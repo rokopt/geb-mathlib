@@ -670,6 +670,52 @@ the pinning convention from Task 2.25.
 
 **Discoveries.** None new in event K. Phase-1 S3 is refuted.
 
+## Real-repo bring-up — rokopt/geb-mathlib (2026-05-16)
+
+Part 4 brought the bootstrap chain up on the public repo
+`rokopt/geb-mathlib`. The 15-commit `chore/bootstrap` chain
+from the live working tree pushed coherently in a single push.
+Each Part-3 bootstrap-real event was re-exercised on the real
+repo.
+
+| Event | Result on rokopt/geb-mathlib | Notes |
+| --- | --- | --- |
+| A — repo creation + first push | clean | main + chore/bootstrap both at the 15-commit tip; default branch main. |
+| B — hooks | deferred (user fresh-session check) | hook script and `.claude/settings.json` ship in chore/bootstrap. |
+| C — branch operations | partial — only main + chore/bootstrap present | full topic-branch exercise comes with first workstream. |
+| D — CI activates | green via workflow_dispatch (see RR.1 below) | initial-push auto-trigger did not fire — discovery RR.1. |
+| E — integration regeneration | integration bookmark created on remote at the degenerate single-parent fan-in | full fan-in shape comes with first topic branches. |
+| F — mass-rebase on bump | deferred — no topic branches yet | routine post-bootstrap work. |
+| G3 — clean import-lint | green — `lint-imports.sh` clean on empty skeleton (0 files checked). | — |
+| G-bis — axiom check | green — `check-axioms.sh` clean on empty skeleton (0 declarations, exit 0 via pre-push.sh). | — |
+| H — PR extraction | deferred — no upstream-eligible content yet | routine post-bootstrap. |
+| I — conflict refusal | deferred — conflict-check.yml registered and active; will fire on first PR or push to main/integration. | path-detection design proved on test-1/test-2. |
+| J — CLAUDE.md round-trip | deferred (user fresh-session check on real repo) | strong-pass condition already verified on test-2 iteration 2. |
+| K — doc generation | green — `lake build Geb:docs` clean locally; `doc-build.yml` workflow_dispatch on real repo also green. | — |
+
+**RR.1 (2026-05-16) — GitHub Actions did not auto-trigger on
+the initial-branch-creation push.** Pushing main + chore/bootstrap
+to a freshly-created `rokopt/geb-mathlib` produced two CreateEvent
+entries on the events feed and zero workflow runs, despite ci.yml,
+markdown-lint.yml, and conflict-check.yml all declaring
+`on: push: branches: [main, integration]`. A subsequent
+`workflow_dispatch` triggered the same three workflows
+successfully on the same content, confirming the pipeline is
+fully functional. The integration push (Event E) also registered
+as a CreateEvent (new branch) and likewise did not auto-trigger.
+The pattern: GitHub treats the first push that *creates* a ref
+as a CreateEvent only, not a PushEvent; workflows with
+`on: push` triggers register their need but fire only on
+subsequent PushEvents against the now-existing ref. The contrast
+with iteration 2's test-2 first-push behaviour (where workflows
+did fire) is unexplained; both pushes followed the same path
+shape. Most likely difference: GitHub's heuristics for first-time
+contributions from a fresh personal repo. The follow-up to
+exercise the on-push trigger naturally is to push any subsequent
+commit to main or integration; the cron-driven update.yml and
+PR-driven conflict-check.yml will both fire on their natural
+events without further user action.
+
 ## Termination verification — iteration 2 (2026-05-14)
 
 Test repo `rokopt/geb-mathlib-test-2` created from a fresh
