@@ -42,10 +42,10 @@ bash scripts/tests/test-lint-imports.sh
 step "scripts/hooks/tests/test-block-mutating-git.sh"
 bash scripts/hooks/tests/test-block-mutating-git.sh
 
-step "doctoc --check '**/*.md'"
+step "doctoc --dryrun --update-only ."
 if command -v doctoc >/dev/null 2>&1; then
-  doctoc --check '**/*.md' \
-    || { echo "doctoc TOCs out of date; run 'doctoc \"**/*.md\"' and re-commit." >&2; exit 1; }
+  doctoc --dryrun --update-only . \
+    || { echo "doctoc TOCs out of date; run 'doctoc --update-only .' and re-commit." >&2; exit 1; }
 else
   echo "doctoc not installed; skipping TOC check." >&2
 fi
