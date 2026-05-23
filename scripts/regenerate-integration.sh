@@ -77,6 +77,14 @@ jj new $parents -m "integration: fan-in @ $(date -I)"
 # on every regeneration after the first.
 jj bookmark set integration -r @ --allow-backwards
 
+# Move @ off the fan-in commit. Without this, the working copy is
+# integration: jj's snapshot-on-every-command would amend the
+# fan-in in place, and the bookmark (anchored to @) would silently
+# follow. Returning @ to main matches the semantics that
+# regeneration is a side operation that doesn't belong to any
+# topic branch.
+jj new main
+
 # Push (lease-protected; jj uses git's force-with-lease semantics
 # and has no separate --force flag). First-time push auto-tracks
 # `integration` via the local remotes.origin.auto-track-bookmarks
