@@ -39,7 +39,17 @@ rest of this file.
 
 ### AI authoring modes (for upstream-eligible work)
 
+| Authoring mode | Triggered by | AI agent may | User must |
+| --- | --- | --- | --- |
+| (a) User-driven | Credentialing-PR candidate | Suggest in natural language only | Write every line |
+| (b) Co-authoring | Other upstream-eligible work | Draft provisional code | Read, rewrite, commit when fully understood |
+
 ### Credentialing-PR checkpoint (agent behavior)
+
+Before starting any work in `Geb/Mathlib/` or `Geb/Cslib/` whose
+only dependencies are the targeted upstream (i.e., a true
+PR-candidate with no in-flight geb-mathlib deps), the AI agent
+asks: "Is this the credentialing PR for this upstream?"
 
 ## Path-scoped rules
 

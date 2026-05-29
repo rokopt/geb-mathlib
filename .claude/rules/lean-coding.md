@@ -138,7 +138,7 @@ guides above as well. CSLib-specific constraints (mandatory
 `Cslib.Init` import, notation locality, `lake shake` minimised
 imports, stronger reuse principle, narrower PR-title types,
 pre-coordination on Zulip for major work) live in
-`.claude/rules/upstream-eligible.md` § CSLib-specific
+`docs/rules/upstream-eligible.md` § CSLib-specific
 constraints.
 
 ## Comment and docstring rules
