@@ -117,7 +117,7 @@ Be wary of value-laden adjectives ("key" / "important" / "core"
 "challenge" etc.), and conversational fillers ("yes" / "wait" /
 "hmm" / "careful" / "actually"). Avoid markup for emphasis;
 save it for delineation (e.g. of book names, links, and words
-being defined).  See also `.claude/rules/markdown-writing.md`.
+being defined).  See also `docs/rules/markdown-writing.md`.
 
 **Avoid colloquialisms and metaphors.** Only standard technical
 terms are precise and universal enough for our purposes.
