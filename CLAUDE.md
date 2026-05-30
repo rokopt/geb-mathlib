@@ -1,8 +1,14 @@
 # geb-mathlib
 
-A Lean 4 + mathlib formalisation of Geb. See `README.md` for the
-project's identity and `docs/process.md` for the rationale behind
-each rule below.
+## Audience
+
+This file binds Claude Code. It supplements
+[CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md),
+which apply to every contributor and every AI agent
+respectively; the rules below are the Claude-specific additions.
+
+@AGENTS.md
+@CONTRIBUTING.md
 
 ## Rules
 
@@ -29,26 +35,8 @@ each rule below.
 
 `lean4` sub-skill mapping by activity (drafting, proving, filling
 `sorry`, golfing, porting, review, exploration, diagnosis,
-checkpointing) lives in `.claude/rules/lean-coding.md` § `lean4`
-sub-skill mapping.
-
-## Mathlib upstream guides
-
-Binding for all `.lean` content and all commit messages:
-
-- Contributing index:
-  `https://leanprover-community.github.io/contribute/index.html`
-- Commit messages:
-  `https://leanprover-community.github.io/contribute/commit.html`
-- Coding style:
-  `https://leanprover-community.github.io/contribute/style.html`
-- Naming conventions:
-  `https://leanprover-community.github.io/contribute/naming.html`
-- Documentation:
-  `https://leanprover-community.github.io/contribute/doc.html`
-
-Bullet-point highlights and adversarial-reviewer instructions
-are in `.claude/rules/lean-coding.md`.
+checkpointing) lives in `.claude/rules/lean-coding-claude.md`
+§ `lean4` sub-skill mapping.
 
 ## Tooling
 
@@ -61,16 +49,20 @@ are in `.claude/rules/lean-coding.md`.
 
 ## When to consider creating a project-specific skill
 
-If recurring patterns accumulate that don't fit `CLAUDE.md` or
-`docs/process.md`, use `skill-creator:skill-creator` to generate a
-`geb-development` skill. Default is to wait for friction.
+If recurring patterns accumulate that don't fit `CONTRIBUTING.md`,
+`AGENTS.md`, `CLAUDE.md`, `docs/process.md`, `docs/rules/*.md`,
+or existing `.claude/rules/*.md`, use
+`skill-creator:skill-creator` to generate a `geb-development`
+skill. Default is to wait for friction.
 
 ## References
 
-- Process rationale: `docs/process.md`.
-- Mathematical / library references catalog: `docs/references.md`.
-- Path-scoped rules: `.claude/rules/` (in particular
-  `lean-coding.md` for `.lean` files,
-  `upstream-eligible.md` for `Geb/Mathlib/` and `Geb/Cslib/`,
-  `markdown-writing.md` for `.md`,
-  `ci-and-workflow.md` for CI / scripts).
+- [CONTRIBUTING.md](CONTRIBUTING.md) — universal contributor
+  rules (auto-loaded via @import above).
+- [AGENTS.md](AGENTS.md) — AI-agent additions on top of
+  CONTRIBUTING (auto-loaded via @import above).
+- [docs/rules/](docs/rules/) — path-scoped rule files.
+- [.claude/rules/](.claude/rules/) — Claude Code's path-scoped
+  loader: symlinks to docs/rules/ plus the two Claude-only
+  delta files.
+- [docs/process.md](docs/process.md) — rationale for every rule.
