@@ -6,8 +6,6 @@ each rule below.
 
 ## Rules
 
-- **No `jj git push` without user line-by-line review.** This includes
-  first-creation pushes, force-pushes, branch-deletes, tag-pushes.
 - **No raw mutating `git` subcommands.** The PreToolUse hook at
   `scripts/hooks/block-mutating-git.sh` is an allow-list of read-only
   forms; mutating forms (and unknown forms) trigger a permission
@@ -34,12 +32,6 @@ each rule below.
 checkpointing) lives in `.claude/rules/lean-coding.md` § `lean4`
 sub-skill mapping.
 
-Specs and plans are
-adversarially-reviewed before execution begins (see
-`docs/process.md` § Adversarial review). Verify agent claims
-against authoritative sources before committing them to artifacts;
-include citations.
-
 ## Mathlib upstream guides
 
 Binding for all `.lean` content and all commit messages:
@@ -56,9 +48,7 @@ Binding for all `.lean` content and all commit messages:
   `https://leanprover-community.github.io/contribute/doc.html`
 
 Bullet-point highlights and adversarial-reviewer instructions
-are in `.claude/rules/lean-coding.md`. Re-fetch the guides on
-every adversarial-review round; they are subject to upstream
-revision.
+are in `.claude/rules/lean-coding.md`.
 
 ## Tooling
 
