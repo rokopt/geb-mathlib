@@ -43,53 +43,7 @@ The contributor-binding rules live in
 
 ## Contributing
 
-### Setup
-
-Suggested steps to run after cloning the repository. The jj
-configuration below is recommended local config; the project
-does not run config commands on a contributor's behalf.
-
-1. Install `jj` via your preferred package manager.
-2. Initialise jj's colocated mode:
-   `jj git init --colocate`.
-3. Apply the recommended local jj configuration:
-
-   ```bash
-   jj config set --repo git.private-commits 'conflicts()'
-   jj config set --repo remotes.origin.auto-track-bookmarks 'glob:*'
-   jj config set --repo revsets.bookmark-advance-from 'heads(::@ & mutable())'
-   jj config set --repo revsets.bookmark-advance-to '@'
-   ```
-
-   `git.private-commits = 'conflicts()'` makes `jj git push -b
-   <name>` fail on a conflict commit (which would be rejected
-   in a submitted PR).
-4. Configure your per-developer `~/.config/jj/config.toml`
-   `[signing]` block (`behavior = "own"`,
-   `backend = "gpg"` or `"ssh"`, `key = "..."`) so commits are
-   signed.
-5. Install the Lean toolchain via `elan` (the toolchain version
-   is read from `lean-toolchain`).
-6. Run `lake exe cache get` then `lake build` to verify the
-   build chain.
-7. Install `doctoc` to enable pre-push TOC regeneration of
-   committed Markdown:
-   `npm install -g doctoc` (or your preferred install path).
-   The pre-push checklist skips the TOC check when `doctoc` is
-   missing rather than failing, so this step is recommended but
-   not blocking.
-
-### Working
-
-1. Read `CLAUDE.md` from top to bottom; the rules there bind every
-   contribution.
-2. Pick a workstream from `TODO.md` (or propose a new one and
-   brainstorm a spec following the process described in
-   `docs/process.md`).
-3. Develop on a topic branch (`feat/<topic>`, `fix/<topic>`, etc.);
-   use `jj` (the working VCS).
-4. Run `scripts/pre-push.sh` and have a contributor (or yourself)
-   review the diff line-by-line before pushing.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Upstream targets
 

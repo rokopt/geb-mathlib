@@ -286,3 +286,26 @@ rationale.
   per test, assert it matches the expectation, return the value
   for reuse in other tests. Reduces duplication; chains tests
   together.
+
+## Constructive-only Lean code
+
+- No `noncomputable` anywhere.
+- Minimise `Classical`; flag/justify each invocation in our own
+  code.
+- `scripts/check-axioms.sh` (vendored from `lean4-skills` with
+  `Classical.choice` excluded from the allowlist) is part of the
+  pre-commit / pre-push checklist and runs in CI.
+
+## sorry, admit, and underscores
+
+- **`sorry`** is permitted between commits as a stand-in while
+  working with a development tool that requires placeholders
+  during proof development (e.g.,
+  `lean4:sorry-filler-deep`, `lean4:autoprove`). It is never
+  permitted in committed code.
+- **`admit`** is never permitted, not even between commits.
+  Use `sorry` (audited as above) when a placeholder is needed.
+- When no tool specifically requires `sorry` and we just need
+  a placeholder for an unfilled term or hypothesis, use an
+  underscore (`_`). Underscores are considered errors by elaboration,
+  highlighting what is missing.
