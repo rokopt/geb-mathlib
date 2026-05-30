@@ -1,10 +1,12 @@
 # Development process — rationale
 
-This document records *why* each rule in `CLAUDE.md` and
-`.claude/rules/*.md` exists. The rules themselves live in those
-files; this document explains the motivation behind each. Read it
-when you need to understand the reason for a rule, propose a
-change, or weigh how to apply a rule in an unfamiliar situation.
+This document records *why* each rule in `CONTRIBUTING.md`,
+`AGENTS.md`, `CLAUDE.md`, `docs/rules/*.md`, and
+`.claude/rules/*.md` exists. The rules themselves live in
+those files; this document explains the motivation behind each.
+Read it when you need to understand the reason for a rule,
+propose a change, or weigh how to apply a rule in an
+unfamiliar situation.
 
 ## Sections
 
@@ -102,9 +104,9 @@ archetypal example continues to teach the rule years later.
 
 Only standard technical terms are precise and universal enough
 for our purposes. The rule binds all committed text; the rule
-statement lives in `CLAUDE.md` § Style guidelines.  Examples
-(where not specific technical terms) include "land", "gap",
-and "gate".
+statement lives in `CONTRIBUTING.md` § Rules § Style and
+references.  Examples (where not specific technical terms)
+include "land", "gap", and "gate".
 
 ## Documentation under `docs/`
 
@@ -152,7 +154,10 @@ or `Geb/Cslib/` for upstream, depending on the upstream target;
 migrate dependents via `jj rebase` after the upstream PR is
 accepted. The two-track split lets velocity and upstream-
 readiness each get the discipline that suits them, without one
-blocking the other.
+blocking the other. The AI-agent posture for Track 1 — drafting
+autonomously under `Geb/Internal/` with user review at commit
+time — is called mode (c) in the AI authoring-modes table at
+`docs/rules/upstream-eligible.md` § Authoring modes.
 
 ## Floodgate test
 
@@ -198,7 +203,8 @@ editor catches violations as we type.
 
 PR descriptions, Zulip messages, GitHub issue/PR comments are
 user-authored. Mathlib's policy is unconditional ("use your own
-words"). Multi-layered enforcement: hard rule in `CLAUDE.md`,
+words"). Multi-layered enforcement: hard rule in
+`CONTRIBUTING.md` § Rules § Submission policy,
 pre-push reminder in `scripts/pre-push.sh`, PR template checkbox,
 user-review-before-push gate. The redundancy is intentional.
 

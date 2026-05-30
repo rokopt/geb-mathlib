@@ -30,9 +30,16 @@ See `lakefile.toml` for the full dependency declaration.
 
 ## Process
 
-The contributor-binding rules live in
-[`CLAUDE.md`](CLAUDE.md). Path-scoped conditional rules live in
-[`.claude/rules/`](.claude/rules/):
+The contributor-binding rules live in three audience-shaped
+entry-point files at the repo root:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — universal contributor
+  rules (humans + AI agents).
+- [AGENTS.md](AGENTS.md) — additions for AI coding agents in
+  general.
+- [CLAUDE.md](CLAUDE.md) — Claude Code-specific additions.
+
+Path-scoped rules live in [docs/rules/](docs/rules/):
 
 - `lean-coding.md` — applies to all `.lean` files.
 - `upstream-eligible.md` — applies under `Geb/Mathlib/`,
@@ -40,6 +47,11 @@ The contributor-binding rules live in
 - `markdown-writing.md` — applies to all `.md` files.
 - `ci-and-workflow.md` — applies to `.github/workflows/` and
   `scripts/`.
+
+Claude Code's path-scoped loader at
+[.claude/rules/](.claude/rules/) consists of symlinks to the
+canonical files in `docs/rules/` plus Claude-only delta files
+for additions specific to Claude.
 
 ## Contributing
 

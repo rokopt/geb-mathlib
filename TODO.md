@@ -35,9 +35,10 @@ first mathematical / programming-language work.
   to Verso, (d) our prose grows substantial. Currently using
   Markdown rendered by doc-gen4.
 - **Project-specific `geb-development` skill**: when recurring
-  patterns accumulate that fit neither `CLAUDE.md` nor
-  `docs/process.md` nor existing `.claude/rules/*.md`. Default is
-  to wait for friction.
+  patterns accumulate that fit neither `CONTRIBUTING.md`,
+  `AGENTS.md`, `CLAUDE.md`, `docs/process.md`,
+  `docs/rules/*.md`, nor existing `.claude/rules/*.md`. Default
+  is to wait for friction.
 - **Author `.github/PULL_REQUEST_TEMPLATE/` for our repo**:
   trigger when the first PR against our own repo is opened (most
   likely the bump-PR cron).
