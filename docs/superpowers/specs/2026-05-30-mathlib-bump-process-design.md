@@ -220,7 +220,9 @@ that:
       targets tags that have been published on all three repos; and
    3. no bump is already in flight for it: neither an open pull
       request on `auto-update-lean/patch` nor an open issue carrying
-      `lean-update`'s failure label (both queried via `gh`).
+      `lean-update`'s failure label `auto-update-lean-fail` (the
+      string `lean-update`'s `create-issue.sh` sets; both queried
+      via `gh`).
 
    Otherwise it emits nothing.
 
@@ -228,8 +230,16 @@ Condition 2 prevents the tag-lag race: mathlib may cut a release
 tag before `cslib`/`doc-gen4` cut theirs, and writing a
 not-yet-published tag to their `rev` fields would make `lake update`
 fail. Withholding the target until all three tags exist keeps the
-apply job from ever attempting an unpublished tag. Condition 3 is
-the re-run guard described next.
+apply job from ever attempting an unpublished tag. Gating on
+`doc-gen4` is necessary, not merely a lockstep preference:
+`doc-gen4` is a top-level `[[require]]`, so `lake update` resolves
+it regardless of whether any module imports it, and a missing
+`doc-gen4` tag fails `lake update` even though `doc-gen4` is absent
+from the `lake build`/`lake test` gate. The cost is latency — a
+build-ready `mathlib`+`cslib` bump is withheld until `doc-gen4` also
+cuts the tag — accepted because all three are kept in lockstep and
+`doc-gen4` tags track the toolchain promptly. Condition 3 is the
+re-run guard described next.
 
 ### update.yml job 2: apply with lockstep
 
@@ -261,16 +271,23 @@ tag. Two in-flight states must be guarded (condition 3 above):
 - A pending pull request. `lean-update` uses a fixed branch
   (`auto-update-lean/patch`) and would force-update the open pull
   request in place, disrupting an in-progress review.
-- A failed bump. `lean-update` opens an issue (deduped by label, so
-  no duplicate issues accumulate), but with no pull request to gate
-  on, the apply job would otherwise re-run `lake update` and a full
-  build on every tick until the cause is resolved.
+- A failed bump. `lean-update` opens an issue (deduped by its
+  `auto-update-lean-fail` label, so no duplicate issues accumulate),
+  but with no pull request to gate on, the apply job would otherwise
+  re-run `lake update` and a full build on every tick until the
+  cause is resolved.
 
 Detection therefore withholds the target while either an open pull
-request on `auto-update-lean/patch` or an open issue with
-`lean-update`'s failure label exists. The in-flight bump is left
+request on `auto-update-lean/patch` or an open issue with the
+`auto-update-lean-fail` label exists. The in-flight bump is left
 untouched until a contributor merges the pull request, or resolves
 and closes the issue.
+
+Closing the failure issue signals retry: while the pin on `main`
+still precedes the bad tag, the next tick re-selects it, rebuilds,
+and (the prior issue being closed) opens a fresh one. To skip a
+known-bad tag permanently rather than retry, a contributor advances
+the pin past it or waits for a newer mathlib tag to supersede it.
 
 ### Validation and merge
 
