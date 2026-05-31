@@ -197,8 +197,8 @@ remains the last `[[require]]`, so the cache-hash ordering
 constraint documented in `lakefile.toml` is preserved. A tag `rev`
 resolves to a commit (in `lake-manifest.json`, `inputRev` holds the
 tag and `rev` the resolved commit), and `lake exe cache get` keys
-on the commit, so the warm mathlib cache is still hit; this is
-confirmed on the test repo.
+on the commit, so the warm mathlib cache is still hit; the first
+bump pull request's build confirms this.
 
 ### update.yml job 1: detect
 
@@ -353,8 +353,12 @@ does not).
 
 ## Verification
 
-Per the project's test-repo-first discipline, validate on a
-numbered test repository before landing the workflow here:
+The shipped `update.yml` is already non-functional (it detects an
+update and discards it), so this work is a bug-fix applied directly
+to the repository; the project's test-repo-first discipline governs
+repository creation, not ongoing fixes to the live repo. The
+following behaviors are confirmed on the repository as the workflow
+is landed, and any defect found is fixed in the workflow:
 
 1. A `v4.30.0-rc2` to `v4.31.0-rc1` lockstep bump regenerates the
    manifest and toolchain, hits the warm mathlib cache, and produces
