@@ -64,6 +64,10 @@ omitted from the commands below for brevity.
 - `scripts/mathlib-bump-detect.sh` (create) — detection: emit a
   target tag or nothing. One responsibility: decide whether a bump
   should proceed and to which tag.
+- `scripts/lib/select-newest-mathlib-tag.cjs` (create) — the
+  semver tag-selection helper, isolated so the npm `semver` package
+  is loadable via `NODE_PATH` and the logic is invoked without
+  inline-quoting fragility.
 - `scripts/tests/test-mathlib-bump-detect.sh` (create) — smoke test
   for the script's pure logic (tag selection, pin read).
 - `scripts/pre-push.sh` (modify) — run the new smoke test.
@@ -134,6 +138,7 @@ jj bookmark set feat/mathlib-bump-pipeline -r @-
 
 **Files:**
 
+- Create: `scripts/lib/select-newest-mathlib-tag.cjs`
 - Create: `scripts/mathlib-bump-detect.sh`
 - Test: `scripts/tests/test-mathlib-bump-detect.sh`
 - Modify: `scripts/pre-push.sh`
@@ -209,9 +214,35 @@ Run: `bash scripts/tests/test-mathlib-bump-detect.sh`
 Expected: FAIL — `scripts/mathlib-bump-detect.sh` does not exist, so
 `source` errors (`No such file or directory`).
 
-- [ ] **Step 3: Write the detection script**
+- [ ] **Step 3: Write the tag-selector helper and the detection script**
 
-Create `scripts/mathlib-bump-detect.sh`:
+First create `scripts/lib/select-newest-mathlib-tag.cjs` (isolating
+the semver logic so the package is loadable via `NODE_PATH` and the
+caller avoids inline-quoting fragility):
+
+```javascript
+// scripts/lib/select-newest-mathlib-tag.cjs
+//
+// Reads candidate tags (newline-separated) from stdin and the
+// current pin from argv[2]; prints the newest tag strictly greater
+// than the pin by semver order, or nothing. Requires the `semver`
+// package to be resolvable (the caller sets NODE_PATH). Tags are
+// parsed v-stripped without coercion so prerelease components
+// (e.g. -rc1) are preserved and ordered correctly.
+const semver = require("semver");
+const fs = require("fs");
+const clean = (t) => t.replace(/^v/, "");
+const pin = clean(process.argv[2] || "");
+const tags = fs.readFileSync(0, "utf8").split("\n")
+  .map((s) => s.trim()).filter(Boolean)
+  .filter((t) => semver.valid(clean(t)));
+const newer = tags
+  .filter((t) => semver.gt(clean(t), pin))
+  .sort((a, b) => semver.compare(clean(a), clean(b)));
+process.stdout.write(newer.length ? newer[newer.length - 1] : "");
+```
+
+Then create `scripts/mathlib-bump-detect.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -234,6 +265,10 @@ Create `scripts/mathlib-bump-detect.sh`:
 # tags from `git ls-remote --tags`, ordered by the npm `semver`
 # package via `semver.gt` (not `sort -V`, which misorders
 # prereleases such as v4.31.0-rc1 against v4.31.0).
+#
+# Detection needs network (git ls-remote, `npx` fetching semver,
+# gh). Failures fail loudly (exit 1) rather than emitting an empty
+# target, so an outage is never mistaken for "already current".
 
 set -uo pipefail
 
@@ -265,38 +300,46 @@ list_version_tags() {
     | sed -n 's#.*refs/tags/\(v[0-9].*\)$#\1#p'
 }
 
-# Pure: given the current pin ($1) and candidate tags (newline-
-# separated on stdin), print the newest tag semver-greater than the
-# pin, or nothing. Uses the npm `semver` package (semver.gt /
-# semver.compare), parsing the v-stripped tag without coercion so
-# prerelease components are preserved.
+# Given the current pin ($1) and candidate tags (newline-separated
+# on stdin), print the newest tag semver-greater than the pin, or
+# nothing. Delegates the comparison to the .cjs helper, run under
+# `npx -p semver@7` with NODE_PATH set to the npx-installed module
+# root so the helper's `require("semver")` resolves (the `-p` flag
+# only adds the bin to PATH, not to node's require path). Exits
+# non-zero if the helper errors, so callers can fail loudly.
 select_target() {
-  npx --yes -p semver@7 node -e '
-    const semver = require("semver");
-    const pin = process.argv[1].replace(/^v/, "");
-    const fs = require("fs");
-    const clean = (t) => t.replace(/^v/, "");
-    const tags = fs.readFileSync(0, "utf8").split("\n")
-      .map((s) => s.trim()).filter(Boolean)
-      .filter((t) => semver.valid(clean(t)));
-    const newer = tags
-      .filter((t) => semver.gt(clean(t), pin))
-      .sort((a, b) => semver.compare(clean(a), clean(b)));
-    process.stdout.write(newer.length ? newer[newer.length - 1] : "");
-  ' "$1"
+  local pin="$1" helper
+  helper="$(dirname "${BASH_SOURCE[0]}")/lib/select-newest-mathlib-tag.cjs"
+  npx --yes -p semver@7 bash -c '
+    node_modules="$(cd "$(dirname "$(command -v semver)")/.." && pwd)"
+    NODE_PATH="$node_modules" node "$1" "$2"
+  ' _ "$helper" "$pin"
 }
 
+# True iff the tag exists on the repo. Captures output rather than
+# piping to `grep -q`: under `set -o pipefail`, `grep -q` closes the
+# pipe on first match and the upstream `git` exits with SIGPIPE
+# (141), which pipefail would surface as failure even on a match.
 tag_exists() {
-  git ls-remote --tags "$1" "refs/tags/$2" | grep -q .
+  local out
+  out=$(git ls-remote --tags "$1" "refs/tags/$2")
+  [[ -n "$out" ]]
 }
 
+# Return 0 if a bump is in flight, 1 if not, 2 on error. Fails
+# closed: a `gh` failure or non-numeric count is treated as an
+# error (return 2), never as "not in flight" — otherwise a
+# transient `gh` outage would let the apply job clobber an open,
+# under-review pull request.
 bump_in_flight() {
   local open_pr open_issue
   open_pr=$(gh pr list --state open --head "$BUMP_BRANCH" \
-    --json number --jq 'length')
+    --json number --jq 'length') || return 2
   open_issue=$(gh issue list --state open --label "$FAIL_LABEL" \
-    --json number --jq 'length')
-  [[ "${open_pr:-0}" != "0" || "${open_issue:-0}" != "0" ]]
+    --json number --jq 'length') || return 2
+  [[ "$open_pr" =~ ^[0-9]+$ ]] || return 2
+  [[ "$open_issue" =~ ^[0-9]+$ ]] || return 2
+  [[ "$open_pr" != "0" || "$open_issue" != "0" ]]
 }
 
 emit() {
@@ -308,21 +351,39 @@ emit() {
 
 main() {
   local lakefile="${1:-lakefile.toml}"
-  local pin target
+  local pin tags target flight
   pin=$(read_mathlib_pin "$lakefile")
   if [[ -z "$pin" ]]; then
     echo "error: no mathlib rev pin in $lakefile" >&2
     exit 1
   fi
 
-  target=$(list_version_tags "$MATHLIB_REPO" | select_target "$pin")
+  # Fail loudly rather than silently reporting "no bump": an empty
+  # tag list or a selector error must not be mistaken for "already
+  # current" (the detect-and-discard failure of the old workflow).
+  tags=$(list_version_tags "$MATHLIB_REPO")
+  if [[ -z "$tags" ]]; then
+    echo "error: no mathlib version tags fetched" >&2
+    exit 1
+  fi
+  if ! target=$(printf '%s\n' "$tags" | select_target "$pin"); then
+    echo "error: tag selection failed" >&2
+    exit 1
+  fi
+
   if [[ -z "$target" ]]; then
     echo "No mathlib release newer than $pin." >&2
     emit ""
     return 0
   fi
 
-  if bump_in_flight; then
+  bump_in_flight
+  flight=$?
+  if [[ "$flight" -eq 2 ]]; then
+    echo "error: in-flight check failed (gh)" >&2
+    exit 1
+  fi
+  if [[ "$flight" -eq 0 ]]; then
     echo "Bump in flight (open PR or $FAIL_LABEL issue); skipping." >&2
     emit ""
     return 0
@@ -473,6 +534,9 @@ sed -E 's/^rev = "[^"]*"/rev = "'"${TARGET}"'"/' lakefile.toml | grep -nE '^rev 
 
 Expected: three lines, each `rev = "v4.31.0-rc1"` (mathlib, cslib,
 doc-gen4). Do not save this; it is a dry check of the substitution.
+This assumes Task 1 has landed (it adds mathlib's `rev`); against a
+lakefile without Task 1, only two lines (cslib, doc-gen4) change —
+run this check after Task 1, not before.
 
 - [ ] **Step 4: Commit**
 
