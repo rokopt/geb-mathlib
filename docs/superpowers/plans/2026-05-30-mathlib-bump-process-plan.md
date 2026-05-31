@@ -515,10 +515,11 @@ jobs:
 
 - [ ] **Step 2: Lint the workflow YAML**
 
-Run:
+Run (node is already a dependency of this plan; PyYAML is not
+guaranteed present):
 
 ```bash
-python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/update.yml')); print('YAML OK')"
+npx --yes js-yaml .github/workflows/update.yml >/dev/null && echo "YAML OK"
 ```
 
 Expected: `YAML OK`.
