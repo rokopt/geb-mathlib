@@ -365,9 +365,11 @@ numbered test repository before landing the workflow here:
    nothing when mathlib has cut a tag the siblings have not (the
    tag-lag gate).
 3. A failing build (a deliberately incompatible tag present on all
-   three repos) opens an issue rather than a pull request; and a
-   later cron tick does not re-run the apply job while that issue —
-   or an open bump pull request — remains in flight.
+   three repos) opens an issue rather than a pull request; a later
+   cron tick does not re-run the apply job while that issue — or an
+   open bump pull request — remains in flight; and closing the issue
+   while the pin still precedes the tag re-selects it and opens a
+   fresh issue.
 4. A module importing `Cslib.…` builds against the lockstep-bumped
    pair (open question 1).
 
