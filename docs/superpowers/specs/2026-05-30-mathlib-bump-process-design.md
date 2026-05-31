@@ -17,7 +17,7 @@
   - [Standing lakefile.toml change](#standing-lakefiletoml-change)
   - [update.yml job 1: detect](#updateyml-job-1-detect)
   - [update.yml job 2: apply with lockstep](#updateyml-job-2-apply-with-lockstep)
-  - [Re-runs while a bump pull request is open](#re-runs-while-a-bump-pull-request-is-open)
+  - [Re-runs while a bump is in flight](#re-runs-while-a-bump-is-in-flight)
   - [Validation and merge](#validation-and-merge)
   - [Post-merge: rebase topics and regenerate integration](#post-merge-rebase-topics-and-regenerate-integration)
 - [Permissions and tokens](#permissions-and-tokens)
@@ -167,11 +167,14 @@ against the locked `cslib`/`doc-gen4` pins. Baselining against the
 pin removes that failure mode, removes the need for project version
 tags (and therefore a self-tagging workflow), and removes the
 circular bootstrapping that a version-tag baseline would require.
-The tag enumeration and comparison reuse the action's exact
-algorithm (`git ls-remote --tags` filtered to `v*.*`, ordered with
-the npm `semver` package — not `sort -V`, which misorders
-prereleases such as `v4.31.0-rc1` against `v4.31.0`). No `master`
-candidate is produced, so no master-filtering is needed.
+The tag enumeration and ordering reuse the action's steps
+(`git ls-remote --tags` filtered to `v*.*`, ordered with the npm
+`semver` package, using `semver.gt` for the newer-than comparison —
+not `sort -V`, which misorders prereleases such as `v4.31.0-rc1`
+against `v4.31.0`, and not `compareBuild`). The design omits the
+action's `master` fallback and its project-version-tag baseline,
+comparing against the pin instead; so no `master` candidate is
+produced and no master-filtering is needed.
 
 ## End-state architecture
 
@@ -202,15 +205,31 @@ confirmed on the test repo.
 A scheduled job (daily cron plus `workflow_dispatch`) runs a step
 that:
 
-1. Reads the current `mathlib` `rev` from `lakefile.toml`.
+1. Reads the current `mathlib` `rev` from the `[[require]]` block
+   whose `name = "mathlib"` in `lakefile.toml` — a TOML-section-aware
+   read keyed on the require name (as `mathlib-update-action`'s
+   `modifyLakefileTOMLMathlibVersion` matches it), not a line
+   `grep`, which would also match the `cslib`/`doc-gen4` `rev`
+   fields.
 2. Enumerates mathlib's `v*.*` tags via `git ls-remote --tags` and
-   selects the newest by npm `semver` order (reusing
-   `mathlib-update-action`'s selection algorithm).
-3. Emits the newest tag as an output if it is `semver`-greater than
-   the current pin; otherwise emits nothing.
+   selects the newest by npm `semver` order.
+3. Emits that tag as the target only if all of:
+   1. it is `semver.gt` the current pin;
+   2. the same tag exists on `cslib` and `doc-gen4` (each checked
+      via `git ls-remote --tags`), so the lockstep substitution
+      targets tags that have been published on all three repos; and
+   3. no bump is already in flight for it: neither an open pull
+      request on `auto-update-lean/patch` nor an open issue carrying
+      `lean-update`'s failure label (both queried via `gh`).
 
-The job outputs the target tag (or an empty result). No `master`
-candidate is involved.
+   Otherwise it emits nothing.
+
+Condition 2 prevents the tag-lag race: mathlib may cut a release
+tag before `cslib`/`doc-gen4` cut theirs, and writing a
+not-yet-published tag to their `rev` fields would make `lake update`
+fail. Withholding the target until all three tags exist keeps the
+apply job from ever attempting an unpublished tag. Condition 3 is
+the re-run guard described next.
 
 ### update.yml job 2: apply with lockstep
 
@@ -233,17 +252,25 @@ When job 1 emits a target tag, the apply job:
 The job needs `contents: write`, `pull-requests: write`, and
 `issues: write`.
 
-### Re-runs while a bump pull request is open
+### Re-runs while a bump is in flight
 
-The cron re-runs daily. While a bump pull request is open and
-unmerged, the project's pin on `main` is unchanged, so job 1 would
-re-select the same target tag. `lean-update` uses a fixed branch
-(`auto-update-lean/patch`) and would force-update the open pull
-request in place, disrupting an in-progress review. To avoid this,
-job 1 skips emitting a target tag when an open pull request from
-`auto-update-lean/patch` already exists (queried with `gh pr
-list`). The open pull request is then left untouched until it is
-merged or closed.
+The cron re-runs daily. While a bump is in flight, the pin on
+`main` is unchanged, so detection would re-select the same target
+tag. Two in-flight states must be guarded (condition 3 above):
+
+- A pending pull request. `lean-update` uses a fixed branch
+  (`auto-update-lean/patch`) and would force-update the open pull
+  request in place, disrupting an in-progress review.
+- A failed bump. `lean-update` opens an issue (deduped by label, so
+  no duplicate issues accumulate), but with no pull request to gate
+  on, the apply job would otherwise re-run `lake update` and a full
+  build on every tick until the cause is resolved.
+
+Detection therefore withholds the target while either an open pull
+request on `auto-update-lean/patch` or an open issue with
+`lean-update`'s failure label exists. The in-flight bump is left
+untouched until a contributor merges the pull request, or resolves
+and closes the issue.
 
 ### Validation and merge
 
@@ -316,11 +343,14 @@ numbered test repository before landing the workflow here:
    manifest and toolchain, hits the warm mathlib cache, and produces
    a green build and a pull request.
 2. Detection emits the newest release tag only when it is
-   `semver`-greater than the pinned `rev`, and emits nothing when
-   the pin is already current.
-3. A failing build (a deliberately incompatible tag) opens an issue
-   rather than a pull request; a second cron tick while that pull
-   request is open does not force-update it.
+   `semver.gt` the pinned `rev` and that tag also exists on `cslib`
+   and `doc-gen4`; it emits nothing when the pin is current, and
+   nothing when mathlib has cut a tag the siblings have not (the
+   tag-lag gate).
+3. A failing build (a deliberately incompatible tag present on all
+   three repos) opens an issue rather than a pull request; and a
+   later cron tick does not re-run the apply job while that issue —
+   or an open bump pull request — remains in flight.
 4. A module importing `Cslib.…` builds against the lockstep-bumped
    pair (open question 1).
 
@@ -340,4 +370,5 @@ numbered test repository before landing the workflow here:
   — in-tree update action used for apply.
 - `https://github.com/leanprover/cslib` — README downstream-pinning
   guidance; `.github/workflows/lake-update.yml` (downstream-reports
-  bump) and `release.yml` (release tagging).
+  bump) and `release.yml` (evidence of cslib's release-tag cadence,
+  which the lockstep relies on).
