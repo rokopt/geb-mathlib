@@ -18,6 +18,7 @@
   - [update.yml job 1: detect](#updateyml-job-1-detect)
   - [update.yml job 2: apply with lockstep](#updateyml-job-2-apply-with-lockstep)
   - [Validation and merge](#validation-and-merge)
+  - [Post-merge: rebase topics and regenerate integration](#post-merge-rebase-topics-and-regenerate-integration)
 - [Bootstrapping the first project version tag](#bootstrapping-the-first-project-version-tag)
 - [Permissions and tokens](#permissions-and-tokens)
 - [Interaction with the review and tagging discipline](#interaction-with-the-review-and-tagging-discipline)
@@ -133,10 +134,19 @@ form of the version lock described below: at a release tag, the
 locked dependencies were built and tested against a mathlib of the
 same toolchain.
 
-The detector (`check-for-updates`) appends `master` to its
-candidate list under `latest` and `all`. The application job
-filters the literal `master` entry out of the candidate list, so
-only release tags produce pull requests.
+The detector (`check-for-updates`) runs with
+`intermediate_releases: latest`, so its candidate list is the
+single newest mathlib release newer than the project's baseline
+tag, followed by the literal `master` (the detector appends
+`master` under both `latest` and `all`; only `stable` omits it,
+and `stable` also drops prereleases, which would exclude the
+release candidates this project tracks). The application job
+therefore filters the `master` entry out (a job-level
+`if: matrix.tag != 'master'`), leaving at most one release tag.
+The `latest`-not-`all` choice means a bump jumps straight to the
+newest release rather than stepping through intermediate ones;
+under close tracking the project is rarely more than one release
+behind, so no intermediate releases are skipped in practice.
 
 ### CSLib and doc-gen4 are version-locked to mathlib
 
@@ -174,6 +184,14 @@ revision: `v4.30.0-rc2`. After this change a bump is the
 substitution of one tag string into three `rev` fields followed by
 `lake update`.
 
+Adding a `rev` does not change the declaration order: `mathlib`
+remains the last `[[require]]`, so the cache-hash ordering
+constraint documented in `lakefile.toml` is preserved. A tag
+`rev` resolves to a commit (in `lake-manifest.json`, `inputRev`
+holds the tag and `rev` the resolved commit), and `lake exe cache
+get` keys on the commit, so the warm mathlib cache is still hit;
+this is verified as part of the test-repo run.
+
 ### create-release.yml (self-tagging)
 
 Adopt the template's `create-release.yml` verbatim: trigger on a
@@ -183,20 +201,35 @@ push to `main` that modifies `lean-toolchain`; run
 § Action pinning policy) with `do-release: true`. This supplies
 the project-tag baseline that the detector requires.
 
+Under release-tag cadence every bump changes `lean-toolchain`, so
+`create-release.yml` fires on every merged bump: each mathlib
+release tag ships a matching distinct toolchain (verified
+2026-05-30: `mathlib4` at `v4.30.0-rc1`, `v4.30.0-rc2`, and
+`v4.31.0-rc1` carries `leanprover/lean4:v4.30.0-rc1`,
+`...-rc2`, and `...v4.31.0-rc1` respectively). The
+distinct-toolchain property is specific to release tags; under a
+master/nightly cadence many commits share one toolchain and the
+self-tagging cycle would not advance per bump, which is one reason
+that cadence is a non-goal.
+
 ### update.yml job 1: detect
 
 Job `check-for-updates` runs `mathlib-update-action`'s root action
-(the detector), producing the `new-tags` output. This is the
-template's detection, used unchanged, so the semver comparison and
-release-selection logic are reused rather than reimplemented. With
-the project carrying its own version tags (from
-`create-release.yml`), the detector emits mathlib release tags
-newer than the project's latest version tag.
+(the detector) with `intermediate_releases: latest`, producing the
+`new-tags` output. This is the template's detection, used
+unchanged, so the semver comparison and release-selection logic are
+reused rather than reimplemented. With the project carrying its own
+version tags (from `create-release.yml`), the detector emits the
+newest mathlib release tag newer than the project's latest version
+tag, followed by `master`.
 
 ### update.yml job 2: apply with lockstep
 
-Job `apply` runs over the `new-tags` matrix with `master` filtered
-out. For each release tag:
+Job `apply` runs over the `new-tags` matrix with `max-parallel: 1`
+and a job-level `if: matrix.tag != 'master'` that drops the
+`master` entry. Under `intermediate_releases: latest` this leaves
+at most one release tag, so the job runs at most once per cron
+tick. For that tag:
 
 1. Set the `rev` of `mathlib`, `cslib`, and `doc-gen4` in
    `lakefile.toml` to the tag.
@@ -205,7 +238,15 @@ out. For each release tag:
    the edited revisions), builds and tests via
    `leanprover/lean-action`, and opens a pull request on success
    (`on_update_succeeds: pr`) or an issue on failure
-   (`on_update_fails: issue`).
+   (`on_update_fails: issue`). `lake update` keeps the tag-pinned
+   revisions fixed (it records the tag as `inputRev` and resolves
+   it to a commit), and for a project that already has
+   dependencies `lean-update` does not run its latest-version
+   probe, so the three pins are honoured rather than advanced.
+
+`lean-update` pushes to a fixed branch (`auto-update-lean/patch`);
+because the `master` filter and `intermediate_releases: latest`
+leave at most one tag, no two `apply` runs contend for that branch.
 
 The job needs `contents: write`, `pull-requests: write`, and
 `issues: write`.
@@ -213,9 +254,30 @@ The job needs `contents: write`, `pull-requests: write`, and
 ### Validation and merge
 
 `ci.yml` runs on the opened pull request and provides the full
-build, test, lint, shake, and axiom-check gate. A contributor
-reviews the diff line-by-line and merges. No step merges
-automatically.
+build, test, lint, shake, and axiom-check gate (`ci.yml` triggers
+on `pull_request` to `main`). A contributor reviews the diff
+line-by-line and merges. No step merges automatically.
+
+### Post-merge: rebase topics and regenerate integration
+
+[docs/process.md](../../process.md) § Mathlib bump procedure
+requires that a bump end with `main` updated, active topic
+branches mass-rebased, and `integration` regenerated. After the
+bump pull request merges to `main`, the maintainer runs
+`scripts/rebase-topics.sh main` (mass-rebases active topic
+branches onto the new `main`) and `scripts/regenerate-integration.sh`
+(regenerates the `integration` fan-in view). These are manual
+post-merge steps, not part of the workflow. The implementation
+updates `docs/process.md` § Mathlib bump procedure, whose current
+text describes `update.yml` as already opening pull requests
+(it does not) and omits the `create-release.yml` self-tagging
+piece.
+
+The auto-created version tag names a commit on `main` and does not
+enter integration regeneration: `scripts/regenerate-integration.sh`
+references no tags (its fan-in revset is defined over `main` and
+topic-branch tips), so tagging and integration regeneration do not
+interact.
 
 ## Bootstrapping the first project version tag
 
@@ -265,21 +327,28 @@ regeneration.
 
 ## Open questions to resolve during planning
 
-1. Whether `lean-update` behaves correctly as the application
-   engine when the three revisions are pre-pinned to a tag (its
-   `lake update` must keep the pinned revisions and regenerate the
-   manifest, rather than advancing a branch). If it does not, the
-   fallback is a bespoke apply job built from the same primitives
-   (`lake update`, `leanprover/lean-action`, a pull-request action,
-   an issue action).
-2. Whether `cslib` at a given release tag is API-consistent with
+1. Whether `cslib` at a given release tag is API-consistent with
    mathlib at the same release tag once a `Geb` module imports
-   `Cslib.…` (the locked dependencies pin their own mathlib
-   revision, which the top-level requirement overrides).
-3. How to seed the initial project version tag
+   `Cslib.…`. The matching tag string (`v4.31.0-rc1` on both) is a
+   naming convention, not a guarantee that `cslib` was built
+   against the same mathlib commit the mathlib tag names: each
+   dependency is a top-level requirement, so the project's mathlib
+   pin overrides `cslib`'s transitive mathlib pin. Verification
+   item 5 is the real check.
+2. How to seed the initial project version tag
    (see [Bootstrapping the first project version tag](#bootstrapping-the-first-project-version-tag)).
-4. Whether to retain a non-blocking `master` canary as a separate
+3. Whether to retain a non-blocking `master` canary as a separate
    job (default: no; release tags only).
+
+Resolved during adversarial review (2026-05-30): `lake update`
+keeps a tag-pinned `rev` fixed (records the tag as `inputRev`,
+resolves it to a commit), and `lean-update` skips its
+latest-version probe for a project that already has dependencies,
+so `lean-update` acts as a pure apply engine over pre-pinned revs.
+The test-repo run still confirms this end-to-end (Verification
+item 1). If it does not hold, the fallback is a bespoke apply job
+built from the same primitives (`lake update`,
+`leanprover/lean-action`, a pull-request action, an issue action).
 
 ## Verification
 
@@ -300,15 +369,20 @@ numbered test repository before landing the workflows here:
 
 ## References
 
+- [docs/process.md](../../process.md) § Mathlib bump procedure
+  — the procedure this spec updates.
 - [docs/rules/ci-and-workflow.md](../../rules/ci-and-workflow.md)
   — commit-message, pre-push, and action-pinning conventions.
 - [AGENTS.md](../../../AGENTS.md) — agent push and review rules.
-- `https://github.com/leanprover-community/LeanProject` — template;
-  workflows under `.github/workflows/`.
-- `https://github.com/leanprover-community/mathlib-update-action`
-  — detection and `do-update` actions; detection logic in
-  `src/index.js`.
-- `https://github.com/leanprover-community/lean-update` — in-tree
-  update action.
+- `scripts/rebase-topics.sh`, `scripts/regenerate-integration.sh`
+  — post-merge mass-rebase and integration regeneration.
+- `https://github.com/leanprover-community/LeanProject/blob/main/.github/workflows/update.yml`
+  and `.../create-release.yml` — the template's bump and
+  self-tagging workflows.
+- `https://github.com/leanprover-community/mathlib-update-action/blob/main/action.yml`,
+  `.../src/index.js` (detection logic), and `.../do-update/action.yml`
+  (artifact-transport apply).
+- `https://github.com/leanprover-community/lean-update/blob/main/action.yml`
+  — in-tree update action.
 - `https://github.com/leanprover-community/lean-release-tag`
   — self-tagging action.
