@@ -36,6 +36,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+      actions: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Set mathlib, cslib, doc-gen4 revs to the target tag
@@ -51,3 +52,11 @@ jobs:
           on_update_succeeds: pr
           on_update_fails: issue
           update_if_modified: lake-manifest.json
+      - name: Trigger CI on the bump pull request
+        run: |
+          if [ "$(gh pr list --head auto-update-lean/patch \
+                  --state open --json number --jq 'length')" != "0" ]; then
+            gh workflow run ci.yml --ref auto-update-lean/patch
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
