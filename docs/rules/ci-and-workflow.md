@@ -33,7 +33,13 @@ include `Moves:` or `Deletions:`, so nor does ours.
 
 Run by `scripts/pre-push.sh`:
 
-1. `lake build` succeeds locally.
+1. `lake exe cache get` populates the full mathlib olean cache
+   (mirroring CI's `leanprover/lean-action`), then `lake build`
+   succeeds locally. The cache fetch is required because `lake
+   build` alone fetches only the oleans `Geb` imports; the
+   `lake shake` smoke test (item 5) injects an arbitrary mathlib
+   import and needs that module's olean present, which after a
+   toolchain bump it otherwise would not be.
 2. `lake test` succeeds locally.
 3. `lake lint` quiet.
 4. `lake shake --add-public --keep-implied --keep-prefix Geb GebTests`
