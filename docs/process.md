@@ -192,7 +192,12 @@ no bump is in flight. The apply job sets all three `rev` fields to
 the target and runs `leanprover-community/lean-update`, which does
 an in-tree `lake update`, builds via `leanprover/lean-action`, and
 opens a pull request on success or an issue on failure; nothing
-merges automatically. A contributor reviews the diff line-by-line
+merges automatically. The bump pull request is created with
+`GITHUB_TOKEN`, whose events do not trigger workflow runs, so the
+apply job dispatches `ci.yml` on the bump branch
+(`workflow_dispatch`, which is exempt from that suppression) to put
+visible CI checks on the pull request for the reviewer. A
+contributor reviews the diff line-by-line
 and merges. After merge to `main`, the contributor mass-rebases
 active topic branches with `scripts/rebase-topics.sh main` and
 regenerates `integration` with `scripts/regenerate-integration.sh`.
