@@ -39,6 +39,9 @@ bash scripts/lint-imports.sh
 step "scripts/tests/test-lint-imports.sh"
 bash scripts/tests/test-lint-imports.sh
 
+step "scripts/tests/test-mathlib-bump-detect.sh"
+bash scripts/tests/test-mathlib-bump-detect.sh
+
 step "scripts/hooks/tests/test-block-mutating-git.sh"
 bash scripts/hooks/tests/test-block-mutating-git.sh
 

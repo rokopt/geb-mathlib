@@ -181,14 +181,22 @@ working view of all in-flight work.
 
 ## Mathlib bump procedure
 
-Two flows: cron-driven (`update.yml` runs `mathlib-update-action`,
-opens a PR against `main`); user-initiated (manual
-`bump/<lean-version>` branch). Both end with `main` updated, topic
-branches mass-rebased via `scripts/rebase-topics.sh`,
-`integration` regenerated. Tracking mathlib closely (rather than
-batching bumps) keeps adaptation cost amortised; the cron is the
-default, the manual flow handles the cases the cron cannot
-(toolchain bumps, breaking changes).
+`update.yml` (daily cron plus manual dispatch) self-detects the
+newest mathlib release tag against the project's pin via
+`scripts/mathlib-bump-detect.sh`, which reuses
+`mathlib-update-action`'s tag-selection (`git ls-remote --tags` +
+npm `semver`) but baselines against the `lakefile.toml` pin. It
+emits a target only when the tag is newer, exists on `cslib` and
+`doc-gen4` (the version-locked dependencies bump in lockstep), and
+no bump is in flight. The apply job sets all three `rev` fields to
+the target and runs `leanprover-community/lean-update`, which does
+an in-tree `lake update`, builds via `leanprover/lean-action`, and
+opens a pull request on success or an issue on failure; nothing
+merges automatically. A contributor reviews the diff line-by-line
+and merges. After merge to `main`, the contributor mass-rebases
+active topic branches with `scripts/rebase-topics.sh main` and
+regenerates `integration` with `scripts/regenerate-integration.sh`.
+The detector tracks release tags, not `master`.
 
 ## Markdownlint discipline
 
