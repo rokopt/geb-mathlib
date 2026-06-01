@@ -118,17 +118,21 @@ pull request carries visible CI checks for the reviewer.
 
 ## Limitations
 
-The dispatched run's results attach to the bump branch's head
-commit as **check runs** — visible in the pull request's Checks tab
-and to a reviewer. They do **not** populate the pull request's
-status rollup (`statusCheckRollup`), because a `workflow_dispatch`
-run is not bound to the pull request's merge context the way a
-native `pull_request` run is. This is adequate for the project's
-model: a contributor reviews the diff and the visible checks, then
-merges manually, and `main` has no required-status-check branch
-protection. If `main` later adopts required-status-check
-protection, `workflow_dispatch`-produced checks are not guaranteed
-to satisfy the required context; the approach would need
+The dispatched run's check runs attach to the bump commit (the
+pull request's head) and are visible there and on the Actions tab —
+reachable from the pull request only via its Commits list, the
+individual commit. They do **not** appear in the pull request's own
+checks UI: neither the merge-box status rollup (`statusCheckRollup`)
+nor `gh pr checks` surfaces them, because a `workflow_dispatch`
+run's check suite is not associated with the pull request the way a
+native `pull_request` run's is (verified on PR #9: five check runs
+on the head commit, empty `statusCheckRollup`). This is adequate
+for the project's model: a contributor reviews the diff and the
+commit's checks, then merges manually, and `main` has no
+required-status-check branch protection. If `main` later adopts
+required-status-check protection, `workflow_dispatch`-produced
+checks are not guaranteed to satisfy the required context; the
+approach would need
 re-validation then (likely a native-`pull_request` run, which means
 opening the pull request under a non-`GITHUB_TOKEN` identity — the
 App-token / self-rolled-PR path this design set aside).

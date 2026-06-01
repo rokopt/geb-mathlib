@@ -195,8 +195,12 @@ opens a pull request on success or an issue on failure; nothing
 merges automatically. The bump pull request is created with
 `GITHUB_TOKEN`, whose events do not trigger workflow runs, so the
 apply job dispatches `ci.yml` on the bump branch
-(`workflow_dispatch`, which is exempt from that suppression) to put
-visible CI checks on the pull request for the reviewer. A
+(`workflow_dispatch`, which is exempt from that suppression). The
+dispatched run records its result on the bump commit and the
+Actions tab — not in the pull request's merge-box checks (a
+`workflow_dispatch` suite is not associated with the pull request),
+so the reviewer checks the commit's checks (via the pull request's
+Commits list) or the Actions run before merging. A
 contributor reviews the diff line-by-line
 and merges. After merge to `main`, the contributor mass-rebases
 active topic branches with `scripts/rebase-topics.sh main` and
