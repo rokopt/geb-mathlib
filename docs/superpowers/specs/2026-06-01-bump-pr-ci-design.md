@@ -9,6 +9,7 @@
   - [update.yml apply job](#updateyml-apply-job)
   - [docs/process.md](#docsprocessmd)
 - [Non-goals](#non-goals)
+- [Limitations](#limitations)
 - [Verification](#verification)
 - [References](#references)
 
@@ -16,10 +17,11 @@
 
 ## Goal
 
-Make the automated mathlib-bump pull request carry `ci.yml` checks
-(so a reviewer can gate it before merge), by having the bump
-workflow dispatch `ci.yml` on the bump branch after opening the
-pull request.
+Make the automated mathlib-bump pull request carry visible
+`ci.yml` checks (so a reviewer sees the full gate before merging),
+by having the bump workflow dispatch `ci.yml` on the bump branch
+after opening the pull request. See [Limitations](#limitations) for
+what "visible" does and does not mean.
 
 ## Motivation
 
@@ -65,12 +67,17 @@ on the bump branch when a pull request was opened:
     GH_TOKEN: ${{ github.token }}
 ```
 
-- The inner `gh pr list` check is the gate: it dispatches `ci.yml`
+- The inner `gh pr list` check is the guard: it dispatches `ci.yml`
   only when an open pull request exists on `auto-update-lean/patch`.
-  On the failure path `lean-update` opens an `auto-update-lean-fail`
-  issue and no pull request, so no CI is dispatched. `lean-update`
-  exits 0 in both the PR and issue cases, so this step runs after
-  it; the check, not the step condition, distinguishes them.
+  It keys on pull-request *existence*, not on success/failure, so it
+  also no-ops on any path that opens no pull request (the failure
+  path, which opens an `auto-update-lean-fail` issue instead; and
+  any no-change path). `lean-update` exits 0 in both the PR and
+  issue cases — the only failing step is gated on
+  `on_update_fails == 'fail'`, and the apply job sets
+  `on_update_fails: issue` — so the dispatch step runs after it in
+  both cases; the check, not the step condition, distinguishes them.
+  (This rationale depends on keeping `on_update_fails: issue`.)
 - Add `actions: write` to the apply job's `permissions` (the
   `workflow_dispatch` REST API the `gh workflow run` call uses
   requires it). The existing `contents: write`,
@@ -94,7 +101,7 @@ Add to § Mathlib bump procedure: the bump pull request is
 `GITHUB_TOKEN`-created, so a native `pull_request` CI run is
 suppressed; the apply job dispatches `ci.yml` on the bump branch
 (`workflow_dispatch`, which is exempt from that suppression) so the
-pull request carries the full CI gate for the reviewer.
+pull request carries visible CI checks for the reviewer.
 
 ## Non-goals
 
@@ -108,6 +115,23 @@ pull request carries the full CI gate for the reviewer.
   merges).
 - Any change to detection, the lockstep substitution, the in-flight
   guards, or `ci.yml`.
+
+## Limitations
+
+The dispatched run's results attach to the bump branch's head
+commit as **check runs** — visible in the pull request's Checks tab
+and to a reviewer. They do **not** populate the pull request's
+status rollup (`statusCheckRollup`), because a `workflow_dispatch`
+run is not bound to the pull request's merge context the way a
+native `pull_request` run is. This is adequate for the project's
+model: a contributor reviews the diff and the visible checks, then
+merges manually, and `main` has no required-status-check branch
+protection. If `main` later adopts required-status-check
+protection, `workflow_dispatch`-produced checks are not guaranteed
+to satisfy the required context; the approach would need
+re-validation then (likely a native-`pull_request` run, which means
+opening the pull request under a non-`GITHUB_TOKEN` identity — the
+App-token / self-rolled-PR path this design set aside).
 
 ## Verification
 
