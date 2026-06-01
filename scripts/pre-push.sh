@@ -12,6 +12,14 @@ step() {
   echo "==> $*"
 }
 
+step "lake exe cache get"
+# Fetch the full mathlib olean cache up front, mirroring CI's
+# leanprover/lean-action. Without it, after a toolchain bump only
+# the oleans that `Geb` directly imports are present, and the
+# `lake shake` smoke test below (which injects an arbitrary mathlib
+# import) fails with "out of date oleans; fetch them from a cache".
+lake exe cache get
+
 step "lake build"
 lake build
 
