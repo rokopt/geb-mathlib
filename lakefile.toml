@@ -42,3 +42,6 @@ globs = ["Geb.*"]
 [[lean_lib]]
 name = "GebTests"
 globs = ["GebTests.*"]
+
+[[lean_lib]]
+name = "GebMeta"
