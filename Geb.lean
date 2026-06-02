@@ -8,6 +8,7 @@ module -- shake: keep-all, shake: keep-downstream
 public import Geb.Mathlib
 public import Geb.Cslib
 public import Geb.Internal
+import GebMeta
 
 /-!
 # Geb root module
