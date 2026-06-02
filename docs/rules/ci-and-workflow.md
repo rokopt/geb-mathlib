@@ -49,12 +49,12 @@ Run by `scripts/pre-push.sh`:
 7. `scripts/tests/test-lint-imports.sh` passes.
 8. `scripts/hooks/tests/test-block-mutating-git.sh` passes.
 9. `markdownlint-cli2 '**/*.md'` quiet.
-10. `bash scripts/check-axioms.sh Geb/ GebTests/` quiet. The
-    script requires `lake build` to have populated `.lake/build/`
-    (item 1 above guarantees this in the checklist order); run
-    manually in a fresh worktree, it reports 0 declarations and
-    exits 3 — which is a missing-build artefact, not a real
-    failure.
+10. The axiom env_linter (`GebMeta.detectNonstandardAxiom`) runs
+    under `lake lint`: `Geb` is covered by item 3's `lake lint`,
+    and `GebTests` by an added `lake lint -- GebTests` step (after
+    `lake build GebTests`). It fails when any declaration depends
+    on an axiom outside `{propext, Quot.sound}`.
+    `scripts/tests/test-axiom-linter.sh` smoke-tests the linter.
 11. (PR-candidate) reminder about no-LLM-text rule for PR
     descriptions; affirmative confirmation required.
 12. (Lean-content) `lean4:golf` ran on changed proofs;

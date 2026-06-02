@@ -35,6 +35,9 @@ lake lint
 step "lake build GebTests (prerequisite for lake shake)"
 lake build GebTests
 
+step "lake lint GebTests (axiom + style linters on tests)"
+lake lint -- GebTests
+
 step "lake shake (minimised imports)"
 lake shake --add-public --keep-implied --keep-prefix Geb GebTests
 
@@ -64,8 +67,8 @@ fi
 step "markdownlint-cli2 '**/*.md'"
 markdownlint-cli2 '**/*.md'
 
-step "scripts/check-axioms.sh"
-bash scripts/check-axioms.sh Geb/ GebTests/
+step "scripts/tests/test-axiom-linter.sh"
+bash scripts/tests/test-axiom-linter.sh
 
 step "scripts/lake-update-warning.sh"
 bash scripts/lake-update-warning.sh

@@ -292,9 +292,11 @@ rationale.
 - No `noncomputable` anywhere.
 - Minimise `Classical`; flag/justify each invocation in our own
   code.
-- `scripts/check-axioms.sh` (vendored from `lean4-skills` with
-  `Classical.choice` excluded from the allowlist) is part of the
-  pre-commit / pre-push checklist and runs in CI.
+- The `GebMeta.detectNonstandardAxiom` `@[env_linter]` fails
+  `lake lint` when any `Geb` or `GebTests` declaration depends on
+  an axiom outside `{propext, Quot.sound}` (`Classical.choice`
+  excluded, per this discipline). It runs in CI and the pre-push
+  checklist; `scripts/tests/test-axiom-linter.sh` smoke-tests it.
 
 ## sorry, admit, and underscores
 
