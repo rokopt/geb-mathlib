@@ -49,6 +49,10 @@ jobs:
       # only), so build `GebTests` explicitly here.
       - name: lake build GebTests (prerequisite for lake shake)
         run: lake build GebTests
+      - name: lake lint GebTests (axiom + style linters on tests)
+        run: lake lint -- GebTests
+      - name: scripts/tests/test-axiom-linter.sh
+        run: bash scripts/tests/test-axiom-linter.sh
       - name: lake shake (minimised imports)
         run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests
       - name: scripts/tests/test-lake-shake.sh
@@ -63,17 +67,3 @@ jobs:
         run: sudo apt-get install -y jq
       - name: scripts/hooks/tests/test-block-mutating-git.sh
         run: bash scripts/hooks/tests/test-block-mutating-git.sh
-
-  axiom_check:
-    name: Axiom check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9  # v1
-        with:
-          build: true
-          test: false
-          lint: false
-          mk_all-check: false
-      - name: scripts/check-axioms.sh
-        run: bash scripts/check-axioms.sh Geb/ GebTests/
