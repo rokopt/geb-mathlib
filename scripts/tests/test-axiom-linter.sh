@@ -8,6 +8,11 @@
 # and a clean one that it must accept. Nothing axiom-violating is
 # committed to the repository.
 #
+# The fixtures live outside the package, so the linter is run on
+# them with `lake env lean`; they set no lakefile options, so the
+# spurious diagnostics that `lake env lean` can otherwise produce
+# do not arise.
+#
 # Exit 0 if both scenarios behave; non-zero otherwise.
 
 set -uo pipefail
