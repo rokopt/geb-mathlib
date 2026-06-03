@@ -47,7 +47,7 @@ jobs:
         env:
           TARGET: ${{ needs.detect.outputs.target }}
       - name: lean-update (lake update, build, PR or issue)
-        uses: leanprover-community/lean-update@926dc957637414948c317588eb14899cddf1fe11  # v0.7.0
+        uses: leanprover-community/lean-update@718f86d0394b46ab73a3cec631f6029fcfcc6e62  # v0.7.0
         with:
           on_update_succeeds: pr
           on_update_fails: issue
