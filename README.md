@@ -55,7 +55,9 @@ for additions specific to Claude.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). All participants are
+expected to follow the project's
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Upstream targets
 

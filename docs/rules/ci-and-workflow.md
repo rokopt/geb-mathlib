@@ -66,5 +66,7 @@ Run by `scripts/pre-push.sh`:
 
 All third-party actions in `.github/workflows/*.yml` are pinned to
 a specific commit SHA, with the SHA followed by a comment naming
-the corresponding tag for human readers. Update via review of the
-upstream action's release notes (Dependabot-style).
+the corresponding tag for human readers. Dependabot
+(`.github/dependabot.yml`) opens a pull request bumping the SHA and
+its tag comment when an action publishes a new release; review the
+upstream release notes before merging.

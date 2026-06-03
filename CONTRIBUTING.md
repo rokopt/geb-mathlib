@@ -30,6 +30,9 @@ in each rule's `paths:` frontmatter. `AGENTS.md` and
 `CLAUDE.md` add further rules for AI-assisted contribution
 and for Claude Code specifically.
 
+All participants are also expected to follow the project's
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Project status
 
 Underway; initial language bootstrap.
@@ -168,7 +171,10 @@ presents superseded decisions as current. See `docs/process.md`
 
 - **Generic user references in committed text.** "the user" /
   "they" / "them"; no first names, email, or autobiographical
-  detail.
+  detail. The exception is a designated project point of contact
+  (e.g. the maintainer named for Code-of-Conduct or security
+  reporting): a specific name and email are appropriate there,
+  since they identify a project role rather than a contributor.
 
 Formal, precise, mathematical, dry, unopinionated.
 Cite known mathematics where applicable; reference standard

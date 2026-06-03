@@ -47,6 +47,10 @@ markers, then commit.
   "elegant", "beautiful", "neat", "clever", "powerful",
   "interesting", "insight" used as labels).
 - Generic user references ("the user" / "they" / "them"); no
-  first names, email, or autobiographical detail.
+  first names, email, or autobiographical detail. The exception
+  is a designated project point of contact (e.g. the maintainer
+  named for Code-of-Conduct or security reporting): a specific
+  name and email are appropriate there, since they identify a
+  project role rather than a contributor.
 
 See `docs/process.md` § Style guidelines for full rationale.
