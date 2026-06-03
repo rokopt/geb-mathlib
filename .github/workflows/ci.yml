@@ -43,6 +43,10 @@ jobs:
           build: true
           test: true
           lint: true
+          # Everything builds via the `Geb.*`/`GebTests.*` globs
+          # rather than a root import list, and bulk imports are
+          # arranged per subdirectory; there is no flat root
+          # aggregator for mk_all to check.
           mk_all-check: false
       # `lake shake` requires built oleans for every library it
       # scans. `build: true` above honours `defaultTargets` (Geb
