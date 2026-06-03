@@ -15,6 +15,7 @@ unfamiliar situation.
   - [Repository structure](#repository-structure)
   - [Code is cost](#code-is-cost)
   - [Document only the persistent](#document-only-the-persistent)
+  - [Specs and plans are transient](#specs-and-plans-are-transient)
   - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
   - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
   - [Documentation under `docs/`](#documentation-under-docs)
@@ -89,6 +90,27 @@ What's persistent and worth documenting:
 The principle is: when this codebase is years old, the comments
 should still read as useful context. Anything that won't survive
 that test belongs elsewhere.
+
+## Specs and plans are transient
+
+The file-level corollary of "Document only the persistent". A spec
+is a worked-out route to a target state; a plan is the task
+sequence that reaches it. Once the change is complete, everything
+persistent has moved into the live code, its `docs/` entries, and
+any `TODO.md` notes on follow-on work; the spec and plan retain
+only the record of how that state was reached. They are therefore
+removed in the final commits of the topic branch (`CONTRIBUTING.md`
+§ Concern shape gives the branch ordering), leaving no spec or plan
+file on an active branch.
+
+Two costs motivate the removal. A spec or plan left in the working
+tree presents superseded intentions as if current — later work may
+have changed direction without rewriting the original plan. And it
+forces every reader to reconcile the plan against the code, an
+obligation that grows as the code evolves away from it. The git
+history preserves the spec and plan in full for anyone tracing how
+a decision was reached; the active branch carries only what the
+code currently is.
 
 ## Illustrate only with the archetypal
 

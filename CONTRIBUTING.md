@@ -96,11 +96,23 @@ does not run config commands on a contributor's behalf.
   unrelated work.
 
 Each feature's spec, plan, and code co-evolve on the same topic
-branch. Spec at
-`docs/superpowers/specs/<date>-<topic>-design.md`; plan at
-`docs/superpowers/plans/<date>-<topic>-plan.md`. Adversarial-review
-iterations on spec and plan are commits on the same branch. Merge
-to `main` brings spec, plan, and code together.
+branch, but only the code and its persistent documentation are
+permanent. Specs and plans are transient: they record how the
+current state was reached, not what it is, so they belong in
+history, not on an active branch. The branch is ordered
+accordingly:
+
+1. Commits adding the spec and plan (and their adversarial-review
+   iterations).
+2. Commits implementing the change, including its persistent
+   documentation under `docs/` and any `TODO.md` notes on
+   follow-on work.
+3. Commits removing the spec and plan.
+
+After merge to `main`, the spec and plan remain reachable in
+history but are absent from the working tree, so no active branch
+presents superseded decisions as current. See `docs/process.md`
+§ Specs and plans are transient.
 
 ### Code is cost
 
@@ -129,8 +141,9 @@ to `main` brings spec, plan, and code together.
   its contracts, non-obvious external constraints. They do not
   describe transient process artifacts: how the code used to be,
   what testing iteration discovered an issue, which task in our
-  plan produced a file, or similar. See `docs/process.md`
-  § Document only the persistent.
+  plan produced a file, or similar. Specs and plans are themselves
+  transient process artifacts in this sense (see § Concern shape).
+  See `docs/process.md` § Document only the persistent.
 
 ### Submission policy
 

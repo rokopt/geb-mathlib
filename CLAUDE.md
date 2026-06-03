@@ -38,6 +38,14 @@ respectively; the rules below are the Claude-specific additions.
 checkpointing) lives in `.claude/rules/lean-coding-claude.md`
 § `lean4` sub-skill mapping.
 
+The `superpowers` brainstorming, writing-plans, and
+executing-plans skills write spec and plan files under
+`docs/superpowers/specs/` and `docs/superpowers/plans/` and leave
+them in the working tree. Those files are spec and plan documents
+like any other: the lifespan rules in
+[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape apply, so remove
+them in the final commits of the topic branch.
+
 ## Tooling
 
 - Skills: `superpowers:*`, `lean4:*`, `claude-md-management:*`,
