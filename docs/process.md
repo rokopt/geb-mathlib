@@ -253,3 +253,10 @@ user-review-before-push gate. The redundancy is intentional.
 first names, email, or autobiographical detail. Committed content
 should make sense to any contributor; specific identities make it
 read as a single author's project.
+
+The rule exists so that no contributor is singled out and the
+project does not read as one author's. A designated project point
+of contact is different: naming the maintainer for Code-of-Conduct
+or security reporting identifies a project role, not a
+contribution. A specific name and email are therefore appropriate
+for such a contact.
