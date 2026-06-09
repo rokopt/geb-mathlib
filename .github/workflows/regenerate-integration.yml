@@ -17,6 +17,12 @@ jobs:
   regenerate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # jj reads the committer identity from these environment
+      # variables. `jj config set` is avoided: it parses its value
+      # as TOML, and the bracketed bot name is not valid TOML.
+      JJ_USER: "github-actions[bot]"
+      JJ_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
@@ -25,15 +31,11 @@ jobs:
       - name: Install pinned jj
         run: bash scripts/install-jj.sh
 
-      - name: Configure jj (colocate + Actions bot identity)
-        run: |
-          jj git init --colocate
-          jj config set --repo user.name "github-actions[bot]"
-          jj config set --repo user.email \
-            "41898282+github-actions[bot]@users.noreply.github.com"
-          # Topic-branch tracking is handled inside the script
-          # (jj bookmark track after fetch), so it works regardless
-          # of any per-developer auto-track configuration.
+      - name: Initialize colocated jj repo
+        # Topic-branch tracking happens inside the regeneration
+        # script (jj bookmark track after fetch), so no per-developer
+        # auto-track config is needed here.
+        run: jj git init --colocate
 
       - name: Regenerate and publish integration
         run: bash scripts/regenerate-integration.sh
