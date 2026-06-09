@@ -14,6 +14,14 @@ removed; content merged into `docs/index.md`.
 The next session opens a fresh brainstorming workstream for the
 first mathematical / programming-language work.
 
+### Automate the jj version pin bump
+
+`scripts/jj-version` (the pinned jj version for CI) is bumped by
+hand. Add a scheduled cron-bump-PR workflow mirroring `update.yml`:
+query the latest `jj-vcs/jj` release, and when it is newer than the
+pin, edit `scripts/jj-version` and open a pull request. Dependabot
+does not cover release-binary version pins.
+
 ## Triggers (do when condition fires)
 
 - **Update `Authors:` lines as content authors arrive**: every
