@@ -53,6 +53,9 @@ bash scripts/tests/test-lint-imports.sh
 step "scripts/tests/test-mathlib-bump-detect.sh"
 bash scripts/tests/test-mathlib-bump-detect.sh
 
+step "scripts/tests/test-jj-bump-detect.sh"
+bash scripts/tests/test-jj-bump-detect.sh
+
 step "scripts/tests/test-regenerate-integration.sh"
 bash scripts/tests/test-regenerate-integration.sh
 
