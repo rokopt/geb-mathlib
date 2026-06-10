@@ -1,0 +1,101 @@
+name: jj bump
+
+on:
+  schedule:
+    - cron: '0 17 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: jj-bump
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    outputs:
+      target: ${{ steps.detect.outputs.target }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - name: scripts/jj-bump-detect.sh
+        id: detect
+        run: bash scripts/jj-bump-detect.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  apply:
+    needs: detect
+    if: ${{ needs.detect.outputs.target != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - name: Set scripts/jj-version to the target version
+        id: set-pin
+        run: printf '%s\n' "${TARGET}" > scripts/jj-version
+        env:
+          TARGET: ${{ needs.detect.outputs.target }}
+      - name: Install the bumped jj
+        id: install
+        run: bash scripts/install-jj.sh
+      - name: Run the regeneration guard test under the bumped jj
+        id: guard
+        run: bash scripts/tests/test-regenerate-integration.sh
+      - name: Open or update the bump pull request
+        id: pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
+        with:
+          base: main
+          branch: auto-update-jj/patch
+          commit-message: "ci: bump jj to ${{ needs.detect.outputs.target }}"
+          title: "ci: bump jj to ${{ needs.detect.outputs.target }}"
+          body: |
+            Automated bump of `scripts/jj-version` to jj
+            ${{ needs.detect.outputs.target }}.
+
+            Upstream release notes:
+            https://github.com/jj-vcs/jj/releases/tag/v${{ needs.detect.outputs.target }}
+      - name: Trigger CI on the bump pull request
+        id: dispatch
+        if: ${{ steps.pr.outputs.pull-request-number != '' }}
+        run: gh workflow run ci.yml --ref auto-update-jj/patch
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Open a failure issue
+        if: ${{ failure() }}
+        run: |
+          body_file="$(mktemp)"
+          cat > "$body_file" <<EOF
+          Automated jj bump to ${TARGET} failed.
+
+          Step outcomes: set-pin=${SET_PIN}, install=${INSTALL},
+          guard=${GUARD}, open-PR=${PR}, dispatch-CI=${DISPATCH}.
+
+          A failure here can coexist with a successfully opened
+          bump PR (e.g. only the CI dispatch failed). This issue
+          suppresses scheduled bumps while open; close it to
+          re-enable them.
+
+          Run: ${RUN_URL}
+          EOF
+          gh issue create --label jj-bump-fail \
+            --title "jj bump to ${TARGET} failed" \
+            --body-file "$body_file"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ needs.detect.outputs.target }}
+          SET_PIN: ${{ steps.set-pin.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          GUARD: ${{ steps.guard.outcome }}
+          PR: ${{ steps.pr.outcome }}
+          DISPATCH: ${{ steps.dispatch.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
