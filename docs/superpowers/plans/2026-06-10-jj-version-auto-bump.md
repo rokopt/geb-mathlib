@@ -241,8 +241,11 @@ Run: `bash scripts/tests/test-jj-bump-detect.sh`
 Expected: FAIL — `source` errors with
 `scripts/jj-bump-detect.sh: No such file or directory`; the test
 runs on (the suite sets `-uo pipefail`, not `-e`, mirroring the
-script it sources) and every case FAILs with `command not found`;
-exit nonzero.
+script it sources). Cases calling the missing functions FAIL
+with `command not found`, except the two select_target
+"yields empty" cases, which PASS vacuously (a failed command
+substitution also yields the expected empty string). Expected
+total: `9 case(s) checked, 7 failure(s)`, exit 7.
 
 - [ ] **Step 3: Write the detect script**
 
@@ -749,7 +752,8 @@ No new files; this task gates the hand-back to the user.
 bash scripts/tests/test-mathlib-bump-detect.sh
 bash scripts/tests/test-jj-bump-detect.sh
 bash scripts/tests/test-regenerate-integration.sh
-bash -n scripts/pre-push.sh scripts/jj-bump-detect.sh
+bash -n scripts/pre-push.sh
+bash -n scripts/jj-bump-detect.sh
 markdownlint-cli2 '**/*.md'
 doctoc --dryrun --update-only .
 ```

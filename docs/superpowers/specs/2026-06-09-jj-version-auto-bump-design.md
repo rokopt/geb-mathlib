@@ -148,10 +148,10 @@ Failure idioms carried over from `mathlib-bump-detect.sh`:
 `scripts/lib/select-newest-mathlib-tag.cjs` contains no
 mathlib-specific logic (newline-separated candidate tags on stdin,
 pin in argv, newest strictly-greater tag on stdout). It is renamed
-to `scripts/lib/select-newest-tag.cjs`; `mathlib-bump-detect.sh`,
-`test-mathlib-bump-detect.sh`, and the helper's header comment
-update their references. The alternative — a second copy or a
-misleading name — fails the reuse rule.
+to `scripts/lib/select-newest-tag.cjs`; `mathlib-bump-detect.sh`
+and the helper's header comment update their references. The
+alternative — a second copy or a misleading name — fails the
+reuse rule.
 
 ### Test: `scripts/tests/test-jj-bump-detect.sh`
 
