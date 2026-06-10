@@ -33,8 +33,9 @@ lags upstream releases until a contributor notices.
 ## Goal
 
 A scheduled workflow that detects a newer `jj-vcs/jj` release,
-verifies it against this repository's jj-dependent scripts, and
-opens a pull request bumping `scripts/jj-version`. The shape
+verifies that the release installs and that the regeneration
+conflict-guard logic behaves under the new binary, and opens a
+pull request bumping `scripts/jj-version`. The shape
 mirrors `.github/workflows/update.yml` (the mathlib bump): a
 read-only detect job feeding a write-permissioned apply job.
 
@@ -46,6 +47,13 @@ The following were settled during brainstorming:
   runs `scripts/install-jj.sh` (proves the release asset exists
   and installs) and `scripts/tests/test-regenerate-integration.sh`
   (exercises the conflict-guard logic against the new binary).
+  These steps duplicate checks the PR branch's CI runs; running
+  them pre-PR converts a would-be red-CI pull request into the
+  labelled-issue failure artifact. The fetch/push surfaces of
+  `scripts/regenerate-integration.sh` are not exercised
+  pre-merge; a jj CLI change there surfaces in the first
+  regeneration run after merge, covered by contributor review of
+  the upstream release notes on the bump PR.
 - **Failure mode**: a failed apply step opens an issue labelled
   `jj-bump-fail`; the in-flight guard treats that open issue as a
   bump in flight, suppressing retries until a human closes it.
@@ -88,7 +96,11 @@ Two jobs, mirroring `update.yml`:
      trigger `pull_request` workflows on their own (same idiom as
      `update.yml`).
   6. On failure of any prior step (`if: failure()`): open an
-     issue labelled `jj-bump-fail` naming the target version.
+     issue labelled `jj-bump-fail` naming the target version and
+     the step that failed. A failure issue can coexist with a
+     successfully opened PR (e.g. when only the CI-dispatch step
+     fails transiently); naming the failed step lets the
+     contributor distinguish that case from a failed bump.
 
 ### Detect script: `scripts/jj-bump-detect.sh`
 
@@ -103,7 +115,13 @@ all of the following hold:
    and prereleases server-side, so no tag-list filtering is
    needed. The comparison reuses the shared semver helper as a
    guard against the endpoint returning an older release (e.g.
-   after a yanked release).
+   after a yanked release). The helper emits the selected tag as
+   given (`v`-prefixed, e.g. `v0.43.0`); the detect script strips
+   the leading `v` before emitting `target`, matching the bare
+   format of `scripts/jj-version` and the `v`-prepending in
+   `scripts/install-jj.sh` (an unstripped emission would build a
+   `jj-vv<version>` asset URL). The unit test covers this
+   normalization.
 2. The release's asset list (in the same API response) contains
    `jj-v<version>-x86_64-unknown-linux-musl.tar.gz` — the asset
    `scripts/install-jj.sh` downloads. A published tag whose
@@ -139,10 +157,17 @@ misleading name — fails the reuse rule.
 
 Mirrors `scripts/tests/test-mathlib-bump-detect.sh`: sources the
 guarded detect script and exercises its pure logic — pin read,
-version selection, and the asset-presence predicate fed canned
-release JSON. Network-bound wrappers are covered by a live
-`workflow_dispatch` run, not by the unit test. Wired into
+version selection including the `v`-strip normalization, and the
+asset-presence predicate fed canned release JSON. Network-bound
+wrappers are covered by a live `workflow_dispatch` run, not by
+the unit test. Wired into
 `scripts/pre-push.sh` and CI alongside the existing script tests.
+
+The pre-push checklist enumeration in
+`docs/rules/ci-and-workflow.md` currently omits the script tests
+`scripts/pre-push.sh` already runs (`test-mathlib-bump-detect.sh`,
+`test-regenerate-integration.sh`); it is updated to list them
+together with the new test.
 
 ### One-time setup
 
@@ -170,6 +195,10 @@ cron / dispatch
   contributor's package manager).
 - Auto-merge. The bump PR is reviewed and merged by a
   contributor; CONTRIBUTING.md's review rules apply unchanged.
+- Suppressing a declined bump. Closing the PR without merging
+  lets an identical PR re-open on the next scheduled run; the
+  suppression mechanism is an open `jj-bump-fail`-labelled issue
+  (the same property as the mathlib bump's shape).
 - Platforms other than x86_64 Linux (the scope of
   `scripts/install-jj.sh`).
 
