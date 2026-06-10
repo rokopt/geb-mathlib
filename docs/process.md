@@ -25,6 +25,7 @@ unfamiliar situation.
   - [Floodgate test](#floodgate-test)
   - [main and integration](#main-and-integration)
   - [Mathlib bump procedure](#mathlib-bump-procedure)
+  - [jj bump procedure](#jj-bump-procedure)
   - [Markdownlint discipline](#markdownlint-discipline)
   - [No LLM-drafted user-facing text](#no-llm-drafted-user-facing-text)
   - [Generic user references](#generic-user-references)
@@ -228,6 +229,58 @@ and merges. After merge to `main`, the contributor mass-rebases
 active topic branches with `scripts/rebase-topics.sh main` and
 regenerates `integration` with `scripts/regenerate-integration.sh`.
 The detector tracks release tags, not `master`.
+
+## jj bump procedure
+
+`jj-bump.yml` (weekly cron `0 17 * * 1` plus manual dispatch)
+parallels the mathlib bump pipeline for the jj binary pin. A
+read-only detect job runs `scripts/jj-bump-detect.sh`; the apply
+job runs only when detect emits a nonempty `target`.
+
+Detection reads the bare pinned version from `scripts/jj-version`
+and queries `GET /releases/latest` (which excludes drafts and
+prereleases server-side). The semver comparison reuses the shared
+`scripts/lib/select-newest-tag.cjs` helper as a guard against the
+endpoint surfacing an older release (e.g. after a yanked release).
+The release must carry `jj-v<version>-x86_64-unknown-linux-musl.tar.gz`
+— the asset `scripts/install-jj.sh` downloads — before a target is
+emitted; a tag whose binaries are still uploading waits for the
+next run. The in-flight guard checks for an open PR on
+`auto-update-jj/patch` or an open issue labelled `jj-bump-fail`;
+either suppresses a new bump. Fail-loudly: any `gh` or network
+failure exits 1, so outages never read as "already current".
+
+The apply job writes the pin, installs the bumped binary via
+`scripts/install-jj.sh`, and runs
+`scripts/tests/test-regenerate-integration.sh` under that binary
+before opening the pull request. A would-be red-CI PR is instead
+converted into a labelled-issue failure artifact. These pre-PR
+checks do not exercise the fetch/push surfaces of
+`scripts/regenerate-integration.sh`; a jj CLI change there surfaces
+in the first regeneration run after merge, covered by contributor
+review of the upstream release notes on the bump PR.
+
+The pull request is opened via the SHA-pinned
+`peter-evans/create-pull-request` (dependabot maintains the pin).
+Because `GITHUB_TOKEN`-created PRs do not trigger `pull_request`
+workflows, the apply job dispatches `ci.yml` on the bump branch via
+`gh workflow run ci.yml --ref auto-update-jj/patch`.
+
+Any apply-step failure opens an issue labelled `jj-bump-fail`
+naming the target version and per-step outcomes. A failure issue
+can coexist with a successfully opened PR (e.g. only the CI
+dispatch failed). The open issue suppresses scheduled bumps until
+closed; closing the bump PR without merging does not suppress
+re-opening — the labelled issue is the suppression mechanism.
+The `jj-bump-fail` label is a one-time repository side effect.
+
+The weekly cadence matches the dependabot interval for other
+CI-tooling pins; jj releases roughly monthly, so the schedule
+detects a new release within a week of publication.
+
+A contributor reviews the bump PR diff and merges. After merge
+to `main`, the contributor mass-rebases active topic branches and
+regenerates `integration` as in the mathlib bump procedure.
 
 ## Markdownlint discipline
 

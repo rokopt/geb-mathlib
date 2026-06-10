@@ -66,7 +66,7 @@ list_version_tags() {
 # non-zero if the helper errors, so callers can fail loudly.
 select_target() {
   local pin="$1" helper
-  helper="$(dirname "${BASH_SOURCE[0]}")/lib/select-newest-mathlib-tag.cjs"
+  helper="$(dirname "${BASH_SOURCE[0]}")/lib/select-newest-tag.cjs"
   # _ becomes $0 inside the -c script; $1=helper, $2=pin.
   npx --yes -p semver@7 bash -c '
     node_modules="$(cd "$(dirname "$(command -v semver)")/.." && pwd)"

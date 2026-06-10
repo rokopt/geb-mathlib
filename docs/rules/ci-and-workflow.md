@@ -47,20 +47,23 @@ Run by `scripts/pre-push.sh`:
 5. `scripts/tests/test-lake-shake.sh` passes.
 6. `scripts/lint-imports.sh` quiet.
 7. `scripts/tests/test-lint-imports.sh` passes.
-8. `scripts/hooks/tests/test-block-mutating-git.sh` passes.
-9. `markdownlint-cli2 '**/*.md'` quiet.
-10. The axiom env_linter (`GebMeta.detectNonstandardAxiom`) runs
+8. `scripts/tests/test-mathlib-bump-detect.sh`,
+   `scripts/tests/test-jj-bump-detect.sh`, and
+   `scripts/tests/test-regenerate-integration.sh` pass.
+9. `scripts/hooks/tests/test-block-mutating-git.sh` passes.
+10. `markdownlint-cli2 '**/*.md'` quiet.
+11. The axiom env_linter (`GebMeta.detectNonstandardAxiom`) runs
     under `lake lint`: `Geb` is covered by item 3's `lake lint`,
     and `GebTests` by an added `lake lint -- GebTests` step (after
     `lake build GebTests`). It fails when any declaration depends
     on an axiom outside `{propext, Quot.sound}`.
     `scripts/tests/test-axiom-linter.sh` smoke-tests the linter.
-11. (PR-candidate) reminder about no-LLM-text rule for PR
+12. (PR-candidate) reminder about no-LLM-text rule for PR
     descriptions; affirmative confirmation required.
-12. (Lean-content) `lean4:golf` ran on changed proofs;
+13. (Lean-content) `lean4:golf` ran on changed proofs;
     `lean4:review` ran on the diff.
-13. (PR-candidate) `pr-review-toolkit:review-pr` ran.
-14. User reviewed the diff line-by-line.
+14. (PR-candidate) `pr-review-toolkit:review-pr` ran.
+15. User reviewed the diff line-by-line.
 
 ## Action pinning policy
 
