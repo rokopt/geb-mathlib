@@ -1,4 +1,4 @@
-// scripts/lib/select-newest-mathlib-tag.cjs
+// scripts/lib/select-newest-tag.cjs
 //
 // Reads candidate tags (newline-separated) from stdin and the
 // current pin from argv[2]; prints the newest tag strictly greater
