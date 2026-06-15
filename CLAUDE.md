@@ -1,5 +1,17 @@
 # geb-mathlib
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Audience](#audience)
+- [Rules](#rules)
+- [Phase-driven workflow](#phase-driven-workflow)
+- [Tooling](#tooling)
+- [When to consider creating a project-specific skill](#when-to-consider-creating-a-project-specific-skill)
+- [References](#references)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Audience
 
 This file binds Claude Code. It supplements

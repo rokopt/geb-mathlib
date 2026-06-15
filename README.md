@@ -1,5 +1,17 @@
 # geb-mathlib
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Dependencies](#dependencies)
+- [License](#license)
+- [Documentation](#documentation)
+- [Process](#process)
+- [Contributing](#contributing)
+- [Upstream targets](#upstream-targets)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 A Lean 4 + mathlib formalisation of Geb, a categorical programming
 language whose first-class notions include "programming language"
 itself. The repository develops mathematical content in a style

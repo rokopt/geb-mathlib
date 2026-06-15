@@ -5,6 +5,29 @@ paths:
 
 # Lean coding conventions
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Authoritative upstream guides (mathlib)](#authoritative-upstream-guides-mathlib)
+  - [Commit messages (from `commit.html`)](#commit-messages-from-commithtml)
+  - [Coding style (see also mathlib's `style.html`)](#coding-style-see-also-mathlibs-stylehtml)
+  - [Naming conventions (see also mathlib's `naming.html`)](#naming-conventions-see-also-mathlibs-naminghtml)
+  - [Documentation (see also mathlib's `doc.html`)](#documentation-see-also-mathlibs-dochtml)
+- [Authoritative upstream guides (CSLib)](#authoritative-upstream-guides-cslib)
+- [Comment and docstring rules](#comment-and-docstring-rules)
+- [Lean 4 module system](#lean-4-module-system)
+- [Lake / build workflow](#lake--build-workflow)
+- [Coding technique](#coding-technique)
+  - [Constructive-only](#constructive-only)
+  - [Proof guidelines](#proof-guidelines)
+  - [Higher-order constructions](#higher-order-constructions)
+  - [One step at a time](#one-step-at-a-time)
+  - [Structure and typeclass patterns](#structure-and-typeclass-patterns)
+- [Constructive-only Lean code](#constructive-only-lean-code)
+- [sorry, admit, and underscores](#sorry-admit-and-underscores)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Applies whenever a `.lean` file is open or being edited.
 
 ## Authoritative upstream guides (mathlib)

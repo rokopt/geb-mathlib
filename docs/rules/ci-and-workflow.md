@@ -6,6 +6,15 @@ paths:
 
 # CI and workflow conventions
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Commit-message convention (mathlib-derived)](#commit-message-convention-mathlib-derived)
+- [Pre-push checklist](#pre-push-checklist)
+- [Action pinning policy](#action-pinning-policy)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Applies to GitHub Actions workflow files and scripts.
 
 ## Commit-message convention (mathlib-derived)
