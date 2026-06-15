@@ -15,9 +15,8 @@ paths:
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Authoring modes](#authoring-modes)
+- [Authoring](#authoring)
 - [Two-track development](#two-track-development)
-- [Credentialing-PR checkpoint](#credentialing-pr-checkpoint)
 - [Floodgate test](#floodgate-test)
 - [Subtree import rules](#subtree-import-rules)
 - [CSLib-specific constraints](#cslib-specific-constraints)
@@ -29,43 +28,38 @@ Applies to anything under `Geb/Mathlib/`, `GebTests/Mathlib/`,
 
 Work in the file globs this rule applies to is also bound by
 [CONTRIBUTING.md § Submission policy](../../CONTRIBUTING.md),
-which restricts LLM-generated code in upstream-eligible content.
+which governs LLM-generated code in upstream-eligible content
+(mandatory disclosure and line-by-line understanding).
 
-## Authoring modes
+## Authoring
 
-Modes (a) and (b) apply to AI-agent contributions and live in
-[AGENTS.md § AI authoring modes (for upstream-eligible work)](../../AGENTS.md).
-The mode (c) row below applies to AI-agent work under
-`Geb/Internal/`.
-
-| Authoring mode | Triggered by | AI agent may | User must |
-| --- | --- | --- | --- |
-| (c) Hands-off draft | Work under `Geb/Internal/` | Draft autonomously | Review at commit time; described in `docs/process.md § Two-track development` |
+For upstream-eligible subtrees, AI authoring follows
+[AGENTS.md § AI authoring (upstream-eligible work)](../../AGENTS.md):
+an agent may draft, and the user commits only after understanding
+every line, being able to justify each design decision to
+reviewers without AI, and disclosing tool use. Work under
+`Geb/Internal/` is reviewed by the user at commit time without
+that upstream justification bar.
 
 ## Two-track development
 
-When a foundation is needed quickly but no upstream-ready version
-exists:
+`Geb/Internal/` holds code that is not (yet) upstream-eligible:
+work in progress not yet at mathlib/CSLib quality, explorations
+that build on upstream-quality code in `Geb/Mathlib/` or
+`Geb/Cslib/` without themselves meeting that bar, and code too
+specialized to this project to be in scope for either upstream.
+The split is driven by quality, scope, and dependency-readiness,
+not by authorship: AI-drafted and human-written code follow the
+same rules in every subtree.
 
-1. **Track 1 (Internal, mode c)**: draft into
-   `Geb/Internal/Foo.lean`; user reviews and accepts.
-2. **Track 2 (upstream-eligible, mode a or b)**: rewrite into
-   `Geb/Mathlib/Foo.lean` or `Geb/Cslib/Foo.lean` depending on
-   the upstream target.
-3. **Migration**: when the upstream PR is accepted and we re-pin
-   to a fresh master that includes it, migrate dependents via
-   `jj rebase`. The Internal version is then removed.
+When Internal content is later brought to upstream quality:
 
-## Credentialing-PR checkpoint
-
-Each upstream has its own credentialing checkpoint. Before
-starting any work in `Geb/Mathlib/` or `Geb/Cslib/` whose only
-dependencies are the targeted upstream (i.e., a true PR-candidate
-with no in-flight geb-mathlib deps). The user weighs (1)
-confidence to write solo, (2) strength on its own merits, (3)
-opportunity cost vs. other candidates. Until the credentialing PR
-for an upstream is identified, every such candidate for that
-upstream is a potential choice — preserve rotatability.
+1. Port it into `Geb/Mathlib/Foo.lean` or `Geb/Cslib/Foo.lean`
+   depending on the upstream target, satisfying the subtree
+   import rules below.
+2. When the upstream PR is accepted and we re-pin to a fresh
+   master that includes it, migrate dependents via `jj rebase`.
+   The Internal version is then removed.
 
 ## Floodgate test
 

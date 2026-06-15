@@ -20,6 +20,7 @@
 - [Mathlib bump procedure](#mathlib-bump-procedure)
 - [jj bump procedure](#jj-bump-procedure)
 - [Markdownlint discipline](#markdownlint-discipline)
+- [Use of AI in upstream-eligible code](#use-of-ai-in-upstream-eligible-code)
 - [No LLM-drafted user-facing text](#no-llm-drafted-user-facing-text)
 - [Generic user references](#generic-user-references)
 
@@ -53,6 +54,7 @@ unfamiliar situation.
   - [Mathlib bump procedure](#mathlib-bump-procedure)
   - [jj bump procedure](#jj-bump-procedure)
   - [Markdownlint discipline](#markdownlint-discipline)
+  - [Use of AI in upstream-eligible code](#use-of-ai-in-upstream-eligible-code)
   - [No LLM-drafted user-facing text](#no-llm-drafted-user-facing-text)
   - [Generic user references](#generic-user-references)
 
@@ -197,16 +199,18 @@ use time keeps committed content trustworthy.
 
 ## Two-track development
 
-For foundations needed quickly without an upstream-ready version
-yet: develop in `Geb/Internal/` first; rewrite in `Geb/Mathlib/`
-or `Geb/Cslib/` for upstream, depending on the upstream target;
-migrate dependents via `jj rebase` after the upstream PR is
-accepted. The two-track split lets velocity and upstream-
+`Geb/Internal/` holds code that is not (yet) upstream-eligible:
+work in progress, explorations that build on upstream-quality
+code without themselves meeting that bar, and code too
+specialized to this project for mathlib or CSLib. Code is ported
+into `Geb/Mathlib/` or `Geb/Cslib/` when it reaches upstream
+quality, with dependents migrated via `jj rebase` after the
+upstream PR is accepted. The split lets velocity and upstream-
 readiness each get the discipline that suits them, without one
-blocking the other. The AI-agent posture for Track 1 — drafting
-autonomously under `Geb/Internal/` with user review at commit
-time — is called mode (c) in the AI authoring-modes table at
-`docs/rules/upstream-eligible.md` § Authoring modes.
+blocking the other. It is driven by quality, scope, and
+dependency-readiness, not by authorship: AI-drafted and
+human-written code follow the same rules in every subtree (see
+`docs/rules/upstream-eligible.md` § Two-track development).
 
 ## Floodgate test
 
@@ -220,31 +224,34 @@ file in either subtree can be extracted to a PR upstream.
 
 ## Alternative formalization targets
 
-mathlib and cslib forbid LLM-generated code and apply a
-scope-and-significance bar enforced by human review. When a
-sound, `sorry`-free result is not a practical fit for either —
-because it falls outside their scope, because it is LLM-authored
-and the user has not taken line-by-line ownership of it for
-upstream submission, or because an upstream PR is blocked or
-slow — two repositories admit it on looser terms (catalogued in
-`docs/references.md` § Alternative formalization targets):
+mathlib and CSLib apply a scope-and-significance bar enforced by
+human review, and require that any LLM-generated code be
+understood line-by-line by a contributor who can justify each
+decision to reviewers without AI. When a sound, `sorry`-free
+result is not a practical fit for either — because it falls
+outside their scope, because no contributor is prepared to take
+that line-by-line ownership for upstream submission, or because
+an upstream PR is blocked or slow — two repositories admit it on
+looser terms (catalogued in `docs/references.md` § Alternative
+formalization targets):
 
 - lean-pool, for results meeting mathlib's rigor and linting but
   not its scope.
 - merely-true, for results below lean-pool's quality gate that
   still build `sorry`-free and `axiom`-free.
 
-Both relax the LLM restriction that drives this project's
-submission policy; neither requires changes to source layout,
-the floodgate test, or the build, so submitting to them is a
-copy-out of an already-sound file, not a restructuring. Code
-produced here already satisfies this project's stricter
-discipline (constructive, no `noncomputable`, minimised
-`Classical`), which exceeds both targets' requirements; that
-discipline is not relaxed to match a looser target. These remain
-fallbacks: mathlib and cslib are the primary targets, and the
-two-track workflow (§ Two-track development) and credentialing
-checkpoint are unchanged.
+Both relax the human-review bar that mathlib and CSLib enforce
+(lean-pool substitutes automated linting plus LLM evaluation;
+merely-true merges on CI pass without human review); neither
+requires changes to source layout, the floodgate test, or the
+build, so submitting to them is a copy-out of an already-sound
+file, not a restructuring. Code produced here already satisfies
+this project's stricter discipline (constructive, no
+`noncomputable`, minimised `Classical`), which exceeds both
+targets' requirements; that discipline is not relaxed to match a
+looser target. These remain fallbacks: mathlib and CSLib are the
+primary targets, and the two-track workflow
+(§ Two-track development) is unchanged.
 
 ## main and integration
 
@@ -344,6 +351,25 @@ Every Markdown document passes `markdownlint-cli2` against
 output is edited locally. The discipline keeps documentation
 uniformly readable; sharing the config with VSCode means the
 editor catches violations as we type.
+
+## Use of AI in upstream-eligible code
+
+mathlib and CSLib permit LLM-generated code under mandatory
+disclosure and line-by-line human understanding; there is no
+first-PR or new-contributor exception and no requirement to
+rewrite AI-drafted code that already meets the bar. The binding
+rule and its source links live in `CONTRIBUTING.md`
+§ Submission policy; the agent-facing form is `AGENTS.md`
+§ AI authoring (upstream-eligible work).
+
+This policy is set upstream and has changed before: mathlib
+briefly prohibited new-contributor LLM code (PR #827,
+2026-04-20), removed that prohibition (PR #840, 2026-05-09), and
+reworded the section (PR #850, 2026-05-27). The linked source
+pages are the authority; re-check them periodically (the
+adversarial-review re-fetch in `AGENTS.md` § Adversarial review
+is one such checkpoint), and when they change, update
+`CONTRIBUTING.md`, `AGENTS.md`, and this file together.
 
 ## No LLM-drafted user-facing text
 

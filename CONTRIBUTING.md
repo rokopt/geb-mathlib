@@ -151,14 +151,22 @@ presents superseded decisions as current. See `docs/process.md`
 ### Submission policy
 
 - **LLM-contribution policy** binds any work in `Geb/Mathlib/`
-  or `Geb/Cslib/`. New contributors cannot submit LLM-generated
-  code in either subtree; the user vouches for every line.
-  Disclosure is mandatory when LLMs are used. (Mathlib's policy
-  is unconditional; CSLib's is looser, but we apply mathlib's
-  symmetrically to both.)
+  or `Geb/Cslib/`. mathlib and CSLib permit LLM-generated code,
+  with no per-contributor or first-PR exception, provided the
+  contributor understands every line and can justify each design
+  decision to reviewers without AI assistance. Disclosure of
+  which tools were used and how is mandatory, and a pull request
+  containing a substantial amount of LLM-generated code carries
+  the `LLM-generated` label. We apply this bar to both subtrees.
+  Source pages (re-check periodically; subject to upstream
+  revision):
+  [mathlib § Use of AI](https://leanprover-community.github.io/contribute/index.html#use-of-ai),
+  [mathlib PR lifecycle (`LLM-generated` label)](https://leanprover-community.github.io/contribute/how-to-contribute.html#lifecycle-of-a-pr),
+  [CSLib § The role of AI](https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md#the-role-of-ai).
 - **No LLM-drafted text in mathlib-facing channels.** PR
   descriptions, Zulip messages, GitHub issue/PR comments are
-  user-authored.
+  user-authored ("use your own words"). This is unconditional in
+  mathlib's policy and unchanged by the code policy above.
 - **Cite the literature when transcribing.** Every definition or
   theorem taken from published mathematics carries a literature
   reference with a searchable identifier in its plan, spec, and
