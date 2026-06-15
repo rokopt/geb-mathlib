@@ -12,6 +12,18 @@ paths:
 
 # Upstream-eligible content rules
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Authoring modes](#authoring-modes)
+- [Two-track development](#two-track-development)
+- [Credentialing-PR checkpoint](#credentialing-pr-checkpoint)
+- [Floodgate test](#floodgate-test)
+- [Subtree import rules](#subtree-import-rules)
+- [CSLib-specific constraints](#cslib-specific-constraints)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Applies to anything under `Geb/Mathlib/`, `GebTests/Mathlib/`,
 `Geb/Cslib/`, or `GebTests/Cslib/`.
 

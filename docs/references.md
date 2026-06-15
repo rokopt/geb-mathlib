@@ -1,5 +1,31 @@
 # Mathematical / library references
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Searchable](#searchable)
+- [Lean language](#lean-language)
+- [CSLib](#cslib)
+- [Alternative formalization targets](#alternative-formalization-targets)
+- [General mathematics](#general-mathematics)
+- [General category theory](#general-category-theory)
+- [Opposite categories](#opposite-categories)
+- [Comma / slice (over) / coslice (under) categories](#comma--slice-over--coslice-under-categories)
+- [Polynomial functors](#polynomial-functors)
+- [Profunctors](#profunctors)
+- [Parametricity and Free Theorems](#parametricity-and-free-theorems)
+- [Computability](#computability)
+- [Monad algebra](#monad-algebra)
+- [Kan extensions](#kan-extensions)
+- [Grothendieck Construction](#grothendieck-construction)
+- [Simplicial Sets and Nerves](#simplicial-sets-and-nerves)
+- [Quotients](#quotients)
+- [Topos Theory](#topos-theory)
+- [Presheaf/Copresheaf Universal Properties](#presheafcopresheaf-universal-properties)
+- [Subobject Classifiers and Related](#subobject-classifiers-and-related)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Catalog of useful pointers into Lean 4 libraries and external
 literature, organised by topic.
 

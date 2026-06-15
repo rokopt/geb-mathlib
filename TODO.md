@@ -1,5 +1,15 @@
 # TODO
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [In progress](#in-progress)
+- [Next up](#next-up)
+  - [Begin first mathematical workstream brainstorming](#begin-first-mathematical-workstream-brainstorming)
+- [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Active workstreams, in topological order. Workstreams complete →
 removed; content merged into `docs/index.md`.
 

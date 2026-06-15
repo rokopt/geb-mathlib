@@ -5,6 +5,14 @@ paths:
 
 # Lean coding — Claude-only additions
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [`lean4` sub-skill mapping](#lean4-sub-skill-mapping)
+- [Lake / build workflow — Claude-tool notes](#lake--build-workflow--claude-tool-notes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Applies whenever a `.lean` file is open or being edited.
 Additions specific to Claude Code, on top of the canonical
 `docs/rules/lean-coding.md`.

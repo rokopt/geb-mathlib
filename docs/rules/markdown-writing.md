@@ -5,6 +5,16 @@ paths:
 
 # Markdown writing conventions
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Markdownlint cleanliness](#markdownlint-cleanliness)
+- [Tables of contents](#tables-of-contents)
+- [Link conventions](#link-conventions)
+- [Prose style](#prose-style)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Applies to all `.md` files.
 
 ## Markdownlint cleanliness

@@ -1,5 +1,17 @@
 # Aristotle theorem-proving CLI
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Availability and consent](#availability-and-consent)
+- [Contribution-policy constraint](#contribution-policy-constraint)
+- [Setup](#setup)
+- [Commands](#commands)
+- [Long-running proofs](#long-running-proofs)
+- [References](#references)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Harmonic's Aristotle is a hosted system that formalizes and proves
 Lean 4 goals, available as the `aristotle` console script shipped by
 the `aristotlelib` package and run on demand via `uvx`. Aristotle

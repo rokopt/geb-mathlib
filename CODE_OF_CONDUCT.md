@@ -1,5 +1,19 @@
 # Contributor Covenant 3.0 Code of Conduct
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Our Pledge](#our-pledge)
+- [Encouraged Behaviors](#encouraged-behaviors)
+- [Restricted Behaviors](#restricted-behaviors)
+  - [Other Restrictions](#other-restrictions)
+- [Reporting an Issue](#reporting-an-issue)
+- [Addressing and Repairing Harm](#addressing-and-repairing-harm)
+- [Scope](#scope)
+- [Attribution](#attribution)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Our Pledge
 
 We pledge to make our community welcoming, safe, and equitable for all.
