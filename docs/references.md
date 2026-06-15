@@ -101,7 +101,8 @@ mathlib → lean-pool → merely-true:
   `unsafe`, and `partial`, and permits no axioms beyond
   `Classical.choice`, `propext`, and `Quot.sound`. Review is
   deterministic linting plus LLM evaluation rather than mathlib's
-  human review, so it admits LLM-generated code.
+  human review, admitting results that meet its automated bar
+  without a human reviewer.
 - [merely-true](https://github.com/merely-true/merely-true) — a
   repository for AI-generated mathematics, doubling as shared
   training data. Accepts any Lean file that builds without

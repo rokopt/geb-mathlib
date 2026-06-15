@@ -30,11 +30,12 @@ even when it is available.
 
 ## Contribution-policy constraint
 
-Aristotle output is LLM-generated code. Under
-[CONTRIBUTING.md § Submission policy](../CONTRIBUTING.md) it must
-not enter `Geb/Mathlib/` or `Geb/Cslib/`; it may be used only in
-`Geb/Internal/`, or as a reference the user rewrites line by line
-before committing. Disclosure of LLM use remains mandatory.
+Aristotle output is LLM-generated code, governed by
+[CONTRIBUTING.md § Submission policy](../CONTRIBUTING.md) like any
+other AI tool. It may enter any subtree, `Geb/Mathlib/` and
+`Geb/Cslib/` included, provided the user understands every line,
+can justify each design decision to reviewers without AI, and
+discloses its use. Disclosure of LLM use is mandatory.
 
 Returned proofs are also subject to the repository's other rules:
 

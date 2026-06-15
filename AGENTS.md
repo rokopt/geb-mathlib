@@ -9,8 +9,7 @@
   - [Adversarial review of specs and plans](#adversarial-review-of-specs-and-plans)
   - [Verify agent claims](#verify-agent-claims)
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
-  - [AI authoring modes (for upstream-eligible work)](#ai-authoring-modes-for-upstream-eligible-work)
-  - [Credentialing-PR checkpoint (agent behavior)](#credentialing-pr-checkpoint-agent-behavior)
+  - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
   - [Aristotle (external LLM prover)](#aristotle-external-llm-prover)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
@@ -35,7 +34,8 @@ rest of this file.
 
 Work in upstream-eligible subtrees is governed by
 [CONTRIBUTING.md § Submission policy](CONTRIBUTING.md), which
-restricts LLM-generated code.
+governs LLM-generated code (mandatory disclosure and line-by-line
+understanding).
 
 ### No `jj git push` without user line-by-line review
 
@@ -60,19 +60,16 @@ Do not draft PR descriptions, Zulip messages, or GitHub
 issue/PR comments. These are user-authored per
 [CONTRIBUTING.md § Submission policy](CONTRIBUTING.md).
 
-### AI authoring modes (for upstream-eligible work)
+### AI authoring (upstream-eligible work)
 
-| Authoring mode | Triggered by | AI agent may | User must |
-| --- | --- | --- | --- |
-| (a) User-driven | Credentialing-PR candidate | Suggest in natural language only | Write every line |
-| (b) Co-authoring | Other upstream-eligible work | Draft provisional code | Read, rewrite, commit when fully understood |
-
-### Credentialing-PR checkpoint (agent behavior)
-
-Before starting any work in `Geb/Mathlib/` or `Geb/Cslib/` whose
-only dependencies are the targeted upstream (i.e., a true
-PR-candidate with no in-flight geb-mathlib deps), the AI agent
-asks: "Is this the credentialing PR for this upstream?"
+An AI agent may draft code for upstream-eligible subtrees. Before
+the user commits it to `Geb/Mathlib/` or `Geb/Cslib/`, the user
+understands every line, can justify each design decision to
+reviewers without AI assistance, and discloses which tools were
+used and how (per
+[CONTRIBUTING.md § Submission policy](CONTRIBUTING.md)). There is
+no human-only authoring track and no requirement to rewrite
+AI-drafted code that already meets that bar.
 
 ### Aristotle (external LLM prover)
 
@@ -80,14 +77,15 @@ If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
 and prove Lean. It is a metered hosted service, so the agent asks
 the contributor whether to use it before invoking it, even when it
-is available. Its output is LLM-generated code: it must not enter
-`Geb/Mathlib/` or `Geb/Cslib/` per
-[CONTRIBUTING.md § Submission policy](CONTRIBUTING.md), and may be
-used only in `Geb/Internal/` or as a reference the user rewrites.
-Disclosure of its use is mandatory, and returned proofs are
-re-verified under the repository's toolchain and constructive
-discipline before use. See [docs/aristotle.md](docs/aristotle.md)
-for invocations and operational notes.
+is available. Its output is LLM-generated code, governed by the
+same policy as any other AI tool
+([CONTRIBUTING.md § Submission policy](CONTRIBUTING.md)): it may
+enter any subtree, upstream-eligible included, provided the user
+understands every line, can justify each decision to reviewers
+without AI, and discloses its use. Returned proofs are re-verified
+under the repository's toolchain and constructive discipline
+before use. See [docs/aristotle.md](docs/aristotle.md) for
+invocations and operational notes.
 
 ## Path-scoped rules
 
@@ -101,7 +99,7 @@ the full text.
 ### When editing files under Geb/Mathlib/ or Geb/Cslib/
 
 Additional upstream-eligibility rules apply (import rules,
-authoring modes, subtree boundaries).
+authoring, subtree boundaries).
 See [docs/rules/upstream-eligible.md](docs/rules/upstream-eligible.md)
 for the full text.
 
