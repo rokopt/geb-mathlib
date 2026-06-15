@@ -11,6 +11,7 @@
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring modes (for upstream-eligible work)](#ai-authoring-modes-for-upstream-eligible-work)
   - [Credentialing-PR checkpoint (agent behavior)](#credentialing-pr-checkpoint-agent-behavior)
+  - [Aristotle (external LLM prover)](#aristotle-external-llm-prover)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
   - [When editing files under Geb/Mathlib/ or Geb/Cslib/](#when-editing-files-under-gebmathlib-or-gebcslib)
@@ -73,6 +74,21 @@ only dependencies are the targeted upstream (i.e., a true
 PR-candidate with no in-flight geb-mathlib deps), the AI agent
 asks: "Is this the credentialing PR for this upstream?"
 
+### Aristotle (external LLM prover)
+
+If Harmonic's Aristotle is available in the environment (the
+`aristotle` CLI plus an API key), an agent may use it to formalize
+and prove Lean. It is a metered hosted service, so the agent asks
+the contributor whether to use it before invoking it, even when it
+is available. Its output is LLM-generated code: it must not enter
+`Geb/Mathlib/` or `Geb/Cslib/` per
+[CONTRIBUTING.md § Submission policy](CONTRIBUTING.md), and may be
+used only in `Geb/Internal/` or as a reference the user rewrites.
+Disclosure of its use is mandatory, and returned proofs are
+re-verified under the repository's toolchain and constructive
+discipline before use. See [docs/aristotle.md](docs/aristotle.md)
+for invocations and operational notes.
+
 ## Path-scoped rules
 
 ### When editing .lean files
@@ -111,5 +127,7 @@ for the full text.
   every contributor for the file globs in each rule's `paths:`
   frontmatter.
 - [docs/process.md](docs/process.md) — rationale for every rule.
+- [docs/aristotle.md](docs/aristotle.md) — Aristotle CLI usage
+  and contribution-policy constraints.
 - [CLAUDE.md](CLAUDE.md) — Claude-specific additions on top of
   this file.
