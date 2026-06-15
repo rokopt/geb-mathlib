@@ -23,6 +23,7 @@ unfamiliar situation.
   - [Verify agent claims](#verify-agent-claims)
   - [Two-track development](#two-track-development)
   - [Floodgate test](#floodgate-test)
+  - [Alternative formalization targets](#alternative-formalization-targets)
   - [main and integration](#main-and-integration)
   - [Mathlib bump procedure](#mathlib-bump-procedure)
   - [jj bump procedure](#jj-bump-procedure)
@@ -191,6 +192,34 @@ no-prefix-leakage rules. The test is what makes
 "upstream-eligible" a binding property of `Geb/Mathlib/` and
 `Geb/Cslib/` rather than an aspiration: at any moment, every
 file in either subtree can be extracted to a PR upstream.
+
+## Alternative formalization targets
+
+mathlib and cslib forbid LLM-generated code and apply a
+scope-and-significance bar enforced by human review. When a
+sound, `sorry`-free result is not a practical fit for either —
+because it falls outside their scope, because it is LLM-authored
+and the user has not taken line-by-line ownership of it for
+upstream submission, or because an upstream PR is blocked or
+slow — two repositories admit it on looser terms (catalogued in
+`docs/references.md` § Alternative formalization targets):
+
+- lean-pool, for results meeting mathlib's rigor and linting but
+  not its scope.
+- merely-true, for results below lean-pool's quality gate that
+  still build `sorry`-free and `axiom`-free.
+
+Both relax the LLM restriction that drives this project's
+submission policy; neither requires changes to source layout,
+the floodgate test, or the build, so submitting to them is a
+copy-out of an already-sound file, not a restructuring. Code
+produced here already satisfies this project's stricter
+discipline (constructive, no `noncomputable`, minimised
+`Classical`), which exceeds both targets' requirements; that
+discipline is not relaxed to match a looser target. These remain
+fallbacks: mathlib and cslib are the primary targets, and the
+two-track workflow (§ Two-track development) and credentialing
+checkpoint are unchanged.
 
 ## main and integration
 

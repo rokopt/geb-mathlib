@@ -62,6 +62,30 @@ literature, organised by topic.
   structures (e.g. `LTS`, `HasFresh`) over reaching into concrete
   instances, so internal CSLib changes do not break our code.
 
+## Alternative formalization targets
+
+Two repositories accept Lean 4 formalizations below mathlib's
+scope or review bar, forming a gradient
+mathlib → lean-pool → merely-true:
+
+- [lean-pool](https://github.com/Vilin97/lean-pool) — preserves
+  Lean 4 formalizations that do not fit mathlib's scope. Requires
+  Apache-2.0 or MIT licensing, warning-free builds, and passing
+  mathlib's linters and style checks; forbids `sorry`, `admit`,
+  `unsafe`, and `partial`, and permits no axioms beyond
+  `Classical.choice`, `propext`, and `Quot.sound`. Review is
+  deterministic linting plus LLM evaluation rather than mathlib's
+  human review, so it admits LLM-generated code.
+- [merely-true](https://github.com/merely-true/merely-true) — a
+  repository for AI-generated mathematics, doubling as shared
+  training data. Accepts any Lean file that builds without
+  errors, `sorry`, or `axiom` declarations, under Apache-2.0;
+  approved pull requests merge on CI pass without human review.
+  Contributions require an identifiable (non-anonymous) account.
+
+Conditions for considering these targets are in
+`docs/process.md` § Alternative formalization targets.
+
 ## General mathematics
 
 - [Lean's "mathlib" page](https://leanprover-community.github.io/mathlib-overview.html)
