@@ -16,14 +16,14 @@ weak.warningAsError = true
 [[require]]
 name = "cslib"
 scope = "leanprover"
-rev = "v4.31.0"
+rev = "v4.32.0-rc1"
 
 # Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
 # the toolchain version.
 [[require]]
 name = "doc-gen4"
 git = "https://github.com/leanprover/doc-gen4.git"
-rev = "v4.31.0"
+rev = "v4.32.0-rc1"
 
 # Declared last so mathlib's transitive dependency pins
 # (plausible, importGraph) take precedence over other requires';
@@ -33,7 +33,7 @@ rev = "v4.31.0"
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4.git"
-rev = "v4.31.0"
+rev = "v4.32.0-rc1"
 
 [[lean_lib]]
 name = "Geb"
