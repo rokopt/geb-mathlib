@@ -13,7 +13,9 @@ public meta import Batteries.Tactic.Lint.Basic
 
 `detectNonstandardAxiom` is an `@[env_linter]` that fails
 `lake lint` when a declaration depends on any axiom outside the
-constructive standard set `{propext, Quot.sound}`. It is built on
+permitted set for its module. For most modules the permitted set
+is `{propext, Quot.sound}`; modules in `classicalAllowedModules`
+additionally permit `Classical.choice`. It is built on
 `Lean.collectAxioms` (core Lean), the same primitive `#print
 axioms` uses. The module lives outside the `Geb`/`GebTests`
 namespaces so the linter does not audit its own metaprogramming
@@ -37,19 +39,42 @@ namespace GebMeta
 def standardAxioms : NameSet :=
   (({} : NameSet).insert ``propext).insert ``Quot.sound
 
-/-- The elements of `used` that are not standard axioms. -/
-def offendingAxioms (used : Array Name) : Array Name :=
-  used.filter (fun a => !standardAxioms.contains a)
+/-- Exact module names additionally permitted to depend on
+`Classical.choice` (and only `Classical.choice`). Empty here; the
+test fixture and feature wrappers add their own module names. -/
+def classicalAllowedModules : NameSet := {}
 
-/-- Flags a declaration depending on a non-standard axiom
-(anything outside `{propext, Quot.sound}`, e.g. `Classical.choice`,
-`sorryAx`, `Lean.ofReduceBool`). -/
+/-- Permitted axioms for a declaration in module `mod`, given the
+allowlist `allowed`: the standard set, plus `Classical.choice` exactly
+when `mod` is allowlisted. -/
+def permittedAxioms (allowed : NameSet) (mod : Name) : NameSet :=
+  let extra := if allowed.contains mod then #[``Classical.choice] else #[]
+  extra.foldl (·.insert ·) standardAxioms
+
+/-- The elements of `used` not in the `permitted` set. -/
+def offendingAxioms (permitted : NameSet) (used : Array Name) : Array Name :=
+  used.filter (!permitted.contains ·)
+
+/-- The defining module of `declName`, if resolvable. Returns `none`
+for a declaration in the current (not-yet-imported) module. -/
+def moduleOf? (env : Environment) (declName : Name) : Option Name :=
+  match env.getModuleIdxFor? declName with
+  | some idx => env.header.moduleNames[idx.toNat]?
+  | none => none
+
+/-- Flags a declaration depending on an axiom outside its permitted
+set. A declaration in a module listed in `classicalAllowedModules`
+additionally permits `Classical.choice` (and only that); every other
+axiom (`sorryAx`, `Lean.ofReduceBool`, …) is forbidden everywhere. A
+declaration whose module is unresolvable is held to the strict set. -/
 @[env_linter] def detectNonstandardAxiom : Linter where
   test declName := do
-    let bad := offendingAxioms (← collectAxioms declName)
+    let mod := (moduleOf? (← getEnv) declName).getD .anonymous
+    let permitted := permittedAxioms classicalAllowedModules mod
+    let bad := offendingAxioms permitted (← collectAxioms declName)
     if bad.isEmpty then return none
     else return some m!"depends on non-standard axiom(s): {bad.toList}"
-  noErrorsFound := "All declarations depend only on propext and Quot.sound."
+  noErrorsFound := "All declarations depend only on permitted axioms."
   errorsFound := "Declarations depend on non-standard axioms."
   isFast := true
 
