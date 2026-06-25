@@ -62,6 +62,26 @@ if [[ "$rc_good" -ne 0 ]]; then
   failed=1
 fi
 
+cat > "$tmp/Choice.lean" <<'EOF'
+import GebMeta
+import Batteries.Tactic.Lint
+theorem usesChoice : True := (Classical.em True).elim (fun _ => trivial) (fun _ => trivial)
+#lint only detectNonstandardAxiom
+EOF
+
+out_choice="$(lake env lean "$tmp/Choice.lean" 2>&1)"
+rc_choice=$?
+if [[ "$rc_choice" -eq 0 ]]; then
+  echo "FAIL: linter accepted Classical.choice in a non-allowlisted module" >&2
+  echo "  output: $out_choice" >&2
+  failed=1
+fi
+if ! grep -qF 'Classical.choice' <<<"$out_choice"; then
+  echo "FAIL: violation output did not name 'Classical.choice'" >&2
+  echo "  output: $out_choice" >&2
+  failed=1
+fi
+
 if [[ "$failed" -ne 0 ]]; then
   echo "test-axiom-linter: FAIL" >&2
   exit 1

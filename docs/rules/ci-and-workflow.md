@@ -65,7 +65,9 @@ Run by `scripts/pre-push.sh`:
     under `lake lint`: `Geb` is covered by item 3's `lake lint`,
     and `GebTests` by an added `lake lint -- GebTests` step (after
     `lake build GebTests`). It fails when any declaration depends
-    on an axiom outside `{propext, Quot.sound}`.
+    on an axiom outside `{propext, Quot.sound}`, except that
+    modules listed in `GebMeta.classicalAllowedModules`
+    additionally permit `Classical.choice` (and only that).
     `scripts/tests/test-axiom-linter.sh` smoke-tests the linter.
 12. (PR-candidate) reminder about no-LLM-text rule for PR
     descriptions; affirmative confirmation required.
