@@ -6,6 +6,7 @@ Authors: The geb-mathlib contributors
 module -- shake: keep-all
 
 import GebTests.Internal.AxiomLinter
+import GebTests.Internal.AxiomLinterClassicalFixture
 
 /-!
 # GebTests.Internal — tests for downstream-only content

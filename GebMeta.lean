@@ -42,7 +42,8 @@ def standardAxioms : NameSet :=
 /-- Exact module names additionally permitted to depend on
 `Classical.choice` (and only `Classical.choice`). Empty here; the
 test fixture and feature wrappers add their own module names. -/
-def classicalAllowedModules : NameSet := {}
+def classicalAllowedModules : NameSet :=
+  ({} : NameSet).insert `GebTests.Internal.AxiomLinterClassicalFixture
 
 /-- Permitted axioms for a declaration in module `mod`, given the
 allowlist `allowed`: the standard set, plus `Classical.choice` exactly
