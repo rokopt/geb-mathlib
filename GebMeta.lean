@@ -57,7 +57,9 @@ def offendingAxioms (permitted : NameSet) (used : Array Name) : Array Name :=
   used.filter (!permitted.contains ·)
 
 /-- The defining module of `declName`, if resolvable. Returns `none`
-for a declaration in the current (not-yet-imported) module. -/
+when `getModuleIdxFor?` returns `none` (declaration in the current,
+not-yet-imported module) or when the module index is out of range;
+both cases route the declaration to the strict axiom set. -/
 def moduleOf? (env : Environment) (declName : Name) : Option Name :=
   match env.getModuleIdxFor? declName with
   | some idx => env.header.moduleNames[idx.toNat]?

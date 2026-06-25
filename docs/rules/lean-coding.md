@@ -317,9 +317,15 @@ rationale.
   code.
 - The `GebMeta.detectNonstandardAxiom` `@[env_linter]` fails
   `lake lint` when any `Geb` or `GebTests` declaration depends on
-  an axiom outside `{propext, Quot.sound}` (`Classical.choice`
-  excluded, per this discipline). It runs in CI and the pre-push
-  checklist; `scripts/tests/test-axiom-linter.sh` smoke-tests it.
+  an axiom outside its permitted set. The permitted set is
+  `{propext, Quot.sound}` by default; declarations defined in the
+  exact modules listed in `GebMeta.classicalAllowedModules`
+  additionally permit `Classical.choice` (and only
+  `Classical.choice`). The allowlist exists so thin wrappers over
+  mathlib's `Classical.choice`-dependent category theory (e.g.
+  `Over`) can reuse it while the constructive core stays strict.
+  It runs in CI and the pre-push checklist;
+  `scripts/tests/test-axiom-linter.sh` smoke-tests it.
 
 ## sorry, admit, and underscores
 
