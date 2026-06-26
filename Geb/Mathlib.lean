@@ -5,6 +5,8 @@ Authors: The geb-mathlib contributors
 -/
 module
 
+public import Geb.Mathlib.Data
+
 /-!
 # Geb.Mathlib — upstream-eligible content for mathlib4
 

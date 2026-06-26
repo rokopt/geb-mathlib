@@ -5,8 +5,8 @@ Authors: The geb-mathlib contributors
 -/
 module
 
-import GebTests.Mathlib.Data
+import GebTests.Mathlib.Data.PFunctor
 
 /-!
-# GebTests.Mathlib — tests for upstream-eligible content
+# Data tests — index
 -/
