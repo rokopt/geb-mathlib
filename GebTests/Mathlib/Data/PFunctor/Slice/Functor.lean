@@ -15,15 +15,31 @@ set_option linter.privateModule false
 
 open CategoryTheory SliceDomPFunctor SlicePFunctor
 
-/-- A concrete slice polynomial functor for the wrapper tests (local,
-to avoid a cross-test-file dependency). -/
-def wrapperTestSlice : SlicePFunctor Bool Unit where
-  A := Unit
+/-- A concrete slice polynomial functor for the wrapper tests (local, to
+avoid a cross-test-file dependency). The tag `t = id` distinguishes the two
+shapes, so the wrapper tests exercise the tag rather than collapsing. -/
+def wrapperTestSlice : SlicePFunctor Bool Bool where
+  A := Bool
   B := fun _ => Bool
   s := fun x => x.2
-  t := fun _ => ()
+  t := id
 
 -- The slice-valued functor forgets back to `domFunctor`.
-example : wrapperTestSlice.functor ⋙ Over.forget Unit =
+example : wrapperTestSlice.functor ⋙ Over.forget Bool =
     wrapperTestSlice.toSliceDomPFunctor.domFunctor :=
   wrapperTestSlice.functor_comp_forget
+
+-- The categorical object map is `Over.mk` of the choice-free `obj`.
+example (Y : Over Bool) :
+    wrapperTestSlice.functor.obj Y =
+      Over.mk (↾ wrapperTestSlice.obj (ConcreteCategory.hom Y.hom)) :=
+  wrapperTestSlice.functor_obj Y
+
+-- The categorical morphism map's underlying function is the choice-free `map`
+-- (the commuting hypothesis is irrelevant: any proof of it agrees).
+example {Y Z : Over Bool} (g : Y ⟶ Z)
+    (hg : ConcreteCategory.hom Z.hom ∘ ConcreteCategory.hom g.left =
+      ConcreteCategory.hom Y.hom) :
+    (wrapperTestSlice.functor.map g).left =
+      ↾ wrapperTestSlice.map (ConcreteCategory.hom g.left) hg :=
+  wrapperTestSlice.functor_map g
