@@ -5,8 +5,9 @@ Authors: The geb-mathlib contributors
 -/
 module
 
-import GebTests.Mathlib.Data
+public import Geb.Mathlib.Data.PFunctor.Slice.Basic
+public import Geb.Mathlib.Data.PFunctor.Slice.Functor
 
 /-!
-# GebTests.Mathlib — tests for upstream-eligible content
+# Slice — index
 -/

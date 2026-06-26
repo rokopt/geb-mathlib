@@ -1,0 +1,48 @@
+/-
+Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The geb-mathlib contributors
+-/
+module
+
+import Geb.Mathlib.Data.PFunctor.Slice.Basic
+
+-- Test files keep their declarations private; silence the
+-- only-private-declarations lint.
+set_option linter.privateModule false
+
+/-!
+# Tests for the slice polynomial functor core
+-/
+
+open SliceDomPFunctor SlicePFunctor
+
+/-- A concrete slice polynomial functor: one shape, two `Bool`-indexed
+positions, constraint `s ⟨(), b⟩ = b`, tag into `Unit`. -/
+def testSlice : SlicePFunctor Bool Unit where
+  A := Unit
+  B := fun _ => Bool
+  s := fun x => x.2
+  t := fun _ => ()
+
+example : testSlice.s ⟨(), true⟩ = true := rfl
+example : testSlice.t () = () := rfl
+
+example (X : Type) (p : X → Bool) (v : Bool → X) :
+    testSlice.Compatible p () v ↔ ∀ b, p (v b) = b :=
+  testSlice.compatible_iff p () v
+
+example (P : PFunctor.{0, 0}) (sc : (a : P.A) → P.B a → Bool) (a : P.A)
+    (b : P.B a) : (SliceDomPFunctor.ofCurried P Bool sc).sCurried a b = sc a b :=
+  rfl
+
+-- The object map is the compatibility subtype of the interpretation.
+example : testSlice.toSliceDomPFunctor.obj (id : Bool → Bool) =
+    { x : (testSlice.toPFunctor).Obj Bool //
+      testSlice.toSliceDomPFunctor.Compatible (id : Bool → Bool) x.1 x.2 } := rfl
+
+-- The action fixes the shape.
+example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p)
+    (z : testSlice.toSliceDomPFunctor.obj p) :
+    (testSlice.toSliceDomPFunctor.map f hf z).1.1 = z.1.1 :=
+  testSlice.toSliceDomPFunctor.map_fst f hf z
