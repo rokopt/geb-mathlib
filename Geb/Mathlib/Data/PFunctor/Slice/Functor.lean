@@ -21,13 +21,24 @@ packaging is kept in a separate module from the choice-free core.
 * `SliceDomPFunctor.domFunctor` — the functor `Over dom ⥤ Type`.
 * `SlicePFunctor.functor` — the functor `Over dom ⥤ Over cod`.
 
+## Main statements
+
+* `SlicePFunctor.functor_obj` / `functor_map` — the categorical
+  functor's object and morphism maps are definitionally the
+  constructive-core `SlicePFunctor.obj` / `map`.
+* `SlicePFunctor.functor_comp_forget` — the wrapper forgets back to
+  `domFunctor`.
+
 ## Implementation notes
 
 `domFunctor` reuses the core `obj`/`map`; `Over` structure maps are
 read through `ConcreteCategory.hom`, the slice-morphism hypothesis is
-derived from `Over.w`, results promoted with `↾`, and the `TypeCat.Hom`
-laws discharged by `ext` plus the core `map_id`/`map_comp`. `functor`
-is the `Functor.toOver` lift along the tag `t`.
+`SliceDomPFunctor.over_hom_comp` (the function-level form of `Over.w`),
+results promoted with `↾`, and the functor laws discharged by `ext`
+plus the core `map_id`/`map_comp`. `functor` is the `Functor.toOver`
+lift along the tag `t`; it is `@[expose]` so `functor_obj` /
+`functor_map` can state the definitional equalities as exported `rfl`
+theorems.
 
 ## References
 
@@ -48,15 +59,22 @@ open CategoryTheory
 
 namespace SliceDomPFunctor
 
+/-- The function-level form of `Over.w`: a slice morphism `g : Y ⟶ Z`
+commutes with the base maps, `Z.hom ∘ g.left = Y.hom`, read through
+`ConcreteCategory.hom`. -/
+theorem over_hom_comp {dom : Type uD} {Y Z : Over dom} (g : Y ⟶ Z) :
+    ConcreteCategory.hom Z.hom ∘ ConcreteCategory.hom g.left =
+      ConcreteCategory.hom Y.hom := by
+  funext z
+  rw [Function.comp_apply, ← ConcreteCategory.comp_apply, Over.w g]
+
 /-- The functor `Over dom ⥤ Type` restricting the `PFunctor`
 interpretation to `s`-compatible assignments; the core maps packaged
 over `Over dom`. -/
 @[expose] def domFunctor {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) :
     CategoryTheory.Functor (Over dom) (Type (max uA uB uD)) where
   obj Y := F.obj (ConcreteCategory.hom Y.hom)
-  map {Y Z} h := ↾(F.map (ConcreteCategory.hom h.left) (by
-    funext z
-    rw [Function.comp_apply, ← ConcreteCategory.comp_apply, Over.w h]))
+  map {Y Z} h := ↾(F.map (ConcreteCategory.hom h.left) (over_hom_comp h))
   map_id Y := by
     ext z
     exact congrFun (F.map_id _) z
@@ -79,12 +97,11 @@ private theorem tagTriangle {dom : Type uD} {cod : Type (max uA uB uD)}
       (↾fun z => F.t z.1.1) := by
   ext z
   exact congrArg F.t (F.toSliceDomPFunctor.map_fst (ConcreteCategory.hom g.left)
-    (by funext w; rw [Function.comp_apply, ← ConcreteCategory.comp_apply,
-      Over.w g]) z)
+    (SliceDomPFunctor.over_hom_comp g) z)
 
 /-- The slice polynomial functor `Over dom ⥤ Over cod`: the
 `Functor.toOver` lift of `domFunctor` along the tag leg `t`. -/
-def functor {dom : Type uD} {cod : Type (max uA uB uD)}
+@[expose] def functor {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) :
     CategoryTheory.Functor (Over dom) (Over cod) :=
   Functor.toOver F.toSliceDomPFunctor.domFunctor cod
@@ -96,6 +113,22 @@ theorem functor_comp_forget {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) :
     F.functor ⋙ Over.forget cod = F.toSliceDomPFunctor.domFunctor := by
   rw [functor]
-  apply Functor.toOver_comp_forget
+  exact Functor.toOver_comp_forget _ _ _ fun g => F.tagTriangle g
+
+/-- `functor.obj` is the choice-free `obj`, packaged with `Over.mk`. The
+categorical object map carries no data beyond the constructive core. -/
+theorem functor_obj {dom : Type uD} {cod : Type (max uA uB uD)}
+    (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) (Y : Over dom) :
+    F.functor.obj Y = Over.mk (↾ F.obj (ConcreteCategory.hom Y.hom)) :=
+  rfl
+
+/-- `functor.map`'s underlying function is the choice-free `map`. An `Over`
+morphism's only data is its `left` component, so this fixes the categorical
+morphism map up to its `Prop`-valued commuting condition. -/
+theorem functor_map {dom : Type uD} {cod : Type (max uA uB uD)}
+    (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) {Y Z : Over dom} (g : Y ⟶ Z) :
+    (F.functor.map g).left =
+      ↾ F.map (ConcreteCategory.hom g.left) (SliceDomPFunctor.over_hom_comp g) :=
+  rfl
 
 end SlicePFunctor

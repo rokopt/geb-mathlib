@@ -46,3 +46,46 @@ example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p)
     (z : testSlice.toSliceDomPFunctor.obj p) :
     (testSlice.toSliceDomPFunctor.map f hf z).1.1 = z.1.1 :=
   testSlice.toSliceDomPFunctor.map_fst f hf z
+
+-- The slice object's structure map into `cod` is the tag at the shape.
+example (X : Type) (p : X → Bool) (z : testSlice.toSliceDomPFunctor.obj p) :
+    testSlice.obj p z = testSlice.t z.1.1 := rfl
+
+-- The slice morphism's underlying function is the `SliceDomPFunctor` map.
+example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p) :
+    testSlice.map f hf = testSlice.toSliceDomPFunctor.map f hf := rfl
+
+-- The morphism lies over `cod`.
+example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p) :
+    testSlice.obj p' ∘ testSlice.map f hf = testSlice.obj p :=
+  testSlice.map_w f hf
+
+-- Functoriality: identity and composition.
+example (X : Type) (p : X → Bool) :
+    testSlice.map id (by simp) =
+      (id : testSlice.toSliceDomPFunctor.obj p → testSlice.toSliceDomPFunctor.obj p) :=
+  testSlice.map_id p
+
+example (X Y Z : Type) (p : X → Bool) (q : Y → Bool) (r : Z → Bool)
+    (f : X → Y) (g : Y → Z) (hf : q ∘ f = p) (hg : r ∘ g = q) :
+    testSlice.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) =
+      testSlice.map g hg ∘ testSlice.map f hf :=
+  testSlice.map_comp f g hf hg
+
+/-- A slice functor whose tag `t = id` distinguishes its two shapes, so the
+tag content of `obj` is genuinely exercised. -/
+def taggedSlice : SlicePFunctor Bool Bool where
+  A := Bool
+  B := fun _ => Bool
+  s := fun x => x.2
+  t := id
+
+-- `obj` reads the tag at the shape: with `t = id`, it is the shape
+-- projection (this fails for any tag that does not separate the shapes).
+example (X : Type) (p : X → Bool) :
+    taggedSlice.obj p = fun z => z.1.1 := rfl
+
+-- `map_w` over a genuinely-tagged functor: the morphism lies over `cod`.
+example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
+    (hf : p' ∘ f = p) : taggedSlice.obj p' ∘ taggedSlice.map f hf = taggedSlice.obj p :=
+  taggedSlice.map_w f hf
