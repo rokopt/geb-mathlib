@@ -99,4 +99,43 @@ leg. -/
     (b : F.B a) : dom :=
   F.s ⟨a, b⟩
 
+/-- Value of the domain-restricted functor on `(X, p)`: the
+compatibility subtype of the `PFunctor` interpretation. -/
+@[expose] def obj {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
+    (p : X → dom) : Type (max uA uB uX) :=
+  { x : F.toPFunctor.Obj X // F.Compatible p x.1 x.2 }
+
+/-- Action on a slice morphism `f` (with `p' ∘ f = p`): `PFunctor.map f`
+restricted to the compatibility subtype. -/
+@[expose] def map {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X X' : Type uX}
+    {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
+    F.obj p → F.obj p' :=
+  fun x => ⟨F.toPFunctor.map f x.1, by
+    obtain ⟨⟨a, v⟩, hx⟩ := x
+    change p' ∘ (f ∘ v) = F.s ∘ Sigma.mk a
+    rw [← Function.comp_assoc, hf]
+    exact hx⟩
+
+/-- `map` fixes the shape component. -/
+theorem map_fst {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X X' : Type uX}
+    {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p)
+    (x : F.obj p) : (F.map f hf x).1.1 = x.1.1 := by
+  obtain ⟨⟨a, v⟩, hx⟩ := x
+  rfl
+
+/-- Functoriality: identity. -/
+theorem map_id {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
+    (p : X → dom) : F.map id (by simp) = (id : F.obj p → F.obj p) := by
+  funext x
+  exact Subtype.ext (F.toPFunctor.id_map x.1)
+
+/-- Functoriality: composition. -/
+theorem map_comp {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X Y Z : Type uX}
+    {p : X → dom} {q : Y → dom} {r : Z → dom} (f : X → Y) (g : Y → Z)
+    (hf : q ∘ f = p) (hg : r ∘ g = q) :
+    F.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) =
+      F.map g hg ∘ F.map f hf := by
+  funext x
+  exact Subtype.ext (F.toPFunctor.map_map f g x.1).symm
+
 end SliceDomPFunctor
