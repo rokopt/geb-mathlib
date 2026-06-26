@@ -40,10 +40,13 @@ def standardAxioms : NameSet :=
   (({} : NameSet).insert ``propext).insert ``Quot.sound
 
 /-- Exact module names additionally permitted to depend on
-`Classical.choice` (and only `Classical.choice`). Empty here; the
-test fixture and feature wrappers add their own module names. -/
+`Classical.choice` (and only `Classical.choice`): the axiom-linter
+test fixture, and the categorical wrappers over mathlib's
+`Classical`-dependent category theory. Feature branches append their
+own wrapper module names. -/
 def classicalAllowedModules : NameSet :=
-  ({} : NameSet).insert `GebTests.Internal.AxiomLinterClassicalFixture
+  (({} : NameSet).insert `GebTests.Internal.AxiomLinterClassicalFixture).insert
+    `Geb.Mathlib.Data.PFunctor.Slice.Functor
 
 /-- Permitted axioms for a declaration in module `mod`, given the
 allowlist `allowed`: the standard set, plus `Classical.choice` exactly
