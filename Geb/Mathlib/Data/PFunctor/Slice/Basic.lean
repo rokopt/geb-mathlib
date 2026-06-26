@@ -71,3 +71,20 @@ structure SlicePFunctor (dom : Type uD) (cod : Type uC) : Type (max (uA + 1) (uB
   t : toPFunctor.A → cod
 
 attribute [ext] SliceDomPFunctor SlicePFunctor
+
+namespace SliceDomPFunctor
+
+/-- A position assignment `v : F.B a → X` is compatible with a base map
+`p : X → dom` when, as functions `F.B a → dom`, `p ∘ v` equals the
+constraint leg restricted to shape `a`. Pointwise: `p (v b) = s ⟨a, b⟩`. -/
+def Compatible {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
+    (p : X → dom) (a : F.A) (v : F.B a → X) : Prop :=
+  p ∘ v = F.s ∘ Sigma.mk a
+
+/-- `Compatible` stated pointwise. -/
+theorem compatible_iff {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+    {X : Type uX} (p : X → dom) (a : F.A) (v : F.B a → X) :
+    F.Compatible p a v ↔ ∀ b, p (v b) = F.s ⟨a, b⟩ :=
+  funext_iff
+
+end SliceDomPFunctor

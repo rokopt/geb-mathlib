@@ -27,3 +27,7 @@ def testSlice : SlicePFunctor Bool Unit where
 
 example : testSlice.s ⟨(), true⟩ = true := rfl
 example : testSlice.t () = () := rfl
+
+example (X : Type) (p : X → Bool) (v : Bool → X) :
+    testSlice.Compatible p () v ↔ ∀ b, p (v b) = b :=
+  testSlice.compatible_iff p () v
