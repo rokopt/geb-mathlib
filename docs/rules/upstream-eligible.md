@@ -71,19 +71,25 @@ upstream subtree's extractability is independent of the other
 
 ## Subtree import rules
 
-Each upstream-eligible subtree has an allowed-import list and a
-self-prefix that must not appear outside `^import` lines:
+Each upstream-eligible subtree has an allowed-import list and one or
+more self-prefixes that must not appear outside `^import` lines. A
+test root mirrors its source root: it additionally imports its own
+`GebTests.<subtree>.*` siblings, and forbids leakage of both the
+source self-prefix and the test self-prefix. Source roots cannot
+import test modules.
 
-| Subtree | Allowed imports | Self-prefix |
+| Subtree | Allowed imports | Self-prefixes (no leakage) |
 | --- | --- | --- |
-| `Geb/Mathlib/` (and tests) | `Mathlib.*`, `Geb.Mathlib.*` | `Geb.Mathlib.` |
-| `Geb/Cslib/` (and tests) | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*` | `Geb.Cslib.` |
+| `Geb/Mathlib/` | `Mathlib.*`, `Geb.Mathlib.*` | `Geb.Mathlib.` |
+| `GebTests/Mathlib/` | `Mathlib.*`, `Geb.Mathlib.*`, `GebTests.Mathlib.*` | `Geb.Mathlib.`, `GebTests.Mathlib.` |
+| `Geb/Cslib/` | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*` | `Geb.Cslib.` |
+| `GebTests/Cslib/` | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*`, `GebTests.Cslib.*` | `Geb.Cslib.`, `GebTests.Cslib.` |
 
 Bare umbrella imports (`import Mathlib`, `import Cslib`) are
 forbidden — extraction requires specific module imports.
 
-The self-prefix appears **only** in `^import` lines that
-reference siblings in the same subtree. Do NOT use the prefix in:
+A self-prefix appears **only** in `^import` lines that
+reference siblings in the same subtree. Do NOT use a self-prefix in:
 
 - namespace declarations
   (`namespace Computability.Primrec`,

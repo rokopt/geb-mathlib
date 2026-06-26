@@ -242,6 +242,94 @@ import Mathlib.Algebra.Group.Basic
 EOF
 assert_case "module with shake annotation" 0 "clean (1 file(s) checked)"
 
+# Case 20: GebTests/Mathlib importing a GebTests.Mathlib.* sibling.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/Index.lean" <<'EOF'
+module
+
+import GebTests.Mathlib.Sub
+EOF
+assert_case "GebTests/Mathlib test-sibling import" 0 "clean (1 file(s) checked)"
+
+# Case 21: Geb/Mathlib (source) importing a GebTests.Mathlib.* module.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/Bad.lean" <<'EOF'
+module
+
+import GebTests.Mathlib.Foo
+EOF
+assert_case "Geb/Mathlib forbidding GebTests import" 1 \
+  "forbidden import 'import GebTests.Mathlib.Foo'"
+
+# Case 22: GebTests/Mathlib leaking the test self-prefix.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/Leak.lean" <<'EOF'
+module
+
+import GebTests.Mathlib.Sub
+
+def GebTests.Mathlib.foo : Nat := 0
+EOF
+assert_case "GebTests/Mathlib test self-prefix leakage" 1 \
+  "'GebTests.Mathlib.' outside ^import line"
+
+# Case 23: source self-prefix still binds GebTests/Mathlib bodies.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/Leak2.lean" <<'EOF'
+module
+
+import Geb.Mathlib.Foo
+
+def Geb.Mathlib.foo : Nat := 0
+EOF
+assert_case "GebTests/Mathlib source-prefix leakage binds tests" 1 \
+  "'Geb.Mathlib.' outside ^import line"
+
+# Case 24: GebTests/Cslib importing a GebTests.Cslib.* sibling.
+setup_empty
+cat > "$test_dir/GebTests/Cslib/Index.lean" <<'EOF'
+module
+
+import Cslib.Init
+import GebTests.Cslib.Sub
+EOF
+assert_case "GebTests/Cslib test-sibling import" 0 "clean (1 file(s) checked)"
+
+# Case 25: Geb/Cslib (source) importing a GebTests.Cslib.* module.
+setup_empty
+cat > "$test_dir/Geb/Cslib/Bad.lean" <<'EOF'
+module
+
+import Cslib.Init
+import GebTests.Cslib.Foo
+EOF
+assert_case "Geb/Cslib forbidding GebTests import" 1 \
+  "forbidden import 'import GebTests.Cslib.Foo'"
+
+# Case 26: GebTests/Cslib leaking the test self-prefix.
+setup_empty
+cat > "$test_dir/GebTests/Cslib/Leak.lean" <<'EOF'
+module
+
+import Cslib.Init
+
+def GebTests.Cslib.foo : Nat := 0
+EOF
+assert_case "GebTests/Cslib test self-prefix leakage" 1 \
+  "'GebTests.Cslib.' outside ^import line"
+
+# Case 27: source self-prefix still binds GebTests/Cslib bodies.
+setup_empty
+cat > "$test_dir/GebTests/Cslib/Leak2.lean" <<'EOF'
+module
+
+import Cslib.Init
+
+def Geb.Cslib.foo : Nat := 0
+EOF
+assert_case "GebTests/Cslib source-prefix leakage binds tests" 1 \
+  "'Geb.Cslib.' outside ^import line"
+
 echo ""
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"
