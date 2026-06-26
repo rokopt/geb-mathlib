@@ -69,8 +69,8 @@ Run by `scripts/pre-push.sh`:
     modules listed in `GebMeta.classicalAllowedModules`
     additionally permit `Classical.choice` (and only that).
     `scripts/tests/test-axiom-linter.sh` smoke-tests the linter.
-12. (PR-candidate) reminder about no-LLM-text rule for PR
-    descriptions; affirmative confirmation required.
+12. (PR-candidate) informational reminder about the no-LLM-text
+    rule for PR descriptions and line-by-line review.
 13. (Lean-content) `lean4:golf` ran on changed proofs;
     `lean4:review` ran on the diff.
 14. (PR-candidate) `pr-review-toolkit:review-pr` ran.
