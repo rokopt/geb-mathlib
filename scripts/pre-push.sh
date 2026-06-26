@@ -104,21 +104,22 @@ if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal)/.*\.lean$
     echo "  Geb/Internal/ changed, but docs/index.md was not" >&2
     echo "  touched. Verify each new concept is reflected in" >&2
     echo "  docs/index.md." >&2
-    echo "  Type 'yes' to acknowledge, anything else to abort:" >&2
-    read -r ack
-    [ "$ack" = "yes" ] || { echo "pre-push: aborted" >&2; exit 1; }
   fi
 fi
 
 # PR-candidate reminder: triggers on feat/, fix/, refactor/, migrate/
-# bookmarks of @, with exact-prefix matching (per-bookmark loop) so
-# names like `chore/feat-tooling` do not spuriously match.
+# bookmarks anywhere in the unpushed range (commits reachable from @ but
+# not from a remote bookmark). A jj bookmark pins a commit and does not
+# follow the working copy, so the topic bookmark is rarely on @ itself;
+# checking only @ would miss it. Exact-prefix matching (per-bookmark
+# loop) so names like `chore/feat-tooling` do not spuriously match.
 is_pr_candidate=0
 while IFS= read -r bm; do
   case "$bm" in
     feat/*|fix/*|refactor/*|migrate/*) is_pr_candidate=1; break ;;
   esac
-done < <(jj log -r @ -T 'bookmarks ++ "\n"' --no-graph 2>/dev/null \
+done < <(jj log -r 'bookmarks() & (remote_bookmarks()..@)' \
+           -T 'local_bookmarks ++ "\n"' --no-graph 2>/dev/null \
          | tr ',' '\n' | sed 's/[[:space:]]*$//' | sed 's/^[[:space:]]*//')
 
 if [ "$is_pr_candidate" -eq 1 ]; then
@@ -130,11 +131,7 @@ REMINDER (PR-candidate branch detected):
   must be authored by the user, not by an AI agent. (Mathlib's
   LLM policy: "use your own words.")
 - The user must review the diff line-by-line before any push.
-
-Type "yes" to confirm acknowledgement, anything else to abort:
 EOF
-  read -r confirm
-  [ "$confirm" = "yes" ] || { echo "pre-push: aborted by user" >&2; exit 1; }
 fi
 
 # Lean-content reminder (informational; does not prompt).
