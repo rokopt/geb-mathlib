@@ -293,7 +293,28 @@ rationale.
 - **Factor out structure components into separate definitions.**
   Makes type signatures explicit.
 - **Universe-polymorphic.** Make universe levels as polymorphic
-  as compiles.
+  as compiles. A declaration's type should be maximally
+  polymorphic while remaining readable and free of auto-bound
+  (`u_1`-style) universe variables; the two bullets below cover
+  the cases that violate this.
+- **Ascribe a structure's result sort.** Lean synthesises a
+  structure's universe field-by-field into a left-nested `max`
+  (e.g. `Type (max (max (uA + 1) (uB + 1)) uD)`). An explicit
+  result ascription replaces it with the written, flat form
+  `Type (max (uA + 1) (uB + 1) uD)`. The ascription precedes
+  `extends` in current syntax:
+  `structure S (..) : Type .. extends P where`. A `def` result
+  type elaborates flat already and needs no ascription.
+- **Pin parent universes in `extends`.** `extends Parent dom`
+  leaves the parent's remaining universe parameters
+  unconstrained, so the elaborator auto-binds fresh `u_1`-style
+  variables; `autoImplicit false` does not catch this, since the
+  levels come from the parent's polymorphism, not an unbound
+  identifier. Write `extends Parent.{uA, uB, uD} dom` to bind
+  them to declared names. Explicit `.{..}` arguments elsewhere
+  (`(F : Parent.{uA, uB} dom)`) never leak. Hover preserves
+  declared names, so it reveals leaks that `#check` (which
+  renames every level to `u_N`) hides.
 - **Check for unused `universe` / `variable` declarations** after
   editing files that introduce or modify them; remove unused
   ones.
