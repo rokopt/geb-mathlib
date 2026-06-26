@@ -346,11 +346,11 @@ regenerates `integration` as in the mathlib bump procedure.
 ## Markdownlint discipline
 
 Every Markdown document passes `markdownlint-cli2` against
-`.markdownlint-cli2.jsonc` (shared with VSCode extension).
-`.remember/` is intentionally not excluded; non-compliant remember
-output is edited locally. The discipline keeps documentation
-uniformly readable; sharing the config with VSCode means the
-editor catches violations as we type.
+`.markdownlint-cli2.jsonc` (shared with VSCode extension). The
+discipline keeps documentation uniformly readable; sharing the
+config with VSCode means the editor catches violations as we
+type. Tool-emitted Markdown is held to the same standard and
+normalized by the process that produces it.
 
 ## Use of AI in upstream-eligible code
 

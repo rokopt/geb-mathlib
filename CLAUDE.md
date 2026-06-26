@@ -28,10 +28,15 @@ respectively; the rules below are the Claude-specific additions.
   `scripts/hooks/block-mutating-git.sh` is an allow-list of read-only
   forms; mutating forms (and unknown forms) trigger a permission
   prompt. Use `jj` for state-mutating operations.
-- `.remember/*.md` must be markdownlint-clean; clean up after each
-  `remember`-skill invocation (the plugin emits non-clean markdown).
-  Rationale and operational details: see `docs/process.md`
-  § Markdownlint discipline.
+- `.remember/*.md` must be markdownlint-clean. The Claude-specific
+  `remember` plugin emits non-compliant markdown, so a `Stop` hook
+  (`scripts/hooks/clean-remember.sh`) normalizes the logs
+  automatically. The plugin keeps `now.md` as a live buffer the
+  hook can miss, so `.remember/` can still be dirty at the next
+  session. When `markdownlint-cli2 '**/*.md'` (pre-push checklist
+  item 10) or the VSCode extension flags a `.remember/` file,
+  re-run the normalizer (`scripts/hooks/clean-remember.sh`); do
+  not hand-edit the logs.
 
 ## Phase-driven workflow
 
