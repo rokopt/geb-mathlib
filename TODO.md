@@ -5,7 +5,7 @@
 
 - [In progress](#in-progress)
 - [Next up](#next-up)
-  - [Begin first mathematical workstream brainstorming](#begin-first-mathematical-workstream-brainstorming)
+  - [Extend slice polynomial functors to presheaf categories](#extend-slice-polynomial-functors-to-presheaf-categories)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -19,20 +19,28 @@ removed; content merged into `docs/index.md`.
 
 ## Next up
 
-### Begin first mathematical workstream brainstorming
+### Extend slice polynomial functors to presheaf categories
 
-The next session opens a fresh brainstorming workstream for the
-first mathematical / programming-language work.
+Extend the polynomial functors between slice categories
+(`Geb/Mathlib/Data/PFunctor/Slice/`) to polynomial functors
+between presheaf categories.
 
 ## Triggers (do when condition fires)
 
+- **Slice polynomial functor natural isomorphism**: when a
+  constructive (computable) `Type`-is-locally-cartesian-closed
+  structure is available, in mathlib or built here, establish the
+  natural isomorphism between `SlicePFunctor.functor` and the
+  categorical composite `Σ_t ∘ Π_f ∘ Δ_s`.
 - **Update `Authors:` lines as content authors arrive**: every
   `.lean` file ships with `Authors: The geb-mathlib contributors`.
   When a contributor authors substantive content in a file,
   update that file's `Authors:` line to credit them by name.
 - **Adopt `leanprover-community/upstreaming-dashboard-action`**:
-  when `Geb/Mathlib/` has substantive content for the dashboard
-  to inspect, add the action to CI plus a Pages-published
+  when we judge we have enough novel and interesting content that
+  members of the mathlib community would likely want to be made
+  aware of the project — a standing question, revisited as content
+  grows. Then add the action to CI plus a Pages-published
   dashboard following FLT's pattern.
 - **`downstream-reports` registration**: a manual periodic
   checkpoint by the user. Trigger: "do we have enough substantive

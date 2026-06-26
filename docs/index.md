@@ -45,6 +45,4 @@ import-direction rules above are enforced by
   `CategoryTheory.Functor (Over dom) (Over cod)` (`domFunctor`,
   `functor`) via `Functor.toOver`; that module is listed in
   `GebMeta.classicalAllowedModules` because mathlib's `Over` is
-  `Classical.choice`-dependent at the type level. A natural
-  isomorphism to the categorical composite `Σ_t ∘ Π_f ∘ Δ_s` is a
-  planned follow-on increment.
+  `Classical.choice`-dependent at the type level.
