@@ -87,4 +87,16 @@ theorem compatible_iff {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     F.Compatible p a v ↔ ∀ b, p (v b) = F.s ⟨a, b⟩ :=
   funext_iff
 
+/-- Build a `SliceDomPFunctor` from the dependently-curried constraint
+leg. -/
+@[expose] def ofCurried (P : PFunctor.{uA, uB}) (dom : Type uD)
+    (sc : (a : P.A) → P.B a → dom) : SliceDomPFunctor dom where
+  toPFunctor := P
+  s := fun x => sc x.1 x.2
+
+/-- The constraint leg in dependently-curried form. -/
+@[expose] def sCurried {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) (a : F.A)
+    (b : F.B a) : dom :=
+  F.s ⟨a, b⟩
+
 end SliceDomPFunctor

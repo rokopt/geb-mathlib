@@ -31,3 +31,7 @@ example : testSlice.t () = () := rfl
 example (X : Type) (p : X → Bool) (v : Bool → X) :
     testSlice.Compatible p () v ↔ ∀ b, p (v b) = b :=
   testSlice.compatible_iff p () v
+
+example (P : PFunctor.{0, 0}) (sc : (a : P.A) → P.B a → Bool) (a : P.A)
+    (b : P.B a) : (SliceDomPFunctor.ofCurried P Bool sc).sCurried a b = sc a b :=
+  rfl
