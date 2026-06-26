@@ -6,15 +6,23 @@
 #
 # Each upstream-eligible subtree has an allowed-import list and a
 # self-prefix that must not appear outside import lines. Files in
-# Geb/Cslib/ (and tests) additionally must import `Cslib.Init` per
-# CSLib's `checkInitImports` requirement. Every upstream-eligible
+# Geb/Cslib/ and GebTests/Cslib/ additionally must import `Cslib.Init`
+# per CSLib's `checkInitImports` requirement. Every upstream-eligible
 # `.lean` file must use Lean 4's module system (start with the
 # `module` keyword), since `lake shake` minimised-imports
 # enforcement only operates on module-form files.
 #
-#   Geb/Mathlib/, GebTests/Mathlib/  →  Mathlib.*, Geb.Mathlib.*
-#   Geb/Cslib/,   GebTests/Cslib/    →  Mathlib.*, Cslib.*, Geb.Cslib.*
-#                                       (plus mandatory `import Cslib.Init`)
+#   Geb/Mathlib/       →  Mathlib.*, Geb.Mathlib.*
+#   GebTests/Mathlib/  →  Mathlib.*, Geb.Mathlib.*, GebTests.Mathlib.*
+#   Geb/Cslib/         →  Mathlib.*, Cslib.*, Geb.Cslib.*
+#   GebTests/Cslib/    →  Mathlib.*, Cslib.*, Geb.Cslib.*, GebTests.Cslib.*
+#                         (plus mandatory `import Cslib.Init`)
+#
+# Test roots additionally permit their own `GebTests.<subtree>.*`
+# siblings (mirroring source self-imports); source roots cannot import
+# test modules. Both the source self-prefix (`Geb.<subtree>.`) and the
+# test self-prefix (`GebTests.<subtree>.`) must not appear outside
+# import lines in test files.
 #
 # Bare umbrella imports (`import Mathlib`, `import Cslib`,
 # whether plain or `public import` form) are forbidden in
@@ -32,19 +40,26 @@ set -euo pipefail
 errors=0
 total=0
 
-# check_subtree <leakage-prefix> <required-init> <find-root>... -- <allowed-prefix>...
+# check_subtree <leakage-prefix>... -- <required-init> <find-root>... -- <allowed-prefix>...
 #
+# Two `--` separators: the first terminates the leakage-prefix list
+# (each such prefix must not appear outside import lines), the second
+# separates the find-roots from the allowed-import prefixes.
 # <required-init> is the module path of an init file every file
 # in this subtree must import (e.g., "Cslib.Init"), or "" for
 # subtrees with no such requirement.
 check_subtree() {
-  local leakage_prefix="$1"; shift
+  local leakage_prefixes=()
+  while [[ "$1" != "--" ]]; do
+    leakage_prefixes+=("$1"); shift
+  done
+  shift                      # drop first --
   local required_init="$1"; shift
   local find_roots=()
   while [[ "$1" != "--" ]]; do
     find_roots+=("$1"); shift
   done
-  shift                      # drop --
+  shift                      # drop second --
   local allowed_prefixes=("$@")
 
   local allowed_str=""
@@ -57,8 +72,7 @@ check_subtree() {
   local files
   mapfile -t files < <(find "${find_roots[@]}" -type f -name '*.lean' 2>/dev/null || true)
 
-  local f line canonical ok ln
-  local prefix_re="${leakage_prefix//./\\.}"
+  local f line canonical ok ln lp prefix_re
   for f in "${files[@]}"; do
     total=$((total + 1))
 
@@ -111,19 +125,35 @@ check_subtree() {
       fi
     fi
 
-    # Rule 2: no-prefix-leakage. `public import` lines count as
-    # imports for the exclusion regex.
-    if grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' >/dev/null; then
-      grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' | while IFS= read -r ln; do
-        echo "$f:$ln: '${leakage_prefix}' outside ^import line" >&2
-      done
-      errors=$((errors + 1))
-    fi
+    # Rule 2: no-prefix-leakage, for each leakage prefix. A test
+    # subtree forbids both the source self-prefix (e.g. `Geb.Mathlib.`)
+    # and the test self-prefix (e.g. `GebTests.Mathlib.`) outside
+    # import lines. `public import` lines count as imports for the
+    # exclusion regex.
+    for lp in "${leakage_prefixes[@]}"; do
+      prefix_re="${lp//./\\.}"
+      if grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' >/dev/null; then
+        grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' | while IFS= read -r ln; do
+          echo "$f:$ln: '${lp}' outside ^import line" >&2
+        done
+        errors=$((errors + 1))
+      fi
+    done
   done
 }
 
-check_subtree "Geb.Mathlib." "" Geb/Mathlib GebTests/Mathlib -- "Mathlib." "Geb.Mathlib."
-check_subtree "Geb.Cslib." "Cslib.Init" Geb/Cslib GebTests/Cslib -- "Mathlib." "Cslib." "Geb.Cslib."
+# Source roots: cannot import test modules (the test prefix is absent
+# from the allowed list). Test roots additionally allow their own
+# `GebTests.<subtree>.*` siblings, and forbid leakage of both the
+# source and the test self-prefix.
+check_subtree "Geb.Mathlib." -- "" Geb/Mathlib \
+  -- "Mathlib." "Geb.Mathlib."
+check_subtree "Geb.Mathlib." "GebTests.Mathlib." -- "" GebTests/Mathlib \
+  -- "Mathlib." "Geb.Mathlib." "GebTests.Mathlib."
+check_subtree "Geb.Cslib." -- "Cslib.Init" Geb/Cslib \
+  -- "Mathlib." "Cslib." "Geb.Cslib."
+check_subtree "Geb.Cslib." "GebTests.Cslib." -- "Cslib.Init" GebTests/Cslib \
+  -- "Mathlib." "Cslib." "Geb.Cslib." "GebTests.Cslib."
 
 if [ "$errors" -gt 0 ]; then
   echo "lint-imports.sh: $errors violation(s) found" >&2
