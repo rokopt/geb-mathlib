@@ -46,3 +46,14 @@ import-direction rules above are enforced by
   `functor`) via `Functor.toOver`; that module is listed in
   `GebMeta.classicalAllowedModules` because mathlib's `Over` is
   `Classical.choice`-dependent at the type level.
+- `Geb/Mathlib/Data/PFunctor/Presheaf/` — presheaf polynomial functors
+  (parametric-right-adjoint functors `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)`),
+  built as a restriction of `SlicePFunctor`. The per-layer structure
+  mirrors the slice pattern: a `…Data` record bundles the operations, a
+  `Prop`-valued `…Data.IsFunctorial` record carries the named law
+  conditions, and the bundle wraps both. `Presheaf/Basic.lean` is the
+  constructive core (`PresheafDomPFunctor`, `PresheafPFunctor`,
+  `obj`/`map`, `objPresheaf` assembling the output as a genuine
+  presheaf), `Classical.choice`-free. `Presheaf/Functor.lean` packages
+  the result as a categorical functor (`domFunctor`, `functor`); that
+  module is listed in `GebMeta.classicalAllowedModules`.

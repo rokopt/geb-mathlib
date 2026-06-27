@@ -5,7 +5,9 @@
 
 - [In progress](#in-progress)
 - [Next up](#next-up)
-  - [Extend slice polynomial functors to presheaf categories](#extend-slice-polynomial-functors-to-presheaf-categories)
+  - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
+  - [Slice and presheaf W-types](#slice-and-presheaf-w-types)
+  - [Free monads over the cslib monad construction](#free-monads-over-the-cslib-monad-construction)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -19,11 +21,20 @@ removed; content merged into `docs/index.md`.
 
 ## Next up
 
-### Extend slice polynomial functors to presheaf categories
+### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
-Extend the polynomial functors between slice categories
-(`Geb/Mathlib/Data/PFunctor/Slice/`) to polynomial functors
-between presheaf categories.
+Establish the natural isomorphism confirming that `PresheafPFunctor.functor`
+is the parametric right adjoint determined by its generic data `(T1, E_T)`.
+
+### Slice and presheaf W-types
+
+Define the initial algebras (W-types) for slice and presheaf polynomial
+functors as subtypes of mathlib's `PFunctor.W`.
+
+### Free monads over the cslib monad construction
+
+Build free monads over presheaf polynomial functors using cslib's monad
+construction.
 
 ## Triggers (do when condition fires)
 
