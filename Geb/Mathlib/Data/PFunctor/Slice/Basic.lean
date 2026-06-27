@@ -108,6 +108,18 @@ leg. -/
     (b : F.B a) : dom :=
   F.s ⟨a, b⟩
 
+/-- The constraint-leg condition on a position of shape `a`: that its
+image under `sCurried a` is `i`. Point-free as `(· = i) ∘ sCurried a`. -/
+@[expose] def PositionOver {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+    (a : F.A) (i : dom) : F.B a → Prop :=
+  (· = i) ∘ F.sCurried a
+
+/-- The positions of shape `a` lying over the base point `i`: the fibre
+of `sCurried a` over `i`, the object-map of shape `a`'s arity presheaf. -/
+@[expose] def Position {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+    (a : F.A) (i : dom) : Type uB :=
+  Subtype (F.PositionOver a i)
+
 /-- Value of the domain-restricted functor on `(X, p)`: the
 compatibility subtype of the `PFunctor` interpretation. -/
 @[expose] def obj {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
