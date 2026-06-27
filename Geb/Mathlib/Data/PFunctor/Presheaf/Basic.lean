@@ -53,6 +53,13 @@ fibres contravariantly.
   `Classical.choice`-free `Functor` value with `map_id` / `map_comp` discharged
   from `isFunctorial`.
 
+## Main statements
+
+* `PresheafDomPFunctorData.map_id` / `map_comp` — functoriality of the
+  domain-restricted action in the input presheaf.
+* `PresheafPFunctor.map_objRestr` — the domain map is natural with respect
+  to the output presheaf's restriction maps.
+
 ## Implementation notes
 
 `PresheafDomPFunctorData` uses `extends SliceDomPFunctor.{uA, uB} I` with
@@ -99,7 +106,7 @@ set_option linter.checkUnivs false in
 @[nolint checkUnivs]
 structure PresheafDomPFunctorData (I : Type uI) [Category I] : Type _
     extends SliceDomPFunctor.{uA, uB} I where
-  /-- The arity-presheaf restriction: for `f : i' ⟶ i`, reindex
+  /-- The arity-presheaf restriction: for a morphism `i' ⟶ i`, reindex
   positions of shape `a` over `i` to positions over `i'`. -/
   restr : ∀ (a : toPFunctor.A) ⦃i i' : I⦄, (i' ⟶ i) →
       toSliceDomPFunctor.Position a i → toSliceDomPFunctor.Position a i'
