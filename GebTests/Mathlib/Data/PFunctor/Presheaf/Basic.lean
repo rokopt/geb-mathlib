@@ -149,3 +149,17 @@ example (Z : (Fin 2)ᵒᵖ ⥤ Type) :
         presheafWitness.t z.1.1.1 = (0 : Fin 2) } :=
   rfl
 
+-- `map` of a composite transformation acts as the composite of the maps.
+example {I : Type} [Category I] (F : PresheafDomPFunctor I) {Z Z' Z'' : Iᵒᵖ ⥤ Type}
+    (α : NatTrans Z Z') (β : NatTrans Z' Z'') :
+    F.map { app := fun i => α.app i ≫ β.app i, naturality := fun _ _ g =>
+        (by rw [← Category.assoc, α.naturality, Category.assoc, β.naturality,
+          ← Category.assoc]) } =
+      F.map β ∘ F.map α := F.map_comp α β
+
+-- The reindex identity and composition laws project from `PresheafPFunctor.isFunctorial`.
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
+    F.ReindexId F.isFunctorial.tagRestr_id := F.isFunctorial.reindex_id
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
+    F.ReindexComp F.isFunctorial.tagRestr_comp := F.isFunctorial.reindex_comp
+
