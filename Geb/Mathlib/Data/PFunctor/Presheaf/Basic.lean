@@ -107,11 +107,11 @@ structure PresheafDomPFunctorData (I : Type uI) [Category I] : Type _
 namespace PresheafDomPFunctorData
 
 /-- `restr` preserves identities. -/
-def RestrId {I : Type uI} [Category I] (F : PresheafDomPFunctorData I) : Prop :=
+@[expose] def RestrId {I : Type uI} [Category I] (F : PresheafDomPFunctorData I) : Prop :=
   ∀ (a : F.A) (i : I), F.restr a (𝟙 i) = id
 
 /-- `restr` is contravariant in `I`. -/
-def RestrComp {I : Type uI} [Category I] (F : PresheafDomPFunctorData I) : Prop :=
+@[expose] def RestrComp {I : Type uI} [Category I] (F : PresheafDomPFunctorData I) : Prop :=
   ∀ (a : F.A) ⦃i i' i'' : I⦄ (f : i' ⟶ i) (g : i'' ⟶ i'),
       F.restr a (g ≫ f) = F.restr a g ∘ F.restr a f
 
@@ -251,12 +251,12 @@ add_decl_doc PresheafPFunctorData.toSlicePFunctor
 namespace PresheafPFunctorData
 
 /-- `tagRestr` preserves identities. -/
-def TagRestrId {I : Type uI} [Category I] {J : Type uJ} [Category J]
+@[expose] def TagRestrId {I : Type uI} [Category I] {J : Type uJ} [Category J]
     (F : PresheafPFunctorData I J) : Prop :=
   ∀ (j : J), F.tagRestr (𝟙 j) = id
 
 /-- `tagRestr` is contravariant in `J`. -/
-def TagRestrComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
+@[expose] def TagRestrComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
     (F : PresheafPFunctorData I J) : Prop :=
   ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j'),
       F.tagRestr (h ≫ g) = F.tagRestr h ∘ F.tagRestr g
@@ -265,7 +265,7 @@ def TagRestrComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
 `E_T(tagRestr g a) ⟶ E_T(a)`): for `f : i' ⟶ i`,
 `restr a.1 f ∘ reindex g a = reindex g a ∘ restr (tagRestr g a).1 f`.
 Ordinary fibre maps only; no `tagRestr` transport. -/
-def ReindexNaturality {I : Type uI} [Category I] {J : Type uJ} [Category J]
+@[expose] def ReindexNaturality {I : Type uI} [Category I] {J : Type uJ} [Category J]
     (F : PresheafPFunctorData I J) : Prop :=
   ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) ⦃i i' : I⦄ (f : i' ⟶ i),
     F.restr a.1 f ∘ F.reindex g a (i := i) =
@@ -276,7 +276,7 @@ along `TagRestrId` at `j` (`tagRestr (𝟙 j) a = a`). The transport is the
 `cast` of `b` along `congrArg (fun s => Position s.1 i) (congrFun (hti j) a)`.
 Parameterized on the identity law `hti` because that source-type equality is
 not definitional. -/
-def ReindexId {I : Type uI} [Category I] {J : Type uJ} [Category J]
+@[expose] def ReindexId {I : Type uI} [Category I] {J : Type uJ} [Category J]
     (F : PresheafPFunctorData I J) (hti : F.TagRestrId) : Prop :=
   ∀ ⦃j : J⦄ (a : F.Shape j) ⦃i : I⦄ (b : F.Position (F.tagRestr (𝟙 j) a).1 i),
     F.reindex (𝟙 j) a b =
@@ -289,7 +289,7 @@ def ReindexId {I : Type uI} [Category I] {J : Type uJ} [Category J]
 of `b` along `congrArg (fun s => Position s.1 i) (congrFun (htc g h) a)`.
 Parameterized on the composition law `htc` because that source-type equality is
 not definitional. -/
-def ReindexComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
+@[expose] def ReindexComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
     (F : PresheafPFunctorData I J) (htc : F.TagRestrComp) : Prop :=
   ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j') (a : F.Shape j) ⦃i : I⦄
     (b : F.Position (F.tagRestr (h ≫ g) a).1 i),
