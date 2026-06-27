@@ -15,7 +15,7 @@ Packages the constructive core (`Presheaf.Basic`) as a
 functor-category instance and the morphism-promotion notation `↾` are
 `Classical.choice`-dependent, so this categorical packaging is kept in a
 separate module from the choice-free core; the module
-`Geb.Mathlib.Data.PFunctor.Presheaf.Functor` is on
+`Data.PFunctor.Presheaf.Functor` is on
 `GebMeta.classicalAllowedModules`.
 
 ## Main definitions
