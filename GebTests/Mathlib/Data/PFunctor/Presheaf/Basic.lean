@@ -48,6 +48,15 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     (F.objPresheaf Z).obj ⟨j⟩ =
       { z : F.toPresheafDomPFunctorData.obj Z // F.t z.1.1.1 = j } := rfl
 
+-- The dom morphism map is natural with respect to `objPresheaf`'s
+-- `J`-restriction: `map α` commutes with `objRestr g`, preserving the `t`-tag.
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
+    {Z Z' : Iᵒᵖ ⥤ Type} (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
+    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.1.1.1 = j) :
+    F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
+      F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
+  F.map_objRestr α g x htag
+
 -- The preorder category on `Fin 2` has a genuine non-identity morphism.
 example : ((0 : Fin 2) ⟶ 1) := homOfLE (by decide)
 

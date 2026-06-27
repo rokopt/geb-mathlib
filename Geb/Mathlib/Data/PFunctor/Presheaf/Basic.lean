@@ -473,4 +473,19 @@ from `F.isFunctorial`. -/
     apply Subtype.ext
     exact F.objRestrElt_comp g.unop h.unop w.1.1 w.2 (F.tagRestr g.unop ⟨w.1.1.1.1, w.2⟩).2
 
+/-- Naturality of the dom morphism map with respect to `objPresheaf`'s
+`J`-restriction: for `α : NatTrans Z Z'`, the dom `map α` carries the fibre of
+`objPresheaf Z` over `j` into that of `objPresheaf Z'` (it preserves the
+`t`-tag, the shape being fixed by `SliceDomPFunctor.map_fst`) and commutes with
+the retag-and-reindex restriction `objRestr g`. The commutation is the
+interchange of the postcomposition with `α` (the morphism action) and the
+precomposition with `reindex g` (the restriction), needing no functor law. -/
+theorem map_objRestr {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctor I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
+    (α : CategoryTheory.NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
+    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.1.1.1 = j) :
+    F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
+      F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
+  Subtype.ext rfl
+
 end PresheafPFunctor
