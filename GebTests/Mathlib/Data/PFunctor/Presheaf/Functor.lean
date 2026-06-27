@@ -13,7 +13,7 @@ set_option linter.privateModule false
 # Tests for the presheaf-domain polynomial functor wrapper
 -/
 
-open CategoryTheory PresheafDomPFunctorData
+open CategoryTheory PresheafDomPFunctorData PresheafPFunctor
 
 -- The categorical object map is the choice-free `obj`.
 example {I : Type} [Category I] (F : PresheafDomPFunctorData I) (Z : Iᵒᵖ ⥤ Type) :
@@ -26,3 +26,8 @@ example {I : Type} [Category I] (F : PresheafDomPFunctorData I) {Z Z' : Iᵒᵖ 
     (h : Z ⟶ Z') :
     F.domFunctor.map h = ↾ F.map h :=
   rfl
+
+-- The presheaf-valued functor's object map is the choice-free `objPresheaf`.
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
+    (Z : Iᵒᵖ ⥤ Type) : F.functor.obj Z = F.objPresheaf Z :=
+  F.functor_obj Z
