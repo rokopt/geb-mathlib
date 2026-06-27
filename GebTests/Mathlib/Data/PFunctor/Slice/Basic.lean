@@ -95,3 +95,8 @@ example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :
     F.Position a i = { b : F.B a // F.s ⟨a, b⟩ = i } := rfl
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) (b : F.B a) :
     F.PositionOver a i b ↔ F.s ⟨a, b⟩ = i := Iff.rfl
+
+example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) :
+    F.Shape j = { a : F.A // F.t a = j } := rfl
+example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) (a : F.A) :
+    F.ShapeOver j a ↔ F.t a = j := Iff.rfl

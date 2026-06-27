@@ -32,6 +32,8 @@ categorical packaging is in the sibling `Slice.Functor` module.
   `obj` is the output object's structure map into `cod`, `map` the
   underlying function; `map_w` that it lies over `cod`, `map_id` /
   `map_comp` its functoriality.
+* `SlicePFunctor.ShapeOver` / `Shape` — the tag-leg condition and the
+  fibre of `t` over `j`, the object-map of the shape presheaf `T1`.
 
 ## Implementation notes
 
@@ -41,8 +43,9 @@ categorical packaging is in the sibling `Slice.Functor` module.
 reuses these — its carrier is `SliceDomPFunctor.obj` and its `map` the
 `SliceDomPFunctor` map — adding only the `t`-tag (`obj`) and the
 tag-compatibility (`map_w`); `map_id` / `map_comp` delegate to the
-domain-side ones. Both namespaces' `obj`, `map`, and
-`SliceDomPFunctor.ofCurried` / `sCurried` are `@[expose]` so the
+domain-side ones. Both namespaces' `obj`, `map`,
+`SliceDomPFunctor.ofCurried` / `sCurried`, and
+`SlicePFunctor.ShapeOver` / `Shape` are `@[expose]` so the
 wrapper and tests can unfold them across the module boundary.
 
 ## References
@@ -196,5 +199,17 @@ theorem map_comp {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD,
     (hf : q ∘ f = p) (hg : r ∘ g = q) :
     F.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) = F.map g hg ∘ F.map f hf :=
   F.toSliceDomPFunctor.map_comp f g hf hg
+
+/-- The tag-leg condition on a shape: that its image under `t` is `j`.
+Point-free as `(· = j) ∘ t`. -/
+@[expose] def ShapeOver {dom : Type uD} {cod : Type uC}
+    (F : SlicePFunctor.{uA, uB, uD, uC} dom cod) (j : cod) : F.A → Prop :=
+  (· = j) ∘ F.t
+
+/-- The shapes lying over `j`: the fibre of `t` over `j`, the object-map
+of the shape presheaf `T1`. -/
+@[expose] def Shape {dom : Type uD} {cod : Type uC}
+    (F : SlicePFunctor.{uA, uB, uD, uC} dom cod) (j : cod) : Type uA :=
+  Subtype (F.ShapeOver j)
 
 end SlicePFunctor
