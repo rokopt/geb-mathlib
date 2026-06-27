@@ -163,3 +163,37 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
     F.ReindexComp F.isFunctorial.tagRestr_comp := F.isFunctorial.reindex_comp
 
+/-- A concrete choice-free input presheaf: the constant presheaf on `(Fin 2)ᵒᵖ`
+at `PUnit`. Every fibre is `PUnit` and every restriction is the identity, so any
+position assignment over it is natural. Reducible so the `PUnit` fibre's
+`Subsingleton` instance resolves through `.obj`. -/
+@[reducible] private def constPUnit : (Fin 2)ᵒᵖ ⥤ Type where
+  obj _ := PUnit
+  map _ := 𝟙 _
+
+/-- A concrete element of `objPresheaf constPUnit`'s fibre over `1`: shape `1`
+(tagged over `1` since `t = id`) with the compatibility-forced assignment
+`b ↦ ⟨1 + b, ⟨⟩⟩` of positions to total-space elements. -/
+private def constFibreElt :
+    (presheafWitness.objPresheaf constPUnit).obj ⟨(1 : Fin 2)⟩ :=
+  ⟨⟨⟨⟨(1 : Fin 2), fun (b : Fin 2) => ⟨1 + b, ⟨⟩⟩⟩,
+      (presheafWitness.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun _ => rfl⟩,
+      fun _ _ _ _ => Subsingleton.elim _ _⟩,
+    rfl⟩
+
+-- `objPresheaf.map` along `h01.op` retags the shape `1` to `0` (the `tagRestr`
+-- action), end to end through `objRestr` / `objRestrElt`.
+example :
+    ((presheafWitness.objPresheaf constPUnit).map h01.op constFibreElt).1.1.1.1 =
+      (0 : Fin 2) := rfl
+
+-- `objPresheaf.map` reindexes the assignment: the retagged element sends position
+-- `b'` to a total-space element whose base index is `reindex`-and-compatibility
+-- determined (`b' + 1` under `reindex`, then `1 + (b' + 1) = b'`).
+example :
+    (((presheafWitness.objPresheaf constPUnit).map h01.op constFibreElt).1.1.1.2
+        (0 : Fin 2)).1 = (0 : Fin 2) := rfl
+example :
+    (((presheafWitness.objPresheaf constPUnit).map h01.op constFibreElt).1.1.1.2
+        (1 : Fin 2)).1 = (1 : Fin 2) := rfl
+
