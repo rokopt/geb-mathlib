@@ -127,6 +127,65 @@ of the slice object on the total-space projection `pZ Z`. -/
     (Z : Iᵒᵖ ⥤ Type uZ) : Type _ :=
   { x : F.toSliceDomPFunctor.obj (pZ Z) // F.IsNatural x }
 
+/-- A component of a natural transformation commutes with the reindexing
+`cast` along an equality of base points. -/
+private theorem app_cast {I : Type uI} [Category I] {Z Z' : Iᵒᵖ ⥤ Type uZ}
+    (α : CategoryTheory.NatTrans Z Z') {k i : I} (e : k = i) (z : Z.obj ⟨k⟩) :
+    cast (congrArg (fun k : I => Z'.obj ⟨k⟩) e) (α.app ⟨k⟩ z) =
+      α.app ⟨i⟩ (cast (congrArg (fun k : I => Z.obj ⟨k⟩) e) z) := by
+  cases e
+  rfl
+
+/-- The `Z'`-component the image under `α` of a slice element assigns to a
+position is `α.app` of the `Z`-component the original assigns to it. -/
+private theorem comp_map {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
+    (x : F.toSliceDomPFunctor.obj (pZ Z)) ⦃i : I⦄
+    (b : F.toSliceDomPFunctor.Position (F.toSliceDomPFunctor.map (p' := pZ Z')
+      (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x).1.1 i) :
+    F.comp (F.toSliceDomPFunctor.map (p' := pZ Z')
+      (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x) b =
+      α.app ⟨i⟩ (F.comp x b) :=
+  app_cast α (((F.compatible_iff (pZ Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2) _
+
+/-- Action on a morphism of input presheaves (the bare `NatTrans`, not
+the functor-category hom, to stay choice-free). -/
+@[expose] def map {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z') :
+    F.obj Z → F.obj Z' :=
+  fun x => ⟨F.toSliceDomPFunctor.map
+    (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x.1, by
+    intro i i' f b
+    rw [comp_map F α x.1, comp_map F α x.1]
+    refine (congrArg (fun w => α.app ⟨i'⟩ w) (x.2 f b)).trans ?_
+    simp only [← ConcreteCategory.comp_apply]
+    rw [α.naturality f.op]⟩
+
+/-- Functoriality in the input presheaf: the identity transformation acts as
+the identity. -/
+theorem map_id {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    (Z : Iᵒᵖ ⥤ Type uZ) :
+    F.map { app := fun i => 𝟙 (Z.obj i), naturality := fun _ _ _ => rfl } =
+      (id : F.obj Z → F.obj Z) := by
+  funext x
+  exact Subtype.ext (congrFun (F.toSliceDomPFunctor.map_id (pZ Z)) x.1)
+
+/-- Functoriality in the input presheaf: the vertical composite of
+transformations acts as the composite of the actions. -/
+theorem map_comp {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    {Z Z' Z'' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
+    (β : CategoryTheory.NatTrans Z' Z'') :
+    F.map { app := fun i => α.app i ≫ β.app i, naturality := fun _ _ g =>
+        (by rw [← Category.assoc, α.naturality, Category.assoc, β.naturality,
+          ← Category.assoc]) } =
+      F.map β ∘ F.map α := by
+  funext x
+  exact Subtype.ext (congrFun (F.toSliceDomPFunctor.map_comp (p := pZ Z) (q := pZ Z')
+    (r := pZ Z'')
+    (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩))
+    (fun p : Σ i : I, Z'.obj ⟨i⟩ => (⟨p.1, β.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z''.obj ⟨i⟩))
+    rfl rfl) x.1)
+
 end PresheafDomPFunctorData
 
 set_option linter.checkUnivs false in

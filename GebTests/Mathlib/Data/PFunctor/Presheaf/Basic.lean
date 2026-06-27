@@ -25,3 +25,10 @@ example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.RestrComp :=
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
     F.obj Z = { x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.pZ Z)
       // F.IsNatural x } := rfl
+
+-- `map` of the hand-built identity transformation is the identity, by
+-- `map_id`. The identity transformation is hand-built (not `NatTrans.id`)
+-- to stay choice-free.
+example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
+    F.map { app := fun i => 𝟙 (Z.obj i), naturality := fun _ _ _ => rfl } =
+      (id : F.obj Z → F.obj Z) := F.map_id Z
