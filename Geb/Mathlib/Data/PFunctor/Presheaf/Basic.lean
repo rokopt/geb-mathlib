@@ -37,6 +37,8 @@ fibres contravariantly.
 * `PresheafDomPFunctorData.IsNatural` — naturality of the position
   assignment with respect to `restr` and `Z.map`.
 * `PresheafDomPFunctorData.obj` — the functor's value on a presheaf `Z`.
+* `PresheafDomPFunctorData.map` — the action on morphisms of input presheaves
+  (the bare `NatTrans`, choice-free).
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
 * `PresheafPFunctorData` — the full operations: the dom operations and the
   tag leg, with the `J`-action `tagRestr` on shapes and the arity reindexing
@@ -63,7 +65,7 @@ fibres contravariantly.
 ## Implementation notes
 
 `PresheafDomPFunctorData` uses `extends SliceDomPFunctor.{uA, uB} I` with
-pinned universes (load-bearing for a later diamond via `PresheafDomPFunctor`
+pinned universes (load-bearing for a later diamond via `PresheafDomPFunctorData`
 and `SlicePFunctor`). The `linter.checkUnivs false` option and
 `@[nolint checkUnivs]` suppress the auto-bound morphism-universe warning
 that arises from `[Category I]`.
@@ -117,7 +119,7 @@ namespace PresheafDomPFunctorData
 @[expose] def RestrId {I : Type uI} [Category I] (F : PresheafDomPFunctorData I) : Prop :=
   ∀ (a : F.A) (i : I), F.restr a (𝟙 i) = id
 
-/-- `restr` is contravariant in `I`. -/
+/-- `restr` reverses composition: `restr a (g ≫ f) = restr a g ∘ restr a f`. -/
 @[expose] def RestrComp {I : Type uI} [Category I] (F : PresheafDomPFunctorData I) : Prop :=
   ∀ (a : F.A) ⦃i i' i'' : I⦄ (f : i' ⟶ i) (g : i'' ⟶ i'),
       F.restr a (g ≫ f) = F.restr a g ∘ F.restr a f
@@ -145,9 +147,9 @@ compatibility of `x` and the constraint condition on `b` to `Z.obj ⟨i⟩`. -/
   cast (congrArg (fun k : I => Z.obj ⟨k⟩)
     (((F.compatible_iff (pZ Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2)) (x.1.2 b.1).2
 
-/-- The position-assignment of `x` is a natural transformation `E_T(a) ⟶ Z`:
-for every `f : i' ⟶ i` and position `b` over `i`, the component assigned to
-`restr a f b` equals `Z.map f.op` applied to the component assigned to `b`. -/
+/-- The position-assignment of `x` is a natural transformation `E_T(a) ⟶ Z`,
+where `a := x.1.1`: for every `f : i' ⟶ i` and position `b` over `i`, the
+component assigned to `restr a f b` equals `Z.map f.op` applied to `comp x b`. -/
 @[expose] def IsNatural {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
     {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.obj (pZ Z)) : Prop :=
   ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (b : F.toSliceDomPFunctor.Position x.1.1 i),
@@ -262,7 +264,7 @@ namespace PresheafPFunctorData
     (F : PresheafPFunctorData I J) : Prop :=
   ∀ (j : J), F.tagRestr (𝟙 j) = id
 
-/-- `tagRestr` is contravariant in `J`. -/
+/-- `tagRestr` reverses composition: `tagRestr (h ≫ g) = tagRestr h ∘ tagRestr g`. -/
 @[expose] def TagRestrComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
     (F : PresheafPFunctorData I J) : Prop :=
   ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j'),
@@ -335,7 +337,7 @@ structure PresheafPFunctor (I : Type uI) [Category I]
   /-- Proof the operations are functorial. -/
   isFunctorial : toPresheafPFunctorData.IsFunctorial
 
-attribute [ext] PresheafPFunctorData PresheafPFunctorData.IsFunctorial
+attribute [ext] PresheafPFunctorData
   PresheafPFunctor
 
 namespace PresheafPFunctor

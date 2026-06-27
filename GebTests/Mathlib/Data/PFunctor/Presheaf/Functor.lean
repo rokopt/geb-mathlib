@@ -31,3 +31,4 @@ example {I : Type} [Category I] (F : PresheafDomPFunctorData I) {Z Z' : Iᵒᵖ 
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     (Z : Iᵒᵖ ⥤ Type) : F.functor.obj Z = F.objPresheaf Z :=
   F.functor_obj Z
+

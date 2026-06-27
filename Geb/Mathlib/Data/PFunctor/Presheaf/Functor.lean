@@ -12,11 +12,13 @@ public import Geb.Mathlib.Data.PFunctor.Presheaf.Basic
 
 Packages the constructive core (`Presheaf.Basic`) as a
 `CategoryTheory.Functor` on the presheaf category `Iᵒᵖ ⥤ Type`. The
-functor-category instance and the morphism-promotion notation `↾` are
-`Classical.choice`-dependent, so this categorical packaging is kept in a
-separate module from the choice-free core; the module
+functor-category packaging — constructing `CategoryTheory.Functor` objects
+over presheaf categories and discharging their laws — is
+`Classical.choice`-dependent, so this packaging is kept in a separate
+module from the choice-free core; the module
 `Data.PFunctor.Presheaf.Functor` is on
-`GebMeta.classicalAllowedModules`.
+`GebMeta.classicalAllowedModules`. The notation `↾` (`TypeCat.ofHom`) is
+choice-free: `objPresheaf` uses `↾` and is `{propext, Quot.sound}`.
 
 ## Main definitions
 

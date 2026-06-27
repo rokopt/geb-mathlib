@@ -44,8 +44,8 @@ reuses these — its carrier is `SliceDomPFunctor.obj` and its `map` the
 `SliceDomPFunctor` map — adding only the `t`-tag (`obj`) and the
 tag-compatibility (`map_w`); `map_id` / `map_comp` delegate to the
 domain-side ones. Both namespaces' `obj`, `map`,
-`SliceDomPFunctor.ofCurried` / `sCurried`, and
-`SlicePFunctor.ShapeOver` / `Shape` are `@[expose]` so the
+`SliceDomPFunctor.ofCurried` / `sCurried` / `PositionOver` / `Position`,
+and `SlicePFunctor.ShapeOver` / `Shape` are `@[expose]` so the
 wrapper and tests can unfold them across the module boundary.
 
 ## References

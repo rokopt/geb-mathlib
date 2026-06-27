@@ -71,7 +71,7 @@ private theorem fin2_add_idx (x i : Fin 2) : x + (i + x) = i := by omega
 `Position a i` is the singleton `{a + i}`, so `restr`, `tagRestr`, and
 `reindex` each pick out the unique element of the target fibre.
 `reindex` along the non-identity `0 ⟶ 1` retags shape `1` to shape `0` and
-moves the underlying position value by `+1` (it is not value-preserving). -/
+maps the underlying position value to `i + a.1` (here `1 = 0 + 1`). -/
 def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   A := Fin 2
   B := fun _ => Fin 2
@@ -148,3 +148,4 @@ example (Z : (Fin 2)ᵒᵖ ⥤ Type) :
       { z : presheafWitness.toPresheafDomPFunctorData.obj Z //
         presheafWitness.t z.1.1.1 = (0 : Fin 2) } :=
   rfl
+
