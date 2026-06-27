@@ -23,9 +23,9 @@ open CategoryTheory PresheafDomPFunctorData
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.RestrComp :=
   F.isFunctorial.restr_comp
 
--- `obj` is the `IsNatural` subtype of the slice object on `pZ Z`.
+-- `obj` is the `IsNatural` subtype of the slice object on `elemProj Z`.
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
-    F.obj Z = { x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.pZ Z)
+    F.obj Z = { x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)
       // F.IsNatural x } := rfl
 
 -- `map` of the hand-built identity transformation is the identity, by

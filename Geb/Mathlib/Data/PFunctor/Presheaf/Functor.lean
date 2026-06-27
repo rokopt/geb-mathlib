@@ -98,7 +98,7 @@ component over `j` is the dom `map α` restricted to the `t`-tagged fibre. Each
 component's naturality is `map_objRestr`; the functor laws come from the dom
 `map_id` / `map_comp`. -/
 @[expose] def functor {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctor.{uI, uJ, vI, vJ, uA, uB} I J) :
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     CategoryTheory.Functor (Iᵒᵖ ⥤ Type uZ) (Jᵒᵖ ⥤ Type (max uI uZ uA uB)) where
   obj Z := F.objPresheaf Z
   map {Z Z'} α :=
@@ -117,7 +117,7 @@ component's naturality is `map_objRestr`; the functor laws come from the dom
 /-- `functor.obj` is the choice-free output presheaf `objPresheaf`. The
 categorical object map carries no data beyond the constructive core. -/
 theorem functor_obj {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctor.{uI, uJ, vI, vJ, uA, uB} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
     F.functor.obj Z = F.objPresheaf Z :=
   rfl
 
@@ -125,7 +125,7 @@ theorem functor_obj {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ}
 retags the dom `map` of the underlying element: its underlying dom value is the
 dom `map α` of the input's. -/
 theorem functor_map {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctor.{uI, uJ, vI, vJ, uA, uB} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : Z ⟶ Z') (X : Jᵒᵖ) (w : (F.functor.obj Z).obj X) :
     (F.functor.map α).app X w =
       (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ : (F.functor.obj Z').obj X) :=
