@@ -38,3 +38,10 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
     F.RestrComp := F.isFunctorial.restr_comp
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
     F.TagRestrComp := F.isFunctorial.tagRestr_comp
+
+-- The output presheaf's fibre over `j` is the `t`-tagged subtype of the dom
+-- functor's value on `Z`.
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
+    (Z : Iᵒᵖ ⥤ Type) (j : J) :
+    (F.objPresheaf Z).obj ⟨j⟩ =
+      { z : F.toPresheafDomPFunctorData.obj Z // F.t z.1.1.1 = j } := rfl
