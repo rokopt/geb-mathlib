@@ -20,3 +20,8 @@ open CategoryTheory PresheafDomPFunctorData
 -- A caller can name the law condition to state things of that type.
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.RestrComp :=
   F.isFunctorial.restr_comp
+
+-- `obj` is the `IsNatural` subtype of the slice object on `pZ Z`.
+example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
+    F.obj Z = { x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.pZ Z)
+      // F.IsNatural x } := rfl

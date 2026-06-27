@@ -31,6 +31,12 @@ fibres contravariantly.
   restriction map `restr`.
 * `PresheafDomPFunctorData.RestrId` / `RestrComp` — named law `Prop`s.
 * `PresheafDomPFunctorData.IsFunctorial` — the functor laws bundled.
+* `PresheafDomPFunctorData.pZ` — the total-space projection of a presheaf.
+* `PresheafDomPFunctorData.comp` — the cast `Z`-component a slice element
+  assigns to a position over `i`.
+* `PresheafDomPFunctorData.IsNatural` — naturality of the position
+  assignment with respect to `restr` and `Z.map`.
+* `PresheafDomPFunctorData.obj` — the functor's value on a presheaf `Z`.
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
 
 ## Implementation notes
@@ -59,7 +65,7 @@ public section
 
 open CategoryTheory
 
-universe uI uA uB
+universe uI uA uB uZ
 
 set_option linter.checkUnivs false in
 /-- Operations of a presheaf-domain polynomial functor over `I`: a
@@ -92,6 +98,34 @@ structure IsFunctorial {I : Type uI} [Category I]
   restr_id : F.RestrId
   /-- Composition law for `restr`. -/
   restr_comp : F.RestrComp
+
+/-- Total-space projection of a presheaf `Z` on `I` to objects of `I`. -/
+@[expose] def pZ {I : Type uI} [Category I] (Z : Iᵒᵖ ⥤ Type uZ) :
+    (Σ i : I, Z.obj ⟨i⟩) → I :=
+  Sigma.fst
+
+/-- The `Z`-component a slice element `x` over `pZ Z` assigns to a position
+`b` of shape `x.1.1` over `i`: the `Z`-value `(x.1.2 b.1).2`, cast along the
+compatibility of `x` and the constraint condition on `b` to `Z.obj ⟨i⟩`. -/
+@[expose] def comp {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.obj (pZ Z)) ⦃i : I⦄
+    (b : F.toSliceDomPFunctor.Position x.1.1 i) : Z.obj ⟨i⟩ :=
+  cast (congrArg (fun k : I => Z.obj ⟨k⟩)
+    (((F.compatible_iff (pZ Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2)) (x.1.2 b.1).2
+
+/-- The position-assignment of `x` is a natural transformation `E_T(a) ⟶ Z`:
+for every `f : i' ⟶ i` and position `b` over `i`, the component assigned to
+`restr a f b` equals `Z.map f.op` applied to the component assigned to `b`. -/
+@[expose] def IsNatural {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.obj (pZ Z)) : Prop :=
+  ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (b : F.toSliceDomPFunctor.Position x.1.1 i),
+    F.comp x (F.restr x.1.1 f b) = Z.map f.op (F.comp x b)
+
+/-- The value of the presheaf-domain functor on `Z`: the `IsNatural` subtype
+of the slice object on the total-space projection `pZ Z`. -/
+@[expose] def obj {I : Type uI} [Category I] (F : PresheafDomPFunctorData I)
+    (Z : Iᵒᵖ ⥤ Type uZ) : Type _ :=
+  { x : F.toSliceDomPFunctor.obj (pZ Z) // F.IsNatural x }
 
 end PresheafDomPFunctorData
 
