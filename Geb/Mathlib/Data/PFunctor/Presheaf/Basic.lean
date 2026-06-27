@@ -38,6 +38,15 @@ fibres contravariantly.
   assignment with respect to `restr` and `Z.map`.
 * `PresheafDomPFunctorData.obj` — the functor's value on a presheaf `Z`.
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
+* `PresheafPFunctorData` — the full operations: the dom operations and the
+  tag leg, with the `J`-action `tagRestr` on shapes and the arity reindexing
+  `reindex`.
+* `PresheafPFunctorData.TagRestrId` / `TagRestrComp` / `ReindexNaturality` /
+  `ReindexId` / `ReindexComp` — the named `J`-side law `Prop`s. `ReindexId`
+  and `ReindexComp` are parameterized on the relevant `tagRestr` law, whose
+  content supplies the non-definitional source-type transport.
+* `PresheafPFunctorData.IsFunctorial` — the full functor laws bundled.
+* `PresheafPFunctor` — the full bundle: operations with a functoriality proof.
 
 ## Implementation notes
 
@@ -46,6 +55,17 @@ pinned universes (load-bearing for a later diamond via `PresheafDomPFunctor`
 and `SlicePFunctor`). The `linter.checkUnivs false` option and
 `@[nolint checkUnivs]` suppress the auto-bound morphism-universe warning
 that arises from `[Category I]`.
+
+`PresheafPFunctorData` is the diamond
+`extends PresheafDomPFunctorData.{uI, uA, uB} I, SlicePFunctor.{uA, uB} I J`,
+which shares the single `SliceDomPFunctor` parent. The `reindex` laws
+`ReindexId` / `ReindexComp` cannot be bare `Prop`s: comparing `reindex` along
+`𝟙` (resp. a composite) with the identity (resp. the composite of `reindex`es)
+requires a source-type transport whose target equality
+(`tagRestr (𝟙 j) a = a`, resp. `tagRestr (h ≫ g) a = tagRestr h (tagRestr g a)`)
+is `TagRestrId` (resp. `TagRestrComp`) content, not definitional. They are
+therefore parameterized on that law and apply it via `cast`; `IsFunctorial`
+supplies the proof from its earlier `tagRestr_id` / `tagRestr_comp` fields.
 
 ## References
 
@@ -65,7 +85,7 @@ public section
 
 open CategoryTheory
 
-universe uI uA uB uZ
+universe uI uJ uA uB uZ
 
 set_option linter.checkUnivs false in
 /-- Operations of a presheaf-domain polynomial functor over `I`: a
@@ -199,3 +219,109 @@ structure PresheafDomPFunctor (I : Type uI) [Category I] : Type _
   isFunctorial : toPresheafDomPFunctorData.IsFunctorial
 
 attribute [ext] PresheafDomPFunctorData PresheafDomPFunctor
+
+set_option linter.checkUnivs false in
+/-- Operations of a presheaf polynomial functor `(Iᵒᵖ ⥤ Type) → (Jᵒᵖ ⥤ Type)`:
+the dom operations plus the tag leg `t` (via `SlicePFunctor`), the `J`-action
+`tagRestr` on shapes, and the arity reindexing `reindex`. -/
+@[nolint checkUnivs]
+structure PresheafPFunctorData (I : Type uI) [Category I]
+    (J : Type uJ) [Category J] : Type _
+    extends PresheafDomPFunctorData.{uI, uA, uB} I, SlicePFunctor.{uA, uB} I J where
+  /-- The shape-presheaf restriction: for `g : j' ⟶ j`, reindex shapes over
+  `j` to shapes over `j'`. -/
+  tagRestr : ∀ ⦃j j' : J⦄ (_g : j' ⟶ j),
+      toSlicePFunctor.Shape j → toSlicePFunctor.Shape j'
+  /-- The arity reindexing along a `J`-morphism: a presheaf morphism
+  `E_T(tagRestr g a) ⟶ E_T(a)`. -/
+  reindex : ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : toSlicePFunctor.Shape j) ⦃i : I⦄,
+      toSliceDomPFunctor.Position (tagRestr g a).1 i →
+        toSliceDomPFunctor.Position a.1 i
+
+/-- The tag-leg view of the operations: the shared `SliceDomPFunctor` together
+with the tag leg `t`. The diamond merges the `SliceDomPFunctor` parent, so this
+view shares its components with `toPresheafDomPFunctorData`. -/
+add_decl_doc PresheafPFunctorData.toSlicePFunctor
+
+namespace PresheafPFunctorData
+
+/-- `tagRestr` preserves identities. -/
+def TagRestrId {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctorData I J) : Prop :=
+  ∀ (j : J), F.tagRestr (𝟙 j) = id
+
+/-- `tagRestr` is contravariant in `J`. -/
+def TagRestrComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctorData I J) : Prop :=
+  ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j'),
+      F.tagRestr (h ≫ g) = F.tagRestr h ∘ F.tagRestr g
+
+/-- Each `reindex g a` commutes with `restr` (a presheaf morphism
+`E_T(tagRestr g a) ⟶ E_T(a)`): for `f : i' ⟶ i`,
+`restr a.1 f ∘ reindex g a = reindex g a ∘ restr (tagRestr g a).1 f`.
+Ordinary fibre maps only; no `tagRestr` transport. -/
+def ReindexNaturality {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctorData I J) : Prop :=
+  ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) ⦃i i' : I⦄ (f : i' ⟶ i),
+    F.restr a.1 f ∘ F.reindex g a (i := i) =
+      F.reindex g a (i := i') ∘ F.restr (F.tagRestr g a).1 f
+
+/-- `reindex (𝟙 j) a` is the identity, modulo the transport of its source
+along `TagRestrId` at `j` (`tagRestr (𝟙 j) a = a`). The transport is the
+`cast` of `b` along `congrArg (fun s => Position s.1 i) (congrFun (hti j) a)`.
+Parameterized on the identity law `hti` because that source-type equality is
+not definitional. -/
+def ReindexId {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctorData I J) (hti : F.TagRestrId) : Prop :=
+  ∀ ⦃j : J⦄ (a : F.Shape j) ⦃i : I⦄ (b : F.Position (F.tagRestr (𝟙 j) a).1 i),
+    F.reindex (𝟙 j) a b =
+      cast (congrArg (fun s : F.Shape j => F.Position s.1 i) (congrFun (hti j) a)) b
+
+/-- For `g : j' ⟶ j`, `h : j'' ⟶ j'`,
+`reindex (h ≫ g) a = reindex g a ∘ reindex h (tagRestr g a)` (outer factor the
+`g` leg), modulo the transport of the source along `TagRestrComp`
+(`tagRestr (h ≫ g) a = tagRestr h (tagRestr g a)`). The transport is the `cast`
+of `b` along `congrArg (fun s => Position s.1 i) (congrFun (htc g h) a)`.
+Parameterized on the composition law `htc` because that source-type equality is
+not definitional. -/
+def ReindexComp {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctorData I J) (htc : F.TagRestrComp) : Prop :=
+  ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j') (a : F.Shape j) ⦃i : I⦄
+    (b : F.Position (F.tagRestr (h ≫ g) a).1 i),
+    F.reindex (h ≫ g) a b =
+      F.reindex g a (F.reindex h (F.tagRestr g a)
+        (cast (congrArg (fun s : F.Shape j'' => F.Position s.1 i)
+          (congrFun (htc g h) a)) b))
+
+/-- All functor laws: the dom laws plus the `J`-side laws making `T1` a
+presheaf and `E_T` a functor on `el(T1)`. The `tagRestr` laws precede the
+`reindex` laws because `reindex_id` / `reindex_comp` are stated relative to
+`tagRestr_id` / `tagRestr_comp`. -/
+structure IsFunctorial {I : Type uI} [Category I] {J : Type uJ} [Category J]
+    (F : PresheafPFunctorData I J) : Prop
+    extends F.toPresheafDomPFunctorData.IsFunctorial where
+  /-- Identity law for `tagRestr`. -/
+  tagRestr_id : F.TagRestrId
+  /-- Composition law for `tagRestr`. -/
+  tagRestr_comp : F.TagRestrComp
+  /-- `reindex` is a presheaf morphism (commutes with `restr`). -/
+  reindex_naturality : F.ReindexNaturality
+  /-- Identity law for `reindex`, relative to `tagRestr_id`. -/
+  reindex_id : F.ReindexId tagRestr_id
+  /-- Composition law for `reindex`, relative to `tagRestr_comp`. -/
+  reindex_comp : F.ReindexComp tagRestr_comp
+
+end PresheafPFunctorData
+
+set_option linter.checkUnivs false in
+/-- A presheaf polynomial functor: operations together with a proof they are
+functorial. Its action is a functor `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)`. -/
+@[nolint checkUnivs]
+structure PresheafPFunctor (I : Type uI) [Category I]
+    (J : Type uJ) [Category J] : Type _
+    extends PresheafPFunctorData I J where
+  /-- Proof the operations are functorial. -/
+  isFunctorial : toPresheafPFunctorData.IsFunctorial
+
+attribute [ext] PresheafPFunctorData PresheafPFunctorData.IsFunctorial
+  PresheafPFunctor

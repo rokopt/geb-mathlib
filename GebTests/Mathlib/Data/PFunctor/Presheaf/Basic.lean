@@ -32,3 +32,9 @@ example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Typ
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
     F.map { app := fun i => 𝟙 (Z.obj i), naturality := fun _ _ _ => rfl } =
       (id : F.obj Z → F.obj Z) := F.map_id Z
+
+-- The full bundle projects the inherited dom law and names a `J`-side law.
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
+    F.RestrComp := F.isFunctorial.restr_comp
+example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
+    F.TagRestrComp := F.isFunctorial.tagRestr_comp
