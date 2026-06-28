@@ -18,7 +18,7 @@ set_option linter.privateModule false
 open SliceDomPFunctor SlicePFunctor
 
 /-- A concrete slice polynomial functor: one shape, two `Bool`-indexed
-positions, constraint `s ⟨(), b⟩ = b`, tag into `Unit`. -/
+directions, constraint `s ⟨(), b⟩ = b`, tag into `Unit`. -/
 def testSlice : SlicePFunctor Bool Unit where
   A := Unit
   B := fun _ => Bool
@@ -90,11 +90,11 @@ example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
     (hf : p' ∘ f = p) : taggedSlice.obj p' ∘ taggedSlice.map f hf = taggedSlice.obj p :=
   taggedSlice.map_w f hf
 
--- Position is the constraint-leg fibre; the predicate is its membership.
+-- Direction is the constraint-leg fibre; the predicate is its membership.
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :
-    F.Position a i = { b : F.B a // F.s ⟨a, b⟩ = i } := rfl
+    F.Direction a i = { b : F.B a // F.s ⟨a, b⟩ = i } := rfl
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) (b : F.B a) :
-    F.PositionOver a i b ↔ F.s ⟨a, b⟩ = i := Iff.rfl
+    F.DirectionOver a i b ↔ F.s ⟨a, b⟩ = i := Iff.rfl
 
 example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) :
     F.Shape j = { a : F.A // F.t a = j } := rfl

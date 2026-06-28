@@ -60,18 +60,18 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
 -- The preorder category on `Fin 2` has a genuine non-identity morphism.
 example : ((0 : Fin 2) ⟶ 1) := homOfLE (by decide)
 
-/-- In `Fin 2`, the unique position of shape `x` over base point `i` has
+/-- In `Fin 2`, the unique direction of shape `x` over base point `i` has
 underlying value `i + x`: `x + (i + x) = i`. -/
 private theorem fin2_add_idx (x i : Fin 2) : x + (i + x) = i := by omega
 
 /-- A concrete presheaf polynomial functor over the preorder category on
 `Fin 2` (for both index categories). Two shapes (`A := Fin 2`), tagged by
-`t := id` so each shape lies over its own object, two positions per shape
+`t := id` so each shape lies over its own object, two directions per shape
 (`B _ := Fin 2`), and constraint `s ⟨a, b⟩ = a + b`. Each fibre
-`Position a i` is the singleton `{a + i}`, so `restr`, `tagRestr`, and
+`Direction a i` is the singleton `{a + i}`, so `restr`, `tagRestr`, and
 `reindex` each pick out the unique element of the target fibre.
 `reindex` along the non-identity `0 ⟶ 1` retags shape `1` to shape `0` and
-maps the underlying position value to `i + a.1` (here `1 = 0 + 1`). -/
+maps the underlying direction value to `i + a.1` (here `1 = 0 + 1`). -/
 def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   A := Fin 2
   B := fun _ => Fin 2
@@ -82,13 +82,13 @@ def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   reindex := fun {_j _j'} _g a {i} _b => ⟨i + a.1, fin2_add_idx a.1 i⟩
 
 /-- The constraint `s ⟨a, ·⟩ = a + ·` is injective, so each fibre
-`Position a i` has at most one element. -/
+`Direction a i` has at most one element. -/
 private theorem fin2_pos_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a + y = i) :
     x = y := by omega
 
-/-- Each position fibre of the witness is a singleton. -/
+/-- Each direction fibre of the witness is a singleton. -/
 private instance posSubsingleton (a i : Fin 2) :
-    Subsingleton (presheafWitnessData.toSliceDomPFunctor.Position a i) :=
+    Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
   ⟨fun x y => Subtype.ext (fin2_pos_cancel a x.1 y.1 i x.2 y.2)⟩
 
 /-- Each shape fibre of the witness is a singleton (the tag `t = id`
@@ -101,7 +101,7 @@ private instance shapeSubsingleton (j : Fin 2) :
     exact hx.trans hy.symm)⟩
 
 /-- The witness, with all seven functor laws discharged. Because every
-position fibre and shape fibre is a singleton, each law equates elements of
+direction fibre and shape fibre is a singleton, each law equates elements of
 (functions into) a subsingleton, so `Subsingleton.elim` closes every goal;
 in particular the `cast`-transport laws `reindex_id` / `reindex_comp` hold
 without computing the transports. -/
@@ -131,13 +131,13 @@ example : presheafWitness.t (1 : Fin 2) = 1 := rfl
 -- `tagRestr` along the non-identity `0 ⟶ 1` retags shape `1` to shape `0`.
 example : (presheafWitness.tagRestr h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
 
--- `restr` along `0 ⟶ 1` sends the unique position of shape `0` over `1` to the
--- unique position over `0`.
+-- `restr` along `0 ⟶ 1` sends the unique direction of shape `0` over `1` to the
+-- unique direction over `0`.
 example : (presheafWitness.restr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
 
--- `reindex` along `0 ⟶ 1` genuinely moves the underlying position value: the
--- position of value `0` over `i = 0` (for the retagged shape `0`) is reindexed
--- to the position of value `1` over `i = 0` (for shape `1`).
+-- `reindex` along `0 ⟶ 1` genuinely moves the underlying direction value: the
+-- direction of value `0` over `i = 0` (for the retagged shape `0`) is reindexed
+-- to the direction of value `1` over `i = 0` (for shape `1`).
 example :
     (presheafWitness.reindex h01 ⟨(1 : Fin 2), rfl⟩ (i := (0 : Fin 2)) ⟨(0 : Fin 2), rfl⟩).1 =
       (1 : Fin 2) := rfl
@@ -165,7 +165,7 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
 
 /-- A concrete choice-free input presheaf: the constant presheaf on `(Fin 2)ᵒᵖ`
 at `PUnit`. Every fibre is `PUnit` and every restriction is the identity, so any
-position assignment over it is natural. Reducible so the `PUnit` fibre's
+direction assignment over it is natural. Reducible so the `PUnit` fibre's
 `Subsingleton` instance resolves through `.obj`. -/
 @[reducible] private def constPUnit : (Fin 2)ᵒᵖ ⥤ Type where
   obj _ := PUnit
@@ -173,7 +173,7 @@ position assignment over it is natural. Reducible so the `PUnit` fibre's
 
 /-- A concrete element of `objPresheaf constPUnit`'s fibre over `1`: shape `1`
 (tagged over `1` since `t = id`) with the compatibility-forced assignment
-`b ↦ ⟨1 + b, ⟨⟩⟩` of positions to total-space elements. -/
+`b ↦ ⟨1 + b, ⟨⟩⟩` of directions to total-space elements. -/
 private def constFibreElt :
     (presheafWitness.objPresheaf constPUnit).obj ⟨(1 : Fin 2)⟩ :=
   ⟨⟨⟨⟨(1 : Fin 2), fun (b : Fin 2) => ⟨1 + b, ⟨⟩⟩⟩,
@@ -187,7 +187,7 @@ example :
     ((presheafWitness.objPresheaf constPUnit).map h01.op constFibreElt).1.1.1.1 =
       (0 : Fin 2) := rfl
 
--- `objPresheaf.map` reindexes the assignment: the retagged element sends position
+-- `objPresheaf.map` reindexes the assignment: the retagged element sends direction
 -- `b'` to a total-space element whose base index is `reindex`-and-compatibility
 -- determined (`b' + 1` under `reindex`, then `1 + (b' + 1) = b'`).
 example :

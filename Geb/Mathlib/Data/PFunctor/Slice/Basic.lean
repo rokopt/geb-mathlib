@@ -14,7 +14,7 @@ A `PFunctor` is the middle leg of a Gambino–Hyland polynomial diagram
 `dom ◀ s ─ Idx ─ fst ▶ A ─ t ▶ cod`. Adding `s : Idx → dom` and
 `t : A → cod` yields a polynomial functor `Type/dom → Type/cod`,
 defined as a restriction of the interpretation `P.Obj X = Σ a, B a → X`
-to `s`-compatible position assignments, tagged by `t`.
+to `s`-compatible direction assignments, tagged by `t`.
 
 This file is the constructive core: the structures, the compatibility
 predicate, the curried constructor, and the object/morphism maps with
@@ -25,7 +25,7 @@ categorical packaging is in the sibling `Slice.Functor` module.
 ## Main definitions
 
 * `SliceDomPFunctor`, `SlicePFunctor` — the structures.
-* `SliceDomPFunctor.Compatible` — the position-compatibility predicate.
+* `SliceDomPFunctor.Compatible` — the direction-compatibility predicate.
 * `SliceDomPFunctor.obj` / `map` — the domain-restricted functor's
   object and morphism maps; `map_id` / `map_comp` its functoriality.
 * `SlicePFunctor.obj` / `map` — the slice functor `Type/dom → Type/cod`:
@@ -44,7 +44,7 @@ reuses these — its carrier is `SliceDomPFunctor.obj` and its `map` the
 `SliceDomPFunctor` map — adding only the `t`-tag (`obj`) and the
 tag-compatibility (`map_w`); `map_id` / `map_comp` delegate to the
 domain-side ones. Both namespaces' `obj`, `map`,
-`SliceDomPFunctor.ofCurried` / `sCurried` / `PositionOver` / `Position`,
+`SliceDomPFunctor.ofCurried` / `sCurried` / `DirectionOver` / `Direction`,
 and `SlicePFunctor.ShapeOver` / `Shape` are `@[expose]` so the
 wrapper and tests can unfold them across the module boundary.
 
@@ -66,11 +66,11 @@ universe uA uB uD uC uX
 
 set_option linter.checkUnivs false in
 /-- A polynomial functor with a constraint leg `s` assigning each
-position (an element of `PFunctor.Idx`) a `dom`-index. -/
+direction (an element of `PFunctor.Idx`) a `dom`-index. -/
 @[nolint checkUnivs]
 structure SliceDomPFunctor (dom : Type uD) : Type (max (uA + 1) (uB + 1) uD)
     extends PFunctor.{uA, uB} where
-  /-- The constraint leg: each position is assigned a `dom`-index. -/
+  /-- The constraint leg: each direction is assigned a `dom`-index. -/
   s : toPFunctor.Idx → dom
 
 set_option linter.checkUnivs false in
@@ -86,7 +86,7 @@ attribute [ext] SliceDomPFunctor SlicePFunctor
 
 namespace SliceDomPFunctor
 
-/-- A position assignment `v : F.B a → X` is compatible with a base map
+/-- A direction assignment `v : F.B a → X` is compatible with a base map
 `p : X → dom` when, as functions `F.B a → dom`, `p ∘ v` equals the
 constraint leg restricted to shape `a`. Pointwise: `p (v b) = s ⟨a, b⟩`. -/
 def Compatible {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
@@ -111,17 +111,17 @@ leg. -/
     (b : F.B a) : dom :=
   F.s ⟨a, b⟩
 
-/-- The constraint-leg condition on a position of shape `a`: that its
+/-- The constraint-leg condition on a direction of shape `a`: that its
 image under `sCurried a` is `i`. Point-free as `(· = i) ∘ sCurried a`. -/
-@[expose] def PositionOver {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+@[expose] def DirectionOver {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     (a : F.A) (i : dom) : F.B a → Prop :=
   (· = i) ∘ F.sCurried a
 
-/-- The positions of shape `a` lying over the base point `i`: the fibre
+/-- The directions of shape `a` lying over the base point `i`: the fibre
 of `sCurried a` over `i`, the object-map of shape `a`'s arity presheaf. -/
-@[expose] def Position {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+@[expose] def Direction {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     (a : F.A) (i : dom) : Type uB :=
-  Subtype (F.PositionOver a i)
+  Subtype (F.DirectionOver a i)
 
 /-- Value of the domain-restricted functor on `(X, p)`: the
 compatibility subtype of the `PFunctor` interpretation. -/
