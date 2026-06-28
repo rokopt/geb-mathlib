@@ -4,6 +4,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Availability and consent](#availability-and-consent)
+- [When to use](#when-to-use)
 - [Contribution-policy constraint](#contribution-policy-constraint)
 - [Setup](#setup)
 - [Commands](#commands)
@@ -27,6 +28,23 @@ Aristotle is a hosted, metered service: invoking it consumes the
 contributor's account resources. Before using it, an agent asks the
 contributor whether they want Aristotle used for the task at hand,
 even when it is available.
+
+## When to use
+
+Aristotle complements the in-editor Lean tooling; reach for it
+when that tooling is insufficient, not as a first resort.
+
+- Formalizing mathematics available only in a published paper:
+  pass the informal statement, with a directory of context files,
+  to `submit`, or a skeleton file to `formalize`.
+- Goals that resist the `lean4:autoprove` and
+  `lean4:sorry-filler-deep` passes.
+- Proofs expected to need long search time: submit without
+  `--wait` and retrieve later (see § Long-running proofs).
+
+A returned proof is a starting point, not a finished
+contribution: re-verify, remove nonconstructive axioms, and
+restyle it per § Contribution-policy constraint before use.
 
 ## Contribution-policy constraint
 
