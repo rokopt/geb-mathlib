@@ -3,7 +3,6 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Sections](#sections)
 - [Repository structure](#repository-structure)
 - [Code is cost](#code-is-cost)
 - [Document only the persistent](#document-only-the-persistent)
@@ -33,30 +32,6 @@ those files; this document explains the motivation behind each.
 Read it when you need to understand the reason for a rule,
 propose a change, or weigh how to apply a rule in an
 unfamiliar situation.
-
-## Sections
-
-- [Development process — rationale](#development-process--rationale)
-  - [Sections](#sections)
-  - [Repository structure](#repository-structure)
-  - [Code is cost](#code-is-cost)
-  - [Document only the persistent](#document-only-the-persistent)
-  - [Specs and plans are transient](#specs-and-plans-are-transient)
-  - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
-  - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
-  - [Documentation under `docs/`](#documentation-under-docs)
-  - [Adversarial review](#adversarial-review)
-  - [Verify agent claims](#verify-agent-claims)
-  - [Two-track development](#two-track-development)
-  - [Floodgate test](#floodgate-test)
-  - [Alternative formalization targets](#alternative-formalization-targets)
-  - [main and integration](#main-and-integration)
-  - [Mathlib bump procedure](#mathlib-bump-procedure)
-  - [jj bump procedure](#jj-bump-procedure)
-  - [Markdownlint discipline](#markdownlint-discipline)
-  - [Use of AI in upstream-eligible code](#use-of-ai-in-upstream-eligible-code)
-  - [No LLM-drafted user-facing text](#no-llm-drafted-user-facing-text)
-  - [Generic user references](#generic-user-references)
 
 ## Repository structure
 

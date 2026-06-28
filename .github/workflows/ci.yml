@@ -18,26 +18,20 @@ permissions:
   contents: read
 
 jobs:
-  style_lint:
-    name: Style lint (forbid bare umbrella imports)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-      - name: forbid bare umbrella imports under upstream-eligible subtrees
-        run: |
-          if grep -RHnE '^import (Mathlib|Cslib)$' \
-               Geb/Mathlib Geb/Cslib GebTests/Mathlib GebTests/Cslib 2>/dev/null; then
-            echo "FAIL: bare umbrella 'import Mathlib' or 'import Cslib' in upstream-eligible files" >&2
-            exit 1
-          fi
-
   floodgate_imports:
     name: Floodgate imports lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      # lint-imports.sh enforces the bare-umbrella-import ban (Rule 1)
+      # among other subtree rules; a separate grep job would duplicate
+      # it.
       - name: scripts/lint-imports.sh
         run: bash scripts/lint-imports.sh
+      - name: scripts/tests/test-lint-imports.sh
+        run: bash scripts/tests/test-lint-imports.sh
+      - name: scripts/tests/test-extract-pr.sh
+        run: bash scripts/tests/test-extract-pr.sh
 
   build:
     name: Build / test / lint / shake
@@ -74,10 +68,9 @@ jobs:
   hooks_test:
     name: Hooks smoke test
     runs-on: ubuntu-latest
+    # jq is preinstalled on ubuntu-latest runners; no explicit install.
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-      - name: install jq
-        run: sudo apt-get install -y jq
       - name: scripts/hooks/tests/test-block-mutating-git.sh
         run: bash scripts/hooks/tests/test-block-mutating-git.sh
 
@@ -90,14 +83,15 @@ jobs:
         run: bash scripts/install-jj.sh
       - name: scripts/tests/test-regenerate-integration.sh
         run: bash scripts/tests/test-regenerate-integration.sh
+      - name: scripts/tests/test-diff-against-main.sh
+        run: bash scripts/tests/test-diff-against-main.sh
 
   bump_detect_tests:
     name: Bump detect-script tests
     runs-on: ubuntu-latest
+    # jq is preinstalled on ubuntu-latest runners; no explicit install.
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-      - name: install jq
-        run: sudo apt-get install -y jq
       - name: scripts/tests/test-mathlib-bump-detect.sh
         run: bash scripts/tests/test-mathlib-bump-detect.sh
       - name: scripts/tests/test-jj-bump-detect.sh

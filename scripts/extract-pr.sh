@@ -80,11 +80,14 @@ dst="$fork/$dst_rel"
 
 mkdir -p "$(dirname "$dst")"
 
-# Copy + rewrite. \b ensures we don't match Geb.MathlibFoo or
-# Geb.CslibFoo accidentally; global within-line replacement (not
-# anchored to import) so any in-file reference is rewritten —
-# relying on the no-prefix-leakage rule (lint-imports.sh) ensuring
-# only import-line occurrences exist.
-sed -E "s/\\b${rewrite_prefix}/${target_prefix}/g" "$src" > "$dst"
+# Copy + rewrite. Anchored to import lines (`import` /
+# `public import`) rather than a within-line `\b` word boundary,
+# which is non-portable (GNU sed only; not BSD/macOS — the same
+# constraint block-mutating-git.sh documents). The no-prefix-leakage
+# rule (lint-imports.sh) guarantees the `Geb.<Subtree>.` prefix
+# appears only on import lines in upstream-eligible files, so an
+# import-anchored rewrite covers every occurrence. Anchoring also
+# rules out matching a prefix embedded in a longer identifier.
+sed -E "s/^(public import|import) ${rewrite_prefix}/\1 ${target_prefix}/" "$src" > "$dst"
 
 echo "extract-pr.sh: $src -> $dst"

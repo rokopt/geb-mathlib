@@ -43,7 +43,7 @@ respectively; the rules below are the Claude-specific additions.
 | Receiving review | `superpowers:receiving-code-review` | — |
 
 `lean4` sub-skill mapping by activity (drafting, proving, filling
-`sorry`, golfing, porting, review, exploration, diagnosis,
+`sorry`, golfing, refactoring, review, exploration, diagnosis,
 checkpointing) lives in `.claude/rules/lean-coding-claude.md`
 § `lean4` sub-skill mapping.
 

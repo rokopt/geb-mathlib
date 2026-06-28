@@ -44,6 +44,20 @@ jobs:
         run: printf '%s\n' "${TARGET}" > scripts/jj-version
         env:
           TARGET: ${{ needs.detect.outputs.target }}
+      - name: Record the jj asset checksum
+        id: checksum
+        run: |
+          set -euo pipefail
+          asset="jj-v${TARGET}-x86_64-unknown-linux-musl.tar.gz"
+          url="https://github.com/jj-vcs/jj/releases/download/v${TARGET}/${asset}"
+          tmp="$(mktemp)"
+          curl -fsSL "$url" -o "$tmp"
+          sha256sum "$tmp" | awk '{print $1}' > scripts/jj-version.sha256
+          rm -f "$tmp"
+          echo "Recorded checksum for ${asset}:"
+          cat scripts/jj-version.sha256
+        env:
+          TARGET: ${{ needs.detect.outputs.target }}
       - name: Install the bumped jj
         id: install
         run: bash scripts/install-jj.sh

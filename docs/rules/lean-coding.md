@@ -54,20 +54,12 @@ revision by the leanprover-community).
 
 ### Commit messages (from `commit.html`)
 
-- Format: `<type>(<optional-scope>): <subject>` followed by an
-  optional body and footers.
-- Types: `feat | fix | doc | style | refactor | test | chore |
-  perf | ci`.
-- **Imperative present tense** in the subject and body
-  ("change" — not "changed", not "changes", not "adds").
-- **Do not capitalise** the first letter of the subject.
-- **No trailing period** on the subject.
-- Aim for the subject under ~72 characters.
-- Body: same imperative present tense; include motivation and
-  contrast with previous behaviour where useful.
-- Documented footers include `Closes #N`, `BREAKING CHANGE: …`,
-  and `- [ ] depends on: #N`. (`Moves:`/`Deletions:` are not
-  documented and are NOT part of our convention.)
+The commit-message convention (format, the
+`feat | fix | doc | style | refactor | test | chore | perf | ci`
+type list, imperative present tense, no-capital/no-period subject,
+and documented footers) is stated once in
+`docs/rules/ci-and-workflow.md` § Commit-message convention; it
+binds every commit, not only `.lean` changes.
 
 **Adversarial-reviewer instruction**: scan every commit message
 in the plan and the actual git history for indicative or
@@ -166,18 +158,12 @@ constraints.
 
 ## Comment and docstring rules
 
-- `/-! ... -/` module docstring is mandatory after imports.
-  Required sections (omit irrelevant ones rather than leave blank):
-  title, summary, main definitions, main statements, notation (if
-  any), implementation notes, references, tags.
-- `/-- ... -/` declaration docstring is mandatory for every
-  `def`, `structure`, `class`, `instance`, and major theorem; and
-  for every field of a `structure` or `class`.
-- Markdown + LaTeX (`$...$`, `$$...$$`) inside docstrings.
-- **No development-history references in docstrings**
-  (e.g., "previously this used X; now uses Y"). Such notes belong
-  in commit messages, not in docstrings, since docstrings are part
-  of the public API and outlive their writing context.
+The module/declaration docstring requirements (mandatory module
+docstring with its required sections, mandatory declaration
+docstrings, Markdown + LaTeX, and no development-history
+references) are stated above in § Documentation (see also
+mathlib's `doc.html`). One additional local rule:
+
 - **Empty lines inside declarations are lint-discouraged**; use a
   brief comment (`-- ...`) as a structural separator if needed.
 

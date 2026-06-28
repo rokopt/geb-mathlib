@@ -35,17 +35,62 @@ DOCGEN_REPO="https://github.com/leanprover/doc-gen4.git"
 BUMP_BRANCH="auto-update-lean/patch"
 FAIL_LABEL="auto-update-lean-fail"
 
+# select_target, bump_in_flight (reads BUMP_BRANCH/FAIL_LABEL above),
+# and emit are shared with jj-bump-detect.sh.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/bump-common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/bump-common.sh"
+
 # Read the mathlib `rev` from the name="mathlib" require block
 # (TOML-aware; a plain grep would also match cslib/doc-gen4 revs).
+# Uses tomllib (Python 3.11+) when available, falling back to tomli,
+# then to a minimal scan of the [[require]] array-of-tables so the
+# script works on older system Pythons without a TOML library.
 read_mathlib_pin() {
   python3 - "$1" <<'PY'
-import sys, tomllib
-with open(sys.argv[1], "rb") as f:
-    data = tomllib.load(f)
-for req in data.get("require", []):
-    if req.get("name") == "mathlib":
-        print(req.get("rev", ""))
-        break
+import sys, re
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    try:
+        import tomli as tomllib
+    except ModuleNotFoundError:
+        tomllib = None
+
+path = sys.argv[1]
+
+if tomllib is not None:
+    with open(path, "rb") as f:
+        data = tomllib.load(f)
+    for req in data.get("require", []):
+        if req.get("name") == "mathlib":
+            print(req.get("rev", ""))
+            break
+    sys.exit(0)
+
+# Fallback: walk [[require]] blocks, recording name and rev per block,
+# and print the rev of the block whose name is "mathlib".
+name = rev = None
+with open(path, encoding="utf-8") as f:
+    for line in f:
+        s = line.strip()
+        if s == "[[require]]":
+            name = rev = None
+            continue
+        if s.startswith("[") and s != "[[require]]":
+            # Left the require array-of-tables.
+            name = rev = None
+            continue
+        m = re.match(r'name\s*=\s*"([^"]*)"', s)
+        if m:
+            name = m.group(1)
+        m = re.match(r'rev\s*=\s*"([^"]*)"', s)
+        if m:
+            rev = m.group(1)
+        if name == "mathlib" and rev is not None:
+            print(rev)
+            break
 PY
 }
 
@@ -57,23 +102,6 @@ list_version_tags() {
     | sed -n 's#.*refs/tags/\(v[0-9].*\)$#\1#p'
 }
 
-# Given the current pin ($1) and candidate tags (newline-separated
-# on stdin), print the newest tag semver-greater than the pin, or
-# nothing. Delegates the comparison to the .cjs helper, run under
-# `npx -p semver@7` with NODE_PATH set to the npx-installed module
-# root so the helper's `require("semver")` resolves (the `-p` flag
-# only adds the bin to PATH, not to node's require path). Exits
-# non-zero if the helper errors, so callers can fail loudly.
-select_target() {
-  local pin="$1" helper
-  helper="$(dirname "${BASH_SOURCE[0]}")/lib/select-newest-tag.cjs"
-  # _ becomes $0 inside the -c script; $1=helper, $2=pin.
-  npx --yes -p semver@7 bash -c '
-    node_modules="$(cd "$(dirname "$(command -v semver)")/.." && pwd)"
-    NODE_PATH="$node_modules" node "$1" "$2"
-  ' _ "$helper" "$pin"
-}
-
 # True iff the tag exists on the repo. Captures output rather than
 # piping to `grep -q`: under `set -o pipefail`, `grep -q` closes the
 # pipe on first match and the upstream `git` exits with SIGPIPE
@@ -82,32 +110,6 @@ tag_exists() {
   local out
   out=$(git ls-remote --tags "$1" "refs/tags/$2")
   [[ -n "$out" ]]
-}
-
-# Return 0 if a bump is in flight, 1 if not, 2 on error. Fails
-# closed: a `gh` failure or non-numeric count is treated as an
-# error (return 2), never as "not in flight" — otherwise a
-# transient `gh` outage would let the apply job clobber an open,
-# under-review pull request.
-bump_in_flight() {
-  local open_pr open_issue
-  open_pr=$(gh pr list --state open --head "$BUMP_BRANCH" \
-    --json number --jq 'length') || return 2
-  open_issue=$(gh issue list --state open --label "$FAIL_LABEL" \
-    --json number --jq 'length') || return 2
-  [[ "$open_pr" =~ ^[0-9]+$ ]] || return 2
-  [[ "$open_issue" =~ ^[0-9]+$ ]] || return 2
-  [[ "$open_pr" != "0" || "$open_issue" != "0" ]]
-}
-
-# Emitting an empty target= is intentional protocol: the downstream
-# workflow gates on `if: ... outputs.target != ''`, so the key must
-# always be written (present-but-empty vs absent are different).
-emit() {
-  echo "target=$1"
-  if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
-    echo "target=$1" >> "$GITHUB_OUTPUT"
-  fi
 }
 
 main() {

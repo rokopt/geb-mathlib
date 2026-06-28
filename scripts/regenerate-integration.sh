@@ -69,9 +69,10 @@ main() {
     exit 1
   fi
 
-  # Fan-in merge into a new commit.
+  # Fan-in merge into a new commit. `date +%F` (not `date -I`, which
+  # is GNU-only) for a portable ISO-8601 date.
   # shellcheck disable=SC2086  # parents must word-split into args
-  jj new $parents -m "integration: fan-in @ $(date -I)"
+  jj new $parents -m "integration: fan-in @ $(date +%F)"
 
   # Refuse to publish a conflicted fan-in. `jj new` succeeds on a
   # textual conflict, recording it in @ rather than failing; CI

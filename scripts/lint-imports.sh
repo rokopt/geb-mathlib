@@ -69,8 +69,13 @@ check_subtree() {
   done
   allowed_str="${allowed_str%, }"
 
-  local files
-  mapfile -t files < <(find "${find_roots[@]}" -type f -name '*.lean' 2>/dev/null || true)
+  # Collect via a read loop rather than `mapfile`/`readarray`, which
+  # are absent from bash 3.2 (the system bash on macOS).
+  local files=()
+  local _file
+  while IFS= read -r _file; do
+    files+=("$_file")
+  done < <(find "${find_roots[@]}" -type f -name '*.lean' 2>/dev/null || true)
 
   local f line canonical ok ln lp prefix_re
   for f in "${files[@]}"; do

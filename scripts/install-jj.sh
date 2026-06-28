@@ -36,6 +36,31 @@ trap 'rm -rf "$tmp"' EXIT
 
 echo "install-jj: downloading ${url}" >&2
 curl -fsSL "$url" -o "$tmp/jj.tar.gz"
+
+# Verify the downloaded asset against the pinned SHA256 before
+# unpacking, the same defence-in-depth as pinning GitHub Actions by
+# commit SHA: GitHub serves the asset over TLS, but the pin detects a
+# tampered or swapped release artifact and freezes the exact bytes
+# reviewed when the bump pull request was opened. jj-bump.yml
+# recomputes scripts/jj-version.sha256 whenever it bumps the version.
+sha_file="$here/jj-version.sha256"
+if [ ! -f "$sha_file" ]; then
+  echo "install-jj: missing checksum pin $sha_file" >&2
+  exit 1
+fi
+expected="$(tr -d '[:space:]' < "$sha_file")"
+if command -v sha256sum >/dev/null 2>&1; then
+  actual="$(sha256sum "$tmp/jj.tar.gz" | awk '{print $1}')"
+else
+  actual="$(shasum -a 256 "$tmp/jj.tar.gz" | awk '{print $1}')"
+fi
+if [ "$actual" != "$expected" ]; then
+  echo "install-jj: checksum mismatch for ${asset}" >&2
+  echo "  expected ${expected}" >&2
+  echo "  actual   ${actual}" >&2
+  exit 1
+fi
+
 tar -xzf "$tmp/jj.tar.gz" -C "$tmp"
 sudo install -m 0755 "$tmp/jj" /usr/local/bin/jj
 
