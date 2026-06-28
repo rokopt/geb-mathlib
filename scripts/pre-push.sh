@@ -91,10 +91,11 @@ step "docs-coverage check (concept docs in same branch)"
 # implementation would parse new top-level declarations and check
 # docs/index.md mentions them; deferred to a future upgrade.
 #
-# Helper: get the diff against the merge-base with main, with a
-# fallback for jj versions lacking `latest_common_ancestor`.
+# Helper: get the diff against the merge-base with main. `fork_point`
+# is the merge-base revset function (verified in the pinned jj); the
+# `main..@` form is kept as a fallback for a jj that lacks it.
 diff_against_main() {
-  jj diff --name-only -r 'latest_common_ancestor(main, @)..@' 2>/dev/null \
+  jj diff --name-only -r 'fork_point(main | @)..@' 2>/dev/null \
     || jj diff --name-only -r 'main..@' 2>/dev/null \
     || true
 }
