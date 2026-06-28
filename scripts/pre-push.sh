@@ -76,6 +76,9 @@ markdownlint-cli2 '**/*.md'
 step "scripts/tests/test-axiom-linter.sh"
 bash scripts/tests/test-axiom-linter.sh
 
+step "scripts/tests/test-lint-driver.sh"
+bash scripts/tests/test-lint-driver.sh
+
 step "scripts/lake-update-warning.sh"
 bash scripts/lake-update-warning.sh
 
