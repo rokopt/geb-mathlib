@@ -261,7 +261,10 @@ branches are merged without force-pushing.
 active topic branches; force-pushed (lease-protected by default)
 as topic-branch tips move. The split keeps `main` fork-friendly
 (clones never see force-pushed history) while giving us a single
-working view of all in-flight work.
+working view of all in-flight work. A regeneration that hits a
+fan-in conflict refuses to publish and opens a deduplicated
+`integration-regen-fail` tracking issue rather than leaving
+`integration` silently stale.
 
 ## Mathlib bump procedure
 

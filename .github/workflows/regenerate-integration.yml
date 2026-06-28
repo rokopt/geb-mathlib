@@ -12,6 +12,7 @@ concurrency:
 permissions:
   contents: write
   actions: write
+  issues: write
 
 jobs:
   regenerate:
@@ -44,3 +45,42 @@ jobs:
         run: gh workflow run ci.yml --ref integration
         env:
           GH_TOKEN: ${{ github.token }}
+
+      - name: Open a tracking issue if regeneration failed
+        # The regeneration script exits non-zero on a fan-in conflict
+        # (it refuses to publish a conflicted integration). Surface
+        # that to a human rather than leaving only a red run; one open
+        # issue is kept at a time to avoid duplicates on repeated main
+        # pushes while integration stays broken.
+        if: ${{ failure() }}
+        run: |
+          set -euo pipefail
+          gh label create integration-regen-fail --force \
+            --color B60205 \
+            --description "Integration branch regeneration failed; resolve the fan-in conflict"
+          existing=$(gh issue list --state open --label integration-regen-fail \
+            --json number --jq 'length')
+          if [ "$existing" != "0" ]; then
+            echo "Open integration-regen-fail issue already exists; not duplicating."
+            exit 0
+          fi
+          body_file="$(mktemp)"
+          cat > "$body_file" <<EOF
+          Automated regeneration of the \`integration\` branch failed.
+
+          The most likely cause is a textual conflict in the fan-in of
+          \`main\` plus the active topic branches; the regeneration
+          script refuses to publish a conflicted \`integration\`, so the
+          branch is now stale until the conflict is resolved.
+
+          This issue is kept open (deduplicated) while the failure
+          persists; close it once \`integration\` regenerates cleanly.
+
+          Run: ${RUN_URL}
+          EOF
+          gh issue create --label integration-regen-fail \
+            --title "Integration regeneration failed" \
+            --body-file "$body_file"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

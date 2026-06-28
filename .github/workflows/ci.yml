@@ -11,6 +11,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref == 'refs/heads/integration' }}
 
+# Jobs build and run pull-request-supplied code (lakefiles,
+# elaboration); restrict the token to read so untrusted PR content
+# cannot use a write-capable GITHUB_TOKEN.
+permissions:
+  contents: read
+
 jobs:
   style_lint:
     name: Style lint (forbid bare umbrella imports)
@@ -36,6 +42,7 @@ jobs:
   build:
     name: Build / test / lint / shake
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9  # v1
