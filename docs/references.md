@@ -27,7 +27,11 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 Catalog of useful pointers into Lean 4 libraries and external
-literature, organised by topic.
+literature, organised by topic. This is a reading catalogue;
+citable literature transcribed into the Lean source is recorded
+separately in `docs/references.bib` and cited from docstrings by
+key in `[Key]` form (see `CONTRIBUTING.md` § Cite the literature
+when transcribing).
 
 ## Searchable
 

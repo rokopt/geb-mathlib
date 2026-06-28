@@ -173,7 +173,13 @@ presents superseded decisions as current. See `docs/process.md`
   Lean source. Each workstream's brainstorming-phase spec marks
   each definition as transcription or novel. In `.lean` files,
   citations live in the module docstring's `## References`
-  section or inside the declaration's `/-- ... -/` docstring.
+  section or inside the declaration's `/-- ... -/` docstring. The
+  bibliographic detail for each cited work lives once in
+  `docs/references.bib`, keyed by a citation key; docstrings refer
+  to a work by that key in `[Key]` form (mathlib's convention), so
+  a work cited from several modules is described in one place.
+  `docs/references.md` is the complementary catalogue of library
+  and URL pointers, not citable literature.
 
 ### Style and references
 

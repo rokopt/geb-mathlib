@@ -32,6 +32,24 @@ jobs:
         run: bash scripts/tests/test-lint-imports.sh
       - name: scripts/tests/test-extract-pr.sh
         run: bash scripts/tests/test-extract-pr.sh
+      - name: scripts/tests/test-check-commit-msg.sh
+        run: bash scripts/tests/test-check-commit-msg.sh
+
+  commit_message_lint:
+    name: Commit message convention
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0
+      - name: Validate the pull request's commit subjects
+        run: |
+          git log --no-merges --format='%s' "${BASE}..${HEAD}" \
+            | bash scripts/check-commit-msg.sh
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
 
   build:
     name: Build / test / lint / shake
