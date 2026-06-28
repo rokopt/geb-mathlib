@@ -21,9 +21,9 @@ Applies to all `.md` files.
 
 Every Markdown document we author passes `markdownlint-cli2`
 against `.markdownlint-cli2.jsonc` (shared with the VSCode
-markdownlint extension). If an automated process emits
-non-compliant output, fix the offending files locally (or
-establish another automated process to do so).
+markdownlint extension). Machine-emitted logs that are not
+authored documentation are excluded from the lint via the
+`ignores` list in `.markdownlint-cli2.jsonc`.
 
 Run `markdownlint-cli2 '**/*.md'` before each commit step that
 touches Markdown.

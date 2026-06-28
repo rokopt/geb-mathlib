@@ -349,8 +349,9 @@ Every Markdown document passes `markdownlint-cli2` against
 `.markdownlint-cli2.jsonc` (shared with VSCode extension). The
 discipline keeps documentation uniformly readable; sharing the
 config with VSCode means the editor catches violations as we
-type. Tool-emitted Markdown is held to the same standard and
-normalized by the process that produces it.
+type. Machine-emitted logs that are not authored documentation
+are excluded from the lint via the ignore list in
+`.markdownlint-cli2.jsonc` rather than held to the prose rules.
 
 ## Use of AI in upstream-eligible code
 

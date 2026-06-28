@@ -15,6 +15,7 @@
   "ignores": [
     ".lake/**",
     ".jj/**",
+    ".remember/**",
     "node_modules/**"
   ]
 }
