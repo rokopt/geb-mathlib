@@ -221,5 +221,53 @@ assert_allow "git diff-index" 'git diff-index HEAD'
 assert_allow "git diff-files" 'git diff-files'
 assert_allow "git symbolic-ref --short" 'git symbolic-ref --short HEAD'
 
+# Prompt cases — wrapper/assignment/path prefixes that must not let
+# a mutating git slip past the segment dispatcher (a bare `git push`
+# is caught, but a prefixed form historically bypassed the hook).
+assert_prompt "env-var prefix push" 'GIT_DIR=x git push origin main'
+assert_prompt "multi env-var prefix push" 'GIT_DIR=x GIT_WORK_TREE=y git push'
+assert_prompt "command prefix push" 'command git push'
+assert_prompt "builtin prefix push" 'builtin git push'
+assert_prompt "exec prefix push" 'exec git push'
+assert_prompt "env prefix push" 'env git push'
+assert_prompt "env then assignment push" 'env GIT_DIR=x git push'
+assert_prompt "absolute-path push" '/usr/bin/git push'
+assert_prompt "relative-path push" './git push'
+assert_prompt "backslash push" '\git push'
+assert_prompt "assignment + absolute-path push" 'GIT_DIR=x /usr/bin/git push'
+assert_prompt "chained: status then command push" 'git status && command git push'
+
+# Allow cases — the same prefixes in front of a read-only verb stay
+# allowed (normalization must not over-block).
+assert_allow "command prefix status" 'command git status'
+assert_allow "env prefix log" 'env git log --oneline'
+assert_allow "env-var prefix status" 'GIT_PAGER=cat git status'
+assert_allow "absolute-path status" '/usr/bin/git status'
+assert_allow "backslash status" '\git status'
+
+# Degrade-to-allow when jq is unavailable: the hook must exit 0 with
+# no output rather than erroring on every Bash invocation. Run the
+# hook with a PATH that provides `cat` but not `jq`.
+assert_jq_missing() {
+  local tmpbin out rc bash_bin
+  bash_bin="$(command -v bash)"
+  tmpbin=$(mktemp -d)
+  ln -s "$(command -v cat)" "$tmpbin/cat"
+  out=$(printf '{"tool_input":{"command":"git status"}}' \
+        | PATH="$tmpbin" "$bash_bin" "$HOOK" 2>/dev/null) || rc=$?
+  rc=${rc:-0}
+  rm -rf "$tmpbin"
+  if [ "$rc" -ne 0 ]; then
+    echo "FAIL [jq missing]: expected exit 0 (degrade to allow), got $rc"
+    return 1
+  fi
+  if [ -n "$out" ]; then
+    echo "FAIL [jq missing]: expected no output, got: $out"
+    return 1
+  fi
+  echo "PASS [jq missing]"
+}
+assert_jq_missing
+
 echo ""
 echo "All smoke tests passed."

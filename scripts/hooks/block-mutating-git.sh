@@ -31,6 +31,11 @@ if [ ! -d "${CLAUDE_PROJECT_DIR:-.}/.jj" ]; then
   exit 0
 fi
 
+# Degrade to allow if jq is unavailable, rather than erroring on
+# every Bash invocation. The hook is a convenience; the binding
+# safety net is server-side (see emit_prompt's reason string).
+command -v jq >/dev/null 2>&1 || exit 0
+
 # Read tool_input.command from stdin.
 input_json=$(cat)
 cmd=$(printf '%s' "$input_json" | jq -r '.tool_input.command // ""')
@@ -107,6 +112,23 @@ strip_globals() {
     i=$((i + 1))
   done
   printf '%s' "${result[*]}"
+}
+
+# normalize_git_prefix: canonicalise a segment so the dispatcher and
+# allow_segment see a bare `git ...` form. Strips, in any order and
+# repeatedly, leading environment-variable assignments
+# (`GIT_DIR=x ...`) and an optional `command`/`builtin`/`exec`/`env`
+# wrapper, then rewrites a path- or backslash-qualified executable
+# (`/usr/bin/git`, `./git`, `\git`) to bare `git`. Without this,
+# `GIT_DIR=x git push`, `command git push`, `env git push`, and
+# `/usr/bin/git push` would not match the `git`/`git *` dispatch and
+# would bypass the allow-list. Quoted assignment values containing
+# spaces are not handled (an accepted edge, like `bash -c`).
+normalize_git_prefix() {
+  printf '%s' "$1" | sed -E ':s
+s/^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+//; ts
+s/^(command|builtin|exec|env)[[:space:]]+//; ts
+s#^([^[:space:]]*/)?\\?git([[:space:]]|$)#git\2#'
 }
 
 # allow_segment: returns 0 if the (single) git command segment is on
@@ -318,6 +340,8 @@ while IFS= read -r segment; do
   # Trim leading/trailing whitespace.
   segment="$(printf '%s' "$segment" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
   [ -z "$segment" ] && continue
+  # Canonicalise wrapper/assignment/path prefixes to a bare `git`.
+  segment="$(normalize_git_prefix "$segment")"
   # Only inspect git invocations.
   case "$segment" in
     git|"git "*) ;;
