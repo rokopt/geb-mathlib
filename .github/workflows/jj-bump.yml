@@ -87,6 +87,12 @@ jobs:
 
           Run: ${RUN_URL}
           EOF
+          # Ensure the suppression label exists (idempotent), so the
+          # issue creation below cannot fail on a fresh repo where the
+          # label was never created.
+          gh label create jj-bump-fail --force \
+            --color D93F0B \
+            --description "An automated jj version bump failed; an open issue with this label suppresses scheduled bumps"
           gh issue create --label jj-bump-fail \
             --title "jj bump to ${TARGET} failed" \
             --body-file "$body_file"
