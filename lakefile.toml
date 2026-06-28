@@ -2,6 +2,7 @@ name = "geb-mathlib"
 defaultTargets = ["Geb"]
 testDriver = "GebTests"
 lintDriver = "batteries/runLinter"
+lintDriverArgs = ["Geb"]
 
 [leanOptions]
 pp.unicode.fun = true
