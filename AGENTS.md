@@ -52,7 +52,12 @@ subject to upstream revision.
 ### Verify agent claims
 
 Verify agent claims against authoritative sources before
-committing them to artifacts; include citations.
+committing them to artifacts; include citations. When the claim
+is the attribution of a mathematical definition or theorem,
+locate and verify it against the primary source using available
+paper-search tooling (e.g. an arXiv search) before recording the
+citation identifier required by
+[CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md).
 
 ### No LLM-drafted text in mathlib-facing channels (enforcement)
 
@@ -75,9 +80,13 @@ AI-drafted code that already meets that bar.
 
 If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
-and prove Lean. It is a metered hosted service, so the agent asks
-the contributor whether to use it before invoking it, even when it
-is available. Its output is LLM-generated code, governed by the
+and prove Lean. Reach for it when a task exceeds the in-editor
+tooling: to formalize a definition or theorem available only in a
+published paper, or when a goal resists the `lean4:autoprove` and
+`lean4:sorry-filler-deep` passes. It is a metered hosted service,
+so the agent asks the contributor whether to use it before
+invoking it, even when it is available. Its output is
+LLM-generated code, governed by the
 same policy as any other AI tool
 ([CONTRIBUTING.md § Submission policy](CONTRIBUTING.md)): it may
 enter any subtree, upstream-eligible included, provided the user

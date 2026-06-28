@@ -9,6 +9,7 @@ paths:
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [`lean4` sub-skill mapping](#lean4-sub-skill-mapping)
+- [`lean-lsp` search and proof tools](#lean-lsp-search-and-proof-tools)
 - [Lake / build workflow — Claude-tool notes](#lake--build-workflow--claude-tool-notes)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -30,6 +31,27 @@ Additions specific to Claude Code, on top of the canonical
 | Exploring mathlib | `lean4:learn` | As needed |
 | Diagnosis | `lean4:doctor` | As needed |
 | Save progress | `lean4:checkpoint` | At milestones |
+
+## `lean-lsp` search and proof tools
+
+The `lean-lsp` MCP exposes these search and proof tools. Select
+by question.
+
+| Need | Tool |
+| --- | --- |
+| Does a declaration exist locally? | `lean_local_search` |
+| A lemma stating X (natural language) | `lean_leansearch` |
+| A lemma matching a type pattern | `lean_loogle` |
+| The Lean name for a concept | `lean_leanfinder` |
+| Lemmas that close the current goal | `lean_state_search` |
+| Premises to feed `simp` / `aesop` | `lean_hammer_premise` |
+| Minimise a goal's hypotheses | `lean_minimal_hypotheses` |
+| Test tactics without editing the file | `lean_multi_attempt` |
+| Profile a proof's tactic hotspots | `lean_profile_proof` |
+
+The natural-language and pattern search tools are rate-limited;
+prefer `lean_local_search` first, then verify any found name with
+`lean_hover_info`.
 
 ## Lake / build workflow — Claude-tool notes
 
