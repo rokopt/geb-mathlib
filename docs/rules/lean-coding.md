@@ -130,6 +130,9 @@ each occurrence with a pointer to the upstream rule.
   and `$$…$$` (display).
 - Cross-references use `` `Foo.bar` `` for identifiers;
   doc-gen4 renders them as links.
+- Literature citations reference a key in `docs/references.bib`
+  in `[Key]` form; the `## References` section lists the cited
+  keys. The bibliographic detail lives only in the `.bib`.
 - No development-history references in docstrings (e.g.,
   "previously did X"); history is for commit logs.
 

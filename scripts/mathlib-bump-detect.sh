@@ -33,6 +33,12 @@ MATHLIB_REPO="https://github.com/leanprover-community/mathlib4.git"
 CSLIB_REPO="https://github.com/leanprover/cslib.git"
 DOCGEN_REPO="https://github.com/leanprover/doc-gen4.git"
 BUMP_BRANCH="auto-update-lean/patch"
+# leanprover-community/lean-update labels its failure issue with this
+# exact name and deduplicates by it, creating the label on first use
+# (its `ensureLabel`). The in-flight suppression here queries the same
+# label, so the two agree without any setup on our side; `gh issue
+# list --label <absent>` returns 0 (not an error) before the first
+# failure ever creates it.
 FAIL_LABEL="auto-update-lean-fail"
 
 # select_target, bump_in_flight (reads BUMP_BRANCH/FAIL_LABEL above),

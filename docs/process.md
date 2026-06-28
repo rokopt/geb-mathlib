@@ -18,6 +18,7 @@
 - [main and integration](#main-and-integration)
 - [Mathlib bump procedure](#mathlib-bump-procedure)
 - [jj bump procedure](#jj-bump-procedure)
+- [LKG/FKB pipeline](#lkgfkb-pipeline)
 - [Markdownlint discipline](#markdownlint-discipline)
 - [Use of AI in upstream-eligible code](#use-of-ai-in-upstream-eligible-code)
 - [No LLM-drafted user-facing text](#no-llm-drafted-user-facing-text)
@@ -321,6 +322,29 @@ A contributor reviews the bump PR diff and merges. After merge
 to `main`, the contributor mass-rebases active topic branches and
 regenerates `integration` as in the mathlib bump procedure.
 
+## LKG/FKB pipeline
+
+The mathlib bump procedure above follows the newest release tag
+blindly: if that tag is the first to break this repository, the
+bump PR fails CI and waits for a human. The
+`leanprover-community/downstream-reports` pipeline replaces blind
+tag-following with regression-gating. Its `hopscotch` tool walks
+mathlib commits to record, per registered downstream, the
+Last-Known-Good (LKG) commit that still builds and the
+First-Known-Bad (FKB) commit that does not, and bumps only as far
+as the LKG. Fermat's Last Theorem uses it (`update.yml` →
+`hopscotch/lkg-bump`); registration is an entry in the pipeline's
+`ci/inventory/downstreams.json`.
+
+This repository has not adopted it. Registration triggers daily
+Zulip notifications, a community-visible cost that is only worth
+paying once the repository carries enough substantive content that
+its breakage signal is informative to mathlib. The trigger for
+revisiting is recorded in `TODO.md`; adopting the pipeline replaces
+the `update.yml` detect-and-apply flow above with the
+`downstream-reports` actions and is a deliberate, separately
+reviewed change rather than an incremental tweak.
+
 ## Markdownlint discipline
 
 Every Markdown document passes `markdownlint-cli2` against
@@ -343,8 +367,10 @@ rule and its source links live in `CONTRIBUTING.md`
 
 This policy is set upstream and has changed before: mathlib
 briefly prohibited new-contributor LLM code (PR #827,
-2026-04-20), removed that prohibition (PR #840, 2026-05-09), and
-reworded the section (PR #850, 2026-05-27). The linked source
+2026-04-20), removed that prohibition (PR #840, 2026-05-09),
+reworded the section (PR #850, 2026-05-27), and added the
+label-by-comment mechanism for the `LLM-generated` label (PR #855,
+2026-05-28). The linked source
 pages are the authority; re-check them periodically (the
 adversarial-review re-fetch in `AGENTS.md` § Adversarial review
 is one such checkpoint), and when they change, update

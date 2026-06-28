@@ -68,6 +68,13 @@ bash scripts/tests/test-diff-against-main.sh
 step "scripts/hooks/tests/test-block-mutating-git.sh"
 bash scripts/hooks/tests/test-block-mutating-git.sh
 
+step "scripts/tests/test-check-commit-msg.sh"
+bash scripts/tests/test-check-commit-msg.sh
+
+step "scripts/check-commit-msg.sh (branch commits)"
+jj log --no-graph -r 'fork_point(main | @)..@ ~ merges()' \
+  -T 'description.first_line() ++ "\n"' | bash scripts/check-commit-msg.sh
+
 step "doctoc --dryrun --update-only ."
 if command -v doctoc >/dev/null 2>&1; then
   doctoc --dryrun --update-only . \
