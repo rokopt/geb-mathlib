@@ -6,6 +6,7 @@ Authors: The geb-mathlib contributors
 module
 
 import GebTests.Mathlib.Data.PFunctor.Slice
+import GebTests.Mathlib.Data.PFunctor.Presheaf
 
 /-!
 # PFunctor tests — index

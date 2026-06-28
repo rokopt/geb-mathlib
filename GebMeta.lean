@@ -45,8 +45,9 @@ test fixture, and the categorical wrappers over mathlib's
 `Classical`-dependent category theory. Feature branches append their
 own wrapper module names. -/
 def classicalAllowedModules : NameSet :=
-  (({} : NameSet).insert `GebTests.Internal.AxiomLinterClassicalFixture).insert
-    `Geb.Mathlib.Data.PFunctor.Slice.Functor
+  ((({} : NameSet).insert `GebTests.Internal.AxiomLinterClassicalFixture).insert
+    `Geb.Mathlib.Data.PFunctor.Slice.Functor).insert
+    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor
 
 /-- Permitted axioms for a declaration in module `mod`, given the
 allowlist `allowed`: the standard set, plus `Classical.choice` exactly
