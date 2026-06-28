@@ -56,9 +56,9 @@ construction.
 - **`downstream-reports` registration**: a manual periodic
   checkpoint by the user. Trigger: "do we have enough substantive
   content that registration would be informative for the
-  community, given the daily Zulip notification cost?" Procedure
-  in `docs/process.md` § LKG/FKB pipeline (section to be
-  populated when triggered).
+  community, given the daily Zulip notification cost?" The
+  registration procedure is to be written in `docs/process.md`
+  when triggered.
 - **Verso adoption**: when any of (a) doc-gen4 supports Verso,
   (b) Verso marks cross-references stable, (c) mathlib migrates
   to Verso, (d) our prose grows substantial. Currently using

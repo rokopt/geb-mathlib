@@ -68,10 +68,9 @@ Returned proofs are also subject to the repository's other rules:
   this repository's. Restyle to
   [docs/rules/lean-coding.md](rules/lean-coding.md) and replace
   the blanket `import Mathlib` with specific imports.
-- Toolchain. Aristotle pins its own Lean toolchain (observed
-  `leanprover/lean4:v4.28.0`), which may differ from this
-  repository's `lean-toolchain`. Re-verify any proof under the
-  repository's build before relying on it.
+- Toolchain. Aristotle pins its own Lean toolchain, which may
+  differ from this repository's `lean-toolchain`. Re-verify any
+  proof under the repository's build before relying on it.
 
 ## Setup
 

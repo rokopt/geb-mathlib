@@ -50,6 +50,9 @@ bash scripts/lint-imports.sh
 step "scripts/tests/test-lint-imports.sh"
 bash scripts/tests/test-lint-imports.sh
 
+step "scripts/tests/test-extract-pr.sh"
+bash scripts/tests/test-extract-pr.sh
+
 step "scripts/tests/test-mathlib-bump-detect.sh"
 bash scripts/tests/test-mathlib-bump-detect.sh
 
@@ -58,6 +61,9 @@ bash scripts/tests/test-jj-bump-detect.sh
 
 step "scripts/tests/test-regenerate-integration.sh"
 bash scripts/tests/test-regenerate-integration.sh
+
+step "scripts/tests/test-diff-against-main.sh"
+bash scripts/tests/test-diff-against-main.sh
 
 step "scripts/hooks/tests/test-block-mutating-git.sh"
 bash scripts/hooks/tests/test-block-mutating-git.sh
@@ -91,14 +97,11 @@ step "docs-coverage check (concept docs in same branch)"
 # implementation would parse new top-level declarations and check
 # docs/index.md mentions them; deferred to a future upgrade.
 #
-# Helper: get the diff against the merge-base with main. `fork_point`
-# is the merge-base revset function (verified in the pinned jj); the
-# `main..@` form is kept as a fallback for a jj that lacks it.
-diff_against_main() {
-  jj diff --name-only -r 'fork_point(main | @)..@' 2>/dev/null \
-    || jj diff --name-only -r 'main..@' 2>/dev/null \
-    || true
-}
+# diff_against_main (diff against the merge-base with main) is shared
+# with lake-update-warning.sh.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/diff-against-main.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/diff-against-main.sh"
 
 if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal)/.*\.lean$'; then
   if ! diff_against_main | grep -q '^docs/index.md$'; then

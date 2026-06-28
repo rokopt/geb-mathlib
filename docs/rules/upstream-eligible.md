@@ -125,10 +125,10 @@ mathlib's style. Files in `Geb/Cslib/` (and `GebTests/Cslib/`):
   no unused imports. Our repo-wide pre-push and CI check (see
   `docs/rules/lean-coding.md` § Lean 4 module system) satisfies
   this for both upstream targets.
-- **PR-title categories**: CSLib's PR-title types are
-  `feat | fix | doc | style | refactor | test | chore | perf`
-  (mathlib's set minus `ci`). When filing a PR upstream to
-  CSLib, the title's leading category is one of these.
+- **PR-title categories**: CSLib's PR-title types are mathlib's set
+  (`docs/rules/ci-and-workflow.md` § Commit-message convention)
+  minus `ci`. When filing a PR upstream to CSLib, the title's
+  leading category is one of these.
 - **Pre-coordination on Zulip**: cross-cutting abstractions,
   typeclasses, notation schemes, foundational frameworks, and
   major refactorings are discussed on the CSLib Zulip channel

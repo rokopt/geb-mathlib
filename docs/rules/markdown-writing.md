@@ -62,4 +62,6 @@ markers, then commit.
   name and email are appropriate there, since they identify a
   project role rather than a contributor.
 
-See `docs/process.md` § Style guidelines for full rationale.
+The binding rule is `CONTRIBUTING.md` § Style and references; see
+`docs/process.md` § Generic user references and § Avoid
+colloquialisms and metaphors for the rationale.

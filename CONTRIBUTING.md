@@ -216,7 +216,11 @@ prefixes outside import lines in their respective subtrees.
 
 ### Each phase produces an artifact
 
-Each phase produces an artifact.
+Every phase of a workstream leaves a durable artifact: brainstorming
+produces a spec, planning produces a plan, and implementation
+produces the code and its `docs/` entries. The spec and plan are
+transient (see § Concern shape); the code and its documentation
+persist. A phase is not complete until its artifact exists.
 
 ## Repo structure
 
@@ -229,10 +233,12 @@ PR-candidate.
 ## Tooling
 
 - VCS: `jj` v0.41+ in colocated mode; lease-protected pushes.
-- Build: `lake` (mathlib pin via SHA + `mathlib-update-action`
-  cron).
-- CI: GitHub Actions via `leanprover/lean-action@v1` and
-  `leanprover-community/mathlib-update-action`.
+- Build: `lake` (the mathlib `rev` pin is bumped by the
+  `update.yml` cron).
+- CI: GitHub Actions via `leanprover/lean-action@v1`; mathlib bumps
+  run `scripts/mathlib-bump-detect.sh` (reusing
+  `mathlib-update-action`'s tag-selection algorithm) plus
+  `leanprover-community/lean-update`.
   (`upstreaming-dashboard-action` deferred until `Geb/Mathlib/`
   has substantive content for it to dashboard.)
 - Linters: `markdownlint-cli2`, `scripts/lint-imports.sh`,
