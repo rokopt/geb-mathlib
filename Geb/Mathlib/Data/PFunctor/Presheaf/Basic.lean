@@ -180,6 +180,11 @@ of the slice object on the total-space projection `elemProj Z`. -/
     (Z : Iᵒᵖ ⥤ Type uZ) : Type (max uI uZ uA uB) :=
   { x : F.toSliceDomPFunctor.Obj (elemProj Z) // F.IsNatural x }
 
+/-- The shape of an element of `F.obj Z`: its underlying `PFunctor` shape. -/
+@[expose, reducible] def obj.shape {I : Type uI} [Category.{vI} I]
+    {F : PresheafDomPFunctorData.{uI, uA, uB, vI} I} {Z : Iᵒᵖ ⥤ Type uZ} (x : F.obj Z) : F.A :=
+  x.1.1.1
+
 /-- A component of a natural transformation commutes with the reindexing
 `cast` along an equality of base points. -/
 private theorem app_cast {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Type uZ}
@@ -400,14 +405,14 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
 `reindex_naturality`. -/
 @[expose] def objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.obj Z) (htag : F.t x.1.1.1 = j) : F.obj Z :=
+    (x : F.obj Z) (htag : F.t x.shape = j) : F.obj Z :=
   ⟨F.objRestrElt g x.1 htag, by
     intro i i' f b
     rw [F.value_objRestrElt, F.value_objRestrElt,
-      show F.reindex g ⟨x.1.1.1, htag⟩ (F.restr (F.objRestrElt g x.1 htag).1.1 f b)
-          = F.restr x.1.1.1 f (F.reindex g ⟨x.1.1.1, htag⟩ b) from
-        (congrFun (F.isFunctorial.reindex_naturality g ⟨x.1.1.1, htag⟩ f) b).symm]
-    exact x.2 f (F.reindex g ⟨x.1.1.1, htag⟩ b)⟩
+      show F.reindex g ⟨x.shape, htag⟩ (F.restr (F.objRestrElt g x.1 htag).1.1 f b)
+          = F.restr x.shape f (F.reindex g ⟨x.shape, htag⟩ b) from
+        (congrFun (F.isFunctorial.reindex_naturality g ⟨x.shape, htag⟩ f) b).symm]
+    exact x.2 f (F.reindex g ⟨x.shape, htag⟩ b)⟩
 
 /-- The underlying index of a direction cast along a shape equality is the
 original index, up to the transport of its type along that equality. -/
@@ -503,15 +508,15 @@ from `F.isFunctorial`. -/
 @[expose] def objPresheaf {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
     Jᵒᵖ ⥤ Type (max uI uZ uA uB) where
-  obj j := { z : F.toPresheafDomPFunctorData.obj Z // F.t z.1.1.1 = j.unop }
-  map g := ↾ fun w => ⟨F.objRestr g.unop w.1 w.2, (F.tagRestr g.unop ⟨w.1.1.1.1, w.2⟩).2⟩
+  obj j := { z : F.toPresheafDomPFunctorData.obj Z // F.t z.shape = j.unop }
+  map g := ↾ fun w => ⟨F.objRestr g.unop w.1 w.2, (F.tagRestr g.unop ⟨w.1.shape, w.2⟩).2⟩
   map_id j := by
     ext w
     exact Subtype.ext (F.objRestrElt_id w.1.1 w.2)
   map_comp g h := by
     ext w
     apply Subtype.ext
-    exact F.objRestrElt_comp g.unop h.unop w.1.1 w.2 (F.tagRestr g.unop ⟨w.1.1.1.1, w.2⟩).2
+    exact F.objRestrElt_comp g.unop h.unop w.1.1 w.2 (F.tagRestr g.unop ⟨w.1.shape, w.2⟩).2
 
 /-- Naturality of the dom morphism map with respect to `objPresheaf`'s
 `J`-restriction: for `α : NatTrans Z Z'`, the dom `map α` carries the fibre of
@@ -523,7 +528,7 @@ precomposition with `reindex g` (the restriction), needing no functor law. -/
 theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : CategoryTheory.NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.1.1.1 = j) :
+    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.shape = j) :
     F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
       F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
   Subtype.ext rfl
