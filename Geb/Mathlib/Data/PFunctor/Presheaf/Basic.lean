@@ -57,6 +57,8 @@ fibres contravariantly.
 * `PresheafPFunctor.objPresheaf` — the output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, a
   `Classical.choice`-free `Functor` value with `map_id` / `map_comp` discharged
   from `isFunctorial`.
+* `PresheafPFunctor.mapPresheaf` — the presheaf morphism
+  `objPresheaf Z ⟶ objPresheaf Z'` induced by a morphism of input presheaves.
 
 ## Main statements
 
@@ -532,5 +534,18 @@ theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ
     F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
       F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
   Subtype.ext rfl
+
+/-- The natural transformation `objPresheaf Z ⟶ objPresheaf Z'` induced by a
+morphism `α : Z ⟶ Z'` of input presheaves: each component is the dom `map α` on
+the underlying element, restricted to the `t`-tagged fibre (the dom map preserves
+the tag, the shape being fixed by `SliceDomPFunctor.map_fst`); naturality is
+`map_objRestr`. The categorical wrapper `functor.map` reuses it. -/
+@[expose] def mapPresheaf {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
+    (α : NatTrans Z Z') : NatTrans (F.objPresheaf Z) (F.objPresheaf Z') where
+  app X := ↾fun w => (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ : (F.objPresheaf Z').obj X)
+  naturality _ _ g := by
+    ext w
+    exact Subtype.ext (F.map_objRestr α g.unop w.1 w.2)
 
 end PresheafPFunctor

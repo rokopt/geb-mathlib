@@ -40,12 +40,12 @@ functor laws discharge by `ext` plus the core `map_id`/`map_comp`. Unlike
 the slice wrapper there is no `Functor.toOver` shortcut: the codomain is a
 plain type category, not an `Over` category.
 
-`functor` assembles directly: its object map is `objPresheaf`, and its
-morphism map carries a functor-category hom `α` to the natural transformation
-whose component over `j` is the dom `map α` restricted to the `t`-tagged fibre
-(the dom map preserves the tag, so it restricts). Each component's naturality
-with respect to `objPresheaf`'s restriction maps is `map_objRestr`; the outer
-functor laws come from the dom `map_id` / `map_comp`. There is no `Functor.toOver`
+`functor` assembles directly: its object map is `objPresheaf`, and its morphism
+map is the core `mapPresheaf` — the natural transformation a
+functor-category hom `α` induces, whose component is the dom `map α` restricted
+to the `t`-tagged fibre (the dom map preserves the tag, so it restricts), with
+naturality `map_objRestr`. The outer functor laws come from the dom
+`map_id` / `map_comp`. There is no `Functor.toOver`
 analogue for presheaf codomains. The morphism universes of `I` and `J` are
 named so the input presheaf's value universe and the `PresheafPFunctor` arity
 universes pin the output presheaf's value universe explicitly.
@@ -91,21 +91,14 @@ end PresheafDomPFunctorData
 namespace PresheafPFunctor
 
 /-- The presheaf polynomial functor `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)` of `F`: its
-object map is the choice-free output presheaf `objPresheaf`, and its morphism
-map carries a functor-category hom `α` to the natural transformation whose
-component over `j` is the dom `map α` restricted to the `t`-tagged fibre. Each
-component's naturality is `map_objRestr`; the functor laws come from the dom
-`map_id` / `map_comp`. -/
+object map is the output presheaf `objPresheaf`, and its morphism map
+is `mapPresheaf` (the induced presheaf morphism). The functor
+laws come from the dom `map_id` / `map_comp`. -/
 @[expose] def functor {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     CategoryTheory.Functor (Iᵒᵖ ⥤ Type uZ) (Jᵒᵖ ⥤ Type (max uI uZ uA uB)) where
   obj Z := F.objPresheaf Z
-  map {Z Z'} α :=
-    { app := fun X => ↾ (fun w => (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ :
-        (F.objPresheaf Z').obj X))
-      naturality := fun _ _ g => by
-        ext w
-        exact Subtype.ext (F.map_objRestr α g.unop w.1 w.2) }
+  map {Z Z'} α := F.mapPresheaf α
   map_id Z := by
     ext j w
     exact Subtype.ext (congrFun (F.toPresheafDomPFunctorData.map_id Z) w.1)
