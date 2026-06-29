@@ -190,7 +190,7 @@ of the slice object on the total-space projection `elemProj Z`. -/
 /-- A component of a natural transformation commutes with the reindexing
 `cast` along an equality of base points. -/
 private theorem app_cast {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Type uZ}
-    (α : CategoryTheory.NatTrans Z Z') {k i : I} (e : k = i) (z : Z.obj ⟨k⟩) :
+    (α : NatTrans Z Z') {k i : I} (e : k = i) (z : Z.obj ⟨k⟩) :
     cast (congrArg (fun k : I => Z'.obj ⟨k⟩) e) (α.app ⟨k⟩ z) =
       α.app ⟨i⟩ (cast (congrArg (fun k : I => Z.obj ⟨k⟩) e) z) := by
   cases e
@@ -207,7 +207,7 @@ base-point projection `elemProj`, so it is a slice morphism over `elemProj`. -/
 direction is `α.app` of the `Z`-component the original assigns to it. -/
 private theorem value_map {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
-    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
+    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z')
     (x : F.toSliceDomPFunctor.Obj (elemProj Z)) ⦃i : I⦄
     (b : F.toSliceDomPFunctor.Direction (F.toSliceDomPFunctor.map (p' := elemProj Z')
       (elemMap α) rfl x).1.1 i) :
@@ -219,7 +219,7 @@ private theorem value_map {I : Type uI} [Category.{vI} I]
 /-- Action on a morphism of input presheaves (the bare `NatTrans`, not
 the functor-category hom, to stay choice-free). -/
 @[expose] def map {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
-    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z') :
+    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z') :
     F.obj Z → F.obj Z' :=
   fun x => ⟨F.toSliceDomPFunctor.map
     (elemMap α) rfl x.1, by
@@ -241,8 +241,8 @@ theorem map_id {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI,
 /-- Functoriality in the input presheaf: the vertical composite of
 transformations acts as the composite of the actions. -/
 theorem map_comp {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
-    {Z Z' Z'' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
-    (β : CategoryTheory.NatTrans Z' Z'') :
+    {Z Z' Z'' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z')
+    (β : NatTrans Z' Z'') :
     F.map { app := fun i => α.app i ≫ β.app i, naturality := fun _ _ g =>
         (by rw [← Category.assoc, α.naturality, Category.assoc, β.naturality,
           ← Category.assoc]) } =
@@ -525,7 +525,7 @@ interchange of the postcomposition with `α` (the morphism action) and the
 precomposition with `reindex g` (the restriction), needing no functor law. -/
 theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
-    (α : CategoryTheory.NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
+    (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
     (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.shape = j) :
     F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
       F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=

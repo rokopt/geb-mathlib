@@ -76,7 +76,7 @@ functor-category hom is definitionally the bare `NatTrans` the core `map`
 consumes, and the functor laws come from the core `map_id`/`map_comp`. -/
 @[expose] def domFunctor {I : Type uI} [Category I]
     (F : PresheafDomPFunctorData.{uI, uA, uB} I) :
-    CategoryTheory.Functor (Iᵒᵖ ⥤ Type uZ) (Type (max uA uB uI uZ)) where
+    CategoryTheory.Functor (Iᵒᵖ ⥤ Type uZ) (Type (max uI uZ uA uB)) where
   obj Z := F.obj Z
   map {Z Z'} h := ↾(F.map h)
   map_id Z := by
