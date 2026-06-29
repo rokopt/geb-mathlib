@@ -224,7 +224,7 @@ the functor-category hom, to stay choice-free). -/
   fun x => ⟨F.toSliceDomPFunctor.map
     (elemMap α) rfl x.1, by
     intro i i' f b
-    rw [value_map F α x.1, value_map F α x.1]
+    simp only [value_map]
     refine (congrArg (fun w => α.app ⟨i'⟩ w) (x.2 f b)).trans ?_
     simp only [← ConcreteCategory.comp_apply]
     rw [α.naturality f.op]⟩
@@ -398,8 +398,7 @@ private theorem value_objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} 
     (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
     ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x htag).1.1 i) :
     F.value (F.objRestrElt g x htag) b = F.value x (F.reindex g ⟨x.1.1, htag⟩ b) := by
-  obtain ⟨b1, hb⟩ := b
-  cases hb
+  obtain ⟨b1, rfl⟩ := b
   rfl
 
 /-- The restriction action of `objPresheaf` on a `J`-morphism `g`, at the level
@@ -434,12 +433,9 @@ private theorem reindex_val_heq {I : Type uI} [Category.{vI} I] {J : Type uJ} [C
     (hb : (b.1 : F.B (F.tagRestr h S).1) ≍ (b'.1 : F.B (F.tagRestr h S').1)) :
     (F.reindex h S b).1 ≍ ((F.reindex h S' b').1 : F.B S'.1) := by
   cases hSS
-  obtain ⟨bv, hbi⟩ := b
-  obtain ⟨bv', hbi'⟩ := b'
-  have hvv : bv = bv' := eq_of_heq hb
-  subst hvv
-  cases hbi
-  cases hbi'
+  obtain ⟨bv, rfl⟩ := b
+  obtain ⟨bv', rfl⟩ := b'
+  cases eq_of_heq hb
   rfl
 
 /-- Two functions into a common type whose domains are equal are heterogeneously
@@ -471,8 +467,8 @@ private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Ca
   dsimp only
   rw [F.isFunctorial.reindex_id]
   congr 1
-  apply eq_of_heq
-  exact HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
+  exact eq_of_heq
+    (HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb)
 
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/

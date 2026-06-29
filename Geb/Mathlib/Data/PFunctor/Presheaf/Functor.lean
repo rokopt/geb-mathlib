@@ -82,9 +82,7 @@ consumes, and the functor laws come from the core `map_id`/`map_comp`. -/
   map_id Z := by
     ext z
     exact congrFun (F.map_id Z) z
-  map_comp f g := by
-    ext z
-    rfl
+  map_comp _ _ := rfl
 
 end PresheafDomPFunctorData
 

@@ -77,9 +77,7 @@ over `Over dom`. -/
   map_id Y := by
     ext z
     exact congrFun (F.map_id _) z
-  map_comp f g := by
-    ext z
-    rfl
+  map_comp _ _ := rfl
 
 end SliceDomPFunctor
 
