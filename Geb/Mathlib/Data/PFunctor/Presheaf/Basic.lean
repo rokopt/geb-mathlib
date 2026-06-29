@@ -38,6 +38,8 @@ fibres contravariantly.
 * `PresheafDomPFunctorData.IsNatural` — naturality of the direction
   assignment with respect to `restr` and `Z.map`.
 * `PresheafDomPFunctorData.obj` — the functor's value on a presheaf `Z`.
+* `PresheafDomPFunctorData.elemMap` — the action of a presheaf morphism `α` on
+  the categories of elements, `el(Z) ⟶ el(Z')`.
 * `PresheafDomPFunctorData.map` — the action on morphisms of input presheaves
   (the bare `NatTrans`, choice-free).
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
@@ -187,6 +189,13 @@ private theorem app_cast {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Typ
   cases e
   rfl
 
+/-- The action of a natural transformation `α : Z ⟶ Z'` on the categories of
+elements, `el(Z) ⟶ el(Z')`: `⟨i, z⟩ ↦ ⟨i, α.app ⟨i⟩ z⟩`. It preserves the
+base-point projection `elemProj`, so it is a slice morphism over `elemProj`. -/
+@[expose] def elemMap {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Type uZ}
+    (α : NatTrans Z Z') : (Σ i : I, Z.obj ⟨i⟩) → (Σ i : I, Z'.obj ⟨i⟩) :=
+  fun p => ⟨p.1, α.app ⟨p.1⟩ p.2⟩
+
 /-- The `Z'`-component the image under `α` of a slice element assigns to a
 direction is `α.app` of the `Z`-component the original assigns to it. -/
 private theorem value_map {I : Type uI} [Category.{vI} I]
@@ -194,9 +203,9 @@ private theorem value_map {I : Type uI} [Category.{vI} I]
     {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
     (x : F.toSliceDomPFunctor.Obj (elemProj Z)) ⦃i : I⦄
     (b : F.toSliceDomPFunctor.Direction (F.toSliceDomPFunctor.map (p' := elemProj Z')
-      (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x).1.1 i) :
+      (elemMap α) rfl x).1.1 i) :
     F.value (F.toSliceDomPFunctor.map (p' := elemProj Z')
-      (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x) b =
+      (elemMap α) rfl x) b =
       α.app ⟨i⟩ (F.value x b) :=
   app_cast α (((F.compatible_iff (elemProj Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2) _
 
@@ -206,7 +215,7 @@ the functor-category hom, to stay choice-free). -/
     {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z') :
     F.obj Z → F.obj Z' :=
   fun x => ⟨F.toSliceDomPFunctor.map
-    (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x.1, by
+    (elemMap α) rfl x.1, by
     intro i i' f b
     rw [value_map F α x.1, value_map F α x.1]
     refine (congrArg (fun w => α.app ⟨i'⟩ w) (x.2 f b)).trans ?_
@@ -234,8 +243,8 @@ theorem map_comp {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{u
   funext x
   exact Subtype.ext (congrFun (F.toSliceDomPFunctor.map_comp (p := elemProj Z) (q := elemProj Z')
     (r := elemProj Z'')
-    (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩))
-    (fun p : Σ i : I, Z'.obj ⟨i⟩ => (⟨p.1, β.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z''.obj ⟨i⟩))
+    (elemMap α)
+    (elemMap β)
     rfl rfl) x.1)
 
 end PresheafDomPFunctorData
