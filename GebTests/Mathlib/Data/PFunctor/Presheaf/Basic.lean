@@ -25,7 +25,7 @@ example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.RestrComp :=
 
 -- `obj` is the `IsNatural` subtype of the slice object on `elemProj Z`.
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
-    F.obj Z = { x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)
+    F.obj Z = { x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)
       // F.IsNatural x } := rfl
 
 -- `map` of the hand-built identity transformation is the identity, by

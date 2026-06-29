@@ -37,18 +37,18 @@ example (P : PFunctor.{0, 0}) (sc : (a : P.A) → P.B a → Bool) (a : P.A)
   rfl
 
 -- The object map is the compatibility subtype of the interpretation.
-example : testSlice.toSliceDomPFunctor.obj (id : Bool → Bool) =
+example : testSlice.toSliceDomPFunctor.Obj (id : Bool → Bool) =
     { x : (testSlice.toPFunctor).Obj Bool //
       testSlice.toSliceDomPFunctor.Compatible (id : Bool → Bool) x.1 x.2 } := rfl
 
 -- The action fixes the shape.
 example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p)
-    (z : testSlice.toSliceDomPFunctor.obj p) :
+    (z : testSlice.toSliceDomPFunctor.Obj p) :
     (testSlice.toSliceDomPFunctor.map f hf z).1.1 = z.1.1 :=
   testSlice.toSliceDomPFunctor.map_fst f hf z
 
 -- The slice object's structure map into `cod` is the tag at the shape.
-example (X : Type) (p : X → Bool) (z : testSlice.toSliceDomPFunctor.obj p) :
+example (X : Type) (p : X → Bool) (z : testSlice.toSliceDomPFunctor.Obj p) :
     testSlice.obj p z = testSlice.t z.1.1 := rfl
 
 -- The slice morphism's underlying function is the `SliceDomPFunctor` map.
@@ -63,7 +63,7 @@ example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p) :
 -- Functoriality: identity and composition.
 example (X : Type) (p : X → Bool) :
     testSlice.map id (by simp) =
-      (id : testSlice.toSliceDomPFunctor.obj p → testSlice.toSliceDomPFunctor.obj p) :=
+      (id : testSlice.toSliceDomPFunctor.Obj p → testSlice.toSliceDomPFunctor.Obj p) :=
   testSlice.map_id p
 
 example (X Y Z : Type) (p : X → Bool) (q : Y → Bool) (r : Z → Bool)

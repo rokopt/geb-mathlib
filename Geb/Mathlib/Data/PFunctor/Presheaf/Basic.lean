@@ -158,7 +158,7 @@ structure IsFunctorial {I : Type uI} [Category.{vI} I]
 compatibility of `x` and the constraint condition on `b` to `Z.obj ⟨i⟩`. -/
 @[expose] def value {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
-    {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.obj (elemProj Z)) ⦃i : I⦄
+    {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.Obj (elemProj Z)) ⦃i : I⦄
     (b : F.toSliceDomPFunctor.Direction x.1.1 i) : Z.obj ⟨i⟩ :=
   cast (congrArg (fun k : I => Z.obj ⟨k⟩)
     (((F.compatible_iff (elemProj Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2)) (x.1.2 b.1).2
@@ -168,7 +168,7 @@ where `a := x.1.1`: for every `f : i' ⟶ i` and direction `b` over `i`, the
 component assigned to `restr a f b` equals `Z.map f.op` applied to `value x b`. -/
 @[expose] def IsNatural {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
-    {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.obj (elemProj Z)) : Prop :=
+    {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.Obj (elemProj Z)) : Prop :=
   ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (b : F.toSliceDomPFunctor.Direction x.1.1 i),
     F.value x (F.restr x.1.1 f b) = Z.map f.op (F.value x b)
 
@@ -176,7 +176,7 @@ component assigned to `restr a f b` equals `Z.map f.op` applied to `value x b`. 
 of the slice object on the total-space projection `elemProj Z`. -/
 @[expose] def obj {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     (Z : Iᵒᵖ ⥤ Type uZ) : Type (max uI uZ uA uB) :=
-  { x : F.toSliceDomPFunctor.obj (elemProj Z) // F.IsNatural x }
+  { x : F.toSliceDomPFunctor.Obj (elemProj Z) // F.IsNatural x }
 
 /-- A component of a natural transformation commutes with the reindexing
 `cast` along an equality of base points. -/
@@ -192,7 +192,7 @@ direction is `α.app` of the `Z`-component the original assigns to it. -/
 private theorem comp_map {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
-    (x : F.toSliceDomPFunctor.obj (elemProj Z)) ⦃i : I⦄
+    (x : F.toSliceDomPFunctor.Obj (elemProj Z)) ⦃i : I⦄
     (b : F.toSliceDomPFunctor.Direction (F.toSliceDomPFunctor.map (p' := elemProj Z')
       (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x).1.1 i) :
     F.value (F.toSliceDomPFunctor.map (p' := elemProj Z')
@@ -366,8 +366,8 @@ namespace PresheafPFunctor
 direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j) :
-    F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z) :=
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j) :
+    F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
   ⟨⟨(F.tagRestr g ⟨x.1.1, htag⟩).1,
       fun b' => x.1.2 (F.reindex g ⟨x.1.1, htag⟩ (i := F.sCurried _ b') ⟨b', rfl⟩).1⟩,
     (F.compatible_iff _ _ _).mpr fun b' =>
@@ -379,7 +379,7 @@ direction-assignment along `reindex g`. -/
 the original assigns to the direction's `reindex`. -/
 private theorem comp_objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
     ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x htag).1.1 i) :
     F.value (F.objRestrElt g x htag) b = F.value x (F.reindex g ⟨x.1.1, htag⟩ b) := by
   obtain ⟨b1, hb⟩ := b
@@ -440,7 +440,7 @@ private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → 
 identity. -/
 private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} {j : J}
-    (x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j) :
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j) :
     F.objRestrElt (𝟙 j) x htag = x := by
   apply Subtype.ext
   obtain ⟨⟨a, v⟩, hc⟩ := x
@@ -463,7 +463,7 @@ factors as the composite of the actions. -/
 private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' j'' : J⦄
     (g : j' ⟶ j) (h : j'' ⟶ j')
-    (x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
     (htag' : F.t (F.objRestrElt g x htag).1.1 = j') :
     F.objRestrElt (h ≫ g) x htag = F.objRestrElt h (F.objRestrElt g x htag) htag' := by
   apply Subtype.ext

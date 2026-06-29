@@ -72,7 +72,7 @@ interpretation to `s`-compatible assignments; the core maps packaged
 over `Over dom`. -/
 @[expose] def domFunctor {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) :
     CategoryTheory.Functor (Over dom) (Type (max uA uB uD)) where
-  obj Y := F.obj (ConcreteCategory.hom Y.hom)
+  obj Y := F.Obj (ConcreteCategory.hom Y.hom)
   map {Y Z} h := ↾(F.map (ConcreteCategory.hom h.left) (over_hom_comp h))
   map_id Y := by
     ext z
