@@ -62,7 +62,7 @@ container, PFunctor
 
 public section
 
-universe uA uB uD uC uX
+universe uA uB uD uC uX uX' uY uZ
 
 set_option linter.checkUnivs false in
 /-- A polynomial functor with a constraint leg `s` assigning each
@@ -131,7 +131,8 @@ compatibility subtype of the `PFunctor` interpretation. -/
 
 /-- Action on a slice morphism `f` (with `p' ∘ f = p`): `PFunctor.map f`
 restricted to the compatibility subtype. -/
-@[expose] def map {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X X' : Type uX}
+@[expose] def map {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+    {X : Type uX} {X' : Type uX'}
     {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
     F.Obj p → F.Obj p' :=
   fun x => ⟨F.toPFunctor.map f x.1, by
@@ -141,7 +142,8 @@ restricted to the compatibility subtype. -/
     exact hx⟩
 
 /-- `map` fixes the shape component. -/
-theorem map_fst {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X X' : Type uX}
+theorem map_fst {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+    {X : Type uX} {X' : Type uX'}
     {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p)
     (x : F.Obj p) : (F.map f hf x).1.1 = x.1.1 := by
   obtain ⟨⟨a, v⟩, hx⟩ := x
@@ -154,7 +156,8 @@ theorem map_id {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
   exact Subtype.ext (F.toPFunctor.id_map x.1)
 
 /-- Functoriality: composition. -/
-theorem map_comp {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X Y Z : Type uX}
+theorem map_comp {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
+    {X : Type uX} {Y : Type uY} {Z : Type uZ}
     {p : X → dom} {q : Y → dom} {r : Z → dom} (f : X → Y) (g : Y → Z)
     (hf : q ∘ f = p) (hg : r ∘ g = q) :
     F.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) =
@@ -176,13 +179,13 @@ the `SliceDomPFunctor` value `F.toSliceDomPFunctor.Obj p`. -/
 /-- The slice functor's action on a morphism: the `SliceDomPFunctor` morphism
 map underlying it. -/
 @[expose] def map {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
-    {X X' : Type uX} {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
+    {X : Type uX} {X' : Type uX'} {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
     F.toSliceDomPFunctor.Obj p → F.toSliceDomPFunctor.Obj p' :=
   F.toSliceDomPFunctor.map f hf
 
 /-- `map` lies over `cod`: it commutes with the `obj` structure maps. -/
 theorem map_w {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
-    {X X' : Type uX} {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
+    {X : Type uX} {X' : Type uX'} {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
     F.obj p' ∘ F.map f hf = F.obj p := by
   funext z
   exact congrArg F.t (F.toSliceDomPFunctor.map_fst f hf z)
@@ -195,7 +198,8 @@ theorem map_id {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, u
 
 /-- Functoriality: composition. -/
 theorem map_comp {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
-    {X Y Z : Type uX} {p : X → dom} {q : Y → dom} {r : Z → dom} (f : X → Y) (g : Y → Z)
+    {X : Type uX} {Y : Type uY} {Z : Type uZ}
+    {p : X → dom} {q : Y → dom} {r : Z → dom} (f : X → Y) (g : Y → Z)
     (hf : q ∘ f = p) (hg : r ∘ g = q) :
     F.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) = F.map g hg ∘ F.map f hf :=
   F.toSliceDomPFunctor.map_comp f g hf hg
