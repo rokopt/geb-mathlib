@@ -77,8 +77,12 @@ The declaration docstrings use the parametric-right-adjoint notation of
   restriction maps.
 * `E_T(a)` — the arity presheaf `i ↦ Direction a.1 i` of a shape `a` on `I`,
   with `restr` as its restriction maps.
-* `el(T1)` — the category of elements of `T1`; `reindex` provides the
-  functorial action of the arities `E_T` over it.
+* `el(T1)` — the category of elements of `T1`: objects are pairs `(j, a)` with
+  `a : Shape j`. As `T1` is a presheaf, its elements vary contravariantly, so a
+  morphism `(j, a) ⟶ (j', a')` is backed by a `J`-morphism `g : j' ⟶ j` (the
+  opposite direction) with `tagRestr g a = a'`. The arity assignment `a ↦ E_T(a)`
+  is therefore contravariant on `el(T1)` (a functor on `el(T1)ᵒᵖ`); `reindex g a`
+  is its action, the presheaf morphism `E_T(tagRestr g a) ⟶ E_T(a)`.
 
 ## Implementation notes
 
