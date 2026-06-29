@@ -42,9 +42,8 @@ theorems.
 
 ## References
 
-* N. Gambino and M. Hyland, *Wellfounded trees and dependent
-  polynomial functors*, TYPES 2003.
-* J. Kock, *Polynomial functors and polynomial monads*.
+* [GambinoHyland2004]
+* [GambinoKock2013]
 
 ## Tags
 

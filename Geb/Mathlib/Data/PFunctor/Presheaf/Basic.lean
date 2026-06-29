@@ -96,11 +96,10 @@ supplies the proof from its earlier `tagRestr_id` / `tagRestr_comp` fields.
 
 ## References
 
-* M. Weber, *Familial 2-functors and parametric right adjoints*, 2007.
-* nLab, *Parametric right adjoint*.
-* N. Gambino and M. Hyland, *Wellfounded trees and dependent
-  polynomial functors*, TYPES 2003.
-* J. Kock, *Polynomial functors and polynomial monads*.
+* [Weber2007]
+* [nLabParametricRightAdjoint]
+* [GambinoHyland2004]
+* [GambinoKock2013]
 
 ## Tags
 

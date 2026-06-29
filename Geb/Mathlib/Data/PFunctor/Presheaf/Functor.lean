@@ -52,10 +52,9 @@ universes pin the output presheaf's value universe explicitly.
 
 ## References
 
-* M. Weber, *Familial 2-functors and parametric right adjoints*, 2007.
-* N. Gambino and M. Hyland, *Wellfounded trees and dependent
-  polynomial functors*, TYPES 2003.
-* J. Kock, *Polynomial functors and polynomial monads*.
+* [Weber2007]
+* [GambinoHyland2004]
+* [GambinoKock2013]
 
 ## Tags
 
