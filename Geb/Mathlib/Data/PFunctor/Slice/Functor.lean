@@ -34,11 +34,15 @@ packaging is kept in a separate module from the choice-free core.
 `domFunctor` reuses the core `obj`/`map`; `Over` structure maps are
 read through `ConcreteCategory.hom`, the slice-morphism hypothesis is
 `SliceDomPFunctor.over_hom_comp` (the function-level form of `Over.w`),
-results promoted with `↾`, and the functor laws discharged by `ext`
-plus the core `map_id`/`map_comp`. `functor` is the `Functor.toOver`
-lift along the tag `t`; it is `@[expose]` so `functor_obj` /
-`functor_map` can state the definitional equalities as exported `rfl`
-theorems.
+results promoted with `↾`, the identity law discharged by `ext` and the
+core `map_id`, and the composition law by `ext` and `rfl`. `functor` is
+the `Functor.toOver` lift along the tag `t`; it is `@[expose]` so
+`functor_obj` / `functor_map` can state the definitional equalities as
+exported `rfl` theorems. `cod` is pinned to `domFunctor`'s codomain
+universe `max uA uB uD` because `Functor.toOver` requires its over-base
+object to inhabit the codomain category of the lifted functor, so the
+core's `cod`-universe polymorphism cannot survive into the categorical
+layer.
 
 ## References
 

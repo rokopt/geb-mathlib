@@ -41,11 +41,11 @@ import-direction rules above are enforced by
   interpretation defines a functor `Type/dom → Type/cod`.
   `Slice/Basic.lean` is the constructive core (`SliceDomPFunctor`,
   `SlicePFunctor`, `Compatible`, `obj`/`map` with functoriality),
-  `Classical.choice`-free. `Slice/Functor.lean` packages it as
-  `CategoryTheory.Functor (Over dom) (Over cod)` (`domFunctor`,
-  `functor`) via `Functor.toOver`; that module is listed in
-  `GebMeta.classicalAllowedModules` because mathlib's `Over` is
-  `Classical.choice`-dependent at the type level.
+  `Classical.choice`-free. `Slice/Functor.lean` packages it
+  categorically as `domFunctor : Over dom ⥤ Type` (reusing the core
+  `obj`/`map`) and, via `Functor.toOver`, `functor : Over dom ⥤ Over cod`;
+  that module is listed in `GebMeta.classicalAllowedModules` because
+  mathlib's `Over` is `Classical.choice`-dependent at the type level.
 - `Geb/Mathlib/Data/PFunctor/Presheaf/` — presheaf polynomial functors
   (parametric-right-adjoint functors `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)`),
   built as a restriction of `SlicePFunctor`. The per-layer structure

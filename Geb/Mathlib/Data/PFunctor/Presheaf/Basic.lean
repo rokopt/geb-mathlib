@@ -67,6 +67,18 @@ fibres contravariantly.
 * `PresheafPFunctor.map_objRestr` — the domain map is natural with respect
   to the output presheaf's restriction maps.
 
+## Notation
+
+The declaration docstrings use the parametric-right-adjoint notation of
+[Weber2007]:
+
+* `T1` — the shape presheaf `j ↦ Shape j` on `J`, with `tagRestr` as its
+  restriction maps.
+* `E_T(a)` — the arity presheaf `i ↦ Direction a.1 i` of a shape `a` on `I`,
+  with `restr` as its restriction maps.
+* `el(T1)` — the category of elements of `T1`; `reindex` provides the
+  functorial action of the arities `E_T` over it.
+
 ## Implementation notes
 
 The morphism universes of `I` and `J` are named `vI` and `vJ` (via
@@ -90,13 +102,16 @@ the same situation mathlib suppresses in `PFunctor`.
 `extends PresheafDomPFunctorData.{uI, uA, uB, vI} I,
 SlicePFunctor.{uA, uB, uI, uJ} I J`,
 which shares the single `SliceDomPFunctor` parent. The `reindex` laws
-`ReindexId` / `ReindexComp` cannot be bare `Prop`s: comparing `reindex` along
+`ReindexId` / `ReindexComp` are stated in homogeneous-`Eq` form, parameterized
+on a `tagRestr` law, rather than as bare `Prop`s: comparing `reindex` along
 `𝟙` (resp. a composite) with the identity (resp. the composite of `reindex`es)
 requires a source-type transport whose target equality
 (`tagRestr (𝟙 j) a = a`, resp. `tagRestr (h ≫ g) a = tagRestr h (tagRestr g a)`)
 is `TagRestrId` (resp. `TagRestrComp`) content, not definitional. They are
 therefore parameterized on that law and apply it via `cast`; `IsFunctorial`
-supplies the proof from its earlier `tagRestr_id` / `tagRestr_comp` fields.
+supplies the proof from its earlier `tagRestr_id` / `tagRestr_comp` fields. A
+heterogeneous-`Eq` formulation would avoid the parameter at the cost of
+`rw`-convenience and mathlib idiom.
 
 ## References
 
@@ -415,8 +430,8 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
         (congrFun (F.isFunctorial.reindex_naturality g ⟨x.shape, htag⟩ f) b).symm]
     exact x.2 f (F.reindex g ⟨x.shape, htag⟩ b)⟩
 
-/-- The underlying index of a direction cast along a shape equality is the
-original index, up to the transport of its type along that equality. -/
+/-- The underlying value of a direction cast along a shape equality is the
+original value, up to the transport of its type along that equality. -/
 private theorem cast_val_heq {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {j : J} {s s' : F.Shape j} (h : s = s')
     {i : I} (p : F.Direction s.1 i) :

@@ -28,17 +28,17 @@ choice-free: `objPresheaf` uses `↾` and is `{propext, Quot.sound}`.
 ## Main statements
 
 * `PresheafPFunctor.functor_obj` / `functor_map` — the categorical functor's
-  object and morphism maps are the choice-free core `objPresheaf` and dom
-  `map`.
+  object map is the core `objPresheaf`, and its morphism map is the
+  dom `map` retagged onto the `t`-tagged fibre.
 
 ## Implementation notes
 
 `domFunctor` reuses the core `obj`/`map`. A functor-category hom
 `h : Z ⟶ Z'` is definitionally a `CategoryTheory.NatTrans Z Z'`, the input
 the core `map` expects, so `map` promotes the core `map` with `↾`; the
-functor laws discharge by `ext` plus the core `map_id`/`map_comp`. Unlike
-the slice wrapper there is no `Functor.toOver` shortcut: the codomain is a
-plain type category, not an `Over` category.
+identity law discharges by `ext` and the core `map_id`, and the composition
+law by `ext` and `rfl`. Unlike the slice wrapper there is no `Functor.toOver`
+shortcut: the codomain is a plain type category, not an `Over` category.
 
 `functor` assembles directly: its object map is `objPresheaf`, and its morphism
 map is the core `mapPresheaf` — the natural transformation a
@@ -47,8 +47,9 @@ to the `t`-tagged fibre (the dom map preserves the tag, so it restricts), with
 naturality `map_objRestr`. The outer functor laws come from the dom
 `map_id` / `map_comp`. There is no `Functor.toOver`
 analogue for presheaf codomains. The morphism universes of `I` and `J` are
-named so the input presheaf's value universe and the `PresheafPFunctor` arity
-universes pin the output presheaf's value universe explicitly.
+named (`vI`, `vJ`) so the input presheaf's value universe `uZ` and the
+`PresheafPFunctor` arity universes `uA` / `uB` pin the output presheaf's value
+universe `max uI uZ uA uB` explicitly.
 
 ## References
 
@@ -73,7 +74,8 @@ namespace PresheafDomPFunctorData
 /-- The functor `(Iᵒᵖ ⥤ Type) ⥤ Type` of a presheaf-domain polynomial
 functor: the core `obj`/`map` packaged on the presheaf category. A
 functor-category hom is definitionally the bare `NatTrans` the core `map`
-consumes, and the functor laws come from the core `map_id`/`map_comp`. -/
+consumes; the identity law comes from the core `map_id`, the composition law
+by `rfl`. -/
 @[expose] def domFunctor {I : Type uI} [Category I]
     (F : PresheafDomPFunctorData.{uI, uA, uB} I) :
     CategoryTheory.Functor (Iᵒᵖ ⥤ Type uZ) (Type (max uI uZ uA uB)) where
