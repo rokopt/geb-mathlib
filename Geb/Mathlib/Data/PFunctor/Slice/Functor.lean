@@ -89,7 +89,7 @@ namespace SlicePFunctor
 post-composing with the `t`-tag is preserved. This is the
 `Functor.toOver` triangle obligation for `functor`, shared with
 `functor_comp_forget`. -/
-private theorem tagTriangle {dom : Type uD} {cod : Type (max uA uB uD)}
+private theorem tag_triangle {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod)
     {Y Z : Over dom} (g : Y ⟶ Z) :
     F.toSliceDomPFunctor.domFunctor.map g ≫ (↾fun z => F.t z.1.1) =
@@ -105,14 +105,14 @@ private theorem tagTriangle {dom : Type uD} {cod : Type (max uA uB uD)}
     CategoryTheory.Functor (Over dom) (Over cod) :=
   Functor.toOver F.toSliceDomPFunctor.domFunctor cod
     (fun _ => ↾(fun z => F.t z.1.1))
-    (by intro Y Z g; exact F.tagTriangle g)
+    (by intro Y Z g; exact F.tag_triangle g)
 
 /-- The wrapper forgets back to `domFunctor`. -/
 theorem functor_comp_forget {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) :
     F.functor ⋙ Over.forget cod = F.toSliceDomPFunctor.domFunctor := by
   rw [functor]
-  exact Functor.toOver_comp_forget _ _ _ fun g => F.tagTriangle g
+  exact Functor.toOver_comp_forget _ _ _ fun g => F.tag_triangle g
 
 /-- `functor.obj` is the choice-free `obj`, packaged with `Over.mk`. The
 categorical object map carries no data beyond the constructive core. -/

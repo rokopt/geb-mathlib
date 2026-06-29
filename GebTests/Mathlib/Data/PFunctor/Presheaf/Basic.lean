@@ -83,13 +83,13 @@ def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
 
 /-- The constraint `s ⟨a, ·⟩ = a + ·` is injective, so each fibre
 `Direction a i` has at most one element. -/
-private theorem fin2_pos_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a + y = i) :
+private theorem fin2_direction_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a + y = i) :
     x = y := by omega
 
 /-- Each direction fibre of the witness is a singleton. -/
-private instance posSubsingleton (a i : Fin 2) :
+private instance directionSubsingleton (a i : Fin 2) :
     Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
-  ⟨fun x y => Subtype.ext (fin2_pos_cancel a x.1 y.1 i x.2 y.2)⟩
+  ⟨fun x y => Subtype.ext (fin2_direction_cancel a x.1 y.1 i x.2 y.2)⟩
 
 /-- Each shape fibre of the witness is a singleton (the tag `t = id`
 separates the two shapes). -/

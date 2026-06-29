@@ -189,7 +189,7 @@ private theorem app_cast {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Typ
 
 /-- The `Z'`-component the image under `α` of a slice element assigns to a
 direction is `α.app` of the `Z`-component the original assigns to it. -/
-private theorem comp_map {I : Type uI} [Category.{vI} I]
+private theorem value_map {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : CategoryTheory.NatTrans Z Z')
     (x : F.toSliceDomPFunctor.Obj (elemProj Z)) ⦃i : I⦄
@@ -208,7 +208,7 @@ the functor-category hom, to stay choice-free). -/
   fun x => ⟨F.toSliceDomPFunctor.map
     (fun p : Σ i : I, Z.obj ⟨i⟩ => (⟨p.1, α.app ⟨p.1⟩ p.2⟩ : Σ i : I, Z'.obj ⟨i⟩)) rfl x.1, by
     intro i i' f b
-    rw [comp_map F α x.1, comp_map F α x.1]
+    rw [value_map F α x.1, value_map F α x.1]
     refine (congrArg (fun w => α.app ⟨i'⟩ w) (x.2 f b)).trans ?_
     simp only [← ConcreteCategory.comp_apply]
     rw [α.naturality f.op]⟩
@@ -377,7 +377,7 @@ direction-assignment along `reindex g`. -/
 
 /-- The component the restricted element assigns to a direction is the component
 the original assigns to the direction's `reindex`. -/
-private theorem comp_objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+private theorem value_objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
     (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
     ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x htag).1.1 i) :
@@ -394,7 +394,7 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
     (x : F.obj Z) (htag : F.t x.1.1.1 = j) : F.obj Z :=
   ⟨F.objRestrElt g x.1 htag, by
     intro i i' f b
-    rw [F.comp_objRestrElt, F.comp_objRestrElt,
+    rw [F.value_objRestrElt, F.value_objRestrElt,
       show F.reindex g ⟨x.1.1.1, htag⟩ (F.restr (F.objRestrElt g x.1 htag).1.1 f b)
           = F.restr x.1.1.1 f (F.reindex g ⟨x.1.1.1, htag⟩ b) from
         (congrFun (F.isFunctorial.reindex_naturality g ⟨x.1.1.1, htag⟩ f) b).symm]
@@ -402,7 +402,7 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
 
 /-- The underlying index of a direction cast along a shape equality is the
 original index, up to the transport of its type along that equality. -/
-private theorem coe_cast_pos {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+private theorem cast_val_heq {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {j : J} {s s' : F.Shape j} (h : s = s')
     {i : I} (p : F.Direction s.1 i) :
     (cast (congrArg (fun t : F.Shape j => F.Direction t.1 i) h) p).1 ≍ (p.1 : F.B s.1) := by
@@ -456,7 +456,7 @@ private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Ca
   rw [F.isFunctorial.reindex_id]
   congr 1
   apply eq_of_heq
-  exact HEq.trans (F.coe_cast_pos (congrFun (F.isFunctorial.tagRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
+  exact HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
 
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/
@@ -484,7 +484,7 @@ private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [
   refine F.reindex_val_heq g rfl _ _ ?_
   refine F.reindex_val_heq h rfl _ _ ?_
   exact HEq.trans
-    (F.coe_cast_pos (congrFun (F.isFunctorial.tagRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
+    (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
 
 /-- The output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, built directly as a `Functor`
 value (a presheaf value is `Classical.choice`-free). Its fibre over `j` is the
