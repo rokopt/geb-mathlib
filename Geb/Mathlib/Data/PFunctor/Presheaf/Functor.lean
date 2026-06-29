@@ -106,8 +106,8 @@ laws come from the dom `map_id` / `map_comp`. -/
     ext j w
     exact Subtype.ext (congrFun (F.toPresheafDomPFunctorData.map_comp α β) w.1)
 
-/-- `functor.obj` is the choice-free output presheaf `objPresheaf`. The
-categorical object map carries no data beyond the constructive core. -/
+/-- `functor.obj` is the output presheaf `objPresheaf`. The
+categorical object map carries no data beyond the core. -/
 theorem functor_obj {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
     F.functor.obj Z = F.objPresheaf Z :=

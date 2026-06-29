@@ -18,7 +18,9 @@ objects of a category `I` with a contravariant `I`-action on arities: for
 each shape `a`, the assignment `i ↦ Direction a i` extends to a presheaf on
 `I` via a restriction map `restr a f`. This file is the p.r.a. (parametric
 right adjoint) construction restricted to the domain side; the full
-categorical packaging appears in sibling modules.
+categorical packaging appears in sibling modules. Every declaration here is
+`Classical.choice`-free; the categorical packaging that pulls in
+`Classical.choice` from mathlib is in the sibling `Presheaf.Functor` module.
 
 The design uses the option-(A) fibre encoding: directions over `i` are
 `SliceDomPFunctor.Direction a i = Subtype (DirectionOver a i)`, the fibre of
@@ -41,7 +43,7 @@ fibres contravariantly.
 * `PresheafDomPFunctorData.elemMap` — the action of a presheaf morphism `α` on
   the categories of elements, `el(Z) ⟶ el(Z')`.
 * `PresheafDomPFunctorData.map` — the action on morphisms of input presheaves
-  (the bare `NatTrans`, choice-free).
+  (the bare `NatTrans`).
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
 * `PresheafPFunctorData` — the full operations: the dom operations and the
   tag leg, with the `J`-action `tagRestr` on shapes and the arity reindexing
@@ -55,8 +57,7 @@ fibres contravariantly.
 * `PresheafPFunctor.objRestrElt` / `objRestr` — the restriction action of the
   output presheaf on a `J`-morphism, on the dom value and on `F.obj Z`.
 * `PresheafPFunctor.objPresheaf` — the output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, a
-  `Classical.choice`-free `Functor` value with `map_id` / `map_comp` discharged
-  from `isFunctorial`.
+  `Functor` value with `map_id` / `map_comp` discharged from `isFunctorial`.
 * `PresheafPFunctor.mapPresheaf` — the presheaf morphism
   `objPresheaf Z ⟶ objPresheaf Z'` induced by a morphism of input presheaves.
 
@@ -231,8 +232,7 @@ private theorem value_map {I : Type uI} [Category.{vI} I]
       α.app ⟨i⟩ (F.value x b) :=
   app_cast α (((F.compatible_iff (elemProj Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2) _
 
-/-- Action on a morphism of input presheaves (the bare `NatTrans`, not
-the functor-category hom, to stay choice-free). -/
+/-- Action on a morphism of input presheaves (the bare `NatTrans`). -/
 @[expose] def map {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z') :
     F.obj Z → F.obj Z' :=
@@ -454,8 +454,8 @@ private theorem reindex_val_heq {I : Type uI} [Category.{vI} I] {J : Type uJ} [C
   rfl
 
 /-- Two functions into a common type whose domains are equal are heterogeneously
-equal when they agree on heterogeneously-equal inputs. A `Classical.choice`-free
-restriction of `Function.hfunext` to a non-dependent codomain. -/
+equal when they agree on heterogeneously-equal inputs. A restriction of
+`Function.hfunext` to a non-dependent codomain. -/
 private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → X} {g : β → X}
     (hfg : ∀ (a : α) (b : β), a ≍ b → f a = g b) : f ≍ g := by
   cases h
@@ -514,7 +514,7 @@ private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [
     (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
 
 /-- The output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, built directly as a `Functor`
-value (a presheaf value is `Classical.choice`-free). Its fibre over `j` is the
+value. Its fibre over `j` is the
 `t`-tagged subtype of the dom value `F.obj Z`; its restriction maps are the
 retag-and-reindex action `objRestr`, whose `map_id` / `map_comp` are discharged
 from `F.isFunctorial`. -/

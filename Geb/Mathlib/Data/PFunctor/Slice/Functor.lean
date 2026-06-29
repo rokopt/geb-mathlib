@@ -25,7 +25,7 @@ packaging is kept in a separate module from the choice-free core.
 
 * `SlicePFunctor.functor_obj` / `functor_map` — the categorical
   functor's object and morphism maps are definitionally the
-  constructive-core `SlicePFunctor.obj` / `map`.
+  core `SlicePFunctor.obj` / `map`.
 * `SlicePFunctor.functor_comp_forget` — the wrapper forgets back to
   `domFunctor`.
 
@@ -116,14 +116,14 @@ theorem functor_comp_forget {dom : Type uD} {cod : Type (max uA uB uD)}
   rw [functor]
   exact Functor.toOver_comp_forget _ _ _ fun g => F.tag_triangle g
 
-/-- `functor.obj` is the choice-free `obj`, packaged with `Over.mk`. The
-categorical object map carries no data beyond the constructive core. -/
+/-- `functor.obj` is the core `obj`, packaged with `Over.mk`. The
+categorical object map carries no data beyond the core. -/
 theorem functor_obj {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) (Y : Over dom) :
     F.functor.obj Y = Over.mk (↾ F.obj (ConcreteCategory.hom Y.hom)) :=
   rfl
 
-/-- `functor.map`'s underlying function is the choice-free `map`. An `Over`
+/-- `functor.map`'s underlying function is the core `map`. An `Over`
 morphism's only data is its `left` component, so this fixes the categorical
 morphism map up to its `Prop`-valued commuting condition. -/
 theorem functor_map {dom : Type uD} {cod : Type (max uA uB uD)}
