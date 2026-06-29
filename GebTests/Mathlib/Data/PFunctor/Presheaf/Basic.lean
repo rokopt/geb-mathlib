@@ -25,7 +25,7 @@ example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.RestrComp :=
 
 -- `obj` is the `IsNatural` subtype of the slice object on `elemProj Z`.
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
-    F.obj Z = { x : F.toSliceDomPFunctor.obj (PresheafDomPFunctorData.elemProj Z)
+    F.obj Z = { x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)
       // F.IsNatural x } := rfl
 
 -- `map` of the hand-built identity transformation is the identity, by
@@ -83,13 +83,13 @@ def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
 
 /-- The constraint `s ⟨a, ·⟩ = a + ·` is injective, so each fibre
 `Direction a i` has at most one element. -/
-private theorem fin2_pos_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a + y = i) :
+private theorem fin2_direction_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a + y = i) :
     x = y := by omega
 
 /-- Each direction fibre of the witness is a singleton. -/
-private instance posSubsingleton (a i : Fin 2) :
+private instance directionSubsingleton (a i : Fin 2) :
     Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
-  ⟨fun x y => Subtype.ext (fin2_pos_cancel a x.1 y.1 i x.2 y.2)⟩
+  ⟨fun x y => Subtype.ext (fin2_direction_cancel a x.1 y.1 i x.2 y.2)⟩
 
 /-- Each shape fibre of the witness is a singleton (the tag `t = id`
 separates the two shapes). -/
@@ -135,9 +135,11 @@ example : (presheafWitness.tagRestr h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) 
 -- unique direction over `0`.
 example : (presheafWitness.restr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
 
--- `reindex` along `0 ⟶ 1` genuinely moves the underlying direction value: the
+-- `reindex` along `0 ⟶ 1` moves the underlying direction value: the
 -- direction of value `0` over `i = 0` (for the retagged shape `0`) is reindexed
--- to the direction of value `1` over `i = 0` (for shape `1`).
+-- to the direction of value `1` over `i = 0` (for shape `1`). (With singleton
+-- fibres the target value is forced by the constraint; a non-degenerate witness
+-- would be needed to discriminate a wrong `reindex`.)
 example :
     (presheafWitness.reindex h01 ⟨(1 : Fin 2), rfl⟩ (i := (0 : Fin 2)) ⟨(0 : Fin 2), rfl⟩).1 =
       (1 : Fin 2) := rfl
@@ -196,4 +198,202 @@ example :
 example :
     (((presheafWitness.objPresheaf constPUnit).map h01.op constFibreElt).1.1.1.2
         (1 : Fin 2)).1 = (1 : Fin 2) := rfl
+
+/-!
+## Non-degenerate witness
+
+`presheafWitness` has singleton direction and shape fibres, so every functor
+law equates elements of a subsingleton and `Subsingleton.elim` closes each
+goal; no test can distinguish a correct `reindex` / `tagRestr` / cast-transport
+from a buggy one. The witness below breaks both degeneracies. The index
+category is `Fin 1`: its only morphism is `𝟙`, so `restr` is forced to be the
+identity transport and `restr_id` / `restr_comp` / `reindex_naturality` are
+immediate, while each direction fibre `Direction a 0` carries the two elements
+of `Fin 2` (non-singleton directions). The tag category is `Fin 3` with its
+preorder `Category` instance (`0 ⟶ 1 ⟶ 2`), giving a genuine composite of two
+non-identity morphisms for `tagRestr_comp` / `reindex_comp`. Four shapes
+(`Fin 4`) tagged `![0, 0, 1, 2]` place two shapes over tag `0` (non-singleton
+shape fibre). `tagRestr` is the identity on the diagonal and the chosen
+representative `repOf2` off it; `reindex` swaps the two directions exactly
+across the `0`-to-positive tag boundary. All seven laws are discharged without
+`Subsingleton.elim`: the two `reindex` cast-transport laws reduce to the
+underlying `Fin 2` value via `castDirVal2` and the `reindexVal2` identity /
+composition lemmas.
+-/
+
+/-- Tag leg of the non-degenerate witness: shapes `0, 1` over tag `0`, shape
+`2` over tag `1`, shape `3` over tag `2`. Written arithmetically (rather than as
+a `Matrix` literal `![0, 0, 1, 2]`) so that the discriminating examples reduce
+by `decide`. -/
+private def tval2 (i : Fin 4) : Fin 3 := ⟨i.val - 1, by omega⟩
+
+/-- A chosen shape over each tag, the off-diagonal target of `tagRestr`
+(`0, 2, 3` over tags `0, 1, 2`). Written arithmetically for the same reason as
+`tval2`. -/
+private def repOf2 (j : Fin 3) : Fin 4 := ⟨if j.val = 0 then 0 else j.val + 1, by split <;> omega⟩
+
+/-- Underlying shape map of `tagRestr` for a morphism with target tag `j'` and
+source tag `j`: the identity on the diagonal, the representative `repOf2 j'`
+off it. -/
+private def trVal2 (j' j : Fin 3) (x : Fin 4) : Fin 4 :=
+  if j' = j then x else repOf2 j'
+
+/-- The representatives lie over their tags. -/
+private theorem repOf2_tag : ∀ j' : Fin 3, tval2 (repOf2 j') = j' := by decide
+
+/-- `trVal2` preserves the tag leg. -/
+private theorem trVal2_tag (j' j : Fin 3) (x : Fin 4) (hx : tval2 x = j) :
+    tval2 (trVal2 j' j x) = j' := by
+  unfold trVal2
+  split
+  · next h => rw [hx]; exact h.symm
+  · next _ => exact repOf2_tag j'
+
+/-- `trVal2` along a tag-fixing morphism is the identity. -/
+private theorem trVal2_self : ∀ (j : Fin 3) (x : Fin 4), trVal2 j j x = x := by decide
+
+/-- Composition law for the underlying shape map, along a chain `j'' ≤ j' ≤ j`. -/
+private theorem trVal2_comp : ∀ (j'' j' j : Fin 3), j'' ≤ j' → j' ≤ j → ∀ x : Fin 4,
+    trVal2 j'' j x = trVal2 j'' j' (trVal2 j' j x) := by decide
+
+/-- Underlying value map of `reindex` for a morphism with source tag `j'` and
+target tag `j`: the swap of the two directions across the `0`-to-positive tag
+boundary, the identity otherwise. -/
+private def reindexVal2 (j' j : Fin 3) : Fin 2 → Fin 2 :=
+  if j' = 0 ∧ j ≠ 0 then Fin.rev else id
+
+/-- `reindexVal2` is the identity along a tag-fixing morphism. -/
+private theorem reindexVal2_id (j : Fin 3) (x : Fin 2) : reindexVal2 j j x = x := by
+  rw [reindexVal2, if_neg (fun h => h.2 h.1)]
+  rfl
+
+/-- Composition law for the value map, along a chain `j'' ≤ j' ≤ j`. -/
+private theorem reindexVal2_comp : ∀ (j'' j' j : Fin 3), j'' ≤ j' → j' ≤ j → ∀ x : Fin 2,
+    reindexVal2 j'' j x = reindexVal2 j' j (reindexVal2 j'' j' x) := by decide
+
+/-- The non-degenerate witness operations. The index category `Fin 1` forces
+`restr` to be the identity transport; the tag category `Fin 3` (preorder)
+carries a length-two composite; `tval2` gives a non-singleton shape fibre over
+tag `0`; `B _ = Fin 2` and `s _ = 0` give non-singleton direction fibres. -/
+def presheafWitness2Data : PresheafPFunctorData (Fin 1) (Fin 3) where
+  A := Fin 4
+  B := fun _ => Fin 2
+  s := fun _ => 0
+  t := tval2
+  restr := fun _a {_i i'} _f b => ⟨b.1, (Fin.fin_one_eq_zero i').symm⟩
+  tagRestr := fun {j j'} _g a => ⟨trVal2 j' j a.1, trVal2_tag j' j a.1 a.2⟩
+  reindex := fun {j j'} _g _a {i} b => ⟨reindexVal2 j' j b.1, (Fin.fin_one_eq_zero i).symm⟩
+
+/-- The underlying value of a direction cast along a shape equality is the
+underlying value of the original. A local, `Subsingleton`-free counterpart of
+the source module's private `cast_val_heq`, specialised to the constant
+direction type `Fin 2`. -/
+private theorem castDirVal2 {j : Fin 3} {s s' : presheafWitness2Data.Shape j} (h : s = s')
+    {i : Fin 1} (p : presheafWitness2Data.Direction s.1 i) :
+    (cast (congrArg (fun t : presheafWitness2Data.Shape j =>
+        presheafWitness2Data.Direction t.1 i) h) p).1 = p.1 := by
+  cases h
+  rfl
+
+/-- The underlying value of a `reindex` is the value map applied to the
+underlying input value. -/
+private theorem reindexFst2 {j j' : Fin 3} (g : j' ⟶ j) (a : presheafWitness2Data.Shape j)
+    {i : Fin 1} (b : presheafWitness2Data.Direction (presheafWitness2Data.tagRestr g a).1 i) :
+    (presheafWitness2Data.reindex g a b).1 = reindexVal2 j' j b.1 := rfl
+
+/-- The non-degenerate witness, with all seven functor laws discharged
+genuinely. `restr_id` / `restr_comp` / `reindex_naturality` hold because the
+index category `Fin 1` makes `restr` the identity transport (so both sides
+agree on the underlying value). `tagRestr_id` / `tagRestr_comp` reduce to the
+`trVal2` lemmas, `reindex_id` / `reindex_comp` to the `reindexVal2` lemmas after
+discharging the shape-equality cast with `castDirVal2`. -/
+def presheafWitness2 : PresheafPFunctor (Fin 1) (Fin 3) where
+  toPresheafPFunctorData := presheafWitness2Data
+  isFunctorial :=
+    { restr_id := by intro _a _i; funext _b; exact Subtype.ext rfl
+      restr_comp := by intro _a _i _i' _i'' _f _g; funext _b; exact Subtype.ext rfl
+      tagRestr_id := by
+        intro j; funext a; apply Subtype.ext
+        change trVal2 j j a.1 = a.1
+        exact trVal2_self j a.1
+      tagRestr_comp := by
+        intro j j' j'' g h; funext a; apply Subtype.ext
+        change trVal2 j'' j a.1 = trVal2 j'' j' (trVal2 j' j a.1)
+        exact trVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1
+      reindex_naturality := by intro _j _j' _g _a _i _i' _f; funext _b; exact Subtype.ext rfl
+      reindex_id := by
+        intro j a i b; apply Subtype.ext
+        rw [reindexFst2, castDirVal2]
+        · exact reindexVal2_id j b.1
+        · exact Subtype.ext (trVal2_self j a.1)
+      reindex_comp := by
+        intro j j' j'' g h a i b; apply Subtype.ext
+        rw [reindexFst2, reindexFst2, reindexFst2, castDirVal2]
+        · exact reindexVal2_comp j'' j' j (leOfHom h) (leOfHom g) b.1
+        · exact Subtype.ext (by
+            change trVal2 j'' j a.1 = trVal2 j'' j' (trVal2 j' j a.1)
+            exact trVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1) }
+
+/-- The non-identity morphisms of the preorder category on `Fin 3`. -/
+private def k01 : (0 : Fin 3) ⟶ 1 := homOfLE (by decide)
+private def k02 : (0 : Fin 3) ⟶ 2 := homOfLE (by decide)
+
+/-- The singleton shape over tag `1` (shape index `2`), reused by the
+discriminating examples. -/
+private def shapeOverOne : presheafWitness2.toSlicePFunctor.Shape (1 : Fin 3) :=
+  ⟨(2 : Fin 4), by change tval2 (2 : Fin 4) = 1; decide⟩
+
+-- `reindex` along the non-identity `0 ⟶ 1` moves the underlying value on the
+-- two-element fibre: the direction of value `0` is sent to value `1`.
+example :
+    (presheafWitness2.reindex k01 shapeOverOne (i := (0 : Fin 1)) ⟨(0 : Fin 2), by rfl⟩).1 =
+      (1 : Fin 2) := rfl
+example :
+    (presheafWitness2.reindex k01 shapeOverOne (i := (0 : Fin 1)) ⟨(1 : Fin 2), by rfl⟩).1 =
+      (0 : Fin 2) := rfl
+
+-- `reindex` along `𝟙` does NOT move the value (would catch a wrong
+-- `reindex_id`): the identity arrow leaves both directions fixed.
+example :
+    (presheafWitness2.reindex (𝟙 (1 : Fin 3)) shapeOverOne (i := (0 : Fin 1))
+        ⟨(1 : Fin 2), by rfl⟩).1 = (1 : Fin 2) := rfl
+example :
+    (presheafWitness2.reindex (𝟙 (1 : Fin 3)) shapeOverOne (i := (0 : Fin 1))
+        ⟨(0 : Fin 2), by rfl⟩).1 = (0 : Fin 2) := rfl
+
+-- `tagRestr` along `0 ⟶ 1` retags the singleton shape `2` (over tag `1`) to the
+-- representative shape `0` (over tag `0`), not the other shape `1` over tag `0`.
+example : (presheafWitness2.tagRestr k01 shapeOverOne).1 = (0 : Fin 4) := rfl
+
+/-- A concrete choice-free input presheaf with a two-element fibre: the constant
+presheaf on `(Fin 1)ᵒᵖ` at `Fin 2`. The index category has only the identity
+morphism, so any direction assignment over it is natural. -/
+@[reducible] private def constFin2 : (Fin 1)ᵒᵖ ⥤ Type where
+  obj _ := Fin 2
+  map _ := 𝟙 _
+
+/-- An element of `objPresheaf constFin2`'s fibre over tag `2`: shape `3`, with
+the assignment `b ↦ ⟨0, b⟩` recording each direction's value in the `Fin 2`
+fibre. -/
+private def fin2FibreElt : (presheafWitness2.objPresheaf constFin2).obj ⟨(2 : Fin 3)⟩ :=
+  ⟨⟨⟨⟨(3 : Fin 4), fun (b : Fin 2) => ⟨0, b⟩⟩,
+      (presheafWitness2.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun _ => rfl⟩,
+      fun _ _ _ _ => rfl⟩,
+    by change tval2 (3 : Fin 4) = 2; decide⟩
+
+-- `objPresheaf.map` along the composite `0 ⟶ 2` retags shape `3` to shape `0`,
+-- end to end through `objRestr` / `objRestrElt` and `tagRestr`.
+example :
+    ((presheafWitness2.objPresheaf constFin2).map k02.op fin2FibreElt).1.1.1.1 = (0 : Fin 4) :=
+  rfl
+
+-- `objPresheaf.map` along the composite `0 ⟶ 2` reindexes the assignment with
+-- the boundary-crossing swap: direction `0` now records the value `1` and
+-- direction `1` the value `0`, distinguishing the moved `reindex` end to end.
+example :
+    (((presheafWitness2.objPresheaf constFin2).map k02.op fin2FibreElt).1.1.1.2 (0 : Fin 2)).2 =
+      (1 : Fin 2) := rfl
+example :
+    (((presheafWitness2.objPresheaf constFin2).map k02.op fin2FibreElt).1.1.1.2 (1 : Fin 2)).2 =
+      (0 : Fin 2) := rfl
 
