@@ -6,6 +6,7 @@ Authors: The geb-mathlib contributors
 module
 
 public import Geb.Mathlib.Data.PFunctor.Presheaf.Basic
+public import Mathlib.CategoryTheory.Elements
 
 /-!
 # Presheaf-domain polynomial functors: categorical wrapper
@@ -18,11 +19,17 @@ over presheaf categories and discharging their laws — is
 module from the choice-free core; the module
 `Data.PFunctor.Presheaf.Functor` is on
 `GebMeta.classicalAllowedModules`. The notation `↾` (`TypeCat.ofHom`) is
-choice-free: `objPresheaf` uses `↾` and is `{propext, Quot.sound}`.
+choice-free: `objPresheaf` uses `↾` and is `{propext, Quot.sound}`. This
+module also relates the core to mathlib's category of elements:
+`elemMap_eq_categoryOfElements_map` proves the choice-free core `elemMap` is
+the object map of mathlib's `Classical.choice`-dependent
+`CategoryOfElements.map`.
 
 ## Main definitions
 
 * `PresheafDomPFunctorData.domFunctor` — the functor `(Iᵒᵖ ⥤ Type) ⥤ Type`.
+* `PresheafDomPFunctorData.toElements` — the bridge from the core's `I`-indexed
+  element set to mathlib's category of elements `Z.Elements`.
 * `PresheafPFunctor.functor` — the functor `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)`.
 
 ## Main statements
@@ -30,6 +37,9 @@ choice-free: `objPresheaf` uses `↾` and is `{propext, Quot.sound}`.
 * `PresheafPFunctor.functor_obj` / `functor_map` — the categorical functor's
   object map is the core `objPresheaf`, and its morphism map is the
   dom `map` retagged onto the `t`-tagged fibre.
+* `PresheafDomPFunctorData.elemMap_eq_categoryOfElements_map` — the core's
+  choice-free `elemMap` is the object map of mathlib's
+  `Classical.choice`-dependent `CategoryOfElements.map`, across `toElements`.
 
 ## Implementation notes
 
@@ -85,6 +95,22 @@ by `rfl`. -/
     ext z
     exact congrFun (F.map_id Z) z
   map_comp _ _ := rfl
+
+/-- The bridge from the core's `I`-indexed element set `Σ i, Z.obj ⟨i⟩` to
+mathlib's `Iᵒᵖ`-indexed category of elements `Z.Elements`, sending `⟨i, z⟩` to
+`⟨op i, z⟩`. -/
+@[expose] def toElements {I : Type uI} [Category.{vI} I] (Z : Iᵒᵖ ⥤ Type uZ) :
+    (Σ i : I, Z.obj ⟨i⟩) → Z.Elements := fun p => ⟨⟨p.1⟩, p.2⟩
+
+/-- The core's `elemMap` is the object map of the functor on categories of
+elements that `α` induces — mathlib's `CategoryOfElements.map` — across the
+index bridge `toElements`. `CategoryOfElements.map` consumes a functor-category
+hom and is `Classical.choice`-dependent, so the core takes a bare `NatTrans` and
+defines `elemMap` directly; this theorem certifies the two agree. -/
+theorem elemMap_eq_categoryOfElements_map {I : Type uI} [Category.{vI} I]
+    {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z') :
+    toElements Z' ∘ elemMap α = (CategoryOfElements.map α).obj ∘ toElements Z :=
+  rfl
 
 end PresheafDomPFunctorData
 
