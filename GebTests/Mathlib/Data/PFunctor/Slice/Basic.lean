@@ -72,6 +72,30 @@ example (X Y Z : Type) (p : X → Bool) (q : Y → Bool) (r : Z → Bool)
       testSlice.map g hg ∘ testSlice.map f hf :=
   testSlice.map_comp f g hf hg
 
+-- A self-contained concrete computation of the morphism action over `dom = Bool`,
+-- not routed through any dependent module. Compatibility over `(Bool, id)` forces
+-- the direction assignment to `id`; the slice morphism `sliceMor` lifts it.
+/-- The compatible element of `Obj (id : Bool → Bool)`: one shape, assignment `id`. -/
+private def sliceElt : testSlice.toSliceDomPFunctor.Obj (id : Bool → Bool) :=
+  ⟨⟨(), id⟩, (testSlice.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun _ => rfl⟩
+
+/-- A non-identity slice morphism `(Bool, id) ⟶ (Bool × Bool, Prod.fst)`. -/
+private def sliceMor : Bool → Bool × Bool := fun b => (b, !b)
+
+example : Prod.fst ∘ sliceMor = (id : Bool → Bool) := rfl
+
+-- The action post-composes the direction assignment with `sliceMor`.
+example :
+    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.2 = sliceMor :=
+  rfl
+example :
+    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.2 false =
+      (false, true) := rfl
+
+-- The shape component is fixed by the action.
+example :
+    (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.1 = () := rfl
+
 /-- A slice functor whose tag `t = id` distinguishes its two shapes, so the
 tag content of `obj` is genuinely exercised. -/
 def taggedSlice : SlicePFunctor Bool Bool where
