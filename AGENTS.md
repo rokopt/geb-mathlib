@@ -58,6 +58,10 @@ locate and verify it against the primary source using available
 paper-search tooling (e.g. an arXiv search) before recording the
 citation identifier required by
 [CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md).
+The `theoremsearch` MCP (`theorem_search`) locates published
+statements and their searchable identifiers across the informal
+literature (arXiv, the Stacks Project, ProofWiki, and others); see
+[docs/references.md](docs/references.md) § Searchable.
 
 ### No LLM-drafted text in mathlib-facing channels (enforcement)
 
