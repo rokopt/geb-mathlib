@@ -7,6 +7,7 @@ module
 
 import GebTests.Mathlib.Data.PFunctor.Slice.Basic
 import GebTests.Mathlib.Data.PFunctor.Slice.Functor
+import GebTests.Mathlib.Data.PFunctor.Slice.W
 
 /-!
 # Slice tests — index
