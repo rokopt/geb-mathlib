@@ -59,10 +59,25 @@ construction.
   community, given the daily Zulip notification cost?" The pipeline
   and its trigger are described in `docs/process.md` § LKG/FKB
   pipeline.
-- **Verso adoption**: when any of (a) doc-gen4 supports Verso,
-  (b) Verso marks cross-references stable, (c) mathlib migrates
-  to Verso, (d) our prose grows substantial. Currently using
-  Markdown rendered by doc-gen4.
+- **Verso adoption** (three scopes with distinct gates; doc-gen4
+  and Verso are complementary, not alternatives — doc-gen4
+  generates the API reference, Verso authors hand-written prose):
+  1. Docstrings in `.lean` files: gated on doc-gen4 gaining
+     Verso-aware rendering and mathlib migrating to Verso;
+     contraindicated for `Geb/Mathlib/` and `Geb/Cslib/` until
+     both hold (Verso-markup docstrings would read as foreign to
+     mathlib reviewers and would not render on the doc-gen4 site).
+  2. Persistent prose (`docs/`, a future Geb-language exposition):
+     gated on the prose growing substantial and describing stable,
+     existing code. `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
+     `docs/process.md`, and `docs/rules/*` remain Markdown
+     regardless (GitHub rendering, tool and `@import` consumption,
+     markdownlint, doctoc).
+  3. Transient design docs on feature branches: no external gate;
+     candidate for a local-only Verso build to evaluate authoring
+     ergonomics and type-checking of embedded Lean.
+
+  Currently using Markdown rendered by doc-gen4.
 - **Project-specific `geb-development` skill**: when recurring
   patterns accumulate that fit neither `CONTRIBUTING.md`,
   `AGENTS.md`, `CLAUDE.md`, `docs/process.md`,
