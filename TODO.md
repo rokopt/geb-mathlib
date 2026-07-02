@@ -77,7 +77,17 @@ construction.
      candidate for a local-only Verso build to evaluate authoring
      ergonomics and type-checking of embedded Lean.
 
-  Currently using Markdown rendered by doc-gen4.
+  Currently using Markdown rendered by doc-gen4. A local pilot
+  (2026-07-02) validated the mechanism: Verso and mathlib coexist in
+  one lake project at v4.32.0-rc1, embedded Lean type-checks (a
+  mismatch fails the build with a locatable error), and
+  within-document references resolve. Two follow-up workstreams, each
+  its own spec/plan cycle when taken up:
+  - Persistent Geb-language exposition seed chapter in Verso
+    (scope 2), once exposition-worthy prose exists.
+  - Verso for transient feature-branch design docs (scope 3); a
+    change to the current Markdown-based brainstorming and
+    writing-plans flow, so it needs its own scoping.
 - **Project-specific `geb-development` skill**: when recurring
   patterns accumulate that fit neither `CONTRIBUTING.md`,
   `AGENTS.md`, `CLAUDE.md`, `docs/process.md`,
