@@ -14,8 +14,6 @@
   ],
   "ignores": [
     ".lake/**",
-    ".verso-pilot/**",
-    ".superpowers/**",
     ".jj/**",
     ".remember/**",
     "node_modules/**"
