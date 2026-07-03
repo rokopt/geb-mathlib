@@ -5,9 +5,15 @@
 
 - [In progress](#in-progress)
 - [Next up](#next-up)
+  - [1. Standardise slice and polynomial-diagram terminology](#1-standardise-slice-and-polynomial-diagram-terminology)
+  - [2. Presheaf W-types](#2-presheaf-w-types)
+  - [3. Categorical wrappers for mathlib's `PFunctor` and `WType`](#3-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
+  - [4. Categorical wrappers for slice and presheaf W-types as initial algebras](#4-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
+  - [5. M-types and their categorical wrappers as terminal coalgebras](#5-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
+  - [6. Universal morphisms: limits, colimits, exponentials](#6-universal-morphisms-limits-colimits-exponentials)
+  - [7. Free monads](#7-free-monads)
+  - [8. Cofree comonads](#8-cofree-comonads)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
-  - [Slice and presheaf W-types](#slice-and-presheaf-w-types)
-  - [Free monads over the cslib monad construction](#free-monads-over-the-cslib-monad-construction)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -21,20 +27,121 @@ removed; content merged into `docs/index.md`.
 
 ## Next up
 
+The polynomial-functor roadmap below is a linear sequence of
+separate planning–implementation cycles. Each item's full spec
+and plan are written only after the prior item's implementation
+is complete: the project is too large to fix every earlier
+interface on the first attempt, so interface corrections in an
+earlier item can invalidate a later item's plan. Each item lives
+on its own topic branch and migrates to persistent documentation
+under `docs/index.md` on completion.
+
+The current stack, each layer expressed as constraints or tags on
+the layer below: mathlib `PFunctor` (`Type` endofunctors) → slice
+polynomial functors (`Geb/Mathlib/Data/PFunctor/Slice/`) →
+presheaf parametric-right-adjoint functors
+(`Geb/Mathlib/Data/PFunctor/Presheaf/`). Categorical
+interpretations into mathlib's category theory are kept thin to
+minimise the `Classical.choice` surface. Slice W-types
+(`Slice/W.lean`) exist; the roadmap extends the stack upward.
+
+### 1. Standardise slice and polynomial-diagram terminology
+
+Replace non-standard names and comments with widely-accepted
+terms. For a slice (`Over`) object — an object `e` with a
+morphism `p : e → c` over a base `c` — standardise on "base
+space" for `c`, "total space" for `e`, and "projection" for `p`,
+abbreviating to "base object" and "total object" where "space"
+reads awkwardly.
+
+Open for that branch's brainstorming: the current sources use
+"constraint leg" for the direction-indexing map `s` and "tag leg"
+for the shape-indexing map `t`. These name the structure maps of
+the polynomial diagram, distinct from the base/total/projection
+triple above, so their replacements are a separate decision.
+Where multiple standard options exist, the user states a
+preference before the term is fixed.
+
+### 2. Presheaf W-types
+
+Define the W-types (initial algebras) of the presheaf polynomial
+functors as constraints or tags on the slice polynomial W-types
+in `Slice/W.lean`, mirroring how the presheaf functors are
+constraints or tags on the slice functors and the slice functors
+on mathlib's `PFunctor`. This layers presheaf W-types on mathlib's
+`PFunctor.W` through the existing slice layer.
+
+### 3. Categorical wrappers for mathlib's `PFunctor` and `WType`
+
+Connect mathlib's generic endofunctor algebras to `PFunctor` as a
+reusable base layer. Per the survey, mathlib has
+`CategoryTheory.Endofunctor.Algebra` with the Lambek isomorphism
+but nothing linking it to `PFunctor`. Add files parallel to the
+existing directory structure: one wrapping mathlib's `PFunctor` as
+an endofunctor with its algebra category, and one wrapping
+mathlib's `WType` as the initial algebra of that endofunctor. Then
+refactor the existing categorical wrapper of the slice functors
+(`Slice/Functor.lean`) to reuse the new `PFunctor` wrapper.
+
+### 4. Categorical wrappers for slice and presheaf W-types as initial algebras
+
+Characterise the slice and presheaf W-types as the initial objects
+of the categories of algebras of their functors, reusing the
+`PFunctor` and `WType` wrappers of item 3. Build the presheaf
+initiality proof on the slice initiality proof, and the slice
+proof on the `WType` initiality of item 3.
+
+### 5. M-types and their categorical wrappers as terminal coalgebras
+
+Define the M-types (greatest fixed points) of the slice and
+presheaf functors on mathlib's `PFunctor.M`, following mathlib's
+standard construction of M-types on W-types, and characterise them
+as the terminal coalgebras of their functors. Following the
+base-layer-first pattern of items 3 and 4, build a categorical
+wrapper for the terminality of mathlib's `PFunctor.M` first,
+reusable in the slice and presheaf terminality proofs.
+
+### 6. Universal morphisms: limits, colimits, exponentials
+
+Establish the limits, colimits, and exponentials of the slice and
+presheaf functors. Layer the slice constructions on mathlib's
+`PFunctor` and the presheaf constructions on the slice
+constructions. Per the survey, mathlib carries little or none of
+this for `PFunctor`, so a base layer of universal morphisms for
+mathlib's `PFunctor` is likely required.
+
+### 7. Free monads
+
+Build free monads over the slice and presheaf functors as
+constraints or tags on cslib's `PFunctor.FreeM` (the free monad of
+a polynomial functor), mirroring the layering of the functors
+themselves.
+
+Two definitions of these free monads are to be shown equivalent,
+in the most reusable form available: as constraints or tags on
+cslib's `PFunctor.FreeM`, and as computed from the slice and
+presheaf W-types of items 2 and 4 (themselves constraints or tags
+on mathlib's `WType`). Define both and prove them equivalent.
+
+### 8. Cofree comonads
+
+Build cofree comonads over the slice and presheaf functors. If
+mathlib and cslib lack a cofree comonad of a polynomial functor,
+build the `PFunctor` version first as a base layer. The survey
+records cslib's `PFunctor.FreeM` but no cofree-comonad
+counterpart; confirm before relying on it.
+
+Two definitions of these cofree comonads are to be shown
+equivalent: as constraints or tags on the `PFunctor` version, and
+as derived from the slice and presheaf M-types of item 5. Define
+both and prove them equivalent.
+
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
-Establish the natural isomorphism confirming that `PresheafPFunctor.functor`
-is the parametric right adjoint determined by its generic data `(T1, E_T)`.
-
-### Slice and presheaf W-types
-
-Define the initial algebras (W-types) for slice and presheaf polynomial
-functors as subtypes of mathlib's `PFunctor.W`.
-
-### Free monads over the cslib monad construction
-
-Build free monads over presheaf polynomial functors using cslib's monad
-construction.
+Independent of the roadmap sequence above. Establish the natural
+isomorphism confirming that `PresheafPFunctor.functor` is the
+parametric right adjoint determined by its generic data
+`(T1, E_T)`.
 
 ## Triggers (do when condition fires)
 
