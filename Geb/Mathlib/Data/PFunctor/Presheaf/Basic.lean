@@ -46,11 +46,11 @@ fibres contravariantly.
   (the bare `NatTrans`).
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
 * `PresheafPFunctorData` — the full operations: the dom operations and the
-  tag leg, with the `J`-action `tagRestr` on shapes and the arity reindexing
+  tag leg, with the `J`-action `shapeRestr` on shapes and the arity reindexing
   `reindex`.
-* `PresheafPFunctorData.TagRestrId` / `TagRestrComp` / `ReindexNaturality` /
+* `PresheafPFunctorData.ShapeRestrId` / `ShapeRestrComp` / `ReindexNaturality` /
   `ReindexId` / `ReindexComp` — the named `J`-side law `Prop`s. `ReindexId`
-  and `ReindexComp` are parameterized on the relevant `tagRestr` law, whose
+  and `ReindexComp` are parameterized on the relevant `shapeRestr` law, whose
   content supplies the non-definitional source-type transport.
 * `PresheafPFunctorData.IsFunctorial` — the full functor laws bundled.
 * `PresheafPFunctor` — the full bundle: operations with a functoriality proof.
@@ -73,16 +73,16 @@ fibres contravariantly.
 The declaration docstrings use the parametric-right-adjoint notation of
 [Weber2007]:
 
-* `T1` — the shape presheaf `j ↦ Shape j` on `J`, with `tagRestr` as its
+* `T1` — the shape presheaf `j ↦ Shape j` on `J`, with `shapeRestr` as its
   restriction maps.
 * `E_T(a)` — the arity presheaf `i ↦ Direction a.1 i` of a shape `a` on `I`,
   with `restr` as its restriction maps.
 * `el(T1)` — the category of elements of `T1`: objects are pairs `(j, a)` with
   `a : Shape j`. As `T1` is a presheaf, its elements vary contravariantly, so a
   morphism `(j, a) ⟶ (j', a')` is backed by a `J`-morphism `g : j' ⟶ j` (the
-  opposite direction) with `tagRestr g a = a'`. The arity assignment `a ↦ E_T(a)`
+  opposite direction) with `shapeRestr g a = a'`. The arity assignment `a ↦ E_T(a)`
   is therefore contravariant on `el(T1)` (a functor on `el(T1)ᵒᵖ`); `reindex g a`
-  is its action, the presheaf morphism `E_T(tagRestr g a) ⟶ E_T(a)`.
+  is its action, the presheaf morphism `E_T(shapeRestr g a) ⟶ E_T(a)`.
 
 ## Implementation notes
 
@@ -108,13 +108,13 @@ the same situation mathlib suppresses in `PFunctor`.
 SlicePFunctor.{uA, uB, uI, uJ} I J`,
 which shares the single `SliceDomPFunctor` parent. The `reindex` laws
 `ReindexId` / `ReindexComp` are stated in homogeneous-`Eq` form, parameterized
-on a `tagRestr` law, rather than as bare `Prop`s: comparing `reindex` along
+on a `shapeRestr` law, rather than as bare `Prop`s: comparing `reindex` along
 `𝟙` (resp. a composite) with the identity (resp. the composite of `reindex`es)
 requires a source-type transport whose target equality
-(`tagRestr (𝟙 j) a = a`, resp. `tagRestr (h ≫ g) a = tagRestr h (tagRestr g a)`)
-is `TagRestrId` (resp. `TagRestrComp`) content, not definitional. They are
+(`shapeRestr (𝟙 j) a = a`, resp. `shapeRestr (h ≫ g) a = shapeRestr h (shapeRestr g a)`)
+is `ShapeRestrId` (resp. `ShapeRestrComp`) content, not definitional. They are
 therefore parameterized on that law and apply it via `cast`; `IsFunctorial`
-supplies the proof from its earlier `tagRestr_id` / `tagRestr_comp` fields. A
+supplies the proof from its earlier `shapeRestr_id` / `shapeRestr_comp` fields. A
 heterogeneous-`Eq` formulation would avoid the parameter at the cost of
 `rw`-convenience and mathlib idiom.
 
@@ -291,19 +291,19 @@ attribute [ext] PresheafDomPFunctorData PresheafDomPFunctor
 set_option linter.checkUnivs false in
 /-- Operations of a presheaf polynomial functor `(Iᵒᵖ ⥤ Type) → (Jᵒᵖ ⥤ Type)`:
 the dom operations plus the tag leg `t` (via `SlicePFunctor`), the `J`-action
-`tagRestr` on shapes, and the arity reindexing `reindex`. -/
+`shapeRestr` on shapes, and the arity reindexing `reindex`. -/
 @[nolint checkUnivs]
 structure PresheafPFunctorData (I : Type uI) [Category.{vI} I]
     (J : Type uJ) [Category.{vJ} J] : Type (max (uA + 1) (uB + 1) uI uJ vI vJ)
     extends PresheafDomPFunctorData.{uI, uA, uB, vI} I, SlicePFunctor.{uA, uB, uI, uJ} I J where
   /-- The shape-presheaf restriction: for `g : j' ⟶ j`, reindex shapes over
   `j` to shapes over `j'`. -/
-  tagRestr : ∀ ⦃j j' : J⦄ (_g : j' ⟶ j),
+  shapeRestr : ∀ ⦃j j' : J⦄ (_g : j' ⟶ j),
       toSlicePFunctor.Shape j → toSlicePFunctor.Shape j'
   /-- The arity reindexing along a `J`-morphism: a presheaf morphism
-  `E_T(tagRestr g a) ⟶ E_T(a)`. -/
+  `E_T(shapeRestr g a) ⟶ E_T(a)`. -/
   reindex : ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : toSlicePFunctor.Shape j) ⦃i : I⦄,
-      toSliceDomPFunctor.Direction (tagRestr g a).1 i →
+      toSliceDomPFunctor.Direction (shapeRestr g a).1 i →
         toSliceDomPFunctor.Direction a.1 i
 
 /-- The tag-leg view of the operations: the shared `SliceDomPFunctor` together
@@ -313,71 +313,71 @@ add_decl_doc PresheafPFunctorData.toSlicePFunctor
 
 namespace PresheafPFunctorData
 
-/-- `tagRestr` preserves identities. -/
-@[expose] def TagRestrId {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+/-- `shapeRestr` preserves identities. -/
+@[expose] def ShapeRestrId {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : Prop :=
-  ∀ (j : J), F.tagRestr (𝟙 j) = id
+  ∀ (j : J), F.shapeRestr (𝟙 j) = id
 
-/-- `tagRestr` reverses composition: `tagRestr (h ≫ g) = tagRestr h ∘ tagRestr g`. -/
-@[expose] def TagRestrComp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+/-- `shapeRestr` reverses composition: `shapeRestr (h ≫ g) = shapeRestr h ∘ shapeRestr g`. -/
+@[expose] def ShapeRestrComp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : Prop :=
   ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j'),
-      F.tagRestr (h ≫ g) = F.tagRestr h ∘ F.tagRestr g
+      F.shapeRestr (h ≫ g) = F.shapeRestr h ∘ F.shapeRestr g
 
 /-- Each `reindex g a` commutes with `restr` (a presheaf morphism
-`E_T(tagRestr g a) ⟶ E_T(a)`): for `f : i' ⟶ i`,
-`restr a.1 f ∘ reindex g a = reindex g a ∘ restr (tagRestr g a).1 f`.
-Ordinary fibre maps only; no `tagRestr` transport. -/
+`E_T(shapeRestr g a) ⟶ E_T(a)`): for `f : i' ⟶ i`,
+`restr a.1 f ∘ reindex g a = reindex g a ∘ restr (shapeRestr g a).1 f`.
+Ordinary fibre maps only; no `shapeRestr` transport. -/
 @[expose] def ReindexNaturality {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : Prop :=
   ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) ⦃i i' : I⦄ (f : i' ⟶ i),
     F.restr a.1 f ∘ F.reindex g a (i := i) =
-      F.reindex g a (i := i') ∘ F.restr (F.tagRestr g a).1 f
+      F.reindex g a (i := i') ∘ F.restr (F.shapeRestr g a).1 f
 
 /-- `reindex (𝟙 j) a` is the identity, modulo the transport of its source
-along `TagRestrId` at `j` (`tagRestr (𝟙 j) a = a`). The transport is the
+along `ShapeRestrId` at `j` (`shapeRestr (𝟙 j) a = a`). The transport is the
 `cast` of `b` along `congrArg (fun s => Direction s.1 i) (congrFun (hti j) a)`.
 Parameterized on the identity law `hti` because that source-type equality is
 not definitional. -/
 @[expose] def ReindexId {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) (hti : F.TagRestrId) : Prop :=
-  ∀ ⦃j : J⦄ (a : F.Shape j) ⦃i : I⦄ (b : F.Direction (F.tagRestr (𝟙 j) a).1 i),
+    (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) (hti : F.ShapeRestrId) : Prop :=
+  ∀ ⦃j : J⦄ (a : F.Shape j) ⦃i : I⦄ (b : F.Direction (F.shapeRestr (𝟙 j) a).1 i),
     F.reindex (𝟙 j) a b =
       cast (congrArg (fun s : F.Shape j => F.Direction s.1 i) (congrFun (hti j) a)) b
 
 /-- For `g : j' ⟶ j`, `h : j'' ⟶ j'`,
-`reindex (h ≫ g) a = reindex g a ∘ reindex h (tagRestr g a)` (outer factor the
-`g` leg), modulo the transport of the source along `TagRestrComp`
-(`tagRestr (h ≫ g) a = tagRestr h (tagRestr g a)`). The transport is the `cast`
+`reindex (h ≫ g) a = reindex g a ∘ reindex h (shapeRestr g a)` (outer factor the
+`g` leg), modulo the transport of the source along `ShapeRestrComp`
+(`shapeRestr (h ≫ g) a = shapeRestr h (shapeRestr g a)`). The transport is the `cast`
 of `b` along `congrArg (fun s => Direction s.1 i) (congrFun (htc g h) a)`.
 Parameterized on the composition law `htc` because that source-type equality is
 not definitional. -/
 @[expose] def ReindexComp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) (htc : F.TagRestrComp) : Prop :=
+    (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) (htc : F.ShapeRestrComp) : Prop :=
   ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j') (a : F.Shape j) ⦃i : I⦄
-    (b : F.Direction (F.tagRestr (h ≫ g) a).1 i),
+    (b : F.Direction (F.shapeRestr (h ≫ g) a).1 i),
     F.reindex (h ≫ g) a b =
-      F.reindex g a (F.reindex h (F.tagRestr g a)
+      F.reindex g a (F.reindex h (F.shapeRestr g a)
         (cast (congrArg (fun s : F.Shape j'' => F.Direction s.1 i)
           (congrFun (htc g h) a)) b))
 
 /-- All functor laws: the dom laws plus the `J`-side laws making `T1` a
-presheaf and `E_T` a functor on `el(T1)`. The `tagRestr` laws precede the
+presheaf and `E_T` a functor on `el(T1)`. The `shapeRestr` laws precede the
 `reindex` laws because `reindex_id` / `reindex_comp` are stated relative to
-`tagRestr_id` / `tagRestr_comp`. -/
+`shapeRestr_id` / `shapeRestr_comp`. -/
 structure IsFunctorial {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : Prop
     extends F.toPresheafDomPFunctorData.IsFunctorial where
-  /-- Identity law for `tagRestr`. -/
-  tagRestr_id : F.TagRestrId
-  /-- Composition law for `tagRestr`. -/
-  tagRestr_comp : F.TagRestrComp
+  /-- Identity law for `shapeRestr`. -/
+  shapeRestr_id : F.ShapeRestrId
+  /-- Composition law for `shapeRestr`. -/
+  shapeRestr_comp : F.ShapeRestrComp
   /-- `reindex` is a presheaf morphism (commutes with `restr`). -/
   reindex_naturality : F.ReindexNaturality
-  /-- Identity law for `reindex`, relative to `tagRestr_id`. -/
-  reindex_id : F.ReindexId tagRestr_id
-  /-- Composition law for `reindex`, relative to `tagRestr_comp`. -/
-  reindex_comp : F.ReindexComp tagRestr_comp
+  /-- Identity law for `reindex`, relative to `shapeRestr_id`. -/
+  reindex_id : F.ReindexId shapeRestr_id
+  /-- Composition law for `reindex`, relative to `shapeRestr_comp`. -/
+  reindex_comp : F.ReindexComp shapeRestr_comp
 
 end PresheafPFunctorData
 
@@ -397,13 +397,13 @@ attribute [ext] PresheafPFunctorData
 namespace PresheafPFunctor
 
 /-- The slice element underlying the restriction action of `objPresheaf` on a
-`J`-morphism `g`: retag the shape along `tagRestr g` and reindex the
+`J`-morphism `g`: retag the shape along `shapeRestr g` and reindex the
 direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
     (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j) :
     F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
-  ⟨⟨(F.tagRestr g ⟨x.1.1, htag⟩).1,
+  ⟨⟨(F.shapeRestr g ⟨x.1.1, htag⟩).1,
       fun b' => x.1.2 (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
     (F.compatible_iff _ _ _).mpr fun b' =>
       ((F.compatible_iff _ _ _).mp x.2
@@ -448,8 +448,8 @@ to directions with equal underlying indices. -/
 private theorem reindex_val_heq {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) ⦃j' j'' : J⦄ (h : j'' ⟶ j')
     {S S' : F.Shape j'} (hSS : S = S')
-    ⦃i i' : I⦄ (b : F.Direction (F.tagRestr h S).1 i) (b' : F.Direction (F.tagRestr h S').1 i')
-    (hb : (b.1 : F.B (F.tagRestr h S).1) ≍ (b'.1 : F.B (F.tagRestr h S').1)) :
+    ⦃i i' : I⦄ (b : F.Direction (F.shapeRestr h S).1 i) (b' : F.Direction (F.shapeRestr h S').1 i')
+    (hb : (b.1 : F.B (F.shapeRestr h S).1) ≍ (b'.1 : F.B (F.shapeRestr h S').1)) :
     (F.reindex h S b).1 ≍ ((F.reindex h S' b').1 : F.B S'.1) := by
   cases hSS
   obtain ⟨bv, rfl⟩ := b
@@ -477,17 +477,17 @@ private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Ca
   obtain ⟨⟨a, v⟩, hc⟩ := x
   simp only [objRestrElt]
   refine Sigma.ext
-    (congrArg Subtype.val (congrFun (F.isFunctorial.tagRestr_id j) (⟨a, htag⟩ : F.Shape j))) ?_
+    (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id j) (⟨a, htag⟩ : F.Shape j))) ?_
   refine heq_fun
     (congrArg F.B
-      (congrArg Subtype.val (congrFun (F.isFunctorial.tagRestr_id j) (⟨a, htag⟩ : F.Shape j))))
+      (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id j) (⟨a, htag⟩ : F.Shape j))))
     ?_
   intro b1 b2 hb
   dsimp only
   rw [F.isFunctorial.reindex_id]
   congr 1
   exact eq_of_heq
-    (HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb)
+    (HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb)
 
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/
@@ -501,11 +501,12 @@ private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [
   obtain ⟨⟨a, v⟩, hc⟩ := x
   simp only [objRestrElt]
   refine Sigma.ext
-    (congrArg Subtype.val (congrFun (F.isFunctorial.tagRestr_comp g h) (⟨a, htag⟩ : F.Shape j)))
+    (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_comp g h) (⟨a, htag⟩ : F.Shape j)))
     ?_
   refine heq_fun
     (congrArg F.B
-      (congrArg Subtype.val (congrFun (F.isFunctorial.tagRestr_comp g h) (⟨a, htag⟩ : F.Shape j))))
+      (congrArg Subtype.val
+        (congrFun (F.isFunctorial.shapeRestr_comp g h) (⟨a, htag⟩ : F.Shape j))))
     ?_
   intro b1 b2 hb
   dsimp only
@@ -515,7 +516,7 @@ private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [
   refine F.reindex_val_heq g rfl _ _ ?_
   refine F.reindex_val_heq h rfl _ _ ?_
   exact HEq.trans
-    (F.cast_val_heq (congrFun (F.isFunctorial.tagRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
+    (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
 
 /-- The output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, built directly as a `Functor`
 value. Its fibre over `j` is the
@@ -526,14 +527,14 @@ from `F.isFunctorial`. -/
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
     Jᵒᵖ ⥤ Type (max uI uZ uA uB) where
   obj j := { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j.unop }
-  map g := ↾ fun w => ⟨F.objRestr g.unop w.1 w.2, (F.tagRestr g.unop ⟨w.1.shape, w.2⟩).2⟩
+  map g := ↾ fun w => ⟨F.objRestr g.unop w.1 w.2, (F.shapeRestr g.unop ⟨w.1.shape, w.2⟩).2⟩
   map_id j := by
     ext w
     exact Subtype.ext (F.objRestrElt_id w.1.1 w.2)
   map_comp g h := by
     ext w
     apply Subtype.ext
-    exact F.objRestrElt_comp g.unop h.unop w.1.1 w.2 (F.tagRestr g.unop ⟨w.1.shape, w.2⟩).2
+    exact F.objRestrElt_comp g.unop h.unop w.1.1 w.2 (F.shapeRestr g.unop ⟨w.1.shape, w.2⟩).2
 
 /-- Naturality of the dom morphism map with respect to `objPresheaf`'s
 `J`-restriction: for `α : NatTrans Z Z'`, the dom `map α` carries the fibre of
