@@ -33,7 +33,7 @@ example (F : SlicePFunctor.{0, 0} Bool Bool) (w : F.toPFunctor.W) :
 example (F : SlicePFunctor.{0, 0} Bool Bool) (a : F.toPFunctor.A)
     (f : F.toPFunctor.B a → F.toPFunctor.W) :
     F.WValid (WType.mk a f) ↔
-      F.ForAll a (F.WValid ∘ f) ∧ F.OverLeg a (F.windexRoot ∘ f) :=
+      F.ForAll a (F.WValid ∘ f) ∧ F.OverInput a (F.windexRoot ∘ f) :=
   F.wValid_mk a f
 
 -- `mk` and `dest` are mutually inverse.
