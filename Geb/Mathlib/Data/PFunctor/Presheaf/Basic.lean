@@ -16,7 +16,7 @@ public import Mathlib.CategoryTheory.Types.Basic
 A presheaf-domain polynomial functor extends a `SliceDomPFunctor` on the
 objects of a category `I` with a contravariant `I`-action on arities: for
 each shape `a`, the assignment `i ↦ Direction a i` extends to a presheaf on
-`I` via a restriction map `restr a f`. This file is the p.r.a. (parametric
+`I` via a restriction map `directionRestr a f`. This file is the p.r.a. (parametric
 right adjoint) construction restricted to the domain side; the full
 categorical packaging appears in sibling modules. Every declaration here is
 `Classical.choice`-free; the categorical packaging that pulls in
@@ -24,21 +24,21 @@ categorical packaging appears in sibling modules. Every declaration here is
 
 The design uses the option-(A) fibre encoding: directions over `i` are
 `SliceDomPFunctor.Direction a i = Subtype (DirectionOver a i)`, the fibre of
-the constraint leg `rCurried a` over `i`. The `restr` field reindexes these
+the constraint leg `rCurried a` over `i`. The `directionRestr` field reindexes these
 fibres contravariantly.
 
 ## Main definitions
 
 * `PresheafDomPFunctorData` — the operations: a `SliceDomPFunctor` with a
-  restriction map `restr`.
-* `PresheafDomPFunctorData.RestrId` / `RestrComp` — named law `Prop`s.
+  restriction map `directionRestr`.
+* `PresheafDomPFunctorData.DirectionRestrId` / `DirectionRestrComp` — named law `Prop`s.
 * `PresheafDomPFunctorData.IsFunctorial` — the functor laws bundled.
 * `PresheafDomPFunctorData.elemProj` — projection from the presheaf's elements
   `Σ i, Z.obj ⟨i⟩` to the base `I`.
 * `PresheafDomPFunctorData.value` — the `Z`-value the assignment gives a
   direction.
 * `PresheafDomPFunctorData.IsNatural` — naturality of the direction
-  assignment with respect to `restr` and `Z.map`.
+  assignment with respect to `directionRestr` and `Z.map`.
 * `PresheafDomPFunctorData.obj` — the functor's value on a presheaf `Z`.
 * `PresheafDomPFunctorData.elemMap` — the action of a presheaf morphism `α` on
   the categories of elements, `el(Z) ⟶ el(Z')`.
@@ -76,7 +76,7 @@ The declaration docstrings use the parametric-right-adjoint notation of
 * `T1` — the shape presheaf `j ↦ Shape j` on `J`, with `shapeRestr` as its
   restriction maps.
 * `E_T(a)` — the arity presheaf `i ↦ Direction a.1 i` of a shape `a` on `I`,
-  with `restr` as its restriction maps.
+  with `directionRestr` as its restriction maps.
 * `el(T1)` — the category of elements of `T1`: objects are pairs `(j, a)` with
   `a : Shape j`. As `T1` is a presheaf, its elements vary contravariantly, so a
   morphism `(j, a) ⟶ (j', a')` is backed by a `J`-morphism `g : j' ⟶ j` (the
@@ -140,37 +140,38 @@ universe uI uJ uA uB uZ u v vI vJ
 set_option linter.checkUnivs false in
 /-- Operations of a presheaf-domain polynomial functor over `I`: a
 `SliceDomPFunctor` on `I`'s objects, with the contravariant `I`-action
-`restr` making each arity a presheaf on `I`. -/
+`directionRestr` making each arity a presheaf on `I`. -/
 @[nolint checkUnivs]
 structure PresheafDomPFunctorData (I : Type uI) [Category.{vI} I] :
     Type (max (uA + 1) (uB + 1) uI vI)
     extends SliceDomPFunctor.{uA, uB} I where
   /-- The arity-presheaf restriction: for a morphism `i' ⟶ i`, reindex
   directions of shape `a` over `i` to directions over `i'`. -/
-  restr : ∀ (a : toPFunctor.A) ⦃i i' : I⦄, (i' ⟶ i) →
+  directionRestr : ∀ (a : toPFunctor.A) ⦃i i' : I⦄, (i' ⟶ i) →
       toSliceDomPFunctor.Direction a i → toSliceDomPFunctor.Direction a i'
 
 namespace PresheafDomPFunctorData
 
-/-- `restr` preserves identities. -/
-@[expose] def RestrId {I : Type uI} [Category.{vI} I]
+/-- `directionRestr` preserves identities. -/
+@[expose] def DirectionRestrId {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I) : Prop :=
-  ∀ (a : F.A) (i : I), F.restr a (𝟙 i) = id
+  ∀ (a : F.A) (i : I), F.directionRestr a (𝟙 i) = id
 
-/-- `restr` reverses composition: `restr a (g ≫ f) = restr a g ∘ restr a f`. -/
-@[expose] def RestrComp {I : Type uI} [Category.{vI} I]
+/-- `directionRestr` reverses composition: `directionRestr a (g ≫ f) = directionRestr a g ∘
+directionRestr a f`. -/
+@[expose] def DirectionRestrComp {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I) : Prop :=
   ∀ (a : F.A) ⦃i i' i'' : I⦄ (f : i' ⟶ i) (g : i'' ⟶ i'),
-      F.restr a (g ≫ f) = F.restr a g ∘ F.restr a f
+      F.directionRestr a (g ≫ f) = F.directionRestr a g ∘ F.directionRestr a f
 
-/-- The arities form presheaves on `I`: `restr` satisfies the functor
+/-- The arities form presheaves on `I`: `directionRestr` satisfies the functor
 laws. -/
 structure IsFunctorial {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I) : Prop where
-  /-- Identity law for `restr`. -/
-  restr_id : F.RestrId
-  /-- Composition law for `restr`. -/
-  restr_comp : F.RestrComp
+  /-- Identity law for `directionRestr`. -/
+  directionRestr_id : F.DirectionRestrId
+  /-- Composition law for `directionRestr`. -/
+  directionRestr_comp : F.DirectionRestrComp
 
 /-- Total-space projection of a presheaf `Z` on `I` to objects of `I`. -/
 @[expose] def elemProj {I : Type uI} [Category.{vI} I] (Z : Iᵒᵖ ⥤ Type uZ) :
@@ -189,12 +190,12 @@ compatibility of `x` and the constraint condition on `b` to `Z.obj ⟨i⟩`. -/
 
 /-- The direction-assignment of `x` is a natural transformation `E_T(a) ⟶ Z`,
 where `a := x.1.1`: for every `f : i' ⟶ i` and direction `b` over `i`, the
-component assigned to `restr a f b` equals `Z.map f.op` applied to `value x b`. -/
+component assigned to `directionRestr a f b` equals `Z.map f.op` applied to `value x b`. -/
 @[expose] def IsNatural {I : Type uI} [Category.{vI} I]
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.Obj (elemProj Z)) : Prop :=
   ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (b : F.toSliceDomPFunctor.Direction x.1.1 i),
-    F.value x (F.restr x.1.1 f b) = Z.map f.op (F.value x b)
+    F.value x (F.directionRestr x.1.1 f b) = Z.map f.op (F.value x b)
 
 /-- The value of the presheaf-domain functor on `Z`: the `IsNatural` subtype
 of the slice object on the total-space projection `elemProj Z`. -/
@@ -324,15 +325,15 @@ namespace PresheafPFunctorData
   ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j'),
       F.shapeRestr (h ≫ g) = F.shapeRestr h ∘ F.shapeRestr g
 
-/-- Each `reindex g a` commutes with `restr` (a presheaf morphism
+/-- Each `reindex g a` commutes with `directionRestr` (a presheaf morphism
 `E_T(shapeRestr g a) ⟶ E_T(a)`): for `f : i' ⟶ i`,
-`restr a.1 f ∘ reindex g a = reindex g a ∘ restr (shapeRestr g a).1 f`.
+`directionRestr a.1 f ∘ reindex g a = reindex g a ∘ directionRestr (shapeRestr g a).1 f`.
 Ordinary fibre maps only; no `shapeRestr` transport. -/
 @[expose] def ReindexNaturality {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : Prop :=
   ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) ⦃i i' : I⦄ (f : i' ⟶ i),
-    F.restr a.1 f ∘ F.reindex g a (i := i) =
-      F.reindex g a (i := i') ∘ F.restr (F.shapeRestr g a).1 f
+    F.directionRestr a.1 f ∘ F.reindex g a (i := i) =
+      F.reindex g a (i := i') ∘ F.directionRestr (F.shapeRestr g a).1 f
 
 /-- `reindex (𝟙 j) a` is the identity, modulo the transport of its source
 along `ShapeRestrId` at `j` (`shapeRestr (𝟙 j) a = a`). The transport is the
@@ -372,7 +373,7 @@ structure IsFunctorial {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{
   shapeRestr_id : F.ShapeRestrId
   /-- Composition law for `shapeRestr`. -/
   shapeRestr_comp : F.ShapeRestrComp
-  /-- `reindex` is a presheaf morphism (commutes with `restr`). -/
+  /-- `reindex` is a presheaf morphism (commutes with `directionRestr`). -/
   reindex_naturality : F.ReindexNaturality
   /-- Identity law for `reindex`, relative to `shapeRestr_id`. -/
   reindex_id : F.ReindexId shapeRestr_id
@@ -429,8 +430,8 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
   ⟨F.objRestrElt g x.1 htag, by
     intro i i' f b
     rw [F.value_objRestrElt, F.value_objRestrElt,
-      show F.reindex g ⟨x.shape, htag⟩ (F.restr (F.objRestrElt g x.1 htag).1.1 f b)
-          = F.restr x.shape f (F.reindex g ⟨x.shape, htag⟩ b) from
+      show F.reindex g ⟨x.shape, htag⟩ (F.directionRestr (F.objRestrElt g x.1 htag).1.1 f b)
+          = F.directionRestr x.shape f (F.reindex g ⟨x.shape, htag⟩ b) from
         (congrFun (F.isFunctorial.reindex_naturality g ⟨x.shape, htag⟩ f) b).symm]
     exact x.2 f (F.reindex g ⟨x.shape, htag⟩ b)⟩
 

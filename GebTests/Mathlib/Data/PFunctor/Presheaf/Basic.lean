@@ -20,8 +20,8 @@ set_option linter.privateModule false
 open CategoryTheory PresheafDomPFunctorData
 
 -- A caller can name the law condition to state things of that type.
-example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.RestrComp :=
-  F.isFunctorial.restr_comp
+example {I : Type} [Category I] (F : PresheafDomPFunctor I) : F.DirectionRestrComp :=
+  F.isFunctorial.directionRestr_comp
 
 -- `obj` is the `IsNatural` subtype of the slice object on `elemProj Z`.
 example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Type) :
@@ -37,7 +37,7 @@ example {I : Type} [Category I] (F : PresheafDomPFunctor I) (Z : Iᵒᵖ ⥤ Typ
 
 -- The full bundle projects the inherited dom law and names a `J`-side law.
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
-    F.RestrComp := F.isFunctorial.restr_comp
+    F.DirectionRestrComp := F.isFunctorial.directionRestr_comp
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
     F.ShapeRestrComp := F.isFunctorial.shapeRestr_comp
 
@@ -68,7 +68,7 @@ private theorem fin2_add_idx (x i : Fin 2) : x + (i + x) = i := by omega
 `Fin 2` (for both index categories). Two shapes (`A := Fin 2`), tagged by
 `q := id` so each shape lies over its own object, two directions per shape
 (`B _ := Fin 2`), and constraint `s ⟨a, b⟩ = a + b`. Each fibre
-`Direction a i` is the singleton `{a + i}`, so `restr`, `shapeRestr`, and
+`Direction a i` is the singleton `{a + i}`, so `directionRestr`, `shapeRestr`, and
 `reindex` each pick out the unique element of the target fibre.
 `reindex` along the non-identity `0 ⟶ 1` retags shape `1` to shape `0` and
 maps the underlying direction value to `i + a.1` (here `1 = 0 + 1`). -/
@@ -77,7 +77,7 @@ def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   B := fun _ => Fin 2
   r := fun x => x.1 + x.2
   q := id
-  restr := fun a {_i i'} _f _b => ⟨i' + a, fin2_add_idx a i'⟩
+  directionRestr := fun a {_i i'} _f _b => ⟨i' + a, fin2_add_idx a i'⟩
   shapeRestr := fun {_j j'} _g _s => ⟨j', rfl⟩
   reindex := fun {_j _j'} _g a {i} _b => ⟨i + a.1, fin2_add_idx a.1 i⟩
 
@@ -108,8 +108,8 @@ without computing the transports. -/
 def presheafWitness : PresheafPFunctor (Fin 2) (Fin 2) where
   toPresheafPFunctorData := presheafWitnessData
   isFunctorial :=
-    { restr_id := by intro a i; funext b; exact Subsingleton.elim _ _
-      restr_comp := by intro a i i' i'' f g; funext b; exact Subsingleton.elim _ _
+    { directionRestr_id := by intro a i; funext b; exact Subsingleton.elim _ _
+      directionRestr_comp := by intro a i i' i'' f g; funext b; exact Subsingleton.elim _ _
       shapeRestr_id := by intro j; funext s; exact Subsingleton.elim _ _
       shapeRestr_comp := by intro j j' j'' g h; funext s; exact Subsingleton.elim _ _
       reindex_naturality := by intro j j' g a i i' f; funext b; exact Subsingleton.elim _ _
@@ -131,9 +131,9 @@ example : presheafWitness.q (1 : Fin 2) = 1 := rfl
 -- `shapeRestr` along the non-identity `0 ⟶ 1` retags shape `1` to shape `0`.
 example : (presheafWitness.shapeRestr h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
 
--- `restr` along `0 ⟶ 1` sends the unique direction of shape `0` over `1` to the
+-- `directionRestr` along `0 ⟶ 1` sends the unique direction of shape `0` over `1` to the
 -- unique direction over `0`.
-example : (presheafWitness.restr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
+example : (presheafWitness.directionRestr (0 : Fin 2) h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
 
 -- `reindex` along `0 ⟶ 1` moves the underlying direction value: the
 -- direction of value `0` over `i = 0` (for the retagged shape `0`) is reindexed
@@ -206,8 +206,8 @@ example :
 law equates elements of a subsingleton and `Subsingleton.elim` closes each
 goal; no test can distinguish a correct `reindex` / `shapeRestr` / cast-transport
 from a buggy one. The witness below breaks both degeneracies. The index
-category is `Fin 1`: its only morphism is `𝟙`, so `restr` is forced to be the
-identity transport and `restr_id` / `restr_comp` / `reindex_naturality` are
+category is `Fin 1`: its only morphism is `𝟙`, so `directionRestr` is forced to be the
+identity transport and `directionRestr_id` / `directionRestr_comp` / `reindex_naturality` are
 immediate, while each direction fibre `Direction a 0` carries the two elements
 of `Fin 2` (non-singleton directions). The tag category is `Fin 3` with its
 preorder `Category` instance (`0 ⟶ 1 ⟶ 2`), giving a genuine composite of two
@@ -272,7 +272,7 @@ private theorem reindexVal2_comp : ∀ (j'' j' j : Fin 3), j'' ≤ j' → j' ≤
     reindexVal2 j'' j x = reindexVal2 j' j (reindexVal2 j'' j' x) := by decide
 
 /-- The non-degenerate witness operations. The index category `Fin 1` forces
-`restr` to be the identity transport; the tag category `Fin 3` (preorder)
+`directionRestr` to be the identity transport; the tag category `Fin 3` (preorder)
 carries a length-two composite; `tval2` gives a non-singleton shape fibre over
 tag `0`; `B _ = Fin 2` and `s _ = 0` give non-singleton direction fibres. -/
 def presheafWitness2Data : PresheafPFunctorData (Fin 1) (Fin 3) where
@@ -280,7 +280,7 @@ def presheafWitness2Data : PresheafPFunctorData (Fin 1) (Fin 3) where
   B := fun _ => Fin 2
   r := fun _ => 0
   q := tval2
-  restr := fun _a {_i i'} _f b => ⟨b.1, (Fin.fin_one_eq_zero i').symm⟩
+  directionRestr := fun _a {_i i'} _f b => ⟨b.1, (Fin.fin_one_eq_zero i').symm⟩
   shapeRestr := fun {j j'} _g a => ⟨trVal2 j' j a.1, trVal2_tag j' j a.1 a.2⟩
   reindex := fun {j j'} _g _a {i} b => ⟨reindexVal2 j' j b.1, (Fin.fin_one_eq_zero i).symm⟩
 
@@ -302,16 +302,16 @@ private theorem reindexFst2 {j j' : Fin 3} (g : j' ⟶ j) (a : presheafWitness2D
     (presheafWitness2Data.reindex g a b).1 = reindexVal2 j' j b.1 := rfl
 
 /-- The non-degenerate witness, with all seven functor laws discharged
-genuinely. `restr_id` / `restr_comp` / `reindex_naturality` hold because the
-index category `Fin 1` makes `restr` the identity transport (so both sides
+genuinely. `directionRestr_id` / `directionRestr_comp` / `reindex_naturality` hold because the
+index category `Fin 1` makes `directionRestr` the identity transport (so both sides
 agree on the underlying value). `shapeRestr_id` / `shapeRestr_comp` reduce to the
 `trVal2` lemmas, `reindex_id` / `reindex_comp` to the `reindexVal2` lemmas after
 discharging the shape-equality cast with `castDirVal2`. -/
 def presheafWitness2 : PresheafPFunctor (Fin 1) (Fin 3) where
   toPresheafPFunctorData := presheafWitness2Data
   isFunctorial :=
-    { restr_id := by intro _a _i; funext _b; exact Subtype.ext rfl
-      restr_comp := by intro _a _i _i' _i'' _f _g; funext _b; exact Subtype.ext rfl
+    { directionRestr_id := by intro _a _i; funext _b; exact Subtype.ext rfl
+      directionRestr_comp := by intro _a _i _i' _i'' _f _g; funext _b; exact Subtype.ext rfl
       shapeRestr_id := by
         intro j; funext a; apply Subtype.ext
         change trVal2 j j a.1 = a.1
