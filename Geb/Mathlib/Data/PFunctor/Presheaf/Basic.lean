@@ -403,22 +403,22 @@ namespace PresheafPFunctor
 direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j) :
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j) :
     F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
-  ⟨⟨(F.shapeRestr g ⟨x.1.1, htag⟩).1,
-      fun b' => x.1.2 (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
+  ⟨⟨(F.shapeRestr g ⟨x.1.1, hq⟩).1,
+      fun b' => x.1.2 (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
     (F.compatible_iff _ _ _).mpr fun b' =>
       ((F.compatible_iff _ _ _).mp x.2
-        (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1).trans
-        (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).2⟩
+        (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1).trans
+        (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).2⟩
 
 /-- The component the restricted element assigns to a direction is the component
 the original assigns to the direction's `reindex`. -/
 private theorem value_objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j)
-    ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x htag).1.1 i) :
-    F.value (F.objRestrElt g x htag) b = F.value x (F.reindex g ⟨x.1.1, htag⟩ b) := by
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j)
+    ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x hq).1.1 i) :
+    F.value (F.objRestrElt g x hq) b = F.value x (F.reindex g ⟨x.1.1, hq⟩ b) := by
   obtain ⟨b1, rfl⟩ := b
   rfl
 
@@ -427,14 +427,14 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
 `reindex_naturality`. -/
 @[expose] def objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.obj Z) (htag : F.q x.shape = j) : F.obj Z :=
-  ⟨F.objRestrElt g x.1 htag, by
+    (x : F.obj Z) (hq : F.q x.shape = j) : F.obj Z :=
+  ⟨F.objRestrElt g x.1 hq, by
     intro i i' f b
     rw [F.value_objRestrElt, F.value_objRestrElt,
-      show F.reindex g ⟨x.shape, htag⟩ (F.directionRestr (F.objRestrElt g x.1 htag).1.1 f b)
-          = F.directionRestr x.shape f (F.reindex g ⟨x.shape, htag⟩ b) from
-        (congrFun (F.isFunctorial.reindex_naturality g ⟨x.shape, htag⟩ f) b).symm]
-    exact x.2 f (F.reindex g ⟨x.shape, htag⟩ b)⟩
+      show F.reindex g ⟨x.shape, hq⟩ (F.directionRestr (F.objRestrElt g x.1 hq).1.1 f b)
+          = F.directionRestr x.shape f (F.reindex g ⟨x.shape, hq⟩ b) from
+        (congrFun (F.isFunctorial.reindex_naturality g ⟨x.shape, hq⟩ f) b).symm]
+    exact x.2 f (F.reindex g ⟨x.shape, hq⟩ b)⟩
 
 /-- The underlying value of a direction cast along a shape equality is the
 original value, up to the transport of its type along that equality. -/
@@ -473,42 +473,42 @@ private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → 
 identity. -/
 private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} {j : J}
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j) :
-    F.objRestrElt (𝟙 j) x htag = x := by
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j) :
+    F.objRestrElt (𝟙 j) x hq = x := by
   apply Subtype.ext
   obtain ⟨⟨a, v⟩, hc⟩ := x
   simp only [objRestrElt]
   refine Sigma.ext
-    (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id j) (⟨a, htag⟩ : F.Shape j))) ?_
+    (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id j) (⟨a, hq⟩ : F.Shape j))) ?_
   refine heq_fun
     (congrArg F.B
-      (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id j) (⟨a, htag⟩ : F.Shape j))))
+      (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id j) (⟨a, hq⟩ : F.Shape j))))
     ?_
   intro b1 b2 hb
   dsimp only
   rw [F.isFunctorial.reindex_id]
   congr 1
   exact eq_of_heq
-    (HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_id j) ⟨a, htag⟩) ⟨b1, rfl⟩) hb)
+    (HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_id j) ⟨a, hq⟩) ⟨b1, rfl⟩) hb)
 
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/
 private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' j'' : J⦄
     (g : j' ⟶ j) (h : j'' ⟶ j')
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j)
-    (htag' : F.q (F.objRestrElt g x htag).1.1 = j') :
-    F.objRestrElt (h ≫ g) x htag = F.objRestrElt h (F.objRestrElt g x htag) htag' := by
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j)
+    (hq' : F.q (F.objRestrElt g x hq).1.1 = j') :
+    F.objRestrElt (h ≫ g) x hq = F.objRestrElt h (F.objRestrElt g x hq) hq' := by
   apply Subtype.ext
   obtain ⟨⟨a, v⟩, hc⟩ := x
   simp only [objRestrElt]
   refine Sigma.ext
-    (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_comp g h) (⟨a, htag⟩ : F.Shape j)))
+    (congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_comp g h) (⟨a, hq⟩ : F.Shape j)))
     ?_
   refine heq_fun
     (congrArg F.B
       (congrArg Subtype.val
-        (congrFun (F.isFunctorial.shapeRestr_comp g h) (⟨a, htag⟩ : F.Shape j))))
+        (congrFun (F.isFunctorial.shapeRestr_comp g h) (⟨a, hq⟩ : F.Shape j))))
     ?_
   intro b1 b2 hb
   dsimp only
@@ -518,7 +518,7 @@ private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [
   refine F.reindex_val_heq g rfl _ _ ?_
   refine F.reindex_val_heq h rfl _ _ ?_
   exact HEq.trans
-    (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
+    (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_comp g h) ⟨a, hq⟩) ⟨b1, rfl⟩) hb
 
 /-- The output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, built directly as a `Functor`
 value. Its fibre over `j` is the subtype of the dom value `F.obj Z` whose
@@ -549,9 +549,9 @@ functor law. -/
 theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.q x.shape = j) :
-    F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
-      F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
+    (x : F.toPresheafDomPFunctorData.obj Z) (hq : F.q x.shape = j) :
+    F.toPresheafDomPFunctorData.map α (F.objRestr g x hq) =
+      F.objRestr g (F.toPresheafDomPFunctorData.map α x) hq :=
   Subtype.ext rfl
 
 /-- The natural transformation `objPresheaf Z ⟶ objPresheaf Z'` induced by a

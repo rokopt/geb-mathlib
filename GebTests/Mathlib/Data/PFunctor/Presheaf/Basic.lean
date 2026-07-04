@@ -53,10 +53,10 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
 -- `q`-output index.
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.q x.1.1.1 = j) :
-    F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
-      F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
-  F.map_objRestr α g x htag
+    (x : F.toPresheafDomPFunctorData.obj Z) (hq : F.q x.1.1.1 = j) :
+    F.toPresheafDomPFunctorData.map α (F.objRestr g x hq) =
+      F.objRestr g (F.toPresheafDomPFunctorData.map α x) hq :=
+  F.map_objRestr α g x hq
 
 -- The preorder category on `Fin 2` has a genuine non-identity morphism.
 example : ((0 : Fin 2) ⟶ 1) := homOfLE (by decide)
