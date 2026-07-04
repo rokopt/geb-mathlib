@@ -47,15 +47,15 @@ example (F : SlicePFunctor.{0, 0} Bool Bool) (x : F.toSliceDomPFunctor.Obj F.win
     F.windex (W.mk x) = F.obj F.windex x := W.windex_mk x
 
 -- `elim` lies over `I` and satisfies its computation rule.
-example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (q : Y → Bool)
-    (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q) :
-    q ∘ W.elim F Y q g hg = F.windex := W.comp_elim F Y q g hg
-example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (q : Y → Bool)
-    (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q)
+example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (p : Y → Bool)
+    (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
+    p ∘ W.elim F Y p g hg = F.windex := W.comp_elim F Y p g hg
+example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (p : Y → Bool)
+    (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p)
     (x : F.toSliceDomPFunctor.Obj F.windex) :
-    W.elim F Y q g hg (W.mk x) =
-      g (F.toSliceDomPFunctor.map (W.elim F Y q g hg) (W.comp_elim F Y q g hg) x) :=
-  W.elim_mk F Y q g hg x
+    W.elim F Y p g hg (W.mk x) =
+      g (F.toSliceDomPFunctor.map (W.elim F Y p g hg) (W.comp_elim F Y p g hg) x) :=
+  W.elim_mk F Y p g hg x
 
 /-- A concrete slice endofunctor with a leaf shape, so finite admissible trees
 exist: shape `false` is a leaf (no directions), shape `true` carries one
@@ -94,7 +94,7 @@ example : (W.dest wLeafElt).1.1 = false := rfl
 example : (W.dest wNodeElt).1.1 = true := rfl
 
 -- `elim` computes on concrete trees. Into the algebra reading the root tag
--- (`wSlice.obj id`, over `Y = Bool` with `q = id`), the eliminator recovers the
+-- (`wSlice.obj id`, over `Y = Bool` with `p = id`), the eliminator recovers the
 -- structure map, so it returns the root tag: `false` for the leaf, `true` for
 -- the node.
 example : W.elim wSlice Bool id (wSlice.obj id) rfl wLeafElt = false := rfl

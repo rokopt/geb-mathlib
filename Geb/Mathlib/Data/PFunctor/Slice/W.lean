@@ -39,7 +39,7 @@ computed by a single non-dependent `WType.elim` (the fold `elimData`, with
 algebra `elimStep`) into the carrier `ElimData` — each subtree's index, its
 admissibility, and (given admissibility) its image value with the witness that
 the value lies over the index, i.e. a slice morphism
-`(valid, const index) → (Y, q)`; carrying the value in the fold keeps the
+`(valid, const index) → (Y, p)`; carrying the value in the fold keeps the
 computational layer independent of the dependent recursor. The
 dependent recursor enters only in the proof `elimData_valid`, relating the
 fold's admissibility component to `WValid`. A direct `WType.rec` definition of
@@ -257,53 +257,53 @@ theorem windex_mk {I : Type uI} {F : SlicePFunctor.{uA, uB, uI, uI} I I}
   rfl
 
 /-- The `elim` fold carrier: extends `WIndex` to a slice morphism
-`(valid, const index) → (Y, q)` — a value function defined once the subtree is
+`(valid, const index) → (Y, p)` — a value function defined once the subtree is
 admissible, together with the proof that it lies over the index. -/
 @[ext]
-structure ElimData {I : Type uI} (Y : Type uY) (q : Y → I) extends WIndex I where
+structure ElimData {I : Type uI} (Y : Type uY) (p : Y → I) extends WIndex I where
   /-- The image value, available once the subtree is admissible. -/
   value : valid → Y
-  /-- The value lies over the index: `q ∘ value` is constant at `index`. -/
-  over : q ∘ value = Function.const valid index
+  /-- The value lies over the index: `p ∘ value` is constant at `index`. -/
+  over : p ∘ value = Function.const valid index
 
 /-- The slice-algebra step of the `elim` fold: index and admissibility
 (`NodeValid`) as for `windexStep`, and a value function that, given a node's
 admissibility, applies the target algebra `g` to the compatible family of its
 children's values, with `over` recording that the result lies over the index. -/
 @[expose] def elimStep {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q) :
-    F.toPFunctor.Obj (ElimData Y q) → ElimData Y q :=
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
+    F.toPFunctor.Obj (ElimData Y p) → ElimData Y p :=
   fun ⟨a, c⟩ =>
     { index := F.t a
       valid := F.NodeValid a (ElimData.toWIndex ∘ c)
       value := fun hv => g ⟨⟨a, fun b => (c b).value (hv.1 b)⟩,
-        (F.toSliceDomPFunctor.compatible_iff q a _).mpr fun b =>
+        (F.toSliceDomPFunctor.compatible_iff p a _).mpr fun b =>
           (congrFun (c b).over (hv.1 b)).trans (congrFun hv.2 b)⟩
       over := funext fun _ => congrFun hg _ }
 
 /-- The `elim` fold: the `F.toPFunctor`-algebra morphism into
-`(ElimData Y q, elimStep)` given by `WType.elim`, a single non-dependent fold
+`(ElimData Y p, elimStep)` given by `WType.elim`, a single non-dependent fold
 with no explicit recursion. -/
 @[expose] def elimData {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q) :
-    F.toPFunctor.W → ElimData Y q :=
-  WType.elim (ElimData Y q) (elimStep F Y q g hg)
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
+    F.toPFunctor.W → ElimData Y p :=
+  WType.elim (ElimData Y p) (elimStep F Y p g hg)
 
 /-- The index component of `elimData` is the root index. -/
 @[simp]
 theorem elimData_index {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q)
-    (w : F.toPFunctor.W) : (elimData F Y q g hg w).index = F.windexRoot w := by
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p)
+    (w : F.toPFunctor.W) : (elimData F Y p g hg w).index = F.windexRoot w := by
   cases w with
   | mk a f => rfl
 
 /-- The admissibility component of `elimData`, unfolded one level. -/
 theorem elimData_valid_mk {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q)
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p)
     (a : F.toPFunctor.A) (f : F.toPFunctor.B a → F.toPFunctor.W) :
-    (elimData F Y q g hg (WType.mk a f)).valid =
-      (F.ForAll a (fun b => (elimData F Y q g hg (f b)).valid) ∧
-        F.OverLeg a (fun b => (elimData F Y q g hg (f b)).index)) :=
+    (elimData F Y p g hg (WType.mk a f)).valid =
+      (F.ForAll a (fun b => (elimData F Y p g hg (f b)).valid) ∧
+        F.OverLeg a (fun b => (elimData F Y p g hg (f b)).index)) :=
   rfl
 
 /-- The admissibility component of `elimData` agrees with `WValid`. The sole
@@ -312,42 +312,42 @@ initial algebra's induction principle, consulting the hypothesis `ih`), unlike
 the non-recursive `cases`/`casesOn` splits elsewhere. It is in a proof, where
 non-computability is immaterial. -/
 theorem elimData_valid {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q)
-    (w : F.toPFunctor.W) : (elimData F Y q g hg w).valid ↔ F.WValid w :=
-  WType.rec (motive := fun w => (elimData F Y q g hg w).valid ↔ F.WValid w)
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p)
+    (w : F.toPFunctor.W) : (elimData F Y p g hg w).valid ↔ F.WValid w :=
+  WType.rec (motive := fun w => (elimData F Y p g hg w).valid ↔ F.WValid w)
     (fun a f ih => by
       rw [F.wValid_mk, elimData_valid_mk]
       exact and_congr (forall_congr' ih) (by simp only [OverLeg, elimData_index]; rfl))
     w
 
 /-- The eliminator of the slice W-type: the morphism into any slice algebra
-`(Y, q, g)` over `I`. The existence half of initiality. The value is computed by
+`(Y, p, g)` over `I`. The existence half of initiality. The value is computed by
 the non-dependent fold `elimData`; the tree's admissibility supplies the
 argument to the fold's `value` function. -/
 @[expose] def elim {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q) :
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
     F.W → Y :=
   fun z =>
-    (elimData F Y q g hg z.val).value
-      ((elimData_valid F Y q g hg z.val).mpr z.property)
+    (elimData F Y p g hg z.val).value
+      ((elimData_valid F Y p g hg z.val).mpr z.property)
 
 /-- `elim` lies over `I`: composing with the target structure map recovers
 `windex`. -/
 theorem comp_elim {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q) :
-    q ∘ elim F Y q g hg = F.windex :=
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
+    p ∘ elim F Y p g hg = F.windex :=
   funext fun z =>
-    (congrFun (elimData F Y q g hg z.val).over
-      ((elimData_valid F Y q g hg z.val).mpr z.property)).trans
-      (elimData_index F Y q g hg z.val)
+    (congrFun (elimData F Y p g hg z.val).over
+      ((elimData_valid F Y p g hg z.val).mpr z.property)).trans
+      (elimData_index F Y p g hg z.val)
 
 /-- The computation rule for `elim`: it commutes with the constructors, i.e. it
 is a morphism of slice algebras. -/
 theorem elim_mk {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
-    (Y : Type uY) (q : Y → I) (g : F.toSliceDomPFunctor.Obj q → Y) (hg : q ∘ g = F.obj q)
+    (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p)
     (x : F.toSliceDomPFunctor.Obj F.windex) :
-    elim F Y q g hg (mk x) =
-      g (F.toSliceDomPFunctor.map (elim F Y q g hg) (comp_elim F Y q g hg) x) :=
+    elim F Y p g hg (mk x) =
+      g (F.toSliceDomPFunctor.map (elim F Y p g hg) (comp_elim F Y p g hg) x) :=
   rfl
 
 end W

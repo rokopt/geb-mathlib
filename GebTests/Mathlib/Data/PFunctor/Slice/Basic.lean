@@ -66,8 +66,8 @@ example (X : Type) (p : X → Bool) :
       (id : testSlice.toSliceDomPFunctor.Obj p → testSlice.toSliceDomPFunctor.Obj p) :=
   testSlice.map_id p
 
-example (X Y Z : Type) (p : X → Bool) (q : Y → Bool) (r : Z → Bool)
-    (f : X → Y) (g : Y → Z) (hf : q ∘ f = p) (hg : r ∘ g = q) :
+example (X Y Z : Type) (p : X → Bool) (p' : Y → Bool) (p'' : Z → Bool)
+    (f : X → Y) (g : Y → Z) (hf : p' ∘ f = p) (hg : p'' ∘ g = p') :
     testSlice.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) =
       testSlice.map g hg ∘ testSlice.map f hf :=
   testSlice.map_comp f g hf hg

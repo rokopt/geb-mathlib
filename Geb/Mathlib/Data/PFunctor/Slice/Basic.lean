@@ -169,8 +169,8 @@ theorem map_id {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
 /-- Functoriality: composition. -/
 theorem map_comp {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     {X : Type uX} {Y : Type uY} {Z : Type uZ}
-    {p : X → dom} {q : Y → dom} {r : Z → dom} (f : X → Y) (g : Y → Z)
-    (hf : q ∘ f = p) (hg : r ∘ g = q) :
+    {p : X → dom} {p' : Y → dom} {p'' : Z → dom} (f : X → Y) (g : Y → Z)
+    (hf : p' ∘ f = p) (hg : p'' ∘ g = p') :
     F.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) =
       F.map g hg ∘ F.map f hf :=
   funext fun x => Subtype.ext (F.toPFunctor.map_map f g x.1).symm
@@ -208,8 +208,8 @@ theorem map_id {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, u
 /-- Functoriality: composition. -/
 theorem map_comp {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
     {X : Type uX} {Y : Type uY} {Z : Type uZ}
-    {p : X → dom} {q : Y → dom} {r : Z → dom} (f : X → Y) (g : Y → Z)
-    (hf : q ∘ f = p) (hg : r ∘ g = q) :
+    {p : X → dom} {p' : Y → dom} {p'' : Z → dom} (f : X → Y) (g : Y → Z)
+    (hf : p' ∘ f = p) (hg : p'' ∘ g = p') :
     F.map (g ∘ f) (by rw [← hf, ← hg, Function.comp_assoc]) = F.map g hg ∘ F.map f hf :=
   F.toSliceDomPFunctor.map_comp f g hf hg
 

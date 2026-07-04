@@ -267,8 +267,8 @@ theorem map_comp {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{u
           ← Category.assoc]) } =
       F.map β ∘ F.map α := by
   funext x
-  exact Subtype.ext (congrFun (F.toSliceDomPFunctor.map_comp (p := elemProj Z) (q := elemProj Z')
-    (r := elemProj Z'')
+  exact Subtype.ext (congrFun (F.toSliceDomPFunctor.map_comp (p := elemProj Z) (p' := elemProj Z')
+    (p'' := elemProj Z'')
     (elemMap α)
     (elemMap β)
     rfl rfl) x.1)
