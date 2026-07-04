@@ -98,7 +98,7 @@ example :
 
 /-- A slice functor whose shape-output map `q = id` distinguishes its two
 shapes, so the output-index content of `obj` is genuinely exercised. -/
-def taggedSlice : SlicePFunctor Bool Bool where
+def separatingSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ => Bool
   r := fun x => x.2
@@ -107,12 +107,12 @@ def taggedSlice : SlicePFunctor Bool Bool where
 -- `obj` reads the output index at the shape: with `q = id`, it is the shape
 -- projection (this fails for any output index that does not separate the shapes).
 example (X : Type) (p : X → Bool) :
-    taggedSlice.obj p = fun z => z.1.1 := rfl
+    separatingSlice.obj p = fun z => z.1.1 := rfl
 
--- `map_w` over a functor with a genuinely-separating output index: the morphism lies over `cod`.
+-- `map_w` over a functor with a separating output index: the morphism lies over `cod`.
 example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
-    (hf : p' ∘ f = p) : taggedSlice.obj p' ∘ taggedSlice.map f hf = taggedSlice.obj p :=
-  taggedSlice.map_w f hf
+    (hf : p' ∘ f = p) : separatingSlice.obj p' ∘ separatingSlice.map f hf = separatingSlice.obj p :=
+  separatingSlice.map_w f hf
 
 -- Direction is the direction-input-map fibre; the predicate is its membership.
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :

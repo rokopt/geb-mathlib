@@ -229,36 +229,37 @@ composition lemmas.
 index `0`, shape `2` over output index `1`, shape `3` over output index `2`.
 Written arithmetically (rather than as a `Matrix` literal `![0, 0, 1, 2]`) so
 that the discriminating examples reduce by `decide`. -/
-private def tval2 (i : Fin 4) : Fin 3 := ⟨i.val - 1, by omega⟩
+private def qVal2 (i : Fin 4) : Fin 3 := ⟨i.val - 1, by omega⟩
 
 /-- A chosen shape over each output index, the off-diagonal target of
 `shapeRestr` (`0, 2, 3` over output indices `0, 1, 2`). Written arithmetically
-for the same reason as `tval2`. -/
+for the same reason as `qVal2`. -/
 private def repOf2 (j : Fin 3) : Fin 4 := ⟨if j.val = 0 then 0 else j.val + 1, by split <;> omega⟩
 
 /-- Underlying shape map of `shapeRestr` for a morphism with target output
 index `j'` and source output index `j`: the identity on the diagonal, the
 representative `repOf2 j'` off it. -/
-private def trVal2 (j' j : Fin 3) (x : Fin 4) : Fin 4 :=
+private def shapeRestrVal2 (j' j : Fin 3) (x : Fin 4) : Fin 4 :=
   if j' = j then x else repOf2 j'
 
 /-- The representatives lie over their output indices. -/
-private theorem repOf2_tag : ∀ j' : Fin 3, tval2 (repOf2 j') = j' := by decide
+private theorem repOf2_output : ∀ j' : Fin 3, qVal2 (repOf2 j') = j' := by decide
 
-/-- `trVal2` preserves the shape-output map. -/
-private theorem trVal2_tag (j' j : Fin 3) (x : Fin 4) (hx : tval2 x = j) :
-    tval2 (trVal2 j' j x) = j' := by
-  unfold trVal2
+/-- `shapeRestrVal2` preserves the shape-output map. -/
+private theorem shapeRestrVal2_output (j' j : Fin 3) (x : Fin 4) (hx : qVal2 x = j) :
+    qVal2 (shapeRestrVal2 j' j x) = j' := by
+  unfold shapeRestrVal2
   split
   · next h => rw [hx]; exact h.symm
-  · next _ => exact repOf2_tag j'
+  · next _ => exact repOf2_output j'
 
-/-- `trVal2` along an output-index-fixing morphism is the identity. -/
-private theorem trVal2_self : ∀ (j : Fin 3) (x : Fin 4), trVal2 j j x = x := by decide
+/-- `shapeRestrVal2` along an output-index-fixing morphism is the identity. -/
+private theorem shapeRestrVal2_self :
+    ∀ (j : Fin 3) (x : Fin 4), shapeRestrVal2 j j x = x := by decide
 
 /-- Composition law for the underlying shape map, along a chain `j'' ≤ j' ≤ j`. -/
-private theorem trVal2_comp : ∀ (j'' j' j : Fin 3), j'' ≤ j' → j' ≤ j → ∀ x : Fin 4,
-    trVal2 j'' j x = trVal2 j'' j' (trVal2 j' j x) := by decide
+private theorem shapeRestrVal2_comp : ∀ (j'' j' j : Fin 3), j'' ≤ j' → j' ≤ j → ∀ x : Fin 4,
+    shapeRestrVal2 j'' j x = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j x) := by decide
 
 /-- Underlying value map of `reindex` for a morphism with source output index
 `j'` and target output index `j`: the swap of the two directions across the
@@ -277,16 +278,16 @@ private theorem reindexVal2_comp : ∀ (j'' j' j : Fin 3), j'' ≤ j' → j' ≤
 
 /-- The non-degenerate witness operations. The index category `Fin 1` forces
 `directionRestr` to be the identity transport; the output category `Fin 3`
-(preorder) carries a length-two composite; `tval2` gives a non-singleton shape
+(preorder) carries a length-two composite; `qVal2` gives a non-singleton shape
 fibre over output index `0`; `B _ = Fin 2` and `r _ = 0` give non-singleton
 direction fibres. -/
 def presheafWitness2Data : PresheafPFunctorData (Fin 1) (Fin 3) where
   A := Fin 4
   B := fun _ => Fin 2
   r := fun _ => 0
-  q := tval2
+  q := qVal2
   directionRestr := fun _a {_i i'} _f b => ⟨b.1, (Fin.fin_one_eq_zero i').symm⟩
-  shapeRestr := fun {j j'} _g a => ⟨trVal2 j' j a.1, trVal2_tag j' j a.1 a.2⟩
+  shapeRestr := fun {j j'} _g a => ⟨shapeRestrVal2 j' j a.1, shapeRestrVal2_output j' j a.1 a.2⟩
   reindex := fun {j j'} _g _a {i} b => ⟨reindexVal2 j' j b.1, (Fin.fin_one_eq_zero i).symm⟩
 
 /-- The underlying value of a direction cast along a shape equality is the
@@ -310,7 +311,7 @@ private theorem reindexFst2 {j j' : Fin 3} (g : j' ⟶ j) (a : presheafWitness2D
 genuinely. `directionRestr_id` / `directionRestr_comp` / `reindex_naturality` hold because the
 index category `Fin 1` makes `directionRestr` the identity transport (so both sides
 agree on the underlying value). `shapeRestr_id` / `shapeRestr_comp` reduce to the
-`trVal2` lemmas, `reindex_id` / `reindex_comp` to the `reindexVal2` lemmas after
+`shapeRestrVal2` lemmas, `reindex_id` / `reindex_comp` to the `reindexVal2` lemmas after
 discharging the shape-equality cast with `castDirVal2`. -/
 def presheafWitness2 : PresheafPFunctor (Fin 1) (Fin 3) where
   toPresheafPFunctorData := presheafWitness2Data
@@ -319,25 +320,25 @@ def presheafWitness2 : PresheafPFunctor (Fin 1) (Fin 3) where
       directionRestr_comp := by intro _a _i _i' _i'' _f _g; funext _b; exact Subtype.ext rfl
       shapeRestr_id := by
         intro j; funext a; apply Subtype.ext
-        change trVal2 j j a.1 = a.1
-        exact trVal2_self j a.1
+        change shapeRestrVal2 j j a.1 = a.1
+        exact shapeRestrVal2_self j a.1
       shapeRestr_comp := by
         intro j j' j'' g h; funext a; apply Subtype.ext
-        change trVal2 j'' j a.1 = trVal2 j'' j' (trVal2 j' j a.1)
-        exact trVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1
+        change shapeRestrVal2 j'' j a.1 = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.1)
+        exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1
       reindex_naturality := by intro _j _j' _g _a _i _i' _f; funext _b; exact Subtype.ext rfl
       reindex_id := by
         intro j a i b; apply Subtype.ext
         rw [reindexFst2, castDirVal2]
         · exact reindexVal2_id j b.1
-        · exact Subtype.ext (trVal2_self j a.1)
+        · exact Subtype.ext (shapeRestrVal2_self j a.1)
       reindex_comp := by
         intro j j' j'' g h a i b; apply Subtype.ext
         rw [reindexFst2, reindexFst2, reindexFst2, castDirVal2]
         · exact reindexVal2_comp j'' j' j (leOfHom h) (leOfHom g) b.1
         · exact Subtype.ext (by
-            change trVal2 j'' j a.1 = trVal2 j'' j' (trVal2 j' j a.1)
-            exact trVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1) }
+            change shapeRestrVal2 j'' j a.1 = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.1)
+            exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1) }
 
 /-- The non-identity morphisms of the preorder category on `Fin 3`. -/
 private def k01 : (0 : Fin 3) ⟶ 1 := homOfLE (by decide)
@@ -346,7 +347,7 @@ private def k02 : (0 : Fin 3) ⟶ 2 := homOfLE (by decide)
 /-- The singleton shape over output index `1` (shape index `2`), reused by the
 discriminating examples. -/
 private def shapeOverOne : presheafWitness2.toSlicePFunctor.Shape (1 : Fin 3) :=
-  ⟨(2 : Fin 4), by change tval2 (2 : Fin 4) = 1; decide⟩
+  ⟨(2 : Fin 4), by change qVal2 (2 : Fin 4) = 1; decide⟩
 
 -- `reindex` along the non-identity `0 ⟶ 1` moves the underlying value on the
 -- two-element fibre: the direction of value `0` is sent to value `1`.
@@ -385,7 +386,7 @@ private def fin2FibreElt : (presheafWitness2.objPresheaf constFin2).obj ⟨(2 : 
   ⟨⟨⟨⟨(3 : Fin 4), fun (b : Fin 2) => ⟨0, b⟩⟩,
       (presheafWitness2.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun _ => rfl⟩,
       fun _ _ _ _ => rfl⟩,
-    by change tval2 (3 : Fin 4) = 2; decide⟩
+    by change qVal2 (3 : Fin 4) = 2; decide⟩
 
 -- `objPresheaf.map` along the composite `0 ⟶ 2` reindexes shape `3` to shape `0`,
 -- end to end through `objRestr` / `objRestrElt` and `shapeRestr`.
