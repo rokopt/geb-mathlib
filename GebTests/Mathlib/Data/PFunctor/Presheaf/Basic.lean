@@ -46,13 +46,13 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J) :
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     (Z : Iᵒᵖ ⥤ Type) (j : J) :
     (F.objPresheaf Z).obj ⟨j⟩ =
-      { z : F.toPresheafDomPFunctorData.obj Z // F.t z.1.1.1 = j } := rfl
+      { z : F.toPresheafDomPFunctorData.obj Z // F.q z.1.1.1 = j } := rfl
 
 -- The dom morphism map is natural with respect to `objPresheaf`'s
 -- `J`-restriction: `map α` commutes with `objRestr g`, preserving the `t`-tag.
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.1.1.1 = j) :
+    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.q x.1.1.1 = j) :
     F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
       F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
   F.map_objRestr α g x htag
@@ -66,7 +66,7 @@ private theorem fin2_add_idx (x i : Fin 2) : x + (i + x) = i := by omega
 
 /-- A concrete presheaf polynomial functor over the preorder category on
 `Fin 2` (for both index categories). Two shapes (`A := Fin 2`), tagged by
-`t := id` so each shape lies over its own object, two directions per shape
+`q := id` so each shape lies over its own object, two directions per shape
 (`B _ := Fin 2`), and constraint `s ⟨a, b⟩ = a + b`. Each fibre
 `Direction a i` is the singleton `{a + i}`, so `restr`, `tagRestr`, and
 `reindex` each pick out the unique element of the target fibre.
@@ -75,8 +75,8 @@ maps the underlying direction value to `i + a.1` (here `1 = 0 + 1`). -/
 def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   A := Fin 2
   B := fun _ => Fin 2
-  s := fun x => x.1 + x.2
-  t := id
+  r := fun x => x.1 + x.2
+  q := id
   restr := fun a {_i i'} _f _b => ⟨i' + a, fin2_add_idx a i'⟩
   tagRestr := fun {_j j'} _g _s => ⟨j', rfl⟩
   reindex := fun {_j _j'} _g a {i} _b => ⟨i + a.1, fin2_add_idx a.1 i⟩
@@ -121,12 +121,12 @@ used by the computational examples. -/
 private def h01 : (0 : Fin 2) ⟶ 1 := homOfLE (by decide)
 
 -- The constraint leg computes as `a + b`.
-example : presheafWitness.s ⟨(0 : Fin 2), (1 : Fin 2)⟩ = 1 := rfl
-example : presheafWitness.s ⟨(1 : Fin 2), (1 : Fin 2)⟩ = 0 := rfl
+example : presheafWitness.r ⟨(0 : Fin 2), (1 : Fin 2)⟩ = 1 := rfl
+example : presheafWitness.r ⟨(1 : Fin 2), (1 : Fin 2)⟩ = 0 := rfl
 
 -- The tag leg is the identity, so each shape lies over its own object.
-example : presheafWitness.t (0 : Fin 2) = 0 := rfl
-example : presheafWitness.t (1 : Fin 2) = 1 := rfl
+example : presheafWitness.q (0 : Fin 2) = 0 := rfl
+example : presheafWitness.q (1 : Fin 2) = 1 := rfl
 
 -- `tagRestr` along the non-identity `0 ⟶ 1` retags shape `1` to shape `0`.
 example : (presheafWitness.tagRestr h01 ⟨(1 : Fin 2), rfl⟩).1 = (0 : Fin 2) := rfl
@@ -148,7 +148,7 @@ example :
 example (Z : (Fin 2)ᵒᵖ ⥤ Type) :
     (presheafWitness.objPresheaf Z).obj ⟨(0 : Fin 2)⟩ =
       { z : presheafWitness.toPresheafDomPFunctorData.obj Z //
-        presheafWitness.t z.1.1.1 = (0 : Fin 2) } :=
+        presheafWitness.q z.1.1.1 = (0 : Fin 2) } :=
   rfl
 
 -- `map` of a composite transformation acts as the composite of the maps.
@@ -278,8 +278,8 @@ tag `0`; `B _ = Fin 2` and `s _ = 0` give non-singleton direction fibres. -/
 def presheafWitness2Data : PresheafPFunctorData (Fin 1) (Fin 3) where
   A := Fin 4
   B := fun _ => Fin 2
-  s := fun _ => 0
-  t := tval2
+  r := fun _ => 0
+  q := tval2
   restr := fun _a {_i i'} _f b => ⟨b.1, (Fin.fin_one_eq_zero i').symm⟩
   tagRestr := fun {j j'} _g a => ⟨trVal2 j' j a.1, trVal2_tag j' j a.1 a.2⟩
   reindex := fun {j j'} _g _a {i} b => ⟨reindexVal2 j' j b.1, (Fin.fin_one_eq_zero i).symm⟩

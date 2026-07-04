@@ -26,10 +26,10 @@ categorical packaging is in the sibling `Slice.Functor` module.
 
 * `SliceDomPFunctor`, `SlicePFunctor` — the structures.
 * `SliceDomPFunctor.Compatible` — the direction-compatibility predicate.
-* `SliceDomPFunctor.ofCurried` / `sCurried` — the curried constructor and
+* `SliceDomPFunctor.ofCurried` / `rCurried` — the curried constructor and
   the constraint leg in dependently-curried form.
 * `SliceDomPFunctor.DirectionOver` / `Direction` — the constraint-leg
-  condition on a direction of shape `a`, and the fibre of `sCurried a`
+  condition on a direction of shape `a`, and the fibre of `rCurried a`
   over `i`.
 * `SliceDomPFunctor.Obj` / `map` — the domain-restricted functor's
   object and morphism maps; `map_id` / `map_comp` its functoriality.
@@ -59,7 +59,7 @@ reuses these — its carrier is `SliceDomPFunctor.Obj` and its `map` the
 tag-compatibility (`map_w`); `map_id` / `map_comp` delegate to the
 domain-side ones. `SliceDomPFunctor.Obj` and `SlicePFunctor.obj`, both
 namespaces' `map`,
-`SliceDomPFunctor.ofCurried` / `sCurried` / `DirectionOver` / `Direction`,
+`SliceDomPFunctor.ofCurried` / `rCurried` / `DirectionOver` / `Direction`,
 and `SlicePFunctor.ShapeOver` / `Shape` are `@[expose]` so the
 wrapper and tests can unfold them across the module boundary.
 
@@ -79,22 +79,22 @@ public section
 universe uA uB uD uC uX uX' uY uZ
 
 set_option linter.checkUnivs false in
-/-- A polynomial functor with a constraint leg `s` assigning each
+/-- A polynomial functor with a constraint leg `r` assigning each
 `(shape, direction)` pair (an element of `PFunctor.Idx`) a `dom`-index. -/
 @[nolint checkUnivs]
 structure SliceDomPFunctor (dom : Type uD) : Type (max (uA + 1) (uB + 1) uD)
     extends PFunctor.{uA, uB} where
   /-- The constraint leg: each direction is assigned a `dom`-index. -/
-  s : toPFunctor.Idx → dom
+  r : toPFunctor.Idx → dom
 
 set_option linter.checkUnivs false in
-/-- A `SliceDomPFunctor` with a tag leg `t` assigning each shape a
+/-- A `SliceDomPFunctor` with a tag leg `q` assigning each shape a
 `cod`-index. -/
 @[nolint checkUnivs]
 structure SlicePFunctor (dom : Type uD) (cod : Type uC) : Type (max (uA + 1) (uB + 1) uC uD)
     extends SliceDomPFunctor.{uA, uB, uD} dom where
   /-- The tag leg: each shape is assigned a `cod`-index. -/
-  t : toPFunctor.A → cod
+  q : toPFunctor.A → cod
 
 attribute [ext] SliceDomPFunctor SlicePFunctor
 
@@ -105,12 +105,12 @@ namespace SliceDomPFunctor
 constraint leg restricted to shape `a`. Pointwise: `p (v b) = s ⟨a, b⟩`. -/
 def Compatible {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) {X : Type uX}
     (p : X → dom) (a : F.A) (v : F.B a → X) : Prop :=
-  p ∘ v = F.s ∘ Sigma.mk a
+  p ∘ v = F.r ∘ Sigma.mk a
 
 /-- `Compatible` stated pointwise. -/
 theorem compatible_iff {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     {X : Type uX} (p : X → dom) (a : F.A) (v : F.B a → X) :
-    F.Compatible p a v ↔ ∀ b, p (v b) = F.s ⟨a, b⟩ :=
+    F.Compatible p a v ↔ ∀ b, p (v b) = F.r ⟨a, b⟩ :=
   funext_iff
 
 /-- Build a `SliceDomPFunctor` from the dependently-curried constraint
@@ -118,21 +118,21 @@ leg. -/
 @[expose] def ofCurried (P : PFunctor.{uA, uB}) (dom : Type uD)
     (sc : (a : P.A) → P.B a → dom) : SliceDomPFunctor dom where
   toPFunctor := P
-  s := fun x => sc x.1 x.2
+  r := fun x => sc x.1 x.2
 
 /-- The constraint leg in dependently-curried form. -/
-@[expose] def sCurried {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) (a : F.A)
+@[expose] def rCurried {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) (a : F.A)
     (b : F.B a) : dom :=
-  F.s ⟨a, b⟩
+  F.r ⟨a, b⟩
 
 /-- The constraint-leg condition on a direction of shape `a`: that its
-image under `sCurried a` is `i`. Point-free as `(· = i) ∘ sCurried a`. -/
+image under `rCurried a` is `i`. Point-free as `(· = i) ∘ rCurried a`. -/
 @[expose] def DirectionOver {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     (a : F.A) (i : dom) : F.B a → Prop :=
-  (· = i) ∘ F.sCurried a
+  (· = i) ∘ F.rCurried a
 
 /-- The directions of shape `a` lying over the base point `i`: the fibre
-of `sCurried a` over `i`. -/
+of `rCurried a` over `i`. -/
 @[expose] def Direction {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom)
     (a : F.A) (i : dom) : Type uB :=
   Subtype (F.DirectionOver a i)
@@ -151,7 +151,7 @@ restricted to the compatibility subtype. -/
     F.Obj p → F.Obj p' :=
   fun x => ⟨F.toPFunctor.map f x.1, by
     obtain ⟨⟨a, v⟩, hx⟩ := x
-    change p' ∘ (f ∘ v) = F.s ∘ Sigma.mk a
+    change p' ∘ (f ∘ v) = F.r ∘ Sigma.mk a
     rw [← Function.comp_assoc, hf]
     exact hx⟩
 
@@ -184,7 +184,7 @@ structure map into `cod`, the tag leg applied to each shape. The carrier is
 the `SliceDomPFunctor` value `F.toSliceDomPFunctor.Obj p`. -/
 @[expose] def obj {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
     {X : Type uX} (p : X → dom) : F.toSliceDomPFunctor.Obj p → cod :=
-  fun z => F.t z.1.1
+  fun z => F.q z.1.1
 
 /-- The slice functor's action on a morphism: the `SliceDomPFunctor` morphism
 map underlying it. -/
@@ -197,7 +197,7 @@ map underlying it. -/
 theorem map_w {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
     {X : Type uX} {X' : Type uX'} {p : X → dom} {p' : X' → dom} (f : X → X') (hf : p' ∘ f = p) :
     F.obj p' ∘ F.map f hf = F.obj p :=
-  funext fun z => congrArg F.t (F.toSliceDomPFunctor.map_fst f hf z)
+  funext fun z => congrArg F.q (F.toSliceDomPFunctor.map_fst f hf z)
 
 /-- Functoriality: identity. -/
 theorem map_id {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD, uC} dom cod)
@@ -217,7 +217,7 @@ theorem map_comp {dom : Type uD} {cod : Type uC} (F : SlicePFunctor.{uA, uB, uD,
 Point-free as `(· = j) ∘ t`. -/
 @[expose] def ShapeOver {dom : Type uD} {cod : Type uC}
     (F : SlicePFunctor.{uA, uB, uD, uC} dom cod) (j : cod) : F.A → Prop :=
-  (· = j) ∘ F.t
+  (· = j) ∘ F.q
 
 /-- The shapes lying over `j`: the fibre of `t` over `j`. -/
 @[expose] def Shape {dom : Type uD} {cod : Type uC}

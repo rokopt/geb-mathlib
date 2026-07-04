@@ -23,7 +23,7 @@ recursive, but is obtained from mathlib's non-dependent W-type eliminator
 `WType.elim`, folding the index and the predicate together into the structure
 `WIndex` via the algebra `windexStep`. Carrying the index inside the fold is
 what lets the algebra state the constraint-leg condition `OverLeg` — the
-children's index family, as a function of direction, equals `sCurried a`, the
+children's index family, as a function of direction, equals `rCurried a`, the
 shape of `SliceDomPFunctor.Compatible`: the plain `Prop`-valued fold discards
 the children, so the condition would be inexpressible without either this
 pairing or the dependent recursor.
@@ -91,7 +91,7 @@ codomain-index against the parent's domain-index, so it typechecks only when
 
 `windexValid` folds into the structure `WIndex` (`index`, `valid`) via
 `windexStep`; a node's `valid` is `NodeValid` — `AllValid` (every child
-admissible) and `OverLeg` (the children's index family equal to `sCurried a`,
+admissible) and `OverLeg` (the children's index family equal to `rCurried a`,
 the `Compatible` shape). Its index component is the depth-1 root tag, so
 `windexValid_index_eq_windexRoot` needs only `cases`. `elim`'s value is computed
 by `elimData`, a single non-dependent `WType.elim` with algebra `elimStep` into
@@ -127,7 +127,7 @@ namespace SlicePFunctor
 — it reads only the root node, via `PFunctor.W.head`. -/
 @[expose] def windexRoot {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I) :
     F.toPFunctor.W → I :=
-  F.t ∘ PFunctor.W.head
+  F.q ∘ PFunctor.W.head
 
 /-- The index and admissibility of a slice W-tree, the two components folded
 together by `windexValid`. -/
@@ -150,11 +150,11 @@ structure WIndex (I : Type uI) where
   F.ForAll a (WIndex.valid ∘ c)
 
 /-- The constraint-leg condition on a node's children: their index family, as a
-function of direction, equals the constraint leg `sCurried a`. Point-free — the
+function of direction, equals the constraint leg `rCurried a`. Point-free — the
 shape of `SliceDomPFunctor.Compatible` for the identity base map. -/
 @[expose] def OverLeg {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
     (a : F.toPFunctor.A) (idx : F.toPFunctor.B a → I) : Prop :=
-  idx = F.sCurried a
+  idx = F.rCurried a
 
 /-- A node with shape `a` and children `c` is admissible when every child is
 admissible (`AllValid`) and the children's index family lies over the
@@ -167,7 +167,7 @@ constraint leg (`OverLeg`). -/
 the index is the tag of the shape, and the node is `NodeValid`. -/
 @[expose] def windexStep {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I) :
     F.toPFunctor.Obj (WIndex I) → WIndex I :=
-  fun ⟨a, c⟩ => { index := F.t a, valid := F.NodeValid a c }
+  fun ⟨a, c⟩ => { index := F.q a, valid := F.NodeValid a c }
 
 /-- The index paired with admissibility: the `F.toPFunctor`-algebra morphism
 into `(WIndex I, windexStep)` given by `WType.elim`. -/
@@ -274,7 +274,7 @@ children's values, with `over` recording that the result lies over the index. -/
     (Y : Type uY) (p : Y → I) (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
     F.toPFunctor.Obj (ElimData Y p) → ElimData Y p :=
   fun ⟨a, c⟩ =>
-    { index := F.t a
+    { index := F.q a
       valid := F.NodeValid a (ElimData.toWIndex ∘ c)
       value := fun hv => g ⟨⟨a, fun b => (c b).value (hv.1 b)⟩,
         (F.toSliceDomPFunctor.compatible_iff p a _).mpr fun b =>

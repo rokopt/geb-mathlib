@@ -24,7 +24,7 @@ categorical packaging appears in sibling modules. Every declaration here is
 
 The design uses the option-(A) fibre encoding: directions over `i` are
 `SliceDomPFunctor.Direction a i = Subtype (DirectionOver a i)`, the fibre of
-the constraint leg `sCurried a` over `i`. The `restr` field reindexes these
+the constraint leg `rCurried a` over `i`. The `restr` field reindexes these
 fibres contravariantly.
 
 ## Main definitions
@@ -401,20 +401,20 @@ namespace PresheafPFunctor
 direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j) :
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j) :
     F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
   ⟨⟨(F.tagRestr g ⟨x.1.1, htag⟩).1,
-      fun b' => x.1.2 (F.reindex g ⟨x.1.1, htag⟩ (i := F.sCurried _ b') ⟨b', rfl⟩).1⟩,
+      fun b' => x.1.2 (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
     (F.compatible_iff _ _ _).mpr fun b' =>
       ((F.compatible_iff _ _ _).mp x.2
-        (F.reindex g ⟨x.1.1, htag⟩ (i := F.sCurried _ b') ⟨b', rfl⟩).1).trans
-        (F.reindex g ⟨x.1.1, htag⟩ (i := F.sCurried _ b') ⟨b', rfl⟩).2⟩
+        (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1).trans
+        (F.reindex g ⟨x.1.1, htag⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).2⟩
 
 /-- The component the restricted element assigns to a direction is the component
 the original assigns to the direction's `reindex`. -/
 private theorem value_objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j)
     ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x htag).1.1 i) :
     F.value (F.objRestrElt g x htag) b = F.value x (F.reindex g ⟨x.1.1, htag⟩ b) := by
   obtain ⟨b1, rfl⟩ := b
@@ -425,7 +425,7 @@ of `F.obj Z`: `objRestrElt` packaged with its naturality, supplied by
 `reindex_naturality`. -/
 @[expose] def objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.obj Z) (htag : F.t x.shape = j) : F.obj Z :=
+    (x : F.obj Z) (htag : F.q x.shape = j) : F.obj Z :=
   ⟨F.objRestrElt g x.1 htag, by
     intro i i' f b
     rw [F.value_objRestrElt, F.value_objRestrElt,
@@ -471,7 +471,7 @@ private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → 
 identity. -/
 private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} {j : J}
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j) :
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j) :
     F.objRestrElt (𝟙 j) x htag = x := by
   apply Subtype.ext
   obtain ⟨⟨a, v⟩, hc⟩ := x
@@ -494,8 +494,8 @@ factors as the composite of the actions. -/
 private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' j'' : J⦄
     (g : j' ⟶ j) (h : j'' ⟶ j')
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.t x.1.1 = j)
-    (htag' : F.t (F.objRestrElt g x htag).1.1 = j') :
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (htag : F.q x.1.1 = j)
+    (htag' : F.q (F.objRestrElt g x htag).1.1 = j') :
     F.objRestrElt (h ≫ g) x htag = F.objRestrElt h (F.objRestrElt g x htag) htag' := by
   apply Subtype.ext
   obtain ⟨⟨a, v⟩, hc⟩ := x
@@ -525,7 +525,7 @@ from `F.isFunctorial`. -/
 @[expose] def objPresheaf {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
     Jᵒᵖ ⥤ Type (max uI uZ uA uB) where
-  obj j := { z : F.toPresheafDomPFunctorData.obj Z // F.t z.shape = j.unop }
+  obj j := { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j.unop }
   map g := ↾ fun w => ⟨F.objRestr g.unop w.1 w.2, (F.tagRestr g.unop ⟨w.1.shape, w.2⟩).2⟩
   map_id j := by
     ext w
@@ -545,7 +545,7 @@ precomposition with `reindex g` (the restriction), needing no functor law. -/
 theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.t x.shape = j) :
+    (x : F.toPresheafDomPFunctorData.obj Z) (htag : F.q x.shape = j) :
     F.toPresheafDomPFunctorData.map α (F.objRestr g x htag) =
       F.objRestr g (F.toPresheafDomPFunctorData.map α x) htag :=
   Subtype.ext rfl

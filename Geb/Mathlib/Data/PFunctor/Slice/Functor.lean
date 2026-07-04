@@ -94,10 +94,10 @@ post-composing with the `t`-tag is preserved. This is the
 private theorem tag_triangle {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod)
     {Y Z : Over dom} (g : Y ⟶ Z) :
-    F.toSliceDomPFunctor.domFunctor.map g ≫ (↾fun z => F.t z.1.1) =
-      (↾fun z => F.t z.1.1) := by
+    F.toSliceDomPFunctor.domFunctor.map g ≫ (↾fun z => F.q z.1.1) =
+      (↾fun z => F.q z.1.1) := by
   ext z
-  exact congrArg F.t (F.toSliceDomPFunctor.map_fst (ConcreteCategory.hom g.left)
+  exact congrArg F.q (F.toSliceDomPFunctor.map_fst (ConcreteCategory.hom g.left)
     (SliceDomPFunctor.over_hom_comp g) z)
 
 /-- The slice polynomial functor `Over dom ⥤ Over cod`: the
@@ -106,7 +106,7 @@ private theorem tag_triangle {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) :
     CategoryTheory.Functor (Over dom) (Over cod) :=
   Functor.toOver F.toSliceDomPFunctor.domFunctor cod
-    (fun _ => ↾(fun z => F.t z.1.1))
+    (fun _ => ↾(fun z => F.q z.1.1))
     (by intro Y Z g; exact F.tag_triangle g)
 
 /-- The wrapper forgets back to `domFunctor`. -/

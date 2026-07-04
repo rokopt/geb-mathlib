@@ -64,8 +64,8 @@ direction whose child must lie over `false` (the constraint leg). The tag
 def wSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun a => cond a Unit Empty
-  s := fun _ => false
-  t := id
+  r := fun _ => false
+  q := id
 
 /-- The leaf: shape `false`, no directions. -/
 def wLeaf : wSlice.toPFunctor.W := WType.mk false (fun e => e.elim)

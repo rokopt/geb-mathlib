@@ -22,18 +22,18 @@ directions, constraint `s ⟨(), b⟩ = b`, tag into `Unit`. -/
 def testSlice : SlicePFunctor Bool Unit where
   A := Unit
   B := fun _ => Bool
-  s := fun x => x.2
-  t := fun _ => ()
+  r := fun x => x.2
+  q := fun _ => ()
 
-example : testSlice.s ⟨(), true⟩ = true := rfl
-example : testSlice.t () = () := rfl
+example : testSlice.r ⟨(), true⟩ = true := rfl
+example : testSlice.q () = () := rfl
 
 example (X : Type) (p : X → Bool) (v : Bool → X) :
     testSlice.Compatible p () v ↔ ∀ b, p (v b) = b :=
   testSlice.compatible_iff p () v
 
 example (P : PFunctor.{0, 0}) (sc : (a : P.A) → P.B a → Bool) (a : P.A)
-    (b : P.B a) : (SliceDomPFunctor.ofCurried P Bool sc).sCurried a b = sc a b :=
+    (b : P.B a) : (SliceDomPFunctor.ofCurried P Bool sc).rCurried a b = sc a b :=
   rfl
 
 -- The object map is the compatibility subtype of the interpretation.
@@ -49,7 +49,7 @@ example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p)
 
 -- The slice object's structure map into `cod` is the tag at the shape.
 example (X : Type) (p : X → Bool) (z : testSlice.toSliceDomPFunctor.Obj p) :
-    testSlice.obj p z = testSlice.t z.1.1 := rfl
+    testSlice.obj p z = testSlice.q z.1.1 := rfl
 
 -- The slice morphism's underlying function is the `SliceDomPFunctor` map.
 example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p) :
@@ -101,8 +101,8 @@ tag content of `obj` is genuinely exercised. -/
 def taggedSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ => Bool
-  s := fun x => x.2
-  t := id
+  r := fun x => x.2
+  q := id
 
 -- `obj` reads the tag at the shape: with `t = id`, it is the shape
 -- projection (this fails for any tag that does not separate the shapes).
@@ -116,11 +116,11 @@ example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
 
 -- Direction is the constraint-leg fibre; the predicate is its membership.
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :
-    F.Direction a i = { b : F.B a // F.s ⟨a, b⟩ = i } := rfl
+    F.Direction a i = { b : F.B a // F.r ⟨a, b⟩ = i } := rfl
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) (b : F.B a) :
-    F.DirectionOver a i b ↔ F.s ⟨a, b⟩ = i := Iff.rfl
+    F.DirectionOver a i b ↔ F.r ⟨a, b⟩ = i := Iff.rfl
 
 example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) :
-    F.Shape j = { a : F.A // F.t a = j } := rfl
+    F.Shape j = { a : F.A // F.q a = j } := rfl
 example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) (a : F.A) :
-    F.ShapeOver j a ↔ F.t a = j := Iff.rfl
+    F.ShapeOver j a ↔ F.q a = j := Iff.rfl

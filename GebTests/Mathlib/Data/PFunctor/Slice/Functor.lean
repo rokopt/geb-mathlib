@@ -21,8 +21,8 @@ shapes, so the wrapper tests exercise the tag rather than collapsing. -/
 def wrapperTestSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ => Bool
-  s := fun x => x.2
-  t := id
+  r := fun x => x.2
+  q := id
 
 -- The slice-valued functor forgets back to `domFunctor`.
 example : wrapperTestSlice.functor ⋙ Over.forget Bool =
