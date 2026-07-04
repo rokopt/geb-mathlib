@@ -16,8 +16,9 @@ set_option linter.privateModule false
 open CategoryTheory SliceDomPFunctor SlicePFunctor
 
 /-- A concrete slice polynomial functor for the wrapper tests (local, to
-avoid a cross-test-file dependency). The tag `t = id` distinguishes the two
-shapes, so the wrapper tests exercise the tag rather than collapsing. -/
+avoid a cross-test-file dependency). The shape-output map `q = id`
+distinguishes the two shapes, so the wrapper tests exercise the output
+index rather than collapsing. -/
 def wrapperTestSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ => Bool

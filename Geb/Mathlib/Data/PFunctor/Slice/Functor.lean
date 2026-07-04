@@ -36,10 +36,11 @@ read through `ConcreteCategory.hom`, the slice-morphism hypothesis is
 `SliceDomPFunctor.over_hom_comp` (the function-level form of `Over.w`),
 results promoted with `↾`, the identity law discharged by `ext` and the
 core `map_id`, and the composition law by `ext` and `rfl`. `functor` is
-the `Functor.toOver` lift along the tag `t`; it is `@[expose]` so
-`functor_obj` / `functor_map` can state the definitional equalities as
-exported `rfl` theorems. `cod` is pinned to `domFunctor`'s codomain
-universe `max uA uB uD` because `Functor.toOver` requires its over-base
+the `Functor.toOver` lift along the shape-output map `q`; it is
+`@[expose]` so `functor_obj` / `functor_map` can state the definitional
+equalities as exported `rfl` theorems. `cod` is pinned to `domFunctor`'s
+codomain universe `max uA uB uD` because `Functor.toOver` requires its
+over-base
 object to inhabit the codomain category of the lifted functor, so the
 core's `cod`-universe polymorphism cannot survive into the categorical
 layer.
@@ -63,7 +64,7 @@ open CategoryTheory
 namespace SliceDomPFunctor
 
 /-- The function-level form of `Over.w`: a slice morphism `g : Y ⟶ Z`
-commutes with the base maps, `Z.hom ∘ g.left = Y.hom`, read through
+commutes with the projections, `Z.hom ∘ g.left = Y.hom`, read through
 `ConcreteCategory.hom`. -/
 theorem over_hom_comp {dom : Type uD} {Y Z : Over dom} (g : Y ⟶ Z) :
     ConcreteCategory.hom Z.hom ∘ ConcreteCategory.hom g.left =
@@ -72,7 +73,7 @@ theorem over_hom_comp {dom : Type uD} {Y Z : Over dom} (g : Y ⟶ Z) :
   rw [Function.comp_apply, ← ConcreteCategory.comp_apply, Over.w g]
 
 /-- The functor `Over dom ⥤ Type` restricting the `PFunctor`
-interpretation to `s`-compatible assignments; the core maps packaged
+interpretation to `r`-compatible assignments; the core maps packaged
 over `Over dom`. -/
 @[expose] def domFunctor {dom : Type uD} (F : SliceDomPFunctor.{uA, uB} dom) :
     CategoryTheory.Functor (Over dom) (Type (max uA uB uD)) where
@@ -87,9 +88,9 @@ end SliceDomPFunctor
 
 namespace SlicePFunctor
 
-/-- Tag naturality: `domFunctor.map g` fixes the shape component, so
-post-composing with the `t`-tag is preserved. This is the
-`Functor.toOver` triangle obligation for `functor`, shared with
+/-- Output-index naturality: `domFunctor.map g` fixes the shape component,
+so post-composing with the shape-output map `q` is preserved. This is
+the `Functor.toOver` triangle obligation for `functor`, shared with
 `functor_comp_forget`. -/
 private theorem output_triangle {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod)
@@ -101,7 +102,7 @@ private theorem output_triangle {dom : Type uD} {cod : Type (max uA uB uD)}
     (SliceDomPFunctor.over_hom_comp g) z)
 
 /-- The slice polynomial functor `Over dom ⥤ Over cod`: the
-`Functor.toOver` lift of `domFunctor` along the tag leg `t`. -/
+`Functor.toOver` lift of `domFunctor` along the shape-output map `q`. -/
 @[expose] def functor {dom : Type uD} {cod : Type (max uA uB uD)}
     (F : SlicePFunctor.{uA, uB, uD, max uA uB uD} dom cod) :
     CategoryTheory.Functor (Over dom) (Over cod) :=

@@ -24,8 +24,8 @@ categorical packaging appears in sibling modules. Every declaration here is
 
 The design uses the option-(A) fibre encoding: directions over `i` are
 `SliceDomPFunctor.Direction a i = Subtype (DirectionOver a i)`, the fibre of
-the constraint leg `rCurried a` over `i`. The `directionRestr` field reindexes these
-fibres contravariantly.
+the direction-input map `rCurried a` over `i`. The `directionRestr` field
+reindexes these fibres contravariantly.
 
 ## Main definitions
 
@@ -46,8 +46,8 @@ fibres contravariantly.
   (the bare `NatTrans`).
 * `PresheafDomPFunctor` — the bundle: operations with a functoriality proof.
 * `PresheafPFunctorData` — the full operations: the dom operations and the
-  tag leg, with the `J`-action `shapeRestr` on shapes and the arity reindexing
-  `reindex`.
+  shape-output map, with the `J`-action `shapeRestr` on shapes and the arity
+  reindexing `reindex`.
 * `PresheafPFunctorData.ShapeRestrId` / `ShapeRestrComp` / `ReindexNaturality` /
   `ReindexId` / `ReindexComp` — the named `J`-side law `Prop`s. `ReindexId`
   and `ReindexComp` are parameterized on the relevant `shapeRestr` law, whose
@@ -291,8 +291,8 @@ attribute [ext] PresheafDomPFunctorData PresheafDomPFunctor
 
 set_option linter.checkUnivs false in
 /-- Operations of a presheaf polynomial functor `(Iᵒᵖ ⥤ Type) → (Jᵒᵖ ⥤ Type)`:
-the dom operations plus the tag leg `t` (via `SlicePFunctor`), the `J`-action
-`shapeRestr` on shapes, and the arity reindexing `reindex`. -/
+the dom operations plus the shape-output map `q` (via `SlicePFunctor`), the
+`J`-action `shapeRestr` on shapes, and the arity reindexing `reindex`. -/
 @[nolint checkUnivs]
 structure PresheafPFunctorData (I : Type uI) [Category.{vI} I]
     (J : Type uJ) [Category.{vJ} J] : Type (max (uA + 1) (uB + 1) uI uJ vI vJ)
@@ -307,9 +307,10 @@ structure PresheafPFunctorData (I : Type uI) [Category.{vI} I]
       toSliceDomPFunctor.Direction (shapeRestr g a).1 i →
         toSliceDomPFunctor.Direction a.1 i
 
-/-- The tag-leg view of the operations: the shared `SliceDomPFunctor` together
-with the tag leg `t`. The diamond merges the `SliceDomPFunctor` parent, so this
-view shares its components with `toPresheafDomPFunctorData`. -/
+/-- The shape-output-map view of the operations: the shared `SliceDomPFunctor`
+together with the shape-output map `q`. The diamond merges the
+`SliceDomPFunctor` parent, so this view shares its components with
+`toPresheafDomPFunctorData`. -/
 add_decl_doc PresheafPFunctorData.toSlicePFunctor
 
 namespace PresheafPFunctorData
@@ -347,8 +348,8 @@ not definitional. -/
       cast (congrArg (fun s : F.Shape j => F.Direction s.1 i) (congrFun (hti j) a)) b
 
 /-- For `g : j' ⟶ j`, `h : j'' ⟶ j'`,
-`reindex (h ≫ g) a = reindex g a ∘ reindex h (shapeRestr g a)` (outer factor the
-`g` leg), modulo the transport of the source along `ShapeRestrComp`
+`reindex (h ≫ g) a = reindex g a ∘ reindex h (shapeRestr g a)` (`g` is the
+outer factor), modulo the transport of the source along `ShapeRestrComp`
 (`shapeRestr (h ≫ g) a = shapeRestr h (shapeRestr g a)`). The transport is the `cast`
 of `b` along `congrArg (fun s => Direction s.1 i) (congrFun (htc g h) a)`.
 Parameterized on the composition law `htc` because that source-type equality is
@@ -398,7 +399,7 @@ attribute [ext] PresheafPFunctorData
 namespace PresheafPFunctor
 
 /-- The slice element underlying the restriction action of `objPresheaf` on a
-`J`-morphism `g`: retag the shape along `shapeRestr g` and reindex the
+`J`-morphism `g`: reindex the shape along `shapeRestr g` and reindex the
 direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
@@ -520,9 +521,9 @@ private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [
     (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_comp g h) ⟨a, htag⟩) ⟨b1, rfl⟩) hb
 
 /-- The output presheaf `T(Z) : Jᵒᵖ ⥤ Type`, built directly as a `Functor`
-value. Its fibre over `j` is the
-`t`-tagged subtype of the dom value `F.obj Z`; its restriction maps are the
-retag-and-reindex action `objRestr`, whose `map_id` / `map_comp` are discharged
+value. Its fibre over `j` is the subtype of the dom value `F.obj Z` whose
+`q`-output index is `j`; its restriction maps are the shape-and-direction
+reindex action `objRestr`, whose `map_id` / `map_comp` are discharged
 from `F.isFunctorial`. -/
 @[expose] def objPresheaf {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
@@ -540,10 +541,11 @@ from `F.isFunctorial`. -/
 /-- Naturality of the dom morphism map with respect to `objPresheaf`'s
 `J`-restriction: for `α : NatTrans Z Z'`, the dom `map α` carries the fibre of
 `objPresheaf Z` over `j` into that of `objPresheaf Z'` (it preserves the
-`t`-tag, the shape being fixed by `SliceDomPFunctor.map_fst`) and commutes with
-the retag-and-reindex restriction `objRestr g`. The commutation is the
-interchange of the postcomposition with `α` (the morphism action) and the
-precomposition with `reindex g` (the restriction), needing no functor law. -/
+`q`-output index, the shape being fixed by `SliceDomPFunctor.map_fst`) and
+commutes with the shape-and-direction reindex restriction `objRestr g`. The
+commutation is the interchange of the postcomposition with `α` (the morphism
+action) and the precomposition with `reindex g` (the restriction), needing no
+functor law. -/
 theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
@@ -554,9 +556,10 @@ theorem map_objRestr {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ
 
 /-- The natural transformation `objPresheaf Z ⟶ objPresheaf Z'` induced by a
 morphism `α : Z ⟶ Z'` of input presheaves: each component is the dom `map α` on
-the underlying element, restricted to the `t`-tagged fibre (the dom map preserves
-the tag, the shape being fixed by `SliceDomPFunctor.map_fst`); naturality is
-`map_objRestr`. The categorical wrapper `functor.map` reuses it. -/
+the underlying element, restricted to the `q`-indexed fibre (the dom map
+preserves the output index, the shape being fixed by
+`SliceDomPFunctor.map_fst`); naturality is `map_objRestr`. The categorical
+wrapper `functor.map` reuses it. -/
 @[expose] def mapPresheaf {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') : NatTrans (F.objPresheaf Z) (F.objPresheaf Z') where

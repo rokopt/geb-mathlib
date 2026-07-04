@@ -33,7 +33,7 @@ example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
   F.functor_obj Z
 
 -- The presheaf-valued functor's morphism map is the dom `map`, restricted to the
--- `t`-tagged fibre.
+-- `q`-indexed fibre.
 example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : Z ⟶ Z') (X : Jᵒᵖ) (w : (F.functor.obj Z).obj X) :
     (F.functor.map α).app X w =

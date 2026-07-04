@@ -18,7 +18,7 @@ set_option linter.privateModule false
 open SliceDomPFunctor SlicePFunctor
 
 /-- A concrete slice polynomial functor: one shape, two `Bool`-indexed
-directions, constraint `s ⟨(), b⟩ = b`, tag into `Unit`. -/
+directions, constraint `r ⟨(), b⟩ = b`, output index into `Unit`. -/
 def testSlice : SlicePFunctor Bool Unit where
   A := Unit
   B := fun _ => Bool
@@ -47,7 +47,7 @@ example (X : Type) (p p' : X → Bool) (f : X → X) (hf : p' ∘ f = p)
     (testSlice.toSliceDomPFunctor.map f hf z).1.1 = z.1.1 :=
   testSlice.toSliceDomPFunctor.map_fst f hf z
 
--- The slice object's structure map into `cod` is the tag at the shape.
+-- The slice object's structure map into `cod` is the output index (`q`) at the shape.
 example (X : Type) (p : X → Bool) (z : testSlice.toSliceDomPFunctor.Obj p) :
     testSlice.obj p z = testSlice.q z.1.1 := rfl
 
@@ -96,25 +96,25 @@ example :
 example :
     (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.1 = () := rfl
 
-/-- A slice functor whose tag `t = id` distinguishes its two shapes, so the
-tag content of `obj` is genuinely exercised. -/
+/-- A slice functor whose shape-output map `q = id` distinguishes its two
+shapes, so the output-index content of `obj` is genuinely exercised. -/
 def taggedSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ => Bool
   r := fun x => x.2
   q := id
 
--- `obj` reads the tag at the shape: with `t = id`, it is the shape
--- projection (this fails for any tag that does not separate the shapes).
+-- `obj` reads the output index at the shape: with `q = id`, it is the shape
+-- projection (this fails for any output index that does not separate the shapes).
 example (X : Type) (p : X → Bool) :
     taggedSlice.obj p = fun z => z.1.1 := rfl
 
--- `map_w` over a genuinely-tagged functor: the morphism lies over `cod`.
+-- `map_w` over a functor with a genuinely-separating output index: the morphism lies over `cod`.
 example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
     (hf : p' ∘ f = p) : taggedSlice.obj p' ∘ taggedSlice.map f hf = taggedSlice.obj p :=
   taggedSlice.map_w f hf
 
--- Direction is the constraint-leg fibre; the predicate is its membership.
+-- Direction is the direction-input-map fibre; the predicate is its membership.
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :
     F.Direction a i = { b : F.B a // F.r ⟨a, b⟩ = i } := rfl
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) (b : F.B a) :

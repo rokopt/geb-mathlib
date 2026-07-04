@@ -24,7 +24,7 @@ example (F : SlicePFunctor.{0, 0} Bool Bool) :
 example (F : SlicePFunctor.{0, 0} Bool Bool) (z : F.W) :
     F.windex z = F.windexRoot z.1 := rfl
 
--- The fold's index component is the root tag.
+-- The fold's index component is the root output index.
 example (F : SlicePFunctor.{0, 0} Bool Bool) (w : F.toPFunctor.W) :
     (F.windexValid w).index = F.windexRoot w :=
   F.windexValid_index_eq_windexRoot w
@@ -59,8 +59,8 @@ example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (p : Y → Bool)
 
 /-- A concrete slice endofunctor with a leaf shape, so finite admissible trees
 exist: shape `false` is a leaf (no directions), shape `true` carries one
-direction whose child must lie over `false` (the constraint leg). The tag
-`t = id` separates shapes. -/
+direction whose child must lie over `false` (the direction-input map). The
+shape-output map `q = id` separates shapes. -/
 def wSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun a => cond a Unit Empty
@@ -72,12 +72,12 @@ def wLeaf : wSlice.toPFunctor.W := WType.mk false (fun e => e.elim)
 /-- A node over the leaf: shape `true`, single child the leaf. -/
 def wNode : wSlice.toPFunctor.W := WType.mk true (fun _ => wLeaf)
 
--- Root indices read the tag.
+-- Root indices read the output index.
 example : wSlice.windexRoot wLeaf = false := rfl
 example : wSlice.windexRoot wNode = true := rfl
 
 -- The leaf is admissible vacuously; the node is admissible because its child is the
--- leaf, whose index `false` matches the constraint leg `s ⟨true, _⟩ = false`.
+-- leaf, whose index `false` matches the direction-input map `r ⟨true, _⟩ = false`.
 /-- The leaf as an element of the slice W-type. -/
 def wLeafElt : wSlice.W :=
   ⟨wLeaf, (wSlice.wValid_mk _ _).mpr ⟨fun e => e.elim, funext fun e => e.elim⟩⟩
@@ -85,7 +85,7 @@ def wLeafElt : wSlice.W :=
 def wNodeElt : wSlice.W :=
   ⟨wNode, (wSlice.wValid_mk _ _).mpr ⟨fun _ => wLeafElt.property, rfl⟩⟩
 
--- Their structure-map indices read the root tag.
+-- Their structure-map indices read the root output index.
 example : wSlice.windex wLeafElt = false := rfl
 example : wSlice.windex wNodeElt = true := rfl
 
@@ -93,9 +93,9 @@ example : wSlice.windex wNodeElt = true := rfl
 example : (W.dest wLeafElt).1.1 = false := rfl
 example : (W.dest wNodeElt).1.1 = true := rfl
 
--- `elim` computes on concrete trees. Into the algebra reading the root tag
--- (`wSlice.obj id`, over `Y = Bool` with `p = id`), the eliminator recovers the
--- structure map, so it returns the root tag: `false` for the leaf, `true` for
--- the node.
+-- `elim` computes on concrete trees. Into the algebra reading the root output
+-- index (`wSlice.obj id`, over `Y = Bool` with `p = id`), the eliminator
+-- recovers the structure map, so it returns the root output index: `false`
+-- for the leaf, `true` for the node.
 example : W.elim wSlice Bool id (wSlice.obj id) rfl wLeafElt = false := rfl
 example : W.elim wSlice Bool id (wSlice.obj id) rfl wNodeElt = true := rfl
