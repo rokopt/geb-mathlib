@@ -36,8 +36,8 @@ import-direction rules above are enforced by
 ## Implemented content
 
 - `Geb/Mathlib/Data/PFunctor/Slice/` — slice polynomial functors on
-  `Type`. Given a `PFunctor` with a constraint leg `s : Idx → dom` and
-  a tag leg `t : A → cod`, a restriction of the `PFunctor`
+  `Type`. Given a `PFunctor` with a direction-input map `r : Idx → dom`
+  and a shape-output map `q : A → cod`, a restriction of the `PFunctor`
   interpretation defines a functor `Type/dom → Type/cod`.
   `Slice/Basic.lean` is the constructive core (`SliceDomPFunctor`,
   `SlicePFunctor`, `Compatible`, `obj`/`map` with functoriality),
@@ -48,7 +48,7 @@ import-direction rules above are enforced by
   mathlib's `Over` is `Classical.choice`-dependent at the type level.
   `Slice/W.lean` builds the W-type (initial algebra) of a slice
   endofunctor (`dom = cod = I`) on top of mathlib's `PFunctor` W-type.
-  The root index `windexRoot` (a tree's root tag) is non-recursive; the
+  The root index `windexRoot` (a tree's root output index) is non-recursive; the
   domain-restriction predicate `WValid` comes from the non-dependent
   W-type eliminator `WType.elim`, which folds an index and a validity
   component together as `windexValid : P.W → WIndex I` (its index

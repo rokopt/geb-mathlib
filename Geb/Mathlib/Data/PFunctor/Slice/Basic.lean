@@ -15,7 +15,15 @@ A `PFunctor` is the middle map of a Gambino–Hyland polynomial diagram
 `q : A → cod` yields a polynomial functor `Type/dom → Type/cod`,
 defined as a restriction of the interpretation `P.Obj X = Σ a, B a → X`
 to `r`-compatible direction assignments, each shape carrying an output
-index via `q`.
+index via `q`. This is a dependent polynomial functor
+[GambinoHyland2004], [GambinoKock2013], equivalently an indexed
+container [AltenkirchGhaniHancockMcBrideMorris2015]; that reference
+presents it as a two-field `(shapes, positions)` record with the
+indices folded into dependent types, whereas here the index
+assignments are the explicit maps `q` and `r`. The letters `q`
+(shape-output) and `r` (direction-input) are this development's; the
+polynomial-diagram sources letter the map into `cod` as `t` and the
+map into `dom` as `s`.
 
 This file is the constructive core: the structures, the compatibility
 predicate, the curried constructor, and the object/morphism maps with
@@ -67,6 +75,7 @@ wrapper and tests can unfold them across the module boundary.
 
 ## References
 
+* [AltenkirchGhaniHancockMcBrideMorris2015]
 * [GambinoHyland2004]
 * [GambinoKock2013]
 

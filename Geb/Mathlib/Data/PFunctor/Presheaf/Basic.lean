@@ -399,7 +399,7 @@ attribute [ext] PresheafPFunctorData
 namespace PresheafPFunctor
 
 /-- The slice element underlying the restriction action of `objPresheaf` on a
-`J`-morphism `g`: reindex the shape along `shapeRestr g` and reindex the
+`J`-morphism `g`: restrict the shape along `shapeRestr g` and reindex the
 direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
