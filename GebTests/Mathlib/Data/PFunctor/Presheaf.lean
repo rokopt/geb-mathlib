@@ -7,6 +7,7 @@ module
 
 import GebTests.Mathlib.Data.PFunctor.Presheaf.Basic
 import GebTests.Mathlib.Data.PFunctor.Presheaf.Functor
+import GebTests.Mathlib.Data.PFunctor.Presheaf.W
 
 /-!
 # Presheaf tests — index

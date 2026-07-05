@@ -6,7 +6,7 @@
 - [In progress](#in-progress)
 - [Next up](#next-up)
   - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
-  - [2. Presheaf W-types](#2-presheaf-w-types)
+  - [2. Presheaf W-types — completed](#2-presheaf-w-types--completed)
   - [3. Categorical wrappers for mathlib's `PFunctor` and `WType`](#3-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
   - [4. Categorical wrappers for slice and presheaf W-types as initial algebras](#4-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
   - [5. M-types and their categorical wrappers as terminal coalgebras](#5-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
@@ -58,14 +58,14 @@ them; the decidable functors are then available downstream, in
 particular for the decidable-case specializations of the universal
 morphisms (item 6).
 
-### 2. Presheaf W-types
+### 2. Presheaf W-types — completed
 
-Define the W-types (initial algebras) of the presheaf polynomial
-functors as restrictions or assignments on the slice polynomial W-types
-in `Slice/W.lean`, mirroring how the presheaf functors are
-restrictions or assignments on the slice functors and the slice functors
-on mathlib's `PFunctor`. This layers presheaf W-types on mathlib's
-`PFunctor.W` through the existing slice layer.
+Implemented in `Presheaf/W.lean`; see `docs/index.md`. The presheaf W-type
+is the hereditarily-natural subtype of the slice W-type, `ULift`ed to the
+functor's value universe, with fixed-point `W.mk`/`W.dest` and the
+eliminator `W.elim` (`elim_mk`/`comp_elim`). Existence half of initiality
+only; uniqueness and the categorical initial-object wrapper remain item 4.
+Item numbers below are retained so their cross-references stay stable.
 
 ### 3. Categorical wrappers for mathlib's `PFunctor` and `WType`
 
@@ -233,3 +233,10 @@ parametric right adjoint determined by its generic data
 - **Migrate `update.yml` from `GITHUB_TOKEN` to a PAT**: trigger
   if the manual close-and-reopen-to-fire-CI overhead on cron-
   created bump-PRs becomes burdensome.
+- **Extract a shared presheaf test-fixtures module**: the
+  `presheafWitness : PresheafPFunctor (Fin 2) (Fin 2)` fixture is
+  duplicated in `GebTests/Mathlib/Data/PFunctor/Presheaf/Basic.lean`
+  and `.../Presheaf/W.lean` because the `Basic` test module has no
+  `public section`. Trigger when a third consumer appears: introduce a
+  `public`-exported `GebTests/Mathlib/Data/PFunctor/Presheaf/Fixtures.lean`
+  and import it from each.

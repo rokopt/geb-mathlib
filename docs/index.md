@@ -70,3 +70,19 @@ import-direction rules above are enforced by
   presheaf), `Classical.choice`-free. `Presheaf/Functor.lean` packages
   the result as a categorical functor (`domFunctor`, `functor`); that
   module is listed in `GebMeta.classicalAllowedModules`.
+  `Presheaf/W.lean` builds the W-type (initial algebra) of a presheaf
+  endofunctor (`I = J`) on top of the slice W-type. Its carrier is the
+  presheaf `W : Iᵒᵖ ⥤ Type (max uI uA uB)` whose fibre over `j` is the
+  `ULift` of the hereditarily-natural slice W-trees indexed at `j`
+  (`IsHereditarilyNatural`, the tree-level analogue of `IsNatural`, defined
+  through the slice W-type's `Prop`-valued paramorphism); restriction is the
+  root-only `wRestr`. The `ULift` places the fibres at the functor's value
+  universe `max uI uA uB`, since the presheaf functor raises the value
+  universe by `uI` through the total-space `Σ` of `elemProj`. Mutually
+  inverse `W.mk`/`W.dest` exhibit `W` as a fixed point of the
+  `objPresheaf`-action, and `W.elim` is the eliminator into any presheaf
+  algebra, computed by a bespoke `WType.elim` fold whose value is guarded by
+  hereditary naturality (the presheaf algebra acts only on natural nodes).
+  Only the existence half of initiality is established (carrier, fixed
+  point, and `W.elim` with `elim_mk`/`comp_elim`), not uniqueness.
+  `Classical.choice`-free.
