@@ -93,6 +93,14 @@ example : wSlice.windex wNodeElt = true := rfl
 example : (W.dest wLeafElt).1.1 = false := rfl
 example : (W.dest wNodeElt).1.1 = true := rfl
 
+-- `recProp` computes one level by `recProp_mk`.
+example (x : wSlice.toSliceDomPFunctor.Obj wSlice.windex) :
+    W.recProp (fun _ _ => True) (W.mk x) = True :=
+  W.recProp_mk _ x
+-- `ind` discharges the always-true motive.
+example (z : wSlice.W) : True :=
+  W.ind (motive := fun _ => True) (fun _ _ => trivial) z
+
 -- `elim` computes on concrete trees. Into the algebra reading the root output
 -- index (`wSlice.obj id`, over `Y = Bool` with `p = id`), the eliminator
 -- recovers the structure map, so it returns the root output index: `false`
