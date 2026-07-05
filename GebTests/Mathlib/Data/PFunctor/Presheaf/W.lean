@@ -80,3 +80,8 @@ example (x : presheafWitness.toSliceDomPFunctor.Obj presheafWitness.toSlicePFunc
                   presheafWitness.toSlicePFunctor.windex x.1.1 x.1.2).mp x.2 b.1).trans b.2)) ∧
         ∀ b, presheafWitness.IsHereditarilyNatural (x.1.2 b) :=
   presheafWitness.isHereditarilyNatural_mk x
+
+-- Restriction of the carrier presheaf `W` along an identity is the identity map.
+example (w : (presheafWitness.W).obj ⟨(1 : Fin 2)⟩) :
+    (presheafWitness.W).map (𝟙 ⟨(1 : Fin 2)⟩) w = w :=
+  presheafWitness.W.map_id_apply ⟨(1 : Fin 2)⟩ w

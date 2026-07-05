@@ -34,20 +34,33 @@ computation rule.
   along a morphism, via the generalized `objRestrElt` at `p := windex`.
 * `PresheafPFunctor.IsHereditarilyNatural` — the tree-level naturality predicate
   on slice W-trees, defined by `SlicePFunctor.W.recProp`.
+* `PresheafPFunctor.wRestr` — restriction on the `ULift`ed carrier fibre,
+  reindexing the underlying tree along a morphism while preserving the index and
+  hereditary naturality.
+* `PresheafPFunctor.W` — the carrier presheaf `Iᵒᵖ ⥤ Type (max uI uA uB)`, whose
+  fibre over `j` is the `ULift` of the hereditarily-natural slice W-trees indexed
+  at `j` and whose restriction maps are `wRestr`.
 
 ## Main statements
 
 * `PresheafPFunctor.isHereditarilyNatural_mk` — the one-level unfolding of
   `IsHereditarilyNatural` on a constructor `SlicePFunctor.W.mk x`: local
   naturality at the root, together with hereditary naturality of every child.
+* `PresheafPFunctor.windex_wRestrTree` — the index of a root-restricted tree is
+  the restriction morphism's source.
+* `PresheafPFunctor.isHereditarilyNatural_wRestrTree` — hereditary naturality is
+  preserved by the root-only restriction, a one-level argument.
+* `PresheafPFunctor.wRestrTree_id` / `PresheafPFunctor.wRestrTree_comp` — the
+  functoriality of `wRestrTree`, from which `W`'s functor laws transport.
 
 ## Implementation notes
 
 This is the presheaf endofunctor case, `I = J`, so the slice endofunctor
 `F.toSlicePFunctor : SlicePFunctor I I` has a W-type. `wRestrTree` and
 `IsHereditarilyNatural` act on the un-lifted trees `F.toSlicePFunctor.W` of type
-`Type (max uA uB)`; the carrier presheaf's universe management is deferred to a
-later module.
+`Type (max uA uB)`; the carrier presheaf `W` `ULift`s the indexed subtype into
+`Type (max uI uA uB)` so its fibres land in a single universe with the index
+category `I`.
 
 The recursion in `IsHereditarilyNatural` is confined to the slice W-type's
 `Prop`-valued paramorphism `SlicePFunctor.W.recProp`: no explicit self-recursion
@@ -120,5 +133,113 @@ theorem isHereditarilyNatural_mk {I : Type uI} [Category.{vI} I]
         ∀ b, F.IsHereditarilyNatural (x.1.2 b) := by
   unfold IsHereditarilyNatural
   rw [SlicePFunctor.W.recProp_mk]
+
+/-- The index of a root-restricted tree is `j'`: `wRestrTree g z` rebuilds the
+root with the restricted shape `(shapeRestr g _).1`, whose `q`-output index is
+`j'`. -/
+theorem windex_wRestrTree {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j j' : I⦄ (g : j' ⟶ j)
+    (z : F.toSlicePFunctor.W) (hq : F.q (PFunctor.W.head z.1) = j) :
+    F.toSlicePFunctor.windex (F.wRestrTree g z hq) = j' := by
+  obtain ⟨tree, hvalid⟩ := z
+  cases tree with
+  | mk a f => exact (F.shapeRestr g ⟨a, hq⟩).2
+
+/-- The child a root-restricted node assigns to a direction is the child the
+original node assigns to the direction's `reindex`. The analogue of
+`value_objRestrElt` for the raw child assignment; `rfl` after destructuring the
+direction, matching `objRestrElt`'s internal `⟨·, rfl⟩` reconstruction. -/
+private theorem snd_objRestrElt {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j j' : I⦄ (g : j' ⟶ j)
+    (x : F.toSliceDomPFunctor.Obj F.toSlicePFunctor.windex) (hq : F.q x.1.1 = j) ⦃i : I⦄
+    (d : F.toSliceDomPFunctor.Direction (F.objRestrElt g x hq).1.1 i) :
+    (F.objRestrElt g x hq).1.2 d.1 = x.1.2 (F.reindex g ⟨x.1.1, hq⟩ d).1 := by
+  obtain ⟨dv, rfl⟩ := d
+  rfl
+
+/-- Hereditary naturality is preserved by the root-only restriction: the
+children of `wRestrTree g z` are the original subtrees reindexed (each already
+hereditarily natural), and its root's local naturality follows from `z`'s own
+root local naturality and `reindex_naturality`. A one-level argument, not a
+recursion. -/
+theorem isHereditarilyNatural_wRestrTree {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j j' : I⦄ (g : j' ⟶ j)
+    (z : F.toSlicePFunctor.W) (hq : F.q (PFunctor.W.head z.1) = j)
+    (hz : F.IsHereditarilyNatural z) :
+    F.IsHereditarilyNatural (F.wRestrTree g z hq) := by
+  obtain ⟨tree, hvalid⟩ := z
+  cases tree with
+  | mk a fchild =>
+    obtain ⟨hz_local, hz_children⟩ :=
+      (F.isHereditarilyNatural_mk (SlicePFunctor.W.dest ⟨WType.mk a fchild, hvalid⟩)).mp hz
+    refine (F.isHereditarilyNatural_mk _).mpr ⟨?_, ?_⟩
+    · intro i i' h b
+      obtain ⟨bv, rfl⟩ := b
+      rw [F.snd_objRestrElt]
+      exact (congrArg (fun d => (SlicePFunctor.W.dest ⟨WType.mk a fchild, hvalid⟩).1.2 d.1)
+          (congrFun (F.isFunctorial.reindex_naturality g ⟨a, hq⟩ h) ⟨bv, rfl⟩).symm).trans
+        (hz_local h (F.reindex g ⟨a, hq⟩ ⟨bv, rfl⟩))
+    · intro b
+      exact hz_children (F.reindex g ⟨a, hq⟩ ⟨b, rfl⟩).1
+
+/-- Restriction on the ULifted carrier fibre: apply `wRestrTree` to the
+underlying tree of `w` along `g`, re-establishing the index (`j'`, read from the
+restricted root shape via `shapeRestr`) and hereditary naturality (preserved by
+`wRestrTree`, a one-level consequence of `isHereditarilyNatural_mk` and
+`reindex_naturality`). -/
+@[expose] def wRestr {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j j' : I⦄ (g : j' ⟶ j) :
+    ULift.{uI} { w : F.toSlicePFunctor.W //
+        F.toSlicePFunctor.windex w = j ∧ F.IsHereditarilyNatural w } →
+      ULift.{uI} { w : F.toSlicePFunctor.W //
+        F.toSlicePFunctor.windex w = j' ∧ F.IsHereditarilyNatural w } :=
+  fun w => ULift.up
+    ⟨F.wRestrTree g w.down.1 w.down.2.1,
+      F.windex_wRestrTree g w.down.1 w.down.2.1,
+      F.isHereditarilyNatural_wRestrTree g w.down.1 w.down.2.1 w.down.2.2⟩
+
+/-- Restriction along an identity fixes the tree: `objRestrElt_id` collapses the
+rebuilt root, and `mk_dest` reassembles the original tree. -/
+theorem wRestrTree_id {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j : I⦄
+    (z : F.toSlicePFunctor.W) (hq : F.q (PFunctor.W.head z.1) = j) :
+    F.wRestrTree (𝟙 j) z hq = z := by
+  obtain ⟨tree, hvalid⟩ := z
+  cases tree with
+  | mk a fchild =>
+    simp only [wRestrTree]
+    rw [F.objRestrElt_id, SlicePFunctor.W.mk_dest]
+
+/-- Restriction along a composite factors: `dest_mk` exposes the inner
+restriction and `objRestrElt_comp` splits the rebuilt root. -/
+theorem wRestrTree_comp {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j j' j'' : I⦄ (g : j' ⟶ j)
+    (h : j'' ⟶ j') (z : F.toSlicePFunctor.W) (hq : F.q (PFunctor.W.head z.1) = j)
+    (hq2 : F.q (PFunctor.W.head (F.wRestrTree g z hq).1) = j') :
+    F.wRestrTree (h ≫ g) z hq = F.wRestrTree h (F.wRestrTree g z hq) hq2 := by
+  obtain ⟨tree, hvalid⟩ := z
+  cases tree with
+  | mk a fchild =>
+    simp only [wRestrTree, SlicePFunctor.W.dest_mk]
+    rw [F.objRestrElt_comp g h (SlicePFunctor.W.dest ⟨WType.mk a fchild, hvalid⟩) hq
+      (F.shapeRestr g ⟨a, hq⟩).2]
+
+/-- The carrier presheaf `W : Iᵒᵖ ⥤ Type` of the presheaf polynomial endofunctor
+`F`: its fibre over `j` is the `ULift` of the hereditarily-natural slice W-trees
+indexed at `j`, and its restriction maps are `wRestr`. The functor laws transport
+from `objRestrElt_id` / `objRestrElt_comp` through `wRestrTree`, `ULift`, and
+`Subtype`. -/
+@[expose] def W {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) : Iᵒᵖ ⥤ Type (max uI uA uB) where
+  obj j := ULift.{uI} { w : F.toSlicePFunctor.W //
+    F.toSlicePFunctor.windex w = j.unop ∧ F.IsHereditarilyNatural w }
+  map g := ↾ (F.wRestr g.unop)
+  map_id j := by
+    ext w
+    exact F.wRestrTree_id w.down.1 w.down.2.1
+  map_comp g h := by
+    ext w
+    exact F.wRestrTree_comp g.unop h.unop w.down.1 w.down.2.1
+      (F.windex_wRestrTree g.unop w.down.1 w.down.2.1)
 
 end PresheafPFunctor

@@ -67,6 +67,8 @@ reindexes these fibres contravariantly.
   domain-restricted action in the input presheaf.
 * `PresheafPFunctor.map_objRestr` — the domain map is natural with respect
   to the output presheaf's restriction maps.
+* `PresheafPFunctor.objRestrElt_id` / `objRestrElt_comp` — the identity and
+  composition laws of the element-level restriction `objRestrElt`.
 
 ## Notation
 
@@ -472,7 +474,7 @@ private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → 
 
 /-- Identity law for the restriction action: `objRestrElt` along `𝟙 j` is the
 identity. -/
-private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {X : Type uX} {p : X → I} {j : J}
     (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j) :
     F.objRestrElt (𝟙 j) x hq = x := by
@@ -494,7 +496,7 @@ private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Ca
 
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/
-private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {X : Type uX} {p : X → I} ⦃j j' j'' : J⦄
     (g : j' ⟶ j) (h : j'' ⟶ j')
     (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j)
