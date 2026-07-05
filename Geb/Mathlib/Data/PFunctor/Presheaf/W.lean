@@ -40,6 +40,14 @@ computation rule.
 * `PresheafPFunctor.W` — the carrier presheaf `Iᵒᵖ ⥤ Type (max uI uA uB)`, whose
   fibre over `j` is the `ULift` of the hereditarily-natural slice W-trees indexed
   at `j` and whose restriction maps are `wRestr`.
+* `PresheafPFunctor.W.forgetNode` / `PresheafPFunctor.W.rememberNode` — the
+  mutually inverse translations between a presheaf node over the carrier
+  presheaf `F.W` and the underlying slice node over `windex` together with the
+  hereditary naturality of its children.
+* `PresheafPFunctor.W.mk` / `PresheafPFunctor.W.dest` — the fixed-point
+  constructor and destructor: mutually inverse fibrewise maps between the
+  `objPresheaf`-value at `F.W` and `F.W`, exhibiting `F.W` as a fixed point of
+  the `objPresheaf`-action at `F.W`.
 
 ## Main statements
 
@@ -52,6 +60,9 @@ computation rule.
   preserved by the root-only restriction, a one-level argument.
 * `PresheafPFunctor.wRestrTree_id` / `PresheafPFunctor.wRestrTree_comp` — the
   functoriality of `wRestrTree`, from which `W`'s functor laws transport.
+* `PresheafPFunctor.W.dest_mk` / `PresheafPFunctor.W.mk_dest` — `mk` and `dest`
+  are mutually inverse, so `F.W` is a fixed point of the `objPresheaf`-action at
+  `F.W`.
 
 ## Implementation notes
 
@@ -241,5 +252,207 @@ from `objRestrElt_id` / `objRestrElt_comp` through `wRestrTree`, `ULift`, and
     ext w
     exact F.wRestrTree_comp g.unop h.unop w.down.1 w.down.2.1
       (F.windex_wRestrTree g.unop w.down.1 w.down.2.1)
+
+namespace W
+
+/-- Casting a carrier fibre element along an index equality leaves its
+underlying slice W-tree unchanged. -/
+private theorem cast_down {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) {k k' : I} (e : k = k')
+    (u : (F.W).obj ⟨k⟩) :
+    (cast (congrArg (fun k : I => (F.W).obj ⟨k⟩) e) u).down.1 = u.down.1 := by
+  cases e
+  rfl
+
+/-- Two carrier fibre elements with equal underlying trees are equal. -/
+private theorem obj_ext {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) {k : I} {u u' : (F.W).obj ⟨k⟩}
+    (h : u.down.1 = u'.down.1) : u = u' := by
+  obtain ⟨u⟩ := u
+  obtain ⟨u'⟩ := u'
+  exact congrArg ULift.up (Subtype.ext h)
+
+/-- The underlying tree of a restricted fibre element is the root-restriction of
+the underlying tree. -/
+private theorem map_down {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃i i' : I⦄ (f : i' ⟶ i)
+    (u : (F.W).obj ⟨i⟩) :
+    ((F.W).map f.op u).down.1 = F.wRestrTree f u.down.1 u.down.2.1 :=
+  rfl
+
+/-- The underlying tree of the value a presheaf node over `F.W` assigns to a
+direction is the underlying tree of the carried child fibre element. -/
+private theorem value_down {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W))) ⦃i : I⦄
+    (b : F.toSliceDomPFunctor.Direction n.1.1 i) :
+    (F.toPresheafDomPFunctorData.value n b).down.1 = (n.1.2 b.1).2.down.1 :=
+  cast_down F
+    (((F.toSliceDomPFunctor.compatible_iff (PresheafDomPFunctorData.elemProj (F.W)) n.1.1 n.1.2).mp
+      n.2 b.1).trans b.2)
+    (n.1.2 b.1).2
+
+/-- Rebuild a carrier fibre element from its underlying tree, its `windex`, and
+its hereditary naturality: a total-space element over `windex w.down.1` equal to
+the original total-space element over `i`. -/
+private theorem sigma_eta {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) {i : I} (w : (F.W).obj ⟨i⟩) :
+    (⟨F.toSlicePFunctor.windex w.down.1, ULift.up ⟨w.down.1, rfl, w.down.2.2⟩⟩ :
+      Σ i : I, (F.W).obj ⟨i⟩) = ⟨i, w⟩ := by
+  obtain ⟨⟨t, hi, hh⟩⟩ := w
+  cases hi
+  rfl
+
+/-- Forget a presheaf node over the carrier presheaf `F.W` to the underlying
+slice node over `windex`: retain the shape, and send each direction to the
+underlying slice W-tree of its carried fibre element. -/
+@[expose] def forgetNode {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W))) :
+    F.toSliceDomPFunctor.Obj F.toSlicePFunctor.windex :=
+  ⟨⟨n.1.1, fun b => (n.1.2 b).2.down.1⟩,
+    (F.toSliceDomPFunctor.compatible_iff F.toSlicePFunctor.windex _ _).mpr fun b =>
+      ((n.1.2 b).2.down.2.1).trans
+        ((F.toSliceDomPFunctor.compatible_iff (PresheafDomPFunctorData.elemProj (F.W)) _ _).mp
+          n.2 b)⟩
+
+/-- Remember a slice node over `windex` whose children are hereditarily natural
+as a presheaf node over the carrier presheaf `F.W`: retain the shape, and send
+each direction to the carried fibre element built from the child tree, its index
+`windex`, and its hereditary naturality. -/
+@[expose] def rememberNode {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (y : F.toSliceDomPFunctor.Obj F.toSlicePFunctor.windex)
+    (hchildren : ∀ b, F.IsHereditarilyNatural (y.1.2 b)) :
+    F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W)) :=
+  ⟨⟨y.1.1, fun b => ⟨F.toSlicePFunctor.windex (y.1.2 b),
+      ULift.up ⟨y.1.2 b, rfl, hchildren b⟩⟩⟩,
+    (F.toSliceDomPFunctor.compatible_iff (PresheafDomPFunctorData.elemProj (F.W)) _ _).mpr fun b =>
+      (F.toSliceDomPFunctor.compatible_iff F.toSlicePFunctor.windex _ _).mp y.2 b⟩
+
+/-- `rememberNode` depends on the slice node only, not the hereditary-naturality
+data (which occupies a `Prop` position). -/
+private theorem rememberNode_eq {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    {y y' : F.toSliceDomPFunctor.Obj F.toSlicePFunctor.windex}
+    (hy : ∀ b, F.IsHereditarilyNatural (y.1.2 b))
+    (hy' : ∀ b, F.IsHereditarilyNatural (y'.1.2 b)) (e : y = y') :
+    rememberNode F y hy = rememberNode F y' hy' := by
+  subst e
+  rfl
+
+/-- `forgetNode` inverts `rememberNode`. -/
+private theorem forgetNode_rememberNode {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (y : F.toSliceDomPFunctor.Obj F.toSlicePFunctor.windex)
+    (hchildren : ∀ b, F.IsHereditarilyNatural (y.1.2 b)) :
+    forgetNode F (rememberNode F y hchildren) = y := by
+  apply Subtype.ext
+  obtain ⟨⟨a, v⟩, hc⟩ := y
+  rfl
+
+/-- `rememberNode` inverts `forgetNode` (with the hereditary-naturality data
+transported through the round trip). -/
+private theorem rememberNode_forgetNode {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W)))
+    (hchildren : ∀ b, F.IsHereditarilyNatural ((forgetNode F n).1.2 b)) :
+    rememberNode F (forgetNode F n) hchildren = n := by
+  apply Subtype.ext
+  obtain ⟨⟨a, v⟩, hc⟩ := n
+  exact Sigma.ext rfl (heq_of_eq (funext fun b => sigma_eta F (v b).2))
+
+/-- The hereditary naturality of the slice tree built from a presheaf node over
+`F.W` is exactly the naturality of the node: the recursive conjunct of
+`isHereditarilyNatural_mk` is discharged by the carried hereditary naturality of
+each child, and its local conjunct matches the node's `IsNatural` datum through
+the underlying-tree correspondence. -/
+private theorem isHereditarilyNatural_mk_forgetNode {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W))) :
+    F.IsHereditarilyNatural (SlicePFunctor.W.mk (forgetNode F n)) ↔
+      F.toPresheafDomPFunctorData.IsNatural n := by
+  rw [F.isHereditarilyNatural_mk]
+  constructor
+  · rintro ⟨hloc, -⟩ i i' f b
+    apply obj_ext F
+    simp only [value_down, map_down]
+    exact hloc f b
+  · intro hnat
+    refine ⟨fun i i' g b => ?_, fun b => (n.1.2 b).2.down.2.2⟩
+    have h := congrArg (fun u => u.down.1) (hnat g b)
+    simp only [value_down, map_down] at h
+    exact h
+
+/-- The fixed-point constructor of the presheaf W-type: the `objPresheaf`-value
+at the carrier presheaf `F.W` maps into `F.W`, fibrewise over `I`. It builds the
+slice W-tree from the node (via `forgetNode` and the slice constructor
+`SlicePFunctor.W.mk`), reads its index from the node's `q`-output index, and
+supplies hereditary naturality via `isHereditarilyNatural_mk_forgetNode`. -/
+@[expose] def mk {I : Type uI} [Category.{vI} I]
+    {F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I} {j : I}
+    (x : (F.objPresheaf F.W).obj ⟨j⟩) : (F.W).obj ⟨j⟩ :=
+  ULift.up ⟨SlicePFunctor.W.mk (forgetNode F x.1.1), x.2,
+    (isHereditarilyNatural_mk_forgetNode F x.1.1).mpr x.1.2⟩
+
+/-- The fixed-point destructor of the presheaf W-type, inverse to `mk`: the
+underlying tree decomposes (via the slice destructor `SlicePFunctor.W.dest`) as
+a shape with a family of hereditarily-natural subtrees, reassembled (via
+`rememberNode`) into a natural node over `F.W`, and re-indexed at the root's
+`q`-output index. -/
+@[expose] def dest {I : Type uI} [Category.{vI} I]
+    {F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I} {j : I}
+    (z : (F.W).obj ⟨j⟩) : (F.objPresheaf F.W).obj ⟨j⟩ := by
+  have hz : F.IsHereditarilyNatural (SlicePFunctor.W.mk (SlicePFunctor.W.dest z.down.1)) := by
+    rw [SlicePFunctor.W.mk_dest]
+    exact z.down.2.2
+  have hchildren := ((F.isHereditarilyNatural_mk (SlicePFunctor.W.dest z.down.1)).mp hz).2
+  exact ⟨⟨rememberNode F (SlicePFunctor.W.dest z.down.1) hchildren,
+      (isHereditarilyNatural_mk_forgetNode F _).mp (by rw [forgetNode_rememberNode F]; exact hz)⟩,
+    calc F.q (SlicePFunctor.W.dest z.down.1).1.1
+        = F.toSlicePFunctor.windex (SlicePFunctor.W.mk (SlicePFunctor.W.dest z.down.1)) :=
+          (SlicePFunctor.W.windex_mk (SlicePFunctor.W.dest z.down.1)).symm
+      _ = F.toSlicePFunctor.windex z.down.1 := by rw [SlicePFunctor.W.mk_dest]
+      _ = j := z.down.2.1⟩
+
+/-- `dest` is a left inverse of `mk`. -/
+@[simp]
+theorem dest_mk {I : Type uI} [Category.{vI} I]
+    {F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I} {j : I}
+    (x : (F.objPresheaf F.W).obj ⟨j⟩) : dest (mk x) = x := by
+  apply Subtype.ext
+  apply Subtype.ext
+  have hz : F.IsHereditarilyNatural (SlicePFunctor.W.mk (F := F.toSlicePFunctor)
+      (SlicePFunctor.W.dest (F := F.toSlicePFunctor)
+        (SlicePFunctor.W.mk (F := F.toSlicePFunctor) (forgetNode F x.1.1)))) := by
+    rw [SlicePFunctor.W.mk_dest]
+    exact (isHereditarilyNatural_mk_forgetNode F x.1.1).mpr x.1.2
+  have hch := ((F.isHereditarilyNatural_mk (SlicePFunctor.W.dest (F := F.toSlicePFunctor)
+    (SlicePFunctor.W.mk (F := F.toSlicePFunctor) (forgetNode F x.1.1)))).mp hz).2
+  change rememberNode F (SlicePFunctor.W.dest (F := F.toSlicePFunctor)
+    (SlicePFunctor.W.mk (F := F.toSlicePFunctor) (forgetNode F x.1.1))) hch = x.1.1
+  have hy' : ∀ b, F.IsHereditarilyNatural ((forgetNode F x.1.1).1.2 b) :=
+    fun b => (x.1.1.1.2 b).2.down.2.2
+  exact (rememberNode_eq F hch hy'
+    (SlicePFunctor.W.dest_mk (F := F.toSlicePFunctor) (forgetNode F x.1.1))).trans
+    (rememberNode_forgetNode F x.1.1 hy')
+
+/-- `mk` is a left inverse of `dest`; with `dest_mk`, `mk` and `dest` are
+mutually inverse, so `F.W` is a fixed point of the `objPresheaf`-action at
+`F.W`. -/
+@[simp]
+theorem mk_dest {I : Type uI} [Category.{vI} I]
+    {F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I} {j : I}
+    (z : (F.W).obj ⟨j⟩) : mk (dest z) = z := by
+  have hz : F.IsHereditarilyNatural (SlicePFunctor.W.mk (SlicePFunctor.W.dest z.down.1)) := by
+    rw [SlicePFunctor.W.mk_dest]
+    exact z.down.2.2
+  have hch := ((F.isHereditarilyNatural_mk (SlicePFunctor.W.dest z.down.1)).mp hz).2
+  apply obj_ext F
+  change SlicePFunctor.W.mk (F := F.toSlicePFunctor) (forgetNode F
+    (rememberNode F (SlicePFunctor.W.dest (F := F.toSlicePFunctor) z.down.1) hch)) = z.down.1
+  rw [forgetNode_rememberNode, SlicePFunctor.W.mk_dest]
+
+end W
 
 end PresheafPFunctor

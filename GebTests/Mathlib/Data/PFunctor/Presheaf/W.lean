@@ -85,3 +85,9 @@ example (x : presheafWitness.toSliceDomPFunctor.Obj presheafWitness.toSlicePFunc
 example (w : (presheafWitness.W).obj ⟨(1 : Fin 2)⟩) :
     (presheafWitness.W).map (𝟙 ⟨(1 : Fin 2)⟩) w = w :=
   presheafWitness.W.map_id_apply ⟨(1 : Fin 2)⟩ w
+
+-- `dest` is a left inverse of `mk`: the fixed-point round trip on a node over
+-- the carrier presheaf `F.W` returns the node.
+example (x : (presheafWitness.objPresheaf presheafWitness.W).obj ⟨(1 : Fin 2)⟩) :
+    PresheafPFunctor.W.dest (PresheafPFunctor.W.mk x) = x :=
+  PresheafPFunctor.W.dest_mk x
