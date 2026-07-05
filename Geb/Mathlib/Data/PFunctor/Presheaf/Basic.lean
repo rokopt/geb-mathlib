@@ -135,7 +135,7 @@ public section
 
 open CategoryTheory
 
-universe uI uJ uA uB uZ u v vI vJ
+universe uI uJ uA uB uZ u v vI vJ uX
 
 set_option linter.checkUnivs false in
 /-- Operations of a presheaf-domain polynomial functor over `I`: a
@@ -399,12 +399,13 @@ attribute [ext] PresheafPFunctorData
 namespace PresheafPFunctor
 
 /-- The slice element underlying the restriction action of `objPresheaf` on a
-`J`-morphism `g`: restrict the shape along `shapeRestr g` and reindex the
-direction-assignment along `reindex g`. -/
+`J`-morphism `g`, for a projection `p : X → I`: restrict the shape along
+`shapeRestr g` and reindex the direction-assignment along `reindex g`. -/
 @[expose] def objRestrElt {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j) :
-    F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {X : Type uX} {p : X → I}
+    ⦃j j' : J⦄ (g : j' ⟶ j)
+    (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j) :
+    F.toSliceDomPFunctor.Obj p :=
   ⟨⟨(F.shapeRestr g ⟨x.1.1, hq⟩).1,
       fun b' => x.1.2 (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
     (F.compatible_iff _ _ _).mpr fun b' =>
@@ -472,8 +473,8 @@ private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → 
 /-- Identity law for the restriction action: `objRestrElt` along `𝟙 j` is the
 identity. -/
 private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} {j : J}
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j) :
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {X : Type uX} {p : X → I} {j : J}
+    (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j) :
     F.objRestrElt (𝟙 j) x hq = x := by
   apply Subtype.ext
   obtain ⟨⟨a, v⟩, hc⟩ := x
@@ -494,9 +495,9 @@ private theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Ca
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/
 private theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' j'' : J⦄
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {X : Type uX} {p : X → I} ⦃j j' j'' : J⦄
     (g : j' ⟶ j) (h : j'' ⟶ j')
-    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j)
+    (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j)
     (hq' : F.q (F.objRestrElt g x hq).1.1 = j') :
     F.objRestrElt (h ≫ g) x hq = F.objRestrElt h (F.objRestrElt g x hq) hq' := by
   apply Subtype.ext
