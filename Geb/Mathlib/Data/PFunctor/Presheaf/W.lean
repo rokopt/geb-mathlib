@@ -48,6 +48,14 @@ computation rule.
   constructor and destructor: mutually inverse fibrewise maps between the
   `objPresheaf`-value at `F.W` and `F.W`, exhibiting `F.W` as a fixed point of
   the `objPresheaf`-action at `F.W`.
+* `PresheafPFunctor.W.PElimData` / `pelimStep` / `pelimData` — the eliminator's
+  fold carrier, algebra, and fold (a `WType.elim` fold whose value is guarded by
+  hereditary naturality, since the presheaf algebra acts only on natural nodes):
+  the presheaf analogue of the slice `ElimData` machinery.
+* `PresheafPFunctor.W.elimVal` — the eliminator's value on a carrier element,
+  extracted from the fold given the tree's hereditary naturality.
+* `PresheafPFunctor.W.elim` — the eliminator into any presheaf algebra `(Y, α)`,
+  a natural transformation `F.W ⟶ Y`.
 
 ## Main statements
 
@@ -63,6 +71,14 @@ computation rule.
 * `PresheafPFunctor.W.dest_mk` / `PresheafPFunctor.W.mk_dest` — `mk` and `dest`
   are mutually inverse, so `F.W` is a fixed point of the `objPresheaf`-action at
   `F.W`.
+* `PresheafPFunctor.W.isHereditarilyNatural_mk_forgetNode` — hereditary
+  naturality of the slice tree built from a presheaf node over `F.W` is exactly
+  the node's `IsNatural` datum; the correspondence underlying `mk` / `dest` and
+  the eliminator fold.
+* `PresheafPFunctor.W.comp_elim` — `elim` is a morphism of presheaves (its
+  `NatTrans` naturality), from `elimVal_wRestr`.
+* `PresheafPFunctor.W.elim_mk` — the computation rule: `elim` commutes with `mk`,
+  i.e. it is a morphism of presheaf algebras.
 
 ## Implementation notes
 
@@ -80,6 +96,21 @@ and no `induction` tactic appear. The child-index witness required by
 direction-assignment (`SliceDomPFunctor.compatible_iff`) together with the
 direction's fibre constraint, exactly as `PresheafDomPFunctorData.value` obtains
 its index equality.
+
+The eliminator `elim` folds the underlying slice tree into a target value with a
+bespoke `WType.elim` fold (`pelimData`, carrier `PElimData`, algebra
+`pelimStep`), the presheaf analogue of the slice `elim`'s `ElimData` fold. The
+presheaf algebra `α` acts only on natural nodes, so — unlike the slice `elim`,
+whose algebra is total — the fold's value is a function of the subtree's
+hereditary naturality, and the fold carries a naturality proxy (via the guard
+`P ∧ ∀ hp : P, Q hp`, builtin `And` with `Q` proof-irrelevant in `hp`) letting
+`α` apply at each node. The value fold is
+a non-dependent `WType.elim` (code-generatable); the recursion in the
+accompanying proofs (`pelimData_valid`, `elimVal_wRestr`) stays inside
+`WType.rec` / `SlicePFunctor.W.ind`. Only the existence half of the
+initial-algebra universal property is established — the carrier, its fixed-point
+structure, and `elim` with its computation rule `elim_mk` and over-`I` law
+`comp_elim`; uniqueness of `elim` is not formalized.
 
 ## References
 
@@ -367,7 +398,7 @@ private theorem rememberNode_forgetNode {I : Type uI} [Category.{vI} I]
 `isHereditarilyNatural_mk` is discharged by the carried hereditary naturality of
 each child, and its local conjunct matches the node's `IsNatural` datum through
 the underlying-tree correspondence. -/
-private theorem isHereditarilyNatural_mk_forgetNode {I : Type uI} [Category.{vI} I]
+theorem isHereditarilyNatural_mk_forgetNode {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
     (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W))) :
     F.IsHereditarilyNatural (SlicePFunctor.W.mk (forgetNode F n)) ↔
@@ -452,6 +483,318 @@ theorem mk_dest {I : Type uI} [Category.{vI} I]
   change SlicePFunctor.W.mk (F := F.toSlicePFunctor) (forgetNode F
     (rememberNode F (SlicePFunctor.W.dest (F := F.toSlicePFunctor) z.down.1) hch)) = z.down.1
   rw [forgetNode_rememberNode, SlicePFunctor.W.mk_dest]
+
+/-- The carrier of the presheaf-`W` value fold: the slice `WIndex` (root index
+and admissibility) together with a hereditary-naturality proxy `H`, a value
+function producing a total-space element of `Y` once the subtree is admissible
+and hereditarily natural, and a proof `over` that the value lies over the
+index. -/
+@[ext]
+structure PElimData {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) extends SlicePFunctor.WIndex I where
+  /-- Hereditary naturality of the subtree, a fold-level proxy. -/
+  H : valid → Prop
+  /-- The subtree's contributed value, in the total space of `Y`, available once
+  the subtree is admissible and hereditarily natural. -/
+  value : (hv : valid) → H hv → Σ i : I, Y.obj ⟨i⟩
+  /-- The value lies over the index. -/
+  over : ∀ (hv : valid) (hn : H hv), (value hv hn).1 = index
+
+/-- The slice node over `elemProj Y` assembled from a shape `a` and the children
+carriers' values: the direction assignment sends `b` to the child value
+`(c b).value`, compatible with `elemProj Y` by the children's `over` and the
+node's `OverInput`. -/
+@[expose] def pnodeSlice {I : Type uI} [Category.{vI} I]
+    {F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I}
+    {Y : Iᵒᵖ ⥤ Type (max uI uA uB)} {a : F.toPFunctor.A}
+    (c : F.toPFunctor.B a → PElimData F Y)
+    (hv : F.toSlicePFunctor.NodeValid a (fun b => (c b).toWIndex))
+    (hc : ∀ b, (c b).H (hv.1 b)) :
+    F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Y) :=
+  ⟨⟨a, fun b => (c b).value (hv.1 b) (hc b)⟩,
+    (F.toSliceDomPFunctor.compatible_iff (PresheafDomPFunctorData.elemProj Y) a _).mpr
+      fun b => ((c b).over (hv.1 b) (hc b)).trans (congrFun hv.2 b)⟩
+
+/-- The value-fold algebra step: index and admissibility as for `windexStep`; a
+hereditary-naturality proxy `H` combining the children's proxies with the
+naturality of the assembled node (`pnodeSlice`); and a value that applies the
+presheaf algebra `α` to that node, packaged over the shape's `q`-output index. -/
+@[expose] def pelimStep {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) :
+    F.toPFunctor.Obj (PElimData F Y) → PElimData F Y :=
+  fun x =>
+    { index := F.q x.1
+      valid := F.toSlicePFunctor.NodeValid x.1 (fun b => (x.2 b).toWIndex)
+      H := fun hv => (∀ b, (x.2 b).H (hv.1 b)) ∧
+        (∀ hc : (∀ b, (x.2 b).H (hv.1 b)), F.IsNatural (pnodeSlice x.2 hv hc))
+      value := fun hv hn =>
+        ⟨F.q x.1, α.app ⟨F.q x.1⟩ ⟨⟨pnodeSlice x.2 hv hn.1, hn.2 hn.1⟩, rfl⟩⟩
+      over := fun _ _ => rfl }
+
+/-- The value fold: the `F.toPFunctor`-algebra morphism into
+`(PElimData F Y, pelimStep)` given by `WType.elim`, a single non-dependent fold
+with no explicit recursion. -/
+@[expose] def pelimData {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) :
+    F.toPFunctor.W → PElimData F Y :=
+  WType.elim (PElimData F Y) (pelimStep F Y α)
+
+/-- The index-and-admissibility projection of `pelimData` agrees with the slice
+fold `windexValid`: the value fold refines the slice fold, so admissibility and
+the root index transport from the slice results. Proved by the dependent
+recursor `WType.rec`. -/
+theorem pelimData_toWIndex {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) (w : F.toPFunctor.W) :
+    (pelimData F Y α w).toWIndex = F.windexValid w :=
+  WType.rec (motive := fun w => (pelimData F Y α w).toWIndex = F.windexValid w)
+    (fun a f ih => by
+      change F.windexStep ⟨a, fun b => (pelimData F Y α (f b)).toWIndex⟩ =
+        F.windexStep ⟨a, fun b => F.windexValid (f b)⟩
+      rw [funext ih])
+    w
+
+/-- The admissibility component of `pelimData` is `WValid`. -/
+theorem pelimData_valid {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) (w : F.toPFunctor.W) :
+    (pelimData F Y α w).valid = F.WValid w :=
+  congrArg SlicePFunctor.WIndex.valid (pelimData_toWIndex F Y α w)
+
+/-- The index component of `pelimData` is the root index. -/
+theorem pelimData_index {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) (w : F.toPFunctor.W) :
+    (pelimData F Y α w).index = F.windexRoot w :=
+  (congrArg SlicePFunctor.WIndex.index (pelimData_toWIndex F Y α w)).trans
+    (F.windexValid_index_eq_windexRoot w)
+
+/-- A natural transformation's components respect heterogeneous equality of
+fibre elements over equal indices. -/
+private theorem app_heq.{w} {I : Type uI} [Category.{vI} I]
+    {Z Z' : Iᵒᵖ ⥤ Type w} (β : NatTrans Z Z') {k k' : I} (hk : k = k')
+    {x : Z.obj ⟨k⟩} {x' : Z.obj ⟨k'⟩} (hx : x ≍ x') :
+    β.app ⟨k⟩ x ≍ β.app ⟨k'⟩ x' := by
+  cases hk
+  cases hx
+  rfl
+
+/-- Two fibre elements of `objPresheaf Y` over equal indices whose underlying
+dom values are equal are heterogeneously equal. -/
+private theorem objPresheaf_obj_heq {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) (Y : Iᵒᵖ ⥤ Type (max uI uA uB))
+    {k k' : I} (hk : k = k') {u : (F.objPresheaf Y).obj ⟨k⟩} {u' : (F.objPresheaf Y).obj ⟨k'⟩}
+    (h : u.1 = u'.1) : u ≍ u' := by
+  cases hk
+  exact heq_of_eq (Subtype.ext h)
+
+/-- Value restriction coherence at the fold level: the fold value on the
+root-restriction of a tree is the `Y`-restriction of the fold value. A one-level
+argument: the restricted node's fold node is the `objPresheaf`-restriction of the
+node, so `α`'s naturality relates their `α`-images. -/
+theorem value_wRestrTree {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y)
+    (t : F.toSlicePFunctor.W) ⦃i i' : I⦄ (f : i' ⟶ i)
+    (hqi : F.q (PFunctor.W.head t.1) = i)
+    (hv : (pelimData F Y α t.1).valid) (hn : (pelimData F Y α t.1).H hv)
+    (hv' : (pelimData F Y α (F.wRestrTree f t hqi).1).valid)
+    (hn' : (pelimData F Y α (F.wRestrTree f t hqi).1).H hv') :
+    (pelimData F Y α (F.wRestrTree f t hqi).1).value hv' hn' =
+      ⟨i', Y.map f.op (cast (congrArg (fun k : I => Y.obj ⟨k⟩)
+          (((pelimData F Y α t.1).over hv hn).trans
+            ((pelimData_index F Y α t.1).trans hqi)))
+        ((pelimData F Y α t.1).value hv hn).2)⟩ := by
+  obtain ⟨tree, hval⟩ := t
+  cases tree with
+  | mk a fchild =>
+    refine Sigma.ext (F.shapeRestr f ⟨a, hqi⟩).2 ?_
+    have hqa : F.q a = i := hqi
+    subst hqa
+    have hnat :
+        Y.map f.op (α.app ⟨F.q a⟩ (⟨⟨pnodeSlice (fun b => pelimData F Y α (fchild b)) hv hn.1,
+            hn.2 hn.1⟩, rfl⟩ : (F.objPresheaf Y).obj ⟨F.q a⟩)) =
+          α.app ⟨i'⟩ ((F.objPresheaf Y).map f.op
+            ⟨⟨pnodeSlice (fun b => pelimData F Y α (fchild b)) hv hn.1, hn.2 hn.1⟩, rfl⟩) := by
+      rw [← ConcreteCategory.comp_apply, ← α.naturality f.op, ConcreteCategory.comp_apply]
+    change (α.app ⟨F.q (F.shapeRestr f ⟨a, hqi⟩).1⟩
+          (⟨⟨F.objRestrElt f (pnodeSlice (fun b => pelimData F Y α (fchild b)) hv hn.1) hqi,
+            hn'.2 hn'.1⟩, rfl⟩ : (F.objPresheaf Y).obj ⟨F.q (F.shapeRestr f ⟨a, hqi⟩).1⟩)) ≍
+        Y.map f.op (α.app ⟨F.q a⟩
+          (⟨⟨pnodeSlice (fun b => pelimData F Y α (fchild b)) hv hn.1, hn.2 hn.1⟩, rfl⟩ :
+            (F.objPresheaf Y).obj ⟨F.q a⟩))
+    rw [hnat]
+    exact app_heq α (F.shapeRestr f ⟨a, hqi⟩).2
+      (objPresheaf_obj_heq F Y (F.shapeRestr f ⟨a, hqi⟩).2 (Subtype.ext rfl))
+
+/-- The node the value fold assembles at a slice node whose children are folds of
+hereditarily-natural subtrees is natural: local naturality of the enclosing tree
+(each child restricting to the child at the reindexed direction) transports
+through the fold's value-restriction coherence `value_wRestrTree`. -/
+private theorem isNatural_pnodeSlice {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y)
+    {a : F.toPFunctor.A} (fc : F.toPFunctor.B a → F.toSlicePFunctor.W)
+    (hv : F.toSlicePFunctor.NodeValid a (fun b => (pelimData F Y α (fc b).1).toWIndex))
+    (hc : ∀ b, (pelimData F Y α (fc b).1).H (hv.1 b))
+    (hloc : ∀ ⦃i i' : I⦄ (g : i' ⟶ i) (b : F.toSliceDomPFunctor.Direction a i)
+        (hq : F.q (PFunctor.W.head (fc b.1).1) = i),
+        fc (F.directionRestr a g b).1 = F.wRestrTree g (fc b.1) hq) :
+    F.IsNatural (pnodeSlice (fun b => pelimData F Y α (fc b).1) hv hc) := by
+  intro i i' g b
+  change F.value (pnodeSlice (fun b => pelimData F Y α (fc b).1) hv hc) (F.directionRestr a g b) =
+    Y.map g.op (F.value (pnodeSlice (fun b => pelimData F Y α (fc b).1) hv hc) b)
+  have hqit : F.q (PFunctor.W.head (fc b.1).1) = i :=
+    (pelimData_index F Y α (fc b.1).1).symm.trans ((congrFun hv.2 b.1).trans b.2)
+  have hgen : ∀ (T : F.toSlicePFunctor.W) (hvT : (pelimData F Y α T.1).valid)
+      (hnT : (pelimData F Y α T.1).H hvT), T = F.wRestrTree g (fc b.1) hqit →
+      (pelimData F Y α T.1).value hvT hnT =
+        ⟨i', Y.map g.op (cast (congrArg (fun k : I => Y.obj ⟨k⟩)
+            (((pelimData F Y α (fc b.1).1).over (hv.1 b.1) (hc b.1)).trans
+              ((pelimData_index F Y α (fc b.1).1).trans hqit)))
+          ((pelimData F Y α (fc b.1).1).value (hv.1 b.1) (hc b.1)).2)⟩ := by
+    intro T hvT hnT hT
+    subst hT
+    exact value_wRestrTree F Y α (fc b.1) g hqit (hv.1 b.1) (hc b.1) hvT hnT
+  have hchild :
+      (pnodeSlice (fun b => pelimData F Y α (fc b).1) hv hc).1.2
+          (F.directionRestr a g b).1 =
+        ⟨i', Y.map g.op (cast (congrArg (fun k : I => Y.obj ⟨k⟩)
+            (((pelimData F Y α (fc b.1).1).over (hv.1 b.1) (hc b.1)).trans
+              ((pelimData_index F Y α (fc b.1).1).trans hqit)))
+          ((pelimData F Y α (fc b.1).1).value (hv.1 b.1) (hc b.1)).2)⟩ :=
+    hgen (fc (F.directionRestr a g b).1) (hv.1 (F.directionRestr a g b).1)
+      (hc (F.directionRestr a g b).1) (hloc g b hqit)
+  simp only [PresheafDomPFunctorData.value]
+  apply eq_of_heq
+  refine (cast_heq _ _).trans ?_
+  rw [hchild]
+  rfl
+
+/-- The node the value fold assembles at a validated hereditarily-natural tree,
+as an element of the output presheaf's fibre over the root index: the shape and
+the children's fold values, natural by the tree's hereditary naturality. -/
+theorem pelimData_H_of_isHN {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y)
+    (w : F.toSlicePFunctor.W) (hv : (pelimData F Y α w.1).valid)
+    (hn : F.IsHereditarilyNatural w) : (pelimData F Y α w.1).H hv :=
+  SlicePFunctor.W.ind
+    (motive := fun z => ∀ (hv : (pelimData F Y α z.1).valid),
+      F.IsHereditarilyNatural z → (pelimData F Y α z.1).H hv)
+    (fun x ih hv hHN => by
+      refine ⟨fun b => ih b (hv.1 b) (((F.isHereditarilyNatural_mk x).mp hHN).2 b), fun _ => ?_⟩
+      exact isNatural_pnodeSlice F Y α x.1.2 hv
+        (fun b => ih b (hv.1 b) (((F.isHereditarilyNatural_mk x).mp hHN).2 b))
+        (fun _ _ g b _ => ((F.isHereditarilyNatural_mk x).mp hHN).1 g b))
+    w hv hn
+
+/-- The fibre value the fold contributes to a validated hereditarily-natural
+tree indexed at `j`: the total-space value's `Y`-component, transported to the
+fibre over `j` through the fold's `over` law and root-index agreement. -/
+@[expose] def elimVal {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) {j : I}
+    (z : (F.W).obj ⟨j⟩) : Y.obj ⟨j⟩ :=
+  cast (congrArg (fun i : I => Y.obj ⟨i⟩)
+      ((((pelimData F Y α z.down.1.1).over
+          ((pelimData_valid F Y α z.down.1.1) ▸ z.down.1.2)
+          (pelimData_H_of_isHN F Y α z.down.1
+            ((pelimData_valid F Y α z.down.1.1) ▸ z.down.1.2) z.down.2.2)).trans
+        (pelimData_index F Y α z.down.1.1)).trans z.down.2.1))
+    ((pelimData F Y α z.down.1.1).value
+      ((pelimData_valid F Y α z.down.1.1) ▸ z.down.1.2)
+      (pelimData_H_of_isHN F Y α z.down.1
+        ((pelimData_valid F Y α z.down.1.1) ▸ z.down.1.2) z.down.2.2)).2
+
+/-- The total-space fold value at a carrier element is `elimVal` paired with the
+index: the `Y`-component is `elimVal` and the base point is the fibre index.
+Proof-irrelevance identifies the fold's internal hereditary-naturality proof with
+any supplied one. -/
+theorem value_eq_elimVal {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) {j : I}
+    (z : (F.W).obj ⟨j⟩) (hv : (pelimData F Y α z.down.1.1).valid)
+    (hn : (pelimData F Y α z.down.1.1).H hv) :
+    (pelimData F Y α z.down.1.1).value hv hn = ⟨j, elimVal F Y α z⟩ := by
+  refine Sigma.ext (((((pelimData F Y α z.down.1.1).over hv hn).trans
+    (pelimData_index F Y α z.down.1.1)).trans z.down.2.1)) ?_
+  exact (cast_heq _ _).symm
+
+/-- `elimVal` commutes with the restriction maps: the value of a restricted
+carrier element is the `Y`-restriction of the value. It glues the fold-level
+restriction coherence `value_wRestrTree` (the one-level argument, combining the
+fold's one-level computation with `α`'s naturality) with `value_eq_elimVal`,
+which identifies the two total-space fold values' fibre components with the two
+`elimVal`s; the tree recursion is confined to `pelimData_H_of_isHN`. -/
+theorem elimVal_wRestr {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) ⦃i i' : I⦄
+    (g : i' ⟶ i) (z : (F.W).obj ⟨i⟩) :
+    elimVal F Y α ((F.W).map g.op z) = Y.map g.op (elimVal F Y α z) := by
+  have hvz : (pelimData F Y α z.down.1.1).valid :=
+    (pelimData_valid F Y α z.down.1.1) ▸ z.down.1.2
+  have hnz : (pelimData F Y α z.down.1.1).H hvz :=
+    pelimData_H_of_isHN F Y α z.down.1 hvz z.down.2.2
+  have hvzr : (pelimData F Y α ((F.W).map g.op z).down.1.1).valid :=
+    (pelimData_valid F Y α ((F.W).map g.op z).down.1.1) ▸ ((F.W).map g.op z).down.1.2
+  have hnzr : (pelimData F Y α ((F.W).map g.op z).down.1.1).H hvzr :=
+    pelimData_H_of_isHN F Y α ((F.W).map g.op z).down.1 hvzr ((F.W).map g.op z).down.2.2
+  have eR := value_eq_elimVal F Y α ((F.W).map g.op z) hvzr hnzr
+  have eW := value_wRestrTree F Y α z.down.1 g z.down.2.1 hvz hnz hvzr hnzr
+  have key : (⟨i', elimVal F Y α ((F.W).map g.op z)⟩ : Σ k : I, Y.obj ⟨k⟩)
+      = ⟨i', Y.map g.op (elimVal F Y α z)⟩ := eR.symm.trans eW
+  exact eq_of_heq (Sigma.ext_iff.mp key).2
+
+/-- The eliminator of the presheaf W-type: the natural transformation into any
+presheaf algebra `(Y, α)`. Its component over `j` is the bespoke value fold
+`elimVal`; naturality is `elimVal_wRestr`. The existence half of initiality. -/
+@[expose] def elim {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) :
+    NatTrans F.W Y where
+  app j := ↾ fun z => elimVal F Y α (j := j.unop) z
+  naturality _ _ g := by
+    ext z
+    exact elimVal_wRestr F Y α g.unop z
+
+/-- `elim` is a genuine presheaf morphism: it commutes with the restriction
+maps of `F.W` and `Y`. The `NatTrans` naturality of `elim`, mirroring the slice
+`comp_elim`. -/
+theorem comp_elim {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) ⦃i i' : I⦄
+    (g : i' ⟶ i) (z : (F.W).obj ⟨i⟩) :
+    (elim F Y α).app ⟨i'⟩ ((F.W).map g.op z) = Y.map g.op ((elim F Y α).app ⟨i⟩ z) :=
+  elimVal_wRestr F Y α g z
+
+/-- The computation rule for `elim`: it commutes with the constructor `mk`, i.e.
+it is a morphism of presheaf algebras. -/
+theorem elim_mk {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
+    (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) {j : I}
+    (x : (F.objPresheaf F.W).obj ⟨j⟩) :
+    (elim F Y α).app ⟨j⟩ (mk x) =
+      α.app ⟨j⟩ ((F.mapPresheaf (elim F Y α)).app ⟨j⟩ x) := by
+  have hv : (pelimData F Y α (mk x).down.1.1).valid :=
+    (pelimData_valid F Y α (mk x).down.1.1) ▸ (mk x).down.1.2
+  have hn : (pelimData F Y α (mk x).down.1.1).H hv :=
+    pelimData_H_of_isHN F Y α (mk x).down.1 hv (mk x).down.2.2
+  have hq : F.q x.1.1.1.1 = j := x.2
+  have hchild : ∀ b, (pelimData F Y α (x.1.1.1.2 b).2.down.1.1).value (hv.1 b) (hn.1 b)
+      = (⟨(x.1.1.1.2 b).1, elimVal F Y α (x.1.1.1.2 b).2⟩ : Σ i : I, Y.obj ⟨i⟩) :=
+    fun b => value_eq_elimVal F Y α (x.1.1.1.2 b).2 (hv.1 b) (hn.1 b)
+  have hval := value_eq_elimVal F Y α (mk x) hv hn
+  apply eq_of_heq
+  refine ((Sigma.ext_iff.mp hval).2.symm).trans ?_
+  refine app_heq α hq ?_
+  refine objPresheaf_obj_heq F Y hq ?_
+  apply Subtype.ext
+  apply Subtype.ext
+  exact Sigma.ext rfl (heq_of_eq (funext fun b => hchild b))
 
 end W
 

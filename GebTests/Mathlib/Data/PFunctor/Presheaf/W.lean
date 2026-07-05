@@ -91,3 +91,30 @@ example (w : (presheafWitness.W).obj ⟨(1 : Fin 2)⟩) :
 example (x : (presheafWitness.objPresheaf presheafWitness.W).obj ⟨(1 : Fin 2)⟩) :
     PresheafPFunctor.W.dest (PresheafPFunctor.W.mk x) = x :=
   PresheafPFunctor.W.dest_mk x
+
+/-- A concrete choice-free target presheaf algebra: the constant presheaf on
+`(Fin 2)ᵒᵖ` at `PUnit`, every fibre `PUnit` and every restriction the identity. -/
+@[reducible] def constPUnit : (Fin 2)ᵒᵖ ⥤ Type where
+  obj _ := PUnit
+  map _ := 𝟙 _
+
+/-- The presheaf algebra on `constPUnit`: its structure map sends every node to
+the unique element of `PUnit`. Naturality holds since `PUnit` is a subsingleton. -/
+def constPUnitAlg : NatTrans (presheafWitness.objPresheaf constPUnit) constPUnit where
+  app _ := ↾ fun _ => PUnit.unit
+  naturality _ _ _ := rfl
+
+/-- The eliminator of the presheaf W-type into the constant-`PUnit` algebra. The
+carrier `presheafWitness.W` admits no elements (its functor has no leaf shape),
+so this eliminator is the concrete W-value the property test below asserts
+about. -/
+def elimConstPUnit : NatTrans presheafWitness.W constPUnit :=
+  PresheafPFunctor.W.elim presheafWitness constPUnit constPUnitAlg
+
+-- The computation rule `elim_mk`: `elim` composed with `mk` is the algebra step
+-- one level, `elim` applied to the children through `mapPresheaf`.
+example (x : (presheafWitness.objPresheaf presheafWitness.W).obj ⟨(1 : Fin 2)⟩) :
+    elimConstPUnit.app ⟨(1 : Fin 2)⟩ (PresheafPFunctor.W.mk x) =
+      constPUnitAlg.app ⟨(1 : Fin 2)⟩
+        ((presheafWitness.mapPresheaf elimConstPUnit).app ⟨(1 : Fin 2)⟩ x) :=
+  PresheafPFunctor.W.elim_mk presheafWitness constPUnit constPUnitAlg x
