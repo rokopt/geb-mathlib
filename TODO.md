@@ -5,14 +5,13 @@
 
 - [In progress](#in-progress)
 - [Next up](#next-up)
-  - [1. Standardise slice and polynomial-diagram terminology](#1-standardise-slice-and-polynomial-diagram-terminology)
+  - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
   - [2. Presheaf W-types](#2-presheaf-w-types)
   - [3. Categorical wrappers for mathlib's `PFunctor` and `WType`](#3-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
   - [4. Categorical wrappers for slice and presheaf W-types as initial algebras](#4-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
   - [5. M-types and their categorical wrappers as terminal coalgebras](#5-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
-  - [6. Universal morphisms: limits, colimits, exponentials](#6-universal-morphisms-limits-colimits-exponentials)
-  - [7. Free monads](#7-free-monads)
-  - [8. Cofree comonads](#8-cofree-comonads)
+  - [6. Universal morphisms](#6-universal-morphisms)
+  - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -36,7 +35,7 @@ earlier item can invalidate a later item's plan. Each item lives
 on its own topic branch and migrates to persistent documentation
 under `docs/index.md` on completion.
 
-The current stack, each layer expressed as constraints or tags on
+The current stack, each layer expressed as restrictions or assignments on
 the layer below: mathlib `PFunctor` (`Type` endofunctors) → slice
 polynomial functors (`Geb/Mathlib/Data/PFunctor/Slice/`) →
 presheaf parametric-right-adjoint functors
@@ -45,29 +44,26 @@ interpretations into mathlib's category theory are kept thin to
 minimise the `Classical.choice` surface. Slice W-types
 (`Slice/W.lean`) exist; the roadmap extends the stack upward.
 
-### 1. Standardise slice and polynomial-diagram terminology
+### 1. Decidable-property specializations of the functor definitions
 
-Replace non-standard names and comments with widely-accepted
-terms. For a slice (`Over`) object — an object `e` with a
-morphism `p : e → c` over a base `c` — standardise on "base
-space" for `c`, "total space" for `e`, and "projection" for `p`,
-abbreviating to "base object" and "total object" where "space"
-reads awkwardly.
-
-Open for that branch's brainstorming: the current sources use
-"constraint leg" for the direction-indexing map `s` and "tag leg"
-for the shape-indexing map `t`. These name the structure maps of
-the polynomial diagram, distinct from the base/total/projection
-triple above, so their replacements are a separate decision.
-Where multiple standard options exist, the user states a
-preference before the term is fixed.
+The slice and presheaf functors are specializations of mathlib's
+`PFunctor`: a restriction to a domain by a compatibility property on
+the direction-input map, together with a shape-output map assigning
+each shape a codomain index. Add explicit specializations for the case
+where the compatibility property is decidable (typically the finitary
+case; the exact conditions are settled when this item is taken up).
+This specializes the functor definitions directly, so it depends only
+on the existing definitions and precedes the constructions built on
+them; the decidable functors are then available downstream, in
+particular for the decidable-case specializations of the universal
+morphisms (item 6).
 
 ### 2. Presheaf W-types
 
 Define the W-types (initial algebras) of the presheaf polynomial
-functors as constraints or tags on the slice polynomial W-types
+functors as restrictions or assignments on the slice polynomial W-types
 in `Slice/W.lean`, mirroring how the presheaf functors are
-constraints or tags on the slice functors and the slice functors
+restrictions or assignments on the slice functors and the slice functors
 on mathlib's `PFunctor`. This layers presheaf W-types on mathlib's
 `PFunctor.W` through the existing slice layer.
 
@@ -101,40 +97,69 @@ base-layer-first pattern of items 3 and 4, build a categorical
 wrapper for the terminality of mathlib's `PFunctor.M` first,
 reusable in the slice and presheaf terminality proofs.
 
-### 6. Universal morphisms: limits, colimits, exponentials
+### 6. Universal morphisms
 
-Establish the limits, colimits, and exponentials of the slice and
-presheaf functors. Layer the slice constructions on mathlib's
-`PFunctor` and the presheaf constructions on the slice
-constructions. Per the survey, mathlib carries little or none of
-this for `PFunctor`, so a base layer of universal morphisms for
-mathlib's `PFunctor` is likely required.
+Establish the universal morphisms of the slice and presheaf functors,
+layering the slice constructions on mathlib's `PFunctor` and the
+presheaf constructions on the slice constructions. Per the survey,
+mathlib carries little or none of this for `PFunctor`, so a base layer
+for mathlib's `PFunctor` is likely required. Model formulas for a
+different representation, to be adapted, are in
+[rokopt/geb `PolyUMorph.lean`](https://github.com/rokopt/geb/blob/main/geb-lean/GebLean/PolyUMorph.lean).
 
-### 7. Free monads
+Implement in this order, each step layered across the three forms:
 
-Build free monads over the slice and presheaf functors as
-constraints or tags on cslib's `PFunctor.FreeM` (the free monad of
-a polynomial functor), mirroring the layering of the functors
-themselves.
+1. Representables (every representable is polynomial).
+2. Small coproducts (indexed by any `Type u`): every polynomial is
+   then a coproduct of representables; the first part of general
+   colimits; includes the initial object (the coproduct over `Empty`).
+3. Day convolution: the first part of general limits.
+4. Commutativity of coproducts with Day convolution.
+5. Small products, as an instantiation of Day convolution.
+6. Small parallel products, as an instantiation of Day convolution.
+7. Exponential objects.
+8. Left Kan extension.
+9. Equalizers.
+10. All small limits, by instantiating mathlib's construction of
+    limits from products and equalizers.
+11. Coequalizers.
+12. All small colimits, by instantiating mathlib's construction of
+    colimits from coproducts and coequalizers.
 
-Two definitions of these free monads are to be shown equivalent,
-in the most reusable form available: as constraints or tags on
-cslib's `PFunctor.FreeM`, and as computed from the slice and
-presheaf W-types of items 2 and 4 (themselves constraints or tags
-on mathlib's `WType`). Define both and prove them equivalent.
+Following the general definitions, implement the decidable-case
+specializations (item 1) of those universal morphisms with interesting
+decidable forms.
 
-### 8. Cofree comonads
+### 7. Relative (co)free (co)monads
 
-Build cofree comonads over the slice and presheaf functors. If
-mathlib and cslib lack a cofree comonad of a polynomial functor,
-build the `PFunctor` version first as a base layer. The survey
-records cslib's `PFunctor.FreeM` but no cofree-comonad
-counterpart; confirm before relying on it.
+Build the relative free monads and relative cofree comonads of the
+slice and presheaf functors for all three forms, and prove the
+relative universal property. A slice or presheaf functor is an
+endofunctor only when its domain and codomain bases coincide, so the
+relative notion [AltenkirchChapmanUustalu2015] is the appropriate one
+for the general (non-endofunctor) case; the ordinary free monad and
+cofree comonad are the `J = id` special case. The formal theory is
+[ArkorMcDermott2024]. Model definitions: cslib's `PFunctor` free monad
+(`Cslib/Foundations/Data/PFunctor/Free.lean`, the ordinary case) and
+[rokopt/geb `RelativeMonad.lean`](https://github.com/rokopt/geb/blob/main/geb-lean/GebLean/Binding/RelativeMonad.lean)
+(the relative case, in extension form). The first intended application
+is generic syntaxes with binding [AllaisAtkeyChapmanMcBrideMcKinna2021],
+which also supplies test material for the relative monads.
 
-Two definitions of these cofree comonads are to be shown
-equivalent: as constraints or tags on the `PFunctor` version, and
-as derived from the slice and presheaf M-types of item 5. Define
-both and prove them equivalent.
+Open technical question, resolved when this item is taken up, that
+determines implementation order: whether the relative (co)free
+(co)monad can be built on top of the ordinary one — as the slice
+functors are built on `PFunctor` and the presheaf functors on the
+slice functors. The primary constraint is to avoid code duplication;
+within that, build the simpler pieces first and the more complex on
+top of them when that can be done without duplication. If the relative
+version can be built on the ordinary one, do so (simpler-first with
+reuse); otherwise build the relative version and define the ordinary
+one as its `J = id` specialization — known achievable, the ordinary
+case being the discrete degeneration. Relate each construction to the
+corresponding slice/presheaf W-type (item 4) or M-type (item 5) and
+show the definitions equivalent, as in the superseded free-monad and
+cofree-comonad items.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
