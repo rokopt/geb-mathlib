@@ -41,13 +41,18 @@ def standardAxioms : NameSet :=
 
 /-- Exact module names additionally permitted to depend on
 `Classical.choice` (and only `Classical.choice`): the axiom-linter
-test fixture, and the categorical wrappers over mathlib's
-`Classical`-dependent category theory. Feature branches append their
-own wrapper module names. -/
+test fixture, the categorical wrappers over mathlib's
+`Classical`-dependent category theory, and the parallel test modules
+that exercise those wrappers (a test of a `Classical`-allowed wrapper
+is itself `Classical`-dependent). Feature branches append their own
+wrapper module names together with their test parallels. -/
 def classicalAllowedModules : NameSet :=
-  ((({} : NameSet).insert `GebTests.Internal.AxiomLinterClassicalFixture).insert
-    `Geb.Mathlib.Data.PFunctor.Slice.Functor).insert
-    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor
+  [`GebTests.Internal.AxiomLinterClassicalFixture,
+   `Geb.Mathlib.Data.PFunctor.Slice.Functor,
+   `Geb.Mathlib.Data.PFunctor.Presheaf.Functor,
+   `GebTests.Mathlib.Data.PFunctor.Slice.Functor,
+   `GebTests.Mathlib.Data.PFunctor.Presheaf.Functor].foldl (·.insert ·)
+    ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
 allowlist `allowed`: the standard set, plus `Classical.choice` exactly

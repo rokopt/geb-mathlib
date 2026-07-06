@@ -3,7 +3,7 @@ Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: The geb-mathlib contributors
 -/
-module -- shake: keep-all
+module
 
 import Geb.Mathlib.Data.PFunctor.Presheaf.Functor
 
@@ -28,13 +28,16 @@ example {I : Type} [Category I] (F : PresheafDomPFunctorData I) {Z Z' : Iᵒᵖ 
   rfl
 
 -- The presheaf-valued functor's object map is the choice-free `objPresheaf`.
-example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
+-- Named (rather than an `example`) so `lake shake` sees `Presheaf.Functor` is
+-- used: the module's declarations are otherwise exercised only in `example`s,
+-- which leave no constant in the `.olean`.
+theorem functor_obj_eq {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     (Z : Iᵒᵖ ⥤ Type) : F.functor.obj Z = F.objPresheaf Z :=
   F.functor_obj Z
 
 -- The presheaf-valued functor's morphism map is the dom `map`, restricted to the
 -- `q`-indexed fibre.
-example {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
+theorem functor_map_app {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : Z ⟶ Z') (X : Jᵒᵖ) (w : (F.functor.obj Z).obj X) :
     (F.functor.map α).app X w =
       (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ : (F.functor.obj Z').obj X) :=

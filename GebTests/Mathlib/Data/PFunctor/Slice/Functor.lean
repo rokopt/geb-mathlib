@@ -3,7 +3,7 @@ Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: The geb-mathlib contributors
 -/
-module -- shake: keep-all
+module
 
 import Geb.Mathlib.Data.PFunctor.Slice.Functor
 
@@ -25,14 +25,18 @@ def wrapperTestSlice : SlicePFunctor Bool Bool where
   r := fun x => x.2
   q := id
 
+/-- The categorical wrapper of `wrapperTestSlice`: a named value from
+`Slice.Functor` (the module under test) that the examples below assert about. -/
+def wrapperFunctor := wrapperTestSlice.functor
+
 -- The slice-valued functor forgets back to `domFunctor`.
-example : wrapperTestSlice.functor ⋙ Over.forget Bool =
+example : wrapperFunctor ⋙ Over.forget Bool =
     wrapperTestSlice.toSliceDomPFunctor.domFunctor :=
   wrapperTestSlice.functor_comp_forget
 
 -- The categorical object map is `Over.mk` of the choice-free `obj`.
 example (Y : Over Bool) :
-    wrapperTestSlice.functor.obj Y =
+    wrapperFunctor.obj Y =
       Over.mk (↾ wrapperTestSlice.obj (ConcreteCategory.hom Y.hom)) :=
   wrapperTestSlice.functor_obj Y
 
@@ -41,6 +45,6 @@ example (Y : Over Bool) :
 example {Y Z : Over Bool} (g : Y ⟶ Z)
     (hg : ConcreteCategory.hom Z.hom ∘ ConcreteCategory.hom g.left =
       ConcreteCategory.hom Y.hom) :
-    (wrapperTestSlice.functor.map g).left =
+    (wrapperFunctor.map g).left =
       ↾ wrapperTestSlice.map (ConcreteCategory.hom g.left) hg :=
   wrapperTestSlice.functor_map g
