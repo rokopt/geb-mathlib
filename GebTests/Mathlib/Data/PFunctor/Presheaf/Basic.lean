@@ -202,6 +202,14 @@ example :
     (((presheafWitness.objPresheaf constPUnit).map h01.op constFibreElt).1.1.1.2
         (1 : Fin 2)).1 = (1 : Fin 2) := rfl
 
+-- `objRestrElt` generalizes over the projection: it applies at any `p : X → I`,
+-- not only `elemProj Z`. Here `p` is a constant map on `PUnit`.
+example (g : (0 : Fin 2) ⟶ 1)
+    (x : presheafWitness.toSliceDomPFunctor.Obj (fun _ : PUnit => (1 : Fin 2)))
+    (hq : presheafWitness.q x.1.1 = 1) :
+    presheafWitness.toSliceDomPFunctor.Obj (fun _ : PUnit => (1 : Fin 2)) :=
+  presheafWitness.objRestrElt g x hq
+
 /-!
 ## Non-degenerate witness
 
