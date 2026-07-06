@@ -21,6 +21,7 @@ paths:
   - [Constructive-only](#constructive-only)
   - [Proof guidelines](#proof-guidelines)
   - [Higher-order constructions](#higher-order-constructions)
+  - [Recursion and induction through recursors](#recursion-and-induction-through-recursors)
   - [One step at a time](#one-step-at-a-time)
   - [Structure and typeclass patterns](#structure-and-typeclass-patterns)
 - [Constructive-only Lean code](#constructive-only-lean-code)
@@ -250,6 +251,36 @@ morphism maps, and functor-law proofs — higher-order operations
 provide all of those at once. The same applies broadly: prefer
 composition of established abstractions over hand-rolling. See
 `docs/process.md` § Code is cost for the rationale.
+
+### Recursion and induction through recursors
+
+All recursion and induction is expressed through recursors — functions
+taking non-recursive step functions as arguments, confining the recursion
+to their own verified internals. This covers mathlib's recursors
+(`WType.elim`, `WType.rec`), Lean's auto-generated ones (`casesOn`, `rec`,
+`brecOn`), and recursors defined here by wrapping those (e.g. an induction
+principle on a W-type subtype). Consequently:
+
+- No `induction` / `induction'` tactics; drive a proof's recursion with an
+  explicit recursor application, reserving `cases` / `casesOn` for
+  non-recursive case analysis.
+- No `def` that calls itself; no `termination_by` / well-founded
+  self-recursion.
+- No `structure` or `inductive` that contains an instance of itself.
+  Self-reference is expressed as a W-type of the appropriate form
+  (mathlib's `WType`, or the slice or presheaf W-types built here), so the
+  recursion is carried by that type's recursor.
+
+The purpose is to keep every datatype and every recursion expressed as a
+polynomial functor and its recursor. So presented, a datatype participates
+in the category of polynomial functors: it composes with the standard
+combinators, it can be assembled à la carte, and every morphism between two
+such datatypes takes one uniform form — a natural transformation of
+polynomial functors. Explicit recursion forfeits this: a self-referential
+datatype sits outside the framework, cannot reuse the shared combinators,
+and forces bespoke, hand-written maps out of it. Keeping definitions
+`noncomputable`-free (§ Constructive-only Lean code) is then a corollary,
+since `WType.elim` folds are code-generatable.
 
 ### One step at a time
 
