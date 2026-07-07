@@ -324,7 +324,7 @@ jj commit -m "feat(cat): add Grothendieck construction module skeletons"
   `functorToCat_obj`, `functorToCat_map`. Task 9 mirrors its
   shape.
 
-- [ ] **Step 1: Add the covariant section to the source module**
+- [x] **Step 1: Add the covariant section to the source module**
 
 Inside `namespace CategoryTheory` (before `end CategoryTheory`),
 add:
@@ -358,7 +358,7 @@ Note the universe binders: mathlib's `Grothendieck.functor` uses
 this module's `u v` declared in Task 1 (order as in mathlib's
 `Cat.{v, u}` notation: hom level first).
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `lake build`
 Expected: `Build completed successfully.` If `functorToCat_map`'s
@@ -366,7 +366,7 @@ Expected: `Build completed successfully.` If `functorToCat_map`'s
 unchanged with proof `rfl` after `dsimp only [functorToCat]` —
 do not weaken the statement.
 
-- [ ] **Step 3: Add the test**
+- [x] **Step 3: Add the test**
 
 In the test module, add:
 
@@ -390,19 +390,19 @@ theorem functorToCat_obj_constTypeCovariant :
 attach to `functorToCat` itself, not to `.obj` — named arguments
 do not travel through dot-notation projections.)
 
-- [ ] **Step 4: Build and test**
+- [x] **Step 4: Build and test**
 
 Run: `lake build && lake test`
 Expected: build success, tests exit 0.
 
-- [ ] **Step 5: Verify axioms**
+- [x] **Step 5: Verify axioms**
 
 Use lean-lsp `lean_verify` on
 `CategoryTheory.Grothendieck.functorToCat`.
 Expected axiom set: subset of
 `{propext, Classical.choice, Quot.sound}`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 jj commit -m "feat(cat): add covariant Grothendieck functorToCat"

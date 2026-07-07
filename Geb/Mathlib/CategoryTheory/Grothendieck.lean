@@ -76,4 +76,28 @@ open Functor
 
 variable {C : Type u} [Category.{v} C]
 
+/-! ## Covariant construction: `Cat`-valued packaging -/
+
+namespace Grothendieck
+
+/-- The covariant Grothendieck construction as a functor to `Cat`:
+`Grothendieck.functor` followed by forgetting the projection to the
+base. -/
+def functorToCat {E : Cat.{v, u}} : (↑E ⥤ Cat.{v, u}) ⥤ Cat.{v, u} :=
+  Grothendieck.functor ⋙ Over.forget E
+
+/-- `functorToCat` sends a functor to the Grothendieck construction on it. -/
+@[simp]
+theorem functorToCat_obj {E : Cat.{v, u}} (F : ↑E ⥤ Cat.{v, u}) :
+    functorToCat.obj F = Cat.of (Grothendieck F) :=
+  rfl
+
+/-- `functorToCat` sends a natural transformation to the induced functor. -/
+@[simp]
+theorem functorToCat_map {E : Cat.{v, u}} {F F' : ↑E ⥤ Cat.{v, u}}
+    (α : F ⟶ F') : functorToCat.map α = (Grothendieck.map α).toCatHom :=
+  rfl
+
+end Grothendieck
+
 end CategoryTheory

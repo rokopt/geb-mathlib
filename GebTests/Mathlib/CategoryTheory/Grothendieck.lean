@@ -14,3 +14,17 @@ set_option linter.privateModule false
 -/
 
 open CategoryTheory
+
+/-! ## Covariant `functorToCat` -/
+
+/-- A concrete covariant `Cat`-valued functor: constant at `Type`. -/
+def constTypeCovariant : Type ⥤ Cat.{0, 1} :=
+  (Functor.const (Type : Type 1)).obj (Cat.of Type)
+
+/-- `functorToCat` applied to a constant functor yields the
+Grothendieck construction on the nose. -/
+theorem functorToCat_obj_constTypeCovariant :
+    (Grothendieck.functorToCat (E := Cat.of (Type : Type 1))).obj
+        constTypeCovariant =
+      Cat.of (Grothendieck constTypeCovariant) :=
+  rfl
