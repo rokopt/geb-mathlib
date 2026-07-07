@@ -5,9 +5,8 @@ Authors: The geb-mathlib contributors
 -/
 module
 
-import GebTests.Mathlib.Data
-import GebTests.Mathlib.CategoryTheory
+public import Geb.Mathlib.CategoryTheory.Grothendieck
 
 /-!
-# GebTests.Mathlib — tests for upstream-eligible content
+# CategoryTheory — index
 -/

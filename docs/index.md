@@ -35,6 +35,22 @@ import-direction rules above are enforced by
 
 ## Implemented content
 
+- `Geb/Mathlib/CategoryTheory/Grothendieck.lean` — covariant and
+  contravariant Grothendieck constructions for 1-functors.
+  `Grothendieck.functorToCat` packages mathlib's covariant
+  construction as a functor to `Cat`. `GrothendieckOp F` is the
+  covariant construction applied to the oppositization
+  `F ⋙ Cat.opFunctor`; `CoGrothendieck G`, for `G : Cᵒᵖ ⥤ Cat`,
+  is its opposite category — the contravariant Grothendieck
+  construction, which mathlib states in a comment but implements
+  only for pseudofunctors. Both carry constructor/destructor
+  interfaces (`mk`/`base`/`fiber`, `homMk`/`homBase`/`homFiber`)
+  using morphisms of `C`, with `rfl` round-trips, projections
+  (`forget`), functoriality (`map`), and packaged forms
+  (`functor` into `Over`, `functorToCat` into `Cat`). The source
+  and test modules are listed in `GebMeta.classicalAllowedModules`
+  because mathlib's `Grothendieck` and `Cat.opFunctor` are
+  `Classical.choice`-dependent.
 - `Geb/Mathlib/Data/PFunctor/Slice/` — slice polynomial functors on
   `Type`. Given a `PFunctor` with a direction-input map `r : Idx → dom`
   and a shape-output map `q : A → cod`, a restriction of the `PFunctor`
