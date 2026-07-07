@@ -111,3 +111,51 @@ theorem coObj_fiber : coObj.fiber = Nat := rfl
 /-- `coObj` is its own `mk` round-trip. -/
 theorem coObj_eta :
     CoGrothendieck.mk coObj.base coObj.fiber = coObj := rfl
+
+/-! ## `CoGrothendieck` morphisms -/
+
+/-- A sample morphism `coObj ⟶ coObj'`: base `Bool → Nat`, fiber
+`Nat → String` (source fiber to target fiber — contravariant hom
+direction with a constant functor). -/
+def coHom : coObj ⟶ coObj' :=
+  CoGrothendieck.homMk (↾fun b => (cond b 1 0 : Nat))
+    (↾fun n : Nat => toString n)
+
+/-- A third object, for composition tests. -/
+def coObj'' : CoGrothendieck constTypeContra :=
+  CoGrothendieck.mk Unit Bool
+
+/-- A second morphism, composable after `coHom`. -/
+def coHom' : coObj' ⟶ coObj'' :=
+  CoGrothendieck.homMk (↾fun _ => ()) (↾String.isEmpty)
+
+/-- `coHom`'s base component reduces to the base function on the
+nose. -/
+theorem coHom_base :
+    CoGrothendieck.homBase coHom = ↾fun b => (cond b 1 0 : Nat) :=
+  rfl
+
+/-- `coHom`'s fiber component reduces to the fiber function on the
+nose. -/
+theorem coHom_fiber :
+    CoGrothendieck.homFiber coHom = ↾fun n : Nat => toString n :=
+  rfl
+
+/-- `coHom` is its own `homMk` round-trip. -/
+theorem coHom_eta :
+    CoGrothendieck.homMk (CoGrothendieck.homBase coHom)
+      (CoGrothendieck.homFiber coHom) = coHom :=
+  rfl
+
+/-- `homBase` sends composition to composition of base components. -/
+theorem coComp_base :
+    CoGrothendieck.homBase (coHom ≫ coHom') =
+      CoGrothendieck.homBase coHom ≫ CoGrothendieck.homBase coHom' :=
+  rfl
+
+/-- `homFiber` of the composite reduces to the composite fiber
+function on the nose. -/
+theorem coComp_fiber :
+    CoGrothendieck.homFiber (coHom ≫ coHom') =
+      ↾fun n : Nat => (toString n).isEmpty :=
+  rfl

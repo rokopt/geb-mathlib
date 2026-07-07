@@ -814,7 +814,7 @@ jj commit -m "feat(cat): add CoGrothendieck with object interface"
   `hom_ext`, and the id/comp simp lemmas named exactly as in
   Task 4 but in the `CoGrothendieck` namespace.
 
-- [ ] **Step 1: Add the hom API inside `namespace CoGrothendieck`**
+- [x] **Step 1: Add the hom API inside `namespace CoGrothendieck`**
 
 Insert before `end CoGrothendieck`:
 
@@ -892,12 +892,12 @@ reverses, which is what makes the `CoGrothendieck` statement come
 out with `f` first. The tactic proofs are candidates; statements
 are contractual.
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `lake build`
 Expected: success, iterating on tactic proofs only.
 
-- [ ] **Step 3: Add tests**
+- [x] **Step 3: Add tests**
 
 ```lean
 /-! ## `CoGrothendieck` morphisms -/
@@ -941,14 +941,14 @@ theorem coComp_fiber :
   rfl
 ```
 
-- [ ] **Step 4: Build, test, verify**
+- [x] **Step 4: Build, test, verify**
 
 Run: `lake build && lake test`
 Expected: success. `lean_verify` on
 `CategoryTheory.CoGrothendieck.homMk` and
 `CategoryTheory.CoGrothendieck.hom_ext`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 jj commit -m "feat(cat): add CoGrothendieck hom interface"

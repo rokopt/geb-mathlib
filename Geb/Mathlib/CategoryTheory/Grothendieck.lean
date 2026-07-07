@@ -284,6 +284,84 @@ and fiber. -/
 theorem mk_base_fiber (X : CoGrothendieck G) : mk X.base X.fiber = X :=
   rfl
 
+/-- Construct a morphism of `CoGrothendieck G` from a base morphism in
+`C` and a fiber morphism. -/
+def homMk {X Y : CoGrothendieck G} (base : X.base ⟶ Y.base)
+    (fiber : X.fiber ⟶ (G.map base.op).toFunctor.obj Y.fiber) :
+    X ⟶ Y :=
+  Quiver.Hom.op (GrothendieckOp.homMk base.op fiber)
+
+/-- The base morphism of a morphism of `CoGrothendieck G`, as a
+morphism of `C`. -/
+def homBase {X Y : CoGrothendieck G} (f : X ⟶ Y) : X.base ⟶ Y.base :=
+  Quiver.Hom.unop (GrothendieckOp.homBase (Quiver.Hom.unop f))
+
+/-- The fiber morphism of a morphism of `CoGrothendieck G`. -/
+def homFiber {X Y : CoGrothendieck G} (f : X ⟶ Y) :
+    X.fiber ⟶ (G.map (homBase f).op).toFunctor.obj Y.fiber :=
+  GrothendieckOp.homFiber (Quiver.Hom.unop f)
+
+/-- `homMk` recovers the base component on the nose. -/
+@[simp]
+theorem homBase_homMk {X Y : CoGrothendieck G} (b : X.base ⟶ Y.base)
+    (φ : X.fiber ⟶ (G.map b.op).toFunctor.obj Y.fiber) :
+    homBase (homMk b φ) = b :=
+  rfl
+
+/-- `homMk` recovers the fiber component on the nose. -/
+@[simp]
+theorem homFiber_homMk {X Y : CoGrothendieck G} (b : X.base ⟶ Y.base)
+    (φ : X.fiber ⟶ (G.map b.op).toFunctor.obj Y.fiber) :
+    homFiber (homMk b φ) = φ :=
+  rfl
+
+/-- Every morphism of `CoGrothendieck G` is `homMk` applied to its own
+base and fiber components. -/
+@[simp]
+theorem homMk_base_fiber {X Y : CoGrothendieck G} (f : X ⟶ Y) :
+    homMk (homBase f) (homFiber f) = f :=
+  rfl
+
+/-- Two morphisms of `CoGrothendieck G` agree once their base
+components agree and their fiber components agree after transport
+along that agreement. -/
+@[ext (iff := false)]
+theorem hom_ext {X Y : CoGrothendieck G} (f g : X ⟶ Y)
+    (hbase : homBase f = homBase g)
+    (hfiber : homFiber f ≫ eqToHom (by rw [hbase]) = homFiber g) :
+    f = g := by
+  apply Quiver.Hom.unop_inj
+  refine GrothendieckOp.hom_ext _ _ (Quiver.Hom.unop_inj hbase) ?_
+  exact hfiber
+
+/-- `homBase` sends the identity morphism to the identity morphism. -/
+@[simp]
+theorem homBase_id (X : CoGrothendieck G) : homBase (𝟙 X) = 𝟙 X.base :=
+  rfl
+
+/-- `homFiber` of the identity morphism is the canonical transport
+isomorphism. -/
+@[simp]
+theorem homFiber_id (X : CoGrothendieck G) :
+    homFiber (𝟙 X) = eqToHom (by simp) := by
+  exact GrothendieckOp.homFiber_id (Opposite.unop X)
+
+/-- `homBase` is functorial: it sends composition to composition. -/
+@[simp]
+theorem homBase_comp {X Y Z : CoGrothendieck G} (f : X ⟶ Y)
+    (g : Y ⟶ Z) : homBase (f ≫ g) = homBase f ≫ homBase g :=
+  rfl
+
+/-- `homFiber` of a composite is the composite of the fiber morphisms,
+transported along the base functoriality. -/
+@[simp]
+theorem homFiber_comp {X Y Z : CoGrothendieck G} (f : X ⟶ Y)
+    (g : Y ⟶ Z) :
+    homFiber (f ≫ g) =
+      homFiber f ≫ (G.map (homBase f).op).toFunctor.map (homFiber g) ≫
+        eqToHom (by simp) := by
+  exact GrothendieckOp.homFiber_comp (Quiver.Hom.unop g) (Quiver.Hom.unop f)
+
 end CoGrothendieck
 
 end CategoryTheory
