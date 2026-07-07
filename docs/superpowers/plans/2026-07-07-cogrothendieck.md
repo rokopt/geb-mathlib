@@ -693,7 +693,7 @@ jj commit -m "feat(cat): add GrothendieckOp hom interface"
   `CoGrothendieck.mk (base : C) (fiber : G.obj (Opposite.op base))`,
   `CoGrothendieck.base`, `CoGrothendieck.fiber` as below.
 
-- [ ] **Step 1: Add the type synonym, instance, and object API**
+- [x] **Step 1: Add the type synonym, instance, and object API**
 
 After `end GrothendieckOp`, add:
 
@@ -749,7 +749,7 @@ theorem mk_base_fiber (X : CoGrothendieck G) : mk X.base X.fiber = X :=
 end CoGrothendieck
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `lake build`
 Expected: success. `fiber`'s return type uses
@@ -757,7 +757,7 @@ Expected: success. `fiber`'s return type uses
 structure eta; if the ascription fails to elaborate, check with
 `lean_term_goal` — the statement stands.
 
-- [ ] **Step 3: Add tests**
+- [x] **Step 3: Add tests**
 
 ```lean
 /-! ## `CoGrothendieck` objects -/
@@ -783,7 +783,7 @@ theorem coObj_eta :
     CoGrothendieck.mk coObj.base coObj.fiber = coObj := rfl
 ```
 
-- [ ] **Step 4: Build, test, verify**
+- [x] **Step 4: Build, test, verify**
 
 Run: `lake build && lake test`
 Expected: success. `lean_verify` on
@@ -791,7 +791,7 @@ Expected: success. `lean_verify` on
 `CategoryTheory.CoGrothendieck.mk`; axioms within the permitted
 set.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 jj commit -m "feat(cat): add CoGrothendieck with object interface"

@@ -86,3 +86,28 @@ theorem gOpComp_base :
     GrothendieckOp.homBase (𝟙 gOpObj ≫ gOpHom) =
       GrothendieckOp.homBase gOpHom := by
   simp
+
+/-! ## `CoGrothendieck` objects -/
+
+/-- The running contravariant example: constant at `Type` on
+`(Type)ᵒᵖ`. -/
+def constTypeContra : (Type : Type 1)ᵒᵖ ⥤ Cat.{0, 1} :=
+  (Functor.const (Type : Type 1)ᵒᵖ).obj (Cat.of Type)
+
+/-- A sample object: base `Bool`, fiber `Nat`. -/
+def coObj : CoGrothendieck constTypeContra :=
+  CoGrothendieck.mk Bool Nat
+
+/-- A second object: base `Nat`, fiber `String`. -/
+def coObj' : CoGrothendieck constTypeContra :=
+  CoGrothendieck.mk Nat String
+
+/-- `coObj.base` reduces to `Bool`. -/
+theorem coObj_base : coObj.base = Bool := rfl
+
+/-- `coObj.fiber` reduces to `Nat`. -/
+theorem coObj_fiber : coObj.fiber = Nat := rfl
+
+/-- `coObj` is its own `mk` round-trip. -/
+theorem coObj_eta :
+    CoGrothendieck.mk coObj.base coObj.fiber = coObj := rfl

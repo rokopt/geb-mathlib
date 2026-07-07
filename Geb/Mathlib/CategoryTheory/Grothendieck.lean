@@ -232,4 +232,58 @@ theorem homFiber_comp {X Y Z : GrothendieckOp F} (f : X ⟶ Y)
 
 end GrothendieckOp
 
+/-! ## The contravariant Grothendieck construction -/
+
+/-- The contravariant Grothendieck construction of `G : Cᵒᵖ ⥤ Cat`:
+the opposite category of `GrothendieckOp G`. Objects are pairs of
+`c : C` and an object of `G.obj (op c)`; a morphism `X ⟶ Y` consists of
+`β : X.base ⟶ Y.base` in `C` and a fiber morphism
+`X.fiber ⟶ (G.map β.op).toFunctor.obj Y.fiber`. -/
+def CoGrothendieck (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) : Type (max u u₂) :=
+  (GrothendieckOp G)ᵒᵖ
+
+namespace CoGrothendieck
+
+/-- The category structure on `CoGrothendieck G`, inherited from the
+opposite of `GrothendieckOp G`. -/
+instance category (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) :
+    Category.{max v v₂} (CoGrothendieck G) :=
+  inferInstanceAs (Category (GrothendieckOp G)ᵒᵖ)
+
+variable {G : Cᵒᵖ ⥤ Cat.{v₂, u₂}}
+
+/-- Construct an object of `CoGrothendieck G` from a base object and a
+fiber object. -/
+def mk (base : C) (fiber : G.obj (Opposite.op base)) :
+    CoGrothendieck G :=
+  Opposite.op (GrothendieckOp.mk (Opposite.op base) fiber)
+
+/-- The base object of an object of `CoGrothendieck G`, as an object
+of `C`. -/
+def base (X : CoGrothendieck G) : C :=
+  Opposite.unop (GrothendieckOp.base (Opposite.unop X))
+
+/-- The fiber object of an object of `CoGrothendieck G`. -/
+def fiber (X : CoGrothendieck G) : G.obj (Opposite.op X.base) :=
+  GrothendieckOp.fiber (Opposite.unop X)
+
+/-- `mk` recovers the base component on the nose. -/
+@[simp]
+theorem base_mk (b : C) (f : G.obj (Opposite.op b)) : (mk b f).base = b :=
+  rfl
+
+/-- `mk` recovers the fiber component on the nose. -/
+@[simp]
+theorem fiber_mk (b : C) (f : G.obj (Opposite.op b)) :
+    (mk b f).fiber = f :=
+  rfl
+
+/-- Every object of `CoGrothendieck G` is `mk` applied to its own base
+and fiber. -/
+@[simp]
+theorem mk_base_fiber (X : CoGrothendieck G) : mk X.base X.fiber = X :=
+  rfl
+
+end CoGrothendieck
+
 end CategoryTheory
