@@ -245,6 +245,65 @@ theorem forget_map {X Y : GrothendieckOp F} (f : X ⟶ Y) :
     (forget F).map f = homBase f :=
   rfl
 
+/-- A natural transformation `α : F ⟶ F'` induces a functor
+`GrothendieckOp F ⥤ GrothendieckOp F'`. -/
+def map {F F' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F') :
+    GrothendieckOp F ⥤ GrothendieckOp F' :=
+  Grothendieck.map (whiskerRight α Cat.opFunctor)
+
+/-- `map` sends `mk b f` to `mk b` applied to the pushforward of `f` along `α`. -/
+@[simp]
+theorem map_obj_mk {F F' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F') (b : C)
+    (f : F.obj b) :
+    (map α).obj (mk b f) = mk b ((α.app b).toFunctor.obj f) :=
+  rfl
+
+/-- `map` leaves the base component of a morphism unchanged. -/
+@[simp]
+theorem homBase_map_map {F F' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F')
+    {X Y : GrothendieckOp F} (f : X ⟶ Y) :
+    homBase ((map α).map f) = homBase f :=
+  rfl
+
+/-- `map` transports the fiber component of a morphism along `α`, up to the
+canonical isomorphism supplied by `α`'s naturality. -/
+@[simp]
+theorem homFiber_map_map {F F' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F')
+    {X Y : GrothendieckOp F} (f : X ⟶ Y) :
+    homFiber ((map α).map f) =
+      (α.app Y.base).toFunctor.map (homFiber f) ≫
+        eqToHom (congrArg
+          (fun p : F.obj X.base ⟶ F'.obj Y.base =>
+            p.toFunctor.obj X.fiber)
+          (α.naturality (homBase f))) := by
+  simp only [map, homBase, homFiber, Grothendieck.map_map_fiber, Functor.comp_map,
+    Cat.Hom.comp_toFunctor]
+  erw [Functor.op_map, unop_comp, eqToHom_unop]
+  rfl
+
+/-- `map` sends the identity natural transformation to the identity functor. -/
+theorem map_id_eq (F : C ⥤ Cat.{v₂, u₂}) :
+    map (𝟙 F) = 𝟭 (GrothendieckOp F) := by
+  rw [map, whiskerRight_id']
+  exact Grothendieck.map_id_eq
+
+/-- `map` sends composition of natural transformations to composition of
+functors. -/
+theorem map_comp_eq {F F' F'' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F')
+    (β : F' ⟶ F'') : map (α ≫ β) = map α ⋙ map β := by
+  rw [map, whiskerRight_comp]
+  exact Grothendieck.map_comp_eq _ _
+
+/-- `map (𝟙 F)` is the identity functor, as an isomorphism. -/
+def mapIdIso (F : C ⥤ Cat.{v₂, u₂}) : map (𝟙 F) ≅ 𝟭 (GrothendieckOp F) :=
+  eqToIso (map_id_eq F)
+
+/-- `map` sends composition of natural transformations to composition
+of functors, as an isomorphism. -/
+def mapCompIso {F F' F'' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F')
+    (β : F' ⟶ F'') : map (α ≫ β) ≅ map α ⋙ map β :=
+  eqToIso (map_comp_eq α β)
+
 end GrothendieckOp
 
 /-! ## The contravariant Grothendieck construction -/
@@ -391,6 +450,64 @@ theorem forget_obj (X : CoGrothendieck G) : (forget G).obj X = X.base :=
 theorem forget_map {X Y : CoGrothendieck G} (f : X ⟶ Y) :
     (forget G).map f = homBase f :=
   rfl
+
+/-- A natural transformation `α : G ⟶ G'` induces a functor
+`CoGrothendieck G ⥤ CoGrothendieck G'` (covariantly in `α`). -/
+def map {G G' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G') :
+    CoGrothendieck G ⥤ CoGrothendieck G' :=
+  (GrothendieckOp.map α).op
+
+/-- `map` sends `mk b f` to `mk b` applied to the pushforward of `f` along `α`. -/
+@[simp]
+theorem map_obj_mk {G G' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G') (b : C)
+    (f : G.obj (Opposite.op b)) :
+    (map α).obj (mk b f) =
+      mk b ((α.app (Opposite.op b)).toFunctor.obj f) :=
+  rfl
+
+/-- `map` leaves the base component of a morphism unchanged. -/
+@[simp]
+theorem homBase_map_map {G G' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
+    {X Y : CoGrothendieck G} (f : X ⟶ Y) :
+    homBase ((map α).map f) = homBase f :=
+  rfl
+
+/-- `map` transports the fiber component of a morphism along `α`, up to the
+canonical isomorphism supplied by `α`'s naturality. -/
+@[simp]
+theorem homFiber_map_map {G G' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
+    {X Y : CoGrothendieck G} (f : X ⟶ Y) :
+    homFiber ((map α).map f) =
+      (α.app (Opposite.op X.base)).toFunctor.map (homFiber f) ≫
+        eqToHom (congrArg
+          (fun p : G.obj (Opposite.op Y.base) ⟶
+              G'.obj (Opposite.op X.base) =>
+            p.toFunctor.obj Y.fiber)
+          (α.naturality ((homBase f).op))) := by
+  exact GrothendieckOp.homFiber_map_map α (Quiver.Hom.unop f)
+
+/-- `map` sends the identity natural transformation to the identity functor. -/
+theorem map_id_eq (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) :
+    map (𝟙 G) = 𝟭 (CoGrothendieck G) := by
+  rw [map, GrothendieckOp.map_id_eq]
+  rfl
+
+/-- `map` sends composition of natural transformations to composition of
+functors. -/
+theorem map_comp_eq {G G' G'' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
+    (β : G' ⟶ G'') : map (α ≫ β) = map α ⋙ map β := by
+  rw [map, GrothendieckOp.map_comp_eq]
+  rfl
+
+/-- `map (𝟙 G)` is the identity functor, as an isomorphism. -/
+def mapIdIso (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) : map (𝟙 G) ≅ 𝟭 (CoGrothendieck G) :=
+  eqToIso (map_id_eq G)
+
+/-- `map` sends composition of natural transformations to composition
+of functors, as an isomorphism. -/
+def mapCompIso {G G' G'' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
+    (β : G' ⟶ G'') : map (α ≫ β) ≅ map α ⋙ map β :=
+  eqToIso (map_comp_eq α β)
 
 end CoGrothendieck
 

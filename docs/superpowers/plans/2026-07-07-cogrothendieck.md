@@ -1052,7 +1052,7 @@ jj commit -m "feat(cat): add GrothendieckOp and CoGrothendieck projections"
   `map_obj_mk`, `homBase_map_map`, and `homFiber_map_map` in each
   namespace, exact signatures below.
 
-- [ ] **Step 1: Add `GrothendieckOp.map` and laws**
+- [x] **Step 1: Add `GrothendieckOp.map` and laws**
 
 Insert before the existing `end GrothendieckOp`:
 
@@ -1129,7 +1129,7 @@ shape
 (`eqToHom_trans`, `Category.comp_id`/`id_comp`), iterating with
 `lean_goal`.
 
-- [ ] **Step 2: Add `CoGrothendieck.map` and laws**
+- [x] **Step 2: Add `CoGrothendieck.map` and laws**
 
 Insert before the existing `end CoGrothendieck`:
 
@@ -1187,12 +1187,12 @@ def mapCompIso {G G' G'' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
   eqToIso (map_comp_eq α β)
 ```
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `lake build`
 Expected: success; iterate on the four `rw` proofs only.
 
-- [ ] **Step 4: Add tests**
+- [x] **Step 4: Add tests**
 
 ```lean
 /-! ## Functoriality in the functor -/
@@ -1226,7 +1226,7 @@ theorem coMap_map_base :
 the explicit `by ext l; simp` scripts are candidates — omit the
 two fields entirely if the autoparam discharges them.)
 
-- [ ] **Step 5: Build, test, verify, commit**
+- [x] **Step 5: Build, test, verify, commit**
 
 Run: `lake build && lake test`; `lean_verify` both `map`s.
 

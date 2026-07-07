@@ -171,3 +171,31 @@ theorem coForget_map :
     (CoGrothendieck.forget constTypeContra).map coHom =
       CoGrothendieck.homBase coHom :=
   rfl
+
+/-! ## Functoriality in the functor -/
+
+/-- The `List` endofunctor on the category of types, with bundled
+morphisms. -/
+def listFunctor : Type ⥤ Type where
+  obj X := List X
+  map f := ↾(List.map (ConcreteCategory.hom f))
+
+/-- A natural transformation between constant functors, induced by
+`listFunctor` via `Functor.const`. -/
+def constListNatTrans : constTypeContra ⟶ constTypeContra :=
+  (Functor.const (Type : Type 1)ᵒᵖ).map listFunctor.toCatHom
+
+/-- `CoGrothendieck.map` applied to `constListNatTrans` sends `coObj` to
+the object with fiber `List Nat`. -/
+theorem coMap_obj :
+    (CoGrothendieck.map constListNatTrans).obj coObj =
+      CoGrothendieck.mk Bool (List Nat) := by
+  simp [coObj, constListNatTrans, listFunctor]
+
+/-- `CoGrothendieck.map` leaves the base component of a morphism
+unchanged. -/
+theorem coMap_map_base :
+    CoGrothendieck.homBase
+        ((CoGrothendieck.map constListNatTrans).map coHom) =
+      CoGrothendieck.homBase coHom :=
+  rfl
