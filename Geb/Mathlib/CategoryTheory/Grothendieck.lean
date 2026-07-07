@@ -443,8 +443,8 @@ theorem homBase_id (X : CoGrothendieck G) : homBase (𝟙 X) = 𝟙 X.base :=
 isomorphism. -/
 @[simp]
 theorem homFiber_id (X : CoGrothendieck G) :
-    homFiber (𝟙 X) = eqToHom (by simp) := by
-  exact GrothendieckOp.homFiber_id (Opposite.unop X)
+    homFiber (𝟙 X) = eqToHom (by simp) :=
+  GrothendieckOp.homFiber_id (Opposite.unop X)
 
 /-- `homBase` is functorial: it sends composition to composition. -/
 @[simp]
@@ -459,8 +459,8 @@ theorem homFiber_comp {X Y Z : CoGrothendieck G} (f : X ⟶ Y)
     (g : Y ⟶ Z) :
     homFiber (f ≫ g) =
       homFiber f ≫ (G.map (homBase f).op).toFunctor.map (homFiber g) ≫
-        eqToHom (by simp) := by
-  exact GrothendieckOp.homFiber_comp (Quiver.Hom.unop g) (Quiver.Hom.unop f)
+        eqToHom (by simp) :=
+  GrothendieckOp.homFiber_comp (Quiver.Hom.unop g) (Quiver.Hom.unop f)
 
 /-- The projection `CoGrothendieck G ⥤ C` onto the base category. -/
 def forget (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) : CoGrothendieck G ⥤ C :=
@@ -509,8 +509,8 @@ theorem homFiber_map_map {G G' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
           (fun p : G.obj (Opposite.op Y.base) ⟶
               G'.obj (Opposite.op X.base) =>
             p.toFunctor.obj Y.fiber)
-          (α.naturality ((homBase f).op))) := by
-  exact GrothendieckOp.homFiber_map_map α (Quiver.Hom.unop f)
+          (α.naturality ((homBase f).op))) :=
+  GrothendieckOp.homFiber_map_map α (Quiver.Hom.unop f)
 
 /-- `map` sends the identity natural transformation to the identity functor. -/
 theorem map_id_eq (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) :
@@ -548,7 +548,7 @@ def functor {E : Cat.{v, u}} :
 `forget G`. -/
 @[simp]
 theorem functor_obj_hom {E : Cat.{v, u}} (G : (↑E)ᵒᵖ ⥤ Cat.{v, u}) :
-    (functor.obj G).hom = (forget G).toCatHom := by
+    (functor.obj G).hom = (forget G).toCatHom :=
   rfl
 
 /-- The `CoGrothendieck` construction as a functor to `Cat`. -/
