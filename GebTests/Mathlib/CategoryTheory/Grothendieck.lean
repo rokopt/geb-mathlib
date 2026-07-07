@@ -5,9 +5,12 @@ Authors: The geb-mathlib contributors
 -/
 module
 
-import GebTests.Mathlib.Data
-import GebTests.Mathlib.CategoryTheory
+import Geb.Mathlib.CategoryTheory.Grothendieck
+
+set_option linter.privateModule false
 
 /-!
-# GebTests.Mathlib — tests for upstream-eligible content
+# Tests for the covariant and contravariant Grothendieck constructions
 -/
+
+open CategoryTheory

@@ -99,7 +99,7 @@ the repository rules.
   test mirror, both importable and lint-clean; all later tasks
   add declarations inside these two files.
 
-- [ ] **Step 1: Create the source module skeleton**
+- [x] **Step 1: Create the source module skeleton**
 
 Create `Geb/Mathlib/CategoryTheory/Grothendieck.lean`:
 
@@ -185,7 +185,7 @@ variable {C : Type u} [Category.{v} C]
 end CategoryTheory
 ```
 
-- [ ] **Step 2: Create the Geb-side index and wire it**
+- [x] **Step 2: Create the Geb-side index and wire it**
 
 Create `Geb/Mathlib/CategoryTheory.lean`:
 
@@ -217,7 +217,7 @@ In `Geb/Mathlib.lean`, add after the existing
 public import Geb.Mathlib.CategoryTheory
 ```
 
-- [ ] **Step 3: Create the test module skeleton and its index**
+- [x] **Step 3: Create the test module skeleton and its index**
 
 Create `GebTests/Mathlib/CategoryTheory/Grothendieck.lean`:
 
@@ -277,7 +277,7 @@ In `GebTests/Mathlib.lean`, add after the existing line
 import GebTests.Mathlib.CategoryTheory
 ```
 
-- [ ] **Step 4: Append both modules to the axiom allowlist**
+- [x] **Step 4: Append both modules to the axiom allowlist**
 
 In `GebMeta.lean`, the current list ends with
 
@@ -294,14 +294,14 @@ that line so the list reads:
    `GebTests.Mathlib.CategoryTheory.Grothendieck].foldl (·.insert ·)
 ```
 
-- [ ] **Step 5: Build and lint**
+- [x] **Step 5: Build and lint**
 
 Run: `lake build && lake lint`
 Expected: `Build completed successfully.` and lint exit 0 (the
 new modules are empty of declarations, so this validates wiring
 and docstring shape only).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 jj commit -m "feat(cat): add Grothendieck construction module skeletons"
