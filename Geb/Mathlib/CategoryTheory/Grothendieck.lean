@@ -55,6 +55,16 @@ preserve universes. The packaged functors (`functor`, `functorToCat`)
 restrict to `E : Cat.{v, u}` with fibers in the same `Cat.{v, u}`,
 inherited from mathlib's `Grothendieck.functor`.
 
+`Cat` is a semireducible `def` (`Bundled Category`), not an `abbrev`,
+so a keyed `rw`/`simp` rewrite that must unify a generic `Cᵒᵖ`-shaped
+lemma (`unop_comp`, `eqToHom_unop`, `Grothendieck.id_fiber`,
+`Grothendieck.comp_fiber`) against a term routed through
+`Cat.opFunctor.obj`/`F.map _ |>.toFunctor` fails even though the two
+sides are definitionally equal. `GrothendieckOp.hom_ext`, `homFiber_id`, `homFiber_comp`, and
+`GrothendieckOp.homFiber_map_map` isolate a single `erw` step — which
+unifies at a higher transparency — to cross exactly that reducibility boundary; the
+surrounding steps stay on `rfl`/`rw`/`simp`.
+
 ## References
 
 The contravariant Grothendieck construction is standard; see
