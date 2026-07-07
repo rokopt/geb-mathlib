@@ -1382,7 +1382,7 @@ jj commit -m "feat(cat): add packaged Grothendieck op-construction functors"
 - Produces: citations resolvable from the module docstring; the
   docs index entry; a fully gated branch.
 
-- [ ] **Step 1: Add bib entries**
+- [x] **Step 1: Add bib entries**
 
 Append at the end of `docs/references.bib`:
 
@@ -1408,7 +1408,7 @@ Append at the end of `docs/references.bib`:
 }
 ```
 
-- [ ] **Step 2: Add the docs index entry**
+- [x] **Step 2: Add the docs index entry**
 
 In `docs/index.md` § Implemented content, add this entry before
 the `Geb/Mathlib/Data/PFunctor/Slice/` entry (the module depends
@@ -1434,12 +1434,12 @@ topological order):
   `Classical.choice`-dependent.
 ```
 
-- [ ] **Step 3: Markdown gates**
+- [x] **Step 3: Markdown gates**
 
 Run: `doctoc --update-only docs/index.md && markdownlint-cli2 "**/*.md"`
 Expected: 0 errors.
 
-- [ ] **Step 4: Commit the documentation changes**
+- [x] **Step 4: Commit the documentation changes**
 
 ```bash
 jj commit -m "doc(cat): cite and index the Grothendieck constructions"
