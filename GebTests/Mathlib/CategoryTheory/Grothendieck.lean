@@ -199,3 +199,21 @@ theorem coMap_map_base :
         ((CoGrothendieck.map constListNatTrans).map coHom) =
       CoGrothendieck.homBase coHom :=
   rfl
+
+/-! ## Packaged functors -/
+
+/-- `CoGrothendieck.functorToCat` applied to `constTypeContra` reduces to
+the `CoGrothendieck` construction on it, on the nose. -/
+theorem coFunctorToCat_obj :
+    (CoGrothendieck.functorToCat (E := Cat.of (Type : Type 1))).obj
+        constTypeContra =
+      Cat.of (CoGrothendieck constTypeContra) :=
+  rfl
+
+/-- `CoGrothendieck.functor` applied to `constTypeContra` has hom
+component `CoGrothendieck.forget constTypeContra`. -/
+theorem coFunctor_obj_hom :
+    ((CoGrothendieck.functor (E := Cat.of (Type : Type 1))).obj
+        constTypeContra).hom =
+      (CoGrothendieck.forget constTypeContra).toCatHom :=
+  rfl

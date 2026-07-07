@@ -1253,7 +1253,7 @@ jj commit -m "feat(cat): add GrothendieckOp and CoGrothendieck map"
   plus consistency lemmas `functor_obj_hom` and
   `functorToCat_obj` in each namespace.
 
-- [ ] **Step 1: Add the `GrothendieckOp` packaged forms**
+- [x] **Step 1: Add the `GrothendieckOp` packaged forms**
 
 Insert before the existing `end GrothendieckOp`:
 
@@ -1281,7 +1281,7 @@ theorem functorToCat_obj {E : Cat.{v, u}} (F : ↑E ⥤ Cat.{v, u}) :
   rfl
 ```
 
-- [ ] **Step 2: Add the `CoGrothendieck` packaged forms**
+- [x] **Step 2: Add the `CoGrothendieck` packaged forms**
 
 Insert before the existing `end CoGrothendieck`:
 
@@ -1330,12 +1330,12 @@ compiler feedback. The statement is contractual. Likewise
 `(Grothendieck (G ⋙ Cat.opFunctor))ᵒᵖ` — definitionally
 `CoGrothendieck G`.
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `lake build`
 Expected: success.
 
-- [ ] **Step 4: Add tests**
+- [x] **Step 4: Add tests**
 
 ```lean
 /-! ## Packaged functors -/
@@ -1356,7 +1356,7 @@ theorem coFunctor_obj_hom :
 (Same parenthesization rule as Task 2: `(E := …)` attaches to the
 packaged functor, never to `.obj`.)
 
-- [ ] **Step 5: Build, test, verify, commit**
+- [x] **Step 5: Build, test, verify, commit**
 
 Run: `lake build && lake test`; `lean_verify` all four packaged
 defs.

@@ -304,6 +304,32 @@ def mapCompIso {F F' F'' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F')
     (β : F' ⟶ F'') : map (α ≫ β) ≅ map α ⋙ map β :=
   eqToIso (map_comp_eq α β)
 
+/-- The `GrothendieckOp` construction as a functor from `↑E ⥤ Cat` to
+the over category of `E` in `Cat`: post-compose with `Cat.opFunctor`,
+then apply mathlib's `Grothendieck.functor`. -/
+def functor {E : Cat.{v, u}} :
+    (↑E ⥤ Cat.{v, u}) ⥤ Over (T := Cat.{v, u}) E :=
+  (whiskeringRight ↑E Cat.{v, u} Cat.{v, u}).obj Cat.opFunctor ⋙
+    Grothendieck.functor
+
+/-- `functor` sends `F` to an over-object whose hom component is
+`forget F`. -/
+@[simp]
+theorem functor_obj_hom {E : Cat.{v, u}} (F : ↑E ⥤ Cat.{v, u}) :
+    (functor.obj F).hom = (forget F).toCatHom :=
+  rfl
+
+/-- The `GrothendieckOp` construction as a functor to `Cat`. -/
+def functorToCat {E : Cat.{v, u}} : (↑E ⥤ Cat.{v, u}) ⥤ Cat.{v, u} :=
+  functor ⋙ Over.forget E
+
+/-- `functorToCat` sends a functor to the `GrothendieckOp` construction
+on it. -/
+@[simp]
+theorem functorToCat_obj {E : Cat.{v, u}} (F : ↑E ⥤ Cat.{v, u}) :
+    functorToCat.obj F = Cat.of (GrothendieckOp F) :=
+  rfl
+
 end GrothendieckOp
 
 /-! ## The contravariant Grothendieck construction -/
@@ -508,6 +534,34 @@ of functors, as an isomorphism. -/
 def mapCompIso {G G' G'' : Cᵒᵖ ⥤ Cat.{v₂, u₂}} (α : G ⟶ G')
     (β : G' ⟶ G'') : map (α ≫ β) ≅ map α ⋙ map β :=
   eqToIso (map_comp_eq α β)
+
+/-- The `CoGrothendieck` construction as a functor from `(↑E)ᵒᵖ ⥤ Cat`
+to the over category of `E` in `Cat`: apply `GrothendieckOp.functor`
+over the base `(↑E)ᵒᵖ`, oppositize the total category with
+`Over.post Cat.opFunctor`, and retarget along `unopUnop`. -/
+def functor {E : Cat.{v, u}} :
+    ((↑E)ᵒᵖ ⥤ Cat.{v, u}) ⥤ Over (T := Cat.{v, u}) E :=
+  GrothendieckOp.functor (E := Cat.of (↑E)ᵒᵖ) ⋙
+    Over.post Cat.opFunctor ⋙ Over.map (unopUnop ↑E).toCatHom
+
+/-- `functor` sends `G` to an over-object whose hom component is
+`forget G`. -/
+@[simp]
+theorem functor_obj_hom {E : Cat.{v, u}} (G : (↑E)ᵒᵖ ⥤ Cat.{v, u}) :
+    (functor.obj G).hom = (forget G).toCatHom := by
+  rfl
+
+/-- The `CoGrothendieck` construction as a functor to `Cat`. -/
+def functorToCat {E : Cat.{v, u}} :
+    ((↑E)ᵒᵖ ⥤ Cat.{v, u}) ⥤ Cat.{v, u} :=
+  functor ⋙ Over.forget E
+
+/-- `functorToCat` sends a functor to the `CoGrothendieck` construction
+on it. -/
+@[simp]
+theorem functorToCat_obj {E : Cat.{v, u}} (G : (↑E)ᵒᵖ ⥤ Cat.{v, u}) :
+    functorToCat.obj G = Cat.of (CoGrothendieck G) :=
+  rfl
 
 end CoGrothendieck
 
