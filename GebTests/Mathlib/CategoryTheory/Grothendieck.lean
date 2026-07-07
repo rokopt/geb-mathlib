@@ -49,3 +49,40 @@ theorem gOpObj_fiber : gOpObj.fiber = Nat := rfl
 /-- `gOpObj` is its own `mk` round-trip. -/
 theorem gOpObj_eta :
     GrothendieckOp.mk gOpObj.base gOpObj.fiber = gOpObj := rfl
+
+/-! ## `GrothendieckOp` morphisms -/
+
+/-- A second object: base `Nat`, fiber `String`. -/
+def gOpObj' : GrothendieckOp constTypeOp :=
+  GrothendieckOp.mk Nat String
+
+/-- A sample morphism `gOpObj ⟶ gOpObj'`. Its fiber component runs
+`String ⟶ Nat` (target fiber to source fiber) because the fiber
+direction is reversed. -/
+def gOpHom : gOpObj ⟶ gOpObj' :=
+  GrothendieckOp.homMk (↾fun b => (cond b 1 0 : Nat)) (↾String.length)
+
+/-- `gOpHom`'s base component reduces to the base function on the
+nose. -/
+theorem gOpHom_base :
+    GrothendieckOp.homBase gOpHom = ↾fun b => (cond b 1 0 : Nat) :=
+  rfl
+
+/-- `gOpHom`'s fiber component reduces to the fiber function on the
+nose. -/
+theorem gOpHom_fiber :
+    GrothendieckOp.homFiber gOpHom = ↾String.length :=
+  rfl
+
+/-- `gOpHom` is its own `homMk` round-trip. -/
+theorem gOpHom_eta :
+    GrothendieckOp.homMk (GrothendieckOp.homBase gOpHom)
+      (GrothendieckOp.homFiber gOpHom) = gOpHom :=
+  rfl
+
+/-- `homBase` sends composition with the identity to the original base
+component. -/
+theorem gOpComp_base :
+    GrothendieckOp.homBase (𝟙 gOpObj ≫ gOpHom) =
+      GrothendieckOp.homBase gOpHom := by
+  simp

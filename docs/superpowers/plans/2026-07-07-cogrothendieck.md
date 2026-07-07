@@ -546,7 +546,7 @@ jj commit -m "feat(cat): add GrothendieckOp with object interface"
   `homBase_id`, `homFiber_id`, `homBase_comp`, `homFiber_comp`.
   Task 6 wraps these; Task 7's `forget_map` mentions `homBase`.
 
-- [ ] **Step 1: Add the hom API inside `namespace GrothendieckOp`**
+- [x] **Step 1: Add the hom API inside `namespace GrothendieckOp`**
 
 Insert before `end GrothendieckOp`:
 
@@ -622,13 +622,13 @@ the statements are contractual; the `eqToHom` bookkeeping lemmas
 to reach for are `eqToHom_unop`, `eqToHom_op`, `unop_comp`, and
 `Quiver.Hom.unop_inj`.
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `lake build`
 Expected: success. Iterate on the three tactic proofs with
 `lean_goal` / `lean_multi_attempt` if needed.
 
-- [ ] **Step 3: Add tests**
+- [x] **Step 3: Add tests**
 
 ```lean
 /-! ## `GrothendieckOp` morphisms -/
@@ -662,7 +662,7 @@ theorem gOpComp_base :
   simp
 ```
 
-- [ ] **Step 4: Build, test, verify**
+- [x] **Step 4: Build, test, verify**
 
 Run: `lake build && lake test`
 Expected: success. `lean_verify` on
@@ -670,7 +670,7 @@ Expected: success. `lean_verify` on
 `CategoryTheory.GrothendieckOp.hom_ext`; expected axioms within
 the permitted set.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 jj commit -m "feat(cat): add GrothendieckOp hom interface"
