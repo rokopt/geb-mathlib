@@ -159,3 +159,15 @@ theorem coComp_fiber :
     CoGrothendieck.homFiber (coHom ≫ coHom') =
       ↾fun n : Nat => (toString n).isEmpty :=
   rfl
+
+/-! ## Projections -/
+
+/-- `CoGrothendieck.forget` applied to `coObj` reduces to its base object. -/
+theorem coForget_obj :
+    (CoGrothendieck.forget constTypeContra).obj coObj = Bool := rfl
+
+/-- `CoGrothendieck.forget` applied to `coHom` reduces to its base morphism. -/
+theorem coForget_map :
+    (CoGrothendieck.forget constTypeContra).map coHom =
+      CoGrothendieck.homBase coHom :=
+  rfl

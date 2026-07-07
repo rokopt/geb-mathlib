@@ -230,6 +230,21 @@ theorem homFiber_comp {X Y Z : GrothendieckOp F} (f : X ⟶ Y)
     Functor.op_map, Category.assoc]
   rfl
 
+/-- The projection `GrothendieckOp F ⥤ C` onto the base category. -/
+def forget (F : C ⥤ Cat.{v₂, u₂}) : GrothendieckOp F ⥤ C :=
+  Grothendieck.forget (F ⋙ Cat.opFunctor)
+
+/-- `forget` sends an object of `GrothendieckOp F` to its base object. -/
+@[simp]
+theorem forget_obj (X : GrothendieckOp F) : (forget F).obj X = X.base :=
+  rfl
+
+/-- `forget` sends a morphism of `GrothendieckOp F` to its base morphism. -/
+@[simp]
+theorem forget_map {X Y : GrothendieckOp F} (f : X ⟶ Y) :
+    (forget F).map f = homBase f :=
+  rfl
+
 end GrothendieckOp
 
 /-! ## The contravariant Grothendieck construction -/
@@ -361,6 +376,21 @@ theorem homFiber_comp {X Y Z : CoGrothendieck G} (f : X ⟶ Y)
       homFiber f ≫ (G.map (homBase f).op).toFunctor.map (homFiber g) ≫
         eqToHom (by simp) := by
   exact GrothendieckOp.homFiber_comp (Quiver.Hom.unop g) (Quiver.Hom.unop f)
+
+/-- The projection `CoGrothendieck G ⥤ C` onto the base category. -/
+def forget (G : Cᵒᵖ ⥤ Cat.{v₂, u₂}) : CoGrothendieck G ⥤ C :=
+  (GrothendieckOp.forget G).leftOp
+
+/-- `forget` sends an object of `CoGrothendieck G` to its base object. -/
+@[simp]
+theorem forget_obj (X : CoGrothendieck G) : (forget G).obj X = X.base :=
+  rfl
+
+/-- `forget` sends a morphism of `CoGrothendieck G` to its base morphism. -/
+@[simp]
+theorem forget_map {X Y : CoGrothendieck G} (f : X ⟶ Y) :
+    (forget G).map f = homBase f :=
+  rfl
 
 end CoGrothendieck
 

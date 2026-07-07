@@ -971,7 +971,7 @@ jj commit -m "feat(cat): add CoGrothendieck hom interface"
   simp lemmas `forget_obj`, `forget_map` in each namespace.
   Task 9's consistency lemmas mention both `forget`s.
 
-- [ ] **Step 1: Add `GrothendieckOp.forget` (insert before the existing `end GrothendieckOp`)**
+- [x] **Step 1: Add `GrothendieckOp.forget` (insert before the existing `end GrothendieckOp`)**
 
 ```lean
 /-- The projection `GrothendieckOp F ⥤ C` onto the base category. -/
@@ -991,7 +991,7 @@ theorem forget_map {X Y : GrothendieckOp F} (f : X ⟶ Y) :
 (`variable {F}` is already in scope; the two lemmas take `F`
 implicit through it — match the file's existing variable block.)
 
-- [ ] **Step 2: Add `CoGrothendieck.forget` (insert before the existing `end CoGrothendieck`)**
+- [x] **Step 2: Add `CoGrothendieck.forget` (insert before the existing `end CoGrothendieck`)**
 
 ```lean
 /-- The projection `CoGrothendieck G ⥤ C` onto the base category. -/
@@ -1008,12 +1008,12 @@ theorem forget_map {X Y : CoGrothendieck G} (f : X ⟶ Y) :
   rfl
 ```
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `lake build`
 Expected: success.
 
-- [ ] **Step 4: Add tests**
+- [x] **Step 4: Add tests**
 
 ```lean
 /-! ## Projections -/
@@ -1027,7 +1027,7 @@ theorem coForget_map :
   rfl
 ```
 
-- [ ] **Step 5: Build, test, verify, commit**
+- [x] **Step 5: Build, test, verify, commit**
 
 Run: `lake build && lake test`; `lean_verify` both `forget`s.
 
