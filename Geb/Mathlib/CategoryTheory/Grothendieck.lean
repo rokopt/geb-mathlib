@@ -100,4 +100,54 @@ theorem functorToCat_map {E : Cat.{v, u}} {F F' : ↑E ⥤ Cat.{v, u}}
 
 end Grothendieck
 
+/-! ## The Grothendieck construction of an oppositized functor -/
+
+/-- The covariant Grothendieck construction applied to the
+oppositization of `F`: objects are pairs of a base object `c : C` and a
+fiber object of `F.obj c`, and morphisms reverse the fiber direction
+relative to `Grothendieck F`. -/
+def GrothendieckOp (F : C ⥤ Cat.{v₂, u₂}) : Type (max u u₂) :=
+  Grothendieck (F ⋙ Cat.opFunctor)
+
+namespace GrothendieckOp
+
+/-- The category structure on `GrothendieckOp F`, inherited from the
+underlying covariant Grothendieck construction. -/
+instance category (F : C ⥤ Cat.{v₂, u₂}) :
+    Category.{max v v₂} (GrothendieckOp F) :=
+  inferInstanceAs (Category (Grothendieck (F ⋙ Cat.opFunctor)))
+
+variable {F : C ⥤ Cat.{v₂, u₂}}
+
+/-- Construct an object of `GrothendieckOp F` from a base object and a
+fiber object. -/
+def mk (base : C) (fiber : F.obj base) : GrothendieckOp F :=
+  ⟨base, Opposite.op fiber⟩
+
+/-- The base object of an object of `GrothendieckOp F`. -/
+def base (X : GrothendieckOp F) : C :=
+  Grothendieck.base X
+
+/-- The fiber object of an object of `GrothendieckOp F`. -/
+def fiber (X : GrothendieckOp F) : F.obj X.base :=
+  Opposite.unop (Grothendieck.fiber X)
+
+/-- `mk` recovers the base component on the nose. -/
+@[simp]
+theorem base_mk (b : C) (f : F.obj b) : (mk b f).base = b :=
+  rfl
+
+/-- `mk` recovers the fiber component on the nose. -/
+@[simp]
+theorem fiber_mk (b : C) (f : F.obj b) : (mk b f).fiber = f :=
+  rfl
+
+/-- Every object of `GrothendieckOp F` is `mk` applied to its own base
+and fiber. -/
+@[simp]
+theorem mk_base_fiber (X : GrothendieckOp F) : mk X.base X.fiber = X :=
+  rfl
+
+end GrothendieckOp
+
 end CategoryTheory

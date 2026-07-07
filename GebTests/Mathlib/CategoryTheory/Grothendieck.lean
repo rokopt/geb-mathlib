@@ -28,3 +28,24 @@ theorem functorToCat_obj_constTypeCovariant :
         constTypeCovariant =
       Cat.of (Grothendieck constTypeCovariant) :=
   rfl
+
+/-! ## `GrothendieckOp` objects -/
+
+/-- A constant `Cat`-valued functor on `Type` for exercising
+`GrothendieckOp`. -/
+def constTypeOp : Type ⥤ Cat.{0, 1} :=
+  (Functor.const (Type : Type 1)).obj (Cat.of Type)
+
+/-- A sample object: base `Bool`, fiber `Nat`. -/
+def gOpObj : GrothendieckOp constTypeOp :=
+  GrothendieckOp.mk Bool Nat
+
+/-- `gOpObj.base` reduces to `Bool`. -/
+theorem gOpObj_base : gOpObj.base = Bool := rfl
+
+/-- `gOpObj.fiber` reduces to `Nat`. -/
+theorem gOpObj_fiber : gOpObj.fiber = Nat := rfl
+
+/-- `gOpObj` is its own `mk` round-trip. -/
+theorem gOpObj_eta :
+    GrothendieckOp.mk gOpObj.base gOpObj.fiber = gOpObj := rfl

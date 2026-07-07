@@ -427,7 +427,7 @@ jj commit -m "feat(cat): add covariant Grothendieck functorToCat"
   `GrothendieckOp.fiber (X : GrothendieckOp F) : F.obj X.base`.
   Tasks 4–9 build on these exact names.
 
-- [ ] **Step 1: Add the type synonym, instance, and object API**
+- [x] **Step 1: Add the type synonym, instance, and object API**
 
 After the covariant section, add:
 
@@ -479,14 +479,14 @@ theorem mk_base_fiber (X : GrothendieckOp F) : mk X.base X.fiber = X :=
 end GrothendieckOp
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `lake build`
 Expected: `Build completed successfully.` The `rfl`s rely on
 structure eta for `Grothendieck` and `Opposite`; they are
 expected to close as stated.
 
-- [ ] **Step 3: Add tests**
+- [x] **Step 3: Add tests**
 
 In the test module, add:
 
@@ -514,7 +514,7 @@ theorem gOpObj_eta :
 and contravariant test sections stay independently readable;
 `constTypeOp` is the running example for the rest of the file.)
 
-- [ ] **Step 4: Build, test, verify**
+- [x] **Step 4: Build, test, verify**
 
 Run: `lake build && lake test`
 Expected: success. Then `lean_verify` on
@@ -522,7 +522,7 @@ Expected: success. Then `lean_verify` on
 `CategoryTheory.GrothendieckOp.mk`; expected axioms: subset of
 `{propext, Classical.choice, Quot.sound}`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 jj commit -m "feat(cat): add GrothendieckOp with object interface"
