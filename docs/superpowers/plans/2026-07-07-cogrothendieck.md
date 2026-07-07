@@ -1448,7 +1448,7 @@ jj commit -m "doc(cat): cite and index the Grothendieck constructions"
 (Committing before the review step keeps the `doc` commit free of
 code changes; `jj commit` sweeps the whole working copy.)
 
-- [ ] **Step 5: Full verification gates and review**
+- [x] **Step 5: Full verification gates and review**
 
 Run: `lake build && lake test && lake lint && scripts/lint-imports.sh`
 Expected: all succeed. Then run the `lean4:review` skill over the
