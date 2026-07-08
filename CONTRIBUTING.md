@@ -171,7 +171,10 @@ presents superseded decisions as current. See `docs/process.md`
   theorem taken from published mathematics carries a literature
   reference with a searchable identifier in its plan, spec, and
   Lean source. Each workstream's brainstorming-phase spec marks
-  each definition as transcription or novel. In `.lean` files,
+  each definition as transcription or novel. (Comments, however,
+  do not. Comments only cite literary context, either stating
+  what is being transcribed, or known context for what is being
+  defined if it is not itself a transcription.) In `.lean` files,
   citations live in the module docstring's `## References`
   section or inside the declaration's `/-- ... -/` docstring. The
   bibliographic detail for each cited work lives once in
