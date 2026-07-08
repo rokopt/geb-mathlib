@@ -423,4 +423,149 @@ def IRrec.{v} {motive : IR D → Type v}
     fun t =>
       Eq.ndrec (IRsigmaCata D motive mk t).2 (IRsigmaCataSect D motive mk t)
 
+/-- The free coproduct completion of `D` treated as a discrete
+category. -/
+def FreeCoprodCompDisc : Type (max (uA + 1) uD) :=
+  Σ (A : Type uA), A → D
+
+/-- The (object-map components of) endofunctors on `FreeCoprodCompDisc`. -/
+def FreeCoprodCompDiscEndo : Type (max (uA + 1) uD) :=
+  FreeCoprodCompDisc.{uA, uD} D → FreeCoprodCompDisc.{uA, uD} D
+
+/-- The morphisms of the free coproduct completion of `D` treated as a
+discrete category. -/
+def FreeCoprodCompDisc.Hom
+  (X Y : FreeCoprodCompDisc.{uA, uD} D) : Type uA :=
+    {h : X.1 → Y.1 // Y.2 ∘ h = X.2}
+
+/-- Rewrite the codomain of a `FreeCoprodCompDisc.Hom` along an
+equality of objects. -/
+def FreeCoprodCompDisc.HomRW {X Y Y' : FreeCoprodCompDisc.{uA, uD} D} :
+  Y = Y' → FreeCoprodCompDisc.Hom D X Y → FreeCoprodCompDisc.Hom D X Y'
+    | rfl => id
+
+/-- The morphism-map component of an endofunctor on `FreeCoprodCompDisc`. -/
+def FreeCoprodCompDiscEndoMor (F : FreeCoprodCompDiscEndo D) :
+  Type (max (uA + 1) uD) :=
+    ∀ (X Y : FreeCoprodCompDisc.{uA, uD} D),
+      FreeCoprodCompDisc.Hom D X Y → FreeCoprodCompDisc.Hom D (F X) (F Y)
+
+/-- The indexed coproduct in the free coproduct completion
+of `D` treated as a discrete category. -/
+def freeCoprodCompDiscCopr.{uI} (I : Type uI)
+  (fi : I → FreeCoprodCompDisc.{uA, uD} D) :
+    FreeCoprodCompDisc.{max uA uI} D :=
+      ⟨(Σ i : I, (fi i).1), fun ⟨i, s⟩ => (fi i).2 s⟩
+
+/-- The functorial action of `freeCoprodCompDiscCopr` on morphisms:
+a reindexing function together with a componentwise family of
+morphisms induces a morphism of indexed coproducts. -/
+def freeCoprodCompDiscCoprMor.{uI} (I J : Type uI) (r : I → J)
+  (fi : I → FreeCoprodCompDisc.{uA, uD} D)
+  (gj : J → FreeCoprodCompDisc.{uA, uD} D)
+  (hom : (i : I) → FreeCoprodCompDisc.Hom D (fi i) (gj (r i))) :
+    FreeCoprodCompDisc.Hom D
+      (freeCoprodCompDiscCopr D I fi)
+      (freeCoprodCompDiscCopr D J gj) :=
+  ⟨fun ⟨i, x⟩ => ⟨r i, (hom i).1 x⟩,
+   funext (fun ⟨i, x⟩ => congrFun (hom i).2 x)⟩
+
+/-- The constant (`iota`) case of the interpretation of an IR code as an
+endofunctor on `FreeCoprodCompDisc`: the constant endofunctor at the
+one-direction object over `d`. -/
+def irInterpObjIota (d : D) : FreeCoprodCompDiscEndo.{uA, uD} D :=
+  fun _ => ⟨ULift Unit, fun (ULift.up ()) => d⟩
+
+/-- The dependent sum (`sigma`) case of the interpretation of an IR code
+as an endofunctor on `FreeCoprodCompDisc`: the pointwise indexed
+coproduct over `A` of the interpretations `α` of the subcodes. -/
+def irInterpObjSigma (A : Type uA)
+  (α : A → FreeCoprodCompDiscEndo.{uA, uD} D) :
+    FreeCoprodCompDiscEndo.{uA, uD} D :=
+  fun X => freeCoprodCompDiscCopr.{uA} D A (fun a => α a X)
+
+/-- The dependent product (`delta`) case of the interpretation of an IR
+code as an endofunctor on `FreeCoprodCompDisc`: at an object `X`, the
+indexed coproduct over `A → X` of the interpretations `α` of the subcodes
+at the directions induced by `X`. -/
+def irInterpObjDelta (A : Type uA)
+  (α : (A → D) → FreeCoprodCompDiscEndo.{uA, uD} D) :
+    FreeCoprodCompDiscEndo.{uA, uD} D :=
+  fun X => freeCoprodCompDiscCopr.{uA} D (A → X.1) (fun g => α (X.2 ∘ g) X)
+
+/-- The algebra which computes one step of the interpretation
+of an IR code as an endofunctor on `FreeCoprodCompDisc`. -/
+def irInterpObjDest :
+  IRalg.{uA, uD, max (uA + 1) uD} D (FreeCoprodCompDiscEndo.{uA, uD} D) :=
+  ⟨irInterpObjIota D, irInterpObjSigma D, irInterpObjDelta D⟩
+
+/-- The object-map component of the interpretation of an IR code as an
+endofunctor on `FreeCoprodCompDisc`. -/
+def IRinterpObj :
+  IR.{uA, uD} D → FreeCoprodCompDiscEndo.{uA, uD} D :=
+    IRcata D (FreeCoprodCompDiscEndo D) (irInterpObjDest D)
+
+/-- The signature of the morphism-map component of `IRinterpObj`. -/
+def IRmorMapSig (ir : IR.{uA, uD} D) : Type (max (uA + 1) uD) :=
+  FreeCoprodCompDiscEndoMor D (IRinterpObj D ir)
+
+/-- The morphism-map component of the constant (`iota`) interpretation
+`irInterpObjIota`: every morphism maps to the identity. -/
+def irInterpMorIota (d : D) :
+  FreeCoprodCompDiscEndoMor D (irInterpObjIota.{uA, uD} D d) :=
+    fun _ _ _ => ⟨id, rfl⟩
+
+/-- The morphism-map component of the dependent sum (`sigma`)
+interpretation `irInterpObjSigma`: the indexed coproduct of the
+componentwise morphism maps `μ`. -/
+def irInterpMorSigma (A : Type uA)
+  (α : A → FreeCoprodCompDiscEndo.{uA, uD} D)
+  (μ : (a : A) → FreeCoprodCompDiscEndoMor D (α a)) :
+    FreeCoprodCompDiscEndoMor D (irInterpObjSigma D A α) :=
+  fun X Y h =>
+    freeCoprodCompDiscCoprMor D A A id
+      (fun a => α a X)
+      (fun a => α a Y)
+      (fun a => μ a X Y h)
+
+/-- The morphism-map component of the dependent product (`delta`)
+interpretation `irInterpObjDelta`: reindex along postcomposition with
+the morphism, transporting each componentwise morphism map `μ` along
+the morphism's commutation equality. -/
+def irInterpMorDelta (A : Type uA)
+  (α : (A → D) → FreeCoprodCompDiscEndo.{uA, uD} D)
+  (μ : (f : A → D) → FreeCoprodCompDiscEndoMor D (α f)) :
+    FreeCoprodCompDiscEndoMor D (irInterpObjDelta D A α) :=
+  fun X Y h =>
+    freeCoprodCompDiscCoprMor D (A → X.1) (A → Y.1) (fun g => h.1 ∘ g)
+      (fun g => α (X.2 ∘ g) X)
+      (fun g => α (Y.2 ∘ g) Y)
+      (fun g =>
+        FreeCoprodCompDisc.HomRW D
+          (congrArg (fun t => α (t ∘ g) Y) h.2.symm)
+          (μ (X.2 ∘ g) X Y h))
+
+/-- The step argument to the recursor which generates the morphism-map
+component of the interpretation of an IR code as an endofunctor on
+`FreeCoprodCompDisc` (the object map is `IRinterpObj`). -/
+def IRinterpMorMk (s : IRshape D) (c : IRdir D s → IR D)
+  (m : (d : IRdir D s) → IRmorMapSig D (c d)) :
+    IRmorMapSig D (IRmk.{uA, uD} D s c) :=
+  match s with
+    | Sum.inl d => irInterpMorIota D d
+    | Sum.inr (Sum.inl A) =>
+        irInterpMorSigma D A
+          (fun a => IRinterpObj D (c (ULift.up a)))
+          (fun a => m (ULift.up a))
+    | Sum.inr (Sum.inr A) =>
+        irInterpMorDelta D A
+          (fun f => IRinterpObj D (c f))
+          (fun f => m f)
+
+/-- The morphism-map component of the interpretation of an IR code as an
+endofunctor on `FreeCoprodCompDisc` (the object map is `IRinterpObj`). -/
+def IRinterpMor
+  (ir : IR.{uA, uD} D) : IRmorMapSig D ir :=
+    IRrec D (IRinterpMorMk D) ir
+
 end IndRec
