@@ -97,8 +97,8 @@ later diamond via `PresheafDomPFunctorData` and `SlicePFunctor`); pinned
 references to it elsewhere take the synthesized order
 `PresheafDomPFunctorData.{uI, uA, uB, vI}`.
 
-The `linter.checkUnivs false` option and `@[nolint checkUnivs]` suppress the
-`checkUnivs` warning on the inherited `PFunctor` universes `uA`/`uB`: they are
+The `linter.checkUnivs false` option suppresses the `checkUnivs` warning on
+the inherited `PFunctor` universes `uA`/`uB`: they are
 the two `Type` universes of the `PFunctor` parent and appear only together in
 the result `max`, so the linter flags them as a pair that could be unified. The
 warning is independent of the morphism universe: naming `vI` does not remove it,
@@ -143,7 +143,6 @@ set_option linter.checkUnivs false in
 /-- Operations of a presheaf-domain polynomial functor over `I`: a
 `SliceDomPFunctor` on `I`'s objects, with the contravariant `I`-action
 `directionRestr` making each arity a presheaf on `I`. -/
-@[nolint checkUnivs]
 structure PresheafDomPFunctorData (I : Type uI) [Category.{vI} I] :
     Type (max (uA + 1) (uB + 1) uI vI)
     extends SliceDomPFunctor.{uA, uB} I where
@@ -282,7 +281,6 @@ set_option linter.checkUnivs false in
 /-- A presheaf-domain polynomial functor: operations together with a
 proof they are functorial. Its action is a functor `(Iᵒᵖ ⥤ Type) ⥤ Type`
 (packaged in `Presheaf.Functor`). -/
-@[nolint checkUnivs]
 structure PresheafDomPFunctor (I : Type uI) [Category.{vI} I] :
     Type (max (uA + 1) (uB + 1) uI vI)
     extends PresheafDomPFunctorData.{uI, uA, uB, vI} I where
@@ -295,7 +293,6 @@ set_option linter.checkUnivs false in
 /-- Operations of a presheaf polynomial functor `(Iᵒᵖ ⥤ Type) → (Jᵒᵖ ⥤ Type)`:
 the dom operations plus the shape-output map `q` (via `SlicePFunctor`), the
 `J`-action `shapeRestr` on shapes, and the arity reindexing `reindex`. -/
-@[nolint checkUnivs]
 structure PresheafPFunctorData (I : Type uI) [Category.{vI} I]
     (J : Type uJ) [Category.{vJ} J] : Type (max (uA + 1) (uB + 1) uI uJ vI vJ)
     extends PresheafDomPFunctorData.{uI, uA, uB, vI} I, SlicePFunctor.{uA, uB, uI, uJ} I J where
@@ -388,7 +385,6 @@ end PresheafPFunctorData
 set_option linter.checkUnivs false in
 /-- A presheaf polynomial functor: operations together with a proof they are
 functorial. Its action is a functor `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)`. -/
-@[nolint checkUnivs]
 structure PresheafPFunctor (I : Type uI) [Category.{vI} I]
     (J : Type uJ) [Category.{vJ} J] : Type (max (uA + 1) (uB + 1) uI uJ vI vJ)
     extends PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J where

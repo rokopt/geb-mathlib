@@ -92,7 +92,6 @@ universe uA uB uD uC uX uX' uY uZ
 set_option linter.checkUnivs false in
 /-- A polynomial functor with a direction-input map `r` assigning each
 `(shape, direction)` pair (an element of `PFunctor.Idx`) a `dom`-index. -/
-@[nolint checkUnivs]
 structure SliceDomPFunctor (dom : Type uD) : Type (max (uA + 1) (uB + 1) uD)
     extends PFunctor.{uA, uB} where
   /-- The direction-input map: each direction is assigned a `dom`-index. -/
@@ -101,7 +100,6 @@ structure SliceDomPFunctor (dom : Type uD) : Type (max (uA + 1) (uB + 1) uD)
 set_option linter.checkUnivs false in
 /-- A `SliceDomPFunctor` with a shape-output map `q` assigning each shape a
 `cod`-index. -/
-@[nolint checkUnivs]
 structure SlicePFunctor (dom : Type uD) (cod : Type uC) : Type (max (uA + 1) (uB + 1) uC uD)
     extends SliceDomPFunctor.{uA, uB, uD} dom where
   /-- The shape-output map: each shape is assigned a `cod`-index. -/
