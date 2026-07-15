@@ -5,10 +5,8 @@ Authors: The geb-mathlib contributors
 -/
 module
 
-import GebTests.Mathlib.Data.PFunctor.Slice
-import GebTests.Mathlib.Data.PFunctor.Presheaf
-import GebTests.Mathlib.Data.PFunctor.IndRec
+import GebTests.Mathlib.Data.PFunctor.IndRec.Basic
 
 /-!
-# PFunctor tests — index
+# IndRec tests — index
 -/
