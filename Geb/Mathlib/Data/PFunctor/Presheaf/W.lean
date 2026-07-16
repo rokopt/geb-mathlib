@@ -240,6 +240,7 @@ restricted root shape via `shapeRestr`) and hereditary naturality (preserved by
       F.windex_wRestrTree g w.down.1 w.down.2.1,
       F.isHereditarilyNatural_wRestrTree g w.down.1 w.down.2.1 w.down.2.2⟩
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- Restriction along an identity fixes the tree: `objRestrElt_id` collapses the
 rebuilt root, and `mk_dest` reassembles the original tree. -/
 theorem wRestrTree_id {I : Type uI} [Category.{vI} I]
@@ -393,6 +394,7 @@ private theorem rememberNode_forgetNode {I : Type uI} [Category.{vI} I]
   obtain ⟨⟨a, v⟩, hc⟩ := n
   exact Sigma.ext rfl (heq_of_eq (funext fun b ↦ sigma_eta F (v b).2))
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- The hereditary naturality of the slice tree built from a presheaf node over
 `F.W` is exactly the naturality of the node: the recursive conjunct of
 `isHereditarilyNatural_mk` is discharged by the carried hereditary naturality of
@@ -591,6 +593,7 @@ private theorem objPresheaf_obj_heq {I : Type uI} [Category.{vI} I]
   cases hk
   exact heq_of_eq (Subtype.ext h)
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- Value restriction coherence at the fold level: the fold value on the
 root-restriction of a tree is the `Y`-restriction of the fold value. A one-level
 argument: the restricted node's fold node is the `objPresheaf`-restriction of the

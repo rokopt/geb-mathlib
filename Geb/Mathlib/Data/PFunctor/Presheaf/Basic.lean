@@ -468,6 +468,7 @@ private theorem heq_fun {α β : Type u} {X : Type v} (h : α = β) {f : α → 
   funext a
   exact hfg a a HEq.rfl
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- Identity law for the restriction action: `objRestrElt` along `𝟙 j` is the
 identity. -/
 theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
@@ -490,6 +491,7 @@ theorem objRestrElt_id {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{
   exact eq_of_heq
     (HEq.trans (F.cast_val_heq (congrFun (F.isFunctorial.shapeRestr_id j) ⟨a, hq⟩) ⟨b1, rfl⟩) hb)
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- Composition law for the restriction action: `objRestrElt` along a composite
 factors as the composite of the actions. -/
 theorem objRestrElt_comp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]

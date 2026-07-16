@@ -83,7 +83,7 @@ universe u v u₂ v₂
 
 namespace CategoryTheory
 
-open Functor
+open CategoryTheory.Functor
 
 variable {C : Type u} [Category.{v} C]
 
@@ -276,6 +276,7 @@ theorem homBase_map_map {F F' : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ F')
     homBase ((map α).map f) = homBase f :=
   rfl
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- `map` transports the fiber component of a morphism along `α`, up to the
 canonical isomorphism supplied by `α`'s naturality. -/
 @[simp]

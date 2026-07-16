@@ -102,6 +102,7 @@ private instance shapeSubsingleton (j : Fin 2) :
     have hy : (y.1 : Fin 2) = j := y.2
     exact hx.trans hy.symm)⟩
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- The witness, with all seven functor laws discharged. Because every
 direction fibre and shape fibre is a singleton, each law equates elements of
 (functions into) a subsingleton, so `Subsingleton.elim` closes every goal;

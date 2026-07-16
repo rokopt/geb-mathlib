@@ -55,6 +55,7 @@ private instance shapeSubsingleton (j : Fin 2) :
     have hy : (y.1 : Fin 2) = j := y.2
     exact hx.trans hy.symm)⟩
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- The witness, with all seven functor laws discharged by `Subsingleton.elim`. -/
 def presheafWitness : PresheafPFunctor (Fin 2) (Fin 2) where
   toPresheafPFunctorData := presheafWitnessData

@@ -320,6 +320,7 @@ theorem elimData_valid_mk {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
         F.OverInput a (fun b ↦ (elimData F Y p g hg (f b)).index)) :=
   rfl
 
+set_option backward.isDefEq.respectTransparency.types false in
 /-- The admissibility component of `elimData` agrees with `WValid`. An
 inductive step: it applies the dependent recursor `WType.rec` (the initial
 algebra's induction principle, consulting the hypothesis `ih`), unlike the
