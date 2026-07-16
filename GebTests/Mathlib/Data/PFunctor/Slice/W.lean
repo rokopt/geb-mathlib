@@ -63,14 +63,14 @@ direction whose child must lie over `false` (the direction-input map). The
 shape-output map `q = id` separates shapes. -/
 def wSlice : SlicePFunctor Bool Bool where
   A := Bool
-  B := fun a => cond a Unit Empty
-  r := fun _ => false
+  B := fun a ↦ cond a Unit Empty
+  r := fun _ ↦ false
   q := id
 
 /-- The leaf: shape `false`, no directions. -/
-def wLeaf : wSlice.toPFunctor.W := WType.mk false (fun e => e.elim)
+def wLeaf : wSlice.toPFunctor.W := WType.mk false (fun e ↦ e.elim)
 /-- A node over the leaf: shape `true`, single child the leaf. -/
-def wNode : wSlice.toPFunctor.W := WType.mk true (fun _ => wLeaf)
+def wNode : wSlice.toPFunctor.W := WType.mk true (fun _ ↦ wLeaf)
 
 -- Root indices read the output index.
 example : wSlice.windexRoot wLeaf = false := rfl
@@ -80,10 +80,10 @@ example : wSlice.windexRoot wNode = true := rfl
 -- leaf, whose index `false` matches the direction-input map `r ⟨true, _⟩ = false`.
 /-- The leaf as an element of the slice W-type. -/
 def wLeafElt : wSlice.W :=
-  ⟨wLeaf, (wSlice.wValid_mk _ _).mpr ⟨fun e => e.elim, funext fun e => e.elim⟩⟩
+  ⟨wLeaf, (wSlice.wValid_mk _ _).mpr ⟨fun e ↦ e.elim, funext fun e ↦ e.elim⟩⟩
 /-- The node over the leaf as an element of the slice W-type. -/
 def wNodeElt : wSlice.W :=
-  ⟨wNode, (wSlice.wValid_mk _ _).mpr ⟨fun _ => wLeafElt.property, rfl⟩⟩
+  ⟨wNode, (wSlice.wValid_mk _ _).mpr ⟨fun _ ↦ wLeafElt.property, rfl⟩⟩
 
 -- Their structure-map indices read the root output index.
 example : wSlice.windex wLeafElt = false := rfl
@@ -95,11 +95,11 @@ example : (W.dest wNodeElt).1.1 = true := rfl
 
 -- `recProp` computes one level by `recProp_mk`.
 example (x : wSlice.toSliceDomPFunctor.Obj wSlice.windex) :
-    W.recProp (fun _ _ => True) (W.mk x) = True :=
+    W.recProp (fun _ _ ↦ True) (W.mk x) = True :=
   W.recProp_mk _ x
 -- `ind` discharges the always-true motive.
 example (z : wSlice.W) : True :=
-  W.ind (motive := fun _ => True) (fun _ _ => trivial) z
+  W.ind (motive := fun _ ↦ True) (fun _ _ ↦ trivial) z
 
 -- `elim` computes on concrete trees. Into the algebra reading the root output
 -- index (`wSlice.obj id`, over `Y = Bool` with `p = id`), the eliminator

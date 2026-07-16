@@ -186,7 +186,7 @@ compatibility of `x` and the constraint condition on `b` to `Z.obj ⟨i⟩`. -/
     (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z : Iᵒᵖ ⥤ Type uZ} (x : F.toSliceDomPFunctor.Obj (elemProj Z)) ⦃i : I⦄
     (b : F.toSliceDomPFunctor.Direction x.1.1 i) : Z.obj ⟨i⟩ :=
-  cast (congrArg (fun k : I => Z.obj ⟨k⟩)
+  cast (congrArg (fun k : I ↦ Z.obj ⟨k⟩)
     (((F.compatible_iff (elemProj Z) x.1.1 x.1.2).mp x.2 b.1).trans b.2)) (x.1.2 b.1).2
 
 /-- The direction-assignment of `x` is a natural transformation `E_T(a) ⟶ Z`,
@@ -213,8 +213,8 @@ of the slice object on the total-space projection `elemProj Z`. -/
 `cast` along an equality of base points. -/
 private theorem app_cast {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') {k i : I} (e : k = i) (z : Z.obj ⟨k⟩) :
-    cast (congrArg (fun k : I => Z'.obj ⟨k⟩) e) (α.app ⟨k⟩ z) =
-      α.app ⟨i⟩ (cast (congrArg (fun k : I => Z.obj ⟨k⟩) e) z) := by
+    cast (congrArg (fun k : I ↦ Z'.obj ⟨k⟩) e) (α.app ⟨k⟩ z) =
+      α.app ⟨i⟩ (cast (congrArg (fun k : I ↦ Z.obj ⟨k⟩) e) z) := by
   cases e
   rfl
 
@@ -223,7 +223,7 @@ elements, `el(Z) ⟶ el(Z')`: `⟨i, z⟩ ↦ ⟨i, α.app ⟨i⟩ z⟩`. It pre
 base-point projection `elemProj`, so it is a slice morphism over `elemProj`. -/
 @[expose] def elemMap {I : Type uI} [Category.{vI} I] {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') : (Σ i : I, Z.obj ⟨i⟩) → (Σ i : I, Z'.obj ⟨i⟩) :=
-  fun p => ⟨p.1, α.app ⟨p.1⟩ p.2⟩
+  fun p ↦ ⟨p.1, α.app ⟨p.1⟩ p.2⟩
 
 /-- The `Z'`-component the image under `α` of a slice element assigns to a
 direction is `α.app` of the `Z`-component the original assigns to it. -/
@@ -242,11 +242,11 @@ private theorem value_map {I : Type uI} [Category.{vI} I]
 @[expose] def map {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z Z' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z') :
     F.obj Z → F.obj Z' :=
-  fun x => ⟨F.toSliceDomPFunctor.map
+  fun x ↦ ⟨F.toSliceDomPFunctor.map
     (elemMap α) rfl x.1, by
     intro i i' f b
     simp only [value_map]
-    refine (congrArg (fun w => α.app ⟨i'⟩ w) (x.2 f b)).trans ?_
+    refine (congrArg (fun w ↦ α.app ⟨i'⟩ w) (x.2 f b)).trans ?_
     simp only [← ConcreteCategory.comp_apply]
     rw [α.naturality f.op]⟩
 
@@ -254,7 +254,7 @@ private theorem value_map {I : Type uI} [Category.{vI} I]
 the identity. -/
 theorem map_id {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     (Z : Iᵒᵖ ⥤ Type uZ) :
-    F.map { app := fun i => 𝟙 (Z.obj i), naturality := fun _ _ _ => rfl } =
+    F.map { app := fun i ↦ 𝟙 (Z.obj i), naturality := fun _ _ _ ↦ rfl } =
       (id : F.obj Z → F.obj Z) := by
   funext x
   exact Subtype.ext (congrFun (F.toSliceDomPFunctor.map_id (elemProj Z)) x.1)
@@ -264,7 +264,7 @@ transformations acts as the composite of the actions. -/
 theorem map_comp {I : Type uI} [Category.{vI} I] (F : PresheafDomPFunctorData.{uI, uA, uB, vI} I)
     {Z Z' Z'' : Iᵒᵖ ⥤ Type uZ} (α : NatTrans Z Z')
     (β : NatTrans Z' Z'') :
-    F.map { app := fun i => α.app i ≫ β.app i, naturality := fun _ _ g =>
+    F.map { app := fun i ↦ α.app i ≫ β.app i, naturality := fun _ _ g ↦
         (by rw [← Category.assoc, α.naturality, Category.assoc, β.naturality,
           ← Category.assoc]) } =
       F.map β ∘ F.map α := by
@@ -337,20 +337,20 @@ Ordinary fibre maps only; no `shapeRestr` transport. -/
 
 /-- `reindex (𝟙 j) a` is the identity, modulo the transport of its source
 along `ShapeRestrId` at `j` (`shapeRestr (𝟙 j) a = a`). The transport is the
-`cast` of `b` along `congrArg (fun s => Direction s.1 i) (congrFun (hti j) a)`.
+`cast` of `b` along `congrArg (fun s ↦ Direction s.1 i) (congrFun (hti j) a)`.
 Parameterized on the identity law `hti` because that source-type equality is
 not definitional. -/
 @[expose] def ReindexId {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) (hti : F.ShapeRestrId) : Prop :=
   ∀ ⦃j : J⦄ (a : F.Shape j) ⦃i : I⦄ (b : F.Direction (F.shapeRestr (𝟙 j) a).1 i),
     F.reindex (𝟙 j) a b =
-      cast (congrArg (fun s : F.Shape j => F.Direction s.1 i) (congrFun (hti j) a)) b
+      cast (congrArg (fun s : F.Shape j ↦ F.Direction s.1 i) (congrFun (hti j) a)) b
 
 /-- For `g : j' ⟶ j`, `h : j'' ⟶ j'`,
 `reindex (h ≫ g) a = reindex g a ∘ reindex h (shapeRestr g a)` (`g` is the
 outer factor), modulo the transport of the source along `ShapeRestrComp`
 (`shapeRestr (h ≫ g) a = shapeRestr h (shapeRestr g a)`). The transport is the `cast`
-of `b` along `congrArg (fun s => Direction s.1 i) (congrFun (htc g h) a)`.
+of `b` along `congrArg (fun s ↦ Direction s.1 i) (congrFun (htc g h) a)`.
 Parameterized on the composition law `htc` because that source-type equality is
 not definitional. -/
 @[expose] def ReindexComp {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
@@ -359,7 +359,7 @@ not definitional. -/
     (b : F.Direction (F.shapeRestr (h ≫ g) a).1 i),
     F.reindex (h ≫ g) a b =
       F.reindex g a (F.reindex h (F.shapeRestr g a)
-        (cast (congrArg (fun s : F.Shape j'' => F.Direction s.1 i)
+        (cast (congrArg (fun s : F.Shape j'' ↦ F.Direction s.1 i)
           (congrFun (htc g h) a)) b))
 
 /-- All functor laws: the dom laws plus the `J`-side laws making `T1` a
@@ -405,8 +405,8 @@ namespace PresheafPFunctor
     (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j) :
     F.toSliceDomPFunctor.Obj p :=
   ⟨⟨(F.shapeRestr g ⟨x.1.1, hq⟩).1,
-      fun b' => x.1.2 (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
-    (F.compatible_iff _ _ _).mpr fun b' =>
+      fun b' ↦ x.1.2 (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1⟩,
+    (F.compatible_iff _ _ _).mpr fun b' ↦
       ((F.compatible_iff _ _ _).mp x.2
         (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).1).trans
         (F.reindex g ⟨x.1.1, hq⟩ (i := F.rCurried _ b') ⟨b', rfl⟩).2⟩
@@ -440,7 +440,7 @@ original value, up to the transport of its type along that equality. -/
 private theorem cast_val_heq {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {j : J} {s s' : F.Shape j} (h : s = s')
     {i : I} (p : F.Direction s.1 i) :
-    (cast (congrArg (fun t : F.Shape j => F.Direction t.1 i) h) p).1 ≍ (p.1 : F.B s.1) := by
+    (cast (congrArg (fun t : F.Shape j ↦ F.Direction t.1 i) h) p).1 ≍ (p.1 : F.B s.1) := by
   cases h
   rfl
 
@@ -528,7 +528,7 @@ from `F.isFunctorial`. -/
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uZ) :
     Jᵒᵖ ⥤ Type (max uI uZ uA uB) where
   obj j := { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j.unop }
-  map g := ↾ fun w => ⟨F.objRestr g.unop w.1 w.2, (F.shapeRestr g.unop ⟨w.1.shape, w.2⟩).2⟩
+  map g := ↾ fun w ↦ ⟨F.objRestr g.unop w.1 w.2, (F.shapeRestr g.unop ⟨w.1.shape, w.2⟩).2⟩
   map_id j := by
     ext w
     exact Subtype.ext (F.objRestrElt_id w.1.1 w.2)
@@ -562,7 +562,7 @@ wrapper `functor.map` reuses it. -/
 @[expose] def mapPresheaf {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
     (α : NatTrans Z Z') : NatTrans (F.objPresheaf Z) (F.objPresheaf Z') where
-  app X := ↾fun w => (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ : (F.objPresheaf Z').obj X)
+  app X := ↾fun w ↦ (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ : (F.objPresheaf Z').obj X)
   naturality _ _ g := by
     ext w
     exact Subtype.ext (F.map_objRestr α g.unop w.1 w.2)

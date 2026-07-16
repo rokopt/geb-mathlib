@@ -21,8 +21,8 @@ distinguishes the two shapes, so the wrapper tests exercise the output
 index rather than collapsing. -/
 def wrapperTestSlice : SlicePFunctor Bool Bool where
   A := Bool
-  B := fun _ => Bool
-  r := fun x => x.2
+  B := fun _ ↦ Bool
+  r := fun x ↦ x.2
   q := id
 
 /-- The categorical wrapper of `wrapperTestSlice`: a named value from
