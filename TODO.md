@@ -174,13 +174,13 @@ docstring's implementation notes).
 
 In the existing constructive file, without `Classical.choice`:
 
-1. The propositional computation rule of `IRrec`, and from it the
-   characterizing equations of `IRinterpMor` at each code constructor
-   (`IRiota`, `IRsigma`, `IRdelta`).
+1. The propositional computation rule of `IR.rec`, and from it the
+   characterizing equations of `IR.interpMor` at each code constructor
+   (`IR.iota`, `IR.sigma`, `IR.delta`).
 2. The functor laws of the interpretation: preservation of identity
    and composition of `FreeCoprodCompDisc.Hom` (which requires
    defining that identity and composition).
-3. The uniqueness properties of `IRcata` and `IRrec` as algebra
+3. The uniqueness properties of `IR.elim` and `IR.rec` as algebra
    morphisms, constructively stated.
 
 In a separate sibling file wrapping the constructive proofs in
@@ -198,7 +198,7 @@ wrapper is kept thin, following `Slice/Functor.lean` and
 Tests: once the computation rule exists, add a morphism-action test
 with a propositionally nontrivial commutation proof (distinct
 decodings on domain and codomain), exercising the
-`FreeCoprodCompDisc.HomRW` transport in `irInterpMorDelta`
+`FreeCoprodCompDisc.homOfEq` transport in `IR.interpMorDelta`
 observably; the current tests exercise the morphism action only at
 the algebra level and only along definitionally trivial transports.
 
