@@ -21,9 +21,9 @@ open SliceDomPFunctor SlicePFunctor
 directions, constraint `r ⟨(), b⟩ = b`, output index into `Unit`. -/
 def testSlice : SlicePFunctor Bool Unit where
   A := Unit
-  B := fun _ => Bool
-  r := fun x => x.2
-  q := fun _ => ()
+  B := fun _ ↦ Bool
+  r := fun x ↦ x.2
+  q := fun _ ↦ ()
 
 example : testSlice.r ⟨(), true⟩ = true := rfl
 example : testSlice.q () = () := rfl
@@ -77,10 +77,10 @@ example (X Y Z : Type) (p : X → Bool) (p' : Y → Bool) (p'' : Z → Bool)
 -- the direction assignment to `id`; the slice morphism `sliceMor` lifts it.
 /-- The compatible element of `Obj (id : Bool → Bool)`: one shape, assignment `id`. -/
 private def sliceElt : testSlice.toSliceDomPFunctor.Obj (id : Bool → Bool) :=
-  ⟨⟨(), id⟩, (testSlice.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun _ => rfl⟩
+  ⟨⟨(), id⟩, (testSlice.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun _ ↦ rfl⟩
 
 /-- A non-identity slice morphism `(Bool, id) ⟶ (Bool × Bool, Prod.fst)`. -/
-private def sliceMor : Bool → Bool × Bool := fun b => (b, !b)
+private def sliceMor : Bool → Bool × Bool := fun b ↦ (b, !b)
 
 example : Prod.fst ∘ sliceMor = (id : Bool → Bool) := rfl
 
@@ -100,14 +100,14 @@ example :
 shapes, so the output-index content of `obj` is genuinely exercised. -/
 def separatingSlice : SlicePFunctor Bool Bool where
   A := Bool
-  B := fun _ => Bool
-  r := fun x => x.2
+  B := fun _ ↦ Bool
+  r := fun x ↦ x.2
   q := id
 
 -- `obj` reads the output index at the shape: with `q = id`, it is the shape
 -- projection (this fails for any output index that does not separate the shapes).
 example (X : Type) (p : X → Bool) :
-    separatingSlice.obj p = fun z => z.1.1 := rfl
+    separatingSlice.obj p = fun z ↦ z.1.1 := rfl
 
 -- `map_w` over a functor with a separating output index: the morphism lies over `cod`.
 example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')

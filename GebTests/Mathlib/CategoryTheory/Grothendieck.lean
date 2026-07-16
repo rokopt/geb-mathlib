@@ -60,12 +60,12 @@ def gOpObj' : GrothendieckOp constTypeOp :=
 `String ⟶ Nat` (target fiber to source fiber) because the fiber
 direction is reversed. -/
 def gOpHom : gOpObj ⟶ gOpObj' :=
-  GrothendieckOp.homMk (↾fun b => (cond b 1 0 : Nat)) (↾String.length)
+  GrothendieckOp.homMk (↾fun b ↦ (cond b 1 0 : Nat)) (↾String.length)
 
 /-- `gOpHom`'s base component reduces to the base function on the
 nose. -/
 theorem gOpHom_base :
-    GrothendieckOp.homBase gOpHom = ↾fun b => (cond b 1 0 : Nat) :=
+    GrothendieckOp.homBase gOpHom = ↾fun b ↦ (cond b 1 0 : Nat) :=
   rfl
 
 /-- `gOpHom`'s fiber component reduces to the fiber function on the
@@ -118,8 +118,8 @@ theorem coObj_eta :
 `Nat → String` (source fiber to target fiber — contravariant hom
 direction with a constant functor). -/
 def coHom : coObj ⟶ coObj' :=
-  CoGrothendieck.homMk (↾fun b => (cond b 1 0 : Nat))
-    (↾fun n : Nat => toString n)
+  CoGrothendieck.homMk (↾fun b ↦ (cond b 1 0 : Nat))
+    (↾fun n : Nat ↦ toString n)
 
 /-- A third object, for composition tests. -/
 def coObj'' : CoGrothendieck constTypeContra :=
@@ -127,18 +127,18 @@ def coObj'' : CoGrothendieck constTypeContra :=
 
 /-- A second morphism, composable after `coHom`. -/
 def coHom' : coObj' ⟶ coObj'' :=
-  CoGrothendieck.homMk (↾fun _ => ()) (↾String.isEmpty)
+  CoGrothendieck.homMk (↾fun _ ↦ ()) (↾String.isEmpty)
 
 /-- `coHom`'s base component reduces to the base function on the
 nose. -/
 theorem coHom_base :
-    CoGrothendieck.homBase coHom = ↾fun b => (cond b 1 0 : Nat) :=
+    CoGrothendieck.homBase coHom = ↾fun b ↦ (cond b 1 0 : Nat) :=
   rfl
 
 /-- `coHom`'s fiber component reduces to the fiber function on the
 nose. -/
 theorem coHom_fiber :
-    CoGrothendieck.homFiber coHom = ↾fun n : Nat => toString n :=
+    CoGrothendieck.homFiber coHom = ↾fun n : Nat ↦ toString n :=
   rfl
 
 /-- `coHom` is its own `homMk` round-trip. -/
@@ -157,7 +157,7 @@ theorem coComp_base :
 function on the nose. -/
 theorem coComp_fiber :
     CoGrothendieck.homFiber (coHom ≫ coHom') =
-      ↾fun n : Nat => (toString n).isEmpty :=
+      ↾fun n : Nat ↦ (toString n).isEmpty :=
   rfl
 
 /-! ## Projections -/
