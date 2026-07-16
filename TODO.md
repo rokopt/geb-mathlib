@@ -12,6 +12,7 @@
   - [5. M-types and their categorical wrappers as terminal coalgebras](#5-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
   - [6. Universal morphisms](#6-universal-morphisms)
   - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
+  - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -160,6 +161,46 @@ case being the discrete degeneration. Relate each construction to the
 corresponding slice/presheaf W-type (item 4) or M-type (item 5) and
 show the definitions equivalent, as in the superseded free-monad and
 cofree-comonad items.
+
+### Complete Theorem 2.4 for `IndRec`
+
+Independent of the roadmap sequence above; layered like items 3–4
+(constructive core first, thin `Classical.choice`-enabled categorical
+wrapper second). Complete the functoriality content of Theorem 2.4 of
+[GhaniNordvallForsbergMalatesta2015] for
+`Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`, which currently
+provides the object and morphism actions only (see the module
+docstring's implementation notes).
+
+In the existing constructive file, without `Classical.choice`:
+
+1. The propositional computation rule of `IRrec`, and from it the
+   characterizing equations of `IRinterpMor` at each code constructor
+   (`IRiota`, `IRsigma`, `IRdelta`).
+2. The functor laws of the interpretation: preservation of identity
+   and composition of `FreeCoprodCompDisc.Hom` (which requires
+   defining that identity and composition).
+3. The uniqueness properties of `IRcata` and `IRrec` as algebra
+   morphisms, constructively stated.
+
+In a separate sibling file wrapping the constructive proofs in
+mathlib `Category`/`Functor` interfaces (pretty much everything
+involving mathlib's `Category` pulls in `Classical.choice`, so the
+wrapper is kept thin, following `Slice/Functor.lean` and
+`Presheaf/Functor.lean`):
+
+1. `FreeCoprodCompDisc` as a `Category` and the interpretation of a
+   code as a `Functor`.
+2. The initiality of `IR` in the category of algebras (mathlib's
+   `CategoryTheory.Endofunctor.Algebra`), wrapping the constructive
+   uniqueness proofs.
+
+Tests: once the computation rule exists, add a morphism-action test
+with a propositionally nontrivial commutation proof (distinct
+decodings on domain and codomain), exercising the
+`FreeCoprodCompDisc.HomRW` transport in `irInterpMorDelta`
+observably; the current tests exercise the morphism action only at
+the algebra level and only along definitionally trivial transports.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
