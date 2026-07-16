@@ -173,10 +173,14 @@ def morTgt : FreeCoprodCompDisc.{0, 1} Type := ⟨Bool, fun _ => Nat⟩
 def morHom : FreeCoprodCompDisc.Hom Type morSrc morTgt :=
   ⟨fun _ => true, rfl⟩
 
+/-- The decoding assigned to each index of the sigma test code. -/
+def sigmaTestDecode : ULift.{1} Bool → Type :=
+  fun b => if b.down then Nat else Bool
+
 /-- The subcodes of a sigma test code over `Bool`: `iota` codes
 decoding to `Nat` and `Bool`. -/
 def sigmaTestSub : ULift.{1} Bool → IR.{0, 1} Type :=
-  fun b => IRiota Type (if b.down then Nat else Bool)
+  fun b => IRiota Type (sigmaTestDecode b)
 
 /-- The sigma-case morphism action of `IRinterpMorMk` at `morHom`. -/
 def sigmaTestMor :
@@ -184,16 +188,21 @@ def sigmaTestMor :
     (IRinterpObj Type (IRsigma Type Bool sigmaTestSub) morSrc)
     (IRinterpObj Type (IRsigma Type Bool sigmaTestSub) morTgt) :=
   IRinterpMorMk Type (Sum.inr (Sum.inl Bool)) sigmaTestSub
-    (fun b => irInterpMorIota Type (if b.down then Nat else Bool))
+    (fun b => irInterpMorIota Type (sigmaTestDecode b))
     morSrc morTgt morHom
 
 -- The sigma action preserves the tag and the payload.
 example : sigmaTestMor.1 ⟨true, ULift.up ()⟩ = ⟨true, ULift.up ()⟩ := rfl
 
-/-- The subcodes of a delta test code over `Bool`: each decodes to the
+/-- The decoding assigned to each index of the delta test code: the
 decoding assigned to `true`. -/
+def deltaTestDecode : (Bool → Type) → Type :=
+  fun f => f true
+
+/-- The subcodes of a delta test code over `Bool`: `iota` codes at the
+index decodings. -/
 def deltaTestSub : (Bool → Type) → IR.{0, 1} Type :=
-  fun f => IRiota Type (f true)
+  fun f => IRiota Type (deltaTestDecode f)
 
 /-- The delta-case morphism action of `IRinterpMorMk` at `morHom`. -/
 def deltaTestMor :
@@ -201,7 +210,7 @@ def deltaTestMor :
     (IRinterpObj Type (IRdelta Type Bool deltaTestSub) morSrc)
     (IRinterpObj Type (IRdelta Type Bool deltaTestSub) morTgt) :=
   IRinterpMorMk Type (Sum.inr (Sum.inr Bool)) deltaTestSub
-    (fun f => irInterpMorIota Type (f true))
+    (fun f => irInterpMorIota Type (deltaTestDecode f))
     morSrc morTgt morHom
 
 -- The delta action reindexes a name by postcomposition with the
