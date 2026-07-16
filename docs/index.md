@@ -35,6 +35,12 @@ import-direction rules above are enforced by
 
 ## Implemented content
 
+- `Geb/Mathlib/Logic/Equiv/Basic.lean` — extensions of mathlib's
+  `Mathlib/Logic/Equiv/Basic.lean`. `sigmaFstSectionElim` eliminates a
+  function into a sigma type along a proof that it is a section of the
+  first projection, producing a dependent function (the inverse
+  direction of mathlib's `Equiv.piEquivSubtypeSigma`).
+  `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/Grothendieck.lean` — covariant and
   contravariant Grothendieck constructions for 1-functors.
   `Grothendieck.functorToCat` packages mathlib's covariant
@@ -102,6 +108,18 @@ import-direction rules above are enforced by
   Only the existence half of initiality is established (carrier, fixed
   point, and `W.elim` with `elim_mk`/`comp_elim`), not uniqueness.
   `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
+  coproduct completion of a type `D` treated as a discrete category:
+  the category of families of elements of `D` (the discrete case of
+  the family construction `Fam C`, a Grothendieck construction).
+  Objects pair an index type with a `D`-valued assignment; morphisms
+  (`Hom`, with the codomain transport `homOfEq`) are index functions
+  commuting with the assignments. `Endo`/`EndoMor` are the object-map
+  and morphism-map components of endofunctors, and `copr`/`coprMor`
+  are the indexed coproducts with their functorial action. No mathlib
+  `Category` instance is taken: the categorical packaging is deferred
+  to a `Classical.choice`-enabled wrapper (see `TODO.md` § Complete
+  Theorem 2.4 for `IndRec`). `Classical.choice`-free.
 - `Geb/Mathlib/Data/PFunctor/IndRec/` — codes for positive
   inductive-recursive definitions (Dybjer–Setzer IR codes, following
   Ghani–Nordvall Forsberg–Malatesta Section 2; the module docstring
@@ -118,9 +136,9 @@ import-direction rules above are enforced by
   (`IR.sigmaRec`) with step arguments `IR.RecStep`/`IR.IndStep`
   specializing the `Sort`-valued `IR.Step`. A code is interpreted on
   the free coproduct completion of `D` treated as a discrete category
-  (`FreeCoprodCompDisc`, with morphisms, indexed coproducts, and the
-  coproducts' functorial action): `IR.interpObj` and `IR.interpMor`
-  are the object and morphism maps of the interpretation. The functor
+  (`CategoryTheory.FreeCoprodCompDisc`, its own module above):
+  `IR.interpObj` and `IR.interpMor` are the object and morphism maps
+  of the interpretation. The functor
   laws completing Theorem 2.4, the propositional computation rule of
   `IR.rec`, and the initial algebras of the interpreted endofunctors
   are deferred (see `TODO.md` § Complete Theorem 2.4 for `IndRec`).

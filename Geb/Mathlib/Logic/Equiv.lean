@@ -5,9 +5,8 @@ Authors: The geb-mathlib contributors
 -/
 module
 
-public import Geb.Mathlib.CategoryTheory.FreeCoprodCompDisc
-public import Geb.Mathlib.CategoryTheory.Grothendieck
+public import Geb.Mathlib.Logic.Equiv.Basic
 
 /-!
-# CategoryTheory — index
+# Equiv — index
 -/

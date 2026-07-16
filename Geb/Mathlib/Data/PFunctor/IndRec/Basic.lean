@@ -5,6 +5,8 @@ Authors: The geb-mathlib contributors
 -/
 module
 
+public import Geb.Mathlib.CategoryTheory.FreeCoprodCompDisc
+public import Geb.Mathlib.Logic.Equiv.Basic
 public import Mathlib.Data.PFunctor.Univariate.Basic
 
 /-!
@@ -16,8 +18,9 @@ output type `D`, presented as the W-type of a polynomial functor
 constant (`iota`), dependent sum (`sigma`), and dependent product
 (`delta`) — and whose directions are their subcode arities. A code is
 interpreted on the free coproduct completion of `D` treated as a
-discrete category (the category of families of elements of `D`): this
-file constructs the object map and morphism map of the interpretation.
+discrete category (`CategoryTheory.FreeCoprodCompDisc`, the category
+of families of elements of `D`): this file constructs the object map
+and morphism map of the interpretation.
 It follows [GhaniNordvallForsbergMalatesta2015], Section 2
 (Definitions 2.1–2.2, Theorem 2.4, and Examples 2.5–2.6), which
 presents the codes of [DybjerSetzer1999] and the functorial semantics
@@ -42,11 +45,6 @@ of [DybjerSetzer2003].
   the latter with step arguments of type `IR.RecStep` (the `Type`
   specialization, alongside `IR.IndStep` for `Prop`, of the
   `Sort`-valued `IR.Step`).
-* `FreeCoprodCompDisc`, `FreeCoprodCompDisc.Hom`,
-  `freeCoprodCompDiscCopr`, `freeCoprodCompDiscCoprMor` — the free
-  coproduct completion of `D` treated as a discrete category: objects,
-  morphisms, indexed coproducts, and the coproducts' functorial
-  action.
 * `IR.interpObj`, `IR.interpMor` — the object map and morphism map of
   the interpretation of an `IR` code on `FreeCoprodCompDisc`.
 * `univCode`, `univEndo`, `univEndoMor` — the code of the universe
@@ -94,15 +92,9 @@ universe uA uD
 
 namespace IndRec
 
-variable (D : Type uD)
+open CategoryTheory
 
-/-- Eliminate a function into a sigma type along a proof that it is a
-section of the first projection, producing a dependent function (the
-inverse direction of mathlib's `Equiv.piEquivSubtypeSigma`
-correspondence). -/
-def sigmaFstSectionElim.{v, w} {X : Type v} {W : X → Type w}
-    (g : (t : X) → Σ e, W e) (sect : ∀ t, (g t).1 = t) (t : X) : W t :=
-  Eq.ndrec (g t).2 (sect t)
+variable (D : Type uD)
 
 namespace IR
 
@@ -474,113 +466,62 @@ def rec.{v} {motive : IR D → Type v} (mk' : RecStep.{uA, uD, v} D motive) :
 
 end IR
 
-/-- The free coproduct completion of `D` treated as a discrete
-category. -/
-def FreeCoprodCompDisc : Type (max (uA + 1) uD) :=
-  Σ (A : Type uA), A → D
-
-/-- The (object-map components of) endofunctors on
-`FreeCoprodCompDisc`. -/
-def FreeCoprodCompDiscEndo : Type (max (uA + 1) uD) :=
-  FreeCoprodCompDisc.{uA, uD} D → FreeCoprodCompDisc.{uA, uD} D
-
-/-- The morphisms of the free coproduct completion of `D` treated as a
-discrete category. -/
-def FreeCoprodCompDisc.Hom (X Y : FreeCoprodCompDisc.{uA, uD} D) :
-    Type uA :=
-  {h : X.1 → Y.1 // Y.2 ∘ h = X.2}
-
-/-- Rewrite the codomain of a `FreeCoprodCompDisc.Hom` along an
-equality of objects. -/
-def FreeCoprodCompDisc.homOfEq {X Y Y' : FreeCoprodCompDisc.{uA, uD} D} :
-    Y = Y' → FreeCoprodCompDisc.Hom D X Y → FreeCoprodCompDisc.Hom D X Y'
-  | rfl => id
-
-/-- The morphism-map component over an object map on
-`FreeCoprodCompDisc`. -/
-def FreeCoprodCompDiscEndoMor (F : FreeCoprodCompDiscEndo D) :
-    Type (max (uA + 1) uD) :=
-  (X Y : FreeCoprodCompDisc.{uA, uD} D) →
-    FreeCoprodCompDisc.Hom D X Y → FreeCoprodCompDisc.Hom D (F X) (F Y)
-
-/-- The indexed coproduct in the free coproduct completion of `D`
-treated as a discrete category. The result lives in the completion at
-index universe `max uA uI`, which is the original completion — making
-the result an in-category coproduct — exactly when `uI ≤ uA`. -/
-def freeCoprodCompDiscCopr.{uI} (I : Type uI)
-    (fi : I → FreeCoprodCompDisc.{uA, uD} D) :
-    FreeCoprodCompDisc.{max uA uI} D :=
-  ⟨(Σ i : I, (fi i).1), Sigma.uncurry (fun i => (fi i).2)⟩
-
-/-- The functorial action of `freeCoprodCompDiscCopr` on morphisms: a
-reindexing function together with a componentwise family of morphisms
-induces a morphism of indexed coproducts. -/
-def freeCoprodCompDiscCoprMor.{uI} (I J : Type uI) (r : I → J)
-    (fi : I → FreeCoprodCompDisc.{uA, uD} D)
-    (gj : J → FreeCoprodCompDisc.{uA, uD} D)
-    (hom : (i : I) → FreeCoprodCompDisc.Hom D (fi i) (gj (r i))) :
-    FreeCoprodCompDisc.Hom D
-      (freeCoprodCompDiscCopr D I fi)
-      (freeCoprodCompDiscCopr D J gj) :=
-  ⟨Sigma.map r (fun i => (hom i).1),
-    funext (fun p => congrFun (hom p.1).2 p.2)⟩
-
 namespace IR
 
 /-- The constant (`iota`) case of the interpretation of an `IR` code
 on `FreeCoprodCompDisc`: the constant object map at the one-direction
 object over `d`. -/
-def interpObjIota (d : D) : FreeCoprodCompDiscEndo.{uA, uD} D :=
+def interpObjIota (d : D) : FreeCoprodCompDisc.Endo.{uA, uD} D :=
   fun _ => ⟨ULift Unit, fun _ => d⟩
 
 /-- The dependent sum (`sigma`) case of the interpretation of an `IR`
 code on `FreeCoprodCompDisc`: the pointwise indexed coproduct over `A`
 of the interpretations `α` of the subcodes. -/
 def interpObjSigma (A : Type uA)
-    (α : A → FreeCoprodCompDiscEndo.{uA, uD} D) :
-    FreeCoprodCompDiscEndo.{uA, uD} D :=
-  fun X => freeCoprodCompDiscCopr.{uA, uD, uA} D A (fun a => α a X)
+    (α : A → FreeCoprodCompDisc.Endo.{uA, uD} D) :
+    FreeCoprodCompDisc.Endo.{uA, uD} D :=
+  fun X => FreeCoprodCompDisc.copr.{uA, uD, uA} D A (fun a => α a X)
 
 /-- The dependent product (`delta`) case of the interpretation of an
 `IR` code on `FreeCoprodCompDisc`: at an object `X`, the indexed
 coproduct over `A → X` of the interpretations `α` of the subcodes at
 the directions induced by `X`. -/
 def interpObjDelta (A : Type uA)
-    (α : (A → D) → FreeCoprodCompDiscEndo.{uA, uD} D) :
-    FreeCoprodCompDiscEndo.{uA, uD} D :=
+    (α : (A → D) → FreeCoprodCompDisc.Endo.{uA, uD} D) :
+    FreeCoprodCompDisc.Endo.{uA, uD} D :=
   fun X =>
-    freeCoprodCompDiscCopr.{uA, uD, uA} D (A → X.1) (fun g => α (X.2 ∘ g) X)
+    FreeCoprodCompDisc.copr.{uA, uD, uA} D (A → X.1) (fun g => α (X.2 ∘ g) X)
 
 /-- The algebra which computes one step of the interpretation of an
 `IR` code on `FreeCoprodCompDisc`. -/
 def interpObjAlg :
-    Alg.{uA, uD, max (uA + 1) uD} D (FreeCoprodCompDiscEndo.{uA, uD} D) :=
+    Alg.{uA, uD, max (uA + 1) uD} D (FreeCoprodCompDisc.Endo.{uA, uD} D) :=
   ⟨interpObjIota D, interpObjSigma D, interpObjDelta D⟩
 
 /-- The object map of the interpretation of an `IR` code on
 `FreeCoprodCompDisc`. -/
-def interpObj : IR.{uA, uD} D → FreeCoprodCompDiscEndo.{uA, uD} D :=
-  elimAlg D (FreeCoprodCompDiscEndo D) (interpObjAlg D)
+def interpObj : IR.{uA, uD} D → FreeCoprodCompDisc.Endo.{uA, uD} D :=
+  elimAlg D (FreeCoprodCompDisc.Endo D) (interpObjAlg D)
 
 /-- The signature of the morphism map accompanying `IR.interpObj`. -/
 def MorMapSig (ir : IR.{uA, uD} D) : Type (max (uA + 1) uD) :=
-  FreeCoprodCompDiscEndoMor D (interpObj D ir)
+  FreeCoprodCompDisc.EndoMor D (interpObj D ir)
 
 /-- The morphism-map component of the constant (`iota`) interpretation
 `IR.interpObjIota`: every morphism maps to the identity. -/
 def interpMorIota (d : D) :
-    FreeCoprodCompDiscEndoMor D (interpObjIota.{uA, uD} D d) :=
+    FreeCoprodCompDisc.EndoMor D (interpObjIota.{uA, uD} D d) :=
   fun _ _ _ => ⟨id, rfl⟩
 
 /-- The morphism-map component of the dependent sum (`sigma`)
 interpretation `IR.interpObjSigma`: the indexed coproduct of the
 componentwise morphism maps `μ`. -/
 def interpMorSigma (A : Type uA)
-    (α : A → FreeCoprodCompDiscEndo.{uA, uD} D)
-    (μ : (a : A) → FreeCoprodCompDiscEndoMor D (α a)) :
-    FreeCoprodCompDiscEndoMor D (interpObjSigma D A α) :=
+    (α : A → FreeCoprodCompDisc.Endo.{uA, uD} D)
+    (μ : (a : A) → FreeCoprodCompDisc.EndoMor D (α a)) :
+    FreeCoprodCompDisc.EndoMor D (interpObjSigma D A α) :=
   fun X Y h =>
-    freeCoprodCompDiscCoprMor D A A id
+    FreeCoprodCompDisc.coprMor D A A id
       (fun a => α a X)
       (fun a => α a Y)
       (fun a => μ a X Y h)
@@ -590,11 +531,11 @@ interpretation `IR.interpObjDelta`: reindex along postcomposition with
 the morphism, transporting each componentwise morphism map `μ` along
 the morphism's commutation equality. -/
 def interpMorDelta (A : Type uA)
-    (α : (A → D) → FreeCoprodCompDiscEndo.{uA, uD} D)
-    (μ : (f : A → D) → FreeCoprodCompDiscEndoMor D (α f)) :
-    FreeCoprodCompDiscEndoMor D (interpObjDelta D A α) :=
+    (α : (A → D) → FreeCoprodCompDisc.Endo.{uA, uD} D)
+    (μ : (f : A → D) → FreeCoprodCompDisc.EndoMor D (α f)) :
+    FreeCoprodCompDisc.EndoMor D (interpObjDelta D A α) :=
   fun X Y h =>
-    freeCoprodCompDiscCoprMor D (A → X.1) (A → Y.1) (fun g => h.1 ∘ g)
+    FreeCoprodCompDisc.coprMor D (A → X.1) (A → Y.1) (fun g => h.1 ∘ g)
       (fun g => α (X.2 ∘ g) X)
       (fun g => α (Y.2 ∘ g) Y)
       (fun g =>
@@ -689,13 +630,13 @@ def univCode : IR.{max uK uT, max uK uT + 1} (Type (max uK uT)) :=
 
 /-- The object map of the interpretation of `univCode`. -/
 def univEndo :
-    FreeCoprodCompDiscEndo.{max uK uT, max uK uT + 1} (Type (max uK uT)) :=
+    FreeCoprodCompDisc.Endo.{max uK uT, max uK uT + 1} (Type (max uK uT)) :=
   IR.interpObj (Type (max uK uT)) (univCode K T)
 
 /-- The morphism map of the interpretation of `univCode` (the object
 map is `univEndo`). -/
 def univEndoMor :
-    FreeCoprodCompDiscEndoMor (Type (max uK uT)) (univEndo K T) :=
+    FreeCoprodCompDisc.EndoMor (Type (max uK uT)) (univEndo K T) :=
   IR.interpMor (Type (max uK uT)) (univCode K T)
 
 end Universes
