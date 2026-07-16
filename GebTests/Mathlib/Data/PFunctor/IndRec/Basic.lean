@@ -45,7 +45,7 @@ variable (K : Type uK) (T : K → Type uT)
 /-- The name, in one application of `univEndo` to `X`, of the starting
 type selected by `k`. -/
 def stepIota (k : K) : (univEndo K T X).1 :=
-  ⟨Sum.inl (ULift.up k), ULift.up ()⟩
+  ⟨Sum.inl k, ULift.up ()⟩
 
 -- A starting-type name decodes to the lifted starting type.
 example (k : K) : (univEndo K T X).2 (stepIota K T X k) = ULift.{uK} (T k) :=
