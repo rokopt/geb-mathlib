@@ -12,7 +12,7 @@ import Geb.Mathlib.Data.PFunctor.Slice.Basic
 
 Concrete slice polynomial functors over `Bool` exercise the
 structures, the compatibility predicate, the object and morphism maps
-with their functoriality, and the fibre formers, mostly by `rfl`.
+with their functoriality, and the fiber formers, mostly by `rfl`.
 
 ## Tags
 
@@ -103,7 +103,7 @@ example :
     (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.1 = () := rfl
 
 /-- A slice functor whose shape-output map `q = id` distinguishes its two
-shapes, so the output-index content of `obj` is genuinely exercised. -/
+shapes, so the output-index content of `obj` is exercised. -/
 def separatingSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ ↦ Bool
@@ -120,7 +120,7 @@ example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
     (hf : p' ∘ f = p) : separatingSlice.obj p' ∘ separatingSlice.map f hf = separatingSlice.obj p :=
   separatingSlice.map_w f hf
 
--- Direction is the direction-input-map fibre; the predicate is its membership.
+-- Direction is the direction-input-map fiber; the predicate is its membership.
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :
     F.Direction a i = { b : F.B a // F.r ⟨a, b⟩ = i } := rfl
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) (b : F.B a) :

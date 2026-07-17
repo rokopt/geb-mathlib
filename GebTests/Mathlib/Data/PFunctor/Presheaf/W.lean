@@ -43,17 +43,17 @@ redefined here). -/
   shapeRestr := fun {_j j'} _g _s ↦ ⟨j', rfl⟩
   reindex := fun {_j _j'} _g a {i} _b ↦ ⟨i + a.1, fin2_add_idx a.1 i⟩
 
-/-- The constraint `r ⟨a, ·⟩ = a + ·` is injective, so each fibre
+/-- The constraint `r ⟨a, ·⟩ = a + ·` is injective, so each fiber
 `Direction a i` has at most one element. -/
 private theorem fin2_direction_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a + y = i) :
     x = y := by omega
 
-/-- Each direction fibre of the witness is a singleton. -/
+/-- Each direction fiber of the witness is a singleton. -/
 private instance subsingleton_direction (a i : Fin 2) :
     Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
   ⟨fun x y ↦ Subtype.ext (fin2_direction_cancel a x.1 y.1 i x.2 y.2)⟩
 
-/-- Each shape fibre of the witness is a singleton (the shape-output map
+/-- Each shape fiber of the witness is a singleton (the shape-output map
 `q = id` separates the two shapes). -/
 private instance subsingleton_shape (j : Fin 2) :
     Subsingleton (presheafWitnessData.toSlicePFunctor.Shape j) :=
@@ -100,7 +100,7 @@ example (x : (presheafWitness.objPresheaf presheafWitness.W).obj ⟨(1 : Fin 2)�
   PresheafPFunctor.W.dest_mk x
 
 /-- A concrete choice-free target presheaf algebra: the constant presheaf on
-`(Fin 2)ᵒᵖ` at `PUnit`, every fibre `PUnit` and every restriction the identity. -/
+`(Fin 2)ᵒᵖ` at `PUnit`, every fiber `PUnit` and every restriction the identity. -/
 @[reducible] def constPUnit : (Fin 2)ᵒᵖ ⥤ Type where
   obj _ := PUnit
   map _ := 𝟙 _
@@ -111,10 +111,10 @@ def constPUnitAlg : NatTrans (presheafWitness.objPresheaf constPUnit) constPUnit
   app _ := ↾ fun _ ↦ PUnit.unit
   naturality _ _ _ := rfl
 
-/-- The eliminator of the presheaf W-type into the constant-`PUnit` algebra. The
-carrier `presheafWitness.W` admits no elements (its functor has no leaf shape),
-so this eliminator is the concrete W-value the property test below asserts
-about. -/
+/-- The eliminator of the presheaf W-type into the constant-`PUnit` algebra; the
+computation-rule test below instantiates `elim_mk` at it. The carrier
+`presheafWitness.W` is empty (no shape of the witness is a leaf), so the test
+exercises the statement, not a computation. -/
 def elimConstPUnit : NatTrans presheafWitness.W constPUnit :=
   PresheafPFunctor.W.elim presheafWitness constPUnit constPUnitAlg
 

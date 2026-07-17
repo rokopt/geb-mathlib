@@ -33,9 +33,8 @@ inductive-recursive, polynomial functor, universe
 -/
 
 -- The type-valued test definitions must be `@[expose]`d so their
--- compilation types match across modules (a current compiler
--- limitation for `module`s), and `expose` is meaningful on public
--- definitions only.
+-- compilation types match across modules (a compiler limitation for
+-- `module`s), and `expose` is meaningful on public definitions only.
 @[expose] public section
 
 open CategoryTheory IndRec

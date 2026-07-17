@@ -11,10 +11,11 @@ import Geb.Mathlib.Data.PFunctor.Slice.W
 /-!
 # Tests for slice W-types
 
-Generic `rfl` checks of the carrier, the structure map, the
-admissibility fold, and the `mk` / `dest` / `elim` laws, followed by a
-concrete slice endofunctor with a leaf shape whose admissible trees
-exercise the constructions computationally.
+Generic checks — by `rfl` where definitional, otherwise by the named
+laws — of the carrier, the structure map, the admissibility fold, and
+the `mk` / `dest` / `elim` laws, followed by a concrete slice
+endofunctor with a leaf shape whose admissible trees exercise the
+constructions computationally.
 
 ## Tags
 

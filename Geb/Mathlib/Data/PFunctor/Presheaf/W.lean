@@ -34,18 +34,18 @@ computation rule.
   along a morphism, via the generalized `objRestrElt` at `p := wIndex`.
 * `PresheafPFunctor.IsHereditarilyNatural` — the tree-level naturality predicate
   on slice W-trees, defined by `SlicePFunctor.W.RecProp`.
-* `PresheafPFunctor.wRestr` — restriction on the `ULift`ed carrier fibre,
+* `PresheafPFunctor.wRestr` — restriction on the `ULift`ed carrier fiber,
   reindexing the underlying tree along a morphism while preserving the index and
   hereditary naturality.
 * `PresheafPFunctor.W` — the carrier presheaf `Iᵒᵖ ⥤ Type (max uI uA uB)`, whose
-  fibre over `j` is the `ULift` of the hereditarily-natural slice W-trees indexed
+  fiber over `j` is the `ULift` of the hereditarily-natural slice W-trees indexed
   at `j` and whose restriction maps are `wRestr`.
 * `PresheafPFunctor.W.forgetNode` / `PresheafPFunctor.W.rememberNode` — the
   mutually inverse translations between a presheaf node over the carrier
   presheaf `F.W` and the underlying slice node over `wIndex` together with the
   hereditary naturality of its children.
 * `PresheafPFunctor.W.mk` / `PresheafPFunctor.W.dest` — the fixed-point
-  constructor and destructor: mutually inverse fibrewise maps between the
+  constructor and destructor: mutually inverse fiberwise maps between the
   `objPresheaf`-value at `F.W` and `F.W`, exhibiting `F.W` as a fixed point of
   the `objPresheaf`-action at `F.W`.
 * `PresheafPFunctor.W.PElimData` / `pElimStep` / `pElimData` — the eliminator's
@@ -86,7 +86,7 @@ This is the presheaf endofunctor case, `I = J`, so the slice endofunctor
 `F.toSlicePFunctor : SlicePFunctor I I` has a W-type. `wRestrTree` and
 `IsHereditarilyNatural` act on the un-lifted trees `F.toSlicePFunctor.W` of type
 `Type (max uA uB)`; the carrier presheaf `W` `ULift`s the indexed subtype into
-`Type (max uI uA uB)` so its fibres land in a single universe with the index
+`Type (max uI uA uB)` so its fibers land in a single universe with the index
 category `I`.
 
 The recursion in `IsHereditarilyNatural` is confined to the slice W-type's
@@ -94,7 +94,7 @@ The recursion in `IsHereditarilyNatural` is confined to the slice W-type's
 and no `induction` tactic appear. The child-index witness required by
 `wRestrTree` is discharged from the compatibility of the node's
 direction-assignment (`SliceDomPFunctor.compatible_iff`) together with the
-direction's fibre constraint, exactly as `PresheafDomPFunctorData.value` obtains
+direction's fiber constraint, exactly as `PresheafDomPFunctorData.value` obtains
 its index equality.
 
 The eliminator `elim` folds the underlying slice tree into a target value with a
@@ -103,13 +103,13 @@ bespoke `WType.elim` fold (`pElimData`, carrier `PElimData`, algebra
 presheaf algebra `α` acts only on natural nodes, so — unlike the slice `elim`,
 whose algebra is total — the fold's value is a function of the subtree's
 hereditary naturality, and the fold carries a naturality proxy (via the guard
-`P ∧ ∀ hp : P, Q hp`, builtin `And` with `Q` proof-irrelevant in `hp`) letting
+`P ∧ ∀ hp : P, Q hp`, the standard `And` with `Q` proof-irrelevant in `hp`) letting
 `α` apply at each node. The value fold is
 a non-dependent `WType.elim` (code-generatable); the recursion in the
 accompanying proofs (`pElimData_valid`, `elimVal_wRestr`) stays inside
 `WType.rec` / `SlicePFunctor.W.induction`. Only the existence half of the
 initial-algebra universal property is established — the carrier, its fixed-point
-structure, and `elim` with its computation rule `elim_mk` and over-`I` law
+structure, and `elim` with its computation rule `elim_mk` and naturality law
 `comp_elim`; uniqueness of `elim` is not formalized.
 
 ## References
@@ -224,7 +224,7 @@ theorem isHereditarilyNatural_wRestrTree {I : Type uI} [Category.{vI} I]
     · intro b
       exact hz_children (F.reindex g ⟨a, hq⟩ ⟨b, rfl⟩).1
 
-/-- Restriction on the ULifted carrier fibre: apply `wRestrTree` to the
+/-- Restriction on the `ULift`ed carrier fiber: apply `wRestrTree` to the
 underlying tree of `w` along `g`, re-establishing the index (`j'`, read from the
 restricted root shape via `shapeRestr`) and hereditary naturality (preserved by
 `wRestrTree`, a one-level consequence of `isHereditarilyNatural_mk` and
@@ -268,7 +268,7 @@ theorem wRestrTree_comp {I : Type uI} [Category.{vI} I]
       (F.shapeRestr g ⟨a, hq⟩).2]
 
 /-- The carrier presheaf `W : Iᵒᵖ ⥤ Type` of the presheaf polynomial endofunctor
-`F`: its fibre over `j` is the `ULift` of the hereditarily-natural slice W-trees
+`F`: its fiber over `j` is the `ULift` of the hereditarily-natural slice W-trees
 indexed at `j`, and its restriction maps are `wRestr`. The functor laws transport
 from `objRestrElt_id` / `objRestrElt_comp` through `wRestrTree`, `ULift`, and
 `Subtype`. -/
@@ -287,7 +287,7 @@ from `objRestrElt_id` / `objRestrElt_comp` through `wRestrTree`, `ULift`, and
 
 namespace W
 
-/-- Casting a carrier fibre element along an index equality leaves its
+/-- Casting a carrier fiber element along an index equality leaves its
 underlying slice W-tree unchanged. -/
 private theorem cast_down {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) {k k' : I} (e : k = k')
@@ -306,7 +306,7 @@ private theorem wRestrTree_congr {I : Type uI} [Category.{vI} I]
   cases hz
   rfl
 
-/-- Two carrier fibre elements with equal underlying trees are equal. -/
+/-- Two carrier fiber elements with equal underlying trees are equal. -/
 private theorem obj_ext {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) {k : I} {u u' : (F.W).obj ⟨k⟩}
     (h : u.down.1 = u'.down.1) : u = u' := by
@@ -314,7 +314,7 @@ private theorem obj_ext {I : Type uI} [Category.{vI} I]
   obtain ⟨u'⟩ := u'
   exact congrArg ULift.up (Subtype.ext h)
 
-/-- The underlying tree of a restricted fibre element is the root-restriction of
+/-- The underlying tree of a restricted fiber element is the root-restriction of
 the underlying tree. -/
 private theorem map_down {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃i i' : I⦄ (f : i' ⟶ i)
@@ -323,7 +323,7 @@ private theorem map_down {I : Type uI} [Category.{vI} I]
   rfl
 
 /-- The underlying tree of the value a presheaf node over `F.W` assigns to a
-direction is the underlying tree of the carried child fibre element. -/
+direction is the underlying tree of the carried child fiber element. -/
 private theorem value_down {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
     (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W))) ⦃i : I⦄
@@ -334,7 +334,7 @@ private theorem value_down {I : Type uI} [Category.{vI} I]
       n.2 b.1).trans b.2)
     (n.1.2 b.1).2
 
-/-- Rebuild a carrier fibre element from its underlying tree, its `wIndex`, and
+/-- Rebuild a carrier fiber element from its underlying tree, its `wIndex`, and
 its hereditary naturality: a total-space element over `wIndex w.down.1` equal to
 the original total-space element over `i`. -/
 private theorem sigma_eta {I : Type uI} [Category.{vI} I]
@@ -347,7 +347,7 @@ private theorem sigma_eta {I : Type uI} [Category.{vI} I]
 
 /-- Forget a presheaf node over the carrier presheaf `F.W` to the underlying
 slice node over `wIndex`: retain the shape, and send each direction to the
-underlying slice W-tree of its carried fibre element. -/
+underlying slice W-tree of its carried fiber element. -/
 @[expose] def forgetNode {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
     (n : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj (F.W))) :
@@ -360,7 +360,7 @@ underlying slice W-tree of its carried fibre element. -/
 
 /-- Remember a slice node over `wIndex` whose children are hereditarily natural
 as a presheaf node over the carrier presheaf `F.W`: retain the shape, and send
-each direction to the carried fibre element built from the child tree, its index
+each direction to the carried fiber element built from the child tree, its index
 `wIndex`, and its hereditary naturality. -/
 @[expose] def rememberNode {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
@@ -427,7 +427,7 @@ theorem isHereditarilyNatural_mk_forgetNode {I : Type uI} [Category.{vI} I]
     exact h.trans (wRestrTree_congr F g (value_down F n b) _ _)
 
 /-- The fixed-point constructor of the presheaf W-type: the `objPresheaf`-value
-at the carrier presheaf `F.W` maps into `F.W`, fibrewise over `I`. It builds the
+at the carrier presheaf `F.W` maps into `F.W`, fiberwise over `I`. It builds the
 slice W-tree from the node (via `forgetNode` and the slice constructor
 `SlicePFunctor.W.mk`), reads its index from the node's `q`-output index, and
 supplies hereditary naturality via `isHereditarilyNatural_mk_forgetNode`. -/
@@ -584,7 +584,7 @@ theorem pElimData_index {I : Type uI} [Category.{vI} I]
     (F.wIndexValid_index_eq_wIndexRoot w)
 
 /-- A natural transformation's components respect heterogeneous equality of
-fibre elements over equal indices. -/
+fiber elements over equal indices. -/
 private theorem app_heq.{w} {I : Type uI} [Category.{vI} I]
     {Z Z' : Iᵒᵖ ⥤ Type w} (β : NatTrans Z Z') {k k' : I} (hk : k = k')
     {x : Z.obj ⟨k⟩} {x' : Z.obj ⟨k'⟩} (hx : x ≍ x') :
@@ -593,7 +593,7 @@ private theorem app_heq.{w} {I : Type uI} [Category.{vI} I]
   cases hx
   rfl
 
-/-- Two fibre elements of `objPresheaf Y` over equal indices whose underlying
+/-- Two fiber elements of `objPresheaf Y` over equal indices whose underlying
 dom values are equal are heterogeneously equal. -/
 private theorem objPresheaf_obj_heq {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) (Y : Iᵒᵖ ⥤ Type (max uI uA uB))
@@ -687,9 +687,10 @@ private theorem isNatural_pNodeSlice {I : Type uI} [Category.{vI} I]
   rw [hchild]
   rfl
 
-/-- The node the value fold assembles at a validated hereditarily-natural tree,
-as an element of the output presheaf's fibre over the root index: the shape and
-the children's fold values, natural by the tree's hereditary naturality. -/
+/-- The value fold's hereditary-naturality proxy `H` holds at every validated
+hereditarily-natural tree: the children's proxies hold by the tree recursion
+(`SlicePFunctor.W.induction`), and the node the fold assembles (`pNodeSlice`)
+is natural by `isNatural_pNodeSlice`, from the tree's local naturality. -/
 theorem pElimData_H_of_isHereditarilyNatural {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
     (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y)
@@ -705,9 +706,9 @@ theorem pElimData_H_of_isHereditarilyNatural {I : Type uI} [Category.{vI} I]
         (fun _ _ g b _ ↦ ((F.isHereditarilyNatural_mk x).mp hHN).1 g b))
     w hv hn
 
-/-- The fibre value the fold contributes to a validated hereditarily-natural
+/-- The fiber value the fold contributes to a validated hereditarily-natural
 tree indexed at `j`: the total-space value's `Y`-component, transported to the
-fibre over `j` through the fold's `over` law and root-index agreement. -/
+fiber over `j` through the fold's `over` law and root-index agreement. -/
 @[expose] def elimVal {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
     (Y : Iᵒᵖ ⥤ Type (max uI uA uB)) (α : NatTrans (F.objPresheaf Y) Y) {j : I}
@@ -724,7 +725,7 @@ fibre over `j` through the fold's `over` law and root-index agreement. -/
         ((pElimData_valid F Y α z.down.1.1) ▸ z.down.1.2) z.down.2.2)).2
 
 /-- The total-space fold value at a carrier element is `elimVal` paired with the
-index: the `Y`-component is `elimVal` and the base point is the fibre index.
+index: the `Y`-component is `elimVal` and the base point is the fiber index.
 Proof-irrelevance identifies the fold's internal hereditary-naturality proof with
 any supplied one. -/
 theorem value_eq_elimVal {I : Type uI} [Category.{vI} I]
@@ -741,7 +742,7 @@ theorem value_eq_elimVal {I : Type uI} [Category.{vI} I]
 carrier element is the `Y`-restriction of the value. It glues the fold-level
 restriction coherence `value_wRestrTree` (the one-level argument, combining the
 fold's one-level computation with `α`'s naturality) with `value_eq_elimVal`,
-which identifies the two total-space fold values' fibre components with the two
+which identifies the two total-space fold values' fiber components with the two
 `elimVal`s; the tree recursion is confined to `pElimData_H_of_isHereditarilyNatural`. -/
 theorem elimVal_wRestr {I : Type uI} [Category.{vI} I]
     (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I)
@@ -775,7 +776,7 @@ presheaf algebra `(Y, α)`. Its component over `j` is the bespoke value fold
     ext z
     exact elimVal_wRestr F Y α g.unop z
 
-/-- `elim` is a genuine presheaf morphism: it commutes with the restriction
+/-- `elim` is a presheaf morphism: it commutes with the restriction
 maps of `F.W` and `Y`. The `NatTrans` naturality of `elim`, mirroring the slice
 `comp_elim`. -/
 theorem comp_elim {I : Type uI} [Category.{vI} I]

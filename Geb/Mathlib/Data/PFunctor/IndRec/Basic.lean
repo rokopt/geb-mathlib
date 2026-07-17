@@ -55,6 +55,8 @@ of [DybjerSetzer2003].
 ## Main statements
 
 * `IR.ext`, `IR.snd_eq_of_eq` — extensionality for codes.
+* `IR.induction` — the induction principle, the recursor restricted to
+  `Prop`-valued motives.
 
 ## Implementation notes
 

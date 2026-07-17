@@ -275,25 +275,24 @@ parametric right adjoint determined by its generic data
   `public import` for its module-under-test while every sibling
   test module uses plain `import`; `GebTests/Internal/`'s
   `public meta import` lines are in the same category. Import
-  visibility changes what a module re-exports, so the
-  style-standardization branch deferred it. Trigger: the next
-  branch that revises the test modules' interfaces.
+  visibility changes what a module re-exports, so it is deferred.
+  Trigger: the next branch that revises the test modules'
+  interfaces.
 - **Decide a test-declaration privacy discipline**: test modules
   mix `private` and public declarations with no uniform rule;
   the IndRec test's type-valued definitions must stay `@[expose]`
   public for cross-module compilation, so blanket privatization
   is not obviously desirable. Privacy changes module-interface
-  visibility, so the style-standardization branch deferred it.
-  Trigger: the next branch that revises the test modules'
-  interfaces.
+  visibility, so it is deferred. Trigger: the next branch that
+  revises the test modules' interfaces.
 - **Add `ext_iff` companions**: mathlib's naming guide
   (§ Extensionality) prescribes bidirectional
   `f = g ↔ ∀ x, f x = g x` companions alongside `ext` lemmas;
   none exist for `GrothendieckOp.hom_ext`,
   `CoGrothendieck.hom_ext`, or `IR.ext` (`IR.snd_eq_of_eq` is a
   converse but is not packaged as `ext_iff`). Adding them alters
-  the theorem-set, so the style-standardization branch deferred
-  it. Trigger: the next branch that revises these interfaces.
+  the theorem-set, so it is deferred. Trigger: the next branch
+  that revises these interfaces.
 - **Extract a shared presheaf test-fixtures module**: the
   `presheafWitness : PresheafPFunctor (Fin 2) (Fin 2)` fixture is
   duplicated in `GebTests/Mathlib/Data/PFunctor/Presheaf/Basic.lean`

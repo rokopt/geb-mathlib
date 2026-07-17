@@ -8,11 +8,11 @@ module
 import Geb.Mathlib.Data.PFunctor.Presheaf.Functor
 
 /-!
-# Tests for the presheaf-domain polynomial functor wrapper
+# Tests for the presheaf polynomial functor wrapper
 
-`rfl` checks that the categorical wrappers' object and morphism maps
-agree with the choice-free core `obj` / `map` / `objPresheaf` /
-`mapPresheaf`.
+Checks — by `rfl` where definitional, otherwise by the named laws —
+that the categorical wrappers' object and morphism maps agree with the
+choice-free core `obj` / `map` / `objPresheaf` / `mapPresheaf`.
 
 ## Tags
 
@@ -44,7 +44,7 @@ theorem functor_obj_eq {I J : Type} [Category I] [Category J] (F : PresheafPFunc
   F.functor_obj Z
 
 /-- The presheaf-valued functor's morphism map is the dom `map`, restricted to
-the `q`-indexed fibre. -/
+the `q`-indexed fiber. -/
 theorem functor_map_app {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : Z ⟶ Z') (X : Jᵒᵖ) (w : (F.functor.obj Z).obj X) :
     (F.functor.map α).app X w =
