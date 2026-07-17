@@ -240,7 +240,6 @@ restricted root shape via `shapeRestr`) and hereditary naturality (preserved by
       F.windex_wRestrTree g w.down.1 w.down.2.1,
       F.isHereditarilyNatural_wRestrTree g w.down.1 w.down.2.1 w.down.2.2⟩
 
-set_option backward.isDefEq.respectTransparency.types false in
 /-- Restriction along an identity fixes the tree: `objRestrElt_id` collapses the
 rebuilt root, and `mk_dest` reassembles the original tree. -/
 theorem wRestrTree_id {I : Type uI} [Category.{vI} I]
@@ -251,7 +250,8 @@ theorem wRestrTree_id {I : Type uI} [Category.{vI} I]
   cases tree with
   | mk a fchild =>
     simp only [wRestrTree]
-    rw [F.objRestrElt_id, SlicePFunctor.W.mk_dest]
+    rw [F.objRestrElt_id]
+    exact SlicePFunctor.W.mk_dest _
 
 /-- Restriction along a composite factors: `dest_mk` exposes the inner
 restriction and `objRestrElt_comp` splits the rebuilt root. -/
@@ -294,6 +294,16 @@ private theorem cast_down {I : Type uI} [Category.{vI} I]
     (u : (F.W).obj ⟨k⟩) :
     (cast (congrArg (fun k : I ↦ (F.W).obj ⟨k⟩) e) u).down.1 = u.down.1 := by
   cases e
+  rfl
+
+/-- `wRestrTree` respects equality of the restricted trees; the head-index
+witnesses are proof-irrelevant. -/
+private theorem wRestrTree_congr {I : Type uI} [Category.{vI} I]
+    (F : PresheafPFunctor.{uI, uI, uA, uB, vI, vI} I I) ⦃j j' : I⦄ (g : j' ⟶ j)
+    {z z' : F.toSlicePFunctor.W} (hz : z = z')
+    (hq : F.q (PFunctor.W.head z.1) = j) (hq' : F.q (PFunctor.W.head z'.1) = j) :
+    F.wRestrTree g z hq = F.wRestrTree g z' hq' := by
+  cases hz
   rfl
 
 /-- Two carrier fibre elements with equal underlying trees are equal. -/
@@ -394,7 +404,6 @@ private theorem rememberNode_forgetNode {I : Type uI} [Category.{vI} I]
   obtain ⟨⟨a, v⟩, hc⟩ := n
   exact Sigma.ext rfl (heq_of_eq (funext fun b ↦ sigma_eta F (v b).2))
 
-set_option backward.isDefEq.respectTransparency.types false in
 /-- The hereditary naturality of the slice tree built from a presheaf node over
 `F.W` is exactly the naturality of the node: the recursive conjunct of
 `isHereditarilyNatural_mk` is discharged by the carried hereditary naturality of
@@ -414,8 +423,8 @@ theorem isHereditarilyNatural_mk_forgetNode {I : Type uI} [Category.{vI} I]
   · intro hnat
     refine ⟨fun i i' g b ↦ ?_, fun b ↦ (n.1.2 b).2.down.2.2⟩
     have h := congrArg (fun u ↦ u.down.1) (hnat g b)
-    simp only [value_down, map_down] at h
-    exact h
+    simp only [value_down F n, map_down F g] at h
+    exact h.trans (wRestrTree_congr F g (value_down F n b) _ _)
 
 /-- The fixed-point constructor of the presheaf W-type: the `objPresheaf`-value
 at the carrier presheaf `F.W` maps into `F.W`, fibrewise over `I`. It builds the
@@ -593,7 +602,6 @@ private theorem objPresheaf_obj_heq {I : Type uI} [Category.{vI} I]
   cases hk
   exact heq_of_eq (Subtype.ext h)
 
-set_option backward.isDefEq.respectTransparency.types false in
 /-- Value restriction coherence at the fold level: the fold value on the
 root-restriction of a tree is the `Y`-restriction of the fold value. A one-level
 argument: the restricted node's fold node is the `objPresheaf`-restriction of the
@@ -621,8 +629,10 @@ theorem value_wRestrTree {I : Type uI} [Category.{vI} I]
         Y.map f.op (α.app ⟨F.q a⟩ (⟨⟨pnodeSlice (fun b ↦ pelimData F Y α (fchild b)) hv hn.1,
             hn.2 hn.1⟩, rfl⟩ : (F.objPresheaf Y).obj ⟨F.q a⟩)) =
           α.app ⟨i'⟩ ((F.objPresheaf Y).map f.op
-            ⟨⟨pnodeSlice (fun b ↦ pelimData F Y α (fchild b)) hv hn.1, hn.2 hn.1⟩, rfl⟩) := by
-      rw [← ConcreteCategory.comp_apply, ← α.naturality f.op, ConcreteCategory.comp_apply]
+            ⟨⟨pnodeSlice (fun b ↦ pelimData F Y α (fchild b)) hv hn.1, hn.2 hn.1⟩, rfl⟩) :=
+      (ConcreteCategory.comp_apply _ _ _).symm.trans
+        ((ConcreteCategory.congr_hom (α.naturality f.op).symm _).trans
+          (ConcreteCategory.comp_apply _ _ _))
     change (α.app ⟨F.q (F.shapeRestr f ⟨a, hqi⟩).1⟩
           (⟨⟨F.objRestrElt f (pnodeSlice (fun b ↦ pelimData F Y α (fchild b)) hv hn.1) hqi,
             hn'.2 hn'.1⟩, rfl⟩ : (F.objPresheaf Y).obj ⟨F.q (F.shapeRestr f ⟨a, hqi⟩).1⟩)) ≍

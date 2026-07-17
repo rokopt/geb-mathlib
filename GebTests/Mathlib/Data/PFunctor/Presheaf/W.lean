@@ -27,7 +27,7 @@ private theorem fin2_add_idx (x i : Fin 2) : x + (i + x) = i := by omega
 `Fin 2` (for both index categories), reused as the fixture from the
 Presheaf/Basic test module (its `presheafWitness` is module-private, so it is
 redefined here). -/
-def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
+@[reducible] def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   A := Fin 2
   B := fun _ ↦ Fin 2
   r := fun x ↦ x.1 + x.2
@@ -55,7 +55,6 @@ private instance shapeSubsingleton (j : Fin 2) :
     have hy : (y.1 : Fin 2) = j := y.2
     exact hx.trans hy.symm)⟩
 
-set_option backward.isDefEq.respectTransparency.types false in
 /-- The witness, with all seven functor laws discharged by `Subsingleton.elim`. -/
 def presheafWitness : PresheafPFunctor (Fin 2) (Fin 2) where
   toPresheafPFunctorData := presheafWitnessData

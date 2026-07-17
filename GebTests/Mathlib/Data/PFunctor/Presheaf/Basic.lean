@@ -74,7 +74,7 @@ fibre `Direction a i` is the singleton `{a + i}`, so `directionRestr`,
 fibre. `reindex` along the non-identity `0 ⟶ 1` reindexes the shape (via
 `shapeRestr`) from `1` to `0` and maps the underlying direction value to
 `i + a.1` (here `1 = 0 + 1`). -/
-def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
+@[reducible] def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   A := Fin 2
   B := fun _ ↦ Fin 2
   r := fun x ↦ x.1 + x.2
@@ -102,7 +102,6 @@ private instance shapeSubsingleton (j : Fin 2) :
     have hy : (y.1 : Fin 2) = j := y.2
     exact hx.trans hy.symm)⟩
 
-set_option backward.isDefEq.respectTransparency.types false in
 /-- The witness, with all seven functor laws discharged. Because every
 direction fibre and shape fibre is a singleton, each law equates elements of
 (functions into) a subsingleton, so `Subsingleton.elim` closes every goal;
