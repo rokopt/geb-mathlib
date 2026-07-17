@@ -1,12 +1,12 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Data.PFunctor.Slice.W
 public import Geb.Mathlib.Data.PFunctor.Presheaf.Basic
+public import Geb.Mathlib.Data.PFunctor.Slice.W
 
 /-!
 # W-types of presheaf polynomial functors: hereditary naturality (constructive core)

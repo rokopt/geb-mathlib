@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
@@ -9,13 +9,11 @@ import Geb.Mathlib.Data.PFunctor.Presheaf.W
 import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.Order.Fin.Basic
 
--- Test files keep their declarations private; silence the
--- only-private-declarations lint.
-set_option linter.privateModule false
-
 /-!
 # Tests for the presheaf W-type hereditary-naturality predicate
 -/
+
+set_option linter.privateModule false
 
 open CategoryTheory
 

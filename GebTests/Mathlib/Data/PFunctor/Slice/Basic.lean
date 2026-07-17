@@ -1,19 +1,17 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
 import Geb.Mathlib.Data.PFunctor.Slice.Basic
 
--- Test files keep their declarations private; silence the
--- only-private-declarations lint.
-set_option linter.privateModule false
-
 /-!
 # Tests for the slice polynomial functor core
 -/
+
+set_option linter.privateModule false
 
 open SliceDomPFunctor SlicePFunctor
 

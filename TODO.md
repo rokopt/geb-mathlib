@@ -270,6 +270,22 @@ parametric right adjoint determined by its generic data
 - **Migrate `update.yml` from `GITHUB_TOKEN` to a PAT**: trigger
   if the manual close-and-reopen-to-fire-CI overhead on cron-
   created bump-PRs becomes burdensome.
+- **Reconcile test-module import visibility**:
+  `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses
+  `public import` for its module-under-test while every sibling
+  test module uses plain `import`; `GebTests/Internal/`'s
+  `public meta import` lines are in the same category. Import
+  visibility changes what a module re-exports, so the
+  style-standardization branch deferred it. Trigger: the next
+  branch that revises the test modules' interfaces.
+- **Decide a test-declaration privacy discipline**: test modules
+  mix `private` and public declarations with no uniform rule;
+  the IndRec test's type-valued definitions must stay `@[expose]`
+  public for cross-module compilation, so blanket privatization
+  is not obviously desirable. Privacy changes module-interface
+  visibility, so the style-standardization branch deferred it.
+  Trigger: the next branch that revises the test modules'
+  interfaces.
 - **Add `ext_iff` companions**: mathlib's naming guide
   (§ Extensionality) prescribes bidirectional
   `f = g ↔ ∀ x, f x = g x` companions alongside `ext` lemmas;

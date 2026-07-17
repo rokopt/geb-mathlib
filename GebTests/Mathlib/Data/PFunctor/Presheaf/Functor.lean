@@ -1,17 +1,17 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
 import Geb.Mathlib.Data.PFunctor.Presheaf.Functor
 
-set_option linter.privateModule false
-
 /-!
 # Tests for the presheaf-domain polynomial functor wrapper
 -/
+
+set_option linter.privateModule false
 
 open CategoryTheory PresheafDomPFunctorData PresheafPFunctor
 
@@ -42,4 +42,3 @@ theorem functor_map_app {I J : Type} [Category I] [Category J] (F : PresheafPFun
     (F.functor.map α).app X w =
       (⟨F.toPresheafDomPFunctorData.map α w.1, w.2⟩ : (F.functor.obj Z').obj X) :=
   F.functor_map α X w
-
