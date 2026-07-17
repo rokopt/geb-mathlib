@@ -42,13 +42,13 @@ private theorem fin2_direction_cancel (a x y i : Fin 2) (hx : a + x = i) (hy : a
     x = y := by omega
 
 /-- Each direction fibre of the witness is a singleton. -/
-private instance directionSubsingleton (a i : Fin 2) :
+private instance subsingleton_direction (a i : Fin 2) :
     Subsingleton (presheafWitnessData.toSliceDomPFunctor.Direction a i) :=
   ⟨fun x y ↦ Subtype.ext (fin2_direction_cancel a x.1 y.1 i x.2 y.2)⟩
 
 /-- Each shape fibre of the witness is a singleton (the shape-output map
 `q = id` separates the two shapes). -/
-private instance shapeSubsingleton (j : Fin 2) :
+private instance subsingleton_shape (j : Fin 2) :
     Subsingleton (presheafWitnessData.toSlicePFunctor.Shape j) :=
   ⟨fun x y ↦ Subtype.ext (by
     have hx : (x.1 : Fin 2) = j := x.2
@@ -70,14 +70,14 @@ def presheafWitness : PresheafPFunctor (Fin 2) (Fin 2) where
 -- `IsHereditarilyNatural` unfolds one level via `isHereditarilyNatural_mk`:
 -- local naturality at the root together with hereditary naturality of every
 -- child subtree.
-example (x : presheafWitness.toSliceDomPFunctor.Obj presheafWitness.toSlicePFunctor.windex) :
+example (x : presheafWitness.toSliceDomPFunctor.Obj presheafWitness.toSlicePFunctor.wIndex) :
     presheafWitness.IsHereditarilyNatural (SlicePFunctor.W.mk x) ↔
       (∀ ⦃i i' : Fin 2⦄ (g : i' ⟶ i)
           (b : presheafWitness.toSliceDomPFunctor.Direction x.1.1 i),
           x.1.2 (presheafWitness.directionRestr x.1.1 g b).1
             = presheafWitness.wRestrTree g (x.1.2 b.1)
                 (((presheafWitness.toSliceDomPFunctor.compatible_iff
-                  presheafWitness.toSlicePFunctor.windex x.1.1 x.1.2).mp x.2 b.1).trans b.2)) ∧
+                  presheafWitness.toSlicePFunctor.wIndex x.1.1 x.1.2).mp x.2 b.1).trans b.2)) ∧
         ∀ b, presheafWitness.IsHereditarilyNatural (x.1.2 b) :=
   presheafWitness.isHereditarilyNatural_mk x
 

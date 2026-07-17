@@ -270,6 +270,14 @@ parametric right adjoint determined by its generic data
 - **Migrate `update.yml` from `GITHUB_TOKEN` to a PAT**: trigger
   if the manual close-and-reopen-to-fire-CI overhead on cron-
   created bump-PRs becomes burdensome.
+- **Add `ext_iff` companions**: mathlib's naming guide
+  (§ Extensionality) prescribes bidirectional
+  `f = g ↔ ∀ x, f x = g x` companions alongside `ext` lemmas;
+  none exist for `GrothendieckOp.hom_ext`,
+  `CoGrothendieck.hom_ext`, or `IR.ext` (`IR.snd_eq_of_eq` is a
+  converse but is not packaged as `ext_iff`). Adding them alters
+  the theorem-set, so the style-standardization branch deferred
+  it. Trigger: the next branch that revises these interfaces.
 - **Extract a shared presheaf test-fixtures module**: the
   `presheafWitness : PresheafPFunctor (Fin 2) (Fin 2)` fixture is
   duplicated in `GebTests/Mathlib/Data/PFunctor/Presheaf/Basic.lean`

@@ -18,5 +18,5 @@ declaration below despite its `Classical.choice` dependency.
 
 /-- A declaration depending on `Classical.choice` (through
 `Classical.em`), used only to test the allowlist. -/
-theorem usesClassicalChoice : True :=
+theorem uses_classicalChoice : True :=
   (Classical.em True).elim (fun _ ↦ trivial) (fun _ ↦ trivial)
