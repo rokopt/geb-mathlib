@@ -27,7 +27,7 @@ private theorem fin2_add_idx (x i : Fin 2) : x + (i + x) = i := by omega
 `Fin 2` (for both index categories), reused as the fixture from the
 Presheaf/Basic test module (its `presheafWitness` is module-private, so it is
 redefined here). -/
-def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
+@[reducible] def presheafWitnessData : PresheafPFunctorData (Fin 2) (Fin 2) where
   A := Fin 2
   B := fun _ ↦ Fin 2
   r := fun x ↦ x.1 + x.2

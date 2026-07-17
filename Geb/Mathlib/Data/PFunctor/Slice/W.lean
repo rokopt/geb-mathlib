@@ -330,8 +330,10 @@ theorem elimData_valid {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
     (w : F.toPFunctor.W) : (elimData F Y p g hg w).valid ↔ F.WValid w :=
   WType.rec (motive := fun w ↦ (elimData F Y p g hg w).valid ↔ F.WValid w)
     (fun a f ih ↦ by
-      rw [F.wValid_mk, elimData_valid_mk]
-      exact and_congr (forall_congr' ih) (by simp only [OverInput, elimData_index]; rfl))
+      rw [F.wValid_mk a f, elimData_valid_mk F Y p g hg a f]
+      exact and_congr (forall_congr' ih)
+        (iff_of_eq (congrArg (F.OverInput a)
+          (funext fun b ↦ elimData_index F Y p g hg (f b)))))
     w
 
 /-- The eliminator of the slice W-type: the morphism into any slice algebra

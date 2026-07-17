@@ -189,8 +189,8 @@ def constListNatTrans : constTypeContra ⟶ constTypeContra :=
 the object with fiber `List Nat`. -/
 theorem coMap_obj :
     (CoGrothendieck.map constListNatTrans).obj coObj =
-      CoGrothendieck.mk Bool (List Nat) := by
-  simp [coObj, constListNatTrans, listFunctor]
+      CoGrothendieck.mk Bool (List Nat) :=
+  rfl
 
 /-- `CoGrothendieck.map` leaves the base component of a morphism
 unchanged. -/
