@@ -86,6 +86,13 @@ periods, and out-of-list types; flag each occurrence.
   outside them in the same file.
 - Anonymous constructors `⟨ ... ⟩` and structure projections
   `.x` are preferred where unambiguous.
+- Copyright header per mathlib's style guide:
+  `Copyright (c) <year> <author names>. All rights reserved.`,
+  the Apache-2.0 license line, and
+  `Authors: <comma-separated names>`. Contributor names appear
+  here in mathlib's named-author form; see
+  CONTRIBUTING.md § Style and references for the scoped
+  exception to the generic-user-reference rule.
 
 **Adversarial-reviewer instruction**: scan our `.lean` files
 for indentation drift, lines exceeding 100 characters,
@@ -94,18 +101,24 @@ and namespace/section nesting violations.
 
 ### Naming conventions (see also mathlib's `naming.html`)
 
-- `snake_case` for `Prop`-valued definitions
-  (`theorem`, `lemma`).
-- `lowerCamelCase` for `def`, `instance`, `example`,
-  variables, anonymous constructors, and tactic names.
-- `UpperCamelCase` for `structure`, `class`, `inductive`,
-  type-class arguments, and Sort-valued constants.
+- `UpperCamelCase` for names denoting `Prop`s or `Type`s:
+  `structure`, `class`, `inductive`, type-class arguments,
+  Sort-valued constants, and `def`s returning a `Prop` or
+  `Type` (e.g. predicates). Functions are named as their
+  return values.
+- `snake_case` for the names of proof terms
+  (`theorem` / `lemma`).
+- `lowerCamelCase` for terms of other types: `def`s returning
+  values, `example`s, variables, anonymous constructors, and
+  tactic names. An explicitly named `instance` is a term of its
+  class and follows the same rules (`snake_case` when the class
+  is `Prop`-valued).
 - Compound names follow the pattern
   `<subject>_<verb>_<object>` or `<verb>_<subject>` for
   theorems (e.g., `add_comm`, `mul_assoc`,
   `Nat.succ_lt_succ`).
-- Predicates use the suffix `_iff_…` to indicate "if and only
-  if" relationships (`even_iff_two_dvd`).
+- Theorem names stating an equivalence use the infix `_iff_`
+  (`even_iff_two_dvd`).
 - Do not include the namespace in the declaration body's
   identifiers; rely on `namespace` to scope.
 - Discharging operator: `_left`, `_right`, `_self`, `_of_…`,
@@ -120,10 +133,18 @@ each occurrence with a pointer to the upstream rule.
 ### Documentation (see also mathlib's `doc.html`)
 
 - `/-! … -/` module docstring is mandatory after imports;
-  required sections (in order): `# Title`, brief summary,
-  `## Main definitions`, `## Main statements`,
-  `## Notation` (if any), `## Implementation notes` (if any),
-  `## References` (if any), and `## Tags`.
+  required sections (in order), each present when it has
+  content and omitted (never a placeholder) when vacuous:
+  `# Title`, brief summary, `## Main definitions`,
+  `## Main statements`, `## Notation`,
+  `## Implementation notes`, `## References`, and `## Tags`.
+  `## Tags` is mandatory for modules with substantive content
+  (index stubs omit it) and lists only keywords for the
+  module's major theme — universal properties of the file's
+  development, nothing transient. The section mandates are
+  deliberate local strengthenings of mathlib's doc guide,
+  which marks `## Main definitions` and `## Main statements`
+  optional.
 - `/-- … -/` declaration docstring is mandatory for every
   `def`, `structure`, `class`, `instance`, every field of a
   `structure`/`class`, and every theorem of public interest.
@@ -162,12 +183,18 @@ constraints.
 
 ## Comment and docstring rules
 
-The module/declaration docstring requirements (mandatory module
-docstring with its required sections, mandatory declaration
-docstrings, Markdown + LaTeX, and no development-history
-references) are stated above in § Documentation (see also
-mathlib's `doc.html`). One additional local rule:
+Local docstring rules. These are deliberate strengthenings of
+mathlib's doc guide (which requires docstrings only for
+definitions and major theorems) and bind as written:
 
+- The `/-! … -/` module docstring is mandatory after imports,
+  with the section list and non-vacuous reading stated in
+  § Documentation above.
+- `/-- … -/` docstrings are mandatory for every `def`,
+  `structure`, `class`, and `instance`, every field of a
+  `structure`/`class`, and every theorem of public interest.
+- Markdown and LaTeX as in § Documentation; no
+  development-history references.
 - **Empty lines inside declarations are lint-discouraged**; use a
   brief comment (`-- ...`) as a structural separator if needed.
 

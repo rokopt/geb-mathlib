@@ -1,19 +1,25 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
 import Geb.Mathlib.Data.PFunctor.Slice.Basic
 
--- Test files keep their declarations private; silence the
--- only-private-declarations lint.
-set_option linter.privateModule false
-
 /-!
 # Tests for the slice polynomial functor core
+
+Concrete slice polynomial functors over `Bool` exercise the
+structures, the compatibility predicate, the object and morphism maps
+with their functoriality, and the fiber formers, mostly by `rfl`.
+
+## Tags
+
+polynomial functor, slice category, container, PFunctor
 -/
+
+set_option linter.privateModule false
 
 open SliceDomPFunctor SlicePFunctor
 
@@ -97,7 +103,7 @@ example :
     (testSlice.toSliceDomPFunctor.map (p' := Prod.fst) sliceMor rfl sliceElt).1.1 = () := rfl
 
 /-- A slice functor whose shape-output map `q = id` distinguishes its two
-shapes, so the output-index content of `obj` is genuinely exercised. -/
+shapes, so the output-index content of `obj` is exercised. -/
 def separatingSlice : SlicePFunctor Bool Bool where
   A := Bool
   B := fun _ ↦ Bool
@@ -114,7 +120,7 @@ example (X X' : Type) (p : X → Bool) (p' : X' → Bool) (f : X → X')
     (hf : p' ∘ f = p) : separatingSlice.obj p' ∘ separatingSlice.map f hf = separatingSlice.obj p :=
   separatingSlice.map_w f hf
 
--- Direction is the direction-input-map fibre; the predicate is its membership.
+-- Direction is the direction-input-map fiber; the predicate is its membership.
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) :
     F.Direction a i = { b : F.B a // F.r ⟨a, b⟩ = i } := rfl
 example (F : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (i : Bool) (b : F.B a) :

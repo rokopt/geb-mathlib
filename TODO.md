@@ -216,10 +216,6 @@ parametric right adjoint determined by its generic data
   structure is available, in mathlib or built here, establish the
   natural isomorphism between `SlicePFunctor.functor` and the
   categorical composite `Σ_t ∘ Π_f ∘ Δ_s`.
-- **Update `Authors:` lines as content authors arrive**: every
-  `.lean` file ships with `Authors: The geb-mathlib contributors`.
-  When a contributor authors substantive content in a file,
-  update that file's `Authors:` line to credit them by name.
 - **Adopt `leanprover-community/upstreaming-dashboard-action`**:
   when we judge we have enough novel and interesting content that
   members of the mathlib community would likely want to be made
@@ -274,6 +270,29 @@ parametric right adjoint determined by its generic data
 - **Migrate `update.yml` from `GITHUB_TOKEN` to a PAT**: trigger
   if the manual close-and-reopen-to-fire-CI overhead on cron-
   created bump-PRs becomes burdensome.
+- **Reconcile test-module import visibility**:
+  `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses
+  `public import` for its module-under-test while every sibling
+  test module uses plain `import`; `GebTests/Internal/`'s
+  `public meta import` lines are in the same category. Import
+  visibility changes what a module re-exports, so it is deferred.
+  Trigger: the next branch that revises the test modules'
+  interfaces.
+- **Decide a test-declaration privacy discipline**: test modules
+  mix `private` and public declarations with no uniform rule;
+  the IndRec test's type-valued definitions must stay `@[expose]`
+  public for cross-module compilation, so blanket privatization
+  is not obviously desirable. Privacy changes module-interface
+  visibility, so it is deferred. Trigger: the next branch that
+  revises the test modules' interfaces.
+- **Add `ext_iff` companions**: mathlib's naming guide
+  (§ Extensionality) prescribes bidirectional
+  `f = g ↔ ∀ x, f x = g x` companions alongside `ext` lemmas;
+  none exist for `GrothendieckOp.hom_ext`,
+  `CoGrothendieck.hom_ext`, or `IR.ext` (`IR.snd_eq_of_eq` is a
+  converse but is not packaged as `ext_iff`). Adding them alters
+  the theorem-set, so it is deferred. Trigger: the next branch
+  that revises these interfaces.
 - **Extract a shared presheaf test-fixtures module**: the
   `presheafWitness : PresheafPFunctor (Fin 2) (Fin 2)` fixture is
   duplicated in `GebTests/Mathlib/Data/PFunctor/Presheaf/Basic.lean`

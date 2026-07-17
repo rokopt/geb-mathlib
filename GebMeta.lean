@@ -1,12 +1,12 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
-public meta import Lean.Util.CollectAxioms
 public meta import Batteries.Tactic.Lint.Basic
+public meta import Lean.Util.CollectAxioms
 
 /-!
 # Axiom-hygiene linter
@@ -15,17 +15,26 @@ public meta import Batteries.Tactic.Lint.Basic
 `lake lint` when a declaration depends on any axiom outside the
 permitted set for its module. For most modules the permitted set
 is `{propext, Quot.sound}`; modules in `classicalAllowedModules`
-additionally permit `Classical.choice`. It is built on
-`Lean.collectAxioms` (core Lean), the same primitive `#print
-axioms` uses. The module lives outside the `Geb`/`GebTests`
-namespaces so the linter does not audit its own metaprogramming
-code.
+additionally permit `Classical.choice`.
 
-## References
+## Main definitions
 
-- `Lean/Util/CollectAxioms.lean` (core Lean) — `collectAxioms`.
-- `Batteries/Tactic/Lint/Basic.lean` — the `Linter` interface and
-  the `@[env_linter]` attribute.
+* `GebMeta.detectNonstandardAxiom` — the linter.
+* `GebMeta.classicalAllowedModules` — the exact module names
+  additionally permitted to depend on `Classical.choice`.
+
+## Implementation notes
+
+The linter is built on `Lean.collectAxioms` (core Lean, in
+`Lean/Util/CollectAxioms.lean`), the same primitive `#print
+axioms` uses, and on the `Linter` interface and `@[env_linter]`
+attribute of `Batteries/Tactic/Lint/Basic.lean`. The module lives
+outside the `Geb`/`GebTests` namespaces so the linter does not
+audit its own metaprogramming code.
+
+## Tags
+
+axioms, linter, constructive
 -/
 
 public meta section

@@ -192,6 +192,11 @@ presents superseded decisions as current. See `docs/process.md`
   (e.g. the maintainer named for Code-of-Conduct or security
   reporting): a specific name and email are appropriate there,
   since they identify a project role rather than a contributor.
+  A second exception is `.lean` copyright headers, which follow
+  mathlib's named-author form
+  (`Copyright (c) <year> <names>. All rights reserved.` /
+  `Authors: <names>`): the names identify authorship as mathlib
+  requires and are exempt from this rule.
 
 Formal, precise, mathematical, dry, unopinionated.
 Cite known mathematics where applicable; reference standard

@@ -398,3 +398,9 @@ of contact is different: naming the maintainer for Code-of-Conduct
 or security reporting identifies a project role, not a
 contribution. A specific name and email are therefore appropriate
 for such a contact.
+
+`.lean` copyright headers are a second exception: mathlib's
+style guide prescribes named authors in the copyright and
+`Authors:` lines, and upstream-eligible files keep that form.
+The header names identify authorship for upstream submission,
+not autobiographical detail.

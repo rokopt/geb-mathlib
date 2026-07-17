@@ -1,21 +1,31 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
 import Geb.Mathlib.CategoryTheory.Grothendieck
 
-set_option linter.privateModule false
-
 /-!
 # Tests for the covariant and contravariant Grothendieck constructions
+
+Concrete `Cat`-valued functors on `Type` exercise
+`Grothendieck.functorToCat`, the `GrothendieckOp` and `CoGrothendieck`
+object and morphism interfaces (constructors, destructors, round
+trips, composition), the base projections, the functoriality in the
+functor, and the packaged functors, mostly by `rfl`.
+
+## Tags
+
+Grothendieck construction, contravariant, opposite category
 -/
+
+set_option linter.privateModule false
 
 open CategoryTheory
 
-/-! ## Covariant `functorToCat` -/
+/-! ### Covariant `functorToCat` -/
 
 /-- A concrete covariant `Cat`-valued functor: constant at `Type`. -/
 def constTypeCovariant : Type ⥤ Cat.{0, 1} :=
@@ -29,7 +39,7 @@ theorem functorToCat_obj_constTypeCovariant :
       Cat.of (Grothendieck constTypeCovariant) :=
   rfl
 
-/-! ## `GrothendieckOp` objects -/
+/-! ### `GrothendieckOp` objects -/
 
 /-- A constant `Cat`-valued functor on `Type` for exercising
 `GrothendieckOp`. -/
@@ -50,7 +60,7 @@ theorem gOpObj_fiber : gOpObj.fiber = Nat := rfl
 theorem gOpObj_eta :
     GrothendieckOp.mk gOpObj.base gOpObj.fiber = gOpObj := rfl
 
-/-! ## `GrothendieckOp` morphisms -/
+/-! ### `GrothendieckOp` morphisms -/
 
 /-- A second object: base `Nat`, fiber `String`. -/
 def gOpObj' : GrothendieckOp constTypeOp :=
@@ -87,7 +97,7 @@ theorem gOpComp_base :
       GrothendieckOp.homBase gOpHom := by
   simp
 
-/-! ## `CoGrothendieck` objects -/
+/-! ### `CoGrothendieck` objects -/
 
 /-- The running contravariant example: constant at `Type` on
 `(Type)ᵒᵖ`. -/
@@ -112,7 +122,7 @@ theorem coObj_fiber : coObj.fiber = Nat := rfl
 theorem coObj_eta :
     CoGrothendieck.mk coObj.base coObj.fiber = coObj := rfl
 
-/-! ## `CoGrothendieck` morphisms -/
+/-! ### `CoGrothendieck` morphisms -/
 
 /-- A sample morphism `coObj ⟶ coObj'`: base `Bool → Nat`, fiber
 `Nat → String` (source fiber to target fiber — contravariant hom
@@ -160,7 +170,7 @@ theorem coComp_fiber :
       ↾fun n : Nat ↦ (toString n).isEmpty :=
   rfl
 
-/-! ## Projections -/
+/-! ### Projections -/
 
 /-- `CoGrothendieck.forget` applied to `coObj` reduces to its base object. -/
 theorem coForget_obj :
@@ -172,7 +182,7 @@ theorem coForget_map :
       CoGrothendieck.homBase coHom :=
   rfl
 
-/-! ## Functoriality in the functor -/
+/-! ### Functoriality in the functor -/
 
 /-- The `List` endofunctor on the category of types, with bundled
 morphisms. -/
@@ -200,7 +210,7 @@ theorem coMap_map_base :
       CoGrothendieck.homBase coHom :=
   rfl
 
-/-! ## Packaged functors -/
+/-! ### Packaged functors -/
 
 /-- `CoGrothendieck.functorToCat` applied to `constTypeContra` reduces to
 the `CoGrothendieck` construction on it, on the nose. -/

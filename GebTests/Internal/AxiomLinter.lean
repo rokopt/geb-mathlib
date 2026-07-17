@@ -1,11 +1,13 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module -- shake: keep-all
+
 public meta import Lean.Elab.Command
 public import Lean.Exception
+
 import GebMeta
 
 /-!
@@ -14,6 +16,10 @@ import GebMeta
 Example-based checks of the pure axiom classifier behind the
 `detectNonstandardAxiom` linter, plus allowlist-logic unit tests
 and a module-resolution meta-test.
+
+## Tags
+
+axioms, linter, constructive
 -/
 
 open Lean GebMeta

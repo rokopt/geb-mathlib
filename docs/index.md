@@ -70,12 +70,12 @@ import-direction rules above are enforced by
   mathlib's `Over` is `Classical.choice`-dependent at the type level.
   `Slice/W.lean` builds the W-type (initial algebra) of a slice
   endofunctor (`dom = cod = I`) on top of mathlib's `PFunctor` W-type.
-  The root index `windexRoot` (a tree's root output index) is non-recursive; the
+  The root index `wIndexRoot` (a tree's root output index) is non-recursive; the
   domain-restriction predicate `WValid` comes from the non-dependent
   W-type eliminator `WType.elim`, which folds an index and a validity
-  component together as `windexValid : P.W → WIndex I` (its index
-  component agreeing with `windexRoot`). The carrier `W` is the
-  admissible trees, with structure map `windex`, mutually-inverse
+  component together as `wIndexValid : P.W → WIndex I` (its index
+  component agreeing with `wIndexRoot`). The carrier `W` is the
+  admissible trees, with structure map `wIndex`, mutually-inverse
   constructor and destructor `W.mk`/`W.dest`, and eliminator `W.elim`
   into any slice algebra over `I`. Only the existence half of
   initiality is established (the carrier, its fixed-point structure,
@@ -88,17 +88,17 @@ import-direction rules above are enforced by
   `Prop`-valued `…Data.IsFunctorial` record carries the named law
   conditions, and the bundle wraps both. `Presheaf/Basic.lean` is the
   constructive core (`PresheafDomPFunctor`, `PresheafPFunctor`,
-  `obj`/`map`, `objPresheaf` assembling the output as a genuine
+  `obj`/`map`, `objPresheaf` assembling the output as a
   presheaf), `Classical.choice`-free. `Presheaf/Functor.lean` packages
   the result as a categorical functor (`domFunctor`, `functor`); that
   module is listed in `GebMeta.classicalAllowedModules`.
   `Presheaf/W.lean` builds the W-type (initial algebra) of a presheaf
   endofunctor (`I = J`) on top of the slice W-type. Its carrier is the
-  presheaf `W : Iᵒᵖ ⥤ Type (max uI uA uB)` whose fibre over `j` is the
+  presheaf `W : Iᵒᵖ ⥤ Type (max uI uA uB)` whose fiber over `j` is the
   `ULift` of the hereditarily-natural slice W-trees indexed at `j`
   (`IsHereditarilyNatural`, the tree-level analogue of `IsNatural`, defined
   through the slice W-type's `Prop`-valued paramorphism); restriction is the
-  root-only `wRestr`. The `ULift` places the fibres at the functor's value
+  root-only `wRestr`. The `ULift` places the fibers at the functor's value
   universe `max uI uA uB`, since the presheaf functor raises the value
   universe by `uI` through the total-space `Σ` of `elemProj`. Mutually
   inverse `W.mk`/`W.dest` exhibit `W` as a fixed point of the
@@ -115,8 +115,9 @@ import-direction rules above are enforced by
   Objects pair an index type with a `D`-valued assignment; morphisms
   (`Hom`, with the codomain transport `homOfEq`) are index functions
   commuting with the assignments. `Endo`/`EndoMor` are the object-map
-  and morphism-map components of endofunctors, and `copr`/`coprMor`
-  are the indexed coproducts with their functorial action. No mathlib
+  and morphism-map components of endofunctors, and
+  `coprod`/`coprodMor` are the indexed coproducts with their
+  functorial action. No mathlib
   `Category` instance is taken: the categorical packaging is deferred
   to a `Classical.choice`-enabled wrapper (see `TODO.md` § Complete
   Theorem 2.4 for `IndRec`). `Classical.choice`-free.
@@ -131,10 +132,11 @@ import-direction rules above are enforced by
   `IR.DepDest`, each with `elim`/`elimInv` and the equivalences
   `IR.destEquiv`/`IR.depDestEquiv`); the code type carries
   extensionality (`IR.ext`/`IR.snd_eq_of_eq`), the eliminator
-  `IR.elim`, the induction principle `IR.ind`, and the dependent
+  `IR.elim`, the induction principle `IR.induction`, and the dependent
   recursor `IR.rec`, derived through the fold into a sigma type
-  (`IR.sigmaRec`) with step arguments `IR.RecStep`/`IR.IndStep`
-  specializing the `Sort`-valued `IR.Step`. A code is interpreted on
+  (`IR.sigmaRec`) with step arguments
+  `IR.RecStep`/`IR.InductionStep` specializing the `Sort`-valued
+  `IR.Step`. A code is interpreted on
   the free coproduct completion of `D` treated as a discrete category
   (`CategoryTheory.FreeCoprodCompDisc`, its own module above):
   `IR.interpObj` and `IR.interpMor` are the object and morphism maps

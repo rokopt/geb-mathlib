@@ -1,17 +1,25 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
 import Geb.Mathlib.Data.PFunctor.Slice.Functor
 
-set_option linter.privateModule false
-
 /-!
 # Tests for the slice polynomial functor wrapper
+
+A concrete slice polynomial functor exercises the categorical wrapper:
+the `Over`-category functor, its agreement with the choice-free core
+`obj` / `map`, and the forgetful triangle back to `domFunctor`.
+
+## Tags
+
+polynomial functor, slice category, Over, PFunctor
 -/
+
+set_option linter.privateModule false
 
 open CategoryTheory SliceDomPFunctor SlicePFunctor
 
@@ -27,7 +35,8 @@ def wrapperTestSlice : SlicePFunctor Bool Bool where
 
 /-- The categorical wrapper of `wrapperTestSlice`: a named value from
 `Slice.Functor` (the module under test) that the examples below assert about. -/
-def wrapperFunctor := wrapperTestSlice.functor
+def wrapperFunctor : CategoryTheory.Functor (Over Bool) (Over Bool) :=
+  wrapperTestSlice.functor
 
 -- The slice-valued functor forgets back to `domFunctor`.
 example : wrapperFunctor ⋙ Over.forget Bool =

@@ -1,20 +1,28 @@
 /-
-Copyright (c) 2026 The geb-mathlib contributors. All rights reserved.
+Copyright (c) 2026 Terence Rokop. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The geb-mathlib contributors
+Authors: Terence Rokop
 -/
 module
 
 import Geb.Mathlib.Data.PFunctor.Slice.Basic
 import Geb.Mathlib.Data.PFunctor.Slice.W
 
--- Test files keep their declarations private; silence the
--- only-private-declarations lint.
-set_option linter.privateModule false
-
 /-!
 # Tests for slice W-types
+
+Generic checks — by `rfl` where definitional, otherwise by the named
+laws — of the carrier, the structure map, the admissibility fold, and
+the `mk` / `dest` / `elim` laws, followed by a concrete slice
+endofunctor with a leaf shape whose admissible trees exercise the
+constructions computationally.
+
+## Tags
+
+W-type, initial algebra, polynomial functor, slice category
 -/
+
+set_option linter.privateModule false
 
 open SlicePFunctor
 
@@ -22,37 +30,37 @@ open SlicePFunctor
 example (F : SlicePFunctor.{0, 0} Bool Bool) :
     F.W = { w : F.toPFunctor.W // F.WValid w } := rfl
 example (F : SlicePFunctor.{0, 0} Bool Bool) (z : F.W) :
-    F.windex z = F.windexRoot z.1 := rfl
+    F.wIndex z = F.wIndexRoot z.1 := rfl
 
 -- The fold's index component is the root output index.
 example (F : SlicePFunctor.{0, 0} Bool Bool) (w : F.toPFunctor.W) :
-    (F.windexValid w).index = F.windexRoot w :=
-  F.windexValid_index_eq_windexRoot w
+    (F.wIndexValid w).index = F.wIndexRoot w :=
+  F.wIndexValid_index_eq_wIndexRoot w
 
 -- Admissibility unfolds one level.
 example (F : SlicePFunctor.{0, 0} Bool Bool) (a : F.toPFunctor.A)
     (f : F.toPFunctor.B a → F.toPFunctor.W) :
     F.WValid (WType.mk a f) ↔
-      F.ForAll a (F.WValid ∘ f) ∧ F.OverInput a (F.windexRoot ∘ f) :=
+      F.ForAll a (F.WValid ∘ f) ∧ F.OverInput a (F.wIndexRoot ∘ f) :=
   F.wValid_mk a f
 
 -- `mk` and `dest` are mutually inverse.
-example (F : SlicePFunctor.{0, 0} Bool Bool) (x : F.toSliceDomPFunctor.Obj F.windex) :
+example (F : SlicePFunctor.{0, 0} Bool Bool) (x : F.toSliceDomPFunctor.Obj F.wIndex) :
     W.dest (W.mk x) = x := W.dest_mk x
 example (F : SlicePFunctor.{0, 0} Bool Bool) (z : F.W) :
     W.mk (W.dest z) = z := W.mk_dest z
 
 -- `mk` lies over `I`.
-example (F : SlicePFunctor.{0, 0} Bool Bool) (x : F.toSliceDomPFunctor.Obj F.windex) :
-    F.windex (W.mk x) = F.obj F.windex x := W.windex_mk x
+example (F : SlicePFunctor.{0, 0} Bool Bool) (x : F.toSliceDomPFunctor.Obj F.wIndex) :
+    F.wIndex (W.mk x) = F.obj F.wIndex x := W.wIndex_mk x
 
 -- `elim` lies over `I` and satisfies its computation rule.
 example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (p : Y → Bool)
     (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p) :
-    p ∘ W.elim F Y p g hg = F.windex := W.comp_elim F Y p g hg
+    p ∘ W.elim F Y p g hg = F.wIndex := W.comp_elim F Y p g hg
 example (F : SlicePFunctor.{0, 0} Bool Bool) (Y : Type) (p : Y → Bool)
     (g : F.toSliceDomPFunctor.Obj p → Y) (hg : p ∘ g = F.obj p)
-    (x : F.toSliceDomPFunctor.Obj F.windex) :
+    (x : F.toSliceDomPFunctor.Obj F.wIndex) :
     W.elim F Y p g hg (W.mk x) =
       g (F.toSliceDomPFunctor.map (W.elim F Y p g hg) (W.comp_elim F Y p g hg) x) :=
   W.elim_mk F Y p g hg x
@@ -73,8 +81,8 @@ def wLeaf : wSlice.toPFunctor.W := WType.mk false (fun e ↦ e.elim)
 def wNode : wSlice.toPFunctor.W := WType.mk true (fun _ ↦ wLeaf)
 
 -- Root indices read the output index.
-example : wSlice.windexRoot wLeaf = false := rfl
-example : wSlice.windexRoot wNode = true := rfl
+example : wSlice.wIndexRoot wLeaf = false := rfl
+example : wSlice.wIndexRoot wNode = true := rfl
 
 -- The leaf is admissible vacuously; the node is admissible because its child is the
 -- leaf, whose index `false` matches the direction-input map `r ⟨true, _⟩ = false`.
@@ -86,20 +94,20 @@ def wNodeElt : wSlice.W :=
   ⟨wNode, (wSlice.wValid_mk _ _).mpr ⟨fun _ ↦ wLeafElt.property, rfl⟩⟩
 
 -- Their structure-map indices read the root output index.
-example : wSlice.windex wLeafElt = false := rfl
-example : wSlice.windex wNodeElt = true := rfl
+example : wSlice.wIndex wLeafElt = false := rfl
+example : wSlice.wIndex wNodeElt = true := rfl
 
 -- `dest` reads the root shape of an admissible tree.
 example : (W.dest wLeafElt).1.1 = false := rfl
 example : (W.dest wNodeElt).1.1 = true := rfl
 
--- `recProp` computes one level by `recProp_mk`.
-example (x : wSlice.toSliceDomPFunctor.Obj wSlice.windex) :
-    W.recProp (fun _ _ ↦ True) (W.mk x) = True :=
+-- `RecProp` computes one level by `recProp_mk`.
+example (x : wSlice.toSliceDomPFunctor.Obj wSlice.wIndex) :
+    W.RecProp (fun _ _ ↦ True) (W.mk x) = True :=
   W.recProp_mk _ x
--- `ind` discharges the always-true motive.
+-- `induction` discharges the always-true motive.
 example (z : wSlice.W) : True :=
-  W.ind (motive := fun _ ↦ True) (fun _ _ ↦ trivial) z
+  W.induction (motive := fun _ ↦ True) (fun _ _ ↦ trivial) z
 
 -- `elim` computes on concrete trees. Into the algebra reading the root output
 -- index (`wSlice.obj id`, over `Y = Bool` with `p = id`), the eliminator
