@@ -9,6 +9,14 @@ import Geb.Mathlib.Data.PFunctor.Presheaf.Functor
 
 /-!
 # Tests for the presheaf-domain polynomial functor wrapper
+
+`rfl` checks that the categorical wrappers' object and morphism maps
+agree with the choice-free core `obj` / `map` / `objPresheaf` /
+`mapPresheaf`.
+
+## Tags
+
+polynomial functor, presheaf, functor category, PFunctor
 -/
 
 set_option linter.privateModule false
@@ -27,16 +35,16 @@ example {I : Type} [Category I] (F : PresheafDomPFunctorData I) {Z Z' : Iᵒᵖ 
     F.domFunctor.map h = ↾ F.map h :=
   rfl
 
--- The presheaf-valued functor's object map is the choice-free `objPresheaf`.
 -- Named (rather than an `example`) so `lake shake` sees `Presheaf.Functor` is
 -- used: the module's declarations are otherwise exercised only in `example`s,
 -- which leave no constant in the `.olean`.
+/-- The presheaf-valued functor's object map is the choice-free `objPresheaf`. -/
 theorem functor_obj_eq {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     (Z : Iᵒᵖ ⥤ Type) : F.functor.obj Z = F.objPresheaf Z :=
   F.functor_obj Z
 
--- The presheaf-valued functor's morphism map is the dom `map`, restricted to the
--- `q`-indexed fibre.
+/-- The presheaf-valued functor's morphism map is the dom `map`, restricted to
+the `q`-indexed fibre. -/
 theorem functor_map_app {I J : Type} [Category I] [Category J] (F : PresheafPFunctor I J)
     {Z Z' : Iᵒᵖ ⥤ Type} (α : Z ⟶ Z') (X : Jᵒᵖ) (w : (F.functor.obj Z).obj X) :
     (F.functor.map α).app X w =

@@ -11,6 +11,15 @@ import Mathlib.Order.Fin.Basic
 
 /-!
 # Tests for the presheaf W-type hereditary-naturality predicate
+
+A concrete presheaf polynomial endofunctor over the preorder category
+on `Fin 2` exercises the one-level unfolding of hereditary naturality,
+the carrier presheaf's restriction, the fixed-point `mk` / `dest`
+round trip, and the eliminator's computation rule.
+
+## Tags
+
+W-type, polynomial functor, presheaf, naturality
 -/
 
 set_option linter.privateModule false

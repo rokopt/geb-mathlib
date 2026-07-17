@@ -12,6 +12,10 @@ This module exists to exercise `GebMeta.detectNonstandardAxiom`'s
 module-scoped `Classical.choice` allowlist. Its module name is listed
 in `GebMeta.classicalAllowedModules`, so the linter accepts the
 declaration below despite its `Classical.choice` dependency.
+
+## Tags
+
+axioms, linter, classical axioms
 -/
 
 @[expose] public section

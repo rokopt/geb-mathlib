@@ -11,6 +11,16 @@ import Mathlib.Order.Fin.Basic
 
 /-!
 # Tests for the presheaf-domain polynomial functor core
+
+Generic checks of the law predicates, the object and morphism maps,
+and the output presheaf, followed by two concrete witnesses over
+preorder categories: a singleton-fibre witness whose laws close by
+`Subsingleton.elim`, and a non-degenerate witness whose reindexing
+action the examples discriminate end to end.
+
+## Tags
+
+polynomial functor, presheaf, parametric right adjoint, PFunctor
 -/
 
 set_option linter.privateModule false
@@ -209,7 +219,7 @@ example (g : (0 : Fin 2) ⟶ 1)
   presheafWitness.objRestrElt g x hq
 
 /-!
-## Non-degenerate witness
+### Non-degenerate witness
 
 `presheafWitness` has singleton direction and shape fibres, so every functor
 law equates elements of a subsingleton and `Subsingleton.elim` closes each
@@ -346,8 +356,10 @@ def presheafWitness2 : PresheafPFunctor (Fin 1) (Fin 3) where
             change shapeRestrVal2 j'' j a.1 = shapeRestrVal2 j'' j' (shapeRestrVal2 j' j a.1)
             exact shapeRestrVal2_comp j'' j' j (leOfHom h) (leOfHom g) a.1) }
 
-/-- The non-identity morphisms of the preorder category on `Fin 3`. -/
+/-- The non-identity morphism `0 ⟶ 1` of the preorder category on `Fin 3`. -/
 private def k01 : (0 : Fin 3) ⟶ 1 := homOfLE (by decide)
+
+/-- The non-identity morphism `0 ⟶ 2` of the preorder category on `Fin 3`. -/
 private def k02 : (0 : Fin 3) ⟶ 2 := homOfLE (by decide)
 
 /-- The singleton shape over output index `1` (shape index `2`), reused by the

@@ -10,6 +10,15 @@ import Geb.Mathlib.Data.PFunctor.Slice.W
 
 /-!
 # Tests for slice W-types
+
+Generic `rfl` checks of the carrier, the structure map, the
+admissibility fold, and the `mk` / `dest` / `elim` laws, followed by a
+concrete slice endofunctor with a leaf shape whose admissible trees
+exercise the constructions computationally.
+
+## Tags
+
+W-type, initial algebra, polynomial functor, slice category
 -/
 
 set_option linter.privateModule false

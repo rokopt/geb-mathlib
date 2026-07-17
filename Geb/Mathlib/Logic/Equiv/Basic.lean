@@ -18,6 +18,11 @@ Extensions of `Mathlib.Logic.Equiv.Basic`.
   a proof that it is a section of the first projection, producing a
   dependent function.
 
+## Main statements
+
+* `sigmaFstSectionElim_eq` — `sigmaFstSectionElim` computes the
+  inverse direction of `Equiv.piEquivSubtypeSigma`.
+
 ## Tags
 
 sigma, section, dependent function, equiv

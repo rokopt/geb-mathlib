@@ -9,6 +9,14 @@ import Geb.Mathlib.Data.PFunctor.Slice.Basic
 
 /-!
 # Tests for the slice polynomial functor core
+
+Concrete slice polynomial functors over `Bool` exercise the
+structures, the compatibility predicate, the object and morphism maps
+with their functoriality, and the fibre formers, mostly by `rfl`.
+
+## Tags
+
+polynomial functor, slice category, container, PFunctor
 -/
 
 set_option linter.privateModule false

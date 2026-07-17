@@ -16,6 +16,10 @@ import GebMeta
 Example-based checks of the pure axiom classifier behind the
 `detectNonstandardAxiom` linter, plus allowlist-logic unit tests
 and a module-resolution meta-test.
+
+## Tags
+
+axioms, linter, constructive
 -/
 
 open Lean GebMeta

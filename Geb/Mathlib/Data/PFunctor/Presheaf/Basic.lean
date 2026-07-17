@@ -22,7 +22,7 @@ categorical packaging appears in sibling modules. Every declaration here is
 `Classical.choice`-free; the categorical packaging that pulls in
 `Classical.choice` from mathlib is in the sibling `Presheaf.Functor` module.
 
-The design uses the option-(A) fibre encoding: directions over `i` are
+Directions over `i` are
 `SliceDomPFunctor.Direction a i = Subtype (DirectionOver a i)`, the fibre of
 the direction-input map `rCurried a` over `i`. The `directionRestr` field
 reindexes these fibres contravariantly.

@@ -90,7 +90,7 @@ open CategoryTheory.Functor
 
 variable {C : Type u} [Category.{v} C]
 
-/-! ## Covariant construction: `Cat`-valued packaging -/
+/-! ### Covariant construction: `Cat`-valued packaging -/
 
 namespace Grothendieck
 
@@ -114,7 +114,7 @@ theorem functorToCat_map {E : Cat.{v, u}} {F F' : ↑E ⥤ Cat.{v, u}}
 
 end Grothendieck
 
-/-! ## The Grothendieck construction of an oppositized functor -/
+/-! ### The Grothendieck construction of an oppositized functor -/
 
 /-- The covariant Grothendieck construction applied to the
 oppositization of `F`: objects are pairs of a base object `c : C` and a
@@ -347,7 +347,7 @@ theorem functorToCat_obj {E : Cat.{v, u}} (F : ↑E ⥤ Cat.{v, u}) :
 
 end GrothendieckOp
 
-/-! ## The contravariant Grothendieck construction -/
+/-! ### The contravariant Grothendieck construction -/
 
 /-- The contravariant Grothendieck construction of `G : Cᵒᵖ ⥤ Cat`:
 the opposite category of `GrothendieckOp G`. Objects are pairs of

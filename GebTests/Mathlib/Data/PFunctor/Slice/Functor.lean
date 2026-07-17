@@ -9,6 +9,14 @@ import Geb.Mathlib.Data.PFunctor.Slice.Functor
 
 /-!
 # Tests for the slice polynomial functor wrapper
+
+A concrete slice polynomial functor exercises the categorical wrapper:
+the `Over`-category functor, its agreement with the choice-free core
+`obj` / `map`, and the forgetful triangle back to `domFunctor`.
+
+## Tags
+
+polynomial functor, slice category, Over, PFunctor
 -/
 
 set_option linter.privateModule false
