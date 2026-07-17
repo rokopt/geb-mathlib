@@ -216,10 +216,6 @@ parametric right adjoint determined by its generic data
   structure is available, in mathlib or built here, establish the
   natural isomorphism between `SlicePFunctor.functor` and the
   categorical composite `Σ_t ∘ Π_f ∘ Δ_s`.
-- **Update `Authors:` lines as content authors arrive**: every
-  `.lean` file ships with `Authors: The geb-mathlib contributors`.
-  When a contributor authors substantive content in a file,
-  update that file's `Authors:` line to credit them by name.
 - **Adopt `leanprover-community/upstreaming-dashboard-action`**:
   when we judge we have enough novel and interesting content that
   members of the mathlib community would likely want to be made

@@ -61,6 +61,8 @@ markers, then commit.
   named for Code-of-Conduct or security reporting): a specific
   name and email are appropriate there, since they identify a
   project role rather than a contributor.
+  (`.lean` copyright headers are exempt; they follow mathlib's
+  named-author form per `docs/rules/lean-coding.md`).
 
 The binding rule is `CONTRIBUTING.md` § Style and references; see
 `docs/process.md` § Generic user references and § Avoid
