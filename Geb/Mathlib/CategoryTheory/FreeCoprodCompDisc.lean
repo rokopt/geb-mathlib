@@ -132,6 +132,68 @@ def coprodMor.{w} (ι κ : Type w) (r : ι → κ)
   ⟨Sigma.map r (fun i ↦ (hom i).1),
     funext (fun p ↦ congrFun (hom p.1).2 p.2)⟩
 
+/-- The binary coproduct of two objects of the free coproduct
+completion: the sum of the name types, the cotuple of the
+decodings — the cotuple object `[i, k]` of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] (the discussion
+preceding Theorem 2). The two objects may live at different
+index universes. -/
+def coprodPair.{uX, uY} (X : FreeCoprodCompDisc.{uX, v} D)
+    (Y : FreeCoprodCompDisc.{uY, v} D) :
+    FreeCoprodCompDisc.{max uX uY, v} D :=
+  ⟨X.1 ⊕ Y.1, Sum.elim X.2 Y.2⟩
+
+/-- The object map `(+i)` of [HancockMcBrideGhaniMalatestaAltenkirch2013]
+(the discussion preceding Theorem 2): the binary coproduct with a
+fixed left object. -/
+def plus.{uJ, uK} (i : FreeCoprodCompDisc.{uJ, v} D)
+    (k : FreeCoprodCompDisc.{uK, v} D) :
+    FreeCoprodCompDisc.{max uJ uK, v} D :=
+  coprodPair.{v, uJ, uK} D i k
+
+/-- The left injection into a binary coproduct (at one index
+universe, where the coproduct is in-category). -/
+def coprodPairInl (X Y : FreeCoprodCompDisc.{u, v} D) :
+    Hom D X (coprodPair.{v, u, u} D X Y) :=
+  ⟨Sum.inl, rfl⟩
+
+/-- The right injection into a binary coproduct. -/
+def coprodPairInr (X Y : FreeCoprodCompDisc.{u, v} D) :
+    Hom D Y (coprodPair.{v, u, u} D X Y) :=
+  ⟨Sum.inr, rfl⟩
+
+/-- The cotuple: the universal morphism out of a binary
+coproduct. -/
+def coprodPairDesc {X Y Z : FreeCoprodCompDisc.{u, v} D}
+    (f : Hom D X Z) (g : Hom D Y Z) :
+    Hom D (coprodPair.{v, u, u} D X Y) Z :=
+  ⟨Sum.elim f.1 g.1,
+    funext (fun s ↦
+      Sum.casesOn s (fun a ↦ congrFun f.2 a) (fun b ↦ congrFun g.2 b))⟩
+
+/-- The cotuple restricted along the left injection is the left
+component. -/
+theorem coprodPair_inl_desc (X Y Z : FreeCoprodCompDisc.{u, v} D)
+    (f : Hom D X Z) (g : Hom D Y Z) :
+    Hom.comp D (coprodPairInl D X Y) (coprodPairDesc D f g) = f :=
+  Subtype.ext rfl
+
+/-- The cotuple restricted along the right injection is the right
+component. -/
+theorem coprodPair_inr_desc (X Y Z : FreeCoprodCompDisc.{u, v} D)
+    (f : Hom D X Z) (g : Hom D Y Z) :
+    Hom.comp D (coprodPairInr D X Y) (coprodPairDesc D f g) = g :=
+  Subtype.ext rfl
+
+/-- Every morphism out of a binary coproduct is the cotuple of its
+restrictions along the injections (uniqueness half of the
+universal property). -/
+theorem coprodPairDesc_eta (X Y Z : FreeCoprodCompDisc.{u, v} D)
+    (h : Hom D (coprodPair.{v, u, u} D X Y) Z) :
+    coprodPairDesc D (Hom.comp D (coprodPairInl D X Y) h)
+      (Hom.comp D (coprodPairInr D X Y) h) = h :=
+  Subtype.ext (funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl)))
+
 end FreeCoprodCompDisc
 
 end CategoryTheory

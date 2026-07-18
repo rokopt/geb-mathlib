@@ -38,3 +38,22 @@ itself. -/
 theorem sampleHom_comp :
     FreeCoprodCompDisc.Hom.comp Bool sampleHom sampleHom = sampleHom :=
   Subtype.ext rfl
+
+/-- A binary coproduct across index universes. -/
+def samplePair : FreeCoprodCompDisc.{1, 0} Bool :=
+  FreeCoprodCompDisc.coprodPair Bool ⟨PUnit.{2}, fun _ ↦ true⟩ sampleX
+
+/-- The left name of `samplePair` decodes through the left
+component. -/
+theorem samplePair_inl_decode :
+    samplePair.2 (Sum.inl PUnit.unit) = true :=
+  rfl
+
+/-- The cotuple restricted along the left injection is the left
+component. -/
+theorem sample_inl_desc :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodPairInl Bool sampleX sampleX)
+        (FreeCoprodCompDisc.coprodPairDesc Bool sampleHom sampleHom) =
+      sampleHom :=
+  FreeCoprodCompDisc.coprodPair_inl_desc Bool sampleX sampleX sampleX sampleHom sampleHom
