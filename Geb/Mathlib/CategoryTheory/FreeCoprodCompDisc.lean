@@ -94,6 +94,12 @@ def homOfEq {X Y Y' : FreeCoprodCompDisc.{u, v} D} :
     Y = Y' → Hom D X Y → Hom D X Y'
   | rfl => id
 
+/-- Composition of morphisms of the free coproduct completion, in
+diagrammatic order. -/
+def Hom.comp {X Y Z : FreeCoprodCompDisc.{u, v} D} (f : Hom D X Y)
+    (g : Hom D Y Z) : Hom D X Z :=
+  ⟨g.1 ∘ f.1, (congrArg (· ∘ f.1) g.2).trans f.2⟩
+
 /-- The morphism-map component over an object map between the free
 coproduct completions of two (generally different) types. -/
 def MapMor.{w} (I : Type v) (O : Type w) (F : Map.{u, v, w} I O) :
