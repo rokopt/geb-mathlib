@@ -60,8 +60,7 @@ points. Example 1 of the same paper supplies the container code
   dependent sums and dependent products, with the object and morphism
   maps of its interpretation.
 * `contCode` — the `IR` code over the unit type representing a simple
-  container (a `PFunctor` with both fields at one universe),
-  following Example 1 of
+  container (a `PFunctor`), following Example 1 of
   [HancockMcBrideGhaniMalatestaAltenkirch2013].
 
 ## Main statements
@@ -83,12 +82,19 @@ describe, in the endofunctor case `IR I I` — are not constructed
 here; the set-theoretic model of [DybjerSetzer2003] justifies their
 existence using a Mahlo cardinal.
 
-The sigma and delta arities of `IR.Shape` share the single universe
-`uA`, following the single `Set` of Definition 2.1. The output index
+The sigma arities of `IR.Shape` live at the universe `uA` and the
+delta arities at `uB`, generalizing the single `Set` of
+Definition 2.1 (recovered as the case `uA = uB`). The output index
 type `O` parameterizes the `iota` shapes (a code `IR.iota I O o`
 decodes to `o : O`); the input index type `I` parameterizes the
-`delta` directions (a code `IR.delta I O A c` receives the decodings
-of its recursive arguments as assignments `A → I`).
+`delta` directions (a code `IR.delta I O B c` receives the decodings
+of its recursive arguments as assignments `B → I`).
+
+The `linter.checkUnivs false` option suppresses the `checkUnivs`
+warning on the separated arity universes `uA`/`uB`: in the suppressed
+declarations' types they appear only together under `max`, so the
+linter flags them as a pair that could be unified; keeping them
+distinct is the point of the separation.
 
 The whole file is exposed (`@[expose] public section`): downstream
 modules, in particular the tests, rely on definitional reduction
@@ -108,7 +114,7 @@ inductive-recursive, polynomial functor, W-type, universe, container
 
 @[expose] public section
 
-universe uA uI uO
+universe uA uB uI uO
 
 namespace IndRec
 
@@ -118,134 +124,143 @@ variable (I : Type uI) (O : Type uO)
 
 namespace IR
 
+set_option linter.checkUnivs false in
 /-- The shape type of the polynomial functor whose W-type defines
 codes for positive inductive-recursive types. -/
-def Shape : Type (max (uA + 1) uO) :=
-  O ⊕ Type uA ⊕ Type uA
+def Shape : Type (max (uA + 1) (uB + 1) uO) :=
+  O ⊕ Type uA ⊕ Type uB
 
 /-- The direction type of the polynomial functor whose W-type defines
 codes for positive inductive-recursive types. -/
-def Direction : Shape.{uA, uO} O → Type (max uA uI) :=
+def Direction : Shape.{uA, uB, uO} O → Type (max uA uB uI) :=
   Sum.elim (fun _ ↦ PEmpty)
-    (Sum.elim (fun A ↦ ULift.{uI} A) (fun A ↦ A → I))
+    (Sum.elim (fun A ↦ ULift.{max uB uI} A) (fun B ↦ ULift.{uA} (B → I)))
 
 /-- Simplification for the constant (`iota`) case of `IR.Direction`. -/
 @[simp]
-theorem direction_iota (o : O) : Direction.{uA, uI, uO} I O (Sum.inl o) = PEmpty := rfl
+theorem direction_iota (o : O) : Direction.{uA, uB, uI, uO} I O (Sum.inl o) = PEmpty := rfl
 
 /-- Simplification for the dependent sum (`sigma`) case of
 `IR.Direction`. -/
 @[simp]
 theorem direction_sigma (A : Type uA) :
-    Direction.{uA, uI, uO} I O (Sum.inr (Sum.inl A)) = ULift.{uI} A := rfl
+    Direction.{uA, uB, uI, uO} I O (Sum.inr (Sum.inl A)) = ULift.{max uB uI} A := rfl
 
 /-- Simplification for the dependent product (`delta`) case of
 `IR.Direction`. -/
 @[simp]
-theorem direction_delta (A : Type uA) :
-    Direction.{uA, uI, uO} I O (Sum.inr (Sum.inr A)) = (A → I) := rfl
+theorem direction_delta (B : Type uB) :
+    Direction.{uA, uB, uI, uO} I O (Sum.inr (Sum.inr B)) = ULift.{uA} (B → I) := rfl
 
 /-- Rewrite the direction type along a shape-type equality. -/
-def directionOfEq {s s' : Shape.{uA, uO} O} : s = s' → Direction I O s → Direction I O s'
+def directionOfEq {s s' : Shape.{uA, uB, uO} O} : s = s' → Direction I O s → Direction I O s'
   | rfl => id
 
 /-- Elimination rule for `IR.Direction`. -/
 def directionElim.{v} (V : Type v) (σ : (A : Type uA) → A → V)
-    (δ : (A : Type uA) → (A → I) → V) (s : Shape O) (ds : Direction I O s) : V :=
+    (δ : (B : Type uB) → (B → I) → V) (s : Shape O) (ds : Direction I O s) : V :=
   match s with
   | Sum.inl _ => PEmpty.elim ds
   | Sum.inr (Sum.inl (A : Type uA)) => σ A (ULift.down ds)
-  | Sum.inr (Sum.inr (A : Type uA)) => δ A ds
+  | Sum.inr (Sum.inr (B : Type uB)) => δ B (ULift.down ds)
 
+set_option linter.checkUnivs false in
 /-- The polynomial functor whose W-type defines codes for positive
 inductive-recursive types. -/
-def pFunctor : PFunctor.{max (uA + 1) uO, max uA uI} :=
-  ⟨Shape O, Direction I O⟩
+def pFunctor : PFunctor.{max (uA + 1) (uB + 1) uO, max uA uB uI} :=
+  ⟨Shape.{uA, uB, uO} O, Direction.{uA, uB, uI, uO} I O⟩
 
+set_option linter.checkUnivs false in
 /-- The value at `V` of the interpretation of `IR.pFunctor` as an
 endofunctor on `Type`. -/
-def Obj.{v} (V : Type v) : Type (max (uA + 1) uI uO v) :=
-  PFunctor.Obj.{v, max (uA + 1) uO, max uA uI} (pFunctor I O) V
+def Obj.{v} (V : Type v) : Type (max (uA + 1) (uB + 1) uI uO v) :=
+  PFunctor.Obj.{v, max (uA + 1) (uB + 1) uO, max uA uB uI}
+    (pFunctor.{uA, uB, uI, uO} I O) V
 
+set_option linter.checkUnivs false in
 /-- The first component of `IR.Obj`. -/
-def ObjFst : Type (max (uA + 1) uO) :=
-  Shape.{uA, uO} O
+def ObjFst : Type (max (uA + 1) (uB + 1) uO) :=
+  Shape.{uA, uB, uO} O
 
 /-- The second component of `IR.Obj`. -/
-def ObjSnd.{v} (V : Type v) : ObjFst O → Type (max uA uI v) :=
-  fun s ↦ Direction.{uA, uI, uO} I O s → V
+def ObjSnd.{v} (V : Type v) : ObjFst O → Type (max uA uB uI v) :=
+  fun s ↦ Direction.{uA, uB, uI, uO} I O s → V
 
 /-- Rewrite the second component of `IR.Obj` along a shape-type
 equality. -/
-def objSndOfEq.{v} (V : Type v) {s s' : ObjFst.{uA, uO} O} :
+def objSndOfEq.{v} (V : Type v) {s s' : ObjFst.{uA, uB, uO} O} :
     s = s' → ObjSnd I O V s → ObjSnd I O V s'
   | rfl => id
 
 /-- The constant (`iota`) element constructor of `IR.Obj`: shape `o`,
 no directions. -/
-def objIota.{v} (V : Type v) (o : O) : Obj.{uA, uI, uO, v} I O V :=
+def objIota.{v} (V : Type v) (o : O) : Obj.{uA, uB, uI, uO, v} I O V :=
   ⟨Sum.inl o, PEmpty.elim⟩
 
 /-- The dependent sum (`sigma`) element constructor of `IR.Obj`: shape
 `A`, directions assigned by `f` (through the lifted direction type
 `ULift A`). -/
 def objSigma.{v} (V : Type v) (A : Type uA) (f : A → V) :
-    Obj.{uA, uI, uO, v} I O V :=
+    Obj.{uA, uB, uI, uO, v} I O V :=
   ⟨Sum.inr (Sum.inl A), f ∘ ULift.down⟩
 
 /-- The dependent product (`delta`) element constructor of `IR.Obj`:
-shape `A`, directions assigned by `f`. -/
-def objDelta.{v} (V : Type v) (A : Type uA) (f : (A → I) → V) :
-    Obj.{uA, uI, uO, v} I O V :=
-  ⟨Sum.inr (Sum.inr A), f⟩
+shape `B`, directions assigned by `f` (through the lifted direction
+type `ULift (B → I)`). -/
+def objDelta.{v} (V : Type v) (B : Type uB) (f : (B → I) → V) :
+    Obj.{uA, uB, uI, uO, v} I O V :=
+  ⟨Sum.inr (Sum.inr B), f ∘ ULift.down⟩
 
 /-- Every element of `IR.Obj` with an `iota` shape equals the
 `IR.objIota` element: direction assignments out of the empty direction
 type are all equal. -/
 theorem objIota_eq_mk.{v} (V : Type v) (o : O)
-    (ds : Direction.{uA, uI, uO} I O (Sum.inl o) → V) :
-    objIota I O V o = (⟨Sum.inl o, ds⟩ : Obj.{uA, uI, uO, v} I O V) :=
+    (ds : Direction.{uA, uB, uI, uO} I O (Sum.inl o) → V) :
+    objIota I O V o = (⟨Sum.inl o, ds⟩ : Obj.{uA, uB, uI, uO, v} I O V) :=
   congrArg (Sigma.mk (Sum.inl o)) (funext (fun x ↦ PEmpty.elim x))
 
+set_option linter.checkUnivs false in
 /-- A destructor for `IR.Obj` — a pattern-matched form of
 elimination. -/
-def Dest.{v, w} (V : Type v) (W : Type w) : Type (max (uA + 1) uI uO v w) :=
-  (O → W) × ((A : Type uA) → (A → V) → W) × ((A : Type uA) → ((A → I) → V) → W)
+def Dest.{v, w} (V : Type v) (W : Type w) :
+    Type (max (uA + 1) (uB + 1) uI uO v w) :=
+  (O → W) × ((A : Type uA) → (A → V) → W) ×
+    ((B : Type uB) → ((B → I) → V) → W)
 
 /-- Convert `IR.Dest` to a morphism out of `IR.Obj` (an eliminator). -/
 def Dest.elim.{v, w} (V : Type v) (W : Type w)
-    (dest : Dest.{uA, uI, uO, v, w} I O V W) : Obj I O V → W :=
+    (dest : Dest.{uA, uB, uI, uO, v, w} I O V W) : Obj I O V → W :=
   fun ⟨s, ds⟩ ↦ match s with
   | Sum.inl o => dest.1 o
   | Sum.inr (Sum.inl (A : Type uA)) => dest.2.1 A (ds ∘ ULift.up)
-  | Sum.inr (Sum.inr (A : Type uA)) => dest.2.2 A ds
+  | Sum.inr (Sum.inr (B : Type uB)) => dest.2.2 B (ds ∘ ULift.up)
 
 /-- The inverse of `IR.Dest.elim`. -/
 def Dest.elimInv.{v, w} (V : Type v) (W : Type w) (m : Obj I O V → W) :
-    Dest.{uA, uI, uO, v, w} I O V W :=
+    Dest.{uA, uB, uI, uO, v, w} I O V W :=
   ⟨fun o ↦ m (objIota I O V o),
     fun A f ↦ m (objSigma I O V A f),
-    fun A f ↦ m (objDelta I O V A f)⟩
+    fun B f ↦ m (objDelta I O V B f)⟩
 
 /-- `IR.Dest.elimInv` is a left inverse of `IR.Dest.elim`. -/
 theorem Dest.elimInv_elim.{v, w} (V : Type v) (W : Type w)
-    (dest : Dest.{uA, uI, uO, v, w} I O V W) :
-    Dest.elimInv.{uA, uI, uO, v, w} I O V W (Dest.elim.{uA, uI, uO, v, w} I O V W dest) =
+    (dest : Dest.{uA, uB, uI, uO, v, w} I O V W) :
+    Dest.elimInv.{uA, uB, uI, uO, v, w} I O V W (Dest.elim.{uA, uB, uI, uO, v, w} I O V W dest) =
       dest :=
   rfl
 
 /-- `IR.Dest.elimInv` is a right inverse of `IR.Dest.elim`. -/
 theorem Dest.elim_elimInv.{v, w} (V : Type v) (W : Type w)
     (m : Obj I O V → W) :
-    Dest.elim.{uA, uI, uO, v, w} I O V W (Dest.elimInv.{uA, uI, uO, v, w} I O V W m) = m :=
+    Dest.elim.{uA, uB, uI, uO, v, w} I O V W (Dest.elimInv.{uA, uB, uI, uO, v, w} I O V W m) = m :=
   funext <| fun ⟨s, ds⟩ ↦ match s with
-  | Sum.inl o => congrArg m (objIota_eq_mk.{uA, uI, uO, v} I O V o ds)
+  | Sum.inl o => congrArg m (objIota_eq_mk.{uA, uB, uI, uO, v} I O V o ds)
   | Sum.inr (Sum.inl _) => rfl
   | Sum.inr (Sum.inr _) => rfl
 
 /-- `IR.Dest` is equivalent to the morphisms out of `IR.Obj`. -/
 def destEquiv.{v, w} (V : Type v) (W : Type w) :
-    Dest.{uA, uI, uO, v, w} I O V W ≃ (Obj I O V → W) where
+    Dest.{uA, uB, uI, uO, v, w} I O V W ≃ (Obj I O V → W) where
   toFun := Dest.elim I O V W
   invFun := Dest.elimInv I O V W
   left_inv := Dest.elimInv_elim I O V W
@@ -254,129 +269,134 @@ def destEquiv.{v, w} (V : Type v) (W : Type w) :
 /-- A dependent destructor for `IR.Obj` — a pattern-matched form of
 elimination. -/
 def DepDest.{v, w} (V : Type v) (W : Obj I O V → Type w) :
-    Type (max (uA + 1) uI uO v w) :=
+    Type (max (uA + 1) (uB + 1) uI uO v w) :=
   ((o : O) → W (objIota I O V o)) ×
     ((A : Type uA) → (f : A → V) → W (objSigma I O V A f)) ×
-    ((A : Type uA) → (f : (A → I) → V) → W (objDelta I O V A f))
+    ((B : Type uB) → (f : (B → I) → V) → W (objDelta I O V B f))
 
 /-- Convert `IR.DepDest` to a destructor into a sigma type. -/
 def sigmaDest.{v, w} (V : Type v) (W : Obj I O V → Type w) :
-    DepDest.{uA, uI, uO, v, w} I O V W →
-      Dest.{uA, uI, uO, v, max (uA + 1) uI uO v w} I O V (Σ e, W e) :=
+    DepDest.{uA, uB, uI, uO, v, w} I O V W →
+      Dest.{uA, uB, uI, uO, v, max (uA + 1) (uB + 1) uI uO v w} I O V (Σ e, W e) :=
   fun dest ↦
     ⟨fun o ↦ ⟨objIota I O V o, dest.1 o⟩,
       fun A f ↦ ⟨objSigma I O V A f, dest.2.1 A f⟩,
-      fun A f ↦ ⟨objDelta I O V A f, dest.2.2 A f⟩⟩
+      fun B f ↦ ⟨objDelta I O V B f, dest.2.2 B f⟩⟩
 
 /-- Convert `IR.DepDest` to a morphism into a sigma type. -/
 def sigmaElim.{v, w} (V : Type v) (W : Obj I O V → Type w) :
-    DepDest.{uA, uI, uO, v, w} I O V W → Obj I O V → Σ e, W e :=
-  Dest.elim.{uA, uI, uO, v, max (uA + 1) uI uO v w} I O V (Σ e, W e) ∘
-    sigmaDest.{uA, uI, uO, v, w} I O V W
+    DepDest.{uA, uB, uI, uO, v, w} I O V W → Obj I O V → Σ e, W e :=
+  Dest.elim.{uA, uB, uI, uO, v, max (uA + 1) (uB + 1) uI uO v w} I O V (Σ e, W e) ∘
+    sigmaDest.{uA, uB, uI, uO, v, w} I O V W
 
 /-- `IR.sigmaElim` is a section of the first projection. -/
 theorem sigmaElim_fst.{v, w} (V : Type v) (W : Obj I O V → Type w)
-    (dest : DepDest.{uA, uI, uO, v, w} I O V W) (e : Obj I O V) :
+    (dest : DepDest.{uA, uB, uI, uO, v, w} I O V W) (e : Obj I O V) :
     (sigmaElim I O V W dest e).1 = e :=
   match e with
   | ⟨s, ds⟩ => match s with
-    | Sum.inl o => objIota_eq_mk.{uA, uI, uO, v} I O V o ds
+    | Sum.inl o => objIota_eq_mk.{uA, uB, uI, uO, v} I O V o ds
     | Sum.inr (Sum.inl _) => rfl
     | Sum.inr (Sum.inr _) => rfl
 
 /-- Convert `IR.DepDest` to a dependent eliminator for `IR.Obj`. -/
 def DepDest.elim.{v, w} (V : Type v) (W : Obj I O V → Type w) :
-    DepDest.{uA, uI, uO, v, w} I O V W → (e : Obj I O V) → W e :=
+    DepDest.{uA, uB, uI, uO, v, w} I O V W → (e : Obj I O V) → W e :=
   fun dest ↦
     sigmaFstSectionElim (sigmaElim I O V W dest) (sigmaElim_fst I O V W dest)
 
 /-- The inverse of `IR.DepDest.elim`. -/
 def DepDest.elimInv.{v, w} (V : Type v) (W : Obj I O V → Type w) :
-    ((e : Obj I O V) → W e) → DepDest.{uA, uI, uO, v, w} I O V W :=
+    ((e : Obj I O V) → W e) → DepDest.{uA, uB, uI, uO, v, w} I O V W :=
   fun m ↦
     ⟨fun o ↦ m (objIota I O V o),
       fun A f ↦ m (objSigma I O V A f),
-      fun A f ↦ m (objDelta I O V A f)⟩
+      fun B f ↦ m (objDelta I O V B f)⟩
 
 /-- `IR.DepDest.elimInv` is a left inverse of `IR.DepDest.elim`. -/
 theorem DepDest.elimInv_elim.{v, w} (V : Type v) (W : Obj I O V → Type w)
-    (dest : DepDest.{uA, uI, uO, v, w} I O V W) :
-    DepDest.elimInv.{uA, uI, uO, v, w} I O V W
-      (DepDest.elim.{uA, uI, uO, v, w} I O V W dest) = dest :=
+    (dest : DepDest.{uA, uB, uI, uO, v, w} I O V W) :
+    DepDest.elimInv.{uA, uB, uI, uO, v, w} I O V W
+      (DepDest.elim.{uA, uB, uI, uO, v, w} I O V W dest) = dest :=
   rfl
 
 /-- `IR.DepDest.elimInv` is a right inverse of `IR.DepDest.elim`. -/
 theorem DepDest.elim_elimInv.{v, w} (V : Type v) (W : Obj I O V → Type w)
     (m : (e : Obj I O V) → W e) :
-    DepDest.elim.{uA, uI, uO, v, w} I O V W
-      (DepDest.elimInv.{uA, uI, uO, v, w} I O V W m) = m :=
+    DepDest.elim.{uA, uB, uI, uO, v, w} I O V W
+      (DepDest.elimInv.{uA, uB, uI, uO, v, w} I O V W m) = m :=
   funext <| fun ⟨s, ds⟩ ↦ match s with
-  | Sum.inl o => objIota_eq_mk.{uA, uI, uO, v} I O V o ds ▸ rfl
+  | Sum.inl o => objIota_eq_mk.{uA, uB, uI, uO, v} I O V o ds ▸ rfl
   | Sum.inr (Sum.inl _) => rfl
   | Sum.inr (Sum.inr _) => rfl
 
 /-- `IR.DepDest` is equivalent to the dependent eliminators of
 `IR.Obj`. -/
 def depDestEquiv.{v, w} (V : Type v) (W : Obj I O V → Type w) :
-    DepDest.{uA, uI, uO, v, w} I O V W ≃ ((e : Obj I O V) → W e) where
+    DepDest.{uA, uB, uI, uO, v, w} I O V W ≃ ((e : Obj I O V) → W e) where
   toFun := DepDest.elim I O V W
   invFun := DepDest.elimInv I O V W
   left_inv := DepDest.elimInv_elim I O V W
   right_inv := DepDest.elim_elimInv I O V W
 
+set_option linter.checkUnivs false in
 /-- A pattern-matched form of an algebra of `IR.pFunctor`. -/
-def Alg.{v} (V : Type v) : Type (max (uA + 1) uI uO v) :=
-  Dest.{uA, uI, uO, v, v} I O V V
+def Alg.{v} (V : Type v) : Type (max (uA + 1) (uB + 1) uI uO v) :=
+  Dest.{uA, uB, uI, uO, v, v} I O V V
 
 /-- Convert `IR.Alg` to the morphism form of an algebra of
 `IR.pFunctor`. -/
-def Alg.toHom.{v} (V : Type v) (alg : Alg.{uA, uI, uO, v} I O V) : Obj I O V → V :=
-  Dest.elim.{uA, uI, uO, v, v} I O V V alg
+def Alg.toHom.{v} (V : Type v) (alg : Alg.{uA, uB, uI, uO, v} I O V) : Obj I O V → V :=
+  Dest.elim.{uA, uB, uI, uO, v, v} I O V V alg
 
 end IR
 
+set_option linter.checkUnivs false in
 /-- The type of codes for positive inductive-recursive definitions:
 the W-type of `IR.pFunctor`. -/
-def IR : Type (max (uA + 1) uI uO) :=
-  PFunctor.W.{max (uA + 1) uO, max uA uI} (IR.pFunctor I O)
+def IR : Type (max (uA + 1) (uB + 1) uI uO) :=
+  PFunctor.W.{max (uA + 1) (uB + 1) uO, max uA uB uI}
+    (IR.pFunctor.{uA, uB, uI, uO} I O)
 
 namespace IR
 
 /-- The constructor for `IR`. -/
-def mk (s : Shape O) (d : Direction I O s → IR I O) : IR I O :=
-  WType.mk.{max (uA + 1) uO, max uA uI} s d
+def mk (s : Shape O) (d : Direction I O s → IR.{uA, uB, uI, uO} I O) :
+    IR.{uA, uB, uI, uO} I O :=
+  WType.mk.{max (uA + 1) (uB + 1) uO, max uA uB uI} s d
 
 /-- The constant (`iota`) code: no subcodes; its interpretation is the
 constant functor at the object with one name decoding to `o`. -/
-def iota (o : O) : IR.{uA, uI, uO} I O :=
+def iota (o : O) : IR.{uA, uB, uI, uO} I O :=
   mk I O (Sum.inl o) PEmpty.elim
 
 /-- The dependent sum (`sigma`) code: subcodes `c` indexed by `A`
 (through the lifted direction type `ULift A`); its interpretation is
 the pointwise indexed coproduct over `A` of the interpretations of the
 subcodes. -/
-def sigma (A : Type uA) (c : ULift.{uI} A → IR.{uA, uI, uO} I O) : IR I O :=
+def sigma (A : Type uA) (c : ULift.{max uB uI} A → IR.{uA, uB, uI, uO} I O) :
+    IR I O :=
   mk I O (Sum.inr (Sum.inl A)) c
 
 /-- The dependent product (`delta`) code: subcodes `c` indexed by the
-assignments of decodings to `A`; its interpretation takes recursive
-arguments indexed by `A` and passes their decodings to `c`. -/
-def delta (A : Type uA) (c : (A → I) → IR.{uA, uI, uO} I O) : IR I O :=
-  mk I O (Sum.inr (Sum.inr A)) c
+assignments of decodings to `B`; its interpretation takes recursive
+arguments indexed by `B` and passes their decodings to `c`. -/
+def delta (B : Type uB) (c : (B → I) → IR.{uA, uB, uI, uO} I O) : IR I O :=
+  mk I O (Sum.inr (Sum.inr B)) (c ∘ ULift.down)
 
 /-- Congruence for `IR.mk` in the direction assignment. -/
 theorem mk_congr (s : Shape O) {ds ds' : Direction I O s → IR I O} :
-    ds = ds' → mk.{uA, uI, uO} I O s ds = mk.{uA, uI, uO} I O s ds'
+    ds = ds' → mk.{uA, uB, uI, uO} I O s ds = mk.{uA, uB, uI, uO} I O s ds'
   | rfl => rfl
 
 /-- The motive of the proof of `IR.ext`. -/
-def ExtMotive (s : Shape.{uA, uO} O) (d : Direction I O s → IR I O)
+def ExtMotive (s : Shape.{uA, uB, uO} O) (d : Direction I O s → IR I O)
     (s' : Shape O) (eq1 : s = s') : Prop :=
   ∀ d' : Direction I O s' → IR I O, d = d' ∘ directionOfEq I O eq1 → mk I O s d = mk I O s' d'
 
 /-- Extensionality for `IR` (equality is determined by equality of
 shapes and pointwise equality of directions). -/
-theorem ext {ir ir' : IR.{uA, uI, uO} I O} (eq1 : ir.1 = ir'.1)
+theorem ext {ir ir' : IR.{uA, uB, uI, uO} I O} (eq1 : ir.1 = ir'.1)
     (eq2 : ir.2 = ir'.2 ∘ directionOfEq I O eq1) : ir = ir' :=
   match ir, ir' with
   | ⟨s, d⟩, ⟨_, d'⟩ =>
@@ -385,17 +405,17 @@ theorem ext {ir ir' : IR.{uA, uI, uO} I O} (eq1 : ir.1 = ir'.1)
 /-- The converse of `IR.ext`: an equality in `IR` determines a
 pointwise equality of directions (transported along the shape equality
 induced by the first projection). -/
-theorem snd_eq_of_eq {ir ir' : IR.{uA, uI, uO} I O} :
+theorem snd_eq_of_eq {ir ir' : IR.{uA, uB, uI, uO} I O} :
     (eq : ir = ir') → ir.2 = ir'.2 ∘ directionOfEq I O (congrArg (fun t ↦ t.1) eq)
   | rfl => rfl
 
 /-- The eliminator (the algebra morphism from the initial algebra) for
 `IR`, taking the algebra in morphism form. -/
-def elim.{v} (V : Type v) (alg : Obj.{uA, uI, uO, v} I O V → V) : IR I O → V :=
-  WType.elim.{max (uA + 1) uO, max uA uI, v} V alg
+def elim.{v} (V : Type v) (alg : Obj.{uA, uB, uI, uO, v} I O V → V) : IR I O → V :=
+  WType.elim.{max (uA + 1) (uB + 1) uO, max uA uB uI, v} V alg
 
 /-- The eliminator for `IR`, taking the algebra in the `IR.Alg` form. -/
-def elimAlg.{v} (V : Type v) (alg : Alg.{uA, uI, uO, v} I O V) : IR I O → V :=
+def elimAlg.{v} (V : Type v) (alg : Alg.{uA, uB, uI, uO, v} I O V) : IR I O → V :=
   elim I O V (Alg.toHom I O V alg)
 
 /-- The type of the step argument of `IR`'s recursors at a
@@ -404,18 +424,18 @@ for the subcodes, produce the result for the constructed code. The
 result sort (an `imax` expression) is left to inference; the
 specializations `IR.RecStep` and `IR.InductionStep` carry the explicit
 ascriptions. -/
-def Step.{v} (motive : IR.{uA, uI, uO} I O → Sort v) :=
+def Step.{v} (motive : IR.{uA, uB, uI, uO} I O → Sort v) :=
   (a : Shape O) → (f : Direction I O a → IR I O) →
   ((d : Direction I O a) → motive (f d)) → motive (mk I O a f)
 
 /-- The step argument type at a `Type`-valued motive (for `IR.rec`,
 `IR.sigmaRec`, and their companions). -/
-def RecStep.{v} (motive : IR.{uA, uI, uO} I O → Type v) :
-    Type (max (uA + 1) uI uO v) :=
+def RecStep.{v} (motive : IR.{uA, uB, uI, uO} I O → Type v) :
+    Type (max (uA + 1) (uB + 1) uI uO v) :=
   Step I O motive
 
 /-- The step argument type at a `Prop`-valued motive (for `IR.induction`). -/
-def InductionStep (motive : IR.{uA, uI, uO} I O → Prop) : Prop :=
+def InductionStep (motive : IR.{uA, uB, uI, uO} I O → Prop) : Prop :=
   Step I O motive
 
 /-- The induction principle — the recursor restricted to `Prop`-valued
@@ -423,45 +443,45 @@ motives. (The compiler does not generate code for `WType.rec`
 applications, so `WType.rec` is used only here, where propositions
 need no code.) -/
 theorem induction (motive : IR I O → Prop) :
-    InductionStep.{uA, uI, uO} I O motive → ∀ t : IR I O, motive t :=
-  WType.rec.{0, max (uA + 1) uO, max uA uI}
+    InductionStep.{uA, uB, uI, uO} I O motive → ∀ t : IR I O, motive t :=
+  WType.rec.{0, max (uA + 1) (uB + 1) uO, max uA uB uI}
     (α := Shape O) (β := Direction I O) (motive := motive)
 
 /-- The `IR.pFunctor` algebra over a sigma type generated by a
 recursor step. -/
 def sigmaRecAlg.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) :
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) :
     Obj I O (Σ e, motive e) → Σ e, motive e :=
   fun ⟨s, f⟩ ↦
     ⟨mk I O s (Sigma.fst ∘ f), mk' s (Sigma.fst ∘ f) (fun d ↦ (f d).2)⟩
 
 /-- `IR.sigmaRecAlg` preserves the shape component. -/
 theorem sigmaRecAlg_fst_fst.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) (t : Obj I O (Σ e, motive e)) :
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) (t : Obj I O (Σ e, motive e)) :
     (sigmaRecAlg I O motive mk' t).1.1 = t.1 :=
   rfl
 
 /-- `IR.sigmaRecAlg` preserves the direction component. -/
 theorem sigmaRecAlg_fst_snd.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) (t : Obj I O (Σ e, motive e)) :
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) (t : Obj I O (Σ e, motive e)) :
     (sigmaRecAlg I O motive mk' t).1.2 = Sigma.fst ∘ t.2 :=
   rfl
 
 /-- The recursor's auxiliary fold into a sigma type. -/
 def sigmaRec.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) : IR I O → Σ e, motive e :=
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) : IR I O → Σ e, motive e :=
   elim I O (Σ e, motive e) (sigmaRecAlg I O motive mk')
 
 /-- The inductive step of the proof that `IR.sigmaRec` is a section of
 the first projection. -/
 theorem sigmaRec_fst_step.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) :
-    InductionStep.{uA, uI, uO} I O (fun t ↦ (sigmaRec I O motive mk' t).1 = t) :=
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) :
+    InductionStep.{uA, uB, uI, uO} I O (fun t ↦ (sigmaRec I O motive mk' t).1 = t) :=
   fun _ _ ih ↦ ext I O rfl (funext ih)
 
 /-- `IR.sigmaRec` is a section of the first projection. -/
 theorem sigmaRec_fst.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) :
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) :
     ∀ t : IR I O, (sigmaRec I O motive mk' t).1 = t :=
   induction I O (motive := fun t ↦ (sigmaRec I O motive mk' t).1 = t)
     (sigmaRec_fst_step I O motive mk')
@@ -469,7 +489,7 @@ theorem sigmaRec_fst.{v} (motive : IR I O → Type v)
 /-- The shape component of `IR.sigmaRec` agrees with the shape
 component of the argument. -/
 theorem sigmaRec_fst_fst.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) (t : IR I O) :
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) (t : IR I O) :
     (sigmaRec I O motive mk' t).1.1 = t.1 :=
   match t with
   | ⟨_, _⟩ => rfl
@@ -477,13 +497,13 @@ theorem sigmaRec_fst_fst.{v} (motive : IR I O → Type v)
 /-- The direction component of `IR.sigmaRec` agrees with the direction
 component of the argument, transported along `IR.sigmaRec_fst_fst`. -/
 theorem sigmaRec_fst_snd.{v} (motive : IR I O → Type v)
-    (mk' : RecStep.{uA, uI, uO, v} I O motive) (t : IR I O) :
+    (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) (t : IR I O) :
     (sigmaRec I O motive mk' t).1.2 =
       t.2 ∘ directionOfEq I O (sigmaRec_fst_fst I O motive mk' t) :=
   snd_eq_of_eq I O (sigmaRec_fst I O motive mk' t)
 
 /-- The recursor — the dependent eliminator for `IR`. -/
-def rec.{v} {motive : IR I O → Type v} (mk' : RecStep.{uA, uI, uO, v} I O motive) :
+def rec.{v} {motive : IR I O → Type v} (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) :
     (t : IR I O) → motive t :=
   sigmaFstSectionElim (sigmaRec I O motive mk') (sigmaRec_fst I O motive mk')
 
@@ -491,57 +511,59 @@ end IR
 
 namespace IR
 
+set_option linter.checkUnivs false in
 /-- The constant (`iota`) case of the interpretation of an `IR` code
 as a `FreeCoprodCompDisc.Map`: the constant object map at the
 singleton family decoding to `o`. -/
-def interpObjIota (o : O) : FreeCoprodCompDisc.Map.{uA, uI, uO} I O :=
+def interpObjIota (o : O) : FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O :=
   fun _ ↦ ⟨ULift Unit, fun _ ↦ o⟩
 
 /-- The dependent sum (`sigma`) case of the interpretation of an `IR`
 code as a `FreeCoprodCompDisc.Map`: the pointwise indexed coproduct
 over `A` of the interpretations `α` of the subcodes. -/
 def interpObjSigma (A : Type uA)
-    (α : A → FreeCoprodCompDisc.Map.{uA, uI, uO} I O) :
-    FreeCoprodCompDisc.Map.{uA, uI, uO} I O :=
-  fun X ↦ FreeCoprodCompDisc.coprod.{uA, uO, uA} O A (fun a ↦ α a X)
+    (α : A → FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O) :
+    FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O :=
+  fun X ↦ FreeCoprodCompDisc.coprod.{max uA uB, uO, uA} O A (fun a ↦ α a X)
 
 /-- The dependent product (`delta`) case of the interpretation of an
 `IR` code as a `FreeCoprodCompDisc.Map`: at an object `X`, the
-indexed coproduct over `A → X.1` of the interpretations `α` of the
+indexed coproduct over `B → X.1` of the interpretations `α` of the
 subcodes at the directions induced by `X`. -/
-def interpObjDelta (A : Type uA)
-    (α : (A → I) → FreeCoprodCompDisc.Map.{uA, uI, uO} I O) :
-    FreeCoprodCompDisc.Map.{uA, uI, uO} I O :=
+def interpObjDelta (B : Type uB)
+    (α : (B → I) → FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O) :
+    FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O :=
   fun X ↦
-    FreeCoprodCompDisc.coprod.{uA, uO, uA} O (A → X.1) (fun g ↦ α (X.2 ∘ g) X)
+    FreeCoprodCompDisc.coprod.{max uA uB, uO, max uA uB} O (B → X.1)
+      (fun g ↦ α (X.2 ∘ g) X)
 
 /-- The algebra which computes one step of the interpretation of an
 `IR` code as a `FreeCoprodCompDisc.Map`. -/
 def interpObjAlg :
-    Alg.{uA, uI, uO, max (uA + 1) uI uO} I O
-      (FreeCoprodCompDisc.Map.{uA, uI, uO} I O) :=
-  ⟨interpObjIota I O, interpObjSigma I O, interpObjDelta I O⟩
+    Alg.{uA, uB, uI, uO, max (uA + 1) (uB + 1) uI uO} I O
+      (FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O) :=
+  ⟨interpObjIota.{uA, uB, uI, uO} I O, interpObjSigma I O, interpObjDelta I O⟩
 
 /-- The object map of the interpretation of an `IR` code as a
 `FreeCoprodCompDisc.Map`. -/
-def interpObj : IR.{uA, uI, uO} I O → FreeCoprodCompDisc.Map.{uA, uI, uO} I O :=
-  elimAlg I O (FreeCoprodCompDisc.Map.{uA, uI, uO} I O) (interpObjAlg I O)
+def interpObj : IR.{uA, uB, uI, uO} I O → FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O :=
+  elimAlg I O (FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O) (interpObjAlg I O)
 
 /-- The signature of the morphism map accompanying `IR.interpObj`. -/
-def MorMapSig (ir : IR.{uA, uI, uO} I O) : Type (max (uA + 1) uI) :=
+def MorMapSig (ir : IR.{uA, uB, uI, uO} I O) : Type (max (uA + 1) (uB + 1) uI) :=
   FreeCoprodCompDisc.MapMor I O (interpObj I O ir)
 
 /-- The morphism-map component of the constant (`iota`) interpretation
 `IR.interpObjIota`: every morphism maps to the identity. -/
 def interpMorIota (o : O) :
-    FreeCoprodCompDisc.MapMor I O (interpObjIota.{uA, uI, uO} I O o) :=
+    FreeCoprodCompDisc.MapMor I O (interpObjIota.{uA, uB, uI, uO} I O o) :=
   fun _ _ _ ↦ ⟨id, rfl⟩
 
 /-- The morphism-map component of the dependent sum (`sigma`)
 interpretation `IR.interpObjSigma`: the indexed coproduct of the
 componentwise morphism maps `μ`. -/
 def interpMorSigma (A : Type uA)
-    (α : A → FreeCoprodCompDisc.Map.{uA, uI, uO} I O)
+    (α : A → FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O)
     (μ : (a : A) → FreeCoprodCompDisc.MapMor I O (α a)) :
     FreeCoprodCompDisc.MapMor I O (interpObjSigma I O A α) :=
   fun X Y h ↦
@@ -554,12 +576,12 @@ def interpMorSigma (A : Type uA)
 interpretation `IR.interpObjDelta`: reindex along postcomposition with
 the morphism, transporting each componentwise morphism map `μ` along
 the morphism's commutation equality. -/
-def interpMorDelta (A : Type uA)
-    (α : (A → I) → FreeCoprodCompDisc.Map.{uA, uI, uO} I O)
-    (μ : (f : A → I) → FreeCoprodCompDisc.MapMor I O (α f)) :
-    FreeCoprodCompDisc.MapMor I O (interpObjDelta I O A α) :=
+def interpMorDelta (B : Type uB)
+    (α : (B → I) → FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O)
+    (μ : (f : B → I) → FreeCoprodCompDisc.MapMor I O (α f)) :
+    FreeCoprodCompDisc.MapMor I O (interpObjDelta I O B α) :=
   fun X Y h ↦
-    FreeCoprodCompDisc.coprodMor O (A → X.1) (A → Y.1) (fun g ↦ h.1 ∘ g)
+    FreeCoprodCompDisc.coprodMor O (B → X.1) (B → Y.1) (fun g ↦ h.1 ∘ g)
       (fun g ↦ α (X.2 ∘ g) X)
       (fun g ↦ α (Y.2 ∘ g) Y)
       (fun g ↦
@@ -570,21 +592,22 @@ def interpMorDelta (A : Type uA)
 /-- The step argument to the recursor which generates the morphism map
 of the interpretation of an `IR` code as a `FreeCoprodCompDisc.Map`
 (the object map is `IR.interpObj`). -/
-def interpMorStep : RecStep.{uA, uI, uO, max (uA + 1) uI} I O (MorMapSig I O) :=
+def interpMorStep :
+    RecStep.{uA, uB, uI, uO, max (uA + 1) (uB + 1) uI} I O (MorMapSig I O) :=
   fun s c m ↦ match s with
-  | Sum.inl o => interpMorIota I O o
+  | Sum.inl o => interpMorIota.{uA, uB, uI, uO} I O o
   | Sum.inr (Sum.inl A) =>
       interpMorSigma I O A
         (fun a ↦ interpObj I O (c (ULift.up a)))
         (fun a ↦ m (ULift.up a))
-  | Sum.inr (Sum.inr A) =>
-      interpMorDelta I O A
-        (fun f ↦ interpObj I O (c f))
-        m
+  | Sum.inr (Sum.inr B) =>
+      interpMorDelta I O B
+        (fun f ↦ interpObj I O (c (ULift.up f)))
+        (fun f ↦ m (ULift.up f))
 
 /-- The morphism map of the interpretation of an `IR` code as a
 `FreeCoprodCompDisc.Map` (the object map is `IR.interpObj`). -/
-def interpMor (ir : IR.{uA, uI, uO} I O) : MorMapSig I O ir :=
+def interpMor (ir : IR.{uA, uB, uI, uO} I O) : MorMapSig I O ir :=
   rec I O (interpMorStep I O) ir
 
 end IR
@@ -610,17 +633,17 @@ recursive argument (the type bound by the binder), then recursive
 arguments indexed by its decoding (the family of types under the
 binder), decoding to `former` applied to the decodings. -/
 def univBinder.{v} (former : (X : Type v) → (X → Type v) → Type v) :
-    IR.{v, v + 1, v + 1} (Type v) (Type v) :=
+    IR.{v, v, v + 1, v + 1} (Type v) (Type v) :=
   IR.delta (Type v) (Type v) PUnit.{v + 1} (fun f ↦
     IR.delta (Type v) (Type v) (f PUnit.unit) (fun q ↦
       IR.iota (Type v) (Type v) (former (f PUnit.unit) q)))
 
 /-- The dependent-sum-former subcode of a universe code. -/
-def univSigma.{v} : IR.{v, v + 1, v + 1} (Type v) (Type v) :=
+def univSigma.{v} : IR.{v, v, v + 1, v + 1} (Type v) (Type v) :=
   univBinder (fun X q ↦ Σ x : X, q x)
 
 /-- The dependent-product-former subcode of a universe code. -/
-def univPi.{v} : IR.{v, v + 1, v + 1} (Type v) (Type v) :=
+def univPi.{v} : IR.{v, v, v + 1, v + 1} (Type v) (Type v) :=
   univBinder (fun X q ↦ (x : X) → q x)
 
 variable (K : Type uK) (T : K → Type uT)
@@ -628,7 +651,7 @@ variable (K : Type uK) (T : K → Type uT)
 /-- The starting-type subcode of a universe code: an `iota` code
 decoding to the lifted starting type selected by `k`. -/
 def univIota (k : K) :
-    IR.{max uK uT, max uK uT + 1, max uK uT + 1}
+    IR.{max uK uT, max uK uT, max uK uT + 1, max uK uT + 1}
       (Type (max uK uT)) (Type (max uK uT)) :=
   IR.iota (Type (max uK uT)) (Type (max uK uT)) (ULift.{uK} (T k))
 
@@ -641,7 +664,7 @@ def UnivConstructor : Type (max uK uT) :=
 /-- The subcode of the universe code selected by each constructor. -/
 def univConstructorCode :
     UnivConstructor.{uK, uT} K →
-      IR.{max uK uT, max uK uT + 1, max uK uT + 1}
+      IR.{max uK uT, max uK uT, max uK uT + 1, max uK uT + 1}
         (Type (max uK uT)) (Type (max uK uT)) :=
   Sum.elim (univIota K T)
     (Sum.elim (fun _ ↦ univSigma.{max uK uT}) (fun _ ↦ univPi.{max uK uT}))
@@ -653,7 +676,7 @@ dependent sums and dependent products — is the initial algebra of the
 code's interpretation; this file provides the code and the
 interpretation, not the initial algebra. -/
 def univCode :
-    IR.{max uK uT, max uK uT + 1, max uK uT + 1}
+    IR.{max uK uT, max uK uT, max uK uT + 1, max uK uT + 1}
       (Type (max uK uT)) (Type (max uK uT)) :=
   IR.sigma (Type (max uK uT)) (Type (max uK uT)) (UnivConstructor.{uK, uT} K)
     (fun i ↦ univConstructorCode K T i.down)
@@ -676,8 +699,7 @@ section Container
 /-! ### Simple containers as `IR` codes over the unit type
 
 A simple container — a shape type `S` and a direction family
-`P : S → Type` — is mathlib's `PFunctor.{u, u}` (with both fields at
-the same universe). Example 1 of
+`P : S → Type` — is mathlib's `PFunctor`. Example 1 of
 [HancockMcBrideGhaniMalatestaAltenkirch2013] represents such a
 container by an `IR` code over the unit type (the paper's `IR 1 1`):
 a `sigma` over the shapes, then for each shape a `delta` over its
@@ -692,7 +714,7 @@ a `sigma` over the shapes `F.A`, then for each shape a `delta` over
 its directions `F.B`, terminating in `iota` at the unit element.
 Follows Example 1 of
 [HancockMcBrideGhaniMalatestaAltenkirch2013]. -/
-def contCode (F : PFunctor.{uA, uA}) : IR.{uA, uI, uO} PUnit PUnit :=
+def contCode (F : PFunctor.{uA, uB}) : IR.{uA, uB, uI, uO} PUnit PUnit :=
   IR.sigma PUnit PUnit F.A
     (fun s ↦ IR.delta PUnit PUnit (F.B s.down)
       (fun _ ↦ IR.iota PUnit PUnit PUnit.unit))

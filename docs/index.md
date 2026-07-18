@@ -154,7 +154,6 @@ import-direction rules above are enforced by
   types and closed under dependent sums and dependent products
   (Examples 2.5 and 2.6, combined and generalized), with
   interpretation maps `univEndo`/`univEndoMor`. `contCode` translates
-  a simple container (a `PFunctor` with both fields at one universe)
-  to an `IR` code over the unit type
-  (Hancock–McBride–Ghani–Malatesta–Altenkirch Example 1).
+  a simple container (a `PFunctor`) to an `IR` code over the unit
+  type (Hancock–McBride–Ghani–Malatesta–Altenkirch Example 1).
   `Classical.choice`-free.

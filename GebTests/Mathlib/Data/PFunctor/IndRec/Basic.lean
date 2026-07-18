@@ -34,8 +34,8 @@ that the `delta` interpretation consumes the input-typed decodings
 of its recursive arguments.
 
 A container is translated to an `IR` code over the unit type by
-`contCode`; a `rfl` test checks that an interpreted name decodes to
-the unit element.
+`contCode`; `rfl` tests check that an interpreted name decodes to
+the unit element, including at separated arity universes.
 
 ## Tags
 
@@ -193,7 +193,7 @@ def SigmaTestDecode : ULift.{1} Bool → Type :=
 
 /-- The subcodes of a sigma test code over `Bool`: `iota` codes
 decoding to `Nat` and `Bool`. -/
-def sigmaTestSub : ULift.{1} Bool → IR.{0, 1, 1} Type Type :=
+def sigmaTestSub : ULift.{1} Bool → IR.{0, 0, 1, 1} Type Type :=
   fun b ↦ IR.iota Type Type (SigmaTestDecode b)
 
 /-- The sigma-case morphism action of `IR.interpMorStep` at `morHom`. -/
@@ -215,7 +215,7 @@ def DeltaTestDecode : (Bool → Type) → Type :=
 
 /-- The subcodes of a delta test code over `Bool`: `iota` codes at the
 index decodings. -/
-def deltaTestSub : (Bool → Type) → IR.{0, 1, 1} Type Type :=
+def deltaTestSub : (Bool → Type) → IR.{0, 0, 1, 1} Type Type :=
   fun f ↦ IR.iota Type Type (DeltaTestDecode f)
 
 /-- The delta-case morphism action of `IR.interpMorStep` at `morHom`. -/
@@ -223,8 +223,9 @@ def deltaTestMor :
     FreeCoprodCompDisc.Hom Type
       (IR.interpObj Type Type (IR.delta Type Type Bool deltaTestSub) morSrc)
       (IR.interpObj Type Type (IR.delta Type Type Bool deltaTestSub) morTgt) :=
-  IR.interpMorStep Type Type (Sum.inr (Sum.inr Bool)) deltaTestSub
-    (fun f ↦ IR.interpMorIota Type Type (DeltaTestDecode f))
+  IR.interpMorStep Type Type (Sum.inr (Sum.inr Bool))
+    (deltaTestSub ∘ ULift.down)
+    (fun f ↦ IR.interpMorIota Type Type (DeltaTestDecode (ULift.down f)))
     morSrc morTgt morHom
 
 -- The delta action reindexes a name by postcomposition with the
@@ -250,7 +251,7 @@ section Heterogeneous
 
 /-- A heterogeneous `IR` code with input index type `Nat` and output
 index type `Bool`: the constant `iota` code at `true`. -/
-def hetCode : IR.{0, 0, 0} Nat Bool :=
+def hetCode : IR.{0, 0, 0, 0} Nat Bool :=
   IR.iota Nat Bool true
 
 /-- A domain object of the input completion: three names decoding to
@@ -273,7 +274,7 @@ example : hetTgt.2 (ULift.up ()) = true := rfl
 /-- A heterogeneous `delta` code: one recursive argument, whose
 subcode decodes to whether the argument's input-index decoding is
 even. -/
-def hetDeltaCode : IR.{0, 0, 0} Nat Bool :=
+def hetDeltaCode : IR.{0, 0, 0, 0} Nat Bool :=
   IR.delta Nat Bool Unit (fun f ↦ IR.iota Nat Bool (f () % 2 == 0))
 
 /-- The codomain object that the heterogeneous `delta` code produces
@@ -293,16 +294,15 @@ end Heterogeneous
 
 section Container
 
--- A simple container (a `PFunctor` with both fields at the same
--- universe) is translated to an `IR` code over the unit type by
--- `contCode`.
+-- A simple container (a `PFunctor`) is translated to an `IR` code
+-- over the unit type by `contCode`.
 
 /-- A test container: shape `Bool`, with `Nat` directions under each
 shape. -/
 def testCont : PFunctor.{0, 0} := ⟨Bool, fun _ ↦ Nat⟩
 
 /-- The `IR` code over the unit type representing `testCont`. -/
-def testContCode : IR.{0, 0, 0} PUnit PUnit := contCode testCont
+def testContCode : IR.{0, 0, 0, 0} PUnit PUnit := contCode testCont
 
 /-- An input family over the unit type: a single name. -/
 def testContX : FreeCoprodCompDisc.{0, 0} PUnit :=
@@ -314,6 +314,27 @@ def testContX : FreeCoprodCompDisc.{0, 0} PUnit :=
 -- (Example 1's `(s : S) × (P s → X) × 1`).
 example (s : Bool) (g : Nat → PUnit) :
     (IR.interpObj PUnit PUnit testContCode testContX).2
+        ⟨s, g, ULift.up ()⟩ = PUnit.unit :=
+  rfl
+
+/-- A test container with separated field universes: shape `ULift Bool`
+at universe `1`, with `Nat` directions at universe `0` under each
+shape. -/
+def testContSep : PFunctor.{1, 0} := ⟨ULift Bool, fun _ ↦ Nat⟩
+
+/-- The `IR` code over the unit type representing `testContSep`: the
+arity universes are instantiated off the diagonal (`uA ≠ uB`). -/
+def testContSepCode : IR.{1, 0, 0, 0} PUnit PUnit := contCode testContSep
+
+/-- An input family over the unit type at the matching index universe:
+a single name. -/
+def testContSepX : FreeCoprodCompDisc.{1, 0} PUnit :=
+  ⟨PUnit, fun _ ↦ PUnit.unit⟩
+
+-- The interpreted-name decoding is preserved at separated arity
+-- universes.
+example (s : ULift Bool) (g : Nat → PUnit) :
+    (IR.interpObj PUnit PUnit testContSepCode testContSepX).2
         ⟨s, g, ULift.up ()⟩ = PUnit.unit :=
   rfl
 
