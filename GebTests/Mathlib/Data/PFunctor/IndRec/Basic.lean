@@ -188,12 +188,12 @@ def morHom : FreeCoprodCompDisc.Hom Type morSrc morTgt :=
   ⟨fun _ ↦ true, rfl⟩
 
 /-- The decoding assigned to each index of the sigma test code. -/
-def SigmaTestDecode : ULift.{1} Bool → Type :=
-  fun b ↦ if b.down then Nat else Bool
+def SigmaTestDecode : Bool → Type :=
+  fun b ↦ if b then Nat else Bool
 
 /-- The subcodes of a sigma test code over `Bool`: `iota` codes
 decoding to `Nat` and `Bool`. -/
-def sigmaTestSub : ULift.{1} Bool → IR.{0, 0, 1, 1} Type Type :=
+def sigmaTestSub : Bool → IR.{0, 0, 1, 1} Type Type :=
   fun b ↦ IR.iota Type Type (SigmaTestDecode b)
 
 /-- The sigma-case morphism action of `IR.interpMorStep` at `morHom`. -/
@@ -201,8 +201,9 @@ def sigmaTestMor :
     FreeCoprodCompDisc.Hom Type
       (IR.interpObj Type Type (IR.sigma Type Type Bool sigmaTestSub) morSrc)
       (IR.interpObj Type Type (IR.sigma Type Type Bool sigmaTestSub) morTgt) :=
-  IR.interpMorStep Type Type (Sum.inr (Sum.inl Bool)) sigmaTestSub
-    (fun b ↦ IR.interpMorIota Type Type (SigmaTestDecode b))
+  IR.interpMorStep Type Type (Sum.inr (Sum.inl Bool))
+    (sigmaTestSub ∘ ULift.down)
+    (fun b ↦ IR.interpMorIota Type Type (SigmaTestDecode (ULift.down b)))
     morSrc morTgt morHom
 
 -- The sigma action preserves the tag and the payload.

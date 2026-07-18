@@ -370,13 +370,11 @@ constant functor at the object with one name decoding to `o`. -/
 def iota (o : O) : IR.{uA, uB, uI, uO} I O :=
   mk I O (Sum.inl o) PEmpty.elim
 
-/-- The dependent sum (`sigma`) code: subcodes `c` indexed by `A`
-(through the lifted direction type `ULift A`); its interpretation is
-the pointwise indexed coproduct over `A` of the interpretations of the
-subcodes. -/
-def sigma (A : Type uA) (c : ULift.{max uB uI} A → IR.{uA, uB, uI, uO} I O) :
-    IR I O :=
-  mk I O (Sum.inr (Sum.inl A)) c
+/-- The dependent sum (`sigma`) code: subcodes `c` indexed by `A`; its
+interpretation is the pointwise indexed coproduct over `A` of the
+interpretations of the subcodes. -/
+def sigma (A : Type uA) (c : A → IR.{uA, uB, uI, uO} I O) : IR I O :=
+  mk I O (Sum.inr (Sum.inl A)) (c ∘ ULift.down)
 
 /-- The dependent product (`delta`) code: subcodes `c` indexed by the
 assignments of decodings to `B`; its interpretation takes recursive
@@ -679,7 +677,7 @@ def univCode :
     IR.{max uK uT, max uK uT, max uK uT + 1, max uK uT + 1}
       (Type (max uK uT)) (Type (max uK uT)) :=
   IR.sigma (Type (max uK uT)) (Type (max uK uT)) (UnivConstructor.{uK, uT} K)
-    (fun i ↦ univConstructorCode K T i.down)
+    (univConstructorCode K T)
 
 /-- The object map of the interpretation of `univCode`. -/
 def univEndo :
@@ -716,7 +714,7 @@ Follows Example 1 of
 [HancockMcBrideGhaniMalatestaAltenkirch2013]. -/
 def contCode (F : PFunctor.{uA, uB}) : IR.{uA, uB, uI, uO} PUnit PUnit :=
   IR.sigma PUnit PUnit F.A
-    (fun s ↦ IR.delta PUnit PUnit (F.B s.down)
+    (fun s ↦ IR.delta PUnit PUnit (F.B s)
       (fun _ ↦ IR.iota PUnit PUnit PUnit.unit))
 
 end Container
