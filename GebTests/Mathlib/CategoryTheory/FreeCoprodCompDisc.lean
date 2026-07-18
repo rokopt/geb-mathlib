@@ -57,3 +57,21 @@ theorem sample_inl_desc :
         (FreeCoprodCompDisc.coprodPairDesc Bool sampleHom sampleHom) =
       sampleHom :=
   FreeCoprodCompDisc.coprodPair_inl_desc Bool sampleX sampleX sampleX sampleHom sampleHom
+
+/-- A renamed copy of `sampleX`: lifted names, the same
+decodings. -/
+def sampleXLift : FreeCoprodCompDisc.{1, 0} Bool :=
+  ⟨ULift.{1} Bool, id ∘ ULift.down⟩
+
+/-- A sample isomorphism: the `ULift` renaming commutes with the
+decodings. -/
+def sampleIso : FreeCoprodCompDisc.Iso.{0, 1, 0} Bool sampleXLift sampleX :=
+  ⟨Equiv.ulift.{1, 0}, rfl⟩
+
+/-- Round-tripping a name through the sample isomorphism and its
+inverse is the identity. -/
+theorem sampleIso_symm_trans_apply :
+    (FreeCoprodCompDisc.Iso.trans Bool sampleIso
+      (FreeCoprodCompDisc.Iso.symm Bool sampleIso)).1 (ULift.up true) =
+      ULift.up true :=
+  rfl

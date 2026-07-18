@@ -49,3 +49,15 @@ theorem sigmaFstSectionElim_eq {X : Type u} {W : X → Type v}
   funext t
   simp only [Equiv.piEquivSubtypeSigma, Equiv.coe_fn_symm_mk]
   exact eq_of_heq ((eqRec_heq (sect t) (g t).2).trans (cast_heq _ _).symm)
+
+/-- The dependent congruence of a sigma type in its second
+component, choice-free (unlike `Equiv.sigmaCongrRight`). The two
+families are at independent universes, so `coprodIso` can relate
+objects at distinct index universes. -/
+def sigmaCongrRight'.{t₁, t₂} {α : Type u} {β₁ : α → Type t₁}
+    {β₂ : α → Type t₂} (F : (a : α) → β₁ a ≃ β₂ a) :
+    (Σ a, β₁ a) ≃ Σ a, β₂ a where
+  toFun p := ⟨p.1, F p.1 p.2⟩
+  invFun p := ⟨p.1, (F p.1).symm p.2⟩
+  left_inv p := congrArg (Sigma.mk p.1) ((F p.1).left_inv p.2)
+  right_inv p := congrArg (Sigma.mk p.1) ((F p.1).right_inv p.2)

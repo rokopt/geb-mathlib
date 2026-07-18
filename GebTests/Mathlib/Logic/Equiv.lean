@@ -5,10 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Mathlib.CategoryTheory
-import GebTests.Mathlib.Data
-import GebTests.Mathlib.Logic
+import GebTests.Mathlib.Logic.Equiv.Basic
 
 /-!
-# GebTests.Mathlib — tests for upstream-eligible content
+# Equiv tests — index
 -/

@@ -6,7 +6,9 @@ Authors: Terence Rokop
 module
 
 public import Mathlib.Data.Sigma.Basic
+public import Mathlib.Logic.Equiv.Basic
 public import Mathlib.Logic.Function.Basic
+public import Geb.Mathlib.Logic.Equiv.Basic
 
 /-!
 # The free coproduct completion of a discrete category
@@ -193,6 +195,44 @@ theorem coprodPairDesc_eta (X Y Z : FreeCoprodCompDisc.{u, v} D)
     coprodPairDesc D (Hom.comp D (coprodPairInl D X Y) h)
       (Hom.comp D (coprodPairInr D X Y) h) = h :=
   Subtype.ext (funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl)))
+
+/-- An isomorphism of two objects of the free coproduct completion of `D`
+treated as a discrete category: a name-type equivalence commuting with the
+decodings. -/
+def Iso.{u₁, u₂} (X : FreeCoprodCompDisc.{u₁, v} D) (Y : FreeCoprodCompDisc.{u₂, v} D) :
+    Type (max u₁ u₂) :=
+  {e : X.1 ≃ Y.1 // Y.2 ∘ e = X.2}
+
+/-- The identity isomorphism of an object. -/
+def Iso.refl (X : FreeCoprodCompDisc.{u, v} D) : Iso D X X :=
+  ⟨Equiv.refl X.1, rfl⟩
+
+/-- The inverse of an isomorphism. -/
+def Iso.symm.{u₁, u₂} {X : FreeCoprodCompDisc.{u₁, v} D}
+    {Y : FreeCoprodCompDisc.{u₂, v} D} (e : Iso D X Y) : Iso D Y X :=
+  ⟨e.1.symm, funext (fun y ↦
+    (congrFun e.2 (e.1.symm y)).symm.trans (congrArg Y.2 (e.1.apply_symm_apply y)))⟩
+
+/-- The composite of two isomorphisms. -/
+def Iso.trans.{u₁, u₂, u₃} {X : FreeCoprodCompDisc.{u₁, v} D}
+    {Y : FreeCoprodCompDisc.{u₂, v} D} {Z : FreeCoprodCompDisc.{u₃, v} D}
+    (e : Iso D X Y) (f : Iso D Y Z) : Iso D X Z :=
+  ⟨e.1.trans f.1, (congrArg (· ∘ ⇑e.1) f.2).trans e.2⟩
+
+/-- Transport an isomorphism along an equality of objects. -/
+def isoOfEq {X Y : FreeCoprodCompDisc.{u, v} D} : X = Y → Iso D X Y
+  | rfl => Iso.refl D X
+
+/-- The congruence of `FreeCoprodCompDisc.coprod` along an index
+equivalence and a family of isomorphisms of the summands. -/
+def coprodIso.{u₁, u₂, w₁, w₂} (ι : Type w₁) (κ : Type w₂) (e : ι ≃ κ)
+    (fi : ι → FreeCoprodCompDisc.{u₁, v} D)
+    (gk : κ → FreeCoprodCompDisc.{u₂, v} D)
+    (iso : (i : ι) → Iso D (fi i) (gk (e i))) :
+    Iso D (coprod.{u₁, v, w₁} D ι fi) (coprod.{u₂, v, w₂} D κ gk) :=
+  ⟨(sigmaCongrRight' (fun i ↦ (iso i).1)).trans
+      (Equiv.sigmaCongrLeft (β := fun j ↦ (gk j).1) e),
+    funext (fun p ↦ congrFun (iso p.1).2 p.2)⟩
 
 end FreeCoprodCompDisc
 
