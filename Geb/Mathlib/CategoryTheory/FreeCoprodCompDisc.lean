@@ -105,8 +105,10 @@ def Endo : Type (max (u + 1) v) :=
   Map.{u, v, v} D D
 
 /-- The morphisms of the free coproduct completion of `D` treated as a
-discrete category. -/
-def Hom (X Y : FreeCoprodCompDisc.{u, v} D) : Type u :=
+discrete category. The two objects may sit at different index
+universes. -/
+def Hom.{u'} (X : FreeCoprodCompDisc.{u, v} D)
+    (Y : FreeCoprodCompDisc.{u', v} D) : Type (max u u') :=
   {h : X.1 → Y.1 // Y.2 ∘ h = X.2}
 
 /-- Rewrite the codomain of a `FreeCoprodCompDisc.Hom` along an
@@ -125,8 +127,8 @@ def Hom.comp {X Y Z : FreeCoprodCompDisc.{u, v} D} (f : Hom D X Y)
 coproduct completions of two (generally different) types. -/
 def MapMor.{w} (I : Type v) (O : Type w) (F : Map.{u, v, w} I O) :
     Type (max (u + 1) v) :=
-  (X Y : FreeCoprodCompDisc.{u, v} I) → Hom.{u, v} I X Y →
-    Hom.{u, w} O (F X) (F Y)
+  (X Y : FreeCoprodCompDisc.{u, v} I) → Hom.{u, v, u} I X Y →
+    Hom.{u, w, u} O (F X) (F Y)
 
 /-- The morphism-map component over an object map on
 `FreeCoprodCompDisc`: the specialization
@@ -283,7 +285,7 @@ object correspond to morphisms out of the un-lifted object, by
 precomposing with `ULift.up`. -/
 def homLiftEquiv.{w} (X : FreeCoprodCompDisc.{u, v} D)
     (Y : FreeCoprodCompDisc.{max u w, v} D) :
-    Hom D (lift.{u, v, w} D X) Y ≃ {h : X.1 → Y.1 // Y.2 ∘ h = X.2} :=
+    Hom D (lift.{u, v, w} D X) Y ≃ Hom D X Y :=
   { toFun := fun f ↦
       ⟨f.1 ∘ ULift.up, funext (fun a ↦ congrFun f.2 (ULift.up a))⟩,
     invFun := fun h ↦
