@@ -686,6 +686,39 @@ theorem precomp_delta (Q : Type uQ) (i : Q → I) (B : Type uB)
           (fun j ↦ precomp I O Q i (c (precompMerge I Q i cl.down j)))) :=
   rfl
 
+/-- The per-code statement of Lemma 4
+([HancockMcBrideGhaniMalatestaAltenkirch2013]): interpreting a code
+precomposed along `Q, i` is isomorphic to interpreting the code
+directly at the coproduct object `FreeCoprodCompDisc.plus ⟨Q, i⟩ k`. -/
+def PrecompIsoMotive (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    Type (max (max uA uB + 1) uI) :=
+  (Q : Type uB) → (i : Q → I) →
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) →
+    FreeCoprodCompDisc.Iso O
+      (interpObj I O (precomp I O Q i γ) k)
+      (interpObj I O γ (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k))
+
+/-- `PrecompIsoMotive` at the constant (`iota`) code: `interpObj`
+ignores its argument at an `iota` code, so both sides are the same
+object and the identity isomorphism suffices. -/
+def precompIsoIota (o : O) : PrecompIsoMotive I O (iota I O o) :=
+  fun _ _ k ↦ FreeCoprodCompDisc.Iso.refl O (interpObj I O (iota I O o) k)
+
+/-- `PrecompIsoMotive` at the dependent sum (`sigma`) code: by
+`precomp_sigma`, both sides are indexed coproducts of subcode
+interpretations, related componentwise by the inductive hypotheses
+`ih` via `coprodIso` over the equivalence stripping the `ULift` that
+`precomp_sigma` introduces. -/
+def precompIsoSigma (A : Type (max uA uB))
+    (c : A → IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (a : A) → PrecompIsoMotive I O (c a)) :
+    PrecompIsoMotive I O (sigma I O A c) :=
+  fun Q i k ↦
+    FreeCoprodCompDisc.coprodIso O (ULift.{uB} A) A Equiv.ulift
+      (fun a ↦ interpObj I O (precomp I O Q i (c a.down)) k)
+      (fun a ↦ interpObj I O (c a) (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k))
+      (fun a ↦ ih a.down Q i k)
+
 end IR
 
 section Universes

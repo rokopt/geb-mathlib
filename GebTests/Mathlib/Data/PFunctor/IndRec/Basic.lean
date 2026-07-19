@@ -374,4 +374,26 @@ theorem samplePrecomp_delta :
             (fun _ ↦ IR.iota Bool PUnit PUnit.unit)) :=
   rfl
 
+/-- A one-name sample object over the unit index type. -/
+def samplePoint : FreeCoprodCompDisc.{0, 0} PUnit :=
+  ⟨PUnit, fun _ ↦ PUnit.unit⟩
+
+/-- The constant-case isomorphism is the identity on the single
+name. -/
+theorem samplePrecompIsoIota_apply :
+    ((IR.precompIsoIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
+      PUnit (fun _ ↦ PUnit.unit) samplePoint).1 (ULift.up Unit.unit) =
+      ULift.up Unit.unit :=
+  rfl
+
+/-- The sum-case isomorphism strips the lifted index: the lifted
+left name maps to the left name. -/
+theorem samplePrecompIsoSigma_apply :
+    (((IR.precompIsoSigma.{0, 0, 0, 0} PUnit PUnit Bool
+          (fun _ ↦ IR.iota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
+          (fun _ ↦ IR.precompIsoIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit))
+        PUnit (fun _ ↦ PUnit.unit) samplePoint).1
+      ⟨ULift.up true, ULift.up Unit.unit⟩).1 = true :=
+  rfl
+
 end Precomp
