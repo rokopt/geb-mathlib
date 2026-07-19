@@ -253,6 +253,25 @@ def copowerEquiv.{w} (X : Type w) (i : FreeCoprodCompDisc.{max u w, v} D)
     left_inv := fun _ ↦ Subtype.ext rfl,
     right_inv := fun _ ↦ funext (fun _ ↦ Subtype.ext rfl) }
 
+/-- The `ULift` renaming of an object: the same decodings, through
+names raised to a (generally higher) universe. -/
+def lift.{w} (X : FreeCoprodCompDisc.{u, v} D) :
+    FreeCoprodCompDisc.{max u w, v} D :=
+  ⟨ULift.{w} X.1, X.2 ∘ ULift.down⟩
+
+/-- The universal property of `lift`: morphisms out of a lifted
+object correspond to morphisms out of the un-lifted object, by
+precomposing with `ULift.up`. -/
+def homLiftEquiv.{w} (X : FreeCoprodCompDisc.{u, v} D)
+    (Y : FreeCoprodCompDisc.{max u w, v} D) :
+    Hom D (lift.{u, v, w} D X) Y ≃ {h : X.1 → Y.1 // Y.2 ∘ h = X.2} :=
+  { toFun := fun f ↦
+      ⟨f.1 ∘ ULift.up, funext (fun a ↦ congrFun f.2 (ULift.up a))⟩,
+    invFun := fun h ↦
+      ⟨h.1 ∘ ULift.down, funext (fun a ↦ congrFun h.2 a.down)⟩,
+    left_inv := fun _ ↦ Subtype.ext rfl,
+    right_inv := fun _ ↦ Subtype.ext rfl }
+
 end FreeCoprodCompDisc
 
 end CategoryTheory

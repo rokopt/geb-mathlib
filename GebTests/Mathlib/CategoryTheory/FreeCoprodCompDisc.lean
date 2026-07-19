@@ -92,3 +92,18 @@ theorem sampleCopower_desc_apply (b : Bool) :
     ((FreeCoprodCompDisc.copowerEquiv.{0, 0, 0} Bool Bool
       sampleX sampleX).symm (fun _ ↦ sampleHom)).1 ⟨true, b⟩ = b :=
   rfl
+
+/-- A lifted object decodes through `ULift.down`. -/
+theorem sampleLift_decode :
+    (FreeCoprodCompDisc.lift.{0, 0, 1} Bool sampleX).2 (ULift.up true) =
+      true :=
+  rfl
+
+/-- `homLiftEquiv` strips the lift from a morphism's domain:
+applying the image of the identity index function evaluates by
+`ULift.up`. -/
+theorem sampleHomLift_apply :
+    ((FreeCoprodCompDisc.homLiftEquiv.{0, 0, 1} Bool sampleX
+        (FreeCoprodCompDisc.lift.{0, 0, 1} Bool sampleX))
+      ⟨_root_.id, rfl⟩).1 true = ULift.up true :=
+  rfl
