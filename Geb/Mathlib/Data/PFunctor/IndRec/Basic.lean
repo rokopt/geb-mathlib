@@ -610,6 +610,84 @@ def interpMor (ir : IR.{uA, uB, uI, uO} I O) : MorMapSig I O ir :=
 
 end IR
 
+namespace IR
+
+/-! ### Precomposition on codes
+
+Precomposition of an `IR` code along a coproduct (the `γ^i` of
+[HancockMcBrideGhaniMalatestaAltenkirch2013], Lemma 4, which
+asserts existence only; the construction here is the project's):
+`precomp Q i` transports a code from `I` to a code over the
+same `I`, replacing every recursive-argument decoding by its
+image under `i` when resolved, or leaving it as a fresh
+recursive argument otherwise. `iota` and `sigma` subcodes push
+through unchanged (up to `ULift`); a `delta B c` subcode becomes
+a `sigma` over classifiers `B → Q ⊕ PUnit` followed by a `delta`
+over the classifier's unresolved elements, recursing into `c` at
+the assignment merging `i`-images with the fresh decodings.
+-/
+
+universe uQ
+
+/-- The assignment merging, along a classifier `c` of `B` into
+`Q ⊕ PUnit`, the `i`-images of the resolved (`Q`-classified)
+elements with the decodings `j` of the unresolved elements. -/
+def precompMerge (Q : Type uQ) (i : Q → I) {B : Type uB}
+    (c : ArrowSumClassifier.{uB, uQ, uQ} B Q)
+    (j : ArrowSumUnresolved c → I) : B → I :=
+  Sum.elim i _root_.id ∘ arrowSumMerge c j
+
+/-- The algebra computing one step of `IR.precomp`: `iota` and
+`sigma` push through (up to `ULift`); `delta` becomes a `sigma`
+over classifiers followed by a `delta` over the unresolved
+arity elements. -/
+def precompAlg (Q : Type uQ) (i : Q → I) :
+    Alg.{uA, uB, uI, uO, max (max uA uB uQ + 1) (uB + 1) uI uO}
+      I O (IR.{max uA uB uQ, uB, uI, uO} I O) :=
+  ⟨fun o ↦ iota I O o,
+    fun A f ↦ sigma I O (ULift.{max uB uQ} A) (f ∘ ULift.down),
+    fun B f ↦
+      sigma I O (ULift.{uA} (B → Q ⊕ PUnit.{uQ + 1})) (fun cl ↦
+        delta I O {b : B // cl.down b = Sum.inr PUnit.unit} (fun j ↦
+          f (precompMerge I Q i cl.down j)))⟩
+
+/-- Precomposition on codes (the `γ^i` of
+[HancockMcBrideGhaniMalatestaAltenkirch2013], Lemma 4, which
+asserts existence only; this construction is the project's):
+`⟦precomp Q i γ⟧ k` is isomorphic to `⟦γ⟧` at the coproduct of
+`⟨Q, i⟩` with `k`. -/
+def precomp (Q : Type uQ) (i : Q → I) :
+    IR.{uA, uB, uI, uO} I O → IR.{max uA uB uQ, uB, uI, uO} I O :=
+  elimAlg I O (IR.{max uA uB uQ, uB, uI, uO} I O) (precompAlg I O Q i)
+
+/-- Computation rule for `IR.precomp` at `IR.iota`: unchanged. -/
+theorem precomp_iota (Q : Type uQ) (i : Q → I) (o : O) :
+    precomp I O Q i (iota I O o) = iota I O o :=
+  rfl
+
+/-- Computation rule for `IR.precomp` at `IR.sigma`: the arity is
+lifted (`ULift`), and `precomp` recurses into each subcode. -/
+theorem precomp_sigma (Q : Type uQ) (i : Q → I) (A : Type uA)
+    (c : A → IR.{uA, uB, uI, uO} I O) :
+    precomp I O Q i (sigma I O A c) =
+      sigma I O (ULift.{max uB uQ} A)
+        (fun a ↦ precomp I O Q i (c a.down)) :=
+  rfl
+
+/-- Computation rule for `IR.precomp` at `IR.delta`: a `sigma` over
+classifiers `B → Q ⊕ PUnit`, then a `delta` over the unresolved
+arity elements, recursing into the subcode at the merged
+assignment. -/
+theorem precomp_delta (Q : Type uQ) (i : Q → I) (B : Type uB)
+    (c : (B → I) → IR.{uA, uB, uI, uO} I O) :
+    precomp I O Q i (delta I O B c) =
+      sigma I O (ULift.{uA} (ArrowSumClassifier.{uB, uQ, uQ} B Q))
+        (fun cl ↦ delta I O (ArrowSumUnresolved cl.down)
+          (fun j ↦ precomp I O Q i (c (precompMerge I Q i cl.down j)))) :=
+  rfl
+
+end IR
+
 section Universes
 
 /-! ### Universes closed under dependent sums and products

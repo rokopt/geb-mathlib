@@ -340,3 +340,38 @@ example (s : ULift Bool) (g : Nat → PUnit) :
   rfl
 
 end Container
+
+section Precomp
+
+/-- A sample delta code: one boolean recursive arity, decoding
+to the unit. -/
+def sampleDeltaCode : IR.{0, 0, 0, 0} Bool PUnit :=
+  IR.delta Bool PUnit Bool (fun _ ↦ IR.iota Bool PUnit PUnit.unit)
+
+/-- The merged assignment takes resolved arity elements from
+`i`. -/
+theorem samplePrecompMerge_inl (b : Bool) :
+    IR.precompMerge Bool PUnit.{1} (fun _ ↦ true)
+      (fun _ : Bool ↦ Sum.inl PUnit.unit)
+      (fun j ↦ nomatch j.2) b = true :=
+  rfl
+
+/-- The merged assignment takes unresolved arity elements from
+the direction assignment. -/
+theorem samplePrecompMerge_inr (b : Bool) :
+    IR.precompMerge Bool PUnit.{1} (fun _ ↦ true)
+      (fun _ : Bool ↦ Sum.inr PUnit.unit) (fun _ ↦ false) b =
+      false :=
+  rfl
+
+/-- The delta computation rule at the sample code. -/
+theorem samplePrecomp_delta :
+    IR.precomp Bool PUnit PUnit.{1} (fun _ ↦ true) sampleDeltaCode =
+      IR.sigma Bool PUnit (ULift.{0} (Bool → PUnit ⊕ PUnit.{1}))
+        (fun cl ↦
+          IR.delta Bool PUnit
+            {b : Bool // cl.down b = Sum.inr PUnit.unit}
+            (fun _ ↦ IR.iota Bool PUnit PUnit.unit)) :=
+  rfl
+
+end Precomp
