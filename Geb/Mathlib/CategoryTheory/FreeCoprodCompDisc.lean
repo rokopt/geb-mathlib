@@ -234,6 +234,25 @@ def coprodIso.{u₁, u₂, w₁, w₂} (ι : Type w₁) (κ : Type w₂) (e : ι
       (Equiv.sigmaCongrLeft (β := fun j ↦ (gk j).1) e),
     funext (fun p ↦ congrFun (iso p.1).2 p.2)⟩
 
+/-- The copower `X ⊗ i`: the `X`-fold coproduct of `i`
+([HancockMcBrideGhaniMalatestaAltenkirch2013], Lemma 3). -/
+def copower.{w} (X : Type w) (i : FreeCoprodCompDisc.{u, v} D) :
+    FreeCoprodCompDisc.{max u w, v} D :=
+  coprod.{u, v, w} D X (fun _ ↦ i)
+
+/-- The universal property of the copower: morphisms out of `X ⊗ i`
+correspond to `X`-indexed families of morphisms out of `i`
+([HancockMcBrideGhaniMalatestaAltenkirch2013], Lemma 3). -/
+def copowerEquiv.{w} (X : Type w) (i : FreeCoprodCompDisc.{max u w, v} D)
+    (Z : FreeCoprodCompDisc.{max u w, v} D) :
+    Hom D (copower.{max u w, v, w} D X i) Z ≃ (X → Hom D i Z) :=
+  { toFun := fun h x ↦
+      ⟨fun a ↦ h.1 ⟨x, a⟩, funext (fun a ↦ congrFun h.2 ⟨x, a⟩)⟩,
+    invFun := fun m ↦
+      ⟨fun p ↦ (m p.1).1 p.2, funext (fun p ↦ congrFun (m p.1).2 p.2)⟩,
+    left_inv := fun _ ↦ Subtype.ext rfl,
+    right_inv := fun _ ↦ funext (fun _ ↦ Subtype.ext rfl) }
+
 end FreeCoprodCompDisc
 
 end CategoryTheory

@@ -75,3 +75,20 @@ theorem sampleIso_symm_trans_apply :
       (FreeCoprodCompDisc.Iso.symm Bool sampleIso)).1 (ULift.up true) =
       ULift.up true :=
   rfl
+
+/-- The copower of `sampleX` by `Bool`: names are pairs
+decoding through the second component. -/
+def sampleCopower : FreeCoprodCompDisc.{0, 0} Bool :=
+  FreeCoprodCompDisc.copower.{0, 0, 0} Bool Bool sampleX
+
+/-- A copower name decodes through its second component. -/
+theorem sampleCopower_decode : sampleCopower.2 ⟨true, false⟩ = false :=
+  rfl
+
+/-- The copower cotuple evaluates componentwise: the inverse
+direction of `copowerEquiv` at a constant family applies the
+component morphism. -/
+theorem sampleCopower_desc_apply (b : Bool) :
+    ((FreeCoprodCompDisc.copowerEquiv.{0, 0, 0} Bool Bool
+      sampleX sampleX).symm (fun _ ↦ sampleHom)).1 ⟨true, b⟩ = b :=
+  rfl
