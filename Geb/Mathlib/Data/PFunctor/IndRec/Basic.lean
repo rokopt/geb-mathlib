@@ -864,6 +864,76 @@ def interpPrecompIso (γ : IR.{max uA uB, uB, uI, uO} I O) :
     PrecompIsoMotive I O γ :=
   rec I O (interpPrecompIsoStep I O) γ
 
+/-- The name type of the `delta` interpretation regrouped by the
+fibers of the direction-decoding composite `k.2 ∘ g`: over each
+direction assignment `i : B → I`, the fiber `{g : B → k.1 // k.2 ∘ g =
+i}` paired with the name type of the subcode interpretation `c i` at
+`k`. -/
+abbrev InterpDeltaFiberSigma (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :=
+  Σ i : B → I, Σ _ : {g : B → k.1 // k.2 ∘ g = i}, (interpObj I O (c i) k).1
+
+/-- The grouping equivalence underlying Lemma 3 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013]: the directions
+`g : B → k.1` of the `delta` interpretation are grouped by their
+composite `k.2 ∘ g : B → I` with the decoding of `k`, presenting each
+group as a fiber of that composite. -/
+def interpDeltaIsoGroup (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpObj I O (delta I O B c) k).1 ≃ InterpDeltaFiberSigma I O B c k :=
+  sigmaCompEquivSigmaFiber (f := (k.2 ∘ ·)) (N := fun i ↦ (interpObj I O (c i) k).1)
+
+/-- The direction-replacement equivalence underlying Lemma 3 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013]: per composite `i : B → I`,
+the fiber `{g : B → k.1 // k.2 ∘ g = i}` is the morphism type
+`Hom I (lift ⟨B, i⟩) k` (by `homLiftEquiv`), so each grouped summand
+becomes the name type of the copower. The projection-based form (rather
+than `Equiv.sigmaCongrLeft'`) keeps the second component untransported,
+so the decodings agree definitionally. -/
+def interpDeltaIsoHom (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    InterpDeltaFiberSigma I O B c k ≃
+      Σ i : B → I, Σ _ : FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) k,
+        (interpObj I O (c i) k).1 :=
+  sigmaCongrRight' (fun i ↦
+    { toFun := fun q ↦ ⟨(FreeCoprodCompDisc.homLiftEquiv I ⟨B, i⟩ k).symm q.1, q.2⟩,
+      invFun := fun q ↦ ⟨FreeCoprodCompDisc.homLiftEquiv I ⟨B, i⟩ k q.1, q.2⟩,
+      left_inv := fun q ↦
+        congrArg (fun s ↦ (⟨s, q.2⟩ : Σ _ : {g : B → k.1 // k.2 ∘ g = i},
+            (interpObj I O (c i) k).1))
+          ((FreeCoprodCompDisc.homLiftEquiv I ⟨B, i⟩ k).apply_symm_apply q.1),
+      right_inv := fun q ↦
+        congrArg (fun s ↦ (⟨s, q.2⟩ : Σ _ : FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) k,
+            (interpObj I O (c i) k).1))
+          ((FreeCoprodCompDisc.homLiftEquiv I ⟨B, i⟩ k).symm_apply_apply q.1) })
+
+/-- Lemma 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013]:
+interpreting the dependent product (`delta`) code at `k` is isomorphic
+to the indexed coproduct, over the direction assignments `i : B → I`,
+of the copower of the interpretation of the subcode `c i` by the
+morphisms `Hom I (lift ⟨B, i⟩) k`. The paper states a natural
+isomorphism; the recorded deviation states it pointwise at `k`, because
+natural transformations between interpretations are not yet defined.
+The isomorphism composes `interpDeltaIsoGroup` and `interpDeltaIsoHom`;
+its decodings agree definitionally. -/
+def interpDeltaIso (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Iso O
+      (interpObj I O (delta I O B c) k)
+      (FreeCoprodCompDisc.coprod O (B → I) (fun i ↦
+        FreeCoprodCompDisc.copower O
+          (FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) k)
+          (interpObj I O (c i) k))) :=
+  ⟨(interpDeltaIsoGroup I O B c k).trans (interpDeltaIsoHom I O B c k),
+    funext (fun _ ↦ rfl)⟩
+
 end IR
 
 section Universes

@@ -409,4 +409,15 @@ theorem samplePrecompIsoDelta_apply :
       fun _ ↦ Sum.inr PUnit.unit :=
   rfl
 
+/-- The delta-interpretation isomorphism sends a name to the
+triple indexed by the composite of the decoding with the
+direction assignment. -/
+theorem sampleInterpDeltaIso_apply :
+    ((IR.interpDeltaIso.{0, 0, 0, 0} PUnit PUnit Bool
+          (fun _ ↦ IR.iota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
+          samplePoint).1
+        ⟨fun _ ↦ PUnit.unit, ULift.up Unit.unit⟩).1 =
+      fun _ ↦ PUnit.unit :=
+  rfl
+
 end Precomp
