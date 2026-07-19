@@ -37,6 +37,14 @@ A container is translated to an `IR` code over the unit type by
 `contCode`; `rfl` tests check that an interpreted name decodes to
 the unit element, including at separated arity universes.
 
+Precomposition is exercised on a sample `delta` code: `IR.precompMerge`
+tests check the resolved and unresolved cases of the merged
+assignment, and `IR.precomp`'s `delta` computation rule is checked by
+`rfl`. The per-shape isomorphism steps of Lemma 4
+(`IR.precompIsoIota`, `IR.precompIsoSigma`, `IR.precompIsoDelta`) and
+the Lemma 3 isomorphism `IR.interpDeltaIso` are each evaluated at a
+sample name, checking the expected image.
+
 ## Tags
 
 inductive-recursive, polynomial functor, universe, container
@@ -340,3 +348,84 @@ example (s : ULift Bool) (g : Nat → PUnit) :
   rfl
 
 end Container
+
+section Precomp
+
+/-- A sample delta code: one boolean recursive arity, decoding
+to the unit. -/
+def sampleDeltaCode : IR.{0, 0, 0, 0} Bool PUnit :=
+  IR.delta Bool PUnit Bool (fun _ ↦ IR.iota Bool PUnit PUnit.unit)
+
+/-- The merged assignment takes resolved arity elements from
+`i`. -/
+theorem samplePrecompMerge_inl (b : Bool) :
+    IR.precompMerge Bool PUnit.{1} (fun _ ↦ true)
+      (fun _ : Bool ↦ Sum.inl PUnit.unit)
+      (fun j ↦ nomatch j.2) b = true :=
+  rfl
+
+/-- The merged assignment takes unresolved arity elements from
+the direction assignment. -/
+theorem samplePrecompMerge_inr (b : Bool) :
+    IR.precompMerge Bool PUnit.{1} (fun _ ↦ true)
+      (fun _ : Bool ↦ Sum.inr PUnit.unit) (fun _ ↦ false) b =
+      false :=
+  rfl
+
+/-- The delta computation rule at the sample code. -/
+theorem samplePrecomp_delta :
+    IR.precomp Bool PUnit PUnit.{1} (fun _ ↦ true) sampleDeltaCode =
+      IR.sigma Bool PUnit (ULift.{0} (Bool → PUnit ⊕ PUnit.{1}))
+        (fun cl ↦
+          IR.delta Bool PUnit
+            {b : Bool // cl.down b = Sum.inr PUnit.unit}
+            (fun _ ↦ IR.iota Bool PUnit PUnit.unit)) :=
+  rfl
+
+/-- A one-name sample object over the unit index type. -/
+def samplePoint : FreeCoprodCompDisc.{0, 0} PUnit :=
+  ⟨PUnit, fun _ ↦ PUnit.unit⟩
+
+/-- The constant-case isomorphism is the identity on the single
+name. -/
+theorem samplePrecompIsoIota_apply :
+    ((IR.precompIsoIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
+      PUnit (fun _ ↦ PUnit.unit) samplePoint).1 (ULift.up Unit.unit) =
+      ULift.up Unit.unit :=
+  rfl
+
+/-- The sum-case isomorphism strips the lifted index: the lifted
+left name maps to the left name. -/
+theorem samplePrecompIsoSigma_apply :
+    (((IR.precompIsoSigma.{0, 0, 0, 0} PUnit PUnit Bool
+          (fun _ ↦ IR.iota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
+          (fun _ ↦ IR.precompIsoIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit))
+        PUnit (fun _ ↦ PUnit.unit) samplePoint).1
+      ⟨ULift.up true, ULift.up Unit.unit⟩).1 = true :=
+  rfl
+
+/-- The delta-case isomorphism maps an all-unresolved sample
+name to the single-classifier form: the resulting name's index
+component sends every arity element to the recursive side. -/
+theorem samplePrecompIsoDelta_apply :
+    (((IR.precompIsoDelta PUnit.{1} PUnit.{1} Bool
+          (fun _ ↦ IR.iota PUnit.{1} PUnit.{1} PUnit.unit)
+          (fun _ ↦ IR.precompIsoIota PUnit.{1} PUnit.{1} PUnit.unit))
+        PUnit (fun _ ↦ PUnit.unit) samplePoint).1
+      ⟨ULift.up (fun _ ↦ Sum.inr PUnit.unit),
+        fun _ ↦ PUnit.unit, ULift.up Unit.unit⟩).1 =
+      fun _ ↦ Sum.inr PUnit.unit :=
+  rfl
+
+/-- The delta-interpretation isomorphism sends a name to the
+triple indexed by the composite of the decoding with the
+direction assignment. -/
+theorem sampleInterpDeltaIso_apply :
+    ((IR.interpDeltaIso.{0, 0, 0, 0} PUnit PUnit Bool
+          (fun _ ↦ IR.iota.{0, 0, 0, 0} PUnit PUnit PUnit.unit)
+          samplePoint).1
+        ⟨fun _ ↦ PUnit.unit, ULift.up Unit.unit⟩).1 =
+      fun _ ↦ PUnit.unit :=
+  rfl
+
+end Precomp

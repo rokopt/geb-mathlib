@@ -7,6 +7,7 @@ module
 
 import GebTests.Mathlib.CategoryTheory
 import GebTests.Mathlib.Data
+import GebTests.Mathlib.Logic
 
 /-!
 # GebTests.Mathlib — tests for upstream-eligible content

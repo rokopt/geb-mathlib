@@ -13,6 +13,7 @@
   - [6. Universal morphisms](#6-universal-morphisms)
   - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
+  - [Category of `IR` codes](#category-of-ir-codes)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -201,6 +202,17 @@ decodings on domain and codomain), exercising the
 `FreeCoprodCompDisc.homOfEq` transport in `IR.interpMorDelta`
 observably; the current tests exercise the morphism action only at
 the algebra level and only along definitionally trivial transports.
+
+### Category of `IR` codes
+
+Independent of the roadmap sequence above; parallel to
+Complete Theorem 2.4 for `IndRec`, and depending on it for the
+functor laws of `IR.interpMor` that a natural-transformation notion
+of code morphism requires. Following Definition 8 and Corollary 2 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013], establish the category
+of `IR` codes for a fixed input/output index pair: the homset between
+two codes, the identity morphism, composition, and the category laws
+(identity and associativity).
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
