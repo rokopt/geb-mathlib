@@ -396,4 +396,17 @@ theorem samplePrecompIsoSigma_apply :
       ⟨ULift.up true, ULift.up Unit.unit⟩).1 = true :=
   rfl
 
+/-- The delta-case isomorphism maps an all-unresolved sample
+name to the single-classifier form: the resulting name's index
+component sends every arity element to the recursive side. -/
+theorem samplePrecompIsoDelta_apply :
+    (((IR.precompIsoDelta PUnit.{1} PUnit.{1} Bool
+          (fun _ ↦ IR.iota PUnit.{1} PUnit.{1} PUnit.unit)
+          (fun _ ↦ IR.precompIsoIota PUnit.{1} PUnit.{1} PUnit.unit))
+        PUnit (fun _ ↦ PUnit.unit) samplePoint).1
+      ⟨ULift.up (fun _ ↦ Sum.inr PUnit.unit),
+        fun _ ↦ PUnit.unit, ULift.up Unit.unit⟩).1 =
+      fun _ ↦ Sum.inr PUnit.unit :=
+  rfl
+
 end Precomp

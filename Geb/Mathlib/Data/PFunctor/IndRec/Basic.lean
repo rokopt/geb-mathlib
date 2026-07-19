@@ -719,6 +719,151 @@ def precompIsoSigma (A : Type (max uA uB))
       (fun a ↦ interpObj I O (c a) (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k))
       (fun a ↦ ih a.down Q i k)
 
+/-- The merged assignment `precompMerge`, taking the resolved elements
+of `c` from the `i`-images and the unresolved elements from the
+`k`-decodings of a direction assignment `j`, equals the cotuple
+`Sum.elim i k.2` reindexed along the reassembled function
+`arrowSumMerge c j`. This aligns the `delta` subcode argument used on
+the precomposed side with the one used on the direct side. -/
+theorem precompMerge_elim (Q : Type uB) (i : Q → I)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) (B : Type uB)
+    (c : ArrowSumClassifier.{uB, uB, uB} B Q)
+    (j : ArrowSumUnresolved c → k.1) :
+    precompMerge I Q i c (k.2 ∘ j) = Sum.elim i k.2 ∘ arrowSumMerge c j :=
+  funext (fun b ↦
+    Sum.casesOn (motive := fun t ↦ c b = t →
+        (precompMerge I Q i c (k.2 ∘ j) b = (Sum.elim i k.2 ∘ arrowSumMerge c j) b))
+      (c b)
+      (fun q h ↦
+        (congrArg (Sum.elim i _root_.id) (arrowSumMerge_eq c (k.2 ∘ j) b (Sum.inl q) h)).trans
+          (congrArg (Sum.elim i k.2) (arrowSumMerge_eq c j b (Sum.inl q) h)).symm)
+      (fun u h ↦
+        (congrArg (Sum.elim i _root_.id) (arrowSumMerge_eq c (k.2 ∘ j) b (Sum.inr u) h)).trans
+          (congrArg (Sum.elim i k.2) (arrowSumMerge_eq c j b (Sum.inr u) h)).symm)
+      rfl)
+
+/-- The `delta`-case inner isomorphism at a fixed classifier `cl`: over
+the unresolved-arity coproduct, each precomposed subcode interpretation
+is related, by the inductive hypothesis `ih`, to the direct
+interpretation at the merged assignment, whose subcode argument
+`precompMerge_elim` then rewrites to `Sum.elim i k.2 ∘ arrowSumMerge
+cl g`. -/
+def precompIsoDeltaInner (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (m : B → I) → PrecompIsoMotive I O (c m)) (Q : Type uB) (i : Q → I)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) (cl : ArrowSumClassifier.{uB, uB, uB} B Q) :
+    FreeCoprodCompDisc.Iso O
+      (FreeCoprodCompDisc.coprod O (ArrowSumUnresolved cl → k.1)
+        (fun g ↦ interpObj I O (precomp I O Q i (c (precompMerge I Q i cl (k.2 ∘ g)))) k))
+      (FreeCoprodCompDisc.coprod O (ArrowSumUnresolved cl → k.1)
+        (fun g ↦ interpObj I O (c (Sum.elim i k.2 ∘ arrowSumMerge cl g))
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k))) :=
+  FreeCoprodCompDisc.coprodIso O ({b // cl b = Sum.inr PUnit.unit} → k.1)
+    ({b // cl b = Sum.inr PUnit.unit} → k.1) (Equiv.refl _)
+    (fun g ↦ interpObj I O (precomp I O Q i (c (precompMerge I Q i cl (k.2 ∘ g)))) k)
+    (fun g ↦ interpObj I O (c (Sum.elim i k.2 ∘ arrowSumMerge cl g))
+      (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k))
+    (fun g ↦ FreeCoprodCompDisc.Iso.trans O (ih (precompMerge I Q i cl (k.2 ∘ g)) Q i k)
+      (FreeCoprodCompDisc.isoOfEq O
+        (congrArg (fun m ↦ interpObj I O (c m) (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k))
+          (precompMerge_elim I Q i k B cl g))))
+
+/-- The `delta` interpretation reshuffled as a coproduct, over the
+direction classifiers `cl : B → Q ⊕ PUnit`, of coproducts, over the
+`k`-assignments of each classifier's unresolved elements, of the
+interpretations of the direct subcodes at the coproduct object
+`FreeCoprodCompDisc.plus ⟨Q, i⟩ k`. This is the common endpoint of
+`precompIsoDeltaStrip` and `precompIsoDeltaReshuffle`. -/
+abbrev precompDeltaCoprod (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O) (Q : Type uB) (i : Q → I)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.{max uA uB, uO} O :=
+  FreeCoprodCompDisc.coprod O (ArrowSumClassifier.{uB, uB, uB} B Q)
+    (fun cl ↦ FreeCoprodCompDisc.coprod O (ArrowSumUnresolved cl → k.1)
+      (fun g ↦ interpObj I O (c (Sum.elim i k.2 ∘ arrowSumMerge cl g))
+        (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k)))
+
+/-- The `delta`-case classifier-stripping isomorphism: strips the
+`ULift` on the `sigma`-over-classifiers index introduced by
+`precomp_delta` (via `Equiv.ulift`) and, componentwise, applies
+`precompIsoDeltaInner`. The source is definitionally the precomposed
+`delta` interpretation. -/
+def precompIsoDeltaStrip (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (m : B → I) → PrecompIsoMotive I O (c m)) (Q : Type uB) (i : Q → I)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Iso O
+      (interpObj I O (precomp I O Q i (delta I O B c)) k)
+      (precompDeltaCoprod I O B c Q i k) :=
+  FreeCoprodCompDisc.coprodIso O (ULift.{max uA uB} (B → Q ⊕ PUnit.{uB + 1}))
+    (B → Q ⊕ PUnit.{uB + 1}) Equiv.ulift
+    (fun cl ↦ interpObj I O (delta I O {b // cl.down b = Sum.inr PUnit.unit}
+      (fun j ↦ precomp I O Q i (c (precompMerge I Q i cl.down j)))) k)
+    (fun cl ↦ FreeCoprodCompDisc.coprod O ({b // cl b = Sum.inr PUnit.unit} → k.1)
+      (fun g ↦ interpObj I O (c (Sum.elim i k.2 ∘ arrowSumMerge cl g))
+        (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k)))
+    (fun cl ↦ precompIsoDeltaInner I O B c ih Q i k cl.down)
+
+/-- The `delta`-case reshuffling isomorphism: the double coproduct over
+classifiers and their unresolved assignments is regrouped, via the
+sigma-associativity equivalence and `arrowSumEquivSigma`, into the
+single coproduct over assignments `B → Q ⊕ k.1` that is definitionally
+the direct `delta` interpretation at the coproduct object. -/
+def precompIsoDeltaReshuffle (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O) (Q : Type uB) (i : Q → I)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Iso O
+      (precompDeltaCoprod I O B c Q i k)
+      (interpObj I O (delta I O B c) (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k)) :=
+  ⟨(Equiv.sigmaAssoc (fun (cl : B → Q ⊕ PUnit.{uB + 1})
+        (g : {b // cl b = Sum.inr PUnit.unit} → k.1) ↦
+      (interpObj I O (c (Sum.elim i k.2 ∘ arrowSumMerge cl g))
+        (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k)).1)).symm.trans
+    (Equiv.sigmaCongrLeft
+      (β := fun (g' : B → Q ⊕ k.1) ↦
+        (interpObj I O (c (Sum.elim i k.2 ∘ g')) (FreeCoprodCompDisc.plus I ⟨Q, i⟩ k)).1)
+      (arrowSumEquivSigma B Q k.1).symm),
+    funext (fun _ ↦ rfl)⟩
+
+/-- `PrecompIsoMotive` at the dependent product (`delta`) code (the
+`delta` case of Lemma 4 of [HancockMcBrideGhaniMalatestaAltenkirch2013]):
+by `precomp_delta` the precomposed side is a `sigma` over classifiers of
+a `delta` over their unresolved elements; `precompIsoDeltaStrip` relates
+it (using `ih`) to the double coproduct at the merged assignments, and
+`precompIsoDeltaReshuffle` regroups that into the direct `delta`
+interpretation at the coproduct object. -/
+def precompIsoDelta (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (m : B → I) → PrecompIsoMotive I O (c m)) :
+    PrecompIsoMotive I O (delta I O B c) :=
+  fun Q i k ↦
+    FreeCoprodCompDisc.Iso.trans O (precompIsoDeltaStrip I O B c ih Q i k)
+      (precompIsoDeltaReshuffle I O B c Q i k)
+
+/-- The step argument to the recursor which generates the family of
+isomorphisms of Lemma 4, dispatching on the shape to the constant,
+dependent sum, and dependent product cases, as `interpMorStep` does for
+the morphism map. -/
+def interpPrecompIsoStep :
+    RecStep.{max uA uB, uB, uI, uO, max (max uA uB + 1) uI} I O
+      (PrecompIsoMotive I O) :=
+  fun s c m ↦ match s with
+  | Sum.inl o => precompIsoIota I O o
+  | Sum.inr (Sum.inl A) =>
+      precompIsoSigma I O A (fun a ↦ c (ULift.up a)) (fun a ↦ m (ULift.up a))
+  | Sum.inr (Sum.inr B) =>
+      precompIsoDelta I O B (fun f ↦ c (ULift.up f)) (fun f ↦ m (ULift.up f))
+
+/-- Lemma 4 of [HancockMcBrideGhaniMalatestaAltenkirch2013]: interpreting
+a code precomposed along `Q, i` is isomorphic to interpreting the code
+directly at the coproduct object `FreeCoprodCompDisc.plus ⟨Q, i⟩ k`. The
+paper asserts an equality; the recorded deviation replaces it with the
+isomorphism `PrecompIsoMotive`, obtained by `IR.rec` from the per-shape
+steps. -/
+def interpPrecompIso (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    PrecompIsoMotive I O γ :=
+  rec I O (interpPrecompIsoStep I O) γ
+
 end IR
 
 section Universes
