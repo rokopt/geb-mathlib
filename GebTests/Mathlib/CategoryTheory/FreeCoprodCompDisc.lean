@@ -14,6 +14,14 @@ A sample object and endomorphism exercise `FreeCoprodCompDisc.Hom.comp`,
 checking that composing the sample endomorphism with itself returns
 the same endomorphism.
 
+A binary coproduct across index universes exercises the injections
+and the cotuple `coprodPairDesc` (via `coprodPair_inl_desc`). A sample
+isomorphism between an object and its `ULift` renaming exercises the
+`Iso` family, checking that a round trip through `Iso.trans` and
+`Iso.symm` is the identity. A sample copower exercises `copower` and
+the inverse direction of `copowerEquiv`. A sample lifted object
+exercises `lift` and `homLiftEquiv`.
+
 ## Tags
 
 free coproduct completion, family, discrete category

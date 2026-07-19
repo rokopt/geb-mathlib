@@ -36,6 +36,24 @@ action, constructively.
   `FreeCoprodCompDisc.MapMor D D`.
 * `FreeCoprodCompDisc.coprod`, `FreeCoprodCompDisc.coprodMor` — the
   indexed coproducts and their functorial action.
+* `FreeCoprodCompDisc.Hom.comp` — composition of morphisms, in
+  diagrammatic order.
+* `FreeCoprodCompDisc.coprodPair`, `FreeCoprodCompDisc.plus` — the
+  binary coproduct (the cotuple object `[i, k]` of
+  [HancockMcBrideGhaniMalatestaAltenkirch2013]) and its
+  fixed-left-object specialization (the object map `(+i)`), with
+  injections `coprodPairInl`/`coprodPairInr` and the universal
+  cotuple `coprodPairDesc`.
+* `FreeCoprodCompDisc.copower` — the copower `X ⊗ i` (the `X`-fold
+  coproduct of `i`, [HancockMcBrideGhaniMalatestaAltenkirch2013],
+  Lemma 3), with universal property `copowerEquiv`.
+* `FreeCoprodCompDisc.lift` — the `ULift` renaming of an object,
+  with universal property `homLiftEquiv`.
+* `FreeCoprodCompDisc.Iso` — isomorphism of two objects (a
+  name-type equivalence commuting with the decodings), with
+  `refl`/`symm`/`trans` and the transport `isoOfEq`; `coprodIso` is
+  the congruence of `coprod` along an index equivalence and a
+  family of isomorphisms of the summands.
 
 ## Implementation notes
 
@@ -51,6 +69,7 @@ wrapper module.
 ## References
 
 * [GhaniNordvallForsbergMalatesta2015]
+* [HancockMcBrideGhaniMalatestaAltenkirch2013]
 
 ## Tags
 

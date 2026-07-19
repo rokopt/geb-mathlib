@@ -3,4 +3,5 @@
 .lake
 **/__pycache__/
 .remember/
+.superpowers/
 .claude/settings.local.json

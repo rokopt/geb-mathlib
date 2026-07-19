@@ -37,6 +37,14 @@ A container is translated to an `IR` code over the unit type by
 `contCode`; `rfl` tests check that an interpreted name decodes to
 the unit element, including at separated arity universes.
 
+Precomposition is exercised on a sample `delta` code: `IR.precompMerge`
+tests check the resolved and unresolved cases of the merged
+assignment, and `IR.precomp`'s `delta` computation rule is checked by
+`rfl`. The per-shape isomorphism steps of Lemma 4
+(`IR.precompIsoIota`, `IR.precompIsoSigma`, `IR.precompIsoDelta`) and
+the Lemma 3 isomorphism `IR.interpDeltaIso` are each evaluated at a
+sample name, checking the expected image.
+
 ## Tags
 
 inductive-recursive, polynomial functor, universe, container

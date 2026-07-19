@@ -8,15 +8,27 @@ module
 public import Mathlib.Logic.Equiv.Basic
 
 /-!
-# Eliminators for sections of sigma-type projections
+# Sigma-type and sum-type equivalence combinators
 
-Extensions of `Mathlib.Logic.Equiv.Basic`.
+Extensions of `Mathlib.Logic.Equiv.Basic`: an eliminator for sections
+of sigma-type projections, choice-free congruence and grouping
+equivalences on sigma types, and an equivalence presenting a function
+into a sum type as a classifier together with an assignment on the
+unresolved elements.
 
 ## Main definitions
 
 * `sigmaFstSectionElim` — eliminate a function into a sigma type along
   a proof that it is a section of the first projection, producing a
   dependent function.
+* `sigmaCongrRight'` — the dependent congruence of a sigma type in its
+  second component, choice-free (unlike `Equiv.sigmaCongrRight`), with
+  the two families at independent universes.
+* `sigmaCompEquivSigmaFiber` — group a sigma over a composite family by
+  the fibers of the inner function.
+* `arrowSumEquivSigma` — a function into a sum type is a classifier
+  into `X ⊕ PUnit` together with an assignment on the classifier's
+  unresolved (right-classified) elements.
 
 ## Main statements
 
@@ -25,7 +37,7 @@ Extensions of `Mathlib.Logic.Equiv.Basic`.
 
 ## Tags
 
-sigma, section, dependent function, equiv
+sigma, section, dependent function, equiv, sum type, classifier
 -/
 
 @[expose] public section
