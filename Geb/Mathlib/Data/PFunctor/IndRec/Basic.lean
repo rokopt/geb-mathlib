@@ -101,7 +101,9 @@ The interpretation is given by its object map (`IR.interpObj`) and
 its morphism map (`IR.interpMor`). The propositional computation
 rule of `IR.rec` is `IR.rec_mk`. The functor laws (preservation of
 identities and composition, completing Theorem 2.4 of
-[GhaniNordvallForsbergMalatesta2015]) are not yet stated. The initial
+[GhaniNordvallForsbergMalatesta2015]) are `IR.interpMor_id` and
+`IR.interpMor_comp` in
+`Geb/Mathlib/Data/PFunctor/IndRec/Functor.lean`. The initial
 algebras of the interpreted endofunctors — the universes the codes
 describe, in the endofunctor case `IR I I` — are not constructed
 here; the set-theoretic model of [DybjerSetzer2003] justifies their
