@@ -44,6 +44,13 @@ predicates and composite maps support the horizontal structure.
   equivalences of transformation spaces.
 * `FreeCoprodCompDisc.natCoprodEquiv` — the coproduct
   decomposition of transformation spaces.
+* `FreeCoprodCompDisc.copowerHomMap`,
+  `FreeCoprodCompDisc.plusMap` (with their morphism maps) and
+  `FreeCoprodCompDisc.natCopowerPlusEquiv` — the copower–Yoneda
+  adjunction: transformations out of the copowered map correspond
+  to transformations into the `plus`-precomposed map (components
+  `FreeCoprodCompDisc.natCopowerPlusToFun` and
+  `FreeCoprodCompDisc.natCopowerPlusInvFun`).
 
 ## Main statements
 
@@ -65,6 +72,9 @@ predicates and composite maps support the horizontal structure.
 * `FreeCoprodCompDisc.isNatTrans_invHom`,
   `FreeCoprodCompDisc.NatTrans.ofIsoFamily_isInverse` — naturality
   of the inverse family and the inverse laws of the packaged pair.
+* `FreeCoprodCompDisc.natCopowerPlus_invFun_toFun`,
+  `FreeCoprodCompDisc.natCopowerPlus_toFun_invFun` — the
+  round-trip laws of the adjunction.
 
 ## Implementation notes
 
@@ -432,6 +442,158 @@ def natCoprodEquiv (A : Type u) (Fa : A → Map.{u, v, w} I O)
     left_inv := fun _ ↦ Subtype.ext (funext (fun _ ↦ Subtype.ext rfl)),
     right_inv := fun _ ↦
       funext (fun _ ↦ Subtype.ext (funext (fun _ ↦ Subtype.ext rfl))) }
+
+/-- The object map `X ↦ Hom(c, X) ⊗ F X`: the copower of the value of
+`F` by the hom-set out of `c`. -/
+def copowerHomMap (c : FreeCoprodCompDisc.{u, v} I)
+    (F : Map.{u, v, w} I O) : Map.{u, v, w} I O :=
+  fun X ↦ copower.{u, w, u} O (Hom.{u, v, u} I c X) (F X)
+
+/-- The morphism-map component of `copowerHomMap`. -/
+def copowerHomMapMor (c : FreeCoprodCompDisc.{u, v} I)
+    {F : Map.{u, v, w} I O} (mF : MapMor I O F) :
+    MapMor I O (copowerHomMap c F) :=
+  fun X Y h ↦
+    coprodMor O (Hom I c X) (Hom I c Y) (fun e ↦ Hom.comp I e h)
+      (fun _ ↦ F X) (fun _ ↦ F Y) (fun _ ↦ mF X Y h)
+
+/-- The object map `(c +)`: the binary coproduct with fixed left
+object `c`. -/
+def plusMap (c : FreeCoprodCompDisc.{u, v} I) : Map.{u, v, v} I I :=
+  fun X ↦ plus.{v, u, u} I c X
+
+/-- The morphism-map component of `plusMap`. -/
+def plusMapMor (c : FreeCoprodCompDisc.{u, v} I) :
+    MapMor I I (plusMap c) :=
+  fun _ _ h ↦ coprodPairMor I (Hom.id I c) h
+
+/-- The forward direction of the copower–plus correspondence: from a
+transformation out of the copowered map to one into the
+`plus`-precomposed map. -/
+def natCopowerPlusToFun (c : FreeCoprodCompDisc.{u, v} I)
+    {F G : Map.{u, v, w} I O} {mF : MapMor I O F} {mG : MapMor I O G}
+    (hFcomp : PreservesComp F mF)
+    (η : NatTrans I O (copowerHomMap c F) G (copowerHomMapMor c mF) mG) :
+    NatTrans I O F (mapComp (plusMap c) G) mF
+      (mapMorComp (plusMapMor c) mG) :=
+  ⟨fun X ↦
+    Hom.comp O (mF X (plus I c X) (coprodPairInr I c X))
+      (Hom.comp O
+        (coprodInj O (Hom I c (plus I c X)) (fun _ ↦ F (plus I c X))
+          (coprodPairInl I c X))
+        (η.1 (plus I c X))),
+    fun X Y h ↦
+      Subtype.ext (funext (fun a ↦
+        (congrArg
+            (fun t ↦ (η.1 (plus I c Y)).1 ⟨coprodPairInl I c Y, t⟩)
+            ((congrFun (congrArg Subtype.val
+                  (hFcomp X Y (plus I c Y) h (coprodPairInr I c Y)))
+                a).symm.trans
+              (congrFun (congrArg Subtype.val
+                  (hFcomp X (plus I c X) (plus I c Y)
+                    (coprodPairInr I c X)
+                    (coprodPairMor I (Hom.id I c) h)))
+                a))).trans
+          (congrFun (congrArg Subtype.val
+              (η.2 (plus I c X) (plus I c Y)
+                (coprodPairMor I (Hom.id I c) h)))
+            ⟨coprodPairInl I c X,
+              (mF X (plus I c X) (coprodPairInr I c X)).1 a⟩)))⟩
+
+/-- The backward direction of the copower–plus correspondence: from a
+transformation into the `plus`-precomposed map to one out of the
+copowered map. -/
+def natCopowerPlusInvFun (c : FreeCoprodCompDisc.{u, v} I)
+    {F G : Map.{u, v, w} I O} {mF : MapMor I O F} {mG : MapMor I O G}
+    (hGcomp : PreservesComp G mG)
+    (θ : NatTrans I O F (mapComp (plusMap c) G) mF
+      (mapMorComp (plusMapMor c) mG)) :
+    NatTrans I O (copowerHomMap c F) G (copowerHomMapMor c mF) mG :=
+  ⟨fun X ↦
+    coprodDesc O (Hom I c X) (fun _ ↦ F X) (G X)
+      (fun e ↦
+        Hom.comp O (θ.1 X)
+          (mG (plus I c X) X (coprodPairDesc I e (Hom.id I X)))),
+    fun X Y h ↦
+      Subtype.ext (funext (fun p ↦
+        (congrArg
+            (fun t ↦ (mG (plus I c Y) Y
+                (coprodPairDesc I (Hom.comp I p.1 h) (Hom.id I Y))).1 t)
+            (congrFun (congrArg Subtype.val (θ.2 X Y h)) p.2)).trans
+          ((congrFun (congrArg Subtype.val
+                (hGcomp (plus I c X) (plus I c Y) Y
+                  (coprodPairMor I (Hom.id I c) h)
+                  (coprodPairDesc I (Hom.comp I p.1 h) (Hom.id I Y))))
+              ((θ.1 X).1 p.2)).symm.trans
+            ((congrArg
+                (fun k ↦ (mG (plus I c X) Y k).1 ((θ.1 X).1 p.2))
+                (coprodPairMor_id_desc I h p.1)).trans
+              (congrFun (congrArg Subtype.val
+                  (hGcomp (plus I c X) X Y
+                    (coprodPairDesc I p.1 (Hom.id I X)) h))
+                ((θ.1 X).1 p.2))))))⟩
+
+/-- The backward direction inverts the forward direction of the
+copower–plus correspondence. -/
+theorem natCopowerPlus_invFun_toFun (c : FreeCoprodCompDisc.{u, v} I)
+    {F G : Map.{u, v, w} I O} {mF : MapMor I O F} {mG : MapMor I O G}
+    (hFid : PreservesId F mF) (hFcomp : PreservesComp F mF)
+    (hGcomp : PreservesComp G mG)
+    (η : NatTrans I O (copowerHomMap c F) G (copowerHomMapMor c mF) mG) :
+    natCopowerPlusInvFun c hGcomp (natCopowerPlusToFun c hFcomp η) = η :=
+  Subtype.ext (funext (fun X ↦ Subtype.ext (funext (fun p ↦
+    (congrFun (congrArg Subtype.val
+          (η.2 (plus I c X) X (coprodPairDesc I p.1 (Hom.id I X))))
+        ⟨coprodPairInl I c X,
+          (mF X (plus I c X) (coprodPairInr I c X)).1 p.2⟩).symm.trans
+      (congrArg (fun t ↦ (η.1 X).1 ⟨p.1, t⟩)
+        ((congrFun (congrArg Subtype.val
+              (hFcomp X (plus I c X) X (coprodPairInr I c X)
+                (coprodPairDesc I p.1 (Hom.id I X)))) p.2).symm.trans
+          (congrFun (congrArg Subtype.val (hFid X)) p.2)))))))
+
+/-- The forward direction inverts the backward direction of the
+copower–plus correspondence. -/
+theorem natCopowerPlus_toFun_invFun (c : FreeCoprodCompDisc.{u, v} I)
+    {F G : Map.{u, v, w} I O} {mF : MapMor I O F} {mG : MapMor I O G}
+    (hGid : PreservesId G mG) (hGcomp : PreservesComp G mG)
+    (hFcomp : PreservesComp F mF)
+    (θ : NatTrans I O F (mapComp (plusMap c) G) mF
+      (mapMorComp (plusMapMor c) mG)) :
+    natCopowerPlusToFun c hFcomp (natCopowerPlusInvFun c hGcomp θ) = θ :=
+  Subtype.ext (funext (fun X ↦ Subtype.ext (funext (fun a ↦
+    (congrArg
+        (fun t ↦ (mG (plus I c (plus I c X)) (plus I c X)
+            (coprodPairDesc I (coprodPairInl I c X)
+              (Hom.id I (plus I c X)))).1 t)
+        (congrFun (congrArg Subtype.val
+            (θ.2 X (plus I c X) (coprodPairInr I c X))) a)).trans
+      ((congrFun (congrArg Subtype.val
+            (hGcomp (plus I c X) (plus I c (plus I c X)) (plus I c X)
+              (coprodPairMor I (Hom.id I c) (coprodPairInr I c X))
+              (coprodPairDesc I (coprodPairInl I c X)
+                (Hom.id I (plus I c X)))))
+          ((θ.1 X).1 a)).symm.trans
+        ((congrArg
+            (fun k ↦ (mG (plus I c X) (plus I c X) k).1 ((θ.1 X).1 a))
+            (coprodPairMor_inr_desc_inl I (Z := c) (X := X))).trans
+          (congrFun (congrArg Subtype.val (hGid (plus I c X)))
+            ((θ.1 X).1 a))))))))
+
+/-- The copower–Yoneda adjunction: transformations out of the
+copowered map correspond to transformations into the
+`plus`-precomposed map. -/
+def natCopowerPlusEquiv (c : FreeCoprodCompDisc.{u, v} I)
+    {F G : Map.{u, v, w} I O} (mF : MapMor I O F) (mG : MapMor I O G)
+    (hFid : PreservesId F mF) (hFcomp : PreservesComp F mF)
+    (hGid : PreservesId G mG) (hGcomp : PreservesComp G mG) :
+    NatTrans I O (copowerHomMap c F) G (copowerHomMapMor c mF) mG ≃
+      NatTrans I O F (mapComp (plusMap c) G) mF
+        (mapMorComp (plusMapMor c) mG) :=
+  { toFun := natCopowerPlusToFun c hFcomp,
+    invFun := natCopowerPlusInvFun c hGcomp,
+    left_inv := natCopowerPlus_invFun_toFun c hFid hFcomp hGcomp,
+    right_inv := natCopowerPlus_toFun_invFun c hGid hGcomp hFcomp }
 
 end FreeCoprodCompDisc
 

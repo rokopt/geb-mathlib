@@ -20,7 +20,8 @@ and interchange laws are exercised at the sample transformations.
 The identity isomorphism family packages into an inverse pair of
 transformations; the transport equivalences, the source-map
 rewrite, and the coproduct decomposition round-trip sample
-transformations.
+transformations. The copower–Yoneda adjunction round-trips the
+right-injection transformation.
 
 ## Tags
 
@@ -251,3 +252,48 @@ theorem sampleNatCoprodEquiv_roundtrip :
   (FreeCoprodCompDisc.natCoprodEquiv Bool (fun _ ↦ sampleMap)
     (fun _ ↦ sampleMapMor) sampleMapDouble
     sampleMapDoubleMor).apply_symm_apply (fun _ ↦ sampleNatInl)
+
+/-- A sample completion object for the copower–Yoneda adjunction. -/
+def sampleNatObj : FreeCoprodCompDisc.{0, 0} Bool :=
+  ⟨Bool, fun b ↦ b⟩
+
+/-- A sample endomorphism of `sampleNatObj`. -/
+def sampleNatObjHom : FreeCoprodCompDisc.Hom Bool sampleNatObj sampleNatObj :=
+  ⟨fun b ↦ b, rfl⟩
+
+/-- The morphism map of the copowered map evaluates componentwise. -/
+theorem sampleCopowerHomMapMor_apply :
+    (FreeCoprodCompDisc.copowerHomMapMor sampleNatObj sampleMapMor
+        sampleNatObj sampleNatObj sampleNatObjHom).1
+        ⟨sampleNatObjHom, true⟩ =
+      ⟨FreeCoprodCompDisc.Hom.comp Bool sampleNatObjHom sampleNatObjHom,
+        true⟩ :=
+  rfl
+
+/-- The right-injection transformation into the `plus`-precomposed
+identity map. -/
+def sampleNatInr :
+    FreeCoprodCompDisc.NatTrans Bool Bool sampleMap
+      (FreeCoprodCompDisc.mapComp
+        (FreeCoprodCompDisc.plusMap sampleNatObj) sampleMap)
+      sampleMapMor
+      (FreeCoprodCompDisc.mapMorComp
+        (FreeCoprodCompDisc.plusMapMor sampleNatObj) sampleMapMor) :=
+  ⟨fun X ↦ FreeCoprodCompDisc.coprodPairInr Bool sampleNatObj X,
+    fun _ _ _ ↦ Subtype.ext rfl⟩
+
+/-- The copower–Yoneda adjunction round-trips the sample
+transformation. -/
+theorem sampleNatCopowerPlus_roundtrip :
+    (FreeCoprodCompDisc.natCopowerPlusEquiv sampleNatObj sampleMapMor
+        sampleMapMor sampleMapMor_preservesId sampleMapMor_preservesComp
+        sampleMapMor_preservesId sampleMapMor_preservesComp)
+        ((FreeCoprodCompDisc.natCopowerPlusEquiv sampleNatObj sampleMapMor
+          sampleMapMor sampleMapMor_preservesId sampleMapMor_preservesComp
+          sampleMapMor_preservesId sampleMapMor_preservesComp).symm
+          sampleNatInr) =
+      sampleNatInr :=
+  (FreeCoprodCompDisc.natCopowerPlusEquiv sampleNatObj sampleMapMor
+    sampleMapMor sampleMapMor_preservesId sampleMapMor_preservesComp
+    sampleMapMor_preservesId sampleMapMor_preservesComp).apply_symm_apply
+    sampleNatInr
