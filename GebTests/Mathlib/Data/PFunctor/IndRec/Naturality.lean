@@ -14,7 +14,9 @@ A `delta` code over Boolean indices whose subcode depends on its
 direction assignment exercises the per-summand decomposition: the
 injections, the cotuple, their computation law, naturality, and
 the transformation-space equivalence. Named theorems give the
-`GebMeta` axiom linter declarations to inspect.
+`GebMeta` axiom linter declarations to inspect. The Lemma 4
+naturality upgrade and its characterizing equation are exercised
+at the sample code.
 
 ## Tags
 
@@ -92,3 +94,35 @@ theorem sampleNatDeltaEquiv_roundtrip :
     (IR.interpMor Bool Bool sampleNaturalityDeltaCode)).symm_apply_apply
     (FreeCoprodCompDisc.NatTrans.id (IR.interpObj Bool Bool sampleNaturalityDeltaCode)
       (IR.interpMor Bool Bool sampleNaturalityDeltaCode))
+
+/-- The characterizing equation of `IR.interpPrecompIso` at a concrete
+`ι`-shaped code. -/
+theorem sampleInterpPrecompIso_mk :
+    IR.interpPrecompIso.{0, 0, 0, 0} Bool Bool
+        (IR.mk Bool Bool (Sum.inl true) PEmpty.elim) =
+      IR.interpPrecompIsoStep Bool Bool (Sum.inl true) PEmpty.elim
+        (fun x ↦ IR.interpPrecompIso Bool Bool (PEmpty.elim x)) :=
+  IR.interpPrecompIso_mk Bool Bool (Sum.inl true) PEmpty.elim
+
+/-- Postcomposing merged-assignment values commutes with the merge at
+the sample types. -/
+theorem sampleArrowSumMerge_map (c : ArrowSumClassifier.{0, 0, 0} Bool Bool)
+    (j : ArrowSumUnresolved c → Bool) (b : Bool) :
+    Sum.map _root_.id Bool.not (arrowSumMerge c j b) =
+      arrowSumMerge c (Bool.not ∘ j) b :=
+  IR.arrowSumMerge_map c j Bool.not b
+
+/-- Naturality of the Lemma 4 isomorphism family at the sample delta
+code. -/
+theorem samplePrecompNat :
+    FreeCoprodCompDisc.IsNatTrans Bool Bool
+      (IR.interpObj Bool Bool
+        (IR.precomp Bool Bool PUnit (fun _ ↦ false) sampleNaturalityDeltaCode))
+      (IR.precompRhsMap Bool Bool PUnit (fun _ ↦ false) sampleNaturalityDeltaCode)
+      (IR.interpMor Bool Bool
+        (IR.precomp Bool Bool PUnit (fun _ ↦ false) sampleNaturalityDeltaCode))
+      (IR.precompRhsMapMor Bool Bool PUnit (fun _ ↦ false) sampleNaturalityDeltaCode)
+      (fun k ↦ FreeCoprodCompDisc.Iso.hom Bool
+        (IR.interpPrecompIso Bool Bool sampleNaturalityDeltaCode PUnit
+          (fun _ ↦ false) k)) :=
+  IR.interpPrecompIso_natural Bool Bool sampleNaturalityDeltaCode PUnit (fun _ ↦ false)

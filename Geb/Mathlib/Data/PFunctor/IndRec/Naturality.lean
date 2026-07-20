@@ -39,6 +39,11 @@ into families of transformations out of the summands
   epicness of the inclusions.
 * `IR.deltaInto_natural` — naturality of the inclusions in the
   interpreted object.
+* `IR.interpPrecompIso_natural` — naturality of the Lemma 4
+  isomorphism family
+  ([HancockMcBrideGhaniMalatestaAltenkirch2013], Lemma 4, upgraded
+  from the pointwise statement), with the characterizing equation
+  `IR.interpPrecompIso_mk`.
 
 ## Implementation notes
 
@@ -50,6 +55,11 @@ and transports of names along equalities of direction assignments
 are eliminated by the cast lemmas `IR.interpObj_snd_cast` and
 `IR.interpMor_cast`, with `Eq.rec` motives at projection-reduced
 types and dependent `rfl`-proofs quantified inside the motive.
+The Lemma 4 upgrade rewrites the isomorphism family to step form
+before eliminating the morphism's commutation equality and
+splitting on the shape; the precomposed code is a stuck match
+until the shape is known, after which the per-constructor
+`IR.interpMor` equations apply to it.
 
 ## References
 
@@ -323,6 +333,389 @@ def natDeltaEquiv (B : Type uB)
       deltaDesc_eta I O B c X (G X) (η.1 X))),
     right_inv := fun θ ↦ funext (fun i ↦ Subtype.ext (funext (fun X ↦
       deltaInto_desc I O B c i X (G X) (fun i' ↦ (θ i').1 X)))) }
+
+/-- The right-hand object map of the Lemma 4 naturality square: the
+direct interpretation of `γ` at the coproduct of `⟨Q, i⟩` with the
+argument object. -/
+def precompRhsMap (Q : Type uB) (i : Q → I)
+    (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    FreeCoprodCompDisc.Map.{max uA uB, uI, uO} I O :=
+  fun k ↦ interpObj I O γ (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, i⟩ k)
+
+/-- The morphism-map component of `IR.precompRhsMap`: the direct
+interpretation's morphism map at the coproduct of the identity on
+`⟨Q, i⟩` with the argument morphism. -/
+def precompRhsMapMor (Q : Type uB) (i : Q → I)
+    (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    FreeCoprodCompDisc.MapMor I O (precompRhsMap I O Q i γ) :=
+  fun X Y h ↦ interpMor I O γ
+    (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X) (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)
+    (FreeCoprodCompDisc.coprodPairMor I (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) h)
+
+/-- The characterizing equation of `IR.interpPrecompIso` at `IR.mk`:
+the isomorphism family computes by one step of
+`IR.interpPrecompIsoStep`. -/
+theorem interpPrecompIso_mk (s : Shape.{max uA uB, uB, uO} O)
+    (d : Direction I O s → IR.{max uA uB, uB, uI, uO} I O) :
+    interpPrecompIso I O (mk I O s d) =
+      interpPrecompIsoStep I O s d (fun x ↦ interpPrecompIso I O (d x)) :=
+  rec_mk I O (interpPrecompIsoStep I O) s d
+
+/-- Postcomposing the values of a merged assignment commutes with the
+merge, pointwise: case analysis on the classifier at each element. -/
+theorem arrowSumMerge_map {B : Type uB} {X : Type uB}
+    {Y Z : Type (max uA uB)} (c : ArrowSumClassifier.{uB, uB, uB} B X)
+    (j : ArrowSumUnresolved c → Y) (h : Y → Z) (b : B) :
+    Sum.map _root_.id h (arrowSumMerge c j b) = arrowSumMerge c (h ∘ j) b :=
+  Sum.casesOn (motive := fun t ↦ c b = t →
+      Sum.map _root_.id h (arrowSumMerge c j b) = arrowSumMerge c (h ∘ j) b)
+    (c b)
+    (fun x hx ↦
+      (congrArg (Sum.map _root_.id h) (arrowSumMerge_eq c j b (Sum.inl x) hx)).trans
+        (arrowSumMerge_eq c (h ∘ j) b (Sum.inl x) hx).symm)
+    (fun u hu ↦
+      (congrArg (Sum.map _root_.id h) (arrowSumMerge_eq c j b (Sum.inr u) hu)).trans
+        (arrowSumMerge_eq c (h ∘ j) b (Sum.inr u) hu).symm)
+    rfl
+
+/-- `IR.interpMor` commutes with `FreeCoprodCompDisc.isoOfEq`
+transport of names along an equality of direction assignments (the
+`IR.interpMor_cast` companion at object-equality transports). -/
+theorem interpMor_isoOfEq (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (V W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (pm : FreeCoprodCompDisc.Hom I V W) {m₀ m₁ : B → I} (e : m₀ = m₁)
+    (u : (interpObj I O (c m₀) V).1) :
+    (FreeCoprodCompDisc.isoOfEq O
+        (congrArg (fun m ↦ interpObj I O (c m) W) e)).1
+        ((interpMor I O (c m₀) V W pm).1 u) =
+      (interpMor I O (c m₁) V W pm).1
+        ((FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m ↦ interpObj I O (c m) V) e)).1 u) :=
+  Eq.rec (motive := fun m' e' ↦
+      (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m ↦ interpObj I O (c m) W) e')).1
+          ((interpMor I O (c m₀) V W pm).1 u) =
+        (interpMor I O (c m') V W pm).1
+          ((FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun m ↦ interpObj I O (c m) V) e')).1 u))
+    rfl e
+
+/-- The motive of the commutation-proof elimination in
+`IR.precompNatDeltaPair`: the domain decoding of the coproduct
+morphism is generalized together with its commutation proof, and the
+assignment equalities (whose types depend on it) are quantified
+inside. -/
+def PrecompNatDeltaPairMotive (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (V1 : Type (max uA uB)) (W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (p1 : V1 → W.1) (gx : B → V1) (m₀ : B → I)
+    (v2 : V1 → I) (p2 : W.2 ∘ p1 = v2) : Prop :=
+  ∀ (gy : B → W.1), p1 ∘ gx = gy →
+    ∀ (eX : m₀ = v2 ∘ gx) (eY : m₀ = W.2 ∘ gy)
+      (u : (interpObj I O (c m₀) ⟨V1, v2⟩).1),
+    (⟨gy, (FreeCoprodCompDisc.isoOfEq O
+        (congrArg (fun m ↦ interpObj I O (c m) W) eY)).1
+        ((interpMor I O (c m₀) ⟨V1, v2⟩ W ⟨p1, p2⟩).1 u)⟩ :
+      (interpObj I O (delta I O B c) W).1) =
+    ⟨p1 ∘ gx,
+      (FreeCoprodCompDisc.homOfEq O
+          (congrArg (fun t ↦ interpObj I O (c (t ∘ gx)) W) p2.symm)
+          (interpMor I O (c (v2 ∘ gx)) ⟨V1, v2⟩ W ⟨p1, p2⟩)).1
+        ((FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m ↦ interpObj I O (c m) ⟨V1, v2⟩) eX)).1 u)⟩
+
+/-- The motive of the reassembled-assignment elimination inside the
+base case of `IR.precompNatDeltaPair`: the codomain-side assignment is
+generalized together with its factoring through the coproduct
+morphism, at the already-factored domain decoding (where the
+`homOfEq` transport has reduced definitionally). -/
+def PrecompNatDeltaPairInnerMotive (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (V1 : Type (max uA uB)) (W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (p1 : V1 → W.1) (gx : B → V1) (m₀ : B → I) (gy : B → W.1) : Prop :=
+  ∀ (eX : m₀ = (W.2 ∘ p1) ∘ gx) (eY : m₀ = W.2 ∘ gy)
+    (u : (interpObj I O (c m₀) ⟨V1, W.2 ∘ p1⟩).1),
+  (⟨gy, (FreeCoprodCompDisc.isoOfEq O
+      (congrArg (fun m ↦ interpObj I O (c m) W) eY)).1
+      ((interpMor I O (c m₀) ⟨V1, W.2 ∘ p1⟩ W ⟨p1, rfl⟩).1 u)⟩ :
+    (interpObj I O (delta I O B c) W).1) =
+  ⟨p1 ∘ gx,
+    (interpMor I O (c ((W.2 ∘ p1) ∘ gx)) ⟨V1, W.2 ∘ p1⟩ W ⟨p1, rfl⟩).1
+      ((FreeCoprodCompDisc.isoOfEq O
+        (congrArg (fun m ↦ interpObj I O (c m) ⟨V1, W.2 ∘ p1⟩) eX)).1 u)⟩
+
+/-- The base case of both eliminations in `IR.precompNatDeltaPair`:
+at the factored assignment `p1 ∘ gx`, the two assignment-equality
+transports commute with the morphism map by `IR.interpMor_isoOfEq`
+under the common first component. -/
+theorem precompNatDeltaPair_inner (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (V1 : Type (max uA uB)) (W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (p1 : V1 → W.1) (gx : B → V1) (m₀ : B → I) :
+    PrecompNatDeltaPairInnerMotive I O B c V1 W p1 gx m₀ (p1 ∘ gx) :=
+  fun eX _ u ↦
+    congrArg (fun t ↦ (⟨p1 ∘ gx, t⟩ : (interpObj I O (delta I O B c) W).1))
+      (interpMor_isoOfEq I O B c ⟨V1, W.2 ∘ p1⟩ W ⟨p1, rfl⟩ eX u)
+
+/-- The transport-commutation square of the `delta` case of the
+naturality upgrade: relabeling a merged assignment on both sides of
+the morphism map (by `FreeCoprodCompDisc.isoOfEq` at the domain and
+codomain objects) agrees with the `homOfEq`-transported component of
+`IR.interpMorDelta`, as elements of the direct `delta` interpretation
+at the codomain. -/
+theorem precompNatDeltaPair (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (V1 : Type (max uA uB)) (W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (p1 : V1 → W.1) (gx : B → V1) (m₀ : B → I)
+    (v2 : V1 → I) (p2 : W.2 ∘ p1 = v2) :
+    PrecompNatDeltaPairMotive I O B c V1 W p1 gx m₀ v2 p2 :=
+  Eq.rec (motive := fun v2' p2' ↦
+      PrecompNatDeltaPairMotive I O B c V1 W p1 gx m₀ v2' p2')
+    (fun _gy e1 ↦
+      Eq.rec (motive := fun gy' _ ↦
+          PrecompNatDeltaPairInnerMotive I O B c V1 W p1 gx m₀ gy')
+        (precompNatDeltaPair_inner I O B c V1 W p1 gx m₀) e1)
+    p2
+
+/-- The motive of the naturality upgrade of Lemma 4
+([HancockMcBrideGhaniMalatestaAltenkirch2013]): for each code, at
+every precomposition datum, the `IR.interpPrecompIso` family is
+natural between the precomposed interpretation and the direct
+interpretation at the coproduct object. -/
+def PrecompNatMotive (γ : IR.{max uA uB, uB, uI, uO} I O) : Prop :=
+  ∀ (Q : Type uB) (i : Q → I),
+    FreeCoprodCompDisc.IsNatTrans I O
+      (interpObj I O (precomp I O Q i γ)) (precompRhsMap I O Q i γ)
+      (interpMor I O (precomp I O Q i γ)) (precompRhsMapMor I O Q i γ)
+      (fun k ↦ FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O γ Q i k))
+
+/-- The motive of the commutation-equality elimination in the
+inductive step of the naturality upgrade: the domain decoding is
+generalized together with the morphism's commutation proof, at the
+`IR.interpPrecompIsoStep` form of the isomorphism family. -/
+def PrecompNatMkMotive (s : Shape.{max uA uB, uB, uO} O)
+    (d : Direction I O s → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (i : Q → I) (X1 : Type (max uA uB))
+    (Y : FreeCoprodCompDisc.{max uA uB, uI} I) (h1 : X1 → Y.1)
+    (x2 : X1 → I) (hcomm : Y.2 ∘ h1 = x2) : Prop :=
+  FreeCoprodCompDisc.Hom.comp O
+      (interpMor I O (precomp I O Q i (mk I O s d)) ⟨X1, x2⟩ Y ⟨h1, hcomm⟩)
+      (FreeCoprodCompDisc.Iso.hom O
+        (interpPrecompIsoStep I O s d
+          (fun x ↦ interpPrecompIso I O (d x)) Q i Y)) =
+    FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.hom O
+        (interpPrecompIsoStep I O s d
+          (fun x ↦ interpPrecompIso I O (d x)) Q i ⟨X1, x2⟩))
+      (interpMor I O (mk I O s d)
+        (FreeCoprodCompDisc.plus I ⟨Q, i⟩ ⟨X1, x2⟩)
+        (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)
+        (FreeCoprodCompDisc.coprodPairMor I
+          (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) ⟨h1, hcomm⟩))
+
+/-- The `iota` case of the naturality upgrade: after the
+characterizing equations, both legs of the square are identities on
+the constant singleton interpretation. -/
+theorem precompNat_mk_iota (o : O)
+    (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (i : Q → I) (X1 : Type (max uA uB))
+    (Y : FreeCoprodCompDisc.{max uA uB, uI} I) (h1 : X1 → Y.1) :
+    PrecompNatMkMotive I O (Sum.inl o) d Q i X1 Y h1 (Y.2 ∘ h1) rfl :=
+  (congrArg
+      (fun (t : MorMapSig I O (iota I O o)) ↦
+        FreeCoprodCompDisc.Hom.comp O (t ⟨X1, Y.2 ∘ h1⟩ Y ⟨h1, rfl⟩)
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIsoStep I O (Sum.inl o) d
+              (fun x ↦ interpPrecompIso I O (d x)) Q i Y)))
+      (interpMor_iota I O o)).trans
+    (congrArg
+      (fun (t : MorMapSig I O (mk I O (Sum.inl o) d)) ↦
+        FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIsoStep I O (Sum.inl o) d
+              (fun x ↦ interpPrecompIso I O (d x)) Q i ⟨X1, Y.2 ∘ h1⟩))
+          (t (FreeCoprodCompDisc.plus I ⟨Q, i⟩ ⟨X1, Y.2 ∘ h1⟩)
+            (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)
+            (FreeCoprodCompDisc.coprodPairMor I
+              (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) ⟨h1, rfl⟩)))
+      (interpMor_mk I O (Sum.inl o) d).symm)
+
+/-- The `sigma` case of the naturality upgrade: after the
+characterizing equations, both paths around the square compute
+componentwise, and each summand's square is the inductive hypothesis
+at the summand's subcode. -/
+theorem precompNat_mk_sigma (A : Type (max uA uB))
+    (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
+      PrecompNatMotive I O (d x))
+    (Q : Type uB) (i : Q → I) (X1 : Type (max uA uB))
+    (Y : FreeCoprodCompDisc.{max uA uB, uI} I) (h1 : X1 → Y.1) :
+    PrecompNatMkMotive I O (Sum.inr (Sum.inl A)) d Q i X1 Y h1 (Y.2 ∘ h1) rfl :=
+  Subtype.ext (funext (fun p ↦
+    ((congrArg
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIsoStep I O (Sum.inr (Sum.inl A)) d
+            (fun x ↦ interpPrecompIso I O (d x)) Q i Y)).1
+        (congrFun (congrArg Subtype.val
+            (congrFun (congrFun (congrFun
+              (interpMor_sigma I O (ULift.{uB} A)
+                (fun a ↦ precomp I O Q i (d (ULift.up a.down))))
+              ⟨X1, Y.2 ∘ h1⟩) Y) ⟨h1, rfl⟩))
+          p)).trans
+      (congrArg
+        (fun t ↦ (⟨p.1.down, t⟩ :
+          (interpObj I O (mk I O (Sum.inr (Sum.inl A)) d)
+            (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)).1))
+        (congrFun (congrArg Subtype.val
+            (ih (ULift.up p.1.down) Q i ⟨X1, Y.2 ∘ h1⟩ Y ⟨h1, rfl⟩))
+          p.2))).trans
+    (congrFun (congrArg Subtype.val
+        (congrFun (congrFun (congrFun
+          (interpMor_mk I O (Sum.inr (Sum.inl A)) d)
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ ⟨X1, Y.2 ∘ h1⟩))
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y))
+          (FreeCoprodCompDisc.coprodPairMor I
+            (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) ⟨h1, rfl⟩)))
+      ((FreeCoprodCompDisc.Iso.hom O
+        (interpPrecompIsoStep I O (Sum.inr (Sum.inl A)) d
+          (fun x ↦ interpPrecompIso I O (d x)) Q i ⟨X1, Y.2 ∘ h1⟩)).1 p)).symm))
+
+/-- The `delta` case of the naturality upgrade: after the
+characterizing equations, a name of the precomposed `delta`
+interpretation is chased componentwise through both paths of the
+square — the classifier component is preserved, the summand's square
+is the inductive hypothesis at the merged assignment, and the
+remaining transports commute by `IR.precompNatDeltaPair`. -/
+theorem precompNat_mk_delta (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      PrecompNatMotive I O (d x))
+    (Q : Type uB) (i : Q → I) (X1 : Type (max uA uB))
+    (Y : FreeCoprodCompDisc.{max uA uB, uI} I) (h1 : X1 → Y.1) :
+    PrecompNatMkMotive I O (Sum.inr (Sum.inr B)) d Q i X1 Y h1 (Y.2 ∘ h1) rfl :=
+  Subtype.ext (funext (fun p ↦
+    ((congrArg
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIsoStep I O (Sum.inr (Sum.inr B)) d
+            (fun x ↦ interpPrecompIso I O (d x)) Q i Y)).1
+        (congrFun (congrArg Subtype.val
+            (congrFun (congrFun (congrFun
+              (interpMor_sigma I O
+                (ULift.{max uA uB} (ArrowSumClassifier.{uB, uB, uB} B Q))
+                (fun cl ↦ delta I O (ArrowSumUnresolved cl.down)
+                  (fun j ↦ precomp I O Q i
+                    (d (ULift.up (precompMerge I Q i cl.down j))))))
+              ⟨X1, Y.2 ∘ h1⟩) Y) ⟨h1, rfl⟩))
+          p)).trans
+      ((congrArg
+          (fun t ↦ (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIsoStep I O (Sum.inr (Sum.inr B)) d
+              (fun x ↦ interpPrecompIso I O (d x)) Q i Y)).1
+            (⟨p.1, t⟩ :
+              (interpObj I O
+                (precomp I O Q i (mk I O (Sum.inr (Sum.inr B)) d)) Y).1))
+          (congrFun (congrArg Subtype.val
+              (congrFun (congrFun (congrFun
+                (interpMor_delta I O (ArrowSumUnresolved p.1.down)
+                  (fun j ↦ precomp I O Q i
+                    (d (ULift.up (precompMerge I Q i p.1.down j)))))
+                ⟨X1, Y.2 ∘ h1⟩) Y) ⟨h1, rfl⟩))
+            p.2)).trans
+        ((congrArg
+            (fun t ↦ (⟨arrowSumMerge p.1.down (h1 ∘ p.2.1),
+              (FreeCoprodCompDisc.isoOfEq O
+                (congrArg
+                  (fun m ↦ interpObj I O (d (ULift.up m))
+                    (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y))
+                  (precompMerge_elim I Q i Y B p.1.down (h1 ∘ p.2.1)))).1 t⟩ :
+              (interpObj I O (mk I O (Sum.inr (Sum.inr B)) d)
+                (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)).1))
+            (congrFun (congrArg Subtype.val
+                (ih (ULift.up
+                    (precompMerge I Q i p.1.down ((Y.2 ∘ h1) ∘ p.2.1))) Q i
+                  ⟨X1, Y.2 ∘ h1⟩ Y ⟨h1, rfl⟩))
+              p.2.2)).trans
+          (precompNatDeltaPair I O B (fun m ↦ d (ULift.up m)) (Q ⊕ X1)
+            (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y) (Sum.map _root_.id h1)
+            (arrowSumMerge p.1.down p.2.1)
+            (precompMerge I Q i p.1.down ((Y.2 ∘ h1) ∘ p.2.1))
+            (Sum.elim i (Y.2 ∘ h1))
+            (FreeCoprodCompDisc.coprodPairMor I
+              (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩)
+              (⟨h1, rfl⟩ :
+                FreeCoprodCompDisc.Hom I ⟨X1, Y.2 ∘ h1⟩ Y)).2
+            (arrowSumMerge p.1.down (h1 ∘ p.2.1))
+            (funext (fun b ↦ arrowSumMerge_map p.1.down p.2.1 h1 b))
+            (precompMerge_elim I Q i ⟨X1, Y.2 ∘ h1⟩ B p.1.down p.2.1)
+            (precompMerge_elim I Q i Y B p.1.down (h1 ∘ p.2.1))
+            ((FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O
+                (d (ULift.up
+                  (precompMerge I Q i p.1.down ((Y.2 ∘ h1) ∘ p.2.1)))) Q i
+                ⟨X1, Y.2 ∘ h1⟩)).1 p.2.2))))).trans
+    (congrFun (congrArg Subtype.val
+        (congrFun (congrFun (congrFun
+          (interpMor_mk I O (Sum.inr (Sum.inr B)) d)
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ ⟨X1, Y.2 ∘ h1⟩))
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y))
+          (FreeCoprodCompDisc.coprodPairMor I
+            (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) ⟨h1, rfl⟩)))
+      ((FreeCoprodCompDisc.Iso.hom O
+        (interpPrecompIsoStep I O (Sum.inr (Sum.inr B)) d
+          (fun x ↦ interpPrecompIso I O (d x)) Q i ⟨X1, Y.2 ∘ h1⟩)).1 p)).symm))
+
+/-- The per-shape dispatch of the naturality upgrade's base case. -/
+theorem precompNat_mk_base (s : Shape.{max uA uB, uB, uO} O)
+    (d : Direction I O s → IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O s) → PrecompNatMotive I O (d x))
+    (Q : Type uB) (i : Q → I) (X1 : Type (max uA uB))
+    (Y : FreeCoprodCompDisc.{max uA uB, uI} I) (h1 : X1 → Y.1) :
+    PrecompNatMkMotive I O s d Q i X1 Y h1 (Y.2 ∘ h1) rfl :=
+  match s, d, ih with
+  | Sum.inl o, d, _ => precompNat_mk_iota I O o d Q i X1 Y h1
+  | Sum.inr (Sum.inl A), d, ih => precompNat_mk_sigma I O A d ih Q i X1 Y h1
+  | Sum.inr (Sum.inr B), d, ih => precompNat_mk_delta I O B d ih Q i X1 Y h1
+
+/-- The inductive step of the naturality upgrade: rewrite the
+isomorphism family by its characterizing equation
+`IR.interpPrecompIso_mk`, eliminate the morphism's commutation
+equality, and dispatch on the shape. -/
+theorem interpPrecompIso_natural_step :
+    InductionStep.{max uA uB, uB, uI, uO} I O (PrecompNatMotive I O) :=
+  fun s d ih Q i X Y h ↦
+    match X, h with
+    | ⟨X1, x2⟩, ⟨h1, hcomm⟩ =>
+      Eq.mpr
+        (congrArg
+          (fun t ↦ FreeCoprodCompDisc.Hom.comp O
+              (interpMor I O (precomp I O Q i (mk I O s d)) ⟨X1, x2⟩ Y
+                ⟨h1, hcomm⟩)
+              (FreeCoprodCompDisc.Iso.hom O (t Q i Y)) =
+            FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O (t Q i ⟨X1, x2⟩))
+              (precompRhsMapMor I O Q i (mk I O s d) ⟨X1, x2⟩ Y ⟨h1, hcomm⟩))
+          (interpPrecompIso_mk I O s d))
+        (Eq.rec (motive := fun x2' hcomm' ↦
+            PrecompNatMkMotive I O s d Q i X1 Y h1 x2' hcomm')
+          (precompNat_mk_base I O s d ih Q i X1 Y h1) hcomm)
+
+/-- Naturality of the Lemma 4 isomorphism family
+([HancockMcBrideGhaniMalatestaAltenkirch2013]): at every code and
+every precomposition datum, `IR.interpPrecompIso` is natural in the
+interpreted object, between the precomposed interpretation and the
+direct interpretation at the coproduct object. -/
+theorem interpPrecompIso_natural (γ : IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (i : Q → I) :
+    FreeCoprodCompDisc.IsNatTrans I O
+      (interpObj I O (precomp I O Q i γ)) (precompRhsMap I O Q i γ)
+      (interpMor I O (precomp I O Q i γ)) (precompRhsMapMor I O Q i γ)
+      (fun k ↦ FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O γ Q i k)) :=
+  induction I O (PrecompNatMotive I O) (interpPrecompIso_natural_step I O)
+    γ Q i
 
 end IR
 
