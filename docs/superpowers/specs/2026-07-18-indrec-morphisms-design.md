@@ -247,7 +247,10 @@ stated:
 
 - `FreeCoprodCompDisc.Hom` identity and the category laws (left
   identity, right identity, associativity); composition
-  (`FreeCoprodCompDisc.Hom.comp`) exists from branch 1.
+  (`FreeCoprodCompDisc.Hom.comp`) exists from branch 1. The
+  functoriality of `coprodMor` (preservation of identity and
+  composition), which the functor-law proofs and branch 2c's
+  naturality consume.
 - The propositional computation rule of `IR.rec`, and from it the
   characterizing equations of `IR.interpMor` at `IR.iota`,
   `IR.sigma`, and `IR.delta`.
@@ -344,6 +347,11 @@ dependency-ordered topic branches, each with its own plan:
   independent of branch 2a.
 - Branch 2c: naturality and Theorem 3 (full and faithful). Depends
   on branch 2b.
+- A dedicated relocation branch (after 2b): moves the `Universes`
+  and `Container` sections of `Basic.lean` into sibling modules
+  following the morphism development, discharging the ordering
+  requirement of Placement and documentation. Depends on branch 2b
+  (which creates the module the sections must follow).
 - Branch 2d: composition and the category laws (Corollary 2), by
   transfer. Depends on branches 2a and 2c.
 
