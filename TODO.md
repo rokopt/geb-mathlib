@@ -167,22 +167,13 @@ cofree-comonad items.
 
 Independent of the roadmap sequence above; layered like items 3–4
 (constructive core first, thin `Classical.choice`-enabled categorical
-wrapper second). Complete the functoriality content of Theorem 2.4 of
-[GhaniNordvallForsbergMalatesta2015] for
-`Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`, which currently
-provides the object and morphism actions only (see the module
-docstring's implementation notes).
+wrapper second). The two remaining layers for Theorem 2.4 of
+[GhaniNordvallForsbergMalatesta2015] follow.
 
-In the existing constructive file, without `Classical.choice`:
-
-1. The propositional computation rule of `IR.rec`, and from it the
-   characterizing equations of `IR.interpMor` at each code constructor
-   (`IR.iota`, `IR.sigma`, `IR.delta`).
-2. The functor laws of the interpretation: preservation of identity
-   and composition of `FreeCoprodCompDisc.Hom` (which requires
-   defining that identity and composition).
-3. The uniqueness properties of `IR.elim` and `IR.rec` as algebra
-   morphisms, constructively stated.
+In the existing constructive files, without `Classical.choice`,
+remaining: the uniqueness properties of `IR.elim` and `IR.rec` as
+algebra morphisms, constructively stated (the Theorem 3 development
+does not need this item).
 
 In a separate sibling file wrapping the constructive proofs in
 mathlib `Category`/`Functor` interfaces (pretty much everything
@@ -196,23 +187,31 @@ wrapper is kept thin, following `Slice/Functor.lean` and
    `CategoryTheory.Endofunctor.Algebra`), wrapping the constructive
    uniqueness proofs.
 
-Tests: once the computation rule exists, add a morphism-action test
-with a propositionally nontrivial commutation proof (distinct
-decodings on domain and codomain), exercising the
-`FreeCoprodCompDisc.homOfEq` transport in `IR.interpMorDelta`
-observably; the current tests exercise the morphism action only at
-the algebra level and only along definitionally trivial transports.
+Tests: the propositional computation rule (`IR.rec_mk`) exists;
+add a morphism-action test with a propositionally nontrivial
+commutation proof (distinct decodings on domain and codomain),
+exercising the `FreeCoprodCompDisc.homOfEq` transport in
+`IR.interpMorDelta` observably; the current tests exercise the
+morphism action only at the algebra level and only along
+definitionally trivial transports.
 
 ### Category of `IR` codes
 
 Independent of the roadmap sequence above; parallel to
-Complete Theorem 2.4 for `IndRec`, and depending on it for the
-functor laws of `IR.interpMor` that a natural-transformation notion
-of code morphism requires. Following Definition 8 and Corollary 2 of
+Complete Theorem 2.4 for `IndRec`. The functor laws of
+`IR.interpMor` (`IR.interpMor_id`, `IR.interpMor_comp`) that a
+natural-transformation notion of code morphism requires are
+available. Following Definition 8 and Corollary 2 of
 [HancockMcBrideGhaniMalatestaAltenkirch2013], establish the category
 of `IR` codes for a fixed input/output index pair: the homset between
 two codes, the identity morphism, composition, and the category laws
 (identity and associativity).
+
+Establishing the natural-transformation notion (Theorem 3 of
+[GhaniNordvallForsbergMalatesta2015]) additionally requires
+upgrading the pointwise isomorphisms of Lemma 3 (`IR.interpDeltaIso`)
+and Lemma 4 (`IR.interpPrecompIso`) to natural isomorphisms; this
+deliverable is not yet scheduled and must be budgeted for.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
