@@ -34,6 +34,16 @@ predicates and composite maps support the horizontal structure.
   composition.
 * `FreeCoprodCompDisc.idMap`, `FreeCoprodCompDisc.idMapMor` — the
   identity object map and its morphism-map component.
+* `FreeCoprodCompDisc.NatTrans.IsInverse`,
+  `FreeCoprodCompDisc.NatTrans.ofIsoFamily`,
+  `FreeCoprodCompDisc.NatTrans.invOfIsoFamily` — inverse pairs and
+  the conversion of a natural family of isomorphisms.
+* `FreeCoprodCompDisc.NatTrans.equivOfInverseTarget`,
+  `FreeCoprodCompDisc.NatTrans.equivOfInverseSource`,
+  `FreeCoprodCompDisc.NatTrans.congrSource` — transport
+  equivalences of transformation spaces.
+* `FreeCoprodCompDisc.natCoprodEquiv` — the coproduct
+  decomposition of transformation spaces.
 
 ## Main statements
 
@@ -52,6 +62,9 @@ predicates and composite maps support the horizontal structure.
   the identity object map is the identity operation (with the
   functor-law witnesses `FreeCoprodCompDisc.idMapMor_preservesId`
   and `FreeCoprodCompDisc.idMapMor_preservesComp`).
+* `FreeCoprodCompDisc.isNatTrans_invHom`,
+  `FreeCoprodCompDisc.NatTrans.ofIsoFamily_isInverse` — naturality
+  of the inverse family and the inverse laws of the packaged pair.
 
 ## Implementation notes
 
@@ -296,6 +309,129 @@ theorem NatTrans.hcomp_vcomp {F G H : Map.{u, v, w} I O}
         Hom.comp P (Hom.comp P (mF' (F X) (G X) (η.1 X)) t)
           (θ'.1 (H X)))
       (θ.2 (G X) (H X) (η'.1 X)))))
+
+/-- Two natural transformations are inverse when their vertical
+composites in both orders are identities. -/
+def NatTrans.IsInverse {F G : Map.{u, v, w} I O} {mF : MapMor I O F}
+    {mG : MapMor I O G} (α : NatTrans I O F G mF mG)
+    (β : NatTrans I O G F mG mF) : Prop :=
+  NatTrans.vcomp α β = NatTrans.id F mF ∧
+    NatTrans.vcomp β α = NatTrans.id G mG
+
+/-- The componentwise inverses of a natural family of isomorphisms
+form a natural family. -/
+theorem isNatTrans_invHom {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G}
+    (iso : (X : FreeCoprodCompDisc.{u, v} I) → Iso O (F X) (G X))
+    (hnat : IsNatTrans I O F G mF mG (fun X ↦ Iso.hom O (iso X))) :
+    IsNatTrans I O G F mG mF (fun X ↦ Iso.invHom O (iso X)) :=
+  fun X Y h ↦
+    Subtype.ext (funext (fun b ↦
+      (congrArg (fun t ↦ (iso Y).1.symm ((mG X Y h).1 t))
+          ((iso X).1.apply_symm_apply b).symm).trans
+        ((congrArg (fun t ↦ (iso Y).1.symm t)
+            (congrFun (congrArg Subtype.val (hnat X Y h))
+              ((iso X).1.symm b)).symm).trans
+          ((iso Y).1.symm_apply_apply
+            ((mF X Y h).1 ((iso X).1.symm b))))))
+
+/-- Package a natural family of isomorphisms as a natural
+transformation. -/
+def NatTrans.ofIsoFamily {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G}
+    (iso : (X : FreeCoprodCompDisc.{u, v} I) → Iso O (F X) (G X))
+    (hnat : IsNatTrans I O F G mF mG (fun X ↦ Iso.hom O (iso X))) :
+    NatTrans I O F G mF mG :=
+  ⟨fun X ↦ Iso.hom O (iso X), hnat⟩
+
+/-- Package the inverses of a natural family of isomorphisms as a
+natural transformation. -/
+def NatTrans.invOfIsoFamily {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G}
+    (iso : (X : FreeCoprodCompDisc.{u, v} I) → Iso O (F X) (G X))
+    (hnat : IsNatTrans I O F G mF mG (fun X ↦ Iso.hom O (iso X))) :
+    NatTrans I O G F mG mF :=
+  ⟨fun X ↦ Iso.invHom O (iso X), isNatTrans_invHom iso hnat⟩
+
+/-- The two transformations packaged from a natural family of
+isomorphisms are inverse. -/
+theorem NatTrans.ofIsoFamily_isInverse {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G}
+    (iso : (X : FreeCoprodCompDisc.{u, v} I) → Iso O (F X) (G X))
+    (hnat : IsNatTrans I O F G mF mG (fun X ↦ Iso.hom O (iso X))) :
+    NatTrans.IsInverse (NatTrans.ofIsoFamily iso hnat)
+      (NatTrans.invOfIsoFamily iso hnat) :=
+  ⟨Subtype.ext (funext (fun X ↦ Iso.hom_invHom O (iso X))),
+    Subtype.ext (funext (fun X ↦ Iso.invHom_hom O (iso X)))⟩
+
+/-- Postcomposition with one half of an inverse pair is an
+equivalence on transformation spaces (target side). -/
+def NatTrans.equivOfInverseTarget {F G G' : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G} {mG' : MapMor I O G'}
+    (α : NatTrans I O G G' mG mG') (β : NatTrans I O G' G mG' mG)
+    (h : NatTrans.IsInverse α β) :
+    NatTrans I O F G mF mG ≃ NatTrans I O F G' mF mG' :=
+  { toFun := fun η ↦ NatTrans.vcomp η α,
+    invFun := fun θ ↦ NatTrans.vcomp θ β,
+    left_inv := fun η ↦
+      (NatTrans.vcomp_assoc η α β).trans
+        ((congrArg (fun t ↦ NatTrans.vcomp η t) h.1).trans
+          (NatTrans.vcomp_id η)),
+    right_inv := fun θ ↦
+      (NatTrans.vcomp_assoc θ β α).trans
+        ((congrArg (fun t ↦ NatTrans.vcomp θ t) h.2).trans
+          (NatTrans.vcomp_id θ)) }
+
+/-- Precomposition with one half of an inverse pair is an
+equivalence on transformation spaces (source side). -/
+def NatTrans.equivOfInverseSource {F F' G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mF' : MapMor I O F'} {mG : MapMor I O G}
+    (α : NatTrans I O F' F mF' mF) (β : NatTrans I O F F' mF mF')
+    (h : NatTrans.IsInverse α β) :
+    NatTrans I O F G mF mG ≃ NatTrans I O F' G mF' mG :=
+  { toFun := fun η ↦ NatTrans.vcomp α η,
+    invFun := fun θ ↦ NatTrans.vcomp β θ,
+    left_inv := fun η ↦
+      (NatTrans.vcomp_assoc β α η).symm.trans
+        ((congrArg (fun t ↦ NatTrans.vcomp t η) h.2).trans
+          (NatTrans.id_vcomp η)),
+    right_inv := fun θ ↦
+      (NatTrans.vcomp_assoc α β θ).symm.trans
+        ((congrArg (fun t ↦ NatTrans.vcomp t θ) h.1).trans
+          (NatTrans.id_vcomp θ)) }
+
+/-- Rewrite the source morphism map of a transformation space along an
+equality of morphism maps. -/
+def NatTrans.congrSource {F G : Map.{u, v, w} I O} {mF mF' : MapMor I O F}
+    (e : mF = mF') (mG : MapMor I O G) :
+    NatTrans I O F G mF mG ≃ NatTrans I O F G mF' mG :=
+  Eq.rec (motive := fun mF'' _ ↦
+      NatTrans I O F G mF mG ≃ NatTrans I O F G mF'' mG)
+    (Equiv.refl (NatTrans I O F G mF mG)) e
+
+/-- The generic coproduct decomposition of transformation spaces:
+transformations out of a pointwise indexed coproduct of object maps
+correspond to families of transformations out of the summands. -/
+def natCoprodEquiv (A : Type u) (Fa : A → Map.{u, v, w} I O)
+    (mFa : (a : A) → MapMor I O (Fa a)) (G : Map.{u, v, w} I O)
+    (mG : MapMor I O G) :
+    NatTrans I O (fun X ↦ coprod O A (fun a ↦ Fa a X)) G
+        (fun X Y h ↦ coprodMor O A A _root_.id (fun a ↦ Fa a X)
+          (fun a ↦ Fa a Y) (fun a ↦ mFa a X Y h)) mG ≃
+      ((a : A) → NatTrans I O (Fa a) G (mFa a) mG) :=
+  { toFun := fun η a ↦
+      ⟨fun X ↦ Hom.comp O (coprodInj O A (fun a' ↦ Fa a' X) a) (η.1 X),
+        fun X Y h ↦
+          congrArg (Hom.comp O (coprodInj O A (fun a' ↦ Fa a' X) a))
+            (η.2 X Y h)⟩,
+    invFun := fun θ ↦
+      ⟨fun X ↦ coprodDesc O A (fun a ↦ Fa a X) (G X) (fun a ↦ (θ a).1 X),
+        fun X Y h ↦
+          congrArg (coprodDesc O A (fun a ↦ Fa a X) (G Y))
+            (funext (fun a ↦ (θ a).2 X Y h))⟩,
+    left_inv := fun _ ↦ Subtype.ext (funext (fun _ ↦ Subtype.ext rfl)),
+    right_inv := fun _ ↦
+      funext (fun _ ↦ Subtype.ext (funext (fun _ ↦ Subtype.ext rfl))) }
 
 end FreeCoprodCompDisc
 

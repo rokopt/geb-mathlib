@@ -17,6 +17,10 @@ left-injection transformation, and the vertical category laws at
 both. Named theorems give the `GebMeta` axiom linter declarations
 to inspect. Whiskering, horizontal composition, and the coherence
 and interchange laws are exercised at the sample transformations.
+The identity isomorphism family packages into an inverse pair of
+transformations; the transport equivalences, the source-map
+rewrite, and the coproduct decomposition round-trip sample
+transformations.
 
 ## Tags
 
@@ -184,3 +188,66 @@ theorem sampleWhiskerLeft_idMap :
         FreeCoprodCompDisc.idMapMor_preservesComp =
       sampleNatInl :=
   FreeCoprodCompDisc.NatTrans.whiskerLeft_idMap sampleNatInl
+
+/-- The identity isomorphism family on the identity map is natural. -/
+theorem sampleIsoFamily_isNatTrans :
+    FreeCoprodCompDisc.IsNatTrans Bool Bool sampleMap sampleMap
+      sampleMapMor sampleMapMor
+      (fun X ↦ FreeCoprodCompDisc.Iso.hom Bool
+        (FreeCoprodCompDisc.Iso.refl Bool X)) :=
+  fun _ _ _ ↦ Subtype.ext rfl
+
+/-- The transformation packaged from the identity isomorphism family. -/
+def sampleOfIsoFamily :
+    FreeCoprodCompDisc.NatTrans Bool Bool sampleMap sampleMap
+      sampleMapMor sampleMapMor :=
+  FreeCoprodCompDisc.NatTrans.ofIsoFamily
+    (fun X ↦ FreeCoprodCompDisc.Iso.refl Bool X) sampleIsoFamily_isNatTrans
+
+/-- The inverse transformation packaged from the identity isomorphism
+family. -/
+def sampleInvOfIsoFamily :
+    FreeCoprodCompDisc.NatTrans Bool Bool sampleMap sampleMap
+      sampleMapMor sampleMapMor :=
+  FreeCoprodCompDisc.NatTrans.invOfIsoFamily
+    (fun X ↦ FreeCoprodCompDisc.Iso.refl Bool X) sampleIsoFamily_isNatTrans
+
+/-- The two packaged transformations are inverse. -/
+theorem sampleOfIsoFamily_isInverse :
+    FreeCoprodCompDisc.NatTrans.IsInverse sampleOfIsoFamily
+      sampleInvOfIsoFamily :=
+  FreeCoprodCompDisc.NatTrans.ofIsoFamily_isInverse
+    (fun X ↦ FreeCoprodCompDisc.Iso.refl Bool X) sampleIsoFamily_isNatTrans
+
+/-- Postcomposition with the sample inverse pair round-trips a
+transformation. -/
+theorem sampleEquivOfInverseTarget_roundtrip :
+    (FreeCoprodCompDisc.NatTrans.equivOfInverseTarget sampleOfIsoFamily
+          sampleInvOfIsoFamily sampleOfIsoFamily_isInverse).symm
+        ((FreeCoprodCompDisc.NatTrans.equivOfInverseTarget sampleOfIsoFamily
+          sampleInvOfIsoFamily sampleOfIsoFamily_isInverse) sampleNatId) =
+      sampleNatId :=
+  (FreeCoprodCompDisc.NatTrans.equivOfInverseTarget sampleOfIsoFamily
+    sampleInvOfIsoFamily sampleOfIsoFamily_isInverse).symm_apply_apply
+    sampleNatId
+
+/-- Rewriting the source morphism map along reflexivity is the
+identity. -/
+theorem sampleCongrSource_apply :
+    FreeCoprodCompDisc.NatTrans.congrSource
+        (rfl : sampleMapMor = sampleMapMor) sampleMapDoubleMor sampleNatInl =
+      sampleNatInl :=
+  rfl
+
+/-- The coproduct decomposition round-trips a family of
+transformations. -/
+theorem sampleNatCoprodEquiv_roundtrip :
+    (FreeCoprodCompDisc.natCoprodEquiv Bool (fun _ ↦ sampleMap)
+        (fun _ ↦ sampleMapMor) sampleMapDouble sampleMapDoubleMor)
+        ((FreeCoprodCompDisc.natCoprodEquiv Bool (fun _ ↦ sampleMap)
+          (fun _ ↦ sampleMapMor) sampleMapDouble sampleMapDoubleMor).symm
+          (fun _ ↦ sampleNatInl)) =
+      fun _ ↦ sampleNatInl :=
+  (FreeCoprodCompDisc.natCoprodEquiv Bool (fun _ ↦ sampleMap)
+    (fun _ ↦ sampleMapMor) sampleMapDouble
+    sampleMapDoubleMor).apply_symm_apply (fun _ ↦ sampleNatInl)
