@@ -90,15 +90,20 @@ points. Example 1 of the same paper supplies the container code
   (`delta`) interpretation at an object is isomorphic to the indexed
   coproduct, over its direction assignments, of copowers of the
   subcode interpretations by the morphisms into that object.
+* `IR.elim_mk`, `IR.rec_mk` (with `IR.rec_iota`, `IR.rec_sigma`,
+  `IR.rec_delta`) — the computation rules of `IR.elim`
+  (definitional, pinned) and `IR.rec` (propositional), the latter
+  from the transport congruence `IR.recStep_congr`.
 
 ## Implementation notes
 
 The interpretation is given by its object map (`IR.interpObj`) and
-its morphism map (`IR.interpMor`); the functor laws (preservation of
+its morphism map (`IR.interpMor`). The propositional computation
+rule of `IR.rec` is `IR.rec_mk`. The functor laws (preservation of
 identities and composition, completing Theorem 2.4 of
-[GhaniNordvallForsbergMalatesta2015]) are not yet stated. Neither is
-the propositional computation rule of `IR.rec`, which would
-characterize `IR.interpMor` at each code constructor. The initial
+[GhaniNordvallForsbergMalatesta2015]) are `IR.interpMor_id` and
+`IR.interpMor_comp` in
+`Geb/Mathlib/Data/PFunctor/IndRec/Functor.lean`. The initial
 algebras of the interpreted endofunctors — the universes the codes
 describe, in the endofunctor case `IR I I` — are not constructed
 here; the set-theoretic model of [DybjerSetzer2003] justifies their
@@ -456,6 +461,15 @@ def elim.{v} (V : Type v) (alg : Obj.{uA, uB, uI, uO, v} I O V → V) : IR I O �
 def elimAlg.{v} (V : Type v) (alg : Alg.{uA, uB, uI, uO, v} I O V) : IR I O → V :=
   elim I O V (Alg.toHom I O V alg)
 
+/-- The computation rule of `IR.elim` at `IR.mk`. It holds
+definitionally; the named statement pins the definitional-unfolding
+chain through `WType.elim` at one site, so that any change to that
+chain localizes here. -/
+theorem elim_mk.{v} (V : Type v) (alg : Obj.{uA, uB, uI, uO, v} I O V → V)
+    (s : Shape O) (d : Direction I O s → IR I O) :
+    elim I O V alg (mk I O s d) = alg ⟨s, fun x ↦ elim I O V alg (d x)⟩ :=
+  rfl
+
 /-- The type of the step argument of `IR`'s recursors at a
 `Sort`-valued motive: from a shape, a subcode assignment, and results
 for the subcodes, produce the result for the constructed code. The
@@ -544,6 +558,69 @@ theorem sigmaRec_fst_snd.{v} (motive : IR I O → Type v)
 def rec.{v} {motive : IR I O → Type v} (mk' : RecStep.{uA, uB, uI, uO, v} I O motive) :
     (t : IR I O) → motive t :=
   sigmaFstSectionElim (sigmaRec I O motive mk') (sigmaRec_fst I O motive mk')
+
+/-- The motive of the proof of `IR.recStep_congr`: transporting a
+recursor-step application along an equality of constructed codes
+agrees with applying the step to the pointwise-transported
+results. -/
+def RecStepCongrMotive.{v} {motive : IR.{uA, uB, uI, uO} I O → Type v}
+    (mk' : RecStep I O motive) (s : Shape O)
+    (f : Direction I O s → IR I O) (m : (x : Direction I O s) → motive (f x))
+    (g : Direction I O s → IR I O) (e : f = g) : Prop :=
+  ∀ h : mk I O s f = mk I O s g,
+    Eq.ndrec (motive := motive) (mk' s f m) h =
+      mk' s g (fun x ↦ Eq.ndrec (motive := motive) (m x) (congrFun e x))
+
+/-- Transporting a recursor-step application along an equality of
+constructed codes agrees with applying the step to the
+pointwise-transported results. The base case is definitional:
+proof irrelevance identifies the transport proof with `rfl`. -/
+theorem recStep_congr.{v} {motive : IR.{uA, uB, uI, uO} I O → Type v}
+    (mk' : RecStep I O motive) (s : Shape O)
+    (f : Direction I O s → IR I O) (m : (x : Direction I O s) → motive (f x))
+    (g : Direction I O s → IR I O) (e : f = g) :
+    RecStepCongrMotive I O mk' s f m g e :=
+  Eq.rec (motive := fun g' e' ↦ RecStepCongrMotive I O mk' s f m g' e')
+    (fun _ ↦ rfl) e
+
+/-- The propositional computation rule of `IR.rec` at `IR.mk`.
+`IR.rec` does not satisfy a definitional computation rule (it is
+built from `IR.elim` through a propositional first-projection
+section), so the rule holds propositionally, by `IR.recStep_congr`
+along the pointwise section proofs. -/
+theorem rec_mk.{v} {motive : IR.{uA, uB, uI, uO} I O → Type v}
+    (mk' : RecStep I O motive) (s : Shape O)
+    (d : Direction I O s → IR I O) :
+    rec I O mk' (mk I O s d) = mk' s d (fun x ↦ rec I O mk' (d x)) :=
+  recStep_congr I O mk' s
+    (fun x ↦ (sigmaRec I O motive mk' (d x)).1)
+    (fun x ↦ (sigmaRec I O motive mk' (d x)).2)
+    d
+    (funext (fun x ↦ sigmaRec_fst I O motive mk' (d x)))
+    (sigmaRec_fst I O motive mk' (mk I O s d))
+
+/-- The computation rule of `IR.rec` at `IR.iota`. -/
+theorem rec_iota.{v} {motive : IR.{uA, uB, uI, uO} I O → Type v}
+    (mk' : RecStep I O motive) (o : O) :
+    rec I O mk' (iota I O o) =
+      mk' (Sum.inl o) PEmpty.elim (fun x ↦ rec I O mk' (PEmpty.elim x)) :=
+  rec_mk I O mk' (Sum.inl o) PEmpty.elim
+
+/-- The computation rule of `IR.rec` at `IR.sigma`. -/
+theorem rec_sigma.{v} {motive : IR.{uA, uB, uI, uO} I O → Type v}
+    (mk' : RecStep I O motive) (A : Type uA) (c : A → IR I O) :
+    rec I O mk' (sigma I O A c) =
+      mk' (Sum.inr (Sum.inl A)) (c ∘ ULift.down)
+        (fun x ↦ rec I O mk' (c x.down)) :=
+  rec_mk I O mk' (Sum.inr (Sum.inl A)) (c ∘ ULift.down)
+
+/-- The computation rule of `IR.rec` at `IR.delta`. -/
+theorem rec_delta.{v} {motive : IR.{uA, uB, uI, uO} I O → Type v}
+    (mk' : RecStep I O motive) (B : Type uB) (c : (B → I) → IR I O) :
+    rec I O mk' (delta I O B c) =
+      mk' (Sum.inr (Sum.inr B)) (c ∘ ULift.down)
+        (fun x ↦ rec I O mk' (c x.down)) :=
+  rec_mk I O mk' (Sum.inr (Sum.inr B)) (c ∘ ULift.down)
 
 end IR
 

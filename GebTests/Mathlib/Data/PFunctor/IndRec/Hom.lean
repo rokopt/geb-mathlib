@@ -59,10 +59,10 @@ example (I : Type uI) (O : Type uO) (B : Type uB)
 -- `IR.sigmaPush` injects a `Hom` into the `a' = true` summand of a
 -- `sigma`-code (which is the codomain here; the domain is `ι`). A
 -- typecheck-only sample: `sigmaPush` is defined through `IndRec.IR.rec`,
--- whose propositional computation rule is not yet stated (see the `IR`
--- `Basic` module docstring, Implementation notes), so the result does
--- not reduce definitionally against an independently-built witness; the
--- check exercises the construction's type correctness, not its value.
+-- whose computation rule (`IR.rec_mk`) is propositional rather than
+-- definitional, so the result does not reduce definitionally against
+-- an independently-built witness; the check exercises the
+-- construction's type correctness, not its value.
 
 example :
     IR.Hom PUnit PUnit (iota PUnit PUnit PUnit.unit)
@@ -140,7 +140,8 @@ example (Bout : Type uB) (iout : Bout → PUnit) (Bin : Type uB)
 -- `IR.id` at the constant (`iota`) code equals the reflexivity witness.
 -- The `ι` homset `ULift (PLift (o = o))` is a subsingleton, so this
 -- `rfl` holds for any inhabitant; it does not witness that the
--- `rec`-driven `id` reduces (that needs `IR.rec`'s computation rule).
+-- `rec`-driven `id` reduces (`IR.rec`'s computation rule `IR.rec_mk`
+-- is propositional, so the reduction is not definitional).
 
 example (I : Type uI) (O : Type uO) (o : O) :
     IR.id.{uA, uB, uI, uO} I O (iota I O o)

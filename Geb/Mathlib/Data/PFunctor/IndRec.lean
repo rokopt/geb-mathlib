@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.Data.PFunctor.IndRec.Basic
 public import Geb.Mathlib.Data.PFunctor.IndRec.Hom
+public import Geb.Mathlib.Data.PFunctor.IndRec.Functor
 
 /-!
 # IndRec — index

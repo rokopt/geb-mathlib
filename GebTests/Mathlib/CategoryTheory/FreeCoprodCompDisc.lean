@@ -22,6 +22,12 @@ isomorphism between an object and its `ULift` renaming exercises the
 the inverse direction of `copowerEquiv`. A sample lifted object
 exercises `lift` and `homLiftEquiv`.
 
+The identity morphism and the category laws are exercised at the
+sample endomorphism; the functoriality of `coprodMor` at constant
+families over the sample object; composition and the identity laws
+additionally across three distinct objects with non-identity
+morphisms, pinning composition order by type.
+
 ## Tags
 
 free coproduct completion, family, discrete category
@@ -115,3 +121,100 @@ theorem sampleHomLift_apply :
         (FreeCoprodCompDisc.lift.{0, 0, 1} Bool sampleX))
       ⟨_root_.id, rfl⟩).1 true = ULift.up true :=
   rfl
+
+/-- The identity morphism of `sampleX` is the sample endomorphism. -/
+theorem sampleHom_id :
+    FreeCoprodCompDisc.Hom.id Bool sampleX = sampleHom :=
+  Subtype.ext rfl
+
+/-- Left identity at the sample endomorphism. -/
+theorem sampleHom_id_comp :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.Hom.id Bool sampleX) sampleHom =
+      sampleHom :=
+  FreeCoprodCompDisc.Hom.id_comp Bool sampleHom
+
+/-- Right identity at the sample endomorphism. -/
+theorem sampleHom_comp_id :
+    FreeCoprodCompDisc.Hom.comp Bool sampleHom
+        (FreeCoprodCompDisc.Hom.id Bool sampleX) =
+      sampleHom :=
+  FreeCoprodCompDisc.Hom.comp_id Bool sampleHom
+
+/-- Associativity at the sample endomorphism. -/
+theorem sampleHom_comp_assoc :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.Hom.comp Bool sampleHom sampleHom)
+        sampleHom =
+      FreeCoprodCompDisc.Hom.comp Bool sampleHom
+        (FreeCoprodCompDisc.Hom.comp Bool sampleHom sampleHom) :=
+  FreeCoprodCompDisc.Hom.comp_assoc Bool sampleHom sampleHom sampleHom
+
+/-- The identity-family coproduct morphism over a constant family is
+the identity. -/
+theorem sampleCoprodMor_id :
+    FreeCoprodCompDisc.coprodMor Bool PUnit PUnit _root_.id
+        (fun _ ↦ sampleX) (fun _ ↦ sampleX)
+        (fun _ ↦ FreeCoprodCompDisc.Hom.id Bool sampleX) =
+      FreeCoprodCompDisc.Hom.id Bool
+        (FreeCoprodCompDisc.coprod Bool PUnit (fun _ ↦ sampleX)) :=
+  FreeCoprodCompDisc.coprodMor_id Bool PUnit (fun _ ↦ sampleX)
+
+/-- Composition of identity-reindexed coproduct morphisms composes
+componentwise. -/
+theorem sampleCoprodMor_comp :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodMor Bool PUnit PUnit _root_.id
+          (fun _ ↦ sampleX) (fun _ ↦ sampleX) (fun _ ↦ sampleHom))
+        (FreeCoprodCompDisc.coprodMor Bool PUnit PUnit _root_.id
+          (fun _ ↦ sampleX) (fun _ ↦ sampleX) (fun _ ↦ sampleHom)) =
+      FreeCoprodCompDisc.coprodMor Bool PUnit PUnit
+        (_root_.id ∘ _root_.id) (fun _ ↦ sampleX) (fun _ ↦ sampleX)
+        (fun _ ↦ FreeCoprodCompDisc.Hom.comp Bool sampleHom sampleHom) :=
+  FreeCoprodCompDisc.coprodMor_comp Bool PUnit PUnit PUnit
+    _root_.id _root_.id (fun _ ↦ sampleX) (fun _ ↦ sampleX)
+    (fun _ ↦ sampleX) (fun _ ↦ sampleHom) (fun _ ↦ sampleHom)
+
+/-- A sample object distinct from `sampleX`: a single name decoding
+to `true`. -/
+def sampleW : FreeCoprodCompDisc.{0, 0} Bool :=
+  ⟨PUnit, fun _ ↦ true⟩
+
+/-- A sample object distinct from both `sampleW` and `sampleX`: names
+from `Bool ⊕ PUnit`, the left summand decoding by the identity and the
+right summand decoding to `true`. -/
+def sampleZ : FreeCoprodCompDisc.{0, 0} Bool :=
+  ⟨Bool ⊕ PUnit, Sum.elim id (fun _ ↦ true)⟩
+
+/-- A non-identity morphism from `sampleW` to `sampleX`. -/
+def sampleWtoX : FreeCoprodCompDisc.Hom Bool sampleW sampleX :=
+  ⟨fun _ ↦ true, rfl⟩
+
+/-- A non-identity morphism from `sampleX` to `sampleZ`. -/
+def sampleXtoZ : FreeCoprodCompDisc.Hom Bool sampleX sampleZ :=
+  ⟨Sum.inl, rfl⟩
+
+/-- The composite of `sampleWtoX` and `sampleXtoZ`. -/
+def sampleWtoZ : FreeCoprodCompDisc.Hom Bool sampleW sampleZ :=
+  ⟨fun _ ↦ Sum.inl true, rfl⟩
+
+/-- Composition across three distinct objects: the composite of
+`sampleWtoX` and `sampleXtoZ` is `sampleWtoZ`, pinning composition
+order by the distinct types of `sampleW`, `sampleX`, and `sampleZ`. -/
+theorem sampleWtoX_comp_sampleXtoZ :
+    FreeCoprodCompDisc.Hom.comp Bool sampleWtoX sampleXtoZ = sampleWtoZ :=
+  Subtype.ext rfl
+
+/-- Left identity at the non-identity morphism `sampleWtoX`. -/
+theorem sampleWtoX_id_comp :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.Hom.id Bool sampleW) sampleWtoX =
+      sampleWtoX :=
+  FreeCoprodCompDisc.Hom.id_comp Bool sampleWtoX
+
+/-- Right identity at the non-identity morphism `sampleWtoX`. -/
+theorem sampleWtoX_comp_id :
+    FreeCoprodCompDisc.Hom.comp Bool sampleWtoX
+        (FreeCoprodCompDisc.Hom.id Bool sampleX) =
+      sampleWtoX :=
+  FreeCoprodCompDisc.Hom.comp_id Bool sampleWtoX

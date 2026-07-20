@@ -45,6 +45,10 @@ assignment, and `IR.precomp`'s `delta` computation rule is checked by
 the Lemma 3 isomorphism `IR.interpDeltaIso` are each evaluated at a
 sample name, checking the expected image.
 
+`IR.elim_mk` is exercised generically; `IR.rec_mk` (via the
+per-constructor forms) at concrete codes and a constant motive,
+including a step that consumes its recursive-results argument.
+
 ## Tags
 
 inductive-recursive, polynomial functor, universe, container
@@ -429,3 +433,76 @@ theorem sampleInterpDeltaIso_apply :
   rfl
 
 end Precomp
+
+universe uA uB uI uO
+
+-- `IR.elim` computes definitionally at `IR.mk`.
+
+example (I : Type uI) (O : Type uO) (V : Type) (alg : IR.Obj I O V → V)
+    (s : IR.Shape O) (d : IR.Direction I O s → IR.{uA, uB, uI, uO} I O) :
+    IR.elim I O V alg (IR.mk I O s d) =
+      alg ⟨s, fun x ↦ IR.elim I O V alg (d x)⟩ :=
+  IR.elim_mk I O V alg s d
+
+-- The propositional computation rule of `IR.rec` at a concrete
+-- constant motive and code: `IR.rec` at `iota` returns the step's
+-- value.
+
+/-- A sample `IR.rec` computation: at the constant motive `Bool` with
+a step returning `true`, the recursor returns `true` on `iota`. -/
+theorem sampleRec_iota :
+    IR.rec.{0, 0, 0, 0, 0} PUnit PUnit
+        (motive := fun _ ↦ Bool) (fun _ _ _ ↦ true)
+        (IR.iota PUnit PUnit PUnit.unit) =
+      true :=
+  IR.rec_iota PUnit PUnit (motive := fun _ ↦ Bool)
+    (fun _ _ _ ↦ true) PUnit.unit
+
+/-- A sample `IR.rec` computation at a `sigma` code. -/
+theorem sampleRec_sigma :
+    IR.rec.{0, 0, 0, 0, 0} PUnit PUnit
+        (motive := fun _ ↦ Bool) (fun _ _ _ ↦ true)
+        (IR.sigma PUnit PUnit Bool
+          (fun _ ↦ IR.iota PUnit PUnit PUnit.unit)) =
+      true :=
+  IR.rec_sigma PUnit PUnit (motive := fun _ ↦ Bool)
+    (fun _ _ _ ↦ true) Bool (fun _ ↦ IR.iota PUnit PUnit PUnit.unit)
+
+/-- A sample `IR.rec` computation at a `delta` code. -/
+theorem sampleRec_delta :
+    IR.rec.{0, 0, 0, 0, 0} PUnit PUnit
+        (motive := fun _ ↦ Bool) (fun _ _ _ ↦ true)
+        (IR.delta PUnit PUnit PUnit
+          (fun _ ↦ IR.iota PUnit PUnit PUnit.unit)) =
+      true :=
+  IR.rec_delta PUnit PUnit (motive := fun _ ↦ Bool)
+    (fun _ _ _ ↦ true) PUnit (fun _ ↦ IR.iota PUnit PUnit PUnit.unit)
+
+/-- A step for `IR.rec` at the constant motive `Nat`, over the index
+type `PUnit`, that consumes its recursive-results argument: `1` on
+the `iota` and `sigma` shapes, and on a `delta` shape `1` plus the
+recursive result at the direction assigning every arity element to
+`PUnit.unit` (a direction available generically in the arity type,
+since the index type `PUnit` is inhabited). -/
+def sumStep : IR.RecStep.{0, 0, 0, 0, 0} PUnit PUnit (motive := fun _ ↦ Nat) :=
+  fun a f ih ↦
+    match a, f, ih with
+    | Sum.inl _, _, _ => 1
+    | Sum.inr (Sum.inl _), _, _ => 1
+    | Sum.inr (Sum.inr _), _, ih => 1 + ih (ULift.up (fun _ ↦ PUnit.unit))
+
+/-- A sample two-level `delta`-over-`iota` code, used to observe
+`sumStep` threading its recursive result. -/
+def sampleRecStepCode : IR.{0, 0, 0, 0} PUnit PUnit :=
+  IR.delta PUnit PUnit Bool (fun _ ↦ IR.iota PUnit PUnit PUnit.unit)
+
+/-- `IR.rec` at `sumStep` and `sampleRecStepCode` observes the
+recursive result computed at the `iota` subcode: a regression in the
+recursive-results component of `IR.rec_mk` (the third argument of the
+per-constructor step) would change this value. -/
+theorem sampleRec_consumesIh :
+    IR.rec.{0, 0, 0, 0, 0} PUnit PUnit (motive := fun _ ↦ Nat) sumStep
+        sampleRecStepCode =
+      2 :=
+  (IR.rec_delta PUnit PUnit sumStep Bool (fun _ ↦ IR.iota PUnit PUnit PUnit.unit)).trans
+    (congrArg (1 + ·) (IR.rec_iota PUnit PUnit sumStep PUnit.unit))
