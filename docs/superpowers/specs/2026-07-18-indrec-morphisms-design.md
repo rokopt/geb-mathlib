@@ -4,14 +4,18 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Purpose](#purpose)
+- [Closure gate result](#closure-gate-result)
 - [Source and proof-route deviation](#source-and-proof-route-deviation)
 - [Design](#design)
   - [FreeCoprodCompDisc additions](#freecoprodcompdisc-additions)
   - [Precomposition on codes](#precomposition-on-codes)
   - [Universe scheme](#universe-scheme)
   - [Homset (Definition 8)](#homset-definition-8)
-  - [Identity, composition, laws](#identity-composition-laws)
-  - [Semantic statements](#semantic-statements)
+  - [Identity (branch 2a)](#identity-branch-2a)
+  - [Theorem 2.4 functoriality (branch 2b)](#theorem-24-functoriality-branch-2b)
+  - [Naturality and Theorem 3 (branch 2c)](#naturality-and-theorem-3-branch-2c)
+  - [Composition and the category laws (branch 2d)](#composition-and-the-category-laws-branch-2d)
+  - [Semantic statements (branch 1, complete)](#semantic-statements-branch-1-complete)
   - [Placement and documentation](#placement-and-documentation)
 - [Branch decomposition](#branch-decomposition)
 - [Constraints](#constraints)
@@ -21,39 +25,91 @@
 ## Purpose
 
 Extend `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean` with the
-morphisms of IR codes, following
+category of IR codes, following
 [HancockMcBrideGhaniMalatestaAltenkirch2013] from "The category of
-small IR codes" through Corollary 2: the auxiliary semantic
-operations (copower, `(+i)`), the code operation `γ^i` (Lemma 4),
-the homset (Definition 8), and identity, composition, and the
-category laws (Corollary 2). The `Category` instance, Theorem 2
-(the left-Kan-extension characterization), Theorem 3 (the
-interpretation extended to morphisms, full and faithful), and the
-equivalence with dependent polynomial functors are deferred to
-future workstreams.
+small IR codes" through Corollary 2. Branch 1 (complete) supplied the
+auxiliary semantic operations (copower, `(+i)`, the cotuple `[i, k]`),
+the code operation `γ^i` (Lemma 4), and Lemmas 3 and 4. The remaining
+work — the homset (Definition 8), the identity, composition, and the
+category laws (Corollary 2) — is delivered in four dependency-ordered
+branches (see Branch decomposition):
+
+- 2a: the homset and the identity morphism, constructed syntactically.
+- 2b: the functoriality content of Theorem 2.4 of
+  [GhaniNordvallForsbergMalatesta2015] for the interpretation
+  (`FreeCoprodCompDisc.Hom` identity and category laws; the `IR.rec`
+  computation rule; the characterizing equations of `IR.interpMor`;
+  preservation of identity and composition).
+- 2c: natural transformations between interpretations and Theorem 3
+  (the interpretation extended to morphisms, full and faithful).
+- 2d: composition and the category laws (Corollary 2), by transfer
+  through the full-and-faithful interpretation of Theorem 3.
+
+The scope grew from the original branch-2 plan (homset plus a purely
+syntactic identity, composition, and laws) after the closure gate below
+established that composition does not close by syntactic induction on
+codes and requires the semantic transfer of Theorem 3.
+
+The mathlib `Category` instance, Theorem 2 (the left-Kan-extension
+characterization), and Theorem 4 (the equivalence with dependent
+polynomial functors) remain deferred to future workstreams.
+
+## Closure gate result
+
+The identity, composition, and category laws were first specified as a
+single simultaneous syntactic induction on codes (no interpretation
+route). A prototype of the homset and the candidate auxiliary
+operations, checked against the built `Basic.lean`, established:
+
+- The homset (Definition 8) computes definitionally at every clause,
+  and the identity morphism closes syntactically — through a
+  list-generalized pre-unit `Hom γ (γ^a)` whose recursion appends the
+  mapped `δ`-direction to a superscript stack (so the subcode
+  induction hypothesis lands at the required precomposition depth) and
+  a navigation operation carrying a factorization parameter. The
+  identity depends only on `propext` and `Quot.sound`.
+- Composition does not close. It requires `supMor` (the action of
+  precomposition on morphisms) and `sup2` (associativity of iterated
+  precomposition) at the codomain code, which is a parameter rather
+  than a structural subcode of the recursion; no generalization of the
+  recursion variable reaches it, and the homset is domain-recursive, so
+  inducting on the codomain does not decompose it either. This matches
+  the source, which obtains Corollary 2 by transfer along the
+  full-and-faithful interpretation (Theorem 3), not syntactically.
 
 ## Source and proof-route deviation
 
-The paper's Corollary 2 is proved by transfer along the full and
-faithful interpretation functor of Theorem 3; the paper exhibits
-neither explicit identity and composition on the homsets of
-Definition 8 nor a concrete construction of `γ^i` (Lemma 4 asserts
-its existence; the appendix proves Theorems 2 and 3 and restates
-Corollary 2's transfer argument). This workstream keeps the paper's
-definitions and theorem statements and supplies its own
-constructions and proofs:
+The paper proves Corollary 2 by transfer along the full and faithful
+interpretation functor of Theorem 3; the paper exhibits no explicit
+identity or composition on the homsets of Definition 8, and asserts
+`γ^i` only to exist (Lemma 4). This workstream follows the paper's
+transfer route for composition and the category laws (branch 2d),
+constructs the identity syntactically (branch 2a), and supplies its own
+constructive proofs, in the `FreeCoprodCompDisc` encoding, of the
+Theorem 2.4 functoriality (branch 2b) and of Theorem 3 (branch 2c) that
+the transfer consumes:
 
 - Transcription: the homset clauses of Definition 8; the statements
-  of Lemma 3 and Lemma 4; the copower and `(+i)` operations; the
-  binary coproduct `[i, k]` of objects (the paper's cotuple, used
-  by `(+i)`).
-- Novel (specified by the paper, constructed here): the concrete
-  `γ^i`; explicit identity and composition; the category-law
-  proofs; the auxiliary morphism operations they require; the
-  universe scheme below; the object-isomorphism notion and the
-  name-lifting operation on `FreeCoprodCompDisc` objects.
+  of Lemma 3, Lemma 4, the functoriality content of Theorem 2.4 of
+  [GhaniNordvallForsbergMalatesta2015], Theorem 3, and Corollary 2;
+  the copower and `(+i)` operations; the binary coproduct `[i, k]`
+  of objects (the paper's cotuple, used by `(+i)`).
+- Novel (constructed here): the concrete `γ^i` (branch 1); the
+  syntactic identity, through a list-generalized pre-unit and a
+  navigation operation (branch 2a); the constructive proofs of the
+  Theorem 2.4 functoriality, Theorem 3, and Corollary 2 in the
+  `FreeCoprodCompDisc` encoding, together with the natural-transformation
+  notion between interpretations they require; the universe scheme
+  below; the object-isomorphism notion and the name-lifting operation
+  on `FreeCoprodCompDisc` objects.
 
-Recorded deviations from the paper's statements: Lemma 4's
+Recorded deviations from the paper's statements: composition and the
+category laws are obtained by the paper's transfer through Theorem 3
+rather than by syntactic induction on codes, the closure gate having
+established that the syntactic route does not reach composition;
+Theorem 3's natural isomorphism is realized in the constructive,
+`Classical`-free `FreeCoprodCompDisc` encoding (no mathlib `Category`);
+Lemma 4's
 equality of interpretations is stated as a pointwise isomorphism
 (the intensional setting does not validate the paper's equality of
 functors); Lemma 3's natural isomorphism is likewise stated as a
@@ -144,62 +200,102 @@ the right code in the `ι` case:
 - Clause 2: `Hom (σ A K) γ' = Π a, Hom (K a) γ'`.
 - Clause 3: `Hom (δ Q K) γ' = Π i : Q → I, Hom (K i) (γ'^i)`.
 
-### Identity, composition, laws
+### Identity (branch 2a)
 
-By induction on codes at the uniform instantiation, broken into
-named one-step auxiliary operations. Case analysis of
-Definition 8 requires at least the following family (superscripts
-by an index object `a = ⟨Q, i⟩` of `FreeCoprodCompDisc I`):
+The homset and the identity are constructed syntactically at the
+uniform instantiation, by `IR.rec` on the domain code, in named
+one-step operations (each an explicit term). The construction, verified
+against `Basic.lean`:
 
-- Transport of homsets along code equalities (the `homOfEq`
-  analogue for `IR.Hom`).
-- σ-injection postcomposition `Hom γ (K a) → Hom γ (σ A K)`
-  (identity at a `σ` code is not componentwise reflexivity:
-  clause 2 makes `id` there a product of morphisms into the whole
-  `σ` code).
-- δ-injection postcomposition at an empty witness:
-  `(e : E → PEmpty) → Hom γ (K (PEmpty.elim ∘ e)) →
-  Hom γ (δ E K)`, and the dual elimination
-  `Hom (ι o) (γ^(PEmpty.elim ∘ e)) → Hom (ι o) γ` (clause 1C in
-  each direction of use).
-- The generalized action of superscripting on morphisms:
-  `Hom γ γ' → Hom_{Set/I}(a, b) → Hom (γ^a) (γ'^b)`, covariant in
-  the index object through a `FreeCoprodCompDisc.Hom`. The plain
-  action (`b = a`, identity) and the reindexing that the action's
-  own `δ` case requires (the classification of a merged
-  assignment induces a morphism of index objects) are its
-  instances.
-- Iterated-superscript conversion
-  `Hom ((γ^a)^b) (γ^(a ⊕ b))` and its converse (the `δ` case of
-  a unit or pre-unit produces `((δ Q K)^a)^b` obligations; the
-  two codes differ by a currying of the classification `σ` and
-  are related by morphisms, not equalities).
-- The pre-unit `Hom γ (γ^a)` and the unit
-  `Hom (K i) ((δ Q K)^i)` (what identity requires at a `δ`
-  code).
+- Homset transport `homOfEq` along code equalities (the `IR.Hom`
+  analogue of `FreeCoprodCompDisc.homOfEq`).
+- `sigmaPush : Hom γ (K a) → Hom γ (σ A K)` — σ-injection
+  postcomposition, `IR.rec` on the domain with the target `(A, K, a)`
+  generalized. (Identity at a `σ` code is not componentwise
+  reflexivity; clause 2 makes it a product of injections into the
+  whole `σ` code.)
+- `deltaEmptyPush : Hom γ (M (PEmpty.elim ∘ e)) → Hom γ (δ E M)` for an
+  empty witness `e : E → PEmpty`, `IR.rec` on the domain with
+  `(E, e, M)` generalized.
+- A list-generalized pre-unit `preUnitStack γ L : Hom γ (γ ^^ L)`,
+  where `γ ^^ L` folds precomposition over a list `L` of index
+  objects. `IR.rec` on `γ` with `L` generalized: the `δ` case appends
+  the mapped direction `⟨B, i⟩` to `L`, so the subcode induction
+  hypothesis lands at the precomposition depth the clause-3 superscript
+  demands. The navigation from that hypothesis into the superscripted
+  `δ`-tower is a `deltaNav` operation carrying a factorization
+  parameter `g : Bin → Bout` that tracks how a peeled classifier layer
+  resolves against the outer superscript.
+- `id γ := preUnitStack γ []`.
 
-These statements are expected to form one simultaneous induction
-whose recursive calls land at superscripted images of subcodes
-rather than at subcodes themselves (subcodes of `γ^a` are
-superscripts of subcodes of `γ`), so the motives are expected to
-be superscript-generalized, with the iterated-superscript
-conversions bounding the depth. The plan for the second branch fixes the exact closed
-statement set and derives every case of the induction before
-implementation begins; if the set fails to close, the workstream
-returns to design before any implementation. Auxiliary
-operations beyond these identified during planning each get
-their own named definition and lemmas.
+The stack generalization replaces the simultaneous superscript-generalized
+induction the original branch-2 plan anticipated. For the identity every
+superscript layer is generated by the domain's own directions, which the
+stack captures, so the recursion is well-founded on the domain code with
+the stack a parameter. The identity depends only on `propext` and
+`Quot.sound`. The `List`-recursive helpers (`γ ^^ L`, the stack folds)
+are committed through `List.rec`, per the recursor-only rule.
 
-Statements: `id : Hom γ γ`; `comp : Hom γ γ' → Hom γ' γ'' →
-Hom γ γ''`; left identity, right identity, associativity as
-equalities in the homsets.
+Statement: `id : Hom γ γ`.
 
-### Semantic statements
+### Theorem 2.4 functoriality (branch 2b)
+
+The functoriality content of Theorem 2.4 of
+[GhaniNordvallForsbergMalatesta2015], constructively, so that `⟦γ⟧` is a
+functor and natural transformations between interpretations can be
+stated:
+
+- `FreeCoprodCompDisc.Hom` identity and the category laws (left
+  identity, right identity, associativity); composition
+  (`FreeCoprodCompDisc.Hom.comp`) exists from branch 1.
+- The propositional computation rule of `IR.rec`, and from it the
+  characterizing equations of `IR.interpMor` at `IR.iota`,
+  `IR.sigma`, and `IR.delta`.
+- Preservation of identity and composition by `IR.interpMor`.
+
+Independent of branch 2a. Corresponds to the existing TODO item
+"Complete Theorem 2.4 for `IndRec`" (constructive part).
+
+### Naturality and Theorem 3 (branch 2c)
+
+- A notion of natural transformation between interpretations
+  `⟦γ⟧ ⇒ ⟦γ'⟧` (families of `FreeCoprodCompDisc.Hom` commuting with the
+  morphism maps), with identity and vertical composition.
+- Theorem 3: the interpretation extended to morphisms,
+  `Hom γ γ' → Nat(⟦γ⟧, ⟦γ'⟧)`, full and faithful — the correspondence
+  `Hom γ γ' ≅ Nat(⟦γ⟧, ⟦γ'⟧)`, by induction on the homset structure,
+  using Lemmas 3 and 4 (branch 1). Fullness (the `Nat → Hom` direction)
+  is what the transfer of branch 2d consumes.
+
+Depends on branch 2b. The constructive proof of Theorem 3 in the
+`FreeCoprodCompDisc` encoding — in particular staying `Classical`-free —
+is this branch's closure gate: its plan derives the induction before
+implementation, returning to design if it fails to close.
+
+### Composition and the category laws (branch 2d)
+
+By transfer through the full-and-faithful interpretation of Theorem 3
+(the paper's Corollary 2):
+
+- `comp : Hom γ γ' → Hom γ' γ'' → Hom γ γ''`, the image under fullness
+  of the vertical composite of the transported natural transformations.
+- Left identity, right identity, and associativity, as equalities in
+  the homsets, from the corresponding laws for natural transformations
+  together with faithfulness.
+
+The auxiliary code operations the syntactic route required (`supMor`,
+the action of precomposition on morphisms; `sup2`, associativity of
+iterated precomposition) are subsumed: they are precomposition's
+functoriality and associativity, which hold semantically through
+Lemma 4 and need no separate syntactic construction. Depends on
+branches 2a and 2c.
+
+### Semantic statements (branch 1, complete)
 
 Both at the uniform instantiation (`γ : IR.{max uA uB, uB}`,
 `i : Q → I`, `Q : Type uB`), with the object-isomorphism notion
 absorbing residual index-universe differences between the two
-sides:
+sides. Branch 2c reuses these as the semantic content of Theorem 3:
 
 - Lemma 4: `⟦γ^i⟧ k ≅ ⟦γ⟧ ((+i) k)` pointwise, by induction on
   `γ` — the correctness proof for the constructed `γ^i`.
@@ -213,14 +309,15 @@ sides:
 
 A requirement of this workstream is that the morphism development
 precede the `Universes` and `Container` sections, so later
-workstreams can extend those sections with morphism uses; the
-code section therefore sits in `IndRec/Basic.lean` between the
-interpretation block and `section Universes`. If the resulting
-module size conflicts with the narrow-and-deep directory
-structure, a follow-on refactor can move the morphism development
-to a sibling `IndRec` module and relocate the `Universes` and
-`Container` sections after it — a decision deferred until the
-development's size is known. Module docstrings (`## Main definitions`,
+workstreams can extend those sections with morphism uses. The
+expanded scope (homset and identity, Theorem 2.4 functoriality,
+naturality and Theorem 3, composition and the laws) is large enough
+that the narrow-and-deep directory structure favours sibling `IndRec`
+modules over a single `IndRec/Basic.lean`; each branch's plan fixes
+its file placement (a natural split is one module per branch —
+`Hom`, `Functor`, `Naturality`, `Category` — with the `Universes` and
+`Container` sections relocated after the morphism development). Module
+docstrings (`## Main definitions`,
 `## Main statements`, implementation notes) are updated in every
 touched file (including `Geb/Mathlib/Logic/Equiv/Basic.lean`,
 which receives generic `Equiv` combinators the constructions
@@ -236,17 +333,32 @@ the same branches.
 
 ## Branch decomposition
 
-Two stacked topic branches, each with its own plan:
+Branch 1 is complete (merged). The remaining work is four
+dependency-ordered topic branches, each with its own plan:
 
-1. FreeCoprodCompDisc additions, `γ^i`, Lemmas 3 and 4.
-2. Homset, identity, composition, category laws.
+- Branch 1 (complete): `FreeCoprodCompDisc` additions, `γ^i`,
+  Lemmas 3 and 4.
+- Branch 2a: the homset (Definition 8) and the identity. Depends on
+  branch 1.
+- Branch 2b: Theorem 2.4 functoriality. Depends on branch 1;
+  independent of branch 2a.
+- Branch 2c: naturality and Theorem 3 (full and faithful). Depends
+  on branch 2b.
+- Branch 2d: composition and the category laws (Corollary 2), by
+  transfer. Depends on branches 2a and 2c.
+
+Branches 2a and 2b are independent and may proceed in parallel. The
+spec and all branch plans are removed in the final commits of the
+last branch (2d), per CONTRIBUTING § Concern shape.
 
 ## Constraints
 
 - Constructive discipline: no `noncomputable`, no `Classical`;
   axiom linter passes (`propext`, `Quot.sound` only).
-- Recursor-only recursion: all definitions by `IR.elim`/`IR.rec`;
-  no `induction` tactic, no self-referential `def`.
+- Recursor-only recursion: all definitions by recursors
+  (`IR.elim`/`IR.rec`, and `List.rec` for the branch-2a stack
+  helpers); no `induction` tactic, no self-referential `def`,
+  no `termination_by`.
 - Explicit proof terms: committed definitions and proofs are
   term-mode, with no tactic blocks. Tactics may be used during
   intermediate development to discover a proof; the committed
