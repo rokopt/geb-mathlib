@@ -17,7 +17,9 @@ the transformation-space equivalence. Named theorems give the
 `GebMeta` axiom linter declarations to inspect. The Lemma 4
 naturality upgrade and its characterizing equation are exercised
 at the sample code. The ∅-evaluation and `InnerHom` fiber
-equivalences are exercised at `ι`-codes.
+equivalences are exercised at `ι`-codes. The plus-lift bridge
+morphisms and transformations are exercised at the sample object
+and code.
 
 ## Tags
 
@@ -146,3 +148,25 @@ theorem sampleInnerHomEquiv_apply :
         (ULift.up (PLift.up rfl))).1 =
       ULift.up Unit.unit :=
   rfl
+
+/-- The forward bridge followed by the backward bridge is the identity
+at the sample object. -/
+theorem samplePlusLiftBridge_hom_invHom :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (IR.plusLiftBridgeHom Bool PUnit (fun _ ↦ false) sampleIObj)
+        (IR.plusLiftBridgeInvHom Bool PUnit (fun _ ↦ false) sampleIObj) =
+      FreeCoprodCompDisc.Hom.id Bool
+        (FreeCoprodCompDisc.plus Bool
+          (FreeCoprodCompDisc.lift.{0, 0, 0} Bool ⟨PUnit, fun _ ↦ false⟩)
+          sampleIObj) :=
+  IR.plusLiftBridge_hom_invHom Bool PUnit (fun _ ↦ false) sampleIObj
+
+/-- The two bridge transformations are inverse at the sample delta
+code. -/
+theorem samplePlusLiftBridgeNat_isInverse :
+    FreeCoprodCompDisc.NatTrans.IsInverse
+        (IR.plusLiftBridgeNat Bool Bool PUnit (fun _ ↦ false) sampleNaturalityDeltaCode)
+        (IR.plusLiftBridgeNatInv Bool Bool PUnit (fun _ ↦ false)
+          sampleNaturalityDeltaCode) :=
+  IR.plusLiftBridgeNat_isInverse Bool Bool PUnit (fun _ ↦ false)
+    sampleNaturalityDeltaCode

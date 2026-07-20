@@ -39,6 +39,10 @@ into families of transformations out of the summands
   at the initial object
   ([HancockMcBrideGhaniMalatestaAltenkirch2013], Definition 8's
   `ι`-clauses, in the form Theorem 3's `ι`-case consumes).
+* `IR.plusLiftBridgeNat`, `IR.plusLiftBridgeNatInv` — the inverse
+  pair of transformations bridging the `plus`-precomposed
+  interpretation at the lifted summand and the Lemma 4 right-hand
+  map.
 
 ## Main statements
 
@@ -884,6 +888,203 @@ def innerHomEquiv (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O) :
       {z : (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)).1 //
         (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)).2 z = o} :=
   rec I O (motive := InnerHomEquivMotive I O o) (innerHomEquivStep I O o) γ'
+
+/-- The bridge from the lifted-summand binary coproduct to the direct
+one: lower the left names, keep the right names. -/
+def plusLiftBridgeHom (Q : Type uB) (i : Q → I)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.plus I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+      (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X) :=
+  ⟨Sum.map ULift.down _root_.id,
+    funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl))⟩
+
+/-- The bridge from the direct binary coproduct to the lifted-summand
+one: raise the left names, keep the right names. -/
+def plusLiftBridgeInvHom (Q : Type uB) (i : Q → I)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+      (FreeCoprodCompDisc.plus I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X) :=
+  ⟨Sum.map ULift.up _root_.id,
+    funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl))⟩
+
+/-- The forward bridge followed by the backward bridge is the
+identity. -/
+theorem plusLiftBridge_hom_invHom (Q : Type uB) (i : Q → I)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeHom I Q i X)
+        (plusLiftBridgeInvHom I Q i X) =
+      FreeCoprodCompDisc.Hom.id I
+        (FreeCoprodCompDisc.plus I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X) :=
+  Subtype.ext (funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl)))
+
+/-- The backward bridge followed by the forward bridge is the
+identity. -/
+theorem plusLiftBridge_invHom_hom (Q : Type uB) (i : Q → I)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I Q i X)
+        (plusLiftBridgeHom I Q i X) =
+      FreeCoprodCompDisc.Hom.id I (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X) :=
+  Subtype.ext (funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl)))
+
+/-- The forward bridge is natural in the right summand. -/
+theorem plusLiftBridge_square (Q : Type uB) (i : Q → I)
+    (X Y : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I X Y) :
+    FreeCoprodCompDisc.Hom.comp I
+        (FreeCoprodCompDisc.coprodPairMor I
+          (FreeCoprodCompDisc.Hom.id I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩)) h)
+        (plusLiftBridgeHom I Q i Y) =
+      FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeHom I Q i X)
+        (FreeCoprodCompDisc.coprodPairMor I
+          (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) h) :=
+  Subtype.ext (funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl)))
+
+/-- The backward bridge is natural in the right summand. -/
+theorem plusLiftBridge_square_inv (Q : Type uB) (i : Q → I)
+    (X Y : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I X Y) :
+    FreeCoprodCompDisc.Hom.comp I
+        (FreeCoprodCompDisc.coprodPairMor I
+          (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) h)
+        (plusLiftBridgeInvHom I Q i Y) =
+      FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I Q i X)
+        (FreeCoprodCompDisc.coprodPairMor I
+          (FreeCoprodCompDisc.Hom.id I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩)) h) :=
+  Subtype.ext (funext (fun s ↦ Sum.casesOn s (fun _ ↦ rfl) (fun _ ↦ rfl)))
+
+/-- The interpretation's image of the forward bridge, as a natural
+transformation from the `plus`-precomposed interpretation at the
+lifted summand to the Lemma 4 right-hand map. -/
+def plusLiftBridgeNat (Q : Type uB) (i : Q → I)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    FreeCoprodCompDisc.NatTrans I O
+      (FreeCoprodCompDisc.mapComp
+        (FreeCoprodCompDisc.plusMap
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩))
+        (interpObj I O γ'))
+      (precompRhsMap I O Q i γ')
+      (FreeCoprodCompDisc.mapMorComp
+        (FreeCoprodCompDisc.plusMapMor
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩))
+        (interpMor I O γ'))
+      (precompRhsMapMor I O Q i γ') :=
+  ⟨fun X ↦ interpMor I O γ'
+      (FreeCoprodCompDisc.plus I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+      (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+      (plusLiftBridgeHom I Q i X),
+    fun X Y h ↦
+      (interpMor_comp I O γ'
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) Y)
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)
+          (FreeCoprodCompDisc.coprodPairMor I
+            (FreeCoprodCompDisc.Hom.id I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩)) h)
+          (plusLiftBridgeHom I Q i Y)).symm.trans
+        ((congrArg
+            (interpMor I O γ'
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+              (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y))
+            (plusLiftBridge_square I Q i X Y h)).trans
+          (interpMor_comp I O γ'
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+            (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+            (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)
+            (plusLiftBridgeHom I Q i X)
+            (FreeCoprodCompDisc.coprodPairMor I
+              (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) h)))⟩
+
+/-- The interpretation's image of the backward bridge, as a natural
+transformation from the Lemma 4 right-hand map to the
+`plus`-precomposed interpretation at the lifted summand. -/
+def plusLiftBridgeNatInv (Q : Type uB) (i : Q → I)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    FreeCoprodCompDisc.NatTrans I O (precompRhsMap I O Q i γ')
+      (FreeCoprodCompDisc.mapComp
+        (FreeCoprodCompDisc.plusMap
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩))
+        (interpObj I O γ'))
+      (precompRhsMapMor I O Q i γ')
+      (FreeCoprodCompDisc.mapMorComp
+        (FreeCoprodCompDisc.plusMapMor
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩))
+        (interpMor I O γ')) :=
+  ⟨fun X ↦ interpMor I O γ' (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+      (FreeCoprodCompDisc.plus I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+      (plusLiftBridgeInvHom I Q i X),
+    fun X Y h ↦
+      (interpMor_comp I O γ' (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ Y)
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) Y)
+          (FreeCoprodCompDisc.coprodPairMor I
+            (FreeCoprodCompDisc.Hom.id I ⟨Q, i⟩) h)
+          (plusLiftBridgeInvHom I Q i Y)).symm.trans
+        ((congrArg
+            (interpMor I O γ' (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) Y))
+            (plusLiftBridge_square_inv I Q i X Y h)).trans
+          (interpMor_comp I O γ' (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) Y)
+            (plusLiftBridgeInvHom I Q i X)
+            (FreeCoprodCompDisc.coprodPairMor I
+              (FreeCoprodCompDisc.Hom.id I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩))
+              h)))⟩
+
+/-- The two bridge transformations are inverse. -/
+theorem plusLiftBridgeNat_isInverse (Q : Type uB) (i : Q → I)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    FreeCoprodCompDisc.NatTrans.IsInverse (plusLiftBridgeNat I O Q i γ')
+      (plusLiftBridgeNatInv I O Q i γ') :=
+  ⟨Subtype.ext (funext (fun X ↦
+      (interpMor_comp I O γ'
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+          (plusLiftBridgeHom I Q i X)
+          (plusLiftBridgeInvHom I Q i X)).symm.trans
+        ((congrArg
+            (interpMor I O γ'
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X))
+            (plusLiftBridge_hom_invHom I Q i X)).trans
+          (interpMor_id I O γ'
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X))))),
+    Subtype.ext (funext (fun X ↦
+      (interpMor_comp I O γ' (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩) X)
+          (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+          (plusLiftBridgeInvHom I Q i X)
+          (plusLiftBridgeHom I Q i X)).symm.trans
+        ((congrArg
+            (interpMor I O γ' (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)
+              (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X))
+            (plusLiftBridge_invHom_hom I Q i X)).trans
+          (interpMor_id I O γ'
+            (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)))))⟩
 
 end IR
 
