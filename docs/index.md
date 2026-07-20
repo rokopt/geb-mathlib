@@ -183,3 +183,15 @@ import-direction rules above are enforced by
   recorded here as the deviation to the pointwise statement (natural
   transformations between interpretations are not yet defined).
   `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean` — the homset of `IR`
+  codes (Hancock–McBride–Ghani–Malatesta–Altenkirch Definition 8),
+  `IR.Hom`, by `IR.elimAlg` on the domain code with `IR.InnerHom`
+  (`IR.elimAlg` on the codomain) in the `ι`-case. The identity morphism
+  `IR.id` — a construction, since the paper gives no explicit one — is
+  built
+  through a list-generalized pre-unit `IR.preUnitStack`, using
+  injection helpers (`IR.sigmaPush`, `IR.deltaEmptyPush`,
+  `IR.msigmaPush`) and a navigation construction (`IR.deltaNavBase`,
+  `IR.deltaNav`) up an iterated-precomposition tower recorded by
+  `IR.mprecomp` (folding `IR.precomp` over a list of superscript
+  objects `IR.SupObj`). `Classical.choice`-free.
