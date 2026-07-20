@@ -31,6 +31,14 @@ into families of transformations out of the summands
   upgraded to per-summand natural form).
 * `IR.natDeltaEquiv` — the per-summand decomposition of
   transformation spaces at a `delta` code.
+* `IR.natIotaEquiv` — the ∅-evaluation equivalence at an `ι`
+  domain: transformations out of `⟦ι o⟧` correspond to their
+  components at the initial object.
+* `IR.innerHomEquiv` — the homset from an `ι`-code as the fiber,
+  over the index, of the decoding of the codomain's interpretation
+  at the initial object
+  ([HancockMcBrideGhaniMalatestaAltenkirch2013], Definition 8's
+  `ι`-clauses, in the form Theorem 3's `ι`-case consumes).
 
 ## Main statements
 
@@ -716,6 +724,166 @@ theorem interpPrecompIso_natural (γ : IR.{max uA uB, uB, uI, uO} I O)
       (fun k ↦ FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O γ Q i k)) :=
   induction I O (PrecompNatMotive I O) (interpPrecompIso_natural_step I O)
     γ Q i
+
+/-- The interpretation's cocone over the initial object: the image of
+the unique morphism out of `∅` followed by the image of any morphism
+is the image of the unique morphism. -/
+theorem interpMor_emptyDesc_comp (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (X Y : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I X Y) :
+    FreeCoprodCompDisc.Hom.comp O
+        (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) X
+          (FreeCoprodCompDisc.emptyDesc I X))
+        (interpMor I O γ' X Y h) =
+      interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) Y
+        (FreeCoprodCompDisc.emptyDesc I Y) :=
+  (interpMor_comp I O γ' (FreeCoprodCompDisc.emptyObj I) X Y
+      (FreeCoprodCompDisc.emptyDesc I X) h).symm.trans
+    (congrArg (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) Y)
+      (FreeCoprodCompDisc.emptyDesc_unique I Y
+        (FreeCoprodCompDisc.Hom.comp I (FreeCoprodCompDisc.emptyDesc I X) h)))
+
+/-- The backward direction of `IR.natIotaEquiv`: extend a morphism at
+the initial object to a transformation by composing with the images of
+the unique morphisms out of `∅`. -/
+def natIotaInvFun (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : FreeCoprodCompDisc.Hom O
+      (interpObj I O (iota.{max uA uB, uB, uI, uO} I O o) (FreeCoprodCompDisc.emptyObj I))
+      (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I))) :
+    FreeCoprodCompDisc.NatTrans I O (interpObj I O (iota.{max uA uB, uB, uI, uO} I O o))
+      (interpObj I O γ') (interpMor I O (iota.{max uA uB, uB, uI, uO} I O o)) (interpMor I O γ') :=
+  ⟨fun X ↦ FreeCoprodCompDisc.Hom.comp O f
+      (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) X
+        (FreeCoprodCompDisc.emptyDesc I X)),
+    fun X Y h ↦
+      (congrArg
+          (fun (t : MorMapSig I O (iota.{max uA uB, uB, uI, uO} I O o)) ↦
+            FreeCoprodCompDisc.Hom.comp O (t X Y h)
+              (FreeCoprodCompDisc.Hom.comp O f
+                (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) Y
+                  (FreeCoprodCompDisc.emptyDesc I Y))))
+          (interpMor_iota.{max uA uB, uB, uI, uO} I O o)).trans
+        ((congrArg (FreeCoprodCompDisc.Hom.comp O f)
+            (interpMor_emptyDesc_comp I O γ' X Y h).symm).trans
+          (FreeCoprodCompDisc.Hom.comp_assoc O f
+            (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) X
+              (FreeCoprodCompDisc.emptyDesc I X))
+            (interpMor I O γ' X Y h)).symm)⟩
+
+/-- The ∅-evaluation equivalence at an `iota` domain: transformations
+out of the interpretation of `iota o` correspond to their components
+at the initial object. -/
+def natIotaEquiv (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    FreeCoprodCompDisc.NatTrans I O (interpObj I O (iota.{max uA uB, uB, uI, uO} I O o))
+        (interpObj I O γ') (interpMor I O (iota.{max uA uB, uB, uI, uO} I O o)) (interpMor I O γ') ≃
+      FreeCoprodCompDisc.Hom O
+        (interpObj I O (iota.{max uA uB, uB, uI, uO} I O o) (FreeCoprodCompDisc.emptyObj I))
+        (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)) :=
+  { toFun := fun η ↦ η.1 (FreeCoprodCompDisc.emptyObj I),
+    invFun := natIotaInvFun I O o γ',
+    left_inv := fun η ↦ Subtype.ext (funext (fun X ↦
+      (η.2 (FreeCoprodCompDisc.emptyObj I) X
+          (FreeCoprodCompDisc.emptyDesc I X)).symm.trans
+        (congrArg
+          (fun (t : MorMapSig I O (iota.{max uA uB, uB, uI, uO} I O o)) ↦
+            FreeCoprodCompDisc.Hom.comp O
+              (t (FreeCoprodCompDisc.emptyObj I) X
+                (FreeCoprodCompDisc.emptyDesc I X))
+              (η.1 X))
+          (interpMor_iota.{max uA uB, uB, uI, uO} I O o)))),
+    right_inv := fun f ↦
+      (congrArg
+          (fun t ↦ FreeCoprodCompDisc.Hom.comp O f
+            (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I)
+              (FreeCoprodCompDisc.emptyObj I) t))
+          (FreeCoprodCompDisc.emptyDesc_unique I
+            (FreeCoprodCompDisc.emptyObj I)
+            (FreeCoprodCompDisc.Hom.id I
+              (FreeCoprodCompDisc.emptyObj I))).symm).trans
+        ((congrArg (FreeCoprodCompDisc.Hom.comp O f)
+            (interpMor_id I O γ' (FreeCoprodCompDisc.emptyObj I))).trans
+          (FreeCoprodCompDisc.Hom.comp_id O f)) }
+
+/-- The motive of `IR.innerHomEquiv`: the homset from an `ι`-code to a
+code is the fiber, over the index, of the decoding of the code's
+interpretation at the initial object. -/
+def InnerHomEquivMotive (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    Type (max uA uB uI) :=
+  InnerHom.{uA, uB, uI, uO} I O o γ' ≃
+    {z : (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)).1 //
+      (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)).2 z = o}
+
+/-- Transport the fiber equivalence of a `δ`-subcode along an equality
+of direction assignments, keeping the equivalence's source at the
+original assignment. -/
+def innerHomEquivCast (o : O) (B : Type uB)
+    (c : ULift.{max uA uB} (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (m : (x : ULift.{max uA uB} (B → I)) → InnerHomEquivMotive I O o (c x))
+    (i j : B → I) (e : i = j) :
+    InnerHom.{uA, uB, uI, uO} I O o (c (ULift.up i)) ≃
+      {n : (interpObj I O (c (ULift.up j)) (FreeCoprodCompDisc.emptyObj I)).1 //
+        (interpObj I O (c (ULift.up j)) (FreeCoprodCompDisc.emptyObj I)).2 n = o} :=
+  Eq.rec (motive := fun j' _ ↦
+      InnerHom.{uA, uB, uI, uO} I O o (c (ULift.up i)) ≃
+        {n : (interpObj I O (c (ULift.up j'))
+            (FreeCoprodCompDisc.emptyObj I)).1 //
+          (interpObj I O (c (ULift.up j'))
+            (FreeCoprodCompDisc.emptyObj I)).2 n = o})
+    (m (ULift.up i)) e
+
+/-- The step of `IR.innerHomEquiv`: per shape, the homset clause and
+the ∅-fiber of the interpretation are matched componentwise, with the
+inductive hypotheses supplying the subcode equivalences. -/
+def innerHomEquivStep (o : O) :
+    RecStep.{max uA uB, uB, uI, uO, max uA uB uI} I O
+      (InnerHomEquivMotive I O o) :=
+  fun s c m ↦ match s, c, m with
+  | Sum.inl _, _, _ =>
+      { toFun := fun h ↦ ⟨ULift.up Unit.unit, h.down.down.symm⟩,
+        invFun := fun z ↦ ULift.up (PLift.up z.2.symm),
+        left_inv := fun _ ↦ rfl,
+        right_inv := fun _ ↦ rfl }
+  | Sum.inr (Sum.inl _), c, m =>
+      (sigmaCongrRight' (fun a ↦ m (ULift.up a))).trans
+        (sigmaSubtypeEquiv
+          (fun a ↦
+            (interpObj I O (c (ULift.up a))
+              (FreeCoprodCompDisc.emptyObj I)).1)
+          (fun a n ↦
+            (interpObj I O (c (ULift.up a))
+              (FreeCoprodCompDisc.emptyObj I)).2 n = o))
+  | Sum.inr (Sum.inr B), c, m =>
+      (sigmaCongrRight' (fun (e : B → PEmpty.{1}) ↦
+          innerHomEquivCast I O o B c m (fun b ↦ (e b).elim)
+            ((FreeCoprodCompDisc.emptyObj I).2 ∘ (fun b ↦ (e b).elim))
+            (funext (fun b ↦ (e b).elim)))).trans
+        ((Equiv.sigmaCongrLeft
+            (β := fun g ↦
+              {n : (interpObj I O
+                  (c (ULift.up ((FreeCoprodCompDisc.emptyObj I).2 ∘ g)))
+                  (FreeCoprodCompDisc.emptyObj I)).1 //
+                (interpObj I O
+                  (c (ULift.up ((FreeCoprodCompDisc.emptyObj I).2 ∘ g)))
+                  (FreeCoprodCompDisc.emptyObj I)).2 n = o})
+            (arrowPEmptyEquiv.{0, max uA uB, uB} B)).trans
+          (sigmaSubtypeEquiv
+            (fun g ↦
+              (interpObj I O
+                (c (ULift.up ((FreeCoprodCompDisc.emptyObj I).2 ∘ g)))
+                (FreeCoprodCompDisc.emptyObj I)).1)
+            (fun g n ↦
+              (interpObj I O
+                (c (ULift.up ((FreeCoprodCompDisc.emptyObj I).2 ∘ g)))
+                (FreeCoprodCompDisc.emptyObj I)).2 n = o)))
+
+/-- The homset from an `ι`-code to a code is the fiber, over the
+index, of the decoding of the code's interpretation at the initial
+object, by `IR.rec` on the code. -/
+def innerHomEquiv (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    InnerHom.{uA, uB, uI, uO} I O o γ' ≃
+      {z : (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)).1 //
+        (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I)).2 z = o} :=
+  rec I O (motive := InnerHomEquivMotive I O o) (innerHomEquivStep I O o) γ'
 
 end IR
 

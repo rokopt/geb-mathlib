@@ -16,7 +16,8 @@ injections, the cotuple, their computation law, naturality, and
 the transformation-space equivalence. Named theorems give the
 `GebMeta` axiom linter declarations to inspect. The Lemma 4
 naturality upgrade and its characterizing equation are exercised
-at the sample code.
+at the sample code. The ∅-evaluation and `InnerHom` fiber
+equivalences are exercised at `ι`-codes.
 
 ## Tags
 
@@ -126,3 +127,22 @@ theorem samplePrecompNat :
         (IR.interpPrecompIso Bool Bool sampleNaturalityDeltaCode PUnit
           (fun _ ↦ false) k)) :=
   IR.interpPrecompIso_natural Bool Bool sampleNaturalityDeltaCode PUnit (fun _ ↦ false)
+
+/-- The ∅-evaluation equivalence evaluates the identity transformation
+to the identity on the singleton name type. -/
+theorem sampleNatIotaEquiv_apply :
+    ((IR.natIotaEquiv.{0, 0, 0, 0} Bool Bool true (iota Bool Bool true))
+        (FreeCoprodCompDisc.NatTrans.id
+          (IR.interpObj Bool Bool (iota Bool Bool true))
+          (IR.interpMor Bool Bool (iota Bool Bool true)))).1
+        (ULift.up Unit.unit) =
+      ULift.up Unit.unit :=
+  rfl
+
+/-- The `InnerHom` fiber equivalence sends the reflexivity witness to
+the singleton name. -/
+theorem sampleInnerHomEquiv_apply :
+    ((IR.innerHomEquiv.{0, 0, 0, 0} Bool Bool true (iota Bool Bool true))
+        (ULift.up (PLift.up rfl))).1 =
+      ULift.up Unit.unit :=
+  rfl
