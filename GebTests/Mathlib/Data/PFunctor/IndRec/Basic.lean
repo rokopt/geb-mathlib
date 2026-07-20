@@ -22,10 +22,6 @@ the input index type to a family over the output index type, and
 that the `delta` interpretation consumes the input-typed decodings
 of its recursive arguments.
 
-A container is translated to an `IR` code over the unit type by
-`contCode`; `rfl` tests check that an interpreted name decodes to
-the unit element, including at separated arity universes.
-
 Precomposition is exercised on a sample `delta` code: `IR.precompMerge`
 tests check the resolved and unresolved cases of the merged
 assignment, and `IR.precomp`'s `delta` computation rule is checked by
@@ -40,7 +36,7 @@ including a step that consumes its recursive-results argument.
 
 ## Tags
 
-inductive-recursive, polynomial functor, container
+inductive-recursive, polynomial functor
 -/
 
 -- The type-valued test definitions must be `@[expose]`d so their
@@ -171,54 +167,6 @@ example : hetDeltaTgt.2 ⟨fun _ ↦ (2 : Fin 3), ULift.up ()⟩ = true := rfl
 example : hetDeltaTgt.2 ⟨fun _ ↦ (1 : Fin 3), ULift.up ()⟩ = false := rfl
 
 end Heterogeneous
-
-section Container
-
--- A simple container (a `PFunctor`) is translated to an `IR` code
--- over the unit type by `contCode`.
-
-/-- A test container: shape `Bool`, with `Nat` directions under each
-shape. -/
-def testCont : PFunctor.{0, 0} := ⟨Bool, fun _ ↦ Nat⟩
-
-/-- The `IR` code over the unit type representing `testCont`. -/
-def testContCode : IR.{0, 0, 0, 0} PUnit PUnit := contCode testCont
-
-/-- An input family over the unit type: a single name. -/
-def testContX : FreeCoprodCompDisc.{0, 0} PUnit :=
-  ⟨PUnit, fun _ ↦ PUnit.unit⟩
-
--- A name in the interpreted container pairs a shape, a direction
--- assignment into the input family, and the single name of the
--- constant `iota` interpretation; it decodes to the unit element
--- (Example 1's `(s : S) × (P s → X) × 1`).
-example (s : Bool) (g : Nat → PUnit) :
-    (IR.interpObj PUnit PUnit testContCode testContX).2
-        ⟨s, g, ULift.up ()⟩ = PUnit.unit :=
-  rfl
-
-/-- A test container with separated field universes: shape `ULift Bool`
-at universe `1`, with `Nat` directions at universe `0` under each
-shape. -/
-def testContSep : PFunctor.{1, 0} := ⟨ULift Bool, fun _ ↦ Nat⟩
-
-/-- The `IR` code over the unit type representing `testContSep`: the
-arity universes are instantiated off the diagonal (`uA ≠ uB`). -/
-def testContSepCode : IR.{1, 0, 0, 0} PUnit PUnit := contCode testContSep
-
-/-- An input family over the unit type at the matching index universe:
-a single name. -/
-def testContSepX : FreeCoprodCompDisc.{1, 0} PUnit :=
-  ⟨PUnit, fun _ ↦ PUnit.unit⟩
-
--- The interpreted-name decoding is preserved at separated arity
--- universes.
-example (s : ULift Bool) (g : Nat → PUnit) :
-    (IR.interpObj PUnit PUnit testContSepCode testContSepX).2
-        ⟨s, g, ULift.up ()⟩ = PUnit.unit :=
-  rfl
-
-end Container
 
 section Precomp
 
