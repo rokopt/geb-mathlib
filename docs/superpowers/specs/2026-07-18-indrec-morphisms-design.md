@@ -14,6 +14,10 @@
   - [Identity (branch 2a)](#identity-branch-2a)
   - [Theorem 2.4 functoriality (branch 2b)](#theorem-24-functoriality-branch-2b)
   - [Naturality and Theorem 3 (branch 2c)](#naturality-and-theorem-3-branch-2c)
+    - [The natural-transformation notion](#the-natural-transformation-notion)
+    - [New `FreeCoprodCompDisc` infrastructure](#new-freecoprodcompdisc-infrastructure)
+    - [Naturality upgrades of Lemmas 3 and 4](#naturality-upgrades-of-lemmas-3-and-4)
+    - [The Theorem 3 induction](#the-theorem-3-induction)
   - [Composition and the category laws (branch 2d)](#composition-and-the-category-laws-branch-2d)
   - [Semantic statements (branch 1, complete)](#semantic-statements-branch-1-complete)
   - [Placement and documentation](#placement-and-documentation)
@@ -139,8 +143,10 @@ In `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`:
 - An object-isomorphism notion: a name-type equivalence commuting
   with decodings. Chosen over a mutually inverse `Hom` pair
   because `Equiv` relates name types at different universes, which
-  the lemma statements below require (`Hom` is fixed at one index
-  universe).
+  the lemma statements below require (`Hom` itself is
+  universe-heterogeneous, but stating a mutually inverse pair
+  requires `Hom.comp`, which fixes one index universe — as do
+  `Map` and `MapMor`).
 
 ### Precomposition on codes
 
@@ -273,7 +279,266 @@ Independent of branch 2a. Corresponds to the existing TODO item
 Depends on branch 2b. The constructive proof of Theorem 3 in the
 `FreeCoprodCompDisc` encoding — in particular staying `Classical`-free —
 is this branch's closure gate: its plan derives the induction before
-implementation, returning to design if it fails to close.
+implementation, returning to design if it fails to close. The
+derivation below discharges the gate; the subsections record, in
+dependency order, the notions and infrastructure it consumes.
+
+#### The natural-transformation notion
+
+Generic to `FreeCoprodCompDisc`, not specific to interpretations of
+codes: for object maps `F G : Map I O` with morphism maps
+`mF : MapMor I O F` and `mG : MapMor I O G`, a natural transformation
+is a family `η : (X : FreeCoprodCompDisc I) → Hom O (F X) (G X)`
+satisfying `(mF X Y h).comp (η Y) = (η X).comp (mG X Y h)` for every
+`h : Hom I X Y` — a subtype with a `Prop`-valued naturality
+condition, so equality of transformations is `Subtype.ext` plus
+`funext`. Identity, vertical composition, and the laws branch 2d
+consumes (left and right identity, associativity) are componentwise,
+from the `FreeCoprodCompDisc.Hom` category laws (branch 2b).
+`Nat(⟦γ⟧, ⟦γ'⟧)` is the instantiation at
+`(interpObj γ, interpMor γ)` and `(interpObj γ', interpMor γ')`; it
+lives at `Type (max (max uA uB + 1) uI)` (a function over the
+object type at `Type (max (max uA uB + 1) uI)` with `Hom`-values at
+`Type (max uA uB)`; neither level mentions `uO`), at least as
+large as `IR.Hom`'s `Type (max uA uB uI)` and not level-equal to
+it in general — `Equiv` is universe-heterogeneous, so the
+Theorem 3 statement elaborates.
+
+A natural family of isomorphisms (the form of the Lemma 4 upgrade)
+is a family of `FreeCoprodCompDisc.Iso` whose forward homs satisfy
+the same naturality condition; naturality of the inverse family
+follows by a lemma (conjugating the square by the inverses), so
+such a family converts to a mutually inverse pair of natural
+transformations — the form the transport lemma of the `δ`-case
+consumes.
+
+The branch also exposes the composition API of the notion (none of
+it is consumed by Theorem 3 or the branch 2d transfer; it is the
+client-facing surface of the functor-category structure): the
+composite of two `Map`s and of their `MapMor`s (function
+composition, at one index universe); right whiskering
+(precomposition of a transformation with a functor — no functor-law
+hypotheses); left whiskering and horizontal composition, whose
+naturality consumes the outer functor's composition-preservation
+law as a hypothesis, in the manner of the copower–Yoneda adjunction
+below; the agreement of the two orientations of the horizontal
+composite (the outer morphism map of a component followed by the
+second transformation, against the second transformation followed
+by the other outer morphism map of the component), by the second
+transformation's naturality; the identity coherences (the
+horizontal composite of identity transformations is the identity —
+consuming the outer functor's identity-preservation law — and
+whiskering by an identity functor is the identity operation); and
+the interchange law with vertical composition, from naturality and
+the composition-law hypotheses.
+
+#### New `FreeCoprodCompDisc` infrastructure
+
+- The initial object `⟨PEmpty, PEmpty.elim⟩`, the morphism
+  `bang X` out of it, and its uniqueness (every commutation
+  condition out of an empty name type holds by `funext`).
+- The universal property of the indexed coproduct, at one index
+  universe (the large-index coproduct of the `δ`-clause is handled
+  by the per-summand Lemma 3 upgrade instead): injections
+  `coprodInj`, the cotuple `coprodDesc`, the equivalence
+  `Hom (coprod ι fi) Z ≃ ((i : ι) → Hom (fi i) Z)` (generalizing
+  `copowerEquiv`, which is its constant-family case), and the
+  composition compatibilities
+  (`(coprodMor r hom).comp (coprodDesc m)` as a cotuple;
+  `(coprodDesc m).comp g` as a cotuple of composites;
+  `(hom i).comp (coprodInj (r i)) = (coprodInj i).comp
+  (coprodMor r hom)` on the injection side).
+- `coprodPairMor` — the functorial action of `coprodPair` (hence of
+  `plus c`) on morphisms, with preservation of identity and
+  composition; it makes `X ↦ ⟦γ'⟧ (plus c X)` a morphism-mapped
+  family, the codomain of the copower–Yoneda adjunction below.
+  Universe-heterogeneous in the two objects, mirroring
+  `coprodPair.{uX, uY}` (the Lemma 4 upgrade composes
+  `Hom.id ⟨Q, i⟩` at index universe `uB` with a morphism at
+  `max uA uB`; a single-universe form would not elaborate there).
+- The singleton-domain fiber description
+  `Hom (⟨ULift Unit, fun _ ↦ d⟩) Z ≃ {z : Z.1 // Z.2 z = d}`
+  (consumed throughout the `ι`-case), together with the
+  sigma–subtype commutation
+  `{z : Σ a, N a // P z} ≃ Σ a, {n : N a // P ⟨a, n⟩}` that
+  decomposes it over a coproduct in clause 1B (a generic `Equiv`
+  combinator, placed per § Placement and documentation).
+
+#### Naturality upgrades of Lemmas 3 and 4
+
+- Lemma 4 (`IR.interpPrecompIso`, fixed `Q`, `i`, `γ`): the
+  right-hand side `k ↦ ⟦γ⟧ (plus ⟨Q, i⟩ k)` stays at the uniform
+  index universe (`plus` of `⟨Q, i⟩` at `uB` with `k` at
+  `max uA uB` lands at `max uA uB`) and carries the composite
+  morphism map
+  `h ↦ interpMor γ _ _ (coprodPairMor (Hom.id ⟨Q, i⟩) h)` (the
+  heterogeneous `coprodPairMor` instantiation). The upgrade states
+  that the existing pointwise isomorphism family is natural with
+  respect to it, by `IR.induction` on `γ` (the square is
+  `Prop`-valued), using branch 2b's characterizing equations, with
+  the transport eliminations in the manner of
+  `InterpMorCompHgMotive`.
+- Lemma 3 (`IR.interpDeltaIso`, fixed `B`, `c`): the lemma's
+  right-hand side is a coproduct over `i : B → I`, whose index type
+  lives at `Type (max uB uI)`, exceeding the uniform index universe
+  whenever `uI` does — so the total coproduct is not a
+  `Map.{max uA uB, uI, uO}` and cannot carry a `MapMor`. The
+  upgrade therefore takes per-summand form and never treats the
+  total coproduct as a functor. Each summand
+  `W i := fun X ↦ Hom(lift ⟨B, i⟩, X) ⊗ ⟦c i⟧ X` is a `Map` at the
+  uniform index universe, with morphism map `mW i` reindexing the
+  copower weight by postcomposition (`e ↦ e.comp h`) over
+  `interpMor (c i)`. The upgrade delivers:
+  - the inclusion family
+    `deltaInto i X : Hom (W i X) (⟦δ B c⟧ X)` (the `i`-summand of
+    the pointwise Lemma 3 isomorphism, inverted), natural in `X`
+    with respect to `mW i` and `interpMor (delta B c)`;
+  - the cotuple `deltaDesc : ((i : B → I) → Hom (W i X) Z) →
+    Hom (⟦δ B c⟧ X) Z`, defined directly through the grouping
+    equivalences of `interpDeltaIso` (both endpoints in-category;
+    the large-index coproduct never appears as a `Hom` endpoint
+    and never carries a morphism map), with the computation
+    law `(deltaInto i X).comp (deltaDesc m) = m i` and the
+    uniqueness law
+    `deltaDesc (fun i ↦ (deltaInto i X).comp h) = h` (together
+    these make the inclusions jointly epic).
+
+  `IR.interpDeltaIso` is a single non-recursive composite of
+  equivalences, so these are direct calculations (after rewriting
+  the `⟦δ B c⟧`-side morphism map by branch 2b's `interpMor_delta`,
+  and with the established transport eliminations for the weight
+  equalities), not inductions.
+
+#### The Theorem 3 induction
+
+By `IR.rec` on the domain code with motive
+`γ ↦ ∀ γ', Hom γ γ' ≃ Nat(⟦γ⟧, ⟦γ'⟧)`, mirroring the domain
+recursion of `IR.Hom` itself; the characterizing equations of the
+resulting equivalence at each constructor hold propositionally via
+`IR.rec_mk` (branch 2b), and the homset clauses compute
+definitionally. The characterizing equations `interpMor_sigma` /
+`interpMor_delta` enter as propositional rewrites of the morphism
+map before the generic lemmas below apply.
+
+- `σ`-case: `Hom (σ A K) γ' = Π a, Hom (K a) γ'` maps through the
+  inductive hypotheses to `Π a, Nat(⟦K a⟧, ⟦γ'⟧)`, and
+  `⟦σ A K⟧ X = coprod A (fun a ↦ ⟦K a⟧ X)` with `coprodMor`-shaped
+  morphism map (identity reindexing), so a generic lemma — a
+  natural transformation out of an indexed coproduct of
+  morphism-mapped families is exactly a family of natural
+  transformations out of the summands — closes the case. Both
+  directions are `coprodDesc` / `coprodInj`; naturality decomposes
+  componentwise by the composition compatibilities.
+- `δ`-case (through Lemmas 3 and 4):
+
+  1. `Nat(⟦δ Q K⟧, ⟦γ'⟧) ≃ Π i : Q → I, Nat(W i, ⟦γ'⟧)` by the
+     per-summand Lemma 3 upgrade: forward restricts along the
+     inclusions (`θ i` at `X` is `(deltaInto i X).comp (η X)`,
+     natural by the inclusion naturality, the naturality of `η`,
+     and associativity); backward cotuples (`η` at `X` is
+     `deltaDesc (fun i ↦ θ i X)`), natural by joint epicness of
+     the inclusions, the computation law, the naturality of each
+     `θ i`, the inclusion naturality, and associativity; the round
+     trips are the computation and uniqueness laws.
+  2. `≃ Π i, Nat(⟦K i⟧, ⟦γ'⟧ ∘ (plus (lift ⟨Q, i⟩) ·))` by the
+     copower–Yoneda adjunction below, at `c := lift ⟨Q, i⟩` (which
+     places `c` at the uniform index universe `max uA uB`, so all
+     injections, cotuples, and composites are same-universe).
+  3. `≃ Π i, Nat(⟦K i⟧, ⟦γ'⟧ ∘ (plus ⟨Q, i⟩ ·))` by transport along
+     the bridge isomorphism `plus (lift ⟨Q, i⟩) X ≅ plus ⟨Q, i⟩ X`
+     (`ULift` on the left summand's names), imaged under `⟦γ'⟧` via
+     `interpMor` and the functor laws as a mutually inverse pair of
+     natural transformations — matching Lemma 4's stated right-hand
+     side. Naturality of the imaged family rests on the
+     object-level commutation of the bridge with `coprodPairMor`
+     (a `Subtype.ext` calculation) before `interpMor_comp`
+     applies.
+  4. `≃ Π i, Nat(⟦K i⟧, ⟦precomp Q i γ'⟧)` by transport along the
+     Lemma 4 upgrade, converted to a mutually inverse natural pair
+     (the generic transport lemma, stated for such pairs on either
+     side: mutually inverse `Nat`s between `G` and `G'` induce
+     `Nat(F, G') ≃ Nat(F, G)`, and dually on the domain side).
+  5. `≃ Π i, Hom (K i) (precomp Q i γ')` by the inductive
+     hypothesis at `K i` (a structural subcode; the motive
+     quantifies over all codomains, so instantiating at
+     `precomp Q i γ'` is available, and the uniform instantiation
+     is preserved since `Q : Type uB`) — which is definitionally
+     `Hom (δ Q K) γ'`'s clause 3.
+
+  The copower–Yoneda adjunction (generic; the functor laws of both
+  `F` and `G` are hypotheses — supplied by `interpMor_id` /
+  `interpMor_comp` — together with the binary-coproduct computation
+  laws `coprodPair_inl_desc` / `coprodPair_inr_desc` and the
+  cotuple uniqueness `coprodPairDesc_eta`):
+  `Nat(Hom(c, ·) ⊗ F, G) ≃ Nat(F, G ∘ (plus c ·))`. Forward: at
+  `X`, inject `F X` into `F (plus c X)` along `mF` of the right
+  injection, pair with the left injection as the weight, and apply
+  the transformation at `plus c X`. Backward: at `X` and weight
+  `h : Hom(c, X)`, apply the transformation at `X` and follow with
+  `G` of the cotuple `coprodPairDesc h (Hom.id)`. Round trips are
+  the coproduct laws, both functor-law hypotheses, and naturality
+  of the given transformation.
+- `ι`-case: `⟦ι o⟧` is the constant map at the singleton object
+  `single o := ⟨ULift Unit, fun _ ↦ o⟩`, and evaluation at the
+  initial object gives
+  `Nat(⟦ι o⟧, ⟦γ'⟧) ≃ Hom(single o, ⟦γ'⟧ ∅)`: forward is
+  `η ↦ η ∅`; backward sends `f` to the family
+  `X ↦ f.comp (interpMor γ' ∅ X (bang X))`, natural by
+  `interpMor_iota` (reducing the `⟦ι o⟧`-side morphism map to the
+  identity — `interpMor` computes only propositionally),
+  `interpMor_comp`, initial-object uniqueness, and the `Hom`
+  category laws, with the round trips by `interpMor_id` (at
+  `bang ∅ = Hom.id`), `interpMor_iota`, and naturality.
+  A second equivalence `InnerHom o γ' ≃ Hom(single o, ⟦γ'⟧ ∅)`
+  follows by `IR.rec` on the codomain, mirroring `InnerHom`'s own
+  recursion, through the fiber description
+  `Hom(single o, Z) ≃ {z : Z.1 // Z.2 z = o}`:
+  - Clause 1A (`ι o'`): both interpretations are singletons; the
+    commutation condition is exactly `o = o'`, matching
+    `ULift (PLift (o = o'))`.
+  - Clause 1B (`σ A' K'`): `⟦σ A' K'⟧ ∅` is a coproduct, a
+    morphism out of a singleton into a coproduct is a summand
+    choice with a morphism into that summand, and the inner
+    inductive hypotheses close each summand:
+    `Σ a', InnerHom o (K' a')`.
+  - Clause 1C (`δ Q' K'`): `⟦δ Q' K'⟧ ∅` is the coproduct over
+    directions `g : Q' → PEmpty` landing in the initial object's
+    empty name type, so the summand choice is an empty witness
+    and the subcode argument is the vacuous assignment:
+    `Σ e : Q' → PEmpty, InnerHom o (K' (PEmpty.elim ∘ e))`, up to
+    the universe bridge between `InnerHom`'s `PEmpty.{1}` witness
+    and the initial object's names at `Type (max uA uB)` (empty
+    types are equivalent across universes) and up to an `Eq.rec`
+    transport of the subcode assignment: the interpretation side
+    feeds `∅.2 ∘ g` where clause 1C feeds the neutral elimination
+    `fun b ↦ (e b).elim`, equal only propositionally (by `funext`
+    of the pointwise eliminations).
+
+Statement: `interpHomEquiv : Hom γ γ' ≃ Nat(⟦γ⟧, ⟦γ'⟧)`, whose
+forward map `interpHom` is the interpretation extended to
+morphisms. Theorem 3 transcribes as this equivalence (fullness is
+the inverse map, faithfulness is injectivity of the forward map);
+the induction realizing it is this project's construction, per
+§ Source and proof-route deviation.
+
+Closure-gate assessment: every map above is explicit data;
+transports are `Eq.rec` along given equalities; the round trips use
+only the functor laws, the coproduct and copower laws, naturality,
+`funext`, and `Subtype.ext`. No step consumes `Classical`; the gate
+closes.
+
+Not in branch 2c: the equation sending `interpHom (IR.id γ)` to the
+identity natural transformation. It consumes branch 2a's syntactic identity, on
+which 2c does not depend; branch 2d (which depends on both) proves
+it for the identity laws. The `IR.elim` / `IR.rec` uniqueness
+properties remain outside the workstream (this route does not need
+them).
+
+Tests: fold in the morphism-action sample of `TODO.md` § Complete
+Theorem 2.4 for `IndRec` (a propositionally nontrivial commutation
+proof exercising the `homOfEq` transport in `IR.interpMorDelta`
+observably) — naturality statements produce exactly such
+transports.
 
 ### Composition and the category laws (branch 2d)
 
@@ -329,8 +594,8 @@ by the paper cites [HancockMcBrideGhaniMalatestaAltenkirch2013]
 per the citation rules, with docstrings distinguishing
 transcription from construction. Generic auxiliary machinery
 (hom composition, the isomorphism notion, lifting, the `Equiv`
-combinators) is not taken from the paper and carries no
-citation, per the citation rules' scope. Mirrored test files
+combinators) is the project's own construction, outside the
+citation rules' scope. Mirrored test files
 under `GebTests/` and the `docs/index.md` entry are updated in
 the same branches.
 
