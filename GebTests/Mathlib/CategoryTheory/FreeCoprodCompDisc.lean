@@ -28,6 +28,11 @@ families over the sample object; composition and the identity laws
 additionally across three distinct objects with non-identity
 morphisms, pinning composition order by type.
 
+The initial object, the indexed-coproduct universal property,
+`coprodPairMor`, the singleton fiber description, and the
+underlying morphisms of isomorphisms are exercised at the sample
+objects.
+
 ## Tags
 
 free coproduct completion, family, discrete category
@@ -218,3 +223,97 @@ theorem sampleWtoX_comp_id :
         (FreeCoprodCompDisc.Hom.id Bool sampleX) =
       sampleWtoX :=
   FreeCoprodCompDisc.Hom.comp_id Bool sampleWtoX
+
+/-- Uniqueness of the morphism out of the initial object at `sampleX`. -/
+theorem sampleEmptyDesc_unique
+    (f : FreeCoprodCompDisc.Hom Bool (FreeCoprodCompDisc.emptyObj Bool) sampleX) :
+    f = FreeCoprodCompDisc.emptyDesc Bool sampleX :=
+  FreeCoprodCompDisc.emptyDesc_unique Bool sampleX f
+
+/-- Restricting the cotuple along an injection recovers the component. -/
+theorem sampleCoprodInj_desc (b : Bool) :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodInj Bool Bool (fun _ ↦ sampleX) b)
+        (FreeCoprodCompDisc.coprodDesc Bool Bool (fun _ ↦ sampleX) sampleX
+          (fun _ ↦ sampleHom)) =
+      sampleHom :=
+  FreeCoprodCompDisc.coprodInj_desc Bool Bool (fun _ ↦ sampleX) sampleX
+    (fun _ ↦ sampleHom) b
+
+/-- The inverse direction of the coproduct universal property evaluates
+componentwise. -/
+theorem sampleCoprodHomEquiv_symm_apply :
+    ((FreeCoprodCompDisc.coprodHomEquiv Bool Bool (fun _ ↦ sampleX)
+        sampleX).symm (fun _ ↦ sampleHom)).1 ⟨true, false⟩ = false :=
+  rfl
+
+/-- A cotuple followed by a morphism is the cotuple of the composites. -/
+theorem sampleCoprodDesc_comp :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodDesc Bool Bool (fun _ ↦ sampleX) sampleX
+          (fun _ ↦ sampleHom))
+        sampleXtoZ =
+      FreeCoprodCompDisc.coprodDesc Bool Bool (fun _ ↦ sampleX) sampleZ
+        (fun _ ↦ FreeCoprodCompDisc.Hom.comp Bool sampleHom sampleXtoZ) :=
+  FreeCoprodCompDisc.coprodDesc_comp Bool Bool (fun _ ↦ sampleX) sampleX
+    sampleZ (fun _ ↦ sampleHom) sampleXtoZ
+
+/-- `coprodPairMor` preserves identities at the sample objects. -/
+theorem sampleCoprodPairMor_id :
+    FreeCoprodCompDisc.coprodPairMor Bool
+        (FreeCoprodCompDisc.Hom.id Bool sampleW)
+        (FreeCoprodCompDisc.Hom.id Bool sampleX) =
+      FreeCoprodCompDisc.Hom.id Bool
+        (FreeCoprodCompDisc.coprodPair Bool sampleW sampleX) :=
+  FreeCoprodCompDisc.coprodPairMor_id Bool sampleW sampleX
+
+/-- `coprodPairMor` preserves composition at the sample morphisms. -/
+theorem sampleCoprodPairMor_comp :
+    FreeCoprodCompDisc.coprodPairMor Bool
+        (FreeCoprodCompDisc.Hom.comp Bool sampleWtoX sampleXtoZ)
+        (FreeCoprodCompDisc.Hom.comp Bool sampleWtoX sampleXtoZ) =
+      FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodPairMor Bool sampleWtoX sampleWtoX)
+        (FreeCoprodCompDisc.coprodPairMor Bool sampleXtoZ sampleXtoZ) :=
+  FreeCoprodCompDisc.coprodPairMor_comp Bool sampleWtoX sampleXtoZ
+    sampleWtoX sampleXtoZ
+
+/-- Reindexing along the right injection then cotupling the left
+injection against the identity is the identity. -/
+theorem sampleCoprodPairMor_inr_desc_inl :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodPairMor Bool
+          (FreeCoprodCompDisc.Hom.id Bool sampleW)
+          (FreeCoprodCompDisc.coprodPairInr Bool sampleW sampleX))
+        (FreeCoprodCompDisc.coprodPairDesc Bool
+          (FreeCoprodCompDisc.coprodPairInl Bool sampleW sampleX)
+          (FreeCoprodCompDisc.Hom.id Bool
+            (FreeCoprodCompDisc.coprodPair.{0, 0, 0} Bool sampleW sampleX))) =
+      FreeCoprodCompDisc.Hom.id Bool
+        (FreeCoprodCompDisc.coprodPair.{0, 0, 0} Bool sampleW sampleX) :=
+  FreeCoprodCompDisc.coprodPairMor_inr_desc_inl Bool
+
+/-- The singleton fiber description evaluates its inverse direction at a
+fiber element. -/
+theorem sampleHomSingletonEquiv_symm_apply :
+    ((FreeCoprodCompDisc.homSingletonEquiv Bool true sampleX).symm
+        ⟨true, rfl⟩).1 (ULift.up Unit.unit) = true :=
+  rfl
+
+/-- A sample object with constant decoding, carrying a non-identity
+isomorphism. -/
+def sampleC : FreeCoprodCompDisc.{0, 0} Bool :=
+  ⟨Bool, fun _ ↦ true⟩
+
+/-- A sample non-identity isomorphism: Boolean negation on `sampleC`. -/
+def sampleIsoNot : FreeCoprodCompDisc.Iso.{0, 0, 0} Bool sampleC sampleC :=
+  ⟨⟨Bool.not, Bool.not, Bool.not_not, Bool.not_not⟩, rfl⟩
+
+/-- The underlying morphisms of the sample isomorphism compose to the
+identity. -/
+theorem sampleIsoNot_hom_invHom :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.Iso.hom Bool sampleIsoNot)
+        (FreeCoprodCompDisc.Iso.invHom Bool sampleIsoNot) =
+      FreeCoprodCompDisc.Hom.id Bool sampleC :=
+  FreeCoprodCompDisc.Iso.hom_invHom Bool sampleIsoNot
