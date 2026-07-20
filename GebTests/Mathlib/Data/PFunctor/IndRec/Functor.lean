@@ -53,3 +53,22 @@ theorem sampleInterpMor_delta :
         (fun _ ↦ IR.interpObj PUnit PUnit (iota PUnit PUnit PUnit.unit))
         (fun _ ↦ IR.interpMor PUnit PUnit (iota PUnit PUnit PUnit.unit)) :=
   IR.interpMor_delta PUnit PUnit PUnit (fun _ ↦ iota PUnit PUnit PUnit.unit)
+
+/-- A sample object of the completion over the unit type. -/
+def sampleObj : FreeCoprodCompDisc.{0, 0} PUnit :=
+  ⟨Bool, fun _ ↦ PUnit.unit⟩
+
+/-- Preservation of identity at a concrete `sigma` code and the
+sample object. -/
+theorem sampleInterpMor_id :
+    IR.interpMor.{0, 0, 0, 0} PUnit PUnit
+        (sigma PUnit PUnit Bool (fun _ ↦ iota PUnit PUnit PUnit.unit))
+        sampleObj sampleObj
+        (FreeCoprodCompDisc.Hom.id PUnit sampleObj) =
+      FreeCoprodCompDisc.Hom.id PUnit
+        (IR.interpObj PUnit PUnit
+          (sigma PUnit PUnit Bool (fun _ ↦ iota PUnit PUnit PUnit.unit))
+          sampleObj) :=
+  IR.interpMor_id PUnit PUnit
+    (sigma PUnit PUnit Bool (fun _ ↦ iota PUnit PUnit PUnit.unit))
+    sampleObj
