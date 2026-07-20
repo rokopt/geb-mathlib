@@ -8,6 +8,7 @@ module
 import GebTests.Mathlib.Data.PFunctor.IndRec.Basic
 import GebTests.Mathlib.Data.PFunctor.IndRec.Hom
 import GebTests.Mathlib.Data.PFunctor.IndRec.Functor
+import GebTests.Mathlib.Data.PFunctor.IndRec.Universes
 
 /-!
 # IndRec tests — index
