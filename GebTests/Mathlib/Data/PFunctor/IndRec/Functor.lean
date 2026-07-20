@@ -1,0 +1,55 @@
+/-
+Copyright (c) 2026 Terence Rokop. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Terence Rokop
+-/
+module
+
+public import Geb.Mathlib.Data.PFunctor.IndRec.Functor
+
+/-!
+# Tests for the functoriality of the IR interpretation
+
+The characterizing equations of `IR.interpMor` are exercised at
+concrete codes over the unit index types; the functor laws
+(preservation of identity and composition) are exercised at a
+sample object and endomorphism, with the identity law also
+exercised at a `delta` code. Named theorems give the `GebMeta`
+axiom linter declarations to inspect.
+
+## Tags
+
+inductive-recursive, interpretation, functor
+-/
+
+@[expose] public section
+
+open CategoryTheory
+open IndRec IndRec.IR
+
+/-- The characterizing equation of `interpMor` at a concrete `iota`
+code. -/
+theorem sampleInterpMor_iota :
+    IR.interpMor.{0, 0, 0, 0} PUnit PUnit (iota PUnit PUnit PUnit.unit) =
+      IR.interpMorIota.{0, 0, 0, 0} PUnit PUnit PUnit.unit :=
+  IR.interpMor_iota PUnit PUnit PUnit.unit
+
+/-- The characterizing equation of `interpMor` at a concrete `sigma`
+code. -/
+theorem sampleInterpMor_sigma :
+    IR.interpMor.{0, 0, 0, 0} PUnit PUnit
+        (sigma PUnit PUnit Bool (fun _ ↦ iota PUnit PUnit PUnit.unit)) =
+      IR.interpMorSigma PUnit PUnit Bool
+        (fun _ ↦ IR.interpObj PUnit PUnit (iota PUnit PUnit PUnit.unit))
+        (fun _ ↦ IR.interpMor PUnit PUnit (iota PUnit PUnit PUnit.unit)) :=
+  IR.interpMor_sigma PUnit PUnit Bool (fun _ ↦ iota PUnit PUnit PUnit.unit)
+
+/-- The characterizing equation of `interpMor` at a concrete `delta`
+code. -/
+theorem sampleInterpMor_delta :
+    IR.interpMor.{0, 0, 0, 0} PUnit PUnit
+        (delta PUnit PUnit PUnit (fun _ ↦ iota PUnit PUnit PUnit.unit)) =
+      IR.interpMorDelta PUnit PUnit PUnit
+        (fun _ ↦ IR.interpObj PUnit PUnit (iota PUnit PUnit PUnit.unit))
+        (fun _ ↦ IR.interpMor PUnit PUnit (iota PUnit PUnit PUnit.unit)) :=
+  IR.interpMor_delta PUnit PUnit PUnit (fun _ ↦ iota PUnit PUnit PUnit.unit)
