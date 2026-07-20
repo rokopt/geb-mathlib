@@ -12,7 +12,8 @@ public import Geb.Mathlib.Logic.Equiv.Basic
 
 Round-trip tests exercise `sigmaCongrRight'`,
 `arrowSumEquivSigma`, and `sigmaCompEquivSigmaFiber` on sample
-inputs.
+inputs. The sigma–subtype commutation and the empty-valued
+function-type equivalence round-trip at sample instances.
 
 ## Tags
 
@@ -46,3 +47,18 @@ theorem sampleSigmaFiber_roundtrip :
       (sigmaCompEquivSigmaFiber Bool.not (fun _ ↦ Nat) ⟨true, 3⟩) =
       ⟨true, 3⟩ :=
   rfl
+
+/-- Commuting a sigma with a fiberwise subtype round-trips. -/
+theorem sampleSigmaSubtypeEquiv_roundtrip :
+    (sigmaSubtypeEquiv (fun _ : Bool ↦ Bool) (fun a n ↦ a = n)).symm
+        ((sigmaSubtypeEquiv (fun _ : Bool ↦ Bool) (fun a n ↦ a = n))
+          ⟨true, ⟨true, rfl⟩⟩) =
+      ⟨true, ⟨true, rfl⟩⟩ :=
+  rfl
+
+/-- The empty-valued function types across universes are equivalent:
+the round trip is the identity. -/
+theorem sampleArrowPEmptyEquiv_roundtrip (e : Bool → PEmpty.{1}) :
+    (arrowPEmptyEquiv.{0, 1, 0} Bool).symm
+        (arrowPEmptyEquiv.{0, 1, 0} Bool e) = e :=
+  (arrowPEmptyEquiv.{0, 1, 0} Bool).symm_apply_apply e
