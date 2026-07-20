@@ -12,16 +12,14 @@ public import Geb.Mathlib.Data.PFunctor.IndRec.Hom
 /-!
 # Naturality of the IR interpretation and Theorem 3
 
-Toward Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013]:
-the per-summand decomposition of transformation spaces at a `delta`
-code (the naturality upgrade of the paper's Lemma 3). Each copower
-summand — the value of `IR.interpObj` at a subcode, copowered by
-the morphisms out of the lifted direction assignment — includes
-into the `delta` interpretation naturally (`IR.deltaInto`); the
-inclusions admit a cotuple (`IR.deltaDesc`) and are jointly epic;
-and transformations out of the `delta` interpretation decompose
-into families of transformations out of the summands
-(`IR.natDeltaEquiv`).
+Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013]: the
+homset between two `IR` codes is equivalent to the space of
+natural transformations between their interpretations
+(`IR.interpHomEquiv`), by `IR.rec` on the domain code. The
+supporting development comprises the per-summand decomposition at
+a `delta` code (the naturality upgrade of the paper's Lemma 3),
+the naturality upgrade of Lemma 4, the ∅-evaluation and `InnerHom`
+fiber equivalences of the `ι`-case, and the plus-lift bridge.
 
 ## Main definitions
 
@@ -43,6 +41,11 @@ into families of transformations out of the summands
   pair of transformations bridging the `plus`-precomposed
   interpretation at the lifted summand and the Lemma 4 right-hand
   map.
+* `IR.interpHomEquiv` — Theorem 3 of
+  [HancockMcBrideGhaniMalatestaAltenkirch2013]: `Hom γ γ'` is
+  equivalent to the transformation space between the
+  interpretations, with the directions `IR.interpHom` and
+  `IR.natToHom`.
 
 ## Main statements
 
@@ -56,6 +59,9 @@ into families of transformations out of the summands
   ([HancockMcBrideGhaniMalatestaAltenkirch2013], Lemma 4, upgraded
   from the pointwise statement), with the characterizing equation
   `IR.interpPrecompIso_mk`.
+* `IR.interpHom_natToHom`, `IR.natToHom_interpHom` — the
+  round-trip laws of `IR.interpHomEquiv` (fullness and
+  faithfulness of the interpretation on morphisms).
 
 ## Implementation notes
 
@@ -1085,6 +1091,109 @@ theorem plusLiftBridgeNat_isInverse (Q : Type uB) (i : Q → I)
             (plusLiftBridge_invHom_hom I Q i X)).trans
           (interpMor_id I O γ'
             (FreeCoprodCompDisc.plus I ⟨Q, i⟩ X)))))⟩
+
+/-- The motive of `IR.interpHomEquiv`: for each code, the homset to
+every codomain code is equivalent to the space of natural
+transformations between the interpretations. -/
+def InterpHomEquivMotive (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    Type (max (max uA uB + 1) uI uO) :=
+  (γ' : IR.{max uA uB, uB, uI, uO} I O) →
+    Hom.{uA, uB, uI, uO} I O γ γ' ≃
+      FreeCoprodCompDisc.NatTrans I O (interpObj I O γ) (interpObj I O γ')
+        (interpMor I O γ) (interpMor I O γ')
+
+/-- The step of `IR.interpHomEquiv`: per shape, the homset clause and
+the transformation space are matched by the corresponding
+decomposition equivalence, with the inductive hypotheses supplying the
+subcode equivalences. -/
+def interpHomEquivStep :
+    RecStep.{max uA uB, uB, uI, uO, max (max uA uB + 1) uI uO} I O
+      (InterpHomEquivMotive I O) :=
+  fun s c m ↦ match s, c, m with
+  | Sum.inl o, c, _ => fun γ' ↦
+      Eq.rec (motive := fun ir _ ↦
+          InnerHom.{uA, uB, uI, uO} I O o γ' ≃
+            FreeCoprodCompDisc.NatTrans I O (interpObj I O ir)
+              (interpObj I O γ') (interpMor I O ir) (interpMor I O γ'))
+        ((innerHomEquiv I O o γ').trans
+          ((FreeCoprodCompDisc.homSingletonEquiv O o
+              (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I))).symm.trans
+            (natIotaEquiv I O o γ').symm))
+        (mk_congr I O (Sum.inl o) (funext (fun x ↦ nomatch x)) :
+          mk I O (Sum.inl o) c = iota.{max uA uB, uB, uI, uO} I O o).symm
+  | Sum.inr (Sum.inl A), c, m => fun γ' ↦
+      (Equiv.piCongrRight (fun a ↦ m (ULift.up a) γ')).trans
+        ((FreeCoprodCompDisc.natCoprodEquiv A
+            (fun a ↦ interpObj I O (c (ULift.up a)))
+            (fun a ↦ interpMor I O (c (ULift.up a)))
+            (interpObj I O γ') (interpMor I O γ')).symm.trans
+          (FreeCoprodCompDisc.NatTrans.congrSource
+            (interpMor_sigma I O A (fun a ↦ c (ULift.up a)))
+            (interpMor I O γ')).symm)
+  | Sum.inr (Sum.inr Q), c, m => fun γ' ↦
+      (Equiv.piCongrRight (fun i ↦
+          (((m (ULift.up i) (precomp I O Q i γ')).trans
+            (FreeCoprodCompDisc.NatTrans.equivOfInverseTarget
+              (FreeCoprodCompDisc.NatTrans.ofIsoFamily
+                (fun k ↦ interpPrecompIso I O γ' Q i k)
+                (interpPrecompIso_natural I O γ' Q i))
+              (FreeCoprodCompDisc.NatTrans.invOfIsoFamily
+                (fun k ↦ interpPrecompIso I O γ' Q i k)
+                (interpPrecompIso_natural I O γ' Q i))
+              (FreeCoprodCompDisc.NatTrans.ofIsoFamily_isInverse
+                (fun k ↦ interpPrecompIso I O γ' Q i k)
+                (interpPrecompIso_natural I O γ' Q i)))).trans
+            (FreeCoprodCompDisc.NatTrans.equivOfInverseTarget
+              (plusLiftBridgeNatInv I O Q i γ')
+              (plusLiftBridgeNat I O Q i γ')
+              ⟨(plusLiftBridgeNat_isInverse I O Q i γ').2,
+                (plusLiftBridgeNat_isInverse I O Q i γ').1⟩)).trans
+            (FreeCoprodCompDisc.natCopowerPlusEquiv
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Q, i⟩)
+              (interpMor I O (c (ULift.up i))) (interpMor I O γ')
+              (interpMor_id I O (c (ULift.up i)))
+              (interpMor_comp I O (c (ULift.up i)))
+              (interpMor_id I O γ') (interpMor_comp I O γ')).symm)).trans
+        (natDeltaEquiv I O Q (fun i ↦ c (ULift.up i)) (interpMor I O γ')).symm
+
+/-- Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013]: the
+homset between two codes is equivalent to the space of natural
+transformations between their interpretations, by `IR.rec` on the
+domain code. -/
+def interpHomEquiv (γ γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    Hom.{uA, uB, uI, uO} I O γ γ' ≃
+      FreeCoprodCompDisc.NatTrans I O (interpObj I O γ) (interpObj I O γ')
+        (interpMor I O γ) (interpMor I O γ') :=
+  rec I O (interpHomEquivStep I O) γ γ'
+
+/-- The interpretation of a code morphism as a natural transformation
+(the forward direction of `IR.interpHomEquiv`). -/
+def interpHom (γ γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ') :
+    FreeCoprodCompDisc.NatTrans I O (interpObj I O γ) (interpObj I O γ')
+      (interpMor I O γ) (interpMor I O γ') :=
+  interpHomEquiv I O γ γ' f
+
+/-- The code morphism carried by a natural transformation between
+interpretations (the backward direction of `IR.interpHomEquiv`). -/
+def natToHom (γ γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (η : FreeCoprodCompDisc.NatTrans I O (interpObj I O γ)
+      (interpObj I O γ') (interpMor I O γ) (interpMor I O γ')) :
+    Hom.{uA, uB, uI, uO} I O γ γ' :=
+  (interpHomEquiv I O γ γ').symm η
+
+/-- `IR.interpHom` inverts `IR.natToHom`. -/
+theorem interpHom_natToHom (γ γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (η : FreeCoprodCompDisc.NatTrans I O (interpObj I O γ)
+      (interpObj I O γ') (interpMor I O γ) (interpMor I O γ')) :
+    interpHom I O γ γ' (natToHom I O γ γ' η) = η :=
+  Equiv.apply_symm_apply (interpHomEquiv I O γ γ') η
+
+/-- `IR.natToHom` inverts `IR.interpHom`. -/
+theorem natToHom_interpHom (γ γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ') :
+    natToHom I O γ γ' (interpHom I O γ γ' f) = f :=
+  Equiv.symm_apply_apply (interpHomEquiv I O γ γ') f
 
 end IR
 
