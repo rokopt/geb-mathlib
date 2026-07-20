@@ -15,7 +15,8 @@ morphism maps and functor-law witnesses, exercise the
 transformation space: the identity transformation, a non-identity
 left-injection transformation, and the vertical category laws at
 both. Named theorems give the `GebMeta` axiom linter declarations
-to inspect.
+to inspect. Whiskering, horizontal composition, and the coherence
+and interchange laws are exercised at the sample transformations.
 
 ## Tags
 
@@ -107,3 +108,79 @@ def sampleMapComp : FreeCoprodCompDisc.Map.{0, 0, 0} Bool Bool :=
 /-- The composite morphism map over `sampleMapComp`. -/
 def sampleMapCompMor : FreeCoprodCompDisc.MapMor Bool Bool sampleMapComp :=
   FreeCoprodCompDisc.mapMorComp sampleMapMor sampleMapMor
+
+/-- Right whiskering of the sample transformation by the identity
+map. -/
+def sampleWhiskerRight :
+    FreeCoprodCompDisc.NatTrans Bool Bool
+      (FreeCoprodCompDisc.mapComp sampleMap sampleMap)
+      (FreeCoprodCompDisc.mapComp sampleMap sampleMapDouble)
+      (FreeCoprodCompDisc.mapMorComp sampleMapMor sampleMapMor)
+      (FreeCoprodCompDisc.mapMorComp sampleMapMor sampleMapDoubleMor) :=
+  FreeCoprodCompDisc.NatTrans.whiskerRight sampleMap sampleMapMor sampleNatInl
+
+/-- Left whiskering of the sample transformation by the identity map. -/
+def sampleWhiskerLeft :
+    FreeCoprodCompDisc.NatTrans Bool Bool
+      (FreeCoprodCompDisc.mapComp sampleMap sampleMap)
+      (FreeCoprodCompDisc.mapComp sampleMapDouble sampleMap)
+      (FreeCoprodCompDisc.mapMorComp sampleMapMor sampleMapMor)
+      (FreeCoprodCompDisc.mapMorComp sampleMapDoubleMor sampleMapMor) :=
+  FreeCoprodCompDisc.NatTrans.whiskerLeft sampleNatInl sampleMap sampleMapMor
+    sampleMapMor_preservesComp
+
+/-- The two orientations of the horizontal composite agree at the
+sample transformations. -/
+theorem sampleHcomp_eq_vcomp_whisker :
+    FreeCoprodCompDisc.NatTrans.hcomp sampleNatInl sampleNatInl
+        sampleMapMor_preservesComp =
+      FreeCoprodCompDisc.NatTrans.vcomp
+        (FreeCoprodCompDisc.NatTrans.whiskerRight sampleMap sampleMapMor
+          sampleNatInl)
+        (FreeCoprodCompDisc.NatTrans.whiskerLeft sampleNatInl sampleMapDouble
+          sampleMapDoubleMor sampleMapDoubleMor_preservesComp) :=
+  FreeCoprodCompDisc.NatTrans.hcomp_eq_vcomp_whisker sampleNatInl sampleNatInl
+    sampleMapMor_preservesComp sampleMapDoubleMor_preservesComp
+
+/-- The horizontal composite of identity transformations is the
+identity. -/
+theorem sampleHcomp_id :
+    FreeCoprodCompDisc.NatTrans.hcomp sampleNatId sampleNatId
+        sampleMapMor_preservesComp =
+      FreeCoprodCompDisc.NatTrans.id
+        (FreeCoprodCompDisc.mapComp sampleMap sampleMap)
+        (FreeCoprodCompDisc.mapMorComp sampleMapMor sampleMapMor) :=
+  FreeCoprodCompDisc.NatTrans.hcomp_id sampleMapMor_preservesComp
+    sampleMapMor_preservesId
+
+/-- The interchange law at the sample transformations. -/
+theorem sampleHcomp_vcomp :
+    FreeCoprodCompDisc.NatTrans.hcomp
+        (FreeCoprodCompDisc.NatTrans.vcomp sampleNatId sampleNatInl)
+        (FreeCoprodCompDisc.NatTrans.vcomp sampleNatId sampleNatInl)
+        sampleMapMor_preservesComp =
+      FreeCoprodCompDisc.NatTrans.vcomp
+        (FreeCoprodCompDisc.NatTrans.hcomp sampleNatId sampleNatId
+          sampleMapMor_preservesComp)
+        (FreeCoprodCompDisc.NatTrans.hcomp sampleNatInl sampleNatInl
+          sampleMapMor_preservesComp) :=
+  FreeCoprodCompDisc.NatTrans.hcomp_vcomp sampleNatId sampleNatInl
+    sampleNatId sampleNatInl sampleMapMor_preservesComp
+    sampleMapMor_preservesComp
+
+/-- Right whiskering by the identity object map is the identity
+operation at the sample transformation. -/
+theorem sampleWhiskerRight_idMap :
+    FreeCoprodCompDisc.NatTrans.whiskerRight FreeCoprodCompDisc.idMap
+        FreeCoprodCompDisc.idMapMor sampleNatInl =
+      sampleNatInl :=
+  FreeCoprodCompDisc.NatTrans.whiskerRight_idMap sampleNatInl
+
+/-- Left whiskering by the identity object map is the identity
+operation at the sample transformation. -/
+theorem sampleWhiskerLeft_idMap :
+    FreeCoprodCompDisc.NatTrans.whiskerLeft sampleNatInl
+        FreeCoprodCompDisc.idMap FreeCoprodCompDisc.idMapMor
+        FreeCoprodCompDisc.idMapMor_preservesComp =
+      sampleNatInl :=
+  FreeCoprodCompDisc.NatTrans.whiskerLeft_idMap sampleNatInl

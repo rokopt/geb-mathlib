@@ -28,6 +28,12 @@ predicates and composite maps support the horizontal structure.
   morphism map.
 * `FreeCoprodCompDisc.mapComp`, `FreeCoprodCompDisc.mapMorComp` —
   the composite of two object maps and of their morphism maps.
+* `FreeCoprodCompDisc.NatTrans.whiskerRight`,
+  `FreeCoprodCompDisc.NatTrans.whiskerLeft`,
+  `FreeCoprodCompDisc.NatTrans.hcomp` — whiskering and horizontal
+  composition.
+* `FreeCoprodCompDisc.idMap`, `FreeCoprodCompDisc.idMapMor` — the
+  identity object map and its morphism-map component.
 
 ## Main statements
 
@@ -35,6 +41,17 @@ predicates and composite maps support the horizontal structure.
   `FreeCoprodCompDisc.NatTrans.vcomp_id`,
   `FreeCoprodCompDisc.NatTrans.vcomp_assoc` — the vertical
   category laws.
+* `FreeCoprodCompDisc.NatTrans.hcomp_eq_vcomp_whisker`,
+  `FreeCoprodCompDisc.NatTrans.hcomp_id`,
+  `FreeCoprodCompDisc.NatTrans.hcomp_id_right`,
+  `FreeCoprodCompDisc.NatTrans.hcomp_id_left`,
+  `FreeCoprodCompDisc.NatTrans.hcomp_vcomp` — the coherence and
+  interchange laws of horizontal composition.
+* `FreeCoprodCompDisc.NatTrans.whiskerRight_idMap`,
+  `FreeCoprodCompDisc.NatTrans.whiskerLeft_idMap` — whiskering by
+  the identity object map is the identity operation (with the
+  functor-law witnesses `FreeCoprodCompDisc.idMapMor_preservesId`
+  and `FreeCoprodCompDisc.idMapMor_preservesComp`).
 
 ## Implementation notes
 
@@ -140,6 +157,145 @@ def mapMorComp {F : Map.{u, v, w} I O} {F' : Map.{u, w, x} O P}
     (mF : MapMor I O F) (mF' : MapMor O P F') :
     MapMor I P (mapComp F F') :=
   fun X Y h ↦ mF' (F X) (F Y) (mF X Y h)
+
+/-- Right whiskering: precomposition of a transformation with an
+object map (no functor-law hypotheses). -/
+def NatTrans.whiskerRight {F' G' : Map.{u, w, x} O P}
+    {mF' : MapMor O P F'} {mG' : MapMor O P G'} (F : Map.{u, v, w} I O)
+    (mF : MapMor I O F) (θ : NatTrans O P F' G' mF' mG') :
+    NatTrans I P (mapComp F F') (mapComp F G')
+      (mapMorComp mF mF') (mapMorComp mF mG') :=
+  ⟨fun X ↦ θ.1 (F X), fun X Y h ↦ θ.2 (F X) (F Y) (mF X Y h)⟩
+
+/-- Left whiskering: postcomposition of a transformation with an
+object map, whose naturality consumes the outer morphism map's
+composition-preservation law. -/
+def NatTrans.whiskerLeft {F G : Map.{u, v, w} I O} {mF : MapMor I O F}
+    {mG : MapMor I O G} (η : NatTrans I O F G mF mG)
+    (F' : Map.{u, w, x} O P) (mF' : MapMor O P F')
+    (hF' : PreservesComp F' mF') :
+    NatTrans I P (mapComp F F') (mapComp G F')
+      (mapMorComp mF mF') (mapMorComp mG mF') :=
+  ⟨fun X ↦ mF' (F X) (G X) (η.1 X),
+    fun X Y h ↦
+      (hF' (F X) (F Y) (G Y) (mF X Y h) (η.1 Y)).symm.trans
+        ((congrArg (mF' (F X) (G Y)) (η.2 X Y h)).trans
+          (hF' (F X) (G X) (G Y) (η.1 X) (mG X Y h)))⟩
+
+/-- Horizontal composition of natural transformations, in the
+`whiskerLeft`-then-`whiskerRight` orientation. -/
+def NatTrans.hcomp {F G : Map.{u, v, w} I O} {mF : MapMor I O F}
+    {mG : MapMor I O G} {F' G' : Map.{u, w, x} O P}
+    {mF' : MapMor O P F'} {mG' : MapMor O P G'}
+    (η : NatTrans I O F G mF mG) (θ : NatTrans O P F' G' mF' mG')
+    (hF' : PreservesComp F' mF') :
+    NatTrans I P (mapComp F F') (mapComp G G')
+      (mapMorComp mF mF') (mapMorComp mG mG') :=
+  NatTrans.vcomp (NatTrans.whiskerLeft η F' mF' hF')
+    (NatTrans.whiskerRight G mG θ)
+
+/-- The two orientations of the horizontal composite agree, by the
+second transformation's naturality. -/
+theorem NatTrans.hcomp_eq_vcomp_whisker {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G} {F' G' : Map.{u, w, x} O P}
+    {mF' : MapMor O P F'} {mG' : MapMor O P G'}
+    (η : NatTrans I O F G mF mG) (θ : NatTrans O P F' G' mF' mG')
+    (hF' : PreservesComp F' mF') (hG' : PreservesComp G' mG') :
+    NatTrans.hcomp η θ hF' =
+      NatTrans.vcomp (NatTrans.whiskerRight F mF θ)
+        (NatTrans.whiskerLeft η G' mG' hG') :=
+  Subtype.ext (funext (fun X ↦ θ.2 (F X) (G X) (η.1 X)))
+
+/-- The horizontal composite of identity transformations is the
+identity (consuming the outer morphism map's identity-preservation
+law). -/
+theorem NatTrans.hcomp_id {F : Map.{u, v, w} I O} {mF : MapMor I O F}
+    {F' : Map.{u, w, x} O P} {mF' : MapMor O P F'}
+    (hF'comp : PreservesComp F' mF') (hF'id : PreservesId F' mF') :
+    NatTrans.hcomp (NatTrans.id F mF) (NatTrans.id F' mF') hF'comp =
+      NatTrans.id (mapComp F F') (mapMorComp mF mF') :=
+  Subtype.ext (funext (fun X ↦
+    (congrArg (fun t ↦ Hom.comp P t (Hom.id P (F' (F X))))
+        (hF'id (F X))).trans
+      (Hom.comp_id P (Hom.id P (F' (F X))))))
+
+/-- Whiskering by an identity-transformation on the right is left
+whiskering. -/
+theorem NatTrans.hcomp_id_right {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G} {F' : Map.{u, w, x} O P}
+    {mF' : MapMor O P F'} (η : NatTrans I O F G mF mG)
+    (hF' : PreservesComp F' mF') :
+    NatTrans.hcomp η (NatTrans.id F' mF') hF' =
+      NatTrans.whiskerLeft η F' mF' hF' :=
+  Subtype.ext (funext (fun X ↦ Hom.comp_id P (mF' (F X) (G X) (η.1 X))))
+
+/-- Whiskering by an identity-transformation on the left is right
+whiskering. -/
+theorem NatTrans.hcomp_id_left {F : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {F' G' : Map.{u, w, x} O P}
+    {mF' : MapMor O P F'} {mG' : MapMor O P G'}
+    (θ : NatTrans O P F' G' mF' mG') (hF'comp : PreservesComp F' mF')
+    (hF'id : PreservesId F' mF') :
+    NatTrans.hcomp (NatTrans.id F mF) θ hF'comp =
+      NatTrans.whiskerRight F mF θ :=
+  Subtype.ext (funext (fun X ↦
+    (congrArg (fun t ↦ Hom.comp P t (θ.1 (F X))) (hF'id (F X))).trans
+      (Hom.id_comp P (θ.1 (F X)))))
+
+/-- The identity object map. -/
+def idMap : Map.{u, v, v} I I :=
+  fun X ↦ X
+
+/-- The morphism-map component of the identity object map. -/
+def idMapMor : MapMor I I (idMap : Map.{u, v, v} I I) :=
+  fun _ _ h ↦ h
+
+/-- The identity object map preserves identities. -/
+theorem idMapMor_preservesId :
+    PreservesId (idMap : Map.{u, v, v} I I) idMapMor :=
+  fun _ ↦ rfl
+
+/-- The identity object map preserves composition. -/
+theorem idMapMor_preservesComp :
+    PreservesComp (idMap : Map.{u, v, v} I I) idMapMor :=
+  fun _ _ _ _ _ ↦ rfl
+
+/-- Whiskering a transformation with the identity object map on the
+precomposition side is the identity operation. -/
+theorem NatTrans.whiskerRight_idMap {F' G' : Map.{u, v, w} I O}
+    {mF' : MapMor I O F'} {mG' : MapMor I O G'}
+    (θ : NatTrans I O F' G' mF' mG') :
+    NatTrans.whiskerRight (idMap : Map.{u, v, v} I I) idMapMor θ = θ :=
+  Subtype.ext rfl
+
+/-- Whiskering a transformation with the identity object map on the
+postcomposition side is the identity operation. -/
+theorem NatTrans.whiskerLeft_idMap {F G : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G}
+    (η : NatTrans I O F G mF mG) :
+    NatTrans.whiskerLeft η (idMap : Map.{u, w, w} O O) idMapMor
+      idMapMor_preservesComp = η :=
+  Subtype.ext rfl
+
+/-- The interchange law between horizontal and vertical composition. -/
+theorem NatTrans.hcomp_vcomp {F G H : Map.{u, v, w} I O}
+    {mF : MapMor I O F} {mG : MapMor I O G} {mH : MapMor I O H}
+    {F' G' H' : Map.{u, w, x} O P} {mF' : MapMor O P F'}
+    {mG' : MapMor O P G'} {mH' : MapMor O P H'}
+    (η : NatTrans I O F G mF mG) (η' : NatTrans I O G H mG mH)
+    (θ : NatTrans O P F' G' mF' mG') (θ' : NatTrans O P G' H' mG' mH')
+    (hF' : PreservesComp F' mF') (hG' : PreservesComp G' mG') :
+    NatTrans.hcomp (NatTrans.vcomp η η') (NatTrans.vcomp θ θ') hF' =
+      NatTrans.vcomp (NatTrans.hcomp η θ hF')
+        (NatTrans.hcomp η' θ' hG') :=
+  Subtype.ext (funext (fun X ↦
+    (congrArg (fun t ↦ Hom.comp P t
+        (Hom.comp P (θ.1 (H X)) (θ'.1 (H X))))
+      (hF' (F X) (G X) (H X) (η.1 X) (η'.1 X))).trans
+    (congrArg (fun t ↦
+        Hom.comp P (Hom.comp P (mF' (F X) (G X) (η.1 X)) t)
+          (θ'.1 (H X)))
+      (θ.2 (G X) (H X) (η'.1 X)))))
 
 end FreeCoprodCompDisc
 
