@@ -13,7 +13,9 @@
   - [6. Universal morphisms](#6-universal-morphisms)
   - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
-  - [Category of `IR` codes](#category-of-ir-codes)
+  - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
+  - [Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`](#relocate-generic-freecoprodcompdisc-facts-out-of-indrecir)
+  - [Cleanup items in `IndRec.IR`](#cleanup-items-in-indrecir)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -187,24 +189,45 @@ wrapper is kept thin, following `Slice/Functor.lean` and
    `CategoryTheory.Endofunctor.Algebra`), wrapping the constructive
    uniqueness proofs.
 
-### Category of `IR` codes
+### Theorems 2 and 4 for `IR` codes
 
 Independent of the roadmap sequence above; parallel to
-Complete Theorem 2.4 for `IndRec`. The functor laws of
-`IR.interpMor` (`IR.interpMor_id`, `IR.interpMor_comp`) that a
-natural-transformation notion of code morphism requires are
-available. Following Definition 8 and Corollary 2 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013], this entry completes
-the category of `IR` codes for a fixed input/output index pair:
-composition and the category laws (identity and associativity),
-building on the homset (`IR.Hom`) and the identity morphism
-(`IR.id`) in `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean`.
+Complete Theorem 2.4 for `IndRec`, and building on the category of
+`IR` codes in `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean`
+(see `docs/index.md`). Two results of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] remain: Theorem 2,
+the left-Kan-extension characterization of the `δ`-code
+interpretation, and Theorem 4, the equivalence with dependent
+polynomial functors.
 
-The natural-transformation notion and Theorem 3 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] (`IR.interpHomEquiv`),
-with the Lemma 3 and Lemma 4 naturality upgrades, are in
-`Geb/Mathlib/Data/PFunctor/IndRec/Naturality.lean`; see
-`docs/index.md`. The branch 2d transfer consumes `IR.natToHom`.
+### Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`
+
+Six facts under `namespace IR` in
+`Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` are generic
+`FreeCoprodCompDisc` facts with no dependence on `IR` codes:
+`IR.emptyHom_ext`, `IR.eq_comp_invHom`, `IR.comp_isoOfEq_hom`,
+`IR.isoOfEq_symm_hom_comp`, `IR.coprodPairInr_mor`, and
+`IR.deltaDesc_comp`. Relocate them to
+`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` and migrate
+call sites. Independent of the roadmap sequence above; touches a
+merged upstream-eligible module, so it belongs on its own branch
+rather than bundled with unrelated work.
+
+### Cleanup items in `IndRec.IR`
+
+Independent of the roadmap sequence above; each belongs on its own
+cleanup branch.
+
+- `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean` still uses `=>` for
+  `fun` binders at 91 sites where the repository standard is `↦`.
+- `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` carries an
+  unused `open CategoryTheory` (a pre-existing pattern also present
+  in `Functor.lean` and `Universes.lean`).
+- Rename `interpHomPreUnit_*` to `interpHom_preUnitStack_*` for
+  naming consistency with `IR.interpHom_preUnitStack`; touches many
+  call sites.
+- Restate `IR.comp_isoOfEq_hom` and `IR.isoOfEq_symm_hom_comp` at a
+  single universe instead of two; untested proposal.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 

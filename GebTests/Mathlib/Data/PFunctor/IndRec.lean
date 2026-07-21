@@ -9,6 +9,7 @@ import GebTests.Mathlib.Data.PFunctor.IndRec.Basic
 import GebTests.Mathlib.Data.PFunctor.IndRec.Hom
 import GebTests.Mathlib.Data.PFunctor.IndRec.Functor
 import GebTests.Mathlib.Data.PFunctor.IndRec.Naturality
+import GebTests.Mathlib.Data.PFunctor.IndRec.Category
 import GebTests.Mathlib.Data.PFunctor.IndRec.Universes
 import GebTests.Mathlib.Data.PFunctor.IndRec.Container
 

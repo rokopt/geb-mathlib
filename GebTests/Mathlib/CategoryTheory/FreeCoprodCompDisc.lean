@@ -31,7 +31,8 @@ morphisms, pinning composition order by type.
 The initial object, the indexed-coproduct universal property,
 `coprodPairMor`, the singleton fiber description, and the
 underlying morphisms of isomorphisms are exercised at the sample
-objects.
+objects. The coproduct-pair injections are exercised across two
+index universes.
 
 ## Tags
 
@@ -317,3 +318,19 @@ theorem sampleIsoNot_hom_invHom :
         (FreeCoprodCompDisc.Iso.invHom Bool sampleIsoNot) =
       FreeCoprodCompDisc.Hom.id Bool sampleC :=
   FreeCoprodCompDisc.Iso.hom_invHom Bool sampleIsoNot
+
+/-- The left injection into a coproduct pair whose summands sit at
+different index universes. -/
+theorem sampleCoprodPairInl_hetero_apply :
+    (FreeCoprodCompDisc.coprodPairInl.{0, 0, 1} Bool sampleX sampleXLift).1
+        true =
+      Sum.inl true :=
+  rfl
+
+/-- The right injection into a coproduct pair whose summands sit at
+different index universes. -/
+theorem sampleCoprodPairInr_hetero_apply :
+    (FreeCoprodCompDisc.coprodPairInr.{0, 0, 1} Bool sampleX sampleXLift).1
+        (ULift.up true) =
+      Sum.inr (ULift.up true) :=
+  rfl

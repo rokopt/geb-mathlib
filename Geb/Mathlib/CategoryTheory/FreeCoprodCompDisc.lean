@@ -347,15 +347,24 @@ def plus.{uJ, uK} (i : FreeCoprodCompDisc.{uJ, v} D)
     FreeCoprodCompDisc.{max uJ uK, v} D :=
   coprodPair.{v, uJ, uK} D i k
 
-/-- The left injection into a binary coproduct (at one index
-universe, where the coproduct is in-category). -/
-def coprodPairInl (X Y : FreeCoprodCompDisc.{u, v} D) :
-    Hom D X (coprodPair.{v, u, u} D X Y) :=
+/-- The left injection into a binary coproduct. The two summands
+may sit at different index universes, mirroring `coprodPair`; at
+`uX ≠ uY` the result is a heterogeneous `Hom` that cannot be fed to
+`Hom.comp`, which pins its source, target, and codomain to a single
+universe. -/
+def coprodPairInl.{uX, uY} (X : FreeCoprodCompDisc.{uX, v} D)
+    (Y : FreeCoprodCompDisc.{uY, v} D) :
+    Hom D X (coprodPair.{v, uX, uY} D X Y) :=
   ⟨Sum.inl, rfl⟩
 
-/-- The right injection into a binary coproduct. -/
-def coprodPairInr (X Y : FreeCoprodCompDisc.{u, v} D) :
-    Hom D Y (coprodPair.{v, u, u} D X Y) :=
+/-- The right injection into a binary coproduct. The two summands
+may sit at different index universes, mirroring `coprodPair`; at
+`uX ≠ uY` the result is a heterogeneous `Hom` that cannot be fed to
+`Hom.comp`, which pins its source, target, and codomain to a single
+universe. -/
+def coprodPairInr.{uX, uY} (X : FreeCoprodCompDisc.{uX, v} D)
+    (Y : FreeCoprodCompDisc.{uY, v} D) :
+    Hom D Y (coprodPair.{v, uX, uY} D X Y) :=
   ⟨Sum.inr, rfl⟩
 
 /-- The cotuple: the universal morphism out of a binary

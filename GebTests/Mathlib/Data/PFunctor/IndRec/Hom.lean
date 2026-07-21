@@ -17,7 +17,8 @@ definitionally; `IR.sigmaPush`, `IR.deltaEmptyPush`, `IR.mprecomp`,
 concrete instantiations. `IR.id` is checked at each code constructor
 (the `ι` check reduces because that homset is a subsingleton); a named
 definition built from `IR.id` gives the `GebMeta` axiom linter a
-declaration to inspect.
+declaration to inspect. The `IR.mk`-computation equations of the
+injection helpers and of the pre-unit are exercised at `PUnit` data.
 
 ## Tags
 
@@ -161,3 +162,41 @@ example (I : Type uI) (O : Type uO) (B : Type uB)
 linter to inspect. -/
 def idSample : IR.Hom PUnit PUnit (iota PUnit PUnit PUnit.unit) (iota PUnit PUnit PUnit.unit) :=
   IR.id PUnit PUnit (iota PUnit PUnit PUnit.unit)
+
+/-- The `ι`-shaped computation equation of `IR.sigmaPush` at
+`PUnit` data. -/
+theorem sampleSigmaPush_mk_iota
+    (d : Direction PUnit PUnit (Sum.inl PUnit.unit : Shape.{0, 0, 0} PUnit) →
+      IR.{0, 0, 0, 0} PUnit PUnit)
+    (K' : PUnit → IR.{0, 0, 0, 0} PUnit PUnit)
+    (f : IR.Hom PUnit PUnit (mk PUnit PUnit (Sum.inl PUnit.unit) d)
+      (K' PUnit.unit)) :
+    sigmaPush PUnit PUnit (mk PUnit PUnit (Sum.inl PUnit.unit) d) PUnit K'
+        PUnit.unit f =
+      ⟨PUnit.unit, f⟩ :=
+  sigmaPush_mk_iota PUnit PUnit PUnit.unit d PUnit K' PUnit.unit f
+
+/-- The `ι`-shaped computation equation of `IR.deltaEmptyPush` at
+`PEmpty` directions. -/
+theorem sampleDeltaEmptyPush_mk_iota
+    (d : Direction PUnit PUnit (Sum.inl PUnit.unit : Shape.{0, 0, 0} PUnit) →
+      IR.{0, 0, 0, 0} PUnit PUnit)
+    (M : (PEmpty.{1} → PUnit) → IR.{0, 0, 0, 0} PUnit PUnit)
+    (f : IR.Hom PUnit PUnit (mk PUnit PUnit (Sum.inl PUnit.unit) d)
+      (M (fun x => (_root_.id x).elim))) :
+    deltaEmptyPush PUnit PUnit (mk PUnit PUnit (Sum.inl PUnit.unit) d)
+        PEmpty.{1} _root_.id M f =
+      ⟨_root_.id, f⟩ :=
+  deltaEmptyPush_mk_iota PUnit PUnit PUnit.unit d PEmpty.{1} _root_.id M f
+
+/-- The `δ`-shaped computation equation of `IR.preUnitStack` names
+its summand datum. -/
+theorem samplePreUnitStack_mk_delta
+    (d : Direction PUnit PUnit
+        (Sum.inr (Sum.inr PUnit) : Shape.{0, 0, 0} PUnit) →
+      IR.{0, 0, 0, 0} PUnit PUnit)
+    (L : List (SupObj.{0, 0} PUnit)) (i : PUnit → PUnit) :
+    preUnitStack PUnit PUnit (mk PUnit PUnit (Sum.inr (Sum.inr PUnit)) d) L
+        i =
+      preUnitDeltaData PUnit PUnit PUnit d L i :=
+  preUnitStack_mk_delta PUnit PUnit PUnit d L i
