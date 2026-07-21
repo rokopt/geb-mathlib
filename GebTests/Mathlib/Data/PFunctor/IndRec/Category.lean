@@ -16,8 +16,11 @@ injection at the empty and singleton stacks and at a right-appended
 superscript, the tower action on morphisms, the iterated Lemma 4
 isomorphism at the empty stack, at a right-appended superscript,
 and in the interpreted object, and the semantic pre-unit component
-at the empty stack. Named theorems give the `GebMeta` axiom linter
-declarations to inspect.
+at the empty stack. The reductions of the two equivalences at an
+`IR.mk`-built domain, the component of `IR.interpHom` at each shape
+of domain code, the `σ`-injection square, and right-composition of
+the `δ`-cotuple are exercised at the sample object. Named theorems
+give the `GebMeta` axiom linter declarations to inspect.
 
 ## Tags
 
@@ -172,3 +175,94 @@ theorem sampleMprecompIso_natural
             h)) :=
   mprecompIso_natural Bool Bool [sampleCategorySup] sampleCategoryCode
     sampleCategoryObj sampleCategoryObj h
+
+/-- The component of `IR.interpHom` at the sample `ι`-domain. -/
+theorem sampleInterpHomIota_component
+    (f : InnerHom.{0, 0, 0, 0} Bool Bool true sampleCategoryCode) :
+    (interpHom Bool Bool (iota Bool Bool true) sampleCategoryCode f).1
+        sampleCategoryObj =
+      FreeCoprodCompDisc.Hom.comp Bool
+        ((FreeCoprodCompDisc.homSingletonEquiv Bool true
+            (interpObj Bool Bool sampleCategoryCode
+              (FreeCoprodCompDisc.emptyObj Bool))).symm
+          (innerHomEquiv Bool Bool true sampleCategoryCode f))
+        (interpMor Bool Bool sampleCategoryCode
+          (FreeCoprodCompDisc.emptyObj Bool) sampleCategoryObj
+          (FreeCoprodCompDisc.emptyDesc Bool sampleCategoryObj)) :=
+  interpHom_iota Bool Bool true sampleCategoryCode f sampleCategoryObj
+
+/-- The `σ`-injection square at the sample object. -/
+theorem sampleInterpMorSigmaInj (A' : Type)
+    (K' : A' → IR.{0, 0, 0, 0} Bool Bool) (a' : A')
+    (h : FreeCoprodCompDisc.Hom Bool sampleCategoryObj sampleCategoryObj) :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (FreeCoprodCompDisc.coprodInj Bool A'
+          (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a')
+        (interpMor Bool Bool (sigma Bool Bool A' K') sampleCategoryObj
+          sampleCategoryObj h) =
+      FreeCoprodCompDisc.Hom.comp Bool
+        (interpMor Bool Bool (K' a') sampleCategoryObj sampleCategoryObj h)
+        (FreeCoprodCompDisc.coprodInj Bool A'
+          (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
+  interpMor_sigma_inj Bool Bool A' K' a' sampleCategoryObj sampleCategoryObj h
+
+/-- The reduction of the Theorem 3 equivalence at an `ι`-shaped
+`IR.mk` domain. -/
+theorem sampleInterpHomEquiv_mk
+    (d : Direction Bool Bool (Sum.inl true : Shape.{0, 0, 0} Bool) →
+      IR.{0, 0, 0, 0} Bool Bool) :
+    interpHomEquiv Bool Bool (mk Bool Bool (Sum.inl true) d) sampleCategoryCode =
+      interpHomEquivStep Bool Bool (Sum.inl true) d
+        (fun x => interpHomEquiv Bool Bool (d x)) sampleCategoryCode :=
+  interpHomEquiv_mk Bool Bool (Sum.inl true) d sampleCategoryCode
+
+/-- The reduction of the inner-hom equivalence at an `ι`-shaped
+`IR.mk` domain. -/
+theorem sampleInnerHomEquiv_mk
+    (d : Direction Bool Bool (Sum.inl true : Shape.{0, 0, 0} Bool) →
+      IR.{0, 0, 0, 0} Bool Bool) :
+    innerHomEquiv Bool Bool true (mk Bool Bool (Sum.inl true) d) =
+      innerHomEquivStep Bool Bool true (Sum.inl true) d
+        (fun x => innerHomEquiv Bool Bool true (d x)) :=
+  innerHomEquiv_mk Bool Bool true (Sum.inl true) d
+
+/-- The component of `IR.interpHom` at a `σ`-domain, at the sample
+codomain and object. -/
+theorem sampleInterpHom_sigma (A : Type) (K : A → IR.{0, 0, 0, 0} Bool Bool)
+    (f : Hom.{0, 0, 0, 0} Bool Bool (sigma Bool Bool A K) sampleCategoryCode) :
+    (interpHom Bool Bool (sigma Bool Bool A K) sampleCategoryCode f).1
+        sampleCategoryObj =
+      FreeCoprodCompDisc.coprodDesc Bool A
+        (fun a => interpObj Bool Bool (K a) sampleCategoryObj)
+        (interpObj Bool Bool sampleCategoryCode sampleCategoryObj)
+        (fun a => (interpHom Bool Bool (K a) sampleCategoryCode (f a)).1
+          sampleCategoryObj) :=
+  interpHom_sigma Bool Bool A K sampleCategoryCode f sampleCategoryObj
+
+/-- The component of `IR.interpHom` at a `δ`-domain, at the sample
+codomain and object. -/
+theorem sampleInterpHom_delta (B : Type)
+    (c : (B → Bool) → IR.{0, 0, 0, 0} Bool Bool)
+    (f : Hom.{0, 0, 0, 0} Bool Bool (delta Bool Bool B c) sampleCategoryCode) :
+    (interpHom Bool Bool (delta Bool Bool B c) sampleCategoryCode f).1
+        sampleCategoryObj =
+      deltaDesc Bool Bool B c sampleCategoryObj
+        (interpObj Bool Bool sampleCategoryCode sampleCategoryObj)
+        (fun i => (interpHomDeltaSummand Bool Bool B c sampleCategoryCode i (f i)).1
+          sampleCategoryObj) :=
+  interpHom_delta Bool Bool B c sampleCategoryCode f sampleCategoryObj
+
+/-- Right-composition of the `δ`-cotuple at the sample object. -/
+theorem sampleDeltaDesc_comp (B : Type)
+    (c : (B → Bool) → IR.{0, 0, 0, 0} Bool Bool)
+    (Z W : FreeCoprodCompDisc.{0, 0} Bool)
+    (m : (i : B → Bool) → FreeCoprodCompDisc.Hom Bool
+      (FreeCoprodCompDisc.copowerHomMap
+        (FreeCoprodCompDisc.lift Bool ⟨B, i⟩) (interpObj Bool Bool (c i))
+        sampleCategoryObj) Z)
+    (g : FreeCoprodCompDisc.Hom Bool Z W) :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (deltaDesc Bool Bool B c sampleCategoryObj Z m) g =
+      deltaDesc Bool Bool B c sampleCategoryObj W
+        (fun i => FreeCoprodCompDisc.Hom.comp Bool (m i) g) :=
+  deltaDesc_comp Bool Bool B c sampleCategoryObj Z W m g

@@ -33,6 +33,8 @@ its iterated Lemma 4 isomorphism.
 * `IR.preUnitComponent` — the semantic pre-unit component: the
   interpretation image of `IR.mplusInj`, composed with the inverse
   of `IR.mprecompIso`.
+* `IR.interpHomDeltaSummand` — the per-summand transport of the
+  `δ`-domain case of `IR.interpHomEquiv`.
 
 ## Main statements
 
@@ -44,6 +46,14 @@ its iterated Lemma 4 isomorphism.
   the interpreted object.
 * `IR.preUnitComponent_nil` — the semantic pre-unit component at the
   empty stack is the identity.
+* `IR.interpHomEquiv_mk`, `IR.innerHomEquiv_mk` — the reductions of
+  the Theorem 3 equivalence and of the inner-hom equivalence at an
+  `IR.mk`-built domain code.
+* `IR.interpHom_iota`, `IR.interpHom_sigma`, `IR.interpHom_delta` —
+  the component of `IR.interpHom` at each shape of domain code.
+* `IR.deltaDesc_comp`, `IR.interpMor_sigma_inj` — right-composition
+  of the `δ`-cotuple, and the commutation of a semantic
+  `σ`-injection with the morphism map of a `σ`-interpretation.
 
 ## Implementation notes
 
@@ -638,6 +648,155 @@ theorem mprecompIso_natural (L : List (SupObj.{uB, uI} I))
                     (FreeCoprodCompDisc.Hom.id I a)
                     (mplusMorMap.{uA, uB, uI} I _L X Y h)))).symm))))
     γ
+
+/-- Components pass through `NatTrans.congrSource` unchanged. -/
+theorem congrSource_symm_fst {F G : FreeCoprodCompDisc.Map.{uA, uI, uO} I O}
+    {mF mF' : FreeCoprodCompDisc.MapMor I O F} (e : mF = mF')
+    (mG : FreeCoprodCompDisc.MapMor I O G)
+    (η : FreeCoprodCompDisc.NatTrans I O F G mF' mG) :
+    ((FreeCoprodCompDisc.NatTrans.congrSource e mG).symm η).1 = η.1 :=
+  Eq.rec (motive := fun mF'' e' =>
+      ∀ η' : FreeCoprodCompDisc.NatTrans I O F G mF'' mG,
+        ((FreeCoprodCompDisc.NatTrans.congrSource e' mG).symm η').1 = η'.1)
+    (fun _ => rfl) e η
+
+/-- The characterizing equation of `IR.interpHomEquiv` at `IR.mk`. -/
+theorem interpHomEquiv_mk (s : Shape.{max uA uB, uB, uO} O)
+    (d : Direction I O s → IR.{max uA uB, uB, uI, uO} I O)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    interpHomEquiv I O (mk I O s d) γ' =
+      interpHomEquivStep I O s d (fun x => interpHomEquiv I O (d x)) γ' :=
+  congrFun (rec_mk I O (interpHomEquivStep I O) s d) γ'
+
+/-- The component of `IR.interpHom` at an `ι`-domain: the singleton
+morphism carried by the inner hom, composed with the codomain's image
+of the unique morphism out of the initial object. -/
+theorem interpHom_iota (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : InnerHom.{uA, uB, uI, uO} I O o γ')
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpHom I O (iota.{max uA uB, uB, uI, uO} I O o) γ' f).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((FreeCoprodCompDisc.homSingletonEquiv O o
+            (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I))).symm
+          (innerHomEquiv I O o γ' f))
+        (interpMor I O γ' (FreeCoprodCompDisc.emptyObj I) X
+          (FreeCoprodCompDisc.emptyDesc I X)) :=
+  congrArg (fun e => (e f).1 X)
+    (interpHomEquiv_mk I O (Sum.inl o) PEmpty.elim γ')
+
+/-- The component of `IR.interpHom` at a `σ`-domain: the cotuple of the
+subcode components. -/
+theorem interpHom_sigma (A : Type (max uA uB))
+    (K : A → IR.{max uA uB, uB, uI, uO} I O)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O (sigma I O A K) γ')
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpHom I O (sigma I O A K) γ' f).1 X =
+      FreeCoprodCompDisc.coprodDesc O A (fun a => interpObj I O (K a) X)
+        (interpObj I O γ' X)
+        (fun a => (interpHom I O (K a) γ' (f a)).1 X) :=
+  (congrArg (fun e => (e f).1 X)
+      (interpHomEquiv_mk I O (Sum.inr (Sum.inl A)) (K ∘ ULift.down) γ')).trans
+    (congrFun
+      (congrSource_symm_fst.{max uA uB, uI, uO} I O
+        (interpMor_sigma.{max uA uB, uB, uI, uO} I O A K) _
+        (FreeCoprodCompDisc.natCoprodEquiv.{max uA uB, uI, uO} A
+            (fun a => interpObj I O (K a))
+            (fun a => interpMor I O (K a)) (interpObj I O γ')
+            (interpMor I O γ')
+          |>.symm (fun a => interpHomEquiv I O (K a) γ' (f a))))
+      X)
+
+/-- The per-summand transport of the `δ`-domain case of
+`IR.interpHomEquiv`: the interpretation of a clause 3 component,
+transported to a transformation out of the copower summand by the
+Lemma 4 pair, the bridge pair, and the copower adjunction. -/
+def interpHomDeltaSummand (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O) (i : B → I)
+    (g : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i γ')) :
+    FreeCoprodCompDisc.NatTrans I O
+      (FreeCoprodCompDisc.copowerHomMap
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+        (interpObj I O (c i)))
+      (interpObj I O γ')
+      (FreeCoprodCompDisc.copowerHomMapMor
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+        (interpMor I O (c i)))
+      (interpMor I O γ') :=
+  (FreeCoprodCompDisc.natCopowerPlusEquiv
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+      (interpMor I O (c i)) (interpMor I O γ')
+      (interpMor_id I O (c i)) (interpMor_comp I O (c i))
+      (interpMor_id I O γ') (interpMor_comp I O γ')).symm
+    (FreeCoprodCompDisc.NatTrans.vcomp
+      (FreeCoprodCompDisc.NatTrans.vcomp
+        (interpHom I O (c i) (precomp I O B i γ') g)
+        (FreeCoprodCompDisc.NatTrans.ofIsoFamily
+          (fun k => interpPrecompIso I O γ' B i k)
+          (interpPrecompIso_natural I O γ' B i)))
+      (plusLiftBridgeNatInv I O B i γ'))
+
+/-- The component of `IR.interpHom` at a `δ`-domain: the cotuple of the
+transported subcode components. -/
+theorem interpHom_delta (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O (delta I O B c) γ')
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpHom I O (delta I O B c) γ' f).1 X =
+      deltaDesc I O B c X (interpObj I O γ' X)
+        (fun i => (interpHomDeltaSummand I O B c γ' i (f i)).1 X) :=
+  congrArg (fun e => (e f).1 X)
+    (interpHomEquiv_mk I O (Sum.inr (Sum.inr B)) (c ∘ ULift.down) γ')
+
+/-- `IR.deltaDesc` composes on the right componentwise. -/
+theorem deltaDesc_comp (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (Z W : FreeCoprodCompDisc.{max uA uB, uO} O)
+    (m : (i : B → I) → FreeCoprodCompDisc.Hom O
+      (FreeCoprodCompDisc.copowerHomMap
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+        (interpObj I O (c i)) X) Z)
+    (g : FreeCoprodCompDisc.Hom O Z W) :
+    FreeCoprodCompDisc.Hom.comp O (deltaDesc I O B c X Z m) g =
+      deltaDesc I O B c X W (fun i => FreeCoprodCompDisc.Hom.comp O (m i) g) :=
+  deltaHom_ext I O B c X W _ _ (fun i =>
+    ((FreeCoprodCompDisc.Hom.comp_assoc O (deltaInto I O B c i X)
+        (deltaDesc I O B c X Z m) g).symm.trans
+      (congrArg (fun t => FreeCoprodCompDisc.Hom.comp O t g)
+        (deltaInto_desc I O B c i X Z m))).trans
+    (deltaInto_desc I O B c i X W
+      (fun i' => FreeCoprodCompDisc.Hom.comp O (m i') g)).symm)
+
+/-- The `σ`-injection square: a semantic `σ`-injection commutes the
+morphism map of a `σ`-interpretation with the summand's. -/
+theorem interpMor_sigma_inj (A' : Type (max uA uB))
+    (K' : A' → IR.{max uA uB, uB, uI, uO} I O) (a' : A')
+    (Z W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I Z W) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O A' (fun a => interpObj I O (K' a) Z) a')
+        (interpMor I O (sigma I O A' K') Z W h) =
+      FreeCoprodCompDisc.Hom.comp O (interpMor I O (K' a') Z W h)
+        (FreeCoprodCompDisc.coprodInj O A' (fun a => interpObj I O (K' a) W) a') :=
+  (congrArg
+      (fun (t : MorMapSig I O (sigma I O A' K')) =>
+        FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.coprodInj O A' (fun a => interpObj I O (K' a) Z) a')
+          (t Z W h))
+      (interpMor_sigma.{max uA uB, uB, uI, uO} I O A' K')).trans
+    (FreeCoprodCompDisc.coprodInj_mor O A' A' _root_.id
+        (fun a => interpObj I O (K' a) Z) (fun a => interpObj I O (K' a) W)
+        (fun a => interpMor I O (K' a) Z W h) a').symm
+
+/-- The characterizing equation of `IR.innerHomEquiv` at `IR.mk`. -/
+theorem innerHomEquiv_mk (o : O) (s : Shape.{max uA uB, uB, uO} O)
+    (d : Direction I O s → IR.{max uA uB, uB, uI, uO} I O) :
+    innerHomEquiv I O o (mk I O s d) =
+      innerHomEquivStep I O o s d (fun x => innerHomEquiv I O o (d x)) :=
+  rec_mk I O (innerHomEquivStep I O o) s d
 
 end IR
 
