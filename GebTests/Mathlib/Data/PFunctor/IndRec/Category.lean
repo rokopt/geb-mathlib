@@ -324,17 +324,6 @@ theorem sampleDeltaEmptyPushChar_apply
   interpHom_deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1}
     _root_.id M f sampleCategoryObj
 
-/-- Cancellation through an isomorphism at the sample universes. -/
-theorem sampleEqCompInvHom (V Y Z : FreeCoprodCompDisc.{0, 0} Bool)
-    (f : FreeCoprodCompDisc.Hom Bool V Y)
-    (g : FreeCoprodCompDisc.Hom Bool V Z)
-    (e : FreeCoprodCompDisc.Iso Bool Y Z)
-    (h : FreeCoprodCompDisc.Hom.comp Bool f
-      (FreeCoprodCompDisc.Iso.hom Bool e) = g) :
-    f = FreeCoprodCompDisc.Hom.comp Bool g
-      (FreeCoprodCompDisc.Iso.invHom Bool e) :=
-  eq_comp_invHom Bool V Y Z f g e h
-
 /-- The tower navigation weight at the empty stack is the graph of
 the factorization into the appended superscript. -/
 theorem sampleNavWeight_nil_apply :

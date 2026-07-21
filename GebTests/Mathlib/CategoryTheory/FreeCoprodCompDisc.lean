@@ -32,7 +32,8 @@ The initial object, the indexed-coproduct universal property,
 `coprodPairMor`, the singleton fiber description, and the
 underlying morphisms of isomorphisms are exercised at the sample
 objects. The coproduct-pair injections are exercised across two
-index universes.
+index universes, and cancellation through an isomorphism
+(`eq_comp_invHom`) at the sample objects.
 
 ## Tags
 
@@ -334,3 +335,14 @@ theorem sampleCoprodPairInr_hetero_apply :
         (ULift.up true) =
       Sum.inr (ULift.up true) :=
   rfl
+
+/-- Cancellation through an isomorphism at the sample universes. -/
+theorem sampleEqCompInvHom (V Y Z : FreeCoprodCompDisc.{0, 0} Bool)
+    (f : FreeCoprodCompDisc.Hom Bool V Y)
+    (g : FreeCoprodCompDisc.Hom Bool V Z)
+    (e : FreeCoprodCompDisc.Iso Bool Y Z)
+    (h : FreeCoprodCompDisc.Hom.comp Bool f
+      (FreeCoprodCompDisc.Iso.hom Bool e) = g) :
+    f = FreeCoprodCompDisc.Hom.comp Bool g
+      (FreeCoprodCompDisc.Iso.invHom Bool e) :=
+  FreeCoprodCompDisc.eq_comp_invHom Bool V Y Z f g e h
