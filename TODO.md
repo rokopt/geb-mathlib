@@ -187,14 +187,6 @@ wrapper is kept thin, following `Slice/Functor.lean` and
    `CategoryTheory.Endofunctor.Algebra`), wrapping the constructive
    uniqueness proofs.
 
-Tests: the propositional computation rule (`IR.rec_mk`) exists;
-add a morphism-action test with a propositionally nontrivial
-commutation proof (distinct decodings on domain and codomain),
-exercising the `FreeCoprodCompDisc.homOfEq` transport in
-`IR.interpMorDelta` observably; the current tests exercise the
-morphism action only at the algebra level and only along
-definitionally trivial transports.
-
 ### Category of `IR` codes
 
 Independent of the roadmap sequence above; parallel to
@@ -202,16 +194,17 @@ Complete Theorem 2.4 for `IndRec`. The functor laws of
 `IR.interpMor` (`IR.interpMor_id`, `IR.interpMor_comp`) that a
 natural-transformation notion of code morphism requires are
 available. Following Definition 8 and Corollary 2 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013], establish the category
-of `IR` codes for a fixed input/output index pair: the homset between
-two codes, the identity morphism, composition, and the category laws
-(identity and associativity).
+[HancockMcBrideGhaniMalatestaAltenkirch2013], this entry completes
+the category of `IR` codes for a fixed input/output index pair:
+composition and the category laws (identity and associativity),
+building on the homset (`IR.Hom`) and the identity morphism
+(`IR.id`) in `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean`.
 
-Establishing the natural-transformation notion (Theorem 3 of
-[GhaniNordvallForsbergMalatesta2015]) additionally requires
-upgrading the pointwise isomorphisms of Lemma 3 (`IR.interpDeltaIso`)
-and Lemma 4 (`IR.interpPrecompIso`) to natural isomorphisms; this
-deliverable is not yet scheduled and must be budgeted for.
+The natural-transformation notion and Theorem 3 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] (`IR.interpHomEquiv`),
+with the Lemma 3 and Lemma 4 naturality upgrades, are in
+`Geb/Mathlib/Data/PFunctor/IndRec/Naturality.lean`; see
+`docs/index.md`. The branch 2d transfer consumes `IR.natToHom`.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
