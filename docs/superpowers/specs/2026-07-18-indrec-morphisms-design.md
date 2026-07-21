@@ -19,6 +19,13 @@
     - [Naturality upgrades of Lemmas 3 and 4](#naturality-upgrades-of-lemmas-3-and-4)
     - [The Theorem 3 induction](#the-theorem-3-induction)
   - [Composition and the category laws (branch 2d)](#composition-and-the-category-laws-branch-2d)
+    - [The identity-image equation (branch 2d closure gate)](#the-identity-image-equation-branch-2d-closure-gate)
+    - [The iterated-precomposition tower, semantically](#the-iterated-precomposition-tower-semantically)
+    - [Characterizing equations of `IR.interpHom`](#characterizing-equations-of-irinterphom)
+    - [Characterization of the injection helpers](#characterization-of-the-injection-helpers)
+    - [The identity-image induction](#the-identity-image-induction)
+    - [Composition and the laws by transfer](#composition-and-the-laws-by-transfer)
+    - [Placement (branch 2d)](#placement-branch-2d)
   - [Semantic statements (branch 1, complete)](#semantic-statements-branch-1-complete)
   - [Placement and documentation](#placement-and-documentation)
 - [Branch decomposition](#branch-decomposition)
@@ -557,6 +564,257 @@ iterated precomposition) are subsumed: they are precomposition's
 functoriality and associativity, which hold semantically through
 Lemma 4 and need no separate syntactic construction. Depends on
 branches 2a and 2c.
+
+Associativity and the composition operation consume only the
+equivalence's round-trip laws and `NatTrans.vcomp_assoc`; the identity
+laws additionally require the identity-image equation below, which is
+branch 2d's closure gate: its induction is derived here before
+planning, returning to design if it fails to close.
+
+#### The identity-image equation (branch 2d closure gate)
+
+Statement: `interpHom γ γ (IR.id γ) = NatTrans.id ⟦γ⟧`. Deliberately
+not part of branch 2c (it consumes branch 2a's `preUnitStack`
+construction, on which 2c does not depend).
+
+`NatTrans` is a subtype (a component family with a `Prop`-valued
+naturality condition), so the equation reduces by `Subtype.ext` and
+`funext` to component equations in `FreeCoprodCompDisc.Hom`, and the
+whole derivation is phrased at the component level: no intermediate
+transformation is constructed as a `NatTrans`, so no intermediate
+naturality proof arises — each equation relates plain
+`FreeCoprodCompDisc.Hom` composites, and component equations between
+plain homs carry no naturality obligation (the left sides happen to
+be components of `IR.interpHom` images; the right sides are explicit
+composites). For the
+same reason `NatTrans.congrSource` drops out of every component
+calculation: it transports the naturality proof and fixes the
+component family.
+
+The induction generalizes the identity to the pre-unit: with
+`γ ^^ L` for `IR.mprecomp L γ`, the generalized statement is a
+component equation for `interpHom γ (γ ^^ L) (preUnitStack γ L)`
+against an explicit semantic pre-unit component, by `IR.induction`
+on `γ` with `L` generalized — mirroring `preUnitStack`'s own
+recursion, as the Theorem 3 induction mirrors `IR.Hom`'s.
+
+#### The iterated-precomposition tower, semantically
+
+Three `List.rec` constructions over the stack (no code recursion),
+with snoc lemmas in the manner of `mprecomp_snoc`:
+
+- `mplus L X`: the iterated coproduct object,
+  `mplus [] X = X` and `mplus (b :: L) X = plus b (mplus L X)`;
+  `mplus (L ++ [b]) X = mplus L (plus b X)`.
+- `mplusInj L X : Hom X (mplus L X)`: the iterated right injection,
+  `Hom.id` at `[]`, and at `b :: L` the right coproduct-pair
+  injection after `mplusInj L X`. `coprodPairInl`/`coprodPairInr`
+  are pinned to one index universe while the summands here sit at
+  `uB` and `max uA uB`; a universe generalization
+  `coprodPairInl.{uX, uY}`/`coprodPairInr.{uX, uY}` (in the manner
+  of `coprodPairMor.{uX, uY, uX', uY'}`; the underlying
+  `⟨Sum.inl, rfl⟩`/`⟨Sum.inr, rfl⟩` terms elaborate
+  heterogeneously) is a required `FreeCoprodCompDisc` addition.
+- `mprecompIso γ L X : Iso (⟦γ ^^ L⟧ X) (⟦γ⟧ (mplus L X))`: the
+  iterated Lemma 4 isomorphism, `Iso.refl` at `[]` and
+  `Iso.trans` of `mprecompIso (precomp b γ) L X` with
+  `interpPrecompIso γ b.1 b.2 (mplus L X)` at `b :: L` (the motive
+  quantifies over `γ`).
+
+The semantic pre-unit component is
+`preUnitComponent γ L X := (interpMor γ X (mplus L X)
+(mplusInj L X)).comp ((mprecompIso γ L X).invHom)`. At `L = []` it
+is `Hom.id` by `interpMor_id` and the identity laws, which reduces
+the closure-gate statement to the generalized one.
+
+#### Characterizing equations of `IR.interpHom`
+
+The domain-constructor unfoldings of `IR.interpHomEquiv`, from
+`IR.rec_mk` as for the `interpMor` family — client-facing API as
+well as the induction's rewriting lemmas, each stated as the
+component formula the step realizes:
+
+- `interpHom_iota`: at an `ι`-domain, the component at `X` is the
+  `∅`-evaluation composed with the codomain's image of
+  `emptyDesc X` (the `natIotaInvFun` formula).
+- `interpHom_sigma`: at a `σ`-domain, the component at `X` is the
+  cotuple `coprodDesc` of the subcode components.
+- `interpHom_delta`: at a `δ`-domain, the component at `X` is the
+  cotuple `deltaDesc` of the transported subcode components, the
+  transport being the composite the Theorem 3 `δ`-case fixes
+  (`natCopowerPlusEquiv` backward, the bridge pair, the Lemma 4
+  pair — each `equivOfInverseTarget` acts on components as
+  composition with a fixed component family, and the
+  `natCopowerPlusEquiv` directions carry explicit component
+  formulas).
+
+#### Characterization of the injection helpers
+
+For each branch 2a helper, a component equation of the form
+"`interpHom` of the helper's output is `interpHom` of its input
+composed with an explicit inclusion", proved by the recursion the
+helper itself uses:
+
+- `sigmaPush` (by `IR.induction` on the domain, target
+  generalized): the inclusion is `coprodInj a'` into
+  `⟦σ A' K'⟧ X` (definitionally a coproduct). The `ι`-domain case
+  computes `innerHomEquiv` at clause 1B (`rec_mk`) against the
+  summand-choice decomposition; the `σ`-domain case is
+  `coprodDesc_comp`; the `δ`-domain case pushes the inclusion
+  through the Theorem 3 target transports via the Lemma 4
+  `σ`-square below.
+- The Lemma 4 `σ`-square: `interpPrecompIso` at a `σ`-code
+  (`interpPrecompIso_mk`, `precompIsoSigma`) is a `coprodIso`, so
+  its forward hom commutes `coprodInj` at a lifted summand with
+  `coprodInj` at the summand — a componentwise calculation, not an
+  induction.
+- `deltaEmptyPush` (same pattern): the inclusion is the copower
+  injection at the unique weight out of an empty-name object,
+  composed with `deltaInto` at the vacuous assignment. The
+  `ι`-domain case computes `innerHomEquiv` at clause 1C; the
+  `δ`-domain case uses the Lemma 4 `δ`-square below. A small
+  `FreeCoprodCompDisc` addition is expected: hom-extensionality at
+  an empty-name domain (the `emptyDesc_unique` argument at an
+  arbitrary empty name type), for the weight uniqueness.
+- The Lemma 4 `δ`-square: the all-resolved-classifier summand
+  inclusion composed with `interpPrecompIso (delta B c)` equals
+  `deltaInto` at the merged assignment composed with the
+  interpretation image of the coproduct-pair inclusion.
+  `precompIsoDelta` is `precompIsoDeltaStrip` (a `coprodIso` over
+  classifiers of `coprodIso`s over unresolved assignments) followed
+  by `precompIsoDeltaReshuffle` (name-level regrouping whose
+  decoding proof is `rfl`), so the square is a name-level
+  calculation through `precompMerge_elim`, with the transport
+  eliminations in the established `Eq.rec` style.
+- `msigmaPush` (by `List.rec`, base `sigmaPush`): the inclusion is
+  `coprodInj` at the `mplus`-position, conjugated by `mprecompIso`;
+  the cons step is the Lemma 4 `σ`-square.
+- `deltaNavBase`: a composite of the `sigmaPush` and
+  `deltaEmptyPush` characterizations at the classifier
+  `Sum.inl ∘ g`; no new recursion.
+- `deltaNav` (by `List.rec` at the general factorization parameter
+  `g`, matching its own recursion): the inclusion is the copower
+  injection at the weight "`g` followed by the left coproduct-pair
+  injection, followed by `mplusInj L` at the coproduct object"
+  (the semantic content of the classifier `Sum.inl ∘ g`: every
+  direction resolves into the outer superscript through `g`),
+  composed with `deltaInto` at `iout ∘ g`, at the
+  `mplus`-position, conjugated by `mprecompIso`; the cons step is
+  the `msigmaPush` characterization at the all-unresolved
+  classifier.
+
+Transports along code equalities (`mprecomp_snoc`,
+`mprecomp_iota_mk`) are handled by `interpHom_cast` lemmas in the
+manner of branch 2c's `interpMor_cast` (generic `Eq.rec`
+eliminations). Three further transports the characterizations must
+eliminate, in the same style: the internal
+`cast (congrArg … (funext …))` along a direction-assignment
+equality inside `deltaEmptyPush` and `deltaNavBase`; and, in the
+`ι`-domain cases, `interpHomEquivStep`'s own `Eq.rec` along
+`mk_congr` (a general `mk (Sum.inl o) c` is not definitionally
+`iota o`). The homset codomain transport `IR.Hom.homOfEq`
+deferred by branch 2a's plan is not needed on this route and
+remains unbuilt.
+
+#### The identity-image induction
+
+By `IR.induction` on `γ` (the statement is `Prop`-valued), motive
+`∀ L X, ((interpHom γ (γ ^^ L) (preUnitStack γ L)).1 X =
+preUnitComponent γ L X)`, with `preUnitStack` unfolded one step by
+`rec_mk` and `interpHom` by its characterizing equations. Each case
+rewrites every cotuple component into the form "inclusion composed
+with a common factor" via the helper characterizations, and
+collapses by the corresponding cotuple eta law:
+
+- `ι`-case: both interpretations are constant (`interpMor_iota`);
+  after transport along `mprecomp_iota_mk`, `interpHom_iota` sends
+  the reflexivity witness to `Hom.id`-composites, and
+  `preUnitComponent` reduces to `Hom.id` since `interpPrecompIso`
+  at an `ι`-code is `Iso.refl` (`precompIsoIota`); transport
+  bookkeeping only.
+- `σ`-case: `interpHom_sigma` exposes `coprodDesc` of the
+  `msigmaPush` characterizations; the `mprecompIso` halves cancel
+  by `Iso.invHom_hom`; the `coprodInj_mor` square and
+  `interpMor_sigma` commute the injection with the morphism map;
+  `coprodDesc_eta` collapses the cotuple to
+  `preUnitComponent (σ A K) L X`.
+- `δ`-case: `interpHom_delta` exposes `deltaDesc`; per summand
+  `i`, `interpHom_cast` eliminates the `mprecomp_snoc` cast, and
+  the `deltaNav` characterization (at `g = id`) with the inductive
+  hypothesis at `L ++ [⟨B, i⟩]` rewrites the component. The
+  per-summand identity — "transported component equals
+  `deltaInto i X` composed with `preUnitComponent (delta B c) L X`"
+  — reduces by `coprodDesc_eta` to a per-weight identity, which is
+  proved by post-composing with `mprecompIso`'s forward hom
+  (`eq_comp_invHom`). That post-composition collapses
+  `preUnitComponent`'s right-hand side to a bare `interpMor` of
+  `mplusInj`, so the `mprecomp_snoc` transport and the Lemma 4
+  layer merge into the single tower isomorphism at
+  `L ++ [⟨B, i⟩]`, which cancels against the inverse halves inside
+  `preUnitComponent` and the navigation inclusion. The residue is
+  `deltaInto`/`coprodInj` naturality together with two morphism
+  identities on the tower (the iterated injection and the
+  navigation weight, both against the bridge morphism carrying
+  `plusLiftBridgeInvHom` and the coproduct-pair cotuple).
+  `deltaDesc_eta` then collapses the outer cotuple. Merging the
+  transports is what makes the case finite: unfolding the tower
+  layer by layer and cancelling the Lemma 4 layer separately does
+  not terminate against the `mprecomp_snoc` cast.
+
+Closure-gate assessment: every statement is a component equation
+between explicit `FreeCoprodCompDisc.Hom` composites; every
+recursion mirrors an existing recursion (`preUnitStack`'s and the
+helpers' own); the commutation squares are calculations at
+`mk`-codes through the `_mk` equations and name-level `Equiv`
+composites; transports are `Eq.rec` along given equalities. The
+laws consumed — cotuple computation and eta (`coprodInj_desc`,
+`coprodDesc_eta`, `coprodDesc_comp`, `coprodInj_mor`,
+`deltaInto_desc`, `deltaDesc_eta`, the `coprodPair` lemmas), the
+functor laws (`interpMor_id`, `interpMor_comp`), the `_mk`
+characterizing equations, and the `Iso` inverse laws — all exist
+from branches 1–2c. No step consumes `Classical`; the gate closes.
+
+The gate is discharged by construction, not by assessment alone: a
+session prototype realizes every declaration of this subsection at
+the universe scheme of § Universe scheme, with `IR.interpHom_id`,
+`IR.id_comp`, `IR.comp_id`, and `IR.comp_assoc` each depending on
+`propext` and `Quot.sound` only. Two consequences for the plan:
+the recursor-computation lemmas require the branch-2a helpers'
+step functions to be named declarations (`IR.rec_mk` does not
+unify against an inline step lambda), so `Hom.lean` names them in
+the manner of `IR.interpMorStep`; and
+`FreeCoprodCompDisc.coprodPairInl`/`coprodPairInr` are
+universe-generalized as recorded above.
+
+#### Composition and the laws by transfer
+
+- `comp f g := natToHom (NatTrans.vcomp (interpHom f)
+  (interpHom g))`.
+- `interpHom_comp`: `interpHom (comp f g) = NatTrans.vcomp
+  (interpHom f) (interpHom g)` — `interpHom_natToHom` applied to
+  the vertical composite; with `interpHom_id` this is the
+  functoriality of the interpretation on morphisms.
+- `id_comp`, `comp_id`: rewrite by `interpHom_id`, collapse by
+  `NatTrans.id_vcomp` / `NatTrans.vcomp_id`, and close by
+  `natToHom_interpHom`.
+- `comp_assoc`: conjugation by the equivalence —
+  `interpHom_natToHom` on both sides and `NatTrans.vcomp_assoc`.
+
+No new induction; the `FreeCoprodCompDisc` additions are limited to
+the universe-generalized coproduct-pair injections and the possible
+hom-extensionality lemma noted above.
+
+#### Placement (branch 2d)
+
+A `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` module per the
+one-module-per-branch split: the tower constructions, the
+characterizing equations of `interpHom`, the helper
+characterizations, the identity-image equation, `comp`, and the
+laws; the mirrored `GebTests/` module (checking sample names
+against the umbrella-wide test namespace before planning) and both
+umbrella registrations; `docs/index.md` entries in the same branch.
+Its final commits remove the workstream's transient documents per
+§ Branch decomposition.
 
 ### Semantic statements (branch 1, complete)
 
