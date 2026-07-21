@@ -11,6 +11,7 @@
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
   - [Aristotle (external LLM prover)](#aristotle-external-llm-prover)
+  - [Sequential thinking](#sequential-thinking)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
   - [When editing files under Geb/Mathlib/ or Geb/Cslib/](#when-editing-files-under-gebmathlib-or-gebcslib)
@@ -84,7 +85,7 @@ AI-drafted code that already meets that bar.
 
 If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
-and prove Lean. Reach for it when a task exceeds the in-editor
+and prove Lean. Consider it when a task exceeds the in-editor
 tooling: to formalize a definition or theorem available only in a
 published paper, or when a goal resists the `lean4:autoprove` and
 `lean4:sorry-filler-deep` passes.
@@ -112,6 +113,16 @@ without AI, and discloses its use. Returned proofs are re-verified
 under the repository's toolchain and constructive discipline
 before use. See [docs/aristotle.md](docs/aristotle.md) for
 invocations and operational notes.
+
+### Sequential thinking
+
+The `sequential-thinking` MCP is available to any agent whose
+harness loads it. Consider it when a task benefits from
+explicit multi-step reasoning: hypothesis generation and
+verification, branching exploration, or revision of earlier
+steps. It complements the `superpowers:brainstorming` and
+`superpowers:writing-plans` skills during the corresponding
+phases.
 
 ## Path-scoped rules
 
