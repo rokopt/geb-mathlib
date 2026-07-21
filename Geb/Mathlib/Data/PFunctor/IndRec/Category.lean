@@ -56,6 +56,9 @@ its iterated Lemma 4 isomorphism.
   code, generalized over the stack.
 * `IR.navBridgeMor` — the tower morphism induced by a weight at a
   right-appended superscript.
+* `IR.comp` — composition of code morphisms: the code morphism
+  carried by the vertical composite of the interpreted
+  transformations.
 
 ## Main statements
 
@@ -116,6 +119,11 @@ its iterated Lemma 4 isomorphism.
 * `IR.interpHom_cast_cod`, `IR.comp_isoOfEq_hom`,
   `IR.isoOfEq_symm_hom_comp`, `IR.interpMor_isoOfEq_dom` — the
   transport eliminations the induction consumes.
+* `IR.interpHom_comp`, `IR.interpHom_id` — `IR.interpHom` sends
+  `IR.comp` to the vertical composite and `IR.id` to the identity
+  transformation: the interpretation is functorial on morphisms.
+* `IR.id_comp`, `IR.comp_id`, `IR.comp_assoc` — the category laws
+  of Corollary 2 of [HancockMcBrideGhaniMalatestaAltenkirch2013].
 
 ## Implementation notes
 
@@ -4908,6 +4916,84 @@ theorem interpHom_preUnitStack (γ : IR.{max uA uB, uB, uI, uO} I O) :
       | Sum.inr (Sum.inl A) => fun d ih => interpHomPreUnit_mk_sigma I O A d ih
       | Sum.inr (Sum.inr B) => fun d ih => interpHomPreUnit_mk_delta I O B d ih)
     γ
+
+/-- Composition of IR-code morphisms (Corollary 2 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013]): the image under
+fullness of the vertical composite of the interpreted
+transformations. -/
+def comp (γ γ' γ'' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ')
+    (g : Hom.{uA, uB, uI, uO} I O γ' γ'') :
+    Hom.{uA, uB, uI, uO} I O γ γ'' :=
+  natToHom I O γ γ''
+    (FreeCoprodCompDisc.NatTrans.vcomp (interpHom I O γ γ' f)
+      (interpHom I O γ' γ'' g))
+
+/-- `IR.interpHom` sends `IR.comp` to the vertical composite: the
+interpretation is functorial on morphisms. -/
+theorem interpHom_comp (γ γ' γ'' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ')
+    (g : Hom.{uA, uB, uI, uO} I O γ' γ'') :
+    interpHom I O γ γ'' (comp I O γ γ' γ'' f g) =
+      FreeCoprodCompDisc.NatTrans.vcomp (interpHom I O γ γ' f)
+        (interpHom I O γ' γ'' g) :=
+  interpHom_natToHom I O γ γ''
+    (FreeCoprodCompDisc.NatTrans.vcomp (interpHom I O γ γ' f)
+      (interpHom I O γ' γ'' g))
+
+/-- Associativity of `IR.comp`, by conjugation through the Theorem 3
+equivalence and associativity of vertical composition. -/
+theorem comp_assoc (γ γ' γ'' γ''' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ')
+    (g : Hom.{uA, uB, uI, uO} I O γ' γ'')
+    (h : Hom.{uA, uB, uI, uO} I O γ'' γ''') :
+    comp I O γ γ'' γ''' (comp I O γ γ' γ'' f g) h =
+      comp I O γ γ' γ''' f (comp I O γ' γ'' γ''' g h) :=
+  (congrArg (fun t => natToHom I O γ γ'''
+      (FreeCoprodCompDisc.NatTrans.vcomp t (interpHom I O γ'' γ''' h)))
+    (interpHom_comp I O γ γ' γ'' f g)).trans
+    ((congrArg (natToHom I O γ γ''')
+        (FreeCoprodCompDisc.NatTrans.vcomp_assoc (interpHom I O γ γ' f)
+          (interpHom I O γ' γ'' g) (interpHom I O γ'' γ''' h))).trans
+      (congrArg (fun t => natToHom I O γ γ'''
+          (FreeCoprodCompDisc.NatTrans.vcomp (interpHom I O γ γ' f) t))
+        (interpHom_comp I O γ' γ'' γ''' g h)).symm)
+
+/-- `IR.interpHom` sends `IR.id` to the identity transformation: the
+identity-image equation at the empty stack. -/
+theorem interpHom_id (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    interpHom I O γ γ (IR.id I O γ) =
+      FreeCoprodCompDisc.NatTrans.id (interpObj I O γ) (interpMor I O γ) :=
+  Subtype.ext (funext (fun X =>
+    (interpHom_preUnitStack I O γ [] X).trans (preUnitComponent_nil I O γ X)))
+
+/-- `IR.id` is a left identity for `IR.comp`, by conjugation through the
+Theorem 3 equivalence and the left identity of vertical composition. -/
+theorem id_comp (γ γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ') :
+    comp I O γ γ γ' (IR.id I O γ) f = f :=
+  (congrArg
+      (fun t => natToHom I O γ γ'
+        (FreeCoprodCompDisc.NatTrans.vcomp t (interpHom I O γ γ' f)))
+      (interpHom_id I O γ)).trans
+    ((congrArg (natToHom I O γ γ')
+        (FreeCoprodCompDisc.NatTrans.id_vcomp
+          (interpHom I O γ γ' f))).trans
+      (natToHom_interpHom I O γ γ' f))
+
+/-- `IR.id` is a right identity for `IR.comp`, by conjugation through the
+Theorem 3 equivalence and the right identity of vertical composition. -/
+theorem comp_id (γ γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ γ') :
+    comp I O γ γ' γ' f (IR.id I O γ') = f :=
+  (congrArg
+      (fun t => natToHom I O γ γ'
+        (FreeCoprodCompDisc.NatTrans.vcomp (interpHom I O γ γ' f) t))
+      (interpHom_id I O γ')).trans
+    ((congrArg (natToHom I O γ γ')
+        (FreeCoprodCompDisc.NatTrans.vcomp_id
+          (interpHom I O γ γ' f))).trans
+      (natToHom_interpHom I O γ γ' f))
 
 end IR
 

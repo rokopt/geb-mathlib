@@ -30,6 +30,8 @@ Named theorems give the `GebMeta` axiom linter declarations to
 inspect.
 The identity-image equation and the tower factorization of the
 semantic pre-unit component are exercised at the empty stack.
+Composition of code morphisms, its image under `IR.interpHom`, and
+the three category laws are exercised at the sample code.
 
 ## Tags
 
@@ -442,3 +444,65 @@ theorem samplePreUnitComponentCompHom :
         (mplusInj Bool [] sampleCategoryObj) :=
   preUnitComponent_comp_hom Bool Bool sampleCategoryCode []
     sampleCategoryObj
+
+/-- The composite of the sample identity morphism with itself. -/
+def sampleCompHom :
+    Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode sampleCategoryCode :=
+  comp Bool Bool sampleCategoryCode sampleCategoryCode
+    sampleCategoryCode (IR.id Bool Bool sampleCategoryCode)
+    (IR.id Bool Bool sampleCategoryCode)
+
+/-- The composite of the sample identity with itself is that
+identity. -/
+theorem sampleCompHom_eq_id :
+    sampleCompHom = IR.id Bool Bool sampleCategoryCode :=
+  id_comp Bool Bool sampleCategoryCode sampleCategoryCode
+    (IR.id Bool Bool sampleCategoryCode)
+
+/-- `IR.interpHom` sends the sample identity to the identity
+transformation. -/
+theorem sampleInterpHomId :
+    interpHom Bool Bool sampleCategoryCode sampleCategoryCode
+        (IR.id Bool Bool sampleCategoryCode) =
+      FreeCoprodCompDisc.NatTrans.id
+        (interpObj Bool Bool sampleCategoryCode)
+        (interpMor Bool Bool sampleCategoryCode) :=
+  interpHom_id Bool Bool sampleCategoryCode
+
+/-- `IR.interpHom` sends a composite at the sample code to the
+vertical composite. -/
+theorem sampleInterpHomComp
+    (f g : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      sampleCategoryCode) :
+    interpHom Bool Bool sampleCategoryCode sampleCategoryCode
+        (comp Bool Bool sampleCategoryCode sampleCategoryCode
+          sampleCategoryCode f g) =
+      FreeCoprodCompDisc.NatTrans.vcomp
+        (interpHom Bool Bool sampleCategoryCode sampleCategoryCode f)
+        (interpHom Bool Bool sampleCategoryCode sampleCategoryCode g) :=
+  interpHom_comp Bool Bool sampleCategoryCode sampleCategoryCode
+    sampleCategoryCode f g
+
+/-- The right identity law at the sample code. -/
+theorem sampleCompIdHom
+    (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      sampleCategoryCode) :
+    comp Bool Bool sampleCategoryCode sampleCategoryCode
+        sampleCategoryCode f (IR.id Bool Bool sampleCategoryCode) =
+      f :=
+  comp_id Bool Bool sampleCategoryCode sampleCategoryCode f
+
+/-- Associativity at the sample code. -/
+theorem sampleCompAssocHom
+    (f g h : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      sampleCategoryCode) :
+    comp Bool Bool sampleCategoryCode sampleCategoryCode
+        sampleCategoryCode
+        (comp Bool Bool sampleCategoryCode sampleCategoryCode
+          sampleCategoryCode f g) h =
+      comp Bool Bool sampleCategoryCode sampleCategoryCode
+        sampleCategoryCode f
+        (comp Bool Bool sampleCategoryCode sampleCategoryCode
+          sampleCategoryCode g h) :=
+  comp_assoc Bool Bool sampleCategoryCode sampleCategoryCode
+    sampleCategoryCode sampleCategoryCode f g h
