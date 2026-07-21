@@ -4637,7 +4637,7 @@ theorem preUnitComponent_comp_hom (γ : IR.{max uA uB, uB, uI, uO} I O)
 /-- The reduced form of the per-weight identity-image equation: after
 the tower isomorphisms cancel, both routes are the interpreted tower
 injection followed by the reindexed weighted summand inclusion. -/
-theorem interpHomPreUnit_deltaWeightRight (B : Type uB)
+theorem interpHom_preUnitStack_deltaWeightRight (B : Type uB)
     (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
@@ -4796,7 +4796,7 @@ theorem interpHomPreUnit_deltaWeightRight (B : Type uB)
 weight out of the lifted arity, the copower-adjunction transport of the
 navigated subcode pre-unit is the weight's injection followed by the
 summand inclusion and the semantic pre-unit component. -/
-theorem interpHomPreUnit_deltaWeight (B : Type uB)
+theorem interpHom_preUnitStack_deltaWeight (B : Type uB)
     (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
@@ -4980,12 +4980,12 @@ theorem interpHomPreUnit_deltaWeight (B : Type uB)
                       (plusLiftBridgeInvHom I B i X)
                       (FreeCoprodCompDisc.coprodPairDesc I e
                         (FreeCoprodCompDisc.Hom.id I X)))))).trans
-              (interpHomPreUnit_deltaWeightRight I O B d ih L X i e))))))
+              (interpHom_preUnitStack_deltaWeightRight I O B d ih L X i e))))))
 
 /-- The per-summand identity-image equation at a `δ`-domain: the
 navigated subcode pre-unit's transported interpretation is the summand
 inclusion followed by the semantic pre-unit component. -/
-theorem interpHomPreUnit_deltaSummand (B : Type uB)
+theorem interpHom_preUnitStack_deltaSummand (B : Type uB)
     (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
@@ -5005,7 +5005,7 @@ theorem interpHomPreUnit_deltaSummand (B : Type uB)
         (fun _ ↦ interpObj I O (d (ULift.up i)) X)
         (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X))
       (funext (fun e ↦
-        interpHomPreUnit_deltaWeight I O B d ih L X i e))).trans
+        interpHom_preUnitStack_deltaWeight I O B d ih L X i e))).trans
     (FreeCoprodCompDisc.coprodDesc_eta O
       (FreeCoprodCompDisc.Hom I
         (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
@@ -5016,7 +5016,7 @@ theorem interpHomPreUnit_deltaSummand (B : Type uB)
         (preUnitComponent I O (mk I O (Sum.inr (Sum.inr B)) d) L X)))
 
 /-- The `δ`-domain case of the identity-image equation. -/
-theorem interpHomPreUnit_mk_delta (B : Type uB)
+theorem interpHom_preUnitStack_mk_delta (B : Type uB)
     (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
@@ -5034,7 +5034,7 @@ theorem interpHomPreUnit_mk_delta (B : Type uB)
             (deltaDesc I O B (fun j ↦ d (ULift.up j)) X
               (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X))
             (funext (fun i ↦
-              interpHomPreUnit_deltaSummand I O B d ih L X i))).trans
+              interpHom_preUnitStack_deltaSummand I O B d ih L X i))).trans
           (deltaDesc_eta I O B (fun j ↦ d (ULift.up j)) X
             (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X)
             (preUnitComponent I O (mk I O (Sum.inr (Sum.inr B)) d) L X))))
@@ -5043,7 +5043,7 @@ theorem interpHomPreUnit_mk_delta (B : Type uB)
 code and the target morphism generalized: at the reflexive instance the
 codomain interpretation is the singleton object, so any two morphisms
 into it agree. -/
-theorem interpHomPreUnit_iotaGen (o : O)
+theorem interpHom_preUnitStack_iotaGen (o : O)
     (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
@@ -5069,7 +5069,7 @@ theorem interpHomPreUnit_iotaGen (o : O)
       (fun _ ↦ Subtype.ext (funext (fun _ ↦ congrArg ULift.up rfl))) hh
 
 /-- The `ι`-domain case of the identity-image equation. -/
-theorem interpHomPreUnit_mk_iota (o : O)
+theorem interpHom_preUnitStack_mk_iota (o : O)
     (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O) :
     InterpHomPreUnitMotive I O (mk I O (Sum.inl o) d) :=
@@ -5078,7 +5078,7 @@ theorem interpHomPreUnit_mk_iota (o : O)
         (fun t ↦ (interpHom I O (mk I O (Sum.inl o) d)
           (mprecomp I O L (mk I O (Sum.inl o) d)) t).1 X)
         (preUnitStack_mk_iota I O o d L)).trans
-      (interpHomPreUnit_iotaGen I O o d X
+      (interpHom_preUnitStack_iotaGen I O o d X
         (mprecomp I O L (mk I O (Sum.inl o) d))
         (mprecomp_iota_mk I O L o d).symm
         (preUnitComponent I O (mk I O (Sum.inl o) d) L X))
@@ -5086,7 +5086,7 @@ theorem interpHomPreUnit_mk_iota (o : O)
 /-- The per-summand identity-image equation at a `σ`-domain: the stack
 `σ`-push of the subcode's pre-unit is the semantic `σ`-injection
 followed by the pre-unit component. -/
-theorem interpHomPreUnit_sigmaSummand (A : Type (max uA uB))
+theorem interpHom_preUnitStack_sigmaSummand (A : Type (max uA uB))
     (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
@@ -5139,7 +5139,7 @@ theorem interpHomPreUnit_sigmaSummand (A : Type (max uA uB))
             (mplus.{uA, uB, uI} I L X) (mplusInj.{uA, uB, uI} I L X)).symm)))
 
 /-- The `σ`-domain case of the identity-image equation. -/
-theorem interpHomPreUnit_mk_sigma (A : Type (max uA uB))
+theorem interpHom_preUnitStack_mk_sigma (A : Type (max uA uB))
     (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
       IR.{max uA uB, uB, uI, uO} I O)
     (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
@@ -5161,7 +5161,7 @@ theorem interpHomPreUnit_mk_sigma (A : Type (max uA uB))
               (interpObj I O
                 (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d)) X))
             (funext (fun a ↦
-              interpHomPreUnit_sigmaSummand I O A d ih L X a))).trans
+              interpHom_preUnitStack_sigmaSummand I O A d ih L X a))).trans
           (FreeCoprodCompDisc.coprodDesc_eta O A
             (fun a ↦ interpObj I O (d (ULift.up a)) X)
             (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d)) X)
@@ -5173,9 +5173,9 @@ theorem interpHom_preUnitStack (γ : IR.{max uA uB, uB, uI, uO} I O) :
     InterpHomPreUnitMotive I O γ :=
   induction I O (InterpHomPreUnitMotive I O)
     (fun s ↦ match s with
-      | Sum.inl o => fun d _ ↦ interpHomPreUnit_mk_iota I O o d
-      | Sum.inr (Sum.inl A) => fun d ih ↦ interpHomPreUnit_mk_sigma I O A d ih
-      | Sum.inr (Sum.inr B) => fun d ih ↦ interpHomPreUnit_mk_delta I O B d ih)
+      | Sum.inl o => fun d _ ↦ interpHom_preUnitStack_mk_iota I O o d
+      | Sum.inr (Sum.inl A) => fun d ih ↦ interpHom_preUnitStack_mk_sigma I O A d ih
+      | Sum.inr (Sum.inr B) => fun d ih ↦ interpHom_preUnitStack_mk_delta I O B d ih)
     γ
 
 /-! ### Composition and the category laws -/

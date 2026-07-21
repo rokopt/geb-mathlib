@@ -221,9 +221,6 @@ cleanup branch.
 - `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` carries an
   unused `open CategoryTheory` (a pre-existing pattern also present
   in `Functor.lean` and `Universes.lean`).
-- Rename `interpHomPreUnit_*` to `interpHom_preUnitStack_*` for
-  naming consistency with `IR.interpHom_preUnitStack`; touches many
-  call sites.
 - Restate `IR.comp_isoOfEq_hom` and `IR.isoOfEq_symm_hom_comp` at a
   single universe instead of two; untested proposal.
 
