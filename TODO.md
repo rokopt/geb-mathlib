@@ -218,8 +218,6 @@ rather than bundled with unrelated work.
 Independent of the roadmap sequence above; each belongs on its own
 cleanup branch.
 
-- `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean` still uses `=>` for
-  `fun` binders at 91 sites where the repository standard is `↦`.
 - `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` carries an
   unused `open CategoryTheory` (a pre-existing pattern also present
   in `Functor.lean` and `Universes.lean`).

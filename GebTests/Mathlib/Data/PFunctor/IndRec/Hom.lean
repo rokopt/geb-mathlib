@@ -45,7 +45,7 @@ example (I : Type uI) (O : Type uO) (o : O) (A : Type (max uA uB))
 example (I : Type uI) (O : Type uO) (o : O) (B : Type uB)
     (K : (B → I) → IR.{max uA uB, uB, uI, uO} I O) :
     IR.Hom.{uA, uB, uI, uO} I O (iota I O o) (delta I O B K)
-      = Σ e : B → PEmpty.{1}, IR.Hom I O (iota I O o) (K (fun b => (e b).elim))
+      = Σ e : B → PEmpty.{1}, IR.Hom I O (iota I O o) (K (fun b ↦ (e b).elim))
     := rfl
 
 example (I : Type uI) (O : Type uO) (A : Type (max uA uB))
@@ -67,9 +67,9 @@ example (I : Type uI) (O : Type uO) (B : Type uB)
 
 example :
     IR.Hom PUnit PUnit (iota PUnit PUnit PUnit.unit)
-      (sigma PUnit PUnit Bool (fun _ => iota PUnit PUnit PUnit.unit)) :=
+      (sigma PUnit PUnit Bool (fun _ ↦ iota PUnit PUnit PUnit.unit)) :=
   sigmaPush PUnit PUnit (iota PUnit PUnit PUnit.unit) Bool
-    (fun _ => iota PUnit PUnit PUnit.unit) true (ULift.up (PLift.up rfl))
+    (fun _ ↦ iota PUnit PUnit PUnit.unit) true (ULift.up (PLift.up rfl))
 
 -- `IR.deltaEmptyPush` injects a `Hom` into an `iota`-domain `delta`-code
 -- over an empty direction witness (`PEmpty → PEmpty`). A typecheck-only
@@ -77,9 +77,9 @@ example :
 
 example :
     IR.Hom PUnit PUnit (iota PUnit PUnit PUnit.unit)
-      (delta PUnit PUnit PEmpty (fun _ => iota PUnit PUnit PUnit.unit)) :=
+      (delta PUnit PUnit PEmpty (fun _ ↦ iota PUnit PUnit PUnit.unit)) :=
   deltaEmptyPush PUnit PUnit (iota PUnit PUnit PUnit.unit) PEmpty PEmpty.elim
-    (fun _ => iota PUnit PUnit PUnit.unit) (ULift.up (PLift.up rfl))
+    (fun _ ↦ iota PUnit PUnit PUnit.unit) (ULift.up (PLift.up rfl))
 
 -- `IR.mprecomp` at the empty stack is the identity code.
 
@@ -111,10 +111,10 @@ example (γ : IR.{max uA uB, uB, uI, uO} PUnit PUnit) (a b : SupObj.{uB, uI} PUn
 
 example :
     msigmaPush.{0, 0, 0, 0} PUnit PUnit (iota PUnit PUnit PUnit.unit) Bool
-        (fun _ => iota PUnit PUnit PUnit.unit) true [] (ULift.up (PLift.up rfl) :
+        (fun _ ↦ iota PUnit PUnit PUnit.unit) true [] (ULift.up (PLift.up rfl) :
           IR.Hom PUnit PUnit (iota PUnit PUnit PUnit.unit) (iota PUnit PUnit PUnit.unit))
       = sigmaPush PUnit PUnit (iota PUnit PUnit PUnit.unit) Bool
-          (fun _ => iota PUnit PUnit PUnit.unit) true (ULift.up (PLift.up rfl) :
+          (fun _ ↦ iota PUnit PUnit PUnit.unit) true (ULift.up (PLift.up rfl) :
             IR.Hom PUnit PUnit (iota PUnit PUnit PUnit.unit) (iota PUnit PUnit PUnit.unit)) :=
   rfl
 
@@ -183,7 +183,7 @@ theorem sampleDeltaEmptyPush_mk_iota
       IR.{0, 0, 0, 0} PUnit PUnit)
     (M : (PEmpty.{1} → PUnit) → IR.{0, 0, 0, 0} PUnit PUnit)
     (f : IR.Hom PUnit PUnit (mk PUnit PUnit (Sum.inl PUnit.unit) d)
-      (M (fun x => (_root_.id x).elim))) :
+      (M (fun x ↦ (_root_.id x).elim))) :
     deltaEmptyPush PUnit PUnit (mk PUnit PUnit (Sum.inl PUnit.unit) d)
         PEmpty.{1} _root_.id M f =
       ⟨_root_.id, f⟩ :=
