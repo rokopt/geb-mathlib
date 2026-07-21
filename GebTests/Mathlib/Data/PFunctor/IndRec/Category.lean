@@ -29,9 +29,11 @@ exercised over the Booleans.
 Named theorems give the `GebMeta` axiom linter declarations to
 inspect.
 The identity-image equation and the tower factorization of the
-semantic pre-unit component are exercised at the empty stack.
+semantic pre-unit component are exercised at the empty stack and at
+a right-appended superscript.
 Composition of code morphisms, its image under `IR.interpHom`, and
-the three category laws are exercised at the sample code.
+the three category laws are exercised at the sample code and, with
+an explicit non-identity morphism, at a `σ`-shaped code over it.
 
 ## Tags
 
@@ -120,7 +122,7 @@ theorem sampleMprecompIso_snoc_hom :
       FreeCoprodCompDisc.Hom.comp Bool
         (FreeCoprodCompDisc.Hom.comp Bool
           (FreeCoprodCompDisc.Iso.hom Bool (FreeCoprodCompDisc.isoOfEq Bool
-            (congrArg (fun c => interpObj Bool Bool c sampleCategoryObj)
+            (congrArg (fun c ↦ interpObj Bool Bool c sampleCategoryObj)
               (mprecomp_snoc Bool Bool [sampleCategorySup] sampleCategorySup
                 sampleCategoryCode))))
           (FreeCoprodCompDisc.Iso.hom Bool
@@ -159,7 +161,7 @@ theorem sampleMprecompIso_snoc_invHom :
               (mprecomp Bool Bool [sampleCategorySup] sampleCategoryCode)
               sampleCategorySup.1 sampleCategorySup.2 sampleCategoryObj))
           (FreeCoprodCompDisc.Iso.hom Bool (FreeCoprodCompDisc.isoOfEq Bool
-            (congrArg (fun c => interpObj Bool Bool c sampleCategoryObj)
+            (congrArg (fun c ↦ interpObj Bool Bool c sampleCategoryObj)
               (mprecomp_snoc Bool Bool [sampleCategorySup] sampleCategorySup
                 sampleCategoryCode).symm)))) :=
   mprecompIso_snoc_invHom Bool Bool [sampleCategorySup] sampleCategorySup
@@ -208,13 +210,13 @@ theorem sampleInterpMorSigmaInj (A' : Type)
     (h : FreeCoprodCompDisc.Hom Bool sampleCategoryObj sampleCategoryObj) :
     FreeCoprodCompDisc.Hom.comp Bool
         (FreeCoprodCompDisc.coprodInj Bool A'
-          (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a')
+          (fun a ↦ interpObj Bool Bool (K' a) sampleCategoryObj) a')
         (interpMor Bool Bool (sigma Bool Bool A' K') sampleCategoryObj
           sampleCategoryObj h) =
       FreeCoprodCompDisc.Hom.comp Bool
         (interpMor Bool Bool (K' a') sampleCategoryObj sampleCategoryObj h)
         (FreeCoprodCompDisc.coprodInj Bool A'
-          (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
+          (fun a ↦ interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
   interpMor_sigma_inj Bool Bool A' K' a' sampleCategoryObj sampleCategoryObj h
 
 /-- The reduction of the Theorem 3 equivalence at an `ι`-shaped
@@ -224,7 +226,7 @@ theorem sampleInterpHomEquiv_mk
       IR.{0, 0, 0, 0} Bool Bool) :
     interpHomEquiv Bool Bool (mk Bool Bool (Sum.inl true) d) sampleCategoryCode =
       interpHomEquivStep Bool Bool (Sum.inl true) d
-        (fun x => interpHomEquiv Bool Bool (d x)) sampleCategoryCode :=
+        (fun x ↦ interpHomEquiv Bool Bool (d x)) sampleCategoryCode :=
   interpHomEquiv_mk Bool Bool (Sum.inl true) d sampleCategoryCode
 
 /-- The reduction of the inner-hom equivalence at an `ι`-shaped
@@ -234,7 +236,7 @@ theorem sampleInnerHomEquiv_mk
       IR.{0, 0, 0, 0} Bool Bool) :
     innerHomEquiv Bool Bool true (mk Bool Bool (Sum.inl true) d) =
       innerHomEquivStep Bool Bool true (Sum.inl true) d
-        (fun x => innerHomEquiv Bool Bool true (d x)) :=
+        (fun x ↦ innerHomEquiv Bool Bool true (d x)) :=
   innerHomEquiv_mk Bool Bool true (Sum.inl true) d
 
 /-- The component of `IR.interpHom` at a `σ`-domain, at the sample
@@ -244,9 +246,9 @@ theorem sampleInterpHom_sigma (A : Type) (K : A → IR.{0, 0, 0, 0} Bool Bool)
     (interpHom Bool Bool (sigma Bool Bool A K) sampleCategoryCode f).1
         sampleCategoryObj =
       FreeCoprodCompDisc.coprodDesc Bool A
-        (fun a => interpObj Bool Bool (K a) sampleCategoryObj)
+        (fun a ↦ interpObj Bool Bool (K a) sampleCategoryObj)
         (interpObj Bool Bool sampleCategoryCode sampleCategoryObj)
-        (fun a => (interpHom Bool Bool (K a) sampleCategoryCode (f a)).1
+        (fun a ↦ (interpHom Bool Bool (K a) sampleCategoryCode (f a)).1
           sampleCategoryObj) :=
   interpHom_sigma Bool Bool A K sampleCategoryCode f sampleCategoryObj
 
@@ -259,7 +261,7 @@ theorem sampleInterpHom_delta (B : Type)
         sampleCategoryObj =
       deltaDesc Bool Bool B c sampleCategoryObj
         (interpObj Bool Bool sampleCategoryCode sampleCategoryObj)
-        (fun i => (interpHomDeltaSummand Bool Bool B c sampleCategoryCode i (f i)).1
+        (fun i ↦ (interpHomDeltaSummand Bool Bool B c sampleCategoryCode i (f i)).1
           sampleCategoryObj) :=
   interpHom_delta Bool Bool B c sampleCategoryCode f sampleCategoryObj
 
@@ -275,7 +277,7 @@ theorem sampleDeltaDesc_comp (B : Type)
     FreeCoprodCompDisc.Hom.comp Bool
         (deltaDesc Bool Bool B c sampleCategoryObj Z m) g =
       deltaDesc Bool Bool B c sampleCategoryObj W
-        (fun i => FreeCoprodCompDisc.Hom.comp Bool (m i) g) :=
+        (fun i ↦ FreeCoprodCompDisc.Hom.comp Bool (m i) g) :=
   deltaDesc_comp Bool Bool B c sampleCategoryObj Z W m g
 
 /-- The `IR.sigmaPush` characterization at the sample code. -/
@@ -295,7 +297,7 @@ theorem sampleSigmaPushChar_apply (A' : Type)
         ((interpHom Bool Bool sampleCategoryCode (K' a') f).1
           sampleCategoryObj)
         (FreeCoprodCompDisc.coprodInj Bool A'
-          (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
+          (fun a ↦ interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
   interpHom_sigmaPush Bool Bool sampleCategoryCode A' K' a' f
     sampleCategoryObj
 
@@ -309,14 +311,14 @@ applied at `PEmpty` directions and the sample object. -/
 theorem sampleDeltaEmptyPushChar_apply
     (M : (PEmpty.{1} → Bool) → IR.{0, 0, 0, 0} Bool Bool)
     (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
-      (M (fun x => (_root_.id x).elim))) :
+      (M (fun x ↦ (_root_.id x).elim))) :
     (interpHom Bool Bool sampleCategoryCode
         (delta Bool Bool PEmpty.{1} M)
         (deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1} _root_.id
           M f)).1 sampleCategoryObj =
       FreeCoprodCompDisc.Hom.comp Bool
         ((interpHom Bool Bool sampleCategoryCode
-          (M (fun x => (_root_.id x).elim)) f).1 sampleCategoryObj)
+          (M (fun x ↦ (_root_.id x).elim)) f).1 sampleCategoryObj)
         (deltaEmptyInj Bool Bool PEmpty.{1} _root_.id M
           sampleCategoryObj) :=
   interpHom_deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1}
@@ -336,7 +338,7 @@ theorem sampleEqCompInvHom (V Y Z : FreeCoprodCompDisc.{0, 0} Bool)
 /-- The tower navigation weight at the empty stack is the graph of
 the factorization into the appended superscript. -/
 theorem sampleNavWeight_nil_apply :
-    (navWeight Bool Bool (fun b => b) Bool (fun b => b) sampleCategoryObj
+    (navWeight Bool Bool (fun b ↦ b) Bool (fun b ↦ b) sampleCategoryObj
         []).1 (ULift.up true) =
       Sum.inl true :=
   rfl
@@ -359,7 +361,7 @@ theorem sampleMsigmaPushChar (A' : Type) (K' : A' → IR.{0, 0, 0, 0} Bool Bool)
             (FreeCoprodCompDisc.Iso.hom Bool
               (mprecompIso Bool Bool [sampleCategorySup] (K' a') sampleCategoryObj))
             (FreeCoprodCompDisc.coprodInj Bool A'
-              (fun a => interpObj Bool Bool (K' a)
+              (fun a ↦ interpObj Bool Bool (K' a)
                 (mplus Bool [sampleCategorySup] sampleCategoryObj)) a'))
           (FreeCoprodCompDisc.Iso.invHom Bool
             (mprecompIso Bool Bool [sampleCategorySup] (sigma Bool Bool A' K')
@@ -381,19 +383,19 @@ theorem sampleDeltaNavBaseChar (Bout : Type) (iout : Bout → Bool) (Bin : Type)
           (precomp Bool Bool Bout iout (K (iout ∘ g))) f).1 sampleCategoryObj)
         (FreeCoprodCompDisc.Hom.comp Bool
           (deltaEmptyInj Bool Bool
-            {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{1}) z =
+            {z : Bin // (fun b ↦ Sum.inl (g b) : Bin → Bout ⊕ PUnit.{1}) z =
               Sum.inr PUnit.unit}
-            (fun z => nomatch z.2)
-            (fun j => precomp Bool Bool Bout iout
-              (K (precompMerge Bool Bout iout (fun b => Sum.inl (g b)) j)))
+            (fun z ↦ nomatch z.2)
+            (fun j ↦ precomp Bool Bool Bout iout
+              (K (precompMerge Bool Bout iout (fun b ↦ Sum.inl (g b)) j)))
             sampleCategoryObj)
           (FreeCoprodCompDisc.coprodInj Bool
             (ULift.{0} (Bin → Bout ⊕ PUnit.{1}))
-            (fun cl => interpObj Bool Bool
+            (fun cl ↦ interpObj Bool Bool
               (delta Bool Bool {z : Bin // cl.down z = Sum.inr PUnit.unit}
-                (fun j => precomp Bool Bool Bout iout
+                (fun j ↦ precomp Bool Bool Bout iout
                   (K (precompMerge Bool Bout iout cl.down j)))) sampleCategoryObj)
-            (ULift.up (fun b => Sum.inl (g b))))) :=
+            (ULift.up (fun b ↦ Sum.inl (g b))))) :=
   interpHom_deltaNavBase Bool Bool sampleCategoryCode Bout iout Bin K g f
     sampleCategoryObj
 
@@ -429,6 +431,17 @@ theorem sampleInterpHomPreUnitStack_nil
         (preUnitStack Bool Bool sampleCategoryCode [])).1 X =
       preUnitComponent Bool Bool sampleCategoryCode [] X :=
   interpHom_preUnitStack Bool Bool sampleCategoryCode [] X
+
+/-- The identity-image equation at the sample code and a
+right-appended superscript, exercising the snoc/`δ` half of
+`IR.interpHom_preUnitStack`'s induction. -/
+theorem sampleInterpHomPreUnitStack_snoc
+    (X : FreeCoprodCompDisc.{0, 0} Bool) :
+    (interpHom Bool Bool sampleCategoryCode
+        (mprecomp Bool Bool [sampleCategorySup] sampleCategoryCode)
+        (preUnitStack Bool Bool sampleCategoryCode [sampleCategorySup])).1 X =
+      preUnitComponent Bool Bool sampleCategoryCode [sampleCategorySup] X :=
+  interpHom_preUnitStack Bool Bool sampleCategoryCode [sampleCategorySup] X
 
 /-- The semantic pre-unit component followed by the tower
 isomorphism, at the sample code and the empty stack. -/
@@ -506,3 +519,69 @@ theorem sampleCompAssocHom
           sampleCategoryCode g h) :=
   comp_assoc Bool Bool sampleCategoryCode sampleCategoryCode
     sampleCategoryCode sampleCategoryCode f g h
+
+/-- A `σ`-shaped code over the sample `ι`-code: its self-homset is
+`∀ a : Bool, Σ a', Hom (iota true) (iota true)`, non-degenerate
+(essentially a `Bool → Bool` selector), unlike the identity-only
+self-homset of `sampleCategoryCode`. -/
+def sampleSigmaCode : IR.{0, 0, 0, 0} Bool Bool :=
+  sigma Bool Bool Bool (fun _ ↦ sampleCategoryCode)
+
+/-- The branch-swapping selector: a self-morphism of
+`sampleSigmaCode` distinct from `IR.id`, since it sends each `a` to
+`!a` rather than to `a`. -/
+def sampleSigmaSwapHom :
+    Hom.{0, 0, 0, 0} Bool Bool sampleSigmaCode sampleSigmaCode :=
+  fun a ↦ ⟨!a, ⟨⟨rfl⟩⟩⟩
+
+/-- The composite of `IR.id` on the left with the swap selector, at
+`sampleSigmaCode`. -/
+def sampleSigmaIdCompHom :
+    Hom.{0, 0, 0, 0} Bool Bool sampleSigmaCode sampleSigmaCode :=
+  comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+    (IR.id Bool Bool sampleSigmaCode) sampleSigmaSwapHom
+
+/-- `IR.id_comp` at the swap selector: a non-degenerate instance of
+the left identity law. -/
+theorem sampleSigmaIdCompHom_eq_swap :
+    sampleSigmaIdCompHom = sampleSigmaSwapHom :=
+  id_comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaSwapHom
+
+/-- The composite of the swap selector with `IR.id` on the right, at
+`sampleSigmaCode`. -/
+def sampleSigmaCompIdHom :
+    Hom.{0, 0, 0, 0} Bool Bool sampleSigmaCode sampleSigmaCode :=
+  comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+    sampleSigmaSwapHom (IR.id Bool Bool sampleSigmaCode)
+
+/-- `IR.comp_id` at the swap selector: a non-degenerate instance of
+the right identity law. -/
+theorem sampleSigmaCompIdHom_eq_swap :
+    sampleSigmaCompIdHom = sampleSigmaSwapHom :=
+  comp_id Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaSwapHom
+
+/-- Associativity at `sampleSigmaCode`, with the swap selector
+composed with itself: a non-degenerate instance. -/
+theorem sampleSigmaCompAssocHom :
+    comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+        (comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+          sampleSigmaSwapHom sampleSigmaSwapHom) sampleSigmaSwapHom =
+      comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+        sampleSigmaSwapHom
+        (comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+          sampleSigmaSwapHom sampleSigmaSwapHom) :=
+  comp_assoc Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+    sampleSigmaCode sampleSigmaSwapHom sampleSigmaSwapHom sampleSigmaSwapHom
+
+/-- `IR.interpHom` sends the swap selector composed with itself to
+the vertical composite, at `sampleSigmaCode`: a non-degenerate
+instance of functoriality. -/
+theorem sampleSigmaInterpHomComp :
+    interpHom Bool Bool sampleSigmaCode sampleSigmaCode
+        (comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+          sampleSigmaSwapHom sampleSigmaSwapHom) =
+      FreeCoprodCompDisc.NatTrans.vcomp
+        (interpHom Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaSwapHom)
+        (interpHom Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaSwapHom) :=
+  interpHom_comp Bool Bool sampleSigmaCode sampleSigmaCode sampleSigmaCode
+    sampleSigmaSwapHom sampleSigmaSwapHom

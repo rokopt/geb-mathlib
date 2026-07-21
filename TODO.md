@@ -14,6 +14,8 @@
   - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
+  - [Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`](#relocate-generic-freecoprodcompdisc-facts-out-of-indrecir)
+  - [Cleanup items in `IndRec.IR`](#cleanup-items-in-indrecir)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -197,6 +199,35 @@ Complete Theorem 2.4 for `IndRec`, and building on the category of
 the left-Kan-extension characterization of the `δ`-code
 interpretation, and Theorem 4, the equivalence with dependent
 polynomial functors.
+
+### Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`
+
+Six facts under `namespace IR` in
+`Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` are generic
+`FreeCoprodCompDisc` facts with no dependence on `IR` codes:
+`IR.emptyHom_ext`, `IR.eq_comp_invHom`, `IR.comp_isoOfEq_hom`,
+`IR.isoOfEq_symm_hom_comp`, `IR.coprodPairInr_mor`, and
+`IR.deltaDesc_comp`. Relocate them to
+`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` and migrate
+call sites. Independent of the roadmap sequence above; touches a
+merged upstream-eligible module, so it belongs on its own branch
+rather than bundled with unrelated work.
+
+### Cleanup items in `IndRec.IR`
+
+Independent of the roadmap sequence above; each belongs on its own
+cleanup branch.
+
+- `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean` still uses `=>` for
+  `fun` binders at 91 sites where the repository standard is `↦`.
+- `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` carries an
+  unused `open CategoryTheory` (a pre-existing pattern also present
+  in `Functor.lean` and `Universes.lean`).
+- Rename `interpHomPreUnit_*` to `interpHom_preUnitStack_*` for
+  naming consistency with `IR.interpHom_preUnitStack`; touches many
+  call sites.
+- Restate `IR.comp_isoOfEq_hom` and `IR.isoOfEq_symm_hom_comp` at a
+  single universe instead of two; untested proposal.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 

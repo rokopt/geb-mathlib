@@ -265,15 +265,17 @@ import-direction rules above are enforced by
   transformations, and the category laws (`IR.id_comp`,
   `IR.comp_id`, `IR.comp_assoc`) follow from the vertical laws
   together with the round-trip laws of the Theorem 3 equivalence;
-  `IR.interpHom_comp` and `IR.interpHom_id` record that the
-  interpretation is functorial on morphisms. The identity laws
-  consume the identity-image equation `IR.interpHom_id`, proved by
-  induction on the domain code with the stack of `IR.preUnitStack`
-  generalized (`IR.interpHom_preUnitStack`), against the semantic
-  counterpart of that stack: the iterated coproduct tower
-  (`IR.mplus`, `IR.mplusInj`, `IR.mplusMorMap`) with its iterated
-  Lemma 4 isomorphism (`IR.mprecompIso`) and the semantic pre-unit
-  component (`IR.preUnitComponent`). The induction consumes the
+  `IR.interpHom_comp` records that the interpretation is
+  functorial on composition; `IR.interpHom_id` records that it is
+  functorial on the identity and, consumed by the identity laws as
+  the identity-image equation, is proved by induction on the domain
+  code with the stack of `IR.preUnitStack` generalized
+  (`IR.interpHom_preUnitStack`), against the semantic counterpart of
+  that stack: the iterated coproduct tower (`IR.mplus`,
+  `IR.mplusInj`, `IR.mplusMorMap`) with its iterated Lemma 4
+  isomorphism (`IR.mprecompIso`, natural in the interpreted object
+  by `IR.mprecompIso_natural`) and the semantic pre-unit component
+  (`IR.preUnitComponent`). The induction consumes the
   characterizing equations of `IR.interpHom` at each code
   constructor (`IR.interpHom_iota`, `IR.interpHom_sigma`,
   `IR.interpHom_delta`) and a characterization of each injection
