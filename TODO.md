@@ -6,12 +6,11 @@
 - [In progress](#in-progress)
 - [Next up](#next-up)
   - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
-  - [2. Presheaf W-types — completed](#2-presheaf-w-types--completed)
-  - [3. Categorical wrappers for mathlib's `PFunctor` and `WType`](#3-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
-  - [4. Categorical wrappers for slice and presheaf W-types as initial algebras](#4-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
-  - [5. M-types and their categorical wrappers as terminal coalgebras](#5-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
-  - [6. Universal morphisms](#6-universal-morphisms)
-  - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
+  - [2. Categorical wrappers for mathlib's `PFunctor` and `WType`](#2-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
+  - [3. Categorical wrappers for slice and presheaf W-types as initial algebras](#3-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
+  - [4. M-types and their categorical wrappers as terminal coalgebras](#4-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
+  - [5. Universal morphisms](#5-universal-morphisms)
+  - [6. Relative (co)free (co)monads](#6-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`](#relocate-generic-freecoprodcompdisc-facts-out-of-indrecir)
@@ -44,8 +43,9 @@ polynomial functors (`Geb/Mathlib/Data/PFunctor/Slice/`) →
 presheaf parametric-right-adjoint functors
 (`Geb/Mathlib/Data/PFunctor/Presheaf/`). Categorical
 interpretations into mathlib's category theory are kept thin to
-minimise the `Classical.choice` surface. Slice W-types
-(`Slice/W.lean`) exist; the roadmap extends the stack upward.
+minimise the `Classical.choice` surface. Slice and presheaf W-types
+(`Slice/W.lean`, `Presheaf/W.lean`) exist, with the existence half of
+initiality only; the roadmap extends the stack upward.
 
 ### 1. Decidable-property specializations of the functor definitions
 
@@ -59,18 +59,9 @@ This specializes the functor definitions directly, so it depends only
 on the existing definitions and precedes the constructions built on
 them; the decidable functors are then available downstream, in
 particular for the decidable-case specializations of the universal
-morphisms (item 6).
+morphisms (item 5).
 
-### 2. Presheaf W-types — completed
-
-Implemented in `Presheaf/W.lean`; see `docs/index.md`. The presheaf W-type
-is the hereditarily-natural subtype of the slice W-type, `ULift`ed to the
-functor's value universe, with fixed-point `W.mk`/`W.dest` and the
-eliminator `W.elim` (`elim_mk`/`comp_elim`). Existence half of initiality
-only; uniqueness and the categorical initial-object wrapper remain item 4.
-Item numbers below are retained so their cross-references stay stable.
-
-### 3. Categorical wrappers for mathlib's `PFunctor` and `WType`
+### 2. Categorical wrappers for mathlib's `PFunctor` and `WType`
 
 Connect mathlib's generic endofunctor algebras to `PFunctor` as a
 reusable base layer. Per the survey, mathlib has
@@ -82,25 +73,25 @@ mathlib's `WType` as the initial algebra of that endofunctor. Then
 refactor the existing categorical wrapper of the slice functors
 (`Slice/Functor.lean`) to reuse the new `PFunctor` wrapper.
 
-### 4. Categorical wrappers for slice and presheaf W-types as initial algebras
+### 3. Categorical wrappers for slice and presheaf W-types as initial algebras
 
 Characterise the slice and presheaf W-types as the initial objects
 of the categories of algebras of their functors, reusing the
-`PFunctor` and `WType` wrappers of item 3. Build the presheaf
+`PFunctor` and `WType` wrappers of item 2. Build the presheaf
 initiality proof on the slice initiality proof, and the slice
-proof on the `WType` initiality of item 3.
+proof on the `WType` initiality of item 2.
 
-### 5. M-types and their categorical wrappers as terminal coalgebras
+### 4. M-types and their categorical wrappers as terminal coalgebras
 
 Define the M-types (greatest fixed points) of the slice and
 presheaf functors on mathlib's `PFunctor.M`, following mathlib's
 standard construction of M-types on W-types, and characterise them
 as the terminal coalgebras of their functors. Following the
-base-layer-first pattern of items 3 and 4, build a categorical
+base-layer-first pattern of items 2 and 3, build a categorical
 wrapper for the terminality of mathlib's `PFunctor.M` first,
 reusable in the slice and presheaf terminality proofs.
 
-### 6. Universal morphisms
+### 5. Universal morphisms
 
 Establish the universal morphisms of the slice and presheaf functors,
 layering the slice constructions on mathlib's `PFunctor` and the
@@ -133,7 +124,7 @@ Following the general definitions, implement the decidable-case
 specializations (item 1) of those universal morphisms with interesting
 decidable forms.
 
-### 7. Relative (co)free (co)monads
+### 6. Relative (co)free (co)monads
 
 Build the relative free monads and relative cofree comonads of the
 slice and presheaf functors for all three forms, and prove the
@@ -160,13 +151,13 @@ version can be built on the ordinary one, do so (simpler-first with
 reuse); otherwise build the relative version and define the ordinary
 one as its `J = id` specialization — known achievable, the ordinary
 case being the discrete degeneration. Relate each construction to the
-corresponding slice/presheaf W-type (item 4) or M-type (item 5) and
+corresponding slice/presheaf W-type (item 3) or M-type (item 4) and
 show the definitions equivalent, as in the superseded free-monad and
 cofree-comonad items.
 
 ### Complete Theorem 2.4 for `IndRec`
 
-Independent of the roadmap sequence above; layered like items 3–4
+Independent of the roadmap sequence above; layered like items 2–3
 (constructive core first, thin `Classical.choice`-enabled categorical
 wrapper second). The two remaining layers for Theorem 2.4 of
 [GhaniNordvallForsbergMalatesta2015] follow.
