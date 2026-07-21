@@ -15,7 +15,6 @@
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`](#relocate-generic-freecoprodcompdisc-facts-out-of-indrecir)
-  - [Cleanup items in `IndRec.IR`](#cleanup-items-in-indrecir)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -212,15 +211,6 @@ Six facts under `namespace IR` in
 call sites. Independent of the roadmap sequence above; touches a
 merged upstream-eligible module, so it belongs on its own branch
 rather than bundled with unrelated work.
-
-### Cleanup items in `IndRec.IR`
-
-Independent of the roadmap sequence above; each belongs on its own
-cleanup branch.
-
-- `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` carries an
-  unused `open CategoryTheory` (a pre-existing pattern also present
-  in `Functor.lean` and `Universes.lean`).
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
