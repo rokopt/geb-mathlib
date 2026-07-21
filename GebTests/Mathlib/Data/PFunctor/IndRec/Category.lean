@@ -28,6 +28,8 @@ the empty stack, and the three navigation characterizations are
 exercised over the Booleans.
 Named theorems give the `GebMeta` axiom linter declarations to
 inspect.
+The identity-image equation and the tower factorization of the
+semantic pre-unit component are exercised at the empty stack.
 
 ## Tags
 
@@ -415,3 +417,28 @@ theorem sampleDeltaNavChar (Bout : Type) (iout : Bout → Bool) (Bin : Type)
         (navInj Bool Bool Bout iout Bin K g [sampleCategorySup] sampleCategoryObj) :=
   interpHom_deltaNav Bool Bool sampleCategoryCode Bout iout Bin K g [sampleCategorySup]
     f sampleCategoryObj
+
+/-- The identity-image equation at the sample code and the empty
+stack. -/
+theorem sampleInterpHomPreUnitStack_nil
+    (X : FreeCoprodCompDisc.{0, 0} Bool) :
+    (interpHom Bool Bool sampleCategoryCode
+        (mprecomp Bool Bool [] sampleCategoryCode)
+        (preUnitStack Bool Bool sampleCategoryCode [])).1 X =
+      preUnitComponent Bool Bool sampleCategoryCode [] X :=
+  interpHom_preUnitStack Bool Bool sampleCategoryCode [] X
+
+/-- The semantic pre-unit component followed by the tower
+isomorphism, at the sample code and the empty stack. -/
+theorem samplePreUnitComponentCompHom :
+    FreeCoprodCompDisc.Hom.comp Bool
+        (preUnitComponent Bool Bool sampleCategoryCode []
+          sampleCategoryObj)
+        (FreeCoprodCompDisc.Iso.hom Bool
+          (mprecompIso Bool Bool [] sampleCategoryCode
+            sampleCategoryObj)) =
+      interpMor Bool Bool sampleCategoryCode sampleCategoryObj
+        (mplus Bool [] sampleCategoryObj)
+        (mplusInj Bool [] sampleCategoryObj) :=
+  preUnitComponent_comp_hom Bool Bool sampleCategoryCode []
+    sampleCategoryObj

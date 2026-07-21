@@ -52,6 +52,10 @@ its iterated Lemma 4 isomorphism.
   and the reindexing of a lifted direction family along the
   inclusion of the all-unresolved classifier's subtype.
 * `IR.navInj` — the tower-conjugated navigation inclusion.
+* `IR.InterpHomPreUnitMotive` — the identity-image equation at one
+  code, generalized over the stack.
+* `IR.navBridgeMor` — the tower morphism induced by a weight at a
+  right-appended superscript.
 
 ## Main statements
 
@@ -93,6 +97,25 @@ its iterated Lemma 4 isomorphism.
 * `IR.eq_comp_invHom` — a factorization through the forward
   component of an isomorphism determines the factorization through
   the inverse.
+* `IR.interpHom_preUnitStack` — `IR.interpHom` sends
+  `IR.preUnitStack` to the semantic pre-unit component, by
+  `IR.induction` on the domain code.
+* `IR.interpHomPreUnit_mk_iota`, `IR.interpHomPreUnit_mk_sigma`,
+  `IR.interpHomPreUnit_mk_delta` — the three cases of that
+  induction.
+* `IR.preUnitComponent_comp_hom`, `IR.navInj_comp_hom`,
+  `IR.mprecompIso_snoc_hom_comp` — the factorizations through the
+  forward hom of the tower isomorphism that merge the
+  `IR.mprecomp_snoc` transport with the Lemma 4 layer.
+* `IR.mplusInj_navBridge`, `IR.navWeight_navBridge` — the iterated
+  injection and the navigation weight against `IR.navBridgeMor`.
+* `IR.mplusInj_natural`, `IR.coprodPairInr_mor`,
+  `IR.deltaIntoWeight_comp` — naturality of the iterated
+  injection, of the fresh right injection, and of the weighted
+  summand inclusion.
+* `IR.interpHom_cast_cod`, `IR.comp_isoOfEq_hom`,
+  `IR.isoOfEq_symm_hom_comp`, `IR.interpMor_isoOfEq_dom` — the
+  transport eliminations the induction consumes.
 
 ## Implementation notes
 
@@ -104,6 +127,14 @@ equalities entering the tower (`IR.mplus_snoc`, `IR.mprecomp_snoc`)
 are carried as `FreeCoprodCompDisc.isoOfEq` transports and commuted
 across the Lemma 4 isomorphism by elimination of the generalized
 equality.
+
+The `linter.checkUnivs false` option on `IR.comp_isoOfEq_hom` and
+`IR.isoOfEq_symm_hom_comp` suppresses the `checkUnivs` warning on
+the separated arity universes `uA`/`uB`: in those two declarations'
+types the pair appears only together under `max`, so the linter
+reports it as unifiable; keeping the two distinct is the point of
+the separation. `IndRec.Basic` carries the same suppression, for
+the same reason.
 
 ## References
 
@@ -3794,6 +3825,1089 @@ theorem interpHom_deltaNav (D : IR.{max uA uB, uB, uI, uO} I O)
         ((interpHom I O D (mprecomp I O (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O
         a.1 a.2 (K' (iout ∘ g')))) f').1 X')) (navInj_cons I O Bout iout Bin' K' g' a _L X')))))
     Bin K g f X
+
+/-- The statement of the identity-image equation at one code: the
+component of `IR.interpHom` at the pre-unit is the semantic pre-unit
+component. -/
+def InterpHomPreUnitMotive (γ : IR.{max uA uB, uB, uI, uO} I O) : Prop :=
+  ∀ (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I),
+    (interpHom I O γ (mprecomp I O L γ) (preUnitStack I O γ L)).1 X =
+      preUnitComponent I O γ L X
+
+/-- Elimination of a codomain-code transport inside `IR.interpHom`, by
+elimination of the generalized equality: the transport passes to an
+object-equality transport on the component. -/
+theorem interpHom_cast_cod (D : IR.{max uA uB, uB, uI, uO} I O)
+    (γ₀ : IR.{max uA uB, uB, uI, uO} I O)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    ∀ (γ'' : IR.{max uA uB, uB, uI, uO} I O) (h : γ₀ = γ'')
+      (f : Hom.{uA, uB, uI, uO} I O D γ₀),
+      (interpHom I O D γ'' (cast (congrArg (Hom I O D) h) f)).1 X =
+        FreeCoprodCompDisc.Hom.comp O ((interpHom I O D γ₀ f).1 X)
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun cc => interpObj I O cc X) h))) :=
+  fun _ h =>
+    Eq.rec (motive := fun γ'' h' =>
+        ∀ f : Hom.{uA, uB, uI, uO} I O D γ₀,
+          (interpHom I O D γ'' (cast (congrArg (Hom I O D) h') f)).1 X =
+            FreeCoprodCompDisc.Hom.comp O ((interpHom I O D γ₀ f).1 X)
+              (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+                (congrArg (fun cc => interpObj I O cc X) h'))))
+      (fun f => (FreeCoprodCompDisc.Hom.comp_id O
+        ((interpHom I O D γ₀ f).1 X)).symm)
+      h
+set_option linter.checkUnivs false in
+/-- Postcomposition with an object-equality transport is the transport
+of the morphism's codomain, by elimination of the generalized
+equality. -/
+theorem comp_isoOfEq_hom (Z W : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    ∀ (V : FreeCoprodCompDisc.{max uA uB, uI} I) (q : W = V)
+      (f : FreeCoprodCompDisc.Hom I Z W),
+      FreeCoprodCompDisc.Hom.comp I f
+          (FreeCoprodCompDisc.Iso.hom I (FreeCoprodCompDisc.isoOfEq I q)) =
+        cast (congrArg (FreeCoprodCompDisc.Hom I Z) q) f :=
+  fun _ q =>
+    Eq.rec (motive := fun _V' q' =>
+        ∀ f : FreeCoprodCompDisc.Hom I Z W,
+          FreeCoprodCompDisc.Hom.comp I f
+              (FreeCoprodCompDisc.Iso.hom I
+                (FreeCoprodCompDisc.isoOfEq I q')) =
+            cast (congrArg (FreeCoprodCompDisc.Hom I Z) q') f)
+      (fun f => FreeCoprodCompDisc.Hom.comp_id I f) q
+set_option linter.checkUnivs false in
+/-- An object-equality transport followed by its inverse is the
+identity, by elimination of the generalized equality. -/
+theorem isoOfEq_symm_hom_comp (Z : FreeCoprodCompDisc.{max uA uB, uO} O) :
+    ∀ (W : FreeCoprodCompDisc.{max uA uB, uO} O) (q : Z = W),
+      FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O q.symm))
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O q)) =
+        FreeCoprodCompDisc.Hom.id O W :=
+  fun _ q =>
+    Eq.rec (motive := fun W' q' =>
+        FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Iso.hom O
+              (FreeCoprodCompDisc.isoOfEq O q'.symm))
+            (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O q')) =
+          FreeCoprodCompDisc.Hom.id O W')
+      (Subtype.ext rfl) q
+
+/-- An object-equality transport of the interpreted argument passes
+through `IR.interpMor`, by elimination of the generalized equality. -/
+theorem interpMor_isoOfEq_dom (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (W Y : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    ∀ (V : FreeCoprodCompDisc.{max uA uB, uI} I) (q : W = V)
+      (h : FreeCoprodCompDisc.Hom I V Y),
+      FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (interpObj I O γ') q)))
+          (interpMor I O γ' V Y h) =
+        interpMor I O γ' W Y
+          (FreeCoprodCompDisc.Hom.comp I
+            (FreeCoprodCompDisc.Iso.hom I (FreeCoprodCompDisc.isoOfEq I q)) h) :=
+  fun _ q =>
+    Eq.rec (motive := fun V' q' =>
+        ∀ h : FreeCoprodCompDisc.Hom I V' Y,
+          FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+                (congrArg (interpObj I O γ') q')))
+              (interpMor I O γ' V' Y h) =
+            interpMor I O γ' W Y
+              (FreeCoprodCompDisc.Hom.comp I
+                (FreeCoprodCompDisc.Iso.hom I
+                  (FreeCoprodCompDisc.isoOfEq I q')) h))
+      (fun _ => rfl) q
+
+/-- The fresh right injection commutes past a coproduct-pair morphism
+with identity left component. -/
+theorem coprodPairInr_mor (a : SupObj.{uB, uI} I)
+    (Z W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I Z W) :
+    FreeCoprodCompDisc.Hom.comp I (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a Z)
+        (FreeCoprodCompDisc.coprodPairMor I
+          (FreeCoprodCompDisc.Hom.id I a) h) =
+      FreeCoprodCompDisc.Hom.comp I h
+        (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a W) :=
+  Subtype.ext rfl
+
+/-- Naturality of the iterated right injection `IR.mplusInj` in the
+base object. -/
+theorem mplusInj_natural (L : List (SupObj.{uB, uI} I))
+    (Z W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I Z W) :
+    FreeCoprodCompDisc.Hom.comp I (mplusInj.{uA, uB, uI} I L Z)
+        (mplusMorMap.{uA, uB, uI} I L Z W h) =
+      FreeCoprodCompDisc.Hom.comp I h (mplusInj.{uA, uB, uI} I L W) :=
+  L.rec (motive := fun L' =>
+      FreeCoprodCompDisc.Hom.comp I (mplusInj.{uA, uB, uI} I L' Z)
+          (mplusMorMap.{uA, uB, uI} I L' Z W h) =
+        FreeCoprodCompDisc.Hom.comp I h (mplusInj.{uA, uB, uI} I L' W))
+    ((FreeCoprodCompDisc.Hom.id_comp I h).trans
+      (FreeCoprodCompDisc.Hom.comp_id I h).symm)
+    (fun a _L ih =>
+      (FreeCoprodCompDisc.Hom.comp_assoc I (mplusInj.{uA, uB, uI} I _L Z)
+          (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I _L Z))
+          (FreeCoprodCompDisc.coprodPairMor I
+            (FreeCoprodCompDisc.Hom.id I a)
+            (mplusMorMap.{uA, uB, uI} I _L Z W h))).trans
+        ((congrArg
+            (FreeCoprodCompDisc.Hom.comp I (mplusInj.{uA, uB, uI} I _L Z) :
+              _ → _)
+            (coprodPairInr_mor I a (mplus.{uA, uB, uI} I _L Z)
+              (mplus.{uA, uB, uI} I _L W)
+              (mplusMorMap.{uA, uB, uI} I _L Z W h))).trans
+          ((FreeCoprodCompDisc.Hom.comp_assoc I (mplusInj.{uA, uB, uI} I _L Z)
+              (mplusMorMap.{uA, uB, uI} I _L Z W h)
+              (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+                (mplus.{uA, uB, uI} I _L W))).symm.trans
+            ((congrArg
+                (fun t => FreeCoprodCompDisc.Hom.comp I t
+                  (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+                    (mplus.{uA, uB, uI} I _L W)))
+                ih).trans
+              (FreeCoprodCompDisc.Hom.comp_assoc I h
+                (mplusInj.{uA, uB, uI} I _L W)
+                (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+                  (mplus.{uA, uB, uI} I _L W)))))))
+
+/-- The weighted summand inclusion commutes with the interpreted
+morphism: reindexing the weight moves the inclusion to the codomain
+object. -/
+theorem deltaIntoWeight_comp (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O) (i : B → I)
+    (Z W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I Z W)
+    (u : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) Z) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) Z)
+            (fun _ => interpObj I O (c i) Z) u)
+          (deltaInto I O B c i Z))
+        (interpMor I O (delta I O B c) Z W h) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O (interpMor I O (c i) Z W h)
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) W)
+            (fun _ => interpObj I O (c i) W)
+            (FreeCoprodCompDisc.Hom.comp I u h)))
+        (deltaInto I O B c i W) :=
+  (FreeCoprodCompDisc.Hom.comp_assoc O
+      (FreeCoprodCompDisc.coprodInj O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) Z)
+        (fun _ => interpObj I O (c i) Z) u)
+      (deltaInto I O B c i Z) (interpMor I O (delta I O B c) Z W h)).trans
+    ((congrArg
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) Z)
+            (fun _ => interpObj I O (c i) Z) u))
+        (deltaInto_natural I O B c i Z W h).symm).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) Z)
+            (fun _ => interpObj I O (c i) Z) u)
+          (FreeCoprodCompDisc.copowerHomMapMor
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+            (interpMor I O (c i)) Z W h)
+          (deltaInto I O B c i W)).symm.trans
+        (congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O t (deltaInto I O B c i W))
+          (FreeCoprodCompDisc.coprodInj_mor O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) Z)
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) W)
+            (fun e' => FreeCoprodCompDisc.Hom.comp I e' h)
+            (fun _ => interpObj I O (c i) Z)
+            (fun _ => interpObj I O (c i) W)
+            (fun _ => interpMor I O (c i) Z W h) u))))
+
+/-- The forward component of `IR.mprecompIso` at a right-appended
+superscript, with the `IR.mplus_snoc` transport moved to the other
+side. -/
+theorem mprecompIso_snoc_hom_comp (L : List (SupObj.{uB, uI} I))
+    (b : SupObj.{uB, uI} I) (γ : IR.{max uA uB, uB, uI, uO} I O)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun cc => interpObj I O cc X) (mprecomp_snoc I O L b γ))))
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (mprecomp I O L γ) b.1 b.2 X)))
+        (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O L γ
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X))) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Iso.hom O
+          (mprecompIso.{uA, uB, uI, uO} I O (L ++ [b]) γ X))
+        (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (interpObj I O γ) (mplus_snoc.{uA, uB, uI} I L b X)))) :=
+  ((congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O t
+        (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (interpObj I O γ) (mplus_snoc.{uA, uB, uI} I L b X)))))
+      (mprecompIso_snoc_hom I O L b γ X)).trans
+    ((FreeCoprodCompDisc.Hom.comp_assoc O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun cc => interpObj I O cc X) (mprecomp_snoc I O L b γ))))
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (mprecomp I O L γ) b.1 b.2 X)))
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O L γ
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X)))
+          (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (interpObj I O γ)
+              (mplus_snoc.{uA, uB, uI} I L b X).symm))))
+        (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (interpObj I O γ) (mplus_snoc.{uA, uB, uI} I L b X))))).trans
+      (congrArg
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+              (congrArg (fun cc => interpObj I O cc X)
+                (mprecomp_snoc I O L b γ))))
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (mprecomp I O L γ) b.1 b.2 X))))
+        ((FreeCoprodCompDisc.Hom.comp_assoc O
+            (FreeCoprodCompDisc.Iso.hom O
+              (mprecompIso.{uA, uB, uI, uO} I O L γ
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X)))
+            (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+              (congrArg (interpObj I O γ)
+                (mplus_snoc.{uA, uB, uI} I L b X).symm)))
+            (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O
+              (congrArg (interpObj I O γ)
+                (mplus_snoc.{uA, uB, uI} I L b X))))).trans
+          ((congrArg
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Iso.hom O
+                  (mprecompIso.{uA, uB, uI, uO} I O L γ
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X))))
+              (isoOfEq_symm_hom_comp.{uA, uB, uO} O
+                (interpObj I O γ (mplus.{uA, uB, uI} I (L ++ [b]) X))
+                (interpObj I O γ (mplus.{uA, uB, uI} I L
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X)))
+                (congrArg (interpObj I O γ)
+                  (mplus_snoc.{uA, uB, uI} I L b X)))).trans
+            (FreeCoprodCompDisc.Hom.comp_id O
+              (FreeCoprodCompDisc.Iso.hom O
+                (mprecompIso.{uA, uB, uI, uO} I O L γ
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X))))))))).symm
+
+/-- The tower morphism induced by a weight at a right-appended
+superscript: the `IR.mplus_snoc` transport followed by the tower action
+on the bridge cotuple at the base. -/
+def navBridgeMor (B : Type uB) (i : B → I) (L : List (SupObj.{uB, uI} I))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (e : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) :
+    FreeCoprodCompDisc.Hom I
+      (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+      (mplus.{uA, uB, uI} I L X) :=
+  FreeCoprodCompDisc.Hom.comp I
+    (FreeCoprodCompDisc.Iso.hom I (FreeCoprodCompDisc.isoOfEq I
+      (mplus_snoc.{uA, uB, uI} I L (⟨B, i⟩ : SupObj.{uB, uI} I) X)))
+    (mplusMorMap.{uA, uB, uI} I L
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+      (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+        (FreeCoprodCompDisc.coprodPairDesc I e (FreeCoprodCompDisc.Hom.id I X))))
+
+/-- The tower injection at a right-appended superscript, followed by the
+weight's tower morphism, is the tower injection at the base stack. -/
+theorem mplusInj_navBridge (B : Type uB) (i : B → I)
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (e : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) :
+    FreeCoprodCompDisc.Hom.comp I
+        (mplusInj.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+        (navBridgeMor.{uA, uB, uI} I B i L X e) =
+      mplusInj.{uA, uB, uI} I L X :=
+  (FreeCoprodCompDisc.Hom.comp_assoc I
+      (mplusInj.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+      (FreeCoprodCompDisc.Iso.hom I (FreeCoprodCompDisc.isoOfEq I
+        (mplus_snoc.{uA, uB, uI} I L (⟨B, i⟩ : SupObj.{uB, uI} I) X)))
+      (mplusMorMap.{uA, uB, uI} I L
+        (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+        (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+          (FreeCoprodCompDisc.coprodPairDesc I e
+            (FreeCoprodCompDisc.Hom.id I X))))).symm.trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp I t
+          (mplusMorMap.{uA, uB, uI} I L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+            (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+              (FreeCoprodCompDisc.coprodPairDesc I e
+                (FreeCoprodCompDisc.Hom.id I X)))))
+        ((comp_isoOfEq_hom.{uA, uB, uI} I X
+            (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+            (mplus.{uA, uB, uI} I L
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+            (mplus_snoc.{uA, uB, uI} I L (⟨B, i⟩ : SupObj.{uB, uI} I) X)
+            (mplusInj.{uA, uB, uI} I
+              (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)).trans
+          (mplusInj_snoc.{uA, uB, uI} I L
+            (⟨B, i⟩ : SupObj.{uB, uI} I) X))).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc I
+          (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I (⟨B, i⟩ : SupObj.{uB, uI} I) X)
+          (mplusInj.{uA, uB, uI} I L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+          (mplusMorMap.{uA, uB, uI} I L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+            (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+              (FreeCoprodCompDisc.coprodPairDesc I e
+                (FreeCoprodCompDisc.Hom.id I X))))).trans
+        ((congrArg
+            (FreeCoprodCompDisc.Hom.comp I
+              (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I
+                (⟨B, i⟩ : SupObj.{uB, uI} I) X))
+            (mplusInj_natural.{uA, uB, uI} I L
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+              (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+                (FreeCoprodCompDisc.coprodPairDesc I e
+                  (FreeCoprodCompDisc.Hom.id I X))))).trans
+          ((FreeCoprodCompDisc.Hom.comp_assoc I
+              (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I
+                (⟨B, i⟩ : SupObj.{uB, uI} I) X)
+              (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+                (FreeCoprodCompDisc.coprodPairDesc I e
+                  (FreeCoprodCompDisc.Hom.id I X)))
+              (mplusInj.{uA, uB, uI} I L X)).symm.trans
+            ((congrArg
+                (fun t => FreeCoprodCompDisc.Hom.comp I t
+                  (mplusInj.{uA, uB, uI} I L X))
+                (Subtype.ext rfl :
+                  FreeCoprodCompDisc.Hom.comp I
+                      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I
+                        (⟨B, i⟩ : SupObj.{uB, uI} I) X)
+                      (FreeCoprodCompDisc.Hom.comp I
+                        (plusLiftBridgeInvHom I B i X)
+                        (FreeCoprodCompDisc.coprodPairDesc I e
+                          (FreeCoprodCompDisc.Hom.id I X))) =
+                    FreeCoprodCompDisc.Hom.id I X)).trans
+              (FreeCoprodCompDisc.Hom.id_comp I
+                (mplusInj.{uA, uB, uI} I L X)))))))
+
+/-- The tower navigation weight, followed by the weight's tower
+morphism, is the weight followed by the tower injection at the base
+stack. -/
+theorem navWeight_navBridge (B : Type uB) (i : B → I)
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (e : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) :
+    FreeCoprodCompDisc.Hom.comp I
+        (navWeight I B i B _root_.id X L)
+        (navBridgeMor.{uA, uB, uI} I B i L X e) =
+      FreeCoprodCompDisc.Hom.comp I e (mplusInj.{uA, uB, uI} I L X) :=
+  (FreeCoprodCompDisc.Hom.comp_assoc I
+      (navWeight I B i B _root_.id X L)
+      (FreeCoprodCompDisc.Iso.hom I (FreeCoprodCompDisc.isoOfEq I
+        (mplus_snoc.{uA, uB, uI} I L (⟨B, i⟩ : SupObj.{uB, uI} I) X)))
+      (mplusMorMap.{uA, uB, uI} I L
+        (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+        (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+          (FreeCoprodCompDisc.coprodPairDesc I e
+            (FreeCoprodCompDisc.Hom.id I X))))).symm.trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp I t
+          (mplusMorMap.{uA, uB, uI} I L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+            (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+              (FreeCoprodCompDisc.coprodPairDesc I e
+                (FreeCoprodCompDisc.Hom.id I X)))))
+        ((comp_isoOfEq_hom.{uA, uB, uI} I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+            (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+            (mplus.{uA, uB, uI} I L
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+            (mplus_snoc.{uA, uB, uI} I L (⟨B, i⟩ : SupObj.{uB, uI} I) X)
+            (navWeight I B i B _root_.id X L)).trans
+          (navWeight_snoc I B i B _root_.id X L))).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc I
+          (⟨fun z => Sum.inl (_root_.id z.down), rfl⟩ :
+            FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+          (mplusInj.{uA, uB, uI} I L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+          (mplusMorMap.{uA, uB, uI} I L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+            (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+              (FreeCoprodCompDisc.coprodPairDesc I e
+                (FreeCoprodCompDisc.Hom.id I X))))).trans
+        ((congrArg
+            (FreeCoprodCompDisc.Hom.comp I
+              (⟨fun z => Sum.inl (_root_.id z.down), rfl⟩ :
+                FreeCoprodCompDisc.Hom I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X)))
+            (mplusInj_natural.{uA, uB, uI} I L
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+              (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+                (FreeCoprodCompDisc.coprodPairDesc I e
+                  (FreeCoprodCompDisc.Hom.id I X))))).trans
+          ((FreeCoprodCompDisc.Hom.comp_assoc I
+              (⟨fun z => Sum.inl (_root_.id z.down), rfl⟩ :
+                FreeCoprodCompDisc.Hom I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+              (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+                (FreeCoprodCompDisc.coprodPairDesc I e
+                  (FreeCoprodCompDisc.Hom.id I X)))
+              (mplusInj.{uA, uB, uI} I L X)).symm.trans
+            (congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp I t
+                (mplusInj.{uA, uB, uI} I L X))
+              (Subtype.ext rfl :
+                FreeCoprodCompDisc.Hom.comp I
+                    (⟨fun z => Sum.inl (_root_.id z.down), rfl⟩ :
+                      FreeCoprodCompDisc.Hom I
+                        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                        (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+                          I ⟨B, i⟩ X))
+                    (FreeCoprodCompDisc.Hom.comp I
+                      (plusLiftBridgeInvHom I B i X)
+                      (FreeCoprodCompDisc.coprodPairDesc I e
+                        (FreeCoprodCompDisc.Hom.id I X))) =
+                  e))))))
+
+/-- The tower-conjugated navigation inclusion, followed by the tower
+isomorphism at the extended stack, is the weighted copower injection
+and the summand inclusion at the tower coproduct. -/
+theorem navInj_comp_hom (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O) (g : Bin → Bout)
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O (navInj I O Bout iout Bin K g L X)
+        (FreeCoprodCompDisc.Iso.hom O
+          (mprecompIso.{uA, uB, uI, uO} I O
+            (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O Bin K) X)) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Iso.hom O
+          (mprecompIso.{uA, uB, uI, uO} I O
+            (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (K (iout ∘ g)) X))
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+              (mplus.{uA, uB, uI} I
+                (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+            (fun _ => interpObj I O (K (iout ∘ g))
+              (mplus.{uA, uB, uI} I
+                (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+            (navWeight I Bout iout Bin g X L))
+          (deltaInto I O Bin K (iout ∘ g)
+            (mplus.{uA, uB, uI} I
+              (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) :=
+  (congrArg
+      (FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O
+            (mprecompIso.{uA, uB, uI, uO} I O
+              (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (K (iout ∘ g)) X))
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.coprodInj O
+              (FreeCoprodCompDisc.Hom I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+                (mplus.{uA, uB, uI} I
+                  (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+              (fun _ => interpObj I O (K (iout ∘ g))
+                (mplus.{uA, uB, uI} I
+                  (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+              (navWeight I Bout iout Bin g X L))
+            (deltaInto I O Bin K (iout ∘ g)
+              (mplus.{uA, uB, uI} I
+                (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))))
+      (FreeCoprodCompDisc.Iso.invHom_hom O
+        (mprecompIso.{uA, uB, uI, uO} I O
+          (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+          (delta I O Bin K) X))).trans
+    (FreeCoprodCompDisc.Hom.comp_id O
+      (FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Iso.hom O
+          (mprecompIso.{uA, uB, uI, uO} I O
+            (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (K (iout ∘ g)) X))
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+              (mplus.{uA, uB, uI} I
+                (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+            (fun _ => interpObj I O (K (iout ∘ g))
+              (mplus.{uA, uB, uI} I
+                (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+            (navWeight I Bout iout Bin g X L))
+          (deltaInto I O Bin K (iout ∘ g)
+            (mplus.{uA, uB, uI} I
+              (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))))
+
+/-- The semantic pre-unit component, followed by the tower
+isomorphism, is the interpreted tower injection. -/
+theorem preUnitComponent_comp_hom (γ : IR.{max uA uB, uB, uI, uO} I O)
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O (preUnitComponent I O γ L X)
+        (FreeCoprodCompDisc.Iso.hom O
+          (mprecompIso.{uA, uB, uI, uO} I O L γ X)) =
+      interpMor I O γ X (mplus.{uA, uB, uI} I L X)
+        (mplusInj.{uA, uB, uI} I L X) :=
+  (congrArg
+      (FreeCoprodCompDisc.Hom.comp O
+        (interpMor I O γ X (mplus.{uA, uB, uI} I L X)
+          (mplusInj.{uA, uB, uI} I L X)))
+      (FreeCoprodCompDisc.Iso.invHom_hom O
+        (mprecompIso.{uA, uB, uI, uO} I O L γ X))).trans
+    (FreeCoprodCompDisc.Hom.comp_id O
+      (interpMor I O γ X (mplus.{uA, uB, uI} I L X)
+        (mplusInj.{uA, uB, uI} I L X)))
+
+/-- The reduced form of the per-weight identity-image equation: after
+the tower isomorphisms cancel, both routes are the interpreted tower
+injection followed by the reindexed weighted summand inclusion. -/
+theorem interpHomPreUnit_deltaWeightRight (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomPreUnitMotive I O (d x))
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (i : B → I)
+    (e : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) :
+    FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (d (ULift.up i))
+          (mprecomp I O (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+            (mk I O (Sum.inr (Sum.inr B)) d))
+          (deltaNav I O (d (ULift.up i)) B i B (fun i' => d (ULift.up i'))
+            _root_.id L
+            (preUnitStack I O (d (ULift.up i))
+              (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])))).1 X)
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O
+            (mprecompIso.{uA, uB, uI, uO} I O
+              (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+              (mk I O (Sum.inr (Sum.inr B)) d) X))
+          (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d)
+            (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+            (mplus.{uA, uB, uI} I L X)
+            (navBridgeMor.{uA, uB, uI} I B i L X e))) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O
+          (FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+          (fun _ => interpObj I O (d (ULift.up i)) X) e)
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaInto I O B (fun j => d (ULift.up j)) i X)
+          (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d) X
+            (mplus.{uA, uB, uI} I L X) (mplusInj.{uA, uB, uI} I L X))) :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O t
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O
+            (mprecompIso.{uA, uB, uI, uO} I O
+              (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+              (mk I O (Sum.inr (Sum.inr B)) d) X))
+          (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d)
+            (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+            (mplus.{uA, uB, uI} I L X)
+            (navBridgeMor.{uA, uB, uI} I B i L X e))))
+      ((interpHom_deltaNav I O (d (ULift.up i)) B i B
+          (fun i' => d (ULift.up i')) _root_.id L
+          (preUnitStack I O (d (ULift.up i))
+            (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])) X).trans
+        (congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O t
+            (navInj I O B i B (fun i' => d (ULift.up i')) _root_.id L X))
+          (ih (ULift.up i) (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)))).trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O
+          (preUnitComponent I O (d (ULift.up i))
+            (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+          (FreeCoprodCompDisc.Hom.comp O t
+            (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d)
+              (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+              (mplus.{uA, uB, uI} I L X)
+              (navBridgeMor.{uA, uB, uI} I B i L X e))))
+        (navInj_comp_hom I O B i B (fun i' => d (ULift.up i')) _root_.id
+          L X)).trans
+      ((congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O t
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.coprodInj O
+                  (FreeCoprodCompDisc.Hom I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                    (mplus.{uA, uB, uI} I
+                      (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X))
+                  (fun _ => interpObj I O (d (ULift.up i))
+                    (mplus.{uA, uB, uI} I
+                      (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X))
+                  (navWeight I B i B _root_.id X L))
+                (deltaInto I O B (fun j => d (ULift.up j)) i
+                  (mplus.{uA, uB, uI} I
+                    (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)))
+              (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d)
+                (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+                (mplus.{uA, uB, uI} I L X)
+                (navBridgeMor.{uA, uB, uI} I B i L X e))))
+          (preUnitComponent_comp_hom I O (d (ULift.up i))
+            (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)).trans
+        ((congrArg
+            (FreeCoprodCompDisc.Hom.comp O
+              (interpMor I O (d (ULift.up i)) X
+                (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+                (mplusInj.{uA, uB, uI} I
+                  (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)))
+            (deltaIntoWeight_comp I O B (fun j => d (ULift.up j)) i
+              (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+              (mplus.{uA, uB, uI} I L X)
+              (navBridgeMor.{uA, uB, uI} I B i L X e)
+              (navWeight I B i B _root_.id X L))).trans
+          ((congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Hom.comp O t
+                  (FreeCoprodCompDisc.coprodInj O
+                    (FreeCoprodCompDisc.Hom I
+                      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                      (mplus.{uA, uB, uI} I L X))
+                    (fun _ => interpObj I O (d (ULift.up i))
+                      (mplus.{uA, uB, uI} I L X))
+                    (FreeCoprodCompDisc.Hom.comp I
+                      (navWeight I B i B _root_.id X L)
+                      (navBridgeMor.{uA, uB, uI} I B i L X e))))
+                (deltaInto I O B (fun j => d (ULift.up j)) i
+                  (mplus.{uA, uB, uI} I L X)))
+              (interpMor_comp I O (d (ULift.up i)) X
+                (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+                (mplus.{uA, uB, uI} I L X)
+                (mplusInj.{uA, uB, uI} I
+                  (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+                (navBridgeMor.{uA, uB, uI} I B i L X e)).symm).trans
+            ((congrArg
+                (fun t => FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Hom.comp O
+                    (interpMor I O (d (ULift.up i)) X
+                      (mplus.{uA, uB, uI} I L X) t)
+                    (FreeCoprodCompDisc.coprodInj O
+                      (FreeCoprodCompDisc.Hom I
+                        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                        (mplus.{uA, uB, uI} I L X))
+                      (fun _ => interpObj I O (d (ULift.up i))
+                        (mplus.{uA, uB, uI} I L X))
+                      (FreeCoprodCompDisc.Hom.comp I
+                        (navWeight I B i B _root_.id X L)
+                        (navBridgeMor.{uA, uB, uI} I B i L X e))))
+                  (deltaInto I O B (fun j => d (ULift.up j)) i
+                    (mplus.{uA, uB, uI} I L X)))
+                (mplusInj_navBridge.{uA, uB, uI} I B i L X e)).trans
+              ((congrArg
+                  (fun t => FreeCoprodCompDisc.Hom.comp O
+                    (FreeCoprodCompDisc.Hom.comp O
+                      (interpMor I O (d (ULift.up i)) X
+                        (mplus.{uA, uB, uI} I L X)
+                        (mplusInj.{uA, uB, uI} I L X))
+                      (FreeCoprodCompDisc.coprodInj O
+                        (FreeCoprodCompDisc.Hom I
+                          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                          (mplus.{uA, uB, uI} I L X))
+                        (fun _ => interpObj I O (d (ULift.up i))
+                          (mplus.{uA, uB, uI} I L X))
+                        t))
+                    (deltaInto I O B (fun j => d (ULift.up j)) i
+                      (mplus.{uA, uB, uI} I L X)))
+                  (navWeight_navBridge.{uA, uB, uI} I B i L X e)).trans
+                (deltaIntoWeight_comp I O B (fun j => d (ULift.up j)) i X
+                  (mplus.{uA, uB, uI} I L X)
+                  (mplusInj.{uA, uB, uI} I L X) e).symm))))))
+
+/-- The per-weight identity-image equation at a `δ`-domain: at each
+weight out of the lifted arity, the copower-adjunction transport of the
+navigated subcode pre-unit is the weight's injection followed by the
+summand inclusion and the semantic pre-unit component. -/
+theorem interpHomPreUnit_deltaWeight (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomPreUnitMotive I O (d x))
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (i : B → I)
+    (e : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O (d (ULift.up i))
+              (precomp I O B i (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)))
+              (preUnitDeltaData I O B d L i)).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O
+                (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) B i X)))
+          ((plusLiftBridgeNatInv I O B i
+            (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d))).1 X))
+        (interpMor I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d))
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+          X
+          (FreeCoprodCompDisc.coprodPairDesc I e
+            (FreeCoprodCompDisc.Hom.id I X))) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O
+          (FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+          (fun _ => interpObj I O (d (ULift.up i)) X) e)
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaInto I O B (fun j => d (ULift.up j)) i X)
+          (preUnitComponent I O (mk I O (Sum.inr (Sum.inr B)) d) L X)) :=
+  eq_comp_invHom O (interpObj I O (d (ULift.up i)) X)
+    (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X)
+    (interpObj I O (mk I O (Sum.inr (Sum.inr B)) d) (mplus.{uA, uB, uI} I L X))
+    (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O (d (ULift.up i))
+            (precomp I O B i (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)))
+            (preUnitDeltaData I O B d L i)).1 X)
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O
+              (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) B i X)))
+        ((plusLiftBridgeNatInv I O B i
+          (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d))).1 X))
+      (interpMor I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d))
+        (FreeCoprodCompDisc.plus I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        X
+        (FreeCoprodCompDisc.coprodPairDesc I e (FreeCoprodCompDisc.Hom.id I X))))
+    (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.coprodInj O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        (fun _ => interpObj I O (d (ULift.up i)) X) e)
+      (FreeCoprodCompDisc.Hom.comp O
+        (deltaInto I O B (fun j => d (ULift.up j)) i X)
+        (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d) X
+          (mplus.{uA, uB, uI} I L X) (mplusInj.{uA, uB, uI} I L X))))
+    (mprecompIso.{uA, uB, uI, uO} I O L (mk I O (Sum.inr (Sum.inr B)) d) X)
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O (d (ULift.up i))
+              (precomp I O B i
+                (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)))
+              (preUnitDeltaData I O B d L i)).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O
+                (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) B i X)))
+          (FreeCoprodCompDisc.Hom.comp O t
+            (FreeCoprodCompDisc.Iso.hom O
+              (mprecompIso.{uA, uB, uI, uO} I O L
+                (mk I O (Sum.inr (Sum.inr B)) d) X))))
+        (interpMor_comp I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d))
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X)
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+            X (plusLiftBridgeInvHom I B i X)
+            (FreeCoprodCompDisc.coprodPairDesc I e
+              (FreeCoprodCompDisc.Hom.id I X))).symm).trans
+      ((congrArg
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              ((interpHom I O (d (ULift.up i))
+                (precomp I O B i
+                  (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)))
+                (preUnitDeltaData I O B d L i)).1 X)
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O
+                  (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) B i X))))
+          (mprecompIso_natural.{uA, uB, uI, uO} I O L
+            (mk I O (Sum.inr (Sum.inr B)) d)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+            (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
+              (FreeCoprodCompDisc.coprodPairDesc I e
+                (FreeCoprodCompDisc.Hom.id I X))))).trans
+        ((congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Hom.comp O t
+                (FreeCoprodCompDisc.Iso.hom O
+                  (interpPrecompIso I O
+                    (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) B i X)))
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Iso.hom O
+                  (mprecompIso.{uA, uB, uI, uO} I O L
+                    (mk I O (Sum.inr (Sum.inr B)) d)
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X)))
+                (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d)
+                  (mplus.{uA, uB, uI} I L
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+                  (mplus.{uA, uB, uI} I L X)
+                  (mplusMorMap.{uA, uB, uI} I L
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+                    (FreeCoprodCompDisc.Hom.comp I
+                      (plusLiftBridgeInvHom I B i X)
+                      (FreeCoprodCompDisc.coprodPairDesc I e
+                        (FreeCoprodCompDisc.Hom.id I X)))))))
+            (interpHom_cast_cod I O (d (ULift.up i))
+              (mprecomp I O (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+                (mk I O (Sum.inr (Sum.inr B)) d))
+              X
+              (precomp I O B i
+                (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)))
+              (mprecomp_snoc I O L (⟨B, i⟩ : SupObj.{uB, uI} I)
+                (mk I O (Sum.inr (Sum.inr B)) d))
+              (deltaNav I O (d (ULift.up i)) B i B (fun i' => d (ULift.up i'))
+                _root_.id L
+                (preUnitStack I O (d (ULift.up i))
+                  (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]))))).trans
+          ((congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O
+                ((interpHom I O (d (ULift.up i))
+                  (mprecomp I O (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+                    (mk I O (Sum.inr (Sum.inr B)) d))
+                  (deltaNav I O (d (ULift.up i)) B i B
+                    (fun i' => d (ULift.up i')) _root_.id L
+                    (preUnitStack I O (d (ULift.up i))
+                      (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])))).1 X)
+                (FreeCoprodCompDisc.Hom.comp O t
+                  (interpMor I O (mk I O (Sum.inr (Sum.inr B)) d)
+                    (mplus.{uA, uB, uI} I L
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+                    (mplus.{uA, uB, uI} I L X)
+                    (mplusMorMap.{uA, uB, uI} I L
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+                      (FreeCoprodCompDisc.Hom.comp I
+                        (plusLiftBridgeInvHom I B i X)
+                        (FreeCoprodCompDisc.coprodPairDesc I e
+                          (FreeCoprodCompDisc.Hom.id I X)))))))
+              (mprecompIso_snoc_hom_comp I O L (⟨B, i⟩ : SupObj.{uB, uI} I)
+                (mk I O (Sum.inr (Sum.inr B)) d) X)).trans
+            ((congrArg
+                (fun t => FreeCoprodCompDisc.Hom.comp O
+                  ((interpHom I O (d (ULift.up i))
+                    (mprecomp I O (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+                      (mk I O (Sum.inr (Sum.inr B)) d))
+                    (deltaNav I O (d (ULift.up i)) B i B
+                      (fun i' => d (ULift.up i')) _root_.id L
+                      (preUnitStack I O (d (ULift.up i))
+                        (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])))).1 X)
+                  (FreeCoprodCompDisc.Hom.comp O
+                    (FreeCoprodCompDisc.Iso.hom O
+                      (mprecompIso.{uA, uB, uI, uO} I O
+                        (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)])
+                        (mk I O (Sum.inr (Sum.inr B)) d) X))
+                    t))
+                (interpMor_isoOfEq_dom I O (mk I O (Sum.inr (Sum.inr B)) d)
+                  (mplus.{uA, uB, uI} I
+                    (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
+                  (mplus.{uA, uB, uI} I L X)
+                  (mplus.{uA, uB, uI} I L
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+                  (mplus_snoc.{uA, uB, uI} I L
+                    (⟨B, i⟩ : SupObj.{uB, uI} I) X)
+                  (mplusMorMap.{uA, uB, uI} I L
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X) X
+                    (FreeCoprodCompDisc.Hom.comp I
+                      (plusLiftBridgeInvHom I B i X)
+                      (FreeCoprodCompDisc.coprodPairDesc I e
+                        (FreeCoprodCompDisc.Hom.id I X)))))).trans
+              (interpHomPreUnit_deltaWeightRight I O B d ih L X i e))))))
+
+/-- The per-summand identity-image equation at a `δ`-domain: the
+navigated subcode pre-unit's transported interpretation is the summand
+inclusion followed by the semantic pre-unit component. -/
+theorem interpHomPreUnit_deltaSummand (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomPreUnitMotive I O (d x))
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (i : B → I) :
+    (interpHomDeltaSummand I O B (fun j => d (ULift.up j))
+        (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) i
+        (preUnitDeltaData I O B d L i)).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        (deltaInto I O B (fun j => d (ULift.up j)) i X)
+        (preUnitComponent I O (mk I O (Sum.inr (Sum.inr B)) d) L X) :=
+  (congrArg
+      (FreeCoprodCompDisc.coprodDesc O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        (fun _ => interpObj I O (d (ULift.up i)) X)
+        (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X))
+      (funext (fun e =>
+        interpHomPreUnit_deltaWeight I O B d ih L X i e))).trans
+    (FreeCoprodCompDisc.coprodDesc_eta O
+      (FreeCoprodCompDisc.Hom I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+      (fun _ => interpObj I O (d (ULift.up i)) X)
+      (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X)
+      (FreeCoprodCompDisc.Hom.comp O
+        (deltaInto I O B (fun j => d (ULift.up j)) i X)
+        (preUnitComponent I O (mk I O (Sum.inr (Sum.inr B)) d) L X)))
+
+/-- The `δ`-domain case of the identity-image equation. -/
+theorem interpHomPreUnit_mk_delta (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomPreUnitMotive I O (d x)) :
+    InterpHomPreUnitMotive I O (mk I O (Sum.inr (Sum.inr B)) d) :=
+  fun L X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inr (Sum.inr B)) d)
+          (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) t).1 X)
+        (funext (fun i => preUnitStack_mk_delta I O B d L i))).trans
+      ((interpHom_delta I O B (fun j => d (ULift.up j))
+          (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d))
+          (preUnitDeltaData I O B d L) X).trans
+        ((congrArg
+            (deltaDesc I O B (fun j => d (ULift.up j)) X
+              (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X))
+            (funext (fun i =>
+              interpHomPreUnit_deltaSummand I O B d ih L X i))).trans
+          (deltaDesc_eta I O B (fun j => d (ULift.up j)) X
+            (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inr B)) d)) X)
+            (preUnitComponent I O (mk I O (Sum.inr (Sum.inr B)) d) L X))))
+
+/-- The identity-image equation at an `ι`-domain, with the codomain
+code and the target morphism generalized: at the reflexive instance the
+codomain interpretation is the singleton object, so any two morphisms
+into it agree. -/
+theorem interpHomPreUnit_iotaGen (o : O)
+    (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    ∀ (γ'' : IR.{max uA uB, uB, uI, uO} I O)
+      (hh : iota.{max uA uB, uB, uI, uO} I O o = γ'')
+      (t : FreeCoprodCompDisc.Hom O
+        (interpObj I O (mk I O (Sum.inl o) d) X) (interpObj I O γ'' X)),
+      (interpHom I O (mk I O (Sum.inl o) d) γ''
+        (cast (congrArg (Hom I O (mk I O (Sum.inl o) d)) hh)
+          (ULift.up (PLift.up rfl) :
+            Hom.{uA, uB, uI, uO} I O (mk I O (Sum.inl o) d)
+              (iota.{max uA uB, uB, uI, uO} I O o)))).1 X = t :=
+  fun _ hh =>
+    Eq.rec (motive := fun (γ'' : IR.{max uA uB, uB, uI, uO} I O)
+        (hh' : iota.{max uA uB, uB, uI, uO} I O o = γ'') =>
+        ∀ t : FreeCoprodCompDisc.Hom O
+          (interpObj I O (mk I O (Sum.inl o) d) X) (interpObj I O γ'' X),
+          (interpHom I O (mk I O (Sum.inl o) d) γ''
+            (cast (congrArg (Hom I O (mk I O (Sum.inl o) d)) hh')
+              (ULift.up (PLift.up rfl) :
+                Hom.{uA, uB, uI, uO} I O (mk I O (Sum.inl o) d)
+                  (iota.{max uA uB, uB, uI, uO} I O o)))).1 X = t)
+      (fun _ => Subtype.ext (funext (fun _ => congrArg ULift.up rfl))) hh
+
+/-- The `ι`-domain case of the identity-image equation. -/
+theorem interpHomPreUnit_mk_iota (o : O)
+    (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O) :
+    InterpHomPreUnitMotive I O (mk I O (Sum.inl o) d) :=
+  fun L X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inl o) d)
+          (mprecomp I O L (mk I O (Sum.inl o) d)) t).1 X)
+        (preUnitStack_mk_iota I O o d L)).trans
+      (interpHomPreUnit_iotaGen I O o d X
+        (mprecomp I O L (mk I O (Sum.inl o) d))
+        (mprecomp_iota_mk I O L o d).symm
+        (preUnitComponent I O (mk I O (Sum.inl o) d) L X))
+
+/-- The per-summand identity-image equation at a `σ`-domain: the stack
+`σ`-push of the subcode's pre-unit is the semantic `σ`-injection
+followed by the pre-unit component. -/
+theorem interpHomPreUnit_sigmaSummand (A : Type (max uA uB))
+    (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomPreUnitMotive I O (d x))
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (a : A) :
+    (interpHom I O (d (ULift.up a))
+        (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d))
+        (msigmaPush I O (d (ULift.up a)) A (fun a' => d (ULift.up a')) a L
+          (preUnitStack I O (d (ULift.up a)) L))).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O A
+          (fun a' => interpObj I O (d (ULift.up a')) X) a)
+        (preUnitComponent I O (mk I O (Sum.inr (Sum.inl A)) d) L X) :=
+  (interpHom_msigmaPush I O (d (ULift.up a)) A (fun a' => d (ULift.up a')) a L
+      (preUnitStack I O (d (ULift.up a)) L) X).trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O t
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O
+                (mprecompIso.{uA, uB, uI, uO} I O L (d (ULift.up a)) X))
+              (FreeCoprodCompDisc.coprodInj O A
+                (fun a' => interpObj I O (d (ULift.up a'))
+                  (mplus.{uA, uB, uI} I L X)) a))
+            (FreeCoprodCompDisc.Iso.invHom O
+              (mprecompIso.{uA, uB, uI, uO} I O L
+                (mk I O (Sum.inr (Sum.inl A)) d) X))))
+        (ih (ULift.up a) L X)).trans
+      ((congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O
+            (interpMor I O (d (ULift.up a)) X (mplus.{uA, uB, uI} I L X)
+              (mplusInj.{uA, uB, uI} I L X))
+            (FreeCoprodCompDisc.Hom.comp O t
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.coprodInj O A
+                  (fun a' => interpObj I O (d (ULift.up a'))
+                    (mplus.{uA, uB, uI} I L X)) a)
+                (FreeCoprodCompDisc.Iso.invHom O
+                  (mprecompIso.{uA, uB, uI, uO} I O L
+                    (mk I O (Sum.inr (Sum.inl A)) d) X)))))
+          (FreeCoprodCompDisc.Iso.invHom_hom O
+            (mprecompIso.{uA, uB, uI, uO} I O L (d (ULift.up a)) X))).trans
+        (congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O t
+            (FreeCoprodCompDisc.Iso.invHom O
+              (mprecompIso.{uA, uB, uI, uO} I O L
+                (mk I O (Sum.inr (Sum.inl A)) d) X)))
+          (interpMor_sigma_inj I O A (fun a' => d (ULift.up a')) a X
+            (mplus.{uA, uB, uI} I L X) (mplusInj.{uA, uB, uI} I L X)).symm)))
+
+/-- The `σ`-domain case of the identity-image equation. -/
+theorem interpHomPreUnit_mk_sigma (A : Type (max uA uB))
+    (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomPreUnitMotive I O (d x)) :
+    InterpHomPreUnitMotive I O (mk I O (Sum.inr (Sum.inl A)) d) :=
+  fun L X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inr (Sum.inl A)) d)
+          (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d)) t).1 X)
+        (funext (fun a => preUnitStack_mk_sigma I O A d L a))).trans
+      ((interpHom_sigma I O A (fun a => d (ULift.up a))
+          (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d))
+          (fun a => msigmaPush I O (d (ULift.up a)) A
+            (fun a' => d (ULift.up a')) a L
+            (preUnitStack I O (d (ULift.up a)) L)) X).trans
+        ((congrArg
+            (FreeCoprodCompDisc.coprodDesc O A
+              (fun a => interpObj I O (d (ULift.up a)) X)
+              (interpObj I O
+                (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d)) X))
+            (funext (fun a =>
+              interpHomPreUnit_sigmaSummand I O A d ih L X a))).trans
+          (FreeCoprodCompDisc.coprodDesc_eta O A
+            (fun a => interpObj I O (d (ULift.up a)) X)
+            (interpObj I O (mprecomp I O L (mk I O (Sum.inr (Sum.inl A)) d)) X)
+            (preUnitComponent I O (mk I O (Sum.inr (Sum.inl A)) d) L X))))
+
+/-- `IR.interpHom` sends `IR.preUnitStack` to the semantic pre-unit
+component, by `IR.induction`. -/
+theorem interpHom_preUnitStack (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    InterpHomPreUnitMotive I O γ :=
+  induction I O (InterpHomPreUnitMotive I O)
+    (fun s => match s with
+      | Sum.inl o => fun d _ => interpHomPreUnit_mk_iota I O o d
+      | Sum.inr (Sum.inl A) => fun d ih => interpHomPreUnit_mk_sigma I O A d ih
+      | Sum.inr (Sum.inr B) => fun d ih => interpHomPreUnit_mk_delta I O B d ih)
+    γ
 
 end IR
 
