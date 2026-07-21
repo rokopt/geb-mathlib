@@ -48,6 +48,10 @@ its iterated Lemma 4 isomorphism.
   of the Lemma 4 `δ`-square at that inclusion.
 * `IR.InterpHomDeltaEmptyPushMotive` — the statement of the
   `IR.deltaEmptyPush` characterization at one code.
+* `IR.navWeight`, `IR.navReindex` — the tower navigation weight,
+  and the reindexing of a lifted direction family along the
+  inclusion of the all-unresolved classifier's subtype.
+* `IR.navInj` — the tower-conjugated navigation inclusion.
 
 ## Main statements
 
@@ -78,6 +82,17 @@ its iterated Lemma 4 isomorphism.
 * `IR.interpMor_deltaEmpty_inj`,
   `IR.interpPrecompIso_deltaEmpty_inj` — the naturality square of
   the empty-summand inclusion, and the Lemma 4 `δ`-square at it.
+* `IR.interpHom_msigmaPush`, `IR.interpHom_deltaNavBase`,
+  `IR.interpHom_deltaNav` — `IR.interpHom` sends the stack
+  `σ`-push, the base `δ`-navigation, and the tower navigation to
+  composition with the corresponding semantic inclusion.
+* `IR.navWeight_snoc`, `IR.navInj_nil`, `IR.navInj_cons` — the
+  tower navigation weight at a right-appended superscript, and the
+  inclusion equations of `IR.navInj` at the empty and extended
+  stacks.
+* `IR.eq_comp_invHom` — a factorization through the forward
+  component of an isomorphism determines the factorization through
+  the inverse.
 
 ## Implementation notes
 
@@ -2340,6 +2355,1445 @@ theorem interpHom_deltaEmptyPush (γ : IR.{max uA uB, uB, uI, uO} I O) :
       | Sum.inr (Sum.inr B) => fun d ih =>
           interpHom_deltaEmptyPush_mk_delta I O B d ih)
     γ
+
+/-- Cancellation through an isomorphism: a factorization through the
+forward component determines the factorization through the inverse. -/
+theorem eq_comp_invHom (V Y Z : FreeCoprodCompDisc.{uA, uO} O)
+    (f : FreeCoprodCompDisc.Hom O V Y) (g : FreeCoprodCompDisc.Hom O V Z)
+    (e : FreeCoprodCompDisc.Iso O Y Z)
+    (h : FreeCoprodCompDisc.Hom.comp O f (FreeCoprodCompDisc.Iso.hom O e) = g) :
+    f = FreeCoprodCompDisc.Hom.comp O g (FreeCoprodCompDisc.Iso.invHom O e) :=
+  (FreeCoprodCompDisc.Hom.comp_id O f).symm.trans
+    ((congrArg (FreeCoprodCompDisc.Hom.comp O f)
+        (FreeCoprodCompDisc.Iso.hom_invHom O e).symm).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc O f (FreeCoprodCompDisc.Iso.hom O e)
+          (FreeCoprodCompDisc.Iso.invHom O e)).symm.trans
+        (congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O t
+            (FreeCoprodCompDisc.Iso.invHom O e))
+          h)))
+
+/-- The `IR.msigmaPush` characterization: `IR.interpHom` sends a stack
+`σ`-push to the composite with the semantic `σ`-injection conjugated
+through the iterated Lemma 4 isomorphism. -/
+theorem interpHom_msigmaPush (D : IR.{max uA uB, uB, uI, uO} I O)
+    (A' : Type (max uA uB)) (K' : A' → IR.{max uA uB, uB, uI, uO} I O) (a' : A')
+    (L : List (SupObj.{uB, uI} I))
+    (f : Hom.{uA, uB, uI, uO} I O D (mprecomp I O L (K' a')))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpHom I O D (mprecomp I O L (sigma I O A' K'))
+        (msigmaPush I O D A' K' a' L f)).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O D (mprecomp I O L (K' a')) f).1 X)
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Iso.hom O
+              (mprecompIso.{uA, uB, uI, uO} I O L (K' a') X))
+            (FreeCoprodCompDisc.coprodInj O A'
+              (fun a => interpObj I O (K' a) (mplus.{uA, uB, uI} I L X)) a'))
+          (FreeCoprodCompDisc.Iso.invHom O
+            (mprecompIso.{uA, uB, uI, uO} I O L (sigma I O A' K') X))) :=
+  L.rec (motive := fun L' => ∀ (A'' : Type (max uA uB))
+      (K'' : A'' → IR.{max uA uB, uB, uI, uO} I O) (a'' : A'')
+      (f' : Hom.{uA, uB, uI, uO} I O D (mprecomp I O L' (K'' a'')))
+      (X' : FreeCoprodCompDisc.{max uA uB, uI} I),
+      (interpHom I O D (mprecomp I O L' (sigma I O A'' K''))
+          (msigmaPush I O D A'' K'' a'' L' f')).1 X' =
+        FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O D (mprecomp I O L' (K'' a'')) f').1 X')
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O
+                (mprecompIso.{uA, uB, uI, uO} I O L' (K'' a'') X'))
+              (FreeCoprodCompDisc.coprodInj O A''
+                (fun a => interpObj I O (K'' a) (mplus.{uA, uB, uI} I L' X'))
+                a''))
+            (FreeCoprodCompDisc.Iso.invHom O
+              (mprecompIso.{uA, uB, uI, uO} I O L' (sigma I O A'' K'') X'))))
+    (fun A'' K'' a'' f' X' => interpHom_sigmaPush I O D A'' K'' a'' f' X')
+    (fun b _L ih A'' K'' a'' f' X' =>
+      (ih (ULift.{uB} A'') (fun x => precomp I O b.1 b.2 (K'' x.down))
+          (ULift.up a'') f' X').trans
+        (congrArg
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O D
+              (mprecomp I O _L (precomp I O b.1 b.2 (K'' a''))) f').1 X'))
+          ((congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Iso.hom O
+                    (mprecompIso.{uA, uB, uI, uO} I O _L
+                      (precomp I O b.1 b.2 (K'' a'')) X'))
+                  t)
+                (FreeCoprodCompDisc.Iso.invHom O
+                  (mprecompIso.{uA, uB, uI, uO} I O _L
+                    (precomp I O b.1 b.2 (sigma I O A'' K'')) X')))
+              (eq_comp_invHom O
+                (interpObj I O (precomp I O b.1 b.2 (K'' a''))
+                  (mplus.{uA, uB, uI} I _L X'))
+                (interpObj I O (precomp I O b.1 b.2 (sigma I O A'' K''))
+                  (mplus.{uA, uB, uI} I _L X'))
+                (interpObj I O (sigma I O A'' K'')
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b
+                    (mplus.{uA, uB, uI} I _L X')))
+                (FreeCoprodCompDisc.coprodInj O (ULift.{uB} A'')
+                  (fun x => interpObj I O (precomp I O b.1 b.2 (K'' x.down))
+                    (mplus.{uA, uB, uI} I _L X'))
+                  (ULift.up a''))
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Iso.hom O
+                    (interpPrecompIso I O (K'' a'') b.1 b.2
+                      (mplus.{uA, uB, uI} I _L X')))
+                  (FreeCoprodCompDisc.coprodInj O A''
+                    (fun a => interpObj I O (K'' a)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b
+                        (mplus.{uA, uB, uI} I _L X')))
+                    a''))
+                (interpPrecompIso I O (sigma I O A'' K'') b.1 b.2
+                  (mplus.{uA, uB, uI} I _L X'))
+                (interpPrecompIso_sigma_inj I O A'' K'' a'' b.1 b.2
+                  (mplus.{uA, uB, uI} I _L X')))).trans
+            ((FreeCoprodCompDisc.Hom.comp_assoc O
+                (FreeCoprodCompDisc.Iso.hom O
+                  (mprecompIso.{uA, uB, uI, uO} I O _L
+                    (precomp I O b.1 b.2 (K'' a'')) X'))
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Hom.comp O
+                    (FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (K'' a'') b.1 b.2
+                        (mplus.{uA, uB, uI} I _L X')))
+                    (FreeCoprodCompDisc.coprodInj O A''
+                      (fun a => interpObj I O (K'' a)
+                        (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b
+                          (mplus.{uA, uB, uI} I _L X')))
+                      a''))
+                  (FreeCoprodCompDisc.Iso.invHom O
+                    (interpPrecompIso I O (sigma I O A'' K'') b.1 b.2
+                      (mplus.{uA, uB, uI} I _L X'))))
+                (FreeCoprodCompDisc.Iso.invHom O
+                  (mprecompIso.{uA, uB, uI, uO} I O _L
+                    (precomp I O b.1 b.2 (sigma I O A'' K'')) X'))).trans
+              ((congrArg
+                  (FreeCoprodCompDisc.Hom.comp O
+                    (FreeCoprodCompDisc.Iso.hom O
+                      (mprecompIso.{uA, uB, uI, uO} I O _L
+                        (precomp I O b.1 b.2 (K'' a'')) X')))
+                  (FreeCoprodCompDisc.Hom.comp_assoc O
+                    (FreeCoprodCompDisc.Hom.comp O
+                      (FreeCoprodCompDisc.Iso.hom O
+                        (interpPrecompIso I O (K'' a'') b.1 b.2
+                          (mplus.{uA, uB, uI} I _L X')))
+                      (FreeCoprodCompDisc.coprodInj O A''
+                        (fun a => interpObj I O (K'' a)
+                          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b
+                            (mplus.{uA, uB, uI} I _L X')))
+                        a''))
+                    (FreeCoprodCompDisc.Iso.invHom O
+                      (interpPrecompIso I O (sigma I O A'' K'') b.1 b.2
+                        (mplus.{uA, uB, uI} I _L X')))
+                    (FreeCoprodCompDisc.Iso.invHom O
+                      (mprecompIso.{uA, uB, uI, uO} I O _L
+                        (precomp I O b.1 b.2 (sigma I O A'' K'')) X')))).trans
+                ((FreeCoprodCompDisc.Hom.comp_assoc O
+                    (FreeCoprodCompDisc.Iso.hom O
+                      (mprecompIso.{uA, uB, uI, uO} I O _L
+                        (precomp I O b.1 b.2 (K'' a'')) X'))
+                    (FreeCoprodCompDisc.Hom.comp O
+                      (FreeCoprodCompDisc.Iso.hom O
+                        (interpPrecompIso I O (K'' a'') b.1 b.2
+                          (mplus.{uA, uB, uI} I _L X')))
+                      (FreeCoprodCompDisc.coprodInj O A''
+                        (fun a => interpObj I O (K'' a)
+                          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b
+                            (mplus.{uA, uB, uI} I _L X')))
+                        a''))
+                    (FreeCoprodCompDisc.Hom.comp O
+                      (FreeCoprodCompDisc.Iso.invHom O
+                        (interpPrecompIso I O (sigma I O A'' K'') b.1 b.2
+                          (mplus.{uA, uB, uI} I _L X')))
+                      (FreeCoprodCompDisc.Iso.invHom O
+                        (mprecompIso.{uA, uB, uI, uO} I O _L
+                          (precomp I O b.1 b.2 (sigma I O A'' K'')) X')))).symm.trans
+                  (congrArg
+                    (fun t => FreeCoprodCompDisc.Hom.comp O t
+                      (FreeCoprodCompDisc.Hom.comp O
+                        (FreeCoprodCompDisc.Iso.invHom O
+                          (interpPrecompIso I O (sigma I O A'' K'') b.1 b.2
+                            (mplus.{uA, uB, uI} I _L X')))
+                        (FreeCoprodCompDisc.Iso.invHom O
+                          (mprecompIso.{uA, uB, uI, uO} I O _L
+                            (precomp I O b.1 b.2 (sigma I O A'' K'')) X'))))
+                    (FreeCoprodCompDisc.Hom.comp_assoc O
+                      (FreeCoprodCompDisc.Iso.hom O
+                        (mprecompIso.{uA, uB, uI, uO} I O _L
+                          (precomp I O b.1 b.2 (K'' a'')) X'))
+                      (FreeCoprodCompDisc.Iso.hom O
+                        (interpPrecompIso I O (K'' a'') b.1 b.2
+                          (mplus.{uA, uB, uI} I _L X')))
+                      (FreeCoprodCompDisc.coprodInj O A''
+                        (fun a => interpObj I O (K'' a)
+                          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b
+                            (mplus.{uA, uB, uI} I _L X')))
+                        a'')).symm)))))))
+    A' K' a' f X
+
+/-- The `IR.deltaNavBase` characterization: `IR.interpHom` sends the
+base navigation to the composite with the empty-summand inclusion at
+the all-resolved classifier's unresolved subtype, followed by the
+semantic `σ`-injection at that classifier. -/
+theorem interpHom_deltaNavBase (D : IR.{max uA uB, uB, uI, uO} I O)
+    (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O) (g : Bin → Bout)
+    (f : Hom.{uA, uB, uI, uO} I O D (precomp I O Bout iout (K (iout ∘ g))))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpHom I O D (precomp I O Bout iout (delta I O Bin K))
+        (deltaNavBase I O D Bout iout Bin K g f)).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O D (precomp I O Bout iout (K (iout ∘ g))) f).1 X)
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => nomatch z.2)
+            (fun j => precomp I O Bout iout
+              (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+            X)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O Bout iout
+                  (K (precompMerge I Bout iout cl.down j)))) X)
+            (ULift.up (fun b => Sum.inl (g b))))) :=
+  (interpHom_sigmaPush I O D (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+      (fun cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+        (fun j => precomp I O Bout iout
+          (K (precompMerge I Bout iout cl.down j))))
+      (ULift.up (fun b => Sum.inl (g b)))
+      (deltaEmptyPush I O D
+        {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+          Sum.inr PUnit.unit}
+        (fun z => nomatch z.2)
+        (fun j => precomp I O Bout iout
+          (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+        f)
+      X).trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O t
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O Bout iout
+                  (K (precompMerge I Bout iout cl.down j)))) X)
+            (ULift.up (fun b => Sum.inl (g b)))))
+        (interpHom_deltaEmptyPush I O D
+          {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+            Sum.inr PUnit.unit}
+          (fun z => nomatch z.2)
+          (fun j => precomp I O Bout iout
+            (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+          f X)).trans
+      (FreeCoprodCompDisc.Hom.comp_assoc O
+        ((interpHom I O D (precomp I O Bout iout (K (iout ∘ g))) f).1 X)
+        (deltaEmptyInj I O
+          {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+            Sum.inr PUnit.unit}
+          (fun z => nomatch z.2)
+          (fun j => precomp I O Bout iout
+            (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+          X)
+        (FreeCoprodCompDisc.coprodInj O
+          (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+          (fun cl => interpObj I O
+            (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+              (fun j => precomp I O Bout iout
+                (K (precompMerge I Bout iout cl.down j)))) X)
+          (ULift.up (fun b => Sum.inl (g b))))))
+
+/-- The name-level computation of the Lemma 4 `δ`-square at a summand
+of a classifier's unresolved subtype, with every assignment equality
+generalized: both routes transport the summand's Lemma 4 image along
+propositionally equal paths, identified by proof irrelevance at the
+base. -/
+theorem deltaNav_strip (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (q : Q → I) (k : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (cl : Bin → Q ⊕ PUnit.{uB + 1}) :
+    ∀ (j₀ j₂ : {z : Bin // cl z = Sum.inr PUnit.unit} → I) (hj : j₀ = j₂)
+      (w₁ : Bin → Q ⊕ k.1)
+      (s₁ : precompMerge I Q q cl j₂ = Sum.elim q k.2 ∘ w₁)
+      (w₂ : Bin → Q ⊕ k.1) (_hw : w₁ = w₂)
+      (b₀ : Bin → I) (r₀ : precompMerge I Q q cl j₀ = b₀)
+      (s₂ : b₀ = Sum.elim q k.2 ∘ w₂)
+      (n : (interpObj I O
+        (precomp I O Q q (K (precompMerge I Q q cl j₀))) k).1),
+      (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m => interpObj I O (K m)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) s₁)).1
+          ((FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (K (precompMerge I Q q cl j₂)) Q q k)).1
+            (cast (congrArg (fun t => (interpObj I O
+              (precomp I O Q q (K (precompMerge I Q q cl t))) k).1) hj) n))⟩ :
+        (interpObj I O (delta I O Bin K)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+      ⟨w₂, cast (congrArg (fun m => (interpObj I O (K m)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) s₂)
+        ((FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (K b₀) Q q k)).1
+          (cast (congrArg (fun t => (interpObj I O
+            (precomp I O Q q (K t)) k).1) r₀) n))⟩ :=
+  fun j₀ _ hj =>
+    Eq.rec (motive := fun j₂' hj' => ∀ (w₁ : Bin → Q ⊕ k.1)
+        (s₁ : precompMerge I Q q cl j₂' = Sum.elim q k.2 ∘ w₁)
+        (w₂ : Bin → Q ⊕ k.1) (_hw : w₁ = w₂)
+        (b₀ : Bin → I) (r₀ : precompMerge I Q q cl j₀ = b₀)
+        (s₂ : b₀ = Sum.elim q k.2 ∘ w₂)
+        (n : (interpObj I O
+          (precomp I O Q q (K (precompMerge I Q q cl j₀))) k).1),
+        (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun m => interpObj I O (K m)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) s₁)).1
+            ((FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (K (precompMerge I Q q cl j₂')) Q q k)).1
+              (cast (congrArg (fun t => (interpObj I O
+                (precomp I O Q q (K (precompMerge I Q q cl t))) k).1) hj')
+                n))⟩ :
+          (interpObj I O (delta I O Bin K)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+        ⟨w₂, cast (congrArg (fun m => (interpObj I O (K m)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) s₂)
+          ((FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (K b₀) Q q k)).1
+            (cast (congrArg (fun t => (interpObj I O
+              (precomp I O Q q (K t)) k).1) r₀) n))⟩)
+      (fun w₁ s₁ _ hw =>
+        Eq.rec (motive := fun w₂' _ => ∀ (b₀ : Bin → I)
+            (r₀ : precompMerge I Q q cl j₀ = b₀)
+            (s₂ : b₀ = Sum.elim q k.2 ∘ w₂')
+            (n : (interpObj I O
+              (precomp I O Q q (K (precompMerge I Q q cl j₀))) k).1),
+            (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+                (congrArg (fun m => interpObj I O (K m)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                  s₁)).1
+                ((FreeCoprodCompDisc.Iso.hom O
+                  (interpPrecompIso I O (K (precompMerge I Q q cl j₀))
+                    Q q k)).1 n)⟩ :
+              (interpObj I O (delta I O Bin K)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+            ⟨w₂', cast (congrArg (fun m => (interpObj I O (K m)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1)
+                s₂)
+              ((FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (K b₀) Q q k)).1
+                (cast (congrArg (fun t => (interpObj I O
+                  (precomp I O Q q (K t)) k).1) r₀) n))⟩)
+          (fun _ r₀ =>
+            Eq.rec (motive := fun b₀' r₀' => ∀
+                (s₂ : b₀' = Sum.elim q k.2 ∘ w₁)
+                (n : (interpObj I O
+                  (precomp I O Q q (K (precompMerge I Q q cl j₀))) k).1),
+                (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+                    (congrArg (fun m => interpObj I O (K m)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                      s₁)).1
+                    ((FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (K (precompMerge I Q q cl j₀))
+                        Q q k)).1 n)⟩ :
+                  (interpObj I O (delta I O Bin K)
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+                      I ⟨Q, q⟩ k)).1) =
+                ⟨w₁, cast (congrArg (fun m => (interpObj I O (K m)
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+                      I ⟨Q, q⟩ k)).1) s₂)
+                  ((FreeCoprodCompDisc.Iso.hom O
+                    (interpPrecompIso I O (K b₀') Q q k)).1
+                    (cast (congrArg (fun t => (interpObj I O
+                      (precomp I O Q q (K t)) k).1) r₀') n))⟩)
+              (fun s₂ n =>
+                congrArg
+                  (fun t => (⟨w₁, t⟩ :
+                    (interpObj I O (delta I O Bin K)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+                        I ⟨Q, q⟩ k)).1))
+                  (interpObj_isoOfEq_cast I O Bin K
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)
+                    (precompMerge I Q q cl j₀) (Sum.elim q k.2 ∘ w₁) s₁ s₂
+                    ((FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (K (precompMerge I Q q cl j₀))
+                        Q q k)).1 n)))
+              r₀)
+          hw)
+      hj
+
+/-- The all-resolved navigation square: the composite inclusion of the
+`IR.deltaNavBase` characterization, pushed through the Lemma 4
+isomorphism, is the copower injection at the graph weight of the
+factorization followed by the summand inclusion, after the summand's
+Lemma 4 isomorphism. -/
+theorem interpPrecompIso_deltaNav_inj (Bout : Type uB) (iout : Bout → I)
+    (Bin : Type uB) (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (g : Bin → Bout) (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => nomatch z.2)
+            (fun j => precomp I O Bout iout
+              (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+            X)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O Bout iout
+                  (K (precompMerge I Bout iout cl.down j)))) X)
+            (ULift.up (fun b => Sum.inl (g b)))))
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (delta I O Bin K) Bout iout X)) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (K (iout ∘ g)) Bout iout X))
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+            (fun _ => interpObj I O (K (iout ∘ g))
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+            ⟨fun z => Sum.inl (g z.down), rfl⟩))
+        (deltaInto I O Bin K (iout ∘ g)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X)) :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => nomatch z.2)
+            (fun j => precomp I O Bout iout
+              (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+            X)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O Bout iout
+                  (K (precompMerge I Bout iout cl.down j)))) X)
+            (ULift.up (fun b => Sum.inl (g b)))))
+        (FreeCoprodCompDisc.Iso.hom O (t Bout iout X)))
+      (interpPrecompIso_mk I O (Sum.inr (Sum.inr Bin)) (K ∘ ULift.down))).trans
+    (Subtype.ext (funext (fun n =>
+      ((rfl :
+        (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              (deltaEmptyInj I O
+                {z : Bin //
+                  (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+                    Sum.inr PUnit.unit}
+                (fun z => nomatch z.2)
+                (fun j => precomp I O Bout iout
+                  (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+                X)
+              (FreeCoprodCompDisc.coprodInj O
+                (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+                (fun cl => interpObj I O
+                  (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                    (fun j => precomp I O Bout iout
+                      (K (precompMerge I Bout iout cl.down j)))) X)
+                (ULift.up (fun b => Sum.inl (g b)))))
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIsoStep I O (Sum.inr (Sum.inr Bin)) (K ∘ ULift.down)
+                (fun x => interpPrecompIso I O ((K ∘ ULift.down) x))
+                Bout iout X))).1 n =
+          (⟨arrowSumMerge (fun b => Sum.inl (g b))
+            (fun z => ((nomatch z.2 : PEmpty.{1}).elim : X.1)),
+          (FreeCoprodCompDisc.isoOfEq O
+            (congrArg
+              (fun m => interpObj I O (K m)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+              (precompMerge_elim I Bout iout X Bin (fun b => Sum.inl (g b))
+                (fun z => ((nomatch z.2 : PEmpty.{1}).elim : X.1))))).1
+            ((FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O
+                (K (precompMerge I Bout iout (fun b => Sum.inl (g b))
+                  (fun z => X.2 ((nomatch z.2 : PEmpty.{1}).elim))))
+                Bout iout X)).1
+              (cast
+                (congrArg
+                  (fun t => (interpObj I O (precomp I O Bout iout
+                    (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) t)))
+                    X).1)
+                  (funext (fun z => nomatch z.2) :
+                    (fun x : {z : Bin //
+                        (fun b => Sum.inl (g b) :
+                          Bin → Bout ⊕ PUnit.{uB + 1}) z =
+                          Sum.inr PUnit.unit} =>
+                      ((nomatch x.2 : PEmpty.{1}).elim : I)) =
+                      fun z : {z : Bin //
+                        (fun b => Sum.inl (g b) :
+                          Bin → Bout ⊕ PUnit.{uB + 1}) z =
+                          Sum.inr PUnit.unit} =>
+                        X.2 ((nomatch z.2 : PEmpty.{1}).elim)))
+                n))⟩ :
+          (interpObj I O (delta I O Bin K)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X)).1)).trans
+        ((deltaNav_strip I O Bin K Bout iout X (fun b => Sum.inl (g b))
+          (fun x => ((nomatch x.2 : PEmpty.{1}).elim : I))
+          (fun z => X.2 ((nomatch z.2 : PEmpty.{1}).elim))
+          (funext (fun z => nomatch z.2))
+          (arrowSumMerge (fun b => Sum.inl (g b))
+            (fun z => ((nomatch z.2 : PEmpty.{1}).elim : X.1)))
+          (precompMerge_elim I Bout iout X Bin (fun b => Sum.inl (g b))
+            (fun z => ((nomatch z.2 : PEmpty.{1}).elim : X.1)))
+          (fun z => (Sum.inl (g z) : Bout ⊕ X.1))
+          rfl
+          (iout ∘ g)
+          (funext (fun _ => rfl))
+          (funext (fun _ => rfl))
+          n).trans
+          (rfl :
+            (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (K (iout ∘ g)) Bout iout X))
+              (FreeCoprodCompDisc.coprodInj O
+                (FreeCoprodCompDisc.Hom I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                    ⟨Bin, iout ∘ g⟩)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                    ⟨Bout, iout⟩ X))
+                (fun _ => interpObj I O (K (iout ∘ g))
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                    ⟨Bout, iout⟩ X))
+                ⟨fun z => Sum.inl (g z.down), rfl⟩))
+            (deltaInto I O Bin K (iout ∘ g)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                ⟨Bout, iout⟩ X))).1 n =
+              (⟨fun z => Sum.inl (g z),
+          cast
+            (congrArg
+              (fun m => (interpObj I O (K m)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                  ⟨Bout, iout⟩ X)).1)
+              (funext (fun _ => rfl) :
+                iout ∘ g = Sum.elim iout X.2 ∘ fun z : Bin => Sum.inl (g z)))
+            ((FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (K (iout ∘ g)) Bout iout X)).1
+              (cast
+                (congrArg
+                  (fun t => (interpObj I O
+                    (precomp I O Bout iout (K t)) X).1)
+                  (funext (fun _ => rfl) :
+                    precompMerge I Bout iout (fun b => Sum.inl (g b))
+                        (fun x : {z : Bin //
+                          (fun b => Sum.inl (g b) :
+                            Bin → Bout ⊕ PUnit.{uB + 1}) z =
+                              Sum.inr PUnit.unit} =>
+                          ((nomatch x.2 : PEmpty.{1}).elim : I)) =
+                      iout ∘ g))
+                n))⟩ :
+          (interpObj I O (delta I O Bin K)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X)).1)).symm)))))
+
+/-- The tower navigation weight: the graph of the factorization into
+the appended superscript, followed by the iterated right injection up
+the tower. By `List.rec`, so the `cons` equation is definitional. -/
+def navWeight (Bout : Type uB) (iout : Bout → I) (Bin : Type uB) (g : Bin → Bout)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) (L : List (SupObj.{uB, uI} I)) :
+    FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X) :=
+  L.rec (motive := fun L' : List (SupObj.{uB, uI} I) =>
+      FreeCoprodCompDisc.Hom I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+        (mplus.{uA, uB, uI} I (L' ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+    ⟨fun z => Sum.inl (g z.down), rfl⟩
+    (fun a _L ih =>
+      FreeCoprodCompDisc.Hom.comp I ih
+        (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+          (mplus.{uA, uB, uI} I (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))
+
+/-- `IR.navWeight`, transported along `IR.mplus_snoc`, is the graph
+weight at the base followed by the tower injection `IR.mplusInj`. -/
+theorem navWeight_snoc (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (g : Bin → Bout) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (L : List (SupObj.{uB, uI} I)) :
+    cast
+        (congrArg
+          (FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩))
+          (mplus_snoc.{uA, uB, uI} I L (⟨Bout, iout⟩ : SupObj.{uB, uI} I) X))
+        (navWeight I Bout iout Bin g X L) =
+      FreeCoprodCompDisc.Hom.comp I
+        (⟨fun z => Sum.inl (g z.down), rfl⟩ :
+          FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+        (mplusInj.{uA, uB, uI} I L
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X)) :=
+  L.rec (motive := fun L' =>
+      cast
+          (congrArg
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩))
+            (mplus_snoc.{uA, uB, uI} I L' (⟨Bout, iout⟩ : SupObj.{uB, uI} I) X))
+          (navWeight I Bout iout Bin g X L') =
+        FreeCoprodCompDisc.Hom.comp I
+          (⟨fun z => Sum.inl (g z.down), rfl⟩ :
+            FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+          (mplusInj.{uA, uB, uI} I L'
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X)))
+    (FreeCoprodCompDisc.Hom.comp_id I
+      (⟨fun z => Sum.inl (g z.down), rfl⟩ :
+        FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))).symm
+    (fun a _L ih =>
+      (comp_coprodPairInr_cast I a
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+          (mplus.{uA, uB, uI} I (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)
+          (mplus.{uA, uB, uI} I _L
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+          (mplus_snoc.{uA, uB, uI} I _L (⟨Bout, iout⟩ : SupObj.{uB, uI} I) X)
+          (navWeight I Bout iout Bin g X _L)).trans
+        ((congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp I t
+              (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+                (mplus.{uA, uB, uI} I _L
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                    ⟨Bout, iout⟩ X))))
+            ih).trans
+          (FreeCoprodCompDisc.Hom.comp_assoc I
+            (⟨fun z => Sum.inl (g z.down), rfl⟩ :
+              FreeCoprodCompDisc.Hom I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+            (mplusInj.{uA, uB, uI} I _L
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+            (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+              (mplus.{uA, uB, uI} I _L
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                  ⟨Bout, iout⟩ X))))))
+
+/-- The reindexing of a lifted direction family along the inclusion of
+the all-unresolved classifier's subtype (all of the arity). -/
+def navReindex (Bin : Type uB) (j : Bin → I) (Q : Type uB) :
+    FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, j⟩)
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+        ⟨{z : Bin //
+            (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z =
+              Sum.inr PUnit.unit},
+          fun z => j z.1⟩) :=
+  ⟨fun z => ULift.up ⟨z.down, rfl⟩, rfl⟩
+
+/-- `IR.navWeight` at the all-unresolved classifier's subtype,
+restricted along `IR.navReindex`, is `IR.navWeight` at the base
+arity. -/
+theorem navWeight_reindex (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (g : Bin → Bout) (Q : Type uB) (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (L : List (SupObj.{uB, uI} I)) :
+    FreeCoprodCompDisc.Hom.comp I (navReindex.{uA, uB, uI} I Bin (iout ∘ g) Q)
+        (navWeight I Bout iout
+          {z : Bin //
+            (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z =
+              Sum.inr PUnit.unit}
+          (fun z => g z.1) X L) =
+      navWeight I Bout iout Bin g X L :=
+  L.rec (motive := fun L' =>
+      FreeCoprodCompDisc.Hom.comp I (navReindex.{uA, uB, uI} I Bin (iout ∘ g) Q)
+          (navWeight I Bout iout
+            {z : Bin //
+              (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z =
+                Sum.inr PUnit.unit}
+            (fun z => g z.1) X L') =
+        navWeight I Bout iout Bin g X L')
+    (Subtype.ext rfl)
+    (fun a _L ih =>
+      (FreeCoprodCompDisc.Hom.comp_assoc I
+          (navReindex.{uA, uB, uI} I Bin (iout ∘ g) Q)
+          (navWeight I Bout iout
+            {z : Bin //
+              (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z =
+                Sum.inr PUnit.unit}
+            (fun z => g z.1) X _L)
+          (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+            (mplus.{uA, uB, uI} I
+              (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))).symm.trans
+        (congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp I t
+            (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+              (mplus.{uA, uB, uI} I
+                (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))
+          ih))
+
+/-- The all-unresolved navigation square: the copower injection into
+the all-unresolved classifier summand, pushed through the Lemma 4
+isomorphism, is the copower injection at the reindexed weight followed
+by the summand inclusion, after the summand's Lemma 4 isomorphism. -/
+theorem interpPrecompIso_deltaNavAll_inj (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (q : Q → I) (j : Bin → I)
+    (k : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (u : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+        ⟨{z : Bin //
+          (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit},
+          fun z => j z.1⟩)
+      k) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.coprodInj O
+              (FreeCoprodCompDisc.Hom I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                  ⟨{z : Bin //
+                    (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                      z = Sum.inr PUnit.unit},
+                    fun z => j z.1⟩)
+                k)
+              (fun _ => interpObj I O
+                (precomp I O Q q (K (precompMerge I Q q
+                  (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                  (fun z : {z : Bin //
+                    (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                      z = Sum.inr PUnit.unit} =>
+                    j z.1))))
+                k)
+              u)
+            (deltaInto I O {z : Bin //
+              (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit}
+              (fun m => precomp I O Q q (K (precompMerge I Q q
+                (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) m)))
+              (fun z => j z.1) k))
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (Bin → Q ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun m => precomp I O Q q
+                  (K (precompMerge I Q q cl.down m)))) k)
+            (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})))))
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (delta I O Bin K) Q q k)) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O (K j) Q q k))
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, j⟩)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+            (fun _ => interpObj I O (K j)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+            (FreeCoprodCompDisc.Hom.comp I (navReindex.{uA, uB, uI} I Bin j Q)
+              (FreeCoprodCompDisc.Hom.comp I u
+                (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I ⟨Q, q⟩ k)))))
+        (deltaInto I O Bin K j
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.coprodInj O
+              (FreeCoprodCompDisc.Hom I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                  ⟨{z : Bin //
+                    (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                      z = Sum.inr PUnit.unit},
+                    fun z => j z.1⟩)
+                k)
+              (fun _ => interpObj I O
+                (precomp I O Q q (K (precompMerge I Q q
+                  (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                  (fun z : {z : Bin //
+                    (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                      z = Sum.inr PUnit.unit} =>
+                    j z.1))))
+                k)
+              u)
+            (deltaInto I O {z : Bin //
+              (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit}
+              (fun m => precomp I O Q q (K (precompMerge I Q q
+                (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) m)))
+              (fun z => j z.1) k))
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (Bin → Q ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun m => precomp I O Q q
+                  (K (precompMerge I Q q cl.down m)))) k)
+            (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})))))
+        (FreeCoprodCompDisc.Iso.hom O (t Q q k)))
+      (interpPrecompIso_mk I O (Sum.inr (Sum.inr Bin)) (K ∘ ULift.down))).trans
+    (Subtype.ext (funext (fun n =>
+      ((rfl :
+        (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.coprodInj O
+                  (FreeCoprodCompDisc.Hom I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                      ⟨{z : Bin //
+                        (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                          z = Sum.inr PUnit.unit},
+                        fun z => j z.1⟩)
+                    k)
+                  (fun _ => interpObj I O
+                    (precomp I O Q q (K (precompMerge I Q q
+                      (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                      (fun z : {z : Bin //
+                        (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                          z = Sum.inr PUnit.unit} =>
+                        j z.1))))
+                    k)
+                  u)
+                (deltaInto I O {z : Bin //
+                  (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit}
+                  (fun m => precomp I O Q q (K (precompMerge I Q q
+                    (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) m)))
+                  (fun z => j z.1) k))
+              (FreeCoprodCompDisc.coprodInj O
+                (ULift.{max uA uB} (Bin → Q ⊕ PUnit.{uB + 1}))
+                (fun cl => interpObj I O
+                  (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                    (fun m => precomp I O Q q
+                      (K (precompMerge I Q q cl.down m)))) k)
+                (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})))))
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIsoStep I O (Sum.inr (Sum.inr Bin))
+                (K ∘ ULift.down)
+                (fun x => interpPrecompIso I O ((K ∘ ULift.down) x))
+                Q q k))).1 n =
+          (⟨arrowSumMerge
+            (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) (fun z => u.1 (ULift.up z)),
+            (FreeCoprodCompDisc.isoOfEq O
+              (congrArg
+                (fun m => interpObj I O (K m)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                (precompMerge_elim I Q q k Bin
+                  (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                  (fun z => u.1 (ULift.up z))))).1
+              ((FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O
+                  (K (precompMerge I Q q (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                    (fun z => k.2 (u.1 (ULift.up z)))))
+                  Q q k)).1
+                (cast
+                  (congrArg
+                    (fun t => (interpObj I O (precomp I O Q q
+                      (K (precompMerge I Q q
+                        (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) t))) k).1)
+                    (funext (fun z => (congrFun u.2 (ULift.up z)).symm) :
+                      (fun z : {z : Bin //
+                        (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                          z = Sum.inr PUnit.unit} =>
+                        j z.1) =
+                        fun z : {z : Bin //
+                          (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                            z = Sum.inr PUnit.unit} =>
+                          k.2 (u.1 (ULift.up z))))
+                  n))⟩ :
+            (interpObj I O (delta I O Bin K)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1)).trans
+        ((deltaNav_strip I O Bin K Q q k (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+          (fun z => j z.1)
+          (fun z => k.2 (u.1 (ULift.up z)))
+          (funext (fun z => (congrFun u.2 (ULift.up z)).symm))
+          (arrowSumMerge
+            (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) (fun z => u.1 (ULift.up z)))
+          (precompMerge_elim I Q q k Bin
+            (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1})) (fun z => u.1 (ULift.up z)))
+          (fun b => (Sum.inr (u.1 (ULift.up ⟨b, rfl⟩)) : Q ⊕ k.1))
+          rfl
+          j
+          (funext (fun _ => rfl))
+          (funext (fun b => (congrFun u.2 (ULift.up ⟨b, rfl⟩)).symm))
+          n).trans
+          (rfl :
+            (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Iso.hom O
+                    (interpPrecompIso I O (K j) Q q k))
+                  (FreeCoprodCompDisc.coprodInj O
+                    (FreeCoprodCompDisc.Hom I
+                      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, j⟩)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                    (fun _ => interpObj I O (K j)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                    (FreeCoprodCompDisc.Hom.comp I
+                      (navReindex.{uA, uB, uI} I Bin j Q)
+                      (FreeCoprodCompDisc.Hom.comp I u
+                        (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I ⟨Q, q⟩ k)))))
+                (deltaInto I O Bin K j
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                    ⟨Q, q⟩ k))).1 n =
+              (⟨fun b => (Sum.inr (u.1 (ULift.up ⟨b, rfl⟩)) : Q ⊕ k.1),
+                cast
+                  (congrArg
+                    (fun m => (interpObj I O (K m)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                        ⟨Q, q⟩ k)).1)
+                    (funext
+                      (fun b => (congrFun u.2 (ULift.up ⟨b, rfl⟩)).symm) :
+                      j = Sum.elim q k.2 ∘
+                        fun b : Bin =>
+                          (Sum.inr (u.1 (ULift.up ⟨b, rfl⟩)) : Q ⊕ k.1)))
+                  ((FreeCoprodCompDisc.Iso.hom O
+                    (interpPrecompIso I O (K j) Q q k)).1
+                    (cast
+                      (congrArg
+                        (fun t => (interpObj I O
+                          (precomp I O Q q (K t)) k).1)
+                        (funext (fun _ => rfl) :
+                          precompMerge I Q q
+                            (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                              (fun z : {z : Bin //
+                                (fun _ : Bin => (Sum.inr PUnit.unit : Q ⊕ PUnit.{uB + 1}))
+                                  z = Sum.inr PUnit.unit} =>
+                                j z.1) =
+                            j))
+                      n))⟩ :
+                (interpObj I O (delta I O Bin K)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                    ⟨Q, q⟩ k)).1)).symm)))))
+
+/-- The tower-conjugated navigation inclusion: the copower injection
+at the `IR.navWeight` weight followed by the summand inclusion, both
+at the tower coproduct, conjugated by the iterated Lemma 4
+isomorphisms. -/
+def navInj (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O) (g : Bin → Bout)
+    (L : List (SupObj.{uB, uI} I)) (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom O
+      (interpObj I O
+        (mprecomp I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+          (K (iout ∘ g))) X)
+      (interpObj I O
+        (mprecomp I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+          (delta I O Bin K)) X) :=
+  FreeCoprodCompDisc.Hom.comp O
+    (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.hom O
+        (mprecompIso.{uA, uB, uI, uO} I O
+          (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (K (iout ∘ g)) X))
+      (FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O
+          (FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+            (mplus.{uA, uB, uI} I
+              (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+          (fun _ => interpObj I O (K (iout ∘ g))
+            (mplus.{uA, uB, uI} I
+              (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+          (navWeight I Bout iout Bin g X L))
+        (deltaInto I O Bin K (iout ∘ g)
+          (mplus.{uA, uB, uI} I
+            (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))))
+    (FreeCoprodCompDisc.Iso.invHom O
+      (mprecompIso.{uA, uB, uI, uO} I O
+        (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O Bin K) X))
+
+/-- The base-inclusion equation: the composite inclusion of the
+`IR.deltaNavBase` characterization is `IR.navInj` at the empty
+stack. -/
+theorem navInj_nil (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O) (g : Bin → Bout)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O
+        (deltaEmptyInj I O
+          {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+            Sum.inr PUnit.unit}
+          (fun z => nomatch z.2)
+          (fun j => precomp I O Bout iout
+            (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+          X)
+        (FreeCoprodCompDisc.coprodInj O
+          (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+          (fun cl => interpObj I O
+            (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+              (fun j => precomp I O Bout iout
+                (K (precompMerge I Bout iout cl.down j)))) X)
+          (ULift.up (fun b => Sum.inl (g b)))) =
+      navInj I O Bout iout Bin K g [] X :=
+  (eq_comp_invHom O
+      (interpObj I O (precomp I O Bout iout (K (iout ∘ g))) X)
+      (interpObj I O (precomp I O Bout iout (delta I O Bin K)) X)
+      (interpObj I O (delta I O Bin K)
+        (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+      (FreeCoprodCompDisc.Hom.comp O
+        (deltaEmptyInj I O
+          {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{uB + 1}) z =
+            Sum.inr PUnit.unit}
+          (fun z => nomatch z.2)
+          (fun j => precomp I O Bout iout
+            (K (precompMerge I Bout iout (fun b => Sum.inl (g b)) j)))
+          X)
+        (FreeCoprodCompDisc.coprodInj O
+          (ULift.{max uA uB} (Bin → Bout ⊕ PUnit.{uB + 1}))
+          (fun cl => interpObj I O
+            (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+              (fun j => precomp I O Bout iout
+                (K (precompMerge I Bout iout cl.down j)))) X)
+          (ULift.up (fun b => Sum.inl (g b)))))
+      (FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (K (iout ∘ g)) Bout iout X))
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+            (fun _ => interpObj I O (K (iout ∘ g))
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+            ⟨fun z => Sum.inl (g z.down), rfl⟩))
+        (deltaInto I O Bin K (iout ∘ g)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X)))
+      (interpPrecompIso I O (delta I O Bin K) Bout iout X)
+      (interpPrecompIso_deltaNav_inj I O Bout iout Bin K g X)).trans
+    (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O t
+        (FreeCoprodCompDisc.Iso.invHom O
+          (interpPrecompIso I O (delta I O Bin K) Bout iout X)))
+      (FreeCoprodCompDisc.Hom.comp_assoc O
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (K (iout ∘ g)) Bout iout X))
+        (FreeCoprodCompDisc.coprodInj O
+          (FreeCoprodCompDisc.Hom I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+          (fun _ => interpObj I O (K (iout ∘ g))
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))
+          ⟨fun z => Sum.inl (g z.down), rfl⟩)
+        (deltaInto I O Bin K (iout ∘ g)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Bout, iout⟩ X))))
+
+/-- The cons-inclusion equation: the navigation inclusion at the
+unresolved-subtype data, composed with the classifier-summand
+inclusion conjugated through the tower isomorphisms, is `IR.navInj`
+at the extended stack. -/
+theorem navInj_cons (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O) (g : Bin → Bout)
+    (a : SupObj.{uB, uI} I) (L : List (SupObj.{uB, uI} I))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O
+        (navInj I O Bout iout
+          {z : Bin //
+            (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+              Sum.inr PUnit.unit}
+          (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2
+            (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m)))
+          (fun z => g z.1) L X)
+        (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O
+                (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+                    (delta I O
+                      {z : Bin //
+                        (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+                          Sum.inr PUnit.unit}
+                      (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2
+                        (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))))
+                    X))
+              (FreeCoprodCompDisc.coprodInj O
+                (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1}))
+                (fun cl => interpObj I O
+                  (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                    (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m))))
+                  (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+                (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})))))
+            (FreeCoprodCompDisc.Iso.invHom O
+              (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+                  (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1}))
+                    (fun cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                      (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))))
+                  X))) =
+      navInj I O Bout iout Bin K g (a :: L) X :=
+    Eq.trans (FreeCoprodCompDisc.Hom.comp_assoc O (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g))) X)) (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.coprodInj O (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI,
+      max uA uB} I ⟨{z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+      Sum.inr PUnit.unit}, fun z => (iout ∘ g) z.1⟩) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X)) (fun _ => interpObj I O (precomp I O a.1 a.2 (K (precompMerge I a.1
+      a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) (fun z : {z : Bin // (fun _
+      : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} => (iout ∘ g)
+      z.1)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (navWeight I
+      Bout iout {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+      Sum.inr PUnit.unit} (fun z => g z.1) X L)) (deltaInto I O {z : Bin // (fun _ : Bin =>
+      (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O
+      a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) m))) (fun z => (iout ∘ g) z.1) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB,
+      uI} I)]) X)))) (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z : Bin // (fun _ : Bin => (Sum.inr
+      PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))))
+      X)) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (delta I O {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕
+      PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I
+      a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m)))) X))
+      (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => interpObj I O (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I
+      O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout,
+      iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕
+      PUnit.{uB + 1}))))) (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕
+      PUnit.{uB + 1})) (fun cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m =>
+      precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m))))) X)))) (Eq.trans (congrArg
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O
+      (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O
+      a.1 a.2 (K (iout ∘ g))) X)) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.coprodInj O
+      (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨{z : Bin // (fun _
+      : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit}, fun z =>
+      (iout ∘ g) z.1⟩) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (fun
+      _ => interpObj I O (precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr
+      PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) (fun z : {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit
+      : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} => (iout ∘ g) z.1)))) (mplus.{uA, uB, uI} I
+      (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (navWeight I Bout iout {z : Bin // (fun _ :
+      Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun z => g z.1)
+      X L)) (deltaInto I O {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _
+      : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))) (fun z => (iout ∘ g) z.1)
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))))) (Eq.trans (Eq.symm
+      (FreeCoprodCompDisc.Hom.comp_assoc O (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB,
+      uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z : Bin // (fun _ : Bin
+      => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I
+      O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) m)))) X)) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O
+      (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z
+      : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr
+      PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin =>
+      (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m)))) X)) (FreeCoprodCompDisc.coprodInj O
+      (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl => interpObj I O (delta I O {z
+      : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I
+      a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))
+      (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})))))
+      (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 cl.down m))))) X)))) (congrArg (fun t => FreeCoprodCompDisc.Hom.comp
+      O t (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun
+      cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 cl.down m))))) X))) (Eq.trans (Eq.symm
+      (FreeCoprodCompDisc.Hom.comp_assoc O (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB,
+      uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z : Bin // (fun _ : Bin
+      => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I
+      O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) m)))) X)) (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z : Bin // (fun _ : Bin => (Sum.inr
+      PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))))
+      X)) (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1}))
+      (fun cl => interpObj I O (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m =>
+      precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit :
+      a.1 ⊕ PUnit.{uB + 1})))))) (Eq.trans (congrArg (fun t => FreeCoprodCompDisc.Hom.comp O t
+      (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => interpObj I O (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I
+      O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout,
+      iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕
+      PUnit.{uB + 1}))))) (FreeCoprodCompDisc.Iso.invHom_hom O (mprecompIso.{uA, uB, uI, uO} I O
+      (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z : Bin // (fun _ : Bin => (Sum.inr
+      PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))))
+      X))) (FreeCoprodCompDisc.Hom.id_comp O (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB,
+      uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl => interpObj I O (delta I O {z : Bin // cl.down z
+      = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m))))
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin
+      => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})))))))))) (Eq.trans
+      (FreeCoprodCompDisc.Hom.comp_assoc O (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI,
+      uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g))) X))
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.coprodInj O (FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨{z : Bin // (fun _ : Bin => (Sum.inr
+      PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit}, fun z => (iout ∘ g) z.1⟩)
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (fun _ => interpObj I
+      O (precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1
+      ⊕ PUnit.{uB + 1})) (fun z : {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕
+      PUnit.{uB + 1})) z = Sum.inr PUnit.unit} => (iout ∘ g) z.1)))) (mplus.{uA, uB, uI} I (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (navWeight I Bout iout {z : Bin // (fun _ : Bin =>
+      (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun z => g z.1) X L))
+      (deltaInto I O {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+      Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin =>
+      (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))) (fun z => (iout ∘ g) z.1) (mplus.{uA, uB,
+      uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => interpObj I O (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I
+      O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout,
+      iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕
+      PUnit.{uB + 1})))) (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕
+      PUnit.{uB + 1})) (fun cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m =>
+      precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m))))) X)))) (Eq.trans (congrArg
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I
+      O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g))) X)))
+      (Eq.symm (FreeCoprodCompDisc.Hom.comp_assoc O (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.coprodInj O (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI,
+      max uA uB} I ⟨{z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+      Sum.inr PUnit.unit}, fun z => (iout ∘ g) z.1⟩) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X)) (fun _ => interpObj I O (precomp I O a.1 a.2 (K (precompMerge I a.1
+      a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) (fun z : {z : Bin // (fun _
+      : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} => (iout ∘ g)
+      z.1)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (navWeight I
+      Bout iout {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+      Sum.inr PUnit.unit} (fun z => g z.1) X L)) (deltaInto I O {z : Bin // (fun _ : Bin =>
+      (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O
+      a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) m))) (fun z => (iout ∘ g) z.1) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB,
+      uI} I)]) X))) (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB
+      + 1})) (fun cl => interpObj I O (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun
+      m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L
+      ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit :
+      a.1 ⊕ PUnit.{uB + 1})))) (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O
+      (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕
+      PUnit.{uB + 1})) (fun cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m =>
+      precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m))))) X))))) (Eq.trans (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB,
+      uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g)))
+      X)) (FreeCoprodCompDisc.Hom.comp O t (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB,
+      uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB}
+      (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl => delta I O {z : Bin // cl.down z = Sum.inr
+      PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m))))) X))))
+      (eq_comp_invHom O (interpObj I O (precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ :
+      Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) (fun z : {z : Bin // (fun _ : Bin =>
+      (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} => (iout ∘ g) z.1))))
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (interpObj I O
+      (precomp I O a.1 a.2 (delta I O Bin K)) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X)) (interpObj I O (delta I O Bin K) (FreeCoprodCompDisc.plus.{uI, uB,
+      max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.coprodInj
+      O (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨{z : Bin // (fun
+      _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit}, fun z =>
+      (iout ∘ g) z.1⟩) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (fun
+      _ => interpObj I O (precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _ : Bin => (Sum.inr
+      PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) (fun z : {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit
+      : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} => (iout ∘ g) z.1)))) (mplus.{uA, uB, uI} I
+      (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)) (navWeight I Bout iout {z : Bin // (fun _ :
+      Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun z => g z.1)
+      X L)) (deltaInto I O {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2 (fun _
+      : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))) (fun z => (iout ∘ g) z.1)
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))
+      (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => interpObj I O (delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I
+      O a.1 a.2 (K (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (L ++ [(⟨Bout,
+      iout⟩ : SupObj.{uB, uI} I)]) X)) (ULift.up (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕
+      PUnit.{uB + 1}))))) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O (K (iout ∘ g)) a.1 a.2 (mplus.{uA, uB,
+      uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.coprodInj O
+      (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (fun _ => interpObj I O (K (iout ∘ g))
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp I (navReindex.{uA, uB, uI} I Bin
+      (iout ∘ g) a.1) (FreeCoprodCompDisc.Hom.comp I (navWeight I Bout iout {z : Bin // (fun _ :
+      Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun z => g z.1)
+      X L) (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X)))))) (deltaInto I O Bin K (iout ∘ g) (FreeCoprodCompDisc.plus.{uI,
+      uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))))
+      (interpPrecompIso I O (delta I O Bin K) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X)) (interpPrecompIso_deltaNavAll_inj I O Bin K a.1 a.2 (iout ∘ g)
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X) (navWeight I Bout iout
+      {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr
+      PUnit.unit} (fun z => g z.1) X L)))) (Eq.trans (congrArg (fun w =>
+      FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I
+      O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g))) X))
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O (K (iout
+      ∘ g)) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))
+      (FreeCoprodCompDisc.coprodInj O (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI,
+      max uA uB} I ⟨Bin, iout ∘ g⟩) (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA,
+      uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (fun _ => interpObj I O (K (iout
+      ∘ g)) (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout,
+      iout⟩ : SupObj.{uB, uI} I)]) X))) (w))) (deltaInto I O Bin K (iout ∘ g)
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X)))) (FreeCoprodCompDisc.Iso.invHom O (interpPrecompIso I O (delta I
+      O Bin K) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))))
+      (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 cl.down m))))) X)))) (Eq.trans (Eq.symm
+      (FreeCoprodCompDisc.Hom.comp_assoc I (navReindex.{uA, uB, uI} I Bin (iout ∘ g) a.1)
+      (navWeight I Bout iout {z : Bin // (fun _ : Bin => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB +
+      1})) z = Sum.inr PUnit.unit} (fun z => g z.1) X L)
+      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))) (congrArg (fun t =>
+      FreeCoprodCompDisc.Hom.comp I t
+      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++
+      [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (navWeight_reindex I Bout iout Bin g a.1 X L))))
+      (Eq.trans (congrArg (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O
+      (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O
+      a.1 a.2 (K (iout ∘ g))) X))) (FreeCoprodCompDisc.Hom.comp_assoc O
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O
+      (interpPrecompIso I O (K (iout ∘ g)) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.coprodInj O (FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (fun _ => interpObj I O (K (iout ∘ g))
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp I (navWeight I Bout iout Bin g X L)
+      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB,
+      uI} I)]) X))))) (deltaInto I O Bin K (iout ∘ g) (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+      I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))))
+      (FreeCoprodCompDisc.Iso.invHom O (interpPrecompIso I O (delta I O Bin K) a.1 a.2 (mplus.{uA,
+      uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Iso.invHom O
+      (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O
+      (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl => delta I O {z : Bin //
+      cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2
+      cl.down m))))) X)))) (Eq.trans (congrArg (fun t => FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g))) X)) (FreeCoprodCompDisc.Hom.comp O
+      t (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.invHom O (interpPrecompIso I O
+      (delta I O Bin K) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+      X))) (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun
+      cl => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 cl.down m))))) X))))) (FreeCoprodCompDisc.Hom.comp_assoc O
+      (FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O (K (iout ∘ g)) a.1 a.2 (mplus.{uA, uB,
+      uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.coprodInj O
+      (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (fun _ => interpObj I O (K (iout ∘ g))
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp I (navWeight I Bout iout Bin g X L)
+      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB,
+      uI} I)]) X)))) (deltaInto I O Bin K (iout ∘ g) (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+      I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))))) (Eq.trans
+      (Eq.symm (FreeCoprodCompDisc.Hom.comp_assoc O (FreeCoprodCompDisc.Iso.hom O
+      (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O
+      a.1 a.2 (K (iout ∘ g))) X)) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O
+      (interpPrecompIso I O (K (iout ∘ g)) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.coprodInj O
+      (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (fun _ => interpObj I O (K (iout ∘ g))
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp I (navWeight I Bout iout Bin g X L)
+      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB,
+      uI} I)]) X)))) (deltaInto I O Bin K (iout ∘ g) (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+      I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))))
+      (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.invHom O (interpPrecompIso I O (delta
+      I O Bin K) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))
+      (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl
+      => delta I O {z : Bin // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K
+      (precompMerge I a.1 a.2 cl.down m))))) X))))) (congrArg (fun t =>
+      FreeCoprodCompDisc.Hom.comp O t (FreeCoprodCompDisc.Hom.comp O
+      (FreeCoprodCompDisc.Iso.invHom O (interpPrecompIso I O (delta I O Bin K) a.1 a.2 (mplus.{uA,
+      uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Iso.invHom O
+      (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O
+      (ULift.{max uA uB, uB} (Bin → a.1 ⊕ PUnit.{uB + 1})) (fun cl => delta I O {z : Bin //
+      cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K (precompMerge I a.1 a.2
+      cl.down m))))) X)))) (Eq.symm (FreeCoprodCompDisc.Hom.comp_assoc O
+      (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO} I O (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K (iout ∘ g))) X)) (FreeCoprodCompDisc.Iso.hom O
+      (interpPrecompIso I O (K (iout ∘ g)) a.1 a.2 (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ :
+      SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.coprodInj O
+      (FreeCoprodCompDisc.Hom I (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨Bin, iout ∘ g⟩)
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (fun _ => interpObj I O (K (iout ∘ g))
+      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩
+      : SupObj.{uB, uI} I)]) X))) (FreeCoprodCompDisc.Hom.comp I (navWeight I Bout iout Bin g X L)
+      (FreeCoprodCompDisc.coprodPairInr.{uI, uB, max uA uB} I a
+      (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB,
+      uI} I)]) X)))) (deltaInto I O Bin K (iout ∘ g) (FreeCoprodCompDisc.plus.{uI, uB, max uA uB}
+      I a (mplus.{uA, uB, uI} I (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X)))))))))))))))
+
+/-- The `IR.deltaNav` characterization: `IR.interpHom` sends the
+tower navigation to the composite with the tower-conjugated
+navigation inclusion `IR.navInj`, by `List.rec` following
+`IR.deltaNav`'s own recursion. -/
+theorem interpHom_deltaNav (D : IR.{max uA uB, uB, uI, uO} I O)
+    (Bout : Type uB) (iout : Bout → I) (Bin : Type uB)
+    (K : (Bin → I) → IR.{max uA uB, uB, uI, uO} I O) (g : Bin → Bout)
+    (L : List (SupObj.{uB, uI} I))
+    (f : Hom.{uA, uB, uI, uO} I O D
+      (mprecomp I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (K (iout ∘ g))))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    (interpHom I O D
+        (mprecomp I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+          (delta I O Bin K))
+        (deltaNav I O D Bout iout Bin K g L f)).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O D
+          (mprecomp I O (L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+            (K (iout ∘ g))) f).1 X)
+        (navInj I O Bout iout Bin K g L X) :=
+  L.rec (motive := fun L' : List (SupObj.{uB, uI} I) =>
+      ∀ (Bin' : Type uB) (K' : (Bin' → I) → IR.{max uA uB, uB, uI, uO} I O)
+        (g' : Bin' → Bout)
+        (f' : Hom.{uA, uB, uI, uO} I O D
+          (mprecomp I O (L' ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+            (K' (iout ∘ g'))))
+        (X' : FreeCoprodCompDisc.{max uA uB, uI} I),
+      (interpHom I O D
+          (mprecomp I O (L' ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+            (delta I O Bin' K'))
+          (deltaNav I O D Bout iout Bin' K' g' L' f')).1 X' =
+        FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O D
+            (mprecomp I O (L' ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)])
+              (K' (iout ∘ g'))) f').1 X')
+          (navInj I O Bout iout Bin' K' g' L' X'))
+    (fun Bin' K' g' f' X' =>
+      (interpHom_deltaNavBase I O D Bout iout Bin' K' g' f' X').trans
+        (congrArg
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O D (precomp I O Bout iout (K' (iout ∘ g'))) f').1 X'))
+          (navInj_nil I O Bout iout Bin' K' g' X')))
+    (fun a _L ih Bin' K' g' f' X' =>
+      Eq.trans (interpHom_msigmaPush I O D (ULift.{max uA uB, uB} (Bin' → a.1 ⊕ PUnit.{uB + 1}))
+        (fun cl => delta I O {z : Bin' // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O
+        a.1 a.2 (K' (precompMerge I a.1 a.2 cl.down m)))) (ULift.up (fun _ => Sum.inr PUnit.unit))
+        (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (deltaNav I O D Bout iout {z : Bin' // (fun _
+        : Bin' => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m =>
+        precomp I O a.1 a.2 (K' (precompMerge I a.1 a.2 (fun _ : Bin' => (Sum.inr PUnit.unit : a.1
+        ⊕ PUnit.{uB + 1})) m))) (fun z => g' z.1) _L f') X') (Eq.trans (congrArg (fun t =>
+        FreeCoprodCompDisc.Hom.comp O t (FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom O (mprecompIso.{uA, uB, uI, uO}
+        I O (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I O {z : Bin' // (fun _ : Bin' =>
+        (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr PUnit.unit} (fun m => precomp I O
+        a.1 a.2 (K' (precompMerge I a.1 a.2 (fun _ : Bin' => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB
+        + 1})) m)))) X')) (FreeCoprodCompDisc.coprodInj O (ULift.{max uA uB, uB} (Bin' → a.1 ⊕
+        PUnit.{uB + 1})) (fun cl => interpObj I O (delta I O {z : Bin' // cl.down z = Sum.inr
+        PUnit.unit} (fun m => precomp I O a.1 a.2 (K' (precompMerge I a.1 a.2 cl.down m))))
+        (mplus.{uA, uB, uI} I (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) X')) (ULift.up (fun _
+        => Sum.inr PUnit.unit)))) (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I
+        O (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin' →
+        a.1 ⊕ PUnit.{uB + 1})) (fun cl => delta I O {z : Bin' // cl.down z = Sum.inr PUnit.unit}
+        (fun m => precomp I O a.1 a.2 (K' (precompMerge I a.1 a.2 cl.down m))))) X')))) (ih {z :
+        Bin' // (fun _ : Bin' => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr
+        PUnit.unit} (fun m => precomp I O a.1 a.2 (K' (precompMerge I a.1 a.2 (fun _ : Bin' =>
+        (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))) (fun z => g' z.1) f' X')) (Eq.trans
+        (FreeCoprodCompDisc.Hom.comp_assoc O ((interpHom I O D (mprecomp I O (_L ++ [(⟨Bout, iout⟩
+        : SupObj.{uB, uI} I)]) (precomp I O a.1 a.2 (K' (iout ∘ g')))) f').1 X') (navInj I O Bout
+        iout {z : Bin' // (fun _ : Bin' => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z =
+        Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K' (precompMerge I a.1 a.2 (fun _ :
+        Bin' => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m))) (fun z => g' z.1) _L X')
+        (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Hom.comp O (FreeCoprodCompDisc.Iso.hom
+        O (mprecompIso.{uA, uB, uI, uO} I O (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (delta I
+        O {z : Bin' // (fun _ : Bin' => (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) z = Sum.inr
+        PUnit.unit} (fun m => precomp I O a.1 a.2 (K' (precompMerge I a.1 a.2 (fun _ : Bin' =>
+        (Sum.inr PUnit.unit : a.1 ⊕ PUnit.{uB + 1})) m)))) X')) (FreeCoprodCompDisc.coprodInj O
+        (ULift.{max uA uB, uB} (Bin' → a.1 ⊕ PUnit.{uB + 1})) (fun cl => interpObj I O (delta I O
+        {z : Bin' // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2 (K'
+        (precompMerge I a.1 a.2 cl.down m)))) (mplus.{uA, uB, uI} I (_L ++ [(⟨Bout, iout⟩ :
+        SupObj.{uB, uI} I)]) X')) (ULift.up (fun _ => Sum.inr PUnit.unit))))
+        (FreeCoprodCompDisc.Iso.invHom O (mprecompIso.{uA, uB, uI, uO} I O (_L ++ [(⟨Bout, iout⟩ :
+        SupObj.{uB, uI} I)]) (sigma I O (ULift.{max uA uB, uB} (Bin' → a.1 ⊕ PUnit.{uB + 1})) (fun
+        cl => delta I O {z : Bin' // cl.down z = Sum.inr PUnit.unit} (fun m => precomp I O a.1 a.2
+        (K' (precompMerge I a.1 a.2 cl.down m))))) X')))) (congrArg (FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O D (mprecomp I O (_L ++ [(⟨Bout, iout⟩ : SupObj.{uB, uI} I)]) (precomp I O
+        a.1 a.2 (K' (iout ∘ g')))) f').1 X')) (navInj_cons I O Bout iout Bin' K' g' a _L X')))))
+    Bin K g f X
 
 end IR
 

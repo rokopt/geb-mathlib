@@ -23,6 +23,9 @@ the `δ`-cotuple are exercised at the sample object. The
 `IR.sigmaPush` characterization is exercised at the sample code.
 The `IR.deltaEmptyPush` characterization is exercised at the sample
 code.
+Cancellation through an isomorphism, the tower navigation weight at
+the empty stack, and the three navigation characterizations are
+exercised over the Booleans.
 Named theorems give the `GebMeta` axiom linter declarations to
 inspect.
 
@@ -314,3 +317,101 @@ theorem sampleDeltaEmptyPushChar_apply
           sampleCategoryObj) :=
   interpHom_deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1}
     _root_.id M f sampleCategoryObj
+
+/-- Cancellation through an isomorphism at the sample universes. -/
+theorem sampleEqCompInvHom (V Y Z : FreeCoprodCompDisc.{0, 0} Bool)
+    (f : FreeCoprodCompDisc.Hom Bool V Y)
+    (g : FreeCoprodCompDisc.Hom Bool V Z)
+    (e : FreeCoprodCompDisc.Iso Bool Y Z)
+    (h : FreeCoprodCompDisc.Hom.comp Bool f
+      (FreeCoprodCompDisc.Iso.hom Bool e) = g) :
+    f = FreeCoprodCompDisc.Hom.comp Bool g
+      (FreeCoprodCompDisc.Iso.invHom Bool e) :=
+  eq_comp_invHom Bool V Y Z f g e h
+
+/-- The tower navigation weight at the empty stack is the graph of
+the factorization into the appended superscript. -/
+theorem sampleNavWeight_nil_apply :
+    (navWeight Bool Bool (fun b => b) Bool (fun b => b) sampleCategoryObj
+        []).1 (ULift.up true) =
+      Sum.inl true :=
+  rfl
+
+/-- The `IR.msigmaPush` characterization at the sample code and a
+singleton stack. -/
+theorem sampleMsigmaPushChar (A' : Type) (K' : A' → IR.{0, 0, 0, 0} Bool Bool)
+    (a' : A')
+    (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      (mprecomp Bool Bool [sampleCategorySup] (K' a'))) :
+    (interpHom Bool Bool sampleCategoryCode
+        (mprecomp Bool Bool [sampleCategorySup] (sigma Bool Bool A' K'))
+        (msigmaPush Bool Bool sampleCategoryCode A' K' a' [sampleCategorySup] f)).1
+        sampleCategoryObj =
+      FreeCoprodCompDisc.Hom.comp Bool
+        ((interpHom Bool Bool sampleCategoryCode
+          (mprecomp Bool Bool [sampleCategorySup] (K' a')) f).1 sampleCategoryObj)
+        (FreeCoprodCompDisc.Hom.comp Bool
+          (FreeCoprodCompDisc.Hom.comp Bool
+            (FreeCoprodCompDisc.Iso.hom Bool
+              (mprecompIso Bool Bool [sampleCategorySup] (K' a') sampleCategoryObj))
+            (FreeCoprodCompDisc.coprodInj Bool A'
+              (fun a => interpObj Bool Bool (K' a)
+                (mplus Bool [sampleCategorySup] sampleCategoryObj)) a'))
+          (FreeCoprodCompDisc.Iso.invHom Bool
+            (mprecompIso Bool Bool [sampleCategorySup] (sigma Bool Bool A' K')
+              sampleCategoryObj))) :=
+  interpHom_msigmaPush Bool Bool sampleCategoryCode A' K' a' [sampleCategorySup] f
+    sampleCategoryObj
+
+/-- The `IR.deltaNavBase` characterization at the sample code. -/
+theorem sampleDeltaNavBaseChar (Bout : Type) (iout : Bout → Bool) (Bin : Type)
+    (K : (Bin → Bool) → IR.{0, 0, 0, 0} Bool Bool) (g : Bin → Bout)
+    (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      (precomp Bool Bool Bout iout (K (iout ∘ g)))) :
+    (interpHom Bool Bool sampleCategoryCode
+        (precomp Bool Bool Bout iout (delta Bool Bool Bin K))
+        (deltaNavBase Bool Bool sampleCategoryCode Bout iout Bin K g f)).1
+        sampleCategoryObj =
+      FreeCoprodCompDisc.Hom.comp Bool
+        ((interpHom Bool Bool sampleCategoryCode
+          (precomp Bool Bool Bout iout (K (iout ∘ g))) f).1 sampleCategoryObj)
+        (FreeCoprodCompDisc.Hom.comp Bool
+          (deltaEmptyInj Bool Bool
+            {z : Bin // (fun b => Sum.inl (g b) : Bin → Bout ⊕ PUnit.{1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => nomatch z.2)
+            (fun j => precomp Bool Bool Bout iout
+              (K (precompMerge Bool Bout iout (fun b => Sum.inl (g b)) j)))
+            sampleCategoryObj)
+          (FreeCoprodCompDisc.coprodInj Bool
+            (ULift.{0} (Bin → Bout ⊕ PUnit.{1}))
+            (fun cl => interpObj Bool Bool
+              (delta Bool Bool {z : Bin // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp Bool Bool Bout iout
+                  (K (precompMerge Bool Bout iout cl.down j)))) sampleCategoryObj)
+            (ULift.up (fun b => Sum.inl (g b))))) :=
+  interpHom_deltaNavBase Bool Bool sampleCategoryCode Bout iout Bin K g f
+    sampleCategoryObj
+
+/-- The `IR.deltaNav` characterization at the sample code and a
+singleton stack. -/
+theorem sampleDeltaNavChar (Bout : Type) (iout : Bout → Bool) (Bin : Type)
+    (K : (Bin → Bool) → IR.{0, 0, 0, 0} Bool Bool) (g : Bin → Bout)
+    (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      (mprecomp Bool Bool
+        ([sampleCategorySup] ++ [(⟨Bout, iout⟩ : SupObj.{0, 0} Bool)])
+        (K (iout ∘ g)))) :
+    (interpHom Bool Bool sampleCategoryCode
+        (mprecomp Bool Bool
+          ([sampleCategorySup] ++ [(⟨Bout, iout⟩ : SupObj.{0, 0} Bool)])
+          (delta Bool Bool Bin K))
+        (deltaNav Bool Bool sampleCategoryCode Bout iout Bin K g [sampleCategorySup]
+          f)).1 sampleCategoryObj =
+      FreeCoprodCompDisc.Hom.comp Bool
+        ((interpHom Bool Bool sampleCategoryCode
+          (mprecomp Bool Bool
+            ([sampleCategorySup] ++ [(⟨Bout, iout⟩ : SupObj.{0, 0} Bool)])
+            (K (iout ∘ g))) f).1 sampleCategoryObj)
+        (navInj Bool Bool Bout iout Bin K g [sampleCategorySup] sampleCategoryObj) :=
+  interpHom_deltaNav Bool Bool sampleCategoryCode Bout iout Bin K g [sampleCategorySup]
+    f sampleCategoryObj
