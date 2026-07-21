@@ -21,6 +21,8 @@ at the empty stack. The reductions of the two equivalences at an
 of domain code, the `σ`-injection square, and right-composition of
 the `δ`-cotuple are exercised at the sample object. The
 `IR.sigmaPush` characterization is exercised at the sample code.
+The `IR.deltaEmptyPush` characterization is exercised at the sample
+code.
 Named theorems give the `GebMeta` axiom linter declarations to
 inspect.
 
@@ -289,3 +291,26 @@ theorem sampleSigmaPushChar_apply (A' : Type)
           (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
   interpHom_sigmaPush Bool Bool sampleCategoryCode A' K' a' f
     sampleCategoryObj
+
+/-- The `IR.deltaEmptyPush` characterization at the sample code. -/
+theorem sampleDeltaEmptyPushChar :
+    InterpHomDeltaEmptyPushMotive Bool Bool sampleCategoryCode :=
+  interpHom_deltaEmptyPush Bool Bool sampleCategoryCode
+
+/-- The `IR.deltaEmptyPush` characterization at the sample code,
+applied at `PEmpty` directions and the sample object. -/
+theorem sampleDeltaEmptyPushChar_apply
+    (M : (PEmpty.{1} → Bool) → IR.{0, 0, 0, 0} Bool Bool)
+    (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode
+      (M (fun x => (_root_.id x).elim))) :
+    (interpHom Bool Bool sampleCategoryCode
+        (delta Bool Bool PEmpty.{1} M)
+        (deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1} _root_.id
+          M f)).1 sampleCategoryObj =
+      FreeCoprodCompDisc.Hom.comp Bool
+        ((interpHom Bool Bool sampleCategoryCode
+          (M (fun x => (_root_.id x).elim)) f).1 sampleCategoryObj)
+        (deltaEmptyInj Bool Bool PEmpty.{1} _root_.id M
+          sampleCategoryObj) :=
+  interpHom_deltaEmptyPush Bool Bool sampleCategoryCode PEmpty.{1}
+    _root_.id M f sampleCategoryObj

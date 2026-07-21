@@ -40,6 +40,14 @@ its iterated Lemma 4 isomorphism.
 * `IR.interpHomIotaComposite`, `IR.interpHomIotaCast` — the
   `ι`-branch equivalence of the Theorem 3 step and its transport
   along a code equality.
+* `IR.deltaEmptyWeight`, `IR.deltaEmptyInj` — the canonical weight
+  out of the lift of an empty-witnessed family, and the semantic
+  inclusion of the empty-witnessed summand into the `δ`
+  interpretation.
+* `IR.deltaEmptySummandHom` — the transported summand isomorphism
+  of the Lemma 4 `δ`-square at that inclusion.
+* `IR.InterpHomDeltaEmptyPushMotive` — the statement of the
+  `IR.deltaEmptyPush` characterization at one code.
 
 ## Main statements
 
@@ -62,6 +70,14 @@ its iterated Lemma 4 isomorphism.
 * `IR.interpHom_sigmaPush` — `IR.interpHom` sends `IR.sigmaPush` to
   composition with the semantic `σ`-injection.
 * `IR.interpPrecompIso_sigma_inj` — the Lemma 4 `σ`-square.
+* `IR.interpHom_deltaEmptyPush` — `IR.interpHom` sends
+  `IR.deltaEmptyPush` to composition with the semantic
+  empty-summand inclusion.
+* `IR.emptyHom_ext` — any two morphisms out of the lift of an
+  empty-witnessed family are equal.
+* `IR.interpMor_deltaEmpty_inj`,
+  `IR.interpPrecompIso_deltaEmpty_inj` — the naturality square of
+  the empty-summand inclusion, and the Lemma 4 `δ`-square at it.
 
 ## Implementation notes
 
@@ -1253,6 +1269,1076 @@ theorem interpHom_sigmaPush (γ : IR.{max uA uB, uB, uI, uO} I O) :
       | Sum.inl o => fun d _ => interpHom_sigmaPush_mk_iota I O o d
       | Sum.inr (Sum.inl A) => fun d ih => interpHom_sigmaPush_mk_sigma I O A d ih
       | Sum.inr (Sum.inr B) => fun d ih => interpHom_sigmaPush_mk_delta I O B d ih)
+    γ
+
+/-- Hom-extensionality at an empty-name domain: any two morphisms out
+of the lift of an empty-witnessed family are equal. -/
+theorem emptyHom_ext (E : Type uB) (e : E → PEmpty.{1})
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (f g : FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨E, fun x => (e x).elim⟩) X) :
+    f = g :=
+  Subtype.ext (funext (fun z => (e z.down).elim))
+
+/-- The canonical weight: the morphism out of the lift of an
+empty-witnessed family given by elimination at every name. -/
+def deltaEmptyWeight (E : Type uB) (e : E → PEmpty.{1})
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom I
+      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨E, fun x => (e x).elim⟩) X :=
+  ⟨fun z => (e z.down).elim, funext (fun z => (e z.down).elim)⟩
+
+/-- The semantic inclusion of the empty-witnessed summand into the
+`delta` interpretation: the copower injection at the canonical weight
+followed by the summand inclusion `IR.deltaInto`. -/
+def deltaEmptyInj (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom O (interpObj I O (M (fun x => (e x).elim)) X)
+      (interpObj I O (delta I O E M) X) :=
+  FreeCoprodCompDisc.Hom.comp O
+    (FreeCoprodCompDisc.coprodInj O
+      (FreeCoprodCompDisc.Hom I
+        (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨E, fun x => (e x).elim⟩) X)
+      (fun _ => interpObj I O (M (fun x => (e x).elim)) X)
+      (deltaEmptyWeight I E e X))
+    (deltaInto I O E M (fun x => (e x).elim) X)
+
+/-- The generic injection square: the semantic empty-summand inclusion
+commutes the morphism map of the `delta` interpretation with the
+summand's. -/
+theorem interpMor_deltaEmpty_inj (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Z W : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (h : FreeCoprodCompDisc.Hom I Z W) :
+    FreeCoprodCompDisc.Hom.comp O (deltaEmptyInj I O E e M Z)
+        (interpMor I O (delta I O E M) Z W h) =
+      FreeCoprodCompDisc.Hom.comp O
+        (interpMor I O (M (fun x => (e x).elim)) Z W h)
+        (deltaEmptyInj I O E e M W) :=
+  (FreeCoprodCompDisc.Hom.comp_assoc O
+      (FreeCoprodCompDisc.coprodInj O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨E, fun x => (e x).elim⟩) Z)
+        (fun _ => interpObj I O (M (fun x => (e x).elim)) Z)
+        (deltaEmptyWeight I E e Z))
+      (deltaInto I O E M (fun x => (e x).elim) Z)
+      (interpMor I O (delta I O E M) Z W h)).trans
+    ((congrArg
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                ⟨E, fun x => (e x).elim⟩) Z)
+            (fun _ => interpObj I O (M (fun x => (e x).elim)) Z)
+            (deltaEmptyWeight I E e Z)))
+        (deltaInto_natural I O E M (fun x => (e x).elim) Z W h).symm).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc O
+          (FreeCoprodCompDisc.coprodInj O
+            (FreeCoprodCompDisc.Hom I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                ⟨E, fun x => (e x).elim⟩) Z)
+            (fun _ => interpObj I O (M (fun x => (e x).elim)) Z)
+            (deltaEmptyWeight I E e Z))
+          (FreeCoprodCompDisc.copowerHomMapMor
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨E, fun x => (e x).elim⟩)
+            (interpMor I O (M (fun x => (e x).elim))) Z W h)
+          (deltaInto I O E M (fun x => (e x).elim) W)).symm.trans
+        ((congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp O t
+              (deltaInto I O E M (fun x => (e x).elim) W))
+            (FreeCoprodCompDisc.coprodInj_mor O
+              (FreeCoprodCompDisc.Hom I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                  ⟨E, fun x => (e x).elim⟩) Z)
+              (FreeCoprodCompDisc.Hom I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                  ⟨E, fun x => (e x).elim⟩) W)
+              (fun e' => FreeCoprodCompDisc.Hom.comp I e' h)
+              (fun _ => interpObj I O (M (fun x => (e x).elim)) Z)
+              (fun _ => interpObj I O (M (fun x => (e x).elim)) W)
+              (fun _ => interpMor I O (M (fun x => (e x).elim)) Z W h)
+              (deltaEmptyWeight I E e Z))).trans
+          ((congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Hom.comp O
+                  (interpMor I O (M (fun x => (e x).elim)) Z W h)
+                  (FreeCoprodCompDisc.coprodInj O
+                    (FreeCoprodCompDisc.Hom I
+                      (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                        ⟨E, fun x => (e x).elim⟩) W)
+                    (fun _ => interpObj I O (M (fun x => (e x).elim)) W) t))
+                (deltaInto I O E M (fun x => (e x).elim) W))
+              (emptyHom_ext I E e W
+                (FreeCoprodCompDisc.Hom.comp I (deltaEmptyWeight I E e Z) h)
+                (deltaEmptyWeight I E e W))).trans
+            (FreeCoprodCompDisc.Hom.comp_assoc O
+              (interpMor I O (M (fun x => (e x).elim)) Z W h)
+              (FreeCoprodCompDisc.coprodInj O
+                (FreeCoprodCompDisc.Hom I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I
+                    ⟨E, fun x => (e x).elim⟩) W)
+                (fun _ => interpObj I O (M (fun x => (e x).elim)) W)
+                (deltaEmptyWeight I E e W))
+              (deltaInto I O E M (fun x => (e x).elim) W))))))
+
+/-- Transport of a summand interpretation along an equality of
+assignments: the object-level `isoOfEq` agrees with the name-level
+cast, for any proofs of the assignment equality. -/
+theorem interpObj_isoOfEq_cast (E : Type uB)
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I) (a : E → I) :
+    ∀ (c : E → I) (s : a = c) (s' : a = c)
+      (y : (interpObj I O (M a) X).1),
+      (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m => interpObj I O (M m) X) s)).1 y =
+        cast (congrArg (fun m => (interpObj I O (M m) X).1) s') y :=
+  fun _ s =>
+    Eq.rec (motive := fun c' s'' => ∀ (s' : a = c')
+        (y : (interpObj I O (M a) X).1),
+        (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun m => interpObj I O (M m) X) s'')).1 y =
+          cast (congrArg (fun m => (interpObj I O (M m) X).1) s') y)
+      (fun _ _ => rfl) s
+
+/-- The transported summand isomorphism of the Lemma 4 `δ`-square at
+the empty inclusion: the summand's Lemma 4 isomorphism followed by the
+transport along the collapse of the merged assignment. -/
+def deltaEmptySummandHom (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (q : Q → I) (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom O
+      (interpObj I O
+        (precomp I O Q q (M (precompMerge I Q q (fun x => (e x).elim)
+          (fun z : {z : E // (fun x => (e x).elim : E → Q ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit} =>
+            (((e z.1).elim : PEmpty.{1}).elim : I))))) k)
+      (interpObj I O (M (fun x => (e x).elim))
+        (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) :=
+  FreeCoprodCompDisc.Hom.comp O
+    (FreeCoprodCompDisc.Iso.hom O
+      (interpPrecompIso I O
+        (M (precompMerge I Q q (fun x => (e x).elim)
+          (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))) Q q k))
+    (FreeCoprodCompDisc.Iso.hom O
+      (FreeCoprodCompDisc.isoOfEq O
+        (congrArg
+          (fun a => interpObj I O (M a)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+          (funext (fun x => (e x).elim) :
+            (fun x => ((e x).elim : I)) =
+              precompMerge I Q q (fun x => (e x).elim)
+                (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))).symm)))
+
+/-- The name-level computation of the Lemma 4 `δ`-square at the empty
+inclusion, with every empty-derived assignment equality generalized:
+both routes transport the summand's Lemma 4 image along propositionally
+equal paths, identified by proof irrelevance at the base. -/
+theorem deltaEmpty_strip (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (q : Q → I) (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    ∀ (j' : {z : E // (fun x => (e x).elim : E → Q ⊕ PUnit.{uB + 1}) z =
+        Sum.inr PUnit.unit} → I)
+      (hj : (fun z : {z : E // (fun x => (e x).elim : E → Q ⊕ PUnit.{uB + 1}) z =
+          Sum.inr PUnit.unit} => (((e z.1).elim : PEmpty.{1}).elim : I)) = j')
+      (w₁ : E → Q ⊕ k.1)
+      (s₁ : precompMerge I Q q (fun x => (e x).elim) j' = Sum.elim q k.2 ∘ w₁)
+      (w₂ : E → Q ⊕ k.1) (_hw : w₁ = w₂)
+      (b₂ : E → I)
+      (r₂ : precompMerge I Q q (fun x => (e x).elim)
+          (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)) = b₂)
+      (s₂ : b₂ = Sum.elim q k.2 ∘ w₂)
+      (n : (interpObj I O (precomp I O Q q (M (precompMerge I Q q
+        (fun x => (e x).elim)
+        (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) k).1),
+      (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m => interpObj I O (M m)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) s₁)).1
+          ((FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O
+              (M (precompMerge I Q q (fun x => (e x).elim) j')) Q q k)).1
+            (cast (congrArg (fun t => (interpObj I O (precomp I O Q q
+              (M (precompMerge I Q q (fun x => (e x).elim) t))) k).1) hj) n))⟩ :
+        (interpObj I O (delta I O E M)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+      ⟨w₂, cast (congrArg (fun m => (interpObj I O (M m)
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) s₂)
+        ((FreeCoprodCompDisc.isoOfEq O
+          (congrArg (fun m => interpObj I O (M m)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) r₂)).1
+          ((FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (M (precompMerge I Q q (fun x => (e x).elim)
+              (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))) Q q k)).1 n))⟩ :=
+  fun _ hj =>
+    Eq.rec (motive := fun j'' hj' => ∀ (w₁ : E → Q ⊕ k.1)
+        (s₁ : precompMerge I Q q (fun x => (e x).elim) j'' = Sum.elim q k.2 ∘ w₁)
+        (w₂ : E → Q ⊕ k.1) (_hw : w₁ = w₂) (b₂ : E → I)
+        (r₂ : precompMerge I Q q (fun x => (e x).elim)
+            (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)) = b₂)
+        (s₂ : b₂ = Sum.elim q k.2 ∘ w₂)
+        (n : (interpObj I O (precomp I O Q q (M (precompMerge I Q q
+          (fun x => (e x).elim)
+          (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) k).1),
+        (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun m => interpObj I O (M m)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) s₁)).1
+            ((FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O
+                (M (precompMerge I Q q (fun x => (e x).elim) j'')) Q q k)).1
+              (cast (congrArg (fun t => (interpObj I O (precomp I O Q q
+                (M (precompMerge I Q q (fun x => (e x).elim) t))) k).1) hj') n))⟩ :
+          (interpObj I O (delta I O E M)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+        ⟨w₂, cast (congrArg (fun m => (interpObj I O (M m)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) s₂)
+          ((FreeCoprodCompDisc.isoOfEq O
+            (congrArg (fun m => interpObj I O (M m)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) r₂)).1
+            ((FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (M (precompMerge I Q q (fun x => (e x).elim)
+                (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))) Q q k)).1
+              n))⟩)
+      (fun w₁ s₁ _ hw =>
+        Eq.rec (motive := fun w₂' _ => ∀ (b₂ : E → I)
+            (r₂ : precompMerge I Q q (fun x => (e x).elim)
+                (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)) = b₂)
+            (s₂ : b₂ = Sum.elim q k.2 ∘ w₂')
+            (n : (interpObj I O (precomp I O Q q (M (precompMerge I Q q
+              (fun x => (e x).elim)
+              (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) k).1),
+            (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+                (congrArg (fun m => interpObj I O (M m)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) s₁)).1
+                ((FreeCoprodCompDisc.Iso.hom O
+                  (interpPrecompIso I O (M (precompMerge I Q q
+                    (fun x => (e x).elim)
+                    (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))) Q q k)).1
+                  n)⟩ :
+              (interpObj I O (delta I O E M)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+            ⟨w₂', cast (congrArg (fun m => (interpObj I O (M m)
+                (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) s₂)
+              ((FreeCoprodCompDisc.isoOfEq O
+                (congrArg (fun m => interpObj I O (M m)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) r₂)).1
+                ((FreeCoprodCompDisc.Iso.hom O
+                  (interpPrecompIso I O (M (precompMerge I Q q
+                    (fun x => (e x).elim)
+                    (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))) Q q k)).1
+                  n))⟩)
+          (fun _ r₂ =>
+            Eq.rec (motive := fun b₂' r₂' => ∀ (s₂ : b₂' = Sum.elim q k.2 ∘ w₁)
+                (n : (interpObj I O (precomp I O Q q (M (precompMerge I Q q
+                  (fun x => (e x).elim)
+                  (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) k).1),
+                (⟨w₁, (FreeCoprodCompDisc.isoOfEq O
+                    (congrArg (fun m => interpObj I O (M m)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                      s₁)).1
+                    ((FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (M (precompMerge I Q q
+                        (fun x => (e x).elim)
+                        (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))
+                        Q q k)).1 n)⟩ :
+                  (interpObj I O (delta I O E M)
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1) =
+                ⟨w₁, cast (congrArg (fun m => (interpObj I O (M m)
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)).1)
+                    s₂)
+                  ((FreeCoprodCompDisc.isoOfEq O
+                    (congrArg (fun m => interpObj I O (M m)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k))
+                      r₂')).1
+                    ((FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (M (precompMerge I Q q
+                        (fun x => (e x).elim)
+                        (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))
+                        Q q k)).1 n))⟩)
+              (fun s₂ n =>
+                congrArg
+                  (fun t => (⟨w₁, t⟩ :
+                    (interpObj I O (delta I O E M)
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                        ⟨Q, q⟩ k)).1))
+                  (interpObj_isoOfEq_cast I O E M
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)
+                    (precompMerge I Q q (fun x => (e x).elim)
+                      (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))
+                    (Sum.elim q k.2 ∘ w₁) s₁ s₂
+                    ((FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (M (precompMerge I Q q
+                        (fun x => (e x).elim)
+                        (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))
+                        Q q k)).1 n)))
+              r₂)
+          hw)
+      hj
+
+/-- The Lemma 4 `δ`-square at the empty inclusion: the syntactic
+injection at the precomposed level, pushed through the Lemma 4
+isomorphism, is the transported summand isomorphism followed by the
+semantic empty-summand inclusion at the coproduct object. -/
+theorem interpPrecompIso_deltaEmpty_inj (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (q : Q → I) (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : E // (fun x => (e x).elim : E → Q ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => (e z.1).elim)
+            (fun j => precomp I O Q q
+              (M (precompMerge I Q q (fun x => (e x).elim) j)))
+            k)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (E → Q ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : E // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O Q q
+                  (M (precompMerge I Q q cl.down j)))) k)
+            (ULift.up (fun x => (e x).elim))))
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (delta I O E M) Q q k)) =
+      FreeCoprodCompDisc.Hom.comp O (deltaEmptySummandHom I O E e M Q q k)
+        (deltaEmptyInj I O E e M
+          (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : E // (fun x => (e x).elim : E → Q ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => (e z.1).elim)
+            (fun j => precomp I O Q q
+              (M (precompMerge I Q q (fun x => (e x).elim) j)))
+            k)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (E → Q ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : E // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O Q q
+                  (M (precompMerge I Q q cl.down j)))) k)
+            (ULift.up (fun x => (e x).elim))))
+        (FreeCoprodCompDisc.Iso.hom O (t Q q k)))
+      (interpPrecompIso_mk I O (Sum.inr (Sum.inr E)) (M ∘ ULift.down))).trans
+    (Subtype.ext (funext (fun n =>
+      deltaEmpty_strip I O E e M Q q k
+        (fun z => k.2 (((e z.1).elim : PEmpty.{1}).elim))
+        (funext (fun z => (e z.1).elim))
+        (arrowSumMerge (fun x => (e x).elim)
+          (fun z => (((e z.1).elim : PEmpty.{1}).elim : k.1)))
+        (precompMerge_elim I Q q k E (fun x => (e x).elim)
+          (fun z => (((e z.1).elim : PEmpty.{1}).elim : k.1)))
+        (fun x => ((e x).elim : Q ⊕ k.1))
+        (funext (fun x => (e x).elim))
+        (fun x => ((e x).elim : I))
+        (funext (fun x => (e x).elim)).symm
+        (funext (fun x => (e x).elim))
+        n)))
+
+/-- The statement of the `IR.deltaEmptyPush` characterization at one
+code: `IR.interpHom` sends a pushed morphism to the composite with the
+semantic empty-summand inclusion. -/
+def InterpHomDeltaEmptyPushMotive (γ : IR.{max uA uB, uB, uI, uO} I O) : Prop :=
+  ∀ (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (f : Hom.{uA, uB, uI, uO} I O γ (M (fun x => (e x).elim)))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I),
+    (interpHom I O γ (delta I O E M) (deltaEmptyPush I O γ E e M f)).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O γ (M (fun x => (e x).elim)) f).1 X)
+        (deltaEmptyInj I O E e M X)
+
+/-- The name component of `IR.innerHomEquivCast` at an empty-witnessed
+direction, as a cast of the untransported name, for any proofs of the
+assignment equality. -/
+theorem innerHomEquivCast_fst_cast (o : O) (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O) :
+    ∀ (j : E → I) (pf : (fun b => ((e b).elim : I)) = j)
+      (h' : (fun b => ((e b).elim : I)) = j)
+      (f : InnerHom.{uA, uB, uI, uO} I O o (M (fun b => (e b).elim))),
+      ((innerHomEquivCast I O o E (M ∘ ULift.down)
+          (fun x => innerHomEquiv I O o ((M ∘ ULift.down) x))
+          (fun b => (e b).elim) j pf) f).1 =
+        cast
+          (congrArg
+            (fun t => (interpObj I O (M t) (FreeCoprodCompDisc.emptyObj I)).1) h')
+          ((innerHomEquiv I O o (M (fun b => (e b).elim)) f).1) :=
+  fun _ pf =>
+    Eq.rec (motive := fun j' pf' => ∀ (h' : (fun b => ((e b).elim : I)) = j')
+        (f : InnerHom.{uA, uB, uI, uO} I O o (M (fun b => (e b).elim))),
+        ((innerHomEquivCast I O o E (M ∘ ULift.down)
+            (fun x => innerHomEquiv I O o ((M ∘ ULift.down) x))
+            (fun b => (e b).elim) j' pf') f).1 =
+          cast
+            (congrArg
+              (fun t => (interpObj I O (M t)
+                (FreeCoprodCompDisc.emptyObj I)).1) h')
+            ((innerHomEquiv I O o (M (fun b => (e b).elim)) f).1))
+      (fun _ _ => rfl) pf
+
+/-- The singleton morphism at the empty-witnessed `δ`-name factors
+through the semantic empty-summand inclusion. -/
+theorem homSingletonEquiv_symm_deltaEmptyInj (o : O) (E : Type uB)
+    (e : E → PEmpty.{1}) (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (f : InnerHom.{uA, uB, uI, uO} I O o (M (fun x => (e x).elim))) :
+    (FreeCoprodCompDisc.homSingletonEquiv O o
+        (interpObj I O (delta I O E M) (FreeCoprodCompDisc.emptyObj I))).symm
+        (innerHomEquiv I O o (delta I O E M) ⟨e, f⟩) =
+      FreeCoprodCompDisc.Hom.comp O
+        ((FreeCoprodCompDisc.homSingletonEquiv O o
+            (interpObj I O (M (fun x => (e x).elim))
+              (FreeCoprodCompDisc.emptyObj I))).symm
+          (innerHomEquiv I O o (M (fun x => (e x).elim)) f))
+        (deltaEmptyInj I O E e M (FreeCoprodCompDisc.emptyObj I)) :=
+  (congrArg
+      (fun (t : InnerHom.{uA, uB, uI, uO} I O o (delta I O E M) ≃
+          {z : (interpObj I O (delta I O E M)
+              (FreeCoprodCompDisc.emptyObj I)).1 //
+            (interpObj I O (delta I O E M)
+              (FreeCoprodCompDisc.emptyObj I)).2 z = o}) =>
+        (FreeCoprodCompDisc.homSingletonEquiv O o
+          (interpObj I O (delta I O E M)
+            (FreeCoprodCompDisc.emptyObj I))).symm (t ⟨e, f⟩))
+      (innerHomEquiv_mk I O o (Sum.inr (Sum.inr E)) (M ∘ ULift.down))).trans
+    (Subtype.ext (funext (fun _ =>
+      congrArg
+        (fun t => (⟨fun x => (e x).elim, t⟩ :
+          (interpObj I O (delta I O E M) (FreeCoprodCompDisc.emptyObj I)).1))
+        (innerHomEquivCast_fst_cast I O o E e M
+          ((FreeCoprodCompDisc.emptyObj I).2 ∘ (fun b => (e b).elim))
+          (funext (fun b => (e b).elim)) (funext (fun b => (e b).elim)) f))))
+
+/-- The empty-push equation for the transported `ι`-composite, by
+elimination of the code equality: at the reflexive instance both sides
+compute to singleton morphisms into the initial-object fiber, related
+by `IR.homSingletonEquiv_symm_deltaEmptyInj` and the injection
+square. -/
+theorem interpHomIotaCast_deltaEmptyPush (o : O) (E : Type uB)
+    (e : E → PEmpty.{1}) (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (f : InnerHom.{uA, uB, uI, uO} I O o (M (fun x => (e x).elim)))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (ir : IR.{max uA uB, uB, uI, uO} I O)
+    (eIr : iota.{max uA uB, uB, uI, uO} I O o = ir) :
+    ((interpHomIotaCast I O o (delta I O E M) ir eIr) ⟨e, f⟩).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        (((interpHomIotaCast I O o (M (fun x => (e x).elim)) ir eIr) f).1 X)
+        (deltaEmptyInj I O E e M X) :=
+  Eq.rec (motive := fun ir' eIr' =>
+      ((interpHomIotaCast I O o (delta I O E M) ir' eIr') ⟨e, f⟩).1 X =
+        FreeCoprodCompDisc.Hom.comp O
+          (((interpHomIotaCast I O o (M (fun x => (e x).elim)) ir' eIr') f).1 X)
+          (deltaEmptyInj I O E e M X))
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O t
+          (interpMor I O (delta I O E M) (FreeCoprodCompDisc.emptyObj I) X
+            (FreeCoprodCompDisc.emptyDesc I X)))
+        (homSingletonEquiv_symm_deltaEmptyInj I O o E e M f)).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc O
+            ((FreeCoprodCompDisc.homSingletonEquiv O o
+                (interpObj I O (M (fun x => (e x).elim))
+                  (FreeCoprodCompDisc.emptyObj I))).symm
+              (innerHomEquiv I O o (M (fun x => (e x).elim)) f))
+            (deltaEmptyInj I O E e M (FreeCoprodCompDisc.emptyObj I))
+            (interpMor I O (delta I O E M) (FreeCoprodCompDisc.emptyObj I) X
+              (FreeCoprodCompDisc.emptyDesc I X))).trans
+          ((congrArg
+              (FreeCoprodCompDisc.Hom.comp O
+                ((FreeCoprodCompDisc.homSingletonEquiv O o
+                    (interpObj I O (M (fun x => (e x).elim))
+                      (FreeCoprodCompDisc.emptyObj I))).symm
+                  (innerHomEquiv I O o (M (fun x => (e x).elim)) f)))
+              (interpMor_deltaEmpty_inj I O E e M
+                (FreeCoprodCompDisc.emptyObj I) X
+                (FreeCoprodCompDisc.emptyDesc I X))).trans
+            (FreeCoprodCompDisc.Hom.comp_assoc O
+              ((FreeCoprodCompDisc.homSingletonEquiv O o
+                  (interpObj I O (M (fun x => (e x).elim))
+                    (FreeCoprodCompDisc.emptyObj I))).symm
+                (innerHomEquiv I O o (M (fun x => (e x).elim)) f))
+              (interpMor I O (M (fun x => (e x).elim))
+                (FreeCoprodCompDisc.emptyObj I) X
+                (FreeCoprodCompDisc.emptyDesc I X))
+              (deltaEmptyInj I O E e M X)).symm)))
+    eIr
+
+/-- The `ι`-case of the `IR.deltaEmptyPush` characterization. -/
+theorem interpHom_deltaEmptyPush_mk_iota (o : O)
+    (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O) :
+    InterpHomDeltaEmptyPushMotive I O (mk I O (Sum.inl o) d) :=
+  fun E e M f X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inl o) d)
+          (delta I O E M) t).1 X)
+        (deltaEmptyPush_mk_iota I O o d E e M f)).trans
+      ((congrArg (fun eq => (eq (⟨e, f⟩ :
+            InnerHom.{uA, uB, uI, uO} I O o (delta I O E M))).1 X)
+          (interpHomEquiv_mk I O (Sum.inl o) d (delta I O E M))).trans
+        ((interpHomIotaCast_deltaEmptyPush I O o E e M f X
+            (mk I O (Sum.inl o) d)
+            (mk_congr I O (Sum.inl o)
+              (funext (fun x => nomatch x)) :
+                mk I O (Sum.inl o) PEmpty.elim = mk I O (Sum.inl o) d)).trans
+          (congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp O t
+              (deltaEmptyInj I O E e M X))
+            (congrArg (fun eq => (eq f).1 X)
+              (interpHomEquiv_mk I O (Sum.inl o) d
+                (M (fun x => (e x).elim)))).symm)))
+
+/-- The `σ`-domain case of the `IR.deltaEmptyPush` characterization:
+componentwise by the inductive hypotheses, then the cotuple
+compatibility. -/
+theorem interpHom_deltaEmptyPush_mk_sigma (A : Type (max uA uB))
+    (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomDeltaEmptyPushMotive I O (d x)) :
+    InterpHomDeltaEmptyPushMotive I O (mk I O (Sum.inr (Sum.inl A)) d) :=
+  fun E e M f X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inr (Sum.inl A)) d)
+          (delta I O E M) t).1 X)
+        (deltaEmptyPush_mk_sigma I O A d E e M f)).trans
+      ((interpHom_sigma I O A (fun a => d (ULift.up a)) (delta I O E M)
+          (fun b => deltaEmptyPush I O (d (ULift.up b)) E e M (f b)) X).trans
+        ((congrArg
+            (FreeCoprodCompDisc.coprodDesc O A
+              (fun a => interpObj I O (d (ULift.up a)) X)
+              (interpObj I O (delta I O E M) X))
+            (funext (fun b => ih (ULift.up b) E e M (f b) X))).trans
+          ((FreeCoprodCompDisc.coprodDesc_comp O A
+              (fun a => interpObj I O (d (ULift.up a)) X)
+              (interpObj I O (M (fun x => (e x).elim)) X)
+              (interpObj I O (delta I O E M) X)
+              (fun b => (interpHom I O (d (ULift.up b))
+                (M (fun x => (e x).elim)) (f b)).1 X)
+              (deltaEmptyInj I O E e M X)).symm.trans
+            (congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O t
+                (deltaEmptyInj I O E e M X))
+              (interpHom_sigma I O A (fun a => d (ULift.up a))
+                (M (fun x => (e x).elim)) f X).symm))))
+
+/-- Elimination of the assignment cast in the `δ`-domain step of
+`IR.deltaEmptyPush`: composing the transported morphism's
+interpretation with the transported summand isomorphism recovers the
+untransported composite. -/
+theorem interpHom_deltaEmptySummand_cast (γ : IR.{max uA uB, uB, uI, uO} I O)
+    (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (Q : Type uB) (q : Q → I) (X : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    ∀ (a : E → I) (h : (fun x => ((e x).elim : I)) = a)
+      (f : Hom.{uA, uB, uI, uO} I O γ
+        (precomp I O Q q (M (fun x => (e x).elim)))),
+      FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O γ (precomp I O Q q (M a))
+            (cast (congrArg (fun a' => Hom I O γ (precomp I O Q q (M a'))) h)
+              f)).1 X)
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O (M a) Q q X))
+            (FreeCoprodCompDisc.Iso.hom O
+              (FreeCoprodCompDisc.isoOfEq O
+                (congrArg
+                  (fun a' => interpObj I O (M a')
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ X))
+                  h.symm)))) =
+        FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O γ (precomp I O Q q (M (fun x => (e x).elim))) f).1 X)
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (M (fun x => (e x).elim)) Q q X)) :=
+  fun _ h =>
+    Eq.rec (motive := fun a' h' => ∀ (f : Hom.{uA, uB, uI, uO} I O γ
+        (precomp I O Q q (M (fun x => (e x).elim)))),
+        FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O γ (precomp I O Q q (M a'))
+              (cast
+                (congrArg (fun a'' => Hom I O γ (precomp I O Q q (M a''))) h')
+                f)).1 X)
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (M a') Q q X))
+              (FreeCoprodCompDisc.Iso.hom O
+                (FreeCoprodCompDisc.isoOfEq O
+                  (congrArg
+                    (fun a'' => interpObj I O (M a'')
+                      (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ X))
+                    h'.symm)))) =
+          FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O γ
+              (precomp I O Q q (M (fun x => (e x).elim))) f).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (M (fun x => (e x).elim)) Q q X)))
+      (fun _ => rfl) h
+
+/-- The transported-composite equation behind the `δ`-domain case of
+the `IR.deltaEmptyPush` characterization: the composite injection
+pushed through the Lemma 4 isomorphism and the bridge factors out of
+the transported composite. -/
+theorem interpHomDeltaSummand_deltaEmpty_theta (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O) (i : B → I)
+    (u : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i (delta I O E M)))
+    (w : Hom.{uA, uB, uI, uO} I O (c i)
+      (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+        (fun z : {z : E // (fun x => (e x).elim : E → B ⊕ PUnit.{uB + 1}) z =
+            Sum.inr PUnit.unit} => (((e z.1).elim : PEmpty.{1}).elim : I))))))
+    (v : Hom.{uA, uB, uI, uO} I O (c i)
+      (precomp I O B i (M (fun x => (e x).elim))))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (hu : (interpHom I O (c i) (precomp I O B i (delta I O E M)) u).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i)
+          (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+            (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) w).1 X)
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : E // (fun x => (e x).elim : E → B ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => (e z.1).elim)
+            (fun j => precomp I O B i
+              (M (precompMerge I B i (fun x => (e x).elim) j)))
+            X)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : E // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O B i
+                  (M (precompMerge I B i cl.down j)))) X)
+            (ULift.up (fun x => (e x).elim)))))
+    (hv : FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i)
+          (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+            (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) w).1 X)
+        (deltaEmptySummandHom I O E e M B i X) =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i)
+          (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (M (fun x => (e x).elim)) B i X))) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O (c i) (precomp I O B i (delta I O E M)) u).1 X)
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (delta I O E M) B i X)))
+        ((plusLiftBridgeNatInv I O B i (delta I O E M)).1 X) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O (c i)
+              (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (M (fun x => (e x).elim)) B i X)))
+          ((plusLiftBridgeNatInv I O B i (M (fun x => (e x).elim))).1 X))
+        (deltaEmptyInj I O E e M
+          (FreeCoprodCompDisc.plus I
+            (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)) :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O t
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (delta I O E M) B i X)))
+        ((plusLiftBridgeNatInv I O B i (delta I O E M)).1 X))
+      hu).trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O t
+          ((plusLiftBridgeNatInv I O B i (delta I O E M)).1 X))
+        ((FreeCoprodCompDisc.Hom.comp_assoc O
+            ((interpHom I O (c i)
+              (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+                (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) w).1 X)
+            (FreeCoprodCompDisc.Hom.comp O
+              (deltaEmptyInj I O
+                {z : E // (fun x => (e x).elim : E → B ⊕ PUnit.{uB + 1}) z =
+                  Sum.inr PUnit.unit}
+                (fun z => (e z.1).elim)
+                (fun j => precomp I O B i
+                  (M (precompMerge I B i (fun x => (e x).elim) j)))
+                X)
+              (FreeCoprodCompDisc.coprodInj O
+                (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+                (fun cl => interpObj I O
+                  (delta I O {z : E // cl.down z = Sum.inr PUnit.unit}
+                    (fun j => precomp I O B i
+                      (M (precompMerge I B i cl.down j)))) X)
+                (ULift.up (fun x => (e x).elim))))
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (delta I O E M) B i X))).trans
+          ((congrArg
+              (FreeCoprodCompDisc.Hom.comp O
+                ((interpHom I O (c i)
+                  (precomp I O B i (M (precompMerge I B i
+                    (fun x => (e x).elim)
+                    (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))))
+                  w).1 X))
+              (interpPrecompIso_deltaEmpty_inj I O E e M B i X)).trans
+            ((FreeCoprodCompDisc.Hom.comp_assoc O
+                ((interpHom I O (c i)
+                  (precomp I O B i (M (precompMerge I B i
+                    (fun x => (e x).elim)
+                    (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))))
+                  w).1 X)
+                (deltaEmptySummandHom I O E e M B i X)
+                (deltaEmptyInj I O E e M
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I
+                    ⟨B, i⟩ X))).symm.trans
+              (congrArg
+                (fun t => FreeCoprodCompDisc.Hom.comp O t
+                  (deltaEmptyInj I O E e M
+                    (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X)))
+                hv))))).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc O
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O (c i)
+              (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (M (fun x => (e x).elim)) B i X)))
+          (deltaEmptyInj I O E e M
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+          ((plusLiftBridgeNatInv I O B i (delta I O E M)).1 X)).trans
+        ((congrArg
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Hom.comp O
+                ((interpHom I O (c i)
+                  (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+                (FreeCoprodCompDisc.Iso.hom O
+                  (interpPrecompIso I O (M (fun x => (e x).elim)) B i X))))
+            (interpMor_deltaEmpty_inj I O E e M
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X)
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+              (plusLiftBridgeInvHom I B i X))).trans
+          (FreeCoprodCompDisc.Hom.comp_assoc O
+            (FreeCoprodCompDisc.Hom.comp O
+              ((interpHom I O (c i)
+                (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (M (fun x => (e x).elim)) B i X)))
+            ((plusLiftBridgeNatInv I O B i (M (fun x => (e x).elim))).1 X)
+            (deltaEmptyInj I O E e M
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
+                X))).symm)))
+
+/-- The per-summand transport of the empty-summand inclusion through
+the `δ`-case target transports, given the summand's own push and cast
+equations. -/
+theorem interpHomDeltaSummand_deltaEmptyInj (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (E : Type uB) (e : E → PEmpty.{1})
+    (M : (E → I) → IR.{max uA uB, uB, uI, uO} I O) (i : B → I)
+    (u : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i (delta I O E M)))
+    (w : Hom.{uA, uB, uI, uO} I O (c i)
+      (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+        (fun z : {z : E // (fun x => (e x).elim : E → B ⊕ PUnit.{uB + 1}) z =
+            Sum.inr PUnit.unit} => (((e z.1).elim : PEmpty.{1}).elim : I))))))
+    (v : Hom.{uA, uB, uI, uO} I O (c i)
+      (precomp I O B i (M (fun x => (e x).elim))))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (hu : (interpHom I O (c i) (precomp I O B i (delta I O E M)) u).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i)
+          (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+            (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) w).1 X)
+        (FreeCoprodCompDisc.Hom.comp O
+          (deltaEmptyInj I O
+            {z : E // (fun x => (e x).elim : E → B ⊕ PUnit.{uB + 1}) z =
+              Sum.inr PUnit.unit}
+            (fun z => (e z.1).elim)
+            (fun j => precomp I O B i
+              (M (precompMerge I B i (fun x => (e x).elim) j)))
+            X)
+          (FreeCoprodCompDisc.coprodInj O
+            (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+            (fun cl => interpObj I O
+              (delta I O {z : E // cl.down z = Sum.inr PUnit.unit}
+                (fun j => precomp I O B i
+                  (M (precompMerge I B i cl.down j)))) X)
+            (ULift.up (fun x => (e x).elim)))))
+    (hv : FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i)
+          (precomp I O B i (M (precompMerge I B i (fun x => (e x).elim)
+            (fun z => (((e z.1).elim : PEmpty.{1}).elim : I))))) w).1 X)
+        (deltaEmptySummandHom I O E e M B i X) =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i)
+          (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (M (fun x => (e x).elim)) B i X))) :
+    (interpHomDeltaSummand I O B c (delta I O E M) i u).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHomDeltaSummand I O B c (M (fun x => (e x).elim)) i v).1 X)
+        (deltaEmptyInj I O E e M X) :=
+  (congrArg
+      (FreeCoprodCompDisc.coprodDesc O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        (fun _ => interpObj I O (c i) X)
+        (interpObj I O (delta I O E M) X))
+      (funext (fun e' =>
+        (congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp O t
+              (interpMor I O (delta I O E M)
+                (FreeCoprodCompDisc.plus I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                X
+                (FreeCoprodCompDisc.coprodPairDesc I e'
+                  (FreeCoprodCompDisc.Hom.id I X))))
+            (interpHomDeltaSummand_deltaEmpty_theta I O B c E e M i u w v X
+              hu hv)).trans
+          ((FreeCoprodCompDisc.Hom.comp_assoc O
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Hom.comp O
+                  ((interpHom I O (c i)
+                    (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+                  (FreeCoprodCompDisc.Iso.hom O
+                    (interpPrecompIso I O (M (fun x => (e x).elim)) B i X)))
+                ((plusLiftBridgeNatInv I O B i
+                  (M (fun x => (e x).elim))).1 X))
+              (deltaEmptyInj I O E e M
+                (FreeCoprodCompDisc.plus I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X))
+              (interpMor I O (delta I O E M)
+                (FreeCoprodCompDisc.plus I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                X
+                (FreeCoprodCompDisc.coprodPairDesc I e'
+                  (FreeCoprodCompDisc.Hom.id I X)))).trans
+            ((congrArg
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Hom.comp O
+                    (FreeCoprodCompDisc.Hom.comp O
+                      ((interpHom I O (c i)
+                        (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+                      (FreeCoprodCompDisc.Iso.hom O
+                        (interpPrecompIso I O (M (fun x => (e x).elim))
+                          B i X)))
+                    ((plusLiftBridgeNatInv I O B i
+                      (M (fun x => (e x).elim))).1 X)))
+                (interpMor_deltaEmpty_inj I O E e M
+                  (FreeCoprodCompDisc.plus I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                  X
+                  (FreeCoprodCompDisc.coprodPairDesc I e'
+                    (FreeCoprodCompDisc.Hom.id I X)))).trans
+              (FreeCoprodCompDisc.Hom.comp_assoc O
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Hom.comp O
+                    ((interpHom I O (c i)
+                      (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+                    (FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (M (fun x => (e x).elim)) B i X)))
+                  ((plusLiftBridgeNatInv I O B i
+                    (M (fun x => (e x).elim))).1 X))
+                (interpMor I O (M (fun x => (e x).elim))
+                  (FreeCoprodCompDisc.plus I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                  X
+                  (FreeCoprodCompDisc.coprodPairDesc I e'
+                    (FreeCoprodCompDisc.Hom.id I X)))
+                (deltaEmptyInj I O E e M X)).symm))))).trans
+    (FreeCoprodCompDisc.coprodDesc_comp O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        (fun _ => interpObj I O (c i) X)
+        (interpObj I O (M (fun x => (e x).elim)) X)
+        (interpObj I O (delta I O E M) X)
+        (fun e' => FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              ((interpHom I O (c i)
+                (precomp I O B i (M (fun x => (e x).elim))) v).1 X)
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (M (fun x => (e x).elim)) B i X)))
+            ((plusLiftBridgeNatInv I O B i (M (fun x => (e x).elim))).1 X))
+          (interpMor I O (M (fun x => (e x).elim))
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) X
+            (FreeCoprodCompDisc.coprodPairDesc I e'
+              (FreeCoprodCompDisc.Hom.id I X))))
+        (deltaEmptyInj I O E e M X)).symm
+
+/-- The `δ`-domain case of the `IR.deltaEmptyPush` characterization. -/
+theorem interpHom_deltaEmptyPush_mk_delta (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomDeltaEmptyPushMotive I O (d x)) :
+    InterpHomDeltaEmptyPushMotive I O (mk I O (Sum.inr (Sum.inr B)) d) :=
+  fun E e M f X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inr (Sum.inr B)) d)
+          (delta I O E M) t).1 X)
+        (deltaEmptyPush_mk_delta I O B d E e M f)).trans
+      ((interpHom_delta I O B (fun j => d (ULift.up j)) (delta I O E M)
+          (fun i => sigmaPush I O (d (ULift.up i))
+            (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+            (fun cl => delta I O {z : E // cl.down z = Sum.inr PUnit.unit}
+              (fun j => precomp I O B i (M (precompMerge I B i cl.down j))))
+            (ULift.up (fun x => (e x).elim))
+            (deltaEmptyPush I O (d (ULift.up i))
+              {z : E // (fun x => (e x).elim) z = Sum.inr PUnit.unit}
+              (fun z => (e z.1).elim)
+              (fun j => precomp I O B i
+                (M (precompMerge I B i (fun x => (e x).elim) j)))
+              (cast (congrArg
+                (fun a => Hom I O (d (ULift.up i)) (precomp I O B i (M a)))
+                (funext (fun x => (e x).elim) :
+                  (fun x => (e x).elim) = precompMerge I B i
+                    (fun x => (e x).elim)
+                    (fun z : {z : E // (fun x => (e x).elim) z =
+                        Sum.inr PUnit.unit}
+                      => ((e z.1).elim : PEmpty.{1}).elim)))
+                (f i)))) X).trans
+        ((congrArg
+            (deltaDesc I O B (fun j => d (ULift.up j)) X
+              (interpObj I O (delta I O E M) X))
+            (funext (fun i =>
+              interpHomDeltaSummand_deltaEmptyInj I O B
+                (fun j => d (ULift.up j)) E e M i
+                (sigmaPush I O (d (ULift.up i))
+                  (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+                  (fun cl => delta I O
+                    {z : E // cl.down z = Sum.inr PUnit.unit}
+                    (fun j => precomp I O B i
+                      (M (precompMerge I B i cl.down j))))
+                  (ULift.up (fun x => (e x).elim))
+                  (deltaEmptyPush I O (d (ULift.up i))
+                    {z : E // (fun x => (e x).elim) z = Sum.inr PUnit.unit}
+                    (fun z => (e z.1).elim)
+                    (fun j => precomp I O B i
+                      (M (precompMerge I B i (fun x => (e x).elim) j)))
+                    (cast (congrArg
+                      (fun a => Hom I O (d (ULift.up i))
+                        (precomp I O B i (M a)))
+                      (funext (fun x => (e x).elim) :
+                        (fun x => (e x).elim) = precompMerge I B i
+                          (fun x => (e x).elim)
+                          (fun z : {z : E // (fun x => (e x).elim) z =
+                              Sum.inr PUnit.unit}
+                            => ((e z.1).elim : PEmpty.{1}).elim)))
+                      (f i))))
+                (cast (congrArg
+                  (fun a => Hom I O (d (ULift.up i))
+                    (precomp I O B i (M a)))
+                  (funext (fun x => (e x).elim) :
+                    (fun x => (e x).elim) = precompMerge I B i
+                      (fun x => (e x).elim)
+                      (fun z : {z : E // (fun x => (e x).elim) z =
+                          Sum.inr PUnit.unit}
+                        => ((e z.1).elim : PEmpty.{1}).elim)))
+                  (f i))
+                (f i) X
+                ((interpHom_sigmaPush I O (d (ULift.up i))
+                    (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+                    (fun cl => delta I O
+                      {z : E // cl.down z = Sum.inr PUnit.unit}
+                      (fun j => precomp I O B i
+                        (M (precompMerge I B i cl.down j))))
+                    (ULift.up (fun x => (e x).elim))
+                    (deltaEmptyPush I O (d (ULift.up i))
+                      {z : E // (fun x => (e x).elim) z = Sum.inr PUnit.unit}
+                      (fun z => (e z.1).elim)
+                      (fun j => precomp I O B i
+                        (M (precompMerge I B i (fun x => (e x).elim) j)))
+                      (cast (congrArg
+                        (fun a => Hom I O (d (ULift.up i))
+                          (precomp I O B i (M a)))
+                        (funext (fun x => (e x).elim) :
+                          (fun x => (e x).elim) = precompMerge I B i
+                            (fun x => (e x).elim)
+                            (fun z : {z : E // (fun x => (e x).elim) z =
+                                Sum.inr PUnit.unit}
+                              => ((e z.1).elim : PEmpty.{1}).elim)))
+                        (f i))) X).trans
+                  ((congrArg
+                      (fun t => FreeCoprodCompDisc.Hom.comp O t
+                        (FreeCoprodCompDisc.coprodInj O
+                          (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+                          (fun cl => interpObj I O
+                            (delta I O
+                              {z : E // cl.down z = Sum.inr PUnit.unit}
+                              (fun j => precomp I O B i
+                                (M (precompMerge I B i cl.down j)))) X)
+                          (ULift.up (fun x => (e x).elim))))
+                      (ih (ULift.up i)
+                        {z : E // (fun x => (e x).elim :
+                          E → B ⊕ PUnit.{uB + 1}) z = Sum.inr PUnit.unit}
+                        (fun z => (e z.1).elim)
+                        (fun j => precomp I O B i
+                          (M (precompMerge I B i (fun x => (e x).elim) j)))
+                        (cast (congrArg
+                          (fun a => Hom I O (d (ULift.up i))
+                            (precomp I O B i (M a)))
+                          (funext (fun x => (e x).elim) :
+                            (fun x => (e x).elim) = precompMerge I B i
+                              (fun x => (e x).elim)
+                              (fun z : {z : E // (fun x => (e x).elim) z =
+                                  Sum.inr PUnit.unit}
+                                => ((e z.1).elim : PEmpty.{1}).elim)))
+                          (f i))
+                        X)).trans
+                    (FreeCoprodCompDisc.Hom.comp_assoc O
+                      ((interpHom I O (d (ULift.up i))
+                        (precomp I O B i (M (precompMerge I B i
+                          (fun x => (e x).elim)
+                          (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))))
+                        (cast (congrArg
+                          (fun a => Hom I O (d (ULift.up i))
+                            (precomp I O B i (M a)))
+                          (funext (fun x => (e x).elim) :
+                            (fun x => (e x).elim) = precompMerge I B i
+                              (fun x => (e x).elim)
+                              (fun z : {z : E // (fun x => (e x).elim) z =
+                                  Sum.inr PUnit.unit}
+                                => ((e z.1).elim : PEmpty.{1}).elim)))
+                          (f i))).1 X)
+                      (deltaEmptyInj I O
+                        {z : E // (fun x => (e x).elim :
+                          E → B ⊕ PUnit.{uB + 1}) z = Sum.inr PUnit.unit}
+                        (fun z => (e z.1).elim)
+                        (fun j => precomp I O B i
+                          (M (precompMerge I B i (fun x => (e x).elim) j)))
+                        X)
+                      (FreeCoprodCompDisc.coprodInj O
+                        (ULift.{max uA uB} (E → B ⊕ PUnit.{uB + 1}))
+                        (fun cl => interpObj I O
+                          (delta I O
+                            {z : E // cl.down z = Sum.inr PUnit.unit}
+                            (fun j => precomp I O B i
+                              (M (precompMerge I B i cl.down j)))) X)
+                        (ULift.up (fun x => (e x).elim))))))
+                (interpHom_deltaEmptySummand_cast I O (d (ULift.up i))
+                  E e M B i X
+                  (precompMerge I B i (fun x => (e x).elim)
+                    (fun z => (((e z.1).elim : PEmpty.{1}).elim : I)))
+                  (funext (fun x => (e x).elim))
+                  (f i))))).trans
+          ((deltaDesc_comp I O B (fun j => d (ULift.up j)) X
+              (interpObj I O (M (fun x => (e x).elim)) X)
+              (interpObj I O (delta I O E M) X)
+              (fun i => (interpHomDeltaSummand I O B (fun j => d (ULift.up j))
+                (M (fun x => (e x).elim)) i (f i)).1 X)
+              (deltaEmptyInj I O E e M X)).symm.trans
+            (congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O t
+                (deltaEmptyInj I O E e M X))
+              (interpHom_delta I O B (fun j => d (ULift.up j))
+                (M (fun x => (e x).elim)) f X).symm))))
+
+/-- `IR.interpHom` sends `IR.deltaEmptyPush` to composition with the
+semantic empty-summand inclusion, by `IR.induction`. -/
+theorem interpHom_deltaEmptyPush (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    InterpHomDeltaEmptyPushMotive I O γ :=
+  induction I O (InterpHomDeltaEmptyPushMotive I O)
+    (fun s => match s with
+      | Sum.inl o => fun d _ => interpHom_deltaEmptyPush_mk_iota I O o d
+      | Sum.inr (Sum.inl A) => fun d ih =>
+          interpHom_deltaEmptyPush_mk_sigma I O A d ih
+      | Sum.inr (Sum.inr B) => fun d ih =>
+          interpHom_deltaEmptyPush_mk_delta I O B d ih)
     γ
 
 end IR
