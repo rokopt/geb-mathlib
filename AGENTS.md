@@ -87,7 +87,20 @@ If Harmonic's Aristotle is available in the environment (the
 and prove Lean. Reach for it when a task exceeds the in-editor
 tooling: to formalize a definition or theorem available only in a
 published paper, or when a goal resists the `lean4:autoprove` and
-`lean4:sorry-filler-deep` passes. It is a metered hosted service,
+`lean4:sorry-filler-deep` passes.
+
+For mathematics available only in published sources, locate the
+reference with `theoremsearch` (`theorem_search`) or
+`arxiv-mcp-server` (`search_papers`, `read_paper`) — see
+[CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md)
+— then draft the Lean with the `lean4:autoformalize` workflow
+(end-to-end formalization from the informal source) or
+`lean4:formalize` (interactive drafting plus proving); see
+[docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4
+skill workflows. Escalate formalizations or proofs that exceed
+the in-editor tooling to Aristotle (below).
+
+It is a metered hosted service,
 so the agent asks the contributor whether to use it before
 invoking it, even when it is available. Its output is
 LLM-generated code, governed by the

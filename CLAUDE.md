@@ -36,25 +36,9 @@ respectively; the rules below are the Claude-specific additions.
 | Brainstorming | `superpowers:brainstorming` | `sequential-thinking`; Lean helpers as needed |
 | Writing-plan | `superpowers:writing-plans` | `sequential-thinking`; Lean helpers as needed |
 | Executing-plan | `superpowers:executing-plans` (or `superpowers:subagent-driven-development`) | phase-relevant Lean skills |
-| Lean code work | `lean4` umbrella (sub-skills below) | `lean-lsp`, `serena` MCPs |
-| Mathlib search | `lean-lsp` (search tools listed in `.claude/rules/lean-coding-claude.md`) | — |
-| Literature search and citation | `theoremsearch` (`theorem_search`) for published statements and their identifiers; `arxiv-mcp-server` (`search_papers`, `read_paper`); `deep-research` for multi-source cited surveys | `lean-lsp` search to bridge concepts to mathlib names |
+| Lean code work, mathlib search, literature search and citation | see [docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4 skill workflows and § `lean-lsp` MCP search and proof tools; literature search uses `theoremsearch` (`theorem_search`), `arxiv-mcp-server` (`search_papers`, `read_paper`), and `deep-research` for multi-source cited surveys | `lean-lsp`, `serena` |
 | Pre-commit | `superpowers:verification-before-completion` | — |
 | Receiving review | `superpowers:receiving-code-review` | — |
-
-`lean4` sub-skill mapping by activity (drafting, proving, filling
-`sorry`, golfing, refactoring, review, exploration, diagnosis,
-checkpointing) lives in `.claude/rules/lean-coding-claude.md`
-§ `lean4` sub-skill mapping.
-
-For mathematics available only in published sources, locate the
-reference with `theoremsearch` or `arxiv-mcp-server`, then draft
-the Lean with
-`lean4:autoformalize` (end-to-end formalization from the informal
-source) or `lean4:formalize` (interactive drafting plus proving).
-Escalate formalizations or proofs that exceed the in-editor
-tooling to Harmonic's Aristotle; see
-[AGENTS.md § Aristotle](AGENTS.md).
 
 The `superpowers` brainstorming, writing-plans, and
 executing-plans skills write spec and plan files under

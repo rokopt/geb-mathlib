@@ -26,6 +26,8 @@ paths:
   - [Structure and typeclass patterns](#structure-and-typeclass-patterns)
 - [Constructive-only Lean code](#constructive-only-lean-code)
 - [sorry, admit, and underscores](#sorry-admit-and-underscores)
+- [Lean 4 skill workflows](#lean-4-skill-workflows)
+- [`lean-lsp` MCP search and proof tools](#lean-lsp-mcp-search-and-proof-tools)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -408,3 +410,50 @@ rationale.
   a placeholder for an unfilled term or hypothesis, use an
   underscore (`_`). Underscores are considered errors by elaboration,
   highlighting what is missing.
+
+## Lean 4 skill workflows
+
+The `lean4` skill (installed from `lean4-skills` at
+`~/.agents/skills/lean4/` or equivalent) provides named workflows
+for the recurring Lean development activities. Select by activity.
+
+| Activity | Workflow | When |
+| --- | --- | --- |
+| Drafting from informal math | `draft`, `formalize`, `autoformalize` | Try `autoformalize` early |
+| Proving a stated lemma | `prove`, `autoprove` | Try `autoprove` when stuck |
+| Filling stubborn `sorry`s | `sorry-filler-deep` | When fast pass fails or proofs are complex |
+| Polishing a proof | `golf` | Post-process before commit |
+| Refactoring existing Lean code | `refactor` | During refactors |
+| Pre-commit Lean review | `review` | Before any Lean commit |
+| Exploring mathlib | `learn` | As needed |
+| Diagnosis | `doctor` | As needed |
+| Save progress | `checkpoint` | At milestones |
+
+**Invocation form is host-dependent.** On Claude Code with the
+`lean4-skills` plugin installed, these are slash commands
+(`/lean4:prove`, `/lean4:autoprove`, etc.). On other harnesses
+that load the skill but not the plugin (e.g. OpenCode), invoke
+them in natural language ("run the guided `prove` workflow on
+`Foo.lean:42`"). The underlying cycle engine and outputs are the
+same; only the surface syntax differs.
+
+## `lean-lsp` MCP search and proof tools
+
+The `lean-lsp` MCP server exposes these search and proof tools to
+any harness that loads it. Select by question.
+
+| Need | Tool |
+| --- | --- |
+| Does a declaration exist locally? | `lean_local_search` |
+| A lemma stating X (natural language) | `lean_leansearch` |
+| A lemma matching a type pattern | `lean_loogle` |
+| The Lean name for a concept | `lean_leanfinder` |
+| Lemmas that close the current goal | `lean_state_search` |
+| Premises to feed `simp` / `aesop` | `lean_hammer_premise` |
+| Minimise a goal's hypotheses | `lean_minimal_hypotheses` |
+| Test tactics without editing the file | `lean_multi_attempt` |
+| Profile a proof's tactic hotspots | `lean_profile_proof` |
+
+The natural-language and pattern search tools are rate-limited;
+prefer `lean_local_search` first, then verify any found name with
+`lean_hover_info`.
