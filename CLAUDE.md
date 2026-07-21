@@ -33,8 +33,8 @@ respectively; the rules below are the Claude-specific additions.
 
 | Phase | Always-on skill | Helper |
 | --- | --- | --- |
-| Brainstorming | `superpowers:brainstorming` | `sequential-thinking`; Lean helpers as needed |
-| Writing-plan | `superpowers:writing-plans` | `sequential-thinking`; Lean helpers as needed |
+| Brainstorming | `superpowers:brainstorming` | — |
+| Writing-plan | `superpowers:writing-plans` | — |
 | Executing-plan | `superpowers:executing-plans` (or `superpowers:subagent-driven-development`) | phase-relevant Lean skills |
 | Lean code work, mathlib search, literature search and citation | see [docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4 skill workflows and § `lean-lsp` MCP search and proof tools; literature search uses `theoremsearch` (`theorem_search`), `arxiv-mcp-server` (`search_papers`, `read_paper`), and `deep-research` for multi-source cited surveys | `lean-lsp`, `serena` |
 | Pre-commit | `superpowers:verification-before-completion` | — |
@@ -57,8 +57,7 @@ them in the final commits of the topic branch.
   `test-driven-development`, `remember`, `session-report`,
   `fewer-permission-prompts`, `claude-automation-recommender`
   (one-shot).
-- MCPs: `lean-lsp`, `serena`, `arxiv-mcp-server`,
-  `sequential-thinking` (active). `session-report` and
+- MCPs: `lean-lsp`, `serena`, `arxiv-mcp-server`. `session-report` and
   `claude-automation-recommender` are one-shot health checks worth
   running at workstream boundaries.
 
