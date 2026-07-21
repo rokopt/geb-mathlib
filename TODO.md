@@ -5,12 +5,13 @@
 
 - [In progress](#in-progress)
 - [Next up](#next-up)
-  - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
-  - [2. Categorical wrappers for mathlib's `PFunctor` and `WType`](#2-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
-  - [3. Categorical wrappers for slice and presheaf W-types as initial algebras](#3-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
-  - [4. M-types and their categorical wrappers as terminal coalgebras](#4-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
-  - [5. Universal morphisms](#5-universal-morphisms)
-  - [6. Relative (co)free (co)monads](#6-relative-cofree-comonads)
+  - [Polynomial functors](#polynomial-functors)
+    - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
+    - [2. Categorical wrappers for mathlib's `PFunctor` and `WType`](#2-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
+    - [3. Categorical wrappers for slice and presheaf W-types as initial algebras](#3-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
+    - [4. M-types and their categorical wrappers as terminal coalgebras](#4-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
+    - [5. Universal morphisms](#5-universal-morphisms)
+    - [6. Relative (co)free (co)monads](#6-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`](#relocate-generic-freecoprodcompdisc-facts-out-of-indrecir)
@@ -24,9 +25,11 @@ removed; content merged into `docs/index.md`.
 
 ## In progress
 
-(None — bootstrap complete.)
+(None.)
 
 ## Next up
+
+### Polynomial functors
 
 The polynomial-functor roadmap below is a linear sequence of
 separate planning–implementation cycles. Each item's full spec
@@ -47,7 +50,7 @@ minimise the `Classical.choice` surface. Slice and presheaf W-types
 (`Slice/W.lean`, `Presheaf/W.lean`) exist, with the existence half of
 initiality only; the roadmap extends the stack upward.
 
-### 1. Decidable-property specializations of the functor definitions
+#### 1. Decidable-property specializations of the functor definitions
 
 The slice and presheaf functors are specializations of mathlib's
 `PFunctor`: a restriction to a domain by a compatibility property on
@@ -61,7 +64,7 @@ them; the decidable functors are then available downstream, in
 particular for the decidable-case specializations of the universal
 morphisms (item 5).
 
-### 2. Categorical wrappers for mathlib's `PFunctor` and `WType`
+#### 2. Categorical wrappers for mathlib's `PFunctor` and `WType`
 
 Connect mathlib's generic endofunctor algebras to `PFunctor` as a
 reusable base layer. Per the survey, mathlib has
@@ -73,7 +76,7 @@ mathlib's `WType` as the initial algebra of that endofunctor. Then
 refactor the existing categorical wrapper of the slice functors
 (`Slice/Functor.lean`) to reuse the new `PFunctor` wrapper.
 
-### 3. Categorical wrappers for slice and presheaf W-types as initial algebras
+#### 3. Categorical wrappers for slice and presheaf W-types as initial algebras
 
 Characterise the slice and presheaf W-types as the initial objects
 of the categories of algebras of their functors, reusing the
@@ -81,7 +84,7 @@ of the categories of algebras of their functors, reusing the
 initiality proof on the slice initiality proof, and the slice
 proof on the `WType` initiality of item 2.
 
-### 4. M-types and their categorical wrappers as terminal coalgebras
+#### 4. M-types and their categorical wrappers as terminal coalgebras
 
 Define the M-types (greatest fixed points) of the slice and
 presheaf functors on mathlib's `PFunctor.M`, following mathlib's
@@ -91,7 +94,7 @@ base-layer-first pattern of items 2 and 3, build a categorical
 wrapper for the terminality of mathlib's `PFunctor.M` first,
 reusable in the slice and presheaf terminality proofs.
 
-### 5. Universal morphisms
+#### 5. Universal morphisms
 
 Establish the universal morphisms of the slice and presheaf functors,
 layering the slice constructions on mathlib's `PFunctor` and the
@@ -124,7 +127,7 @@ Following the general definitions, implement the decidable-case
 specializations (item 1) of those universal morphisms with interesting
 decidable forms.
 
-### 6. Relative (co)free (co)monads
+#### 6. Relative (co)free (co)monads
 
 Build the relative free monads and relative cofree comonads of the
 slice and presheaf functors for all three forms, and prove the
@@ -157,10 +160,9 @@ cofree-comonad items.
 
 ### Complete Theorem 2.4 for `IndRec`
 
-Independent of the roadmap sequence above; layered like items 2–3
-(constructive core first, thin `Classical.choice`-enabled categorical
-wrapper second). The two remaining layers for Theorem 2.4 of
-[GhaniNordvallForsbergMalatesta2015] follow.
+Layered like the polynomial-functor code (constructive core first, thin
+`Classical.choice`-enabled categorical wrapper second). The two remaining
+layers for Theorem 2.4 of [GhaniNordvallForsbergMalatesta2015] follow.
 
 In the existing constructive files, without `Classical.choice`,
 remaining: the uniqueness properties of `IR.elim` and `IR.rec` as
@@ -181,9 +183,8 @@ wrapper is kept thin, following `Slice/Functor.lean` and
 
 ### Theorems 2 and 4 for `IR` codes
 
-Independent of the roadmap sequence above; parallel to
-Complete Theorem 2.4 for `IndRec`, and building on the category of
-`IR` codes in `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean`
+Parallel to "Complete Theorem 2.4 for `IndRec`", and building on the
+category of `IR` codes in `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean`
 (see `docs/index.md`). Two results of
 [HancockMcBrideGhaniMalatestaAltenkirch2013] remain: Theorem 2,
 the left-Kan-extension characterization of the `δ`-code
@@ -199,16 +200,12 @@ Six facts under `namespace IR` in
 `IR.isoOfEq_symm_hom_comp`, `IR.coprodPairInr_mor`, and
 `IR.deltaDesc_comp`. Relocate them to
 `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` and migrate
-call sites. Independent of the roadmap sequence above; touches a
-merged upstream-eligible module, so it belongs on its own branch
-rather than bundled with unrelated work.
+call sites.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
-Independent of the roadmap sequence above. Establish the natural
-isomorphism confirming that `PresheafPFunctor.functor` is the
-parametric right adjoint determined by its generic data
-`(T1, E_T)`.
+Establish the natural isomorphism confirming that `PresheafPFunctor.functor`
+is the parametric right adjoint determined by its generic data `(T1, E_T)`.
 
 ## Triggers (do when condition fires)
 
