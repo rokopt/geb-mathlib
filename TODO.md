@@ -13,7 +13,7 @@
   - [6. Universal morphisms](#6-universal-morphisms)
   - [7. Relative (co)free (co)monads](#7-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
-  - [Category of `IR` codes](#category-of-ir-codes)
+  - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -187,24 +187,16 @@ wrapper is kept thin, following `Slice/Functor.lean` and
    `CategoryTheory.Endofunctor.Algebra`), wrapping the constructive
    uniqueness proofs.
 
-### Category of `IR` codes
+### Theorems 2 and 4 for `IR` codes
 
 Independent of the roadmap sequence above; parallel to
-Complete Theorem 2.4 for `IndRec`. The functor laws of
-`IR.interpMor` (`IR.interpMor_id`, `IR.interpMor_comp`) that a
-natural-transformation notion of code morphism requires are
-available. Following Definition 8 and Corollary 2 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013], this entry completes
-the category of `IR` codes for a fixed input/output index pair:
-composition and the category laws (identity and associativity),
-building on the homset (`IR.Hom`) and the identity morphism
-(`IR.id`) in `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean`.
-
-The natural-transformation notion and Theorem 3 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] (`IR.interpHomEquiv`),
-with the Lemma 3 and Lemma 4 naturality upgrades, are in
-`Geb/Mathlib/Data/PFunctor/IndRec/Naturality.lean`; see
-`docs/index.md`. The branch 2d transfer consumes `IR.natToHom`.
+Complete Theorem 2.4 for `IndRec`, and building on the category of
+`IR` codes in `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean`
+(see `docs/index.md`). Two results of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] remain: Theorem 2,
+the left-Kan-extension characterization of the `δ`-code
+interpretation, and Theorem 4, the equivalence with dependent
+polynomial functors.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
