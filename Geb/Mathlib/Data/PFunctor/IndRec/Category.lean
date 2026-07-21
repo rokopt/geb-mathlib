@@ -35,6 +35,11 @@ its iterated Lemma 4 isomorphism.
   of `IR.mprecompIso`.
 * `IR.interpHomDeltaSummand` — the per-summand transport of the
   `δ`-domain case of `IR.interpHomEquiv`.
+* `IR.InterpHomSigmaPushMotive` — the statement of the
+  `IR.sigmaPush` characterization at one code.
+* `IR.interpHomIotaComposite`, `IR.interpHomIotaCast` — the
+  `ι`-branch equivalence of the Theorem 3 step and its transport
+  along a code equality.
 
 ## Main statements
 
@@ -54,6 +59,9 @@ its iterated Lemma 4 isomorphism.
 * `IR.deltaDesc_comp`, `IR.interpMor_sigma_inj` — right-composition
   of the `δ`-cotuple, and the commutation of a semantic
   `σ`-injection with the morphism map of a `σ`-interpretation.
+* `IR.interpHom_sigmaPush` — `IR.interpHom` sends `IR.sigmaPush` to
+  composition with the semantic `σ`-injection.
+* `IR.interpPrecompIso_sigma_inj` — the Lemma 4 `σ`-square.
 
 ## Implementation notes
 
@@ -797,6 +805,455 @@ theorem innerHomEquiv_mk (o : O) (s : Shape.{max uA uB, uB, uO} O)
     innerHomEquiv I O o (mk I O s d) =
       innerHomEquivStep I O o s d (fun x => innerHomEquiv I O o (d x)) :=
   rec_mk I O (innerHomEquivStep I O o) s d
+
+/-- The statement of the `IR.sigmaPush` characterization at one code:
+`IR.interpHom` sends a pushed morphism to the composite with the
+semantic `σ`-injection. -/
+def InterpHomSigmaPushMotive (γ : IR.{max uA uB, uB, uI, uO} I O) : Prop :=
+  ∀ (A' : Type (max uA uB)) (K' : A' → IR.{max uA uB, uB, uI, uO} I O)
+    (a' : A') (f : Hom.{uA, uB, uI, uO} I O γ (K' a'))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I),
+    (interpHom I O γ (sigma I O A' K') (sigmaPush I O γ A' K' a' f)).1 X =
+      FreeCoprodCompDisc.Hom.comp O ((interpHom I O γ (K' a') f).1 X)
+        (FreeCoprodCompDisc.coprodInj O A' (fun a => interpObj I O (K' a) X) a')
+
+/-- The `ι`-composite of the Theorem 3 step at codomain `γ'`
+(definitionally the equivalence the step transports). -/
+def interpHomIotaComposite (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O) :
+    InnerHom.{uA, uB, uI, uO} I O o γ' ≃
+      FreeCoprodCompDisc.NatTrans I O
+        (interpObj I O (iota.{max uA uB, uB, uI, uO} I O o)) (interpObj I O γ')
+        (interpMor I O (iota.{max uA uB, uB, uI, uO} I O o)) (interpMor I O γ') :=
+  (innerHomEquiv I O o γ').trans
+    ((FreeCoprodCompDisc.homSingletonEquiv O o
+        (interpObj I O γ' (FreeCoprodCompDisc.emptyObj I))).symm.trans
+      (natIotaEquiv I O o γ').symm)
+
+/-- The transport of `IR.interpHomIotaComposite` along a code equality
+(definitionally the `ι`-branch of `IR.interpHomEquivStep`). -/
+def interpHomIotaCast (o : O) (γ' : IR.{max uA uB, uB, uI, uO} I O)
+    (ir : IR.{max uA uB, uB, uI, uO} I O)
+    (e : iota.{max uA uB, uB, uI, uO} I O o = ir) :
+    InnerHom.{uA, uB, uI, uO} I O o γ' ≃
+      FreeCoprodCompDisc.NatTrans I O (interpObj I O ir) (interpObj I O γ')
+        (interpMor I O ir) (interpMor I O γ') :=
+  Eq.rec (motive := fun ir' _ =>
+      InnerHom.{uA, uB, uI, uO} I O o γ' ≃
+        FreeCoprodCompDisc.NatTrans I O (interpObj I O ir') (interpObj I O γ')
+          (interpMor I O ir') (interpMor I O γ'))
+    (interpHomIotaComposite I O o γ') e
+
+/-- The singleton morphism at a `σ`-summand name factors through the
+semantic `σ`-injection. -/
+theorem homSingletonEquiv_symm_inj (o : O) (A' : Type (max uA uB))
+    (K' : A' → IR.{max uA uB, uB, uI, uO} I O) (a' : A')
+    (z : {z : (interpObj I O (K' a') (FreeCoprodCompDisc.emptyObj I)).1 //
+      (interpObj I O (K' a') (FreeCoprodCompDisc.emptyObj I)).2 z = o}) :
+    (FreeCoprodCompDisc.homSingletonEquiv O o
+        (interpObj I O (sigma I O A' K') (FreeCoprodCompDisc.emptyObj I))).symm
+        ⟨⟨a', z.1⟩, z.2⟩ =
+      FreeCoprodCompDisc.Hom.comp O
+        ((FreeCoprodCompDisc.homSingletonEquiv O o
+            (interpObj I O (K' a') (FreeCoprodCompDisc.emptyObj I))).symm z)
+        (FreeCoprodCompDisc.coprodInj O A'
+          (fun a => interpObj I O (K' a) (FreeCoprodCompDisc.emptyObj I)) a') :=
+  Subtype.ext (funext (fun _ => rfl))
+
+/-- The `σ`-push equation for the transported `ι`-composite, by
+elimination of the code equality: at the reflexive instance both sides
+compute to singleton morphisms into the initial-object fiber, related
+by `IR.homSingletonEquiv_symm_inj` and the `σ`-injection square. -/
+theorem interpHomIotaCast_sigmaPush (o : O) (A' : Type (max uA uB))
+    (K' : A' → IR.{max uA uB, uB, uI, uO} I O) (a' : A')
+    (f : InnerHom.{uA, uB, uI, uO} I O o (K' a'))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (ir : IR.{max uA uB, uB, uI, uO} I O)
+    (e : iota.{max uA uB, uB, uI, uO} I O o = ir) :
+    ((interpHomIotaCast I O o (sigma I O A' K') ir e) ⟨a', f⟩).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        (((interpHomIotaCast I O o (K' a') ir e) f).1 X)
+        (FreeCoprodCompDisc.coprodInj O A' (fun a => interpObj I O (K' a) X) a') :=
+  Eq.rec (motive := fun ir' e' =>
+      ((interpHomIotaCast I O o (sigma I O A' K') ir' e') ⟨a', f⟩).1 X =
+        FreeCoprodCompDisc.Hom.comp O
+          (((interpHomIotaCast I O o (K' a') ir' e') f).1 X)
+          (FreeCoprodCompDisc.coprodInj O A'
+            (fun a => interpObj I O (K' a) X) a'))
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O
+          ((FreeCoprodCompDisc.homSingletonEquiv O o
+              (interpObj I O (sigma I O A' K')
+                (FreeCoprodCompDisc.emptyObj I))).symm (t ⟨a', f⟩))
+          (interpMor I O (sigma I O A' K') (FreeCoprodCompDisc.emptyObj I) X
+            (FreeCoprodCompDisc.emptyDesc I X)))
+        (innerHomEquiv_mk I O o (Sum.inr (Sum.inl A')) (K' ∘ ULift.down))).trans
+      ((congrArg
+          (fun t => FreeCoprodCompDisc.Hom.comp O t
+            (interpMor I O (sigma I O A' K') (FreeCoprodCompDisc.emptyObj I) X
+              (FreeCoprodCompDisc.emptyDesc I X)))
+          (homSingletonEquiv_symm_inj I O o A' K' a'
+            (innerHomEquiv I O o (K' a') f))).trans
+        ((FreeCoprodCompDisc.Hom.comp_assoc O
+            ((FreeCoprodCompDisc.homSingletonEquiv O o
+                (interpObj I O (K' a') (FreeCoprodCompDisc.emptyObj I))).symm
+              (innerHomEquiv I O o (K' a') f))
+            (FreeCoprodCompDisc.coprodInj O A'
+              (fun a => interpObj I O (K' a) (FreeCoprodCompDisc.emptyObj I)) a')
+            (interpMor I O (sigma I O A' K') (FreeCoprodCompDisc.emptyObj I) X
+              (FreeCoprodCompDisc.emptyDesc I X))).trans
+          ((congrArg
+              (FreeCoprodCompDisc.Hom.comp O
+                ((FreeCoprodCompDisc.homSingletonEquiv O o
+                    (interpObj I O (K' a')
+                      (FreeCoprodCompDisc.emptyObj I))).symm
+                  (innerHomEquiv I O o (K' a') f)))
+              (interpMor_sigma_inj I O A' K' a'
+                (FreeCoprodCompDisc.emptyObj I) X
+                (FreeCoprodCompDisc.emptyDesc I X))).trans
+            (FreeCoprodCompDisc.Hom.comp_assoc O
+              ((FreeCoprodCompDisc.homSingletonEquiv O o
+                  (interpObj I O (K' a')
+                    (FreeCoprodCompDisc.emptyObj I))).symm
+                (innerHomEquiv I O o (K' a') f))
+              (interpMor I O (K' a') (FreeCoprodCompDisc.emptyObj I) X
+                (FreeCoprodCompDisc.emptyDesc I X))
+              (FreeCoprodCompDisc.coprodInj O A'
+                (fun a => interpObj I O (K' a) X) a')).symm))))
+    e
+
+/-- The `ι`-case of the `IR.sigmaPush` characterization. -/
+theorem interpHom_sigmaPush_mk_iota (o : O)
+    (d : Direction I O (Sum.inl o : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O) :
+    InterpHomSigmaPushMotive I O (mk I O (Sum.inl o) d) :=
+  fun A' K' a' f X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inl o) d)
+          (sigma I O A' K') t).1 X)
+        (sigmaPush_mk_iota I O o d A' K' a' f)).trans
+      ((congrArg (fun e => (e (⟨a', f⟩ :
+            InnerHom.{uA, uB, uI, uO} I O o (sigma I O A' K'))).1 X)
+          (interpHomEquiv_mk I O (Sum.inl o) d (sigma I O A' K'))).trans
+        ((interpHomIotaCast_sigmaPush I O o A' K' a' f X
+            (mk I O (Sum.inl o) d)
+            (mk_congr I O (Sum.inl o)
+              (funext (fun x => nomatch x)) :
+                mk I O (Sum.inl o) PEmpty.elim = mk I O (Sum.inl o) d)).trans
+          (congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp O t
+              (FreeCoprodCompDisc.coprodInj O A'
+                (fun a => interpObj I O (K' a) X) a'))
+            (congrArg (fun e => (e f).1 X)
+              (interpHomEquiv_mk I O (Sum.inl o) d (K' a'))).symm)))
+
+/-- The `σ`-domain case of the `IR.sigmaPush` characterization:
+componentwise by the inductive hypotheses, then the cotuple
+compatibility. -/
+theorem interpHom_sigmaPush_mk_sigma (A : Type (max uA uB))
+    (d : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inl A) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomSigmaPushMotive I O (d x)) :
+    InterpHomSigmaPushMotive I O (mk I O (Sum.inr (Sum.inl A)) d) :=
+  fun A' K' a' f X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inr (Sum.inl A)) d)
+          (sigma I O A' K') t).1 X)
+        (sigmaPush_mk_sigma I O A d A' K' a' f)).trans
+      ((interpHom_sigma I O A (fun a => d (ULift.up a)) (sigma I O A' K')
+          (fun b => sigmaPush I O (d (ULift.up b)) A' K' a' (f b)) X).trans
+        ((congrArg
+            (FreeCoprodCompDisc.coprodDesc O A
+              (fun a => interpObj I O (d (ULift.up a)) X)
+              (interpObj I O (sigma I O A' K') X))
+            (funext (fun b => ih (ULift.up b) A' K' a' (f b) X))).trans
+          ((FreeCoprodCompDisc.coprodDesc_comp O A
+              (fun a => interpObj I O (d (ULift.up a)) X)
+              (interpObj I O (K' a') X) (interpObj I O (sigma I O A' K') X)
+              (fun b => (interpHom I O (d (ULift.up b)) (K' a') (f b)).1 X)
+              (FreeCoprodCompDisc.coprodInj O A'
+                (fun a => interpObj I O (K' a) X) a')).symm.trans
+            (congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O t
+                (FreeCoprodCompDisc.coprodInj O A'
+                  (fun a => interpObj I O (K' a) X) a'))
+              (interpHom_sigma I O A (fun a => d (ULift.up a))
+                (K' a') f X).symm))))
+
+/-- The Lemma 4 `σ`-square: the isomorphism of `IR.interpPrecompIso`
+at a `σ`-code commutes the lifted-summand injection with the direct
+summand injection. -/
+theorem interpPrecompIso_sigma_inj (A' : Type (max uA uB))
+    (K' : A' → IR.{max uA uB, uB, uI, uO} I O) (a' : A')
+    (Q : Type uB) (q : Q → I) (k : FreeCoprodCompDisc.{max uA uB, uI} I) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O (ULift.{uB} A')
+          (fun x => interpObj I O (precomp I O Q q (K' x.down)) k)
+          (ULift.up a'))
+        (FreeCoprodCompDisc.Iso.hom O
+          (interpPrecompIso I O (sigma I O A' K') Q q k)) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Iso.hom O (interpPrecompIso I O (K' a') Q q k))
+        (FreeCoprodCompDisc.coprodInj O A'
+          (fun a => interpObj I O (K' a)
+            (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨Q, q⟩ k)) a') :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.coprodInj O (ULift.{uB} A')
+          (fun x => interpObj I O (precomp I O Q q (K' x.down)) k)
+          (ULift.up a'))
+        (FreeCoprodCompDisc.Iso.hom O (t Q q k)))
+      (interpPrecompIso_mk I O (Sum.inr (Sum.inl A')) (K' ∘ ULift.down))).trans
+    (Subtype.ext (funext (fun _ => rfl)))
+
+/-- The transported-composite equation behind the `δ`-domain case: a
+`σ`-injection pushed through the Lemma 4 isomorphism and the bridge
+factors out of the transported composite. -/
+theorem interpHomDeltaSummand_theta (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (A' : Type (max uA uB)) (K' : A' → IR.{max uA uB, uB, uI, uO} I O)
+    (a' : A') (i : B → I)
+    (u : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i (sigma I O A' K')))
+    (v : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i (K' a')))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (hu : (interpHom I O (c i) (precomp I O B i (sigma I O A' K')) u).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+        (FreeCoprodCompDisc.coprodInj O (ULift.{uB} A')
+          (fun x => interpObj I O (precomp I O B i (K' x.down)) X)
+          (ULift.up a'))) :
+    FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          ((interpHom I O (c i) (precomp I O B i (sigma I O A' K')) u).1 X)
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (sigma I O A' K') B i X)))
+        ((plusLiftBridgeNatInv I O B i (sigma I O A' K')).1 X) =
+      FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (K' a') B i X)))
+          ((plusLiftBridgeNatInv I O B i (K' a')).1 X))
+        (FreeCoprodCompDisc.coprodInj O A'
+          (fun a => interpObj I O (K' a)
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X))
+          a') :=
+  (congrArg
+      (fun t => FreeCoprodCompDisc.Hom.comp O
+        (FreeCoprodCompDisc.Hom.comp O t
+          (FreeCoprodCompDisc.Iso.hom O
+            (interpPrecompIso I O (sigma I O A' K') B i X)))
+        ((plusLiftBridgeNatInv I O B i (sigma I O A' K')).1 X))
+      hu).trans
+    ((congrArg
+        (fun t => FreeCoprodCompDisc.Hom.comp O t
+          ((plusLiftBridgeNatInv I O B i (sigma I O A' K')).1 X))
+        ((FreeCoprodCompDisc.Hom.comp_assoc O
+            ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+            (FreeCoprodCompDisc.coprodInj O (ULift.{uB} A')
+              (fun x => interpObj I O (precomp I O B i (K' x.down)) X)
+              (ULift.up a'))
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (sigma I O A' K') B i X))).trans
+          ((congrArg
+              (FreeCoprodCompDisc.Hom.comp O
+                ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X))
+              (interpPrecompIso_sigma_inj I O A' K' a' B i X)).trans
+            (FreeCoprodCompDisc.Hom.comp_assoc O
+              ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (K' a') B i X))
+              (FreeCoprodCompDisc.coprodInj O A'
+                (fun a => interpObj I O (K' a)
+                  (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
+                a')).symm))).trans
+      ((FreeCoprodCompDisc.Hom.comp_assoc O
+          (FreeCoprodCompDisc.Hom.comp O
+            ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+            (FreeCoprodCompDisc.Iso.hom O
+              (interpPrecompIso I O (K' a') B i X)))
+          (FreeCoprodCompDisc.coprodInj O A'
+            (fun a => interpObj I O (K' a)
+              (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X)) a')
+          ((plusLiftBridgeNatInv I O B i (sigma I O A' K')).1 X)).trans
+        ((congrArg
+            (FreeCoprodCompDisc.Hom.comp O
+              (FreeCoprodCompDisc.Hom.comp O
+                ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+                (FreeCoprodCompDisc.Iso.hom O
+                  (interpPrecompIso I O (K' a') B i X))))
+            (interpMor_sigma_inj I O A' K' a'
+              (FreeCoprodCompDisc.plus I ⟨B, i⟩ X)
+              (FreeCoprodCompDisc.plus I
+                (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+              (plusLiftBridgeInvHom I B i X))).trans
+          (FreeCoprodCompDisc.Hom.comp_assoc O
+            (FreeCoprodCompDisc.Hom.comp O
+              ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (K' a') B i X)))
+            ((plusLiftBridgeNatInv I O B i (K' a')).1 X)
+            (FreeCoprodCompDisc.coprodInj O A'
+              (fun a => interpObj I O (K' a)
+                (FreeCoprodCompDisc.plus I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X))
+              a')).symm)))
+
+/-- The per-summand transport of a `σ`-injection through the `δ`-case
+target transports, given the summand's own push equation. -/
+theorem interpHomDeltaSummand_inj (B : Type uB)
+    (c : (B → I) → IR.{max uA uB, uB, uI, uO} I O)
+    (A' : Type (max uA uB)) (K' : A' → IR.{max uA uB, uB, uI, uO} I O)
+    (a' : A') (i : B → I)
+    (u : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i (sigma I O A' K')))
+    (v : Hom.{uA, uB, uI, uO} I O (c i) (precomp I O B i (K' a')))
+    (X : FreeCoprodCompDisc.{max uA uB, uI} I)
+    (hu : (interpHom I O (c i) (precomp I O B i (sigma I O A' K')) u).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+        (FreeCoprodCompDisc.coprodInj O (ULift.{uB} A')
+          (fun x => interpObj I O (precomp I O B i (K' x.down)) X)
+          (ULift.up a'))) :
+    (interpHomDeltaSummand I O B c (sigma I O A' K') i u).1 X =
+      FreeCoprodCompDisc.Hom.comp O
+        ((interpHomDeltaSummand I O B c (K' a') i v).1 X)
+        (FreeCoprodCompDisc.coprodInj O A'
+          (fun a => interpObj I O (K' a) X) a') :=
+  (congrArg
+      (FreeCoprodCompDisc.coprodDesc O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        (fun _ => interpObj I O (c i) X)
+        (interpObj I O (sigma I O A' K') X))
+      (funext (fun e =>
+        (congrArg
+            (fun t => FreeCoprodCompDisc.Hom.comp O t
+              (interpMor I O (sigma I O A' K')
+                (FreeCoprodCompDisc.plus I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                X
+                (FreeCoprodCompDisc.coprodPairDesc I e
+                  (FreeCoprodCompDisc.Hom.id I X))))
+            (interpHomDeltaSummand_theta I O B c A' K' a' i u v X hu)).trans
+          ((FreeCoprodCompDisc.Hom.comp_assoc O
+              (FreeCoprodCompDisc.Hom.comp O
+                (FreeCoprodCompDisc.Hom.comp O
+                  ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+                  (FreeCoprodCompDisc.Iso.hom O
+                    (interpPrecompIso I O (K' a') B i X)))
+                ((plusLiftBridgeNatInv I O B i (K' a')).1 X))
+              (FreeCoprodCompDisc.coprodInj O A'
+                (fun a => interpObj I O (K' a)
+                  (FreeCoprodCompDisc.plus I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X))
+                a')
+              (interpMor I O (sigma I O A' K')
+                (FreeCoprodCompDisc.plus I
+                  (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                X
+                (FreeCoprodCompDisc.coprodPairDesc I e
+                  (FreeCoprodCompDisc.Hom.id I X)))).trans
+            ((congrArg
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Hom.comp O
+                    (FreeCoprodCompDisc.Hom.comp O
+                      ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+                      (FreeCoprodCompDisc.Iso.hom O
+                        (interpPrecompIso I O (K' a') B i X)))
+                    ((plusLiftBridgeNatInv I O B i (K' a')).1 X)))
+                (interpMor_sigma_inj I O A' K' a'
+                  (FreeCoprodCompDisc.plus I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                  X
+                  (FreeCoprodCompDisc.coprodPairDesc I e
+                    (FreeCoprodCompDisc.Hom.id I X)))).trans
+              (FreeCoprodCompDisc.Hom.comp_assoc O
+                (FreeCoprodCompDisc.Hom.comp O
+                  (FreeCoprodCompDisc.Hom.comp O
+                    ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+                    (FreeCoprodCompDisc.Iso.hom O
+                      (interpPrecompIso I O (K' a') B i X)))
+                  ((plusLiftBridgeNatInv I O B i (K' a')).1 X))
+                (interpMor I O (K' a')
+                  (FreeCoprodCompDisc.plus I
+                    (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+                  X
+                  (FreeCoprodCompDisc.coprodPairDesc I e
+                    (FreeCoprodCompDisc.Hom.id I X)))
+                (FreeCoprodCompDisc.coprodInj O A'
+                  (fun a => interpObj I O (K' a) X) a')).symm))))).trans
+    (FreeCoprodCompDisc.coprodDesc_comp O
+        (FreeCoprodCompDisc.Hom I
+          (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X)
+        (fun _ => interpObj I O (c i) X) (interpObj I O (K' a') X)
+        (interpObj I O (sigma I O A' K') X)
+        (fun e => FreeCoprodCompDisc.Hom.comp O
+          (FreeCoprodCompDisc.Hom.comp O
+            (FreeCoprodCompDisc.Hom.comp O
+              ((interpHom I O (c i) (precomp I O B i (K' a')) v).1 X)
+              (FreeCoprodCompDisc.Iso.hom O
+                (interpPrecompIso I O (K' a') B i X)))
+            ((plusLiftBridgeNatInv I O B i (K' a')).1 X))
+          (interpMor I O (K' a')
+            (FreeCoprodCompDisc.plus I
+              (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩) X) X
+            (FreeCoprodCompDisc.coprodPairDesc I e
+              (FreeCoprodCompDisc.Hom.id I X))))
+        (FreeCoprodCompDisc.coprodInj O A'
+          (fun a => interpObj I O (K' a) X) a')).symm
+
+/-- The `δ`-domain case of the `IR.sigmaPush` characterization. -/
+theorem interpHom_sigmaPush_mk_delta (B : Type uB)
+    (d : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O) →
+      IR.{max uA uB, uB, uI, uO} I O)
+    (ih : (x : Direction I O (Sum.inr (Sum.inr B) : Shape.{max uA uB, uB, uO} O)) →
+      InterpHomSigmaPushMotive I O (d x)) :
+    InterpHomSigmaPushMotive I O (mk I O (Sum.inr (Sum.inr B)) d) :=
+  fun A' K' a' f X =>
+    (congrArg
+        (fun t => (interpHom I O (mk I O (Sum.inr (Sum.inr B)) d)
+          (sigma I O A' K') t).1 X)
+        (sigmaPush_mk_delta I O B d A' K' a' f)).trans
+      ((interpHom_delta I O B (fun j => d (ULift.up j)) (sigma I O A' K')
+          (fun i => sigmaPush I O (d (ULift.up i)) (ULift.{uB} A')
+            (fun x => precomp I O B i (K' x.down)) (ULift.up a') (f i)) X).trans
+        ((congrArg
+            (deltaDesc I O B (fun j => d (ULift.up j)) X
+              (interpObj I O (sigma I O A' K') X))
+            (funext (fun i =>
+              interpHomDeltaSummand_inj I O B (fun j => d (ULift.up j))
+                A' K' a' i
+                (sigmaPush I O (d (ULift.up i)) (ULift.{uB} A')
+                  (fun x => precomp I O B i (K' x.down)) (ULift.up a') (f i))
+                (f i) X
+                (ih (ULift.up i) (ULift.{uB} A')
+                  (fun x => precomp I O B i (K' x.down)) (ULift.up a')
+                  (f i) X)))).trans
+          ((deltaDesc_comp I O B (fun j => d (ULift.up j)) X
+              (interpObj I O (K' a') X) (interpObj I O (sigma I O A' K') X)
+              (fun i => (interpHomDeltaSummand I O B (fun j => d (ULift.up j))
+                (K' a') i (f i)).1 X)
+              (FreeCoprodCompDisc.coprodInj O A'
+                (fun a => interpObj I O (K' a) X) a')).symm.trans
+            (congrArg
+              (fun t => FreeCoprodCompDisc.Hom.comp O t
+                (FreeCoprodCompDisc.coprodInj O A'
+                  (fun a => interpObj I O (K' a) X) a'))
+              (interpHom_delta I O B (fun j => d (ULift.up j))
+                (K' a') f X).symm))))
+
+/-- `IR.interpHom` sends `IR.sigmaPush` to composition with the
+semantic `σ`-injection, by `IR.induction`. -/
+theorem interpHom_sigmaPush (γ : IR.{max uA uB, uB, uI, uO} I O) :
+    InterpHomSigmaPushMotive I O γ :=
+  induction I O (InterpHomSigmaPushMotive I O)
+    (fun s => match s with
+      | Sum.inl o => fun d _ => interpHom_sigmaPush_mk_iota I O o d
+      | Sum.inr (Sum.inl A) => fun d ih => interpHom_sigmaPush_mk_sigma I O A d ih
+      | Sum.inr (Sum.inr B) => fun d ih => interpHom_sigmaPush_mk_delta I O B d ih)
+    γ
 
 end IR
 

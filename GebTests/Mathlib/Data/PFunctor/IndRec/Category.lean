@@ -19,8 +19,10 @@ and in the interpreted object, and the semantic pre-unit component
 at the empty stack. The reductions of the two equivalences at an
 `IR.mk`-built domain, the component of `IR.interpHom` at each shape
 of domain code, the `σ`-injection square, and right-composition of
-the `δ`-cotuple are exercised at the sample object. Named theorems
-give the `GebMeta` axiom linter declarations to inspect.
+the `δ`-cotuple are exercised at the sample object. The
+`IR.sigmaPush` characterization is exercised at the sample code.
+Named theorems give the `GebMeta` axiom linter declarations to
+inspect.
 
 ## Tags
 
@@ -266,3 +268,24 @@ theorem sampleDeltaDesc_comp (B : Type)
       deltaDesc Bool Bool B c sampleCategoryObj W
         (fun i => FreeCoprodCompDisc.Hom.comp Bool (m i) g) :=
   deltaDesc_comp Bool Bool B c sampleCategoryObj Z W m g
+
+/-- The `IR.sigmaPush` characterization at the sample code. -/
+theorem sampleSigmaPushChar :
+    InterpHomSigmaPushMotive Bool Bool sampleCategoryCode :=
+  interpHom_sigmaPush Bool Bool sampleCategoryCode
+
+/-- The `IR.sigmaPush` characterization at the sample code, applied
+at the sample object. -/
+theorem sampleSigmaPushChar_apply (A' : Type)
+    (K' : A' → IR.{0, 0, 0, 0} Bool Bool) (a' : A')
+    (f : Hom.{0, 0, 0, 0} Bool Bool sampleCategoryCode (K' a')) :
+    (interpHom Bool Bool sampleCategoryCode (sigma Bool Bool A' K')
+        (sigmaPush Bool Bool sampleCategoryCode A' K' a' f)).1
+        sampleCategoryObj =
+      FreeCoprodCompDisc.Hom.comp Bool
+        ((interpHom Bool Bool sampleCategoryCode (K' a') f).1
+          sampleCategoryObj)
+        (FreeCoprodCompDisc.coprodInj Bool A'
+          (fun a => interpObj Bool Bool (K' a) sampleCategoryObj) a') :=
+  interpHom_sigmaPush Bool Bool sampleCategoryCode A' K' a' f
+    sampleCategoryObj
