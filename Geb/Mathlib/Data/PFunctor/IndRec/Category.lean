@@ -86,14 +86,6 @@ are carried as `FreeCoprodCompDisc.isoOfEq` transports and commuted
 across the Lemma 4 isomorphism by elimination of the generalized
 equality.
 
-The `linter.checkUnivs false` option on `IR.comp_isoOfEq_hom` and
-`IR.isoOfEq_symm_hom_comp` suppresses the `checkUnivs` warning on
-the separated arity universes `uA`/`uB`: in those two declarations'
-types the pair appears only together under `max`, so the linter
-reports it as unifiable; keeping the two distinct is the point of
-the separation. `IndRec.Basic` carries the same suppression, for
-the same reason.
-
 ## References
 
 * [HancockMcBrideGhaniMalatestaAltenkirch2013]
@@ -105,7 +97,7 @@ inductive-recursive, morphism, category
 
 @[expose] public section
 
-universe uA uB uI uO
+universe u uA uB uI uO
 
 namespace IndRec
 
@@ -4125,12 +4117,11 @@ theorem interpHom_cast_cod (D : IR.{max uA uB, uB, uI, uO} I O)
       (fun f ↦ (FreeCoprodCompDisc.Hom.comp_id O
         ((interpHom I O D γ₀ f).1 X)).symm)
       h
-set_option linter.checkUnivs false in
 /-- Postcomposition with an object-equality transport is the transport
 of the morphism's codomain, by elimination of the generalized
 equality. -/
-theorem comp_isoOfEq_hom (Z W : FreeCoprodCompDisc.{max uA uB, uI} I) :
-    ∀ (V : FreeCoprodCompDisc.{max uA uB, uI} I) (q : W = V)
+theorem comp_isoOfEq_hom (Z W : FreeCoprodCompDisc.{u, uI} I) :
+    ∀ (V : FreeCoprodCompDisc.{u, uI} I) (q : W = V)
       (f : FreeCoprodCompDisc.Hom I Z W),
       FreeCoprodCompDisc.Hom.comp I f
           (FreeCoprodCompDisc.Iso.hom I (FreeCoprodCompDisc.isoOfEq I q)) =
@@ -4143,11 +4134,10 @@ theorem comp_isoOfEq_hom (Z W : FreeCoprodCompDisc.{max uA uB, uI} I) :
                 (FreeCoprodCompDisc.isoOfEq I q')) =
             cast (congrArg (FreeCoprodCompDisc.Hom I Z) q') f)
       (fun f ↦ FreeCoprodCompDisc.Hom.comp_id I f) q
-set_option linter.checkUnivs false in
 /-- An object-equality transport followed by its inverse is the
 identity, by elimination of the generalized equality. -/
-theorem isoOfEq_symm_hom_comp (Z : FreeCoprodCompDisc.{max uA uB, uO} O) :
-    ∀ (W : FreeCoprodCompDisc.{max uA uB, uO} O) (q : Z = W),
+theorem isoOfEq_symm_hom_comp (Z : FreeCoprodCompDisc.{u, uO} O) :
+    ∀ (W : FreeCoprodCompDisc.{u, uO} O) (q : Z = W),
       FreeCoprodCompDisc.Hom.comp O
           (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O q.symm))
           (FreeCoprodCompDisc.Iso.hom O (FreeCoprodCompDisc.isoOfEq O q)) =
@@ -4359,7 +4349,7 @@ theorem mprecompIso_snoc_hom_comp (L : List (SupObj.{uB, uI} I))
                 (FreeCoprodCompDisc.Iso.hom O
                   (mprecompIso.{uA, uB, uI, uO} I O L γ
                     (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X))))
-              (isoOfEq_symm_hom_comp.{uA, uB, uO} O
+              (isoOfEq_symm_hom_comp.{max uA uB, uO} O
                 (interpObj I O γ (mplus.{uA, uB, uI} I (L ++ [b]) X))
                 (interpObj I O γ (mplus.{uA, uB, uI} I L
                   (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I b X)))
@@ -4414,7 +4404,7 @@ theorem mplusInj_navBridge (B : Type uB) (i : B → I)
             (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
               (FreeCoprodCompDisc.coprodPairDesc I e
                 (FreeCoprodCompDisc.Hom.id I X)))))
-        ((comp_isoOfEq_hom.{uA, uB, uI} I X
+        ((comp_isoOfEq_hom.{max uA uB, uI} I X
             (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
             (mplus.{uA, uB, uI} I L
               (FreeCoprodCompDisc.plus.{uI, uB, max uA uB} I ⟨B, i⟩ X))
@@ -4490,7 +4480,7 @@ theorem navWeight_navBridge (B : Type uB) (i : B → I)
             (FreeCoprodCompDisc.Hom.comp I (plusLiftBridgeInvHom I B i X)
               (FreeCoprodCompDisc.coprodPairDesc I e
                 (FreeCoprodCompDisc.Hom.id I X)))))
-        ((comp_isoOfEq_hom.{uA, uB, uI} I
+        ((comp_isoOfEq_hom.{max uA uB, uI} I
             (FreeCoprodCompDisc.lift.{uB, uI, max uA uB} I ⟨B, i⟩)
             (mplus.{uA, uB, uI} I (L ++ [(⟨B, i⟩ : SupObj.{uB, uI} I)]) X)
             (mplus.{uA, uB, uI} I L

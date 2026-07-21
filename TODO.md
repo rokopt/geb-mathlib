@@ -221,8 +221,6 @@ cleanup branch.
 - `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` carries an
   unused `open CategoryTheory` (a pre-existing pattern also present
   in `Functor.lean` and `Universes.lean`).
-- Restate `IR.comp_isoOfEq_hom` and `IR.isoOfEq_symm_hom_comp` at a
-  single universe instead of two; untested proposal.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
