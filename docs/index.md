@@ -59,6 +59,30 @@ import-direction rules above are enforced by
   and test modules are listed in `GebMeta.classicalAllowedModules`
   because mathlib's `Grothendieck` and `Cat.opFunctor` are
   `Classical.choice`-dependent.
+- `Geb/Mathlib/Data/W/Basic.lean` — the two laws of the W-type fold
+  mathlib does not state: the computation rule `WType.elim_mk` and
+  uniqueness `WType.elim_unique`. Together with mathlib's `WType.elim`
+  they are the initiality of `WType β` among algebras of the polynomial
+  endofunctor `X ↦ Σ a, β a → X`, stated concretely. Depends on
+  mathlib's `Data/W/Basic.lean` only; no category theory.
+- `Geb/Mathlib/Data/PFunctor/Univariate/` — the categorical reading of
+  mathlib's univariate `PFunctor`. `Functor.lean` packages the
+  interpretation as `PFunctor.functor : Type v ⥤ Type (max v uA uB)`,
+  transported from the upstream `Functor` / `LawfulFunctor` instances
+  along `ofTypeFunctor`. `W.lean` gives the W-type its algebra
+  structure (`wAlgebra`), the algebra morphism into any algebra
+  (`wElim`), initiality as `Unique` on the hom-sets (`wUniqueHom`), and
+  the structure map as an isomorphism (`wStrIso`); all of it is
+  `Classical.choice`-free. `Initial.lean` packages that initiality as
+  mathlib's `Limits.IsInitial` (`wIsInitial`) and is listed in
+  `GebMeta.classicalAllowedModules`, since
+  `Limits.IsInitial.ofUnique` is `Classical.choice`-dependent.
+  Consumers wanting a choice-free development use `wUniqueHom`
+  directly. Depends on mathlib's `Data/PFunctor/Univariate/Basic.lean`,
+  `CategoryTheory/Endofunctor/Algebra.lean`, and
+  `Geb/Mathlib/Data/W/Basic.lean`, and mathlib's
+  `CategoryTheory/Types/Basic.lean` and
+  `CategoryTheory/Limits/Shapes/IsTerminal.lean`.
 - `Geb/Mathlib/Data/PFunctor/Slice/` — slice polynomial functors on
   `Type`. Given a `PFunctor` with a direction-input map `r : Idx → dom`
   and a shape-output map `q : A → cod`, a restriction of the `PFunctor`
@@ -66,8 +90,10 @@ import-direction rules above are enforced by
   `Slice/Basic.lean` is the constructive core (`SliceDomPFunctor`,
   `SlicePFunctor`, `Compatible`, `obj`/`map` with functoriality),
   `Classical.choice`-free. `Slice/Functor.lean` packages it
-  categorically as `domFunctor : Over dom ⥤ Type` (reusing the core
-  `obj`/`map`) and, via `Functor.toOver`, `functor : Over dom ⥤ Over cod`;
+  categorically: `domSubfunctor` cuts the `r`-compatible assignments out
+  of the underlying polynomial functor `Over.forget dom ⋙ PFunctor.functor`,
+  `domFunctor : Over dom ⥤ Type` reads that subfunctor as a functor, and
+  `functor : Over dom ⥤ Over cod` is its `Functor.toOver` lift;
   that module is listed in `GebMeta.classicalAllowedModules` because
   mathlib's `Over` is `Classical.choice`-dependent at the type level.
   `Slice/W.lean` builds the W-type (initial algebra) of a slice

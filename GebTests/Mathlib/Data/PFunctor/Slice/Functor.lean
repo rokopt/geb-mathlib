@@ -57,3 +57,15 @@ example {Y Z : Over Bool} (g : Y ⟶ Z)
     (wrapperFunctor.map g).left =
       ↾ wrapperTestSlice.map (ConcreteCategory.hom g.left) hg :=
   wrapperTestSlice.functor_map g
+
+-- The subfunctor's object map is the choice-free core `Obj`.
+example (Y : Over Bool) :
+    wrapperTestSlice.toSliceDomPFunctor.domSubfunctor.toFunctor.obj Y =
+      wrapperTestSlice.toSliceDomPFunctor.Obj (ConcreteCategory.hom Y.hom) :=
+  rfl
+
+-- The subfunctor's morphism map is the choice-free core `map`.
+example {Y Z : Over Bool} (g : Y ⟶ Z) :
+    wrapperTestSlice.toSliceDomPFunctor.domSubfunctor.toFunctor.map g =
+      ↾(wrapperTestSlice.toSliceDomPFunctor.map (ConcreteCategory.hom g.left) (over_hom_comp g)) :=
+  rfl
