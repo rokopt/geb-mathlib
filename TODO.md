@@ -14,7 +14,6 @@
     - [6. Relative (co)free (co)monads](#6-relative-cofree-comonads)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
-  - [Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`](#relocate-generic-freecoprodcompdisc-facts-out-of-indrecir)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
@@ -190,17 +189,6 @@ category of `IR` codes in `Geb/Mathlib/Data/PFunctor/IndRec/Category.lean`
 the left-Kan-extension characterization of the `δ`-code
 interpretation, and Theorem 4, the equivalence with dependent
 polynomial functors.
-
-### Relocate generic `FreeCoprodCompDisc` facts out of `IndRec.IR`
-
-Six facts under `namespace IR` in
-`Geb/Mathlib/Data/PFunctor/IndRec/Category.lean` are generic
-`FreeCoprodCompDisc` facts with no dependence on `IR` codes:
-`IR.emptyHom_ext`, `IR.eq_comp_invHom`, `IR.comp_isoOfEq_hom`,
-`IR.isoOfEq_symm_hom_comp`, `IR.coprodPairInr_mor`, and
-`IR.deltaDesc_comp`. Relocate them to
-`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` and migrate
-call sites.
 
 ### Validate `PresheafPFunctor.functor` as a parametric right adjoint
 
