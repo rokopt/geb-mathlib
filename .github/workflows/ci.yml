@@ -22,7 +22,7 @@ jobs:
     name: Floodgate imports lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       # lint-imports.sh enforces the bare-umbrella-import ban (Rule 1)
       # among other subtree rules; a separate grep job would duplicate
       # it.
@@ -40,7 +40,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
       - name: Validate the pull request's commit subjects
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9  # v1
         with:
           build: true
@@ -88,7 +88,7 @@ jobs:
     runs-on: ubuntu-latest
     # jq is preinstalled on ubuntu-latest runners; no explicit install.
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: scripts/hooks/tests/test-block-mutating-git.sh
         run: bash scripts/hooks/tests/test-block-mutating-git.sh
 
@@ -96,7 +96,7 @@ jobs:
     name: Integration regeneration guard test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Install pinned jj
         run: bash scripts/install-jj.sh
       - name: scripts/tests/test-regenerate-integration.sh
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     # jq is preinstalled on ubuntu-latest runners; no explicit install.
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: scripts/tests/test-mathlib-bump-detect.sh
         run: bash scripts/tests/test-mathlib-bump-detect.sh
       - name: scripts/tests/test-jj-bump-detect.sh
