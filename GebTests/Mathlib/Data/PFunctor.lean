@@ -8,6 +8,7 @@ module
 import GebTests.Mathlib.Data.PFunctor.IndRec
 import GebTests.Mathlib.Data.PFunctor.Presheaf
 import GebTests.Mathlib.Data.PFunctor.Slice
+import GebTests.Mathlib.Data.PFunctor.Univariate
 
 /-!
 # PFunctor tests — index
