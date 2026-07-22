@@ -7,11 +7,12 @@
 - [Next up](#next-up)
   - [Polynomial functors](#polynomial-functors)
     - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
-    - [2. Categorical wrappers for mathlib's `PFunctor` and `WType`](#2-categorical-wrappers-for-mathlibs-pfunctor-and-wtype)
-    - [3. Categorical wrappers for slice and presheaf W-types as initial algebras](#3-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
-    - [4. M-types and their categorical wrappers as terminal coalgebras](#4-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
-    - [5. Universal morphisms](#5-universal-morphisms)
-    - [6. Relative (co)free (co)monads](#6-relative-cofree-comonads)
+    - [2. Categorical wrappers for slice and presheaf W-types as initial algebras](#2-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
+    - [3. M-types and their categorical wrappers as terminal coalgebras](#3-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
+    - [4. Universal morphisms](#4-universal-morphisms)
+    - [5. Relative (co)free (co)monads](#5-relative-cofree-comonads)
+    - [6. Composition and identity of polynomial functors](#6-composition-and-identity-of-polynomial-functors)
+  - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
@@ -30,10 +31,12 @@ removed; content merged into `docs/index.md`.
 
 ### Polynomial functors
 
-The polynomial-functor roadmap below is a linear sequence of
-separate planning–implementation cycles. Each item's full spec
-and plan are written only after the prior item's implementation
-is complete: the project is too large to fix every earlier
+The polynomial-functor roadmap below is a partial order of
+separate planning–implementation cycles. Items with disjoint file
+sets that do not depend on one another may be taken in either
+order. Each item's full spec and plan are written only after the
+items it depends on are implemented: the project is too large to
+fix every earlier
 interface on the first attempt, so interface corrections in an
 earlier item can invalidate a later item's plan. Each item lives
 on its own topic branch and migrates to persistent documentation
@@ -61,39 +64,29 @@ This specializes the functor definitions directly, so it depends only
 on the existing definitions and precedes the constructions built on
 them; the decidable functors are then available downstream, in
 particular for the decidable-case specializations of the universal
-morphisms (item 5).
+morphisms (item 4).
 
-#### 2. Categorical wrappers for mathlib's `PFunctor` and `WType`
-
-Connect mathlib's generic endofunctor algebras to `PFunctor` as a
-reusable base layer. Per the survey, mathlib has
-`CategoryTheory.Endofunctor.Algebra` with the Lambek isomorphism
-but nothing linking it to `PFunctor`. Add files parallel to the
-existing directory structure: one wrapping mathlib's `PFunctor` as
-an endofunctor with its algebra category, and one wrapping
-mathlib's `WType` as the initial algebra of that endofunctor. Then
-refactor the existing categorical wrapper of the slice functors
-(`Slice/Functor.lean`) to reuse the new `PFunctor` wrapper.
-
-#### 3. Categorical wrappers for slice and presheaf W-types as initial algebras
+#### 2. Categorical wrappers for slice and presheaf W-types as initial algebras
 
 Characterise the slice and presheaf W-types as the initial objects
 of the categories of algebras of their functors, reusing the
-`PFunctor` and `WType` wrappers of item 2. Build the presheaf
-initiality proof on the slice initiality proof, and the slice
-proof on the `WType` initiality of item 2.
+`PFunctor` and `WType` wrappers described under
+`Geb/Mathlib/Data/PFunctor/Univariate/` in `docs/index.md`. Build the
+presheaf initiality proof on the slice initiality proof, and the slice
+proof on the `WType` initiality established there.
 
-#### 4. M-types and their categorical wrappers as terminal coalgebras
+#### 3. M-types and their categorical wrappers as terminal coalgebras
 
 Define the M-types (greatest fixed points) of the slice and
 presheaf functors on mathlib's `PFunctor.M`, following mathlib's
 standard construction of M-types on W-types, and characterise them
 as the terminal coalgebras of their functors. Following the
-base-layer-first pattern of items 2 and 3, build a categorical
+base-layer-first pattern of the `PFunctor` wrappers and item 2,
+build a categorical
 wrapper for the terminality of mathlib's `PFunctor.M` first,
 reusable in the slice and presheaf terminality proofs.
 
-#### 5. Universal morphisms
+#### 4. Universal morphisms
 
 Establish the universal morphisms of the slice and presheaf functors,
 layering the slice constructions on mathlib's `PFunctor` and the
@@ -126,7 +119,7 @@ Following the general definitions, implement the decidable-case
 specializations (item 1) of those universal morphisms with interesting
 decidable forms.
 
-#### 6. Relative (co)free (co)monads
+#### 5. Relative (co)free (co)monads
 
 Build the relative free monads and relative cofree comonads of the
 slice and presheaf functors for all three forms, and prove the
@@ -153,9 +146,48 @@ version can be built on the ordinary one, do so (simpler-first with
 reuse); otherwise build the relative version and define the ordinary
 one as its `J = id` specialization — known achievable, the ordinary
 case being the discrete degeneration. Relate each construction to the
-corresponding slice/presheaf W-type (item 3) or M-type (item 4) and
+corresponding slice/presheaf W-type (item 2) or M-type (item 3) and
 show the definitions equivalent, as in the superseded free-monad and
 cofree-comonad items.
+
+#### 6. Composition and identity of polynomial functors
+
+Establish that the interpretation of mathlib's `PFunctor` carries
+`PFunctor.comp` to composition of the corresponding functors, and
+supply the identity polynomial functor together with the isomorphism
+identifying its interpretation with the identity functor. mathlib
+defines `comp`, `comp.mk`, and `comp.get` and states no lemma about
+them, so the mutual-inverse laws `comp.get_mk` and `comp.mk_get` are
+part of the item.
+
+This is the 1-cell composition of `Cat`, a 2-categorical operation,
+not a universal morphism. It is independent of the items above and may
+be taken in any order relative to them. Two design points are settled:
+the identity polynomial functor is `protected def PFunctor.id`, since
+an unprotected `id` shadows `_root_.id` throughout the `PFunctor`
+namespace and breaks uses such as `P.map id`; and both isomorphisms
+admit an ambient universe beyond the parameters of the functors
+involved.
+
+### Upstream placement of categorical wrappers
+
+Settle where the categorical wrappers under `Geb/Mathlib/Data/` belong
+upstream. No file under mathlib's `Mathlib/Data/` imports
+`Mathlib.CategoryTheory.*`; mathlib packages category-theoretic
+material under `Mathlib/Algebra/Category/` and
+`Mathlib/CategoryTheory/`. In scope is every file under
+`Geb/Mathlib/Data/` that directly imports `Mathlib.CategoryTheory.*`
+or `Geb.Mathlib.CategoryTheory.*`, the latter because it extracts to
+the former: currently `PFunctor/Slice/Functor.lean`,
+`PFunctor/Presheaf/Basic.lean`, `PFunctor/Presheaf/Functor.lean`,
+`PFunctor/Univariate/Functor.lean`, `PFunctor/Univariate/W.lean`,
+`PFunctor/Univariate/Initial.lean`, `PFunctor/IndRec/Basic.lean`, and
+`PFunctor/IndRec/Naturality.lean`. Files importing those transitively —
+`PFunctor/Presheaf/W.lean`, the rest of the `IndRec` family — follow
+whatever placement is settled for them. Scoping the item by that
+criterion
+rather than by a module list keeps it from being settled
+incompletely.
 
 ### Complete Theorem 2.4 for `IndRec`
 
