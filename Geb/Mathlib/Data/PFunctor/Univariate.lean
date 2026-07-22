@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.PFunctor.Univariate.Functor
+public import Geb.Mathlib.Data.PFunctor.Univariate.Initial
 public import Geb.Mathlib.Data.PFunctor.Univariate.W
 
 /-!
