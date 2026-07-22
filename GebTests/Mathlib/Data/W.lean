@@ -5,9 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Data.PFunctor
-public import Geb.Mathlib.Data.W
+import GebTests.Mathlib.Data.W.Basic
 
 /-!
-# Data — index
+# W tests — index
 -/

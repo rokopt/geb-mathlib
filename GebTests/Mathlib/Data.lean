@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.Data.PFunctor
+import GebTests.Mathlib.Data.W
 
 /-!
 # Data tests — index
