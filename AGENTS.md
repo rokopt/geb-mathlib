@@ -45,10 +45,17 @@ branch-deletes, tag-pushes.
 
 ### Adversarial review of specs and plans
 
-Specs and plans are adversarially-reviewed before execution
-begins (see `docs/process.md` § Adversarial review). Re-fetch
-the upstream guides on every adversarial-review round; they are
-subject to upstream revision.
+Specs and plans go through fresh-context adversarial review
+rounds until convergence — no blocker and no serious findings —
+before the user reviews the artifact and before execution
+begins. Each round is a new general-purpose `Agent` invocation,
+never a `SendMessage` to a continuing agent, so no round
+inherits the previous reviewer's conclusions. Findings are
+categorised blocker / serious / minor / cosmetic-taste; the
+author responds in writing to every finding: fix, defer with
+rationale, or reject as cosmetic-taste. Re-fetch the upstream
+guides on every round; they are subject to upstream revision.
+See [docs/process.md](docs/process.md) § Adversarial review.
 
 ### Verify agent claims
 

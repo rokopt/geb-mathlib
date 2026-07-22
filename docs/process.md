@@ -154,10 +154,13 @@ Both are reader-facing alongside `docs/index.md`.
 ## Adversarial review
 
 Specs and plans go through fresh-context adversarial review until
-convergence (no blockers, no serious findings). The reviewer is a
+convergence (no blockers, no serious findings), before the user
+reviews the artifact and before execution begins. The reviewer is a
 NEW general-purpose `Agent` invocation per round (not
-`SendMessage` to a continuing agent), reading only the artifact at
-the given path. Findings are categorised blocker / serious / minor
+`SendMessage` to a continuing agent), reading the artifact at the
+given path without the authoring conversation's context, and
+consulting authoritative sources as § Verify agent claims
+requires. Findings are categorised blocker / serious / minor
 / cosmetic-taste; the author responds in writing to every finding
 (fix / defer with rationale / reject as cosmetic-taste). The
 discipline catches bugs the author cannot see; the fresh context
