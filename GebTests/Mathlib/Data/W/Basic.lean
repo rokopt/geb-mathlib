@@ -55,3 +55,25 @@ def testTree : WType TestBranch :=
 
 -- The fold evaluates: the test tree has three nodes.
 example : nodeCount testTree = 3 := rfl
+
+/-- Directions of the unary-numeral W-type: `true` branches once,
+`false` is a leaf. An `abbrev` so `Nb true` / `Nb false` reduce at
+instances transparency. -/
+abbrev Nb : Bool → Type := fun b ↦ cond b Unit Empty
+
+/-- Zero, as a `WType`. -/
+def zeroW : WType Nb := WType.mk false Empty.elim
+
+/-- Successor, as a `WType`. -/
+def succW (w : WType Nb) : WType Nb := WType.mk true fun _ ↦ w
+
+/-- A paramorphism that sees each node's children: the depth of a
+numeral, computed by consulting the child subtree's folded depth. -/
+def depthPara : WType Nb → Nat :=
+  WType.para Nat fun x ↦
+    match x with
+    | ⟨true, c⟩ => (c ()).2 + 1
+    | ⟨false, _⟩ => 0
+
+example : depthPara (succW (succW zeroW)) = 2 := by decide
+example : depthPara zeroW = 0 := by decide
