@@ -8,7 +8,6 @@ module
 public import Geb.Mathlib.Data.PFunctor.Slice.W
 public import Geb.Mathlib.Data.PFunctor.Univariate.Finitary
 public import Geb.Mathlib.Data.FinEnum
-import Geb.Mathlib.Data.W.Basic
 
 /-!
 # Decidability of the slice functor's fiber and compatibility predicates
