@@ -63,8 +63,17 @@ import-direction rules above are enforced by
   mathlib does not state: the computation rule `WType.elim_mk` and
   uniqueness `WType.elim_unique`. Together with mathlib's `WType.elim`
   they are the initiality of `WType β` among algebras of the polynomial
-  endofunctor `X ↦ Σ a, β a → X`, stated concretely. Depends on
-  mathlib's `Data/W/Basic.lean` only; no category theory.
+  endofunctor `X ↦ Σ a, β a → X`, stated concretely. `WType.para`
+  generalises the fold to a paramorphism, whose step additionally sees
+  each node's children as subtrees, with computation rule `WType.para_mk`
+  [Meertens1992]. `WType.beq` is Boolean equality of W-trees, decidable
+  when the shape type has decidable equality and every direction type is
+  finitely enumerable; `WType.beq_eq_true_iff` is its correctness lemma
+  and `WType.instDecidableEq` the resulting `DecidableEq (WType β)`
+  instance, which mathlib reaches only through `Encodable`, at the cost
+  of an unwanted countability hypothesis. Depends on mathlib's
+  `Data/W/Basic.lean` and `Geb/Mathlib/Data/FinEnum.lean`; no category
+  theory.
 - `Geb/Mathlib/Data/PFunctor/Univariate/` — the categorical reading of
   mathlib's univariate `PFunctor`. `Functor.lean` packages the
   interpretation as `PFunctor.functor : Type v ⥤ Type (max v uA uB)`,
@@ -136,6 +145,47 @@ import-direction rules above are enforced by
   Only the existence half of initiality is established (carrier, fixed
   point, and `W.elim` with `elim_mk`/`comp_elim`), not uniqueness.
   `Classical.choice`-free.
+- `Geb/Mathlib/Data/FinEnum.lean` — three choice-free `Decidable`
+  instances for mathlib's `FinEnum`: `FinEnum.decidableForallFinEnum`
+  (a bounded `∀`), `FinEnum.decidableForallSubtype` (a bounded `∀` over
+  a decidable subtype, without forming a `FinEnum` on the subtype), and
+  `FinEnum.decidablePiFinEnum` (`DecidableEq` of functions out of a
+  finitely enumerable domain, given `DecidableEq` of the codomain).
+  Each routes through `List.decidableBAll` over `FinEnum.toList`, unlike
+  mathlib's own route through `Fintype`, which is `Classical.choice`-
+  dependent. `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Univariate/Finitary.lean` —
+  `PFunctor.Finitary`, the condition that every shape has finitely many
+  directions (`∀ a, FinEnum (P.B a)`). A reducible `abbrev` on
+  `PFunctor` rather than a `class`, so `[F.Finitary]` is transparent to
+  instance resolution and serves as the finitary binder for the slice
+  and presheaf layers as well, through their `toPFunctor` projections.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Slice/Decidable.lean` — decidability of
+  the slice functor's term-level predicates, given `F.Finitary` and
+  decidable equality of the base or output index type:
+  `SliceDomPFunctor.decidableDirectionOver` and
+  `SlicePFunctor.decidableShapeOver` decide the two fiber predicates;
+  `SliceDomPFunctor.decidableForallDirection` decides a quantifier over
+  the directions of a shape lying over an index;
+  `SliceDomPFunctor.decidableCompatible` decides `Compatible`; and
+  `SlicePFunctor.decidableWValid` decides `WValid`, computed by the
+  `WType.elim` fold `wValidData`/`wValidStep` alongside the tree's root
+  index in a single pass, with correctness lemma
+  `wValidBool_eq_true_iff`. `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Presheaf/Decidable.lean` — decidability of
+  the presheaf functor's naturality predicates.
+  `PresheafDomPFunctorData.decidableIsNatural` decides `IsNatural`
+  given finitarity, a finite index category (`FinEnum I` and finite
+  hom-sets), and decidable equality of the input presheaf's values.
+  `PresheafPFunctor.decidableIsHereditarilyNatural` decides
+  `IsHereditarilyNatural` through a classless `Bool`-valued core,
+  `isHereditarilyNaturalBoolCore` (a `WType.para` fold over the raw
+  tree, with correctness lemma
+  `isHereditarilyNaturalBoolCore_eq_true_iff`), taking every finiteness
+  and decidability datum as an explicit argument because instance
+  resolution does not traverse the `PresheafPFunctor` diamond to
+  synthesise `decidableForallDirection` there. `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
   coproduct completion of a type `D` treated as a discrete category:
   the category of families of elements of `D` (the discrete case of

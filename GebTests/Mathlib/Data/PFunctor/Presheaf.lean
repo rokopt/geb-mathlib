@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.Data.PFunctor.Presheaf.Basic
+import GebTests.Mathlib.Data.PFunctor.Presheaf.Decidable
 import GebTests.Mathlib.Data.PFunctor.Presheaf.Functor
 import GebTests.Mathlib.Data.PFunctor.Presheaf.W
 
