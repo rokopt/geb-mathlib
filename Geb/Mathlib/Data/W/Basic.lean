@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Mathlib.Data.W.Basic
+public import Geb.Mathlib.Data.FinEnum
 
 /-!
 # The W-type fold and paramorphism: computation rules and uniqueness
@@ -22,6 +23,9 @@ children as subtrees, not only as their folded values.
 
 * `WType.para` — the paramorphism: a fold whose step function receives
   each child as a subtree paired with its folded value.
+* `WType.beq` — Boolean equality of W-trees, decidable when the shape
+  type has decidable equality and every direction type is finitely
+  enumerable.
 
 ## Main statements
 
@@ -30,6 +34,9 @@ children as subtrees, not only as their folded values.
 * `WType.elim_unique` — uniqueness: a function satisfying the
   computation rule is the fold.
 * `WType.para_mk` — the paramorphism's computation rule.
+* `WType.beq_eq_true_iff` — `beq` decides equality of W-trees.
+* `WType.instDecidableEq` — the resulting `DecidableEq (WType β)`
+  instance.
 
 ## Implementation notes
 
@@ -108,5 +115,49 @@ not hold by `rfl`; it is `paraStep_fst` under a `congrArg`. -/
     para γ fγ (mk a f) = fγ ⟨a, fun b ↦ (f b, para γ fγ (f b))⟩ :=
   congrArg (fun h ↦ fγ ⟨a, h⟩)
     (funext fun b ↦ Prod.ext (paraStep_fst γ fγ (f b)) rfl)
+
+/-- Boolean equality of W-trees: compare the shapes, then compare the
+children pointwise over the finite direction type. A fold by `elim` at
+the carrier `WType β → Bool`, so no recursion is introduced. -/
+@[expose] def beq {α : Type uA} {β : α → Type uB} [DecidableEq α]
+    [∀ a, FinEnum (β a)] : WType β → WType β → Bool :=
+  elim (WType β → Bool) fun x t' ↦
+    if h : x.1 = (toSigma t').1 then
+      decide (∀ b : β x.1, x.2 b ((toSigma t').2 (h ▸ b)) = true)
+    else false
+
+/-- `beq` unfolded on two constructor applications. -/
+theorem beq_mk {α : Type uA} {β : α → Type uB} [DecidableEq α]
+    [∀ a, FinEnum (β a)] (a : α) (f : β a → WType β) (a' : α)
+    (f' : β a' → WType β) :
+    beq (mk a f) (mk a' f') =
+      if h : a = a' then decide (∀ b : β a, beq (f b) (f' (h ▸ b)) = true) else false :=
+  rfl
+
+/-- `beq` decides equality of W-trees. -/
+theorem beq_eq_true_iff {α : Type uA} {β : α → Type uB} [DecidableEq α]
+    [∀ a, FinEnum (β a)] (s t : WType β) : beq s t = true ↔ s = t :=
+  rec (motive := fun s ↦ ∀ t, beq s t = true ↔ s = t)
+    (fun a f ih t ↦
+      match t with
+      | mk a' f' =>
+        match ‹DecidableEq α› a a' with
+        | isTrue h => by
+            subst h
+            rw [beq_mk, dif_pos rfl, decide_eq_true_iff]
+            exact ⟨fun hb ↦ congrArg (mk a) (funext fun b ↦ (ih b (f' b)).mp (hb b)),
+              fun he b ↦ (ih b (f' b)).mpr (congrFun (eq_of_heq (mk.inj he).2) b)⟩
+        | isFalse h => by
+            rw [beq_mk, dif_neg h]
+            exact ⟨fun hb ↦ Bool.noConfusion hb, fun he ↦ absurd (mk.inj he).1 h⟩)
+    s t
+
+/-- Equality of W-trees is decidable when shapes have decidable equality
+and every direction type is finitely enumerable. mathlib reaches this
+only through `Encodable`, which additionally requires the shape and
+direction types countable. -/
+instance instDecidableEq {α : Type uA} {β : α → Type uB} [DecidableEq α]
+    [∀ a, FinEnum (β a)] : DecidableEq (WType β) :=
+  fun s t ↦ decidable_of_iff _ (beq_eq_true_iff s t)
 
 end WType

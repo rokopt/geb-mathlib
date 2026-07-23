@@ -77,3 +77,30 @@ def depthPara : WType Nb → Nat :=
 
 example : depthPara (succW (succW zeroW)) = 2 := by decide
 example : depthPara zeroW = 0 := by decide
+
+/-- A choice-free `FinEnum` for each direction type of `Nb`. Built from
+the structure fields; `FinEnum.punit` and `FinEnum.empty` are derived
+through `FinEnum.ofList` and depend on `Classical.choice`. `decEq` is
+ascribed explicitly: `Nb b` does not reduce enough for a bare
+`inferInstance` to find `DecidableEq (Nb b)`. -/
+instance finEnumNb : ∀ b, FinEnum (Nb b)
+  | true =>
+    { card := 1
+      equiv := { toFun := fun _ ↦ 0, invFun := fun _ ↦ (),
+                 left_inv := fun _ ↦ rfl,
+                 right_inv := fun i ↦ Fin.cases rfl (fun i ↦ i.elim0) i }
+      decEq := (inferInstance : DecidableEq Unit) }
+  | false =>
+    { card := 0
+      equiv := { toFun := Empty.elim, invFun := Fin.elim0,
+                 left_inv := fun x ↦ x.elim, right_inv := fun i ↦ i.elim0 }
+      decEq := (inferInstance : DecidableEq Empty) }
+
+/-- Equal numerals compare equal. -/
+def beqSame : Bool := decide (succW (succW zeroW) = succW (succW zeroW))
+
+/-- Unequal numerals compare unequal. -/
+def beqDiff : Bool := decide (succW zeroW = zeroW)
+
+example : beqSame = true := by decide
+example : beqDiff = false := by decide
