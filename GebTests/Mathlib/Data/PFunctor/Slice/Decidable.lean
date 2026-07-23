@@ -83,3 +83,20 @@ example : shapeOverTrue = true := by decide
 example : shapeOverFalse = false := by decide
 example : compatTrue = true := by decide
 example : compatFalse = false := by decide
+
+/-- The admissible tree: the bare leaf, whose `OverInput` is vacuous. -/
+def leafTree : testSlice.toPFunctor.W := WType.mk false Empty.elim
+
+/-- An admissible tree is admitted. -/
+def wValidTrue : Bool := decide (testSlice.WValid leafTree)
+
+/-- An inadmissible tree: a `true`-node whose child has root index
+`false`, violating `OverInput`. -/
+def branchTree : testSlice.toPFunctor.W :=
+  WType.mk true fun _ ↦ WType.mk false Empty.elim
+
+/-- An inadmissible tree is rejected. -/
+def wValidFalse : Bool := decide (testSlice.WValid branchTree)
+
+example : wValidTrue = true := by decide
+example : wValidFalse = false := by decide
