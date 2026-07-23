@@ -6,12 +6,12 @@
 - [In progress](#in-progress)
 - [Next up](#next-up)
   - [Polynomial functors](#polynomial-functors)
-    - [1. Decidable-property specializations of the functor definitions](#1-decidable-property-specializations-of-the-functor-definitions)
-    - [2. Categorical wrappers for slice and presheaf W-types as initial algebras](#2-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
-    - [3. M-types and their categorical wrappers as terminal coalgebras](#3-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
-    - [4. Universal morphisms](#4-universal-morphisms)
-    - [5. Relative (co)free (co)monads](#5-relative-cofree-comonads)
-    - [6. Composition and identity of polynomial functors](#6-composition-and-identity-of-polynomial-functors)
+    - [1. Categorical wrappers for slice and presheaf W-types as initial algebras](#1-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
+    - [2. M-types and their categorical wrappers as terminal coalgebras](#2-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
+    - [3. Universal morphisms](#3-universal-morphisms)
+    - [4. Relative (co)free (co)monads](#4-relative-cofree-comonads)
+    - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
+  - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
@@ -52,21 +52,7 @@ minimise the `Classical.choice` surface. Slice and presheaf W-types
 (`Slice/W.lean`, `Presheaf/W.lean`) exist, with the existence half of
 initiality only; the roadmap extends the stack upward.
 
-#### 1. Decidable-property specializations of the functor definitions
-
-The slice and presheaf functors are specializations of mathlib's
-`PFunctor`: a restriction to a domain by a compatibility property on
-the direction-input map, together with a shape-output map assigning
-each shape a codomain index. Add explicit specializations for the case
-where the compatibility property is decidable (typically the finitary
-case; the exact conditions are settled when this item is taken up).
-This specializes the functor definitions directly, so it depends only
-on the existing definitions and precedes the constructions built on
-them; the decidable functors are then available downstream, in
-particular for the decidable-case specializations of the universal
-morphisms (item 4).
-
-#### 2. Categorical wrappers for slice and presheaf W-types as initial algebras
+#### 1. Categorical wrappers for slice and presheaf W-types as initial algebras
 
 Characterise the slice and presheaf W-types as the initial objects
 of the categories of algebras of their functors, reusing the
@@ -75,18 +61,18 @@ of the categories of algebras of their functors, reusing the
 presheaf initiality proof on the slice initiality proof, and the slice
 proof on the `WType` initiality established there.
 
-#### 3. M-types and their categorical wrappers as terminal coalgebras
+#### 2. M-types and their categorical wrappers as terminal coalgebras
 
 Define the M-types (greatest fixed points) of the slice and
 presheaf functors on mathlib's `PFunctor.M`, following mathlib's
 standard construction of M-types on W-types, and characterise them
 as the terminal coalgebras of their functors. Following the
-base-layer-first pattern of the `PFunctor` wrappers and item 2,
+base-layer-first pattern of the `PFunctor` wrappers and item 1,
 build a categorical
 wrapper for the terminality of mathlib's `PFunctor.M` first,
 reusable in the slice and presheaf terminality proofs.
 
-#### 4. Universal morphisms
+#### 3. Universal morphisms
 
 Establish the universal morphisms of the slice and presheaf functors,
 layering the slice constructions on mathlib's `PFunctor` and the
@@ -116,10 +102,11 @@ Implement in this order, each step layered across the three forms:
     colimits from coproducts and coequalizers.
 
 Following the general definitions, implement the decidable-case
-specializations (item 1) of those universal morphisms with interesting
-decidable forms.
+specializations of those universal morphisms with interesting
+decidable forms, building on the `PFunctor.Finitary` layer documented
+in `docs/index.md`.
 
-#### 5. Relative (co)free (co)monads
+#### 4. Relative (co)free (co)monads
 
 Build the relative free monads and relative cofree comonads of the
 slice and presheaf functors for all three forms, and prove the
@@ -146,11 +133,11 @@ version can be built on the ordinary one, do so (simpler-first with
 reuse); otherwise build the relative version and define the ordinary
 one as its `J = id` specialization — known achievable, the ordinary
 case being the discrete degeneration. Relate each construction to the
-corresponding slice/presheaf W-type (item 2) or M-type (item 3) and
+corresponding slice/presheaf W-type (item 1) or M-type (item 2) and
 show the definitions equivalent, as in the superseded free-monad and
 cofree-comonad items.
 
-#### 6. Composition and identity of polynomial functors
+#### 5. Composition and identity of polynomial functors
 
 Establish that the interpretation of mathlib's `PFunctor` carries
 `PFunctor.comp` to composition of the corresponding functors, and
@@ -168,6 +155,39 @@ an unprotected `id` shadows `_root_.id` throughout the `PFunctor`
 namespace and breaks uses such as `P.map id`; and both isomorphisms
 admit an ambient universe beyond the parameters of the functors
 involved.
+
+### Complexity of the decidable validity checkers
+
+Prove the complexity bounds conjectured, but not proved, for the
+checkers in `Geb/Mathlib/Data/PFunctor/Slice/Decidable.lean` and
+`Geb/Mathlib/Data/PFunctor/Presheaf/Decidable.lean` (see
+`docs/index.md`). With `n` the number of nodes of the input term, `h`
+its height, `k` the branching bound, `κ` the number of objects of `I`,
+and `H` the maximal hom-set size, and taking equality in `I`, in
+`dom`, and in the presheaf's value types to cost `O(1)`: the four
+single-step checks are constant-time in `n`, with node-level factors
+`1` for the two fiber predicates, `k` for `Compatible`, and `κ²Hk` for
+`IsNatural`; `WValid` runs in `O(k · n)`, a single fold with an
+`O(1)` accumulator; and `IsHereditarilyNatural` runs in
+`O(κ²Hk · n · h)`, worst case `O(n²)`, because each node's local
+condition is an equation between a subtree and the root-restriction
+of a sibling, whose decision cost is linear in subtree size. All six
+are polynomial time, and the functor's data enters as multiplicative
+constants rather than as a change of complexity class. Upper bounds
+only: a `Bool` fold short-circuits, so no matching lower bound is
+claimed on rejecting inputs.
+
+A sharing or hash-consing representation would reduce
+`IsHereditarilyNatural`'s checker to linear time, each subtree
+comparison becoming a pointer comparison; building that
+representation is out of scope for this item.
+
+[Leivant1999], [DalLagoMartiniZorzi2010], and [AvanziniDalLago2018]
+place the checkers' complexity: every recursion here is a
+non-dependent fold at a first-order carrier, the regime those results
+place in first-order polynomial time, as against the higher-order and
+word-algebra regimes in which they identify an elementary or
+exponential jump.
 
 ### Upstream placement of categorical wrappers
 
@@ -317,4 +337,10 @@ is the parametric right adjoint determined by its generic data `(T1, E_T)`.
   and `.../Presheaf/W.lean` because the `Basic` test module has no
   `public section`. Trigger when a third consumer appears: introduce a
   `public`-exported `GebTests/Mathlib/Data/PFunctor/Presheaf/Fixtures.lean`
-  and import it from each.
+  and import it from each. The condition has been met:
+  `.../Presheaf/Decidable.lean` re-declares the same fixture data as a
+  third consumer. Take the extraction together with the two items
+  above (test-module import visibility, test-declaration privacy
+  discipline); the extraction entails both, since the fixtures module
+  can only be shared by making the currently-private fixture data
+  public and importing it from every consumer.
