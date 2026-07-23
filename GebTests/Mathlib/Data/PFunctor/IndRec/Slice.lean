@@ -50,3 +50,23 @@ example :
             (ULift.{0} (PLift (∀ b, assign b = testSlice.rCurried a b))) fun _ ↦
             IR.iota PUnit PUnit PUnit.unit :=
   rfl
+
+/-- A simple `IR` code: `iota PUnit.unit`. -/
+def testIRiota : IR.{0, 0, 0, 0} PUnit PUnit :=
+  IR.iota PUnit PUnit PUnit.unit
+
+/-- The iota case `toSlicePFunctorIota` reduces to the constant
+slice polynomial: one shape, no directions, output index `o`. -/
+example (o : PUnit) :
+    IR.toSlicePFunctorIota PUnit PUnit o =
+      { toPFunctor := ⟨PUnit, fun _ ↦ PEmpty⟩
+      , r := fun ⟨_, b⟩ ↦ PEmpty.elim b
+      , q := fun _ ↦ o } :=
+  rfl
+
+/-- `toSlicePFunctor` at `iota` satisfies the computation rule
+(definitional). -/
+example :
+    IR.toSlicePFunctor PUnit PUnit testIRiota =
+      IR.toSlicePFunctorIota PUnit PUnit PUnit.unit :=
+  rfl
