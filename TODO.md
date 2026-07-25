@@ -16,6 +16,7 @@
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
+  - [Exhaustive verification of presheaf PRA laws for finite instances](#exhaustive-verification-of-presheaf-pra-laws-for-finite-instances)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -246,6 +247,25 @@ polynomial functors.
 
 Establish the natural isomorphism confirming that `PresheafPFunctor.functor`
 is the parametric right adjoint determined by its generic data `(T1, E_T)`.
+
+### Exhaustive verification of presheaf PRA laws for finite instances
+
+The `FinitePresheafPFunctor` structure bundles `FinEnum J` alongside the
+domain finiteness. With both index categories finite, the functor laws
+(`ShapeRestrId`, `ShapeRestrComp`, `ReindexNaturality`, `ReindexId`,
+`ReindexComp`, and the domain-side `DirectionRestrId`,
+`DirectionRestrComp`) are exhaustively verifiable by enumeration: each
+law quantifies over finitely many objects, morphisms, shapes, and
+directions, and the equalities are decidable (shapes and directions
+have `DecidableEq` from the bundled `FinEnum` evidence). A `decide`-
+based test harness can confirm that a concrete `FinitePresheafPFunctor`
+satisfies all laws without manual proof, turning the law fields from
+trusted input into checked input. The laws quantifying over
+`J`-morphisms additionally need finite `J`-hom-sets, which the structure
+does not currently bundle: a `finEnumHomJ` field is added by the commit
+that first consumes it. This is a testing/verification concern (not a
+new decidability instance) and is distinct from the decidability of
+fiber membership already implemented.
 
 ## Triggers (do when condition fires)
 
