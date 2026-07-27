@@ -144,7 +144,9 @@ import-direction rules above are enforced by
   hereditary naturality (the presheaf algebra acts only on natural nodes).
   Only the existence half of initiality is established (carrier, fixed
   point, and `W.elim` with `elim_mk`/`comp_elim`), not uniqueness.
-  `Classical.choice`-free.
+  `MemW` states fiber membership on a raw W-tree, so that it can be
+  decided by a fold, and `memW_iff_exists_obj` identifies it with the
+  carrier's fiber. `Classical.choice`-free.
 - `Geb/Mathlib/Data/FinEnum.lean` — three choice-free `Decidable`
   instances for mathlib's `FinEnum`: `FinEnum.decidableForallFinEnum`
   (a bounded `∀`), `FinEnum.decidableForallSubtype` (a bounded `∀` over
@@ -186,6 +188,28 @@ import-direction rules above are enforced by
   and decidability datum as an explicit argument because instance
   resolution does not traverse the `PresheafPFunctor` diamond to
   synthesise `decidableForallDirection` there. `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Presheaf/Finite/Basic.lean` — finite
+  presheaf polynomial functors: a bundled structure
+  `FinitePresheafPFunctor` wrapping `PresheafPFunctor I J` with
+  `FinEnum` evidence for shapes, directions, the domain index category
+  and its hom-sets, and the codomain index category. Derived
+  projections supply `DecidableEq` on the shape and index types.
+  Forwarding instances supply the bundled evidence to the existing
+  general-tier decision procedures (`decidableIsNatural`,
+  `decidableCompatible`, `decidableShapeOver`,
+  `decidableDirectionOver`). `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Presheaf/Finite/W.lean` — decidable
+  membership in the carrier presheaf's fiber for finite presheaf
+  polynomial endofunctors. The `Bool`-valued validator `wValidBool`
+  conjoins slice admissibility (`SlicePFunctor.wValidBool`) and
+  hereditary naturality (`isHereditarilyNaturalBoolCore`), and
+  `memWBool` adds the index test; `wValidBool_eq_true_iff` and
+  `memWBool_eq_true_iff` are their correctness lemmas, the latter
+  stated against `PresheafPFunctor.MemW`, so `decidableMemW` decides
+  the whole fiber condition by a single fold. Forwarding instances for
+  `decidableWValid` and `decidableIsHereditarilyNatural`;
+  `decidableEqW` provides `DecidableEq` on raw W-trees.
+  `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
   coproduct completion of a type `D` treated as a discrete category:
   the category of families of elements of `D` (the discrete case of
