@@ -55,7 +55,11 @@ Batteries at the `.lake/packages/` pins, `lake` for build/test/lint,
   `Classical.choice`. Use `Vector.ofFnC` from Task 1.
 - **Never import `Batteries.Data.Vector.Lemmas`.** It is permitted by
   the allow-list but brings choice-tainted `@[simp]` `Vector.get_ofFn`
-  and `Vector.get_range` into the `get` normal form.
+  and `Vector.get_range` into the `get` normal form. Since Task 1
+  declares `Vector.get_eq_getElem` at the same fully-qualified name as
+  Batteries', the import is a hard error rather than a silent hazard —
+  `Vector.get_eq_getElem has already been declared` — which is the
+  failure mode to prefer.
 - **Application-normal form is `f.toVec.get i`**, `i : Fin X.len`.
   `Vector.get_eq_getElem` (Task 1) bridges to the `getElem` API and is
   deliberately not `@[simp]`.
@@ -78,6 +82,17 @@ Batteries at the `.lake/packages/` pins, `lake` for build/test/lint,
 - **Test modules name a `def` or `theorem` built from the module under
   test.** `lake shake` cannot see imports used only inside `example`,
   and reports a false "remove import".
+- **Run `lean4:review` before each Lean commit**, per
+  `docs/rules/lean-coding.md` § Lean 4 skill workflows and `CLAUDE.md`'s
+  phase table (`superpowers:verification-before-completion` at
+  pre-commit). `scripts/pre-push.sh` only reminds, and only at the end.
+- **The user understands every line before it is committed to
+  `Geb/Mathlib/`**, per `AGENTS.md` § AI authoring. In practice this
+  repository gates at the push (`CONTRIBUTING.md` § Working step 4),
+  which Task 8 Step 5 enforces; do not push without that review.
+- **Index files carry no `@[expose] public section`.** They declare
+  nothing, and the existing ones omit it; the header constraint above
+  applies to modules with declarations.
 - **If a mathlib or toolchain bump lands mid-branch, re-verify the
   axiom findings before continuing.** The spec's findings are pinned
   to `leanprover/lean4:v4.33.0-rc1`. A core repair of
@@ -169,8 +184,6 @@ Authors: Terence Rokop
 -/
 module
 
-public import Mathlib.Data.Vector.Basic
-
 /-!
 # A choice-free `ofFn` for root `Vector`
 
@@ -240,7 +253,7 @@ theorem get_eq_getElem {α : Type u} {n : Nat} (v : Vector α n)
 /-- `ofFnC` inverts indexing. -/
 @[simp] theorem ofFnC_get {α : Type u} {n : Nat} (v : Vector α n) :
     ofFnC v.get = v :=
-  Vector.ext fun i hi => getElem_ofFnC _ i hi
+  Vector.ext fun i hi ↦ getElem_ofFnC _ i hi
 
 end Vector
 ```
@@ -269,7 +282,7 @@ that no `Vector.ofFn`/`range`/`finRange` lemma crept in.
 
 - [ ] **Step 5: Confirm the `@[simp]` lemmas fire**
 
-`ofFnC_get` is a higher-order pattern (`ofFnC (fun i => v.get i) = v`),
+`ofFnC_get` is a higher-order pattern (`ofFnC (fun i ↦ v.get i) = v`),
 so whether `simp` matches it is confirmed rather than assumed. Through
 `lean-lsp`, on a snippet importing the module:
 
@@ -292,7 +305,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.Vector.OfFn
+public import Geb.Mathlib.Data.Vector.OfFn
 
 /-!
 # Tests for the choice-free `ofFn`
@@ -308,7 +321,7 @@ vector, ofFn
 @[expose] public section
 
 /-- A sample index function. -/
-def sampleIdx : Fin 3 → Nat := fun i => 2 * i.1
+def sampleIdx : Fin 3 → Nat := fun i ↦ 2 * i.1
 
 /-- The sample vector built from it. -/
 def sampleVec : Vector Nat 3 := Vector.ofFnC sampleIdx
@@ -328,24 +341,35 @@ theorem sampleVec_bridge : sampleVec.get ⟨1, by omega⟩ = sampleVec[1] :=
 
 - [ ] **Step 7: Build and lint**
 
-Run: `lake build GebTests.Mathlib.Data.Vector.OfFn && lake lint && lake lint GebTests`
+Run:
+
+```bash
+lake build GebTests.Mathlib.Data.Vector.OfFn
+lake build GebTests
+lake lint && lake lint -- GebTests
+```
+
 Expected: no errors, no linter output.
 
 - [ ] **Step 8: Check imports**
 
 Run: `scripts/lint-imports.sh`
-Expected: exit 0.
+Expected: exit 0. Run this at the end of every Lean task, not only
+this one: W1 creates the first `Geb/Mathlib/Data/Vector/`,
+`Geb/Mathlib/Data/List/` and `Geb/Mathlib/CategoryTheory/FinSetSkel/`
+directories, and the spec singles this lint out as one W1 exercises
+more than most branches.
 
 - [ ] **Step 9: Commit**
 
 ```bash
-jj commit -m "feat(vector): choice-free ofFn for root Vector
+jj commit -m "feat(vector): add a choice-free ofFn for root Vector
 
 Core's Vector.ofFn indexing lemmas depend on Classical.choice through
 the private Array.getElem_ofFn_go. Routing construction through
-List.ofFn avoids it while leaving the result array-backed. Adds the
-get/getElem bridge, Batteries' being unreachable from Mathlib.*
-modules."
+List.ofFn avoids it while leaving the result array-backed. The
+get/getElem bridge is stated here too, Batteries' being unreachable
+from any Mathlib.* module."
 ```
 
 ---
@@ -370,7 +394,7 @@ modules."
 List.Nodup.getEquivC {α : Type u} [DecidableEq α] (l : List α)
     (H : l.Nodup) : Fin l.length ≃ {x // x ∈ l}
 
-Fin.compressC {n : ℕ} (p : Fin n → Bool) :
+Fin.compress {n : ℕ} (p : Fin n → Bool) :
     Fin ((List.finRange n).filter p).length ≃ {i : Fin n // p i}
 ```
 
@@ -403,7 +427,7 @@ public import Mathlib.Logic.Equiv.Basic
 `List.Nodup.getEquiv` depends on `Classical.choice` through a single
 ingredient, `List.idxOf_lt_length_iff`. Substituting
 `List.idxOf_lt_length_of_mem`, which depends on `propext` alone,
-rebuilds it choice-free. `Fin.compressC` renumbers the indices
+rebuilds it choice-free. `Fin.compress` renumbers the indices
 satisfying a decidable predicate, which is what an equalizer or a
 coequalizer carrier needs.
 
@@ -411,7 +435,7 @@ coequalizer carrier needs.
 
 * `List.Nodup.getEquivC` — the choice-free rebuild of
   `List.Nodup.getEquiv`.
-* `Fin.compressC` — the indices satisfying a predicate, renumbered.
+* `Fin.compress` — the indices satisfying a predicate, renumbered.
 
 ## Tags
 
@@ -439,10 +463,10 @@ namespace Fin
 
 /-- The indices of `Fin n` satisfying `p`, renumbered onto an initial
 segment. -/
-def compressC {n : ℕ} (p : Fin n → Bool) :
+def compress {n : ℕ} (p : Fin n → Bool) :
     Fin ((List.finRange n).filter p).length ≃ {i : Fin n // p i} :=
   (List.Nodup.getEquivC _ ((List.nodup_finRange n).filter p)).trans
-    (Equiv.subtypeEquivRight (fun x => by simp [List.mem_filter]))
+    (Equiv.subtypeEquivRight (fun x ↦ by simp [List.mem_filter]))
 
 end Fin
 ```
@@ -458,7 +482,7 @@ Through `lean-lsp`, on a snippet importing the module:
 
 ```lean
 #print axioms List.Nodup.getEquivC
-#print axioms Fin.compressC
+#print axioms Fin.compress
 ```
 
 Expected: both `[propext, Quot.sound]`.
@@ -473,13 +497,13 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.List.NodupEquivFin
+public import Geb.Mathlib.Data.List.NodupEquivFin
 
 /-!
 # Tests for the choice-free list inversion
 
 A sample duplicate-free list round-trips through `getEquivC`, and
-`compressC` renumbers a sample predicate's indices.
+`compress` renumbers a sample predicate's indices.
 
 ## Tags
 
@@ -502,13 +526,13 @@ theorem sampleList_roundtrip :
   (List.Nodup.getEquivC sampleList sampleList_nodup).left_inv _
 
 /-- A sample decidable predicate on `Fin 4`. -/
-def samplePred : Fin 4 → Bool := fun i => decide (i.1 % 2 = 0)
+def samplePred : Fin 4 → Bool := fun i ↦ decide (i.1 % 2 = 0)
 
-/-- `compressC` round-trips a sample compressed index. -/
+/-- `compress` round-trips a sample compressed index. -/
 theorem sampleCompress_roundtrip
     (i : Fin ((List.finRange 4).filter samplePred).length) :
-    (Fin.compressC samplePred).symm (Fin.compressC samplePred i) = i :=
-  (Fin.compressC samplePred).left_inv i
+    (Fin.compress samplePred).symm (Fin.compress samplePred i) = i :=
+  (Fin.compress samplePred).left_inv i
 ```
 
 - [ ] **Step 6: Build and lint**
@@ -517,7 +541,8 @@ Run:
 
 ```bash
 lake build GebTests.Mathlib.Data.List.NodupEquivFin
-lake lint && lake lint GebTests
+lake build GebTests
+lake lint && lake lint -- GebTests
 ```
 
 Expected: no errors.
@@ -525,13 +550,13 @@ Expected: no errors.
 - [ ] **Step 7: Commit**
 
 ```bash
-jj commit -m "feat(list): choice-free inversion of a duplicate-free list
+jj commit -m "feat(list): invert a duplicate-free list choice-free
 
 List.Nodup.getEquiv depends on Classical.choice through
 List.idxOf_lt_length_iff alone; substituting
-List.idxOf_lt_length_of_mem rebuilds it choice-free. Adds the
-predicate compression that W3's equalizer and W4's coequalizer
-carriers consume."
+List.idxOf_lt_length_of_mem rebuilds it choice-free. The predicate
+compression that W3's equalizer and W4's coequalizer carriers consume
+is built over it."
 ```
 
 ---
@@ -552,7 +577,7 @@ carriers consume."
 - Produces:
 
 ```lean
-Vector.invOfInjectiveC {n k : ℕ} (ι : Vector (Fin n) k)
+Vector.invOfInjective {n k : ℕ} (ι : Vector (Fin n) k)
     (h : Function.Injective ι.get) :
     Fin k ≃ {j : Fin n // j ∈ ι.toList}
 ```
@@ -584,7 +609,7 @@ statement is an `Equiv`, which exists in neither.
 
 ## Main definitions
 
-* `Vector.invOfInjectiveC` — the inverse of an injective vector.
+* `Vector.invOfInjective` — the inverse of an injective vector.
 
 ## Tags
 
@@ -596,7 +621,7 @@ vector, injective, equiv, choice-free
 namespace Vector
 
 /-- An injective vector corresponds to the set of its entries. -/
-def invOfInjectiveC {n k : ℕ} (ι : Vector (Fin n) k)
+def invOfInjective {n k : ℕ} (ι : Vector (Fin n) k)
     (h : Function.Injective ι.get) :
     Fin k ≃ {j : Fin n // j ∈ ι.toList} :=
   have hlen : ι.toList.length = k := by simp
@@ -626,7 +651,7 @@ Expected: no errors.
 
 - [ ] **Step 3: Verify the axioms**
 
-Through `lean-lsp`: `#print axioms Vector.invOfInjectiveC`
+Through `lean-lsp`: `#print axioms Vector.invOfInjective`
 Expected: `[propext, Quot.sound]`.
 
 - [ ] **Step 4: Write `GebTests/Mathlib/Data/Vector/NodupEquivFin.lean`**
@@ -639,12 +664,12 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.Vector.NodupEquivFin
+public import Geb.Mathlib.Data.Vector.NodupEquivFin
 
 /-!
 # Tests for the injective-vector inversion
 
-A sample injective vector round-trips through `invOfInjectiveC`.
+A sample injective vector round-trips through `invOfInjective`.
 
 ## Tags
 
@@ -655,7 +680,7 @@ vector, injective, equiv
 
 /-- A sample injective vector. -/
 def sampleInj : Vector (Fin 5) 3 :=
-  Vector.ofFnC (fun i => ⟨i.1 + 1, by omega⟩)
+  Vector.ofFnC (fun i ↦ ⟨i.1 + 1, by omega⟩)
 
 /-- It is injective on indices. -/
 theorem sampleInj_injective : Function.Injective sampleInj.get := by
@@ -666,9 +691,9 @@ theorem sampleInj_injective : Function.Injective sampleInj.get := by
 
 /-- The inversion round-trips a sample index. -/
 theorem sampleInj_roundtrip (i : Fin 3) :
-    (Vector.invOfInjectiveC sampleInj sampleInj_injective).symm
-      (Vector.invOfInjectiveC sampleInj sampleInj_injective i) = i :=
-  (Vector.invOfInjectiveC sampleInj sampleInj_injective).left_inv i
+    (Vector.invOfInjective sampleInj sampleInj_injective).symm
+      (Vector.invOfInjective sampleInj sampleInj_injective i) = i :=
+  (Vector.invOfInjective sampleInj sampleInj_injective).left_inv i
 ```
 
 - [ ] **Step 5: Build and lint**
@@ -677,7 +702,8 @@ Run:
 
 ```bash
 lake build GebTests.Mathlib.Data.Vector.NodupEquivFin
-lake lint && lake lint GebTests
+lake build GebTests
+lake lint && lake lint -- GebTests
 ```
 
 Expected: no errors.
@@ -685,11 +711,11 @@ Expected: no errors.
 - [ ] **Step 6: Commit**
 
 ```bash
-jj commit -m "feat(vector): choice-free inversion of an injective vector
+jj commit -m "feat(vector): invert an injective vector choice-free
 
 Stated over the get view fixed as the application-normal form rather
 than over toList.Nodup, which List.nodup_iff_injective_get relates to
-it. Consumed by W3's equalizer, W3's row m and W4's coequalizer."
+it. W3's equalizer, W3's row m and W4's coequalizer consume it."
 ```
 
 ---
@@ -716,7 +742,10 @@ it. Consumed by W3's equalizer, W3's row m and W4's coequalizer."
     trips `toVec_ofVec`, `ofVec_toVec`
   - `FinSetSkel.smallCategory : SmallCategory FinSetSkel.{u}`
   - `@[ext] FinSetSkel.hom_ext`, and `hom_ext_iff` generated by it
-  - `@[simp] FinSetSkel.id_get`, `@[simp] FinSetSkel.comp_get`
+  - `@[simp] FinSetSkel.id_get`, `@[simp] FinSetSkel.comp_get`,
+    `@[simp] FinSetSkel.ofIdxFun_get`
+  - the pre-seal `Hom.ext'`, `Hom.id_get'`, `Hom.comp_get'` and
+    `Hom.ofIdxFun'_get`, from which the categorical forms derive
   - `FinSetSkel.decidableEqHom`, `FinSetSkel.reprHom`
   - `FinSetSkel.ofIdxFun`, `FinSetSkel.toIdxFun` and the round trips
     `ofIdxFun_toIdxFun`, `toIdxFun_ofIdxFun`
@@ -737,7 +766,8 @@ Task 1 Step 1, each importing `Basic` only — `Skeleton` does not exist
 until Task 5, and importing it now would leave this task's build red.
 Task 5 Step 3 adds it. Add the corresponding lines to
 `Geb/Mathlib/CategoryTheory.lean` and
-`GebTests/Mathlib/CategoryTheory.lean`.
+`GebTests/Mathlib/CategoryTheory.lean`, first in each:
+`FinSetSkel` sorts before `FreeCoprodCompDisc`.
 
 - [ ] **Step 2: Write `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`**
 
@@ -837,7 +867,8 @@ open CategoryTheory
 
 namespace FinSetSkel
 
-instance : Inhabited FinSetSkel.{u} := ⟨⟨0⟩⟩
+/-- The empty finite set is the default object. -/
+instance inhabited : Inhabited FinSetSkel.{u} := ⟨⟨0⟩⟩
 
 /-- A morphism is a vector of codomain indices, one per domain index.
 The `ULift` is outside the vector, so index types stay at `Type 0`. -/
@@ -855,9 +886,12 @@ def ofVec (v : Vector (Fin Y.len) X.len) : FinSetSkel.Hom X Y :=
 /-- The vector of a morphism. -/
 def toVec (f : FinSetSkel.Hom X Y) : Vector (Fin Y.len) X.len := f.down
 
+/-- `toVec` inverts `ofVec`. -/
 @[simp] theorem toVec_ofVec (v : Vector (Fin Y.len) X.len) :
     (ofVec v).toVec = v := rfl
 
+/-- `ofVec` inverts `toVec`. Unprovable after the seal, hence stated
+here. -/
 @[simp] theorem ofVec_toVec (f : FinSetSkel.Hom X Y) :
     ofVec f.toVec = f := rfl
 
@@ -868,25 +902,29 @@ protected def id (X : FinSetSkel.{u}) : FinSetSkel.Hom X X :=
 /-- Composition of morphisms. -/
 protected def comp (f : FinSetSkel.Hom X Y) (g : FinSetSkel.Hom Y Z) :
     FinSetSkel.Hom X Z :=
-  ofVec (Vector.ofFnC fun i => g.toVec.get (f.toVec.get i))
+  ofVec (Vector.ofFnC fun i ↦ g.toVec.get (f.toVec.get i))
 
 /-- A morphism from a lifted index function. -/
 def ofIdxFun' (g : ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)) :
     FinSetSkel.Hom X Y :=
-  ofVec (Vector.ofFnC fun i => (g (ULift.up i)).down)
+  ofVec (Vector.ofFnC fun i ↦ (g (ULift.up i)).down)
 
+/-- Pre-instance extensionality, from which `hom_ext` is derived. -/
 theorem ext' {f g : FinSetSkel.Hom X Y}
     (h : ∀ i, f.toVec.get i = g.toVec.get i) : f = g :=
-  congrArg ULift.up (Vector.ext fun i hi => h ⟨i, hi⟩)
+  congrArg ULift.up (Vector.ext fun i hi ↦ h ⟨i, hi⟩)
 
+/-- The identity acts as the identity on indices. -/
 theorem id_get' (X : FinSetSkel.{u}) (i : Fin X.len) :
     (Hom.id X).toVec.get i = i := Vector.get_ofFnC _ _
 
+/-- Composition acts by composing index lookups. -/
 theorem comp_get' (f : FinSetSkel.Hom X Y) (g : FinSetSkel.Hom Y Z)
     (i : Fin X.len) :
     (Hom.comp f g).toVec.get i = g.toVec.get (f.toVec.get i) :=
   Vector.get_ofFnC _ _
 
+/-- A morphism built from an index function acts by that function. -/
 theorem ofIdxFun'_get
     (g : ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)) (i : Fin X.len) :
     (ofIdxFun' g).toVec.get i = (g (ULift.up i)).down :=
@@ -896,22 +934,27 @@ end Hom
 
 attribute [irreducible] FinSetSkel.Hom
 
+/-- Objects and vector morphisms form a category. -/
 instance smallCategory : SmallCategory FinSetSkel.{u} where
   Hom X Y := FinSetSkel.Hom X Y
   id X := Hom.id X
   comp f g := Hom.comp f g
-  id_comp f := Hom.ext' fun i => by rw [Hom.comp_get', Hom.id_get']
-  comp_id f := Hom.ext' fun i => by rw [Hom.comp_get', Hom.id_get']
-  assoc f g h := Hom.ext' fun i => by
+  id_comp f := Hom.ext' fun i ↦ by rw [Hom.comp_get', Hom.id_get']
+  comp_id f := Hom.ext' fun i ↦ by rw [Hom.comp_get', Hom.id_get']
+  assoc f g h := Hom.ext' fun i ↦ by
     rw [Hom.comp_get', Hom.comp_get', Hom.comp_get', Hom.comp_get']
 
 /-- Morphisms agreeing at every index are equal. -/
 @[ext] theorem hom_ext {X Y : FinSetSkel.{u}} {f g : X ⟶ Y}
     (h : ∀ i, f.toVec.get i = g.toVec.get i) : f = g := Hom.ext' h
 
+/-- The categorical identity acts as the identity on indices. This
+fixes the application-normal form for W3 and W4. -/
 @[simp] theorem id_get (X : FinSetSkel.{u}) (i : Fin X.len) :
     (𝟙 X : X ⟶ X).toVec.get i = i := Hom.id_get' X i
 
+/-- Categorical composition acts by composing index lookups. This
+fixes the application-normal form for W3 and W4. -/
 @[simp] theorem comp_get {X Y Z : FinSetSkel.{u}} (f : X ⟶ Y)
     (g : Y ⟶ Z) (i : Fin X.len) :
     (f ≫ g).toVec.get i = g.toVec.get (f.toVec.get i) :=
@@ -924,19 +967,20 @@ inhabits the same class through the choice-dependent
 `Vector.instLawfulBEq`, so leaving the instance to search would let a
 bump silently change its axioms. -/
 instance decidableEqHom (X Y : FinSetSkel.{u}) : DecidableEq (X ⟶ Y) :=
-  fun f g => decidable_of_iff (f.toVec = g.toVec)
-    ⟨fun h => hom_ext fun i => congrArg (·.get i) h,
-     fun h => congrArg Hom.toVec h⟩
+  fun f g ↦ decidable_of_iff (f.toVec = g.toVec)
+    ⟨fun h ↦ hom_ext fun i ↦ congrArg (·.get i) h,
+     fun h ↦ congrArg Hom.toVec h⟩
 
 /-- Morphisms are serialisable, through their vector. -/
 instance reprHom (X Y : FinSetSkel.{u}) : Repr (X ⟶ Y) :=
-  ⟨fun f n => reprPrec f.toVec n⟩
+  ⟨fun f n ↦ reprPrec f.toVec n⟩
 
 /-- A morphism from a lifted index function. -/
 def ofIdxFun {X Y : FinSetSkel.{u}}
     (g : ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)) : X ⟶ Y :=
   Hom.ofIdxFun' g
 
+/-- A morphism built from an index function acts by that function. -/
 @[simp] theorem ofIdxFun_get {X Y : FinSetSkel.{u}}
     (g : ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)) (i : Fin X.len) :
     (ofIdxFun g).toVec.get i = (g (ULift.up i)).down :=
@@ -945,16 +989,18 @@ def ofIdxFun {X Y : FinSetSkel.{u}}
 /-- The lifted index function of a morphism. -/
 def toIdxFun {X Y : FinSetSkel.{u}} (f : X ⟶ Y) :
     ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len) :=
-  fun i => ULift.up (f.toVec.get i.down)
+  fun i ↦ ULift.up (f.toVec.get i.down)
 
+/-- The index-function correspondence round-trips a morphism. -/
 @[simp] theorem ofIdxFun_toIdxFun {X Y : FinSetSkel.{u}} (f : X ⟶ Y) :
     ofIdxFun (toIdxFun f) = f :=
-  hom_ext fun i => by simp only [ofIdxFun_get, toIdxFun]
+  hom_ext fun i ↦ by simp only [ofIdxFun_get, toIdxFun]
 
+/-- The index-function correspondence round-trips an index function. -/
 @[simp] theorem toIdxFun_ofIdxFun {X Y : FinSetSkel.{u}}
     (g : ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)) :
     toIdxFun (ofIdxFun g) = g :=
-  funext fun i => by simp only [toIdxFun, ofIdxFun_get]
+  funext fun i ↦ by simp only [toIdxFun, ofIdxFun_get]
 
 end FinSetSkel
 ```
@@ -999,14 +1045,17 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 
 /-!
 # Tests for `FinSetSkel`
 
-Sample morphisms compose, the identity acts as such at sample
-indices, decidable equality and `Repr` compute, and the index-function
-correspondence round-trips.
+Every assertion below is a closed computation: the sample morphisms
+reduce to concrete vectors, decidable equality separates two distinct
+morphisms rather than merely accepting one, composition with the
+identity reduces to the morphism, and `Repr` agrees with the vector's.
+A failure to reduce is caught, which is the point of a category whose
+morphisms are data.
 
 ## Tags
 
@@ -1024,22 +1073,58 @@ def objThree : FinSetSkel.{0} := ⟨3⟩
 def objTwo : FinSetSkel.{0} := ⟨2⟩
 
 /-- A sample morphism collapsing three indices onto two. -/
-def sampleHom : objThree ⟶ objTwo :=
-  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i => ⟨i.1 % 2, by omega⟩))
+def sampleSkelHom : objThree ⟶ objTwo :=
+  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 2, Nat.mod_lt _ (by decide)⟩))
 
-/-- Composition with the identity is the morphism, indexwise. -/
-theorem sampleHom_id_comp (i : Fin objThree.len) :
-    (𝟙 objThree ≫ sampleHom).toVec.get i = sampleHom.toVec.get i := by
-  simp
+/-- A second sample morphism, constant at the first index. -/
+def constZeroHom : objThree ⟶ objTwo :=
+  FinSetSkel.Hom.ofVec (Vector.ofFnC (fun _ ↦ ⟨0, by decide⟩))
 
-/-- Decidable equality of morphisms computes. -/
-theorem sampleHom_decEq : (sampleHom = sampleHom) := by decide
+/-- The sample morphism takes a concrete value at a concrete index. -/
+theorem sampleSkelHom_value :
+    sampleSkelHom.toVec.get ⟨1, by decide⟩ = ⟨1, by decide⟩ := by decide
+
+/-- Decidable equality separates two distinct morphisms. -/
+theorem sampleSkelHom_ne_constZero : sampleSkelHom ≠ constZeroHom := fun h ↦ by
+  have := congrArg (fun f ↦ (FinSetSkel.Hom.toVec f).get ⟨1, by decide⟩) h
+  exact absurd this (by decide)
+
+/-- Composition with the identity reduces to the morphism. -/
+theorem constZeroHom_comp_id : constZeroHom ≫ 𝟙 objTwo = constZeroHom := rfl
+
+/-- Composition with the identity preserves the underlying vector. -/
+theorem sampleSkelHom_comp_id_toVec :
+    (sampleSkelHom ≫ 𝟙 objTwo).toVec = sampleSkelHom.toVec := rfl
+
+/-- `Repr` on a morphism is `Repr` on its vector. -/
+theorem sampleSkelHom_repr :
+    reprStr sampleSkelHom = reprStr sampleSkelHom.toVec := rfl
 
 /-- The index-function correspondence round-trips the sample. -/
-theorem sampleHom_idxFun_roundtrip :
-    FinSetSkel.ofIdxFun (FinSetSkel.toIdxFun sampleHom) = sampleHom :=
-  FinSetSkel.ofIdxFun_toIdxFun sampleHom
+theorem sampleSkelHom_idxFun_roundtrip :
+    FinSetSkel.ofIdxFun (FinSetSkel.toIdxFun sampleSkelHom) = sampleSkelHom :=
+  FinSetSkel.ofIdxFun_toIdxFun sampleSkelHom
 ```
+
+`sampleSkelHom` rather than `sampleHom`:
+`GebTests/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` already
+declares a public root-namespace `sampleHom`, and
+`GebTests/Mathlib/CategoryTheory.lean` imports both modules.
+
+The bounds are `by decide`, not `by omega`: the goal mentions
+`objTwo.len`, and `omega` treats a definition-wrapped projection as an
+opaque atom rather than unfolding it.
+
+Morphism equalities are `rfl`, not `by decide`, and the inequality
+pushes its decision down to `Fin`. Under Lean's module system — which
+every file here uses — `decide` cannot reduce a root-`Vector`
+`DecidableEq`: the body of core's `Array.instDecidableEqImpl` is not
+exported across module boundaries, so reduction gets stuck at
+`instDecidableEqVector.decEq`. `rfl` still forces a closed
+computation, since defeq at default transparency evaluates both sides,
+and `Fin`'s `decide` does reduce. Verify any new `decide` in a test
+module with the `module` keyword present; without it the same
+proposition closes and the check is worthless.
 
 - [ ] **Step 7: Build and lint**
 
@@ -1047,7 +1132,8 @@ Run:
 
 ```bash
 lake build GebTests.Mathlib.CategoryTheory.FinSetSkel.Basic
-lake lint && lake lint GebTests
+lake build GebTests
+lake lint && lake lint -- GebTests
 ```
 
 Expected: no errors.
@@ -1055,7 +1141,7 @@ Expected: no errors.
 - [ ] **Step 8: Commit**
 
 ```bash
-jj commit -m "feat(finsetskel): the category and its vector morphism API
+jj commit -m "feat(finsetskel): define the category and its morphism API
 
 Objects are a one-field structure, whose projection reduces at
 reducible transparency where a definition would not and would force a
@@ -1082,7 +1168,12 @@ Decidable equality is pinned to the choice-free route."
 - Consumes: everything Task 4 produces.
 - Produces: `FinSetSkel.toSkeleton`, `ofSkeleton`,
   `toSkeleton_comp_ofSkeleton`, `ofSkeleton_comp_toSkeleton`,
-  `catIso`, `skeletonEquivalence`, `incl`, `skeletal`, `isSkeleton`.
+  `catIso`, `skeletonEquivalence`, `toSkeleton_isEquivalence`, `incl`,
+  `incl_isEquivalence`, `skeletal`, `isSkeleton`. The two
+  `IsEquivalence` instances are not in the spec's module-layout list
+  but are required: `IsSkeletonOf`'s `eqv` field defaults to
+  `by infer_instance`, so `where skel := skeletal` closes only if
+  `incl.IsEquivalence` synthesises.
 
 - [ ] **Step 1: Add the allowlist entries to `GebMeta.lean`**
 
@@ -1093,7 +1184,9 @@ In `classicalAllowedModules`, add to the bracketed literal:
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.Skeleton,
 ```
 
-Keep the `].foldl (·.insert ·)` terminator on the final element.
+Insert them before the current final element,
+`` `GebTests.Mathlib.CategoryTheory.Grothendieck ``, so that the
+`].foldl (·.insert ·)` terminator stays attached to it.
 
 - [ ] **Step 2: Write `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean`**
 
@@ -1131,9 +1224,11 @@ The isomorphism is closed by `CategoryTheory.Functor.hext`, which
 takes object equality together with `HEq` of the morphism components.
 `Functor.ext` does not close it: its `h_map` obligation retains
 `eqToHom` applied to `(F ⋙ G).obj X = (𝟭 _).obj X`, on which
-`eqToHom_refl` cannot fire. Write both names qualified — under
+`eqToHom_refl` cannot fire. Write `Functor.ext` qualified — under
 `open CategoryTheory` a bare `Functor.ext` resolves to the
 `LawfulFunctor` lemma and errors with a message mentioning `f <$> x`.
+`Functor.hext` is unambiguous, there being no `_root_.Functor.hext`,
+and is written qualified only for symmetry.
 
 ## Main definitions
 
@@ -1168,25 +1263,28 @@ namespace FinSetSkel
 def toSkeleton : FinSetSkel.{u} ⥤ FintypeCat.Skeleton.{u} where
   obj X := FintypeCat.Skeleton.mk X.len
   map f := toIdxFun f
-  map_id X := funext fun i => congrArg ULift.up (id_get X i.down)
-  map_comp f g := funext fun i => congrArg ULift.up (comp_get f g i.down)
+  map_id X := funext fun i ↦ congrArg ULift.up (id_get X i.down)
+  map_comp f g := funext fun i ↦ congrArg ULift.up (comp_get f g i.down)
 
 /-- The comparison functor from mathlib's skeleton. -/
 def ofSkeleton : FintypeCat.Skeleton.{u} ⥤ FinSetSkel.{u} where
   obj X := ⟨X.len⟩
   map {X Y} g := ofIdxFun (X := ⟨X.len⟩) (Y := ⟨Y.len⟩) g
-  map_id X := hom_ext fun i => by rw [ofIdxFun_get, id_get]; rfl
-  map_comp f g := hom_ext fun i => by
+  map_id X := hom_ext fun i ↦ by rw [ofIdxFun_get, id_get]; rfl
+  map_comp f g := hom_ext fun i ↦ by
     rw [ofIdxFun_get, comp_get, ofIdxFun_get, ofIdxFun_get]; rfl
 
+/-- The comparison functors compose to the identity on `FinSetSkel`. -/
 theorem toSkeleton_comp_ofSkeleton :
     toSkeleton.{u} ⋙ ofSkeleton.{u} = Functor.id _ :=
-  CategoryTheory.Functor.hext (fun _ => rfl) fun X Y f =>
+  CategoryTheory.Functor.hext (fun _ ↦ rfl) fun _ _ f ↦
     heq_of_eq (ofIdxFun_toIdxFun f)
 
+/-- The comparison functors compose to the identity on mathlib's
+skeleton. -/
 theorem ofSkeleton_comp_toSkeleton :
     ofSkeleton.{u} ⋙ toSkeleton.{u} = Functor.id _ :=
-  CategoryTheory.Functor.hext (fun _ => rfl) fun X Y f =>
+  CategoryTheory.Functor.hext (fun _ ↦ rfl) fun X Y f ↦
     heq_of_eq (toIdxFun_ofIdxFun (X := ⟨X.len⟩) (Y := ⟨Y.len⟩) f)
 
 /-- `FinSetSkel` and mathlib's skeleton are isomorphic in `Cat`. -/
@@ -1206,6 +1304,8 @@ def catIso : Cat.of FinSetSkel.{u} ≅ Cat.of FintypeCat.Skeleton.{u} where
 def skeletonEquivalence : FinSetSkel.{u} ≌ FintypeCat.Skeleton.{u} :=
   Cat.equivOfIso catIso
 
+/-- The comparison functor is an equivalence, being half of an
+isomorphism in `Cat`. -/
 instance toSkeleton_isEquivalence : toSkeleton.{u}.IsEquivalence :=
   skeletonEquivalence.isEquivalence_functor
 
@@ -1213,11 +1313,13 @@ instance toSkeleton_isEquivalence : toSkeleton.{u}.IsEquivalence :=
 def incl : FinSetSkel.{u} ⥤ FintypeCat.{u} :=
   toSkeleton ⋙ FintypeCat.Skeleton.incl
 
+/-- The inclusion is an equivalence, `IsSkeletonOf`'s `eqv` field
+requiring it. -/
 instance incl_isEquivalence : incl.{u}.IsEquivalence := by
   unfold incl; infer_instance
 
 /-- Isomorphic objects of `FinSetSkel` are equal. -/
-theorem skeletal : Skeletal FinSetSkel.{u} := fun X Y ⟨e⟩ =>
+theorem skeletal : Skeletal FinSetSkel.{u} := fun _ _ ⟨e⟩ ↦
   FinSetSkel.ext (congrArg FintypeCat.Skeleton.len
     (FintypeCat.Skeleton.is_skeletal ⟨toSkeleton.mapIso e⟩))
 
@@ -1246,6 +1348,10 @@ Through `lean-lsp`:
 ```lean
 #print axioms FinSetSkel.toSkeleton
 #print axioms FinSetSkel.ofSkeleton
+#print axioms FinSetSkel.toSkeleton_comp_ofSkeleton
+#print axioms FinSetSkel.ofSkeleton_comp_toSkeleton
+#print axioms FinSetSkel.toSkeleton_isEquivalence
+#print axioms FinSetSkel.incl_isEquivalence
 #print axioms FinSetSkel.catIso
 #print axioms FinSetSkel.skeletonEquivalence
 #print axioms FinSetSkel.incl
@@ -1253,15 +1359,25 @@ Through `lean-lsp`:
 #print axioms FinSetSkel.isSkeleton
 ```
 
-Expected: the two functors `[propext, Quot.sound]`; the rest
-`[propext, Classical.choice, Quot.sound]`.
+Expected: the two comparison functors `[propext, Quot.sound]`; the
+other nine `[propext, Classical.choice, Quot.sound]`.
 
 - [ ] **Step 6: Confirm nothing is `noncomputable`**
 
-`FintypeCat.Skeleton.equivalence` is `noncomputable` and must not be
-reached. `Skeleton.incl` and `Cat.equivOfIso`, which are used, are
-computable. Confirm the module compiles with no `noncomputable`
-modifier anywhere; `CONTRIBUTING.md` § Constructive-only forbids it.
+Run:
+
+```bash
+grep -rn "noncomputable" \
+  Geb/Mathlib/Data/Vector* Geb/Mathlib/Data/List* \
+  Geb/Mathlib/CategoryTheory/FinSetSkel* \
+  GebTests/Mathlib/Data/Vector* GebTests/Mathlib/Data/List* \
+  GebTests/Mathlib/CategoryTheory/FinSetSkel*
+```
+
+Expected: no matches. `CONTRIBUTING.md` § Constructive-only forbids
+the modifier outright. `FintypeCat.Skeleton.equivalence` is
+`noncomputable` and must not be reached; `Skeleton.incl` and
+`Cat.equivOfIso`, which are used, are computable.
 
 - [ ] **Step 7: Write `GebTests/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean`**
 
@@ -1273,7 +1389,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton
 
 /-!
 # Tests for the skeleton comparison
@@ -1308,7 +1424,8 @@ Run:
 
 ```bash
 lake build GebTests.Mathlib.CategoryTheory.FinSetSkel.Skeleton
-lake lint && lake lint GebTests
+lake build GebTests
+lake lint && lake lint -- GebTests
 ```
 
 Expected: no errors. If the axiom linter reports
@@ -1319,7 +1436,7 @@ a name for a nonexistent module silently.
 - [ ] **Step 9: Commit**
 
 ```bash
-jj commit -m "feat(finsetskel): the comparison with mathlib's skeleton
+jj commit -m "feat(finsetskel): compare with mathlib's skeleton
 
 The comparison functors are mutually inverse on the nose, so the
 categories are isomorphic in Cat and not merely equivalent. Cat's own
@@ -1378,10 +1495,12 @@ Append to § Implemented content, in the file's existing style:
   `List.Nodup.getEquivC` rebuilds `List.Nodup.getEquiv` choice-free,
   substituting `List.idxOf_lt_length_of_mem` for the
   `Classical.choice`-dependent `List.idxOf_lt_length_iff`.
-  `Fin.compressC` renumbers the indices satisfying a decidable
-  predicate onto an initial segment. `Classical.choice`-free.
+  `Fin.compress` renumbers the indices of `Fin n` satisfying a
+  `Bool`-valued predicate onto an initial segment; it is in the `Fin`
+  namespace, the module's `List` content being the rebuild.
+  `Classical.choice`-free.
 - `Geb/Mathlib/Data/Vector/NodupEquivFin.lean` —
-  `Vector.invOfInjectiveC` inverts an injective vector, stated over
+  `Vector.invOfInjective` inverts an injective vector, stated over
   the `get` view rather than over `toList.Nodup`.
   `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` — `FinSetSkel`,
@@ -1408,10 +1527,10 @@ Expected: "Everything is OK" and 0 issues.
 - [ ] **Step 4: Commit**
 
 ```bash
-jj commit -m "doc(finsetskel): index and bibliography entries
+jj commit -m "doc(finsetskel): record the modules and the citation
 
-Records the five modules under docs/index.md and adds the nLab
-skeletal-category entry the FinSetSkel docstring cites."
+docs/index.md gains the five modules; docs/references.bib gains the
+nLab skeletal-category entry the FinSetSkel docstring cites."
 ```
 
 ---
@@ -1439,14 +1558,35 @@ before starting.
 
 - [ ] **Step 1: Apply the `TODO.md` amendments**
 
-Working through the spec's § Amendments in order: W0's precedence; the
-objects; constraint 9 appended; the remaining decisions of § Decisions
-fixed here added to the W1 bullet; the index equivalences (W1 bullet,
-constraint 4, constraint 7's first sentence only — its second sentence
-is retained verbatim); the isomorphism's placement; the representation
-paragraph; the evidence pointer; the two § Triggers entries; the
-§ Next up item; the § Standing obligations entry; and the status
-table's W1 row.
+Working through the spec's § Amendments in order:
+
+1. W0's precedence.
+2. The objects.
+3. Constraint 9, appended.
+4. The record that `TODO.md`'s "pattern-matched, serialised, and
+   compared" is discharged on `f.toVec`, the seal making `Hom` itself
+   opaque, so that the purpose sentence and the seal are not read as
+   contradicting each other.
+5. The remaining decisions of § Decisions fixed here, added to the W1
+   bullet.
+6. The index equivalences: the W1 bullet loses the transported forms;
+   constraint 4 loses its trailing ground; constraint 7's first
+   sentence is rewritten, its second sentence retained verbatim, and a
+   sentence is added recording that the choice-free replacements for
+   `finProdFinEquiv` and `finFunctionFinEquiv` are deliberately
+   W3-local.
+7. The isomorphism's placement.
+8. The representation paragraph.
+9. The evidence pointer.
+10. The two § Triggers entries and the § Next up item.
+11. The § Standing obligations entry.
+12. The operation table's row m: a clause recording that W1 supplies
+    `Vector.invOfInjective` as the ingredient of a direct vector-level
+    `Mono` characterisation, the alternative to the
+    `SimplexCategory`/`incl` route, which would land row m in W3's
+    wrapper. The spec records this under § Out of scope, which no other
+    amendment carries into `TODO.md`, and the choice remains W3's.
+13. The status table's W1 row.
 
 - [ ] **Step 2: Apply the subtree-rule amendments**
 
@@ -1460,23 +1600,58 @@ and comments at both `scripts/extract-pr.sh` mapping arms. Also
 correct `Geb/Mathlib.lean`'s stale "import only from `Mathlib.*` or
 `Geb.Mathlib.*`", which W0 left behind when it admitted `Batteries.*`.
 
-- [ ] **Step 3: Verify the scripts still pass their own tests**
+- [ ] **Step 3: Verify the amendment set is complete**
+
+The spec is deleted in Task 8, so an omission here is undetectable
+from the working tree afterwards.
+
+The check that counts: walk the spec's § Amendments bullet list against
+`jj diff` and tick each bullet off against a hunk. It is the only
+complete one, because two of the files Step 2 edits
+(`docs/process.md` § Two-track development,
+`docs/rules/upstream-eligible.md` § Two-track development step 1) state
+the mathlib-or-CSLib binary without containing the string `mathlib4`.
+
+As a supporting sweep, expecting hits the amendment set does not touch:
+
+```bash
+grep -rnE "mathlib4|upstream target|extraction to mathlib" \
+  --include=*.md --include=*.lean --include=*.sh . \
+  | grep -v '^./.lake' | grep -v '^./.jj' | grep -v '^./.git' \
+  | grep -v docs/superpowers
+```
+
+Confirm each edited file appears with its new scoping clause. The
+sweep also returns `docs/references.md`'s doc-gen URLs, `README.md`'s
+opening, `scripts/mathlib-bump-detect.sh`, `scripts/toolchain-watch.sh`
+and their tests, and `docs/rules/lean-coding.md` § Authoritative
+upstream guides; none of those states the subtree's destination, and
+the spec excludes the last two by name.
+
+Finally, the evidence-pointer amendment needs W1's spec change-id:
+
+```bash
+jj log -r 'description(glob:"doc(finsetskel): spec and plan W1*")' \
+  --no-graph -T 'change_id ++ "\n"'
+```
+
+- [ ] **Step 4: Verify the scripts still pass their own tests**
 
 Run: `scripts/tests/test-lint-imports.sh && scripts/tests/test-extract-pr.sh`
 Expected: both pass. The changes are to comments only; a failure means
 a code line was touched.
 
-- [ ] **Step 4: Regenerate the table of contents and lint**
+- [ ] **Step 5: Regenerate the table of contents and lint**
 
 Run: `doctoc --update-only . && markdownlint-cli2 '**/*.md'`
 Expected: "Everything is OK" and 0 issues.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 jj commit -m "doc(finsetskel): amend the roadmap and the subtree rules
 
-Records what W1's re-verification changed for the workstreams that
+TODO.md gains what W1's re-verification changed for the workstreams that
 read TODO.md from main: W0 no longer precedes W1, the objects are a
 structure, the index-equivalence transports are dropped and their
 choice-taint assigned to W3, the isomorphism moves to the wrapper, and
@@ -1526,7 +1701,7 @@ rm docs/superpowers/plans/2026-07-28-finsetskel-w1.md
 
 Run: `scripts/pre-push.sh`
 Expected: every step passes — `lake build`, `lake test`, `lake lint`,
-`lake lint GebTests`, `lake shake`, `scripts/lint-imports.sh`, the
+`lake lint -- GebTests`, `lake shake`, `scripts/lint-imports.sh`, the
 script tests, `scripts/check-commit-msg.sh` and the `doctoc` check.
 
 If `lake shake` reports an import to remove from a `GebTests` module,
