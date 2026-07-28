@@ -5,11 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Data.FinEnum
-public import Geb.Mathlib.Data.PFunctor
-public import Geb.Mathlib.Data.Vector
-public import Geb.Mathlib.Data.W
+import GebTests.Mathlib.Data.Vector.OfFn
 
 /-!
-# Data — index
+# Vector tests — index
 -/
