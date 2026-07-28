@@ -330,6 +330,37 @@ EOF
 assert_case "GebTests/Cslib source-prefix leakage binds tests" 1 \
   "'Geb.Cslib.' outside ^import line"
 
+# Case 28: Geb/Mathlib importing Batteries.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/Batt.lean" <<'EOF'
+module
+
+import Mathlib.Algebra.Group.Basic
+import Batteries.Data.UnionFind
+EOF
+assert_case "Geb/Mathlib Batteries import" 0 "clean (1 file(s) checked)"
+
+# Case 29: Geb/Cslib importing Batteries (admitted to Mathlib subtrees only).
+setup_empty
+cat > "$test_dir/Geb/Cslib/Batt.lean" <<'EOF'
+module
+
+import Cslib.Init
+import Batteries.Data.UnionFind
+EOF
+assert_case "Geb/Cslib forbidding Batteries import" 1 \
+  "forbidden import 'import Batteries.Data.UnionFind'"
+
+# Case 30: bare `import Batteries` umbrella.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/BattUmbrella.lean" <<'EOF'
+module
+
+import Batteries
+EOF
+assert_case "Batteries bare umbrella" 1 \
+  "bare umbrella 'import Batteries'"
+
 echo ""
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

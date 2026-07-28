@@ -17,7 +17,8 @@ The repository is laid out narrow-and-deep, with one indexing
   downstream-only content.
   - `Geb/Mathlib/` — content authored in mathlib's style and
     intended for eventual upstream extraction to mathlib4;
-    imports from `Mathlib.*` and `Geb.Mathlib.*` only.
+    imports from `Mathlib.*`, `Batteries.*`, and `Geb.Mathlib.*`
+    only.
   - `Geb/Cslib/` — content authored in CSLib's style and
     intended for eventual upstream extraction to CSLib;
     imports from `Mathlib.*`, `Cslib.*`, and `Geb.Cslib.*`

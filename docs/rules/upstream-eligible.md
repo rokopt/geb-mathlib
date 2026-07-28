@@ -80,13 +80,19 @@ import test modules.
 
 | Subtree | Allowed imports | Self-prefixes (no leakage) |
 | --- | --- | --- |
-| `Geb/Mathlib/` | `Mathlib.*`, `Geb.Mathlib.*` | `Geb.Mathlib.` |
-| `GebTests/Mathlib/` | `Mathlib.*`, `Geb.Mathlib.*`, `GebTests.Mathlib.*` | `Geb.Mathlib.`, `GebTests.Mathlib.` |
+| `Geb/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*` | `Geb.Mathlib.` |
+| `GebTests/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*`, `GebTests.Mathlib.*` | `Geb.Mathlib.`, `GebTests.Mathlib.` |
 | `Geb/Cslib/` | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*` | `Geb.Cslib.` |
 | `GebTests/Cslib/` | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*`, `GebTests.Cslib.*` | `Geb.Cslib.`, `GebTests.Cslib.` |
 
-Bare umbrella imports (`import Mathlib`, `import Cslib`) are
-forbidden — extraction requires specific module imports.
+`Batteries.*` is admitted to the mathlib-targeted subtrees because
+mathlib depends on Batteries and imports its modules directly, so a
+Batteries import survives extraction to mathlib4. Batteries modules
+that no `Mathlib.*` module imports are reachable no other way.
+
+Bare umbrella imports (`import Mathlib`, `import Batteries`,
+`import Cslib`) are forbidden — extraction requires specific module
+imports.
 
 A self-prefix appears **only** in `^import` lines that
 reference siblings in the same subtree. Do NOT use a self-prefix in:
