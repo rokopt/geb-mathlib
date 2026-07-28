@@ -116,4 +116,70 @@ class ElementaryTopos (C : Type u) [Category.{v} C] where
   /-- A subobject classifier. -/
   classifier : Subobject.Classifier C
 
+namespace ElementaryTopos
+
+variable (C : Type u) [Category.{v} C] [ElementaryTopos C]
+
+/-- The cartesian structure, as a definition rather than an instance:
+two routes to data need not agree definitionally. -/
+@[instance_reducible] def cartesianMonoidalCategory :
+    CartesianMonoidalCategory C :=
+  cartesian
+
+attribute [local instance] cartesianMonoidalCategory
+
+/-- Closure over the cartesian structure. -/
+@[instance_reducible] def monoidalClosed : MonoidalClosed C := closed
+
+/-- The comparison of the cartesian terminal with the classifier's
+`Ω₀`. Both are terminal, so this isomorphism is unique. -/
+def tensorUnitIsoΩ₀ : 𝟙_ C ≅ (classifier (C := C)).Ω₀ :=
+  IsTerminal.uniqueUpToIso CartesianMonoidalCategory.isTerminalTensorUnit
+    Subobject.Classifier.isTerminalΩ₀
+
+/-- The chosen initial object is initial. -/
+def isInitial : IsInitial (initialCocone (C := C)).cocone.pt :=
+  IsColimit.ofIsoColimit initialCocone.isColimit
+    (Cocone.ext (Iso.refl _) (by simp))
+
+/-- The initial-object field, as the corresponding `Prop` class. -/
+instance : HasInitial C := IsInitial.hasInitial (isInitial C)
+
+/-- The binary-coproduct field, per diagram. -/
+instance hasColimit_pair {X Y : C} : HasColimit (pair X Y) :=
+  ⟨⟨binaryCoproductCocone X Y⟩⟩
+
+/-- Binary coproducts, from the per-diagram form. -/
+instance : HasBinaryCoproducts C := hasBinaryCoproducts_of_hasColimit_pair C
+
+/-- The equalizer field, per diagram. -/
+instance hasLimit_parallelPair {X Y : C} {f g : X ⟶ Y} :
+    HasLimit (parallelPair f g) :=
+  ⟨⟨equalizerCone f g⟩⟩
+
+/-- Equalizers, from the per-diagram form. -/
+instance : HasEqualizers C := hasEqualizers_of_hasLimit_parallelPair C
+
+/-- The coequalizer field, per diagram. -/
+instance hasColimit_parallelPair {X Y : C} {f g : X ⟶ Y} :
+    HasColimit (parallelPair f g) :=
+  ⟨⟨coequalizerCocone f g⟩⟩
+
+/-- Coequalizers, from the per-diagram form. -/
+instance : HasCoequalizers C := hasCoequalizers_of_hasColimit_parallelPair C
+
+/-- Finite coproducts, from the initial object and binary coproducts. -/
+instance : HasFiniteCoproducts C :=
+  hasFiniteCoproducts_of_has_binary_and_initial (C := C)
+
+/-- Finite limits, from the cartesian structure and equalizers. -/
+instance : HasFiniteLimits C :=
+  hasFiniteLimits_of_hasEqualizers_and_finite_products
+
+/-- Finite colimits, from finite coproducts and coequalizers. -/
+instance : HasFiniteColimits C :=
+  hasFiniteColimits_of_hasCoequalizers_and_finite_coproducts
+
+end ElementaryTopos
+
 end CategoryTheory

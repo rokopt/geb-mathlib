@@ -25,7 +25,24 @@ open CategoryTheory CategoryTheory.Limits MonoidalCategory
 
 universe v u
 
-/-- The class elaborates and its fields are reachable. -/
-example (C : Type u) [Category.{v} C] [ElementaryTopos C] :
-    Subobject.Classifier C :=
-  ElementaryTopos.classifier
+section Resolution
+
+variable (C : Type u) [Category.{v} C] [ElementaryTopos C]
+
+example : HasInitial C := inferInstance
+example : HasBinaryCoproducts C := inferInstance
+example : HasEqualizers C := inferInstance
+example : HasCoequalizers C := inferInstance
+example : HasFiniteCoproducts C := inferInstance
+example : HasFiniteLimits C := inferInstance
+example : HasFiniteColimits C := inferInstance
+
+attribute [local instance] ElementaryTopos.cartesianMonoidalCategory
+
+/-- The data accessors cross the module boundary. -/
+example : CartesianMonoidalCategory C :=
+  ElementaryTopos.cartesianMonoidalCategory C
+
+example : MonoidalClosed C := ElementaryTopos.monoidalClosed C
+
+end Resolution
