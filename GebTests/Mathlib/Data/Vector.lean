@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+import GebTests.Mathlib.Data.Vector.NodupEquivFin
 import GebTests.Mathlib.Data.Vector.OfFn
 
 /-!
