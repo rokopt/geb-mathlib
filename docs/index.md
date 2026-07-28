@@ -18,7 +18,10 @@ The repository is laid out narrow-and-deep, with one indexing
   - `Geb/Mathlib/` — content authored in mathlib's style and
     intended for eventual upstream extraction to mathlib4;
     imports from `Mathlib.*`, `Batteries.*`, and `Geb.Mathlib.*`
-    only.
+    only. Where those import rules leave no alternative, a module
+    here may instead target Lean core or Batteries; that
+    destination is open, per `TODO.md` § Upstream destination of
+    core- and Batteries-targeted content.
   - `Geb/Cslib/` — content authored in CSLib's style and
     intended for eventual upstream extraction to CSLib;
     imports from `Mathlib.*`, `Cslib.*`, and `Geb.Cslib.*`
