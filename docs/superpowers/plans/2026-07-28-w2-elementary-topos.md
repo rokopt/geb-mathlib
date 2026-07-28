@@ -294,8 +294,10 @@ carries no trailing comma, so that the list keeps its existing shape:
 
 ```lean
    `Geb.Mathlib.CategoryTheory.ElementaryTopos,
-   `GebTests.Mathlib.CategoryTheory.ElementaryTopos,
+   `GebTests.Mathlib.CategoryTheory.ElementaryTopos].foldl (·.insert ·)
 ```
+
+replacing the previous last entry's `].foldl (·.insert ·)` tail.
 
 - [ ] **Step 6: Run the build to verify it passes**
 
@@ -444,17 +446,31 @@ end ElementaryTopos
 
 Run: `lake build GebTests.Mathlib.CategoryTheory.ElementaryTopos`
 
-Expected: PASS. This build settles the spec's one open question, and
-settles it negatively: the wrapper opens a plain `public section`,
-without `@[expose]`, and the accessors nonetheless cross the module
-boundary — the test module is a second module, so had
-`@[instance_reducible]` needed `@[expose]` to survive, these
-assertions would fail. `@[expose]` is therefore not taken. The
-repository's exposed modules state their own ground for it, as
-`Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean` does (downstream
-definitional reduction through every definition); W2 has no such
-need, and an attribute exposing every body of an upstream-eligible
-module is not added without one.
+Expected: PASS, with the wrapper under a plain `public section`.
+
+What this does and does not show. A `public section` carries
+signatures and instance resolution across a module boundary; it does
+not carry definitional transparency, and `@[instance_reducible]` does
+not supply it either — a downstream `rfl` through an accessor's body
+reports `The following definitions were not unfolded because their
+definition is not exposed`. These assertions are signature-level, so
+they would pass for an unattributed `def` too.
+
+W2 nonetheless does not need `@[expose]`, on three grounds that do not
+depend on this build. W3 and W4 never import W2, per constraint 2, so
+nothing can be denied them. W5 only constructs the instance, which
+needs field signatures. And the equations a consumer wants about
+`isInitial` and `tensorUnitIsoΩ₀` are settled by `IsInitial.hom_ext`
+and `IsTerminal.hom_ext` rather than by unfolding — that is what
+§ The two terminals need no coherence field already relies on.
+
+The cost is recorded rather than hidden: no downstream `simp` or
+`unfold` on a W2 accessor is available, so a consumer wanting one must
+state its own lemma, and `@[expose]` is then a one-line change to the
+wrapper. Do not test the question at `Discrete PUnit`: its objects are
+a structure over `PUnit` and its morphisms are proofs, so a `rfl`
+between accessors succeeds there by structure eta and proof
+irrelevance whether or not the body is exposed.
 
 - [ ] **Step 5: Verify the accessors are reachable across the module boundary**
 
@@ -639,13 +655,15 @@ grep -nE '^noncomputable' \
 Expected: no output. `noncomputable` is a declaration modifier, so it
 opens a line where it is used as one; the module docstring mentions
 the word in prose, never at the start of a line, and a pattern without
-the anchor reports three docstring hits. The anchor is not airtight —
-`private noncomputable def` and the like would evade it — but nothing
-in these modules is `private` or attributed, and no linter catches
-`noncomputable`, which is legal Lean, so this scan is the only guard.
+the anchor reports three docstring hits. The anchor is not airtight:
+`@[instance_reducible] noncomputable def` would evade it, and this
+module has two `@[instance_reducible]`
+definitions already. No linter catches `noncomputable`, which is legal
+Lean, so if the anchored scan is ever in doubt, run it unanchored and
+check the hit count is the three docstring lines.
 
 `sorry` and `admit` need no textual scan: each makes the build itself
-fail, `declaration uses 'sorry'` being a warning that
+fail, ``declaration uses `sorry` `` being a warning that
 `weak.warningAsError = true` promotes to an error. The axiom linter is
 not the mechanism — it reports named declarations, and this module's
 assertions are `example`s, which it does not name.
@@ -890,7 +908,7 @@ OK".
 - [ ] **Step 6: Commit**
 
 ```bash
-jj describe -m "doc(finsetskel): amend the roadmap for the W2 design
+jj describe -m "doc(elementary-topos): amend the roadmap for the W2 design
 
 Constraint 6 ceases to require an identification of the classifier's
 Ω₀ with the cartesian terminal: both are terminal and so
@@ -1001,7 +1019,7 @@ Expected: exit 0.
 ```bash
 jj describe -m "doc(elementary-topos): complete W2 and remove its spec and plan
 
-Marks W2 complete in the roadmap's status table, every check having
+Mark W2 complete in the roadmap's status table, every check having
 passed: both builds, both lint invocations, the import lint, the
 minimised-imports check and the pre-push script.
 
@@ -1019,9 +1037,10 @@ jj new
 
 **Spec coverage.** Every deliverable of the spec's § Deliverables maps
 to a task: deliverable 1 to Task 1 Step 3 and Task 2 Step 3;
-deliverable 2 to Task 1 Step 1 and Task 3; deliverable 3 to Task 1
-Step 4; deliverable 4 to Task 1 Step 5; deliverable 5 to Tasks 4,
-5 and 6 Step 5. Task 6 carries the two separate `lake lint` invocations and
+deliverable 2 to Task 1 Step 1, Task 2 Steps 1 and 5, and Task 3;
+deliverable 3 to Task 1 Step 4; deliverable 4 to Task 1 Step 5;
+deliverable 5 to Tasks 4, 5 and 6 Step 5. Task 6 carries the two
+separate `lake lint` invocations and
 `lake shake`; the placeholder scan is Task 3 Step 5 and the Markdown
 checks are in Tasks 4, 5 and 6.
 The spec's one open question — whether cross-module `@[expose]` is

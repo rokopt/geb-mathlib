@@ -575,15 +575,22 @@ result. Three specifics rather than a general caveat:
   precede the header the style linter requires.
 - Under `module`, the declarations need a `public section`.
 - Definitional transparency across a module boundary needs
-  `@[expose]`, per this repository's own precedent in
+  `@[expose]`, per this repository's precedent in
   `Geb/Mathlib/Data/PFunctor/Slice/Basic.lean` and
-  `Geb/Mathlib/CategoryTheory/Grothendieck.lean`. It is not required
-  here: a two-module build with the wrapper under a plain
-  `public section` resolves every derived instance and both data
-  accessors from the test module, so `@[instance_reducible]` crosses
-  the boundary without it. W2 therefore does not take `@[expose]`,
-  an attribute exposing every body of an upstream-eligible module not
-  being added without a stated need.
+  `Geb/Mathlib/CategoryTheory/Grothendieck.lean`. W2 does not take it.
+  A plain `public section` carries signatures and instance resolution
+  across the boundary but not transparency, and `@[instance_reducible]`
+  does not supply transparency either: a two-module build shows a
+  downstream `rfl` through an accessor's body reporting `The following
+  definitions were not unfolded because their definition is not
+  exposed`. W2 needs none of it. W3 and W4 never import W2, per
+  constraint 2; W5 only constructs the instance, which needs field
+  signatures; and the equations a consumer wants about `isInitial` and
+  `tensorUnitIsoΩ₀` are settled by `IsInitial.hom_ext` and
+  `IsTerminal.hom_ext`, which is what § The two terminals need no
+  coherence field already relies on. The cost is that no downstream
+  `simp` or `unfold` on a W2 accessor is available; a consumer wanting
+  one states its own lemma, and `@[expose]` is then a one-line change.
 
 ## Out of scope
 
