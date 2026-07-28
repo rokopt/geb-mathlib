@@ -29,27 +29,27 @@
 This is the brainstorming-phase spec for W2 of the workstream group
 `TODO.md` § FinSetSkel as an elementary topos. W2 supplies the
 `ElementaryTopos` class, its derived accessors and derived `Prop`
-instances, the citations, and the module docstring. It adds no part
-of `FinSetSkel`: W1 through W5 are ordered by that roadmap, and W2 is
+instances, the citations, and the module docstring. It adds no part of
+`FinSetSkel`: W1 through W5 are ordered by that roadmap, and W2 is
 independent of W1.
 
 The umbrella spec that produced the roadmap was added and removed on
 branch `docs/finsetskel-topos-roadmap`, `jj` change
-`nkwoqxwytsvrlpnsklzzlzkxtovyxkzm`. Its findings were pinned to
-mathlib at Lean v4.33.0-rc1. Every finding this spec relies on was
-re-verified on 28 July 2026, at the revision then current on `main`,
-by elaborating the declarations named, through the `lean-lsp` MCP;
-§ Findings the umbrella spec does not cover records the additions.
+`nkwoqxwytsvrlpnsklzzlzkxtovyxkzm`. Its findings were pinned to mathlib
+at Lean v4.33.0-rc1. Every finding this spec relies on was re-verified
+on 28 July 2026, at the revision then current on `main`, by elaborating
+the declarations named, through the `lean-lsp` MCP; § Findings the
+umbrella spec does not cover records the additions.
 
-This document is transient, per `CONTRIBUTING.md` § Concern shape:
-the branch removes it in its final commits.
+This document is transient, per `CONTRIBUTING.md` § Concern shape: the
+branch removes it in its final commits.
 
 ## Decisions taken here
 
-The roadmap leaves two choices to W2, and W2 adds a third. The first
-two are settled against an elaborated experiment rather than a
-reading of mathlib's sources; the third is a judgement about what W2
-can establish before W5.
+The roadmap leaves two choices to W2, and W2 adds a third. The first two
+are settled against an elaborated experiment rather than a reading of
+mathlib's sources; the third is a judgement about what W2 can establish
+before W5.
 
 1. **The two `Prop` fields are derived, not carried.** The class has
    seven data fields and one coherence field. `HasFiniteCoproducts`
@@ -64,38 +64,35 @@ can establish before W5.
    and W5 build against it.
 
 Decision 1 is what `TODO.md` § Class fields offers W2, and its
-consequence is what that paragraph states: rows e, j and k become
-W2's one-time derivations, and W3 and W5 proceed on the field form
-regardless, their rows e, j and k becoming redundant `Prop`
-instances, harmless by proof irrelevance. W2 removes no obligation
-from any other workstream and requires no amendment to the operation
-table, to the § Workstreams bullets, or to W5's duty to remove the
-roadmap entry on completion. W5 is assigned row k whichever route W2
-takes.
+consequence is what that paragraph states: rows e, j and k become W2's
+one-time derivations, and W3 and W5 proceed on the field form
+regardless, their rows e, j and k becoming redundant `Prop` instances,
+harmless by proof irrelevance. W2 removes no obligation from any other
+workstream and requires no amendment to the operation table, to the §
+Workstreams bullets, or to W5's duty to remove the roadmap entry on
+completion. W5 is assigned row k whichever route W2 takes.
 
-The sentence licensing this in `TODO.md` § Class fields — rows e, j
-and k "become W2's one-time derivations and leave W3's and W5's
-assignments" — admits reading "leave" as either vacating or leaving
-alone. Leaving alone is the reading taken, on two grounds internal to
-the roadmap: the clause that redundant `Prop` instances are harmless
-by proof irrelevance presupposes W3 and W5 still register them; and
-the § Workstreams bullet assigns W5 row k unconditionally on W2's
-choice. The same paragraph settles it
-outright: "W3 and W5 proceed on it regardless of W2's eventual
-choice". W2's amendment to that section
-disambiguates the sentence rather than leaving the next reader to
-re-derive it.
+The sentence licensing this in `TODO.md` § Class fields — rows e, j and
+k "become W2's one-time derivations and leave W3's and W5's assignments"
+— admits reading "leave" as either vacating or leaving alone. Leaving
+alone is the reading taken, on two grounds internal to the roadmap: the
+clause that redundant `Prop` instances are harmless by proof irrelevance
+presupposes W3 and W5 still register them; and the § Workstreams bullet
+assigns W5 row k unconditionally on W2's choice. The same paragraph
+settles it outright: "W3 and W5 proceed on it regardless of W2's
+eventual choice". W2's amendment to that section disambiguates the
+sentence rather than leaving the next reader to re-derive it.
 
-Decision 1 departs from constraint 1 ("Data for generators, `Prop`
-for finite (co)limits") only in the way `TODO.md` § Class fields
-licenses: the finite (co)limits remain `Prop`, and cease only to be
-fields. Constraints 4 and 7 bind W1 and are not W2's.
+Decision 1 departs from constraint 1 ("Data for generators, `Prop` for
+finite (co)limits") only in the way `TODO.md` § Class fields licenses:
+the finite (co)limits remain `Prop`, and cease only to be fields.
+Constraints 4 and 7 bind W1 and are not W2's.
 
 ## Transcription or novel
 
-Required by `CONTRIBUTING.md` § Cite the literature when
-transcribing, which obliges each workstream's brainstorming-phase
-spec to mark each definition.
+Required by `CONTRIBUTING.md` § Cite the literature when transcribing,
+which obliges each workstream's brainstorming-phase spec to mark each
+definition.
 
 | Declaration | Status |
 | --- | --- |
@@ -104,11 +101,10 @@ spec to mark each definition.
 | The derived `Prop` instances | Neither. Consequences of the fields, by mathlib lemmas |
 | The `Discrete PUnit` witness | Novel, and a test fixture rather than a definition |
 
-The redundancy of the finite colimits is literary context rather than
-a transcription: W2 derives `HasFiniteColimits` from the initial
-object, binary coproducts and coequalizers by mathlib lemmas, not by
-the theorem of
-[Mikkelsen1976] or the proof of [Pare1974]. Those works are cited to
+The redundancy of the finite colimits is literary context rather than a
+transcription: W2 derives `HasFiniteColimits` from the initial object,
+binary coproducts and coequalizers by mathlib lemmas, not by the theorem
+of [Mikkelsen1976] or the proof of [Pare1974]. Those works are cited to
 record why the redundancy is not an accident, not as the source of a
 transcribed theorem.
 
@@ -117,10 +113,10 @@ transcribed theorem.
 ### Findings the umbrella spec does not cover
 
 The mathlib pin is unchanged. `lake-manifest.json` records
-`79d0395a1825a6264ad5d269e35e60537518955e`, tagged `v4.33.0-rc1`,
-both on `main` today and at the umbrella spec's change, so no
-declaration moved between the two documents. Re-verification
-confirmed what that spec records and added two items it does not.
+`79d0395a1825a6264ad5d269e35e60537518955e`, tagged `v4.33.0-rc1`, both
+on `main` today and at the umbrella spec's change, so no declaration
+moved between the two documents. Re-verification confirmed what that
+spec records and added two items it does not.
 
 | Item | Umbrella spec | This spec |
 | --- | --- | --- |
@@ -129,27 +125,26 @@ confirmed what that spec records and added two items it does not.
 | `Cocones.ext` | not recorded | deprecated in favour of `Cocone.ext` |
 | `isTerminalTensorUnit` | not recorded | declared in `SemiCartesianMonoidalCategory`, which `CartesianMonoidalCategory` extends |
 
-Both additions bear on the module. `Cocones.ext` is deprecated at
-this pin, and `lakefile.toml` sets `weak.warningAsError = true`, so
-its use is an error here rather than a warning; § The derived form
-elaborates uses `Cocone.ext`. And `isTerminalTensorUnit` is
-unreachable under the bare name and under
-`CategoryTheory.isTerminalTensorUnit`; the reachable forms are
-`SemiCartesianMonoidalCategory.isTerminalTensorUnit` and
+Both additions bear on the module. `Cocones.ext` is deprecated at this
+pin, and `lakefile.toml` sets `weak.warningAsError = true`, so its use
+is an error here rather than a warning; § The derived form elaborates
+uses `Cocone.ext`. And `isTerminalTensorUnit` is unreachable under the
+bare name and under `CategoryTheory.isTerminalTensorUnit`; the reachable
+forms are `SemiCartesianMonoidalCategory.isTerminalTensorUnit` and
 `CartesianMonoidalCategory.isTerminalTensorUnit`, the latter by an
 explicit `export` inside the `CartesianMonoidalCategory` namespace
 rather than by parent projection. This spec uses the latter.
 
 `CartesianMonoidalCategory C` supplies `HasTerminal C`,
 `HasBinaryProducts C` and `HasFiniteProducts C` by instance search,
-confirming the roadmap's statement that row f needs nothing beyond
-the cartesian field.
+confirming the roadmap's statement that row f needs nothing beyond the
+cartesian field.
 
 ### A class-typed definition warns, and warnings are errors here
 
-Constraint 5 requires that W2's accessors for the data-carrying
-classes be definitions rather than instances. A definition whose type
-is a class draws:
+Constraint 5 requires that W2's accessors for the data-carrying classes
+be definitions rather than instances. A definition whose type is a class
+draws:
 
 > Definition `…` of class type is semireducible. Most type class
 > instances should be instance-reducible, so consider marking this
@@ -159,18 +154,17 @@ is a class draws:
 
 This is a warning at the toolchain, promoted to an error by this
 repository's `weak.warningAsError = true`. Two remedies exist:
-`@[instance_reducible]` on the accessor, or
-`set_option warn.classDefReducibility false`. W2 takes the first,
-which is what the message recommends and what keeps the accessors
-instance-reducible for downstream elaboration. This is a constraint
-on how constraint 5 is implemented, not a departure from it: the
-accessors remain definitions, and the two routes to the data still
-need not agree definitionally.
+`@[instance_reducible]` on the accessor, or `set_option
+warn.classDefReducibility false`. W2 takes the first, which is what the
+message recommends and what keeps the accessors instance-reducible for
+downstream elaboration. This is a constraint on how constraint 5 is
+implemented, not a departure from it: the accessors remain definitions,
+and the two routes to the data still need not agree definitionally.
 
 ### The derived form elaborates
 
-All three derivations of decision 1 hold with the class's data fields
-as their only input, by the lemmas the umbrella spec recorded:
+All three derivations of decision 1 hold with the class's data fields as
+their only input, by the lemmas the umbrella spec recorded:
 
 | Derived instance | Lemma | Supplied by |
 | --- | --- | --- |
@@ -179,40 +173,43 @@ as their only input, by the lemmas the umbrella spec recorded:
 | `HasFiniteColimits C` | `hasFiniteColimits_of_hasCoequalizers_and_finite_coproducts` | `HasFiniteCoproducts` above and the coequalizer field |
 
 `HasBinaryCoproducts`, `HasEqualizers` and `HasCoequalizers` are not
-fields, and the lemmas that supply them — `hasBinaryCoproducts_of_hasColimit_pair`,
+fields, and the lemmas that supply them —
+`hasBinaryCoproducts_of_hasColimit_pair`,
 `hasEqualizers_of_hasLimit_parallelPair` and
 `hasCoequalizers_of_hasColimit_parallelPair` — take the per-diagram
 limit and colimit classes as instance arguments. The module therefore
 declares three further instances by `HasLimit.mk` and `HasColimit.mk`
-over the corresponding fields, for `HasColimit (pair X Y)`,
-`HasLimit (parallelPair f g)` and `HasColimit (parallelPair f g)`.
-They are global, so they are named rather than anonymous and are part
-of the module's public surface, and are listed with the accessors
-below. From them, `hasBinaryCoproducts_of_hasColimit_pair`,
+over the corresponding fields, for `HasColimit (pair X Y)`, `HasLimit
+(parallelPair f g)` and `HasColimit (parallelPair f g)`. They are named,
+and the seven derived `Prop` instances are not, because these three are
+the ones a downstream module has reason to refer to: they are the
+per-diagram form W3 and W4 will already have constructed, and naming
+them lets a later declaration cite the instance rather than re-derive
+it. They are listed with the accessors below. From them,
+`hasBinaryCoproducts_of_hasColimit_pair`,
 `hasEqualizers_of_hasLimit_parallelPair` and
 `hasCoequalizers_of_hasColimit_parallelPair` give the three
 corresponding `Prop` classes; `HasInitial` is separate, below.
 
 `Functor.empty.{0} C` pins the universe deliberately, against the
-guidance in `docs/rules/lean-coding.md` to keep universes as
-polymorphic as compiles. `HasInitial C` unfolds to
-`HasColimitsOfShape (Discrete PEmpty.{1}) C`, and `IsInitial` is
-`IsColimit (asEmptyCocone _)` at the same level, so any other level
-breaks the connection below. The module docstring records this so it
-is not later generalised.
+guidance in `docs/rules/lean-coding.md` to keep universes as polymorphic
+as compiles. `HasInitial C` unfolds to `HasColimitsOfShape (Discrete
+PEmpty.{1}) C`, and `IsInitial` is `IsColimit (asEmptyCocone _)` at the
+same level, so any other level breaks the connection below. The module
+docstring records this so it is not later generalised.
 
 That connection is the one step in the module that is not mechanical.
 The initial field is a `ColimitCocone` over the empty diagram, while
-`HasInitial` is reached through `IsInitial.hasInitial`, whose
-argument is an `IsColimit` for the cocone `asEmptyCocone`. The two
-cocones agree on their point and have no components elsewhere, so
-`IsColimit.ofIsoColimit … (Cocone.ext (Iso.refl _))` converts one to
-the other, its remaining obligation discharged by the autoParam.
+`HasInitial` is reached through `IsInitial.hasInitial`, whose argument
+is an `IsColimit` for the cocone `asEmptyCocone`. The two cocones agree
+on their point and have no components elsewhere, so
+`IsColimit.ofIsoColimit … (Cocone.ext (Iso.refl _))` converts one to the
+other, its remaining obligation discharged by the autoParam.
 
 ### The coherence field is `rfl` exactly at `mkOfTerminalΩ₀`
 
-Two facts determine decision 2, and the second is a
-construction obligation on every instance of the class.
+Two facts determine decision 2, and the second is a construction
+obligation on every instance of the class.
 
 - A classifier built by
   `Subobject.Classifier.mkOfTerminalΩ₀ (𝟙_ C)
@@ -228,8 +225,8 @@ construction obligation on every instance of the class.
   classifier obtained some other way without first transporting it.
 
 The alternative of carrying no coherence field was considered and
-rejected. It would leave every statement mixing the classifier with
-the cartesian structure carrying a transport along that canonical
+rejected. It would leave every statement mixing the classifier with the
+cartesian structure carrying a transport along that canonical
 isomorphism, where the roadmap's intent — and W3's construction — is
 that the two terminals are one object. Constraint 6 stands as the
 roadmap states it.
@@ -238,59 +235,57 @@ roadmap states it.
 
 W2's standing obligation is discharged. [Pare1974] was read in
 facsimile; the article is open access and is served both by the
-publisher and by Project Euclid, though which of the two answers a
-given request has varied, so neither is recorded here as the source.
+publisher and by Project Euclid, though which of the two answers a given
+request has varied, so neither is recorded here as the source.
 [Mikkelsen1976] was read at the Theory and Applications of Categories
 reprint series.
 
 | Claim under obligation | Verdict |
 | --- | --- |
-| The `docs/references.bib` record for [Pare1974] | Author, title, volume 80, number 3, May 1974 and pages 556–561 confirmed against the scan. The DOI is not printed on the article and was confirmed separately against the Crossref record, which is also where the title's letter case was checked; `references.bib` records the title in sentence case, a BibTeX convention, where the article prints it capitalised |
-| Proof route is monadicity of the power-object functor | Confirmed. The paper's main theorem is that `Ω^(-) : Eᵒᵖ ⟶ E` satisfies the hypotheses of what it calls the RTT, a modification of the Barr-Beck crude tripleableness theorem, and is therefore tripleable |
+| The [Pare1974] bibliographic record | Author, title, volume 80, number 3, May 1974 and pages 556–561 confirmed against the scan. The DOI is not printed on the article and was confirmed separately against the Crossref record, which is also where the title's letter case was checked; `references.bib` records the title in sentence case, a BibTeX convention, where the article prints it capitalised |
+| Proof route is monadicity of the power-object functor | Confirmed. The paper's main theorem is that `Ω^(-) : Eᵒᵖ ⥤ E` satisfies the hypotheses of what it calls the RTT, a modification of the Barr-Beck crude tripleableness theorem, and is therefore tripleable |
 | Priority of C. J. Mikkelsen | Confirmed as to discovery, and refined |
 
-The paper describes itself as giving a new proof of Mikkelsen's
-theorem, which states that an elementary topos has all finite
-colimits, and cites for it a talk at the category theory conference
-at Oberwolfach in July 1972. [Mikkelsen1976], the author's own
-licentiate thesis, states that theorem and dates the talk to 23–29
-July 1972.
+The paper describes itself as giving a new proof of Mikkelsen's theorem,
+which states that an elementary topos has all finite colimits, and cites
+for it a talk at the category theory conference at Oberwolfach in July
+1972. [Mikkelsen1976], the author's own licentiate thesis, states that
+theorem and dates the talk to 23–29 July 1972.
 
-The roadmap's sentence in `TODO.md` § Class fields — that
-[Pare1974] first published the result — is amended to what the
-sources support, which is less. They establish that Mikkelsen
-discovered the theorem and that [Pare1974] appeared before
-[Mikkelsen1976]: the thesis was published in March 1976 and its
-bibliography cites [Pare1974] as a 1973 Dalhousie preprint. They do
-not establish that no earlier publication exists, which is what
-"first published" asserts; [Pare1974] positions itself as a new proof
-of an existing theorem and claims no priority in print. The amended
-sentence records the theorem as Mikkelsen's, discovered and presented
-in July 1972, with [Pare1974] giving a published proof by
-tripleability of the power-object functor. Mikkelsen's discovery
-priority is what the roadmap's standing obligation anticipated as
-"the reported priority of C. J. Mikkelsen", now verified against both
-primary sources.
+The roadmap's sentence in `TODO.md` § Class fields — that [Pare1974]
+first published the result — is amended to what the sources support,
+which is less. They establish that Mikkelsen discovered the theorem and
+that [Pare1974] appeared before [Mikkelsen1976]: the thesis was
+published in March 1976 and its bibliography cites [Pare1974] as a 1973
+Dalhousie preprint. They do not establish that no earlier publication
+exists, which is what "first published" asserts; [Pare1974] positions
+itself as a new proof of an existing theorem and claims no priority in
+print. The amended sentence records the theorem as Mikkelsen's,
+discovered and presented in July 1972, with [Pare1974] giving a
+published proof by tripleability of the power-object functor.
+Mikkelsen's discovery priority is what the roadmap's standing obligation
+anticipated as "the reported priority of C. J. Mikkelsen", now verified
+against both primary sources.
 
 Two statements about the paper are recorded here so that the module
 docstring does not misread them. Both stand on page 558, before the
-tripleability theorem, while the finite-colimits statement they might
-be taken to qualify is on page 559, after that theorem's proof.
-Reading them as qualifications of the finite-colimits theorem gets
-the attribution wrong. The paper's sentences "Lambek and Rattray [5] have
+tripleability theorem, while the finite-colimits statement they might be
+taken to qualify is on page 559, after that theorem's proof. Reading
+them as qualifications of the finite-colimits theorem gets the
+attribution wrong. The paper's sentences "Lambek and Rattray [5] have
 also obtained this theorem … but their approach is different" and
 "Certain parts of this theorem were already known to Mikkelsen" both
-refer to the tripleability theorem, that being "the main theorem of
-the paper" as the same passage names it — not to the
-finite-colimits theorem. The paper does not use the word
-"independently". [Mikkelsen1976] supplies the detail behind the
-second sentence: Mikkelsen was asked in December 1972 whether
-`P : Eᵒᵖ ⟶ E` was tripleable, dates his own proof to January 1973 and
-presented it at Oberwolfach on 28 July 1973, whereas [Pare1974] was
-communicated to the Bulletin on 22 September 1973.
+refer to the tripleability theorem, that being "the main theorem of the
+paper" as the same passage names it — not to the finite-colimits
+theorem. The paper does not use the word "independently".
+[Mikkelsen1976] supplies the detail behind the second sentence:
+Mikkelsen was asked in December 1972 whether `P : Eᵒᵖ ⥤ E` was
+tripleable, dates his own proof to January 1973 and presented it at
+Oberwolfach on 28 July 1973, whereas [Pare1974] was communicated to the
+Bulletin on 22 September 1973.
 
-Two further statements in [Pare1974] bear on the class's design and
-are recorded in the module docstring.
+Two further statements in [Pare1974] bear on the class's design and are
+recorded in the module docstring.
 
 - The axiomatisation the paper adopts, from its reference [6], is
   cartesian closed together with a subobject classifier, with finite
@@ -326,21 +321,21 @@ class ElementaryTopos (C : Type u) [Category.{v} C] where
   classifier_Ω₀ : classifier.Ω₀ = cartesian.tensorUnit
 ```
 
-The seven data fields are mathlib types, per constraint 2, so W3 and
-W4 produce them without importing W2. The eighth is an `Eq`, which
-constraint 2 admits separately as the coherence field of
-constraint 6. The closed field is typed relative to the cartesian
-field, carrying that dependency in its own type; the classifier's
-dependency on the cartesian terminal is carried by the coherence
-field, for the reason recorded in § Findings.
+The seven data fields are mathlib types, per constraint 2, so W3 and W4
+produce them without importing W2. The eighth is an `Eq`, which
+constraint 2 admits separately as the coherence field of constraint 6.
+The closed field is typed relative to the cartesian field, carrying that
+dependency in its own type; the classifier's dependency on the cartesian
+terminal is carried by the coherence field, for the reason recorded in §
+Findings.
 
 Terminal and binary products are reached through the cartesian field
 only, so the class carries one terminal object rather than two.
 
 ## Derived accessors and instances
 
-Per constraint 5: definitions for the data-carrying classes,
-instances for the `Prop` classes.
+Per constraint 5: definitions for the data-carrying classes, instances
+for the `Prop` classes.
 
 | Name | Kind | Type |
 | --- | --- | --- |
@@ -359,77 +354,78 @@ instances for the `Prop` classes.
 | — | `instance` | `HasFiniteColimits C` (row k) |
 
 Constraint 5 has a consequence for the ordering within the module.
-Because `cartesianMonoidalCategory` is a definition and not an
-instance, no `MonoidalCategory C` is in scope, and the type
-`MonoidalClosed C` does not elaborate: the elaborator reports
-`failed to synthesize instance of type class MonoidalCategory C`. The
-module therefore declares `cartesianMonoidalCategory` first and marks
-it `attribute [local instance]` before the two declarations that need
-it: `monoidalClosed`, for the reason above, and `HasFiniteLimits`,
-which without it fails to synthesize `HasFiniteProducts C`. The other
-ten accessors and instances elaborate with no cartesian instance in
-scope. The alternative, spelling `monoidalClosed` at
-`@MonoidalClosed C _ (cartesianMonoidalCategory C).toMonoidalCategory`,
-also elaborates and is not taken, the local attribute serving every
-later declaration rather than one.
+Because `cartesianMonoidalCategory` is a definition and not an instance,
+no `MonoidalCategory C` is in scope, and the type `MonoidalClosed C`
+does not elaborate: the elaborator reports `failed to synthesize
+instance of type class MonoidalCategory C`. The module therefore
+declares `cartesianMonoidalCategory` first and marks it `attribute
+[local instance]` before the two declarations that need it:
+`monoidalClosed`, for the reason above, and `HasFiniteLimits`, which
+without it fails to synthesize `HasFiniteProducts C`. The other ten
+accessors and instances elaborate with no cartesian instance in scope.
+The alternative, spelling `monoidalClosed` at `@MonoidalClosed C _
+(cartesianMonoidalCategory C).toMonoidalCategory`, also elaborates and
+is not taken, the local attribute serving every later declaration rather
+than one.
 
 The same consequence applies to consumers: a downstream module holding
-only `[ElementaryTopos C]` has no `CartesianMonoidalCategory C` in
-scope until it applies the same local attribute. The module docstring
-records this alongside constraint 5's accessor rule, since W3, W4 and
-W5 all meet it.
+only `[ElementaryTopos C]` has no `CartesianMonoidalCategory C` in scope
+until it applies the same local attribute. The module docstring records
+this alongside constraint 5's accessor rule, since W3, W4 and W5 all
+meet it.
 
 ## The test module
 
 `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean` has two parts.
 
-The witness instantiates the class at `Discrete PUnit`, the
-one-object one-morphism category, which is a degenerate elementary
-topos. Its construction rests on `Unique (X ⟶ Y)` for every pair of
-objects. That instance is not in mathlib and the module supplies it,
-in one line over the `Subsingleton (X ⟶ Y)` that mathlib does
-provide. From it, every cone is a limit cone and every cocone a
-colimit cone; the cartesian structure is
-`CartesianMonoidalCategory.ofChosenFiniteProducts`, the closure is an
-adjunction whose hom-equivalence is `Equiv.ofUnique`, and the
-classifier is `mkOfTerminalΩ₀` at the tensor unit, whose coherence
-obligation is discharged by `rfl`. The closed field is written at the
-explicit type `@MonoidalClosed _ _ cartesian.toMonoidalCategory`
-rather than `MonoidalClosed _`: no competing `MonoidalCategory
-(Discrete PUnit)` instance is reachable under this module's imports —
-checked, and `Discrete.monoidal` needs a `Monoid PUnit` that they do
-not bring — but the explicit form costs nothing and does not depend
-on that remaining true.
+The witness instantiates the class at `Discrete PUnit`, the one-object
+one-morphism category, which is a degenerate elementary topos. Its
+construction rests on `Unique (X ⟶ Y)` for every pair of objects. That
+instance is not in mathlib and the module supplies it, in one line over
+the `Subsingleton (X ⟶ Y)` that mathlib does provide. From it, every
+cone is a limit cone and every cocone a colimit cone; the cartesian
+structure is `CartesianMonoidalCategory.ofChosenFiniteProducts`, the
+closure is an adjunction whose hom-equivalence is `Equiv.ofUnique`, and
+the classifier is `mkOfTerminalΩ₀` at the tensor unit, whose coherence
+obligation is discharged by `rfl`. The witness declares its cartesian
+and closed structures as instances rather than as definitions, so § A
+class-typed definition warns does not reach it; a definition form would
+need the same `@[instance_reducible]`. The closed field is written at
+the explicit type `@MonoidalClosed _ _ cartesian.toMonoidalCategory`
+rather than `MonoidalClosed _`: no competing `MonoidalCategory (Discrete
+PUnit)` instance is reachable under this module's imports — checked, and
+`Discrete.monoidal` needs a `Monoid PUnit` that they do not bring — but
+the explicit form costs nothing and does not depend on that remaining
+true.
 
-The resolution assertions then confirm, through that instance, that
-each of the ten `Prop` classes and per-diagram classes of § Derived
-accessors and instances is found by `inferInstance`.
+The resolution assertions then confirm, through that instance, that each
+of the ten `Prop` classes and per-diagram classes of § Derived accessors
+and instances is found by `inferInstance`.
 
 The witness is comparable in size to the module it tests, and it
 establishes what nothing else in W2 can: that the eight fields can be
-satisfied together. The cheaper alternative, resolution assertions
-under a hypothetical `variable [ElementaryTopos C]`, cannot detect an
-over-constrained class, and the two places over-constraint could
-arise undetected — the coherence
-equality and the closed field's dependent typing — are exactly the
-two the roadmap left W2 to decide. Without the witness the first
-instance of the class is W5's, at the end of the group, after W3 and
-W4 have built against it.
+satisfied together. The cheaper alternative, resolution assertions under
+a hypothetical `variable [ElementaryTopos C]`, cannot detect an
+over-constrained class, and the two places over-constraint could arise
+undetected are the coherence equality and the closed field's dependent
+typing. The first is decision 2, which the roadmap left W2 to make; the
+second is a spelling W2 fixes, the roadmap constraining the field only
+to a mathlib type over the cartesian field. Without the witness the
+first instance of the class is W5's, at the end of the group, after W3
+and W4 have built against it.
 
 Two constraint interactions follow, and are noted rather than left
-implicit. Constraint 2 admits the coherence field "no workstream but
-W5 producing it", and the witness produces it; the reading taken here
-is that the constraint governs the `Geb/Mathlib/` deliverables and
-the interface W3 and W4 must produce without importing W2, not a test
+implicit. Constraint 2 admits the coherence field "no workstream but W5
+producing it", and the witness produces it; the reading taken here is
+that the constraint governs the `Geb/Mathlib/` deliverables and the
+interface W3 and W4 must produce without importing W2, not a test
 fixture that imports W2 by construction. Constraint 8 makes W2 "a
 wrapper throughout"; the witness is the one part of W2 that is not
 packaging, and it is a test module, which `TODO.md` § Standing
-obligations already requires to be allowlisted alongside its
-wrapper.
+obligations already requires to be allowlisted alongside its wrapper.
 
-Neither part depends on `FinSetSkel`. `Discrete PUnit` is not
-proposed as a fixture for later workstreams; it exists to exercise
-this class.
+Neither part depends on `FinSetSkel`. `Discrete PUnit` is not proposed
+as a fixture for later workstreams; it exists to exercise this class.
 
 ## Documentation and citations
 
@@ -437,8 +433,11 @@ this class.
   `SmallCategory C`), constraint 5's accessor rule together with the
   local-instance consequence for consumers, the deliberate universe
   pinning of the empty diagram, the rationale for carrying the
-  generators as data and deriving the finite (co)limit `Prop`s, and a
-  `## References` section.
+  generators as data and deriving the finite (co)limit `Prop`s. Its
+  sections are those `docs/rules/lean-coding.md` § Documentation makes
+  mandatory where non-vacuous: `# Title` and summary,
+  `## Main definitions`, `## Implementation notes` for the rationale
+  above, `## References`, and `## Tags`.
 - `docs/references.bib` gains [Mikkelsen1976], the licentiate thesis,
   keyed to the original 1976 Aarhus publication with the 2022
   Theory and Applications of Categories reprint recorded as the
@@ -490,20 +489,21 @@ this class.
   together with `Classical.choice`, both modules being allowlisted.
 - `lake shake --add-public --keep-implied --keep-prefix Geb GebTests`
   clean, for minimised imports.
-- `scripts/lint-imports.sh` clean. W2 imports only `Mathlib.*`, which
-  the `Geb/Mathlib/` allow-list already admits; it needs nothing from
-  the `Batteries.` admission W0 made.
+- `scripts/lint-imports.sh` clean. W2 imports nothing outside
+  `Mathlib.*`, `Geb.Mathlib.*` and `GebTests.Mathlib.*` — the test
+  module imports the wrapper, and the two index files gain a line
+  each — all of which the allow-lists already admit; it needs nothing
+  from the `Batteries.` admission W0 made.
 - `markdownlint-cli2` and the `doctoc` check clean for the Markdown
   touched.
 - No `noncomputable` and no `sorry` in either module.
 
 The class, the accessors, the derived instances, the witness and the
-resolution assertions have each been elaborated at the current
-revision, as a single unit, with no error and no `sorry`. That was
-done in standalone snippets, which did not exercise the module
-system, and the plan re-verifies inside the actual modules rather
-than inheriting the result. Three specifics rather than a general
-caveat:
+resolution assertions have each been elaborated at the current revision,
+as a single unit, with no error and no `sorry`. That was done in
+standalone snippets, which did not exercise the module system, and the
+plan re-verifies inside the actual modules rather than inheriting the
+result. Three specifics rather than a general caveat:
 
 - `scripts/lint-imports.sh` requires every upstream-eligible file to
   open with `module`; it is not optional.
@@ -530,15 +530,15 @@ caveat:
 
 ## Interaction with the other workstreams
 
-W2 is independent of W1. The files it touches that W1 also touches
-are the four the roadmap's § Standing obligations identifies as
+W2 is independent of W1. The files it touches that W1 also touches are
+the four the roadmap's § Standing obligations identifies as
 concurrent-append points for the W1/W2 pair:
 `GebMeta.classicalAllowedModules`, the § Status table, `docs/index.md`,
 and any shared directory index file — the last being
 `Geb/Mathlib/CategoryTheory.lean` and its `GebTests` parallel, which
-deliverable 3 appends to and which are the natural home for W1's
-modules as well. These are textual conflicts, resolved by rebasing
-whichever sibling merges second.
+deliverable 3 appends to and which are the natural home for W1's modules
+as well. These are textual conflicts, resolved by rebasing whichever
+sibling merges second.
 
 W2 introduces no `simp` lemma, so the caution about W3's and W4's
 carrier-level normal forms does not apply to it.
