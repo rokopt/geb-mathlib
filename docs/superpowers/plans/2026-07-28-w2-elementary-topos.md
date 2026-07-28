@@ -28,8 +28,9 @@ citations and roadmap amendments, per
 **Architecture:** One wrapper module under `Geb/Mathlib/` holding a
 seven-field class over mathlib types, four `def` accessors and ten
 `instance`s derived from the fields; one test parallel under
-`GebTests/Mathlib/` holding an instance at `Discrete PUnit` and
-resolution assertions through it. W2 adds no choice-free layer: its
+`GebTests/Mathlib/` holding resolution assertions under a hypothetical
+`[ElementaryTopos C]` and an instance at `Discrete PUnit` with the
+same assertions through it. W2 adds no choice-free layer: its
 whole deliverable is packaging, so both modules are allowlisted for
 `Classical.choice`.
 
@@ -53,8 +54,8 @@ whole deliverable is packaging, so both modules are allowlisted for
 - **Module system.** Every file under `Geb/Mathlib/` and
   `GebTests/Mathlib/` carries the copyright block, then `module`, then
   imports. `Geb/Mathlib/` uses `public import`; `GebTests/Mathlib/`
-  uses plain `import`. Declarations live under `@[expose] public
-  section` in the wrapper.
+  uses plain `import`. Declarations live under `public section` in the
+  wrapper; `@[expose]` is not taken, per Task 2 Step 4.
 - **Naming.** `lowerCamelCase` for `def`s returning terms;
   `snake_case` for explicitly named instances of `Prop`-valued classes
   (`docs/rules/lean-coding.md` § Naming conventions).
@@ -239,7 +240,7 @@ yields an isomorphic but unequal `Ω₀` to rebuild it.
 elementary topos, subobject classifier, cartesian closed, topos
 -/
 
-@[expose] public section
+public section
 
 universe v u
 
@@ -288,8 +289,8 @@ import GebTests.Mathlib.CategoryTheory.ElementaryTopos
 - [ ] **Step 5: Append both modules to the `Classical` allow-list**
 
 In `GebMeta.lean`, inside `classicalAllowedModules`, append two
-entries and move the closing `].foldl` onto the new last entry, so
-that the list keeps its existing shape:
+entries and move the closing `].foldl` onto the new last entry, which
+carries no trailing comma, so that the list keeps its existing shape:
 
 ```lean
    `Geb.Mathlib.CategoryTheory.ElementaryTopos,
@@ -443,12 +444,17 @@ end ElementaryTopos
 
 Run: `lake build GebTests.Mathlib.CategoryTheory.ElementaryTopos`
 
-Expected: PASS. This build is also the settlement of the spec's one
-open question: the test module is a second module, so if
-`@[instance_reducible]` needed `@[expose]` to survive the module
-boundary, the `HasFiniteLimits` assertion would fail here. The
-wrapper already opens `@[expose] public section`, matching
-`Geb/Mathlib/CategoryTheory/Grothendieck.lean`.
+Expected: PASS. This build settles the spec's one open question, and
+settles it negatively: the wrapper opens a plain `public section`,
+without `@[expose]`, and the accessors nonetheless cross the module
+boundary — the test module is a second module, so had
+`@[instance_reducible]` needed `@[expose]` to survive, these
+assertions would fail. `@[expose]` is therefore not taken. The
+repository's exposed modules state their own ground for it, as
+`Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean` does (downstream
+definitional reduction through every definition); W2 has no such
+need, and an attribute exposing every body of an upstream-eligible
+module is not added without one.
 
 - [ ] **Step 5: Verify the accessors are reachable across the module boundary**
 
@@ -633,9 +639,16 @@ grep -nE '^noncomputable' \
 Expected: no output. `noncomputable` is a declaration modifier, so it
 opens a line where it is used as one; the module docstring mentions
 the word in prose, never at the start of a line, and a pattern without
-the anchor reports four docstring hits. `sorry` and `admit` need no
-textual scan: both leave `sorryAx` in the axiom set, which the linter
-in Task 6 Step 2 rejects.
+the anchor reports three docstring hits. The anchor is not airtight —
+`private noncomputable def` and the like would evade it — but nothing
+in these modules is `private` or attributed, and no linter catches
+`noncomputable`, which is legal Lean, so this scan is the only guard.
+
+`sorry` and `admit` need no textual scan: each makes the build itself
+fail, `declaration uses 'sorry'` being a warning that
+`weak.warningAsError = true` promotes to an error. The axiom linter is
+not the mechanism — it reports named declarations, and this module's
+assertions are `example`s, which it does not name.
 
 - [ ] **Step 6: Commit**
 
@@ -877,7 +890,7 @@ OK".
 - [ ] **Step 6: Commit**
 
 ```bash
-jj describe -m "doc(finsetskel): amend the roadmap for W2's completion
+jj describe -m "doc(finsetskel): amend the roadmap for the W2 design
 
 Constraint 6 ceases to require an identification of the classifier's
 Ω₀ with the cartesian terminal: both are terminal and so
@@ -986,10 +999,15 @@ Expected: exit 0.
 - [ ] **Step 8: Commit**
 
 ```bash
-jj describe -m "doc(elementary-topos): remove the W2 spec and plan
+jj describe -m "doc(elementary-topos): complete W2 and remove its spec and plan
 
-Transient process artifacts, per CONTRIBUTING.md section Concern
-shape: they record how the current state was reached, not what it is.
+Marks W2 complete in the roadmap's status table, every check having
+passed: both builds, both lint invocations, the import lint, the
+minimised-imports check and the pre-push script.
+
+The spec and the plan are transient process artifacts, per
+CONTRIBUTING.md section Concern shape: they record how the current
+state was reached, not what it is.
 They remain reachable in history and are absent from the working tree,
 so no active branch presents superseded decisions as current."
 jj new
@@ -1003,12 +1021,14 @@ jj new
 to a task: deliverable 1 to Task 1 Step 3 and Task 2 Step 3;
 deliverable 2 to Task 1 Step 1 and Task 3; deliverable 3 to Task 1
 Step 4; deliverable 4 to Task 1 Step 5; deliverable 5 to Tasks 4,
-5 and 6 Step 5. Every check in the spec's § Verification appears in Task 6,
-including the two separate `lake lint` invocations and `lake shake`.
+5 and 6 Step 5. Task 6 carries the two separate `lake lint` invocations and
+`lake shake`; the placeholder scan is Task 3 Step 5 and the Markdown
+checks are in Tasks 4, 5 and 6.
 The spec's one open question — whether cross-module `@[expose]` is
-needed for the `@[instance_reducible]` accessors — is settled by
-Task 2 Steps 4 and 5, which exercise the accessors from the test
-module, a second module.
+needed for the `@[instance_reducible]` accessors — is settled
+negatively by Task 2 Steps 4 and 5, which exercise the accessors from
+the test module, a second module, with the wrapper under a plain
+`public section`.
 
 **Placeholder scan.** No step says TBD, "handle edge cases", or
 "similar to Task N". Every code step carries the code.

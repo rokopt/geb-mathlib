@@ -577,12 +577,13 @@ result. Three specifics rather than a general caveat:
 - Definitional transparency across a module boundary needs
   `@[expose]`, per this repository's own precedent in
   `Geb/Mathlib/Data/PFunctor/Slice/Basic.lean` and
-  `Geb/Mathlib/CategoryTheory/Grothendieck.lean`. Whether it is
-  required here is unresolved and the plan settles it:
-  `cartesianMonoidalCategory` and `monoidalClosed` are
-  `@[instance_reducible]`, which governs how the elaborator sees
-  through a body, and an unexposed body downstream could defeat that.
-  A single-snippet check cannot decide it, two modules being needed.
+  `Geb/Mathlib/CategoryTheory/Grothendieck.lean`. It is not required
+  here: a two-module build with the wrapper under a plain
+  `public section` resolves every derived instance and both data
+  accessors from the test module, so `@[instance_reducible]` crosses
+  the boundary without it. W2 therefore does not take `@[expose]`,
+  an attribute exposing every body of an upstream-eligible module not
+  being added without a stated need.
 
 ## Out of scope
 
