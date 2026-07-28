@@ -103,7 +103,7 @@ definition.
 | `ElementaryTopos` | Transcription of [MacLaneMoerdijk1992]'s definition — finite limits, finite colimits, cartesian closure, subobject classifier — strengthened computationally, the generators being carried as data rather than asserted |
 | `cartesianMonoidalCategory`, `monoidalClosed`, `isInitial`, `tensorUnitIsoΩ₀` | Neither. Projections of the fields, or derived from them by terminality |
 | The derived `Prop` instances | Neither. Consequences of the fields, by mathlib lemmas |
-| The `Discrete PUnit` witness | Neither, and no originality is claimed. The degenerate topos is a standard example; W2 neither transcribes a statement of it nor asserts one, the witness proving the topos structure directly from `Unique (X ⟶ Y)` |
+| The `Discrete PUnit` witness | Neither, and no originality is claimed. The degenerate topos is a standard example; W2 neither transcribes a statement of it nor rests on a published one, the witness proving the topos structure directly from `Unique (X ⟶ Y)` |
 
 The redundancy of the finite colimits is literary context rather than a
 transcription: W2 derives `HasFiniteColimits` from the initial object,
@@ -236,7 +236,7 @@ equivalence. mathlib does state such equalities where the
 identification is itself the subject — `CategoryTheory.Skeletal` and
 `CategoryTheory.Bicategory.Strict` both do — but not in the classes
 involved here, whose idiom is to bundle an object and assert a
-property of it (`isTerminalTensorUnit : IsTerminal (tensorUnit C)`).
+property of it (`isTerminalTensorUnit : IsTerminal (𝟙_ C)`).
 The identification is not the subject of an elementary topos, and
 `Geb/Mathlib/` is upstream-eligible under `CONTRIBUTING.md`
 § Floodgate test.
@@ -295,7 +295,7 @@ anticipated as "the reported priority of C. J. Mikkelsen", now verified
 against both primary sources.
 
 Two statements about the paper are recorded here so that the module
-docstring does not misread them. Both stand on page 558, before the
+docstring does not repeat a misreading of them. Both stand on page 558, before the
 tripleability theorem, while the finite-colimits statement they might be
 taken to qualify is on page 559, after that theorem's proof. Reading
 them as qualifications of the finite-colimits theorem gets the
@@ -499,8 +499,11 @@ as a fixture for later workstreams; it exists to exercise this class.
   the § Status row for W2, the disambiguation of the "leave W3's and
   W5's assignments" sentence per § Decisions taken here, and a note
   that W2 took the derived-instance route, so that W3, W4 and W5 read
-  an accurate roadmap. Also § Standing obligations, whose last bullet
-  records the [Pare1974] attribution as unverifiable and assigns the
+  an accurate roadmap; the note names the § Class fields table's
+  finite-limits and finite-colimits rows, which a reader of that table
+  alone would otherwise count as fields the class carries. Also
+  § Standing obligations, whose last bullet records the [Pare1974]
+  attribution as unverifiable and assigns the
   verification to W2; it is struck, the obligation being discharged
   in § The literature, verified against the primary sources.
 - `TODO.md` § Class fields, classifier row: it reads
@@ -513,8 +516,8 @@ as a fixture for later workstreams; it exists to exercise this class.
   both terminal and so canonically and uniquely isomorphic, that W2
   exports the isomorphism, and that W3 builds row l at the cartesian
   terminal as a convenience rather than an obligation. Constraint 2's
-  parenthetical admitting "a `Prop` coherence field of W2's own
-  (constraint 6)" is struck with it, no such field now existing.
+  closing sentence, admitting "a `Prop` coherence field of W2's own
+  (constraint 6)", is struck with it, no such field now existing.
 - Decision 1 leaves the operation table, the § Workstreams bullets and
   W5's scope untouched; decision 2 changes W5's instance only by
   removing a field it would have discharged by `rfl`.
@@ -592,9 +595,11 @@ concurrent-append points for the W1/W2 pair:
 `GebMeta.classicalAllowedModules`, the § Status table, `docs/index.md`,
 and any shared directory index file — the last being
 `Geb/Mathlib/CategoryTheory.lean` and its `GebTests` parallel, which
-deliverable 3 appends to and which W1's modules are also indexed by
-as well. These are textual conflicts, resolved by rebasing whichever
-sibling merges second.
+deliverable 3 appends to. The roadmap fixes only that W1 through W5
+place their modules under `Geb/Mathlib/`, so whether W1 appends to
+those same two files is not settled there; the resolution is the same
+either way. These are textual conflicts, resolved by rebasing
+whichever sibling merges second.
 
 W2 introduces no `simp` lemma, so the caution about W3's and W4's
 carrier-level normal forms does not apply to it.
