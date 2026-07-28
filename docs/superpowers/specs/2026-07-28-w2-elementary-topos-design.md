@@ -46,8 +46,9 @@ the branch removes it in its final commits.
 
 ## Decisions taken here
 
-The roadmap leaves three choices to W2. Each is settled against an
-elaborated experiment rather than a reading of mathlib's sources.
+The roadmap leaves two choices to W2, and W2 adds a third. Each is
+settled against an elaborated experiment rather than a reading of
+mathlib's sources.
 
 1. **The two `Prop` fields are derived, not carried.** The class has
    seven data fields and one coherence field. `HasFiniteCoproducts`
@@ -68,15 +69,24 @@ regardless, their rows e, j and k becoming redundant `Prop`
 instances, harmless by proof irrelevance. W2 removes no obligation
 from any other workstream and requires no amendment to the operation
 table, to the § Workstreams bullets, or to W5's duty to remove the
-roadmap entry on completion. An earlier draft of this spec claimed
-that W5 reduces to the `ElementaryTopos FinSetSkel` instance alone;
-that overstated the roadmap, which assigns W5 row k whichever route
-W2 takes.
+roadmap entry on completion. W5 is assigned row k whichever route W2
+takes.
 
-Decision 1 bends constraint 1 ("Data for generators, `Prop` for
-finite (co)limits"), which is what `TODO.md` § Class fields licenses:
-the finite (co)limits remain `Prop`, and cease only to be *fields*.
-Constraints 4 and 7 bind W1 and are not W2's.
+The sentence licensing this in `TODO.md` § Class fields — rows e, j
+and k "become W2's one-time derivations and leave W3's and W5's
+assignments" — admits reading "leave" as either vacating or leaving
+alone. Leaving alone is the reading taken, on two grounds internal to
+the roadmap: the following clause, that redundant `Prop` instances
+are harmless by proof irrelevance, presupposes W3 and W5 still
+register them; and the § Workstreams bullet assigns W5 row k
+unconditionally on W2's choice. W2's amendment to that section
+disambiguates the sentence rather than leaving the next reader to
+re-derive it.
+
+Decision 1 departs from constraint 1 ("Data for generators, `Prop`
+for finite (co)limits") only in the way `TODO.md` § Class fields
+licenses: the finite (co)limits remain `Prop`, and cease only to be
+fields. Constraints 4 and 7 bind W1 and are not W2's.
 
 ## Transcription or novel
 
@@ -116,10 +126,10 @@ error here rather than a warning; § The derived form elaborates uses
 `Cocone.ext`. And `isTerminalTensorUnit` is now inherited rather than
 declared, so it is unreachable under the bare name and under
 `CategoryTheory.isTerminalTensorUnit`; the reachable forms are
-`SemiCartesianMonoidalCategory.isTerminalTensorUnit` and, by
-parent-projection dot notation,
-`CartesianMonoidalCategory.isTerminalTensorUnit`. This spec uses the
-latter.
+`SemiCartesianMonoidalCategory.isTerminalTensorUnit` and
+`CartesianMonoidalCategory.isTerminalTensorUnit`, the latter by an
+explicit `export` inside the `CartesianMonoidalCategory` namespace
+rather than by parent projection. This spec uses the latter.
 
 `CartesianMonoidalCategory C` supplies `HasTerminal C`,
 `HasBinaryProducts C` and `HasFiniteProducts C` by instance search,
@@ -161,8 +171,10 @@ Those three lemmas take the per-diagram limit and colimit classes as
 instance arguments, so the module declares three further instances,
 by `HasLimit.mk` and `HasColimit.mk` over the corresponding fields,
 for `HasColimit (pair X Y)`, `HasLimit (parallelPair f g)` and
-`HasColimit (parallelPair f g)`. They are global, so they are part of
-the module's public surface and are listed with the accessors below.
+`HasColimit (parallelPair f g)`. They are global and are named
+rather than anonymous, so they are part of the module's public
+surface, and are listed with the
+accessors below.
 From them, `hasBinaryCoproducts_of_hasColimit_pair`,
 `hasEqualizers_of_hasLimit_parallelPair` and
 `hasCoequalizers_of_hasColimit_parallelPair` give the three
@@ -212,10 +224,11 @@ roadmap states it.
 ### The literature, verified against the primary sources
 
 W2's standing obligation is discharged. [Pare1974] was read in
-facsimile at Project Euclid, which carries the *Bulletin* as open
-access; the publisher's own pages returned the same access denial
-recorded when the roadmap entry was written. [Mikkelsen1976] was read
-at the Theory and Applications of Categories reprint series.
+facsimile; the article is open access and is served both by the
+publisher and by Project Euclid, though which of the two answers a
+given request has varied, so neither is recorded here as the source.
+[Mikkelsen1976] was read at the Theory and Applications of Categories
+reprint series.
 
 | Claim under obligation | Verdict |
 | --- | --- |
@@ -231,28 +244,35 @@ licentiate thesis, states that theorem and dates the talk to 23–29
 July 1972.
 
 The roadmap's sentence in `TODO.md` § Class fields — that
-[Pare1974] first published the result — stands, and is not corrected
-by this workstream. [Mikkelsen1976] was published in March
-1976, and its bibliography cites [Pare1974] as a 1973 Dalhousie
-preprint, so Paré's is the earlier publication of the finite-colimits
-theorem while Mikkelsen's is the earlier discovery. What W2 adds to
-that sentence is Mikkelsen's discovery priority, which the roadmap's
-standing obligation already anticipated as "the reported priority of
-C. J. Mikkelsen", now verified.
+[Pare1974] first published the result — is amended to what the
+sources support, which is less. They establish that Mikkelsen
+discovered the theorem and that [Pare1974] appeared before
+[Mikkelsen1976]: the thesis was published in March 1976 and its
+bibliography cites [Pare1974] as a 1973 Dalhousie preprint. They do
+not establish that no earlier publication exists, which is what
+"first published" asserts; [Pare1974] positions itself as a new proof
+of an existing theorem and claims no priority in print. The amended
+sentence records the theorem as Mikkelsen's, discovered and presented
+in July 1972, with [Pare1974] giving a published proof by
+tripleability of the power-object functor. Mikkelsen's discovery
+priority is what the roadmap's standing obligation anticipated as
+"the reported priority of C. J. Mikkelsen", now verified against both
+primary sources.
 
-Two statements about the paper are recorded here because an earlier
-draft of this spec got them wrong, and the module docstring must not
-repeat the error. The paper's sentences "Lambek and Rattray [5] have
+Two statements about the paper are recorded here so that the module
+docstring does not misread them, as is easily done: they sit two
+sentences apart from the finite-colimits theorem and appear to
+qualify it. The paper's sentences "Lambek and Rattray [5] have
 also obtained this theorem … but their approach is different" and
 "Certain parts of this theorem were already known to Mikkelsen" both
-refer to the *tripleability* theorem, that being "the main theorem of
+refer to the tripleability theorem, that being "the main theorem of
 the paper" named in the preceding sentence — not to the
 finite-colimits theorem. The paper does not use the word
 "independently". [Mikkelsen1976] supplies the detail behind the
 second sentence: Mikkelsen was asked in December 1972 whether
 `P : Eᵒᵖ ⟶ E` was tripleable, dates his own proof to January 1973 and
-presented it at Oberwolfach on 28 July 1973, where [Pare1974] was
-communicated on 22 September 1973.
+presented it at Oberwolfach on 28 July 1973, whereas [Pare1974] was
+communicated to the Bulletin on 22 September 1973.
 
 Two further statements in [Pare1974] bear on the class's design and
 are recorded in the module docstring.
@@ -325,13 +345,15 @@ instances for the `Prop` classes.
 
 Constraint 5 has a consequence for the ordering within the module.
 Because `cartesianMonoidalCategory` is a definition and not an
-instance, no `MonoidalCategory C` is in scope, and the *type*
+instance, no `MonoidalCategory C` is in scope, and the type
 `MonoidalClosed C` does not elaborate: the elaborator reports
 `failed to synthesize instance of type class MonoidalCategory C`. The
 module therefore declares `cartesianMonoidalCategory` first and marks
-it `attribute [local instance]` before the remaining accessors and
-instances, all of which depend on the cartesian structure. The
-alternative, spelling `monoidalClosed` at
+it `attribute [local instance]` before the two declarations that need
+it: `monoidalClosed`, for the reason above, and `HasFiniteLimits`,
+which without it fails to synthesize `HasFiniteProducts C`. The other
+nine accessors and instances elaborate with no cartesian instance in
+scope. The alternative, spelling `monoidalClosed` at
 `@MonoidalClosed C _ (cartesianMonoidalCategory C).toMonoidalCategory`,
 also elaborates and is not taken, the local attribute serving every
 later declaration rather than one.
@@ -368,9 +390,9 @@ The resolution assertions then confirm, through that instance, that
 each of the ten `Prop` classes and per-diagram classes of § Derived
 accessors and instances is found by `inferInstance`.
 
-The witness is the larger part of W2 by line count, and larger than
-the module it tests. What it buys is what nothing else in W2 can
-establish: that the eight fields can be satisfied together. The
+The witness is comparable in size to the module it tests. What it
+buys is what nothing else in W2 can establish: that the eight fields
+can be satisfied together. The
 cheaper alternative, resolution assertions under a hypothetical
 `variable [ElementaryTopos C]`, cannot detect an over-constrained
 class, and the two places over-constraint could hide — the coherence
@@ -415,7 +437,10 @@ this class.
   § Transcription or novel.
 - `TODO.md` § Class fields: the attribution sentence gains
   Mikkelsen's discovery priority and keeps its publication claim, per
-  § The literature. Also the § Status row for W2, and a note that W2
+  § The literature, verified against the primary sources. Also the
+  § Status row for W2, the disambiguation of the "leave W3's and
+  W5's assignments" sentence per § Decisions taken here, and a note
+  that W2
   took the derived-instance route, so that W3, W4 and W5 read an
   accurate roadmap. No other part of the roadmap changes: the
   operation table, the § Workstreams bullets and W5's scope are
@@ -517,6 +542,4 @@ carrier-level normal forms does not apply to it.
   <http://www.tac.mta.ca/tac/reprints/articles/29/tr29.pdf>.
 - [Pare1974] Robert Paré, "Colimits in topoi", *Bulletin of the
   American Mathematical Society* 80(3), 556–561, May 1974,
-  <https://doi.org/10.1090/S0002-9904-1974-13497-X>; read in
-  facsimile at
-  <https://projecteuclid.org/journals/bulletin-of-the-american-mathematical-society/volume-80/issue-3/Colimits-in-Topoi/bams/1183535542.full>.
+  <https://doi.org/10.1090/S0002-9904-1974-13497-X>.
