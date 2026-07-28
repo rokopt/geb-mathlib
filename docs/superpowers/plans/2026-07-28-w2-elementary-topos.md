@@ -124,6 +124,8 @@ derived `Prop` instance is reachable through it.
 elementary topos, subobject classifier, degenerate topos
 -/
 
+set_option linter.privateModule false
+
 open CategoryTheory CategoryTheory.Limits MonoidalCategory
 
 universe v u
@@ -175,8 +177,8 @@ derives the finite-limit and finite-colimit properties from them.
 * `CategoryTheory.ElementaryTopos`
 * `CategoryTheory.ElementaryTopos.cartesianMonoidalCategory`
 * `CategoryTheory.ElementaryTopos.monoidalClosed`
-* `CategoryTheory.ElementaryTopos.isInitial`
 * `CategoryTheory.ElementaryTopos.tensorUnitIsoΩ₀`
+* `CategoryTheory.ElementaryTopos.isInitial`
 
 ## Implementation notes
 
@@ -188,19 +190,20 @@ non-small one.
 Data is carried rather than asserted because a `Prop` form is
 indifferent to a distinction that matters computationally: recovering
 a cone from `Nonempty` is `getLimitCone`, which is `Classical.choice`
-and `noncomputable`, and `noncomputable` is forbidden here. The
-finite-limit and finite-colimit properties are `Prop` and are derived
-below rather than carried, chosen cones for an arbitrary finite
-diagram not being computably derivable — `FinCategory` carries no
-enumeration, and every route to one is `noncomputable` or
-`Trunc`-valued.
+and `noncomputable`, so a class built on the `Prop` form computes
+nothing. The finite-limit and finite-colimit properties are `Prop`
+and are derived below rather than carried, chosen cones for an
+arbitrary finite diagram not being computably derivable:
+`FinCategory` carries a `Fintype`, whose underlying `Finset` yields a
+list only through the `noncomputable` `Finset.toList`, and every
+other route is `noncomputable` or `Trunc`-valued.
 
 Accessors for the data-carrying classes are definitions, not
 instances, two routes to data not needing to agree definitionally;
 accessors for the `Prop` classes are instances, two resolution routes
 being harmless there by proof irrelevance. A class-typed definition
-is `@[instance_reducible]`, without which it draws a semireducibility
-warning that this repository promotes to an error.
+carries `@[instance_reducible]`, without which it draws the
+semireducibility warning such a definition otherwise attracts.
 
 `cartesianMonoidalCategory` is marked `attribute [local instance]`,
 in force for the rest of the module. Three declarations need it:
@@ -224,11 +227,12 @@ yields an isomorphic but unequal `Ω₀` to rebuild it.
 
 ## References
 
-Finite colimits are redundant as an axiom: that an elementary topos
-has them is Mikkelsen's theorem [Mikkelsen1976], presented at
-Oberwolfach in July 1972, of which [Pare1974] gives a published proof
-by the tripleability of the power-object functor. The definition
-transcribed here is [MacLaneMoerdijk1992]'s.
+* [Freyd1972], for the axiomatisation transcribed here, which
+  includes the finite colimits.
+* [Mikkelsen1976], whose Theorem 2.3 is that an elementary topos has
+  finite colimits, so that the property is redundant as an axiom.
+* [Pare1974], for a published proof of that theorem by the
+  tripleability of the power-object functor.
 
 ## Tags
 
@@ -391,31 +395,41 @@ def isInitial : IsInitial (initialCocone (C := C)).cocone.pt :=
   IsColimit.ofIsoColimit initialCocone.isColimit
     (Cocone.ext (Iso.refl _) (by simp))
 
+/-- The initial-object field, as the corresponding `Prop` class. -/
 instance : HasInitial C := IsInitial.hasInitial (isInitial C)
 
+/-- The binary-coproduct field, per diagram. -/
 instance hasColimit_pair {X Y : C} : HasColimit (pair X Y) :=
   ⟨⟨binaryCoproductCocone X Y⟩⟩
 
+/-- Binary coproducts, from the per-diagram form. -/
 instance : HasBinaryCoproducts C := hasBinaryCoproducts_of_hasColimit_pair C
 
+/-- The equalizer field, per diagram. -/
 instance hasLimit_parallelPair {X Y : C} {f g : X ⟶ Y} :
     HasLimit (parallelPair f g) :=
   ⟨⟨equalizerCone f g⟩⟩
 
+/-- Equalizers, from the per-diagram form. -/
 instance : HasEqualizers C := hasEqualizers_of_hasLimit_parallelPair C
 
+/-- The coequalizer field, per diagram. -/
 instance hasColimit_parallelPair {X Y : C} {f g : X ⟶ Y} :
     HasColimit (parallelPair f g) :=
   ⟨⟨coequalizerCocone f g⟩⟩
 
+/-- Coequalizers, from the per-diagram form. -/
 instance : HasCoequalizers C := hasCoequalizers_of_hasColimit_parallelPair C
 
+/-- Finite coproducts, from the initial object and binary coproducts. -/
 instance : HasFiniteCoproducts C :=
   hasFiniteCoproducts_of_has_binary_and_initial (C := C)
 
+/-- Finite limits, from the cartesian structure and equalizers. -/
 instance : HasFiniteLimits C :=
   hasFiniteLimits_of_hasEqualizers_and_finite_products
 
+/-- Finite colimits, from finite coproducts and coequalizers. -/
 instance : HasFiniteColimits C :=
   hasFiniteColimits_of_hasCoequalizers_and_finite_coproducts
 
@@ -438,14 +452,21 @@ wrapper already opens `@[expose] public section`, matching
 Append to the test module, inside `section Resolution`:
 
 ```lean
+attribute [local instance] ElementaryTopos.cartesianMonoidalCategory
+
 /-- The data accessors cross the module boundary. -/
 example : CartesianMonoidalCategory C :=
   ElementaryTopos.cartesianMonoidalCategory C
 
-example : MonoidalClosed C :=
-  letI := ElementaryTopos.cartesianMonoidalCategory C
-  ElementaryTopos.monoidalClosed C
+example : MonoidalClosed C := ElementaryTopos.monoidalClosed C
 ```
+
+The `attribute` line is required and must precede the second example.
+A `letI` inside the example does not serve: the example's *type* is
+elaborated before its body, so `MonoidalClosed C` would report
+`failed to synthesize instance of type class MonoidalCategory C`.
+This is the same constraint the wrapper meets internally, now met by
+a consumer.
 
 Run: `lake build GebTests.Mathlib.CategoryTheory.ElementaryTopos`
 
@@ -507,8 +528,10 @@ end Witness
 Run: `lake build GebTests.Mathlib.CategoryTheory.ElementaryTopos`
 
 Expected: FAIL with `failed to synthesize instance of type class
-HasFiniteLimits Pt` and six further failures — there is no
-`ElementaryTopos Pt` yet.
+HasFiniteLimits Pt` and five further failures — six in all, there
+being no `ElementaryTopos Pt` yet. `HasInitial Pt` is the exception:
+mathlib already supplies it for `Discrete PUnit`, so that assertion
+passes either way and does not exercise the witness.
 
 - [ ] **Step 3: Add the witness**
 
@@ -567,13 +590,14 @@ def ptAdj (F G : Pt ⥤ Pt) : F ⊣ G :=
       homEquiv_naturality_left_symm := by intros; apply Subsingleton.elim
       homEquiv_naturality_right := by intros; apply Subsingleton.elim }
 
+/-- `Pt` is monoidal closed: every endofunctor is a right adjoint. -/
 instance : MonoidalClosed Pt where
   closed _ := { rightAdj := 𝟭 Pt, adj := ptAdj _ _ }
 
 /-- The degenerate topos is an elementary topos. -/
 instance : ElementaryTopos Pt where
   cartesian := ptCart
-  closed := inferInstance
+  closed := (inferInstance : @MonoidalClosed Pt _ ptCart.toMonoidalCategory)
   initialCocone := ptColimitCocone _
   binaryCoproductCocone X Y := ptColimitCocone (pair X Y)
   equalizerCone f g := ptLimitCone (parallelPair f g)
@@ -598,12 +622,15 @@ Expected: PASS.
 Run:
 
 ```bash
-grep -nE 'sorry|admit|noncomputable' \
+grep -nE '^[^-]*\b(sorry|admit)\b|^noncomputable' \
   Geb/Mathlib/CategoryTheory/ElementaryTopos.lean \
   GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean
 ```
 
-Expected: no output.
+Expected: no output. The pattern excludes the module docstring, which
+uses the words `admit` and `noncomputable` in prose; a bare
+`grep -nE 'sorry|admit|noncomputable'` reports three docstring hits
+and is not the check intended.
 
 - [ ] **Step 6: Commit**
 
@@ -613,7 +640,7 @@ jj describe -m "test(elementary-topos): witness the class at the degenerate topo
 An instance at Discrete PUnit, the one-object one-morphism category.
 It establishes what nothing else in W2 can, that the seven fields are
 satisfiable together, before W3 through W5 build against the class.
-Every construction runs off Unique (X - Y), which mathlib does not
+Every construction runs off Unique (X ⟶ Y), which mathlib does not
 supply for Discrete and which the module adds in one line over the
 Subsingleton that it does."
 jj new
@@ -634,9 +661,24 @@ jj new
   Task 1, which cites `[Mikkelsen1976]`.
 - Produces: nothing later tasks consume.
 
-- [ ] **Step 1: Add the Mikkelsen entry to the bibliography**
+- [ ] **Step 1: Add the two bibliography entries**
 
 Append to `docs/references.bib`:
+
+```bibtex
+@article{Freyd1972,
+  author        = {Freyd, Peter},
+  title         = {Aspects of topoi},
+  journal       = {Bulletin of the Australian Mathematical Society},
+  volume        = {7},
+  number        = {1},
+  pages         = {1--76},
+  year          = {1972},
+  doi           = {10.1017/S0004972700044828},
+}
+```
+
+and:
 
 ```bibtex
 @phdthesis{Mikkelsen1976,
@@ -663,7 +705,7 @@ Append to `docs/references.bib`:
 Run:
 
 ```bash
-for k in Mikkelsen1976 Pare1974 MacLaneMoerdijk1992; do
+for k in Freyd1972 Mikkelsen1976 Pare1974; do
   printf '%s: ' "$k"
   grep -c "^@[a-z]*{$k," docs/references.bib
 done
@@ -673,8 +715,10 @@ Expected: each key reports `1`.
 
 - [ ] **Step 3: Add the `docs/index.md` entry**
 
-Insert in `docs/index.md`, in the same list as the other
-`Geb/Mathlib/CategoryTheory/` entries and in path order:
+`docs/index.md` § Implemented content is one flat list in topological
+order, and its `Geb/Mathlib/CategoryTheory/` entries are not
+contiguous. Append this entry at the end of that list: the module
+depends on nothing else in the repository, so it sorts last.
 
 ```markdown
 - `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` — the
@@ -687,8 +731,9 @@ Insert in `docs/index.md`, in the same list as the other
   from them. Accessors are definitions for the data-carrying classes
   and instances for the `Prop` classes. `tensorUnitIsoΩ₀` compares
   the cartesian terminal with the classifier's `Ω₀`, both being
-  terminal. A wrapper over mathlib's category theory, so
-  `Classical.choice`-dependent.
+  terminal. The source and test modules are listed in
+  `GebMeta.classicalAllowedModules`, the module being a wrapper over
+  mathlib's `Classical`-dependent category theory.
 ```
 
 - [ ] **Step 4: Run the Markdown checks**
@@ -730,7 +775,7 @@ jj new
 
 - [ ] **Step 1: Amend the attribution sentence in § Class fields**
 
-In `TODO.md` § Class fields (lines 289-293), replace the two lines:
+In `TODO.md` § Class fields (lines 290-293), replace:
 
 ```text
 finite colimits are redundant as an axiom, [Pare1974]
@@ -763,7 +808,9 @@ row so it reads:
 | classifier | `Subobject.Classifier C` | l |
 ```
 
-Then append to the paragraph following the table:
+Then append to the paragraph beginning "W2 may instead expose the
+two `Prop` fields as derived instances" — the second of the two that
+follow the table, not the first:
 
 ```text
 W2 took the derived-instance route, so the finite-limits and
@@ -801,15 +848,11 @@ against the primary source and before citing the work in Lean, the
 tripleability proof route and Mikkelsen's priority were each checked
 against the primary sources.
 
-- [ ] **Step 5: Update the § Status table**
+The § Status row is not changed here. It asserts completion, and
+nothing has been verified yet; Task 6 changes it after the checks
+pass.
 
-Change the W2 row to:
-
-```text
-| W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
-```
-
-- [ ] **Step 6: Run the Markdown checks**
+- [ ] **Step 5: Run the Markdown checks**
 
 Run:
 
@@ -820,13 +863,13 @@ markdownlint-cli2 'TODO.md' && doctoc --dryrun --update-only TODO.md
 Expected: `Summary: 0 issues`, and `doctoc` reports "Everything is
 OK".
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 jj describe -m "doc(finsetskel): amend the roadmap for W2's completion
 
 Constraint 6 ceases to require an identification of the classifier's
-Omega-0 with the cartesian terminal: both are terminal and so
+Ω₀ with the cartesian terminal: both are terminal and so
 canonically and uniquely isomorphic, leaving no coherence condition to
 impose, and an equality of objects is not invariant under equivalence.
 Constraint 2's admission of a coherence field goes with it.
@@ -854,9 +897,12 @@ jj new
 
 - [ ] **Step 1: Run the full build**
 
-Run: `lake build`
+Run: `lake build && lake build GebTests`
 
-Expected: PASS, no errors and no warnings.
+Expected: PASS, no errors and no warnings. The second invocation is
+needed: `lakefile.toml` sets `defaultTargets = ["Geb"]`, so a bare
+`lake build` does not reach the test module, and `lake shake` in
+Step 4 requires its oleans.
 
 - [ ] **Step 2: Run both lint invocations**
 
@@ -866,9 +912,10 @@ Run:
 lake lint && lake lint -- GebTests
 ```
 
-Expected: both report `All declarations depend only on permitted
-axioms.` The two are separate invocations because `lakefile.toml` sets
-`lintDriverArgs = ["Geb"]`, so plain `lake lint` does not reach the
+Expected: `-- Linting passed for Geb.` and `-- Linting passed for
+GebTests.` respectively. The two are separate invocations because
+`lakefile.toml` sets `lintDriverArgs = ["Geb"]`, so plain `lake lint`
+does not reach the
 test module.
 
 - [ ] **Step 3: Run the import lint**
@@ -885,7 +932,18 @@ Run: `lake shake --add-public --keep-implied --keep-prefix Geb GebTests`
 Expected: no suggested import removals for the two new modules. If it
 suggests removing one, remove it and re-run Step 1.
 
-- [ ] **Step 5: Remove the spec and the plan**
+- [ ] **Step 5: Update the § Status table**
+
+Every check above has passed, so the row may now assert completion.
+In `TODO.md` § Status, change the W2 row to:
+
+```text
+| W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
+```
+
+Then run `markdownlint-cli2 'TODO.md'`; expect `Summary: 0 issues`.
+
+- [ ] **Step 6: Remove the spec and the plan**
 
 Run:
 
@@ -898,13 +956,13 @@ These are transient process artifacts per `CONTRIBUTING.md` § Concern
 shape: they record how the current state was reached, not what it is,
 so they belong in history rather than on an active branch.
 
-- [ ] **Step 6: Run the pre-push checklist**
+- [ ] **Step 7: Run the pre-push checklist**
 
 Run: `scripts/pre-push.sh`
 
 Expected: exit 0.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 jj describe -m "doc(elementary-topos): remove the W2 spec and plan

@@ -100,7 +100,7 @@ definition.
 
 | Declaration | Status |
 | --- | --- |
-| `ElementaryTopos` | Transcription of [MacLaneMoerdijk1992]'s definition — finite limits, finite colimits, cartesian closure, subobject classifier — strengthened computationally, the generators being carried as data rather than asserted |
+| `ElementaryTopos` | Transcription of the colimits-inclusive axiomatisation — finite limits, finite colimits, cartesian closure, subobject classifier — strengthened computationally, the generators being carried as data rather than asserted. [Pare1974] page 556 attributes that axiomatisation to [Freyd1972] and to Kock and Wraith, taking the colimits-free form itself |
 | `cartesianMonoidalCategory`, `monoidalClosed`, `isInitial`, `tensorUnitIsoΩ₀` | Neither. Projections of the fields, or derived from them by terminality |
 | The derived `Prop` instances | Neither. Consequences of the fields, by mathlib lemmas |
 | The `Discrete PUnit` witness | Neither, and no originality is claimed. The degenerate topos is a standard example; W2 neither transcribes a statement of it nor rests on a published one, the witness proving the topos structure directly from `Unique (X ⟶ Y)` |
@@ -484,12 +484,17 @@ as a fixture for later workstreams; it exists to exercise this class.
   retrievable form. It is cited in preference to the 1972 talk, which
   has no searchable identifier of the kind `CONTRIBUTING.md` § Cite
   the literature when transcribing requires; the thesis states the
-  theorem and dates the talk, so nothing is lost.
-  [MacLaneMoerdijk1992] and [Pare1974] are already present.
-- Cited from the Lean sources: [MacLaneMoerdijk1992] for the
-  definition transcribed, and [Mikkelsen1976] with [Pare1974] as
-  context for the redundancy of the finite colimits, per
-  § Transcription or novel.
+  theorem and dates the talk, so nothing is lost. It also gains
+  [Freyd1972], the source [Pare1974] names for the colimits-inclusive
+  axiomatisation this class transcribes. [Pare1974] is already
+  present.
+- Cited from the Lean sources: [Freyd1972] for the definition
+  transcribed, and [Mikkelsen1976] with [Pare1974] as context for the
+  redundancy of the finite colimits, per § Transcription or novel.
+  [MacLaneMoerdijk1992] is not cited: an earlier draft named it as the
+  source of the definition, and its own prologue gives the
+  colimits-free form, finite limits with exponentials and power
+  objects, constructing the colimits later.
 - `TODO.md` § Class fields: the attribution sentence loses "first
   published", which the sources do not support, and records instead
   that the theorem is Mikkelsen's, discovered and presented in July
@@ -613,9 +618,9 @@ carrier-level normal forms does not apply to it.
   `docs/finsetskel-topos-roadmap`.
 - `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, `docs/process.md`,
   `docs/rules/lean-coding.md`.
-- [MacLaneMoerdijk1992] Saunders Mac Lane and Ieke Moerdijk,
-  *Sheaves in Geometry and Logic*, Springer, 1992,
-  <https://doi.org/10.1007/978-1-4612-0927-0>.
+- [Freyd1972] Peter Freyd, "Aspects of topoi", *Bulletin of the
+  Australian Mathematical Society* 7(1), 1–76, 1972,
+  <https://doi.org/10.1017/S0004972700044828>.
 - [Mikkelsen1976] Christian Juul Mikkelsen, *Lattice Theoretic and
   Logical Aspects of Elementary Topoi*, Various Publication Series
   No. 25, Matematisk Institut, Aarhus Universitet, March 1976;
