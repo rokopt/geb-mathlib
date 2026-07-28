@@ -180,12 +180,12 @@ fields, and the lemmas that supply them —
 limit and colimit classes as instance arguments. The module therefore
 declares three further instances by `HasLimit.mk` and `HasColimit.mk`
 over the corresponding fields, for `HasColimit (pair X Y)`, `HasLimit
-(parallelPair f g)` and `HasColimit (parallelPair f g)`. They are named,
-and the seven derived `Prop` instances are not, because these three are
-the ones a downstream module has reason to refer to: they are the
-per-diagram form W3 and W4 will already have constructed, and naming
-them lets a later declaration cite the instance rather than re-derive
-it. They are listed with the accessors below. From them,
+(parallelPair f g)` and `HasColimit (parallelPair f g)`. They are named
+rather than left anonymous, so that a diagnostic or a later
+declaration can refer to them; nothing downstream is obliged to, every
+one of them being a `Prop` and so interchangeable with any other route
+to the same class by proof irrelevance. They are listed with the
+accessors below. From them,
 `hasBinaryCoproducts_of_hasColimit_pair`,
 `hasEqualizers_of_hasLimit_parallelPair` and
 `hasCoequalizers_of_hasColimit_parallelPair` give the three
@@ -277,12 +277,20 @@ also obtained this theorem … but their approach is different" and
 "Certain parts of this theorem were already known to Mikkelsen" both
 refer to the tripleability theorem, that being "the main theorem of the
 paper" as the same passage names it — not to the finite-colimits
-theorem. The paper does not use the word "independently".
-[Mikkelsen1976] supplies the detail behind the second sentence:
-Mikkelsen was asked in December 1972 whether `P : Eᵒᵖ ⥤ E` was
-tripleable, dates his own proof to January 1973 and presented it at
-Oberwolfach on 28 July 1973, whereas [Pare1974] was communicated to the
-Bulletin on 22 September 1973.
+theorem. [Pare1974] itself does not use the word "independently".
+
+[Mikkelsen1976] supplies the detail behind the second sentence, and
+settles the relation between the two proofs of the tripleability
+theorem in its author's own words: "The proof of the tripleability
+theorem which we are now going to establish does not differ essential
+from that which was discovered independently by R. Paré, [22]". The
+tripleability theorem was therefore discovered twice over, and the
+later of the two sources says so. The chronology around it: Mikkelsen
+was asked in December 1972 whether `P : Eᵒᵖ ⥤ E` was tripleable, dates
+his own proof to January 1973 and presented it at Oberwolfach on 28
+July 1973, whereas [Pare1974] was communicated to the Bulletin on 22
+September 1973. None of this bears on the finite-colimits theorem,
+which is Mikkelsen's alone.
 
 Two further statements in [Pare1974] bear on the class's design and are
 recorded in the module docstring.
@@ -388,9 +396,10 @@ structure is `CartesianMonoidalCategory.ofChosenFiniteProducts`, the
 closure is an adjunction whose hom-equivalence is `Equiv.ofUnique`, and
 the classifier is `mkOfTerminalΩ₀` at the tensor unit, whose coherence
 obligation is discharged by `rfl`. The witness declares its cartesian
-and closed structures as instances rather than as definitions, so § A
-class-typed definition warns does not reach it; a definition form would
-need the same `@[instance_reducible]`. The closed field is written at
+and closed structures as instances rather than as definitions, so
+§ A class-typed definition warns, and warnings are errors here does
+not reach it; a definition form would need the same
+`@[instance_reducible]`. The closed field is written at
 the explicit type `@MonoidalClosed _ _ cartesian.toMonoidalCategory`
 rather than `MonoidalClosed _`: no competing `MonoidalCategory (Discrete
 PUnit)` instance is reachable under this module's imports — checked, and
@@ -398,9 +407,9 @@ PUnit)` instance is reachable under this module's imports — checked, and
 the explicit form costs nothing and does not depend on that remaining
 true.
 
-The resolution assertions then confirm, through that instance, that each
-of the ten `Prop` classes and per-diagram classes of § Derived accessors
-and instances is found by `inferInstance`.
+The resolution assertions then confirm, with that instance in scope,
+that each of the ten `Prop` instances of § Derived accessors and
+instances is found by `inferInstance`.
 
 The witness is comparable in size to the module it tests, and it
 establishes what nothing else in W2 can: that the eight fields can be
@@ -512,8 +521,9 @@ result. Three specifics rather than a general caveat:
   `@[expose]`, per this repository's own precedent in
   `Geb/Mathlib/Data/PFunctor/Slice/Basic.lean` and
   `Geb/Mathlib/CategoryTheory/Grothendieck.lean`. Whether it is
-  required here is unresolved and the plan settles it: the accessors
-  are `@[instance_reducible]`, which governs how the elaborator sees
+  required here is unresolved and the plan settles it:
+  `cartesianMonoidalCategory` and `monoidalClosed` are
+  `@[instance_reducible]`, which governs how the elaborator sees
   through a body, and an unexposed body downstream could defeat that.
   A single-snippet check cannot decide it, two modules being needed.
 
