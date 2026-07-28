@@ -11,6 +11,13 @@
     - [3. Universal morphisms](#3-universal-morphisms)
     - [4. Relative (co)free (co)monads](#4-relative-cofree-comonads)
     - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
+  - [FinSetSkel as an elementary topos](#finsetskel-as-an-elementary-topos)
+    - [Workstreams](#workstreams)
+    - [Operations](#operations)
+    - [Class fields](#class-fields)
+    - [Cross-workstream interface constraints](#cross-workstream-interface-constraints)
+    - [Standing obligations](#standing-obligations)
+    - [Status](#status)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
@@ -156,6 +163,217 @@ an unprotected `id` shadows `_root_.id` throughout the `PFunctor`
 namespace and breaks uses such as `P.map id`; and both isomorphisms
 admit an ambient universe beyond the parameters of the functors
 involved.
+
+### FinSetSkel as an elementary topos
+
+Geb requires a category of finite sets whose morphisms are data:
+values that can be pattern-matched, serialised, and compared.
+mathlib's skeletal model `FintypeCat.Skeleton` takes morphisms to be
+functions, whose equality is decidable only through
+`Classical.choice`, so this group builds `FinSetSkel` — the same
+objects, morphisms as length-indexed vectors of codomain indices —
+and the elementary-topos structure on it.
+
+The spec recording the research findings and the argument that the
+workstreams compose was added and removed on branch
+`docs/finsetskel-topos-roadmap` (PR #97); recover it from there when
+re-verifying a finding, since the findings are pinned to the mathlib
+revision current when they were taken.
+
+Two names are fixed for the group. `FinSetSkel` is the category, the
+`Skel` recording that it is the skeletal model, parallel to
+`FintypeCat.Skeleton`. `ElementaryTopos` is the class, the qualifier
+distinguishing it from a Grothendieck topos, mathlib using `Topos`
+for sheaf-theoretic material. W1 through W5 place their modules under
+`Geb/Mathlib/`, with test parallels under `GebTests/Mathlib/`; W0
+adds no modules.
+
+Morphisms are root-namespace `Vector`, not `List.Vector`: the
+morphisms exist to be computed with, array-backed indexing is
+constant-time where list-backed is linear, and the
+`propext`/`Quot.sound` that root `Vector`'s `DecidableEq` costs is
+accepted, neither being `Classical.choice`. This fixes W1's morphism
+type and every downstream carrier.
+
+#### Workstreams
+
+W0 precedes the rest. W1 and W2 are independent of each other; W3 and
+W4 both depend on W1 and are independent of each other and of W2; W5
+depends on W1 through W4. Each of W1 through W5 writes its spec and
+plan only after the workstreams it depends on are merged, each
+through brainstorming, adversarial review to convergence, user
+review, planning, adversarial review, user review, and
+subagent-driven development. Each of their deliverable lists includes
+a `docs/index.md` entry, per `CONTRIBUTING.md` § Each phase produces
+an artifact. W0 carries no spec, no plan and no `docs/index.md`
+entry, adding no Lean content.
+
+- **W0** — `Batteries.` admitted to the `Geb/Mathlib/` and
+  `GebTests/Mathlib/` allow-lists in every place that states them:
+  `scripts/lint-imports.sh` and its comment header,
+  `docs/rules/upstream-eligible.md` § Subtree import rules, the
+  `Geb/Mathlib/` line of `docs/index.md` § Directory structure, and a
+  case in `scripts/tests/test-lint-imports.sh`. W4 requires it,
+  needing `Batteries.Data.UnionFind`; W1 is shortened by it, root
+  `Vector.get_ofFn` being Batteries' and unreachable from any
+  `Mathlib.*` module. It therefore precedes W1.
+- **W1** — the `SmallCategory` instance at an arbitrary universe;
+  morphism extensionality and the identity/composition application
+  lemmas, whose `simp` orientation W1 fixes as the shared
+  application-normal form for W3 and W4; `DecidableEq` on morphisms;
+  the choice-free rebuild of `List.Nodup.getEquiv` and the predicate
+  compression over it; the `ULift`-transported forms of
+  `finProdFinEquiv`, `finSumFinEquiv` and `finFunctionFinEquiv`; the
+  isomorphism in `Cat` to `FintypeCat.Skeleton` in the choice-free
+  core, with the equivalence and the transported `Skeletal` and
+  `IsSkeletonOf` in an allowlisted wrapper; and a module docstring
+  recording the morphism-representation choice with the evidence
+  against it.
+- **W2** — the `ElementaryTopos` class, its derived accessors and
+  derived `Prop` instances, the `docs/references.bib` citations, and
+  a module docstring carrying constraint 3 and constraint 5's
+  accessor rule.
+- **W3** — rows a through h, j, l and m of the operation table.
+- **W4** — row i, by folding `Batteries.UnionFind.union` over the
+  domain; plus a `TODO.md` § Triggers entry recording the
+  mathlib-to-Batteries dependency-edge question against W4's upstream
+  submission, which outlives this group.
+- **W5** — row k and the `ElementaryTopos FinSetSkel` instance.
+  Removes this entry, its content moving to `docs/index.md`.
+
+#### Operations
+
+`Fin k` abbreviates the object of length `k`.
+
+| | Operation | Carrier or source | Workstream |
+| --- | --- | --- | --- |
+| a | Initial object | `Fin 0` | W3 |
+| b | Terminal object | `Fin 1` | W3 |
+| c | Binary coproducts | `m + n`, via `finSumFinEquiv` | W3 |
+| d | Binary products | `m * n`, via `finProdFinEquiv` | W3 |
+| e | Finite coproducts (`Prop`) | from a and c | W3 |
+| f | Finite products (`Prop`) | from b and d | W3 |
+| g | Exponentials (`MonoidalClosed`) | `Fin m ⟹ Fin n` is `Fin (n ^ m)` | W3 |
+| h | Binary equalizers, and `HasEqualizers` | agreement subset | W3 |
+| i | Binary coequalizers, and `HasCoequalizers` | union-find | W4 |
+| j | Finite limits (`Prop`) | from f and h | W3 |
+| k | Finite colimits (`Prop`) | from e and i | W5 |
+| l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
+| m | `Mono` is an injective vector | — | W3 |
+
+#### Class fields
+
+`ElementaryTopos C` carries data for its generators and `Prop` for
+finite (co)limits, which is the most that is available: chosen cones
+for an arbitrary finite diagram are not computably derivable, since
+`FinCategory` carries no enumeration and every route to one is either
+`noncomputable` or `Trunc`-valued.
+
+| Field | mathlib type | Supplies rows |
+| --- | --- | --- |
+| cartesian | `CartesianMonoidalCategory C` | b, d, and hence f |
+| closed | `MonoidalClosed C`, over the cartesian field | g |
+| initial | `ColimitCocone` over `Discrete PEmpty` | a, and with binary coproducts hence e |
+| binary coproducts | `ColimitCocone` over `Discrete WalkingPair`, a family | c, and with initial hence e |
+| equalizers | `LimitCone` over `WalkingParallelPair`, a family | h |
+| coequalizers | `ColimitCocone` over `WalkingParallelPair`, a family | i |
+| classifier | `Subobject.Classifier C`, with `Ω₀` the cartesian terminal | l |
+| finite limits | `HasFiniteLimits C` | j |
+| finite colimits | `HasFiniteColimits C` | k |
+
+Data is carried rather than `Prop` for the same reason at two scales:
+a `Prop` form is indifferent to a distinction that matters
+computationally, all limits of a diagram being isomorphic and none of
+them running. Within a construction, carrying a `LimitCone` rather
+than its `Nonempty` decides whether anything computes at all.
+Across constructions, carrying the coequalizer as data decides which
+algorithm runs: finite colimits are redundant as an axiom, [Pare1974]
+having first published that an elementary topos has them, but a
+derived construction is whichever one the general proof yields, and
+that is not union-find.
+
+W2 may instead expose the two `Prop` fields as derived instances.
+That is not free: deriving them generically obliges W2 to derive
+`HasFiniteCoproducts` generically too, so rows e, j and k become
+W2's one-time derivations and leave W3's and W5's assignments. The
+operation table assumes the field form, and W3 and W5 proceed on it
+regardless of W2's eventual choice; redundant `Prop` instances are
+harmless by proof irrelevance.
+
+#### Cross-workstream interface constraints
+
+1. Data for generators, `Prop` for finite (co)limits. Binds W2
+   through W5.
+2. Field types for the topos structure are mathlib types — no bespoke
+   bundle of W2's own, since W3 and W4 must produce the fields
+   without importing W2. A `Prop` coherence field of W2's own
+   (constraint 6) is admitted, no workstream but W5 producing it.
+3. `ElementaryTopos` is stated over `(C : Type u) [Category.{v} C]`,
+   matching mathlib convention. `SmallCategory C` is `Category.{u} C`,
+   so a formulation over it would admit `FinSetSkel` but foreclose
+   every non-small instance.
+4. W1 settles the `ULift` placement in the morphism type and supplies
+   the transported forms of the three index equivalences, every
+   object carrier being `Fin`-shaped universe-zero data.
+5. W3 and W4 register as instances what they consume and what a later
+   workstream consumes — including `HasFiniteCoproducts` (W3, row e)
+   and `HasCoequalizers` (W4, row i, via
+   `hasCoequalizers_of_hasColimit_parallelPair`), which are row k's
+   two hypotheses. Rows b and d are exposed only through the
+   cartesian instance. Each row's data term is exported under a
+   stable public name. W2's accessors from `[ElementaryTopos C]` are
+   instances for the `Prop` classes, two resolution routes being
+   harmless there by proof irrelevance, and definitions for the
+   data-carrying classes, two routes to data not needing to agree
+   definitionally.
+6. The class enforces that the classifier field's `Ω₀` is the
+   cartesian field's terminal object, by a mechanism W2 chooses that
+   leaves the field's type `Subobject.Classifier C`. W3 builds row l
+   over its own row b as exposed through the cartesian instance, so
+   the coherence obligation is `rfl`.
+7. `DecidableEq` on morphisms, the injective-vector inversion and the
+   transported index equivalences live in W1. A shared lemma
+   discovered after W1 merges goes on its own branch off `main`,
+   which W3 and W4 both rebase onto.
+8. Every workstream splits its modules: constructions and the content
+   of their universal properties choice-free over vectors and `Fin`;
+   mathlib structures and `Prop` instances in a wrapper whose fields
+   are those terms. Only wrapper modules reach
+   `GebMeta.classicalAllowedModules`. A workstream whose entire
+   deliverable is packaging — W2 and W5 — is a wrapper throughout.
+
+Beyond W1's application-normal form, W3 and W4 each add carrier-level
+`simp` lemmas that first meet at W5; neither marks a transport lemma
+`simp` in a direction that rewrites the other's normal form.
+
+#### Standing obligations
+
+- W0 precedes W1 (above).
+- `GebMeta.classicalAllowedModules` gains each new wrapper module and
+  its `GebTests` parallel, appended by the workstream introducing it;
+  W1 through W5 each entail such an amendment, W0 none.
+- Both concurrent pairs — W1 with W2, W3 with W4 — append to files
+  the other also appends to: `GebMeta.classicalAllowedModules`, the
+  status table below, `docs/index.md`, and any shared directory index
+  file. These are ordinary textual conflicts, resolved by rebasing
+  the later sibling before merge.
+- W2 verifies, against the primary source and before citing the work
+  in Lean, the [Pare1974] attribution, the characterisation of its
+  proof route as the monadicity of the power-object functor, and the
+  reported priority of C. J. Mikkelsen, per `AGENTS.md` § Verify
+  agent claims. None was verifiable when the entry was written: the
+  publisher returned an access denial for the article and its PDF.
+
+#### Status
+
+| Workstream | Depends on | State | Code |
+| --- | --- | --- | --- |
+| W0 `Batteries.` allow-list | — | Not started | — |
+| W1 `FinSetSkel` | W0 | Not started | — |
+| W2 `ElementaryTopos` | — | Not started | — |
+| W3 Rows a–h, j, l, m | W1 | Not started | — |
+| W4 Row i, union-find | W0, W1 | Not started | — |
+| W5 Row k, unification | W1–W4 | Not started | — |
 
 ### Complexity of the decidable validity checkers
 
