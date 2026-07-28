@@ -271,6 +271,7 @@ reprint series.
 | The [Pare1974] bibliographic record | Author, title, volume 80, number 3, May 1974 and pages 556–561 confirmed against the scan. The DOI is not printed on the article and was confirmed separately against the Crossref record, which is also where the title's letter case was checked; `references.bib` records the title in sentence case, a BibTeX convention, where the article prints it in full caps |
 | Proof route is monadicity of the power-object functor | Confirmed. The paper's main theorem is that `Ω^(-) : Eᵒᵖ ⥤ E` satisfies the hypotheses of what it calls the RTT, a modification of the Barr-Beck crude tripleableness theorem, and is therefore tripleable |
 | Priority of C. J. Mikkelsen | Confirmed as to discovery, and refined |
+| The source of the transcribed axiomatisation | [Pare1974] page 556 names [Freyd1972] and Kock and Wraith as assuming finite limits and colimits. [Freyd1972] confirms it directly: its section 1 defines a cartesian closed category as a finitely bicomplete one, and its section 2 adds the classifier |
 
 The paper describes itself as giving a new proof of Mikkelsen's theorem,
 which states that an elementary topos has all finite colimits, and cites
@@ -443,8 +444,10 @@ the explicit form costs nothing and does not depend on that remaining
 true.
 
 The resolution assertions then confirm, with that instance in scope,
-that each of the ten `Prop` instances of § Derived accessors and
-instances is found by `inferInstance`.
+that each of the seven whole-category `Prop` classes of § Derived
+accessors and instances is found by `inferInstance`. The three
+per-diagram instances take implicit arguments and are exercised
+through those seven rather than asserted directly.
 
 The witness is comparable in size to the module it tests, and it
 establishes what nothing else in W2 can: that the seven fields can be

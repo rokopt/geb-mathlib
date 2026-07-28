@@ -74,7 +74,7 @@ whole deliverable is packaging, so both modules are allowlisted for
 | `Geb/Mathlib/CategoryTheory.lean` | Modify. Add one `public import`. |
 | `GebTests/Mathlib/CategoryTheory.lean` | Modify. Add one `import`. |
 | `GebMeta.lean` | Modify. Append both module names to `classicalAllowedModules`. |
-| `docs/references.bib` | Modify. Add `Mikkelsen1976`. |
+| `docs/references.bib` | Modify. Add `Freyd1972` and `Mikkelsen1976`. |
 | `docs/index.md` | Modify. Add the module entry. |
 | `TODO.md` | Modify. Amend § Class fields, constraints 2 and 6, § Standing obligations, § Status. |
 
@@ -288,7 +288,8 @@ import GebTests.Mathlib.CategoryTheory.ElementaryTopos
 - [ ] **Step 5: Append both modules to the `Classical` allow-list**
 
 In `GebMeta.lean`, inside `classicalAllowedModules`, append two
-entries before the closing `].foldl`:
+entries and move the closing `].foldl` onto the new last entry, so
+that the list keeps its existing shape:
 
 ```lean
    `Geb.Mathlib.CategoryTheory.ElementaryTopos,
@@ -334,7 +335,9 @@ jj new
   `hasColimit_parallelPair`, plus unnamed instances for `HasInitial`,
   `HasBinaryCoproducts`, `HasEqualizers`, `HasCoequalizers`,
   `HasFiniteCoproducts`, `HasFiniteLimits`, `HasFiniteColimits`.
-  Task 3 asserts all ten resolve.
+  Task 3 asserts that the seven whole-category classes resolve; the
+  three per-diagram instances take implicit arguments and are
+  exercised only through them.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -622,15 +625,17 @@ Expected: PASS.
 Run:
 
 ```bash
-grep -nE '^[^-]*\b(sorry|admit)\b|^noncomputable' \
+grep -nE '^noncomputable' \
   Geb/Mathlib/CategoryTheory/ElementaryTopos.lean \
   GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean
 ```
 
-Expected: no output. The pattern excludes the module docstring, which
-uses the words `admit` and `noncomputable` in prose; a bare
-`grep -nE 'sorry|admit|noncomputable'` reports three docstring hits
-and is not the check intended.
+Expected: no output. `noncomputable` is a declaration modifier, so it
+opens a line where it is used as one; the module docstring mentions
+the word in prose, never at the start of a line, and a pattern without
+the anchor reports four docstring hits. `sorry` and `admit` need no
+textual scan: both leave `sorryAx` in the axiom set, which the linter
+in Task 6 Step 2 rejects.
 
 - [ ] **Step 6: Commit**
 
@@ -658,7 +663,8 @@ jj new
 **Interfaces:**
 
 - Consumes: the module docstring's `## References` section from
-  Task 1, which cites `[Mikkelsen1976]`.
+  Task 1, which cites `[Freyd1972]`, `[Mikkelsen1976]` and
+  `[Pare1974]`.
 - Produces: nothing later tasks consume.
 
 - [ ] **Step 1: Add the two bibliography entries**
@@ -750,13 +756,19 @@ or updates it.
 - [ ] **Step 5: Commit**
 
 ```bash
-jj describe -m "doc(elementary-topos): cite Mikkelsen 1976 and index the module
+jj describe -m "doc(elementary-topos): cite the topos literature and index the module
 
-The finite-colimits theorem is Mikkelsen's, presented at Oberwolfach
-in July 1972 and published in his 1976 licentiate thesis; the entry is
-keyed to the thesis rather than to the talk, which carries no
-searchable identifier, and records the 2022 Theory and Applications of
-Categories reprint as the retrievable form."
+[Freyd1972] is the source of the axiomatisation the class transcribes,
+the one that includes the finite colimits; [Pare1974] page 556 names
+it, and Freyd states it directly, a cartesian closed category being
+finitely bicomplete there.
+
+[Mikkelsen1976] and [Pare1974] are context for the redundancy of the
+finite colimits rather than sources of a transcription. The Mikkelsen
+entry is keyed to the 1976 licentiate thesis rather than to the 1972
+talk, which carries no searchable identifier, and records the 2022
+Theory and Applications of Categories reprint as the retrievable
+form."
 jj new
 ```
 
@@ -815,9 +827,8 @@ follow the table, not the first:
 ```text
 W2 took the derived-instance route, so the finite-limits and
 finite-colimits rows of the table above are not fields of the class:
-rows e, j and k are W2's one-time derivations. W3 and W5 proceed on
-the field form regardless, their assignments becoming redundant `Prop`
-instances, harmless by proof irrelevance.
+rows e, j and k are W2's one-time derivations, and W3's and W5's
+assignments become redundant.
 ```
 
 - [ ] **Step 3: Amend constraints 2 and 6**
@@ -848,9 +859,9 @@ against the primary source and before citing the work in Lean, the
 tripleability proof route and Mikkelsen's priority were each checked
 against the primary sources.
 
-The § Status row is not changed here. It asserts completion, and
-nothing has been verified yet; Task 6 changes it after the checks
-pass.
+The § Status row is not changed here. The replacement row would
+assert completion, and nothing has been verified yet; Task 6 Step 5
+writes it after the checks pass.
 
 - [ ] **Step 5: Run the Markdown checks**
 
@@ -874,6 +885,10 @@ canonically and uniquely isomorphic, leaving no coherence condition to
 impose, and an equality of objects is not invariant under equivalence.
 Constraint 2's admission of a coherence field goes with it.
 
+The class-field section gains a note that W2 took the
+derived-instance route, so rows e, j and k are W2's one-time
+derivations while W3 and W5 proceed on the field form regardless.
+
 The attribution sentence records the finite-colimits theorem as
 Mikkelsen's, the sources not establishing the stronger claim that
 Pare's was the first publication anywhere, and the standing obligation
@@ -887,6 +902,7 @@ jj new
 
 **Files:**
 
+- Modify: `TODO.md` (§ Status, in Step 5)
 - Delete: `docs/superpowers/specs/2026-07-28-w2-elementary-topos-design.md`
 - Delete: `docs/superpowers/plans/2026-07-28-w2-elementary-topos.md`
 
@@ -912,8 +928,9 @@ Run:
 lake lint && lake lint -- GebTests
 ```
 
-Expected: `-- Linting passed for Geb.` and `-- Linting passed for
-GebTests.` respectively. The two are separate invocations because
+Expected: `-- Linting passed for Geb.` from the first, and both that
+line and `-- Linting passed for GebTests.` from the second, which runs
+over both libraries. The two are separate invocations because
 `lakefile.toml` sets `lintDriverArgs = ["Geb"]`, so plain `lake lint`
 does not reach the
 test module.
@@ -944,6 +961,10 @@ In `TODO.md` § Status, change the W2 row to:
 Then run `markdownlint-cli2 'TODO.md'`; expect `Summary: 0 issues`.
 
 - [ ] **Step 6: Remove the spec and the plan**
+
+Steps 7 and 8 follow this deletion and are not recoverable from disk
+afterwards. They are: run `scripts/pre-push.sh`, then commit. Note
+them before proceeding.
 
 Run:
 
@@ -981,8 +1002,8 @@ jj new
 **Spec coverage.** Every deliverable of the spec's § Deliverables maps
 to a task: deliverable 1 to Task 1 Step 3 and Task 2 Step 3;
 deliverable 2 to Task 1 Step 1 and Task 3; deliverable 3 to Task 1
-Step 4; deliverable 4 to Task 1 Step 5; deliverable 5 to Tasks 4
-and 5. Every check in the spec's § Verification appears in Task 6,
+Step 4; deliverable 4 to Task 1 Step 5; deliverable 5 to Tasks 4,
+5 and 6 Step 5. Every check in the spec's § Verification appears in Task 6,
 including the two separate `lake lint` invocations and `lake shake`.
 The spec's one open question — whether cross-module `@[expose]` is
 needed for the `@[instance_reducible]` accessors — is settled by
