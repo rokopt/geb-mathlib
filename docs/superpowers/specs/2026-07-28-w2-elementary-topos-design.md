@@ -417,7 +417,12 @@ meet it.
 
 ## The test module
 
-`GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean` has two parts.
+`GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean` has three
+parts: resolution assertions under a hypothetical `[ElementaryTopos
+C]`, the witness, and the same assertions through the witness. The
+first is what § The test module below calls the cheaper alternative;
+it is kept because it exercises the accessors from a second module,
+which the witness's own assertions do not isolate.
 
 The witness instantiates the class at `Discrete PUnit`, the one-object
 one-morphism category, which is the degenerate topos. That it is an

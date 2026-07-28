@@ -30,9 +30,9 @@ seven-field class over mathlib types, four `def` accessors and ten
 `instance`s derived from the fields; one test parallel under
 `GebTests/Mathlib/` holding resolution assertions under a hypothetical
 `[ElementaryTopos C]` and an instance at `Discrete PUnit` with the
-same assertions through it. W2 adds no choice-free layer: its
-whole deliverable is packaging, so both modules are allowlisted for
-`Classical.choice`.
+same assertions through it. The wrapper adds no choice-free layer,
+being packaging throughout, and the test module is allowlisted
+alongside it as every `GebTests` parallel is.
 
 **Tech Stack:** Lean 4 (`v4.33.0-rc1`), mathlib
 (`79d0395a1825a6264ad5d269e35e60537518955e`), `lake`, `jj`.
@@ -313,9 +313,13 @@ jj describe -m "feat(elementary-topos): add the ElementaryTopos class
 Carry seven fields of mathlib types: the cartesian and closed
 structures, the initial object, binary coproducts, equalizers,
 coequalizers, and the subobject classifier. State the class over
-(C : Type u) [Category.{v} C]. Append both modules to
-GebMeta.classicalAllowedModules, W2's whole deliverable being
-packaging over Classical-dependent mathlib category theory."
+(C : Type u) [Category.{v} C].
+
+Append the wrapper to GebMeta.classicalAllowedModules, its whole
+deliverable being packaging over Classical-dependent mathlib category
+theory, and the test module alongside it, TODO.md section Standing
+obligations requiring each wrapper's GebTests parallel to be
+allowlisted with it."
 jj new
 ```
 
@@ -503,8 +507,9 @@ Expected: PASS.
 ```bash
 jj describe -m "feat(elementary-topos): derive the accessors and Prop instances
 
-Add four definitions for the data-carrying classes and ten instances
-for the Prop classes, per the accessor rule: definitions for data, two
+Add four definitions — two for the data-carrying classes, and the
+comparison isomorphism and the initiality term — and ten instances for
+the Prop classes, per the accessor rule: definitions for data, two
 routes to which need not agree definitionally, and instances for Prop,
 two routes to which are harmless by proof irrelevance.
 
@@ -656,11 +661,11 @@ grep -nE '^noncomputable' \
 Expected: no output. `noncomputable` is a declaration modifier, so it
 opens a line where it is used as one; the module docstring mentions
 the word in prose, never at the start of a line, and a pattern without
-the anchor reports three docstring hits. The anchor is not airtight:
+the anchor reports three docstring hits. The anchor does not catch every form:
 `@[instance_reducible] noncomputable def` would evade it, and this
-module has two `@[instance_reducible]`
-definitions already. No linter catches `noncomputable`, which is legal
-Lean, so if the anchored scan is ever in doubt, run it unanchored and
+module has two `@[instance_reducible]` definitions already. No linter
+catches `noncomputable`, which is legal Lean, so if the anchored scan
+is ever in doubt, run it unanchored and
 check the hit count is the three docstring lines.
 
 `sorry` and `admit` need no textual scan: each makes the build itself
@@ -678,8 +683,8 @@ Instantiate the class at Discrete PUnit, the one-object one-morphism
 category, establishing what nothing else in W2 can: that the seven
 fields are satisfiable together, before W3 through W5 build against
 the class. Run every construction off Unique (X ⟶ Y), which mathlib
-does not supply for Discrete and which the module adds in one line
-over the Subsingleton that it does."
+does not supply for Discrete: its Subsingleton instance gives the uniq
+field, and eqToHom gives the default."
 jj new
 ```
 
@@ -755,8 +760,8 @@ Expected: each key reports `1`.
 
 `docs/index.md` § Implemented content is one flat list in topological
 order, and its `Geb/Mathlib/CategoryTheory/` entries are not
-contiguous. Append this entry at the end of that list: the module
-depends on nothing else in the repository, so it sorts last.
+contiguous. Append this entry at the end of that list: nothing else in
+the repository depends on the module, so nothing need follow it.
 
 ```markdown
 - `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` — the
@@ -1043,7 +1048,9 @@ deliverable 3 to Task 1 Step 4; deliverable 4 to Task 1 Step 5;
 deliverable 5 to Tasks 4, 5 and 6 Step 5. Task 6 carries the two
 separate `lake lint` invocations and
 `lake shake`; the placeholder scan is Task 3 Step 5 and the Markdown
-checks are in Tasks 4, 5 and 6.
+checks are in Tasks 4, 5 and 6. (The scan for `sorry` and
+`noncomputable` is Task 3 Step 5; the check for TBDs and vague steps
+is the next paragraph.)
 The question the spec's § Verification records — whether the wrapper
 needs `@[expose]` — is answered there and in Task 2 Step 4, on three
 grounds independent of any build: W3 and W4 never import W2, W5 only
