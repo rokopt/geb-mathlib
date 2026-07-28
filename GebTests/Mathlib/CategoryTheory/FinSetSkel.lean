@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Basic
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Skeleton
 
 /-!
 # FinSetSkel tests — index

@@ -64,7 +64,9 @@ def classicalAllowedModules : NameSet :=
    `Geb.Mathlib.Data.PFunctor.Univariate.Initial,
    `GebTests.Mathlib.Data.PFunctor.Univariate.Initial,
    `Geb.Mathlib.CategoryTheory.Grothendieck,
-   `GebTests.Mathlib.CategoryTheory.Grothendieck].foldl (·.insert ·)
+   `GebTests.Mathlib.CategoryTheory.Grothendieck,
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Skeleton].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
