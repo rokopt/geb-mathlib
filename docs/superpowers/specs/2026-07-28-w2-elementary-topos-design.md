@@ -58,7 +58,10 @@ before W5.
 2. **Constraint 6 is amended: the class carries no coherence field.**
    The classifier's `Ω₀` and the cartesian unit are both terminal and
    so canonically and uniquely isomorphic; W2 exports that
-   isomorphism as `terminalIsoΩ₀` instead of equating the objects.
+   isomorphism as `tensorUnitIsoΩ₀` instead of equating the objects.
+   No composite of it is exported: a consumer wanting the truth map
+   over the cartesian unit writes `tensorUnitIsoΩ₀.hom ≫
+   classifier.truth`, which needs no lemma of W2's to normalise.
 3. **The test module carries a witness.** Besides the resolution
    assertions, it instantiates the class at the degenerate topos
    `Discrete PUnit`, so the class is shown inhabitable before W3, W4
@@ -98,9 +101,9 @@ definition.
 | Declaration | Status |
 | --- | --- |
 | `ElementaryTopos` | Transcription of [MacLaneMoerdijk1992]'s definition — finite limits, finite colimits, cartesian closure, subobject classifier — strengthened computationally, the generators being carried as data rather than asserted |
-| `terminalIsoΩ₀`, `truth` | Neither. Derived from the fields by terminality |
+| `cartesianMonoidalCategory`, `monoidalClosed`, `isInitial`, `tensorUnitIsoΩ₀` | Neither. Projections of the fields, or derived from them by terminality |
 | The derived `Prop` instances | Neither. Consequences of the fields, by mathlib lemmas |
-| The `Discrete PUnit` witness | Transcription of the degenerate topos, which is standard; no originality is claimed for it. A test fixture rather than a definition, so it is the instantiation that is W2's, not the example |
+| The `Discrete PUnit` witness | Neither, and no originality is claimed. The degenerate topos is a standard example; W2 neither transcribes a statement of it nor asserts one, the witness proving the topos structure directly from `Unique (X ⟶ Y)` |
 
 The redundancy of the finite colimits is literary context rather than a
 transcription: W2 derives `HasFiniteColimits` from the initial object,
@@ -220,35 +223,39 @@ not compose with the cartesian structure" — does not hold, and decision
   `Subobject.Classifier.isTerminalΩ₀`, and `CartesianMonoidalCategory`
   carries `isTerminalTensorUnit`, so both are terminal and therefore
   canonically isomorphic. W2 exports the isomorphism as
-  `terminalIsoΩ₀` by `IsTerminal.uniqueUpToIso`.
+  `tensorUnitIsoΩ₀` by `IsTerminal.uniqueUpToIso`.
 - The isomorphism is unique, in both directions, by `hom_ext` at either
   terminal. So no coherence condition arises: every diagram involving
   the comparison map commutes by terminality alone, with nothing to
   state and nothing to check.
 
-An equality field was drafted first and rejected on three grounds. It
-asserts an equality of objects, which is not invariant under
-equivalence and which mathlib avoids: its own idiom, in the very
-classes involved, is to bundle an object and assert a property of it
-(`isTerminalTensorUnit : IsTerminal (tensorUnit C)`), never to equate
-two objects. `Geb/Mathlib/` is upstream-eligible under
-`CONTRIBUTING.md` § Floodgate test, and a non-invariant field in a
-definition as settled as this one is the kind mathlib review declines.
+An equality field was drafted first and rejected on two grounds.
+
+It asserts an equality of objects, which is not invariant under
+equivalence. mathlib does state such equalities where the
+identification is itself the subject — `CategoryTheory.Skeletal` and
+`CategoryTheory.Bicategory.Strict` both do — but not in the classes
+involved here, whose idiom is to bundle an object and assert a
+property of it (`isTerminalTensorUnit : IsTerminal (tensorUnit C)`).
+The identification is not the subject of an elementary topos, and
+`Geb/Mathlib/` is upstream-eligible under `CONTRIBUTING.md`
+§ Floodgate test.
+
 And it constrains every instance for a benefit no consumer yet needs:
 an arbitrary `Subobject.Classifier C` does not satisfy the equality —
 the `rfl` fails with a type mismatch — so an instance whose natural
 classifier construction yields an `Ω₀` isomorphic but not equal to the
 cartesian unit would have to rebuild the classifier through
-`mkOfTerminalΩ₀` before it could be given at all. That is mechanical
-rather than blocking, the pullback squares transporting along the
-unique comparison, but it is friction imposed on every future instance
-to make definitional a statement that terminality already supplies.
+`mkOfTerminalΩ₀` before it could be given at all. The rebuild is
+mechanical, the pullback squares transporting along the unique
+comparison, but it is a cost carried by every future instance to make
+definitional a statement that terminality already supplies.
 
 Nothing is lost at `FinSetSkel`. W3 builds row l through
 `mkOfTerminalΩ₀` at its own terminal, as the operation table already
-assigns, so `Ω₀` and the cartesian unit remain the same object there —
-the class simply does not require it. `terminalIsoΩ₀` is `Iso.refl` in
-that case, and computes.
+assigns, so `Ω₀` and the cartesian unit remain the same object there;
+the class does not require it. `tensorUnitIsoΩ₀` is then a map between
+one object and itself, equal to the identity by terminality.
 
 ### The literature, verified against the primary sources
 
@@ -370,8 +377,7 @@ for the `Prop` classes.
 | `cartesianMonoidalCategory` | `def`, `@[instance_reducible]` | `CartesianMonoidalCategory C` |
 | `monoidalClosed` | `def`, `@[instance_reducible]` | `MonoidalClosed C` |
 | `isInitial` | `def` | `IsInitial initialCocone.cocone.pt` |
-| `terminalIsoΩ₀` | `def` | `𝟙_ C ≅ classifier.Ω₀` |
-| `truth` | `def` | `𝟙_ C ⟶ classifier.Ω` |
+| `tensorUnitIsoΩ₀` | `def` | `𝟙_ C ≅ classifier.Ω₀` |
 | `hasColimit_pair` | `instance` | `HasColimit (pair X Y)` |
 | `hasLimit_parallelPair` | `instance` | `HasLimit (parallelPair f g)` |
 | `hasColimit_parallelPair` | `instance` | `HasColimit (parallelPair f g)` |
@@ -389,11 +395,14 @@ no `MonoidalCategory C` is in scope, and the type `MonoidalClosed C`
 does not elaborate: the elaborator reports `failed to synthesize
 instance of type class MonoidalCategory C`. The module therefore
 declares `cartesianMonoidalCategory` first and marks it `attribute
-[local instance]` before the two declarations that need it:
-`monoidalClosed`, for the reason above, and `HasFiniteLimits`, which
-without it fails to synthesize `HasFiniteProducts C`. The remaining
+[local instance]`, in force for the rest of the module. Three
+declarations need it: `monoidalClosed`, for the reason above;
+`tensorUnitIsoΩ₀`, whose type mentions `𝟙_ C` and which without it
+fails to synthesize `MonoidalCategoryStruct C`; and `HasFiniteLimits`,
+which without it fails to synthesize `HasFiniteProducts C`. The other
 ten declarations of the table elaborate with no cartesian instance in
-scope.
+scope; the attribute is left in force throughout rather than scoped to
+three, so that a later addition inherits it.
 The alternative, spelling `monoidalClosed` at `@MonoidalClosed C _
 (cartesianMonoidalCategory C).toMonoidalCategory`, also elaborates and
 is not taken, the local attribute serving every later declaration rather
@@ -410,10 +419,11 @@ meet it.
 `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean` has two parts.
 
 The witness instantiates the class at `Discrete PUnit`, the one-object
-one-morphism category. That this is an elementary topos is standard —
-it is the degenerate topos, terminal among elementary toposes and
-logical morphisms — and W2 supplies only the Lean instantiation. Its
-construction rests on `Unique (X ⟶ Y)` for every pair of objects. That
+one-morphism category, which is the degenerate topos. That it is an
+elementary topos is standard, and W2 claims no originality for it; the
+witness also does not rest on the claim, proving the structure
+directly. The construction rests on `Unique (X ⟶ Y)` for every pair of
+objects. That
 instance is not in mathlib and the module supplies it, in one line over
 the `Subsingleton (X ⟶ Y)` that mathlib does provide. From it, every
 cone is a limit cone and every cocone a colimit cone; the cartesian
@@ -493,6 +503,10 @@ as a fixture for later workstreams; it exists to exercise this class.
   records the [Pare1974] attribution as unverifiable and assigns the
   verification to W2; it is struck, the obligation being discharged
   in § The literature, verified against the primary sources.
+- `TODO.md` § Class fields, classifier row: it reads
+  "`Subobject.Classifier C`, with `Ω₀` the cartesian terminal", which
+  states the enforcement the class no longer carries. The qualifier is
+  struck, leaving the field type.
 - `TODO.md` § Cross-workstream interface constraints: constraint 6 is
   amended per decision 2. It ceases to require enforcement and becomes
   a note that the classifier's `Ω₀` and the cartesian terminal are
@@ -500,8 +514,7 @@ as a fixture for later workstreams; it exists to exercise this class.
   exports the isomorphism, and that W3 builds row l at the cartesian
   terminal as a convenience rather than an obligation. Constraint 2's
   parenthetical admitting "a `Prop` coherence field of W2's own
-  (constraint 6)" is struck with it, no such field now existing. W5's
-  field list loses the coherence field.
+  (constraint 6)" is struck with it, no such field now existing.
 - Decision 1 leaves the operation table, the § Workstreams bullets and
   W5's scope untouched; decision 2 changes W5's instance only by
   removing a field it would have discharged by `rfl`.
