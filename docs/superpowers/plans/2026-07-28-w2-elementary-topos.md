@@ -310,12 +310,12 @@ Expected: PASS, no errors and no warnings.
 ```bash
 jj describe -m "feat(elementary-topos): add the ElementaryTopos class
 
-Seven fields of mathlib types: the cartesian and closed structures,
-the initial object, binary coproducts, equalizers, coequalizers, and
-the subobject classifier. Stated over (C : Type u) [Category.{v} C].
-Both modules are appended to GebMeta.classicalAllowedModules, W2's
-whole deliverable being packaging over Classical-dependent mathlib
-category theory."
+Carry seven fields of mathlib types: the cartesian and closed
+structures, the initial object, binary coproducts, equalizers,
+coequalizers, and the subobject classifier. State the class over
+(C : Type u) [Category.{v} C]. Append both modules to
+GebMeta.classicalAllowedModules, W2's whole deliverable being
+packaging over Classical-dependent mathlib category theory."
 jj new
 ```
 
@@ -344,7 +344,8 @@ jj new
 
 - [ ] **Step 1: Write the failing test**
 
-In the test module, replace the single `example` from Task 1 with:
+In the test module, replace the single `example` from Task 1, together
+with its docstring, by:
 
 ```lean
 section Resolution
@@ -502,14 +503,14 @@ Expected: PASS.
 ```bash
 jj describe -m "feat(elementary-topos): derive the accessors and Prop instances
 
-Four definitions for the data-carrying classes and ten instances for
-the Prop classes, per the accessor rule: definitions for data, two
+Add four definitions for the data-carrying classes and ten instances
+for the Prop classes, per the accessor rule: definitions for data, two
 routes to which need not agree definitionally, and instances for Prop,
 two routes to which are harmless by proof irrelevance.
 
-HasFiniteCoproducts, HasFiniteLimits and HasFiniteColimits are derived
-from the fields rather than carried, so an instance discharges seven
-obligations rather than ten."
+Derive HasFiniteCoproducts, HasFiniteLimits and HasFiniteColimits from
+the fields rather than carrying them, so that an instance discharges
+seven obligations rather than ten."
 jj new
 ```
 
@@ -673,12 +674,12 @@ assertions are `example`s, which it does not name.
 ```bash
 jj describe -m "test(elementary-topos): witness the class at the degenerate topos
 
-An instance at Discrete PUnit, the one-object one-morphism category.
-It establishes what nothing else in W2 can, that the seven fields are
-satisfiable together, before W3 through W5 build against the class.
-Every construction runs off Unique (X ⟶ Y), which mathlib does not
-supply for Discrete and which the module adds in one line over the
-Subsingleton that it does."
+Instantiate the class at Discrete PUnit, the one-object one-morphism
+category, establishing what nothing else in W2 can: that the seven
+fields are satisfiable together, before W3 through W5 build against
+the class. Run every construction off Unique (X ⟶ Y), which mathlib
+does not supply for Discrete and which the module adds in one line
+over the Subsingleton that it does."
 jj new
 ```
 
@@ -789,15 +790,15 @@ or updates it.
 ```bash
 jj describe -m "doc(elementary-topos): cite the topos literature and index the module
 
-[Freyd1972] is the source of the axiomatisation the class transcribes,
-the one that includes the finite colimits; [Pare1974] page 556 names
-it, and Freyd states it directly, a cartesian closed category being
-finitely bicomplete there.
+Cite [Freyd1972] as the source of the axiomatisation the class
+transcribes, the one that includes the finite colimits; [Pare1974]
+page 556 names it, and Freyd states it directly, a cartesian closed
+category being finitely bicomplete there.
 
-[Mikkelsen1976] and [Pare1974] are context for the redundancy of the
-finite colimits rather than sources of a transcription. The Mikkelsen
-entry is keyed to the 1976 licentiate thesis rather than to the 1972
-talk, which carries no searchable identifier, and records the 2022
+Cite [Mikkelsen1976] and [Pare1974] as context for the redundancy of
+the finite colimits rather than as sources of a transcription. Key the
+Mikkelsen entry to the 1976 licentiate thesis rather than to the 1972
+talk, which carries no searchable identifier, and record the 2022
 Theory and Applications of Categories reprint as the retrievable
 form."
 jj new
@@ -910,20 +911,20 @@ OK".
 ```bash
 jj describe -m "doc(elementary-topos): amend the roadmap for the W2 design
 
-Constraint 6 ceases to require an identification of the classifier's
-Ω₀ with the cartesian terminal: both are terminal and so
+Relieve constraint 6 of requiring an identification of the
+classifier's Ω₀ with the cartesian terminal: both are terminal and so
 canonically and uniquely isomorphic, leaving no coherence condition to
 impose, and an equality of objects is not invariant under equivalence.
-Constraint 2's admission of a coherence field goes with it.
+Strike constraint 2's admission of a coherence field with it.
 
-The class-field section gains a note that W2 took the
-derived-instance route, so rows e, j and k are W2's one-time
-derivations while W3 and W5 proceed on the field form regardless.
+Note in the class-field section that W2 took the derived-instance
+route, so that rows e, j and k are W2's one-time derivations while W3
+and W5 proceed on the field form regardless.
 
-The attribution sentence records the finite-colimits theorem as
-Mikkelsen's, the sources not establishing the stronger claim that
-Pare's was the first publication anywhere, and the standing obligation
-to verify it is struck as discharged."
+Record the finite-colimits theorem as Mikkelsen's, the sources not
+establishing the stronger claim that Pare's was the first publication
+anywhere, and strike the standing obligation to verify it as
+discharged."
 jj new
 ```
 
@@ -1043,11 +1044,14 @@ deliverable 5 to Tasks 4, 5 and 6 Step 5. Task 6 carries the two
 separate `lake lint` invocations and
 `lake shake`; the placeholder scan is Task 3 Step 5 and the Markdown
 checks are in Tasks 4, 5 and 6.
-The spec's one open question — whether cross-module `@[expose]` is
-needed for the `@[instance_reducible]` accessors — is settled
-negatively by Task 2 Steps 4 and 5, which exercise the accessors from
-the test module, a second module, with the wrapper under a plain
-`public section`.
+The question the spec's § Verification records — whether the wrapper
+needs `@[expose]` — is answered there and in Task 2 Step 4, on three
+grounds independent of any build: W3 and W4 never import W2, W5 only
+constructs the instance, and the equations a consumer wants go
+through `IsInitial.hom_ext` and `IsTerminal.hom_ext`. The Task 2
+build shows only that signatures and instance resolution cross a
+plain `public section`; it does not bear on transparency, which
+`@[expose]` alone supplies.
 
 **Placeholder scan.** No step says TBD, "handle edge cases", or
 "similar to Task N". Every code step carries the code.
@@ -1055,6 +1059,6 @@ the test module, a second module, with the wrapper under a plain
 **Type consistency.** `cartesianMonoidalCategory`, `monoidalClosed`,
 `isInitial`, `tensorUnitIsoΩ₀`, `hasColimit_pair`,
 `hasLimit_parallelPair` and `hasColimit_parallelPair` are spelled
-identically in Task 2's interface block, its Step 3 code, and Task 3's
-witness. The class field names in Task 1 Step 3 match the field
-assignments in Task 3 Step 3 one for one.
+identically in Task 2's interface block and its Step 3 code. The class
+field names in Task 1 Step 3 match the field assignments in Task 3
+Step 3 one for one.
