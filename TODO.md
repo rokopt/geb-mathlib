@@ -208,7 +208,7 @@ a `docs/index.md` entry, per `CONTRIBUTING.md` § Each phase produces
 an artifact. W0 carries no spec, no plan and no `docs/index.md`
 entry, adding no Lean content.
 
-- **W0** — `Batteries.` admitted to the `Geb/Mathlib/` and
+- **W0** _(complete)_ — `Batteries.` admitted to the `Geb/Mathlib/` and
   `GebTests/Mathlib/` allow-lists in every place that states them:
   `scripts/lint-imports.sh` and its comment header,
   `docs/rules/upstream-eligible.md` § Subtree import rules, the
@@ -368,7 +368,7 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 
 | Workstream | Depends on | State | Code |
 | --- | --- | --- | --- |
-| W0 `Batteries.` allow-list | — | Not started | — |
+| W0 `Batteries.` allow-list | — | Complete | — |
 | W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Not started | — |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |

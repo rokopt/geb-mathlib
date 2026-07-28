@@ -12,11 +12,16 @@
 # `module` keyword), since `lake shake` minimised-imports
 # enforcement only operates on module-form files.
 #
-#   Geb/Mathlib/       →  Mathlib.*, Geb.Mathlib.*
-#   GebTests/Mathlib/  →  Mathlib.*, Geb.Mathlib.*, GebTests.Mathlib.*
+#   Geb/Mathlib/       →  Mathlib.*, Batteries.*, Geb.Mathlib.*
+#   GebTests/Mathlib/  →  Mathlib.*, Batteries.*, Geb.Mathlib.*,
+#                         GebTests.Mathlib.*
 #   Geb/Cslib/         →  Mathlib.*, Cslib.*, Geb.Cslib.*
 #   GebTests/Cslib/    →  Mathlib.*, Cslib.*, Geb.Cslib.*, GebTests.Cslib.*
 #                         (plus mandatory `import Cslib.Init`)
+#
+# `Batteries.*` is admitted to the mathlib-targeted subtrees because
+# mathlib depends on Batteries and imports its modules directly, so a
+# Batteries import survives extraction to mathlib4.
 #
 # Test roots additionally permit their own `GebTests.<subtree>.*`
 # siblings (mirroring source self-imports); source roots cannot import
@@ -24,8 +29,8 @@
 # test self-prefix (`GebTests.<subtree>.`) must not appear outside
 # import lines in test files.
 #
-# Bare umbrella imports (`import Mathlib`, `import Cslib`,
-# whether plain or `public import` form) are forbidden in
+# Bare umbrella imports (`import Mathlib`, `import Batteries`,
+# `import Cslib`, whether plain or `public import` form) are forbidden in
 # upstream-eligible files: extraction requires specific module
 # imports.
 #
@@ -99,7 +104,7 @@ check_subtree() {
         *) canonical="$line" ;;
       esac
       case "$canonical" in
-        'import Mathlib'|'import Cslib')
+        'import Mathlib'|'import Batteries'|'import Cslib')
           echo "$f: bare umbrella '$line' is forbidden in upstream-eligible files" >&2
           errors=$((errors + 1))
           continue
@@ -152,9 +157,9 @@ check_subtree() {
 # `GebTests.<subtree>.*` siblings, and forbid leakage of both the
 # source and the test self-prefix.
 check_subtree "Geb.Mathlib." -- "" Geb/Mathlib \
-  -- "Mathlib." "Geb.Mathlib."
+  -- "Mathlib." "Batteries." "Geb.Mathlib."
 check_subtree "Geb.Mathlib." "GebTests.Mathlib." -- "" GebTests/Mathlib \
-  -- "Mathlib." "Geb.Mathlib." "GebTests.Mathlib."
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib."
 check_subtree "Geb.Cslib." -- "Cslib.Init" Geb/Cslib \
   -- "Mathlib." "Cslib." "Geb.Cslib."
 check_subtree "Geb.Cslib." "GebTests.Cslib." -- "Cslib.Init" GebTests/Cslib \
