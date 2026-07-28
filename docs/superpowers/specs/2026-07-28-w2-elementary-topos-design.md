@@ -37,8 +37,8 @@ The umbrella spec that produced the roadmap was added and removed on
 branch `docs/finsetskel-topos-roadmap`, `jj` change
 `nkwoqxwytsvrlpnsklzzlzkxtovyxkzm`. Its findings were pinned to
 mathlib at Lean v4.33.0-rc1. Every finding this spec relies on was
-re-verified at the revision current on `main` at the date above by
-elaborating the declarations named, through the `lean-lsp` MCP;
+re-verified on 28 July 2026, at the revision then current on `main`,
+by elaborating the declarations named, through the `lean-lsp` MCP;
 § Findings the umbrella spec does not cover records the additions.
 
 This document is transient, per `CONTRIBUTING.md` § Concern shape:
@@ -77,12 +77,12 @@ The sentence licensing this in `TODO.md` § Class fields — rows e, j
 and k "become W2's one-time derivations and leave W3's and W5's
 assignments" — admits reading "leave" as either vacating or leaving
 alone. Leaving alone is the reading taken, on two grounds internal to
-the roadmap: the following clause, that redundant `Prop` instances
-are harmless by proof irrelevance, presupposes W3 and W5 still
-register them; and the § Workstreams bullet assigns W5 row k
-unconditionally on W2's choice. The same paragraph settles it
-outright two clauses earlier: "W3 and W5 proceed on it regardless of
-W2's eventual choice". W2's amendment to that section
+the roadmap: the clause that redundant `Prop` instances are harmless
+by proof irrelevance presupposes W3 and W5 still register them; and
+the § Workstreams bullet assigns W5 row k unconditionally on W2's
+choice. The same paragraph settles it
+outright: "W3 and W5 proceed on it regardless of W2's eventual
+choice". W2's amendment to that section
 disambiguates the sentence rather than leaving the next reader to
 re-derive it.
 
@@ -153,7 +153,9 @@ is a class draws:
 
 > Definition `…` of class type is semireducible. Most type class
 > instances should be instance-reducible, so consider marking this
-> definition with `@[instance_reducible]`.
+> definition with `@[instance_reducible]`. If it is intentionally
+> semireducible, this warning can be disabled with
+> `set_option warn.classDefReducibility false`.
 
 This is a warning at the toolchain, promoted to an error by this
 repository's `weak.warningAsError = true`. Two remedies exist:
@@ -176,8 +178,8 @@ as their only input, by the lemmas the umbrella spec recorded:
 | `HasFiniteLimits C` | `hasFiniteLimits_of_hasEqualizers_and_finite_products` | the cartesian and equalizer fields |
 | `HasFiniteColimits C` | `hasFiniteColimits_of_hasCoequalizers_and_finite_coproducts` | `HasFiniteCoproducts` above and the coequalizer field |
 
-`HasEqualizers` and `HasCoequalizers` are not fields, and the lemmas
-that supply them — `hasBinaryCoproducts_of_hasColimit_pair`,
+`HasBinaryCoproducts`, `HasEqualizers` and `HasCoequalizers` are not
+fields, and the lemmas that supply them — `hasBinaryCoproducts_of_hasColimit_pair`,
 `hasEqualizers_of_hasLimit_parallelPair` and
 `hasCoequalizers_of_hasColimit_parallelPair` — take the per-diagram
 limit and colimit classes as instance arguments. The module therefore
@@ -272,10 +274,10 @@ primary sources.
 
 Two statements about the paper are recorded here so that the module
 docstring does not misread them. Both stand on page 558, before the
-tripleability theorem, while the finite-colimits statement is on page
-559, after that theorem's proof; a reader who takes them for
-qualifications of the finite-colimits theorem gets the attribution
-wrong. The paper's sentences "Lambek and Rattray [5] have
+tripleability theorem, while the finite-colimits statement they might
+be taken to qualify is on page 559, after that theorem's proof.
+Reading them as qualifications of the finite-colimits theorem gets
+the attribution wrong. The paper's sentences "Lambek and Rattray [5] have
 also obtained this theorem … but their approach is different" and
 "Certain parts of this theorem were already known to Mikkelsen" both
 refer to the tripleability theorem, that being "the main theorem of
@@ -290,9 +292,9 @@ communicated to the Bulletin on 22 September 1973.
 Two further statements in [Pare1974] bear on the class's design and
 are recorded in the module docstring.
 
-- The paper's own axiomatisation of an elementary topos is cartesian
-  closed together with a subobject classifier, with finite limits and
-  finite colimits both derived, the paper noting that two of its
+- The axiomatisation the paper adopts, from its reference [6], is
+  cartesian closed together with a subobject classifier, with finite
+  limits and finite colimits both derived, the paper noting that two of its
   references assume them "but we do not make that assumption here".
   Every generator this class carries as data is therefore a
   computational strengthening of the definition rather than a
@@ -345,9 +347,9 @@ instances for the `Prop` classes.
 | `cartesianMonoidalCategory` | `def`, `@[instance_reducible]` | `CartesianMonoidalCategory C` |
 | `monoidalClosed` | `def`, `@[instance_reducible]` | `MonoidalClosed C` |
 | `isInitial` | `def` | `IsInitial initialCocone.cocone.pt` |
-| `hasColimitPair` | `instance` | `HasColimit (pair X Y)` |
-| `hasLimitParallelPair` | `instance` | `HasLimit (parallelPair f g)` |
-| `hasColimitParallelPair` | `instance` | `HasColimit (parallelPair f g)` |
+| `hasColimit_pair` | `instance` | `HasColimit (pair X Y)` |
+| `hasLimit_parallelPair` | `instance` | `HasLimit (parallelPair f g)` |
+| `hasColimit_parallelPair` | `instance` | `HasColimit (parallelPair f g)` |
 | — | `instance` | `HasInitial C` |
 | — | `instance` | `HasBinaryCoproducts C` |
 | — | `instance` | `HasEqualizers C` |
@@ -458,9 +460,12 @@ this class.
   the § Status row for W2, the disambiguation of the "leave W3's and
   W5's assignments" sentence per § Decisions taken here, and a note
   that W2 took the derived-instance route, so that W3, W4 and W5 read
-  an accurate roadmap. No other part of the roadmap changes: the
-  operation table, the § Workstreams bullets and W5's scope are
-  unaffected by decision 1.
+  an accurate roadmap. Also § Standing obligations, whose last bullet
+  records the [Pare1974] attribution as unverifiable and assigns the
+  verification to W2; it is struck, the obligation being discharged
+  in § The literature, verified against the primary sources. Nothing
+  else changes: decision 1 leaves the operation table, the
+  § Workstreams bullets and W5's scope untouched.
 - `docs/index.md`: the module entry.
 
 ## Deliverables
