@@ -158,8 +158,8 @@ Modified:
 | --- | --- |
 | `Geb/Mathlib/Data.lean` | `public import Geb.Mathlib.Data.UnionFind` |
 | `GebTests/Mathlib/Data.lean` | `import GebTests.Mathlib.Data.UnionFind` |
-| `Geb/Mathlib/CategoryTheory/FinSetSkel.lean` | two `public import` lines |
-| `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean` | two `import` lines |
+| `Geb/Mathlib/CategoryTheory/FinSetSkel.lean` | two `public import` lines, one per task that creates a module (Task 3 Step 11, Task 5 Step 5) |
+| `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean` | two `import` lines (Task 4 Step 7, Task 5 Step 5) |
 | `GebMeta.lean` | two names appended to `classicalAllowedModules` |
 | `docs/index.md` | one entry per new source module |
 | `docs/references.bib` | the `nLabCoequalizer` `@misc` entry |
@@ -291,15 +291,16 @@ variable {n : Nat}
 end Batteries.UnionFind
 ```
 
-Two forward references, both deliberate. `universe u` is first used by
-Task 2's `apply_root_ofEdges` and `apply_root_foldl`, and the
-`## Main statements` section names those two theorems, which Task 2
-adds. `docs/rules/lean-coding.md` § Structure and typeclass patterns
-asks that unused `universe` declarations be removed, so if Tasks 1 and
-2 are executed as separate reviewable commits rather than back to
-back, move both into Task 2 Step 1 and add them there. Tasks 1 and 2
-are one module reviewed across two commits; the module docstring
-describes the module, not the commit.
+Two forward references, both deliberate and both left as written.
+`universe u` is first used by Task 2's `apply_root_ofEdges` and
+`apply_root_foldl`, and the `## Main statements` section names those
+two theorems, which Task 2 adds. Tasks 1 and 2 build one module across
+two reviewable commits, and a module docstring describes the module,
+not the commit that happens to be current.
+`docs/rules/lean-coding.md` § Structure and typeclass patterns asks
+that *unused* `universe` declarations be removed; this one is used by
+the end of Task 2, and Lean emits no diagnostic for it in between
+(measured: Task 1 verbatim gives zero diagnostics).
 
 - [ ] **Step 2: add the two size lemmas, unproved, and confirm they
   fail**
@@ -758,8 +759,8 @@ union-find, disjoint set, test
 
 open Batteries
 
-/-- A five-element edge list merging `0`, `1`, `2` and, separately,
-`3` and `4`. -/
+/-- A three-element edge list over `Fin 5`, merging `0`, `1`, `2` and,
+separately, `3` and `4`. -/
 def sampleEdges : List (Fin 5 × Fin 5) :=
   [(⟨0, by decide⟩, ⟨1, by decide⟩), (⟨1, by decide⟩, ⟨2, by decide⟩),
    (⟨3, by decide⟩, ⟨4, by decide⟩)]
@@ -845,14 +846,18 @@ Spec sections: § The quotient core, § Sharing, § Definitions,
 **Files:**
 
 - Create: `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`
+- Modify: `Geb/Mathlib/CategoryTheory/FinSetSkel.lean`
 
 **Interfaces:**
 
-- Consumes: Task 1's and Task 2's `Batteries.UnionFind.Sized` API;
-  W1's `FinSetSkel`, `FinSetSkel.Hom.ofVec`,
+- Consumes: Task 1's `Batteries.UnionFind.Sized`, `Sized.root`,
+  `Sized.ofEdges` and `Sized.root_root` — not Task 2's two theorems,
+  which are Task 4's; W1's `FinSetSkel`, `FinSetSkel.Hom.ofVec`,
   `FinSetSkel.Hom.toVec` and `FinSetSkel.Hom.toVec_ofVec`;
   `Vector.ofFnC` and `Vector.get_ofFnC`; `Fin.compressEquiv`,
-  `Equiv.apply_symm_apply` and `Equiv.symm_apply_apply`.
+  `Equiv.apply_symm_apply` and `Equiv.symm_apply_apply`;
+  `instDecidableEqFin`, named explicitly by `isRoot`, and
+  `decide_eq_true_eq`, used by `isRoot_root`.
   `FinSetSkel.hom_ext` and `FinSetSkel.comp_get` are Task 4's, not
   this task's.
 - Produces, all in namespace `FinSetSkel.Quotient`: `edges`,
@@ -954,6 +959,11 @@ namespace FinSetSkel.Quotient
 
 end FinSetSkel.Quotient
 ```
+
+As in Task 1 Step 1, the `## Main statements` section names three
+declarations a later task adds — `comp_π`, `π_desc` and `desc_uniq`
+are Task 4's. Tasks 3 and 4 build one module across two reviewable
+commits, and the docstring describes the module.
 
 The `CategoryTheory` open is what puts `⟶` and `≫` in scope, as W1's
 `Basic.lean` does for the same reason. The `Batteries` open licenses
@@ -1233,23 +1243,44 @@ subterm succeeds; use it there and nowhere else in the proof.
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 9: mark `rep_π` and `π_rep` `@[simp]`, and re-verify**
+- [ ] **Step 9: run the `@[simp]` test, and mark neither**
 
 None of the five carries `@[simp]` as specified. `rep_π` and `π_rep`
-are the candidates, but the index types obstruct `rw` at nested
-positions, so whether `simp` can fire them is settled by exhibiting a
-goal each closes, not in advance.
+are the candidates, and the spec settles the question by measurement:
+"whether `simp` can fire them is settled by exhibiting a goal each
+closes, not in advance; implementation marks a lemma `@[simp]` only
+then, and records which."
 
-**Both are marked.** That was measured before this plan was written,
-so add `@[simp]` to `rep_π` and to `π_rep`. The probes are modelled on
-the nested positions the two lemmas occupy in Task 4 — `rep_π` inside
-`π_desc`, `π_rep` inside `desc_uniq` — since a goal that is the lemma
-itself proves nothing about firing. Only `rep_π`'s probe reflects an
-actual `simp` need: `desc_uniq` reaches `π_rep` with a plain
-`rw [desc_get, ← hm, comp_get, π_rep]`, so `π_rep`'s mark has no W4
-consumer and is justified by the spec's own test — exhibiting a goal it
-closes — rather than by a call site. Immediately above Step 5's
-section-closing `end`, temporarily:
+**The outcome is that neither is marked.** Both pass the exhibited-goal
+test, but passing it is the spec's necessary condition, not a
+sufficient one, and no W4 proof needs either mark: `rw` reaches both
+lemmas at the nested positions their consumers put them in. Measured —
+with `rep_π` unmarked, `by rw [rep_π]` closes probe 1 below with zero
+diagnostics, while `by simp` on the same goal reports "`simp` made no
+progress"; and `desc_uniq` reaches `π_rep` by plain
+`rw [desc_get, ← hm, comp_get, π_rep]`, which Task 4 Step 4 already
+gives as a working term. An attribute no consumer needs is a cost
+without a return, which `CONTRIBUTING.md` § Code is cost rejects.
+
+Not marking is also the safer side of the note following `TODO.md`'s
+cross-workstream constraints: W3 and W4 each add carrier-level `simp`
+lemmas that first meet at W5, and neither workstream marks a lemma in
+a direction that rewrites the other's normal form. W5 may mark either
+lemma if it turns out to need it, with W3's carrier-level lemmas then
+visible for comparison — which they are not from here.
+
+**One discrepancy to record for the user's review.** Spec § Statements
+motivates the deferral with the clause "the index types above obstruct
+`rw` at nested positions". That is true where § Index types establishes
+it — of `rw [Vector.get_ofFnC]` against the three unfolding lemmas, and
+of rewriting with `rep_get` after `π_get` inside `rep_π`'s own proof —
+but it does not hold of rewriting *with* `rep_π` or `π_rep` at their
+call sites, which is the position this step is about. The spec's
+operative instruction is unaffected: it says to settle the question by
+exhibiting a goal, and that is what this step does.
+
+Run the test anyway rather than taking the outcome on trust.
+Immediately above Step 5's section-closing `end`, temporarily:
 
 ```lean
 example (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) (h : Y ⟶ Z)
@@ -1268,8 +1299,7 @@ each uses `Z` as an implicit variable and unqualified `rep`, `π` and
 `obj`, all of which are out of scope outside it, and
 `autoImplicit = false` means `Z` would not be auto-bound.
 
-The measured table, which the implementation reproduces rather than
-takes on trust:
+The measured table, which the implementation reproduces:
 
 | `rep_π` | `π_rep` | probe 1 | probe 2 |
 | --- | --- | --- | --- |
@@ -1278,27 +1308,21 @@ takes on trust:
 | `@[simp]` | `@[simp]` | closes | closes |
 
 Each probe is closed by its own lemma and by nothing else — with both
-unmarked neither closes, so no third `simp` lemma reaches either
-goal. That also answers constraint 9 for these two probes: no
-choice-tainted `Vector` lemma is doing the work.
+unmarked neither closes, so no third `simp` lemma reaches either goal.
+That answers constraint 9 for these two probes: no choice-tainted
+`Vector` lemma is doing the work. It is also what makes the marks
+dispensable: nothing else was relying on them.
 
-Delete both `example`s once the table is reproduced — they are
-scaffolding, not tests, and `CONTRIBUTING.md` § Document only the
-persistent keeps them out of the tree. Record under the module
-docstring's `## Implementation notes` that both round trips carry
-`@[simp]`, in one sentence:
+Delete both `example`s once the table is reproduced, and leave both
+lemmas unmarked — the `example`s are scaffolding, not tests, and
+`CONTRIBUTING.md` § Document only the persistent keeps them out of the
+tree. Record the outcome under the module docstring's
+`## Implementation notes`, in one sentence:
 
 ```text
-`rep_π` and `π_rep` both carry `@[simp]`; each fires at the nested
-position its own consumer puts it in, where `rw` cannot reach for the
-index-type reason above.
+Neither round trip carries `@[simp]`: `rw` reaches each at the position
+its consumer uses, so the attribute would have no consumer here.
 ```
-
-Per the note following `TODO.md`'s cross-workstream constraints, no
-attribute is added in a direction that rewrites a carrier-level normal
-form W3 introduces; W3's rows and W4's row first meet at W5. Neither
-`rep_π` nor `π_rep` is a transport lemma between two carriers, so
-neither is in that position.
 
 Run: `lake build`
 Expected: PASS.
@@ -1318,7 +1342,25 @@ Expected: `instDecidableEqFin`, as written — not
 Run: `lake lint`
 Expected: PASS.
 
-- [ ] **Step 11: commit**
+- [ ] **Step 11: wire the module into the source index**
+
+In `Geb/Mathlib/CategoryTheory/FinSetSkel.lean`, add after `.Basic` and
+before `.Skeleton`:
+
+```lean
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
+```
+
+This happens here rather than in Task 4, so the commit does not ship a
+`Geb/Mathlib/` module unreachable from `Geb.lean` —
+`CONTRIBUTING.md` § Repo structure asks for one indexing file per
+directory. The `GebTests` index line waits for Task 4 Step 7, where the
+test module arrives.
+
+Run: `lake build`
+Expected: PASS.
+
+- [ ] **Step 12: commit**
 
 ```bash
 jj commit -m "feat(finsetskel): construct the coequalizer carrier and projection"
@@ -1335,7 +1377,6 @@ bullet).
 
 - Modify: `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`
 - Create: `GebTests/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`
-- Modify: `Geb/Mathlib/CategoryTheory/FinSetSkel.lean`
 - Modify: `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`
 
 **Interfaces:**
@@ -1554,21 +1595,16 @@ the classes are as stated by `#eval coeqClasses` and
 `#eval (List.finRange 4).map coeqPiAt`; a wrong class count means the
 edge list is wrong, a right count with wrong grouping means `π` is.
 
-- [ ] **Step 7: wire both modules into their directory indices**
+- [ ] **Step 7: wire the test module into the test index**
 
-In `Geb/Mathlib/CategoryTheory/FinSetSkel.lean`, add:
-
-```lean
-public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
-```
-
-In `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`, add:
+In `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`, add in
+alphabetical position — after `.Basic`, before `.Skeleton`:
 
 ```lean
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Quotient
 ```
 
-Both in alphabetical position: after `.Basic`, before `.Skeleton`.
+The source index already has its `.Quotient` line from Task 3 Step 11.
 
 Run: `lake build` then `lake build GebTests` then `lake test` then
 `lake lint` then `lake lint -- GebTests`
@@ -2021,6 +2057,20 @@ That branch amends constraint 9 with three choice-taint families and
 a measurement rule. W4 imports nothing from it; the dependency is its
 `TODO.md` text alone.
 
+- [ ] **Step 0: if the sibling has not merged, skip this task**
+
+Check whether `feat/choice-free-primitives` has merged to `main`. If it
+has not, and W4 is otherwise complete, skip Task 7 in full and go to
+Task 8. Do not wait for it: the clause this task would correct is not
+in this branch's `TODO.md`, so there is nothing to correct, and W4's
+three constraint-9 answers stand as measurements about W4's own
+construction either way — spec § Constraint 9: "if it does not merge,
+the three answers stand as measurements in their own right … and this
+section loses only its addressee". The correction then falls to
+whichever branch rebases after the clause lands.
+
+If it has merged, continue.
+
 - [ ] **Step 1: rebase once `feat/choice-free-primitives` merges**
 
 ```bash
@@ -2197,6 +2247,22 @@ plan at all. It is now a step: Task 1 Step 8 checks that
 module's import set, W4 being the first workstream to take a direct
 `Batteries.` import and so the one place `TODO.md` constraint 9's
 standing choice is exercised.
+
+**Reversed after review round 4.** Rounds 2 and 3 recorded that both
+round trips would be marked `@[simp]`, on the strength of the probe
+table. The table is right, but the conclusion was not: measured,
+`by rw [rep_π]` closes probe 1's goal with `rep_π` unmarked, and
+`desc_uniq` already reaches `π_rep` by plain `rw`. So `rw` reaches both
+lemmas at the positions their consumers use, no W4 proof needs either
+mark, and `CONTRIBUTING.md` § Code is cost rejects an attribute with no
+consumer. Task 3 Step 9 now marks neither and records the measurement.
+The plan's earlier motivation for the marks — that "the index types
+obstruct `rw` at nested positions", a clause quoted from spec
+§ Statements — is true of the three unfolding lemmas and of `rep_π`'s
+own internal proof, but not of rewriting *with* `rep_π` or `π_rep` at a
+call site; Step 9 records that discrepancy rather than repeating the
+clause. The spec's operative instruction, to settle the question by
+exhibiting a goal, is unaffected and is what the step does.
 
 **Type consistency.** `Sized`, `Sized.root`, `Sized.ofEdges`,
 `Sized.root_ofEdges_eq_of_mem` and `Sized.apply_root_ofEdges` are
