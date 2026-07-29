@@ -143,13 +143,14 @@ identity is inserted by this development, at the index one past the
 client's range in each endo-hom:
 
 ```lean
-def FinCat.homCount (S : FinCat) (i j : Fin S.objCount) : Nat :=
-  S.nonIdCount i j + if i = j then 1 else 0
+def FinCat.homCountOf (objCount : Nat) (nonIdCount) (i j : Fin objCount) : Nat :=
+  nonIdCount i j + if i = j then 1 else 0
 ```
 
-so that the embedding of a client morphism into the full hom type is
-index-preserving on and off the diagonal, and `𝟙 i` has index
-`S.nonIdCount i i`.
+with `FinCat.homCount S` the wrapper applying it to `S`'s own fields,
+per [The specification type](#the-specification-type). The embedding of
+a client morphism into the full hom type is therefore index-preserving
+on and off the diagonal, and `𝟙 i` has index `S.nonIdCount i i`.
 
 The alternative of reserving index `0` for the identity was rejected.
 Under it the embedding is `Fin.succ` on the diagonal and the identity
@@ -187,7 +188,7 @@ structure FinCat where
 with the derived notions
 
 ```lean
-def FinCat.Mor (S : FinCat) (i j : Fin S.objCount) : Type :=
+abbrev FinCat.Mor (S : FinCat) (i j : Fin S.objCount) : Type :=
   Fin (S.homCount i j)
 
 def FinCat.emb {S : FinCat} {i j : Fin S.objCount} :
@@ -202,6 +203,12 @@ protected def FinCat.id (S : FinCat) (i : Fin S.objCount) : S.Mor i i :=
 `id` would otherwise shadow core's, as
 `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` records for its own
 `protected def id`, whose body has to write `_root_.id`.
+
+`Mor` is an `abbrev`, not a `def`. Instance search does not unfold a
+plain `def`, so `DecidableEq (S.Mor i j)` would not be found and the
+checkers below — whose `decide` bodies are equalities at `Mor` — would
+not elaborate. An `abbrev` inherits `Fin`'s `DecidableEq`, `Repr` and
+`Fintype` instances, all axiom-free.
 
 and the total composition
 `FinCat.compTotal : S.Mor i j → S.Mor j k → S.Mor i k`, defined by
@@ -452,43 +459,51 @@ dependency order follows the module order rather than a single list.
 2. Composition and identity of `FinCat.Hom` as operations, each
    discharging its validity field through the reflection lemmas.
 3. `FinCat.Hom.mapTotal_id : F.mapTotal (S.id i) = T.id (F.objMap i)`
-   and
-   `FinCat.Hom.comp_mapTotal : (F ≫ G).mapTotal x = G.mapTotal (F.mapTotal x)`.
-4. `FinCat.Hom.mapTotal_compTotal` — functoriality of `mapTotal` at
+   and `FinCat.Hom.comp_mapTotal`, that `(F.comp G).mapTotal x` equals
+   `G.mapTotal (F.mapTotal x)`.
+4. `FinCat.Hom.mapTotal_id`'s companions: `FinCat.Hom.id_mapTotal`,
+   that the identity 1-cell's `mapTotal` is the identity, and
+   `FinCat.Hom.mapTotal_compTotal`, functoriality of `mapTotal` at
    **total** morphisms, extending `compCheck` off the client range.
-   This was previously carried as a verification obligation; it is
-   named content, because the coherence theorems below consume it and
-   nothing else can supply it.
-5. The three strict equalities: `𝟙 ≫ F = F`, `F ≫ 𝟙 = F`,
-   `(F ≫ G) ≫ H = F ≫ (G ≫ H)`. The `Bool`-equation fields contribute
-   nothing, being proof-irrelevant; `comp_mapTotal` supplies the
-   associativity component.
+   The coherence theorems below consume it and nothing else can supply
+   it.
+5. The three strict equalities, written with `FinCat.Hom.comp` and
+   `FinCat.Hom.id` rather than `≫` and `𝟙`: no `CategoryStruct FinCat`
+   exists until `Bicategory.lean`. The `Bool`-equation fields
+   contribute nothing, being proof-irrelevant; `comp_mapTotal` supplies
+   the associativity component.
 
 ### In `Hom2.lean`
 
-1. A hand-written `@[ext]` lemma for `FinCat.Hom₂` phrased at
+1. `FinCat.Hom.instCategory : Category (FinCat.Hom S T)` — vertical
+   composition of 2-cells and the identity 2-cell — with
+   `FinCat.Hom₂.app_id` and `FinCat.Hom₂.app_comp`. It comes first
+   because it is the only source of `⟶` at the 2-cell level, on which
+   items 2 and 4 depend. mathlib orders the same three the same way:
+   `Cat.Hom.instQuiver` (`Cat.lean:118`), `Cat.Hom.instCategory`
+   (`:127`), `Cat.Hom₂.ext` (`:154`).
+2. A hand-written `@[ext]` lemma for `FinCat.Hom₂` phrased at
    `F ⟶ G`. The structure-derived one does not fire on goals stated
    through the hom notation, and mathlib writes the corresponding
    lemma by hand for the same reason (`Cat.Hom₂.ext`,
    `Cat.lean:153-155`).
-2. `FinCat.Hom.instCategory : Category (FinCat.Hom S T)` — vertical
-   composition of 2-cells and the identity 2-cell — with
-   `FinCat.Hom₂.app_id` and `FinCat.Hom₂.app_comp`.
 3. `FinCat.Hom₂.natCheck_total` — naturality at **total** morphisms,
-   extending `natCheck` off the client range. Promoted from a
-   verification obligation for the same reason as
-   `mapTotal_compTotal`: `whisker_exchange` is exactly this at
-   `η.app i`, which ranges over the full hom type.
-4. `FinCat.Hom₂.toNatTrans`, whose statement uses `⟶` at the 2-cell
-   level and so follows the instance.
+   extending `natCheck` off the client range. `whisker_exchange` is
+   exactly this at `η.app i`, which ranges over the full hom type,
+   so no default can supply it.
+4. `FinCat.Hom₂.toNatTrans`.
 
 ### In `Bicategory.lean`
 
 1. `FinCat.Hom₂.whiskerLeft` and `FinCat.Hom₂.whiskerRight` as
-   standalone definitions. `whiskerLeft` is pure reindexing —
+   standalone definitions, their result types written through `⟶`
+   (`F ≫ G ⟶ F ≫ H`) rather than as `FinCat.Hom₂ _ _`. Written the
+   latter way, every statement mentioning them needs an `@`-ascription
+   to unify `FinCat.Hom₂ _ _` against `_ ⟶ _`; written through `⟶`,
+   none does. `whiskerLeft` is pure reindexing —
    `(F ◁ η).app i = η.app (F.objMap i)`; `whiskerRight` applies
    `mapTotal` — `(η ▷ H).app i = H.mapTotal (η.app i)`. That asymmetry
-   is what decides the partition below.
+   decides the partition below.
 2. `FinCat.Hom₂.eqToHom_app`. It cannot be stated in the form
    `(eqToHom p).app i = T.id (F.objMap i)`: `app`'s type mentions both
    `F.objMap` and `G.objMap`, so the two sides have different types.
@@ -503,49 +518,61 @@ dependency order follows the module order rather than a single list.
 
    The `cases` is available here, `p` being a hypothesis over variable
    `F` and `G`; it is *not* available inside the instance, `F`
-   occurring on both sides of `𝟙 ≫ F = F`.
-3. **Ten** coherence theorems — `id_whiskerLeft`, `comp_whiskerLeft`,
+   occurring on both sides of `FinCat.Hom.id _ ≫ F = F`.
+3. Two `Fin.val`-level lemmas, needed because a `Fin.cast` appearing
+   inside an argument of `compTotal` is not reachable by rewriting the
+   outer equality:
+   - a unitality pair, `(S.compTotal f y).val = f.val` given
+     `S.nonIdCount j k ≤ y.val`, and its left dual — each immediate
+     from `compTotal`'s `dif_neg` branch;
+   - `(F.mapTotal x).val = T.nonIdCount (F.objMap j) (F.objMap j)`
+     given `S.nonIdCount i j ≤ x.val`, the `Fin.val`-level form of
+     `mapTotal_id`.
+4. **Ten** coherence theorems — `id_whiskerLeft`, `comp_whiskerLeft`,
    `id_whiskerRight`, `comp_whiskerRight`, `whiskerRight_id`,
    `whiskerRight_comp`, `whisker_assoc`, `whisker_exchange`,
    `pentagon`, `triangle` — stated against `FinCat.Hom.instCategory`.
-   Because `eqToHom_app`'s right-hand side is a `Fin.cast`, it is not
-   a `simp` rewrite under `T.compTotal`; each proof descends to
-   `Fin.val` first, in the shape
-   `apply FinCat.Hom₂.ext; funext i; apply Fin.ext; simp only [app_comp,
-   eqToHom_app]; simp`. `id_whiskerRight` and `whiskerRight_id` need
-   `mapTotal_id`; `whiskerRight_comp` and `whisker_assoc` need
-   `comp_mapTotal`; `comp_whiskerRight` needs `mapTotal_compTotal`;
-   `whisker_exchange` needs `natCheck_total`.
-   Statements need explicit instance ascriptions: written bare,
-   `whiskerRight η h ≫ whiskerLeft g θ` fails to unify
-   `FinCat.Hom₂ _ _` against `_ ⟶ _`.
-4. `FinCat.bicategory : Bicategory FinCat`: `id`, `comp`,
+
+   They fall into two families, which is the only thing about their
+   proofs this spec fixes; the tactic scripts are the implementation
+   plan's business.
+
+   - `id_whiskerRight`, `comp_whiskerRight` and `whisker_exchange`
+     contain no `eqToHom`. Each closes at the `app` level from a single
+     named lemma — respectively `mapTotal_id`, `mapTotal_compTotal`
+     and `natCheck_total`. Descending these to `Fin.val` is
+     counterproductive: it unfolds the semireducible `FinCat.Mor` and
+     puts `natCheck_total` out of rewriting range.
+   - The other seven carry `eqToHom` through the associator and
+     unitors, and need item 3's `Fin.val`-level lemmas.
+     `whiskerRight_comp` additionally needs `comp_mapTotal`;
+     `whiskerRight_id` needs `id_mapTotal`, that the identity 1-cell's
+     `mapTotal` is the identity, which is a different statement from
+     `mapTotal_id` and is why both are named in `Hom.lean`;
+     `pentagon` and `triangle` need `mapTotal_id` in its
+     `Fin.val`-level form.
+5. `FinCat.bicategory : Bicategory FinCat`: `id`, `comp`,
    `homCategory`, `whiskerLeft`, `whiskerRight`, the associator and
    unitors, and the ten fields above cited explicitly. Only
    `whiskerLeft_id` and `whiskerLeft_comp` are left to their defaults;
    both sides of each are definitionally equal. The associator and
-   unitors are `eqToIso` of the strict equalities but need the instance
-   supplied by hand — `eqToIso (…)` inside the instance fails to
-   synthesize `Category (a ⟶ d)`, the `homCategory` field not yet
-   being available to instance search, so they are written
-   `@eqToIso _ FinCat.Hom.instCategory _ _ (…)`. Field binders are
-   likewise written out (`fun {a b} {F G : FinCat.Hom a b} η => …`); a
-   bare `fun η => …` fails the same unification as in item 3.
-5. `FinCat.bicategory_strict : Bicategory.Strict FinCat`. Its
-   `leftUnitor_eqToIso`, `rightUnitor_eqToIso` and
-   `associator_eqToIso` fields hold by `rfl` even though the
-   underlying equalities do not, by definitional proof irrelevance of
-   the `Eq` proofs inside `eqToIso`. The name is `snake_case` per
-   `docs/rules/lean-coding.md` § Naming conventions, the class being
-   `Prop`-valued; mathlib spells the corresponding instances
-   `Cat.bicategory.strict` and
-   `locallyDiscreteBicategory.strict`, which that rule would not
-   admit.
-6. `FinCat.category : Category FinCat`, defined as
-   `StrictBicategory.category FinCat`. It is named rather than left to
-   the anonymous priority-100 instance, following `Cat.category`.
-   There are no universe parameters to pin: `FinCat`, `FinCat.Hom` and
-   `FinCat.Hom₂` all live at `Type 0`.
+   unitors are `eqToIso` of the strict equalities, and these do need
+   the instance supplied by hand — `eqToIso (…)` inside the instance
+   fails to synthesize `Category (a ⟶ d)`, the `homCategory` field not
+   yet being available to instance search — so they are written
+   `@eqToIso _ FinCat.Hom.instCategory _ _ (…)`. Note `eqToHom` takes a
+   `CategoryStruct` where `eqToIso` takes a `Category`, so the two
+   ascriptions differ.
+6. `FinCat.bicategory_strict : Bicategory.Strict FinCat`. Three of its
+   six fields are `id_comp`, `comp_id` and `assoc`, which are the
+   strict equalities of `Hom.lean`. The other three —
+   `leftUnitor_eqToIso`, `rightUnitor_eqToIso`, `associator_eqToIso` —
+   hold by `rfl` even though those equalities do not, by definitional
+   proof irrelevance of the `Eq` proofs inside `eqToIso`. The name is
+   `snake_case` per `docs/rules/lean-coding.md` § Naming conventions,
+   the class being `Prop`-valued; mathlib spells the corresponding
+   instances `Cat.bicategory.strict` and
+   `locallyDiscreteBicategory.strict`, which that rule would not admit.
 
 ### Why ten axioms are proved rather than defaulted
 
@@ -558,11 +585,14 @@ switches `cat_disch` to `grind` under
 `mathlib.tactic.category.grind`, which `lakefile.toml` does not set.
 Under `grind` all twelve fail.
 
-The operative cause is not that `eqToHom` fails to rewrite. Every
-failure reports its goal *unchanged* after safe rules: `aesop` applies
-no extensionality rule to a goal at `F ⟶ G`, so no `app`-level lemma is
-ever reached, whether or not it is `@[simp]`, and adding the
-hand-written `@[ext]` lemma does not change that. The defaults
+The operative cause is not that `eqToHom` fails to rewrite. `aesop`'s
+normalisation does make progress — it rewrites `(eqToIso p).hom` to
+`eqToHom p` in eight of the ten, and collapses `pentagon`'s right-hand
+side to a single `eqToHom` — but it applies no extensionality rule to a
+goal at `F ⟶ G`, so no `app`-level lemma is ever reached, whether or
+not it is `@[simp]`, and adding the hand-written `@[ext]` lemma does not
+change that. Under `grind` the goals do reach `.app i`, `cat_disch`'s
+grind branch running `try ext`, and still fail. The defaults
 therefore close only goals whose two sides are already definitionally
 equal — which is exactly `whiskerLeft_id` and `whiskerLeft_comp`.
 Three of the ten failures (`id_whiskerRight`, `comp_whiskerRight`,
@@ -586,8 +616,8 @@ existing abstraction to instantiate rather than parallel, and it was
 priced: hom-objects come free from `FinCat.Hom.instCategory`, leaving a
 unit functor, horizontal composition as a bifunctor
 `Hom S T ⊗ Hom T U ⟶ Hom S U`, and three functor-level equalities —
-about six obligations against the seventeen above. `CatEnriched C` is a
-type alias, but that is not an obstacle: `Bicategory`,
+materially fewer obligations than the hand-rolled construction.
+`CatEnriched C` is a type alias, but that is not an obstacle: `Bicategory`,
 `Bicategory.Strict`, `Category` and the hom-categories all transport
 onto the carrier itself through `inferInstanceAs`, measured.
 
@@ -704,15 +734,15 @@ Three consequences.
   `CategoryTheory.Iso.refl`, reached through `Cat.Hom.isoMk` in its
   associator and unitor fields; `cat_disch` itself introduces no
   choice, and `Bicategory.lean` above uses `eqToIso`, not `Iso.refl`,
-  so that route has no way in. Every ingredient of the hand-rolled
-  construction is accounted for: `eqToIso` is `[propext]`,
+  so that route has no way in. The measured ingredients of the hand-rolled
+  construction are: `eqToIso` is `[propext]`,
   `StrictBicategory.category` is `[propext]`, and `funext` — reached
   through the strict equalities, which are not `rfl` — is
   `[Quot.sound]`, all within `GebMeta.standardAxioms`. The instance
-  figure `[propext, Quot.sound]` is therefore expected but is listed
-  outstanding below rather than discharged: the model it was first
-  measured on was refuted on its coherence claim, so the figure has to
-  be re-measured against the corrected construction. By contrast
+  figure `[propext, Quot.sound]` is therefore expected, and is listed
+  outstanding below rather than discharged: the coherence proofs are
+  themselves an ingredient, and their tactic content is settled by the
+  implementation plan rather than here. By contrast
   `MonoidalCategory Cat` measures
   `[propext, Classical.choice, Quot.sound]`, and so do
   `Bicategory (CatEnriched X)` and `Bicategory.Strict (CatEnriched X)`
@@ -739,17 +769,21 @@ Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean  diagonal FinCategory
 Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          functor specifications,
                                                     checker, toFunctor, ext,
                                                     composition and identity,
-                                                    mapTotal_id,
+                                                    compCheck_eq_true_iff,
+                                                    mapTotal_id, id_mapTotal,
                                                     comp_mapTotal,
                                                     mapTotal_compTotal,
                                                     strict equalities
 Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean         2-cell specifications,
-                                                    checker, ext lemma at
-                                                    F to G, instCategory,
-                                                    app_id, app_comp,
+                                                    checker,
+                                                    natCheck_eq_true_iff,
+                                                    instCategory, ext lemma at
+                                                    F to G, app_id, app_comp,
                                                     natCheck_total, toNatTrans
 Geb/Mathlib/CategoryTheory/FinCat/Bicategory.lean   whiskerings, eqToHom_app,
-                                                    the ten coherence theorems,
+                                                    Fin.val-level unitality and
+                                                    mapTotal_id, the ten
+                                                    coherence theorems,
                                                     Bicategory, Strict,
                                                     Category
 Geb/Mathlib/CategoryTheory/FinCat/Decidable.lean    decidableEqPiFin,
@@ -806,20 +840,19 @@ re-runs them rather than re-deriving them.
 Outstanding:
 
 1. `FinCat.bicategory` and `FinCat.bicategory_strict` measure
-   `[propext, Quot.sound]` at `FinCat`. Every ingredient is measured
-   and leaves no route for `Classical.choice`, but the instances
-   themselves have not been measured against the corrected
-   construction.
-2. The ten coherence theorems close in the stated `Fin.val`-descending
-   shape, and `whiskerLeft_id` and `whiskerLeft_comp` close under
-   `aesop_cat`. The partition is measured on a faithful model; what is
-   outstanding is that it holds at `FinCat` itself.
+   `[propext, Quot.sound]` at `FinCat`. Every ingredient named in
+   § Axiom hygiene is measured and leaves no route for
+   `Classical.choice`; the instances themselves are not yet measured.
+2. The ten coherence theorems close from the lemma inventory of
+   § In `Bicategory.lean`, items 1 to 3, and that inventory is
+   sufficient. The ten/two partition against `aesop_cat` is measured on
+   a faithful model; that it holds at `FinCat` itself, and that no
+   further lemma is needed, is not.
 3. `FinCat.Hom.mapTotal_compTotal` and `FinCat.Hom₂.natCheck_total`
    hold: `compCheck` and `natCheck`, which quantify over client
-   morphisms, extend to all morphisms of the full hom types. These were
-   carried as a single obligation in an earlier draft; they are now
-   named content in `Hom.lean` and `Hom2.lean`, because the coherence
-   theorems consume them, but they remain to be proved.
+   morphisms, extend to all morphisms of the full hom types. Both are
+   named content, the coherence theorems consuming them, and both
+   remain to be proved.
 
 ## Testing
 
@@ -838,7 +871,8 @@ worked examples, each discharging its validity field by `rfl`:
 The negative test is the two-object specification of discharged
 obligation 3, asserting `assocCheck … = false` by `rfl`. Its witness is
 `f : 0 ⟶ 0`, `g : 0 ⟶ 1`, `h : 1 ⟶ 0`, where `(f ⬝ g) ⬝ h` is the
-reserved identity of `0` and `f ⬝ (g ⬝ h)` is `f`.
+reserved identity of `0` and `f ⬝ (g ⬝ h)` is `f`, writing `⬝` for
+`compTotal`.
 
 Functor and 2-cell tests: the identity functor on each worked example,
 the two functors from the terminal category into the walking arrow, and
