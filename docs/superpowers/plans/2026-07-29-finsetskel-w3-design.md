@@ -129,6 +129,14 @@ Every task's requirements implicitly include this section.
   In particular `linter.style.show` rejects a goal-changing `show`
   (use `change`), and `dupNamespace` rejects a declaration whose own
   name repeats its enclosing namespace.
+- **`simpa … using t` fails when `simp` alone would close the goal.**
+  `linter.unnecessarySimpa` reports it, and the bullet above turns
+  that into a build failure. This bites wherever the `using` term is a
+  library lemma the default simp set already applies — measured at
+  this toolchain for both `List.getElem_mem` sites in Tasks 14 and 17.
+  Reach for `simpa` only when the term is a local hypothesis simp
+  cannot produce; try plain `simp` first and keep whichever the
+  linter accepts.
 - **Docstrings are mandatory** for every `def`, `instance`,
   `structure` field and theorem of every module this plan creates,
   and a `/-! … -/` module docstring with the sections
@@ -2796,9 +2804,16 @@ Route, in three moves:
 The recipe to try first:
 
 ```lean
-  simp only [curriedTensor_obj_obj, curriedTensor_obj_map,
-    homEquivIdxFun_apply, homEquivIdxFun_symm_get, comp_get, whiskerLeft_get]
+  simp only [expHomEquiv, expEquivHom, curriedTensor_obj_obj,
+    curriedTensor_obj_map, homEquivIdxFun_apply, homEquivIdxFun_symm_get,
+    comp_get, whiskerLeft_get]
 ```
+
+`expHomEquiv` and `expEquivHom` head the list because both are plain
+`def`s with no `@[simp]` unfolding lemma: without them nothing turns
+`expHomEquiv X Z' Y …` into a term the `homEquivIdxFun` lemmas can
+match, and the rest of the set never fires. `simp only` uses their
+equation lemmas.
 
 `whiskerLeft_get` and `expEquivIdx_naturality` carry no `@[simp]`, so
 they are named explicitly here and a bare `simp` will not find them.
@@ -2820,8 +2835,14 @@ instance monoidalClosed : MonoidalClosed FinSetSkel.{u} where
   closed X :=
     { rightAdj :=
         Adjunction.rightAdjointOfEquiv (expHomEquiv X) (expHomEquiv_naturality X)
-      adj := Adjunction.adjunctionOfEquivRight _ _ }
+      adj :=
+        Adjunction.adjunctionOfEquivRight (expHomEquiv X)
+          (expHomEquiv_naturality X) }
 ```
+
+`adj`'s two arguments are named rather than left as `_ _`. They are
+recoverable by unification against `rightAdj` one line above, but
+naming them costs nothing and localises any future breakage.
 
 One declaration, not two. A separate `instance closed (X) : Closed X`
 alongside this one would give instance search two routes to
@@ -2867,8 +2888,12 @@ Expected: PASS.
 - [ ] **Step 6: check the axioms, test and commit**
 
 Measure `expHomEquiv`, `expHomEquiv_naturality` and
-`monoidalClosed`. Expected:
-`[propext, Classical.choice, Quot.sound]`, the allowlisted wrapper.
+`monoidalClosed`. Expected: axioms **contained in**
+`{propext, Classical.choice, Quot.sound}` — the allowlisted wrapper
+permits `Classical.choice` without requiring it, and `expHomEquiv` is
+`expEquivHom` at the lengths, whose core is choice-free, so it may
+measure `[propext, Quot.sound]`. A tighter set is not a discrepancy;
+a wider one is.
 
 The test parallel resolves `MonoidalClosed FinSetSkel.{0}` by
 `inferInstance` into a named `def`, and asserts the exponential
@@ -3051,21 +3076,24 @@ def ι (f g : X ⟶ Y) : obj f g ⟶ X := Hom.ofVec (injVec f g)
 /-- Every entry of the injection is an agreeing index. -/
 theorem injVec_get_mem (f g : X ⟶ Y) (i : Fin (obj f g).len) :
     (injVec f g).get i ∈ agree f g := by
-  simpa [injVec, Vector.get_eq_getElem, Vector.getElem_toArray] using
-    List.getElem_mem _
+  simp [injVec, Vector.get_eq_getElem]
 ```
 
 The injection is built from the list directly, not by
 `Vector.ofFnC` over an index lookup: `List.toArray` is the one-pass
 form. This was measured monomorphically at `[propext]`.
 
-The bridge out of the vector is `Vector.getElem_mk` followed by
-`List.getElem_toArray`, not `Vector.getElem_toArray`: the latter goes
-from a *`Vector`*'s array back to the `Vector`, and `injVec f g` is a
-`Vector.mk` over a *`List`*'s array. Both of the right ones are
-`@[simp]`, so the `simpa` will likely close either way; name the ones
-that can fire. The goal after `simpa` is
-`(agree f g)[i] ∈ agree f g`, closed by `List.getElem_mem`.
+`simp`, not `simpa … using List.getElem_mem _`. The bridge out of the
+vector — `Vector.getElem_mk` then `List.getElem_toArray`, both
+`@[simp]` — and `List.getElem_mem` itself are all in the default simp
+set, so `simp` closes the goal alone, and supplying the `using` term
+then trips `linter.unnecessarySimpa`, which
+`weak.warningAsError = true` turns into a build failure. This shape
+was measured at this toolchain: `simp [Vector.get_eq_getElem]` closes
+it with no diagnostics, and the `simpa` form fails the linter. Note
+that `Vector.getElem_toArray` is *not* the applicable lemma — it goes
+from a `Vector`'s array back to the `Vector`, where `injVec f g` is a
+`Vector.mk` over a *`List`*'s array.
 
 Run: `lake build`
 Expected: PASS.
@@ -3268,8 +3296,9 @@ Spec section: § Row h, § Verification obligations (9).
 **Interfaces:**
 
 - Consumes: Task 14.
-- Produces: `ι_comp`, `injVec_get_invVec`, `lift`, `lift_ι`,
-  `lift_uniq`. Consumed by Task 16. A helper factored out of
+- Produces, in namespace `FinSetSkel.Equalizer`: `ι_comp`,
+  `injVec_get_invVec`, `lift`, `lift_ι`, `lift_uniq`. Consumed by
+  Task 16. A helper factored out of
   `lift_uniq` (`injVec_injective`) or out of `invVec_lt` is a further
   export of the module if it is stated at all; see Steps 2 and 4.
 
@@ -3390,15 +3419,30 @@ def invVecTraced (f g : X ⟶ Y) : Vector ℕ X.len :=
   dbgTrace "invVec ran" fun _ ↦ scatter (agree f g) 0 (Vector.replicate X.len 0)
 ```
 
-point `lift` at it, then `#eval` the lift's **vector** at a domain of
-length 4 — `#eval (lift f g h w).toVec.toList` — and count the trace
-lines. A bare `#eval` of the morphism will not run at all: `Hom` is
+`lift`'s bound is discharged by `invVec_lt`, a lemma about `invVec`,
+so after the redirection the goal speaks of `invVecTraced`. It still
+typechecks, `dbgTrace s f` reducing to `f ()`, but only if the bound
+is supplied by `exact`; a `rw [invVec]` or `simp only [invVec]` in
+that position will not match. Leave the bound proof alone when
+redirecting.
+
+point `lift` at it, then `#eval` the lift's **vector** at the
+witnesses Step 5 already names:
+
+```lean
+#eval (lift probeLiftHom probeLiftHom (𝟙 (mk 5)) rfl).toVec.toList
+```
+
+and count the trace lines. `probeLiftHom : mk 5 ⟶ mk 2` is Step 5's,
+so the domain has five indices and an unshared pass would trace five
+times. A bare `#eval` of the morphism will not run at all: `Hom` is
 sealed `irreducible` and carries no `Repr`, and `#eval` refuses a
 value it can neither print nor sequence, so no trace would be emitted
-either way and the check would silently pass. Expected: one line, not
-four. If four, the
-`let` is not shared and `lift` must be restructured until it is;
-report the finding either way.
+either way and the check would silently pass.
+
+Expected: one trace line, not five. If five, the `let` is not shared
+and `lift` must be restructured until it is; report the finding either
+way.
 
 Then revert **both** edits — `invVecTraced` and the redirection of
 `lift` — and confirm with `grep -n "dbgTrace" <file>`, expecting no
@@ -3412,10 +3456,16 @@ function-returning definition re-runs per application while the same
 generator, so it is re-taken on a toolchain bump.
 
 Obligation 9's other candidate is `Fin.funDecodeC` of Task 4, which
-returns `Fin n → Fin m`. Check it the same way: `#eval` a decode
-applied at two indices and count. If it re-runs, note it in the
-`docs/index.md` entry rather than restructuring — nothing in W3
-applies a partially applied `funDecodeC` in a loop — and report.
+returns `Fin n → Fin m`. It lives in
+`Geb/Mathlib/Logic/Equiv/Fin/Basic.lean`, which this module does not
+import, and § Global constraints forbids a scratch module under
+`Geb/`, so run that check through the `lean-lsp` MCP's
+`lean_run_code`: `#eval` a decode applied at two indices and count the
+trace lines. If it re-runs, do not restructure — nothing in W3 applies
+a partially applied `funDecodeC` in a loop — and do not edit
+`docs/index.md`, which does not yet carry that module's entry and is
+not this task's file. Report the finding to the orchestrator; the note
+belongs in Task 19 Step 1's entry for that module.
 
 - [ ] **Step 7: write the test parallel and commit**
 
@@ -3711,10 +3761,12 @@ theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
 The first two by explicit `List.rec` with the starting vector in the
 motive, in the shape of Task 14 Step 6; the third is a corollary.
 
-The `Vector.set` bound is `j.isLt` outright rather than `by omega`;
-Task 14's `scatter` writes `by omega` for the same obligation because
-that text was measured verbatim, but the direct term cannot regress on
-a change to `omega`'s handling of `Fin.val`.
+The `Vector.set` bound is `j.isLt` outright rather than `by omega`.
+Both discharge `↑j < n` and are equal by proof irrelevance; Task 14
+uses `by omega` in `scatter`'s definition, that text having been
+measured verbatim, and `j.isLt` in `scatter_cons`'s statement. The
+direct term is preferred where there is a choice, being cheaper and
+immune to a change in how `omega` preprocesses `Fin.val`.
 
 Both directions split on `a.val = j.val` through the axiom-free
 `Nat.decEq`, never on list membership: where equal,
@@ -3885,7 +3937,7 @@ uniqueness**
 theorem chi_comp_eq (m : U ⟶ X) (i : Fin U.len) :
     (chi m).toVec.get (m.toVec.get i) = 1 :=
   (chiVec_get_eq_one_iff m _).mpr (by
-    simpa [Vector.get_eq_getElem] using List.getElem_mem _)
+    simp [Vector.get_eq_getElem])
 
 /-- A morphism whose fibre over `1` is the image is the
 characteristic morphism. -/
@@ -3893,6 +3945,12 @@ theorem chi_uniq (m : U ⟶ X) (χ' : X ⟶ mk 2)
     (h : ∀ j, χ'.toVec.get j = 1 ↔ j ∈ m.toVec.toList) :
     χ' = chi m := _
 ```
+
+`chi_comp_eq`'s side goal is `m.toVec.get i ∈ m.toVec.toList`, which
+`simp [Vector.get_eq_getElem]` closes alone; a
+`simpa … using List.getElem_mem _` there fails
+`linter.unnecessarySimpa`, measured at this toolchain. See § Global
+constraints on that linter.
 
 `chi_uniq` is `hom_ext` at `j` followed by `Fin 2` case analysis: if
 `j` is in the image both sides are `1`; otherwise neither is `1`, and
@@ -4102,20 +4160,32 @@ def classifier : Subobject.Classifier FinSetSkel.{u} :=
     (fun m _ χ' hp ↦ Classifier.chi_uniq m χ' (chi_iff_of_isPullback m χ' hp))
 ```
 
-The `_` in the third argument's binder list is not optional and is not
-a placeholder to fill. `uniq`'s type is
+The `_` in the `uniq` argument's binder list — the seventh and last
+argument — is not optional and is not a placeholder to fill. `uniq`'s type is
 `∀ {U X} (m : U ⟶ X) [Mono m] (χ' : X ⟶ Ω) (_ : IsPullback …), χ' = χ m`,
 and Lean auto-inserts implicit and instance lambdas only for *leading*
 binders and for those left over after the written binders run out —
 never mid-list. So `fun m χ' hp ↦ …` binds `χ'` to the `[Mono m]`
 instance and `hp` to the real `χ'`, and the mismatch is reported at
 the body rather than at the binders, which makes the diagnostic
-misleading. The `_` binds the instance explicitly; it is still a local
-instance, so `‹Mono m›` resolves inside the `isPullback` hole.
+misleading. The `_` binds the instance explicitly, and a `_`-named binder whose
+type is a class is still registered as a local instance.
+
+The `isPullback` argument is a different lambda and needs no such
+binder: there the instance is auto-inserted as a trailing one, before
+the body is elaborated, which is what puts `Mono m` in scope for
+`mono_iff_injective.mp ‹Mono m›` below.
 
 The two sibling arguments need no such binder: `(fun m ↦ …)` exhausts
 the written binders before the instance, so the instance lambda is
 auto-inserted as a trailing one.
+
+The `_` in `(fun m ↦ _)`, by contrast, **is** a hole to fill, and it
+is filled below in this same step — which is why this step's
+`Expected:` is PASS rather than the FAIL that a bare `_` draws
+elsewhere in this plan. Two different `_`s, four lines apart: the one
+in the `uniq` binder list stays, the one in the `isPullback` argument
+goes.
 
 The `isPullback` argument is the remaining hole. Its statement is
 `IsPullback m (isTerminalOne.from U) (Classifier.chi m) truth`, and
@@ -4156,8 +4226,14 @@ Expected: PASS.
 - [ ] **Step 4: check the axioms, test, wire and commit**
 
 Measure `truth`, `chi_iff_of_isPullback` and `classifier`. Expected:
-`[propext, Classical.choice, Quot.sound]`, the allowlisted wrapper.
-Confirm `Classifier/Core.lean`'s witnesses are unchanged.
+axioms **contained in** `{propext, Classical.choice, Quot.sound}` —
+this is the allowlisted wrapper, so `Classical.choice` is permitted
+but not required. `truth` is `point 1` from the choice-free
+`Shapes/Core.lean` and will measure `[propext, Quot.sound]` at most;
+only `classifier`, which goes through `mkOfTerminalΩ₀` and
+`IsPullback`, is expected to carry the third. A tighter set than the
+allowlist is not a discrepancy. Confirm `Classifier/Core.lean`'s
+witnesses are unchanged.
 
 The test parallel names `classifier` in a `def` and asserts
 `classifier.Ω = mk 2` and `classifier.Ω₀ = mk 1` by `rfl`.
@@ -4195,7 +4271,12 @@ Spec sections: § Documentation, § Amendments to `TODO.md`
 
 One entry per content module, eleven in all, in topological order,
 placed after the existing `FinSetSkel/Skeleton.lean` and
-`ElementaryTopos.lean` entries. Each states what the module
+`ElementaryTopos.lean` entries.
+
+If Task 15 Step 6 reported that `Fin.funDecodeC` re-runs its
+computation per application, record that in the
+`Logic/Equiv/Fin/Basic.lean` entry: it is a persistent property of the
+declaration, and Task 15 has no entry to write it into. Each states what the module
 contains, not how it was built. `CONTRIBUTING.md` § Each phase
 produces an artifact requires them; `CONTRIBUTING.md` § Document only
 the persistent forbids referring to the spec or the plan from any of
@@ -4416,6 +4497,21 @@ docstrings naming a choice-dependent mathlib counterpart follow W1's
 own precedent at `FinSetSkel.decidableEqHom`, which names
 `instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
 that way.
+
+**Round 5** (two fresh agents: Lean correctness, consistency and
+executability) returned no blocker and two serious findings, both
+applied. One `simpa … using List.getElem_mem _` in Task 14 and another
+in Task 17 fail `linter.unnecessarySimpa` — `simp` closes both goals
+alone, and `weak.warningAsError` makes the redundant `using` term a
+build error. The reviewer diagnosed the cause as open metavariables
+and proposed a replacement; both the diagnosis and the replacement
+were wrong, verified at this toolchain, so the finding stands but the
+fix is `simp [Vector.get_eq_getElem]` in both places, and § Global
+constraints now carries the rule. The second: Task 15 Step 6 directed
+an edit to a `docs/index.md` entry that does not exist until Task 19
+and is not that task's file — the converse of the deferred-wiring
+shape rounds 2 through 4 kept finding — now a report to the
+orchestrator with a matching hook in Task 19 Step 1.
 
 **Round 4** (two fresh agents: consistency and executability, Lean
 correctness) returned one blocker and three serious findings, all
