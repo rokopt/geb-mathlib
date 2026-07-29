@@ -176,8 +176,14 @@ Referenced by name from the steps below.
   environment linters over `Geb`; `lake lint -- GebTests` over
   `GebTests`.
 - **Axiom check**: the `lean-lsp` MCP's `lean_verify` at the fully
-  qualified name. `#print axioms` through the same MCP is
-  equivalent. `lake env lean` is forbidden by
+  qualified name. It rejects a name containing a non-ASCII character at
+  the argument-validation layer — measured, `lean_verify` on
+  `FinSetSkel.Quotient.π_rep` returns "Invalid theorem name", distinct
+  from the "Unknown constant" it returns for a genuinely absent name —
+  so for the six declarations whose names contain `π` (`π`, `π_get`,
+  `rep_π`, `π_rep`, `comp_π`, `π_desc`) write `#print axioms <name>` in
+  the file and read the result through `lean_diagnostic_messages`, where
+  it appears at `info` severity. `lake env lean` is forbidden by
   `docs/rules/lean-coding.md` § Lake / build workflow.
 - `markdownlint-cli2 '**/*.md'` — before each commit touching
   Markdown.
@@ -1270,7 +1276,7 @@ Four points, each measured:
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 9: run the `@[simp]` test, and mark both**
+- [ ] **Step 9: run the `@[simp]` test, then mark accordingly**
 
 None of the five carries `@[simp]` as specified. `rep_π` and `π_rep`
 are the candidates, and the spec settles the question by measurement:
@@ -1286,7 +1292,8 @@ the `get` form is the normal form, and marking this in either
 orientation would rewrite it away." It is about *orientation against
 the normal form*, and `TODO.md` records the same rule for W1's
 deliverable — "The two `get`-form round trips carry `@[simp]`;
-`getElem_ofFnC` and the bridge do not, neither being the normal form."
+`getElem_ofFnC` and the bridge do not, neither the `getElem` form nor
+either orientation of the bridge being the normal form."
 `rep_π` and `π_rep` are `get`-form round trips oriented *toward* the
 normal form: one lands on `v.root j`, the other on the class index
 itself. So they are `get_ofFnC` and `ofFnC_get`'s case, which W1 marks,
@@ -1294,8 +1301,9 @@ not `get_eq_getElem`'s, which it does not.
 
 Absence of a consumer is not a reason to withhold the attribute here,
 and the repo settles that too: W1's `FinSetSkel.Hom.ofVec_toVec` is
-`@[simp]` and has no consumer anywhere in the tree
-(`grep -rn ofVec_toVec` outside `Basic.lean` returns nothing). Marking
+`@[simp]` and has no consumer anywhere in the tree — `grep -rn
+ofVec_toVec` finds only its declaration in `Basic.lean` and `TODO.md`'s
+listing of W1's deliverables, no use site. Marking
 also keeps true the clause of `TODO.md`'s post-constraint note that
 names W4 — "W3 and W4 each add carrier-level `simp` lemmas that first
 meet at W5" — which marking neither would falsify, and the note's
@@ -2335,6 +2343,10 @@ add carrier-level `simp` lemmas that first meet at W5". Step 9 records
 the discrepancy with spec § Statements' motivating clause rather than
 repeating it; the spec's operative instruction, to settle the question
 by exhibiting a goal, is unaffected and is what the step does.
+
+Round 6 reproduced the table in all three configurations and confirmed
+each precedent claim against the live files, so the answer is settled
+on evidence rather than on the last round's argument.
 
 Round 5 also supplied the one proof still given as prose: `π_rep` is now
 a measured term, with the `Bool`-to-`Prop` step as
