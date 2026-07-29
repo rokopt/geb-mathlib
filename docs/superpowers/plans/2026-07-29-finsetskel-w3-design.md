@@ -187,6 +187,19 @@ Every task's requirements implicitly include this section.
   `feat | fix | doc | style | refactor | test | chore | perf | ci`,
   imperative present tense, no capital, no trailing period, subject
   under 72 characters.
+- **This plan and the spec are not edited during execution.** Step
+  state is tracked outside the tree — in the orchestrator's task list,
+  not by ticking the `- [ ]` boxes in this file. `jj commit` takes the
+  whole working copy, so a plan-file diff would land inside whichever
+  task's commit came next, messaged `feat(fin): …` or similar. The
+  checkbox syntax is for reading, not for writing.
+- **Every commit step is preceded by `jj st`**, confirming that the
+  modified files are exactly the ones that task's Files block names.
+  A stray file in the list means the previous task left something
+  uncommitted, or something outside this task's scope was touched;
+  stop and report rather than committing it. This is the same
+  discipline Task 19 Step 1's ordering exists to enforce, applied to
+  every task.
 - **The commit idiom is two commands, and the second is not
   optional.** `jj commit -m "…"` describes the *current* working-copy
   commit and opens a new empty one; it does not create a commit
@@ -346,13 +359,21 @@ here anyway — the branch exists for the constraint-9 amendment, which
 W4 does depend on, the module is one W4 never touches, and moving the
 declaration to W3's branch would change three sections of a
 user-approved spec for no gain. Report the discrepancy with the
-spec's § Shared declarations to the user; do not act on it further.
+spec's § Shared declarations to the orchestrator; do not act on it
+further.
 
 - [ ] **Step 1: start a child of the shared branch**
 
 ```bash
+jj st
 jj new feat/choice-free-primitives
 ```
+
+`jj st` **before** `jj new`, not after: after `jj new` the working copy
+is empty by construction, so the check would be vacuous. What it
+guards against is uncommitted work stranded on the previous
+working-copy commit. If it reports modifications, stop and report;
+they belong to whatever produced them.
 
 `jj new`, not `jj edit`: the bookmarked commit carries the reviewed
 constraint-9 amendment, and editing it would make the Step 6
@@ -410,27 +431,34 @@ Expected: `[Quot.sound]`.
 Append to `GebTests/Mathlib/Logic/Equiv/Basic.lean`:
 
 ```lean
+/-- A non-identity self-equivalence of `Bool`, to transport along. -/
+def boolNotEquiv : Bool ≃ Bool where
+  toFun := Bool.not
+  invFun := Bool.not
+  left_inv := Bool.not_not
+  right_inv := Bool.not_not
+
 /-- A sample function whose domain the transport rewrites. -/
 def sampleArrowCongrLeft : Bool → Nat :=
-  Equiv.arrowCongrLeftC (Equiv.refl Bool) (fun b ↦ if b then 1 else 0)
+  Equiv.arrowCongrLeftC boolNotEquiv (fun b ↦ if b then 1 else 0)
 
 /-- The domain transport round-trips a sample function pointwise. -/
 theorem sampleArrowCongrLeftC_roundtrip (b : Bool) :
-    (Equiv.arrowCongrLeftC (γ := Nat) Bool.not_not_equiv.symm).symm
-        ((Equiv.arrowCongrLeftC (γ := Nat) Bool.not_not_equiv.symm)
+    (Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv).symm
+        ((Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv)
           sampleArrowCongrLeft) b =
       sampleArrowCongrLeft b :=
   congrFun
-    ((Equiv.arrowCongrLeftC (γ := Nat)
-      Bool.not_not_equiv.symm).symm_apply_apply sampleArrowCongrLeft) b
+    ((Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv).symm_apply_apply
+      sampleArrowCongrLeft) b
 ```
 
-`Bool.not_not_equiv` may not exist at this revision. If `#check
-@Bool.not_not_equiv` fails, replace it with any `Bool ≃ Bool` in
-scope — `Equiv.refl Bool` suffices for the round trip, and the
-`def` above is what keeps `lake shake` from reporting the import
-unused. Confirm whichever name is used with `#check` in the test
-module itself.
+The equivalence is built here rather than taken from mathlib, and it
+is deliberately **not** `Equiv.refl Bool`: transporting along the
+identity would leave the round-trip theorem exercising only
+`symm_apply_apply` at the identity, which is no test of the
+declaration. `Bool.not_not` is core's `!!b = b`; `#check` it in the
+test module before relying on it.
 
 Run: `lake build GebTests` then `lake test`
 Expected: PASS.
@@ -1530,9 +1558,11 @@ Expected: `[propext, Quot.sound]`. Delete the witness; run the
 banned-form grep.
 
 Append to the test parallel a computed coproduct: the descent of two
-sample morphisms, one `#guard`-free `rfl` assertion of its vector,
-and the factorisation at a sample index. Follow Task 5 Step 7's
-shape.
+sample morphisms, one `rfl` assertion of its vector, and the
+factorisation at a sample index. The shape is a named `def` value
+built from the module under test, then `theorem`s asserting its
+computed values by `rfl` — per § Global constraints, which explains
+why an `example` alone would fail `lake shake`.
 
 Run: `lake build`, `lake build GebTests`, `lake test`, `lake lint`,
 `lake lint -- GebTests`
@@ -2346,6 +2376,16 @@ adjunction is taken in, not of which digit `Fin.pairC` makes high.
 
 finite sets, skeleton, exponential, closed, choice-free
 -/
+
+@[expose] public section
+
+universe u
+
+open CategoryTheory
+
+namespace FinSetSkel
+
+end FinSetSkel
 ```
 
 - [ ] **Step 2: add the equivalence and its unfolding lemma**
@@ -2717,8 +2757,15 @@ parallel's.
 
 - Consumes: Tasks 8 (`cartesianMonoidalCategory`, without which
   neither `⊗` nor `MonoidalClosed FinSetSkel` elaborates), 5
-  (`homEquivIdxFun_apply`, `homEquivIdxFun_symm_get`, the two
-  `@[simp]` lemmas the naturality proof rewrites with), 11 and 12;
+  (`homEquivIdxFun_apply : homEquivIdxFun X Y f i = f.toVec.get i` and
+  `homEquivIdxFun_symm_get :
+  ((homEquivIdxFun X Y).symm g).toVec.get i = g i`), 11
+  (`expEquivIdx_naturality`, whose statement Task 11 gives) and 12
+  (`whiskerLeft_get : (X ◁ f).toVec.get i =
+  Fin.pairC (Fin.divNatC i) (f.toVec.get (Fin.modNatC i))`, together
+  with W1's `comp_get : (f ≫ g).toVec.get i =
+  g.toVec.get (f.toVec.get i)` — these two fix the shape `harg` must
+  produce);
   `Adjunction.rightAdjointOfEquiv`,
   `Adjunction.adjunctionOfEquivRight`, `Closed`, `MonoidalClosed`,
   `MonoidalCategory.tensorLeft`.
@@ -2753,16 +2800,20 @@ def expHomEquiv (X : FinSetSkel.{u}) (Z Y : FinSetSkel.{u}) :
 
 `(tensorLeft X).obj Z` is `X ⊗ Z`, which is `mk (X.len * Z.len)` on
 the nose, and `Y` is `mk Y.len` on the nose by the eta rule for the
-one-field structure. If the ascription is not accepted, do not insert
+one-field structure.
+
+**If the ascription is not accepted, stop and report.** Do not insert
 a cast or a comparison isomorphism — that would contradict the spec's
 § Row g, which states the transport is along a definitional equality.
-Restate `expEquivHom` in
-`Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean` over
-objects rather than over their lengths — that module is Task 11's and
-is already committed, so this is a conditional edit outside this
-task's own file. Taking it obliges re-measuring that module's
-monomorphic witness at `[propext, Quot.sound]`, the core being
-choice-free, and reporting the change.
+And do not restate `expEquivHom` over objects instead of lengths:
+every later step of this task is written against the length-indexed
+form (`expEquivHom X.len Z.len Y.len` here, `harg` and
+`expEquivIdx_naturality X.len Z'.len Z.len Y.len …` in Step 3), that
+module is Task 11's and already committed, and an executor who took
+the edit would then be following a recipe that no longer typechecks.
+Leave the work uncommitted and report to the orchestrator; the
+restatement, if it is needed, is a change to Task 11 and to this
+task's Step 3 together, and belongs to whoever holds both.
 
 Run: `lake build`
 Expected: PASS.
@@ -2823,7 +2874,7 @@ both sides *are* applied:
       whiskerLeft_get]
   ext t
   simp only [expHomEquiv, expEquivHom, Equiv.trans_apply,
-    curriedTensor_obj_obj, homEquivIdxFun_symm_get, comp_get, harg]
+    homEquivIdxFun_symm_get, comp_get, harg]
   exact congrFun (expEquivIdx_naturality X.len Z'.len Z.len Y.len f.toVec.get
     (homEquivIdxFun (mk (X.len * Z.len)) (mk Y.len) g)) t
 ```
@@ -2837,6 +2888,11 @@ because `expEquivHom` is a nested `Equiv.trans`, which
 but `simp only` does not load the default set. And `harg` is the
 bridge above. If the goal displays the coerced form instead,
 `Equiv.coe_trans` and `Function.comp_apply` are the alternates.
+
+`curriedTensor_obj_map` belongs to the **inner** set only. Keeping it
+out of the outer one is what leaves `(tensorLeft X).map f ≫ g`
+verbatim in the outer goal, so that `harg`'s left-hand side still
+matches it; rewriting it there first would break the match.
 
 Do **not** try to close the residue by `rfl` or by adding
 `expEquivIdx_apply` to the first set: `(X ◁ f ≫ g).toVec.get i` is not
@@ -2910,7 +2966,9 @@ workstream's instance. The instance path Lean finds for
 MonoidalCategory`, two `extends` hops, while W2's field names the
 one-hop `cartesian.toMonoidalCategory`; if those do not coincide, the
 failure belongs here rather than in W5. Delete the `example` once it
-passes, and report if it does not.
+passes. If it fails, stop: leave the work uncommitted and report to
+the orchestrator, since the divergence is between W2's field type and
+this instance and is not this task's to resolve.
 
 Run: `lake build`
 Expected: PASS.
@@ -3060,6 +3118,16 @@ would break it silently.
 
 finite sets, skeleton, equalizer, choice-free
 -/
+
+@[expose] public section
+
+universe u
+
+open CategoryTheory
+
+namespace FinSetSkel.Equalizer
+
+end FinSetSkel.Equalizer
 ```
 
 - [ ] **Step 2: add the predicate, the agreement list and the object**
@@ -3236,9 +3304,18 @@ whose motive is
 (scatter L c v).get j = k` and whose cons case splits on whether the
 head is `j`:
 
-- head is `j`: then `k = c` by `Nodup` (the tail cannot mention `j`
-  again), the tail pass leaves the written entry alone by
-  `get_scatter_of_not_mem`, and `Vector.getElem_set_self` finishes.
+- head is `j`: then `k = c`, the tail pass leaves the written entry
+  alone by `get_scatter_of_not_mem`, and `Vector.getElem_set_self`
+  finishes. Deriving `k = c` is the branch's one non-mechanical step.
+  `List.zipIdx_cons` splits the membership into `(j, k) = (j, c)` and
+  `(j, k) ∈ L.zipIdx (c + 1)`; the second is killed by `Nodup`, which
+  gives `j ∉ L`, once `j ∈ L` is extracted from membership **at
+  counter `c + 1`**. That extraction needs a nonzero-counter lemma —
+  `List.mk_add_mem_zipIdx_iff_getElem?`, or a `List.mem_zipIdx` /
+  `List.fst_mem_of_mem_zipIdx` variant — not the `c = 0`
+  specialisation Step 7 uses. `#check` the candidates and name the one
+  that fires; if none exists, prove the projection by `List.rec` in
+  this same shape.
 - head is not `j`: the membership passes to the tail and `ih`
   applies, `Vector.getElem_set_ne` discharging the write.
 
@@ -3393,7 +3470,7 @@ theorem injVec_get_invVec (f g : X ⟶ Y) (j : Fin X.len)
 Route: `List.getElem_of_mem` gives `k` and `(agree f g)[k] = j`, the
 computation inside `invVec_lt` gives `(invVec f g).get j = k`, and
 `injVec`'s entries are the list's by `Vector.getElem_mk` and
-`List.getElem_toArray`, as in Task 14 Step 3. Factor
+`List.getElem_toArray`, both `@[simp]`. Factor
 the `(invVec f g).get j = k` step out of `invVec_lt` into its own
 named lemma if proving it twice — once there, once here — becomes
 awkward; that lemma is then a further export of Task 14.
@@ -3796,6 +3873,16 @@ test, which would rebuild and rescan the image per index.
 
 finite sets, skeleton, subobject classifier, choice-free
 -/
+
+@[expose] public section
+
+universe u
+
+open CategoryTheory
+
+namespace FinSetSkel.Classifier
+
+end FinSetSkel.Classifier
 ```
 
 - [ ] **Step 2: add the scatter and its three lemmas**
@@ -3824,8 +3911,25 @@ theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
   get_scatterOne_eq_one_of L j v (Or.inl hj)
 ```
 
-The first two by explicit `List.rec` with the starting vector in the
-motive, in the shape of Task 14 Step 6; the third is a corollary.
+The first two by explicit `List.rec` — the `induction` tactic is
+forbidden by § Global constraints — with the starting vector and the
+hypothesis inside the motive, so the recursion may re-instantiate
+them. The third is a corollary. The skeleton, for the first:
+
+```lean
+  L.rec (motive := fun L ↦ ∀ (v : Vector (Fin 2) n),
+      (scatterOne L v).get j = 1 → j ∈ L ∨ v.get j = 1)
+    (fun v h ↦ Or.inr h)
+    (fun a L ih v h ↦ _)
+    v h
+```
+
+and for the second the same shape at the motive
+`fun L ↦ ∀ (v : Vector (Fin 2) n), j ∈ L ∨ v.get j = 1 →
+(scatterOne L v).get j = 1`. Each cons case rewrites by `scatterOne`'s
+cons identity — `scatterOne (a :: L) v = scatterOne L (v.set a.val 1
+a.isLt)`, which holds by `List.foldl_cons` — and then splits as
+described below.
 
 Both directions split on `a.val = j.val` through the axiom-free
 `Nat.decEq`, never on list membership: where equal,
@@ -3869,13 +3973,14 @@ starting vector alone. The counter does not exist in this
 construction — the value written is the constant `1`, not a
 position — and duplicate-freeness is not needed, `Vector.set`
 overwriting `1` with `1` being harmless. Adding either would be dead
-weight against `CONTRIBUTING.md` § Code is cost. Two independent
+weight against `CONTRIBUTING.md` § Code is cost. Three independent
 adversarial reviewers examined this reading and judged the
 mathematics sound — with duplicates present, both statements still
 hold, because `Vector.set` overwriting `1` with `1` changes nothing
-and there is no position to renumber. Report the reading to the user
-with the finished plan; if it is rejected, the counter and the
-hypothesis are added and the three lemmas restated.
+and there is no position to renumber. This reading was reported to the
+user with the finished plan and stands; **implement the three lemmas
+as stated**. Reopening it — adding a counter and a `Nodup`
+hypothesis — is not this task's to decide.
 
 Run: `lake build`
 Expected: PASS after the proofs; FAIL with two placeholder errors
@@ -4012,11 +4117,29 @@ theorem chi_uniq (m : U ⟶ X) (χ' : X ⟶ mk 2)
 `linter.unnecessarySimpa`, measured at this toolchain. See § Global
 constraints on that linter.
 
-`chi_uniq` is `hom_ext` at `j` followed by `Fin 2` case analysis: if
-`j` is in the image both sides are `1`; otherwise neither is `1`, and
-in `Fin 2` that leaves `0` for both. `Fin.val_eq_of_lt` plus `omega`
-over `(χ'.toVec.get j).isLt` is the mechanical route; `Fin.cases` or
-`decide` over the two values is the shorter one if it elaborates.
+`chi_uniq` is `hom_ext` at `j` followed by a case split on the
+*value*, not on membership:
+
+```lean
+  hom_ext fun j ↦ by
+    rw [chi_get]
+    by_cases hj : χ'.toVec.get j = 1
+    · rw [hj]
+      exact ((chiVec_get_eq_one_iff m j).mpr ((h j).mp hj)).symm
+    · have h1 : (chiVec m).get j ≠ 1 :=
+        fun hc ↦ hj ((h j).mpr ((chiVec_get_eq_one_iff m j).mp hc))
+      -- neither is `1`, so in `Fin 2` both are `0`
+      _
+```
+
+`by_cases` on `χ'.toVec.get j = 1` is decided by the axiom-free
+`instDecidableEqFin`, not by any membership instance, so no
+`LawfulBEq (Fin n)` is reached. The remaining hole closes by lifting
+both disequalities to `Fin.val` and finishing with `omega` over the
+two `isLt`s: `Fin.ext` and `Fin.val_eq_val` are the two names
+available for that lifting — both confirmed present at this
+revision — and `#check` whichever is used before relying on it.
+`Fin.val_eq_of_lt` does **not** exist; do not reach for it.
 
 That the wrapper can supply `h` from `IsPullback` is Task 18's
 obligation; this statement is the choice-free half of the spec's
@@ -4043,9 +4166,17 @@ The test parallel names that `m`, asserts `chiVec m = ⟨#[0, 1, 0, 1], rfl⟩`
 by `rfl` or `decide`, and exercises `pullbackLift_comp` at a sample
 `z`.
 
-Create the two `Classifier.lean` index files (importing `Core` now
-and `Instance` in Task 18) and add them to the two `FinSetSkel.lean`
-index files.
+Create the two `Classifier.lean` index files, each carrying its
+`Core` line only — Task 18 adds the `Instance` line to both:
+
+- `Geb/…/FinSetSkel/Classifier.lean`:
+  `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Core`
+- `GebTests/…/FinSetSkel/Classifier.lean`:
+  `import GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Core`
+
+Then add the corresponding `Classifier` line to each of the two
+`FinSetSkel.lean` index files, `public import` on the source side and
+plain `import` on the `GebTests` side.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -4459,7 +4590,12 @@ grep -rn "2026-07-29-finsetskel-w3-design" \
   --include='*.md' --include='*.lean' .
 ```
 
-Expected: matches in the two files themselves only.
+Expected: matches in the two files themselves only. The grep
+self-matches, so a bare count is uninformative; what it is looking
+for is a `docs/index.md` or `TODO.md` entry added in Task 19 that
+cites the spec or the plan. Such a match is **removed**, not
+tolerated: `CONTRIBUTING.md` § Document only the persistent forbids a
+permanent document referring to a transient one.
 
 - [ ] **Step 2: delete both, verify and commit**
 
@@ -4572,6 +4708,25 @@ lemmas and universal property (Tasks 14 and 15), row l's fold lemmas,
 inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
+
+**Round 8** (two fresh agents: Lean correctness, and a fresh-eyes
+executability lens simulating a per-task subagent) split. The Lean
+lens returned **converged** — no blocker, no serious — having traced
+Task 13 Step 3's two-stage proof symbol by symbol and confirmed both
+sides meet; its three minors are applied, one of which was a
+fictitious lemma name, `Fin.val_eq_of_lt`, that this plan had invented
+for row l's `Fin 2` split. The executability lens returned four
+serious, all applied and all a class the six static rounds could not
+see. Chief among them: ticking this file's `- [ ]` boxes during
+execution would have put a plan-file diff inside every task's commit,
+since `jj commit` takes the whole working copy — the same failure
+Task 19 Step 1 exists to prevent, left unguarded for the plan itself.
+Also: two proofs in Task 17 were specified only by reference to
+Task 14's, which that subagent cannot read; Task 13 Step 1's fallback
+would have had the executor edit Task 11's committed module and then
+follow a recipe no longer typechecking against it; and Tasks 11, 14
+and 17 omitted the `universe u` / `namespace` / `@[expose] public
+section` skeleton that their own `variable` lines require.
 
 **Round 7** (three fresh agents, the consistency lens relaunched after
 its first attempt stalled) returned no blocker and three serious
