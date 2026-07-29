@@ -382,14 +382,7 @@ W5's assignments become redundant.
    harmless there by proof irrelevance, and definitions for the
    data-carrying classes, two routes to data not needing to agree
    definitionally.
-6. The class enforces that the classifier field's `Ω₀` is the
-   cartesian field's terminal object, by a mechanism W2 chooses that
-   leaves the field's type `Subobject.Classifier C`. W3 builds row l
-   over its own row b as exposed through the cartesian instance, so
-   the coherence obligation is `rfl`.
-7. `DecidableEq` on morphisms and the injective-vector inversion live
-   in W1. A shared lemma
-8. The classifier field's `Ω₀` and the cartesian field's terminal
+6. The classifier field's `Ω₀` and the cartesian field's terminal
    object are both terminal, hence canonically and uniquely
    isomorphic; W2 exports the comparison as
    `ElementaryTopos.tensorUnitIsoΩ₀`. The class enforces no
@@ -398,8 +391,8 @@ W5's assignments become redundant.
    through `mkOfTerminalΩ₀`, as the operation table assigns, so the
    two coincide there as a matter of construction rather than of
    obligation.
-9. `DecidableEq` on morphisms, the injective-vector inversion and the
-   transported index equivalences live in W1. A shared lemma
+7. `DecidableEq` on morphisms and the injective-vector inversion live
+   in W1. A shared lemma
    discovered after W1 merges goes on its own branch off `main`,
    which W3 and W4 both rebase onto. The choice-free replacements for
    `finProdFinEquiv` and `finFunctionFinEquiv` are deliberately
