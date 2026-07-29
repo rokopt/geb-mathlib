@@ -313,6 +313,9 @@ entry, adding no Lean content.
 | l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
 | m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `SimplexCategory.mono_iff_injective` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
 
+Rows e, j and k are reassigned to W2 below (§ Class fields); the
+table above states the plan's original per-field assignment.
+
 #### Class fields
 
 `ElementaryTopos C` carries data for its generators and `Prop` for
@@ -329,7 +332,7 @@ for an arbitrary finite diagram are not computably derivable, since
 | binary coproducts | `ColimitCocone` over `Discrete WalkingPair`, a family | c, and with initial hence e |
 | equalizers | `LimitCone` over `WalkingParallelPair`, a family | h |
 | coequalizers | `ColimitCocone` over `WalkingParallelPair`, a family | i |
-| classifier | `Subobject.Classifier C`, with `Ω₀` the cartesian terminal | l |
+| classifier | `Subobject.Classifier C` | l |
 | finite limits | `HasFiniteLimits C` | j |
 | finite colimits | `HasFiniteColimits C` | k |
 
@@ -339,27 +342,30 @@ computationally, all limits of a diagram being isomorphic and none of
 them running. Within a construction, carrying a `LimitCone` rather
 than its `Nonempty` decides whether anything computes at all.
 Across constructions, carrying the coequalizer as data decides which
-algorithm runs: finite colimits are redundant as an axiom, [Pare1974]
-having first published that an elementary topos has them, but a
+algorithm runs: finite colimits are redundant as an axiom — that an elementary
+topos has them is Mikkelsen's theorem [Mikkelsen1976], presented
+at Oberwolfach in July 1972, of which [Pare1974] gives a published
+proof by the tripleability of the power-object functor — but a
 derived construction is whichever one the general proof yields, and
 that is not union-find.
 
-W2 may instead expose the two `Prop` fields as derived instances.
-That is not free: deriving them generically obliges W2 to derive
-`HasFiniteCoproducts` generically too, so rows e, j and k become
-W2's one-time derivations and leave W3's and W5's assignments. The
-operation table assumes the field form, and W3 and W5 proceed on it
-regardless of W2's eventual choice; redundant `Prop` instances are
-harmless by proof irrelevance.
+W2 exposes the two `Prop` fields as derived instances, the route it
+took. That is not free: deriving them generically obliges W2 to
+derive `HasFiniteCoproducts` generically too, so rows e, j and k
+become W2's one-time derivations and leave W3's and W5's
+assignments. The operation table assumes the field form, and W3
+and W5 proceed on it regardless of W2's choice; redundant `Prop`
+instances are harmless by proof irrelevance, so the finite-limits
+and finite-colimits rows of the table above are not fields of the
+class: rows e, j and k are W2's one-time derivations, and W3's and
+W5's assignments become redundant.
 
 #### Cross-workstream interface constraints
 
 1. Data for generators, `Prop` for finite (co)limits. Binds W2
    through W5.
-2. Field types for the topos structure are mathlib types — no bespoke
-   bundle of W2's own, since W3 and W4 must produce the fields
-   without importing W2. A `Prop` coherence field of W2's own
-   (constraint 6) is admitted, no workstream but W5 producing it.
+2. Field types for the topos structure are mathlib types — no bespoke bundle of
+   W2's own, since W3 and W4 must produce the fields without importing W2.
 3. `ElementaryTopos` is stated over `(C : Type u) [Category.{v} C]`,
    matching mathlib convention. `SmallCategory C` is `Category.{u} C`,
    so a formulation over it would admit `FinSetSkel` but foreclose
@@ -376,11 +382,15 @@ harmless by proof irrelevance.
    harmless there by proof irrelevance, and definitions for the
    data-carrying classes, two routes to data not needing to agree
    definitionally.
-6. The class enforces that the classifier field's `Ω₀` is the
-   cartesian field's terminal object, by a mechanism W2 chooses that
-   leaves the field's type `Subobject.Classifier C`. W3 builds row l
-   over its own row b as exposed through the cartesian instance, so
-   the coherence obligation is `rfl`.
+6. The classifier field's `Ω₀` and the cartesian field's terminal
+   object are both terminal, hence canonically and uniquely
+   isomorphic; W2 exports the comparison as
+   `ElementaryTopos.tensorUnitIsoΩ₀`. The class enforces no
+   identification between them, an equality of objects not being
+   invariant under equivalence. W3 builds row l over its own row b
+   through `mkOfTerminalΩ₀`, as the operation table assigns, so the
+   two coincide there as a matter of construction rather than of
+   obligation.
 7. `DecidableEq` on morphisms and the injective-vector inversion live
    in W1. A shared lemma
    discovered after W1 merges goes on its own branch off `main`,
@@ -446,12 +456,6 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
   status table below, `docs/index.md`, and any shared directory index
   file. These are ordinary textual conflicts, resolved by rebasing
   the later sibling before merge.
-- W2 verifies, against the primary source and before citing the work
-  in Lean, the [Pare1974] attribution, the characterisation of its
-  proof route as the monadicity of the power-object functor, and the
-  reported priority of C. J. Mikkelsen, per `AGENTS.md` § Verify
-  agent claims. None was verifiable when the entry was written: the
-  publisher returned an access denial for the article and its PDF.
 
 #### Status
 
@@ -459,7 +463,9 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | --- | --- | --- | --- |
 | W0 `Batteries.` allow-list | — | Complete | — |
 | W1 `FinSetSkel` | — | Complete | `Geb/Mathlib/Data/Vector/OfFn.lean`, `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` |
+| W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Not started | — |
+| W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |
 | W4 Row i, union-find | W0, W1 | Not started | — |
 | W5 Row k, unification | W1–W4 | Not started | — |
@@ -600,6 +606,24 @@ fiber membership already implemented.
 
 ## Triggers (do when condition fires)
 
+- **`lake shake --keep-implied` versus mathlib CI's plain
+  `lake shake`**: a repo-wide decision, on a separate branch, on
+  whether to drop `--keep-implied` from `scripts/pre-push.sh:42`
+  and minimise imports across the affected files, or to record why
+  the project diverges from mathlib CI here.
+  `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` imports
+  `Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinaryProducts`,
+  which is transitively supplied by the next import,
+  `…LimitsOfProductsAndEqualizers`; `--keep-implied` keeps this
+  import out of `scripts/pre-push.sh`'s `lake shake` report, but
+  without that flag, `lake shake` reports it as removable, and
+  reports the same pattern in six other pre-existing
+  `Geb/Mathlib/` files (`FreeCoprodCompDisc.lean`,
+  `Grothendieck.lean`, three `PFunctor` modules) and four
+  `GebTests` ones. mathlib CI runs `lake shake` without
+  `--keep-implied`, and `CONTRIBUTING.md` § Floodgate test commits
+  the repo to shipping `Geb/Mathlib/` PRs with no source-code
+  changes.
 - **Slice polynomial functor natural isomorphism**: when a
   constructive (computable) `Type`-is-locally-cartesian-closed
   structure is available, in mathlib or built here, establish the
