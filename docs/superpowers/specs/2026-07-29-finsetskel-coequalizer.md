@@ -94,9 +94,22 @@ a parallel pair of functions between finite sets is the quotient of the
 codomain by the equivalence relation the pair generates, and its
 universal property. The transcribed declarations are `obj`, `π`,
 `desc`, `comp_π`, `π_desc`, `desc_uniq` and the wrapper's
-`coequalizerCocone`, cited to `[MacLaneMoerdijk1992]` in the module
-docstrings of both `Quotient.lean` and `Coequalizer.lean`, the
-statement being the same one in each.
+`coequalizerCocone`, cited in the module docstrings of both
+`Quotient.lean` and `Coequalizer.lean`, the statement being the same
+one in each.
+
+The citation key is not settled here. `AGENTS.md` § Verify agent claims
+requires the attribution verified against the primary source before the
+identifier is recorded, and this spec is an artifact in that sense, so
+naming a key on the strength of a plausible title would be the thing
+that rule forbids. `MacLaneMoerdijk1992` is the candidate, being
+already in `docs/references.bib`; Mac Lane, _Categories for the Working
+Mathematician_, is the more usual locator for colimits in `Set` and is
+not yet in the file. Settling which, and its section locator, is an
+obligation on the plan, discharged against the book rather than against
+a secondary attestation — the same standard the group's standing
+obligation sets for the skeleton locator. No `.bib` change is entailed
+if the candidate holds.
 
 Everything else is novel, in the sense of being a representation
 choice rather than a statement taken from a source: `Sized`,
@@ -129,7 +142,11 @@ Batteries-targeted content. W4 adds this module to that item's
 "currently" list, a one-line edit and the third of W4's `TODO.md`
 edits. It does not touch the item's scoping criterion, which reads
 "restate or replace" and so does not literally reach declarations that
-extend a Batteries type with new statements. Rewording the criterion
+extend a Batteries type with new statements. The addition is therefore
+made under the item's own subject — where content whose upstream target
+is not mathlib4 belongs — and the mismatch between that subject and the
+criterion's present wording is stated in the same edit, as the thing
+the separate branch settles. Rewording the criterion
 would oblige a re-sweep of `Geb/Mathlib/`, the item being deliberately
 scoped by criterion rather than by module list; that is a second
 concern, and `CONTRIBUTING.md` § Concern shape puts it on its own
@@ -191,7 +208,15 @@ lemma. All three recursions below consume this form rather than
 Batteries'.
 
 `Sized` carries the size as a subtype rather than re-deriving it at
-each step, so the `Fin n` indices passed to `union` need no cast.
+each step, so the `Fin n` indices passed to `union` need no cast. It is
+a `def`, and so opaque at reducible transparency — the property W1's
+`Basic.lean` docstring records as its reason for making the objects a
+structure instead. The cases differ in where the representation is
+read. W1's objects are projected as `X.len` in every downstream
+statement, so opacity would block every `simp` lemma; `Sized`'s
+representation is projected as `v.1` in two proofs only, `Sized.union`
+and `Sized.root`, both of which destruct it with `obtain ⟨u, rfl⟩`.
+Every public statement is over `Sized.root`, not over `v.1`.
 `Sized.root` returns `Fin n` rather than Batteries' `Nat`-valued
 `rootD`, discharging the bound once so that every downstream statement
 is an equation between `Fin n` terms, which is W1's normal form.
@@ -242,7 +267,16 @@ Per `docs/rules/lean-coding.md` § Recursion and induction through
 recursors, every recursion here is an explicit recursor application
 rather than an `induction` tactic: the three above, and also
 `Sized.discrete`, which is an `n`-fold `push`, and its lemma
-`Sized.rootD_discrete`.
+`Sized.rootD_discrete`. Inside `List.rec (motive := …)` the fold
+function's binders are annotated —
+`fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2` — since with
+them bare the lambda's elaboration is postponed and the inductive
+hypothesis fails to apply.
+
+`Sized.equiv_union` shares its base name with Batteries'
+`UnionFind.equiv_union`, one namespace up. Both resolve, but a bare
+`equiv_union` inside the module means Batteries'; this module writes
+each qualified.
 
 ## The quotient core
 
@@ -261,6 +295,11 @@ Stated over `FinSetSkel` morphisms in W1's application-normal form
 choice-free, so the core may import it, and stating over morphisms
 makes the wrapper a transcription rather than a translation.
 
+The module `open`s `Batteries`. The union-find layer's declarations are
+`Batteries.UnionFind.Sized` and below; this spec writes them as
+`UnionFind.Sized`, `Sized.root_ofEdges_eq_of_mem` and so on throughout,
+which is the form that `open` licenses.
+
 ### Sharing
 
 The fold must run once per coequalizer, not once per index. `TODO.md`
@@ -278,9 +317,11 @@ callers.
 
 Hence: nothing expensive sits above a lambda anywhere in this module.
 The union-find is a parameter, so no definition below rebuilds it; the
-per-index renumbering data is a `Vector`, not a function; and the two
-definitions that do call `Vector.ofFnC` bind what their lambda needs in
-a `let`, which shares because their result is a morphism.
+per-index renumbering data is a `Vector`, not a function; and the three
+definitions that call `Vector.ofFnC` — `rep`, `π` and `desc` — bind
+what their lambda needs in a `let`, which shares in each because each
+returns a value, a vector in the first case and a morphism in the other
+two.
 
 ### Definitions
 
@@ -339,10 +380,11 @@ from `v`. Where `Y` is a binder it is explicit, because
 cannot recover `Y` from it; `?Y.len =?= n` does not solve.
 
 `isRoot` and `len` mention no `FinSetSkel` and could live in the
-union-find module. They stay here because each has one consumer, `obj`,
-and `TODO.md` § FinSetSkel as an elementary topos assigns the carrier
-to this row; a module boundary between a carrier and its length would
-be paid for nothing.
+union-find module. They stay here because they exist to define the
+carrier — `len`'s only consumer is `obj`, and `isRoot`'s consumers are
+all in this module — and `TODO.md` § FinSetSkel as an elementary topos
+assigns the carrier to this row; a module boundary drawn through one
+construction would be paid for nothing.
 
 `rep Y v` is `Vector.ofFnC fun c ↦ (Fin.compressEquiv (isRoot v) c).1`
 with the equivalence bound in a `let` above the lambda — a vector
@@ -388,6 +430,12 @@ and rejects a goal-changing `show`, which `weak.warningAsError = true`
 makes an error.
 
 ### Statements
+
+Two further `variable` scopes, on the pattern of § Definitions: the
+five general lemmas take `Y` as an explicit binder with `Z` a variable;
+the three universal-property statements take `X`, `Y` and `Z` all as
+variables, `Y` included, since there `v` is `unionFind f g` and `Y`
+comes from the pair.
 
 The three unfolding lemmas and the two round-trip lemmas hold at an
 arbitrary `v`, and are stated there, as `isRoot_root` above already is.
@@ -476,6 +524,14 @@ Constraint 9 gains three paragraphs and a measurement rule on `jj`
 change `ypqrxnwk`, "record three choice-taint families in constraint
 9". Each binds W3 through W5, and two name W4. W4 answers all three.
 
+That change is on branch `feat/choice-free-primitives` and is not an
+ancestor of this branch, so the text this section answers is not
+readable from W4 alone. W4 rebases onto it once it merges, which is the
+precondition for this section reading as an answer rather than as an
+assertion; if it does not merge, the three answers stand as
+measurements in their own right — each is a statement about W4's own
+construction — and this section loses only its addressee.
+
 The `Nat` division and order paragraph names W4's `Fin self.size`
 obligations. It reaches little of W4: no `Nat` division arises
 anywhere, the index arithmetic W3 needs for products and exponentials
@@ -552,11 +608,28 @@ register `HasCoequalizers`, it being one of row k's two hypotheses.
 
 Three parallels under `GebTests/Mathlib/`, compositional per
 `docs/rules/lean-coding.md`
-§ Structure and typeclass patterns.
+§ Structure and typeclass patterns. Each carries a module docstring and
+the per-declaration docstrings the same rules require of any `.lean`
+file; the `Quotient` parallel qualifies rather than opens, for the
+reason § The quotient core gives.
+
+Computed assertions use `#guard`, not `by decide` or `by rfl`. Nothing
+built from `UnionFind.union` or `rootD` reduces in the kernel:
+`root`, `findAux` and `find` are well-founded recursions whose measure
+is the `noncomputable` `rankMax`, so `by rfl` fails on so small a goal
+as `(UnionFind.empty.push.push.union 0 1).size = 2`, and `decide` gets
+stuck at the `Decidable` instance. `native_decide` is not the escape:
+`GebMeta.detectNonstandardAxiom` forbids `Lean.ofReduceBool`
+everywhere. `#guard` evaluates through the compiler and introduces no
+declaration, hence no axiom obligation, and
+`GebTests/Internal/AxiomLinter.lean` already uses it. W1's test
+parallels use `rfl` and `decide` because their subjects are vectors,
+which do reduce; the union-find is the difference.
 
 - `Data/UnionFind/OfEdges.lean` — a fold over a small edge list, with
-  the root map computed and asserted, and the two correctness theorems
-  instantiated at that list.
+  the root map `#guard`ed, and `Sized.root_ofEdges_eq_of_mem` and
+  `Sized.apply_root_ofEdges` instantiated at that list. Those two are
+  proofs and need no reduction.
 - `CategoryTheory/FinSetSkel/Quotient.lean` — a worked coequalizer.
   The objects are `abbrev`s, not `def`s: a numeral at type
   `Fin Y.len` needs `Y.len` to reduce at instance-search transparency,
@@ -564,16 +637,21 @@ Three parallels under `GebTests/Mathlib/`, compositional per
   and `Y` of length 4, `f = ofVec ⟨#[0, 1, 3], rfl⟩` and
   `g = ofVec ⟨#[1, 2, 3], rfl⟩`, the edges are `(0,1)`, `(1,2)` and the
   reflexive `(3,3)`, and the classes are `{0,1,2}` and `{3}`. The
-  assertions are `len (unionFind f g) = 2` and that `π` sends `0`, `1`,
+  `#guard`s are `len (unionFind f g) == 2` and that `π` sends `0`, `1`,
   `2` to one index and `3` to the other. Which representative each
   class gets is fixed by union by rank, an internal of Batteries'
   algorithm, and is not asserted. For `desc`, take
-  `h : Y ⟶ ⟨2⟩` to be `ofVec ⟨#[0, 0, 0, 1], rfl⟩`, which satisfies
-  `f ≫ h = g ≫ h` by computation; the asserted equation is
-  `π Y (unionFind f g) ≫ desc Y (unionFind f g) h = h`, decided by
-  W1's morphism `DecidableEq`.
+  `h : Y ⟶ ⟨2⟩` to be `ofVec ⟨#[0, 0, 0, 1], rfl⟩`; that it satisfies
+  `f ≫ h = g ≫ h`, and the factorisation
+  `π Y (unionFind f g) ≫ desc Y (unionFind f g) h = h`, are both
+  `#guard`ed through W1's morphism `DecidableEq` in its `Bool` form.
+  The same two facts also follow from `comp_π` and `π_desc` as proofs;
+  the test asserts them by computation, which is what exercises the
+  algorithm.
 - `CategoryTheory/FinSetSkel/Coequalizer.lean` — resolution of
   `HasCoequalizers FinSetSkel` and of the per-diagram `HasColimit`.
+  Instance resolution needs no reduction, so this module is unaffected
+  by the above.
 
 The axiom discipline is checked by `lake lint` through
 `GebMeta.detectNonstandardAxiom`, not by a bespoke test.
@@ -588,8 +666,8 @@ The axiom discipline is checked by `lake lint` through
 - A module docstring for each of the three new source modules, with the
   sections `docs/rules/lean-coding.md` § Documentation makes mandatory.
   `OfEdges.lean`'s records why its upstream target is Batteries;
-  `Quotient.lean`'s and `Coequalizer.lean`'s carry
-  `[MacLaneMoerdijk1992]` under `## References`.
+  `Quotient.lean`'s and `Coequalizer.lean`'s carry the citation key
+  § Transcription or novel leaves to the plan, under `## References`.
 - A `/-- … -/` docstring on every `def`, `instance` and theorem of the
   three modules, per `docs/rules/lean-coding.md` § Comment and
   docstring rules, which makes them mandatory rather than reserving
@@ -607,10 +685,10 @@ The axiom discipline is checked by `lake lint` through
   referencing `UnionFind`; the condition is the preparation of W4's
   upstream submission, which outlives this group.
 - `TODO.md` § Upstream destination of core- and Batteries-targeted
-  content: its scoping criterion widens to reach modules that extend
-  core or Batteries API as well as those that restate or replace it,
-  the criterion is re-swept over `Geb/Mathlib/`, and the union-find
-  module is named alongside `Geb/Mathlib/Data/Vector/OfFn.lean`.
+  content: `Geb/Mathlib/Data/UnionFind/OfEdges.lean` and its
+  `GebTests` parallel are added to the item's "currently" list, which
+  names source modules and their test parallels both. The criterion
+  itself is not touched, per § The union-find layer.
 - `TODO.md` § Status: W4's row becomes complete, with
   its module list.
 - The spec and plan are removed in the branch's final commits, per
@@ -631,10 +709,10 @@ alone. That branch is specified to carry `Equiv.arrowCongrLeftC` and
 `Fin.instLawfulBEqC`; § Constraint 9 above records that W4 reaches
 neither, so W4 imports nothing from it.
 
-`docs/references.bib` is unchanged, `MacLaneMoerdijk1992` being already
-present. Its section locator for colimits in `Set` is verified against
-the primary source before either docstring ships, per the group's
-standing obligation on textbook locators.
+Whether `docs/references.bib` changes depends on which citation key the
+plan settles on, per § Transcription or novel: none if
+`MacLaneMoerdijk1992` holds, one entry if the locator search lands on
+Mac Lane's _Categories for the Working Mathematician_ instead.
 
 ## Out of scope
 
