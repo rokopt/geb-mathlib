@@ -435,3 +435,16 @@ import-direction rules above are enforced by
   and `IsSkeletonOf`. Allowlisted for `Classical.choice`:
   `CategoryTheory.Cat.category` depends on it, so an `Iso` in `Cat`
   carries the dependence however it is built.
+- `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` — the
+  `ElementaryTopos` class: a cartesian closed category with a
+  subobject classifier, carrying chosen data for the generators of
+  its finite limits and finite colimits — the cartesian and closed
+  structures, the initial object, binary coproducts, equalizers,
+  coequalizers, and the classifier — and deriving
+  `HasFiniteCoproducts`, `HasFiniteLimits` and `HasFiniteColimits`
+  from them. Accessors are definitions for the data-carrying classes
+  and instances for the `Prop` classes. `tensorUnitIsoΩ₀` compares
+  the cartesian terminal with the classifier's `Ω₀`, both being
+  terminal. The source and test modules are listed in
+  `GebMeta.classicalAllowedModules`, the module being a wrapper over
+  mathlib's `Classical`-dependent category theory.
