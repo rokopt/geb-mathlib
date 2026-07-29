@@ -439,10 +439,67 @@ W5's assignments become redundant.
    than an impossibility: a workstream that adds one admits the same
    family into the `get` normal form.
 
+   The `Nat` division and order API states the same distinction
+   without a closed list to state it by. `Nat.div_lt_of_lt_mul` and
+   `Nat.lt_of_mul_lt_mul_left` depend on `Classical.choice`;
+   `Nat.div_mul_le_self`, `Nat.add_mul_div_right`,
+   `Nat.div_add_mod'`, `Nat.add_mul_mod_self_right`,
+   `Nat.div_eq_of_lt`, `Nat.mod_eq_of_lt`, `Nat.mod_lt` and
+   `Nat.mul_le_mul_right` do not. The two sets are interleaved and
+   neither the name nor the namespace separates them, so a bound on
+   `Fin` arithmetic is established by `omega` over hypotheses named
+   individually, or by case analysis on `Nat.lt_or_ge`, rather than
+   by the single lemma that states it. Binds W3 through W5: W3's
+   index encodings and W4's `Fin self.size` obligations both run
+   through this API. Measured at v4.33.0-rc1, and re-measured on a
+   bump, a lemma's axioms following its proof.
+
+   The equality API carries the distinction, with the repair one step
+   further than the closing paragraph below describes. At `Fin n`,
+   `BEq` and `DecidableEq` are axiom-free, while the `LawfulBEq`
+   instance search finds, `Std.LawfulBEqOrd.lawfulBEq`, depends on
+   `Classical.choice`. Every operation stated over `LawfulBEq`
+   inherits that: `decide (j ∈ l)` at `List (Fin n)`, through
+   `List.instDecidableMemOfLawfulBEq`, is choice-dependent where
+   `List.contains`, through `List.elem`, is axiom-free.
+
+   Here the choice-free term does not already exist to be named, so a
+   choice-free module supplies it. Three lines over the
+   `DecidableEq`-derived `BEq` — `eq_of_beq := of_decide_eq_true`,
+   `rfl := decide_eq_true rfl` — give a `LawfulBEq (Fin n)` depending
+   on no axioms, and with it pinned at raised priority the `∈` form
+   and the `List.contains_iff_mem` bridge both measure `propext`
+   alone. Restating each operation over the weaker class is the more
+   expensive repair and is not required. W1's pinning of morphism
+   `DecidableEq` away from `instDecidableEqOfLawfulBEq` is the same
+   link one level down. Binds W3 through W5.
+
+   `Equiv`'s transport combinators divide the same way, by which side
+   of the arrow they move. `Equiv.arrowCongr`, `Equiv.arrowCongr'`,
+   `Equiv.piCongrLeft`, `Equiv.piCongrLeft'` and `Equiv.piCongr` all
+   depend on `Classical.choice`; `Equiv.piCongrRight`, `Equiv.curry`,
+   `Equiv.piComm`, `Equiv.refl` and `Equiv.symm` do not. Transporting
+   a function type along an equivalence of its codomain is therefore
+   choice-free and transporting it along an equivalence of its domain
+   is not, so a choice-free module states the domain transport itself:
+   the six-line `Equiv.arrowCongrLeftC` in
+   `Geb/Mathlib/Logic/Equiv/Basic.lean` measures `Quot.sound` alone.
+   Binds W3 through W5; W4's renumbering of union-find roots onto an
+   initial segment is a domain transport.
+
+   Measurement is from a monomorphic declaration at the instances
+   actually used. `#print axioms` on a polymorphic constant reports
+   that constant and not any instantiation of it, so a constant whose
+   hypothesis is `[LawfulBEq α]` measures clean while every use of it
+   at `Fin n` collects `Classical.choice`; the same holds of a functor
+   argument instantiated at a choice-dependent functor.
+
    The general shape binds as well as the instances, which are not a
    closed list: where two routes inhabit one class and only one is
    choice-free, a choice-free module names the term rather than
-   leaving instance search to pick. Morphism `DecidableEq` is one
+   leaving instance search to pick, and where the only instance in
+   scope is choice-dependent it supplies its own. Morphism
+   `DecidableEq` is one
    such, pinned by W1. Deciding a proposition quantified over `Fin n`
    is another, and W3 needs it: `inferInstance` gives an
    axiom-free term, while `Fintype.decidableForallFintype`, which
