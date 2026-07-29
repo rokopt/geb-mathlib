@@ -126,7 +126,20 @@ Every task's requirements implicitly include this section.
   on every `#guard`, but because `weak.warningAsError = true`
   mathlib's `HashCommandLinter` takes its `logInfoAt` branch, so the
   message does not fail the build. A `#guard` whose assertion is
-  false is a genuine error and does.
+  false is a genuine error and does. `#guard` also introduces no
+  declaration, so it carries no axiom obligation and
+  `GebMeta.detectNonstandardAxiom` has nothing to report on it.
+- **Docstrings state the code's shape, not Lean's mechanics.**
+  Where a construction's shape is forced by how Lean elaborates,
+  compiles or reduces, the docstring records the requirement and this
+  plan records the mechanics. A committed docstring is not a Lean
+  tutorial: `CONTRIBUTING.md` § Document only the persistent limits it
+  to the code's purpose, contracts and non-obvious external
+  constraints, and `Geb/Mathlib/` docstrings are read by mathlib
+  reviewers who do not need the language explained. The three places
+  this bites are the `let`-sharing shape (Task 3 Step 1), the `#guard`
+  wrappers (Tasks 2 and 4 Step 6), and the `abbrev` objects (Task 4
+  Step 6); each carries an implementer's note beside its code block.
 - **VCS is `jj`.** No mutating `git` subcommand; the PreToolUse hook
   at `scripts/hooks/block-mutating-git.sh` blocks them.
 - **Commit messages**: `<type>(<scope>): <subject>`, type in
@@ -746,15 +759,9 @@ algorithm.
 
 Nothing built from `UnionFind.union` or `rootD` reduces in the kernel,
 `root`, `findAux` and `find` being well-founded recursions whose
-measure is the `noncomputable` `rankMax`, so the assertions are
-`#guard`, which evaluates through the compiler, rather than
-`by decide` or `by rfl`. `#guard` introduces no declaration and hence
-no axiom obligation.
-
-Each assertion goes through a locally declared wrapper. `#guard`
-elaborates its argument as a temporary `meta` definition, which may
-only reference constants from modules imported with `meta import`, so
-a `#guard` naming an imported constant directly does not elaborate.
+measure is the `noncomputable` `rankMax`. The assertions are therefore
+`#guard` rather than `by decide` or `by rfl`, and each goes through a
+locally declared wrapper.
 
 ## Tags
 
@@ -914,15 +921,10 @@ that packages this as a `ColimitCocone` is a transcription rather than
 a translation. The module is `Classical.choice`-free; the wrapper is
 not, and is separate for that reason.
 
-Nothing expensive sits above a lambda anywhere in this module. A `let`
-shares only in a definition whose result is a value: a definition
-whose result is a function is compiled at the arity of all its
-binders, including those under the `let`, so its `let` body is
-re-entered on every application. The union-find is therefore a
-parameter that no definition below rebuilds, the per-class
-renumbering data is a `Vector` rather than a function, and the three
-definitions calling `Vector.ofFnC` each return a value, so their
-`let` shares.
+The fold runs once per coequalizer. Nothing expensive sits above a
+lambda anywhere in this module: the union-find is a parameter that no
+definition below rebuilds, and the per-class renumbering data is a
+`Vector` rather than a function.
 
 ## Main definitions
 
@@ -942,11 +944,10 @@ definitions calling `Vector.ofFnC` each return a value, so their
 
 `Fin (obj Y v).len`, `Fin (len v)` and
 `Fin ((List.finRange Y.len).filter (isRoot v)).length` are three
-forms of the carrier's index type, differing by iota and by delta.
-Every statement uses the first, which the morphism types force, and
-each of `π`, `rep` and `desc` therefore carries an unfolding lemma
-stated by hand: `rw [Vector.get_ofFnC]` reports no occurrence of the
-pattern, the index types differing.
+forms of the carrier's index type. Every statement uses the first,
+which the morphism types force, and each of `π`, `rep` and `desc`
+therefore carries an unfolding lemma stated by hand rather than
+inherited from `Vector.get_ofFnC`.
 
 ## References
 
@@ -973,6 +974,23 @@ As in Task 1 Step 1, the `## Main statements` section names three
 declarations a later task adds — `comp_π`, `π_desc` and `desc_uniq`
 are Task 4's. Tasks 3 and 4 build one module across two reviewable
 commits, and the docstring describes the module.
+
+**Why the sharing shape is what it is** (implementer's note, not
+docstring material — the docstring states the shape, not the Lean
+mechanics behind it). Two facts govern the definitions of Steps 3 and 4,
+both measured. `Vector.ofFnC` applies its argument once per index. And a
+`let` shares only in a definition whose result is a value: a definition
+whose result is a *function* is compiled at the arity of all its
+binders, including those under the `let`, so its `let` body is
+re-entered on every application — a `fun`-valued `def` therefore cannot
+hold an expensive `let` for its callers. Hence the union-find is a
+parameter rather than something any definition below rebuilds; `rep` is
+a `Vector` rather than the function
+`Fin (obj Y v).len → Fin Y.len`; and `rep`, `π` and `desc` each return a
+value, so the `let` binding `Fin.compressEquiv` does share in each. A
+term that reran the fold `Y.len` times would not be the chosen
+algorithm `TODO.md` § Class fields carries the coequalizer as data to
+secure.
 
 The `CategoryTheory` open is what puts `⟶` and `≫` in scope, as W1's
 `Basic.lean` does for the same reason. The `Batteries` open licenses
@@ -1553,14 +1571,9 @@ algorithm. Assertions are `#guard` for the reason recorded in the
 union-find test module: nothing built from `UnionFind.union` or
 `rootD` reduces in the kernel.
 
-The objects are `abbrev`s, not `def`s: a numeral at type `Fin Y.len`
-needs `Y.len` to reduce at instance-search transparency, which a `def`
-blocks and an `abbrev` does not.
-
-Each assertion goes through a locally declared wrapper, for the reason
-recorded in the union-find test module: `#guard` elaborates its
-argument as a temporary `meta` definition, which may not reference an
-imported constant.
+The objects are `abbrev`s, not `def`s, so that `Y.len` reduces where a
+numeral at `Fin Y.len` needs it to. Each assertion goes through a
+locally declared wrapper.
 
 ## Tags
 
@@ -1625,6 +1638,12 @@ def coeqFactors : Bool :=
 `instBEqOfDecidableEq` at the pinned `FinSetSkel.decidableEqHom`.
 They are wrappers for the same reason as `coeqPiAt` — keeping
 `decidableEqHom`, an imported constant, out of the guarded term.
+
+The objects must be `abbrev`s and not `def`s (implementer's note, not
+docstring material): a numeral at type `Fin Y.len` needs `Y.len` to
+reduce at instance-search transparency, which a `def` blocks and an
+`abbrev` does not. The docstring states the requirement; it does not
+explain the transparency levels behind it.
 
 The test module declares no namespace and reaches the declarations
 under test fully qualified, as W1's parallel does with
@@ -1849,9 +1868,8 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
 /-!
 # Tests for `HasCoequalizers FinSetSkel`
 
-Instance resolution needs no reduction, so this module is unaffected
-by the kernel non-reduction of `UnionFind.union` that makes the
-sibling test modules use `#guard`.
+That the instances resolve is the whole of what is checked here; the
+sibling test modules exercise the algorithm.
 
 ## Tags
 
@@ -1869,6 +1887,11 @@ example : HasCoequalizers FinSetSkel.{0} := inferInstance
 example (f g : (⟨3⟩ : FinSetSkel.{0}) ⟶ (⟨4⟩ : FinSetSkel.{0})) :
     HasColimit (parallelPair f g) := inferInstance
 ```
+
+Instance resolution needs no reduction, which is why this module is
+unaffected by the kernel non-reduction that makes the sibling test
+modules use `#guard` — an implementer's note; the docstring says only
+what is checked.
 
 This module's only declarations are `example`s, which are private, so
 a plain `import` would also elaborate here. It uses `public import`
