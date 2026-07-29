@@ -191,6 +191,15 @@ dependency-readiness, not by authorship: AI-drafted and
 human-written code follow the same rules in every subtree (see
 `docs/rules/upstream-eligible.md` § Two-track development).
 
+The upstream target is not a mathlib-or-CSLib binary. The subtree
+import rules restrict `Geb/Mathlib/` modules to `Mathlib.*`,
+`Batteries.*` and `Geb.Mathlib.*` imports, so a dependency of such a
+module cannot live in `Geb/Internal/`; a module restating Lean core
+or Batteries API therefore sits in `Geb/Mathlib/` while its upstream
+is neither mathlib4 nor CSLib. That destination is open, per
+`TODO.md` § Upstream destination of core- and Batteries-targeted
+content.
+
 ## Floodgate test
 
 At all times, the repo is ready to ship dependency-ordered PRs on

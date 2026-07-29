@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Mathlib.CategoryTheory.FinSetSkel
 public import Geb.Mathlib.CategoryTheory.FreeCoprodCompDisc
 public import Geb.Mathlib.CategoryTheory.FreeCoprodCompDisc.NatTrans
 public import Geb.Mathlib.CategoryTheory.Grothendieck

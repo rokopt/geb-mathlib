@@ -21,7 +21,14 @@
 #
 # `Batteries.*` is admitted to the mathlib-targeted subtrees because
 # mathlib depends on Batteries and imports its modules directly, so a
-# Batteries import survives extraction to mathlib4.
+# Batteries import survives extraction to mathlib4. That rationale
+# applies to a module whose own upstream target is mathlib4; the
+# restriction to these prefixes can also force a module into
+# Geb/Mathlib/ whose target is Lean core or Batteries, since a
+# dependency of a Geb/Mathlib/ module cannot live in Geb/Internal/.
+# Such a module is not extracted to mathlib4 at all, and its
+# destination is open, per TODO.md § Upstream destination of core- and
+# Batteries-targeted content.
 #
 # Test roots additionally permit their own `GebTests.<subtree>.*`
 # siblings (mirroring source self-imports); source roots cannot import

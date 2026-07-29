@@ -74,7 +74,11 @@ expected to follow the project's
 ## Upstream targets
 
 Content in `Geb/Mathlib/` is intended for eventual extraction as
-mathlib4 PRs. Content addressing computer-science topics
+mathlib4 PRs. Where the subtree import rules leave no alternative,
+a module there may instead target Lean core or Batteries; that
+destination is open, per [TODO.md](TODO.md) § Upstream destination
+of core- and Batteries-targeted content. Content addressing
+computer-science topics
 overlapping [CSLib](https://github.com/leanprover/cslib) targets
 CSLib instead and lives in `Geb/Cslib/`. Code in `Geb/Internal/`
 is not eligible for upstream submission; some of it may eventually be

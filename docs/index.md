@@ -18,7 +18,10 @@ The repository is laid out narrow-and-deep, with one indexing
   - `Geb/Mathlib/` — content authored in mathlib's style and
     intended for eventual upstream extraction to mathlib4;
     imports from `Mathlib.*`, `Batteries.*`, and `Geb.Mathlib.*`
-    only.
+    only. Where those import rules leave no alternative, a module
+    here may instead target Lean core or Batteries; that
+    destination is open, per `TODO.md` § Upstream destination of
+    core- and Batteries-targeted content.
   - `Geb/Cslib/` — content authored in CSLib's style and
     intended for eventual upstream extraction to CSLib;
     imports from `Mathlib.*`, `Cslib.*`, and `Geb.Cslib.*`
@@ -398,3 +401,37 @@ import-direction rules above are enforced by
   translates a simple container (a `PFunctor`) to an `IR` code over
   the unit type (Hancock–McBride–Ghani–Malatesta–Altenkirch
   Example 1). `Classical.choice`-free.
+- `Geb/Mathlib/Data/Vector/OfFn.lean` — a choice-free `ofFn` for
+  root `Vector`. Core's `Vector.ofFn` indexing lemmas depend on
+  `Classical.choice` through the private `Array.getElem_ofFn_go`;
+  `Vector.ofFnC` routes construction through `List.ofFn` instead,
+  leaving the result array-backed and indexing constant-time.
+  `Vector.get_eq_getElem` bridges to the `getElem` API.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Data/List/NodupEquivFin.lean` — extensions of
+  mathlib's `Mathlib/Data/List/NodupEquivFin.lean`.
+  `List.Nodup.getEquivC` rebuilds `List.Nodup.getEquiv` choice-free,
+  substituting `List.idxOf_lt_length_of_mem` for the
+  `Classical.choice`-dependent `List.idxOf_lt_length_iff`.
+  `Fin.compressEquiv` renumbers the indices of `Fin n` satisfying a
+  `Bool`-valued predicate onto an initial segment; it is in the `Fin`
+  namespace, the module's `List` content being the rebuild.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Data/Vector/NodupEquivFin.lean` —
+  `Vector.invOfInjective` inverts an injective vector, stated over
+  the `get` view rather than over `toList.Nodup`.
+  `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` — `FinSetSkel`,
+  a skeletal category of finite sets whose morphisms are
+  length-indexed vectors of codomain indices. Objects are a one-field
+  structure, so the length projection reduces at reducible
+  transparency; morphisms carry `DecidableEq` and `Repr`, both pinned
+  to choice-free terms, and the representation is sealed once the
+  `ofVec`/`toVec` API is in place. `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` — the
+  comparison with `FintypeCat.Skeleton`. The comparison functors are
+  mutually inverse on the nose, giving an isomorphism in `Cat` and
+  not merely an equivalence, together with the transported `Skeletal`
+  and `IsSkeletonOf`. Allowlisted for `Classical.choice`:
+  `CategoryTheory.Cat.category` depends on it, so an `Iso` in `Cat`
+  carries the dependence however it is built.

@@ -56,7 +56,12 @@ When Internal content is later brought to upstream quality:
 
 1. Port it into `Geb/Mathlib/Foo.lean` or `Geb/Cslib/Foo.lean`
    depending on the upstream target, satisfying the subtree
-   import rules below.
+   import rules below. The two subtrees are the only destinations
+   for ported content, but `Geb/Mathlib/` is not exclusively
+   mathlib4-targeted: where the import rules below leave no
+   alternative, a module there may instead target Lean core or
+   Batteries, a destination open per `TODO.md` § Upstream
+   destination of core- and Batteries-targeted content.
 2. When the upstream PR is accepted and we re-pin to a fresh
    master that includes it, migrate dependents via `jj rebase`.
    The Internal version is then removed.
@@ -89,6 +94,14 @@ import test modules.
 mathlib depends on Batteries and imports its modules directly, so a
 Batteries import survives extraction to mathlib4. Batteries modules
 that no `Mathlib.*` module imports are reachable no other way.
+
+That rationale applies to a module whose own upstream target is
+mathlib4. The restriction to these prefixes can also force a module
+into `Geb/Mathlib/` whose target is Lean core or Batteries — a
+dependency of a `Geb/Mathlib/` module cannot live in `Geb/Internal/` —
+and such a module is not extracted to mathlib4 at all. Its destination
+is open, per `TODO.md` § Upstream destination of core- and
+Batteries-targeted content.
 
 Bare umbrella imports (`import Mathlib`, `import Batteries`,
 `import Cslib`) are forbidden — extraction requires specific module

@@ -20,6 +20,7 @@
     - [Status](#status)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
+  - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
@@ -170,15 +171,30 @@ Geb requires a category of finite sets whose morphisms are data:
 values that can be pattern-matched, serialised, and compared.
 mathlib's skeletal model `FintypeCat.Skeleton` takes morphisms to be
 functions, whose equality is decidable only through
-`Classical.choice`, so this group builds `FinSetSkel` — the same
-objects, morphisms as length-indexed vectors of codomain indices —
-and the elementary-topos structure on it.
+`Classical.choice`, so this group builds `FinSetSkel` — objects
+corresponding to ℕ as `FintypeCat.Skeleton`'s do, morphisms as
+length-indexed vectors of codomain indices — and the elementary-topos
+structure on it.
+
+The two object carriers differ although the objects correspond:
+`FinSetSkel` is a one-field structure with a named `len`, where
+`FintypeCat.Skeleton` is `ULift ℕ`, whose projection is `down`. W3, W4
+and W5 all state constructions over `Fin X.len`, and the structure
+supplies both that name and, under `@[ext]`, an extensionality lemma.
 
 The spec recording the research findings and the argument that the
 workstreams compose was added and removed on branch
 `docs/finsetskel-topos-roadmap` (PR #97); recover it from there when
 re-verifying a finding, since the findings are pinned to the mathlib
-revision current when they were taken.
+revision current when they were taken. W1's spec, added and removed on
+branch `feat/finsetskel` (`jj` change
+`qnkykqtqrtlvznoqznsrzzynvluwvuqz`), is the later document of the two
+and records the re-verification of the findings W1 consumes. It
+corrects four of the umbrella spec's findings — the `Functor.ext`
+route for the comparison, the choice-free isomorphism in `Cat`, W0's
+shortening of W1, and the `ULift`-transport plan for the index
+equivalences — and adds the index-equivalence choice-taint that the
+operation table assumed away.
 
 Two names are fixed for the group. `FinSetSkel` is the category, the
 `Skel` recording that it is the skeletal model, parallel to
@@ -188,17 +204,24 @@ for sheaf-theoretic material. W1 through W5 place their modules under
 `Geb/Mathlib/`, with test parallels under `GebTests/Mathlib/`; W0
 adds no modules.
 
-Morphisms are root-namespace `Vector`, not `List.Vector`: the
-morphisms exist to be computed with, array-backed indexing is
-constant-time where list-backed is linear, and the
-`propext`/`Quot.sound` that root `Vector`'s `DecidableEq` costs is
-accepted, neither being `Classical.choice`. This fixes W1's morphism
-type and every downstream carrier.
+Morphisms are root-namespace `Vector`, not `List.Vector`, on the
+ground that composition is the operation the category exists to run.
+Composing `f : X ⟶ Y` with `g : Y ⟶ Z`, writing `X.len = m` and
+`Y.len = n`, costs `O(m)` over root `Vector`'s constant-time indexing
+and `O(m² + m · n)` over `List.Vector`'s linear indexing. The axiom
+comparison runs the other way on every count: root `Vector`'s derived
+`DecidableEq` costs `propext`/`Quot.sound` where
+`List.Vector.instDecidableEq` depends on no axioms, and root
+`Vector`'s `ofFn`, `range` and `finRange` lemmas depend on
+`Classical.choice` where `List.Vector`'s do not. Root `Vector` is
+chosen against that, at the price of the declarations of
+`Geb/Mathlib/Data/Vector/OfFn.lean` and of constraint 9's ban. This
+fixes W1's morphism type and every downstream carrier.
 
 #### Workstreams
 
-W0 precedes the rest. W1 and W2 are independent of each other; W3 and
-W4 both depend on W1 and are independent of each other and of W2; W5
+W0 precedes W4. W1 and W2 are independent of each other and of W0; W3
+and W4 both depend on W1 and are independent of each other and of W2; W5
 depends on W1 through W4. Each of W1 through W5 writes its spec and
 plan only after the workstreams it depends on are merged, each
 through brainstorming, adversarial review to convergence, user
@@ -214,21 +237,50 @@ entry, adding no Lean content.
   `docs/rules/upstream-eligible.md` § Subtree import rules, the
   `Geb/Mathlib/` line of `docs/index.md` § Directory structure, and a
   case in `scripts/tests/test-lint-imports.sh`. W4 requires it,
-  needing `Batteries.Data.UnionFind`; W1 is shortened by it, root
-  `Vector.get_ofFn` being Batteries' and unreachable from any
-  `Mathlib.*` module. It therefore precedes W1.
-- **W1** — the `SmallCategory` instance at an arbitrary universe;
-  morphism extensionality and the identity/composition application
-  lemmas, whose `simp` orientation W1 fixes as the shared
-  application-normal form for W3 and W4; `DecidableEq` on morphisms;
-  the choice-free rebuild of `List.Nodup.getEquiv` and the predicate
-  compression over it; the `ULift`-transported forms of
-  `finProdFinEquiv`, `finSumFinEquiv` and `finFunctionFinEquiv`; the
-  isomorphism in `Cat` to `FintypeCat.Skeleton` in the choice-free
-  core, with the equivalence and the transported `Skeletal` and
-  `IsSkeletonOf` in an allowlisted wrapper; and a module docstring
-  recording the morphism-representation choice with the evidence
-  against it.
+  needing `Batteries.Data.UnionFind`.
+- **W1** _(complete)_ — the `SmallCategory` instance at an arbitrary
+  universe, its objects the one-field structure above and its morphism
+  type `ULift.{u} (Vector (Fin Y.len) X.len)`, the lift outside the
+  vector rather than on its entries. Its deliverables, and with them
+  the decisions it fixes for W3 through W5:
+  - The morphism API: `FinSetSkel.Hom`, the `ofVec`/`toVec` pair with
+    both round trips `toVec_ofVec` and `ofVec_toVec`, `@[ext]`
+    extensionality, and `attribute [irreducible] FinSetSkel.Hom`
+    sealing the representation once the API is in place. No
+    downstream construction projects the representation; all route
+    through `ofVec`, `toVec` and `ofIdxFun`.
+  - Morphism extensionality and the identity and composition
+    application lemmas, whose `@[simp]` orientation fixes
+    `f.toVec.get i`, with `i : Fin X.len`, as the shared
+    application-normal form for W3 and W4.
+  - The three properties of morphisms this entry requires —
+    pattern-matched, serialised and compared — each discharged on
+    `f.toVec`, since the seal makes `Hom` itself opaque. Morphism
+    `DecidableEq` and `Repr` are the terms W1 exports, pinned through
+    `hom_ext` and `toVec` rather than left to `inferInstance`:
+    instance search does not unfold the `Hom` definition, and the
+    `instDecidableEqOfLawfulBEq` route inhabits the same class and is
+    choice-tainted.
+  - `Geb/Mathlib/Data/Vector/OfFn.lean`, exporting `Vector.ofFnC`,
+    `getElem_ofFnC`, `get_ofFnC`, `ofFnC_get` and the `rfl` bridge
+    `get_eq_getElem` to the `getElem` API. The two `get`-form round
+    trips carry `@[simp]`; `getElem_ofFnC` and the bridge do not,
+    neither the `getElem` form nor either orientation of the bridge
+    being the normal form.
+  - `Geb/Mathlib/Data/List/NodupEquivFin.lean`, the choice-free
+    rebuild of `List.Nodup.getEquiv` and the predicate compression
+    over it; and `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`,
+    exporting `Vector.invOfInjective`, the vector-level inversion
+    `Fin k ≃ {j : Fin n // j ∈ ι.toList}` of an injective
+    `ι : Vector (Fin n) k` under the hypothesis
+    `Function.Injective ι.get`, stated over the normal form.
+  - The comparison functors to `FintypeCat.Skeleton`, the isomorphism
+    in `Cat`, the equivalence, and the transported `Skeletal` and
+    `IsSkeletonOf`, all in an allowlisted wrapper:
+    `CategoryTheory.Cat.category` depends on `Classical.choice`, so an
+    isomorphism in `Cat` is not choice-free by any route.
+  - A module docstring recording the morphism-representation choice
+    with the evidence against it.
 - **W2** — the `ElementaryTopos` class, its derived accessors and
   derived `Prop` instances, the `docs/references.bib` citations, and
   a module docstring carrying constraint 3 and constraint 5's
@@ -249,17 +301,17 @@ entry, adding no Lean content.
 | --- | --- | --- | --- |
 | a | Initial object | `Fin 0` | W3 |
 | b | Terminal object | `Fin 1` | W3 |
-| c | Binary coproducts | `m + n`, via `finSumFinEquiv` | W3 |
-| d | Binary products | `m * n`, via `finProdFinEquiv` | W3 |
+| c | Binary coproducts | `m + n`, via `finSumFinEquiv`, which is choice-free and usable as it stands | W3 |
+| d | Binary products | `m * n`, via `finProdFinEquiv`, which depends on `Classical.choice` through `Fin.divNat`; W3 owes a choice-free replacement | W3 |
 | e | Finite coproducts (`Prop`) | from a and c | W3 |
 | f | Finite products (`Prop`) | from b and d | W3 |
-| g | Exponentials (`MonoidalClosed`) | `Fin m ⟹ Fin n` is `Fin (n ^ m)` | W3 |
+| g | Exponentials (`MonoidalClosed`) | `Fin m ⟹ Fin n` is `Fin (n ^ m)`, via `finFunctionFinEquiv`, which depends on `Classical.choice`; W3 owes a choice-free replacement | W3 |
 | h | Binary equalizers, and `HasEqualizers` | agreement subset | W3 |
 | i | Binary coequalizers, and `HasCoequalizers` | union-find | W4 |
 | j | Finite limits (`Prop`) | from f and h | W3 |
 | k | Finite colimits (`Prop`) | from e and i | W5 |
 | l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
-| m | `Mono` is an injective vector | — | W3 |
+| m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `SimplexCategory.mono_iff_injective` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
 
 #### Class fields
 
@@ -312,9 +364,7 @@ harmless by proof irrelevance.
    matching mathlib convention. `SmallCategory C` is `Category.{u} C`,
    so a formulation over it would admit `FinSetSkel` but foreclose
    every non-small instance.
-4. W1 settles the `ULift` placement in the morphism type and supplies
-   the transported forms of the three index equivalences, every
-   object carrier being `Fin`-shaped universe-zero data.
+4. W1 settles the `ULift` placement in the morphism type.
 5. W3 and W4 register as instances what they consume and what a later
    workstream consumes — including `HasFiniteCoproducts` (W3, row e)
    and `HasCoequalizers` (W4, row i, via
@@ -331,16 +381,49 @@ harmless by proof irrelevance.
    leaves the field's type `Subobject.Classifier C`. W3 builds row l
    over its own row b as exposed through the cartesian instance, so
    the coherence obligation is `rfl`.
-7. `DecidableEq` on morphisms, the injective-vector inversion and the
-   transported index equivalences live in W1. A shared lemma
+7. `DecidableEq` on morphisms and the injective-vector inversion live
+   in W1. A shared lemma
    discovered after W1 merges goes on its own branch off `main`,
-   which W3 and W4 both rebase onto.
+   which W3 and W4 both rebase onto. The choice-free replacements for
+   `finProdFinEquiv` and `finFunctionFinEquiv` are deliberately
+   W3-local, each having a single consumer in W3: this constraint
+   places in W1 what W3 and W4 share, and W4's row i touches neither.
 8. Every workstream splits its modules: constructions and the content
    of their universal properties choice-free over vectors and `Fin`;
    mathlib structures and `Prop` instances in a wrapper whose fields
    are those terms. Only wrapper modules reach
    `GebMeta.classicalAllowedModules`. A workstream whose entire
    deliverable is packaging — W2 and W5 — is a wrapper throughout.
+9. Constructions in choice-free modules use `Vector.ofFnC` and never
+   `Vector.ofFn`, `Vector.range` or `Vector.finRange`, nor the
+   `Array.toList_ofFn` / `List.toArray_ofFn` bridges. Binds W3
+   through W5. The definitions themselves depend on `propext` alone;
+   what is banned with them is their lemmas. Those that fire
+   automatically — `Vector.getElem_ofFn`, `Vector.getElem_range`,
+   `Vector.getElem_finRange`, `Vector.ofFn_getElem`,
+   `Array.getElem_ofFn` and the two `Array` bridges — are `@[simp]`,
+   most also `@[grind =]`, and all depend on `Classical.choice`, as
+   do the `ofFn` lemmas carrying no attribute at all. A bare `simp`
+   or `grind` meeting such a term therefore introduces
+   `Classical.choice` into a module required to be choice-free. It is
+   not an elaboration error: it surfaces at `lake lint`, on the
+   branch's own CI run and pre-push check. Batteries' `get`-form
+   counterparts are equally tainted and are not in scope: no
+   `Mathlib.*` module reaches `Batteries.Data.Vector.Lemmas`, and the
+   bare umbrella `import Mathlib` that would is forbidden in
+   upstream-eligible files by `scripts/lint-imports.sh`. W0 permits a
+   direct `Batteries.` import, so this is a standing choice rather
+   than an impossibility: a workstream that adds one admits the same
+   family into the `get` normal form.
+
+   The general shape binds as well as the instances, which are not a
+   closed list: where two routes inhabit one class and only one is
+   choice-free, a choice-free module names the term rather than
+   leaving instance search to pick. Morphism `DecidableEq` is one
+   such, pinned by W1. Deciding a proposition quantified over `Fin n`
+   is another, and W3 and W4 both need it: `inferInstance` gives an
+   axiom-free term, while `Fintype.decidableForallFintype`, which
+   inhabits the same class, depends on `Classical.choice`.
 
 Beyond W1's application-normal form, W3 and W4 each add carrier-level
 `simp` lemmas that first meet at W5; neither marks a transport lemma
@@ -348,7 +431,13 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 
 #### Standing obligations
 
-- W0 precedes W1 (above).
+- A textbook locator for the skeleton of a category is verified
+  against the primary source before any Lean docstring cites one, on
+  the [Pare1974] precedent below. The nLab entry cited by
+  `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` attests Mac Lane,
+  _Categories for the Working Mathematician_ (1971), p. 91 and Riehl,
+  _Category Theory in Context_ (2017), p. 34, but attestation by a
+  secondary source is not verification.
 - `GebMeta.classicalAllowedModules` gains each new wrapper module and
   its `GebTests` parallel, appended by the workstream introducing it;
   W1 through W5 each entail such an amendment, W0 none.
@@ -369,7 +458,7 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | Workstream | Depends on | State | Code |
 | --- | --- | --- | --- |
 | W0 `Batteries.` allow-list | — | Complete | — |
-| W1 `FinSetSkel` | W0 | Not started | — |
+| W1 `FinSetSkel` | — | Complete | `Geb/Mathlib/Data/Vector/OfFn.lean`, `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` |
 | W2 `ElementaryTopos` | — | Not started | — |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |
 | W4 Row i, union-find | W0, W1 | Not started | — |
@@ -427,6 +516,30 @@ whatever placement is settled for them. Scoping the item by that
 criterion
 rather than by a module list keeps it from being settled
 incompletely.
+
+### Upstream destination of core- and Batteries-targeted content
+
+Settle where content under `Geb/Mathlib/` whose upstream target is
+Lean core or Batteries rather than mathlib4 belongs. Such content
+exists because `docs/rules/upstream-eligible.md` § Subtree import
+rules restricts `Geb/Mathlib/` modules to `Mathlib.*`, `Batteries.*`
+and `Geb.Mathlib.*` imports: a dependency of a `Geb/Mathlib/` module
+cannot live in `Geb/Internal/`, so a module restating core or
+Batteries API sits under `Geb/Mathlib/` while its upstream is neither
+mathlib4 nor CSLib. In scope is every module under `Geb/Mathlib/`, and
+every `GebTests/Mathlib/` parallel, whose declarations restate or
+replace declarations of Lean core or Batteries rather than of mathlib:
+currently `Geb/Mathlib/Data/Vector/OfFn.lean` and its test parallel.
+Scoping the item by that criterion rather than by a module list keeps
+it from being settled incompletely; the criterion does not reach
+`Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, whose statement is an
+`Equiv` and so has no core or Batteries home.
+
+`scripts/extract-pr.sh` is the enforcer: its `Geb/Mathlib/*` arm maps
+unconditionally to `Mathlib/` and its `GebTests/Mathlib/*` arm to
+`MathlibTest/`, so a core-targeted module extracts to the wrong
+upstream silently. Changing either mapping waits on this item's
+outcome.
 
 ### Complete Theorem 2.4 for `IndRec`
 
@@ -582,3 +695,27 @@ fiber membership already implemented.
   discipline); the extraction entails both, since the fixtures module
   can only be shared by making the currently-private fixture data
   public and importing it from every consumer.
+- **Choice-free `Array.ofFn` lemmas**: when an upstream submission
+  touching root `Vector`'s `ofFn` API is prepared, give
+  `Array.getElem_ofFn_go` (`Init/Data/Array/Lemmas.lean`) a
+  choice-free proof in Lean core, from which `Array.getElem_ofFn`,
+  `Array.toList_ofFn`, `List.toArray_ofFn`, `Vector.getElem_ofFn`,
+  `Vector.ofFn_getElem`, `Vector.getElem_range` and
+  `Vector.getElem_finRange` all follow, retiring `Vector.ofFnC` and
+  its round trips. It does not retire the `get`/`getElem` bridge in
+  the same module: core states no `Vector.get_eq_getElem`, and a
+  repaired core lemma is still in `getElem` form. The bridge goes only
+  if the direct `Batteries.Data.Vector.Lemmas` import is taken at the
+  same time, which the repair would make safe by de-tainting
+  Batteries' `get_ofFn` and `get_range`; that is a second decision,
+  not a consequence of this one. This is a Lean core submission, not a
+  mathlib one, and it does not reach
+  `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, whose statement is an
+  `Equiv` and so has no core or Batteries home.
+- **Choice-free `Skeletal FinSetSkel`**: when a use for it arises
+  outside an allowlisted module, prove it directly rather than
+  transporting it along the isomorphism to `FintypeCat.Skeleton`. That
+  needs a choice-free pigeonhole, mathlib's `Fin.equiv_iff_eq`,
+  `Fintype.card_congr` and `Fintype.card_fin` all depending on
+  `Classical.choice`. There is no such use while `Skeletal` is
+  consumed only by the wrapper.

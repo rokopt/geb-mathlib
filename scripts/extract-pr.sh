@@ -51,11 +51,20 @@ fi
 # Map source path to destination path; pick rewrite prefixes.
 case "$src" in
   Geb/Mathlib/*)
+    # Unconditional: a Geb/Mathlib/ module whose own upstream target is
+    # Lean core or Batteries rather than mathlib4 extracts to the wrong
+    # upstream here, silently. Such modules exist because the subtree
+    # import rules leave nowhere else to put them; the destination is
+    # open, per TODO.md § Upstream destination of core- and
+    # Batteries-targeted content, and this mapping waits on its outcome.
     dst_rel="Mathlib/${src#Geb/Mathlib/}"
     rewrite_prefix='Geb\.Mathlib\.'
     target_prefix='Mathlib.'
     ;;
   GebTests/Mathlib/*)
+    # Unconditional in the same way as the arm above, and with the same
+    # consequence for the test parallel of a core- or Batteries-targeted
+    # module; this mapping waits on the same TODO.md item's outcome.
     dst_rel="MathlibTest/${src#GebTests/Mathlib/}"
     rewrite_prefix='Geb\.Mathlib\.'
     target_prefix='Mathlib.'
