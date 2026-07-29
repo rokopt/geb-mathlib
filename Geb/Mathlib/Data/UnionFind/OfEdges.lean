@@ -118,4 +118,72 @@ theorem Sized.root_discrete (x : Fin n) : (discrete n).root x = x :=
 theorem Sized.root_root (v : Sized n) (x : Fin n) :
     v.root (v.root x) = v.root x := Fin.ext UnionFind.rootD_rootD
 
+/-- Equivalence in an accumulator survives the fold. -/
+theorem Sized.equiv_foldl_of_equiv (l : List (Fin n × Fin n))
+    (a b : Fin n) (v : Sized n) (hv : v.1.Equiv a b) :
+    (l.foldl (fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2) v).1.Equiv
+      a b :=
+  List.rec (motive := fun (l : List (Fin n × Fin n)) ↦ ∀ (v : Sized n), v.1.Equiv a b →
+      (l.foldl (fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2) v).1.Equiv a b)
+    (fun _ hv ↦ hv)
+    (fun p _ ih v hv ↦ ih (v.union p.1 p.2) (Sized.equiv_union.mpr (Or.inl hv)))
+    l v hv
+
+/-- A listed pair is equivalent after the fold, from any accumulator. -/
+theorem Sized.equiv_foldl_of_mem (l : List (Fin n × Fin n))
+    (a b : Fin n) (hab : (a, b) ∈ l) (v : Sized n) :
+    (l.foldl (fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2) v).1.Equiv
+      a b :=
+  List.rec (motive := fun (l : List (Fin n × Fin n)) ↦ (a, b) ∈ l → ∀ (v : Sized n),
+      (l.foldl (fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2) v).1.Equiv a b)
+    (fun hab ↦ absurd hab List.not_mem_nil)
+    (fun p _ ih hab v ↦ by
+      cases List.mem_cons.mp hab with
+      | inl hp =>
+        subst hp
+        exact equiv_foldl_of_equiv _ a b (v.union a b)
+          (Sized.equiv_union.mpr (Or.inr (Or.inl ⟨rfl, rfl⟩)))
+      | inr ht => exact ih ht (v.union p.1 p.2))
+    l hab v
+
+/-- A function agreeing on every listed pair, and on the accumulator's
+roots, agrees on the roots after the fold. -/
+theorem Sized.apply_root_foldl {α : Type u} {h : Fin n → α}
+    (l : List (Fin n × Fin n)) (hl : ∀ p ∈ l, h p.1 = h p.2)
+    (v : Sized n) (hv : ∀ x, h (v.root x) = h x) (x : Fin n) :
+    h ((l.foldl (fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2) v).root
+      x) = h x :=
+  List.rec (motive := fun (l : List (Fin n × Fin n)) ↦ (∀ p ∈ l, h p.1 = h p.2) →
+      ∀ (v : Sized n), (∀ z, h (v.root z) = h z) →
+      h ((l.foldl (fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2) v).root x) = h x)
+    (fun _ _ hv ↦ hv x)
+    (fun p _ ih hl v hv ↦ ih (fun q hq ↦ hl q (List.mem_cons_of_mem p hq))
+      (v.union p.1 p.2) (fun z ↦ by
+        have key : ∀ c d : Fin n, v.1.Equiv c d → h c = h d := fun c d hcd ↦
+          ((hv c).symm.trans (congrArg h (root_eq_iff.mpr hcd))).trans (hv d)
+        have hz : (v.union p.1 p.2).1.Equiv z ((v.union p.1 p.2).root z) :=
+          UnionFind.rootD_rootD.symm
+        cases Sized.equiv_union.mp hz with
+        | inl hsame => exact (key _ _ hsame).symm
+        | inr hcross =>
+          cases hcross with
+          | inl hfwd => exact ((key _ _ hfwd.1).trans
+              ((hl p List.mem_cons_self).trans (key _ _ hfwd.2))).symm
+          | inr hbwd => exact ((key _ _ hbwd.1).trans
+              ((hl p List.mem_cons_self).symm.trans (key _ _ hbwd.2))).symm))
+    l hl v hv
+
+/-- Every listed pair is merged. -/
+theorem Sized.root_ofEdges_eq_of_mem {l : List (Fin n × Fin n)}
+    {a b : Fin n} (hab : (a, b) ∈ l) :
+    (ofEdges n l).root a = (ofEdges n l).root b :=
+  root_eq_iff.mpr (equiv_foldl_of_mem l a b hab (discrete n))
+
+/-- Nothing beyond the listed pairs is merged: a function agreeing on
+every listed pair agrees on roots. -/
+theorem Sized.apply_root_ofEdges {α : Type u} {l : List (Fin n × Fin n)}
+    {h : Fin n → α} (hl : ∀ p ∈ l, h p.1 = h p.2) (x : Fin n) :
+    h ((ofEdges n l).root x) = h x :=
+  apply_root_foldl l hl (discrete n) (fun z ↦ congrArg h (root_discrete z)) x
+
 end Batteries.UnionFind
