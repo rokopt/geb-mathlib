@@ -180,6 +180,8 @@ def Sized.ofEdges (n : Nat) (l : List (Fin n × Fin n)) : Sized n
 
 theorem Sized.root_eq_iff {v : Sized n} {a b : Fin n} :
     v.root a = v.root b ↔ v.1.Equiv a b
+-- `a b : Nat`, matching Batteries' `Equiv`; the `Fin n` arguments the
+-- other lemmas pass are coerced.
 theorem Sized.equiv_union {v : Sized n} {x y : Fin n} {a b : Nat} :
     (v.union x y).1.Equiv a b ↔
       v.1.Equiv a b ∨ v.1.Equiv a x ∧ v.1.Equiv y b
@@ -498,7 +500,10 @@ theorem desc_uniq (f g : X ⟶ Y) (h : Y ⟶ Z)
 ```
 
 `comp_π` instantiates `Sized.root_ofEdges_eq_of_mem` at the membership
-witness supplied by `List.mem_map` and `List.mem_finRange`. `π_desc`
+witness supplied by `List.mem_map` and `List.mem_finRange`. `edges`
+needs no unfolding lemma of its own, unlike `π`, `rep` and `desc`: it
+returns a list rather than a morphism or a vector at a mismatched index
+type, so `List.mem_map` applies to it directly. `π_desc`
 instantiates `Sized.apply_root_ofEdges` at `h.toVec.get`, whose
 hypothesis is `w` read indexwise through W1's `comp_get`, and consumes
 `desc_get` and `rep_π`. `desc_uniq` needs no recursion: it is
@@ -514,11 +519,16 @@ already uses it. Importing `Batteries.Data.UnionFind.Lemmas` makes no
 constraint 9's tainted `get`-form counterparts.
 
 Decidability in `isRoot` is left to instance search rather than named.
-Constraint 9's rule to name the term is conditional on two routes
-inhabiting the class, and for `DecidableEq (Fin n)` only
-`instDecidableEqFin` is in scope; implementation confirms this by
-elaborating `isRoot` with `pp.all` and reading the instance off the
-term, as constraint 9's measurement discipline requires.
+Two routes do inhabit `DecidableEq (Fin n)` — `instDecidableEqFin`,
+which search picks, and `instDecidableEqOfLawfulBEq` — but constraint
+9's rule to name the term is conditional on exactly one of the routes
+being choice-free, and both are axiom-free at the `BEq (Fin n)` in
+scope, that being `instBEqOfDecidableEq` rather than the
+choice-dependent `Std.LawfulBEqOrd.lawfulBEq` the equality-API
+paragraph warns of. The rule therefore does not engage. Implementation
+confirms which instance search picked by elaborating `isRoot` with
+`pp.all` and reading it off the term, as constraint 9's measurement
+discipline requires.
 
 Constraint 9 gains three paragraphs and a measurement rule on `jj`
 change `ypqrxnwk`, "record three choice-taint families in constraint
@@ -626,10 +636,13 @@ declaration, hence no axiom obligation, and
 parallels use `rfl` and `decide` because their subjects are vectors,
 which do reduce; the union-find is the difference.
 
-- `Data/UnionFind/OfEdges.lean` — a fold over a small edge list, with
-  the root map `#guard`ed, and `Sized.root_ofEdges_eq_of_mem` and
-  `Sized.apply_root_ofEdges` instantiated at that list. Those two are
-  proofs and need no reduction.
+- `Data/UnionFind/OfEdges.lean` — a fold over a small edge list. What
+  is `#guard`ed is the partition the fold induces: roots equal within
+  each class, unequal across. Which representative a class gets is
+  union by rank's business, so the root map itself is not pinned, on
+  the same ground as the second bullet below. `Sized.root_ofEdges_eq_of_mem`
+  and `Sized.apply_root_ofEdges` are instantiated at that list as
+  proofs, which need no reduction.
 - `CategoryTheory/FinSetSkel/Quotient.lean` — a worked coequalizer.
   The objects are `abbrev`s, not `def`s: a numeral at type
   `Fin Y.len` needs `Y.len` to reduce at instance-search transparency,
@@ -691,6 +704,16 @@ The axiom discipline is checked by `lake lint` through
   itself is not touched, per § The union-find layer.
 - `TODO.md` § Status: W4's row becomes complete, with
   its module list.
+- Constraint 9's `Equiv`-transport paragraph, once branch
+  `feat/choice-free-primitives` has merged, loses its closing clause
+  "W4's renumbering of union-find roots onto an initial segment is a
+  domain transport". § Constraint 9 above measures that it is not one.
+  The clause names W4, so correcting it is W4's; it is a fourth
+  `TODO.md` edit, made on the rebase and conditional on that branch
+  merging first with the clause intact. If it merges corrected — the
+  discrepancy has been reported to its author — W4 makes no edit.
+  Constraint 9 binds W5, which would otherwise read the clause as
+  current.
 - The spec and plan are removed in the branch's final commits, per
   `CONTRIBUTING.md` § Concern shape.
 
@@ -700,9 +723,8 @@ W4 edits `TODO.md` in three places, and appends to
 `feat/choice-free-primitives` (`jj` change `ypqrxnwk`) amends `TODO.md`
 as well. These are the ordinary textual conflicts the group's standing
 obligation anticipates for concurrent siblings; W4 rebases onto
-whichever of them merges first. The standing obligation lists three
-shared files and not the `FinSetSkel` index; W3's spec amends it to
-add the fourth, so W4 does not.
+whichever of them merges first. The standing obligation already covers
+all four, its fourth item being "any shared directory index file".
 
 W4's dependency on `feat/choice-free-primitives` is its `TODO.md` text
 alone. That branch is specified to carry `Equiv.arrowCongrLeftC` and
