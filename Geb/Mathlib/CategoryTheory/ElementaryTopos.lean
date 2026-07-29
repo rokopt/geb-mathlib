@@ -99,6 +99,7 @@ open CategoryTheory.Limits MonoidalCategory
 /-- An elementary topos: a cartesian closed category with a subobject
 classifier, with chosen data for the generators of its finite limits
 and finite colimits. -/
+@[ext]
 class ElementaryTopos (C : Type u) [Category.{v} C] where
   /-- The cartesian structure, supplying the terminal object and
   binary products. -/

@@ -45,6 +45,13 @@ example : CartesianMonoidalCategory C :=
 
 example : MonoidalClosed C := ElementaryTopos.monoidalClosed C
 
+/-- The remaining two accessors cross the module boundary. -/
+example : 𝟙_ C ≅ (ElementaryTopos.classifier (C := C)).Ω₀ :=
+  ElementaryTopos.tensorUnitIsoΩ₀ C
+
+example : IsInitial (ElementaryTopos.initialCocone (C := C)).cocone.pt :=
+  ElementaryTopos.isInitial C
+
 end Resolution
 
 section Witness
