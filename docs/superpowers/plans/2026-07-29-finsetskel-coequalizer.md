@@ -72,7 +72,16 @@ Every task's requirements implicitly include this section.
   `@[expose] public section`.
 - **Import visibility.** Imports whose contents appear in a module's
   own statements are `public import`; source index files use
-  `public import`, `GebTests` index files use plain `import`.
+  `public import`, `GebTests` *index* files use plain `import`.
+  `GebTests` *leaf* modules use `public import`, as W1's
+  `GebTests/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` does: a
+  leaf opens `@[expose] public section` and declares public `def`s
+  and theorems mentioning the imported names, and under a plain
+  `import` those names are not in scope for a public declaration.
+  Measured: `module`, `import …FinSetSkel.Basic`,
+  `@[expose] public section`, `abbrev sDom : FinSetSkel.{0} := ⟨3⟩`
+  reports "Unknown identifier `FinSetSkel`. Note: A public
+  declaration `FinSetSkel` exists but is imported privately".
 - **`autoImplicit = false`.** Every binder is declared.
 - **Line length 100 characters** in `.lean` files; 80 in `.md` prose
   (`MD013`, tables and code blocks exempt).
@@ -94,6 +103,30 @@ Every task's requirements implicitly include this section.
   `by rfl`: nothing built from `UnionFind.union` or `rootD` reduces
   in the kernel, `root`/`findAux`/`find` being well-founded
   recursions measured by the `noncomputable` `rankMax`.
+- **Every `#guard` term mentions only locally declared constants.**
+  `#guard` elaborates its argument as a temporary `meta` definition,
+  and under the Lean 4 module system a `meta` definition may only
+  reference constants from modules imported with `meta import`. A
+  `#guard` naming an imported constant directly therefore fails.
+  Measured: with `public import …FinSetSkel.Basic` and a local
+  `def rF`, `#guard rF.toVec.get 0 == rF.toVec.get 0` reports
+  "Invalid `meta` definition `_tmp✝`, `FinSetSkel.Hom.toVec` is not
+  accessible here", while `def rFAt (i : Fin 3) : Nat := (rF.toVec.get i).val`
+  followed by `#guard rFAt 0 == 0` elaborates clean. So each assertion
+  goes through a locally declared wrapper, one per quantity asserted.
+  The compiler's suggested repair — adding
+  `public meta import Geb.Mathlib.…` alongside the ordinary
+  `public import` — does make the `#guard`s elaborate but is rejected
+  by `scripts/lint-imports.sh`, whose Rule 2 exempts only lines
+  matching the regex `^[0-9]+:(public[[:space:]]+)?import` followed by
+  a space, so the `Geb.Mathlib.` self-prefix on a
+  `public meta import` line is flagged. `public import all …` is
+  rejected by Lean outright.
+- **`#guard` is `info`, not `warning`.** `linter.hashCommand` fires
+  on every `#guard`, but because `weak.warningAsError = true`
+  mathlib's `HashCommandLinter` takes its `logInfoAt` branch, so the
+  message does not fail the build. A `#guard` whose assertion is
+  false is a genuine error and does.
 - **VCS is `jj`.** No mutating `git` subcommand; the PreToolUse hook
   at `scripts/hooks/block-mutating-git.sh` blocks them.
 - **Commit messages**: `<type>(<scope>): <subject>`, type in
@@ -176,8 +209,8 @@ paragraph).
   `rootD_empty`, `root_push`, `equiv_union`.
 - Produces, all in namespace `Batteries.UnionFind`:
   `size_union`, `size_push`, `Sized`, `Sized.discrete`,
-  `Sized.union`, `Sized.root`, `Sized.ofEdges`, `Sized.root_eq_iff`,
-  `Sized.equiv_union`, `Sized.rootD_discrete`,
+  `Sized.union`, `Sized.root`, `Sized.ofEdges`, `Sized.val_root`,
+  `Sized.root_eq_iff`, `Sized.equiv_union`, `Sized.rootD_discrete`,
   `Sized.root_discrete`, `Sized.root_root`. Task 2 adds the rest.
 
 Every declaration but `size_union` and `size_push` carries the
@@ -355,6 +388,10 @@ Expected: PASS.
   they fail**
 
 ```lean
+/-- The underlying `Nat` of a root is Batteries' `rootD`. -/
+theorem Sized.val_root (v : Sized n) (x : Fin n) :
+    (v.root x : Nat) = v.1.rootD x := _
+
 /-- Two indices have the same root exactly when they are equivalent. -/
 theorem Sized.root_eq_iff {v : Sized n} {a b : Fin n} :
     v.root a = v.root b ↔ v.1.Equiv a b := _
@@ -379,7 +416,7 @@ theorem Sized.root_root (v : Sized n) (x : Fin n) :
 ```
 
 Run: `lake build`
-Expected: FAIL, five errors.
+Expected: FAIL, six errors.
 
 - [ ] **Step 6: prove them, one at a time**
 
@@ -387,6 +424,19 @@ Expected: FAIL, five errors.
 time, first errors first. Ingredients, in the order the spec records
 them:
 
+- `val_root` — `obtain ⟨u, rfl⟩ := v`, then `rfl`. Measured:
+
+  ```lean
+  theorem Sized.val_root (v : Sized n) (x : Fin n) :
+      (v.root x : Nat) = v.1.rootD x := by
+    obtain ⟨u, rfl⟩ := v; rfl
+  ```
+
+  It exists because `Sized.root` is written in tactic mode over a
+  destructured `v`, so `(discrete n).root x` is stuck: `discrete n`
+  is a `Nat.rec` application at a variable `n`, and the `Subtype.rec`
+  inside `root` cannot iota-reduce past it. `val_root` steps around
+  that once, and `root_discrete` below is the only consumer.
 - `root_eq_iff` — unfold `Sized.root` by `obtain ⟨u, rfl⟩ := v`, then
   `Fin.ext_iff` reduces the `Fin n` equation to the `Nat` equation
   `u.rootD a = u.rootD b`, which is Batteries' `Equiv` by definition.
@@ -403,7 +453,13 @@ them:
 - `rootD_discrete` — an `n`-fold recursion through `Nat.rec` on the
   same motive `Sized.discrete` uses, with `rootD_empty` at the base
   and `root_push` at the step.
-- `root_discrete` — `Fin.ext` then `rootD_discrete`.
+- `root_discrete` — `Fin.ext ((val_root _ x).trans (rootD_discrete n x))`,
+  taken as one term. `Fin.ext (rootD_discrete n x)` alone does *not*
+  typecheck: it reports "the argument `rootD_discrete n ↑x` has type
+  `(↑(discrete n)).rootD ↑x = ↑x` but is expected to have type
+  `↑((discrete n).root x) = ↑x`", which is the stuck `Subtype.rec`
+  `val_root` exists to step around. `simp only [Sized.root,
+  Sized.discrete]` does not repair it either.
 - `root_root` — destruct `v`, then `Fin.ext` and `rootD_rootD`.
 
 Inside a `Sized.*` declaration Lean opens the declaration's own
@@ -447,9 +503,10 @@ Expected: PASS.
 
 Through the `lean-lsp` MCP, `lean_verify` each of `size_union`,
 `size_push`, `Sized.discrete`, `Sized.union`, `Sized.root`,
-`Sized.ofEdges`, `Sized.root_eq_iff`, `Sized.equiv_union`,
-`Sized.rootD_discrete`, `Sized.root_discrete`, `Sized.root_root`,
-fully qualified as `Batteries.UnionFind.size_union` and so on.
+`Sized.ofEdges`, `Sized.val_root`, `Sized.root_eq_iff`,
+`Sized.equiv_union`, `Sized.rootD_discrete`, `Sized.root_discrete`,
+`Sized.root_root`, fully qualified as
+`Batteries.UnionFind.size_union` and so on.
 
 Expected: each depends on `propext` and `Quot.sound` only.
 
@@ -553,9 +610,14 @@ changes it at every step.
 
 The annotation on the fold function's binders —
 `fun (v : Sized n) (p : Fin n × Fin n) ↦ v.union p.1 p.2` — is not
-optional. With the binders bare the lambda's elaboration is postponed
-and the inductive hypothesis fails to apply. Write it annotated at
-every occurrence, statement and proof alike.
+optional inside a `List.rec` motive or a proof driven by one. With the
+binders bare the lambda's elaboration is postponed and the inductive
+hypothesis fails to apply. Write it annotated in every statement and
+proof of this task.
+
+Task 1's `Sized.ofEdges` leaves them bare, and correctly: there the
+binder types are forced by `List.foldl`'s own type at elaboration
+time, no motive is in play, and the elaborated terms coincide.
 
 Ingredients:
 
@@ -611,7 +673,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.UnionFind.OfEdges
+public import Geb.Mathlib.Data.UnionFind.OfEdges
 
 /-!
 # Tests for the size-indexed union-find
@@ -628,6 +690,11 @@ measure is the `noncomputable` `rankMax`, so the assertions are
 `#guard`, which evaluates through the compiler, rather than
 `by decide` or `by rfl`. `#guard` introduces no declaration and hence
 no axiom obligation.
+
+Each assertion goes through a locally declared wrapper. `#guard`
+elaborates its argument as a temporary `meta` definition, which may
+only reference constants from modules imported with `meta import`, so
+a `#guard` naming an imported constant directly does not elaborate.
 
 ## Tags
 
@@ -648,10 +715,14 @@ def sampleEdges : List (Fin 5 × Fin 5) :=
 def sampleUnionFind : UnionFind.Sized 5 :=
   UnionFind.Sized.ofEdges 5 sampleEdges
 
-#guard sampleUnionFind.root ⟨0, by decide⟩ == sampleUnionFind.root ⟨1, by decide⟩
-#guard sampleUnionFind.root ⟨1, by decide⟩ == sampleUnionFind.root ⟨2, by decide⟩
-#guard sampleUnionFind.root ⟨3, by decide⟩ == sampleUnionFind.root ⟨4, by decide⟩
-#guard sampleUnionFind.root ⟨0, by decide⟩ != sampleUnionFind.root ⟨3, by decide⟩
+/-- The root of a sample index, as a `Nat`. The wrapper is what the
+`#guard`s below name; see the module docstring. -/
+def sampleRoot (i : Fin 5) : Nat := (sampleUnionFind.root i).val
+
+#guard sampleRoot ⟨0, by decide⟩ == sampleRoot ⟨1, by decide⟩
+#guard sampleRoot ⟨1, by decide⟩ == sampleRoot ⟨2, by decide⟩
+#guard sampleRoot ⟨3, by decide⟩ == sampleRoot ⟨4, by decide⟩
+#guard sampleRoot ⟨0, by decide⟩ != sampleRoot ⟨3, by decide⟩
 
 /-- A listed pair is merged: `root_ofEdges_eq_of_mem` at the sample.
 A proof, so no reduction is needed. -/
@@ -928,8 +999,8 @@ def obj (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) :
     FinSetSkel.{u} := ⟨len v⟩
 
 /-- A chosen representative of each class, as a vector so that its
-consumers index it in constant time rather than rebuilding
-`Fin.compressEquiv` per class. -/
+consumers index it rather than rebuilding `Fin.compressEquiv` per
+class. -/
 def rep (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) :
     Vector (Fin Y.len) (obj Y v).len :=
   let e := Fin.compressEquiv (isRoot v)
@@ -971,7 +1042,16 @@ Expected: PASS.
 - [ ] **Step 5: state the three unfolding lemmas and the two round
   trips unproved, confirm they fail**
 
-In a new `section` with `variable {Z : FinSetSkel.{u}}`:
+Close Step 3's section with `end`, then open a new one:
+
+```lean
+section
+variable {Z : FinSetSkel.{u}}
+```
+
+Everything from here to the end of Step 8 sits inside it, and it is
+closed by an `end` before Task 4 Step 1 opens the last section of the
+file. Inside it:
 
 ```lean
 /-- The projection at an index. -/
@@ -1087,10 +1167,29 @@ are the candidates, but the index types obstruct `rw` at nested
 positions, so whether `simp` can fire them is settled by exhibiting a
 goal each closes, not in advance.
 
-Attempt it: in a scratch declaration, state a goal `rep_π` should
-close and try `simp [rep_π]`. Mark a lemma `@[simp]` only if it
-fires, and record in the module docstring's
-`## Implementation notes` which are marked and which are not.
+The probe for each is the nested position its own consumer puts it
+in — Task 4 Step 3 for `rep_π`, Task 4 Step 4 for `π_rep` — since a
+goal that is the lemma itself proves nothing about firing. In a
+scratch declaration at the end of the module, temporarily:
+
+```lean
+example (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) (h : Y ⟶ Z)
+    (j : Fin Y.len) :
+    h.toVec.get ((rep Y v).get ((π Y v).toVec.get j))
+      = h.toVec.get (v.root j) := by simp
+
+example (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
+    (m : obj Y v ⟶ Z) (c : Fin (obj Y v).len) :
+    m.toVec.get ((π Y v).toVec.get ((rep Y v).get c))
+      = m.toVec.get c := by simp
+```
+
+Mark `rep_π` `@[simp]` only if the first closes with it marked and
+fails with it unmarked; likewise `π_rep` and the second. Delete both
+`example`s afterwards — they are scaffolding, not tests, and
+`CONTRIBUTING.md` § Document only the persistent keeps them out of
+the tree. Record in the module docstring's `## Implementation notes`
+which of the two are marked and which are not.
 
 Per the note following `TODO.md`'s cross-workstream constraints, no
 attribute is added in a direction that rewrites a carrier-level normal
@@ -1149,8 +1248,16 @@ bullet).
 
 - [ ] **Step 1: state the three unproved, confirm they fail**
 
-In a new `section` with `variable {X Y Z : FinSetSkel.{u}}`, after the
-five lemmas of Task 3:
+Close Task 3 Step 5's section with `end`, then open the file's last
+section:
+
+```lean
+section
+variable {X Y Z : FinSetSkel.{u}}
+```
+
+It is closed by an `end` before the closing
+`end FinSetSkel.Quotient`. Inside it:
 
 ```lean
 /-- The projection coequalizes the pair. -/
@@ -1234,7 +1341,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
 
 /-!
 # Tests for the coequalizer of a parallel pair in `FinSetSkel`
@@ -1255,6 +1362,11 @@ union-find test module: nothing built from `UnionFind.union` or
 The objects are `abbrev`s, not `def`s: a numeral at type `Fin Y.len`
 needs `Y.len` to reduce at instance-search transparency, which a `def`
 blocks and an `abbrev` does not.
+
+Each assertion goes through a locally declared wrapper, for the reason
+recorded in the union-find test module: `#guard` elaborates its
+argument as a temporary `meta` definition, which may not reference an
+imported constant.
 
 ## Tags
 
@@ -1283,29 +1395,42 @@ def coeqG : coeqDom ⟶ coeqCod :=
 def coeqV : Batteries.UnionFind.Sized coeqCod.len :=
   FinSetSkel.Quotient.unionFind coeqF coeqG
 
-#guard FinSetSkel.Quotient.len coeqV == 2
+/-- The number of classes. -/
+def coeqClasses : Nat := FinSetSkel.Quotient.len coeqV
+
+#guard coeqClasses == 2
 
 /-- The projection of the sample pair. -/
 def coeqPi : coeqCod ⟶ FinSetSkel.Quotient.obj coeqCod coeqV :=
   FinSetSkel.Quotient.π coeqCod coeqV
 
-#guard coeqPi.toVec.get 0 == coeqPi.toVec.get 1
-#guard coeqPi.toVec.get 1 == coeqPi.toVec.get 2
-#guard coeqPi.toVec.get 0 != coeqPi.toVec.get 3
+/-- The class of a sample index, as a `Nat`. -/
+def coeqPiAt (j : Fin coeqCod.len) : Nat := (coeqPi.toVec.get j).val
+
+#guard coeqPiAt 0 == coeqPiAt 1
+#guard coeqPiAt 1 == coeqPiAt 2
+#guard coeqPiAt 0 != coeqPiAt 3
 
 /-- A morphism coequalizing the sample pair. -/
 def coeqH : coeqCod ⟶ (⟨2⟩ : FinSetSkel.{0}) :=
   FinSetSkel.Hom.ofVec ⟨#[0, 0, 0, 1], rfl⟩
 
-#guard (coeqF ≫ coeqH) == (coeqG ≫ coeqH)
-#guard (coeqPi ≫ FinSetSkel.Quotient.desc coeqCod coeqV coeqH) == coeqH
+/-- Whether the sample morphism coequalizes the pair. -/
+def coeqCoequalizes : Bool := (coeqF ≫ coeqH) == (coeqG ≫ coeqH)
+
+/-- Whether the factorisation through the projection recovers it. -/
+def coeqFactors : Bool :=
+  (coeqPi ≫ FinSetSkel.Quotient.desc coeqCod coeqV coeqH) == coeqH
+
+#guard coeqCoequalizes
+#guard coeqFactors
 ```
 
-The last two `#guard`s go through W1's morphism `DecidableEq` in its
-`Bool` form, which is `FinSetSkel.decidableEqHom`. If `==` does not
-resolve on morphisms, replace it with
-`decide (coeqF ≫ coeqH = coeqG ≫ coeqH)` inside the `#guard`, which
-uses the same pinned instance.
+`coeqCoequalizes` and `coeqFactors` go through W1's morphism
+`DecidableEq` in its `Bool` form: `==` resolves on morphisms through
+`instBEqOfDecidableEq` at the pinned `FinSetSkel.decidableEqHom`.
+They are wrappers for the same reason as `coeqPiAt` — keeping
+`decidableEqHom`, an imported constant, out of the guarded term.
 
 The test module declares no namespace and reaches the declarations
 under test fully qualified, as W1's parallel does with
@@ -1317,10 +1442,9 @@ Run: `lake build GebTests`
 Expected: PASS, and no `#guard` failure.
 
 If a `#guard` fails on the projection assertions, check first that
-the classes are as stated by printing
-`FinSetSkel.Quotient.len coeqV` and the four projection values with
-`#eval`; a wrong class count means the edge list is wrong, a right
-count with wrong grouping means `π` is.
+the classes are as stated by `#eval coeqClasses` and
+`#eval (List.finRange 4).map coeqPiAt`; a wrong class count means the
+edge list is wrong, a right count with wrong grouping means `π` is.
 
 - [ ] **Step 7: wire both modules into their directory indices**
 
@@ -1520,7 +1644,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
 
 /-!
 # Tests for `HasCoequalizers FinSetSkel`
@@ -1545,6 +1669,11 @@ example : HasCoequalizers FinSetSkel.{0} := inferInstance
 example (f g : (⟨3⟩ : FinSetSkel.{0}) ⟶ (⟨4⟩ : FinSetSkel.{0})) :
     HasColimit (parallelPair f g) := inferInstance
 ```
+
+This module's only declarations are `example`s, which are private, so
+a plain `import` would also elaborate here. It uses `public import`
+anyway, matching W1's test parallel and the Global-constraints rule
+for test leaves; the pre-push `lake shake` settles it if it disagrees.
 
 Run: `lake build GebTests` then `lake lint -- GebTests`
 Expected: PASS. `lake lint -- GebTests` passes because this test
@@ -1628,10 +1757,17 @@ written into the two module docstrings in Tasks 3 and 5.
 
 - [ ] **Step 2: add the `docs/index.md` entries**
 
-Three entries, in the § Implemented content list, each placed to keep
-the list's existing ordering. Follow the shape of the neighbouring
-entries: what the module contains, the non-obvious decision, and the
-axiom status.
+Three entries in the § Implemented content list. The list is
+topological, not alphabetical, so the anchors are given rather than a
+rule: `Geb/Mathlib/Data/UnionFind/OfEdges.lean` goes after
+`Geb/Mathlib/Data/Vector/NodupEquivFin.lean` and before
+`Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, its dependencies
+being Batteries' alone; the two `FinSetSkel` entries go after
+`Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` and before
+`Geb/Mathlib/CategoryTheory/ElementaryTopos.lean`, in the order
+`Quotient.lean` then `Coequalizer.lean`. Follow the shape of the
+neighbouring entries: what the module contains, the non-obvious
+decision, and the axiom status.
 
 ```markdown
 - `Geb/Mathlib/Data/UnionFind/OfEdges.lean` —
@@ -1664,9 +1800,10 @@ axiom status.
   while the construction being packaged does not.
 ```
 
-Check whether § Directory structure needs a line for the new
-`Geb/Mathlib/Data/UnionFind/` directory, and add one in the form the
-neighbouring directory lines use if so.
+§ Directory structure needs no change. It enumerates `Geb/`,
+`Geb/Mathlib/`, `Geb/Cslib/`, `Geb/Internal/` and `GebTests/` and no
+per-module directories, so the new `Geb/Mathlib/Data/UnionFind/`
+directory is already covered by its `Geb/Mathlib/` line.
 
 - [ ] **Step 3: add the `TODO.md` § Triggers entry**
 
@@ -1889,6 +2026,10 @@ correction 4 → Task 6 Step 5; § Transcription or novel → the
 complexity claim appears in any docstring above, no closure
 characterisation is stated, `homEquivIdxFun` is never mentioned, and
 the stale W1 status row is explicitly left alone in Task 6 Step 6.
+The one docstring above that touches cost — `rep`'s, on why the
+representatives are a vector — states the sharing property without a
+timing claim, so the § Out of scope ban on complexity claims is
+unqualified here.
 
 **Signatures.** Every signature and every definition body in Tasks 1,
 3 and 5, and `desc_uniq` and `rep_π` in full, were elaborated against
@@ -1897,8 +2038,17 @@ this branch's toolchain before this plan was written; the three
 `isRoot_root`, `π_get`, `rep_get`, `desc_get`, `rep_π`,
 `desc_uniq`, `coequalizerCocone`, both instances) compiled. The
 proofs left as routes rather than terms are the union-find layer's
-five structural lemmas, its three recursions, its two correctness
+six structural lemmas, its three recursions, its two correctness
 theorems, and `π_rep`, `comp_π` and `π_desc`.
+
+**Measured after review round 1.** `#guard` elaborates its argument
+as a temporary `meta` definition, so every assertion in the two
+computational test modules goes through a locally declared wrapper;
+test *leaf* modules take `public import`, only test *index* files
+take plain `import`; and `Sized.root_discrete` needs the `val_root`
+step, `Fin.ext (rootD_discrete n x)` alone failing on a stuck
+`Subtype.rec`. Each of the three was reproduced directly before the
+plan was changed.
 
 **Type consistency.** `Sized`, `Sized.root`, `Sized.ofEdges`,
 `Sized.root_ofEdges_eq_of_mem` and `Sized.apply_root_ofEdges` are
