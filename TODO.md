@@ -281,8 +281,8 @@ entry, adding no Lean content.
     isomorphism in `Cat` is not choice-free by any route.
   - A module docstring recording the morphism-representation choice
     with the evidence against it.
-- **W2** — the `ElementaryTopos` class, its derived accessors and
-  derived `Prop` instances, the `docs/references.bib` citations, and
+- **W2** _(complete_): — the `ElementaryTopos` class, its derived accessors
+  and derived `Prop` instances, the `docs/references.bib` citations, and
   a module docstring carrying constraint 3 and constraint 5's
   accessor rule.
 - **W3** — rows a through h, j, l and m of the operation table.
@@ -464,7 +464,6 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | W0 `Batteries.` allow-list | — | Complete | — |
 | W1 `FinSetSkel` | — | Complete | `Geb/Mathlib/Data/Vector/OfFn.lean`, `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` |
 | W1 `FinSetSkel` | W0 | Not started | — |
-| W2 `ElementaryTopos` | — | Not started | — |
 | W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |
 | W4 Row i, union-find | W0, W1 | Not started | — |
