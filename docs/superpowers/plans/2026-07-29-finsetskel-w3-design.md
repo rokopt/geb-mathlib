@@ -181,6 +181,18 @@ Every task's requirements implicitly include this section.
   import used only inside an `example`, since no constant reaches the
   olean, and reports a false "remove import" with exit 1. Index
   parallels are import-only.
+- **A core module's test parallel is also its permanent axiom
+  witness.** The named `def` the bullet above requires is monomorphic
+  and built from the module, which is exactly what an axiom
+  measurement needs, so it doubles as the witness a later task
+  re-measures. Scratch witnesses declared *inside* a `Geb/` source
+  module are deleted after measuring, per the no-scratch-module rule
+  below; the test parallel's named declarations are not. A later task
+  told to "re-measure module M's witness" measures the declaration
+  named in M's `GebTests` parallel, which is in the tree and which
+  that task's own step names. This also puts every core module's
+  axiom set under `lake lint -- GebTests` continuously, since a core
+  module's test parallel is not allowlisted.
 - **VCS is `jj`.** No mutating `git` subcommand; the PreToolUse hook
   at `scripts/hooks/block-mutating-git.sh` blocks them.
 - **Commit messages**: `<type>(<scope>): <subject>`, type in
@@ -859,8 +871,12 @@ fin, equiv, product, exponential, choice-free
 
 Confirm `finProdFinEquivC`, `finFunctionFinEquivC`, `Fin.funEncodeC`,
 `Fin.funDecodeC`, `Fin.funDecodeC_funEncodeC` and
-`Fin.funEncodeC_funDecodeC` are free by the `#check` procedure of
-Task 2 Step 2, under this module's import set.
+`Fin.funEncodeC_funDecodeC` are free under this module's own import
+set: `#check @finProdFinEquivC` and so on inside the module, expecting
+`lake build` to FAIL with "unknown identifier" for each, then delete
+the `#check`s. A success means the name is taken and the plan's naming
+must change; report that. A probe file cannot substitute, seeing only
+its own imports.
 
 - [ ] **Step 2: add the product equivalence**
 
@@ -1213,8 +1229,19 @@ The `## Main definitions` and `## Main statements` lists name Tasks 6
 and 7's declarations as well; the module docstring is written once,
 in this step, and the later tasks add no sections to it.
 
-Confirm every name the three tasks introduce is free by the `#check`
-procedure of Task 2 Step 2, under this module's import set.
+Confirm every name Tasks 5, 6 and 7 introduce — the ones the docstring
+lists above — is free under this module's own import set, before
+writing any of them. The procedure, inside the namespace block:
+
+```lean
+#check @FinSetSkel.homEquivIdxFun
+```
+
+Run `lake build` and expect FAIL with "unknown identifier". A success
+means the name is already taken under these imports and the plan's
+naming must change; report that. Repeat for each name and delete the
+`#check`s afterwards. A probe file cannot substitute: it sees only its
+own imports.
 
 - [ ] **Step 2: add the index-function correspondence**
 
@@ -1439,8 +1466,8 @@ obligation 5.
 Its implicit `{m n}` are solved by unifying `Fin (?m + ?n)` against
 `Fin (coprodObj X Y).len`, which needs the plain `def coprodObj` to
 delta-unfold. If the elaborator does not see through it, ascribe the
-index type as `Fin (X.len + Y.len)` and record the divergence — the
-same hedge Task 7 carries for `prodObj`.
+index type as `Fin (X.len + Y.len)` and report the divergence to the
+orchestrator — the same hedge Task 7 carries for `prodObj`.
 
 Run: `lake build`
 Expected: PASS.
@@ -1539,7 +1566,7 @@ bound variable, which `kabstract` cannot do; the rewrite fails with
 `rcases` is case analysis on a `Sum`, not a recursion, so it is
 permitted. If `subst` refuses because `i` is not a local hypothesis
 in the right form, replace it with `rw [this]` and adjust the
-rewrite chain; report which was needed.
+rewrite chain; report which was needed to the orchestrator.
 
 Run: `lake build`
 Expected: PASS.
@@ -1939,9 +1966,13 @@ Measure `terminalCone`, `binaryProductCone`,
 Expected: `[propext, Classical.choice, Quot.sound]` — this module is
 the allowlisted wrapper and the taint is
 `CartesianMonoidalCategory`'s. What must **not** happen is a
-`Classical.choice` in `Shapes/Core.lean`; re-measure Task 5's and
-Task 7's monomorphic witnesses to confirm the instance's arrival
-changed nothing there.
+`Classical.choice` in `Shapes/Core.lean`. Confirm the cartesian
+instance's arrival changed nothing there by re-measuring that
+module's permanent witness — `samplePoint`, the named `def` in
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Shapes/Core.lean`.
+Expected: `[propext, Quot.sound]`. If it now carries
+`Classical.choice`, a `simp` in the core has started reaching the new
+instance; stop and report.
 
 - [ ] **Step 7: wire the index files and commit**
 
@@ -2490,7 +2521,10 @@ grep.
 
 The test parallel encodes a sample two-argument function and asserts
 the encoded value by `rfl` or `decide`, then applies
-`expEquivIdx_naturality` at a sample `φ`.
+`expEquivIdx_naturality` at a sample `φ`. Name the encoding
+**`sampleExpEquivIdx`**: it is this module's permanent axiom witness,
+which Task 12 re-measures by that name, so it must be a monomorphic
+`def` at `FinSetSkel.{0}` and must not be deleted.
 
 Create the two `Exponential.lean` index files, importing `Core` now
 and `Closed` in Task 12, and add them to the two `FinSetSkel.lean`
@@ -2522,10 +2556,13 @@ largest single proof obligation in W3 and gives it its own task.
 
 **Interfaces:**
 
-- Consumes: Tasks 7, 8, 11;
-  `CartesianMonoidalCategory.whiskerLeft_fst`,
+- Consumes: Task 7 (`prodFst`, `prodSnd`, `prodLift`, `prodFst_get`,
+  `prodSnd_get`, `prodLift_get`, `prodLift_uniq`), Task 8
+  (`cartesianMonoidalCategory`, without which `⊗` and `◁` do not
+  elaborate), Task 11 (nothing directly — the import is for the module
+  this one extends); `CartesianMonoidalCategory.whiskerLeft_fst`,
   `CartesianMonoidalCategory.whiskerLeft_snd`,
-  `MonoidalCategory.whiskerLeft`.
+  `MonoidalCategory.whiskerLeft`, and W1's `comp_get` and `hom_ext`.
 - Produces: `FinSetSkel.whiskerLeft_get`. Consumed by Task 13.
 
 - [ ] **Step 1: allowlist both module names**
@@ -2619,7 +2656,9 @@ end FinSetSkel
 The docstring is written whole here, so Task 13 adds no section to
 it: the three declarations it names besides `whiskerLeft_get` —
 `expHomEquiv`, `expHomEquiv_naturality` and `monoidalClosed` — arrive
-in that task. `Exponential/Closed.lean` depends on `Shapes/Instances.lean`
+in that task. The commit closing this task therefore ships a docstring
+naming constants the module does not yet contain, which nothing lints
+and which Task 13 completes. `Exponential/Closed.lean` depends on `Shapes/Instances.lean`
 and not only on `Exponential/Core.lean`, because the cartesian
 instance its statements mention is declared there.
 
@@ -2663,7 +2702,7 @@ theorem whiskerLeft_get (X : FinSetSkel.{u}) {Y Z : FinSetSkel.{u}}
 `(X ⊗ Y).len` reduces to `X.len * Y.len`, so `Fin.divNatC i : Fin
 X.len` and `Fin.modNatC i : Fin Y.len` typecheck without ascription.
 Confirm that before proceeding; if they do not, ascribe `i`'s type as
-`Fin (prodObj X Y).len` and record the divergence.
+`Fin (prodObj X Y).len` and report the divergence to the orchestrator.
 
 Run: `lake build`
 Expected: FAIL, one placeholder error.
@@ -2712,8 +2751,10 @@ Expected: PASS.
 Measure `whiskerLeft_get`. Expected:
 `[propext, Classical.choice, Quot.sound]` — the whiskering is the
 cartesian structure's, and this is the allowlisted wrapper. Confirm
-that `Exponential/Core.lean`'s witnesses still measure
-`[propext, Quot.sound]`.
+that `Exponential/Core.lean` is unchanged by re-measuring its
+permanent witness `sampleExpEquivIdx`, in
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean`.
+Expected: `[propext, Quot.sound]`.
 
 Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed`
 to `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential.lean`, which
@@ -2887,7 +2928,12 @@ because `expEquivHom` is a nested `Equiv.trans`, which
 `homEquivIdxFun_symm_get` does not match; it is `@[simp]` in mathlib,
 but `simp only` does not load the default set. And `harg` is the
 bridge above. If the goal displays the coerced form instead,
-`Equiv.coe_trans` and `Function.comp_apply` are the alternates.
+`Equiv.coe_trans` and `Function.comp_apply` are the alternates; and if
+`harg` does not fire at all, the goal is presenting the objects as
+`(tensorLeft X).obj Z'` — re-add `curriedTensor_obj_obj` to this outer
+set. Its absence is deliberate, that equation being unnecessary once
+the two `def`s unfold, but a silent no-progress is the failure mode
+worth pre-empting.
 
 `curriedTensor_obj_map` belongs to the **inner** set only. Keeping it
 out of the outer one is what leaves `(tensorLeft X).map f ≫ g`
@@ -3130,6 +3176,12 @@ namespace FinSetSkel.Equalizer
 end FinSetSkel.Equalizer
 ```
 
+The docstring is written whole here, including the `## Main statements`
+entries for `ι_comp`, `lift_ι` and `lift_uniq`, which arrive in
+Task 15. That task adds no section to it. The commit closing this task
+therefore ships a docstring naming constants the module does not yet
+contain, which nothing lints.
+
 - [ ] **Step 2: add the predicate, the agreement list and the object**
 
 ```lean
@@ -3230,9 +3282,11 @@ with `(by omega)` in that position, which also works — `omega` reads
 term is preferred, being cheaper and immune to a change in omega's
 preprocessing. `List.zipIdx_cons` states
 `(a :: as).zipIdx n = (a, n) :: as.zipIdx (n + 1)`; confirm the name
-and the `+ 1` convention with `#check` — if `zipIdx` counts the other
-way at this revision, the whole design of the counter changes and
-that is a finding to report before continuing.
+and the `+ 1` convention with `#check`. If `zipIdx` counts the other
+way at this revision, the whole design of the counter changes:
+**stop**, leave the work uncommitted, and report to the orchestrator.
+Do not improvise a replacement convention — Steps 5, 6 and 7's lemmas
+are all written against this one.
 
 Run: `lake build`
 Expected: PASS.
@@ -3310,12 +3364,17 @@ head is `j`:
   `List.zipIdx_cons` splits the membership into `(j, k) = (j, c)` and
   `(j, k) ∈ L.zipIdx (c + 1)`; the second is killed by `Nodup`, which
   gives `j ∉ L`, once `j ∈ L` is extracted from membership **at
-  counter `c + 1`**. That extraction needs a nonzero-counter lemma —
-  `List.mk_add_mem_zipIdx_iff_getElem?`, or a `List.mem_zipIdx` /
-  `List.fst_mem_of_mem_zipIdx` variant — not the `c = 0`
-  specialisation Step 7 uses. `#check` the candidates and name the one
-  that fires; if none exists, prove the projection by `List.rec` in
-  this same shape.
+  counter `c + 1`**. Step 7's `List.mk_mem_zipIdx_iff_getElem?` is the
+  `c = 0` specialisation and does not serve here. Core's
+  `List.fst_mem_of_mem_zipIdx` does, at any counter:
+
+  ```lean
+  theorem List.fst_mem_of_mem_zipIdx {x : α × Nat} {l : List α} {k : Nat}
+      (h : x ∈ zipIdx l k) : x.1 ∈ l
+  ```
+
+  applied at `x := (j, k)`, whose `.1` is `j` by `rfl`. Confirm with
+  `#check` and use it; no lemma of W3's own is needed here.
 - head is not `j`: the membership passes to the tail and `ih`
   applies, `Vector.getElem_set_ne` discharging the write.
 
@@ -3614,8 +3673,11 @@ belongs in Task 19 Step 2's entry for that module.
 The test computes an equalizer at a concrete pair: two morphisms
 `mk 5 ⟶ mk 2` agreeing at three indices, the object's length
 asserted to be `3` by `rfl` or `decide`, the injection's vector
-asserted, and `lift_ι` exercised at a sample morphism. Name a `def`
-value from the module, per § Global constraints.
+asserted, and `lift_ι` exercised at a sample morphism. Name the
+equalizer's injection **`sampleEqualizerInj`**: it is this module's
+permanent axiom witness, which Task 16 re-measures by that name, so it
+must be a monomorphic `def` at `FinSetSkel.{0}` and must not be
+deleted.
 
 Create `GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`
 importing this task's test module, and add it to
@@ -3745,7 +3807,10 @@ Measure `equalizerCone` and a monomorphic witness at
 `FinSetSkel.{0}`. Expected:
 `[propext, Classical.choice, Quot.sound]` — `LimitCone` and
 `parallelPair` bring the taint, which is why the module is
-allowlisted. Confirm `Equalizer/Core.lean`'s witnesses are unchanged.
+allowlisted. Confirm `Equalizer/Core.lean` is unchanged by
+re-measuring its permanent witness `sampleEqualizerInj`, in
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`.
+Expected: `[propext, Quot.sound]`.
 
 The test parallel names the cone at a concrete pair and asserts its
 point's length.
@@ -3926,7 +3991,18 @@ them. The third is a corollary. The skeleton, for the first:
 
 and for the second the same shape at the motive
 `fun L ↦ ∀ (v : Vector (Fin 2) n), j ∈ L ∨ v.get j = 1 →
-(scatterOne L v).get j = 1`. Each cons case rewrites by `scatterOne`'s
+(scatterOne L v).get j = 1` — but **not** the same base case. There the
+base goal is `∀ v, j ∈ [] ∨ v.get j = 1 → v.get j = 1`, which
+`Or.inr h` does not inhabit; it is
+
+```lean
+    (fun v h ↦ h.resolve_left List.not_mem_nil)
+```
+
+`List.not_mem_nil` has its argument implicit at this revision, so none
+is passed, and `Or.resolve_left : a ∨ b → ¬a → b`. Direction one's
+`fun v h ↦ Or.inr h` is right because `scatterOne [] v` reduces to `v`
+by `List.foldl`'s iota rule. Each cons case rewrites by `scatterOne`'s
 cons identity — `scatterOne (a :: L) v = scatterOne L (v.set a.val 1
 a.isLt)`, which holds by `List.foldl_cons` — and then splits as
 described below.
@@ -4129,16 +4205,27 @@ constraints on that linter.
     · have h1 : (chiVec m).get j ≠ 1 :=
         fun hc ↦ hj ((h j).mpr ((chiVec_get_eq_one_iff m j).mp hc))
       -- neither is `1`, so in `Fin 2` both are `0`
-      _
+      have h2 : (χ'.toVec.get j).val ≠ 1 := fun hc ↦ hj (Fin.val_injective hc)
+      have h3 : ((chiVec m).get j).val ≠ 1 := fun hc ↦ h1 (Fin.val_injective hc)
+      have := (χ'.toVec.get j).isLt
+      have := ((chiVec m).get j).isLt
+      exact Fin.val_injective (by omega)
 ```
 
 `by_cases` on `χ'.toVec.get j = 1` is decided by the axiom-free
-`instDecidableEqFin`, not by any membership instance, so no
-`LawfulBEq (Fin n)` is reached. The remaining hole closes by lifting
-both disequalities to `Fin.val` and finishing with `omega` over the
-two `isLt`s: `Fin.ext` and `Fin.val_eq_val` are the two names
-available for that lifting — both confirmed present at this
-revision — and `#check` whichever is used before relying on it.
+`instDecidableEqFin` — a real instance outranks the low-priority
+`Classical.propDecidable` — so no `LawfulBEq (Fin n)` is reached and
+nothing classical enters. Step 6's `#print axioms` is the backstop for
+that claim, which is read-verified rather than elaborated.
+
+The lifting to `Fin.val` is what lets `omega` finish: it sees
+`(1 : Fin 2).val` as an atom until the disequalities are stated
+against the `ℕ` literal, which the two `have`s above do
+(`hc : x.val = 1` is accepted where `x.val = (1 : Fin 2).val` is
+expected, `(1 : Fin 2).val` reducing to `1` by whnf).
+`Fin.val_injective` is used rather than `Fin.val_eq_val`, whose two
+arguments are explicit and which therefore needs
+`(Fin.val_eq_val _ _).mp` in term position.
 `Fin.val_eq_of_lt` does **not** exist; do not reach for it.
 
 That the wrapper can supply `h` from `IsPullback` is Task 18's
@@ -4162,9 +4249,13 @@ membership, which is why Step 2 states a third fold lemma rather than
 deciding anything; if one appears, find it by measuring each lemma the
 failing proof names. Then run the banned-form grep.
 
-The test parallel names that `m`, asserts `chiVec m = ⟨#[0, 1, 0, 1], rfl⟩`
-by `rfl` or `decide`, and exercises `pullbackLift_comp` at a sample
-`z`.
+The test parallel names that `m` **`sampleMono`** and its
+characteristic vector **`sampleChiVec`**, asserts
+`sampleChiVec = ⟨#[0, 1, 0, 1], rfl⟩` by `rfl` or `decide`, and
+exercises `pullbackLift_comp` at a sample `z`. `sampleChiVec` is this
+module's permanent axiom witness, which Task 18 re-measures by that
+name, so it must be a monomorphic `def` at `FinSetSkel.{0}` and must
+not be deleted.
 
 Create the two `Classifier.lean` index files, each carrying its
 `Core` line only — Task 18 adds the `Instance` line to both:
@@ -4218,7 +4309,12 @@ that order; confirm with `#check` before use.
 
 - [ ] **Step 1: allowlist and create the module**
 
-Append the two module names to `classicalAllowedModules` first.
+Append to `classicalAllowedModules` in `GebMeta.lean` first:
+
+```lean
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance,
+```
 
 ```lean
 /-
@@ -4382,28 +4478,60 @@ which states a declaration unproved expects FAIL with placeholder
 errors, and a step which states and discharges it expects PASS at the
 end.
 
-The `isPullback` argument is the remaining hole. Its statement is
-`IsPullback m (isTerminalOne.from U) (Classifier.chi m) truth`, and
-it is built from `IsPullback.of_isLimit'` applied to the commuting
-square and `PullbackCone.isLimitAux`, whose `lift` is
-`Classifier.pullbackLift m (mono_iff_injective.mp ‹Mono m›) s.fst hs`
-for the membership `hs` obtained from the cone's own commutation. The
-square commutes by `hom_ext` and `Classifier.chi_comp_eq`.
+The `isPullback` argument is the remaining hole and the largest
+obligation of this task. Its statement is
+`IsPullback m (isTerminalOne.from U) (Classifier.chi m) truth`. The
+skeleton, with the four pieces named:
+
+```lean
+    (fun m ↦ by
+      have hinj : Function.Injective m.toVec.get := mono_iff_injective.mp ‹Mono m›
+      -- the square: both sides are the constant `1` on the image of `m`
+      have hsq : CommSq m (isTerminalOne.from _) (Classifier.chi m) truth :=
+        ⟨hom_ext fun i ↦ by simp [Classifier.chi_comp_eq, truth]⟩
+      -- membership of a competing cone's left leg, from its own commutation
+      have hmem : ∀ (s : PullbackCone (Classifier.chi m) truth) (t : Fin _),
+          s.fst.toVec.get t ∈ m.toVec.toList := fun s t ↦
+        (Classifier.chiVec_get_eq_one_iff m _).mp (by
+          have := congrArg (fun k ↦ (k : _ ⟶ mk 2).toVec.get t) s.condition
+          simpa [truth] using this)
+      exact IsPullback.of_isLimit' hsq
+        (PullbackCone.isLimitAux _
+          (fun s ↦ Classifier.pullbackLift m hinj s.fst (hmem s))
+          (fun s ↦ Classifier.pullbackLift_comp m hinj s.fst (hmem s))
+          (fun s ↦ toOne_uniq _)
+          (fun s n hn ↦
+            Classifier.pullbackLift_uniq m hinj s.fst (hmem s) n
+              (hn WalkingCospan.left))))
+```
+
+Four points. `hmem` is the piece with no counterpart in Task 17's
+exports: it derives the membership `pullbackLift` requires from the
+competing cone's own commutation `s.condition`, read at an index —
+both sides of that equation are the constant `1`, so
+`Classifier.chiVec_get_eq_one_iff` converts the value back into
+membership. Its statement is written out here because Task 17 does not
+supply it and this task's executor cannot read Task 17.
+
+`fac_right` and every such cone's second leg are morphisms into
+`mk 1`, so `toOne_uniq` discharges them; that is why the terminal
+object is `Ω₀` and why `isTerminalOne` is named rather than
+reconstructed.
 
 `isLimitAux`'s `uniq` does **not** take
 `Classifier.pullbackLift_uniq` directly: its hypothesis is quantified
 over the whole index category,
 `∀ j : WalkingCospan, m ≫ t.π.app j = s.π.app j`, where
-`pullbackLift_uniq` wants the single equation `n ≫ m = z`. Project
-the leg:
-
-```lean
-  (fun s n hn ↦
-    Classifier.pullbackLift_uniq m _ s.fst _ n (hn WalkingCospan.left))
-```
-
+`pullbackLift_uniq` wants the single equation `n ≫ m = z`. Hence the
+`hn WalkingCospan.left` projection above;
 `PullbackCone.fst s = s.π.app WalkingCospan.left` definitionally, so
-the projection typechecks; mathlib's own `isLimitAux'` does the same.
+it typechecks, and mathlib's own `isLimitAux'` does the same.
+
+`CommSq`'s single field is the commutation equation, so the
+anonymous-constructor `⟨…⟩` above is the whole square; `#check
+@CommSq` and `@PullbackCone.isLimitAux` before writing either, and
+expect the `hmem` `simpa` to need adjusting to whatever
+`s.condition` displays as.
 
 `fac_right` and every such cone's second leg are morphisms into
 `mk 1`, so `toOne_uniq` discharges them; that is why the terminal
@@ -4426,8 +4554,10 @@ but not required. `truth` is `point 1` from the choice-free
 `Shapes/Core.lean` and will measure `[propext, Quot.sound]` at most;
 only `classifier`, which goes through `mkOfTerminalΩ₀` and
 `IsPullback`, is expected to carry the third. A tighter set than the
-allowlist is not a discrepancy. Confirm `Classifier/Core.lean`'s
-witnesses are unchanged.
+allowlist is not a discrepancy. Confirm `Classifier/Core.lean` is unchanged
+by re-measuring its permanent witness `sampleChiVec`, in
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean`.
+Expected: `[propext, Quot.sound]`.
 
 The test parallel names `classifier` in a `def` and asserts
 `classifier.Ω = mk 2` and `classifier.Ω₀ = mk 1` by `rfl`.
@@ -4708,6 +4838,31 @@ lemmas and universal property (Tasks 14 and 15), row l's fold lemmas,
 inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
+
+**Round 9** (two fresh agents: executability over four tasks the
+previous round had not read, Lean correctness over the previous
+round's own edits). The Lean lens returned **converged** a second
+time, catching in its minors the error this plan had introduced one
+round earlier: the second `scatterOne` fold lemma's base case is not
+`Or.inr h`, which does not inhabit its goal. It also resolved a search
+this plan had left open — core's `List.fst_mem_of_mem_zipIdx` extracts
+`j ∈ L` from `zipIdx` membership at any counter, so the hand-rolled
+lemma the round had added is withdrawn — and supplied the numeral
+normalisation `omega` needs in row l's `Fin 2` split.
+
+The executability lens returned three serious, all one root cause:
+obligations written from the whole-plan vantage point rather than from
+inside a single task. Four tasks were told to "re-measure the earlier
+core module's witnesses", every one of which the creating task
+deletes and none of which that subagent can reconstruct; core modules
+now keep a *named* permanent witness in their `GebTests` parallel —
+`samplePoint`, `sampleExpEquivIdx`, `sampleEqualizerInj`,
+`sampleChiVec` — which the later task measures by name, and which
+`lake lint -- GebTests` then audits continuously. Task 14's second
+fold lemma delegated its one hard step to a three-name lemma search,
+and Task 18's `isPullback` hole — the largest obligation in the task —
+was prose only, with the membership hypothesis its `lift` field needs
+named nowhere; both now carry written-out terms.
 
 **Round 8** (two fresh agents: Lean correctness, and a fresh-eyes
 executability lens simulating a per-task subagent) split. The Lean
