@@ -679,33 +679,33 @@ new entry: [JohnsonYau2021] is present.
 
 ## Deferred work
 
-`TODO.md` gains an entry for the comparison with `Cat`, comprising:
+`TODO.md` carries three entries touching this workstream, all added in
+the same commit as this spec.
 
-- the object property on `Cat.{v, u}` selecting the categories with
-  finitely many objects and finitely many morphisms in each hom-set,
-  stated as a `Prop` in the shape of
-  `CategoryTheory.CountableCategory`, mathlib having no such property;
-- the 2-functor from `FinCat` to `Cat.{v, u}` extending
-  `FinCat.Hom.toFunctor`;
-- the proof that it is an equivalence onto the corresponding full
-  subcategory.
+§ PRA functors over finite-specification base categories is the
+consumer that keeps scope items 2 and 3 in scope under CONTRIBUTING
+§ Code is cost: presheaf parametric-right-adjoint functors instantiated
+at `FinCat`-presented base categories, with decidable equality on their
+W-types and natural transformations among them. That entry also records
+that this workstream supplies the finite `J`-hom-sets with decidable
+equality which § Exhaustive verification of presheaf PRA laws for
+finite instances records as missing, and that supplying a `FinEnum J`
+field choice-free is a cost this workstream declines and that one must
+price.
 
-The entry records two observations from this workstream. Essential
-surjectivity chooses `Obj ≃ Fin n` and a bijection on each hom-set, so
-it depends on `Fintype.equivFin` and is classical; and because the
-chosen map on objects is a bijection, the result is an isomorphism in
-`Cat` rather than only an equivalence, as
-`Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` obtains for its
-own comparison. The hom-set bijections must be chosen to carry each
-identity to the reserved index, which is a constraint the present
-workstream's conventions impose on that one.
+§ Finite categories as a full subcategory of `Cat` is the deferred
+comparison: the object property on `Cat.{v, u}`, the 2-functor from
+`FinCat` extending `FinCat.Hom.toFunctor`, and the equivalence onto the
+full subcategory. It records that essential surjectivity is classical
+through `Fintype.equivFin`, that the object bijection makes the result
+an isomorphism in `Cat` rather than only an equivalence, and that the
+hom-set bijections must carry each identity to the index reserved here.
 
-The existing `TODO.md` entry on the complexity of the decidable
-validity checkers gains a note that `assocCheck` enumerates
-`Θ(objCount⁴) + O(M³)` tuples, where `M` is the total non-identity
-morphism count: four object quantifiers stand outside the three
-morphism quantifiers, so a discrete category on `n` objects still costs
-`n⁴` iterations with `M = 0`.
+§ Complexity of the decidable validity checkers gains `FinCat.assocCheck`,
+which enumerates `Θ(objCount⁴) + O(M³)` tuples for `M` the total
+non-identity morphism count: four object quantifiers stand outside the
+three morphism quantifiers, so a discrete category on `n` objects costs
+`n⁴` iterations even at `M = 0`.
 
 ## References
 
