@@ -108,10 +108,15 @@ not novel, but it is not restated here either — it is Batteries'.
 ## The union-find layer
 
 `Geb/Mathlib/Data/UnionFind/OfEdges.lean`, in namespace
-`Batteries.UnionFind.Sized`, `size_union` and `size_push` excepted,
-which are about `UnionFind` itself. Everything else is about `Sized`,
-including `ofEdges`, and `Batteries.UnionFind.root_root` would
+`Batteries.UnionFind`. Every declaration but `size_union` and
+`size_push` is about `Sized` and carries a `Sized.` prefix in its own
+name, `ofEdges` included: `Batteries.UnionFind.root_root` would
 otherwise read as a statement about Batteries' own `UnionFind.root`.
+The prefix is written into the name rather than opened as a deeper
+namespace, since `namespace Batteries.UnionFind.Sized` together with a
+declaration named `Sized.root_root` yields
+`Batteries.UnionFind.Sized.Sized.root_root`, which `linter.dupNamespace`
+rejects — the same rule § The wrapper invokes.
 
 Choice-free, and free of any reference to category theory or to
 `FinSetSkel`: it is stated over a size `n`, a list of edges, and an
@@ -120,21 +125,18 @@ closure characterisation is out of scope below.
 
 Its upstream target is Batteries rather than mathlib4, which is the
 subject of `TODO.md` § Upstream destination of core- and
-Batteries-targeted content. That item's scoping criterion does not
-reach this module as written — it covers modules whose declarations
-"restate or replace" core or Batteries declarations, and these
-declarations do neither, being new statements about a Batteries type.
-The criterion is widened to cover them, which is the third of W4's
-`TODO.md` edits. Since the item is scoped by criterion rather than by
-module list, widening it obliges a re-sweep of `Geb/Mathlib/`; the
-sweep is a deliverable, and its expected result is that the item names
-`Geb/Mathlib/Data/Vector/OfFn.lean` and this module and nothing else.
-In particular the widened criterion still excludes
-`Geb/Mathlib/Data/List/NodupEquivFin.lean`, which rebuilds
-`List.Nodup.getEquiv`, a mathlib declaration, choice-free.
-`scripts/extract-pr.sh` maps `Geb/Mathlib/*` to `Mathlib/`
-unconditionally, so without the item's outcome this module extracts to
-`Mathlib/Data/UnionFind/OfEdges.lean`, which is the wrong upstream.
+Batteries-targeted content. W4 adds this module to that item's
+"currently" list, a one-line edit and the third of W4's `TODO.md`
+edits. It does not touch the item's scoping criterion, which reads
+"restate or replace" and so does not literally reach declarations that
+extend a Batteries type with new statements. Rewording the criterion
+would oblige a re-sweep of `Geb/Mathlib/`, the item being deliberately
+scoped by criterion rather than by module list; that is a second
+concern, and `CONTRIBUTING.md` § Concern shape puts it on its own
+branch, as it does the stale status-table row in § Out of scope.
+Nothing in W4 depends on the outcome: `scripts/extract-pr.sh` maps
+`Geb/Mathlib/*` to `Mathlib/` unconditionally, but it is a manual tool
+whose `Geb/Mathlib/*` arm already defers to this item.
 
 The six declarations the quotient core consumes are `Sized`,
 `Sized.root`, `Sized.ofEdges`, `Sized.root_root`,
@@ -161,6 +163,10 @@ def Sized.ofEdges (n : Nat) (l : List (Fin n × Fin n)) : Sized n
 
 theorem Sized.root_eq_iff {v : Sized n} {a b : Fin n} :
     v.root a = v.root b ↔ v.1.Equiv a b
+theorem Sized.equiv_union {v : Sized n} {x y : Fin n} {a b : Nat} :
+    (v.union x y).1.Equiv a b ↔
+      v.1.Equiv a b ∨ v.1.Equiv a x ∧ v.1.Equiv y b
+                    ∨ v.1.Equiv a y ∧ v.1.Equiv x b
 theorem Sized.rootD_discrete (m x : Nat) : (discrete m).1.rootD x = x
 theorem Sized.root_discrete (x : Fin n) : (discrete n).root x = x
 theorem Sized.root_root (v : Sized n) (x : Fin n) :
@@ -175,6 +181,14 @@ theorem Sized.apply_root_ofEdges {α : Type u} {l : List (Fin n × Fin n)}
 
 `apply_root_ofEdges` is named for its left-hand side; `_sound` is not
 among mathlib's discharging-operator suffixes.
+
+`Sized.equiv_union` restates Batteries' `UnionFind.equiv_union` at
+`Sized.union`, and is not optional. `Sized.union` is built on
+`unionN`, whose `match n, h with` does not reduce until the size proof
+is destructed, so Batteries' lemma does not apply to `(v.union x y).1`
+as it stands; the restatement destructs `v` and is otherwise the same
+lemma. All three recursions below consume this form rather than
+Batteries'.
 
 `Sized` carries the size as a subtype rather than re-deriving it at
 each step, so the `Fin n` indices passed to `union` need no cast.
@@ -214,15 +228,15 @@ theorem Sized.apply_root_foldl {α : Type u} {h : Fin n → α}
 ```
 
 The first two are `Equiv`-level and give `root_ofEdges_eq_of_mem`: the
-left disjunct of `equiv_union` supplies monotonicity, its middle
+left disjunct of `Sized.equiv_union` supplies monotonicity, its middle
 disjunct the step. The third is generalised over `h` as well as over
 the accumulator, and is the one `apply_root_ofEdges` is read off, at
 `v := Sized.discrete n` with `Sized.root_discrete` discharging its
 invariant. It is not derivable from the first two: those are statements
 about `Equiv`, and passing from them to a statement about an arbitrary
 `h` is exactly the closure characterisation this module declines to
-prove. Its own step discharges the three disjuncts of `equiv_union`
-against `hv` and `hl`.
+prove. Its own step discharges the three disjuncts of
+`Sized.equiv_union` against `hv` and `hl`.
 
 Per `docs/rules/lean-coding.md` § Recursion and induction through
 recursors, every recursion here is an explicit recursor application
@@ -236,9 +250,11 @@ rather than an `induction` tactic: the three above, and also
 `FinSetSkel.Quotient`. Choice-free. The namespace tracks the module
 path, and the extra level is not optional: `FinSetSkel.len` is the
 object structure's field, so a `len` declared directly in `FinSetSkel`
-collides with it. `Quotient` shadows nothing — a namespace with no
-declaration of that name does not — and W4 uses neither `Quot` nor
-`Quotient`.
+collides with it. The namespace does shadow `_root_.Quotient`, but only
+for `open`: an `open Quotient` inside `namespace FinSetSkel` resolves
+to this one and draws `linter.ambiguousOpen`. Qualified reference is
+unaffected, and the wrapper qualifies — `Quotient.π`, `Quotient.comp_π`
+— rather than opening. W4 uses neither `Quot` nor `Quotient` itself.
 
 Stated over `FinSetSkel` morphisms in W1's application-normal form
 `f.toVec.get i`, not over bare index functions: W1's `Basic.lean` is
@@ -268,12 +284,16 @@ a `let`, which shares because their result is a morphism.
 
 ### Definitions
 
-Two binder groups. `edges` and `unionFind` take the parallel pair;
-everything after takes the union-find and never calls `unionFind`.
+Two binder groups, and two `variable` scopes, since `Y` is a variable
+in the first and an explicit binder in the second. `edges` and
+`unionFind` take the parallel pair; everything after takes the
+union-find and never calls `unionFind`.
 
 ```lean
 universe u
-variable {n : ℕ} {X Y Z : FinSetSkel.{u}}
+
+section
+variable {X Y : FinSetSkel.{u}}
 
 def edges (f g : X ⟶ Y) : List (Fin Y.len × Fin Y.len) :=
   (List.finRange X.len).map fun i ↦ (f.toVec.get i, g.toVec.get i)
@@ -281,11 +301,19 @@ def edges (f g : X ⟶ Y) : List (Fin Y.len × Fin Y.len) :=
 def unionFind (f g : X ⟶ Y) : UnionFind.Sized Y.len :=
   UnionFind.Sized.ofEdges _ (edges f g)
 
+end
+
+section
+variable {n : ℕ} {Z : FinSetSkel.{u}}
+
 def isRoot (v : UnionFind.Sized n) : Fin n → Bool :=
   fun j ↦ decide (v.root j = j)
 
 def len (v : UnionFind.Sized n) : ℕ :=
   ((List.finRange n).filter (isRoot v)).length
+
+theorem isRoot_root (v : UnionFind.Sized n) (j : Fin n) :
+    isRoot v (v.root j)
 
 def obj (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) :
     FinSetSkel.{u} := ⟨len v⟩
@@ -295,16 +323,20 @@ def rep (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) :
 def π (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) : Y ⟶ obj Y v
 def desc (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
     (h : Y ⟶ Z) : obj Y v ⟶ Z
+
+end
 ```
+
+`isRoot_root` sits here rather than with the statements below because
+`π` discharges its side condition with it, so it precedes `π` in the
+file.
 
 `Y` is a binder exactly where a `FinSetSkel` object or morphism occurs
 in the type — `obj`, `rep`, `π`, `desc` — and is absent where only
-indices do: `isRoot` and `len` take `{n : ℕ}`, inferred from `v`. Where
-`Y` is a binder it is explicit, because `UnionFind.Sized Y.len`
-mentions `Y.len`, not `Y`, so the elaborator cannot recover `Y` from
-it; `?Y.len =?= n` does not solve. `Y` is dropped from the `variable`
-line for this block, since a shadowed variable and binder of the same
-name is unreadable.
+indices do: `isRoot`, `len` and `isRoot_root` take `{n : ℕ}`, inferred
+from `v`. Where `Y` is a binder it is explicit, because
+`UnionFind.Sized Y.len` mentions `Y.len`, not `Y`, so the elaborator
+cannot recover `Y` from it; `?Y.len =?= n` does not solve.
 
 `isRoot` and `len` mention no `FinSetSkel` and could live in the
 union-find module. They stay here because each has one consumer, `obj`,
@@ -337,16 +369,19 @@ the second and third by delta. Every statement uses
 `Fin (obj Y v).len`, which the morphism types force.
 
 The difference is not cosmetic, and it is why each of `π`, `rep` and
-`desc` needs an unfolding lemma stated by hand. None of the three
-follows from `Vector.get_ofFnC` by `rw`, which reports no occurrence of
-the pattern because the index types differ; nor by a term-mode
-application, which reports an invalid projection out of `Y.Hom _`; nor
-by `rfl`. Each goes through
-`change (Hom.ofVec _).toVec.get _ = _` — or `change (Vector.ofFnC _)`
-`.get _ = _` for `rep` — then `rw [Hom.toVec_ofVec]` where the term is
-a morphism, closing with `exact Vector.get_ofFnC _ _`. The closing step
-is `exact`, not a further `rw`: `rw [Hom.toVec_ofVec, Vector.get_ofFnC]`
-fails with the same no-occurrence error.
+`desc` needs an unfolding lemma stated by hand rather than reached by
+`rw [Vector.get_ofFnC]`, which reports no occurrence of the pattern
+because the index types differ.
+
+The two morphism-valued ones, `π_get` and `desc_get`, need more than
+that: a term-mode `Vector.get_ofFnC _ _` reports an invalid projection
+out of `Y.Hom _`, and `rfl` fails. Each goes through
+`change (Hom.ofVec _).toVec.get _ = _`, then `rw [Hom.toVec_ofVec]`,
+closing with `exact Vector.get_ofFnC _ _`. The closing step is `exact`,
+not a further `rw`: `rw [Hom.toVec_ofVec, Vector.get_ofFnC]` fails with
+the same no-occurrence error. `rep_get` needs none of this — it is
+`Vector.get_ofFnC _ _` in term mode, its subject being a vector rather
+than a morphism.
 
 `change`, not `show`: `linter.style.show` is in `mathlibStandardSet`
 and rejects a goal-changing `show`, which `weak.warningAsError = true`
@@ -354,16 +389,14 @@ makes an error.
 
 ### Statements
 
-The three unfolding lemmas and the three round-trip lemmas hold at an
-arbitrary `v`, and are stated there. No edge enters them, and stating
-them at `unionFind f g` would carry `X`, `f` and `g` through proofs
-that do not use them and would keep them from firing in the worked
-example of § Tests, or at any other `v` W5 might supply.
+The three unfolding lemmas and the two round-trip lemmas hold at an
+arbitrary `v`, and are stated there, as `isRoot_root` above already is.
+No edge enters them, and stating them at `unionFind f g` would carry
+`X`, `f` and `g` through proofs that do not use them and would keep
+them from firing in the worked example of § Tests, or at any other `v`
+W5 might supply.
 
 ```lean
-theorem isRoot_root (v : UnionFind.Sized n) (j : Fin n) :
-    isRoot v (v.root j)
-
 theorem π_get (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
     (j : Fin Y.len) :
     (π Y v).toVec.get j
@@ -394,11 +427,11 @@ that `(rep Y v).get c` is its own root. Rewriting with that step under
 proof argument mentioning the term being rewritten, and `conv` fails
 the same way; `simp only` at the subterm succeeds.
 
-None of the six carries `@[simp]` as specified. `rep_π` and `π_rep` are
-the candidates, but the index types above obstruct `rw` at nested
-positions, and `desc_uniq` uses `π_rep` right to left, which `simp`
-never does. Implementation marks a lemma `@[simp]` only on exhibiting a
-goal it closes, and records which. Per the note following the
+None of the five carries `@[simp]` as specified. `rep_π` and `π_rep`
+are the candidates, but the index types above obstruct `rw` at nested
+positions, so whether `simp` can fire them is settled by exhibiting a
+goal each closes, not in advance; implementation marks a lemma
+`@[simp]` only then, and records which. Per the note following the
 cross-workstream constraints, no such attribute is added in a direction
 that rewrites a carrier-level normal form W3 introduces; W3's rows and
 W4's row first meet at W5.
@@ -420,10 +453,8 @@ theorem desc_uniq (f g : X ⟶ Y) (h : Y ⟶ Z)
 witness supplied by `List.mem_map` and `List.mem_finRange`. `π_desc`
 instantiates `Sized.apply_root_ofEdges` at `h.toVec.get`, whose
 hypothesis is `w` read indexwise through W1's `comp_get`, and consumes
-`desc_get` and `rep_π`. `desc_uniq` needs no recursion: by `π_rep`,
-`m.toVec.get c` is `m.toVec.get ((π Y v).toVec.get ((rep Y v).get c))`,
-which `hm` and W1's `comp_get` identify with
-`h.toVec.get ((rep Y v).get c)`, which is `desc_get`.
+`desc_get` and `rep_π`. `desc_uniq` needs no recursion: it is
+`hom_ext fun c ↦ by rw [desc_get, ← hm, comp_get, π_rep]`.
 
 ### Constraint 9
 
@@ -441,17 +472,45 @@ inhabiting the class, and for `DecidableEq (Fin n)` only
 elaborating `isRoot` with `pp.all` and reading the instance off the
 term, as constraint 9's measurement discipline requires.
 
-Constraint 9's paragraph on the `Nat` division and order API, added on
-branch `doc/constraint-9-nat-arithmetic`, names W4's `Fin self.size`
-obligations among the two consumers it binds. That paragraph reaches
-little of W4: no `Nat` division arises anywhere, the index arithmetic
-W3 needs for products and exponentials having no counterpart here, and
-the only `Fin` bound discharged is `Sized.root`'s, which is
-`Batteries.UnionFind.rootD_lt` applied to `x.isLt` with no arithmetic
-between them. Where a bound does need arithmetic — `Sized.discrete`'s
-`size + 1` — the constraint's rule applies as stated, and each lemma's
-axioms are re-measured at the revision this branch builds against
-rather than taken from the paragraph's v4.33.0-rc1 measurement.
+Constraint 9 gains three paragraphs and a measurement rule on `jj`
+change `ypqrxnwk`, "record three choice-taint families in constraint
+9". Each binds W3 through W5, and two name W4. W4 answers all three.
+
+The `Nat` division and order paragraph names W4's `Fin self.size`
+obligations. It reaches little of W4: no `Nat` division arises
+anywhere, the index arithmetic W3 needs for products and exponentials
+having no counterpart here, and the only `Fin` bound discharged is
+`Sized.root`'s, which is `Batteries.UnionFind.rootD_lt` applied to
+`x.isLt` with no arithmetic between them. Where a bound does need
+arithmetic — `Sized.discrete`'s `size + 1` — the rule applies as
+stated.
+
+The `Equiv`-transport paragraph names W4's renumbering of union-find
+roots onto an initial segment, as a domain transport, the family in
+which `Equiv.arrowCongr` and `Equiv.piCongrLeft` are choice-dependent
+and for which that branch supplies `Equiv.arrowCongrLeftC`. W4 does not
+transport a function type in either direction: `rep` and `π` apply
+`Fin.compressEquiv (isRoot v)` and its `symm` pointwise, to an index
+and to a subtype element, and no `Equiv` of W4's is an equivalence
+between arrow types. The paragraph's repair is therefore not needed
+here, and W4 does not import `Geb/Mathlib/Logic/Equiv/Basic.lean`.
+
+The equality-API paragraph binds W4 vacuously. Nothing in the interface
+decides membership: `List.filter` applies a `Bool`-valued function,
+`comp_π`'s membership witness is a proposition rather than a decision,
+and the only `DecidableEq` W4 uses at `Fin n` is `instDecidableEqFin`,
+which is axiom-free. The `LawfulBEq (Fin n)` the paragraph pins is not
+reached. In the tests, deciding equality of morphisms goes through
+W1's pinned `decidableEqHom`, which is the same paragraph's concern one
+level down and is already settled.
+
+Each of these is re-measured at the revision this branch builds
+against rather than taken from the paragraph's v4.33.0-rc1 measurement,
+and per the amendment's measurement rule the measurement is taken at a
+monomorphic instantiation: `#print axioms` on `apply_root_ofEdges`,
+whose `α` is a bare type variable carrying no instance, reports that
+constant and not its use, so the reading that counts is the one at
+`α := Fin Z.len` inside `π_desc`.
 
 ## The wrapper
 
@@ -531,6 +590,11 @@ The axiom discipline is checked by `lake lint` through
   `OfEdges.lean`'s records why its upstream target is Batteries;
   `Quotient.lean`'s and `Coequalizer.lean`'s carry
   `[MacLaneMoerdijk1992]` under `## References`.
+- A `/-- … -/` docstring on every `def`, `instance` and theorem of the
+  three modules, per `docs/rules/lean-coding.md` § Comment and
+  docstring rules, which makes them mandatory rather than reserving
+  them for major declarations. That is every declaration listed in this
+  spec, the wrapper's unnamed `HasCoequalizers` instance included.
 - `GebMeta.classicalAllowedModules` gains
   `Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer` and
   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Coequalizer`, and those
@@ -555,10 +619,17 @@ The axiom discipline is checked by `lake lint` through
 W4 edits `TODO.md` in three places, and appends to
 `GebMeta.classicalAllowedModules`, to `docs/index.md`, and to the
 `FinSetSkel` index files. W3 appends to all four, and branch
-`doc/constraint-9-nat-arithmetic` amends `TODO.md` as well. These are
-the ordinary textual conflicts the group's standing obligation
-anticipates for concurrent siblings; W4 rebases onto whichever of them
-merges first.
+`feat/choice-free-primitives` (`jj` change `ypqrxnwk`) amends `TODO.md`
+as well. These are the ordinary textual conflicts the group's standing
+obligation anticipates for concurrent siblings; W4 rebases onto
+whichever of them merges first. The standing obligation lists three
+shared files and not the `FinSetSkel` index; W3's spec amends it to
+add the fourth, so W4 does not.
+
+W4's dependency on `feat/choice-free-primitives` is its `TODO.md` text
+alone. That branch is specified to carry `Equiv.arrowCongrLeftC` and
+`Fin.instLawfulBEqC`; § Constraint 9 above records that W4 reaches
+neither, so W4 imports nothing from it.
 
 `docs/references.bib` is unchanged, `MacLaneMoerdijk1992` being already
 present. Its section locator for colimits in `Set` is verified against
@@ -576,6 +647,12 @@ standing obligation on textbook locators.
   closure of the edges.
 - Row k and `HasFiniteColimits`, which are W5's, as is the
   `ElementaryTopos FinSetSkel` instance.
+- `FinSetSkel.homEquivIdxFun`, the equivalence between morphisms and
+  bare index functions. Row i does not use it: every construction and
+  statement above is over `f.toVec.get i`, W1's application-normal
+  form, and `desc` is built by `Vector.ofFnC` with `hom_ext` supplying
+  extensionality. It is W3-local, and constraint 7's rule placing
+  shared declarations outside both branches does not engage.
 - The stale duplicate W1 row in `TODO.md` § Status,
   which is a defect of the W1/W2 rebase and belongs on its own branch
   per `CONTRIBUTING.md` § Concern shape.
