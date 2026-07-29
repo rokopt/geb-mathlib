@@ -1888,10 +1888,9 @@ level is literally `0` there. `IsTerminal X` is `IsLimit
 (asEmptyCone X)` by definition, which is why the `isLimit` field
 accepts an `IsTerminal`.
 
-Run: `lake build`
-Expected: PASS. Confirm the argument order of
-`BinaryFan.IsLimit.mk` with `#check` first — the `uniq` argument
-takes `m` after the two components.
+Confirm the argument order of `BinaryFan.IsLimit.mk` with `#check`
+**before** writing the code above — the `uniq` argument takes `m`
+after the two components.
 
 `BinaryFan.IsLimit.mk`'s `fac` and `uniq` arguments are stated over
 `s.fst` and `s.snd`, which for `BinaryFan.mk (prodFst X Y)
@@ -1911,6 +1910,10 @@ example (X Y : FinSetSkel.{u}) :
 Delete both once they pass. Task 12 Step 3's check of the monoidal
 `fst`/`snd` presupposes this one, so a failure here is diagnosed
 before that task rather than inside it.
+
+Run: `lake build`
+Expected: PASS — with the two `example`s still present, so that this
+step's gate covers them and not only the two cones.
 
 - [ ] **Step 4: add the cartesian instance**
 
@@ -1980,10 +1983,13 @@ Add the `Shapes.Instances` import line to
 `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes.lean` and its
 `GebTests` parallel. Create
 `GebTests/Mathlib/CategoryTheory/FinSetSkel/Shapes/Instances.lean`
-now, with its preamble and module docstring and no declaration yet:
-the `GebTests` index file imports it, so it must exist for the test
-library to build. Task 9 fills it, both tasks' declarations being
-tested in one file.
+now, with its preamble and module docstring, **no declaration and no
+import of the module under test**: the `GebTests` index file imports
+it, so it must exist for the test library to build, but an import
+reached by no constant is what `lake shake` reports as removable.
+Task 9 adds the import together with its first `def`. `lake shake`
+does not run until Task 19, so either order builds; this one keeps the
+tree shake-clean at every commit.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -2452,9 +2458,12 @@ letter `m`, deliberately: the encoding keeps the roles of the
 
 If `rfl` does not close `expEquivIdx_apply`, unfold with
 `simp only [expEquivIdx, Equiv.trans_apply, Equiv.arrowCongrLeftC,
-Equiv.curry, Equiv.piComm, Equiv.piCongrRight, Fin.funEncodeC]` and
-report what was needed — the lemma is the interface both later proofs
-use, so it is worth the unfolding once here.
+Equiv.curry, Equiv.piComm, Equiv.piCongrRight, Fin.funEncodeC]`,
+expecting to need `Equiv.coe_fn_mk` alongside them: those names are
+`def`s, so unfolding them exposes a coerced `Equiv.mk` application
+rather than a reduced term. Report what was needed to the
+orchestrator — the lemma is the interface both later proofs use, so it
+is worth the unfolding once here.
 
 Run: `lake build`
 Expected: PASS.
@@ -2509,6 +2518,8 @@ Expected: PASS.
 
 Measure the four declarations and a monomorphic witness:
 
+Append to `Exponential/Core.lean`, measure, then delete:
+
 ```lean
 /-- Monomorphic witness for the axiom measurement. -/
 def probeExp : Fin 2 → Fin (3 ^ 2) := expEquivIdx 2 2 3 (fun _ ↦ 0)
@@ -2521,10 +2532,23 @@ grep.
 
 The test parallel encodes a sample two-argument function and asserts
 the encoded value by `rfl` or `decide`, then applies
-`expEquivIdx_naturality` at a sample `φ`. Name the encoding
-**`sampleExpEquivIdx`**: it is this module's permanent axiom witness,
-which Task 12 re-measures by that name, so it must be a monomorphic
-`def` at `FinSetSkel.{0}` and must not be deleted.
+`expEquivIdx_naturality` at a sample `φ`. It also carries this
+module's **permanent** axiom witness, which Task 12 re-measures by
+name and which is therefore not deleted:
+
+```lean
+/-- Permanent monomorphic witness for this module's axiom set. -/
+def sampleExpEquivHom : (mk 2 : FinSetSkel.{0}) ⟶ mk (3 ^ 2) :=
+  expEquivHom 2 2 3 (Hom.ofVec (Vector.ofFnC fun _ ↦ 0))
+```
+
+It is built from `expEquivHom`, not from `expEquivIdx`: only
+`expEquivHom` mentions `FinSetSkel` at all, and it is the declaration
+that could acquire `Classical.choice` — through `homEquivIdxFun` and
+whatever instance a later import brings — so it is the one worth
+watching. Measuring it covers `expEquivIdx` and `homEquivIdxFun`
+transitively, since it is their composite. A `def`, not a `theorem`:
+a theorem would measure its proof's axioms rather than the data's.
 
 Create the two `Exponential.lean` index files, importing `Core` now
 and `Closed` in Task 12, and add them to the two `FinSetSkel.lean`
@@ -2752,7 +2776,7 @@ Measure `whiskerLeft_get`. Expected:
 `[propext, Classical.choice, Quot.sound]` — the whiskering is the
 cartesian structure's, and this is the allowlisted wrapper. Confirm
 that `Exponential/Core.lean` is unchanged by re-measuring its
-permanent witness `sampleExpEquivIdx`, in
+permanent witness `sampleExpEquivHom`, in
 `GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean`.
 Expected: `[propext, Quot.sound]`.
 
@@ -3532,7 +3556,9 @@ computation inside `invVec_lt` gives `(invVec f g).get j = k`, and
 `List.getElem_toArray`, both `@[simp]`. Factor
 the `(invVec f g).get j = k` step out of `invVec_lt` into its own
 named lemma if proving it twice — once there, once here — becomes
-awkward; that lemma is then a further export of Task 14.
+awkward; that lemma is then a further export of Task 14, and if it is
+stated it is added to `Equalizer/Core.lean`'s `## Main statements`,
+which Task 14 wrote.
 
 Run: `lake build`
 Expected: PASS once the routes above are written; before them, FAIL
@@ -3582,7 +3608,9 @@ same entry are equal, from `agree_nodup` through
 `List.Nodup.getElem_inj_iff` or `List.nodup_iff_injective_get` — the
 same step W1 takes in `Vector.invOfInjective`, whose proof is the
 model to follow. State the injectivity as a named lemma
-`injVec_injective` if the proof of `lift_uniq` needs it twice.
+`injVec_injective` if the proof of `lift_uniq` needs it twice; if
+stated, add it to `Equalizer/Core.lean`'s `## Main statements`, which
+Task 14 wrote.
 
 Run: `lake build`
 Expected: PASS once the routes above are written; before them, FAIL
@@ -3619,30 +3647,38 @@ def invVecTraced (f g : X ⟶ Y) : Vector ℕ X.len :=
   dbgTrace "invVec ran" fun _ ↦ scatter (agree f g) 0 (Vector.replicate X.len 0)
 ```
 
-`lift`'s bound is discharged by `invVec_lt`, a lemma about `invVec`,
-so after the redirection the goal speaks of `invVecTraced`. It still
-typechecks, `dbgTrace s f` reducing to `f ()`, but only if the bound
-is supplied by `exact`; a `rw [invVec]` or `simp only [invVec]` in
-that position will not match. Leave the bound proof alone when
-redirecting.
+Point `lift` at `invVecTraced` in place of `invVec`, changing nothing
+else — in particular **leave the bound proof alone**. It still
+typechecks, `dbgTrace s f` reducing to `f ()`, so the `invVec_lt`
+application inside `lift` is unaffected.
 
-point `lift` at it, then `#eval` the lift's **vector** at the
-witnesses Step 5 already names:
+Then evaluate the lift's **vector** at the witnesses Step 5 names:
 
 ```lean
 #eval (lift probeLiftHom probeLiftHom (𝟙 (mk 5)) rfl).toVec.toList
 ```
 
-and count the trace lines. `probeLiftHom : mk 5 ⟶ mk 2` is Step 5's,
-so the domain has five indices and an unshared pass would trace five
-times. A bare `#eval` of the morphism will not run at all: `Hom` is
-sealed `irreducible` and carries no `Repr`, and `#eval` refuses a
-value it can neither print nor sequence, so no trace would be emitted
-either way and the check would silently pass.
+Run it through the `lean-lsp` MCP's `lean_run_code`, where the
+`dbgTrace` lines come back in the returned output alongside the
+`#eval` result. `probeLiftHom : mk 5 ⟶ mk 2` is Step 5's, so the
+domain has five indices and an unshared pass traces five times.
 
-Expected: one trace line, not five. If five, the `let` is not shared
-and `lift` must be restructured until it is; report the finding either
-way.
+A bare `#eval` of the *morphism* would not run at all — `Hom` is
+sealed `irreducible` and carries no `Repr`, and `#eval` refuses a
+value it can neither print nor sequence — so no trace would be emitted
+either way and the check would silently pass. Evaluate the vector.
+
+Expected: one trace line, not five.
+
+- **Five lines**: the `let` is not shared. Apply exactly one
+  restructuring — lift the vector out into its own value-returning
+  helper, `def liftVec (f g : X ⟶ Y) {Z} (h : Z ⟶ X) (w : h ≫ f = h ≫ g)
+  : Vector (Fin (obj f g).len) Z.len`, with `lift := Hom.ofVec (liftVec …)`
+  — and re-run. If it still traces five times, **stop** and report; do
+  not iterate further, `lift` being a deliverable Task 16 consumes.
+- **No line at all**: the trace is not observable through this tool.
+  Report `unobservable` and proceed. Do **not** read absence as
+  evidence of sharing; it is evidence of nothing.
 
 Then revert **both** edits — `invVecTraced` and the redirection of
 `lift` — delete Step 5's two witnesses, and confirm with
@@ -3992,8 +4028,9 @@ them. The third is a corollary. The skeleton, for the first:
 and for the second the same shape at the motive
 `fun L ↦ ∀ (v : Vector (Fin 2) n), j ∈ L ∨ v.get j = 1 →
 (scatterOne L v).get j = 1` — but **not** the same base case. There the
-base goal is `∀ v, j ∈ [] ∨ v.get j = 1 → v.get j = 1`, which
-`Or.inr h` does not inhabit; it is
+base goal is `∀ v, j ∈ [] ∨ v.get j = 1 → (scatterOne [] v).get j = 1`,
+whose conclusion reduces to `v.get j = 1` by `List.foldl`'s iota rule,
+and which `Or.inr h` does not inhabit; it is
 
 ```lean
     (fun v h ↦ h.resolve_left List.not_mem_nil)
@@ -4207,8 +4244,8 @@ constraints on that linter.
       -- neither is `1`, so in `Fin 2` both are `0`
       have h2 : (χ'.toVec.get j).val ≠ 1 := fun hc ↦ hj (Fin.val_injective hc)
       have h3 : ((chiVec m).get j).val ≠ 1 := fun hc ↦ h1 (Fin.val_injective hc)
-      have := (χ'.toVec.get j).isLt
-      have := ((chiVec m).get j).isLt
+      have h4 : (χ'.toVec.get j).val < 2 := (χ'.toVec.get j).isLt
+      have h5 : ((chiVec m).get j).val < 2 := ((chiVec m).get j).isLt
       exact Fin.val_injective (by omega)
 ```
 
@@ -4218,14 +4255,24 @@ constraints on that linter.
 nothing classical enters. Step 6's `#print axioms` is the backstop for
 that claim, which is read-verified rather than elaborated.
 
-The lifting to `Fin.val` is what lets `omega` finish: it sees
-`(1 : Fin 2).val` as an atom until the disequalities are stated
-against the `ℕ` literal, which the two `have`s above do
-(`hc : x.val = 1` is accepted where `x.val = (1 : Fin 2).val` is
-expected, `(1 : Fin 2).val` reducing to `1` by whnf).
-`Fin.val_injective` is used rather than `Fin.val_eq_val`, whose two
-arguments are explicit and which therefore needs
-`(Fin.val_eq_val _ _).mp` in term position.
+Two things make `omega` able to finish, and **both** are needed.
+First, the disequalities are lifted to `Fin.val` against the `ℕ`
+literal, which `h2` and `h3` do (`hc : x.val = 1` is accepted where
+`x.val = (1 : Fin 2).val` is expected, `(1 : Fin 2).val` reducing to
+`1` by whnf). Second, the two bounds are **ascribed `< 2`** rather
+than left as bare `isLt`: `χ' : X ⟶ mk 2`, so `(χ'.toVec.get j).isLt`
+reads `… < (mk 2).len`, and `omega` does not reduce that
+projection-of-constructor — it takes it as an atom, leaving
+`a ≠ 1 ∧ a < c` for unknown `c`, which does not give `a = 0`. This was
+probed at this toolchain: without the ascriptions `omega` fails with a
+counterexample naming `↑{ len := 2 }.len` as an atom. The ascriptions
+typecheck because `(mk 2).len` is defeq to `2` at default
+transparency.
+`Fin.val_injective` — `Mathlib/Data/Fin/Basic.lean`, reached here
+transitively through the category-theory imports — is used rather than
+`Fin.val_eq_val`, whose two arguments are explicit and which therefore
+needs `(Fin.val_eq_val _ _).mp` in term position. If it is reported
+unknown, that is a missing import, not a rename.
 `Fin.val_eq_of_lt` does **not** exist; do not reach for it.
 
 That the wrapper can supply `h` from `IsPullback` is Task 18's
@@ -4490,7 +4537,7 @@ skeleton, with the four pieces named:
       have hsq : CommSq m (isTerminalOne.from _) (Classifier.chi m) truth :=
         ⟨hom_ext fun i ↦ by simp [Classifier.chi_comp_eq, truth]⟩
       -- membership of a competing cone's left leg, from its own commutation
-      have hmem : ∀ (s : PullbackCone (Classifier.chi m) truth) (t : Fin _),
+      have hmem : ∀ (s : PullbackCone (Classifier.chi m) truth) (t : Fin s.pt.len),
           s.fst.toVec.get t ∈ m.toVec.toList := fun s t ↦
         (Classifier.chiVec_get_eq_one_iff m _).mp (by
           have := congrArg (fun k ↦ (k : _ ⟶ mk 2).toVec.get t) s.condition
@@ -4499,7 +4546,7 @@ skeleton, with the four pieces named:
         (PullbackCone.isLimitAux _
           (fun s ↦ Classifier.pullbackLift m hinj s.fst (hmem s))
           (fun s ↦ Classifier.pullbackLift_comp m hinj s.fst (hmem s))
-          (fun s ↦ toOne_uniq _)
+          (fun _ ↦ (toOne_uniq _).trans (toOne_uniq _).symm)
           (fun s n hn ↦
             Classifier.pullbackLift_uniq m hinj s.fst (hmem s) n
               (hn WalkingCospan.left))))
@@ -4514,7 +4561,12 @@ membership. Its statement is written out here because Task 17 does not
 supply it and this task's executor cannot read Task 17.
 
 `fac_right` and every such cone's second leg are morphisms into
-`mk 1`, so `toOne_uniq` discharges them; that is why the terminal
+`mk 1`, and `toOne_uniq` gives each of them equal to `toOne _`, so
+`fac_right` is closed two-sidedly —
+`(toOne_uniq _).trans (toOne_uniq _).symm` — and **not** by
+`toOne_uniq _` alone, whose shape is `?f = toOne ?X` and which would
+need `s.snd` to be definitionally `toOne s.pt`. It is not: `s.snd` is
+an opaque projection of an arbitrary cone. This is why the terminal
 object is `Ω₀` and why `isTerminalOne` is named rather than
 reconstructed.
 
@@ -4530,13 +4582,11 @@ it typechecks, and mathlib's own `isLimitAux'` does the same.
 `CommSq`'s single field is the commutation equation, so the
 anonymous-constructor `⟨…⟩` above is the whole square; `#check
 @CommSq` and `@PullbackCone.isLimitAux` before writing either, and
-expect the `hmem` `simpa` to need adjusting to whatever
-`s.condition` displays as.
-
-`fac_right` and every such cone's second leg are morphisms into
-`mk 1`, so `toOne_uniq` discharges them; that is why the terminal
-object is `Ω₀` and why `isTerminalOne` is named rather than
-reconstructed.
+expect both `hsq`'s `simp` and `hmem`'s `simpa` to need adjusting.
+`hsq`'s goal after `hom_ext` sits at an index of `Fin (mk 1).len`, so
+it needs that index collapsed to `0` — add `Fin.fin_one_eq_zero` to the
+simp set, or `Subsingleton.elim`; mathlib's own call sites pass the
+former explicitly rather than relying on its `@[simp]` attribute.
 
 `Subobject.Classifier` is written qualified: inside
 `namespace FinSetSkel`, a bare `Classifier` is the sub-namespace of
@@ -4839,6 +4889,32 @@ inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
 
+**Round 10** (two fresh agents: executability over four tasks neither
+earlier pass had read, Lean correctness over round 9's edits) returned
+one blocker and three serious findings, all applied, and every one of
+them a defect round 9 had introduced.
+
+The blocker: `chi_uniq`'s closing `omega` cannot succeed. `χ' : X ⟶ mk 2`,
+so `(χ'.toVec.get j).isLt` reads `… < (mk 2).len`, and `omega` takes
+that projection-of-constructor as an atom rather than reducing it —
+leaving `a ≠ 1 ∧ a < c` for unknown `c`, which does not give `a = 0`.
+The reviewer probed it and reproduced the failure with the atom named
+in the counterexample. The two bounds are now ascribed `< 2`.
+
+Serious: `fac_right` cannot be `toOne_uniq _`, whose shape is
+`?f = toOne ?X` and which would need `s.snd` definitionally
+`toOne s.pt` — it is an opaque projection of an arbitrary cone; the
+route is two-sided. Task 11's permanent-witness instruction was
+self-contradictory, demanding a witness "at `FinSetSkel.{0}`" built
+from `expEquivIdx`, whose type contains no `FinSetSkel`; it is now
+written-out code built from `expEquivHom`, renamed to match, and
+Task 12's re-measurement follows it. And Task 15's `dbgTrace` sharing
+check named no observation tool, so absence of a trace was
+indistinguishable from sharing — the failing branch also being an
+unbounded "restructure until shared" on a deliverable Task 16
+consumes; it now names `lean_run_code`, distinguishes `unobservable`
+from shared, and caps the restructuring at one named alternative.
+
 **Round 9** (two fresh agents: executability over four tasks the
 previous round had not read, Lean correctness over the previous
 round's own edits). The Lean lens returned **converged** a second
@@ -4856,7 +4932,7 @@ inside a single task. Four tasks were told to "re-measure the earlier
 core module's witnesses", every one of which the creating task
 deletes and none of which that subagent can reconstruct; core modules
 now keep a *named* permanent witness in their `GebTests` parallel —
-`samplePoint`, `sampleExpEquivIdx`, `sampleEqualizerInj`,
+`samplePoint`, `sampleExpEquivHom`, `sampleEqualizerInj`,
 `sampleChiVec` — which the later task measures by name, and which
 `lake lint -- GebTests` then audits continuously. Task 14's second
 fold lemma delegated its one hard step to a three-name lemma search,
