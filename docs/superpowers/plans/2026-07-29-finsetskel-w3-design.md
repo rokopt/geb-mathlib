@@ -2785,44 +2785,64 @@ Expected: FAIL, one placeholder error.
 
 Route, in three moves:
 
-1. `hom_ext` reduces both sides to an equation between index
-   lookups at each `t : Fin Z'.len`.
-2. `(tensorLeft X).map f` must first be turned into `X ◁ f`, or
+1. The left side's *argument* is rewritten into the `φ`-shaped
+   function of `expEquivIdx_naturality`, with `φ := f.toVec.get`.
+   `(tensorLeft X).map f` must first become `X ◁ f`, or
    `whiskerLeft_get` cannot fire: `tensorLeft` is
    `abbrev tensorLeft (X : C) : C ⥤ C := (curriedTensor C).obj X`, so
    the term is `((curriedTensor C).obj X).map f`, which is not
    syntactically `X ◁ f`, and `simp only` will not unfold a
    `Functor.map` projection on its own. `curriedTensor` is `@[simps]`,
-   so `curriedTensor_obj_map` is the bridge. Then `comp_get` and
-   `whiskerLeft_get` rewrite the left side's argument into
-   `fun i ↦ g.toVec.get (Fin.pairC (Fin.divNatC i)
-   (f.toVec.get (Fin.modNatC i)))` — the `φ`-shaped function of
-   `expEquivIdx_naturality`, with `φ := f.toVec.get`.
-3. `expEquivIdx_naturality X.len Z'.len Z.len Y.len f.toVec.get
-   (g.toVec.get ·)` closes it, after `homEquivIdxFun_apply` and
-   `homEquivIdxFun_symm_get` have moved both sides through the
-   correspondence.
+   so `curriedTensor_obj_map` is the bridge; `comp_get` and
+   `whiskerLeft_get` then finish the argument.
+2. `ext t` reduces the two morphisms to index lookups at each
+   `t : Fin Z'.len`, and the correspondence lemmas move both sides
+   through `homEquivIdxFun`.
+3. `expEquivIdx_naturality X.len Z'.len Z.len Y.len f.toVec.get …`,
+   read at `t`, closes it.
 
-The recipe to try first:
+Move 1 comes first, not second, and that ordering is the point.
+
+The proof, in two stages. A single `simp only` cannot do it, for a
+reason worth stating: after `ext t` the term
+`homEquivIdxFun … ((tensorLeft X).map f ≫ g)` sits **unapplied**, as
+`expEquivIdx`'s function argument, and `homEquivIdxFun_apply`,
+`comp_get` and `whiskerLeft_get` are all applied-form equations.
+`simp only` will not eta-expand a function occurrence to make such a
+lemma fire. So the argument is bridged under a `funext` first, where
+both sides *are* applied:
 
 ```lean
+  have harg :
+      homEquivIdxFun (mk (X.len * Z'.len)) (mk Y.len) ((tensorLeft X).map f ≫ g)
+        = fun i ↦ (homEquivIdxFun (mk (X.len * Z.len)) (mk Y.len) g)
+            (Fin.pairC (Fin.divNatC i) (f.toVec.get (Fin.modNatC i))) := by
+    funext i
+    simp only [homEquivIdxFun_apply, curriedTensor_obj_map, comp_get,
+      whiskerLeft_get]
+  ext t
   simp only [expHomEquiv, expEquivHom, Equiv.trans_apply,
-    curriedTensor_obj_obj, curriedTensor_obj_map, homEquivIdxFun_apply,
-    homEquivIdxFun_symm_get, comp_get, whiskerLeft_get]
+    curriedTensor_obj_obj, homEquivIdxFun_symm_get, comp_get, harg]
+  exact congrFun (expEquivIdx_naturality X.len Z'.len Z.len Y.len f.toVec.get
+    (homEquivIdxFun (mk (X.len * Z.len)) (mk Y.len) g)) t
 ```
 
-Three entries are there for reasons that are not obvious.
-`expHomEquiv` and `expEquivHom` are plain `def`s with no `@[simp]`
-unfolding lemma, so without them nothing turns `expHomEquiv X Z' Y …`
-into a term the later lemmas can match; `simp only` uses their
-equation lemmas. `Equiv.trans_apply` is needed because `expEquivHom`
-is a nested `Equiv.trans`, and `homEquivIdxFun_apply` /
-`homEquivIdxFun_symm_get` are stated about a bare application and a
-bare `.symm` application, neither of which matches an `Equiv.trans`
-application. `Equiv.trans_apply` is `@[simp]` in mathlib, but
-`simp only` does not load the default set. If the goal instead
-displays the coerced form, `Equiv.coe_trans` and
-`Function.comp_apply` are the alternates.
+Four entries of the second set are there for reasons that are not
+obvious. `expHomEquiv` and `expEquivHom` are plain `def`s with no
+`@[simp]` unfolding lemma, so without them nothing opens the term up;
+`simp only` uses their equation lemmas. `Equiv.trans_apply` is needed
+because `expEquivHom` is a nested `Equiv.trans`, which
+`homEquivIdxFun_symm_get` does not match; it is `@[simp]` in mathlib,
+but `simp only` does not load the default set. And `harg` is the
+bridge above. If the goal displays the coerced form instead,
+`Equiv.coe_trans` and `Function.comp_apply` are the alternates.
+
+Do **not** try to close the residue by `rfl` or by adding
+`expEquivIdx_apply` to the first set: `(X ◁ f ≫ g).toVec.get i` is not
+definitionally `g.toVec.get (Fin.pairC …)` — `whiskerLeft_get` is
+Task 12's theorem, proved through `prodLift_uniq` — and routing
+around `expEquivIdx_naturality` would leave Task 11's stated
+deliverable with no consumer.
 
 `whiskerLeft_get` and `expEquivIdx_naturality` carry no `@[simp]`, so
 they are named explicitly here and a bare `simp` will not find them.
@@ -3263,15 +3283,19 @@ discharger will not use `hk` to fire the conditional
 The bridge from `(agree f g)[k] = j` to
 `(j, k) ∈ (agree f g).zipIdx 0` is core's
 `List.mk_mem_zipIdx_iff_getElem?`, stated through `getElem?` rather
-than `getElem`; `#check` it and adjust the `simp` set to whatever its
-actual form needs. If it is absent at this revision, prove the bridge
-as a named lemma by `List.rec` in the shape of Step 6 and add it to
-this module's exports.
+than `getElem`, which is why the side goal needs the `rw` above.
+`#check` it and adjust to whatever its actual form needs. Note it is
+the `c = 0` specialisation — exactly this call site, but
+`get_scatter_mem` is stated for general `c`, so a later consumer at
+nonzero `c` needs `List.mk_add_mem_zipIdx_iff_getElem?` instead. If
+it is absent at this revision, prove the bridge as a named lemma by
+`List.rec` in the shape of Step 6 and add it to this module's
+exports.
 
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 8: check the axioms and commit**
+- [ ] **Step 8: check the axioms, wire the source index and commit**
 
 Measure every declaration, plus monomorphic witnesses at
 `FinSetSkel.{0}`:
@@ -3295,6 +3319,16 @@ both after measuring, then run the banned-form grep: `Vector.replicate`
 and `Vector.set` are permitted, `Vector.ofFn` and `Vector.finRange`
 are not, and `List.finRange` is a different declaration and is
 permitted.
+
+Then wire the source side, without which `lake lint` cannot audit
+this module at all: create
+`Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean` carrying
+`public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Core`,
+on the pattern of Task 2 Step 6, and add
+`public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer` to
+`Geb/Mathlib/CategoryTheory/FinSetSkel.lean`. Task 16 adds the
+`Limits` line to the same index; Task 15 creates the two `GebTests`
+files.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`, `lake lint`
 Expected: PASS.
@@ -3495,7 +3529,7 @@ trace lines. If it re-runs, do not restructure — nothing in W3 applies
 a partially applied `funDecodeC` in a loop — and do not edit
 `docs/index.md`, which does not yet carry that module's entry and is
 not this task's file. Report the finding to the orchestrator; the note
-belongs in Task 19 Step 1's entry for that module.
+belongs in Task 19 Step 2's entry for that module.
 
 - [ ] **Step 7: write the test parallel and commit**
 
@@ -3641,7 +3675,8 @@ point's length.
 Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits`
 to `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`, and the
 plain-`import` parallel for the test module to its `GebTests`
-counterpart; Task 15 Step 7 created both carrying `Core` alone.
+counterpart; Task 14 created the source index and Task 15 Step 7 the
+`GebTests` one, both carrying `Core` alone.
 Without these lines neither module is reachable from a root import,
 so `lake build` still compiles them through lake's glob while
 `lake lint` never audits them — green, and unchecked.
@@ -4296,7 +4331,34 @@ Spec sections: § Documentation, § Amendments to `TODO.md`
 - Modify, only as `lake shake` requires and in their own commit: the
   import lines of any of this branch's `.lean` modules (Step 4)
 
-- [ ] **Step 1: add the `docs/index.md` entries**
+- [ ] **Step 1: settle the import lists, in their own commit**
+
+This step runs **before** the documentation edits, and the ordering is
+load-bearing. `jj commit` takes no paths here — it commits the whole
+working copy — so if the Markdown were already edited, this commit
+would swallow it, mislabelling the documentation work as a refactor
+and leaving Step 5 with nothing to commit. Running it first keeps this
+commit `.lean`-only and lets `pre-push.sh` see unmodified Markdown.
+
+This is also the branch's first `pre-push.sh` run, so it is where
+`lake shake` first sees W3's modules and where their import lists are
+actually settled — the per-task lists were a starting point, per
+§ Global constraints.
+
+Run: `bash scripts/pre-push.sh`
+Expected: PASS, or a `lake shake` report. If it reports, adjust the
+named modules' import lines, re-run until clean, and re-run the axiom
+checks of every module whose imports changed — an import that
+disappears can change which instance search finds.
+
+```bash
+jj commit -m "refactor(finsetskel): minimise W3's module imports"
+jj bookmark set feat/finsetskel-w3 -r @-
+```
+
+Skip this commit if `lake shake` reported nothing.
+
+- [ ] **Step 2: add the `docs/index.md` entries**
 
 One entry per content module, eleven in all, in topological order,
 placed after the existing `FinSetSkel/Skeleton.lean` and
@@ -4311,7 +4373,7 @@ produces an artifact requires them; `CONTRIBUTING.md` § Document only
 the persistent forbids referring to the spec or the plan from any of
 them.
 
-- [ ] **Step 2: apply amendments 2, 6 and the status row**
+- [ ] **Step 3: apply amendments 2, 6 and the status row**
 
 In `TODO.md` § Status: the W3 row becomes `Complete` with the eleven
 content module paths, and its label becomes `Rows a–e, g, h, l, m`.
@@ -4328,7 +4390,7 @@ original per-field assignment" — is corrected: the table no longer
 states the original assignment once rows f and j are marked derived,
 and its enumeration gains `f`.
 
-- [ ] **Step 3: apply amendments 3, 4, 5, 7 and 8**
+- [ ] **Step 4: apply amendments 3, 4, 5, 7 and 8**
 
 - Amendment 3: in the operation table's row m, replace
   `SimplexCategory.mono_iff_injective` with
@@ -4358,27 +4420,6 @@ and its enumeration gains `f`.
   rests on, and the decision is the user's. **Do not write it.**
   Report to the orchestrator that the entry is pending the user's
   decision on the `Equiv.arrowCongrLeftC` departure, and continue.
-
-- [ ] **Step 4: settle the import lists, in their own commit**
-
-This is the branch's first `pre-push.sh` run, so it is where
-`lake shake` first sees W3's modules and where their import lists are
-actually settled — the per-task lists were a starting point, per
-§ Global constraints. Those are `.lean` edits, so they do not belong
-in this task's documentation commit.
-
-Run: `bash scripts/pre-push.sh`
-Expected: PASS, or a `lake shake` report. If it reports, adjust the
-named modules' import lines, re-run until clean, and re-run the axiom
-checks of every module whose imports changed — an import that
-disappears can change which instance search finds.
-
-```bash
-jj commit -m "refactor(finsetskel): minimise W3's module imports"
-jj bookmark set feat/finsetskel-w3 -r @-
-```
-
-Skip this commit if `lake shake` reported nothing.
 
 - [ ] **Step 5: lint the documentation and commit**
 
@@ -4464,7 +4505,7 @@ correspondence → Task 5, `truth` is index 1 → Tasks 17 and 18.
 § Shared declarations → Task 1. § Module layout and § Exported names
 → the file-structure and namespace tables. § Deliverables rows a–m →
 Tasks 5 through 18. § Tests → each task's own test step. §
-Documentation → Task 19 Step 1 and the module docstrings of Tasks 2,
+Documentation → Task 19 Step 2 and the module docstrings of Tasks 2,
 14, 17 and 18. § Amendments → Task 19. § Out of scope → nothing:
 row i, row k, the `ElementaryTopos` instance, the constraint-6
 comparison lemma, an agreement lemma with mathlib's tainted
@@ -4475,7 +4516,7 @@ obligations 1 through 9 → each task's axiom-check step (1, 2), the
 and Task 17 Step 2 (4), the mathlib-name confirmation bullet of
 § Global constraints (5 — that bullet, not the per-task reminders,
 which are deliberately partial), Tasks 8, 12, 16 and 18 Step 1 (6),
-Task 19 Step 4 (7), § Global constraints and every probe deletion
+Task 19 Step 5 (7), § Global constraints and every probe deletion
 (8), Task 15 Step 6 (9). `CONTRIBUTING.md` § Cite the literature is
 discharged by the `## References` bullet of § Global constraints and
 the nine module docstrings carrying `[Freyd1972]`; no task adds a
@@ -4486,7 +4527,7 @@ silently.** Task 1 records that W4's converged spec puts
 `Equiv.arrowCongrLeftC` out of scope, so the declaration has one
 consumer rather than two and the spec's § Shared declarations
 overstates the ground for its placement; the placement is unchanged,
-and Task 19 Step 3 records the corresponding `TODO.md` § Triggers
+and Task 19 Step 4 records the corresponding `TODO.md` § Triggers
 entry as an explicit do-not-edit plus a report to the orchestrator,
 so nothing about the observation survives Task 20 unless the user
 asks for the entry. Task 17 Step 2 records the reading of verification
@@ -4546,6 +4587,23 @@ own precedent at `FinSetSkel.decidableEqHom`, which names
 `instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
 that way.
 
+**Round 7** (two fresh agents: Lean correctness, consistency and
+executability) returned no blocker and two serious findings from the
+Lean lens, both applied. Task 13 Step 3's recipe failed a third time,
+for a third reason: after `ext t` the `homEquivIdxFun …` term sits
+*unapplied* as `expEquivIdx`'s function argument, and `simp only` does
+not eta-expand a function occurrence to make an applied-form equation
+fire — so the argument is now bridged under a `funext` in a `have`
+before the morphisms are compared, and the step's three-move summary
+was reordered to match. The reviewer probed a minimal analogue of the
+eta failure. Second: Task 19's import commit came *after* the
+documentation edits, and `jj commit` takes the whole working copy, so
+it would have swallowed `docs/index.md` and `TODO.md` into a commit
+messaged `refactor(…)` and left the documentation commit empty. The
+import step is now Step 1 and the ordering is recorded as
+load-bearing; path-scoped `jj commit` was rejected as the fix, being
+its own footgun.
+
 **Round 6** (two fresh agents: Lean correctness, consistency and
 executability) returned no blocker and four serious findings, all
 applied. Task 13 Step 3's `simp only` recipe still could not fire:
@@ -4559,12 +4617,14 @@ about `l[k]` and the goal about `l[k]?`, so the conditional
 route is now an explicit `rw`. Five steps whose code blocks end
 declarations in `:= _` claimed `Expected: PASS`, and Task 18 Step 3
 asserted that convention held plan-wide; all six now state the real
-one. And Task 19 Step 4 folded `lake shake`'s `.lean` import
-adjustments into a documentation commit, against
-`CONTRIBUTING.md` § Concern shape — they are now their own commit,
-declared in the task's Files block. Minors applied with them: Task 14
-now wires its own source index rather than leaving the module
-unreachable from a root import for one commit, and `scatter`'s bound
+one. And Task 19 folded `lake shake`'s `.lean` import adjustments into
+a documentation commit, against `CONTRIBUTING.md` § Concern shape —
+they are now their own commit, declared in the task's Files block and
+taken first, since `jj commit` takes the whole working copy.
+Minors applied with them: Task 14 now wires its own source index
+rather than leaving the module unreachable from a root import for one
+commit — with the wiring written into its Step 8, not only into its
+Files block — and `scatter`'s bound
 is `j.isLt` throughout.
 
 **Round 5** (two fresh agents: Lean correctness, consistency and
@@ -4580,7 +4640,7 @@ constraints now carries the rule. The second: Task 15 Step 6 directed
 an edit to a `docs/index.md` entry that does not exist until Task 19
 and is not that task's file — the converse of the deferred-wiring
 shape rounds 2 through 4 kept finding — now a report to the
-orchestrator with a matching hook in Task 19 Step 1.
+orchestrator with a matching hook in Task 19 Step 2.
 
 **Round 4** (two fresh agents: consistency and executability, Lean
 correctness) returned one blocker and three serious findings, all
@@ -4595,7 +4655,7 @@ blocks claiming index-file edits that no step of theirs performed,
 because Tasks 15 and 17 deferred the wiring forward, which would have
 left two wrapper modules compiled by lake's glob but never reached by
 `runLinter` — green, and unaudited by the axiom linter; and the
-self-review record contradicted Task 19 Step 3 about the conditional
+self-review record contradicted Task 19's amendment step about the conditional
 `TODO.md` entry.
 
 **Round 3** (two fresh agents: Lean correctness, executability under
@@ -4620,7 +4680,7 @@ constraints, written out in all twenty commit steps); Task 13's Files
 list named a `GebMeta.lean` edit no step of it performed, which would
 have failed its own `lake lint -- GebTests` (Task 12 Step 1 now
 appends both names); Task 8's commit step verified none of what it
-wrote to `GebTests`; and Task 19 Step 3 carried a step conditioned on
+wrote to `GebTests`; and Task 19's amendment step carried a step conditioned on
 a user decision its executor cannot obtain (now an explicit
 do-not-edit with a report).
 
