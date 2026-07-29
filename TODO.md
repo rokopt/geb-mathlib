@@ -313,6 +313,9 @@ entry, adding no Lean content.
 | l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
 | m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `SimplexCategory.mono_iff_injective` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
 
+Rows e, j and k are reassigned to W2 below (§ Class fields); the
+table above states the plan's original per-field assignment.
+
 #### Class fields
 
 `ElementaryTopos C` carries data for its generators and `Prop` for
@@ -346,16 +349,16 @@ proof by the tripleability of the power-object functor — but a
 derived construction is whichever one the general proof yields, and
 that is not union-find.
 
-W2 may instead expose the two `Prop` fields as derived instances.
-That is not free: deriving them generically obliges W2 to derive
-`HasFiniteCoproducts` generically too, so rows e, j and k become
-W2's one-time derivations and leave W3's and W5's assignments. The
-operation table assumes the field form, and W3 and W5 proceed on it
-regardless of W2's eventual choice; redundant `Prop` instances are
-harmless by proof irrelevance. W2 took the derived-instance route, so
-the finite-limits and finite-colimits rows of the table above are not
-fields of the class: rows e, j and k are W2's one-time derivations,
-and W3's and W5's assignments become redundant.
+W2 exposes the two `Prop` fields as derived instances, the route it
+took. That is not free: deriving them generically obliges W2 to
+derive `HasFiniteCoproducts` generically too, so rows e, j and k
+become W2's one-time derivations and leave W3's and W5's
+assignments. The operation table assumes the field form, and W3
+and W5 proceed on it regardless of W2's choice; redundant `Prop`
+instances are harmless by proof irrelevance, so the finite-limits
+and finite-colimits rows of the table above are not fields of the
+class: rows e, j and k are W2's one-time derivations, and W3's and
+W5's assignments become redundant.
 
 #### Cross-workstream interface constraints
 
@@ -610,6 +613,24 @@ fiber membership already implemented.
 
 ## Triggers (do when condition fires)
 
+- **`lake shake --keep-implied` versus mathlib CI's plain
+  `lake shake`**: a repo-wide decision, on a separate branch, on
+  whether to drop `--keep-implied` from `scripts/pre-push.sh:42`
+  and minimise imports across the affected files, or to record why
+  the project diverges from mathlib CI here.
+  `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` imports
+  `Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinaryProducts`,
+  which is transitively supplied by the next import,
+  `…LimitsOfProductsAndEqualizers`; `--keep-implied` keeps this
+  import out of `scripts/pre-push.sh`'s `lake shake` report, but
+  without that flag, `lake shake` reports it as removable, and
+  reports the same pattern in six other pre-existing
+  `Geb/Mathlib/` files (`FreeCoprodCompDisc.lean`,
+  `Grothendieck.lean`, three `PFunctor` modules) and four
+  `GebTests` ones. mathlib CI runs `lake shake` without
+  `--keep-implied`, and `CONTRIBUTING.md` § Floodgate test commits
+  the repo to shipping `Geb/Mathlib/` PRs with no source-code
+  changes.
 - **Slice polynomial functor natural isomorphism**: when a
   constructive (computable) `Type`-is-locally-cartesian-closed
   structure is available, in mathlib or built here, establish the

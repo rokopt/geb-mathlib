@@ -440,7 +440,8 @@ import-direction rules above are enforced by
   subobject classifier, carrying chosen data for the generators of
   its finite limits and finite colimits — the cartesian and closed
   structures, the initial object, binary coproducts, equalizers,
-  coequalizers, and the classifier — and deriving
+  coequalizers, and the classifier — and deriving `HasInitial`,
+  `HasBinaryCoproducts`, `HasEqualizers`, `HasCoequalizers`,
   `HasFiniteCoproducts`, `HasFiniteLimits` and `HasFiniteColimits`
   from them. Accessors are definitions for the data-carrying classes
   and instances for the `Prop` classes. `tensorUnitIsoΩ₀` compares
