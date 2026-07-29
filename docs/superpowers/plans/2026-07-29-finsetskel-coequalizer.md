@@ -209,27 +209,12 @@ paragraph).
   `rootD_empty`, `root_push`, `equiv_union`.
 - Produces, all in namespace `Batteries.UnionFind`:
   `size_union`, `size_push`, `Sized`, `Sized.discrete`,
-  `Sized.union`, `Sized.root`, `Sized.ofEdges`, `Sized.val_root`,
-  `Sized.root_eq_iff`, `Sized.equiv_union`, `Sized.rootD_discrete`,
+  `Sized.union`, `Sized.root`, `Sized.ofEdges`, `Sized.root_eq_iff`,
+  `Sized.equiv_union`, `Sized.rootD_discrete`,
   `Sized.root_discrete`, `Sized.root_root`. Task 2 adds the rest.
 
-**One departure from the spec, for the user's line-by-line review.**
-`Sized.val_root` is not in the spec's § The union-find layer
-declaration list; the plan adds it. It is forced: `Sized.root` is
-written in tactic mode over a destructured `v`, so `(discrete n).root x`
-is a stuck `Subtype.rec` over a `Nat.rec` at a variable `n`, and
-`root_discrete` cannot be reached without a step that reads the
-underlying `Nat` off a root. The alternative — writing `Sized.root` in
-term mode over `v.1.rootD`, so that `val_root` would be `rfl` and
-unnecessary — does not elaborate at all: measured, both of its `▸`
-transports report "invalid `▸` notation, failed to compute motive for
-the substitution", and the same is true of a term-mode `Sized.union`.
-`val_root` joins the family the spec already keeps internal to the
-module, alongside `root_eq_iff`, `equiv_union` and `rootD_discrete`,
-all of which the spec states over `v.1`; nothing outside the module
-consumes it.
-
-Every declaration but `size_union` and `size_push` carries the
+The declaration list is exactly the spec's. Every declaration but
+`size_union` and `size_push` carries the
 `Sized.` prefix in its own name, `ofEdges` included: a bare
 `Batteries.UnionFind.root_root` would read as a statement about
 Batteries' own `UnionFind.root`. The prefix is written into the name
@@ -306,6 +291,16 @@ variable {n : Nat}
 end Batteries.UnionFind
 ```
 
+Two forward references, both deliberate. `universe u` is first used by
+Task 2's `apply_root_ofEdges` and `apply_root_foldl`, and the
+`## Main statements` section names those two theorems, which Task 2
+adds. `docs/rules/lean-coding.md` § Structure and typeclass patterns
+asks that unused `universe` declarations be removed, so if Tasks 1 and
+2 are executed as separate reviewable commits rather than back to
+back, move both into Task 2 Step 1 and add them there. Tasks 1 and 2
+are one module reviewed across two commits; the module docstring
+describes the module, not the commit.
+
 - [ ] **Step 2: add the two size lemmas, unproved, and confirm they
   fail**
 
@@ -359,27 +354,43 @@ def Sized.discrete (n : Nat) : Sized n :=
     (fun _ v ↦ ⟨v.1.push, by rw [size_push, v.2]⟩) n
 
 /-- Merge the classes of two indices. -/
-def Sized.union (v : Sized n) (x y : Fin n) : Sized n := by
-  obtain ⟨u, rfl⟩ := v
-  exact ⟨u.unionN x y rfl, size_union u x y⟩
+def Sized.union (v : Sized n) (x y : Fin n) : Sized n :=
+  ⟨v.1.unionN x y v.2.symm, by obtain ⟨u, rfl⟩ := v; exact size_union u x y⟩
 
 /-- The representative of an index's class, as an index. -/
-def Sized.root (v : Sized n) (x : Fin n) : Fin n := by
-  obtain ⟨u, rfl⟩ := v
-  exact ⟨u.rootD x, UnionFind.rootD_lt.mpr x.isLt⟩
+def Sized.root (v : Sized n) (x : Fin n) : Fin n :=
+  ⟨v.1.rootD x, by obtain ⟨u, rfl⟩ := v; exact UnionFind.rootD_lt.mpr x.isLt⟩
 
 /-- The union-find obtained by merging every listed pair. -/
 def Sized.ofEdges (n : Nat) (l : List (Fin n × Fin n)) : Sized n :=
   l.foldl (fun v p ↦ v.union p.1 p.2) (discrete n)
 ```
 
-Four points, each measured:
+Five points, each measured:
 
 - `Sized.discrete` is an `n`-fold `push` through `Nat.rec`, not an
   `induction` tactic and not a self-recursive `def`.
+- **The value is in term mode; only the bound is a tactic block.**
+  This shape is load-bearing and is why the module needs no auxiliary
+  lemma reading the `Nat` off a root. Writing the whole of `Sized.root`
+  in tactic mode — `by obtain ⟨u, rfl⟩ := v; exact ⟨u.rootD x, …⟩` —
+  makes `(discrete n).root x` a stuck `Subtype.rec` over a `Nat.rec` at
+  a variable `n`, and then `root_discrete` below is unreachable
+  (measured: `Fin.ext (rootD_discrete n x)` reports "the argument
+  `rootD_discrete n ↑x` has type `(↑(discrete n)).rootD ↑x = ↑x` but is
+  expected to have type `↑((discrete n).root x) = ↑x`"). With the value
+  written as `v.1.rootD x`, that projection is already in the term and
+  `Fin.ext (rootD_discrete n x)` closes it directly.
+  Discharging the bound with `▸` instead of a tactic block does not
+  elaborate either — "invalid `▸` notation, failed to compute motive
+  for the substitution" — so the tactic block is the third and only
+  working option for that component. The spec's requirement is met:
+  § The union-find layer asks that `Sized.union` and `Sized.root`
+  destruct with `obtain ⟨u, rfl⟩`, and both still do, inside the module
+  that owns the representation.
 - `Sized.union` is built on `unionN`, which takes `x y : Fin n`
   together with `h : n = self.size` and so threads the size invariant
-  without casting indices (correction 2). It destructs `v` with
+  without casting indices (correction 2). Its bound destructs `v` with
   `obtain ⟨u, rfl⟩`; without that, `rw [size_union]` reports no
   occurrence of the pattern, `unionN`'s `match n, h with` not
   reducing until the size proof is destructed.
@@ -400,14 +411,10 @@ Four points, each measured:
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 5: state the six structural lemmas unproved, confirm
+- [ ] **Step 5: state the five structural lemmas unproved, confirm
   they fail**
 
 ```lean
-/-- The underlying `Nat` of a root is Batteries' `rootD`. -/
-theorem Sized.val_root (v : Sized n) (x : Fin n) :
-    (v.root x : Nat) = v.1.rootD x := _
-
 /-- Two indices have the same root exactly when they are equivalent. -/
 theorem Sized.root_eq_iff {v : Sized n} {a b : Fin n} :
     v.root a = v.root b ↔ v.1.Equiv a b := _
@@ -432,51 +439,56 @@ theorem Sized.root_root (v : Sized n) (x : Fin n) :
 ```
 
 Run: `lake build`
-Expected: FAIL, six errors.
+Expected: FAIL, five errors.
 
 - [ ] **Step 6: prove them, one at a time**
 
 `docs/rules/lean-coding.md` § Proof guidelines: one declaration at a
-time, first errors first. Ingredients, in the order the spec records
-them:
+time, first errors first. All five were elaborated verbatim at this
+module's own import set, so replace each `_` with the term below —
+keeping the docstring written in Step 5:
 
-- `val_root` — `obtain ⟨u, rfl⟩ := v`, then `rfl`. Measured:
+```lean
+theorem Sized.root_eq_iff {v : Sized n} {a b : Fin n} :
+    v.root a = v.root b ↔ v.1.Equiv a b := Fin.ext_iff
 
-  ```lean
-  theorem Sized.val_root (v : Sized n) (x : Fin n) :
-      (v.root x : Nat) = v.1.rootD x := by
-    obtain ⟨u, rfl⟩ := v; rfl
-  ```
+theorem Sized.equiv_union {v : Sized n} {x y : Fin n} {a b : Nat} :
+    (v.union x y).1.Equiv a b ↔
+      v.1.Equiv a b ∨ v.1.Equiv a x ∧ v.1.Equiv y b
+                    ∨ v.1.Equiv a y ∧ v.1.Equiv x b := by
+  obtain ⟨u, rfl⟩ := v
+  exact UnionFind.equiv_union
 
-  It exists because `Sized.root` is written in tactic mode over a
-  destructured `v`, so `(discrete n).root x` is stuck: `discrete n`
-  is a `Nat.rec` application at a variable `n`, and the `Subtype.rec`
-  inside `root` cannot iota-reduce past it. `val_root` steps around
-  that once, and `root_discrete` below is the only consumer.
-- `root_eq_iff` — unfold `Sized.root` by `obtain ⟨u, rfl⟩ := v`, then
-  `Fin.ext_iff` reduces the `Fin n` equation to the `Nat` equation
-  `u.rootD a = u.rootD b`, which is Batteries' `Equiv` by definition.
-  Check Batteries' spelling with the `lean-lsp` MCP
-  (`lean_hover_info` on `Batteries.UnionFind.Equiv`) before writing
-  the term; `Equiv` may be definitionally the `rootD` equation, in
-  which case `Iff.rfl` closes it after the destruct.
-- `equiv_union` — destruct `v` with `obtain ⟨u, rfl⟩`, then it is
-  Batteries' `UnionFind.equiv_union`. This restatement is not
-  optional: `unionN`'s `match n, h with` does not reduce until the
-  size proof is destructed, so Batteries' lemma does not apply to
-  `(v.union x y).1` as it stands. All three recursions of Task 2
-  consume this form, never Batteries'.
-- `rootD_discrete` — an `n`-fold recursion through `Nat.rec` on the
-  same motive `Sized.discrete` uses, with `rootD_empty` at the base
-  and `root_push` at the step.
-- `root_discrete` — `Fin.ext ((val_root _ x).trans (rootD_discrete n x))`,
-  taken as one term. `Fin.ext (rootD_discrete n x)` alone does *not*
-  typecheck: it reports "the argument `rootD_discrete n ↑x` has type
-  `(↑(discrete n)).rootD ↑x = ↑x` but is expected to have type
-  `↑((discrete n).root x) = ↑x`", which is the stuck `Subtype.rec`
-  `val_root` exists to step around. `simp only [Sized.root,
-  Sized.discrete]` does not repair it either.
-- `root_root` — destruct `v`, then `Fin.ext` and `rootD_rootD`.
+theorem Sized.rootD_discrete (m x : Nat) : (discrete m).1.rootD x = x :=
+  Nat.rec (motive := fun k ↦ (discrete k).1.rootD x = x)
+    UnionFind.rootD_empty (fun _ ih ↦ (UnionFind.root_push).trans ih) m
+
+theorem Sized.root_discrete (x : Fin n) : (discrete n).root x = x :=
+  Fin.ext (rootD_discrete n x)
+
+theorem Sized.root_root (v : Sized n) (x : Fin n) :
+    v.root (v.root x) = v.root x := Fin.ext UnionFind.rootD_rootD
+```
+
+Four points:
+
+- `root_eq_iff` is `Fin.ext_iff` alone, with no destructuring:
+  `Batteries.UnionFind.Equiv` is definitionally the `rootD` equation,
+  and `Sized.root`'s value component is already `v.1.rootD x`, so
+  `Fin.ext_iff` lands on it directly.
+- `equiv_union` is the one that still needs `obtain ⟨u, rfl⟩`, and the
+  restatement is not optional: `unionN`'s `match n, h with` does not
+  reduce until the size proof is destructed, so Batteries' lemma does
+  not apply to `(v.union x y).1` as it stands. All three recursions of
+  Task 2 consume this form, never Batteries'.
+- `rootD_discrete`'s motive is the proposition
+  `fun k ↦ (discrete k).1.rootD x = x`, not `Sized.discrete`'s own
+  `fun m ↦ Sized m`, which is `Type`-valued and cannot carry a proof.
+  `rootD_empty` is the base and `root_push` the step, as an explicit
+  `Nat.rec` application rather than an `induction` tactic.
+- `root_discrete` and `root_root` are each one `Fin.ext` application.
+  They are this short only because `Sized.root`'s value is in term
+  mode; see Step 4's second point.
 
 Inside a `Sized.*` declaration Lean opens the declaration's own
 prefix, so a bare `equiv_union` resolves to the restatement, while
@@ -519,12 +531,37 @@ Expected: PASS.
 
 Through the `lean-lsp` MCP, `lean_verify` each of `size_union`,
 `size_push`, `Sized`, `Sized.discrete`, `Sized.union`, `Sized.root`,
-`Sized.ofEdges`, `Sized.val_root`, `Sized.root_eq_iff`,
-`Sized.equiv_union`, `Sized.rootD_discrete`, `Sized.root_discrete`,
-`Sized.root_root`, fully qualified as
-`Batteries.UnionFind.size_union` and so on.
+`Sized.ofEdges`, `Sized.root_eq_iff`, `Sized.equiv_union`,
+`Sized.rootD_discrete`, `Sized.root_discrete`, `Sized.root_root`,
+fully qualified as `Batteries.UnionFind.size_union` and so on — twelve
+names, matching the Interfaces block.
 
 Expected: each depends on `propext` and `Quot.sound` only.
+
+Also check that this module's direct `Batteries.` import has not
+admitted constraint 9's Batteries `get`-form family. Spec
+§ Constraint 9 states that importing `Batteries.Data.UnionFind`, whose
+index module `public import`s `Basic` and `Lemmas`, makes no
+`Batteries.Data.Vector.*` module reachable. W4 is the first workstream
+to take a direct `Batteries.` import, and `TODO.md` constraint 9 names
+that as a standing choice rather than an impossibility — "a workstream
+that adds one admits the same family into the `get` normal form" — so
+this is the one place the choice is exercised and must be checked.
+
+In a scratch file at this module's import set, `#check` each of
+`@Vector.get_ofFn`, `@Vector.get_range`, `@Vector.get_mk` and
+`@Vector.toArray_injective`, all declared only in
+`Batteries/Data/Vector/Lemmas.lean`.
+
+Expected: all four report `Unknown constant`. That was the measurement
+when this plan was written; `Batteries/Data/UnionFind.lean`
+`public import`s only `.Basic` and `.Lemmas`, whose own imports are
+`Batteries.Tactic.Lint.Misc`, `Batteries.Tactic.SeqFocus` and
+`Batteries.Util.Panic`. Delete the scratch file afterwards. Should a
+later import change make the family reachable, `lake lint`'s axiom
+check is the net that catches the consequence, but it catches it only
+after a tainted lemma has fired, which is why the reachability itself
+is checked here.
 
 Run: `lake lint`
 Expected: PASS (no `detectNonstandardAxiom` report).
@@ -813,9 +850,11 @@ Spec sections: § The quotient core, § Sharing, § Definitions,
 
 - Consumes: Task 1's and Task 2's `Batteries.UnionFind.Sized` API;
   W1's `FinSetSkel`, `FinSetSkel.Hom.ofVec`,
-  `FinSetSkel.Hom.toVec`, `FinSetSkel.Hom.toVec_ofVec`,
-  `FinSetSkel.hom_ext`, `FinSetSkel.comp_get`; `Vector.ofFnC` and
-  `Vector.get_ofFnC`; `Fin.compressEquiv`.
+  `FinSetSkel.Hom.toVec` and `FinSetSkel.Hom.toVec_ofVec`;
+  `Vector.ofFnC` and `Vector.get_ofFnC`; `Fin.compressEquiv`,
+  `Equiv.apply_symm_apply` and `Equiv.symm_apply_apply`.
+  `FinSetSkel.hom_ext` and `FinSetSkel.comp_get` are Task 4's, not
+  this task's.
 - Produces, all in namespace `FinSetSkel.Quotient`: `edges`,
   `unionFind`, `isRoot`, `len`, `isRoot_root`, `obj`, `rep`, `π`,
   `desc`, `π_get`, `rep_get`, `desc_get`, `rep_π`, `π_rep`. Task 4
@@ -1118,6 +1157,11 @@ Expected: FAIL, five errors.
 
 - [ ] **Step 6: prove `π_get`, `rep_get` and `desc_get`**
 
+Replace each `_` with the proof below, keeping the docstring Step 5
+wrote above it — the blocks here omit the `/-- … -/` lines only to keep
+the proof in view, and Global constraints makes a docstring mandatory
+on every theorem of these modules.
+
 ```lean
 theorem π_get (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
     (j : Fin Y.len) :
@@ -1157,6 +1201,8 @@ Expected: PASS for these three; `rep_π` and `π_rep` still fail.
 
 - [ ] **Step 7: prove `rep_π`**
 
+Again, keep Step 5's docstring above it.
+
 ```lean
 theorem rep_π (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
     (j : Fin Y.len) :
@@ -1195,10 +1241,14 @@ positions, so whether `simp` can fire them is settled by exhibiting a
 goal each closes, not in advance.
 
 **Both are marked.** That was measured before this plan was written,
-so add `@[simp]` to `rep_π` and to `π_rep`. The probe for each is the
-nested position its own consumer puts it in — Task 4 Step 3 for
-`rep_π`, Task 4 Step 4 for `π_rep` — since a goal that is the lemma
-itself proves nothing about firing. Immediately above Step 5's
+so add `@[simp]` to `rep_π` and to `π_rep`. The probes are modelled on
+the nested positions the two lemmas occupy in Task 4 — `rep_π` inside
+`π_desc`, `π_rep` inside `desc_uniq` — since a goal that is the lemma
+itself proves nothing about firing. Only `rep_π`'s probe reflects an
+actual `simp` need: `desc_uniq` reaches `π_rep` with a plain
+`rw [desc_get, ← hm, comp_get, π_rep]`, so `π_rep`'s mark has no W4
+consumer and is justified by the spec's own test — exhibiting a goal it
+closes — rather than by a call site. Immediately above Step 5's
 section-closing `end`, temporarily:
 
 ```lean
@@ -1364,6 +1414,8 @@ Run: `lake build`
 Expected: PASS for `π_desc`.
 
 - [ ] **Step 4: prove `desc_uniq`**
+
+Keeping Step 1's docstring above it.
 
 ```lean
 theorem desc_uniq (f g : X ⟶ Y) (h : Y ⟶ Z)
@@ -1880,18 +1932,30 @@ been removed on its own branch.
 
 - [ ] **Step 4: extend `TODO.md` § Upstream destination**
 
-Add `Geb/Mathlib/Data/UnionFind/OfEdges.lean` and its `GebTests`
-parallel to the item's "currently" list, which names source modules
-and their test parallels both. In the same edit, state that the
-item's scoping criterion — "restate or replace" — does not literally
-reach declarations that extend a Batteries type with new statements,
-and that reconciling the criterion with the item's subject is a
-separate concern on its own branch.
+The item currently reads, at `TODO.md`:
 
-Do not reword the criterion. Rewording it would oblige a re-sweep of
-`Geb/Mathlib/`, the item being deliberately scoped by criterion
-rather than by module list; `CONTRIBUTING.md` § Concern shape puts
-that on its own branch.
+```text
+currently `Geb/Mathlib/Data/Vector/OfFn.lean` and its test parallel.
+```
+
+Replace that sentence with:
+
+```text
+currently `Geb/Mathlib/Data/Vector/OfFn.lean` and
+`Geb/Mathlib/Data/UnionFind/OfEdges.lean`, and their test parallels.
+The criterion does not literally reach `OfEdges.lean`, whose
+declarations extend a Batteries type with new statements rather than
+restating or replacing existing ones; it is listed here because this
+item's subject — content under `Geb/Mathlib/` whose upstream target is
+not mathlib4 — is where such a module belongs. Reconciling the
+criterion's wording with that subject is a separate concern, on its
+own branch.
+```
+
+Do not reword the criterion itself. Rewording it would oblige a
+re-sweep of `Geb/Mathlib/`, the item being deliberately scoped by
+criterion rather than by module list; `CONTRIBUTING.md` § Concern
+shape puts that on its own branch.
 
 - [ ] **Step 5: correct constraint 9's closing paragraph**
 
@@ -2037,11 +2101,13 @@ grep -rn "2026-07-29-finsetskel-coequalizer" \
   --include='*.md' --include='*.lean' .
 ```
 
-Expected: matches in the plan only — it names the spec's path in its
-preamble and its own in the `rm` commands below; the spec names
-neither. A match in any third file is a docstring or a `docs/` entry
-citing a transient artifact, which `CONTRIBUTING.md` § Document only
-the persistent forbids; fix it before deleting.
+Expected: matches in the plan only — six lines of it, namely the
+spec's path in the preamble, the two `Delete:` bullets in this task's
+Files block, the `grep` command itself, and the two `rm` commands
+below. The spec names neither path. A match in any third file is a
+docstring or a `docs/` entry citing a transient artifact, which
+`CONTRIBUTING.md` § Document only the persistent forbids; fix it
+before deleting.
 
 - [ ] **Step 2: delete both**
 
@@ -2089,34 +2155,48 @@ timing claim, so the § Out of scope ban on complexity claims is
 unqualified here.
 
 **Signatures.** Every signature and every definition body in Tasks 1,
-3 and 5, and `desc_uniq` and `rep_π` in full, were elaborated against
-this branch's toolchain before this plan was written; the three
-`sorry`-free proofs given verbatim (`size_union`, `size_push`,
-`isRoot_root`, `π_get`, `rep_get`, `desc_get`, `rep_π`,
-`desc_uniq`, `coequalizerCocone`, both instances) compiled. The
-proofs left as routes rather than terms are the union-find layer's
-six structural lemmas, its three recursions, its two correctness
-theorems, and `π_rep`, `comp_π` and `π_desc`.
+3 and 5 was elaborated against this branch's toolchain; the proofs
+given verbatim (`size_union`, `size_push`, all five of the union-find
+layer's structural lemmas, `isRoot_root`, `π_get`, `rep_get`,
+`desc_get`, `rep_π`, `desc_uniq`, `coequalizerCocone`, both instances)
+compiled. The proofs left as routes rather than terms are the
+union-find layer's three recursions, its two correctness theorems, and
+`π_rep`, `comp_π` and `π_desc`.
 
 **Measured after review round 1.** `#guard` elaborates its argument
 as a temporary `meta` definition, so every assertion in the two
 computational test modules goes through a locally declared wrapper;
 test *leaf* modules take `public import`, only test *index* files
-take plain `import`; and `Sized.root_discrete` needs the `val_root`
-step, `Fin.ext (rootD_discrete n x)` alone failing on a stuck
-`Subtype.rec`. Each of the three was reproduced directly before the
-plan was changed.
+take plain `import`. Both were reproduced directly before the plan was
+changed.
 
 **Measured after review round 2.** An unnamed section left open ahead
 of `end FinSetSkel.Quotient` does not elaborate, so Task 3 Step 5 and
 Task 4 Step 1 now write each section's `end` in the same block as its
 opener and the later steps insert above it. Both round trips carry
 `@[simp]`: reproduced across all three configurations, each probe
-closed by its own lemma and neither closed with both unmarked. A
-term-mode `Sized.root` that would retire `val_root` does not
-elaborate, so the one departure from the spec's declaration list is
-forced and is flagged in Task 1's Interfaces block for the user's
-review.
+closed by its own lemma and neither closed with both unmarked.
+
+**Corrected after review round 3.** Round 2 recorded that a term-mode
+`Sized.root` does not elaborate, and concluded that an auxiliary
+`Sized.val_root` — a declaration outside the spec's enumerated
+interface — was forced. That was wrong: only the `▸`-discharged
+variant fails. Writing the *value* in term mode and the *bound* as a
+tactic block elaborates, and with it `root_eq_iff` is `Fin.ext_iff`,
+`root_discrete` is `Fin.ext (rootD_discrete n x)`, and `root_root` is
+`Fin.ext UnionFind.rootD_rootD` — all measured, all
+`[propext, Quot.sound]`. `Sized.val_root` is gone and the module's
+declaration list is exactly the spec's. The whole of Task 1 as revised,
+together with Task 3, elaborates with zero diagnostics.
+
+Round 3 also found that the spec's § Constraint 9 claim about
+`Batteries.Data.Vector.*` being unreachable was not carried into the
+plan at all. It is now a step: Task 1 Step 8 checks that
+`Vector.get_ofFn`, `Vector.get_range`, `Vector.get_mk` and
+`Vector.toArray_injective` are all unknown constants at the new
+module's import set, W4 being the first workstream to take a direct
+`Batteries.` import and so the one place `TODO.md` constraint 9's
+standing choice is exercised.
 
 **Type consistency.** `Sized`, `Sized.root`, `Sized.ofEdges`,
 `Sized.root_ofEdges_eq_of_mem` and `Sized.apply_root_ofEdges` are
