@@ -178,6 +178,32 @@ Every task's requirements implicitly include this section.
   `feat | fix | doc | style | refactor | test | chore | perf | ci`,
   imperative present tense, no capital, no trailing period, subject
   under 72 characters.
+- **The commit idiom is two commands, and the second is not
+  optional.** `jj commit -m "…"` describes the *current* working-copy
+  commit and opens a new empty one; it does not create a commit
+  beside the existing one. So every task ends with
+
+  ```bash
+  jj commit -m "<message>"
+  jj bookmark set feat/finsetskel-w3 -r @-
+  ```
+
+  and the bookmark move is written out in each task's commit step.
+  Bookmark auto-advance is contributor-local configuration that
+  `CONTRIBUTING.md` § Setup only recommends, so a workspace without
+  it would otherwise leave `feat/finsetskel-w3` pointing at the plan
+  commit after all twenty tasks, and the branch the user reviews
+  would be empty of the work.
+- **Never `jj edit` a described commit you intend to add work
+  beside.** `jj edit <bookmark>` makes that commit the working copy,
+  and the next `jj commit` then overwrites its message and squashes
+  the new changes into it, destroying a reviewed commit. Use
+  `jj new <bookmark>` to start a child.
+- **Where a step says "report", the report goes to the orchestrator,
+  not into the tree.** A subagent executing one task cannot reach the
+  user and has not read the other tasks. The orchestrator records
+  each answer and includes it verbatim in the brief of any task the
+  step names.
 - **Module import lists below are a starting point**, not
   `lake shake`'s output. The pre-push `lake shake` settles the
   minimal set; adjust to whatever it reports and re-run.
@@ -313,14 +339,18 @@ declaration to W3's branch would change three sections of a
 user-approved spec for no gain. Report the discrepancy with the
 spec's § Shared declarations to the user; do not act on it further.
 
-- [ ] **Step 1: switch to the shared branch**
+- [ ] **Step 1: start a child of the shared branch**
 
 ```bash
-jj edit feat/choice-free-primitives
+jj new feat/choice-free-primitives
 ```
 
-Confirm with `jj st` that the working copy is that change and that
-`TODO.md` is its only modification.
+`jj new`, not `jj edit`: the bookmarked commit carries the reviewed
+constraint-9 amendment, and editing it would make the Step 6
+`jj commit` overwrite its message and squash this task's work into
+it. Confirm with `jj log` that the parent is
+`doc(elementary-topos): record three choice-taint families in
+constraint 9` and with `jj st` that the working copy is empty.
 
 - [ ] **Step 2: add the declaration**
 
@@ -413,14 +443,25 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(equiv): add a choice-free domain transport for arrow types"
+jj bookmark set feat/choice-free-primitives -r @-
 ```
+
+The bookmark move is this task's, and it moves
+`feat/choice-free-primitives` rather than `feat/finsetskel-w3`: this
+commit belongs to the shared branch. Confirm with `jj log` that the
+bookmark now names the new commit.
 
 - [ ] **Step 7: rebase W3 onto the shared branch**
 
 ```bash
 jj rebase -b feat/finsetskel-w3 -d feat/choice-free-primitives
-jj edit feat/finsetskel-w3
+jj new feat/finsetskel-w3
 ```
+
+`jj new`, not `jj edit`: `feat/finsetskel-w3` names the commit
+carrying this plan, and editing it would make Task 2's `jj commit`
+overwrite that commit's message and bundle the plan document into
+Task 2's change.
 
 Confirm with `jj log` that `feat/finsetskel-w3` is now a descendant
 of `feat/choice-free-primitives` and with `lake build` that the tree
@@ -694,6 +735,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(fin): add choice-free division, remainder and pairing"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -847,6 +889,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(equiv): add a choice-free product encoding of Fin"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -1003,6 +1046,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(equiv): add a choice-free exponential encoding of Fin"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -1301,6 +1345,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the index correspondence, points and units"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -1485,6 +1530,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add binary coproducts over vectors"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -1629,6 +1675,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add binary products over vectors"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -1867,11 +1914,16 @@ the `GebTests` index file imports it, so it must exist for the test
 library to build. Task 9 fills it, both tasks' declarations being
 tested in one file.
 
-Run: `bash scripts/lint-imports.sh`, `lake build`, `lake lint`
-Expected: PASS.
+Run: `bash scripts/lint-imports.sh`, `lake build`,
+`lake build GebTests`, `lake test`, `lake lint`,
+`lake lint -- GebTests`
+Expected: PASS. The `GebTests` half of the set is what exercises the
+stub and the index line this step wrote; without it a mistyped import
+commits green and surfaces inside Task 9.
 
 ```bash
 jj commit -m "feat(finsetskel): add the cartesian monoidal structure"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -2025,6 +2077,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the coproduct cocones and finite coproducts"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -2192,6 +2245,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): characterise monomorphisms as injective vectors"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -2398,6 +2452,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the exponential equivalence over carriers"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -2422,13 +2477,23 @@ largest single proof obligation in W3 and gives it its own task.
   `MonoidalCategory.whiskerLeft`.
 - Produces: `FinSetSkel.whiskerLeft_get`. Consumed by Task 13.
 
-- [ ] **Step 1: allowlist the source module name**
+- [ ] **Step 1: allowlist both module names**
 
-Append `Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed` to
-`classicalAllowedModules`, before the module exists, as in Task 8
-Step 1. Its `GebTests` parallel is appended in Task 13, which is
-where that file is created; every other allowlisting task creates
-both files itself and appends both names at once.
+Append to `classicalAllowedModules` in `GebMeta.lean`:
+
+```lean
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed,
+```
+
+Both now, although Task 13 is where the `GebTests` module is created:
+`classicalAllowedModules` is a `NameSet` the linter matches
+declarations against, so a name with no module is inert, and Task 13
+runs `lake lint -- GebTests` over a test module that resolves
+`MonoidalClosed FinSetSkel` and is therefore `Classical.choice`-
+tainted. Leaving that name to Task 13 would mean a task whose Files
+list says `GebMeta.lean` but whose steps never edit it, and its
+executor has not read this task.
 
 - [ ] **Step 2: create the module**
 
@@ -2442,8 +2507,6 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Core
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
-public import Mathlib.CategoryTheory.Monoidal.Closed.Basic
-public import Mathlib.CategoryTheory.Adjunction.Basic
 
 /-!
 # `FinSetSkel` is monoidal closed
@@ -2471,12 +2534,16 @@ instance, which depends on `Classical.choice`.
 
 ## Main definitions
 
+* `FinSetSkel.expHomEquiv` — the exponential's hom-level
+  equivalence, in the form the adjunction consumes.
 * `FinSetSkel.monoidalClosed` — the monoidal closed structure.
 
 ## Main statements
 
 * `FinSetSkel.whiskerLeft_get` — the action of left whiskering on
   indices.
+* `FinSetSkel.expHomEquiv_naturality` — naturality of that
+  equivalence in the parameter.
 
 ## References
 
@@ -2491,7 +2558,7 @@ finite sets, skeleton, exponential, monoidal closed
 
 universe u
 
-open CategoryTheory Limits MonoidalCategory
+open CategoryTheory MonoidalCategory
 
 namespace FinSetSkel
 
@@ -2502,6 +2569,13 @@ The docstring names Task 13's declarations too; it is written once,
 here. `Exponential/Closed.lean` depends on `Shapes/Instances.lean`
 and not only on `Exponential/Core.lean`, because the cartesian
 instance its statements mention is declared there.
+
+`Mathlib.CategoryTheory.Monoidal.Closed.Basic` is **not** imported
+here: nothing in this task mentions `Closed` or `MonoidalClosed`, and
+`lake shake` at Task 19 would reject the import. Task 13 adds it when
+it adds the declarations that need it, and does not additionally
+import `Mathlib.CategoryTheory.Adjunction.Basic`, which
+`Monoidal/Closed/Basic.lean` already brings.
 
 - [ ] **Step 3: confirm the projections are the chosen ones**
 
@@ -2554,6 +2628,16 @@ read off its indices.
   rw [h, prodLift_get, comp_get, prodFst_get, prodSnd_get]
 ```
 
+`rw` matches at `instances` transparency, and the goal's index has
+type `Fin (X ⊗ Y).len` where `prodLift_get` and the two projection
+lemmas are stated at `Fin (prodObj X Y).len`; the two agree only
+through the cartesian instance and `ofChosenFiniteProducts`. If the
+chain reports no occurrence of a pattern, insert
+`change (prodLift (prodFst X Y) (prodSnd X Y ≫ f)).toVec.get i = _`
+after `rw [h]`, or state `whiskerLeft_get` over
+`Fin (prodObj X Y).len` from the start and let Step 4's statement
+change with it. This is Step 4's elaboration hedge one layer down.
+
 `whiskerLeft_fst X f : X ◁ f ≫ fst X Z = fst X Y` and
 `whiskerLeft_snd X f : X ◁ f ≫ snd X Z = snd X Y ≫ f`; with Step 3's
 two `rfl`s those are exactly `prodLift_uniq`'s two hypotheses. This
@@ -2591,6 +2675,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): bridge left whiskering to the pairing on indices"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -2605,8 +2690,15 @@ Spec section: § Row g (wrapper pieces 2 and 3), § Exported names.
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`
 - Create:
   `GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`
-- Modify: `GebMeta.lean` (the `GebTests` name, per Task 12 Step 1),
+- Modify:
   `GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential.lean`
+- Conditionally modify:
+  `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean`, only
+  on the Step 1 fallback below
+
+`GebMeta.lean` needs no edit here: Task 12 Step 1 appended both
+`Exponential.Closed` names, this module's and its `GebTests`
+parallel's.
 
 **Interfaces:**
 
@@ -2629,7 +2721,12 @@ well-typed only when W5's `cartesian` is the same term W3 stated its
 guarantees. This is the single place where two routes to the same
 data would fail to typecheck rather than merely diverge.
 
-- [ ] **Step 1: restate the equivalence at `X ⊗ Z ⟶ Y`**
+- [ ] **Step 1: add the import, then restate the equivalence at
+`X ⊗ Z ⟶ Y`**
+
+Add `public import Mathlib.CategoryTheory.Monoidal.Closed.Basic` to
+`Exponential/Closed.lean`, which Task 12 left out because nothing in
+that task mentioned `Closed` or `MonoidalClosed`.
 
 ```lean
 /-- The exponential's hom-level equivalence, in the form
@@ -2644,8 +2741,13 @@ the nose, and `Y` is `mk Y.len` on the nose by the eta rule for the
 one-field structure. If the ascription is not accepted, do not insert
 a cast or a comparison isomorphism — that would contradict the spec's
 § Row g, which states the transport is along a definitional equality.
-Restate `expEquivHom` in Task 11 over objects rather than over their
-lengths, and report the change.
+Restate `expEquivHom` in
+`Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean` over
+objects rather than over their lengths — that module is Task 11's and
+is already committed, so this is a conditional edit outside this
+task's own file. Taking it obliges re-measuring that module's
+monomorphic witness at `[propext, Quot.sound]`, the core being
+choice-free, and reporting the change.
 
 Run: `lake build`
 Expected: PASS.
@@ -2671,7 +2773,13 @@ Route, in three moves:
 
 1. `hom_ext` reduces both sides to an equation between index
    lookups at each `t : Fin Z'.len`.
-2. `(tensorLeft X).map f` is `X ◁ f`, so `comp_get` and Task 12's
+2. `(tensorLeft X).map f` must first be turned into `X ◁ f`, or
+   `whiskerLeft_get` cannot fire: `tensorLeft` is
+   `abbrev tensorLeft (X : C) : C ⥤ C := (curriedTensor C).obj X`, so
+   the term is `((curriedTensor C).obj X).map f`, which is not
+   syntactically `X ◁ f`, and `simp only` will not unfold a
+   `Functor.map` projection on its own. `curriedTensor` is `@[simps]`,
+   so `curriedTensor_obj_map` is the bridge. Then `comp_get` and
    `whiskerLeft_get` rewrite the left side's argument into
    `fun i ↦ g.toVec.get (Fin.pairC (Fin.divNatC i)
    (f.toVec.get (Fin.modNatC i)))` — the `φ`-shaped function of
@@ -2681,9 +2789,17 @@ Route, in three moves:
    `homEquivIdxFun_symm_get` have moved both sides through the
    correspondence.
 
-Expect this to need the goal re-checked between moves. `simp only`
-with the four `@[simp]` lemmas named above plus `comp_get` is the
-first thing to try; if it stalls, factor an intermediate lemma per
+The recipe to try first:
+
+```lean
+  simp only [curriedTensor_obj_obj, curriedTensor_obj_map,
+    homEquivIdxFun_apply, homEquivIdxFun_symm_get, comp_get, whiskerLeft_get]
+```
+
+`whiskerLeft_get` and `expEquivIdx_naturality` carry no `@[simp]`, so
+they are named explicitly here and a bare `simp` will not find them.
+Expect the goal to need re-checking between moves; if the recipe
+stalls, factor an intermediate lemma per
 `docs/rules/lean-coding.md` § Proof guidelines, stating the left
 side's rewritten form, and prove the two halves separately.
 
@@ -2693,16 +2809,23 @@ Expected: PASS.
 - [ ] **Step 4: add `Closed` and `MonoidalClosed`**
 
 ```lean
-/-- Every object of `FinSetSkel` is exponentiable. -/
-instance closed (X : FinSetSkel.{u}) : Closed X where
-  rightAdj :=
-    Adjunction.rightAdjointOfEquiv (expHomEquiv X) (expHomEquiv_naturality X)
-  adj := Adjunction.adjunctionOfEquivRight _ _
-
-/-- `FinSetSkel` is monoidal closed. -/
+/-- `FinSetSkel` is monoidal closed: the exponential of the object of
+length `X.len` into the object of length `Y.len` is the object of
+length `Y.len ^ X.len`. -/
 instance monoidalClosed : MonoidalClosed FinSetSkel.{u} where
-  closed X := inferInstance
+  closed X :=
+    { rightAdj :=
+        Adjunction.rightAdjointOfEquiv (expHomEquiv X) (expHomEquiv_naturality X)
+      adj := Adjunction.adjunctionOfEquivRight _ _ }
 ```
+
+One declaration, not two. A separate `instance closed (X) : Closed X`
+alongside this one would give instance search two routes to
+`Closed X`, since `MonoidalClosed.closed` is itself
+`@[instance_reducible, instance 100]` with default
+`by infer_instance`; constraint 9's rule against leaving two
+inhabitants of one class to search applies, and here the cheaper fix
+is to declare only the one the spec's § Exported names names.
 
 `Adjunction.rightAdjointOfEquiv` takes the object map implicitly
 through `G_obj`; the object map here is
@@ -2710,16 +2833,36 @@ through `G_obj`; the object map here is
 Confirm the field names of `Closed` (`rightAdj`, `adj`) and of
 `MonoidalClosed` (`closed`) with `#check` before writing them.
 
-`Closed X` is an `instance` and `closed` names it; the exported name
-the spec's § Exported names fixes for W5's field is
-`FinSetSkel.monoidalClosed`.
+Run: `lake build`
+Expected: PASS.
+
+- [ ] **Step 5: confirm W5's field type accepts this term**
+
+This is the one place the plan identifies where two routes to the
+same data would fail to typecheck rather than merely diverge, so it
+gets a probe rather than an assertion:
+
+```lean
+example : @MonoidalClosed FinSetSkel.{u} _
+    (FinSetSkel.cartesianMonoidalCategory.{u}).toMonoidalCategory :=
+  monoidalClosed
+```
+
+That is W2's `closed` field type with W5's `cartesian` filled by this
+workstream's instance. The instance path Lean finds for
+`MonoidalCategory FinSetSkel` runs
+`CartesianMonoidalCategory → SemiCartesianMonoidalCategory →
+MonoidalCategory`, two `extends` hops, while W2's field names the
+one-hop `cartesian.toMonoidalCategory`; if those do not coincide, the
+failure belongs here rather than in W5. Delete the `example` once it
+passes, and report if it does not.
 
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 5: check the axioms, test and commit**
+- [ ] **Step 6: check the axioms, test and commit**
 
-Measure `expHomEquiv`, `expHomEquiv_naturality`, `closed` and
+Measure `expHomEquiv`, `expHomEquiv_naturality` and
 `monoidalClosed`. Expected:
 `[propext, Classical.choice, Quot.sound]`, the allowlisted wrapper.
 
@@ -2742,6 +2885,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the monoidal closed structure"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -3098,6 +3242,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the equalizer's data path and fold lemmas"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -3244,7 +3389,13 @@ def invVecTraced (f g : X ⟶ Y) : Vector ℕ X.len :=
 point `lift` at it, `#eval` a `lift` at a domain of length 4, and
 count the trace lines. Expected: one line, not four. If four, the
 `let` is not shared and `lift` must be restructured until it is;
-report the finding either way. Revert `invVecTraced` afterwards.
+report the finding either way.
+
+Then revert **both** edits — `invVecTraced` and the redirection of
+`lift` — and confirm with `grep -n "dbgTrace" <file>`, expecting no
+match, before Step 7 commits. A `dbgTrace` left in a choice-free
+module is caught by neither `#print axioms` nor
+`scripts/lint-imports.sh`.
 
 The measurement — that a `let` above the lambda of a
 function-returning definition re-runs per application while the same
@@ -3278,6 +3429,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the equalizer's universal property"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -3404,6 +3556,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): package the equalizer as a limit cone"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -3755,6 +3908,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the characteristic vector and its inversion"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -3780,11 +3934,6 @@ consumes the W1 inversion, § Exported names.
   `IsPullback.lift`, `IsTerminal.from`.
 - Produces: `FinSetSkel.truth`, `FinSetSkel.chi_iff_of_isPullback`,
   `FinSetSkel.classifier`. `classifier` is W5's `classifier` field.
-
-Import `Mathlib.CategoryTheory.Subobject.Classifier.Defs`, **not**
-`Mathlib.CategoryTheory.Topos.Classifier`: the latter is deprecated
-at this revision and emits a warning, which
-`weak.warningAsError = true` turns into a build failure.
 
 `mkOfTerminalΩ₀` takes `Ω₀`, its terminality, `Ω`, `truth`, the
 family `χ`, the pullback property and the uniqueness property, in
@@ -3894,7 +4043,10 @@ Route:
 
 - (←) from the square's commutation `hp.w : m ≫ χ' = _ ≫ truth`,
   read at the index `i` with `m.toVec.get i = j`, both sides being
-  the constant `1`.
+  the constant `1`. Extracting that `i` from `j ∈ m.toVec.toList`
+  is `List.getElem_of_mem` (or `List.mem_iff_getElem`) through
+  `Vector.get_eq_getElem` — the traffic runs the opposite way from
+  the (→) direction's `List.getElem_mem`.
 - (→) from the universal property. Given `χ'.toVec.get j = 1`, the
   square `point j ≫ χ' = toOne (mk 1) ≫ truth` commutes — both are
   the constant-`1` morphism `mk 1 ⟶ mk 2`, by `hom_ext` — so
@@ -3928,9 +4080,25 @@ The `isPullback` argument is the remaining hole. Its statement is
 it is built from `IsPullback.of_isLimit'` applied to the commuting
 square and `PullbackCone.isLimitAux`, whose `lift` is
 `Classifier.pullbackLift m (mono_iff_injective.mp ‹Mono m›) s.fst hs`
-for the membership `hs` obtained from the cone's own commutation, and
-whose `uniq` is `Classifier.pullbackLift_uniq`. The square commutes
-by `hom_ext` and `Classifier.chi_comp_eq`.
+for the membership `hs` obtained from the cone's own commutation. The
+square commutes by `hom_ext` and `Classifier.chi_comp_eq`.
+
+`isLimitAux`'s `uniq` does **not** take
+`Classifier.pullbackLift_uniq` directly: its hypothesis is quantified
+over the whole index category,
+`∀ j : WalkingCospan, m ≫ t.π.app j = s.π.app j`, where
+`pullbackLift_uniq` wants the single equation `n ≫ m = z`. Project
+the leg:
+
+```lean
+  (fun s n hn ↦
+    Classifier.pullbackLift_uniq m _ s.fst _ n (hn WalkingCospan.left))
+```
+
+`PullbackCone.fst s = s.π.app WalkingCospan.left` definitionally, so
+the projection typechecks; mathlib's own `isLimitAux'` does the same.
+`fac_right` and the cone's second leg are morphisms into `mk 1` and
+are discharged by `toOne_uniq`.
 
 The second component of every such cone is a morphism into `mk 1`,
 so `toOne_uniq` discharges it; that is why the terminal object is
@@ -3959,6 +4127,7 @@ Expected: PASS.
 
 ```bash
 jj commit -m "feat(finsetskel): add the subobject classifier"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -4022,14 +4191,14 @@ and its enumeration gains `f`.
   through it; besides its own module, its only remaining occurrences
   are its test parallel and its `docs/index.md` entry. The trigger's
   condition is the next occasion to revisit W1's helpers.
-- **Conditional, only if the user accepts the departure reported with
-  this plan**: a second § Triggers entry recording that
-  `Equiv.arrowCongrLeftC` has a single consumer, W4's converged spec
-  having put it out of scope, so constraint 7's "what W3 and W4
-  share" no longer describes it. Without such an entry the
-  observation dies with this document at Task 20, exactly as
-  amendment 8's would. The plan does not make this edit unilaterally:
-  it amends a constraint the user's approved spec rests on.
+- **Not an edit.** A second § Triggers entry, recording that
+  `Equiv.arrowCongrLeftC` has a single consumer because W4's
+  converged spec put it out of scope, would keep that observation
+  alive past Task 20 as amendment 8 keeps `Fin.compressEquiv`'s. It
+  is not made here: it amends a constraint the user's approved spec
+  rests on, and the decision is the user's. **Do not write it.**
+  Report to the orchestrator that the entry is pending the user's
+  decision on the `Equiv.arrowCongrLeftC` departure, and continue.
 
 - [ ] **Step 4: lint, verify and commit**
 
@@ -4041,6 +4210,7 @@ re-run the axiom checks of any module whose imports changed.
 
 ```bash
 jj commit -m "doc(finsetskel): index W3's modules and amend the roadmap"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 ---
@@ -4072,16 +4242,26 @@ Expected: matches in the two files themselves only.
 
 - [ ] **Step 2: delete both, verify and commit**
 
+Read this step in full before running anything: the `rm` removes the
+file these instructions are in, so the commit that follows must be
+run from memory or from a copy taken first.
+
+Run: `bash scripts/pre-push.sh`
+Expected: PASS. Run it **before** the deletion, so a failure is
+diagnosed with both documents still present.
+
 ```bash
 rm docs/superpowers/specs/2026-07-29-finsetskel-w3-design.md
 rm docs/superpowers/plans/2026-07-29-finsetskel-w3-design.md
 ```
 
 Run: `bash scripts/pre-push.sh`
-Expected: PASS.
+Expected: PASS, again — the deletion changes `doctoc`'s and
+`markdownlint`'s file set.
 
 ```bash
 jj commit -m "chore(finsetskel): remove the W3 spec and plan"
+jj bookmark set feat/finsetskel-w3 -r @-
 ```
 
 The branch is then ready for the user's line-by-line review. No
@@ -4186,6 +4366,32 @@ docstrings naming a choice-dependent mathlib counterpart follow W1's
 own precedent at `FinSetSkel.decidableEqHom`, which names
 `instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
 that way.
+
+**Round 3** (two fresh agents: Lean correctness, executability under
+`superpowers:subagent-driven-development`) returned three blockers
+and five serious findings, all applied. From the Lean lens: Task 13's
+rewrite recipe could not fire, `tensorLeft` being
+`(curriedTensor C).obj X` rather than `◁` syntactically, so
+`curriedTensor_obj_map` is now named; `PullbackCone.isLimitAux`'s
+`uniq` quantifies over `WalkingCospan` and does not accept
+`pullbackLift_uniq` directly, so Task 18 now projects the leg; and
+the one typing risk the plan itself calls out — W2's `closed` field
+over `cartesian.toMonoidalCategory`, where the instance path is two
+`extends` hops — now carries a probe in Task 13 rather than an
+assertion. From the executability lens:
+`jj edit <bookmark>` followed by `jj commit` would have overwritten
+two reviewed commits, since `jj commit` describes the current
+working-copy commit rather than creating one beside it (Task 1, and
+the `jj new` rule in § Global constraints); no task moved the branch
+bookmark, so after twenty commits the branch the user reviews would
+still have named the plan commit (the two-command idiom in § Global
+constraints, written out in all twenty commit steps); Task 13's Files
+list named a `GebMeta.lean` edit no step of it performed, which would
+have failed its own `lake lint -- GebTests` (Task 12 Step 1 now
+appends both names); Task 8's commit step verified none of what it
+wrote to `GebTests`; and Task 19 Step 3 carried a step conditioned on
+a user decision its executor cannot obtain (now an explicit
+do-not-edit with a report).
 
 **Round 2** (two fresh agents: Lean correctness, cross-reference
 consistency) returned no blocker and five serious findings, all
