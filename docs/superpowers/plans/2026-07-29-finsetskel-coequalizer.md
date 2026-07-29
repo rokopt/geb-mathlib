@@ -213,6 +213,22 @@ paragraph).
   `Sized.root_eq_iff`, `Sized.equiv_union`, `Sized.rootD_discrete`,
   `Sized.root_discrete`, `Sized.root_root`. Task 2 adds the rest.
 
+**One departure from the spec, for the user's line-by-line review.**
+`Sized.val_root` is not in the spec's § The union-find layer
+declaration list; the plan adds it. It is forced: `Sized.root` is
+written in tactic mode over a destructured `v`, so `(discrete n).root x`
+is a stuck `Subtype.rec` over a `Nat.rec` at a variable `n`, and
+`root_discrete` cannot be reached without a step that reads the
+underlying `Nat` off a root. The alternative — writing `Sized.root` in
+term mode over `v.1.rootD`, so that `val_root` would be `rfl` and
+unnecessary — does not elaborate at all: measured, both of its `▸`
+transports report "invalid `▸` notation, failed to compute motive for
+the substitution", and the same is true of a term-mode `Sized.union`.
+`val_root` joins the family the spec already keeps internal to the
+module, alongside `root_eq_iff`, `equiv_union` and `rootD_discrete`,
+all of which the spec states over `v.1`; nothing outside the module
+consumes it.
+
 Every declaration but `size_union` and `size_push` carries the
 `Sized.` prefix in its own name, `ofEdges` included: a bare
 `Batteries.UnionFind.root_root` would read as a statement about
@@ -384,7 +400,7 @@ Four points, each measured:
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 5: state the five structural lemmas unproved, confirm
+- [ ] **Step 5: state the six structural lemmas unproved, confirm
   they fail**
 
 ```lean
@@ -502,7 +518,7 @@ Expected: PASS.
 - [ ] **Step 8: check the axioms**
 
 Through the `lean-lsp` MCP, `lean_verify` each of `size_union`,
-`size_push`, `Sized.discrete`, `Sized.union`, `Sized.root`,
+`size_push`, `Sized`, `Sized.discrete`, `Sized.union`, `Sized.root`,
 `Sized.ofEdges`, `Sized.val_root`, `Sized.root_eq_iff`,
 `Sized.equiv_union`, `Sized.rootD_discrete`, `Sized.root_discrete`,
 `Sized.root_root`, fully qualified as
@@ -1042,16 +1058,27 @@ Expected: PASS.
 - [ ] **Step 5: state the three unfolding lemmas and the two round
   trips unproved, confirm they fail**
 
-Close Step 3's section with `end`, then open a new one:
+After Step 3's `end` and before `end FinSetSkel.Quotient`, insert a
+complete section — opener and closer together, so the file compiles at
+every step:
 
 ```lean
 section
 variable {Z : FinSetSkel.{u}}
+
+-- Steps 5 through 9's declarations go here.
+
+end
 ```
 
-Everything from here to the end of Step 8 sits inside it, and it is
-closed by an `end` before Task 4 Step 1 opens the last section of the
-file. Inside it:
+Write the `end` now, not later. An unnamed section left open ahead of
+`end FinSetSkel.Quotient` does not elaborate: measured, it reports
+"Unexpected name `FinSetSkel.Quotient` after `end`: The current
+section is unnamed" together with "unclosed sections or namespaces",
+so every `lake build` from here to Step 10 would fail for a reason
+unrelated to the declaration under test.
+
+Steps 5 through 9 all insert above that `end`. Inside it:
 
 ```lean
 /-- The projection at an index. -/
@@ -1160,17 +1187,19 @@ subterm succeeds; use it there and nowhere else in the proof.
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 9: decide the `@[simp]` question, and record it**
+- [ ] **Step 9: mark `rep_π` and `π_rep` `@[simp]`, and re-verify**
 
 None of the five carries `@[simp]` as specified. `rep_π` and `π_rep`
 are the candidates, but the index types obstruct `rw` at nested
 positions, so whether `simp` can fire them is settled by exhibiting a
 goal each closes, not in advance.
 
-The probe for each is the nested position its own consumer puts it
-in — Task 4 Step 3 for `rep_π`, Task 4 Step 4 for `π_rep` — since a
-goal that is the lemma itself proves nothing about firing. In a
-scratch declaration at the end of the module, temporarily:
+**Both are marked.** That was measured before this plan was written,
+so add `@[simp]` to `rep_π` and to `π_rep`. The probe for each is the
+nested position its own consumer puts it in — Task 4 Step 3 for
+`rep_π`, Task 4 Step 4 for `π_rep` — since a goal that is the lemma
+itself proves nothing about firing. Immediately above Step 5's
+section-closing `end`, temporarily:
 
 ```lean
 example (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) (h : Y ⟶ Z)
@@ -1184,12 +1213,36 @@ example (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
       = m.toVec.get c := by simp
 ```
 
-Mark `rep_π` `@[simp]` only if the first closes with it marked and
-fails with it unmarked; likewise `π_rep` and the second. Delete both
-`example`s afterwards — they are scaffolding, not tests, and
-`CONTRIBUTING.md` § Document only the persistent keeps them out of
-the tree. Record in the module docstring's `## Implementation notes`
-which of the two are marked and which are not.
+They go inside that section, not after `end FinSetSkel.Quotient`:
+each uses `Z` as an implicit variable and unqualified `rep`, `π` and
+`obj`, all of which are out of scope outside it, and
+`autoImplicit = false` means `Z` would not be auto-bound.
+
+The measured table, which the implementation reproduces rather than
+takes on trust:
+
+| `rep_π` | `π_rep` | probe 1 | probe 2 |
+| --- | --- | --- | --- |
+| unmarked | unmarked | no progress | no progress |
+| `@[simp]` | unmarked | closes | no progress |
+| `@[simp]` | `@[simp]` | closes | closes |
+
+Each probe is closed by its own lemma and by nothing else — with both
+unmarked neither closes, so no third `simp` lemma reaches either
+goal. That also answers constraint 9 for these two probes: no
+choice-tainted `Vector` lemma is doing the work.
+
+Delete both `example`s once the table is reproduced — they are
+scaffolding, not tests, and `CONTRIBUTING.md` § Document only the
+persistent keeps them out of the tree. Record under the module
+docstring's `## Implementation notes` that both round trips carry
+`@[simp]`, in one sentence:
+
+```text
+`rep_π` and `π_rep` both carry `@[simp]`; each fires at the nested
+position its own consumer puts it in, where `rw` cannot reach for the
+index-type reason above.
+```
 
 Per the note following `TODO.md`'s cross-workstream constraints, no
 attribute is added in a direction that rewrites a carrier-level normal
@@ -1248,16 +1301,19 @@ bullet).
 
 - [ ] **Step 1: state the three unproved, confirm they fail**
 
-Close Task 3 Step 5's section with `end`, then open the file's last
-section:
+After Task 3 Step 5's `end` and before `end FinSetSkel.Quotient`,
+insert the file's last section, opener and closer together:
 
 ```lean
 section
 variable {X Y Z : FinSetSkel.{u}}
+
+-- Steps 1 through 4's declarations go here.
+
+end
 ```
 
-It is closed by an `end` before the closing
-`end FinSetSkel.Quotient`. Inside it:
+Steps 1 through 4 all insert above that `end`. Inside it:
 
 ```lean
 /-- The projection coequalizes the pair. -/
@@ -1981,10 +2037,11 @@ grep -rn "2026-07-29-finsetskel-coequalizer" \
   --include='*.md' --include='*.lean' .
 ```
 
-Expected: matches in the two files themselves only. A match anywhere
-else is a docstring or a `docs/` entry citing a transient artifact,
-which `CONTRIBUTING.md` § Document only the persistent forbids; fix
-it before deleting.
+Expected: matches in the plan only — it names the spec's path in its
+preamble and its own in the `rm` commands below; the spec names
+neither. A match in any third file is a docstring or a `docs/` entry
+citing a transient artifact, which `CONTRIBUTING.md` § Document only
+the persistent forbids; fix it before deleting.
 
 - [ ] **Step 2: delete both**
 
@@ -2049,6 +2106,17 @@ take plain `import`; and `Sized.root_discrete` needs the `val_root`
 step, `Fin.ext (rootD_discrete n x)` alone failing on a stuck
 `Subtype.rec`. Each of the three was reproduced directly before the
 plan was changed.
+
+**Measured after review round 2.** An unnamed section left open ahead
+of `end FinSetSkel.Quotient` does not elaborate, so Task 3 Step 5 and
+Task 4 Step 1 now write each section's `end` in the same block as its
+opener and the later steps insert above it. Both round trips carry
+`@[simp]`: reproduced across all three configurations, each probe
+closed by its own lemma and neither closed with both unmarked. A
+term-mode `Sized.root` that would retire `val_root` does not
+elaborate, so the one departure from the spec's declaration list is
+forced and is flagged in Task 1's Interfaces block for the user's
+review.
 
 **Type consistency.** `Sized`, `Sized.root`, `Sized.ofEdges`,
 `Sized.root_ofEdges_eq_of_mem` and `Sized.apply_root_ofEdges` are
