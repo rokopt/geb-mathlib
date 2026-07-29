@@ -54,6 +54,13 @@ In scope:
 3. `DecidableEq` and `Repr` on specifications, functor specifications
    and 2-cell specifications.
 
+Items 2 and 3 are in scope on the strength of a stated near-term
+consumer rather than on speculation: the contributor has work queued
+that compares whole specifications and that hands specifications to
+code expecting a `Category` instance. Absent that, CONTRIBUTING § Code
+is cost would put both with the deferred work below, the comparison
+with `Cat` being the only consumer visible from the source tree.
+
 Out of scope, recorded under [Deferred work](#deferred-work): the
 finiteness object property on `Cat` and the comparison between the
 specifications and the corresponding full subcategory.
@@ -67,14 +74,14 @@ Notation is deferred until a client reports friction with that.
 Per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Cite the literature
 when transcribing:
 
-- Finite category, functor, natural transformation: transcription.
-  mathlib states the finiteness condition as
-  `CategoryTheory.FinCategory` in
-  `Mathlib/CategoryTheory/FinCategory/Basic.lean`; the definitions of
-  functor and natural transformation are mathlib's.
+- Category, functor, natural transformation, and the finiteness
+  condition on a category: transcription, from [JohnsonYau2021]
+  §§ 1.1–1.2. mathlib renders the finiteness condition as
+  `CategoryTheory.FinCategory`.
 - Bicategory, strict bicategory, and the 2-category `Cat`:
-  transcription, from [JohnsonYau2021]; mathlib's rendering is
-  `CategoryTheory.Bicategory`, `CategoryTheory.Bicategory.Strict` and
+  transcription, from [JohnsonYau2021] §§ 2.1, 2.3. mathlib's
+  rendering is `CategoryTheory.Bicategory`,
+  `CategoryTheory.Bicategory.Strict` and
   `CategoryTheory.Cat.bicategory`.
 - The encoding below — the hom-count matrix, the reserved identity
   index, the checkers and their reflection lemmas — is novel. It is a
@@ -83,10 +90,12 @@ when transcribing:
 
 ## Encoding of the morphisms
 
-The objects are indexed by `Fin objCount` for `objCount : Nat`. Two
-encodings of the morphisms were considered.
+The objects are indexed by `Fin objCount` for `objCount : Nat`. Write
+`c` for the client-supplied count of non-identity morphisms and `c'`
+for the total count defined from it in the next section. Two encodings
+of the morphisms were considered.
 
-1. A hom-count matrix `Fin objCount → Fin objCount → Nat`.
+1. A hom-count matrix `c : Fin objCount → Fin objCount → Nat`.
 2. A total morphism count `Nat` together with domain and codomain
    projections into `Fin objCount`, which presents a finite category as
    a category internal to finite sets.
@@ -127,21 +136,20 @@ map off it, so the client's numbering and this development's numbering
 agree at some index pairs and disagree at others; a client's
 composition function takes arguments in one numbering and returns a
 result in the other. The alternative of requiring the client to include
-the identities in their own counts was also rejected: it removes the
-transport discussed below, but requires the client to write the
-identity rows and columns of the composition table, whose entries are
-determined by the identity laws.
+the identities in their own counts was also rejected: it requires the
+client to write the identity rows and columns of the composition table,
+whose entries are determined by the identity laws.
 
-A consequence of the adopted convention, recorded so that it is priced
-rather than discovered: the total composition must case on whether each
-argument is an identity, and in the branch where the first argument is
-`FinCat.id i` it moves the second argument across the equation `i = j`
-between two hom types. This is an `Eq.rec`, and it propagates into
-lemmas about composition. It is confined by the pattern
-`Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` establishes for its
-own morphisms: a named transport with `@[simp]` application lemmas,
-followed by `attribute [irreducible]`, so that no downstream module
-unfolds it.
+The total composition dispatches on whether each argument is an
+identity, which involves the equation `i = j` between objects. That
+equation is used **only inside a `Prop`**: every branch returns
+`⟨x.val, proof⟩`, so the value component is a `Nat` moved with no
+`Eq.rec` and only the bound is transported. This is core's own idiom
+for `Fin.castLE`. Consequently there is no transport in the
+computational content, no named transport API is required, and no
+`attribute [irreducible]` seal is applied — a seal would in any case
+defeat the `rfl` discharge that the design rests on, `irreducible`
+blocking the elaborator's definitional unfolding.
 
 ## The specification type
 
@@ -169,10 +177,21 @@ def FinCat.id (S : FinCat) (i : Fin S.objCount) : S.Mor i i :=
   ⟨S.nonIdCount i i, by simp [FinCat.homCount]⟩
 ```
 
-and the total composition `FinCat.compTotal : S.Mor i j → S.Mor j k →
-S.Mor i k`, which returns its second argument when its first is
-`S.id i`, its first argument when its second is `S.id j`, and `S.comp`
-applied to the underlying client indices otherwise.
+and the total composition
+`FinCat.compTotal : S.Mor i j → S.Mor j k → S.Mor i k`, defined by
+
+```lean
+if hf : f.val < S.nonIdCount i j then
+  if hg : g.val < S.nonIdCount j k then S.comp i j k ⟨f.val, hf⟩ ⟨g.val, hg⟩
+  else ⟨f.val, _⟩          -- g is the reserved identity, so j = k
+else ⟨g.val, _⟩            -- f is the reserved identity, so i = j
+```
+
+The two elided proofs derive the object equation from the failed bound
+— an index outside the client's range can only exist on the diagonal —
+and then rewrite the bound. Note that when both arguments are
+identities the outermost `else` fires and returns the identity, which
+is correct.
 
 `homCountOf` and the unbundled `compTotal` used in the `comp` and
 `assoc` field types take `objCount`, `nonIdCount` and `comp` as
@@ -185,8 +204,7 @@ The client writes `objCount`, `nonIdCount` and `comp`, and discharges
 `assoc`. The client designates no identities, states no identity laws,
 and supplies no domain or codomain data. The composition a client
 writes returns a value in the **full** hom type, because a composite of
-two non-identity morphisms may be an identity — the walking isomorphism
-is the smallest instance.
+two non-identity morphisms may be an identity.
 
 The specification type carries no universe parameters. Its content
 lives at `Type 0`; universe levels enter only at the boundary described
@@ -194,9 +212,23 @@ under [The generated mathlib category](#the-generated-mathlib-category).
 
 ## The checkers and their reflection lemmas
 
-Because the identity and its composition branches are defined here, the
-identity laws hold by construction and are not checked. Associativity
-is checked, and only on triples of client morphisms:
+The identity laws are not checked. They are proved here, once, at
+variable indices:
+
+```lean
+theorem FinCat.id_comp (S) (i k) (g : S.Mor i k) :
+    S.compTotal (S.id i) g = g
+theorem FinCat.comp_id (S) (i j) (f : S.Mor i j) :
+    S.compTotal f (S.id j) = f
+```
+
+Neither is `rfl`: `Fin.decEq i j` does not reduce at a variable `i`, so
+each requires discharging the `dite`, and `comp_id` additionally
+requires that an index outside the client's range equals the reserved
+one. Both are ordinary proofs, and the implementation budgets for them
+rather than describing the laws as holding definitionally.
+
+Associativity is checked, and only on triples of client morphisms:
 
 ```lean
 def FinCat.assocCheck … : Bool :=
@@ -208,36 +240,49 @@ def FinCat.assocCheck … : Bool :=
 ```
 
 The composition appearing in the statement is the total one, so a
-composite landing on an identity is covered. Associativity of the total
-composition on all triples follows by cases on which arguments are
-identities; in each of those cases both sides reduce by the definition
-of `compTotal`.
+composite landing on the reserved identity index is covered.
+Associativity of the total composition on all triples follows by cases
+on which arguments are identities, using `id_comp` and `comp_id` above.
 
-Every quantifier ranges over a `Fin`. The `Decidable` instances are
-therefore `FinEnum.decidableForallFinEnum` from
-`Geb/Mathlib/Data/FinEnum.lean`, which routes through
-`List.decidableBAll` over `FinEnum.toList`, and not
-`Fintype.decidableForallFintype`, which depends on `Classical.choice`.
-The `FinEnum (Fin n)` instance is mathlib's `FinEnum.fin`.
+The `Decidable` instance is to be left to Lean's default resolution,
+which reaches core's `Nat.decidableForallFin`. Neither
+`Fintype.decidableForallFintype` nor the repository's
+`FinEnum.decidableForallFinEnum` is to be used: the former depends on
+`Classical.choice` directly, and the latter requires `FinEnum (Fin n)`,
+whose only instance `FinEnum.fin` is choice-dependent. See
+[Axiom hygiene](#axiom-hygiene).
 
 The validity field is a `Bool` equation, so a client with a concrete
 category discharges it with `rfl`.
 
-Each checker is accompanied by a reflection lemma:
+The functor and naturality checkers are stated in the same form, over
+the *total* composition and the *total* morphism map, for the same
+reason — a client composite may land on the reserved index, on which
+the partial map is undefined:
 
 ```lean
-theorem FinCat.assocCheck_eq_true_iff : assocCheck … = true ↔ ∀ …
-theorem FinCat.Hom.compCheck_eq_true_iff : compCheck … = true ↔ ∀ …
-theorem FinCat.Hom.natCheck_eq_true_iff : natCheck … = true ↔ ∀ …
+def FinCat.Hom.compCheck (objMap) (map) : Bool :=
+  decide <| ∀ (i j k : Fin S.objCount)
+    (f : Fin (S.nonIdCount i j)) (g : Fin (S.nonIdCount j k)),
+      mapTotal (S.compTotal (emb f) (emb g))
+        = T.compTotal (mapTotal (emb f)) (mapTotal (emb g))
+
+def FinCat.Hom₂.natCheck (F G) (app) : Bool :=
+  decide <| ∀ (i j : Fin S.objCount) (f : Fin (S.nonIdCount i j)),
+    T.compTotal (F.mapTotal (emb f)) (app j)
+      = T.compTotal (app i) (G.mapTotal (emb f))
 ```
 
-These are required by the constructions of
+Each checker is accompanied by a reflection lemma
+(`assocCheck_eq_true_iff`, `compCheck_eq_true_iff`,
+`natCheck_eq_true_iff`) relating it to the corresponding `Prop`. These
+are required by the constructions of
 [the strict 2-category](#the-strict-2-category-of-specifications), not
 merely convenient. Vertical composition of 2-cells must produce a valid
-2-cell, and its validity field cannot be discharged by `decide`,
-because the source and target specifications are variables. Each such
-construction proves the law at the `Prop` level from its hypotheses and
-converts back through the reflection lemma.
+2-cell, and its validity field cannot be discharged by the `decide`
+tactic, because the source and target specifications are variables.
+Each such construction proves the law at the `Prop` level from its
+hypotheses and converts back through the reflection lemma.
 
 ## The generated mathlib category
 
@@ -268,6 +313,12 @@ independent levels here only because the underlying category sits at
 unwrapping in every proof, for a result the direct instance states
 in one.
 
+`FinCat.Obj` and the generated hom types carry `DecidableEq` instances,
+derived from `Fin` and `ULift`. A category whose purpose is that its
+laws are decidable is of limited use if its objects and morphisms are
+not comparable, and mathlib's `FinCategory` dropped its own
+`DecidableEq` requirements, so the instances have to originate here.
+
 Where the object and morphism levels coincide the category is small,
 and
 
@@ -284,16 +335,8 @@ class in general. mathlib's universe-polymorphic analogue,
 `Category*` with `countableObj` and `countableHom` fields; no
 corresponding finite class exists upstream.
 
-The `Fintype` fields of `FinCat.instFinCategory` are to be supplied by
-`Fin.fintype` and `ULift.fintype`, not by mathlib's
-`FinEnum → Fintype` bridge. See
-[Verification obligations](#verification-obligations).
-
-`FinCat.Obj` and the generated hom types carry `DecidableEq` instances,
-derived from `Fin` and `ULift`. A category whose purpose is that its
-laws are decidable is of limited use if its objects and morphisms are
-not comparable, and mathlib's `FinCategory` dropped its own
-`DecidableEq` requirements, so the instances have to originate here.
+This instance is choice-dependent and gets a module of its own. See
+[Axiom hygiene](#axiom-hygiene).
 
 ## Functor and 2-cell specifications
 
@@ -304,90 +347,108 @@ structure FinCat.Hom (S T : FinCat) where
     Fin (S.nonIdCount i j) → T.Mor (objMap i) (objMap j)
   compValid : compCheck objMap map = true
 
-structure FinCat.Hom.Hom {S T : FinCat} (F G : FinCat.Hom S T) where
+structure FinCat.Hom₂ {S T : FinCat} (F G : FinCat.Hom S T) where
   app : (i : Fin S.objCount) → T.Mor (F.objMap i) (G.objMap i)
   natValid : natCheck F G app = true
 ```
+
+The 2-cell structure is `FinCat.Hom₂` rather than `FinCat.Hom.Hom`,
+following `CategoryTheory.Cat.Hom₂` and avoiding a name that collides
+visually with dot notation on a `FinCat.Hom` value.
 
 `map` is given on client morphisms and lands in the target's full hom
 type, since a functor may send a non-identity morphism to an identity;
 every functor into the terminal category does. It extends to `mapTotal`
 by sending `S.id i` to `T.id (F.objMap i)`, so preservation of
 identities holds by construction and only the composition law is
-checked. This extension requires no transport: at `S.id i` the target
-type is already `T.Mor (F.objMap i) (F.objMap i)`. The transport
-described under
-[Encoding of the identities](#encoding-of-the-identities) does not
-propagate into this module.
+checked. At `S.id i` the target type is already
+`T.Mor (F.objMap i) (F.objMap i)`, so this extension involves no
+object equation at all.
 
 `app` ranges over the full hom type from the outset, the identity
-2-cell having every component an identity. Naturality is checked on
-client morphisms only, the identity case again holding by the
-definition of `compTotal`.
+2-cell having every component an identity.
 
 The generated mathlib data are
 
 ```lean
 def FinCat.Hom.toFunctor.{v, u} {S T : FinCat} (F : FinCat.Hom S T) :
-    FinCat.Obj.{u} S ⥤ FinCat.Obj.{u} T
+    @Functor (FinCat.Obj.{u} S) (FinCat.instCategory.{v, u} S)
+             (FinCat.Obj.{u} T) (FinCat.instCategory.{v, u} T)
 
-def FinCat.Hom.Hom.toNatTrans.{v, u} {S T : FinCat}
-    {F G : FinCat.Hom S T} (α : F ⟶ G) :
+def FinCat.Hom₂.toNatTrans.{v, u} {S T : FinCat}
+    {F G : FinCat.Hom S T} (α : FinCat.Hom₂ F G) :
     F.toFunctor.{v, u} ⟶ G.toFunctor.{v, u}
 ```
 
+`toFunctor`'s type is written with explicit instance arguments rather
+than through `⥤`, so that `v` appears in the type and is not left to be
+inferred from a hidden instance argument.
+
 ## The strict 2-category of specifications
 
-Built in the order strictness imposes.
+Only steps 4 to 6 are order-constrained, by strictness; steps 1 to 3
+are independent of one another.
 
 1. Composition and identity of `FinCat.Hom` as operations, each
    discharging its validity field through the reflection lemmas, with
-   `@[ext]` lemmas: equality of specifications is `funext` on the map
-   fields together with proof irrelevance on the `Bool` equations.
+   an `@[ext]` lemma. Because `map`'s type mentions `objMap`, that
+   lemma is heterogeneous — `objMap` equality plus `HEq` of `map`, in
+   the shape `CategoryTheory.Functor.hext` takes — and the `Bool`
+   equations contribute nothing, being proof-irrelevant. `FinCat`
+   itself and `FinCat.Hom₂` also get `@[ext]` lemmas, per
+   `docs/rules/lean-coding.md` § Structure and typeclass patterns.
 2. The three strict equalities as lemmas about `FinCat.Hom`:
    `𝟙 ≫ F = F`, `F ≫ 𝟙 = F`, `(F ≫ G) ≫ H = F ≫ (G ≫ H)`.
-3. `FinCat.Hom.instCategory` — vertical composition of 2-cells and the
-   identity 2-cell, with an `@[ext]` lemma on `app`.
+3. `FinCat.Hom.instCategory : Category (FinCat.Hom S T)` — vertical
+   composition of 2-cells and the identity 2-cell. This instance lives
+   in `Hom2.lean`, before `toNatTrans`, whose statement uses `⟶` at
+   the 2-cell level and so depends on it.
 4. `FinCat.bicategory : Bicategory FinCat`, following
    `CategoryTheory.Cat.bicategory`: `id`, `comp`, `homCategory`,
    `whiskerLeft`, `whiskerRight`, and the associator and unitors as
    `eqToIso` of step 2's equalities. The twelve coherence axioms of
-   `CategoryTheory.Bicategory` carry defaults, as `Cat.bicategory`
-   relies on.
+   `CategoryTheory.Bicategory` carry `cat_disch` defaults, as
+   `Cat.bicategory` relies on.
 5. `FinCat.bicategory.strict : Bicategory.Strict FinCat`. Its
    `leftUnitor_eqToIso`, `rightUnitor_eqToIso` and
    `associator_eqToIso` fields hold by `rfl`, step 4 having defined
-   those isomorphisms that way.
-6. `Category FinCat` follows from
-   `CategoryTheory.StrictBicategory.category`, a priority-100 instance
-   on any `Bicategory` that is `Strict`. It is not written by hand.
+   those isomorphisms that way; `Bicategory.Strict` is `Prop`-valued,
+   so the proof arguments need not match definitionally.
+6. `FinCat.instCategoryFinCat : Category FinCat`, defined as
+   `StrictBicategory.category FinCat`. It is named and its universes
+   pinned rather than left to the anonymous priority-100 instance,
+   following `Cat.category`.
 
 Steps 1 to 3 are equalities of `Fin`-valued functions and are proved
 here. Steps 4 to 6 package them into mathlib classes.
 
 ## Decidable equality and `Repr`
 
-`Geb/Mathlib/Data/FinEnum.lean` gains one instance, the dependent
-sibling of its existing `FinEnum.decidablePiFinEnum`:
+The decision procedures are built on core's `Nat.decidableForallFin`,
+which is axiom-free, and **not** on the repository's
+`Geb/Mathlib/Data/FinEnum.lean`, whose instances require
+`FinEnum (Fin n)` and so carry `Classical.choice`. This workstream
+therefore adds nothing to that file. The primitive is
 
 ```lean
-instance FinEnum.decidableDPiFinEnum {α : Type u} {Y : α → Type v}
-    [∀ a, DecidableEq (Y a)] [FinEnum α] : DecidableEq ((a : α) → Y a)
+instance FinCat.decEqDPiFin {n : Nat} {Y : Fin n → Type v}
+    [∀ i, DecidableEq (Y i)] : DecidableEq ((i : Fin n) → Y i) :=
+  fun f g => decidable_of_iff (∀ i, f i = g i) funext_iff.symm
 ```
 
-proved as its non-dependent sibling is, `funext_iff` being already
-dependent.
+which is dependent from the outset — `funext_iff` already is — and so
+covers the non-dependent case too, without a second instance competing
+with it at the same head symbol.
 
 Three layers follow, in dependency order.
 
 1. Equality of `comp` fields at fixed `objCount` and `nonIdCount`: the
-   new instance, applied at `Fin`.
-2. `DecidableEq (FinCat.Hom S T)` and
-   `DecidableEq (FinCat.Hom.Hom F G)`. `objMap` is a non-dependent
-   `Pi` and is decided by the existing instance; `map` has a type
-   mentioning `objMap`, so its comparison follows a transport along
-   that equality. The `Bool`-equation fields are proof-irrelevant and
-   contribute no obligation.
+   instance above, applied at `Fin`.
+2. `DecidableEq (FinCat.Hom S T)` and `DecidableEq (FinCat.Hom₂ F G)`.
+   `map` has a type mentioning `objMap`, so its comparison follows a
+   transport along the decided equality of `objMap`. The
+   `Bool`-equation fields are proof-irrelevant and contribute no
+   obligation.
 3. `DecidableEq FinCat`: decide `objCount`, transport, decide
    `nonIdCount`, transport, decide `comp`.
 
@@ -399,86 +460,132 @@ transport at any level: it maps out of the dependent structure into
 
 ## Axiom hygiene
 
-The target is that every module of this workstream is choice-free, so
-that `GebMeta.classicalAllowedModules` gains no entries.
+The target is that every module of this workstream is choice-free
+except one, which is choice-dependent for a reason external to this
+design.
 
-Two candidates for taint are known and are to be resolved by
-measurement, not assumption.
+**Measured, on the pinned toolchain (`leanprover/lean4:v4.33.0-rc1`),
+against a prototype of the design.** `compTotal` and `assocCheck`
+depend on **no axioms at all**; `id_comp` depends on `propext` alone.
+`decide (∀ i j : Fin n, …)` at variable `n` is axiom-free, resolving
+through `Nat.decidableForallFin`. The `DecidableEq` primitive above
+and its application at the `comp` field's type depend on `Quot.sound`
+alone. All of these are within the standard set
+`GebMeta.standardAxioms`.
 
-- `FinCat.instFinCategory`. `CategoryTheory.FinCategory` is declared
-  inside a `noncomputable section`, but the class itself is a pair of
-  `Fintype` fields, and the intended witnesses — `Fin.fintype` and
-  `ULift.fintype` — are choice-free. mathlib's
-  `FinEnum → Fintype` bridge is not to be used, its `complete` field
-  being closed by `simp`.
-- `FinCat.bicategory` and `FinCat.bicategory.strict`.
-  `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` records that
-  `CategoryTheory.Cat.category` depends on `Classical.choice`, and
-  that instance is obtained from `Cat.bicategory` through
-  `StrictBicategory.category`. The default field values of
-  `CategoryTheory.Bicategory`, discharged by `cat_disch`, are
-  therefore a candidate source.
+**Measured to be choice-dependent**, all reporting
+`[propext, Classical.choice, Quot.sound]`: `Fin.fintype`,
+`ULift.fintype`, `FinEnum.fin`, and `Fintype.decidableForallFintype`.
 
-Should measurement show a taint, the modules added to
-`GebMeta.classicalAllowedModules` are exactly those that package —
-`Geb.Mathlib.CategoryTheory.FinCat.Category` or
-`Geb.Mathlib.CategoryTheory.FinCat.Bicategory`, with their test
-parallels — and no module in which a definition or a proof of this
-workstream's own content resides. Where a taint is confirmed, the
-affected instance is moved into a module of its own so that the
-allowlisted surface is one instance rather than one file of mixed
-content.
+Two consequences, both of which corrected an earlier draft of this
+spec:
+
+- `FinCat.instFinCategory` cannot be made choice-free by choosing its
+  `Fintype` witnesses carefully, because every available witness is
+  tainted; `FinCategory`'s fields are `Fintype`s and `Fintype` is
+  choice-dependent at `Fin` itself. Hand-rolling a choice-free
+  `Fintype (Fin n)` was considered and rejected under CONTRIBUTING
+  § Code is cost: it would duplicate mathlib machinery to avoid one
+  allowlist entry. The instance therefore goes in
+  `Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean`, a module
+  containing that instance and nothing else, and that module and its
+  test parallel are appended to `GebMeta.classicalAllowedModules`.
+- The checkers must **not** be routed through
+  `Geb.Mathlib.Data.FinEnum`. That file's premise — that mathlib
+  decides a bounded `∀` through a choice-dependent `Fintype` — holds
+  for a general type carrying a `FinEnum` hypothesis, which is how
+  every existing caller in `Geb/` uses it. It does not hold at a
+  concrete `Fin n`, where instantiating `FinEnum (Fin n)` introduces
+  the very taint the file exists to avoid, and where core's default
+  route is already clean. No change to that file is warranted; the
+  restriction is on this workstream's use of it.
+
+`FinCat.bicategory` and `FinCat.bicategory.strict` remain untested.
+`Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` records that
+`CategoryTheory.Cat.category` depends on `Classical.choice`, and that
+was confirmed here, together with `Cat.bicategory` and
+`Cat.bicategory.strict`. The taint does **not** come from
+`StrictBicategory.category`, which is choice-free, so it originates
+either in `Cat`'s own construction or in the `cat_disch` field
+defaults. Only the latter would propagate to `FinCat`. If it does,
+`Geb.Mathlib.CategoryTheory.FinCat.Bicategory` and its test parallel
+are appended to the allowlist and no other module is; steps 1 to 3 of
+[the strict 2-category](#the-strict-2-category-of-specifications) stay
+in `Hom.lean` and `Hom2.lean` so that what is allowlisted packages
+rather than argues.
 
 ## File layout
 
 ```text
-Geb/Mathlib/CategoryTheory/FinCat.lean             index
-Geb/Mathlib/CategoryTheory/FinCat/Basic.lean       specification, identity,
-                                                   total composition, checker,
-                                                   reflection lemma
-Geb/Mathlib/CategoryTheory/FinCat/Category.lean    object type, Category,
-                                                   FinCategory
-Geb/Mathlib/CategoryTheory/FinCat/Hom.lean         functor specifications,
-                                                   checker, toFunctor
-Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean        2-cell specifications,
-                                                   checker, toNatTrans
-Geb/Mathlib/CategoryTheory/FinCat/Bicategory.lean  Bicategory, Strict
-Geb/Mathlib/CategoryTheory/FinCat/Decidable.lean   DecidableEq, layers 1-3
-Geb/Mathlib/CategoryTheory/FinCat/Repr.lean        Repr
+Geb/Mathlib/CategoryTheory/FinCat.lean              index
+Geb/Mathlib/CategoryTheory/FinCat/Basic.lean        specification, identity,
+                                                    total composition, identity
+                                                    laws, checker, reflection
+                                                    lemma
+Geb/Mathlib/CategoryTheory/FinCat/Category.lean     object type, Category
+Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean  diagonal FinCategory
+                                                    (allowlisted)
+Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          functor specifications,
+                                                    checker, toFunctor, strict
+                                                    equalities
+Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean         2-cell specifications,
+                                                    checker, instCategory,
+                                                    toNatTrans
+Geb/Mathlib/CategoryTheory/FinCat/Bicategory.lean   Bicategory, Strict, Category
+Geb/Mathlib/CategoryTheory/FinCat/Decidable.lean    DecidableEq, layers 1-3
+Geb/Mathlib/CategoryTheory/FinCat/Repr.lean         Repr
 ```
 
-together with one added instance in `Geb/Mathlib/Data/FinEnum.lean` and
-a mirroring `GebTests/Mathlib/CategoryTheory/FinCat/` tree.
+`Geb/Mathlib/CategoryTheory.lean` gains the `FinCat` index import, and
+`GebTests/Mathlib/CategoryTheory/FinCat/` mirrors the tree.
+
+Every file opens with the `module` keyword and uses `public import`, as
+`scripts/lint-imports.sh` requires of upstream-eligible files, and
+carries a module docstring with the section list that
+`docs/rules/lean-coding.md` § Documentation mandates, `## Tags`
+included.
 
 The names follow `CategoryTheory.Cat`: the specification type is
 `FinCat`, its 1-cells are `FinCat.Hom` — as `Cat.Hom` is likewise a
-one-field bundling of the notion it names — and its 2-cells are the
-homs of `FinCat.Hom.instCategory`.
+one-field bundling of the notion it names — and its 2-cells are
+`FinCat.Hom₂`.
 
-`Geb/Mathlib/CategoryTheory/FinCat/Basic.lean` imports only
-`Mathlib.CategoryTheory.Category.Basic`,
-`Geb.Mathlib.Data.FinEnum` and core `Fin` material, so that the
-specification type and its checker are usable without the mathlib
-category-theory hierarchy.
+`Geb/Mathlib/CategoryTheory/FinCat/Basic.lean` imports core `Fin` and
+`Nat` material only. Nothing in its content mentions `Category`, so it
+must not import `Mathlib.CategoryTheory.Category.Basic`; `lake shake`
+would flag that. The specification type and its checker are usable
+without any part of the mathlib category-theory hierarchy.
 
 ## Verification obligations
 
-Discharged during implementation, before the corresponding artifact is
-claimed complete.
+Items 1 to 4 are **discharged**, by measurement against a prototype on
+the pinned toolchain, and are recorded here so the implementation
+re-runs them rather than re-deriving them.
 
-1. `FinCat.instFinCategory` is choice-free, or is isolated and
-   allowlisted.
-2. `FinCat.bicategory` and `FinCat.bicategory.strict` are choice-free,
-   or are isolated and allowlisted.
-3. `assocCheck` reduces in the kernel on each worked example, so that
-   `rfl` discharges the validity field without `decide` and without
-   `native_decide`. `native_decide` is excluded: it introduces
-   `Lean.ofReduceBool`, which the axiom linter rejects.
+1. `compTotal` and `assocCheck` are axiom-free under the default
+   `Decidable` resolution.
+2. `assocCheck` reduces in the kernel, so `rfl` — not the `decide`
+   tactic — discharges the validity field. Confirmed on the walking
+   isomorphism, the case where a client composite lands on the
+   reserved identity index.
+3. The checker rejects as well as accepts: a non-associative
+   three-object specification gives `assocCheck … = false` by `rfl`.
 4. The reduction of general associativity to client-triple
-   associativity holds as stated, including the case in which a
-   composite of two client morphisms is an identity.
-5. `Fin.castLE` is index-preserving definitionally, so that `emb` needs
-   no simp lemma to compute on literals.
+   associativity holds, including the case in which a composite of two
+   client morphisms is an identity, and the identity laws are
+   provable at variable indices though not by `rfl`.
+
+Outstanding:
+
+1. `FinCat.bicategory` and `FinCat.bicategory.strict` are choice-free,
+   or are isolated and allowlisted.
+2. `compCheck` and `natCheck`, stated over `mapTotal` and `compTotal`,
+   admit the same reduction as `assocCheck`: the law holds on all
+   morphisms given that it holds on client morphisms. This is the
+   functor and naturality analogue of discharged item 4 and is not
+   implied by it.
+3. `native_decide` is used nowhere. It introduces `Lean.ofReduceBool`,
+   which the axiom linter rejects.
 
 ## Testing
 
@@ -494,9 +601,10 @@ worked examples, each discharging its validity field by `rfl`:
   for the case in which a client-supplied composition returns a value
   outside the client's own index range.
 
-A negative test asserts `assocCheck … = false` on a specification
-violating associativity, so that the checker is shown to reject as well
-as accept.
+The negative test asserts `assocCheck … = false` on a three-object
+specification with one non-identity morphism at every index pair whose
+composition sends each composable pair to the identity exactly when its
+endpoints agree, which violates associativity.
 
 Functor and 2-cell tests: the identity functor on each worked example,
 the two functors from the terminal category into the walking arrow, and
@@ -537,9 +645,11 @@ identity to the reserved index, which is a constraint the present
 workstream's conventions impose on that one.
 
 The existing `TODO.md` entry on the complexity of the decidable
-validity checkers gains a note that `assocCheck` is bounded by the cube
-of the non-identity morphism count, the reserved-identity convention
-having removed the identity cases from the quantifier.
+validity checkers gains a note that `assocCheck` enumerates
+`Θ(objCount⁴) + O(M³)` tuples, where `M` is the total non-identity
+morphism count: four object quantifiers stand outside the three
+morphism quantifiers, so a discrete category on `n` objects still costs
+`n⁴` iterations with `M = 0`.
 
 ## References
 
