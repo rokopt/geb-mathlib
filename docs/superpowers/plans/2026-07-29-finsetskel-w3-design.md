@@ -2565,8 +2565,10 @@ namespace FinSetSkel
 end FinSetSkel
 ```
 
-The docstring names Task 13's declarations too; it is written once,
-here. `Exponential/Closed.lean` depends on `Shapes/Instances.lean`
+The docstring is written whole here, so Task 13 adds no section to
+it: the three declarations it names besides `whiskerLeft_get` —
+`expHomEquiv`, `expHomEquiv_naturality` and `monoidalClosed` — arrive
+in that task. `Exponential/Closed.lean` depends on `Shapes/Instances.lean`
 and not only on `Exponential/Core.lean`, because the cartesian
 instance its statements mention is declared there.
 
@@ -2703,7 +2705,9 @@ parallel's.
 **Interfaces:**
 
 - Consumes: Tasks 8 (`cartesianMonoidalCategory`, without which
-  neither `⊗` nor `MonoidalClosed FinSetSkel` elaborates), 11 and 12;
+  neither `⊗` nor `MonoidalClosed FinSetSkel` elaborates), 5
+  (`homEquivIdxFun_apply`, `homEquivIdxFun_symm_get`, the two
+  `@[simp]` lemmas the naturality proof rewrites with), 11 and 12;
   `Adjunction.rightAdjointOfEquiv`,
   `Adjunction.adjunctionOfEquivRight`, `Closed`, `MonoidalClosed`,
   `MonoidalCategory.tensorLeft`.
@@ -3538,7 +3542,7 @@ which is exactly `lift`'s hypothesis; confirm the direction with
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 2: check the axioms, test and commit**
+- [ ] **Step 2: check the axioms, test, wire and commit**
 
 Measure `equalizerCone` and a monomorphic witness at
 `FinSetSkel.{0}`. Expected:
@@ -3548,6 +3552,14 @@ allowlisted. Confirm `Equalizer/Core.lean`'s witnesses are unchanged.
 
 The test parallel names the cone at a concrete pair and asserts its
 point's length.
+
+Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits`
+to `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`, and the
+plain-`import` parallel for the test module to its `GebTests`
+counterpart; Task 15 Step 7 created both carrying `Core` alone.
+Without these lines neither module is reachable from a root import,
+so `lake build` still compiles them through lake's glob while
+`lake lint` never audits them — green, and unchecked.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -3665,7 +3677,7 @@ finite sets, skeleton, subobject classifier, choice-free
 -/
 ```
 
-- [ ] **Step 2: add the scatter and its two lemmas**
+- [ ] **Step 2: add the scatter and its three lemmas**
 
 ```lean
 /-- One pass writing `1` at each listed index, generalised over the
@@ -4111,7 +4123,7 @@ Task 17.
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 4: check the axioms, test and commit**
+- [ ] **Step 4: check the axioms, test, wire and commit**
 
 Measure `truth`, `chi_iff_of_isPullback` and `classifier`. Expected:
 `[propext, Classical.choice, Quot.sound]`, the allowlisted wrapper.
@@ -4119,6 +4131,13 @@ Confirm `Classifier/Core.lean`'s witnesses are unchanged.
 
 The test parallel names `classifier` in a `def` and asserts
 `classifier.Ω = mk 2` and `classifier.Ω₀ = mk 1` by `rfl`.
+
+Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance`
+to `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier.lean`, and the
+plain-`import` parallel for the test module to its `GebTests`
+counterpart; Task 17 Step 6 created both carrying `Core` alone. As in
+Task 16, an unwired module compiles through lake's glob and is never
+audited by `lake lint`.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -4298,7 +4317,7 @@ and Task 17 Step 2 (4), the mathlib-name confirmation bullet of
 § Global constraints (5 — that bullet, not the per-task reminders,
 which are deliberately partial), Tasks 8, 12, 16 and 18 Step 1 (6),
 Task 19 Step 4 (7), § Global constraints and every probe deletion
-(8), Task 15 Step 5 (9). `CONTRIBUTING.md` § Cite the literature is
+(8), Task 15 Step 6 (9). `CONTRIBUTING.md` § Cite the literature is
 discharged by the `## References` bullet of § Global constraints and
 the nine module docstrings carrying `[Freyd1972]`; no task adds a
 `docs/references.bib` entry, per the spec.
@@ -4308,9 +4327,10 @@ silently.** Task 1 records that W4's converged spec puts
 `Equiv.arrowCongrLeftC` out of scope, so the declaration has one
 consumer rather than two and the spec's § Shared declarations
 overstates the ground for its placement; the placement is unchanged,
-and Task 19 Step 3 carries a conditional `TODO.md` § Triggers entry
-so the observation survives this document's deletion if the user
-accepts it. Task 17 Step 2 records the reading of verification
+and Task 19 Step 3 records the corresponding `TODO.md` § Triggers
+entry as an explicit do-not-edit plus a report to the orchestrator,
+so nothing about the observation survives Task 20 unless the user
+asks for the entry. Task 17 Step 2 records the reading of verification
 obligation 4 under which row l's fold lemmas carry neither a counter
 nor a `Nodup` hypothesis. Task 5 records that rows c, d and h do not
 consume `homEquivIdxFun`, although the spec's § W1's index-function
