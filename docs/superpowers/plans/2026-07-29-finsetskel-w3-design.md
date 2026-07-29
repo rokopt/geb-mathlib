@@ -134,9 +134,10 @@ Every task's requirements implicitly include this section.
   that into a build failure. This bites wherever the `using` term is a
   library lemma the default simp set already applies — measured at
   this toolchain for both `List.getElem_mem` sites in Tasks 14 and 17.
-  Reach for `simpa` only when the term is a local hypothesis simp
-  cannot produce; try plain `simp` first and keep whichever the
-  linter accepts.
+  The test is the linter's, not a rule about what kind of term `t` may
+  be: use `simpa` only when plain `simp` does not close the goal
+  without `t`. Try `simp` first and keep whichever form the linter
+  accepts.
 - **Docstrings are mandatory** for every `def`, `instance`,
   `structure` field and theorem of every module this plan creates,
   and a `/-! … -/` module docstring with the sections
@@ -1084,8 +1085,9 @@ and is `ULift`ed, § Rows a and b, § Module layout.
 - Produces, in namespace `FinSetSkel`: `homEquivIdxFunU`,
   `homEquivIdxFun`, `homEquivIdxFun_apply`,
   `homEquivIdxFun_symm_get`, `point`, `point_get`, `fromZero`,
-  `fromZero_uniq`, `toOne`, `toOne_uniq`. `homEquivIdxFun` is
-  consumed by Tasks 11 and 13; `point` by Tasks 10 and 18;
+  `fromZero_uniq`, `toOne`, `toOne_uniq`. `homEquivIdxFun` itself is
+  consumed by Task 11 and its two application lemmas by Task 13;
+  `point` by Tasks 10 and 18;
   `fromZero`, `fromZero_uniq`, `toOne` and `toOne_uniq` by Tasks 8, 9
   and 18.
 
@@ -2804,16 +2806,23 @@ Route, in three moves:
 The recipe to try first:
 
 ```lean
-  simp only [expHomEquiv, expEquivHom, curriedTensor_obj_obj,
-    curriedTensor_obj_map, homEquivIdxFun_apply, homEquivIdxFun_symm_get,
-    comp_get, whiskerLeft_get]
+  simp only [expHomEquiv, expEquivHom, Equiv.trans_apply,
+    curriedTensor_obj_obj, curriedTensor_obj_map, homEquivIdxFun_apply,
+    homEquivIdxFun_symm_get, comp_get, whiskerLeft_get]
 ```
 
-`expHomEquiv` and `expEquivHom` head the list because both are plain
-`def`s with no `@[simp]` unfolding lemma: without them nothing turns
-`expHomEquiv X Z' Y …` into a term the `homEquivIdxFun` lemmas can
-match, and the rest of the set never fires. `simp only` uses their
-equation lemmas.
+Three entries are there for reasons that are not obvious.
+`expHomEquiv` and `expEquivHom` are plain `def`s with no `@[simp]`
+unfolding lemma, so without them nothing turns `expHomEquiv X Z' Y …`
+into a term the later lemmas can match; `simp only` uses their
+equation lemmas. `Equiv.trans_apply` is needed because `expEquivHom`
+is a nested `Equiv.trans`, and `homEquivIdxFun_apply` /
+`homEquivIdxFun_symm_get` are stated about a bare application and a
+bare `.symm` application, neither of which matches an `Equiv.trans`
+application. `Equiv.trans_apply` is `@[simp]` in mathlib, but
+`simp only` does not load the default set. If the goal instead
+displays the coerced form, `Equiv.coe_trans` and
+`Function.comp_apply` are the alternates.
 
 `whiskerLeft_get` and `expEquivIdx_naturality` carry no `@[simp]`, so
 they are named explicitly here and a bare `simp` will not find them.
@@ -2928,10 +2937,14 @@ Task 12's whiskering bridge, and this task is the pair's second half.
 
 - Create:
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`
+- Create: `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`
+- Modify: `Geb/Mathlib/CategoryTheory/FinSetSkel.lean`
 
-The `Equalizer.lean` index files and the two `FinSetSkel.lean`
-amendments are Task 15's, which is where the `GebTests` parallel this
-module's index would import is written.
+The source index is created here, not deferred: `lake lint` audits
+only what a root import reaches, so leaving this module unwired for a
+commit would mean committing it unaudited by the axiom linter. The
+two `GebTests` files are Task 15's, that side having nothing to import
+until its test module exists.
 
 **Interfaces:**
 
@@ -3088,9 +3101,11 @@ vector — `Vector.getElem_mk` then `List.getElem_toArray`, both
 `@[simp]` — and `List.getElem_mem` itself are all in the default simp
 set, so `simp` closes the goal alone, and supplying the `using` term
 then trips `linter.unnecessarySimpa`, which
-`weak.warningAsError = true` turns into a build failure. This shape
-was measured at this toolchain: `simp [Vector.get_eq_getElem]` closes
-it with no diagnostics, and the `simpa` form fails the linter. Note
+`weak.warningAsError = true` turns into a build failure. Measured at
+this toolchain on this shape: `simp [Vector.get_eq_getElem]` closes it
+with no diagnostics and the `simpa` form fails the linter; `injVec` is
+in the simp set above because the goal must first unfold to the
+underlying list. Note
 that `Vector.getElem_toArray` is *not* the applicable lemma — it goes
 from a `Vector`'s array back to the `Vector`, where `injVec f g` is a
 `Vector.mk` over a *`List`*'s array.
@@ -3105,7 +3120,7 @@ Expected: PASS.
 generalised over the starting vector and the starting counter. -/
 def scatter {n : ℕ} (L : List (Fin n)) (c : ℕ) (v : Vector ℕ n) :
     Vector ℕ n :=
-  (L.zipIdx c).foldl (fun w (j, k) ↦ w.set j.val k (by omega)) v
+  (L.zipIdx c).foldl (fun w (j, k) ↦ w.set j.val k j.isLt) v
 
 /-- The empty pass changes nothing. -/
 @[simp] theorem scatter_nil {n : ℕ} (c : ℕ) (v : Vector ℕ n) :
@@ -3119,8 +3134,12 @@ theorem scatter_cons {n : ℕ} (j : Fin n) (L : List (Fin n)) (c : ℕ)
   simp [scatter, List.zipIdx_cons]
 ```
 
-The `by omega` discharges `j.val < n` from `j : Fin n`; `omega` reads
-`Fin` bounds. `List.zipIdx_cons` states
+`j.isLt` discharges the `Vector.set` bound `j.val < n` directly, and
+is the same term `scatter_cons` writes below. This text was measured
+with `(by omega)` in that position, which also works — `omega` reads
+`Fin` bounds — and the two are equal by proof irrelevance; the direct
+term is preferred, being cheaper and immune to a change in omega's
+preprocessing. `List.zipIdx_cons` states
 `(a :: as).zipIdx n = (a, n) :: as.zipIdx (n + 1)`; confirm the name
 and the `+ 1` convention with `#check` — if `zipIdx` counts the other
 way at this revision, the whole design of the counter changes and
@@ -3225,15 +3244,23 @@ theorem invVec_lt (f g : X ⟶ Y) (j : Fin X.len)
   obtain ⟨k, hk, hget⟩ := List.getElem_of_mem ((mem_agree_iff f g j).mpr hj)
   have hlen : (obj f g).len = (agree f g).length := rfl
   have : (invVec f g).get j = k :=
-    get_scatter_mem _ (agree_nodup f g) 0 _ j k (by
-      simpa [hget] using (List.mk_mem_zipIdx_iff_getElem?).mpr (by simp [hget]))
+    get_scatter_mem _ (agree_nodup f g) 0 _ j k
+      ((List.mk_mem_zipIdx_iff_getElem?).mpr (by
+        rw [List.getElem?_eq_getElem hk, hget]))
   omega
 ```
 
 Two things this step needs and does not get for free. `omega`
 atomises `(obj f g).len` and `(agree f g).length` separately — it
 will not delta-unfold `obj` — so `hlen` must be in context before it
-runs. And the bridge from `(agree f g)[k] = j` to
+runs. And the `getElem?` side goal is closed by
+`rw [List.getElem?_eq_getElem hk, hget]`, not by `simp [hget]`:
+`hget` is about `l[k]` and the goal about `l[k]?`, and simp's
+discharger will not use `hk` to fire the conditional
+`List.getElem?_eq_getElem`. Measured at this toolchain —
+`simp [hget]` reports "made no progress" on exactly this shape.
+
+The bridge from `(agree f g)[k] = j` to
 `(j, k) ∈ (agree f g).zipIdx 0` is core's
 `List.mk_mem_zipIdx_iff_getElem?`, stated through `getElem?` rather
 than `getElem`; `#check` it and adjust the `simp` set to whatever its
@@ -3289,9 +3316,8 @@ Spec section: § Row h, § Verification obligations (9).
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`
 - Create:
   `GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`
-- Create: `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean` and
-  its `GebTests` parallel
-- Modify: the two `FinSetSkel.lean` index files
+- Create: `GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`
+- Modify: `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`
 
 **Interfaces:**
 
@@ -3338,7 +3364,8 @@ named lemma if proving it twice — once there, once here — becomes
 awkward; that lemma is then a further export of Task 14.
 
 Run: `lake build`
-Expected: PASS.
+Expected: PASS once the routes above are written; before them, FAIL
+with one placeholder error per `_`.
 
 - [ ] **Step 3: add the lift**
 
@@ -3387,7 +3414,8 @@ model to follow. State the injectivity as a named lemma
 `injVec_injective` if the proof of `lift_uniq` needs it twice.
 
 Run: `lake build`
-Expected: PASS.
+Expected: PASS once the routes above are written; before them, FAIL
+with one placeholder error per `_`.
 
 - [ ] **Step 5: check the axioms**
 
@@ -3405,9 +3433,10 @@ def probeLift : (mk 5 : FinSetSkel.{0}) ⟶ obj probeLiftHom probeLiftHom :=
   lift probeLiftHom probeLiftHom (𝟙 (mk 5)) rfl
 ```
 
-Expected: `[propext, Quot.sound]`. Delete both after measuring, then
-run the banned-form grep — `lift` is the declaration most likely to
-reach for `Vector.ofFn` by habit.
+Expected: `[propext, Quot.sound]`. Keep both until the end of Step 6,
+which reuses `probeLiftHom`, then delete them. Run the banned-form
+grep now — `lift` is the declaration most likely to reach for
+`Vector.ofFn` by habit.
 
 - [ ] **Step 6: check sharing with `dbgTrace`**
 
@@ -3445,8 +3474,9 @@ and `lift` must be restructured until it is; report the finding either
 way.
 
 Then revert **both** edits — `invVecTraced` and the redirection of
-`lift` — and confirm with `grep -n "dbgTrace" <file>`, expecting no
-match, before Step 7 commits. A `dbgTrace` left in a choice-free
+`lift` — delete Step 5's two witnesses, and confirm with
+`grep -n "dbgTrace" <file>`, expecting no match, before Step 7
+commits. A `dbgTrace` left in a choice-free
 module is caught by neither `#print axioms` nor
 `scripts/lint-imports.sh`.
 
@@ -3475,11 +3505,11 @@ asserted to be `3` by `rfl` or `decide`, the injection's vector
 asserted, and `lift_ι` exercised at a sample morphism. Name a `def`
 value from the module, per § Global constraints.
 
-Create the two `Equalizer.lean` index files (importing `Core` now and
-`Limits` in Task 16) and add them to the two `FinSetSkel.lean` index
-files. They are created here rather than in Task 14 because the
-`GebTests` index has nothing to import until this task's test module
-exists.
+Create `GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`
+importing this task's test module, and add it to
+`GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`. The source side was
+wired in Task 14; only the `GebTests` half is deferred here, that
+index having had nothing to import until now.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -3761,13 +3791,6 @@ theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
 The first two by explicit `List.rec` with the starting vector in the
 motive, in the shape of Task 14 Step 6; the third is a corollary.
 
-The `Vector.set` bound is `j.isLt` outright rather than `by omega`.
-Both discharge `↑j < n` and are equal by proof irrelevance; Task 14
-uses `by omega` in `scatter`'s definition, that text having been
-measured verbatim, and `j.isLt` in `scatter_cons`'s statement. The
-direct term is preferred where there is a choice, being cheaper and
-immune to a change in how `omega` preprocesses `Fin.val`.
-
 Both directions split on `a.val = j.val` through the axiom-free
 `Nat.decEq`, never on list membership: where equal,
 `Vector.getElem_set_self` supplies the right disjunct for the
@@ -3927,7 +3950,8 @@ where `Nonempty (IsLimit …)` erases it. `Vector.invOfInjective`'s
 face the same objection as the rejected `χ`.
 
 Run: `lake build`
-Expected: PASS.
+Expected: PASS once the routes above are written; before them, FAIL
+with one placeholder error per `_`.
 
 - [ ] **Step 5: add the square's commutation and vector-level
 uniqueness**
@@ -3963,7 +3987,8 @@ obligation; this statement is the choice-free half of the spec's
 split of `uniq`.
 
 Run: `lake build`
-Expected: PASS.
+Expected: PASS once the routes above are written; before them, FAIL
+with one placeholder error per `_`.
 
 - [ ] **Step 6: check the axioms, test, wire and commit**
 
@@ -4147,7 +4172,8 @@ writing either direction. Prove the two directions as separate
 `docs/rules/lean-coding.md` § Proof guidelines.
 
 Run: `lake build`
-Expected: PASS.
+Expected: PASS once the routes above are written; before them, FAIL
+with one placeholder error per `_`.
 
 - [ ] **Step 3: build the classifier**
 
@@ -4171,21 +4197,23 @@ the body rather than at the binders, which makes the diagnostic
 misleading. The `_` binds the instance explicitly, and a `_`-named binder whose
 type is a class is still registered as a local instance.
 
-The `isPullback` argument is a different lambda and needs no such
-binder: there the instance is auto-inserted as a trailing one, before
-the body is elaborated, which is what puts `Mono m` in scope for
-`mono_iff_injective.mp ‹Mono m›` below.
+The `isPullback` argument is a different lambda: there the instance is
+auto-inserted as a trailing one, before the body is elaborated, which
+is what puts `Mono m` in scope for `mono_iff_injective.mp ‹Mono m›`
+below.
 
 The two sibling arguments need no such binder: `(fun m ↦ …)` exhausts
 the written binders before the instance, so the instance lambda is
 auto-inserted as a trailing one.
 
 The `_` in `(fun m ↦ _)`, by contrast, **is** a hole to fill, and it
-is filled below in this same step — which is why this step's
-`Expected:` is PASS rather than the FAIL that a bare `_` draws
-elsewhere in this plan. Two different `_`s, four lines apart: the one
-in the `uniq` binder list stays, the one in the `isPullback` argument
-goes.
+is filled below in this same step. Two different `_`s, four lines
+apart: the one in the `uniq` binder list stays, the one in the
+`isPullback` argument goes. This step's `Expected:` therefore reads
+PASS *once the hole is filled* — the plan's convention is that a step
+which states a declaration unproved expects FAIL with placeholder
+errors, and a step which states and discharges it expects PASS at the
+end.
 
 The `isPullback` argument is the remaining hole. Its statement is
 `IsPullback m (isTerminalOne.from U) (Classifier.chi m) truth`, and
@@ -4209,12 +4237,11 @@ the leg:
 
 `PullbackCone.fst s = s.π.app WalkingCospan.left` definitionally, so
 the projection typechecks; mathlib's own `isLimitAux'` does the same.
-`fac_right` and the cone's second leg are morphisms into `mk 1` and
-are discharged by `toOne_uniq`.
 
-The second component of every such cone is a morphism into `mk 1`,
-so `toOne_uniq` discharges it; that is why the terminal object is
-`Ω₀` and why `isTerminalOne` is named rather than reconstructed.
+`fac_right` and every such cone's second leg are morphisms into
+`mk 1`, so `toOne_uniq` discharges them; that is why the terminal
+object is `Ω₀` and why `isTerminalOne` is named rather than
+reconstructed.
 
 `Subobject.Classifier` is written qualified: inside
 `namespace FinSetSkel`, a bare `Classifier` is the sub-namespace of
@@ -4266,6 +4293,8 @@ Spec sections: § Documentation, § Amendments to `TODO.md`
 **Files:**
 
 - Modify: `docs/index.md`, `TODO.md`
+- Modify, only as `lake shake` requires and in their own commit: the
+  import lines of any of this branch's `.lean` modules (Step 4)
 
 - [ ] **Step 1: add the `docs/index.md` entries**
 
@@ -4330,13 +4359,32 @@ and its enumeration gains `f`.
   Report to the orchestrator that the entry is pending the user's
   decision on the `Equiv.arrowCongrLeftC` departure, and continue.
 
-- [ ] **Step 4: lint, verify and commit**
+- [ ] **Step 4: settle the import lists, in their own commit**
+
+This is the branch's first `pre-push.sh` run, so it is where
+`lake shake` first sees W3's modules and where their import lists are
+actually settled — the per-task lists were a starting point, per
+§ Global constraints. Those are `.lean` edits, so they do not belong
+in this task's documentation commit.
+
+Run: `bash scripts/pre-push.sh`
+Expected: PASS, or a `lake shake` report. If it reports, adjust the
+named modules' import lines, re-run until clean, and re-run the axiom
+checks of every module whose imports changed — an import that
+disappears can change which instance search finds.
+
+```bash
+jj commit -m "refactor(finsetskel): minimise W3's module imports"
+jj bookmark set feat/finsetskel-w3 -r @-
+```
+
+Skip this commit if `lake shake` reported nothing.
+
+- [ ] **Step 5: lint the documentation and commit**
 
 Run: `doctoc --update-only .`, `markdownlint-cli2 '**/*.md'`,
 `bash scripts/pre-push.sh`
-Expected: PASS. `pre-push.sh` runs `lake shake`; adjust every
-module's import list to what it reports and re-run until clean, then
-re-run the axiom checks of any module whose imports changed.
+Expected: PASS.
 
 ```bash
 jj commit -m "doc(finsetskel): index W3's modules and amend the roadmap"
@@ -4497,6 +4545,27 @@ docstrings naming a choice-dependent mathlib counterpart follow W1's
 own precedent at `FinSetSkel.decidableEqHom`, which names
 `instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
 that way.
+
+**Round 6** (two fresh agents: Lean correctness, consistency and
+executability) returned no blocker and four serious findings, all
+applied. Task 13 Step 3's `simp only` recipe still could not fire:
+`expEquivHom` is a nested `Equiv.trans`, and the `homEquivIdxFun`
+lemmas match neither a `trans` application nor its `.symm`, so
+`Equiv.trans_apply` — `@[simp]` in mathlib, but `simp only` does not
+load the default set — is now named. Task 14 Step 7's `getElem?` side
+goal was closed by `simp [hget]`, which makes no progress: `hget` is
+about `l[k]` and the goal about `l[k]?`, so the conditional
+`List.getElem?_eq_getElem` never fires; the reviewer probed it and the
+route is now an explicit `rw`. Five steps whose code blocks end
+declarations in `:= _` claimed `Expected: PASS`, and Task 18 Step 3
+asserted that convention held plan-wide; all six now state the real
+one. And Task 19 Step 4 folded `lake shake`'s `.lean` import
+adjustments into a documentation commit, against
+`CONTRIBUTING.md` § Concern shape — they are now their own commit,
+declared in the task's Files block. Minors applied with them: Task 14
+now wires its own source index rather than leaving the module
+unreachable from a root import for one commit, and `scatter`'s bound
+is `j.isLt` throughout.
 
 **Round 5** (two fresh agents: Lean correctness, consistency and
 executability) returned no blocker and two serious findings, both
