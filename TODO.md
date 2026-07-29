@@ -467,7 +467,9 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | --- | --- | --- | --- |
 | W0 `Batteries.` allow-list | — | Complete | — |
 | W1 `FinSetSkel` | — | Complete | `Geb/Mathlib/Data/Vector/OfFn.lean`, `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` |
+| W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Not started | — |
+| W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |
 | W4 Row i, union-find | W0, W1 | Not started | — |
 | W5 Row k, unification | W1–W4 | Not started | — |
