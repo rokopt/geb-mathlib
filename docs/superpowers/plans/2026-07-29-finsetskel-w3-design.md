@@ -2712,9 +2712,9 @@ parallel's.
   `Adjunction.adjunctionOfEquivRight`, `Closed`, `MonoidalClosed`,
   `MonoidalCategory.tensorLeft`.
 - Produces: `FinSetSkel.expHomEquiv`,
-  `FinSetSkel.expHomEquiv_naturality`, `FinSetSkel.closed` and
-  `FinSetSkel.monoidalClosed`. `monoidalClosed` is W5's `closed`
-  field.
+  `FinSetSkel.expHomEquiv_naturality` and
+  `FinSetSkel.monoidalClosed`, which is W5's `closed` field. No
+  separate `FinSetSkel.closed` — see Step 4.
 
 W2's `closed` field has type
 `@MonoidalClosed C _ cartesian.toMonoidalCategory`, so it is
@@ -3390,8 +3390,13 @@ def invVecTraced (f g : X ⟶ Y) : Vector ℕ X.len :=
   dbgTrace "invVec ran" fun _ ↦ scatter (agree f g) 0 (Vector.replicate X.len 0)
 ```
 
-point `lift` at it, `#eval` a `lift` at a domain of length 4, and
-count the trace lines. Expected: one line, not four. If four, the
+point `lift` at it, then `#eval` the lift's **vector** at a domain of
+length 4 — `#eval (lift f g h w).toVec.toList` — and count the trace
+lines. A bare `#eval` of the morphism will not run at all: `Hom` is
+sealed `irreducible` and carries no `Repr`, and `#eval` refuses a
+value it can neither print nor sequence, so no trace would be emitted
+either way and the check would silently pass. Expected: one line, not
+four. If four, the
 `let` is not shared and `lift` must be restructured until it is;
 report the finding either way.
 
@@ -3684,7 +3689,7 @@ finite sets, skeleton, subobject classifier, choice-free
 starting vector. -/
 def scatterOne {n : ℕ} (L : List (Fin n)) (v : Vector (Fin 2) n) :
     Vector (Fin 2) n :=
-  L.foldl (fun w j ↦ w.set j.val 1 (by omega)) v
+  L.foldl (fun w j ↦ w.set j.val 1 j.isLt) v
 
 /-- The pass writes `1` only at listed indices. -/
 theorem get_scatterOne_eq_one {n : ℕ} (L : List (Fin n)) (j : Fin n)
@@ -3705,6 +3710,11 @@ theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
 
 The first two by explicit `List.rec` with the starting vector in the
 motive, in the shape of Task 14 Step 6; the third is a corollary.
+
+The `Vector.set` bound is `j.isLt` outright rather than `by omega`;
+Task 14's `scatter` writes `by omega` for the same obligation because
+that text was measured verbatim, but the direct term cannot regress on
+a change to `omega`'s handling of `Fin.val`.
 
 Both directions split on `a.val = j.val` through the axiom-free
 `Nat.decEq`, never on list membership: where equal,
@@ -3789,6 +3799,11 @@ theorem chiVec_get_eq_one_iff (m : U ⟶ X) (j : Fin X.len) :
   · intro hj
     exact get_scatterOne_of_mem _ _ hj _
 ```
+
+Both applications of the fold lemmas must unify
+`(scatterOne ?L ?v).get ?j` against `(chiVec m).get j`, which unfolds
+the non-reducible `def chiVec` at default transparency. That should
+succeed; if either stalls, `simp only [chiVec]` first.
 
 Neither direction decides membership, so neither reaches
 `Decidable (· ∈ ·)` and its `LawfulBEq (Fin n)`. The `decide` that
@@ -4084,8 +4099,23 @@ def classifier : Subobject.Classifier FinSetSkel.{u} :=
   Subobject.Classifier.mkOfTerminalΩ₀ (mk 1) isTerminalOne (mk 2) truth
     (fun m ↦ Classifier.chi m)
     (fun m ↦ _)
-    (fun m χ' hp ↦ Classifier.chi_uniq m χ' (chi_iff_of_isPullback m χ' hp))
+    (fun m _ χ' hp ↦ Classifier.chi_uniq m χ' (chi_iff_of_isPullback m χ' hp))
 ```
+
+The `_` in the third argument's binder list is not optional and is not
+a placeholder to fill. `uniq`'s type is
+`∀ {U X} (m : U ⟶ X) [Mono m] (χ' : X ⟶ Ω) (_ : IsPullback …), χ' = χ m`,
+and Lean auto-inserts implicit and instance lambdas only for *leading*
+binders and for those left over after the written binders run out —
+never mid-list. So `fun m χ' hp ↦ …` binds `χ'` to the `[Mono m]`
+instance and `hp` to the real `χ'`, and the mismatch is reported at
+the body rather than at the binders, which makes the diagnostic
+misleading. The `_` binds the instance explicitly; it is still a local
+instance, so `‹Mono m›` resolves inside the `isPullback` hole.
+
+The two sibling arguments need no such binder: `(fun m ↦ …)` exhausts
+the written binders before the instance, so the instance lambda is
+auto-inserted as a trailing one.
 
 The `isPullback` argument is the remaining hole. Its statement is
 `IsPullback m (isTerminalOne.from U) (Classifier.chi m) truth`, and
@@ -4386,6 +4416,22 @@ docstrings naming a choice-dependent mathlib counterpart follow W1's
 own precedent at `FinSetSkel.decidableEqHom`, which names
 `instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
 that way.
+
+**Round 4** (two fresh agents: consistency and executability, Lean
+correctness) returned one blocker and three serious findings, all
+applied. The blocker: `mkOfTerminalΩ₀`'s `uniq` argument was written
+`fun m χ' hp ↦ …`, which binds `χ'` to the `[Mono m]` instance,
+because Lean auto-inserts instance lambdas only for leading and
+trailing binders, never mid-list — Task 18 Step 3 now writes the
+binder explicitly, and records why the resulting error would have been
+reported at the body rather than at the binders. The serious three
+were all one shape found for the third time: Tasks 16 and 18 had Files
+blocks claiming index-file edits that no step of theirs performed,
+because Tasks 15 and 17 deferred the wiring forward, which would have
+left two wrapper modules compiled by lake's glob but never reached by
+`runLinter` — green, and unaudited by the axiom linter; and the
+self-review record contradicted Task 19 Step 3 about the conditional
+`TODO.md` entry.
 
 **Round 3** (two fresh agents: Lean correctness, executability under
 `superpowers:subagent-driven-development`) returned three blockers
