@@ -1659,9 +1659,11 @@ wrapper paragraph), § Exported names, § Decisions fixed here (10).
 - Produces: `FinSetSkel.terminalCone`,
   `FinSetSkel.binaryProductCone`,
   `FinSetSkel.cartesianMonoidalCategory` (a global `instance`),
-  `FinSetSkel.isTerminalOne`. Consumed by Task 9 (nothing), Task 12
-  (`⊗`, `◁`, the whiskering lemmas), Task 13 and Task 18
-  (`isTerminalOne`), and by W5's `cartesian` field.
+  `FinSetSkel.isTerminalOne`. Consumed by Task 12 (`⊗`, `◁`, the
+  whiskering lemmas), Task 13 (`cartesianMonoidalCategory`, through
+  `⊗` and `MonoidalClosed FinSetSkel`), Task 18 (`isTerminalOne`),
+  and by W5's `cartesian` field. Task 9 extends this module without
+  consuming anything of this task's.
 
 `cartesianMonoidalCategory` is a global `instance`, not W2's
 `@[instance_reducible] def` plus `attribute [local instance]`. Three
@@ -2409,7 +2411,8 @@ largest single proof obligation in W3 and gives it its own task.
 
 - Create:
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`
-- Modify: `GebMeta.lean`, the two `Exponential.lean` index files
+- Modify: `GebMeta.lean`,
+  `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential.lean`
 
 **Interfaces:**
 
@@ -2575,6 +2578,11 @@ cartesian structure's, and this is the allowlisted wrapper. Confirm
 that `Exponential/Core.lean`'s witnesses still measure
 `[propext, Quot.sound]`.
 
+Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed`
+to `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential.lean`, which
+Task 11 Step 5 created carrying `Core` alone. The `GebTests` index
+gains its parallel line in Task 13, with the test module it names.
+
 This task writes no test: the module's `GebTests` parallel is created
 in Task 13, which tests both tasks' declarations together.
 
@@ -2597,11 +2605,14 @@ Spec section: § Row g (wrapper pieces 2 and 3), § Exported names.
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`
 - Create:
   `GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`
-- Modify: `GebMeta.lean` (the `GebTests` name, per Task 12 Step 1)
+- Modify: `GebMeta.lean` (the `GebTests` name, per Task 12 Step 1),
+  `GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential.lean`
 
 **Interfaces:**
 
-- Consumes: Tasks 11 and 12; `Adjunction.rightAdjointOfEquiv`,
+- Consumes: Tasks 8 (`cartesianMonoidalCategory`, without which
+  neither `⊗` nor `MonoidalClosed FinSetSkel` elaborates), 11 and 12;
+  `Adjunction.rightAdjointOfEquiv`,
   `Adjunction.adjunctionOfEquivRight`, `Closed`, `MonoidalClosed`,
   `MonoidalCategory.tensorLeft`.
 - Produces: `FinSetSkel.expHomEquiv`,
@@ -2718,6 +2729,12 @@ object's length: `((ihom (mk 2 : FinSetSkel.{0})).obj (mk 3)) = mk 9`
 by `rfl` if `ihom` reduces, otherwise state the equality through
 `Closed.rightAdj`. Report which form was used.
 
+Add `import GebTests.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed`
+to `GebTests/Mathlib/CategoryTheory/FinSetSkel/Exponential.lean`,
+which Task 11 Step 5 created carrying `Core` alone. Without that line
+the test module is imported by nothing and `lake test` passes without
+running it — a silent coverage hole rather than a build error.
+
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
 `lake lint -- GebTests`
@@ -2738,9 +2755,10 @@ Task 12's whiskering bridge, and this task is the pair's second half.
 
 - Create:
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`
-- Create: `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean` and
-  its `GebTests` parallel
-- Modify: the two `FinSetSkel.lean` index files
+
+The `Equalizer.lean` index files and the two `FinSetSkel.lean`
+amendments are Task 15's, which is where the `GebTests` parallel this
+module's index would import is written.
 
 **Interfaces:**
 
@@ -2892,8 +2910,14 @@ theorem injVec_get_mem (f g : X ⟶ Y) (i : Fin (obj f g).len) :
 The injection is built from the list directly, not by
 `Vector.ofFnC` over an index lookup: `List.toArray` is the one-pass
 form. This was measured monomorphically at `[propext]`.
-`Vector.getElem_toArray` and `List.getElem_mem` are the two names to
-confirm; the goal after `simpa` is `(agree f g)[i] ∈ agree f g`.
+
+The bridge out of the vector is `Vector.getElem_mk` followed by
+`List.getElem_toArray`, not `Vector.getElem_toArray`: the latter goes
+from a *`Vector`*'s array back to the `Vector`, and `injVec f g` is a
+`Vector.mk` over a *`List`*'s array. Both of the right ones are
+`@[simp]`, so the `simpa` will likely close either way; name the ones
+that can fire. The goal after `simpa` is
+`(agree f g)[i] ∈ agree f g`, closed by `List.getElem_mem`.
 
 Run: `lake build`
 Expected: PASS.
@@ -2981,12 +3005,13 @@ Two spellings matter here. Root `Vector` has `getElem_set_ne` and
 `get_` forms exist only for `List.Vector` — so the step goes through
 W1's `rfl` bridge `Vector.get_eq_getElem`, and the disequality
 `getElem_set_ne` takes is between the two `Nat` indices, which is why
-`Fin.ext` lifts it. And `he ▸ List.mem_cons_self ..` must not rewrite
-both occurrences at once: if it produces `j ∈ j :: L` where `hj` is
-about `a :: L`, pin the motive or `subst` the equality first.
-`List.mem_cons_self`'s binders have moved between explicit and
-implicit across recent core releases; `#check` it in the module
-first.
+`Fin.ext` lifts it. The whole of this proof, `scatter`, `scatter_nil` and `scatter_cons`
+included, was elaborated verbatim at this toolchain: the `▸` resolves
+because the expected type is `False`, and
+`Vector.getElem_set_ne`'s signature is
+`(hi : i < n) (hj : j < n) (h : i ≠ j)`. `List.mem_cons_self`'s
+binders have moved between explicit and implicit across recent core
+releases, so `#check` it in the module before relying on the `..`.
 
 for the first, with the hypotheses moved into the motive so that the
 recursion may re-instantiate them, and analogously for the second,
@@ -2997,9 +3022,9 @@ head is `j`:
 
 - head is `j`: then `k = c` by `Nodup` (the tail cannot mention `j`
   again), the tail pass leaves the written entry alone by
-  `get_scatter_of_not_mem`, and `Vector.get_set_self` finishes.
+  `get_scatter_of_not_mem`, and `Vector.getElem_set_self` finishes.
 - head is not `j`: the membership passes to the tail and `ih`
-  applies, `Vector.get_set_ne` discharging the write.
+  applies, `Vector.getElem_set_ne` discharging the write.
 
 `Vector.getElem_set_self` and `Vector.getElem_set_ne` are the two
 names to confirm, through `Vector.get_eq_getElem` as above. Prove the
@@ -3087,12 +3112,17 @@ Spec section: § Row h, § Verification obligations (9).
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`
 - Create:
   `GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`
+- Create: `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean` and
+  its `GebTests` parallel
+- Modify: the two `FinSetSkel.lean` index files
 
 **Interfaces:**
 
 - Consumes: Task 14.
 - Produces: `ι_comp`, `injVec_get_invVec`, `lift`, `lift_ι`,
-  `lift_uniq`. Consumed by Task 16.
+  `lift_uniq`. Consumed by Task 16. A helper factored out of
+  `lift_uniq` (`injVec_injective`) or out of `invVec_lt` is a further
+  export of the module if it is stated at all; see Steps 2 and 4.
 
 - [ ] **Step 1: prove the equalising equation**
 
@@ -3123,7 +3153,8 @@ theorem injVec_get_invVec (f g : X ⟶ Y) (j : Fin X.len)
 
 Route: `List.getElem_of_mem` gives `k` and `(agree f g)[k] = j`, the
 computation inside `invVec_lt` gives `(invVec f g).get j = k`, and
-`injVec`'s entries are the list's by `Vector.getElem_toArray`. Factor
+`injVec`'s entries are the list's by `Vector.getElem_mk` and
+`List.getElem_toArray`, as in Task 14 Step 3. Factor
 the `(invVec f g).get j = k` step out of `invVec_lt` into its own
 named lemma if proving it twice — once there, once here — becomes
 awkward; that lemma is then a further export of Task 14.
@@ -3180,7 +3211,27 @@ model to follow. State the injectivity as a named lemma
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 5: check sharing with `dbgTrace`**
+- [ ] **Step 5: check the axioms**
+
+Measure the five declarations this task adds, and the lift at a
+monomorphic witness — `lift` is the one that computes, and the one
+whose bound proof reaches into the `Nat` API:
+
+```lean
+/-- Monomorphic witness for the axiom measurement. -/
+def probeLiftHom : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
+  Hom.ofVec (Vector.ofFnC fun _ ↦ 0)
+
+/-- Monomorphic witness for the axiom measurement. -/
+def probeLift : (mk 5 : FinSetSkel.{0}) ⟶ obj probeLiftHom probeLiftHom :=
+  lift probeLiftHom probeLiftHom (𝟙 (mk 5)) rfl
+```
+
+Expected: `[propext, Quot.sound]`. Delete both after measuring, then
+run the banned-form grep — `lift` is the declaration most likely to
+reach for `Vector.ofFn` by habit.
+
+- [ ] **Step 6: check sharing with `dbgTrace`**
 
 Verification obligation 9 requires this to be checked by measurement,
 not by reading the source. Temporarily wrap the inverse pass:
@@ -3206,7 +3257,7 @@ applied at two indices and count. If it re-runs, note it in the
 `docs/index.md` entry rather than restructuring — nothing in W3
 applies a partially applied `funDecodeC` in a loop — and report.
 
-- [ ] **Step 6: write the test parallel and commit**
+- [ ] **Step 7: write the test parallel and commit**
 
 The test computes an equalizer at a concrete pair: two morphisms
 `mk 5 ⟶ mk 2` agreeing at three indices, the object's length
@@ -3216,7 +3267,9 @@ value from the module, per § Global constraints.
 
 Create the two `Equalizer.lean` index files (importing `Core` now and
 `Limits` in Task 16) and add them to the two `FinSetSkel.lean` index
-files.
+files. They are created here rather than in Task 14 because the
+`GebTests` index has nothing to import until this task's test module
+exists.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -3380,8 +3433,8 @@ Spec sections: § Row l, § The classifier consumes the W1 inversion,
   `Vector.getElem_replicate`, `Equiv.apply_symm_apply`,
   `List.getElem_mem`.
 - Produces, in namespace `FinSetSkel.Classifier`: `scatterOne`,
-  `get_scatterOne_of_mem`, `get_scatterOne_of_not_mem`,
-  `get_scatterOne_eq_one`, `chiVec`,
+  `get_scatterOne_eq_one`, `get_scatterOne_eq_one_of`,
+  `get_scatterOne_of_mem`, `chiVec`,
   `chiVec_get_eq_one_iff`, `chi`, `chi_get`, `invOfInjective_apply`,
   `pullbackLift`, `pullbackLift_comp`, `pullbackLift_uniq`,
   `chi_comp_eq`, `chi_uniq`. Consumed by Task 18.
@@ -3441,6 +3494,9 @@ test, which would rebuild and rescan the image per index.
 
 ## Main statements
 
+* `FinSetSkel.Classifier.get_scatterOne_eq_one`,
+  `FinSetSkel.Classifier.get_scatterOne_eq_one_of` — the pass writes
+  `1` at the listed indices and nowhere else.
 * `FinSetSkel.Classifier.chiVec_get_eq_one_iff` — the characteristic
   vector is the indicator of the image.
 * `FinSetSkel.Classifier.chi_uniq` — a morphism with the same
@@ -3465,27 +3521,47 @@ def scatterOne {n : ℕ} (L : List (Fin n)) (v : Vector (Fin 2) n) :
     Vector (Fin 2) n :=
   L.foldl (fun w j ↦ w.set j.val 1 (by omega)) v
 
-/-- The pass writes `1` at every listed index. -/
-theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
-    (hj : j ∈ L) (v : Vector (Fin 2) n) : (scatterOne L v).get j = 1 := _
-
-/-- The pass leaves untouched every index the list does not
-mention. -/
-theorem get_scatterOne_of_not_mem {n : ℕ} (L : List (Fin n))
-    (j : Fin n) (hj : j ∉ L) (v : Vector (Fin 2) n) :
-    (scatterOne L v).get j = v.get j := _
-
 /-- The pass writes `1` only at listed indices. -/
 theorem get_scatterOne_eq_one {n : ℕ} (L : List (Fin n)) (j : Fin n)
     (v : Vector (Fin 2) n) (h : (scatterOne L v).get j = 1) :
     j ∈ L ∨ v.get j = 1 := _
+
+/-- The pass writes `1` at every listed index, and preserves a `1`
+already present. -/
+theorem get_scatterOne_eq_one_of {n : ℕ} (L : List (Fin n))
+    (j : Fin n) (v : Vector (Fin 2) n) (h : j ∈ L ∨ v.get j = 1) :
+    (scatterOne L v).get j = 1 := _
+
+/-- The pass writes `1` at every listed index. -/
+theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
+    (hj : j ∈ L) (v : Vector (Fin 2) n) : (scatterOne L v).get j = 1 :=
+  get_scatterOne_eq_one_of L j v (Or.inl hj)
 ```
 
-All three by explicit `List.rec` with the starting vector in the
-motive, in the shape of Task 14 Step 6.
+The first two by explicit `List.rec` with the starting vector in the
+motive, in the shape of Task 14 Step 6; the third is a corollary.
 
-The third is what keeps this module choice-free, and it is not
-optional. The converse of the first would otherwise be proved by
+Both directions split on `a.val = j.val` through the axiom-free
+`Nat.decEq`, never on list membership: where equal,
+`Vector.getElem_set_self` supplies the right disjunct for the
+inductive hypothesis; where not, `Vector.getElem_set_ne` transports
+the hypothesis through the write.
+
+The second is stated in this strengthened form because
+`get_scatterOne_of_mem` is **not** provable directly by `List.rec`.
+Its cons case splits `j ∈ a :: L` by `List.mem_cons`, and the branch
+`j = a` leaves the goal
+`(scatterOne L (v.set a.val 1 _)).get j = 1` with no `j ∈ L` in hand,
+so the inductive hypothesis does not apply. Task 14's corresponding
+lemma escapes that branch through its `Nodup` hypothesis, which gives
+it `j ∉ L`; this one has no `Nodup` (see below) and would have to
+decide `j ∈ L` instead, reaching `List.instDecidableMemOfLawfulBEq`
+and with it the choice-tainted `LawfulBEq (Fin n)`. Carrying `v.get j
+= 1` as an alternative disjunct closes the branch with no decision at
+all.
+
+That pair is what keeps this module choice-free, and it is not
+optional. Without them `chiVec_get_eq_one_iff` would be proved by
 `by_contra` or by `decide` on `j ∈ m.toVec.toList`, and the only
 `Decidable (a ∈ as)` for lists in Lean core is
 `instance [BEq α] [LawfulBEq α] …`, which routes through the
@@ -4111,8 +4187,23 @@ own precedent at `FinSetSkel.decidableEqHom`, which names
 `instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
 that way.
 
-**Type consistency.** `homEquivIdxFun` takes `X` and `Y` explicitly
-in Tasks 5, 11 and 13. `expEquivIdx` and `expEquivHom` take `m z y`
+**Round 2** (two fresh agents: Lean correctness, cross-reference
+consistency) returned no blocker and five serious findings, all
+applied: `get_scatterOne_of_mem` was not provable in the shape round 1
+gave it — its head case needs the strengthened
+`get_scatterOne_eq_one_of`, without which the proof would have to
+decide list membership and reach the taint the pair exists to avoid
+(Task 17); the `Exponential.lean` and `Equalizer.lean` index files
+were attributed to tasks whose steps never wired them, leaving the
+Task 13 test module imported by nothing (Tasks 11 through 16);
+Task 15 had no axiom-check step; and Task 8's "consumed by"
+annotation named a task that does not use `isTerminalOne` while
+Task 13's "consumes" omitted the cartesian instance it cannot
+elaborate without.
+
+**Type consistency.** `homEquivIdxFun` itself, with `X` and `Y`
+explicit, appears in Tasks 5 and 11; Task 13 applies only its two
+`@[simp]` application lemmas. `expEquivIdx` and `expEquivHom` take `m z y`
 explicitly, in that order, in Tasks 11 and 13, and `expHomEquiv`
 takes `X` then `Z` then `Y`, matching `adjunctionOfEquivRight`'s
 argument order. `Equalizer.ι`, `Equalizer.lift` and
