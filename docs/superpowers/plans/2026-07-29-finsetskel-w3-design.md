@@ -2000,7 +2000,8 @@ takes the cocone morphism.
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 2: register the three `Prop` instances**
+- [ ] **Step 2: register the three `Prop` classes and the pair-colimit
+instance they route through**
 
 ```lean
 /-- `FinSetSkel` has an initial object. -/
@@ -4329,7 +4330,8 @@ Spec sections: § Documentation, § Amendments to `TODO.md`
 
 - Modify: `docs/index.md`, `TODO.md`
 - Modify, only as `lake shake` requires and in their own commit: the
-  import lines of any of this branch's `.lean` modules (Step 4)
+  import lines of any of this branch's `.lean` modules (Step 1, which
+  runs first for that reason)
 
 - [ ] **Step 1: settle the import lists, in their own commit**
 
@@ -4571,25 +4573,15 @@ inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
 
-**Round 1 of adversarial review** (three fresh agents: Lean
-correctness, cross-reference consistency, obligation coverage)
-returned no blocker and five serious findings, all applied: the
-`Prop`-valued instance test written as a `Prod` (Task 9), the
-`Sum.elim` reduction missing from row c's rewrite chains (Task 6),
-the decidability route in row l that could have pulled
-`LawfulBEq (Fin n)`'s taint into a choice-free module (Task 17, now
-a third fold lemma), the absent `[Freyd1972]` citations (§ Global
-constraints and nine module docstrings), and the overstated coverage
-claim for verification obligation 5 (§ Global constraints, corrected
-above). One cosmetic-taste finding was rejected: declaration
-docstrings naming a choice-dependent mathlib counterpart follow W1's
-own precedent at `FinSetSkel.decidableEqHom`, which names
-`instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
-that way.
-
-**Round 7** (two fresh agents: Lean correctness, consistency and
-executability) returned no blocker and two serious findings from the
-Lean lens, both applied. Task 13 Step 3's recipe failed a third time,
+**Round 7** (three fresh agents, the consistency lens relaunched after
+its first attempt stalled) returned no blocker and three serious
+findings, all applied. The consistency lens found the single
+cross-reference the round's own renumbering script had missed: Task
+19's Files block still pointed the `.lean` import commit at Step 4,
+the `TODO.md` amendment step, rather than at Step 1 — the Files block
+being the first thing that task's subagent reads. It also corrected a
+count in this record and, incidentally, a count in its own brief. The
+two from the Lean lens, both applied. Task 13 Step 3's recipe failed a third time,
 for a third reason: after `ext t` the `homEquivIdxFun …` term sits
 *unapplied* as `expEquivIdx`'s function argument, and `simp only` does
 not eta-expand a function occurrence to make an applied-form equation
@@ -4674,9 +4666,11 @@ assertion. From the executability lens:
 two reviewed commits, since `jj commit` describes the current
 working-copy commit rather than creating one beside it (Task 1, and
 the `jj new` rule in § Global constraints); no task moved the branch
-bookmark, so after twenty commits the branch the user reviews would
-still have named the plan commit (the two-command idiom in § Global
-constraints, written out in all twenty commit steps); Task 13's Files
+bookmark, so at the end of the branch the commit the user reviews
+would still have been the plan commit (the two-command idiom in
+§ Global constraints, written out in every commit step — twenty-one
+such steps, Task 19 carrying two, its import commit conditional on
+`lake shake` reporting anything); Task 13's Files
 list named a `GebMeta.lean` edit no step of it performed, which would
 have failed its own `lake lint -- GebTests` (Task 12 Step 1 now
 appends both names); Task 8's commit step verified none of what it
@@ -4697,6 +4691,22 @@ Task 15 had no axiom-check step; and Task 8's "consumed by"
 annotation named a task that does not use `isTerminalOne` while
 Task 13's "consumes" omitted the cartesian instance it cannot
 elaborate without.
+
+**Round 1 of adversarial review** (three fresh agents: Lean
+correctness, cross-reference consistency, obligation coverage)
+returned no blocker and five serious findings, all applied: the
+`Prop`-valued instance test written as a `Prod` (Task 9), the
+`Sum.elim` reduction missing from row c's rewrite chains (Task 6),
+the decidability route in row l that could have pulled
+`LawfulBEq (Fin n)`'s taint into a choice-free module (Task 17, now
+a third fold lemma), the absent `[Freyd1972]` citations (§ Global
+constraints and nine module docstrings), and the overstated coverage
+claim for verification obligation 5 (§ Global constraints, corrected
+above). One cosmetic-taste finding was rejected: declaration
+docstrings naming a choice-dependent mathlib counterpart follow W1's
+own precedent at `FinSetSkel.decidableEqHom`, which names
+`instDecidableEqOfLawfulBEq` and `Vector.instLawfulBEq` in exactly
+that way.
 
 **Type consistency.** `homEquivIdxFun` itself, with `X` and `Y`
 explicit, appears in Tasks 5 and 11; Task 13 applies only its two
