@@ -22,10 +22,12 @@
 
 ## Scope
 
-Row i of the operation table in `TODO.md` § FinSetSkel
-as an elementary topos: binary coequalizers in `FinSetSkel`, and
+Row i of the operation table in `TODO.md` § FinSetSkel as an
+elementary topos, § Operations: binary coequalizers in `FinSetSkel`,
+and
 `HasCoequalizers FinSetSkel`, constructed by folding
-`Batteries.UnionFind.union` over the domain of a parallel pair.
+`Batteries.UnionFind.union`, through `unionN`, over the domain of a
+parallel pair.
 
 W4 depends on W0 (the `Batteries.` allow-list) and W1 (`FinSetSkel`
 and its morphism API), both merged. It is independent of W2 and of W3.
@@ -123,9 +125,11 @@ Everything else is novel, in the sense of being a representation
 choice rather than a statement taken from a source: `size_union`,
 `size_push`, `Sized`, `Sized.discrete`, `Sized.union`, `Sized.root`,
 `Sized.ofEdges` and the theorems about them; and `edges`, `unionFind`,
-`isRoot`, `len`, `rep` and the application-normal-form lemmas. The
-disjoint-set algorithm is not novel, but it is not restated here
-either — it is Batteries'.
+`isRoot`, `len`, `rep` and the application-normal-form lemmas, along
+with the wrapper's two instances, `hasColimit_parallelPair` and the
+anonymous `HasCoequalizers`, which are packaging rather than statements
+taken from the source. The disjoint-set algorithm is not novel, but it
+is not restated here either — it is Batteries'.
 
 ## The union-find layer
 
@@ -143,6 +147,14 @@ Choice-free, and free of any reference to category theory or to
 `FinSetSkel`: it is stated over a size `n`, a list of edges, and an
 arbitrary target type. Named for the fold, not for a closure: the
 closure characterisation is out of scope below.
+
+Its preamble, per `docs/rules/lean-coding.md` § Lean 4 module system:
+`module`, then `public import Batteries.Data.UnionFind` and whatever
+`Mathlib.Data.List.*` module the `List` lemmas the recursions use turn
+out to need, then `@[expose] public section`. The imports are `public`
+because the quotient core states its own definitions over `Sized`.
+Every module list in this spec is the starting point for `lake shake`,
+not its output; the pre-push check settles the minimal set.
 
 Its upstream target is Batteries rather than mathlib4, which is the
 subject of `TODO.md` § Upstream destination of core- and
@@ -229,9 +241,9 @@ representation is projected only inside the module that owns it:
 `root_eq_iff`, `equiv_union`, `rootD_discrete` and the two
 `equiv_foldl` lemmas are stated over `v.1`, and `Sized.union` and
 `Sized.root` destruct it with `obtain ⟨u, rfl⟩`. None of that
-surfaces: of the six declarations the quotient core consumes, the four
-statements are over `Sized.root`, and the other two are the type
-`Sized` and the constructor `Sized.ofEdges`.
+surfaces: of the six declarations the quotient core consumes, three
+are statements over `Sized.root`, one is `Sized.root` itself, and the
+other two are the type `Sized` and the constructor `Sized.ofEdges`.
 `Sized.root` returns `Fin n` rather than Batteries' `Nat`-valued
 `rootD`, discharging the bound once so that every downstream statement
 is an equation between `Fin n` terms, which is W1's normal form.
@@ -313,8 +325,16 @@ Stated over `FinSetSkel` morphisms in W1's application-normal form
 choice-free, so the core may import it, and stating over morphisms
 makes the wrapper a transcription rather than a translation.
 
-The module `open`s `Batteries`, which licenses the `UnionFind.`-
-prefixed form and no shorter one: with the union-find layer declaring
+Its preamble is `module`; `public import` of
+`Geb.Mathlib.Data.UnionFind.OfEdges`,
+`Geb.Mathlib.CategoryTheory.FinSetSkel.Basic`,
+`Geb.Mathlib.Data.List.NodupEquivFin` and
+`Geb.Mathlib.Data.Vector.OfFn`; then `@[expose] public section` and
+`open CategoryTheory Batteries`. The `CategoryTheory` open is what puts
+`⟶` and `≫` in scope, as W1's `Basic.lean` does for the same reason.
+
+The `Batteries` open licenses the `UnionFind.`-prefixed form and no
+shorter one: with the union-find layer declaring
 `Sized` inside `namespace Batteries.UnionFind`, `UnionFind.Sized`
 resolves under that `open` and a bare `Sized` does not. This spec
 therefore writes `UnionFind.Sized`, `UnionFind.Sized.root_root`,
@@ -612,9 +632,11 @@ reached. In the tests, deciding equality of morphisms goes through
 W1's pinned `decidableEqHom`, which is the same paragraph's concern one
 level down and is already settled.
 
-Each of these is re-measured at the revision this branch builds
-against rather than taken from the paragraph's v4.33.0-rc1 measurement,
-and the amendment's measurement rule does not engage. That rule
+Each of these is re-measured rather than carried over, though at
+present the two revisions coincide: `lean-toolchain` and the mathlib
+pin in `lakefile.toml` are both v4.33.0-rc1, which is what that
+paragraph measured at. The amendment's measurement rule does not
+engage. That rule
 concerns a polymorphic constant whose instance argument may be
 instantiated at a choice-dependent instance; the two declarations W4
 states over a type variable, `apply_root_ofEdges` and
@@ -630,7 +652,15 @@ used.
 `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean`, in namespace
 `FinSetSkel`. The only source module of W4 that reaches
 `GebMeta.classicalAllowedModules`, per constraint 8; its `GebTests`
-parallel is listed alongside it, as the standing obligation requires. Its module
+parallel is listed alongside it, as the standing obligation requires.
+
+Its preamble is `module`; `public import` of
+`Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient` and
+`Mathlib.CategoryTheory.Limits.Shapes.Equalizers`; then
+`@[expose] public section` and
+`open CategoryTheory CategoryTheory.Limits`, which is what puts
+`ColimitCocone`, `parallelPair`, `Cofork`, `HasColimit` and
+`HasCoequalizers` in scope. Its module
 docstring carries `[nLabCoequalizer]` in `## References`, the
 declaration below being on the transcription list.
 
@@ -655,9 +685,11 @@ namespace would name it `FinSetSkel.FinSetSkel.hasColimit_parallelPair`,
 which the `dupNamespace` linter rejects; `weak.warningAsError = true`
 makes that a build failure.
 
-`coequalizerCocone` opens with `let v := unionFind f g`, which is where
-the fold runs, and is `Cofork.ofπ (π Y v) (comp_π f g)` together with
-`Cofork.IsColimit.mk` applied to `desc`, `π_desc` and `desc_uniq`,
+`coequalizerCocone` opens with `let v := Quotient.unionFind f g`,
+which is where the fold runs, and is
+`Cofork.ofπ (Quotient.π Y v) (Quotient.comp_π f g)` together with
+`Cofork.IsColimit.mk` applied to `Quotient.desc`, `Quotient.π_desc` and
+`Quotient.desc_uniq`,
 whose signature —
 `(desc : (s : Cofork f g) → t.pt ⟶ s.pt) → (∀ s, t.π ≫ desc s = s.π)`
 `→ (∀ s m, t.π ≫ m = s.π → m = desc s)` — takes the three as written,
@@ -677,14 +709,22 @@ Three parallels under `GebTests/Mathlib/`, compositional per
 `docs/rules/lean-coding.md`
 § Structure and typeclass patterns. Each carries a module docstring and
 the per-declaration docstrings the same rules require of any `.lean`
-file; the `Quotient` parallel qualifies rather than opens, for the
-reason § The quotient core gives.
+file. Each test module declares no namespace and reaches the
+declarations under test fully qualified, as W1's parallel does with
+`FinSetSkel.Hom.ofVec`. The wrapper's reason for qualifying — that
+`open Quotient` inside `namespace FinSetSkel` draws
+`linter.ambiguousOpen` — does not transfer to a module with no
+enclosing namespace, where `open FinSetSkel.Quotient` would be
+unambiguous; qualifying is a house convention here, not a constraint.
 
 Computed assertions use `#guard`, not `by decide` or `by rfl`. Nothing
 built from `UnionFind.union` or `rootD` reduces in the kernel:
 `root`, `findAux` and `find` are well-founded recursions whose measure
-is the `noncomputable` `rankMax`, so `by rfl` fails on so small a goal
-as `(UnionFind.empty.push.push.union 0 1).size = 2`, and `decide` gets
+is the `noncomputable` `rankMax`. On a union-find `u` of size 2,
+`by rfl` fails on so small a goal as
+`(u.union ⟨0, by decide⟩ ⟨1, by decide⟩).size = 2` — the index
+arguments written with explicit bounds, a numeral at
+`Fin u.size` running into the same non-reduction — and `decide` gets
 stuck at the `Decidable` instance. `native_decide` is not the escape:
 `GebMeta.detectNonstandardAxiom` forbids `Lean.ofReduceBool`
 everywhere. `#guard` evaluates through the compiler and introduces no
@@ -708,13 +748,14 @@ which do reduce; the union-find is the difference.
   and `Y` of length 4, `f = Hom.ofVec ⟨#[0, 1, 3], rfl⟩` and
   `g = Hom.ofVec ⟨#[1, 2, 3], rfl⟩`, the edges are `(0,1)`, `(1,2)` and the
   reflexive `(3,3)`, and the classes are `{0,1,2}` and `{3}`. The
-  `#guard`s are `len (unionFind f g) == 2` and that `π` sends `0`, `1`,
-  `2` to one index and `3` to the other. Which representative each
-  class gets is fixed by union by rank, an internal of Batteries'
-  algorithm, and is not asserted. For `desc`, take
-  `h : Y ⟶ ⟨2⟩` to be `Hom.ofVec ⟨#[0, 0, 0, 1], rfl⟩`; that it satisfies
-  `f ≫ h = g ≫ h`, and the factorisation
-  `π Y (unionFind f g) ≫ desc Y (unionFind f g) h = h`, are both
+  `#guard`s are `Quotient.len (Quotient.unionFind f g) == 2` and that
+  `Quotient.π` sends `0`, `1`, `2` to one index and `3` to the other.
+  Which representative each class gets is fixed by union by rank, an
+  internal of Batteries' algorithm, and is not asserted. For `desc`,
+  take `h : Y ⟶ ⟨2⟩` to be `FinSetSkel.Hom.ofVec ⟨#[0, 0, 0, 1], rfl⟩`;
+  that it satisfies `f ≫ h = g ≫ h`, and the factorisation
+  `Quotient.π Y v ≫ Quotient.desc Y v h = h` at
+  `v := Quotient.unionFind f g`, are both
   `#guard`ed through W1's morphism `DecidableEq` in its `Bool` form.
   The same two facts also follow from `comp_π` and `π_desc` as proofs;
   the test asserts them by computation, which is what exercises the
