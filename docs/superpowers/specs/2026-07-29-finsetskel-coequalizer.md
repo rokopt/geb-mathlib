@@ -28,8 +28,9 @@ as an elementary topos: binary coequalizers in `FinSetSkel`, and
 `Batteries.UnionFind.union` over the domain of a parallel pair.
 
 W4 depends on W0 (the `Batteries.` allow-list) and W1 (`FinSetSkel`
-and its morphism API), both merged. It is independent of W2 and of W3,
-which proceeds concurrently in a separate worktree.
+and its morphism API), both merged. It is independent of W2 and of W3.
+`TODO.md` § Status records W3 as not started; it is being specified
+concurrently in a separate worktree, which that table does not track.
 
 The coequalizer's data term is what W5 consumes for the
 `coequalizerCocone` field of `ElementaryTopos`; `HasCoequalizers` is
@@ -227,9 +228,10 @@ statement, so opacity would block every `simp` lemma. `Sized`'s
 representation is projected only inside the module that owns it:
 `root_eq_iff`, `equiv_union`, `rootD_discrete` and the two
 `equiv_foldl` lemmas are stated over `v.1`, and `Sized.union` and
-`Sized.root` destruct it with `obtain ⟨u, rfl⟩`. None of that surfaces
-— all six declarations the quotient core consumes are over
-`Sized.root`.
+`Sized.root` destruct it with `obtain ⟨u, rfl⟩`. None of that
+surfaces: of the six declarations the quotient core consumes, the four
+statements are over `Sized.root`, and the other two are the type
+`Sized` and the constructor `Sized.ofEdges`.
 `Sized.root` returns `Fin n` rather than Batteries' `Nat`-valued
 `rootD`, discharging the bound once so that every downstream statement
 is an equation between `Fin n` terms, which is W1's normal form.
@@ -287,9 +289,12 @@ them bare the lambda's elaboration is postponed and the inductive
 hypothesis fails to apply.
 
 `Sized.equiv_union` shares its base name with Batteries'
-`UnionFind.equiv_union`, one namespace up. Both resolve, but a bare
-`equiv_union` inside the module means Batteries'; this module writes
-each qualified.
+`UnionFind.equiv_union`, one namespace up. Which one a bare
+`equiv_union` means depends on where it is written: inside a `Sized.*`
+declaration — which all three recursions above are — Lean opens the
+declaration's own prefix and it resolves to the restatement, while
+outside one it resolves to Batteries'. This module writes each
+qualified rather than relying on that.
 
 ## The quotient core
 
@@ -367,7 +372,7 @@ section
 variable {n : ℕ} {Z : FinSetSkel.{u}}
 
 def isRoot (v : UnionFind.Sized n) : Fin n → Bool :=
-  fun j ↦ decide (v.root j = j)
+  fun j ↦ @decide (v.root j = j) (instDecidableEqFin _ _ _)
 
 def len (v : UnionFind.Sized n) : ℕ :=
   ((List.finRange n).filter (isRoot v)).length
@@ -530,14 +535,19 @@ consumes
 ### Constraint 9
 
 The constructions use `Vector.ofFnC` and never `Vector.ofFn`,
-`Vector.range` or `Vector.finRange`. `List.finRange` is not covered by
+`Vector.range`, `Vector.finRange`, or the `Array.toList_ofFn` and
+`List.toArray_ofFn` bridges. `List.finRange` is not covered by
 that ban and its lemmas are choice-free; W1's `Fin.compressEquiv`
-already uses it. Importing `Batteries.Data.UnionFind.Lemmas` makes no
+already uses it. Importing `Batteries.Data.UnionFind`, whose index module
+`public import`s `Basic` and `Lemmas`, makes no
 `Batteries.Data.Vector.*` module reachable, so it admits none of
 constraint 9's tainted `get`-form counterparts.
 
 `isRoot` names its decidability instance rather than leaving it to
-search: `@decide _ (instDecidableEqFin _ _ _)`.
+search: `@decide (v.root j = j) (instDecidableEqFin _ _ _)`. The
+proposition is written out, not elided — with `@decide _ …` nothing
+constrains `decide`'s `p`, and `instDecidableEqFin`'s three arguments
+stay unsolved.
 
 Two routes inhabit `DecidableEq (Fin n)`, `instDecidableEqFin` and
 `instDecidableEqOfLawfulBEq`, and which of them is choice-free depends
@@ -578,10 +588,10 @@ The `Nat` division and order paragraph names W4's `Fin self.size`
 obligations. It reaches little of W4: no `Nat` division arises
 anywhere, the index arithmetic W3 needs for products and exponentials
 having no counterpart here, and the only `Fin` bound discharged is
-`Sized.root`'s, which is `Batteries.UnionFind.rootD_lt` applied to
-`x.isLt` with no arithmetic between them. Where a bound does need
-arithmetic — `Sized.discrete`'s `size + 1` — the rule applies as
-stated.
+`UnionFind.Sized.root`'s, which is `Batteries.UnionFind.rootD_lt`
+applied to `x.isLt` with no arithmetic between them. Where a bound does
+need arithmetic — `UnionFind.Sized.discrete`'s `size + 1` — the rule
+applies as stated.
 
 The `Equiv`-transport paragraph names W4's renumbering of union-find
 roots onto an initial segment, as a domain transport, the family in
@@ -606,11 +616,14 @@ Each of these is re-measured at the revision this branch builds
 against rather than taken from the paragraph's v4.33.0-rc1 measurement,
 and the amendment's measurement rule does not engage. That rule
 concerns a polymorphic constant whose instance argument may be
-instantiated at a choice-dependent instance; `apply_root_ofEdges`, the
-only polymorphic declaration W4 states, takes `α` as a bare type
-variable with no instance argument, so its polymorphic reading is
+instantiated at a choice-dependent instance; the two declarations W4
+states over a type variable, `apply_root_ofEdges` and
+`apply_root_foldl`, both take `α` bare, with no instance argument, so
+their polymorphic reading is
 already complete. The composites are nonetheless measured whole rather
-than ingredient by ingredient, per the rule's second half.
+than ingredient by ingredient, per the rule's first sentence:
+measurement is from a monomorphic declaration at the instances actually
+used.
 
 ## The wrapper
 
@@ -752,6 +765,17 @@ The axiom discipline is checked by `lake lint` through
   itself is not touched, per § The union-find layer.
 - `TODO.md` § Status: W4's row becomes complete, with
   its module list.
+- `docs/references.bib` gains one `@misc` entry, `nLabCoequalizer`, on
+  the pattern of the `nLabSkeletalCategory` entry already there: nLab
+  authors, "Coequalizer",
+  `https://ncatlab.org/nlab/show/coequalizer`. The existing
+  `MacLaneMoerdijk1992` entry is left alone; W4 does not cite it.
+- Constraint 9's closing paragraph reads "Deciding a proposition
+  quantified over `Fin n` is another, and W3 and W4 both need it". W4
+  does not, per correction 4, so the clause narrows to W3. This one is
+  unconditional: the paragraph is already in this branch's `TODO.md`,
+  not on a sibling. W4 speaks only for itself; whether W3 needs it is
+  W3's to record.
 - Constraint 9's `Equiv`-transport paragraph, once branch
   `feat/choice-free-primitives` has merged, loses its closing clause
   "W4's renumbering of union-find roots onto an initial segment is a
@@ -765,8 +789,9 @@ The axiom discipline is checked by `lake lint` through
 - The spec and plan are removed in the branch's final commits, per
   `CONTRIBUTING.md` § Concern shape.
 
-W4 edits `TODO.md` in three places, or four if the conditional
-constraint-9 correction fires, of which only the § Status row is a
+W4 edits `TODO.md` in four places, or five if the conditional
+constraint-9 `Equiv` correction fires, of which only the § Status row
+is a
 shared file in the standing obligation's sense; the § Triggers,
 § Upstream destination and constraint-9 edits touch parts of `TODO.md`
 that obligation does not anticipate, and are conflicts to watch for on
@@ -789,11 +814,8 @@ which that text leaves unnamed; § Constraint 9 above records that W4
 reaches
 neither, so W4 imports nothing from it.
 
-`docs/references.bib` gains one `@misc` entry, `nLabCoequalizer`, on
-the pattern of the `nLabSkeletalCategory` entry already there:
-nLab authors, "Coequalizer",
-`https://ncatlab.org/nlab/show/coequalizer`. The existing
-`MacLaneMoerdijk1992` entry is left alone; W4 does not cite it.
+The `docs/references.bib` entry is listed with the other non-Lean
+deliverables above.
 
 ## Out of scope
 
