@@ -81,8 +81,8 @@ Measured against the mathlib limit interface: `parallelPair` depends on
 `propext` alone, but `Cofork.ofπ`, `Cofork.IsColimit.mk` and
 `hasCoequalizers_of_hasColimit_parallelPair` each depend on
 `Classical.choice`. The allowlist amendment the standing obligation
-predicts for W4 is therefore required, and is required for the wrapper
-module alone.
+predicts for W4 is therefore required, and among W4's source modules is
+required for the wrapper alone.
 
 ## Transcription or novel
 
@@ -119,11 +119,12 @@ and Riehl and the obligation records that attestation is not
 verification.
 
 Everything else is novel, in the sense of being a representation
-choice rather than a statement taken from a source: `Sized`,
-`Sized.discrete`, `Sized.union`, `Sized.root`, `Sized.ofEdges` and the
-theorems about them; and `edges`, `unionFind`, `isRoot`, `len`, `rep`
-and the application-normal-form lemmas. The disjoint-set algorithm is
-not novel, but it is not restated here either — it is Batteries'.
+choice rather than a statement taken from a source: `size_union`,
+`size_push`, `Sized`, `Sized.discrete`, `Sized.union`, `Sized.root`,
+`Sized.ofEdges` and the theorems about them; and `edges`, `unionFind`,
+`isRoot`, `len`, `rep` and the application-normal-form lemmas. The
+disjoint-set algorithm is not novel, but it is not restated here
+either — it is Batteries'.
 
 ## The union-find layer
 
@@ -182,7 +183,8 @@ def Sized (n : Nat) : Type := {u : UnionFind // u.size = n}
 def Sized.discrete (n : Nat) : Sized n
 def Sized.union (v : Sized n) (x y : Fin n) : Sized n
 def Sized.root (v : Sized n) (x : Fin n) : Fin n
-def Sized.ofEdges (n : Nat) (l : List (Fin n × Fin n)) : Sized n
+def Sized.ofEdges (n : Nat) (l : List (Fin n × Fin n)) : Sized n :=
+  l.foldl (fun v p ↦ v.union p.1 p.2) (discrete n)
 
 theorem Sized.root_eq_iff {v : Sized n} {a b : Fin n} :
     v.root a = v.root b ↔ v.1.Equiv a b
@@ -221,10 +223,13 @@ a `def`, and so opaque at reducible transparency — the property W1's
 `Basic.lean` docstring records as its reason for making the objects a
 structure instead. The cases differ in where the representation is
 read. W1's objects are projected as `X.len` in every downstream
-statement, so opacity would block every `simp` lemma; `Sized`'s
-representation is projected as `v.1` in two proofs only, `Sized.union`
-and `Sized.root`, both of which destruct it with `obtain ⟨u, rfl⟩`.
-Every public statement is over `Sized.root`, not over `v.1`.
+statement, so opacity would block every `simp` lemma. `Sized`'s
+representation is projected only inside the module that owns it:
+`root_eq_iff`, `equiv_union`, `rootD_discrete` and the two
+`equiv_foldl` lemmas are stated over `v.1`, and `Sized.union` and
+`Sized.root` destruct it with `obtain ⟨u, rfl⟩`. None of that surfaces
+— all six declarations the quotient core consumes are over
+`Sized.root`.
 `Sized.root` returns `Fin n` rather than Batteries' `Nat`-valued
 `rootD`, discharging the bound once so that every downstream statement
 is an equation between `Fin n` terms, which is W1's normal form.
@@ -531,17 +536,25 @@ already uses it. Importing `Batteries.Data.UnionFind.Lemmas` makes no
 `Batteries.Data.Vector.*` module reachable, so it admits none of
 constraint 9's tainted `get`-form counterparts.
 
-Decidability in `isRoot` is left to instance search rather than named.
-Two routes do inhabit `DecidableEq (Fin n)` — `instDecidableEqFin`,
-which search picks, and `instDecidableEqOfLawfulBEq` — but constraint
-9's rule to name the term is conditional on exactly one of the routes
-being choice-free, and both are axiom-free at the `BEq (Fin n)` in
-scope, that being `instBEqOfDecidableEq` rather than the
-choice-dependent `Std.LawfulBEqOrd.lawfulBEq` the equality-API
-paragraph warns of. The rule therefore does not engage. Implementation
-confirms which instance search picked by elaborating `isRoot` with
-`pp.all` and reading it off the term, as constraint 9's measurement
-discipline requires.
+`isRoot` names its decidability instance rather than leaving it to
+search: `@decide _ (instDecidableEqFin _ _ _)`.
+
+Two routes inhabit `DecidableEq (Fin n)`, `instDecidableEqFin` and
+`instDecidableEqOfLawfulBEq`, and which of them is choice-free depends
+on what is imported. At W4's own imports both are axiom-free, and
+search picks `instDecidableEqFin` — measured, by elaborating `isRoot`
+with `pp.all` and reading the instance off the term. Under `import
+Mathlib`, `instDecidableEqOfLawfulBEq` measures
+`[propext, Classical.choice, Quot.sound]`, its `LawfulBEq (Fin n)`
+resolving to the choice-dependent `Std.LawfulBEqOrd.lawfulBEq` that
+constraint 9's equality-API paragraph names.
+
+So the second route is choice-free here only by accident of import, and
+constraint 9's rule engages on the general shape rather than on today's
+measurement: W1 pins `decidableEqHom` for exactly this reason, its
+docstring recording that leaving the instance to search "would let a
+bump silently change its axioms". Pinning costs one elaboration and
+removes the dependence.
 
 Constraint 9 gains three choice-taint families across four paragraphs,
 a measurement rule, and an amendment to its closing paragraph, on `jj`
@@ -602,8 +615,9 @@ than ingredient by ingredient, per the rule's second half.
 ## The wrapper
 
 `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean`, in namespace
-`FinSetSkel`. The only module of W4 that reaches
-`GebMeta.classicalAllowedModules`, per constraint 8. Its module
+`FinSetSkel`. The only source module of W4 that reaches
+`GebMeta.classicalAllowedModules`, per constraint 8; its `GebTests`
+parallel is listed alongside it, as the standing obligation requires. Its module
 docstring carries `[nLabCoequalizer]` in `## References`, the
 declaration below being on the transcription list.
 
@@ -612,7 +626,7 @@ universe u
 variable {X Y : FinSetSkel.{u}}
 
 def coequalizerCocone (f g : X ⟶ Y) : ColimitCocone (parallelPair f g)
-instance hasColimit_parallelPair {X Y : FinSetSkel.{u}} {f g : X ⟶ Y} :
+instance hasColimit_parallelPair {f g : X ⟶ Y} :
     HasColimit (parallelPair f g)
 instance : HasCoequalizers FinSetSkel.{u}
 ```
@@ -632,9 +646,10 @@ makes that a build failure.
 the fold runs, and is `Cofork.ofπ (π Y v) (comp_π f g)` together with
 `Cofork.IsColimit.mk` applied to `desc`, `π_desc` and `desc_uniq`,
 whose signature —
-`(∀ s, t.π ≫ desc s = s.π) → (∀ s m, t.π ≫ m = s.π → m = desc s)` —
-takes the three as written, `Cofork.condition` supplying `π_desc`'s
-`w`. It is exported under that stable public name because constraint 5
+`(desc : (s : Cofork f g) → t.pt ⟶ s.pt) → (∀ s, t.π ≫ desc s = s.π)`
+`→ (∀ s m, t.π ≫ m = s.π → m = desc s)` — takes the three as written,
+`Cofork.condition` supplying `π_desc`'s `w`. It is exported under that
+stable public name because constraint 5
 requires each row's data term to be, and because it is what W5's
 `coequalizerCocone` field consumes. The per-diagram `HasColimit`
 carries it into instance search, and `HasCoequalizers` follows through
@@ -723,8 +738,10 @@ The axiom discipline is checked by `lake lint` through
   two only.
 - `docs/index.md` gains an entry for each of
   the three new source modules.
-- `TODO.md` § Triggers gains the entry the umbrella
-  spec specifies: whether mathlib accepts a mathlib-to-Batteries
+- `TODO.md` § Triggers gains the entry `TODO.md` § Workstreams'
+  W4 bullet specifies — the umbrella spec that first stated it is not
+  in the tree, having been removed on its own branch: whether mathlib
+  accepts a mathlib-to-Batteries
   dependency edge is a maintainer judgement, no `Mathlib.*` module
   referencing `UnionFind`; the condition is the preparation of W4's
   upstream submission, which outlives this group.
@@ -748,7 +765,8 @@ The axiom discipline is checked by `lake lint` through
 - The spec and plan are removed in the branch's final commits, per
   `CONTRIBUTING.md` § Concern shape.
 
-W4 edits `TODO.md` in four places, of which only the § Status row is a
+W4 edits `TODO.md` in three places, or four if the conditional
+constraint-9 correction fires, of which only the § Status row is a
 shared file in the standing obligation's sense; the § Triggers,
 § Upstream destination and constraint-9 edits touch parts of `TODO.md`
 that obligation does not anticipate, and are conflicts to watch for on
@@ -781,9 +799,7 @@ nLab authors, "Coequalizer",
 
 - Any complexity claim in a docstring. Establishing the near-linear
   bound would require a citation for the union-find analysis and a
-  proof; unproved complexity conjectures already have a home in
-  `TODO.md` § Complexity of the decidable validity
-  checkers, and W4 adds none.
+  proof, and W4 offers neither.
 - The characterisation of the merged relation as the equivalence
   closure of the edges.
 - Row k and `HasFiniteColimits`, which are W5's, as is the
