@@ -17,7 +17,7 @@
 - [Task 4: the universal property and the worked coequalizer](#task-4-the-universal-property-and-the-worked-coequalizer)
 - [Task 5: the wrapper](#task-5-the-wrapper)
 - [Task 6: documentation, citation and `TODO.md`](#task-6-documentation-citation-and-todomd)
-- [Task 7: the conditional constraint-9 correction](#task-7-the-conditional-constraint-9-correction)
+- [Task 7: rebase, and the conditional constraint-9 correction](#task-7-rebase-and-the-conditional-constraint-9-correction)
 - [Task 8: remove the spec and the plan](#task-8-remove-the-spec-and-the-plan)
 - [Self-review record](#self-review-record)
 
@@ -857,9 +857,12 @@ Spec sections: § The quotient core, § Sharing, § Definitions,
   `Vector.ofFnC` and `Vector.get_ofFnC`; `Fin.compressEquiv`,
   `Equiv.apply_symm_apply` and `Equiv.symm_apply_apply`;
   `instDecidableEqFin`, named explicitly by `isRoot`, and
-  `decide_eq_true_eq`, used by `isRoot_root`.
+  `decide_eq_true_eq`, used by `isRoot_root`; `List.finRange` and
+  `List.filter` (`edges`, `len`); and `of_decide_eq_true`,
+  `Subtype.ext`, `Subtype.val` and `congrArg` (`rep_π`, `π_rep`).
   `FinSetSkel.hom_ext` and `FinSetSkel.comp_get` are Task 4's, not
-  this task's.
+  this task's. The four `public import`s of Step 1 suffice for all of
+  it.
 - Produces, all in namespace `FinSetSkel.Quotient`: `edges`,
   `unionFind`, `isRoot`, `len`, `isRoot_root`, `obj`, `rep`, `π`,
   `desc`, `π_get`, `rep_get`, `desc_get`, `rep_π`, `π_rep`. Task 4
@@ -1230,20 +1233,44 @@ Expected: PASS for `rep_π`.
 
 - [ ] **Step 8: prove `π_rep`**
 
-Not the mirror image of `rep_π`. It is `π_get` then `rep_get`, then
-`Equiv.symm_apply_apply` composed with the step from
-`(Fin.compressEquiv (isRoot v) c).2` — a `Bool` equation — to the
-`Prop` that `(rep Y v).get c` is its own root.
+Not the mirror image of `rep_π`. Keeping Step 5's docstring above it:
 
-Rewriting with that step under `(Fin.compressEquiv …).symm ⟨_, _⟩`
-fails on a dependent motive, the proof argument mentioning the term
-being rewritten, and `conv` fails the same way. `simp only` at the
-subterm succeeds; use it there and nowhere else in the proof.
+```lean
+theorem π_rep (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
+    (c : Fin (obj Y v).len) :
+    (π Y v).toVec.get ((rep Y v).get c) = c := by
+  have h : v.root ((rep Y v).get c) = (rep Y v).get c := by
+    rw [rep_get]
+    exact of_decide_eq_true (Fin.compressEquiv (isRoot v) c).2
+  rw [π_get]
+  simp only [h]
+  exact (congrArg _ (Subtype.ext (rep_get Y v c))).trans
+    (Equiv.symm_apply_apply _ _)
+```
+
+Four points, each measured:
+
+- The `have` is the step from `(Fin.compressEquiv (isRoot v) c).2` — a
+  `Bool` equation — to the `Prop` that `(rep Y v).get c` is its own
+  root. It is a term, `of_decide_eq_true`, not a tactic, which is what
+  keeps the `simp only` budget at one.
+- Rewriting with that step under `(Fin.compressEquiv …).symm ⟨_, _⟩`
+  fails on a dependent motive, the proof argument mentioning the term
+  being rewritten, and `conv` fails the same way. The `simp only [h]`
+  is where it succeeds; use it there and nowhere else in the proof.
+- `rw [π_get, Equiv.symm_apply_eq]` is not a shortcut. Measured, it
+  reports "Did not find an occurrence of the pattern
+  `@Eq ?m ((Equiv.symm ?e) ?x) ?y`", with the note that the target has
+  type `Fin (List.filter (isRoot v) (List.finRange Y.len)).length` but
+  is expected to have type `Fin (obj Y v).len` — § Index types' delta
+  gap again.
+- The closing `exact` needs `Subtype.ext` to lift `rep_get` into the
+  subtype before `Equiv.symm_apply_apply` applies.
 
 Run: `lake build`
 Expected: PASS.
 
-- [ ] **Step 9: run the `@[simp]` test, and mark neither**
+- [ ] **Step 9: run the `@[simp]` test, and mark both**
 
 None of the five carries `@[simp]` as specified. `rep_π` and `π_rep`
 are the candidates, and the spec settles the question by measurement:
@@ -1251,36 +1278,45 @@ are the candidates, and the spec settles the question by measurement:
 closes, not in advance; implementation marks a lemma `@[simp]` only
 then, and records which."
 
-**The outcome is that neither is marked.** Both pass the exhibited-goal
-test, but passing it is the spec's necessary condition, not a
-sufficient one, and no W4 proof needs either mark: `rw` reaches both
-lemmas at the nested positions their consumers put them in. Measured —
-with `rep_π` unmarked, `by rw [rep_π]` closes probe 1 below with zero
-diagnostics, while `by simp` on the same goal reports "`simp` made no
-progress"; and `desc_uniq` reaches `π_rep` by plain
-`rw [desc_get, ← hm, comp_get, π_rep]`, which Task 4 Step 4 already
-gives as a working term. An attribute no consumer needs is a cost
-without a return, which `CONTRIBUTING.md` § Code is cost rejects.
+**Both are marked.** Each closes a goal it does not close unmarked, so
+each passes the spec's test, and W1's criterion for withholding the
+attribute does not reach either. That criterion is stated in
+`Geb/Mathlib/Data/Vector/OfFn.lean`, on `get_eq_getElem`: "Not `simp`:
+the `get` form is the normal form, and marking this in either
+orientation would rewrite it away." It is about *orientation against
+the normal form*, and `TODO.md` records the same rule for W1's
+deliverable — "The two `get`-form round trips carry `@[simp]`;
+`getElem_ofFnC` and the bridge do not, neither being the normal form."
+`rep_π` and `π_rep` are `get`-form round trips oriented *toward* the
+normal form: one lands on `v.root j`, the other on the class index
+itself. So they are `get_ofFnC` and `ofFnC_get`'s case, which W1 marks,
+not `get_eq_getElem`'s, which it does not.
 
-Not marking is also the safer side of the note following `TODO.md`'s
-cross-workstream constraints: W3 and W4 each add carrier-level `simp`
-lemmas that first meet at W5, and neither workstream marks a lemma in
-a direction that rewrites the other's normal form. W5 may mark either
-lemma if it turns out to need it, with W3's carrier-level lemmas then
-visible for comparison — which they are not from here.
+Absence of a consumer is not a reason to withhold the attribute here,
+and the repo settles that too: W1's `FinSetSkel.Hom.ofVec_toVec` is
+`@[simp]` and has no consumer anywhere in the tree
+(`grep -rn ofVec_toVec` outside `Basic.lean` returns nothing). Marking
+also keeps true the clause of `TODO.md`'s post-constraint note that
+names W4 — "W3 and W4 each add carrier-level `simp` lemmas that first
+meet at W5" — which marking neither would falsify, and the note's
+operative prohibition is untouched: neither lemma is a transport
+between two carriers, so neither can rewrite W3's normal form.
 
 **One discrepancy to record for the user's review.** Spec § Statements
 motivates the deferral with the clause "the index types above obstruct
 `rw` at nested positions". That is true where § Index types establishes
-it — of `rw [Vector.get_ofFnC]` against the three unfolding lemmas, and
-of rewriting with `rep_get` after `π_get` inside `rep_π`'s own proof —
-but it does not hold of rewriting *with* `rep_π` or `π_rep` at their
-call sites, which is the position this step is about. The spec's
-operative instruction is unaffected: it says to settle the question by
-exhibiting a goal, and that is what this step does.
+it — of `rw [Vector.get_ofFnC]` against the three unfolding lemmas, of
+rewriting with `rep_get` after `π_get` inside `rep_π`'s own proof, and
+of `rw [π_get, Equiv.symm_apply_eq]` inside `π_rep`'s — but it does not
+hold of rewriting *with* `rep_π` or `π_rep` at their call sites:
+measured, `by rw [rep_π]` closes probe 1 below with `rep_π` unmarked,
+and Task 4 Step 4's `desc_uniq` reaches `π_rep` by plain `rw`. So the
+marks are not what makes those two proofs go through; they earn their
+place by the spec's exhibited-goal test and by W1's orientation
+criterion. The spec's operative instruction is unaffected.
 
-Run the test anyway rather than taking the outcome on trust.
-Immediately above Step 5's section-closing `end`, temporarily:
+Run the test rather than taking the outcome on trust. Immediately above
+Step 5's section-closing `end`, temporarily:
 
 ```lean
 example (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len) (h : Y ⟶ Z)
@@ -1310,18 +1346,19 @@ The measured table, which the implementation reproduces:
 Each probe is closed by its own lemma and by nothing else — with both
 unmarked neither closes, so no third `simp` lemma reaches either goal.
 That answers constraint 9 for these two probes: no choice-tainted
-`Vector` lemma is doing the work. It is also what makes the marks
-dispensable: nothing else was relying on them.
+`Vector` lemma is doing the work.
 
-Delete both `example`s once the table is reproduced, and leave both
-lemmas unmarked — the `example`s are scaffolding, not tests, and
+Add `@[simp]` to `rep_π` in Step 7's block and to `π_rep` in Step 8's,
+then delete both `example`s — they are scaffolding, not tests, and
 `CONTRIBUTING.md` § Document only the persistent keeps them out of the
-tree. Record the outcome under the module docstring's
+tree. Both were measured `[propext, Quot.sound]` with the attributes in
+place. Record the outcome under the module docstring's
 `## Implementation notes`, in one sentence:
 
 ```text
-Neither round trip carries `@[simp]`: `rw` reaches each at the position
-its consumer uses, so the attribute would have no consumer here.
+`rep_π` and `π_rep` both carry `@[simp]`: each is a `get`-form round
+trip oriented toward the normal form, on the criterion
+`Vector.get_eq_getElem`'s docstring states.
 ```
 
 Run: `lake build`
@@ -1652,15 +1689,26 @@ modules is required for this one alone.
 
 - [ ] **Step 1: allowlist the two module names first**
 
-In `GebMeta.lean`, append to `classicalAllowedModules`, after the two
-`ElementaryTopos` entries:
+In `GebMeta.lean`, append to `classicalAllowedModules` after the two
+`ElementaryTopos` entries. The list's last element currently carries the
+closing bracket and the fold on the same line —
 
 ```lean
-   `Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer,
-   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
+   `GebTests.Mathlib.CategoryTheory.ElementaryTopos].foldl (·.insert ·)
+    ({} : NameSet)
 ```
 
-Those two only. Doing this before the module exists keeps the next
+— so this is not a pure append; the `].foldl …` tail moves to the new
+last element:
+
+```lean
+   `GebTests.Mathlib.CategoryTheory.ElementaryTopos,
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Coequalizer].foldl (·.insert ·)
+    ({} : NameSet)
+```
+
+Those two names only. Doing this before the module exists keeps the next
 `lake lint` from failing on a module the linter is right to reject.
 
 Run: `lake build`
@@ -1833,12 +1881,15 @@ and before `.Quotient`:
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
 ```
 
-In `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`, add
-correspondingly:
+In `GebTests/Mathlib/CategoryTheory/FinSetSkel.lean`, add in the same
+position — after `.Basic`, before `.Quotient`:
 
 ```lean
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
 ```
+
+Both index files then read `.Basic`, `.Coequalizer`, `.Quotient`,
+`.Skeleton` — alphabetical.
 
 Run: `lake build` then `lake build GebTests` then `lake test` then
 `lake lint` then `lake lint -- GebTests`
@@ -1995,11 +2046,19 @@ shape puts that on its own branch.
 
 - [ ] **Step 5: correct constraint 9's closing paragraph**
 
-Constraint 9's closing paragraph currently reads "Deciding a
-proposition quantified over `Fin n` is another, and W3 and W4 both
-need it". W4 does not — nothing in W4 decides a quantified
-proposition; `isRoot` decides an equation and `List.filter` applies a
-`Bool`-valued function pointwise — so narrow the clause to W3.
+Constraint 9's closing paragraph reads, at `TODO.md`:
+
+```text
+Deciding a proposition quantified over `Fin n`
+   is another, and W3 and W4 both need it: `inferInstance` gives an
+   axiom-free term, while `Fintype.decidableForallFintype`, which
+   inhabits the same class, depends on `Classical.choice`.
+```
+
+Replace `and W3 and W4 both need it` with `and W3 needs it`, leaving
+the rest of the sentence as it stands. W4 does not need it — nothing in
+W4 decides a quantified proposition; `isRoot` decides an equation and
+`List.filter` applies a `Bool`-valued function pointwise.
 
 This edit is unconditional: the paragraph is already in this branch's
 `TODO.md`, not on a sibling. W4 speaks only for itself; whether W3
@@ -2042,7 +2101,7 @@ jj commit -m "doc(finsetskel): document the coequalizer and cite its source"
 
 ---
 
-## Task 7: the conditional constraint-9 correction
+## Task 7: rebase, and the conditional constraint-9 correction
 
 Spec section: § Non-Lean deliverables (the conditional bullet),
 § Constraint 9 (the last three paragraphs).
@@ -2051,27 +2110,16 @@ Spec section: § Non-Lean deliverables (the conditional bullet),
 
 - Modify: `TODO.md`
 
-This task is conditional and is performed on the rebase onto
-`feat/choice-free-primitives` (`jj` change `ypqrxnwk`), not before.
-That branch amends constraint 9 with three choice-taint families and
-a measurement rule. W4 imports nothing from it; the dependency is its
-`TODO.md` text alone.
+Step 1 is unconditional: `TODO.md` § Standing obligations requires the
+later sibling to rebase "before merge", and spec § Non-Lean
+deliverables says "W4 rebases onto whichever of them merges first" —
+neither is conditional on `feat/choice-free-primitives`. Steps 2 and 3
+are the conditional part: they correct a clause that branch adds, and
+they are skipped if it has not landed. Nothing in
+`scripts/pre-push.sh` checks ancestry against `main`, so skipping the
+rebase would not be caught downstream.
 
-- [ ] **Step 0: if the sibling has not merged, skip this task**
-
-Check whether `feat/choice-free-primitives` has merged to `main`. If it
-has not, and W4 is otherwise complete, skip Task 7 in full and go to
-Task 8. Do not wait for it: the clause this task would correct is not
-in this branch's `TODO.md`, so there is nothing to correct, and W4's
-three constraint-9 answers stand as measurements about W4's own
-construction either way — spec § Constraint 9: "if it does not merge,
-the three answers stand as measurements in their own right … and this
-section loses only its addressee". The correction then falls to
-whichever branch rebases after the clause lands.
-
-If it has merged, continue.
-
-- [ ] **Step 1: rebase once `feat/choice-free-primitives` merges**
+- [ ] **Step 1: rebase onto `main` and resolve the sibling conflicts**
 
 ```bash
 jj rebase -b feat/finsetskel-coequalizer -d main
@@ -2082,9 +2130,28 @@ obligation anticipates. W4 appends to `GebMeta.classicalAllowedModules`,
 `docs/index.md`, the `FinSetSkel` index files, and
 `Geb/Mathlib/Data.lean` and `GebTests/Mathlib/Data.lean`; W3 appends
 to several of the same, and `feat/choice-free-primitives` amends
-`TODO.md`. W4 rebases onto whichever merges first.
+`TODO.md`. Do this whichever siblings have merged, and re-run
+`bash scripts/pre-push.sh` after resolving.
 
 - [ ] **Step 2: read the merged constraint 9 and decide**
+
+Test which case applies from the rebased `TODO.md`, textually:
+
+```bash
+grep -n "domain transport\|arrowCongrLeftC" TODO.md
+```
+
+- **No match** — `feat/choice-free-primitives` has not landed. Skip to
+  Task 8; there is no clause to correct. W4's three constraint-9
+  answers stand as measurements about W4's own construction either way,
+  per spec § Constraint 9: "if it does not merge, the three answers
+  stand as measurements in their own right … and this section loses
+  only its addressee". The correction then falls to whichever branch
+  rebases after the clause lands.
+- **A match on "domain transport"** — the clause is present. Take the
+  first bullet below.
+- **A match on `arrowCongrLeftC` but not on "domain transport"** — the
+  amendment landed already corrected. Take the second bullet below.
 
 Read constraint 9's `Equiv`-transport paragraph as merged.
 
@@ -2223,9 +2290,9 @@ changed.
 **Measured after review round 2.** An unnamed section left open ahead
 of `end FinSetSkel.Quotient` does not elaborate, so Task 3 Step 5 and
 Task 4 Step 1 now write each section's `end` in the same block as its
-opener and the later steps insert above it. Both round trips carry
-`@[simp]`: reproduced across all three configurations, each probe
-closed by its own lemma and neither closed with both unmarked.
+opener and the later steps insert above it. Each probe is closed by its
+own lemma when that lemma is marked `@[simp]`, and by nothing else:
+reproduced across all three configurations.
 
 **Corrected after review round 3.** Round 2 recorded that a term-mode
 `Sized.root` does not elaborate, and concluded that an auxiliary
@@ -2248,21 +2315,36 @@ module's import set, W4 being the first workstream to take a direct
 `Batteries.` import and so the one place `TODO.md` constraint 9's
 standing choice is exercised.
 
-**Reversed after review round 4.** Rounds 2 and 3 recorded that both
-round trips would be marked `@[simp]`, on the strength of the probe
-table. The table is right, but the conclusion was not: measured,
-`by rw [rep_π]` closes probe 1's goal with `rep_π` unmarked, and
-`desc_uniq` already reaches `π_rep` by plain `rw`. So `rw` reaches both
-lemmas at the positions their consumers use, no W4 proof needs either
-mark, and `CONTRIBUTING.md` § Code is cost rejects an attribute with no
-consumer. Task 3 Step 9 now marks neither and records the measurement.
-The plan's earlier motivation for the marks — that "the index types
-obstruct `rw` at nested positions", a clause quoted from spec
-§ Statements — is true of the three unfolding lemmas and of `rep_π`'s
-own internal proof, but not of rewriting *with* `rep_π` or `π_rep` at a
-call site; Step 9 records that discrepancy rather than repeating the
-clause. The spec's operative instruction, to settle the question by
-exhibiting a goal, is unaffected and is what the step does.
+**Settled after review rounds 4 and 5.** The `@[simp]` question turned
+over twice and its final answer rests on the repo's own precedent, not
+on either round's argument. Round 4 established, correctly, that the
+plan's stated *motivation* for the marks was false: `by rw [rep_π]`
+closes probe 1's goal with `rep_π` unmarked, and `desc_uniq` already
+reaches `π_rep` by plain `rw`, so the clause "the index types obstruct
+`rw` at nested positions" — quoted from spec § Statements — is true of
+the three unfolding lemmas and of each round trip's own internal proof,
+but not of rewriting *with* them at a call site. The plan then dropped
+both marks on a Code-is-cost argument, which round 5 showed does not
+match how this project decides the question: W1's
+`FinSetSkel.Hom.ofVec_toVec` is `@[simp]` with no consumer anywhere in
+the tree, and W1's stated criterion, on `Vector.get_eq_getElem`, is
+orientation against the normal form rather than consumer demand. Both
+round trips are oriented toward the normal form, so both are marked —
+which also keeps true the `TODO.md` clause naming W4, "W3 and W4 each
+add carrier-level `simp` lemmas that first meet at W5". Step 9 records
+the discrepancy with spec § Statements' motivating clause rather than
+repeating it; the spec's operative instruction, to settle the question
+by exhibiting a goal, is unaffected and is what the step does.
+
+Round 5 also supplied the one proof still given as prose: `π_rep` is now
+a measured term, with the `Bool`-to-`Prop` step as
+`of_decide_eq_true (Fin.compressEquiv (isRoot v) c).2` and the closing
+`exact` lifting `rep_get` through `Subtype.ext`. And it found that
+Task 7's skip-if-not-merged exit would have skipped the plan's only
+`jj rebase`, leaving the sibling conflicts unresolved with nothing
+downstream to catch it — `scripts/pre-push.sh` does not check ancestry
+against `main`. Task 7's rebase is now unconditional and only the
+clause edit is conditional, tested by one `grep`.
 
 **Type consistency.** `Sized`, `Sized.root`, `Sized.ofEdges`,
 `Sized.root_ofEdges_eq_of_mem` and `Sized.apply_root_ofEdges` are
