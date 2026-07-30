@@ -27,6 +27,25 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
 3. `iotaConst` — the constant functor at an *arbitrary* presheaf on `J`, which
    is what a Lemma-1-style completeness result needs and which `iota` + `sigma`
    cannot reach (they generate only coproducts of representables).
+4. `Functoriality` — that a witness family over pre-codes is definable by
+   `IR.rec`. It establishes the attachment mechanism only; the witness type it
+   uses is built from `IR.Hom`, whose `ι`-clause is propositional equality of
+   indices rather than a `C₀`-morphism, and is therefore the wrong type at a
+   non-discrete `C₀`.
+5. `arityVaries` — a functor whose shape presheaf is terminal and whose
+   `reindex` is not invertible.
+
+## Main definitions
+
+* `GebProto.iotaPresheaf` / `iotaPresheafData` — the constant functor at a
+  representable, and its operations.
+* `GebProto.iotaDiscreteShapeEquiv` — the discrete degeneracy of its shape type.
+* `GebProto.iotaConst` / `iotaConstData` — the constant functor at an arbitrary
+  presheaf, and its operations.
+* `GebProto.Functoriality` — the witness family attached over pre-codes.
+* `GebProto.arityB`, `GebProto.arityVaries` / `arityVariesData`,
+  `GebProto.arityVariesShapeEquiv` — the functor with non-invertible `reindex`,
+  its arity, its operations, and the terminality of its shape presheaf.
 
 ## Tags
 
@@ -133,6 +152,8 @@ def iotaConstData (P : Jᵒᵖ ⥤ Type uB) :
     ⟨⟨j', P.map g.op (cast (congrArg (fun x ↦ P.obj ⟨x⟩) s.2) s.1.2)⟩, rfl⟩
   reindex := fun {_ _} _g _a {_} d ↦ PEmpty.elim d.1
 
+/-- Every direction fiber of `iotaConstData` is empty, hence a subsingleton;
+this discharges all five direction-side functor laws. -/
 instance subsingletonIotaConstDirection (P : Jᵒᵖ ⥤ Type uB)
     (a : (iotaConstData.{uI, uJ, uB, vI, vJ} (I := I) P).A) (i : I) :
     Subsingleton ((iotaConstData.{uI, uJ, uB, vI, vJ} (I := I) P).Direction a i) :=
