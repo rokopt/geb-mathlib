@@ -151,4 +151,87 @@ def assocCheckOf (objCount : Nat) (nonIdCount : Fin objCount → Fin objCount �
       compTotalOf comp (compTotalOf comp (embOf f) (embOf g)) (embOf h)
         = compTotalOf comp (embOf f) (compTotalOf comp (embOf g) (embOf h))
 
+/-- A finite-category specification: a count of objects, a count of
+non-identity morphisms at each pair, a composition function on those
+morphisms, and the associativity check. The client designates no
+identities, states no identity laws, and supplies no domain or codomain
+data. -/
+@[ext] structure _root_.FinCat where
+  /-- The number of objects, indexed by `Fin objCount`. -/
+  objCount : Nat
+  /-- The number of non-identity morphisms `i ⟶ j`. -/
+  nonIdCount : Fin objCount → Fin objCount → Nat
+  /-- Composition of client morphisms. It lands in the full hom type,
+  because a composite of two non-identity morphisms may be an
+  identity. -/
+  comp : (i j k : Fin objCount) →
+    Fin (nonIdCount i j) → Fin (nonIdCount j k) →
+      Fin (homCountOf objCount nonIdCount i k)
+  /-- Associativity on triples of client morphisms. A client with a
+  concrete category discharges this by `rfl`. -/
+  assoc : assocCheckOf objCount nonIdCount comp = true
+
+/-- The number of morphisms `i ⟶ j` of `S`. -/
+def homCount (S : FinCat) (i j : Fin S.objCount) : Nat :=
+  homCountOf S.objCount S.nonIdCount i j
+
+/-- The morphisms `i ⟶ j` of `S`, client morphisms and the reserved
+identity together. An `abbrev` rather than a `def`: instance search
+does not unfold a plain `def`, so `DecidableEq (S.Mor i j)` would not
+be found and `compCheckOf`'s and `natCheckOf`'s `decide` bodies —
+equalities at `Mor` — would not elaborate. -/
+abbrev Mor (S : FinCat) (i j : Fin S.objCount) : Type := Fin (S.homCount i j)
+
+/-- The embedding of a client morphism of `S` into the full hom type. -/
+def emb {S : FinCat} {i j : Fin S.objCount} (f : Fin (S.nonIdCount i j)) : S.Mor i j := embOf f
+
+/-- The reserved identity at `i`, at the index one past the client's
+range. -/
+protected def id (S : FinCat) (i : Fin S.objCount) : S.Mor i i :=
+  ⟨S.nonIdCount i i, by simp [homCount, homCountOf]⟩
+
+/-- Composition on the full hom types of `S`. -/
+def compTotal (S : FinCat) {i j k : Fin S.objCount} (f : S.Mor i j) (g : S.Mor j k) : S.Mor i k :=
+  compTotalOf S.comp f g
+
+/-- Associativity of `S` on triples of client morphisms, as a `Bool`. -/
+def assocCheck (S : FinCat) : Bool := assocCheckOf S.objCount S.nonIdCount S.comp
+
+/-- An index at or beyond `S`'s client count exists only on the
+diagonal. -/
+theorem eq_of_nonIdCount_le (S : FinCat) {i j : Fin S.objCount} (x : S.Mor i j)
+    (h : S.nonIdCount i j ≤ x.val) : i = j := objEq_of_le x h
+
+/-- An index at or beyond `S`'s client count is the reserved identity
+index. -/
+theorem val_eq_of_nonIdCount_le (S : FinCat) {i j : Fin S.objCount} (x : S.Mor i j)
+    (h : S.nonIdCount i j ≤ x.val) : x.val = S.nonIdCount j j := val_eq_of_le x h
+
+/-- The reserved identity is a left identity for the total
+composition. -/
+theorem id_comp (S : FinCat) {i k : Fin S.objCount} (g : S.Mor i k) :
+    S.compTotal (S.id i) g = g := by
+  have hlt : ¬ ((S.id i).val < S.nonIdCount i i) := Nat.lt_irrefl _
+  unfold FinCat.compTotal compTotalOf
+  rw [dif_neg hlt]
+  rfl
+
+/-- The reserved identity is a right identity for the total
+composition. -/
+theorem comp_id (S : FinCat) {i j : Fin S.objCount} (f : S.Mor i j) :
+    S.compTotal f (S.id j) = f := by
+  have hlt : ¬ ((S.id j).val < S.nonIdCount j j) := Nat.lt_irrefl _
+  unfold FinCat.compTotal compTotalOf
+  by_cases hf : f.val < S.nonIdCount i j
+  · rw [dif_pos hf, dif_neg hlt]
+    rfl
+  · rw [dif_neg hf]
+    exact Fin.ext (val_eq_of_le f (Nat.not_lt.mp hf)).symm
+
+/-- The specification with no objects. `deriving Inhabited` fails,
+there being no `Inhabited` instance for the `Prop`-valued `assoc`
+field. -/
+instance inhabited : Inhabited FinCat :=
+  ⟨⟨0, fun i _ ↦ i.elim0, fun i _ _ ↦ i.elim0, rfl⟩⟩
+
 end FinCat
