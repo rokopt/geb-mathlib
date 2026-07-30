@@ -53,3 +53,40 @@ def finProdFinEquivC {m n : ℕ} : Fin m × Fin n ≃ Fin (m * n) where
   invFun i := (Fin.divNatC i, Fin.modNatC i)
   left_inv p := Prod.ext (Fin.divNatC_pairC p.1 p.2) (Fin.modNatC_pairC p.1 p.2)
   right_inv i := Fin.pairC_divNatC_modNatC i
+
+/-- The choice-free exponential encoding, by recursion on the arity
+over `finProdFinEquivC` (unlike mathlib's `finFunctionFinEquiv`,
+whose base-`m` digit round trips depend on `Classical.choice`). -/
+def finFunctionFinEquivC {m n : ℕ} : (Fin n → Fin m) ≃ Fin (m ^ n) :=
+  Nat.rec (motive := fun k ↦ (Fin k → Fin m) ≃ Fin (m ^ k))
+    (((Equiv.equivPUnit (Fin 0 → Fin m)).trans finOneEquiv.symm).trans
+      (finCongr (Nat.pow_zero m).symm))
+    (fun k ih ↦
+      (((Fin.consEquiv (fun _ : Fin (k + 1) ↦ Fin m)).symm.trans
+        (Equiv.prodCongr (Equiv.refl (Fin m)) ih)).trans finProdFinEquivC).trans
+        (finCongr (Nat.pow_succ' (m := m) (n := k)).symm))
+    n
+
+namespace Fin
+
+/-- Encode a function `Fin n → Fin m` as an index of `Fin (m ^ n)`:
+the forward direction of `finFunctionFinEquivC`. -/
+def funEncodeC {m n : ℕ} (g : Fin n → Fin m) : Fin (m ^ n) :=
+  finFunctionFinEquivC g
+
+/-- Decode an index of `Fin (m ^ n)` as a function `Fin n → Fin m`:
+the inverse direction of `finFunctionFinEquivC`. -/
+def funDecodeC {m n : ℕ} (i : Fin (m ^ n)) : Fin n → Fin m :=
+  finFunctionFinEquivC.symm i
+
+/-- Decoding an encoded function recovers it. -/
+@[simp] theorem funDecodeC_funEncodeC {m n : ℕ} (g : Fin n → Fin m) :
+    funDecodeC (funEncodeC g) = g :=
+  finFunctionFinEquivC.left_inv g
+
+/-- Encoding a decoded index recovers it. -/
+@[simp] theorem funEncodeC_funDecodeC {m n : ℕ} (i : Fin (m ^ n)) :
+    funEncodeC (funDecodeC i) = i :=
+  finFunctionFinEquivC.right_inv i
+
+end Fin
