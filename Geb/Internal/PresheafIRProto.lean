@@ -46,6 +46,8 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
 * `GebProto.arityB`, `GebProto.arityVaries` / `arityVariesData`,
   `GebProto.arityVariesShapeEquiv` — the functor with non-invertible `reindex`,
   its arity, its operations, and the terminality of its shape presheaf.
+* `GebProto.shapePresheaf` / `GebProto.arityPresheaf` — the shape presheaf `T₁`
+  and the arity presheaf `E(a)`, as `Functor` values built from the raw fields.
 
 ## References
 
@@ -60,7 +62,7 @@ prototype, inductive-recursive, presheaf, parametric right adjoint
 
 @[expose] public section
 
-universe uI uJ uA uB uX vI vJ
+universe uI uJ uA uB uX uZ vI vJ
 
 open CategoryTheory
 
@@ -404,5 +406,74 @@ def sliceHomApp {dom : Type uI} {cod : Type uJ}
         (α.arity j ⟨x.1.1, hq⟩ (F'.rCurried _ b') ⟨b', rfl⟩).2⟩
 
 end PolyMorphism
+
+end GebProto
+
+namespace GebProto
+
+section ShapeAndArityPresheaves
+
+/-!
+The two presheaves the p.r.a. formula names, extracted from the raw fields as
+`Functor` values, on the model of `PresheafPFunctor.objPresheaf`.
+
+`shapePresheaf` lands in `Type uA` and `arityPresheaf` in `Type uB`, those being
+the universes of `SlicePFunctor.Shape` (a `Subtype` of `F.A : Type uA`) and of
+`SliceDomPFunctor.Direction` (a `Subtype` of `F.B a : Type uB`). Neither carries
+a `max` with the base or morphism universes: `Shape j` is cut out of `F.A` by a
+`Prop`, and `Direction a i` out of `F.B a` by a `Prop`.
+
+Consequently `arityPresheaf F a : Iᵒᵖ ⥤ Type uB` is an object of the same
+category as `Z : Iᵒᵖ ⥤ Type uZ` only when `uB` and `uZ` are the same level.
+Lean's `Type` hierarchy is not cumulative, so no relation `uB ≤ uZ` (which is
+not expressible on levels anyway) helps; the two options are to instantiate
+`uZ := uB`, or to `ULift` both sides into `Type (max uB uZ)`. Both are exhibited
+below.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The shape presheaf `T₁ : Jᵒᵖ ⥤ Type uA`: fibre `F.Shape j` over `j`,
+restriction maps `F.shapeRestr`, functor laws from `shapeRestr_id` /
+`shapeRestr_comp`. -/
+def shapePresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    Jᵒᵖ ⥤ Type uA where
+  obj j := F.Shape j.unop
+  map g := ↾ F.shapeRestr g.unop
+  map_id j := by
+    ext a
+    exact congrFun (F.isFunctorial.shapeRestr_id j.unop) a
+  map_comp g h := by
+    ext a
+    exact congrFun (F.isFunctorial.shapeRestr_comp g.unop h.unop) a
+
+/-- The arity presheaf `E(a) : Iᵒᵖ ⥤ Type uB` of a shape `a`: fibre
+`F.Direction a i` over `i`, restriction maps `F.directionRestr a`, functor laws
+from `directionRestr_id` / `directionRestr_comp`. -/
+def arityPresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) :
+    Iᵒᵖ ⥤ Type uB where
+  obj i := F.Direction a i.unop
+  map f := ↾ F.directionRestr a f.unop
+  map_id i := by
+    ext d
+    exact congrFun (F.isFunctorial.directionRestr_id a i.unop) d
+  map_comp f g := by
+    ext d
+    exact congrFun (F.isFunctorial.directionRestr_comp a f.unop g.unop) d
+
+/-- At `uZ := uB` the arity presheaf and the input presheaf are objects of one
+category, so the hom the p.r.a. formula needs is formable with no transport. -/
+example (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) (Z : Iᵒᵖ ⥤ Type uB) :
+    Type (max uI uB) :=
+  arityPresheaf F a ⟶ Z
+
+/-- At an unrelated `uZ` the hom is formable after `ULift`ing both sides into
+`Type (max uB uZ)`; `max` is commutative on levels, so the two composites are
+objects of one category. -/
+example (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) (Z : Iᵒᵖ ⥤ Type uZ) :
+    Type (max uI uB uZ) :=
+  (arityPresheaf F a ⋙ uliftFunctor.{uZ, uB}) ⟶ (Z ⋙ uliftFunctor.{uB, uZ})
+
+end ShapeAndArityPresheaves
 
 end GebProto
