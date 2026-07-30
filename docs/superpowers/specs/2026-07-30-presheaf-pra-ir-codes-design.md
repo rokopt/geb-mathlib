@@ -63,29 +63,42 @@ a coproduct of representables in `Z`. Yoneda then computes the natural
 transformations:
 
 ```text
-Nat(Σ_a Hom(E a, −), Σ_b Hom(E' b, −))
-  = Π_a Nat(Hom(E a, −), Σ_b Hom(E' b, −))
-  = Π_a (Σ_b Hom(E' b, −))(E a)
-  = Π_a Σ_b Hom(E' b, E a)
+Nat_Z(Σ_{a : T₁ j} Hom(E a, −), Σ_{b : T₁' j} Hom(E' b, −))
+  ≅ Π_{a : T₁ j} Nat_Z(Hom(E a, −), Σ_{b : T₁' j} Hom(E' b, −))
+  ≅ Π_{a : T₁ j} (Σ_{b : T₁' j} Hom(E' b, −))(E a)          -- Yoneda
+  ≅ Π_{a : T₁ j} Σ_{b : T₁' j} Hom(E' b, E a)
 ```
 
-so a transformation is a map of shapes forward together with, at each
-shape, a map of arities backward. Naturality in `Z` is automatic. What
-remains as data is naturality in the indices: the shape map is a morphism
-of presheaves on `J`, and the arity maps are natural over `el(T₁)ᵒᵖ`.
+at each fixed output index `j`. So a transformation is a map of shapes
+forward together with, at each shape, a map of arities backward.
+Naturality in `Z` is thereby accounted for. What remains, as conditions
+rather than data, is naturality in the indices: the shape map is a
+morphism of presheaves on `J`, and the arity maps are natural over
+`el(T₁)ᵒᵖ`.
 
-The step that carries this is Yoneda, which requires the domain to be a
-presheaf category. This is why the same argument is unavailable over
-`Fam(C)`, the free set-indexed coproduct completion, and it matches the
-failure reported in Section 2 of
-[GhaniNordvallForsbergMalatesta2015]: the characterization of the
-interpretation of `δ` codes as left Kan extensions fails for non-discrete
-`C`, and full and faithfulness of the interpretation is lost. That paper
-then takes, per its Remark 3.4, the "smallest possible usable" morphism
-collection. The presheaf setting is therefore not only the further
-generalization; it is the setting in which the natural-transformation
-formula is regular, and consequently the setting in which the
-full-and-faithfulness requirement above is attainable at all.
+What makes the classification available is not the ambient category but
+the shape of the functor: Yoneda holds in any locally small category, and
+`PresheafPFunctor` is by construction familial, its interpretation being
+a coproduct of representables in `Z`.
+
+Over `Fam(C)` the classification does not apply, because the
+interpretation of a `δ` code is not a coproduct of `Fam(C)`-representables.
+Theorem 2.4 of [GhaniNordvallForsbergMalatesta2015] indexes that
+coproduct by the set maps `A → X`, whereas a `Fam(C)`-morphism
+`(X, P) → (Y, Q)` is by its Definition 2.2 a pair `(h, k)` with
+`h : X → Y` and `k : P ⟹ Q ∘ h`, carrying `C`-morphism data the index
+does not. Section 2 of that paper reports the consequence as the
+breakdown of the characterization of the `δ` interpretation as a left Kan
+extension, and its concluding section lists recovering that
+characterization as an open problem rather than an impossibility.
+
+Full and faithfulness over `Fam(C)` is therefore attainable, not
+excluded. Remark 3.4 records that taking `Hom(x, y) = ⟦x⟧ → ⟦y⟧` gives it
+"by definition", at the cost of defining the interpretation
+simultaneously with the codes, so that the definition of the code system
+is itself inductive-recursive. What the presheaf setting offers is the
+same property without that cost: the classification supplies the
+morphisms structurally, from data the p.r.a. structure already carries.
 
 ## Prototype findings
 
@@ -96,23 +109,28 @@ drawn from an entry are marked as such.
 1. `SliceHom` — the formula's data at the slice level: a map of shapes
    over each output index, and at each shape a map of arities in the
    opposite direction.
-2. `sliceHomApp` — the action of that data on the domain-restricted
-   functor's value, constructed with no further data and no side
-   condition. This is the content of the formula: the shape travels
-   forward, each direction of the new shape is filled by pulling it back
-   along the arity map, and compatibility follows by composing the
-   original element's compatibility with the arity map's fiber witness.
-3. `iotaPresheaf j₀` — the constant functor at the representable `y j₀`
-   is a `PresheafPFunctor`, with shape type the total space
-   `Σ j', (j' ⟶ j₀)` rather than a single shape. All seven functor laws
-   are discharged.
+2. `sliceHomApp` — the forward action of that data on the
+   domain-restricted functor's value, definable with no further data: the
+   shape travels forward, each direction of the new shape is filled by
+   pulling it back along the arity map, and compatibility follows by
+   composing the original element's compatibility with the arity map's
+   fiber witness. It establishes neither naturality nor the equivalence.
+   It is at the slice level, where the `el(T₁)ᵒᵖ` condition is vacuous, so
+   it is not evidence that the presheaf-level `Hom` needs no condition.
+3. `iotaPresheaf j₀` — the data with shape type the total space
+   `Σ j', (j' ⟶ j₀)`, no directions, and `shapeRestr` precomposition is a
+   `PresheafPFunctor`; all seven functor laws are discharged. Inference,
+   not elaborated: its interpretation is the constant functor at the
+   representable `y j₀`. Nothing relates `objPresheaf` to `yoneda.obj j₀`.
 4. `iotaDiscreteShapeEquiv` — for a discrete `J` the type
    `Σ j' : Discrete O, (j' ⟶ ⟨o⟩)` is equivalent to `PUnit`. No
    identification with `IR.toSlicePFunctorIota`'s shape type is
    established; the two are at different universe instantiations.
-5. `iotaConst P` — the constant functor at an arbitrary presheaf `P` on
-   `J` is a `PresheafPFunctor`. Its shape type at `P := yoneda.obj j₀` is
-   definitionally the shape type of finding 3.
+5. `iotaConst P` — the data with shapes the total space of an arbitrary
+   presheaf `P` on `J` and `shapeRestr` the restriction of `P` is a
+   `PresheafPFunctor`. Its shape type at `P := yoneda.obj j₀` is
+   definitionally the shape type of finding 3. Inference, not elaborated:
+   its interpretation is the constant functor at `P`.
 6. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
    elaborates. Its witness type is built from `IR.Hom` and is retained
    only as a record of the discrete case.
@@ -130,10 +148,12 @@ Three components.
 - `PresheafPFunctor.Hom F F'`: a morphism of shape presheaves
   `T₁ ⟶ T₁'` on `J`; for each element `a` of `T₁`, a morphism of arity
   presheaves `E'(φ a) ⟶ E(a)` on `I`; and the condition that the latter
-  family is natural over `el(T₁)ᵒᵖ`. The arity component's variance is
-  the same as that of the existing `reindex` field, which is an instance
-  of it: `reindex g a` maps the directions of `shapeRestr g a` into those
-  of `a`.
+  family is natural over `el(T₁)ᵒᵖ`. The arity component's variance is the
+  same as that of the existing `reindex` field, which is an instance
+  as that of the existing `reindex` field, though it is not an instance of
+  it: `reindex` is indexed by `J`-morphisms and relates two arities of one
+  functor, whereas this component is indexed by shapes and relates arities
+  of two functors.
 - The action of a `Hom` on `objPresheaf`, and the proof that it is a
   natural transformation. Finding 2 constructs the slice-level action;
   the presheaf level adds compatibility with `objRestr`.
@@ -163,16 +183,19 @@ Settled by Stage 1, once it exists:
   formula, and the code-level analogue of the representation theorem is
   what makes the interpretation full and faithful. This removes the
   question that the `Fam(C)` route could not answer.
-- Because naturality is carried as data, the codes and their morphisms do
-  not require an inductive-inductive definition, and in particular do not
-  require the interpretation to be defined simultaneously with the codes
-  — the alternative Remark 3.4 describes and declines.
+- Because the p.r.a. structure carries the index actions as fields
+  (`directionRestr`, `reindex`) rather than as witnesses referring to code
+  morphisms, a `δ` constructor need not carry a functoriality witness of
+  the kind that forces mutuality. The interpretation therefore need not be
+  defined simultaneously with the codes — the route Remark 3.4 describes
+  and declines.
 
 Settled by elaboration, from the findings:
 
-- A constant-functor constructor at an arbitrary presheaf on `J` has a
-  semantics (finding 5), and at a representable its shape type is that of
-  finding 3.
+- The data of a constant-functor constructor at an arbitrary presheaf on
+  `J` is functorial (finding 5), and at a representable its shape type is
+  that of finding 3. That its interpretation is the constant functor is
+  an inference, not elaborated.
 - Arity variation is independent of shape-presheaf complexity
   (finding 7), so `reindex` cannot be recovered from the shape presheaf.
 
@@ -190,9 +213,10 @@ Open:
    the constructors.
 3. What indexes the `δ` subcode family once the arity is a presheaf on
    `I` — presheaf morphisms out of the arity, or maps out of its total
-   space. These differ, and only the former reduces to the `A → X`
-   coproduct index of Definition 5 of
-   [HancockMcBrideGhaniMalatestaAltenkirch2013] at discrete `I`.
+   space. These differ; which of them degenerates at discrete `I` to the
+   unconstrained `A → X` index of Definition 4 of
+   [HancockMcBrideGhaniMalatestaAltenkirch2013] is to be derived, not
+   assumed.
 4. Whether the codes are represented as a W-type of a presheaf p.r.a.
    functor over a category of sorts, so that the dependency of morphisms
    on codes is carried by presheaf restriction. Lean has no
@@ -213,10 +237,12 @@ Open:
 
 Positive inductive-recursive definitions over `Fam(C)`
 ([GhaniNordvallForsbergMalatesta2015]) are not a stage of this
-workstream. They cannot meet the full-and-faithfulness requirement, for
-the reason in § The formula. If wanted, they are better recovered inside
-the presheaf construction, `Fam(C)` embedding in presheaves as the
-coproducts of representables, than built separately.
+workstream. They can meet the full-and-faithfulness requirement, but only
+by the route of Remark 3.4, defining the interpretation simultaneously
+with the codes; the presheaf setting reaches it structurally instead. If
+wanted, they are better recovered inside the presheaf construction,
+`Fam(C)` embedding in presheaves as the coproducts of representables,
+than built separately.
 
 ## Definitions: transcription or novel
 
@@ -226,7 +252,7 @@ definitions.
 
 | Definition | Status |
 | --- | --- |
-| `PresheafPFunctor.Hom` | Novel in this repository. The shapes-forward arities-backward form is the standard morphism notion for familial functors; obligation 5 records verifying the precise correspondence against [Weber2007] and [Shapiro2021], and against Definition 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013] in the discrete case |
+| `PresheafPFunctor.Hom` | Novel in this repository. The shapes-forward arities-backward form is the standard morphism notion for familial functors; obligation 5 records verifying the precise correspondence against [Weber2007] and [Shapiro2021], and against Definition 7 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (morphisms of indexed containers, whose form this is) and its Definition 6 (the dependent-polynomial presentation the repository's `r`/`q` naming follows) in the discrete case |
 | The action of a `Hom`, and its naturality | Novel |
 | The representation theorem | Novel at this level; the discrete analogue is Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013], present as `IR.interpHomEquiv` |
 | Identity, composition, and the category structure on `Hom` | Novel |
@@ -238,38 +264,55 @@ Stage 1 only. Each is unproved at the time of writing.
 1. **The action.** That a `Hom` acts on `objPresheaf` and that the action
    is a natural transformation, including compatibility with `objRestr`.
    Finding 2 establishes the slice-level action only.
-2. **Representation.** That `Hom F F'` is equivalent to
-   `NatTrans (F.functor) (F'.functor)`, with both round trips.
+2. **Representation.** That `Hom F F'` is equivalent to the
+   natural transformations of the interpreted functors, stated against the
+   `Classical.choice`-free `objPresheaf` and `mapPresheaf` rather than
+   against `PresheafPFunctor.functor`, which depends on
+   `Classical.choice`. The `functor` form is a corollary, and belongs in a
+   module on `GebMeta.classicalAllowedModules`.
 3. **Category structure.** That `Hom` has identities and composition,
    that composition is associative with those identities as units, and
    that the equivalence of obligation 2 carries them to the identities
    and composition of natural transformations.
-4. **Naturality over `el(T₁)`.** That the naturality condition on the
-   arity family is exactly what the representation theorem needs — that
-   dropping it makes the equivalence fail, so the condition is neither
-   redundant nor too strong.
+4. **Non-redundancy.** That dropping the `el(T₁)ᵒᵖ` naturality condition
+   makes the equivalence fail. That it is not too strong is obligation 2's
+   fullness direction and is not a separate obligation. A candidate
+   witness is `arityVaries`, whose `reindex` is not invertible.
 5. **Correspondence with the literature.** That `PresheafPFunctor.Hom`
    agrees with the familial morphism notion of [Weber2007] and
-   [Shapiro2021], and with Definition 6 of
+   [Shapiro2021], and with Definitions 6 and 7 of
    [HancockMcBrideGhaniMalatestaAltenkirch2013] when `I` and `J` are
    discrete.
-6. **Universes.** That the equivalence is statable at the universes the
-   existing declarations carry. `NatTrans` between functors on presheaf
-   categories is large, and `PresheafPFunctor` already pins six universe
-   parameters; that the two sides of obligation 2 live at the same
-   universe is not obvious and is not assumed.
-7. **Constructive discipline.** That the development stays free of
-   `Classical.choice`, or that any module needing it is added to
-   `GebMeta.classicalAllowedModules` with a justification per
-   [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Constructive-only. The
-   categorical packaging in `Presheaf.Functor` is already on that list;
-   `Presheaf.Basic` is not, and `Hom` should follow `Basic`.
+6. **Universes.** That the arity presheaf `E a`, whose values lie in
+   `Type uB`, is an object of the domain category `Iᵒᵖ ⥤ Type uZ` that the
+   classification quantifies over. This needs a universe relation such as
+   `uB ≤ uZ`, or an explicit `ULift`; without one the interpretation is
+   still defined but is not a coproduct of representables of that
+   category. The obligation is to fix the relation and say whether the
+   equivalence is claimed at a fixed `uZ` or for all `uZ`. Note that
+   `Equiv` is universe-heterogeneous, so the two sides needing the same
+   universe is not itself a requirement.
+7. **Bundling.** That `T₁ : Jᵒᵖ ⥤ Type` and `E a : Iᵒᵖ ⥤ Type uB` exist
+   as `Functor` values, assembled from `shapeRestr`, `directionRestr` and
+   `isFunctorial`, and that
+   `{ z : F.obj Z // F.q z.shape = j }` is equivalent to
+   `Σ a : T₁ j, (E a ⟶ Z)`, naturally in `Z` and in `j`. Neither presheaf
+   exists in the repository today — the fields are raw, with their laws in
+   a separate `Prop` — and every phrase in Stage 1 that speaks of a
+   morphism of shape or arity presheaves presupposes them.
+8. **Constructive discipline.** That `Hom` and obligation 2's statement
+   stay free of `Classical.choice`, per
+   [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Constructive-only.
+   `Presheaf.Functor` is on `GebMeta.classicalAllowedModules` and
+   `Presheaf.Basic` is not; `Hom` follows `Basic`, which is what
+   obligation 2's restatement is for.
 
 ## Non-goals
 
 - A code system. See § Direction.
 - Positive inductive-recursive definitions over `Fam(C)` as a separate
-  construction, for the reason given in § Direction.
+  construction, for the reason given in § Direction. This is a choice
+  about cost, not an impossibility claim.
 - The `W`-type of a code, and initial algebras.
 - Any change to `SlicePFunctor`, `PresheafPFunctor` or the existing `IR`
   code type. Stage 1 adds to them; it does not modify them.
