@@ -5,6 +5,7 @@
 
 - [In progress](#in-progress)
 - [Next up](#next-up)
+  - [Removal of guard hash-command](#removal-of-guard-hash-command)
   - [Polynomial functors](#polynomial-functors)
     - [1. Categorical wrappers for slice and presheaf W-types as initial algebras](#1-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
     - [2. M-types and their categorical wrappers as terminal coalgebras](#2-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
@@ -37,6 +38,18 @@ removed; content merged into `docs/index.md`.
 (None.)
 
 ## Next up
+
+### Removal of guard hash-command
+
+- **`#guards should be removed`: mathlib disallows `#guard`, so we
+  should as well; our coding standards are meant to be at least as
+  strict as theirs, at least for anything not under `Geb/Internal/`.
+  `docs/lean-coding.md` has a reference to uses of `#guard`; it
+  should say that we shouldn't use it. One possible exception is
+  `AxiomLinter.lean`, which _is_ in `Geb/Internal/` and, as an
+  internal test file, might not need to adhere to that mathlib
+  convention. We should still make it do so if it can function
+  equally well without `#guard`.
 
 ### Polynomial functors
 
