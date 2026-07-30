@@ -70,3 +70,47 @@ example :
     IR.toSlicePFunctor PUnit PUnit testIRiota =
       IR.toSlicePFunctorIota PUnit PUnit PUnit.unit :=
   rfl
+
+/-- The sigma case `toSlicePFunctorSigma`, expressed through
+`SlicePFunctor.coprod`, reduces to the componentwise coproduct of
+Definition 5, clause 2. The index types are `Bool` rather than `PUnit`
+so that the `r` and `q` components are discriminating. -/
+example (A : Type) (sub : A → SlicePFunctor.{0, 0, 0, 0} Bool Bool) :
+    IR.toSlicePFunctorSigma Bool Bool A sub =
+      { toPFunctor := ⟨Σ a, (sub a).toPFunctor.A,
+          fun ⟨a, sa⟩ ↦ (sub a).toPFunctor.B sa⟩
+      , r := fun ⟨⟨a, sa⟩, p⟩ ↦ (sub a).r ⟨sa, p⟩
+      , q := fun ⟨a, sa⟩ ↦ (sub a).q sa } :=
+  rfl
+
+/-- The delta case `toSlicePFunctorDelta`, expressed through
+`SlicePFunctor.coprod`, reduces to the shape-indexed coproduct of
+Definition 5, clause 3. Shapes, directions and the shape-output map are
+checked as whole components; the direction-input map is checked on each
+branch of the cotuple, since the two cotuple presentations agree on every
+constructor but are not compared definitionally at a variable
+discriminant. -/
+example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool) :
+    (IR.toSlicePFunctorDelta Bool Bool B sub).toPFunctor =
+      ⟨Σ (i : B → Bool), (sub i).toPFunctor.A,
+        fun ⟨i, sa⟩ ↦ Sum B ((sub i).toPFunctor.B sa)⟩ :=
+  rfl
+
+example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool) :
+    (IR.toSlicePFunctorDelta Bool Bool B sub).q = fun ⟨i, sa⟩ ↦ (sub i).q sa :=
+  rfl
+
+/-- The cotuple's arity branch: a direction of the adjoined arity `B` is
+sent to its image under the assignment `i`. -/
+example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool)
+    (i : B → Bool) (sa : (sub i).toPFunctor.A) (b : B) :
+    (IR.toSlicePFunctorDelta Bool Bool B sub).r ⟨⟨i, sa⟩, Sum.inl b⟩ = i b :=
+  rfl
+
+/-- The cotuple's sub-polynomial branch: a direction of `sub i` keeps the
+direction-input map it had there. -/
+example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool)
+    (i : B → Bool) (sa : (sub i).toPFunctor.A) (p' : (sub i).toPFunctor.B sa) :
+    (IR.toSlicePFunctorDelta Bool Bool B sub).r ⟨⟨i, sa⟩, Sum.inr p'⟩ =
+      (sub i).r ⟨sa, p'⟩ :=
+  rfl

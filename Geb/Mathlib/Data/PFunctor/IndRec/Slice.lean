@@ -38,6 +38,10 @@ the latter via `IR.elimAlg`.
 
 ## Implementation notes
 
+Definition 5's sigma and delta clauses are both coproducts of slice
+polynomial functors, so both are expressed through `SlicePFunctor.coprod`;
+the delta clause differs only in its summand, which extends the
+sub-polynomial by the arity's directions.
 The recursive translation stabilizes the universe parameters: shapes at
 `max uA uB uI` (the delta case introduces shapes indexed by `B → I` at
 `Type (max uB uI)`), directions at `uB`. The constraint in
@@ -96,30 +100,26 @@ def toSlicePFunctorIota (o : O) :
 
 set_option linter.checkUnivs false in
 /-- The dependent sum (`sigma`) case of the translation (Definition 5,
-clause 2): coproduct of sub-polynomials — shapes, directions, input map,
-and output map inherited componentwise. -/
+clause 2): the coproduct of the sub-polynomials over the arity. -/
 def toSlicePFunctorSigma (A : Type uA)
     (sub : A → SlicePFunctor.{max uA uB uI, uB, uI, uO} I O) :
     SlicePFunctor.{max uA uB uI, uB, uI, uO} I O :=
-  { toPFunctor := ⟨Σ a, (sub a).toPFunctor.A,
-      fun ⟨a, sa⟩ ↦ (sub a).toPFunctor.B sa⟩
-  , r := fun ⟨⟨a, sa⟩, p⟩ ↦ (sub a).r ⟨sa, p⟩
-  , q := fun ⟨a, sa⟩ ↦ (sub a).q sa }
+  SlicePFunctor.coprod A sub
 
 set_option linter.checkUnivs false in
 /-- The dependent product (`delta`) case of the translation (Definition 5,
-clause 3): shapes indexed by assignments `B → I`, directions are the
-coproduct of the arity and the sub-directions, the input map is the
-cotuple `[i, sub.r]`, the output map delegates. -/
+clause 3): the coproduct, over the assignments `i : B → I`, of the
+sub-polynomial at `i` extended by `B` further directions whose
+direction-input map is `i`, so that the summand's input map is the cotuple
+`[i, (sub i).r]`. -/
 def toSlicePFunctorDelta (B : Type uB)
     (sub : (B → I) → SlicePFunctor.{max uA uB uI, uB, uI, uO} I O) :
     SlicePFunctor.{max uA uB uI, uB, uI, uO} I O :=
-  { toPFunctor := ⟨Σ (i : B → I), (sub i).toPFunctor.A,
-      fun ⟨i, sa⟩ ↦ Sum B ((sub i).toPFunctor.B sa)⟩
-  , r := fun ⟨⟨i, sa⟩, p⟩ ↦ match p with
-    | Sum.inl b => i b
-    | Sum.inr p' => (sub i).r ⟨sa, p'⟩
-  , q := fun ⟨i, sa⟩ ↦ (sub i).q sa }
+  SlicePFunctor.coprod (B → I) fun i ↦
+    { toPFunctor := ⟨(sub i).toPFunctor.A,
+        fun sa ↦ Sum B ((sub i).toPFunctor.B sa)⟩
+    , r := fun ⟨sa, p⟩ ↦ Sum.elim i (fun p' ↦ (sub i).r ⟨sa, p'⟩) p
+    , q := (sub i).q }
 
 set_option linter.checkUnivs false in
 /-- The algebra computing one step of the translation from `IR` codes to
