@@ -38,6 +38,14 @@ control, `doctoc` and `markdownlint-cli2` for Markdown.
   every commit is followed by `jj bookmark set feat/finsetskel-w5 -r @-`.
   Run `jj st` before each commit and confirm the modified files are exactly
   that task's scope.
+- Every step that states an expected result is a completion claim. Use
+  `superpowers:verification-before-completion` before each commit: run the
+  command, read its output, and report a check not run as not run rather
+  than assumed.
+- Every `lean4:review` pass below produces review feedback. Use
+  `superpowers:receiving-code-review` on it: verify each finding against
+  the source before acting, and record which were fixed, which deferred
+  with a reason, and which declined.
 - Do not tick this plan's `- [ ]` boxes. `jj commit` takes the whole working
   copy, so a plan-file edit lands in the next task's commit.
 - Commit subjects: imperative present, lower-case, no trailing period, under
@@ -100,13 +108,11 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
 
 The seven fields of `ElementaryTopos` are the terms the shapes, exponential,
 equalizer, coequalizer and classifier modules export, assembled unchanged.
-Some `Prop` classes are registered directly by the modules supplying the
-fields, and resolve without this one: `HasTerminal`, `HasBinaryProducts`,
-`HasFiniteProducts`, `HasInitial`, `HasBinaryCoproducts`, `HasCoequalizers`
-and `HasFiniteCoproducts`. The rest are derived through the class, and
-registering the instance is what makes them resolve: `HasEqualizers`,
-`HasLimit` at a parallel pair, `HasFiniteLimits`, `HasFiniteColimits`,
-`HasPullbacks` and `HasPushouts`.
+`HasInitial`, `HasBinaryCoproducts`, `HasCoequalizers` and
+`HasFiniteCoproducts` are registered directly by the modules supplying the
+fields and resolve without this one. `HasEqualizers`, `HasFiniteLimits`,
+`HasFiniteColimits` and `HasPushouts` are derived through the class, and
+registering the instance is what makes them resolve.
 
 This module is allowlisted for `Classical.choice`, introducing no
 dependence of its own and inheriting the whole of it from the seven field
@@ -181,7 +187,12 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos
 
 - [ ] **Step 4: Add the bibliography entry**
 
-In `docs/references.bib`, immediately after the `nLabSkeletalCategory` entry:
+`AGENTS.md` § Verify agent claims requires the attribution be checked
+against the source before the identifier is recorded. Fetch
+`https://ncatlab.org/nlab/show/FinSet` and confirm it states that FinSet is
+an elementary topos and cites Johnstone's Elephant example 2.1.2. Then, in
+`docs/references.bib`, immediately after the `nLabSkeletalCategory`
+entry:
 
 ```bibtex
 @misc{nLabFinSet,
@@ -508,7 +519,7 @@ After the `Compositional tests` bullet, add:
 Run:
 
 ```bash
-markdownlint-cli2 'docs/rules/lean-coding.md'
+markdownlint-cli2 '**/*.md'
 doctoc --dryrun --update-only docs/rules/lean-coding.md
 ```
 
@@ -565,7 +576,7 @@ it is re-taken on a toolchain bump.
 
 ```bash
 doctoc --update-only docs/process.md
-markdownlint-cli2 'docs/process.md'
+markdownlint-cli2 '**/*.md'
 ```
 
 Expected: doctoc updates the TOC; markdownlint reports 0 issues.
@@ -609,10 +620,10 @@ Those four lemmas are therefore not to be used in a choice-free module,
 and neither is the `Array` bridge beneath them. All four carry `@[simp]`,
 and all but `Vector.ofFn_getElem` also `@[grind =]`, so a bare `simp` or
 `grind` meeting such a term introduces `Classical.choice` without an
-error. The constructions `Vector.range` and
-`Vector.finRange` are equally unusable, each having only choice-dependent
-indexing lemmas, so the restriction covers them and not only the lemmas. The constructions themselves depend on
-`propext` alone. Measured at v4.33.0-rc1.
+error. The constructions `Vector.range` and `Vector.finRange` are equally
+unusable, each having only choice-dependent indexing lemmas, so the
+restriction covers the constructions and not only their lemmas; the
+constructions themselves depend on `propext` alone.
 ```
 
 - [ ] **Step 2: `ElementaryTopos.lean`**
@@ -708,12 +719,11 @@ At the end of § Implemented content, after the
   initial cocone, the binary-coproduct cocones, the equalizer cones, the
   coequalizer cocones and the classifier. It depends on the five
   field-supplying entries above and on the `ElementaryTopos` class entry.
-  The classes the field-supplying modules register directly —
-  `HasTerminal`, `HasBinaryProducts`, `HasFiniteProducts`, `HasInitial`,
-  `HasBinaryCoproducts`, `HasCoequalizers` and `HasFiniteCoproducts` —
-  resolve without it; those the class derives resolve only through it:
-  `HasEqualizers`, `HasLimit` at a parallel pair, `HasFiniteLimits`,
-  `HasFiniteColimits`, `HasPullbacks` and `HasPushouts`. The source
+  `HasInitial`, `HasBinaryCoproducts`, `HasCoequalizers` and
+  `HasFiniteCoproducts` are registered by the field-supplying modules and
+  resolve without it; `HasEqualizers`, `HasFiniteLimits`,
+  `HasFiniteColimits` and `HasPushouts` are derived through the class and
+  resolve only through the instance. The source
   and test modules are listed in `GebMeta.classicalAllowedModules`, the
   module inheriting its `Classical.choice` dependence entirely from the
   field terms.
@@ -722,7 +732,7 @@ At the end of § Implemented content, after the
 - [ ] **Step 2: Lint**
 
 ```bash
-markdownlint-cli2 'docs/index.md'
+markdownlint-cli2 '**/*.md'
 doctoc --dryrun --update-only docs/index.md
 ```
 
@@ -785,16 +795,18 @@ At the end of § Triggers, add:
 - [ ] **Step 3: Amend four entries**
 
 These four amendments use line anchors that shift under one another, so
-make them in the order given — highest line number first — and assert each
-boundary with `sed -n 'Np;Mp' TODO.md` before editing, proceeding only if
-it matches what the step quotes. Each replacement below carries the
+make them in the order given and assert each boundary with
+`sed -n 'Np;Mp' TODO.md` before editing, proceeding only if it matches what
+the step quotes. Every replacement below preserves its range's line count,
+so no anchor shifts; the assertions are what catch it if one does. Each
+replacement below carries the
 trailing clause of its last line, so the sentence that continues past the
 range is preserved.
 
-First, `TODO.md:883-885`, the `Fin.compressEquiv` entry — already removed
-in Step 1, which is why the ranges below are the file's current ones.
+The `Fin.compressEquiv` entry was already removed in Step 1, at the file's
+end, so it shifts none of the ranges below.
 
-Second, the `Reconcile test-module import visibility` entry. Assert that
+First, the `Reconcile test-module import visibility` entry. Assert that
 line 783 reads
 `` `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses `` and line 785
 ends `` `GebTests/Internal/`'s ``, then replace 783-785 with:
@@ -808,7 +820,7 @@ ends `` `GebTests/Internal/`'s ``, then replace 783-785 with:
 The trailing `` `GebTests/Internal/`'s `` is deliberate: line 786 continues
 that sentence and is not touched.
 
-Third, the `lake shake --keep-implied` entry. Assert that line 715 reads
+Second, the `lake shake --keep-implied` entry. Assert that line 715 reads
 `` without that flag, `lake shake` reports it as removable, and `` and
 line 719 ends `` mathlib CI runs `lake shake` without ``, then replace
 715-719 with:
@@ -827,17 +839,23 @@ design — that is its report, not a failure. The trailing
 `` mathlib CI runs `lake shake` without `` is deliberate: line 720
 continues that sentence.
 
-Fourth, `TODO.md:850`, the `mathlib-to-Batteries` entry: replace
+Third, `TODO.md:850`, the `mathlib-to-Batteries` entry: replace
 `which outlives this workstream group` with
 `which outlives the FinSetSkel development`.
 
-Fifth, the choice-free `Skeletal FinSetSkel` entry at `TODO.md:840-841`.
-Replace its closing sentence with:
+Fourth, the choice-free `Skeletal FinSetSkel` entry. Assert that line 840
+opens `` `Classical.choice`. There is no such use while `Skeletal` is ``
+and line 841 reads `` consumed only by the wrapper. ``, then replace
+840-841 with:
 
 ```markdown
-  Its consumers are the wrapper and the one allowlisted test
-  module that identifies a pushout, so no such use has arisen.
+  `Classical.choice`. Its consumers are the wrapper and the one
+  allowlisted test module that identifies a pushout, so no such
+  use has arisen.
 ```
+
+The leading `` `Classical.choice`. `` is deliberate: it closes the sentence
+that begins on line 838 and must survive.
 
 - [ ] **Step 4: Verify the entry count and leave three entries alone**
 
@@ -857,9 +875,9 @@ the `Decide a test-declaration privacy discipline` entry, or the
 - [ ] **Step 5: Lint and commit**
 
 ```bash
-markdownlint-cli2 'TODO.md'
+markdownlint-cli2 '**/*.md'
 jj st
-jj commit -m "doc(todo): correct four trigger premises and add two"
+jj commit -m "doc(todo): revise the triggers the branch touches"
 jj bookmark set feat/finsetskel-w5 -r @-
 ```
 
@@ -928,7 +946,7 @@ branch does not touch, so a whole-file count is 23.
 - [ ] **Step 5: Lint and commit**
 
 ```bash
-markdownlint-cli2 'TODO.md'
+markdownlint-cli2 '**/*.md'
 jj st
 jj commit -m "doc(todo): remove the finsetskel roadmap entry"
 jj bookmark set feat/finsetskel-w5 -r @-
@@ -1026,7 +1044,7 @@ restriction being stated on its own line rather than only inside a lemma
 name.
 
 ```bash
-jj diff --stat -r 'main..@' -- GebMeta.lean TODO.md
+jj diff -r 'main..@' -- GebMeta.lean
 jj diff -r 'main..@' -- TODO.md
 ```
 
