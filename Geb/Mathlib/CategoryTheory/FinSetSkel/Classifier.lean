@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Core
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance
 
 /-!
 # Classifier — index

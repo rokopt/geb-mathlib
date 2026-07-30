@@ -76,7 +76,9 @@ def classicalAllowedModules : NameSet :=
    `Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed,
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed,
    `Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits,
-   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits].foldl (·.insert ·)
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits,
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the

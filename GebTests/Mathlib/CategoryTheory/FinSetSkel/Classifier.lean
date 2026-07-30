@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Core
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance
 
 /-!
 # Classifier tests — index
