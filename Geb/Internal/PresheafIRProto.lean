@@ -28,12 +28,9 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
    is what a Lemma-1-style completeness result needs and which `iota` + `sigma`
    cannot reach (they generate only coproducts of representables).
 4. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
-   establishes. The witness type it uses is built from `IR.Hom`, whose
-   `ι`-clause is propositional equality of indices and so ignores `C₀`'s
-   morphisms; it is strictly smaller than the `C₀`-morphism the source
-   requires. The after-the-fact attachment it demonstrates is superseded: the
-   source's `δ` morphism rule takes a natural transformation, whose naturality
-   refers to the witnesses, so codes and morphisms are built simultaneously.
+   establishes. Its witness type is built from `IR.Hom`, whose `ι`-clause is
+   propositional equality of indices and so ignores `C₀`'s morphisms; it is
+   not the type the source requires.
 5. `arityVaries` — a functor whose shape presheaf is terminal and whose
    `reindex` is not invertible.
 
@@ -201,21 +198,24 @@ namespace GebProto
 section Functoriality
 
 /-!
-Does a category-valued decoding target force a *mutual* (inductive-inductive)
-definition of codes and code morphisms, as in Positive IR's Agda?
+Can the functoriality witness be attached after the codes, rather than as a
+code field defined simultaneously with the morphisms?
 
-Two observations say no. First, Positive IR's pre-codes are already this
-repository's `IR` codes: its `ι` carries an object of `C`, its `σ` a `Set`
-with subcodes indexed by it, its `δ` a `Set` with subcodes indexed by
-`A → C` — which is exactly `IR.Shape` / `IR.Direction` at `I = O = C₀`.
-Second, in the Agda the `δ→δ` constructor of `Hom` takes `F→` and `G→` only as
-implicit *indices* and never uses them, so `Hom` does not in fact depend on the
-functoriality witnesses.
+That depends on which morphism collection is taken. Remark 3.4 of the source
+states that its results are parametric in that choice: any collection
+representing natural transformations between the codes works, provided
+identities and composition are definable. Its Definition 3.1 takes a natural
+transformation, whose naturality refers to the witnesses and to composition of
+code morphisms; the accompanying Agda takes a bare family of components, whose
+`δ→δ` rule mentions the witnesses only as unused implicit indices. Under the
+latter the morphism type does not depend on the witnesses, so the witness can
+be attached afterwards, by `IR.rec` against an already-defined morphism type.
 
-Together those let the witness be attached *after* the codes, by `IR.rec`,
-against the already-defined `IR.Hom` — no mutuality, and so within this
-repository's rule that recursion goes through recursors rather than
-self-referential inductives. `Functoriality` below is that attachment.
+`Functoriality` below demonstrates only that `IR.rec` reaches the subcodes,
+which is what such an attachment needs. Its witness type is built from
+`IR.Hom`, whose `ι`-clause is propositional equality of indices and so ignores
+the category's morphisms; that is not the type the source requires, and no
+claim is made here that this witness is the right one.
 -/
 
 open IndRec IndRec.IR

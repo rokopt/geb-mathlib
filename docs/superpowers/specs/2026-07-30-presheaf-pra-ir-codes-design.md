@@ -27,9 +27,9 @@ workstream, Stage 1: codes for functors `Fam(C) → Fam(C)`, a
 transcription of [GhaniNordvallForsbergMalatesta2015]. Its proof
 obligations are in § Proof obligations.
 
-It does **not** fix a design for Stage 2, the presheaf generalization.
-The prototype settles several questions about what Stage 2 must contain,
-and those are recorded in § Direction: codes over presheaf categories
+It does not fix a design for Stage 2, the presheaf generalization. The
+prototype settles several questions about what Stage 2 must contain, and
+those are recorded in § Direction: codes over presheaf categories
 together with the questions that remain open. The Stage 2 code type is
 undetermined here, and a separate brainstorming phase is required before
 it can be planned. Nothing in Stage 1 depends on Stage 2.
@@ -49,11 +49,11 @@ and `IR.sliceCode` translates back (Lemma 1). The repository also has
 `(Iᵒᵖ ⥤ Type) → (Jᵒᵖ ⥤ Type)` for categories `I` and `J`. No code system
 denotes those functors.
 
-`PresheafPFunctorData` extends `SlicePFunctor` unconditionally, adding
-`directionRestr`, `shapeRestr` and `reindex`. At discrete `I` and `J`
-those three fields are expected to carry no information beyond the
-`SlicePFunctor` they extend; that expectation is obligation 8 below, not
-an established fact.
+`PresheafPFunctorData` extends `PresheafDomPFunctorData`, which carries
+`directionRestr`, and `SlicePFunctor`; it adds `shapeRestr` and
+`reindex`. At discrete `I` and `J` those fields are expected to carry no
+information beyond the `SlicePFunctor` they extend; that expectation is
+an open question of § Direction, not an established fact.
 
 ## Two prior lines of work, on independent axes
 
@@ -73,13 +73,15 @@ The axes are independent, and `PresheafPFunctor` sits past both:
 `Cᵒᵖ ⥤ Type` is the free colimit completion, and the former embeds in
 the latter as the coproducts of representables.
 
-The two directions are not compatible by default. Section 2 of
-[GhaniNordvallForsbergMalatesta2015] records that its morphisms differ
-from those of [HancockMcBrideGhaniMalatestaAltenkirch2013], whose
-characterization of the interpretation of `δ` codes as left Kan
-extensions fails when `C` is non-discrete, so that full and faithfulness
-of the interpretation is lost. That loss is what makes a separate
-morphism notion necessary in Stage 1.
+Why the second work needs code morphisms at all: per its Section 3.1,
+the `δ` introduction rule deploys a proper functor
+`F : (A → C) → IR⁺(C)`, which requires `IR⁺(C)` to be a category. That
+is what forces codes and morphisms to be introduced together. Separately,
+Section 2 records that these morphisms differ from those of
+[HancockMcBrideGhaniMalatestaAltenkirch2013], whose characterization of
+the interpretation of `δ` codes as left Kan extensions fails for
+non-discrete `C`; the consequences are that full and faithfulness of the
+interpretation is lost and that the category laws must be proved by hand.
 
 Related work at the semantic level: parametric right adjoints between
 presheaf categories are characterized in [Weber2007] and
@@ -91,8 +93,8 @@ category.
 ## Prototype findings
 
 `Geb/Internal/PresheafIRProto.lean` is exploration, not upstream-eligible
-content. It establishes the following by elaboration. Each entry states
-what the prototype establishes and nothing further.
+content. Each entry states what the prototype elaborates; inferences
+drawn from an entry are marked as such.
 
 1. `iotaPresheaf j₀` — the constant functor at the representable
    `y j₀` is a `PresheafPFunctor`, with shape type the total space
@@ -104,24 +106,22 @@ what the prototype establishes and nothing further.
    identification with `(iotaPresheafData ⟨o⟩).A` is definitional. No
    identification with `IR.toSlicePFunctorIota`'s shape type is
    established: the two `PUnit`s are at different universe
-   instantiations, and reconciling them is part of obligation 8.
+   instantiations.
 3. `iotaConst P` — the constant functor at an arbitrary presheaf `P` on
    `J` is a `PresheafPFunctor`, with shapes the total space of `P` and
    `shapeRestr` the restriction of `P`. Its shape type at
    `P := yoneda.obj j₀` is definitionally the shape type of finding 1.
-   No relation between the two functors beyond that is established; see
-   § Direction, open question 5.
-4. `Functoriality` — a witness family over pre-codes is definable by
-   `IR.rec`, whose `δ` clause has access to the subcode family. This
-   establishes only that `IR.rec` reaches the subcodes. The witness type
-   the prototype uses is built from `IR.Hom` and is the wrong one, and
-   the after-the-fact attachment it demonstrates is superseded by the
-   simultaneous construction of Stage 1 below.
-5. `arityVaries` — a `PresheafPFunctor (Fin 1) (Fin 2)` whose shape
-   presheaf is terminal (every `Shape j` is equivalent to `PUnit`) and
-   whose arity is empty at the shape over `0` and a singleton at the
-   shape over `1`, so `reindex` along `0 ⟶ 1` is the map out of the
-   empty type and is not invertible.
+   No relation between the two functors beyond that is established.
+4. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
+   elaborates. The witness type it uses is built from `IR.Hom`, whose
+   `ι` clause ignores `C₀`'s morphisms, and is not the one Stage 1 needs.
+5. `arityVaries` — a `PresheafPFunctor (Fin 1) (Fin 2)` whose every
+   `Shape j` is equivalent to `PUnit`, and whose arity is elaborated as
+   `ULift (Fin 0)` at the shape over `0` and `ULift (Fin 1)` at the shape
+   over `1`. Inference, one step and not elaborated: `Direction a i` is a
+   subtype of the arity and `I` has one object, so the arity fibers are
+   empty over `0` and inhabited over `1`, whence `reindex` along `0 ⟶ 1`
+   is the map out of the empty type and is not invertible.
 
 ## Semantic targets
 
@@ -130,7 +130,7 @@ what the prototype establishes and nothing further.
 direction: a `SliceDomPFunctor` on the objects of `I` together with
 `directionRestr` (arities are presheaves on `I`), `q`, `shapeRestr`
 (shapes form a presheaf on `J`), and `reindex` (the arity assignment is a
-functor on `el(T₁)ᵒᵖ`, contravariantly).
+functor on `el(T₁)ᵒᵖ`).
 
 ## Stage 1: codes over `Fam(C)`
 
@@ -144,33 +144,39 @@ observations fix the shape of the work.
   `IR.Direction` at `I = O = C₀`. Whether the identification survives the
   functoriality data is obligation 2.
 - `IR.Hom` cannot serve as the morphism notion. Definition 3.1's `ι`
-  rule takes a `C`-morphism `HomC(c, c′)`, whereas `IR.Hom` at an
-  `ι`-leaf is propositional equality of indices: the identification of
+  rule takes a `C`-morphism `HomC(c, c′)`, whereas the identification of
   `IR.Hom C₀ C₀ (iota c) (iota c′)` with `ULift (PLift (c = c′))` is
-  definitional. That type ignores `C₀`'s morphisms entirely, so at a
-  non-discrete `C₀` it is strictly smaller than `HomC(c, c′)`. Stage 1
-  therefore defines its own `PosHom`, whose `ι` clause is `c ⟶ c′` and
-  whose `σ` and `δ` clauses transcribe Definition 3.1.
-- The mutuality of codes and morphisms is **not** eliminable, and the
-  construction is simultaneous. Definition 3.1's `δ` morphism rule takes
-  `ρ : Nat(F, G(− ∘ α))`, a natural transformation, whose naturality is
-  stated in terms of the morphism actions of `F` and `G` — that is, in
-  terms of the functoriality witnesses. So the morphism rules do inspect
-  those witnesses. The accompanying Agda weakens `ρ` to a bare family and
-  thereby breaks the dependency, but adopting that weakening to ease
-  implementation is forbidden by
-  [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Non-negotiable interfaces
-  for formalising pre-existing objects. `PosHom` and the functoriality
-  witness family are therefore built **simultaneously**, by a single
-  `IR.rec` into a product motive. Every premise recurses on subcodes, so
-  the recursion is structural.
-- An inductive `PosHom` is independently forbidden: its `σ` and `δ` rules
-  take `PosHom` premises, so it would be an `inductive` containing an
-  instance of itself, which
-  [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Recursion and
-  induction through recursors rejects. The simultaneous `IR.rec`
-  construction satisfies that rule; it uses one recursor and introduces
-  no self-referential inductive.
+  definitional. That type is a subsingleton and ignores `C₀`'s morphisms,
+  so wherever `C₀` has non-identity morphisms between the relevant
+  objects it is strictly smaller than `HomC(c, c′)`. Stage 1 therefore
+  defines its own `PosHom`, whose `ι` clause is `c ⟶ c′`.
+- The morphism collection is a parameter of the source, and Stage 1
+  fixes it to the one its Agda formalization uses. Remark 3.4 of
+  [GhaniNordvallForsbergMalatesta2015] states that its results are
+  "completely parametric in the choice of morphisms used; any collection
+  that represents natural transformations between the codes works, as
+  long as the identity morphisms and composition can be defined", and
+  describes a range from no non-identity morphisms up to
+  `Hom(x, y) = ⟦x⟧ → ⟦y⟧`, which would force the interpretation to be
+  defined simultaneously with the codes. Definition 3.1's `δ` morphism
+  rule takes `ρ : Nat(F, G(− ∘ α))`, a natural transformation;
+  [GhaniMalatestaNordvallForsberg2014Agda] weakens `ρ` to a bare family
+  of components. Stage 1 adopts the latter. This is an instantiation of a
+  parameter the source supplies, not a weakening of a fixed interface, so
+  [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Structure and
+  typeclass patterns, "Non-negotiable interfaces for formalising
+  pre-existing objects", does not bite. Obligation 3 discharges
+  Remark 3.4's two conditions for this choice.
+- Consequently `PosHom` and the functoriality witness family are built
+  sequentially, not simultaneously: with `ρ` a bare family, the morphism
+  rules do not mention the witnesses, so `PosHom` is definable first — by
+  `IR.elimAlg` on the codomain nested in `IR.elimAlg` on the domain, as
+  `IR.Hom` already is — and the witness family follows by `IR.rec`, whose
+  step reaches the subcodes. Had Definition 3.1's `Nat` premise been
+  adopted instead, naturality would refer to the witnesses and to
+  composition of code morphisms, which the source defines only afterwards
+  in its Lemma 3.2; that variant is not reachable by this construction
+  and is not taken.
 - `Fam(C)` for a general category `C`: the presentation as a
   contravariant Grothendieck construction on the family functor is this
   project's Lean presentation, not new mathematics. Remarks 2.3 of that
@@ -185,31 +191,45 @@ observations fix the shape of the work.
   `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` covers only the
   discrete case.
 
-New content in this stage: `PosHom` and the functoriality witness family,
-built simultaneously; the family functor `Typeᵒᵖ ⥤ Cat`; the
-interpretation of codes into `Fam(C)`; its morphism part, which consumes
-the functoriality witness; and the interpretation of code morphisms as
-`Fam(C)`-morphisms, which the morphism part applies to that witness and
-which therefore cannot be omitted.
+On the presentation of `PosHom`:
+[docs/rules/lean-coding.md](../../rules/lean-coding.md) § Recursion and
+induction through recursors rejects an `inductive PosHom`, since its `σ`
+and `δ` rules take `PosHom` premises. That rule sanctions a W-type
+presentation as the alternative to a computed one, and `PosHom` is an
+indexed family over `IR × IR` for which the repository's slice W-type
+machinery would serve. Stage 1 takes the computed presentation because it
+matches `IR.Hom`, which the degeneracy obligation compares against; the
+W-type presentation is not evaluated further here.
+
+New content in this stage: `PosHom`; the functoriality witness family;
+the family functor `Typeᵒᵖ ⥤ Cat`; the interpretation of codes into
+`Fam(C)`; its morphism part, which consumes the functoriality witness;
+and the interpretation of code morphisms as `Fam(C)`-morphisms, which the
+morphism part applies to that witness and which therefore cannot be
+omitted.
 
 ## Direction: codes over presheaf categories
 
-Not a fixed design. What the prototype settles, and what it does not.
+Not a fixed design.
 
-Settled:
+Settled by elaboration:
 
 - A constant-functor constructor at an arbitrary presheaf on `J` has a
   semantics (finding 3), and at a representable its shape type is that of
   finding 1. Some such relaxation is needed for a Lemma-1 analogue, since
   a constructor at an object of `J` together with set-indexed coproducts
   reaches only coproducts of representables.
+- Arity variation is independent of shape-presheaf complexity: finding 5
+  exhibits a functor whose every shape fiber is a singleton and whose
+  `reindex` is not invertible. So `reindex` cannot be recovered from the
+  shape presheaf.
+
+Settled by argument, with no corresponding declaration:
+
 - A `δ` whose arity is a bare set `B` labelled by `ℓ : B → I` admits no
   `directionRestr` at all: `Direction a i` is the fiber of `ℓ` over `i`,
   and for `f : i′ ⟶ i` that fiber can be inhabited over `i` while empty
   over `i′`. The arity must carry presheaf structure.
-- Arity variation is independent of shape-presheaf complexity: finding 5
-  exhibits a functor with terminal shape presheaf and non-invertible
-  `reindex`. So `reindex` cannot be recovered from the shape presheaf.
 - If a constructor supplies `reindex` through a witness that is a code
   morphism, its variance is determined: `reindex g a` maps the directions
   of `shapeRestr g a` into those of `a`; morphisms of codes carry shapes
@@ -241,6 +261,8 @@ Open, and blocking a Stage 2 design:
    satisfying all seven `IsFunctorial` fields, with `reindex_id` and
    `reindex_comp` discharged by functoriality of the witness assignment.
 7. A Stage 2 morphism type, and that it composes and has identities.
+8. Whether `PresheafPFunctor` at discrete `I` and `J` carries any
+   information beyond `SlicePFunctor`.
 
 ## Definitions: transcription or novel
 
@@ -251,12 +273,12 @@ definitions.
 | Definition | Status |
 | --- | --- |
 | Stage 1 code type | Transcription, [GhaniNordvallForsbergMalatesta2015] Definition 3.1; identified with the existing `IR` modulo obligation 2 |
-| Stage 1 `PosHom` | Transcription of Definition 3.1's morphism rules, in a computed rather than inductive presentation. The computed presentation is novel |
-| Stage 1 functoriality witness family | Transcription of Definition 3.1's functoriality side condition on `F`. Its simultaneous construction with `PosHom`, rather than as a code field, is novel |
+| Stage 1 `PosHom` | Transcription of the morphism collection of [GhaniMalatestaNordvallForsberg2014Agda], one admissible choice under Remark 3.4 of the paper. The computed rather than inductive presentation is novel |
+| Stage 1 functoriality witness family `PosFunctoriality` | Transcription of the same source's `F→`, attached after the codes rather than as a code field. The attachment is novel |
 | Stage 1 family functor `Typeᵒᵖ ⥤ Cat` | Novel in this repository |
-| `Fam(C)` as a contravariant Grothendieck construction | Novel Lean presentation; the underlying split fibration `Fam(C) → Set` is Remarks 2.3 of that paper |
-| Stage 1 interpretation of codes into `Fam(C)` and its morphism part | Transcription of that paper's Theorem 3.2 and the corresponding Agda definitions |
-| Stage 1 interpretation of code morphisms as `Fam(C)`-morphisms | Transcription of the Agda's corresponding definition |
+| `Fam(C)` as a contravariant Grothendieck construction | Novel Lean presentation; the underlying split fibration `Fam(C) → Set` is Remarks 2.3 of the paper |
+| Stage 1 interpretation of codes into `Fam(C)` and its morphism part | Transcription, [GhaniNordvallForsbergMalatesta2015] Theorem 3.3, whose object action is inherited from its Theorem 2.4 |
+| Stage 1 interpretation of code morphisms as `Fam(C)`-morphisms | Transcription of the corresponding definition of [GhaniMalatestaNordvallForsberg2014Agda] |
 
 No presheaf-level code system was located in the literature search; the
 nearest prior art is [SpivakGarnerFairbanks2021], which presents the
@@ -266,47 +288,59 @@ functors but not an inductive syntax for them.
 
 Stage 1 only. Each is unproved at the time of writing.
 
-1. **Simultaneous construction.** That `PosHom` and the functoriality
-   witness family can be built by one `IR.rec` into a product motive,
-   with every premise recursing on subcodes, and that the result agrees
-   with Definition 3.1.
-2. **Code identification.** That `IR⁺(C)` is equivalent to
-   `Σ γ : IR, Functoriality γ`, so that identifying the pre-codes with
-   the existing `IR` loses nothing.
-3. **Category structure.** That `PosHom` composes and has identities,
-   which that paper proves by recursion on the structure of morphisms
-   (its Lemma 3.2).
-4. **Naturality.** That the `Nat` premise of Definition 3.1's `δ`
-   morphism rule is transcribed faithfully, and that the Agda's weakening
-   of it is not silently adopted anywhere in the construction.
+1. **Construction.** That `PosHom` is definable by `IR.elimAlg` on the
+   codomain nested in `IR.elimAlg` on the domain, and that
+   `PosFunctoriality` is then definable by `IR.rec`, with its `δ` clause
+   supplied from the subcodes the step exposes.
+2. **Code identification.** That `IR⁺(C)` is adequately represented by
+   `Σ γ : IR, PosFunctoriality γ`, so that identifying the pre-codes with
+   the existing `IR` loses nothing. `IR⁺(C)` is an informal object, so
+   this is an argued adequacy claim, not a Lean theorem; what is a Lean
+   theorem is whatever equivalence obligation 3 and the interpretation
+   obligations require of the bundled type.
+3. **Remark 3.4's conditions.** That the adopted morphism collection
+   represents natural transformations between the codes, and that
+   identity morphisms and composition are definable for it. These are
+   exactly the conditions Remark 3.4 requires of any choice, and the
+   source's Lemma 3.2 proves them for its own.
+4. **Naturality not silently assumed.** That no step of the construction
+   or of the interpretation relies on a naturality property of `ρ` that
+   the adopted collection does not carry.
 5. **Interpretation.** That codes with their witnesses interpret into
    `Fam(C)`, and that the interpretation is functorial. Prototype
    finding 4 establishes nothing about this.
 6. **Morphism interpretation.** That code morphisms interpret as
    `Fam(C)`-morphisms, and that the object interpretation's morphism part
    agrees with it where both apply.
-7. **Relation to `IR.Hom`.** Whether `PosHom` and the Definition 8 homset
-   agree at discrete `C`. They do not agree in general: the `ι`-clause
-   comparison above shows `IR.Hom` ignores `C`'s morphisms. Section 2 of
-   [GhaniNordvallForsbergMalatesta2015] is cited only for the loss of
-   full and faithfulness, not for the non-agreement.
-8. **Degeneracy.** That the Stage 1 system at a discrete `C` agrees with
-   the existing `IR` system, and that `PresheafPFunctor` at discrete `I`
-   and `J` carries no information beyond `SlicePFunctor`. Prototype
-   finding 2 covers only one shape type, and only up to a universe
-   instantiation it does not fix.
-9. **Constructive discipline.** `Geb.Mathlib.CategoryTheory.Grothendieck`
-   is listed in `GebMeta.classicalAllowedModules`, whereas no `IndRec`
-   or `FreeCoprodCompDisc` module is. Building the Stage 1 semantic
-   target on `CoGrothendieck` would introduce `Classical.choice` into an
-   interpretation presently free of it. Either the affected modules are
-   added to that allowlist with a justification, per
-   [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Constructive-only, or a
-   `Fam(C)` construction avoiding `Cat` is used.
+7. **Coproducts in `Fam(C)`.** That the `CoGrothendieck` presentation of
+   the family functor has the set-indexed coproducts, and the functorial
+   action on them, that the interpretation of `σ` and `δ` uses; and that
+   its objects and morphisms agree with that paper's Definition 2.2.
+8. **`PosHom` and `IR.Hom`.** That the two agree at discrete `C`. They do
+   not agree in general: the `ι`-clause comparison above shows `IR.Hom`
+   ignores `C`'s morphisms.
+9. **Degeneracy.** That the Stage 1 system at a discrete `C` agrees with
+   the existing `IR` system, where agreement means an equivalence of code
+   types carrying `PosHom` to `IR.Hom` and commuting with the two
+   interpretations up to natural isomorphism. Prototype finding 2 covers
+   only one shape type, and only up to a universe instantiation it does
+   not fix.
+10. **Constructive discipline.** `Geb.Mathlib.CategoryTheory.Grothendieck`
+    is listed in `GebMeta.classicalAllowedModules`, whereas no `IndRec`
+    or `FreeCoprodCompDisc` module is. Building the Stage 1 semantic
+    target on `CoGrothendieck` would introduce `Classical.choice` into an
+    interpretation presently free of it. Either the affected modules are
+    added to that allowlist with a justification, per
+    [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Constructive-only, or a
+    `Fam(C)` construction avoiding `Cat` is used.
 
 ## Non-goals
 
 - A Stage 2 design. See § Direction for what is settled and what is open.
+- The morphism collection of Definition 3.1 itself, with its `Nat`
+  premise. Stage 1 adopts the Agda's collection under Remark 3.4;
+  transcribing the `Nat` variant would additionally require composition
+  of code morphisms in order to state the premise, and is not attempted.
 - Universe polymorphism beyond what the existing `IR` and
   `PresheafPFunctor` declarations carry. The prototype's `Functoriality`
   is at a single universe; generalizing it is plan-level work.
@@ -326,6 +360,8 @@ Stage 1 only. Each is unproved at the time of writing.
   definitions.
 - [GhaniNordvallForsbergMalatesta2015] — positive inductive-recursive
   definitions; the Stage 1 source.
+- [GhaniMalatestaNordvallForsberg2014Agda] — its Agda formalization,
+  whose morphism collection Stage 1 adopts.
 - [HancockMcBrideGhaniMalatestaAltenkirch2013] — small induction
   recursion; the existing `IR` system's source.
 - [Weber2007], [nLabParametricRightAdjoint] — parametric right adjoints.
