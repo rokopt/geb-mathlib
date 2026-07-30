@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.Logic.Equiv.Basic
+public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # The initial and terminal objects, coproducts and products of `FinSetSkel`
@@ -61,6 +62,8 @@ finite sets, skeleton, coproduct, product, terminal, choice-free
 @[expose] public section
 
 universe u
+
+open CategoryTheory
 
 namespace FinSetSkel
 
@@ -118,5 +121,86 @@ def point {X : FinSetSkel.{u}} (i : Fin X.len) : mk 1 ⟶ X :=
 @[simp] theorem point_get {X : FinSetSkel.{u}} (i : Fin X.len)
     (t : Fin (mk 1 : FinSetSkel.{u}).len) : (point i).toVec.get t = i := by
   simp [point]
+
+/-- The binary coproduct object: lengths add. Reducible, so that
+`Fin (coprodObj X Y).len` and `Fin (X.len + Y.len)` are interchangeable
+at reducible transparency: `finSumFinEquiv`'s index types are stated in
+the second form and the objects of this category in the first, and a
+term mixing them is type-correct only up to delta, which `rw`'s motive
+check rejects. -/
+@[reducible] def coprodObj (X Y : FinSetSkel.{u}) : FinSetSkel.{u} :=
+  mk (X.len + Y.len)
+
+/-- The left injection into the binary coproduct. -/
+def coprodInl (X Y : FinSetSkel.{u}) : X ⟶ coprodObj X Y :=
+  Hom.ofVec (Vector.ofFnC fun i ↦ finSumFinEquiv (Sum.inl i))
+
+/-- The right injection into the binary coproduct. -/
+def coprodInr (X Y : FinSetSkel.{u}) : Y ⟶ coprodObj X Y :=
+  Hom.ofVec (Vector.ofFnC fun i ↦ finSumFinEquiv (Sum.inr i))
+
+/-- The left injection acts by the left summand embedding. -/
+@[simp] theorem coprodInl_get (X Y : FinSetSkel.{u}) (i : Fin X.len) :
+    (coprodInl X Y).toVec.get i = finSumFinEquiv (Sum.inl i) := by
+  rw [coprodInl, Hom.toVec_ofVec]
+  exact Vector.get_ofFnC _ _
+
+/-- The right injection acts by the right summand embedding. -/
+@[simp] theorem coprodInr_get (X Y : FinSetSkel.{u}) (i : Fin Y.len) :
+    (coprodInr X Y).toVec.get i = finSumFinEquiv (Sum.inr i) := by
+  rw [coprodInr, Hom.toVec_ofVec]
+  exact Vector.get_ofFnC _ _
+
+/-- The morphism out of a binary coproduct determined by its two
+components. -/
+def coprodDesc {X Y Z : FinSetSkel.{u}} (f : X ⟶ Z) (g : Y ⟶ Z) :
+    coprodObj X Y ⟶ Z :=
+  Hom.ofVec (Vector.ofFnC fun i ↦
+    Sum.elim (fun a ↦ f.toVec.get a) (fun b ↦ g.toVec.get b)
+      (finSumFinEquiv.symm i))
+
+/-- The descent morphism acts by case analysis on the summand. -/
+@[simp] theorem coprodDesc_get {X Y Z : FinSetSkel.{u}} (f : X ⟶ Z)
+    (g : Y ⟶ Z) (i : Fin (coprodObj X Y).len) :
+    (coprodDesc f g).toVec.get i =
+      Sum.elim (fun a ↦ f.toVec.get a) (fun b ↦ g.toVec.get b)
+        (finSumFinEquiv.symm i) := by
+  rw [coprodDesc, Hom.toVec_ofVec]
+  exact Vector.get_ofFnC _ _
+
+/-- Descent restricted along the left injection is its left
+component. -/
+@[simp] theorem coprodInl_desc {X Y Z : FinSetSkel.{u}} (f : X ⟶ Z)
+    (g : Y ⟶ Z) : coprodInl X Y ≫ coprodDesc f g = f :=
+  hom_ext fun i ↦ by
+    rw [comp_get, coprodInl_get, coprodDesc_get, Equiv.symm_apply_apply,
+      Sum.elim_inl]
+
+/-- Descent restricted along the right injection is its right
+component. -/
+@[simp] theorem coprodInr_desc {X Y Z : FinSetSkel.{u}} (f : X ⟶ Z)
+    (g : Y ⟶ Z) : coprodInr X Y ≫ coprodDesc f g = g :=
+  hom_ext fun i ↦ by
+    rw [comp_get, coprodInr_get, coprodDesc_get, Equiv.symm_apply_apply,
+      Sum.elim_inr]
+
+/-- A morphism agreeing with both components on the injections is
+the descent morphism. -/
+theorem coprodDesc_uniq {X Y Z : FinSetSkel.{u}} (f : X ⟶ Z)
+    (g : Y ⟶ Z) (m : coprodObj X Y ⟶ Z)
+    (hl : coprodInl X Y ≫ m = f) (hr : coprodInr X Y ≫ m = g) :
+    m = coprodDesc f g :=
+  hom_ext fun i ↦ by
+    rcases hs : finSumFinEquiv.symm i with a | b
+    · have : i = finSumFinEquiv (Sum.inl a) := by
+        rw [← hs, Equiv.apply_symm_apply]
+      subst this
+      rw [coprodDesc_get, Equiv.symm_apply_apply, Sum.elim_inl, ← hl, comp_get,
+        coprodInl_get]
+    · have : i = finSumFinEquiv (Sum.inr b) := by
+        rw [← hs, Equiv.apply_symm_apply]
+      subst this
+      rw [coprodDesc_get, Equiv.symm_apply_apply, Sum.elim_inr, ← hr, comp_get,
+        coprodInr_get]
 
 end FinSetSkel
