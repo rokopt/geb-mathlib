@@ -46,7 +46,8 @@ import-direction rules above are enforced by
   direction of mathlib's `Equiv.piEquivSubtypeSigma`).
   `sigmaSubtypeEquiv` commutes a sigma with a fiberwise subtype;
   `arrowPEmptyEquiv` equates empty-valued function types across
-  universes. `Classical.choice`-free.
+  universes. `Equiv.arrowCongrLeftC` transports a function type along
+  an equivalence of its domain. `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/Grothendieck.lean` — covariant and
   contravariant Grothendieck constructions for 1-functors.
   `Grothendieck.functorToCat` packages mathlib's covariant

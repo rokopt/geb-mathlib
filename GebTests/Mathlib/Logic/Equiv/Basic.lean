@@ -12,8 +12,9 @@ public import Geb.Mathlib.Logic.Equiv.Basic
 
 Round-trip tests exercise `sigmaCongrRight'`,
 `arrowSumEquivSigma`, and `sigmaCompEquivSigmaFiber` on sample
-inputs. The sigma–subtype commutation and the empty-valued
-function-type equivalence round-trip at sample instances.
+inputs. The sigma–subtype commutation, the empty-valued
+function-type equivalence, and the arrow-type domain transport
+round-trip at sample instances.
 
 ## Tags
 
@@ -62,3 +63,24 @@ theorem sampleArrowPEmptyEquiv_roundtrip (e : Bool → PEmpty.{1}) :
     (arrowPEmptyEquiv.{0, 1, 0} Bool).symm
         (arrowPEmptyEquiv.{0, 1, 0} Bool e) = e :=
   (arrowPEmptyEquiv.{0, 1, 0} Bool).symm_apply_apply e
+
+/-- A non-identity self-equivalence of `Bool`, to transport along. -/
+def boolNotEquiv : Bool ≃ Bool where
+  toFun := Bool.not
+  invFun := Bool.not
+  left_inv := Bool.not_not
+  right_inv := Bool.not_not
+
+/-- A sample function whose domain the transport rewrites. -/
+def sampleArrowCongrLeft : Bool → Nat :=
+  Equiv.arrowCongrLeftC boolNotEquiv (fun b ↦ if b then 1 else 0)
+
+/-- The domain transport round-trips a sample function pointwise. -/
+theorem sampleArrowCongrLeftC_roundtrip (b : Bool) :
+    (Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv).symm
+        ((Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv)
+          sampleArrowCongrLeft) b =
+      sampleArrowCongrLeft b :=
+  congrFun
+    ((Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv).symm_apply_apply
+      sampleArrowCongrLeft) b
