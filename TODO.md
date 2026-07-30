@@ -298,7 +298,7 @@ entry, adding no Lean content.
   and derived `Prop` instances, the `docs/references.bib` citations, and
   a module docstring carrying constraint 3 and constraint 5's
   accessor rule.
-- **W3** — rows a through h, j, l and m of the operation table.
+- **W3** — rows a through e, g, h, l and m of the operation table.
 - **W4** — row i, by folding `Batteries.UnionFind.union` over the
   domain; plus a `TODO.md` § Triggers entry recording the
   mathlib-to-Batteries dependency-edge question against W4's upstream
@@ -317,17 +317,17 @@ entry, adding no Lean content.
 | c | Binary coproducts | `m + n`, via `finSumFinEquiv`, which is choice-free and usable as it stands | W3 |
 | d | Binary products | `m * n`, via `finProdFinEquiv`, which depends on `Classical.choice` through `Fin.divNat`; W3 owes a choice-free replacement | W3 |
 | e | Finite coproducts (`Prop`) | from a and c | W3 |
-| f | Finite products (`Prop`) | from b and d | W3 |
+| f | Finite products (`Prop`) | from b and d | derived |
 | g | Exponentials (`MonoidalClosed`) | `Fin m ⟹ Fin n` is `Fin (n ^ m)`, via `finFunctionFinEquiv`, which depends on `Classical.choice`; W3 owes a choice-free replacement | W3 |
-| h | Binary equalizers, and `HasEqualizers` | agreement subset | W3 |
+| h | Binary equalizers | agreement subset | W3 |
 | i | Binary coequalizers, and `HasCoequalizers` | union-find | W4 |
-| j | Finite limits (`Prop`) | from f and h | W3 |
+| j | Finite limits (`Prop`) | from f and h | derived |
 | k | Finite colimits (`Prop`) | from e and i | W5 |
 | l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
-| m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `SimplexCategory.mono_iff_injective` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
+| m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `ConcreteCategory.mono_iff_injective_of_preservesPullback` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
 
-Rows e, j and k are reassigned to W2 below (§ Class fields); the
-table above states the plan's original per-field assignment.
+Rows e, f, j and k are also W2's one-time derivations below
+(§ Class fields).
 
 #### Class fields
 
@@ -411,12 +411,19 @@ W5's assignments become redundant.
    `finProdFinEquiv` and `finFunctionFinEquiv` are deliberately
    W3-local, each having a single consumer in W3: this constraint
    places in W1 what W3 and W4 share, and W4's row i touches neither.
+   "A single consumer in W3" holds of the two `Equiv`s, not of the
+   three `Fin` operations beneath them — `Fin.divNatC`,
+   `Fin.modNatC` and `Fin.pairC` — which rows d and g both consume.
 8. Every workstream splits its modules: constructions and the content
    of their universal properties choice-free over vectors and `Fin`;
    mathlib structures and `Prop` instances in a wrapper whose fields
    are those terms. Only wrapper modules reach
    `GebMeta.classicalAllowedModules`. A workstream whose entire
    deliverable is packaging — W2 and W5 — is a wrapper throughout.
+   A wrapper may also carry content, where that content cannot be
+   stated choice-free: W3's whiskering bridge for the exponential
+   and its derivation of the characteristic-vector hypothesis of
+   the classifier from `IsPullback` are both such.
 9. Constructions in choice-free modules use `Vector.ofFnC` and never
    `Vector.ofFn`, `Vector.range` or `Vector.finRange`, nor the
    `Array.toList_ofFn` / `List.toArray_ofFn` bridges. Binds W3
@@ -523,8 +530,9 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
   W1 through W5 each entail such an amendment, W0 none.
 - Both concurrent pairs — W1 with W2, W3 with W4 — append to files
   the other also appends to: `GebMeta.classicalAllowedModules`, the
-  status table below, `docs/index.md`, and any shared directory index
-  file. These are ordinary textual conflicts, resolved by rebasing
+  status table below, `docs/index.md`, and the directory index files
+  they share, `Geb/Mathlib/CategoryTheory/FinSetSkel.lean` among
+  them. These are ordinary textual conflicts, resolved by rebasing
   the later sibling before merge.
 
 #### Status
@@ -533,9 +541,8 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | --- | --- | --- | --- |
 | W0 `Batteries.` allow-list | — | Complete | — |
 | W1 `FinSetSkel` | — | Complete | `Geb/Mathlib/Data/Vector/OfFn.lean`, `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` |
-| W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
-| W3 Rows a–h, j, l, m | W1 | Not started | — |
+| W3 Rows a–e, g, h, l, m | W1 | Complete | `Geb/Mathlib/Data/Fin/Basic.lean`, `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes/Instances.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Mono.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Instance.lean` |
 | W4 Row i, union-find | W0, W1 | Complete | `Geb/Mathlib/Data/UnionFind/OfEdges.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` |
 | W5 Row k, unification | W1–W4 | Not started | — |
 
@@ -863,3 +870,11 @@ fiber membership already implemented.
   item above: both enumerate import forms and both predate the module
   system's `meta` forms. Trigger: the next branch that revises
   `scripts/extract-pr.sh`, or the first extraction of either module.
+- **`Fin.compressEquiv` has no consumer**: W1 built it for the binary
+  equalizers, which route through the agreement list instead. Besides
+  its own module, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, its
+  only occurrences are its test parallel and its `docs/index.md`
+  entry.
+  Trigger: the next occasion to revisit W1's helpers, at which point
+  decide between keeping it and removing it under
+  `CONTRIBUTING.md` § Code is cost.
