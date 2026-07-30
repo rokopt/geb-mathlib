@@ -12,9 +12,10 @@ public import Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinary
 /-!
 # The cartesian and coproduct structure of `FinSetSkel`
 
-The mathlib packaging of `Shapes/Core.lean`'s rows a, b, c and d: the
-chosen cones, the `CartesianMonoidalCategory` instance built from
-them, and the `Prop` instances a later workstream consumes.
+The mathlib packaging of `Shapes/Core.lean`'s rows a, b, c and d
+together with row e: the chosen cones and cocones, the
+`CartesianMonoidalCategory` instance built from the cones, and the
+`Prop` instances a later workstream consumes.
 `CartesianMonoidalCategory` depends on `Classical.choice`, so this
 module is allowlisted and the constructions it packages are not.
 
@@ -22,16 +23,20 @@ module is allowlisted and the constructions it packages are not.
 cone and a family of binary product cones and supplies the
 associator, the unitors and the coherence conditions, so no
 monoidal law is proved here. Its instance registers
-`HasFiniteProducts`, `HasTerminal` and `HasBinaryProducts` at
-priority 100, so none of the three is registered separately.
+`HasFiniteProducts` at priority 100, from which `HasTerminal` and
+`HasBinaryProducts` follow, so none of the three is registered
+separately.
 
 ## Main definitions
 
 * `FinSetSkel.terminalCone`, `FinSetSkel.binaryProductCone`,
   `FinSetSkel.initialCocone`, `FinSetSkel.binaryCoproductCocone` —
-  the chosen cones.
+  the chosen cones and cocones.
 * `FinSetSkel.cartesianMonoidalCategory` — the cartesian structure.
 * `FinSetSkel.isTerminalOne` — the one-element object is terminal.
+* `FinSetSkel.hasInitial`, `FinSetSkel.hasColimit_pair`,
+  `FinSetSkel.hasBinaryCoproducts`,
+  `FinSetSkel.hasFiniteCoproducts` — the colimit `Prop` instances.
 
 ## References
 
@@ -46,7 +51,7 @@ finite sets, skeleton, cartesian, coproduct, topos
 
 universe u
 
-open CategoryTheory Limits MonoidalCategory
+open CategoryTheory Limits
 
 namespace FinSetSkel
 
@@ -73,5 +78,36 @@ instance cartesianMonoidalCategory :
 /-- The one-element object is terminal. -/
 def isTerminalOne : IsTerminal (mk 1 : FinSetSkel.{u}) :=
   SemiCartesianMonoidalCategory.isTerminalTensorUnit
+
+/-- The chosen initial cocone: the empty object. -/
+def initialCocone : ColimitCocone (Functor.empty.{0} FinSetSkel.{u}) where
+  cocone := asEmptyCocone (mk 0)
+  isColimit :=
+    IsInitial.ofUniqueHom (fun Y ↦ fromZero Y) (fun _ f ↦ fromZero_uniq f)
+
+/-- The chosen binary coproduct cocone. -/
+def binaryCoproductCocone (X Y : FinSetSkel.{u}) :
+    ColimitCocone (pair X Y) where
+  cocone := BinaryCofan.mk (coprodInl X Y) (coprodInr X Y)
+  isColimit :=
+    BinaryCofan.IsColimit.mk _ (fun f g ↦ coprodDesc f g)
+      (fun f g ↦ coprodInl_desc f g) (fun f g ↦ coprodInr_desc f g)
+      (fun f g m hl hr ↦ coprodDesc_uniq f g m hl hr)
+
+/-- `FinSetSkel` has an initial object. -/
+instance hasInitial : HasInitial FinSetSkel.{u} :=
+  IsInitial.hasInitial initialCocone.isColimit
+
+/-- `FinSetSkel` has colimits of pairs. -/
+instance hasColimit_pair {X Y : FinSetSkel.{u}} : HasColimit (pair X Y) :=
+  ⟨⟨binaryCoproductCocone X Y⟩⟩
+
+/-- `FinSetSkel` has binary coproducts. -/
+instance hasBinaryCoproducts : HasBinaryCoproducts FinSetSkel.{u} :=
+  hasBinaryCoproducts_of_hasColimit_pair FinSetSkel.{u}
+
+/-- `FinSetSkel` has finite coproducts, which row k consumes. -/
+instance hasFiniteCoproducts : HasFiniteCoproducts FinSetSkel.{u} :=
+  hasFiniteCoproducts_of_has_binary_and_initial
 
 end FinSetSkel
