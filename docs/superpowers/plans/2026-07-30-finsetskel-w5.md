@@ -69,34 +69,13 @@ control, `doctoc` and `markdownlint-cli2` for Markdown.
   `HasFiniteColimits` and `HasPushouts` at `FinSetSkel`. Task 2 asserts all
   of these.
 
-- [ ] **Step 1: Confirm the four classes do not resolve yet**
+The fact that the limit-side classes do not resolve before this task was
+measured against `c38e3249` and is recorded in the spec's § Verified
+findings. Task 2's four resolution assertions are the standing check; no
+scratch probe is created here, so the branch never carries a file it must
+remember to remove.
 
-Create a scratch file `Geb/Internal/W5Probe.lean`:
-
-```lean
-module
-
-public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
-public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
-
-/-! # Scratch probe -/
-
-@[expose] public section
-
-open CategoryTheory CategoryTheory.Limits
-
-/-- Should fail to synthesize. -/
-example : HasFiniteColimits FinSetSkel.{0} := inferInstance
-```
-
-Run: `lake build Geb.Internal.W5Probe`
-Expected: FAIL, `failed to synthesize instance of type class
-HasFiniteColimits FinSetSkel`. Then delete the file:
-`jj file untrack Geb/Internal/W5Probe.lean` is not needed — just remove it
-with the Write/Edit tooling before proceeding, and confirm `jj st` shows no
-trace of it.
-
-- [ ] **Step 2: Write the module**
+- [ ] **Step 1: Write the module**
 
 Create `Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean`:
 
@@ -120,14 +99,17 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
 
 The seven fields of `ElementaryTopos` are the terms the shapes, exponential,
 equalizer, coequalizer and classifier modules export, assembled unchanged.
-Registering the instance makes `HasEqualizers`, `HasFiniteLimits`,
-`HasFiniteColimits` and `HasPushouts` resolve at `FinSetSkel`; the remaining
-`Prop` classes the class derives resolve independently of it.
+Registering the instance is what makes the limit-side `Prop` classes
+resolve at `FinSetSkel` — `HasEqualizers`, `HasLimit` at a parallel pair,
+`HasFiniteLimits`, `HasFiniteColimits`, `HasPullbacks` and `HasPushouts`
+among them. The colimit-side generators `HasInitial`,
+`HasBinaryCoproducts`, `HasCoequalizers` and `HasFiniteCoproducts`, and the
+cartesian `HasTerminal`, `HasBinaryProducts` and `HasFiniteProducts`,
+resolve without it.
 
-This module introduces no dependence on `Classical.choice` of its own,
-inheriting the whole of it from the seven field terms, whose own modules
-each name the mathlib construct responsible. It and its test parallel are
-listed in `GebMeta.classicalAllowedModules` on that ground.
+This module is allowlisted for `Classical.choice`, introducing no
+dependence of its own and inheriting the whole of it from the seven field
+terms.
 
 ## Main definitions
 
@@ -142,7 +124,7 @@ Nothing beyond the instance is registered. A direct
 The class carries the coequalizer as data rather than asserting finite
 colimits because the choice decides which algorithm runs. That an
 elementary topos has finite colimits is a theorem, but the construction a
-general proof yields is not the union-find of `FinSetSkel/Quotient.lean`.
+general proof yields is not `FinSetSkel.Quotient.unionFind`.
 
 ## References
 
@@ -174,7 +156,7 @@ instance elementaryTopos : ElementaryTopos FinSetSkel.{u} where
 end FinSetSkel
 ```
 
-- [ ] **Step 3: Add both allowlist names**
+- [ ] **Step 2: Add both allowlist names**
 
 In `GebMeta.lean`, in the `classicalAllowedModules` list, after
 `` `GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance ``, add:
@@ -184,9 +166,10 @@ In `GebMeta.lean`, in the `classicalAllowedModules` list, after
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos
 ```
 
-Keep the existing `].foldl (·.insert ·)` tail on the final element.
+The `].foldl (·.insert ·)` tail currently sits on the last name in the
+list; move it onto the new final element.
 
-- [ ] **Step 4: Add the index import**
+- [ ] **Step 3: Add the index import**
 
 In `Geb/Mathlib/CategoryTheory/FinSetSkel.lean`, between the `Coequalizer`
 and `Equalizer` lines:
@@ -195,7 +178,7 @@ and `Equalizer` lines:
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos
 ```
 
-- [ ] **Step 5: Add the bibliography entry**
+- [ ] **Step 4: Add the bibliography entry**
 
 In `docs/references.bib`, immediately after the `nLabSkeletalCategory` entry:
 
@@ -208,26 +191,41 @@ In `docs/references.bib`, immediately after the `nLabSkeletalCategory` entry:
 }
 ```
 
-- [ ] **Step 6: Build and lint**
+- [ ] **Step 5: Build, lint and review**
 
 Run, one at a time with a generous timeout:
 
 ```text
 lake build
 lake lint
+scripts/lint-imports.sh
 ```
 
-Expected: both succeed. If `lake lint` reports `elementaryTopos depends on
-non-standard axiom(s): [Classical.choice]`, Step 3 was not applied or the
-index import of Step 4 is missing.
+Expected: all succeed. If `lake lint` reports `elementaryTopos depends on
+non-standard axiom(s): [Classical.choice]`, Step 2's source allowlist name
+is missing. If `lake lint` reports nothing about the module at all, Step 3's
+index import is missing and the linter never reached it.
 
-- [ ] **Step 7: Commit**
+Check the banned family by grep, per the spec's constraint 4:
+
+```bash
+grep -nE 'Vector\.(ofFn|range|finRange)|ofFn_getElem' \
+  Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
+```
+
+Expected: no output.
+
+Then run `lean4:review` on the new module, which
+`docs/rules/lean-coding.md` § Lean 4 skill workflows requires before any
+Lean commit. Address findings before committing.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 jj st
 jj commit -m "feat(finsetskel): register the elementary-topos instance
 
-Assembles the seven fields the shapes, exponential, equalizer,
+Assemble the seven fields the shapes, exponential, equalizer,
 coequalizer and classifier modules export."
 jj bookmark set feat/finsetskel-w5 -r @-
 ```
@@ -253,7 +251,7 @@ jj bookmark set feat/finsetskel-w5 -r @-
 Run:
 
 ```bash
-grep -rnE '^(def|theorem|abbrev|lemma) (sampleSkelTopos|has(Equalizers|FiniteLimits|FiniteColimits|Pushouts)_finSetSkel)' GebTests/
+grep -rnE '(sampleSkelTopos|has(Equalizers|FiniteLimits|FiniteColimits|Pushouts)_finSetSkel)' GebTests/
 ```
 
 Expected: no output. If any name is taken, rename with the same
@@ -377,14 +375,25 @@ import GebTests.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos
 Run, one at a time:
 
 ```text
-lake build GebTests
 lake test
 lake lint -- GebTests
+scripts/lint-imports.sh
 ```
 
-Expected: all succeed. If `lake lint -- GebTests` flags the twelve
-declarations for `Classical.choice`, Task 1 Step 3 omitted the `GebTests`
-allowlist name.
+`lake test` builds `GebTests`, `testDriver` being that library, so no
+separate build step is needed. Expected: all succeed. If
+`lake lint -- GebTests` flags the twelve declarations for
+`Classical.choice`, Task 1 Step 2 omitted the `GebTests` allowlist name.
+
+Check the banned family by grep, per the spec's constraint 4:
+
+```bash
+grep -nE 'Vector\.(ofFn|range|finRange)|ofFn_getElem' \
+  GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
+```
+
+Expected: no output. Then run `lean4:review` on the new module before
+committing.
 
 - [ ] **Step 5: Check the import closure**
 
@@ -416,14 +425,14 @@ jj bookmark set feat/finsetskel-w5 -r @-
 - Consumes: nothing.
 - Produces: the rule text Task 4 supplies rationale for.
 
-- [ ] **Step 1: Append six bullets to § Constructive-only Lean code**
+- [ ] **Step 1: Append seven bullets to § Constructive-only Lean code**
 
 After the existing paragraph ending `scripts/tests/test-axiom-linter.sh
 smoke-tests it.`, add:
 
 ```markdown
-Six rules govern keeping a module choice-free. Each rests on axiom
-measurements taken at v4.33.0-rc1.
+Seven rules govern keeping a module choice-free. Where a rule rests on an
+axiom measurement, that measurement was taken at v4.33.0-rc1.
 
 - **Measure monomorphically, in the consuming closure.** Take an axiom
   measurement from a monomorphic declaration at the instances used, and in
@@ -444,26 +453,30 @@ measurements taken at v4.33.0-rc1.
   bound over individually named hypotheses, or by case analysis, rather
   than by the single lemma that states it: the choice-dependent and
   choice-free lemmas of that API interleave under no separating convention.
-- **Transport along the codomain freely; state domain transport yourself.**
-  `Equiv`'s combinators divide by which side of the arrow they move.
-  Mathlib's domain-transport combinators depend on `Classical.choice` where
-  its codomain-transport ones do not, so a choice-free module supplies its
-  own domain transport.
+- **Transport a dependent codomain with `Equiv.piCongrRight`; state domain
+  transport yourself.** `Equiv`'s combinators divide by which side of the
+  arrow they move: `Equiv.arrowCongr`, `Equiv.arrowCongr'`,
+  `Equiv.piCongrLeft`, `Equiv.piCongrLeft'` and `Equiv.piCongr` all depend
+  on `Classical.choice`, while `Equiv.piCongrRight` and `Equiv.curry` do
+  not. `Equiv.arrowCongr` moves the codomain too, so it is not the
+  choice-free codomain route; name `Equiv.piCongrRight`. For the domain, a
+  choice-free module supplies its own, as
+  `Geb/Mathlib/Logic/Equiv/Basic.lean` does.
 - **Pin `LawfulBEq (Fin n)` where the closure reaches mathlib's `Fin`
   order API.** Instance search there selects `Std.LawfulBEqOrd.lawfulBEq`,
   which is choice-dependent at `Fin n`, and every operation stated over the
   class inherits that, `decide (j ∈ l)` at `List (Fin n)` among them. Pin
   the instance to the construction over the `DecidableEq`-derived `BEq`.
-  This is the second rule one level down, stated separately because the
-  closure-dependence makes a narrow measurement read clean.
+  This is the name-the-term rule one level down, stated separately because
+  the closure-dependence makes a narrow measurement report clean.
 
-Re-measure each of these at every toolchain bump, a lemma's axioms
-following its proof.
+- **Re-measure at every toolchain bump.** A lemma's axioms follow its
+  proof, so each measurement above is re-taken when the pin moves rather
+  than assumed to persist.
 
 A violation of the `Vector.ofFn` ban stated in
-`Geb/Mathlib/Data/Vector/OfFn.lean` is not an elaboration error. The banned
-lemmas carry `@[simp]`, so a bare `simp` or `grind` introduces
-`Classical.choice` silently, and the violation surfaces at `lake lint`.
+`Geb/Mathlib/Data/Vector/OfFn.lean` is not an elaboration error: it
+surfaces at `lake lint`.
 ```
 
 - [ ] **Step 2: Append one bullet to § Structure and typeclass patterns**
@@ -521,20 +534,18 @@ exist because axiom cleanliness is not a property of a name. `#print
 axioms` on a polymorphic constant reports that constant, not any
 instantiation of it, so a constant whose hypothesis is a class can measure
 clean while every use of it at a concrete type collects `Classical.choice`.
-Instance search compounds this: which instance wins depends on the import
-closure, so the same measurement taken in a narrow closure and in the
-consuming one can disagree.
+Instance search compounds this: which instance is selected depends on the
+import closure, so the same measurement taken in a narrow closure and in
+the consuming one can disagree.
 
 That is why the rules are stated as obligations on the author rather than
 as facts about named declarations. Naming the term, pinning the instance
 and splitting modules by what can be stated choice-free all remove the
-dependence on what search happens to select. The module split additionally
-keeps the allowlist honest: only a wrapper, whose content is packaging,
-reaches `GebMeta.classicalAllowedModules`, so the constructive core stays
-strict.
-
-Each rule rests on a measurement, and a lemma's axioms follow its proof, so
-they are re-measured on a toolchain bump rather than assumed to persist.
+dependence on what search selects. The module split also bounds the
+allowlist: only a wrapper, whose content is packaging, reaches
+`GebMeta.classicalAllowedModules`, so the constructive core stays strict.
+Where a rule rests on a measurement, a lemma's axioms follow its proof, so
+it is re-taken on a toolchain bump.
 ```
 
 - [ ] **Step 2: Regenerate the TOC and lint**
@@ -581,8 +592,10 @@ In the module docstring, after the sentence ending `into scope.`, add:
 The banned lemmas carry `@[simp]`, and all but `Vector.ofFn_getElem` also
 `@[grind =]`, so a bare `simp` or `grind` meeting such a term introduces
 `Classical.choice` without an error. The constructions `Vector.range` and
-`Vector.finRange` are equally banned in choice-free modules, not only their
-lemmas. Measured at v4.33.0-rc1.
+`Vector.finRange` are unusable in a choice-free module for the same
+reason — each has only choice-dependent indexing lemmas — so the ban
+covers them and not only the lemmas. The constructions themselves depend on
+`propext` alone. Measured at v4.33.0-rc1.
 ```
 
 - [ ] **Step 2: `ElementaryTopos.lean`**
@@ -604,8 +617,8 @@ Between `## Main statements` and `## References`, insert:
 ```markdown
 ## Implementation notes
 
-The name records the model: `Skel` marks this as the skeletal category of
-finite sets, parallel to `FintypeCat.Skeleton`.
+The name records the skeletal model: `Skel` marks this as the skeletal
+model of the category of finite sets, parallel to `FintypeCat.Skeleton`.
 ```
 
 - [ ] **Step 4: `Skeleton.lean`**
@@ -633,8 +646,9 @@ lake build
 scripts/lint-imports.sh
 ```
 
-Expected: both succeed. Confirm no addition names a workstream or a row
-letter:
+Expected: both succeed. Then run `lean4:review` on the four edited modules,
+which `docs/rules/lean-coding.md` § Lean 4 skill workflows requires before
+any Lean commit. Confirm no addition names a workstream or a row letter:
 
 ```bash
 grep -rnE '\bW[0-5]\b|[Ww]orkstream' Geb/ GebTests/
@@ -675,9 +689,12 @@ At the end of § Implemented content, after the
   initial cocone, the binary-coproduct cocones, the equalizer cones, the
   coequalizer cocones and the classifier. It depends on the five
   field-supplying entries above and on the `ElementaryTopos` class entry.
-  Registering it makes `HasEqualizers`, `HasFiniteLimits`,
-  `HasFiniteColimits` and `HasPushouts` resolve at `FinSetSkel`; the other
-  `Prop` classes the class derives already resolve without it. The source
+  Registering it is what makes the limit-side `Prop` classes resolve at
+  `FinSetSkel` — `HasEqualizers`, `HasLimit` at a parallel pair,
+  `HasFiniteLimits`, `HasFiniteColimits`, `HasPullbacks` and `HasPushouts`
+  among them — where the colimit-side generators and the cartesian
+  `HasTerminal`, `HasBinaryProducts` and `HasFiniteProducts` resolve
+  without it. The source
   and test modules are listed in `GebMeta.classicalAllowedModules`, the
   module inheriting its `Classical.choice` dependence entirely from the
   field terms.
@@ -748,15 +765,20 @@ At the end of § Triggers, add:
 
 - [ ] **Step 3: Amend four entries**
 
-In the `lake shake --keep-implied` entry, replace the file enumeration
-sentence with output measured now:
+In the `lake shake --keep-implied` entry, replace lines 715-719 — from
+`without that flag,` through `` `GebTests` ones. `` — with text of this
+shape, substituting the counts the command reports:
 
-```bash
-lake shake --add-public --keep-prefix Geb GebTests
+```markdown
+  without that flag, `lake shake` reports it as removable, and
+  reports the same pattern across the tree:
+  `lake shake --add-public --keep-prefix Geb GebTests` reports
+  N `Geb/Mathlib/` files and M `GebTests` ones, exiting 1.
 ```
 
-Record the counts that command reports, naming the invocation. Do not carry
-the entry's present figures forward; they predate the FinSetSkel modules.
+Obtain N and M by running that command now; the entry's present figures
+predate the FinSetSkel modules. The command exits 1 by design — that is
+its report, not a failure — so do not treat the exit status as an error.
 
 In the `mathlib-to-Batteries` entry, replace `which outlives this
 workstream group` with `which outlives the FinSetSkel development`.
@@ -766,10 +788,18 @@ sentence (that no such use exists while `Skeletal` is consumed only by the
 wrapper) with: its consumers are the wrapper and its test parallels, all
 allowlisted, so no such use has arisen.
 
-In the `Reconcile test-module import visibility` entry, replace the claim
-that every sibling test module uses plain `import` with: most test modules
-use `public import` for the module under test, a minority plain `import`.
-Do not state a count; it goes stale on the next test module.
+In the `Reconcile test-module import visibility` entry, replace lines
+783-785 — from `` `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses ``
+through `` test module uses plain `import`; `` — with:
+
+```markdown
+  `GebTests/` modules disagree on whether to `public import` the
+  module under test: most do, a minority use plain `import`;
+```
+
+Do not state a count; it goes stale on the next test module. The entry's
+remaining sentences, from `` `GebTests/Internal/`'s `` onward, are
+unchanged.
 
 - [ ] **Step 4: Verify the entry count and leave three entries alone**
 
@@ -815,9 +845,9 @@ sed -n '180p;181p;549p;550p' TODO.md
 ```
 
 Expected exactly: a blank line; `### FinSetSkel as an elementary topos`; a
-blank line; `### Complexity of the decidable validity checkers`. If any
-line differs, stop — Task 7 shifted the file and the anchors must be
-recomputed.
+blank line; `### Complexity of the decidable validity checkers`. Task 7
+edits only lines 692 and beyond, so it cannot have moved these; if any line
+differs, something else has, and the anchors must be recomputed.
 
 - [ ] **Step 2: Delete lines 181–549**
 
@@ -826,12 +856,18 @@ sections and a title-bounded edit has no checkable bound.
 
 - [ ] **Step 3: Amend the preamble**
 
-Replace `TODO.md:33-34`'s `Workstreams complete → removed; content merged
-into \`docs/index.md\`.` with:
+`TODO.md:32-33` currently read:
 
 ```markdown
-Workstreams complete → removed; content merged into the persistent
-documentation.
+Active workstreams, in topological order. Workstreams complete →
+removed; content merged into `docs/index.md`.
+```
+
+The sentence wraps, so match the two lines together, not one. Replace with:
+
+```markdown
+Active workstreams, in topological order. Workstreams complete →
+removed; content merged into the persistent documentation.
 ```
 
 Leave the word "workstream" in place elsewhere: `CONTRIBUTING.md` § Working
@@ -843,11 +879,13 @@ step 2 directs a reader here to pick one.
 doctoc --update-only TODO.md
 grep -nE '\bW[0-5]\b' TODO.md
 grep -n '### FinSetSkel as an elementary topos' TODO.md
-awk 'NR>=1 && /^- \*\*/ {c++} END{print c}' TODO.md
+awk '/^## Triggers/{t=1} t && /^- \*\*/ {c++} END{print c}' TODO.md
 ```
 
-Expected: doctoc updates; both greps produce no output; the entry count is
-22 (all `- **` bullets now live in § Triggers).
+Expected: doctoc updates; both greps produce no output; the § Triggers
+entry count is 22. Count within § Triggers, not file-wide: `TODO.md:44`
+carries a `- **` bullet under § Removal of guard hash-command that this
+branch does not touch, so a whole-file count is 23.
 
 - [ ] **Step 5: Lint and commit**
 
@@ -884,21 +922,61 @@ doctoc check.
 
 - [ ] **Step 2: Verify the acceptance criteria the check does not cover**
 
+Each check below is separate on purpose. A disjunctive grep passes on one
+hit and would let six of the seven rules go unwritten.
+
 ```bash
 grep -rnE '^[[:space:]]*noncomputable[[:space:]]' Geb/ GebTests/
 grep -rnE '\bW[0-5]\b|[Ww]orkstream' Geb/ GebTests/
-grep -c 'monomorphic\|two routes\|underlying data\|omega\|codomain\|LawfulBEq\|toolchain bump\|elaboration error' docs/rules/lean-coding.md
+```
+
+Expected: both empty.
+
+```bash
+for t in monomorphic 'import closure' 'two routes' 'underlying data' \
+         omega codomain LawfulBEq 'toolchain bump' 'elaboration error' \
+         'proof irrelevance'; do
+  printf '%s: %s\n' "$t" "$(grep -c -- "$t" docs/rules/lean-coding.md)"
+done
+```
+
+Expected: every count non-zero. `proof irrelevance` must appear under
+§ Structure and typeclass patterns and the other nine under
+§ Constructive-only Lean code; confirm placement by eye, since grep does
+not see sections.
+
+```bash
 grep -c 'Constructive-only discipline' docs/process.md
 grep -c 'grind' Geb/Mathlib/Data/Vector/OfFn.lean
+grep -c 'Vector.finRange' Geb/Mathlib/Data/Vector/OfFn.lean
 grep -c 'sheaf' Geb/Mathlib/CategoryTheory/ElementaryTopos.lean
-grep -c 'skeletal model\|Skel. marks' Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean
+grep -c 'skeletal model' Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean
+grep -c '## Implementation notes' \
+  Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean
 grep -c 'SmallCategory' Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean
 grep -c 'FinSetSkel/ElementaryTopos.lean' docs/index.md
 grep -c 'nLabFinSet' docs/references.bib
-grep -c 'Johnstone\|Mac Lane\|Riehl\|Main statements' TODO.md
 ```
 
-Expected: the first two produce no output; every count is non-zero.
+Expected: every count non-zero.
+
+```bash
+for t in Johnstone '2\.1\.2' 'Mac Lane' Riehl 'Main statements'; do
+  printf '%s: %s\n' "$t" "$(grep -c -- "$t" TODO.md)"
+done
+```
+
+Expected: every count non-zero. These five are the appended § Triggers
+entries' content; a Johnstone-only locator entry would lose the Mac Lane
+and Riehl obligations, which `TODO.md` is the tree's only record of.
+
+```bash
+grep -nE 'Vector\.(ofFn|range|finRange)|ofFn_getElem' \
+  Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean \
+  GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
+```
+
+Expected: no output.
 
 - [ ] **Step 3: Run the Lean review passes**
 
@@ -908,7 +986,13 @@ prints. Address findings before proceeding.
 
 - [ ] **Step 4: Remove the spec and the plan**
 
-Delete both files.
+```bash
+rm docs/superpowers/specs/2026-07-30-finsetskel-w5-design.md
+rm docs/superpowers/plans/2026-07-30-finsetskel-w5.md
+```
+
+`rm` is not blocked by the git hook, and jj snapshots the working copy, so
+`jj st` will show both as deleted.
 
 - [ ] **Step 5: Final check and commit**
 
@@ -920,5 +1004,9 @@ jj bookmark set feat/finsetskel-w5 -r @-
 ```
 
 Then stop. The branch is ready for the user's line-by-line review. Do not
-push: `AGENTS.md` § No `jj git push` without user line-by-line review binds,
-and the PR description is user-authored.
+push: `AGENTS.md` § No `jj git push` without user line-by-line review
+binds. The PR description, and any Zulip or GitHub comment, are
+user-authored per `CONTRIBUTING.md` § Submission policy, which also
+requires that tool use be disclosed and that a PR carrying a substantial
+amount of LLM-generated code take the `LLM-generated` label. Report to the
+user which tools were used and how, so they can make that disclosure.
