@@ -33,6 +33,12 @@ locally declared wrapper.
 category, finite set, coequalizer, test
 -/
 
+-- `linter.hashCommand` rejects `#`-commands; this module's assertions are
+-- `#guard` of necessity, per the module docstring, so the linter is off
+-- here. It is silent in the sibling test modules only because their
+-- import closures are too small to declare `linter.mathlibStandardSet`.
+set_option linter.hashCommand false
+
 @[expose] public section
 
 open CategoryTheory
