@@ -48,6 +48,8 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
   its arity, its operations, and the terminality of its shape presheaf.
 * `GebProto.shapePresheaf` / `GebProto.arityPresheaf` — the shape presheaf `T₁`
   and the arity presheaf `E(a)`, as `Functor` values built from the raw fields.
+* `GebProto.ofNatTransElt` / `GebProto.objEquivSigmaHom` — the p.r.a. formula
+  `T Z ≃ Σ a, Hom(E(a), Z)`, and the slice element its inverse produces.
 
 ## References
 
@@ -477,3 +479,79 @@ example (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) (Z : Iᵒ�
 end ShapeAndArityPresheaves
 
 end GebProto
+
+namespace GebProto
+
+section CoproductOfRepresentables
+
+/-!
+The p.r.a. formula itself: the domain-restricted interpretation of a presheaf
+polynomial functor is the coproduct of the representables on its arity
+presheaves,
+`T Z ≃ Σ a : A, Hom(E(a), Z)`.
+
+The input presheaf is taken at `Z : Iᵒᵖ ⥤ Type uB`, the universe of
+`arityPresheaf`, for the reason recorded in § ShapeAndArityPresheaves: the two
+presheaves must be objects of one category for the hom to be formed, and
+`Type` is not cumulative.
+
+The statement is un-fibred: it ranges over all shapes rather than the fiber of
+`q` over a fixed `j`, so neither `q` nor the shape presheaf appears. Fibring it
+is postcomposition with the equivalence of `Σ a : A, ...` with
+`Σ j, Σ a : Shape j, ...`.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The slice element determined by a shape `a` and a presheaf morphism
+`α : E(a) ⟶ Z`: the direction `b` is assigned the `α`-image of `b`, read at
+`b`'s own base point `F.rCurried a b`. Compatibility holds by construction, the
+index component being that base point. -/
+def ofNatTransElt (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uB}
+    (a : F.A) (α : arityPresheaf F a ⟶ Z) :
+    F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
+  ⟨⟨a, fun b ↦ ⟨F.rCurried a b, α.app ⟨F.rCurried a b⟩ ⟨b, rfl⟩⟩⟩,
+    (F.compatible_iff _ _ _).mpr fun _ ↦ rfl⟩
+
+/-- The component `ofNatTransElt` assigns to a direction is the component `α`
+assigns to it. Destructing the direction makes the `cast` inside `value` a
+`cast` along a proof of `t = t`, which proof irrelevance reduces away. -/
+theorem value_ofNatTrans (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uB} (a : F.A) (α : arityPresheaf F a ⟶ Z) ⦃i : I⦄
+    (b : F.Direction (ofNatTransElt F a α).1.1 i) :
+    F.value (ofNatTransElt F a α) b = α.app ⟨i⟩ b := by
+  obtain ⟨b1, rfl⟩ := b
+  rfl
+
+/-- The p.r.a. formula: the domain-restricted interpretation of `F` at `Z` is
+the coproduct over shapes of the representables on the arity presheaves. The
+forward map reads off the shape and repackages the direction-assignment as a
+presheaf morphism, its components being `value` and its naturality being
+`IsNatural`; the inverse is `ofNatTransElt`. -/
+def objEquivSigmaHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : Iᵒᵖ ⥤ Type uB) :
+    F.toPresheafDomPFunctorData.obj Z ≃ Σ a : F.A, (arityPresheaf F a ⟶ Z) where
+  toFun x :=
+    ⟨x.1.1.1,
+      { app := fun X ↦ ↾ F.value x.1 (i := X.unop)
+        naturality := by
+          intro _ _ φ
+          ext b
+          exact x.2 φ.unop b }⟩
+  invFun p :=
+    ⟨ofNatTransElt F p.1 p.2, by
+      intro i i' f b
+      rw [value_ofNatTrans, value_ofNatTrans]
+      exact NatTrans.naturality_apply p.2 f.op b⟩
+  left_inv x := by
+    refine Subtype.ext (Subtype.ext (Sigma.ext rfl (heq_of_eq (funext fun b ↦ ?_))))
+    exact Sigma.ext ((F.compatible_iff _ _ _).mp x.1.2 b).symm (cast_heq _ _)
+  right_inv p := by
+    refine Sigma.ext rfl (heq_of_eq ?_)
+    ext _ b
+    exact value_ofNatTrans F p.1 p.2 b
+
+end CoproductOfRepresentables
+
+end GebProto
+
+
