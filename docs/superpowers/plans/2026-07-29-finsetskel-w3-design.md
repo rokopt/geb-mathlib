@@ -139,6 +139,15 @@ Every task's requirements implicitly include this section.
   In particular `linter.style.show` rejects a goal-changing `show`
   (use `change`), and `dupNamespace` rejects a declaration whose own
   name repeats its enclosing namespace.
+- **A `simp only` list may contain no unused member.**
+  `linter.unusedSimpArgs` reports one at *error* severity under the
+  bullet above, so padding a list "belt and braces" is a build
+  failure, not a harmless precaution — measured at this toolchain.
+  Where a step gives a `simp only` set as a best guess, run it, read
+  the linter's "This simp argument is unused" names, and delete exactly
+  those; `simp?` reports the minimal set directly. A step that says to
+  add a lemma "if the goal does not close" means exactly that, and not
+  to add it pre-emptively.
 - **`simpa … using t` fails when `simp` alone would close the goal.**
   `linter.unnecessarySimpa` reports it, and the bullet above turns
   that into a build failure. This bites wherever the `using` term is a
@@ -1306,18 +1315,32 @@ Expected: PASS.
 @[simp] theorem homEquivIdxFun_symm_get
     (g : Fin X.len → Fin Y.len) (i : Fin X.len) :
     ((homEquivIdxFun X Y).symm g).toVec.get i = g i := by
-  simp only [homEquivIdxFun, homEquivIdxFunU, ofIdxFun_get, Vector.get_ofFnC]
+  simp [homEquivIdxFun, homEquivIdxFunU, ofIdxFun_get]
 ```
 
 Both orientations rewrite *toward* W1's normal form `f.toVec.get i`,
 so neither disturbs the other workstream's normal form, per
 `TODO.md`'s remark that W3's and W4's carrier-level `simp` lemmas
 first meet at W5. If `rfl` does not close the first, prove it by
-`simp only [homEquivIdxFun, homEquivIdxFunU, toIdxFun]` and report
-which was needed. `simp only`, not bare `simp`, in both places: W1's
-own two analogues use `simp only`, and § Global constraints records
-that a bare `simp` is how the banned `@[simp]` family enters a
-choice-free module.
+`simp [homEquivIdxFun, homEquivIdxFunU, toIdxFun]` — or, if a
+`simp only` is wanted there, by that list plus `Equiv.trans_apply` and
+`Equiv.coe_fn_mk` — and report which was needed.
+
+**Bare `simp`, deliberately, in both places, and this is a local
+exemption from § Global constraints' warning about it.** A `simp only`
+cannot close `homEquivIdxFun_symm_get`: `homEquivIdxFun` is a nested
+`Equiv.trans` and its `.symm` matches neither `ofIdxFun_get` nor
+`Vector.get_ofFnC`, so the goal is left headed by
+`Equiv.symm (Equiv.trans …)` with both named lemmas never firing —
+measured. Closing it with `simp only` means naming
+`Equiv.symm_trans_apply`, `Equiv.coe_fn_symm_mk` and both component
+equivalences' unfoldings, which is a longer list than the goal is
+worth and exposed to the unused-argument linter below. The hazard the
+global warning guards against is absent here: the only `ofFn`-family
+term in reach is `Vector.ofFnC`, on which no banned `@[simp]` lemma
+keys. Step 5's axiom measurement is the backstop either way, and it is
+what would catch a `Classical.choice` if a future mathlib `@[simp]`
+lemma changed that.
 
 Run: `lake build`
 Expected: PASS.
@@ -2172,11 +2195,13 @@ instance hasFiniteCoproducts : HasFiniteCoproducts FinSetSkel.{u} :=
 `hasBinaryCoproducts_of_hasColimit_pair` quantifies over.
 
 The two constructors are written with the category argument spelled
-differently — explicitly for `hasBinaryCoproducts_of_hasColimit_pair`
-and bare for `hasFiniteCoproducts_of_has_binary_and_initial` —
-because they bind it differently upstream. `#check` both and use
-whichever spelling each one's signature requires; at most one of the
-two forms above is right for either.
+differently because they bind it differently upstream, and both
+spellings above are correct as given:
+`hasBinaryCoproducts_of_hasColimit_pair` takes `C` explicitly
+(`Mathlib/CategoryTheory/Limits/Shapes/BinaryProducts.lean`), while
+`hasFiniteCoproducts_of_has_binary_and_initial` takes it implicitly
+(`Mathlib/CategoryTheory/Limits/Constructions/FiniteProductsOfBinaryProducts.lean`).
+`#check` both before relying on it.
 
 Run: `lake build`
 Expected: PASS.
@@ -2184,9 +2209,13 @@ Expected: PASS.
 - [ ] **Step 3: check the axioms**
 
 All four instances are named above — `hasInitial`, `hasColimit_pair`,
-`hasBinaryCoproducts`, `hasFiniteCoproducts` — precisely so that this
-step has something to measure: an anonymous `instance` has no
-qualified name to give `lean_verify`.
+`hasBinaryCoproducts`, `hasFiniteCoproducts`. An anonymous `instance`
+has no qualified name to give `lean_verify`, and although these four
+are in fact measured through Step 4's `sampleInstances` rather than
+individually, the names are what let a future reader measure any one of
+them in isolation. None can collide: all are inside
+`namespace FinSetSkel`, and mathlib's initial-object constant is
+`IsInitial.hasInitial`, not `Limits.hasInitial`.
 
 The six declarations are `universe u`-polymorphic, and § Global
 constraints forbids reading a polymorphic measurement as an
@@ -2606,11 +2635,12 @@ letter `m`, deliberately: the encoding keeps the roles of the
 If `rfl` does not close `expEquivIdx_apply`, unfold with
 `simp only [expEquivIdx, Equiv.trans_apply, Equiv.arrowCongrLeftC,
 Equiv.curry, Equiv.piComm, Equiv.piCongrRight, Fin.funEncodeC]`,
-expecting to need `Equiv.coe_fn_mk` alongside them: those names are
-`def`s, so unfolding them exposes a coerced `Equiv.mk` application
-rather than a reduced term. Report what was needed to the
-orchestrator — the lemma is the interface both later proofs use, so it
-is worth the unfolding once here.
+adding `Equiv.coe_fn_mk` **only if the goal does not close without
+it**: those names are `def`s, so unfolding them exposes a coerced
+`Equiv.mk` application rather than a reduced term, but a member the
+goal does not need fails `linter.unusedSimpArgs`. Report what was
+needed to the orchestrator — the lemma is the interface both later
+proofs use, so it is worth the unfolding once here.
 
 Run: `lake build`
 Expected: PASS.
@@ -4055,8 +4085,11 @@ theorem sampleEqualizerCone_pt : sampleEqualizerCone.cone.pt = mk 5 := by
 ```
 
 The pair is `sampleF` against itself, so every index agrees and the
-cone's point is `mk 5`; if the `rfl` does not close, `decide` on the
-lengths is the fallback, and report which was needed. Then measure
+cone's point is `mk 5`. If the `rfl` does not close, the fallback
+changes the *statement* to the lengths —
+`theorem sampleEqualizerCone_pt : sampleEqualizerCone.cone.pt.len = 5 := by decide`
+— because `decide` on the objects would want a `DecidableEq FinSetSkel`
+this plan never supplies. Report which form was needed. Then measure
 `equalizerCone` and `sampleEqualizerCone`. Expected:
 `[propext, Classical.choice, Quot.sound]` — `LimitCone` and
 `parallelPair` bring the taint, which is why the module is
@@ -5112,6 +5145,44 @@ lemmas and universal property (Tasks 14 and 15), row l's fold lemmas,
 inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
+
+**Round 15** (two fresh agents: Lean on the newest edits plus wherever
+it judged risk highest; executability on Tasks 2, 3, 7 and 10, the last
+four no executability pass had read). Between them they returned one
+blocker, three serious findings and a new global constraint.
+
+The blocker was a **regression this plan introduced in round 14**: that
+round's Lean lens recommended replacing two bare `simp`s in Task 5
+Step 3 with `simp only`, on the precedent of W1's analogues and § Global
+constraints' warning, and the change was applied without checking that
+the narrowed set still closed the goal. It does not — round 15 probed
+it, and the residual goal is left headed by `Equiv.symm (Equiv.trans …)`
+with both named lemmas never firing. This is the failure round 6 had
+already fixed in Task 13 Step 3: `simp only` does not load mathlib's
+default set, and the `homEquivIdxFun` lemmas match neither a `trans`
+application nor its `.symm`. Bare `simp` is restored with a local
+exemption and its ground stated — the only `ofFn`-family term in reach
+is `Vector.ofFnC`, on which no banned `@[simp]` lemma keys, and the
+axiom measurement is the backstop.
+
+The new constraint came out of the same probe: `linter.unusedSimpArgs`
+reports an unused `simp only` member at *error* severity under
+`weak.warningAsError`, so padding such a list is a build failure rather
+than a harmless precaution. § Global constraints now says so, and three
+"expecting to need X alongside them" phrasings became "add X only if
+the goal does not close".
+
+The executability lens found one serious, again in never-audited
+territory and again the stale-axiom-scope class: Task 7's check said
+"the seven new declarations" where the task adds ten, omitting exactly
+the three universal-property theorems — the only ones with tactic
+proofs. Round 14 had fixed the same defect in Task 6 without my
+checking whether its sibling shared it. Six minors with it: `Data.Fin`
+sorts *before* `Data.FinEnum`, not after; Task 3's module docstring
+wrote the exponential motive over an unbound `y`; Task 7's second
+factorisation needed two substitutions rather than one; and Tasks 7 and
+10's test bodies, specified in prose where Tasks 2 and 3 give code, are
+now written out.
 
 **Round 14** (two fresh agents, each splitting its effort between the
 newest repairs and territory no earlier pass had audited). The Lean
