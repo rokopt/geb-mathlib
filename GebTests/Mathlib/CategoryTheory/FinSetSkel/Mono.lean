@@ -37,4 +37,3 @@ theorem sampleSkelInj_injective : Function.Injective sampleSkelInj.toVec.get := 
 /-- The sample morphism is therefore a monomorphism. -/
 theorem sampleSkelInj_mono : Mono sampleSkelInj :=
   mono_iff_injective.mpr sampleSkelInj_injective
-

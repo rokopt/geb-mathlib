@@ -15,24 +15,9 @@ public import Geb.Mathlib.Data.Vector.Scatter
 
 The classifying object is the object of length 2 and the
 characteristic morphism of a monomorphism sends the members of its
-image to `1` and everything else to `0`. `truth` picks the index `1`
-in `Classifier/Instance.lean`; the two modules fix the orientation
-jointly and each states it.
-
-The orientation follows mathlib's own: `finTwoEquiv` is
-`fun i ↦ i == 1`, and `Presheaf.truth` and `Sheaf.truth`, the truth
-morphisms of the two subobject classifiers mathlib builds,
-`Presheaf.classifier` and `Sheaf.classifier`, both pick the maximal
-sieve.
-With `truth = 1` the characteristic morphism is the indicator of
-membership and every bridge to `Bool`, `decide` or `Prop` is
-`finTwoEquiv` composed with nothing; with `truth = 0` each such
-bridge carries a negation and the normal forms on the two sides stop
-matching.
-
-The characteristic vector is scattered in one pass over a
-`Vector.replicate`, not written index-by-index over a membership
-test, which would rebuild and rescan the image per index.
+image to `1` and everything else to `0`. `FinSetSkel.truth` picks the
+index `1`, and this module and the module defining it fix that
+orientation jointly, each stating it.
 
 ## Main definitions
 
@@ -49,9 +34,21 @@ test, which would rebuild and rescan the image per index.
 * `FinSetSkel.Classifier.chi_uniq` — a morphism with the same
   indicator is the characteristic morphism.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+The orientation follows mathlib's own: `finTwoEquiv` is
+`fun i ↦ i == 1`, and `Presheaf.truth` and `Sheaf.truth`, the truth
+morphisms of the two subobject classifiers mathlib builds,
+`Presheaf.classifier` and `Sheaf.classifier`, both pick the maximal
+sieve. With `truth = 1` the characteristic morphism is the indicator
+of membership and every bridge to `Bool`, `decide` or `Prop` is
+`finTwoEquiv` composed with nothing; with `truth = 0` each such
+bridge carries a negation and the normal forms on the two sides stop
+matching.
+
+The characteristic vector is scattered in one pass over a
+`Vector.replicate`, not written index-by-index over a membership
+test, which would rebuild and rescan the image per index.
 
 ## Tags
 
@@ -68,12 +65,15 @@ namespace FinSetSkel.Classifier
 
 variable {U X : FinSetSkel.{u}}
 
-/-- The characteristic vector of a monomorphism: `1` on its image,
-`0` elsewhere. -/
+/-- The characteristic vector of `m`: `1` on its image, `0`
+elsewhere. `m` is not assumed monic; monicity is what makes the
+vector classify a subobject. -/
 def chiVec (m : U ⟶ X) : Vector (Fin 2) X.len :=
   Vector.scatter (m.toVec.toList.map (fun j ↦ (j, 1))) (Vector.replicate X.len (0 : Fin 2))
 
-/-- The characteristic morphism of a monomorphism. -/
+/-- The characteristic morphism of `m`, whose vector is
+`FinSetSkel.Classifier.chiVec m`. It classifies the image of `m` as a
+subobject when `m` is monic. -/
 def chi (m : U ⟶ X) : X ⟶ mk 2 := Hom.ofVec (chiVec m)
 
 /-- The characteristic morphism looks up the characteristic

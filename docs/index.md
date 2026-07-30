@@ -511,7 +511,7 @@ import-direction rules above are enforced by
   `finFunctionFinEquivC` are the counterparts of mathlib's
   `finProdFinEquiv` and `finFunctionFinEquiv`, which depend on
   `Classical.choice` through `Fin.divNat` and through the
-  `Finset.sum` lemmas of the base-`n` digit round trips. The
+  `Finset.sum` lemmas of the base-`m` digit round trips. The
   exponential is an explicit `Nat.rec` on the arity over the product
   encoding rather than digit arithmetic; `Fin.funEncodeC` and
   `Fin.funDecodeC` name its two directions, with round trips
@@ -559,8 +559,8 @@ import-direction rules above are enforced by
   of `Fin m` into `Fin y` is `Fin (y ^ m)`, and `expEquivIdx` and
   `expEquivHom` give the adjunction's hom-level equivalence over
   index functions and over morphisms, with `expEquivIdx_naturality`
-  its naturality in the parameter — the whole mathematical content of
-  the universal property. The chain is stated over the raw carrier
+  its naturality in the parameter. The chain is stated over the raw
+  carrier
   and the explicit product projections, never over `⊗` or `◁`, both
   of which elaborate through the `Classical.choice`-dependent
   `CartesianMonoidalCategory` instance. Its swap step is forced by

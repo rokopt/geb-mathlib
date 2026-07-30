@@ -23,17 +23,8 @@ the adjunction's hom-level equivalence is the chain
 stated here over the raw carrier and the explicit projections of the
 binary product, never over `⊗` or `◁`: those elaborate through the
 `CartesianMonoidalCategory` instance, which depends on
-`Classical.choice`. The monoidal restatement is in
-`Exponential/Closed.lean`.
-
-Two steps are not the obvious spelling. The domain transport is
-`Equiv.arrowCongrLeftC`, mathlib's `Equiv.arrowCongr` and
-`Equiv.piCongrLeft` family all depending on `Classical.choice`. The
-swap is required because the adjunction `tensorLeft X ⊣ ihom X`
-varies in the parameter `Z`, so the result must be a function of
-`Fin z`, while `X ⊗ Z` places `X` first and `Equiv.curry` therefore
-produces `Fin m` outermost. It is a consequence of which factor the
-adjunction is taken in, not of which digit `Fin.pairC` makes high.
+`Classical.choice`. The monoidal restatement is
+`FinSetSkel.monoidalClosed`.
 
 ## Main definitions
 
@@ -43,13 +34,19 @@ adjunction is taken in, not of which digit `Fin.pairC` makes high.
 
 ## Main statements
 
-* `FinSetSkel.expEquivIdx_naturality` — naturality in the
-  parameter, the whole mathematical content of the exponential's
-  universal property.
+* `FinSetSkel.expEquivIdx_naturality` — naturality of that
+  equivalence in the parameter.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+Two steps of the chain are not the obvious spelling. The domain
+transport is `Equiv.arrowCongrLeftC`, mathlib's `Equiv.arrowCongr`
+and `Equiv.piCongrLeft` family all depending on `Classical.choice`.
+The swap is required because the adjunction `tensorLeft X ⊣ ihom X`
+varies in the parameter `Z`, so the result must be a function of
+`Fin z`, while `X ⊗ Z` places `X` first and `Equiv.curry` therefore
+produces `Fin m` outermost. It is a consequence of which factor the
+adjunction is taken in, not of which digit `Fin.pairC` makes high.
 
 ## Tags
 

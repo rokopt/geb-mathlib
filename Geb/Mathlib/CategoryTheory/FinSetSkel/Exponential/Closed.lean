@@ -12,26 +12,8 @@ public import Mathlib.CategoryTheory.Monoidal.Closed.Basic
 /-!
 # `FinSetSkel` is monoidal closed
 
-The monoidal packaging of `Exponential/Core.lean`. `Closed X` has
-exactly the two fields `rightAdj` and `adj`, and `MonoidalClosed C`
-exactly the one field `closed`, so `Adjunction.rightAdjointOfEquiv`
-and `Adjunction.adjunctionOfEquivRight` supply the functor, the unit,
-the counit and the triangle identities, and none is constructed by
-hand.
-
-`X ⊗ Z` is the object of length `X.len * Z.len` on the nose, the
-monoidal structure having come from
-`CartesianMonoidalCategory.ofChosenFiniteProducts` fed with the
-chosen binary product cones, so restating the equivalence at
-`X ⊗ Z ⟶ Y` transports along a definitional equality rather than a
-comparison isomorphism.
-
-The whiskering bridge is what connects the carrier-level naturality
-of `Exponential/Core.lean` to `F.map f`: left whiskering acts on
-indices by pairing the first component with the whiskered morphism's
-action on the second. It is stated here rather than in the core
-because `◁` elaborates through the `CartesianMonoidalCategory`
-instance, which depends on `Classical.choice`.
+The monoidal packaging of `FinSetSkel.expEquivIdx` and
+`FinSetSkel.expEquivHom` as a `MonoidalClosed` structure.
 
 ## Main definitions
 
@@ -46,9 +28,28 @@ instance, which depends on `Classical.choice`.
 * `FinSetSkel.expHomEquiv_naturality` — naturality of that
   equivalence in the parameter.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+`Closed X` has exactly the two fields `rightAdj` and `adj`, and
+`MonoidalClosed C` exactly the one field `closed`, so
+`Adjunction.rightAdjointOfEquiv` and
+`Adjunction.adjunctionOfEquivRight` supply the functor, the unit, the
+counit and the triangle identities, and none is constructed by hand.
+
+`X ⊗ Z` is the object of length `X.len * Z.len` on the nose, the
+monoidal structure having come from
+`CartesianMonoidalCategory.ofChosenFiniteProducts` fed with the
+chosen binary product cones, so restating the equivalence at
+`X ⊗ Z ⟶ Y` transports along a definitional equality rather than a
+comparison isomorphism.
+
+The whiskering bridge is what connects the carrier-level naturality
+of `FinSetSkel.expEquivIdx_naturality` to `F.map f`: left whiskering
+acts on indices by pairing the first component with the whiskered
+morphism's action on the second. It is stated here rather than
+alongside the carrier-level equivalence because `◁` elaborates
+through the `CartesianMonoidalCategory` instance, which depends on
+`Classical.choice`.
 
 ## Tags
 
@@ -93,7 +94,7 @@ theorem expHomEquiv_naturality (X : FinSetSkel.{u})
     expHomEquiv X Z' Y ((tensorLeft X).map f ≫ g) =
       f ≫ expHomEquiv X Z Y g := by
   -- The statement over the length-indexed objects, where the rewrites
-  -- of `Exponential/Core.lean` match syntactically.
+  -- of `expEquivHom` match syntactically.
   have key : ∀ (g' : (mk (X.len * Z.len) : FinSetSkel.{u}) ⟶ mk Y.len)
       (h : (mk (X.len * Z'.len) : FinSetSkel.{u}) ⟶ mk Y.len),
       (∀ i, h.toVec.get i =

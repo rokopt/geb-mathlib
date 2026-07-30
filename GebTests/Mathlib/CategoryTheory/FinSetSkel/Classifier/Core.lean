@@ -66,4 +66,3 @@ theorem sampleSkelPullbackLift_toList :
     (Classifier.pullbackLift sampleSkelMono sampleSkelMono_injective
       sampleSkelChiSection sampleSkelChiSection_mem).toVec.toList = [1, 0, 1] := by
   decide
-

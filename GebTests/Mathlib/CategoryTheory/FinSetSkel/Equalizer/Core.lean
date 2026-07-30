@@ -75,4 +75,3 @@ theorem sampleSkelEqualizerLift_toList :
         sampleSkelEqualizerSection
         sampleSkelEqualizerSection_eq).toVec.toList.map Fin.val = [0, 2] := by
   decide
-

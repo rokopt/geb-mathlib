@@ -13,22 +13,13 @@ public import Mathlib.CategoryTheory.Subobject.Classifier.Defs
 /-!
 # The subobject classifier of `FinSetSkel`
 
-The mathlib packaging of `Classifier/Core.lean`. The classifying
-object is the object of length 2, `Ω₀` is the one-element terminal
-object, and `truth` picks the index `1`; the characteristic morphism
-sends the members of a monomorphism's image to `1`. This module and
-`Classifier/Core.lean` fix that orientation jointly and each states
-it.
-
-The derivation of the vector-level hypothesis of
-`Classifier.chi_uniq` from `IsPullback` lives here rather than in the
-core, and it is content rather than packaging: it uses the pullback's
-universal property and cannot be stated choice-free.
-
-`Ω₀` is the object `mk 1`, which the cartesian structure also takes
-as its unit, so the classifier's `Ω₀` and the cartesian unit are the
-same object and their comparison is an isomorphism between an object
-and itself.
+The mathlib packaging of `FinSetSkel.Classifier.chi` and its
+universal property. The classifying object is the object of length 2,
+`Ω₀` is the one-element terminal object, and `truth` picks the index
+`1`; the characteristic morphism sends the members of a
+monomorphism's image to `1`. This module and the module defining
+`FinSetSkel.Classifier.chi` fix that orientation jointly, each
+stating it.
 
 ## Main definitions
 
@@ -40,9 +31,18 @@ and itself.
 * `FinSetSkel.chi_iff_of_isPullback` — the fibre of a classifying
   morphism over `1` is the image of the monomorphism it classifies.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+The derivation of the vector-level hypothesis of
+`FinSetSkel.Classifier.chi_uniq` from `IsPullback` lives here rather
+than in the choice-free layer, and it is content rather than
+packaging: it uses the pullback's universal property and cannot be
+stated choice-free.
+
+`Ω₀` is the object `mk 1`, which the cartesian structure also takes
+as its unit, so the classifier's `Ω₀` and the cartesian unit are the
+same object and their comparison is an isomorphism between an object
+and itself.
 
 ## Tags
 

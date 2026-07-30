@@ -14,11 +14,7 @@ import Geb.Mathlib.Data.Vector.OfFn
 one left-to-right pass, each pair overwriting the entry at its index.
 Repeated indices are allowed, the last pair carrying an index being
 the one whose value survives, so the entry at an index is determined
-by the pairs whenever they all carry the same value there. That
-condition covers a list of constant value and a list of distinct
-indices alike, neither paying for the other's hypothesis. Both lemmas
-quantify over the starting vector, so they apply part-way through a
-pass as well as at its start.
+by the pairs whenever they all carry the same value there.
 
 ## Main definitions
 
@@ -30,6 +26,13 @@ pass as well as at its start.
   its entry.
 * `Vector.get_scatter_of_mem` — an index carried with one value takes
   that value.
+
+## Implementation notes
+
+The determinacy condition covers a list of constant value and a list
+of distinct indices alike, neither paying for the other's hypothesis.
+Both lemmas quantify over the starting vector, so they apply part-way
+through a pass as well as at its start.
 
 ## Tags
 

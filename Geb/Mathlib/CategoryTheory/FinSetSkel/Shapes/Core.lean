@@ -15,20 +15,11 @@ public import Mathlib.Logic.Equiv.Fin.Basic
 
 The constructions of the initial and terminal objects, the binary
 coproducts and the binary products over `Fin` and vectors, together
-with the content of their universal properties, stated in
-W1's application-normal form `f.toVec.get i`. The mathlib cones and
-`Prop` instances built from them are in `Shapes/Instances.lean`; this
+with the content of their universal properties, stated in the
+application-normal form `f.toVec.get i`. The mathlib cones and `Prop`
+instances built from them are in
+`FinSetSkel.cartesianMonoidalCategory` and its neighbours; this
 module is choice-free.
-
-W1 exports the correspondence between morphisms and index functions
-as the pair `ofIdxFun` / `toIdxFun` over
-`ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)`, not as an `Equiv`
-and not over bare index functions. `homEquivIdxFun` packages the two
-round trips and removes both `ULift`s, so that a universal property
-stated over index functions can be transported to one over morphisms.
-Its domain transport is `Equiv.arrowCongrLeftC`; mathlib's
-`Equiv.arrowCongr` and the `Equiv.piCongrLeft` family all depend on
-`Classical.choice`.
 
 ## Main definitions
 
@@ -52,9 +43,17 @@ Its domain transport is `Equiv.arrowCongrLeftC`; mathlib's
 * `FinSetSkel.prodLift_fst`, `FinSetSkel.prodLift_snd`,
   `FinSetSkel.prodLift_uniq` — the product's universal property.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+`FinSetSkel.ofIdxFun` and `FinSetSkel.toIdxFun` state the
+correspondence between morphisms and index functions over
+`ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)`, not as an `Equiv`
+and not over bare index functions. `FinSetSkel.homEquivIdxFun`
+packages the two round trips and removes both `ULift`s, so that a
+universal property stated over index functions can be transported to
+one over morphisms. Its domain transport is `Equiv.arrowCongrLeftC`;
+mathlib's `Equiv.arrowCongr` and the `Equiv.piCongrLeft` family all
+depend on `Classical.choice`.
 
 ## Tags
 
@@ -71,8 +70,8 @@ namespace FinSetSkel
 
 variable {X Y : FinSetSkel.{u}}
 
-/-- Morphisms as lifted index functions: W1's `ofIdxFun` and
-`toIdxFun` as an equivalence. -/
+/-- Morphisms as lifted index functions: `FinSetSkel.ofIdxFun` and
+`FinSetSkel.toIdxFun` as an equivalence. -/
 def homEquivIdxFunU (X Y : FinSetSkel.{u}) :
     (X ⟶ Y) ≃ (ULift.{u} (Fin X.len) → ULift.{u} (Fin Y.len)) where
   toFun := toIdxFun

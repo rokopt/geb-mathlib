@@ -17,15 +17,6 @@ mathlib's `finProdFinEquiv : Fin m × Fin n ≃ Fin (m * n)` and
 through the `Finset.sum` lemmas its round trips run on. The two
 equivalences here are their choice-free counterparts.
 
-The exponential is built by recursion on the arity over the product
-encoding rather than by base-`n` digit arithmetic: the digit
-construction's round trips are `Finset.sum` lemmas, each a separate
-choice audit, and mathlib's version of that construction is the one
-that depends on `Classical.choice`. The recursion is an explicit
-`Nat.rec` at the motive `fun k ↦ (Fin k → Fin m) ≃ Fin (m ^ k)`, per
-`docs/rules/lean-coding.md` § Recursion and induction through
-recursors.
-
 ## Main definitions
 
 * `finProdFinEquivC` — the product encoding.
@@ -37,6 +28,22 @@ recursors.
 
 * `Fin.funDecodeC_funEncodeC`, `Fin.funEncodeC_funDecodeC` — the two
   round trips of the exponential encoding.
+
+## Implementation notes
+
+The exponential is built by recursion on the arity over the product
+encoding rather than by base-`m` digit arithmetic: the digit
+construction's round trips are `Finset.sum` lemmas, each a separate
+choice audit, and mathlib's version of that construction is the one
+that depends on `Classical.choice`. The recursion is an explicit
+`Nat.rec` at the motive `fun k ↦ (Fin k → Fin m) ≃ Fin (m ^ k)`: what
+recurses is the equivalence itself, whose type varies with the arity,
+and the successor step composes the equivalence at `k` with
+`finProdFinEquivC`.
+
+`Fin.funDecodeC` returns a function, so the recursion building the
+equivalence is re-run on each application of the decoded function;
+binding the equivalence above the lambda would run it once.
 
 ## Tags
 

@@ -24,8 +24,8 @@ category, finite set, skeleton, exponential, monoidal closed
 open CategoryTheory MonoidalCategory FinSetSkel
 
 /-- The internal hom functor out of the two-element object, resolved
-through the monoidal closed structure at a fixed universe. Permanent
-monomorphic witness for this module's axiom set. -/
+through the monoidal closed structure at a fixed universe. Naming it
+gives the `GebMeta` axiom linter a declaration to inspect. -/
 def sampleSkelIhom : FinSetSkel.{0} ⥤ FinSetSkel.{0} := ihom (mk 2)
 
 /-- The exponential of the two-element object into the three-element

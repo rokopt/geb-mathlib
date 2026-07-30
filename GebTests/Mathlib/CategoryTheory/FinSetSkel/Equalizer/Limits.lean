@@ -26,8 +26,8 @@ open CategoryTheory Limits FinSetSkel
 def sampleSkelEqualizerConst : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
   Hom.ofVec (Vector.ofFnC fun _ ↦ 0)
 
-/-- The equalizer cone of the sample morphism against itself. Permanent
-monomorphic witness for this module's axiom set. -/
+/-- The equalizer cone of the sample morphism against itself. Naming
+it gives the `GebMeta` axiom linter a declaration to inspect. -/
 def sampleSkelEqualizerCone :
     LimitCone (parallelPair sampleSkelEqualizerConst sampleSkelEqualizerConst) :=
   equalizerCone sampleSkelEqualizerConst sampleSkelEqualizerConst

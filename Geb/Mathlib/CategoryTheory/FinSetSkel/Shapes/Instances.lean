@@ -12,24 +12,16 @@ public import Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinary
 /-!
 # The cartesian and coproduct structure of `FinSetSkel`
 
-The mathlib packaging of `Shapes/Core.lean`'s initial and terminal
-objects, binary coproducts and binary products, together with the
-finite coproducts the initial object and the binary coproducts
-generate: the chosen cones and cocones, the
-`CartesianMonoidalCategory` instance built from the cones, and the
-colimit `Prop` instances.
+The mathlib packaging of the initial and terminal objects, binary
+coproducts and binary products built over `Fin` and vectors in
+`FinSetSkel.prodObj` and its neighbours, together with the finite
+coproducts the initial object and the binary coproducts generate: the
+chosen cones and cocones, the `CartesianMonoidalCategory` instance
+built from the cones, and the colimit `Prop` instances.
 mathlib's cone and cocone API depends on `Classical.choice` —
 `CartesianMonoidalCategory` and the empty-diagram (co)cones
 independently — so this module is allowlisted and the constructions
 it packages are not.
-
-`CartesianMonoidalCategory.ofChosenFiniteProducts` takes a terminal
-cone and a family of binary product cones and supplies the
-associator, the unitors and the coherence conditions, so no
-monoidal law is proved here. Its instance registers
-`HasFiniteProducts` at priority 100, from which `HasTerminal` and
-`HasBinaryProducts` follow, so none of the three is registered
-separately.
 
 ## Main definitions
 
@@ -42,9 +34,15 @@ separately.
   `FinSetSkel.hasBinaryCoproducts`,
   `FinSetSkel.hasFiniteCoproducts` — the colimit `Prop` instances.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+`CartesianMonoidalCategory.ofChosenFiniteProducts` takes a terminal
+cone and a family of binary product cones and supplies the
+associator, the unitors and the coherence conditions, so no
+monoidal law is proved here. Its instance registers
+`HasFiniteProducts` at priority 100, from which `HasTerminal` and
+`HasBinaryProducts` follow, so none of the three is registered
+separately.
 
 ## Tags
 

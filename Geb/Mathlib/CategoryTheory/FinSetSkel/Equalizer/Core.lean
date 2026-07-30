@@ -19,22 +19,6 @@ which they agree: the list `(List.finRange X.len).filter p` for the
 decidable predicate `p i = decide (f.toVec.get i = g.toVec.get i)`,
 and the object of its length.
 
-The inverse of the injection is built as a vector of `ℕ`, not of
-`Fin k`: `Vector (Fin k) X.len` is uninhabited whenever `k = 0` and
-`X.len > 0`, and that case is reachable — any `f g : mk 3 ⟶ mk 2`
-differing at every index gives `k = 0`. `Vector.replicate` needs an
-inhabitant, and `0 : ℕ` is one where no `Fin k` is. The `Fin k` is
-built at the lift site, where the agreement of the index is
-available and the bound lemma applies.
-
-The agreement list and the inverse vector are bound outside anything
-function-valued. A definition whose result is a function re-runs a
-`let` above its lambda on every application of the partially applied
-function, while the same `let` in a definition returning a value runs
-once; the constraint is invisible in the source, and a refactor
-lifting the vector construction into a function-returning helper
-would break it silently.
-
 ## Main definitions
 
 * `FinSetSkel.Equalizer.agree` — the indices at which a parallel
@@ -56,9 +40,23 @@ would break it silently.
 * `FinSetSkel.Equalizer.ι_comp`, `FinSetSkel.Equalizer.lift_ι`,
   `FinSetSkel.Equalizer.lift_uniq` — the universal property.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+The inverse of the injection is built as a vector of `ℕ`, not of
+`Fin k`: `Vector (Fin k) X.len` is uninhabited whenever `k = 0` and
+`X.len > 0`, and that case is reachable — any `f g : mk 3 ⟶ mk 2`
+differing at every index gives `k = 0`. `Vector.replicate` needs an
+inhabitant, and `0 : ℕ` is one where no `Fin k` is. The `Fin k` is
+built at the lift site, where the agreement of the index is
+available and the bound lemma applies.
+
+The agreement list and the inverse vector are bound outside anything
+function-valued. A definition whose result is a function re-runs a
+`let` above its lambda on every application of the partially applied
+function, while the same `let` in a definition returning a value runs
+once; the constraint is invisible in the source, and a refactor
+lifting the vector construction into a function-returning helper
+would break it silently.
 
 ## Tags
 

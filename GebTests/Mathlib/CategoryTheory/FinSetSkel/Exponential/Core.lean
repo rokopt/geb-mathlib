@@ -47,6 +47,8 @@ theorem sampleSkelExpFun_naturality :
       expEquivIdx 2 3 2 sampleSkelExpFun ∘ sampleSkelExpReindex :=
   expEquivIdx_naturality 2 2 3 2 sampleSkelExpReindex sampleSkelExpFun
 
-/-- Permanent monomorphic witness for this module's axiom set. -/
+/-- The morphism-level transpose of the constant morphism at index
+`0`, at a fixed universe. Naming it gives the `GebMeta` axiom linter
+a declaration to inspect. -/
 def sampleSkelExpEquivHom : (mk 2 : FinSetSkel.{0}) ⟶ mk (3 ^ 2) :=
   expEquivHom 2 2 3 (Hom.ofVec (Vector.ofFnC fun _ ↦ 0))

@@ -22,8 +22,8 @@ category, finite set, skeleton, subobject classifier
 
 open CategoryTheory FinSetSkel
 
-/-- The subobject classifier at `Type 0`. Permanent monomorphic
-witness for this module's axiom set. -/
+/-- The subobject classifier at `Type 0`. Naming it gives the
+`GebMeta` axiom linter a declaration to inspect. -/
 def sampleSkelClassifier : Subobject.Classifier FinSetSkel.{0} := classifier
 
 /-- Its classifying object is the two-element object. -/

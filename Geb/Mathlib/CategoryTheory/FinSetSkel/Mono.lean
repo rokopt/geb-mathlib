@@ -11,23 +11,23 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Core
 # Monomorphisms of `FinSetSkel`
 
 A morphism is a monomorphism exactly when its vector is injective.
-`CategoryTheory.Mono` and `CategoryTheory.Category` are both
-axiom-free, so the statement belongs in the choice-free layer, and
-the proof is direct over vectors: the forward direction tests a
-morphism against two points, and the reverse is `hom_ext`.
-
-This is the hypothesis `Vector.invOfInjective` takes, so the row is a
-prerequisite of the subobject classifier rather than a free-standing
-characterisation.
 
 ## Main statements
 
 * `FinSetSkel.mono_iff_injective` — monomorphisms are the morphisms
   with injective vectors.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+`CategoryTheory.Mono` and `CategoryTheory.Category` are both
+axiom-free, so the statement belongs in the choice-free layer, and
+the proof is direct over vectors: the forward direction tests a
+morphism against two points, and the reverse is
+`FinSetSkel.hom_ext`.
+
+It supplies the hypothesis `Vector.invOfInjective` takes, and so is a
+prerequisite of the subobject classifier rather than a free-standing
+characterisation.
 
 ## Tags
 

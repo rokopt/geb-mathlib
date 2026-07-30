@@ -16,17 +16,15 @@ its factorisation as a `LimitCone (parallelPair f g)`. `LimitCone`
 and `parallelPair` depend on `Classical.choice`, so this module is
 allowlisted and the construction it packages is not.
 
-`HasEqualizers` is not registered: nothing in this workstream
-consumes it, and it is one of the `Prop` classes derived once from
-`ElementaryTopos`.
-
 ## Main definitions
 
 * `FinSetSkel.equalizerCone` — the chosen equalizer cone.
 
-## References
+## Implementation notes
 
-* [Freyd1972]
+`HasEqualizers` is not registered: nothing in this development
+consumes it, and it is one of the `Prop` classes derived once from
+`ElementaryTopos`.
 
 ## Tags
 
