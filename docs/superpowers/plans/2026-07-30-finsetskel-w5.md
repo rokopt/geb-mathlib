@@ -3,7 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use
-> checkbox (`- [ ]`) syntax for tracking.
+> checkbox (`- [ ]`) syntax. Track progress outside the file: see Global
+> Constraints on why the boxes are not ticked in place.
 
 **Goal:** Register `ElementaryTopos FinSetSkel` from the seven fields W3 and
 W4 export, and remove the FinSetSkel roadmap entry from `TODO.md`, migrating
@@ -99,13 +100,13 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
 
 The seven fields of `ElementaryTopos` are the terms the shapes, exponential,
 equalizer, coequalizer and classifier modules export, assembled unchanged.
-Registering the instance is what makes the limit-side `Prop` classes
-resolve at `FinSetSkel` — `HasEqualizers`, `HasLimit` at a parallel pair,
-`HasFiniteLimits`, `HasFiniteColimits`, `HasPullbacks` and `HasPushouts`
-among them. The colimit-side generators `HasInitial`,
-`HasBinaryCoproducts`, `HasCoequalizers` and `HasFiniteCoproducts`, and the
-cartesian `HasTerminal`, `HasBinaryProducts` and `HasFiniteProducts`,
-resolve without it.
+Some `Prop` classes are registered directly by the modules supplying the
+fields, and resolve without this one: `HasTerminal`, `HasBinaryProducts`,
+`HasFiniteProducts`, `HasInitial`, `HasBinaryCoproducts`, `HasCoequalizers`
+and `HasFiniteCoproducts`. The rest are derived through the class, and
+registering the instance is what makes them resolve: `HasEqualizers`,
+`HasLimit` at a parallel pair, `HasFiniteLimits`, `HasFiniteColimits`,
+`HasPullbacks` and `HasPushouts`.
 
 This module is allowlisted for `Classical.choice`, introducing no
 dependence of its own and inheriting the whole of it from the seven field
@@ -119,7 +120,7 @@ terms.
 
 Nothing beyond the instance is registered. A direct
 `HasFiniteColimits FinSetSkel` would be a second resolution route to a
-`Prop` that nothing consumes.
+`Prop` the class already derives.
 
 The class carries the coequalizer as data rather than asserting finite
 colimits because the choice decides which algorithm runs. That an
@@ -209,7 +210,7 @@ index import is missing and the linter never reached it.
 Check the banned family by grep, per the spec's constraint 4:
 
 ```bash
-grep -nE 'Vector\.(ofFn|range|finRange)|ofFn_getElem' \
+grep -nE 'Vector\.(ofFn|range|finRange)\b|ofFn_getElem' \
   Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
 ```
 
@@ -388,7 +389,7 @@ separate build step is needed. Expected: all succeed. If
 Check the banned family by grep, per the spec's constraint 4:
 
 ```bash
-grep -nE 'Vector\.(ofFn|range|finRange)|ofFn_getElem' \
+grep -nE 'Vector\.(ofFn|range|finRange)\b|ofFn_getElem' \
   GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
 ```
 
@@ -427,8 +428,9 @@ jj bookmark set feat/finsetskel-w5 -r @-
 
 - [ ] **Step 1: Append seven bullets to § Constructive-only Lean code**
 
-After the existing paragraph ending `scripts/tests/test-axiom-linter.sh
-smoke-tests it.`, add:
+That section ends with a three-item list whose last item ends
+`scripts/tests/test-axiom-linter.sh smoke-tests it.`. Leave a blank line
+after it, then add at column 0:
 
 ```markdown
 Seven rules govern keeping a module choice-free. Where a rule rests on an
@@ -446,13 +448,16 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
 - **Split modules by what can be stated choice-free.** Constructions and
   the content of their universal properties go in modules choice-free over
   the underlying data; mathlib structures and `Prop` instances go in a
-  wrapper whose fields are those terms. Only wrapper modules are admitted
-  to `GebMeta.classicalAllowedModules`. A wrapper may carry content where
-  that content cannot be stated choice-free.
+  wrapper whose fields are those terms. Admit to
+  `GebMeta.classicalAllowedModules` only wrapper modules, their `GebTests`
+  parallels, and the linter's own test fixture. A wrapper may carry content
+  where that content cannot be stated choice-free.
 - **Bound `Fin` and `Nat` arithmetic by `omega` or by cases.** Establish a
   bound over individually named hypotheses, or by case analysis, rather
   than by the single lemma that states it: the choice-dependent and
-  choice-free lemmas of that API interleave under no separating convention.
+  choice-free lemmas of `Nat`'s division and order API interleave under no
+  separating convention, and neither the name nor the namespace separates
+  them.
 - **Transport a dependent codomain with `Equiv.piCongrRight`; state domain
   transport yourself.** `Equiv`'s combinators divide by which side of the
   arrow they move: `Equiv.arrowCongr`, `Equiv.arrowCongr'`,
@@ -586,15 +591,19 @@ jj bookmark set feat/finsetskel-w5 -r @-
 
 - [ ] **Step 1: `OfFn.lean`**
 
-In the module docstring, after the sentence ending `into scope.`, add:
+In the module docstring, immediately after the paragraph that names
+`Vector.getElem_ofFn`, `Vector.ofFn_getElem`, `Vector.getElem_range` and
+`Vector.getElem_finRange` — not after the later Batteries paragraph, whose
+lemmas are `@[simp]` only — add:
 
 ```markdown
-The banned lemmas carry `@[simp]`, and all but `Vector.ofFn_getElem` also
-`@[grind =]`, so a bare `simp` or `grind` meeting such a term introduces
-`Classical.choice` without an error. The constructions `Vector.range` and
-`Vector.finRange` are unusable in a choice-free module for the same
-reason — each has only choice-dependent indexing lemmas — so the ban
-covers them and not only the lemmas. The constructions themselves depend on
+Those four lemmas are therefore not to be used in a choice-free module,
+and neither is the `Array` bridge beneath them. All four carry `@[simp]`,
+and all but `Vector.ofFn_getElem` also `@[grind =]`, so a bare `simp` or
+`grind` meeting such a term introduces `Classical.choice` without an
+error. The constructions `Vector.range` and
+`Vector.finRange` are equally unusable, each having only choice-dependent
+indexing lemmas, so the restriction covers them and not only the lemmas. The constructions themselves depend on
 `propext` alone. Measured at v4.33.0-rc1.
 ```
 
@@ -630,9 +639,10 @@ Between `## Main statements` and `## Tags`, insert:
 
 `FinSetSkel` is not an instantiation of `FintypeCat.Skeleton` because it
 cannot be. mathlib's `SmallCategory Skeleton` instance fixes
-`Hom X Y := ULift (Fin X.len) → ULift (Fin Y.len)`, and a type carries one
-`Category` instance, so a category with the same objects and vector
-morphisms is a distinct type rather than a re-instantiation. The
+`Hom X Y := ULift (Fin X.len) → ULift (Fin Y.len)`, and instance search
+selects one `Category` structure per type, so a category with the same
+objects and vector morphisms is a distinct type rather than a
+re-instantiation. The
 representation is what makes the constructions decidable: mathlib's finite
 limits and colimits on `FintypeCat` are layered over `noncomputable`
 constructions, so nothing transported along the equivalence computes.
@@ -643,10 +653,11 @@ Measured at v4.33.0-rc1.
 
 ```bash
 lake build
+lake lint
 scripts/lint-imports.sh
 ```
 
-Expected: both succeed. Then run `lean4:review` on the four edited modules,
+Expected: all succeed. Then run `lean4:review` on the four edited modules,
 which `docs/rules/lean-coding.md` § Lean 4 skill workflows requires before
 any Lean commit. Confirm no addition names a workstream or a row letter:
 
@@ -689,12 +700,12 @@ At the end of § Implemented content, after the
   initial cocone, the binary-coproduct cocones, the equalizer cones, the
   coequalizer cocones and the classifier. It depends on the five
   field-supplying entries above and on the `ElementaryTopos` class entry.
-  Registering it is what makes the limit-side `Prop` classes resolve at
-  `FinSetSkel` — `HasEqualizers`, `HasLimit` at a parallel pair,
-  `HasFiniteLimits`, `HasFiniteColimits`, `HasPullbacks` and `HasPushouts`
-  among them — where the colimit-side generators and the cartesian
-  `HasTerminal`, `HasBinaryProducts` and `HasFiniteProducts` resolve
-  without it. The source
+  The classes the field-supplying modules register directly —
+  `HasTerminal`, `HasBinaryProducts`, `HasFiniteProducts`, `HasInitial`,
+  `HasBinaryCoproducts`, `HasCoequalizers` and `HasFiniteCoproducts` —
+  resolve without it; those the class derives resolve only through it:
+  `HasEqualizers`, `HasLimit` at a parallel pair, `HasFiniteLimits`,
+  `HasFiniteColimits`, `HasPullbacks` and `HasPushouts`. The source
   and test modules are listed in `GebMeta.classicalAllowedModules`, the
   module inheriting its `Classical.choice` dependence entirely from the
   field terms.
@@ -765,6 +776,11 @@ At the end of § Triggers, add:
 
 - [ ] **Step 3: Amend four entries**
 
+These four amendments use line anchors that shift under one another, so
+make them in the order given and re-read the file between edits. Before
+each, assert the boundary text with `sed -n 'Np;Mp' TODO.md` and proceed
+only if it matches what the step quotes.
+
 In the `lake shake --keep-implied` entry, replace lines 715-719 — from
 `without that flag,` through `` `GebTests` ones. `` — with text of this
 shape, substituting the counts the command reports:
@@ -785,11 +801,13 @@ workstream group` with `which outlives the FinSetSkel development`.
 
 In the choice-free `Skeletal FinSetSkel` entry, replace its closing
 sentence (that no such use exists while `Skeletal` is consumed only by the
-wrapper) with: its consumers are the wrapper and its test parallels, all
-allowlisted, so no such use has arisen.
+wrapper) with: its consumers are the wrapper and the one allowlisted test
+module that identifies a pushout, so no such use has arisen.
 
-In the `Reconcile test-module import visibility` entry, replace lines
-783-785 — from `` `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses ``
+In the `Reconcile test-module import visibility` entry — now one line
+earlier than its original position, the first amendment having removed a
+line — replace the three lines from ``
+`GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses ``
 through `` test module uses plain `import`; `` — with:
 
 ```markdown
@@ -856,7 +874,7 @@ sections and a title-bounded edit has no checkable bound.
 
 - [ ] **Step 3: Amend the preamble**
 
-`TODO.md:32-33` currently read:
+`TODO.md:33-34` currently read:
 
 ```markdown
 Active workstreams, in topological order. Workstreams complete →
@@ -971,7 +989,7 @@ entries' content; a Johnstone-only locator entry would lose the Mac Lane
 and Riehl obligations, which `TODO.md` is the tree's only record of.
 
 ```bash
-grep -nE 'Vector\.(ofFn|range|finRange)|ofFn_getElem' \
+grep -nE 'Vector\.(ofFn|range|finRange)\b|ofFn_getElem' \
   Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean \
   GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
 ```
@@ -980,11 +998,21 @@ Expected: no output.
 
 - [ ] **Step 3: Run the Lean review passes**
 
-Invoke `lean4:review` on the two new modules and
-`pr-review-toolkit:review-pr` on the branch, as `scripts/pre-push.sh`
-prints. Address findings before proceeding.
+`scripts/pre-push.sh` prints three reminders it does not enforce; run all
+three: `lean4:golf` on the changed proofs, `lean4:review` on the diff — the
+two new modules and Task 5's four edited ones — and
+`pr-review-toolkit:review-pr` on the branch. Use
+`superpowers:receiving-code-review` on what they report: verify each
+finding against the source before acting, and record which were fixed,
+which deferred with a reason, and which declined.
 
-- [ ] **Step 4: Remove the spec and the plan**
+- [ ] **Step 4: Verify before claiming completion**
+
+Use `superpowers:verification-before-completion`. Every claim that a check
+passed is backed by the command's output in this session, not by
+recollection; a check not run is reported as not run.
+
+- [ ] **Step 5: Remove the spec and the plan**
 
 ```bash
 rm docs/superpowers/specs/2026-07-30-finsetskel-w5-design.md
@@ -994,7 +1022,7 @@ rm docs/superpowers/plans/2026-07-30-finsetskel-w5.md
 `rm` is not blocked by the git hook, and jj snapshots the working copy, so
 `jj st` will show both as deleted.
 
-- [ ] **Step 5: Final check and commit**
+- [ ] **Step 6: Final check and commit**
 
 ```bash
 scripts/pre-push.sh
