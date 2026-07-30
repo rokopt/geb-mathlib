@@ -60,7 +60,7 @@ prototype, inductive-recursive, presheaf, parametric right adjoint
 
 @[expose] public section
 
-universe uI uJ uB vI vJ
+universe uI uJ uA uB uX vI vJ
 
 open CategoryTheory
 
@@ -350,5 +350,59 @@ def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
   right_inv := fun _ ↦ rfl
 
 end Reindex
+
+end GebProto
+
+namespace GebProto
+
+section PolyMorphism
+
+/-!
+The regular formula for natural transformations between polynomial functors:
+shapes forward, arities backward. For slice polynomial functors `F`, `F'` over
+the same `dom` and `cod`, a transformation is a map of shapes over each output
+index together with, for each shape, a map of arities in the opposite
+direction. Naturality is not a side condition on this data; it is automatic,
+which is what `sliceHomApp` below exhibits by constructing the action.
+
+Derivation, for the presheaf case: `T Z j = Σ_{a ∈ T₁ j} Hom(E a, Z)` is a
+coproduct of representables in `Z`, so by Yoneda
+`Nat(Σ_a Hom(E a, −), Σ_b Hom(E' b, −)) = Π_a Σ_b Hom(E' b, E a)`. The step
+that carries it is Yoneda, which needs the domain to be a presheaf category —
+this is why the same argument is unavailable over the free coproduct completion.
+-/
+
+open CategoryTheory
+
+set_option linter.checkUnivs false in
+/-- A morphism of slice polynomial functors: shapes forward over each output
+index, arities backward at each shape. -/
+structure SliceHom {dom : Type uI} {cod : Type uJ}
+    (F F' : SlicePFunctor.{uA, uB, uI, uJ} dom cod) : Type (max uA uB uI uJ) where
+  /-- The shape map, over each output index. -/
+  shape : ∀ j : cod, F.Shape j → F'.Shape j
+  /-- The arity map, in the opposite direction, at each shape and base point. -/
+  arity : ∀ (j : cod) (a : F.Shape j) (i : dom),
+    F'.Direction (shape j a).1 i → F.Direction a.1 i
+
+set_option linter.checkUnivs false in
+/-- The action of a `SliceHom` on the domain-restricted functor's value: the
+shape travels forward, and each direction of the new shape is filled by pulling
+it back along `arity` and reading off the original assignment. That this is
+definable with no further data is the content of the formula. -/
+def sliceHomApp {dom : Type uI} {cod : Type uJ}
+    {F F' : SlicePFunctor.{uA, uB, uI, uJ} dom cod} (α : SliceHom F F')
+    {X : Type uX} (p : X → dom) (j : cod)
+    (x : F.toSliceDomPFunctor.Obj p) (hq : F.q x.1.1 = j) :
+    F'.toSliceDomPFunctor.Obj p :=
+  ⟨⟨(α.shape j ⟨x.1.1, hq⟩).1,
+      fun (b' : F'.toPFunctor.B (α.shape j ⟨x.1.1, hq⟩).1) ↦
+        x.1.2 (α.arity j ⟨x.1.1, hq⟩ (F'.rCurried _ b') ⟨b', rfl⟩).1⟩,
+    (F'.toSliceDomPFunctor.compatible_iff _ _ _).mpr fun b' ↦
+      ((F.toSliceDomPFunctor.compatible_iff _ _ _).mp x.2
+        (α.arity j ⟨x.1.1, hq⟩ (F'.rCurried _ b') ⟨b', rfl⟩).1).trans
+        (α.arity j ⟨x.1.1, hq⟩ (F'.rCurried _ b') ⟨b', rfl⟩).2⟩
+
+end PolyMorphism
 
 end GebProto
