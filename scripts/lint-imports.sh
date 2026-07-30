@@ -44,6 +44,9 @@
 # `public import` lines are recognised the same as plain `import`
 # (the same allowed-prefix and forbidden-umbrella rules apply,
 # and they count as import lines for the no-prefix-leakage rule).
+# The module system's `meta import` and `public meta import` forms
+# count as import lines for the no-prefix-leakage rule only; the
+# allowed-prefix and umbrella rules do not currently read them.
 #
 # Exit 0 on clean. Exit 1 on any violation.
 
@@ -89,7 +92,7 @@ check_subtree() {
     files+=("$_file")
   done < <(find "${find_roots[@]}" -type f -name '*.lean' 2>/dev/null || true)
 
-  local f line canonical ok ln lp prefix_re
+  local f line canonical ok ln lp prefix_re import_line_re
   for f in "${files[@]}"; do
     total=$((total + 1))
 
@@ -145,12 +148,18 @@ check_subtree() {
     # Rule 2: no-prefix-leakage, for each leakage prefix. A test
     # subtree forbids both the source self-prefix (e.g. `Geb.Mathlib.`)
     # and the test self-prefix (e.g. `GebTests.Mathlib.`) outside
-    # import lines. `public import` lines count as imports for the
-    # exclusion regex.
+    # import lines. `public import` counts as an import for the
+    # exclusion regex, and so does a `meta import` line, in either
+    # its bare or its `public` form: docs/rules/upstream-eligible.md
+    # § Subtree import rules states the rule as "a self-prefix appears
+    # only in ^import lines", which a `meta import` line satisfies.
+    # The exclusion regex is named so the test and the report it
+    # explains cannot come apart.
+    import_line_re='^[0-9]+:(public[[:space:]]+)?(meta[[:space:]]+)?import '
     for lp in "${leakage_prefixes[@]}"; do
       prefix_re="${lp//./\\.}"
-      if grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' >/dev/null; then
-        grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' | while IFS= read -r ln; do
+      if grep -nE "\\b${prefix_re}" "$f" | grep -vE "$import_line_re" >/dev/null; then
+        grep -nE "\\b${prefix_re}" "$f" | grep -vE "$import_line_re" | while IFS= read -r ln; do
           echo "$f:$ln: '${lp}' outside ^import line" >&2
         done
         errors=$((errors + 1))

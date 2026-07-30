@@ -361,6 +361,32 @@ EOF
 assert_case "Batteries bare umbrella" 1 \
   "bare umbrella 'import Batteries'"
 
+# Case 31: `public meta import` of a self-prefixed sibling is an import
+# line for the no-prefix-leakage rule.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/MetaImport.lean" <<'EOF'
+module
+
+public import Geb.Mathlib.Bar
+public meta import Geb.Mathlib.Bar
+EOF
+assert_case "public meta import not flagged as leakage" 0 \
+  "clean (1 file(s) checked)"
+
+# Case 32: the widening of Case 31 does not swallow real leakage; the
+# same prefix outside an import line still fails.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/MetaImportLeak.lean" <<'EOF'
+module
+
+public import Geb.Mathlib.Bar
+public meta import Geb.Mathlib.Bar
+
+def Geb.Mathlib.foo : Nat := 0
+EOF
+assert_case "public meta import does not mask leakage" 1 \
+  "'Geb.Mathlib.' outside ^import line"
+
 echo ""
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

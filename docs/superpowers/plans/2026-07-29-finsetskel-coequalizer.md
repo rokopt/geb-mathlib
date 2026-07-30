@@ -103,25 +103,59 @@ Every task's requirements implicitly include this section.
   `by rfl`: nothing built from `UnionFind.union` or `rootD` reduces
   in the kernel, `root`/`findAux`/`find` being well-founded
   recursions measured by the `noncomputable` `rankMax`.
-- **Every `#guard` term mentions only locally declared constants.**
-  `#guard` elaborates its argument as a temporary `meta` definition,
-  and under the Lean 4 module system a `meta` definition may only
-  reference constants from modules imported with `meta import`. A
-  `#guard` naming an imported constant directly therefore fails.
-  Measured: with `public import …FinSetSkel.Basic` and a local
-  `def rF`, `#guard rF.toVec.get 0 == rF.toVec.get 0` reports
-  "Invalid `meta` definition `_tmp✝`, `FinSetSkel.Hom.toVec` is not
-  accessible here", while `def rFAt (i : Fin 3) : Nat := (rF.toVec.get i).val`
-  followed by `#guard rFAt 0 == 0` elaborates clean. So each assertion
-  goes through a locally declared wrapper, one per quantity asserted.
-  The compiler's suggested repair — adding
-  `public meta import Geb.Mathlib.…` alongside the ordinary
-  `public import` — does make the `#guard`s elaborate but is rejected
-  by `scripts/lint-imports.sh`, whose Rule 2 exempts only lines
-  matching the regex `^[0-9]+:(public[[:space:]]+)?import` followed by
-  a space, so the `Geb.Mathlib.` self-prefix on a
-  `public meta import` line is flagged. `public import all …` is
-  rejected by Lean outright.
+- **Every `#guard` term mentions only locally declared constants, and
+  the module `meta import`s what those constants compute with.** Two
+  distinct failures sit between a `#guard` and a green build, and each
+  needs its own repair.
+
+  The first is at elaboration. `#guard` elaborates its argument as a
+  temporary `meta` definition, and under the Lean 4 module system a
+  `meta` definition may only reference constants from modules imported
+  with `meta import`. A `#guard` naming an imported constant directly
+  therefore fails. Measured: with
+  `public import …FinSetSkel.Basic` and a local `def rF`,
+  `#guard rF.toVec.get 0 == rF.toVec.get 0` reports "Invalid `meta`
+  definition `_tmp✝`, `FinSetSkel.Hom.toVec` is not accessible here",
+  while `def rFAt (i : Fin 3) : Nat := (rF.toVec.get i).val` followed
+  by `#guard rFAt 0 == 0` elaborates clean. So each assertion goes
+  through a locally declared wrapper, one per quantity asserted.
+
+  The second is at evaluation, and the wrapper does not reach it. The
+  wrapper's *own* name is local, but the interpreter still has to run
+  the imported code the wrapper calls, and the IR of a non-`meta`
+  declaration from another module of this package is not available to
+  meta code. Measured at this toolchain: a wrapper over
+  `Batteries.UnionFind.Sized.ofEdges` elaborates clean and then fails
+  `lake build` with "Could not find native implementation of external
+  declaration `Batteries.UnionFind.Sized.ofEdges` (symbols
+  `lp_geb_x2dmathlib_…`)", once per `#guard`. The same shape written
+  against Batteries alone fails too, differently — "(interpreter) IR of
+  declaration `Batteries.UnionFind.empty` not available" — so this is
+  not a consequence of this package's libraries being uncompiled and
+  `precompileModules` would not reach it.
+
+  The repair is `public meta import` of the module under test, beside
+  the ordinary `public import`. Measured: with both lines present the
+  four assertions of Task 2 Step 6 evaluate, and a deliberately false
+  fifth assertion fails, so the assertions are real checks rather than
+  vacuous passes. `public import all …` is rejected by Lean outright.
+
+  Note also that the LSP is not an oracle for this. The wrapper shape
+  reports zero diagnostics under `lean_diagnostic_messages`, and
+  `#eval` returns a value, in a file that then fails `lake build`.
+  Every `#guard` claim is settled by `lake build`.
+
+  `scripts/lint-imports.sh` flagged the `public meta import` line until
+  this workstream widened it: its Rule 2 exempted only lines matching
+  `^[0-9]+:(public[[:space:]]+)?import` followed by a space, which
+  enumerates `import` and `public import` but not the module system's
+  `meta import` forms, so the `Geb.Mathlib.` self-prefix on a
+  `public meta import` line was reported as leakage.
+  `docs/rules/upstream-eligible.md` § Subtree import rules states the
+  rule as "a self-prefix appears only in `^import` lines", which a
+  `meta import` line satisfies, so the script was narrower than the
+  rule it enforces. Task 2 widens the regex and extends
+  `scripts/tests/test-lint-imports.sh` to cover the form.
 - **`#guard` is `info`, not `warning`.** `linter.hashCommand` fires
   on every `#guard`, but because `weak.warningAsError = true`
   mathlib's `HashCommandLinter` takes its `logInfoAt` branch, so the
@@ -605,6 +639,9 @@ recursions), § Tests (first bullet).
 - Create: `GebTests/Mathlib/Data/UnionFind/OfEdges.lean`
 - Create: `GebTests/Mathlib/Data/UnionFind.lean`
 - Modify: `GebTests/Mathlib/Data.lean`
+- Modify: `scripts/lint-imports.sh`
+- Modify: `scripts/tests/test-lint-imports.sh`
+- Modify: `docs/rules/lean-coding.md`
 
 **Interfaces:**
 
@@ -713,7 +750,10 @@ an arbitrary `h` is exactly the closure characterisation this module
 declines to prove (spec § Out of scope).
 
 Run: `lake build`
-Expected: PASS.
+Expected: FAIL, with the two errors of Step 1 and none of Step 2's.
+Step 1's two `_` placeholders are not filled until Step 4, so a green
+build is not reachable here; what this step establishes is that the
+three recursions no longer contribute errors of their own.
 
 - [ ] **Step 4: prove the two correctness theorems**
 
@@ -734,6 +774,45 @@ Expected: `propext` and `Quot.sound` only.
 Run: `lake lint`
 Expected: PASS.
 
+- [ ] **Step 5a: widen the import linter's exemption for `meta import`
+  lines, and record the measurement where it lasts**
+
+`scripts/lint-imports.sh` Rule 2 exempts import lines from the
+self-prefix leakage check with the regex
+`^[0-9]+:(public[[:space:]]+)?import` followed by a space — `import` and
+`public import`, but not the module system's `meta import` or
+`public meta import`.
+`docs/rules/upstream-eligible.md` § Subtree import rules states the rule
+as "a self-prefix appears only in `^import` lines", which a
+`meta import` line satisfies, so the script is narrower than the rule it
+enforces. Widen it:
+
+```bash
+grep -vE '^[0-9]+:(public[[:space:]]+)?(meta[[:space:]]+)?import '
+```
+
+Both occurrences, the test and the reporting branch, so the report and
+the condition cannot diverge. Add a comment beside Rule 2 recording
+that a `meta import` line is an import line.
+
+Extend `scripts/tests/test-lint-imports.sh` with a case covering a
+`public meta import` of a self-prefixed sibling: it must pass the
+leakage rule and continue to fail on the same prefix outside an import
+line, so the widening cannot silently swallow real leakage.
+
+The measurement behind this is durable and its home is
+`docs/rules/lean-coding.md` § Lean 4 module system, not this plan, which
+Task 8 deletes: a `#guard` whose wrapper calls a non-`meta` declaration
+from another module of this package fails at evaluation, not
+elaboration, and the repair is a `public meta import` of that module
+beside the ordinary `public import`. Record it there in two or three
+sentences, with the rule that `lake build` and not the LSP settles a
+`#guard` claim.
+
+Run: `bash scripts/lint-imports.sh` then
+`bash scripts/tests/test-lint-imports.sh`
+Expected: both PASS.
+
 - [ ] **Step 6: write the test module**
 
 Create `GebTests/Mathlib/Data/UnionFind/OfEdges.lean`:
@@ -747,6 +826,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.UnionFind.OfEdges
+public meta import Geb.Mathlib.Data.UnionFind.OfEdges
 
 /-!
 # Tests for the size-indexed union-find
@@ -1554,6 +1634,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
+public meta import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
 
 /-!
 # Tests for the coequalizer of a parallel pair in `FinSetSkel`
