@@ -181,8 +181,8 @@ structure FinCat where
   nonIdCount : Fin objCount → Fin objCount → Nat
   comp : (i j k : Fin objCount) →
     Fin (nonIdCount i j) → Fin (nonIdCount j k) →
-      Fin (homCountOf objCount nonIdCount i k)
-  assoc : assocCheckOf objCount nonIdCount comp = true
+      Fin (FinCat.homCountOf objCount nonIdCount i k)
+  assoc : FinCat.assocCheckOf objCount nonIdCount comp = true
 ```
 
 with the derived notions
@@ -265,13 +265,20 @@ forms of the two arithmetic lemmas below, which discharge
 `compTotalOf`'s elided bounds where no `S : FinCat` exists.
 `FinCat.emb`, `FinCat.compTotal`, `FinCat.assocCheck`,
 `FinCat.eq_of_nonIdCount_le` and `FinCat.val_eq_of_nonIdCount_le` are
-one-line bundled wrappers over them. The same applies one
+one-line bundled wrappers over them. These references are written
+qualified inside the structure's own field types, where
+`docs/rules/lean-coding.md` § Naming conventions' "rely on `namespace`
+to scope" is unavailable: no `namespace FinCat` can be open while
+`FinCat` is being defined. The same applies one
 level up, to `FinCat.Hom`: its `compValid` field type needs unbundled
 `mapTotalOf` and `compCheckOf` over `objMap` and `map`. The bundled
-`FinCat.homCount`, `FinCat.Mor`, `FinCat.emb`, `FinCat.id`,
-`FinCat.compTotal` and `FinCat.Hom.mapTotal` shown in this document are
-the wrappers applying them to a given `S` or `F`, and are what every
-later module uses. Bundled `FinCat.assocCheck`,
+`FinCat.homCount`, `FinCat.emb`, `FinCat.compTotal` and
+`FinCat.Hom.mapTotal` shown in this document are the wrappers applying
+them to a given `S` or `F`, and are what every later module uses.
+`FinCat.Mor` and `FinCat.id` are defined directly on `S` and have no
+unbundled form: the `comp` field type writes `Fin (FinCat.homCountOf …)`
+inline rather than through a `Mor`, and no unbundled definition needs an
+identity. Bundled `FinCat.assocCheck`,
 `FinCat.Hom.compCheck` and `FinCat.Hom₂.natCheck` are among them, so
 that the reflection lemmas below and all prose outside this section
 name declarations that exist.
@@ -311,12 +318,15 @@ def FinCat.assocCheckOf … : Bool :=
   decide <| ∀ (i j k l : Fin objCount)
     (f : Fin (nonIdCount i j)) (g : Fin (nonIdCount j k))
     (h : Fin (nonIdCount k l)),
-      compTotalOf (compTotalOf (emb f) (emb g)) (emb h)
-        = compTotalOf (emb f) (compTotalOf (emb g) (emb h))
+      cTot (cTot (embOf f) (embOf g)) (embOf h)
+        = cTot (embOf f) (cTot (embOf g) (embOf h))
 ```
 
-The composition appearing in the statement is the total one, so a
-composite landing on the reserved identity index is covered.
+where `cTot` abbreviates `FinCat.compTotalOf` and `embOf` is
+`FinCat.embOf`; both live in the `FinCat` namespace and are written
+qualified in the source, the elision here being for width only. The
+composition appearing in the statement is the total one, so a composite
+landing on the reserved identity index is covered.
 Associativity of the total composition on all triples is
 
 ```lean
@@ -448,7 +458,8 @@ structure FinCat.Hom₂ {S T : FinCat} (F G : FinCat.Hom S T) where
 ```
 
 The 2-cell structure is `FinCat.Hom₂` rather than `FinCat.Hom.Hom`,
-following `CategoryTheory.Cat.Hom₂` (`Cat.lean:111`) and avoiding a
+following `CategoryTheory.Cat.Hom₂`
+(`Mathlib/CategoryTheory/Category/Cat.lean:111`) and avoiding a
 name that collides visually with dot notation on a `FinCat.Hom` value.
 `FinCat.Hom` is named for its position — the 1-cells of a 2-category —
 not for its shape: unlike `Cat.Hom` it is not a one-field bundling.
@@ -534,6 +545,8 @@ statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
    `Bool`-equation fields contribute nothing, being proof-irrelevant.
    `id_comp` reduces to `mapTotal_emb`, `comp_id` to `id_mapTotal`, and
    `assoc` to `comp_mapTotal`.
+9. `FinCat.Hom.toFunctor`, last because its `map_id` and `map_comp`
+   fields are `mapTotal_id` and `mapTotal_compTotal`, items 3 and 4.
 
 ### In `Hom2.lean`
 
@@ -626,7 +639,8 @@ statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
    six fields are `id_comp`, `comp_id` and `assoc`, which are the
    strict equalities of `Hom.lean`. The other three —
    `leftUnitor_eqToIso`, `rightUnitor_eqToIso`, `associator_eqToIso` —
-   hold by `fun _ => rfl` even though those equalities do not, by
+   hold by `rfl` after intros — `associator_eqToIso` takes three explicit
+   arguments — even though those equalities do not, by
    definitional proof irrelevance of the `Eq` proofs inside `eqToIso`.
    The name is `snake_case` per `docs/rules/lean-coding.md` § Naming
    conventions, the class being `Prop`-valued; mathlib spells the
@@ -828,24 +842,27 @@ Geb/Mathlib/CategoryTheory/FinCat/Basic.lean        homCountOf, embOf, the
                                                     specification and ext, the
                                                     bundled wrappers, the
                                                     identity laws, the
-                                                    reflection lemma and
-                                                    compTotal_assoc
-Geb/Mathlib/CategoryTheory/FinCat/Category.lean     object type, Category,
-                                                    DecidableEq on Obj and on
-                                                    the generated homs
+                                                    reflection lemma,
+                                                    compTotal_assoc, and the
+                                                    Inhabited derivation
+Geb/Mathlib/CategoryTheory/FinCat/Category.lean     object type and its ext,
+                                                    Category, DecidableEq on
+                                                    Obj and on the generated
+                                                    homs
 Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean  diagonal FinCategory
                                                     (allowlisted)
 Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          functor specifications,
                                                     checker,
                                                     compCheck_eq_true_iff,
-                                                    mapTotal, toFunctor, ext,
+                                                    mapTotal, ext,
                                                     mapTotal_emb, mapTotal_id,
                                                     mapTotal_compTotal,
                                                     id_mapTotalOf,
                                                     comp_mapTotalOf,
                                                     id and comp, id_mapTotal,
                                                     comp_mapTotal,
-                                                    strict equalities
+                                                    strict equalities,
+                                                    toFunctor
 Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean         2-cell specifications,
                                                     checker,
                                                     natCheck_eq_true_iff,
@@ -878,10 +895,13 @@ The names follow `CategoryTheory.Cat`: the specification type is
 the instances `FinCat.bicategory`, `FinCat.bicategory_strict` and
 `FinCat.category`.
 
-`Geb/Mathlib/CategoryTheory/FinCat/Basic.lean` imports core `Fin` and
-`Nat` material only. Nothing in its content mentions `Category`, so it
-must not import `Mathlib.CategoryTheory.Category.Basic`; `lake shake`
-would flag that. The specification type and its checker are usable
+`Geb/Mathlib/CategoryTheory/FinCat/Basic.lean` needs no imports at all:
+its `Fin` and `Nat` material is in the prelude, and
+`scripts/lint-imports.sh` admits only `Mathlib.`, `Batteries.` and
+`Geb.Mathlib.` prefixes in this subtree, so a core import would be a
+lint violation. Nothing in its content mentions `Category`, so it must
+not import `Mathlib.CategoryTheory.Category.Basic`; `lake shake` would
+flag that. The specification type and its checker are usable
 without any part of the mathlib category-theory hierarchy.
 
 ## Verification obligations
@@ -932,12 +952,11 @@ Outstanding:
    identity 2-cell and of the vertical composite in
    `FinCat.Hom.instCategory` discharge from `natCheck_eq_true_iff` and,
    for the composite, `compTotal_assoc` three times.
-4. All ten coherence theorems close at the `app` level from the
-   inventory of § In `Bicategory.lean` item 3, with no `Fin.val`-level
-   lemma. Four have been checked against a prototype —
-   `id_whiskerRight`, `comp_whiskerRight`, `whiskerRight_id` and
-   `whisker_exchange`, one per distinct lemma assignment. The remaining
-   six are unverified.
+4. `DecidableEq` layers 2 and 3 construct as § Decidable equality and
+   `Repr` describes, the heterogeneous `@[ext]` lemmas supplying the
+   negative cases, and they and the `Repr` instances measure
+   `[propext, Quot.sound]` or better. Layer 1 is measured; these two are
+   the spec's only transport-based decision procedures and are not.
 
 ## Testing
 
@@ -969,10 +988,14 @@ Axiom-hygiene tests run the existing linter over each module.
 
 ## Persistent documentation
 
-`docs/index.md` gains a subsection under the category-theory heading
-listing the `FinCat` modules and their contents, in the form the
-existing `FinSetSkel` entries take. `docs/references.bib` requires no
-new entry: [JohnsonYau2021] is present.
+`docs/index.md` § Implemented content gains one bullet per `FinCat`
+module, in topological position and in the form the existing
+`FinSetSkel` bullets take: module path, a summary of its content, and a
+closing `Classical.choice`-free or allowlist clause. That section is a
+flat list with no subsection level, so no heading is added.
+
+`docs/references.bib` requires no new entry: [JohnsonYau2021] is
+present.
 
 ## Deferred work
 
