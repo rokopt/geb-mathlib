@@ -5,9 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.CategoryTheory.FinCat.FinCategory
-public import GebTests.Mathlib.CategoryTheory.FinCat.Basic
-public import Mathlib.Data.Fintype.Card
+public import Geb.Mathlib.CategoryTheory.FinCat.FinCategory  -- shake: keep; example needs it
+public import GebTests.Mathlib.CategoryTheory.FinCat.Basic  -- shake: keep; example needs it
+public import Mathlib.Data.Fintype.Card  -- shake: keep; example needs it
 
 /-!
 # Tests for the diagonal `FinCategory`
