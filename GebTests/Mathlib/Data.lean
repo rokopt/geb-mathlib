@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+import GebTests.Mathlib.Data.Fin
 import GebTests.Mathlib.Data.FinEnum
 import GebTests.Mathlib.Data.List
 import GebTests.Mathlib.Data.PFunctor
