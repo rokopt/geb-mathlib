@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.CategoryTheory.FinCat.Basic
+import GebTests.Mathlib.CategoryTheory.FinCat.Category
 
 /-!
 # FinCat tests — index

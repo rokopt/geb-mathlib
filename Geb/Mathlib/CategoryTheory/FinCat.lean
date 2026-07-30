@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinCat.Basic
+public import Geb.Mathlib.CategoryTheory.FinCat.Category
 
 /-!
 # FinCat — index
