@@ -130,3 +130,45 @@ example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) :
     F.Shape j = { a : F.A // F.q a = j } := rfl
 example (F : SlicePFunctor.{0, 0} Bool Unit) (j : Unit) (a : F.A) :
     F.ShapeOver j a ↔ F.q a = j := Iff.rfl
+
+-- `representable` at `(V, v)`: one shape, `V` as its directions, `v` as the
+-- direction-input map. Its value at `(X, p)` is the slice hom-set, so the
+-- compatibility condition on an assignment `f : V → X` is `p ∘ f = v`.
+example (V : Type) (v : V → Bool) :
+    (representable V v : SliceDomPFunctor.{0, 0} Bool).A = PUnit := rfl
+example (V : Type) (v : V → Bool) (b : V) :
+    (representable V v : SliceDomPFunctor.{0, 0} Bool).r ⟨PUnit.unit, b⟩ = v b := rfl
+example (V X : Type) (v : V → Bool) (p : X → Bool) (f : V → X) :
+    (representable V v : SliceDomPFunctor.{0, 0} Bool).Compatible p PUnit.unit f ↔
+      ∀ b, p (f b) = v b :=
+  (representable V v).compatible_iff p PUnit.unit f
+
+-- `prod`: shapes pair, directions sum, and the direction-input map is the
+-- cotuple of the factors', each reading its own shape component.
+example (F G : SliceDomPFunctor.{0, 0} Bool) :
+    (F.prod G).A = (F.A × G.A) := rfl
+example (F G : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (a' : G.A) :
+    (F.prod G).B (a, a') = (F.B a ⊕ G.B a') := rfl
+example (F G : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (a' : G.A) (b : F.B a) :
+    (F.prod G).r ⟨(a, a'), Sum.inl b⟩ = F.r ⟨a, b⟩ := rfl
+example (F G : SliceDomPFunctor.{0, 0} Bool) (a : F.A) (a' : G.A) (b : G.B a') :
+    (F.prod G).r ⟨(a, a'), Sum.inr b⟩ = G.r ⟨a', b⟩ := rfl
+
+-- `prodSlice` keeps the slice functor's shape-output map, read off the
+-- second shape component.
+example (G : SliceDomPFunctor.{0, 0} Bool) (F : SlicePFunctor.{0, 0} Bool Unit)
+    (a : G.A) (a' : F.A) :
+    (G.prodSlice F).q (a, a') = F.q a' := rfl
+
+-- `ofFamily`: a shape is a member's shape tagged with its index, the
+-- shape-output map returns the tag, and directions and the direction-input
+-- map are the tagged member's.
+example (fam : Unit → SliceDomPFunctor.{0, 0} Bool) :
+    (ofFamily fam).A = (Σ o, (fam o).A) := rfl
+example (fam : Unit → SliceDomPFunctor.{0, 0} Bool) (o : Unit) (a : (fam o).A) :
+    (ofFamily fam).q ⟨o, a⟩ = o := rfl
+example (fam : Unit → SliceDomPFunctor.{0, 0} Bool) (o : Unit) (a : (fam o).A) :
+    (ofFamily fam).B ⟨o, a⟩ = (fam o).B a := rfl
+example (fam : Unit → SliceDomPFunctor.{0, 0} Bool) (o : Unit) (a : (fam o).A)
+    (b : (fam o).B a) :
+    (ofFamily fam).r ⟨⟨o, a⟩, b⟩ = (fam o).r ⟨a, b⟩ := rfl

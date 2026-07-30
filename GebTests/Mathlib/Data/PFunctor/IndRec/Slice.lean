@@ -83,34 +83,34 @@ example (A : Type) (sub : A → SlicePFunctor.{0, 0, 0, 0} Bool Bool) :
       , q := fun ⟨a, sa⟩ ↦ (sub a).q sa } :=
   rfl
 
-/-- The delta case `toSlicePFunctorDelta`, expressed through
-`SlicePFunctor.coprod`, reduces to the shape-indexed coproduct of
-Definition 5, clause 3. Shapes, directions and the shape-output map are
-checked as whole components; the direction-input map is checked on each
-branch of the cotuple, since the two cotuple presentations agree on every
-constructor but are not compared definitionally at a variable
-discriminant. -/
+/-- The delta case `toSlicePFunctorDelta`, expressed as a coproduct of
+products with a representable, reduces to the shape-indexed coproduct of
+Definition 5, clause 3, up to the representable's `PUnit` shape factor.
+Shapes, directions and the shape-output map are checked as whole
+components; the direction-input map is checked on each branch of the
+cotuple, since the two cotuple presentations agree on every constructor but
+are not compared definitionally at a variable discriminant. -/
 example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool) :
     (IR.toSlicePFunctorDelta Bool Bool B sub).toPFunctor =
-      ⟨Σ (i : B → Bool), (sub i).toPFunctor.A,
-        fun ⟨i, sa⟩ ↦ Sum B ((sub i).toPFunctor.B sa)⟩ :=
+      ⟨Σ (i : B → Bool), PUnit × (sub i).toPFunctor.A,
+        fun ⟨i, x⟩ ↦ B ⊕ (sub i).toPFunctor.B x.2⟩ :=
   rfl
 
 example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool) :
-    (IR.toSlicePFunctorDelta Bool Bool B sub).q = fun ⟨i, sa⟩ ↦ (sub i).q sa :=
+    (IR.toSlicePFunctorDelta Bool Bool B sub).q = fun ⟨i, x⟩ ↦ (sub i).q x.2 :=
   rfl
 
-/-- The cotuple's arity branch: a direction of the adjoined arity `B` is
+/-- The cotuple's arity branch: a direction of the representable's `B` is
 sent to its image under the assignment `i`. -/
 example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool)
     (i : B → Bool) (sa : (sub i).toPFunctor.A) (b : B) :
-    (IR.toSlicePFunctorDelta Bool Bool B sub).r ⟨⟨i, sa⟩, Sum.inl b⟩ = i b :=
+    (IR.toSlicePFunctorDelta Bool Bool B sub).r ⟨⟨i, ⟨PUnit.unit, sa⟩⟩, Sum.inl b⟩ = i b :=
   rfl
 
 /-- The cotuple's sub-polynomial branch: a direction of `sub i` keeps the
 direction-input map it had there. -/
 example (B : Type) (sub : (B → Bool) → SlicePFunctor.{0, 0, 0, 0} Bool Bool)
     (i : B → Bool) (sa : (sub i).toPFunctor.A) (p' : (sub i).toPFunctor.B sa) :
-    (IR.toSlicePFunctorDelta Bool Bool B sub).r ⟨⟨i, sa⟩, Sum.inr p'⟩ =
+    (IR.toSlicePFunctorDelta Bool Bool B sub).r ⟨⟨i, ⟨PUnit.unit, sa⟩⟩, Sum.inr p'⟩ =
       (sub i).r ⟨sa, p'⟩ :=
   rfl
