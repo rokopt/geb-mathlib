@@ -8,6 +8,7 @@ module
 import GebTests.Mathlib.CategoryTheory.FinCat.Basic
 import GebTests.Mathlib.CategoryTheory.FinCat.Category
 import GebTests.Mathlib.CategoryTheory.FinCat.FinCategory
+import GebTests.Mathlib.CategoryTheory.FinCat.Hom
 
 /-!
 # FinCat tests — index
