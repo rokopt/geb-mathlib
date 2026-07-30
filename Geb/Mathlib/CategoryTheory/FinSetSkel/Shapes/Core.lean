@@ -13,8 +13,9 @@ public import Mathlib.Logic.Equiv.Fin.Basic
 /-!
 # The initial and terminal objects, coproducts and products of `FinSetSkel`
 
-The constructions of rows a, b, c and d over `Fin` and vectors,
-together with the content of their universal properties, stated in
+The constructions of the initial and terminal objects, the binary
+coproducts and the binary products over `Fin` and vectors, together
+with the content of their universal properties, stated in
 W1's application-normal form `f.toVec.get i`. The mathlib cones and
 `Prop` instances built from them are in `Shapes/Instances.lean`; this
 module is choice-free.

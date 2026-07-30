@@ -12,8 +12,9 @@ public import Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinary
 /-!
 # The cartesian and coproduct structure of `FinSetSkel`
 
-The mathlib packaging of `Shapes/Core.lean`'s rows a, b, c and d
-together with row e: the chosen cones and cocones, the
+The mathlib packaging of `Shapes/Core.lean`'s initial and terminal
+objects, binary coproducts and binary products, together with the
+finite coproducts they generate: the chosen cones and cocones, the
 `CartesianMonoidalCategory` instance built from the cones, and the
 `Prop` instances a later workstream consumes.
 `CartesianMonoidalCategory` depends on `Classical.choice`, so this
@@ -106,7 +107,8 @@ instance hasColimit_pair {X Y : FinSetSkel.{u}} : HasColimit (pair X Y) :=
 instance hasBinaryCoproducts : HasBinaryCoproducts FinSetSkel.{u} :=
   hasBinaryCoproducts_of_hasColimit_pair FinSetSkel.{u}
 
-/-- `FinSetSkel` has finite coproducts, which row k consumes. -/
+/-- `FinSetSkel` has finite coproducts, one of the two hypotheses of
+the finite colimits a later workstream derives. -/
 instance hasFiniteCoproducts : HasFiniteCoproducts FinSetSkel.{u} :=
   hasFiniteCoproducts_of_has_binary_and_initial
 

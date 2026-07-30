@@ -14,8 +14,8 @@ public import Mathlib.CategoryTheory.Subobject.Classifier.Defs
 # The subobject classifier of `FinSetSkel`
 
 The mathlib packaging of `Classifier/Core.lean`. The classifying
-object is the object of length 2, `Ω₀` is the one-element object of
-row b, and `truth` picks the index `1`; the characteristic morphism
+object is the object of length 2, `Ω₀` is the one-element terminal
+object, and `truth` picks the index `1`; the characteristic morphism
 sends the members of a monomorphism's image to `1`. This module and
 `Classifier/Core.lean` fix that orientation jointly and each states
 it.
@@ -25,8 +25,9 @@ The derivation of the vector-level hypothesis of
 core, and it is content rather than packaging: it uses the pullback's
 universal property and cannot be stated choice-free.
 
-`Ω₀` is row b's terminal object, so the classifier's `Ω₀` and the
-cartesian unit are the same object and their comparison is an
+`Ω₀` is the object `mk 1`, which the cartesian structure also takes
+as its unit, so the classifier's `Ω₀` and the cartesian unit are the
+same object and their comparison is an
 isomorphism between an object and itself.
 
 ## Main definitions
