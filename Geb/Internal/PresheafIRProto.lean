@@ -50,6 +50,11 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
   and the arity presheaf `E(a)`, as `Functor` values built from the raw fields.
 * `GebProto.ofNatTransElt` / `GebProto.objEquivSigmaHom` — the p.r.a. formula
   `T Z ≃ Σ a, Hom(E(a), Z)`, and the slice element its inverse produces.
+* `GebProto.ArityHom` / `GebProto.objEquivSigmaArityHom` — the same formula with
+  the presheaf hom unbundled, hence free of `Classical.choice`.
+* `GebProto.DomHom` / `GebProto.DomNatFamily` /
+  `GebProto.domHomEquivNatFamily` — the domain-level morphism data, the natural
+  families it represents, and the Yoneda equivalence between them.
 
 ## References
 
@@ -551,6 +556,249 @@ def objEquivSigmaHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : I�
     exact value_ofNatTrans F p.1 p.2 b
 
 end CoproductOfRepresentables
+
+end GebProto
+
+namespace GebProto
+
+section UnbundledArityHom
+
+/-!
+The p.r.a. formula again, with the presheaf hom in unbundled form.
+
+`objEquivSigmaHom` above depends on `Classical.choice`, and so does anything
+built on it. The dependence enters through `CategoryTheory.Functor.category`,
+that is, through writing `⟶` between two objects of a functor category at all,
+before any proof: `#print axioms CategoryTheory.Functor.category` reports
+`Classical.choice`, whereas `shapePresheaf`, `arityPresheaf`,
+`PresheafDomPFunctorData.obj` and `PresheafDomPFunctorData.value` do not.
+
+`ArityHom` is the same data as `arityPresheaf F a ⟶ Z` written as a subtype of
+a family of fibre maps, with the naturality square as the subtype predicate —
+literally `PresheafDomPFunctorData.IsNatural`'s shape. `Z.map f.op` is
+unaffected: the category instance on `Type u` is axiom-free; only the functor
+category's instance is not.
+
+Restating the equivalence over `ArityHom` also frees the universe of `Z`:
+`objEquivSigmaHom` needs `Z : Iᵒᵖ ⥤ Type uB` so that `Z` and `arityPresheaf F a`
+are objects of one category, whereas `ArityHom F a Z` is formable at any `uZ`.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The unbundled presheaf hom `E(a) ⟶ Z`: a family of fibre maps
+`F.Direction a i → Z.obj ⟨i⟩` subject to the naturality square. -/
+def ArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A)
+    (Z : Iᵒᵖ ⥤ Type uZ) : Type (max uI uB uZ) :=
+  { α : (i : I) → F.Direction a i → Z.obj ⟨i⟩ //
+      ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (b : F.Direction a i),
+        α i' (F.directionRestr a f b) = Z.map f.op (α i b) }
+
+/-- The slice element determined by a shape `a` and an unbundled arity hom
+`α : E(a) ⟶ Z`: the direction `b` is assigned the `α`-image of `b`, read at
+`b`'s own base point `F.rCurried a b`. Compatibility holds by construction, the
+index component being that base point. -/
+def ofArityHomElt (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ}
+    (a : F.A) (α : ArityHom F a Z) :
+    F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z) :=
+  ⟨⟨a, fun b ↦ ⟨F.rCurried a b, α.1 (F.rCurried a b) ⟨b, rfl⟩⟩⟩,
+    (F.compatible_iff _ _ _).mpr fun _ ↦ rfl⟩
+
+/-- The component `ofArityHomElt` assigns to a direction is the component `α`
+assigns to it. Destructing the direction makes the `cast` inside `value` a
+`cast` along a proof of `t = t`, which proof irrelevance reduces away. -/
+theorem value_ofArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} (a : F.A) (α : ArityHom F a Z) ⦃i : I⦄
+    (b : F.Direction (ofArityHomElt F a α).1.1 i) :
+    F.value (ofArityHomElt F a α) b = α.1 i b := by
+  obtain ⟨b1, rfl⟩ := b
+  rfl
+
+/-- The p.r.a. formula with the hom unbundled: the domain-restricted
+interpretation of `F` at `Z` is the coproduct over shapes of the unbundled
+representables on the arity presheaves. The forward map reads off the shape and
+repackages the direction-assignment, its components being `value` and its
+naturality being `IsNatural`; the inverse is `ofArityHomElt`. -/
+def objEquivSigmaArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (Z : Iᵒᵖ ⥤ Type uZ) :
+    F.toPresheafDomPFunctorData.obj Z ≃ Σ a : F.A, ArityHom F a Z where
+  toFun x := ⟨x.1.1.1, ⟨fun i ↦ F.value x.1 (i := i), x.2⟩⟩
+  invFun p :=
+    ⟨ofArityHomElt F p.1 p.2, by
+      intro i i' f b
+      rw [value_ofArityHom, value_ofArityHom]
+      exact p.2.2 f b⟩
+  left_inv x := by
+    refine Subtype.ext (Subtype.ext (Sigma.ext rfl (heq_of_eq (funext fun b ↦ ?_))))
+    exact Sigma.ext ((F.compatible_iff _ _ _).mp x.1.2 b).symm (cast_heq _ _)
+  right_inv p := by
+    refine Sigma.ext rfl (heq_of_eq (Subtype.ext (funext fun i ↦ funext fun b ↦ ?_)))
+    exact value_ofArityHom F p.1 p.2 b
+
+end UnbundledArityHom
+
+end GebProto
+
+namespace GebProto
+
+section UnbundledYoneda
+
+/-!
+The Yoneda step, unbundled, at the domain level only: `q`, `shapeRestr` and
+`reindex` play no part here, so `DomHom` records only the shape map and the
+backward arity map.
+
+`DomHom F F'` is `Π a, Σ a', Hom(E'(a'), E(a))`, and its arity component is
+definitionally `ArityHom F' a' (arityPresheaf F a)` — the unbundled hom into
+the representing presheaf. `DomNatFamily F F'` is the families
+`Π Z, T Z → T' Z` natural in `Z`, with naturality stated against
+`PresheafDomPFunctorData.map`, which takes a bare `NatTrans` and so avoids the
+functor category's instance.
+
+The two are equivalent. Composing `objEquivSigmaArityHom` on both sides turns a
+natural family into a map `Π a, Σ a', ArityHom F' a' (arityPresheaf F a)`, and
+Yoneda supplies the inverse: a natural family out of `Σ a, ArityHom F a (−)` is
+determined by its value at the representing object, recovered by evaluating at
+`Z := arityPresheaf F a` on the generic element `idElt F a` — the element whose
+arity hom is the identity.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The bundled natural transformation `E(a) ⟶ Z` of an unbundled arity hom.
+The functor category's instance is not involved: `NatTrans` is a structure, and
+only `⟶` between two functors would require it. -/
+def natTransOfArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A)
+    {Z : Iᵒᵖ ⥤ Type uB} (μ : ArityHom F a Z) : NatTrans (arityPresheaf F a) Z where
+  app X := ↾ μ.1 X.unop
+  naturality := by
+    intro _ _ f
+    ext b
+    exact μ.2 f.unop b
+
+/-- Postcomposition of an unbundled arity hom with a natural transformation. -/
+def postcompArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A)
+    {Z Z' : Iᵒᵖ ⥤ Type uZ} (ν : NatTrans Z Z') (μ : ArityHom F a Z) : ArityHom F a Z' :=
+  ⟨fun i b ↦ ν.app ⟨i⟩ (μ.1 i b), by
+    intro i i' f b
+    change ν.app ⟨i'⟩ (μ.1 i' (F.directionRestr a f b)) = Z'.map f.op (ν.app ⟨i⟩ (μ.1 i b))
+    rw [μ.2 f b]
+    simp only [← ConcreteCategory.comp_apply]
+    rw [ν.naturality f.op]⟩
+
+/-- The identity arity hom, of `F` at `a` into `F`'s own arity presheaf. -/
+def idArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) :
+    ArityHom F a (arityPresheaf F a) :=
+  ⟨fun _ b ↦ b, by intro i i' f b; rfl⟩
+
+/-- The generic element of shape `a`: the element of `T (E(a))` whose arity hom
+is the identity. Yoneda's representing datum. -/
+def idElt (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) :
+    F.toPresheafDomPFunctorData.obj (arityPresheaf F a) :=
+  (objEquivSigmaArityHom F (arityPresheaf F a)).symm ⟨a, idArityHom F a⟩
+
+/-- The generic element's shape and arity hom are `a` and the identity. -/
+theorem objEquivSigmaArityHom_idElt (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (a : F.A) :
+    objEquivSigmaArityHom F (arityPresheaf F a) (idElt F a) = ⟨a, idArityHom F a⟩ :=
+  (objEquivSigmaArityHom F (arityPresheaf F a)).apply_symm_apply _
+
+/-- The morphism data between two presheaf p.r.a. functors at the domain level:
+shapes forward, arities backward, the arity map a morphism of arity
+presheaves. -/
+def DomHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : Type (max uA uI uB) :=
+  (a : F.A) → Σ a' : F'.A, { ψ : (i : I) → F'.Direction a' i → F.Direction a i //
+      ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (b : F'.Direction a' i),
+        ψ i' (F'.directionRestr a' f b) = F.directionRestr a f (ψ i b) }
+
+/-- The arity component of a `DomHom` is an unbundled arity hom of `F'` into the
+arity presheaf of `F`: the representing presheaf of Yoneda's statement. -/
+example (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    DomHom F F' = ((a : F.A) → Σ a' : F'.A, ArityHom F' a' (arityPresheaf F a)) := rfl
+
+/-- Families `T Z → T' Z` natural in `Z`, with naturality stated unbundled
+against `PresheafDomPFunctorData.map`. -/
+def DomNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    Type (max uA uI vI (uB + 1)) :=
+  { η : (Z : Iᵒᵖ ⥤ Type uB) → F.toPresheafDomPFunctorData.obj Z →
+        F'.toPresheafDomPFunctorData.obj Z //
+      ∀ (Z Z' : Iᵒᵖ ⥤ Type uB) (ν : NatTrans Z Z') (x : F.toPresheafDomPFunctorData.obj Z),
+        η Z' (F.toPresheafDomPFunctorData.map ν x) =
+          F'.toPresheafDomPFunctorData.map ν (η Z x) }
+
+/-- Under `objEquivSigmaArityHom`, the action on input presheaves is
+postcomposition: the shape is untouched and the arity hom is composed with `ν`.
+Stated on the inverse side, where both sides are `ofArityHomElt` of the same
+data. -/
+theorem map_symm_arityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z Z' : Iᵒᵖ ⥤ Type uB} (ν : NatTrans Z Z') (p : Σ a : F.A, ArityHom F a Z) :
+    F.toPresheafDomPFunctorData.map ν ((objEquivSigmaArityHom F Z).symm p) =
+      (objEquivSigmaArityHom F Z').symm ⟨p.1, postcompArityHom F p.1 ν p.2⟩ :=
+  rfl
+
+/-- Yoneda's reconstruction: the element of `T Z` with shape `a` and arity hom
+`μ` is the image of the generic element of shape `a` under the action of `μ`. -/
+theorem map_idElt (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uB}
+    (p : Σ a : F.A, ArityHom F a Z) :
+    F.toPresheafDomPFunctorData.map (natTransOfArityHom F p.1 p.2) (idElt F p.1) =
+      (objEquivSigmaArityHom F Z).symm p := by
+  rw [idElt, map_symm_arityHom]
+  rfl
+
+/-- The action of a `DomHom` on the coproduct-of-representables side: the shape
+travels forward along `φ`, and the arity hom is precomposed with `φ`'s backward
+arity map. -/
+def domHomSigma (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : DomHom F F')
+    {Z : Iᵒᵖ ⥤ Type uB} (p : Σ a : F.A, ArityHom F a Z) : Σ a' : F'.A, ArityHom F' a' Z :=
+  ⟨(φ p.1).1, postcompArityHom F' _ (natTransOfArityHom F p.1 p.2) (φ p.1).2⟩
+
+/-- The natural family determined by a `DomHom`: `domHomSigma` conjugated by the
+p.r.a. formula. Keeping the sigma-level action a separate function puts the
+dependent shape and arity-hom projections behind one non-dependent argument,
+which is what makes the rewrites below applicable. -/
+def domHomFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : DomHom F F')
+    (Z : Iᵒᵖ ⥤ Type uB) (x : F.toPresheafDomPFunctorData.obj Z) :
+    F'.toPresheafDomPFunctorData.obj Z :=
+  (objEquivSigmaArityHom F' Z).symm (domHomSigma F F' φ (objEquivSigmaArityHom F Z x))
+
+/-- `domHomFamily` on an element presented by its shape and arity hom. -/
+theorem domHomFamily_symm (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (φ : DomHom F F') {Z : Iᵒᵖ ⥤ Type uB} (p : Σ a : F.A, ArityHom F a Z) :
+    domHomFamily F F' φ Z ((objEquivSigmaArityHom F Z).symm p) =
+      (objEquivSigmaArityHom F' Z).symm (domHomSigma F F' φ p) := by
+  rw [domHomFamily, Equiv.apply_symm_apply]
+
+/-- The representation theorem, unbundled: morphism data at the domain level is
+the same thing as a family `T Z → T' Z` natural in `Z`. The inverse is Yoneda —
+evaluation at the representing presheaf `arityPresheaf F a` on the generic
+element `idElt F a`. -/
+def domHomEquivNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    DomHom F F' ≃ DomNatFamily F F' where
+  toFun φ :=
+    ⟨domHomFamily F F' φ, by
+      intro Z Z' ν x
+      obtain ⟨p, rfl⟩ : ∃ p, (objEquivSigmaArityHom F Z).symm p = x :=
+        ⟨_, Equiv.symm_apply_apply _ x⟩
+      rw [map_symm_arityHom, domHomFamily_symm, domHomFamily_symm, map_symm_arityHom]
+      rfl⟩
+  invFun η a :=
+    objEquivSigmaArityHom F' (arityPresheaf F a) (η.1 (arityPresheaf F a) (idElt F a))
+  left_inv φ :=
+    funext fun a ↦ by
+      simp only [domHomFamily, Equiv.apply_symm_apply, objEquivSigmaArityHom_idElt]
+      rfl
+  right_inv η := by
+    refine Subtype.ext (funext fun Z ↦ funext fun x ↦ ?_)
+    obtain ⟨p, rfl⟩ : ∃ p, (objEquivSigmaArityHom F Z).symm p = x :=
+      ⟨_, Equiv.symm_apply_apply _ x⟩
+    conv_rhs =>
+      rw [← map_idElt F p, η.2,
+        ← Equiv.symm_apply_apply (objEquivSigmaArityHom F' (arityPresheaf F p.1))
+          (η.1 (arityPresheaf F p.1) (idElt F p.1)),
+        map_symm_arityHom]
+    exact domHomFamily_symm F F' _ p
+
+end UnbundledYoneda
 
 end GebProto
 
