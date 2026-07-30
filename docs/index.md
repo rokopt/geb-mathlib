@@ -489,17 +489,21 @@ import-direction rules above are enforced by
   `GebMeta.classicalAllowedModules`, the module being a wrapper over
   mathlib's `Classical`-dependent category theory.
 - `Geb/Mathlib/Data/Fin/Basic.lean` — choice-free division,
-  remainder and pairing on `Fin`. Lean core's `Fin.divNat` and
-  `Fin.modNat` prove their bounds through `Nat.div_lt_of_lt_mul`,
-  which depends on `Classical.choice`; `Fin.divNatC`, `Fin.modNatC`
-  and `Fin.pairC` are their counterparts, with the round trips
-  `Fin.divNatC_pairC`, `Fin.modNatC_pairC` and
-  `Fin.pairC_divNatC_modNatC` exhibiting them as a bijection
-  `Fin m × Fin n ≃ Fin (m * n)`. `Nat`'s division and order API
-  interleaves choice-dependent lemmas with choice-free ones under no
-  separating convention, so the bound proofs route through `omega`
+  remainder and pairing on `Fin`. Batteries' `Fin.divNat` proves its
+  bound through `Nat.div_lt_of_lt_mul`, which depends on
+  `Classical.choice`; `Fin.divNatC`, `Fin.modNatC` and `Fin.pairC`
+  are choice-free counterparts of `Fin.divNat`, `Fin.modNat` and
+  `Fin.mkDivMod`, with the round trips `Fin.divNatC_pairC`,
+  `Fin.modNatC_pairC` and `Fin.pairC_divNatC_modNatC` exhibiting them
+  as a bijection `Fin m × Fin n ≃ Fin (m * n)`. `Fin.modNat` and
+  `Fin.mkDivMod` depend on no axiom outside `propext`, so
+  `Fin.modNatC` and `Fin.pairC` are present for uniformity rather
+  than necessity: both round trips stated over `Fin.divNat` inherit
+  its dependence on `Classical.choice`. `Nat`'s division and order
+  API interleaves choice-dependent lemmas with choice-free ones under
+  no separating convention, so the bound proofs route through `omega`
   over individually named hypotheses or through case analysis on
-  `Nat.lt_or_ge`. The upstream target is Lean core rather than
+  `Nat.lt_or_ge`. The upstream target is Batteries rather than
   mathlib4, per `TODO.md` § Upstream destination of core- and
   Batteries-targeted content. `Classical.choice`-free.
 - `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean` — choice-free product and

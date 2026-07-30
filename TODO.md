@@ -691,6 +691,17 @@ fiber membership already implemented.
 
 ## Triggers (do when condition fires)
 
+- **Choice-free bound for `Fin.divNat` in Batteries**:
+  `Geb/Mathlib/Data/Fin/Basic.lean` exists because Batteries'
+  `Fin.divNat` proves its bound through `Nat.div_lt_of_lt_mul`,
+  which depends on `Classical.choice`, and the two round trips
+  stated over `Fin.divNat` inherit that dependence; `Fin.modNat`
+  and `Fin.mkDivMod` depend on no axiom outside `propext`. A
+  choice-free bound upstream removes the reason for the module.
+  Trigger: Batteries admits such a bound, at which point
+  `Geb/Mathlib/Data/Fin/Basic.lean` and its test parallel are
+  deleted and `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean` is restated
+  over `Fin.divNat`, `Fin.modNat` and `Fin.mkDivMod`.
 - **`lake shake --keep-implied` versus mathlib CI's plain
   `lake shake`**: a repo-wide decision, on a separate branch, on
   whether to drop `--keep-implied` from `scripts/pre-push.sh:42`

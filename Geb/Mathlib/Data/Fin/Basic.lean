@@ -11,11 +11,34 @@ public import Mathlib.Tactic.ToDual
 /-!
 # Choice-free division, remainder and pairing on `Fin`
 
-`Fin.divNat` and `Fin.modNat` are Lean core declarations whose bound
-proofs run through `Nat.div_lt_of_lt_mul`, which depends on
-`Classical.choice`. The three operations here are their choice-free
-counterparts, together with the round trips exhibiting them as a
-bijection `Fin m × Fin n ≃ Fin (m * n)`.
+Batteries' `Fin.divNat` proves its bound through
+`Nat.div_lt_of_lt_mul`, which depends on `Classical.choice`. The
+three operations here are choice-free counterparts of `Fin.divNat`,
+`Fin.modNat` and `Fin.mkDivMod`, together with the round trips
+exhibiting them as a bijection `Fin m × Fin n ≃ Fin (m * n)`.
+
+## Main definitions
+
+* `Fin.divNatC`, `Fin.modNatC` — the quotient and remainder of an
+  index of `Fin (m * n)`.
+* `Fin.pairC` — the index of `Fin (m * n)` with given quotient and
+  remainder, the counterpart of `Fin.mkDivMod`.
+
+## Main statements
+
+* `Fin.divNatC_pairC`, `Fin.modNatC_pairC`,
+  `Fin.pairC_divNatC_modNatC` — the three round trips.
+
+## Implementation notes
+
+`Fin.modNat` and `Fin.mkDivMod` depend on no axiom outside `propext`,
+so `Fin.modNatC` and `Fin.pairC` are present for uniformity rather
+than necessity. Both round trips stated over `Fin.divNat` inherit its
+dependence on `Classical.choice`, so a family mixing the Batteries
+declarations in would still rebuild two of the three; the three here
+are stated over one pairing throughout. `Fin.pairC a b` is
+`a * n + b` where `Fin.mkDivMod a b` is `n * a + b`, the same pairing
+with the multiplication commuted.
 
 `Nat`'s division and order API interleaves choice-dependent lemmas
 with choice-free ones under no separating convention of name or
@@ -26,22 +49,10 @@ proofs below therefore route through `omega` over hypotheses named
 individually, or through case analysis on `Nat.lt_or_ge`, rather than
 through whichever lemma states the bound directly.
 
-The upstream target of this module is Lean core rather than mathlib4,
-`Fin.divNat` and `Fin.modNat` being core declarations; where such
+The upstream target of this module is Batteries rather than mathlib4,
+the declarations it replaces being Batteries declarations; where such
 content belongs is `TODO.md` § Upstream destination of core- and
 Batteries-targeted content.
-
-## Main definitions
-
-* `Fin.divNatC`, `Fin.modNatC` — the quotient and remainder of an
-  index of `Fin (m * n)`.
-* `Fin.pairC` — the index of `Fin (m * n)` with given quotient and
-  remainder.
-
-## Main statements
-
-* `Fin.divNatC_pairC`, `Fin.modNatC_pairC`,
-  `Fin.pairC_divNatC_modNatC` — the three round trips.
 
 ## Tags
 
@@ -63,8 +74,8 @@ def divNatC {m n : ℕ} (i : Fin (m * n)) : Fin m :=
       have h5 : m * n ≤ (i : ℕ) / n * n := Nat.mul_le_mul_right n h
       omega⟩
 
-/-- The remainder of an index of `Fin (m * n)` modulo `n`,
-choice-free (unlike `Fin.modNat`). -/
+/-- The remainder of an index of `Fin (m * n)` modulo `n`, the
+counterpart of `Fin.modNat` over `Fin.pairC`. -/
 def modNatC {m n : ℕ} (i : Fin (m * n)) : Fin n :=
   ⟨i % n, Nat.mod_lt _ (by
     have h := i.isLt
@@ -72,7 +83,8 @@ def modNatC {m n : ℕ} (i : Fin (m * n)) : Fin n :=
     · omega
     · exact hn)⟩
 
-/-- The index of `Fin (m * n)` with quotient `a` and remainder `b`. -/
+/-- The index of `Fin (m * n)` with quotient `a` and remainder `b`,
+the counterpart of `Fin.mkDivMod`. -/
 def pairC {m n : ℕ} (a : Fin m) (b : Fin n) : Fin (m * n) :=
   ⟨a * n + b, by
     have h1 : ((a : ℕ) + 1) * n ≤ m * n := Nat.mul_le_mul_right n a.isLt

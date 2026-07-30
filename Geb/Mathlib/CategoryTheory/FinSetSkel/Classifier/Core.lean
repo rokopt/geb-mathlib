@@ -20,8 +20,10 @@ in `Classifier/Instance.lean`; the two modules fix the orientation
 jointly and each states it.
 
 The orientation follows mathlib's own: `finTwoEquiv` is
-`fun i ↦ i == 1`, and `Presheaf.truth` and `Sheaf.truth`, the two
-classifier instances mathlib builds, both pick the maximal sieve.
+`fun i ↦ i == 1`, and `Presheaf.truth` and `Sheaf.truth`, the truth
+morphisms of the two subobject classifiers mathlib builds,
+`Presheaf.classifier` and `Sheaf.classifier`, both pick the maximal
+sieve.
 With `truth = 1` the characteristic morphism is the indicator of
 membership and every bridge to `Bool`, `decide` or `Prop` is
 `finTwoEquiv` composed with nothing; with `truth = 0` each such
