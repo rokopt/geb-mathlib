@@ -326,8 +326,9 @@ entry, adding no Lean content.
 | l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
 | m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `ConcreteCategory.mono_iff_injective_of_preservesPullback` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
 
-Rows e, f, j and k are also W2's one-time derivations below
-(§ Class fields).
+Rows e, f, j and k are derived rather than separately assigned: e, j
+and k are W2's one-time derivations below (§ Class fields), and f
+arrives with the cartesian structure.
 
 #### Class fields
 
