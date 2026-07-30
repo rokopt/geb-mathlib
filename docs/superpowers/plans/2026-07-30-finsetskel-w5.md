@@ -204,8 +204,14 @@ scripts/lint-imports.sh
 
 Expected: all succeed. If `lake lint` reports `elementaryTopos depends on
 non-standard axiom(s): [Classical.choice]`, Step 2's source allowlist name
-is missing. If `lake lint` reports nothing about the module at all, Step 3's
-index import is missing and the linter never reached it.
+is missing. A clean `lake lint` does not by itself show the module was
+reached, so check the index import positively:
+
+```bash
+grep -n 'FinSetSkel.ElementaryTopos' Geb/Mathlib/CategoryTheory/FinSetSkel.lean
+```
+
+Expected: one line.
 
 Check the banned family by grep, per the spec's constraint 4:
 
@@ -256,7 +262,9 @@ grep -rnE '(sampleSkelTopos|has(Equalizers|FiniteLimits|FiniteColimits|Pushouts)
 ```
 
 Expected: no output. If any name is taken, rename with the same
-`sampleSkelTopos` prefix and record the change in Step 2's code.
+`sampleSkelTopos` prefix for the field-identity and pushout names, or the
+`<class>_finSetSkel` form for a resolution name, and record the change in
+Step 2's code.
 
 - [ ] **Step 2: Write the module**
 
@@ -500,7 +508,7 @@ After the `Compositional tests` bullet, add:
 Run:
 
 ```bash
-npx markdownlint-cli2 'docs/rules/lean-coding.md'
+markdownlint-cli2 'docs/rules/lean-coding.md'
 doctoc --dryrun --update-only docs/rules/lean-coding.md
 ```
 
@@ -557,7 +565,7 @@ it is re-taken on a toolchain bump.
 
 ```bash
 doctoc --update-only docs/process.md
-npx markdownlint-cli2 'docs/process.md'
+markdownlint-cli2 'docs/process.md'
 ```
 
 Expected: doctoc updates the TOC; markdownlint reports 0 issues.
@@ -714,7 +722,7 @@ At the end of § Implemented content, after the
 - [ ] **Step 2: Lint**
 
 ```bash
-npx markdownlint-cli2 'docs/index.md'
+markdownlint-cli2 'docs/index.md'
 doctoc --dryrun --update-only docs/index.md
 ```
 
@@ -777,47 +785,59 @@ At the end of § Triggers, add:
 - [ ] **Step 3: Amend four entries**
 
 These four amendments use line anchors that shift under one another, so
-make them in the order given and re-read the file between edits. Before
-each, assert the boundary text with `sed -n 'Np;Mp' TODO.md` and proceed
-only if it matches what the step quotes.
+make them in the order given — highest line number first — and assert each
+boundary with `sed -n 'Np;Mp' TODO.md` before editing, proceeding only if
+it matches what the step quotes. Each replacement below carries the
+trailing clause of its last line, so the sentence that continues past the
+range is preserved.
 
-In the `lake shake --keep-implied` entry, replace lines 715-719 — from
-`without that flag,` through `` `GebTests` ones. `` — with text of this
-shape, substituting the counts the command reports:
+First, `TODO.md:883-885`, the `Fin.compressEquiv` entry — already removed
+in Step 1, which is why the ranges below are the file's current ones.
+
+Second, the `Reconcile test-module import visibility` entry. Assert that
+line 783 reads
+`` `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses `` and line 785
+ends `` `GebTests/Internal/`'s ``, then replace 783-785 with:
+
+```markdown
+  `GebTests/` modules disagree on whether to `public import` the
+  module under test: most do, a minority use plain `import`;
+  `GebTests/Internal/`'s
+```
+
+The trailing `` `GebTests/Internal/`'s `` is deliberate: line 786 continues
+that sentence and is not touched.
+
+Third, the `lake shake --keep-implied` entry. Assert that line 715 reads
+`` without that flag, `lake shake` reports it as removable, and `` and
+line 719 ends `` mathlib CI runs `lake shake` without ``, then replace
+715-719 with:
 
 ```markdown
   without that flag, `lake shake` reports it as removable, and
   reports the same pattern across the tree:
   `lake shake --add-public --keep-prefix Geb GebTests` reports
   N `Geb/Mathlib/` files and M `GebTests` ones, exiting 1.
+  mathlib CI runs `lake shake` without
 ```
 
-Obtain N and M by running that command now; the entry's present figures
-predate the FinSetSkel modules. The command exits 1 by design — that is
-its report, not a failure — so do not treat the exit status as an error.
+Substitute the counts that command reports for N and M; the entry's
+present figures predate the FinSetSkel modules. The command exits 1 by
+design — that is its report, not a failure. The trailing
+`` mathlib CI runs `lake shake` without `` is deliberate: line 720
+continues that sentence.
 
-In the `mathlib-to-Batteries` entry, replace `which outlives this
-workstream group` with `which outlives the FinSetSkel development`.
+Fourth, `TODO.md:850`, the `mathlib-to-Batteries` entry: replace
+`which outlives this workstream group` with
+`which outlives the FinSetSkel development`.
 
-In the choice-free `Skeletal FinSetSkel` entry, replace its closing
-sentence (that no such use exists while `Skeletal` is consumed only by the
-wrapper) with: its consumers are the wrapper and the one allowlisted test
-module that identifies a pushout, so no such use has arisen.
-
-In the `Reconcile test-module import visibility` entry — now one line
-earlier than its original position, the first amendment having removed a
-line — replace the three lines from ``
-`GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses ``
-through `` test module uses plain `import`; `` — with:
+Fifth, the choice-free `Skeletal FinSetSkel` entry at `TODO.md:840-841`.
+Replace its closing sentence with:
 
 ```markdown
-  `GebTests/` modules disagree on whether to `public import` the
-  module under test: most do, a minority use plain `import`;
+  Its consumers are the wrapper and the one allowlisted test
+  module that identifies a pushout, so no such use has arisen.
 ```
-
-Do not state a count; it goes stale on the next test module. The entry's
-remaining sentences, from `` `GebTests/Internal/`'s `` onward, are
-unchanged.
 
 - [ ] **Step 4: Verify the entry count and leave three entries alone**
 
@@ -837,7 +857,7 @@ the `Decide a test-declaration privacy discipline` entry, or the
 - [ ] **Step 5: Lint and commit**
 
 ```bash
-npx markdownlint-cli2 'TODO.md'
+markdownlint-cli2 'TODO.md'
 jj st
 jj commit -m "doc(todo): correct four trigger premises and add two"
 jj bookmark set feat/finsetskel-w5 -r @-
@@ -908,7 +928,7 @@ branch does not touch, so a whole-file count is 23.
 - [ ] **Step 5: Lint and commit**
 
 ```bash
-npx markdownlint-cli2 'TODO.md'
+markdownlint-cli2 'TODO.md'
 jj st
 jj commit -m "doc(todo): remove the finsetskel roadmap entry"
 jj bookmark set feat/finsetskel-w5 -r @-
