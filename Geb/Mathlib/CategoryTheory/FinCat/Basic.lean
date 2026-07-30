@@ -234,4 +234,40 @@ field. -/
 instance inhabited : Inhabited FinCat :=
   ⟨⟨0, fun i _ ↦ i.elim0, fun i _ _ ↦ i.elim0, rfl⟩⟩
 
+/-- The associativity check reflects associativity on triples of client
+morphisms. -/
+theorem assocCheck_eq_true_iff (objCount : Nat) (nonIdCount : Fin objCount → Fin objCount → Nat)
+    (comp : (i j k : Fin objCount) → Fin (nonIdCount i j) → Fin (nonIdCount j k) →
+      Fin (homCountOf objCount nonIdCount i k)) :
+    assocCheckOf objCount nonIdCount comp = true ↔
+      ∀ (i j k l : Fin objCount) (f : Fin (nonIdCount i j)) (g : Fin (nonIdCount j k))
+        (h : Fin (nonIdCount k l)),
+          compTotalOf comp (compTotalOf comp (embOf f) (embOf g)) (embOf h)
+            = compTotalOf comp (embOf f) (compTotalOf comp (embOf g) (embOf h)) :=
+  decide_eq_true_iff
+
+/-- Associativity of the total composition, on all triples of morphisms
+of `S`. A triple of client morphisms is the check's; a triple with the
+reserved identity among it is the identity laws'. -/
+theorem compTotal_assoc (S : FinCat) {i j k l : Fin S.objCount}
+    (f : S.Mor i j) (g : S.Mor j k) (h : S.Mor k l) :
+    S.compTotal (S.compTotal f g) h = S.compTotal f (S.compTotal g h) := by
+  by_cases hf : f.val < S.nonIdCount i j
+  · by_cases hg : g.val < S.nonIdCount j k
+    · by_cases hh : h.val < S.nonIdCount k l
+      · exact (assocCheck_eq_true_iff S.objCount S.nonIdCount S.comp).mp S.assoc i j k l
+          ⟨f.val, hf⟩ ⟨g.val, hg⟩ ⟨h.val, hh⟩
+      · have hkl := S.eq_of_nonIdCount_le h (Nat.not_lt.mp hh)
+        subst hkl
+        rw [show h = S.id _ from Fin.ext (S.val_eq_of_nonIdCount_le h (Nat.not_lt.mp hh)),
+          S.comp_id, S.comp_id]
+    · have hjk := S.eq_of_nonIdCount_le g (Nat.not_lt.mp hg)
+      subst hjk
+      rw [show g = S.id _ from Fin.ext (S.val_eq_of_nonIdCount_le g (Nat.not_lt.mp hg)),
+        S.comp_id, S.id_comp]
+  · have hij := S.eq_of_nonIdCount_le f (Nat.not_lt.mp hf)
+    subst hij
+    rw [show f = S.id _ from Fin.ext (S.val_eq_of_nonIdCount_le f (Nat.not_lt.mp hf)),
+      S.id_comp, S.id_comp]
+
 end FinCat
