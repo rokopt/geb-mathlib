@@ -431,7 +431,7 @@ W5's assignments become redundant.
    choice-free, a choice-free module names the term rather than
    leaving instance search to pick. Morphism `DecidableEq` is one
    such, pinned by W1. Deciding a proposition quantified over `Fin n`
-   is another, and W3 and W4 both need it: `inferInstance` gives an
+   is another, and W3 needs it: `inferInstance` gives an
    axiom-free term, while `Fintype.decidableForallFintype`, which
    inhabits the same class, depends on `Classical.choice`.
 
@@ -466,7 +466,7 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |
-| W4 Row i, union-find | W0, W1 | Not started | — |
+| W4 Row i, union-find | W0, W1 | Complete | `Geb/Mathlib/Data/UnionFind/OfEdges.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` |
 | W5 Row k, unification | W1–W4 | Not started | — |
 
 ### Complexity of the decidable validity checkers
@@ -534,7 +534,15 @@ Batteries API sits under `Geb/Mathlib/` while its upstream is neither
 mathlib4 nor CSLib. In scope is every module under `Geb/Mathlib/`, and
 every `GebTests/Mathlib/` parallel, whose declarations restate or
 replace declarations of Lean core or Batteries rather than of mathlib:
-currently `Geb/Mathlib/Data/Vector/OfFn.lean` and its test parallel.
+currently `Geb/Mathlib/Data/Vector/OfFn.lean` and
+`Geb/Mathlib/Data/UnionFind/OfEdges.lean`, and their test parallels.
+The criterion does not literally reach `OfEdges.lean`, whose
+declarations extend a Batteries type with new statements rather than
+restating or replacing existing ones; it is listed here because this
+item's subject — content under `Geb/Mathlib/` whose upstream target is
+not mathlib4 — is where such a module belongs. Reconciling the
+criterion's wording with that subject is a separate concern, on its
+own branch.
 Scoping the item by that criterion rather than by a module list keeps
 it from being settled incompletely; the criterion does not reach
 `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, whose statement is an
@@ -742,3 +750,46 @@ fiber membership already implemented.
   `Fintype.card_congr` and `Fintype.card_fin` all depending on
   `Classical.choice`. There is no such use while `Skeletal` is
   consumed only by the wrapper.
+- **mathlib-to-Batteries dependency edge**: whether mathlib accepts a
+  `Mathlib/`-to-`Batteries/` dependency edge is a maintainer
+  judgement — no `Mathlib.*` module references `UnionFind` — and
+  `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, the
+  mathlib-targeted consumer of the union-find layer, needs one to
+  extract. (`Geb/Mathlib/Data/UnionFind/OfEdges.lean` itself does
+  not: its own upstream target is Batteries.)
+  Trigger: the preparation of that module's upstream submission,
+  which outlives this workstream group.
+- **Check the leakage prefix in an import line's comment tail**:
+  `scripts/lint-imports.sh` Rule 2 exempts a whole import line from
+  the self-prefix check, so a self-prefix in a trailing comment on an
+  import line passes clean — verified by adding
+  `public import Geb.Mathlib.Bar  -- see Geb.Mathlib.Baz` under
+  `GebTests/Mathlib/`. Not a regression: the rule has always
+  exempted whole lines. The fix direction is to exempt the import
+  path alone and apply the prefix check to the line's comment tail.
+  Trigger: the next branch that revises `scripts/lint-imports.sh`.
+- **Repo-relative paths in upstream-eligible docstrings**: docstrings
+  under `Geb/Mathlib/` name paths that carry no meaning for a mathlib
+  reviewer, and `scripts/extract-pr.sh` rewrites import lines only, so
+  such prose survives extraction unchanged. Instances include the module
+  path in `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` and
+  the same pattern in `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`.
+  Repo-wide, so no one workstream's to fix. Trigger: a repo-wide pass
+  over upstream-eligible docstrings, on its own branch.
+  Workstream labels were a second instance of this and are gone: a
+  workstream is a transient concept whose name is arbitrary, so it
+  cannot be referred to from persistent code or documentation at all.
+  `TODO.md` is where workstreams are named, being the roadmap that
+  defines them.
+- **`scripts/extract-pr.sh` does not rewrite `meta import` lines**: its
+  rewrite is anchored to `^(public import|import)`, so a
+  `public meta import` of a self-prefixed sibling is emitted with the
+  `Geb.Mathlib.` prefix intact and the extracted file does not compile.
+  The two such lines are
+  `GebTests/Mathlib/Data/UnionFind/OfEdges.lean` and
+  `GebTests/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, where the
+  `#guard` assertions need the module under test available to meta
+  code. This is the rewriter's counterpart to the `lint-imports.sh`
+  item above: both enumerate import forms and both predate the module
+  system's `meta` forms. Trigger: the next branch that revises
+  `scripts/extract-pr.sh`, or the first extraction of either module.

@@ -209,6 +209,16 @@ and for content needed by callers of this module) use
 `public import`; imports whose contents are used only internally
 use plain `import`.
 
+A `#guard` whose wrapper calls a non-`meta` declaration from another
+module of this package fails at evaluation rather than at
+elaboration: `#guard` runs its argument in the interpreter, and the
+IR of a non-`meta` declaration is not available to meta code across a
+module boundary. The repair is a `public meta import` of the module
+under test beside the ordinary `public import` of the same module.
+The LSP is not an oracle for this — the file reports no diagnostics
+and `#eval` returns a value — so a `#guard` claim is settled by
+`lake build` alone.
+
 ## Lake / build workflow
 
 - Always use `lake build` and `lake test`. Avoid `lake clean`
@@ -219,6 +229,12 @@ use plain `import`.
   `lake build` to pull mathlib's precompiled artifacts. Without
   this, lake falls back to building mathlib from source (hours of
   work).
+- `lake shake` infers a module's required imports from the
+  constants its olean references, so an import needed only for
+  `#guard`'s interpreter-time evaluation, or only to resolve an
+  instance for an anonymous `example`, leaves no such reference and
+  is reported as removable. `-- shake: keep` on the import line is
+  the sanctioned suppression for that case.
 
 ## Coding technique
 

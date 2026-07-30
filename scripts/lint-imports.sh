@@ -44,6 +44,11 @@
 # `public import` lines are recognised the same as plain `import`
 # (the same allowed-prefix and forbidden-umbrella rules apply,
 # and they count as import lines for the no-prefix-leakage rule).
+# The module system's `meta import` and `public meta import` forms are
+# recognised the same way. The one rule that stays narrow is the
+# required-init check: a `meta import Cslib.Init` does not bring
+# `Cslib.Init` into a file's ordinary scope, so it does not satisfy
+# CSLib's requirement.
 #
 # Exit 0 on clean. Exit 1 on any violation.
 
@@ -89,6 +94,11 @@ check_subtree() {
     files+=("$_file")
   done < <(find "${find_roots[@]}" -type f -name '*.lean' 2>/dev/null || true)
 
+  # The accepted import-line keyword forms: `import`, `public import`,
+  # `meta import`, `public meta import`. Bound once and referenced by
+  # both Rule 1's collection and Rule 2's exclusion, so the two cannot
+  # come to disagree about what an import line is.
+  local import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import '
   local f line canonical ok ln lp prefix_re
   for f in "${files[@]}"; do
     total=$((total + 1))
@@ -102,14 +112,12 @@ check_subtree() {
       errors=$((errors + 1))
     fi
 
-    # Rule 1: imports. `public import` is canonicalised to
-    # `import` before pattern matching; rules apply identically
-    # to both forms.
+    # Rule 1: imports. The `public` and `meta` keywords are stripped
+    # before pattern matching, so the allowed-prefix and
+    # forbidden-umbrella rules apply identically to all four forms.
     while IFS= read -r line; do
-      case "$line" in
-        'public import '*) canonical="${line#public }" ;;
-        *) canonical="$line" ;;
-      esac
+      canonical="${line#public }"
+      canonical="${canonical#meta }"
       case "$canonical" in
         'import Mathlib'|'import Batteries'|'import Cslib')
           echo "$f: bare umbrella '$line' is forbidden in upstream-eligible files" >&2
@@ -128,7 +136,7 @@ check_subtree() {
         echo "$f: forbidden import '$line' (allowed: $allowed_str)" >&2
         errors=$((errors + 1))
       fi
-    done < <(grep -E '^(public[[:space:]]+)?import ' "$f" || true)
+    done < <(grep -E "^${import_kw_re}" "$f" || true)
 
     # Rule 1b: required init import. When the subtree mandates a
     # specific init module (e.g., CSLib's Cslib.Init), every file
@@ -145,12 +153,17 @@ check_subtree() {
     # Rule 2: no-prefix-leakage, for each leakage prefix. A test
     # subtree forbids both the source self-prefix (e.g. `Geb.Mathlib.`)
     # and the test self-prefix (e.g. `GebTests.Mathlib.`) outside
-    # import lines. `public import` lines count as imports for the
-    # exclusion regex.
+    # import lines. `public import` counts as an import for the
+    # exclusion regex, and so does a `meta import` line, in either
+    # its bare or its `public` form: docs/rules/upstream-eligible.md
+    # § Subtree import rules states the rule as "a self-prefix appears
+    # only in ^import lines", which a `meta import` line satisfies.
+    # The exclusion is anchored at the `grep -n` line-number prefix, so
+    # a comment merely containing the word `import` is not exempted.
     for lp in "${leakage_prefixes[@]}"; do
       prefix_re="${lp//./\\.}"
-      if grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' >/dev/null; then
-        grep -nE "\\b${prefix_re}" "$f" | grep -vE '^[0-9]+:(public[[:space:]]+)?import ' | while IFS= read -r ln; do
+      if grep -nE "\\b${prefix_re}" "$f" | grep -vE "^[0-9]+:${import_kw_re}" >/dev/null; then
+        grep -nE "\\b${prefix_re}" "$f" | grep -vE "^[0-9]+:${import_kw_re}" | while IFS= read -r ln; do
           echo "$f:$ln: '${lp}' outside ^import line" >&2
         done
         errors=$((errors + 1))
