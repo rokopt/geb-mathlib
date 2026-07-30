@@ -1955,9 +1955,9 @@ deliverable.
 
 If the `example` fails, the two objects are not definitionally equal
 and the fallback is `isTerminalOne := terminalCone.isLimit`, whose
-type is the same by the definition of `IsTerminal`. Report which
-route was taken: Task 18 builds `Ω₀` on this, and constraint 6's
-identification depends on it.
+type is the same by the definition of `IsTerminal`. Report which route
+was taken to the orchestrator: Task 18 builds `Ω₀` on this, and
+constraint 6's identification depends on it.
 
 Also confirm the name resolves:
 `#check @SemiCartesianMonoidalCategory.isTerminalTensorUnit`. The
@@ -3666,7 +3666,7 @@ value-returning and one function-returning, over a traced stand-in for
 the inverse pass, and evaluates both:
 
 ```lean
-import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Core
+import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 
 structure Box where v : List Nat
 
@@ -3690,10 +3690,22 @@ def liftFun (n : Nat) : Nat → Nat :=
 
 Run it through the `lean-lsp` MCP's `lean_run_code`; `dbgTrace` output
 from `#eval` is captured into the message log as an `info` diagnostic,
-so it comes back in the result.
+so it comes back in the result, and the two `#eval`s return separate
+diagnostics so the counts are attributable.
+
+The import is `FinSetSkel.Basic`, a module W3 never edits — **not**
+`Equalizer.Core`, which Steps 1 through 5 have just modified and which
+Step 5 deliberately leaves two probe declarations in. The snippet
+defines everything it measures, so it needs nothing from either; what
+it must not do is make the measurement fail because the module under
+edit does not build.
 
 Expected: **one** `PASS RAN` from the first `#eval` and **five** from
-the second.
+the second. Each `#eval` also returns
+`` `#`-commands, such as '#eval', are not allowed in 'Mathlib' `` at
+`info` severity; that is the repo's `linter.hashCommand` and is
+expected, not instrument breakage. This whole snippet elaborates with
+zero errors and zero warnings at this toolchain.
 
 The control is the point of the step. One trace from the subject alone
 is equally consistent with sharing and with the measurement having
@@ -3712,9 +3724,10 @@ control did not fire.
   asserts the distinction and would need rewriting, which is not this
   task's to do.
 
-Nothing is added to `Equalizer/Core.lean`, so there is nothing to
-revert and no guard grep to run. Delete Step 5's two witnesses
-(`probeLiftHom`, `probeLift`) before Step 7 commits, and confirm with
+This step adds nothing to `Equalizer/Core.lean`, so it has nothing to
+revert. What does still need removing is Step 5's, not this step's:
+delete the two witnesses (`probeLiftHom`, `probeLift`) before Step 7
+commits, and confirm with
 
 ```bash
 grep -n "probeLift\|dbgTrace\|#eval" \
