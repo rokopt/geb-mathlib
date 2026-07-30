@@ -403,7 +403,16 @@ scripts/lint-imports.sh
 `lake test` builds `GebTests`, `testDriver` being that library, so no
 separate build step is needed. Expected: all succeed. If
 `lake lint -- GebTests` flags the twelve declarations for
-`Classical.choice`, Task 1 Step 2 omitted the `GebTests` allowlist name.
+`Classical.choice`, Task 1 Step 2 omitted the `GebTests` allowlist name. A
+clean run does not by itself show the module was reached — `lake lint --
+GebTests` walks that root's import closure — so check the index import
+positively:
+
+```bash
+grep -n 'FinSetSkel.ElementaryTopos' GebTests/Mathlib/CategoryTheory/FinSetSkel.lean
+```
+
+Expected: one line.
 
 Check the banned family by grep, per the spec's constraint 4:
 
@@ -916,8 +925,16 @@ differs, something else has, and the anchors must be recomputed.
 
 - [ ] **Step 2: Delete lines 181–549**
 
-Use a line-numbered edit, not a title match. Titles repeat in this file's
-sections and a title-bounded edit has no checkable bound.
+Use `sed -i '181,549d' TODO.md`, not a title match: the Edit tool matches
+strings, and a title-bounded edit has no checkable bound, where a line
+range has the two Step 1 just asserted. Re-read the boundary afterwards:
+
+```bash
+sed -n '179p;180p;181p' TODO.md
+```
+
+Expected: the last line of § Polynomial functors, a blank line, then
+`### Complexity of the decidable validity checkers`.
 
 - [ ] **Step 3: Amend the preamble**
 
@@ -988,7 +1005,9 @@ doctoc check.
 - [ ] **Step 2: Verify the acceptance criteria the check does not cover**
 
 Each check below is separate on purpose. A disjunctive grep passes on one
-hit and would let six of the seven rules go unwritten.
+hit and would let six of the seven rules go unwritten. `grep` exits 1 when
+it matches nothing, so run these interactively rather than under `set -e`:
+for the checks whose expectation is no output, exit 1 is the pass.
 
 ```bash
 grep -rnE '^[[:space:]]*noncomputable[[:space:]]' Geb/ GebTests/
