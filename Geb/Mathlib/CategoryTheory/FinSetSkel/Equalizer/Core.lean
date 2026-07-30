@@ -7,7 +7,8 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.Data.Vector.OfFn
-public import Mathlib.Data.List.FinRange
+public import Mathlib.Data.List.Nodup
+public import Mathlib.Tactic.Finiteness.Attr
 
 /-!
 # Binary equalizers of `FinSetSkel`
@@ -131,10 +132,6 @@ generalised over the starting vector and the starting counter. -/
 def scatter {n : ℕ} (L : List (Fin n)) (c : ℕ) (v : Vector ℕ n) :
     Vector ℕ n :=
   (L.zipIdx c).foldl (fun w (j, k) ↦ w.set j.val k j.isLt) v
-
-/-- The empty pass changes nothing. -/
-@[simp] theorem scatter_nil {n : ℕ} (c : ℕ) (v : Vector ℕ n) :
-    scatter [] c v = v := rfl
 
 /-- One step of the pass writes the head's position and continues on
 the tail with the counter advanced. -/

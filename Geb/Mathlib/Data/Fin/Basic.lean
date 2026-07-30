@@ -5,7 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Mathlib.Data.Fin.Basic
+public import Mathlib.Data.Nat.Notation
+public import Mathlib.Tactic.ToDual
 
 /-!
 # Choice-free division, remainder and pairing on `Fin`

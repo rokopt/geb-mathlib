@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.CategoryTheory.FinSetSkel.Mono
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.Data.Vector.NodupEquivFin
 public import Geb.Mathlib.Data.Vector.OfFn
 

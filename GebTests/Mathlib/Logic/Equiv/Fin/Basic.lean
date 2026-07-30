@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.Tactic.Attr.Core
 
 /-!
 # Tests for the choice-free product and exponential encodings of `Fin`

@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.Fin.Basic
-public import Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.Data.Fin.Tuple.Basic
 
 /-!
 # Choice-free product and exponential encodings of `Fin`
