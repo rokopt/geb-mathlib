@@ -23,7 +23,8 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
    constant at the representable `y j₀`, whose shape type is the total space
    `Σ j', (j' ⟶ j₀)` of that representable rather than a single shape.
 2. `iotaDiscreteShapeEquiv` — for a discrete `J` that shape type collapses to
-   `PUnit`, recovering `IR.toSlicePFunctorIota`'s single shape.
+   `PUnit`. No identification with `IR.toSlicePFunctorIota`'s shape type is
+   established; the two are at different universe instantiations.
 3. `iotaConst` — the constant functor at an *arbitrary* presheaf on `J`, which
    is what a Lemma-1-style completeness result needs and which `iota` + `sigma`
    cannot reach (they generate only coproducts of representables).
@@ -45,6 +46,12 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
 * `GebProto.arityB`, `GebProto.arityVaries` / `arityVariesData`,
   `GebProto.arityVariesShapeEquiv` — the functor with non-invertible `reindex`,
   its arity, its operations, and the terminality of its shape presheaf.
+
+## References
+
+* [GhaniNordvallForsbergMalatesta2015]
+* [GhaniMalatestaNordvallForsberg2014Agda]
+* [HancockMcBrideGhaniMalatestaAltenkirch2013]
 
 ## Tags
 
@@ -116,7 +123,8 @@ section Degeneracy
 variable {O : Type uJ}
 
 /-- Claim 2: for a discrete `J` the generalized iota's shape type collapses to
-`PUnit`, recovering the single shape of `IR.toSlicePFunctorIota`. -/
+`PUnit`. This is not an identification with `IR.toSlicePFunctorIota`'s shape
+type, which is at a different universe instantiation. -/
 def iotaDiscreteShapeEquiv (o : O) :
     (Σ j' : Discrete O, (j' ⟶ (⟨o⟩ : Discrete O))) ≃ PUnit.{uJ + 1} where
   toFun := fun _ ↦ PUnit.unit
@@ -201,13 +209,16 @@ section Functoriality
 Can the functoriality witness be attached after the codes, rather than as a
 code field defined simultaneously with the morphisms?
 
-That depends on which morphism collection is taken. Remark 3.4 of the source
-states that its results are parametric in that choice: any collection
+That depends on which morphism collection is taken. Remark 3.4 of
+[GhaniNordvallForsbergMalatesta2015] states that its results are parametric
+in that choice: any collection
 representing natural transformations between the codes works, provided
 identities and composition are definable. Its Definition 3.1 takes a natural
 transformation, whose naturality refers to the witnesses and to composition of
-code morphisms; the accompanying Agda takes a bare family of components, whose
-`δ→δ` rule mentions the witnesses only as unused implicit indices. Under the
+code morphisms; [GhaniMalatestaNordvallForsberg2014Agda] takes a bare
+family of components, whose
+`δ→δ` rule mentions the witnesses only in its conclusion's indices, never in its
+premises. Under the
 latter the morphism type does not depend on the witnesses, so the witness can
 be attached afterwards, by `IR.rec` against an already-defined morphism type.
 

@@ -4,6 +4,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Scope of this document](#scope-of-this-document)
+- [Unresolved, and blocking](#unresolved-and-blocking)
 - [Motivation](#motivation)
 - [Two prior lines of work, on independent axes](#two-prior-lines-of-work-on-independent-axes)
 - [Prototype findings](#prototype-findings)
@@ -39,6 +40,32 @@ concern. Per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape,
 this file and its plan are transient and are removed in the final commits
 of the topic branch.
 
+## Unresolved, and blocking
+
+Two decisions are open. Until they are made, § Stage 1's third and fourth
+bullets, the `PosHom` and `PosFunctoriality` rows of § Definitions, and
+obligations 1 to 6 are provisional.
+
+1. **Which morphism collection.** Definition 3.1 of
+   [GhaniNordvallForsbergMalatesta2015] takes `ρ : Nat(F, G(− ∘ α))`;
+   [GhaniMalatestaNordvallForsberg2014Agda] takes a bare family of
+   components. Remark 3.4 permits any collection "that represents
+   natural transformations between the codes … as long as the identity
+   morphisms and composition can be defined". Whether the Agda's
+   collection meets the first condition is unsettled here: it admits
+   families that are not natural, yet the paper states its material has
+   been formalised in that development. Adopting `Nat` requires
+   composition of code morphisms in order to state the premise, so codes,
+   morphisms and composition would be constructed together; adopting the
+   Agda's collection permits a sequential construction but forfeits the
+   claim of transcribing Definition 3.1.
+2. **Whether `F→` carries its functor laws.** Definition 3.1 requires
+   `F : (A → C) → IR⁺(C)` to be a functor, so `F→` must preserve
+   identities and composition. The Agda's `F→` field carries no laws.
+   Obligation 5 cannot be discharged without them, so either
+   `PosFunctoriality` becomes a law-carrying bundle or obligation 5 is
+   weakened to something correspondingly weaker.
+
 ## Motivation
 
 `IR.toSlicePFunctor` translates an `IR` code to a
@@ -65,7 +92,7 @@ directions.
 
 | Work | Direction | Cost |
 | --- | --- | --- |
-| [HancockMcBrideGhaniMalatestaAltenkirch2013] | Splits the single index type into distinct input and output types `I` and `O`, and restricts to the case where both are sets ("small"), obtaining the equivalence with dependent polynomials and indexed containers. `IR.Hom` is the homset of the interpreted functors, computed by `IR.elimAlg` on the codomain nested in `IR.elimAlg` on the domain | Smallness is a restriction, not a generalization. Definition 8's homset; the identity morphism is not given by the paper and is constructed here as `IR.id` |
+| [HancockMcBrideGhaniMalatestaAltenkirch2013] | Splits the single index type into distinct input and output types `I` and `O`, and restricts to the case where both are sets ("small"), obtaining the equivalence with dependent polynomials and indexed containers ([AltenkirchGhaniHancockMcBrideMorris2015]). `IR.Hom` is the homset of the interpreted functors, computed by `IR.elimAlg` on the codomain nested in `IR.elimAlg` on the domain | Smallness is a restriction, not a generalization. Definition 8's homset; the identity morphism is not given by the paper and is constructed here as `IR.id` |
 | [GhaniNordvallForsbergMalatesta2015] | Replaces the discrete category on `D` by an arbitrary category `C`, giving functors `Fam(C) → Fam(C)` | A type of code morphisms, defined simultaneously with the codes, whose `ι` rule carries a `C`-morphism |
 
 The axes are independent, and `PresheafPFunctor` sits past both:
@@ -197,9 +224,9 @@ induction through recursors rejects an `inductive PosHom`, since its `σ`
 and `δ` rules take `PosHom` premises. That rule sanctions a W-type
 presentation as the alternative to a computed one, and `PosHom` is an
 indexed family over `IR × IR` for which the repository's slice W-type
-machinery would serve. Stage 1 takes the computed presentation because it
-matches `IR.Hom`, which the degeneracy obligation compares against; the
-W-type presentation is not evaluated further here.
+machinery would serve. Stage 1 takes the computed presentation because
+the recursion is structural on the domain code; the W-type presentation
+is not evaluated further here.
 
 New content in this stage: `PosHom`; the functoriality witness family;
 the family functor `Typeᵒᵖ ⥤ Cat`; the interpretation of codes into
@@ -288,10 +315,14 @@ functors but not an inductive syntax for them.
 
 Stage 1 only. Each is unproved at the time of writing.
 
-1. **Construction.** That `PosHom` is definable by `IR.elimAlg` on the
-   codomain nested in `IR.elimAlg` on the domain, and that
-   `PosFunctoriality` is then definable by `IR.rec`, with its `δ` clause
-   supplied from the subcodes the step exposes.
+1. **Construction.** That `PosHom` is definable by `IR.rec` on the
+   domain with case analysis on the codomain's shape and subcodes. Not by
+   nested `IR.elimAlg`: `IR.Alg`'s `σ` and `δ` components receive
+   `A → V` and `(B → I) → V`, recursive results only, whereas
+   Definition 3.1's `σ` and `δ` morphism rules need the codomain's raw
+   subcode family to state `PosHom (f x) (g (α x))`. `IR.Hom` escapes
+   this because Definition 8 passes the codomain opaquely in those
+   clauses, its inner fold sitting only in the `ι` case.
 2. **Code identification.** That `IR⁺(C)` is adequately represented by
    `Σ γ : IR, PosFunctoriality γ`, so that identifying the pre-codes with
    the existing `IR` loses nothing. `IR⁺(C)` is an informal object, so
@@ -300,25 +331,38 @@ Stage 1 only. Each is unproved at the time of writing.
    obligations require of the bundled type.
 3. **Remark 3.4's conditions.** That the adopted morphism collection
    represents natural transformations between the codes, and that
-   identity morphisms and composition are definable for it. These are
-   exactly the conditions Remark 3.4 requires of any choice, and the
-   source's Lemma 3.2 proves them for its own.
-4. **Naturality not silently assumed.** That no step of the construction
-   or of the interpretation relies on a naturality property of `ρ` that
-   the adopted collection does not carry.
+   identity morphisms and composition are definable for it, and that
+   composition is associative with the identities as left and right
+   units, so that the codes form a category. The last is required because
+   Definition 3.1's `δ` premise calls `F` a functor into `IR⁺(C)`, which
+   presupposes a category; it is the full content of the source's
+   Lemma 3.2.
+4. **Naturality not silently assumed.** An argued claim, not a Lean
+   theorem, and contingent on unresolved decision 1: that no step relies
+   on a naturality property of `ρ` the adopted collection does not carry.
+   The concrete instance is that the source's Theorem 3.3 `δ` formula and
+   the Agda's differ by a naturality square of the interpreted `F→`.
 5. **Interpretation.** That codes with their witnesses interpret into
-   `Fam(C)`, and that the interpretation is functorial. Prototype
+   `Fam(C)`, and that the interpretation is functorial. This depends on
+   `F→` preserving identities and composition, per unresolved decision 2:
+   `⟦δ_A F⟧` preserves identities and composition only if `F→` does. Prototype
    finding 4 establishes nothing about this.
 6. **Morphism interpretation.** That code morphisms interpret as
-   `Fam(C)`-morphisms, and that the object interpretation's morphism part
-   agrees with it where both apply.
+   `Fam(C)`-morphisms, and that the source's Theorem 3.3 `δ` formula and
+   the Agda's agree, naming the hypothesis that reconciles them.
 7. **Coproducts in `Fam(C)`.** That the `CoGrothendieck` presentation of
    the family functor has the set-indexed coproducts, and the functorial
    action on them, that the interpretation of `σ` and `δ` uses; and that
    its objects and morphisms agree with that paper's Definition 2.2.
-8. **`PosHom` and `IR.Hom`.** That the two agree at discrete `C`. They do
-   not agree in general: the `ι`-clause comparison above shows `IR.Hom`
-   ignores `C`'s morphisms.
+8. **`PosHom` and `IR.Hom`.** These do not agree at any `C`, discrete or
+   not, so no obligation asserts that they do. Definition 3.1's rules are
+   all shape-preserving, whereas Definition 8's `σ` and `δ` clauses leave
+   the codomain's shape unconstrained: the type
+   `IR.Hom C₀ C₀ (sigma PEmpty f) (iota c)` is inhabited, by
+   `fun a ↦ a.elim`, while the corresponding
+   `PosHom` is empty. The obligation is to identify the relation that
+   does hold — an embedding of `PosHom` into `IR.Hom` at discrete `C`, or
+   agreement of the two interpretations on its image.
 9. **Degeneracy.** That the Stage 1 system at a discrete `C` agrees with
    the existing `IR` system, where agreement means an equivalence of code
    types carrying `PosHom` to `IR.Hom` and commuting with the two
