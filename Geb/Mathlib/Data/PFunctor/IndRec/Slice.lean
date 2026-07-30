@@ -40,8 +40,20 @@ the latter via `IR.elimAlg`.
 
 Definition 5's sigma and delta clauses are both coproducts of slice
 polynomial functors, so both are expressed through `SlicePFunctor.coprod`;
-the delta clause differs only in its summand, which extends the
-sub-polynomial by the arity's directions.
+the delta clause differs only in its summand, the product of the
+sub-polynomial with the functor `SliceDomPFunctor.representable`
+represents. Since the representable has one shape, the summand's shapes are
+`PUnit × (sub i).A` rather than `(sub i).A`; the two are isomorphic, and
+the clause is stated up to that isomorphism.
+
+The summand is equally the `O`-way product, over `SlicePFunctor.ofFamily`'s
+equivalence of `Type/O` with `O`-indexed families, of the products of the
+representable with each member of the sub-polynomial's family. It is formed
+here as `SliceDomPFunctor.prodSlice` instead, because transporting a
+`SlicePFunctor` out to its family and back introduces a `Σ` over `O` and so
+raises the shape universe by `uO`, which the fixed carrier of
+`IR.toSlicePFunctorAlg` does not admit.
+
 The recursive translation stabilizes the universe parameters: shapes at
 `max uA uB uI` (the delta case introduces shapes indexed by `B → I` at
 `Type (max uB uI)`), directions at `uB`. The constraint in
@@ -108,18 +120,16 @@ def toSlicePFunctorSigma (A : Type uA)
 
 set_option linter.checkUnivs false in
 /-- The dependent product (`delta`) case of the translation (Definition 5,
-clause 3): the coproduct, over the assignments `i : B → I`, of the
-sub-polynomial at `i` extended by `B` further directions whose
-direction-input map is `i`, so that the summand's input map is the cotuple
-`[i, (sub i).r]`. -/
+clause 3): the coproduct, over the assignments `i : B → I`, of the product
+of the sub-polynomial at `i` with the functor represented by `i` read as an
+object `(B, i)` of `Type/I`. The representable contributes the one shape
+and the `B` directions carrying `i` as their direction-input map, so the
+summand's input map is the cotuple `[i, (sub i).r]`. -/
 def toSlicePFunctorDelta (B : Type uB)
     (sub : (B → I) → SlicePFunctor.{max uA uB uI, uB, uI, uO} I O) :
     SlicePFunctor.{max uA uB uI, uB, uI, uO} I O :=
   SlicePFunctor.coprod (B → I) fun i ↦
-    { toPFunctor := ⟨(sub i).toPFunctor.A,
-        fun sa ↦ Sum B ((sub i).toPFunctor.B sa)⟩
-    , r := fun ⟨sa, p⟩ ↦ Sum.elim i (fun p' ↦ (sub i).r ⟨sa, p'⟩) p
-    , q := (sub i).q }
+    (SliceDomPFunctor.representable B i).prodSlice (sub i)
 
 set_option linter.checkUnivs false in
 /-- The algebra computing one step of the translation from `IR` codes to
