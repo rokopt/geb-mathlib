@@ -55,9 +55,9 @@ which the morphism types force, and each of `π`, `rep` and `desc`
 therefore carries an unfolding lemma stated by hand rather than
 inherited from `Vector.get_ofFnC`.
 
-`rep_π` and `π_rep` both carry `@[simp]`: each is a `get`-form round
-trip oriented toward the normal form, on the criterion
-`Vector.get_eq_getElem`'s docstring states.
+`rep_π` and `π_rep` both carry `@[simp]`: each is a round trip whose
+right-hand side is strictly smaller than its left-hand side, which is
+the criterion for marking an equation in the stated orientation.
 
 ## References
 

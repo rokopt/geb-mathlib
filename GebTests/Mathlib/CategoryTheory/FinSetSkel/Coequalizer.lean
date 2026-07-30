@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer  -- shake: keep
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
 
 /-!
 # Tests for `HasCoequalizers FinSetSkel`
@@ -23,8 +23,9 @@ category, finite set, coequalizer, test
 open CategoryTheory CategoryTheory.Limits
 
 /-- The category has binary coequalizers. -/
-example : HasCoequalizers FinSetSkel.{0} := inferInstance
+theorem hasCoequalizers_finSetSkel : HasCoequalizers FinSetSkel.{0} := inferInstance
 
 /-- A concrete parallel pair has a colimit. -/
-example (f g : (⟨3⟩ : FinSetSkel.{0}) ⟶ (⟨4⟩ : FinSetSkel.{0})) :
+theorem hasColimit_parallelPair
+    (f g : (⟨3⟩ : FinSetSkel.{0}) ⟶ (⟨4⟩ : FinSetSkel.{0})) :
     HasColimit (parallelPair f g) := inferInstance

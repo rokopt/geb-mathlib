@@ -56,7 +56,7 @@ def coeqV : Batteries.UnionFind.Sized coeqCod.len :=
   FinSetSkel.Quotient.unionFind coeqF coeqG
 
 /-- The number of classes. -/
-def coeqClasses : Nat := FinSetSkel.Quotient.len coeqV
+def coeqClasses : ℕ := FinSetSkel.Quotient.len coeqV
 
 #guard coeqClasses == 2
 
@@ -65,7 +65,7 @@ def coeqPi : coeqCod ⟶ FinSetSkel.Quotient.obj coeqCod coeqV :=
   FinSetSkel.Quotient.π coeqCod coeqV
 
 /-- The class of a sample index, as a `Nat`. -/
-def coeqPiAt (j : Fin coeqCod.len) : Nat := (coeqPi.toVec.get j).val
+def coeqPiAt (j : Fin coeqCod.len) : ℕ := (coeqPi.toVec.get j).val
 
 #guard coeqPiAt 0 == coeqPiAt 1
 #guard coeqPiAt 1 == coeqPiAt 2
