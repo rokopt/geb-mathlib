@@ -1576,7 +1576,9 @@ Expected: PASS.
 
 - [ ] **Step 6: check the axioms, test and commit**
 
-Measure the seven new declarations, and a monomorphic witness:
+Measure all ten new declarations — the object, the two injections,
+the descent morphism, the three `_get` lemmas and the three
+universal-property theorems — and a monomorphic witness:
 
 ```lean
 /-- Monomorphic witness for the axiom measurement. -/
@@ -1594,9 +1596,12 @@ built from the module under test, then `theorem`s asserting its
 computed values by `rfl` — per § Global constraints, which explains
 why an `example` alone would fail `lake shake`.
 
-Run: `lake build`, `lake build GebTests`, `lake test`, `lake lint`,
+Run: `bash scripts/lint-imports.sh`, `lake build`,
+`lake build GebTests`, `lake test`, `lake lint`,
 `lake lint -- GebTests`
-Expected: PASS.
+Expected: PASS. `lint-imports.sh` is the gate for the
+no-self-prefix-leakage constraint, and this task adds ten declarations
+to an upstream-eligible module.
 
 ```bash
 jj commit -m "feat(finsetskel): add binary coproducts over vectors"
@@ -2082,7 +2087,7 @@ instance they route through**
 
 ```lean
 /-- `FinSetSkel` has an initial object. -/
-instance : HasInitial FinSetSkel.{u} :=
+instance hasInitial : HasInitial FinSetSkel.{u} :=
   IsInitial.hasInitial initialCocone.isColimit
 
 /-- `FinSetSkel` has colimits of pairs. -/
@@ -2090,11 +2095,11 @@ instance hasColimit_pair {X Y : FinSetSkel.{u}} : HasColimit (pair X Y) :=
   ⟨⟨binaryCoproductCocone X Y⟩⟩
 
 /-- `FinSetSkel` has binary coproducts. -/
-instance : HasBinaryCoproducts FinSetSkel.{u} :=
+instance hasBinaryCoproducts : HasBinaryCoproducts FinSetSkel.{u} :=
   hasBinaryCoproducts_of_hasColimit_pair FinSetSkel.{u}
 
 /-- `FinSetSkel` has finite coproducts, which row k consumes. -/
-instance : HasFiniteCoproducts FinSetSkel.{u} :=
+instance hasFiniteCoproducts : HasFiniteCoproducts FinSetSkel.{u} :=
   hasFiniteCoproducts_of_has_binary_and_initial
 ```
 
@@ -2115,16 +2120,52 @@ Expected: PASS.
 
 - [ ] **Step 3: check the axioms**
 
-Measure the two cocones and the four instances. Expected:
-`[propext, Classical.choice, Quot.sound]`, this being the allowlisted
-wrapper. `initialCocone` may measure `[propext, Quot.sound]`; either
-is acceptable here.
+All four instances are named above — `hasInitial`, `hasColimit_pair`,
+`hasBinaryCoproducts`, `hasFiniteCoproducts` — precisely so that this
+step has something to measure: an anonymous `instance` has no
+qualified name to give `lean_verify`.
+
+The six declarations are `universe u`-polymorphic, and § Global
+constraints forbids reading a polymorphic measurement as an
+instantiation's, so measure them at monomorphic witnesses. Append,
+measure, delete:
+
+```lean
+/-- Monomorphic witness for the axiom measurement. -/
+def probeInitialCocone : ColimitCocone (Functor.empty.{0} FinSetSkel.{0}) :=
+  initialCocone
+
+/-- Monomorphic witness for the axiom measurement. -/
+def probeCoprodCocone : ColimitCocone (pair (mk 2 : FinSetSkel.{0}) (mk 3)) :=
+  binaryCoproductCocone _ _
+```
+
+The four `Prop` instances need no probe of their own: Step 4's
+`sampleInstances` resolves all of them at `FinSetSkel.{0}` in one
+`theorem`, so measure that after Step 4 and take it as their
+monomorphic witness.
+
+Expected: axioms **contained in**
+`{propext, Classical.choice, Quot.sound}`, this being the allowlisted
+wrapper — `Classical.choice` is permitted but not required, and
+`probeInitialCocone` may measure `[propext, Quot.sound]`. A tighter
+set is not a discrepancy; a wider one is.
 
 - [ ] **Step 4: write the test parallel**
 
-`GebTests/Mathlib/CategoryTheory/FinSetSkel/Shapes/Instances.lean`,
-covering the resolution of each registered `Prop` instance and the
-cartesian structure of Task 8:
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Shapes/Instances.lean` is
+the declaration- and import-free stub Task 8 Step 7 created, so this
+step adds its imports as well as its content:
+
+```lean
+import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
+```
+
+and, after the `@[expose] public section`,
+`open CategoryTheory Limits MonoidalCategory` — `⊗` is scoped notation
+and does not resolve without the last of those. The content covers the
+resolution of each registered `Prop` instance and the cartesian
+structure of Task 8:
 
 ```lean
 /-- The registered instances resolve. -/
@@ -2149,7 +2190,16 @@ olean, so `lake shake` sees the import.
 
 The `HasFiniteProducts`, `HasTerminal` and `HasBinaryProducts`
 components are the point of the test: they are not registered here,
-and their resolution is what makes rows f and j redundant. If
+and their resolution is what makes rows f and j redundant.
+
+`sampleTensorObj` asserts `(mk 2 ⊗ mk 3) = mk 6`, which holds by `rfl`
+only because Task 8 built the monoidal structure from row d's chosen
+cones, so `⊗` unfolds to `prodObj` and thence to `mk (2 * 3)`. If
+`rfl` fails, weaken the assertion to `(mk 2 ⊗ mk 3).len = 6` and try
+`rfl` again; do **not** reach for `decide`, which would want a
+`DecidableEq FinSetSkel` this plan never supplies. If that also fails,
+report to the orchestrator and drop the assertion — the instance
+resolutions above are the test's substance and stand without it. If
 `sampleTensorObj` fails to close by `rfl`, `2 * 3` is not reducing to
 `6` under `prodObj`; use `by decide` or `by simp [prodObj]` and
 report.
@@ -3649,10 +3699,10 @@ def probeLift : (mk 5 : FinSetSkel.{0}) ⟶ obj probeLiftHom probeLiftHom :=
   lift probeLiftHom probeLiftHom (𝟙 (mk 5)) rfl
 ```
 
-Expected: `[propext, Quot.sound]`. Keep both until the end of Step 6,
-which reuses `probeLiftHom`, then delete them. Run the banned-form
-grep now — `lift` is the declaration most likely to reach for
-`Vector.ofFn` by habit.
+Expected: `[propext, Quot.sound]`. Delete both at the end of Step 6,
+whose grep confirms their removal — Step 6's own snippet is
+self-contained and uses neither. Run the banned-form grep now: `lift`
+is the declaration most likely to reach for `Vector.ofFn` by habit.
 
 - [ ] **Step 6: measure let-sharing, subject against control**
 
@@ -3715,10 +3765,9 @@ produce the five is a **broken instrument, not a pass**. Report it as
 such and proceed; do not record a sharing result from a run whose
 control did not fire.
 
-- **1 and 5**: the property holds at this toolchain. `lift`, `injVec`
-  and `chiVec` are all value-returning with their `let`s after every
-  binder, so they are in the sharing shape, and Task 14's module
-  docstring records the property.
+- **1 and 5**: the property holds at this toolchain. `lift` is
+  value-returning with its `let` after every binder, so it is in the
+  sharing shape, and Task 14's module docstring records the property.
 - **1 and 1**, or **5 and 5**: the code generator no longer
   distinguishes the two shapes. Report it — Task 14's docstring
   asserts the distinction and would need rewriting, which is not this
@@ -3820,8 +3869,12 @@ registered in Task 9 because they are the hypotheses of
 
 - [ ] **Step 1: allowlist, then create the module**
 
-Append the two module names to `classicalAllowedModules` first, as in
-Task 8 Step 1.
+Append to `classicalAllowedModules` in `GebMeta.lean` first:
+
+```lean
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits,
+```
 
 ```lean
 /-
@@ -3892,8 +3945,28 @@ Expected: PASS.
 
 - [ ] **Step 2: check the axioms, test, wire and commit**
 
-Measure `equalizerCone` and a monomorphic witness at
-`FinSetSkel.{0}`. Expected:
+Create
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean`
+first, so that this step has a monomorphic witness to measure:
+
+```lean
+/-- A sample morphism, constant at index `0`. -/
+def sampleF : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
+  Hom.ofVec (Vector.ofFnC fun _ ↦ 0)
+
+/-- Permanent monomorphic witness for this module's axiom set. -/
+def sampleEqualizerCone : LimitCone (parallelPair sampleF sampleF) :=
+  equalizerCone sampleF sampleF
+
+/-- The equalizer of a morphism with itself is its whole domain. -/
+theorem sampleEqualizerCone_pt : sampleEqualizerCone.cone.pt = mk 5 := by
+  rfl
+```
+
+The pair is `sampleF` against itself, so every index agrees and the
+cone's point is `mk 5`; if the `rfl` does not close, `decide` on the
+lengths is the fallback, and report which was needed. Then measure
+`equalizerCone` and `sampleEqualizerCone`. Expected:
 `[propext, Classical.choice, Quot.sound]` — `LimitCone` and
 `parallelPair` bring the taint, which is why the module is
 allowlisted. Confirm `Equalizer/Core.lean` is unchanged by
