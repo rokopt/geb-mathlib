@@ -8,6 +8,7 @@ module
 public import Geb.Mathlib.CategoryTheory.FinCat.Basic
 public import Geb.Mathlib.CategoryTheory.FinCat.Bicategory
 public import Geb.Mathlib.CategoryTheory.FinCat.Category
+public import Geb.Mathlib.CategoryTheory.FinCat.Decidable
 public import Geb.Mathlib.CategoryTheory.FinCat.FinCategory
 public import Geb.Mathlib.CategoryTheory.FinCat.Hom
 public import Geb.Mathlib.CategoryTheory.FinCat.Hom2
