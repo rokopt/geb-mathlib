@@ -6,7 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Batteries.Data.UnionFind
-public import Mathlib.Data.List.Basic
+public import Mathlib.Data.Subtype
+public import Mathlib.Tactic.Attr.Core
 
 /-!
 # A size-indexed union-find and the fold over a list of edges

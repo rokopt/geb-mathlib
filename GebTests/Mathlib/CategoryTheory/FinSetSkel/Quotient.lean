@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
-public meta import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
+public meta import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient  -- shake: keep
 
 /-!
 # Tests for the coequalizer of a parallel pair in `FinSetSkel`

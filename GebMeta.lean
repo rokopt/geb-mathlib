@@ -68,7 +68,9 @@ def classicalAllowedModules : NameSet :=
    `Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton,
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.Skeleton,
    `Geb.Mathlib.CategoryTheory.ElementaryTopos,
-   `GebTests.Mathlib.CategoryTheory.ElementaryTopos].foldl (·.insert ·)
+   `GebTests.Mathlib.CategoryTheory.ElementaryTopos,
+   `Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer,
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.Coequalizer].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
