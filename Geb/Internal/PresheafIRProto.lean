@@ -27,11 +27,13 @@ load-bearing claims of the presheaf-generalized IR brainstorm:
 3. `iotaConst` — the constant functor at an *arbitrary* presheaf on `J`, which
    is what a Lemma-1-style completeness result needs and which `iota` + `sigma`
    cannot reach (they generate only coproducts of representables).
-4. `Functoriality` — that a witness family over pre-codes is definable by
-   `IR.rec`. It establishes the attachment mechanism only; the witness type it
-   uses is built from `IR.Hom`, whose `ι`-clause is propositional equality of
-   indices rather than a `C₀`-morphism, and is therefore the wrong type at a
-   non-discrete `C₀`.
+4. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
+   establishes. The witness type it uses is built from `IR.Hom`, whose
+   `ι`-clause is propositional equality of indices and so ignores `C₀`'s
+   morphisms; it is strictly smaller than the `C₀`-morphism the source
+   requires. The after-the-fact attachment it demonstrates is superseded: the
+   source's `δ` morphism rule takes a natural transformation, whose naturality
+   refers to the witnesses, so codes and morphisms are built simultaneously.
 5. `arityVaries` — a functor whose shape presheaf is terminal and whose
    `reindex` is not invertible.
 
