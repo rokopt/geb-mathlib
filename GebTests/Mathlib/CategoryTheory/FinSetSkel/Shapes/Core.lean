@@ -12,12 +12,13 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Core
 
 A sample point of a three-element object at a fixed universe, the
 index it looks up, its round trip through the index-function
-correspondence, terminality of the one-element object, and a computed
-binary coproduct with its descent morphism.
+correspondence, terminality of the one-element object, a computed
+binary coproduct with its descent morphism, and a computed binary
+product with its lift and the two factorisations.
 
 ## Tags
 
-category, finite set, skeleton, terminal, point, coproduct
+category, finite set, skeleton, terminal, point, coproduct, product
 -/
 
 @[expose] public section
@@ -68,3 +69,28 @@ theorem sampleSkelDesc_inl_get :
 theorem sampleSkelDesc_inr_get :
     (coprodInr (mk 2) (mk 3) ≫ sampleSkelDesc).toVec.get ⟨1, by decide⟩ =
       sampleSkelRightLeg.toVec.get ⟨1, by decide⟩ := rfl
+
+/-- A sample morphism into the two-element object. -/
+def sampleToTwo : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
+  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 2, Nat.mod_lt _ (by decide)⟩))
+
+/-- A sample morphism into the three-element object. -/
+def sampleToThree : (mk 5 : FinSetSkel.{0}) ⟶ mk 3 :=
+  Hom.ofVec (Vector.ofFnC (fun i ↦ ⟨i.1 % 3, Nat.mod_lt _ (by decide)⟩))
+
+/-- A sample lift into the binary product. -/
+def sampleProdLift : (mk 5 : FinSetSkel.{0}) ⟶ prodObj (mk 2) (mk 3) :=
+  prodLift sampleToTwo sampleToThree
+
+/-- The lift's vector pairs its two components' vectors index by
+index, `Fin.pairC a b` being `a * 3 + b`. -/
+theorem sampleProdLift_toVec :
+    sampleProdLift.toVec.toList = [0, 4, 2, 3, 1] := rfl
+
+/-- The first factorisation holds at the sample. -/
+theorem sampleProdLift_fst : sampleProdLift ≫ prodFst (mk 2) (mk 3) = sampleToTwo :=
+  prodLift_fst _ _
+
+/-- The second factorisation holds at the sample. -/
+theorem sampleProdLift_snd : sampleProdLift ≫ prodSnd (mk 2) (mk 3) = sampleToThree :=
+  prodLift_snd _ _

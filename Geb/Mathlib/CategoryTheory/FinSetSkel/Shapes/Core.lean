@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
+public import Geb.Mathlib.Data.Fin.Basic
 public import Geb.Mathlib.Logic.Equiv.Basic
 public import Mathlib.Logic.Equiv.Fin.Basic
 
@@ -128,7 +129,7 @@ at reducible transparency: `finSumFinEquiv`'s index types are stated in
 the second form and the objects of this category in the first, and a
 term mixing them is type-correct only up to delta, which `rw`'s motive
 check rejects. -/
-@[reducible] def coprodObj (X Y : FinSetSkel.{u}) : FinSetSkel.{u} :=
+abbrev coprodObj (X Y : FinSetSkel.{u}) : FinSetSkel.{u} :=
   mk (X.len + Y.len)
 
 /-- The left injection into the binary coproduct. -/
@@ -202,5 +203,70 @@ theorem coprodDesc_uniq {X Y Z : FinSetSkel.{u}} (f : X ⟶ Z)
       subst this
       rw [coprodDesc_get, Equiv.symm_apply_apply, Sum.elim_inr, ← hr, comp_get,
         coprodInr_get]
+
+/-- The binary product object: lengths multiply. Reducible for the
+reason recorded at `coprodObj`. -/
+abbrev prodObj (X Y : FinSetSkel.{u}) : FinSetSkel.{u} :=
+  mk (X.len * Y.len)
+
+/-- The first projection of the binary product. -/
+def prodFst (X Y : FinSetSkel.{u}) : prodObj X Y ⟶ X :=
+  Hom.ofVec (Vector.ofFnC Fin.divNatC)
+
+/-- The second projection of the binary product. -/
+def prodSnd (X Y : FinSetSkel.{u}) : prodObj X Y ⟶ Y :=
+  Hom.ofVec (Vector.ofFnC Fin.modNatC)
+
+/-- The morphism into a binary product determined by its two
+components. -/
+def prodLift {X Y Z : FinSetSkel.{u}} (f : Z ⟶ X) (g : Z ⟶ Y) :
+    Z ⟶ prodObj X Y :=
+  Hom.ofVec (Vector.ofFnC fun t ↦ Fin.pairC (f.toVec.get t) (g.toVec.get t))
+
+/-- The first projection acts by the quotient. -/
+@[simp] theorem prodFst_get (X Y : FinSetSkel.{u})
+    (i : Fin (prodObj X Y).len) :
+    (prodFst X Y).toVec.get i = Fin.divNatC i := by
+  rw [prodFst, Hom.toVec_ofVec]
+  exact Vector.get_ofFnC _ _
+
+/-- The second projection acts by the remainder. -/
+@[simp] theorem prodSnd_get (X Y : FinSetSkel.{u})
+    (i : Fin (prodObj X Y).len) :
+    (prodSnd X Y).toVec.get i = Fin.modNatC i := by
+  rw [prodSnd, Hom.toVec_ofVec]
+  exact Vector.get_ofFnC _ _
+
+/-- The lift acts by pairing its components' lookups. -/
+@[simp] theorem prodLift_get {X Y Z : FinSetSkel.{u}} (f : Z ⟶ X)
+    (g : Z ⟶ Y) (t : Fin Z.len) :
+    (prodLift f g).toVec.get t =
+      Fin.pairC (f.toVec.get t) (g.toVec.get t) := by
+  rw [prodLift, Hom.toVec_ofVec]
+  exact Vector.get_ofFnC _ _
+
+/-- The lift followed by the first projection is its first
+component. -/
+@[simp] theorem prodLift_fst {X Y Z : FinSetSkel.{u}} (f : Z ⟶ X)
+    (g : Z ⟶ Y) : prodLift f g ≫ prodFst X Y = f :=
+  hom_ext fun t ↦ by
+    rw [comp_get, prodLift_get, prodFst_get, Fin.divNatC_pairC]
+
+/-- The lift followed by the second projection is its second
+component. -/
+@[simp] theorem prodLift_snd {X Y Z : FinSetSkel.{u}} (f : Z ⟶ X)
+    (g : Z ⟶ Y) : prodLift f g ≫ prodSnd X Y = g :=
+  hom_ext fun t ↦ by
+    rw [comp_get, prodLift_get, prodSnd_get, Fin.modNatC_pairC]
+
+/-- A morphism agreeing with both components on the projections is
+the lift. -/
+theorem prodLift_uniq {X Y Z : FinSetSkel.{u}} (f : Z ⟶ X)
+    (g : Z ⟶ Y) (m : Z ⟶ prodObj X Y)
+    (hf : m ≫ prodFst X Y = f) (hg : m ≫ prodSnd X Y = g) :
+    m = prodLift f g :=
+  hom_ext fun t ↦ by
+    rw [prodLift_get, ← hf, ← hg, comp_get, comp_get, prodFst_get,
+      prodSnd_get, Fin.pairC_divNatC_modNatC]
 
 end FinSetSkel
