@@ -34,8 +34,8 @@ exhibiting them as a bijection `Fin m × Fin n ≃ Fin (m * n)`.
 so `Fin.modNatC` and `Fin.pairC` are present for uniformity rather
 than necessity. Both round trips stated over `Fin.divNat` inherit its
 dependence on `Classical.choice`, so a family mixing the Batteries
-declarations in would still rebuild two of the three; the three here
-are stated over one pairing throughout. `Fin.pairC a b` is
+declarations in would still rebuild two of the three round trips;
+the three here are stated over one pairing throughout. `Fin.pairC a b` is
 `a * n + b` where `Fin.mkDivMod a b` is `n * a + b`, the same pairing
 with the multiplication commuted.
 

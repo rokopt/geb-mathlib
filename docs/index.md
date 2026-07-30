@@ -308,22 +308,20 @@ import-direction rules above are enforced by
   per-shape steps; the paper states an equality, recorded here as the
   deviation to a pointwise isomorphism (the naturality upgrade is
   `IR.interpPrecompIso_natural` in `Naturality.lean`, below).
-  `IR.interpDeltaIso`
-  establishes Lemma 3: the dependent product (`delta`) interpretation
-  is isomorphic to the indexed coproduct, over its direction
-  assignments, of copowers of the subcode interpretations by the
-  morphisms into the object; the paper states a natural isomorphism,
-  recorded here as the deviation to the pointwise statement (the
-  per-summand natural form is `IR.natDeltaEquiv` in
-  `Naturality.lean`, below).
+  `IR.interpDeltaIso` establishes Lemma 3: the dependent product
+  (`delta`) interpretation is isomorphic to the indexed coproduct,
+  over its direction assignments, of copowers of the subcode
+  interpretations by the morphisms into the object; the paper states
+  a natural isomorphism, recorded here as the deviation to the
+  pointwise statement (the per-summand natural form is
+  `IR.natDeltaEquiv` in `Naturality.lean`, below).
   `Classical.choice`-free.
 - `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean` — the homset of `IR`
   codes (Hancock–McBride–Ghani–Malatesta–Altenkirch Definition 8),
   `IR.Hom`, by `IR.elimAlg` on the domain code with `IR.InnerHom`
   (`IR.elimAlg` on the codomain) in the `ι`-case. The identity morphism
   `IR.id` — a construction, since the paper gives no explicit one — is
-  built
-  through a list-generalized pre-unit `IR.preUnitStack`, using
+  built through a list-generalized pre-unit `IR.preUnitStack`, using
   injection helpers (`IR.sigmaPush`, `IR.deltaEmptyPush`,
   `IR.msigmaPush`) and a navigation construction (`IR.deltaNavBase`,
   `IR.deltaNav`) up an iterated-precomposition tower recorded by
@@ -413,7 +411,7 @@ import-direction rules above are enforced by
   list of index-value pairs into a vector in one left-to-right pass,
   with `get_scatter_of_not_mem` for an index no pair carries and
   `get_scatter_of_mem` for an index carried with a single value. The
-  second hypothesis is that uniqueness of the value rather than
+  second hypothesis is uniqueness of the value rather than
   distinctness of the indices, so a list of constant value needs no
   `Nodup`. Both lemmas quantify over the starting vector, and so
   apply part-way through a pass. `Classical.choice`-free.
@@ -560,9 +558,8 @@ import-direction rules above are enforced by
   `expEquivHom` give the adjunction's hom-level equivalence over
   index functions and over morphisms, with `expEquivIdx_naturality`
   its naturality in the parameter. The chain is stated over the raw
-  carrier
-  and the explicit product projections, never over `⊗` or `◁`, both
-  of which elaborate through the `Classical.choice`-dependent
+  carrier and the explicit product projections, never over `⊗` or `◁`,
+  both of which elaborate through the `Classical.choice`-dependent
   `CartesianMonoidalCategory` instance. Its swap step is forced by
   the adjunction `tensorLeft X ⊣ ihom X` varying in the second
   factor while `Equiv.curry` produces the first outermost.
@@ -591,14 +588,14 @@ import-direction rules above are enforced by
   `Equalizer.obj` and `Equalizer.ι` are the equalizer object and its
   injection, `Equalizer.invVec` inverts the injection in one pass
   over `Vector.scatter`, and `Equalizer.lift` is the factorisation,
-  with `ι_comp`, `lift_ι`
-  and `lift_uniq` the universal property. The inverse is a vector of
-  `ℕ` rather than of `Fin k`, which is uninhabited whenever `k = 0`
-  and `X.len > 0` — a case any pair differing at every index
-  reaches — and the `Fin k` is built at the lift site, where the
-  bound lemma applies. The agreement list and the inverse vector are
-  bound outside anything function-valued, a `let` above a lambda
-  being re-run on each application of the partially applied function.
+  with `ι_comp`, `lift_ι` and `lift_uniq` the universal property. The
+  inverse is a vector of `ℕ` rather than of `Fin k`, which is
+  uninhabited whenever `k = 0` and `X.len > 0` — a case any pair
+  differing at every index reaches — and the `Fin k` is built at the
+  lift site, where the bound lemma applies. The agreement list and
+  the inverse vector are bound outside anything function-valued, a
+  `let` above a lambda being re-run on each application of the
+  partially applied function.
   `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean` —
   `equalizerCone`, the mathlib packaging of the agreement sub-object,

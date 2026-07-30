@@ -6,7 +6,9 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.Tactic.Attr.Core -- for the `id` indirection in the `decide` proofs
+-- `Mathlib.Tactic.Attr.Core` tags `id` with `mfld_simps`; `lake shake` treats
+-- any reference to `id` as depending on the tagging module.
+import Mathlib.Tactic.Attr.Core
 
 /-!
 # Tests for the choice-free product and exponential encodings of `Fin`
