@@ -60,8 +60,8 @@ In scope:
    and 2-cell specifications.
 
 Items 2 and 3 are in scope on the strength of a near-term consumer
-outside this workstream, recorded as a `TODO.md` entry in the same
-commit as this spec. Absent that entry, CONTRIBUTING § Code is cost
+outside this workstream, recorded as a `TODO.md` entry on this branch.
+Absent that entry, CONTRIBUTING § Code is cost
 would put both with the deferred work below, the comparison with `Cat`
 being the only consumer visible from the source tree, and that
 comparison being itself deferred.
@@ -216,10 +216,13 @@ derivable at variable `S` and `T` and is not provided.
 plain `def`, so `DecidableEq (S.Mor i j)` would not be found and the
 checkers below — whose `decide` bodies are equalities at `Mor` — would
 not elaborate. An `abbrev` inherits `Fin`'s `DecidableEq` and
-`Repr`, both axiom-free. It also inherits `Fin.fintype`, which is not:
-nothing in scope needs a `Fintype` on a hom type, the checkers
-resolving through `Nat.decidableForallFin`, and § Axiom hygiene records
-why the `Fintype` route is closed.
+`Repr`, both axiom-free. It also inherits `Fin.fintype`, which is not.
+A `Fintype` on a hom type has exactly one consumer in scope,
+`FinCat.Obj.finCategory`, whose `fintypeHom` field routes to it through
+`ULift.fintype`; that is why the module holding that instance is
+allowlisted, and § Axiom hygiene records that no choice of witness
+avoids it. The checkers do not use it, resolving through
+`Nat.decidableForallFin`.
 
 and the total composition
 `FinCat.compTotal : S.Mor i j → S.Mor j k → S.Mor i k`, defined by
@@ -254,9 +257,15 @@ so closing it against `f` requires exactly `f.val = S.nonIdCount j j`.
 When both arguments are identities the outermost `else` fires and
 returns the identity, which is correct.
 
-Field types cannot mention the structure being defined, so `homCountOf`,
-`assocCheckOf` and an unbundled `compTotalOf` take `objCount`,
-`nonIdCount` and `comp` as explicit arguments. The same applies one
+Field types cannot mention the structure being defined, so everything
+the `comp` and `assoc` field types mention precedes `FinCat` and takes
+`objCount`, `nonIdCount` and `comp` as explicit arguments:
+`homCountOf`, `embOf`, `compTotalOf`, `assocCheckOf`, and unbundled
+forms of the two arithmetic lemmas below, which discharge
+`compTotalOf`'s elided bounds where no `S : FinCat` exists.
+`FinCat.emb`, `FinCat.compTotal`, `FinCat.assocCheck`,
+`FinCat.eq_of_nonIdCount_le` and `FinCat.val_eq_of_nonIdCount_le` are
+one-line bundled wrappers over them. The same applies one
 level up, to `FinCat.Hom`: its `compValid` field type needs unbundled
 `mapTotalOf` and `compCheckOf` over `objMap` and `map`. The bundled
 `FinCat.homCount`, `FinCat.Mor`, `FinCat.emb`, `FinCat.id`,
@@ -317,7 +326,9 @@ theorem FinCat.compTotal_assoc (S : FinCat) {i j k l : Fin S.objCount}
 ```
 
 proved from `assocCheck_eq_true_iff` by cases on which arguments are
-identities, using `id_comp`, `comp_id` and `val_eq_of_nonIdCount_le`. It
+identities, using `eq_of_nonIdCount_le` to substitute the index equation
+before an identity can be named, then `val_eq_of_nonIdCount_le`,
+`id_comp` and `comp_id`. It
 is named because three later constructions consume it and none can
 reach the checker directly, every one of them quantifying over full hom
 types: the `assoc` fields of `FinCat.Obj.category` and of
@@ -479,9 +490,10 @@ dependency order follows the module order rather than a single list.
 
 ### In `Hom.lean`
 
-Ordered so that each item's dependencies precede it. Items 2 to 5 are
-statements about `mapTotalOf` applied to given data and so are statable
-before `FinCat.Hom.id` and `FinCat.Hom.comp` exist.
+Ordered so that each item's dependencies precede it. Items 2 to 4 are
+statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
+`mapTotalOf` applied to given data; all are therefore statable before
+`FinCat.Hom.id` and `FinCat.Hom.comp` exist.
 
 1. `@[ext]` on `FinCat.Hom`. Because `map`'s type mentions `objMap`,
    Lean's derived lemma is heterogeneous — `objMap` equality plus `HEq`
@@ -653,7 +665,8 @@ Three of the ten failures (`id_whiskerRight`, `comp_whiskerRight`,
 `Cat.bicategory` is not a precedent for defaulting them. `Cat`'s 1-cell
 composition *is* definitionally unital, `Cat.Hom` being a one-field
 bundling of `Functor` — `Cat.lean:229-232` proves its `Strict` fields
-by `cases F; rfl`. This spec records at § Functor and 2-cell
+by `cases F; rfl` for the two unit laws and `intros; rfl` for
+associativity. This spec records at § Functor and 2-cell
 specifications that `FinCat.Hom` is not such a bundling, which is why
 the two differ.
 
@@ -808,14 +821,18 @@ which the axiom linter rejects.
 
 ```text
 Geb/Mathlib/CategoryTheory/FinCat.lean              index
-Geb/Mathlib/CategoryTheory/FinCat/Basic.lean        specification, ext,
-                                                    eq_of_nonIdCount_le,
-                                                    val_eq_of_nonIdCount_le,
-                                                    identity,
-                                                    total composition, identity
-                                                    laws, checker, reflection
-                                                    lemma, compTotal_assoc
-Geb/Mathlib/CategoryTheory/FinCat/Category.lean     object type, Category
+Geb/Mathlib/CategoryTheory/FinCat/Basic.lean        homCountOf, embOf, the
+                                                    unbundled arithmetic
+                                                    lemmas, compTotalOf,
+                                                    assocCheckOf; then the
+                                                    specification and ext, the
+                                                    bundled wrappers, the
+                                                    identity laws, the
+                                                    reflection lemma and
+                                                    compTotal_assoc
+Geb/Mathlib/CategoryTheory/FinCat/Category.lean     object type, Category,
+                                                    DecidableEq on Obj and on
+                                                    the generated homs
 Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean  diagonal FinCategory
                                                     (allowlisted)
 Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          functor specifications,
@@ -909,9 +926,12 @@ Outstanding:
    `FinCat.Hom₂.natCheck_total`, which is `whisker_exchange`. All are
    named content and all remain to be proved.
 3. The three strict equalities `FinCat.Hom.id_comp`,
-   `FinCat.Hom.comp_id` and `FinCat.Hom.assoc` hold, and the validity
+   `FinCat.Hom.comp_id` and `FinCat.Hom.assoc` hold; the validity
    fields of `FinCat.Hom.id` and `FinCat.Hom.comp` discharge as
-   § In `Hom.lean` item 6 assigns them.
+   § In `Hom.lean` item 6 assigns them; and the `natValid` fields of the
+   identity 2-cell and of the vertical composite in
+   `FinCat.Hom.instCategory` discharge from `natCheck_eq_true_iff` and,
+   for the composite, `compTotal_assoc` three times.
 4. All ten coherence theorems close at the `app` level from the
    inventory of § In `Bicategory.lean` item 3, with no `Fin.val`-level
    lemma. Four have been checked against a prototype —
@@ -956,8 +976,7 @@ new entry: [JohnsonYau2021] is present.
 
 ## Deferred work
 
-`TODO.md` carries three entries touching this workstream, all added in
-the same commit as this spec.
+`TODO.md` carries three entries touching this workstream.
 
 § PRA functors over finite-specification base categories is the
 consumer that keeps scope items 2 and 3 in scope under CONTRIBUTING
