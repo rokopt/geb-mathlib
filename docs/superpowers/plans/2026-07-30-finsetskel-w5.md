@@ -468,7 +468,8 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
   the content of their universal properties go in modules choice-free over
   the underlying data; mathlib structures and `Prop` instances go in a
   wrapper whose fields are those terms. Admit to
-  `GebMeta.classicalAllowedModules` only wrapper modules, their `GebTests`
+  `GebMeta.classicalAllowedModules` only such a wrapper, a module whose own
+  subject is a `Classical`-dependent mathlib structure, their `GebTests`
   parallels, and the linter's own test fixture. A wrapper may carry content
   where that content cannot be stated choice-free.
 - **Bound `Fin` and `Nat` arithmetic by `omega` or by cases.** Establish a
@@ -498,9 +499,13 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
   proof, so each measurement above is re-taken when the pin moves rather
   than assumed to persist.
 
-A violation of the `Vector.ofFn` ban stated in
-`Geb/Mathlib/Data/Vector/OfFn.lean` is not an elaboration error: it
-surfaces at `lake lint`.
+`Geb/Mathlib/Data/Vector/OfFn.lean`'s docstring states which lemmas of the
+`Vector.ofFn` family a choice-free module may not use, and Task 5 adds the
+attribute mechanism to it. Where that restriction is violated in a
+module held to the standard axiom set, nothing errors at elaboration and
+`lake lint` catches it. In an allowlisted module `lake lint` does not:
+`GebMeta.detectNonstandardAxiom` permits `Classical.choice` there outright,
+so the restriction is enforced only by grep and by review.
 ```
 
 - [ ] **Step 2: Append one bullet to § Structure and typeclass patterns**
@@ -566,8 +571,12 @@ That is why the rules are stated as obligations on the author rather than
 as facts about named declarations. Naming the term, pinning the instance
 and splitting modules by what can be stated choice-free all remove the
 dependence on what search selects. The module split also bounds the
-allowlist: only a wrapper, whose content is packaging, reaches
-`GebMeta.classicalAllowedModules`, so the constructive core stays strict.
+allowlist: what reaches `GebMeta.classicalAllowedModules` is a wrapper, its
+test parallel, or the linter's own fixture, so the constructive core stays
+strict. A wrapper is mostly packaging but may carry content that cannot be
+stated choice-free — a bridge through a `Classical`-dependent mathlib
+construct, say — which is why the boundary is drawn at what can be stated
+rather than at how much is written.
 Where a rule rests on a measurement, a lemma's axioms follow its proof, so
 it is re-taken on a toolchain bump.
 ```
