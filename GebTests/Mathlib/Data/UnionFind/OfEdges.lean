@@ -6,8 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.UnionFind.OfEdges
-public meta import Geb.Mathlib.Data.UnionFind.OfEdges  -- shake: keep -- guards evaluate against it
-public import Mathlib.Tactic.Push
+public meta import Geb.Mathlib.Data.UnionFind.OfEdges  -- shake: keep; #guard evaluates against it
 
 /-!
 # Tests for the size-indexed union-find
@@ -56,7 +55,7 @@ def sampleRoot (i : Fin 5) : Nat := (sampleUnionFind.root i).val
 A proof, so no reduction is needed. -/
 theorem sampleUnionFind_root_zero_eq_one :
     sampleUnionFind.root ⟨0, by decide⟩ = sampleUnionFind.root ⟨1, by decide⟩ :=
-  UnionFind.Sized.root_ofEdges_eq_of_mem (by simp [sampleEdges])
+  UnionFind.Sized.root_ofEdges_eq_of_mem (by decide)
 
 /-- The eliminator at the sample: a function constant on each class
 agrees on roots. -/

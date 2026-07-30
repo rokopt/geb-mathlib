@@ -6,31 +6,18 @@ Authors: Terence Rokop
 module
 
 public import Batteries.Data.UnionFind
-public import Mathlib.Data.Subtype
-public import Mathlib.Tactic.Attr.Core
 
 /-!
 # A size-indexed union-find and the fold over a list of edges
 
-`Batteries.UnionFind` carries its size as a field, so an index into it
-has type `Fin self.size` and every operation that changes the
+`Batteries.UnionFind` ties its size to its representation, so an index
+into it has type `Fin self.size` and every operation that changes the
 structure changes the index type. `Sized n` fixes the size as a
 subtype, so the indices are `Fin n` throughout and no cast is needed
 to pass one operation's index to the next. `Sized.ofEdges` folds
 `Sized.union` over a list of pairs, and the two theorems about it are
 the two directions of correctness: every listed pair is merged, and
 nothing beyond the listed pairs is.
-
-The second is stated as an eliminator — any `h : Fin n → α` agreeing
-on the listed pairs agrees on roots — rather than as a
-characterisation of the merged relation as the equivalence closure of
-the edges. The eliminator is what a coequalizer's factorisation law
-instantiates directly.
-
-The upstream target of this module is Batteries rather than mathlib4,
-`Sized` being a wrapper over a Batteries type; where such content
-belongs is `TODO.md` § Upstream destination of core- and
-Batteries-targeted content.
 
 ## Main definitions
 
@@ -47,6 +34,19 @@ Batteries-targeted content.
   pair is merged.
 * `Batteries.UnionFind.Sized.apply_root_ofEdges` — nothing beyond the
   listed pairs is merged, in eliminator form.
+
+## Implementation notes
+
+The second is stated as an eliminator — any `h : Fin n → α` agreeing
+on the listed pairs agrees on roots — rather than as a
+characterisation of the merged relation as the equivalence closure of
+the edges. The eliminator is what a coequalizer's factorisation law
+instantiates directly.
+
+The upstream target of this module is Batteries rather than mathlib4,
+`Sized` being a wrapper over a Batteries type; where such content
+belongs is `TODO.md` § Upstream destination of core- and
+Batteries-targeted content.
 
 ## Tags
 
