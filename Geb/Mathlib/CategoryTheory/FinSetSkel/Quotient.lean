@@ -188,4 +188,33 @@ theorem desc_get (Y : FinSetSkel.{u}) (v : UnionFind.Sized Y.len)
 
 end
 
+section
+variable {X Y Z : FinSetSkel.{u}}
+
+/-- The projection coequalizes the pair. -/
+theorem comp_π (f g : X ⟶ Y) :
+    f ≫ π Y (unionFind f g) = g ≫ π Y (unionFind f g) :=
+  hom_ext fun i ↦ by
+    rw [comp_get, comp_get, π_get, π_get]
+    exact congrArg _ (Subtype.ext (UnionFind.Sized.root_ofEdges_eq_of_mem
+      (List.mem_map.mpr ⟨i, List.mem_finRange i, rfl⟩)))
+
+/-- A morphism coequalizing the pair factors through the projection. -/
+theorem π_desc (f g : X ⟶ Y) (h : Y ⟶ Z) (w : f ≫ h = g ≫ h) :
+    π Y (unionFind f g) ≫ desc Y (unionFind f g) h = h :=
+  hom_ext fun j ↦ by
+    rw [comp_get, desc_get, rep_π]
+    refine UnionFind.Sized.apply_root_ofEdges (fun p hp ↦ ?_) j
+    obtain ⟨i, -, rfl⟩ := List.mem_map.mp hp
+    exact ((comp_get f h i).symm.trans
+      (congrArg (fun k ↦ (Hom.toVec k).get i) w)).trans (comp_get g h i)
+
+/-- The factorisation is unique. -/
+theorem desc_uniq (f g : X ⟶ Y) (h : Y ⟶ Z)
+    (m : obj Y (unionFind f g) ⟶ Z)
+    (hm : π Y (unionFind f g) ≫ m = h) : m = desc Y (unionFind f g) h :=
+  hom_ext fun c ↦ by rw [desc_get, ← hm, comp_get, π_rep]
+
+end
+
 end FinSetSkel.Quotient
