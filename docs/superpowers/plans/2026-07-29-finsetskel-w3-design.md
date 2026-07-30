@@ -755,7 +755,9 @@ public import Geb.Mathlib.Data.Fin.Basic
 
 Add `public import Geb.Mathlib.Data.Fin` to `Geb/Mathlib/Data.lean`
 and `import GebTests.Mathlib.Data.Fin` to `GebTests/Mathlib/Data.lean`,
-both in alphabetical position (after `Geb.Mathlib.Data.FinEnum`).
+both in alphabetical position, which puts `…Data.Fin` **before**
+`…Data.FinEnum` — the shorter prefix sorts first — i.e. as the first
+entry of each list.
 
 - [ ] **Step 7: write the test parallel**
 
@@ -858,7 +860,7 @@ encoding rather than by base-`n` digit arithmetic: the digit
 construction's round trips are `Finset.sum` lemmas, each a separate
 choice audit, and mathlib's version of that construction is the one
 that depends on `Classical.choice`. The recursion is an explicit
-`Nat.rec` at the motive `fun k ↦ (Fin k → Fin y) ≃ Fin (y ^ k)`, per
+`Nat.rec` at the motive `fun k ↦ (Fin k → Fin m) ≃ Fin (m ^ k)`, per
 `docs/rules/lean-coding.md` § Recursion and induction through
 recursors.
 
@@ -909,8 +911,11 @@ Expected: PASS.
 
 - [ ] **Step 3: check the axioms**
 
-Measure `finProdFinEquivC`, and additionally a monomorphic witness,
-since the constant is polymorphic:
+Measure `finProdFinEquivC`, and additionally a monomorphic witness —
+not because it is polymorphic in `m` and `n` (Task 2's six are too,
+and their own measurements suffice) but because it is an `Equiv`,
+whose `left_inv` and `right_inv` fields carry proofs whose axioms the
+constant's measurement reports only at the level it was elaborated:
 
 ```lean
 /-- Monomorphic witness for the axiom measurement. -/
@@ -1730,8 +1735,11 @@ Expected: FAIL, three placeholder errors.
     rw [comp_get, prodLift_get, prodFst_get, Fin.divNatC_pairC]
 ```
 
-for the first, `Fin.modNatC_pairC` for the second, and for
-uniqueness:
+for the first. The second is the same chain with `prodSnd_get` and
+`Fin.modNatC_pairC` in place of `prodFst_get` and `Fin.divNatC_pairC`
+— both substitutions, not just the round trip: `prodLift_snd`'s goal
+contains `prodSnd`, so `prodFst_get` has nothing to rewrite and the
+`rw` fails. And for uniqueness:
 
 ```lean
   hom_ext fun t ↦ by
@@ -1748,7 +1756,9 @@ Expected: PASS.
 
 - [ ] **Step 4: check the axioms, test and commit**
 
-Measure the seven new declarations plus a monomorphic witness:
+Measure all ten new declarations — the object, the two projections,
+the lift, their three lookup lemmas and the three universal-property
+theorems — plus a monomorphic witness:
 
 ```lean
 /-- Monomorphic witness for the axiom measurement. -/
@@ -1760,9 +1770,41 @@ def probeLift : (mk 5 : FinSetSkel.{0}) ⟶ prodObj (mk 2) (mk 3) :=
 Expected: `[propext, Quot.sound]`. Delete the witness; run the
 banned-form grep.
 
-Append to the test parallel a computed product: a lift of two sample
-morphisms with its vector asserted by `rfl`, and both factorisations
-at a sample index.
+Append to the test parallel a computed product:
+
+```lean
+/-- A sample morphism into the two-element object. -/
+def sampleToTwo : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
+  Hom.ofVec (Vector.ofFnC fun _ ↦ 0)
+
+/-- A sample morphism into the three-element object. -/
+def sampleToThree : (mk 5 : FinSetSkel.{0}) ⟶ mk 3 :=
+  Hom.ofVec (Vector.ofFnC fun _ ↦ 1)
+
+/-- A sample lift into the binary product. -/
+def sampleProdLift : (mk 5 : FinSetSkel.{0}) ⟶ prodObj (mk 2) (mk 3) :=
+  prodLift sampleToTwo sampleToThree
+
+/-- The lift pairs the two components: `0 * 3 + 1 = 1`. -/
+theorem sampleProdLift_get (t : Fin (mk 5 : FinSetSkel.{0}).len) :
+    sampleProdLift.toVec.get t = 1 := by
+  simp only [sampleProdLift, prodLift_get, sampleToTwo, sampleToThree,
+    Hom.toVec_ofVec, Vector.get_ofFnC]
+  rfl
+
+/-- The first factorisation holds at the sample. -/
+theorem sampleProdLift_fst : sampleProdLift ≫ prodFst (mk 2) (mk 3) = sampleToTwo :=
+  prodLift_fst _ _
+
+/-- The second factorisation holds at the sample. -/
+theorem sampleProdLift_snd : sampleProdLift ≫ prodSnd (mk 2) (mk 3) = sampleToThree :=
+  prodLift_snd _ _
+```
+
+`Fin.pairC a b = a * n + b` with `n = 3`, so the paired value is
+`0 * 3 + 1 = 1`. If `sampleProdLift_get`'s closing `rfl` does not
+hold, report the value it does compute rather than adjusting the
+assertion to match.
 
 Run: `bash scripts/lint-imports.sh`, `lake build`,
 `lake build GebTests`, `lake test`, `lake lint`,
@@ -2255,8 +2297,10 @@ inversion, § Every route through `incl` is choice-tainted.
 
 **Interfaces:**
 
-- Consumes: Task 5's `point`, `point_get`, `hom_ext`, `comp_get`;
-  `CategoryTheory.Mono`, `Mono.right_cancellation`,
+- Consumes: Task 5's `point` and `point_get`; W1's existing
+  `hom_ext`, `comp_get` and `Hom.ofVec`, from
+  `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` rather than from
+  Task 5; `CategoryTheory.Mono`, `Mono.right_cancellation`,
   `Function.Injective`.
 - Produces:
   `FinSetSkel.mono_iff_injective {X Y : FinSetSkel.{u}} {f : X ⟶ Y} :
@@ -2383,12 +2427,34 @@ underscores treats as an unfilled hole. Expected:
 `[propext, Quot.sound]`. Delete both afterwards, then run the
 banned-form grep.
 
-The test parallel names a sample injective morphism and applies
-`mono_iff_injective` to obtain `Mono` for it. State the injectivity
-hypothesis in the decidable form
-`∀ i j : Fin 2, v.get i = v.get j → i = j`, close that by `decide`
-over the axiom-free `DecidableEq (Fin n)`, and feed it to
-`mono_iff_injective` through `Function.Injective`'s definition.
+The test parallel:
+
+```lean
+/-- A sample injective morphism. -/
+def sampleInj : (mk 2 : FinSetSkel.{0}) ⟶ mk 3 :=
+  Hom.ofVec (Vector.ofFnC fun i ↦ (⟨i.val, by omega⟩ : Fin 3))
+
+/-- Its vector is injective, decided at `Fin 2`. -/
+theorem sampleInj_injective : Function.Injective sampleInj.toVec.get := by
+  intro i j hij
+  revert hij
+  revert i j
+  decide
+
+/-- The sample morphism is therefore a monomorphism. -/
+theorem sampleInj_mono : Mono sampleInj :=
+  mono_iff_injective.mpr sampleInj_injective
+```
+
+The injectivity is decided in the quantified-then-`revert`ed form so
+that `decide` meets a closed proposition over the axiom-free
+`DecidableEq (Fin n)`. Do **not** write `by decide` against
+`Function.Injective sampleInj.toVec.get` directly: `Function.Injective`
+is a non-reducible `def`, so instance search never reaches a quantifier
+instance, and if it did the route would be
+`Fintype.decidableForallFintype`, which constraint 9 bans and which
+this test module is not allowlisted for. If the `revert`/`decide` form
+fails, state the two-index case analysis explicitly and report.
 Do **not** write `by decide` against `Function.Injective f.toVec.get`
 directly: `Function.Injective` is a non-reducible `def`, so instance
 search never reaches a quantifier instance, and if it did the route
@@ -4041,8 +4107,11 @@ Spec sections: § Row l, § The classifier consumes the W1 inversion,
 
 **Interfaces:**
 
-- Consumes: Task 10's `mono_iff_injective`; Task 5's `Hom.ofVec`,
-  `hom_ext`, `comp_get` (W1's, re-exported through `Mono.lean`); W1's
+- Consumes: Task 10's `mono_iff_injective`; W1's existing `Hom.ofVec`,
+  `hom_ext` and `comp_get`, from
+  `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` and reached here
+  through `Mono.lean`'s import rather than produced by any W3 task;
+  W1's
   `Vector.invOfInjective` from
   `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`; `Vector.replicate`,
   `Vector.set`, `Vector.ofFnC`, `Vector.get_eq_getElem`,
