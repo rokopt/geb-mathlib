@@ -20,6 +20,9 @@ map to each component.
 
 * `FinCat.Hom₂.whiskerLeft`, `FinCat.Hom₂.whiskerRight` — the two
   whiskerings.
+* `FinCat.bicategory`, `FinCat.bicategory_strict`, `FinCat.category` —
+  the bicategory of specifications, its strictness, and the resulting
+  category.
 
 ## Main statements
 
@@ -218,5 +221,44 @@ theorem triangle (F : FinCat.Hom S T) (G : FinCat.Hom T U) :
     exact (U.comp_id (U.id (G.objMap (F.objMap i)))).trans (G.mapTotal_id (F.objMap i)).symm
 
 end Hom₂
+
+/-- The bicategory of finite-category specifications. -/
+instance bicategory : Bicategory FinCat where
+  Hom S T := FinCat.Hom S T
+  id S := FinCat.Hom.id S
+  comp F G := F.comp G
+  homCategory _ _ := FinCat.Hom.instCategory
+  whiskerLeft := FinCat.Hom₂.whiskerLeft
+  whiskerRight := FinCat.Hom₂.whiskerRight
+  associator F G H := @eqToIso _ FinCat.Hom.instCategory _ _ (FinCat.Hom.assoc F G H)
+  leftUnitor F := @eqToIso _ FinCat.Hom.instCategory _ _ (FinCat.Hom.id_comp F)
+  rightUnitor F := @eqToIso _ FinCat.Hom.instCategory _ _ (FinCat.Hom.comp_id F)
+  id_whiskerLeft := FinCat.Hom₂.id_whiskerLeft
+  comp_whiskerLeft := FinCat.Hom₂.comp_whiskerLeft
+  id_whiskerRight := FinCat.Hom₂.id_whiskerRight
+  comp_whiskerRight := FinCat.Hom₂.comp_whiskerRight
+  whiskerRight_id := FinCat.Hom₂.whiskerRight_id
+  whiskerRight_comp := FinCat.Hom₂.whiskerRight_comp
+  whisker_assoc := FinCat.Hom₂.whisker_assoc
+  whisker_exchange := FinCat.Hom₂.whisker_exchange
+  pentagon := FinCat.Hom₂.pentagon
+  triangle := FinCat.Hom₂.triangle
+
+/-- The bicategory of specifications is strict: 1-cell composition is
+unital and associative on the nose. -/
+instance bicategory_strict : Bicategory.Strict FinCat where
+  id_comp := FinCat.Hom.id_comp
+  comp_id := FinCat.Hom.comp_id
+  assoc := FinCat.Hom.assoc
+  leftUnitor_eqToIso := fun _ ↦ rfl
+  rightUnitor_eqToIso := fun _ ↦ rfl
+  associator_eqToIso := fun _ _ _ ↦ rfl
+
+/-- The category of finite-category specifications, from the strict
+bicategory. Named rather than left to the anonymous priority-100
+instance, following `CategoryTheory.Cat.category`. There are no
+universe parameters to pin: `FinCat`, `FinCat.Hom` and `FinCat.Hom₂`
+all live at `Type 0`. -/
+instance category : Category FinCat := StrictBicategory.category FinCat
 
 end FinCat
