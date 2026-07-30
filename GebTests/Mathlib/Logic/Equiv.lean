@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.Logic.Equiv.Basic
+import GebTests.Mathlib.Logic.Equiv.Fin
 
 /-!
 # Equiv tests — index

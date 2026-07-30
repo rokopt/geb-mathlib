@@ -298,7 +298,7 @@ entry, adding no Lean content.
   and derived `Prop` instances, the `docs/references.bib` citations, and
   a module docstring carrying constraint 3 and constraint 5's
   accessor rule.
-- **W3** — rows a through h, j, l and m of the operation table.
+- **W3** — rows a through e, g, h, l and m of the operation table.
 - **W4** — row i, by folding `Batteries.UnionFind.union` over the
   domain; plus a `TODO.md` § Triggers entry recording the
   mathlib-to-Batteries dependency-edge question against W4's upstream
@@ -317,17 +317,18 @@ entry, adding no Lean content.
 | c | Binary coproducts | `m + n`, via `finSumFinEquiv`, which is choice-free and usable as it stands | W3 |
 | d | Binary products | `m * n`, via `finProdFinEquiv`, which depends on `Classical.choice` through `Fin.divNat`; W3 owes a choice-free replacement | W3 |
 | e | Finite coproducts (`Prop`) | from a and c | W3 |
-| f | Finite products (`Prop`) | from b and d | W3 |
+| f | Finite products (`Prop`) | from b and d | derived |
 | g | Exponentials (`MonoidalClosed`) | `Fin m ⟹ Fin n` is `Fin (n ^ m)`, via `finFunctionFinEquiv`, which depends on `Classical.choice`; W3 owes a choice-free replacement | W3 |
-| h | Binary equalizers, and `HasEqualizers` | agreement subset | W3 |
+| h | Binary equalizers | agreement subset | W3 |
 | i | Binary coequalizers, and `HasCoequalizers` | union-find | W4 |
-| j | Finite limits (`Prop`) | from f and h | W3 |
+| j | Finite limits (`Prop`) | from f and h | derived |
 | k | Finite colimits (`Prop`) | from e and i | W5 |
 | l | Subobject classifier | `Fin 2`, via `mkOfTerminalΩ₀` | W3 |
-| m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `SimplexCategory.mono_iff_injective` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
+| m | `Mono` is an injective vector | either directly over vectors, W1 supplying `Vector.invOfInjective` as the ingredient, or through `ConcreteCategory.mono_iff_injective_of_preservesPullback` and W1's `incl`, which lands the row in W3's wrapper; W3 chooses | W3 |
 
-Rows e, j and k are reassigned to W2 below (§ Class fields); the
-table above states the plan's original per-field assignment.
+Rows f and j are derived rather than separately assigned: j is W2's
+one-time derivation below (§ Class fields), and f arrives with the
+cartesian structure.
 
 #### Class fields
 
@@ -411,12 +412,19 @@ W5's assignments become redundant.
    `finProdFinEquiv` and `finFunctionFinEquiv` are deliberately
    W3-local, each having a single consumer in W3: this constraint
    places in W1 what W3 and W4 share, and W4's row i touches neither.
+   "A single consumer in W3" holds of the two `Equiv`s, not of the
+   three `Fin` operations beneath them — `Fin.divNatC`,
+   `Fin.modNatC` and `Fin.pairC` — which rows d and g both consume.
 8. Every workstream splits its modules: constructions and the content
    of their universal properties choice-free over vectors and `Fin`;
    mathlib structures and `Prop` instances in a wrapper whose fields
    are those terms. Only wrapper modules reach
    `GebMeta.classicalAllowedModules`. A workstream whose entire
    deliverable is packaging — W2 and W5 — is a wrapper throughout.
+   A wrapper may also carry content, where that content cannot be
+   stated choice-free: W3's whiskering bridge for the exponential
+   and its derivation of the characteristic-vector hypothesis of
+   the classifier from `IsPullback` are both such.
 9. Constructions in choice-free modules use `Vector.ofFnC` and never
    `Vector.ofFn`, `Vector.range` or `Vector.finRange`, nor the
    `Array.toList_ofFn` / `List.toArray_ofFn` bridges. Binds W3
@@ -439,10 +447,67 @@ W5's assignments become redundant.
    than an impossibility: a workstream that adds one admits the same
    family into the `get` normal form.
 
+   The `Nat` division and order API states the same distinction
+   without a closed list to state it by. `Nat.div_lt_of_lt_mul` and
+   `Nat.lt_of_mul_lt_mul_left` depend on `Classical.choice`;
+   `Nat.div_mul_le_self`, `Nat.add_mul_div_right`,
+   `Nat.div_add_mod'`, `Nat.add_mul_mod_self_right`,
+   `Nat.div_eq_of_lt`, `Nat.mod_eq_of_lt`, `Nat.mod_lt` and
+   `Nat.mul_le_mul_right` do not. The two sets are interleaved and
+   neither the name nor the namespace separates them, so a bound on
+   `Fin` arithmetic is established by `omega` over hypotheses named
+   individually, or by case analysis on `Nat.lt_or_ge`, rather than
+   by the single lemma that states it. Binds W3 through W5: W3's
+   index encodings and W4's `Fin self.size` obligations both run
+   through this API. Measured at v4.33.0-rc1, and re-measured on a
+   bump, a lemma's axioms following its proof.
+
+   The equality API carries the distinction, with the repair one step
+   further than the closing paragraph below describes. At `Fin n`,
+   `BEq` and `DecidableEq` are axiom-free, while the `LawfulBEq`
+   instance search finds, `Std.LawfulBEqOrd.lawfulBEq`, depends on
+   `Classical.choice`. Every operation stated over `LawfulBEq`
+   inherits that: `decide (j ∈ l)` at `List (Fin n)`, through
+   `List.instDecidableMemOfLawfulBEq`, is choice-dependent where
+   `List.contains`, through `List.elem`, is axiom-free.
+
+   Here the choice-free term does not already exist to be named, so a
+   choice-free module supplies it. Three lines over the
+   `DecidableEq`-derived `BEq` — `eq_of_beq := of_decide_eq_true`,
+   `rfl := decide_eq_true rfl` — give a `LawfulBEq (Fin n)` depending
+   on no axioms, and with it pinned at raised priority the `∈` form
+   and the `List.contains_iff_mem` bridge both measure `propext`
+   alone. Restating each operation over the weaker class is the more
+   expensive repair and is not required. W1's pinning of morphism
+   `DecidableEq` away from `instDecidableEqOfLawfulBEq` is the same
+   link one level down. Binds W3 through W5.
+
+   `Equiv`'s transport combinators divide the same way, by which side
+   of the arrow they move. `Equiv.arrowCongr`, `Equiv.arrowCongr'`,
+   `Equiv.piCongrLeft`, `Equiv.piCongrLeft'` and `Equiv.piCongr` all
+   depend on `Classical.choice`; `Equiv.piCongrRight`, `Equiv.curry`,
+   `Equiv.piComm`, `Equiv.refl` and `Equiv.symm` do not. Transporting
+   a function type along an equivalence of its codomain is therefore
+   choice-free and transporting it along an equivalence of its domain
+   is not, so a choice-free module states the domain transport itself:
+   the six-line `Equiv.arrowCongrLeftC` in
+   `Geb/Mathlib/Logic/Equiv/Basic.lean` measures `Quot.sound` alone.
+   Binds W3 through W5; W4's renumbering of union-find roots onto an
+   initial segment is a domain transport.
+
+   Measurement is from a monomorphic declaration at the instances
+   actually used. `#print axioms` on a polymorphic constant reports
+   that constant and not any instantiation of it, so a constant whose
+   hypothesis is `[LawfulBEq α]` measures clean while every use of it
+   at `Fin n` collects `Classical.choice`; the same holds of a functor
+   argument instantiated at a choice-dependent functor.
+
    The general shape binds as well as the instances, which are not a
    closed list: where two routes inhabit one class and only one is
    choice-free, a choice-free module names the term rather than
-   leaving instance search to pick. Morphism `DecidableEq` is one
+   leaving instance search to pick, and where the only instance in
+   scope is choice-dependent it supplies its own. Morphism
+   `DecidableEq` is one
    such, pinned by W1. Deciding a proposition quantified over `Fin n`
    is another, and W3 needs it: `inferInstance` gives an
    axiom-free term, while `Fintype.decidableForallFintype`, which
@@ -466,8 +531,9 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
   W1 through W5 each entail such an amendment, W0 none.
 - Both concurrent pairs — W1 with W2, W3 with W4 — append to files
   the other also appends to: `GebMeta.classicalAllowedModules`, the
-  status table below, `docs/index.md`, and any shared directory index
-  file. These are ordinary textual conflicts, resolved by rebasing
+  status table below, `docs/index.md`, and the directory index files
+  they share, `Geb/Mathlib/CategoryTheory/FinSetSkel.lean` among
+  them. These are ordinary textual conflicts, resolved by rebasing
   the later sibling before merge.
 
 #### Status
@@ -476,9 +542,8 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | --- | --- | --- | --- |
 | W0 `Batteries.` allow-list | — | Complete | — |
 | W1 `FinSetSkel` | — | Complete | `Geb/Mathlib/Data/Vector/OfFn.lean`, `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` |
-| W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
-| W3 Rows a–h, j, l, m | W1 | Not started | — |
+| W3 Rows a–e, g, h, l, m | W1 | Complete | `Geb/Mathlib/Data/Fin/Basic.lean`, `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes/Instances.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Mono.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Instance.lean` |
 | W4 Row i, union-find | W0, W1 | Complete | `Geb/Mathlib/Data/UnionFind/OfEdges.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` |
 | W5 Row k, unification | W1–W4 | Not started | — |
 
@@ -626,6 +691,17 @@ fiber membership already implemented.
 
 ## Triggers (do when condition fires)
 
+- **Choice-free bound for `Fin.divNat` in Batteries**:
+  `Geb/Mathlib/Data/Fin/Basic.lean` exists because Batteries'
+  `Fin.divNat` proves its bound through `Nat.div_lt_of_lt_mul`,
+  which depends on `Classical.choice`, and the two round trips
+  stated over `Fin.divNat` inherit that dependence; `Fin.modNat`
+  and `Fin.mkDivMod` depend on no axiom outside `propext`. A
+  choice-free bound upstream removes the reason for the module.
+  Trigger: Batteries admits such a bound, at which point
+  `Geb/Mathlib/Data/Fin/Basic.lean` and its test parallel are
+  deleted and `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean` is restated
+  over `Fin.divNat`, `Fin.modNat` and `Fin.mkDivMod`.
 - **`lake shake --keep-implied` versus mathlib CI's plain
   `lake shake`**: a repo-wide decision, on a separate branch, on
   whether to drop `--keep-implied` from `scripts/pre-push.sh:42`
@@ -806,3 +882,11 @@ fiber membership already implemented.
   item above: both enumerate import forms and both predate the module
   system's `meta` forms. Trigger: the next branch that revises
   `scripts/extract-pr.sh`, or the first extraction of either module.
+- **`Fin.compressEquiv` has no consumer**: W1 built it for the binary
+  equalizers, which route through the agreement list instead. Besides
+  its own module, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, its
+  only occurrences are its test parallel and its `docs/index.md`
+  entry.
+  Trigger: the next occasion to revisit W1's helpers, at which point
+  decide between keeping it and removing it under
+  `CONTRIBUTING.md` § Code is cost.

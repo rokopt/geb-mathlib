@@ -46,7 +46,8 @@ import-direction rules above are enforced by
   direction of mathlib's `Equiv.piEquivSubtypeSigma`).
   `sigmaSubtypeEquiv` commutes a sigma with a fiberwise subtype;
   `arrowPEmptyEquiv` equates empty-valued function types across
-  universes. `Classical.choice`-free.
+  universes. `Equiv.arrowCongrLeftC` transports a function type along
+  an equivalence of its domain. `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/Grothendieck.lean` — covariant and
   contravariant Grothendieck constructions for 1-functors.
   `Grothendieck.functorToCat` packages mathlib's covariant
@@ -307,22 +308,20 @@ import-direction rules above are enforced by
   per-shape steps; the paper states an equality, recorded here as the
   deviation to a pointwise isomorphism (the naturality upgrade is
   `IR.interpPrecompIso_natural` in `Naturality.lean`, below).
-  `IR.interpDeltaIso`
-  establishes Lemma 3: the dependent product (`delta`) interpretation
-  is isomorphic to the indexed coproduct, over its direction
-  assignments, of copowers of the subcode interpretations by the
-  morphisms into the object; the paper states a natural isomorphism,
-  recorded here as the deviation to the pointwise statement (the
-  per-summand natural form is `IR.natDeltaEquiv` in
-  `Naturality.lean`, below).
+  `IR.interpDeltaIso` establishes Lemma 3: the dependent product
+  (`delta`) interpretation is isomorphic to the indexed coproduct,
+  over its direction assignments, of copowers of the subcode
+  interpretations by the morphisms into the object; the paper states
+  a natural isomorphism, recorded here as the deviation to the
+  pointwise statement (the per-summand natural form is
+  `IR.natDeltaEquiv` in `Naturality.lean`, below).
   `Classical.choice`-free.
 - `Geb/Mathlib/Data/PFunctor/IndRec/Hom.lean` — the homset of `IR`
   codes (Hancock–McBride–Ghani–Malatesta–Altenkirch Definition 8),
   `IR.Hom`, by `IR.elimAlg` on the domain code with `IR.InnerHom`
   (`IR.elimAlg` on the codomain) in the `ι`-case. The identity morphism
   `IR.id` — a construction, since the paper gives no explicit one — is
-  built
-  through a list-generalized pre-unit `IR.preUnitStack`, using
+  built through a list-generalized pre-unit `IR.preUnitStack`, using
   injection helpers (`IR.sigmaPush`, `IR.deltaEmptyPush`,
   `IR.msigmaPush`) and a navigation construction (`IR.deltaNavBase`,
   `IR.deltaNav`) up an iterated-precomposition tower recorded by
@@ -408,6 +407,14 @@ import-direction rules above are enforced by
   leaving the result array-backed and indexing constant-time.
   `Vector.get_eq_getElem` bridges to the `getElem` API.
   `Classical.choice`-free.
+- `Geb/Mathlib/Data/Vector/Scatter.lean` — `Vector.scatter` writes a
+  list of index-value pairs into a vector in one left-to-right pass,
+  with `get_scatter_of_not_mem` for an index no pair carries and
+  `get_scatter_of_mem` for an index carried with a single value. The
+  second hypothesis is uniqueness of the value rather than
+  distinctness of the indices, so a list of constant value needs no
+  `Nodup`. Both lemmas quantify over the starting vector, and so
+  apply part-way through a pass. `Classical.choice`-free.
 - `Geb/Mathlib/Data/List/NodupEquivFin.lean` — extensions of
   mathlib's `Mathlib/Data/List/NodupEquivFin.lean`.
   `List.Nodup.getEquivC` rebuilds `List.Nodup.getEquiv` choice-free,
@@ -419,8 +426,9 @@ import-direction rules above are enforced by
   `Classical.choice`-free.
 - `Geb/Mathlib/Data/Vector/NodupEquivFin.lean` —
   `Vector.invOfInjective` inverts an injective vector, stated over
-  the `get` view rather than over `toList.Nodup`.
-  `Classical.choice`-free.
+  the `get` view rather than over `toList.Nodup`, with
+  `invOfInjective_apply` reading its forward direction back as the
+  vector's lookup. `Classical.choice`-free.
 - `Geb/Mathlib/Data/UnionFind/OfEdges.lean` —
   `Batteries.UnionFind.Sized`, a union-find of a fixed size, so that
   its indices are `Fin n` and no operation changes their type;
@@ -478,3 +486,149 @@ import-direction rules above are enforced by
   terminal. The source and test modules are listed in
   `GebMeta.classicalAllowedModules`, the module being a wrapper over
   mathlib's `Classical`-dependent category theory.
+- `Geb/Mathlib/Data/Fin/Basic.lean` — choice-free division,
+  remainder and pairing on `Fin`. Batteries' `Fin.divNat` proves its
+  bound through `Nat.div_lt_of_lt_mul`, which depends on
+  `Classical.choice`; `Fin.divNatC`, `Fin.modNatC` and `Fin.pairC`
+  are choice-free counterparts of `Fin.divNat`, `Fin.modNat` and
+  `Fin.mkDivMod`, with the round trips `Fin.divNatC_pairC`,
+  `Fin.modNatC_pairC` and `Fin.pairC_divNatC_modNatC` exhibiting them
+  as a bijection `Fin m × Fin n ≃ Fin (m * n)`. `Fin.modNat` and
+  `Fin.mkDivMod` depend on no axiom outside `propext`, so
+  `Fin.modNatC` and `Fin.pairC` are present for uniformity rather
+  than necessity: both round trips stated over `Fin.divNat` inherit
+  its dependence on `Classical.choice`. `Nat`'s division and order
+  API interleaves choice-dependent lemmas with choice-free ones under
+  no separating convention, so the bound proofs route through `omega`
+  over individually named hypotheses or through case analysis on
+  `Nat.lt_or_ge`. The upstream target is Batteries rather than
+  mathlib4, per `TODO.md` § Upstream destination of core- and
+  Batteries-targeted content. `Classical.choice`-free.
+- `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean` — choice-free product and
+  exponential encodings of `Fin`. `finProdFinEquivC` and
+  `finFunctionFinEquivC` are the counterparts of mathlib's
+  `finProdFinEquiv` and `finFunctionFinEquiv`, which depend on
+  `Classical.choice` through `Fin.divNat` and through the
+  `Finset.sum` lemmas of the base-`m` digit round trips. The
+  exponential is an explicit `Nat.rec` on the arity over the product
+  encoding rather than digit arithmetic; `Fin.funEncodeC` and
+  `Fin.funDecodeC` name its two directions, with round trips
+  `Fin.funDecodeC_funEncodeC` and `Fin.funEncodeC_funDecodeC`.
+  `Fin.funDecodeC` returns a function, so the recursion building it
+  is re-run on each application. `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes/Core.lean` — the
+  initial and terminal objects, the binary coproducts and the binary
+  products of `FinSetSkel` over `Fin` and vectors, with the content
+  of their universal properties (`fromZero_uniq`, `toOne_uniq`,
+  `coprodDesc_uniq`, `prodLift_uniq` and the compatibilities) stated
+  in the application-normal form `f.toVec.get i`. `homEquivIdxFun`
+  packages the correspondence between morphisms and index functions
+  as an `Equiv` with both `ULift`s removed, so a universal property
+  stated over index functions transports to one over morphisms; its
+  domain transport is `Equiv.arrowCongrLeftC`, mathlib's
+  `Equiv.arrowCongr` and `Equiv.piCongrLeft` family all depending on
+  `Classical.choice`. `point` picks an index as a morphism out of the
+  one-element object. `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Shapes/Instances.lean` — the
+  mathlib packaging of `Shapes/Core.lean`: the chosen `terminalCone`,
+  `binaryProductCone`, `initialCocone` and `binaryCoproductCocone`,
+  the `cartesianMonoidalCategory` instance built from the cones by
+  `CartesianMonoidalCategory.ofChosenFiniteProducts` (which supplies
+  the associator, the unitors and the coherence conditions, so no
+  monoidal law is proved here), `isTerminalOne`, and the colimit
+  `Prop` instances `hasInitial`, `hasColimit_pair`,
+  `hasBinaryCoproducts` and `hasFiniteCoproducts`.
+  `HasFiniteProducts` arrives with the cartesian instance at priority
+  100, and with it `HasTerminal` and `HasBinaryProducts`, so none of
+  the three is registered separately. The source and test modules are
+  listed in `GebMeta.classicalAllowedModules`, since
+  `CartesianMonoidalCategory` depends on `Classical.choice`.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Mono.lean` —
+  `FinSetSkel.mono_iff_injective`: a morphism is a monomorphism
+  exactly when its vector is injective. `CategoryTheory.Mono` and
+  `CategoryTheory.Category` are both axiom-free, so the statement
+  belongs in the choice-free layer; the forward direction tests a
+  morphism against two points and the reverse is `hom_ext`. It
+  supplies the hypothesis `Vector.invOfInjective` takes, and so is a
+  prerequisite of the subobject classifier rather than a
+  free-standing characterisation. `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Core.lean` — the
+  exponential of `FinSetSkel` over carriers. The exponential object
+  of `Fin m` into `Fin y` is `Fin (y ^ m)`, and `expEquivIdx` and
+  `expEquivHom` give the adjunction's hom-level equivalence over
+  index functions and over morphisms, with `expEquivIdx_naturality`
+  its naturality in the parameter. The chain is stated over the raw
+  carrier and the explicit product projections, never over `⊗` or `◁`,
+  both of which elaborate through the `Classical.choice`-dependent
+  `CartesianMonoidalCategory` instance. Its swap step is forced by
+  the adjunction `tensorLeft X ⊣ ihom X` varying in the second
+  factor while `Equiv.curry` produces the first outermost.
+  `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Exponential/Closed.lean` —
+  the monoidal packaging of `Exponential/Core.lean`: `expHomEquiv`,
+  the hom-level equivalence in the form the adjunction consumes, and
+  the `monoidalClosed` structure, obtained from
+  `Adjunction.rightAdjointOfEquiv` and
+  `Adjunction.adjunctionOfEquivRight`, which supply the functor, the
+  unit, the counit and the triangle identities. `X ⊗ Z` is the object
+  of length `X.len * Z.len` on the nose, so restating the equivalence
+  at `X ⊗ Z ⟶ Y` transports along a definitional equality rather than
+  a comparison isomorphism. `whiskerLeft_get` and
+  `expHomEquiv_naturality` are content rather than packaging: left
+  whiskering acts on indices by pairing the first component with the
+  whiskered morphism's action on the second, and that bridge connects
+  the carrier-level naturality to `F.map f`, but `◁` elaborates
+  through the cartesian instance and so cannot be stated choice-free.
+  The source and test modules are listed in
+  `GebMeta.classicalAllowedModules`.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean` — the
+  binary equalizers of `FinSetSkel`, as the sub-object on the indices
+  at which a parallel pair agrees: `Equalizer.agree` filters
+  `List.finRange X.len` by `decide (f.toVec.get i = g.toVec.get i)`,
+  `Equalizer.obj` and `Equalizer.ι` are the equalizer object and its
+  injection, `Equalizer.invVec` inverts the injection in one pass
+  over `Vector.scatter`, and `Equalizer.lift` is the factorisation,
+  with `ι_comp`, `lift_ι` and `lift_uniq` the universal property. The
+  inverse is a vector of `ℕ` rather than of `Fin k`, which is
+  uninhabited whenever `k = 0` and `X.len > 0` — a case any pair
+  differing at every index reaches — and the `Fin k` is built at the
+  lift site, where the bound lemma applies. The agreement list and
+  the inverse vector are bound outside anything function-valued, a
+  `let` above a lambda being re-run on each application of the
+  partially applied function.
+  `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean` —
+  `equalizerCone`, the mathlib packaging of the agreement sub-object,
+  its injection and its factorisation as a
+  `LimitCone (parallelPair f g)`. `HasEqualizers` is not registered:
+  nothing in this development consumes it, and it is one of the
+  `Prop` classes derived once from `ElementaryTopos`. The source and
+  test modules are listed in `GebMeta.classicalAllowedModules`, since
+  `LimitCone` and `parallelPair` depend on `Classical.choice`.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean` — the
+  subobject classifier of `FinSetSkel` over vectors. The classifying
+  object is the object of length 2, and `Classifier.chi` sends the
+  members of a monomorphism's image to `1` and everything else to
+  `0`, with `chiVec_get_eq_one_iff` identifying the characteristic
+  vector as the indicator of the image, `chi_uniq` its uniqueness
+  among morphisms with that indicator, and `Classifier.pullbackLift`
+  the factorisation through a monomorphism of a morphism whose image
+  it contains. The orientation follows mathlib's own: `finTwoEquiv`
+  is `fun i ↦ i == 1`, and `Presheaf.truth` and `Sheaf.truth` both
+  pick the maximal sieve, so with truth at `1` every bridge to
+  `Bool`, `decide` or `Prop` is `finTwoEquiv` composed with nothing,
+  where truth at `0` would put a negation in each. The characteristic
+  vector is scattered in one pass over a `Vector.replicate` rather
+  than written index-by-index over a membership test, which would
+  rebuild and rescan the image per index. `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Instance.lean` —
+  `truth`, the morphism out of the one-element object picking the
+  index `1`, and `classifier`, the `Subobject.Classifier FinSetSkel`
+  built by `Subobject.Classifier.mkOfTerminalΩ₀` over that object, so
+  the classifier's `Ω₀` and the cartesian unit are the same object
+  and their comparison is an isomorphism between an object and
+  itself. `chi_iff_of_isPullback` is content rather than packaging:
+  it derives the vector-level hypothesis of `Classifier.chi_uniq`
+  from `IsPullback` through the pullback's universal property, which
+  cannot be stated choice-free. The source and test modules are
+  listed in `GebMeta.classicalAllowedModules`.

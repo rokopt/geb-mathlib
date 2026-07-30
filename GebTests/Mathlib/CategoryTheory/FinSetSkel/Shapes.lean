@@ -5,9 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Logic.Equiv.Basic
-public import Geb.Mathlib.Logic.Equiv.Fin
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Shapes.Core
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
 
 /-!
-# Equiv — index
+# Shapes tests — index
 -/

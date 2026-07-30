@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Mathlib.Data.Fin
 public import Geb.Mathlib.Data.FinEnum
 public import Geb.Mathlib.Data.List
 public import Geb.Mathlib.Data.PFunctor

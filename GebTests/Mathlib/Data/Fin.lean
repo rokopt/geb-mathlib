@@ -5,9 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Logic.Equiv.Basic
-public import Geb.Mathlib.Logic.Equiv.Fin
+import GebTests.Mathlib.Data.Fin.Basic
 
 /-!
-# Equiv — index
+# Fin tests — index
 -/

@@ -5,9 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Logic.Equiv.Basic
-public import Geb.Mathlib.Logic.Equiv.Fin
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Core
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance
 
 /-!
-# Equiv — index
+# Classifier tests — index
 -/
