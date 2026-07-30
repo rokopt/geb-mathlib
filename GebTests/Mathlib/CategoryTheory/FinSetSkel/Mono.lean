@@ -12,7 +12,8 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Mono
 
 A sample morphism of the two-element into the three-element object,
 the decision that its vector is injective, and the monomorphism it
-therefore is.
+therefore is; a constant morphism between the same objects, and the
+monomorphism it therefore is not.
 
 ## Tags
 
@@ -37,3 +38,13 @@ theorem sampleSkelInj_injective : Function.Injective sampleSkelInj.toVec.get := 
 /-- The sample morphism is therefore a monomorphism. -/
 theorem sampleSkelInj_mono : Mono sampleSkelInj :=
   mono_iff_injective.mpr sampleSkelInj_injective
+
+/-- A sample morphism whose vector is constant, hence not injective
+at length two. -/
+def sampleSkelNonInj : (mk 2 : FinSetSkel.{0}) ⟶ mk 3 :=
+  Hom.ofVec (Vector.ofFnC fun _ : Fin 2 ↦ (⟨0, by omega⟩ : Fin 3))
+
+/-- The constant morphism is not a monomorphism. -/
+theorem sampleSkelNonInj_not_mono : ¬ Mono sampleSkelNonInj := fun h ↦ by
+  have h01 : (0 : Fin 2) = 1 := mono_iff_injective.mp h (by decide)
+  exact absurd h01 (by decide)

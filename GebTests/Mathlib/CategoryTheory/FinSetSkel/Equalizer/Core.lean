@@ -12,8 +12,8 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Core
 
 A parallel pair of the five-element into the two-element object
 agreeing at three indices, the length of its equalizer, the entries of
-the injection, and the factorisation of a sample morphism equalising
-the pair.
+the injection, the factorisation of a sample morphism equalising the
+pair, and the length of the equalizer of a pair agreeing nowhere.
 
 ## Tags
 
@@ -74,4 +74,19 @@ theorem sampleSkelEqualizerLift_toList :
     (Equalizer.lift sampleSkelEqualizerLeft sampleSkelEqualizerRight
         sampleSkelEqualizerSection
         sampleSkelEqualizerSection_eq).toVec.toList.map Fin.val = [0, 2] := by
+  decide
+
+/-- The left member of a parallel pair agreeing nowhere. -/
+def sampleSkelDisjointLeft : (mk 3 : FinSetSkel.{0}) ⟶ mk 2 :=
+  Hom.ofVec (⟨#[0, 0, 0], rfl⟩ : Vector (Fin 2) 3)
+
+/-- The right member of a parallel pair agreeing nowhere. -/
+def sampleSkelDisjointRight : (mk 3 : FinSetSkel.{0}) ⟶ mk 2 :=
+  Hom.ofVec (⟨#[1, 1, 1], rfl⟩ : Vector (Fin 2) 3)
+
+/-- The equalizer of a pair agreeing nowhere is empty. This is the
+case for which the inverse of the injection carries naturals rather
+than indices of the equalizer object. -/
+theorem sampleSkelDisjointObj_len :
+    (Equalizer.obj sampleSkelDisjointLeft sampleSkelDisjointRight).len = 0 := by
   decide

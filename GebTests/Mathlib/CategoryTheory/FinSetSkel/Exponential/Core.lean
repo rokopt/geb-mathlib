@@ -13,7 +13,7 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Core
 A sample function on a product carrier, the index its exponential
 encoding takes at a sample parameter, naturality of that encoding
 along a sample reindexing of the parameter, and a morphism-level
-transpose at a fixed universe.
+transpose at a fixed universe with its entries.
 
 ## Tags
 
@@ -47,8 +47,17 @@ theorem sampleSkelExpFun_naturality :
       expEquivIdx 2 3 2 sampleSkelExpFun ∘ sampleSkelExpReindex :=
   expEquivIdx_naturality 2 2 3 2 sampleSkelExpReindex sampleSkelExpFun
 
-/-- The morphism-level transpose of the constant morphism at index
-`0`, at a fixed universe. Naming it gives the `GebMeta` axiom linter
-a declaration to inspect. -/
-def sampleSkelExpEquivHom : (mk 2 : FinSetSkel.{0}) ⟶ mk (3 ^ 2) :=
-  expEquivHom 2 2 3 (Hom.ofVec (Vector.ofFnC fun _ ↦ 0))
+/-- The morphism-level transpose of the sample function, at exponent
+length `2`, parameter length `3` and target length `2`, at a fixed
+universe. Naming it gives the `GebMeta` axiom linter a declaration to
+inspect. -/
+def sampleSkelExpEquivHom : (mk 3 : FinSetSkel.{0}) ⟶ mk (2 ^ 2) :=
+  expEquivHom 2 3 2 (Hom.ofVec (Vector.ofFnC sampleSkelExpFun))
+
+/-- At each parameter index `t` the transpose encodes the function
+`fun a ↦ sampleSkelExpFun (Fin.pairC a t)`, the entry at `a = 1`
+being the low digit; its entries are read as naturals, the target
+object's length not being a literal. -/
+theorem sampleSkelExpEquivHom_toList :
+    sampleSkelExpEquivHom.toVec.toList.map Fin.val = [1, 2, 1] := by
+  decide

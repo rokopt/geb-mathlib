@@ -10,8 +10,8 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance
 /-!
 # Tests for the subobject classifier of `FinSetSkel`
 
-The classifier at `Type 0`, its classifying object and its terminal
-object.
+The classifier at `Type 0`, its classifying object, its terminal
+object, and the index its truth morphism picks.
 
 ## Tags
 
@@ -31,3 +31,8 @@ theorem sampleSkelClassifier_Ω : sampleSkelClassifier.Ω = mk 2 := rfl
 
 /-- Its terminal object is the one-element object. -/
 theorem sampleSkelClassifier_Ω₀ : sampleSkelClassifier.Ω₀ = mk 1 := rfl
+
+/-- The truth morphism picks the index `1` of the classifying
+object. -/
+theorem sampleSkelTruth_toList : (truth : (mk 1 : FinSetSkel.{0}) ⟶ mk 2).toVec.toList = [1] :=
+  rfl

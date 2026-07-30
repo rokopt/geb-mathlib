@@ -60,15 +60,15 @@ def sampleSkelDesc : coprodObj (mk 2) (mk 3) ⟶ (mk 4 : FinSetSkel.{0}) :=
 theorem sampleSkelDesc_toVec :
     sampleSkelDesc.toVec.toList = [1, 2, 0, 2, 0] := rfl
 
-/-- The descent agrees with its left component at a sample index. -/
-theorem sampleSkelDesc_inl_get :
-    (coprodInl (mk 2) (mk 3) ≫ sampleSkelDesc).toVec.get ⟨1, by decide⟩ =
-      sampleSkelLeftLeg.toVec.get ⟨1, by decide⟩ := rfl
+/-- The left injection followed by the descent is the left
+component. -/
+theorem sampleSkelDesc_inl_toList :
+    (coprodInl (mk 2) (mk 3) ≫ sampleSkelDesc).toVec.toList = [1, 2] := rfl
 
-/-- The descent agrees with its right component at a sample index. -/
-theorem sampleSkelDesc_inr_get :
-    (coprodInr (mk 2) (mk 3) ≫ sampleSkelDesc).toVec.get ⟨1, by decide⟩ =
-      sampleSkelRightLeg.toVec.get ⟨1, by decide⟩ := rfl
+/-- The right injection followed by the descent is the right
+component. -/
+theorem sampleSkelDesc_inr_toList :
+    (coprodInr (mk 2) (mk 3) ≫ sampleSkelDesc).toVec.toList = [0, 2, 0] := rfl
 
 /-- A sample morphism into the two-element object. -/
 def sampleToTwo : (mk 5 : FinSetSkel.{0}) ⟶ mk 2 :=
@@ -87,10 +87,13 @@ index, `Fin.pairC a b` being `a * 3 + b`. -/
 theorem sampleProdLift_toVec :
     sampleProdLift.toVec.toList = [0, 4, 2, 3, 1] := rfl
 
-/-- The first factorisation holds at the sample. -/
-theorem sampleProdLift_fst : sampleProdLift ≫ prodFst (mk 2) (mk 3) = sampleToTwo :=
-  prodLift_fst _ _
+/-- The lift followed by the first projection, which divides by the
+second factor's length, is the first component. -/
+theorem sampleProdLift_fst :
+    (sampleProdLift ≫ prodFst (mk 2) (mk 3)).toVec.toList = [0, 1, 0, 1, 0] := rfl
 
-/-- The second factorisation holds at the sample. -/
-theorem sampleProdLift_snd : sampleProdLift ≫ prodSnd (mk 2) (mk 3) = sampleToThree :=
-  prodLift_snd _ _
+/-- The lift followed by the second projection, which takes the
+remainder modulo the second factor's length, is the second
+component. -/
+theorem sampleProdLift_snd :
+    (sampleProdLift ≫ prodSnd (mk 2) (mk 3)).toVec.toList = [0, 1, 2, 0, 1] := rfl
