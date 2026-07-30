@@ -1916,8 +1916,10 @@ inside it.
 
 Run: `lake build`
 Expected: PASS — with the two `example`s still present, so this step's
-gate covers them and not only the two cones. Delete them once it
-passes.
+gate covers them and not only the two cones. Delete the two `example`s
+and the `#check` once it passes; § Global constraints requires the
+`#check` to run in this module rather than in a probe, so it is here
+until then and not after.
 
 - [ ] **Step 4: add the cartesian instance**
 
@@ -1964,7 +1966,10 @@ declaration lives on the semi-cartesian parent and is reached through
 either spelling.
 
 Run: `lake build`
-Expected: PASS.
+Expected: PASS — with the `example` and the `#check` still present, so
+this step's gate covers them. Delete both once it passes; § Global
+constraints puts the `#check` in this module rather than in a probe,
+which is why it is here until then.
 
 - [ ] **Step 6: check the axioms**
 
@@ -3649,89 +3654,93 @@ which reuses `probeLiftHom`, then delete them. Run the banned-form
 grep now — `lift` is the declaration most likely to reach for
 `Vector.ofFn` by habit.
 
-- [ ] **Step 6: check sharing with `dbgTrace`**
+- [ ] **Step 6: measure let-sharing, subject against control**
 
-Verification obligation 9 requires this to be checked by measurement,
-not by reading the source. Temporarily add to
-`Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`, below
-`invVec`:
+Verification obligation 9 wants the let-sharing property established
+by measurement rather than by reading the source, because it is a
+property of the code generator. This step does that in one
+`lean_run_code` snippet, **touching no file in the repository**.
 
-```lean
-def invVecTraced (f g : X ⟶ Y) : Vector ℕ X.len :=
-  dbgTrace "invVec ran" fun _ ↦ scatter (agree f g) 0 (Vector.replicate X.len 0)
-```
-
-Point `lift` at `invVecTraced` in place of `invVec`, changing nothing
-else — in particular **leave the bound proof alone**. It still
-typechecks, `dbgTrace s f` reducing to `f ()`, so the `invVec_lt`
-application inside `lift` is unaffected.
-
-Then add the evaluation **to the same file**, below `lift`:
+The snippet carries two definitions of the same shape as `lift`, one
+value-returning and one function-returning, over a traced stand-in for
+the inverse pass, and evaluates both:
 
 ```lean
-#eval (lift probeLiftHom probeLiftHom (𝟙 (mk 5)) rfl).toVec.toList
+import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Core
+
+structure Box where v : List Nat
+
+/-- Stand-in for the inverse pass, traced. -/
+def scatterish (n : Nat) : List Nat :=
+  dbgTrace "PASS RAN" fun _ ↦ List.replicate n 7
+
+/-- Subject: `lift`'s shape — `let` after all binders, returns a value. -/
+def liftVal (n : Nat) : Box :=
+  let inv := scatterish n
+  ⟨(List.range 5).map (fun t ↦ inv.getD t 0)⟩
+
+/-- Control: the same `let` in a function-returning definition. -/
+def liftFun (n : Nat) : Nat → Nat :=
+  let inv := scatterish n
+  fun t ↦ inv.getD t 0
+
+#eval (liftVal 5).v
+#eval (List.range 5).map (liftFun 5)
 ```
 
-Run: `lake build`, and read the `dbgTrace` lines from its output —
-`lean_diagnostic_messages` on the file shows the same.
+Run it through the `lean-lsp` MCP's `lean_run_code`; `dbgTrace` output
+from `#eval` is captured into the message log as an `info` diagnostic,
+so it comes back in the result.
 
-**Do not use `lean_run_code` here.** A snippet resolves
-`import Geb.…FinSetSkel.Equalizer.Core` against the *built* olean, so
-it would see the old `lift`, emit no trace, and the check would pass
-for the wrong reason. The measurement has to run against the edited
-file, which means an in-module `#eval` and a build.
+Expected: **one** `PASS RAN` from the first `#eval` and **five** from
+the second.
 
-`probeLiftHom : mk 5 ⟶ mk 2` is Step 5's, so the domain has five
-indices and an unshared pass traces five times.
+The control is the point of the step. One trace from the subject alone
+is equally consistent with sharing and with the measurement having
+collapsed — the term folded at elaboration, the value cached, the
+trace firing for an unrelated reason — so a run that does not also
+produce the five is a **broken instrument, not a pass**. Report it as
+such and proceed; do not record a sharing result from a run whose
+control did not fire.
 
-Evaluate the **vector**, not the morphism: `Hom` is sealed
-`irreducible` and carries no `Repr`, so `#eval` of the morphism would
-refuse the value, emit no trace, and again pass for the wrong reason.
+- **1 and 5**: the property holds at this toolchain. `lift`, `injVec`
+  and `chiVec` are all value-returning with their `let`s after every
+  binder, so they are in the sharing shape, and Task 14's module
+  docstring records the property.
+- **1 and 1**, or **5 and 5**: the code generator no longer
+  distinguishes the two shapes. Report it — Task 14's docstring
+  asserts the distinction and would need rewriting, which is not this
+  task's to do.
 
-Expected: one trace line, not five.
-
-- **Five lines**: the `let` is not shared. **Stop and report.** Do not
-  restructure `lift`: it is a deliverable Task 16 consumes, its shape
-  is the one the spec's § Row h prescribes, and this plan authorises
-  no alternative. Routing the finding is the orchestrator's.
-- **No line at all**, after a `lake build` that succeeded: report
-  `unobservable` and proceed. Do **not** read absence as evidence of
-  sharing; it is evidence of nothing.
-
-Then revert **all three** edits — `invVecTraced`, the redirection of
-`lift`, and the `#eval` — delete Step 5's two witnesses, and confirm
-with
+Nothing is added to `Equalizer/Core.lean`, so there is nothing to
+revert and no guard grep to run. Delete Step 5's two witnesses
+(`probeLiftHom`, `probeLift`) before Step 7 commits, and confirm with
 
 ```bash
-grep -n "dbgTrace\|#eval" \
+grep -n "probeLift\|dbgTrace\|#eval" \
   Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean
 ```
 
-expecting no match, before Step 7 commits. A `dbgTrace` left in a
-choice-free module is caught by neither `#print axioms` nor
-`scripts/lint-imports.sh`.
+expecting no match: a probe left in an upstream-eligible module builds
+cleanly, measures clean and passes `lint-imports.sh`, so nothing else
+catches it (verification obligation 8).
 
-The measurement — that a `let` above the lambda of a
-function-returning definition re-runs per application while the same
-`let` in a value-returning one does not — is a property of the code
-generator, so it is re-taken on a toolchain bump.
+This replaces an earlier design that edited the module — adding a
+traced copy of the inverse pass, redirecting `lift` at it, adding an
+in-module `#eval`, building, then reverting all three. That measured a
+redirected `lift` rather than the deliverable, so it measured a copy
+either way, and it cost three edits to an upstream-eligible
+choice-free module plus a build and a revert for the same evidence.
 
-Obligation 9's other candidate is `Fin.funDecodeC` of Task 4, which
-returns `Fin n → Fin m`. It lives in
-`Geb/Mathlib/Logic/Equiv/Fin/Basic.lean`, which this module does not
-import and which this task does not edit, so check it in a
-`lean_run_code` snippet: that needs no source edit and its imports are
-all built. Read that module, copy `funDecodeC`'s body into the snippet
-as `funDecodeCTraced` with the per-index computation wrapped in
-`dbgTrace`, apply it at two indices, and count the lines. Importing
-the module and evaluating `Fin.funDecodeC` itself would trace nothing —
-the `dbgTrace` has to be in the copy.
-
-If it re-runs, do not restructure — nothing in W3 applies a partially
-applied `funDecodeC` in a loop — and do not edit `docs/index.md`,
-which does not yet carry that module's entry and is not this task's
-file. Report the finding to the orchestrator; the note belongs in
-Task 19 Step 2's entry for that module.
+**Row g's `Fin.funDecodeC` gets no separate check**, and that is a
+departure from the spec's obligation 9, which names it as the other
+candidate. It returns `Fin n → Fin m`, so re-running per application
+is its *expected* behaviour; the plan's own conclusion is that this is
+harmless, nothing in W3 applying a partially applied `funDecodeC` in a
+loop; and the control above already establishes the general property
+at exactly that shape. A measurement whose outcome is predicted, whose
+finding is pre-declared harmless, and which has no consumer, is cost
+without return. Report the departure with the finished plan.
 
 - [ ] **Step 7: write the test parallel and commit**
 
@@ -3879,8 +3888,9 @@ re-measuring its permanent witness `sampleEqualizerInj`, in
 `GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`.
 Expected: `[propext, Quot.sound]`.
 
-The test parallel names the cone at a concrete pair and asserts its
-point's length.
+Create
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean`; it
+names the cone at a concrete pair and asserts its point's length.
 
 Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits`
 to `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer.lean`, and the
@@ -4548,8 +4558,8 @@ the written binders before the instance, so the instance lambda is
 auto-inserted as a trailing one.
 
 The `_` in `(fun m ↦ _)`, by contrast, **is** a hole to fill, and it
-is filled below in this same step. Two different `_`s, four lines
-apart: the one in the `uniq` binder list stays, the one in the
+is filled below in this same step. Two different `_`s on consecutive
+lines: the one in the `uniq` binder list stays, the one in the
 `isPullback` argument goes. This step's `Expected:` therefore reads
 PASS *once the hole is filled* — the plan's convention is that a step
 which states a declaration unproved expects FAIL with placeholder
@@ -4559,8 +4569,8 @@ end.
 The `isPullback` argument is the remaining hole and the largest
 obligation of this task. Its statement is
 `IsPullback m (isTerminalOne.from U) (Classifier.chi m) truth`.
-Replace the fifth argument, `(fun m ↦ _)` above, with the following —
-four named pieces:
+Replace `(fun m ↦ _)` above — the sixth argument, `isPullback` — with
+the following, in four named pieces:
 
 ```lean
     (fun m ↦ by
@@ -4641,8 +4651,10 @@ by re-measuring its permanent witness `sampleChiVec`, in
 `GebTests/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean`.
 Expected: `[propext, Quot.sound]`.
 
-The test parallel names `classifier` in a `def` and asserts
-`classifier.Ω = mk 2` and `classifier.Ω₀ = mk 1` by `rfl`.
+Create
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/Classifier/Instance.lean`;
+it names `classifier` in a `def` and asserts `classifier.Ω = mk 2` and
+`classifier.Ω₀ = mk 1` by `rfl`.
 
 Add `public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance`
 to `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier.lean`, and the
@@ -4920,6 +4932,40 @@ lemmas and universal property (Tasks 14 and 15), row l's fold lemmas,
 inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
+
+**Round 12** (two fresh agents: one asked whether Task 15's sharing
+step was sound *or should be replaced*, one on the round-11 repairs)
+returned one blocker and four serious findings, all applied — and the
+blocker's fix was to delete the apparatus rather than repair it a
+fourth time.
+
+The blocker: the step had **no positive control**. `lift` returns a
+value, so one trace is equally consistent with sharing and with the
+measurement having collapsed — the term folded at elaboration, the
+value cached, the trace firing for an unrelated reason. Three rounds
+of repair had each removed one way for the step to report success
+having measured nothing, and left the general one untouched. The
+reviewer also established by probe that `dbgTrace` from `#eval` *is*
+captured into the message log as an `info` diagnostic, so
+`lean_run_code` can observe it after all — which dissolved round 11's
+prohibition, since a snippet carrying its own copies never imports the
+edited module. Step 6 is now a single snippet with subject and control
+side by side, expecting one trace and five, touching no file in the
+repository: no edits to an upstream-eligible module, no build, no
+revert, no guard grep, and self-validating, because a run whose
+control does not fire is a broken instrument rather than a pass. The
+`Fin.funDecodeC` sub-check is deleted — its outcome was predicted, its
+finding pre-declared harmless, and it had no consumer — which is a
+fourth departure from the spec, obligation 9 naming it, and is
+reported as such.
+
+Also applied: the confirmation grep did not cover Step 5's two
+witnesses, so a probe could have shipped into an upstream-eligible
+module past every check; Task 18 Step 3 called `isPullback` "the fifth
+argument" when it is the sixth, in a step whose own text correctly
+calls `uniq` the seventh, so an executor trusting the ordinal would
+have overwritten `χ`; and Task 8's two in-module `#check`s had no
+deletion instruction and would have been committed.
 
 **Round 11** (two fresh agents, both aimed at the previous round's
 repairs rather than at unread tasks). The Lean lens returned
