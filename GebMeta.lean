@@ -80,7 +80,9 @@ def classicalAllowedModules : NameSet :=
    `Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance,
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.Classifier.Instance,
    `Geb.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos,
-   `GebTests.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos].foldl (·.insert ·)
+   `GebTests.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos,
+   `Geb.Mathlib.CategoryTheory.FinCat.FinCategory,
+   `GebTests.Mathlib.CategoryTheory.FinCat.FinCategory].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the

@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinCat.Basic
 public import Geb.Mathlib.CategoryTheory.FinCat.Category
+public import Geb.Mathlib.CategoryTheory.FinCat.FinCategory
 
 /-!
 # FinCat — index
