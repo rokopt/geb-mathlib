@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Core
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Equalizer.Limits
 
 /-!
 # Equalizer tests — index
