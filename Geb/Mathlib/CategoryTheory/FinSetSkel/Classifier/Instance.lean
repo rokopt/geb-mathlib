@@ -27,8 +27,8 @@ universal property and cannot be stated choice-free.
 
 `Ω₀` is the object `mk 1`, which the cartesian structure also takes
 as its unit, so the classifier's `Ω₀` and the cartesian unit are the
-same object and their comparison is an
-isomorphism between an object and itself.
+same object and their comparison is an isomorphism between an object
+and itself.
 
 ## Main definitions
 

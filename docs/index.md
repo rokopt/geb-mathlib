@@ -609,8 +609,7 @@ import-direction rules above are enforced by
   where truth at `0` would put a negation in each. The characteristic
   vector is scattered in one pass over a `Vector.replicate` rather
   than written index-by-index over a membership test, which would
-  rebuild and rescan the image per index.
-  `Classical.choice`-free.
+  rebuild and rescan the image per index. `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Instance.lean` —
   `truth`, the morphism out of the one-element object picking the
   index `1`, and `classifier`, the `Subobject.Classifier FinSetSkel`

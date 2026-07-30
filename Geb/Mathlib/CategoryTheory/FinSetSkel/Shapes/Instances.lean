@@ -14,11 +14,14 @@ public import Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinary
 
 The mathlib packaging of `Shapes/Core.lean`'s initial and terminal
 objects, binary coproducts and binary products, together with the
-finite coproducts they generate: the chosen cones and cocones, the
+finite coproducts the initial object and the binary coproducts
+generate: the chosen cones and cocones, the
 `CartesianMonoidalCategory` instance built from the cones, and the
-`Prop` instances a later workstream consumes.
-`CartesianMonoidalCategory` depends on `Classical.choice`, so this
-module is allowlisted and the constructions it packages are not.
+colimit `Prop` instances.
+mathlib's cone and cocone API depends on `Classical.choice` —
+`CartesianMonoidalCategory` and the empty-diagram (co)cones
+independently — so this module is allowlisted and the constructions
+it packages are not.
 
 `CartesianMonoidalCategory.ofChosenFiniteProducts` takes a terminal
 cone and a family of binary product cones and supplies the
@@ -107,8 +110,8 @@ instance hasColimit_pair {X Y : FinSetSkel.{u}} : HasColimit (pair X Y) :=
 instance hasBinaryCoproducts : HasBinaryCoproducts FinSetSkel.{u} :=
   hasBinaryCoproducts_of_hasColimit_pair FinSetSkel.{u}
 
-/-- `FinSetSkel` has finite coproducts, one of the two hypotheses of
-the finite colimits a later workstream derives. -/
+/-- `FinSetSkel` has finite coproducts, from the initial object and
+the binary coproducts. -/
 instance hasFiniteCoproducts : HasFiniteCoproducts FinSetSkel.{u} :=
   hasFiniteCoproducts_of_has_binary_and_initial
 
