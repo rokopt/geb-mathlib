@@ -387,6 +387,53 @@ EOF
 assert_case "public meta import does not mask leakage" 1 \
   "'Geb.Mathlib.' outside ^import line"
 
+# Case 33: a source module importing a test module through a
+# `public meta import`.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/MetaTestImport.lean" <<'EOF'
+module
+
+public meta import GebTests.Mathlib.Foo
+EOF
+assert_case "public meta import forbidding GebTests import" 1 \
+  "forbidden import 'public meta import GebTests.Mathlib.Foo'"
+
+# Case 34: a forbidden cross-subtree prefix through a bare
+# `meta import`.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/MetaCrossSubtree.lean" <<'EOF'
+module
+
+meta import Cslib.Data.Thing
+EOF
+assert_case "meta import forbidden cross-subtree" 1 \
+  "forbidden import 'meta import Cslib.Data.Thing'"
+
+# Case 35: a bare umbrella through a `public meta import`.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/MetaUmbrella.lean" <<'EOF'
+module
+
+public meta import Mathlib
+EOF
+assert_case "public meta import bare umbrella" 1 \
+  "bare umbrella 'public meta import Mathlib'"
+
+# Case 36: the leakage exemption is anchored at the start of the line.
+# A comment merely containing the word `import` is not an import line,
+# so a self-prefix in it is still leakage.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/CommentLeak.lean" <<'EOF'
+module
+
+public import Geb.Mathlib.Bar
+public meta import Geb.Mathlib.Bar
+
+-- do not import Geb.Mathlib.Baz here
+EOF
+assert_case "comment containing 'import' is not an import line" 1 \
+  "'Geb.Mathlib.' outside ^import line"
+
 echo ""
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

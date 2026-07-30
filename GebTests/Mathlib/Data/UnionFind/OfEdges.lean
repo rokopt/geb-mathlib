@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.UnionFind.OfEdges
-public meta import Geb.Mathlib.Data.UnionFind.OfEdges
+public meta import Geb.Mathlib.Data.UnionFind.OfEdges  -- the `#guard`s evaluate against it
 
 /-!
 # Tests for the size-indexed union-find
@@ -21,9 +21,7 @@ Nothing built from `UnionFind.union` or `rootD` reduces in the kernel,
 `root`, `findAux` and `find` being well-founded recursions whose
 measure is the `noncomputable` `rankMax`. The assertions are therefore
 `#guard` rather than `by decide` or `by rfl`, and each goes through a
-locally declared wrapper. Evaluating them further requires the module
-under test to be available to meta code, which is the second import
-line's purpose.
+locally declared wrapper.
 
 ## Tags
 
