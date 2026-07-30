@@ -43,10 +43,10 @@ characterisation of the merged relation as the equivalence closure of
 the edges. The eliminator is what a coequalizer's factorisation law
 instantiates directly.
 
-The upstream target of this module is Batteries rather than mathlib4,
-`Sized` being a wrapper over a Batteries type; where such content
-belongs is `TODO.md` § Upstream destination of core- and
-Batteries-targeted content.
+This module does not extract to mathlib4, `Sized` being a wrapper over
+a Batteries type, and it imports nothing outside core and Batteries.
+Where such content belongs is `TODO.md` § Upstream destination of core-
+and Batteries-targeted content.
 
 ## Tags
 

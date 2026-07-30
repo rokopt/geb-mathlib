@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.UnionFind.OfEdges
-public meta import Geb.Mathlib.Data.UnionFind.OfEdges  -- shake: keep; #guard evaluates against it
+public meta import Geb.Mathlib.Data.UnionFind.OfEdges  -- shake: keep; #guard needs it
 
 /-!
 # Tests for the size-indexed union-find

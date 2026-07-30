@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
-public meta import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient  -- shake: keep
+public meta import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient  -- shake: keep; #guard needs it
 
 /-!
 # Tests for the coequalizer of a parallel pair in `FinSetSkel`
@@ -64,7 +64,7 @@ def coeqClasses : ℕ := FinSetSkel.Quotient.len coeqV
 def coeqPi : coeqCod ⟶ FinSetSkel.Quotient.obj coeqCod coeqV :=
   FinSetSkel.Quotient.π coeqCod coeqV
 
-/-- The class of a sample index, as a `Nat`. -/
+/-- The class of a sample index, as an `ℕ`. -/
 def coeqPiAt (j : Fin coeqCod.len) : ℕ := (coeqPi.toVec.get j).val
 
 #guard coeqPiAt 0 == coeqPiAt 1

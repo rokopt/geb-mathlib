@@ -772,10 +772,22 @@ fiber membership already implemented.
   docstrings under `Geb/Mathlib/` name repo-relative paths and
   workstream labels that carry no meaning for a mathlib reviewer, and
   `scripts/extract-pr.sh` rewrites import lines only, so such prose
-  survives extraction unchanged. Instances: the module path named in
+  survives extraction unchanged. Instances include the module path in
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean`, "W1's
   application-normal form" in
   `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, and the same
   pattern in `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`. Repo-wide,
   so no one workstream's to fix. Trigger: a repo-wide pass over
   upstream-eligible docstrings, on its own branch.
+- **`scripts/extract-pr.sh` does not rewrite `meta import` lines**: its
+  rewrite is anchored to `^(public import|import)`, so a
+  `public meta import` of a self-prefixed sibling is emitted with the
+  `Geb.Mathlib.` prefix intact and the extracted file does not compile.
+  The two such lines are
+  `GebTests/Mathlib/Data/UnionFind/OfEdges.lean` and
+  `GebTests/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, where the
+  `#guard` assertions need the module under test available to meta
+  code. This is the rewriter's counterpart to the `lint-imports.sh`
+  item above: both enumerate import forms and both predate the module
+  system's `meta` forms. Trigger: the next branch that revises
+  `scripts/extract-pr.sh`, or the first extraction of either module.
