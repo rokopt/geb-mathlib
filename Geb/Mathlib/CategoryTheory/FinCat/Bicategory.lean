@@ -9,7 +9,7 @@ public import Geb.Mathlib.CategoryTheory.FinCat.Hom2
 public import Mathlib.CategoryTheory.Bicategory.Strict.Basic
 
 /-!
-# Whiskering of 2-cell specifications
+# The bicategory of finite-category specifications
 
 Whiskering a 2-cell specification by a 1-cell specification on either
 side. Left whiskering reindexes the components along the inner 1-cell's

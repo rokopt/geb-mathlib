@@ -48,7 +48,8 @@ open CategoryTheory
 theorem category_id_comp_arrowPointSrc : 𝟙 terminalCat ≫ arrowPointSrc = arrowPointSrc :=
   FinCat.Hom.id_comp arrowPointSrc
 
-/-- Assertion 2: and a right unit. -/
+/-- Assertion 2: the identity 1-cell is a right unit, restated through
+`≫` and `𝟙` and discharged by the equality of specifications. -/
 theorem category_comp_id_arrowPointSrc : arrowPointSrc ≫ 𝟙 walkingArrow = arrowPointSrc :=
   FinCat.Hom.comp_id arrowPointSrc
 

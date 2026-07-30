@@ -16,7 +16,7 @@ specification level, two functor specifications at the 1-cell level,
 and two 2-cell specifications at the 2-cell level. Each runs the
 decision procedure: the negative assertions state a disequality, and
 the positive ones state what the procedure returns, so that neither
-direction is a definitional unfolding.
+direction closes by reflexivity of its two sides.
 
 The negative assertions carry the test: a procedure that accepts
 everything passes every positive one, and one that rejects everything
