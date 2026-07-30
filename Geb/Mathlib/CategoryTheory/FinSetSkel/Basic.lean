@@ -176,12 +176,12 @@ instance smallCategory : SmallCategory FinSetSkel.{u} where
     (h : ∀ i, f.toVec.get i = g.toVec.get i) : f = g := Hom.ext' h
 
 /-- The categorical identity acts as the identity on indices. This
-fixes the application-normal form for W3 and W4. -/
+fixes the application-normal form for downstream statements. -/
 @[simp] theorem id_get (X : FinSetSkel.{u}) (i : Fin X.len) :
     (𝟙 X : X ⟶ X).toVec.get i = i := Hom.id_get' X i
 
 /-- Categorical composition acts by composing index lookups. This
-fixes the application-normal form for W3 and W4. -/
+fixes the application-normal form for downstream statements. -/
 @[simp] theorem comp_get {X Y Z : FinSetSkel.{u}} (f : X ⟶ Y)
     (g : Y ⟶ Z) (i : Fin X.len) :
     (f ≫ g).toVec.get i = g.toVec.get (f.toVec.get i) :=

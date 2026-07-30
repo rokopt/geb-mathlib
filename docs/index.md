@@ -452,10 +452,11 @@ import-direction rules above are enforced by
   `Batteries.UnionFind.Sized.ofEdges`, the roots are renumbered onto
   an initial segment by `Fin.compressEquiv`, and the carrier's length
   is the number of roots. The carrier, projection and factorisation
-  are stated over W1's application-normal form, and each of the three
-  definitions calling `Vector.ofFnC` carries an unfolding lemma
-  stated by hand, `rw [Vector.get_ofFnC]` reporting no occurrence of
-  the pattern where the index types differ. `Classical.choice`-free.
+  are stated over the application-normal form `f.toVec.get i`, and
+  each of the three definitions calling `Vector.ofFnC` carries an
+  unfolding lemma stated by hand, `rw [Vector.get_ofFnC]` reporting no
+  occurrence of the pattern where the index types differ.
+  `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` — the
   packaging of that construction as `ColimitCocone (parallelPair f g)`,
   the per-diagram `HasColimit`, and `HasCoequalizers FinSetSkel`.
