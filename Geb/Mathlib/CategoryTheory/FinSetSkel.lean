@@ -8,6 +8,7 @@ module
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Quotient
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton
 
 /-!
