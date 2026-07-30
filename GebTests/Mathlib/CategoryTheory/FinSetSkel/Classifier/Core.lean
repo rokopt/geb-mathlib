@@ -60,3 +60,10 @@ theorem sampleSkelPullbackLift_comp :
       sampleSkelChiSection :=
   Classifier.pullbackLift_comp _ _ _ _
 
+/-- The factorisation sends each index to the position of its value in
+the monomorphism's vector. -/
+theorem sampleSkelPullbackLift_toList :
+    (Classifier.pullbackLift sampleSkelMono sampleSkelMono_injective
+      sampleSkelChiSection sampleSkelChiSection_mem).toVec.toList = [1, 0, 1] := by
+  decide
+

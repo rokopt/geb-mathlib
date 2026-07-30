@@ -67,3 +67,12 @@ theorem sampleSkelEqualizerLift_ι :
       sampleSkelEqualizerInj = sampleSkelEqualizerSection :=
   Equalizer.lift_ι _ _ _ _
 
+/-- The factorisation sends each index to the position of its value in
+the agreement list; its entries are read as naturals, the equalizer
+object's length not being a literal. -/
+theorem sampleSkelEqualizerLift_toList :
+    (Equalizer.lift sampleSkelEqualizerLeft sampleSkelEqualizerRight
+        sampleSkelEqualizerSection
+        sampleSkelEqualizerSection_eq).toVec.toList.map Fin.val = [0, 2] := by
+  decide
+
