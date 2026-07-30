@@ -9,7 +9,6 @@ public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.Data.Vector.OfFn
 public import Geb.Mathlib.Data.Vector.Scatter
 public import Mathlib.Data.List.Nodup
-public import Mathlib.Tactic.Finiteness.Attr
 
 /-!
 # Binary equalizers of `FinSetSkel`
