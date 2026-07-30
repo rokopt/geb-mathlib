@@ -7,6 +7,7 @@ module
 
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Basic
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Mono
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Quotient
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Shapes
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Skeleton
