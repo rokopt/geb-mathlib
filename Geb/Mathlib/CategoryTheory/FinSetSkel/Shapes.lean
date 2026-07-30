@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Core
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
 
 /-!
 # Shapes — index

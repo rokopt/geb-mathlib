@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Shapes.Core
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
 
 /-!
 # Shapes tests — index
