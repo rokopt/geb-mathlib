@@ -97,10 +97,20 @@ Every task's requirements implicitly include this section.
   touches a choice-free module:
 
   ```bash
-  grep -n "Vector\.ofFn\b\|Vector\.range\|Vector\.finRange\|toList_ofFn\|toArray_ofFn" <file>
+  grep -nE '(Vector|Array)\.(ofFn|range|finRange)\b|List\.ofFn\b|_ofFn\b|ofFn_|getElem_range\b|getElem_finRange\b' <file>
   ```
 
-  Expected: no match. `Vector.ofFnC` is the permitted form.
+  Expected: no match. The pattern covers the `Array` forms and the
+  bridges that constraint 9 also names, and it matches the *lemma*
+  spellings (`getElem_ofFn`, `ofFn_getElem`, `toList_ofFn`,
+  `toArray_ofFn`) as well as the definitions — a hand-written
+  `simp only [Vector.getElem_ofFn]` is the way the family enters, and
+  a pattern anchored on the definitions alone would miss it. Verified
+  not to match the permitted `Vector.ofFnC`, `Vector.get_ofFnC`,
+  `Vector.ofFnC_get` or `List.finRange`, each of which ends the
+  matched prefix at a word character. The axiom measurement remains
+  the real gate; this is the pre-check that localises a violation to a
+  line.
 - **No `induction` tactic, no self-recursive `def`, no
   `termination_by`.** Every recursion is an explicit recursor
   application (`Nat.rec`, `List.rec`), per
@@ -1291,15 +1301,18 @@ Expected: PASS.
 @[simp] theorem homEquivIdxFun_symm_get
     (g : Fin X.len → Fin Y.len) (i : Fin X.len) :
     ((homEquivIdxFun X Y).symm g).toVec.get i = g i := by
-  simp [homEquivIdxFun, homEquivIdxFunU, ofIdxFun_get]
+  simp only [homEquivIdxFun, homEquivIdxFunU, ofIdxFun_get, Vector.get_ofFnC]
 ```
 
 Both orientations rewrite *toward* W1's normal form `f.toVec.get i`,
 so neither disturbs the other workstream's normal form, per
 `TODO.md`'s remark that W3's and W4's carrier-level `simp` lemmas
 first meet at W5. If `rfl` does not close the first, prove it by
-`simp [homEquivIdxFun, homEquivIdxFunU, toIdxFun]` and record which
-was needed.
+`simp only [homEquivIdxFun, homEquivIdxFunU, toIdxFun]` and report
+which was needed. `simp only`, not bare `simp`, in both places: W1's
+own two analogues use `simp only`, and § Global constraints records
+that a bare `simp` is how the banned `@[simp]` family enters a
+choice-free module.
 
 Run: `lake build`
 Expected: PASS.
@@ -1346,9 +1359,17 @@ Expected: PASS.
 
 - [ ] **Step 5: check the axioms**
 
-Every declaration is polymorphic in `X`, `Y` and the universe, so
-measure a monomorphic witness at the instances actually used as well
-as the constants themselves:
+Measure the six declarations of Steps 2 through 4 by name —
+`homEquivIdxFunU`, `homEquivIdxFun`, `homEquivIdxFun_apply`,
+`homEquivIdxFun_symm_get`, `point`, `point_get` — and rows a and b's
+`fromZero`, `fromZero_uniq`, `toOne`, `toOne_uniq` with them.
+`homEquivIdxFun_symm_get` is the one to watch: it is the only proof in
+this task closed by a tactic rather than by `rfl`, a term or a named
+`rw` chain.
+
+All of them are polymorphic in `X`, `Y` and the universe, so measure a
+monomorphic witness at the instances actually used as well as the
+constants themselves:
 
 ```lean
 /-- Monomorphic witness for the axiom measurement. -/
@@ -3754,8 +3775,12 @@ Expected: **one** `PASS RAN` from the first `#eval` and **five** from
 the second. Each `#eval` also returns
 `` `#`-commands, such as '#eval', are not allowed in 'Mathlib' `` at
 `info` severity; that is the repo's `linter.hashCommand` and is
-expected, not instrument breakage. This whole snippet elaborates with
-zero errors and zero warnings at this toolchain.
+expected, not instrument breakage. The severity is not a guess:
+mathlib's `Mathlib/Tactic/Linter/HashCommandLinter.lean` calls
+`logInfoAt` precisely when `warningAsError` is set, which
+`lakefile.toml` sets, so the message cannot fail the build. This whole
+snippet was elaborated at this toolchain and returns zero errors and
+zero warnings.
 
 The control is the point of the step. One trace from the subject alone
 is equally consistent with sharing and with the measurement having
@@ -5018,6 +5043,35 @@ lemmas and universal property (Tasks 14 and 15), row l's fold lemmas,
 inversion lemma and uniqueness (Task 17), and the pullback
 construction (Task 18). Each names the lemmas its route needs and
 says what to do when one is absent.
+
+**Round 14** (two fresh agents, each splitting its effort between the
+newest repairs and territory no earlier pass had audited). The Lean
+lens returned **converged**, its five minors applied: the banned-form
+grep is widened to the `Array` forms and the *lemma* spellings
+constraint 9 also names — a hand-written
+`simp only [Vector.getElem_ofFn]` is how the family enters, and the old
+pattern, anchored on the definitions, would have missed it; two bare
+`simp`s in Task 5 became `simp only`, matching W1's own analogues and
+§ Global constraints' own warning; and Task 5's axiom check now names
+its ten declarations rather than saying "the constants themselves". It
+also established the `linter.hashCommand` severity from mathlib's
+source — `logInfoAt` precisely when `warningAsError` is set — closing
+the one item round 14's other lens could not verify.
+
+The executability lens found one serious, and it was in the unaudited
+half: Task 9 Step 3 said "measure the two cocones and the four
+instances", but three of the four instances were **anonymous**, so
+there was no qualified name to measure, and all six declarations were
+universe-polymorphic, which § Global constraints forbids reading as an
+instantiation's measurement. That step had been unexecutable since the
+plan was drafted, and thirteen rounds of briefs aimed at recently-edited
+text had never looked at it. The instances are now named and the step
+measures monomorphic probes plus Step 4's `sampleInstances`. Six minors
+with it, also mostly in unaudited tasks: Task 6's check said "seven
+declarations" where the task adds ten — dropping exactly the three with
+non-trivial tactic proofs — and its commit gate omitted
+`lint-imports.sh` while adding ten declarations to an upstream-eligible
+module.
 
 **Round 12** (two fresh agents: one asked whether Task 15's sharing
 step was sound *or should be replaced*, one on the round-11 repairs)
