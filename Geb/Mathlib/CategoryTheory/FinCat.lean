@@ -9,6 +9,7 @@ public import Geb.Mathlib.CategoryTheory.FinCat.Basic
 public import Geb.Mathlib.CategoryTheory.FinCat.Category
 public import Geb.Mathlib.CategoryTheory.FinCat.FinCategory
 public import Geb.Mathlib.CategoryTheory.FinCat.Hom
+public import Geb.Mathlib.CategoryTheory.FinCat.Hom2
 
 /-!
 # FinCat — index
