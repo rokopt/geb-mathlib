@@ -12,6 +12,7 @@ public import Geb.Mathlib.CategoryTheory.FinCat.Decidable
 public import Geb.Mathlib.CategoryTheory.FinCat.FinCategory
 public import Geb.Mathlib.CategoryTheory.FinCat.Hom
 public import Geb.Mathlib.CategoryTheory.FinCat.Hom2
+public import Geb.Mathlib.CategoryTheory.FinCat.Repr
 
 /-!
 # FinCat — index

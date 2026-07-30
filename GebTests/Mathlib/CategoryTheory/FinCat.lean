@@ -12,6 +12,7 @@ import GebTests.Mathlib.CategoryTheory.FinCat.Decidable
 import GebTests.Mathlib.CategoryTheory.FinCat.FinCategory
 import GebTests.Mathlib.CategoryTheory.FinCat.Hom
 import GebTests.Mathlib.CategoryTheory.FinCat.Hom2
+import GebTests.Mathlib.CategoryTheory.FinCat.Repr
 
 /-!
 # FinCat tests — index
