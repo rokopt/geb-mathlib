@@ -44,6 +44,11 @@ as its unit, so the classifier's `Ω₀` and the cartesian unit are the
 same object and their comparison is an isomorphism between an object
 and itself.
 
+## References
+
+* [Freyd1972], for the axiomatisation whose subobject classifier
+  `FinSetSkel.classifier` supplies.
+
 ## Tags
 
 finite sets, skeleton, subobject classifier, topos

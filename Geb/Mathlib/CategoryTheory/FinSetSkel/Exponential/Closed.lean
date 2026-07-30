@@ -51,6 +51,11 @@ alongside the carrier-level equivalence because `◁` elaborates
 through the `CartesianMonoidalCategory` instance, which depends on
 `Classical.choice`.
 
+## References
+
+* [Freyd1972], for the axiomatisation whose cartesian-closure axiom
+  `FinSetSkel.monoidalClosed` discharges.
+
 ## Tags
 
 finite sets, skeleton, exponential, monoidal closed

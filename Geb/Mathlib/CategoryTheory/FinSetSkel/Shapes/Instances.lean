@@ -44,6 +44,12 @@ monoidal law is proved here. Its instance registers
 `HasBinaryProducts` follow, so none of the three is registered
 separately.
 
+## References
+
+* [Freyd1972], for the axiomatisation whose terminal object, binary
+  products, initial object and binary coproducts are the ones
+  supplied here.
+
 ## Tags
 
 finite sets, skeleton, cartesian, coproduct, topos

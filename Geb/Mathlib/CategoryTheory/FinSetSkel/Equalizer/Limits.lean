@@ -26,6 +26,11 @@ allowlisted and the construction it packages is not.
 consumes it, and it is one of the `Prop` classes derived once from
 `ElementaryTopos`.
 
+## References
+
+* [Freyd1972], for the axiomatisation whose equalizers, a generator
+  of its finite limits, `FinSetSkel.equalizerCone` supplies.
+
 ## Tags
 
 finite sets, skeleton, equalizer, limit cone
