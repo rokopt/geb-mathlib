@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+import GebTests.Mathlib.CategoryTheory.FinSetSkel.Exponential.Closed
 import GebTests.Mathlib.CategoryTheory.FinSetSkel.Exponential.Core
 
 /-!

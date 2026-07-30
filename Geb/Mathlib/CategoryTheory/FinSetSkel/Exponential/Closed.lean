@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Core
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
+public import Mathlib.CategoryTheory.Monoidal.Closed.Basic
 
 /-!
 # `FinSetSkel` is monoidal closed
@@ -78,5 +79,51 @@ theorem whiskerLeft_get (X : FinSetSkel.{u}) {Y Z : FinSetSkel.{u}}
     rw [prodLift_get, comp_get, prodFst_get, prodSnd_get]
   rw [h]
   exact h' i
+
+/-- The exponential's hom-level equivalence, in the form
+`adjunctionOfEquivRight` consumes. -/
+def expHomEquiv (X : FinSetSkel.{u}) (Z Y : FinSetSkel.{u}) :
+    ((tensorLeft X).obj Z ⟶ Y) ≃ (Z ⟶ mk (Y.len ^ X.len)) :=
+  expEquivHom X.len Z.len Y.len
+
+/-- Naturality of the exponential's equivalence, in the form
+`Adjunction.adjunctionOfEquivRight` consumes. -/
+theorem expHomEquiv_naturality (X : FinSetSkel.{u})
+    (Z' Z Y : FinSetSkel.{u}) (f : Z' ⟶ Z) (g : (tensorLeft X).obj Z ⟶ Y) :
+    expHomEquiv X Z' Y ((tensorLeft X).map f ≫ g) =
+      f ≫ expHomEquiv X Z Y g := by
+  -- The statement over the length-indexed objects, where the rewrites
+  -- of `Exponential/Core.lean` match syntactically.
+  have key : ∀ (g' : (mk (X.len * Z.len) : FinSetSkel.{u}) ⟶ mk Y.len)
+      (h : (mk (X.len * Z'.len) : FinSetSkel.{u}) ⟶ mk Y.len),
+      (∀ i, h.toVec.get i =
+          g'.toVec.get (Fin.pairC (Fin.divNatC i) (f.toVec.get (Fin.modNatC i)))) →
+      expEquivHom X.len Z'.len Y.len h = f ≫ expEquivHom X.len Z.len Y.len g' := by
+    intro g' h hh
+    have harg : homEquivIdxFun (mk (X.len * Z'.len)) (mk Y.len) h =
+        fun i ↦ (homEquivIdxFun (mk (X.len * Z.len)) (mk Y.len) g')
+          (Fin.pairC (Fin.divNatC i) (f.toVec.get (Fin.modNatC i))) := funext hh
+    refine hom_ext fun t ↦ ?_
+    simp only [expEquivHom, Equiv.trans_apply, harg]
+    rw [homEquivIdxFun_symm_get, comp_get, homEquivIdxFun_symm_get]
+    exact congrFun (expEquivIdx_naturality X.len Z'.len Z.len Y.len f.toVec.get
+      (homEquivIdxFun (mk (X.len * Z.len)) (mk Y.len) g')) t
+  -- The whiskered composite, at the tensor spelling `whiskerLeft_get` matches.
+  have hten : ∀ i : Fin (X ⊗ Z').len,
+      (X ◁ f ≫ g).toVec.get i =
+        g.toVec.get (Fin.pairC (Fin.divNatC i) (f.toVec.get (Fin.modNatC i))) :=
+    fun i ↦ by rw [comp_get, whiskerLeft_get]
+  exact key g (X ◁ f ≫ g) fun i ↦ hten i
+
+/-- `FinSetSkel` is monoidal closed: the exponential of the object of
+length `X.len` into the object of length `Y.len` is the object of
+length `Y.len ^ X.len`. -/
+instance monoidalClosed : MonoidalClosed FinSetSkel.{u} where
+  closed X :=
+    { rightAdj :=
+        Adjunction.rightAdjointOfEquiv (expHomEquiv X) (expHomEquiv_naturality X)
+      adj :=
+        Adjunction.adjunctionOfEquivRight (expHomEquiv X)
+          (expHomEquiv_naturality X) }
 
 end FinSetSkel
