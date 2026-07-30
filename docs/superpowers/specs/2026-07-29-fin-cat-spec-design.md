@@ -196,7 +196,7 @@ def FinCat.emb {S : FinCat} {i j : Fin S.objCount} :
   Fin.castLE (Nat.le_add_right _ _)
 
 protected def FinCat.id (S : FinCat) (i : Fin S.objCount) : S.Mor i i :=
-  ⟨S.nonIdCount i i, by simp [FinCat.homCount]⟩
+  ⟨S.nonIdCount i i, by simp [homCount, homCountOf]⟩
 ```
 
 `FinCat.id` is `protected`: inside `namespace FinCat` an unqualified
@@ -208,9 +208,13 @@ protected def FinCat.id (S : FinCat) (i : Fin S.objCount) : S.Mor i i :=
 Structure and typeclass patterns; its derived lemma is heterogeneous for
 the same reason `FinCat.Hom`'s is, `nonIdCount`'s type mentioning
 `objCount`. `FinCat.Obj` is a one-field structure and takes the derived
-homogeneous lemma. `Inhabited FinCat` is derived, witnessed by the
-specification with no objects; `Inhabited (FinCat.Hom S T)` is not
-derivable at variable `S` and `T` and is not provided.
+homogeneous lemma. `FinCat.inhabited` is hand-written at the
+specification with no objects —
+`⟨⟨0, fun i _ => i.elim0, fun i _ _ => i.elim0, rfl⟩⟩`, the
+`assoc` field closing by `rfl`. `deriving Inhabited` fails, there being
+no `Inhabited` instance for the `Prop`-valued `assoc` field.
+`Inhabited (FinCat.Hom S T)` is neither derivable nor constructible at
+variable `S` and `T`, and is not provided.
 
 `Mor` is an `abbrev`, not a `def`. Instance search does not unfold a
 plain `def`, so `DecidableEq (S.Mor i j)` would not be found and the
@@ -234,8 +238,8 @@ if hf : f.val < S.nonIdCount i j then
 else ⟨g.val, _⟩            -- f is the reserved identity, so i = j
 ```
 
-The two elided proofs both reduce to one arithmetic fact, which is the
-single reusable ingredient of the module and is stated once:
+The two elided proofs reduce to two arithmetic facts, the reusable
+ingredients of the module, stated once:
 
 ```lean
 theorem FinCat.eq_of_nonIdCount_le (S : FinCat) {i j : Fin S.objCount}
@@ -260,12 +264,14 @@ returns the identity, which is correct.
 Field types cannot mention the structure being defined, so everything
 the `comp` and `assoc` field types mention precedes `FinCat` and takes
 `objCount`, `nonIdCount` and `comp` as explicit arguments:
-`homCountOf`, `embOf`, `compTotalOf`, `assocCheckOf`, and unbundled
-forms of the two arithmetic lemmas below, which discharge
-`compTotalOf`'s elided bounds where no `S : FinCat` exists.
-`FinCat.emb`, `FinCat.compTotal`, `FinCat.assocCheck`,
-`FinCat.eq_of_nonIdCount_le` and `FinCat.val_eq_of_nonIdCount_le` are
-one-line bundled wrappers over them. These references are written
+`homCountOf`, `embOf`, `compTotalOf`, `assocCheckOf`, and
+`objEq_of_le` and `val_eq_of_le`, the unbundled forms of the two
+arithmetic lemmas below, which discharge `compTotalOf`'s elided bounds
+where no `S : FinCat` exists.
+`FinCat.homCount`, `FinCat.emb`, `FinCat.compTotal`,
+`FinCat.assocCheck`, `FinCat.eq_of_nonIdCount_le` and
+`FinCat.val_eq_of_nonIdCount_le` are one-line bundled wrappers over
+them. These references are written
 qualified inside the structure's own field types, where
 `docs/rules/lean-coding.md` § Naming conventions' "rely on `namespace`
 to scope" is unavailable: no `namespace FinCat` can be open while
@@ -418,6 +424,11 @@ independent levels here only because the underlying category sits at
 unwrapping in every proof, for a result the direct instance states
 in one.
 
+The instance's three law fields discharge from `Basic.lean`: `id_comp`
+and `comp_id` from `FinCat.id_comp` and `FinCat.comp_id`, and `assoc`
+from `FinCat.compTotal_assoc`, all three transported across the `ULift`
+on homs.
+
 `FinCat.Obj` and the generated hom types carry `DecidableEq` instances,
 derived from `Fin` and `ULift`. A category whose purpose is that its
 laws are decidable is of limited use if its objects and morphisms are
@@ -545,8 +556,9 @@ statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
    `Bool`-equation fields contribute nothing, being proof-irrelevant.
    `id_comp` reduces to `mapTotal_emb`, `comp_id` to `id_mapTotal`, and
    `assoc` to `comp_mapTotal`.
-9. `FinCat.Hom.toFunctor`, last because its `map_id` and `map_comp`
-   fields are `mapTotal_id` and `mapTotal_compTotal`, items 3 and 4.
+9. `FinCat.Hom.toFunctor`, which needs items 3 and 4 — `mapTotal_id`
+   and `mapTotal_compTotal` are its `map_id` and `map_comp` fields — and
+   is placed last because nothing in this module consumes it.
 
 ### In `Hom2.lean`
 
@@ -554,18 +566,24 @@ statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
    composition of 2-cells and the identity 2-cell — with
    `FinCat.Hom₂.app_id` and `FinCat.Hom₂.app_comp`. It comes first
    because it is the only source of `⟶` at the 2-cell level, on which
-   items 2 and 4 depend. mathlib orders the same three the same way:
+   item 2 depends; item 4 follows it because `toNatTrans`'s target
+   mentions a mathlib `NatTrans` between the two `toFunctor`s, not
+   because of the 2-cell notation. mathlib orders the same three the same way:
    `Cat.Hom.instQuiver` (`Cat.lean:118`), `Cat.Hom.instCategory`
    (`:127`), `Cat.Hom₂.ext` (`:154`).
-2. A hand-written `@[ext]` lemma for `FinCat.Hom₂` phrased at
-   `F ⟶ G`. The structure-derived one does not fire on goals stated
-   through the hom notation, and mathlib writes the corresponding
-   lemma by hand for the same reason (`Cat.Hom₂.ext`,
-   `Cat.lean:153-155`).
+2. `FinCat.Hom₂.ext`, hand-written and phrased at `F ⟶ G`. A
+   structure-derived lemma does not fire on goals stated through the hom
+   notation, so `FinCat.Hom₂` is *not* marked `@[ext]` — leaving the
+   name free for the hand-written one, as mathlib does for `Cat.Hom₂`
+   (`Cat.lean:153-155`). This is the one structure in the workstream
+   that departs from `docs/rules/lean-coding.md` § Structure and
+   typeclass patterns' `@[ext]` reflex, and it departs because the
+   derived lemma would be unusable at the only place it is needed.
 3. `FinCat.Hom₂.natCheck_total` — naturality at **total** morphisms,
-   extending `natCheck` off the client range. `whisker_exchange` is
-   exactly this at `η.app i`, which ranges over the full hom type,
-   so no default can supply it.
+   extending `natCheck` off the client range. Two consumers:
+   `whisker_exchange`, which is exactly this at `η.app i`, and
+   `FinCat.Hom₂.whiskerLeft`'s own `natValid` field. Both range over the
+   full hom type, so no default can supply either.
 4. `FinCat.Hom₂.toNatTrans`.
 
 ### In `Bicategory.lean`
@@ -583,6 +601,16 @@ statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
    `(F ◁ η).app i = η.app (F.objMap i)`; `whiskerRight` applies
    `mapTotal` — `(η ▷ H).app i = H.mapTotal (η.app i)`. That asymmetry
    decides the partition below.
+
+   Each constructs a `FinCat.Hom₂` and so discharges a `natValid` field.
+   `whiskerRight`'s takes `natCheck_eq_true_iff`, `comp_mapTotal` and
+   `mapTotal_compTotal`. `whiskerLeft`'s is the non-obvious one: its
+   check reduces to `η`'s naturality at `F.mapTotal (S.emb f)`, which by
+   `mapTotal_emb` is `F.map i j f` — a value of the **full** hom type,
+   not in `T.emb`'s image, `F` being free to send a client morphism to
+   an identity. So it takes `natCheck_total`, not `natCheck_eq_true_iff`
+   alone, for the reason § In `Hom.lean` item 4 gives for
+   `FinCat.Hom.comp`.
 2. `FinCat.Hom₂.eqToHom_app`. It cannot be stated in the form
    `(eqToHom p).app i = T.id (F.objMap i)`: `app`'s type mentions both
    `F.objMap` and `G.objMap`, so the two sides have different types.
@@ -602,6 +630,14 @@ statements about an arbitrary `F : FinCat.Hom S T`, and item 5 about
    `id_whiskerRight`, `comp_whiskerRight`, `whiskerRight_id`,
    `whiskerRight_comp`, `whisker_assoc`, `whisker_exchange`,
    `pentagon`, `triangle` — stated against `FinCat.Hom.instCategory`.
+   `◁`, `▷`, `α_`, `λ_` and `ρ_` are `Bicategory`-scoped notation for
+   that class's own fields and so are unavailable here, exactly as `≫`
+   is in item 1. The whiskerings therefore appear as
+   `FinCat.Hom₂.whiskerLeft` and `FinCat.Hom₂.whiskerRight`, and the
+   associator and unitors as `eqToHom` — with `.symm` on the equality
+   for the inverses — of `FinCat.Hom.assoc`, `FinCat.Hom.id_comp` and
+   `FinCat.Hom.comp_id`. Those field types match the class's,
+   `eqToIso`'s `hom` and `inv` projections being `rfl`.
 
    Every proof stays at the `app` level. `FinCat.Hom₂`'s `@[ext]`
    lemma together with `funext` stops there; plain `ext` must be
@@ -836,25 +872,28 @@ which the axiom linter rejects.
 ```text
 Geb/Mathlib/CategoryTheory/FinCat.lean              index
 Geb/Mathlib/CategoryTheory/FinCat/Basic.lean        homCountOf, embOf, the
-                                                    unbundled arithmetic
-                                                    lemmas, compTotalOf,
+                                                    objEq_of_le,
+                                                    val_eq_of_le, compTotalOf,
                                                     assocCheckOf; then the
                                                     specification and ext, the
-                                                    bundled wrappers, the
-                                                    identity laws, the
+                                                    bundled wrappers, Mor and
+                                                    id, the identity laws, the
                                                     reflection lemma,
                                                     compTotal_assoc, and the
-                                                    Inhabited derivation
+                                                    Inhabited instance at the
+                                                    empty specification
 Geb/Mathlib/CategoryTheory/FinCat/Category.lean     object type and its ext,
                                                     Category, DecidableEq on
                                                     Obj and on the generated
                                                     homs
 Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean  diagonal FinCategory
                                                     (allowlisted)
-Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          functor specifications,
-                                                    checker,
-                                                    compCheck_eq_true_iff,
-                                                    mapTotal, ext,
+Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          mapTotalOf, compCheckOf;
+                                                    then the functor
+                                                    specification and ext,
+                                                    compCheck_eq_true_iff, the
+                                                    bundled mapTotal and
+                                                    compCheck,
                                                     mapTotal_emb, mapTotal_id,
                                                     mapTotal_compTotal,
                                                     id_mapTotalOf,
@@ -863,9 +902,10 @@ Geb/Mathlib/CategoryTheory/FinCat/Hom.lean          functor specifications,
                                                     comp_mapTotal,
                                                     strict equalities,
                                                     toFunctor
-Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean         2-cell specifications,
-                                                    checker,
-                                                    natCheck_eq_true_iff,
+Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean         natCheckOf; then the
+                                                    2-cell specification,
+                                                    natCheck_eq_true_iff, the
+                                                    bundled natCheck,
                                                     instCategory, app_id,
                                                     app_comp, ext lemma at
                                                     F to G, natCheck_total,
@@ -952,11 +992,17 @@ Outstanding:
    identity 2-cell and of the vertical composite in
    `FinCat.Hom.instCategory` discharge from `natCheck_eq_true_iff` and,
    for the composite, `compTotal_assoc` three times.
-4. `DecidableEq` layers 2 and 3 construct as § Decidable equality and
-   `Repr` describes, the heterogeneous `@[ext]` lemmas supplying the
-   negative cases, and they and the `Repr` instances measure
-   `[propext, Quot.sound]` or better. Layer 1 is measured; these two are
-   the spec's only transport-based decision procedures and are not.
+4. The ten coherence theorems hold, from the inventory of § In
+   `Bicategory.lean` item 3 and no more. Each assignment has been
+   checked against mathlib's statement of the corresponding field; what
+   remains is to write them.
+5. `DecidableEq` layers 2 and 3 construct as § Decidable equality and
+   `Repr` describes, and they and the `Repr` instances measure
+   `[propext, Quot.sound]` or better. Layer 1 is measured and these are
+   not. Only `DecidableEq (FinCat.Hom S T)` and `DecidableEq FinCat`
+   transport, and only their `@[ext]` lemmas are heterogeneous;
+   `DecidableEq (FinCat.Hom₂ F G)` needs neither, `app`'s type
+   mentioning only the fixed parameters `F` and `G`.
 
 ## Testing
 
