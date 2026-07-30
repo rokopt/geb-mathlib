@@ -1016,6 +1016,25 @@ grep -nE 'Vector\.(ofFn|range|finRange)\b|ofFn_getElem' \
 
 Expected: no output.
 
+```bash
+grep -c sorry GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean
+grep -n 'Vector.finRange' Geb/Mathlib/Data/Vector/OfFn.lean | grep -vc getElem
+```
+
+Expected: the first is 0; the second is non-zero, the construction
+restriction being stated on its own line rather than only inside a lemma
+name.
+
+```bash
+jj diff --stat -r 'main..@' -- GebMeta.lean TODO.md
+jj diff -r 'main..@' -- TODO.md
+```
+
+Expected: `GebMeta.lean` gains exactly the two allowlist names this
+workstream adds, and `TODO.md` differs from `main` only in its TOC, its
+preamble, the deleted section, and the § Triggers entries Task 7
+enumerates. Read both diffs and confirm; no grep establishes either.
+
 - [ ] **Step 3: Run the Lean review passes**
 
 `scripts/pre-push.sh` prints three reminders it does not enforce; run all
