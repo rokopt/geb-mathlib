@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.Data.Vector.OfFn
+public import Geb.Mathlib.Data.Vector.Scatter
 public import Mathlib.Data.List.Nodup
 public import Mathlib.Tactic.Finiteness.Attr
 
@@ -40,14 +41,12 @@ would break it silently.
   pair agrees.
 * `FinSetSkel.Equalizer.obj`, `FinSetSkel.Equalizer.ι` — the
   equalizer object and its injection.
-* `FinSetSkel.Equalizer.scatter` — the one-pass inverse fold.
+* `FinSetSkel.Equalizer.invVec` — the inverse of the injection,
+  written in one pass.
 * `FinSetSkel.Equalizer.lift` — the factorisation.
 
 ## Main statements
 
-* `FinSetSkel.Equalizer.get_scatter_mem`,
-  `FinSetSkel.Equalizer.get_scatter_of_not_mem` — the fold's
-  correctness.
 * `FinSetSkel.Equalizer.invVec_get`,
   `FinSetSkel.Equalizer.injVec_get_invVec` — the inverse of the
   injection.
@@ -127,69 +126,22 @@ theorem ι_comp (f g : X ⟶ Y) : ι f g ≫ f = ι f g ≫ g :=
     have h := (mem_agree_iff f g _).mp (injVec_get_mem f g i)
     simpa [ι] using of_decide_eq_true h
 
-/-- One pass writing each list entry's position into a vector,
-generalised over the starting vector and the starting counter. -/
-def scatter {n : ℕ} (L : List (Fin n)) (c : ℕ) (v : Vector ℕ n) :
-    Vector ℕ n :=
-  (L.zipIdx c).foldl (fun w (j, k) ↦ w.set j.val k j.isLt) v
-
-/-- One step of the pass writes the head's position and continues on
-the tail with the counter advanced. -/
-theorem scatter_cons {n : ℕ} (j : Fin n) (L : List (Fin n)) (c : ℕ)
-    (v : Vector ℕ n) :
-    scatter (j :: L) c v = scatter L (c + 1) (v.set j.val c j.isLt) := by
-  simp [scatter, List.zipIdx_cons]
-
-/-- The pass leaves untouched every index the list does not
-mention. -/
-theorem get_scatter_of_not_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
-    (hj : j ∉ L) (c : ℕ) (v : Vector ℕ n) :
-    (scatter L c v).get j = v.get j :=
-  L.rec (motive := fun L ↦ ∀ (c : ℕ) (v : Vector ℕ n), j ∉ L →
-      (scatter L c v).get j = v.get j)
-    (fun _ _ _ ↦ rfl)
-    (fun a L ih c v hj ↦ by
-      rw [scatter_cons, ih (c + 1) _ (fun hm ↦ hj (List.mem_cons_of_mem a hm))]
-      simp only [Vector.get_eq_getElem]
-      exact Vector.getElem_set_ne a.isLt j.isLt
-        (fun he ↦ hj (Fin.ext he ▸ List.mem_cons_self ..)))
-    c v hj
-
-/-- The pass writes each listed index's position, offset by the
-starting counter. -/
-theorem get_scatter_mem {n : ℕ} (L : List (Fin n)) (hnd : L.Nodup)
-    (c : ℕ) (v : Vector ℕ n) (j : Fin n) (k : ℕ)
-    (h : (j, k) ∈ L.zipIdx c) : (scatter L c v).get j = k :=
-  L.rec (motive := fun L ↦ L.Nodup → ∀ (c : ℕ) (v : Vector ℕ n) (k : ℕ),
-      (j, k) ∈ L.zipIdx c → (scatter L c v).get j = k)
-    (fun _ _ _ _ hm ↦ absurd hm (by simp))
-    (fun a L ih hnd c v k hm ↦ by
-      obtain ⟨hal, hL⟩ := List.nodup_cons.mp hnd
-      rw [List.zipIdx_cons, List.mem_cons] at hm
-      rw [scatter_cons]
-      rcases hm with hm | hm
-      · have hja : j = a := congrArg Prod.fst hm
-        have hkc : k = c := congrArg Prod.snd hm
-        subst hkc
-        subst hja
-        rw [get_scatter_of_not_mem L _ hal, Vector.get_eq_getElem]
-        exact Vector.getElem_set_self _
-      · exact ih hL (c + 1) _ k hm)
-    hnd c v k h
-
 /-- The inverse of the injection, as positions in the agreement
 list; entries at non-agreeing indices are unconstrained. -/
 def invVec (f g : X ⟶ Y) : Vector ℕ X.len :=
-  scatter (agree f g) 0 (Vector.replicate X.len 0)
+  Vector.scatter ((agree f g).zipIdx 0) (Vector.replicate X.len 0)
 
 /-- The inverse's entry at a listed index is that index's position in
 the agreement list. -/
 theorem invVec_get (f g : X ⟶ Y) (j : Fin X.len) (k : ℕ)
     (hk : k < (agree f g).length) (hget : (agree f g)[k] = j) :
-    (invVec f g).get j = k :=
-  get_scatter_mem _ (agree_nodup f g) 0 _ j k
-    ((List.mk_mem_zipIdx_iff_getElem?).mpr (by
-      rw [List.getElem?_eq_getElem hk, hget]))
+    (invVec f g).get j = k := by
+  have hm : (j, k) ∈ (agree f g).zipIdx 0 :=
+    (List.mk_mem_zipIdx_iff_getElem?).mpr (by rw [List.getElem?_eq_getElem hk, hget])
+  have hnd : (((agree f g).zipIdx 0).map Prod.fst).Nodup := by
+    rw [List.zipIdx_map_fst]; exact agree_nodup f g
+  exact Vector.get_scatter_of_mem _ _ _ _ hm
+    fun b hb ↦ congrArg Prod.snd (List.inj_on_of_nodup_map hnd hb hm rfl)
 
 /-- At an agreeing index the inverse is a position in the agreement
 list. -/

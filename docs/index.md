@@ -409,6 +409,14 @@ import-direction rules above are enforced by
   leaving the result array-backed and indexing constant-time.
   `Vector.get_eq_getElem` bridges to the `getElem` API.
   `Classical.choice`-free.
+- `Geb/Mathlib/Data/Vector/Scatter.lean` — `Vector.scatter` writes a
+  list of index-value pairs into a vector in one left-to-right pass,
+  with `get_scatter_of_not_mem` for an index no pair carries and
+  `get_scatter_of_mem` for an index carried with a single value. The
+  second hypothesis is that uniqueness of the value rather than
+  distinctness of the indices, so a list of constant value needs no
+  `Nodup`. Both lemmas quantify over the starting vector, and so
+  apply part-way through a pass. `Classical.choice`-free.
 - `Geb/Mathlib/Data/List/NodupEquivFin.lean` — extensions of
   mathlib's `Mathlib/Data/List/NodupEquivFin.lean`.
   `List.Nodup.getEquivC` rebuilds `List.Nodup.getEquiv` choice-free,
@@ -420,8 +428,9 @@ import-direction rules above are enforced by
   `Classical.choice`-free.
 - `Geb/Mathlib/Data/Vector/NodupEquivFin.lean` —
   `Vector.invOfInjective` inverts an injective vector, stated over
-  the `get` view rather than over `toList.Nodup`.
-  `Classical.choice`-free.
+  the `get` view rather than over `toList.Nodup`, with
+  `invOfInjective_apply` reading its forward direction back as the
+  vector's lookup. `Classical.choice`-free.
 - `Geb/Mathlib/Data/UnionFind/OfEdges.lean` —
   `Batteries.UnionFind.Sized`, a union-find of a fixed size, so that
   its indices are `Fin n` and no operation changes their type;
@@ -576,8 +585,9 @@ import-direction rules above are enforced by
   at which a parallel pair agrees: `Equalizer.agree` filters
   `List.finRange X.len` by `decide (f.toVec.get i = g.toVec.get i)`,
   `Equalizer.obj` and `Equalizer.ι` are the equalizer object and its
-  injection, `Equalizer.scatter` inverts the injection in one pass,
-  and `Equalizer.lift` is the factorisation, with `ι_comp`, `lift_ι`
+  injection, `Equalizer.invVec` inverts the injection in one pass
+  over `Vector.scatter`, and `Equalizer.lift` is the factorisation,
+  with `ι_comp`, `lift_ι`
   and `lift_uniq` the universal property. The inverse is a vector of
   `ℕ` rather than of `Fin k`, which is uninhabited whenever `k = 0`
   and `X.len > 0` — a case any pair differing at every index

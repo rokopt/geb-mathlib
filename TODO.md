@@ -879,19 +879,3 @@ fiber membership already implemented.
   Trigger: the next occasion to revisit W1's helpers, at which point
   decide between keeping it and removing it under
   `CONTRIBUTING.md` § Code is cost.
-- **The two scatter folds are one construction**:
-  `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean`'s
-  `scatterOne` and
-  `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Core.lean`'s
-  `scatter` are each a left fold writing values into a `Vector` at
-  listed indices, carrying a lemma that an unlisted index is
-  unchanged and a lemma that a listed index carries the written
-  value, both proved by an explicit `List.rec` over the same
-  `Vector.getElem_set_ne` and `Vector.getElem_set_self` skeleton.
-  `scatterOne L v` is the fold at the constant `1`; `scatter L c v`
-  is the fold over `L.zipIdx c`. A single `Vector` helper subsumes
-  both. The same branch renames the lemma names that depart from
-  `<subject>_<verb>_<object>`: `get_scatterOne_of_mem` and
-  `get_scatter_mem` do not state their conclusions, and
-  `get_scatterOne_eq_one_of` ends in a bare `_of`.
-  Trigger: the next occasion to touch either fold.

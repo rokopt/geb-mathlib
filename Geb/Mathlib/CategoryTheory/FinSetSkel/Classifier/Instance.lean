@@ -107,7 +107,7 @@ def classifier : Subobject.Classifier FinSetSkel.{u} :=
       have hsq : CommSq m (isTerminalOne.from _) (Classifier.chi m) truth :=
         ⟨hom_ext fun i ↦ by
           rw [comp_get, comp_get, truth, point_get]
-          exact Classifier.chi_comp_eq m i⟩
+          exact Classifier.chi_get_image_eq_one m i⟩
       -- membership of a competing cone's left leg, from its own commutation
       have hmem : ∀ (s : PullbackCone (Classifier.chi m) truth) (t : Fin s.pt.len),
           s.fst.toVec.get t ∈ m.toVec.toList := fun s t ↦

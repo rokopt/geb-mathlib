@@ -25,6 +25,11 @@ statement is an `Equiv`, which exists in neither.
 
 * `Vector.invOfInjective` — the inverse of an injective vector.
 
+## Main statements
+
+* `Vector.invOfInjective_apply` — the inverse's forward direction is
+  the vector's lookup.
+
 ## Tags
 
 vector, injective, equiv, choice-free
@@ -49,5 +54,11 @@ def invOfInjective {n k : ℕ} (ι : Vector (Fin n) k)
         List.get_eq_getElem] using hab
     exact Fin.ext (congrArg (Fin.val (n := k)) (h key))
   (finCongr hlen.symm).trans (List.Nodup.getEquivC _ hnd)
+
+/-- The inversion of an injective vector recovers the vector's
+lookup. -/
+theorem invOfInjective_apply {n k : ℕ} (ι : Vector (Fin n) k)
+    (h : Function.Injective ι.get) (i : Fin k) :
+    ((invOfInjective ι h) i).val = ι.get i := rfl
 
 end Vector

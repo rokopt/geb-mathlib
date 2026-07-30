@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.Data.Vector.NodupEquivFin
 public import Geb.Mathlib.Data.Vector.OfFn
+public import Geb.Mathlib.Data.Vector.Scatter
 
 /-!
 # Vector — index

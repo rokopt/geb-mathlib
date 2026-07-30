@@ -8,6 +8,7 @@ module
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.Data.Vector.NodupEquivFin
 public import Geb.Mathlib.Data.Vector.OfFn
+public import Geb.Mathlib.Data.Vector.Scatter
 
 /-!
 # The subobject classifier of `FinSetSkel`, over vectors
@@ -39,11 +40,10 @@ test, which would rebuild and rescan the image per index.
 
 ## Main statements
 
-* `FinSetSkel.Classifier.get_scatterOne_eq_one`,
-  `FinSetSkel.Classifier.get_scatterOne_eq_one_of` — the pass writes
-  `1` at the listed indices and nowhere else.
 * `FinSetSkel.Classifier.chiVec_get_eq_one_iff` — the characteristic
   vector is the indicator of the image.
+* `FinSetSkel.Classifier.chi_get_image_eq_one` — the characteristic
+  morphism sends the image to `1`.
 * `FinSetSkel.Classifier.chi_uniq` — a morphism with the same
   indicator is the characteristic morphism.
 
@@ -64,67 +64,12 @@ open CategoryTheory
 
 namespace FinSetSkel.Classifier
 
-/-- One pass writing `1` at each listed index, generalised over the
-starting vector. -/
-def scatterOne {n : ℕ} (L : List (Fin n)) (v : Vector (Fin 2) n) :
-    Vector (Fin 2) n :=
-  L.foldl (fun w j ↦ w.set j.val 1 j.isLt) v
-
-/-- The pass writes `1` only at listed indices. -/
-theorem get_scatterOne_eq_one {n : ℕ} (L : List (Fin n)) (j : Fin n)
-    (v : Vector (Fin 2) n) (h : (scatterOne L v).get j = 1) :
-    j ∈ L ∨ v.get j = 1 :=
-  L.rec (motive := fun L ↦ ∀ (v : Vector (Fin 2) n),
-      (scatterOne L v).get j = 1 → j ∈ L ∨ v.get j = 1)
-    (fun _ h ↦ Or.inr h)
-    (fun a L ih v h ↦ by
-      rcases ih (v.set a.val 1 a.isLt) h with hm | hs
-      · exact Or.inl (List.mem_cons_of_mem a hm)
-      · rcases Nat.decEq a.val j.val with hne | he
-        · refine Or.inr ?_
-          rw [Vector.get_eq_getElem] at hs
-          rw [Vector.getElem_set_ne a.isLt j.isLt hne] at hs
-          rwa [Vector.get_eq_getElem]
-        · exact Or.inl (List.mem_cons.mpr (Or.inl (Fin.ext he).symm)))
-    v h
-
-/-- The pass writes `1` at every listed index, and preserves a `1`
-already present. -/
-theorem get_scatterOne_eq_one_of {n : ℕ} (L : List (Fin n))
-    (j : Fin n) (v : Vector (Fin 2) n) (h : j ∈ L ∨ v.get j = 1) :
-    (scatterOne L v).get j = 1 :=
-  L.rec (motive := fun L ↦ ∀ (v : Vector (Fin 2) n),
-      j ∈ L ∨ v.get j = 1 → (scatterOne L v).get j = 1)
-    (fun _ h ↦ h.resolve_left List.not_mem_nil)
-    (fun a L ih v h ↦ by
-      refine ih (v.set a.val 1 a.isLt) ?_
-      have hset : a = j → (v.set a.val 1 a.isLt).get j = 1 := by
-        rintro rfl
-        rw [Vector.get_eq_getElem]
-        exact Vector.getElem_set_self _
-      rcases h with hm | hv
-      · rcases List.mem_cons.mp hm with hja | hjL
-        · exact Or.inr (hset hja.symm)
-        · exact Or.inl hjL
-      · refine Or.inr ?_
-        rcases Nat.decEq a.val j.val with hne | he
-        · rw [Vector.get_eq_getElem] at hv
-          rw [Vector.get_eq_getElem, Vector.getElem_set_ne a.isLt j.isLt hne]
-          exact hv
-        · exact hset (Fin.ext he))
-    v h
-
-/-- The pass writes `1` at every listed index. -/
-theorem get_scatterOne_of_mem {n : ℕ} (L : List (Fin n)) (j : Fin n)
-    (hj : j ∈ L) (v : Vector (Fin 2) n) : (scatterOne L v).get j = 1 :=
-  get_scatterOne_eq_one_of L j v (Or.inl hj)
-
 variable {U X : FinSetSkel.{u}}
 
 /-- The characteristic vector of a monomorphism: `1` on its image,
 `0` elsewhere. -/
 def chiVec (m : U ⟶ X) : Vector (Fin 2) X.len :=
-  scatterOne m.toVec.toList (Vector.replicate X.len 0)
+  Vector.scatter (m.toVec.toList.map (fun j ↦ (j, 1))) (Vector.replicate X.len (0 : Fin 2))
 
 /-- The characteristic morphism of a monomorphism. -/
 def chi (m : U ⟶ X) : X ⟶ mk 2 := Hom.ofVec (chiVec m)
@@ -140,17 +85,13 @@ theorem chiVec_get_eq_one_iff (m : U ⟶ X) (j : Fin X.len) :
     (chiVec m).get j = 1 ↔ j ∈ m.toVec.toList := by
   constructor
   · intro h
-    refine (get_scatterOne_eq_one _ _ _ h).resolve_right ?_
-    simp only [Vector.get_eq_getElem, Vector.getElem_replicate]
-    decide
-  · intro hj
-    exact get_scatterOne_of_mem _ _ hj _
-
-/-- The inversion of an injective vector recovers the vector's
-lookup. -/
-theorem invOfInjective_apply {n k : ℕ} (v : Vector (Fin n) k)
-    (h : Function.Injective v.get) (i : Fin k) :
-    ((Vector.invOfInjective v h) i).val = v.get i := rfl
+    by_cases hj : j ∈ m.toVec.toList
+    · exact hj
+    · rw [chiVec, Vector.get_scatter_of_not_mem _ _ _ (by simpa using hj),
+        Vector.get_eq_getElem, Vector.getElem_replicate] at h
+      exact absurd h (by decide)
+  · exact fun hj ↦ Vector.get_scatter_of_mem _ _ _ _ (List.mem_map_of_mem hj)
+      fun b hb ↦ by obtain ⟨_, _, hx⟩ := List.mem_map.mp hb; exact (congrArg Prod.snd hx).symm
 
 /-- The factorisation through a monomorphism of a morphism whose
 image it contains. -/
@@ -167,7 +108,7 @@ theorem pullbackLift_comp (m : U ⟶ X)
     pullbackLift m hm z hz ≫ m = z :=
   hom_ext fun t ↦ by
     simp only [comp_get, pullbackLift, Hom.toVec_ofVec, Vector.get_ofFnC]
-    rw [← invOfInjective_apply m.toVec hm, Equiv.apply_symm_apply]
+    rw [← Vector.invOfInjective_apply m.toVec hm, Equiv.apply_symm_apply]
 
 /-- The factorisation through a monomorphism is unique. -/
 theorem pullbackLift_uniq (m : U ⟶ X)
@@ -180,7 +121,7 @@ theorem pullbackLift_uniq (m : U ⟶ X)
     simpa only [comp_get] using h)
 
 /-- The characteristic morphism is `1` on the image. -/
-theorem chi_comp_eq (m : U ⟶ X) (i : Fin U.len) :
+theorem chi_get_image_eq_one (m : U ⟶ X) (i : Fin U.len) :
     (chi m).toVec.get (m.toVec.get i) = 1 := by
   rw [chi_get]
   exact (chiVec_get_eq_one_iff m _).mpr (by simp [Vector.get_eq_getElem])
