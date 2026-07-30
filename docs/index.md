@@ -421,6 +421,17 @@ import-direction rules above are enforced by
   `Vector.invOfInjective` inverts an injective vector, stated over
   the `get` view rather than over `toList.Nodup`.
   `Classical.choice`-free.
+- `Geb/Mathlib/Data/UnionFind/OfEdges.lean` —
+  `Batteries.UnionFind.Sized`, a union-find of a fixed size, so that
+  its indices are `Fin n` and no operation changes their type;
+  `Sized.ofEdges` folds `union` over a list of pairs. The two
+  theorems about it are the two directions of correctness: every
+  listed pair is merged, and nothing beyond them is, the latter in
+  eliminator form rather than as a characterisation of the merged
+  relation as an equivalence closure. Its upstream target is
+  Batteries rather than mathlib4, per `TODO.md` § Upstream
+  destination of core- and Batteries-targeted content.
+  `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Basic.lean` — `FinSetSkel`,
   a skeletal category of finite sets whose morphisms are
   length-indexed vectors of codomain indices. Objects are a one-field
@@ -435,6 +446,23 @@ import-direction rules above are enforced by
   and `IsSkeletonOf`. Allowlisted for `Classical.choice`:
   `CategoryTheory.Cat.category` depends on it, so an `Iso` in `Cat`
   carries the dependence however it is built.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean` — the
+  coequalizer of a parallel pair in `FinSetSkel`, computed: the pairs
+  a parallel pair generates are folded through
+  `Batteries.UnionFind.Sized.ofEdges`, the roots are renumbered onto
+  an initial segment by `Fin.compressEquiv`, and the carrier's length
+  is the number of roots. The carrier, projection and factorisation
+  are stated over W1's application-normal form, and each of the three
+  definitions calling `Vector.ofFnC` carries an unfolding lemma
+  stated by hand, `rw [Vector.get_ofFnC]` reporting no occurrence of
+  the pattern where the index types differ. `Classical.choice`-free.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` — the
+  packaging of that construction as `ColimitCocone (parallelPair f g)`,
+  the per-diagram `HasColimit`, and `HasCoequalizers FinSetSkel`.
+  Allowlisted for `Classical.choice`: `Cofork.ofπ`,
+  `Cofork.IsColimit.mk` and
+  `hasCoequalizers_of_hasColimit_parallelPair` each depend on it,
+  while the construction being packaged does not.
 - `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` — the
   `ElementaryTopos` class: a cartesian closed category with a
   subobject classifier, carrying chosen data for the generators of

@@ -229,6 +229,12 @@ and `#eval` returns a value — so a `#guard` claim is settled by
   `lake build` to pull mathlib's precompiled artifacts. Without
   this, lake falls back to building mathlib from source (hours of
   work).
+- `lake shake` infers a module's required imports from the
+  constants its olean references, so an import needed only for
+  `#guard`'s interpreter-time evaluation, or only to resolve an
+  instance for an anonymous `example`, leaves no such reference and
+  is reported as removable. `-- shake: keep` on the import line is
+  the sanctioned suppression for that case.
 
 ## Coding technique
 

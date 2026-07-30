@@ -431,7 +431,7 @@ W5's assignments become redundant.
    choice-free, a choice-free module names the term rather than
    leaving instance search to pick. Morphism `DecidableEq` is one
    such, pinned by W1. Deciding a proposition quantified over `Fin n`
-   is another, and W3 and W4 both need it: `inferInstance` gives an
+   is another, and W3 needs it: `inferInstance` gives an
    axiom-free term, while `Fintype.decidableForallFintype`, which
    inhabits the same class, depends on `Classical.choice`.
 
@@ -466,7 +466,7 @@ Beyond W1's application-normal form, W3 and W4 each add carrier-level
 | W1 `FinSetSkel` | W0 | Not started | — |
 | W2 `ElementaryTopos` | — | Complete | `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` |
 | W3 Rows a–h, j, l, m | W1 | Not started | — |
-| W4 Row i, union-find | W0, W1 | Not started | — |
+| W4 Row i, union-find | W0, W1 | Complete | `Geb/Mathlib/Data/UnionFind/OfEdges.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` |
 | W5 Row k, unification | W1–W4 | Not started | — |
 
 ### Complexity of the decidable validity checkers
@@ -534,7 +534,15 @@ Batteries API sits under `Geb/Mathlib/` while its upstream is neither
 mathlib4 nor CSLib. In scope is every module under `Geb/Mathlib/`, and
 every `GebTests/Mathlib/` parallel, whose declarations restate or
 replace declarations of Lean core or Batteries rather than of mathlib:
-currently `Geb/Mathlib/Data/Vector/OfFn.lean` and its test parallel.
+currently `Geb/Mathlib/Data/Vector/OfFn.lean` and
+`Geb/Mathlib/Data/UnionFind/OfEdges.lean`, and their test parallels.
+The criterion does not literally reach `OfEdges.lean`, whose
+declarations extend a Batteries type with new statements rather than
+restating or replacing existing ones; it is listed here because this
+item's subject — content under `Geb/Mathlib/` whose upstream target is
+not mathlib4 — is where such a module belongs. Reconciling the
+criterion's wording with that subject is a separate concern, on its
+own branch.
 Scoping the item by that criterion rather than by a module list keeps
 it from being settled incompletely; the criterion does not reach
 `Geb/Mathlib/Data/Vector/NodupEquivFin.lean`, whose statement is an
@@ -742,3 +750,9 @@ fiber membership already implemented.
   `Fintype.card_congr` and `Fintype.card_fin` all depending on
   `Classical.choice`. There is no such use while `Skeletal` is
   consumed only by the wrapper.
+- **mathlib-to-Batteries dependency edge**: whether mathlib accepts a
+  `Mathlib/`-to-`Batteries/` dependency edge is a maintainer
+  judgement — no `Mathlib.*` module references `UnionFind` — and
+  `Geb/Mathlib/Data/UnionFind/OfEdges.lean` needs one to extract.
+  Trigger: the preparation of that module's upstream submission,
+  which outlives this workstream group.
