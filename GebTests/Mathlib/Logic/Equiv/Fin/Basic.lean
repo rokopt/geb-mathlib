@@ -45,3 +45,8 @@ theorem sampleFunEncode_eq : sampleFunEncode = (1 : Fin (3 ^ 2)) := by decide
 theorem sampleFunEncode_roundtrip (i : Fin 2) :
     Fin.funDecodeC sampleFunEncode i = (⟨i.val, by omega⟩ : Fin 3) := by
   simp only [sampleFunEncode, Fin.funDecodeC_funEncodeC]
+
+/-- The decode direction computes at the encoded literal. -/
+theorem sampleFunDecode_eq (i : Fin 2) :
+    Fin.funDecodeC (1 : Fin (3 ^ 2)) i = (⟨i.val, by omega⟩ : Fin 3) := by
+  revert i; decide
