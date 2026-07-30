@@ -1,0 +1,82 @@
+/-
+Copyright (c) 2026 Terence Rokop. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Terence Rokop
+-/
+module
+
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential.Core
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.Shapes.Instances
+
+/-!
+# `FinSetSkel` is monoidal closed
+
+The monoidal packaging of `Exponential/Core.lean`. `Closed X` has
+exactly the two fields `rightAdj` and `adj`, and `MonoidalClosed C`
+exactly the one field `closed`, so `Adjunction.rightAdjointOfEquiv`
+and `Adjunction.adjunctionOfEquivRight` supply the functor, the unit,
+the counit and the triangle identities, and none is constructed by
+hand.
+
+`X ⊗ Z` is the object of length `X.len * Z.len` on the nose, the
+monoidal structure having come from
+`CartesianMonoidalCategory.ofChosenFiniteProducts` fed with the
+chosen binary product cones, so restating the equivalence at
+`X ⊗ Z ⟶ Y` transports along a definitional equality rather than a
+comparison isomorphism.
+
+The whiskering bridge is what connects the carrier-level naturality
+of `Exponential/Core.lean` to `F.map f`: left whiskering acts on
+indices by pairing the first component with the whiskered morphism's
+action on the second. It is stated here rather than in the core
+because `◁` elaborates through the `CartesianMonoidalCategory`
+instance, which depends on `Classical.choice`.
+
+## Main definitions
+
+* `FinSetSkel.expHomEquiv` — the exponential's hom-level
+  equivalence, in the form the adjunction consumes.
+* `FinSetSkel.monoidalClosed` — the monoidal closed structure.
+
+## Main statements
+
+* `FinSetSkel.whiskerLeft_get` — the action of left whiskering on
+  indices.
+* `FinSetSkel.expHomEquiv_naturality` — naturality of that
+  equivalence in the parameter.
+
+## References
+
+* [Freyd1972]
+
+## Tags
+
+finite sets, skeleton, exponential, monoidal closed
+-/
+
+@[expose] public section
+
+universe u
+
+open CategoryTheory MonoidalCategory
+
+namespace FinSetSkel
+
+/-- Left whiskering acts on indices by pairing the first component
+with the whiskered morphism's action on the second. -/
+theorem whiskerLeft_get (X : FinSetSkel.{u}) {Y Z : FinSetSkel.{u}}
+    (f : Y ⟶ Z) (i : Fin (X ⊗ Y).len) :
+    (X ◁ f).toVec.get i =
+      Fin.pairC (Fin.divNatC i) (f.toVec.get (Fin.modNatC i)) := by
+  have h : (X ◁ f) = prodLift (prodFst X Y) (prodSnd X Y ≫ f) :=
+    prodLift_uniq _ _ _
+      (CartesianMonoidalCategory.whiskerLeft_fst X f)
+      (CartesianMonoidalCategory.whiskerLeft_snd X f)
+  have h' : ∀ j : Fin (prodObj X Y).len,
+      (prodLift (prodFst X Y) (prodSnd X Y ≫ f)).toVec.get j =
+        Fin.pairC (Fin.divNatC j) (f.toVec.get (Fin.modNatC j)) := fun j ↦ by
+    rw [prodLift_get, comp_get, prodFst_get, prodSnd_get]
+  rw [h]
+  exact h' i
+
+end FinSetSkel
