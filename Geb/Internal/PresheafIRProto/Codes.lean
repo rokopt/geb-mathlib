@@ -58,10 +58,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.hasBijectiveReindex_iotaPresheaf`,
   `GebProto.hasBijectiveReindex_iotaConst`,
   `GebProto.hasBijectiveReindex_coprod`,
-  `GebProto.hasBijectiveReindex_deltaConst` — the presheaf reading of the
-  `ι` / `σ` / `δ` rules generates only functors with bijective reindexing.
-* `GebProto.hasBijectiveReindex_delta` — the sharp form: a `δ`'s reindexing is
-  bijective exactly when the adjoined arity's is.
+  `GebProto.hasBijectiveReindex_deltaConst`, `GebProto.hasBijectiveReindex_unitPsh`,
+  `GebProto.hasBijectiveReindex_sigmaPsh` — every generator and operation of the
+  constant-arity fragment has, or preserves, bijective reindexing.
+* `GebProto.hasBijectiveReindex_delta` — a `δ`'s reindexing is bijective when
+  the adjoined arity's is. The converse is not proved.
 * `GebProto.not_hasBijectiveReindex_arityVaries` — `arityVaries` is not such a
   functor, so those rules do not generate it.
 * `GebProto.not_hasBijectiveReindex_deltaVarying` — a `δ` at an arity that does
@@ -928,9 +929,9 @@ theorem hasBijectiveReindex_coprod (S : Type uS)
   intro j j' g a i
   exact h a.1.1 g ⟨a.1.2, a.2⟩ i
 
-/-- Bijective reindexing is inherited by `δ` exactly when the adjoined arity's
-own reindexing is bijective: the two summands of a `δ` direction are reindexed
-independently. -/
+/-- Bijective reindexing is inherited by `δ` from the adjoined arity's own
+reindexing: the two summands of a `δ` direction are reindexed independently.
+Only this direction is proved; the converse is not used. -/
 theorem hasBijectiveReindex_delta (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (P : ShapeArity F.toPresheafPFunctorData) (hP : P.IsFunctorial F)
     (hF : HasBijectiveReindex F)
@@ -1113,6 +1114,27 @@ theorem not_hasBijectiveReindex_deltaVarying : ¬ HasBijectiveReindex deltaVaryi
   exact deltaVarying_source_empty d
 
 end VaryingWitness
+
+section Closure
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The unit has bijective reindexing: it has no directions at all. -/
+theorem hasBijectiveReindex_unitPsh :
+    HasBijectiveReindex (unitPsh.{uI, uJ, uB, vI, vJ} I J) := by
+  intro j j' g a i
+  exact ⟨fun x _ _ ↦ PEmpty.elim x.1, fun y ↦ PEmpty.elim y.1⟩
+
+/-- Bijective reindexing is inherited by the `σ` base change: its reindexing is
+its subfunctor's, at the lifted morphism. -/
+theorem hasBijectiveReindex_sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S))
+    (hF : HasBijectiveReindex F) : HasBijectiveReindex (sigmaPsh S F) := by
+  intro j j' g s i
+  exact hF (sigmaLiftHom S F.toPresheafPFunctorData g s) ⟨s.1, rfl⟩ i
+
+end Closure
+
 
 
 

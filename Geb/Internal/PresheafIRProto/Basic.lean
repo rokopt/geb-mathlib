@@ -20,7 +20,7 @@ Throwaway exploration, not upstream-eligible content. Every declaration here is
 `Classical.choice`-free; the bundled restatement of the p.r.a. formula, which
 writes `⟶` between two objects of a presheaf category and so pulls in
 `Classical.choice` from mathlib, is in the sibling `PresheafIRProto.Functor`
-module. This module tests the load-bearing claims of the presheaf-generalized
+module. This module tests the following claims of the presheaf-generalized
 IR brainstorm:
 
 1. `iotaPresheaf` — the constant (`iota`) case generalizes to the functor
@@ -396,9 +396,14 @@ which is what `sliceHomApp` below exhibits by constructing the action.
 
 Derivation, for the presheaf case: `T Z j = Σ_{a ∈ T₁ j} Hom(E a, Z)` is a
 coproduct of representables in `Z`, so by Yoneda
-`Nat(Σ_a Hom(E a, −), Σ_b Hom(E' b, −)) = Π_a Σ_b Hom(E' b, E a)`. The step
-that carries it is Yoneda, which needs the domain to be a presheaf category —
-this is why the same argument is unavailable over the free coproduct completion.
+`Nat(Σ_a Hom(E a, −), Σ_b Hom(E' b, −)) = Π_a Σ_b Hom(E' b, E a)`. Yoneda for
+covariant hom-functors holds in any locally small category, so it is not what
+restricts the argument. What restricts it is the premise: over the free
+coproduct completion the `δ` interpretation is not a coproduct of
+`Fam(C)`-representables, since by Theorem 2.4 of
+[GhaniNordvallForsbergMalatesta2015] its coproduct is indexed by set maps
+`A → X`, whereas by Definition 2.2 a `Fam(C)`-morphism carries `C`-morphism
+data that index does not.
 -/
 
 open CategoryTheory
