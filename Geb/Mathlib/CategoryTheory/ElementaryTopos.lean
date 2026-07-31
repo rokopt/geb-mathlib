@@ -74,6 +74,10 @@ comparison. An equality of objects would not be invariant under
 equivalence, and would oblige an instance whose natural classifier
 yields an isomorphic but unequal `Ω₀` to rebuild it.
 
+The class is `ElementaryTopos` and not `Topos`: the qualifier distinguishes it from a Grothendieck
+topos, and mathlib reserves `Topos` for sheaf-theoretic material, `Mathlib/CategoryTheory/Topos/`
+holding `Sheaf.lean` and a deprecated classifier shim while declaring no `Topos` class.
+
 ## References
 
 * [Freyd1972], for the axiomatisation transcribed here, which

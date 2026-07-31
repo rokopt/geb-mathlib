@@ -17,6 +17,15 @@ depend on `Classical.choice` through the private
 and the result is still array-backed, so indexing stays
 constant-time.
 
+Those four lemmas are therefore not to be used in a choice-free module,
+and neither is the `Array` bridge beneath them. All four carry `@[simp]`,
+and all but `Vector.ofFn_getElem` also `@[grind =]`, so a bare `simp` or
+`grind` meeting such a term introduces `Classical.choice` without an
+error. The constructions `Vector.range` and `Vector.finRange` are equally
+unusable, each having only choice-dependent indexing lemmas, so the
+restriction covers the constructions and not only their lemmas; the
+constructions themselves depend on `propext` alone.
+
 `ofFnC` is not related to `Vector.ofFn` by any choice-free equation —
 the bridge would be `List.toArray_ofFn`, itself choice-dependent — so
 the two coexist unrelated, and choice-free modules use this one.
