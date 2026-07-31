@@ -44,5 +44,20 @@ globs = ["Geb.*"]
 name = "GebTests"
 globs = ["GebTests.*"]
 
+# `linter.hashCommand`, a member of `mathlibStandardSet`, rejects every
+# `#`-command outside `#adaptation_note`. Its purpose is to keep them
+# out of library code, where they print output and slow elaboration;
+# `Geb` keeps the full set and so keeps that ban. Test modules assert
+# by `#guard`, which is the only form available for values that do not
+# reduce in the kernel — `Repr` rendering through `Std.Format.prettyM`,
+# and well-founded recursions such as `UnionFind.find` — since `rfl`
+# and `decide` both fail on those and `native_decide` is forbidden
+# outright. mathlib draws the same line: its `lean_lib MathlibTest`
+# carries no `leanOptions`, so `mathlibStandardSet` never reaches it.
+# A library's options are appended to the package's, so this overrides
+# the one linter and inherits the rest.
+[lean_lib.leanOptions]
+weak.linter.hashCommand = false
+
 [[lean_lib]]
 name = "GebMeta"

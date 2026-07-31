@@ -219,6 +219,15 @@ The LSP is not an oracle for this — the file reports no diagnostics
 and `#eval` returns a value — so a `#guard` claim is settled by
 `lake build` alone.
 
+`#guard` belongs to test modules only. `linter.hashCommand`, a member
+of `mathlibStandardSet`, rejects every `#`-command but
+`#adaptation_note`, which keeps them out of library code where they
+print output and slow elaboration. `lakefile.toml` disables that one
+linter for the `GebTests` library alone, so a test may assert by
+`#guard` — the only form available for a value that does not reduce in
+the kernel — while `Geb` keeps the ban. mathlib draws the same line for
+its own `MathlibTest`.
+
 ## Lake / build workflow
 
 - Always use `lake build` and `lake test`. Avoid `lake clean`
