@@ -25,15 +25,17 @@ specifications, not merely up to isomorphism.
 
 ## Main definitions
 
-* `FinCat.Hom.mapTotalOf`, `FinCat.Hom.mapTotal` — the extension of the
-  morphism map to the full hom types.
-* `FinCat.Hom.compCheckOf`, `FinCat.Hom.compCheck` — the decidable
+* `CategoryTheory.FinCat.Hom.mapTotalOf`,
+  `CategoryTheory.FinCat.Hom.mapTotal` — the extension of the morphism
+  map to the full hom types.
+* `CategoryTheory.FinCat.Hom.compCheckOf`,
+  `CategoryTheory.FinCat.Hom.compCheck` — the decidable
   preservation-of-composition check on pairs of client morphisms.
-* `FinCat.Hom` — the functor specification type.
-* `FinCat.Hom.id`, `FinCat.Hom.comp` — the identity specification and
-  composition of specifications.
-* `FinCat.Hom.toFunctor` — the mathlib functor a specification
-  generates.
+* `CategoryTheory.FinCat.Hom` — the functor specification type.
+* `CategoryTheory.FinCat.Hom.id`, `CategoryTheory.FinCat.Hom.comp` —
+  the identity specification and composition of specifications.
+* `CategoryTheory.FinCat.Hom.toFunctor` — the mathlib functor a
+  specification generates.
 
 ## Main statements
 
@@ -92,7 +94,7 @@ category, functor, finite category, decidable, constructive, choice-free
 
 @[expose] public section
 
-open CategoryTheory
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -273,8 +275,7 @@ written with explicit instance arguments rather than through `⥤`, so
 that `v` appears in it and is not left to be inferred from a hidden
 instance argument. -/
 def toFunctor.{v, u} {S T : FinCat} (F : Hom S T) :
-    @CategoryTheory.Functor (Obj.{u} S) (Obj.category.{v, u} S)
-             (Obj.{u} T) (Obj.category.{v, u} T) where
+    @Functor (Obj.{u} S) (Obj.category.{v, u} S) (Obj.{u} T) (Obj.category.{v, u} T) where
   obj X := ⟨ULift.up (F.objMap X.idx.down)⟩
   map f := ULift.up (F.mapTotal f.down)
   map_id _ := congrArg ULift.up (F.mapTotal_id _)
@@ -283,3 +284,5 @@ def toFunctor.{v, u} {S T : FinCat} (F : Hom S T) :
 end Hom
 
 end FinCat
+
+end CategoryTheory

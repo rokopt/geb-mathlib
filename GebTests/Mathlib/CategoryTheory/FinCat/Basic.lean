@@ -28,6 +28,8 @@ category, finite category, decidable, constructive
 
 @[expose] public section
 
+open CategoryTheory
+
 /-- The terminal category: one object, no non-identity morphisms. -/
 def terminalCat : FinCat where
   objCount := 1

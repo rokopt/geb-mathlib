@@ -36,6 +36,8 @@ category, functor, finite category, decidable, constructive
 
 @[expose] public section
 
+open CategoryTheory
+
 /-- The functor specification sending the terminal category's object to
 `walkingArrow`'s source. -/
 def arrowPointSrc : FinCat.Hom terminalCat walkingArrow where

@@ -18,15 +18,18 @@ checked.
 
 ## Main definitions
 
-* `FinCat` — the specification type.
-* `FinCat.homCountOf`, `FinCat.homCount` — the hom-count including the
-  reserved identity.
-* `FinCat.Mor`, `FinCat.emb`, `FinCat.id` — the full hom type, the
-  embedding of a client morphism, and the reserved identity.
-* `FinCat.compTotalOf`, `FinCat.compTotal` — composition on the full
-  hom types.
-* `FinCat.assocCheckOf`, `FinCat.assocCheck` — the decidable
-  associativity check on triples of client morphisms.
+* `CategoryTheory.FinCat` — the specification type.
+* `CategoryTheory.FinCat.homCountOf`, `CategoryTheory.FinCat.homCount`
+  — the hom-count including the reserved identity.
+* `CategoryTheory.FinCat.Mor`, `CategoryTheory.FinCat.emb`,
+  `CategoryTheory.FinCat.id` — the full hom type, the embedding of a
+  client morphism, and the reserved identity.
+* `CategoryTheory.FinCat.compTotalOf`,
+  `CategoryTheory.FinCat.compTotal` — composition on the full hom
+  types.
+* `CategoryTheory.FinCat.assocCheckOf`,
+  `CategoryTheory.FinCat.assocCheck` — the decidable associativity
+  check on triples of client morphisms.
 
 ## Main statements
 
@@ -59,8 +62,8 @@ equation is used only inside a `Prop`: each branch returns
 only the bound is transported. This is core's own idiom for
 `Fin.castLE`.
 
-The specification type is declared `structure _root_.FinCat` inside
-`namespace FinCat`, so that its field types name the arithmetic
+The specification type is declared `structure _root_.CategoryTheory.FinCat`
+inside `namespace FinCat`, so that its field types name the arithmetic
 unqualified and the module needs only one namespace block.
 
 This module has no imports. Its `Fin` and `Nat` material is in the
@@ -77,6 +80,8 @@ category, finite category, decidable, constructive, choice-free
 -/
 
 @[expose] public section
+
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -156,7 +161,7 @@ non-identity morphisms at each pair, a composition function on those
 morphisms, and the associativity check. The client designates no
 identities, states no identity laws, and supplies no domain or codomain
 data. -/
-@[ext] structure _root_.FinCat where
+@[ext] structure _root_.CategoryTheory.FinCat where
   /-- The number of objects, indexed by `Fin objCount`. -/
   objCount : Nat
   /-- The number of non-identity morphisms `i ⟶ j`. -/
@@ -271,3 +276,5 @@ theorem compTotal_assoc (S : FinCat) {i j k l : Fin S.objCount}
       S.id_comp, S.id_comp]
 
 end FinCat
+
+end CategoryTheory

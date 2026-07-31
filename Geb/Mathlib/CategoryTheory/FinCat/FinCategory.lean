@@ -21,8 +21,8 @@ instance and nothing else.
 
 ## Main definitions
 
-* `FinCat.Obj.finCategory` — the `FinCategory` instance at coinciding
-  object and morphism levels.
+* `CategoryTheory.FinCat.Obj.finCategory` — the `FinCategory` instance
+  at coinciding object and morphism levels.
 
 ## Implementation notes
 
@@ -45,7 +45,7 @@ finite category, fintype, choice, small category
 
 @[expose] public section
 
-open CategoryTheory
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -59,3 +59,5 @@ instance Obj.finCategory.{u} (S : FinCat) :
   fintypeHom := fun X Y ↦ ULift.fintype (S.Mor X.idx.down Y.idx.down)
 
 end FinCat
+
+end CategoryTheory

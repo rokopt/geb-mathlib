@@ -18,12 +18,13 @@ equation fields are proof-irrelevant and contribute no decision.
 
 ## Main definitions
 
-* `FinCat.decidableEqPiFin` — equality of functions out of `Fin n`,
-  decided pointwise.
-* `FinCat.decidableEqComp` — equality of composition tables at fixed
-  counts.
-* `FinCat.Hom₂.decidableEq`, `FinCat.Hom.decidableEq`,
-  `FinCat.decidableEq` — the three levels.
+* `CategoryTheory.FinCat.decidableEqPiFin` — equality of functions out
+  of `Fin n`, decided pointwise.
+* `CategoryTheory.FinCat.decidableEqComp` — equality of composition
+  tables at fixed counts.
+* `CategoryTheory.FinCat.Hom₂.decidableEq`,
+  `CategoryTheory.FinCat.Hom.decidableEq`,
+  `CategoryTheory.FinCat.decidableEq` — the three levels.
 
 ## Implementation notes
 
@@ -48,9 +49,8 @@ the functor level `objMap` precedes `map`, whose type mentions it; at
 the 2-cell level `app`'s type mentions only the fixed 1-cells `F` and
 `G`, so no transport arises.
 
-This module names nothing from `CategoryTheory` and takes no `open`.
-Beyond its own dependency it needs no import: `funext_iff` and
-`decidable_of_iff` are core.
+Beyond its own dependency this module needs no import: `funext_iff`
+and `decidable_of_iff` are core.
 
 ## Tags
 
@@ -59,6 +59,8 @@ equality, constructive, choice-free
 -/
 
 @[expose] public section
+
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -129,3 +131,5 @@ instance decidableEq : DecidableEq FinCat := fun S T ↦
     else isFalse (fun e ↦ hn (by injection e))
 
 end FinCat
+
+end CategoryTheory

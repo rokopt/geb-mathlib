@@ -25,17 +25,16 @@ from, and simpler than, the decidable-equality module.
 
 ## Main definitions
 
-* `FinCat.instRepr` — renders a specification as its object count, its
-  count matrix and its composition table.
-* `FinCat.Hom.instRepr` — renders a functor specification as its object
-  map and its morphism table.
-* `FinCat.Hom₂.instRepr` — renders a 2-cell specification as its
-  component vector.
+* `CategoryTheory.FinCat.instRepr` — renders a specification as its
+  object count, its count matrix and its composition table.
+* `CategoryTheory.FinCat.Hom.instRepr` — renders a functor
+  specification as its object map and its morphism table.
+* `CategoryTheory.FinCat.Hom₂.instRepr` — renders a 2-cell
+  specification as its component vector.
 
 ## Implementation notes
 
-This module names nothing from `CategoryTheory` and takes no `open`.
-Beyond its own dependency it needs no import: `List.ofFn` is
+Beyond its own dependency this module needs no import: `List.ofFn` is
 axiom-free and core.
 
 ## Tags
@@ -45,6 +44,8 @@ constructive, choice-free
 -/
 
 @[expose] public section
+
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -70,3 +71,5 @@ instance Hom₂.instRepr {S T : FinCat} {F G : Hom S T} :
   reprPrec α _ := repr (List.ofFn (fun i ↦ (α.app i).val))
 
 end FinCat
+
+end CategoryTheory

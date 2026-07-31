@@ -18,10 +18,11 @@ of `S.Mor`. Objects and morphisms sit at independent universe levels.
 
 ## Main definitions
 
-* `FinCat.Obj` — the object type of the generated category.
-* `FinCat.Obj.category` — the `Category` instance.
-* `FinCat.Obj.decidableEqHom` — decidable equality of the generated
-  morphisms.
+* `CategoryTheory.FinCat.Obj` — the object type of the generated
+  category.
+* `CategoryTheory.FinCat.Obj.category` — the `Category` instance.
+* `CategoryTheory.FinCat.Obj.decidableEqHom` — decidable equality of
+  the generated morphisms.
 
 ## Implementation notes
 
@@ -47,7 +48,7 @@ universe polymorphism
 
 @[expose] public section
 
-open CategoryTheory
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -81,3 +82,5 @@ instance Obj.decidableEqHom.{v, u} {S : FinCat} (X Y : Obj.{u} S) :
   inferInstanceAs (DecidableEq (ULift.{v} (S.Mor X.idx.down Y.idx.down)))
 
 end FinCat
+
+end CategoryTheory

@@ -18,11 +18,12 @@ map to each component.
 
 ## Main definitions
 
-* `FinCat.Hom₂.whiskerLeft`, `FinCat.Hom₂.whiskerRight` — the two
-  whiskerings.
-* `FinCat.bicategory`, `FinCat.bicategory_strict`, `FinCat.category` —
-  the bicategory of specifications, its strictness, and the resulting
-  category.
+* `CategoryTheory.FinCat.Hom₂.whiskerLeft`,
+  `CategoryTheory.FinCat.Hom₂.whiskerRight` — the two whiskerings.
+* `CategoryTheory.FinCat.bicategory`,
+  `CategoryTheory.FinCat.bicategory_strict`,
+  `CategoryTheory.FinCat.category` — the bicategory of specifications,
+  its strictness, and the resulting category.
 
 ## Main statements
 
@@ -83,7 +84,7 @@ whiskering, finite category, decidable, constructive, choice-free
 
 @[expose] public section
 
-open CategoryTheory
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -262,3 +263,5 @@ all live at `Type 0`. -/
 instance category : Category FinCat := StrictBicategory.category FinCat
 
 end FinCat
+
+end CategoryTheory

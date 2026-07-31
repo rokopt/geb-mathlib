@@ -45,6 +45,8 @@ constructive
 
 @[expose] public section
 
+open CategoryTheory
+
 -- Assertion 1: a specification renders as its object count, its count
 -- matrix and its composition table.
 #guard reprStr walkingIso ==

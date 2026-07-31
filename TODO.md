@@ -14,6 +14,7 @@
     - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
+  - [`FinSetSkel` under `namespace CategoryTheory`](#finsetskel-under-namespace-categorytheory)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
@@ -236,6 +237,17 @@ whatever placement is settled for them. Scoping the item by that
 criterion
 rather than by a module list keeps it from being settled
 incompletely.
+
+### `FinSetSkel` under `namespace CategoryTheory`
+
+Move `FinSetSkel` and the modules under
+`Geb/Mathlib/CategoryTheory/FinSetSkel/`, together with their
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/` parallels, from the root
+namespace into `namespace CategoryTheory`, as mathlib places
+essentially all of `Mathlib/CategoryTheory/`. A root-namespace
+`FinSetSkel` draws the upstream-eligibility objection that moved
+`CategoryTheory.FinCat`; it is a separate concern and so a separate
+branch.
 
 ### Upstream destination of core- and Batteries-targeted content
 

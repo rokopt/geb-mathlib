@@ -23,13 +23,14 @@ mathlib natural transformation between the generated functors.
 
 ## Main definitions
 
-* `FinCat.Hom₂.natCheckOf`, `FinCat.Hom₂.natCheck` — the decidable
-  naturality check on client morphisms.
-* `FinCat.Hom₂` — the 2-cell specification type.
-* `FinCat.Hom.instCategory` — the hom-category: vertical composition
-  and the identity 2-cell.
-* `FinCat.Hom₂.toNatTrans` — the mathlib natural transformation a 2-cell
-  specification generates.
+* `CategoryTheory.FinCat.Hom₂.natCheckOf`,
+  `CategoryTheory.FinCat.Hom₂.natCheck` — the decidable naturality
+  check on client morphisms.
+* `CategoryTheory.FinCat.Hom₂` — the 2-cell specification type.
+* `CategoryTheory.FinCat.Hom.instCategory` — the hom-category:
+  vertical composition and the identity 2-cell.
+* `CategoryTheory.FinCat.Hom₂.toNatTrans` — the mathlib natural
+  transformation a 2-cell specification generates.
 
 ## Main statements
 
@@ -95,7 +96,7 @@ constructive, choice-free
 
 @[expose] public section
 
-open CategoryTheory
+namespace CategoryTheory
 
 namespace FinCat
 
@@ -206,10 +207,12 @@ theorem natCheck_total {F G : Hom S T} (α : Hom₂ F G)
 /-- The mathlib natural transformation a 2-cell specification
 generates. -/
 def toNatTrans.{v, u} {F G : Hom S T} (α : Hom₂ F G) :
-    CategoryTheory.NatTrans F.toFunctor.{v, u} G.toFunctor.{v, u} where
+    NatTrans F.toFunctor.{v, u} G.toFunctor.{v, u} where
   app X := ULift.up (α.app X.idx.down)
   naturality _ _ f := congrArg ULift.up (α.natCheck_total f.down)
 
 end Hom₂
 
 end FinCat
+
+end CategoryTheory
