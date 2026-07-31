@@ -75,11 +75,14 @@ free of both ports. Whichever of W-c to W-f lands last removes the remainder
 together with this document, the plan, the directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
-and the `Geb.Internal.PresheafIRProto.Functor` entry in
-`GebMeta.classicalAllowedModules`; the four are mutually unordered, so the
-removal is a condition on the last rather than an assignment to a named branch.
-Carrying the whole prototype alongside its port would define the same
-declarations twice on `main`, against
+the `Geb.Internal.PresheafIRProto.Functor` entry in
+`GebMeta.classicalAllowedModules`, and the two module-docstring bullets naming
+`Geb.Internal` (`Geb.lean` and `GebTests.lean`), `GebTests/Internal/` itself
+surviving as the axiom-linter fixtures; W-c, W-d and W-e are mutually unordered
+and W-f precedes W-d, so which of the four lands last is not determined in
+advance, and the removal is a condition on the last rather than an assignment
+to a named branch. Carrying the whole prototype alongside its port would define
+the same declarations twice on `main`, against
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
 It also retains steps of the derivation that the obligations do not port, and
@@ -481,8 +484,10 @@ practice for that subtree: a `GebTests/Mathlib/` mirror per new module, which
 69 of the 70 existing `Geb/Mathlib/` modules have, and which
 `GebMeta.classicalAllowedModules`' own docstring requires of any module a
 branch adds to that allowlist ("Feature branches append their own wrapper
-module names together with their test parallels"). W-a, W-f and obligation 3
-each add such a module, so each adds an allowlist pair.
+module names together with their test parallels"). W-a and W-f each add one
+such module — W-a's carrying obligation 1's `functor`-form corollary and
+obligation 3's identification together, as its acceptance cell says — so each
+adds one allowlist pair.
 
 `docs/index.md` describes some directories module by module, others by a single
 directory bullet, and several — `Data/PFunctor/Presheaf/` and
@@ -738,12 +743,17 @@ Theorem 15, Theorem 18, Theorem 21, Corollary 19 and Corollary 22. Example 1 is
 cited by `Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module and
 `docs/index.md:402`. No branch of this workstream touches the first two, and
 each branch adds to `docs/index.md` without touching that line, so that
-citation's correction is independent of the ordering constraint below. Of the
-results the existing note does not cover, Definition 5 and Lemma 4 are the
-repository's most-cited; Lemma 4 is the most-cited outright. Definition 5 is
-cited in `Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and its test mirror;
-Lemma 4 in `Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Category,Naturality}.lean`,
-their three test mirrors and `docs/index.md`, `Category.lean` being its largest
+citation's correction is independent of the ordering constraint below. The
+existing note covers Definition 8, Theorems 2, 3 and 4 and Corollary 2. Of the
+results it does not, the repository's most-cited are Lemma 4 (62 occurrences
+over 7 files, the most-cited outright), Lemma 3 (14 over 5) and Definition 5
+(13 over 2). Definition 5 is cited in
+`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and its test mirror; Lemma 3 in
+`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`,
+`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Naturality}.lean`, one test mirror and
+`docs/index.md`; Lemma 4 in
+`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Category,Naturality}.lean`, their
+three test mirrors and `docs/index.md`, `Category.lean` being its largest
 single consumer. A key-only search under-scopes both, as it does the author
 order below. One collision deserves recording on its own: the preprint's
 Definition 8 is the proceedings' Definition 5, while the proceedings'

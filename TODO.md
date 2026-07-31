@@ -43,7 +43,9 @@ is the design's validated part; the design record is
 which names six branches and is removed with the last of them:
 
 - W-a: morphisms of presheaf p.r.a. functors, their action and the
-  hom-set bijection, upstream-eligible.
+  hom-set bijection; their composition and category structure; and the
+  bundled restatements and natural-transformation identification, in a
+  `Classical`-allowed module. Upstream-eligible.
 - W-b: the semantic operations, the decoding layer, the code type, the
   interpretation and the bound's vocabulary, upstream-eligible.
 - W-c: the bound — transport of `HasBijectiveReindex` along an
@@ -154,8 +156,8 @@ branch that found it, so each is deferred per
   Definition 8 is the proceedings' Definition 5, while the
   proceedings' Definition 8 is the preprint's Definition 17, so a
   citation that does not say which numbering it uses sends a reader to
-  the wrong statement — and Definition 5 and Lemma 4 are, of the
-  results the present note does not cover, the repository's
+  the wrong statement — and Definition 5, Lemma 3 and Lemma 4 are, of
+  the results the present note does not cover, the repository's
   most-cited. Section numbering is unchanged. Note too that the
   preprint carries a different title and author order, so the key
   names the proceedings version alone. This correction must land
