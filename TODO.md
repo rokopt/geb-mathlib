@@ -576,32 +576,44 @@ Five items over `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`.
 
 `Geb/Internal/ConcreteSyntax.lean` implements the format-independent
 core and one concrete syntax, the canonical S-expression form of
-RFC 9804 restricted to the bare tree.
+RFC 9804 restricted to the bare tree, with tests in
+`GebTests/Internal/ConcreteSyntax.lean`.
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Roadmap
 states the staging; the next items are the JSON core profile as a
-second syntax, the cross-syntax agreement theorem, and the lift of
-both syntaxes from `Ast` to `Doc`.
+second syntax, deterministic CBOR as a third, the cross-syntax
+agreement theorem, and the lift of every syntax from `Ast` to `Doc`.
 
-The module is a prototype and is exempt from nothing: it sits under
-`Geb/Internal/`, so it is downstream-only, but the coding conventions
-in [docs/rules/lean-coding.md](docs/rules/lean-coding.md) bind it. As
-committed it does not yet meet them:
-[docs/superpowers/plans/concrete-syntax-port-handoff.md](docs/superpowers/plans/concrete-syntax-port-handoff.md)
-records the outstanding port to W-types, the adversarial-review findings
-still to discharge, and the decisions already taken. That handoff is a
-transient artifact and is removed with the specs and plans before the
-branch is pushed.
+Two statements the module makes are weaker than the document's design
+argument assumes. `rosePathToBin_last` proves that every binary
+occurrence nameable in the rose presentation is the root or a path
+ending in `L`; the converse inclusion is not proved, and no lemma
+connects `rosePathToBin` to the tree it indexes. Proving the converse,
+or connecting the path map to a subtree selector, would restore the
+biconditional that
+[docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Which
+occurrences the rose presentation can name draws its two design
+consequences from. Neither `rosePathToBin` nor `Path` has a consumer in
+the module, so this is worth doing when a syntax annotates occurrences
+and not before.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
-The survey sections of
+The format-by-format sections of
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) — everything
 between § The AST and its isomorphisms and § Caveats other than
 § Local verification and § Roadmap — are inherited text. They have not
 had a pass against [CONTRIBUTING.md](CONTRIBUTING.md) § Style and
 references, and carry value-laden adjectives and evaluative framing
-that the style rule excludes. The factual content has been checked;
-only the prose is outstanding.
+that the style rule excludes.
+
+Two factual items ride along with that pass. The document's
+§ References duplicates bibliographic detail that
+[docs/references.bib](docs/references.bib) holds for RFC 9804, RFC 6962
+and Uustalu and Vene 2011, and roughly forty further works there have no
+`.bib` entry and several no searchable identifier; and its
+§ CBOR (RFC 8949 §4.2) and DAG-CBOR attributes a quoted key-ordering
+rule to DAG-CBOR's specification without recording which of IPLD's two
+specification generations carries that wording.
 
 ## Triggers (do when condition fires)
 

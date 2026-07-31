@@ -55,15 +55,16 @@ the concrete role, and states the implementation roadmap.
 
 The format-independent core and the first concrete syntax are
 implemented in
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean).
-[Local verification](#local-verification) records what compiling the
-design in this repository established; [Roadmap](#roadmap) states the
-staging and supersedes the survey sections where the two differ.
+[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
+with tests in
+[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
+[Local verification](#local-verification) records the facts the
+implementation fixes; [Roadmap](#roadmap) states the staging and
+supersedes the format-by-format sections where the two differ.
 
-The survey sections are inherited text, carried in with their factual
-corrections intact. A pass over them against
-[CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references is
-outstanding; `TODO.md` records it.
+The format-by-format sections do not yet conform to
+[CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references; `TODO.md`
+records the outstanding pass.
 
 ## The AST and its isomorphisms
 
@@ -107,8 +108,8 @@ Three precision caveats:
    both ways, but concluding that the composites are identities needs
    the two algebra structures to be compatible. In a mechanized
    development it is shorter to define both maps directly and prove the
-   round trips by structural induction — which is what the Lean below
-   does.
+   round trips on each side — which is what `Ast.toRose`, `Ast.ofRose`,
+   `Ast.ofRose_toRose` and `Ast.toRose_ofRose` do.
 
 The classical left-child/right-sibling correspondence is the unlabeled
 shadow of this: a bijection between binary trees and *forests* of rose
@@ -122,11 +123,15 @@ Occurrences in `A` are words over `{L, R}`. Under the convention above,
 child `i` of the rose node at binary position `q` sits at binary
 position `q · Rⁱ · L`. Hence:
 
-> The binary occurrences that are rose-tree nodes are exactly the empty
-> path together with the paths ending in `L`. Binary positions ending
-> in `R` are sibling-list cells and have no rose-tree name.
+> The binary occurrences that are rose-tree nodes are the empty path
+> together with the paths ending in `L`. Binary positions ending in `R`
+> are sibling-list cells and have no rose-tree name.
 
-This is proved below (`rosePathToBin_last`). Two design consequences:
+`rosePathToBin_last` proves one inclusion of this: every path in the
+image of `rosePathToBin` is empty or ends in `L`. The converse is not
+proved, and no lemma connects `rosePathToBin` to the tree it indexes, so
+the two design consequences below rest on statements the development
+does not establish.
 
 - A document written in a rose-shaped syntax can annotate strictly fewer
   positions than one written in a binary-shaped syntax. If both syntaxes
@@ -158,12 +163,17 @@ for storing combinator-calculus terms, and vice versa.
 
 ### Complexity note
 
-Parsing, printing, and the Merkle fold are all linear in the size of the
-tree with a constant number of passes, hence elementary — indeed they
-sit in the lower-elementary fragment once the hash primitive is taken as
-a unit-cost oracle. Nothing in this design requires more than bounded
-primitive recursion over the tree, which matters for a project that
-tracks where its constructions sit in the Grzegorczyk hierarchy.
+Parsing and the Merkle fold are linear in the size of the tree with a
+constant number of passes. Printing as implemented is not: `printAst`
+concatenates with `++`, which is left-associative, so each node's output
+is copied once per ancestor. An accumulator-passing printer restores
+linearity and changes no theorem.
+
+All three are elementary — indeed they sit in the lower-elementary
+fragment once the hash primitive is taken as a unit-cost oracle. Nothing
+in this design requires more than bounded primitive recursion over the
+tree, which matters for a project that tracks where its constructions
+sit in the Grzegorczyk hierarchy.
 
 ## Round-trip laws
 
@@ -202,7 +212,7 @@ be composed with itself directly. If `parse c = none` both sides are
 Less obviously, the retraction law also **forces `print` to be
 injective**: if `print d₁ = print d₂` then
 `some d₁ = parse (print d₁) = parse (print d₂) = some d₂`. Both facts
-are mechanized below (`format_idem`, `printDoc_injective`).
+are proved once and generically, as `format_idem` and `print_injective`.
 
 Injectivity is a design constraint on the document type. It
 means the document type `D` must contain **no redundant
@@ -239,7 +249,7 @@ print    = printDoc ∘ trivialDoc
 with the retraction law stated at the document level,
 `parseDoc (printDoc d) = some d`. The bare-level law is then a
 corollary — but only given the auxiliary lemma
-`erase (trivialDoc a) = a`, proved as `erase_trivialDoc`.
+`Tree.erase (Ast.trivialDoc a) = a`, proved as `Ast.erase_trivialDoc`.
 
 One caution: any data the printer *invents* must either be omitted from
 `parseDoc`'s result or be a deterministic function of the tree, or
@@ -283,8 +293,9 @@ admitting a *unique* coalgebra-to-algebra morphism into every algebra
 all `F`-coalgebras, which fails, since unfolding an arbitrary coalgebra
 can diverge and so cannot land in `μ`. For a mechanized development the
 right move is to **state and prove the comonad laws concretely** rather
-than lean on the slogan; that is done below
-(`extract_duplicate`, `map_extract_duplicate`, `duplicate_duplicate`).
+than lean on the slogan; `Tree.extract_duplicate`,
+`Tree.map_extract_duplicate` and `Tree.duplicate_duplicate` are those
+laws.
 
 The comultiplication is the structure behind histomorphisms
 (course-of-values recursion), which Geb will plausibly want over
@@ -407,6 +418,10 @@ hashes at the data-model level and guarantees the same hash for a value
 independent of whether it was written in Ion text or Ion binary.
 
 ## Merkle hashing as a catamorphism
+
+This section and the next are specification, not implementation. No hash
+function usable from Lean exists yet, so the fold would have no consumer
+and is not written; [Roadmap](#roadmap) stage 3 carries it.
 
 A Merkle hash is a catamorphism over the initial algebra with a hash
 algebra `h : F(Digest) → Digest`; the unique fold `⦇h⦈ : μF → Digest` is
@@ -544,7 +559,8 @@ designed for hashing and signing), an **advanced** human-readable
 encoding, a basic/**transport** encoding, and an in-memory
 representation; the base-64 form (`{…}`) wraps the canonical bytes.
 
-The canonical grammar is genuinely four ABNF productions:
+The canonical grammar is two productions, pulling in two more by
+reference:
 
 ```abnf
 c-sexp   = c-string / ("(" *c-sexp ")")
@@ -587,11 +603,13 @@ injective:
 - Any list element whose head atom is `*ann` is an annotation and is
   skipped by the core decoder.
 
-Tooling, stated honestly: implementations exist and are real — GNU
-Libgcrypt's `gcry_sexp_*` (used by GnuPG), the OCaml `csexp` package
-(used by dune), and Ribose's `sexpp` in RNP, all three named by RFC 9804
-§1.1, plus reference Python/Ruby/C code in its Appendix A. But there is
-no maintained, first-class canonical-S-expression library across
+Tooling, stated honestly: implementations exist and are real. RFC 9804
+§1.1 names two — GNU Libgcrypt (used by GnuPG) and Ribose's RNP, whose
+`sexpp` is C++ — and refers to Appendix A for the rest. Appendix A lists
+seven in all: those two, plus implementations in C, Ruby and OCaml, one
+for Inferno, and the Small Fast X-Expression Library. It lists no Python
+code. There is no maintained, first-class canonical-S-expression library
+across
 Python/JavaScript/Rust/Go/Java. The ecosystem is roughly one to two
 orders of magnitude smaller than JSON's, CBOR's, or bencode's, and it is
 concentrated in the SPKI/PGP niche. "Multiple open-source
@@ -626,15 +644,14 @@ major type 3 and length", *therefore* by length first. The two rules can
 only diverge on maps that mix major types (integer key `1000` encodes as
 `19 03e8`, string key `"z"` as `61 7a`; bytewise puts the integer first,
 length-first puts the string first), and DAG-CBOR forbids non-string
-keys. Exhaustive random testing over string-keyed maps found zero
-disagreements.
+keys, so for DAG-CBOR the two rules cannot diverge at all.
 
 So that warning is misleading rather than false, and the practical
 divergence is elsewhere: **CBOR sorts the encoded key, JSON
 sorts the raw key.** The keys `k, ann, root, format` sort as
 `k, ann, root, format` under both CBOR rules and as
-`ann, format, k, root` under JCS and DAG-JSON. In random string-keyed
-maps the encoded and raw orders disagreed about 78% of the time.
+`ann, format, k, root` under JCS and DAG-JSON: the two orders differ
+whenever two keys differ in length.
 
 DAG-CBOR's other constraints, all confirmed: map keys must be strings;
 only tag 42 (CID) is permitted and it must be encoded as `0xd82a`, so
@@ -654,13 +671,14 @@ ordering. This removes the hazard rather than documenting it, and it
 costs only the self-description that map keys would have provided, which
 the format tag in position 0 restores.
 
-Verified prior art, and it is strong: EverCBOR, part of EverParse,
-implements RFC 8949 §4.2 deterministic CBOR in F* with proofs of memory
-safety, arithmetic safety, functional correctness, non-ambiguity, and
-non-malleability of the deterministic fragment, extracting to C and safe
-Rust; EverCDDL adds a CDDL frontend. This is the single largest piece of
-reusable verification leverage available to this project, and it is
-available for CBOR and for no other candidate format.
+Verified prior art, and it exists for CBOR and for no other candidate
+format: EverCBOR, part of EverParse, implements RFC 8949 §4.2
+deterministic CBOR in F* with proofs of memory safety, arithmetic
+safety, functional correctness, non-ambiguity, and non-malleability of
+the deterministic fragment, extracting to C and safe Rust; EverCDDL adds
+a CDDL frontend. What it offers a Lean development is bounded, and
+[Evaluating the candidates](#evaluating-the-candidates) states the
+bound: the proof does not cross into Lean, the extracted C does.
 
 ### JSON, JCS (RFC 8785), DAG-JSON
 
@@ -722,14 +740,20 @@ parser. JSON's verification cost is concentrated entirely in the
 *annotated* document, where strings appear — and csexp's quoted-string
 form carries a comparable cost there.
 
-Against JSON, decisively for a *verified* bootstrap: **no fully verified
-RFC 8259 parser or RFC 8785 canonicalizer is known to exist in any proof
-assistant.** The nearest artifacts are Isabelle's Nano JSON entry
-(explicitly not fully compliant, with no round-trip proofs), Coq's
-Vermillion (an LL(1) parser generator using JSON only as a benchmark),
-and a Lean project proving serialization-to-schema validity in one
-direction. So JSON's enormous *implementation* ecosystem does not
-translate into any *verification* leverage.
+Against full JSON: **no fully verified RFC 8259 parser or RFC 8785
+canonicalizer is known to exist in any proof assistant.** The nearest
+artifacts are Isabelle's Nano JSON entry (explicitly not fully
+compliant, with no round-trip proofs), Coq's Vermillion (an LL(1) parser
+generator using JSON only as a benchmark), and a Lean project proving
+serialization-to-schema validity in one direction. So JSON's enormous
+*implementation* ecosystem does not translate into any *verification*
+leverage.
+
+This does not separate JSON from canonical S-expressions, for which no
+verified parser exists either; both are written here from nothing. It
+bears on the *full* JSON document — escaping, Unicode, floats — which is
+why the roadmap takes the core profile, whose parser needs none of the
+three, and leaves the rest to the annotated stage.
 
 ### Protocol Buffers — rejected for any hash-bearing role
 
@@ -794,7 +818,8 @@ with annotations as explicit elements, never XML comments:
 </geb:annotation>
 ```
 
-Why it still loses for the *bootstrap* pair: this project must produce
+Why it still loses a place in the bootstrap set: this project must
+produce
 verified parse/print for each syntax, and XML-with-namespaces plus C14N
 1.1 is a large and subtle target — RFC 8785's own introduction cites the
 difficulty of getting XML signatures to validate, attributing it to
@@ -884,10 +909,12 @@ Three findings bear on the choice, and they do not point the same way:
    proof assistant, whereas a verified deterministic-CBOR
    implementation with non-malleability proofs does.
 
-The third finding carries less weight than it appears to. EverCBOR is
-an F* artifact: it cannot be imported into a Lean development, so its
-value here is as a differential-testing oracle and as methodology, not
-as reusable code. That is not enough to order the syntaxes by.
+The third finding is narrower than it looks. EverCBOR's *proof* is an
+F* artifact and does not cross into a Lean development. Its extracted C
+does, through `@[extern]`, as an unverified differential-testing oracle,
+and its methodology transfers. That is worth having — it is the route
+[Ecosystem notes](#ecosystem-notes) proposes for the hash as well — and
+it is not enough to order the syntaxes by.
 
 ### The bootstrap set
 
@@ -911,12 +938,19 @@ Two considerations constrain the order.
   lowest available verified-parser cost, and `Lean.Json` supplies an
   unverified oracle for differential testing immediately.
 
-The order adopted is therefore canonical S-expressions, then the JSON
-core profile, then deterministic CBOR. CBOR is not dropped: it shares
-JSON's data model, so once the JSON core is proved its incremental
-cost is the byte-level integer encoding alone, and it carries the
-storage and interchange role. Deferring it costs nothing that
-validating syntax independence needs.
+The order adopted is canonical S-expressions, then the JSON core
+profile, then deterministic CBOR. Canonical csexp goes first on two
+grounds none of the three findings touches: its verified-parser cost is
+tied for the lowest in the table, and its data model is the only one
+that differs from every other candidate's, so it tests syntax
+independence more sharply than any alternative first choice. The
+findings remove csexp's *other* advantages — the normative canonical
+form and the readability — and leave those two standing.
+
+CBOR is not dropped: it shares JSON's data model, so once the JSON core
+is proved its incremental cost is the byte-level integer encoding alone,
+and it carries the storage and interchange role. Ordering it third costs
+nothing that validating syntax independence needs.
 
 What this ordering costs, stated plainly: outside the Geb
 implementation, nobody's toolchain reads Geb csexp without new code.
@@ -924,15 +958,16 @@ That is acceptable for a bootstrap format and unacceptable for an
 interchange format, which is why JSON and then CBOR carry the
 interchange role.
 
-**Switch thresholds.** Replace canonical S-expressions with bencode as
-the first syntax if the readable form is abandoned: bencode is smaller
-to verify, better tooled, and canonical by construction, and it loses
-only on human readability, which the canonical form does not supply
-either. Promote CBOR ahead of JSON if a storage format is needed
-before a second validation of syntax independence. Promote the csexp
+**Switch thresholds**, which bear on the syntaxes not yet written;
+canonical S-expressions are implemented, so none of them displaces it.
+Promote CBOR ahead of the JSON core profile if a storage format is
+needed before a second validation of syntax independence. Add the csexp
 advanced form ahead of both if the textual form is read and written by
 hand often enough for the canonical form's unreadability to cost more
-than the second parser.
+than the second parser. Add bencode if a second
+canonical-by-construction format is wanted: it is smaller to verify and
+better tooled than canonical csexp, and it loses only on human
+readability, which the canonical form does not supply either.
 
 ## Prior art on content-addressed code
 
@@ -1091,79 +1126,108 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 ## Local verification
 
 The development is
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean).
+[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
+806 lines and 54 theorems, with 123 lines of tests in
+[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
 It builds under the toolchain pinned in `lean-toolchain` with
-`autoImplicit` and `relaxedAutoImplicit` false, uses Lean core only —
-no `Mathlib` or `Cslib` import — and contains no `sorry`.
+`autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
+Its one import is
+[Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean), and
+through it `Mathlib.Data.W.Basic`.
 
-Compiling it in this repository established three facts that a
-standalone compilation does not.
+Four facts constrain how it is written.
 
-1. `decide` does not discharge `tagLeaf.size = 16` in a file carrying
-   the `module` keyword. Core's `String.toUTF8` is not exposed to the
-   kernel under the module system, so reduction gets stuck;
-   `simp [tagLeaf, tagFork, tagRoot, tagDoc]` first reduces the goal
-   to one `decide` closes.
-2. mathlib's `Nat.digits` is unusable here on two counts. It depends
-   on `Classical.choice`, which
-   [CONTRIBUTING.md](../CONTRIBUTING.md) § Constructive-only forbids, and
-   it has no native implementation, so a printer built on it does not
-   run in the interpreter. The decimal encoding is written out
-   instead — `digitsLE`, `ofLE`, and the round trip `ofLE_digitsLE` —
-   in about thirty lines, which also removes the mathlib dependency.
-3. The recursive-descent parser's fuel measure must be additive.
-   Stating it as `1 + max l.depth r.depth` draws `Classical.choice`
-   into the retraction proof through the order lemmas for `max`;
-   `1 + l.depth + r.depth` does not.
+1. `Ast`, `Tree` and `Rose` are W-types, and every recursion runs
+   through `WType.elim`, `WType.para` or a recursor application.
+   [docs/rules/lean-coding.md](rules/lean-coding.md) § Recursion and
+   induction through recursors requires it: no self-referential
+   `inductive`, no self-calling `def`, no `induction` tactic. The
+   parser's fuel and the decimal digits are therefore written as
+   `Nat.rec` and `List.rec` applications rather than through the
+   equation compiler.
+2. mathlib's `Nat.digits` depends on `Classical.choice`, which
+   [CONTRIBUTING.md](../CONTRIBUTING.md) § Constructive-only forbids. It
+   does have a native implementation and does run in the interpreter;
+   the choice dependency alone is what rules it out. The decimal
+   encoding is written out instead — `digitsLE`, `ofLE`, and the round
+   trip `ofLE_digitsLE`.
+3. mathlib's `FinEnum` instances for `Fin n` and `Empty` are built
+   through `FinEnum.ofList`, whose proof obligations depend on
+   `Classical.choice`. `finEnumFin` and `finEnumEmpty` name choice-free
+   constructions in their place, and the arity instances are defined
+   from those, so decidable equality on each tree type stays
+   choice-free.
+4. Core's `String.toList` and `String.data` depend on
+   `Classical.choice`, so the tests build their inputs as `List Char`.
+   `String.ofList` does not, so the printer's output is still compared
+   against a string literal.
 
-Axiom dependencies, from `#print axioms`:
+A note on the fuel measure, since it is easy to get wrong. `omega`
+reasons about `Nat.max` choice-free; `simp` on a hypothesis containing
+`Nat.max` does not, reaching choice-dependent order lemmas instead.
+Either a `max`-based or an additive measure is therefore available,
+provided every bound on it is discharged by `omega`. The measure used,
+`Ast.size`, is the node count, and is named for its return value as
+[docs/rules/lean-coding.md](rules/lean-coding.md) § Naming conventions
+requires.
 
-| Declarations | Axioms |
+Axiom dependencies, from `#print axioms` over all 54 theorems:
+
+| Theorems | Axioms |
 | --- | --- |
-| `Tree.extract_duplicate`, `tags_equal_length`, `printDoc_injective`, `charDigit_digitChar` | none |
-| the remaining theorems of the format-independent core | `propext` |
-| the remaining theorems of the S-expression syntax | `propext`, `Quot.sound` |
+| 13, among them `Tree.map_mk`, `print_injective`, `Csexp.charDigit_digitChar` | none |
+| 13, among them `Ast.toRose_fork`, `format_idem`, `rosePathToBin_last` | `propext` |
+| 6, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
+| the remaining 22, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
-No declaration depends on `Classical.choice`. `tags_equal_length` is
-proved by `decide` rather than `native_decide`, which would add
-`Lean.ofReduceBool` and the compiler to the trusted base.
+No declaration depends on `Classical.choice`, and `lake lint` enforces
+that through `GebMeta.detectNonstandardAxiom`.
 
 The theorems that carry the architecture:
 
 - `Tree.extract_duplicate`, `Tree.map_extract_duplicate` and
-  `Tree.duplicate_duplicate` are the three comonad laws. They justify
-  calling `μX. Ann × F X` a comonad without appealing to the
-  cofree-recursive-comonad terminology.
-- `ofRose_toRose` and `toRose_ofRose` are the rose/binary bijection.
-- `rosePathToBin_last` is the occurrence characterization.
-- `tags_equal_length` discharges the equal-length side condition the
-  domain-separation argument depends on.
-- `erase_trivialDoc` makes the bare-level round-trip law a corollary
-  of the document-level one.
-- `format_idem` and `printDoc_injective` are the two corollaries of
-  the retraction law, proved once and generically, so that each
-  concrete syntax has exactly one obligation left to discharge: its
-  own retraction.
-- `parse_print` discharges that obligation for the canonical
-  S-expression syntax on the bare tree;
-  `csexp_format_idem` and `csexp_print_injective` instantiate the two
-  corollaries at it.
+  `Tree.duplicate_duplicate` are the three comonad laws, and
+  `Tree.map_id` and `Tree.map_map` the two functor laws they presuppose.
+  They justify calling `μX. Ann × F X` a comonad without appealing to
+  the cofree-recursive-comonad terminology.
+- `Ast.ofRose_toRose` and `Ast.toRose_ofRose` are the rose/binary
+  bijection.
+- `rosePathToBin_last` bounds the image of the rose-to-binary path map.
+  See
+  [Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name)
+  for what it does and does not establish.
+- `Ast.erase_trivialDoc` says that decorating every node with the empty
+  annotation and then erasing is the identity. It is what will make a
+  bare-level round-trip law a corollary of the document-level one, once
+  stage 2 states that law.
+- `format_idem` and `print_injective` are the two corollaries of the
+  retraction law, proved once and generically, so that each concrete
+  syntax has exactly one obligation left to discharge: its own
+  retraction.
+- `Csexp.parse_print` discharges that obligation for the canonical
+  S-expression syntax on the bare tree; `Csexp.format_idem` and
+  `Csexp.print_injective` instantiate the two corollaries at it.
 
-Three notes for anyone extending the development, all found by
-compiling rather than by reading:
+Two facts about the encoding, for anyone extending the development:
 
-1. With `autoImplicit` false, `def Doc.erase : Doc k → Ast k` does not
-   elaborate; `k` must be bound explicitly as `{k : Nat}`.
-2. `deriving DecidableEq` fails on the nested inductive
-   `Rose k := node : Fin k → List (Rose k) → Rose k`; no deriving
-   handler applies, so it must be written by hand if needed.
-3. There is no `Repr ByteArray` instance, so `deriving Repr` fails on
-   any structure with a `ByteArray` field.
+1. `simp` and `rw` match at reducible transparency, so an arity family
+   used as a W-type index is an `abbrev`. Left as a plain `def`, a child
+   function whose type reads `Rose.Arity (i, n) → _` in a goal will not
+   unify with a lemma stating `Fin n → _`, definitional equality
+   notwithstanding.
+2. `WType.para` supplies `Tree.duplicate` with no new recursion:
+   redecorating each node with its own subtree is a paramorphism.
+   `Tree.map` and `Tree.erase` need less than that — each changes a
+   node's shape and not its children, so each is a morphism of
+   polynomial functors.
 
-Remaining proof obligations, in dependency order: the retraction law
-for a second syntax; the cross-syntax agreement theorem; the lift of
-both syntaxes from `Ast` to `Doc`; injectivity of `annCanon`; and the
-equivalence of the recursive and side-table document presentations.
+Remaining proof obligations, in dependency order: the retraction law for
+a second syntax; the cross-syntax agreement theorem; the lift of every
+syntax from `Ast` to `Doc`; injectivity of the annotation
+canonicalization `annCanon`, which
+[Structural content-addressing specification](#structural-content-addressing-specification)
+specifies and no module defines; and the equivalence of the recursive
+and side-table document presentations.
 
 ## Ecosystem notes
 
@@ -1188,9 +1252,10 @@ equivalence of the recursive and side-table document presentations.
   realistic production route is FFI: `joehendrix/lean-crypto` already
   links OpenSSL and libkeccak, and Lean's `@[extern]` makes binding
   OpenSSL, libsodium, or BLAKE3 straightforward. This is why the hash
-  is a parameter (`HashFn`) in the development above rather than a
-  fixed function: the round-trip and compositionality theorems hold for
-  any `H`, and the choice of `H` is a deployment decision.
+  is a parameter in
+  [Structural content-addressing specification](#structural-content-addressing-specification)
+  rather than a fixed function: the fold's theorems will hold for any
+  `H`, and the choice of `H` is a deployment decision.
 - Verified-parsing leverage: EverCBOR and EverCDDL (F*, RFC 8949 §4.2,
   with non-malleability proofs) as a differential-testing oracle and as
   methodology; ASN1★ for how a non-malleability argument is structured;
@@ -1208,12 +1273,11 @@ equivalence of the recursive and side-table document presentations.
 
 ## Roadmap
 
-The survey's original staging fixed `annCanon`, the multihash codes,
-the CID layout and the version numbers before any implementation. That
-order specifies a component whose hash function does not yet exist in
-Lean — see [Ecosystem notes](#ecosystem-notes) — against no running
-code. The order adopted instead is: get the bare tree round-tripping
-in two syntaxes, then lift to the annotated document, then hash. What
+The order is: get the bare tree round-tripping in three syntaxes, then
+lift to the annotated document, then hash. Fixing `annCanon`, the
+multihash codes, the CID layout and the version numbers first would
+specify a component whose hash function does not yet exist in Lean — see
+[Ecosystem notes](#ecosystem-notes) — against no running code. What
 must be fixed before those identifiers are *used*, rather than before
 implementation begins, is the annotation vocabulary, the two key forms
 `(rootCoreId, path)` and `subtreeMH`, and version numbers for
@@ -1222,31 +1286,48 @@ everything feeding a hash.
 | Stage | Content | Status |
 | --- | --- | --- |
 | 1a | canonical S-expressions, bare tree, retraction proved | done |
-| 1b | JSON core profile, bare tree, retraction proved | 1–2 days |
-| 1c | cross-syntax agreement theorem | hours |
-| 2 | lift both syntaxes from `Ast` to `Doc` | 1–2 weeks |
-| 3 | a hash that runs | half a day, plus build and CI work |
-| 4 | CID, multibase, CAR, DAG-CBOR | deferred |
+| 1b | JSON core profile, bare tree, retraction proved | next |
+| 1c | deterministic CBOR, bare tree, retraction proved | after 1b |
+| 1d | cross-syntax agreement theorem | after 1c |
+| 2 | lift every syntax from `Ast` to `Doc` | not started |
+| 3 | a hash that runs | not started |
+| 4 | CID, multibase, CAR | deferred |
 
-Stage 1a is measured; the remaining figures are extrapolations from
-it. Stage 1b introduces no new proof technique: the tree recursion has
-the same shape, and the new work is a round-trip lemma for the
-byte-level integer encoding in place of the decimal one. Stage 1c is a
-corollary of two retractions, both syntaxes parsing to the same `Ast`.
+Stage 1a is 806 lines of Lean and 54 theorems, plus 123 lines of tests.
+That is the only measured quantity, and one implementation is too small
+a base to extrapolate a schedule from, so the stages below are ordered
+by dependency and carry no estimate.
 
-The stage-2 estimate dominates, and it is where the survey understates
-the cost. Moving from `Ast k` to `Doc k = Tree k Ann` puts
+Stage 1b introduces no new proof technique and reuses the decimal layer
+unchanged: the JSON core profile's integers are decimal ASCII, which is
+what `decOf` and `digitsVal` already encode and decode. Its new work is
+the bracket-and-comma grammar and the whitespace the profile permits.
+Stage 1c is where a byte-level integer encoding first appears, and that
+round-trip lemma is what CBOR adds over JSON. Stage 1d is a corollary of
+the retractions preceding it, every syntax parsing to the same `Ast`.
+
+Stage 2 is the largest. Moving from `Ast k` to `Doc k = Tree k Ann` puts
 `Option String` and `List String` into the syntax, so the printer and
 parser acquire string escaping and the round-trip proofs acquire its
-inverse. The injectivity constraint on `printDoc` additionally forces
-a canonical representation of the annotation record: no two spellings
-of one annotation may exist in `Doc`.
+inverse. The injectivity constraint on `printDoc` costs nothing here:
+`Ann` is a plain product, so no two values of `Doc k` denote one
+document. It binds on
+[The side-table presentation](#the-side-table-presentation) instead,
+whose annotation collections must be canonically ordered and
+duplicate-free by construction — and stage 2 does not lift that
+presentation.
 
-Stage 3 is a build problem, not a proof problem. The Merkle fold is
-written and proved compositional over an arbitrary `HashFn`; what is
-missing is any usable hash function. The realistic route is
-`@[extern]` against OpenSSL, libsodium or BLAKE3. A verified pure-Lean
-hash is not available and is not on this path.
+Stage 3 is a build problem before it is a proof problem. What is missing
+is any usable hash function; the realistic route is `@[extern]` against
+OpenSSL, libsodium or BLAKE3, and a verified pure-Lean hash is not
+available and is not on this path. The fold itself is specified in
+[Structural content-addressing specification](#structural-content-addressing-specification)
+and not written, since with no hash to run it would have no consumer.
+Its compositionality will be a consequence of the fold's uniqueness,
+which
+[Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean)
+already states as `WType.elim_unique`; stage 3 inherits it rather than
+proving it again.
 
 Stage 4 is deferred in full. Validating syntax independence needs no
 content identifiers, multibase, CAR archives or IPLD interoperation;
@@ -1272,17 +1353,29 @@ diversity, which would add XML with explicit annotation elements.
 ### Relation to existing repository content
 
 `Ast k` is the W-type of the polynomial functor with shapes
-`Fin k ⊕ Unit` and arities `0` and `2`, and this repository already
-carries that construction, in
+`Fin k ⊕ Unit` and arities `0` and `2`, and it is declared as one:
+`Ast.Shape k` carries the two shapes, `Ast.Arity` sends them to `Empty`
+and `Fin 2`, and `Ast k` is `WType Ast.Arity`.
+[docs/rules/lean-coding.md](rules/lean-coding.md) § Recursion and
+induction through recursors requires this. An ordinary inductive would
+supply `DecidableEq` and `Repr` through `deriving` and structural
+recursion through the equation compiler, and is not available.
+
+Nothing the syntax layer needs is forfeited.
+[Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean)
+supplies the fold's computation rule and its uniqueness, the
+paramorphism `WType.para`, and a `DecidableEq` instance needing only a
+finitely enumerable arity; `Ast.ind` recovers the two-constructor
+induction principle, so no proof in the module mentions the shape and
+arity encoding. `Repr` is not derived, and nothing asks for it.
+
+This repository separately carries the polynomial-functor presentation
+of the same construction, in
 [Geb/Mathlib/Data/PFunctor/Univariate/W.lean](../Geb/Mathlib/Data/PFunctor/Univariate/W.lean)
 and
 [Geb/Mathlib/Data/PFunctor/Univariate/Initial.lean](../Geb/Mathlib/Data/PFunctor/Univariate/Initial.lean).
-The syntax layer nonetheless declares `Ast` as an ordinary inductive:
-that supplies `DecidableEq` and `Repr` through `deriving`, and
-structural recursion through the equation compiler, both of which the
-W-encoding forfeits. The reconciliation is a single equivalence
-between the two presentations, proved when the categorical machinery
-needs it, which the parse and print layer does not.
+Reconciling the two is a single equivalence, proved when the categorical
+machinery needs it, which the parse and print layer does not.
 
 ## Caveats
 
@@ -1312,7 +1405,9 @@ needs it, which the parse and print layer does not.
   versioned binary/rose bijection.
 - **The rose presentation cannot name every occurrence** — only the root
   and positions ending in `L`. Annotations on sibling-list cells do not
-  survive a round trip through a rose-shaped syntax.
+  survive a round trip through a rose-shaped syntax. The development
+  proves one inclusion of this; see
+  [Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name).
 - **Lexical comments do not survive**; durable metadata must be explicit
   annotation values.
 - **Fixed-point equations do not pin down `μ`.** The rose/binary
@@ -1340,6 +1435,12 @@ needs it, which the parse and print layer does not.
   situation, and the csexp tooling landscape before committing.
 
 ## References
+
+Works cited from Lean source carry an entry in
+[docs/references.bib](references.bib), which is authoritative for their
+bibliographic detail; the entries below duplicate it for RFC 9804,
+RFC 6962 and Uustalu and Vene 2011. Migrating the rest of this list into
+the `.bib` is part of the outstanding pass `TODO.md` records.
 
 Standards and specifications:
 

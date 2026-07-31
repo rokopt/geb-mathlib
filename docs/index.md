@@ -4,6 +4,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Directory structure](#directory-structure)
+- [Design documents](#design-documents)
 - [Implemented content](#implemented-content)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -36,6 +37,14 @@ The repository is laid out narrow-and-deep, with one indexing
 The directory split denotes upstream eligibility; the
 import-direction rules above are enforced by
 `scripts/lint-imports.sh` and corresponding CI.
+
+## Design documents
+
+- [concrete-syntaxes.md](concrete-syntaxes.md) — the concrete-syntax
+  layer for the Geb abstract syntax tree: the round-trip laws, the
+  annotation model, the content-addressing specification, the
+  format-by-format evaluation, and the staging.
+  `Geb/Internal/ConcreteSyntax.lean` implements its first stage.
 
 ## Implemented content
 
@@ -839,32 +848,35 @@ import-direction rules above are enforced by
   are not rendered, carrying no information a reader of the table
   needs. All three instances depend on `propext`.
 - `Geb/Internal/ConcreteSyntax.lean` — prototype of the concrete-syntax
-  layer for the Geb abstract syntax tree. `Geb.Ast k` is the initial
-  algebra of `F X = Fin k + X × X`: binary trees whose leaves carry a
-  label in `Fin k`. `Geb.Tree k A` annotates every node with an `A`,
-  and carries `extract`/`duplicate` with the three comonad laws
-  (`Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
-  `Tree.duplicate_duplicate`); `Geb.Doc k` is the annotated document
-  type `Tree k Ann`, and `Tree.erase` forgets the annotations, with
+  layer for the Geb abstract syntax tree. Every tree type here is a
+  `WType`, so its recursion runs through `WType.elim`, `WType.para` or
+  a recursor application. `Geb.Ast k` is the initial algebra of
+  `F X = Fin k + X × X`, presented as the W-type on `Ast.Shape k`:
+  binary trees whose leaves carry a label in `Fin k`. `Ast.ind`
+  recovers the two-constructor induction principle, so no proof
+  mentions the shape and arity encoding. `Geb.Tree k A` annotates every
+  node with an `A`, and carries `extract`/`duplicate` with the three
+  comonad laws (`Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
+  `Tree.duplicate_duplicate`) and the two functor laws (`Tree.map_id`,
+  `Tree.map_map`); `duplicate` is `WType.para`, redecoration being a
+  paramorphism. `Geb.Doc k` is the annotated document type
+  `Tree k Ann`, and `Tree.erase` forgets the annotations, with
   `Ast.erase_trivialDoc` the round trip against the trivial
   decoration. `Geb.Rose k` is the rose-tree presentation, and
-  `ofRose_toRose`/`toRose_ofRose` are the two halves of its bijection
-  with `Ast k` under the head-child-left convention;
-  `rosePathToBin_last` records that the binary occurrences nameable in
-  the rose presentation are exactly the root and the paths ending in
-  `L`. `Ast.subtreeMH` and `Ast.coreMH` are the domain-separated
-  Merkle fold in the style of [RFC6962] § 2.1, over an arbitrary
-  `HashFn`; `tags_equal_length` discharges the equal-length side
-  condition the domain-separation argument needs. `Retraction`,
-  `format_idem` and `printDoc_injective` state the law a concrete
-  syntax must satisfy and derive formatter idempotence and printer
-  injectivity from it once for every syntax. `Geb.print`/`Geb.parse`
-  are the first such syntax, the canonical S-expression encoding of
-  [RFC9804] restricted to the bare tree, with `parse_print` the
-  retraction and `csexp_format_idem`/`csexp_print_injective` its two
-  instantiated corollaries. `Tree.extract_duplicate`,
-  `tags_equal_length`, `printDoc_injective` and `charDigit_digitChar`
-  depend on no axioms; the remaining theorems of the
-  format-independent core depend on `propext` alone, and the remaining
-  theorems of the S-expression syntax on `propext` and `Quot.sound`.
-  No declaration depends on `Classical.choice`.
+  `Ast.ofRose_toRose`/`Ast.toRose_ofRose` are the two halves of its
+  bijection with `Ast k` under the head-child-left convention;
+  `rosePathToBin_last` records that every binary occurrence nameable in
+  the rose presentation is the root or a path ending in `L`, the
+  converse inclusion being unproved. `Retraction`, `format_idem` and
+  `print_injective` state the law a concrete syntax must satisfy and
+  derive formatter idempotence and printer injectivity from it once for
+  every syntax. `Geb.Csexp.print`/`Geb.Csexp.parse` are the first such
+  syntax, the canonical S-expression encoding of [RFC9804] restricted
+  to the bare tree, with `Csexp.parse_print` the retraction and
+  `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
+  corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
+  `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
+  depending on `Classical.choice`. Of the module's 54 theorems, 13
+  depend on no axioms, 13 on `propext` alone, 6 on `Quot.sound` alone,
+  and the remaining 22 on `propext` and `Quot.sound`. No declaration
+  depends on `Classical.choice`.
