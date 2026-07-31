@@ -583,18 +583,17 @@ states the staging; the next items are the JSON core profile as a
 second syntax, deterministic CBOR as a third, the cross-syntax
 agreement theorem, and the lift of every syntax from `Ast` to `Doc`.
 
-Two statements the module makes are weaker than the document's design
-argument assumes. `rosePathToBin_last` proves that every binary
-occurrence nameable in the rose presentation is the root or a path
-ending in `L`; the converse inclusion is not proved, and no lemma
-connects `rosePathToBin` to the tree it indexes. Proving the converse,
-or connecting the path map to a subtree selector, would restore the
-biconditional that
+The occurrence vocabulary is absent. A `Dir`/`Path` word type, a map
+`rosePathToBin` from rose child indices to binary paths, and a proof
+that every path in its image is empty or ends in `L` were written and
+then removed: with no subtree selector to interpret a path against, they
+had no consumer, and the biconditional that
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Which
 occurrences the rose presentation can name draws its two design
-consequences from. No parser, printer or tree operation consumes `Path`
-or `rosePathToBin`, so this is worth doing when a syntax annotates
-occurrences and not before.
+consequences from could not be stated. Reinstating them together with a
+subtree selector, and proving the converse inclusion, is the work that
+makes those consequences formal. It belongs to the stage at which a
+syntax annotates occurrences, not before.
 
 ### Prose-conformance pass over the concrete-syntax survey
 

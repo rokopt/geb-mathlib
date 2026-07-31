@@ -130,11 +130,12 @@ position `q · Rⁱ · L`. Hence:
 > together with the paths ending in `L`. Binary positions ending in `R`
 > are sibling-list cells and have no rose-tree name.
 
-`rosePathToBin_last` proves one inclusion of this: every path in the
-image of `rosePathToBin` is empty or ends in `L`. The converse is not
-proved, and no lemma connects `rosePathToBin` to the tree it indexes, so
-the two design consequences below rest on statements the development
-does not establish.
+The development does not state this. It carried a map from rose child
+indices to binary paths, and a proof of one inclusion, but with no
+subtree selector to interpret a path against there was nothing to state
+the reading above, and `TODO.md` § Concrete-syntax prototype records the
+removal. The two design consequences below therefore rest on an
+unformalized claim.
 
 - A document written in a rose-shaped syntax can annotate strictly fewer
   positions than one written in a binary-shaped syntax. If both syntaxes
@@ -367,9 +368,8 @@ key forms:
 - `subtreeMH` — metadata intended for every occurrence of an equal
   subtree.
 
-Paths must be expressed in a fixed, versioned vocabulary, and per the
-one-sided occurrence bound above (see
-[Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name)),
+Paths must be expressed in a fixed, versioned vocabulary, and per
+[Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name),
 the normative vocabulary should be the binary one.
 
 ### Lexical comments are not durable
@@ -1150,7 +1150,7 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-54 theorems, with tests in
+51 theorems, with tests in
 [GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
 It builds under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
@@ -1204,12 +1204,12 @@ the running example of
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding),
 whose two right-hand labels are transposed.
 
-Axiom dependencies, from `#print axioms` over all 54 theorems:
+Axiom dependencies, from `#print axioms` over all 51 theorems:
 
 | Theorems | Axioms |
 | --- | --- |
-| 13, among them `Tree.map_mk`, `print_injective`, `Csexp.charDigit_digitChar` | none |
-| 13, among them `Ast.toRose_fork`, `format_idem`, `rosePathToBin_last` | `propext` |
+| 11, among them `Tree.map_mk`, `print_injective`, `Csexp.charDigit_digitChar` | none |
+| 12, among them `Ast.toRose_fork`, `format_idem`, `Csexp.printAst_leaf` | `propext` |
 | 6, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
 | the remaining 22, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
@@ -1225,10 +1225,6 @@ The theorems that carry the architecture:
   the cofree-recursive-comonad terminology.
 - `Ast.ofRose_toRose` and `Ast.toRose_ofRose` are the rose/binary
   bijection.
-- `rosePathToBin_last` bounds the image of the rose-to-binary path map.
-  See
-  [Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name)
-  for what it does and does not establish.
 - `Ast.erase_trivialDoc` says that decorating every node with the empty
   annotation and then erasing is the identity. It is what will make a
   bare-level round-trip law a corollary of the document-level one, once
@@ -1326,7 +1322,7 @@ everything feeding a hash.
 | 3 | a hash that runs | not started |
 | 4 | CID, multibase, CAR | deferred |
 
-Stage 1a is 54 theorems; [Local verification](#local-verification)
+Stage 1a is 51 theorems; [Local verification](#local-verification)
 breaks them down. That is the only measured quantity, and one
 implementation is too small a base to extrapolate a schedule from, so
 the stages below are ordered by dependency and carry no estimate.
@@ -1417,8 +1413,8 @@ finitely enumerable arity; `Ast.ind` recovers the two-constructor
 induction principle, so no proof about `Ast` other than `Ast.ind` itself
 mentions the shape and arity encoding. The rose bijection's proofs still
 destructure `Rose.Shape`, there being no `Rose.ind`. No `Repr` instance
-is derived for the three tree types, and nothing asks for one; `Ann` and
-`Dir`, which are ordinary non-recursive declarations, derive theirs.
+is derived for the three tree types, and nothing asks for one; `Ann`,
+an ordinary non-recursive structure, derives one.
 
 This repository separately carries the polynomial-functor presentation
 of the same construction, in
@@ -1456,8 +1452,8 @@ machinery needs it, which the parse and print layer does not.
   versioned binary/rose bijection.
 - **The rose presentation cannot name every occurrence** — only the root
   and positions ending in `L`. Annotations on sibling-list cells do not
-  survive a round trip through a rose-shaped syntax. The development
-  proves one inclusion of this; see
+  survive a round trip through a rose-shaped syntax. This is not
+  formalized; see
   [Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name).
 - **Lexical comments do not survive**; durable metadata must be explicit
   annotation values.

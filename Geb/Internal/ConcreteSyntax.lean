@@ -30,8 +30,6 @@ Every tree type here is a `WType`, so its recursion is carried by
 * `Ann`, `Doc` — the annotation vocabulary and the annotated document
   type `Tree k Ann`.
 * `Rose` — the rose-tree presentation of the same fixed point.
-* `Dir`, `Path` — the occurrence vocabulary, and `rosePathToBin` the
-  rose presentation's map into it.
 * `Retraction`, `format` — the law skeleton a concrete syntax proves.
 * `Csexp.print`, `Csexp.parse` — the [RFC9804] canonical S-expression
   syntax.
@@ -472,52 +470,6 @@ theorem print_injective (hr : Retraction parse print) :
   exact (Option.some.inj h1).symm
 
 end Laws
-
-/-! ## Occurrence paths -/
-
-/-- A step into a fork. -/
-inductive Dir where
-  /-- Into the left child. -/
-  | L
-  /-- Into the right child. -/
-  | R
-  deriving Repr, DecidableEq
-
-/-- An occurrence in a tree, as a word over `Dir`. Intended as the path
-vocabulary a syntax annotates occurrences through, of which the rose
-presentation reaches only part, by `rosePathToBin_last`. No declaration
-here interprets a `Path` against a tree; see `TODO.md` § Concrete-syntax
-prototype. -/
-abbrev Path : Type := List Dir
-
-/-- Rose child index sequence to binary path. Under `Ast.toRose`'s
-convention, child `i` of a rose node at binary position `q` is intended
-to sit at `q ++ replicate i R ++ [L]`; that reading is not stated as a
-theorem, there being no subtree selector here to state it against. -/
-def rosePathToBin : List Nat → Path :=
-  List.rec [] fun i _ ih => List.replicate i .R ++ .L :: ih
-
-@[simp] theorem rosePathToBin_nil : rosePathToBin [] = [] := rfl
-
-@[simp] theorem rosePathToBin_cons (i : Nat) (is : List Nat) :
-    rosePathToBin (i :: is) = List.replicate i .R ++ .L :: rosePathToBin is := rfl
-
-/-- Every binary occurrence named by the rose presentation is the empty
-path or ends in `L`. The converse inclusion is not proved here. -/
-theorem rosePathToBin_last (is : List Nat) :
-    rosePathToBin is = [] ∨ (rosePathToBin is).getLast? = some .L :=
-  List.rec (motive := fun is =>
-      rosePathToBin is = [] ∨ (rosePathToBin is).getLast? = some .L)
-    (Or.inl rfl)
-    (fun i is ih => by
-      refine Or.inr ?_
-      simp only [rosePathToBin_cons, List.getLast?_append]
-      cases ih with
-      | inl h => simp [h]
-      | inr h =>
-        cases hh : rosePathToBin is with
-        | nil => simp [hh] at h
-        | cons x xs => simp [hh] at h ⊢; simpa [hh] using h) is
 
 /-! ## A concrete syntax: RFC 9804 canonical S-expressions -/
 
