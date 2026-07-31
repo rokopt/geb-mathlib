@@ -151,14 +151,11 @@ itself `Classical`-dependent. A module with choice-free content of its own
 is held to the strict set, so the constructive core cannot widen by
 accident. The remaining admissions follow from that reading rather than
 extending it: a test parallel inherits the dependence of the module it
-exercises, and the linter's own fixture exists to establish that the
-allowlist has effect at all.
-A wrapper is mostly packaging but may carry content that cannot be stated
+exercises, the linter's own fixture exists to establish that the allowlist
+has effect at all, and a wrapper may carry content that cannot be stated
 choice-free — a bridge through a `Classical`-dependent mathlib construct,
-say — which is why the boundary is drawn at what can be stated rather than
-at how much is written.
-Where a rule rests on a measurement, a lemma's axioms follow its proof, so
-it is re-taken on a toolchain bump.
+say. Where a rule rests on a measurement, a lemma's axioms follow its
+proof, so it is re-taken on a toolchain bump.
 
 ## Avoid colloquialisms and metaphors
 

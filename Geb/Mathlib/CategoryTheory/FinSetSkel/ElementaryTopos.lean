@@ -44,7 +44,7 @@ general proof yields is not `FinSetSkel.Quotient.unionFind`.
 
 ## References
 
-* [nLabFinSet]
+* [nLabFinSet], for `FinSet` being an elementary topos.
 
 ## Tags
 

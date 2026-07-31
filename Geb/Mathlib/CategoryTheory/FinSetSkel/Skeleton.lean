@@ -55,13 +55,15 @@ and is written qualified only for symmetry.
 
 ## Implementation notes
 
-`FinSetSkel` is not an instantiation of `FintypeCat.Skeleton` because it cannot be. mathlib's
-`SmallCategory Skeleton` instance fixes `Hom X Y := ULift (Fin X.len) → ULift (Fin Y.len)`, and
-instance search selects one `Category` structure per type, so a category with the same objects
-and vector morphisms is a distinct type rather than a re-instantiation. The representation is
-what makes the constructions decidable: mathlib's finite limits and colimits on `FintypeCat` are
-layered over `noncomputable` constructions, so nothing transported along the equivalence computes.
-Measured at v4.33.0-rc1.
+`FinSetSkel` is not an instantiation of `FintypeCat.Skeleton` because it
+cannot be. mathlib's `SmallCategory Skeleton` instance fixes
+`Hom X Y := ULift (Fin X.len) → ULift (Fin Y.len)`, and instance search
+selects one `Category` structure per type, so a category with the same
+objects and vector morphisms is a distinct type rather than a
+re-instantiation. The representation is what makes the constructions
+decidable: mathlib's finite limits and colimits on `FintypeCat` are
+layered over `noncomputable` constructions, so nothing transported along
+the equivalence computes. Measured at v4.33.0-rc1.
 
 ## Tags
 

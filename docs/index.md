@@ -642,7 +642,6 @@ import-direction rules above are enforced by
   `HasFiniteCoproducts` are registered by the field-supplying modules and
   resolve without it; `HasEqualizers`, `HasFiniteLimits`,
   `HasFiniteColimits` and `HasPushouts` are derived through the class and
-  resolve only through the instance. The source
-  and test modules are listed in `GebMeta.classicalAllowedModules`, the
-  module inheriting its `Classical.choice` dependence entirely from the
-  field terms.
+  resolve only through the instance. The source and test modules are
+  listed in `GebMeta.classicalAllowedModules`, the module inheriting its
+  `Classical.choice` dependence entirely from the field terms.
