@@ -26,7 +26,11 @@ Every tree type here is a `WType`, so its recursion is carried by
 ## Main definitions
 
 * `Ast` — the abstract syntax, the W-type on `Ast.Shape`.
-* `Tree` — the abstract syntax with every node decorated by an `A`.
+* `Ast.toRose`, `Ast.ofRose` — the two directions of the rose
+  presentation's bijection with `Ast`.
+* `Tree` — the abstract syntax with every node decorated by an `A`,
+  with `Tree.map`, `Tree.extract`, `Tree.duplicate` its functor and
+  comonad structure and `Tree.erase` the forgetful map to `Ast`.
 * `Ann`, `Doc` — the annotation vocabulary and the annotated document
   type `Tree k Ann`.
 * `Rose` — the rose-tree presentation of the same fixed point.
@@ -45,7 +49,8 @@ Every tree type here is a `WType`, so its recursion is carried by
 * `Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
   `Tree.duplicate_duplicate` — the comonad laws on the annotated
   syntax, with `Tree.map_id` and `Tree.map_map` the functor laws they
-  presuppose.
+  presuppose and `Tree.extract_map`, `Tree.duplicate_map` the
+  naturality of the two structure maps.
 
 ## Implementation notes
 
@@ -56,9 +61,14 @@ returns, which is not a form Lean's structural recursion accepts.
 shows that bound admits every tree the printer emits.
 
 The decimal layer (`Csexp.digitsLE`, `Csexp.ofLE`, `Csexp.decOf`,
-`Csexp.digitsVal`) is written here rather than taken from mathlib, whose
-`Nat.digits` depends on `Classical.choice`. `finEnumFin` and
-`finEnumEmpty` are named for the same reason.
+`Csexp.digitsVal`) is written here rather than reused. mathlib's
+`Nat.digits` depends on `Classical.choice`. Core's `Nat.toDigits` does
+not, and uses the same explicit bound, but the retraction proof needs
+the inverse direction and its lemmas — `digitsVal_decOf`,
+`decOf_all_digits`, `decOf_ne_nil` — and core states none of them, so
+reuse would save the encoder and leave the proof obligations untouched.
+`finEnumFin` and `finEnumEmpty` are named because mathlib's `FinEnum`
+instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
 
 Each `Arity` family is an `abbrev` rather than a `def`: `simp` and `rw`
 match at reducible transparency, so a child function whose type reads
@@ -87,11 +97,12 @@ Every `Arity` family below is finitely enumerable, which is what lets
 `WType.instDecidableEq` decide equality of the corresponding tree type.
 The `#guard`s in `GebTests.Internal.ConcreteSyntax` decide equality at
 `Ast k` and at `Tree k Ann`. The two enumerations are named rather than
-left
-to instance search: mathlib's `FinEnum.fin` and `FinEnum.empty` are built
+left to instance search: mathlib's `FinEnum.fin` and `FinEnum.empty` are built
 by `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
 which [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md)
-forbids. -/
+forbids. Neither construction is specific to syntax; the second module
+needing a choice-free `FinEnum` moves them beside the choice-free
+decidability instances in `Geb/Mathlib/Data/FinEnum.lean`. -/
 
 /-- `Fin n` enumerated by the identity equivalence. -/
 @[instance_reducible] def finEnumFin (n : Nat) : FinEnum (Fin n) := ⟨n, Equiv.refl (Fin n)⟩
@@ -205,14 +216,6 @@ abbrev Tree (k : Nat) (A : Type uA) : Type uA :=
 
 namespace Tree
 
-/-- A leaf decorated by `a` and labelled `i`. -/
-def leaf {k : Nat} {A : Type uA} (a : A) (i : Fin k) : Tree k A :=
-  WType.mk (a, .leaf i) Empty.elim
-
-/-- A fork decorated by `a`, with left child `l` and right child `r`. -/
-def fork {k : Nat} {A : Type uA} (a : A) (l r : Tree k A) : Tree k A :=
-  WType.mk (a, .fork) fun b : Fin 2 => Fin.cases l (fun _ => r) b
-
 /-- Relabel every node along `f`. -/
 def map {k : Nat} {A : Type uA} {B : Type uB} (f : A → B) :
     Tree k A → Tree k B :=
@@ -269,6 +272,22 @@ theorem map_map {k : Nat} {A : Type uA} {B : Type uB} {C : Type uC}
     map g (map f t) = map (g ∘ f) t :=
   WType.rec (motive := fun t => map g (map f t) = map (g ∘ f) t)
     (fun s ch ih => by simp only [map_mk, Function.comp_apply]
+                       exact congrArg _ (funext ih)) t
+
+/-- Naturality of the counit: reading the root decoration commutes with
+relabelling. -/
+theorem extract_map {k : Nat} {A : Type uA} {B : Type uB} (f : A → B)
+    (t : Tree k A) : extract (map f t) = f (extract t) := by
+  cases t with
+  | mk s ch => rfl
+
+/-- Naturality of the comultiplication: redecorating commutes with
+relabelling, the relabelling acting on each subtree. -/
+theorem duplicate_map {k : Nat} {A : Type uA} {B : Type uB} (f : A → B)
+    (t : Tree k A) :
+    duplicate (map f t) = map (map f) (duplicate t) :=
+  WType.rec (motive := fun t => duplicate (map f t) = map (map f) (duplicate t))
+    (fun s ch ih => by simp only [map_mk, duplicate_mk]
                        exact congrArg _ (funext ih)) t
 
 /-- The first comonad law: the subtree redecorating the root is the whole
@@ -366,9 +385,7 @@ namespace Ast
 /-- The binary-to-rose direction, under the convention that the left child
 of a fork is the head child and the right child carries the label and the
 remaining siblings. Choosing the last child instead gives a different and
-equally valid bijection, so the choice has to be fixed. It will also have
-to be versioned once occurrence paths are carried across a syntax, since
-a path's meaning depends on it; nothing here does that yet. -/
+equally valid bijection, so the choice has to be fixed. -/
 def toRose {k : Nat} : Ast k → Rose k :=
   WType.elim (Rose k) fun x =>
     match x with
@@ -785,7 +802,7 @@ theorem size_le_length_printAst {k : Nat} (a : Ast k) : a.size ≤ (printAst a).
 
 /-- The printer of the canonical S-expression syntax. A concrete syntax
 needs a deterministic printer, not a normative canonical form; that this
-one also emits the format's canonical spelling is convenient rather than
+one also emits the format's canonical spelling is incidental rather than
 required. -/
 def print {k : Nat} (a : Ast k) : List Char := printAst a
 

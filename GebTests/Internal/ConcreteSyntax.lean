@@ -14,9 +14,10 @@ public meta import Geb.Internal.ConcreteSyntax  -- shake: keep; #guard needs it
 `Geb.Csexp.parse_print` constrains the parser only on the printer's
 output, so every rejection path is unexercised by it. The assertions
 below exercise the parser on inputs the printer never emits; check the
-printer's spelling, which no theorem pins; and evaluate the retraction,
-the rose bijection and the formatter, which the theorems state but do
-not run.
+printer's spelling and `Ast.size`, which no theorem pins; evaluate the
+retraction, the rose bijection and the formatter, which the theorems
+state but do not run; and pin two properties of `Csexp.readVerbatim`
+and of the fuel bound that `Csexp.parse` cannot see.
 
 Three places where the parser deliberately admits more than the printer
 emits are recorded here, since each is a divergence from [RFC9804]
@@ -24,16 +25,18 @@ canonical form: a label atom may be empty, a label atom may carry
 leading zeros, and the length prefix of a verbatim atom may carry
 leading zeros.
 
-Inputs are `List Char`, built by `atomRaw` out of the same two
-productions the grammar has. Core's `String.toList` is unavailable here:
+Inputs are `List Char`, built by `atomRaw` and `sexp` out of the same
+two productions the canonical grammar has. Core's `String.toList` is unavailable here:
 it depends on `Classical.choice`, which
 [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md) forbids.
 `String.ofList` is choice-free, so the printer's output is still checked
 against a string literal.
 
-The assertions are `#guard` rather than `by decide`: equality of `Ast k`
-goes through `WType.beq`, which folds over a `FinEnum` enumeration and
-does not reduce usefully in the kernel.
+The assertions are `#guard`, which runs its argument in the interpreter.
+`by decide` also discharges every one of them — `WType.beq` reduces in
+the kernel — but it would check a different thing. What a parser and
+printer have to do is run, which is why `Csexp.digitsLE` exists in place
+of mathlib's `Nat.digits`; the interpreter is the path that use takes.
 
 ## References
 
@@ -72,7 +75,7 @@ def leafBody (content : List Char) : List Char :=
 /-- A well-formed leaf s-expression whose label atom is `content`. -/
 def leafSexp (content : List Char) : List Char := sexp (leafBody content)
 
-/-- A three-node tree over a three-letter leaf alphabet. -/
+/-- A five-node tree over a three-letter leaf alphabet. -/
 def sampleAst : Ast 3 :=
   Ast.fork (Ast.leaf 0) (Ast.fork (Ast.leaf 1) (Ast.leaf 2))
 
@@ -87,8 +90,9 @@ def sampleText : String := String.ofList (Csexp.print sampleAst)
 
 `Csexp.parse_print` and `Ast.ofRose_toRose` already state these. What
 the assertions add is that the compiled evaluation agrees with the
-kernel and terminates — `WType.beq` and `WType.para` are folds over a
-`FinEnum` enumeration, and nothing else here runs them. -/
+kernel and terminates. `WType.beq`, which decides the equalities, folds
+over a `FinEnum` enumeration, and `Tree.duplicate` is a `WType.para`;
+nothing else here runs either. -/
 
 #guard Csexp.parse 3 (Csexp.print sampleAst) == some sampleAst
 
@@ -112,26 +116,25 @@ so only a worked `some` shows the branch that does something. -/
 
 /-! ## The reader, where `Csexp.parse` cannot see
 
-Two properties of `Csexp.readVerbatim` are invisible through `parse`:
-whichever way they go, the atom is rejected further along and `parse`
-answers `none`. They are asserted here on the reader itself. -/
-
--- A length prefix is what delimits an atom, so `)` and `:` inside the
--- declared content are content. Asserting this through `parse` would
--- not distinguish a reader that stopped at the `)`.
-#guard Csexp.readVerbatim (Csexp.printVerbatim ['f', 'o', ')', 'k'] ++ ['x'])
-    == some (['f', 'o', ')', 'k'], ['x'])
+Whether `Csexp.readVerbatim` rejects an over-long declared length or
+truncates to it is invisible through `parse`: either way the atom is
+rejected further along and `parse` answers `none`. It is asserted here
+on the reader itself. That a `)` inside an atom's declared content is
+content rather than a delimiter needs no assertion —
+`Geb.Csexp.readVerbatim_append` states it for every atom. -/
 
 -- An atom declaring more content than follows it is rejected, not
--- truncated.
+-- truncated. No theorem states this, and `parse` cannot see it.
 #guard Csexp.readVerbatim (atomRaw ['9'] Csexp.leafTok) == none
 
 /-! ## `Ast.size` and the fuel it bounds -/
 
 #guard sampleAst.size == 5
 
--- `Csexp.parse` supplies the input length, far above what is needed;
--- these pin the bound that actually operates.
+-- `parseAst_printAst` asks for fuel at least `a.size`, which is 5 here.
+-- The bound is not tight: fuel counts nesting depth, not nodes, so 3
+-- suffices and 2 does not. `Csexp.parse` supplies the input length, far
+-- above either.
 #guard (Csexp.parseAst 3 3 (Csexp.print sampleAst)).isSome
 #guard (Csexp.parseAst 3 2 (Csexp.print sampleAst)).isNone
 
