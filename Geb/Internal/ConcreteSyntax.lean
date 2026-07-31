@@ -27,7 +27,11 @@ Every tree type here is a `WType`, so its recursion is carried by
 
 * `Ast` — the abstract syntax, the W-type on `Ast.Shape`.
 * `Tree` — the abstract syntax with every node decorated by an `A`.
+* `Ann`, `Doc` — the annotation vocabulary and the annotated document
+  type `Tree k Ann`.
 * `Rose` — the rose-tree presentation of the same fixed point.
+* `Dir`, `Path` — the occurrence vocabulary, and `rosePathToBin` the
+  rose presentation's map into it.
 * `Retraction`, `format` — the law skeleton a concrete syntax proves.
 * `Csexp.print`, `Csexp.parse` — the [RFC9804] canonical S-expression
   syntax.
@@ -38,10 +42,30 @@ Every tree type here is a `WType`, so its recursion is carried by
 * `Ast.ofRose_toRose`, `Ast.toRose_ofRose` — the rose presentation is
   a bijection.
 * `Csexp.parse_print` — the retraction law for the S-expression syntax.
-* `format_idem`, `print_injective` — the corollaries of a retraction.
+* `Geb.format_idem`, `Geb.print_injective` — the corollaries of a
+  retraction, proved once for every syntax.
 * `Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
   `Tree.duplicate_duplicate` — the comonad laws on the annotated
-  syntax.
+  syntax, with `Tree.map_id` and `Tree.map_map` the functor laws they
+  presuppose.
+
+## Implementation notes
+
+`Csexp.parseAst` recurses on an explicit `Nat` bound rather than on its
+input: the recursion descends only through the remainder each call
+returns, which is not a form Lean's structural recursion accepts.
+`Csexp.parse` supplies the input length, and `Csexp.size_le_length_printAst`
+shows that bound admits every tree the printer emits.
+
+The decimal layer (`Csexp.digitsLE`, `Csexp.ofLE`, `Csexp.decOf`,
+`Csexp.digitsVal`) is written here rather than taken from mathlib, whose
+`Nat.digits` depends on `Classical.choice`. `finEnumFin` and
+`finEnumEmpty` are named for the same reason.
+
+Each `Arity` family is an `abbrev` rather than a `def`: `simp` and `rw`
+match at reducible transparency, so a child function whose type reads
+`Rose.Arity (i, n) → _` in a goal would not otherwise unify with a lemma
+stated at `Fin n → _`.
 
 ## References
 
@@ -61,9 +85,12 @@ namespace Geb
 
 /-! ## Choice-free finite enumerations
 
-Every `Arity` family below is finitely enumerable, which is what makes
-equality of the corresponding W-type decidable through
-`WType.instDecidableEq`. The two enumerations are named rather than left
+Every `Arity` family below is finitely enumerable, which is what lets
+`WType.instDecidableEq` decide equality of the corresponding tree type.
+`Ast k` is the one whose decidable equality is presently used, by the
+`#guard`s in `GebTests.Internal.ConcreteSyntax`; the other two are
+supplied so that the three tree types carry the same interface. The two
+enumerations are named rather than left
 to instance search: mathlib's `FinEnum.fin` and `FinEnum.empty` are built
 by `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
 which [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md)
@@ -126,8 +153,8 @@ def size {k : Nat} : Ast k → Nat :=
     | ⟨.leaf _, _⟩ => 1
     | ⟨.fork, ch⟩ => 1 + ch (0 : Fin 2) + ch (1 : Fin 2)
 
-/-- Induction on `Ast` in its two-constructor presentation, so that
-proofs never mention the underlying shape and arity. -/
+/-- Induction on `Ast` in its two-constructor presentation, so that a
+proof driven by it need not mention the underlying shape and arity. -/
 theorem ind {k : Nat} {motive : Ast k → Prop}
     (leaf : ∀ i, motive (Ast.leaf i))
     (fork : ∀ l r, motive l → motive r → motive (Ast.fork l r)) :
@@ -146,10 +173,10 @@ theorem ind {k : Nat} {motive : Ast k → Prop}
         exact this ▸ fork (f (0 : Fin 2)) (f (1 : Fin 2))
           (ih (0 : Fin 2)) (ih (1 : Fin 2))
 
-@[simp] theorem size_leaf {k : Nat} (i : Fin k) : (Ast.leaf i).size = 1 := rfl
+@[simp] theorem size_leaf {k : Nat} (i : Fin k) : (leaf i).size = 1 := rfl
 
 @[simp] theorem size_fork {k : Nat} (l r : Ast k) :
-    (Ast.fork l r).size = 1 + l.size + r.size := rfl
+    (fork l r).size = 1 + l.size + r.size := rfl
 
 end Ast
 
@@ -232,10 +259,14 @@ def erase {k : Nat} {A : Type uA} : Tree k A → Ast k :=
     erase (WType.mk s ch) = WType.mk s.2 fun b => erase (ch b) :=
   rfl
 
+/-- The first functor law: relabelling along the identity is the
+identity. -/
 theorem map_id {k : Nat} {A : Type uA} (t : Tree k A) : map id t = t :=
   WType.rec (motive := fun t => map id t = t)
     (fun s ch ih => by simp only [map_mk, id_eq]; exact congrArg _ (funext ih)) t
 
+/-- The second functor law: relabelling twice is relabelling along the
+composite. -/
 theorem map_map {k : Nat} {A : Type uA} {B : Type uB} {C : Type uC}
     (f : A → B) (g : B → C) (t : Tree k A) :
     map g (map f t) = map (g ∘ f) t :=
@@ -243,17 +274,22 @@ theorem map_map {k : Nat} {A : Type uA} {B : Type uB} {C : Type uC}
     (fun s ch ih => by simp only [map_mk, Function.comp_apply]
                        exact congrArg _ (funext ih)) t
 
+/-- The first comonad law: the subtree redecorating the root is the whole
+tree. -/
 theorem extract_duplicate {k : Nat} {A : Type uA} (t : Tree k A) :
     extract (duplicate t) = t := by
   cases t with
   | mk s ch => simp
 
+/-- The second comonad law: taking each node's subtree and then keeping
+only its root decoration recovers the original decoration. -/
 theorem map_extract_duplicate {k : Nat} {A : Type uA} (t : Tree k A) :
     map extract (duplicate t) = t :=
   WType.rec (motive := fun t => map extract (duplicate t) = t)
     (fun s ch ih => by simp only [duplicate_mk, map_mk, extract_mk]
                        exact congrArg _ (funext ih)) t
 
+/-- The third comonad law, coassociativity of the redecoration map. -/
 theorem duplicate_duplicate {k : Nat} {A : Type uA} (t : Tree k A) :
     duplicate (duplicate t) = map duplicate (duplicate t) :=
   WType.rec (motive := fun t => duplicate (duplicate t) = map duplicate (duplicate t))
@@ -278,15 +314,23 @@ comments, and canonical forms differ over whether they are retained. -/
 /-- An annotated Geb document. -/
 abbrev Doc (k : Nat) : Type := Tree k Ann
 
+namespace Ast
+
 /-- Decorate every node with the empty annotation. -/
-def Ast.trivialDoc {k : Nat} : Ast k → Doc k :=
+def trivialDoc {k : Nat} : Ast k → Doc k :=
   WType.elim (Doc k) fun x => WType.mk (({} : Ann), x.1) x.2
 
-theorem Ast.erase_trivialDoc {k : Nat} (a : Ast k) :
+/-- Decorating every node with the empty annotation and then erasing is
+the identity. Once a syntax is lifted from `Ast` to `Doc`, this is what
+makes the bare-level retraction law a corollary of the document-level
+one. -/
+theorem erase_trivialDoc {k : Nat} (a : Ast k) :
     Tree.erase a.trivialDoc = a :=
-  WType.rec (motive := fun a => Tree.erase (Ast.trivialDoc a) = a)
+  WType.rec (motive := fun a => Tree.erase (trivialDoc a) = a)
     (fun s ch ih => by simp only [trivialDoc, WType.elim_mk]
                        exact congrArg _ (funext ih)) a
+
+end Ast
 
 /-! ## The rose presentation and its bijection -/
 
@@ -331,8 +375,9 @@ namespace Ast
 /-- The binary-to-rose direction, under the convention that the left child
 of a fork is the head child and the right child carries the label and the
 remaining siblings. Choosing the last child instead gives a different and
-equally valid bijection, so the convention is normative and versioned:
-annotation paths travel through it. -/
+equally valid bijection, so the choice has to be fixed. It will also have
+to be versioned once occurrence paths are carried across a syntax, since
+a path's meaning depends on it; nothing here does that yet. -/
 def toRose {k : Nat} : Ast k → Rose k :=
   WType.elim (Rose k) fun x =>
     match x with
@@ -343,29 +388,31 @@ def toRose {k : Nat} : Ast k → Rose k :=
 spine that carries the label at its end. -/
 def ofRose {k : Nat} : Rose k → Ast k :=
   WType.elim (Ast k) fun x =>
-    Fin.foldr x.1.2 (fun j acc => Ast.fork (x.2 j) acc) (Ast.leaf x.1.1)
+    Fin.foldr x.1.2 (fun j acc => fork (x.2 j) acc) (leaf x.1.1)
 
 @[simp] theorem toRose_leaf {k : Nat} (i : Fin k) :
-    (Ast.leaf i).toRose = Rose.node i Fin.elim0 := rfl
+    (leaf i).toRose = Rose.node i Fin.elim0 := rfl
 
 @[simp] theorem toRose_fork {k : Nat} (l r : Ast k) :
-    (Ast.fork l r).toRose = Rose.cons l.toRose r.toRose := rfl
+    (fork l r).toRose = Rose.cons l.toRose r.toRose := rfl
 
 @[simp] theorem ofRose_node {k : Nat} (i : Fin k) {n : Nat} (f : Fin n → Rose k) :
-    Ast.ofRose (Rose.node i f) =
-      Fin.foldr n (fun j acc => Ast.fork (Ast.ofRose (f j)) acc) (Ast.leaf i) :=
+    ofRose (Rose.node i f) =
+      Fin.foldr n (fun j acc => fork (ofRose (f j)) acc) (leaf i) :=
   rfl
 
 theorem ofRose_cons {k : Nat} (t r : Rose k) :
-    Ast.ofRose (Rose.cons t r) = Ast.fork (Ast.ofRose t) (Ast.ofRose r) := by
+    ofRose (Rose.cons t r) = fork (ofRose t) (ofRose r) := by
   obtain ⟨⟨i, n⟩, f⟩ := r
-  change Ast.ofRose (Rose.cons t (Rose.node i f))
-      = Ast.fork (Ast.ofRose t) (Ast.ofRose (Rose.node i f))
+  change ofRose (Rose.cons t (Rose.node i f))
+      = fork (ofRose t) (ofRose (Rose.node i f))
   simp only [Rose.cons_node, ofRose_node, Fin.foldr_succ, Fin.cases_zero,
     Fin.cases_succ]
 
-theorem ofRose_toRose {k : Nat} (a : Ast k) : Ast.ofRose a.toRose = a :=
-  Ast.ind (motive := fun a => Ast.ofRose a.toRose = a)
+/-- One half of the rose/binary bijection: converting to a rose tree and
+back is the identity on `Ast k`. -/
+theorem ofRose_toRose {k : Nat} (a : Ast k) : ofRose a.toRose = a :=
+  Ast.ind (motive := fun a => ofRose a.toRose = a)
     (fun i => by simp only [toRose_leaf, ofRose_node, Fin.foldr_zero])
     (fun l r ihl ihr => by rw [toRose_fork, ofRose_cons, ihl, ihr]) a
 
@@ -373,11 +420,11 @@ theorem ofRose_toRose {k : Nat} (a : Ast k) : Ast.ofRose a.toRose = a :=
 performs on a node's children is undone one child at a time. -/
 theorem toRose_foldr {k : Nat} (i : Fin k) :
     ∀ (n : Nat) (g : Fin n → Ast k),
-      (Fin.foldr n (fun j acc => Ast.fork (g j) acc) (Ast.leaf i)).toRose
+      (Fin.foldr n (fun j acc => fork (g j) acc) (leaf i)).toRose
         = Rose.node i fun j => (g j).toRose :=
   Nat.rec
     (motive := fun n => ∀ g : Fin n → Ast k,
-      (Fin.foldr n (fun j acc => Ast.fork (g j) acc) (Ast.leaf i)).toRose
+      (Fin.foldr n (fun j acc => fork (g j) acc) (leaf i)).toRose
         = Rose.node i fun j => (g j).toRose)
     (fun g => by
       simp only [Fin.foldr_zero, toRose_leaf]
@@ -388,11 +435,13 @@ theorem toRose_foldr {k : Nat} (i : Fin k) :
         Fin.cases (motive := fun j => Fin.cases (g 0).toRose
           (fun j => (g j.succ).toRose) j = (g j).toRose) rfl (fun _ => rfl) j))
 
-theorem toRose_ofRose {k : Nat} (r : Rose k) : (Ast.ofRose r).toRose = r :=
-  WType.rec (motive := fun r => (Ast.ofRose r).toRose = r)
+/-- The other half of the rose/binary bijection: converting from a rose
+tree and back is the identity on `Rose k`. -/
+theorem toRose_ofRose {k : Nat} (r : Rose k) : (ofRose r).toRose = r :=
+  WType.rec (motive := fun r => (ofRose r).toRose = r)
     (fun s f ih => by
       obtain ⟨i, n⟩ := s
-      change (Ast.ofRose (Rose.node i f)).toRose = Rose.node i f
+      change (ofRose (Rose.node i f)).toRose = Rose.node i f
       rw [ofRose_node, toRose_foldr]
       exact congrArg _ (funext ih)) r
 
@@ -402,7 +451,7 @@ end Ast
 
 section Laws
 
-variable {D C : Type} (parse : C → Option D) (print : D → C)
+variable {D : Type uA} {C : Type uB} (parse : C → Option D) (print : D → C)
 
 /-- The document-level retraction law: the only law a syntax must prove. -/
 def Retraction : Prop := ∀ d : D, parse (print d) = some d
@@ -410,6 +459,8 @@ def Retraction : Prop := ∀ d : D, parse (print d) = some d
 /-- The formatter, defined where parsing succeeds. -/
 def format (c : C) : Option C := (parse c).map print
 
+/-- Formatter idempotence, the first corollary of a retraction:
+reformatting formatted input changes nothing. -/
 theorem format_idem (hr : Retraction parse print) (c : C) :
     (format parse print c).bind (format parse print)
       = format parse print c := by
@@ -418,6 +469,8 @@ theorem format_idem (hr : Retraction parse print) (c : C) :
   | none => simp
   | some d => simp [hr d]
 
+/-- Injectivity of the printer, the second corollary of a retraction: a
+syntax that can be parsed back cannot spell two documents alike. -/
 theorem print_injective (hr : Retraction parse print) :
     Function.Injective print := by
   intro d1 d2 h
@@ -437,13 +490,17 @@ inductive Dir where
   | R
   deriving Repr, DecidableEq
 
-/-- An occurrence in a tree, as a word over `Dir`. This is the normative
-path vocabulary; the rose presentation names only a subset of it, by
-`rosePathToBin_last`. -/
+/-- An occurrence in a tree, as a word over `Dir`. Intended as the path
+vocabulary a syntax annotates occurrences through, of which the rose
+presentation reaches only part, by `rosePathToBin_last`. No declaration
+here interprets a `Path` against a tree; see `TODO.md` § Concrete-syntax
+prototype. -/
 abbrev Path : Type := List Dir
 
-/-- Rose child index sequence to binary path: child `i` of a rose node at
-binary position `q` sits at `q ++ replicate i R ++ [L]`. -/
+/-- Rose child index sequence to binary path. Under `Ast.toRose`'s
+convention, child `i` of a rose node at binary position `q` is intended
+to sit at `q ++ replicate i R ++ [L]`; that reading is not stated as a
+theorem, there being no subtree selector here to state it against. -/
 def rosePathToBin : List Nat → Path :=
   List.rec [] fun i _ ih => List.replicate i .R ++ .L :: ih
 
@@ -486,7 +543,7 @@ theorem charDigit_digitChar (d : Nat) (h : d < 10) :
     charDigit (digitChar d) = some d := by
   revert h; revert d; decide
 
-theorem charsToDigits_map : ∀ ds : List Nat, (∀ d ∈ ds, d < 10) →
+theorem mapM_charDigit_digitChar : ∀ ds : List Nat, (∀ d ∈ ds, d < 10) →
     (ds.map digitChar).mapM charDigit = some ds :=
   List.rec (motive := fun ds => (∀ d ∈ ds, d < 10) →
       (ds.map digitChar).mapM charDigit = some ds)
@@ -569,7 +626,7 @@ theorem digitsVal_decOf (n : Nat) : digitsVal (decOf n) = some n := by
   · have hlt : ∀ d ∈ (digitsLE n).reverse, d < 10 := by
       intro d hd
       exact digitsLE_lt n d (List.mem_reverse.mp hd)
-    rw [if_neg h, charsToDigits_map _ hlt]
+    rw [if_neg h, mapM_charDigit_digitChar _ hlt]
     simp [ofLE_digitsLE]
 
 theorem decOf_all_digits (n : Nat) : ∀ c ∈ decOf n, (charDigit c).isSome := by
@@ -635,7 +692,10 @@ def readNat (cs : List Char) : Option (Nat × List Char) :=
 def printVerbatim (s : List Char) : List Char :=
   decOf s.length ++ ':' :: s
 
-/-- Read one verbatim atom, returning it and the remaining input. -/
+/-- Read one verbatim atom, returning it and the remaining input. The
+`n ≤ r.length` guard makes the read total rather than truncating; `parse`
+cannot observe it, since a truncating read would consume the whole
+remaining input and every position that follows one demands more. -/
 def readVerbatim (cs : List Char) : Option (List Char × List Char) :=
   match readNat cs with
   | some (n, ':' :: r) => if n ≤ r.length then some (r.take n, r.drop n) else none
@@ -715,7 +775,7 @@ def parseStep (k : Nat) (childParse : List Char → Option (Ast k × List Char))
 unconsumed input. The `Nat` argument bounds the recursion: the recursion
 is on the input's structure only through the remainder each call returns,
 which is not a form Lean's structural recursion accepts. `parse` supplies
-the input length; `size_le_length` shows that this bound admits every
+the input length; `size_le_length_printAst` shows that this bound admits every
 tree the printer emits. Whether it admits every input the grammar accepts
 is not stated, and is not needed for the retraction law. -/
 def parseAst (k : Nat) : Nat → List Char → Option (Ast k × List Char) :=
@@ -760,7 +820,7 @@ theorem parseAst_printAst {k : Nat} (a : Ast k) :
         rw [ihr f _ hr]
         simp) a
 
-theorem size_le_length {k : Nat} (a : Ast k) : a.size ≤ (printAst a).length :=
+theorem size_le_length_printAst {k : Nat} (a : Ast k) : a.size ≤ (printAst a).length :=
   Ast.ind (motive := fun a => a.size ≤ (printAst a).length)
     (fun i => by simp [printAst_leaf])
     (fun l r ihl ihr => by
@@ -783,21 +843,26 @@ def parse (k : Nat) (cs : List Char) : Option (Ast k) :=
   | some (a, []) => some a
   | _ => none
 
+/-- The retraction law for the canonical S-expression syntax: printing a
+tree and parsing the result returns that tree. -/
 theorem parse_print {k : Nat} (a : Ast k) : parse k (print a) = some a := by
   unfold parse print
   rw [show printAst a = printAst a ++ [] by simp,
-    parseAst_printAst a _ [] (by simpa using size_le_length a)]
+    parseAst_printAst a _ [] (by simpa using size_le_length_printAst a)]
 
 /-! ### The generic corollaries, instantiated here -/
 
+/-- `parse_print` in the form the generic corollaries consume. -/
 theorem retraction (k : Nat) : Retraction (parse k) (print (k := k)) :=
   parse_print
 
+/-- `Geb.format_idem` at this syntax. -/
 theorem format_idem (k : Nat) (c : List Char) :
     (format (parse k) print c).bind (format (parse k) print)
       = format (parse k) print c :=
   Geb.format_idem _ _ (retraction k) c
 
+/-- `Geb.print_injective` at this syntax. -/
 theorem print_injective (k : Nat) : Function.Injective (print (k := k)) :=
   Geb.print_injective _ _ (retraction k)
 
