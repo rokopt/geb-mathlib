@@ -34,8 +34,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.ElObj` / `GebProto.elCategory` — the category of elements of a
   presheaf on `J`, as a base category; presheaves on it are the slice
   `PSh(J)/S`.
-* `GebProto.sigmaLiftHom` / `GebProto.sigmaPshData` — the `σ` case: push a
-  functor over the base `ElObj S` forward along the projection to `J`.
+* `GebProto.sigmaLiftHom` / `GebProto.sigmaPshData` / `GebProto.sigmaPsh` — the
+  `σ` case: push a functor over the base `ElObj S` forward along the projection
+  to `J`.
+* `GebProto.elEqToHom` — the transport in the category of elements, with its
+  underlying `J`-morphism definitionally an `eqToHom`.
 * `GebProto.unitPsh` — the unit for `δ`: terminal shape presheaf, no directions.
 * `GebProto.arityVariesShapeArity` / `GebProto.deltaVarying` — the arity of
   `arityVaries` as a `ShapeArity` over `unitPsh`, and the `δ` at it.
@@ -57,8 +60,10 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.BaseArity.isFunctorial_pullback` — the pullback of a functorial
   `BaseArity` is functorial, so a code's `δ` need not mention its subcode's
   shapes.
-* `GebProto.sigmaPsh_shapeRestr_id` — the `σ` case preserves the
-  shape-restriction identity law.
+* `GebProto.sigmaPsh_shapeRestr_id`, `GebProto.sigmaPsh_shapeRestr_comp`,
+  `GebProto.sigmaPsh_reindex_naturality`, `GebProto.sigmaPsh_reindex_id`,
+  `GebProto.sigmaPsh_reindex_comp` — the five laws the `σ` case does not
+  inherit unchanged from its subfunctor.
 * `GebProto.elObj_eq_of_hom` / `GebProto.elHom_eq_eqToHom_comp` — the source of
   a morphism of elements is determined by its base and its underlying
   `J`-morphism, and two morphisms with equal underlying `J`-morphisms differ by
@@ -79,11 +84,15 @@ two transported laws reduce to equalities of `J`-morphisms built from
 `eqToHom`s. `BaseArity.reindex_eqToHom`, `BaseArity.reindex_cast_shape` and
 `BaseArity.reindex_comp_apply` are the three lemmas that reduction needs.
 
-The `σ` case is carried to the point where its operations are defined and its
-first shape-restriction law holds. Its remaining four laws are the same
-`eqToHom` bookkeeping over `ElObj S`, for which `elObj_eq_of_hom`,
-`elHom_eq_eqToHom_comp`, `shapeRestr_val_eqToHom_comp`, `shapeRestr_eqToHom` and
-`cast_shape_val` are the intended tools.
+The `σ` case's laws are `eqToHom` bookkeeping over `ElObj S`. Two devices carry
+them. `elEqToHom` is a transport whose underlying `J`-morphism reduces
+definitionally, because `eqToHom` is opaque to `rw` and `simp` and blocks the
+`J`-level identities the laws reduce to. And the reindexing laws are stated and
+combined through `HEq`, because a direction over a restricted shape and its
+counterpart over the same shape reached by a different route have types that
+agree only once the morphisms are identified; `reindex_heq_congr_hom`,
+`reindex_heq_congr_shape`, `reindex_heq_eqToHom`, `reindex_eq_of_eq_comp` and
+`reindex_eq_of_eq_eqToHom_comp` are the resulting toolkit.
 
 ## Tags
 
@@ -612,6 +621,20 @@ theorem shapeRestr_val_eqToHom_comp {K : Type uK} [Category.{vK} K]
   exact cast_shape_val F.toPresheafPFunctorData hx.symm _
 
 
+/-- The transport morphism in the category of elements, defined so that its
+underlying `J`-morphism is definitionally an `eqToHom`. `eqToHom` itself is
+opaque under `rw` and `simp`, which blocks the `J`-level identities the `σ`
+laws reduce to. -/
+def elEqToHom (S : Jᵒᵖ ⥤ Type uS) {x y : ElObj.{uJ, uS, vJ} S} (h : x = y) : x ⟶ y :=
+  ⟨eqToHom (congrArg Sigma.fst h), by cases h; simp⟩
+
+/-- `elEqToHom` is the categorical transport. Deliberately not `@[simp]`: the
+`J`-level identities the `σ` laws reduce to need the `elEqToHom` form. -/
+theorem elEqToHom_eq (S : Jᵒᵖ ⥤ Type uS) {x y : ElObj.{uJ, uS, vJ} S} (h : x = y) :
+    elEqToHom S h = eqToHom h := by
+  cases h
+  rfl
+
 /-- The source of a morphism in the category of elements is determined by its
 base and its underlying `J`-morphism: the element is forced to be the
 restriction of the target's. -/
@@ -660,6 +683,190 @@ theorem sigmaPsh_shapeRestr_id (S : Jᵒᵖ ⥤ Type uS)
   refine Eq.trans (shapeRestr_val_eqToHom_comp F hsrc (𝟙 (F.q a)) ⟨a, rfl⟩) ?_
   exact congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id (F.q a)) ⟨a, rfl⟩)
 
+
+
+/-- The `σ` operation preserves the shape-restriction composition law. -/
+theorem sigmaPsh_shapeRestr_comp (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    (sigmaPshData S F.toPresheafPFunctorData).ShapeRestrComp := by
+  intro j j' j'' g h
+  funext s
+  obtain ⟨a, rfl⟩ := s
+  refine Subtype.ext ?_
+  change (F.shapeRestr (sigmaLiftHom S F.toPresheafPFunctorData (h ≫ g) ⟨a, rfl⟩) ⟨a, rfl⟩).1 =
+    (F.shapeRestr (sigmaLiftHom S F.toPresheafPFunctorData h
+        ((sigmaPshData S F.toPresheafPFunctorData).shapeRestr g ⟨a, rfl⟩))
+      ⟨(F.shapeRestr (sigmaLiftHom S F.toPresheafPFunctorData g ⟨a, rfl⟩) ⟨a, rfl⟩).1, rfl⟩).1
+  set Lg := sigmaLiftHom S F.toPresheafPFunctorData g ⟨a, rfl⟩ with hLgdef
+  set b := F.shapeRestr Lg ⟨a, rfl⟩ with hbdef
+  set Lh := sigmaLiftHom S F.toPresheafPFunctorData h
+    ((sigmaPshData S F.toPresheafPFunctorData).shapeRestr g ⟨a, rfl⟩) with hLhdef
+  have hval : (sigmaLiftHom S F.toPresheafPFunctorData (h ≫ g) ⟨a, rfl⟩).1 =
+      eqToHom (rfl : j'' = j'') ≫ ((Lh ≫ elEqToHom S b.2) ≫ Lg).1 := by
+    simp [hLhdef, hLgdef, sigmaLiftHom, elEqToHom]
+  have hsplit : (F.shapeRestr (Lh ≫ elEqToHom S b.2) b).1 = (F.shapeRestr Lh ⟨b.1, rfl⟩).1 := by
+    refine Eq.trans (congrArg Subtype.val
+      (congrFun (F.isFunctorial.shapeRestr_comp (elEqToHom S b.2) Lh) b)) ?_
+    refine congrArg (fun t ↦ (F.shapeRestr Lh t).1) ?_
+    rw [elEqToHom_eq, shapeRestr_eqToHom]
+    exact Subtype.ext (cast_shape_val F.toPresheafPFunctorData b.2.symm b)
+  rw [elHom_eq_eqToHom_comp S (sigmaLiftHom S F.toPresheafPFunctorData (h ≫ g) ⟨a, rfl⟩)
+      ((Lh ≫ elEqToHom S b.2) ≫ Lg) rfl hval,
+    shapeRestr_val_eqToHom_comp,
+    congrFun (F.isFunctorial.shapeRestr_comp Lg (Lh ≫ elEqToHom S b.2)) ⟨a, rfl⟩,
+    Function.comp_apply]
+  exact hsplit
+
+
+/-- The `σ` operation preserves the reindexing naturality law: its shapes and
+directions are the subfunctor's unchanged. -/
+theorem sigmaPsh_reindex_naturality (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    (sigmaPshData S F.toPresheafPFunctorData).ReindexNaturality := by
+  intro j j' g s i i' f
+  exact F.isFunctorial.reindex_naturality (sigmaLiftHom S F.toPresheafPFunctorData g s)
+    ⟨s.1, rfl⟩ f
+
+/-- Reindexing is congruent in the morphism, on heterogeneously equal
+directions. Stated with `HEq` because the two directions live over the two
+restricted shapes, whose types agree only once the morphisms are identified. -/
+theorem reindex_heq_congr_hom {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x y : K} {m m' : x ⟶ y} (hm : m = m')
+    (s : F.Shape y) {i : I}
+    (d : F.Direction (F.shapeRestr m s).1 i) (d' : F.Direction (F.shapeRestr m' s).1 i)
+    (hd : HEq d d') : HEq (F.reindex m s d) (F.reindex m' s d') := by
+  cases hm
+  cases hd
+  rfl
+
+
+/-- Reindexing along a transport is heterogeneously the identity. -/
+theorem reindex_heq_eqToHom {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x y : K} {m : x ⟶ y} (h : x = y)
+    (hm : m = eqToHom h) (s : F.Shape y) {i : I}
+    (d : F.Direction (F.shapeRestr m s).1 i) : HEq (F.reindex m s d) d := by
+  cases hm
+  cases h
+  exact HEq.trans (heq_of_eq (F.isFunctorial.reindex_id s d)) (cast_heq _ d)
+
+/-- Reindexing along a composite factors, on heterogeneously equal
+directions. -/
+theorem reindex_eq_of_eq_comp {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x y z : K} {m : x ⟶ z}
+    (m₁ : x ⟶ y) (m₂ : y ⟶ z) (hm : m = m₁ ≫ m₂) (s : F.Shape z) {i : I}
+    (d : F.Direction (F.shapeRestr m s).1 i)
+    (d' : F.Direction (F.shapeRestr m₁ (F.shapeRestr m₂ s)).1 i) (hd : HEq d d') :
+    F.reindex m s d = F.reindex m₂ s (F.reindex m₁ (F.shapeRestr m₂ s) d') := by
+  cases hm
+  refine Eq.trans (F.isFunctorial.reindex_comp m₂ m₁ s d) ?_
+  exact congrArg (fun z ↦ F.reindex m₂ s (F.reindex m₁ (F.shapeRestr m₂ s) z))
+    (eq_of_heq (HEq.trans (cast_heq _ d) hd))
+
+/-- Reindexing is congruent in the shape, on heterogeneously equal
+directions. -/
+theorem reindex_heq_congr_shape {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x y : K} (m : x ⟶ y)
+    {s s' : F.Shape y} (hs : s = s') {i : I}
+    (d : F.Direction (F.shapeRestr m s).1 i) (d' : F.Direction (F.shapeRestr m s').1 i)
+    (hd : HEq d d') : HEq (F.reindex m s d) (F.reindex m s' d') := by
+  cases hs
+  cases hd
+  rfl
+
+/-- Reindexing along a composite carrying a transport prefix. -/
+theorem reindex_eq_of_eq_eqToHom_comp {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {w x y z : K} {m : w ⟶ z}
+    (e : w = x) (m₁ : x ⟶ y) (m₂ : y ⟶ z) (hm : m = eqToHom e ≫ (m₁ ≫ m₂)) (s : F.Shape z)
+    {i : I} (d : F.Direction (F.shapeRestr m s).1 i)
+    (d' : F.Direction (F.shapeRestr m₁ (F.shapeRestr m₂ s)).1 i) (hd : HEq d d') :
+    F.reindex m s d = F.reindex m₂ s (F.reindex m₁ (F.shapeRestr m₂ s) d') := by
+  cases hm
+  cases e
+  exact reindex_eq_of_eq_comp F m₁ m₂ (Category.id_comp _) s d d' hd
+
+/-- The `σ` operation preserves the reindexing identity law. -/
+theorem sigmaPsh_reindex_id (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    (sigmaPshData S F.toPresheafPFunctorData).ReindexId (sigmaPsh_shapeRestr_id S F) := by
+  intro j s i d
+  obtain ⟨a, rfl⟩ := s
+  refine eq_of_heq (HEq.trans ?_ (cast_heq _ d).symm)
+  have hsrc : (⟨(F.q a).1, S.map (sigmaLiftHom S F.toPresheafPFunctorData
+      (𝟙 ((F.q a).1)) ⟨a, rfl⟩).1.op (F.q a).2⟩ : ElObj S) = F.q a :=
+    Sigma.ext rfl (heq_of_eq (by simp [sigmaLiftHom]))
+  have hval : (eqToHom hsrc : _ ⟶ F.q a).1 = 𝟙 (F.q a).1 := by
+    rw [elCategory_eqToHom_val]
+    simp
+  have hm : sigmaLiftHom S F.toPresheafPFunctorData (𝟙 ((F.q a).1)) ⟨a, rfl⟩ = eqToHom hsrc :=
+    Subtype.ext (by
+      simp only [sigmaLiftHom, eqToHom_refl, op_comp, op_id, Category.comp_id]
+      exact hval.symm)
+  exact reindex_heq_eqToHom F hsrc hm ⟨a, rfl⟩ d
+
+
+/-- The `σ` operation preserves the reindexing composition law. The chain
+follows `sigmaPsh_shapeRestr_comp`: decompose the lifted morphism, split the
+reindexing twice, and discard the two transports. -/
+theorem sigmaPsh_reindex_comp (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    (sigmaPshData S F.toPresheafPFunctorData).ReindexComp (sigmaPsh_shapeRestr_comp S F) := by
+  intro j j' j'' g h s i d
+  obtain ⟨a, rfl⟩ := s
+  set Lg := sigmaLiftHom S F.toPresheafPFunctorData g ⟨a, rfl⟩ with hLgdef
+  set b := F.shapeRestr Lg ⟨a, rfl⟩ with hbdef
+  set Lh := sigmaLiftHom S F.toPresheafPFunctorData h
+    ((sigmaPshData S F.toPresheafPFunctorData).shapeRestr g ⟨a, rfl⟩) with hLhdef
+  have hval : (sigmaLiftHom S F.toPresheafPFunctorData (h ≫ g) ⟨a, rfl⟩).1 =
+      eqToHom (rfl : j'' = j'') ≫ ((Lh ≫ elEqToHom S b.2) ≫ Lg).1 := by
+    simp [hLhdef, hLgdef, sigmaLiftHom, elEqToHom]
+  have hm := elHom_eq_eqToHom_comp S (sigmaLiftHom S F.toPresheafPFunctorData (h ≫ g) ⟨a, rfl⟩)
+    ((Lh ≫ elEqToHom S b.2) ≫ Lg) rfl hval
+  have hsh : F.shapeRestr (elEqToHom S b.2) b = ⟨b.1, rfl⟩ := by
+    rw [elEqToHom_eq, shapeRestr_eqToHom]
+    exact Subtype.ext (cast_shape_val F.toPresheafPFunctorData b.2.symm b)
+  have hs1 : (F.shapeRestr (sigmaLiftHom S F.toPresheafPFunctorData (h ≫ g) ⟨a, rfl⟩)
+      ⟨a, rfl⟩).1 = (F.shapeRestr (Lh ≫ elEqToHom S b.2) b).1 := by
+    rw [hm, shapeRestr_val_eqToHom_comp,
+      congrFun (F.isFunctorial.shapeRestr_comp Lg (Lh ≫ elEqToHom S b.2)) ⟨a, rfl⟩,
+      Function.comp_apply]
+  have hs2 : (F.shapeRestr (Lh ≫ elEqToHom S b.2) b).1 =
+      (F.shapeRestr Lh (F.shapeRestr (elEqToHom S b.2) b)).1 :=
+    congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_comp (elEqToHom S b.2) Lh) b)
+  refine Eq.trans (reindex_eq_of_eq_eqToHom_comp F _ (Lh ≫ elEqToHom S b.2) Lg hm ⟨a, rfl⟩ d
+    (cast (congrArg (fun x ↦ F.Direction x i) hs1) d) (cast_heq _ d).symm) ?_
+  refine congrArg (F.reindex Lg ⟨a, rfl⟩ (i := i)) ?_
+  refine Eq.trans (reindex_eq_of_eq_comp F Lh (elEqToHom S b.2) rfl b _
+    (cast (congrArg (fun x ↦ F.Direction x i) hs2)
+      (cast (congrArg (fun x ↦ F.Direction x i) hs1) d)) (cast_heq _ _).symm) ?_
+  refine eq_of_heq (HEq.trans (reindex_heq_eqToHom F b.2 (elEqToHom_eq S b.2) b _) ?_)
+  have hs3 : (F.shapeRestr Lh (F.shapeRestr (elEqToHom S b.2) b)).1 =
+      (F.shapeRestr Lh (⟨b.1, rfl⟩ : F.Shape (F.q b.1))).1 :=
+    congrArg (fun t ↦ (F.shapeRestr Lh t).1) hsh
+  refine HEq.trans (reindex_heq_congr_shape F Lh hsh _
+    (cast (congrArg (fun x ↦ F.Direction x i) hs3) _) (cast_heq _ _).symm) ?_
+  refine heq_of_eq (congrArg (F.reindex Lh ⟨b.1, rfl⟩ (i := i)) (eq_of_heq ?_))
+  exact (cast_heq _ _).trans ((cast_heq _ _).trans ((cast_heq _ d).trans (cast_heq _ d).symm))
+
+
+set_option linter.checkUnivs false in
+/-- The `σ` case as a `PresheafPFunctor`: pushing a functor over the base
+`ElObj S` forward along the projection to `J` yields a presheaf p.r.a. functor.
+Its shape presheaf is the total space of `S` paired with the subfunctor's
+shapes, which is what lets a later `δ` adjoin an arity varying over the
+elements of `S` — the capability `not_hasBijectiveReindex_arityVaries` shows a
+`δ` over `J` alone cannot supply. -/
+def sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J where
+  toPresheafPFunctorData := sigmaPshData S F.toPresheafPFunctorData
+  isFunctorial :=
+    { directionRestr_id := F.isFunctorial.directionRestr_id
+      directionRestr_comp := F.isFunctorial.directionRestr_comp
+      shapeRestr_id := sigmaPsh_shapeRestr_id S F
+      shapeRestr_comp := sigmaPsh_shapeRestr_comp S F
+      reindex_naturality := sigmaPsh_reindex_naturality S F
+      reindex_id := sigmaPsh_reindex_id S F
+      reindex_comp := sigmaPsh_reindex_comp S F }
 
 end Sigma
 
