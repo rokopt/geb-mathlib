@@ -713,10 +713,10 @@ fiber membership already implemented.
   `…LimitsOfProductsAndEqualizers`; `--keep-implied` keeps this
   import out of `scripts/pre-push.sh`'s `lake shake` report, but
   without that flag, `lake shake` reports it as removable, and
-  reports the same pattern in six other pre-existing
-  `Geb/Mathlib/` files (`FreeCoprodCompDisc.lean`,
-  `Grothendieck.lean`, three `PFunctor` modules) and four
-  `GebTests` ones. mathlib CI runs `lake shake` without
+  reports the same pattern across the tree:
+  `lake shake --add-public --keep-prefix Geb GebTests` reports
+  14 `Geb/Mathlib/` files and 5 `GebTests` ones, exiting 1.
+  mathlib CI runs `lake shake` without
   `--keep-implied`, and `CONTRIBUTING.md` § Floodgate test commits
   the repo to shipping `Geb/Mathlib/` PRs with no source-code
   changes.
@@ -780,9 +780,9 @@ fiber membership already implemented.
   if the manual close-and-reopen-to-fire-CI overhead on cron-
   created bump-PRs becomes burdensome.
 - **Reconcile test-module import visibility**:
-  `GebTests/Mathlib/Data/PFunctor/IndRec/Basic.lean` uses
-  `public import` for its module-under-test while every sibling
-  test module uses plain `import`; `GebTests/Internal/`'s
+  `GebTests/` modules disagree on whether to `public import` the
+  module under test: most do, a minority use plain `import`;
+  `GebTests/Internal/`'s
   `public meta import` lines are in the same category. Import
   visibility changes what a module re-exports, so it is deferred.
   Trigger: the next branch that revises the test modules'
@@ -837,8 +837,9 @@ fiber membership already implemented.
   transporting it along the isomorphism to `FintypeCat.Skeleton`. That
   needs a choice-free pigeonhole, mathlib's `Fin.equiv_iff_eq`,
   `Fintype.card_congr` and `Fintype.card_fin` all depending on
-  `Classical.choice`. There is no such use while `Skeletal` is
-  consumed only by the wrapper.
+  `Classical.choice`. Its consumers are the wrapper and the one
+  allowlisted test module that identifies a pushout, so no such
+  use has arisen.
 - **mathlib-to-Batteries dependency edge**: whether mathlib accepts a
   `Mathlib/`-to-`Batteries/` dependency edge is a maintainer
   judgement — no `Mathlib.*` module references `UnionFind` — and
@@ -847,7 +848,7 @@ fiber membership already implemented.
   extract. (`Geb/Mathlib/Data/UnionFind/OfEdges.lean` itself does
   not: its own upstream target is Batteries.)
   Trigger: the preparation of that module's upstream submission,
-  which outlives this workstream group.
+  which outlives the FinSetSkel development.
 - **Check the leakage prefix in an import line's comment tail**:
   `scripts/lint-imports.sh` Rule 2 exempts a whole import line from
   the self-prefix check, so a self-prefix in a trailing comment on an
@@ -882,11 +883,18 @@ fiber membership already implemented.
   item above: both enumerate import forms and both predate the module
   system's `meta` forms. Trigger: the next branch that revises
   `scripts/extract-pr.sh`, or the first extraction of either module.
-- **`Fin.compressEquiv` has no consumer**: W1 built it for the binary
-  equalizers, which route through the agreement list instead. Besides
-  its own module, `Geb/Mathlib/Data/List/NodupEquivFin.lean`, its
-  only occurrences are its test parallel and its `docs/index.md`
-  entry.
-  Trigger: the next occasion to revisit W1's helpers, at which point
-  decide between keeping it and removing it under
-  `CONTRIBUTING.md` § Code is cost.
+- **Verify the attested textbook locators**: three locators are recorded
+  from secondary attestation and none is verified against its primary
+  source. [nLabSkeletalCategory] attests Mac Lane, _Categories for the
+  Working Mathematician_ (1971), p. 91 and Riehl, _Category Theory in
+  Context_ (2017), p. 34 for the skeleton of a category;
+  [nLabFinSet] attests Johnstone, _Sketches of an Elephant_, example 2.1.2
+  for the category of finite sets being an elementary topos. Attestation by
+  a secondary source is not verification, on the [Pare1974] precedent.
+  Trigger: the acquisition of any of the three primary sources, which
+  discharges that locator and leaves the entry standing for the others.
+- **Reconcile `## Main statements` across the test modules**:
+  `GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean` carries
+  the section, and its siblings do not although each declares named
+  theorems. `docs/rules/lean-coding.md` § Documentation requires a section
+  when it has content. Trigger: the next occasion to revise those modules.
