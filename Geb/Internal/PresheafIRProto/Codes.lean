@@ -1015,9 +1015,12 @@ section VaryingWitness
 
 /-!
 The positive counterpart of `not_hasBijectiveReindex_arityVaries`: a `δ` whose
-arity varies over the shape presheaf does reach `arityVaries`. The base is
-`unitPsh`, whose shape presheaf is terminal and which has no directions, so
-every direction of the `δ` comes from the adjoined arity.
+arity varies over the shape presheaf carries `arityVaries`'s arity, and so
+falls outside the bound. It is not `arityVaries` itself, and nothing here
+constructs an isomorphism: `deltaVarying`'s directions are
+`arityB a ⊕ PEmpty`, `arityVaries`'s are `arityB a`. The base is `unitPsh`,
+whose shape presheaf is terminal and which has no directions, so every
+direction of the `δ` comes from the adjoined arity.
 -/
 
 set_option linter.checkUnivs false in
@@ -1147,6 +1150,12 @@ set_option linter.checkUnivs false in
 shape presheaf by `S` and continue over its category of elements (`σ`), or
 adjoin the arity `P` and continue over the same base (`δ`). The arity carrier
 universe is pinned to the base's, which the prototype does not need to vary.
+
+`δ` has a single continuation, not a family indexed by decodings as in
+Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013]. This is the layer
+whose decoding presheaf is terminal, where that family is a singleton; the
+continuation's dependence on the decoding — the recursion of
+induction-recursion — belongs to the `(I, D)` layer, which is not built here.
 
 The `σ` shape is what makes the code type indexed by a *category* rather than
 by a fixed one, and the index is a parameter, not a type defined simultaneously
