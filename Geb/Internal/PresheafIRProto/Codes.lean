@@ -120,8 +120,8 @@ definitionally, because `eqToHom` is opaque to `rw` and `simp` and blocks the
 `J`-level identities the laws reduce to. And the reindexing laws are stated and
 combined through `HEq`, because a direction over a restricted shape and its
 counterpart over the same shape reached by a different route have types that
-agree only once the morphisms are identified; `reindex_heq_congr_hom`,
-`reindex_heq_congr_shape`, `reindex_heq_eqToHom`, `reindex_eq_of_eq_comp` and
+agree only once the morphisms are identified; `reindex_heq_congr_shape`,
+`reindex_heq_eqToHom`, `reindex_eq_of_eq_comp` and
 `reindex_eq_of_eq_eqToHom_comp` are the resulting toolkit.
 
 The code type is the W-type of a slice polynomial functor on `Cat`, not an
@@ -132,6 +132,10 @@ elements of a presheaf valued in `Type u` on a base in `Type u` is again in
 pinned to the base's, which the prototype does not need to vary. Nothing here
 is defined simultaneously with anything else, so no inductive-inductive
 definition or encoding of one is required.
+
+## References
+
+* [HancockMcBrideGhaniMalatestaAltenkirch2013]
 
 ## Tags
 
@@ -524,15 +528,6 @@ def pullback (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : ShapeArit
   reindex := fun {_ _} g s {_} d ↦
     P.reindex (eqToHom (F.shapeRestr g s).2 ≫ g ≫ eqToHom s.2.symm) d
 
-/-- The transported morphism a pullback reindexes along, named so the two
-transported laws can rewrite it. -/
-theorem pullback_reindex (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
-    {j j' : J} (g : j' ⟶ j) (s : F.Shape j) {i : I}
-    (d : ((P.pullback F).fam (F.shapeRestr g s).1).Dir i) :
-    (P.pullback F).reindex g s d =
-      P.reindex (eqToHom (F.shapeRestr g s).2 ≫ g ≫ eqToHom s.2.symm) d :=
-  rfl
-
 set_option linter.checkUnivs false in
 /-- The pullback of a functorial `BaseArity` is functorial. The two transported
 laws reduce, via `reindex_eqToHom` and `reindex_cast`, to equalities of
@@ -761,19 +756,6 @@ theorem sigmaPsh_reindex_naturality (S : Jᵒᵖ ⥤ Type uS)
   intro j j' g s i i' f
   exact F.isFunctorial.reindex_naturality (sigmaLiftHom S F.toPresheafPFunctorData g s)
     ⟨s.1, rfl⟩ f
-
-/-- Reindexing is congruent in the morphism, on heterogeneously equal
-directions. Stated with `HEq` because the two directions live over the two
-restricted shapes, whose types agree only once the morphisms are identified. -/
-theorem reindex_heq_congr_hom {K : Type uK} [Category.{vK} K]
-    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x y : K} {m m' : x ⟶ y} (hm : m = m')
-    (s : F.Shape y) {i : I}
-    (d : F.Direction (F.shapeRestr m s).1 i) (d' : F.Direction (F.shapeRestr m' s).1 i)
-    (hd : HEq d d') : HEq (F.reindex m s d) (F.reindex m' s d') := by
-  cases hm
-  cases hd
-  rfl
-
 
 /-- Reindexing along a transport is heterogeneously the identity. -/
 theorem reindex_heq_eqToHom {K : Type uK} [Category.{vK} K]

@@ -87,9 +87,9 @@ branch that found it, so each is deferred per
   [DybjerSetzer2003] justifies their existence using a Mahlo cardinal".
   The model is [DybjerSetzer1999]'s;
   [GhaniNordvallForsbergMalatesta2015] § 7 says so explicitly ("they use
-  the assumption of the existence of a large cardinal, namely a Mahlo
-  cardinal ... see Dybjer and Setzer [DS99]"), and DybjerSetzer2003's own
-  introduction attributes the model to its predecessor. Change the key.
+  briefly revisit the initial algebra argument used by Dybjer and Setzer
+  [DS99]"), and DybjerSetzer2003's own introduction attributes the model
+  to its predecessor. Change the key.
 - **`docs/references.bib` has the author order of
   `GhaniNordvallForsbergMalatesta2015` wrong.** The published LMCS byline
   is Ghani, Malatesta, Nordvall Forsberg; the entry and the citation key
@@ -97,11 +97,14 @@ branch that found it, so each is deferred per
 - **`docs/references.bib`'s note on
   `HancockMcBrideGhaniMalatestaAltenkirch2013` is unverified and
   incomplete.** It claims the extended preprint "renumbers two of" the
-  results this repository cites. Whether that is complete has not been
-  checked against the preprint, and the note covers none of Lemma 1,
-  Definition 1, Definition 6, Definition 7 or Theorem 1, which are cited
-  by the presheaf p.r.a. workstream. Obtain the preprint, check the
-  renumbering, and rewrite the note.
+  results this repository cites. Checked against the preprint, that is
+  false: the numbering runs one continuous counter from Lemma 1 onward,
+  so every result renumbers except Definition 1. The proceedings'
+  Definition 6, Definition 7, Theorem 1, Theorem 2, Theorem 3,
+  Theorem 4, Lemma 1, Definition 8 and Corollary 2 are the preprint's
+  Definition 10, Definition 11, Theorem 12, Theorem 15, Theorem 18,
+  Theorem 21, Lemma 7, Definition 17 and Corollary 19. Rewrite the note
+  with that table.
 
 ### Polynomial functors
 

@@ -18,8 +18,8 @@ Throwaway exploration, not upstream-eligible content. Every declaration here is
 `Classical.choice`-free; the bundled restatement of the p.r.a. formula, which
 writes `⟶` between two objects of a presheaf category and so pulls in
 `Classical.choice` from mathlib, is in the sibling `PresheafIRProto.Functor`
-module. This module tests the following claims of the presheaf-generalized
-IR brainstorm:
+module. This module tests the following claims about presheaf-generalized
+IR codes:
 
 1. `iotaPresheaf` — the constant (`iota`) case generalizes to the functor
    constant at the representable `y j₀`, whose shape type is the total space
@@ -794,12 +794,6 @@ structure PshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     F.reindex g a ((arity j' (F.shapeRestr g a)).1 i d) =
       (arity j a).1 i (F'.reindex g (shape.1 j a)
         (cast (congrArg (fun s : F'.Shape j' ↦ F'.Direction s.1 i) (shape.2 g a)) d))
-
-/-- The data of a `PshHom` over a fixed `j` is `DomHom`'s data restricted to the
-shapes over `j`: shapes forward, arity presheaf morphisms backward. -/
-def pshHomAtIndex (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : PshHom F F')
-    (j : J) (a : F.Shape j) : Σ a' : F'.Shape j, ArityHom F' a'.1 (arityPresheaf F a.1) :=
-  ⟨φ.shape.1 j a, φ.arity j a⟩
 
 /-- The identity morphism. The `cast` in `reindexCompat` is along `rfl`, so the
 law reduces to reflexivity — the smallest check that the transport is threaded
