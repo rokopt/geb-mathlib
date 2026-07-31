@@ -14,13 +14,16 @@ public import GebTests.Mathlib.CategoryTheory.FinCat.Hom
 Three 2-cell specifications out of the terminal category: the one from
 the source-picking functor specification into the walking arrow to the
 target-picking one, and the two parallel 2-cells on the specification
-picking out the idempotent monoid's object. Five assertions exercising
-the bundled naturality check, the emptiness of the reverse 2-cell type,
-the components of the identity 2-cell and of a vertical composite, and
-the component of the generated natural transformation.
+picking out the idempotent monoid's object. A fourth out of the walking
+arrow, whose naturality quantifier is not empty. Six assertions
+exercising the bundled naturality check, the emptiness of the reverse
+2-cell type, the components of the identity 2-cell and of a vertical
+composite, the component of the generated natural transformation, and
+the checker rejecting.
 
-Each `natValid` field holds by `rfl`, the naturality quantifier ranging
-over the terminal category's empty client range.
+A `natValid` field of a 2-cell out of the terminal category holds by
+`rfl` with the naturality quantifier ranging over an empty client
+range; `arrowIdemCell`'s ranges over one client morphism.
 
 ## Tags
 
@@ -32,11 +35,8 @@ constructive
 
 open CategoryTheory
 
-/-- `walkingArrow`'s one non-identity morphism. -/
-def arrowMor : walkingArrow.Mor arrowSrc arrowTgt := ⟨0, by decide⟩
-
 /-- The 2-cell from the source-picking functor specification to the
-target-picking one, whose single component is that morphism. -/
+target-picking one, whose single component is `arrowMor`. -/
 def arrowPointCell : FinCat.Hom₂ arrowPointSrc arrowPointTgt where
   app := fun _ ↦ arrowMor
   natValid := rfl
@@ -77,3 +77,18 @@ theorem isoId_app_comp (i : Fin walkingIso.objCount) :
 terminal category's one object is the 2-cell's. -/
 theorem arrowPointCell_toNatTrans_app :
     (arrowPointCell.toNatTrans.{0, 0}).app termPoint = ULift.up arrowMor := rfl
+
+/-- The 2-cell from `arrowIdem` to the collapse-then-point composite,
+with the idempotent at each component. Its source is `walkingArrow`,
+which has a client morphism, so its `natValid` field is the one
+naturality check here that is not vacuous. -/
+def arrowIdemCell : FinCat.Hom₂ arrowIdem (arrowCollapse.comp idemPoint) where
+  app := fun _ ↦ idemMor
+  natValid := rfl
+
+/-- Assertion 6: the naturality checker rejects as well as accepts. The
+reserved identity at each component fails the square that
+`arrowIdemCell`'s idempotent satisfies. -/
+theorem arrowIdem_natCheckOf_id_eq_false :
+    FinCat.Hom₂.natCheckOf walkingArrow idemMonoid arrowIdem (arrowCollapse.comp idemPoint)
+      (fun _ ↦ idemIdMor) = false := rfl

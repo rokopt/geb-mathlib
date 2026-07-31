@@ -128,6 +128,9 @@ theorem arrow_nonIdCount_diag : walkingArrow.nonIdCount arrowSrc arrowSrc = 0 :=
 identity. -/
 theorem arrow_homCount_diag : walkingArrow.homCount arrowSrc arrowSrc = 1 := rfl
 
+/-- `walkingArrow`'s one non-identity morphism. -/
+def arrowMor : walkingArrow.Mor arrowSrc arrowTgt := ⟨0, by decide⟩
+
 /-- The first object index of `walkingIso`. -/
 def isoSrcIdx : Fin walkingIso.objCount := ⟨0, by decide⟩
 

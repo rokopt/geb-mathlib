@@ -13,13 +13,16 @@ public import GebTests.Mathlib.CategoryTheory.FinCat.Basic
 
 Three functor specifications out of the terminal category: the two into
 the walking arrow, and the one into the two-element monoid on an
-idempotent, which is the only fixture with a two-element hom-set. Five
-assertions exercising the two unit laws, the bundled composition check,
-and the object and morphism maps of the generated mathlib functor.
+idempotent, which is the only fixture with a two-element hom-set. Two
+more out of the walking arrow, whose morphism maps are not vacuous.
+Seven assertions exercising the two unit laws, the bundled composition
+check, the object and morphism maps of the generated mathlib functor,
+and a composite's morphism map at a client morphism.
 
-The morphism component of each specification is vacuous, the terminal
-category having no client morphisms, and the composition check holds
-because its quantifier ranges over an empty index type.
+The morphism component of a specification out of the terminal category
+is vacuous, that category having no client morphisms. Every composition
+check here holds because its quantifier ranges over an empty index
+type: no fixture has two composable client morphisms.
 
 ## Tags
 
@@ -82,3 +85,31 @@ theorem arrowPointSrc_toFunctor_obj :
 theorem arrowPointSrc_toFunctor_map :
     (arrowPointSrc.toFunctor.{0, 0}).map (X := termPoint) (Y := termPoint) termPointId
       = ULift.up (walkingArrow.id arrowSrc) := rfl
+
+/-- The collapsing 1-cell out of `walkingArrow`. Its source has a
+client morphism, so its morphism map is not vacuous. -/
+def arrowCollapse : FinCat.Hom walkingArrow terminalCat where
+  objMap := fun _ ↦ termObj
+  map := fun _ _ _ ↦ terminalCat.id termObj
+  compValid := rfl
+
+/-- The 1-cell out of `walkingArrow` sending its client morphism to the
+idempotent. It agrees with `arrowCollapse.comp idemPoint` on object
+maps and differs on morphism maps. -/
+def arrowIdem : FinCat.Hom walkingArrow idemMonoid where
+  objMap := fun _ ↦ idemObj
+  map := fun _ _ _ ↦ idemMor
+  compValid := rfl
+
+/-- Assertion 6: a composite's morphism map at a client morphism. It is
+the composite's `map` field that is evaluated: the total map takes its
+client branch at `arrowMor`, whose index is inside the client range. -/
+theorem arrowCollapse_comp_idemPoint_mapTotal :
+    (arrowCollapse.comp idemPoint).mapTotal arrowMor = idemMonoid.id idemObj := rfl
+
+/-- Assertion 7: and the factorisation theorem holds there, by the
+theorem rather than by `rfl`. -/
+theorem arrowCollapse_comp_idemPoint_mapTotal_eq :
+    (arrowCollapse.comp idemPoint).mapTotal arrowMor
+      = idemPoint.mapTotal (arrowCollapse.mapTotal arrowMor) :=
+  FinCat.Hom.comp_mapTotal arrowCollapse idemPoint arrowMor

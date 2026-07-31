@@ -13,10 +13,13 @@ public import GebTests.Mathlib.CategoryTheory.FinCat.Hom2
 
 One assertion per level, in both directions: two specifications at the
 specification level, two functor specifications at the 1-cell level,
-and two 2-cell specifications at the 2-cell level. Each runs the
-decision procedure: the negative assertions state a disequality, and
-the positive ones state what the procedure returns, so that neither
-direction closes by reflexivity of its two sides.
+and two 2-cell specifications at the 2-cell level. The 1-cell level
+carries a second negative assertion, at a pair agreeing on object maps,
+which is what reaches the transported morphism-map stage of the
+decision. Each runs the decision procedure: the negative assertions
+state a disequality, and the positive ones state what the procedure
+returns, so that neither direction closes by reflexivity of its two
+sides.
 
 The negative assertions carry the test: a procedure that accepts
 everything passes every positive one, and one that rejects everything
@@ -51,3 +54,10 @@ theorem idemCellIdem_ne_idemCellId : idemCellIdem ≠ idemCellId := by decide
 /-- Assertion 5: and affirmatively at a 2-cell specification against
 itself. -/
 theorem idemCellIdem_decide_self : decide (idemCellIdem = idemCellIdem) = true := rfl
+
+/-- Assertion 6: two functor specifications agreeing on their object map
+and differing in their morphism map are distinguished. Assertion 3's
+pair differs already in the object map, so it never reaches the
+transported second stage of the decision. -/
+theorem arrowIdem_ne_arrowCollapse_comp_idemPoint :
+    arrowIdem ≠ arrowCollapse.comp idemPoint := by decide
