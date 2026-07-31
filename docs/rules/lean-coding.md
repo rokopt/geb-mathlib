@@ -459,14 +459,13 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
   the instance to the construction over the `DecidableEq`-derived `BEq`.
   This is the name-the-term rule one level down, stated separately because
   the closure-dependence makes a narrow measurement report clean.
-
 - **Re-measure at every toolchain bump.** A lemma's axioms follow its
   proof, so each measurement above is re-taken when the pin moves rather
   than assumed to persist.
 
 `Geb/Mathlib/Data/Vector/OfFn.lean`'s docstring states which lemmas of the
-`Vector.ofFn` family a choice-free module may not use, and Task 5 adds the
-attribute mechanism to it. Where that restriction is violated in a
+`Vector.ofFn` family a choice-free module may not use, and why a bare
+`simp` or `grind` reaches them. Where that restriction is violated in a
 module held to the standard axiom set, nothing errors at elaboration and
 `lake lint` catches it. In an allowlisted module `lake lint` does not:
 `GebMeta.detectNonstandardAxiom` permits `Classical.choice` there outright,
