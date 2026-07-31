@@ -1157,12 +1157,13 @@ family is indexed by once a decoding presheaf is supplied: the analogue of
 
 Unbundled for the usual reason: `P ⟶ D` between objects of a presheaf category
 would draw in `Classical.choice`. -/
-structure PshMor (P D : Iᵒᵖ ⥤ Type uD) : Type (max uI uD vI) where
+@[ext] structure PshMor (G : DomArity.{uI, uD, vI} I) (D : Iᵒᵖ ⥤ Type uD) :
+    Type (max uI uD vI) where
   /-- The components. -/
-  app : ∀ i : I, P.obj ⟨i⟩ → D.obj ⟨i⟩
+  app : ∀ ⦃i : I⦄, G.Dir i → D.obj ⟨i⟩
   /-- Naturality. -/
-  naturality : ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (p : P.obj ⟨i⟩),
-    app i' (P.map f.op p) = D.map f.op (app i p)
+  naturality : ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (x : G.Dir i),
+    app (G.restr f x) = D.map f.op (app x)
 
 set_option linter.checkUnivs false in
 /-- The arity a `δ` adjoins at the decoding `s`: the fibres of `s`, as a
@@ -1174,31 +1175,33 @@ morphism and not a bare family.
 The carrier is indexed by `ElObj D` with `proj` the projection, rather than
 being the total space of `P` with `proj` computed from `s`, so that a direction
 destructures to its fibre without transporting the element. -/
-@[reducible] def fibreArity {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D) :
+@[reducible] def fibreArity {G : DomArity.{uI, uD, vI} I} {D : Iᵒᵖ ⥤ Type uD} (s : PshMor G D) :
     DomArity.{max uI uD, max uI uD, vI} (ElObj.{uI, uD, vI} D) where
-  carrier := Σ y : ElObj.{uI, uD, vI} D, {p : P.obj ⟨y.1⟩ // s.app y.1 p = y.2}
+  carrier := Σ y : ElObj.{uI, uD, vI} D, {x : G.Dir y.1 // s.app x = y.2}
   proj := Sigma.fst
   restr := fun {_ y'} f d ↦
     match d with
     | ⟨⟨_, p⟩, rfl⟩ =>
-        ⟨⟨y', ⟨P.map f.1.op p.1, by rw [s.naturality, p.2]; exact f.2⟩⟩, rfl⟩
+        ⟨⟨y', ⟨G.restr f.1 p.1, by rw [s.naturality, p.2]; exact f.2⟩⟩, rfl⟩
 
 /-- The underlying element of a restricted fibre direction, so that the two
 laws below need not unfold `fibreArity`'s matcher. -/
-theorem fibreArity_restr_val {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D)
-    {y' z : ElObj.{uI, uD, vI} D} (p : {q : P.obj ⟨z.1⟩ // s.app z.1 q = z.2}) (f : y' ⟶ z) :
-    (((fibreArity s).restr f ⟨⟨z, p⟩, rfl⟩).1).2.1 = P.map f.1.op p.1 := rfl
+theorem fibreArity_restr_val {G : DomArity.{uI, uD, vI} I} {D : Iᵒᵖ ⥤ Type uD}
+    (s : PshMor G D) {y' z : ElObj.{uI, uD, vI} D}
+    (p : {q : G.Dir z.1 // s.app q = z.2}) (f : y' ⟶ z) :
+    (((fibreArity s).restr f ⟨⟨z, p⟩, rfl⟩).1).2.1 = G.restr f.1 p.1 := rfl
 
 /-- The fibre arity is a presheaf: both laws are `P`'s own, the fibre condition
 being carried along by `s`'s naturality. -/
-theorem isFunctorial_fibreArity {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D) :
-    (fibreArity s).IsFunctorial where
+theorem isFunctorial_fibreArity {G : DomArity.{uI, uD, vI} I} (hG : G.IsFunctorial)
+    {D : Iᵒᵖ ⥤ Type uD} (s : PshMor G D) : (fibreArity s).IsFunctorial where
   restr_id := by
     intro y
     funext d
     obtain ⟨⟨z, p⟩, rfl⟩ := d
     refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
-    exact (fibreArity_restr_val s p (𝟙 z)).trans (by simp)
+    exact (fibreArity_restr_val s p (𝟙 z)).trans (by
+      simpa using congrFun (hG.restr_id z.1) p.1)
   restr_comp := by
     intro y y' y'' f g
     funext d
@@ -1206,9 +1209,9 @@ theorem isFunctorial_fibreArity {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D) :
     refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
     refine Eq.trans (fibreArity_restr_val s p (g ≫ f)) ?_
     refine Eq.trans ?_ (fibreArity_restr_val s
-      (⟨P.map f.1.op p.1, by rw [s.naturality, p.2]; exact f.2⟩ :
-        {q : P.obj ⟨y'.1⟩ // s.app y'.1 q = y'.2}) g).symm
-    simp
+      (⟨G.restr f.1 p.1, by rw [s.naturality, p.2]; exact f.2⟩ :
+        {q : G.Dir y'.1 // s.app q = y'.2}) g).symm
+    exact congrFun (hG.restr_comp f.1 g.1) p.1
 
 
 set_option linter.checkUnivs false in
@@ -1223,22 +1226,23 @@ assignments by the decoding they induce presents it as a coproduct, over the
 decodings, of the non-recursive `δ` at the corresponding fibre arity. Both
 `coprod` and `delta` already carry all seven functor laws, so this does
 too. -/
-def deltaRec {J : Type uJ} [Category.{vJ} J] {P D : Iᵒᵖ ⥤ Type uD}
-    (K : PshMor P D →
+def deltaRec {J : Type uJ} [Category.{vJ} J] {G : DomArity.{uI, uD, vI} I}
+    (hG : G.IsFunctorial) {D : Iᵒᵖ ⥤ Type uD}
+    (K : PshMor G D →
       PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
         (ElObj.{uI, uD, vI} D) J) :
     PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
       (ElObj.{uI, uD, vI} D) J :=
-  coprod (PshMor P D) fun s ↦
+  coprod (PshMor G D) fun s ↦
     delta (K s) (ShapeArity.const (K s).toPresheafPFunctorData (fibreArity s))
-      (ShapeArity.isFunctorial_const (K s) (fibreArity s) (isFunctorial_fibreArity s))
+      (ShapeArity.isFunctorial_const (K s) (fibreArity s) (isFunctorial_fibreArity hG s))
 
 /-- At the terminal decoding the recursive `δ` degenerates: `PshMor P ⊤` is a
 singleton, so the coproduct has one summand and the subcode cannot depend on
 anything. That is the case the base-category layer builds. -/
-theorem subsingleton_pshMor_to_terminal (P : Iᵒᵖ ⥤ Type uD)
+theorem subsingleton_pshMor_to_terminal (G : DomArity.{uI, uD, vI} I)
     (D : Iᵒᵖ ⥤ Type uD) (hD : ∀ i : I, Subsingleton (D.obj ⟨i⟩)) :
-    Subsingleton (PshMor P D) :=
+    Subsingleton (PshMor G D) :=
   ⟨fun s t ↦ by
     obtain ⟨sa, -⟩ := s
     obtain ⟨ta, -⟩ := t
@@ -1246,6 +1250,115 @@ theorem subsingleton_pshMor_to_terminal (P : Iᵒᵖ ⥤ Type uD)
       intro i i' f p
       exact (hD i').elim _ _))
       (funext fun i ↦ funext fun p ↦ (hD i).elim _ _)⟩
+
+
+set_option linter.checkUnivs false in
+/-- The decoding presheaf of an output-varying arity: over the output object
+`b`, the decodings of the arity there. Restriction along `g : b' ⟶ b` is
+precomposition with `A.reindex g`, which is what makes the decodings vary
+contravariantly and so form a presheaf on `J`.
+
+This is the object that keeps a fused `δ` free of mutuality: a continuation
+depending functorially on the decoding is a single code over `ElObj` of this
+presheaf, not a family of codes indexed by decodings. -/
+def decPresheaf {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, vJ} I J)
+    (hA : A.IsFunctorial) (D : Iᵒᵖ ⥤ Type uD) : Jᵒᵖ ⥤ Type (max uI uD vI) where
+  obj b := PshMor (A.fam b.unop) D
+  map g := ↾ fun s ↦
+    { app := fun {i} x ↦ s.app (A.reindex g.unop x)
+      naturality := fun {i i'} f x ↦
+        (congrArg (fun y ↦ s.app (i := i') y)
+          (congrFun (hA.reindex_naturality g.unop f) x).symm).trans
+          (s.naturality f (A.reindex g.unop x)) }
+  map_id b := by
+    ext s i x
+    exact congrArg (fun y ↦ s.app (i := i) y) (congrFun (hA.reindex_id b.unop i) x)
+  map_comp g h := by
+    ext s i x
+    exact congrArg (fun y ↦ s.app (i := i) y) (congrFun (hA.reindex_comp g.unop h.unop i) x)
+
+
+set_option linter.checkUnivs false in
+/-- The arity a fused `δ` adjoins, indexed by the objects of `ElObj (decPresheaf …)`.
+Each such object carries its own decoding, so the arity over it is that
+decoding's fibre arity — and the arity therefore varies over the output, which
+`not_hasBijectiveReindex_arityVaries` shows is necessary.
+
+Reindexing along a morphism of elements applies `A.reindex` to the fibre
+element; the morphism's own condition says the two decodings agree after that,
+so no transport is needed. -/
+def decArity {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, vJ} I J)
+    (hA : A.IsFunctorial) (D : Iᵒᵖ ⥤ Type uD) :
+    BaseArity.{max uI uD, max uI uJ uD vI, max uI uD, vI, vJ}
+      (ElObj.{uI, uD, vI} D) (ElObj.{uJ, max uI uD vI, vJ} (decPresheaf A hA D)) where
+  fam y := fibreArity y.2
+  reindex := fun {y y'} f z d ↦
+    match d with
+    | ⟨⟨_, ⟨x, hx⟩⟩, rfl⟩ =>
+        ⟨⟨z, ⟨A.reindex f.1 x, by rw [show y.2.app (A.reindex f.1 x) = y'.2.app x from
+          congrArg (fun t : PshMor (A.fam y'.1) D ↦ t.app x) f.2, hx]⟩⟩, rfl⟩
+
+
+/-- The underlying fibre element of a reindexed `decArity` direction, so the
+laws below need not unfold the matcher. -/
+theorem decArity_reindex_val {J : Type uJ} [Category.{vJ} J]
+    (A : BaseArity.{uI, uJ, uD, vI, vJ} I J) (hA : A.IsFunctorial) (D : Iᵒᵖ ⥤ Type uD)
+    {y y' : ElObj.{uJ, max uI uD vI, vJ} (decPresheaf A hA D)} (f : y' ⟶ y)
+    {z : ElObj.{uI, uD, vI} D} (x : (A.fam y'.1).Dir z.1) (hx : y'.2.app x = z.2) :
+    (((decArity A hA D).reindex f ⟨⟨z, ⟨x, hx⟩⟩, rfl⟩).1).2.1 = A.reindex f.1 x := rfl
+
+set_option linter.checkUnivs false in
+/-- The adjoined arity is functorial: the fibre laws are `A`'s own, and the
+reindexing laws are `A.reindex`'s. -/
+theorem isFunctorial_decArity {J : Type uJ} [Category.{vJ} J]
+    (A : BaseArity.{uI, uJ, uD, vI, vJ} I J) (hA : A.IsFunctorial) (D : Iᵒᵖ ⥤ Type uD) :
+    (decArity A hA D).IsFunctorial where
+  restr_id := fun y ↦ (isFunctorial_fibreArity ⟨hA.restr_id y.1, hA.restr_comp y.1⟩ y.2).restr_id
+  restr_comp := by
+    intro y i i' i'' f g
+    exact (isFunctorial_fibreArity ⟨hA.restr_id y.1, hA.restr_comp y.1⟩ y.2).restr_comp f g
+  reindex_id := by
+    intro y z
+    funext d
+    obtain ⟨⟨w, ⟨x, hx⟩⟩, rfl⟩ := d
+    refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
+    exact (decArity_reindex_val A hA D (𝟙 y) x hx).trans (congrFun (hA.reindex_id y.1 w.1) x)
+  reindex_comp := by
+    intro y y' y'' g h z
+    funext d
+    obtain ⟨⟨w, ⟨x, hx⟩⟩, rfl⟩ := d
+    refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
+    refine Eq.trans (decArity_reindex_val A hA D (h ≫ g) x hx) ?_
+    exact congrFun (hA.reindex_comp g.1 h.1 w.1) x
+  reindex_naturality := by
+    intro y y' g z z' f
+    funext d
+    obtain ⟨⟨w, ⟨x, hx⟩⟩, rfl⟩ := d
+    refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
+    exact congrFun (hA.reindex_naturality g.1 f.1) x
+
+
+set_option linter.checkUnivs false in
+/-- The fused `δ`: an arity that varies over the output object, whose
+continuation depends on the decoding. It is the presheaf reading of the `δ`
+rule of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013] with both
+features present at once.
+
+It needs no operation beyond those already proved. Over the base
+`ElObj (decPresheaf A hA D)` every object carries its own decoding, so
+`decArity` is an ordinary `BaseArity` there and `BaseArity.pullback` turns it
+into the shape-indexed arity `delta` consumes; `sigmaPsh` then pushes the
+result forward to `J`. In particular the continuation `F` is a *single* code's
+interpretation over that base, not a family of them indexed by decodings, so
+nothing is defined simultaneously with anything else. -/
+def deltaFused {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, vJ} I J)
+    (hA : A.IsFunctorial) (D : Iᵒᵖ ⥤ Type uD)
+    (F : PresheafPFunctor.{max uI uD, max uI uJ uD vI, uA, max uI uD, vI, vJ}
+      (ElObj.{uI, uD, vI} D) (ElObj.{uJ, max uI uD vI, vJ} (decPresheaf A hA D))) :
+    PresheafPFunctor.{max uI uD, uJ, uA, max uI uD, vI, vJ} (ElObj.{uI, uD, vI} D) J :=
+  sigmaPsh (decPresheaf A hA D)
+    (delta F ((decArity A hA D).pullback F.toPresheafPFunctorData)
+      ((decArity A hA D).isFunctorial_pullback (isFunctorial_decArity A hA D) F))
 
 end Decoding
 
