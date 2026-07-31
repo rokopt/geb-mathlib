@@ -28,6 +28,8 @@
   - [Bellantoni-Cook](#bellantoni-cook)
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
+  - [Concrete-syntax prototype](#concrete-syntax-prototype)
+  - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -569,6 +571,31 @@ Five items over `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`.
    representation strategy used here, in which the program is the term.
    Any pursuit of this item begins by verifying both claims against
    primary sources.
+
+### Concrete-syntax prototype
+
+`Geb/Internal/ConcreteSyntax.lean` implements the format-independent
+core and one concrete syntax, the canonical S-expression form of
+RFC 9804 restricted to the bare tree.
+[docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Roadmap
+states the staging; the next items are the JSON core profile as a
+second syntax, the cross-syntax agreement theorem, and the lift of
+both syntaxes from `Ast` to `Doc`.
+
+The module is a prototype and is exempt from nothing: it sits under
+`Geb/Internal/`, so it is downstream-only, but the coding conventions
+in [docs/rules/lean-coding.md](docs/rules/lean-coding.md) bind it.
+
+### Prose-conformance pass over the concrete-syntax survey
+
+The survey sections of
+[docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) — everything
+between § The AST and its isomorphisms and § Caveats other than
+§ Local verification and § Roadmap — are inherited text. They have not
+had a pass against [CONTRIBUTING.md](CONTRIBUTING.md) § Style and
+references, and carry value-laden adjectives and evaluative framing
+that the style rule excludes. The factual content has been checked;
+only the prose is outstanding.
 
 ## Triggers (do when condition fires)
 
