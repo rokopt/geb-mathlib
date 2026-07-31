@@ -632,3 +632,17 @@ import-direction rules above are enforced by
   from `IsPullback` through the pullback's universal property, which
   cannot be stated choice-free. The source and test modules are
   listed in `GebMeta.classicalAllowedModules`.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean` —
+  `FinSetSkel.elementaryTopos`, the `ElementaryTopos FinSetSkel` instance,
+  assembling unchanged the cartesian and monoidal-closed structures, the
+  initial cocone, the binary-coproduct cocones, the equalizer cones, the
+  coequalizer cocones and the classifier. It depends on the five
+  field-supplying entries above and on the `ElementaryTopos` class entry.
+  `HasInitial`, `HasBinaryCoproducts`, `HasCoequalizers` and
+  `HasFiniteCoproducts` are registered by the field-supplying modules and
+  resolve without it; `HasEqualizers`, `HasFiniteLimits`,
+  `HasFiniteColimits` and `HasPushouts` are derived through the class and
+  resolve only through the instance. The source
+  and test modules are listed in `GebMeta.classicalAllowedModules`, the
+  module inheriting its `Classical.choice` dependence entirely from the
+  field terms.
