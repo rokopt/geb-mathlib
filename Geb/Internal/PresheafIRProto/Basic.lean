@@ -286,7 +286,7 @@ IR's `F→` witnesses functoriality of subcodes in the *input* labelling
 (`A → C`), which is the `directionRestr` side, whereas `reindex` witnesses
 functoriality of the arity assignment over `el(T₁)` — the *output* side.
 
-`arityVaries` below is the smallest functor that makes the obligation bite. Its
+`arityVaries` below is the smallest functor for which the obligation has content. Its
 shape presheaf is the representable `y 1` (equivalently, since `1` is terminal
 in the walking arrow, the terminal presheaf): one shape over each of `0` and
 `1`. But its arity is `Fin 1` at the shape over `1` and `Fin 0` at the shape
@@ -1077,7 +1077,9 @@ theorem objFibMap_eq_objFibRestr_apply (F : PresheafPFunctor.{uI, uJ, uA, uB, vI
 /-- Families of maps of output-presheaf fibres, natural in the input presheaf
 and commuting with the `J`-restriction. The `J`-restriction is stated unbundled
 against `objFibRestr` (that is, `PresheafPFunctor.objRestr`) rather than via
-`objPresheaf.map`, which would need the functor category's instance. -/
+`objPresheaf.map`. Both are choice-free — `objPresheaf` is a functor into
+`Type`, not an object of a functor category — so the unbundled form is a
+presentational choice, not a constructivity one. -/
 def PshNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     Type (max uA uI uJ vI (uB + 1)) :=
   { η : (Z : Iᵒᵖ ⥤ Type uB) → (j : J) → ObjFib F Z j → ObjFib F' Z j //

@@ -505,15 +505,7 @@ theorem reindex_comp_apply (hP : P.IsFunctorial) {x y z : J} (k₁ : x ⟶ y) (k
     P.reindex (k₁ ≫ k₂) d = P.reindex k₂ (P.reindex k₁ d) :=
   congrFun (hP.reindex_comp k₂ k₁ i) d
 
-/-- Reindexing after a transport is reindexing along the composite with the
-transport's `eqToHom`. -/
-theorem reindex_cast {x y z : J} (k : y ⟶ z) (hh : x = y) {i : I} (d : (P.fam x).Dir i) :
-    P.reindex k (cast (congrArg (fun w : J ↦ (P.fam w).Dir i) hh) d) =
-      P.reindex (eqToHom hh ≫ k) d := by
-  cases hh
-  simp
-
-/-- Reindexing after a transport along an equality of *shapes* is reindexing
+/-- Reindexing after a transport along an equality of shapes is reindexing
 along the composite with that equality's `eqToHom`. -/
 theorem reindex_cast_shape (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
     {j : J} {t t' : F.Shape j} (hh : t = t') {x : J} (k : F.q t'.1 ⟶ x) {i : I}
@@ -917,9 +909,10 @@ section Incompleteness
 
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
-/-- Every reindexing map of `F` is a bijection. Equivalently, the fibres of
-`objPresheaf F` are cartesian over the shape presheaf: restricting a shape
-along `g : j' ⟶ j` neither discards nor invents directions. -/
+/-- Every reindexing map of `F` is a bijection. Read informally, and not
+established here: the fibres of `objPresheaf F` are then cartesian over the
+shape presheaf, restricting a shape along `g : j' ⟶ j` neither discarding nor
+inventing directions. -/
 def HasBijectiveReindex (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : Prop :=
   ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) (i : I),
     Function.Bijective (F.reindex g a (i := i))
@@ -1614,6 +1607,27 @@ theorem interp_deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I �
       ⟨𝔹, deltaFused A hA D (cast (congrArg (fun 𝔻 : Cat.{v, u} ↦
         PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) 𝔻)
         ((interp_fst I D K).trans hK)) (interp I D K).2)⟩ := rfl
+
+
+set_option linter.checkUnivs false in
+/-- A `δ` *code* whose interpretation lies outside the bound. This carries
+`not_hasBijectiveReindex_deltaFusedVaries` from a statement about the semantic
+operations to one about the code system: the constant-arity fragment admits no
+code for this functor, and the fused rule does. -/
+def deltaCodeVaries : Code.{0, 0} (Fin 1) termPsh :=
+  deltaCode (Fin 1) termPsh (Cat.of (Fin 2)) arityVariesBase isFunctorial_arityVariesBase
+    (iotaCode (Fin 1) termPsh
+      (Cat.of (ElObj.{0, 0, 0} (decPresheaf arityVariesBase isFunctorial_arityVariesBase
+        termPsh)))) rfl
+
+/-- Its interpretation is the fused `δ` at the output-varying arity. -/
+theorem interp_deltaCodeVaries :
+    interp (Fin 1) termPsh deltaCodeVaries = ⟨Cat.of (Fin 2), deltaFusedVaries⟩ := rfl
+
+/-- So a code's interpretation lies outside the bound. -/
+theorem not_hasBijectiveReindex_interp_deltaCodeVaries :
+    ¬ HasBijectiveReindex (interp (Fin 1) termPsh deltaCodeVaries).2 :=
+  not_hasBijectiveReindex_deltaFusedVaries
 
 end CodeType
 

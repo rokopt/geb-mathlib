@@ -7,6 +7,7 @@
 - [Next up](#next-up)
   - [Removal of guard hash-command](#removal-of-guard-hash-command)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
+  - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
     - [1. Categorical wrappers for slice and presheaf W-types as initial algebras](#1-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
     - [2. M-types and their categorical wrappers as terminal coalgebras](#2-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
@@ -74,6 +75,33 @@ removed; content merged into the persistent documentation.
 - Consider whether the linter itself should flag anonymous `example`s in
   audited modules, which would enforce this rather than relying on
   convention.
+
+### Citation corrections deferred to their own branch
+
+Each is a defect in committed content, unrelated to the concern of the
+branch that found it, so each is deferred per
+[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
+
+- **`IndRec/Basic.lean` attributes the Mahlo-cardinal model to the wrong
+  paper.** Its module docstring says "the set-theoretic model of
+  [DybjerSetzer2003] justifies their existence using a Mahlo cardinal".
+  The model is [DybjerSetzer1999]'s;
+  [GhaniNordvallForsbergMalatesta2015] § 7 says so explicitly ("they use
+  the assumption of the existence of a large cardinal, namely a Mahlo
+  cardinal ... see Dybjer and Setzer [DS99]"), and DybjerSetzer2003's own
+  introduction attributes the model to its predecessor. Change the key.
+- **`docs/references.bib` has the author order of
+  `GhaniNordvallForsbergMalatesta2015` wrong.** The published LMCS byline
+  is Ghani, Malatesta, Nordvall Forsberg; the entry and the citation key
+  both encode the arXiv preprint's order. Five persistent consumers.
+- **`docs/references.bib`'s note on
+  `HancockMcBrideGhaniMalatestaAltenkirch2013` is unverified and
+  incomplete.** It claims the extended preprint "renumbers two of" the
+  results this repository cites. Whether that is complete has not been
+  checked against the preprint, and the note covers none of Lemma 1,
+  Definition 1, Definition 6, Definition 7 or Theorem 1, which are cited
+  by the presheaf p.r.a. workstream. Obtain the preprint, check the
+  renumbering, and rewrite the note.
 
 ### Polynomial functors
 
