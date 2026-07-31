@@ -138,7 +138,7 @@ not a one-field bundling. -/
   map : (i j : Fin S.objCount) →
     Fin (S.nonIdCount i j) → T.Mor (objMap i) (objMap j)
   /-- Preservation of composition. -/
-  compValid : FinCat.Hom.compCheckOf S T objMap map = true
+  compValid : Hom.compCheckOf S T objMap map = true
 
 namespace Hom
 
@@ -155,30 +155,30 @@ theorem compCheck_eq_true_iff (S T : FinCat) (objMap : Fin S.objCount → Fin T.
   decide_eq_true_iff
 
 /-- `F` on the full hom types. -/
-def mapTotal (F : FinCat.Hom S T) {i j : Fin S.objCount} (x : S.Mor i j) :
+def mapTotal (F : Hom S T) {i j : Fin S.objCount} (x : S.Mor i j) :
     T.Mor (F.objMap i) (F.objMap j) := mapTotalOf F.objMap F.map x
 
 /-- `F`'s composition check. -/
-def compCheck (F : FinCat.Hom S T) : Bool := compCheckOf S T F.objMap F.map
+def compCheck (F : Hom S T) : Bool := compCheckOf S T F.objMap F.map
 
 /-- On an embedded client morphism the total map is the client map. -/
-theorem mapTotal_emb (F : FinCat.Hom S T) {i j : Fin S.objCount}
+theorem mapTotal_emb (F : Hom S T) {i j : Fin S.objCount}
     (f : Fin (S.nonIdCount i j)) : F.mapTotal (S.emb f) = F.map i j f := by
   have hlt : (S.emb f).val < S.nonIdCount i j := f.isLt
-  unfold FinCat.Hom.mapTotal mapTotalOf
+  unfold Hom.mapTotal mapTotalOf
   rw [dif_pos hlt]
   rfl
 
 /-- The total map preserves the reserved identity. -/
-theorem mapTotal_id (F : FinCat.Hom S T) (i : Fin S.objCount) :
+theorem mapTotal_id (F : Hom S T) (i : Fin S.objCount) :
     F.mapTotal (S.id i) = T.id (F.objMap i) := by
   have hlt : ¬ ((S.id i).val < S.nonIdCount i i) := Nat.lt_irrefl _
-  unfold FinCat.Hom.mapTotal mapTotalOf
+  unfold Hom.mapTotal mapTotalOf
   rw [dif_neg hlt]
 
 /-- The total map preserves the total composition, on all pairs of
 morphisms. -/
-theorem mapTotal_compTotal (F : FinCat.Hom S T) {i j k : Fin S.objCount}
+theorem mapTotal_compTotal (F : Hom S T) {i j k : Fin S.objCount}
     (x : S.Mor i j) (y : S.Mor j k) :
     F.mapTotal (S.compTotal x y) = T.compTotal (F.mapTotal x) (F.mapTotal y) := by
   by_cases hx : x.val < S.nonIdCount i j
@@ -208,7 +208,7 @@ theorem id_mapTotalOf (S : FinCat) {i j : Fin S.objCount} (x : S.Mor i j) :
 
 /-- `mapTotalOf` at a composite's data factors as the outer 1-cell
 applied to the inner. -/
-theorem comp_mapTotalOf {S T U : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T U)
+theorem comp_mapTotalOf {S T U : FinCat} (F : Hom S T) (G : Hom T U)
     {i j : Fin S.objCount} (x : S.Mor i j) :
     mapTotalOf (fun i ↦ G.objMap (F.objMap i)) (fun i j f ↦ G.mapTotal (F.map i j f)) x
       = G.mapTotal (F.mapTotal x) := by
@@ -225,7 +225,7 @@ theorem comp_mapTotalOf {S T U : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T 
     exact dif_neg (Nat.lt_irrefl _)
 
 /-- The identity 1-cell. -/
-protected def id (S : FinCat) : FinCat.Hom S S where
+protected def id (S : FinCat) : Hom S S where
   objMap := fun i ↦ i
   map := fun _ _ f ↦ S.emb f
   compValid := by
@@ -234,7 +234,7 @@ protected def id (S : FinCat) : FinCat.Hom S S where
     rw [id_mapTotalOf, id_mapTotalOf, id_mapTotalOf]
 
 /-- Composition of 1-cells. -/
-def comp {S T U : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T U) : FinCat.Hom S U where
+def comp {S T U : FinCat} (F : Hom S T) (G : Hom T U) : Hom S U where
   objMap := fun i ↦ G.objMap (F.objMap i)
   map := fun i j f ↦ G.mapTotal (F.map i j f)
   compValid := by
@@ -245,26 +245,26 @@ def comp {S T U : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T U) : FinCat.Hom
 
 /-- The identity 1-cell acts as the identity on total morphisms. -/
 theorem id_mapTotal (S : FinCat) {i j : Fin S.objCount} (x : S.Mor i j) :
-    (FinCat.Hom.id S).mapTotal x = x := id_mapTotalOf S x
+    (Hom.id S).mapTotal x = x := id_mapTotalOf S x
 
 /-- A composite 1-cell's total map factors. -/
-theorem comp_mapTotal {S T U : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T U)
+theorem comp_mapTotal {S T U : FinCat} (F : Hom S T) (G : Hom T U)
     {i j : Fin S.objCount} (x : S.Mor i j) :
     (F.comp G).mapTotal x = G.mapTotal (F.mapTotal x) := comp_mapTotalOf F G x
 
 /-- The identity 1-cell is a left identity, on the nose. -/
-theorem id_comp {S T : FinCat} (F : FinCat.Hom S T) : (FinCat.Hom.id S).comp F = F :=
+theorem id_comp {S T : FinCat} (F : Hom S T) : (Hom.id S).comp F = F :=
   Hom.ext rfl (heq_of_eq (funext fun _ ↦ funext fun _ ↦ funext fun f ↦
     F.mapTotal_emb f))
 
 /-- The identity 1-cell is a right identity, on the nose. -/
-theorem comp_id {S T : FinCat} (F : FinCat.Hom S T) : F.comp (FinCat.Hom.id T) = F :=
+theorem comp_id {S T : FinCat} (F : Hom S T) : F.comp (Hom.id T) = F :=
   Hom.ext rfl (heq_of_eq (funext fun i ↦ funext fun j ↦ funext fun f ↦
     id_mapTotal T (F.map i j f)))
 
 /-- 1-cell composition is associative, on the nose. -/
-theorem assoc {S T U V : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T U)
-    (H : FinCat.Hom U V) : (F.comp G).comp H = F.comp (G.comp H) :=
+theorem assoc {S T U V : FinCat} (F : Hom S T) (G : Hom T U)
+    (H : Hom U V) : (F.comp G).comp H = F.comp (G.comp H) :=
   Hom.ext rfl (heq_of_eq (funext fun i ↦ funext fun j ↦ funext fun f ↦
     (comp_mapTotal G H (F.map i j f)).symm))
 
@@ -272,9 +272,9 @@ theorem assoc {S T U V : FinCat} (F : FinCat.Hom S T) (G : FinCat.Hom T U)
 written with explicit instance arguments rather than through `⥤`, so
 that `v` appears in it and is not left to be inferred from a hidden
 instance argument. -/
-def toFunctor.{v, u} {S T : FinCat} (F : FinCat.Hom S T) :
-    @CategoryTheory.Functor (FinCat.Obj.{u} S) (FinCat.Obj.category.{v, u} S)
-             (FinCat.Obj.{u} T) (FinCat.Obj.category.{v, u} T) where
+def toFunctor.{v, u} {S T : FinCat} (F : Hom S T) :
+    @CategoryTheory.Functor (Obj.{u} S) (Obj.category.{v, u} S)
+             (Obj.{u} T) (Obj.category.{v, u} T) where
   obj X := ⟨ULift.up (F.objMap X.idx.down)⟩
   map f := ULift.up (F.mapTotal f.down)
   map_id _ := congrArg ULift.up (F.mapTotal_id _)

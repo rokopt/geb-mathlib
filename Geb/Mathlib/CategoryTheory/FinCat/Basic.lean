@@ -212,7 +212,7 @@ composition. -/
 theorem id_comp (S : FinCat) {i k : Fin S.objCount} (g : S.Mor i k) :
     S.compTotal (S.id i) g = g := by
   have hlt : ¬ ((S.id i).val < S.nonIdCount i i) := Nat.lt_irrefl _
-  unfold FinCat.compTotal compTotalOf
+  unfold compTotal compTotalOf
   rw [dif_neg hlt]
   rfl
 
@@ -221,7 +221,7 @@ composition. -/
 theorem comp_id (S : FinCat) {i j : Fin S.objCount} (f : S.Mor i j) :
     S.compTotal f (S.id j) = f := by
   have hlt : ¬ ((S.id j).val < S.nonIdCount j j) := Nat.lt_irrefl _
-  unfold FinCat.compTotal compTotalOf
+  unfold compTotal compTotalOf
   by_cases hf : f.val < S.nonIdCount i j
   · rw [dif_pos hf, dif_neg hlt]
     rfl

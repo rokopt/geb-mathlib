@@ -15,8 +15,8 @@ public import Mathlib.Data.Fintype.OfMap
 
 Where the object and morphism levels of `FinCat.Obj.category` coincide,
 the generated category is small, and mathlib's `CategoryTheory.FinCategory`
-applies. `Fintype` is choice-dependent, so this is the one module of the
-development permitted to depend on `Classical.choice`; it holds this
+applies. `Fintype` is choice-dependent, so this is the one `FinCat`
+module permitted to depend on `Classical.choice`; it holds this
 instance and nothing else.
 
 ## Main definitions
@@ -52,10 +52,10 @@ namespace FinCat
 /-- Where the object and morphism levels coincide the generated
 category is small, and its objects and hom-sets are finite. -/
 instance Obj.finCategory.{u} (S : FinCat) :
-    @FinCategory (FinCat.Obj.{u} S) (FinCat.Obj.category.{u, u} S) where
+    @FinCategory (Obj.{u} S) (Obj.category.{u, u} S) where
   fintypeObj :=
     Fintype.ofEquiv (ULift.{u} (Fin S.objCount))
-      ⟨FinCat.Obj.mk, FinCat.Obj.idx, fun _ ↦ rfl, fun _ ↦ rfl⟩
+      ⟨Obj.mk, Obj.idx, fun _ ↦ rfl, fun _ ↦ rfl⟩
   fintypeHom := fun X Y ↦ ULift.fintype (S.Mor X.idx.down Y.idx.down)
 
 end FinCat

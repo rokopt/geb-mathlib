@@ -75,8 +75,7 @@ maps, for the reason `FinCat.Hom.compCheckOf` is: a client composite
 may land on the reserved identity index, on which the client's
 morphism map is undefined.
 
-`FinCat.Hom₂` is not marked `@[ext]`, the one structure in the
-workstream that departs from the `@[ext]` reflex. A structure-derived
+`FinCat.Hom₂` is not marked `@[ext]`. A structure-derived
 extensionality lemma does not fire on goals stated through the hom
 notation `F ⟶ G`, so it would be unusable at the only place it is
 needed; the name `FinCat.Hom₂.ext` is left free for a hand-written
@@ -105,7 +104,7 @@ namespace Hom₂
 /-- Naturality, as a `Bool`, on client morphisms. Stated over the total
 composition and the total morphism maps, for the reason
 `FinCat.Hom.compCheckOf` is. -/
-def natCheckOf (S T : FinCat) (F G : FinCat.Hom S T)
+def natCheckOf (S T : FinCat) (F G : Hom S T)
     (app : (i : Fin S.objCount) → T.Mor (F.objMap i) (G.objMap i)) : Bool :=
   decide <| ∀ (i j : Fin S.objCount) (f : Fin (S.nonIdCount i j)),
     T.compTotal (F.mapTotal (S.emb f)) (app j)
@@ -115,18 +114,18 @@ end Hom₂
 
 /-- A 2-cell specification: a natural transformation between two
 functor specifications. -/
-structure Hom₂ {S T : FinCat} (F G : FinCat.Hom S T) where
+structure Hom₂ {S T : FinCat} (F G : Hom S T) where
   /-- The component at each object. It ranges over the full hom type
   from the outset, the identity 2-cell having every component an
   identity. -/
   app : (i : Fin S.objCount) → T.Mor (F.objMap i) (G.objMap i)
   /-- Naturality. -/
-  natValid : FinCat.Hom₂.natCheckOf S T F G app = true
+  natValid : Hom₂.natCheckOf S T F G app = true
 
 namespace Hom₂
 
 /-- The naturality check reflects naturality on client morphisms. -/
-theorem natCheck_eq_true_iff (S T : FinCat) (F G : FinCat.Hom S T)
+theorem natCheck_eq_true_iff (S T : FinCat) (F G : Hom S T)
     (app : (i : Fin S.objCount) → T.Mor (F.objMap i) (G.objMap i)) :
     natCheckOf S T F G app = true ↔
       ∀ (i j : Fin S.objCount) (f : Fin (S.nonIdCount i j)),
@@ -135,13 +134,13 @@ theorem natCheck_eq_true_iff (S T : FinCat) (F G : FinCat.Hom S T)
   decide_eq_true_iff
 
 /-- `α`'s naturality check. -/
-def natCheck {S T : FinCat} {F G : FinCat.Hom S T} (α : FinCat.Hom₂ F G) : Bool :=
+def natCheck {S T : FinCat} {F G : Hom S T} (α : Hom₂ F G) : Bool :=
   natCheckOf S T F G α.app
 
 /-- Two 2-cells with equal components are equal. Stated at
 `FinCat.Hom₂ F G` rather than at `F ⟶ G`, so that it is available
 before the hom-category instance exists. -/
-theorem eq_of_app_eq {S T : FinCat} {F G : FinCat.Hom S T} {α β : FinCat.Hom₂ F G}
+theorem eq_of_app_eq {S T : FinCat} {F G : Hom S T} {α β : Hom₂ F G}
     (h : ∀ i, α.app i = β.app i) : α = β := by
   obtain ⟨a, _⟩ := α
   obtain ⟨b, _⟩ := β
@@ -153,8 +152,8 @@ end Hom₂
 
 /-- The category of 2-cells between two functor specifications:
 vertical composition and the identity 2-cell. -/
-instance Hom.instCategory {S T : FinCat} : Category (FinCat.Hom S T) where
-  Hom F G := FinCat.Hom₂ F G
+instance Hom.instCategory {S T : FinCat} : Category (Hom S T) where
+  Hom F G := Hom₂ F G
   id F :=
     { app := fun i ↦ T.id (F.objMap i)
       natValid := by
@@ -178,22 +177,22 @@ namespace Hom₂
 variable {S T : FinCat}
 
 /-- The identity 2-cell's components are the reserved identities. -/
-@[simp] theorem app_id {F : FinCat.Hom S T} (i : Fin S.objCount) :
+@[simp] theorem app_id {F : Hom S T} (i : Fin S.objCount) :
     (𝟙 F : F ⟶ F).app i = T.id (F.objMap i) := rfl
 
 /-- A vertical composite's components are the composites. -/
-@[simp] theorem app_comp {F G H : FinCat.Hom S T} (α : F ⟶ G) (β : G ⟶ H)
+@[simp] theorem app_comp {F G H : Hom S T} (α : F ⟶ G) (β : G ⟶ H)
     (i : Fin S.objCount) :
     (α ≫ β).app i = T.compTotal (α.app i) (β.app i) := rfl
 
 /-- Two 2-cells with equal components are equal, phrased at `F ⟶ G` so
 that the `ext` tactic fires on goals stated through the hom notation. -/
-@[ext] theorem ext {F G : FinCat.Hom S T} {α β : F ⟶ G} (h : ∀ i, α.app i = β.app i) :
+@[ext] theorem ext {F G : Hom S T} {α β : F ⟶ G} (h : ∀ i, α.app i = β.app i) :
     α = β := eq_of_app_eq h
 
 /-- Naturality at total morphisms, extending `natCheck` off the client
 range. -/
-theorem natCheck_total {F G : FinCat.Hom S T} (α : FinCat.Hom₂ F G)
+theorem natCheck_total {F G : Hom S T} (α : Hom₂ F G)
     {i j : Fin S.objCount} (x : S.Mor i j) :
     T.compTotal (F.mapTotal x) (α.app j) = T.compTotal (α.app i) (G.mapTotal x) := by
   by_cases hx : x.val < S.nonIdCount i j
@@ -206,7 +205,7 @@ theorem natCheck_total {F G : FinCat.Hom S T} (α : FinCat.Hom₂ F G)
 
 /-- The mathlib natural transformation a 2-cell specification
 generates. -/
-def toNatTrans.{v, u} {F G : FinCat.Hom S T} (α : FinCat.Hom₂ F G) :
+def toNatTrans.{v, u} {F G : Hom S T} (α : Hom₂ F G) :
     CategoryTheory.NatTrans F.toFunctor.{v, u} G.toFunctor.{v, u} where
   app X := ULift.up (α.app X.idx.down)
   naturality _ _ f := congrArg ULift.up (α.natCheck_total f.down)

@@ -59,14 +59,14 @@ instance instRepr : Repr FinCat where
 
 /-- Renders a functor specification as its object map and its morphism
 table. -/
-instance Hom.instRepr {S T : FinCat} : Repr (FinCat.Hom S T) where
+instance Hom.instRepr {S T : FinCat} : Repr (Hom S T) where
   reprPrec F _ :=
     repr (List.ofFn (fun i ↦ (F.objMap i).val),
       List.ofFn (fun i ↦ List.ofFn (fun j ↦ List.ofFn (fun f ↦ (F.map i j f).val))))
 
 /-- Renders a 2-cell specification as its component vector. -/
-instance Hom₂.instRepr {S T : FinCat} {F G : FinCat.Hom S T} :
-    Repr (FinCat.Hom₂ F G) where
+instance Hom₂.instRepr {S T : FinCat} {F G : Hom S T} :
+    Repr (Hom₂ F G) where
   reprPrec α _ := repr (List.ofFn (fun i ↦ (α.app i).val))
 
 end FinCat

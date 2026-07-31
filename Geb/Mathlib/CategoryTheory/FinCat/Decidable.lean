@@ -85,29 +85,29 @@ def decidableEqComp {objCount : Nat} {nonIdCount : Fin objCount → Fin objCount
 
 /-- Decidable equality of 2-cell specifications. No transport: `app`'s
 type mentions only the fixed parameters `F` and `G`. -/
-instance Hom₂.decidableEq {S T : FinCat} {F G : FinCat.Hom S T} :
-    DecidableEq (FinCat.Hom₂ F G) :=
+instance Hom₂.decidableEq {S T : FinCat} {F G : Hom S T} :
+    DecidableEq (Hom₂ F G) :=
   fun α β ↦
     match α, β with
     | ⟨a, _⟩, ⟨b, _⟩ =>
-      match @FinCat.decidableEqPiFin _ _ (fun _ ↦ inferInstance) a b with
+      match @decidableEqPiFin _ _ (fun _ ↦ inferInstance) a b with
       | isTrue h => isTrue (by subst h; rfl)
       | isFalse h => isFalse (fun e ↦ h (by injection e))
 
 /-- Decidable equality of functor specifications: decide `objMap`,
 transport along that equality — `map`'s type mentions `objMap` — then
 decide `map`. -/
-instance Hom.decidableEq {S T : FinCat} : DecidableEq (FinCat.Hom S T) :=
+instance Hom.decidableEq {S T : FinCat} : DecidableEq (Hom S T) :=
   fun F G ↦
     match F, G with
     | ⟨o, m, _⟩, ⟨o', m', _⟩ =>
-      match @FinCat.decidableEqPiFin _ _ (fun _ ↦ inferInstance) o o' with
+      match @decidableEqPiFin _ _ (fun _ ↦ inferInstance) o o' with
       | isFalse h => isFalse (fun e ↦ h (by injection e))
       | isTrue ho => by
         subst ho
-        exact match @FinCat.decidableEqPiFin _ _ (fun _ ↦
-            @FinCat.decidableEqPiFin _ _ (fun _ ↦
-              @FinCat.decidableEqPiFin _ _ (fun _ ↦ inferInstance))) m m' with
+        exact match @decidableEqPiFin _ _ (fun _ ↦
+            @decidableEqPiFin _ _ (fun _ ↦
+              @decidableEqPiFin _ _ (fun _ ↦ inferInstance))) m m' with
           | isTrue h => isTrue (by subst h; rfl)
           | isFalse h => isFalse (fun e ↦ h (by injection e))
 
@@ -118,12 +118,12 @@ instance decidableEq : DecidableEq FinCat := fun S T ↦
   | ⟨n, nc, c, _⟩, ⟨n', nc', c', _⟩ =>
     if hn : n = n' then by
       subst hn
-      exact match @FinCat.decidableEqPiFin _ _ (fun _ ↦
-          @FinCat.decidableEqPiFin _ _ (fun _ ↦ inferInstance)) nc nc' with
+      exact match @decidableEqPiFin _ _ (fun _ ↦
+          @decidableEqPiFin _ _ (fun _ ↦ inferInstance)) nc nc' with
         | isFalse h => isFalse (fun e ↦ h (by injection e))
         | isTrue hnc => by
           subst hnc
-          exact match FinCat.decidableEqComp c c' with
+          exact match decidableEqComp c c' with
             | isTrue h => isTrue (by subst h; rfl)
             | isFalse h => isFalse (fun e ↦ h (by injection e))
     else isFalse (fun e ↦ hn (by injection e))

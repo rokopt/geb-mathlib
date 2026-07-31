@@ -90,7 +90,7 @@ namespace FinCat
 namespace Hom₂
 
 /-- Left whiskering: pure reindexing. -/
-def whiskerLeft {S T U : FinCat} (F : FinCat.Hom S T) {G H : FinCat.Hom T U}
+def whiskerLeft {S T U : FinCat} (F : Hom S T) {G H : Hom T U}
     (η : G ⟶ H) : F.comp G ⟶ F.comp H where
   app i := η.app (F.objMap i)
   natValid := by
@@ -100,8 +100,8 @@ def whiskerLeft {S T U : FinCat} (F : FinCat.Hom S T) {G H : FinCat.Hom T U}
     exact natCheck_total η (F.mapTotal (S.emb f))
 
 /-- Right whiskering: application of the outer 1-cell's total map. -/
-def whiskerRight {S T U : FinCat} {F G : FinCat.Hom S T} (η : F ⟶ G)
-    (H : FinCat.Hom T U) : F.comp H ⟶ G.comp H where
+def whiskerRight {S T U : FinCat} {F G : Hom S T} (η : F ⟶ G)
+    (H : Hom T U) : F.comp H ⟶ G.comp H where
   app i := H.mapTotal (η.app i)
   natValid := by
     refine (natCheck_eq_true_iff S U (F.comp H) (G.comp H) _).mpr ?_
@@ -115,7 +115,7 @@ def whiskerRight {S T U : FinCat} {F G : FinCat.Hom S T} (η : F ⟶ G)
 stated as `(eqToHom p).app i = T.id (F.objMap i)`: `app`'s type
 mentions both `F.objMap` and `G.objMap`, so the two sides would have
 different types. -/
-theorem eqToHom_app {S T : FinCat} {F G : FinCat.Hom S T} (p : F = G) (i : Fin S.objCount) :
+theorem eqToHom_app {S T : FinCat} {F G : Hom S T} (p : F = G) (i : Fin S.objCount) :
     (eqToHom p : F ⟶ G).app i
       = Fin.cast (congrArg (fun H ↦ T.homCount (F.objMap i) (H.objMap i)) p)
           (T.id (F.objMap i)) := by cases p; rfl
@@ -124,99 +124,99 @@ variable {S T U V W : FinCat}
 
 /-- Left whiskering by the identity 1-cell is conjugation by the left
 unitor. -/
-theorem id_whiskerLeft {F G : FinCat.Hom S T} (η : F ⟶ G) :
-    whiskerLeft (FinCat.Hom.id S) η
-      = eqToHom (FinCat.Hom.id_comp F) ≫ η ≫ eqToHom (FinCat.Hom.id_comp G).symm :=
-  FinCat.Hom₂.ext fun i ↦ by
+theorem id_whiskerLeft {F G : Hom S T} (η : F ⟶ G) :
+    whiskerLeft (Hom.id S) η
+      = eqToHom (Hom.id_comp F) ≫ η ≫ eqToHom (Hom.id_comp G).symm :=
+  Hom₂.ext fun i ↦ by
     rw [app_comp, app_comp, eqToHom_app, eqToHom_app]
     exact ((T.id_comp _).trans (T.comp_id _)).symm
 
 /-- Left whiskering by a composite 1-cell is the two whiskerings in
 turn, conjugated by the associator. -/
-theorem comp_whiskerLeft (F : FinCat.Hom S T) (G : FinCat.Hom T U)
-    {H H' : FinCat.Hom U V} (η : H ⟶ H') :
+theorem comp_whiskerLeft (F : Hom S T) (G : Hom T U)
+    {H H' : Hom U V} (η : H ⟶ H') :
     whiskerLeft (F.comp G) η
-      = eqToHom (FinCat.Hom.assoc F G H) ≫ whiskerLeft F (whiskerLeft G η)
-          ≫ eqToHom (FinCat.Hom.assoc F G H').symm :=
-  FinCat.Hom₂.ext fun i ↦ by
+      = eqToHom (Hom.assoc F G H) ≫ whiskerLeft F (whiskerLeft G η)
+          ≫ eqToHom (Hom.assoc F G H').symm :=
+  Hom₂.ext fun i ↦ by
     rw [app_comp, app_comp, eqToHom_app, eqToHom_app]
     exact ((V.id_comp _).trans (V.comp_id _)).symm
 
 /-- Right whiskering the identity 2-cell gives the identity 2-cell. -/
-theorem id_whiskerRight (F : FinCat.Hom S T) (G : FinCat.Hom T U) :
+theorem id_whiskerRight (F : Hom S T) (G : Hom T U) :
     whiskerRight (𝟙 F) G = 𝟙 (F.comp G) :=
-  FinCat.Hom₂.ext fun i ↦ G.mapTotal_id (F.objMap i)
+  Hom₂.ext fun i ↦ G.mapTotal_id (F.objMap i)
 
 /-- Right whiskering distributes over vertical composition. -/
-theorem comp_whiskerRight {F G H : FinCat.Hom S T} (η : F ⟶ G) (θ : G ⟶ H)
-    (I : FinCat.Hom T U) :
+theorem comp_whiskerRight {F G H : Hom S T} (η : F ⟶ G) (θ : G ⟶ H)
+    (I : Hom T U) :
     whiskerRight (η ≫ θ) I = whiskerRight η I ≫ whiskerRight θ I :=
-  FinCat.Hom₂.ext fun i ↦ I.mapTotal_compTotal (η.app i) (θ.app i)
+  Hom₂.ext fun i ↦ I.mapTotal_compTotal (η.app i) (θ.app i)
 
 /-- Right whiskering by the identity 1-cell is conjugation by the right
 unitor. -/
-theorem whiskerRight_id {F G : FinCat.Hom S T} (η : F ⟶ G) :
-    whiskerRight η (FinCat.Hom.id T)
-      = eqToHom (FinCat.Hom.comp_id F) ≫ η ≫ eqToHom (FinCat.Hom.comp_id G).symm :=
-  FinCat.Hom₂.ext fun i ↦ by
+theorem whiskerRight_id {F G : Hom S T} (η : F ⟶ G) :
+    whiskerRight η (Hom.id T)
+      = eqToHom (Hom.comp_id F) ≫ η ≫ eqToHom (Hom.comp_id G).symm :=
+  Hom₂.ext fun i ↦ by
     rw [app_comp, app_comp, eqToHom_app, eqToHom_app]
-    exact (FinCat.Hom.id_mapTotal T (η.app i)).trans ((T.id_comp _).trans (T.comp_id _)).symm
+    exact (Hom.id_mapTotal T (η.app i)).trans ((T.id_comp _).trans (T.comp_id _)).symm
 
 /-- Right whiskering by a composite 1-cell is the two whiskerings in
 turn, conjugated by the associator. -/
-theorem whiskerRight_comp {F F' : FinCat.Hom S T} (η : F ⟶ F') (G : FinCat.Hom T U)
-    (H : FinCat.Hom U V) :
+theorem whiskerRight_comp {F F' : Hom S T} (η : F ⟶ F') (G : Hom T U)
+    (H : Hom U V) :
     whiskerRight η (G.comp H)
-      = eqToHom (FinCat.Hom.assoc F G H).symm ≫ whiskerRight (whiskerRight η G) H
-          ≫ eqToHom (FinCat.Hom.assoc F' G H) :=
-  FinCat.Hom₂.ext fun i ↦ by
+      = eqToHom (Hom.assoc F G H).symm ≫ whiskerRight (whiskerRight η G) H
+          ≫ eqToHom (Hom.assoc F' G H) :=
+  Hom₂.ext fun i ↦ by
     rw [app_comp, app_comp, eqToHom_app, eqToHom_app]
-    exact (FinCat.Hom.comp_mapTotal G H (η.app i)).trans ((V.id_comp _).trans (V.comp_id _)).symm
+    exact (Hom.comp_mapTotal G H (η.app i)).trans ((V.id_comp _).trans (V.comp_id _)).symm
 
 /-- Right whiskering a left whiskering is, conjugated by the associator,
 the left whiskering of a right whiskering. -/
-theorem whisker_assoc (F : FinCat.Hom S T) {G G' : FinCat.Hom T U} (η : G ⟶ G')
-    (H : FinCat.Hom U V) :
+theorem whisker_assoc (F : Hom S T) {G G' : Hom T U} (η : G ⟶ G')
+    (H : Hom U V) :
     whiskerRight (whiskerLeft F η) H
-      = eqToHom (FinCat.Hom.assoc F G H) ≫ whiskerLeft F (whiskerRight η H)
-          ≫ eqToHom (FinCat.Hom.assoc F G' H).symm :=
-  FinCat.Hom₂.ext fun i ↦ by
+      = eqToHom (Hom.assoc F G H) ≫ whiskerLeft F (whiskerRight η H)
+          ≫ eqToHom (Hom.assoc F G' H).symm :=
+  Hom₂.ext fun i ↦ by
     rw [app_comp, app_comp, eqToHom_app, eqToHom_app]
     exact ((V.id_comp _).trans (V.comp_id _)).symm
 
 /-- The exchange law between left and right whiskering. -/
-theorem whisker_exchange {F G : FinCat.Hom S T} {H I : FinCat.Hom T U}
+theorem whisker_exchange {F G : Hom S T} {H I : Hom T U}
     (η : F ⟶ G) (θ : H ⟶ I) :
     whiskerLeft F θ ≫ whiskerRight η I = whiskerRight η H ≫ whiskerLeft G θ :=
-  FinCat.Hom₂.ext fun i ↦ (natCheck_total θ (η.app i)).symm
+  Hom₂.ext fun i ↦ (natCheck_total θ (η.app i)).symm
 
 /-- The pentagon identity for the associator. -/
-theorem pentagon (F : FinCat.Hom S T) (G : FinCat.Hom T U) (H : FinCat.Hom U V)
-    (I : FinCat.Hom V W) :
-    whiskerRight (eqToHom (FinCat.Hom.assoc F G H)) I
-        ≫ eqToHom (FinCat.Hom.assoc F (G.comp H) I)
-        ≫ whiskerLeft F (eqToHom (FinCat.Hom.assoc G H I))
-      = eqToHom (FinCat.Hom.assoc (F.comp G) H I)
-          ≫ eqToHom (FinCat.Hom.assoc F G (H.comp I)) :=
-  FinCat.Hom₂.ext fun i ↦ by
-    change W.compTotal (I.mapTotal ((eqToHom (FinCat.Hom.assoc F G H)).app i))
-        (W.compTotal ((eqToHom (FinCat.Hom.assoc F (G.comp H) I)).app i)
-          ((eqToHom (FinCat.Hom.assoc G H I)).app (F.objMap i)))
-      = W.compTotal ((eqToHom (FinCat.Hom.assoc (F.comp G) H I)).app i)
-          ((eqToHom (FinCat.Hom.assoc F G (H.comp I))).app i)
+theorem pentagon (F : Hom S T) (G : Hom T U) (H : Hom U V)
+    (I : Hom V W) :
+    whiskerRight (eqToHom (Hom.assoc F G H)) I
+        ≫ eqToHom (Hom.assoc F (G.comp H) I)
+        ≫ whiskerLeft F (eqToHom (Hom.assoc G H I))
+      = eqToHom (Hom.assoc (F.comp G) H I)
+          ≫ eqToHom (Hom.assoc F G (H.comp I)) :=
+  Hom₂.ext fun i ↦ by
+    change W.compTotal (I.mapTotal ((eqToHom (Hom.assoc F G H)).app i))
+        (W.compTotal ((eqToHom (Hom.assoc F (G.comp H) I)).app i)
+          ((eqToHom (Hom.assoc G H I)).app (F.objMap i)))
+      = W.compTotal ((eqToHom (Hom.assoc (F.comp G) H I)).app i)
+          ((eqToHom (Hom.assoc F G (H.comp I))).app i)
     rw [eqToHom_app, eqToHom_app, eqToHom_app, eqToHom_app, eqToHom_app]
     exact (congrArg (fun y ↦ W.compTotal y _)
       (I.mapTotal_id (H.objMap (G.objMap (F.objMap i))))).trans (W.id_comp _)
 
 /-- The triangle identity relating the associator and the unitors. -/
-theorem triangle (F : FinCat.Hom S T) (G : FinCat.Hom T U) :
-    eqToHom (FinCat.Hom.assoc F (FinCat.Hom.id T) G)
-        ≫ whiskerLeft F (eqToHom (FinCat.Hom.id_comp G))
-      = whiskerRight (eqToHom (FinCat.Hom.comp_id F)) G :=
-  FinCat.Hom₂.ext fun i ↦ by
-    change U.compTotal ((eqToHom (FinCat.Hom.assoc F (FinCat.Hom.id T) G)).app i)
-        ((eqToHom (FinCat.Hom.id_comp G)).app (F.objMap i))
-      = G.mapTotal ((eqToHom (FinCat.Hom.comp_id F)).app i)
+theorem triangle (F : Hom S T) (G : Hom T U) :
+    eqToHom (Hom.assoc F (Hom.id T) G)
+        ≫ whiskerLeft F (eqToHom (Hom.id_comp G))
+      = whiskerRight (eqToHom (Hom.comp_id F)) G :=
+  Hom₂.ext fun i ↦ by
+    change U.compTotal ((eqToHom (Hom.assoc F (Hom.id T) G)).app i)
+        ((eqToHom (Hom.id_comp G)).app (F.objMap i))
+      = G.mapTotal ((eqToHom (Hom.comp_id F)).app i)
     rw [eqToHom_app, eqToHom_app, eqToHom_app]
     exact (U.comp_id (U.id (G.objMap (F.objMap i)))).trans (G.mapTotal_id (F.objMap i)).symm
 
@@ -224,32 +224,32 @@ end Hom₂
 
 /-- The bicategory of finite-category specifications. -/
 instance bicategory : Bicategory FinCat where
-  Hom S T := FinCat.Hom S T
-  id S := FinCat.Hom.id S
+  Hom S T := Hom S T
+  id S := Hom.id S
   comp F G := F.comp G
-  homCategory _ _ := FinCat.Hom.instCategory
-  whiskerLeft := FinCat.Hom₂.whiskerLeft
-  whiskerRight := FinCat.Hom₂.whiskerRight
-  associator F G H := @eqToIso _ FinCat.Hom.instCategory _ _ (FinCat.Hom.assoc F G H)
-  leftUnitor F := @eqToIso _ FinCat.Hom.instCategory _ _ (FinCat.Hom.id_comp F)
-  rightUnitor F := @eqToIso _ FinCat.Hom.instCategory _ _ (FinCat.Hom.comp_id F)
-  id_whiskerLeft := FinCat.Hom₂.id_whiskerLeft
-  comp_whiskerLeft := FinCat.Hom₂.comp_whiskerLeft
-  id_whiskerRight := FinCat.Hom₂.id_whiskerRight
-  comp_whiskerRight := FinCat.Hom₂.comp_whiskerRight
-  whiskerRight_id := FinCat.Hom₂.whiskerRight_id
-  whiskerRight_comp := FinCat.Hom₂.whiskerRight_comp
-  whisker_assoc := FinCat.Hom₂.whisker_assoc
-  whisker_exchange := FinCat.Hom₂.whisker_exchange
-  pentagon := FinCat.Hom₂.pentagon
-  triangle := FinCat.Hom₂.triangle
+  homCategory _ _ := Hom.instCategory
+  whiskerLeft := Hom₂.whiskerLeft
+  whiskerRight := Hom₂.whiskerRight
+  associator F G H := @eqToIso _ Hom.instCategory _ _ (Hom.assoc F G H)
+  leftUnitor F := @eqToIso _ Hom.instCategory _ _ (Hom.id_comp F)
+  rightUnitor F := @eqToIso _ Hom.instCategory _ _ (Hom.comp_id F)
+  id_whiskerLeft := Hom₂.id_whiskerLeft
+  comp_whiskerLeft := Hom₂.comp_whiskerLeft
+  id_whiskerRight := Hom₂.id_whiskerRight
+  comp_whiskerRight := Hom₂.comp_whiskerRight
+  whiskerRight_id := Hom₂.whiskerRight_id
+  whiskerRight_comp := Hom₂.whiskerRight_comp
+  whisker_assoc := Hom₂.whisker_assoc
+  whisker_exchange := Hom₂.whisker_exchange
+  pentagon := Hom₂.pentagon
+  triangle := Hom₂.triangle
 
 /-- The bicategory of specifications is strict: 1-cell composition is
 unital and associative on the nose. -/
 instance bicategory_strict : Bicategory.Strict FinCat where
-  id_comp := FinCat.Hom.id_comp
-  comp_id := FinCat.Hom.comp_id
-  assoc := FinCat.Hom.assoc
+  id_comp := Hom.id_comp
+  comp_id := Hom.comp_id
+  assoc := Hom.assoc
   leftUnitor_eqToIso := fun _ ↦ rfl
   rightUnitor_eqToIso := fun _ ↦ rfl
   associator_eqToIso := fun _ _ _ ↦ rfl
