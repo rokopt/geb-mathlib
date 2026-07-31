@@ -126,7 +126,7 @@ prototype, inductive-recursive, presheaf, parametric right adjoint
 
 @[expose] public section
 
-universe uI uJ uA uB uS vI vJ u v
+universe uI uJ uA uB uS uD vI vJ u v
 
 open CategoryTheory
 
@@ -608,6 +608,10 @@ def sigmaPshData (S : Jᵒᵖ ⥤ Type uS)
 
 
 universe uK vK
+
+/-- The underlying `J`-morphism of an identity in the category of elements. -/
+@[simp] theorem elCategory_id_val (S : Jᵒᵖ ⥤ Type uS) (x : ElObj.{uJ, uS, vJ} S) :
+    (𝟙 x : x ⟶ x).1 = 𝟙 x.1 := rfl
 
 /-- The underlying `J`-morphism of a composite in the category of elements. -/
 @[simp] theorem elCategory_comp_val (S : Jᵒᵖ ⥤ Type uS) {x y z : ElObj.{uJ, uS, vJ} S}
@@ -1140,6 +1144,110 @@ end Closure
 
 
 
+
+section Decoding
+
+variable {I : Type uI} [Category.{vI} I]
+
+set_option linter.checkUnivs false in
+/-- A morphism of presheaves on `I`, unbundled. This is the type `δ`'s subcode
+family is indexed by once a decoding presheaf is supplied: the analogue of
+`IR.delta`'s `B → I`, and of the sections `(p : P) → D (i p)` of Section 6 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013].
+
+Unbundled for the usual reason: `P ⟶ D` between objects of a presheaf category
+would draw in `Classical.choice`. -/
+structure PshMor (P D : Iᵒᵖ ⥤ Type uD) : Type (max uI uD vI) where
+  /-- The components. -/
+  app : ∀ i : I, P.obj ⟨i⟩ → D.obj ⟨i⟩
+  /-- Naturality. -/
+  naturality : ∀ ⦃i i' : I⦄ (f : i' ⟶ i) (p : P.obj ⟨i⟩),
+    app i' (P.map f.op p) = D.map f.op (app i p)
+
+set_option linter.checkUnivs false in
+/-- The arity a `δ` adjoins at the decoding `s`: the fibres of `s`, as a
+presheaf on the base `ElObj D`. The fibre over `y` is the elements of `P` at
+`y.1` that `s` sends to `y.2`, and it is `s`'s naturality that makes those
+fibres close under restriction — which is why the decoding must be a presheaf
+morphism and not a bare family.
+
+The carrier is indexed by `ElObj D` with `proj` the projection, rather than
+being the total space of `P` with `proj` computed from `s`, so that a direction
+destructures to its fibre without transporting the element. -/
+@[reducible] def fibreArity {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D) :
+    DomArity.{max uI uD, max uI uD, vI} (ElObj.{uI, uD, vI} D) where
+  carrier := Σ y : ElObj.{uI, uD, vI} D, {p : P.obj ⟨y.1⟩ // s.app y.1 p = y.2}
+  proj := Sigma.fst
+  restr := fun {_ y'} f d ↦
+    match d with
+    | ⟨⟨_, p⟩, rfl⟩ =>
+        ⟨⟨y', ⟨P.map f.1.op p.1, by rw [s.naturality, p.2]; exact f.2⟩⟩, rfl⟩
+
+/-- The underlying element of a restricted fibre direction, so that the two
+laws below need not unfold `fibreArity`'s matcher. -/
+theorem fibreArity_restr_val {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D)
+    {y' z : ElObj.{uI, uD, vI} D} (p : {q : P.obj ⟨z.1⟩ // s.app z.1 q = z.2}) (f : y' ⟶ z) :
+    (((fibreArity s).restr f ⟨⟨z, p⟩, rfl⟩).1).2.1 = P.map f.1.op p.1 := rfl
+
+/-- The fibre arity is a presheaf: both laws are `P`'s own, the fibre condition
+being carried along by `s`'s naturality. -/
+theorem isFunctorial_fibreArity {P D : Iᵒᵖ ⥤ Type uD} (s : PshMor P D) :
+    (fibreArity s).IsFunctorial where
+  restr_id := by
+    intro y
+    funext d
+    obtain ⟨⟨z, p⟩, rfl⟩ := d
+    refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
+    exact (fibreArity_restr_val s p (𝟙 z)).trans (by simp)
+  restr_comp := by
+    intro y y' y'' f g
+    funext d
+    obtain ⟨⟨z, p⟩, rfl⟩ := d
+    refine Subtype.ext (Sigma.ext rfl (heq_of_eq (Subtype.ext ?_)))
+    refine Eq.trans (fibreArity_restr_val s p (g ≫ f)) ?_
+    refine Eq.trans ?_ (fibreArity_restr_val s
+      (⟨P.map f.1.op p.1, by rw [s.naturality, p.2]; exact f.2⟩ :
+        {q : P.obj ⟨y'.1⟩ // s.app y'.1 q = y'.2}) g).symm
+    simp
+
+
+set_option linter.checkUnivs false in
+/-- The recursive `δ`: adjoin the arity `P` and let the subcode depend on the
+decoding. This is the rule of Section 6 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013], whose subcode family is indexed
+by the sections `(p : P) → D (i p)`, generalized to presheaves — the sections
+become `PshMor P D`.
+
+It needs no new construction: regrouping `IR.delta`'s coproduct over
+assignments by the decoding they induce presents it as a coproduct, over the
+decodings, of the non-recursive `δ` at the corresponding fibre arity. Both
+`coprod` and `delta` already carry all seven functor laws, so this does
+too. -/
+def deltaRec {J : Type uJ} [Category.{vJ} J] {P D : Iᵒᵖ ⥤ Type uD}
+    (K : PshMor P D →
+      PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
+        (ElObj.{uI, uD, vI} D) J) :
+    PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
+      (ElObj.{uI, uD, vI} D) J :=
+  coprod (PshMor P D) fun s ↦
+    delta (K s) (ShapeArity.const (K s).toPresheafPFunctorData (fibreArity s))
+      (ShapeArity.isFunctorial_const (K s) (fibreArity s) (isFunctorial_fibreArity s))
+
+/-- At the terminal decoding the recursive `δ` degenerates: `PshMor P ⊤` is a
+singleton, so the coproduct has one summand and the subcode cannot depend on
+anything. That is the case the base-category layer builds. -/
+theorem subsingleton_pshMor_to_terminal (P : Iᵒᵖ ⥤ Type uD)
+    (D : Iᵒᵖ ⥤ Type uD) (hD : ∀ i : I, Subsingleton (D.obj ⟨i⟩)) :
+    Subsingleton (PshMor P D) :=
+  ⟨fun s t ↦ by
+    obtain ⟨sa, -⟩ := s
+    obtain ⟨ta, -⟩ := t
+    exact congrArg (fun a ↦ PshMor.mk a (by
+      intro i i' f p
+      exact (hD i').elim _ _))
+      (funext fun i ↦ funext fun p ↦ (hD i).elim _ _)⟩
+
+end Decoding
 
 section CodeType
 
