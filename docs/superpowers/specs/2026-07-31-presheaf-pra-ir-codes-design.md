@@ -11,6 +11,7 @@
   - [The setting is indexed induction-recursion, not induction-recursion](#the-setting-is-indexed-induction-recursion-not-induction-recursion)
   - [The three rules and their semantics](#the-three-rules-and-their-semantics)
   - [Why `δ`'s arity must vary over the shape presheaf](#why-%CE%B4s-arity-must-vary-over-the-shape-presheaf)
+  - [The two features of `δ` are orthogonal, and the fused rule has both](#the-two-features-of-%CE%B4-are-orthogonal-and-the-fused-rule-has-both)
   - [Why no inductive-inductive definition is needed](#why-no-inductive-inductive-definition-is-needed)
 - [Definitions: transcription or novel](#definitions-transcription-or-novel)
 - [Branches](#branches)
@@ -26,10 +27,10 @@
 
 This specifies a workstream on morphisms of presheaf parametric-right-adjoint
 functors and on codes denoting them, in two stages. Stage 1 is settled and
-machine-checked. Stage 2 is elaborated far enough that its shape is fixed and
-its obstruction is reduced to a one-step induction whose base and step cases
-are proved; its recursion, its completeness and its morphism theory remain
-open.
+machine-checked. Stage 2 is elaborated: the three rules, the code type and the
+interpretation are built, and the recursion is present. Its obstruction is
+reduced to a one-step induction whose base and step cases are proved; its
+completeness and its morphism theory remain open.
 
 The prototype at `Geb/Internal/PresheafIRProto/` is the source this document
 transcribes. It compiles, is linted, and is audited by
@@ -141,15 +142,10 @@ fibre of `ℓ` over `i`, and for `f : i′ ⟶ i` that fibre can be inhabited ov
 arity must carry presheaf structure — which is the separation `IIR` makes and
 `IR` does not.
 
-The prototype builds only the layer in which the decoding presheaf is terminal.
-There `δ`'s subcode family, indexed in Section 6 by the decodings
-`(p : P) → D (i p)`, is a singleton, and `deltaCode` accordingly carries a
-single continuation over the same base. That layer has no recursion: nothing in
-it lets a continuation depend on a decoding. Supplying the decoding presheaf —
-codes over `(𝕀, D)` and `(𝕁, E)`, with `δ`'s subcodes indexed by presheaf
-morphisms `P ⟶ D` — is what makes the system inductive-*recursive*, and is
-obligation 8. Until it lands, what the prototype denotes are presheaf indexed
-containers with a varying arity.
+So the presheaf system generalizes `IIR`, not `IR`: its input side is the pair
+`(𝕀, D)` of a base category and a decoding presheaf, and `δ`'s continuation
+depends on the decoding, which is `PshMor` — the presheaf reading of Section
+6's sections `(p : P) → D (i p)`.
 
 *Inference, not elaborated.* The semantic counterpart of that split is the
 equivalence `PSh(𝕀)/D ≃ PSh(el D)`: `IIR D E` interprets into
@@ -174,19 +170,19 @@ constructors, with the semantic operation each folds to:
 | --- | --- | --- |
 | `ι` | `iotaCode 𝔹` | `unitPsh` — terminal shape presheaf, no directions |
 | `σ` | `sigmaCode 𝔹 S K (hK : wIndex K = Cat.of (ElObj S))` | `sigmaPsh S` — push a functor over `ElObj S` forward to `𝔹` |
-| `δ` | `deltaCode 𝔹 P hP K (hK : wIndex K = 𝔹)` | `delta` at `BaseArity.pullback P` — adjoin the arity `P` |
+| `δ` | `deltaCode 𝔹 A hA K (hK : wIndex K = Cat.of (ElObj (decPresheaf A hA D)))` | `deltaFused A hA D` — adjoin the output-varying arity `A`, the continuation depending on its decoding |
 
-`σ`'s subcode sits over the category of elements of `S`, so the base changes;
-`δ`'s sits over the same base. The interpretation is `interp`, the fold of
-`codeAlg` over the W-type; its three computation rules `interp_iotaCode`,
-`interp_sigmaCode` and `interp_deltaCode` are definitional, and `interp_fst`
-records that a code's index is the base its interpretation lands in.
+Both continuations sit over a category of elements the shape determines, so
+each rule has exactly one subcode slot. The interpretation is `interp`, the
+fold of `codeAlg` over the W-type; its three computation rules
+`interp_iotaCode`, `interp_sigmaCode` and `interp_deltaCode` are definitional,
+and `interp_fst` records that a code's index is the base its interpretation
+lands in.
 
-Each of the three semantic operations is a `PresheafPFunctor` — that is, all
-seven functor laws are proved, not assumed: `unitPsh`, `sigmaPsh` and `delta`.
-The prototype also carries `coprod`, the coproduct of a type-indexed family,
-likewise with all seven laws; the code system does not use it, and it appears
-only as the `σ` of the rejected fragment in § Why `δ`'s arity must vary.
+Every semantic operation is a `PresheafPFunctor` — that is, all seven functor
+laws are proved, not assumed: `unitPsh`, `sigmaPsh`, `delta`, `coprod`,
+`deltaRec` and `deltaFused`. The last two are composites of the others and so
+inherit their laws rather than needing new ones.
 
 ### Why `δ`'s arity must vary over the shape presheaf
 
@@ -234,6 +230,35 @@ to derive the transport of `HasBijectiveReindex` along an isomorphism from
 `pshHomEquivNatFamily`, but needs composition on `PshHom`, which the prototype
 does not build (`idPshHom` supplies the identity). That is proof obligation 2.
 
+### The two features of `δ` are orthogonal, and the fused rule has both
+
+An arity varying over the output object and a continuation depending on the
+decoding are independent, and neither buys the other.
+
+`deltaRec` supplies the recursion. Regrouping `IR.delta`'s coproduct over
+assignments by the decoding each induces presents it as a coproduct, over the
+decodings `PshMor G D`, of non-recursive `δ`s at the corresponding fibre arity
+(`fibreArity`, whose closure under restriction is exactly the decoding's
+naturality). It needs no new functoriality proof, being built from `coprod` and
+`delta`. But its adjoined arity is constant over the output, so it lies inside
+the same bound as `deltaConst`.
+
+`deltaFused` has both. Three steps, none of them a new operation:
+
+1. The decodings of an output-varying arity form a presheaf on the output base
+   (`decPresheaf`), restriction along `g : b' ⟶ b` being precomposition with
+   `A.reindex g`; its functor laws are `A`'s reindexing laws.
+2. Over `ElObj (decPresheaf A hA D)` every object carries its own decoding, so
+   the adjoined arity is an ordinary `BaseArity` there (`decArity`,
+   `isFunctorial_decArity`), and `BaseArity.pullback` turns it into the
+   shape-indexed arity `delta` consumes.
+3. `sigmaPsh` pushes the result forward to the output base.
+
+`not_hasBijectiveReindex_deltaFusedVaries` checks that the fusion does not cost
+the output-varying arity: at the terminal decoding, where the recursion
+degenerates (`subsingleton_pshMor_to_terminal`), the fused `δ` at an
+output-varying arity still lies outside the bound.
+
 ### Why no inductive-inductive definition is needed
 
 A code's `δ` cannot mention its subcode's shapes, so its arity is indexed by
@@ -241,6 +266,11 @@ output objects (`BaseArity`) and pulled back along the shape-output map
 (`BaseArity.pullback`, `BaseArity.isFunctorial_pullback`). The transport that
 the pullback carries is the reason `ShapeArity` is indexed by shapes rather
 than by output objects: `deltaData` is then free of it.
+
+Nor does the recursion force mutuality. A continuation depending functorially
+on the decoding is one code over `ElObj (decPresheaf A hA D)`, not a family of
+codes indexed by decodings — the same collapse `σ` already makes. So `δ`, like
+`σ`, has a single subcode slot at a base the shape determines.
 
 The code type is the W-type of a slice polynomial functor on `Cat`
 (`codePFunctor`, `Code`), not an inductive family. `Cat.{v, u}` is closed under
@@ -262,9 +292,9 @@ transcribing.
 | --- | --- |
 | `PshHom`, to be named `PresheafPFunctor.Hom` upstream | Novel in this repository. The shapes-forward arities-backward form is Definition 7 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (morphisms of indexed containers) in the discrete case; its Definition 6 is the dependent-polynomial presentation whose `r`/`q` naming this repository follows |
 | The action of a `Hom`, and its naturality | Novel |
-| The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (that paper's restatement of Theorem 2.12 of [GambinoKock2013]), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 10, not of this |
+| The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (that paper's restatement of Theorem 2.12 of [GambinoKock2013]), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 9, not of this |
 | Identity, composition, and the category structure on `Hom` | Novel |
-| The `σ` / `δ` code rules | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves. The generalization of `δ`'s arity from an object of `Set/I` to one varying over the shape presheaf is novel, and § Why `δ`'s arity must vary shows it is forced |
+| The `σ` / `δ` code rules | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves: `σ`'s family over a set becomes a base change along a category of elements, and `δ`'s sections `(p : P) → D (i p)` become `PshMor`. The further generalization of `δ`'s arity from an object of `Set/I` to one varying over the output object is novel, and § Why `δ`'s arity must vary shows it is forced |
 | The `ι` code rule | Novel. Section 6's `ι` takes a point of the output total space `ΣE`; `iotaCode 𝔹` takes none and denotes `unitPsh`, one shape over every object of `𝔹`. The pointed form exists in the prototype as `iotaPresheaf j₀` but is not what the code system uses, and that `σ` at a representable over `iotaCode` recovers it is unelaborated |
 | Indexing the code type by a base category, with `σ` replacing it by a category of elements | Novel |
 | `coprod`, the coproduct of a type-indexed family | Novel at this level; the discrete analogue is `SlicePFunctor.coprod` |
@@ -279,26 +309,31 @@ transcribing.
 | `CodeShape`, `CodeDir`, `CodeNext`, `codePFunctor`, `Code` | Novel. Indexing by a base category, with `σ` replacing it by a category of elements, has no counterpart in the cited literature |
 | `codeAlgOn`, `codeAlg`, `interp` — the interpretation | Novel at this level; the discrete analogue is `IR.interpObj` |
 | The constant-arity fragment's code type (obligation 7) | Novel |
-| The code-level morphism type (obligation 10) | Novel at this level; the discrete analogue is `IndRec.IR.Hom` |
+| The code-level morphism type (obligation 9) | Novel at this level; the discrete analogue is `IndRec.IR.Hom` |
+| `PshMor` — a morphism from a `DomArity` to a presheaf, unbundled | Novel presentation; it is the presheaf reading of Section 6's sections `(p : P) → D (i p)` |
+| `fibreArity` — the arity a decoding adjoins | Novel |
+| `deltaRec` — the `δ` whose continuation depends on the decoding | Transcription of Section 6's `δ` rule at a constant arity |
+| `decPresheaf` — the decodings of an output-varying arity, as a presheaf on the output base | Novel |
+| `decArity` — that arity, indexed by the elements of `decPresheaf` | Novel |
+| `deltaFused` — the `δ` carrying both features | Novel; it is Section 6's `δ` rule with the arity generalized as § Why `δ`'s arity must vary requires |
 
 ## Branches
 
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape binds one concern
-per branch. The obligations below divide into six.
+per branch. The obligations below divide into five.
 
 | Branch | Obligations | Acceptance |
 | --- | --- | --- |
 | W-a — Stage 1 upstream | 1, 2, 3 | `PshHom`, its action and the hom-set bijection in `Geb/Mathlib/`, choice-free; composition and the category structure; and the bijection related to natural transformations of the interpreted functors |
-| W-c — Stage 2 upstream | 4, 5 | the four operations, the code type, the interpretation, and the bound's vocabulary in `Geb/Mathlib/` |
+| W-c — Stage 2 upstream | 4, 5 | the semantic operations, the decoding layer, the code type, the interpretation, and the bound's vocabulary in `Geb/Mathlib/` |
 | W-b — the bound | 6, 7 | `HasBijectiveReindex` transports along an isomorphism, and the constant-arity fragment's induction is formalized against a code type for that fragment |
-| W-d — the decoding layer | 8 | codes over `(𝕀, D)` and `(𝕁, E)`, with `δ`'s subcodes indexed by presheaf morphisms `P ⟶ D`, interpreting into `PresheafPFunctor (el D) (el E)` |
-| W-e — completeness | 9 | either a code for every `PresheafPFunctor`, or a counterexample together with a proof of completeness for the fragment named in obligation 9 |
-| W-f — code morphisms | 10 | the code-level morphism type and representation theorem |
+| W-e — completeness | 8 | either a code for every `PresheafPFunctor`, or a counterexample together with a proof of completeness for the fragment named in obligation 8 |
+| W-f — code morphisms | 9 | the code-level morphism type and representation theorem |
 
 W-c depends on nothing; W-a depends on nothing; W-b depends on W-a and W-c;
-W-d depends on W-c; W-e depends on W-c and W-d; W-f depends on W-a and W-c.
+W-e depends on W-c; W-f depends on W-a and W-c.
 
-This document is the design record for all six and is removed with the last of
+This document is the design record for all five and is removed with the last of
 them, which deviates from § Concern shape's per-branch spec lifetime. The
 rationale: between branches it presents decisions that are pending, not
 superseded, which is what that section guards against. If W-a lands and the
@@ -324,8 +359,9 @@ Each is unproved at the time of writing.
    the unbundled proxy `pshHomEquivNatFamily` lands in, is equivalent to the
    natural transformations `F.functor ⟶ F'.functor`. The prototype relates
    `PshNatFamily` to nothing outside `Basic.lean`.
-4. **Stage 2 at upstream quality** (W-c). Port `unitPsh`, `sigmaPsh`, `delta`
-   and `coprod`, the code type and the interpretation. The prototype's
+4. **Stage 2 at upstream quality** (W-c). Port `unitPsh`, `sigmaPsh`, `delta`,
+   `coprod`, `PshMor`, `fibreArity`, `decPresheaf`, `decArity`, `deltaRec`,
+   `deltaFused`, the code type and the interpretation. The prototype's
    `ElObj` / `elCategory` is written out rather than reused; the upstream
    version should be `S.Elementsᵒᵖ`. Acceptance for that choice: reuse is
    adopted unless it requires more transport lemmas than the four
@@ -333,7 +369,8 @@ Each is unproved at the time of writing.
    the written-out version needs.
 5. **The bound's vocabulary at upstream quality** (W-c). Port
    `HasBijectiveReindex`, its six closure lemmas, `iotaPresheaf`, `iotaConst`,
-   `ShapeArity.const`, `arityVaries` and `deltaVarying`. Obligations 6 and 7
+   `ShapeArity.const`, `arityVaries`, `deltaVarying`, and the fused witness
+   (`termPsh`, `arityVariesBase`, `deltaFusedVaries`). Obligations 6 and 7
    consume these, and the prototype is removed with this document, so without
    this obligation W-b has no inputs.
 6. **Iso-invariance of the bound** (W-b). That `HasBijectiveReindex` transports
@@ -345,16 +382,7 @@ Each is unproved at the time of writing.
    functor with bijective reindexing. The three base cases and three step cases
    are proved in the prototype and ported by obligation 5; only the induction
    is missing.
-8. **The decoding layer** (W-d). Codes parameterized by a base category and a
-   decoding presheaf — `(𝕀, D)` and `(𝕁, E)` — with `δ`'s subcodes indexed by
-   presheaf morphisms `P ⟶ D`, generalizing the singleton family the prototype
-   carries. This is what supplies the recursion of induction-recursion, and
-   until it lands the system denotes presheaf indexed containers rather than
-   presheaf inductive-recursive definitions. The semantics is expected to need
-   nothing new: `PSh(𝕀)/D ≃ PSh(el D)` should make such a code denote an
-   ordinary `PresheafPFunctor (el D) (el E)`, which is the inference recorded
-   in § The setting is indexed induction-recursion.
-9. **Completeness** (W-e). Whether every `PresheafPFunctor` has a code — the
+8. **Completeness** (W-e). Whether every `PresheafPFunctor` has a code — the
    analogue of Lemma 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013]
    ("Every dependent polynomial functor is an IR functor"). The shape of the
    expected witness is `sigmaCode` at the shape presheaf over a `deltaCode` at
@@ -362,30 +390,36 @@ Each is unproved at the time of writing.
    conjecture, not elaboration. If it is false, the branch delivers the
    counterexample together with completeness for the fragment of functors whose
    arity is constant on each connected component of the shape presheaf.
-10. **Code morphisms** (W-f). The code-level morphism type, mirroring `PshHom`,
-    and the code-level representation theorem — the analogue of Theorem 3 of
-    [HancockMcBrideGhaniMalatestaAltenkirch2013], present in the discrete case
-    as `IR.interpHomEquiv`. Stage 1 determines the shape of both.
+9. **Code morphisms** (W-f). The code-level morphism type, mirroring `PshHom`,
+   and the code-level representation theorem — the analogue of Theorem 3 of
+   [HancockMcBrideGhaniMalatestaAltenkirch2013], present in the discrete case
+   as `IR.interpHomEquiv`. Stage 1 determines the shape of both.
 
 ## Open questions
 
 To be answered by the work rather than before it.
 
-1. Whether the arity carrier universe, pinned to the base's in the prototype,
-   needs to vary.
-2. Whether `iotaPresheaf j₀` and `iotaConst (yoneda.obj j₀)` are isomorphic as
+1. Whether the universes the code type pins — the input base, its homs and the
+   decoding presheaf all at `u` — need to vary. The pinning is what makes
+   `Cat.{v, u}` closed under both continuation steps.
+2. Whether the output side should also carry a decoding presheaf `E`, as
+   Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013] does. The
+   prototype's output index is a bare category, which by the collapse of
+   § The setting already subsumes a pair `(𝕁, E)` at `el E`; whether the syntax
+   gains from naming `E` separately is not settled.
+3. Whether `iotaPresheaf j₀` and `iotaConst (yoneda.obj j₀)` are isomorphic as
    functors. Their shape types agree definitionally
    (`iotaPresheafData_A_eq_iotaConstData_yoneda`, in the allowlisted `Functor`
    module because `yoneda` lands in a functor category); nothing more is
    established.
-3. Whether the walking arrow should carry a worked example exercising
+4. Whether the walking arrow should carry a worked example exercising
    `shapeRestr`, `reindex` and `reindexCompat` together, while staying small
    enough to compute with by hand. `arityVaries` has the walking arrow as its
    output base and exercises `reindex` alone: its shape presheaf is fibrewise a
    singleton (`arityVariesShapeEquiv`), its input base `Fin 1` makes
    `directionRestr` trivial, and `reindexCompat` is a `PshHom` field, of which
    it carries none. The worked example would be new.
-4. Whether `PresheafPFunctor` at discrete `I` and `J` carries information
+5. Whether `PresheafPFunctor` at discrete `I` and `J` carries information
    beyond `SlicePFunctor`, and whether the code system degenerates to `IR`
    there.
 
