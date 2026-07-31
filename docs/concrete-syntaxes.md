@@ -62,9 +62,12 @@ with tests in
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
 
-The format-by-format sections do not yet conform to
+Everything between § The AST and its isomorphisms and § References,
+other than § Local verification and § Roadmap, is inherited text and
+does not yet conform to
 [CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references; `TODO.md`
-records the outstanding pass.
+§ Prose-conformance pass over the concrete-syntax survey records the
+outstanding pass and its scope.
 
 ## The AST and its isomorphisms
 
@@ -163,11 +166,17 @@ for storing combinator-calculus terms, and vice versa.
 
 ### Complexity note
 
-Parsing and the Merkle fold are linear in the size of the tree with a
-constant number of passes. Printing as implemented is not: `printAst`
-concatenates with `++`, which is left-associative, so each node's output
-is copied once per ancestor. An accumulator-passing printer restores
-linearity and changes no theorem.
+As algorithms, parsing, printing and the Merkle fold are linear in the
+size of the tree with a constant number of passes. Neither implemented
+map achieves that. `Csexp.printAst` re-appends at every level, so each
+node's output is copied once per ancestor. `Csexp.parse` evaluates
+`r.length` over the whole remaining input at every atom, and
+`Csexp.readDigits` is a strict `List.rec` that traverses the rest of the
+input even when the first character is not a digit; the cost is the
+node count times the input length. An accumulator-passing printer and a
+parser carrying the remaining length would restore linearity, at the
+cost of restating and reproving `parseAst_printAst` and `parse_print`,
+which are stated about the present maps.
 
 All three are elementary — indeed they sit in the lower-elementary
 fragment once the hash primitive is taken as a unit-cost oracle. Nothing
@@ -593,8 +602,12 @@ Geb profile decisions, which must be fixed for `printDoc` to be
 injective:
 
 - A leaf label is the **shortest decimal ASCII** representation, no
-  leading zeros, `"0"` for zero; the decoder rejects non-canonical
-  spellings.
+  leading zeros, `"0"` for zero. That binds the printer. The decoder is
+  deliberately laxer — `Csexp.digitsVal` accepts leading zeros and the
+  empty atom, and `Csexp.readNat` accepts a leading zero in a length
+  prefix — since the retraction law constrains only the composite. A
+  profile that rejects non-canonical spellings on input is a separate
+  obligation, and is not discharged here.
 - `printDoc` emits a fixed sublanguage of the advanced form (quoted
   strings only, one fixed indentation discipline, no display hints);
   `parseDoc` accepts the full advanced form. The retraction law
@@ -939,13 +952,19 @@ Two considerations constrain the order.
   unverified oracle for differential testing immediately.
 
 The order adopted is canonical S-expressions, then the JSON core
-profile, then deterministic CBOR. Canonical csexp goes first on two
-grounds none of the three findings touches: its verified-parser cost is
-tied for the lowest in the table, and its data model is the only one
-that differs from every other candidate's, so it tests syntax
-independence more sharply than any alternative first choice. The
-findings remove csexp's *other* advantages — the normative canonical
-form and the readability — and leave those two standing.
+profile, then deterministic CBOR.
+
+Canonical csexp earns a place in the set: among the bootstrap-eligible
+candidates its data model is the one that shares least with the others,
+so the pair {csexp, JSON core} stresses syntax independence more than
+any pair drawn from the array-and-map formats would. That is an argument
+for inclusion and not for sequence — syntax independence is validated by
+the pair, and swapping the two yields the same pair. On sequence the two
+are close: both are "very low" parser cost, and JSON core has the
+tie-breaker, `Lean.Json` as an immediate differential-testing oracle.
+The order was settled by writing csexp first; stage 1a is done, so the
+question is no longer open. Had it been reopened before implementation,
+JSON core first would have been the better call.
 
 CBOR is not dropped: it shares JSON's data model, so once the JSON core
 is proved its incremental cost is the byte-level integer encoding alone,
@@ -1061,8 +1080,8 @@ erasure drops them:
 ```text
 (geb-doc/v1 "3"
   (fork
-    (leaf "0" (*ann (name "operator")))
-    (fork (leaf "2") (leaf "1"))
+    (leaf "0")
+    (fork (leaf "2" (*ann (name "operator"))) (leaf "1"))
     (*ann (name "example")
           (doc "the root expression")
           (link "https://example.org/spec"))))
@@ -1110,7 +1129,8 @@ definite lengths and shortest-form integers, as RFC 8949 §4.2 requires.
 CBOR annotated document, **map-free** so that the §4.2 and DAG-CBOR
 encodings are byte-identical. The shape is
 `[format, k, root, annotations]` with each annotation
-`[path, name, doc, links]` and `null` for an absent field:
+`[path, name, doc, links]`, writing `null` for an absent scalar field
+and `[]` for absent `links`, as `Ann.links` defaults:
 
 ```text
 84 6a 67 65 62 2d 64 6f 63 2f 76 31 03 82 00 82 02 01 82 84
@@ -1133,7 +1153,9 @@ It builds under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
 Its one import is
 [Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean), and
-through it `Mathlib.Data.W.Basic`.
+through it `Mathlib.Data.W.Basic` and
+[Geb/Mathlib/Data/FinEnum.lean](../Geb/Mathlib/Data/FinEnum.lean), which
+supplies the choice-free decidability instances fact 3 below relies on.
 
 Four facts constrain how it is written.
 
@@ -1162,14 +1184,18 @@ Four facts constrain how it is written.
    `String.ofList` does not, so the printer's output is still compared
    against a string literal.
 
-A note on the fuel measure, since it is easy to get wrong. `omega`
-reasons about `Nat.max` choice-free; `simp` on a hypothesis containing
-`Nat.max` does not, reaching choice-dependent order lemmas instead.
-Either a `max`-based or an additive measure is therefore available,
-provided every bound on it is discharged by `omega`. The measure used,
-`Ast.size`, is the node count, and is named for its return value as
-[docs/rules/lean-coding.md](rules/lean-coding.md) § Naming conventions
-requires.
+The fuel measure is `Ast.size`, the node count, named for its return
+value as [docs/rules/lean-coding.md](rules/lean-coding.md) § Naming
+conventions requires. Every bound on it is discharged by `omega`, per
+that file's § Constructive-only rule on `Fin` and `Nat` arithmetic.
+
+The implemented wire form is header-free and carries the bare tree
+alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
+alphabet size that
+[One tree, every recommended encoding](#one-tree-every-recommended-encoding)
+shows, both of which belong to the document level that stage 2 reaches.
+The tests pin the spelling, and for the three-node tree over `Fin 3` it
+is `(4:fork(4:leaf1:0)(4:fork(4:leaf1:1)(4:leaf1:2)))`.
 
 Axiom dependencies, from `#print axioms` over all 54 theorems:
 
@@ -1293,10 +1319,10 @@ everything feeding a hash.
 | 3 | a hash that runs | not started |
 | 4 | CID, multibase, CAR | deferred |
 
-Stage 1a is 806 lines of Lean and 54 theorems, plus 123 lines of tests.
-That is the only measured quantity, and one implementation is too small
-a base to extrapolate a schedule from, so the stages below are ordered
-by dependency and carry no estimate.
+[Local verification](#local-verification) gives stage 1a's size. That is
+the only measured quantity, and one implementation is too small a base
+to extrapolate a schedule from, so the stages below are ordered by
+dependency and carry no estimate.
 
 Stage 1b introduces no new proof technique and reuses the decimal layer
 unchanged: the JSON core profile's integers are decimal ASCII, which is
@@ -1309,13 +1335,22 @@ the retractions preceding it, every syntax parsing to the same `Ast`.
 Stage 2 is the largest. Moving from `Ast k` to `Doc k = Tree k Ann` puts
 `Option String` and `List String` into the syntax, so the printer and
 parser acquire string escaping and the round-trip proofs acquire its
-inverse. The injectivity constraint on `printDoc` costs nothing here:
-`Ann` is a plain product, so no two values of `Doc k` denote one
-document. It binds on
-[The side-table presentation](#the-side-table-presentation) instead,
-whose annotation collections must be canonically ordered and
-duplicate-free by construction — and stage 2 does not lift that
-presentation.
+inverse.
+
+The injectivity constraint on `printDoc` is discharged for free on
+`Doc k` as `Ann` is presently declared: it is a plain product, so
+distinct `Doc k` values are distinguished by any printer that emits
+every field, and no setoid is needed. What
+[Idempotence is a corollary, and so is injectivity](#idempotence-is-a-corollary-and-so-is-injectivity)
+warns against is the prior question, whether `Doc k` is the right model.
+`Ann.links : List String` gives one document several `Doc k` values
+whenever link order is not meant to be semantic. Injectivity survives
+that; what fails is that `format` then has no fixed point to converge
+to, and the choice — order is semantic, or `links` becomes a sorted
+duplicate-free type — has to be made before stage 2 states a
+document-level law. The same choice, one level up, is what
+[The side-table presentation](#the-side-table-presentation) requires of
+an annotation table.
 
 Stage 3 is a build problem before it is a proof problem. What is missing
 is any usable hash function; the realistic route is `@[extern]` against
@@ -1352,8 +1387,8 @@ diversity, which would add XML with explicit annotation elements.
 
 ### Relation to existing repository content
 
-`Ast k` is the W-type of the polynomial functor with shapes
-`Fin k ⊕ Unit` and arities `0` and `2`, and it is declared as one:
+`Ast k` is the W-type of the polynomial functor with shapes in bijection
+with `Fin k ⊕ Unit` and arities `0` and `2`, and it is declared as one:
 `Ast.Shape k` carries the two shapes, `Ast.Arity` sends them to `Empty`
 and `Fin 2`, and `Ast k` is `WType Ast.Arity`.
 [docs/rules/lean-coding.md](rules/lean-coding.md) § Recursion and
@@ -1367,7 +1402,9 @@ supplies the fold's computation rule and its uniqueness, the
 paramorphism `WType.para`, and a `DecidableEq` instance needing only a
 finitely enumerable arity; `Ast.ind` recovers the two-constructor
 induction principle, so no proof in the module mentions the shape and
-arity encoding. `Repr` is not derived, and nothing asks for it.
+arity encoding. No `Repr` instance is derived for the three tree types,
+and nothing asks for one; `Ann` and `Dir`, which are ordinary
+non-recursive declarations, derive theirs.
 
 This repository separately carries the polynomial-functor presentation
 of the same construction, in
@@ -1436,11 +1473,13 @@ machinery needs it, which the parse and print layer does not.
 
 ## References
 
-Works cited from Lean source carry an entry in
-[docs/references.bib](references.bib), which is authoritative for their
-bibliographic detail; the entries below duplicate it for RFC 9804,
-RFC 6962 and Uustalu and Vene 2011. Migrating the rest of this list into
-the `.bib` is part of the outstanding pass `TODO.md` records.
+[docs/references.bib](references.bib) is authoritative for the
+bibliographic detail of three works this list also carries: RFC 9804 and
+Uustalu and Vene 2011, both cited from Lean source, and RFC 6962, cited
+from [Merkle hashing as a catamorphism](#merkle-hashing-as-a-catamorphism)
+here and from Lean source once roadmap stage 3 writes the fold.
+Migrating the rest of this list into the `.bib` is part of the
+outstanding pass `TODO.md` records.
 
 Standards and specifications:
 

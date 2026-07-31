@@ -592,19 +592,18 @@ or connecting the path map to a subtree selector, would restore the
 biconditional that
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Which
 occurrences the rose presentation can name draws its two design
-consequences from. Neither `rosePathToBin` nor `Path` has a consumer in
-the module, so this is worth doing when a syntax annotates occurrences
-and not before.
+consequences from. No parser, printer or tree operation consumes `Path`
+or `rosePathToBin`, so this is worth doing when a syntax annotates
+occurrences and not before.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
-The format-by-format sections of
-[docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) — everything
-between § The AST and its isomorphisms and § Caveats other than
-§ Local verification and § Roadmap — are inherited text. They have not
-had a pass against [CONTRIBUTING.md](CONTRIBUTING.md) § Style and
-references, and carry value-laden adjectives and evaluative framing
-that the style rule excludes.
+Everything in [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md)
+between § The AST and its isomorphisms and § References, other than
+§ Local verification and § Roadmap, is inherited text. It has not had a
+pass against [CONTRIBUTING.md](CONTRIBUTING.md) § Style and references,
+and carries value-laden adjectives and evaluative framing that the style
+rule excludes. § Status states the same scope.
 
 Two factual items ride along with that pass. The document's
 § References duplicates bibliographic detail that
