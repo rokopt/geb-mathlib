@@ -143,14 +143,17 @@ That is why the rules are stated as obligations on the author rather than
 as facts about named declarations. Naming the term, pinning the instance
 and splitting modules by what can be stated choice-free all remove the
 dependence on what search selects. The module split also bounds the
-allowlist, and the boundary is drawn at what can be stated rather than at
-what a module contains. A module admitted to
-`GebMeta.classicalAllowedModules` is one with nothing choice-free left to
-state: either it packages terms whose choice-free content lives elsewhere,
-or its own subject is a mathlib structure that is itself
-`Classical`-dependent. A module with choice-free content of its own is
-held to the strict set, so the constructive core cannot quietly widen. A
-wrapper is mostly packaging but may carry content that cannot be stated
+allowlist. The boundary is drawn at what can be stated, not at how much a
+module contains: a module reaches `GebMeta.classicalAllowedModules` when it
+has no choice-free content of its own left to state, either because its
+content is packaging or because its subject is a mathlib structure that is
+itself `Classical`-dependent. A module with choice-free content of its own
+is held to the strict set, so the constructive core cannot widen by
+accident. The remaining admissions follow from that reading rather than
+extending it: a test parallel inherits the dependence of the module it
+exercises, and the linter's own fixture exists to establish that the
+allowlist has effect at all.
+A wrapper is mostly packaging but may carry content that cannot be stated
 choice-free — a bridge through a `Classical`-dependent mathlib construct,
 say — which is why the boundary is drawn at what can be stated rather than
 at how much is written.
