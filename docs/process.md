@@ -8,6 +8,7 @@
 - [Document only the persistent](#document-only-the-persistent)
 - [Specs and plans are transient](#specs-and-plans-are-transient)
 - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
+- [Constructive-only discipline](#constructive-only-discipline)
 - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
 - [Documentation under `docs/`](#documentation-under-docs)
 - [Adversarial review](#adversarial-review)
@@ -126,6 +127,30 @@ cannot become obsolete. Incidental examples (a particular task,
 test artifact, or transient project state) consume reader
 attention with trivialities and rot as the codebase evolves; an
 archetypal example continues to teach the rule years later.
+
+## Constructive-only discipline
+
+The rules in `docs/rules/lean-coding.md` § Constructive-only Lean code
+exist because axiom cleanliness is not a property of a name. `#print
+axioms` on a polymorphic constant reports that constant, not any
+instantiation of it, so a constant whose hypothesis is a class can measure
+clean while every use of it at a concrete type collects `Classical.choice`.
+Instance search compounds this: which instance is selected depends on the
+import closure, so the same measurement taken in a narrow closure and in
+the consuming one can disagree.
+
+That is why the rules are stated as obligations on the author rather than
+as facts about named declarations. Naming the term, pinning the instance
+and splitting modules by what can be stated choice-free all remove the
+dependence on what search selects. The module split also bounds the
+allowlist: what reaches `GebMeta.classicalAllowedModules` is a wrapper, its
+test parallel, or the linter's own fixture, so the constructive core stays
+strict. A wrapper is mostly packaging but may carry content that cannot be
+stated choice-free — a bridge through a `Classical`-dependent mathlib
+construct, say — which is why the boundary is drawn at what can be stated
+rather than at how much is written.
+Where a rule rests on a measurement, a lemma's axioms follow its proof, so
+it is re-taken on a toolchain bump.
 
 ## Avoid colloquialisms and metaphors
 
