@@ -14,15 +14,20 @@ public import GebTests.Mathlib.CategoryTheory.FinCat.Basic
 Three functor specifications out of the terminal category: the two into
 the walking arrow, and the one into the two-element monoid on an
 idempotent, which is the only fixture with a two-element hom-set. Two
-more out of the walking arrow, whose morphism maps are not vacuous.
-Seven assertions exercising the two unit laws, the bundled composition
-check, the object and morphism maps of the generated mathlib functor,
-and a composite's morphism map at a client morphism.
+more out of the walking arrow, whose morphism maps are not vacuous, and
+one out of the walking isomorphism, whose composition check is not
+vacuous. Eight assertions exercising the two unit laws, the bundled
+composition check, the object and morphism maps of the generated
+mathlib functor, a composite's morphism map at a client morphism, and
+the composition checker rejecting.
 
 The morphism component of a specification out of the terminal category
-is vacuous, that category having no client morphisms. Every composition
-check here holds because its quantifier ranges over an empty index
-type: no fixture has two composable client morphisms.
+is vacuous, that category having no client morphisms. A composition
+check whose source is `terminalCat` or `walkingArrow` holds because its
+quantifier ranges over an empty index type: neither has a composable
+pair of client morphisms. `walkingIso` has two, so `isoConst` and
+`isoIdem_compCheckOf_eq_false` are the two directions of the check at a
+non-empty range.
 
 ## Tags
 
@@ -113,3 +118,27 @@ theorem arrowCollapse_comp_idemPoint_mapTotal_eq :
     (arrowCollapse.comp idemPoint).mapTotal arrowMor
       = idemPoint.mapTotal (arrowCollapse.mapTotal arrowMor) :=
   FinCat.Hom.comp_mapTotal arrowCollapse idemPoint arrowMor
+
+/-- The constant 1-cell out of `walkingIso`, sending every client
+morphism to `idemMonoid`'s reserved identity. `walkingIso` has two
+composable client morphisms each way round, `isoFwdMor` with
+`isoBwdMor` and the reverse, so this is the one specification here
+whose `compValid` field ranges over a non-empty index type. -/
+def isoConst : FinCat.Hom walkingIso idemMonoid where
+  objMap := fun _ ↦ idemObj
+  map := fun _ _ _ ↦ idemIdMor
+  compValid := rfl
+
+/-- Assertion 8: the composition checker rejects as well as accepts.
+Replacing `isoConst`'s morphism map by the idempotent breaks
+preservation of composition: `isoFwdMor` and `isoBwdMor` compose to the
+reserved identity of `isoSrcIdx` (`iso_fwd_comp_bwd`), whose image is
+`idemIdMor`, while their images compose to `idemMor`
+(`idem_mor_comp_self`), and the two differ (`idem_mor_ne_id`). Stated
+at `FinCat.Hom.compCheckOf` rather than at a `FinCat.Hom`, as
+`badComp_assocCheck_eq_false` is stated at `FinCat.assocCheckOf`: the
+equation that fails is exactly the `compValid` field such a value would
+have to supply. -/
+theorem isoIdem_compCheckOf_eq_false :
+    FinCat.Hom.compCheckOf walkingIso idemMonoid (fun _ ↦ idemObj)
+      (fun _ _ _ ↦ idemMor) = false := rfl

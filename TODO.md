@@ -13,7 +13,6 @@
     - [4. Relative (co)free (co)monads](#4-relative-cofree-comonads)
     - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
-  - [Non-vacuous composition check for `FinCat` 1-cells](#non-vacuous-composition-check-for-fincat-1-cells)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
@@ -217,27 +216,6 @@ each identity keeps the identity cases out of the quantifier entirely,
 the identity laws holding by construction, so the morphism factor is
 the non-identity count rather than the total. As above this is an upper
 bound only, the `Bool` conjunction short-circuiting on rejection.
-
-### Non-vacuous composition check for `FinCat` 1-cells
-
-Give `GebTests/Mathlib/CategoryTheory/FinCat/Hom.lean` a 1-cell fixture
-whose composition check is not vacuous. `FinCat.Hom.compCheckOf`
-quantifies over pairs of composable client morphisms of the source, and
-no fixture's source has such a pair: the sources are `terminalCat`,
-which has no client morphisms, and `walkingArrow`, whose one client
-morphism composes with nothing. So `arrowPointSrc_compCheck` and every
-`compValid` field there holds over an empty range.
-
-`idemMonoid` is the only fixture whose source qualifies, its idempotent
-composing with itself, so a 1-cell out of `idemMonoid` into
-`terminalCat` is the cheapest fixture that makes the quantifier bite.
-That alone does not settle the item: every morphism map into
-`terminalCat` satisfies the equation, so a fixture the check rejects
-needs a target whose composition discriminates, and both candidate
-morphism maps out of `idemMonoid` into itself are functorial. The
-other two checkers have their rejecting instances already —
-`badComp_assocCheck_eq_false` for `FinCat.assocCheckOf` and
-`arrowIdem_natCheckOf_id_eq_false` for `FinCat.Hom₂.natCheckOf`.
 
 ### Upstream placement of categorical wrappers
 
