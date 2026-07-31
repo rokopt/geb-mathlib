@@ -62,12 +62,12 @@ with tests in
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
 
-Everything between § The AST and its isomorphisms and § References,
-other than § Local verification and § Roadmap, is inherited text and
-does not yet conform to
-[CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references; `TODO.md`
+Between § The AST and its isomorphisms and § References, the paragraphs
+that name a Lean declaration of this repository were written here; the
+rest is inherited text and does not yet conform to
+[CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references. `TODO.md`
 § Prose-conformance pass over the concrete-syntax survey records the
-outstanding pass and its scope.
+outstanding pass.
 
 ## The AST and its isomorphisms
 
@@ -368,8 +368,9 @@ key forms:
   subtree.
 
 Paths must be expressed in a fixed, versioned vocabulary, and per the
-occurrence characterization above, the normative vocabulary should be
-the binary one.
+one-sided occurrence bound above (see
+[Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name)),
+the normative vocabulary should be the binary one.
 
 ### Lexical comments are not durable
 
@@ -399,7 +400,9 @@ c ∼_geb c'   iff  parse c = parse c' and both are `some`
 unparseable string, so it is an equivalence on the parseable subset
 `C_ok ⊆ C` only. For any sane implementation `parse` factors as
 `decode ∘ formatParse`, so on `C_ok` we have `∼_fmt ⊆ ∼_geb`: the Geb
-equivalence is strictly **coarser**.
+equivalence is **coarser**, and strictly so exactly when the decoder
+admits more than one format-level value per tree, as the implemented
+csexp decoder does and as the JSON core profile would not.
 
 - Format canonicalizers — JCS, RFC 8949 §4.2, canonical csexp, Canonical
   XML 1.1 — choose a section of `q_fmt : C ↠ C/∼_fmt`.
@@ -438,9 +441,10 @@ the content hash.
 
 Structural equality implies hash equality, but not by the fold's
 universal property: every function respects equality, so that argument
-is vacuous. What the universal property actually gives
-is **uniqueness**, hence *compositionality*: the digest of a node is a
-function of the digests of its children and nothing else. That is what
+is vacuous. What gives *compositionality* — the digest of a node is a function of
+the digests of its children and nothing else — is the fold's computation
+rule. The universal property's other half, **uniqueness**, is what
+identifies an independently defined digest function with the fold. That is what
 licenses incremental recomputation under local edits, subtree-level
 deduplication, and structural sharing. The interesting direction — hash
 equality implying structural equality — is not a theorem at all; it
@@ -827,7 +831,6 @@ with annotations as explicit elements, never XML comments:
 ```xml
 <geb:annotation path="RL">
   <geb:name>operator</geb:name>
-  <geb:link href="https://example.org/reference"/>
 </geb:annotation>
 ```
 
@@ -861,9 +864,9 @@ EDN fits the rose view directly — lists, vectors, maps, symbols,
 keywords, tagged elements, and `;` comments:
 
 ```clojure
-#geb/node [0
-  #geb/node [2]
-  #geb/node [1]]
+#geb/node [1
+  #geb/node [0]
+  #geb/node [2]]
 ```
 
 Against it: no broadly adopted canonical byte serialization, a smaller
@@ -962,9 +965,8 @@ for inclusion and not for sequence — syntax independence is validated by
 the pair, and swapping the two yields the same pair. On sequence the two
 are close: both are "very low" parser cost, and JSON core has the
 tie-breaker, `Lean.Json` as an immediate differential-testing oracle.
-The order was settled by writing csexp first; stage 1a is done, so the
-question is no longer open. Had it been reopened before implementation,
-JSON core first would have been the better call.
+Stage 1a is done in csexp, so the sequence is settled and the remaining
+question is only where CBOR falls.
 
 CBOR is not dropped: it shares JSON's data model, so once the JSON core
 is proved its incremental cost is the byte-level integer encoding alone,
@@ -1114,8 +1116,9 @@ order is ever computed:
 ```
 
 This is a *different document* from the compact core with a different
-JCS hash, and the same `coreMH`. That is the whole architecture in one
-example.
+JCS hash, and the same `coreMH` once the alphabet size is supplied — the
+core encodings are relative to a fixed `k`, as `Csexp.parse` is. That is
+the whole architecture in one example.
 
 CBOR core, diagnostic notation `[0, [2, 1]]`, canonical bytes:
 
@@ -1147,7 +1150,7 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-806 lines and 54 theorems, with 123 lines of tests in
+54 theorems, with tests in
 [GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
 It builds under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
@@ -1194,8 +1197,12 @@ alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
 alphabet size that
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding)
 shows, both of which belong to the document level that stage 2 reaches.
-The tests pin the spelling, and for the three-node tree over `Fin 3` it
-is `(4:fork(4:leaf1:0)(4:fork(4:leaf1:1)(4:leaf1:2)))`.
+The tests pin the spelling: for the five-node tree
+`fork (leaf 0) (fork (leaf 1) (leaf 2))` over `Fin 3` it is
+`(4:fork(4:leaf1:0)(4:fork(4:leaf1:1)(4:leaf1:2)))`. That tree is not
+the running example of
+[One tree, every recommended encoding](#one-tree-every-recommended-encoding),
+whose two right-hand labels are transposed.
 
 Axiom dependencies, from `#print axioms` over all 54 theorems:
 
@@ -1252,7 +1259,7 @@ a second syntax; the cross-syntax agreement theorem; the lift of every
 syntax from `Ast` to `Doc`; injectivity of the annotation
 canonicalization `annCanon`, which
 [Structural content-addressing specification](#structural-content-addressing-specification)
-specifies and no module defines; and the equivalence of the recursive
+names in one sentence and no module defines; and the equivalence of the recursive
 and side-table document presentations.
 
 ## Ecosystem notes
@@ -1319,10 +1326,10 @@ everything feeding a hash.
 | 3 | a hash that runs | not started |
 | 4 | CID, multibase, CAR | deferred |
 
-[Local verification](#local-verification) gives stage 1a's size. That is
-the only measured quantity, and one implementation is too small a base
-to extrapolate a schedule from, so the stages below are ordered by
-dependency and carry no estimate.
+Stage 1a is 54 theorems; [Local verification](#local-verification)
+breaks them down. That is the only measured quantity, and one
+implementation is too small a base to extrapolate a schedule from, so
+the stages below are ordered by dependency and carry no estimate.
 
 Stage 1b introduces no new proof technique and reuses the decimal layer
 unchanged: the JSON core profile's integers are decimal ASCII, which is
@@ -1333,9 +1340,12 @@ round-trip lemma is what CBOR adds over JSON. Stage 1d is a corollary of
 the retractions preceding it, every syntax parsing to the same `Ast`.
 
 Stage 2 is the largest. Moving from `Ast k` to `Doc k = Tree k Ann` puts
-`Option String` and `List String` into the syntax, so the printer and
-parser acquire string escaping and the round-trip proofs acquire its
-inverse.
+`Option String` and `List String` into the syntax. What that costs
+depends on the syntax: canonical csexp atoms and CBOR text strings are
+length-prefixed, so neither needs escaping, while JSON and the csexp
+advanced form acquire string escaping and the round-trip proofs acquire
+its inverse. Which csexp form carries the annotated syntax is not yet
+settled; the canonical form is the one the roadmap schedules.
 
 The injectivity constraint on `printDoc` is discharged for free on
 `Doc k` as `Ann` is presently declared: it is a plain product, so
@@ -1345,8 +1355,10 @@ every field, and no setoid is needed. What
 warns against is the prior question, whether `Doc k` is the right model.
 `Ann.links : List String` gives one document several `Doc k` values
 whenever link order is not meant to be semantic. Injectivity survives
-that; what fails is that `format` then has no fixed point to converge
-to, and the choice — order is semantic, or `links` becomes a sorted
+that, and so does `format_idem` — every output of `format` is a fixed
+point unconditionally. What fails is that `format` no longer picks one
+representative per semantic document: two link orderings are distinct
+fixed points. The choice — order is semantic, or `links` becomes a sorted
 duplicate-free type — has to be made before stage 2 states a
 document-level law. The same choice, one level up, is what
 [The side-table presentation](#the-side-table-presentation) requires of
@@ -1358,11 +1370,12 @@ OpenSSL, libsodium or BLAKE3, and a verified pure-Lean hash is not
 available and is not on this path. The fold itself is specified in
 [Structural content-addressing specification](#structural-content-addressing-specification)
 and not written, since with no hash to run it would have no consumer.
-Its compositionality will be a consequence of the fold's uniqueness,
-which
+Its compositionality will be a consequence of the fold's computation
+rule, which
 [Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean)
-already states as `WType.elim_unique`; stage 3 inherits it rather than
-proving it again.
+already states as `WType.elim_mk`; stage 3 inherits it rather than
+proving it again. `WType.elim_unique`, the converse, is what identifies
+an independently defined hash with the fold.
 
 Stage 4 is deferred in full. Validating syntax independence needs no
 content identifiers, multibase, CAR archives or IPLD interoperation;
@@ -1401,10 +1414,11 @@ Nothing the syntax layer needs is forfeited.
 supplies the fold's computation rule and its uniqueness, the
 paramorphism `WType.para`, and a `DecidableEq` instance needing only a
 finitely enumerable arity; `Ast.ind` recovers the two-constructor
-induction principle, so no proof in the module mentions the shape and
-arity encoding. No `Repr` instance is derived for the three tree types,
-and nothing asks for one; `Ann` and `Dir`, which are ordinary
-non-recursive declarations, derive theirs.
+induction principle, so no proof about `Ast` other than `Ast.ind` itself
+mentions the shape and arity encoding. The rose bijection's proofs still
+destructure `Rose.Shape`, there being no `Rose.ind`. No `Repr` instance
+is derived for the three tree types, and nothing asks for one; `Ann` and
+`Dir`, which are ordinary non-recursive declarations, derive theirs.
 
 This repository separately carries the polynomial-functor presentation
 of the same construction, in

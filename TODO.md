@@ -598,12 +598,14 @@ occurrences and not before.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
-Everything in [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md)
-between § The AST and its isomorphisms and § References, other than
-§ Local verification and § Roadmap, is inherited text. It has not had a
-pass against [CONTRIBUTING.md](CONTRIBUTING.md) § Style and references,
-and carries value-laden adjectives and evaluative framing that the style
-rule excludes. § Status states the same scope.
+In [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md), everything
+between § The AST and its isomorphisms and § References is inherited
+text apart from § Local verification, § Roadmap, and the paragraphs
+elsewhere that name a Lean declaration of this repository, which were
+written here. The inherited material has not had a pass against
+[CONTRIBUTING.md](CONTRIBUTING.md) § Style and references, and carries
+value-laden adjectives and evaluative framing that the style rule
+excludes. § Status states the same scope.
 
 Two factual items ride along with that pass. The document's
 § References duplicates bibliographic detail that
