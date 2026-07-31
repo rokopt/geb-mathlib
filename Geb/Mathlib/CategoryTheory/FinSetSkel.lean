@@ -8,6 +8,7 @@ module
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Basic
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Classifier
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Coequalizer
+public import Geb.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Equalizer
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Exponential
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.Mono
