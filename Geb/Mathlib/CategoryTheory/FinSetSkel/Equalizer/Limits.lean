@@ -22,9 +22,8 @@ allowlisted and the construction it packages is not.
 
 ## Implementation notes
 
-`HasEqualizers` is not registered: nothing in this development
-consumes it, and it is one of the `Prop` classes derived once from
-`ElementaryTopos`.
+`HasEqualizers` is not registered here: it is one of the `Prop` classes derived
+once from `ElementaryTopos`, and a consumer resolves it through that route.
 
 ## References
 

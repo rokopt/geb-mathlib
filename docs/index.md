@@ -598,13 +598,13 @@ import-direction rules above are enforced by
   partially applied function.
   `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean` —
-  `equalizerCone`, the mathlib packaging of the agreement sub-object,
-  its injection and its factorisation as a
-  `LimitCone (parallelPair f g)`. `HasEqualizers` is not registered:
-  nothing in this development consumes it, and it is one of the
-  `Prop` classes derived once from `ElementaryTopos`. The source and
-  test modules are listed in `GebMeta.classicalAllowedModules`, since
-  `LimitCone` and `parallelPair` depend on `Classical.choice`.
+  `equalizerCone`, the mathlib packaging of the agreement sub-object, its
+  injection and its factorisation as a `LimitCone (parallelPair f g)`.
+  `HasEqualizers` is not registered here: it is one of the `Prop` classes
+  derived once from `ElementaryTopos`, and a consumer resolves it through that
+  route. The source and test modules are listed in
+  `GebMeta.classicalAllowedModules`, since `LimitCone` and `parallelPair` depend
+  on `Classical.choice`.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean` — the
   subobject classifier of `FinSetSkel` over vectors. The classifying
   object is the object of length 2, and `Classifier.chi` sends the
