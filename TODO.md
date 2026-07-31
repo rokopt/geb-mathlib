@@ -4,6 +4,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [In progress](#in-progress)
+  - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
 - [Next up](#next-up)
   - [Removal of guard hash-command](#removal-of-guard-hash-command)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
@@ -36,7 +37,22 @@ removed; content merged into the persistent documentation.
 
 ## In progress
 
-(None.)
+### Presheaf parametric-right-adjoint IR codes
+
+Morphisms of presheaf p.r.a. functors, and a code system denoting a
+fragment of them. The prototype under
+`Geb/Internal/PresheafIRProto/` is the design's validated part; the
+design record is
+[docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md](docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md),
+which names six branches and is removed with the last of them:
+
+- W-a: morphisms of presheaf p.r.a. functors, upstream-eligible.
+- W-b: the semantic operations `sigmaPsh`, `delta`, `coprod`,
+  `deltaRec` and `deltaFused`, upstream-eligible.
+- W-c: the code type and its interpretation.
+- W-d: `HasBijectiveReindex` and the incompleteness witness.
+- W-e: the representation of the interpretation as a p.r.a. functor.
+- W-f: the `docs/index.md` presentation of the whole.
 
 ## Next up
 
@@ -93,7 +109,15 @@ branch that found it, so each is deferred per
 - **`docs/references.bib` has the author order of
   `GhaniNordvallForsbergMalatesta2015` wrong.** The published LMCS byline
   is Ghani, Malatesta, Nordvall Forsberg; the entry and the citation key
-  both encode the arXiv preprint's order. Five persistent consumers.
+  both encode the arXiv preprint's order. Five persistent consumers
+  name the key —
+  `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`,
+  `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`, `IndRec/Functor.lean`,
+  `IndRec/Universes.lean` and `docs/references.bib` — and
+  `docs/index.md` spells the wrong order out in prose at three further
+  places (lines 275, 336 and 393) without using the key, so a key-only
+  search under-scopes the branch. `docs/references.bib`'s own note also
+  names the work in the wrong order.
 - **`docs/references.bib`'s note on
   `HancockMcBrideGhaniMalatestaAltenkirch2013` is unverified and
   incomplete.** It claims the extended preprint "renumbers two of" the
@@ -108,8 +132,13 @@ branch that found it, so each is deferred per
   Definition 10, Definition 11, Theorem 12, Theorem 15, Theorem 18,
   Theorem 21, Definition 17 and Corollary 19. Across everything this
   repository cites, add also: the proceedings' Definition 2, Definition
-  5, Lemma 2, Lemma 3 and Lemma 4 are the preprint's Definition 2,
-  Definition 8, Lemma 9, Lemma 14 and Lemma 16. Record the collision
+  5, Example 1, Lemma 2, Lemma 3, Lemma 4 and Corollary 4 are the
+  preprint's Definition 2, Definition 8, Example 5, Lemma 9, Lemma 14,
+  Lemma 16 and Corollary 22. Example 1 is cited by
+  `Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module
+  and `docs/index.md:402`, none of which the presheaf p.r.a.
+  workstream touches, so that citation's correction is independent of
+  its branches. Record the collision
   explicitly: the preprint's Definition 8 is the proceedings'
   Definition 5, while the proceedings' Definition 8 is the preprint's
   Definition 17, so a citation that does not say which numbering it
