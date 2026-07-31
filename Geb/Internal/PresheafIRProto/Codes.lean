@@ -1251,6 +1251,25 @@ def deltaRec {J : Type uJ} [Category.{vJ} J] {G : DomArity.{uI, uD, vI} I}
     delta (K s) (ShapeArity.const (K s).toPresheafPFunctorData (fibreArity s))
       (ShapeArity.isFunctorial_const (K s) (fibreArity s) (isFunctorial_fibreArity hG s))
 
+set_option linter.checkUnivs false in
+/-- The recursive `δ` inherits bijective reindexing from its subcodes: the
+arity it adjoins at a decoding is that decoding's fibre arity, which is
+constant over the output object, so `ShapeArity.const`'s reindexing is the
+identity. The recursion therefore does not by itself reach past the bound of
+`hasBijectiveReindex_deltaConst`; `deltaFused` is what does, per
+`not_hasBijectiveReindex_deltaFusedVaries`. -/
+theorem hasBijectiveReindex_deltaRec {J : Type uJ} [Category.{vJ} J]
+    {G : DomArity.{uI, uD, vI} I} (hG : G.IsFunctorial) {D : Iᵒᵖ ⥤ Type uD}
+    (K : PshMor G D →
+      PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
+        (ElObj.{uI, uD, vI} D) J)
+    (hK : ∀ s, HasBijectiveReindex (K s)) :
+    HasBijectiveReindex (deltaRec.{uI, uJ, uA, uD, vI, vJ} hG K) := by
+  refine hasBijectiveReindex_coprod _ _ fun s ↦ ?_
+  refine hasBijectiveReindex_delta _ _ _ (hK s) ?_
+  intro j j' g a i
+  exact Function.bijective_id
+
 /-- At the terminal decoding the recursive `δ` degenerates: `PshMor P ⊤` is a
 singleton, so the coproduct has one summand and the subcode cannot depend on
 anything. That is the case the base-category layer builds. -/
@@ -1362,7 +1381,7 @@ It needs no operation beyond those already proved. Over the base
 `ElObj (decPresheaf A hA D)` every object carries its own decoding, so
 `decArity` is an ordinary `BaseArity` there and `BaseArity.pullback` turns it
 into the shape-indexed arity `delta` consumes; `sigmaPsh` then pushes the
-result forward to `J`. In particular the continuation `F` is a *single* code's
+result forward to `J`. In particular the continuation `F` is a single code's
 interpretation over that base, not a family of them indexed by decodings, so
 nothing is defined simultaneously with anything else. -/
 def deltaFused {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, vJ} I J)

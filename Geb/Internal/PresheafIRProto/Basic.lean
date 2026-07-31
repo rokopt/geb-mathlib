@@ -27,7 +27,7 @@ IR brainstorm:
 2. `iotaDiscreteShapeEquiv` — for a discrete `J` that shape type collapses to
    `PUnit`. No identification with `IR.toSlicePFunctorIota`'s shape type is
    established; the two are at different universe instantiations.
-3. `iotaConst` — the constant functor at an *arbitrary* presheaf on `J`, which
+3. `iotaConst` — the constant functor at an arbitrary presheaf on `J`, which
    is what a Lemma-1-style completeness result needs and which `iota` + `sigma`
    cannot reach (they generate only coproducts of representables).
 4. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
@@ -169,7 +169,7 @@ section IotaConst
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
 set_option linter.checkUnivs false in
-/-- Claim 3: the constant functor at an *arbitrary* presheaf `P` on `J`. Shapes
+/-- Claim 3: the constant functor at an arbitrary presheaf `P` on `J`. Shapes
 are the total space of `P` (its category of elements), the shape-output map is
 the projection, there are no directions, and `shapeRestr` is `P`'s own
 restriction. This is what a Lemma-1-style completeness result needs and what
@@ -329,7 +329,7 @@ at `0`. `reindex` along `0 ⟶ 1` is `Fin.castLE`, here the map out of `Fin 0`. 
     exact ⟨⟨Fin.castLE (leOfHom g) d.1.down⟩, Subsingleton.elim _ _⟩
 
 /-- Each direction fiber has at most one element, so the five direction-side
-laws hold by `Subsingleton.elim`. The *content* is unaffected: the fibers are
+laws hold by `Subsingleton.elim`. The content is unaffected: the fibers are
 empty at the shape over `0` and inhabited at the shape over `1`, which is
 exactly what makes `reindex` non-invertible. -/
 instance subsingletonArityVariesDirection (a : arityVariesData.A) (i : Fin 1) :
