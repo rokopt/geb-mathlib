@@ -4,11 +4,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [In progress](#in-progress)
-  - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
 - [Next up](#next-up)
   - [Removal of guard hash-command](#removal-of-guard-hash-command)
-  - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
-  - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
     - [1. Categorical wrappers for slice and presheaf W-types as initial algebras](#1-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
     - [2. M-types and their categorical wrappers as terminal coalgebras](#2-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
@@ -40,19 +37,25 @@ removed; content merged into the persistent documentation.
 ### Presheaf parametric-right-adjoint IR codes
 
 Morphisms of presheaf p.r.a. functors, and a code system denoting a
-fragment of them. The prototype under
-`Geb/Internal/PresheafIRProto/` is the design's validated part; the
-design record is
+fragment of them. The prototype under `Geb/Internal/PresheafIRProto/`
+is the design's validated part; the design record is
 [docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md](docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md),
 which names six branches and is removed with the last of them:
 
-- W-a: morphisms of presheaf p.r.a. functors, upstream-eligible.
-- W-b: the semantic operations `sigmaPsh`, `delta`, `coprod`,
-  `deltaRec` and `deltaFused`, upstream-eligible.
-- W-c: the code type and its interpretation.
-- W-d: `HasBijectiveReindex` and the incompleteness witness.
-- W-e: the representation of the interpretation as a p.r.a. functor.
-- W-f: the `docs/index.md` presentation of the whole.
+- W-a: morphisms of presheaf p.r.a. functors, their action and the
+  hom-set bijection, upstream-eligible.
+- W-b: the semantic operations, the decoding layer, the code type, the
+  interpretation and the bound's vocabulary, upstream-eligible.
+- W-c: the bound — transport of `HasBijectiveReindex` along an
+  isomorphism, and the constant-arity fragment's code type and
+  induction.
+- W-d: completeness — a code for every presheaf p.r.a. functor, or a
+  counterexample.
+- W-e: code-level morphisms and their representation theorem.
+- W-f: the collapse `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`.
+
+W-a and W-b depend on nothing, and W-f on nothing; W-c, W-d and W-e
+each depend on W-a and W-b, and W-d additionally on W-f.
 
 ## Next up
 
@@ -73,23 +76,24 @@ which names six branches and is removed with the last of them:
 - **Anonymous `example`s escape the axiom linter.**
   `GebMeta.detectNonstandardAxiom` runs over declaration names, so an
   anonymous `example` is never audited: it may depend on
-  `Classical.choice`, or on any forbidden axiom, in a module held to the
-  strict permitted set, and `lake lint` still passes. This was found by
-  observation — two `example`s naming a functor-category `⟶`, whose
-  `Category` instance is `Classical.choice`-dependent, sat in a module
-  advertised as choice-free with the linter green. A third instance was
-  found the same way: an `example` applying `yoneda`, whose target is a
-  functor category, sat in the choice-free prototype core; naming it
-  showed the `Classical.choice` dependency and it moved to the
-  allowlisted module.
-- Give every `example` a name, so that the axiom linter covers it. The 6
-  in `Geb/` are now named; 209 in `GebTests/` remain at the time of
+  `Classical.choice`, or on any forbidden axiom, in a module held to
+  the strict permitted set, and `lake lint` still passes. This was
+  found by observation — two `example`s naming a functor-category `⟶`,
+  whose `Category` instance is `Classical.choice`-dependent, sat in a
+  module advertised as choice-free with the linter green. A third
+  instance was found the same way: an `example` applying `yoneda`,
+  whose target is a functor category, sat in the choice-free prototype
+  core; naming it showed the `Classical.choice` dependency and it
+  moved to the allowlisted module.
+- Give every `example` a name, so that the axiom linter covers it. The
+  6 in `Geb/` are now named; 209 in `GebTests/` remain at the time of
   writing.
-- Record the rule in [docs/rules/lean-coding.md](docs/rules/lean-coding.md),
-  alongside the other axiom-hygiene material in § Constructive-only Lean
-  code, stating the reason rather than only the rule.
-- Consider whether the linter itself should flag anonymous `example`s in
-  audited modules, which would enforce this rather than relying on
+- Record the rule in
+  [docs/rules/lean-coding.md](docs/rules/lean-coding.md), alongside
+  the other axiom-hygiene material in § Constructive-only Lean code,
+  stating the reason rather than only the rule.
+- Consider whether the linter itself should flag anonymous `example`s
+  in audited modules, which would enforce this rather than relying on
   convention.
 
 ### Citation corrections deferred to their own branch
@@ -98,58 +102,64 @@ Each is a defect in committed content, unrelated to the concern of the
 branch that found it, so each is deferred per
 [CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
 
-- **`IndRec/Basic.lean` attributes the Mahlo-cardinal model to the wrong
-  paper.** Its module docstring says "the set-theoretic model of
-  [DybjerSetzer2003] justifies their existence using a Mahlo cardinal".
-  The model is [DybjerSetzer1999]'s;
-  [GhaniNordvallForsbergMalatesta2015] § 7 says so explicitly ("they use
-  briefly revisit the initial algebra argument used by Dybjer and Setzer
-  [DS99]"), and DybjerSetzer2003's own introduction attributes the model
-  to its predecessor. Change the key.
+- **`IndRec/Basic.lean` attributes the Mahlo-cardinal model to the
+  wrong paper.** Its module docstring says "the set-theoretic model of
+  [DybjerSetzer2003] justifies their existence using a Mahlo
+  cardinal". The model is [DybjerSetzer1999]'s;
+  [GhaniNordvallForsbergMalatesta2015] § 7 says so explicitly ("We
+  briefly revisit the initial algebra argument used by Dybjer and
+  Setzer [DS99]"), and DybjerSetzer2003's own introduction attributes
+  the model to its predecessor. Change the key.
 - **`docs/references.bib` has the author order of
-  `GhaniNordvallForsbergMalatesta2015` wrong.** The published LMCS byline
-  is Ghani, Malatesta, Nordvall Forsberg; the entry and the citation key
-  both encode the arXiv preprint's order. Five persistent consumers
-  name the key —
+  `GhaniNordvallForsbergMalatesta2015` wrong.** The published LMCS
+  byline is Ghani, Malatesta, Nordvall Forsberg; the entry and the
+  citation key both encode the order arXiv's listing and the LMCS
+  landing page give in metadata, which differs from the byline of
+  either PDF: the preprint's typeset byline is the published one. A
+  reviewer who checks the DOI record alone will find the current entry
+  matches it, so the correction cites the article itself. Five
+  persistent consumers name the key —
   `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`,
-  `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`, `IndRec/Functor.lean`,
-  `IndRec/Universes.lean` and `docs/references.bib` — and
-  `docs/index.md` spells the wrong order out in prose at three further
-  places (lines 275, 336 and 393) without using the key, so a key-only
-  search under-scopes the branch. `docs/references.bib`'s own note also
-  names the work in the wrong order.
+  `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`,
+  `IndRec/Functor.lean`, `IndRec/Universes.lean` and
+  `docs/references.bib` — and `docs/index.md` spells the wrong order
+  out in prose at three further places (lines 275, 336 and 393)
+  without using the key, so a key-only search under-scopes the branch.
+  `docs/references.bib`'s own note also names the work in the wrong
+  order.
 - **`docs/references.bib`'s note on
   `HancockMcBrideGhaniMalatestaAltenkirch2013` is unverified and
   incomplete.** It claims the extended preprint "renumbers two of" the
   results this repository cites. Checked against the preprint, that is
   false. The preprint numbers Definitions, Examples, Lemmas, Theorems
   and Corollaries in one shared sequence where the proceedings number
-  each kind separately, so Definitions 1 to 4 are unaffected, being the
-  first four numbered items in both, and everything from the
+  each kind separately, so Definitions 1 to 4 are unaffected, being
+  the first four numbered items in both, and everything from the
   proceedings' Example 1 onward shifts. The proceedings' Lemma 1,
-  Definition 6, Definition 7, Theorem 1, Theorem 2, Theorem 3,
-  Theorem 4, Definition 8 and Corollary 2 are the preprint's Lemma 7,
+  Definition 6, Definition 7, Theorem 1, Theorem 2, Theorem 3, Theorem
+  4, Definition 8 and Corollary 2 are the preprint's Lemma 7,
   Definition 10, Definition 11, Theorem 12, Theorem 15, Theorem 18,
   Theorem 21, Definition 17 and Corollary 19. Across everything this
-  repository cites, add also: the proceedings' Definition 2, Definition
-  5, Example 1, Lemma 2, Lemma 3, Lemma 4 and Corollary 4 are the
-  preprint's Definition 2, Definition 8, Example 5, Lemma 9, Lemma 14,
-  Lemma 16 and Corollary 22. Example 1 is cited by
+  repository cites, add also: the proceedings' Definition 2,
+  Definition 5, Example 1, Lemma 2, Lemma 3, Lemma 4 and Corollary 4
+  are the preprint's Definition 2, Definition 8, Example 5, Lemma 9,
+  Lemma 14, Lemma 16 and Corollary 22. Example 1 is cited by
   `Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module
   and `docs/index.md:402`, none of which the presheaf p.r.a.
   workstream touches, so that citation's correction is independent of
-  its branches. Record the collision
-  explicitly: the preprint's Definition 8 is the proceedings'
-  Definition 5, while the proceedings' Definition 8 is the preprint's
-  Definition 17, so a citation that does not say which numbering it
-  uses sends a reader to the wrong statement — and Definition 5 and
-  Lemma 4 are the repository's most-cited numbered results. Section
-  numbering is unchanged. Note too that the preprint carries a
-  different title and author order, so the key names the proceedings
-  version alone. This correction must land before any branch of the
-  presheaf p.r.a. workstream that cites an uncovered result: W-a for
-  Definitions 6 and 7 and Theorem 1, W-b for the delta rule, W-d for
-  Lemma 1, W-e for Theorem 3.
+  its branches. Record the collision explicitly: the preprint's
+  Definition 8 is the proceedings' Definition 5, while the
+  proceedings' Definition 8 is the preprint's Definition 17, so a
+  citation that does not say which numbering it uses sends a reader to
+  the wrong statement — and Definition 5 and Lemma 4 are the
+  repository's most-cited numbered results. Section numbering is
+  unchanged. Note too that the preprint carries a different title and
+  author order, so the key names the proceedings version alone. This
+  correction must land before any branch of the presheaf p.r.a.
+  workstream that cites an uncovered result: W-a for Definitions 6 and
+  7 and Theorem 1, W-d for Lemma 1, W-e for Theorem 3. W-b cites the
+  delta rule by section, and section numbering is unchanged, so W-b is
+  unconstrained.
 
 ### Polynomial functors
 

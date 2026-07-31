@@ -39,20 +39,37 @@ transcribes. It compiles, is linted, and is audited by
 `Classical.choice`-free except where noted. Where this document and the
 prototype's *elaborated content* disagree, the prototype is right; its prose
 carries no such authority. Claims marked *inference*, *unelaborated* or
-*conjecture* are not elaborated there; every other claim names the declaration
-that establishes it.
+*conjecture* are not elaborated there. Every other claim names the declaration
+that establishes it, with three classes of exception, each flagged where it
+arises: readings of a construction, backed by structure fields rather than by
+theorems (§ Stage 1, facts 2 and 4); the discrete-analogue column of §
+Definitions, no entry of which is an elaborated identification; and statements
+about ambient mathematics rather than about this development (§ Stage 1, fact
+2's appeal to Yoneda in any locally small category).
 
 The prototype is not deliverable content. Each branch removes the part of it
 that branch ports, rather than the whole surviving until the last branch. W-a
 and W-b are independent in their deliverables but both remove from
 `Geb/Internal/PresheafIRProto/Basic.lean`, so whichever lands second rebases
 over the other's deletions: after W-a and W-b, what remains is the retained
-derivation below. Whichever of W-c to W-f lands last removes the remainder
-together with this document, the plan, and the
-`Geb.Internal.PresheafIRProto.Functor` entry in
-`GebMeta.classicalAllowedModules`; the four are mutually unordered, so the
-removal is a condition on the last rather than an assignment to a named branch.
-Carrying the whole prototype alongside its port would define the same
+derivation below. Removal alone does not leave it buildable. Most of it names
+declarations the ports move and rename — `arityVariesShapeEquiv` and the two
+`arityVariesData_B_*` checks name `arityVariesData`;
+`iotaPresheafData_A_eq_iotaConstData_yoneda` names `iotaPresheafData` and
+`iotaConstData`; `arityPresheafHomAtUB` and `arityPresheafHomULifted` name
+`arityPresheaf`; the whole domain-level warm-up names `objEquivSigmaArityHom`,
+`ArityHom` and the four shared `ArityHom` lemmas — so each of W-a and W-b also
+rewrites the retained remainder against the names it has just established in
+`Geb/Mathlib/`, and the prototype gains imports of the new modules, which
+`Geb/Internal/` is permitted. Only `SliceHom`, `sliceHomApp`, `Functoriality`
+and `iotaDiscreteShapeEquiv` stand free of both ports. Whichever of W-c to W-f
+lands last removes the remainder together with this document, the plan, the
+directory index `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` —
+whose sole import is that index, leaving it empty — the `public import
+Geb.Internal` in `Geb.lean`, and the `Geb.Internal.PresheafIRProto.Functor`
+entry in `GebMeta.classicalAllowedModules`; the four are mutually unordered, so
+the removal is a condition on the last rather than an assignment to a named
+branch. Carrying the whole prototype alongside its port would define the same
 declarations twice on `main`, against
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
@@ -428,26 +445,27 @@ universe instantiations.
 | `deltaRec` — the `δ` whose continuation depends on the decoding, at an arity constant over the output | Transcription of Section 6's `δ` rule, generalized from families to presheaves as the `δ` code rule row describes: its subcodes are indexed by `PshMor`, not by sections. A semantic operation, where Section 6's `δ` is a code rule |
 | `decPresheaf` — the decodings of an output-varying arity, as a presheaf on the output base | Novel |
 | `decArity` — that arity, indexed by the elements of `decPresheaf` | Novel |
-| `deltaFused` — the `δ` carrying both features | Novel; it is Section 6's `δ` rule with the arity generalized as § Why `δ`'s arity must vary over the shape presheaf requires |
+| `deltaFused` — the `δ` carrying both features. Its output-varying arity is witnessed by `not_hasBijectiveReindex_deltaFusedVaries`; its decoding-dependence is by construction, and no theorem relates it to `deltaRec`, whose decoding-dependence is the same construction at a constant arity. Supplying that relation is not an obligation of this workstream | Novel; it is Section 6's `δ` rule with the arity generalized as § Why `δ`'s arity must vary over the shape presheaf requires |
 
 ## Branches
 
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape binds one concern
 per branch. The ten obligations below divide into six. W-f is separate because
-nothing in W-b consumes the collapse: it justifies the input-side design rather
-than being used by it.
+nothing in W-a to W-c or W-e consumes the collapse: for them it justifies the
+input-side design rather than being used by it. W-d does consume it, as
+obligation 8 states.
 
 | Branch | Obligations | Acceptance |
 | --- | --- | --- |
 | W-a — Stage 1 upstream | 1, 2, 3 | `PshHom`, its action and the hom-set bijection in `Geb/Mathlib/`, choice-free, with the bundled restatements and the natural-transformation identification in a module on `GebMeta.classicalAllowedModules`; composition and the category structure; and `docs/index.md` entries |
 | W-b — Stage 2 upstream | 4, 5 | the semantic operations, the decoding layer, the code type, the interpretation, and the bound's vocabulary, in `Geb/Mathlib/`, each new module carrying its `docs/index.md` entry |
 | W-c — the bound | 6, 7 | `HasBijectiveReindex` transports along an isomorphism, and the constant-arity fragment's code type and induction are built, in `Geb/Mathlib/`, with `docs/index.md` entries |
-| W-d — completeness | 8 | either a code for every `PresheafPFunctor`, or a counterexample, in `Geb/Mathlib/`, with `docs/index.md` entries. Characterising a class over which completeness does hold is not this branch's acceptance: if the conjecture fails, the branch delivers the counterexample and records the characterisation as follow-on work in `TODO.md` |
+| W-d — completeness | 8 | either, for every `PresheafPFunctor` out of `ElObj D` at the universes `CodeShape` pins, a code whose interpretation is isomorphic to it, or a counterexample, in `Geb/Mathlib/`, with `docs/index.md` entries. Characterising a class over which completeness does hold is not this branch's acceptance: if the conjecture fails, the branch delivers the counterexample and records the characterisation as follow-on work in `TODO.md` |
 | W-e — code morphisms | 10 | the code-level morphism type and representation theorem, in `Geb/Mathlib/`, with `docs/index.md` entries |
 | W-f — the collapse | 9 | `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)` in `Geb/Mathlib/`, in a module on `GebMeta.classicalAllowedModules`, with its `docs/index.md` entry |
 
-W-a and W-b depend on nothing; W-c depends on W-a and W-b; W-d depends on W-a
-and W-b; W-e depends on W-a and W-b. W-f depends on nothing.
+W-a and W-b depend on nothing; W-c depends on W-a and W-b; W-d depends on W-a,
+W-b and W-f; W-e depends on W-a and W-b. W-f depends on nothing.
 
 `docs/index.md` describes some directories module by module and others by a
 single directory bullet; each branch's entries follow whichever form the
@@ -515,12 +533,13 @@ Each is unproved at the time of writing.
    `iotaCode`, `sigmaCode` and `deltaCode` with their computation rules
    `interp_iotaCode`, `interp_sigmaCode`, `interp_deltaCode` and `interp_fst`,
    which nothing else in this obligation's list depends on, so the closure
-   clause does not reach them, and which obligation 8's expected witness needs;
-   the five `σ` laws (`sigmaPsh_shapeRestr_id`, `_shapeRestr_comp`,
-   `_reindex_naturality`, `_reindex_id`, `_reindex_comp`) with the transport
-   lemmas they use (`elObj_eq_of_hom`, `elHom_eq_eqToHom_comp`,
-   `shapeRestr_eqToHom`, `cast_shape_val`, `shapeRestr_val_eqToHom_comp`,
-   `reindex_heq_congr_shape`, `reindex_heq_eqToHom`, `reindex_eq_of_eq_comp`,
+   clause does not reach them, and which obligation 5's `deltaCodeVaries` and
+   obligation 8's expected witness both need; the five `σ` laws
+   (`sigmaPsh_shapeRestr_id`, `_shapeRestr_comp`, `_reindex_naturality`,
+   `_reindex_id`, `_reindex_comp`) with the transport lemmas they use
+   (`elObj_eq_of_hom`, `elHom_eq_eqToHom_comp`, `shapeRestr_eqToHom`,
+   `cast_shape_val`, `shapeRestr_val_eqToHom_comp`, `reindex_heq_congr_shape`,
+   `reindex_heq_eqToHom`, `reindex_eq_of_eq_comp`,
    `reindex_eq_of_eq_eqToHom_comp`); and `Interp`. The port is to be
    dependency-closed: anything a listed item needs travels with it, since
    [docs/rules/upstream-eligible.md](../../rules/upstream-eligible.md) §
@@ -540,19 +559,20 @@ Each is unproved at the time of writing.
 5. **The bound's vocabulary at upstream quality** (W-b). Port
    `HasBijectiveReindex`; the three generators' cases and four operations'
    cases, together with the general `hasBijectiveReindex_delta` that
-   `hasBijectiveReindex_deltaConst` alone rests on, and `deltaRec` with
-   `hasBijectiveReindex_deltaRec`, which is the fragment's decoding-indexed
-   operation case, and `subsingleton_pshMor_to_terminal`, whose port is
-   conditional on its being instantiated at `termPsh` so that the witness rests
-   on it; if it is not, it is dropped rather than landed dead; the three
-   negative theorems `not_hasBijectiveReindex_arityVaries`,
+   `hasBijectiveReindex_deltaConst` and `hasBijectiveReindex_deltaRec` both
+   rest on, and `deltaRec` with `hasBijectiveReindex_deltaRec`, which is the
+   fragment's decoding-indexed operation case, and
+   `subsingleton_pshMor_to_terminal`, whose port is conditional on its being
+   instantiated at `termPsh` so that the witness rests on it; if it is not, it
+   is dropped rather than landed dead; the three negative theorems
+   `not_hasBijectiveReindex_arityVaries`,
    `not_hasBijectiveReindex_deltaVarying` and
    `not_hasBijectiveReindex_deltaFusedVaries`; and the witnesses they need —
-   `iotaPresheaf`, `iotaConst`, `arityVaries` with `arityVariesShapeArity` and
-   `isFunctorial_arityVariesShapeArity`, `deltaVarying` with
-   `deltaVarying_source_empty`, and `termPsh`, `arityVariesBase`,
-   `isFunctorial_arityVariesBase`, `decUnit`, `deltaFusedVaries`,
-   `deltaCodeVaries` with `interp_deltaCodeVaries` and
+   `iotaPresheaf`, `iotaConst`, `arityVaries`, and `arityVariesShapeArity` with
+   `isFunctorial_arityVariesShapeArity` as `deltaVarying`'s arity,
+   `deltaVarying` with `deltaVarying_source_empty`, and `termPsh`,
+   `arityVariesBase`, `isFunctorial_arityVariesBase`, `decUnit`,
+   `deltaFusedVaries`, `deltaCodeVaries` with `interp_deltaCodeVaries` and
    `not_hasBijectiveReindex_interp_deltaCodeVaries`, and the underlying
    `arityB`, `arityVariesData`, `iotaPresheafData`, `iotaConstData`,
    `subsingletonIotaDirection`, `subsingletonIotaConstDirection`,
@@ -578,13 +598,25 @@ Each is unproved at the time of writing.
    functor with bijective reindexing. The three base cases and four step cases
    are proved in the prototype and ported by obligation 5; only the induction
    is missing.
-8. **Completeness** (W-d). Whether every `PresheafPFunctor` has a code — the
-   analogue of Lemma 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] ("Every
-   dependent polynomial functor is an IR functor"). The shape of the expected
-   witness is `sigmaCode` at the shape presheaf over a `deltaCode` at the arity
-   over `iotaCode`; that this reconstructs an arbitrary functor is conjecture,
-   not elaboration. If it is false, the branch delivers the counterexample.
-   What completeness then holds of is for that branch to determine; the natural
+8. **Completeness** (W-d). Whether every `PresheafPFunctor` over the
+   interpretation's own input base — `interp` lands in `Σ 𝔹, PresheafPFunctor
+   (ElObj D) 𝔹`, so the question is about functors out of `ElObj D` at the
+   universes `CodeShape` pins, not about `PresheafPFunctor` at large — has a
+   code, up to isomorphism of the interpreted functors. On the nose it is
+   refutable by inspection: `sigmaPshData` keeps the subfunctor's shape type
+   and drops only the `ElObj`-component of its shape-output map, so the
+   expected witness's shape presheaf at `j` is the decodings paired with the
+   target's shapes, not the target's shapes. The analogue is Lemma 1 of
+   [HancockMcBrideGhaniMalatestaAltenkirch2013] ("Every dependent polynomial
+   functor is an IR functor"). The shape of the expected witness is `sigmaCode`
+   at the shape presheaf over a `deltaCode` at the arity over `iotaCode`; that
+   this reconstructs an arbitrary functor is conjecture, not elaboration. That
+   `deltaCode`'s arity is where W-f enters: `BaseArity` carries `fam : 𝔹 →
+   DomArity I` over the fixed input base `I`, while an arbitrary target's arity
+   lives over `ElObj D`, so re-presenting the one as the other is a direction
+   of the collapse, and W-d depends on W-f as well as on W-a and W-b. If the
+   conjecture is false, the branch delivers the counterexample. What
+   completeness then holds of is for that branch to determine; the natural
    candidate is the functors whose arity is constant on each connected
    component of `el(T₁)`, but nothing here argues it, and "fragment" in that
    sense is a class of functors, not the class of codes § Why `δ`'s arity must
@@ -673,20 +705,26 @@ numbers Definitions, Examples, Lemmas, Theorems and Corollaries in one shared
 sequence, where the proceedings number each kind separately. Definitions 1 to 4
 are unaffected, being the first four numbered items in both; everything from
 the proceedings' Example 1 onward shifts, because the preprint's counter
-absorbs the examples. Across everything this repository cites, the proceedings'
-Definition 2, Definition 5, Definition 6, Definition 7, Definition 8, Example
-1, Lemma 1, Lemma 2, Lemma 3, Lemma 4, Theorem 1, Theorem 2, Theorem 3, Theorem
-4, Corollary 2 and Corollary 4 are the preprint's Definition 2, Definition 8,
-Definition 10, Definition 11, Definition 17, Example 5, Lemma 7, Lemma 9, Lemma
-14, Lemma 16, Theorem 12, Theorem 15, Theorem 18, Theorem 21, Corollary 19 and
-Corollary 22. Example 1 is cited by
+absorbs the examples. Across every numbered result this repository cites or a
+branch of this workstream will cite — Corollary 4 being cited only by the
+transient handoff, and Definitions 6 and 7 and Theorem 1 only prospectively —
+the proceedings' Definition 2, Definition 5, Definition 6, Definition 7,
+Definition 8, Example 1, Lemma 1, Lemma 2, Lemma 3, Lemma 4, Theorem 1, Theorem
+2, Theorem 3, Theorem 4, Corollary 2 and Corollary 4 are the preprint's
+Definition 2, Definition 8, Definition 10, Definition 11, Definition 17,
+Example 5, Lemma 7, Lemma 9, Lemma 14, Lemma 16, Theorem 12, Theorem 15,
+Theorem 18, Theorem 21, Corollary 19 and Corollary 22. Example 1 is cited by
 `Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module and
-`docs/index.md`, none of which any branch of this workstream touches, so that
+`docs/index.md:402`. No branch of this workstream touches the first two, and
+each branch adds to `docs/index.md` without touching that line, so that
 citation's correction is independent of the ordering constraint below.
-Definition 5 and Lemma 4 are the repository's most-cited numbered results, in
-`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and
-`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Naturality}.lean`, and neither is in
-the existing note. One collision deserves recording on its own: the preprint's
+Definition 5 and Lemma 4 are the repository's most-cited numbered results, and
+neither is in the existing note. Definition 5 is cited in
+`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and its test mirror; Lemma 4 in
+`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Category,Naturality}.lean`, their
+three test mirrors and `docs/index.md`, `Category.lean` being its largest
+single consumer. A key-only search under-scopes both, as it does the author
+order below. One collision deserves recording on its own: the preprint's
 Definition 8 is the proceedings' Definition 5, while the proceedings'
 Definition 8 is the preprint's Definition 17, so a reader who does not know
 which numbering a citation uses lands on the wrong statement. Section numbering
@@ -698,16 +736,21 @@ alone, and its Corollary 19 states more than the proceedings' Corollary 2.
 Correcting and extending the note is recorded in [TODO.md](../../../TODO.md) §
 Citation corrections deferred to their own branch, and must land before
 whichever branch first cites an uncovered result — W-a for Definitions 6 and 7
-and Theorem 1, W-b for the `δ` rule, W-d for Lemma 1, W-e for Theorem 3. That
+and Theorem 1, W-d for Lemma 1, W-e for Theorem 3. W-b cites the `δ` rule by
+section, and section numbering is unchanged, so W-b is unconstrained. That
 ordering constraint is recorded in `TODO.md` too, this document being removed
 with the last branch.
 
 The author order of `GhaniNordvallForsbergMalatesta2015` in
 `docs/references.bib` is wrong. The published LMCS byline is Ghani, Malatesta,
-Nordvall Forsberg; the entry and the citation key both encode the arXiv
-preprint's order. It is pre-existing. Four persistent modules carry the key —
-`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` and
-`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Functor,Universes}.lean` — besides
+Nordvall Forsberg, and so is the arXiv preprint's. What the entry and the
+citation key encode is the metadata order — what arXiv's listing, the LMCS
+landing page and the DOI record `10.2168/LMCS-11(1:13)2015` all return — which
+disagrees with the byline of either PDF. A reviewer of the correction branch
+who checks the DOI record alone will find the present entry matches it, so the
+correction cites the article itself. It is pre-existing. Four persistent
+modules carry the key — `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`
+and `Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Functor,Universes}.lean` — besides
 `docs/references.bib`, `TODO.md`, this spec, the transient prototype and the
 transient handoff. The repair surface is larger than the key count:
 `docs/index.md` spells the wrong order out in prose at three places without
@@ -717,7 +760,7 @@ its own branch per one concern per branch, recorded in `TODO.md`.
 ## References
 
 Each key is cited in the body above; the bibliographic detail lives in
-[docs/references.bib](docs/references.bib).
+[docs/references.bib](../../references.bib).
 
 - [GhaniNordvallForsbergMalatesta2015] — positive inductive-recursive
   definitions; Remark 3.4 on the choice of morphism collection, and Section 2
