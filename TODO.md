@@ -583,25 +583,28 @@ states the staging; the next items are the JSON core profile as a
 second syntax, deterministic CBOR as a third, the cross-syntax
 agreement theorem, and the lift of every syntax from `Ast` to `Doc`.
 
-The occurrence vocabulary is absent. A `Dir`/`Path` word type, a map
-`rosePathToBin` from rose child indices to binary paths, and a proof
-that every path in its image is empty or ends in `L` were written and
-then removed: with no subtree selector to interpret a path against, they
-had no consumer, and the biconditional that
+The occurrence vocabulary is absent, so the two design consequences that
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Which
-occurrences the rose presentation can name draws its two design
-consequences from could not be stated. Reinstating them together with a
-subtree selector, and proving the converse inclusion, is the work that
-makes those consequences formal. It belongs to the stage at which a
-syntax annotates occurrences, not before.
+occurrences the rose presentation can name draws are unformalized.
+Formalizing them takes a `Dir`/`Path` word type, a subtree selector
+interpreting a path against a tree, a map from rose child indices to
+binary paths, and a proof that every path in its image is empty or ends
+in `L` — that inclusion, not its converse, is what the consequences
+rest on; the converse upgrades it to the biconditional the document
+states. A path vocabulary with no selector to interpret it has no
+consumer, so all of this belongs to the stage at which a syntax
+annotates occurrences, not before. The rose/binary orientation
+`Ast.toRose` fixes has to be versioned at that point, since a path's
+meaning depends on it.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
-In [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md), everything
-between § The AST and its isomorphisms and § References is inherited
-text apart from § Local verification, § Roadmap, and the paragraphs
-elsewhere that name a Lean declaration of this repository, which were
-written here. The inherited material has not had a pass against
+In [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md), § Local
+verification, § Roadmap with § Relation to existing repository content,
+§ Caveats, and the paragraphs elsewhere that describe this repository's
+implementation were written here; the rest, between § The AST and its
+isomorphisms and § References, is inherited text. The inherited material
+has not had a pass against
 [CONTRIBUTING.md](CONTRIBUTING.md) § Style and references, and carries
 value-laden adjectives and evaluative framing that the style rule
 excludes. § Status states the same scope.
@@ -609,7 +612,7 @@ excludes. § Status states the same scope.
 Two factual items ride along with that pass. The document's
 § References duplicates bibliographic detail that
 [docs/references.bib](docs/references.bib) holds for RFC 9804, RFC 6962
-and Uustalu and Vene 2011, and roughly forty further works there have no
+and Uustalu and Vene 2011, and roughly thirty-five further works have no
 `.bib` entry and several no searchable identifier; and its
 § CBOR (RFC 8949 §4.2) and DAG-CBOR attributes a quoted key-ordering
 rule to DAG-CBOR's specification without recording which of IPLD's two

@@ -858,10 +858,12 @@ import-direction rules above are enforced by
   encoding. `Geb.Tree k A` annotates every
   node with an `A`, and carries `extract`/`duplicate` with the three
   comonad laws (`Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
-  `Tree.duplicate_duplicate`) and the two functor laws (`Tree.map_id`,
-  `Tree.map_map`); `duplicate` is `WType.para`, redecoration being a
-  paramorphism. `Geb.Doc k` is the annotated document type
-  `Tree k Ann`, and `Tree.erase` forgets the annotations, with
+  `Tree.duplicate_duplicate`), the two functor laws (`Tree.map_id`,
+  `Tree.map_map`) and the naturality of the two structure maps
+  (`Tree.extract_map`, `Tree.duplicate_map`); `duplicate` is
+  `WType.para`, redecoration being a paramorphism. `Geb.Doc k` is the
+  annotated document type `Tree k Ann`, and `Tree.erase` forgets the
+  annotations, with
   `Ast.erase_trivialDoc` the round trip against the trivial
   decoration. `Geb.Rose k` is the rose-tree presentation, and
   `Ast.ofRose_toRose`/`Ast.toRose_ofRose` are the two halves of its
@@ -875,7 +877,7 @@ import-direction rules above are enforced by
   `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
   corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
   `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
-  depending on `Classical.choice`. Of the module's 51 theorems, 11
-  depend on no axioms, 12 on `propext` alone, 6 on `Quot.sound` alone,
+  depending on `Classical.choice`. Of the module's 53 theorems, 12
+  depend on no axioms, 12 on `propext` alone, 7 on `Quot.sound` alone,
   and the remaining 22 on `propext` and `Quot.sound`. No declaration
   depends on `Classical.choice`.

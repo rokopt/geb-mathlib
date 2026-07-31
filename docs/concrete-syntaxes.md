@@ -62,12 +62,14 @@ with tests in
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
 
-Between § The AST and its isomorphisms and § References, the paragraphs
-that name a Lean declaration of this repository were written here; the
-rest is inherited text and does not yet conform to
+§ Local verification, § Roadmap with § Relation to existing repository
+content, § Caveats, and the paragraphs elsewhere that describe this
+repository's implementation were written here. The rest, between § The
+AST and its isomorphisms and § References, is inherited text and does
+not yet conform to
 [CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references. `TODO.md`
 § Prose-conformance pass over the concrete-syntax survey records the
-outstanding pass.
+outstanding pass, in the same terms.
 
 ## The AST and its isomorphisms
 
@@ -130,15 +132,15 @@ position `q · Rⁱ · L`. Hence:
 > together with the paths ending in `L`. Binary positions ending in `R`
 > are sibling-list cells and have no rose-tree name.
 
-The development does not state this. It carried a map from rose child
-indices to binary paths, and a proof of one inclusion, but with no
-subtree selector to interpret a path against there was nothing to state
-the reading above, and `TODO.md` § Concrete-syntax prototype records the
-removal. The two design consequences below therefore rest on an
-unformalized claim.
+The development does not state this: it has no occurrence vocabulary and
+no subtree selector to interpret a path against. The two design
+consequences below therefore rest on an unformalized claim, and
+`TODO.md` § Concrete-syntax prototype records what formalizing it
+takes.
 
-- A document written in a rose-shaped syntax can annotate strictly fewer
-  positions than one written in a binary-shaped syntax. If both syntaxes
+- A document written in a rose-shaped syntax can annotate no more
+  positions than one written in a binary-shaped syntax, and strictly
+  fewer as soon as the tree contains a fork. If both syntaxes
   are offered, the normative path vocabulary must be the binary one, and
   the rose syntax must be documented as annotating a sub-poset of the
   occurrences.
@@ -170,14 +172,16 @@ for storing combinator-calculus terms, and vice versa.
 As algorithms, parsing, printing and the Merkle fold are linear in the
 size of the tree with a constant number of passes. Neither implemented
 map achieves that. `Csexp.printAst` re-appends at every level, so each
-node's output is copied once per ancestor. `Csexp.parse` evaluates
+node's output is copied once per ancestor. `Csexp.readVerbatim` evaluates
 `r.length` over the whole remaining input at every atom, and
 `Csexp.readDigits` is a strict `List.rec` that traverses the rest of the
 input even when the first character is not a digit; the cost is the
-node count times the input length. An accumulator-passing printer and a
-parser carrying the remaining length would restore linearity, at the
-cost of restating and reproving `parseAst_printAst` and `parse_print`,
-which are stated about the present maps.
+node count times the input length. Three repairs would restore
+linearity: an accumulator-passing printer, a reader carrying the
+remaining length rather than measuring it, and a `readDigits` that stops
+at the first non-digit. Each costs restating and reproving
+`parseAst_printAst` and `parse_print`, which are stated about the
+present maps.
 
 All three are elementary — indeed they sit in the lower-elementary
 fragment once the hash primitive is taken as a unit-cost oracle. Nothing
@@ -431,9 +435,11 @@ independent of whether it was written in Ion text or Ion binary.
 
 ## Merkle hashing as a catamorphism
 
-This section and the next are specification, not implementation. No hash
-function usable from Lean exists yet, so the fold would have no consumer
-and is not written; [Roadmap](#roadmap) stage 3 carries it.
+This section and the next are specification, not implementation. No
+production-grade hash function is reachable from Lean yet — see
+[Ecosystem notes](#ecosystem-notes) for what does exist and why it
+disclaims cryptographic use — so the fold is not written;
+[Roadmap](#roadmap) stage 3 carries it.
 
 A Merkle hash is a catamorphism over the initial algebra with a hash
 algebra `h : F(Digest) → Digest`; the unique fold `⦇h⦈ : μF → Digest` is
@@ -441,12 +447,14 @@ the content hash.
 
 Structural equality implies hash equality, but not by the fold's
 universal property: every function respects equality, so that argument
-is vacuous. What gives *compositionality* — the digest of a node is a function of
-the digests of its children and nothing else — is the fold's computation
-rule. The universal property's other half, **uniqueness**, is what
-identifies an independently defined digest function with the fold. That is what
-licenses incremental recomputation under local edits, subtree-level
-deduplication, and structural sharing. The interesting direction — hash
+is vacuous. What gives *compositionality* — the digest of a node is a
+function of the digests of its children and nothing else — is the fold's
+computation
+rule. Compositionality is what licenses incremental recomputation under
+local edits, subtree-level deduplication, and structural sharing. The
+universal property's other half, **uniqueness**, is what transfers those
+consequences onto an independently written digest function, by
+identifying it with the fold. The interesting direction — hash
 equality implying structural equality — is not a theorem at all; it
 holds only under a collision-resistance assumption that lives outside
 the kernel.
@@ -513,7 +521,7 @@ Notes:
    excluding all names", rendered in base32Hex, with no algorithm
    identifier alongside it and no documented hash-version concept. That
    is a hash-agility liability. Encoding each child
-   digest as a multihash costs two varints per node and buys: a
+   digest as a multihash costs two varints per child digest and buys: a
    self-describing algorithm, a migration path, and — because multihash
    is length-prefixed and therefore self-delimiting — the concatenation
    injectivity the fold needs, *without* a fixed-length side condition.
@@ -863,7 +871,7 @@ interop ever matters, revisit.
 EDN fits the rose view directly — lists, vectors, maps, symbols,
 keywords, tagged elements, and `;` comments:
 
-```clojure
+```edn
 #geb/node [1
   #geb/node [0]
   #geb/node [2]]
@@ -915,7 +923,8 @@ breadth of maintained third-party libraries:
 | bencode | very low | broad | no | by construction |
 | XML + C14N 1.1 | high | very broad | yes | normative |
 
-Three findings bear on the choice, and they do not point the same way:
+Three findings bear on the choice. None argues for canonical
+S-expressions:
 
 1. Because identity lives on `A`, a textual syntax needs a
    deterministic printer, not a normative canonical form. This
@@ -941,7 +950,8 @@ numbers, no scalar types — which stresses the abstraction further than
 a second array-and-map format would. A DAG-JSON and DAG-CBOR pair
 would share the identical IPLD data model and test it least.
 
-Two considerations constrain the order.
+Two considerations bear on the order, and both favour the JSON core
+profile first.
 
 - Canonical csexp has no readable form. Readability lives in the
   advanced form, which is a second and larger parser. A bootstrap
@@ -955,18 +965,17 @@ Two considerations constrain the order.
   unverified oracle for differential testing immediately.
 
 The order adopted is canonical S-expressions, then the JSON core
-profile, then deterministic CBOR.
+profile, then deterministic CBOR. The first position records what was
+implemented, not what the considerations above recommend: stage 1a is
+done in csexp, and re-doing it in JSON first would buy nothing the pair
+does not already validate.
 
-Canonical csexp earns a place in the set: among the bootstrap-eligible
-candidates its data model is the one that shares least with the others,
-so the pair {csexp, JSON core} stresses syntax independence more than
-any pair drawn from the array-and-map formats would. That is an argument
-for inclusion and not for sequence — syntax independence is validated by
-the pair, and swapping the two yields the same pair. On sequence the two
-are close: both are "very low" parser cost, and JSON core has the
-tie-breaker, `Lean.Json` as an immediate differential-testing oracle.
-Stage 1a is done in csexp, so the sequence is settled and the remaining
-question is only where CBOR falls.
+Canonical csexp earns its place in the set on a separate ground: among
+the bootstrap-eligible candidates its data model shares least with the
+others, so the pair {csexp, JSON core} stresses syntax independence
+more than any pair drawn from the array-and-map formats would. That
+argues for inclusion, not for sequence — the pair is what validates,
+and swapping the two yields the same pair.
 
 CBOR is not dropped: it shares JSON's data model, so once the JSON core
 is proved its incremental cost is the byte-level integer encoding alone,
@@ -1150,7 +1159,7 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-51 theorems, with tests in
+53 theorems, with tests in
 [GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
 It builds under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
@@ -1189,8 +1198,9 @@ Four facts constrain how it is written.
 
 The fuel measure is `Ast.size`, the node count, named for its return
 value as [docs/rules/lean-coding.md](rules/lean-coding.md) § Naming
-conventions requires. Every bound on it is discharged by `omega`, per
-that file's § Constructive-only rule on `Fin` and `Nat` arithmetic.
+conventions requires. Each bound on it is discharged by `omega` or by
+case analysis, per that file's § Constructive-only rule on `Fin` and
+`Nat` arithmetic.
 
 The implemented wire form is header-free and carries the bare tree
 alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
@@ -1204,13 +1214,13 @@ the running example of
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding),
 whose two right-hand labels are transposed.
 
-Axiom dependencies, from `#print axioms` over all 51 theorems:
+Axiom dependencies, from `#print axioms` over all 53 theorems:
 
 | Theorems | Axioms |
 | --- | --- |
-| 11, among them `Tree.map_mk`, `print_injective`, `Csexp.charDigit_digitChar` | none |
+| 12, among them `Tree.map_mk`, `print_injective`, `Csexp.charDigit_digitChar` | none |
 | 12, among them `Ast.toRose_fork`, `format_idem`, `Csexp.printAst_leaf` | `propext` |
-| 6, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
+| 7, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
 | the remaining 22, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
 No declaration depends on `Classical.choice`, and `lake lint` enforces
@@ -1219,9 +1229,12 @@ that through `GebMeta.detectNonstandardAxiom`.
 The theorems that carry the architecture:
 
 - `Tree.extract_duplicate`, `Tree.map_extract_duplicate` and
-  `Tree.duplicate_duplicate` are the three comonad laws, and
-  `Tree.map_id` and `Tree.map_map` the two functor laws they presuppose.
-  They justify calling `μX. Ann × F X` a comonad without appealing to
+  `Tree.duplicate_duplicate` are the three comonad laws;
+  `Tree.map_id` and `Tree.map_map` the two functor laws they presuppose;
+  and `Tree.extract_map` and `Tree.duplicate_map` the naturality of the
+  two structure maps, which in a development where `map`, `extract` and
+  `duplicate` are bare functions is a separate obligation. Together the
+  seven justify calling `μX. Ann × F X` a comonad without appealing to
   the cofree-recursive-comonad terminology.
 - `Ast.ofRose_toRose` and `Ast.toRose_ofRose` are the rose/binary
   bijection.
@@ -1255,7 +1268,7 @@ a second syntax; the cross-syntax agreement theorem; the lift of every
 syntax from `Ast` to `Doc`; injectivity of the annotation
 canonicalization `annCanon`, which
 [Structural content-addressing specification](#structural-content-addressing-specification)
-names in one sentence and no module defines; and the equivalence of the recursive
+specifies and no module defines; and the equivalence of the recursive
 and side-table document presentations.
 
 ## Ecosystem notes
@@ -1322,7 +1335,7 @@ everything feeding a hash.
 | 3 | a hash that runs | not started |
 | 4 | CID, multibase, CAR | deferred |
 
-Stage 1a is 51 theorems; [Local verification](#local-verification)
+Stage 1a is 53 theorems; [Local verification](#local-verification)
 breaks them down. That is the only measured quantity, and one
 implementation is too small a base to extrapolate a schedule from, so
 the stages below are ordered by dependency and carry no estimate.
@@ -1361,7 +1374,9 @@ document-level law. The same choice, one level up, is what
 an annotation table.
 
 Stage 3 is a build problem before it is a proof problem. What is missing
-is any usable hash function; the realistic route is `@[extern]` against
+is a production-grade hash function: the pure-Lean SHA-3 that
+[Ecosystem notes](#ecosystem-notes) records passes the NIST vectors and
+disclaims cryptographic use. The realistic route is `@[extern]` against
 OpenSSL, libsodium or BLAKE3, and a verified pure-Lean hash is not
 available and is not on this path. The fold itself is specified in
 [Structural content-addressing specification](#structural-content-addressing-specification)
