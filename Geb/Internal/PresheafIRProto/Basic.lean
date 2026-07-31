@@ -59,6 +59,22 @@ IR brainstorm:
 * `GebProto.DomHom` / `GebProto.DomNatFamily` /
   `GebProto.domHomEquivNatFamily` — the domain-level morphism data, the natural
   families it represents, and the Yoneda equivalence between them.
+* `GebProto.ShapeHom` — the unbundled presheaf hom `T₁ ⟶ T₁'`.
+* `GebProto.PshHom` — the full morphism data of presheaf p.r.a. functors:
+  a `ShapeHom`, a backward arity map, and the `el(T₁)ᵒᵖ` naturality of the
+  latter, stated across a transport along the former's naturality.
+* `GebProto.ObjFib` / `GebProto.objFibRestr` / `GebProto.objFibMap` /
+  `GebProto.ofSigmaFib` — the output presheaf's fibres, their `J`-restriction
+  and input-presheaf action, unbundled, and the fibre element of a shape and an
+  arity hom.
+* `GebProto.pshHomFib` — the action of a `PshHom` on those fibres.
+* `GebProto.PshNatFamily` / `GebProto.pshHomEquivNatFamily` — the natural
+  families a `PshHom` represents, and the equivalence between them.
+
+## Main statements
+
+* `GebProto.pshHomFib_objFibRestr` — the action of a `PshHom` commutes with the
+  `J`-restriction, which is the content of `PshHom`'s `reindexCompat` clause.
 
 ## References
 
@@ -721,6 +737,455 @@ def domHomEquivNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) 
     exact domHomFamily_symm F F' _ p
 
 end UnbundledYoneda
+
+end GebProto
+
+namespace GebProto
+
+section ShapeSide
+
+/-!
+The `J`-side of the morphism type: the shape map is a morphism of shape
+presheaves, and the arity map is natural over `el(T₁)ᵒᵖ`, not merely over each
+fibre of `q` separately.
+
+`ShapeHom` is `ArityHom`'s recipe transposed: a family of fibre maps subject to
+a naturality predicate, the fibres now `F.Shape j` and the restriction maps
+`shapeRestr`.
+
+`PshHom`'s third law is the `el(T₁)ᵒᵖ` naturality of the arity map, and it does
+not typecheck on the nose. For `g : j' ⟶ j` and `a : F.Shape j`, one route runs
+the arity map at `F.shapeRestr g a` and then `F.reindex g a`; the other runs
+`F'.reindex g (σ j a)` and then the arity map at `a`. The second route's source
+is `F'.Direction (F'.shapeRestr g (σ j a)).1 i`, the first route's is
+`F'.Direction (σ j' (F.shapeRestr g a)).1 i`, and those two shapes agree only by
+the `ShapeHom` naturality of `σ`. The law is therefore stated across a `cast`
+along that equality — the device `PresheafPFunctorData.ReindexId` and
+`ReindexComp` use, whose transports are likewise supplied by an earlier law
+rather than by definitional equality. Here the law is bundled with `σ` in
+`ShapeHom`, so the transport is threaded through `shape.2` rather than through
+an extra parameter.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The unbundled presheaf hom `T₁ ⟶ T₁'`: a family of fibre maps
+`F.Shape j → F'.Shape j` subject to the naturality square against
+`shapeRestr`. -/
+def ShapeHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : Type (max uJ uA) :=
+  { σ : (j : J) → F.Shape j → F'.Shape j //
+      ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j),
+        σ j' (F.shapeRestr g a) = F'.shapeRestr g (σ j a) }
+
+/-- A morphism of presheaf p.r.a. functors, unbundled: a morphism `σ` of shape
+presheaves, an arity map backwards at each shape — a morphism of arity
+presheaves, so `q`-fibrewise this is `DomHom`'s data — and the `el(T₁)ᵒᵖ`
+naturality of that arity map, stated across the `cast` along `σ`'s own
+naturality. -/
+structure PshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    Type (max uI uJ uA uB) where
+  /-- The shape map, a morphism of shape presheaves. -/
+  shape : ShapeHom F F'
+  /-- The arity map, backwards, a morphism of arity presheaves. -/
+  arity : (j : J) → (a : F.Shape j) → ArityHom F' (shape.1 j a).1 (arityPresheaf F a.1)
+  /-- Naturality of `arity` over `el(T₁)ᵒᵖ`: restricting the shape along `g` and
+  then reindexing agrees with reindexing in `F'` and then restricting, once the
+  source of the second route is transported along `shape.2`. -/
+  reindexCompat : ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) ⦃i : I⦄
+      (d : F'.Direction (shape.1 j' (F.shapeRestr g a)).1 i),
+    F.reindex g a ((arity j' (F.shapeRestr g a)).1 i d) =
+      (arity j a).1 i (F'.reindex g (shape.1 j a)
+        (cast (congrArg (fun s : F'.Shape j' ↦ F'.Direction s.1 i) (shape.2 g a)) d))
+
+/-- The data of a `PshHom` over a fixed `j` is `DomHom`'s data restricted to the
+shapes over `j`: shapes forward, arity presheaf morphisms backward. -/
+def pshHomAtIndex (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : PshHom F F')
+    (j : J) (a : F.Shape j) : Σ a' : F'.Shape j, ArityHom F' a'.1 (arityPresheaf F a.1) :=
+  ⟨φ.shape.1 j a, φ.arity j a⟩
+
+/-- The identity morphism. The `cast` in `reindexCompat` is along `rfl`, so the
+law reduces to reflexivity — the smallest check that the transport is threaded
+in the direction that makes the two routes comparable. -/
+def idPshHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : PshHom F F where
+  shape := ⟨fun _ a ↦ a, fun _ _ _ _ ↦ rfl⟩
+  arity _ a := idArityHom F a.1
+  reindexCompat _ _ _ _ _ _ := rfl
+
+end ShapeSide
+
+end GebProto
+
+namespace GebProto
+
+section ShapeSideAction
+
+/-!
+The action of a `PshHom` on the p.r.a. formula, and the two laws that make it a
+map of output presheaves. The `Z`-naturality is `DomHom`'s and needs nothing new;
+the `J`-restriction law is what tests clause (c) of `PshHom`: the two sides have
+different shapes, equal only by the `ShapeHom` naturality of `φ.shape`, and the
+components agree exactly when `reindexCompat` holds. So `pshHomObj_objRestr` is
+not merely well-typed with clause (c) present — it is unprovable without it.
+
+`PresheafPFunctor.value_objRestrElt` is `private` upstream. Stating the
+restriction lemma on the `symm` side of `objEquivSigmaArityHom` does not avoid
+it: `objRestrElt` of an `ofArityHomElt` is not `ofArityHomElt` of the reindexed
+arity hom on the nose, the two direction-assignments differing by the transport
+along a direction's own base-point constraint. That transport is the content of
+`value_objRestrElt`, so it is restated here instead.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The component the restricted element assigns to a direction is the component
+the original assigns to the direction's `reindex`. Local restatement of the
+`private` `PresheafPFunctor.value_objRestrElt`. -/
+theorem value_objRestrElt (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j)
+    (x : F.toSliceDomPFunctor.Obj (PresheafDomPFunctorData.elemProj Z)) (hq : F.q x.1.1 = j)
+    ⦃i : I⦄ (b : F.Direction (F.objRestrElt g x hq).1.1 i) :
+    F.value (F.objRestrElt g x hq) b = F.value x (F.reindex g ⟨x.1.1, hq⟩ b) := by
+  obtain ⟨b1, rfl⟩ := b
+  rfl
+
+/-- Precomposition of an unbundled arity hom with `reindex g a`, which is a
+morphism of arity presheaves by `reindex_naturality`. -/
+def reindexArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ}
+    ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) (μ : ArityHom F a.1 Z) :
+    ArityHom F (F.shapeRestr g a).1 Z :=
+  ⟨fun i d ↦ μ.1 i (F.reindex g a d), by
+    intro i i' f d
+    refine Eq.trans (congrArg (μ.1 i') ?_) (μ.2 f (F.reindex g a d))
+    exact (congrFun (F.isFunctorial.reindex_naturality g a f) d).symm⟩
+
+/-- The `J`-restriction on the coproduct-of-representables side: the shape is
+restricted along `shapeRestr` and the arity hom is precomposed with `reindex`. -/
+def objRestrSigma (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ}
+    ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.A) (hq : F.q a = j) (μ : ArityHom F a Z) :
+    Σ a' : F.A, ArityHom F a' Z :=
+  ⟨(F.shapeRestr g ⟨a, hq⟩).1, reindexArityHom F g ⟨a, hq⟩ μ⟩
+
+/-- Under `objEquivSigmaArityHom`, the `J`-restriction is `objRestrSigma`. -/
+theorem objEquivSigmaArityHom_objRestr (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.A) (hq : F.q a = j)
+    (μ : ArityHom F a Z) :
+    objEquivSigmaArityHom F Z
+        (F.objRestr g ((objEquivSigmaArityHom F Z).symm ⟨a, μ⟩) hq) =
+      objRestrSigma F g a hq μ := by
+  refine Sigma.ext rfl (heq_of_eq (Subtype.ext (funext fun i ↦ funext fun d ↦ ?_)))
+  exact (value_objRestrElt F g _ hq d).trans (value_ofArityHom F a μ _)
+
+/-- The same on the `symm` side, which is the form the action below rewrites
+with. Transported by hand rather than by `Equiv.eq_symm_apply`, which depends on
+`Classical.choice`. -/
+theorem objRestr_symm (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.A) (hq : F.q a = j)
+    (μ : ArityHom F a Z) :
+    F.objRestr g ((objEquivSigmaArityHom F Z).symm ⟨a, μ⟩) hq =
+      (objEquivSigmaArityHom F Z).symm (objRestrSigma F g a hq μ) :=
+  ((objEquivSigmaArityHom F Z).symm_apply_apply _).symm.trans
+    (congrArg (objEquivSigmaArityHom F Z).symm (objEquivSigmaArityHom_objRestr F g a hq μ))
+
+/-- Two shape-and-arity-hom pairs are equal when the shapes are equal and the
+arity homs agree across the transport along that equality. The `cast` is along
+a `Prop`-valued equality, so proof irrelevance identifies it with the `cast` of
+`PshHom.reindexCompat`, which is stated along the `F'.Shape`-level equality. -/
+theorem sigmaArityHom_ext (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} {a a' : F.A} (h : a = a') (μ : ArityHom F a Z) (μ' : ArityHom F a' Z)
+    (hμ : ∀ (i : I) (d : F.Direction a i),
+      μ.1 i d = μ'.1 i (cast (congrArg (fun t : F.A ↦ F.Direction t i) h) d)) :
+    (⟨a, μ⟩ : Σ b : F.A, ArityHom F b Z) = ⟨a', μ'⟩ := by
+  cases h
+  exact Sigma.ext rfl (heq_of_eq (Subtype.ext (funext fun i ↦ funext fun d ↦ hμ i d)))
+
+/-- The action of a `PshHom` on the coproduct-of-representables side: the shape
+travels forward along `φ.shape`, and the arity hom is precomposed with `φ`'s
+backward arity map. `DomHom`'s `domHomSigma`, now indexed by an output index. -/
+def pshHomSigma (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : PshHom F F')
+    {Z : Iᵒᵖ ⥤ Type uB} (j : J) (a : F.Shape j) (μ : ArityHom F a.1 Z) :
+    Σ a' : F'.A, ArityHom F' a' Z :=
+  ⟨(φ.shape.1 j a).1, postcompArityHom F' _ (natTransOfArityHom F a.1 μ) (φ.arity j a)⟩
+
+/-- The fibre of the output presheaf over `j`, unbundled: the elements of
+`F.obj Z` whose `q`-output index is `j`. This is `objPresheaf`'s object part
+written without the functor-category instance. Bundling the index proof with the
+element keeps the restriction and action laws free of the dependent-proof
+argument that blocks rewriting. -/
+@[reducible] def ObjFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (Z : Iᵒᵖ ⥤ Type uZ) (j : J) : Type (max uI uZ uA uB) :=
+  { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j }
+
+/-- The `J`-restriction of the output presheaf, unbundled: `objRestr` together
+with the `q`-index of the restricted shape. This is `objPresheaf`'s map part. -/
+def objFibRestr (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ}
+    ⦃j j' : J⦄ (g : j' ⟶ j) (w : ObjFib F Z j) : ObjFib F Z j' :=
+  ⟨F.objRestr g w.1 w.2, (F.shapeRestr g ⟨w.1.shape, w.2⟩).2⟩
+
+/-- The action of an input-presheaf morphism on a fibre: the dom `map`, which
+fixes the shape and so fixes the `q`-output index. -/
+def objFibMap (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z Z' : Iᵒᵖ ⥤ Type uZ}
+    (ν : NatTrans Z Z') {j : J} (w : ObjFib F Z j) : ObjFib F Z' j :=
+  ⟨F.toPresheafDomPFunctorData.map ν w.1, w.2⟩
+
+/-- The fibre element with shape `a : F.Shape j` and arity hom `μ`. -/
+def ofSigmaFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ} {j : J}
+    (a : F.Shape j) (μ : ArityHom F a.1 Z) : ObjFib F Z j :=
+  ⟨(objEquivSigmaArityHom F Z).symm ⟨a.1, μ⟩, a.2⟩
+
+/-- Every fibre element is `ofSigmaFib` of its own shape and arity hom, which is
+what lets the laws below be proved on `ofSigmaFib` alone. -/
+theorem ofSigmaFib_self (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} {j : J} (w : ObjFib F Z j) :
+    ofSigmaFib F ⟨w.1.shape, w.2⟩ (objEquivSigmaArityHom F Z w.1).2 = w :=
+  Subtype.ext ((objEquivSigmaArityHom F Z).symm_apply_apply w.1)
+
+/-- The `J`-restriction of an `ofSigmaFib`: the shape restricts and the arity
+hom is precomposed with `reindex`. -/
+theorem objFibRestr_ofSigmaFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) (μ : ArityHom F a.1 Z) :
+    objFibRestr F g (ofSigmaFib F a μ) =
+      ofSigmaFib F (F.shapeRestr g a) (reindexArityHom F g a μ) :=
+  Subtype.ext (objRestr_symm F g a.1 a.2 μ)
+
+/-- The input-presheaf action on an `ofSigmaFib`: the shape is untouched and the
+arity hom is postcomposed. -/
+theorem objFibMap_ofSigmaFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z Z' : Iᵒᵖ ⥤ Type uB} (ν : NatTrans Z Z') {j : J} (a : F.Shape j) (μ : ArityHom F a.1 Z) :
+    objFibMap F ν (ofSigmaFib F a μ) = ofSigmaFib F a (postcompArityHom F a.1 ν μ) :=
+  Subtype.ext (map_symm_arityHom F ν ⟨a.1, μ⟩)
+
+/-- The action of a `PshHom` on a fibre of the output presheaf. -/
+def pshHomFib (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : PshHom F F')
+    {Z : Iᵒᵖ ⥤ Type uB} (j : J) (w : ObjFib F Z j) : ObjFib F' Z j :=
+  ⟨(objEquivSigmaArityHom F' Z).symm
+      (pshHomSigma F F' φ j ⟨w.1.shape, w.2⟩ (objEquivSigmaArityHom F Z w.1).2),
+    (φ.shape.1 j ⟨w.1.shape, w.2⟩).2⟩
+
+/-- The action on an `ofSigmaFib`: the shape travels along `φ.shape`, and the
+arity hom is `φ`'s backward arity map followed by the original. -/
+theorem pshHomFib_ofSigmaFib (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (φ : PshHom F F') {Z : Iᵒᵖ ⥤ Type uB} {j : J} (a : F.Shape j) (μ : ArityHom F a.1 Z) :
+    pshHomFib F F' φ j (ofSigmaFib F a μ) =
+      ofSigmaFib F' (φ.shape.1 j a)
+        (postcompArityHom F' _ (natTransOfArityHom F a.1 μ) (φ.arity j a)) :=
+  Subtype.ext (congrArg (objEquivSigmaArityHom F' Z).symm
+    (congrArg (pshHomSigma F F' φ j a)
+      (Subtype.ext (funext fun _i ↦ funext fun b ↦ value_ofArityHom F a.1 μ b))))
+
+/-- Naturality of the action in the input presheaf. Nothing beyond `DomHom`'s
+argument: both sides postcompose the same two arity homs. -/
+theorem pshHomFib_objFibMap (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (φ : PshHom F F') {Z Z' : Iᵒᵖ ⥤ Type uB} (ν : NatTrans Z Z') (j : J) (w : ObjFib F Z j) :
+    pshHomFib F F' φ j (objFibMap F ν w) = objFibMap F' ν (pshHomFib F F' φ j w) := by
+  obtain ⟨a, μ, rfl⟩ : ∃ (a : F.Shape j) (μ : ArityHom F a.1 Z), ofSigmaFib F a μ = w :=
+    ⟨⟨w.1.shape, w.2⟩, _, ofSigmaFib_self F w⟩
+  rw [objFibMap_ofSigmaFib, pshHomFib_ofSigmaFib, pshHomFib_ofSigmaFib, objFibMap_ofSigmaFib]
+  rfl
+
+/-- Clause (c) of `PshHom` is what makes the action commute with the
+`J`-restriction of the output presheaves. The two sides carry different shapes —
+`φ.shape` of a restricted shape against the restriction of a `φ.shape`-image —
+identified only by `φ.shape.2`, and their arity homs agree across that transport
+exactly by `reindexCompat`. So the law is not merely well-typed once clause (c)
+is present; clause (c) is precisely its content. -/
+theorem pshHomFib_objFibRestr (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (φ : PshHom F F') {Z : Iᵒᵖ ⥤ Type uB} ⦃j j' : J⦄ (g : j' ⟶ j) (w : ObjFib F Z j) :
+    pshHomFib F F' φ j' (objFibRestr F g w) = objFibRestr F' g (pshHomFib F F' φ j w) := by
+  obtain ⟨a, μ, rfl⟩ : ∃ (a : F.Shape j) (μ : ArityHom F a.1 Z), ofSigmaFib F a μ = w :=
+    ⟨⟨w.1.shape, w.2⟩, _, ofSigmaFib_self F w⟩
+  rw [objFibRestr_ofSigmaFib, pshHomFib_ofSigmaFib, pshHomFib_ofSigmaFib,
+    objFibRestr_ofSigmaFib]
+  refine Subtype.ext (congrArg (objEquivSigmaArityHom F' Z).symm ?_)
+  refine sigmaArityHom_ext F' (congrArg Subtype.val (φ.shape.2 g a)) _ _ fun i d ↦ ?_
+  exact congrArg (μ.1 i) (φ.reindexCompat g a d)
+
+end ShapeSideAction
+
+end GebProto
+
+namespace GebProto
+
+section ShapeSideYoneda
+
+/-!
+The representation theorem on the `J`-side: `PshHom F F'` is the same thing as a
+family of maps of output-presheaf fibres, natural in the input presheaf and
+commuting with the `J`-restriction.
+
+Both laws are needed and each supplies one half of the reconstruction: the
+`Z`-naturality is Yoneda, recovering the shape map and the arity map from the
+value at the representing presheaf `arityPresheaf F a`; the `J`-restriction law
+supplies the two remaining clauses of `PshHom`, the naturality of the shape map
+and `reindexCompat`, which are the shape component and the arity component of a
+single equation between fibre elements.
+-/
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- The generic fibre element of shape `a`: the element whose arity hom is the
+identity, bundled with its `q`-output index. Yoneda's representing datum. -/
+def genericFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {j : J} (a : F.Shape j) :
+    ObjFib F (arityPresheaf F a.1) j :=
+  ofSigmaFib F a (idArityHom F a.1)
+
+/-- Yoneda at the fibre level: the fibre element of shape `a` and arity hom `μ`
+is the image of the generic element of shape `a` under the action of `μ`. -/
+theorem ofSigmaFib_eq_objFibMap (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uB} {j : J} (a : F.Shape j) (μ : ArityHom F a.1 Z) :
+    ofSigmaFib F a μ = objFibMap F (natTransOfArityHom F a.1 μ) (genericFib F a) := by
+  rw [genericFib, objFibMap_ofSigmaFib]
+  rfl
+
+/-- The arity hom the p.r.a. formula reads off an `ofArityHomElt` is the one it
+was built from. -/
+theorem objEquivSigmaArityHom_symm_snd (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} (a : F.A) (μ : ArityHom F a Z) :
+    (objEquivSigmaArityHom F Z ((objEquivSigmaArityHom F Z).symm ⟨a, μ⟩)).2 = μ :=
+  Subtype.ext (funext fun _i ↦ funext fun b ↦ value_ofArityHom F a μ b)
+
+/-- Converse of `sigmaArityHom_ext`: an equality of fibre elements whose shapes
+agree gives agreement of the arity homs across the transport along that
+equality. -/
+theorem ofSigmaFib_apply (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z : Iᵒᵖ ⥤ Type uZ} {j : J} {s s' : F.Shape j} {γ : ArityHom F s.1 Z}
+    {γ' : ArityHom F s'.1 Z} (h : ofSigmaFib F s γ = ofSigmaFib F s' γ') (hs : s = s')
+    (i : I) (d : F.Direction s.1 i) :
+    γ.1 i d = γ'.1 i (cast (congrArg (fun t : F.Shape j ↦ F.Direction t.1 i) hs) d) := by
+  cases hs
+  have hγ : (⟨s.1, γ⟩ : Σ b : F.A, ArityHom F b Z) = ⟨s.1, γ'⟩ :=
+    (objEquivSigmaArityHom F Z).symm.injective (congrArg Subtype.val h)
+  injection hγ with _ h2
+  cases h2
+  rfl
+
+/-- The arity component of an equality between an input-presheaf image and a
+`J`-restriction of fibre elements, once their shapes are known to agree. -/
+theorem objFibMap_eq_objFibRestr_apply (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    {Z Z' : Iᵒᵖ ⥤ Type uB} (ν : NatTrans Z Z') ⦃j j' : J⦄ (g : j' ⟶ j)
+    (u : ObjFib F Z j') (v : ObjFib F Z' j)
+    (h : objFibMap F ν u = objFibRestr F g v)
+    (hs : (⟨u.1.shape, u.2⟩ : F.Shape j') = F.shapeRestr g ⟨v.1.shape, v.2⟩)
+    (i : I) (d : F.Direction u.1.shape i) :
+    (postcompArityHom F u.1.shape ν (objEquivSigmaArityHom F Z u.1).2).1 i d =
+      (reindexArityHom F g ⟨v.1.shape, v.2⟩ (objEquivSigmaArityHom F Z' v.1).2).1 i
+        (cast (congrArg (fun t : F.Shape j' ↦ F.Direction t.1 i) hs) d) := by
+  refine ofSigmaFib_apply F ?_ hs i d
+  exact ((objFibMap_ofSigmaFib F ν ⟨u.1.shape, u.2⟩
+      (objEquivSigmaArityHom F Z u.1).2).symm.trans
+    ((congrArg (objFibMap F ν) (ofSigmaFib_self F u)).trans h)).trans
+    ((congrArg (objFibRestr F g) (ofSigmaFib_self F v).symm).trans
+      (objFibRestr_ofSigmaFib F g ⟨v.1.shape, v.2⟩ (objEquivSigmaArityHom F Z' v.1).2))
+
+/-- Families of maps of output-presheaf fibres, natural in the input presheaf
+and commuting with the `J`-restriction. The `J`-restriction is stated unbundled
+against `objFibRestr` (that is, `PresheafPFunctor.objRestr`) rather than via
+`objPresheaf.map`, which would need the functor category's instance. -/
+def PshNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    Type (max uA uI uJ vI (uB + 1)) :=
+  { η : (Z : Iᵒᵖ ⥤ Type uB) → (j : J) → ObjFib F Z j → ObjFib F' Z j //
+      (∀ (Z Z' : Iᵒᵖ ⥤ Type uB) (ν : NatTrans Z Z') (j : J) (w : ObjFib F Z j),
+          η Z' j (objFibMap F ν w) = objFibMap F' ν (η Z j w)) ∧
+        ∀ (Z : Iᵒᵖ ⥤ Type uB) ⦃j j' : J⦄ (g : j' ⟶ j) (w : ObjFib F Z j),
+          η Z j' (objFibRestr F g w) = objFibRestr F' g (η Z j w) }
+
+/-- The natural family determined by a `PshHom`. -/
+def pshHomFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : PshHom F F') :
+    PshNatFamily F F' :=
+  ⟨fun _ j ↦ pshHomFib F F' φ j,
+    ⟨fun _ _ ν j w ↦ pshHomFib_objFibMap F F' φ ν j w,
+      fun _ _ _ g w ↦ pshHomFib_objFibRestr F F' φ g w⟩⟩
+
+/-- The equation the reconstruction rests on: the generic element of the
+restricted shape, pushed along `reindex`, is the restriction of the generic
+element. Both remaining `PshHom` clauses are components of it. -/
+theorem natFamily_generic (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (η : PshNatFamily F F') ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) :
+    objFibMap F'
+        (natTransOfArityHom F (F.shapeRestr g a).1 (reindexArityHom F g a (idArityHom F a.1)))
+        (η.1 (arityPresheaf F (F.shapeRestr g a).1) j' (genericFib F (F.shapeRestr g a))) =
+      objFibRestr F' g (η.1 (arityPresheaf F a.1) j (genericFib F a)) := by
+  rw [← η.2.1, ← ofSigmaFib_eq_objFibMap, ← objFibRestr_ofSigmaFib]
+  exact η.2.2 _ g (genericFib F a)
+
+/-- The shape map recovered from a natural family: the shape of its value on the
+generic element. Its naturality is the shape component of `natFamily_generic`. -/
+def natFamilyShape (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (η : PshNatFamily F F') : ShapeHom F F' :=
+  ⟨fun j a ↦ ⟨(η.1 (arityPresheaf F a.1) j (genericFib F a)).1.shape,
+      (η.1 (arityPresheaf F a.1) j (genericFib F a)).2⟩,
+    fun _ _ g a ↦ Subtype.ext (congrArg (fun w ↦ w.1.shape) (natFamily_generic F F' η g a))⟩
+
+/-- The arity map recovered from a natural family: the arity hom of its value on
+the generic element. -/
+def natFamilyArity (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (η : PshNatFamily F F') (j : J) (a : F.Shape j) :
+    ArityHom F' ((natFamilyShape F F' η).1 j a).1 (arityPresheaf F a.1) :=
+  (objEquivSigmaArityHom F' (arityPresheaf F a.1)
+    (η.1 (arityPresheaf F a.1) j (genericFib F a)).1).2
+
+/-- The `PshHom` recovered from a natural family. `reindexCompat` is the arity
+component of `natFamily_generic`, read off across the transport along the shape
+component of the same equation. -/
+def natFamilyPshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (η : PshNatFamily F F') : PshHom F F' where
+  shape := natFamilyShape F F' η
+  arity := natFamilyArity F F' η
+  reindexCompat := by
+    intro j j' g a i d
+    exact objFibMap_eq_objFibRestr_apply F'
+      (natTransOfArityHom F (F.shapeRestr g a).1 (reindexArityHom F g a (idArityHom F a.1)))
+      g _ _ (natFamily_generic F F' η g a) ((natFamilyShape F F' η).2 g a) i d
+
+/-- Two `PshHom`s with equal shape maps and arity maps are equal; the remaining
+field is a `Prop`. -/
+theorem pshHom_ext (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {φ ψ : PshHom F F'}
+    (hs : φ.shape = ψ.shape) (ha : φ.arity ≍ ψ.arity) : φ = ψ := by
+  obtain ⟨σ, α, hc⟩ := φ
+  obtain ⟨σ', α', hc'⟩ := ψ
+  cases hs
+  cases ha
+  rfl
+
+/-- The arity map recovered from the family of a `PshHom` is the original: the
+generic element's arity hom is the identity, so the postcomposition it induces
+is trivial. -/
+theorem natFamilyArity_pshHomFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
+    (φ : PshHom F F') (j : J) (a : F.Shape j) :
+    natFamilyArity F F' (pshHomFamily F F' φ) j a = φ.arity j a :=
+  (objEquivSigmaArityHom_symm_snd F' _ _).trans
+    (Subtype.ext (funext fun i ↦ funext fun b ↦
+      value_ofArityHom F a.1 (idArityHom F a.1) ((φ.arity j a).1 i b)))
+
+/-- The representation theorem on the `J`-side: the full morphism data of
+presheaf p.r.a. functors is the same thing as a family of maps of
+output-presheaf fibres, natural in the input presheaf and commuting with the
+`J`-restriction. -/
+def pshHomEquivNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    PshHom F F' ≃ PshNatFamily F F' where
+  toFun := pshHomFamily F F'
+  invFun := natFamilyPshHom F F'
+  left_inv φ :=
+    pshHom_ext F F' rfl
+      (heq_of_eq (funext fun j ↦ funext fun a ↦ natFamilyArity_pshHomFamily F F' φ j a))
+  right_inv η := by
+    refine Subtype.ext (funext fun Z ↦ funext fun j ↦ funext fun w ↦ ?_)
+    obtain ⟨a, μ, rfl⟩ : ∃ (a : F.Shape j) (μ : ArityHom F a.1 Z), ofSigmaFib F a μ = w :=
+      ⟨⟨w.1.shape, w.2⟩, _, ofSigmaFib_self F w⟩
+    change pshHomFib F F' (natFamilyPshHom F F' η) j (ofSigmaFib F a μ) =
+      η.1 Z j (ofSigmaFib F a μ)
+    refine (pshHomFib_ofSigmaFib F F' (natFamilyPshHom F F' η) a μ).trans ?_
+    refine Eq.trans ?_ (congrArg (η.1 Z j) (ofSigmaFib_eq_objFibMap F a μ)).symm
+    refine Eq.trans ?_
+      (η.2.1 (arityPresheaf F a.1) Z (natTransOfArityHom F a.1 μ) j (genericFib F a)).symm
+    exact (objFibMap_ofSigmaFib F' (natTransOfArityHom F a.1 μ)
+        ⟨(η.1 (arityPresheaf F a.1) j (genericFib F a)).1.shape,
+          (η.1 (arityPresheaf F a.1) j (genericFib F a)).2⟩
+        (objEquivSigmaArityHom F' (arityPresheaf F a.1)
+          (η.1 (arityPresheaf F a.1) j (genericFib F a)).1).2).symm.trans
+      (congrArg (objFibMap F' (natTransOfArityHom F a.1 μ))
+        (ofSigmaFib_self F' (η.1 (arityPresheaf F a.1) j (genericFib F a))))
+
+end ShapeSideYoneda
 
 end GebProto
 
