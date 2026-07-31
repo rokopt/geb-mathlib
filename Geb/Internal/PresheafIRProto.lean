@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Internal.PresheafIRProto.Basic
+public import Geb.Internal.PresheafIRProto.Codes
 public import Geb.Internal.PresheafIRProto.Functor
 
 /-!
