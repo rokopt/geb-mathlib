@@ -183,7 +183,8 @@ at the first non-digit. Each costs restating and reproving
 `parseAst_printAst` and `parse_print`, which are stated about the
 present maps.
 
-All three are elementary — indeed they sit in the lower-elementary
+Parsing, printing and the fold are elementary — indeed they sit in the
+lower-elementary
 fragment once the hash primitive is taken as a unit-cost oracle. Nothing
 in this design requires more than bounded primitive recursion over the
 tree, which matters for a project that tracks where its constructions
@@ -689,12 +690,16 @@ type definition.
 **Design resolution.** Take RFC 8949 §4.2 deterministic CBOR as the
 normative Geb binary syntax, matching the IETF standard, the CDE draft,
 and the verified implementation. Then choose **map-free encodings** —
-positional arrays instead of string-keyed maps. A CBOR item containing
-no maps is simultaneously valid §4.2 deterministic CBOR and valid
-DAG-CBOR, **with identical bytes**, because the only divergence is key
-ordering. This removes the hazard rather than documenting it, and it
-costs only the self-description that map keys would have provided, which
-the format tag in position 0 restores.
+positional arrays instead of string-keyed maps.
+
+The two divergences are of different kinds. DAG-CBOR **restricts which
+values are expressible** — string keys only, tag 42 only, 64-bit floats
+only, integers within i64 — and for a value both admit, the only
+divergence in **byte layout** is map key ordering. An item that is
+map-free and stays inside those value restrictions therefore encodes to
+identical bytes under both. This removes the hazard rather than
+documenting it, and it costs only the self-description that map keys
+would have provided, which the format tag in position 0 restores.
 
 Verified prior art, and it exists for CBOR and for no other candidate
 format: EverCBOR, part of EverParse, implements RFC 8949 §4.2
@@ -995,7 +1000,7 @@ needed before a second validation of syntax independence. Add the csexp
 advanced form ahead of both if the textual form is read and written by
 hand often enough for the canonical form's unreadability to cost more
 than the second parser. Add bencode if a second
-canonical-by-construction format is wanted: it is smaller to verify and
+canonical-by-construction format is wanted: it is as small to verify and
 better tooled than canonical csexp, and it loses only on human
 readability, which the canonical form does not supply either.
 
@@ -1095,7 +1100,7 @@ erasure drops them:
     (fork (leaf "2" (*ann (name "operator"))) (leaf "1"))
     (*ann (name "example")
           (doc "the root expression")
-          (link "https://example.org/spec"))))
+          (links "https://example.org/spec"))))
 ```
 
 JSON, compact core encoding (leaf = integer, fork = 2-element array):
@@ -1183,8 +1188,8 @@ Four facts constrain how it is written.
    [CONTRIBUTING.md](../CONTRIBUTING.md) § Constructive-only forbids. It
    does have a native implementation and does run in the interpreter;
    the choice dependency alone is what rules it out. The decimal
-   encoding is written out instead — `digitsLE`, `ofLE`, and the round
-   trip `ofLE_digitsLE`.
+   encoding is written out instead — `Csexp.digitsLE`, `Csexp.ofLE`, and
+   the round trip `Csexp.ofLE_digitsLE`.
 3. mathlib's `FinEnum` instances for `Fin n` and `Empty` are built
    through `FinEnum.ofList`, whose proof obligations depend on
    `Classical.choice`. `finEnumFin` and `finEnumEmpty` name choice-free
@@ -1206,7 +1211,9 @@ The implemented wire form is header-free and carries the bare tree
 alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
 alphabet size that
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding)
-shows, both of which belong to the document level that stage 2 reaches.
+shows. A format header and a serialized alphabet size are additions no
+stage below has needed: `Csexp.parse` takes `k` as a parameter, so the
+bare-tree stages carry neither.
 The tests pin the spelling: for the five-node tree
 `fork (leaf 0) (fork (leaf 1) (leaf 2))` over `Fin 3` it is
 `(4:fork(4:leaf1:0)(4:fork(4:leaf1:1)(4:leaf1:2)))`. That tree is not
@@ -1218,8 +1225,8 @@ Axiom dependencies, from `#print axioms` over all 53 theorems:
 
 | Theorems | Axioms |
 | --- | --- |
-| 12, among them `Tree.map_mk`, `print_injective`, `Csexp.charDigit_digitChar` | none |
-| 12, among them `Ast.toRose_fork`, `format_idem`, `Csexp.printAst_leaf` | `propext` |
+| 12, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
+| 12, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
 | 7, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
 | the remaining 22, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
@@ -1458,9 +1465,11 @@ machinery needs it, which the parse and print layer does not.
   encodings of the same tree; semantic identity is `coreMH` on `A`.
 - **A concrete syntax needs a deterministic printer, not a normative
   canonical form.** Do not over-weight the latter when choosing one.
-- **`printDoc` must be injective**, so `D` must contain no redundant
-  representations; annotation tables must be canonically ordered and
-  duplicate-free by construction.
+- **`printDoc` must be injective**, so either the printer distinguishes
+  every redundant representation in `D`, or `D` carries none — with
+  annotation collections canonically ordered and duplicate-free by
+  construction. `Doc k` as declared takes the first branch;
+  [Roadmap](#roadmap) records the choice `Ann.links` still poses.
 - **Content addressing conflates occurrences.** Hash-keyed annotation
   tables attach metadata to every equal subtree; per-occurrence
   annotation needs `(rootCoreId, path)` keys, and paths depend on the
@@ -1500,9 +1509,10 @@ machinery needs it, which the parse and print layer does not.
 
 [docs/references.bib](references.bib) is authoritative for the
 bibliographic detail of three works this list also carries: RFC 9804 and
-Uustalu and Vene 2011, both cited from Lean source, and RFC 6962, cited
-from [Merkle hashing as a catamorphism](#merkle-hashing-as-a-catamorphism)
-here and from Lean source once roadmap stage 3 writes the fold.
+Uustalu and Vene 2011, both cited from Lean source, and RFC 6962, cited from
+[Merkle hashing as a catamorphism](#merkle-hashing-as-a-catamorphism)
+and [Prior art on content-addressed code](#prior-art-on-content-addressed-code)
+here, and from Lean source once roadmap stage 3 writes the fold.
 Migrating the rest of this list into the `.bib` is part of the
 outstanding pass `TODO.md` records.
 

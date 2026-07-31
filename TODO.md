@@ -597,6 +597,13 @@ annotates occurrences, not before. The rose/binary orientation
 `Ast.toRose` fixes has to be versioned at that point, since a path's
 meaning depends on it.
 
+`Geb.finEnumFin` and `Geb.finEnumEmpty` are choice-free `FinEnum`
+constructions with nothing syntax-specific about them, standing in for
+mathlib's `FinEnum.fin` and `FinEnum.empty`, which reach
+`Classical.choice` through `FinEnum.ofList`. The second module needing
+either moves them beside the choice-free decidability instances in
+`Geb/Mathlib/Data/FinEnum.lean`.
+
 ### Prose-conformance pass over the concrete-syntax survey
 
 In [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md), § Local
