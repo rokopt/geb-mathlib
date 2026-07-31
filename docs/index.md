@@ -598,13 +598,13 @@ import-direction rules above are enforced by
   partially applied function.
   `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Equalizer/Limits.lean` —
-  `equalizerCone`, the mathlib packaging of the agreement sub-object,
-  its injection and its factorisation as a
-  `LimitCone (parallelPair f g)`. `HasEqualizers` is not registered:
-  nothing in this development consumes it, and it is one of the
-  `Prop` classes derived once from `ElementaryTopos`. The source and
-  test modules are listed in `GebMeta.classicalAllowedModules`, since
-  `LimitCone` and `parallelPair` depend on `Classical.choice`.
+  `equalizerCone`, the mathlib packaging of the agreement sub-object, its
+  injection and its factorisation as a `LimitCone (parallelPair f g)`.
+  `HasEqualizers` is not registered here: it is one of the `Prop` classes
+  derived once from `ElementaryTopos`, and a consumer resolves it through that
+  route. The source and test modules are listed in
+  `GebMeta.classicalAllowedModules`, since `LimitCone` and `parallelPair` depend
+  on `Classical.choice`.
 - `Geb/Mathlib/CategoryTheory/FinSetSkel/Classifier/Core.lean` — the
   subobject classifier of `FinSetSkel` over vectors. The classifying
   object is the object of length 2, and `Classifier.chi` sends the
@@ -632,3 +632,16 @@ import-direction rules above are enforced by
   from `IsPullback` through the pullback's universal property, which
   cannot be stated choice-free. The source and test modules are
   listed in `GebMeta.classicalAllowedModules`.
+- `Geb/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean` —
+  `FinSetSkel.elementaryTopos`, the `ElementaryTopos FinSetSkel` instance,
+  assembling unchanged the cartesian and monoidal-closed structures, the
+  initial cocone, the binary-coproduct cocones, the equalizer cones, the
+  coequalizer cocones and the classifier. It depends on the five
+  field-supplying entries above and on the `ElementaryTopos` class entry.
+  `HasInitial`, `HasBinaryCoproducts`, `HasCoequalizers` and
+  `HasFiniteCoproducts` are registered by the field-supplying modules and
+  resolve without it; `HasEqualizers`, `HasFiniteLimits`,
+  `HasFiniteColimits` and `HasPushouts` are derived through the class and
+  resolve only through the instance. The source and test modules are
+  listed in `GebMeta.classicalAllowedModules`, the module inheriting its
+  `Classical.choice` dependence entirely from the field terms.

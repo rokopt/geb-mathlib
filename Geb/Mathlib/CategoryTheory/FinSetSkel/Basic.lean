@@ -67,6 +67,11 @@ hom-`DecidableEq` depends on `Classical.choice`.
 * `FinSetSkel.id_get`, `FinSetSkel.comp_get` — the
   application-normal form for identity and composition.
 
+## Implementation notes
+
+The name records the skeletal model: `Skel` marks this as the skeletal
+model of the category of finite sets, parallel to `FintypeCat.Skeleton`.
+
 ## References
 
 * [nLabSkeletalCategory] — skeletal categories and the skeleton of a

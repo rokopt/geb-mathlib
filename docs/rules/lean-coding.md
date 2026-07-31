@@ -395,6 +395,10 @@ rationale.
   per test, assert it matches the expectation, return the value
   for reuse in other tests. Reduces duplication; chains tests
   together.
+- **Register a `Prop` class where something consumes it.** Redundant
+  registrations are harmless by proof irrelevance, but that is not a reason
+  to make them; a second resolution route to an unconsumed `Prop` is code
+  without a return.
 
 ## Constructive-only Lean code
 
@@ -412,6 +416,60 @@ rationale.
   `Over`) can reuse it while the constructive core stays strict.
   It runs in CI and the pre-push checklist;
   `scripts/tests/test-axiom-linter.sh` smoke-tests it.
+
+Seven rules govern keeping a module choice-free. Where a rule rests on an
+axiom measurement, that measurement was taken at v4.33.0-rc1.
+
+- **Measure monomorphically, in the consuming closure.** Take an axiom
+  measurement from a monomorphic declaration at the instances used, and in
+  the import closure of the module that will use them. `#print axioms` on a
+  polymorphic constant reports that constant and no instantiation of it,
+  and instance search selects different instances in different closures, so
+  a measurement taken narrowly can be the opposite of the one that binds.
+- **Name the term where two routes inhabit one class.** Where only one of
+  them is choice-free, name it rather than leaving instance search to
+  select; where the only instance in scope is choice-dependent, supply one.
+- **Split modules by what can be stated choice-free.** Constructions and
+  the content of their universal properties go in modules choice-free over
+  the underlying data; mathlib structures and `Prop` instances go in a
+  wrapper whose fields are those terms. Admit to
+  `GebMeta.classicalAllowedModules` only such a wrapper, a module whose own
+  subject is a `Classical`-dependent mathlib structure, their `GebTests`
+  parallels, and the linter's own test fixture. A wrapper may carry content
+  where that content cannot be stated choice-free.
+- **Bound `Fin` and `Nat` arithmetic by `omega` or by cases.** Establish a
+  bound over individually named hypotheses, or by case analysis, rather
+  than by the single lemma that states it: the choice-dependent and
+  choice-free lemmas of `Nat`'s division and order API interleave under no
+  separating convention, and neither the name nor the namespace separates
+  them.
+- **Transport a dependent codomain with `Equiv.piCongrRight`; state domain
+  transport yourself.** `Equiv`'s combinators divide by which side of the
+  arrow they move: `Equiv.arrowCongr`, `Equiv.arrowCongr'`,
+  `Equiv.piCongrLeft`, `Equiv.piCongrLeft'` and `Equiv.piCongr` all depend
+  on `Classical.choice`, while `Equiv.piCongrRight` and `Equiv.curry` do
+  not. `Equiv.arrowCongr` moves the codomain too, so it is not the
+  choice-free codomain route; name `Equiv.piCongrRight`. For the domain, a
+  choice-free module supplies its own, as
+  `Geb/Mathlib/Logic/Equiv/Basic.lean` does.
+- **Pin `LawfulBEq (Fin n)` where the closure reaches mathlib's `Fin`
+  order API.** Instance search there selects `Std.LawfulBEqOrd.lawfulBEq`,
+  which is choice-dependent at `Fin n`, and every operation stated over the
+  class inherits that, `decide (j ∈ l)` at `List (Fin n)` among them. Pin
+  the instance to the construction over the `DecidableEq`-derived `BEq`.
+  This is the name-the-term rule one level down, stated separately because
+  the closure-dependence makes a narrow measurement report clean.
+- **Re-measure at every toolchain bump.** A lemma's axioms follow its
+  proof, so each measurement above is re-taken when the pin moves rather
+  than assumed to persist.
+
+`Geb/Mathlib/Data/Vector/OfFn.lean`'s docstring states which lemmas of the
+`Vector.ofFn` family a choice-free module may not use, and why a bare
+`simp` or `grind` reaches them. Where that restriction is violated in a
+module held to the standard axiom set, nothing errors at elaboration and
+`lake lint` catches it. In an allowlisted module `lake lint` does not:
+`GebMeta.detectNonstandardAxiom` permits `Classical.choice` there outright,
+so the restriction is enforced only by grep and by review.
 
 ## sorry, admit, and underscores
 
