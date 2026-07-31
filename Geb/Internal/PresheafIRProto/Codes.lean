@@ -44,6 +44,15 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.unitPsh` — the unit for `δ`: terminal shape presheaf, no directions.
 * `GebProto.arityVariesShapeArity` / `GebProto.deltaVarying` — the arity of
   `arityVaries` as a `ShapeArity` over `unitPsh`, and the `δ` at it.
+* `GebProto.PshMor` — a morphism from a `DomArity` to a presheaf, unbundled:
+  the decodings a `δ`'s continuation may depend on.
+* `GebProto.fibreArity` — the arity a decoding adjoins, its fibres.
+* `GebProto.deltaRec` — the `δ` whose continuation depends on the decoding,
+  as a coproduct over the decodings of non-recursive `δ`s.
+* `GebProto.decPresheaf` / `GebProto.decArity` / `GebProto.deltaFused` — the
+  decodings of an output-varying arity as a presheaf on the output base, the
+  arity indexed by that presheaf's elements, and the `δ` carrying both
+  features.
 * `GebProto.CodeShape` / `GebProto.CodeDir` / `GebProto.CodeNext` /
   `GebProto.codePFunctor` — the polynomial functor on `Cat` whose W-type is the
   type of codes, and `GebProto.Code`, that W-type.
@@ -84,6 +93,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   constructor, each definitional.
 * `GebProto.interp_fst` — a code's index is the base its interpretation lands
   in.
+* `GebProto.not_hasBijectiveReindex_deltaFusedVaries` — the fused `δ` at an
+  output-varying arity lies outside the bound, so fusing the decoding-indexed
+  continuation onto the rule does not cost the output-varying arity.
+* `GebProto.subsingleton_pshMor_to_terminal` — at the terminal decoding the
+  recursion degenerates.
 
 ## Implementation notes
 
@@ -1362,28 +1376,105 @@ def deltaFused {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, v
 
 end Decoding
 
+section FusedWitness
+
+/-!
+That the fused `δ` keeps the output-varying arity, checked rather than argued:
+at the terminal decoding, where the recursion degenerates, `deltaFused` at an
+output-varying arity still lies outside the bound of
+`hasBijectiveReindex_deltaConst`.
+-/
+
+open CategoryTheory
+
+/-- The terminal presheaf on `Fin 1`, as a decoding: every fibre a singleton,
+so the decodings of any arity form a singleton and the recursion degenerates. -/
+def termPsh : (Fin 1)ᵒᵖ ⥤ Type where
+  obj _ := PUnit
+  map _ := ↾ fun _ ↦ PUnit.unit
+
+/-- `arityVaries`'s arity as an output-varying `BaseArity`: empty over `0`,
+inhabited over `1`, reindexed along `0 ⟶ 1` by the map out of the empty type. -/
+def arityVariesBase : BaseArity.{0, 0, 0, 0, 0} (Fin 1) (Fin 2) where
+  fam b :=
+    { carrier := arityB b
+      proj := fun _ ↦ 0
+      restr := fun {_ _} _f d ↦ ⟨d.1, Subsingleton.elim _ _⟩ }
+  reindex := fun {_ _} g {_} d ↦
+    ⟨⟨Fin.castLE (leOfHom g) d.1.down⟩, Subsingleton.elim _ _⟩
+
+/-- Each fibre of `arityVariesBase` has at most one element. -/
+theorem arityVariesBase_dir_ext (b : Fin 2) (i : Fin 1)
+    (x y : (arityVariesBase.fam b).Dir i) : x = y :=
+  Subtype.ext (Subsingleton.elim (α := arityB b) x.1 y.1)
+
+/-- The arity is functorial; its content is the variation of the fibres, not
+the laws. -/
+theorem isFunctorial_arityVariesBase : arityVariesBase.IsFunctorial where
+  restr_id := by intro b i; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  restr_comp := by intro b i i' i'' f g; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  reindex_id := by intro b i; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  reindex_comp := by intro b b' b'' g h i; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  reindex_naturality := by
+    intro b b' g i i' f
+    funext d
+    exact arityVariesBase_dir_ext _ _ _ _
+
+/-- The fused `δ` at that arity, over the terminal decoding, with the unit as
+its continuation. -/
+def deltaFusedVaries : PresheafPFunctor.{0, 0, 0, 0, 0, 0} (ElObj.{0, 0, 0} termPsh) (Fin 2) :=
+  deltaFused arityVariesBase isFunctorial_arityVariesBase termPsh
+    (unitPsh (ElObj.{0, 0, 0} termPsh)
+      (ElObj.{0, 0, 0} (decPresheaf arityVariesBase isFunctorial_arityVariesBase termPsh)))
+
+
+/-- The unique decoding into the terminal presheaf. -/
+def decUnit (b : Fin 2) : PshMor (arityVariesBase.fam b) termPsh where
+  app := fun {_} _ ↦ PUnit.unit
+  naturality := by intros; rfl
+
+/-- The fused `δ` at an output-varying arity has non-bijective reindexing, so
+it lies outside the bound of `hasBijectiveReindex_deltaConst`. Fusing the
+decoding-indexed continuation onto the rule does not cost the output-varying
+arity: both features are present at once. -/
+theorem not_hasBijectiveReindex_deltaFusedVaries :
+    ¬ HasBijectiveReindex deltaFusedVaries := by
+  intro h
+  have hb := (h (homOfLE (show (0 : Fin 2) ≤ 1 by omega))
+    (⟨⟨(1 : Fin 2), decUnit 1⟩, rfl⟩ : deltaFusedVaries.Shape (1 : Fin 2))
+    (⟨(0 : Fin 1), PUnit.unit⟩ : ElObj.{0, 0, 0} termPsh)).2
+  obtain ⟨d, -⟩ := hb
+    ⟨Sum.inl ⟨⟨(0 : Fin 1), PUnit.unit⟩,
+      ⟨⟨⟨(0 : Fin 1)⟩, Subsingleton.elim _ _⟩, rfl⟩⟩, rfl⟩
+  obtain ⟨b, -⟩ := d
+  cases b with
+  | inl c => exact (c.2.1.1.down).elim0
+  | inr e => exact e.elim
+
+end FusedWitness
+
 section CodeType
 
-variable (I : Type uI) [Category.{vI} I]
+variable (I : Type u) [Category.{u} I] (D : Iᵒᵖ ⥤ Type u)
 
 set_option linter.checkUnivs false in
 /-- The shape of a code node over the base category `𝔹`: stop (`ι`), refine the
 shape presheaf by `S` and continue over its category of elements (`σ`), or
-adjoin the arity `P` and continue over the same base (`δ`). The arity carrier
-universe is pinned to the base's, which the prototype does not need to vary.
+adjoin the output-varying arity `A` and continue over the category of elements
+of its decoding presheaf (`δ`).
 
-`δ` has a single continuation, not a family indexed by decodings as in
-Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013]. This is the layer
-whose decoding presheaf is terminal, where that family is a singleton; the
-continuation's dependence on the decoding — the recursion of
-induction-recursion — belongs to the `(I, D)` layer, which is not built here.
+Both `σ` and `δ` have a single continuation over a base the shape determines.
+For `δ` that is what carries the recursion: a continuation depending
+functorially on the decoding is one code over `ElObj (decPresheaf …)`, not a
+family of codes indexed by decodings. The index is therefore a parameter, and
+nothing is defined simultaneously with anything else.
 
-The `σ` shape is what makes the code type indexed by a *category* rather than
-by a fixed one, and the index is a parameter, not a type defined simultaneously
-with the codes: no inductive-inductive definition is required. -/
-def CodeShape (𝔹 : Cat.{v, u}) : Type (max (u + 1) v uI vI) :=
+The input side is the fixed pair `(I, D)`; the interpretation's input base is
+`ElObj D`. Universes are pinned so that `Cat.{v, u}` is closed under both
+continuation steps. -/
+def CodeShape (𝔹 : Cat.{v, u}) : Type (max (u + 1) v) :=
   PUnit.{1} ⊕ ((𝔹ᵒᵖ ⥤ Type u) ⊕
-    {P : BaseArity.{uI, u, u, vI, v} I 𝔹 // P.IsFunctorial})
+    {A : BaseArity.{u, u, u, u, v} I 𝔹 // A.IsFunctorial})
 
 set_option linter.checkUnivs false in
 /-- The subcode slots of a code shape: none for `ι`, one for `σ` and `δ`. -/
@@ -1393,120 +1484,117 @@ def CodeDir (𝔹 : Cat.{v, u}) : CodeShape I 𝔹 → Type
 
 set_option linter.checkUnivs false in
 /-- The base category the subcode of a code shape lives over: the category of
-elements of `S` for `σ`, and the same base for `δ`. `Cat` is closed under this
-step, which is what lets the codes be an ordinary W-type. -/
+elements of `S` for `σ`, and of the decoding presheaf of `A` for `δ`. `Cat` is
+closed under both, which is what lets the codes be an ordinary W-type. -/
 def CodeNext (𝔹 : Cat.{v, u}) : (sh : CodeShape I 𝔹) → CodeDir I 𝔹 sh → Cat.{v, u}
   | Sum.inl _, b => PEmpty.elim b
   | Sum.inr (Sum.inl S), _ => Cat.of (ElObj.{u, u, v} S)
-  | Sum.inr (Sum.inr _), _ => 𝔹
+  | Sum.inr (Sum.inr ⟨A, hA⟩), _ => Cat.of (ElObj.{u, u, v} (decPresheaf A hA D))
 
 set_option linter.checkUnivs false in
 /-- The slice polynomial functor on `Cat` whose W-type is the type of codes. -/
 def codePFunctor :
-    SlicePFunctor.{max (u + 1) (v + 1) uI vI, 0,
+    SlicePFunctor.{max (u + 1) (v + 1), 0,
       max (u + 1) (v + 1), max (u + 1) (v + 1)} Cat.{v, u} Cat.{v, u} where
   toPFunctor := ⟨Σ 𝔹 : Cat.{v, u}, CodeShape I 𝔹, fun x ↦ CodeDir I x.1 x.2⟩
-  r := fun x ↦ CodeNext I x.1.1 x.1.2 x.2
+  r := fun x ↦ CodeNext I D x.1.1 x.1.2 x.2
   q := fun x ↦ x.1
 
 set_option linter.checkUnivs false in
-/-- The type of codes: the W-type of `codePFunctor`, indexed by the base
-category its root sits over. -/
-def Code : Type (max (u + 1) (v + 1) uI vI) :=
-  (codePFunctor.{uI, vI, u, v} I).W
+/-- The type of codes: the W-type of `codePFunctor`, fibred over `Cat` by the
+base category its root sits over. -/
+def Code : Type (max (u + 1) (v + 1)) :=
+  (codePFunctor.{u, v} I D).W
 
 set_option linter.checkUnivs false in
-/-- The target of the interpretation: a presheaf p.r.a. functor together with
-the base category it lands in. -/
-def Interp : Type (max (u + 1) (v + 1) uI vI) :=
-  Σ 𝔹 : Cat.{v, u}, PresheafPFunctor.{uI, u, u, u, vI, v} I 𝔹
+/-- The target of the interpretation: a presheaf p.r.a. functor on the input
+base `ElObj D`, together with the base category it lands in. -/
+def Interp : Type (max (u + 1) (v + 1)) :=
+  Σ 𝔹 : Cat.{v, u}, PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) 𝔹
 
 set_option linter.checkUnivs false in
 /-- The interpretation of one code node, given its subcode's interpretation
-already transported to the base its slot prescribes. This is the whole
-semantics: `ι` is the unit, `σ` is the base change, `δ` adjoins the pullback of
-its arity. -/
+already at the base its slot prescribes: `ι` is the unit, `σ` is the base
+change, `δ` is the fused rule. -/
 def codeAlgOn (𝔹 : Cat.{v, u}) :
     (sh : CodeShape I 𝔹) →
-      ((b : CodeDir I 𝔹 sh) → PresheafPFunctor.{uI, u, u, u, vI, v} I (CodeNext I 𝔹 sh b)) →
-      PresheafPFunctor.{uI, u, u, u, vI, v} I 𝔹
-  | Sum.inl _, _ => unitPsh I 𝔹
+      ((b : CodeDir I 𝔹 sh) →
+        PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) (CodeNext I D 𝔹 sh b)) →
+      PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) 𝔹
+  | Sum.inl _, _ => unitPsh (ElObj.{u, u, u} D) 𝔹
   | Sum.inr (Sum.inl S), c => sigmaPsh S (c PUnit.unit)
-  | Sum.inr (Sum.inr ⟨P, hP⟩), c =>
-      delta (c PUnit.unit) (P.pullback (c PUnit.unit).toPresheafPFunctorData)
-        (P.isFunctorial_pullback hP (c PUnit.unit))
+  | Sum.inr (Sum.inr ⟨A, hA⟩), c => deltaFused A hA D (c PUnit.unit)
 
 set_option linter.checkUnivs false in
-/-- The slice algebra the interpretation folds with: transport each subcode's
-interpretation to the base its slot prescribes, then apply `codeAlgOn`. -/
+/-- The slice algebra the interpretation folds with. -/
 def codeAlg :
-    (codePFunctor.{uI, vI, u, v} I).toSliceDomPFunctor.Obj
-        (Sigma.fst : Interp.{uI, vI, u, v} I → Cat.{v, u}) →
-      Interp.{uI, vI, u, v} I :=
-  fun x ↦ ⟨x.1.1.1, codeAlgOn I x.1.1.1 x.1.1.2 fun b ↦
-    cast (congrArg (fun 𝔻 : Cat.{v, u} ↦ PresheafPFunctor.{uI, u, u, u, vI, v} I 𝔻)
-      (((codePFunctor.{uI, vI, u, v} I).toSliceDomPFunctor.compatible_iff _ _ _).mp x.2 b))
+    (codePFunctor.{u, v} I D).toSliceDomPFunctor.Obj
+        (Sigma.fst : Interp.{u, v} I D → Cat.{v, u}) →
+      Interp.{u, v} I D :=
+  fun x ↦ ⟨x.1.1.1, codeAlgOn I D x.1.1.1 x.1.1.2 fun b ↦
+    cast (congrArg (fun 𝔻 : Cat.{v, u} ↦
+        PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) 𝔻)
+      (((codePFunctor.{u, v} I D).toSliceDomPFunctor.compatible_iff _ _ _).mp x.2 b))
       (x.1.2 b).2⟩
 
 set_option linter.checkUnivs false in
-/-- The interpretation of a code, as the fold of `codeAlg`. It lies over the
-base category by construction, so the algebra's over-`Cat` law is `rfl`. -/
-def interp : Code.{uI, vI, u, v} I → Interp.{uI, vI, u, v} I :=
-  SlicePFunctor.W.elim (codePFunctor.{uI, vI, u, v} I) (Interp.{uI, vI, u, v} I) Sigma.fst
-    (codeAlg.{uI, vI, u, v} I) rfl
-
+/-- The interpretation of a code, as the fold of `codeAlg`. -/
+def interp : Code.{u, v} I D → Interp.{u, v} I D :=
+  SlicePFunctor.W.elim (codePFunctor.{u, v} I D) (Interp.{u, v} I D) Sigma.fst
+    (codeAlg.{u, v} I D) rfl
 
 set_option linter.checkUnivs false in
 /-- The `ι` code over `𝔹`. -/
-def iotaCode (𝔹 : Cat.{v, u}) : Code.{uI, vI, u, v} I :=
+def iotaCode (𝔹 : Cat.{v, u}) : Code.{u, v} I D :=
   SlicePFunctor.W.mk
     ⟨⟨⟨𝔹, Sum.inl PUnit.unit⟩, fun b ↦ PEmpty.elim b⟩, funext fun b ↦ PEmpty.elim b⟩
 
 set_option linter.checkUnivs false in
-/-- The `σ` code over `𝔹`: refine the shape presheaf by `S`, the subcode being
-one over the category of elements of `S`. -/
-def sigmaCode (𝔹 : Cat.{v, u}) (S : 𝔹ᵒᵖ ⥤ Type u) (K : Code.{uI, vI, u, v} I)
-    (hK : (codePFunctor.{uI, vI, u, v} I).wIndex K = Cat.of (ElObj.{u, u, v} S)) :
-    Code.{uI, vI, u, v} I :=
+/-- The `σ` code over `𝔹`. -/
+def sigmaCode (𝔹 : Cat.{v, u}) (S : 𝔹ᵒᵖ ⥤ Type u) (K : Code.{u, v} I D)
+    (hK : (codePFunctor.{u, v} I D).wIndex K = Cat.of (ElObj.{u, u, v} S)) :
+    Code.{u, v} I D :=
   SlicePFunctor.W.mk ⟨⟨⟨𝔹, Sum.inr (Sum.inl S)⟩, fun _ ↦ K⟩, funext fun _ ↦ hK⟩
 
 set_option linter.checkUnivs false in
-/-- The `δ` code over `𝔹`: adjoin the arity `P`, the subcode being one over the
-same base. -/
-def deltaCode (𝔹 : Cat.{v, u}) (P : BaseArity.{uI, u, u, vI, v} I 𝔹) (hP : P.IsFunctorial)
-    (K : Code.{uI, vI, u, v} I) (hK : (codePFunctor.{uI, vI, u, v} I).wIndex K = 𝔹) :
-    Code.{uI, vI, u, v} I :=
-  SlicePFunctor.W.mk ⟨⟨⟨𝔹, Sum.inr (Sum.inr ⟨P, hP⟩)⟩, fun _ ↦ K⟩, funext fun _ ↦ hK⟩
+/-- The `δ` code over `𝔹`: adjoin the output-varying arity `A`, the subcode
+being one over the category of elements of `A`'s decoding presheaf. -/
+def deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I 𝔹) (hA : A.IsFunctorial)
+    (K : Code.{u, v} I D)
+    (hK : (codePFunctor.{u, v} I D).wIndex K =
+      Cat.of (ElObj.{u, u, v} (decPresheaf A hA D))) :
+    Code.{u, v} I D :=
+  SlicePFunctor.W.mk ⟨⟨⟨𝔹, Sum.inr (Sum.inr ⟨A, hA⟩)⟩, fun _ ↦ K⟩, funext fun _ ↦ hK⟩
 
 /-- The interpretation of an `ι` code is the unit functor. -/
 theorem interp_iotaCode (𝔹 : Cat.{v, u}) :
-    interp.{uI, vI, u, v} I (iotaCode I 𝔹) = ⟨𝔹, unitPsh I 𝔹⟩ := rfl
+    interp.{u, v} I D (iotaCode I D 𝔹) = ⟨𝔹, unitPsh (ElObj.{u, u, u} D) 𝔹⟩ := rfl
 
 /-- The index of a code is the base its interpretation lands in. -/
-theorem interp_fst (K : Code.{uI, vI, u, v} I) :
-    (interp I K).1 = (codePFunctor.{uI, vI, u, v} I).wIndex K :=
-  congrFun (SlicePFunctor.W.comp_elim (codePFunctor I) (Interp I) Sigma.fst (codeAlg I) rfl) K
+theorem interp_fst (K : Code.{u, v} I D) :
+    (interp I D K).1 = (codePFunctor.{u, v} I D).wIndex K :=
+  congrFun (SlicePFunctor.W.comp_elim (codePFunctor.{u, v} I D) (Interp.{u, v} I D)
+    Sigma.fst (codeAlg I D) rfl) K
 
 set_option linter.checkUnivs false in
 /-- The interpretation of a `σ` code is the base change of its subcode's. -/
-theorem interp_sigmaCode (𝔹 : Cat.{v, u}) (S : 𝔹ᵒᵖ ⥤ Type u) (K : Code.{uI, vI, u, v} I)
-    (hK : (codePFunctor.{uI, vI, u, v} I).wIndex K = Cat.of (ElObj.{u, u, v} S)) :
-    interp I (sigmaCode I 𝔹 S K hK) =
+theorem interp_sigmaCode (𝔹 : Cat.{v, u}) (S : 𝔹ᵒᵖ ⥤ Type u) (K : Code.{u, v} I D)
+    (hK : (codePFunctor.{u, v} I D).wIndex K = Cat.of (ElObj.{u, u, v} S)) :
+    interp I D (sigmaCode I D 𝔹 S K hK) =
       ⟨𝔹, sigmaPsh S (cast (congrArg (fun 𝔻 : Cat.{v, u} ↦
-        PresheafPFunctor.{uI, u, u, u, vI, v} I 𝔻) ((interp_fst I K).trans hK))
-        (interp I K).2)⟩ := rfl
+        PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) 𝔻)
+        ((interp_fst I D K).trans hK)) (interp I D K).2)⟩ := rfl
 
 set_option linter.checkUnivs false in
-/-- The interpretation of a `δ` code adjoins the pullback of its arity to its
-subcode's interpretation. -/
-theorem interp_deltaCode (𝔹 : Cat.{v, u}) (P : BaseArity.{uI, u, u, vI, v} I 𝔹)
-    (hP : P.IsFunctorial) (K : Code.{uI, vI, u, v} I)
-    (hK : (codePFunctor.{uI, vI, u, v} I).wIndex K = 𝔹) :
-    interp I (deltaCode I 𝔹 P hP K hK) =
-      ⟨𝔹, delta (cast (congrArg (fun 𝔻 : Cat.{v, u} ↦
-          PresheafPFunctor.{uI, u, u, u, vI, v} I 𝔻) ((interp_fst I K).trans hK))
-          (interp I K).2)
-        (P.pullback _) (P.isFunctorial_pullback hP _)⟩ := rfl
+/-- The interpretation of a `δ` code is the fused rule at its arity. -/
+theorem interp_deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I 𝔹)
+    (hA : A.IsFunctorial) (K : Code.{u, v} I D)
+    (hK : (codePFunctor.{u, v} I D).wIndex K =
+      Cat.of (ElObj.{u, u, v} (decPresheaf A hA D))) :
+    interp I D (deltaCode I D 𝔹 A hA K hK) =
+      ⟨𝔹, deltaFused A hA D (cast (congrArg (fun 𝔻 : Cat.{v, u} ↦
+        PresheafPFunctor.{u, u, u, u, u, v} (ElObj.{u, u, u} D) 𝔻)
+        ((interp_fst I D K).trans hK)) (interp I D K).2)⟩ := rfl
 
 end CodeType
 
