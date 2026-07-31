@@ -7,7 +7,6 @@ module
 
 public import Geb.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos
 import Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton
-import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Basic
 
 /-!
 # Tests for `ElementaryTopos FinSetSkel`
