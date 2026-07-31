@@ -645,3 +645,142 @@ import-direction rules above are enforced by
   resolve only through the instance. The source and test modules are
   listed in `GebMeta.classicalAllowedModules`, the module inheriting its
   `Classical.choice` dependence entirely from the field terms.
+- `Geb/Mathlib/CategoryTheory/FinCat/Basic.lean` —
+  `CategoryTheory.FinCat`, the specification of a finite category: a
+  count of objects, a count of non-identity morphisms at each pair
+  (`nonIdCount`), a composition function on those morphisms (`comp`),
+  and a `Bool` equation asserting associativity
+  (`CategoryTheory.FinCat.assocCheckOf` and
+  `CategoryTheory.FinCat.assocCheck`) that a client with a concrete
+  category discharges by `rfl`. The client designates no identities:
+  one is reserved at the index one past the client's range in each
+  endo-hom (`CategoryTheory.FinCat.homCountOf`,
+  `CategoryTheory.FinCat.embOf`, `CategoryTheory.FinCat.emb`,
+  `CategoryTheory.FinCat.id`), so the identity laws
+  (`CategoryTheory.FinCat.id_comp`, `CategoryTheory.FinCat.comp_id`)
+  hold of the reserved index by construction and only associativity is
+  checked; composition on the full hom types
+  (`CategoryTheory.FinCat.compTotalOf` and
+  `CategoryTheory.FinCat.compTotal`) is total and associative on all
+  triples (`CategoryTheory.FinCat.compTotal_assoc`). The six unbundled
+  declarations — `CategoryTheory.FinCat.homCountOf_of_ne`,
+  `CategoryTheory.FinCat.homCountOf_diag`,
+  `CategoryTheory.FinCat.objEq_of_le`,
+  `CategoryTheory.FinCat.val_eq_of_le`,
+  `CategoryTheory.FinCat.compTotalOf` and
+  `CategoryTheory.FinCat.assocCheckOf` — are axiom-free.
+  `CategoryTheory.FinCat.id_comp`, `CategoryTheory.FinCat.comp_id` and
+  `CategoryTheory.FinCat.compTotal_assoc` depend on `propext`.
+- `Geb/Mathlib/CategoryTheory/FinCat/Category.lean` —
+  `CategoryTheory.FinCat.Obj`, the object type a specification
+  generates: a one-field structure over `ULift (Fin S.objCount)`, a
+  structure projection reducing by iota at reducible transparency,
+  where a `Category` instance placed directly on `ULift` would not.
+  `CategoryTheory.FinCat.Obj.category` is the generated mathlib
+  `Category` instance, with objects and morphisms at independent
+  universe levels `u` and `v`;
+  `CategoryTheory.FinCat.Obj.decidableEqHom` supplies `DecidableEq` on
+  the generated hom-sets, since instance search does not unfold
+  `Quiver.Hom`. `CategoryTheory.FinCat.Obj.category` depends on
+  `propext`; `CategoryTheory.FinCat.Obj.decidableEqHom` on `propext`
+  and `Quot.sound`; the derived
+  `DecidableEq (CategoryTheory.FinCat.Obj S)` on `Quot.sound`.
+- `Geb/Mathlib/CategoryTheory/FinCat/FinCategory.lean` —
+  `CategoryTheory.FinCat.Obj.finCategory`: where the object and
+  morphism levels of `CategoryTheory.FinCat.Obj.category` coincide,
+  the generated category is small and its objects and hom-sets are
+  finite, mathlib's `CategoryTheory.FinCategory` applying at that
+  coinciding level. Allowlisted for `Classical.choice`, together with
+  its test parallel, in `GebMeta.classicalAllowedModules`: `Fintype`'s
+  `complete` field routes membership through `Finset.instSetLike`,
+  itself `Classical.choice`-dependent, so no choice of witness and no
+  hand-rolled instance avoids it, and `Finite` is not an escape,
+  `FinCategory`'s fields being `Fintype`s. `Obj.finCategory` depends
+  on `propext`, `Quot.sound` and `Classical.choice`.
+- `Geb/Mathlib/CategoryTheory/FinCat/Hom.lean` —
+  `CategoryTheory.FinCat.Hom`, the specification of a functor between
+  two finite-category specifications: a map on object indices
+  (`objMap`), a map on client morphisms landing in the target's full
+  hom type (`map`), and a `Bool` equation asserting preservation of
+  composition (`CategoryTheory.FinCat.Hom.compCheckOf` and
+  `CategoryTheory.FinCat.Hom.compCheck`). Preservation of identities
+  is not checked: the extension of the morphism map to the full hom
+  types (`CategoryTheory.FinCat.Hom.mapTotalOf` and
+  `CategoryTheory.FinCat.Hom.mapTotal`) sends the reserved identity to
+  the reserved identity by construction (`mapTotal_id`) and preserves
+  the total composition on all pairs (`mapTotal_compTotal`).
+  `CategoryTheory.FinCat.Hom.id` and `CategoryTheory.FinCat.Hom.comp`
+  are the identity specification and composition of specifications,
+  satisfying the unit and associativity laws as equalities of
+  specifications (`id_comp`, `comp_id`, `assoc`), not merely up to
+  isomorphism; `CategoryTheory.FinCat.Hom.toFunctor` is the mathlib
+  functor a specification generates. `mapTotalOf`, `compCheckOf`,
+  the three `mapTotal` lemmas (`mapTotal_emb`, `mapTotal_id`,
+  `mapTotal_compTotal`), `Hom.id`, `Hom.comp` and `toFunctor` depend
+  on `propext`; the three strict equalities `id_comp`, `comp_id` and
+  `assoc` on `propext` and `Quot.sound`.
+- `Geb/Mathlib/CategoryTheory/FinCat/Hom2.lean` —
+  `CategoryTheory.FinCat.Hom₂`, the specification of a natural
+  transformation between two functor specifications with the same
+  source and target: a component at each object index, ranging over
+  the target's full hom type from the outset so the identity 2-cell
+  has every component an identity, and a `Bool` equation asserting
+  naturality (`CategoryTheory.FinCat.Hom₂.natCheckOf` and
+  `CategoryTheory.FinCat.Hom₂.natCheck`).
+  `CategoryTheory.FinCat.Hom.instCategory` is the hom-category of
+  2-cells under componentwise vertical composition and the identity
+  2-cell; `CategoryTheory.FinCat.Hom₂.toNatTrans` is the mathlib
+  natural transformation a 2-cell specification generates.
+  `Hom.instCategory` depends on `propext` and `Quot.sound`;
+  `natCheck_total` and `toNatTrans` on `propext`.
+- `Geb/Mathlib/CategoryTheory/FinCat/Bicategory.lean` —
+  `CategoryTheory.FinCat.Hom₂.whiskerLeft` and
+  `CategoryTheory.FinCat.Hom₂.whiskerRight`, whiskering a 2-cell
+  specification by a 1-cell specification on either side, with the ten
+  coherence theorems of a bicategory (`id_whiskerLeft`,
+  `comp_whiskerLeft`, `id_whiskerRight`, `comp_whiskerRight`,
+  `whiskerRight_id`, `whiskerRight_comp`, `whisker_assoc`,
+  `whisker_exchange`, `pentagon`, `triangle`), the associator and the
+  unitors taken to be `CategoryTheory.eqToHom` at the strict
+  equalities `CategoryTheory.FinCat.Hom.assoc`,
+  `CategoryTheory.FinCat.Hom.id_comp` and
+  `CategoryTheory.FinCat.Hom.comp_id`
+  (`CategoryTheory.FinCat.Hom₂.eqToHom_app` gives their components).
+  `CategoryTheory.FinCat.bicategory` packages this as a
+  `Bicategory CategoryTheory.FinCat`,
+  `CategoryTheory.FinCat.bicategory_strict` as its strictness (1-cell
+  composition unital and associative on the nose), and
+  `CategoryTheory.FinCat.category` as the resulting
+  `Category CategoryTheory.FinCat`, from the strict bicategory. The
+  whiskerings, `eqToHom_app`, the ten coherence theorems, and the
+  three instances all depend on `propext` and `Quot.sound`.
+- `Geb/Mathlib/CategoryTheory/FinCat/Decidable.lean` — decidable
+  equality at each of the three levels, decided field by field and
+  transported along the equality of an earlier field wherever a
+  later field's type mentions it; the `Bool`-valued equation fields
+  contribute no decision, being proof-irrelevant.
+  `CategoryTheory.FinCat.decidableEqPiFin` decides equality of
+  functions out of `Fin n` pointwise and is `scoped`, with every
+  `DecidableEq` argument at a Π-type use site supplied explicitly so
+  that only the innermost `DecidableEq (Fin _)` is left to instance
+  resolution — `Fintype.decidablePiFintype` being a competitor at the
+  same head symbol that default resolution would otherwise select;
+  `CategoryTheory.FinCat.decidableEqComp` specialises it to
+  composition tables at fixed counts.
+  `CategoryTheory.FinCat.Hom₂.decidableEq`,
+  `CategoryTheory.FinCat.Hom.decidableEq` and
+  `CategoryTheory.FinCat.decidableEq` are the three levels.
+  `decidableEqPiFin` and `decidableEqComp` depend on `Quot.sound`;
+  `Hom.decidableEq` and `Hom₂.decidableEq` on `propext` and
+  `Quot.sound`; the outer `decidableEq` on `Quot.sound`.
+- `Geb/Mathlib/CategoryTheory/FinCat/Repr.lean` — `Repr` at each of
+  the three levels, rendering the counts and the tables as nested
+  naturals through `List.ofFn` and `Fin.val`:
+  `CategoryTheory.FinCat.instRepr` renders a specification as its
+  object count, its count matrix and its composition table;
+  `CategoryTheory.FinCat.Hom.instRepr` renders a functor
+  specification as its object map and its morphism table;
+  `CategoryTheory.FinCat.Hom₂.instRepr` renders a 2-cell
+  specification as its component vector. The `Bool`-validity fields
+  are not rendered, carrying no information a reader of the table
+  needs. All three instances depend on `propext`.

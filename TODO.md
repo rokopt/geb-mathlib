@@ -14,11 +14,14 @@
     - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
+  - [`FinSetSkel` under `namespace CategoryTheory`](#finsetskel-under-namespace-categorytheory)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
   - [Complete Theorem 2.4 for `IndRec`](#complete-theorem-24-for-indrec)
   - [Theorems 2 and 4 for `IR` codes](#theorems-2-and-4-for-ir-codes)
   - [Validate `PresheafPFunctor.functor` as a parametric right adjoint](#validate-presheafpfunctorfunctor-as-a-parametric-right-adjoint)
   - [Exhaustive verification of presheaf PRA laws for finite instances](#exhaustive-verification-of-presheaf-pra-laws-for-finite-instances)
+  - [PRA functors over finite-specification base categories](#pra-functors-over-finite-specification-base-categories)
+  - [Finite categories as a full subcategory of `Cat`](#finite-categories-as-a-full-subcategory-of-cat)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -204,6 +207,17 @@ place in first-order polynomial time, as against the higher-order and
 word-algebra regimes in which they identify an elementary or
 exponential jump.
 
+`FinCat.assocCheck`
+(`Geb/Mathlib/CategoryTheory/FinCat/Basic.lean`) is in scope for the
+same treatment. It enumerates `Θ(objCount⁴) + O(M³)` tuples, where `M`
+is the total non-identity morphism count: four object quantifiers stand
+outside the three morphism quantifiers, so a discrete category on `n`
+objects costs `n⁴` iterations even at `M = 0`. Reserving an index for
+each identity keeps the identity cases out of the quantifier entirely,
+the identity laws holding by construction, so the morphism factor is
+the non-identity count rather than the total. As above this is an upper
+bound only, the `Bool` conjunction short-circuiting on rejection.
+
 ### Upstream placement of categorical wrappers
 
 Settle where the categorical wrappers under `Geb/Mathlib/Data/` belong
@@ -223,6 +237,17 @@ whatever placement is settled for them. Scoping the item by that
 criterion
 rather than by a module list keeps it from being settled
 incompletely.
+
+### `FinSetSkel` under `namespace CategoryTheory`
+
+Move `FinSetSkel` and the modules under
+`Geb/Mathlib/CategoryTheory/FinSetSkel/`, together with their
+`GebTests/Mathlib/CategoryTheory/FinSetSkel/` parallels, from the root
+namespace into `namespace CategoryTheory`, as mathlib places
+essentially all of `Mathlib/CategoryTheory/`. A root-namespace
+`FinSetSkel` draws the upstream-eligibility objection that moved
+`CategoryTheory.FinCat`; it is a separate concern and so a separate
+branch.
 
 ### Upstream destination of core- and Batteries-targeted content
 
@@ -312,6 +337,75 @@ does not currently bundle: a `finEnumHomJ` field is added by the commit
 that first consumes it. This is a testing/verification concern (not a
 new decidability instance) and is distinct from the decidability of
 fiber membership already implemented.
+
+### PRA functors over finite-specification base categories
+
+Instantiate the presheaf parametric-right-adjoint functors of
+`Geb/Mathlib/Data/PFunctor/Presheaf/` at base categories presented by
+`FinCat` specifications (`Geb/Mathlib/CategoryTheory/FinCat/`), derive
+decidable equality on their W-types from the specification's own, and
+specify the natural transformations among the resulting functors.
+
+This is the consumer that justifies the functor, 2-cell, `Bicategory`
+and `DecidableEq`/`Repr` layers of the `FinCat` workstream under
+CONTRIBUTING § Code is cost. Without it those layers have no in-tree
+consumer: the comparison with `Cat` below is the only other one and is
+itself deferred.
+
+It also supplies what § Exhaustive verification of presheaf PRA laws
+for finite instances records as missing. That entry notes that the laws
+quantifying over `J`-morphisms need finite `J`-hom-sets, which
+`FinitePresheafPFunctor` does not bundle, and anticipates a
+`finEnumHomJ` field. A `FinCat` specification carries finite hom-sets
+with decidable equality by construction, so the field may be
+discharged from a specification rather than added.
+
+One interface constraint carries over. `FinitePresheafPFunctor` bundles
+`FinEnum J`, and the `FinCat` workstream establishes by measurement
+that mathlib's only `FinEnum (Fin n)` instance, `FinEnum.fin`, depends
+on `Classical.choice`, as does `ULift.instFinEnum` over it. Supplying
+that field from a `FinCat` specification choice-free therefore needs a
+`FinEnum` built directly as a cardinality with `Equiv.refl`, which
+competes with `FinEnum.fin` at the same head symbol and so requires the
+explicit-supply mitigation `Geb/Mathlib/Data/FinEnum.lean` documents.
+The `FinCat` workstream declines that trade, having no need of
+`FinEnum`; this item does need it and should price it.
+
+Depends on the `FinCat` workstream.
+
+### Finite categories as a full subcategory of `Cat`
+
+Compare the `FinCat` specifications with the finite categories among
+mathlib's, comprising:
+
+- the object property on `Cat.{v, u}` selecting the categories with
+  finitely many objects and finitely many morphisms in each hom-set,
+  stated as a `Prop` in the shape of
+  `CategoryTheory.CountableCategory`. mathlib has no such property:
+  `Mathlib/CategoryTheory/Cat/` contains no `ObjectProperty` file, and
+  `CategoryTheory.FinCategory` requires `SmallCategory` and so does not
+  express it at independent universe levels;
+- the 2-functor from `FinCat` to `Cat.{v, u}` extending
+  `FinCat.Hom.toFunctor`;
+- the proof that it is an equivalence onto that full subcategory.
+
+Two observations from the `FinCat` workstream. Essential surjectivity
+chooses `Obj ≃ Fin n` and a bijection on each hom-set, so it depends on
+`Fintype.equivFin` and is classical; and because the chosen map on
+objects is a bijection, the result is an isomorphism in `Cat` rather
+than only an equivalence, as
+`Geb/Mathlib/CategoryTheory/FinSetSkel/Skeleton.lean` obtains for its
+own comparison. The hom-set bijections must be chosen to carry each
+identity to the index `FinCat` reserves for it, which is a constraint
+that workstream's conventions impose on this one.
+
+Deferred rather than scheduled: this item is the least predictable of
+the three that the `FinCat` brainstorming identified, and it is the one
+most likely to force revision of `FinCat`'s identity convention or hom
+encoding, so it is taken after that workstream's interface has been
+exercised by the PRA item above.
+
+Depends on the `FinCat` workstream.
 
 ## Triggers (do when condition fires)
 
