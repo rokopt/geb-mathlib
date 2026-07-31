@@ -26,6 +26,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   varying over the shape presheaf, and the constant one.
 * `GebProto.deltaData` / `GebProto.delta` — the `δ` case: adjoin a `ShapeArity`
   to every arity of a functor.
+* `GebProto.BaseArity` / `GebProto.BaseArity.pullback` — the arity a code's `δ`
+  carries, indexed by output objects rather than by shapes, and its pullback
+  along a functor's shape-output map to the `ShapeArity` that `delta` consumes.
 * `GebProto.HasBijectiveReindex` — the property that every reindexing map is a
   bijection.
 * `GebProto.unitPsh` — the unit for `δ`: terminal shape presheaf, no directions.
@@ -46,6 +49,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.not_hasBijectiveReindex_deltaVarying` — a `δ` at an arity that does
   vary over the shape presheaf is not such a functor either, so the extended
   rule reaches past the bound.
+* `GebProto.BaseArity.isFunctorial_pullback` — the pullback of a functorial
+  `BaseArity` is functorial, so a code's `δ` need not mention its subcode's
+  shapes.
 
 ## Implementation notes
 
@@ -55,6 +61,12 @@ shape `a` is `fam a`, not `fam (F.q a)` transported along `a`'s membership
 proof. Its `IsFunctorial` mirrors `PresheafPFunctorData.IsFunctorial` clause for
 clause, so `delta`'s law proofs split over the two direction summands into the
 arity's law and `F`'s.
+
+`BaseArity.pullback` is where the transport `ShapeArity` avoids reappears: its
+reindexing runs along `g` conjugated by the two shape-membership proofs, so its
+two transported laws reduce to equalities of `J`-morphisms built from
+`eqToHom`s. `BaseArity.reindex_eqToHom`, `BaseArity.reindex_cast_shape` and
+`BaseArity.reindex_comp_apply` are the three lemmas that reduction needs.
 
 ## Tags
 
@@ -370,6 +382,130 @@ def delta (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
                 (congrFun (F.isFunctorial.shapeRestr_comp g h) a) ⟨b, hb⟩)).symm
             exact Subtype.ext (congrArg (fun x : F.Direction a.1 i ↦ Sum.inr x.1)
               (F.isFunctorial.reindex_comp g h a ⟨b, hb⟩)) }
+
+
+section Base
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+set_option linter.checkUnivs false in
+/-- The arity a code's `δ` carries: a presheaf on `I` for each *output object*,
+with a reindexing along `J`-morphisms. This is the data of a functor
+`J ⥤ (Iᵒᵖ ⥤ Type)`, unbundled.
+
+A code's `δ` must be indexed this way rather than by shapes: the shapes belong
+to the subcode's interpretation, which a code cannot mention. `pullback`
+converts it to the shape-indexed `ShapeArity` that `delta` consumes. -/
+structure BaseArity (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
+    Type (max (uB + 1) uI uJ vI vJ) where
+  /-- The presheaf on `I` carried over each output object. -/
+  fam : J → DomArity.{uI, uB, vI} I
+  /-- Reindexing along a `J`-morphism, covariant, matching the direction of
+  `PresheafPFunctorData.reindex`. -/
+  reindex : ∀ ⦃j j' : J⦄, (j' ⟶ j) → ∀ ⦃i : I⦄, (fam j').Dir i → (fam j).Dir i
+
+namespace BaseArity
+
+set_option linter.checkUnivs false in
+/-- The functor laws of a `BaseArity`. No `cast` appears: there is no shape
+presheaf to transport along. -/
+structure IsFunctorial (P : BaseArity.{uI, uJ, uB, vI, vJ} I J) : Prop where
+  /-- Each presheaf preserves identities. -/
+  restr_id : ∀ (j : J) (i : I), (P.fam j).restr (𝟙 i) = id
+  /-- Each presheaf reverses composition. -/
+  restr_comp : ∀ (j : J) ⦃i i' i'' : I⦄ (f : i' ⟶ i) (g : i'' ⟶ i'),
+    (P.fam j).restr (g ≫ f) = (P.fam j).restr g ∘ (P.fam j).restr f
+  /-- Reindexing preserves identities. -/
+  reindex_id : ∀ (j : J) (i : I), P.reindex (𝟙 j) (i := i) = id
+  /-- Reindexing preserves composition, `g` being the outer factor. -/
+  reindex_comp : ∀ ⦃j j' j'' : J⦄ (g : j' ⟶ j) (h : j'' ⟶ j') (i : I),
+    P.reindex (h ≫ g) (i := i) = P.reindex g (i := i) ∘ P.reindex h (i := i)
+  /-- Reindexing is a morphism of presheaves on `I`. -/
+  reindex_naturality : ∀ ⦃j j' : J⦄ (g : j' ⟶ j) ⦃i i' : I⦄ (f : i' ⟶ i),
+    (P.fam j).restr f ∘ P.reindex g (i := i) = P.reindex g (i := i') ∘ (P.fam j').restr f
+
+variable (P : BaseArity.{uI, uJ, uB, vI, vJ} I J)
+
+/-- Reindexing along an `eqToHom` is the transport along the underlying
+equality. -/
+theorem reindex_eqToHom (hP : P.IsFunctorial) {x y : J} (hh : x = y) {i : I}
+    (d : (P.fam x).Dir i) :
+    P.reindex (eqToHom hh) d = cast (congrArg (fun w : J ↦ (P.fam w).Dir i) hh) d := by
+  cases hh
+  simpa using congrFun (hP.reindex_id x i) d
+
+/-- Reindexing along a composite, applied pointwise. -/
+theorem reindex_comp_apply (hP : P.IsFunctorial) {x y z : J} (k₁ : x ⟶ y) (k₂ : y ⟶ z)
+    {i : I} (d : (P.fam x).Dir i) :
+    P.reindex (k₁ ≫ k₂) d = P.reindex k₂ (P.reindex k₁ d) :=
+  congrFun (hP.reindex_comp k₂ k₁ i) d
+
+/-- Reindexing after a transport is reindexing along the composite with the
+transport's `eqToHom`. -/
+theorem reindex_cast {x y z : J} (k : y ⟶ z) (hh : x = y) {i : I} (d : (P.fam x).Dir i) :
+    P.reindex k (cast (congrArg (fun w : J ↦ (P.fam w).Dir i) hh) d) =
+      P.reindex (eqToHom hh ≫ k) d := by
+  cases hh
+  simp
+
+/-- Reindexing after a transport along an equality of *shapes* is reindexing
+along the composite with that equality's `eqToHom`. -/
+theorem reindex_cast_shape (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
+    {j : J} {t t' : F.Shape j} (hh : t = t') {x : J} (k : F.q t'.1 ⟶ x) {i : I}
+    (d : (P.fam (F.q t.1)).Dir i) :
+    P.reindex k (cast (congrArg (fun u : F.Shape j ↦ (P.fam (F.q u.1)).Dir i) hh) d) =
+      P.reindex (eqToHom (congrArg (fun u : F.Shape j ↦ F.q u.1) hh) ≫ k) d := by
+  cases hh
+  simp
+
+set_option linter.checkUnivs false in
+/-- Pull a `BaseArity` back along a functor's shape-output map: the arity over
+the shape `a` is the arity over `F.q a`, reindexed along the `J`-morphism `g`
+transported by the two shape-membership proofs. -/
+def pullback (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) : ShapeArity F where
+  fam := fun a ↦ P.fam (F.q a)
+  reindex := fun {_ _} g s {_} d ↦
+    P.reindex (eqToHom (F.shapeRestr g s).2 ≫ g ≫ eqToHom s.2.symm) d
+
+/-- The transported morphism a pullback reindexes along, named so the two
+transported laws can rewrite it. -/
+theorem pullback_reindex (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
+    {j j' : J} (g : j' ⟶ j) (s : F.Shape j) {i : I}
+    (d : ((P.pullback F).fam (F.shapeRestr g s).1).Dir i) :
+    (P.pullback F).reindex g s d =
+      P.reindex (eqToHom (F.shapeRestr g s).2 ≫ g ≫ eqToHom s.2.symm) d :=
+  rfl
+
+set_option linter.checkUnivs false in
+/-- The pullback of a functorial `BaseArity` is functorial. The two transported
+laws reduce, via `reindex_eqToHom` and `reindex_cast`, to equalities of
+`J`-morphisms built from `eqToHom`s, which cancel. -/
+theorem isFunctorial_pullback (hP : P.IsFunctorial)
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+    (P.pullback F.toPresheafPFunctorData).IsFunctorial F where
+  restr_id := fun a i ↦ hP.restr_id (F.q a) i
+  restr_comp := by intro a i i' i'' f g; exact hP.restr_comp (F.q a) f g
+  reindex_naturality := by
+    intro j j' g s i i' f
+    exact hP.reindex_naturality (eqToHom (F.shapeRestr g s).2 ≫ g ≫ eqToHom s.2.symm) f
+  reindex_id := by
+    intro j s i d
+    simp only [pullback] at d ⊢
+    rw [show
+      (eqToHom (F.shapeRestr (𝟙 j) s).2 ≫ (𝟙 j) ≫ eqToHom s.2.symm) =
+        eqToHom (((F.shapeRestr (𝟙 j) s).2).trans s.2.symm) by simp,
+      reindex_eqToHom P hP]
+  reindex_comp := by
+    intro j j' j'' g h s i d
+    simp only [pullback] at d ⊢
+    rw [reindex_cast_shape (hh := congrFun (F.isFunctorial.shapeRestr_comp g h) s),
+      ← reindex_comp_apply P hP]
+    congr 1
+    simp
+
+end BaseArity
+
+end Base
 
 end Delta
 
