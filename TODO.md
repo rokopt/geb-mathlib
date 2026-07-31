@@ -106,8 +106,21 @@ branch that found it, so each is deferred per
   Definition 6, Definition 7, Theorem 1, Theorem 2, Theorem 3,
   Theorem 4, Definition 8 and Corollary 2 are the preprint's Lemma 7,
   Definition 10, Definition 11, Theorem 12, Theorem 15, Theorem 18,
-  Theorem 21, Definition 17 and Corollary 19. Section numbering is
-  unchanged. Rewrite the note with that.
+  Theorem 21, Definition 17 and Corollary 19. Across everything this
+  repository cites, add also: the proceedings' Definition 2, Definition
+  5, Lemma 2, Lemma 3 and Lemma 4 are the preprint's Definition 2,
+  Definition 8, Lemma 9, Lemma 14 and Lemma 16. Record the collision
+  explicitly: the preprint's Definition 8 is the proceedings'
+  Definition 5, while the proceedings' Definition 8 is the preprint's
+  Definition 17, so a citation that does not say which numbering it
+  uses sends a reader to the wrong statement — and Definition 5 and
+  Lemma 4 are the repository's most-cited numbered results. Section
+  numbering is unchanged. Note too that the preprint carries a
+  different title and author order, so the key names the proceedings
+  version alone. This correction must land before any branch of the
+  presheaf p.r.a. workstream that cites an uncovered result: W-a for
+  Definitions 6 and 7 and Theorem 1, W-b for the delta rule, W-d for
+  Lemma 1, W-e for Theorem 3.
 
 ### Polynomial functors
 

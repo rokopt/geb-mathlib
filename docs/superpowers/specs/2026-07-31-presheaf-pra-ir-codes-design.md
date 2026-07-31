@@ -36,15 +36,22 @@ The prototype at `Geb/Internal/PresheafIRProto/` is the source this document
 transcribes. It compiles, is linted, and is audited by
 `GebMeta.detectNonstandardAxiom`; every declaration cited below is
 `Classical.choice`-free except where noted. Where this document and the
-prototype disagree, the prototype is right. Claims marked *inference* are not
-elaborated there; every other claim names the declaration that establishes it.
+prototype's *elaborated content* disagree, the
+prototype is right; its prose carries no such authority, and three defects in
+it were found and corrected during review — two labels reading `σ` for both
+`coprod` and `sigmaPsh`, an overstated "only new content" in `Functor.lean`,
+and a comment calling two `def`s `example`s. Claims marked *inference*,
+*unelaborated* or *conjecture* are not elaborated
+there; every other claim names the declaration that establishes it.
 
 The prototype is not deliverable content. Each branch removes the part of it
 that branch ports, rather than the whole surviving until the last branch: after
-W-a and W-b, what remains is the retained derivation below and the fixtures
-W-c still needs. The last branch removes the remainder together with this
+W-a and W-b, what remains is the retained derivation below. Whichever of W-c
+to W-f lands last removes the remainder together with this
 document, the plan, and the `Geb.Internal.PresheafIRProto.Functor` entry in
-`GebMeta.classicalAllowedModules`. Carrying the whole prototype alongside its
+`GebMeta.classicalAllowedModules`; the four are mutually unordered, so the
+removal is a condition on the last rather than an assignment to a named
+branch. Carrying the whole prototype alongside its
 port would define the same declarations twice on `main`, against
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
@@ -71,8 +78,13 @@ and are ported by obligation 1; `idElt`, `map_idElt`,
 The repository's existing code system, `IndRec.IR I O`, denotes functors
 between free coproduct completions of discrete index types. Its interpretation
 preserves identities and composition (`IR.interpMor_id`, `IR.interpMor_comp`);
-the `⥤` packaging is deferred to a `Classical.choice`-enabled wrapper. Two
-capabilities it lacks motivate the generalization to presheaf bases:
+the `⥤` packaging is deferred to a `Classical.choice`-enabled wrapper. One
+capability it lacks, and one property that the `Fam(C)`-based positive
+inductive-recursive definitions of [GhaniNordvallForsbergMalatesta2015] lack,
+motivate the generalization to presheaf bases. `IR I O` itself is full and
+faithful — Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013], present
+here as `IR.interpHomEquiv` — so the second point is about the `Fam(C)`
+generalization, not about `IR I O`:
 
 - *Inference, not elaborated* — the prototype constructs no initial algebras
   (§ Non-goals) and no walking-arrow endofunctor. Only one of
@@ -86,7 +98,12 @@ capabilities it lacks motivate the generalization to presheaf bases:
   collections, and Section 2 records only that its own choice loses the
   property, adding that it "is not an essential property". That nothing short
   of the simultaneous definition recovers it over `Fam(C)` is this document's
-  reading. Full and faithfulness of the interpretation is not available over
+  reading. The prototype argues the loss concretely rather than from Remark
+  3.4: by Theorem 2.4 of [GhaniNordvallForsbergMalatesta2015] the `δ`
+  interpretation's coproduct is indexed by set maps `A → X`, whereas by its
+  Definition 2.2 a `Fam(C)`-morphism carries `C`-morphism data that index does
+  not, so the interpretation is not a coproduct of `Fam(C)`-representables. Full
+  and faithfulness of the interpretation is not available over
   `Fam(C)` without defining the interpretation simultaneously with the codes.
   Section 2 of [GhaniNordvallForsbergMalatesta2015] records that the
   characterization of the `δ` interpretation as a left Kan extension fails for
@@ -254,7 +271,7 @@ continuation indexed by the decoding, and both are primitives of the fragment,
 `deltaRec` because obligation 7's code type must carry the decoding-indexed
 subcode family in order to contain Section 6's `δ`.
 
-The fragment strictly contains the presheaf reading of the rules of
+The fragment contains the presheaf reading of the rules of
 [HancockMcBrideGhaniMalatestaAltenkirch2013] Section 6 — `iotaPresheaf` for
 its pointed `ι`, `sigmaPsh` for its `σ` (`coprod` entering only as the
 operation `deltaRec` is built from), `deltaRec` for its `δ`, whose arity is an
@@ -362,7 +379,7 @@ transcribing.
 | --- | --- |
 | `PshHom`, to be named `PresheafPFunctor.Hom` upstream | Novel in this repository. The shapes-forward arities-backward form is Definition 7 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (morphisms of indexed containers) in the discrete case; its Definition 6 is the dependent-polynomial presentation of morphisms; the `r`/`q` naming this repository follows comes from the `(r, t, q)` triples of its Definition 1, this repository absorbing `t` into the dependent family `B` |
 | The action of a `Hom`, and its naturality | Novel |
-| The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (that paper's restatement of Theorem 2.12 of [GambinoKock2013]), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 10, not of this |
+| The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (which that paper states as "Theorem 1 ([13] Theorem 2.12)", its [13] being the 2010 arXiv version of [GambinoKock2013]; whether the numbering 2.12 survives into the 2013 journal article is unchecked), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 10, not of this |
 | Identity, composition, and the category structure on `Hom` | Novel |
 | The `σ` / `δ` code rules | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves: `σ`'s family over a set becomes a base change along a category of elements, and `δ`'s sections `(p : P) → D (i p)` become `PshMor`. The further generalization of `δ`'s arity from an object of `Set/I` to one varying over the output object is novel, and § Why `δ`'s arity must vary over the shape presheaf shows it is forced |
 | The `ι` code rule | Novel. Section 6's `ι` takes a point of the output total space `ΣE`; `iotaCode 𝔹` takes none and denotes `unitPsh`, one shape over every object of `𝔹`. The pointed form exists in the prototype as `iotaPresheaf j₀` but is not what the code system uses, and that `σ` at a representable over `iotaCode` recovers it is unelaborated |
@@ -380,7 +397,10 @@ transcribing.
 | `codeAlgOn`, `codeAlg`, `interp` — the interpretation | Novel at this level; the discrete analogue is `IR.interpObj` |
 | The constant-arity fragment's code type (obligation 7) | Novel |
 | The code-level morphism type (obligation 10) | Novel at this level; the discrete analogue is `IR.Hom` |
+| The p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` (`objEquivSigmaArityHom`, bundled as `objEquivSigmaHom`) | Transcription: the familial presentation of a parametric right adjoint, [Weber2007]; novel only in being stated with the hom unbundled |
 | `shapePresheaf`, `arityPresheaf` — `T₁` and each `E(a)` as functors | Transcription: the familial presentation of [Weber2007] |
+| `SliceHom`, `sliceHomApp` — the slice-level morphism formula | Transcription of Definition 7 of [HancockMcBrideGhaniMalatestaAltenkirch2013] at a discrete base; retained in the prototype as the derivation and ported by nothing |
+| `Functoriality` — the witness family attached over pre-codes | Novel; retained in the prototype as the derivation and ported by nothing |
 | `ArityHom` — the unbundled presheaf hom `E(a) ⟶ Z` | Novel presentation of a standard object, chosen to avoid the functor category's `Classical.choice` |
 | `ShapeHom` — the unbundled presheaf hom `T₁ ⟶ T₁'` | Novel presentation, as `ArityHom` |
 | `ObjFib`, `objFibRestr`, `objFibMap` — the output presheaf's fibres and their two actions, unbundled | Novel presentation. They are `objPresheaf`'s and `mapPresheaf`'s components; obligation 1 states the interpretation against those directly |
@@ -475,7 +495,11 @@ Each is unproved at the time of writing.
    `elCategory_comp_val` and `elCategory_eqToHom_val`; `sigmaLiftHom`,
    `elEqToHom` and `elEqToHom_eq`; `isFunctorial_fibreArity` and
    `fibreArity_restr_val`; `isFunctorial_decArity` and `decArity_reindex_val`;
-   `delta_cast_inl` and `delta_cast_inr`; the five `σ` laws
+   `delta_cast_inl` and `delta_cast_inr`; the three code constructors `iotaCode`,
+   `sigmaCode` and `deltaCode` with their computation rules `interp_iotaCode`,
+   `interp_sigmaCode`, `interp_deltaCode` and `interp_fst`, which the closure
+   clause does not reach because nothing else listed depends on them and which
+   obligation 8's expected witness needs; the five `σ` laws
    (`sigmaPsh_shapeRestr_id`, `_shapeRestr_comp`, `_reindex_naturality`,
    `_reindex_id`, `_reindex_comp`) with the transport lemmas they use
    (`elObj_eq_of_hom`, `elHom_eq_eqToHom_comp`, `shapeRestr_eqToHom`,
@@ -499,9 +523,10 @@ Each is unproved at the time of writing.
    `HasBijectiveReindex`; its six closure lemmas together with the general
    `hasBijectiveReindex_delta` they rest on, and `deltaRec` with
    `hasBijectiveReindex_deltaRec`, which is the fragment's decoding-indexed
-   operation case, and `subsingleton_pshMor_to_terminal`, which § The two
-   features of `δ` are orthogonal, and the fused rule has both cites for the
-   degeneracy at the terminal decoding; the three negative theorems
+   operation case, and `subsingleton_pshMor_to_terminal`, whose port is
+   conditional on its being instantiated at `termPsh` so that the witness rests
+   on it; if it is not, it is dropped rather than landed dead; the three negative
+   theorems
    `not_hasBijectiveReindex_arityVaries`, `not_hasBijectiveReindex_deltaVarying`
    and `not_hasBijectiveReindex_deltaFusedVaries`; and the witnesses they need —
    `iotaPresheaf`, `iotaConst`, `arityVaries` with `arityVariesShapeArity` and
@@ -623,24 +648,44 @@ cites. Checked against the preprint, the preprint numbers Definitions, Examples,
 Lemmas, Theorems and Corollaries in one shared sequence, where the proceedings
 number each kind separately. Definitions 1 to 4 are unaffected, being the first
 four numbered items in both; everything from the proceedings' Example 1 onward
-shifts, because the preprint's counter absorbs the examples. Of the results
-cited here and in the existing note, the proceedings' Lemma 1, Definition 6,
-Definition 7, Theorem 1, Theorem 2, Theorem 3, Theorem 4, Definition 8 and
-Corollary 2 are the preprint's Lemma 7, Definition 10, Definition 11,
-Theorem 12, Theorem 15, Theorem 18, Theorem 21, Definition 17 and
-Corollary 19. Section numbering is unchanged. Correcting and extending the
+shifts, because the preprint's counter absorbs the examples. Across everything
+this repository cites, the proceedings' Definition 2,
+Definition 5, Definition 6, Definition 7, Definition 8, Lemma 1, Lemma 2,
+Lemma 3, Lemma 4, Theorem 1, Theorem 2, Theorem 3, Theorem 4 and Corollary 2
+are the preprint's Definition 2, Definition 8, Definition 10, Definition 11,
+Definition 17, Lemma 7, Lemma 9, Lemma 14, Lemma 16, Theorem 12, Theorem 15,
+Theorem 18, Theorem 21 and Corollary 19. Definition 5 and Lemma 4 are the
+repository's most-cited numbered results, in
+`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and
+`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Naturality}.lean`, and neither is in
+the existing note. One collision deserves recording on its own: the preprint's
+Definition 8 is the proceedings' Definition 5, while the proceedings'
+Definition 8 is the preprint's Definition 17, so a reader who does not know
+which numbering a citation uses lands on the wrong statement. Section numbering
+is unchanged, though the preprint adds numbered subsections the proceedings
+runs in. The preprint is not merely a renumbering: it carries a different title
+and a different author order, so the key
+`HancockMcBrideGhaniMalatestaAltenkirch2013` names the proceedings version
+alone, and its Corollary 19 states more than the proceedings' Corollary 2.
+Correcting and extending the
 note is
 recorded in
 [TODO.md](../../../TODO.md) § Citation corrections deferred to their own
 branch, and must land before whichever branch first cites an uncovered result
 — W-a for Definitions 6 and 7 and Theorem 1, W-b for the `δ` rule, W-d for
-Lemma 1.
+Lemma 1, W-e for Theorem 3. That ordering constraint is recorded in `TODO.md`
+too, this document being removed with the last branch.
 
 The author order of `GhaniNordvallForsbergMalatesta2015` in
 `docs/references.bib` is wrong. The published LMCS byline is Ghani, Malatesta,
 Nordvall Forsberg; the entry and the citation key both encode the arXiv
-preprint's order. It is pre-existing, with five persistent consumers besides
-`docs/references.bib`, this spec, and the transient prototype. It is deferred
+preprint's order. It is pre-existing. Four persistent modules carry the key —
+`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` and
+`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Functor,Universes}.lean` — besides
+`docs/references.bib`, `TODO.md`, this spec, the transient prototype and the
+transient handoff. The repair surface is larger than the key count:
+`docs/index.md` spells the wrong order out in prose at three places without
+using the key, so a key-only search under-scopes the branch. It is deferred
 to its own branch per one concern per branch, recorded in `TODO.md`.
 
 ## References
@@ -659,6 +704,7 @@ to its own branch per one concern per branch, recorded in `TODO.md`.
 - [SpivakGarnerFairbanks2021], [Shapiro2021] — parametric right adjoints
   between presheaf categories.
 - [AltenkirchGhaniHancockMcBrideMorris2015] — indexed containers.
+- [MacLaneMoerdijk1992] — the category of elements.
 - [GambinoKock2013] — polynomial functors; Theorem 2.12, which
   [HancockMcBrideGhaniMalatestaAltenkirch2013] restates as its Theorem 1.
 - [DybjerSetzer1999], [DybjerSetzer2003] — inductive-recursive definitions.

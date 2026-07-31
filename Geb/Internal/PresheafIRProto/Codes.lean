@@ -20,8 +20,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 
 ## Main definitions
 
-* `GebProto.coprodData` / `GebProto.coprod` — the `σ` case: the coproduct of a
-  family of presheaf p.r.a. functors indexed by a type.
+* `GebProto.coprodData` / `GebProto.coprod` — the coproduct of a family of
+  presheaf p.r.a. functors indexed by a type. The code system's `σ` is
+  `sigmaPsh`; `coprod` enters only through `deltaRec`.
 * `GebProto.DomArity` — a presheaf on `I` unbundled, in the presentation
   `PresheafDomPFunctorData` uses for its arities.
 * `GebProto.ShapeArity` / `GebProto.ShapeArity.const` — the arity a `δ` adjoins,
@@ -155,9 +156,10 @@ section Coprod
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
 set_option linter.checkUnivs false in
-/-- Operations of the `σ` case: the coproduct of an `S`-indexed family of
-presheaf p.r.a. functors. A shape is a shape of one summand tagged with its
-index; the directions, both restrictions and the reindexing are that summand's.
+/-- Operations of the coproduct of an `S`-indexed family of presheaf p.r.a.
+functors. This is not the code system's `σ`, which is `sigmaPsh`. A shape is a
+shape of one summand tagged with its index; the directions, both restrictions
+and the reindexing are that summand's.
 The `J`-action never changes the tag, which is what makes each summand's laws
 suffice. -/
 def coprodData (S : Type uS) (sub : S → PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) :

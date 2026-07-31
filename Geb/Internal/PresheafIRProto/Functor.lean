@@ -18,7 +18,7 @@ of a presheaf category invokes `CategoryTheory.Functor.category`, which is
 `Classical.choice`-dependent, so this packaging is kept in a separate module
 from the choice-free core.
 
-The only new content is `arityHomEquivNatTrans`, the bundling isomorphism: a
+Its content is `arityHomEquivNatTrans`, the bundling isomorphism: a
 `CategoryTheory.NatTrans` is its `app` field together with `naturality`, and
 `GebProto.ArityHom` is exactly that data unbundled, so the equivalence is the
 identity on both sides. The formula itself is then transported along it from

@@ -486,9 +486,9 @@ def arityPresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) 
     ext d
     exact congrFun (F.isFunctorial.directionRestr_comp a f.unop g.unop) d
 
--- The two `example`s exhibiting the bundled hom, and the universes at which it
--- is formable, live in the sibling `Functor` module: they name `⟶` between
--- objects of a functor category, which is what draws in `Classical.choice`.
+-- The two declarations exhibiting the bundled hom, and the universes at which
+-- it is formable, live in the sibling `Functor` module: they name `⟶` between
+-- objects of a functor category, which is what introduces `Classical.choice`.
 
 end ShapeAndArityPresheaves
 
