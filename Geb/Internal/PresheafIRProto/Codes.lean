@@ -31,6 +31,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   along a functor's shape-output map to the `ShapeArity` that `delta` consumes.
 * `GebProto.HasBijectiveReindex` — the property that every reindexing map is a
   bijection.
+* `GebProto.ElObj` / `GebProto.elCategory` — the category of elements of a
+  presheaf on `J`, as a base category; presheaves on it are the slice
+  `PSh(J)/S`.
+* `GebProto.sigmaLiftHom` / `GebProto.sigmaPshData` — the `σ` case: push a
+  functor over the base `ElObj S` forward along the projection to `J`.
 * `GebProto.unitPsh` — the unit for `δ`: terminal shape presheaf, no directions.
 * `GebProto.arityVariesShapeArity` / `GebProto.deltaVarying` — the arity of
   `arityVaries` as a `ShapeArity` over `unitPsh`, and the `δ` at it.
@@ -52,6 +57,12 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.BaseArity.isFunctorial_pullback` — the pullback of a functorial
   `BaseArity` is functorial, so a code's `δ` need not mention its subcode's
   shapes.
+* `GebProto.sigmaPsh_shapeRestr_id` — the `σ` case preserves the
+  shape-restriction identity law.
+* `GebProto.elObj_eq_of_hom` / `GebProto.elHom_eq_eqToHom_comp` — the source of
+  a morphism of elements is determined by its base and its underlying
+  `J`-morphism, and two morphisms with equal underlying `J`-morphisms differ by
+  that transport.
 
 ## Implementation notes
 
@@ -67,6 +78,12 @@ reindexing runs along `g` conjugated by the two shape-membership proofs, so its
 two transported laws reduce to equalities of `J`-morphisms built from
 `eqToHom`s. `BaseArity.reindex_eqToHom`, `BaseArity.reindex_cast_shape` and
 `BaseArity.reindex_comp_apply` are the three lemmas that reduction needs.
+
+The `σ` case is carried to the point where its operations are defined and its
+first shape-restriction law holds. Its remaining four laws are the same
+`eqToHom` bookkeeping over `ElObj S`, for which `elObj_eq_of_hom`,
+`elHom_eq_eqToHom_comp`, `shapeRestr_val_eqToHom_comp`, `shapeRestr_eqToHom` and
+`cast_shape_val` are the intended tools.
 
 ## Tags
 
@@ -508,6 +525,143 @@ end BaseArity
 end Base
 
 end Delta
+
+section Sigma
+
+variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+
+/-- Objects of the base category of elements of a presheaf `S` on `J`. -/
+abbrev ElObj (S : Jᵒᵖ ⥤ Type uS) : Type (max uJ uS) := Σ j : J, S.obj ⟨j⟩
+
+/-- The base category of elements of `S`: a morphism `x ⟶ y` is a `J`-morphism
+carrying `y`'s element to `x`'s. Presheaves on it are the slice `PSh(J)/S`, and
+this is `S.Elementsᵒᵖ`; it is written out here rather than reused so that the
+`σ` operation below is free of `Opposite` transport. -/
+instance elCategory (S : Jᵒᵖ ⥤ Type uS) : Category.{vJ} (ElObj.{uJ, uS, vJ} S) where
+  Hom x y := {g : x.1 ⟶ y.1 // S.map g.op y.2 = x.2}
+  id x := ⟨𝟙 x.1, by simp⟩
+  comp {x y z} f g := ⟨f.1 ≫ g.1, by
+    rw [op_comp, S.map_comp, types_comp_apply, g.2, f.2]⟩
+  id_comp f := Subtype.ext (Category.id_comp f.1)
+  comp_id f := Subtype.ext (Category.comp_id f.1)
+  assoc f g h := Subtype.ext (Category.assoc f.1 g.1 h.1)
+
+/-- The `J`-morphism a shape's membership proof turns `g` into: `g` followed by
+the transport identifying `j` with the base of the shape's output object. -/
+def sigmaLiftHom (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctorData.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S))
+    {j j' : J} (g : j' ⟶ j) (s : {a : F.A // (F.q a).1 = j}) :
+    (⟨j', S.map (g ≫ eqToHom s.2.symm).op (F.q s.1).2⟩ : ElObj S) ⟶ F.q s.1 :=
+  ⟨g ≫ eqToHom s.2.symm, rfl⟩
+
+set_option linter.checkUnivs false in
+/-- Operations of the `σ` case: push a functor over the base `ElObj S` forward
+to one over `J`. The shapes and arities are unchanged; only the shape-output map
+drops the `S`-component, so the shape presheaf becomes the total space of `S`
+paired with the subfunctor's shapes. -/
+def sigmaPshData (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctorData.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J where
+  A := F.A
+  B := F.B
+  r := F.r
+  q := fun a ↦ (F.q a).1
+  directionRestr := F.directionRestr
+  shapeRestr := fun {_ _} g s ↦
+    ⟨(F.shapeRestr (sigmaLiftHom S F g s) ⟨s.1, rfl⟩).1,
+      congrArg Sigma.fst (F.shapeRestr (sigmaLiftHom S F g s) ⟨s.1, rfl⟩).2⟩
+  reindex := fun {_ _} g s {_} d ↦ F.reindex (sigmaLiftHom S F g s) ⟨s.1, rfl⟩ d
+
+
+universe uK vK
+
+/-- The underlying `J`-morphism of a composite in the category of elements. -/
+@[simp] theorem elCategory_comp_val (S : Jᵒᵖ ⥤ Type uS) {x y z : ElObj.{uJ, uS, vJ} S}
+    (f : x ⟶ y) (g : y ⟶ z) : (f ≫ g).1 = f.1 ≫ g.1 := rfl
+
+/-- The underlying `J`-morphism of a transport in the category of elements is
+the transport of the underlying objects. -/
+@[simp]
+theorem elCategory_eqToHom_val (S : Jᵒᵖ ⥤ Type uS) {x y : ElObj.{uJ, uS, vJ} S} (h : x = y) :
+    (eqToHom h : x ⟶ y).1 = eqToHom (congrArg Sigma.fst h) := by
+  cases h
+  rfl
+
+/-- Restricting a shape along a transport is the transport of the shape. -/
+theorem shapeRestr_eqToHom {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x y : K} (h : x = y) (s : F.Shape y) :
+    F.shapeRestr (eqToHom h) s = cast (congrArg F.Shape h.symm) s := by
+  cases h
+  simpa using congrFun (F.isFunctorial.shapeRestr_id x) s
+
+/-- A transport of shapes leaves the underlying shape alone. -/
+theorem cast_shape_val {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctorData.{uI, uK, uA, uB, vI, vK} I K) {x y : K} (h : x = y)
+    (s : F.Shape x) : (cast (congrArg F.Shape h) s).1 = s.1 := by
+  cases h
+  rfl
+
+
+/-- Restricting along a morphism with a transport prefix leaves the underlying
+shape where restricting along the morphism alone leaves it. -/
+theorem shapeRestr_val_eqToHom_comp {K : Type uK} [Category.{vK} K]
+    (F : PresheafPFunctor.{uI, uK, uA, uB, vI, vK} I K) {x x' y : K} (hx : x = x')
+    (m : x' ⟶ y) (s : F.Shape y) :
+    (F.shapeRestr (eqToHom hx ≫ m) s).1 = (F.shapeRestr m s).1 := by
+  rw [F.isFunctorial.shapeRestr_comp, Function.comp_apply, shapeRestr_eqToHom]
+  exact cast_shape_val F.toPresheafPFunctorData hx.symm _
+
+
+/-- The source of a morphism in the category of elements is determined by its
+base and its underlying `J`-morphism: the element is forced to be the
+restriction of the target's. -/
+theorem elObj_eq_of_hom (S : Jᵒᵖ ⥤ Type uS) {x x' y : ElObj.{uJ, uS, vJ} S}
+    (m : x ⟶ y) (m' : x' ⟶ y) (hb : x.1 = x'.1) (hm : m.1 = eqToHom hb ≫ m'.1) : x = x' := by
+  cases x with
+  | mk xb xe =>
+    cases x' with
+    | mk xb' xe' =>
+      cases hb
+      refine Sigma.ext rfl (heq_of_eq ?_)
+      rw [← m.2, ← m'.2, hm]
+      simp
+
+/-- Two morphisms into the same object with equal underlying `J`-morphisms
+differ by the transport identifying their sources. -/
+theorem elHom_eq_eqToHom_comp (S : Jᵒᵖ ⥤ Type uS) {x x' y : ElObj.{uJ, uS, vJ} S}
+    (m : x ⟶ y) (m' : x' ⟶ y) (hb : x.1 = x'.1) (hm : m.1 = eqToHom hb ≫ m'.1) :
+    m = eqToHom (elObj_eq_of_hom S m m' hb hm) ≫ m' := by
+  refine Subtype.ext ?_
+  rw [hm]
+  change _ = (eqToHom (elObj_eq_of_hom S m m' hb hm) : x ⟶ x').1 ≫ m'.1
+  rw [elCategory_eqToHom_val]
+
+/-- The `σ` operation preserves the shape-restriction identity law. -/
+theorem sigmaPsh_shapeRestr_id (S : Jᵒᵖ ⥤ Type uS)
+    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
+    (sigmaPshData S F.toPresheafPFunctorData).ShapeRestrId := by
+  intro j
+  funext s
+  obtain ⟨a, rfl⟩ := s
+  refine Subtype.ext ?_
+  have hsrc : (⟨(F.q a).1, S.map (sigmaLiftHom S F.toPresheafPFunctorData
+      (𝟙 ((F.q a).1)) ⟨a, rfl⟩).1.op (F.q a).2⟩ : ElObj S) = F.q a :=
+    Sigma.ext rfl (heq_of_eq (by simp [sigmaLiftHom]))
+  have hval : (eqToHom hsrc : _ ⟶ F.q a).1 = 𝟙 (F.q a).1 := by
+    rw [elCategory_eqToHom_val]
+    simp
+  have hm : sigmaLiftHom S F.toPresheafPFunctorData (𝟙 ((F.q a).1)) ⟨a, rfl⟩
+      = eqToHom hsrc ≫ 𝟙 (F.q a) :=
+    Subtype.ext (by
+      simp only [sigmaLiftHom, eqToHom_refl, op_comp, op_id, Category.comp_id]
+      exact hval.symm)
+  change (F.shapeRestr (sigmaLiftHom S F.toPresheafPFunctorData (𝟙 _) ⟨a, rfl⟩) ⟨a, rfl⟩).1 = a
+  rw [hm]
+  refine Eq.trans (shapeRestr_val_eqToHom_comp F hsrc (𝟙 (F.q a)) ⟨a, rfl⟩) ?_
+  exact congrArg Subtype.val (congrFun (F.isFunctorial.shapeRestr_id (F.q a)) ⟨a, rfl⟩)
+
+
+end Sigma
 
 section Incompleteness
 
