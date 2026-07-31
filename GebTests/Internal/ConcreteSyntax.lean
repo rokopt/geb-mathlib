@@ -35,6 +35,10 @@ The assertions are `#guard` rather than `by decide`: equality of `Ast k`
 goes through `WType.beq`, which folds over a `FinEnum` enumeration and
 does not reduce usefully in the kernel.
 
+## References
+
+* [RFC9804]
+
 ## Tags
 
 concrete syntax, S-expression, parser, test
@@ -101,14 +105,35 @@ kernel and terminates — `WType.beq` and `WType.para` are folds over a
 evaluates it. `Geb.format_idem` is trivially true on its `none` branch,
 so only a worked `some` shows the branch that does something. -/
 
-#guard Geb.format (Csexp.parse 3) Csexp.print (Csexp.print sampleAst)
+#guard format (Csexp.parse 3) Csexp.print (Csexp.print sampleAst)
     == some (Csexp.print sampleAst)
 
-#guard Geb.format (Csexp.parse 3) Csexp.print (leafSexp ['x']) == none
+#guard format (Csexp.parse 3) Csexp.print (leafSexp ['x']) == none
 
-/-! ## The fuel bound -/
+/-! ## The reader, where `Csexp.parse` cannot see
+
+Two properties of `Csexp.readVerbatim` are invisible through `parse`:
+whichever way they go, the atom is rejected further along and `parse`
+answers `none`. They are asserted here on the reader itself. -/
+
+-- A length prefix is what delimits an atom, so `)` and `:` inside the
+-- declared content are content. Asserting this through `parse` would
+-- not distinguish a reader that stopped at the `)`.
+#guard Csexp.readVerbatim (Csexp.printVerbatim ['f', 'o', ')', 'k'] ++ ['x'])
+    == some (['f', 'o', ')', 'k'], ['x'])
+
+-- An atom declaring more content than follows it is rejected, not
+-- truncated.
+#guard Csexp.readVerbatim (atomRaw ['9'] Csexp.leafTok) == none
+
+/-! ## `Ast.size` and the fuel it bounds -/
 
 #guard sampleAst.size == 5
+
+-- `Csexp.parse` supplies the input length, far above what is needed;
+-- these pin the bound that actually operates.
+#guard (Csexp.parseAst 3 3 (Csexp.print sampleAst)).isSome
+#guard (Csexp.parseAst 3 2 (Csexp.print sampleAst)).isNone
 
 /-! ## Inputs the parser accepts but the printer never emits -/
 
@@ -127,19 +152,20 @@ so only a worked `some` shows the branch that does something. -/
 
 /-! ## Rejection paths -/
 
--- Empty input: the fuel is the input length, so there is none.
+-- Empty input.
 #guard Csexp.parse 3 [] == none
 
--- A leading character that is not `(`. Only the head character differs
--- from the accepted input on the line above it, and `Csexp.parseStep`
--- uses the head character for nothing else, so this assertion fails if
--- and only if that check is dropped.
+-- A leading character that is not `(`. The two assertions differ only
+-- in the head character, and `Csexp.parseStep` uses that character for
+-- nothing else, so the second fails if and only if the check is
+-- dropped.
 #guard Csexp.parse 3 ('(' :: (leafBody ['0'] ++ [')'])) == some (Ast.leaf 0)
 #guard Csexp.parse 3 ('x' :: (leafBody ['0'] ++ [')'])) == none
 
 -- A head atom whose declared length exceeds the input that follows it.
--- `Csexp.readVerbatim`'s length guard is not what rejects this — see its
--- docstring — the truncated atom is rejected as a head atom instead.
+-- The length guard rejects it; were the guard removed, the truncated
+-- atom would be rejected as a head atom, so this assertion does not
+-- distinguish the two. The reader-level assertion above does.
 #guard Csexp.parse 3 (sexp (atom 9 Csexp.leafTok ++ atom 1 ['0'])) == none
 
 -- A label at the leaf alphabet's bound.
@@ -171,7 +197,8 @@ so only a worked `some` shows the branch that does something. -/
 -- Trailing input after a complete tree.
 #guard Csexp.parse 3 (Csexp.print sampleAst ++ [')']) == none
 
--- Parentheses inside a verbatim atom are content, not delimiters: the
--- atom is read whole, and then rejected as a head atom.
+-- A head atom that is neither token, here one containing `)`. That the
+-- `)` is read as content rather than as a delimiter is asserted on the
+-- reader above; at this level either behaviour yields `none`.
 #guard Csexp.parse 3
   (sexp (Csexp.printVerbatim ['f', 'o', ')', 'k'] ++ atom 1 ['0'])) == none

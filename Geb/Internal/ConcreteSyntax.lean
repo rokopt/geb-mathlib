@@ -87,10 +87,9 @@ namespace Geb
 
 Every `Arity` family below is finitely enumerable, which is what lets
 `WType.instDecidableEq` decide equality of the corresponding tree type.
-`Ast k` is the one whose decidable equality is presently used, by the
-`#guard`s in `GebTests.Internal.ConcreteSyntax`; the other two are
-supplied so that the three tree types carry the same interface. The two
-enumerations are named rather than left
+The `#guard`s in `GebTests.Internal.ConcreteSyntax` decide equality at
+`Ast k` and at `Tree k Ann`. The two enumerations are named rather than
+left
 to instance search: mathlib's `FinEnum.fin` and `FinEnum.empty` are built
 by `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
 which [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md)
@@ -117,8 +116,8 @@ inductive Shape (k : Nat) where
   deriving DecidableEq
 
 /-- The child index type of each shape: a leaf has none, a fork has two.
-`Fin 2` rather than `Bool`, so that the three arity families here are
-enumerated by one construction, `finEnumFin`. Reducible, so that `simp`
+`Fin 2` rather than `Bool`, so that every non-empty arity here is
+enumerated by `finEnumFin`. Reducible, so that `simp`
 and `rw` match a child function against the arity it was written at. -/
 abbrev Arity {k : Nat} : Shape k → Type
   | .leaf _ => Empty
@@ -156,8 +155,8 @@ def size {k : Nat} : Ast k → Nat :=
 /-- Induction on `Ast` in its two-constructor presentation, so that a
 proof driven by it need not mention the underlying shape and arity. -/
 theorem ind {k : Nat} {motive : Ast k → Prop}
-    (leaf : ∀ i, motive (Ast.leaf i))
-    (fork : ∀ l r, motive l → motive r → motive (Ast.fork l r)) :
+    (leaf : ∀ i, motive (leaf i))
+    (fork : ∀ l r, motive l → motive r → motive (fork l r)) :
     ∀ t, motive t :=
   WType.rec (motive := motive) fun s f ih =>
     match s, f, ih with
@@ -321,9 +320,7 @@ def trivialDoc {k : Nat} : Ast k → Doc k :=
   WType.elim (Doc k) fun x => WType.mk (({} : Ann), x.1) x.2
 
 /-- Decorating every node with the empty annotation and then erasing is
-the identity. Once a syntax is lifted from `Ast` to `Doc`, this is what
-makes the bare-level retraction law a corollary of the document-level
-one. -/
+the identity. -/
 theorem erase_trivialDoc {k : Nat} (a : Ast k) :
     Tree.erase a.trivialDoc = a :=
   WType.rec (motive := fun a => Tree.erase (trivialDoc a) = a)
@@ -342,10 +339,6 @@ abbrev Shape (k : Nat) : Type := Fin k × Nat
 
 /-- The child index type of a rose shape. -/
 abbrev Arity {k : Nat} (s : Shape k) : Type := Fin s.2
-
-/-- Every rose arity is finitely enumerable. -/
-instance instFinEnumArity {k : Nat} (s : Shape k) : FinEnum (Arity s) :=
-  finEnumFin s.2
 
 end Rose
 
@@ -366,7 +359,7 @@ def node {k : Nat} (i : Fin k) {n : Nat} (f : Fin n → Rose k) : Rose k :=
 
 @[simp] theorem cons_node {k : Nat} (t : Rose k) (i : Fin k) {n : Nat}
     (f : Fin n → Rose k) :
-    Rose.cons t (Rose.node i f) = Rose.node i (Fin.cases t f) := rfl
+    cons t (node i f) = node i (Fin.cases t f) := rfl
 
 end Rose
 
@@ -412,7 +405,7 @@ theorem ofRose_cons {k : Nat} (t r : Rose k) :
 /-- One half of the rose/binary bijection: converting to a rose tree and
 back is the identity on `Ast k`. -/
 theorem ofRose_toRose {k : Nat} (a : Ast k) : ofRose a.toRose = a :=
-  Ast.ind (motive := fun a => ofRose a.toRose = a)
+  ind (motive := fun a => ofRose a.toRose = a)
     (fun i => by simp only [toRose_leaf, ofRose_node, Fin.foldr_zero])
     (fun l r ihl ihr => by rw [toRose_fork, ofRose_cons, ihl, ihr]) a
 
@@ -693,9 +686,12 @@ def printVerbatim (s : List Char) : List Char :=
   decOf s.length ++ ':' :: s
 
 /-- Read one verbatim atom, returning it and the remaining input. The
-`n ≤ r.length` guard makes the read total rather than truncating; `parse`
-cannot observe it, since a truncating read would consume the whole
-remaining input and every position that follows one demands more. -/
+`n ≤ r.length` guard rejects an atom declaring more content than
+follows it, rather than truncating. `parse` cannot observe the guard —
+a truncating read would consume the whole remaining input, and every
+position that can follow one demands more — so what the guard buys is
+that `readVerbatim` reads the [RFC9804] `verbatim` production correctly
+on its own. `GebTests.Internal.ConcreteSyntax` asserts that directly. -/
 def readVerbatim (cs : List Char) : Option (List Char × List Char) :=
   match readNat cs with
   | some (n, ':' :: r) => if n ≤ r.length then some (r.take n, r.drop n) else none
@@ -787,6 +783,8 @@ def parseAst (k : Nat) : Nat → List Char → Option (Ast k × List Char) :=
 @[simp] theorem parseAst_succ (k f : Nat) :
     parseAst k (f + 1) = parseStep k (parseAst k f) := rfl
 
+/-- The parser inverts the printer on printed input, given fuel at least
+the tree's node count, and returns the unconsumed remainder. -/
 theorem parseAst_printAst {k : Nat} (a : Ast k) :
     ∀ (f : Nat) (rest : List Char), a.size ≤ f →
       parseAst k f (printAst a ++ rest) = some (a, rest) :=
@@ -820,6 +818,9 @@ theorem parseAst_printAst {k : Nat} (a : Ast k) :
         rw [ihr f _ hr]
         simp) a
 
+/-- A tree's node count bounds the length of its printed form, so the
+input length is fuel enough for `parseAst` to read anything `printAst`
+emits. -/
 theorem size_le_length_printAst {k : Nat} (a : Ast k) : a.size ≤ (printAst a).length :=
   Ast.ind (motive := fun a => a.size ≤ (printAst a).length)
     (fun i => by simp [printAst_leaf])
