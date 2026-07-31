@@ -4,8 +4,11 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [In progress](#in-progress)
+  - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
 - [Next up](#next-up)
   - [Removal of guard hash-command](#removal-of-guard-hash-command)
+  - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
+  - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
     - [1. Categorical wrappers for slice and presheaf W-types as initial algebras](#1-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
     - [2. M-types and their categorical wrappers as terminal coalgebras](#2-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)

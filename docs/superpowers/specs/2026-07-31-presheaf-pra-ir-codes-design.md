@@ -76,14 +76,14 @@ together with this document, the plan, the directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
 the `Geb.Internal.PresheafIRProto.Functor` entry in
-`GebMeta.classicalAllowedModules`, and the two module-docstring bullets naming
-`Geb.Internal` (`Geb.lean` and `GebTests.lean`), `GebTests/Internal/` itself
-surviving as the axiom-linter fixtures; W-c, W-d and W-e are mutually unordered
-and W-f precedes W-d, so which of the four lands last is not determined in
-advance, and the removal is a condition on the last rather than an assignment
-to a named branch. Carrying the whole prototype alongside its port would define
-the same declarations twice on `main`, against
-[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
+`GebMeta.classicalAllowedModules`, and the two module-docstring mentions of
+`Geb.Internal` — a bullet in `Geb.lean`, a clause in `GebTests.lean` —
+`GebTests/Internal/` itself surviving as the axiom-linter fixtures; W-c, W-d
+and W-e are mutually unordered and W-f precedes W-d, so any of those three may
+land last and which does is not determined in advance, and the removal is a
+condition on the last rather than an assignment to a named branch. Carrying the
+whole prototype alongside its port would define the same declarations twice on
+`main`, against [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
 It also retains steps of the derivation that the obligations do not port, and
 which exist to record how the design was reached rather than to be delivered:
@@ -481,7 +481,7 @@ W-b and W-f; W-e depends on W-a and W-b. W-f depends on nothing.
 
 Each acceptance cell's "in `Geb/Mathlib/`" carries the repository's standing
 practice for that subtree: a `GebTests/Mathlib/` mirror per new module, which
-69 of the 70 existing `Geb/Mathlib/` modules have, and which
+79 of the 80 existing `Geb/Mathlib/` modules have, and which
 `GebMeta.classicalAllowedModules`' own docstring requires of any module a
 branch adds to that allowlist ("Feature branches append their own wrapper
 module names together with their test parallels"). W-a and W-f each add one
