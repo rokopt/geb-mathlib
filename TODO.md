@@ -98,13 +98,16 @@ branch that found it, so each is deferred per
   `HancockMcBrideGhaniMalatestaAltenkirch2013` is unverified and
   incomplete.** It claims the extended preprint "renumbers two of" the
   results this repository cites. Checked against the preprint, that is
-  false: the numbering runs one continuous counter from Lemma 1 onward,
-  so every result renumbers except Definition 1. The proceedings'
+  false. The preprint numbers Definitions, Examples, Lemmas, Theorems
+  and Corollaries in one shared sequence where the proceedings number
+  each kind separately, so Definitions 1 to 4 are unaffected, being the
+  first four numbered items in both, and everything from the
+  proceedings' Example 1 onward shifts. The proceedings' Lemma 1,
   Definition 6, Definition 7, Theorem 1, Theorem 2, Theorem 3,
-  Theorem 4, Lemma 1, Definition 8 and Corollary 2 are the preprint's
+  Theorem 4, Definition 8 and Corollary 2 are the preprint's Lemma 7,
   Definition 10, Definition 11, Theorem 12, Theorem 15, Theorem 18,
-  Theorem 21, Lemma 7, Definition 17 and Corollary 19. Rewrite the note
-  with that table.
+  Theorem 21, Definition 17 and Corollary 19. Section numbering is
+  unchanged. Rewrite the note with that.
 
 ### Polynomial functors
 
