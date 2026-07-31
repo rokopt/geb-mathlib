@@ -6,6 +6,7 @@
 - [In progress](#in-progress)
 - [Next up](#next-up)
   - [Removal of guard hash-command](#removal-of-guard-hash-command)
+  - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Polynomial functors](#polynomial-functors)
     - [1. Categorical wrappers for slice and presheaf W-types as initial algebras](#1-categorical-wrappers-for-slice-and-presheaf-w-types-as-initial-algebras)
     - [2. M-types and their categorical wrappers as terminal coalgebras](#2-m-types-and-their-categorical-wrappers-as-terminal-coalgebras)
@@ -49,6 +50,25 @@ removed; content merged into the persistent documentation.
   internal test file, might not need to adhere to that mathlib
   convention. We should still make it do so if it can function
   equally well without `#guard`.
+
+### Named examples for axiom auditing
+
+- **Anonymous `example`s escape the axiom linter.**
+  `GebMeta.detectNonstandardAxiom` runs over declaration names, so an
+  anonymous `example` is never audited: it may depend on
+  `Classical.choice`, or on any forbidden axiom, in a module held to the
+  strict permitted set, and `lake lint` still passes. This was found by
+  observation — two `example`s naming a functor-category `⟶`, whose
+  `Category` instance is `Classical.choice`-dependent, sat in a module
+  advertised as choice-free with the linter green.
+- Give every `example` a name, so that the axiom linter covers it. There
+  are 6 in `Geb/` and 209 in `GebTests/` at the time of writing.
+- Record the rule in [docs/rules/lean-coding.md](docs/rules/lean-coding.md),
+  alongside the other axiom-hygiene material in § Constructive-only Lean
+  code, stating the reason rather than only the rule.
+- Consider whether the linter itself should flag anonymous `example`s in
+  audited modules, which would enforce this rather than relying on
+  convention.
 
 ### Polynomial functors
 
