@@ -584,7 +584,13 @@ both syntaxes from `Ast` to `Doc`.
 
 The module is a prototype and is exempt from nothing: it sits under
 `Geb/Internal/`, so it is downstream-only, but the coding conventions
-in [docs/rules/lean-coding.md](docs/rules/lean-coding.md) bind it.
+in [docs/rules/lean-coding.md](docs/rules/lean-coding.md) bind it. As
+committed it does not yet meet them:
+[docs/superpowers/plans/concrete-syntax-port-handoff.md](docs/superpowers/plans/concrete-syntax-port-handoff.md)
+records the outstanding port to W-types, the adversarial-review findings
+still to discharge, and the decisions already taken. That handoff is a
+transient artifact and is removed with the specs and plans before the
+branch is pushed.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
