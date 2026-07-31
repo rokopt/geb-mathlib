@@ -32,7 +32,7 @@ Every tree type here is a `WType`, so its recursion is carried by
   with `Tree.map`, `Tree.extract`, `Tree.duplicate` its functor and
   comonad structure and `Tree.erase` the forgetful map to `Ast`.
 * `Ann`, `Doc` — the annotation vocabulary and the annotated document
-  type `Tree k Ann`.
+  type `Tree k Ann`, with `Ast.trivialDoc` the empty decoration.
 * `Rose` — the rose-tree presentation of the same fixed point.
 * `Retraction`, `format` — the law skeleton a concrete syntax proves.
 * `Csexp.print`, `Csexp.parse` — the [RFC9804] canonical S-expression
@@ -43,7 +43,10 @@ Every tree type here is a `WType`, so its recursion is carried by
 * `Ast.ind` — the two-constructor induction principle on `Ast`.
 * `Ast.ofRose_toRose`, `Ast.toRose_ofRose` — the rose presentation is
   a bijection.
-* `Csexp.parse_print` — the retraction law for the S-expression syntax.
+* `Csexp.parse_print` — the retraction law for the S-expression syntax,
+  from `Csexp.parseAst_printAst` and `Csexp.size_le_length_printAst`.
+* `Csexp.readVerbatim_append` — a printed atom reads back whole,
+  whatever it contains.
 * `Geb.format_idem`, `Geb.print_injective` — the corollaries of a
   retraction, proved once for every syntax.
 * `Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
@@ -70,10 +73,9 @@ reuse would save the encoder and leave the proof obligations untouched.
 `finEnumFin` and `finEnumEmpty` are named because mathlib's `FinEnum`
 instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
 
-Each `Arity` family is an `abbrev` rather than a `def`: `simp` and `rw`
-match at reducible transparency, so a child function whose type reads
-`Rose.Arity (i, n) → _` in a goal would not otherwise unify with a lemma
-stated at `Fin n → _`.
+`Rose.Arity` is an `abbrev` because two of the rose bijection's proofs
+need it reducible; its docstring says which. The other two `Arity`
+families follow it for uniformity and would compile as plain `def`s.
 
 ## References
 
@@ -100,9 +102,7 @@ The `#guard`s in `GebTests.Internal.ConcreteSyntax` decide equality at
 left to instance search: mathlib's `FinEnum.fin` and `FinEnum.empty` are built
 by `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
 which [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md)
-forbids. Neither construction is specific to syntax; the second module
-needing a choice-free `FinEnum` moves them beside the choice-free
-decidability instances in `Geb/Mathlib/Data/FinEnum.lean`. -/
+forbids. Neither construction is specific to syntax. -/
 
 /-- `Fin n` enumerated by the identity equivalence. -/
 @[instance_reducible] def finEnumFin (n : Nat) : FinEnum (Fin n) := ⟨n, Equiv.refl (Fin n)⟩
@@ -126,8 +126,8 @@ inductive Shape (k : Nat) where
 
 /-- The child index type of each shape: a leaf has none, a fork has two.
 `Fin 2` rather than `Bool`, so that every non-empty arity here is
-enumerated by `finEnumFin`. Reducible, so that `simp`
-and `rw` match a child function against the arity it was written at. -/
+enumerated by `finEnumFin`. An `abbrev` for uniformity with
+`Rose.Arity`, which has to be reducible. -/
 abbrev Arity {k : Nat} : Shape k → Type
   | .leaf _ => Empty
   | .fork => Fin 2
@@ -197,7 +197,8 @@ the decoration carried at that node. -/
 abbrev Shape (k : Nat) (A : Type uA) : Type uA := A × Ast.Shape k
 
 /-- The child index type of an annotated shape: that of the underlying
-`Ast.Shape`, since decorating a node does not change its children. -/
+`Ast.Shape`, since decorating a node does not change its children. An
+`abbrev` for uniformity with `Rose.Arity`. -/
 abbrev Arity {k : Nat} {A : Type uA} (s : Shape k A) : Type := Ast.Arity s.2
 
 /-- Every annotated arity is finitely enumerable. -/
@@ -354,7 +355,12 @@ namespace Rose
 number of children. -/
 abbrev Shape (k : Nat) : Type := Fin k × Nat
 
-/-- The child index type of a rose shape. -/
+/-- The child index type of a rose shape. Reducible, and this is the one
+family that has to be: `simp` and `rw` match at reducible transparency,
+so with a plain `def` a child function whose type reads
+`Rose.Arity (i, n) → _` in a goal fails to unify with a lemma stated at
+`Fin n → _`, and `Ast.ofRose_cons` and `Ast.toRose_ofRose` do not go
+through. -/
 abbrev Arity {k : Nat} (s : Shape k) : Type := Fin s.2
 
 end Rose

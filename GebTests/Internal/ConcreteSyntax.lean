@@ -14,7 +14,8 @@ public meta import Geb.Internal.ConcreteSyntax  -- shake: keep; #guard needs it
 `Geb.Csexp.parse_print` constrains the parser only on the printer's
 output, so every rejection path is unexercised by it. The assertions
 below exercise the parser on inputs the printer never emits; check the
-printer's spelling and `Ast.size`, which no theorem pins; evaluate the
+printer's spelling and `Ast.size` at a concrete tree, which the
+`@[simp]` lemmas pin but no theorem evaluates; evaluate the
 retraction, the rose bijection and the formatter, which the theorems
 state but do not run; and pin two properties of `Csexp.readVerbatim`
 and of the fuel bound that `Csexp.parse` cannot see.
@@ -33,10 +34,10 @@ it depends on `Classical.choice`, which
 against a string literal.
 
 The assertions are `#guard`, which runs its argument in the interpreter.
-`by decide` also discharges every one of them — `WType.beq` reduces in
-the kernel — but it would check a different thing. What a parser and
-printer have to do is run, which is why `Csexp.digitsLE` exists in place
-of mathlib's `Nat.digits`; the interpreter is the path that use takes.
+`by decide` discharges every one of them too — `WType.beq` reduces in
+the kernel — but checks a different thing. A parser and a printer are
+used by running them, so the interpreter is the path worth exercising;
+that the kernel agrees is what the two forms together would show.
 
 ## References
 
@@ -88,7 +89,8 @@ def sampleText : String := String.ofList (Csexp.print sampleAst)
 
 /-! ## The proved round trips, evaluated
 
-`Csexp.parse_print` and `Ast.ofRose_toRose` already state these. What
+`Csexp.parse_print`, `Ast.ofRose_toRose`, `Ast.erase_trivialDoc` and
+`Tree.extract_duplicate` already state these. What
 the assertions add is that the compiled evaluation agrees with the
 kernel and terminates. `WType.beq`, which decides the equalities, folds
 over a `FinEnum` enumeration, and `Tree.duplicate` is a `WType.para`;
@@ -103,14 +105,20 @@ nothing else here runs either. -/
 #guard Tree.extract (Tree.duplicate (Ast.trivialDoc sampleAst))
     == Ast.trivialDoc sampleAst
 
+-- Relabelling changes decorations and not shape.
+#guard Tree.erase (Tree.map (fun a : Ann => { a with name := some "x" })
+    (Ast.trivialDoc sampleAst)) == sampleAst
+
 /-! ## The formatter
 
 `Geb.format` is the module's headline abstraction and no theorem
 evaluates it. `Geb.format_idem` is trivially true on its `none` branch,
 so only a worked `some` shows the branch that does something. -/
 
-#guard format (Csexp.parse 3) Csexp.print (Csexp.print sampleAst)
-    == some (Csexp.print sampleAst)
+-- On a non-canonical spelling, so that a `format` returning its input
+-- unchanged on parse success would fail this.
+#guard format (Csexp.parse 3) Csexp.print (leafSexp ['0', '1'])
+    == some (Csexp.print (Ast.leaf (1 : Fin 3)))
 
 #guard format (Csexp.parse 3) Csexp.print (leafSexp ['x']) == none
 
@@ -199,9 +207,3 @@ content rather than a delimiter needs no assertion —
 
 -- Trailing input after a complete tree.
 #guard Csexp.parse 3 (Csexp.print sampleAst ++ [')']) == none
-
--- A head atom that is neither token, here one containing `)`. That the
--- `)` is read as content rather than as a delimiter is asserted on the
--- reader above; at this level either behaviour yields `none`.
-#guard Csexp.parse 3
-  (sexp (Csexp.printVerbatim ['f', 'o', ')', 'k'] ++ atom 1 ['0'])) == none
