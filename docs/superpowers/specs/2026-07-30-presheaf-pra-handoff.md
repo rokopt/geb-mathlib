@@ -11,6 +11,9 @@
 - [Verified literature facts](#verified-literature-facts)
 - [What to harvest from the previous spec](#what-to-harvest-from-the-previous-spec)
 - [What remains open](#what-remains-open)
+- [Two leads to weigh when brainstorming the codes](#two-leads-to-weigh-when-brainstorming-the-codes)
+  - [Varying both sides at once, over the walking arrow](#varying-both-sides-at-once-over-the-walking-arrow)
+  - [Indexed induction-recursion as the route to the code type](#indexed-induction-recursion-as-the-route-to-the-code-type)
 - [Repository hazards learned the hard way](#repository-hazards-learned-the-hard-way)
 - [Process notes](#process-notes)
 
@@ -185,6 +188,103 @@ subcode family once the arity is a presheaf, whether every
 incompleteness claim. Positive inductive-recursive definitions over
 `Fam(C)` are not a stage of this work; if wanted they are better
 recovered inside the presheaf construction than built separately.
+
+## Two leads to weigh when brainstorming the codes
+
+Neither is established to be needed. Both should be considered during
+the brainstorming phase, and if they do not enter the implementation
+they are strong candidates for tests, since each exercises a capability
+the discrete system provably lacks.
+
+### Varying both sides at once, over the walking arrow
+
+In the endofunctor case of the existing `IR` system (`I = O = D`), the
+initial algebra generates a type `A` together with a decoding
+`A → D`, but `D` is fixed throughout the iteration: only one of the two
+sets varies. `Fam(D)` has `D` as a parameter, so no `IR(D)` code can
+move it.
+
+A presheaf on the walking arrow category is exactly a function between
+two sets — `PSh(𝟚) ≃ Set^→`, the arrow category. Iterating an
+endofunctor there varies both sets and the map between them
+simultaneously. That is the minimal witness that presheaf p.r.a.
+functors strictly extend the discrete system, and it is the simplest
+concrete instance of the observation that presheaf W-types subsume
+inductive-inductive definitions: defining two types and a map between
+them at once is precisely an inductive-inductive definition, and it is
+precisely an initial algebra in `PSh(𝟚)`.
+
+Two things make this immediately usable rather than aspirational. The
+degeneracy direction is already understood — discrete `I` and `J`
+recover the slice system — so the walking arrow is the first step off
+the discrete case, not a leap. And the prototype's `arityVaries` is
+already a `PresheafPFunctor (Fin 1) (Fin 2)` with `Fin 2` carrying its
+preorder category, which *is* the walking arrow; the fixture for this
+test partly exists.
+
+Worth checking during brainstorming: whether the codes should be
+developed against the walking arrow first, as the smallest base with a
+non-identity morphism, before any general `J`. A worked example there
+would exercise `shapeRestr`, `reindex` and `reindexCompat` non-trivially
+while staying small enough to compute with by hand.
+
+### Indexed induction-recursion as the route to the code type
+
+Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], "Small
+indexed Induction Recursion", generalises `IR` to `IIR`, whose codes are
+parameterised by two *families* rather than two types:
+
+```text
+data IIR (D : I → Set) (E : J → Set) : Set₁ where
+  ι : (je : ΣE)                                            → IIR D E
+  σ : (S : Set)          (K : S → IIR D E)                 → IIR D E
+  δ : (P : Set) (i : P → I) (K : ((p : P) → D (i p)) → IIR D E) → IIR D E
+```
+
+with a translation `⌊·⌋ : IIR D E → IR ΣD ΣE` into the unindexed system,
+and Corollary 4 stating that `IIR D E` and `Poly ΣD ΣE` are equivalent.
+The paper also gives the direct interpretation
+`⟦·⟧IIR : IIR D E → ((i : I) → Set/(D i)) → ((j : J) → Set/(E j))`.
+
+The lead: `D : I → Set` and `E : J → Set` are exactly the object maps of
+presheaves over discrete `I` and `J`. So the step from `IIR` to a
+presheaf-indexed `IIR` is the same step this repository already took
+from `SlicePFunctor` to `PresheafPFunctor` — supply the functorial
+actions and use them as restrictions. If that is right, `IIR`'s code
+type is the template for the presheaf code type, and its `δ` rule, which
+carries an extra `i : P → I` "selecting the index for each position in
+`P`", is the template for how the indices thread through — which is
+open question 2 of § What remains open.
+
+Three specifics that make the lead look sound rather than merely
+suggestive:
+
+- `IIR`'s `ι` takes a point of the *total space* `ΣE`, not a point of
+  an index type. The prototype's constant functors have shape type a
+  total space too — `iotaConst P`'s shapes are the total space of `P`,
+  and `iotaPresheaf j₀`'s are `Σ j', (j' ⟶ j₀)`, the total space of the
+  representable. The shapes of the presheaf `ι` are already in the form
+  `IIR`'s `ι` argument takes.
+- The paper's own size remark, that `(i : I) → Set/(D i) ≅ ΣD → Set ≅
+  Set/ΣD`, is the same total-space collapse that makes the translation
+  to `IR` work. Whether it survives the presheaf generalisation is a
+  question worth asking early: the collapse is available for discrete
+  bases, and the analogue for a general base is the equivalence between
+  presheaves on `el(P)` and presheaves over `P` — which does hold, but
+  needs the category of elements rather than a bare `Σ`.
+- `δ`'s extra `i : P → I` is precisely the labelling that the prototype
+  found must acquire presheaf structure: a bare set `P` labelled by
+  `i : P → I` admits no `directionRestr`, since for `f : i′ ⟶ i` the
+  fibre over `i` can be inhabited while the fibre over `i′` is empty.
+  So the `IIR` `δ` rule is the discrete shadow of the constructor whose
+  presheaf form is already known to be required.
+
+Worth checking during brainstorming: whether the presheaf code type
+should be developed as presheaf-`IIR` directly, with the existing `IR`
+recovered as the singleton-indexed case, rather than as a separate
+generalisation of `IR`. The paper notes that `IR` is the fragment of
+`IIR` indexed over a singleton, so that specialisation is already
+established on the discrete side.
 
 ## Repository hazards learned the hard way
 
