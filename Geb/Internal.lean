@@ -5,8 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Internal.PresheafIRProto
-
+public import Geb.Internal.ConcreteSyntax
 /-!
 # Geb.Internal — downstream-only content
 
