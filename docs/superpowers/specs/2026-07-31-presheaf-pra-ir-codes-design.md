@@ -310,7 +310,9 @@ To be answered by the work rather than before it.
    needs to vary.
 3. Whether `iotaPresheaf j₀` and `iotaConst (yoneda.obj j₀)` are isomorphic as
    functors. Their shape types agree definitionally
-   (`iotaConst`'s section, `Basic.lean`); nothing more is established.
+   (`iotaPresheafData_A_eq_iotaConstData_yoneda`, in the allowlisted `Functor`
+   module because `yoneda` lands in a functor category); nothing more is
+   established.
 4. Whether the walking arrow should carry a worked example exercising
    `shapeRestr`, `reindex` and `reindexCompat` together, while staying small
    enough to compute with by hand. `arityVaries` has the walking arrow as its

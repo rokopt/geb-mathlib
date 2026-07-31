@@ -6,10 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.PFunctor.Presheaf.Basic
-public import Geb.Mathlib.Data.PFunctor.IndRec.Slice
 public import Geb.Mathlib.Data.PFunctor.IndRec.Hom
 public import Mathlib.CategoryTheory.Discrete.Basic
-public import Mathlib.CategoryTheory.Yoneda
 public import Mathlib.CategoryTheory.Category.Preorder
 public import Mathlib.Order.Fin.Basic
 
@@ -220,12 +218,6 @@ def iotaConst (P : Jᵒᵖ ⥤ Type uB) :
       reindex_id := by intro j a i d; exact Subsingleton.elim _ _
       reindex_comp := by intro j j' j'' g h a i d; exact Subsingleton.elim _ _ }
 
-/-- The representable case is definitionally the `P := yoneda.obj j₀` case: the
-two shape types coincide on the nose. -/
-example (j₀ : J) :
-    (iotaPresheafData.{uI, uJ, uB, vI, vJ} (I := I) j₀).A =
-      (iotaConstData.{uI, uJ, vJ, vI, vJ} (I := I) (yoneda.obj j₀)).A := rfl
-
 end IotaConst
 
 end GebProto
@@ -367,8 +359,9 @@ def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
 
 /-- The arity genuinely varies: empty at the shape over `0`, inhabited at the
 shape over `1`. So `reindex` along `0 ⟶ 1` is the empty map, not an iso. -/
-example : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
-example : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
+theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
+
+theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
 
 /-- Every `Shape j` is a singleton, so the shape presheaf is terminal — as
 simple as a shape presheaf gets, yet the arity above it is not constant. -/
@@ -656,7 +649,7 @@ def DomHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : Type (max uA
 
 /-- The arity component of a `DomHom` is an unbundled arity hom of `F'` into the
 arity presheaf of `F`: the representing presheaf of Yoneda's statement. -/
-example (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+theorem domHom_eq_pi_sigma_arityHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     DomHom F F' = ((a : F.A) → Σ a' : F'.A, ArityHom F' a' (arityPresheaf F a)) := rfl
 
 /-- Families `T Z → T' Z` natural in `Z`, with naturality stated unbundled

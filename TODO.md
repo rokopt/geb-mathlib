@@ -60,9 +60,14 @@ removed; content merged into the persistent documentation.
   strict permitted set, and `lake lint` still passes. This was found by
   observation — two `example`s naming a functor-category `⟶`, whose
   `Category` instance is `Classical.choice`-dependent, sat in a module
-  advertised as choice-free with the linter green.
-- Give every `example` a name, so that the axiom linter covers it. There
-  are 6 in `Geb/` and 209 in `GebTests/` at the time of writing.
+  advertised as choice-free with the linter green. A third instance was
+  found the same way: an `example` applying `yoneda`, whose target is a
+  functor category, sat in the choice-free prototype core; naming it
+  showed the `Classical.choice` dependency and it moved to the
+  allowlisted module.
+- Give every `example` a name, so that the axiom linter covers it. The 6
+  in `Geb/` are now named; 209 in `GebTests/` remain at the time of
+  writing.
 - Record the rule in [docs/rules/lean-coding.md](docs/rules/lean-coding.md),
   alongside the other axiom-hygiene material in § Constructive-only Lean
   code, stating the reason rather than only the rule.

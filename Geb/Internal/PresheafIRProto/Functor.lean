@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Internal.PresheafIRProto.Basic
+public import Mathlib.CategoryTheory.Yoneda
 
 /-!
 # Prototype: the p.r.a. formula with the presheaf hom bundled
@@ -73,16 +74,25 @@ def objEquivSigmaHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (Z : I�
 
 /-- At `uZ := uB` the arity presheaf and the input presheaf are objects of one
 category, so the hom the p.r.a. formula needs is formable with no transport. -/
-example (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) (Z : Iᵒᵖ ⥤ Type uB) :
-    Type (max uI uB) :=
+def arityPresheafHomAtUB (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A)
+    (Z : Iᵒᵖ ⥤ Type uB) : Type (max uI uB) :=
   arityPresheaf F a ⟶ Z
 
 /-- At an unrelated `uZ` the hom is formable after `ULift`ing both sides into
 `Type (max uB uZ)`; `max` is commutative on levels, so the two composites are
 objects of one category. -/
-example (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) (Z : Iᵒᵖ ⥤ Type uZ) :
-    Type (max uI uB uZ) :=
+def arityPresheafHomULifted (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A)
+    (Z : Iᵒᵖ ⥤ Type uZ) : Type (max uI uB uZ) :=
   (arityPresheaf F a ⋙ uliftFunctor.{uZ, uB}) ⟶ (Z ⋙ uliftFunctor.{uB, uZ})
+
+set_option linter.checkUnivs false in
+/-- The representable case is definitionally the `P := yoneda.obj j₀` case: the
+two shape types coincide on the nose. Kept here rather than in the choice-free
+core because `yoneda` lands in a functor category, so naming it — which the
+axiom linter requires — would import `Classical.choice` into that core. -/
+theorem iotaPresheafData_A_eq_iotaConstData_yoneda (j₀ : J) :
+    (iotaPresheafData.{uI, uJ, uB, vI, vJ} (I := I) j₀).A =
+      (iotaConstData.{uI, uJ, vJ, vI, vJ} (I := I) (yoneda.obj j₀)).A := rfl
 
 
 end CoproductOfRepresentables
