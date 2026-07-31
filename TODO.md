@@ -49,13 +49,15 @@ which names six branches and is removed with the last of them:
 - W-c: the bound — transport of `HasBijectiveReindex` along an
   isomorphism, and the constant-arity fragment's code type and
   induction.
-- W-d: completeness — a code for every presheaf p.r.a. functor, or a
-  counterexample.
+- W-d: completeness — for every presheaf p.r.a. functor out of the
+  interpretation's own input base, at the universes the code type
+  pins, a code whose interpretation is isomorphic to it, or a
+  counterexample. Depends on W-f as well.
 - W-e: code-level morphisms and their representation theorem.
 - W-f: the collapse `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`.
 
-W-a and W-b depend on nothing, and W-f on nothing; W-c, W-d and W-e
-each depend on W-a and W-b, and W-d additionally on W-f.
+W-a, W-b and W-f depend on nothing; W-c, W-d and W-e each depend on
+W-a and W-b, and W-d additionally on W-f.
 
 ## Next up
 
@@ -141,9 +143,10 @@ branch that found it, so each is deferred per
   Definition 10, Definition 11, Theorem 12, Theorem 15, Theorem 18,
   Theorem 21, Definition 17 and Corollary 19. Across everything this
   repository cites, add also: the proceedings' Definition 2,
-  Definition 5, Example 1, Lemma 2, Lemma 3, Lemma 4 and Corollary 4
-  are the preprint's Definition 2, Definition 8, Example 5, Lemma 9,
-  Lemma 14, Lemma 16 and Corollary 22. Example 1 is cited by
+  Definition 3, Definition 5, Example 1, Lemma 2, Lemma 3, Lemma 4 and
+  Corollary 4 are the preprint's Definition 2, Definition 3,
+  Definition 8, Example 5, Lemma 9, Lemma 14, Lemma 16 and Corollary
+  22. Example 1 is cited by
   `Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module
   and `docs/index.md:402`, none of which the presheaf p.r.a.
   workstream touches, so that citation's correction is independent of
@@ -151,15 +154,15 @@ branch that found it, so each is deferred per
   Definition 8 is the proceedings' Definition 5, while the
   proceedings' Definition 8 is the preprint's Definition 17, so a
   citation that does not say which numbering it uses sends a reader to
-  the wrong statement — and Definition 5 and Lemma 4 are the
-  repository's most-cited numbered results. Section numbering is
-  unchanged. Note too that the preprint carries a different title and
-  author order, so the key names the proceedings version alone. This
-  correction must land before any branch of the presheaf p.r.a.
-  workstream that cites an uncovered result: W-a for Definitions 6 and
-  7 and Theorem 1, W-d for Lemma 1, W-e for Theorem 3. W-b cites the
-  delta rule by section, and section numbering is unchanged, so W-b is
-  unconstrained.
+  the wrong statement — and Definition 5 and Lemma 4 are, of the
+  results the present note does not cover, the repository's
+  most-cited. Section numbering is unchanged. Note too that the
+  preprint carries a different title and author order, so the key
+  names the proceedings version alone. This correction must land
+  before any branch of the presheaf p.r.a. workstream that cites an
+  uncovered result: W-a for Definitions 6 and 7 and Theorem 1, W-d for
+  Lemma 1, W-e for Theorem 3. W-b cites the delta rule by section, and
+  section numbering is unchanged, so W-b is unconstrained.
 
 ### Polynomial functors
 

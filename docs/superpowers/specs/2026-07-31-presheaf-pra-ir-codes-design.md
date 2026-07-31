@@ -30,7 +30,12 @@ This specifies a workstream on morphisms of presheaf parametric-right-adjoint
 functors and on codes denoting them, in two stages. Stage 1 is settled and
 machine-checked. Stage 2 is elaborated: the three rules, the code type and the
 interpretation are built, and the recursion is present. Its obstruction is
-reduced to a one-step induction whose base and step cases are proved; its
+bounded rather than discharged: the bound's three generator and four operation
+cases are proved, but the code type they would run over is a different one from
+the prototype's — its `δ` carries a `PshMor`-indexed subcode family, so it is a
+different slice polynomial functor — and building it, running the induction
+over it, and supplying the composition and the iso-transport the semantic form
+of the bound needs are all outstanding (obligations 2, 6 and 7). Its
 completeness and its morphism theory remain open.
 
 The prototype at `Geb/Internal/PresheafIRProto/` is the source this document
@@ -42,34 +47,38 @@ carries no such authority. Claims marked *inference*, *unelaborated* or
 *conjecture* are not elaborated there. Every other claim names the declaration
 that establishes it, with three classes of exception, each flagged where it
 arises: readings of a construction, backed by structure fields rather than by
-theorems (§ Stage 1, facts 2 and 4); the discrete-analogue column of §
-Definitions, no entry of which is an elaborated identification; and statements
-about ambient mathematics rather than about this development (§ Stage 1, fact
-2's appeal to Yoneda in any locally small category).
+theorems (§ Stage 1, facts 2 and 4); the discrete analogues named in §
+Definitions' `Status` cells, no one of which is an elaborated identification;
+and statements about ambient mathematics rather than about this development (§
+Stage 1, fact 2's appeal to Yoneda in any locally small category).
 
 The prototype is not deliverable content. Each branch removes the part of it
 that branch ports, rather than the whole surviving until the last branch. W-a
-and W-b are independent in their deliverables but both remove from
-`Geb/Internal/PresheafIRProto/Basic.lean`, so whichever lands second rebases
-over the other's deletions: after W-a and W-b, what remains is the retained
-derivation below. Removal alone does not leave it buildable. Most of it names
-declarations the ports move and rename — `arityVariesShapeEquiv` and the two
-`arityVariesData_B_*` checks name `arityVariesData`;
-`iotaPresheafData_A_eq_iotaConstData_yoneda` names `iotaPresheafData` and
-`iotaConstData`; `arityPresheafHomAtUB` and `arityPresheafHomULifted` name
-`arityPresheaf`; the whole domain-level warm-up names `objEquivSigmaArityHom`,
-`ArityHom` and the four shared `ArityHom` lemmas — so each of W-a and W-b also
-rewrites the retained remainder against the names it has just established in
-`Geb/Mathlib/`, and the prototype gains imports of the new modules, which
-`Geb/Internal/` is permitted. Only `SliceHom`, `sliceHomApp`, `Functoriality`
-and `iotaDiscreteShapeEquiv` stand free of both ports. Whichever of W-c to W-f
-lands last removes the remainder together with this document, the plan, the
-directory index `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` —
-whose sole import is that index, leaving it empty — the `public import
-Geb.Internal` in `Geb.lean`, and the `Geb.Internal.PresheafIRProto.Functor`
-entry in `GebMeta.classicalAllowedModules`; the four are mutually unordered, so
-the removal is a condition on the last rather than an assignment to a named
-branch. Carrying the whole prototype alongside its port would define the same
+and W-b are independent in their deliverables but both edit
+`Geb/Internal/PresheafIRProto/Basic.lean` and
+`Geb/Internal/PresheafIRProto/Functor.lean` — W-a removing
+`arityHomEquivNatTrans` and `objEquivSigmaHom` from the latter, W-b rewriting
+the `iotaPresheafData_A_eq_iotaConstData_yoneda` that survives it — so
+whichever lands second rebases over the other's edits: after W-a and W-b, what
+remains is the retained derivation below. Removal alone does not leave it
+buildable. Most of it names declarations the ports move and rename —
+`arityVariesShapeEquiv` and the two `arityVariesData_B_*` checks name
+`arityVariesData`; `iotaPresheafData_A_eq_iotaConstData_yoneda` names
+`iotaPresheafData` and `iotaConstData`; `arityPresheafHomAtUB` and
+`arityPresheafHomULifted` name `arityPresheaf`; the whole domain-level warm-up
+names `objEquivSigmaArityHom`, `ArityHom` and the four shared `ArityHom`
+declarations — so each of W-a and W-b also rewrites the retained remainder
+against the names it has just established in `Geb/Mathlib/`, and the prototype
+gains imports of the new modules, which `Geb/Internal/` is permitted. Only
+`SliceHom`, `sliceHomApp`, `Functoriality` and `iotaDiscreteShapeEquiv` stand
+free of both ports. Whichever of W-c to W-f lands last removes the remainder
+together with this document, the plan, the directory index
+`Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
+that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
+and the `Geb.Internal.PresheafIRProto.Functor` entry in
+`GebMeta.classicalAllowedModules`; the four are mutually unordered, so the
+removal is a condition on the last rather than an assignment to a named branch.
+Carrying the whole prototype alongside its port would define the same
 declarations twice on `main`, against
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
@@ -139,9 +148,9 @@ bijection; obligations 2 and 3 carry that to full and faithfulness.
 
 ## Stage 1: morphisms and the representation theorem
 
-Settled up to the two identifications recorded as obligations 2 and 3.
-`Geb/Internal/PresheafIRProto/Basic.lean` carries it, choice-free;
-`Functor.lean` carries what depends on `Classical.choice` through
+Settled up to the category structure and the identification recorded as
+obligations 2 and 3. `Geb/Internal/PresheafIRProto/Basic.lean` carries it,
+choice-free; `Functor.lean` carries what depends on `Classical.choice` through
 `CategoryTheory.Functor.category`: `arityHomEquivNatTrans` and
 `objEquivSigmaHom`, which write `⟶` between objects of a presheaf category; the
 two universe-formability demonstrations `arityPresheafHomAtUB` and
@@ -168,8 +177,8 @@ structure fields rather than by theorems:
    between presheaf p.r.a. functors: `pshHomEquivNatFamily` is a bijection
    `PshHom F F' ≃ PshNatFamily F F'`. It is not definitional: its inverse is
    `natFamilyPshHom`, whose `reindexCompat` field is discharged by
-   `natFamily_generic` and `objFibMap_eq_objFibRestr_apply`, and whose
-   `left_inv` rests on `natFamilyArity_pshHomFamily` and `pshHom_ext`. Two
+   `natFamily_generic` and `objFibMap_eq_objFibRestr_apply`; the equivalence's
+   own `left_inv` rests on `natFamilyArity_pshHomFamily` and `pshHom_ext`. Two
    steps separate it from full and faithfulness of the interpretation, both
    obligations rather than results: `PshNatFamily` is an unbundled proxy and is
    nowhere related to `PresheafPFunctor.functor`'s natural transformations
@@ -393,12 +402,12 @@ inductive-inductive types, and it avoids the route Remark 3.4 of
 Per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Cite the literature when
 transcribing.
 
-No entry in the discrete-analogue column is an elaborated identification: each
-names the declaration occupying the corresponding role over a discrete base,
-and nothing relates the two. The `iotaPresheaf` row is the sharpest case — the
-prototype's `iotaDiscreteShapeEquiv` docstring explicitly declines the
-identification with `IR.toSlicePFunctorIota`, the two being at different
-universe instantiations.
+No discrete analogue named in a `Status` cell below is an elaborated
+identification: each names the declaration occupying the corresponding role
+over a discrete base, and nothing relates the two. The `iotaPresheaf` row is
+the sharpest case — the prototype's `iotaDiscreteShapeEquiv` docstring
+explicitly declines the identification with `IR.toSlicePFunctorIota`, the two
+being at different universe instantiations.
 
 | Definition | Status |
 | --- | --- |
@@ -467,9 +476,20 @@ obligation 8 states.
 W-a and W-b depend on nothing; W-c depends on W-a and W-b; W-d depends on W-a,
 W-b and W-f; W-e depends on W-a and W-b. W-f depends on nothing.
 
-`docs/index.md` describes some directories module by module and others by a
-single directory bullet; each branch's entries follow whichever form the
-directory it lands in already uses.
+Each acceptance cell's "in `Geb/Mathlib/`" carries the repository's standing
+practice for that subtree: a `GebTests/Mathlib/` mirror per new module, which
+69 of the 70 existing `Geb/Mathlib/` modules have, and which
+`GebMeta.classicalAllowedModules`' own docstring requires of any module a
+branch adds to that allowlist ("Feature branches append their own wrapper
+module names together with their test parallels"). W-a, W-f and obligation 3
+each add such a module, so each adds an allowlist pair.
+
+`docs/index.md` describes some directories module by module, others by a single
+directory bullet, and several — `Data/PFunctor/Presheaf/` and
+`Data/PFunctor/IndRec/` among them — by a directory bullet plus per-module
+bullets for later additions. A branch adding to a directory that already has a
+bullet adds per-module bullets beneath it; a branch creating a directory writes
+the directory bullet.
 
 This document is the design record for all six and is removed with the last of
 them, which deviates from § Concern shape's per-branch spec lifetime. The
@@ -488,21 +508,22 @@ Each is unproved at the time of writing.
    `ShapeHom`, `objEquivSigmaArityHom` with `ofArityHomElt` and
    `value_ofArityHom`, `reindexArityHom`, `sigmaArityHom_ext`, `idArityHom`,
    `natTransOfArityHom`, `postcompArityHom`, `map_symm_arityHom`, `idPshHom`,
-   `ObjFib` and its two actions where they are not replaced by `objPresheaf`
-   and `mapPresheaf`, `PshNatFamily`, and the round-trip lemmas
-   `natFamily_generic`, `natFamilyPshHom`, `objFibMap_eq_objFibRestr_apply`,
+   `PshNatFamily`, and the round-trip lemmas `natFamily_generic`,
+   `natFamilyPshHom`, `objFibMap_eq_objFibRestr_apply`,
    `natFamilyArity_pshHomFamily` and `pshHom_ext`. This port is
    dependency-closed on the same grounds as obligation 4's: anything a listed
    item needs travels with it. Port it against the choice-free `objPresheaf`
-   and `mapPresheaf` rather than `PresheafPFunctor.functor`, and without the
-   prototype's parallel `ObjFib` / `objFibRestr` / `objFibMap` layer, which
-   duplicates their components. The `functor` form is a corollary and belongs
-   in a module on `GebMeta.classicalAllowedModules`, together with
-   `arityHomEquivNatTrans` and `objEquivSigmaHom`, the prototype's two bundled
-   restatements. The ported chain needs `PresheafPFunctor.value_objRestrElt`,
-   which is `private` in `Geb/Mathlib/Data/PFunctor/Presheaf/Basic.lean` and
-   which the prototype restates locally; this obligation decides between
-   dropping the `private` and shipping a restatement.
+   and `mapPresheaf` rather than `PresheafPFunctor.functor`, and drop the
+   prototype's parallel `ObjFib` / `objFibRestr` / `objFibMap` layer entirely:
+   `ObjFib` is `objPresheaf`'s object part at `j.unop` and the two actions are
+   `objPresheaf.map` and `mapPresheaf.app` verbatim, so nothing of it survives
+   the replacement. The `functor` form is a corollary and belongs in a module
+   on `GebMeta.classicalAllowedModules`, together with `arityHomEquivNatTrans`
+   and `objEquivSigmaHom`, the prototype's two bundled restatements. The ported
+   chain needs `PresheafPFunctor.value_objRestrElt`, which is `private` in
+   `Geb/Mathlib/Data/PFunctor/Presheaf/Basic.lean` and which the prototype
+   restates locally; this obligation decides between dropping the `private` and
+   shipping a restatement.
 2. **Category structure** (W-a). Composition on `PshHom` (`idPshHom` already
    supplies the identity), that composition is associative with that identity
    as unit, and that the bijection of obligation 1 carries them to the
@@ -628,9 +649,9 @@ Each is unproved at the time of writing.
    and open question 2 all rest. In mathlib it is the composite of
    `overEquivPresheafCostructuredArrow` and
    `CategoryOfElements.costructuredArrowYonedaEquivalence`, the second
-   transported through the presheaf construction before the two compose. The
-   first is stated about `Over` in a functor category and so depends on
-   `Classical.choice`, and the deliverable therefore belongs in a module on
+   transported through the presheaf construction before the two compose. Both
+   name functor-category instances and so depend on `Classical.choice`, and the
+   deliverable therefore belongs in a module on
    `GebMeta.classicalAllowedModules`.
 10. **Code morphisms** (W-e). The code-level morphism type, mirroring `PshHom`,
     and the code-level representation theorem — the analogue of Theorem 3 of
@@ -708,21 +729,21 @@ the proceedings' Example 1 onward shifts, because the preprint's counter
 absorbs the examples. Across every numbered result this repository cites or a
 branch of this workstream will cite — Corollary 4 being cited only by the
 transient handoff, and Definitions 6 and 7 and Theorem 1 only prospectively —
-the proceedings' Definition 2, Definition 5, Definition 6, Definition 7,
-Definition 8, Example 1, Lemma 1, Lemma 2, Lemma 3, Lemma 4, Theorem 1, Theorem
-2, Theorem 3, Theorem 4, Corollary 2 and Corollary 4 are the preprint's
-Definition 2, Definition 8, Definition 10, Definition 11, Definition 17,
-Example 5, Lemma 7, Lemma 9, Lemma 14, Lemma 16, Theorem 12, Theorem 15,
-Theorem 18, Theorem 21, Corollary 19 and Corollary 22. Example 1 is cited by
-`Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module and
+the proceedings' Definition 2, Definition 3, Definition 5, Definition 6,
+Definition 7, Definition 8, Example 1, Lemma 1, Lemma 2, Lemma 3, Lemma 4,
+Theorem 1, Theorem 2, Theorem 3, Theorem 4, Corollary 2 and Corollary 4 are the
+preprint's Definition 2, Definition 3, Definition 8, Definition 10, Definition
+11, Definition 17, Example 5, Lemma 7, Lemma 9, Lemma 14, Lemma 16, Theorem 12,
+Theorem 15, Theorem 18, Theorem 21, Corollary 19 and Corollary 22. Example 1 is
+cited by `Geb/Mathlib/Data/PFunctor/IndRec/Container.lean`, its test module and
 `docs/index.md:402`. No branch of this workstream touches the first two, and
 each branch adds to `docs/index.md` without touching that line, so that
-citation's correction is independent of the ordering constraint below.
-Definition 5 and Lemma 4 are the repository's most-cited numbered results, and
-neither is in the existing note. Definition 5 is cited in
-`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and its test mirror; Lemma 4 in
-`Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Category,Naturality}.lean`, their
-three test mirrors and `docs/index.md`, `Category.lean` being its largest
+citation's correction is independent of the ordering constraint below. Of the
+results the existing note does not cover, Definition 5 and Lemma 4 are the
+repository's most-cited; Lemma 4 is the most-cited outright. Definition 5 is
+cited in `Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and its test mirror;
+Lemma 4 in `Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Category,Naturality}.lean`,
+their three test mirrors and `docs/index.md`, `Category.lean` being its largest
 single consumer. A key-only search under-scopes both, as it does the author
 order below. One collision deserves recording on its own: the preprint's
 Definition 8 is the proceedings' Definition 5, while the proceedings'
