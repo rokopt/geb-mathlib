@@ -395,85 +395,89 @@ abbrev Rose (k : Nat) : Type := WType (Rose.Arity (k := k))
 
 namespace Rose
 
-/-- Prepend `t` to the children of `r`, keeping `r`'s label. -/
-def cons {k : Nat} (t r : Rose k) : Rose k :=
+/-- Append `t` to the children of `r`, keeping `r`'s label. -/
+def snoc {k : Nat} (r t : Rose k) : Rose k :=
   match r with
-  | ⟨(i, n), f⟩ => WType.mk (i, n + 1) (Fin.cases t f)
+  | ⟨(i, n), f⟩ => WType.mk (i, n + 1) (Fin.snoc f t)
 
 /-- The node with label `i` and children `f`. -/
 def node {k : Nat} (i : Fin k) {n : Nat} (f : Fin n → Rose k) : Rose k :=
   WType.mk (i, n) f
 
-@[simp] theorem cons_node {k : Nat} (t : Rose k) (i : Fin k) {n : Nat}
-    (f : Fin n → Rose k) :
-    cons t (node i f) = node i (Fin.cases t f) := rfl
+@[simp] theorem snoc_node {k : Nat} (i : Fin k) {n : Nat}
+    (f : Fin n → Rose k) (t : Rose k) :
+    snoc (node i f) t = node i (Fin.snoc f t) := rfl
 
 end Rose
 
 namespace Ast
 
-/-- The binary-to-rose direction, under the convention that the left child
-of a fork is the head child and the right child carries the label and the
-remaining siblings. Choosing the last child instead gives a different and
-equally valid bijection, so the choice has to be fixed. -/
+/-- The binary-to-rose direction. A rose node is read as a curried
+function: its label is the function and its children are the arguments
+it is applied to, in order. A fork `(l, r)` is read as the application
+of `l` to `r`. Application of a curried function is left-associative, so
+`l` carries the label together with every argument but the last, and `r`
+is the last argument alone — that is, the child sequence is consumed as
+a snoclist. Reading application to the right instead gives a different
+and equally valid bijection, so the choice has to be fixed. -/
 def toRose {k : Nat} : Ast k → Rose k :=
   WType.elim (Rose k) fun x =>
     match x with
     | ⟨.leaf i, _⟩ => Rose.node i Fin.elim0
-    | ⟨.fork, ch⟩ => Rose.cons (ch (0 : Fin 2)) (ch (1 : Fin 2))
+    | ⟨.fork, ch⟩ => Rose.snoc (ch (0 : Fin 2)) (ch (1 : Fin 2))
 
-/-- The rose-to-binary direction, folding a node's children into the right
-spine that carries the label at its end. -/
+/-- The rose-to-binary direction, folding a node's children into the left
+spine that carries the label at its head. -/
 def ofRose {k : Nat} : Rose k → Ast k :=
   WType.elim (Ast k) fun x =>
-    Fin.foldr x.1.2 (fun j acc => fork (x.2 j) acc) (leaf x.1.1)
+    Fin.foldl x.1.2 (fun acc j => fork acc (x.2 j)) (leaf x.1.1)
 
 @[simp] theorem toRose_leaf {k : Nat} (i : Fin k) :
     (leaf i).toRose = Rose.node i Fin.elim0 := rfl
 
 @[simp] theorem toRose_fork {k : Nat} (l r : Ast k) :
-    (fork l r).toRose = Rose.cons l.toRose r.toRose := rfl
+    (fork l r).toRose = Rose.snoc l.toRose r.toRose := rfl
 
 @[simp] theorem ofRose_node {k : Nat} (i : Fin k) {n : Nat} (f : Fin n → Rose k) :
     ofRose (Rose.node i f) =
-      Fin.foldr n (fun j acc => fork (ofRose (f j)) acc) (leaf i) :=
+      Fin.foldl n (fun acc j => fork acc (ofRose (f j))) (leaf i) :=
   rfl
 
-/-- Prepending a child to a rose node prepends a fork on the binary
-side, which is the step `Ast.ofRose_toRose` turns on. -/
-theorem ofRose_cons {k : Nat} (t r : Rose k) :
-    ofRose (Rose.cons t r) = fork (ofRose t) (ofRose r) := by
+/-- Appending a child to a rose node appends a fork on the binary side,
+which is the step `Ast.ofRose_toRose` turns on. -/
+theorem ofRose_snoc {k : Nat} (r t : Rose k) :
+    ofRose (Rose.snoc r t) = fork (ofRose r) (ofRose t) := by
   obtain ⟨⟨i, n⟩, f⟩ := r
-  change ofRose (Rose.cons t (Rose.node i f))
-      = fork (ofRose t) (ofRose (Rose.node i f))
-  simp only [Rose.cons_node, ofRose_node, Fin.foldr_succ, Fin.cases_zero,
-    Fin.cases_succ]
+  change ofRose (Rose.snoc (Rose.node i f) t)
+      = fork (ofRose (Rose.node i f)) (ofRose t)
+  simp only [Rose.snoc_node, ofRose_node, Fin.foldl_succ_last, Fin.snoc_castSucc,
+    Fin.snoc_last]
 
 /-- One half of the rose/binary bijection: converting to a rose tree and
 back is the identity on `Ast k`. -/
 theorem ofRose_toRose {k : Nat} (a : Ast k) : ofRose a.toRose = a :=
   ind (motive := fun a => ofRose a.toRose = a)
-    (fun i => by simp only [toRose_leaf, ofRose_node, Fin.foldr_zero])
-    (fun l r ihl ihr => by rw [toRose_fork, ofRose_cons, ihl, ihr]) a
+    (fun i => by simp only [toRose_leaf, ofRose_node, Fin.foldl_zero])
+    (fun l r ihl ihr => by rw [toRose_fork, ofRose_snoc, ihl, ihr]) a
 
-/-- The image of a right spine under `toRose`: the fold that `ofRose`
-performs on a node's children is undone one child at a time. -/
-theorem toRose_foldr {k : Nat} (i : Fin k) :
+/-- The image of a left spine under `toRose`: the fold that `ofRose`
+performs on a node's children is undone one child at a time, from the
+last. -/
+theorem toRose_foldl {k : Nat} (i : Fin k) :
     ∀ (n : Nat) (g : Fin n → Ast k),
-      (Fin.foldr n (fun j acc => fork (g j) acc) (leaf i)).toRose
+      (Fin.foldl n (fun acc j => fork acc (g j)) (leaf i)).toRose
         = Rose.node i fun j => (g j).toRose :=
   Nat.rec
     (motive := fun n => ∀ g : Fin n → Ast k,
-      (Fin.foldr n (fun j acc => fork (g j) acc) (leaf i)).toRose
+      (Fin.foldl n (fun acc j => fork acc (g j)) (leaf i)).toRose
         = Rose.node i fun j => (g j).toRose)
     (fun g => by
-      simp only [Fin.foldr_zero, toRose_leaf]
+      simp only [Fin.foldl_zero, toRose_leaf]
       exact congrArg _ (funext fun j => j.elim0))
     (fun n ih g => by
-      simp only [Fin.foldr_succ, toRose_fork, ih (fun j => g j.succ), Rose.cons_node]
-      exact congrArg _ (funext fun j =>
-        Fin.cases (motive := fun j => Fin.cases (g 0).toRose
-          (fun j => (g j.succ).toRose) j = (g j).toRose) rfl (fun _ => rfl) j))
+      simp only [Fin.foldl_succ_last, toRose_fork,
+        ih (fun j => g j.castSucc), Rose.snoc_node]
+      exact congrArg _ (Fin.snoc_init_self fun j => (g j).toRose))
 
 /-- The other half of the rose/binary bijection: converting from a rose
 tree and back is the identity on `Rose k`. -/
@@ -482,7 +486,7 @@ theorem toRose_ofRose {k : Nat} (r : Rose k) : (ofRose r).toRose = r :=
     (fun s f ih => by
       obtain ⟨i, n⟩ := s
       change (ofRose (Rose.node i f)).toRose = Rose.node i f
-      rw [ofRose_node, toRose_foldr]
+      rw [ofRose_node, toRose_foldl]
       exact congrArg _ (funext ih)) r
 
 end Ast

@@ -111,6 +111,14 @@ that. -/
 
 #guard Ast.ofRose sampleAst.toRose == sampleAst
 
+-- The orientation is normative, and the round trip above holds under
+-- either choice, so it is pinned here: children are consumed as a
+-- snoclist, so `sampleAst` is the curried application `0 1 2` and its
+-- rose form nests one child deep at each level.
+#guard Ast.toRose sampleAst
+    == Rose.node 0 (fun _ : Fin 1 =>
+         Rose.node 1 (fun _ : Fin 1 => Rose.node 2 Fin.elim0))
+
 #guard Tree.erase (Ast.trivialDoc sampleAst) == sampleAst
 
 #guard Tree.extract (Tree.duplicate (Ast.trivialDoc sampleAst))

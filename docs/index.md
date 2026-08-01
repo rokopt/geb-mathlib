@@ -868,7 +868,9 @@ import-direction rules above are enforced by
   `Ast.erase_trivialDoc` the round trip against the trivial
   decoration. `Geb.Rose k` is the rose-tree presentation, and
   `Ast.ofRose_toRose`/`Ast.toRose_ofRose` are the two halves of its
-  bijection with `Ast k` under the head-child-left convention.
+  bijection with `Ast k`, under the convention that reads a rose node as
+  a curried function and a fork as application, so that a node's
+  children are consumed as a snoclist.
   `Retraction`, `format_idem` and
   `print_injective` state the law a concrete syntax must satisfy and
   derive formatter idempotence and printer injectivity from it once for
@@ -878,7 +880,7 @@ import-direction rules above are enforced by
   `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
   corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
   `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
-  depending on `Classical.choice`. Of the module's 50 theorems, 10
-  depend on no axioms, 11 on `propext` alone, 7 on `Quot.sound` alone,
-  and the remaining 22 on `propext` and `Quot.sound`. No declaration
+  depending on `Classical.choice`. Of the module's 50 theorems, 11
+  depend on no axioms, 8 on `propext` alone, 7 on `Quot.sound` alone,
+  and the remaining 24 on `propext` and `Quot.sound`. No declaration
   depends on `Classical.choice`.

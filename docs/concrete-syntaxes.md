@@ -101,13 +101,17 @@ Three precision caveats:
    initial algebra: the terminal coalgebra `νX. (k + X²)` of possibly
    infinite trees satisfies it too. The derivation supplies candidate
    maps; something further must prove them mutually inverse.
-2. The bijection depends on a **convention**. Reading the last step
-   forwards, a rose node `(l, t :: ts)` maps to the fork whose *left*
-   child is the head child `t` and whose *right* child is the rose node
-   `(l, ts)` carrying the label and the remaining siblings. Choosing the
-   last child instead gives a different, equally valid bijection. The
-   convention must be fixed and versioned, because annotation *paths*
-   travel through it.
+2. The bijection depends on a **convention**, and Geb fixes it by
+   reading both sides as application. A rose node is a curried function:
+   its label is the function, its children the arguments it is applied
+   to, in order. A fork `(l, r)` is the application of `l` to `r`.
+   Application of a curried function is left-associative, so a rose node
+   `(l, ts ++ [t])` maps to the fork whose *left* child is the rose node
+   `(l, ts)` — the label with every argument but the last — and whose
+   *right* child is the last argument `t` alone. The child sequence is
+   consumed as a **snoclist**. Reading application to the right instead
+   gives a different, equally valid bijection. The convention must be
+   fixed and versioned, because annotation *paths* travel through it.
 3. Reading the derivation off as a bijection of *initial algebras* is
    available but not free: `R` carries an `F`-algebra structure and `A`
    carries a `k × List(−)`-algebra structure, so initiality gives maps
@@ -117,21 +121,25 @@ Three precision caveats:
    round trips on each side — which is what `Ast.toRose`, `Ast.ofRose`,
    `Ast.ofRose_toRose` and `Ast.toRose_ofRose` do.
 
-The classical left-child/right-sibling correspondence is the unlabeled
-shadow of this: a bijection between binary trees and *forests* of rose
-trees. The `k`-labeled statement is stronger and is the one Geb should
-normatively adopt: binary tree as the core, rose tree as a surface
-presentation.
+The classical left-child/right-sibling correspondence is the same
+theorem at the opposite orientation and without labels: it takes the
+head child where this takes the last argument, and relates binary trees
+to *forests* of rose trees. The `k`-labeled statement is stronger and is
+the one Geb should normatively adopt: binary tree as the core, rose tree
+as a surface presentation.
 
 ### Which occurrences the rose presentation can name
 
 Occurrences in `A` are words over `{L, R}`. Under the convention above,
-child `i` of the rose node at binary position `q` sits at binary
-position `q · Rⁱ · L`. Hence:
+the last argument of the rose node at binary position `q` sits at
+`q · R`, the one before it at `q · L · R`, and in general the argument
+`d` places from the end at `q · Lᵈ · R`; the label itself, for a node of
+arity `n`, sits at `q · Lⁿ`. Hence:
 
 > The binary occurrences that are rose-tree nodes are the empty path
-> together with the paths ending in `L`. Binary positions ending in `R`
-> are sibling-list cells and have no rose-tree name.
+> together with the paths ending in `R`. Binary positions ending in `L`
+> are partial applications — the node with some suffix of its arguments
+> removed — and have no rose-tree name.
 
 The development does not state this: it has no occurrence vocabulary and
 no subtree selector to interpret a path against. The two design
@@ -899,9 +907,9 @@ EDN fits the rose view directly — lists, vectors, maps, symbols,
 keywords, tagged elements, and `;` comments:
 
 ```edn
-#geb/node [1
-  #geb/node [0]
-  #geb/node [2]]
+#geb/node [0
+  #geb/node [2
+    #geb/node [1]]]
 ```
 
 Against it: no broadly adopted canonical byte serialization, a smaller
@@ -1250,10 +1258,10 @@ Axiom dependencies, from `#print axioms` over all 50 theorems:
 
 | Theorems | Axioms |
 | --- | --- |
-| 10, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
-| 11, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
+| 11, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
+| 8, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
 | 7, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
-| the remaining 22, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
+| the remaining 24, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
 No declaration depends on `Classical.choice`, and `lake lint` enforces
 that through `GebMeta.detectNonstandardAxiom`.
@@ -1524,7 +1532,7 @@ machinery needs it, which the parse and print layer does not.
   annotation needs `(rootCoreId, path)` keys, and paths depend on the
   versioned binary/rose bijection.
 - **The rose presentation cannot name every occurrence** — only the root
-  and positions ending in `L`. Annotations on sibling-list cells do not
+  and positions ending in `R`. Annotations on sibling-list cells do not
   survive a round trip through a rose-shaped syntax. This is not
   formalized; see
   [Which occurrences the rose presentation can name](#which-occurrences-the-rose-presentation-can-name).
