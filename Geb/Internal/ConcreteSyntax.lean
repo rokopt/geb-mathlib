@@ -47,6 +47,10 @@ Every tree type here is a `WType`, so its recursion is carried by
   from `Csexp.parseAst_printAst` and `Csexp.size_le_length_printAst`.
 * `Csexp.readVerbatim_append` — a printed atom reads back whole,
   whatever it contains.
+* `Ast.erase_trivialDoc` — the trivial decoration is erased away.
+* `Csexp.format_idem`, `Csexp.print_injective` — the generic corollaries
+  instantiated, which is what shows the law skeleton applies to a
+  syntax rather than only to a hypothetical one.
 * `Geb.format_idem`, `Geb.print_injective` — the corollaries of a
   retraction, proved once for every syntax.
 * `Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
@@ -66,10 +70,15 @@ shows that bound admits every tree the printer emits.
 The decimal layer (`Csexp.digitsLE`, `Csexp.ofLE`, `Csexp.decOf`,
 `Csexp.digitsVal`) is written here rather than reused. mathlib's
 `Nat.digits` depends on `Classical.choice`. Core's `Nat.toDigits` does
-not, and uses the same explicit bound, but the retraction proof needs
-the inverse direction and its lemmas — `digitsVal_decOf`,
-`decOf_all_digits`, `decOf_ne_nil` — and core states none of them, so
-reuse would save the encoder and leave the proof obligations untouched.
+not, and on base 10 agrees with `Csexp.decOf` pointwise; core further
+states `Nat.isDigit_of_mem_toDigits` and `Nat.length_toDigits_pos`,
+which are `Csexp.decOf_all_digits` and `Csexp.decOf_ne_nil`, and
+`Nat.digitChar` with `Nat.toNat_digitChar_of_lt_ten`. What core has no
+counterpart for is the decoder: it states no `digitsVal`, hence no
+`digitsVal_decOf`, which is the lemma the retraction proof turns on and
+the only one whose proof is not routine. `TODO.md` § Concrete-syntax
+prototype records the reuse this leaves open.
+
 `finEnumFin` and `finEnumEmpty` are named because mathlib's `FinEnum`
 instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
 
@@ -540,8 +549,10 @@ theorem digitsLEAux_succ (f n : Nat) :
     digitsLEAux (f + 1) n =
       if n = 0 then [] else n % 10 :: digitsLEAux f (n / 10) := rfl
 
-/-- Little-endian decimal digits. Hand-rolled rather than taken from
-mathlib, whose `Nat.digits` depends on `Classical.choice`. -/
+/-- Little-endian decimal digits. Hand-rolled: mathlib's `Nat.digits`
+depends on `Classical.choice`, and core's `Nat.toDigits`, which does
+not, is big-endian and has no decoder to invert it against. See the
+module docstring's implementation notes. -/
 def digitsLE (n : Nat) : List Nat := digitsLEAux n n
 
 theorem ofLE_digitsLEAux : ∀ f n : Nat, n ≤ f → ofLE (digitsLEAux f n) = n :=
@@ -672,6 +683,9 @@ def readVerbatim (cs : List Char) : Option (List Char × List Char) :=
   | some (n, ':' :: r) => if n ≤ r.length then some (r.take n, r.drop n) else none
   | _ => none
 
+/-- A printed atom reads back whole, and leaves exactly what followed
+it. The length prefix is what delimits the content, so the content may
+contain `:` and parentheses. -/
 theorem readVerbatim_append (s rest : List Char) :
     readVerbatim (printVerbatim s ++ rest) = some (s, rest) := by
   have hcolon : ∀ c cs, (':' :: (s ++ rest)) = c :: cs → charDigit c = none := by

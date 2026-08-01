@@ -105,7 +105,16 @@ nothing else here runs either. -/
 #guard Tree.extract (Tree.duplicate (Ast.trivialDoc sampleAst))
     == Ast.trivialDoc sampleAst
 
--- Relabelling changes decorations and not shape.
+/-! ## Relabelling
+
+`Tree.map` is the only structure map no theorem here evaluates. The two
+assertions are a pair: `Tree.erase` discards decorations whatever the
+relabelling is, so the shape half passes under `id` too, and only the
+`Tree.extract` half sees that the relabelling happened. -/
+
+#guard Tree.extract (Tree.map (fun a : Ann => { a with name := some "x" })
+    (Ast.trivialDoc sampleAst)) == ({ name := some "x" } : Ann)
+
 #guard Tree.erase (Tree.map (fun a : Ann => { a with name := some "x" })
     (Ast.trivialDoc sampleAst)) == sampleAst
 
@@ -115,12 +124,12 @@ nothing else here runs either. -/
 evaluates it. `Geb.format_idem` is trivially true on its `none` branch,
 so only a worked `some` shows the branch that does something. -/
 
--- On a non-canonical spelling, so that a `format` returning its input
--- unchanged on parse success would fail this.
+-- On a non-canonical spelling, so a `format` returning its input
+-- unchanged on parse success fails this; and against a spelling built
+-- from the fixtures rather than from `Csexp.print`, so a `print` that
+-- emitted something else fails it too.
 #guard format (Csexp.parse 3) Csexp.print (leafSexp ['0', '1'])
-    == some (Csexp.print (Ast.leaf (1 : Fin 3)))
-
-#guard format (Csexp.parse 3) Csexp.print (leafSexp ['x']) == none
+    == some (leafSexp ['1'])
 
 /-! ## The reader, where `Csexp.parse` cannot see
 
