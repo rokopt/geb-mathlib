@@ -71,14 +71,14 @@ The decimal layer is written here rather than reused, and the reason is
 `Classical.choice` throughout. mathlib's `Nat.digits` depends on it.
 Core supplies the whole layer — `Nat.toDigits`, which agrees with
 `Csexp.decOf` pointwise on base 10, the decoder `Nat.ofDigitChars`, and
-the round trip `Nat.ofDigitChars_ten_toDigits`, which is
-`Csexp.digitsVal_decOf` verbatim — but every core lemma relating
-`toDigits b n` to `toDigits b (n / b)` depends on `Classical.choice`,
-`Nat.ofDigitChars_ten_toDigits` and `Nat.toDigits_eq_if` among them, so
-the round trip cannot be imported and cannot be reproved from core's
-recursion equation. What is choice-free in core is the shallow part:
-`Nat.digitChar`, `Nat.toNat_digitChar_of_lt_ten`,
-`Nat.isDigit_of_mem_toDigits` and `Nat.length_toDigits_pos`.
+the same round trip in total form, `Nat.ofDigitChars_ten_toDigits`,
+where `Csexp.digitsVal_decOf` is partial. It cannot be used. That round
+trip depends on `Classical.choice`, and so does every lemma descending
+from `toDigits b n` to `toDigits b (n / b)` — `Nat.toDigits_eq_if` and
+`Nat.toDigits_of_base_le` — so it can be neither imported nor reproved.
+The boundary is not depth but direction: the printer's descent lemmas
+are choice-dependent, while the decoder's recursion equations and the
+digit-character lemmas are not.
 
 `finEnumFin` and `finEnumEmpty` are named because mathlib's `FinEnum`
 instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
@@ -108,11 +108,15 @@ namespace Geb
 Every `Arity` family below is finitely enumerable, which is what lets
 `WType.instDecidableEq` decide equality of the corresponding tree type.
 The `#guard`s in `GebTests.Internal.ConcreteSyntax` decide equality at
-`Ast k` and at `Tree k Ann`. The two enumerations are named rather than
-left to instance search: mathlib's `FinEnum.fin` and `FinEnum.empty` are built
-by `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
+`Ast k` and at `Tree k Ann`. The two enumerations are named because
+mathlib's `FinEnum.fin` and `FinEnum.empty` are built by
+`FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
 which [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md)
-forbids. Neither construction is specific to syntax. -/
+forbids. Naming them is not by itself enough: an arity family has to be
+a plain `def` as well, or instance search reduces past it and reaches
+mathlib's anyway. `Ast.Arity` and `Tree.Arity` are; `Rose.Arity` cannot
+be, and its docstring records what that costs. Neither construction is
+specific to syntax. -/
 
 /-- `Fin n` enumerated by the identity equivalence. -/
 @[instance_reducible] def finEnumFin (n : Nat) : FinEnum (Fin n) := ⟨n, Equiv.refl (Fin n)⟩
@@ -136,9 +140,11 @@ inductive Shape (k : Nat) where
 
 /-- The child index type of each shape: a leaf has none, a fork has two.
 `Fin 2` rather than `Bool`, so that every non-empty arity here is
-enumerated by `finEnumFin`. An `abbrev` for uniformity with
-`Rose.Arity`, which has to be reducible. -/
-abbrev Arity {k : Nat} : Shape k → Type
+enumerated by `finEnumFin`. A `def` rather than an `abbrev`: reducible,
+instance search at a concrete shape would whnf past this family to
+`Empty` or `Fin 2` and select mathlib's `Classical.choice`-dependent
+`FinEnum`, never reaching `instFinEnumArity`. -/
+def Arity {k : Nat} : Shape k → Type
   | .leaf _ => Empty
   | .fork => Fin 2
 
@@ -207,9 +213,9 @@ the decoration carried at that node. -/
 abbrev Shape (k : Nat) (A : Type uA) : Type uA := A × Ast.Shape k
 
 /-- The child index type of an annotated shape: that of the underlying
-`Ast.Shape`, since decorating a node does not change its children. An
-`abbrev` for uniformity with `Rose.Arity`. -/
-abbrev Arity {k : Nat} {A : Type uA} (s : Shape k A) : Type := Ast.Arity s.2
+`Ast.Shape`, since decorating a node does not change its children. A
+`def` rather than an `abbrev`, for the reason `Ast.Arity` gives. -/
+def Arity {k : Nat} {A : Type uA} (s : Shape k A) : Type := Ast.Arity s.2
 
 /-- Every annotated arity is finitely enumerable. -/
 instance instFinEnumArity {k : Nat} {A : Type uA} (s : Shape k A) :
@@ -264,11 +270,6 @@ def erase {k : Nat} {A : Type uA} : Tree k A → Ast k :=
     duplicate (WType.mk s ch)
       = WType.mk (WType.mk s ch, s.2) fun b => duplicate (ch b) :=
   WType.para_mk _ s ch
-
-@[simp] theorem erase_mk {k : Nat} {A : Type uA} (s : Shape k A)
-    (ch : Arity s → Tree k A) :
-    erase (WType.mk s ch) = WType.mk s.2 fun b => erase (ch b) :=
-  rfl
 
 /-- The first functor law: relabelling along the identity is the
 identity. -/
@@ -370,14 +371,19 @@ family that has to be: `simp` and `rw` match at reducible transparency,
 so with a plain `def` a child function whose type reads
 `Rose.Arity (i, n) → _` in a goal fails to unify with a lemma stated at
 `Fin n → _`, and `Ast.ofRose_cons` and `Ast.toRose_ofRose` do not go
-through. -/
+through. The cost is that `instFinEnumArity` below is unreachable at a
+concrete shape — instance search reduces past this family to `Fin n` and
+selects mathlib's `Classical.choice`-dependent `FinEnum` — so deciding
+equality at a `Rose k` whose shape is a literal acquires that axiom.
+`Ast.Arity` and `Tree.Arity` are plain `def`s for exactly this reason
+and do not have the hole. -/
 abbrev Arity {k : Nat} (s : Shape k) : Type := Fin s.2
 
 /-- Every rose arity is finitely enumerable. Named for the same reason
-as the other two: without it, deciding equality at `Rose k` reaches
-mathlib's `FinEnum.fin` and acquires `Classical.choice`, and a `#guard`
-is not a declaration, so `GebMeta.detectNonstandardAxiom` would not
-catch it. -/
+as the other two, and forward-looking: nothing decides equality at
+`Rose k` yet, and without this instance the first thing that did would
+acquire `Classical.choice`. A `#guard` is not a declaration, so
+`GebMeta.detectNonstandardAxiom` would not catch it. -/
 instance instFinEnumArity {k : Nat} (s : Shape k) : FinEnum (Arity s) :=
   finEnumFin s.2
 
@@ -647,8 +653,6 @@ def readDigits : List Char → List Char × List Char :=
     | some _ => (c :: ih.1, ih.2)
     | none => ([], c :: cs)
 
-@[simp] theorem readDigits_nil : readDigits [] = ([], []) := rfl
-
 theorem readDigits_cons (c : Char) (cs : List Char) :
     readDigits (c :: cs) =
       match charDigit c with
@@ -778,9 +782,6 @@ tree the printer emits. Whether it admits every input the grammar accepts
 is not stated, and is not needed for the retraction law. -/
 def parseAst (k : Nat) : Nat → List Char → Option (Ast k × List Char) :=
   Nat.rec (fun _ => none) fun _ ih => parseStep k ih
-
-@[simp] theorem parseAst_zero (k : Nat) (cs : List Char) :
-    parseAst k 0 cs = none := rfl
 
 @[simp] theorem parseAst_succ (k f : Nat) :
     parseAst k (f + 1) = parseStep k (parseAst k f) := rfl

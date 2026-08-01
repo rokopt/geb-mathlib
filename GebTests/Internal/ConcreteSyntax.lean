@@ -35,7 +35,8 @@ against a string literal.
 
 The assertions are `#guard`, which runs its argument in the interpreter.
 `by decide` discharges every one of them too — `WType.beq` reduces in
-the kernel — but checks a different thing. A parser and a printer are
+the kernel, and the assertions that do not reach it compare `String`,
+`Nat`, `Bool`, `Ann` or `Option` — but checks a different thing. A parser and a printer are
 used by running them, so the interpreter is the path worth exercising;
 that the kernel agrees is what the two forms together would show.
 
@@ -100,8 +101,10 @@ def sampleText : String := String.ofList (Csexp.print sampleAst)
 `Tree.extract_duplicate` already state these. What
 the assertions add is that the compiled evaluation agrees with the
 kernel and terminates. `WType.beq`, which decides the equalities, folds
-over a `FinEnum` enumeration, and nearly every assertion below runs it;
-`Tree.duplicate` is a `WType.para`, and only the fourth of these runs
+over a `FinEnum` enumeration; nine assertions in this file reach it, the
+four below among them, while the twelve that compare `none` with `none`
+are settled by `Option.decEq` without touching the payload.
+`Tree.duplicate` is a `WType.para`, and only the fourth below runs
 that. -/
 
 #guard Csexp.parse 3 (Csexp.print sampleAst) == some sampleAst
@@ -128,7 +131,7 @@ relabelling is, so the shape half passes under `id` too, and only the
 
 /-! ## The formatter
 
-`Geb.format` is the module's headline abstraction and no theorem
+`Geb.format` is the law skeleton's one derived map, and no theorem
 evaluates it. `Geb.format_idem` is trivially true on its `none` branch,
 so only a worked `some` shows the branch that does something. -/
 
