@@ -600,25 +600,27 @@ meaning depends on it.
 `Geb.finEnumFin` and `Geb.finEnumEmpty` are choice-free `FinEnum`
 constructions with nothing syntax-specific about them, standing in for
 mathlib's `FinEnum.fin` and `FinEnum.empty`, which reach
-`Classical.choice` through `FinEnum.ofList`. They duplicate
+`Classical.choice` through `FinEnum.ofList`. `Geb.finEnumFin` duplicates
 `finEnumFin2` and `finEnumFin0` in
 `GebTests/Mathlib/Data/PFunctor/Presheaf/Fixtures.lean`, which take the
-same `Equiv.refl` route for the same reason. Moving all of them beside
+same `Equiv.refl` route for the same reason; `Geb.finEnumEmpty` is
+`FinEnum Empty`, built from an explicit `Empty ≃ Fin 0`, and duplicates
+nothing. Moving all of them beside
 the choice-free decidability instances in `Geb/Mathlib/Data/FinEnum.lean`
 is a separate concern from the syntax layer, so it belongs on its own
 branch per [CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
 
-The decimal layer is larger than reuse would leave it. Core's
-`Nat.toDigits` is choice-free and on base 10 agrees with `Csexp.decOf`
-pointwise, and core states `Nat.isDigit_of_mem_toDigits`,
-`Nat.length_toDigits_pos`, `Nat.digitChar` and
-`Nat.toNat_digitChar_of_lt_ten`, which cover four of the five lemmas the
-retraction proof uses about the encoder. What core has no counterpart
-for is the decoder, so `Csexp.digitsVal` and `Csexp.digitsVal_decOf`
-stay either way; the question is whether proving the latter over core's
-big-endian `Nat.toDigits_eq_if` recursion costs less than the
-`Csexp.digitsLE`/`Csexp.ofLE` layer it would replace. Measure before
-deciding.
+Reusing core's decimal layer is foreclosed, not merely costlier. Core
+supplies the whole layer, including the decoder `Nat.ofDigitChars` and
+the round trip `Nat.ofDigitChars_ten_toDigits`, which is
+`Csexp.digitsVal_decOf` verbatim. Measured at v4.33.0-rc1, that theorem
+depends on `Classical.choice`, as does every core lemma relating
+`Nat.toDigits b n` to `Nat.toDigits b (n / b)`, `Nat.toDigits_eq_if`
+among them — so the round trip can be neither imported nor reproved from
+core's recursion equation. Choice-free in core are `Nat.digitChar`,
+`Nat.toNat_digitChar_of_lt_ten`, `Nat.isDigit_of_mem_toDigits` and
+`Nat.length_toDigits_pos`, which is not enough to build on. Reopen if a
+choice-free recursion equation for `Nat.toDigits` lands upstream.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
@@ -630,7 +632,9 @@ isomorphisms and § References, is inherited text. The inherited material
 has not had a pass against
 [CONTRIBUTING.md](CONTRIBUTING.md) § Style and references, and carries
 value-laden adjectives and evaluative framing that the style rule
-excludes. § Status states the same scope.
+excludes. § Status states the same scope, listing itself and
+§ References's opening paragraph among the repository-written material
+as well.
 
 Two factual items ride along with that pass. The document's
 § References duplicates bibliographic detail that

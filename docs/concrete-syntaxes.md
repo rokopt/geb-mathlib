@@ -178,13 +178,14 @@ node's output is copied once per ancestor. `Csexp.readVerbatim` evaluates
 `Csexp.readDigits` is a strict `List.rec` that traverses the rest of the
 input even when the first character is not a digit; the cost is the
 node count times the input length. Three repairs would restore
-linearity, and they cost differently. A reader carrying the remaining
-length, and a `readDigits` that stops at the first non-digit, restate
-`readVerbatim_append` and `readDigits_append` and reprove the retraction
-chain above them. An accumulator-passing printer additionally restates
-`printAst_leaf`, `printAst_fork`, `size_le_length_printAst` and
-`parseAst_printAst`, all of which are stated about the present
-`printAst`.
+linearity, at different cost. A `readDigits` that stops at the first
+non-digit, and an accumulator-passing printer kept behind its present
+signature, change no statement: `readDigits_append`, `printAst_leaf`,
+`printAst_fork`, `size_le_length_printAst` and `parseAst_printAst` all
+stand as written, and only the first two stop holding by `rfl`. A reader
+carrying the remaining length changes `readVerbatim`'s type, so
+`readVerbatim_append` is restated and the retraction chain above it
+reproved.
 
 Parsing, printing and the fold are elementary — indeed they sit in the
 lower-elementary
@@ -654,12 +655,12 @@ the bytewise lexicographic order of their deterministic encodings**.
 by RFC 7049 §3.9, which is retained only as an optional "length-first"
 variant.
 
-**The correction, and it is not the one it first appears to be.**
-DAG-CBOR's specification says to use the §4.2 rules *except* for map key
-ordering, which follows RFC 7049 §3.9, "so the keys are sorted by length
-first". Asserting §4.2 ordering for DAG-CBOR while warning against the
-length-first order reads as though the two were in conflict. They are
-not, for DAG-CBOR:
+**Why the two orderings do not conflict for DAG-CBOR.** Its
+specification cites RFC 8949 §4.2 for key ordering and derives
+length-first from it: "sorted in (byte-wise) lexical order, including
+their major type 3 and length. Therefore, the keys are sorted by length
+first." Reading that as a departure from §4.2, to be warned against,
+inverts it — the derivation is sound:
 
 > For text-string keys, RFC 8949 §4.2's bytewise order on the
 > *encoded* key coincides with RFC 7049 §3.9's length-first order.
@@ -682,13 +683,14 @@ sorts the raw key.** The keys `k, ann, root, format` sort as
 `ann, format, k, root` under JCS and DAG-JSON: the two orders differ
 whenever two keys differ in length.
 
-DAG-CBOR's other constraints, all confirmed: map keys must be strings;
+DAG-CBOR's other constraints: map keys must be strings;
 only tag 42 (CID) is permitted and it must be encoded as `0xd82a`, so
 the bignum tags 2 and 3 are excluded along with everything else; floats
 are always 64-bit, with NaN, ±Infinity, and −0.0 forbidden; and the
-codec assumes integers fit the 64-bit signed range. That last bound is
-documented as a **codec and library limitation**, not as a Data Model
-type definition.
+specification's limitations section documents a **JavaScript
+safe-integer** bound of 2⁵³ − 1, as a library limitation rather than a
+Data Model type definition. An i64 codec-level bound is sometimes
+attributed to DAG-CBOR; the current specification does not state one.
 
 **Design resolution.** Take RFC 8949 §4.2 deterministic CBOR as the
 normative Geb binary syntax, matching the IETF standard, the CDE draft,
@@ -696,17 +698,23 @@ and the verified implementation. Then choose **map-free encodings** —
 positional arrays instead of string-keyed maps.
 
 The divergences are of two kinds. DAG-CBOR **restricts which values are
-expressible** — string keys only, tag 42 only, no bignum tags. For a
-value both codecs admit, **byte layout** diverges in two places: map key
-ordering, and floats, which §4.2.1 requires in the shortest form
-preserving the value while DAG-CBOR requires 64-bit always, so `1.5` is
-`f9 3e00` under one and `fb 3ff8000000000000` under the other. An item
-that is map-free and float-free, and stays inside DAG-CBOR's value
-restrictions, therefore encodes to identical bytes under both. The Geb
-encodings are float-free: the annotated CBOR document in
+expressible** — string keys only, tag 42 only, no bignum tags, floats
+always 64-bit. For a value both codecs admit, **byte layout** diverges
+in exactly one place: floats, which §4.2.1 requires in the shortest form
+preserving the value where DAG-CBOR requires 64 bits, so `1.5` is
+`f9 3e00` under one and `fb 3ff8000000000000` under the other. Key
+ordering is not a second place: a value both admit has string-only keys,
+and for those the two orders coincide, as above. An item that is
+float-free and stays inside DAG-CBOR's value restrictions therefore
+encodes to identical bytes under both, and the Geb encodings are
+float-free — the annotated CBOR document in
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding)
-contains no float. This removes the hazard rather than
-documenting it, and it costs only the self-description that map keys
+uses only major types 0, 3, 4 and `f6`.
+
+Map-free encodings are chosen for a different reason: the CBOR/JSON key
+order mismatch below, which no CBOR-side rule removes. That removes the
+hazard rather than documenting it, and it costs only the
+self-description that map keys
 would have provided, which the format tag in position 0 restores.
 
 Verified prior art, and it exists for CBOR and for no other candidate
@@ -1213,8 +1221,8 @@ Four facts constrain how it is written.
 The fuel measure is `Ast.size`, the node count, named for its return
 value as [docs/rules/lean-coding.md](rules/lean-coding.md) § Naming
 conventions requires. Each bound on it is discharged by `omega` or by
-case analysis, per that file's § Constructive-only rule on `Fin` and
-`Nat` arithmetic.
+case analysis, per that file's § Constructive-only Lean code rule on
+`Fin` and `Nat` arithmetic.
 
 The implemented wire form is header-free and carries the bare tree
 alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
@@ -1242,7 +1250,7 @@ Axiom dependencies, from `#print axioms` over all 53 theorems:
 No declaration depends on `Classical.choice`, and `lake lint` enforces
 that through `GebMeta.detectNonstandardAxiom`.
 
-The theorems that carry the architecture:
+The theorems the architecture rests on:
 
 - `Tree.extract_duplicate`, `Tree.map_extract_duplicate` and
   `Tree.duplicate_duplicate` are the three comonad laws;
@@ -1354,8 +1362,9 @@ everything feeding a hash.
 | 3 | a hash that runs | not started |
 | 4 | CID, multibase, CAR | deferred |
 
-Stage 1a is 53 theorems; [Local verification](#local-verification)
-breaks them down. That is the only measured quantity, and one
+The module is 53 theorems, 28 of them in `Csexp`;
+[Local verification](#local-verification) breaks them down by axiom.
+That is the only measured quantity, and one
 implementation is too small a base to extrapolate a schedule from, so
 the stages below are ordered by dependency and carry no estimate.
 
@@ -1445,7 +1454,10 @@ supplies the fold's computation rule and its uniqueness, the
 paramorphism `WType.para`, and a `DecidableEq` instance needing
 decidable shapes and a finitely enumerable arity; `Ast.ind` recovers the two-constructor
 induction principle, so no proof about `Ast` case-splits on `Ast.Shape`
-or `Ast.Arity`; only `Ast.ind` itself and the three folds do.
+or `Ast.Arity` except `Ast.ind` itself. Outside the proofs, what does
+case-split is the arity family, its `FinEnum` instance, the two
+constructors, and the three folds `Ast.size`, `Ast.toRose` and
+`Csexp.printAst`.
 `Ast.erase_trivialDoc` still drives its recursion by `WType.rec`
 directly, and the rose bijection's proofs destructure `Rose.Shape`,
 there being no `Rose.ind`. No `Repr` instance
@@ -1467,8 +1479,9 @@ machinery needs it, which the parse and print layer does not.
   implementation; canonical means one encoding per value across all
   implementations. Only the latter supports content addressing.
 - **CBOR sorts encoded keys; JSON sorts raw keys.** For string keys
-  RFC 8949 §4.2 and RFC 7049 §3.9 agree (both are length-first), so
-  DAG-CBOR's stated exception is a no-op; but both disagree with JCS and
+  RFC 8949 §4.2 and RFC 7049 §3.9 agree (both are length-first), so the
+  length-first reading of DAG-CBOR is not a departure from §4.2; but
+  both disagree with JCS and
   DAG-JSON for keys of unequal length. Audit any CBOR library for
   whether it sorts the encoded item or the bare string, and prefer
   map-free encodings, which make the question moot.
@@ -1483,8 +1496,9 @@ machinery needs it, which the parse and print layer does not.
   every redundant representation in `D`, or `D` carries none — with
   annotation collections canonically ordered and duplicate-free by
   construction. `Doc k` as declared carries redundancy in
-  `Ann.links : List String`, which forecloses the second branch until
-  that field is settled; [Roadmap](#roadmap) records the choice.
+  `Ann.links : List String` whenever link order is not meant to be
+  semantic, which is undecided and forecloses the second branch until it
+  is settled; [Roadmap](#roadmap) records the choice.
 - **Content addressing conflates occurrences.** Hash-keyed annotation
   tables attach metadata to every equal subtree; per-occurrence
   annotation needs `(rootCoreId, path)` keys, and paths depend on the
@@ -1507,8 +1521,11 @@ machinery needs it, which the parse and print layer does not.
   document-level idempotence is at risk.
 - **RFC 9804 is Informational**, `@` is not a legal token character, and
   a leading digit is not a legal token start.
-- **CBOR and DAG-CBOR limits**: integers effectively i64 by codec and
-  library convention, no bignum tags, only tag 42, 64-bit floats only.
+- **CBOR and DAG-CBOR limits**: no bignum tags, only tag 42, 64-bit
+  floats only — which is a byte-layout divergence from RFC 8949 §4.2.1's
+  shortest-form rule, so map-freeness alone does not make an item
+  byte-identical under both. Integer bounds are a library matter; the
+  specification documents the JavaScript safe-integer range.
 - **DAG-JSON reserves the key `"/"`.** Never use it as a Geb key.
 - **Lean crypto is research-grade.** `@gdncc/cryptography` disclaims
   cryptographic use and there is no pure-Lean SHA-2; plan for FFI.
