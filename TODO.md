@@ -593,9 +593,9 @@ implemented syntax parses exactly two children at a fork, where this one
 parses until the closing parenthesis, so its parser needs a bounded
 inner loop and its retraction proof needs to rebuild a W-type node from
 the `List` that loop returns — a transport along `List.length_ofFn` with
-no counterpart in the fixed-arity case. Worth doing when a second
-spelling earns its place; it tests nothing about data-model
-independence, both spellings being canonical S-expressions.
+no counterpart in the fixed-arity case. Worth doing when a second spelling is
+wanted; it tests nothing about data-model independence, both spellings
+being canonical S-expressions.
 
 The occurrence vocabulary is absent, so the two design consequences that
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Which
