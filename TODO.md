@@ -636,19 +636,11 @@ excludes. § Status states the same scope, listing itself and
 § References's opening paragraph among the repository-written material
 as well.
 
-Two factual items ride along with that pass. The document's
+One factual item rides along with that pass: the document's
 § References duplicates bibliographic detail that
 [docs/references.bib](docs/references.bib) holds for RFC 9804, RFC 6962
-and Uustalu and Vene 2011, and roughly thirty-five further works have no
-`.bib` entry and several no searchable identifier; and its
-§ CBOR (RFC 8949 §4.2) and DAG-CBOR attributes to DAG-CBOR's
-specification both a key-ordering exception following RFC 7049 §3.9 and
-a codec-level 64-bit integer bound. A fetch of the current spec found
-neither: it cites RFC 8949 §4.2 for key ordering with no exception, and
-its limitations section discusses the JavaScript safe-integer range
-rather than i64. Whether an earlier IPLD specification generation
-carries them, or whether both attributions are wrong, is unsettled —
-the fetch was a single summarized retrieval and was not repeated.
+and Uustalu and Vene 2011, and roughly thirty-five further works there
+have no `.bib` entry, several no searchable identifier.
 
 ## Triggers (do when condition fires)
 

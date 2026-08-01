@@ -180,12 +180,14 @@ input even when the first character is not a digit; the cost is the
 node count times the input length. Three repairs would restore
 linearity, at different cost. A `readDigits` that stops at the first
 non-digit, and an accumulator-passing printer kept behind its present
-signature, change no statement: `readDigits_append`, `printAst_leaf`,
-`printAst_fork`, `size_le_length_printAst` and `parseAst_printAst` all
-stand as written, and only the first two stop holding by `rfl`. A reader
-carrying the remaining length changes `readVerbatim`'s type, so
-`readVerbatim_append` is restated and the retraction chain above it
-reproved.
+signature, change no statement: `readDigits_append`,
+`size_le_length_printAst` and `parseAst_printAst` all stand as written.
+What they cost is the computation lemmas that hold by `rfl` today —
+`printAst_leaf` and `printAst_fork` for the printer, `readDigits_nil`
+and `readDigits_cons` for the reader — each of which needs a proof once
+its definition changes shape. A reader carrying the remaining length
+changes `readVerbatim`'s type, so `readVerbatim_append` is restated and
+the retraction chain built on it reproved.
 
 Parsing, printing and the fold are elementary — indeed they sit in the
 lower-elementary
@@ -680,8 +682,10 @@ So that warning is misleading rather than false, and the practical
 divergence is elsewhere: **CBOR sorts the encoded key, JSON
 sorts the raw key.** The keys `k, ann, root, format` sort as
 `k, ann, root, format` under both CBOR rules and as
-`ann, format, k, root` under JCS and DAG-JSON: the two orders differ
-whenever two keys differ in length.
+`ann, format, k, root` under JCS and DAG-JSON. The two orders can
+differ as soon as two keys differ in length, and differ exactly when the
+shorter key is the lexicographically greater: of the six pairs among
+those four keys, three order alike under both rules and three do not.
 
 DAG-CBOR's other constraints: map keys must be strings;
 only tag 42 (CID) is permitted and it must be encoded as `0xd82a`, so
@@ -698,8 +702,9 @@ and the verified implementation. Then choose **map-free encodings** —
 positional arrays instead of string-keyed maps.
 
 The divergences are of two kinds. DAG-CBOR **restricts which values are
-expressible** — string keys only, tag 42 only, no bignum tags, floats
-always 64-bit. For a value both codecs admit, **byte layout** diverges
+expressible** — string keys only, tag 42 only, no bignum tags, and no
+NaN, infinities or `-0.0`. For a value both codecs admit, **byte
+layout** diverges
 in exactly one place: floats, which §4.2.1 requires in the shortest form
 preserving the value where DAG-CBOR requires 64 bits, so `1.5` is
 `f9 3e00` under one and `fb 3ff8000000000000` under the other. Key
@@ -748,8 +753,9 @@ different, and not only outside ASCII:**
 The JSON pair agree on ASCII and disagree exactly on the surrogate
 range: `"\uFFFF"` precedes `"\U00010000"` in code-point order but
 follows it in UTF-16 order, since the latter begins with code unit
-`0xD800`. Both disagree with CBOR whenever two keys differ in length,
-ASCII or not. Two mitigations, and Geb should adopt both:
+`0xD800`. Both disagree with CBOR on any key pair whose shorter member
+is lexicographically the greater, ASCII or not; see above. Two
+mitigations, and Geb should adopt both:
 
 - **Restrict all object keys to 7-bit ASCII**, which makes JCS and
   DAG-JSON agree. RFC 8785 itself notes that names are rarely outside
@@ -1228,9 +1234,11 @@ The implemented wire form is header-free and carries the bare tree
 alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
 alphabet size that
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding)
-shows. A format header and a serialized alphabet size are additions no
-stage below has needed: `Csexp.parse` takes `k` as a parameter, so the
-bare-tree stages carry neither.
+shows. The bare-tree stages carry neither a format header nor a serialized
+alphabet size: `Csexp.parse` takes `k` as a parameter, and a bare tree
+in a known syntax needs no self-description. The annotated encodings in
+that section carry both, and § CBOR's map-free resolution turns on the
+format tag being present.
 The tests pin the spelling: for the five-node tree
 `fork (leaf 0) (fork (leaf 1) (leaf 2))` over `Fin 3` it is
 `(4:fork(4:leaf1:0)(4:fork(4:leaf1:1)(4:leaf1:2)))`. That tree is not
@@ -1362,6 +1370,9 @@ everything feeding a hash.
 | 3 | a hash that runs | not started |
 | 4 | CID, multibase, CAR | deferred |
 
+The table covers the scheduled stages; stage 5 below is contingent on
+language features that do not exist yet.
+
 The module is 53 theorems, 28 of them in `Csexp`;
 [Local verification](#local-verification) breaks them down by axiom.
 That is the only measured quantity, and one
@@ -1385,9 +1396,11 @@ its inverse. Which csexp form carries the annotated syntax is not yet
 settled; the canonical form is the one the roadmap schedules.
 
 The injectivity constraint on `printDoc` is discharged for free on
-`Doc k` as `Ann` is presently declared: it is a plain product, so
-distinct `Doc k` values are distinguished by any printer that emits
-every field, and no setoid is needed. What
+`Doc k` as `Ann` is presently declared: it is a plain product, so no
+quotient obstructs injectivity and distinct `Doc k` values are
+distinguished by any printer that emits every field *unambiguously* —
+length-prefixed atoms in csexp, delimited arrays in JSON. No setoid is
+needed; unambiguity remains the printer's obligation. What
 [Idempotence is a corollary, and so is injectivity](#idempotence-is-a-corollary-and-so-is-injectivity)
 warns against is the prior question, whether `Doc k` is the right model.
 `Ann.links : List String` gives one document several `Doc k` values
@@ -1481,8 +1494,8 @@ machinery needs it, which the parse and print layer does not.
 - **CBOR sorts encoded keys; JSON sorts raw keys.** For string keys
   RFC 8949 §4.2 and RFC 7049 §3.9 agree (both are length-first), so the
   length-first reading of DAG-CBOR is not a departure from §4.2; but
-  both disagree with JCS and
-  DAG-JSON for keys of unequal length. Audit any CBOR library for
+  both disagree with JCS and DAG-JSON on any key pair whose shorter
+  member is lexicographically the greater. Audit any CBOR library for
   whether it sorts the encoded item or the bare string, and prefer
   map-free encodings, which make the question moot.
 - **JCS and DAG-JSON disagree outside ASCII.** JCS sorts UTF-16 code
