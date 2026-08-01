@@ -245,6 +245,74 @@ structure IsFunctorial (G : DomArity.{uI, uB, vI} I) : Prop where
   restr_comp : ∀ ⦃i i' i'' : I⦄ (f : i' ⟶ i) (g : i'' ⟶ i'),
     G.restr (g ≫ f) = G.restr g ∘ G.restr f
 
+/-- The arity as a presheaf on the input base: the fibers of `proj` with their
+own restriction. A `DomArity` is the total-space presentation of a discrete
+fibration over `I`, and this is the presheaf that fibration classifies. -/
+def presheaf (G : DomArity.{uI, uB, vI} I) (hG : G.IsFunctorial) : Iᵒᵖ ⥤ Type uB where
+  obj i := G.Dir i.unop
+  map f := ↾ G.restr f.unop
+  map_id i := by
+    ext c
+    exact congrArg Subtype.val (congrFun (hG.restr_id i.unop) c)
+  map_comp f g := by
+    ext c
+    exact congrArg Subtype.val (congrFun (hG.restr_comp f.unop g.unop) c)
+
+/-- Every presheaf on the input base arises as an arity: its total space is the
+carrier and its projection the base-point map. -/
+def ofPresheaf (P : Iᵒᵖ ⥤ Type uB) : DomArity.{uI, max uI uB, vI} I where
+  carrier := Σ i : I, P.obj ⟨i⟩
+  proj := Sigma.fst
+  restr := fun {_ i'} f c ↦
+    match c with
+    | ⟨⟨_, x⟩, rfl⟩ => ⟨⟨i', P.map f.op x⟩, rfl⟩
+
+/-- `ofPresheaf` lands in the functorial arities, its two laws being `P`'s. -/
+theorem isFunctorial_ofPresheaf (P : Iᵒᵖ ⥤ Type uB) :
+    (ofPresheaf.{uI, uB, vI} P).IsFunctorial where
+  restr_id := by
+    intro i
+    funext c
+    obtain ⟨⟨_, x⟩, rfl⟩ := c
+    refine Subtype.ext (congrArg (Sigma.mk _) ?_)
+    simp
+    rfl
+  restr_comp := by
+    intro i i' i'' f g
+    funext c
+    obtain ⟨⟨_, x⟩, rfl⟩ := c
+    refine Subtype.ext (congrArg (Sigma.mk _) ?_)
+    simp
+    rfl
+
+/-- The fibers of `ofPresheaf P` are `P`'s own values. Stated fiberwise rather
+than as an isomorphism of presheaves because `ofPresheaf` raises the carrier's
+universe from `uB` to `max uI uB`, so the two presheaves inhabit different
+functor categories. -/
+def dirEquivOfPresheaf (P : Iᵒᵖ ⥤ Type uB) (i : I) :
+    (ofPresheaf.{uI, uB, vI} P).Dir i ≃ P.obj ⟨i⟩ where
+  toFun := fun c ↦ match c with | ⟨⟨_, x⟩, rfl⟩ => x
+  invFun := fun x ↦ ⟨⟨i, x⟩, rfl⟩
+  left_inv := by rintro ⟨⟨_, x⟩, rfl⟩; rfl
+  right_inv := by intro x; rfl
+
+/-- That equivalence carries `ofPresheaf`'s restriction to `P`'s own action, so
+the two agree as presheaves and not merely fiberwise. -/
+theorem dirEquivOfPresheaf_restr (P : Iᵒᵖ ⥤ Type uB) ⦃i i' : I⦄ (f : i' ⟶ i)
+    (c : (ofPresheaf.{uI, uB, vI} P).Dir i) :
+    dirEquivOfPresheaf.{uI, uB, vI} P i' ((ofPresheaf P).restr f c) =
+      P.map f.op (dirEquivOfPresheaf P i c) := by
+  obtain ⟨⟨_, x⟩, rfl⟩ := c
+  rfl
+
+/-- The other round trip: an arity's carrier is the total space of its fibers,
+which is the object part of the category of elements of `presheaf`. -/
+def sigmaDirEquivCarrier (G : DomArity.{uI, uB, vI} I) : (Σ i : I, G.Dir i) ≃ G.carrier where
+  toFun := fun x ↦ x.2.1
+  invFun := fun c ↦ ⟨G.proj c, ⟨c, rfl⟩⟩
+  left_inv := by rintro ⟨_, ⟨c, rfl⟩⟩; rfl
+  right_inv := by intro c; rfl
+
 end DomArity
 
 end Arity
@@ -496,6 +564,31 @@ structure IsFunctorial (P : BaseArity.{uI, uJ, uB, vI, vJ} I J) : Prop where
     (P.fam j).restr f ∘ P.reindex g (i := i) = P.reindex g (i := i') ∘ (P.fam j').restr f
 
 variable (P : BaseArity.{uI, uJ, uB, vI, vJ} I J)
+
+/-- Each fibrewise arity of a functorial `BaseArity` is itself functorial: the
+first two clauses of `IsFunctorial` are `DomArity.IsFunctorial` at each output
+object. -/
+theorem isFunctorial_fam (hP : P.IsFunctorial) (j : J) : (P.fam j).IsFunctorial where
+  restr_id := hP.restr_id j
+  restr_comp := hP.restr_comp j
+
+/-- The arity carried over the output object `j`, as a presheaf on the input
+base — equivalently, as the discrete fibration over `I` that `δ` adjoins
+there. -/
+def famPresheaf (hP : P.IsFunctorial) (j : J) : Iᵒᵖ ⥤ Type uB :=
+  (P.fam j).presheaf (isFunctorial_fam P hP j)
+
+/-- Reindexing along a `J`-morphism is a morphism of those presheaves. Stated as
+a bare `NatTrans` rather than as a functor-category `⟶`, which would need the
+`Classical.choice`-dependent `Functor.category` instance. -/
+def reindexHom (hP : P.IsFunctorial) ⦃j j' : J⦄ (g : j' ⟶ j) :
+    NatTrans (famPresheaf P hP j') (famPresheaf P hP j) where
+  app i := ↾ P.reindex g (i := i.unop)
+  naturality := by
+    intro i i' f
+    ext d
+    simp only [TypeCat.Fun.toFun_apply, comp_apply, ConcreteCategory.hom_ofHom]
+    exact congrFun (hP.reindex_naturality g f.unop).symm d
 
 /-- Reindexing along an `eqToHom` is the transport along the underlying
 equality. -/

@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Internal.PresheafIRProto.Basic
+public import Geb.Internal.PresheafIRProto.Codes
 public import Mathlib.CategoryTheory.Yoneda
 
 /-!
@@ -96,5 +97,26 @@ theorem iotaPresheafData_A_eq_iotaConstData_yoneda (j₀ : J) :
 
 
 end CoproductOfRepresentables
+
+/-- A functorial `BaseArity` is a functor from the output base to presheaves on
+the input base — equivalently, to discrete fibrations over it. This is the
+`δ` rule's arity datum in bundled form: `famPresheaf` is the object part,
+`reindexHom` the morphism part, and the remaining two clauses of
+`BaseArity.IsFunctorial` are the functor laws.
+
+Kept here rather than in the choice-free core because the target
+`Iᵒᵖ ⥤ Type uB` is a functor category, whose `Category` instance is
+`Classical.choice`-dependent. -/
+def BaseArity.functor {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (P : BaseArity.{uI, uJ, uB, vI, vJ} I J) (hP : P.IsFunctorial) :
+    J ⥤ (Iᵒᵖ ⥤ Type uB) where
+  obj j := P.famPresheaf hP j
+  map g := P.reindexHom hP g
+  map_id j := by
+    ext i d
+    exact congrFun (hP.reindex_id j i.unop) d
+  map_comp g h := by
+    ext i d
+    exact congrFun (hP.reindex_comp h g i.unop) d
 
 end GebProto
