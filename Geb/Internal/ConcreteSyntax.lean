@@ -140,7 +140,7 @@ construction is specific to syntax. -/
 
 /-- `Empty` enumerated by the empty equivalence. -/
 @[instance_reducible] def finEnumEmpty : FinEnum Empty :=
-  ⟨0, ⟨Empty.elim, Fin.elim0, fun e => e.elim, fun i => i.elim0⟩⟩
+  ⟨0, ⟨Empty.elim, Fin.elim0, fun e ↦ e.elim, fun i ↦ i.elim0⟩⟩
 
 /-! ## Abstract syntax -/
 
@@ -185,11 +185,11 @@ def leaf {k : Nat} (i : Fin k) : Ast k :=
 
 /-- A fork with left child `l` and right child `r`. -/
 def fork {k : Nat} (l r : Ast k) : Ast k :=
-  WType.mk .fork fun b : Fin 2 => Fin.cases l (fun _ => r) b
+  WType.mk .fork fun b : Fin 2 ↦ Fin.cases l (fun _ ↦ r) b
 
 /-- The number of nodes. -/
 def size {k : Nat} : Ast k → Nat :=
-  WType.elim Nat fun x =>
+  WType.elim Nat fun x ↦
     match x with
     | ⟨.leaf _, _⟩ => 1
     | ⟨.fork, ch⟩ => 1 + ch (0 : Fin 2) + ch (1 : Fin 2)
@@ -200,15 +200,15 @@ theorem ind {k : Nat} {motive : Ast k → Prop}
     (leaf : ∀ i, motive (leaf i))
     (fork : ∀ l r, motive l → motive r → motive (fork l r)) :
     ∀ t, motive t :=
-  WType.rec (motive := motive) fun s f ih =>
+  WType.rec (motive := motive) fun s f ih ↦
     match s, f, ih with
     | .leaf i, f, _ => by
-        have : f = Empty.elim := funext (fun e => e.elim)
+        have : f = Empty.elim := funext (fun e ↦ e.elim)
         subst this; exact leaf i
     | .fork, f, ih => by
-        have : (fun b : Fin 2 => Fin.cases (f (0 : Fin 2))
-            (fun _ => f (1 : Fin 2)) b) = f :=
-          funext fun b => match b with
+        have : (fun b : Fin 2 ↦ Fin.cases (f (0 : Fin 2))
+            (fun _ ↦ f (1 : Fin 2)) b) = f :=
+          funext fun b ↦ match b with
             | ⟨0, _⟩ => rfl
             | ⟨1, _⟩ => rfl
         exact this ▸ fork (f (0 : Fin 2)) (f (1 : Fin 2))
@@ -253,7 +253,7 @@ namespace Tree
 /-- Relabel every node along `f`. -/
 def map {k : Nat} {A : Type uA} {B : Type uB} (f : A → B) :
     Tree k A → Tree k B :=
-  WType.elim (Tree k B) fun x => WType.mk (f x.1.1, x.1.2) x.2
+  WType.elim (Tree k B) fun x ↦ WType.mk (f x.1.1, x.1.2) x.2
 
 /-- The comonad counit: the decoration at the root. -/
 def extract {k : Nat} {A : Type uA} (t : Tree k A) : A :=
@@ -264,18 +264,18 @@ subtree rooted at it, in the sense [UustaluVene2011] gives the
 comultiplication of the cofree recursive comonad. A paramorphism, since
 the new decoration at a node is that node's own subtree. -/
 def duplicate {k : Nat} {A : Type uA} : Tree k A → Tree k (Tree k A) :=
-  WType.para (Tree k (Tree k A)) fun x =>
-    WType.mk (WType.mk x.1 fun b => (x.2 b).1, x.1.2) fun b => (x.2 b).2
+  WType.para (Tree k (Tree k A)) fun x ↦
+    WType.mk (WType.mk x.1 fun b ↦ (x.2 b).1, x.1.2) fun b ↦ (x.2 b).2
 
 /-- Forget every decoration, recovering the bare tree. This is the fold
 induced by the second projection `A × F X → F X`, not the comonad
 counit. -/
 def erase {k : Nat} {A : Type uA} : Tree k A → Ast k :=
-  WType.elim (Ast k) fun x => WType.mk x.1.2 x.2
+  WType.elim (Ast k) fun x ↦ WType.mk x.1.2 x.2
 
 @[simp] theorem map_mk {k : Nat} {A : Type uA} {B : Type uB} (f : A → B)
     (s : Shape k A) (ch : Arity s → Tree k A) :
-    map f (WType.mk s ch) = WType.mk (f s.1, s.2) fun b => map f (ch b) :=
+    map f (WType.mk s ch) = WType.mk (f s.1, s.2) fun b ↦ map f (ch b) :=
   rfl
 
 @[simp] theorem extract_mk {k : Nat} {A : Type uA} (s : Shape k A)
@@ -285,23 +285,23 @@ def erase {k : Nat} {A : Type uA} : Tree k A → Ast k :=
 @[simp] theorem duplicate_mk {k : Nat} {A : Type uA} (s : Shape k A)
     (ch : Arity s → Tree k A) :
     duplicate (WType.mk s ch)
-      = WType.mk (WType.mk s ch, s.2) fun b => duplicate (ch b) :=
+      = WType.mk (WType.mk s ch, s.2) fun b ↦ duplicate (ch b) :=
   WType.para_mk _ s ch
 
 /-- The first functor law: relabelling along the identity is the
 identity. -/
 theorem map_id {k : Nat} {A : Type uA} (t : Tree k A) : map id t = t :=
-  WType.rec (motive := fun t => map id t = t)
-    (fun s ch ih => by simp only [map_mk, id_eq]; exact congrArg _ (funext ih)) t
+  WType.rec (motive := fun t ↦ map id t = t)
+    (fun s ch ih ↦ by simp only [map_mk, id_eq]; exact congrArg _ (funext ih)) t
 
 /-- The second functor law: relabelling twice is relabelling along the
 composite. -/
 theorem map_map {k : Nat} {A : Type uA} {B : Type uB} {C : Type uC}
     (f : A → B) (g : B → C) (t : Tree k A) :
     map g (map f t) = map (g ∘ f) t :=
-  WType.rec (motive := fun t => map g (map f t) = map (g ∘ f) t)
-    (fun s ch ih => by simp only [map_mk, Function.comp_apply]
-                       exact congrArg _ (funext ih)) t
+  WType.rec (motive := fun t ↦ map g (map f t) = map (g ∘ f) t)
+    (fun s ch ih ↦ by simp only [map_mk, Function.comp_apply]
+                      exact congrArg _ (funext ih)) t
 
 /-- Naturality of the counit: reading the root decoration commutes with
 relabelling. -/
@@ -315,9 +315,9 @@ relabelling, the relabelling acting on each subtree. -/
 theorem duplicate_map {k : Nat} {A : Type uA} {B : Type uB} (f : A → B)
     (t : Tree k A) :
     duplicate (map f t) = map (map f) (duplicate t) :=
-  WType.rec (motive := fun t => duplicate (map f t) = map (map f) (duplicate t))
-    (fun s ch ih => by simp only [map_mk, duplicate_mk]
-                       exact congrArg _ (funext ih)) t
+  WType.rec (motive := fun t ↦ duplicate (map f t) = map (map f) (duplicate t))
+    (fun s ch ih ↦ by simp only [map_mk, duplicate_mk]
+                      exact congrArg _ (funext ih)) t
 
 /-- The first comonad law: the subtree redecorating the root is the whole
 tree. -/
@@ -330,17 +330,17 @@ theorem extract_duplicate {k : Nat} {A : Type uA} (t : Tree k A) :
 only its root decoration recovers the original decoration. -/
 theorem map_extract_duplicate {k : Nat} {A : Type uA} (t : Tree k A) :
     map extract (duplicate t) = t :=
-  WType.rec (motive := fun t => map extract (duplicate t) = t)
-    (fun s ch ih => by simp only [duplicate_mk, map_mk, extract_mk]
-                       exact congrArg _ (funext ih)) t
+  WType.rec (motive := fun t ↦ map extract (duplicate t) = t)
+    (fun s ch ih ↦ by simp only [duplicate_mk, map_mk, extract_mk]
+                      exact congrArg _ (funext ih)) t
 
 /-- The third comonad law, coassociativity of the redecoration map. -/
 theorem duplicate_duplicate {k : Nat} {A : Type uA} (t : Tree k A) :
     duplicate (duplicate t) = map duplicate (duplicate t) :=
-  WType.rec (motive := fun t => duplicate (duplicate t) = map duplicate (duplicate t))
-    (fun s ch ih => by simp only [duplicate_mk, map_mk]
-                       rw [duplicate_mk]
-                       exact congrArg _ (funext ih)) t
+  WType.rec (motive := fun t ↦ duplicate (duplicate t) = map duplicate (duplicate t))
+    (fun s ch ih ↦ by simp only [duplicate_mk, map_mk]
+                      rw [duplicate_mk]
+                      exact congrArg _ (funext ih)) t
 
 end Tree
 
@@ -363,15 +363,15 @@ namespace Ast
 
 /-- Decorate every node with the empty annotation. -/
 def trivialDoc {k : Nat} : Ast k → Doc k :=
-  WType.elim (Doc k) fun x => WType.mk (({} : Ann), x.1) x.2
+  WType.elim (Doc k) fun x ↦ WType.mk (({} : Ann), x.1) x.2
 
 /-- Decorating every node with the empty annotation and then erasing is
 the identity. -/
 theorem erase_trivialDoc {k : Nat} (a : Ast k) :
     Tree.erase a.trivialDoc = a :=
-  WType.rec (motive := fun a => Tree.erase (trivialDoc a) = a)
-    (fun s ch ih => by simp only [trivialDoc, WType.elim_mk]
-                       exact congrArg _ (funext ih)) a
+  WType.rec (motive := fun a ↦ Tree.erase (trivialDoc a) = a)
+    (fun s ch ih ↦ by simp only [trivialDoc, WType.elim_mk]
+                      exact congrArg _ (funext ih)) a
 
 end Ast
 
@@ -435,7 +435,7 @@ arity is read off the list, so this is the constructor available to a
 parser, which learns a node's children one at a time and its arity only
 when the list ends. -/
 def ofList {k : Nat} (i : Fin k) (ts : List (Rose k)) : Rose k :=
-  node i fun j : Fin ts.length => ts.get j
+  node i fun j : Fin ts.length ↦ ts.get j
 
 /-- `ofList` against a tuple presentation of the same children. The list
 is a parameter rather than `List.ofFn f`, which is what makes the arity
@@ -454,7 +454,7 @@ a fixed-arity one does not: the loop that reads the children returns a
 `List`, while the node takes a `Fin n`-indexed tuple. -/
 theorem ofList_ofFn {k n : Nat} (i : Fin k) (f : Fin n → Rose k) :
     ofList i (List.ofFn f) = node i f :=
-  ofList_eq i _ f List.length_ofFn.symm fun j => by simp
+  ofList_eq i _ f List.length_ofFn.symm fun j ↦ by simp
 
 end Rose
 
@@ -469,7 +469,7 @@ is the last argument alone — that is, the child sequence is consumed as
 a snoclist. Reading application to the right instead gives a different
 and equally valid bijection, so the choice has to be fixed. -/
 def toRose {k : Nat} : Ast k → Rose k :=
-  WType.elim (Rose k) fun x =>
+  WType.elim (Rose k) fun x ↦
     match x with
     | ⟨.leaf i, _⟩ => Rose.node i Fin.elim0
     | ⟨.fork, ch⟩ => Rose.snoc (ch (0 : Fin 2)) (ch (1 : Fin 2))
@@ -477,8 +477,8 @@ def toRose {k : Nat} : Ast k → Rose k :=
 /-- The rose-to-binary direction, folding a node's children into the left
 spine that carries the label at its head. -/
 def ofRose {k : Nat} : Rose k → Ast k :=
-  WType.elim (Ast k) fun x =>
-    Fin.foldl x.1.2 (fun acc j => fork acc (x.2 j)) (leaf x.1.1)
+  WType.elim (Ast k) fun x ↦
+    Fin.foldl x.1.2 (fun acc j ↦ fork acc (x.2 j)) (leaf x.1.1)
 
 @[simp] theorem toRose_leaf {k : Nat} (i : Fin k) :
     (leaf i).toRose = Rose.node i Fin.elim0 := rfl
@@ -488,7 +488,7 @@ def ofRose {k : Nat} : Rose k → Ast k :=
 
 @[simp] theorem ofRose_node {k : Nat} (i : Fin k) {n : Nat} (f : Fin n → Rose k) :
     ofRose (Rose.node i f) =
-      Fin.foldl n (fun acc j => fork acc (ofRose (f j))) (leaf i) :=
+      Fin.foldl n (fun acc j ↦ fork acc (ofRose (f j))) (leaf i) :=
   rfl
 
 /-- Appending a child to a rose node appends a fork on the binary side,
@@ -504,34 +504,34 @@ theorem ofRose_snoc {k : Nat} (r t : Rose k) :
 /-- One half of the rose/binary bijection: converting to a rose tree and
 back is the identity on `Ast k`. -/
 theorem ofRose_toRose {k : Nat} (a : Ast k) : ofRose a.toRose = a :=
-  ind (motive := fun a => ofRose a.toRose = a)
-    (fun i => by simp only [toRose_leaf, ofRose_node, Fin.foldl_zero])
-    (fun l r ihl ihr => by rw [toRose_fork, ofRose_snoc, ihl, ihr]) a
+  ind (motive := fun a ↦ ofRose a.toRose = a)
+    (fun i ↦ by simp only [toRose_leaf, ofRose_node, Fin.foldl_zero])
+    (fun l r ihl ihr ↦ by rw [toRose_fork, ofRose_snoc, ihl, ihr]) a
 
 /-- The image of a left spine under `toRose`: the fold that `ofRose`
 performs on a node's children is undone one child at a time, from the
 last. -/
 theorem toRose_foldl {k : Nat} (i : Fin k) :
     ∀ (n : Nat) (g : Fin n → Ast k),
-      (Fin.foldl n (fun acc j => fork acc (g j)) (leaf i)).toRose
-        = Rose.node i fun j => (g j).toRose :=
+      (Fin.foldl n (fun acc j ↦ fork acc (g j)) (leaf i)).toRose
+        = Rose.node i fun j ↦ (g j).toRose :=
   Nat.rec
-    (motive := fun n => ∀ g : Fin n → Ast k,
-      (Fin.foldl n (fun acc j => fork acc (g j)) (leaf i)).toRose
-        = Rose.node i fun j => (g j).toRose)
-    (fun g => by
+    (motive := fun n ↦ ∀ g : Fin n → Ast k,
+      (Fin.foldl n (fun acc j ↦ fork acc (g j)) (leaf i)).toRose
+        = Rose.node i fun j ↦ (g j).toRose)
+    (fun g ↦ by
       simp only [Fin.foldl_zero, toRose_leaf]
-      exact congrArg _ (funext fun j => j.elim0))
-    (fun n ih g => by
+      exact congrArg _ (funext fun j ↦ j.elim0))
+    (fun n ih g ↦ by
       simp only [Fin.foldl_succ_last, toRose_fork,
-        ih (fun j => g j.castSucc), Rose.snoc_node]
-      exact congrArg _ (Fin.snoc_init_self fun j => (g j).toRose))
+        ih (fun j ↦ g j.castSucc), Rose.snoc_node]
+      exact congrArg _ (Fin.snoc_init_self fun j ↦ (g j).toRose))
 
 /-- The other half of the rose/binary bijection: converting from a rose
 tree and back is the identity on `Rose k`. -/
 theorem toRose_ofRose {k : Nat} (r : Rose k) : (ofRose r).toRose = r :=
-  WType.rec (motive := fun r => (ofRose r).toRose = r)
-    (fun s f ih => by
+  WType.rec (motive := fun r ↦ (ofRose r).toRose = r)
+    (fun s f ih ↦ by
       obtain ⟨i, n⟩ := s
       change (ofRose (Rose.node i f)).toRose = Rose.node i f
       rw [ofRose_node, toRose_foldl]
@@ -591,16 +591,16 @@ theorem charDigit_digitChar (d : Nat) (h : d < 10) :
 
 theorem mapM_charDigit_digitChar : ∀ ds : List Nat, (∀ d ∈ ds, d < 10) →
     (ds.map digitChar).mapM charDigit = some ds :=
-  List.rec (motive := fun ds => (∀ d ∈ ds, d < 10) →
+  List.rec (motive := fun ds ↦ (∀ d ∈ ds, d < 10) →
       (ds.map digitChar).mapM charDigit = some ds)
-    (fun _ => rfl)
-    (fun d ds ih h => by
+    (fun _ ↦ rfl)
+    (fun d ds ih h ↦ by
       have hd : d < 10 := h d (by simp)
-      have ht : ∀ x ∈ ds, x < 10 := fun x hx => h x (by simp [hx])
+      have ht : ∀ x ∈ ds, x < 10 := fun x hx ↦ h x (by simp [hx])
       simp [List.mapM_cons, charDigit_digitChar d hd, ih ht])
 
 /-- The value of a little-endian decimal digit list. -/
-def ofLE : List Nat → Nat := List.rec 0 fun d _ ih => d + 10 * ih
+def ofLE : List Nat → Nat := List.rec 0 fun d _ ih ↦ d + 10 * ih
 
 @[simp] theorem ofLE_nil : ofLE [] = 0 := rfl
 
@@ -610,7 +610,7 @@ def ofLE : List Nat → Nat := List.rec 0 fun d _ ih => d + 10 * ih
 /-- Little-endian decimal digits of `n`, on an explicit recursion bound.
 Each step divides by ten, so `n` itself is always a sufficient bound. -/
 def digitsLEAux : Nat → Nat → List Nat :=
-  Nat.rec (fun _ => []) fun _ ih n => if n = 0 then [] else n % 10 :: ih (n / 10)
+  Nat.rec (fun _ ↦ []) fun _ ih n ↦ if n = 0 then [] else n % 10 :: ih (n / 10)
 
 @[simp] theorem digitsLEAux_zero (n : Nat) : digitsLEAux 0 n = [] := rfl
 
@@ -624,11 +624,11 @@ see the module docstring's implementation notes. -/
 def digitsLE (n : Nat) : List Nat := digitsLEAux n n
 
 theorem ofLE_digitsLEAux : ∀ f n : Nat, n ≤ f → ofLE (digitsLEAux f n) = n :=
-  Nat.rec (motive := fun f => ∀ n : Nat, n ≤ f → ofLE (digitsLEAux f n) = n)
-    (fun n hn => by
+  Nat.rec (motive := fun f ↦ ∀ n : Nat, n ≤ f → ofLE (digitsLEAux f n) = n)
+    (fun n hn ↦ by
       simp only [digitsLEAux_zero, ofLE_nil]
       exact (Nat.le_zero.mp hn).symm)
-    (fun f ih n hn => by
+    (fun f ih n hn ↦ by
       rw [digitsLEAux_succ]
       split
       next h => simp [h]
@@ -638,9 +638,9 @@ theorem ofLE_digitsLE (n : Nat) : ofLE (digitsLE n) = n :=
   ofLE_digitsLEAux n n (Nat.le_refl n)
 
 theorem digitsLEAux_lt : ∀ f n : Nat, ∀ d ∈ digitsLEAux f n, d < 10 :=
-  Nat.rec (motive := fun f => ∀ n : Nat, ∀ d ∈ digitsLEAux f n, d < 10)
-    (fun n d hd => by simp at hd)
-    (fun f ih n d hd => by
+  Nat.rec (motive := fun f ↦ ∀ n : Nat, ∀ d ∈ digitsLEAux f n, d < 10)
+    (fun n d hd ↦ by simp at hd)
+    (fun f ih n d hd ↦ by
       rw [digitsLEAux_succ] at hd
       split at hd
       next => simp at hd
@@ -664,7 +664,7 @@ character is not a digit. Leading zeros are accepted, and so is the empty
 string, whose value is `0`: the parser may admit more than the printer
 emits, since the retraction law constrains only the composite. -/
 def digitsVal (cs : List Char) : Option Nat :=
-  (cs.mapM charDigit).map fun l => ofLE l.reverse
+  (cs.mapM charDigit).map fun l ↦ ofLE l.reverse
 
 /-- The decimal round trip: reading back a shortest-form spelling
 recovers the number. This is what the retraction law rests on at the
@@ -700,7 +700,7 @@ theorem decOf_ne_nil (n : Nat) : decOf n ≠ [] := by
 
 /-- Split off the longest decimal prefix. -/
 def readDigits : List Char → List Char × List Char :=
-  List.rec ([], []) fun c cs ih =>
+  List.rec ([], []) fun c cs ih ↦
     match charDigit c with
     | some _ => (c :: ih.1, ih.2)
     | none => ([], c :: cs)
@@ -715,17 +715,17 @@ theorem readDigits_append : ∀ ds rest : List Char,
     (∀ c ∈ ds, (charDigit c).isSome) →
     (∀ c cs, rest = c :: cs → charDigit c = none) →
     readDigits (ds ++ rest) = (ds, rest) :=
-  List.rec (motive := fun ds => ∀ rest : List Char,
+  List.rec (motive := fun ds ↦ ∀ rest : List Char,
       (∀ c ∈ ds, (charDigit c).isSome) →
       (∀ c cs, rest = c :: cs → charDigit c = none) →
       readDigits (ds ++ rest) = (ds, rest))
-    (fun rest _ hr => by
+    (fun rest _ hr ↦ by
       cases rest with
       | nil => rfl
       | cons c cs => simp [readDigits_cons, hr c cs rfl])
-    (fun d ds ih rest hd hr => by
+    (fun d ds ih rest hd hr ↦ by
       have h1 : (charDigit d).isSome := hd d (by simp)
-      have h2 : ∀ c ∈ ds, (charDigit c).isSome := fun c hc => hd c (by simp [hc])
+      have h2 : ∀ c ∈ ds, (charDigit c).isSome := fun c hc ↦ hd c (by simp [hc])
       obtain ⟨v, hv⟩ := Option.isSome_iff_exists.mp h1
       simp [readDigits_cons, hv, ih rest h2 hr])
 
@@ -779,7 +779,7 @@ def forkTok : List Char := ['f', 'o', 'r', 'k']
 shortest-form decimal, written as a verbatim atom: canonical form admits
 no other atom encoding. -/
 def printAst {k : Nat} : Ast k → List Char :=
-  WType.elim (List Char) fun x =>
+  WType.elim (List Char) fun x ↦
     match x with
     | ⟨.leaf i, _⟩ =>
       '(' :: (printVerbatim leafTok ++ printVerbatim (decOf i.val) ++ [')'])
@@ -833,7 +833,7 @@ the input length; `size_le_length_printAst` shows that this bound admits every
 tree the printer emits. Whether it admits every input the grammar accepts
 is not stated, and is not needed for the retraction law. -/
 def parseAst (k : Nat) : Nat → List Char → Option (Ast k × List Char) :=
-  Nat.rec (fun _ => none) fun _ ih => parseStep k ih
+  Nat.rec (fun _ ↦ none) fun _ ih ↦ parseStep k ih
 
 @[simp] theorem parseAst_succ (k f : Nat) :
     parseAst k (f + 1) = parseStep k (parseAst k f) := rfl
@@ -843,9 +843,9 @@ the tree's node count, and returns the unconsumed remainder. -/
 theorem parseAst_printAst {k : Nat} (a : Ast k) :
     ∀ (f : Nat) (rest : List Char), a.size ≤ f →
       parseAst k f (printAst a ++ rest) = some (a, rest) :=
-  Ast.ind (motive := fun a => ∀ (f : Nat) (rest : List Char), a.size ≤ f →
+  Ast.ind (motive := fun a ↦ ∀ (f : Nat) (rest : List Char), a.size ≤ f →
       parseAst k f (printAst a ++ rest) = some (a, rest))
-    (fun i f rest hf => by
+    (fun i f rest hf ↦ by
       cases f with
       | zero => simp at hf
       | succ f =>
@@ -856,7 +856,7 @@ theorem parseAst_printAst {k : Nat} (a : Ast k) :
         simp only []
         rw [readVerbatim_append]
         simp [digitsVal_decOf, i.isLt])
-    (fun l r ihl ihr f rest hf => by
+    (fun l r ihl ihr f rest hf ↦ by
       cases f with
       | zero => simp at hf
       | succ f =>
@@ -877,9 +877,9 @@ theorem parseAst_printAst {k : Nat} (a : Ast k) :
 input length is fuel enough for `parseAst` to read anything `printAst`
 emits. -/
 theorem size_le_length_printAst {k : Nat} (a : Ast k) : a.size ≤ (printAst a).length :=
-  Ast.ind (motive := fun a => a.size ≤ (printAst a).length)
-    (fun i => by simp [printAst_leaf])
-    (fun l r ihl ihr => by
+  Ast.ind (motive := fun a ↦ a.size ≤ (printAst a).length)
+    (fun i ↦ by simp [printAst_leaf])
+    (fun l r ihl ihr ↦ by
       simp only [Ast.size_fork, printAst_fork, List.length_cons,
         List.length_append]
       omega) a

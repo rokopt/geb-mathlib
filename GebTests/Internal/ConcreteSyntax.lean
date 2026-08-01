@@ -118,8 +118,8 @@ that. -/
 -- snoclist, so `sampleAst` is the curried application `0 1 2` and its
 -- rose form nests one child deep at each level.
 #guard Ast.toRose sampleAst
-    == Rose.node 0 (fun _ : Fin 1 =>
-         Rose.node 1 (fun _ : Fin 1 => Rose.node 2 Fin.elim0))
+    == Rose.node 0 (fun _ : Fin 1 ↦
+         Rose.node 1 (fun _ : Fin 1 ↦ Rose.node 2 Fin.elim0))
 
 #guard Tree.erase (Ast.trivialDoc sampleAst) == sampleAst
 
@@ -133,10 +133,10 @@ assertions are a pair: `Tree.erase` discards decorations whatever the
 relabelling is, so the shape half passes under `id` too, and only the
 `Tree.extract` half sees that the relabelling happened. -/
 
-#guard Tree.extract (Tree.map (fun a : Ann => { a with name := some "x" })
+#guard Tree.extract (Tree.map (fun a : Ann ↦ { a with name := some "x" })
     (Ast.trivialDoc sampleAst)) == ({ name := some "x" } : Ann)
 
-#guard Tree.erase (Tree.map (fun a : Ann => { a with name := some "x" })
+#guard Tree.erase (Tree.map (fun a : Ann ↦ { a with name := some "x" })
     (Ast.trivialDoc sampleAst)) == sampleAst
 
 /-! ## The formatter

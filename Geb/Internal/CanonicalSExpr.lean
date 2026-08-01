@@ -159,17 +159,17 @@ def list {n : Nat} (f : Fin n → CSexp) : CSexp := WType.mk (.list n) f
 renders as its verbatim encoding, a list as its elements' renderings
 concatenated between parentheses. -/
 def render : CSexp → List Char :=
-  WType.elim (List Char) fun x =>
+  WType.elim (List Char) fun x ↦
     match x with
     | ⟨.atom s, _⟩ => Csexp.printVerbatim s
-    | ⟨.list n, ch⟩ => '(' :: (Fin.foldr n (fun j acc => ch j ++ acc) [] ++ [')'])
+    | ⟨.list n, ch⟩ => '(' :: (Fin.foldr n (fun j acc ↦ ch j ++ acc) [] ++ [')'])
 
 @[simp] theorem render_atom (s : List Char) :
     render (atom s) = Csexp.printVerbatim s := rfl
 
 @[simp] theorem render_list {n : Nat} (f : Fin n → CSexp) :
     render (list f)
-      = '(' :: (Fin.foldr n (fun j acc => render (f j) ++ acc) [] ++ [')']) :=
+      = '(' :: (Fin.foldr n (fun j acc ↦ render (f j) ++ acc) [] ++ [')']) :=
   rfl
 
 /-- `render_list` with the children's renderings as a `List`. `render`
@@ -188,7 +188,7 @@ namespace Ast
 the two-element list `(leaf label)`, a fork the three-element list
 `(fork left right)`. -/
 def toCSexp {k : Nat} : Ast k → CSexp :=
-  WType.elim CSexp fun x =>
+  WType.elim CSexp fun x ↦
     match x with
     | ⟨.leaf i, _⟩ =>
       CSexp.list ![CSexp.atom Csexp.leafTok, CSexp.atom (Csexp.decOf i.val)]
@@ -213,14 +213,14 @@ namespace Rose
 the node's label and the tail is its children, so a node is spelled as
 its label applied to its arguments. -/
 def toCSexp {k : Nat} : Rose k → CSexp :=
-  WType.elim CSexp fun x =>
+  WType.elim CSexp fun x ↦
     CSexp.list (Fin.cases (CSexp.atom (Csexp.decOf x.1.1.val)) x.2)
 
 @[simp] theorem toCSexp_node {k : Nat} (i : Fin k) {n : Nat}
     (f : Fin n → Rose k) :
     (node i f).toCSexp
       = CSexp.list (Fin.cases (CSexp.atom (Csexp.decOf i.val))
-          fun j => (f j).toCSexp) :=
+          fun j ↦ (f j).toCSexp) :=
   rfl
 
 /-- Print a rose tree as a canonical S-expression. -/
@@ -254,15 +254,15 @@ closing parenthesis, so a node of `n` children needs `n + 1`. -/
 def parseChildren {k : Nat}
     (childParse : List Char → Option (Rose k × List Char)) :
     Nat → List Char → Option (List (Rose k) × List Char) :=
-  Nat.rec (motive := fun _ => List Char → Option (List (Rose k) × List Char))
-    (fun _ => none)
-    fun _ ih cs =>
+  Nat.rec (motive := fun _ ↦ List Char → Option (List (Rose k) × List Char))
+    (fun _ ↦ none)
+    fun _ ih cs ↦
       match cs with
       | [] => none
       | c :: cs' =>
         if c = ')' then some ([], cs')
-        else (childParse (c :: cs')).bind fun p =>
-          (ih p.2).map fun q => (p.1 :: q.1, q.2)
+        else (childParse (c :: cs')).bind fun p ↦
+          (ih p.2).map fun q ↦ (p.1 :: q.1, q.2)
 
 @[simp] theorem parseChildren_succ_close {k : Nat}
     (childParse : List Char → Option (Rose k × List Char)) (f : Nat)
@@ -273,8 +273,8 @@ theorem parseChildren_succ_cons {k : Nat}
     (childParse : List Char → Option (Rose k × List Char)) (f : Nat)
     (c : Char) (cs : List Char) (h : c ≠ ')') :
     parseChildren childParse (f + 1) (c :: cs)
-      = (childParse (c :: cs)).bind fun p =>
-          (parseChildren childParse f p.2).map fun q => (p.1 :: q.1, q.2) :=
+      = (childParse (c :: cs)).bind fun p ↦
+          (parseChildren childParse f p.2).map fun q ↦ (p.1 :: q.1, q.2) :=
   if_neg h
 
 /-- One layer of the recursive descent: read a single s-expression,
@@ -291,7 +291,7 @@ def parseStep (k : Nat) (childParse : List Char → Option (Rose k × List Char)
         | some m =>
           if h : m < k then
             (parseChildren childParse loopFuel cs1).map
-              fun p => (ofList ⟨m, h⟩ p.1, p.2)
+              fun p ↦ (ofList ⟨m, h⟩ p.1, p.2)
           else none
         | none => none
       | none => none
@@ -304,8 +304,8 @@ undecremented as the child loop's bound, and decremented as the child
 parser's fuel. `parse` supplies the input length, which `parseAux_print`
 shows admits every tree the printer emits. -/
 def parseAux (k : Nat) : Nat → List Char → Option (Rose k × List Char) :=
-  Nat.rec (motive := fun _ => List Char → Option (Rose k × List Char))
-    (fun _ => none) fun f ih => parseStep k ih (f + 1)
+  Nat.rec (motive := fun _ ↦ List Char → Option (Rose k × List Char))
+    (fun _ ↦ none) fun f ih ↦ parseStep k ih (f + 1)
 
 @[simp] theorem parseAux_succ (k f : Nat) :
     parseAux k (f + 1) = parseStep k (parseAux k f) (f + 1) := rfl
@@ -328,15 +328,15 @@ theorem parseChildren_print {k : Nat}
       ts.length < fuel →
       parseChildren childParse fuel ((ts.map print).flatten ++ ')' :: rest)
         = some (ts, rest) :=
-  List.rec (motive := fun ts => ∀ (fuel : Nat) (rest : List Char),
+  List.rec (motive := fun ts ↦ ∀ (fuel : Nat) (rest : List Char),
       (∀ t ∈ ts, ∀ r : List Char, childParse (print t ++ r) = some (t, r)) →
       ts.length < fuel →
       parseChildren childParse fuel ((ts.map print).flatten ++ ')' :: rest)
         = some (ts, rest))
-    (fun fuel rest _ hfuel => by
+    (fun fuel rest _ hfuel ↦ by
       obtain ⟨g, rfl⟩ : ∃ g, fuel = g + 1 := ⟨fuel - 1, by omega⟩
       simp)
-    (fun t ts ih fuel rest hchild hfuel => by
+    (fun t ts ih fuel rest hchild hfuel ↦ by
       obtain ⟨g, rfl⟩ : ∃ g, fuel = g + 1 := ⟨fuel - 1, by omega⟩
       obtain ⟨body, hbody⟩ := exists_print_eq_cons t
       have hne : '(' ≠ ')' := by decide
@@ -347,7 +347,7 @@ theorem parseChildren_print {k : Nat}
       rw [List.map_cons, List.flatten_cons, List.append_assoc, hcons,
         parseChildren_succ_cons _ _ _ _ hne, ← hcons,
         hchild t (by simp) _, Option.bind_some,
-        ih g rest (fun x hx => hchild x (by simp [hx])) hlt, Option.map_some])
+        ih g rest (fun x hx ↦ hchild x (by simp [hx])) hlt, Option.map_some])
 
 /-- The parser inverts the printer on printed input, given fuel at least
 the printed length, and returns the unconsumed remainder. The module
@@ -356,9 +356,9 @@ why this one is taken. -/
 theorem parseAux_print {k : Nat} (r : Rose k) :
     ∀ (f : Nat) (rest : List Char), (print r).length ≤ f →
       parseAux k f (print r ++ rest) = some (r, rest) :=
-  WType.rec (motive := fun r => ∀ (f : Nat) (rest : List Char),
+  WType.rec (motive := fun r ↦ ∀ (f : Nat) (rest : List Char),
       (print r).length ≤ f → parseAux k f (print r ++ rest) = some (r, rest))
-    (fun s ch ih f rest hf => by
+    (fun s ch ih f rest hf ↦ by
       obtain ⟨i, n⟩ := s
       change (print (node i ch)).length ≤ f at hf
       change parseAux k f (print (node i ch) ++ rest) = some (node i ch, rest)
@@ -444,13 +444,13 @@ namespace Csexp
 S-expression, hence a canonical S-expression by construction. -/
 theorem printAst_eq_render_toCSexp {k : Nat} (a : Ast k) :
     printAst a = CSexp.render a.toCSexp :=
-  Ast.ind (motive := fun a => printAst a = CSexp.render a.toCSexp)
-    (fun i => by
+  Ast.ind (motive := fun a ↦ printAst a = CSexp.render a.toCSexp)
+    (fun i ↦ by
       simp only [printAst_leaf, Ast.toCSexp_leaf, CSexp.render_list,
         Fin.foldr_succ, Fin.foldr_zero, Matrix.cons_val_zero,
         Matrix.cons_val_succ, CSexp.render_atom, List.append_nil,
         List.append_assoc])
-    (fun l r ihl ihr => by
+    (fun l r ihl ihr ↦ by
       simp only [printAst_fork, Ast.toCSexp_fork, CSexp.render_list,
         Fin.foldr_succ, Fin.foldr_zero, Matrix.cons_val_zero,
         Matrix.cons_val_succ, CSexp.render_atom, List.append_nil,

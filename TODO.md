@@ -30,6 +30,7 @@
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
   - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
+  - [Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`](#lambda-arrow-in-gebtestsmathlibcategorytheoryelementarytoposlean)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -642,6 +643,16 @@ One factual item rides along with that pass: the document's
 [docs/references.bib](docs/references.bib) holds for RFC 9804, RFC 6962
 and Uustalu and Vene 2011, and roughly thirty-five further works there
 have no `.bib` entry, several no searchable identifier.
+
+### Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`
+
+Six ordinary lambdas there are spelled `fun x => ...` rather than
+`fun x ↦ ...`. [docs/rules/lean-coding.md](docs/rules/lean-coding.md)
+binds every `.lean` file in the repository through its `paths`
+frontmatter, and its § Coding style lists `↦` among the Unicode forms
+mathlib uses; every other `.lean` file in the repository follows it.
+Correcting these is a separate concern from any current branch per
+[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
 
 ## Triggers (do when condition fires)
 
