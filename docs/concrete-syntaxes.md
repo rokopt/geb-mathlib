@@ -1187,7 +1187,7 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-53 theorems, with tests in
+50 theorems, with tests in
 [GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
 It builds under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
@@ -1246,12 +1246,12 @@ the running example of
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding),
 whose two right-hand labels are transposed.
 
-Axiom dependencies, from `#print axioms` over all 53 theorems:
+Axiom dependencies, from `#print axioms` over all 50 theorems:
 
 | Theorems | Axioms |
 | --- | --- |
-| 12, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
-| 12, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
+| 10, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
+| 11, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
 | 7, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
 | the remaining 22, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
@@ -1284,11 +1284,18 @@ The theorems the architecture rests on:
 
 Two facts about the encoding, for anyone extending the development:
 
-1. `simp` and `rw` match at reducible transparency, so an arity family
-   used as a W-type index is an `abbrev`. Left as a plain `def`, a child
-   function whose type reads `Rose.Arity (i, n) → _` in a goal will not
-   unify with a lemma stating `Fin n → _`, definitional equality
-   notwithstanding.
+1. Reducibility of an arity family cuts both ways, and the three
+   families here fall differently. `simp` and `rw` match at reducible
+   transparency, so `Rose.Arity` has to be an `abbrev`: as a plain `def`
+   a child function whose type reads `Rose.Arity (i, n) → _` in a goal
+   will not unify with a lemma stating `Fin n → _`, definitional
+   equality notwithstanding, and two of the rose bijection's proofs stop
+   going through. But instance search reduces at the same transparency,
+   so a reducible family lets it whnf past `Ast.Arity .fork` to `Fin 2`
+   and select mathlib's `Classical.choice`-dependent `FinEnum` rather
+   than the named choice-free one. `Ast.Arity` and `Tree.Arity` are
+   therefore plain `def`s; `Rose.Arity` cannot be, and deciding equality
+   at a `Rose k` whose shape is a literal acquires that axiom.
 2. `WType.para` supplies `Tree.duplicate` with no new recursion:
    redecorating each node with its own subtree is a paramorphism.
    `Tree.map` and `Tree.erase` need less than that — each changes a
@@ -1373,7 +1380,7 @@ everything feeding a hash.
 The table covers the scheduled stages; stage 5 below is contingent on
 language features that do not exist yet.
 
-The module is 53 theorems, 28 of them in `Csexp`;
+The module is 50 theorems, 26 of them in `Csexp`;
 [Local verification](#local-verification) breaks them down by axiom.
 That is the only measured quantity, and one
 implementation is too small a base to extrapolate a schedule from, so

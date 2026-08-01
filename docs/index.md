@@ -878,7 +878,7 @@ import-direction rules above are enforced by
   `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
   corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
   `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
-  depending on `Classical.choice`. Of the module's 53 theorems, 12
-  depend on no axioms, 12 on `propext` alone, 7 on `Quot.sound` alone,
+  depending on `Classical.choice`. Of the module's 50 theorems, 10
+  depend on no axioms, 11 on `propext` alone, 7 on `Quot.sound` alone,
   and the remaining 22 on `propext` and `Quot.sound`. No declaration
   depends on `Classical.choice`.
