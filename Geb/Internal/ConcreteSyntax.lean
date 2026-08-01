@@ -67,17 +67,18 @@ returns, which is not a form Lean's structural recursion accepts.
 `Csexp.parse` supplies the input length, and `Csexp.size_le_length_printAst`
 shows that bound admits every tree the printer emits.
 
-The decimal layer (`Csexp.digitsLE`, `Csexp.ofLE`, `Csexp.decOf`,
-`Csexp.digitsVal`) is written here rather than reused. mathlib's
-`Nat.digits` depends on `Classical.choice`. Core's `Nat.toDigits` does
-not, and on base 10 agrees with `Csexp.decOf` pointwise; core further
-states `Nat.isDigit_of_mem_toDigits` and `Nat.length_toDigits_pos`,
-which are `Csexp.decOf_all_digits` and `Csexp.decOf_ne_nil`, and
-`Nat.digitChar` with `Nat.toNat_digitChar_of_lt_ten`. What core has no
-counterpart for is the decoder: it states no `digitsVal`, hence no
-`digitsVal_decOf`, which is the lemma the retraction proof turns on and
-the only one whose proof is not routine. `TODO.md` § Concrete-syntax
-prototype records the reuse this leaves open.
+The decimal layer is written here rather than reused, and the reason is
+`Classical.choice` throughout. mathlib's `Nat.digits` depends on it.
+Core supplies the whole layer — `Nat.toDigits`, which agrees with
+`Csexp.decOf` pointwise on base 10, the decoder `Nat.ofDigitChars`, and
+the round trip `Nat.ofDigitChars_ten_toDigits`, which is
+`Csexp.digitsVal_decOf` verbatim — but every core lemma relating
+`toDigits b n` to `toDigits b (n / b)` depends on `Classical.choice`,
+`Nat.ofDigitChars_ten_toDigits` and `Nat.toDigits_eq_if` among them, so
+the round trip cannot be imported and cannot be reproved from core's
+recursion equation. What is choice-free in core is the shallow part:
+`Nat.digitChar`, `Nat.toNat_digitChar_of_lt_ten`,
+`Nat.isDigit_of_mem_toDigits` and `Nat.length_toDigits_pos`.
 
 `finEnumFin` and `finEnumEmpty` are named because mathlib's `FinEnum`
 instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
@@ -236,9 +237,9 @@ def extract {k : Nat} {A : Type uA} (t : Tree k A) : A :=
   (WType.toSigma t).1.1
 
 /-- The comonad comultiplication: relabel each node with the annotated
-subtree rooted at it. This is the redecoration map of
-[UustaluVene2011]. A paramorphism, since the new decoration at a node is
-that node's own subtree. -/
+subtree rooted at it, in the sense [UustaluVene2011] gives the
+comultiplication of the cofree recursive comonad. A paramorphism, since
+the new decoration at a node is that node's own subtree. -/
 def duplicate {k : Nat} {A : Type uA} : Tree k A → Tree k (Tree k A) :=
   WType.para (Tree k (Tree k A)) fun x =>
     WType.mk (WType.mk x.1 fun b => (x.2 b).1, x.1.2) fun b => (x.2 b).2
@@ -372,6 +373,14 @@ so with a plain `def` a child function whose type reads
 through. -/
 abbrev Arity {k : Nat} (s : Shape k) : Type := Fin s.2
 
+/-- Every rose arity is finitely enumerable. Named for the same reason
+as the other two: without it, deciding equality at `Rose k` reaches
+mathlib's `FinEnum.fin` and acquires `Classical.choice`, and a `#guard`
+is not a declaration, so `GebMeta.detectNonstandardAxiom` would not
+catch it. -/
+instance instFinEnumArity {k : Nat} (s : Shape k) : FinEnum (Arity s) :=
+  finEnumFin s.2
+
 end Rose
 
 /-- The rose-tree presentation: a label in `Fin k` and a finite sequence
@@ -424,6 +433,8 @@ def ofRose {k : Nat} : Rose k → Ast k :=
       Fin.foldr n (fun j acc => fork (ofRose (f j)) acc) (leaf i) :=
   rfl
 
+/-- Prepending a child to a rose node prepends a fork on the binary
+side, which is the step `Ast.ofRose_toRose` turns on. -/
 theorem ofRose_cons {k : Nat} (t r : Rose k) :
     ofRose (Rose.cons t r) = fork (ofRose t) (ofRose r) := by
   obtain ⟨⟨i, n⟩, f⟩ := r
@@ -549,10 +560,9 @@ theorem digitsLEAux_succ (f n : Nat) :
     digitsLEAux (f + 1) n =
       if n = 0 then [] else n % 10 :: digitsLEAux f (n / 10) := rfl
 
-/-- Little-endian decimal digits. Hand-rolled: mathlib's `Nat.digits`
-depends on `Classical.choice`, and core's `Nat.toDigits`, which does
-not, is big-endian and has no decoder to invert it against. See the
-module docstring's implementation notes. -/
+/-- Little-endian decimal digits. Hand-rolled because every route to a
+decimal round trip in mathlib and in core depends on `Classical.choice`;
+see the module docstring's implementation notes. -/
 def digitsLE (n : Nat) : List Nat := digitsLEAux n n
 
 theorem ofLE_digitsLEAux : ∀ f n : Nat, n ≤ f → ofLE (digitsLEAux f n) = n :=
@@ -598,6 +608,9 @@ emits, since the retraction law constrains only the composite. -/
 def digitsVal (cs : List Char) : Option Nat :=
   (cs.mapM charDigit).map fun l => ofLE l.reverse
 
+/-- The decimal round trip: reading back a shortest-form spelling
+recovers the number. This is what the retraction law rests on at the
+label level. -/
 theorem digitsVal_decOf (n : Nat) : digitsVal (decOf n) = some n := by
   unfold decOf digitsVal
   by_cases h : n = 0

@@ -39,6 +39,13 @@ the kernel — but checks a different thing. A parser and a printer are
 used by running them, so the interpreter is the path worth exercising;
 that the kernel agrees is what the two forms together would show.
 
+## Main definitions
+
+* `atomRaw`, `atom`, `sexp`, `leafBody`, `leafSexp`, `nodeTok` — input
+  fixtures, built out of the canonical grammar's two productions.
+* `sampleAst`, `sampleText` — the tree the assertions run on, and its
+  printed spelling.
+
 ## References
 
 * [RFC9804]
@@ -93,8 +100,9 @@ def sampleText : String := String.ofList (Csexp.print sampleAst)
 `Tree.extract_duplicate` already state these. What
 the assertions add is that the compiled evaluation agrees with the
 kernel and terminates. `WType.beq`, which decides the equalities, folds
-over a `FinEnum` enumeration, and `Tree.duplicate` is a `WType.para`;
-nothing else here runs either. -/
+over a `FinEnum` enumeration, and nearly every assertion below runs it;
+`Tree.duplicate` is a `WType.para`, and only the fourth of these runs
+that. -/
 
 #guard Csexp.parse 3 (Csexp.print sampleAst) == some sampleAst
 
