@@ -38,6 +38,7 @@
 - [Local verification](#local-verification)
 - [Ecosystem notes](#ecosystem-notes)
 - [Roadmap](#roadmap)
+  - [Under consideration](#under-consideration)
   - [Relation to existing repository content](#relation-to-existing-repository-content)
 - [Caveats](#caveats)
 - [References](#references)
@@ -1465,6 +1466,97 @@ high-throughput transport, which would add Cap'n Proto as transport
 with identity unchanged; a need for maximal annotation-surface
 diversity, which would add XML with explicit annotation elements.
 
+### Under consideration
+
+Neither item below is scheduled. Both are recorded so the reasoning is
+not re-derived.
+
+**A formal model of the canonical grammar.** [FormalSExpr] formalizes
+canonical S-expressions in Idris as a family indexed by the octet string
+that represents them:
+
+```idris
+data Verbatim : List Bits8 -> Type where
+  MkVerbatim : (xs : List Bits8) ->
+    Verbatim (base10 (length xs) ++ [58] ++ xs)
+
+data CanonicalSExprList : List Bits8 -> Type where
+  Nil : CanonicalSExprList []
+  (::) : CanonicalSExpr xs -> CanonicalSExprList ys ->
+    CanonicalSExprList (xs ++ ys)
+
+data CanonicalSExpr : List Bits8 -> Type where
+  MkCanonical : Verbatim xs -> CanonicalSExpr xs
+  MkCanonicalHint : Verbatim xs -> Verbatim ys ->
+    CanonicalSExpr (91 :: xs ++ [93] ++ ys)
+  MkCanonicalList : CanonicalSExprList xs ->
+    CanonicalSExpr (40 :: xs ++ [41])
+```
+
+`Verbatim`'s index is `Csexp.printVerbatim`, `58` being `:` and `base10`
+being `Csexp.decOf`; `MkCanonicalList`'s is the parenthesization
+`Csexp.printAst` performs, `40` and `41` being the parentheses. The
+correspondence is exact, so transcribing the non-dependent family — an
+atom-or-list W-type — with a serializer into `List Char` would let
+`Csexp.print` be factored as that serializer after a map into it. What
+that buys is a conformance statement the development does not currently
+make: that the printer's output is a canonical S-expression by
+construction, rather than a byte string that the local parser happens to
+accept.
+
+`Rose k` maps into the family by sending a node to the list whose head
+is the atom of its label and whose tail is the images of its children.
+Note that `MkCanonicalList` takes a `CanonicalSExprList`, so the head is
+consed inside that list rather than passed as a separate argument:
+
+```text
+inj (node l ts) = MkCanonicalList (MkCanonical (atom l) :: map inj ts)
+```
+
+Three properties of the image. `MkCanonicalHint` is never used, display
+hints having no counterpart here. Every list is non-empty and begins
+with an atom, which is the restriction canonical S-expressions carry in
+SPKI use, so the image lies in that profile as well as in the general
+grammar. And `inj` is injective — by induction, given an injective label
+encoding — but not surjective: lists headed by lists, empty lists,
+hints, and atoms outside the label encoding all lie outside the image.
+
+The map is not a factorization of `Csexp.printAst`. That prints from
+`Ast`, spelling a leaf `(4:leaf …)` and a fork `(4:fork … …)`; `inj`
+prints from `Rose`, spelling a node as its label applied to its
+arguments. The second is the S-expression application convention, and it
+agrees with the curried reading `Ast.toRose` fixes, so it is a candidate
+syntax in its own right rather than a restatement of the implemented
+one — but it is still canonical S-expressions, so it would not test
+data-model independence.
+
+[FormalSExpr] is an expired individual submission with no IETF standing.
+Its value here is as a transcription target that has been checked
+against the grammar, not as a citable specification; [RFC9804] remains
+the normative reference.
+
+**Temper as a portability target.** [Temper] is a source-to-source
+compiler: one definition cross-translates to C#, Java,
+JavaScript/TypeScript, Lua and Python. It defines no wire format of its
+own — its own documentation uses JSON for the client-server example — so
+it does not supply a second syntax, and a syntax drawn from it would be
+JSON, which stage 1b already schedules.
+
+Where it bears on this document is the admission in
+[The bootstrap set](#the-bootstrap-set): outside the Geb implementation,
+nobody's toolchain reads Geb csexp without new code. Temper is a way for
+that code to be written once and deployed across five language
+ecosystems, with the Lean development as the specification and reference
+implementation and differential testing between them as the bridge —
+the role [Ecosystem notes](#ecosystem-notes) gives EverCBOR's extracted
+C and `Lean.Json`. Only the fragment Geb emits would need an
+implementation, which is the same restriction that makes the JSON core
+profile cheap. That is an ecosystem question rather than a
+syntax-independence one, and it is worth revisiting once a second syntax
+exists and interchange starts to matter. Temper publishes no version or
+stability statement, so any dependency on it is re-checked at each
+revisit.
+
 ### Relation to existing repository content
 
 `Ast k` is the W-type of the polynomial functor with shapes in bijection
@@ -1584,6 +1676,11 @@ Standards and specifications:
 - Bormann, C., and P. Hoffman, "Concise Binary Object Representation
   (CBOR)", STD 94, RFC 8949, December 2020; §4.2 deterministic
   encoding. <https://www.rfc-editor.org/rfc/rfc8949.html>
+- Petit-Huguenin, M., "Formal Specification of S-Expressions",
+  draft-petithuguenin-ufmrg-formal-sexpr-06, expired individual
+  submission, intended status Informational, May 2025.
+  <https://datatracker.ietf.org/doc/html/draft-petithuguenin-ufmrg-formal-sexpr-06>
+- Temper, a source-to-source compiler. <https://temperlang.dev/>
 - Bormann, C., "CBOR Common Deterministic Encoding (CDE)",
   draft-ietf-cbor-cde-13, October 2025.
   <https://datatracker.ietf.org/doc/draft-ietf-cbor-cde/>
