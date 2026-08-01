@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Internal.CanonicalSExpr
 public import Geb.Internal.ConcreteSyntax
 /-!
 # Geb.Internal — downstream-only content

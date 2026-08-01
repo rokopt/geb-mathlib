@@ -847,6 +847,22 @@ import-direction rules above are enforced by
   specification as its component vector. The `Bool`-validity fields
   are not rendered, carrying no information a reader of the table
   needs. All three instances depend on `propext`.
+- `Geb/Internal/CanonicalSExpr.lean` — canonical S-expressions as a data
+  type. `Geb.CSexp` is the non-dependent form of the family
+  [FormalSExpr] indexes by the octets representing it, and
+  `CSexp.render` is that index function: an atom renders as
+  `Csexp.printVerbatim`, a list as its elements' renderings between
+  parentheses. `Ast.toCSexp` is the map underlying the implemented
+  syntax, and `Csexp.print_eq_render_toCSexp` factors `Csexp.print`
+  through it — a conformance statement `Csexp.parse_print` does not
+  make, since that law says only that the local parser accepts the local
+  printer's output. `Rose.toCSexp` is a second map into the family,
+  spelling a node as its label applied to its arguments, with
+  `Rose.print` its rendering and `Ast.printViaRose` its composite with
+  the rose bijection; the two encodings of one tree differ, as
+  `GebTests.Internal.CanonicalSExpr` exhibits. Of the module's 7
+  theorems, 2 depend on no axioms, 3 on `propext` alone, and 2 on
+  `propext` and `Quot.sound`.
 - `Geb/Internal/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or

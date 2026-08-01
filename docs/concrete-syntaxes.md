@@ -30,6 +30,7 @@
   - [XML with C14N — the strongest "genuinely different" alternative](#xml-with-c14n--the-strongest-genuinely-different-alternative)
   - [WebAssembly text format (WAT)](#webassembly-text-format-wat)
   - [EDN](#edn)
+  - [Temper — rejected as a syntax, retained as a deployment route](#temper--rejected-as-a-syntax-retained-as-a-deployment-route)
   - [The remainder](#the-remainder)
 - [Evaluating the candidates](#evaluating-the-candidates)
   - [The bootstrap set](#the-bootstrap-set)
@@ -38,7 +39,7 @@
 - [Local verification](#local-verification)
 - [Ecosystem notes](#ecosystem-notes)
 - [Roadmap](#roadmap)
-  - [Under consideration](#under-consideration)
+  - [The canonical grammar as a data type](#the-canonical-grammar-as-a-data-type)
   - [Relation to existing repository content](#relation-to-existing-repository-content)
 - [Caveats](#caveats)
 - [References](#references)
@@ -918,6 +919,35 @@ cross-language ecosystem than JSON/XML/CBOR, no Lean tooling, and
 semicolon comments are lexical and hence non-durable. A pleasant later
 frontend; not a bootstrap identity format.
 
+### Temper — rejected as a syntax, retained as a deployment route
+
+[Temper] is a source-to-source compiler: one definition cross-translates
+to C#, Java, JavaScript/TypeScript, Lua and Python, with more stated as
+coming. It was considered here as a candidate second syntax and is not
+one, for a reason that is structural rather than a matter of maturity:
+it defines no wire format. Its own documentation uses JSON for the
+client-server example, so "the Temper encoding of `Ast`" resolves either
+to Temper *source code*, which is a programming language rather than a
+data format and an unstable parsing target, or to JSON, which
+[Roadmap](#roadmap) stage 1b already schedules. Either way it supplies
+no new data model, which is what
+[The bootstrap set](#the-bootstrap-set) requires of a second syntax.
+
+It bears instead on a gap that section states plainly: outside the Geb
+implementation, nobody's toolchain reads Geb csexp without new code.
+Temper is a route by which that code is written once and deployed to
+several language ecosystems at once, with the Lean development as the
+specification and reference implementation and differential testing
+between the two as the bridge — the role
+[Ecosystem notes](#ecosystem-notes) gives EverCBOR's extracted C and
+`Lean.Json`. Only the fragment Geb emits would need an implementation,
+which is the restriction that makes the JSON core profile cheap here.
+
+Two conditions on taking that route. It is an interchange question, so
+it waits on a second syntax existing and interchange mattering; and
+Temper publishes no version or stability statement, so its maturity is
+re-checked at each revisit rather than assumed.
+
 ### The remainder
 
 - **Bencode**: canonical by construction — length-prefixed strings,
@@ -1466,14 +1496,10 @@ high-throughput transport, which would add Cap'n Proto as transport
 with identity unchanged; a need for maximal annotation-surface
 diversity, which would add XML with explicit annotation elements.
 
-### Under consideration
+### The canonical grammar as a data type
 
-Neither item below is scheduled. Both are recorded so the reasoning is
-not re-derived.
-
-**A formal model of the canonical grammar.** [FormalSExpr] formalizes
-canonical S-expressions in Idris as a family indexed by the octet string
-that represents them:
+[FormalSExpr] models canonical S-expressions as a family indexed by the
+octet string that represents them:
 
 ```idris
 data Verbatim : List Bits8 -> Type where
@@ -1496,66 +1522,67 @@ data CanonicalSExpr : List Bits8 -> Type where
 `Verbatim`'s index is `Csexp.printVerbatim`, `58` being `:` and `base10`
 being `Csexp.decOf`; `MkCanonicalList`'s is the parenthesization
 `Csexp.printAst` performs, `40` and `41` being the parentheses. The
-correspondence is exact, so transcribing the non-dependent family — an
-atom-or-list W-type — with a serializer into `List Char` would let
-`Csexp.print` be factored as that serializer after a map into it. What
-that buys is a conformance statement the development does not currently
-make: that the printer's output is a canonical S-expression by
-construction, rather than a byte string that the local parser happens to
-accept.
+correspondence is exact, and
+[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+transcribes the non-dependent family as `CSexp`, an atom-or-list W-type,
+with `CSexp.render` as the index function. `Csexp.print` factors through
+it: `Csexp.print_eq_render_toCSexp` states that the printer's output is
+the rendering of a `CSexp`, hence a canonical S-expression by
+construction. `Csexp.parse_print` does not say that — it says only that
+the local parser accepts what the local printer emits.
 
-`Rose k` maps into the family by sending a node to the list whose head
-is the atom of its label and whose tail is the images of its children.
-Note that `MkCanonicalList` takes a `CanonicalSExprList`, so the head is
-consed inside that list rather than passed as a separate argument:
+`MkCanonicalHint` has no counterpart: display hints are unused here, so
+`CSexp.Shape` carries no shape for them.
+
+`Rose k` maps into the family separately, by `Rose.toCSexp`, which sends
+a node to the list whose head is the atom of its label and whose tail is
+its children. Note that `MkCanonicalList` takes a `CanonicalSExprList`,
+so the head is consed inside that list rather than passed beside it:
 
 ```text
-inj (node l ts) = MkCanonicalList (MkCanonical (atom l) :: map inj ts)
+Rose.toCSexp (node l ts) = MkCanonicalList (MkCanonical (atom l) :: map … ts)
 ```
 
-Three properties of the image. `MkCanonicalHint` is never used, display
-hints having no counterpart here. Every list is non-empty and begins
-with an atom, which is the restriction canonical S-expressions carry in
-SPKI use, so the image lies in that profile as well as in the general
-grammar. And `inj` is injective — by induction, given an injective label
-encoding — but not surjective: lists headed by lists, empty lists,
-hints, and atoms outside the label encoding all lie outside the image.
+Every list in the image of either map is non-empty and begins with an
+atom, which is the restriction canonical S-expressions carry in SPKI
+use, so both images lie in that profile as well as in the general
+grammar. Neither map is surjective: lists headed by lists, empty lists,
+hints, and atoms outside the label encoding all lie outside.
 
-The map is not a factorization of `Csexp.printAst`. That prints from
-`Ast`, spelling a leaf `(4:leaf …)` and a fork `(4:fork … …)`; `inj`
-prints from `Rose`, spelling a node as its label applied to its
-arguments. The second is the S-expression application convention, and it
-agrees with the curried reading `Ast.toRose` fixes, so it is a candidate
-syntax in its own right rather than a restatement of the implemented
-one — but it is still canonical S-expressions, so it would not test
-data-model independence.
+`Rose.toCSexp` is not a factorization of `Csexp.printAst`. That prints
+from `Ast`, spelling a leaf `(4:leaf …)` and a fork `(4:fork … …)`;
+`Rose.toCSexp` prints from `Rose`, spelling a node as its label applied
+to its arguments — the S-expression application convention, agreeing
+with the curried reading `Ast.toRose` fixes. On the five-node tree
+`fork (leaf 0) (fork (leaf 1) (leaf 2))` the two spellings are
+
+```text
+(4:fork(4:leaf1:0)(4:fork(4:leaf1:1)(4:leaf1:2)))
+(1:0(1:1(1:2)))
+```
+
+and `GebTests.Internal.CanonicalSExpr` pins both. `Ast.printViaRose`
+composes the rose bijection with the second, so it encodes the same
+trees in far fewer octets, carrying neither constructor tags nor binary
+scaffolding.
+
+It is not yet a syntax. `Retraction` needs a parser, and the rose
+spelling has variable-arity lists where the implemented one has fixed
+arity, so its parser needs a bounded inner loop over the children and
+its retraction proof needs to rebuild a W-type node from the list the
+loop returns — a transport along `List.length_ofFn` that the fixed-arity
+case never meets. `TODO.md` § Concrete-syntax prototype records it.
+Being still canonical S-expressions, it would not test data-model
+independence even once proved; its interest is as a second spelling over
+one grammar, and as the spelling that matches the abstract syntax's own
+reading.
 
 [FormalSExpr] is an expired individual submission with no IETF standing.
-Its value here is as a transcription target that has been checked
-against the grammar, not as a citable specification; [RFC9804] remains
-the normative reference.
-
-**Temper as a portability target.** [Temper] is a source-to-source
-compiler: one definition cross-translates to C#, Java,
-JavaScript/TypeScript, Lua and Python. It defines no wire format of its
-own — its own documentation uses JSON for the client-server example — so
-it does not supply a second syntax, and a syntax drawn from it would be
-JSON, which stage 1b already schedules.
-
-Where it bears on this document is the admission in
-[The bootstrap set](#the-bootstrap-set): outside the Geb implementation,
-nobody's toolchain reads Geb csexp without new code. Temper is a way for
-that code to be written once and deployed across five language
-ecosystems, with the Lean development as the specification and reference
-implementation and differential testing between them as the bridge —
-the role [Ecosystem notes](#ecosystem-notes) gives EverCBOR's extracted
-C and `Lean.Json`. Only the fragment Geb emits would need an
-implementation, which is the same restriction that makes the JSON core
-profile cheap. That is an ecosystem question rather than a
-syntax-independence one, and it is worth revisiting once a second syntax
-exists and interchange starts to matter. Temper publishes no version or
-stability statement, so any dependency on it is re-checked at each
-revisit.
+Its value here is as a transcription target checked against the grammar,
+not as a citable specification; [RFC9804] remains the normative
+reference. Temper was considered as a second syntax and rejected as one;
+see
+[Temper — rejected as a syntax, retained as a deployment route](#temper--rejected-as-a-syntax-retained-as-a-deployment-route).
 
 ### Relation to existing repository content
 
