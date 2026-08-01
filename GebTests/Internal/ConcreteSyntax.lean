@@ -27,8 +27,8 @@ leading zeros, and the length prefix of a verbatim atom may carry
 leading zeros.
 
 Inputs are `List Char`, built by `atomRaw` and `sexp` out of the same
-two productions the canonical grammar has. Core's `String.toList` is unavailable here:
-it depends on `Classical.choice`, which
+two productions the canonical grammar has. Core's `String.toList` is
+unavailable here: it depends on `Classical.choice`, which
 [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md) forbids.
 `String.ofList` is choice-free, so the printer's output is still checked
 against a string literal.
@@ -36,9 +36,10 @@ against a string literal.
 The assertions are `#guard`, which runs its argument in the interpreter.
 `by decide` discharges every one of them too — `WType.beq` reduces in
 the kernel, and the assertions that do not reach it compare `String`,
-`Nat`, `Bool`, `Ann` or `Option` — but checks a different thing. A parser and a printer are
-used by running them, so the interpreter is the path worth exercising;
-that the kernel agrees is what the two forms together would show.
+`Nat`, `Bool`, `Ann` or `Option` — but checks a different thing. A
+parser and a printer are used by running them, so the interpreter is
+the path worth exercising; that the kernel agrees is what the two forms
+together would show.
 
 ## Main definitions
 
@@ -98,13 +99,14 @@ def sampleText : String := String.ofList (Csexp.print sampleAst)
 /-! ## The proved round trips, evaluated
 
 `Csexp.parse_print`, `Ast.ofRose_toRose`, `Ast.erase_trivialDoc` and
-`Tree.extract_duplicate` already state these. What
+`Tree.extract_duplicate` already state four of these; the third
+assertion below pins the rose orientation, which no theorem fixes. What
 the assertions add is that the compiled evaluation agrees with the
 kernel and terminates. `WType.beq`, which decides the equalities, folds
-over a `FinEnum` enumeration; nine assertions in this file reach it, the
-four below among them, while the twelve that compare `none` with `none`
+over a `FinEnum` enumeration; ten assertions in this file reach it, the
+five below among them, while the twelve that compare `none` with `none`
 are settled by `Option.decEq` without touching the payload.
-`Tree.duplicate` is a `WType.para`, and only the fourth below runs
+`Tree.duplicate` is a `WType.para`, and only the last below runs
 that. -/
 
 #guard Csexp.parse 3 (Csexp.print sampleAst) == some sampleAst

@@ -44,7 +44,8 @@ import-direction rules above are enforced by
   layer for the Geb abstract syntax tree: the round-trip laws, the
   annotation model, the content-addressing specification, the
   format-by-format evaluation, and the staging.
-  `Geb/Internal/ConcreteSyntax.lean` implements its first stage.
+  `Geb/Internal/ConcreteSyntax.lean` and
+  `Geb/Internal/CanonicalSExpr.lean` implement its first stage.
 
 ## Implemented content
 
@@ -847,6 +848,47 @@ import-direction rules above are enforced by
   specification as its component vector. The `Bool`-validity fields
   are not rendered, carrying no information a reader of the table
   needs. All three instances depend on `propext`.
+- `Geb/Internal/ConcreteSyntax.lean` — prototype of the concrete-syntax
+  layer for the Geb abstract syntax tree. Every tree type here is a
+  `WType`, so its recursion runs through `WType.elim`, `WType.para` or
+  a recursor application. `Geb.Ast k` is the initial algebra of
+  `F X = Fin k + X × X`, presented as the W-type on `Ast.Shape k`:
+  binary trees whose leaves carry a label in `Fin k`. `Ast.ind`
+  recovers the two-constructor induction principle, so no proof about
+  `Ast` case-splits on `Ast.Shape` or `Ast.Arity` except `Ast.ind`
+  itself; outside the proofs, the arity family, its `FinEnum` instance,
+  the two constructors and this module's three folds do.
+  `Geb.Tree k A` annotates every node with an `A`, and carries
+  `extract`/`duplicate` with the three
+  comonad laws (`Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
+  `Tree.duplicate_duplicate`), the two functor laws (`Tree.map_id`,
+  `Tree.map_map`) and the naturality of the two structure maps
+  (`Tree.extract_map`, `Tree.duplicate_map`); `duplicate` is
+  `WType.para`, redecoration being a paramorphism. `Geb.Doc k` is the
+  annotated document type `Tree k Ann`, and `Tree.erase` forgets the
+  annotations, with
+  `Ast.erase_trivialDoc` the round trip against the trivial
+  decoration. `Geb.Rose k` is the rose-tree presentation, and
+  `Ast.ofRose_toRose`/`Ast.toRose_ofRose` are the two halves of its
+  bijection with `Ast k`, under the convention that reads a rose node as
+  a curried function and a fork as application, so that a node's
+  children are consumed as a snoclist. `Rose.ofList` builds a node from
+  the list of its children, the constructor a parser of variable-arity
+  nodes needs, and `Rose.ofList_ofFn` is the transport back to the
+  `Fin n`-indexed tuple.
+  `Retraction`, `format_idem` and
+  `print_injective` state the law a concrete syntax must satisfy and
+  derive formatter idempotence and printer injectivity from it once for
+  every syntax. `Geb.Csexp.print`/`Geb.Csexp.parse` are the first such
+  syntax, the canonical S-expression encoding of [RFC9804] restricted
+  to the bare tree, with `Csexp.parse_print` the retraction and
+  `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
+  corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
+  `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
+  depending on `Classical.choice`. Of the module's 52 theorems, 11
+  depend on no axioms, 8 on `propext` alone, 8 on `Quot.sound` alone,
+  and the remaining 25 on `propext` and `Quot.sound`. No declaration
+  depends on `Classical.choice`.
 - `Geb/Internal/CanonicalSExpr.lean` — canonical S-expressions as a data
   type. `Geb.CSexp` is the non-dependent form of the family
   [FormalSExpr] indexes by the octets representing it, and
@@ -860,43 +902,17 @@ import-direction rules above are enforced by
   spelling a node as its label applied to its arguments, with
   `Rose.print` its rendering and `Ast.printViaRose` its composite with
   the rose bijection; the two encodings of one tree differ, as
-  `GebTests.Internal.CanonicalSExpr` exhibits. Of the module's 7
-  theorems, 2 depend on no axioms, 3 on `propext` alone, and 2 on
-  `propext` and `Quot.sound`.
-- `Geb/Internal/ConcreteSyntax.lean` — prototype of the concrete-syntax
-  layer for the Geb abstract syntax tree. Every tree type here is a
-  `WType`, so its recursion runs through `WType.elim`, `WType.para` or
-  a recursor application. `Geb.Ast k` is the initial algebra of
-  `F X = Fin k + X × X`, presented as the W-type on `Ast.Shape k`:
-  binary trees whose leaves carry a label in `Fin k`. `Ast.ind`
-  recovers the two-constructor induction principle, so no proof about
-  `Ast` case-splits on `Ast.Shape` or `Ast.Arity` except `Ast.ind`
-  itself; outside the proofs, the arity family, its `FinEnum` instance,
-  the two constructors and the three folds do. `Geb.Tree k A` annotates every
-  node with an `A`, and carries `extract`/`duplicate` with the three
-  comonad laws (`Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
-  `Tree.duplicate_duplicate`), the two functor laws (`Tree.map_id`,
-  `Tree.map_map`) and the naturality of the two structure maps
-  (`Tree.extract_map`, `Tree.duplicate_map`); `duplicate` is
-  `WType.para`, redecoration being a paramorphism. `Geb.Doc k` is the
-  annotated document type `Tree k Ann`, and `Tree.erase` forgets the
-  annotations, with
-  `Ast.erase_trivialDoc` the round trip against the trivial
-  decoration. `Geb.Rose k` is the rose-tree presentation, and
-  `Ast.ofRose_toRose`/`Ast.toRose_ofRose` are the two halves of its
-  bijection with `Ast k`, under the convention that reads a rose node as
-  a curried function and a fork as application, so that a node's
-  children are consumed as a snoclist.
-  `Retraction`, `format_idem` and
-  `print_injective` state the law a concrete syntax must satisfy and
-  derive formatter idempotence and printer injectivity from it once for
-  every syntax. `Geb.Csexp.print`/`Geb.Csexp.parse` are the first such
-  syntax, the canonical S-expression encoding of [RFC9804] restricted
-  to the bare tree, with `Csexp.parse_print` the retraction and
-  `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
-  corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
-  `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
-  depending on `Classical.choice`. Of the module's 50 theorems, 11
-  depend on no axioms, 8 on `propext` alone, 7 on `Quot.sound` alone,
-  and the remaining 24 on `propext` and `Quot.sound`. No declaration
-  depends on `Classical.choice`.
+  `GebTests.Internal.CanonicalSExpr` exhibits. `Rose.parse` reads the
+  second spelling back and `Rose.parse_print` is its retraction, with
+  `Rose.format_idem`/`Rose.print_injective` the two instantiated
+  corollaries and `Ast.parseViaRose`/`Ast.parseViaRose_printViaRose` the
+  same retraction transported across the rose bijection to `Ast k`. What
+  distinguishes its parser from the implemented one is that a rose
+  node's arity is unbounded: `Rose.parseChildren` is the bounded loop
+  reading a node's children, and `Rose.parseAux_print` states its
+  measure as the printed length. The module's `## Implementation notes`
+  derives the two inequalities that measure has to satisfy and why the
+  printed length is taken rather than a node count.
+  Of the module's 20 theorems, 4 depend on no axioms, 4 on
+  `propext` alone, and the remaining 12 on `propext` and `Quot.sound`.
+  No declaration depends on `Classical.choice`.

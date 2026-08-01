@@ -33,7 +33,9 @@ Every tree type here is a `WType`, so its recursion is carried by
   comonad structure and `Tree.erase` the forgetful map to `Ast`.
 * `Ann`, `Doc` — the annotation vocabulary and the annotated document
   type `Tree k Ann`, with `Ast.trivialDoc` the empty decoration.
-* `Rose` — the rose-tree presentation of the same fixed point.
+* `Rose` — the rose-tree presentation of the same fixed point, with
+  `Rose.node` and `Rose.ofList` its constructors and `Rose.snoc`
+  appending a child to one.
 * `Retraction`, `format` — the law skeleton a concrete syntax proves.
 * `Csexp.print`, `Csexp.parse` — the [RFC9804] canonical S-expression
   syntax.
@@ -43,6 +45,9 @@ Every tree type here is a `WType`, so its recursion is carried by
 * `Ast.ind` — the two-constructor induction principle on `Ast`.
 * `Ast.ofRose_toRose`, `Ast.toRose_ofRose` — the rose presentation is
   a bijection.
+* `Rose.ofList_ofFn` — a rose node rebuilt by `Rose.ofList` from the
+  list of its children is that node. It is the equation justifying the
+  transport a variable-arity parser needs.
 * `Csexp.parse_print` — the retraction law for the S-expression syntax,
   from `Csexp.parseAst_printAst` and `Csexp.size_le_length_printAst`.
 * `Csexp.readVerbatim_append` — a printed atom reads back whole,
@@ -83,9 +88,17 @@ digit-character lemmas are not.
 `finEnumFin` and `finEnumEmpty` are named because mathlib's `FinEnum`
 instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
 
-`Rose.Arity` is an `abbrev` because two of the rose bijection's proofs
-need it reducible; its docstring says which. The other two `Arity`
-families follow it for uniformity and would compile as plain `def`s.
+`Rose.Arity` is an `abbrev` because a proof matching a child function's
+type against a lemma stated at `Fin n → _` needs it reducible;
+`Ast.ofRose_snoc` and `Ast.toRose_ofRose` are the two here, and
+`Rose.parseAux_print` the third, downstream. Its docstring names all
+three and says what the reducibility costs.
+
+`Ast.Arity` and `Tree.Arity` are plain `def`s, which keeps instance
+search from reducing past them at a literal shape. No demand here
+reaches that case; the `def`s guard against one arising later, which
+would otherwise resolve through mathlib's `Classical.choice`-dependent
+`FinEnum.fin`.
 
 ## References
 
@@ -107,16 +120,20 @@ namespace Geb
 
 Every `Arity` family below is finitely enumerable, which is what lets
 `WType.instDecidableEq` decide equality of the corresponding tree type.
-The `#guard`s in `GebTests.Internal.ConcreteSyntax` decide equality at
-`Ast k` and at `Tree k Ann`. The two enumerations are named because
-mathlib's `FinEnum.fin` and `FinEnum.empty` are built by
+The `#guard`s in the two `GebTests` syntax modules decide equality at
+`Ast k`, at `Tree k Ann` and at `Rose k`. The two enumerations are named
+because mathlib's `FinEnum.fin` and `FinEnum.empty` are built by
 `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
 which [CONTRIBUTING.md § Constructive-only](../../CONTRIBUTING.md)
-forbids. Naming them is not by itself enough: an arity family has to be
-a plain `def` as well, or instance search reduces past it and reaches
-mathlib's anyway. `Ast.Arity` and `Tree.Arity` are; `Rose.Arity` cannot
-be, and its docstring records what that costs. Neither construction is
-specific to syntax. -/
+forbids. Naming them suffices for that consumer: `WType.instDecidableEq`
+asks for a family at a general shape, where nothing reduces, so equality
+is decided choice-free however the family is declared — `Rose.Arity` is
+an `abbrev` and equality at `Rose k` is choice-free. What a reducible
+family gives up is `FinEnum` demanded at a shape already a literal,
+where search reduces past it to `Empty` or `Fin n` and selects mathlib's.
+`Ast.Arity` and `Tree.Arity` are plain `def`s so that such a demand
+would reach the named instance; nothing here makes one. Neither
+construction is specific to syntax. -/
 
 /-- `Fin n` enumerated by the identity equivalence. -/
 @[instance_reducible] def finEnumFin (n : Nat) : FinEnum (Fin n) := ⟨n, Equiv.refl (Fin n)⟩
@@ -370,20 +387,25 @@ abbrev Shape (k : Nat) : Type := Fin k × Nat
 family that has to be: `simp` and `rw` match at reducible transparency,
 so with a plain `def` a child function whose type reads
 `Rose.Arity (i, n) → _` in a goal fails to unify with a lemma stated at
-`Fin n → _`, and `Ast.ofRose_cons` and `Ast.toRose_ofRose` do not go
-through. The cost is that `instFinEnumArity` below is unreachable at a
-concrete shape — instance search reduces past this family to `Fin n` and
-selects mathlib's `Classical.choice`-dependent `FinEnum` — so deciding
-equality at a `Rose k` whose shape is a literal acquires that axiom.
-`Ast.Arity` and `Tree.Arity` are plain `def`s for exactly this reason
-and do not have the hole. -/
+`Fin n → _`, and the proofs of `Ast.ofRose_snoc` and
+`Ast.toRose_ofRose` fail here, `Geb.Rose.parseAux_print`'s downstream.
+The cost is that `instFinEnumArity` below is unreachable at a concrete
+shape: instance search reduces past this family to `Fin n` and selects
+mathlib's `Classical.choice`-dependent `FinEnum.fin`. Deciding equality
+at a `Rose k` does not incur that, `WType.instDecidableEq` asking for
+the family at a general shape and so reaching the named instance; what
+would pay it is a demand for `FinEnum` at a shape already a literal.
+`Ast.Arity` and `Tree.Arity` are plain `def`s, at which search reaches
+the named instance either way. -/
 abbrev Arity {k : Nat} (s : Shape k) : Type := Fin s.2
 
 /-- Every rose arity is finitely enumerable. Named for the same reason
-as the other two, and forward-looking: nothing decides equality at
-`Rose k` yet, and without this instance the first thing that did would
-acquire `Classical.choice`. A `#guard` is not a declaration, so
-`GebMeta.detectNonstandardAxiom` would not catch it. -/
+as the other two: `WType.instDecidableEq` asks for this family at a
+general shape, so deciding equality at a `Rose k` goes through this
+instance rather than mathlib's `Classical.choice`-dependent
+`FinEnum.fin`. Both `GebTests` syntax modules decide it. A `#guard`
+is not a declaration, so `GebMeta.detectNonstandardAxiom` would not
+catch a leak there. -/
 instance instFinEnumArity {k : Nat} (s : Shape k) : FinEnum (Arity s) :=
   finEnumFin s.2
 
@@ -407,6 +429,32 @@ def node {k : Nat} (i : Fin k) {n : Nat} (f : Fin n → Rose k) : Rose k :=
 @[simp] theorem snoc_node {k : Nat} (i : Fin k) {n : Nat}
     (f : Fin n → Rose k) (t : Rose k) :
     snoc (node i f) t = node i (Fin.snoc f t) := rfl
+
+/-- The node with label `i` whose children are the entries of `ts`. The
+arity is read off the list, so this is the constructor available to a
+parser, which learns a node's children one at a time and its arity only
+when the list ends. -/
+def ofList {k : Nat} (i : Fin k) (ts : List (Rose k)) : Rose k :=
+  node i fun j : Fin ts.length => ts.get j
+
+/-- `ofList` against a tuple presentation of the same children. The list
+is a parameter rather than `List.ofFn f`, which is what makes the arity
+equation substitutable: `n = (List.ofFn f).length` cannot be substituted,
+`n` occurring on the right through the type of `f`. -/
+theorem ofList_eq {k n : Nat} (i : Fin k) (ts : List (Rose k))
+    (f : Fin n → Rose k) (h : n = ts.length)
+    (hf : ∀ j : Fin n, ts.get (j.cast h) = f j) :
+    ofList i ts = node i f := by
+  subst h
+  exact congrArg (node i) (funext hf)
+
+/-- Rebuilding a node from the list of its children recovers it. This is
+the equation justifying the transport a variable-arity parser needs and
+a fixed-arity one does not: the loop that reads the children returns a
+`List`, while the node takes a `Fin n`-indexed tuple. -/
+theorem ofList_ofFn {k n : Nat} (i : Fin k) (f : Fin n → Rose k) :
+    ofList i (List.ofFn f) = node i f :=
+  ofList_eq i _ f List.length_ofFn.symm fun j => by simp
 
 end Rose
 

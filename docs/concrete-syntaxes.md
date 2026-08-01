@@ -60,6 +60,10 @@ implemented in
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
 with tests in
 [GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
+[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+carries canonical S-expressions as a data type and a second retraction
+over the same grammar, the rose spelling, with tests in
+[GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean).
 [Local verification](#local-verification) records the facts the
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
@@ -930,8 +934,9 @@ client-server example, so "the Temper encoding of `Ast`" resolves either
 to Temper *source code*, which is a programming language rather than a
 data format and an unstable parsing target, or to JSON, which
 [Roadmap](#roadmap) stage 1b already schedules. Either way it supplies
-no new data model, which is what
-[The bootstrap set](#the-bootstrap-set) requires of a second syntax.
+no new data model, and data-model diversity is the purpose
+[The bootstrap set](#the-bootstrap-set) gives for writing more than one
+syntax.
 
 It bears instead on a gap that section states plainly: outside the Geb
 implementation, nobody's toolchain reads Geb csexp without new code.
@@ -944,7 +949,8 @@ between the two as the bridge — the role
 which is the restriction that makes the JSON core profile cheap here.
 
 Two conditions on taking that route. It is an interchange question, so
-it waits on a second syntax existing and interchange mattering; and
+it waits on a syntax over a second data model existing and on
+interchange mattering; and
 Temper publishes no version or stability statement, so its maturity is
 re-checked at each revisit rather than assumed.
 
@@ -1226,19 +1232,24 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-50 theorems, with tests in
-[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
-It builds under the toolchain pinned in `lean-toolchain` with
-`autoImplicit` and `relaxedAutoImplicit` false and contains no `sorry`.
-Its one import is
+52 theorems, and
+[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean),
+20 more, with tests in
+[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean)
+and
+[GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean).
+All four build under the toolchain pinned in `lean-toolchain` with
+`autoImplicit` and `relaxedAutoImplicit` false and contain no `sorry`.
+The first module's one import is
 [Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean), and
 through it `Mathlib.Data.W.Basic` and
 [Geb/Mathlib/Data/FinEnum.lean](../Geb/Mathlib/Data/FinEnum.lean), which
 supplies the choice-free decidability instances fact 3 below relies on.
+The second imports the first and `Mathlib.Data.Fin.VecNotation`.
 
-Four facts constrain how it is written.
+Four facts constrain how the two modules and their tests are written.
 
-1. `Ast`, `Tree` and `Rose` are W-types, and every recursion runs
+1. `Ast`, `Tree`, `Rose` and `CSexp` are W-types, and every recursion runs
    through `WType.elim`, `WType.para` or a recursor application.
    [docs/rules/lean-coding.md](rules/lean-coding.md) § Recursion and
    induction through recursors requires it: no self-referential
@@ -1269,6 +1280,20 @@ conventions requires. Each bound on it is discharged by `omega` or by
 case analysis, per that file's § Constructive-only Lean code rule on
 `Fin` and `Nat` arithmetic.
 
+`Rose.parseAux` needs more of its measure, because a rose node's arity
+is unbounded. It supplies its `Nat` in two roles at each layer,
+undecremented as the child loop's bound and decremented as the child
+parser's fuel, so a measure `M` has to satisfy two inequalities at every
+node of `n` children: `M ≥ n + 1`, so that the loop reaches the closing
+parenthesis, and `M > M'` for each child's `M'`, so that one decrement
+leaves that child enough. A node count satisfies both and would serve;
+the printed length is taken instead because `Rose.parse` supplies that
+number in any case, which leaves no node count to define and no
+counterpart to `Csexp.size_le_length_printAst` to prove. The bound is
+correspondingly loose: `sampleWide` is three nodes, and the tests assert
+that it parses at fuel three and not at two, against a printed length of
+fifteen.
+
 The implemented wire form is header-free and carries the bare tree
 alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
 alphabet size that
@@ -1285,17 +1310,23 @@ the running example of
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding),
 whose two right-hand labels are transposed.
 
-Axiom dependencies, from `#print axioms` over all 50 theorems:
+Axiom dependencies, from `#print axioms` over all 52 theorems:
 
 | Theorems | Axioms |
 | --- | --- |
 | 11, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
 | 8, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
-| 7, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc` | `Quot.sound` |
-| the remaining 24, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
+| 8, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc`, `Rose.ofList_eq` | `Quot.sound` |
+| the remaining 25, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
-No declaration depends on `Classical.choice`, and `lake lint` enforces
-that through `GebMeta.detectNonstandardAxiom`.
+[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+adds 20 theorems. Four depend on no axiom, four on `propext` alone, and
+the remaining 12 — `Rose.parse_print` and
+`Ast.parseViaRose_printViaRose` among them — on `propext` and
+`Quot.sound`.
+
+No declaration in either module depends on `Classical.choice`, and
+`lake lint` enforces that through `GebMeta.detectNonstandardAxiom`.
 
 The theorems the architecture rests on:
 
@@ -1320,31 +1351,54 @@ The theorems the architecture rests on:
 - `Csexp.parse_print` discharges that obligation for the canonical
   S-expression syntax on the bare tree; `Csexp.format_idem` and
   `Csexp.print_injective` instantiate the two corollaries at it.
+- `Rose.parse_print` discharges it for the rose spelling of the same
+  grammar, with `Rose.format_idem` and `Rose.print_injective` the same
+  two instantiations, and `Ast.parseViaRose_printViaRose` transports it
+  across the rose/binary bijection to a second retraction on `Ast k`.
+  It is a second spelling over the grammar this stage implements rather
+  than a second syntax in the sense
+  [The bootstrap set](#the-bootstrap-set) fixes, supplying no data model
+  the binary spelling does not.
 
-Two facts about the encoding, for anyone extending the development:
+Three facts about the encoding, for anyone extending the development:
 
-1. Reducibility of an arity family cuts both ways, and the three
-   families here fall differently. `simp` and `rw` match at reducible
-   transparency, so `Rose.Arity` has to be an `abbrev`: as a plain `def`
+1. Reducibility of an arity family has opposite consequences for
+   unification and for instance search, and the four families here
+   divide over it. `simp` and `rw` unify at reducible transparency, so
+   `Rose.Arity` has to be an `abbrev`: as a plain `def`
    a child function whose type reads `Rose.Arity (i, n) → _` in a goal
    will not unify with a lemma stating `Fin n → _`, definitional
-   equality notwithstanding, and two of the rose bijection's proofs stop
-   going through. But instance search reduces at the same transparency,
-   so a reducible family lets it whnf past `Ast.Arity .fork` to `Fin 2`
-   and select mathlib's `Classical.choice`-dependent `FinEnum` rather
-   than the named choice-free one. `Ast.Arity` and `Tree.Arity` are
-   therefore plain `def`s; `Rose.Arity` cannot be, and deciding equality
-   at a `Rose k` whose shape is a literal acquires that axiom.
+   equality notwithstanding, and `Ast.ofRose_snoc`, `Ast.toRose_ofRose`
+   and `Rose.parseAux_print` fail. Instance search unfolds reducible
+   constants too, so a reducible family lets it whnf past
+   `Ast.Arity .fork` to `Fin 2` and select mathlib's
+   `Classical.choice`-dependent `FinEnum` rather than the named
+   choice-free one — but only where the shape is already a literal.
+   `WType.instDecidableEq` asks for the family at a general shape, so
+   deciding equality at any of the four is choice-free however its
+   family is declared, `Rose.Arity` being an `abbrev` and equality at
+   `Rose k` choice-free. `Ast.Arity`, `Tree.Arity` and `CSexp.Arity` are
+   plain `def`s
+   so that a literal-shape demand would reach the named instance, and
+   nothing in the development makes one.
 2. `WType.para` supplies `Tree.duplicate` with no new recursion:
    redecorating each node with its own subtree is a paramorphism.
    `Tree.map` and `Tree.erase` need less than that — each changes a
    node's shape and not its children, so each is a morphism of
    polynomial functors.
+3. An unbounded arity imposes two obligations a fixed-arity parser does
+   not have. The loop over a node's children needs a recursion bound,
+   and the `List` that loop returns has to be transported into the
+   node's `Fin n`-indexed tuple. `Rose.parseChildren` discharges the
+   first; `Rose.ofList` is the transport discharging the second, with
+   `Rose.ofList_ofFn` the equation justifying it. The bare-tree JSON
+   and CBOR profiles above spell a fork as a two-element array, so
+   neither obligation arises at stages 1b and 1c.
 
 Remaining proof obligations, in dependency order: the retraction law for
-a second syntax; the cross-syntax agreement theorem; the lift of every
-syntax from `Ast` to `Doc`; injectivity of the annotation
-canonicalization `annCanon`, which
+a syntax over a second data model; the cross-syntax agreement theorem;
+the lift of every syntax from `Ast` to `Doc`; injectivity of the
+annotation canonicalization `annCanon`, which
 [Structural content-addressing specification](#structural-content-addressing-specification)
 specifies and no module defines; and the equivalence of the recursive
 and side-table document presentations.
@@ -1419,7 +1473,10 @@ everything feeding a hash.
 The table covers the scheduled stages; stage 5 below is contingent on
 language features that do not exist yet.
 
-The module is 50 theorems, 26 of them in `Csexp`;
+[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean)
+is 52 theorems, 26 of them in `Csexp`, and
+[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+a further 20;
 [Local verification](#local-verification) breaks them down by axiom.
 That is the only measured quantity, and one
 implementation is too small a base to extrapolate a schedule from, so
@@ -1566,16 +1623,22 @@ composes the rose bijection with the second, so it encodes the same
 trees in far fewer octets, carrying neither constructor tags nor binary
 scaffolding.
 
-It is not yet a syntax. `Retraction` needs a parser, and the rose
-spelling has variable-arity lists where the implemented one has fixed
-arity, so its parser needs a bounded inner loop over the children and
-its retraction proof needs to rebuild a W-type node from the list the
-loop returns — a transport along `List.length_ofFn` that the fixed-arity
-case never meets. `TODO.md` § Concrete-syntax prototype records it.
-Being still canonical S-expressions, it would not test data-model
-independence even once proved; its interest is as a second spelling over
-one grammar, and as the spelling that matches the abstract syntax's own
-reading.
+`Rose.parse` reads the spelling back and `Rose.parse_print` proves the
+retraction, so `Retraction` is instantiated at it;
+`Ast.parseViaRose_printViaRose` is the same law composed with the rose
+bijection, giving a second retraction on `Ast k`. Supplying no new data
+model, it tests nothing about data-model independence, for the reason
+[Local verification](#local-verification) gives. What
+distinguishes it from the implemented spelling is that a rose node's
+arity is unbounded: the parser reads until the closing parenthesis where
+the fixed-arity one reads exactly two children, so it carries a bounded
+inner loop
+(`Rose.parseChildren`) and
+its retraction rebuilds a W-type node from the `List` that loop returns
+(`Rose.ofList_ofFn`, a transport along `List.length_ofFn`). What it
+contributes is a second spelling over one grammar, the spelling that
+matches the abstract syntax's own reading, and the one place in this
+development where those two obligations are discharged.
 
 [FormalSExpr] is an expired individual submission with no IETF standing.
 Its value here is as a transcription target checked against the grammar,
@@ -1603,12 +1666,14 @@ decidable shapes and a finitely enumerable arity; `Ast.ind` recovers the two-con
 induction principle, so no proof about `Ast` case-splits on `Ast.Shape`
 or `Ast.Arity` except `Ast.ind` itself. Outside the proofs, what does
 case-split is the arity family, its `FinEnum` instance, the two
-constructors, and the three folds `Ast.size`, `Ast.toRose` and
-`Csexp.printAst`.
+constructors, and the four folds `Ast.size`, `Ast.toRose`,
+`Csexp.printAst` and `Ast.toCSexp`.
 `Ast.erase_trivialDoc` still drives its recursion by `WType.rec`
-directly, and the rose bijection's proofs destructure `Rose.Shape`,
-there being no `Rose.ind`. No `Repr` instance
-is derived for the three tree types, and nothing asks for one; `Ann`,
+directly, and four proofs destructure `Rose.Shape`, there being no
+`Rose.ind`: the rose bijection's `Ast.ofRose_snoc` and
+`Ast.toRose_ofRose`, and the parser's `Rose.exists_print_eq_cons` and
+`Rose.parseAux_print`. No `Repr` instance is derived for the four tree
+types, and nothing asks for one; `Ann`,
 an ordinary non-recursive structure, derives one.
 
 This repository separately carries the polynomial-functor presentation
