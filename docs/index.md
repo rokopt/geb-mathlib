@@ -854,9 +854,8 @@ import-direction rules above are enforced by
   `F X = Fin k + X × X`, presented as the W-type on `Ast.Shape k`:
   binary trees whose leaves carry a label in `Fin k`. `Ast.ind`
   recovers the two-constructor induction principle, so no proof about
-  `Ast` other than `Ast.ind` itself mentions the shape and arity
-  encoding; the rose bijection's proofs still destructure `Rose.Shape`,
-  there being no `Rose.ind`. `Geb.Tree k A` annotates every
+  `Ast` case-splits on `Ast.Shape` or `Ast.Arity`; only `Ast.ind` itself
+  and the three folds do. `Geb.Tree k A` annotates every
   node with an `A`, and carries `extract`/`duplicate` with the three
   comonad laws (`Tree.extract_duplicate`, `Tree.map_extract_duplicate`,
   `Tree.duplicate_duplicate`), the two functor laws (`Tree.map_id`,

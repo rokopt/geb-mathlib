@@ -600,9 +600,25 @@ meaning depends on it.
 `Geb.finEnumFin` and `Geb.finEnumEmpty` are choice-free `FinEnum`
 constructions with nothing syntax-specific about them, standing in for
 mathlib's `FinEnum.fin` and `FinEnum.empty`, which reach
-`Classical.choice` through `FinEnum.ofList`. The second module needing
-either moves them beside the choice-free decidability instances in
-`Geb/Mathlib/Data/FinEnum.lean`.
+`Classical.choice` through `FinEnum.ofList`. They duplicate
+`finEnumFin2` and `finEnumFin0` in
+`GebTests/Mathlib/Data/PFunctor/Presheaf/Fixtures.lean`, which take the
+same `Equiv.refl` route for the same reason. Moving all of them beside
+the choice-free decidability instances in `Geb/Mathlib/Data/FinEnum.lean`
+is a separate concern from the syntax layer, so it belongs on its own
+branch per [CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
+
+The decimal layer is larger than reuse would leave it. Core's
+`Nat.toDigits` is choice-free and on base 10 agrees with `Csexp.decOf`
+pointwise, and core states `Nat.isDigit_of_mem_toDigits`,
+`Nat.length_toDigits_pos`, `Nat.digitChar` and
+`Nat.toNat_digitChar_of_lt_ten`, which cover four of the five lemmas the
+retraction proof uses about the encoder. What core has no counterpart
+for is the decoder, so `Csexp.digitsVal` and `Csexp.digitsVal_decOf`
+stay either way; the question is whether proving the latter over core's
+big-endian `Nat.toDigits_eq_if` recursion costs less than the
+`Csexp.digitsLE`/`Csexp.ofLE` layer it would replace. Measure before
+deciding.
 
 ### Prose-conformance pass over the concrete-syntax survey
 
@@ -621,9 +637,14 @@ Two factual items ride along with that pass. The document's
 [docs/references.bib](docs/references.bib) holds for RFC 9804, RFC 6962
 and Uustalu and Vene 2011, and roughly thirty-five further works have no
 `.bib` entry and several no searchable identifier; and its
-§ CBOR (RFC 8949 §4.2) and DAG-CBOR attributes a quoted key-ordering
-rule to DAG-CBOR's specification without recording which of IPLD's two
-specification generations carries that wording.
+§ CBOR (RFC 8949 §4.2) and DAG-CBOR attributes to DAG-CBOR's
+specification both a key-ordering exception following RFC 7049 §3.9 and
+a codec-level 64-bit integer bound. A fetch of the current spec found
+neither: it cites RFC 8949 §4.2 for key ordering with no exception, and
+its limitations section discusses the JavaScript safe-integer range
+rather than i64. Whether an earlier IPLD specification generation
+carries them, or whether both attributions are wrong, is unsettled —
+the fetch was a single summarized retrieval and was not repeated.
 
 ## Triggers (do when condition fires)
 

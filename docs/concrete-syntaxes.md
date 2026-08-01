@@ -62,11 +62,12 @@ with tests in
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
 
-§ Local verification, § Roadmap with § Relation to existing repository
-content, § Caveats, and the paragraphs elsewhere that describe this
-repository's implementation were written here. The rest, between § The
-AST and its isomorphisms and § References, is inherited text and does
-not yet conform to
+This section, § Local verification, § Roadmap with § Relation to
+existing repository content, § Caveats, § References's opening
+paragraph, and the paragraphs elsewhere that describe this repository's
+implementation were written here. The rest, between § The AST and its
+isomorphisms and § References, is inherited text and does not yet
+conform to
 [CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references. `TODO.md`
 § Prose-conformance pass over the concrete-syntax survey records the
 outstanding pass, in the same terms.
@@ -177,11 +178,13 @@ node's output is copied once per ancestor. `Csexp.readVerbatim` evaluates
 `Csexp.readDigits` is a strict `List.rec` that traverses the rest of the
 input even when the first character is not a digit; the cost is the
 node count times the input length. Three repairs would restore
-linearity: an accumulator-passing printer, a reader carrying the
-remaining length rather than measuring it, and a `readDigits` that stops
-at the first non-digit. Each costs restating and reproving
-`parseAst_printAst` and `parse_print`, which are stated about the
-present maps.
+linearity, and they cost differently. A reader carrying the remaining
+length, and a `readDigits` that stops at the first non-digit, restate
+`readVerbatim_append` and `readDigits_append` and reprove the retraction
+chain above them. An accumulator-passing printer additionally restates
+`printAst_leaf`, `printAst_fork`, `size_le_length_printAst` and
+`parseAst_printAst`, all of which are stated about the present
+`printAst`.
 
 Parsing, printing and the fold are elementary — indeed they sit in the
 lower-elementary
@@ -692,12 +695,17 @@ normative Geb binary syntax, matching the IETF standard, the CDE draft,
 and the verified implementation. Then choose **map-free encodings** —
 positional arrays instead of string-keyed maps.
 
-The two divergences are of different kinds. DAG-CBOR **restricts which
-values are expressible** — string keys only, tag 42 only, 64-bit floats
-only, integers within i64 — and for a value both admit, the only
-divergence in **byte layout** is map key ordering. An item that is
-map-free and stays inside those value restrictions therefore encodes to
-identical bytes under both. This removes the hazard rather than
+The divergences are of two kinds. DAG-CBOR **restricts which values are
+expressible** — string keys only, tag 42 only, no bignum tags. For a
+value both codecs admit, **byte layout** diverges in two places: map key
+ordering, and floats, which §4.2.1 requires in the shortest form
+preserving the value while DAG-CBOR requires 64-bit always, so `1.5` is
+`f9 3e00` under one and `fb 3ff8000000000000` under the other. An item
+that is map-free and float-free, and stays inside DAG-CBOR's value
+restrictions, therefore encodes to identical bytes under both. The Geb
+encodings are float-free: the annotated CBOR document in
+[One tree, every recommended encoding](#one-tree-every-recommended-encoding)
+contains no float. This removes the hazard rather than
 documenting it, and it costs only the self-description that map keys
 would have provided, which the format tag in position 0 restores.
 
@@ -1109,7 +1117,8 @@ JSON, compact core encoding (leaf = integer, fork = 2-element array):
 [0, [2, 1]]
 ```
 
-JSON, annotated document. Keys are ASCII only, so the JCS and DAG-JSON
+JSON, annotated document, shown in source order rather than canonical
+order. Keys are ASCII only, so the JCS and DAG-JSON
 orders coincide; the CBOR encoding below is map-free, so no CBOR key
 order is ever computed:
 
@@ -1323,9 +1332,12 @@ and side-table document presentations.
 ## Roadmap
 
 The order is: get the bare tree round-tripping in three syntaxes, then
-lift to the annotated document, then hash. Fixing `annCanon`, the
-multihash codes, the CID layout and the version numbers first would
-specify a component whose hash function does not yet exist in Lean — see
+lift to the annotated document, then hash. Settling `annCanon`, the
+multihash codes, the CID layout and the version numbers *normatively*
+first — as against writing them down as the candidate specification
+[Structural content-addressing specification](#structural-content-addressing-specification)
+is — would fix a component whose hash function does not yet exist in
+Lean — see
 [Ecosystem notes](#ecosystem-notes) — against no running code. What
 must be fixed before those identifiers are *used*, rather than before
 implementation begins, is the annotation vocabulary, the two key forms
@@ -1430,11 +1442,13 @@ recursion through the equation compiler, and is not available.
 Nothing the syntax layer needs is forfeited.
 [Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean)
 supplies the fold's computation rule and its uniqueness, the
-paramorphism `WType.para`, and a `DecidableEq` instance needing only a
-finitely enumerable arity; `Ast.ind` recovers the two-constructor
-induction principle, so no proof about `Ast` other than `Ast.ind` itself
-mentions the shape and arity encoding. The rose bijection's proofs still
-destructure `Rose.Shape`, there being no `Rose.ind`. No `Repr` instance
+paramorphism `WType.para`, and a `DecidableEq` instance needing
+decidable shapes and a finitely enumerable arity; `Ast.ind` recovers the two-constructor
+induction principle, so no proof about `Ast` case-splits on `Ast.Shape`
+or `Ast.Arity`; only `Ast.ind` itself and the three folds do.
+`Ast.erase_trivialDoc` still drives its recursion by `WType.rec`
+directly, and the rose bijection's proofs destructure `Rose.Shape`,
+there being no `Rose.ind`. No `Repr` instance
 is derived for the three tree types, and nothing asks for one; `Ann`,
 an ordinary non-recursive structure, derives one.
 
@@ -1468,8 +1482,9 @@ machinery needs it, which the parse and print layer does not.
 - **`printDoc` must be injective**, so either the printer distinguishes
   every redundant representation in `D`, or `D` carries none — with
   annotation collections canonically ordered and duplicate-free by
-  construction. `Doc k` as declared takes the first branch;
-  [Roadmap](#roadmap) records the choice `Ann.links` still poses.
+  construction. `Doc k` as declared carries redundancy in
+  `Ann.links : List String`, which forecloses the second branch until
+  that field is settled; [Roadmap](#roadmap) records the choice.
 - **Content addressing conflates occurrences.** Hash-keyed annotation
   tables attach metadata to every equal subtree; per-occurrence
   annotation needs `(rootCoreId, path)` keys, and paths depend on the
