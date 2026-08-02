@@ -1172,6 +1172,38 @@ def unitPsh (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
       reindex_id := by intro j a i d; exact PEmpty.elim d.1
       reindex_comp := by intro j j' j'' g h a i d; exact PEmpty.elim d.1 }
 
+/-- The unit at the shape universe the `ι` rule forces. `unitPsh`'s shape type
+is `J` itself, at `uJ`, where `iotaPresheaf`'s is the total space of a
+hom-family, at `max uJ vJ`; a code system carrying both rules needs them in one
+`PresheafPFunctor` universe, so this lifts the shape type. -/
+def unitPshLiftData (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
+    PresheafPFunctorData.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
+  A := ULift.{vJ} J
+  B := fun _ ↦ PEmpty
+  r := fun x ↦ PEmpty.elim x.2
+  q := ULift.down
+  directionRestr := fun _ {_ _} _g d ↦ PEmpty.elim d.1
+  shapeRestr := fun {_ j'} _g _s ↦ ⟨⟨j'⟩, rfl⟩
+  reindex := fun {_ _} _g _a {_} d ↦ PEmpty.elim d.1
+
+set_option linter.checkUnivs false in
+/-- The lifted unit is a genuine `PresheafPFunctor`: its direction fibers are
+empty and its shape presheaf is terminal. -/
+def unitPshLift (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
+    PresheafPFunctor.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
+  toPresheafPFunctorData := unitPshLiftData I J
+  isFunctorial :=
+    { directionRestr_id := by intro a i; funext d; exact PEmpty.elim d.1
+      directionRestr_comp := by intro a i i' i'' f g; funext d; exact PEmpty.elim d.1
+      shapeRestr_id := by
+        intro j
+        funext s
+        exact Subtype.ext (congrArg ULift.up s.2.symm)
+      shapeRestr_comp := by intro j j' j'' g h; funext s; rfl
+      reindex_naturality := by intro j j' g a i i' f; funext d; exact PEmpty.elim d.1
+      reindex_id := by intro j a i d; exact PEmpty.elim d.1
+      reindex_comp := by intro j j' j'' g h a i d; exact PEmpty.elim d.1 }
+
 /-- The arity of `arityVaries`, presented as a `ShapeArity` over `unitPsh`: one
 direction over the shape at `1`, none over the shape at `0`, reindexed along
 `0 ⟶ 1` by the map out of the empty type. -/
@@ -1636,30 +1668,35 @@ The input side is the fixed pair `(I, D)`; the interpretation's input base is
 `ElObj D`. Universes are pinned so that `Cat.{v, u}` is closed under both
 continuation steps. -/
 def CodeShape (𝔹 : Cat.{v, u}) : Type (max (u + 1) v) :=
-  𝔹 ⊕ ((𝔹ᵒᵖ ⥤ Type u) ⊕
-    {A : BaseArity.{u, u, u, u, v} I 𝔹 // A.IsFunctorial})
+  PUnit.{1} ⊕ (𝔹 ⊕ ((𝔹ᵒᵖ ⥤ Type u) ⊕
+    ({A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) 𝔹 // A.IsFunctorial} ⊕
+      {A : BaseArity.{u, u, u, u, v} I 𝔹 // A.IsFunctorial})))
 
 set_option linter.checkUnivs false in
 /-- The subcode slots of a code shape: none for `ι`, one for `σ` and `δ`. -/
-def CodeDir (𝔹 : Cat.{v, u}) : CodeShape I 𝔹 → Type
+def CodeDir (𝔹 : Cat.{v, u}) : CodeShape I D 𝔹 → Type
   | Sum.inl _ => PEmpty.{1}
-  | Sum.inr _ => PUnit.{1}
+  | Sum.inr (Sum.inl _) => PEmpty.{1}
+  | Sum.inr (Sum.inr _) => PUnit.{1}
 
 set_option linter.checkUnivs false in
 /-- The base category the subcode of a code shape lives over: the category of
 elements of `S` for `σ`, and of the decoding presheaf of `A` for `δ`. `Cat` is
 closed under both, which is what lets the codes be an ordinary W-type. -/
-def CodeNext (𝔹 : Cat.{v, u}) : (sh : CodeShape I 𝔹) → CodeDir I 𝔹 sh → Cat.{v, u}
+def CodeNext (𝔹 : Cat.{v, u}) : (sh : CodeShape I D 𝔹) → CodeDir I D 𝔹 sh → Cat.{v, u}
   | Sum.inl _, b => PEmpty.elim b
-  | Sum.inr (Sum.inl S), _ => Cat.of (ElObj.{u, u, v} S)
-  | Sum.inr (Sum.inr ⟨A, hA⟩), _ => Cat.of (ElObj.{u, u, v} (decPresheaf A hA D))
+  | Sum.inr (Sum.inl _), b => PEmpty.elim b
+  | Sum.inr (Sum.inr (Sum.inl S)), _ => Cat.of (ElObj.{u, u, v} S)
+  | Sum.inr (Sum.inr (Sum.inr (Sum.inl _))), _ => 𝔹
+  | Sum.inr (Sum.inr (Sum.inr (Sum.inr ⟨A, hA⟩))), _ =>
+      Cat.of (ElObj.{u, u, v} (decPresheaf A hA D))
 
 set_option linter.checkUnivs false in
 /-- The slice polynomial functor on `Cat` whose W-type is the type of codes. -/
 def codePFunctor :
     SlicePFunctor.{max (u + 1) (v + 1), 0,
       max (u + 1) (v + 1), max (u + 1) (v + 1)} Cat.{v, u} Cat.{v, u} where
-  toPFunctor := ⟨Σ 𝔹 : Cat.{v, u}, CodeShape I 𝔹, fun x ↦ CodeDir I x.1 x.2⟩
+  toPFunctor := ⟨Σ 𝔹 : Cat.{v, u}, CodeShape I D 𝔹, fun x ↦ CodeDir I D x.1 x.2⟩
   r := fun x ↦ CodeNext I D x.1.1 x.1.2 x.2
   q := fun x ↦ x.1
 
@@ -1680,13 +1717,17 @@ set_option linter.checkUnivs false in
 already at the base its slot prescribes: `ι` is the unit, `σ` is the base
 change, `δ` is the fused rule. -/
 def codeAlgOn (𝔹 : Cat.{v, u}) :
-    (sh : CodeShape I 𝔹) →
-      ((b : CodeDir I 𝔹 sh) →
+    (sh : CodeShape I D 𝔹) →
+      ((b : CodeDir I D 𝔹 sh) →
         PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) (CodeNext I D 𝔹 sh b)) →
       PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) 𝔹
-  | Sum.inl j₀, _ => iotaPresheaf (I := ElObj.{u, u, u} D) j₀
-  | Sum.inr (Sum.inl S), c => sigmaPsh S (c PUnit.unit)
-  | Sum.inr (Sum.inr ⟨A, hA⟩), c => deltaFused A hA D (c PUnit.unit)
+  | Sum.inl _, _ => unitPshLift (ElObj.{u, u, u} D) 𝔹
+  | Sum.inr (Sum.inl j₀), _ => iotaPresheaf (I := ElObj.{u, u, u} D) j₀
+  | Sum.inr (Sum.inr (Sum.inl S)), c => sigmaPsh S (c PUnit.unit)
+  | Sum.inr (Sum.inr (Sum.inr (Sum.inl ⟨A, hA⟩))), c =>
+      delta (c PUnit.unit) (A.pullback (c PUnit.unit).toPresheafPFunctorData)
+        (A.isFunctorial_pullback hA (c PUnit.unit))
+  | Sum.inr (Sum.inr (Sum.inr (Sum.inr ⟨A, hA⟩))), c => deltaFused A hA D (c PUnit.unit)
 
 set_option linter.checkUnivs false in
 /-- The slice algebra the interpretation folds with. -/
@@ -1711,14 +1752,23 @@ set_option linter.checkUnivs false in
 induction recursion's `ι : O → IR I O`. -/
 def iotaCode (𝔹 : Cat.{v, u}) (j₀ : 𝔹) : Code.{u, v} I D :=
   SlicePFunctor.W.mk
-    ⟨⟨⟨𝔹, Sum.inl j₀⟩, fun b ↦ PEmpty.elim b⟩, funext fun b ↦ PEmpty.elim b⟩
+    ⟨⟨⟨𝔹, Sum.inr (Sum.inl j₀)⟩, fun b ↦ PEmpty.elim b⟩, funext fun b ↦ PEmpty.elim b⟩
+
+set_option linter.checkUnivs false in
+/-- The unit code over `𝔹`: the terminal shape presheaf, no directions. Small
+induction recursion carries no separate rule for this, its `ι` being terminal
+over a discrete base; over a category the two part. -/
+def unitCode (𝔹 : Cat.{v, u}) : Code.{u, v} I D :=
+  SlicePFunctor.W.mk
+    ⟨⟨⟨𝔹, Sum.inl PUnit.unit⟩, fun b ↦ PEmpty.elim b⟩, funext fun b ↦ PEmpty.elim b⟩
 
 set_option linter.checkUnivs false in
 /-- The `σ` code over `𝔹`. -/
 def sigmaCode (𝔹 : Cat.{v, u}) (S : 𝔹ᵒᵖ ⥤ Type u) (K : Code.{u, v} I D)
     (hK : (codePFunctor.{u, v} I D).wIndex K = Cat.of (ElObj.{u, u, v} S)) :
     Code.{u, v} I D :=
-  SlicePFunctor.W.mk ⟨⟨⟨𝔹, Sum.inr (Sum.inl S)⟩, fun _ ↦ K⟩, funext fun _ ↦ hK⟩
+  SlicePFunctor.W.mk
+    ⟨⟨⟨𝔹, Sum.inr (Sum.inr (Sum.inl S))⟩, fun _ ↦ K⟩, funext fun _ ↦ hK⟩
 
 set_option linter.checkUnivs false in
 /-- The `δ` code over `𝔹`: adjoin the output-varying arity `A`, the subcode
@@ -1728,7 +1778,22 @@ def deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I 𝔹) (hA : A
     (hK : (codePFunctor.{u, v} I D).wIndex K =
       Cat.of (ElObj.{u, u, v} (decPresheaf A hA D))) :
     Code.{u, v} I D :=
-  SlicePFunctor.W.mk ⟨⟨⟨𝔹, Sum.inr (Sum.inr ⟨A, hA⟩)⟩, fun _ ↦ K⟩, funext fun _ ↦ hK⟩
+  SlicePFunctor.W.mk
+    ⟨⟨⟨𝔹, Sum.inr (Sum.inr (Sum.inr (Sum.inr ⟨A, hA⟩)))⟩, fun _ ↦ K⟩,
+      funext fun _ ↦ hK⟩
+
+set_option linter.checkUnivs false in
+/-- The non-recursive `δ` code over `𝔹`: adjoin the output-varying arity `A`
+without summing over its decodings, so the subcode sits over `𝔹` itself. This
+is the rule the p.r.a. formula needs, `deltaCode` adding the decodings to the
+shapes. -/
+def deltaPlainCode (𝔹 : Cat.{v, u})
+    (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) 𝔹)
+    (hA : A.IsFunctorial) (K : Code.{u, v} I D)
+    (hK : (codePFunctor.{u, v} I D).wIndex K = 𝔹) : Code.{u, v} I D :=
+  SlicePFunctor.W.mk
+    ⟨⟨⟨𝔹, Sum.inr (Sum.inr (Sum.inr (Sum.inl ⟨A, hA⟩)))⟩, fun _ ↦ K⟩,
+      funext fun _ ↦ hK⟩
 
 /-- The interpretation of an `ι` code is the constant functor at the
 representable presheaf `y j₀`. Over a discrete base a morphism `j' ⟶ j₀` is an
@@ -1737,6 +1802,12 @@ equality, which is small induction recursion's own `ι` semantics; see
 theorem interp_iotaCode (𝔹 : Cat.{v, u}) (j₀ : 𝔹) :
     interp.{u, v} I D (iotaCode I D 𝔹 j₀) =
       ⟨𝔹, iotaPresheaf (I := ElObj.{u, u, u} D) j₀⟩ := rfl
+
+set_option linter.checkUnivs false in
+/-- The interpretation of a unit code is the terminal shape presheaf. -/
+theorem interp_unitCode (𝔹 : Cat.{v, u}) :
+    interp.{u, v} I D (unitCode I D 𝔹) =
+      ⟨𝔹, unitPshLift (ElObj.{u, u, u} D) 𝔹⟩ := rfl
 
 /-- The index of a code is the base its interpretation lands in. -/
 theorem interp_fst (K : Code.{u, v} I D) :
@@ -1764,6 +1835,53 @@ theorem interp_deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I �
         PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) 𝔻)
         ((interp_fst I D K).trans hK)) (interp I D K).2)⟩ := rfl
 
+
+set_option linter.checkUnivs false in
+/-- The interpretation of a non-recursive `δ` code adjoins the arity to its
+subcode's interpretation, over the same base. -/
+theorem interp_deltaPlainCode (𝔹 : Cat.{v, u})
+    (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) 𝔹) (hA : A.IsFunctorial)
+    (K : Code.{u, v} I D) (hK : (codePFunctor.{u, v} I D).wIndex K = 𝔹) :
+    interp I D (deltaPlainCode I D 𝔹 A hA K hK) =
+      ⟨𝔹, delta (cast (congrArg (fun 𝔻 : Cat.{v, u} ↦
+          PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) 𝔻)
+          ((interp_fst I D K).trans hK)) (interp I D K).2)
+        (A.pullback _) (A.isFunctorial_pullback hA _)⟩ := rfl
+
+set_option linter.checkUnivs false in
+/-- The `σ`-`δ`-unit chain as a code: `σ` at an arbitrary shape presheaf `T`,
+over the non-recursive `δ` at an arbitrary arity, over the unit. -/
+def praWitnessCode (𝔹 : Cat.{v, u}) (T : 𝔹ᵒᵖ ⥤ Type u)
+    (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
+    (hA : A.IsFunctorial) : Code.{u, v} I D :=
+  sigmaCode I D 𝔹 T
+    (deltaPlainCode I D (Cat.of (ElObj.{u, u, v} T)) A hA
+      (unitCode I D (Cat.of (ElObj.{u, u, v} T))) rfl) rfl
+
+set_option linter.checkUnivs false in
+/-- Its interpretation is the chain `praWitnessShapeEquiv` and
+`praWitnessDirEquiv` identify: shape presheaf `T`, directions the arity. So the
+code system reaches the p.r.a. formula's data, which no chain over
+`iotaCode` could (`elSliceEquiv`). -/
+theorem interp_praWitnessCode (𝔹 : Cat.{v, u}) (T : 𝔹ᵒᵖ ⥤ Type u)
+    (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
+    (hA : A.IsFunctorial) :
+    interp I D (praWitnessCode I D 𝔹 T A hA) =
+      ⟨𝔹, sigmaPsh T (delta
+        (unitPshLift (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
+        (A.pullback _) (A.isFunctorial_pullback hA _))⟩ := rfl
+
+set_option linter.checkUnivs false in
+/-- The chain's shape presheaf is `T`, pinned on the code's interpretation
+rather than on the semantic witness. -/
+def interpPraWitnessCodeShapeEquiv (𝔹 : Cat.{v, u}) (T : 𝔹ᵒᵖ ⥤ Type u)
+    (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
+    (hA : A.IsFunctorial) (j : 𝔹) :
+    (interp I D (praWitnessCode I D 𝔹 T A hA)).2.Shape j ≃ T.obj ⟨j⟩ where
+  toFun x := match x with | ⟨⟨⟨_, t⟩⟩, rfl⟩ => t
+  invFun t := ⟨⟨⟨j, t⟩⟩, rfl⟩
+  left_inv := by rintro ⟨⟨⟨j', t⟩⟩, rfl⟩; rfl
+  right_inv := by intro t; rfl
 
 set_option linter.checkUnivs false in
 /-- A `δ` *code* whose interpretation lies outside the bound. This carries
