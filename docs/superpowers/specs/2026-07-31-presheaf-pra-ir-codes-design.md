@@ -123,7 +123,7 @@ generalization conservative.
 | --- | --- | --- | --- |
 | `ι` | takes `o : O`, denoting `o' ↦ (o' = o)` | takes `j₀ : 𝔹`, denoting `j' ↦ Hom(j', j₀)` — the representable | Confirmed. `interp_iotaCode` folds `iotaCode 𝔹 j₀` to `iotaPresheaf j₀`; `iotaDiscreteShapeEquiv` is the discrete collapse |
 | `σ` | takes `S : Set` and a family `K : S → IR I O`, denoting a coproduct | takes `S : 𝔹ᵒᵖ ⥤ Type u` and one subcode over `el(S)`, denoting the dependent sum along `el(S) → 𝔹` | Open, and the one place the parallel does not yet line up; see open question 7 |
-| `δ` | takes `P : Set` and `P → I` | takes a `BaseArity`, whose fibrewise datum is a discrete fibration over `I` and whose output-indexing is functorial | Confirmed. `DomArity.presheaf` and `BaseArity.functor`; [nLabParametricRightAdjoint] is the characterization that fixes it |
+| `δ` | takes `P : Set` and `i : P → I`, the node's directions and their labelling | takes a `BaseArity`; each `fam j` is a discrete fibration over `I`, in the same directions role, and the output-indexing is functorial | Confirmed. `DomArity.presheaf` and `BaseArity.functor`; [nLabParametricRightAdjoint] is the characterization that fixes it |
 
 Two facts recur across the confirmations and are stated once here rather than
 at each site. First, a total space costs one universe: `Interp`'s shape
@@ -259,13 +259,33 @@ index-labelling and the decoding of the recursive arguments; in that paper's
 by the decodings `(p : P) → D (i p)`.
 
 The presheaf setting forces the split, and what it forces the arity to be is
-fixed by the ambient characterization rather than by this design:
+fixed by the ambient characterization rather than by this design.
 [nLabParametricRightAdjoint] presents the p.r.a. functors between presheaf
-categories as the polynomials in `Cat` whose middle leg is a discrete
-fibration. A discrete fibration over `I` is a presheaf on `I`, presented by its
-total space, and that is what `DomArity` is — `carrier`, `proj`, and a
-contravariant action on the fibres of `proj`. `DomArity.presheaf` makes the
-identification and `DomArity.ofPresheaf` inverts it; `dirEquivOfPresheaf`,
+categories as the polynomials `I ← E → K → J` in `Cat` in which the last leg `K
+→ J` is a discrete fibration and the first two form a two-sided discrete
+fibration, the leg into `I` being a fibration and the leg into `K` an
+opfibration.
+
+The first condition is this repository's shape presheaf: `q : A → J` with
+`shapeRestr` and its two laws is a discrete fibration over `J`. *Inference, not
+elaborated*: the second condition is the arity side, the fibration into `I`
+being the presheaf structure carried at each shape and the two-sidedness the
+compatibility `reindex` and `ReindexNaturality` impose between that structure
+and shape restriction. Nothing here identifies the two presentations; what is
+elaborated is only that the arity datum is a presheaf on `I`.
+
+A discrete fibration over `I` is a presheaf on `I` presented by the total space
+of its own fibres — not to be confused with the polynomial's `E`, the total
+space of directions over shapes — and that is what `DomArity` is: `carrier`,
+`proj`, and a contravariant action on the fibres of `proj`. It is the arity at
+*one* shape, occupying the `B`-slot of `deltaData`, where `ShapeArity.fam` and
+`BaseArity.fam` supply the parameterization by shape and by output object; the
+paper's `P` and `i : P → I` are `carrier` and `proj`, and the decodings that
+`δ` turns into shapes are `PshMor`, reaching the shape presheaf through
+`sigmaPsh` rather than through the arity. The total-space presentation is what
+`deltaData` consumes, needing one type per shape in its `B`-slot and recovering
+the `I`-indexing through `r`; `DomArity.presheaf` is the fibrewise form,
+`ofPresheaf` converts back, and `dirEquivOfPresheaf`,
 `dirEquivOfPresheaf_restr` and `sigmaDirEquivCarrier` are the round trips. The
 labelling is therefore code data carrying presheaf structure, which is the
 separation `IIR` makes and `IR` does not.
@@ -891,8 +911,9 @@ Each key is cited in the body above; the bibliographic detail lives in
   statement, Lemma 1 for completeness.
 - [Weber2007] — parametric right adjoints and familial functors.
 - [nLabParametricRightAdjoint] — the presentation of presheaf p.r.a. functors
-  as the polynomials in `Cat` whose middle leg is a discrete fibration, which
-  is what fixes `δ`'s arity datum.
+  as the polynomials `I ← E → K → J` in `Cat` whose last leg is a discrete
+  fibration and whose first two form a two-sided discrete fibration, which is
+  what fixes the shape and arity data.
 - [MacLaneMoerdijk1992] — the category of elements.
 - [GambinoKock2013] — polynomial functors. The result
   [HancockMcBrideGhaniMalatestaAltenkirch2013] restates as its Theorem 1 is
