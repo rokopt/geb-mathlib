@@ -305,14 +305,14 @@ A discrete fibration over `I` is a presheaf on `I` presented by the total space
 of its own fibres — not to be confused with the polynomial's `E`, the total
 space of directions over shapes — and that is what `DomArity` is: `carrier`,
 `proj`, and a contravariant action on the fibres of `proj`. It is the arity at
-*one* shape, occupying the `B`-slot of `deltaData`, where `ShapeArity.fam` and
-`BaseArity.fam` supply the parameterization by shape and by output object; the
-paper's `P` and `i : P → I` are `carrier` and `proj`, and the decodings that
-`δ` turns into shapes are `PshMor`, reaching the shape presheaf through
-`sigmaPsh` rather than through the arity. The total-space presentation is what
-`deltaData` consumes, needing one type per shape in its `B`-slot and recovering
-the `I`-indexing through `r`; `DomArity.presheaf` is the fibrewise form,
-`ofPresheaf` converts back, and `dirEquivOfPresheaf`,
+*one* shape, occupying the `B`-slot of `adjoinArityData`, where
+`ShapeArity.fam` and `BaseArity.fam` supply the parameterization by shape and
+by output object; the paper's `P` and `i : P → I` are `carrier` and `proj`, and
+the decodings that `δ` turns into shapes are `PshMor`, reaching the shape
+presheaf through `sigmaPsh` rather than through the arity. The total-space
+presentation is what `adjoinArityData` consumes, needing one type per shape in
+its `B`-slot and recovering the `I`-indexing through `r`; `DomArity.presheaf`
+is the fibrewise form, `ofPresheaf` converts back, and `dirEquivOfPresheaf`,
 `dirEquivOfPresheaf_restr` and `sigmaDirEquivCarrier` are the round trips. The
 labelling is therefore code data carrying presheaf structure, which is the
 separation `IIR` makes and `IR` does not.
@@ -362,14 +362,33 @@ constructors, with the semantic operation each folds to:
 | unit | `unitCode 𝔹` | `unitPshLift` — terminal shape presheaf, no directions |
 | `ι` | `iotaCode 𝔹 j₀` | `iotaPresheaf j₀` — the constant functor at the representable `y j₀`, no directions |
 | `σ` | `sigmaCode 𝔹 S K (hK : wIndex K = Cat.of (ElObj S))` | `sigmaPsh S` — push a functor over `ElObj S` forward to `𝔹` |
-| `δ` non-recursive | `deltaPlainCode 𝔹 A hA K (hK : wIndex K = 𝔹)` | `delta` at `A.pullback` — adjoin the arity, the subcode over the same base |
-| `δ` fused | `deltaCode 𝔹 A hA K (hK : wIndex K = Cat.of (ElObj (decPresheaf A hA D)))` | `deltaFused A hA D` — adjoin the output-varying arity `A`, the continuation depending on its decoding |
+| `δ` non-recursive | `deltaPlainCode 𝔹 A hA K (hK : wIndex K = 𝔹)` | `adjoinArity` at `A.pullback` — adjoin the arity, the subcode over the same base |
+| `δ` fused | `deltaCode 𝔹 A hA K (hK : wIndex K = Cat.of (ElObj (decPresheaf A hA D)))` | `delta A hA D` — adjoin the output-varying arity `A`, the continuation depending on its decoding |
+
+`delta` decomposes as `sigmaPsh (decPresheaf A hA D) ∘ adjoinArity`: the inner
+factor adjoins the directions, and the outer takes the coproduct over the
+decodings, `decPresheaf` at `b` being the decodings at `b`. That coproduct is
+the shape half of Dybjer–Setzer's `δ` under the regrouping `Σ_{g : P → X} ⟦F (f
+∘ g)⟧ = Σ_{d : P → D} (sections of f over d) × ⟦F d⟧`, the same regrouping
+`deltaRec` rests on. `adjoinArity` alone is not `δ` and is named accordingly;
+it leaves the shapes untouched.
 
 The two `δ` rules take arities over different categories: the fused rule's is a
 `BaseArity 𝕀 𝔹` over the raw input base, whose decodings into `D` it sums,
 where the non-recursive rule's is a `BaseArity (el(D)ᵒᵖ) 𝔹` over the
-interpretation's own input base, there being no decodings to sum. `CodeShape`
-therefore depends on `D`.
+interpretation's own input base. There a direction's label carries its own
+decoding value, so the coproduct is absorbed into the labelling rather than
+appearing as shapes — the collapse `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)` seen from the
+arity side. `CodeShape` therefore depends on `D`.
+
+*Implementation note.* No operation's `A` field grows when a coproduct of shape
+presheaves is taken, which reads as though nothing happens. A shape presheaf
+here is a total space `A` fibred by `q` (`SlicePFunctor.Shape` is the fibre of
+`q`), so a coproduct over the fibres of a discrete fibration is a re-fibring of
+the same total space rather than an enlargement: `sigmaPsh` changes only `q`,
+and `Σ_{s ∈ S j} F.Shape ⟨j, s⟩` and `F.A` over `ElObj S` are the same total
+space, which is `elSliceEquiv` once more. `coprod` does enlarge `A`, its index
+being a bare type rather than the fibres of a fibration.
 
 The `σ` and fused-`δ` continuations sit over a category of elements the shape
 determines, the non-recursive `δ`'s over the shape's own base, so each rule has
@@ -380,8 +399,8 @@ records that a code's index is the base its interpretation lands in.
 
 Every operation and generator named in this document is a `PresheafPFunctor` —
 that is, all seven functor laws are proved, not assumed: `unitPsh`,
-`iotaPresheaf`, `iotaConst`, `sigmaPsh`, `delta`, `coprod`, `deltaRec` and
-`deltaFused`. The last two are composites of the others and so inherit their
+`iotaPresheaf`, `iotaConst`, `sigmaPsh`, `adjoinArity`, `coprod`, `deltaRec`
+and `delta`. The last two are composites of the others and so inherit their
 laws rather than needing new ones. `unitPsh` is no longer among the code
 system's semantics; it survives as a semantic operation, as a generator of the
 fragment below, and as the base of the `arityVaries` fixtures.
@@ -398,23 +417,24 @@ constant-arity reading of `ι` / `σ` / `δ` does not suffice.
   (`hasBijectiveReindex_coprod`) and by the `σ` base change
   (`hasBijectiveReindex_sigmaPsh`); and a `δ` inherits it from the adjoined
   arity's own reindexing together with the subfunctor's
-  (`hasBijectiveReindex_delta` requires both), in particular from a constant
-  arity, whose reindexing is the identity (`hasBijectiveReindex_deltaConst`).
-  Only that direction is proved; the converse is not used.
+  (`hasBijectiveReindex_adjoinArity` requires both), in particular from a
+  constant arity, whose reindexing is the identity
+  (`hasBijectiveReindex_adjoinArityConst`). Only that direction is proved; the
+  converse is not used.
 - `arityVaries`, a functor whose output base is the walking arrow, whose shape
   presheaf is terminal and whose arity is inhabited over `1` and empty over
   `0`, does not satisfy it (`not_hasBijectiveReindex_arityVaries`).
 
 Define the *constant-arity fragment* once, as a generator and operation list:
 its generators are `unitPsh`, `iotaPresheaf` and `iotaConst`; its operations
-are `coprod`, `sigmaPsh`, `delta` at a `ShapeArity.const` — written
+are `coprod`, `sigmaPsh`, `adjoinArity` at a `ShapeArity.const` — written
 `deltaConst` below, though the prototype names only the lemma
-`hasBijectiveReindex_deltaConst` and not the operation — and `deltaRec`. Every
-`δ` in it adjoins an arity constant over the output object; `deltaConst` is the
-case with a single continuation and `deltaRec` the case with a continuation
-indexed by the decoding, and both are primitives of the fragment, `deltaRec`
-because obligation 7's code type must carry the decoding-indexed subcode family
-in order to contain Section 6's `δ`.
+`hasBijectiveReindex_adjoinArityConst` and not the operation — and `deltaRec`.
+Every `δ` in it adjoins an arity constant over the output object; `deltaConst`
+is the case with a single continuation and `deltaRec` the case with a
+continuation indexed by the decoding, and both are primitives of the fragment,
+`deltaRec` because obligation 7's code type must carry the decoding-indexed
+subcode family in order to contain Section 6's `δ`.
 
 The fragment contains the presheaf reading of the rules of
 [HancockMcBrideGhaniMalatestaAltenkirch2013] Section 6 — `iotaPresheaf` for its
@@ -441,9 +461,9 @@ that code type and running the induction is obligation 7.
 
 The replacement is `ShapeArity`: an arity varying over the shape presheaf,
 which is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`.
-`deltaVarying` is the `δ` carrying `arityVaries`'s arity, and
-`not_hasBijectiveReindex_deltaVarying` records that it lies outside the bound.
-It is not `arityVaries`: its directions are `arityB a ⊕ PEmpty`, and no
+`adjoinArityVarying` is the `δ` carrying `arityVaries`'s arity, and
+`not_hasBijectiveReindex_adjoinArityVarying` records that it lies outside the
+bound. It is not `arityVaries`: its directions are `arityB a ⊕ PEmpty`, and no
 isomorphism is constructed.
 
 The result is syntactic: it bounds what the constructions produce on the nose,
@@ -464,11 +484,11 @@ elaborated*: regrouping `IR.delta`'s coproduct over assignments by the decoding
 each induces presents it as a coproduct, over the decodings `PshMor G D`, of
 non-recursive `δ`s at the corresponding fibre arity (`fibreArity`, whose
 closure under restriction is exactly the decoding's naturality). It needs no
-new functoriality proof, being built from `coprod` and `delta`. Its adjoined
-arity is constant over the output, so it lies inside the same bound as
+new functoriality proof, being built from `coprod` and `adjoinArity`. Its
+adjoined arity is constant over the output, so it lies inside the same bound as
 `deltaConst` (`hasBijectiveReindex_deltaRec`).
 
-`deltaFused` has both. Three steps, none of them a new operation:
+`delta` has both. Three steps, none of them a new operation:
 
 1. The decodings of an output-varying arity form a presheaf on the output base
    (`decPresheaf`), restriction along `g : b' ⟶ b` being precomposition with
@@ -476,11 +496,11 @@ arity is constant over the output, so it lies inside the same bound as
 2. Over `ElObj (decPresheaf A hA D)` every object carries its own decoding, so
    the adjoined arity is an ordinary `BaseArity` there (`decArity`,
    `isFunctorial_decArity`), and `BaseArity.pullback` turns it into the
-   shape-indexed arity `delta` consumes.
+   shape-indexed arity `adjoinArity` consumes.
 3. `sigmaPsh` pushes the result forward to the output base.
 
-`not_hasBijectiveReindex_deltaFusedVaries` checks that the fusion does not cost
-the output-varying arity: at the terminal decoding the fused `δ` at an
+`not_hasBijectiveReindex_deltaVaries` checks that the fusion does not cost the
+output-varying arity: at the terminal decoding the fused `δ` at an
 output-varying arity still lies outside the bound.
 `subsingleton_pshMor_to_terminal` states the degeneracy in general; the
 prototype does not instantiate it at `termPsh`, so the witness rests on the
@@ -495,7 +515,7 @@ A code's `δ` cannot mention its subcode's shapes, so its arity is indexed by
 output objects (`BaseArity`) and pulled back along the shape-output map
 (`BaseArity.pullback`, `BaseArity.isFunctorial_pullback`). The transport that
 the pullback carries is the reason `ShapeArity` is indexed by shapes rather
-than by output objects: `deltaData` is then free of it.
+than by output objects: `adjoinArityData` is then free of it.
 
 Nor does the recursion force mutuality. *Inference, not elaborated*, being the
 collapse of § The setting is indexed induction-recursion, not
@@ -538,7 +558,7 @@ being at different universe instantiations.
 | Indexing the code type by a base category, with `σ` replacing it by a category of elements | Novel |
 | `coprod`, the coproduct of a type-indexed family | Novel at this level; the discrete analogue is `SlicePFunctor.coprod` |
 | `unitPsh`, the unit | Novel at this level; the discrete analogue is `SliceDomPFunctor.representable` at the empty direction type |
-| `delta`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
+| `adjoinArity`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
 | `sigmaPsh`, the base change along `ElObj S → J` | Novel. It has no discrete analogue in this repository: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`; open question 5 leaves the discrete degeneration open and nothing establishes this |
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
 | `ShapeArity`, `ShapeArity.const` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`. `const` is the case Section 6's `δ` arity occupies |
@@ -566,7 +586,7 @@ being at different universe instantiations.
 | `arityPresheafHomAtUB`, `arityPresheafHomULifted` — the universes at which the bundled hom is formable | Novel; retained in the prototype as the derivation and ported by nothing |
 | `iotaDiscreteShapeEquiv`, `arityVariesShapeEquiv` — the discrete collapse of `iotaPresheaf`'s shape type, and the terminality of `arityVaries`'s shape presheaf | Novel; retained in the prototype as the derivation and ported by nothing |
 | `genericFib`, `idElt`, `ofSigmaFib`, `reindexArityHom`, `pshHomSigma`, `domHomSigma` — the fibre-level intermediates of the representation theorem | Novel presentations; those the theorem needs travel with obligation 1, the rest are retained derivation |
-| `arityB`, `arityVariesData`, `arityVaries`, `arityVariesShapeArity`, `deltaVarying`, `termPsh`, `arityVariesBase`, `decUnit`, `deltaFusedVaries`, `deltaCodeVaries` — the witnesses of § Why `δ`'s arity must vary over the shape presheaf | Novel. Fixtures, carrying no mathematics beyond the theorems they witness |
+| `arityB`, `arityVariesData`, `arityVaries`, `arityVariesShapeArity`, `adjoinArityVarying`, `termPsh`, `arityVariesBase`, `decUnit`, `deltaVaries`, `deltaCodeVaries` — the witnesses of § Why `δ`'s arity must vary over the shape presheaf | Novel. Fixtures, carrying no mathematics beyond the theorems they witness |
 | `PshMor` — a morphism from a `DomArity` to a presheaf, unbundled | Novel presentation; it is the presheaf reading of Section 6's sections `(p : P) → D (i p)` |
 | `fibreArity` — the arity a decoding adjoins | Novel |
 | `deltaRec` — the `δ` whose continuation depends on the decoding, at an arity constant over the output | Transcription of Section 6's `δ` rule, generalized from families to presheaves as the `δ` code rule row describes: its subcodes are indexed by `PshMor`, not by sections. A semantic operation, where Section 6's `δ` is a code rule |
@@ -577,7 +597,7 @@ being at different universe instantiations.
 | `praWitness`, `praWitnessLift` and their shape and arity identifications, with `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` — the `σ`-`δ`-unit chain and its data | Novel at this level; the discrete analogue is Lemma 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] |
 | `praWitnessLiftShapeVal` — the shape's `T`-component transported to the object it lies over | Novel; named rather than written inline because an `Equiv` coercion around it blocks the reduction its naturality proof needs, as `elEqToHom` is named for the same reason |
 | `praWitnessCode`, `interp_praWitnessCode`, `interpPraWitnessCodeShapeEquiv` — that chain as a code | Novel |
-| `deltaFused` — the `δ` carrying both features. Its output-varying arity is witnessed by `not_hasBijectiveReindex_deltaFusedVaries`; its decoding-dependence is by construction, and no theorem relates it to `deltaRec`, whose decoding-dependence is the same construction at a constant arity. Supplying that relation is not an obligation of this workstream | Novel; it is Section 6's `δ` rule with the arity generalized as § Why `δ`'s arity must vary over the shape presheaf requires |
+| `delta` — the `δ` carrying both features. Its output-varying arity is witnessed by `not_hasBijectiveReindex_deltaVaries`; its decoding-dependence is by construction, and no theorem relates it to `deltaRec`, whose decoding-dependence is the same construction at a constant arity. Supplying that relation is not an obligation of this workstream | Novel; it is Section 6's `δ` rule with the arity generalized as § Why `δ`'s arity must vary over the shape presheaf requires |
 
 ## Branches
 
@@ -664,9 +684,9 @@ Each is unproved at the time of writing.
    `GebMeta.classicalAllowedModules`, as obligations 1 and 9's choice-dependent
    halves do.
 4. **Stage 2 at upstream quality** (W-b). Port `iotaPresheaf`, `sigmaPsh`,
-   `delta`, `coprod`, `PshMor`, `fibreArity`, `decPresheaf`, `decArity`,
-   `deltaFused`, the code type and the interpretation, together with the
-   structures and lemmas they rest on: `DomArity` with the discrete-fibration
+   `adjoinArity`, `coprod`, `PshMor`, `fibreArity`, `decPresheaf`, `decArity`,
+   `delta`, the code type and the interpretation, together with the structures
+   and lemmas they rest on: `DomArity` with the discrete-fibration
    identification `presheaf`, `ofPresheaf`, `isFunctorial_ofPresheaf`,
    `dirEquivOfPresheaf`, `dirEquivOfPresheaf_restr` and `sigmaDirEquivCarrier`;
    `ShapeArity`, `ShapeArity.const` and `ShapeArity.isFunctorial_const`;
@@ -677,7 +697,7 @@ Each is unproved at the time of writing.
    `elCategory_id_val`, `elCategory_comp_val` and `elCategory_eqToHom_val`;
    `sigmaLiftHom`, `elEqToHom` and `elEqToHom_eq`; `isFunctorial_fibreArity`
    and `fibreArity_restr_val`; `isFunctorial_decArity` and
-   `decArity_reindex_val`; `delta_cast_inl` and `delta_cast_inr`;
+   `decArity_reindex_val`; `adjoinArity_cast_inl` and `adjoinArity_cast_inr`;
    `unitPshLiftData` and `unitPshLift`, the unit at the shape universe the `ι`
    rule forces; the five code constructors `unitCode`, `iotaCode`, `sigmaCode`,
    `deltaPlainCode` and `deltaCode` with their computation rules
@@ -717,21 +737,21 @@ Each is unproved at the time of writing.
    of the mathematics.
 5. **The bound's vocabulary at upstream quality** (W-b). Port
    `HasBijectiveReindex`; the three generators' cases and four operations'
-   cases, together with the general `hasBijectiveReindex_delta` that
-   `hasBijectiveReindex_deltaConst` and `hasBijectiveReindex_deltaRec` both
-   rest on, and `deltaRec` with `hasBijectiveReindex_deltaRec`, which is the
-   fragment's decoding-indexed operation case, and
+   cases, together with the general `hasBijectiveReindex_adjoinArity` that
+   `hasBijectiveReindex_adjoinArityConst` and `hasBijectiveReindex_deltaRec`
+   both rest on, and `deltaRec` with `hasBijectiveReindex_deltaRec`, which is
+   the fragment's decoding-indexed operation case, and
    `subsingleton_pshMor_to_terminal`, whose port is conditional on its being
    instantiated at `termPsh` so that the witness rests on it; if it is not, it
    is dropped rather than landed dead; the three negative theorems
    `not_hasBijectiveReindex_arityVaries`,
-   `not_hasBijectiveReindex_deltaVarying` and
-   `not_hasBijectiveReindex_deltaFusedVaries`; and the witnesses they need —
+   `not_hasBijectiveReindex_adjoinArityVarying` and
+   `not_hasBijectiveReindex_deltaVaries`; and the witnesses they need —
    `iotaPresheaf`, `iotaConst`, `arityVaries`, and `arityVariesShapeArity` with
-   `isFunctorial_arityVariesShapeArity` as `deltaVarying`'s arity,
-   `deltaVarying` with `deltaVarying_source_empty`, and `termPsh`,
+   `isFunctorial_arityVariesShapeArity` as `adjoinArityVarying`'s arity,
+   `adjoinArityVarying` with `adjoinArityVarying_source_empty`, and `termPsh`,
    `arityVariesBase`, `isFunctorial_arityVariesBase`, `decUnit`,
-   `decVariesElt`, `deltaFusedVaries`, `deltaCodeVaries` with
+   `decVariesElt`, `deltaVaries`, `deltaCodeVaries` with
    `interp_deltaCodeVaries` and
    `not_hasBijectiveReindex_interp_deltaCodeVaries`, and the underlying
    `arityB`, `arityVariesData`, `iotaPresheafData`, `iotaConstData`,
