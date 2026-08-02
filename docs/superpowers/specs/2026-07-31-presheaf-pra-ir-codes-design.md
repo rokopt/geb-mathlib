@@ -710,7 +710,11 @@ Each is unproved at the time of writing.
    `elEqToHom` they are stated about, and the three `@[simp]` projection lemmas
    `elCategory_eqToHom_val`, `elCategory_id_val` and `elCategory_comp_val`, of
    which only the first has an explicit call site; whether the other two fire
-   is to be confirmed when the count is taken.
+   is to be confirmed when the count is taken. Weigh also whether
+   `CategoryOfElements`' API dissolves the transport obstructions
+   `praWitnessLiftShapeVal` exists to work around, since those are artefacts of
+   presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
+   of the mathematics.
 5. **The bound's vocabulary at upstream quality** (W-b). Port
    `HasBijectiveReindex`; the three generators' cases and four operations'
    cases, together with the general `hasBijectiveReindex_delta` that
