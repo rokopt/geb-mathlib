@@ -574,7 +574,8 @@ being at different universe instantiations.
 | `decArity` — that arity, indexed by the elements of `decPresheaf` | Novel |
 | `unitPshLift` — the unit at the shape universe the `ι` rule forces | Novel; `unitPsh` with its shape type lifted, the two differing only by `ULift` |
 | `elSliceEquiv`, `elSliceEquiv_fst` — the collapse of `el(S)`'s slice to `𝔹`'s | Novel. It is the discrete-fibration property of `el(S) → 𝔹`, and it is what shows `σ` over `ι` contributes no shapes |
-| `praWitness`, `praWitnessShapeEquiv`, `praWitnessDirEquiv` — the `σ`-`δ`-unit chain and its data | Novel at this level; the discrete analogue is Lemma 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] |
+| `praWitness`, `praWitnessLift` and their shape and arity identifications, with `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` — the `σ`-`δ`-unit chain and its data | Novel at this level; the discrete analogue is Lemma 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] |
+| `praWitnessLiftShapeVal` — the shape's `T`-component transported to the object it lies over | Novel; named rather than written inline because an `Equiv` coercion around it blocks the reduction its naturality proof needs, as `elEqToHom` is named for the same reason |
 | `praWitnessCode`, `interp_praWitnessCode`, `interpPraWitnessCodeShapeEquiv` — that chain as a code | Novel |
 | `deltaFused` — the `δ` carrying both features. Its output-varying arity is witnessed by `not_hasBijectiveReindex_deltaFusedVaries`; its decoding-dependence is by construction, and no theorem relates it to `deltaRec`, whose decoding-dependence is the same construction at a constant arity. Supplying that relation is not an obligation of this workstream | Novel; it is Section 6's `δ` rule with the arity generalized as § Why `δ`'s arity must vary over the shape presheaf requires |
 
@@ -764,16 +765,17 @@ Each is unproved at the time of writing.
    functor is an IR functor"). The witness is `praWitnessCode`: `σ` at the
    target's shape presheaf, over the non-recursive `δ` at its arity, over the
    unit. `interp_praWitnessCode` gives its interpretation definitionally and
-   `interpPraWitnessCodeShapeEquiv` its shape presheaf as the target's, so what
-   remains is to lift that and `praWitnessDirEquiv` from objectwise
-   equivalences to an isomorphism of interpreted functors — open question 7.
-   The witness needs no re-presentation of the arity, the non-recursive `δ`
-   carrying one over `el(D)ᵒᵖ` already, so W-d does not depend on W-f. What
-   completeness then holds of is for that branch to determine; the natural
-   candidate is the functors whose arity is constant on each connected
-   component of `el(T₁)`, but nothing here argues it, and "fragment" in that
-   sense is a class of functors, not the class of codes § Why `δ`'s arity must
-   vary over the shape presheaf names.
+   `interpPraWitnessCodeShapeEquiv` its shape presheaf as the target's, and
+   `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` lift
+   its shape and arity identifications from objectwise correspondences to
+   presheaf ones, so the witness's data is established in full. The witness
+   needs no re-presentation of the arity, the non-recursive `δ` carrying one
+   over `el(D)ᵒᵖ` already, so W-d does not depend on W-f. What completeness
+   then holds of is for that branch to determine; the natural candidate is the
+   functors whose arity is constant on each connected component of `el(T₁)`,
+   but nothing here argues it, and "fragment" in that sense is a class of
+   functors, not the class of codes § Why `δ`'s arity must vary over the shape
+   presheaf names.
 9. **The collapse** (W-f). The equivalence `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`, which the
    § The setting is indexed induction-recursion, not induction-recursion
    section marks as an inference, and on which the input-side design, the
@@ -833,18 +835,13 @@ To be answered by the work rather than before it.
    Non-goals section invokes it in passing; nothing in the workstream depends
    on it.
 
-7. Whether the completeness witness's shape identification is natural. The
-   direction side is settled: `praWitnessLiftDirEquiv_restr` matches the
-   chain's directions with the arity compatibly with restriction along an input
-   morphism, so the arity is matched as a presheaf. The shape side is
-   objectwise only: `praWitnessLiftShapeEquiv` matches the chain's shape
-   presheaf with `T` at each object, and its naturality in `J` is not
-   established. After unfolding, the two sides differ only by `g ≫ eqToHom h`
-   against `g` at a reflexive `h`, inside the dependent match that reads the
-   shape's `T`-component; `rw` times out in `whnf` on the unfolded term and a
-   `simp only` at a local rewrite does not reach through the match. Closing it
-   makes obligation 8's witness an isomorphism of interpreted functors rather
-   than a pair of objectwise correspondences.
+7. Whether obligation 8's witness is the *only* code for a given functor, and
+   what the interpretation's fibres over a functor look like. The witness's
+   data is settled — `praWitnessLiftShapeVal_naturality` matches its shape
+   presheaf with the target's naturally in the output base, and
+   `praWitnessLiftDirEquiv_restr` its directions with the target's arity
+   compatibly with restriction along an input morphism — so what is open is
+   uniqueness rather than existence.
 
 ## Non-goals
 

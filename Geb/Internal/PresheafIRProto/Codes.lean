@@ -1315,17 +1315,41 @@ def praWitnessLift
   sigmaPsh T (delta (unitPshLift I (ElObj.{uJ, uS, vJ} T)) (A.pullback _)
     (A.isFunctorial_pullback hA _))
 
-/-- Its shape presheaf is `T` objectwise. Naturality in `J` is not established:
-after unfolding, the two sides differ only by `g ≫ eqToHom h` against `g` at a
-reflexive `h`, inside the dependent match that reads the shape's `T`-component,
-and neither `rw` (which times out in `whnf` on the unfolded term) nor a
-`simp only` at a local rewrite discharges it through that match. -/
+/-- The `T`-component of a shape of the chain, transported to the object that
+shape lies over. Named rather than written inline so that the naturality lemma
+can be stated about it with no `Equiv` coercion in the way, which is what
+blocks reduction. -/
+def praWitnessLiftShapeVal
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) {j : J} (x : (praWitnessLift T A hA).Shape j) : T.obj ⟨j⟩ :=
+  cast (congrArg (fun k ↦ T.obj ⟨k⟩) x.2) x.1.down.2
+
+/-- It is natural in `J`, so the chain's shape presheaf and `T` agree as
+presheaves and not merely fibrewise. -/
+theorem praWitnessLiftShapeVal_naturality
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) ⦃j j' : J⦄ (g : j' ⟶ j)
+    (x : (praWitnessLift T A hA).Shape j) :
+    praWitnessLiftShapeVal T A hA ((praWitnessLift T A hA).shapeRestr g x) =
+      T.map g.op (praWitnessLiftShapeVal T A hA x) := by
+  obtain ⟨⟨⟨jj, t⟩⟩, hj⟩ := x
+  have hj' : jj = j := hj
+  subst hj'
+  dsimp only [praWitnessLiftShapeVal, praWitnessLift, sigmaPsh, sigmaPshData, delta,
+    deltaData, unitPshLift, unitPshLiftData]
+  simp only [eqToHom_refl, Category.comp_id]
+  rfl
+
+/-- Its shape presheaf is `T` objectwise; `praWitnessLiftShapeVal_naturality`
+makes it an isomorphism of presheaves. -/
 def praWitnessLiftShapeEquiv
     {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
     (hA : A.IsFunctorial) (j : J) :
     (praWitnessLift T A hA).Shape j ≃ T.obj ⟨j⟩ where
-  toFun x := match x with | ⟨⟨⟨_, t⟩⟩, rfl⟩ => t
+  toFun x := praWitnessLiftShapeVal T A hA x
   invFun t := ⟨⟨⟨j, t⟩⟩, rfl⟩
   left_inv := by rintro ⟨⟨⟨j', t⟩⟩, rfl⟩; rfl
   right_inv := by intro t; rfl
