@@ -1305,6 +1305,58 @@ def praWitnessDirEquiv
     · exact e.elim
   right_inv := by intro c; rfl
 
+/-- `praWitness` with the lifted unit at its foot, which is the form the code
+system's `σ`-`δ`-unit chain folds to. -/
+def praWitnessLift
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) :
+    PresheafPFunctor.{uI, uJ, max uJ uS vJ, max uB 0, vI, vJ} I J :=
+  sigmaPsh T (delta (unitPshLift I (ElObj.{uJ, uS, vJ} T)) (A.pullback _)
+    (A.isFunctorial_pullback hA _))
+
+/-- Its shape presheaf is `T` objectwise. Naturality in `J` is not established:
+after unfolding, the two sides differ only by `g ≫ eqToHom h` against `g` at a
+reflexive `h`, inside the dependent match that reads the shape's `T`-component,
+and neither `rw` (which times out in `whnf` on the unfolded term) nor a
+`simp only` at a local rewrite discharges it through that match. -/
+def praWitnessLiftShapeEquiv
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) (j : J) :
+    (praWitnessLift T A hA).Shape j ≃ T.obj ⟨j⟩ where
+  toFun x := match x with | ⟨⟨⟨_, t⟩⟩, rfl⟩ => t
+  invFun t := ⟨⟨⟨j, t⟩⟩, rfl⟩
+  left_inv := by rintro ⟨⟨⟨j', t⟩⟩, rfl⟩; rfl
+  right_inv := by intro t; rfl
+
+/-- Its directions at a shape are that shape's arity. -/
+def praWitnessLiftDirEquiv
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) (a : (praWitnessLift T A hA).A) (i : I) :
+    (praWitnessLift T A hA).Direction a i ≃ (A.fam a.down).Dir i where
+  toFun d := match d with | ⟨Sum.inl c, h⟩ => ⟨c, h⟩ | ⟨Sum.inr e, _⟩ => e.elim
+  invFun c := ⟨Sum.inl c.1, c.2⟩
+  left_inv := by
+    rintro ⟨c | e, h⟩
+    · rfl
+    · exact e.elim
+  right_inv := by intro c; rfl
+
+/-- And compatibly with restriction along an input morphism, so the arity too
+is matched as a presheaf. -/
+theorem praWitnessLiftDirEquiv_restr
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) (a : (praWitnessLift T A hA).A) ⦃i i' : I⦄ (f : i' ⟶ i)
+    (d : (praWitnessLift T A hA).Direction a i) :
+    praWitnessLiftDirEquiv T A hA a i' ((praWitnessLift T A hA).directionRestr a f d) =
+      (A.fam a.down).restr f (praWitnessLiftDirEquiv T A hA a i d) := by
+  obtain ⟨c | e, h⟩ := d
+  · rfl
+  · exact e.elim
+
 end VaryingWitness
 
 section Closure
@@ -1859,29 +1911,15 @@ def praWitnessCode (𝔹 : Cat.{v, u}) (T : 𝔹ᵒᵖ ⥤ Type u)
       (unitCode I D (Cat.of (ElObj.{u, u, v} T))) rfl) rfl
 
 set_option linter.checkUnivs false in
-/-- Its interpretation is the chain `praWitnessShapeEquiv` and
-`praWitnessDirEquiv` identify: shape presheaf `T`, directions the arity. So the
-code system reaches the p.r.a. formula's data, which no chain over
-`iotaCode` could (`elSliceEquiv`). -/
+/-- Its interpretation is `praWitnessLift`, whose shape presheaf is `T` and
+whose directions at a shape are that shape's arity. So the code system reaches
+the p.r.a. formula's data, which no chain over `iotaCode` could
+(`elSliceEquiv`). -/
 theorem interp_praWitnessCode (𝔹 : Cat.{v, u}) (T : 𝔹ᵒᵖ ⥤ Type u)
     (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
     (hA : A.IsFunctorial) :
     interp I D (praWitnessCode I D 𝔹 T A hA) =
-      ⟨𝔹, sigmaPsh T (delta
-        (unitPshLift (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
-        (A.pullback _) (A.isFunctorial_pullback hA _))⟩ := rfl
-
-set_option linter.checkUnivs false in
-/-- The chain's shape presheaf is `T`, pinned on the code's interpretation
-rather than on the semantic witness. -/
-def interpPraWitnessCodeShapeEquiv (𝔹 : Cat.{v, u}) (T : 𝔹ᵒᵖ ⥤ Type u)
-    (A : BaseArity.{u, u, u, u, v} (ElObj.{u, u, u} D) (Cat.of (ElObj.{u, u, v} T)))
-    (hA : A.IsFunctorial) (j : 𝔹) :
-    (interp I D (praWitnessCode I D 𝔹 T A hA)).2.Shape j ≃ T.obj ⟨j⟩ where
-  toFun x := match x with | ⟨⟨⟨_, t⟩⟩, rfl⟩ => t
-  invFun t := ⟨⟨⟨j, t⟩⟩, rfl⟩
-  left_inv := by rintro ⟨⟨⟨j', t⟩⟩, rfl⟩; rfl
-  right_inv := by intro t; rfl
+      ⟨𝔹, praWitnessLift T A hA⟩ := rfl
 
 set_option linter.checkUnivs false in
 /-- A `δ` *code* whose interpretation lies outside the bound. This carries

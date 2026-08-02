@@ -833,12 +833,18 @@ To be answered by the work rather than before it.
    Non-goals section invokes it in passing; nothing in the workstream depends
    on it.
 
-7. Whether the completeness witness's identifications lift from objects to
-   presheaves. `interpPraWitnessCodeShapeEquiv` matches the chain's shape
-   presheaf with `T` objectwise, and `praWitnessDirEquiv` its directions with
-   the arity, but neither is yet shown natural, and the direction side is
-   pinned only for the semantic `praWitness` rather than for the code's
-   interpretation. Obligation 8 states what closing this would settle.
+7. Whether the completeness witness's shape identification is natural. The
+   direction side is settled: `praWitnessLiftDirEquiv_restr` matches the
+   chain's directions with the arity compatibly with restriction along an input
+   morphism, so the arity is matched as a presheaf. The shape side is
+   objectwise only: `praWitnessLiftShapeEquiv` matches the chain's shape
+   presheaf with `T` at each object, and its naturality in `J` is not
+   established. After unfolding, the two sides differ only by `g ≫ eqToHom h`
+   against `g` at a reflexive `h`, inside the dependent match that reads the
+   shape's `T`-component; `rw` times out in `whnf` on the unfolded term and a
+   `simp only` at a local rewrite does not reach through the match. Closing it
+   makes obligation 8's witness an isomorphism of interpreted functors rather
+   than a pair of objectwise correspondences.
 
 ## Non-goals
 
