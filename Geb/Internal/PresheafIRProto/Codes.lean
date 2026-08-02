@@ -1234,6 +1234,45 @@ theorem not_hasBijectiveReindex_deltaVarying : ¬ HasBijectiveReindex deltaVaryi
     (⟨(1 : Fin 2), rfl⟩ : deltaVarying.Shape (1 : Fin 2)) (0 : Fin 1)).2 w
   exact deltaVarying_source_empty d
 
+/-- The `σ`-`δ`-`ι` chain that a completeness witness needs, with the unit at
+its foot: `σ` at an arbitrary shape presheaf `T`, over the non-recursive `δ` at
+an arbitrary output-indexed arity, over the terminal shape presheaf. -/
+def praWitness
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
+    (hA : A.IsFunctorial) :
+    PresheafPFunctor.{uI, uJ, max uJ uS, max uB 0, vI, vJ} I J :=
+  sigmaPsh T (delta (unitPsh I (ElObj.{uJ, uS, vJ} T)) (A.pullback _)
+    (A.isFunctorial_pullback hA _))
+
+/-- Its shape presheaf is `T`: the chain reproduces an arbitrary shape
+presheaf, which `σ` over `ι` could not. -/
+def praWitnessShapeEquiv
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS)
+    (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T)) (hA : A.IsFunctorial) (j : J) :
+    (praWitness T A hA).Shape j ≃ T.obj ⟨j⟩ where
+  toFun x := match x with | ⟨⟨_, t⟩, rfl⟩ => t
+  invFun t := ⟨⟨j, t⟩, rfl⟩
+  left_inv := by rintro ⟨⟨j', t⟩, rfl⟩; rfl
+  right_inv := by intro t; rfl
+
+/-- Its directions at a shape are that shape's arity, so the chain reproduces
+an arbitrary arity as well. -/
+def praWitnessDirEquiv
+    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
+    (T : Jᵒᵖ ⥤ Type uS)
+    (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T)) (hA : A.IsFunctorial)
+    (a : (praWitness T A hA).A) (i : I) :
+    (praWitness T A hA).Direction a i ≃ (A.fam a).Dir i where
+  toFun d := match d with | ⟨Sum.inl c, h⟩ => ⟨c, h⟩ | ⟨Sum.inr e, _⟩ => e.elim
+  invFun c := ⟨Sum.inl c.1, c.2⟩
+  left_inv := by
+    rintro ⟨c | e, h⟩
+    · rfl
+    · exact e.elim
+  right_inv := by intro c; rfl
+
 end VaryingWitness
 
 section Closure
