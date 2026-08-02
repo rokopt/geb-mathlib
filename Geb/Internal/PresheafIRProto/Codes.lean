@@ -980,6 +980,36 @@ def sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
       reindex_id := sigmaPsh_reindex_id S F
       reindex_comp := sigmaPsh_reindex_comp S F }
 
+/-- The slice of `ElObj S` over an element collapses to the slice of `J` over
+its output object. `el(S) → J` is a discrete fibration, so a morphism into `y₀`
+is determined by its image in `J`, the source's `S`-component being forced. -/
+def elSliceEquiv (S : Jᵒᵖ ⥤ Type uS) (y₀ : ElObj.{uJ, uS, vJ} S) :
+    (Σ y' : ElObj.{uJ, uS, vJ} S, (y' ⟶ y₀)) ≃ (Σ j' : J, (j' ⟶ y₀.1)) where
+  toFun x := ⟨x.1.1, x.2.1⟩
+  invFun x := ⟨⟨x.1, S.map x.2.op y₀.2⟩, ⟨x.2, rfl⟩⟩
+  left_inv := by
+    rintro ⟨⟨j', s'⟩, ⟨g, hg⟩⟩
+    dsimp only at g hg ⊢
+    congr!
+  right_inv := by intro x; rfl
+
+/-- That collapse is over `J`: it commutes with the shape-output maps. So
+`sigmaPsh S (iotaPresheaf y₀)` and `iotaPresheaf y₀.1` have the same shape
+presheaf, and `σ` over `ι` contributes no shapes of its own.
+
+This bounds the present `σ`. Small induction recursion builds an arbitrary
+shape set as `σ S K` with `K : S → IR I O` a family of `ι`s, one output index
+per element; here the subcode is a single code over `ElObj S`, so its own
+shapes take over and the composite collapses. An arbitrary shape presheaf is
+therefore not reachable by `σ` over `ι`, which is what the p.r.a. formula
+`F Z j = Σ (a : T₁ j), Hom (E ⟨j, a⟩) Z` asks a completeness witness to
+produce. -/
+theorem elSliceEquiv_fst (S : Jᵒᵖ ⥤ Type uS) (y₀ : ElObj.{uJ, uS, vJ} S)
+    (x : Σ y' : ElObj.{uJ, uS, vJ} S, (y' ⟶ y₀)) :
+    (elSliceEquiv S y₀ x).1 =
+      (sigmaPshData S (iotaPresheafData.{uI, max uJ uS, uB, vI, vJ} (I := I) y₀)).q x :=
+  rfl
+
 end Sigma
 
 section Incompleteness
