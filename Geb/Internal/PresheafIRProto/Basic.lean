@@ -97,7 +97,6 @@ section Iota
 
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
-set_option linter.checkUnivs false in
 /-- The operations of the constant functor at the representable `y j₀`: shapes
 are the total space of `y j₀`, the shape-output map is its projection, there
 are no directions, and `shapeRestr` is precomposition. -/
@@ -118,7 +117,6 @@ instance subsingletonIotaDirection (j₀ : J)
     Subsingleton ((iotaPresheafData.{uI, uJ, uB, vI, vJ} (I := I) j₀).Direction a i) :=
   ⟨fun x _ ↦ PEmpty.elim x.1⟩
 
-set_option linter.checkUnivs false in
 /-- The constant functor at the representable `y j₀`, as a `PresheafPFunctor`.
 The shape-side laws are the category laws of `J`; the direction-side laws hold
 because every direction fiber is empty. -/
@@ -168,7 +166,6 @@ section IotaConst
 
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
-set_option linter.checkUnivs false in
 /-- Claim 3: the constant functor at an arbitrary presheaf `P` on `J`. Shapes
 are the total space of `P` (its category of elements), the shape-output map is
 the projection, there are no directions, and `shapeRestr` is `P`'s own
@@ -193,7 +190,6 @@ instance subsingletonIotaConstDirection (P : Jᵒᵖ ⥤ Type uB)
     Subsingleton ((iotaConstData.{uI, uJ, uB, vI, vJ} (I := I) P).Direction a i) :=
   ⟨fun x _ ↦ PEmpty.elim x.1⟩
 
-set_option linter.checkUnivs false in
 /-- The constant functor at `P` is a genuine `PresheafPFunctor`: the shape-side
 laws are `P`'s own functor laws. -/
 def iotaConst (P : Jᵒᵖ ⥤ Type uB) :
@@ -401,7 +397,6 @@ data that index does not.
 
 open CategoryTheory
 
-set_option linter.checkUnivs false in
 /-- A morphism of slice polynomial functors: shapes forward over each output
 index, arities backward at each shape. -/
 structure SliceHom {dom : Type uI} {cod : Type uJ}
@@ -412,7 +407,6 @@ structure SliceHom {dom : Type uI} {cod : Type uJ}
   arity : ∀ (j : cod) (a : F.Shape j) (i : dom),
     F'.Direction (shape j a).1 i → F.Direction a.1 i
 
-set_option linter.checkUnivs false in
 /-- The action of a `SliceHom` on the domain-restricted functor's value: the
 shape travels forward, and each direction of the new shape is filled by pulling
 it back along `arity` and reading off the original assignment. That this is

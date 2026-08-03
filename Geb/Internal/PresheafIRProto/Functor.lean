@@ -86,7 +86,6 @@ def arityPresheafHomULifted (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) 
     (Z : Iᵒᵖ ⥤ Type uZ) : Type (max uI uB uZ) :=
   (arityPresheaf F a ⋙ uliftFunctor.{uZ, uB}) ⟶ (Z ⋙ uliftFunctor.{uB, uZ})
 
-set_option linter.checkUnivs false in
 /-- The representable case is definitionally the `P := yoneda.obj j₀` case: the
 two shape types coincide on the nose. Kept here rather than in the choice-free
 core because `yoneda` lands in a functor category, so naming it — which the
