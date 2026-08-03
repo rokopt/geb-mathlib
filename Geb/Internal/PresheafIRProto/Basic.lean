@@ -12,14 +12,26 @@ public import Mathlib.CategoryTheory.Category.Preorder
 public import Mathlib.Order.Fin.Basic
 
 /-!
-# Prototype: IR code constructors at the presheaf p.r.a. level (choice-free core)
+# Prototype: morphisms of presheaf p.r.a. functors, and the `ι` generators
+(choice-free core)
 
 Throwaway exploration, not upstream-eligible content. Every declaration here is
 `Classical.choice`-free; the bundled restatement of the p.r.a. formula, which
 writes `⟶` between two objects of a presheaf category and so pulls in
 `Classical.choice` from mathlib, is in the sibling `PresheafIRProto.Functor`
-module. This module tests the following claims about presheaf-generalized
-IR codes:
+module.
+
+Two developments sit here. The larger is the morphism theory: the p.r.a.
+formula `F Z j = Σ (a : T₁ j), Hom (E ⟨j, a⟩) Z` as an equivalence
+(`objEquivSigmaArityHom`), the morphism type `PshHom` with its action, and the
+representation theorem `pshHomEquivNatFamily` classifying the natural families
+between two such functors by shape-map-forward and arity-map-backward data,
+with `DomHom` / `domHomEquivNatFamily` as its domain-level warm-up. The
+smaller, below, is the constant-functor generators and the fixtures that bound
+what they generate. The code type itself and its two rules are in the sibling
+`PresheafIRProto.Codes` module; nothing here is a code constructor.
+
+The generator development tests the following claims:
 
 1. `iotaPresheaf` — the constant (`iota`) case generalizes to the functor
    constant at the representable `y j₀`, whose shape type is the total space
@@ -303,6 +315,8 @@ open CategoryTheory
 so the `PFunctor` projection reduces to it. -/
 abbrev arityB (a : Fin 2) : Type := ULift (Fin a.val)
 
+/-- Each fibre of `arityB` is a subsingleton: `Fin 0` is empty and `Fin 1` is a
+point, so the two elements of any fibre are equal. -/
 instance subsingletonArityB (a : Fin 2) : Subsingleton (arityB a) :=
   ⟨fun x y ↦ ULift.ext _ _ (Fin.ext (by
     have hx := x.down.isLt
@@ -357,6 +371,7 @@ def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
 shape over `1`. So `reindex` along `0 ⟶ 1` is the empty map, not an iso. -/
 theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
 
+/-- And inhabited at the shape over `1`. -/
 theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
 
 /-- Every `Shape j` is a singleton, so the shape presheaf is terminal — as

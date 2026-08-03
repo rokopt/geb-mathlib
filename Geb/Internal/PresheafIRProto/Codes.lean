@@ -27,8 +27,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   `PresheafDomPFunctorData` uses for its arities.
 * `GebProto.ShapeArity` / `GebProto.ShapeArity.const` — the arity a `δ` adjoins,
   varying over the shape presheaf, and the constant one.
-* `GebProto.adjoinArityData` / `GebProto.adjoinArity` — the `δ` case: adjoin a `ShapeArity`
-  to every arity of a functor.
+* `GebProto.adjoinArityData` / `GebProto.adjoinArity` — `δ`'s direction-adjoining
+  half, which is not `δ`: adjoin a `ShapeArity` to every arity of a functor,
+  leaving the shapes untouched.
 * `GebProto.BaseArity` / `GebProto.BaseArity.pullback` — the arity a code's `δ`
   carries, indexed by output objects rather than by shapes, and its pullback
   along a functor's shape-output map to the `ShapeArity` that `adjoinArity` consumes.
@@ -63,6 +64,17 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   continuation.
 * `GebProto.Interp` — the interpretation's target, a presheaf p.r.a. functor
   paired with the base category it lands in.
+* `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` — the round trip
+  between the total-space and the fibrewise presentation of an arity.
+* `GebProto.BaseArity.famPresheaf` / `GebProto.BaseArity.reindexHom` — an
+  output-indexed arity's presheaf at each output object, and the morphism of
+  presheaves each output morphism induces.
+* `GebProto.unitPshLift` — the unit at the shape universe the representables
+  force.
+* `GebProto.praWitness` / `GebProto.praWitnessLift` — the chain reaching the
+  p.r.a. formula's data, unlifted and at the shape universe `Interp` pins.
+* `GebProto.termPsh` / `GebProto.arityVariesBase` / `GebProto.deltaVaries` — the
+  fixtures witnessing that `δ` keeps the output-varying arity.
 * `GebProto.deltaCodeVaries` — a `δ` code whose interpretation lies outside the
   bound.
 * `GebProto.codeAlgOn` / `GebProto.codeAlg` / `GebProto.interp` — the
@@ -77,8 +89,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   `GebProto.hasBijectiveReindex_adjoinArityConst`, `GebProto.hasBijectiveReindex_unitPsh`,
   `GebProto.hasBijectiveReindex_sigmaPsh` — every generator and operation of the
   constant-arity fragment has, or preserves, bijective reindexing.
-* `GebProto.hasBijectiveReindex_adjoinArity` — a `δ`'s reindexing is bijective when
-  the adjoined arity's is. The converse is not proved.
+* `GebProto.hasBijectiveReindex_adjoinArity` — an `adjoinArity`'s reindexing is
+  bijective when both the subfunctor's and the adjoined arity's are. The
+  converse is not proved.
 * `GebProto.not_hasBijectiveReindex_arityVaries` — `arityVaries` is not such a
   functor, so those rules do not generate it.
 * `GebProto.not_hasBijectiveReindex_adjoinArityVarying` — a `δ` at an arity that does
@@ -105,6 +118,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.interp_deltaCodeVaries`,
   `GebProto.not_hasBijectiveReindex_interp_deltaCodeVaries` — that bound
   restated about a code rather than about the semantic operations.
+* `GebProto.elSliceEquiv_fst` — the collapse's underlying output object is the
+  base change's, so `sigmaPsh` over `iotaPresheaf` adds no shapes.
+* `GebProto.praWitnessLiftShapeVal_naturality`,
+  `GebProto.praWitnessLiftDirEquiv_restr` — the chain's shape and arity agree
+  with the target's as presheaves, not merely fibrewise.
 * `GebProto.interp_fst` — a code's index is the base its interpretation lands
   in.
 * `GebProto.not_hasBijectiveReindex_deltaVaries` — the fused `δ` at an
@@ -147,12 +165,12 @@ arity carrier universe is pinned to the base's, which the prototype does not
 need to vary. Nothing here is defined simultaneously with anything else, so no
 inductive-inductive definition or encoding of one is required.
 
-The generators the codes had before `pra` — `iotaPresheaf`, `unitPshLift`,
-`sigmaPsh`, `adjoinArity` — remain as semantic operations, and the results
-about them stand: `elSliceEquiv`, the `HasBijectiveReindex` bound, and
-`praWitnessLift` measure what a generated fragment reaches. They are no longer
-code constructors, because a code built from them is `praCode` of their
-composite and records nothing further.
+`iotaPresheaf`, `unitPshLift`, `sigmaPsh` and `adjoinArity` are semantic
+operations rather than code rules: a code built from any of them is `praCode`
+of the composite, which records nothing the composite does not. What they
+support is the measurement of restricted leaves — `elSliceEquiv`, the
+`HasBijectiveReindex` bound and `praWitnessLift` say what a leaf generated
+from them reaches and what it does not.
 
 ## References
 
@@ -412,7 +430,7 @@ theorem isFunctorial_const (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
 
 end ShapeArity
 
-/-- Operations of the `δ` case: adjoin the arity `P` to every arity of `F`,
+/-- Operations of `δ`'s direction-adjoining half: adjoin the arity `P` to every arity of `F`,
 leaving the shapes untouched. -/
 def adjoinArityData (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) (P : ShapeArity F) :
     PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J where
@@ -1047,9 +1065,10 @@ theorem hasBijectiveReindex_coprod (S : Type uS)
   intro j j' g a i
   exact h a.1.1 g ⟨a.1.2, a.2⟩ i
 
-/-- Bijective reindexing is inherited by `δ` from the adjoined arity's own
-reindexing: the two summands of a `δ` direction are reindexed independently.
-Only this direction is proved; the converse is not used. -/
+/-- `adjoinArity` inherits bijective reindexing from the subfunctor's and the
+adjoined arity's together, both being required: the two summands of a direction
+are reindexed independently, one by each. Only this direction is proved; the
+converse is not used. -/
 theorem hasBijectiveReindex_adjoinArity (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (P : ShapeArity F.toPresheafPFunctorData) (hP : P.IsFunctorial F)
     (hF : HasBijectiveReindex F)
@@ -1071,13 +1090,13 @@ theorem hasBijectiveReindex_adjoinArity (F : PresheafPFunctor.{uI, uJ, uA, uB, v
         | inr b₂ =>
             have hv : (Sum.inl (P.reindex g a ⟨c₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
                 Sum.inr (F.reindex g a ⟨b₂, h₂⟩).1 := congrArg Subtype.val hd
-            simp at hv
+            cases hv
     | inr b₁ =>
         cases b₂ with
         | inl c₂ =>
             have hv : (Sum.inr (F.reindex g a ⟨b₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
                 Sum.inl (P.reindex g a ⟨c₂, h₂⟩).1 := congrArg Subtype.val hd
-            simp at hv
+            cases hv
         | inr b₂ =>
             have hv : (Sum.inr (F.reindex g a ⟨b₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
                 Sum.inr (F.reindex g a ⟨b₂, h₂⟩).1 := congrArg Subtype.val hd
@@ -1405,10 +1424,12 @@ section Decoding
 
 variable {I : Type uI} [Category.{vI} I]
 
-/-- A morphism of presheaves on `I`, unbundled. This is the type `δ`'s subcode
-family is indexed by once a decoding presheaf is supplied: the analogue of
+/-- A morphism of presheaves on `I`, unbundled. It is the analogue of
 `IR.delta`'s `B → I`, and of the sections `(p : P) → D (i p)` of Section 6 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013].
+[HancockMcBrideGhaniMalatestaAltenkirch2013]: the decodings `δ`'s continuation
+depends on. `δ` takes one continuation over `ElObj (decPresheaf …)` rather than
+a family indexed by these; `deltaRec` is the construction that does index a
+family of functors by them.
 
 Unbundled for the usual reason: `P ⟶ D` between objects of a presheaf category
 would draw in `Classical.choice`. -/
@@ -1421,7 +1442,7 @@ would draw in `Classical.choice`. -/
     app (G.restr f x) = D.map f.op (app x)
 
 /-- The arity a `δ` adjoins at the decoding `s`: the fibres of `s`, as a
-presheaf on the base `ElObj D`. The fibre over `y` is the elements of `P` at
+presheaf on the base `ElObj D`. The fibre over `y` is the elements of `G` at
 `y.1` that `s` sends to `y.2`, and it is `s`'s naturality that makes those
 fibres close under restriction — which is why the decoding must be a presheaf
 morphism and not a bare family.
@@ -1445,7 +1466,7 @@ theorem fibreArity_restr_val {G : DomArity.{uI, uD, vI} I} {D : Iᵒᵖ ⥤ Type
     (p : {q : G.Dir z.1 // s.app q = z.2}) (f : y' ⟶ z) :
     (((fibreArity s).restr f ⟨⟨z, p⟩, rfl⟩).1).2.1 = G.restr f.1 p.1 := rfl
 
-/-- The fibre arity is a presheaf: both laws are `P`'s own, the fibre condition
+/-- The fibre arity is a presheaf: both laws are `G`'s own, the fibre condition
 being carried along by `s`'s naturality. -/
 theorem isFunctorial_fibreArity {G : DomArity.{uI, uD, vI} I} (hG : G.IsFunctorial)
     {D : Iᵒᵖ ⥤ Type uD} (s : PshMor G D) : (fibreArity s).IsFunctorial where
@@ -1467,11 +1488,11 @@ theorem isFunctorial_fibreArity {G : DomArity.{uI, uD, vI} I} (hG : G.IsFunctori
         {q : G.Dir y'.1 // s.app q = y'.2}) g).symm
     exact congrFun (hG.restr_comp f.1 g.1) p.1
 
-/-- The recursive `δ`: adjoin the arity `P` and let the continuation depend on
-the decoding. This is a semantic operation; it is the rule of Section 6 of
+/-- The recursive `δ`: adjoin the decoding's fibre arity and let the
+continuation depend on that decoding. This is a semantic operation; it is the rule of Section 6 of
 [HancockMcBrideGhaniMalatestaAltenkirch2013], whose subcode family is indexed
 by the sections `(p : P) → D (i p)`, generalized to presheaves — the sections
-become `PshMor P D`.
+become `PshMor G D`.
 
 It needs no new construction: regrouping `IR.delta`'s coproduct over
 assignments by the decoding they induce presents it as a coproduct, over the
@@ -1507,9 +1528,9 @@ theorem hasBijectiveReindex_deltaRec {J : Type uJ} [Category.{vJ} J]
   intro j j' g a i
   exact Function.bijective_id
 
-/-- At the terminal decoding the recursive `δ` degenerates: `PshMor P ⊤` is a
-singleton, so the coproduct has one summand and the continuation cannot depend
-on anything. That is the case the base-category layer builds. -/
+/-- At a fibrewise-subsingleton decoding the recursive `δ` degenerates:
+`PshMor G D` is a singleton, so the coproduct has one summand and the
+continuation cannot depend on anything. That is the case the base-category layer builds. -/
 theorem subsingleton_pshMor_to_terminal (G : DomArity.{uI, uD, vI} I)
     (D : Iᵒᵖ ⥤ Type uD) (hD : ∀ i : I, Subsingleton (D.obj ⟨i⟩)) :
     Subsingleton (PshMor G D) :=
@@ -1816,7 +1837,12 @@ def praCode (𝔹 : Cat.{v, u})
     ⟨⟨⟨𝔹, Sum.inl F⟩, fun b ↦ PEmpty.elim b⟩, funext fun b ↦ PEmpty.elim b⟩
 
 /-- The `δ` code over `𝔹`: adjoin the output-varying arity `A`, the subcode
-being one over the category of elements of `A`'s decoding presheaf. -/
+being one over the category of elements of `A`'s decoding presheaf.
+
+`hK` aligns the subcode's fibre with that base as a strict equality of bundled
+categories, which is what `SlicePFunctor.W.mk` needs. So `Code` is not closed
+under replacing a subcode's base by an equivalent category — a constraint of
+the W-type presentation, not of the mathematics. -/
 def deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I 𝔹) (hA : A.IsFunctorial)
     (K : Code.{u, v} I D)
     (hK : (codePFunctor.{u, v} I D).wIndex K =
