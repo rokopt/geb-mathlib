@@ -151,9 +151,11 @@ Concern shape.
       author order, so the key names the proceedings version alone. This
       correction must land before any branch of the presheaf p.r.a. workstream
       that cites an uncovered result: W-a for Definitions 6 and 7 and Theorem
-      1, W-b for Lemma 1. Theorem 3, which W-d cites, is covered by the
-      existing note already. W-b's other citation is to the delta rule by
-      section, and section numbering is unchanged.
+      1. Lemma 1 is due already rather than at a branch: it is cited in
+      persistent content at three sites in
+      `Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and once in its test
+      mirror, uncovered by the existing note. Theorem 3, which W-d cites, the
+      existing note already covers.
 
 ### Polynomial functors
 

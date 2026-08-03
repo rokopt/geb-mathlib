@@ -28,7 +28,8 @@
 ## Scope of this document
 
 This specifies a workstream on morphisms of presheaf parametric-right-adjoint
-functors and on codes denoting them, in two stages. Stage 1's content is
+functors and on codes denoting them, in two stages. The leaf rule injects a
+presheaf p.r.a. functor at the universes `CodeShape` pins. Stage 1's content is
 settled and machine-checked, up to the category structure and the
 natural-transformation identification recorded as obligations 2 and 3. Stage 2
 is elaborated: the two rules, the code type and the
@@ -83,7 +84,9 @@ gains imports of the new modules, which `Geb/Internal/` is permitted. Only
 free of both ports, `BaseArity.functor` being ported by obligation 4 into
 W-b's allowlisted module. Whichever of W-c, W-d and W-e lands last removes the
 remainder
-together with this document, the two transient handoffs
+together with this document, the `TODO.md` § In progress entry for this
+workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
+dangle once the prototype is gone, the two transient handoffs
 `docs/superpowers/specs/2026-07-30-presheaf-pra-handoff.md` and
 `2026-08-02-presheaf-pra-codes-handoff.md`, the plan, the directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
@@ -133,11 +136,14 @@ the correspondence is definitional rather than earned.
 | Rule | Small `IR` | Here | Status |
 | --- | --- | --- | --- |
 | `ι`, `σ` | generate the shape data: `ι` takes `o : O`, denoting `o' ↦ (o' = o)`; `σ` takes `S : Set` and a family `K : S → IR I O`, denoting a coproduct | absent as rules. The leaf takes a `PresheafPFunctor (el(D)ᵒᵖ) 𝔹` outright | `praCode`; `interp_praCode` folds it back unchanged |
-| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` whose `fam j` is a discrete fibration, in the same directions role, with functorial output-indexing; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Inference, not elaborated*; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
+| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` in the same directions role, with functorial output-indexing; that each `fam j` is a discrete fibration is the reading the Status cell marks; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Inference, not elaborated*; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
 
-The principle governing `δ`'s generalization is unchanged: **replace equality
-by a morphism**. In a discrete category `Hom(x, y)` is `x = y`, so the rule
-collapses to its small-IR counterpart over a discrete base.
+The principle governing `δ`'s generalization is the same one: replace equality
+by a morphism, `Hom(x, y)` being `x = y` in a discrete category. *Inference,
+not elaborated*: that the rule therefore collapses to its small-IR counterpart
+over a discrete base. Open question 5 leaves that degeneration open, and
+`iotaDiscreteShapeEquiv`, the one declaration in the vicinity, collapses a
+total space and no more.
 
 The leaf has three consequences, the first two of them costs.
 
@@ -187,9 +193,10 @@ consuming the general form.
 Four semantic operations sit beside the two rules without being rules. They
 are what establishes that the p.r.a. side is what this document says it is:
 
-- `iotaPresheaf j₀`'s shape presheaf is the representable `j' ↦ Hom(j', j₀)`,
-  with
-  `iotaDiscreteShapeEquiv` the discrete collapse; `unitPshLift`'s is the
+- `iotaPresheaf j₀`'s shape type is the total space `Σ j', (j' ⟶ j₀)` of the
+  representable, with `iotaDiscreteShapeEquiv` collapsing that total space over
+  a discrete base. *Inference, not elaborated*: that its shape presheaf is
+  `y j₀`, which no declaration states; `unitPshLift`'s is the
   presheaf with one element over each output object. Small induction
   recursion's `ι` does two jobs that a discrete
   base conflates — the pointed generator, and the terminal foot a `σ` chain
@@ -208,8 +215,8 @@ are what establishes that the p.r.a. side is what this document says it is:
   `praWitnessLiftShapeEquiv` matches its shapes over each object with
   `T.obj ⟨j⟩` — fibrewise, the two lying at different universes so that no
   isomorphism of presheaves is formable, as for `dirEquivOfPresheaf` — and
-  `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` lift
-  its shape and arity identifications to presheaf ones. That is the
+  `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` show
+  those fibrewise correspondences commute with restriction. That is the
   [nLabParametricRightAdjoint] formula's data, reached by those operations.
 
 Two facts recur across the confirmations and are stated once here rather than
@@ -480,8 +487,11 @@ in.
 
 Every operation and generator named in this document is a `PresheafPFunctor` —
 that is, all seven functor laws are proved, not assumed: `unitPsh`,
-`unitPshLift`, `iotaPresheaf`, `iotaConst`, `sigmaPsh`, `adjoinArity`,
-`coprod`, `deltaRec` and `delta`. The last two are composites of the others and
+`unitPshLift`,
+`iotaPresheaf`, `iotaConst`, `sigmaPsh`, `adjoinArity`, `coprod`, `deltaRec`
+and `delta`, together with the composites `praWitnessLift`,
+`adjoinArityVarying` and `deltaVaries` and the fixture `arityVaries`. The last
+two are composites of the others and
 so inherit their laws rather than needing new ones. Of these only `delta` is
 named by a code rule; the rest survive as semantic operations, as generators of
 the fragment below, and as the `arityVaries` fixtures' base.
@@ -522,9 +532,9 @@ continuation indexed by the decoding, and both are primitives of the fragment,
 subcode family in order to contain Section 6's `δ`.
 
 The fragment contains the presheaf reading of the rules of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] Section 6 on the readings §
-Definitions
-records — `iotaPresheaf` for its pointed `ι`, `sigmaPsh` for its `σ` (`coprod`
+[HancockMcBrideGhaniMalatestaAltenkirch2013] Section 6 on the transcription
+readings § Definitions records — `iotaPresheaf` for its pointed `ι`,
+`sigmaPsh` for its `σ` (`coprod`
 entering only as the operation `deltaRec` is built from), `deltaRec` for its
 `δ`, whose arity is an object of
 `Set/I` and so carries no dependence on the output object. *Inference, not
@@ -654,7 +664,7 @@ being at different universe instantiations.
 | `coprod`, the coproduct of a type-indexed family | Novel at this level; the discrete analogue is `SlicePFunctor.coprod` |
 | `unitPsh`, the unit | Novel at this level; the discrete analogue is `SliceDomPFunctor.representable` at the empty direction type |
 | `adjoinArity`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
-| `sigmaPsh`, the base change along `ElObj S → J` | Novel. It has no discrete analogue in this repository: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`; open question 5 leaves the discrete degeneration open and nothing establishes this |
+| `sigmaPsh`, the base change along `ElObj S → J` | Transcription of Section 6's `σ` as a semantic operation, generalized from a family over a set to a base change along a category of elements; it is not a code rule. Its discrete analogue in this repository is not identified: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`, but open question 5 leaves that degeneration open and nothing establishes it |
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
 | `ShapeArity`, `ShapeArity.const` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. *Inference, not elaborated*: that this is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern. `const` is the case Section 6's `δ` arity occupies |
 | `BaseArity`, `BaseArity.pullback` — the arity indexed by output objects, and its pullback along `q` | Novel |
@@ -741,7 +751,8 @@ into `docs/` as persistent documentation rather than leaving a spec on `main`.
 
 ## Proof obligations
 
-Each is unproved at the time of writing.
+Obligation 8 is discharged, as its entry records; each of the other nine is
+unproved.
 
 1. **Stage 1 at upstream quality** (W-a). Port `PshHom`, its action, and
    `pshHomEquivNatFamily` from the prototype into `Geb/Mathlib/`, together with
@@ -909,8 +920,8 @@ Each is unproved at the time of writing.
    carried is instead `delta`'s type. The semantic chain `praWitnessLift` — the
    `σ`-`δ`-unit composite, with `praWitnessLiftShapeEquiv` matching its shapes
    with the target's fibrewise and `praWitnessLiftShapeVal_naturality` and
-   `praWitnessLiftDirEquiv_restr` lifting the shape and arity identifications
-   from objectwise correspondences to presheaf ones — survives as what shows
+   `praWitnessLiftDirEquiv_restr` showing those correspondences commute with
+   restriction — survives as what shows
    the operations reach that data, which is the statement a restricted leaf
    would need. It is ported by obligation 4.
 9. **The collapse** (W-e). The equivalence `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`, which the
@@ -928,7 +939,8 @@ Each is unproved at the time of writing.
     recursion over the two rules, independently of `interp`, and a bijection
     with `PshHom` of the interpretations. `PshHom F F'` requires `F` and `F'`
     over one output base, where `Code` is fibred over `Cat` by
-    `codePFunctor.wIndex` and `interp_fst` records that the fibre varies, so
+    `codePFunctor.wIndex`, and `interp_fst` identifies a code's index with the
+    base its interpretation lands in, so
     the statement is over a fixed base: for `c c' : Code` with
     `h : wIndex c = 𝔹` and `h' : wIndex c' = 𝔹`, a bijection between
     `Code.Hom c c'` and `PshHom` of `(interp c).2` and `(interp c').2`
@@ -947,7 +959,9 @@ Each is unproved at the time of writing.
     codomain and obligation 2 the category structure the bijection must
     respect. Whether a `Code.Hom` so defined exists for these two rules is
     open, on two counts: the leaf's morphisms are `PshHom`s outright, so the
-    recursion has content only at `δ`; and the `δ`/`δ` clause must relate
+    recursion has content only at `δ` — and the leaf/leaf clause needs the same
+    `wIndex` alignment the top-level statement does, `Code` being unindexed;
+    and the `δ`/`δ` clause must relate
     subcodes over `ElObj (decPresheaf A hA D)` and
     `ElObj (decPresheaf A' hA' D)`, two different categories of elements, where
     the one-base restriction bites again and no `interp_fst` transport is
@@ -1092,7 +1106,7 @@ over 7 files, the most-cited outright), Lemma 3 (14 over 5) and Definition 5
 `Geb/Mathlib/Data/PFunctor/IndRec/{Basic,Category,Naturality}.lean`, their
 three test mirrors and `docs/index.md`, `Category.lean` being its largest
 single consumer. A key-only search under-scopes both, as it does the author
-order below. One collision deserves recording on its own: the preprint's
+order below. One collision is recorded separately: the preprint's
 Definition 8 is the proceedings' Definition 5, while the proceedings'
 Definition 8 is the preprint's Definition 17, so a reader who does not know
 which numbering a citation uses lands on the wrong statement. Section numbering
@@ -1100,15 +1114,21 @@ is unchanged, though the preprint adds numbered subsections the proceedings
 runs in. The preprint is not merely a renumbering: it carries a different title
 and a different author order, so the key
 `HancockMcBrideGhaniMalatestaAltenkirch2013` names the proceedings version
-alone, and its Corollary 19 states more than the proceedings' Corollary 2.
+alone. *Unelaborated*: that its Corollary 19 states more than the proceedings'
+Corollary 2, which this document asserts and does not source.
 Correcting and extending the note is recorded in [TODO.md](../../../TODO.md) §
-Citation corrections deferred to their own branch, and must land before
-whichever branch first cites an uncovered result — W-a for Definitions 6 and 7
-and Theorem 1, W-b for Lemma 1. Theorem 3, which W-d cites, is covered by the
-existing note already, so W-d is unconstrained. W-b is constrained because
-§ Definitions gives Lemma 1 as the discrete analogue of `praWitnessLift`,
-which obligation 4 ports, so the correction must land before
-W-b if that analogue travels into the ported docstrings. W-b's other citation
+Citation corrections deferred to their own branch. Lemma 1 makes that
+correction due already rather than at a future branch: it is cited in
+persistent content at three sites in
+`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and once in its test mirror, and
+the existing note does not cover it, so those citations are ambiguous between
+the two numberings today and no branch of this workstream introduced them.
+Among this workstream's own citations the constraint binds W-a, for Definitions
+6 and 7 and Theorem 1, which no repository file cites yet; W-b would cite Lemma
+1 if § Definitions' `praWitnessLift` analogue travels into the ported
+docstrings, but the correction is due before W-b regardless. Theorem 3, which
+W-d cites, the existing note already covers, so W-d is unconstrained. W-b's
+other citation
 of the paper is to the `δ` rule by section, and section numbering is unchanged.
 That ordering constraint is recorded in `TODO.md` too, this document being
 removed with the last branch.
