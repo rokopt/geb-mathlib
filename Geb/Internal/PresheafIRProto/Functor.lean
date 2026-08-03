@@ -10,20 +10,25 @@ public import Geb.Internal.PresheafIRProto.Codes
 public import Mathlib.CategoryTheory.Yoneda
 
 /-!
-# Prototype: the p.r.a. formula with the presheaf hom bundled
+# Prototype: the parts that write in a functor category
 
-Packages the choice-free core (`PresheafIRProto.Basic`) statement of the
-p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` with its hom written as a
-functor-category hom `arityPresheaf F a ⟶ Z`. Writing `⟶` between two objects
-of a presheaf category invokes `CategoryTheory.Functor.category`, which is
-`Classical.choice`-dependent, so this packaging is kept in a separate module
-from the choice-free core.
+Collects what the choice-free core (`PresheafIRProto.Basic`,
+`PresheafIRProto.Codes`) cannot state. Writing `⟶` between two objects of a
+presheaf category, or `⥤` into one, invokes
+`CategoryTheory.Functor.category`, which is `Classical.choice`-dependent, so
+every declaration needing either lives here and this module alone is on
+`GebMeta.classicalAllowedModules`.
 
-Its content is `arityHomEquivNatTrans`, the bundling isomorphism: a
-`CategoryTheory.NatTrans` is its `app` field together with `naturality`, and
-`GebProto.ArityHom` is exactly that data unbundled, so the equivalence is the
-identity on both sides. The formula itself is then transported along it from
-the core `GebProto.objEquivSigmaArityHom`; no part of it is re-proved here.
+Three things sit here. The p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` with its
+hom written as `arityPresheaf F a ⟶ Z`, obtained by transporting the core's
+`GebProto.objEquivSigmaArityHom` along the bundling isomorphism
+`arityHomEquivNatTrans` — a `CategoryTheory.NatTrans` is its `app` field
+together with `naturality`, and `GebProto.ArityHom` is that data unbundled, so
+the isomorphism is the identity on both sides and no part of the formula is
+re-proved. The two universe-formability demonstrations recording where the
+bundled hom is formable. And `BaseArity.functor`, the output-indexed arity
+bundled as a functor into the presheaf category, whose two functor laws are
+proved here rather than transported.
 
 ## Main definitions
 
@@ -31,10 +36,17 @@ the core `GebProto.objEquivSigmaArityHom`; no part of it is re-proved here.
   unbundled arity hom and the functor-category hom.
 * `GebProto.objEquivSigmaHom` — the p.r.a. formula with the presheaf hom
   bundled.
+* `GebProto.arityPresheafHomAtUB` / `GebProto.arityPresheafHomULifted` — the
+  universes at which the bundled hom is formable.
+* `GebProto.BaseArity.functor` — an output-indexed arity as a functor
+  `J ⥤ (Iᵒᵖ ⥤ Type uB)`, the output base to discrete fibrations over the
+  input base.
 
-## References
+## Main statements
 
-* [GhaniNordvallForsbergMalatesta2015]
+* `GebProto.iotaPresheafData_A_eq_iotaConstData_yoneda` — the shape type of the
+  constant functor at a representable is that of the constant functor at
+  `yoneda.obj j₀`. An equality of total spaces, not of presheaves.
 
 ## Tags
 
