@@ -43,8 +43,7 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   to `J`.
 * `GebProto.elEqToHom` — the transport in the category of elements, with its
   underlying `J`-morphism definitionally an `eqToHom`.
-* `GebProto.unitPsh` — the unit for `δ`: one shape over each output object, no
-  directions.
+
 * `GebProto.arityVariesShapeArity` / `GebProto.adjoinArityVarying` — the arity of
   `arityVaries` as a `ShapeArity` over `unitPsh`, and the `δ` at it.
 * `GebProto.PshMor` — a morphism from a `DomArity` to a presheaf, unbundled:
@@ -65,8 +64,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   continuation.
 * `GebProto.Interp` — the interpretation's target, a presheaf p.r.a. functor
   paired with the base category it lands in.
-* `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` — the round trip
-  between the total-space and the fibrewise presentation of an arity.
+* `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` — the two
+  conversions between the total-space and the fibrewise presentation of an
+  arity, with `GebProto.DomArity.dirEquivOfPresheaf`,
+  `GebProto.DomArity.dirEquivOfPresheaf_restr` and
+  `GebProto.DomArity.sigmaDirEquivCarrier` the round trips.
 * `GebProto.BaseArity.famPresheaf` / `GebProto.BaseArity.reindexHom` — an
   output-indexed arity's presheaf at each output object, and the morphism of
   presheaves each output morphism induces.
@@ -93,11 +95,16 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   `GebProto.hasBijectiveReindex_iotaConst`,
   `GebProto.hasBijectiveReindex_coprod`,
   `GebProto.hasBijectiveReindex_adjoinArityConst`, `GebProto.hasBijectiveReindex_unitPsh`,
-  `GebProto.hasBijectiveReindex_sigmaPsh` — every generator and operation of the
-  constant-arity fragment has, or preserves, bijective reindexing.
+  `GebProto.hasBijectiveReindex_sigmaPsh`, `GebProto.hasBijectiveReindex_deltaRec`
+  — every generator and operation of the constant-arity fragment has, or
+  preserves, bijective reindexing.
 * `GebProto.hasBijectiveReindex_adjoinArity` — an `adjoinArity`'s reindexing is
   bijective when both the subfunctor's and the adjoined arity's are. The
   converse is not proved.
+* `GebProto.hasBijectiveReindex_of_isEmpty` /
+  `GebProto.not_hasBijectiveReindex_of_isEmpty` — the empty-direction criterion
+  and its negative dual, which the three generator cases and the three negative
+  witnesses respectively apply.
 * `GebProto.not_hasBijectiveReindex_arityVaries` — `arityVaries` is not such a
   functor. That those rules do not generate it needs an induction over a code
   type for them, which is not built here.
@@ -360,7 +367,9 @@ variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
 /-- The arity adjoined by a `δ`, varying over `F`'s shape presheaf: a presheaf
 on `I` for each shape, together with a reindexing along shape restriction. This
-is the data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`, unbundled — the same data
+carries a family over `F.A` with a reindexing along `shapeRestr`; reading that
+as the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)` is not elaborated
+here, there being no counterpart of `BaseArity.functor` for it — the same data
 `PresheafPFunctorData` carries in its `directionRestr` and `reindex` fields.
 
 Indexing by shapes rather than by output objects is what keeps the `δ`
@@ -1017,7 +1026,8 @@ def elSliceEquiv (S : Jᵒᵖ ⥤ Type uS) (y₀ : ElObj.{uJ, uS, vJ} S) :
 
 /-- That collapse is over `J`: it commutes with the shape-output maps. So
 `sigmaPsh S (iotaPresheaf y₀)` and `iotaPresheaf y₀.1` have the same shape
-presheaf, and `σ` over `ι` contributes no shapes of its own.
+total space over each output object; the base change contributes no shapes of
+its own.
 
 This bounds `sigmaPsh`. Small induction recursion builds an arbitrary shape
 set as `σ S K` with `K : S → IR I O` a family of `ι`s, one output index per
@@ -1053,6 +1063,14 @@ reindexing map is a map between empty types. -/
 theorem hasBijectiveReindex_of_isEmpty (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (h : ∀ (a : F.A) (i : I), IsEmpty (F.Direction a i)) : HasBijectiveReindex F :=
   fun _ _ _ a i ↦ ⟨fun x _ _ ↦ (h _ i).elim x, fun y ↦ (h a.1 i).elim y⟩
+
+/-- Conversely, reindexing is not bijective when a direction over a shape has
+no preimage: the source fibre is empty and the target inhabited. -/
+theorem not_hasBijectiveReindex_of_isEmpty
+    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) ⦃j j' : J⦄ (g : j' ⟶ j)
+    (a : F.Shape j) (i : I) (w : F.Direction a.1 i)
+    (h : IsEmpty (F.Direction (F.shapeRestr g a).1 i)) : ¬ HasBijectiveReindex F :=
+  fun hb ↦ ((hb g a i).2 w).elim fun d _ ↦ h.false d
 
 /-- The constant functor at a representable has bijective reindexing: it has no
 directions at all. -/
@@ -1153,12 +1171,10 @@ generated, so `δ` must admit arities that vary over the output object. That
 induction and that code type are not built here. The cases are also syntactic
 — they bound what the constructions produce on the nose, not up to isomorphism
 of the interpreted functors. -/
-theorem not_hasBijectiveReindex_arityVaries : ¬ HasBijectiveReindex arityVaries := by
-  intro h
-  have hb := (h (homOfLE (show (0 : Fin 2) ≤ 1 by omega))
-    (⟨(1 : Fin 2), rfl⟩ : arityVaries.Shape (1 : Fin 2)) (0 : Fin 1)).2
-  obtain ⟨d, -⟩ := hb ⟨⟨(0 : Fin 1)⟩, rfl⟩
-  exact d.1.down.elim0
+theorem not_hasBijectiveReindex_arityVaries : ¬ HasBijectiveReindex arityVaries :=
+  not_hasBijectiveReindex_of_isEmpty arityVaries
+    (homOfLE (show (0 : Fin 2) ≤ 1 by omega)) ⟨(1 : Fin 2), rfl⟩ (0 : Fin 1)
+    ⟨⟨(0 : Fin 1)⟩, rfl⟩ ⟨fun d ↦ d.1.down.elim0⟩
 
 end Incompleteness
 
@@ -1199,8 +1215,9 @@ def unitPsh (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
 
 /-- The unit at the shape universe the representables force. `unitPsh`'s shape
 type is `J` itself, at `uJ`, where `iotaPresheaf`'s is the total space of a
-hom-family, at `max uJ vJ`; admitting both to one code leaf needs them in one
-`PresheafPFunctor` universe, so this lifts the shape type. -/
+hom-family, at `max uJ vJ`. `praWitnessLift` needs the unit at the second, so
+that the chain it heads lives at the shape universe `Interp` pins; this lifts
+the shape type to reach it. -/
 def unitPshLiftData (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
     PresheafPFunctorData.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
   A := ULift.{vJ} J
@@ -1285,13 +1302,11 @@ outside the class `hasBijectiveReindex_adjoinArityConst` bounds. Admitting ariti
 that vary over the shape presheaf therefore takes the construction outside the
 bound. Whether it reaches `arityVaries` itself is not established: the
 directions differ by a `PEmpty` summand and no isomorphism is constructed. -/
-theorem not_hasBijectiveReindex_adjoinArityVarying : ¬ HasBijectiveReindex adjoinArityVarying := by
-  intro h
-  have w : adjoinArityVarying.Direction (1 : Fin 2) (0 : Fin 1) :=
-    ⟨Sum.inl (ULift.up (0 : Fin 1)), rfl⟩
-  obtain ⟨d, -⟩ := (h (homOfLE (show (0 : Fin 2) ≤ 1 by omega))
-    (⟨(1 : Fin 2), rfl⟩ : adjoinArityVarying.Shape (1 : Fin 2)) (0 : Fin 1)).2 w
-  exact adjoinArityVarying_source_empty d
+theorem not_hasBijectiveReindex_adjoinArityVarying :
+    ¬ HasBijectiveReindex adjoinArityVarying :=
+  not_hasBijectiveReindex_of_isEmpty adjoinArityVarying
+    (homOfLE (show (0 : Fin 2) ≤ 1 by omega)) ⟨(1 : Fin 2), rfl⟩ (0 : Fin 1)
+    ⟨Sum.inl (ULift.up (0 : Fin 1)), rfl⟩ ⟨adjoinArityVarying_source_empty⟩
 
 /-- The chain that reaches the p.r.a. formula's data: `sigmaPsh` at an
 arbitrary shape presheaf `T`, over `adjoinArity` at an arbitrary output-indexed
@@ -1302,7 +1317,7 @@ def praWitnessLift
     {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
     (hA : A.IsFunctorial) :
-    PresheafPFunctor.{uI, uJ, max uJ uS vJ, max uB 0, vI, vJ} I J :=
+    PresheafPFunctor.{uI, uJ, max uJ uS vJ, uB, vI, vJ} I J :=
   sigmaPsh T (adjoinArity (unitPshLift I (ElObj.{uJ, uS, vJ} T)) (A.pullback _)
     (A.isFunctorial_pullback hA _))
 
@@ -1594,7 +1609,8 @@ factor adjoins the directions and the outer one takes the coproduct over the
 decodings, `decPresheaf` at `b` being the decodings at `b`. That coproduct is
 the shape half of [DybjerSetzer1999]'s `δ` under the regrouping
 `Σ_{g : P → X} ⟦F (f ∘ g)⟧ = Σ_{d : P → D} (sections of f over d) × ⟦F d⟧`,
-which `deltaRec` uses as well.
+which `deltaRec` uses as well. That regrouping is stated here and in
+`deltaRec`, and no declaration establishes it as an equation.
 
 No `A` field grows in the process, and that is not an accident. A shape
 presheaf here is a total space `A` fibred by `q`, so a coproduct over the
@@ -1655,18 +1671,17 @@ outside the bound of `hasBijectiveReindex_adjoinArityConst`. Carrying the
 decoding-indexed continuation on the rule does not cost the output-varying
 arity: both features are present at once. -/
 theorem not_hasBijectiveReindex_deltaVaries :
-    ¬ HasBijectiveReindex deltaVaries := by
-  intro h
-  have hb := (h (homOfLE (show (0 : Fin 2) ≤ 1 by omega))
-    (⟨⟨decVariesElt, 𝟙 _⟩, rfl⟩ : deltaVaries.Shape (1 : Fin 2))
-    (⟨(0 : Fin 1), PUnit.unit⟩ : ElObj.{0, 0, 0} termPsh)).2
-  obtain ⟨d, -⟩ := hb
+    ¬ HasBijectiveReindex deltaVaries :=
+  not_hasBijectiveReindex_of_isEmpty deltaVaries
+    (homOfLE (show (0 : Fin 2) ≤ 1 by omega)) ⟨⟨decVariesElt, 𝟙 _⟩, rfl⟩
+    ⟨(0 : Fin 1), PUnit.unit⟩
     ⟨Sum.inl ⟨⟨(0 : Fin 1), PUnit.unit⟩,
       ⟨⟨⟨(0 : Fin 1)⟩, Subsingleton.elim _ _⟩, rfl⟩⟩, rfl⟩
-  obtain ⟨b, -⟩ := d
-  cases b with
-  | inl c => exact (c.2.1.1.down).elim0
-  | inr e => exact e.elim
+    ⟨fun d ↦ by
+      obtain ⟨b, -⟩ := d
+      cases b with
+      | inl c => exact (c.2.1.1.down).elim0
+      | inr e => exact e.elim⟩
 
 end FusedWitness
 
@@ -1769,9 +1784,9 @@ def praCode (𝔹 : Cat.{v, u})
 being one over the category of elements of `A`'s decoding presheaf.
 
 `hK` aligns the subcode's fibre with that base as a strict equality of bundled
-categories, which is what `SlicePFunctor.W.mk` needs. So `Code` is not closed
-under replacing a subcode's base by an equivalent category — a constraint of
-the W-type presentation, not of the mathematics. -/
+categories, which is what `SlicePFunctor.W.mk` needs — a constraint of the
+W-type presentation, not of the mathematics. Whether a code exists over an
+equivalent base is not settled here. -/
 def deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I 𝔹) (hA : A.IsFunctorial)
     (K : Code.{u, v} I D)
     (hK : (codePFunctor.{u, v} I D).wIndex K =

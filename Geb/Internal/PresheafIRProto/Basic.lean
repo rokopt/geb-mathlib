@@ -39,7 +39,8 @@ The generator development tests the following claims:
    `PUnit`. No identification with `IR.toSlicePFunctorIota`'s shape type is
    established; the two are at different universe instantiations.
 3. `iotaConst` — the constant functor at an arbitrary presheaf on `J`, which
-   is what a Lemma-1-style completeness result needs and which `iota` and
+   is what a completeness result in the style of Lemma 1 of
+   [HancockMcBrideGhaniMalatestaAltenkirch2013] needs and which `iota` and
    `sigma` are not expected to reach, those generating only coproducts of
    representables. Nothing here establishes that non-reachability.
 4. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
@@ -62,7 +63,8 @@ The generator development tests the following claims:
 * `GebProto.Functoriality` — the witness family attached over pre-codes.
 * `GebProto.ArityB`, `GebProto.arityVaries` / `arityVariesData`,
   `GebProto.arityVariesShapeEquiv` — the functor with non-invertible `reindex`,
-  its arity, its operations, and the terminality of its shape presheaf.
+  its arity, its operations, and its shape presheaf being fibrewise a
+  singleton.
 * `GebProto.shapePresheaf` / `GebProto.arityPresheaf` — the shape presheaf `T₁`
   and the arity presheaf `E(a)`, as `Functor` values built from the raw fields.
 * `GebProto.ArityHom` / `GebProto.ofArityHomElt` /
@@ -93,8 +95,7 @@ The generator development tests the following claims:
 
 * [GhaniNordvallForsbergMalatesta2015]
 * [GhaniMalatestaNordvallForsberg2014Agda]
-* [GhaniNordvallForsbergMalatesta2015]
-* [GhaniMalatestaNordvallForsberg2014Agda]
+* [HancockMcBrideGhaniMalatestaAltenkirch2013]
 
 ## Tags
 
@@ -196,7 +197,8 @@ variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 /-- Claim 3: the constant functor at an arbitrary presheaf `P` on `J`. Shapes
 are the total space of `P` (its category of elements), the shape-output map is
 the projection, there are no directions, and `shapeRestr` is `P`'s own
-restriction. This is what a Lemma-1-style completeness result needs and what
+restriction. This is what a completeness result in the style of Lemma 1 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] needs and what
 `iota` + `sigma` are not expected to reach, those generating only coproducts of
 representables. -/
 def iotaConstData (P : Jᵒᵖ ⥤ Type uB) :
@@ -305,9 +307,9 @@ IR's `F→` witnesses functoriality of subcodes in the *input* labelling
 (`A → C`), which is the `directionRestr` side, whereas `reindex` witnesses
 functoriality of the arity assignment over `el(T₁)` — the *output* side.
 
-`arityVaries` below is the smallest functor for which the obligation has content. Its
-shape presheaf is the representable `y 1` (equivalently, since `1` is terminal
-in the walking arrow, fibrewise a singleton): one shape over each of `0` and
+`arityVaries` below is a functor for which the obligation has content, and a
+small one. Its shape presheaf is fibrewise a singleton: one shape over each of
+`0` and
 `1`. But its arity is `Fin 1` at the shape over `1` and `Fin 0` at the shape
 over `0`, so `reindex` along `0 ⟶ 1` is the map out of the empty type — not
 invertible.
@@ -369,7 +371,7 @@ def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
       (by intro j; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
       (by intro j j' j'' g h; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
 
-/-- The arity genuinely varies: empty at the shape over `0`, inhabited at the
+/-- The arity varies: empty at the shape over `0`, inhabited at the
 shape over `1`. So `reindex` along `0 ⟶ 1` is the empty map, not an iso. -/
 theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
 
@@ -1195,6 +1197,3 @@ def pshHomEquivNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) 
 end ShapeSideYoneda
 
 end GebProto
-
-
-

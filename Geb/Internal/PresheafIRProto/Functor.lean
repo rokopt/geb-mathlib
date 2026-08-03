@@ -106,7 +106,6 @@ theorem iotaPresheafData_A_eq_iotaConstData_yoneda (j₀ : J) :
     (iotaPresheafData.{uI, uJ, uB, vI, vJ} (I := I) j₀).A =
       (iotaConstData.{uI, uJ, vJ, vI, vJ} (I := I) (yoneda.obj j₀)).A := rfl
 
-
 end CoproductOfRepresentables
 
 /-- A functorial `BaseArity` is a functor from the output base to presheaves on

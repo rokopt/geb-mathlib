@@ -109,7 +109,9 @@ open question 3 cites and no obligation ports, and the small computation checks
 `domHom_eq_pi_sigma_arityHom`), and `arityVariesShapeEquiv`, which open
 question 4 cites and no obligation ports, so that citation lapses with the
 prototype. None is reachable from the code system. Within the domain-level
-warm-up the line falls thus: `idArityHom`, `natTransOfArityHom`,
+warm-up, whose `DomHom`, `DomNatFamily` and
+`domHom_eq_pi_sigma_arityHom` the previous paragraph already places, the line
+falls thus: `idArityHom`, `natTransOfArityHom`,
 `postcompArityHom` and `map_symm_arityHom` are shared with the `PshHom` layer
 and are ported by obligation 1; `idElt`, `map_idElt`,
 `objEquivSigmaArityHom_idElt`, `domHomSigma`, `domHomFamily`,
@@ -130,7 +132,7 @@ the correspondence is definitional rather than earned.
 | Rule | Small `IR` | Here | Status |
 | --- | --- | --- | --- |
 | `ι`, `σ` | generate the shape data: `ι` takes `o : O`, denoting `o' ↦ (o' = o)`; `σ` takes `S : Set` and a family `K : S → IR I O`, denoting a coproduct | absent as rules. The leaf takes a `PresheafPFunctor (el(D)ᵒᵖ) 𝔹` outright | `praCode`; `interp_praCode` folds it back unchanged |
-| `δ` | takes `P : Set` and `i : P → I`, the node's directions and their labelling, and a continuation depending on the decoding | takes a `BaseArity 𝕀 𝔹` whose `fam j` is a discrete fibration, in the same directions role, with functorial output-indexing; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *inference, not elaborated*; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
+| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` whose `fam j` is a discrete fibration, in the same directions role, with functorial output-indexing; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Inference, not elaborated*; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
 
 The principle governing `δ`'s generalization is unchanged: **replace equality
 by a morphism**. In a discrete category `Hom(x, y)` is `x = y`, so the rule
@@ -203,7 +205,9 @@ p.r.a. side is what this document says it is:
   composite contributes `S` itself — no declaration compares either.
 - `praWitnessLift T A hA` is the chain `sigmaPsh` at an arbitrary shape
   presheaf `T` over `adjoinArity` at an arbitrary arity over the unit;
-  `praWitnessLiftShapeEquiv` gives its shape presheaf as `T` and
+  `praWitnessLiftShapeEquiv` matches its shapes over each object with
+  `T.obj ⟨j⟩` — fibrewise, the two lying at different universes so that no
+  isomorphism of presheaves is formable, as for `dirEquivOfPresheaf` — and
   `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` lift
   its shape and arity identifications to presheaf ones. That is the
   [nLabParametricRightAdjoint] formula's data, reached by those operations.
@@ -225,15 +229,17 @@ the corresponding bare `NatTrans` or unbundled data does not. That is why
 ## Motivation
 
 The repository's existing code system, `IndRec.IR I O`, denotes functors
-between free coproduct completions of discrete index types. Its interpretation
-preserves identities and composition (`IR.interpMor_id`, `IR.interpMor_comp`);
-the `⥤` packaging is deferred to a `Classical.choice`-enabled wrapper. One
-capability it lacks, and one property that the `Fam(C)`-based positive
-inductive-recursive definitions of [GhaniNordvallForsbergMalatesta2015] lack,
-motivate the generalization to presheaf bases. `IR I O` itself is full and
-faithful — Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013], present
-here as `IR.interpHomEquiv` — so the second point is about the `Fam(C)`
-generalization, not about `IR I O`:
+between free coproduct completions of discrete index types. Each functor it
+denotes preserves identities and composition (`IR.interpMor_id`,
+`IR.interpMor_comp`) — a statement about the denoted functors, not about the
+code-level map; the `⥤` packaging is deferred to a `Classical.choice`-enabled
+wrapper. One capability it lacks, and one property that the `Fam(C)`-based
+positive inductive-recursive definitions of
+[GhaniNordvallForsbergMalatesta2015] lack, motivate the generalization to
+presheaf bases. `IR I O`'s own code-level interpretation is full and faithful —
+Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013], present here as
+`IR.interpHomEquiv` — so the second point is about the `Fam(C)` generalization,
+not about `IR I O`:
 
 - *Inference, not elaborated* — the prototype constructs no initial algebras (§
   Non-goals) and no walking-arrow endofunctor. Only one of the two index sets
@@ -359,8 +365,9 @@ categories as the polynomials `I ← E → K → J` in `Cat` in which the last l
 fibration, the leg into `I` being a fibration and the leg into `K` an
 opfibration.
 
-The first condition is this repository's shape presheaf: `q : A → J` with
-`shapeRestr` and its two laws is a discrete fibration over `J`. *Inference, not
+*Inference, not elaborated*: the first condition is this repository's shape
+presheaf, `q : A → J` with `shapeRestr` and its two laws being a discrete
+fibration over `J`; no declaration states that reading. *Inference, not
 elaborated*: the second condition is the arity side, the fibration into `I`
 being the presheaf structure carried at each shape and the two-sidedness the
 compatibility `reindex` and `ReindexNaturality` impose between that structure
@@ -432,7 +439,8 @@ constructors, with the semantic operation each folds to:
 `D` it sums. The alternative — a `BaseArity (el(D)ᵒᵖ) 𝔹` over the
 interpretation's own input base, where a direction's label carries its own
 decoding value and the coproduct is absorbed into the labelling rather than
-appearing as shapes — is not a separate rule. It is `adjoinArity`, which is
+appearing as shapes — is not a separate rule. It is `adjoinArity` at that
+arity's `BaseArity.pullback`, which is
 not `δ` at all: it sums over no decodings and so carries no recursion, and it
 is a semantic operation for the same reason `sigmaPsh` is. (That it is
 reachable through the leaf does not distinguish it, every presheaf p.r.a.
@@ -537,7 +545,10 @@ different one, its `δ` carrying a decoding-indexed subcode family. Building
 that code type and running the induction is obligation 7.
 
 The replacement is `ShapeArity`: an arity varying over the shape presheaf,
-which is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`.
+carrying a family over `F.A` with a reindexing along `shapeRestr`. *Inference,
+not elaborated*: that this is the unbundled data of a functor
+`el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`; `BaseArity.functor` bundles the output-indexed
+version, and `ShapeArity` has no counterpart.
 `adjoinArityVarying` is the `δ` carrying `arityVaries`'s arity, and
 `not_hasBijectiveReindex_adjoinArityVarying` records that it lies outside the
 bound. It is not `arityVaries`: its directions are `ArityB a ⊕ PEmpty`, and no
@@ -581,8 +592,7 @@ output-varying arity: at the terminal decoding the fused `δ` at an
 output-varying arity still lies outside the bound.
 The degeneracy the witness exploits — `PshMor` into a fibrewise-subsingleton
 decoding is itself a subsingleton — is discharged inline by `Subsingleton.elim`
-at `PUnit`. A general statement of it was written and removed: nothing rested
-on it, and § Code is cost does not carry a lemma for its own sake.
+at `PUnit`, no general statement of it being carried.
 `deltaCodeVaries` is a code whose
 interpretation is that functor (`interp_deltaCodeVaries`, itself definitional),
 so `not_hasBijectiveReindex_interp_deltaCodeVaries` states the conclusion about
@@ -643,9 +653,9 @@ being at different universe instantiations.
 | `adjoinArity`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
 | `sigmaPsh`, the base change along `ElObj S → J` | Novel. It has no discrete analogue in this repository: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`; open question 5 leaves the discrete degeneration open and nothing establishes this |
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
-| `ShapeArity`, `ShapeArity.const` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`. `const` is the case Section 6's `δ` arity occupies |
+| `ShapeArity`, `ShapeArity.const` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. *Inference, not elaborated*: that this is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern. `const` is the case Section 6's `δ` arity occupies |
 | `BaseArity`, `BaseArity.pullback` — the arity indexed by output objects, and its pullback along `q` | Novel |
-| `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I; in mathlib it is `S.Elementsᵒᵖ`, written out here to avoid `Opposite` transport, and obligation 4 revisits the choice |
+| `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I; *Inference, not elaborated*: that it agrees with mathlib's `S.Elementsᵒᵖ`, which nothing here compares it to. It is written out rather than reused to avoid `Opposite` transport, and obligation 4 revisits the choice |
 | `HasBijectiveReindex` | Novel; the property that every reindexing map is a bijection. That this is cartesianness of `objPresheaf`'s fibres over the shape presheaf is an unelaborated reading |
 | `CodeShape`, `CodeDir`, `CodeNext`, `codePFunctor`, `Code` | Novel. Indexing by a base category, with `δ` replacing it by a category of elements, has no counterpart in the cited literature; nor does a leaf that injects the denoted functors, which is what `CodeShape`'s first summand is |
 | `codeAlgOn`, `codeAlg`, `interp` — the interpretation | Novel at this level; the discrete analogue is `IR.interpObj` |
@@ -827,7 +837,10 @@ Each is unproved at the time of writing.
    presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
    of the mathematics.
 5. **The bound's vocabulary at upstream quality** (W-b). Port
-   `HasBijectiveReindex`; the three generators' cases and four operations'
+   `HasBijectiveReindex` with `hasBijectiveReindex_of_isEmpty` and
+   `not_hasBijectiveReindex_of_isEmpty`, the criteria the generator cases and
+   the negative witnesses respectively apply; the three generators' cases and
+   four operations'
    cases, together with the general `hasBijectiveReindex_adjoinArity` that
    `hasBijectiveReindex_adjoinArityConst` and `hasBijectiveReindex_deltaRec`
    both rest on, and `deltaRec` with `hasBijectiveReindex_deltaRec`, which is
@@ -858,7 +871,9 @@ Each is unproved at the time of writing.
    [docs/rules/upstream-eligible.md](../../rules/upstream-eligible.md) §
    Subtree import rules forbids `Geb/Mathlib/` from importing `Geb.Internal.*`,
    so without this obligation W-c has no inputs whether or not the prototype
-   still exists.
+   still exists. This port is dependency-closed on the same grounds as
+   obligations 1 and 4: anything a listed item needs travels with it, the
+   enumeration above being a reading aid rather than a bound.
 6. **Iso-invariance of the bound** (W-c). That `HasBijectiveReindex` transports
    along an isomorphism of interpreted functors, upgrading
    `not_hasBijectiveReindex_arityVaries` from a syntactic to a semantic
@@ -883,8 +898,8 @@ Each is unproved at the time of writing.
    codes have no leaf to inject into; the leaf is what makes the statement
    trivial here rather than any new argument, and the content it would have
    carried is instead `delta`'s type. The semantic chain `praWitnessLift` — the
-   `σ`-`δ`-unit composite, with `praWitnessLiftShapeEquiv` giving its shape
-   presheaf as the target's and `praWitnessLiftShapeVal_naturality` and
+   `σ`-`δ`-unit composite, with `praWitnessLiftShapeEquiv` matching its shapes
+   with the target's fibrewise and `praWitnessLiftShapeVal_naturality` and
    `praWitnessLiftDirEquiv_restr` lifting the shape and arity identifications
    from objectwise correspondences to presheaf ones — survives as what shows
    the *operations* reach that data, which is the statement a restricted leaf
@@ -921,8 +936,12 @@ Each is unproved at the time of writing.
     relation to small induction recursion records. Stage 1 supplies the
     codomain and obligation 2 the category structure the bijection must
     respect. Whether a `Code.Hom` so defined exists for these two rules is
-    open: the leaf's morphisms are `PshHom`s outright, so the recursion has
-    content only at `δ`.
+    open, on two counts: the leaf's morphisms are `PshHom`s outright, so the
+    recursion has content only at `δ`; and the `δ`/`δ` clause must relate
+    subcodes over `ElObj (decPresheaf A hA D)` and
+    `ElObj (decPresheaf A' hA' D)`, two different categories of elements, where
+    the one-base restriction bites again and no `interp_fst` transport is
+    available.
 
 ## Open questions
 
