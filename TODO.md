@@ -56,7 +56,7 @@ which names five branches and is removed with the last of them:
 - W-c: the bound — transport of `HasBijectiveReindex` along an isomorphism, and
   the constant-arity fragment's code type and induction.
 - W-d: code-level morphisms and their representation theorem.
-- W-e: the collapse `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`.
+- W-e: the collapse `PSh(𝕀)/D ≃ PSh(el(D))`.
 
 W-a, W-b and W-e depend on nothing; W-c and W-d each depend on W-a and W-b.
 Completeness needs no branch: the code type's leaf rule injects a presheaf
