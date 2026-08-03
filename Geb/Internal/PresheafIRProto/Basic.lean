@@ -21,8 +21,10 @@ writes `⟶` between two objects of a presheaf category and so pulls in
 module.
 
 Two developments sit here. The larger is the morphism theory: the p.r.a.
-formula `F Z j = Σ (a : T₁ j), Hom (E ⟨j, a⟩) Z` as an equivalence
-(`objEquivSigmaArityHom`), the morphism type `PshHom` with its action, and the
+formula as the equivalence `F.obj Z ≃ Σ a : F.A, ArityHom F a Z`
+(`objEquivSigmaArityHom`), unindexed — its `j`-fibred form
+`F Z j = Σ (a : T₁ j), Hom (E a) Z` is reached through `ObjFib` and
+`ofSigmaFib` — the morphism type `PshHom` with its action, and the
 representation theorem `pshHomEquivNatFamily` classifying the natural families
 between two such functors by shape-map-forward and arity-map-backward data,
 with `DomHom` / `domHomEquivNatFamily` as its domain-level warm-up. The
@@ -54,6 +56,9 @@ The generator development tests the following claims:
 
 ## Main definitions
 
+* `GebProto.isFunctorial_of_subsingletonDirection` — the five direction-side
+  functor laws where every direction fibre is a subsingleton.
+* `GebProto.idPshHom` — the identity morphism of presheaf p.r.a. functors.
 * `GebProto.SliceHom` / `GebProto.sliceHomApp` — the morphism formula at a
   discrete base, and its action.
 * `GebProto.iotaPresheaf` / `iotaPresheafData` — the constant functor at a
@@ -150,7 +155,10 @@ instance subsingleton_iotaDirection (j₀ : J)
     Subsingleton ((iotaPresheafData.{uI, uJ, uB, vI, vJ} (I := I) j₀).Direction a i) :=
   ⟨fun x _ ↦ PEmpty.elim x.1⟩
 
-/-- The constant functor at the representable `y j₀`, as a `PresheafPFunctor`.
+/-- The functor whose shape type is the total space of the representable
+`y j₀` and which has no directions, as a `PresheafPFunctor`. That its shape
+presheaf is `y j₀` is not established here; see
+`iotaPresheafData_A_eq_iotaConstData_yoneda`, which equates shape types only.
 The shape-side laws are the category laws of `J`; the direction-side laws hold
 because every direction fiber is empty. -/
 def iotaPresheaf (j₀ : J) : PresheafPFunctor.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
@@ -370,11 +378,10 @@ separately; `not_hasBijectiveReindex_arityVaries` derives the emptiness it needs
 directly rather than through either. -/
 theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
 
-/-- Every `Shape j` is a singleton, fibrewise. Terminality in `PSh(J)` would
-need the restriction square as well, which this family of equivalences does not
-state; what it establishes is that the arity varies above a shape presheaf with
-one element over each output object. That the arity above it varies is a
-separate statement, proved in the sibling `Codes` module. -/
+/-- Every `Shape j` is a singleton, fibrewise. That is all this establishes:
+terminality in `PSh(J)` would need the restriction square as well, which a
+family of equivalences does not state, and the variation of the arity above
+these shapes is proved in the sibling `Codes` module. -/
 def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
   toFun := fun _ ↦ PUnit.unit
   invFun := fun _ ↦ ⟨j, rfl⟩
@@ -776,9 +783,10 @@ naturality. -/
   shape : ShapeHom F F'
   /-- The arity map, backwards, a morphism of arity presheaves. -/
   arity : (j : J) → (a : F.Shape j) → ArityHom F' (shape.1 j a).1 (arityPresheaf F a.1)
-  /-- Naturality of `arity` over `el(T₁)ᵒᵖ`: restricting the shape along `g` and
-  then reindexing agrees with reindexing in `F'` and then restricting, once the
-  source of the second route is transported along `shape.2`. -/
+  /-- Naturality of `arity` over `el(T₁)ᵒᵖ`: applying the arity map at
+  `F.shapeRestr g a` and then `F.reindex g a` agrees with applying
+  `F'.reindex g (shape.1 j a)` and then the arity map at `a`, once the source of
+  the second route is transported along `shape.2`. -/
   reindexCompat : ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) ⦃i : I⦄
       (d : F'.Direction (shape.1 j' (F.shapeRestr g a)).1 i),
     F.reindex g a ((arity j' (F.shapeRestr g a)).1 i d) =
@@ -888,9 +896,10 @@ def pshHomSigma (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : Psh
 /-- The fibre of the output presheaf over `j`: the elements of
 `F.toPresheafDomPFunctorData.obj Z` whose `q`-output index is `j`. It is
 `(F.objPresheaf Z).obj ⟨j⟩` on the nose, and `objPresheaf` is choice-free, so
-this layer buys no constructivity and duplicates existing API. What it does
-supply is the index proof bundled with the element, which keeps the laws below
-free of a dependent-proof argument. -/
+this layer buys no constructivity and supplies nothing `objPresheaf` does not.
+It is retained because the representation theorem below is stated against it,
+and restating that chain is obligation 1 of the design record, which drops the
+layer in the port. -/
 @[reducible] def ObjFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (Z : Iᵒᵖ ⥤ Type uZ) (j : J) : Type (max uI uZ uA uB) :=
   { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j }
@@ -967,8 +976,9 @@ theorem pshHomFib_objFibMap (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I 
 `J`-restriction of the output presheaves. The two sides carry different shapes —
 `φ.shape` of a restricted shape against the restriction of a `φ.shape`-image —
 identified only by `φ.shape.2`, and their arity homs agree across that transport
-exactly by `reindexCompat`. So the law is not merely well-typed once clause (c)
-is present; clause (c) is precisely its content. -/
+exactly by `reindexCompat`, which is what discharges the law. That the law
+fails without clause (c) is not established here, no
+`PshHom`-minus-`reindexCompat` type being defined. -/
 theorem pshHomFib_objFibRestr (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (φ : PshHom F F') {Z : Iᵒᵖ ⥤ Type uB} ⦃j j' : J⦄ (g : j' ⟶ j) (w : ObjFib F Z j) :
     pshHomFib F F' φ j' (objFibRestr F g w) = objFibRestr F' g (pshHomFib F F' φ j w) := by

@@ -104,7 +104,11 @@ whole prototype alongside its port would define the same declarations twice on
 It also retains steps of the derivation that the obligations do not port, and
 which exist to record how the design was reached rather than to be delivered:
 the domain-level warm-up (`DomHom`, `DomNatFamily`, `domHomEquivNatFamily` and
-their lemmas), the slice-level morphism formula (`SliceHom`, `sliceHomApp`),
+their lemmas), the `ObjFib` / `objFibRestr` / `objFibMap` layer, which
+duplicates `objPresheaf` and `mapPresheaf` on the nose and is retained only
+because the representation theorem is stated against it — obligation 1 restates
+that chain and drops the layer — the slice-level morphism formula (`SliceHom`,
+`sliceHomApp`),
 `Functoriality`, `iotaDiscreteShapeEquiv`, the universe-formability
 demonstrations in `Functor.lean` (`arityPresheafHomAtUB`,
 `arityPresheafHomULifted`), `iotaPresheafData_A_eq_iotaConstData_yoneda`, which

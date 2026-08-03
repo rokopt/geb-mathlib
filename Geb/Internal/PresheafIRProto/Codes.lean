@@ -64,11 +64,11 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   category of elements of its decoding presheaf.
 * `GebProto.Interp` — the interpretation's target, a presheaf p.r.a. functor
   paired with the base category it lands in.
-* `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` — the two
-  conversions between the total-space and the fibrewise presentation of an
-  arity, with `GebProto.DomArity.dirEquivOfPresheaf`,
-  `GebProto.DomArity.dirEquivOfPresheaf_restr` and
-  `GebProto.DomArity.sigmaDirEquivCarrier` the round trips.
+* `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` /
+  `GebProto.DomArity.dirEquivOfPresheaf` /
+  `GebProto.DomArity.sigmaDirEquivCarrier` — the two conversions between the
+  total-space and the fibrewise presentation of an arity, and the round
+  trips.
 * `GebProto.BaseArity.famPresheaf` / `GebProto.BaseArity.reindexHom` — an
   output-indexed arity's presheaf at each output object, and the morphism of
   presheaves each output morphism induces.
@@ -1243,7 +1243,7 @@ def unitPshLift (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] 
       (by intro j; funext s; exact Subtype.ext (congrArg ULift.up s.2.symm))
       (by intro j j' j'' g h; funext s; rfl)
 
-/-- The terminal presheaf on `Fin 1`, as a decoding: every fibre a singleton,
+/-- A decoding on `Fin 1` with every fibre a singleton,
 so the decodings of any arity into it are expected to form a singleton and the
 recursion to degenerate; nothing here states that. -/
 def termPsh : (Fin 1)ᵒᵖ ⥤ Type where
