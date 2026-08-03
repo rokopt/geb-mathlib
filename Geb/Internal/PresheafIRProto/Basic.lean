@@ -36,8 +36,9 @@ The generator development tests the following claims:
    constant at the representable `y j₀`, whose shape type is the total space
    `Σ j', (j' ⟶ j₀)` of that representable rather than a single shape.
 2. `iotaDiscreteShapeEquiv` — for a discrete `J` that shape type collapses to
-   `PUnit`. No identification with `IR.toSlicePFunctorIota`'s shape type is
-   established; the two are at different universe instantiations.
+   `PUnit`. No identification with the discrete-base `ι` of
+   `Geb.Mathlib.Data.PFunctor.IndRec.Slice` is established; the two are at
+   different universe instantiations, and that module is not imported here.
 3. `iotaConst` — the constant functor at an arbitrary presheaf on `J`, which
    is what a completeness result in the style of Lemma 1 of
    [HancockMcBrideGhaniMalatestaAltenkirch2013] needs and which `iota` and
@@ -177,7 +178,7 @@ section Degeneracy
 variable {O : Type uJ}
 
 /-- Claim 2: for a discrete `J` the generalized iota's shape type collapses to
-`PUnit`. This is not an identification with `IR.toSlicePFunctorIota`'s shape
+`PUnit`. This is not an identification with the discrete-base `ι`'s shape
 type, which is at a different universe instantiation. -/
 def iotaDiscreteShapeEquiv (o : O) :
     (Σ j' : Discrete O, (j' ⟶ (⟨o⟩ : Discrete O))) ≃ PUnit.{uJ + 1} where
@@ -199,9 +200,9 @@ variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 are the total space of `P` (its category of elements), the shape-output map is
 the projection, there are no directions, and `shapeRestr` is `P`'s own
 restriction. This is what a completeness result in the style of Lemma 1 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] needs and what
-`iota` + `sigma` are not expected to reach, those generating only coproducts of
-representables. -/
+[HancockMcBrideGhaniMalatestaAltenkirch2013] needs and what `iota` + `sigma`
+are not expected to reach, those generating only coproducts of representables.
+Nothing here establishes that non-reachability. -/
 def iotaConstData (P : Jᵒᵖ ⥤ Type uB) :
     PresheafPFunctorData.{uI, uJ, max uJ uB, uB, vI, vJ} I J where
   A := Σ j : J, P.obj ⟨j⟩
@@ -375,14 +376,16 @@ def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
 /-- The arity is empty at the shape over `0`. -/
 theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
 
-/-- And inhabited at the shape over `1`, so the two fibres differ;
-`not_hasBijectiveReindex_arityVaries` draws the consequence for `reindex`. -/
+/-- And inhabited at the shape over `1`. The two computations are recorded
+separately; `not_hasBijectiveReindex_arityVaries` derives the emptiness it needs
+directly rather than through either. -/
 theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
 
 /-- Every `Shape j` is a singleton, fibrewise. Terminality in `PSh(J)` would
 need the restriction square as well, which this family of equivalences does not
 state; what it establishes is that the arity varies above a shape presheaf with
-one element over each object. -/
+one element over each object; that the arity above it varies is
+`not_hasBijectiveReindex_arityVaries`, in the sibling module. -/
 def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
   toFun := fun _ ↦ PUnit.unit
   invFun := fun _ ↦ ⟨j, rfl⟩
@@ -800,7 +803,7 @@ presheaves, an arity map backwards at each shape — a morphism of arity
 presheaves, so `q`-fibrewise this is `DomHom`'s data — and the `el(T₁)ᵒᵖ`
 naturality of that arity map, stated across the `cast` along `σ`'s own
 naturality. -/
-structure PshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
+@[ext] structure PshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     Type (max uI uJ uA uB) where
   /-- The shape map, a morphism of shape presheaves. -/
   shape : ShapeHom F F'
@@ -919,17 +922,20 @@ def pshHomSigma (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : Psh
     Σ a' : F'.A, ArityHom F' a' Z :=
   ⟨(φ.shape.1 j a).1, postcompArityHom F' _ (natTransOfArityHom F a.1 μ) (φ.arity j a)⟩
 
-/-- The fibre of the output presheaf over `j`, unbundled: the elements of
-`F.obj Z` whose `q`-output index is `j`. This is `objPresheaf`'s object part
-written without the functor-category instance. Bundling the index proof with the
-element keeps the restriction and action laws free of the dependent-proof
-argument that blocks rewriting. -/
+/-- The fibre of the output presheaf over `j`: the elements of
+`F.toPresheafDomPFunctorData.obj Z` whose `q`-output index is `j`. It is
+`(F.objPresheaf Z).obj ⟨j⟩` on the nose, and `objPresheaf` is choice-free, so
+this layer buys no constructivity and duplicates existing API. It is retained
+as the derivation the representation theorem was reached through; obligation 1
+of the design record drops it, stating that theorem against `objPresheaf` and
+`mapPresheaf` directly. -/
 @[reducible] def ObjFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (Z : Iᵒᵖ ⥤ Type uZ) (j : J) : Type (max uI uZ uA uB) :=
   { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j }
 
-/-- The `J`-restriction of the output presheaf, unbundled: `objRestr` together
-with the `q`-index of the restricted shape. This is `objPresheaf`'s map part. -/
+/-- The `J`-restriction of the output presheaf: `objRestr` together with the
+`q`-index of the restricted shape. It is `(F.objPresheaf Z).map g.op` on the
+nose; see `ObjFib` for why the layer is retained. -/
 def objFibRestr (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ}
     ⦃j j' : J⦄ (g : j' ⟶ j) (w : ObjFib F Z j) : ObjFib F Z j' :=
   ⟨F.objRestr g w.1 w.2, (F.shapeRestr g ⟨w.1.shape, w.2⟩).2⟩
@@ -1151,15 +1157,6 @@ def natFamilyPshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
       (natTransOfArityHom F (F.shapeRestr g a).1 (reindexArityHom F g a (idArityHom F a.1)))
       g _ _ (natFamily_generic F F' η g a) ((natFamilyShape F F' η).2 g a) i d
 
-/-- Two `PshHom`s with equal shape maps and arity maps are equal; the remaining
-field is a `Prop`. -/
-theorem pshHom_ext (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {φ ψ : PshHom F F'}
-    (hs : φ.shape = ψ.shape) (ha : φ.arity ≍ ψ.arity) : φ = ψ := by
-  obtain ⟨σ, α, hc⟩ := φ
-  obtain ⟨σ', α', hc'⟩ := ψ
-  cases hs
-  cases ha
-  rfl
 
 /-- The arity map recovered from the family of a `PshHom` is the original: the
 generic element's arity hom is the identity, so the postcomposition it induces
@@ -1180,7 +1177,7 @@ def pshHomEquivNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) 
   toFun := pshHomFamily F F'
   invFun := natFamilyPshHom F F'
   left_inv φ :=
-    pshHom_ext F F' rfl
+    PshHom.ext rfl
       (heq_of_eq (funext fun j ↦ funext fun a ↦ natFamilyArity_pshHomFamily F F' φ j a))
   right_inv η := by
     refine Subtype.ext (funext fun Z ↦ funext fun j ↦ funext fun w ↦ ?_)

@@ -96,8 +96,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   `GebProto.hasBijectiveReindex_coprod`,
   `GebProto.hasBijectiveReindex_adjoinArityConst`, `GebProto.hasBijectiveReindex_unitPsh`,
   `GebProto.hasBijectiveReindex_sigmaPsh`, `GebProto.hasBijectiveReindex_deltaRec`
-  — every generator and operation of the constant-arity fragment has, or
-  preserves, bijective reindexing.
+  — the three generator and four operation cases of the constant-arity
+  fragment's closure under bijective reindexing. The closure statement itself
+  is an induction over a code type for those rules, not built here.
 * `GebProto.hasBijectiveReindex_adjoinArity` — an `adjoinArity`'s reindexing is
   bijective when both the subfunctor's and the adjoined arity's are. The
   converse is not proved.
@@ -127,8 +128,6 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   is what makes the interpretation surjective on objects.
 * `GebProto.interp_praCode_interp` — every code has the interpretation of a
   one-node code, so `δ` adds no functor the leaf does not already supply.
-* `GebProto.hasBijectiveReindex_deltaRec` — the recursion alone does not reach
-  past the bound.
 * `GebProto.interp_deltaCodeVaries`,
   `GebProto.not_hasBijectiveReindex_interp_deltaCodeVaries` — that bound
   restated about a code rather than about the semantic operations.
@@ -378,7 +377,7 @@ here, there being no counterpart of `BaseArity.functor` for it — the same data
 Indexing by shapes rather than by output objects is what keeps the `δ`
 operation transport-free: the arity of the shape `a` is `fam a`, not
 `fam (F.q a)` transported along `a`'s membership proof. -/
-structure ShapeArity (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) :
+@[ext] structure ShapeArity (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) :
     Type (max (uB + 1) uA uI uJ vI vJ) where
   /-- The presheaf on `I` adjoined over each shape. -/
   fam : F.A → DomArity.{uI, uB, vI} I

@@ -638,7 +638,7 @@ role over a discrete base or the published result stating it, and nothing
 relates the two. The `iotaPresheaf` row is
 the case where the gap is widest — the prototype's `iotaDiscreteShapeEquiv`
 docstring
-explicitly declines the identification with `IR.toSlicePFunctorIota`, the two
+explicitly declines the identification with the discrete-base `ι`, the two
 being at different universe instantiations.
 
 | Definition | Status |
@@ -649,7 +649,7 @@ being at different universe instantiations.
 | Identity, composition, and the category structure on `Hom` | Novel |
 | The `δ` code rule | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves: its sections `(p : P) → D (i p)` become `PshMor`, and the family of subcodes over them becomes one subcode over their category of elements. The further generalization of the arity from an object of `Set/I` to one varying over the output object is novel, and § Why `δ`'s arity must vary over the shape presheaf shows it is what separates the rule from the constant-arity one |
 | The leaf code rule `praCode` | Novel. It has no small-`IR` counterpart, `IR I O` having no primitive notion of the functors it denotes to inject; the closest statement in [HancockMcBrideGhaniMalatestaAltenkirch2013] is its Lemma 1, which constructs by hand what `praCode` takes as data |
-| `iotaPresheaf` — the constant functor at a representable | Transcription of `ι : O → IR I O` as a semantic operation, generalized by replacing equality with a morphism: `ι`'s interpretation sends `o'` to `o' = o`, and `iotaPresheaf j₀` sends `j'` to `Hom(j', j₀)`. It is not a code rule. Two declarations bear on it and neither is an identification: `iotaDiscreteShapeEquiv` collapses its shape type to `PUnit` over a discrete base, its own docstring declining to identify that with `IR.toSlicePFunctorIota`'s, and `iotaPresheafData_A_eq_iotaConstData_yoneda` equates its shape type with `iotaConst (yoneda.obj j₀)`'s — total spaces, not presheaves, with open question 3 recording that nothing further holds |
+| `iotaPresheaf` — the constant functor at a representable | Transcription of `ι : O → IR I O` as a semantic operation, generalized by replacing equality with a morphism: `ι`'s interpretation sends `o'` to `o' = o`, and `iotaPresheaf j₀` sends `j'` to `Hom(j', j₀)`. It is not a code rule. Two declarations bear on it and neither is an identification: `iotaDiscreteShapeEquiv` collapses its shape type to `PUnit` over a discrete base, its own docstring declining to identify that with the discrete-base `ι`'s (`IR.toSlicePFunctorIota`, in a module the prototype does not import), and `iotaPresheafData_A_eq_iotaConstData_yoneda` equates its shape type with `iotaConst (yoneda.obj j₀)`'s — total spaces, not presheaves, with open question 3 recording that nothing further holds |
 | Indexing the code type by a base category, with `δ` replacing it by a category of elements | Novel |
 | `coprod`, the coproduct of a type-indexed family | Novel at this level; the discrete analogue is `SlicePFunctor.coprod` |
 | `unitPsh`, the unit | Novel at this level; the discrete analogue is `SliceDomPFunctor.representable` at the empty direction type |
