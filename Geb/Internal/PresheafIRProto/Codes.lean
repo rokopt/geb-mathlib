@@ -60,8 +60,8 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   type of codes, and `GebProto.Code`, that W-type.
 * `GebProto.praCode` / `GebProto.deltaCode` — the two code constructors. `pra`
   abbreviates parametric right adjoint: the leaf injects a presheaf p.r.a.
-  functor as it stands, and `δ` adjoins an arity with a decoding-indexed
-  continuation.
+  functor as it stands, and `δ` adjoins an arity with one continuation over the
+  category of elements of its decoding presheaf.
 * `GebProto.Interp` — the interpretation's target, a presheaf p.r.a. functor
   paired with the base category it lands in.
 * `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` — the two
@@ -135,8 +135,8 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.elSliceEquiv_fst` — the collapse's underlying output object is the
   base change's, so `sigmaPsh` over `iotaPresheaf` adds no shapes.
 * `GebProto.praWitnessLiftShapeVal_naturality`,
-  `GebProto.praWitnessLiftDirEquiv_restr` — the chain's shape and arity agree
-  with the target's as presheaves, not merely fibrewise.
+  `GebProto.praWitnessLiftDirEquiv_restr` — the chain's fibrewise
+  correspondences with the target's shape and arity commute with restriction.
 * `GebProto.interp_fst` — a code's index is the base its interpretation lands
   in.
 * `GebProto.not_hasBijectiveReindex_deltaVaries` — the fused `δ` at an
@@ -188,6 +188,8 @@ from them reaches and what it does not.
 
 * [DybjerSetzer1999]
 * [HancockMcBrideGhaniMalatestaAltenkirch2013]
+* [MacLaneMoerdijk1992]
+* [nLabParametricRightAdjoint]
 
 ## Tags
 
@@ -271,7 +273,7 @@ without transport.
 
 Writing this as `Iᵒᵖ ⥤ Type uB` and its morphisms with `⟶` would draw in
 `Classical.choice` through `CategoryTheory.Functor.category`. -/
-structure DomArity (I : Type uI) [Category.{vI} I] : Type (max (uB + 1) uI vI) where
+@[ext] structure DomArity (I : Type uI) [Category.{vI} I] : Type (max (uB + 1) uI vI) where
   /-- The total space of the arity. -/
   carrier : Type uB
   /-- The base-point map assigning each element of the carrier an input object. -/
@@ -295,7 +297,8 @@ structure IsFunctorial (G : DomArity.{uI, uB, vI} I) : Prop where
 
 /-- The arity as a presheaf on the input base: the fibers of `proj` with their
 own restriction. A `DomArity` is the total-space presentation of a discrete
-fibration over `I`, and this is the presheaf that fibration classifies. -/
+fibration over `I`, and this is the presheaf that fibration classifies. Discrete
+fibrations in this role are what [nLabParametricRightAdjoint] specifies. -/
 def presheaf (G : DomArity.{uI, uB, vI} I) (hG : G.IsFunctorial) : Iᵒᵖ ⥤ Type uB where
   obj i := G.Dir i.unop
   map f := ↾ G.restr f.unop
@@ -577,7 +580,7 @@ with a reindexing along `J`-morphisms. This is the data of a functor
 A code's `δ` must be indexed this way rather than by shapes: the shapes belong
 to the subcode's interpretation, which a code cannot mention. `pullback`
 converts it to the shape-indexed `ShapeArity` that `adjoinArity` consumes. -/
-structure BaseArity (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
+@[ext] structure BaseArity (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
     Type (max (uB + 1) uI uJ vI vJ) where
   /-- The presheaf on `I` carried over each output object. -/
   fam : J → DomArity.{uI, uB, vI} I
@@ -703,7 +706,8 @@ variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 abbrev ElObj (S : Jᵒᵖ ⥤ Type uS) : Type (max uJ uS) := Σ j : J, S.obj ⟨j⟩
 
 /-- The base category of elements of `S`: a morphism `x ⟶ y` is a `J`-morphism
-carrying `y`'s element to `x`'s. Presheaves on it are expected to be the slice
+carrying `y`'s element to `x`'s. It is the category of elements of
+[MacLaneMoerdijk1992] Chapter I. Presheaves on it are expected to be the slice
 `PSh(J)/S`, and it is expected to agree with `S.Elementsᵒᵖ`; neither is
 established here. It is written out rather than reused so that the
 `σ` operation below is free of `Opposite` transport. -/
@@ -1160,8 +1164,9 @@ theorem hasBijectiveReindex_adjoinArityConst (G : DomArity.{uI, uB, vI} I) (hG :
   hasBijectiveReindex_adjoinArity F _ _ hF (by intro j j' g s i; exact Function.bijective_id)
 
 /-- The witness: `arityVaries` has non-bijective reindexing. Its shape presheaf
-is terminal, yet the arity over `1` is inhabited while the arity over `0` is
-empty, so reindexing along `0 ⟶ 1` is the map out of the empty type.
+has one element over each output object, yet the arity over `1` is inhabited
+while the arity over `0` is empty, so reindexing along `0 ⟶ 1` is the map out
+of the empty type.
 
 It is the fixture the constant-arity fragment's closure would exclude: with
 `hasBijectiveReindex_adjoinArityConst` and the fragment's other six cases, an
@@ -1331,8 +1336,8 @@ def praWitnessLiftShapeVal
     (hA : A.IsFunctorial) {j : J} (x : (praWitnessLift T A hA).Shape j) : T.obj ⟨j⟩ :=
   cast (congrArg (fun k ↦ T.obj ⟨k⟩) x.2) x.1.down.2
 
-/-- It is natural in `J`, so the chain's shape presheaf and `T` agree as
-presheaves and not merely fibrewise. -/
+/-- It is natural in `J`, so the fibrewise correspondence between the chain's
+shapes and `T` commutes with restriction. -/
 theorem praWitnessLiftShapeVal_naturality
     {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
     (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
@@ -1649,7 +1654,8 @@ output-varying arity still lies outside the bound of
 
 open CategoryTheory
 
-/-- The unique decoding into the terminal presheaf. -/
+/-- A decoding into `termPsh`. Every fibre of `termPsh` is a singleton, so this
+is the only one, though nothing here states that. -/
 def decUnit (b : Fin 2) : PshMor (arityVariesBase.fam b) termPsh where
   app := fun {_} _ ↦ PUnit.unit
   naturality := by intros; rfl
@@ -1660,8 +1666,8 @@ def decVariesElt :
     ElObj.{0, 0, 0} (decPresheaf arityVariesBase isFunctorial_arityVariesBase termPsh) :=
   ⟨1, decUnit 1⟩
 
-/-- The `δ` at an output-varying arity, its continuation the representable at
-`decVariesElt`. -/
+/-- The `δ` at an output-varying arity, its continuation the constant functor
+at the representable `y decVariesElt`. -/
 def deltaVaries : PresheafPFunctor.{0, 0, 0, 0, 0, 0} (ElObj.{0, 0, 0} termPsh) (Fin 2) :=
   delta arityVariesBase isFunctorial_arityVariesBase termPsh
     (iotaPresheaf (I := ElObj.{0, 0, 0} termPsh) decVariesElt)

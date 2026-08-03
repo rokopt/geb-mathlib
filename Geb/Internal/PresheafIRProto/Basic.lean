@@ -26,8 +26,8 @@ formula `F Z j = Σ (a : T₁ j), Hom (E ⟨j, a⟩) Z` as an equivalence
 representation theorem `pshHomEquivNatFamily` classifying the natural families
 between two such functors by shape-map-forward and arity-map-backward data,
 with `DomHom` / `domHomEquivNatFamily` as its domain-level warm-up. The
-smaller, below, is the constant-functor generators and the fixtures that bound
-what they generate. The code type itself and its two rules are in the sibling
+smaller, first in the file, is the constant-functor generators and the fixtures
+that bound what they generate. The code type itself and its two rules are in the sibling
 `PresheafIRProto.Codes` module; nothing here is a code constructor.
 
 The generator development tests the following claims:
@@ -96,6 +96,7 @@ The generator development tests the following claims:
 * [GhaniNordvallForsbergMalatesta2015]
 * [GhaniMalatestaNordvallForsberg2014Agda]
 * [HancockMcBrideGhaniMalatestaAltenkirch2013]
+* [Weber2007]
 
 ## Tags
 
@@ -371,11 +372,11 @@ def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
       (by intro j; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
       (by intro j j' j'' g h; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
 
-/-- The arity varies: empty at the shape over `0`, inhabited at the
-shape over `1`. So `reindex` along `0 ⟶ 1` is the empty map, not an iso. -/
+/-- The arity is empty at the shape over `0`. -/
 theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
 
-/-- And inhabited at the shape over `1`. -/
+/-- And inhabited at the shape over `1`, so the two fibres differ;
+`not_hasBijectiveReindex_arityVaries` draws the consequence for `reindex`. -/
 theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
 
 /-- Every `Shape j` is a singleton, fibrewise. Terminality in `PSh(J)` would
@@ -419,8 +420,10 @@ data that index does not.
 open CategoryTheory
 
 /-- A morphism of slice polynomial functors: shapes forward over each output
-index, arities backward at each shape. -/
-structure SliceHom {dom : Type uI} {cod : Type uJ}
+index, arities backward at each shape. This is Definition 7 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] (morphisms of indexed containers)
+at a discrete base. -/
+@[ext] structure SliceHom {dom : Type uI} {cod : Type uJ}
     (F F' : SlicePFunctor.{uA, uB, uI, uJ} dom cod) : Type (max uA uB uI uJ) where
   /-- The shape map, over each output index. -/
   shape : ∀ j : cod, F.Shape j → F'.Shape j
@@ -473,7 +476,8 @@ below.
 
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
-/-- The shape presheaf `T₁ : Jᵒᵖ ⥤ Type uA`: fibre `F.Shape j` over `j`,
+/-- The shape presheaf `T₁ : Jᵒᵖ ⥤ Type uA` of the familial presentation of
+[Weber2007]: fibre `F.Shape j` over `j`,
 restriction maps `F.shapeRestr`, functor laws from `shapeRestr_id` /
 `shapeRestr_comp`. -/
 def shapePresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
@@ -487,7 +491,8 @@ def shapePresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
     ext a
     exact congrFun (F.isFunctorial.shapeRestr_comp g.unop h.unop) a
 
-/-- The arity presheaf `E(a) : Iᵒᵖ ⥤ Type uB` of a shape `a`: fibre
+/-- The arity presheaf `E(a) : Iᵒᵖ ⥤ Type uB` of a shape `a`, the second half
+of [Weber2007]'s familial presentation: fibre
 `F.Direction a i` over `i`, restriction maps `F.directionRestr a`, functor laws
 from `directionRestr_id` / `directionRestr_comp`. -/
 def arityPresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) :
@@ -565,7 +570,7 @@ theorem value_ofArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
   obtain ⟨b1, rfl⟩ := b
   rfl
 
-/-- The p.r.a. formula with the hom unbundled: the domain-restricted
+/-- The p.r.a. formula of [Weber2007] with the hom unbundled: the domain-restricted
 interpretation of `F` at `Z` is the coproduct over shapes of the unbundled
 representables on the arity presheaves. The forward map reads off the shape and
 repackages the direction-assignment, its components being `value` and its
@@ -831,8 +836,9 @@ The action of a `PshHom` on the p.r.a. formula, and the two laws that make it a
 map of output presheaves. The `Z`-naturality is `DomHom`'s and needs nothing new;
 the `J`-restriction law is what tests clause (c) of `PshHom`: the two sides have
 different shapes, equal only by the `ShapeHom` naturality of `φ.shape`, and the
-components agree exactly when `reindexCompat` holds. So `pshHomFib_objFibRestr` is
-not merely well-typed with clause (c) present — it is unprovable without it.
+components agree exactly when `reindexCompat` holds, which is what
+`pshHomFib_objFibRestr` needs; no `PshHom`-minus-`reindexCompat` type is
+defined here, so its unprovability without the clause is not established.
 
 `PresheafPFunctor.value_objRestrElt` is `private` upstream. Stating the
 restriction lemma on the `symm` side of `objEquivSigmaArityHom` does not avoid

@@ -34,8 +34,8 @@ proved here rather than transported.
 
 * `GebProto.arityHomEquivNatTrans` — the bundling isomorphism between the
   unbundled arity hom and the functor-category hom.
-* `GebProto.objEquivSigmaHom` — the p.r.a. formula with the presheaf hom
-  bundled.
+* `GebProto.objEquivSigmaHom` — the p.r.a. formula of [Weber2007] with the
+  presheaf hom bundled.
 * `GebProto.arityPresheafHomAtUB` / `GebProto.arityPresheafHomULifted` — the
   universes at which the bundled hom is formable.
 * `GebProto.BaseArity.functor` — an output-indexed arity as a functor
@@ -47,6 +47,10 @@ proved here rather than transported.
 * `GebProto.iotaPresheafData_A_eq_iotaConstData_yoneda` — the shape type of the
   constant functor at a representable is that of the constant functor at
   `yoneda.obj j₀`. An equality of total spaces, not of presheaves.
+
+## References
+
+* [Weber2007]
 
 ## Tags
 

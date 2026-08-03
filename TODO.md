@@ -55,10 +55,10 @@ which names five branches and is removed with the last of them:
   interpretation and the bound's vocabulary, upstream-eligible.
 - W-c: the bound — transport of `HasBijectiveReindex` along an isomorphism, and
   the constant-arity fragment's code type and induction.
-- W-e: code-level morphisms and their representation theorem.
-- W-f: the collapse `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`.
+- W-d: code-level morphisms and their representation theorem.
+- W-e: the collapse `PSh(𝕀)/D ≃ PSh(el(D)ᵒᵖ)`.
 
-W-a, W-b and W-f depend on nothing; W-c and W-e each depend on W-a and W-b.
+W-a, W-b and W-e depend on nothing; W-c and W-d each depend on W-a and W-b.
 Completeness needs no branch: the code type's leaf rule injects a presheaf
 p.r.a. functor as it stands, so every such functor has a code definitionally.
 
@@ -151,7 +151,7 @@ Concern shape.
       author order, so the key names the proceedings version alone. This
       correction must land before any branch of the presheaf p.r.a. workstream
       that cites an uncovered result: W-a for Definitions 6 and 7 and Theorem
-      1, W-b for Lemma 1. Theorem 3, which W-e cites, is covered by the
+      1, W-b for Lemma 1. Theorem 3, which W-d cites, is covered by the
       existing note already. W-b's other citation is to the delta rule by
       section, and section numbering is unchanged.
 
