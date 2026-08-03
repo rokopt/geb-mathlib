@@ -46,7 +46,8 @@ The generator development tests the following claims:
    establishes. Its witness type is built from `IR.Hom`, whose `ι`-clause is
    propositional equality of indices and so ignores `C₀`'s morphisms; it is
    not the type the source requires.
-5. `arityVaries` — a functor whose shape presheaf is terminal and whose
+5. `arityVaries` — a functor whose shape presheaf is fibrewise a singleton and
+   whose
    `reindex` is not invertible.
 
 ## Main definitions
@@ -112,6 +113,21 @@ section Iota
 
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
+/-- Where every direction fiber is a subsingleton, the five direction-side
+functor laws are all `Subsingleton.elim` and only the two shape-side laws carry
+content. Every constant functor here is of that kind. -/
+theorem isFunctorial_of_subsingletonDirection
+    (D : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
+    (h : ∀ (a : D.A) (i : I), Subsingleton (D.Direction a i))
+    (hid : D.ShapeRestrId) (hc : D.ShapeRestrComp) : D.IsFunctorial where
+  directionRestr_id := by intro a i; funext d; exact (h a i).elim _ _
+  directionRestr_comp := by intro a i i' i'' f g; funext d; exact (h a i'').elim _ _
+  shapeRestr_id := hid
+  shapeRestr_comp := hc
+  reindex_naturality := by intro j j' g a i i' f; funext d; exact (h a.1 i').elim _ _
+  reindex_id := by intro j a i d; exact (h a.1 i).elim _ _
+  reindex_comp := by intro j j' j'' g h' a i d; exact (h a.1 i).elim _ _
+
 /-- The operations of the constant functor at the representable `y j₀`: shapes
 are the total space of `y j₀`, the shape-output map is its projection, there
 are no directions, and `shapeRestr` is precomposition. -/
@@ -138,23 +154,19 @@ because every direction fiber is empty. -/
 def iotaPresheaf (j₀ : J) : PresheafPFunctor.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
   toPresheafPFunctorData := iotaPresheafData j₀
   isFunctorial :=
-    { directionRestr_id := by intro a i; funext d; exact Subsingleton.elim _ _
-      directionRestr_comp := by intro a i i' i'' f g; funext d; exact Subsingleton.elim _ _
-      shapeRestr_id := by
+    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ inferInstance)
+      (by
         intro j
         funext s
         obtain ⟨⟨jj, h⟩, rfl⟩ := s
-        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (by simp [iotaPresheafData])))
-      shapeRestr_comp := by
+        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (by simp [iotaPresheafData]))))
+      (by
         intro j j' j'' g h
         funext s
         obtain ⟨⟨jj, k⟩, rfl⟩ := s
         refine Subtype.ext (Sigma.ext rfl (heq_of_eq ?_))
         simp only [iotaPresheafData, Function.comp_apply, eqToHom_refl, Category.id_comp]
-        exact Category.assoc _ _ _
-      reindex_naturality := by intro j j' g a i i' f; funext d; exact Subsingleton.elim _ _
-      reindex_id := by intro j a i d; exact Subsingleton.elim _ _
-      reindex_comp := by intro j j' j'' g h a i d; exact Subsingleton.elim _ _ }
+        exact Category.assoc _ _ _)
 
 end Iota
 
@@ -211,23 +223,19 @@ def iotaConst (P : Jᵒᵖ ⥤ Type uB) :
     PresheafPFunctor.{uI, uJ, max uJ uB, uB, vI, vJ} I J where
   toPresheafPFunctorData := iotaConstData P
   isFunctorial :=
-    { directionRestr_id := by intro a i; funext d; exact Subsingleton.elim _ _
-      directionRestr_comp := by intro a i i' i'' f g; funext d; exact Subsingleton.elim _ _
-      shapeRestr_id := by
+    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ inferInstance)
+      (by
         intro j
         funext s
         obtain ⟨⟨jj, p⟩, rfl⟩ := s
-        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (by simp [iotaConstData])))
-      shapeRestr_comp := by
+        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (by simp [iotaConstData]))))
+      (by
         intro j j' j'' g h
         funext s
         obtain ⟨⟨jj, p⟩, rfl⟩ := s
         refine Subtype.ext (Sigma.ext rfl (heq_of_eq ?_))
         simp only [iotaConstData, Function.comp_apply, cast_eq]
-        exact Functor.map_comp_apply P g.op h.op p
-      reindex_naturality := by intro j j' g a i i' f; funext d; exact Subsingleton.elim _ _
-      reindex_id := by intro j a i d; exact Subsingleton.elim _ _
-      reindex_comp := by intro j j' j'' g h a i d; exact Subsingleton.elim _ _ }
+        exact Functor.map_comp_apply P g.op h.op p)
 
 end IotaConst
 
@@ -299,7 +307,7 @@ functoriality of the arity assignment over `el(T₁)` — the *output* side.
 
 `arityVaries` below is the smallest functor for which the obligation has content. Its
 shape presheaf is the representable `y 1` (equivalently, since `1` is terminal
-in the walking arrow, the terminal presheaf): one shape over each of `0` and
+in the walking arrow, fibrewise a singleton): one shape over each of `0` and
 `1`. But its arity is `Fin 1` at the shape over `1` and `Fin 0` at the shape
 over `0`, so `reindex` along `0 ⟶ 1` is the map out of the empty type — not
 invertible.
@@ -357,21 +365,9 @@ singleton `{j}`. -/
 def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
   toPresheafPFunctorData := arityVariesData
   isFunctorial :=
-    { directionRestr_id := by intro a i; funext d; exact Subsingleton.elim _ _
-      directionRestr_comp := by intro a i i' i'' f g; funext d; exact Subsingleton.elim _ _
-      shapeRestr_id := by
-        intro j
-        funext s
-        obtain ⟨ss, (rfl : ss = j)⟩ := s
-        rfl
-      shapeRestr_comp := by
-        intro j j' j'' g h
-        funext s
-        obtain ⟨ss, (rfl : ss = j)⟩ := s
-        rfl
-      reindex_naturality := by intro j j' g a i i' f; funext d; exact Subsingleton.elim _ _
-      reindex_id := by intro j a i d; exact Subsingleton.elim _ _
-      reindex_comp := by intro j j' j'' g h a i d; exact Subsingleton.elim _ _ }
+    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ inferInstance)
+      (by intro j; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
+      (by intro j j' j'' g h; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
 
 /-- The arity genuinely varies: empty at the shape over `0`, inhabited at the
 shape over `1`. So `reindex` along `0 ⟶ 1` is the empty map, not an iso. -/
@@ -380,8 +376,10 @@ theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fi
 /-- And inhabited at the shape over `1`. -/
 theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
 
-/-- Every `Shape j` is a singleton, so the shape presheaf is terminal — as
-simple as a shape presheaf gets, yet the arity above it is not constant. -/
+/-- Every `Shape j` is a singleton, fibrewise. Terminality in `PSh(J)` would
+need the restriction square as well, which this family of equivalences does not
+state; what it establishes is that the arity varies above a shape presheaf with
+one element over each object. -/
 def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
   toFun := fun _ ↦ PUnit.unit
   invFun := fun _ ↦ ⟨j, rfl⟩
@@ -831,7 +829,7 @@ The action of a `PshHom` on the p.r.a. formula, and the two laws that make it a
 map of output presheaves. The `Z`-naturality is `DomHom`'s and needs nothing new;
 the `J`-restriction law is what tests clause (c) of `PshHom`: the two sides have
 different shapes, equal only by the `ShapeHom` naturality of `φ.shape`, and the
-components agree exactly when `reindexCompat` holds. So `pshHomObj_objRestr` is
+components agree exactly when `reindexCompat` holds. So `pshHomFib_objFibRestr` is
 not merely well-typed with clause (c) present — it is unprovable without it.
 
 `PresheafPFunctor.value_objRestrElt` is `private` upstream. Stating the
