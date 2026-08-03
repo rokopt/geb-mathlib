@@ -227,7 +227,8 @@ def coprodData (S : Type uS) (sub : S → PresheafPFunctorData.{uI, uJ, uA, uB, 
 
 /-- The coproduct is a genuine `PresheafPFunctor`: every law is the
 corresponding law of the summand a shape came from, the tag being inert under
-both restrictions. The two transported laws hold by `rfl` because the
+both restrictions. The two transported laws hold by the summand's own, the two `cast`s being
+identified by proof irrelevance because the
 coproduct's `cast` and the summand's `cast` run between definitionally equal
 types, so proof irrelevance identifies them. -/
 def coprod (S : Type uS) (sub : S → PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
@@ -572,7 +573,7 @@ section Base
 
 variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
-/-- The arity a code's `δ` carries: a presheaf on `I` for each *output object*,
+/-- The arity a code's `δ` carries: a presheaf on `I` for each output object,
 with a reindexing along `J`-morphisms. This is the data of a functor
 `J ⥤ (Iᵒᵖ ⥤ Type)`, unbundled.
 
@@ -1097,7 +1098,7 @@ theorem hasBijectiveReindex_coprod (S : Type uS)
   exact h a.1.1 g ⟨a.1.2, a.2⟩ i
 
 /-- `adjoinArity` inherits bijective reindexing from the subfunctor's and the
-adjoined arity's together, both being required: the two summands of a direction
+adjoined arity's together: the two summands of a direction
 are reindexed independently, one by each. Only this direction is proved; the
 converse is not used. -/
 theorem hasBijectiveReindex_adjoinArity (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
@@ -1151,8 +1152,8 @@ theorem hasBijectiveReindex_adjoinArity (F : PresheafPFunctor.{uI, uJ, uA, uB, v
 reindexing is the identity.
 
 This is one operation case of the constant-arity fragment's closure under
-bijective reindexing, alongside `hasBijectiveReindex_coprod`, `_sigmaPsh`,
-`_deltaRec` and the three generator cases. The closure statement itself — that
+bijective reindexing, alongside `hasBijectiveReindex_coprod`, `hasBijectiveReindex_sigmaPsh`,
+`hasBijectiveReindex_deltaRec` and the three generator cases. The closure statement itself — that
 everything the presheaf reading of the `ι` / `σ` / `δ` rules of
 [HancockMcBrideGhaniMalatestaAltenkirch2013] generates has bijective reindexing
 — is an induction over a code type for those rules, which is not built here. -/
@@ -1243,7 +1244,8 @@ def unitPshLift (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] 
       (by intro j j' j'' g h; funext s; rfl)
 
 /-- The terminal presheaf on `Fin 1`, as a decoding: every fibre a singleton,
-so the decodings of any arity form a singleton and the recursion degenerates. -/
+so the decodings of any arity into it are expected to form a singleton and the
+recursion to degenerate; nothing here states that. -/
 def termPsh : (Fin 1)ᵒᵖ ⥤ Type where
   obj _ := PUnit
   map _ := ↾ fun _ ↦ PUnit.unit
@@ -1619,7 +1621,7 @@ which `deltaRec` uses as well. That regrouping is stated here and in
 No `A` field grows in the process, and that is not an accident. A shape
 presheaf here is a total space `A` fibred by `q`, so a coproduct over the
 fibres of a discrete fibration is a *re-fibring* of the same total space, not
-an enlargement of it: `sigmaPsh` changes only `q`, and `Σ_{s ∈ S j} F.Shape
+an enlargement of it: `sigmaPsh` leaves `A` untouched, and `Σ_{s ∈ S j} F.Shape
 ⟨j, s⟩` and `F.A` over `ElObj S` are the same total space, which is
 `elSliceEquiv` again. `coprod` does enlarge `A`, its index being a bare type
 rather than the fibres of a fibration.
@@ -1650,8 +1652,6 @@ at the terminal decoding, where the recursion degenerates, `delta` at an
 output-varying arity still lies outside the bound of
 `hasBijectiveReindex_adjoinArityConst`.
 -/
-
-open CategoryTheory
 
 /-- A decoding into `termPsh`. Every fibre of `termPsh` is a singleton, so this
 is the only one, though nothing here states that. -/
@@ -1831,7 +1831,7 @@ theorem interp_deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I �
         PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) 𝔻)
         ((interp_fst I D K).trans hK)) (interp I D K).2)⟩ := rfl
 
-/-- A `δ` *code* whose interpretation lies outside the bound of
+/-- A `δ` code whose interpretation lies outside the bound of
 `hasBijectiveReindex_adjoinArityConst`, restating
 `not_hasBijectiveReindex_deltaVaries` about a code rather than about the
 semantic operations. It says nothing about what the constant-arity fragment

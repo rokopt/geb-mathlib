@@ -48,9 +48,9 @@ The generator development tests the following claims:
    establishes. Its witness type is built from `IR.Hom`, whose `ι`-clause is
    propositional equality of indices and so ignores `C₀`'s morphisms; it is
    not the type the source requires.
-5. `arityVaries` — a functor whose shape presheaf is fibrewise a singleton and
-   whose
-   `reindex` is not invertible.
+5. `arityVaries` — a functor whose shape presheaf is fibrewise a singleton.
+   That its `reindex` is not invertible is proved in the sibling `Codes`
+   module.
 
 ## Main definitions
 
@@ -63,9 +63,8 @@ The generator development tests the following claims:
   presheaf, and its operations.
 * `GebProto.Functoriality` — the witness family attached over pre-codes.
 * `GebProto.ArityB`, `GebProto.arityVaries` / `arityVariesData`,
-  `GebProto.arityVariesShapeEquiv` — the functor with non-invertible `reindex`,
-  its arity, its operations, and its shape presheaf being fibrewise a
-  singleton.
+  `GebProto.arityVariesShapeEquiv` — the fixture functor, its arity, its
+  operations, and its shape presheaf being fibrewise a singleton.
 * `GebProto.shapePresheaf` / `GebProto.arityPresheaf` — the shape presheaf `T₁`
   and the arity presheaf `E(a)`, as `Functor` values built from the raw fields.
 * `GebProto.ArityHom` / `GebProto.ofArityHomElt` /
@@ -243,10 +242,6 @@ def iotaConst (P : Jᵒᵖ ⥤ Type uB) :
 
 end IotaConst
 
-end GebProto
-
-namespace GebProto
-
 section Functoriality
 
 /-!
@@ -297,17 +292,13 @@ def Functoriality : IR.{u, u, u, u} C₀ C₀ → Type u :=
 
 end Functoriality
 
-end GebProto
-
-namespace GebProto
-
 section Reindex
 
 /-!
 `reindex` is the obligation neither prior paper has an analogue for: Positive
-IR's `F→` witnesses functoriality of subcodes in the *input* labelling
+IR's `F→` witnesses functoriality of subcodes in the input labelling
 (`A → C`), which is the `directionRestr` side, whereas `reindex` witnesses
-functoriality of the arity assignment over `el(T₁)` — the *output* side.
+functoriality of the arity assignment over `el(T₁)` — the output side.
 
 `arityVaries` below is a functor for which the obligation has content, and a
 small one. Its shape presheaf is fibrewise a singleton: one shape over each of
@@ -316,7 +307,7 @@ small one. Its shape presheaf is fibrewise a singleton: one shape over each of
 over `0`, so `reindex` along `0 ⟶ 1` is the map out of the empty type — not
 invertible.
 
-This is what rules out attaching arities per code-*path*. A code built from `ι`
+This is what rules out attaching arities per code-path. A code built from `ι`
 at a presheaf, `σ` over a set, and `δ` adjoining a fixed arity assigns to each
 shape the arity accumulated along its path through the code tree; restriction
 of a shape never changes that path, so such a code can only denote functors
@@ -326,8 +317,6 @@ argument is stated here and elaborated nowhere: the code type it quantifies
 over is not built, and the closure it needs is `Codes`' `HasBijectiveReindex`
 family.
 -/
-
-open CategoryTheory
 
 /-- The arity of the shape `a`: one direction at `1`, none at `0`. An `abbrev`
 so the `PFunctor` projection reduces to it. -/
@@ -342,7 +331,7 @@ instance subsingleton_arityB (a : Fin 2) : Subsingleton (ArityB a) :=
     have ha := a.isLt
     omega))⟩
 
-/-- Operations of the smallest functor with non-invertible `reindex`: over the
+/-- Operations of a small functor whose `reindex` is not invertible: over the
 walking arrow, one shape at each object, with one direction at `1` and none
 at `0`. `reindex` along `0 ⟶ 1` is `Fin.castLE`, here the map out of `Fin 0`. -/
 @[reducible] def arityVariesData : PresheafPFunctorData (Fin 1) (Fin 2) where
@@ -384,8 +373,8 @@ theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin
 /-- Every `Shape j` is a singleton, fibrewise. Terminality in `PSh(J)` would
 need the restriction square as well, which this family of equivalences does not
 state; what it establishes is that the arity varies above a shape presheaf with
-one element over each object; that the arity above it varies is
-`not_hasBijectiveReindex_arityVaries`, in the sibling module. -/
+one element over each output object. That the arity above it varies is a
+separate statement, proved in the sibling `Codes` module. -/
 def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
   toFun := fun _ ↦ PUnit.unit
   invFun := fun _ ↦ ⟨j, rfl⟩
@@ -394,10 +383,6 @@ def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
 
 end Reindex
 
-end GebProto
-
-namespace GebProto
-
 section PolyMorphism
 
 /-!
@@ -405,8 +390,8 @@ The regular formula for natural transformations between polynomial functors:
 shapes forward, arities backward. For slice polynomial functors `F`, `F'` over
 the same `dom` and `cod`, a transformation is a map of shapes over each output
 index together with, for each shape, a map of arities in the opposite
-direction. Naturality is not a side condition on this data; it is automatic,
-which is what `sliceHomApp` below exhibits by constructing the action.
+direction. `SliceHom` carries no naturality field; `sliceHomApp` below
+constructs the action from those two components alone.
 
 Derivation, for the presheaf case: `T Z j = Σ_{a ∈ T₁ j} Hom(E a, Z)` is a
 coproduct of representables in `Z`, so by Yoneda
@@ -419,8 +404,6 @@ coproduct completion the `δ` interpretation is not a coproduct of
 `A → X`, whereas by Definition 2.2 a `Fam(C)`-morphism carries `C`-morphism
 data that index does not.
 -/
-
-open CategoryTheory
 
 /-- A morphism of slice polynomial functors: shapes forward over each output
 index, arities backward at each shape. This is Definition 7 of
@@ -452,10 +435,6 @@ def sliceHomApp {dom : Type uI} {cod : Type uJ}
         (α.arity j ⟨x.1.1, hq⟩ (F'.rCurried _ b') ⟨b', rfl⟩).2⟩
 
 end PolyMorphism
-
-end GebProto
-
-namespace GebProto
 
 section ShapeAndArityPresheaves
 
@@ -514,10 +493,6 @@ def arityPresheaf (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A) 
 -- objects of a functor category, which is what introduces `Classical.choice`.
 
 end ShapeAndArityPresheaves
-
-end GebProto
-
-namespace GebProto
 
 section UnbundledArityHom
 
@@ -595,10 +570,6 @@ def objEquivSigmaArityHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     exact value_ofArityHom F p.1 p.2 b
 
 end UnbundledArityHom
-
-end GebProto
-
-namespace GebProto
 
 section UnbundledYoneda
 
@@ -759,10 +730,6 @@ def domHomEquivNatFamily (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) 
 
 end UnbundledYoneda
 
-end GebProto
-
-namespace GebProto
-
 section ShapeSide
 
 /-!
@@ -827,10 +794,6 @@ def idPshHom (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : PshHom F F wh
   reindexCompat _ _ _ _ _ _ := rfl
 
 end ShapeSide
-
-end GebProto
-
-namespace GebProto
 
 section ShapeSideAction
 
@@ -925,10 +888,9 @@ def pshHomSigma (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : Psh
 /-- The fibre of the output presheaf over `j`: the elements of
 `F.toPresheafDomPFunctorData.obj Z` whose `q`-output index is `j`. It is
 `(F.objPresheaf Z).obj ⟨j⟩` on the nose, and `objPresheaf` is choice-free, so
-this layer buys no constructivity and duplicates existing API. It is retained
-as the derivation the representation theorem was reached through; obligation 1
-of the design record drops it, stating that theorem against `objPresheaf` and
-`mapPresheaf` directly. -/
+this layer buys no constructivity and duplicates existing API. What it does
+supply is the index proof bundled with the element, which keeps the laws below
+free of a dependent-proof argument. -/
 @[reducible] def ObjFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (Z : Iᵒᵖ ⥤ Type uZ) (j : J) : Type (max uI uZ uA uB) :=
   { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j }
@@ -1019,10 +981,6 @@ theorem pshHomFib_objFibRestr (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} 
   exact congrArg (μ.1 i) (φ.reindexCompat g a d)
 
 end ShapeSideAction
-
-end GebProto
-
-namespace GebProto
 
 section ShapeSideYoneda
 
@@ -1156,7 +1114,6 @@ def natFamilyPshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     exact objFibMap_eq_objFibRestr_apply F'
       (natTransOfArityHom F (F.shapeRestr g a).1 (reindexArityHom F g a (idArityHom F a.1)))
       g _ _ (natFamily_generic F F' η g a) ((natFamilyShape F F' η).2 g a) i d
-
 
 /-- The arity map recovered from the family of a `PshHom` is the original: the
 generic element's arity hom is the identity, so the postcomposition it induces
