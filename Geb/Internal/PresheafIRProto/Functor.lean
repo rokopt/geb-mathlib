@@ -19,7 +19,7 @@ presheaf category, or `⥤` into one, invokes
 every declaration needing either lives here and this module alone is on
 `GebMeta.classicalAllowedModules`.
 
-Five things sit here. The p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` with its
+Six things sit here. The p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` with its
 hom written as `arityPresheaf F a ⟶ Z`, obtained by transporting the core's
 `GebProto.objEquivSigmaArityHom` along the bundling isomorphism
 `arityHomEquivNatTrans` — a `CategoryTheory.NatTrans` is its `app` field

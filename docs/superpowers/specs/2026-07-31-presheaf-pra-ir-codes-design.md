@@ -577,7 +577,7 @@ that code type and running the induction is obligation 7.
 The replacement is `ShapeArity`: an arity varying over the shape presheaf,
 carrying a family over `F.A` with a reindexing along `shapeRestr`. *Inference,
 not elaborated*: that this is the unbundled data of a functor
-`el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`; `BaseArity.functor` bundles the output-indexed
+`el(T₁) ⥤ (Iᵒᵖ ⥤ Type)`; `BaseArity.functor` bundles the output-indexed
 version, and `ShapeArity` has no counterpart.
 `adjoinArityVarying` is the `δ` carrying `arityVaries`'s arity, and
 `not_hasBijectiveReindex_adjoinArityVarying` records that it lies outside the
@@ -684,7 +684,7 @@ being at different universe instantiations.
 | `adjoinArity`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
 | `sigmaPsh`, the base change along `ElObj S → J` | Transcription of Section 6's `σ` as a semantic operation, generalized from a family over a set to a base change along a category of elements; it is not a code rule. Its discrete analogue in this repository is not identified: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`, but open question 5 leaves that degeneration open and nothing establishes it |
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
-| `ShapeArity`, `ShapeArity.const` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. *Inference, not elaborated*: that this is the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)`, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern. `const` is the case Section 6's `δ` arity occupies |
+| `ShapeArity`, `ShapeArity.const` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. *Inference, not elaborated*: that this is the unbundled data of a functor `el(T₁) ⥤ (Iᵒᵖ ⥤ Type)`, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern. `const` is the case Section 6's `δ` arity occupies |
 | `BaseArity`, `BaseArity.pullback` — the arity indexed by output objects, and its pullback along `q` | Novel |
 | `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I; *Inference, not elaborated*: that it agrees with mathlib's `S.Elementsᵒᵖ`, which nothing here compares it to. It is written out rather than reused to avoid `Opposite` transport, and obligation 4 revisits the choice |
 | `HasBijectiveReindex` | Novel; the property that every reindexing map is a bijection. *Unelaborated*: that this is cartesianness of `objPresheaf`'s fibres over the shape presheaf |

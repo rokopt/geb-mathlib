@@ -36,8 +36,8 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
 * `GebProto.HasBijectiveReindex` — the property that every reindexing map is a
   bijection.
 * `GebProto.ElObj` / `GebProto.elCategory` — the category of elements of a
-  presheaf on `J`, as a base category; presheaves on it are the slice
-  `PSh(J)/S`.
+  presheaf on `J`, as a base category. Presheaves on it are expected to be the
+  slice `PSh(J)/S`; nothing here establishes that.
 * `GebProto.sigmaLiftHom` / `GebProto.sigmaPshData` / `GebProto.sigmaPsh` — the
   `σ` case: push a functor over the base `ElObj S` forward along the projection
   to `J`.
@@ -371,8 +371,10 @@ variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 /-- The arity adjoined by a `δ`, varying over `F`'s shape presheaf: a presheaf
 on `I` for each shape, together with a reindexing along shape restriction. This
 carries a family over `F.A` with a reindexing along `shapeRestr`; reading that
-as the unbundled data of a functor `el(T₁)ᵒᵖ ⥤ (Iᵒᵖ ⥤ Type)` is not elaborated
-here, there being no counterpart of `BaseArity.functor` for it — the same data
+as the unbundled data of a functor `el(T₁) ⥤ (Iᵒᵖ ⥤ Type)` — covariant, since
+a morphism of `el(T₁)` runs from a restricted shape to the shape and `reindex`
+follows it — is not elaborated here, there being no counterpart of
+`BaseArity.functor` for it — the same data
 `PresheafPFunctorData` carries in its `directionRestr` and `reindex` fields.
 
 Indexing by shapes rather than by output objects is what keeps the `δ`
@@ -720,7 +722,8 @@ instance elCategory (S : Jᵒᵖ ⥤ Type uS) : Category.{vJ} (ElObj.{uJ, uS, vJ
   comp_id f := Subtype.ext (Category.comp_id f.1)
   assoc f g h := Subtype.ext (Category.assoc f.1 g.1 h.1)
 
-/-- The `J`-morphism a shape's membership proof turns `g` into: `g` followed by
+/-- The morphism of `ElObj S` a shape's membership proof turns `g` into, whose
+underlying `J`-morphism is: `g` followed by
 the transport identifying `j` with the base of the shape's output object. -/
 def sigmaLiftHom (S : Jᵒᵖ ⥤ Type uS)
     (F : PresheafPFunctorData.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S))
@@ -1243,7 +1246,7 @@ def unitPshLift (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] 
       (by intro j; funext s; exact Subtype.ext (congrArg ULift.up s.2.symm))
       (by intro j j' j'' g h; funext s; rfl)
 
-/-- A decoding on `Fin 1` with every fibre a singleton,
+/-- The decoding target on `Fin 1` with every fibre a singleton,
 so the decodings of any arity into it are expected to form a singleton and the
 recursion to degenerate; nothing here states that. -/
 def termPsh : (Fin 1)ᵒᵖ ⥤ Type where

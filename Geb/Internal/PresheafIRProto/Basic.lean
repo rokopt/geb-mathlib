@@ -81,7 +81,7 @@ The generator development tests the following claims:
   families it represents, and the Yoneda equivalence between them.
 * `GebProto.ShapeHom` — the unbundled presheaf hom `T₁ ⟶ T₁'`.
 * `GebProto.PshHom` — the full morphism data of presheaf p.r.a. functors:
-  a `ShapeHom`, a backward arity map, and the `el(T₁)ᵒᵖ` naturality of the
+  a `ShapeHom`, a backward arity map, and the `el(T₁)` naturality of the
   latter, stated across a transport along the former's naturality.
 * `GebProto.ObjFib` / `GebProto.objFibRestr` / `GebProto.objFibMap` /
   `GebProto.ofSigmaFib` — the output presheaf's fibres, their `J`-restriction
@@ -741,14 +741,14 @@ section ShapeSide
 
 /-!
 The `J`-side of the morphism type: the shape map is a morphism of shape
-presheaves, and the arity map is natural over `el(T₁)ᵒᵖ`, not merely over each
+presheaves, and the arity map is natural over `el(T₁)`, not merely over each
 fibre of `q` separately.
 
 `ShapeHom` is `ArityHom`'s recipe transposed: a family of fibre maps subject to
 a naturality predicate, the fibres now `F.Shape j` and the restriction maps
 `shapeRestr`.
 
-`PshHom`'s third law is the `el(T₁)ᵒᵖ` naturality of the arity map, and it does
+`PshHom`'s third law is the `el(T₁)` naturality of the arity map, and it does
 not typecheck on the nose. For `g : j' ⟶ j` and `a : F.Shape j`, one route runs
 the arity map at `F.shapeRestr g a` and then `F.reindex g a`; the other runs
 `F'.reindex g (σ j a)` and then the arity map at `a`. The second route's source
@@ -774,7 +774,7 @@ def ShapeHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : Type (max 
 
 /-- A morphism of presheaf p.r.a. functors, unbundled: a morphism `σ` of shape
 presheaves, an arity map backwards at each shape — a morphism of arity
-presheaves, so `q`-fibrewise this is `DomHom`'s data — and the `el(T₁)ᵒᵖ`
+presheaves, so `q`-fibrewise this is `DomHom`'s data — and the `el(T₁)`
 naturality of that arity map, stated across the `cast` along `σ`'s own
 naturality. -/
 @[ext] structure PshHom (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
@@ -783,7 +783,7 @@ naturality. -/
   shape : ShapeHom F F'
   /-- The arity map, backwards, a morphism of arity presheaves. -/
   arity : (j : J) → (a : F.Shape j) → ArityHom F' (shape.1 j a).1 (arityPresheaf F a.1)
-  /-- Naturality of `arity` over `el(T₁)ᵒᵖ`: applying the arity map at
+  /-- Naturality of `arity` over `el(T₁)`: applying the arity map at
   `F.shapeRestr g a` and then `F.reindex g a` agrees with applying
   `F'.reindex g (shape.1 j a)` and then the arity map at `a`, once the source of
   the second route is transported along `shape.2`. -/
@@ -897,16 +897,17 @@ def pshHomSigma (F F' : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (φ : Psh
 `F.toPresheafDomPFunctorData.obj Z` whose `q`-output index is `j`. It is
 `(F.objPresheaf Z).obj ⟨j⟩` on the nose, and `objPresheaf` is choice-free, so
 this layer buys no constructivity and supplies nothing `objPresheaf` does not.
-It is retained because the representation theorem below is stated against it,
-and restating that chain is obligation 1 of the design record, which drops the
-layer in the port. -/
+It is retained because the representation theorem below is stated against it;
+restating that chain against `objPresheaf` and `mapPresheaf` is the work of the
+upstream port, not of this module. -/
 @[reducible] def ObjFib (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
     (Z : Iᵒᵖ ⥤ Type uZ) (j : J) : Type (max uI uZ uA uB) :=
   { z : F.toPresheafDomPFunctorData.obj Z // F.q z.shape = j }
 
 /-- The `J`-restriction of the output presheaf: `objRestr` together with the
 `q`-index of the restricted shape. It is `(F.objPresheaf Z).map g.op` on the
-nose; see `ObjFib` for why the layer is retained. -/
+nose, up to the `ConcreteCategory` coercion; see `ObjFib` for why the layer is
+retained. -/
 def objFibRestr (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) {Z : Iᵒᵖ ⥤ Type uZ}
     ⦃j j' : J⦄ (g : j' ⟶ j) (w : ObjFib F Z j) : ObjFib F Z j' :=
   ⟨F.objRestr g w.1 w.2, (F.shapeRestr g ⟨w.1.shape, w.2⟩).2⟩
