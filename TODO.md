@@ -22,6 +22,7 @@
   - [Exhaustive verification of presheaf PRA laws for finite instances](#exhaustive-verification-of-presheaf-pra-laws-for-finite-instances)
   - [PRA functors over finite-specification base categories](#pra-functors-over-finite-specification-base-categories)
   - [Finite categories as a full subcategory of `Cat`](#finite-categories-as-a-full-subcategory-of-cat)
+  - [Bellantoni-Cook](#bellantoni-cook)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -407,6 +408,23 @@ exercised by the PRA item above.
 
 Depends on the `FinCat` workstream.
 
+### Bellantoni-Cook
+
+Three items, in dependency order, over
+`Geb/Mathlib/Computability/BellantoniCook.lean`.
+
+1. `MultiPoly`, the multivariate polynomial library of the reference
+   development. Required by its `BC_to_Cobham.v:2`, by its
+   `Cobham_to_BC.v:2`, and by Proposition 2, whose statement
+   `polymax_bounding` (`BC.v:1128`) is over `poly_BC` (`:1075`), built from
+   `pcst`, `pproj`, `pplus`, `pmult`, `pcomp`, `pshift` and `pplusl`.
+   Returns the polynomial apparatus items 2 and 3 are stated over.
+2. Proposition 2, the polymax bounding of `B`. Depends on 1. Returns the
+   length bound the translation of item 3 requires.
+3. Cobham's class and the translations of Theorems 1 and 2. Depends on 1
+   and 2. Returns the characterization of the polynomial-time functions,
+   and is the consumer that justifies the definitions already committed.
+
 ## Triggers (do when condition fires)
 
 - **Choice-free bound for `Fin.divNat` in Batteries**:
@@ -616,3 +634,20 @@ Depends on the `FinCat` workstream.
   the section, and its siblings do not although each declares named
   theorems. `docs/rules/lean-coding.md` § Documentation requires a section
   when it has content. Trigger: the next occasion to revise those modules.
+- **A workstream needs programmable building blocks for terms of `B`**:
+  port the derived function library of the reference development's
+  `BCLib.v`. Its `Require Import` line also names `BellantoniCook.Bitstring`,
+  whose bitstring type is the notation `bs := list bool`; that type is
+  `List Bool` directly here, so the port is unaffected by the additional
+  dependency.
+- **A second consumer of `BellantoniCook.finEnumFin` or
+  `finEnumCompDirection` appears**: move them to
+  `Geb/Mathlib/Data/FinEnum.lean`, the repository's home for choice-free
+  `FinEnum` support. They are `scoped` in
+  `Geb/Mathlib/Computability/BellantoniCook.lean`.
+- **A consumer needs `DecidableEq` or `Repr` for `BellantoniCook.BC`**:
+  derive them on `Shape` and lift along `sig.W`'s subtype.
+- **A workstream needs the polytime checker of [HeraudNowak2011] as a
+  term-level artifact**: add an untyped `Ast` and
+  `check : Ast → Option ((n s : ℕ) × BellantoniCook.BCOf n s)` over
+  `SlicePFunctor.decidableWValid`.

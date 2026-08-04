@@ -185,6 +185,10 @@ Conditions for considering these targets are in
 - [Mathlib.Computability.Primrec](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Computability/Primrec.html)
 - [Mathlib.Computability.TMComputable](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Computability/TMComputable.html)
 - [Mathlib.Computability.TuringMachine](https://leanprover-community.github.io/mathlib4_docs/Mathlib/Computability/TuringMachine.html)
+- [davidnowak/bellantonicook](https://github.com/davidnowak/bellantonicook)
+  — the Coq development accompanying [HeraudNowak2011], at commit
+  `1f03b9296104646ddc2b2b4b12e35a6619c17a99`. Licensed CeCILL; no code is
+  taken from it.
 
 ## Monad algebra
 
