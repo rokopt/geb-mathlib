@@ -183,6 +183,77 @@ instance sigFinitary : sig.toPFunctor.Finitary
   | .safeRec _ _ => inferInstanceAs (FinEnum (Fin 3))
   | .comp _ _ m k => inferInstanceAs (FinEnum (Unit ⊕ Fin m ⊕ Fin k))
 
+/-- An expression of `B`: a `sig`-tree every node of which carries children
+at the indices `rc` prescribes. -/
+@[expose] def BC : Type := sig.W
+
+/-- The arity pair of an expression: its normal and safe arities. -/
+@[expose] def BC.arity : BC → ℕ × ℕ := sig.wIndex
+
+/-- The expressions of arity `(n, s)`, which is the arity relation of
+[HeraudNowak2011] § 3.2 as a type rather than a side condition. -/
+@[expose] def BCOf (n s : ℕ) : Type := { e : BC // e.arity = (n, s) }
+
+/-- The meaning of an arity pair: a function of a normal and a safe
+environment, each a tuple of bitstrings, returning a bitstring. -/
+@[expose] def Sem : ℕ × ℕ → Type :=
+  fun i ↦ (Fin i.1 → List Bool) → (Fin i.2 → List Bool) → List Bool
+
+/-- Transport of a meaning along an equality of arity pairs. Named so that
+the motive of `▸` is fixed once rather than inferred at each use in
+`evalValue`. -/
+@[expose] def transport {i j : ℕ × ℕ} (h : i = j) (v : Sem i) : Sem j := h ▸ v
+
+/-- The recursion `safeRec` performs on its first normal argument, by
+`List.rec`. The base case is the empty bitstring; a step consumes the low
+bit `b`, passes the remaining bitstring `v` as the new first normal
+argument, and passes the recursive value in safe position. -/
+@[expose] def evalRec {n s : ℕ} (g : Sem (n, s))
+    (h₀ h₁ : Sem (n + 1, s + 1)) : List Bool → Sem (n, s) :=
+  List.rec g (fun b v ih x y ↦
+    (if b then h₁ else h₀) (Fin.cons v x) (Fin.cons (ih x y) y))
+
+/-- The meaning of one node, from its children's meanings and the proof that
+each child's index is the one `rc` prescribes. A separate definition from
+`evalStep` because the match on `Shape` must generalize that proof.
+
+`cond` reads its first safe argument and returns the second, third or fourth
+according as it is empty, odd or even — the ordering of the authors' Coq
+development. `comp` applies its head's meaning to the normal arguments'
+meanings, each in the empty safe environment, and to the safe arguments'. -/
+@[expose] def evalValue : (a : Shape) → (c : Direction a → Σ i, Sem i) →
+    (∀ b, (c b).1 = rc a b) → Sem (q a)
+  | .zero, _, _ => fun _ _ ↦ []
+  | .proj _ _ i, _, _ => fun x y ↦ Fin.append x y i
+  | .succ b, _, _ => fun _ y ↦ b :: y 0
+  | .pred, _, _ => fun _ y ↦ (y 0).tail
+  | .cond, _, _ => fun _ y ↦
+      match y 0 with
+      | [] => y 1
+      | true :: _ => y 2
+      | false :: _ => y 3
+  | .safeRec _ _, c, h => fun x y ↦
+      evalRec (transport (h 0) (c 0).2) (transport (h 1) (c 1).2)
+        (transport (h 2) (c 2).2) (x 0) (Fin.tail x) y
+  | .comp _ _ _ _, c, h => fun x y ↦
+      transport (h (.inl ())) (c (.inl ())).2
+        (fun i ↦ transport (h (.inr (.inl i))) (c (.inr (.inl i))).2 x Fin.elim0)
+        (fun j ↦ transport (h (.inr (.inr j))) (c (.inr (.inr j))).2 x y)
+
+/-- `evalValue` as an algebra for `sig` in the slice over `ℕ × ℕ`. Returning
+the shape's own output index as the first component makes the eliminator's
+coherence obligation hold by `rfl`. -/
+@[expose] def evalStep :
+    sig.toSliceDomPFunctor.Obj (Sigma.fst (β := Sem)) → Σ i, Sem i :=
+  fun z ↦ ⟨sig.q z.1.1,
+    evalValue z.1.1 z.1.2
+      ((sig.toSliceDomPFunctor.compatible_iff _ z.1.1 z.1.2).mp z.2)⟩
+
+/-- The interpretation of an expression: its arity pair together with its
+meaning at that pair, by the slice W-type's eliminator. -/
+@[expose] def BC.eval : BC → Σ i, Sem i :=
+  SlicePFunctor.W.elim sig (Σ i, Sem i) (Sigma.fst (β := Sem)) evalStep rfl
+
 end
 
 end BellantoniCook
