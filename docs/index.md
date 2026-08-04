@@ -185,9 +185,9 @@ import-direction rules above are enforced by
   `ℕ × ℕ`, its syntax as that functor's slice W-type, and its semantics by
   the W-type's eliminator. Depends on
   `Geb.Mathlib.Data.PFunctor.Slice.W` and
-  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. Every declaration of the
-  module has axioms within `propext` and `Quot.sound`; `sig` and
-  `finEnumFin` have none.
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `evalRec` depends on
+  `propext`; `finEnumCompDirection`, `sigFinitary`, `evalValue`,
+  `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
 - `Geb/Mathlib/Data/PFunctor/Presheaf/Decidable.lean` — decidability of
   the presheaf functor's naturality predicates.
   `PresheafDomPFunctorData.decidableIsNatural` decides `IsNatural`

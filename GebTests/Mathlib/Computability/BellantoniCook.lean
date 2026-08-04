@@ -23,8 +23,8 @@ development. The composition superscripts printed in § 3.2's `mult` are
 
 ## Main statements
 
-The thirteen assertions below: twelve expected outputs of `BC.eval`, and one
-inadmissible tree.
+The fourteen assertions below: thirteen expected outputs of `BC.eval`, and
+one inadmissible tree.
 
 ## References
 
@@ -192,6 +192,18 @@ def projSTerm : BC := ⟨projSTermRaw, by decide⟩
 /-- The safe projection returns the safe argument. -/
 theorem eval_projSTerm :
     (BC.eval projSTerm).2 ![[true]] ![[false]] = [false] := rfl
+
+/-- The successor appending `false`, as a single node. Every other `succ`
+node in this file carries `true`, so this one separates the constructor's
+bit argument, which a transcription dropping it would not catch. -/
+def succFalseTermRaw : sig.toPFunctor.W := WType.mk (.succ false) Fin.elim0
+
+/-- The `false`-successor, admissible. -/
+def succFalseTerm : BC := ⟨succFalseTermRaw, by decide⟩
+
+/-- The `false`-successor prepends `false` to its safe argument. -/
+theorem eval_succFalseTerm :
+    (BC.eval succFalseTerm).2 ![] ![[true]] = [false, true] := rfl
 
 /-- `plusStepRaw` with its safe argument replaced by an expression of arity
 `(2, 0)` where the signature demands `(1, 2)`. -/

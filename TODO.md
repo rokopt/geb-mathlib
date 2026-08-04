@@ -636,8 +636,10 @@ Three items, in dependency order, over
   when it has content. Trigger: the next occasion to revise those modules.
 - **A workstream needs programmable building blocks for terms of `B`**:
   port the derived function library of the reference development's
-  `BCLib.v`, which depends only on the syntax and semantics already
-  committed.
+  `BCLib.v`. Its `Require Import` line also names `BellantoniCook.Bitstring`,
+  whose bitstring type is the notation `bs := list bool`; that type is
+  `List Bool` directly here, so the port is unaffected by the additional
+  dependency.
 - **A second consumer of `BellantoniCook.finEnumFin` or
   `finEnumCompDirection` appears**: move them to
   `Geb/Mathlib/Data/FinEnum.lean`, the repository's home for choice-free

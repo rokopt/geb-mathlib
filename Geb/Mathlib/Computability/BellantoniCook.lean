@@ -72,6 +72,13 @@ at each of the six sites.
 delta-reduce a semireducible definition, and every numeral in `evalValue`
 elaborates against `Fin (q a).1` or `Direction a`.
 
+`Mathlib.Logic.Equiv.Fin.Basic` is imported for `finSumFinEquiv`. It
+transitively supplies `Mathlib.Data.Fin.Tuple.Basic`, the source of
+`Fin.cons`, `Fin.tail` and `Fin.append` used here, and
+`Mathlib.Data.Fin.VecNotation`, reached the same way by the test module's
+`![…]` notation. Neither is imported by name, so that `lake shake` does not
+report either as a redundant import.
+
 `finEnumFin` and `finEnumCompDirection` are `scoped`, and hand-built:
 mathlib's `FinEnum` instances depend on `Classical.choice`, which
 `lake lint` rejects, and an unscoped instance at the head symbol `FinEnum
