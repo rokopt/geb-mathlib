@@ -80,12 +80,12 @@ names `objEquivSigmaArityHom`, `ArityHom` and the four shared `ArityHom`
 declarations — so each of W-a and W-b also rewrites the retained remainder
 against the names it has just established in `Geb/Mathlib/`, and the prototype
 gains imports of the new modules, which `Geb/Internal/` is permitted. Only
-`SliceHom`, `sliceHomApp`, `Functoriality` and `iotaDiscreteShapeEquiv` stand
-free of both ports, `BaseArity.functor` being ported by obligation 4 into
+`SliceHom`, `sliceHomApp`, `Functoriality`, `iotaDiscreteShapeEquiv` and the
+`ObjFib` / `objFibRestr` / `objFibMap` layer stand free of both ports,
+`BaseArity.functor` being ported by obligation 4 into
 W-b's allowlisted module. Whichever of W-c, W-d and W-e lands last removes the
 remainder
-together with this document, any plan this workstream has written by then, the
-`TODO.md` § In progress entry for this
+together with this document, the `TODO.md` § In progress entry for this
 workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
 dangle once the prototype is gone, the two transient handoffs
 `docs/superpowers/specs/2026-07-30-presheaf-pra-handoff.md` and
@@ -248,8 +248,8 @@ The repository's existing code system, `IndRec.IR I O`, denotes functors
 between free coproduct completions of discrete index types. Each functor it
 denotes preserves identities and composition (`IR.interpMor_id`,
 `IR.interpMor_comp`) — a statement about the denoted functors, not about the
-code-level map; the `⥤` packaging is deferred to a `Classical.choice`-enabled
-wrapper. One capability it lacks, and one property that the `Fam(C)`-based
+code-level map; no `⥤` packaging of it is built. One capability it lacks, and
+one property that the `Fam(C)`-based
 positive inductive-recursive definitions of
 [GhaniNordvallForsbergMalatesta2015] lack, motivate the generalization to
 presheaf bases. `IR I O`'s own code-level interpretation is full and faithful —
@@ -487,7 +487,8 @@ leaves the shapes untouched.
 presheaves is taken, which might read as no change at all. A shape presheaf
 here is a total space `A` fibred by `q` (`SlicePFunctor.Shape` is the fibre of
 `q`), so a coproduct over the fibres of a discrete fibration is a re-fibring of
-the same total space rather than an enlargement: `sigmaPsh` changes only `q`,
+the same total space rather than an enlargement: `sigmaPsh` leaves `A`
+untouched,
 and `Σ_{s ∈ S j} F.Shape ⟨j, s⟩` and `F.A` over `ElObj S` are the same total
 space, which is `elSliceEquiv` once more. `coprod` does enlarge `A`, its index
 being a bare type rather than the fibres of a fibration.
@@ -620,8 +621,8 @@ adjoined arity is constant over the output, so it lies inside the same bound as
 `not_hasBijectiveReindex_deltaVaries` checks that the fusion does not cost the
 output-varying arity: at the terminal decoding the fused `δ` at an
 output-varying arity still lies outside the bound.
-The witness does not rest on a degeneracy lemma: its two `Subsingleton.elim`
-calls inhabit `fibreArity`'s fibre condition at `termPsh`'s value `PUnit`, and
+The witness does not rest on a degeneracy lemma: its `Subsingleton.elim` call
+inhabits `fibreArity`'s fibre condition at `termPsh`'s value `PUnit`, and
 that `PshMor` into a fibrewise-subsingleton decoding is itself a subsingleton
 is stated nowhere.
 `deltaCodeVaries` is a code whose
@@ -673,11 +674,11 @@ being at different universe instantiations.
 | --- | --- |
 | `PshHom`, to be named `PresheafPFunctor.Hom` upstream | Novel in this repository. The shapes-forward arities-backward form is Definition 7 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (morphisms of indexed containers) in the discrete case; its Definition 6 is the dependent-polynomial presentation of morphisms; the `r`/`q` naming this repository follows comes from the `(r, t, q)` triples of its Definition 1, this repository absorbing `t` into the dependent family `B` |
 | The action of a `Hom`, and its naturality | Novel |
-| The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (which that paper states as "Theorem 1 ([13] Theorem 2.12)", its [13] being the 2010 arXiv version of [GambinoKock2013]; whether the numbering 2.12 survives into the 2013 journal article is unchecked), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 10, not of this |
+| The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (which that paper states with a bracketed reference to Theorem 2.12 of the 2010 arXiv version of [GambinoKock2013]; the bracket number differs between the proceedings and the preprint, and whether the numbering 2.12 survives into the 2013 journal article is unchecked), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 10, not of this |
 | Identity, composition, and the category structure on `Hom` | Novel |
 | The `δ` code rule | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves: its sections `(p : P) → D (i p)` become `PshMor`, and the family of subcodes over them becomes one subcode over their category of elements. The further generalization of the arity from an object of `Set/I` to one varying over the output object is novel, and § Why `δ`'s arity must vary over the shape presheaf shows it is what separates the rule from the constant-arity one |
 | The leaf code rule `praCode` | Novel. It has no small-`IR` counterpart, `IR I O` having no primitive notion of the functors it denotes to inject; the closest statement in [HancockMcBrideGhaniMalatestaAltenkirch2013] is its Lemma 1, which constructs by hand what `praCode` takes as data |
-| `iotaPresheaf` — the constant functor at a representable | Transcription of `ι : O → IR I O` as a semantic operation, generalized by replacing equality with a morphism: `ι`'s interpretation sends `o'` to `o' = o`, and `iotaPresheaf j₀` sends `j'` to `Hom(j', j₀)`. It is not a code rule. Two declarations bear on it and neither is an identification: `iotaDiscreteShapeEquiv` collapses its shape type to `PUnit` over a discrete base, its own docstring declining to identify that with the discrete-base `ι`'s (`IR.toSlicePFunctorIota`, in a module the prototype does not import), and `iotaPresheafData_A_eq_iotaConstData_yoneda` equates its shape type with `iotaConst (yoneda.obj j₀)`'s — total spaces, not presheaves, with open question 3 recording that nothing further holds |
+| `iotaPresheaf` — the constant functor at a representable | Transcription of `ι : O → IR I O` as a semantic operation, generalized by replacing equality with a morphism: `ι`'s interpretation sends `o'` to `o' = o`, and `iotaPresheaf j₀`'s shape type over `j'` is `Hom(j', j₀)`; § The rules marks the presheaf-level reading as inference. It is not a code rule. Two declarations bear on it and neither is an identification: `iotaDiscreteShapeEquiv` collapses its shape type to `PUnit` over a discrete base, its own docstring declining to identify that with the discrete-base `ι`'s (`IR.toSlicePFunctorIota`, in a module the prototype does not import), and `iotaPresheafData_A_eq_iotaConstData_yoneda` equates its shape type with `iotaConst (yoneda.obj j₀)`'s — total spaces, not presheaves, with open question 3 recording that nothing further holds |
 | Indexing the code type by a base category, with `δ` replacing it by a category of elements | Novel |
 | `coprod`, the coproduct of a type-indexed family | Novel at this level; the discrete analogue is `SlicePFunctor.coprod` |
 | `unitPsh`, the unit | Novel at this level; the discrete analogue is `SliceDomPFunctor.representable` at the empty direction type |
@@ -716,7 +717,7 @@ being at different universe instantiations.
 | `decPresheaf` — the decodings of an output-varying arity, as a presheaf on the output base | Novel |
 | `decArity` — that arity, indexed by the elements of `decPresheaf` | Novel |
 | `unitPshLift` — the unit at the shape universe the representables force | Novel; `unitPsh` with its shape type lifted, the two differing only by `ULift` |
-| `elSliceEquiv`, `elSliceEquiv_fst` — the collapse of `el(S)`'s slice to `𝔹`'s | Novel. It is the discrete-fibration property of `el(S) → 𝔹`, and it is what shows `σ` over `ι` contributes no shapes |
+| `elSliceEquiv`, `elSliceEquiv_fst` — the collapse of `el(S)`'s slice to that of `S`'s own base | Novel. It is the discrete-fibration property of `el(S) → 𝔹`, and it is what shows `σ` over `ι` contributes no shapes |
 | `praWitnessLift` and its shape and arity identifications, with `praWitnessLiftShapeVal_naturality` and `praWitnessLiftDirEquiv_restr` — the `σ`-`δ`-unit chain and its data | Novel at this level; the discrete analogue is Lemma 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] |
 | `praWitnessLiftShapeVal` — the shape's `T`-component transported to the object it lies over | Novel; named rather than written inline because an `Equiv` coercion around it blocks the reduction its naturality proof needs, as `elEqToHom` is named for the same reason |
 | `praWitnessLiftShapeEquiv`, `praWitnessLiftDirEquiv` — that chain's shape presheaf and arity, objectwise | Novel |
@@ -797,7 +798,7 @@ unproved.
    chain needs `PresheafPFunctor.value_objRestrElt`, which is `private` in
    `Geb/Mathlib/Data/PFunctor/Presheaf/Basic.lean` and which the prototype
    restates locally; this obligation decides between dropping the `private` and
-   shipping a restatement.
+   restating it locally.
 2. **Category structure** (W-a). Composition on `PshHom` (`idPshHom` already
    supplies the identity), that composition is associative with that identity
    as unit, and that the bijection of obligation 1 carries them to the
@@ -869,7 +870,7 @@ unproved.
    the first has an explicit call site; the other two fire inside the `σ` laws'
    `simp` calls, deleting them leaving three goals unsolved, so all seven
    count. Weigh also whether
-   `CategoryOfElements`' API dissolves the transport obstructions
+   `CategoryOfElements`' API removes the transport obstructions
    `praWitnessLiftShapeVal` exists to work around, since those are artefacts of
    presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
    of the mathematics.
@@ -1107,12 +1108,12 @@ are unaffected, being the first four numbered items in both; everything from
 the proceedings' Example 1 onward shifts, because the preprint's counter
 absorbs the examples. Across every numbered result this repository cites or a
 branch of this workstream will cite — Corollary 4 being cited only by the
-transient handoff, and Definitions 6 and 7 and Theorem 1 only prospectively —
+transient handoff, Theorem 4 only by `TODO.md` § Theorems 2 and 4 for `IR`
+codes, and Definitions 6 and 7 and Theorem 1 only prospectively —
 the proceedings' Definition 2, Definition 3, Definition 5, Definition 6,
 Definition 7, Definition 8, Example 1, Lemma 1, Lemma 2, Lemma 3, Lemma 4,
-Theorem 1, Theorem 2, Theorem 3, Corollary 2 and Corollary 4 — Theorem 4 is
-listed for completeness of the note's own coverage, no repository file citing
-it — are the
+Theorem 1, Theorem 2, Theorem 3, Theorem 4, Corollary 2 and Corollary 4 are
+the
 preprint's Definition 2, Definition 3, Definition 8, Definition 10, Definition
 11, Definition 17, Example 5, Lemma 7, Lemma 9, Lemma 14, Lemma 16, Theorem 12,
 Theorem 15, Theorem 18, Theorem 21, Corollary 19 and Corollary 22. Example 1 is
@@ -1142,12 +1143,13 @@ and a different author order, so the key
 alone. *Unelaborated*: that its Corollary 19 states more than the proceedings'
 Corollary 2, which this document asserts and does not source.
 Correcting and extending the note is recorded in [TODO.md](../../../TODO.md) §
-Citation corrections deferred to their own branch. Lemma 1 makes that
-correction due already rather than at a future branch: it is cited in
-persistent content at three sites in
-`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and once in its test mirror, and
-the existing note does not cover it, so those citations are ambiguous between
-the two numberings today and no branch of this workstream introduced them.
+Citation corrections deferred to their own branch. The correction is due
+already rather than at a future branch. Of the results
+the existing note does not cover, Lemma 4, Lemma 3, Lemma 2, Lemma 1 and
+Definition 5 are each cited in persistent content — Lemma 1 at three sites in
+`Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and once in its test mirror —
+so those citations are ambiguous between the two numberings today, and no
+branch of this workstream introduced any of them.
 Definition 7 is in the same position as Lemma 1: the prototype cites it at
 `Basic.lean`'s `SliceHom`, and while the prototype is transient, obligation 1
 ports `SliceHom`'s role into persistent content. Definition 6 and Theorem 1 no
