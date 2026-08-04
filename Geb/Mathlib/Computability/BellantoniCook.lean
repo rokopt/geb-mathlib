@@ -153,6 +153,36 @@ index being the pair of normal and safe arities. -/
   r := fun x ↦ rc x.1 x.2
   q := q
 
+/-- A choice-free `FinEnum (Fin n)`: the cardinality is `n` and the
+enumeration is the identity. `scoped`, so that it does not compete with
+mathlib's `FinEnum.fin` at the same head symbol outside this namespace. -/
+scoped instance finEnumFin (n : ℕ) :
+    FinEnum (Fin n) where
+  card := n
+  equiv := Equiv.refl _
+  decEq := inferInstance
+
+/-- A choice-free `FinEnum` for `comp`'s directions. `scoped`, for the same
+reason as `finEnumFin`. -/
+scoped instance finEnumCompDirection (m k : ℕ) :
+    FinEnum (Unit ⊕ Fin m ⊕ Fin k) where
+  card := 1 + (m + k)
+  equiv := (Equiv.sumCongr finOneEquiv.symm finSumFinEquiv).trans finSumFinEquiv
+  decEq := inferInstance
+
+/-- Every shape has finitely many directions, which is what makes
+admissibility of a `sig`-tree decidable. The branches ascribe their
+instances explicitly: instance search stops at reducible transparency on the
+projection `sig.B a`, so a bare `inferInstance` does not find them. -/
+instance sigFinitary : sig.toPFunctor.Finitary
+  | .zero => inferInstanceAs (FinEnum (Fin 0))
+  | .proj _ _ _ => inferInstanceAs (FinEnum (Fin 0))
+  | .succ _ => inferInstanceAs (FinEnum (Fin 0))
+  | .pred => inferInstanceAs (FinEnum (Fin 0))
+  | .cond => inferInstanceAs (FinEnum (Fin 0))
+  | .safeRec _ _ => inferInstanceAs (FinEnum (Fin 3))
+  | .comp _ _ m k => inferInstanceAs (FinEnum (Unit ⊕ Fin m ⊕ Fin k))
+
 end
 
 end BellantoniCook
