@@ -38,7 +38,7 @@ example : (testPFunctor.wStrIso).hom = wTestAlgebra.str :=
 -- Any two algebra morphisms out of the W-type algebra agree.
 example (B : Endofunctor.Algebra (testPFunctor.functor.{0, 0, 0}))
     (g h : wTestAlgebra ⟶ B) : g = h := by
-  haveI := testPFunctor.wUniqueHom B
+  have := testPFunctor.wUniqueHom B
   exact Subsingleton.elim g h
 
 /-- A concrete tree in `testPFunctor.W`: a branching root over two
