@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.CategoryTheory
+import GebTests.Mathlib.Computability
 import GebTests.Mathlib.Data
 import GebTests.Mathlib.Logic
 
