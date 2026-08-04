@@ -180,6 +180,14 @@ import-direction rules above are enforced by
   `WType.elim` fold `wValidData`/`wValidStep` alongside the tree's root
   index in a single pass, with correctness lemma
   `wValidBool_eq_true_iff`. `Classical.choice`-free.
+- `Geb/Mathlib/Computability/BellantoniCook.lean` — the function class `B`
+  of [HeraudNowak2011] § 3.2: its arity relation as a `SlicePFunctor` over
+  `ℕ × ℕ`, its syntax as that functor's slice W-type, and its semantics by
+  the W-type's eliminator. Depends on
+  `Geb.Mathlib.Data.PFunctor.Slice.W` and
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. Every declaration of the
+  module has axioms within `propext` and `Quot.sound`; `sig` and
+  `finEnumFin` have none.
 - `Geb/Mathlib/Data/PFunctor/Presheaf/Decidable.lean` — decidability of
   the presheaf functor's naturality predicates.
   `PresheafDomPFunctorData.decidableIsNatural` decides `IsNatural`
