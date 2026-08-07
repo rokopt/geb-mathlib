@@ -99,8 +99,8 @@ imports neither directly, so both move there rather than being suppressed with
 `-- shake: keep`. Both move as `public import`: `arityVariesBase`'s type names
 the `Category (Fin 2)` instance, so it is re-exported content, and
 `scripts/pre-push.sh` runs `lake shake --add-public`, which distinguishes the
-two forms. `scripts/pre-push.sh` runs `lake shake` as a blocking step,
-so leaving any of the four in place fails the checklist. The three added
+two forms, and does so as a blocking step, so leaving any of the four in
+place fails the checklist. The three added
 declarations need no import of their own: `Function.LeftInverse` and
 `Function.Surjective` are already in `Codes.lean`'s closure. `Reindex` in
 `Basic.lean` retains `ArityB`
@@ -131,9 +131,9 @@ been proved about.
 The design carries three declarations the prototype does not yet contain —
 `praCodeOf`,
 `leftInverse_interp_praCodeOf` and `surjective_interp`, obligation 5's content
-in named form. They are the only declarations this document names that the
-prototype does not
-already contain; every other name cited below is present.
+in named form. They are the only declarations of this development that this
+document names
+and the prototype does not contain; every other name cited below is present.
 
 The trim carries its own documentation repair, which no obligation reaches:
 obligation 1's clause is about a ported declaration's docstring, and the
@@ -235,8 +235,7 @@ together with this document, the `TODO.md` § In progress entry for this
 workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
 dangle once the prototype is gone — with the `## In progress` heading above
 it, that entry being its only child, and the heading's doctoc line — the two
-transient handoffs § Scope of this
-document names, the directory index
+transient handoffs named above, the directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
 the `Geb.Internal.PresheafIRProto.Functor` entry in
@@ -435,7 +434,7 @@ natural families between two presheaf p.r.a. functors by shapes-forward
 arities-backward data, structurally, from the fact that such a functor is by
 construction a coproduct of representables. Obligations 2 and 3 carry that
 hom-set bijection to full and faithfulness of `PresheafPFunctor.functor`. That
-is not the property § Motivation opens with; it is the input the code-level
+is not the property this section opens with; it is the input the code-level
 statement needs, since a code-level hom-set bijection has to land somewhere,
 and obligation 7 is where the code-level property is discharged.
 
@@ -1094,9 +1093,10 @@ To be answered by the work rather than before it.
    input base and the decoding presheaf, the `δ`-arity's carrier, and `Cat.{v,
    u}`'s object universe all at `u`, and the input base's homs at `u` as well.
    `Interp`'s shape universe is `max u v` rather than `u`, which costs one
-   universe and no more, and admitting the representables into the leaf is what
-   costs it: a representable's shape type is the total space of a hom-family,
-   and a family of fibres indexed by the base is larger than either. The
+   universe and no more; § The rules and their relation to small
+   induction recursion marks *Inference, not elaborated* that admitting the
+   representables into the leaf is what costs it, and this question carries
+   that mark. The
    pinning is what makes `Cat.{v, u}` closed under the continuation step. What
    is open is whether a leaf restricted below the representables would let
    `max u v` come down to `u`, and whether anything wants it to.
@@ -1117,8 +1117,8 @@ To be answered by the work rather than before it.
    beyond `SlicePFunctor`, and whether the code system degenerates to `IR`
    there.
 5. A source, with a searchable identifier, for the embedding of `Fam(C)` in
-   presheaves as the coproducts of representables, and for its fullness. The §
-   Non-goals section invokes it in passing; nothing in the workstream depends
+   presheaves as the coproducts of representables, and for its fullness. §
+   Non-goals invokes it in passing; nothing in the workstream depends
    on it.
 6. What the interpretation's fibres over a functor look like.
    `interp_praCode_interp` exhibits, for every code, a one-node code with the
