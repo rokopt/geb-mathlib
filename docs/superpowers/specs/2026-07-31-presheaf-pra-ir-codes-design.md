@@ -186,7 +186,9 @@ the prototype branch's acceptance. The two transient handoffs
 `docs/superpowers/specs/2026-07-30-presheaf-pra-handoff.md` and
 `2026-08-02-presheaf-pra-codes-handoff.md` predate this document's current
 state and describe rules, obligations and branches it no longer has; where they
-disagree with it, this document governs, and they are removed with it.
+disagree with it, this document governs. The prototype's own branch removes
+them, their content being spent rather than pending: the first's task, writing
+the spec, is complete, and the second's is this revision.
 Claims marked *Inference, not elaborated* or
 *Unelaborated* are not elaborated there; the first follows from what the
 prototype elaborates, though no declaration states it, and the second is not
@@ -234,8 +236,8 @@ remainder
 together with this document, the `TODO.md` § In progress entry for this
 workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
 dangle once the prototype is gone — with the `## In progress` heading above
-it, that entry being its only child, and the heading's doctoc line — the two
-transient handoffs named above, the directory index
+it, that entry being its only child, and the heading's doctoc line — the
+directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
 the `Geb.Internal.PresheafIRProto.Functor` entry in
@@ -795,8 +797,9 @@ per branch. A fifth branch precedes them; it carries no unproved obligation,
 only the writing of obligation 5's content: the prototype's own, which adds
 this document, retires the fifty-two declarations
 § Scope of this document lists, repairs the documentation that retirement
-breaks, and adds `praCodeOf` with `leftInverse_interp_praCodeOf` and
-`surjective_interp`. Its acceptance is that `Geb/Internal/PresheafIRProto/`
+breaks, adds `praCodeOf` with
+`leftInverse_interp_praCodeOf` and `surjective_interp`, and removes the two
+spent handoffs. Its acceptance is that `Geb/Internal/PresheafIRProto/`
 builds, lints and passes `scripts/pre-push.sh` with none of the retired
 declarations and no dangling docstring cross-reference. It is downstream-only,
 so it has no `Geb/Mathlib/` deliverable and no `docs/index.md` entry.

@@ -47,8 +47,10 @@ they are about.
 - No `noncomputable`. No `sorry` in any committed state. No `admit` ever.
 - Commit subjects are imperative present tense, lower case, no trailing period,
   from the type list in `docs/rules/ci-and-workflow.md`.
-- No raw mutating `git` subcommands; use `jj`. Run `jj new` before starting
-  each task so the task's work does not fold into the previous commit.
+- No raw mutating `git` subcommands; use `jj`. Each task's final step ends
+  with `jj new`, which is what keeps the next task's work out of the previous
+  commit; do not issue a second one at the start of a task, or the log the
+  user reviews gains an empty commit between every pair.
 - Every commit in this plan leaves `lake build Geb.Internal.PresheafIRProto`
   passing. Only Task 6 runs the full `scripts/pre-push.sh`.
 - Line ranges below are as of the branch head at the time of writing. Verify
@@ -94,10 +96,11 @@ Run:
 grep -n 'yoneda' Geb/Internal/PresheafIRProto/Functor.lean
 ```
 
-Expected: hits only at line 10 (the import), lines 47 and 49 (the
-`## Main statements` bullet), line 108 (the docstring) and lines 110-112 (the
-declaration). If `yoneda` appears in any other declaration, stop and report:
-the import removal below is then wrong.
+Expected: exactly five hits — lines 47 and 49 (the `## Main statements`
+bullet), 108 (the docstring), and 110 and 112 (the declaration). The grep is
+case-sensitive, so line 10's `Mathlib.CategoryTheory.Yoneda` does not match.
+If `yoneda` appears in any other declaration, stop and report: the import
+removal in Step 5 is then wrong.
 
 - [ ] **Step 2: Delete the declaration with its docstring**
 
@@ -174,7 +177,8 @@ jj new
 **Files:**
 
 - Modify: `Geb/Internal/PresheafIRProto/Codes.lean` — eleven deletion blocks,
-  three section wrappers, two imports, six docstrings
+  three section wrappers, two imports, nine declaration docstrings and the
+  module docstring
 
 **Interfaces:**
 
@@ -210,6 +214,11 @@ and `adjoinArityVarying` declarations, the six `praWitnessLift*`,
 `elSliceEquiv` with `elSliceEquiv_fst`, and `DomArity.ofPresheaf` with its
 four satellites.
 
+Each block is bounded by a blank line on both sides, so deleting exactly the
+stated range leaves two consecutive blank lines. Close each up to one; neither
+module currently contains a double blank and `mathlibStandardSet` has no
+linter for it, so nothing downstream will catch a miss.
+
 - [ ] **Step 2: Delete the three emptied section wrappers**
 
 `Coprod`, `Incompleteness` and `Closure` now contain nothing. Delete each
@@ -217,20 +226,27 @@ four satellites.
 `docs/rules/lean-coding.md` § Structure and typeclass patterns requires the
 unused `variable` go with it.
 
-- [ ] **Step 3: Verify no `variable` or `universe` is left unused**
+- [ ] **Step 3: Check the universe line by hand**
 
-Run:
+Lean emits no diagnostic for an unused `universe` or section `variable`, so
+this cannot be checked by building. Confirm by grep that each name on the
+`universe` line still occurs in a surviving declaration:
 
 ```bash
-lake build Geb.Internal.PresheafIRProto 2>&1 | grep -i 'unused\|warning'
+for u in uI uJ uA uB uS uD vI vJ u v; do
+  printf '%s %s\n' "$u" \
+    "$(grep -c "\.{[^}]*\b$u\b\|([^)]*\b$u\b *:" Geb/Internal/PresheafIRProto/Codes.lean)"
+done
 ```
 
-Expected: no output. If a `universe` name is reported unused, delete it from
-the `universe` line at the top of the file.
+Expected: every count non-zero. `uK` and `vK` are held by the `σ` transport
+lemmas, `uS` by `sigmaPsh`, `uD` by the `Decoding` section, so none should
+fall to zero; delete from the `universe` line any that does.
 
 - [ ] **Step 4: Add the two imports Task 4 will strip from `Basic.lean`**
 
-After `public import Geb.Internal.PresheafIRProto.Basic`, add:
+After the last Mathlib import, so the Geb and Mathlib import groups stay
+separate as in the other two modules, add:
 
 ```lean
 public import Mathlib.CategoryTheory.Category.Preorder
@@ -244,7 +260,8 @@ distinguishes the two forms.
 - [ ] **Step 5: Repair `sigmaPsh`'s docstring**
 
 Replace its last sentence — from "Its shape presheaf is the total space" to
-"separating the two." — with:
+"separating the two." — with the following. Keep the closing `-/`, which
+shares `Codes.lean:1007` with the replaced text:
 
 ```lean
 Its shape presheaf is the total space of `S` paired with the subfunctor's
@@ -284,7 +301,7 @@ with
 ```lean
 decoding's fibre arity, so the arity varies over the output object. That this
 is a proper generalization of Section 6's constant arity is not established
-here; see the design record's § Why `δ`'s arity varies over the output object.
+here.
 ```
 
 - [ ] **Step 8: Repair `delta`'s docstring**
@@ -400,22 +417,56 @@ Four edits.
    type."
 2. In `## Main definitions`, delete every bullet naming a retired
    declaration: `coprodData`/`coprod`, `HasBijectiveReindex`, `unitPsh*`,
-   `elSliceEquiv`, `praWitnessLift`, `deltaRec`, and the `ofPresheaf` half of
-   the `DomArity` conversion bullet. Change the `ShapeArity` bullet to name
-   `ShapeArity` alone.
+   `elSliceEquiv`, `praWitnessLift`, `deltaRec`, and
+   `arityVariesShapeArity`/`adjoinArityVarying`. Change the `ShapeArity`
+   bullet to name `ShapeArity` alone. Rewrite the `DomArity` conversion
+   bullet, three of whose four names go — only `presheaf` survives, so "the
+   two conversions between the total-space and the fibrewise presentation of
+   an arity, and the round trips" becomes:
+
+   ```markdown
+   * `GebProto.DomArity.presheaf` — an arity's fibrewise presentation, as a
+     presheaf on the input base.
+   ```
+
 3. In `## Main statements`, delete every bullet naming a retired declaration —
    the `hasBijectiveReindex_*` family, the `not_hasBijectiveReindex_*` family,
-   `elSliceEquiv_fst`, and the `praWitnessLift*` naturality bullets.
+   `elSliceEquiv_fst`, and the `praWitnessLift*` naturality bullets — with one
+   exception. The bullet naming both `interp_deltaCodeVaries` and
+   `not_hasBijectiveReindex_interp_deltaCodeVaries` is *rewritten*, not
+   deleted, the first of the two surviving:
+
+   ```markdown
+   * `GebProto.interp_deltaCodeVaries` — the check that `interp_deltaCode`'s
+     transports reduce at a closed instance.
+   ```
+
 4. Delete the `## Implementation notes` paragraph beginning "`iotaPresheaf`,
    `unitPshLift`, `sigmaPsh` and `adjoinArity` are semantic operations" —
    its subject is the measurement of restricted leaves.
+5. Two `## Main definitions` bullets name no retired declaration but describe
+   the retirement's subject, so neither the criterion above nor Step 16's grep
+   reaches them. Replace both:
+
+   ```markdown
+   * `GebProto.termPsh` / `GebProto.arityVariesBase` / `GebProto.deltaVaries` —
+     the worked example's decoding target, its output-varying arity, and the
+     `δ` at it.
+   * `GebProto.deltaCodeVaries` — a `δ` code at that arity.
+   ```
+
+   The first currently reads "the fixtures witnessing that `δ` keeps the
+   output-varying arity", whose witness is retired and whose claim the design
+   record marks *Unelaborated*; the second reads "a `δ` code whose
+   interpretation lies outside the bound", and there is no bound.
 
 - [ ] **Step 15: Build**
 
 Run: `lake build Geb.Internal.PresheafIRProto`
 Expected: exit 0.
 
-- [ ] **Step 16: Verify no retired name survives in this file**
+- [ ] **Step 16: Verify no retired name survives outside the two witness
+  section docstrings**
 
 Run:
 
@@ -423,7 +474,12 @@ Run:
 grep -n 'HasBijectiveReindex\|hasBijectiveReindex\|deltaRec\|unitPsh\|praWitnessLift\|elSliceEquiv\|ShapeArity.const\|isFunctorial_const\|ofPresheaf\|dirEquivOfPresheaf\|sigmaDirEquivCarrier\|\bcoprod\b\|adjoinArityVarying\|arityVariesShapeArity' Geb/Internal/PresheafIRProto/Codes.lean
 ```
 
-Expected: no output.
+Expected: hits only inside two `/-! … -/` section docstrings —
+`VaryingWitness`'s, which names `not_hasBijectiveReindex_arityVaries`,
+`adjoinArityVarying` and `unitPsh`, and `FusedWitness`'s, which names
+`hasBijectiveReindex_adjoinArityConst`. Task 3 deletes the first and replaces
+the second; leave both alone here. Any hit outside those two docstrings is a
+miss in Steps 1-14 and must be fixed before committing.
 
 - [ ] **Step 17: Commit**
 
@@ -536,7 +592,10 @@ jj new
 | 187-198 | `/-- Claim 2: for a discrete J the generalized iota's shape type …` |
 
 That is 104 lines and ten declarations. `ArityB` (line 331) and
-`subsingleton_arityB` (line 335) sit between blocks two and three and stay.
+`subsingleton_arityB` (line 335) lie between the 206-249 block and the 342-389
+block, and stay.
+
+Close up the double blank line each deletion leaves, as in Task 2.
 
 - [ ] **Step 2: Delete the two emptied section wrappers**
 
@@ -625,6 +684,9 @@ Five edits.
 1. Title: replace "and the `ι` generators" with "and the `ι` generator".
 2. Summary: replace "the constant-functor generators and the fixtures that
    bound what they generate" with "the constant functor at a representable".
+   That phrase spans a line break in the file (`Basic.lean:31-32`, "…and the
+   fixtures" / "that bound what they generate"), so a literal single-line
+   search fails; match across the newline.
 3. Numbered claims list: delete claims 2, 3 and 5 (`iotaDiscreteShapeEquiv`,
    `iotaConst`, `arityVaries`), renumber the survivors from one, and rewrite
    the framing sentence "The generator development tests the following
@@ -790,48 +852,72 @@ rm docs/superpowers/specs/2026-08-02-presheaf-pra-codes-handoff.md
 Run:
 
 ```bash
-grep -rn '2026-07-30-presheaf-pra-handoff\|2026-08-02-presheaf-pra-codes-handoff' --include='*.md' .
+grep -rn '2026-07-30-presheaf-pra-handoff\|2026-08-02-presheaf-pra-codes-handoff' \
+  --include='*.md' . | grep -v '^\./docs/superpowers/plans/'
 ```
 
 Expected: hits only inside
 `docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md`, which
-names both as removed with it. If `TODO.md` names either, fix `TODO.md`.
+names both and assigns their removal to this branch. The `grep -v` excludes
+this plan, which names both paths and is itself removed in Step 6. If
+`TODO.md` names either, fix `TODO.md`.
 
 - [ ] **Step 3: Verify the design record's counts against the tree**
 
 Run:
 
 ```bash
-grep -c 'def \|theorem \|abbrev \|instance ' Geb/Internal/PresheafIRProto/Functor.lean
+grep -cE '^(@\[[^]]*\] )?(def|theorem|abbrev|instance) ' \
+  Geb/Internal/PresheafIRProto/Functor.lean
 ```
 
-Expected: 5. If not 5, the `Functor.lean` claim in the design record's § Scope
-is now wrong and must be corrected before pushing.
+Expected: 5. The anchor matters: an unanchored `grep -c 'instance '` also
+matches prose inside docstrings and reports 6. If the anchored count is not 5,
+a declaration was lost or kept in error in Task 1 — fix the file, not the
+design record, whose § Scope claim of six declarations with five remaining is
+correct.
 
 - [ ] **Step 4: Run the full gate**
 
 Run: `scripts/pre-push.sh`
-Expected: exit 0. It runs, in order, `lake build`, `lake test`, `lake lint`,
-`lake build GebTests`, `lake lint -- GebTests`,
+Expected: exit 0. It runs `lake exe cache get` first, then `lake build`,
+`lake test`, `lake lint`, `lake build GebTests`, `lake lint -- GebTests`,
 `lake shake --add-public --keep-implied --keep-prefix Geb GebTests`,
 `scripts/tests/test-lake-shake.sh`, `scripts/lint-imports.sh` and
-`scripts/tests/test-lint-imports.sh`, then the Markdown checks.
+`scripts/tests/test-lint-imports.sh`, then its script and workflow tests
+including `check-commit-msg.sh`, then the Markdown checks, then the axiom and
+lint-driver tests. Budget for a long run; only the first `lake build` is
+incremental.
 
 If `lake shake` reports a removable import in `Basic.lean` or `Codes.lean`,
 the Task 2 / Task 4 import moves were wrong: report which import and stop
 rather than adding `-- shake: keep`.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Remove this plan**
+
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape orders the branch
+so that its final commits remove its spec and plan. The design record has a
+documented exception — it is the record for four further branches and goes
+with the last of them — and this plan has none.
 
 ```bash
-jj describe -m "doc(indrec): remove the two spent presheaf p.r.a. handoffs
+rm docs/superpowers/plans/2026-08-07-presheaf-pra-prototype-trim.md
+```
 
-Both describe rules, obligations and branches the design no longer has;
-the design record governs and is removed with the last branch."
+Re-run `markdownlint-cli2 '**/*.md'` and `doctoc --dryrun --update-only .`
+afterwards; both should still pass, the plan having no inbound links.
+
+- [ ] **Step 6: Commit**
+
+```bash
+jj describe -m "doc(proto): remove the spent handoffs and this branch's plan
+
+Both handoffs describe rules, obligations and branches the design no longer
+has; the design record governs and is removed with the last branch."
 jj new
 ```
 
-- [ ] **Step 6: Report the final state**
+- [ ] **Step 7: Report the final state**
 
 Report to the user: the commit list from `main` to `@`, the `pre-push.sh`
 result, and the line counts of the three prototype modules before and after.
