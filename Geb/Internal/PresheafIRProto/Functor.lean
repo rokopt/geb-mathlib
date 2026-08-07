@@ -7,7 +7,6 @@ module
 
 public import Geb.Internal.PresheafIRProto.Basic
 public import Geb.Internal.PresheafIRProto.Codes
-public import Mathlib.CategoryTheory.Yoneda
 
 /-!
 # Prototype: the parts that write in a functor category
@@ -19,7 +18,7 @@ presheaf category, or `⥤` into one, invokes
 every declaration needing either lives here and this module alone is on
 `GebMeta.classicalAllowedModules`.
 
-Six things sit here. The p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` with its
+Five things sit here. The p.r.a. formula `T Z ≃ Σ a, Hom(E(a), Z)` with its
 hom written as `arityPresheaf F a ⟶ Z`, obtained by transporting the core's
 `GebProto.objEquivSigmaArityHom` along the bundling isomorphism
 `arityHomEquivNatTrans` — a `CategoryTheory.NatTrans` is its `app` field
@@ -41,12 +40,6 @@ proved here rather than transported.
 * `GebProto.BaseArity.functor` — an output-indexed arity as a functor
   `J ⥤ (Iᵒᵖ ⥤ Type uB)`, the output base to discrete fibrations over the
   input base.
-
-## Main statements
-
-* `GebProto.iotaPresheafData_A_eq_iotaConstData_yoneda` — the shape type of the
-  constant functor at a representable is that of the constant functor at
-  `yoneda.obj j₀`. An equality of total spaces, not of presheaves.
 
 ## References
 
@@ -101,15 +94,6 @@ objects of one category. -/
 def arityPresheafHomULifted (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (a : F.A)
     (Z : Iᵒᵖ ⥤ Type uZ) : Type (max uI uB uZ) :=
   (arityPresheaf F a ⋙ uliftFunctor.{uZ, uB}) ⟶ (Z ⋙ uliftFunctor.{uB, uZ})
-
-/-- The two shape types coincide on the nose. Only the shape types: the
-`shapeRestr` fields differ, so the two `PresheafPFunctorData`s are not
-definitionally equal. Kept here rather than in the choice-free core because
-`yoneda` lands in a functor category, so naming it — which the axiom linter
-requires — would import `Classical.choice` into that core. -/
-theorem iotaPresheafData_A_eq_iotaConstData_yoneda (j₀ : J) :
-    (iotaPresheafData.{uI, uJ, uB, vI, vJ} (I := I) j₀).A =
-      (iotaConstData.{uI, uJ, vJ, vI, vJ} (I := I) (yoneda.obj j₀)).A := rfl
 
 end CoproductOfRepresentables
 
