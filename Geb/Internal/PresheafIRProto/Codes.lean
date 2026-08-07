@@ -68,6 +68,7 @@ this module supplies the semantic operations and the code type.
 * `GebProto.codeAlgOn` / `GebProto.codeAlg` / `GebProto.interp` — the
   interpretation of a code node, the slice algebra it assembles into, and the
   fold.
+* `GebProto.praCodeOf` — the leaf as a section of the interpretation.
 
 ## Main statements
 
@@ -87,6 +88,9 @@ this module supplies the semantic operations and the code type.
   is what makes the interpretation surjective on objects.
 * `GebProto.interp_praCode_interp` — every code has the interpretation of a
   one-node code, so `δ` adds no functor the leaf does not already supply.
+* `GebProto.leftInverse_interp_praCodeOf`, `GebProto.surjective_interp` — the
+  interpretation retracts onto the leaf, so the codes denote exactly the
+  presheaf p.r.a. functors over `ElObj D` at the universes `CodeShape` pins.
 * `GebProto.interp_deltaCodeVaries` — the check that `interp_deltaCode`'s
   transports reduce at a closed instance.
 * `GebProto.interp_fst` — a code's index is the base its interpretation lands
@@ -1235,6 +1239,26 @@ def deltaCodeVaries : Code.{0, 0} (Fin 1) termPsh :=
 /-- Its interpretation is the `δ` at the output-varying arity. -/
 theorem interp_deltaCodeVaries :
     interp (Fin 1) termPsh deltaCodeVaries = ⟨Cat.of (Fin 2), deltaVaries⟩ := rfl
+
+/-- The leaf as a function of what it denotes: `praCode` uncurried over
+`Interp`. It is a section of `interp`, which is what
+`leftInverse_interp_praCodeOf` states. -/
+def praCodeOf (p : Interp.{u, v} I D) : Code.{u, v} I D :=
+  praCode I D p.1 p.2
+
+/-- The interpretation retracts onto the leaf: interpreting the leaf code of a
+presheaf p.r.a. functor returns that functor, paired with the base it lands in.
+Definitional, `interp`'s leaf clause being the identity and `Interp` a `Sigma`,
+so structure eta supplies `⟨p.1, p.2⟩ = p`. -/
+theorem leftInverse_interp_praCodeOf :
+    Function.LeftInverse (interp.{u, v} I D) (praCodeOf.{u, v} I D) :=
+  fun _ ↦ rfl
+
+/-- So the codes denote exactly the presheaf p.r.a. functors over `ElObj D` at
+the universes `CodeShape` pins: every one of them has a code, and by
+`interp_praCode_interp` `δ` supplies none that the leaf does not. -/
+theorem surjective_interp : Function.Surjective (interp.{u, v} I D) :=
+  (leftInverse_interp_praCodeOf.{u, v} I D).surjective
 
 end CodeType
 
