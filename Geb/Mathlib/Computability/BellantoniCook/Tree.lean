@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.Computability.BellantoniCook.Basic
 public import Geb.Mathlib.Data.PFunctor.Slice.Decidable
+public import Geb.Mathlib.Data.Tree.Preorder
 
 /-!
 # A tree recognizer in the Bellantoni-Cook class
@@ -37,6 +38,12 @@ argument is what the class forbids.
   `BellantoniCook.isTreeSem` — the meaning of each of the three at its
   arity, over which every statement of the module is stated.
 
+## Main statements
+
+* `BellantoniCook.combSem_eq` — the scan computes `BinTree.depth` in
+  unary, offset by one, while `BinTree.ok` holds, and `[false]` once it
+  has failed.
+
 ## Implementation notes
 
 The scan carries the stack depth and the underflow verdict in one
@@ -45,6 +52,19 @@ below depth two the value is the depth in unary offset by one, so its
 head is `true`; once one has been, the value is `[false]`, which the node
 step reproduces, that value's two predecessors being empty. Each bit is
 read once.
+
+Each unfolding lemma is stated per constructor with the recursive value
+exposed on the right. `Sem` is a function type, so `evalRec` recurses at
+a function motive and every eliminator in the chain sits there;
+eliminators at function motives reduce only when their scrutinee is a
+constructor, so a symbolic-bit or fold-shaped statement is not
+definitional.
+
+Every unfolding lemma closes by `rfl` across the module boundary, and so
+depends on the `@[expose]` attributes `Basic.lean` carries on `Direction`,
+`rc`, `q`, `sig`, `compChildren`, `BC`, `evalRec`, `evalValue`, `evalStep` and
+`BC.eval`. Removing any of them leaves those lemmas stuck; the failure is
+silent at the language server and appears at `lake build`.
 
 `combSem`, `eqOneSem` and `isTreeSem` name each meaning at its arity, so
 that the arity pair is reduced and rewriting under it type-checks. A
@@ -188,6 +208,64 @@ reduced and rewriting under it type-checks. -/
 /-- The recognizer's meaning at its arity, ascribed likewise. -/
 @[expose] def isTreeSem :
     (Fin 1 → List Bool) → (Fin 0 → List Bool) → List Bool := (BC.eval isTree).2
+
+/-- The scan's value on the empty bitstring: depth zero, offset by
+one. -/
+theorem combSem_nil : combSem ![[]] ![] = [true] := rfl
+
+/-- A leaf bit pushes a level onto a live value, and is absorbed by a
+failure. -/
+theorem combSem_cons_false (v : List Bool) :
+    combSem ![false :: v] ![] =
+      (match combSem ![v] ![] with
+       | [] => [false]
+       | true :: _ => true :: combSem ![v] ![]
+       | false :: _ => [false]) := rfl
+
+/-- A node bit pops a level when at least two remain, and fails
+otherwise. The guard is the value with two bits dropped, so a failure,
+whose two predecessors are empty, propagates. -/
+theorem combSem_cons_true (v : List Bool) :
+    combSem ![true :: v] ![] =
+      (match (combSem ![v] ![]).tail.tail with
+       | [] => [false]
+       | true :: _ => (combSem ![v] ![]).tail
+       | false :: _ => (combSem ![v] ![]).tail) := rfl
+
+/-- The scan computes the stack depth in unary, offset by one, while
+`ok` holds, and the absorbing value `[false]` once it has failed. -/
+theorem combSem_eq (w : List Bool) :
+    combSem ![w] ![] =
+      if BinTree.ok w then List.replicate (BinTree.depth w + 1) true
+      else [false] := by
+  refine List.rec (motive := fun u ↦ combSem ![u] ![] =
+    if BinTree.ok u then List.replicate (BinTree.depth u + 1) true else [false])
+    rfl ?_ w
+  intro b v ih
+  cases hok : BinTree.ok v
+  · have hv : combSem ![v] ![] = [false] := by rw [ih, hok]; rfl
+    cases b
+    · rw [combSem_cons_false, hv, BinTree.ok_cons_false, hok]; rfl
+    · rw [combSem_cons_true, hv, BinTree.ok_cons_true, hok]; rfl
+  · have hv : combSem ![v] ![] = List.replicate (BinTree.depth v + 1) true := by
+      rw [ih, hok]; rfl
+    cases b
+    · rw [combSem_cons_false, hv, BinTree.ok_cons_false, hok,
+        BinTree.depth_cons_false]
+      rfl
+    · rw [combSem_cons_true, hv, BinTree.ok_cons_true, hok,
+        BinTree.depth_cons_true]
+      -- the guard's two predecessors reduce only on a numeral of at
+      -- least that size, so the depth is split into constructor forms
+      have hsplit : ∀ d : ℕ, d = 0 ∨ d = 1 ∨ ∃ m, d = m + 2 := fun d ↦
+        match d with
+        | 0 => Or.inl rfl
+        | 1 => Or.inr (Or.inl rfl)
+        | (m + 2) => Or.inr (Or.inr ⟨m, rfl⟩)
+      obtain (h0 | h1 | ⟨m, hm⟩) := hsplit (BinTree.depth v)
+      · rw [h0]; rfl
+      · rw [h1]; rfl
+      · rw [hm]; rfl
 
 end
 
