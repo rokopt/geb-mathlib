@@ -12,11 +12,14 @@ public import Geb.Mathlib.Data.Tree.Preorder
 /-!
 # A tree recognizer in the Bellantoni-Cook class
 
-Three expressions of `B` deciding whether a bitstring is the preorder
-spelling of a binary tree. `B` is a characterization of the
-polynomial-time functions [BellantoniCook1992], which is used and not
-proved here, so the membership test lies in that class without a separate
-complexity argument.
+Three expressions of `B` deciding whether a bitstring is the preorder spelling
+of a binary tree, and their correctness against the `Valid` predicate of the
+encoding. Composed with `BinTree.valid_iff_exists_print`,
+`isTreeSem_eq_singleton_iff_exists_print` states that an expression of `B`
+accepts exactly the spellings of trees. `B` is a characterization of the
+polynomial-time functions [BellantoniCook1992], which is used and not proved
+here, so the membership test lies in that class without a separate complexity
+argument.
 
 The recognizer is a single right-to-left scan rather than a recursive
 descent. A descent would parse the second subtree from a remainder the
@@ -43,6 +46,12 @@ argument is what the class forbids.
 * `BellantoniCook.combSem_eq` — the scan computes `BinTree.depth` in
   unary, offset by one, while `BinTree.ok` holds, and `[false]` once it
   has failed.
+* `BellantoniCook.eqOneSem_eq` — `eqOne` accepts exactly the bitstrings
+  of length one.
+* `BellantoniCook.isTreeSem_eq_singleton_iff_valid` — `isTree` accepts
+  exactly the words satisfying `BinTree.Valid`.
+* `BellantoniCook.isTreeSem_eq_singleton_iff_exists_print` —
+  equivalently, exactly the spellings of trees.
 
 ## Implementation notes
 
@@ -266,6 +275,60 @@ theorem combSem_eq (w : List Bool) :
       · rw [h0]; rfl
       · rw [h1]; rfl
       · rw [hm]; rfl
+
+/-- The one-test at an arbitrary environment is the test at the canonical
+one. -/
+theorem eqOneSem_env (f : Fin 0 → List Bool) (g : Fin 1 → List Bool) :
+    eqOneSem f g = eqOneSem ![] ![g 0] := by
+  have hf : f = ![] := Subsingleton.elim _ _
+  have hg : g = ![g 0] := funext fun i ↦ match i with | ⟨0, _⟩ => rfl
+  conv_lhs => rw [hf, hg]
+
+/-- The one-test accepts exactly the bitstrings of length one. It is not
+a recursion, so its three cases are decided by matching. -/
+theorem eqOneSem_eq (u : List Bool) :
+    eqOneSem ![] ![u] = if u.length = 1 then [true] else [] := by
+  match u with
+  | [] => rfl
+  | [b] => cases b <;> rfl
+  | b :: c :: v =>
+    cases b <;> cases c <;>
+      (change ([] : List Bool) = _
+       rw [if_neg (by simp only [List.length_cons]; omega)])
+
+/-- One step of the recognizer: the one-test on the scan's predecessor.
+The scan's value is `[false]` on failure, whose predecessor is empty, and
+otherwise the depth in unary offset by one, whose predecessor has length
+the depth. -/
+theorem isTreeSem_apply (w : List Bool) :
+    isTreeSem ![w] ![] =
+      eqOneSem (fun _ ↦ []) (fun _ ↦ (combSem ![w] ![]).tail) := rfl
+
+/-- The recognizer accepts exactly the words satisfying `BinTree.Valid`. -/
+theorem isTreeSem_eq_singleton_iff_valid (w : List Bool) :
+    isTreeSem ![w] ![] = [true] ↔ BinTree.Valid w := by
+  rw [isTreeSem_apply, eqOneSem_env]
+  simp only [eqOneSem_eq, combSem_eq]
+  by_cases h : BinTree.ok w = true
+  · rw [if_pos h]
+    simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]
+    by_cases hd : BinTree.depth w = 1
+    · rw [if_pos hd]
+      exact ⟨fun _ ↦ ⟨h, hd⟩, fun _ ↦ rfl⟩
+    · rw [if_neg hd]
+      refine ⟨fun hw ↦ absurd hw (by nofun), ?_⟩
+      rintro ⟨-, hd'⟩
+      exact absurd hd' hd
+  · rw [if_neg h, if_neg (by decide : ¬ ([false] : List Bool).tail.length = 1)]
+    refine ⟨fun hw ↦ absurd hw (by nofun), ?_⟩
+    rintro ⟨h', -⟩
+    exact absurd h' h
+
+/-- The recognizer accepts exactly the preorder spellings of binary
+trees. -/
+theorem isTreeSem_eq_singleton_iff_exists_print (w : List Bool) :
+    isTreeSem ![w] ![] = [true] ↔ ∃ t, BinTree.print t = w :=
+  (isTreeSem_eq_singleton_iff_valid w).trans (BinTree.valid_iff_exists_print w)
 
 end
 
