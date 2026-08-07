@@ -63,9 +63,10 @@ fragment for such a bound to be about. Its letter is not reused.
 
 Completeness needs no branch: the code type's leaf rule injects a presheaf
 p.r.a. functor as it stands, so every such functor has a code definitionally.
-`praCodeOf` names the leaf as a section of the interpretation, and
-`leftInverse_interp_praCodeOf` and `surjective_interp` state that `interp`
-retracts onto it.
+The prototype's own branch adds `praCodeOf`, naming the leaf as a section of
+the interpretation, with `leftInverse_interp_praCodeOf` and
+`surjective_interp` stating that `interp` retracts onto it; it also retires the
+bound's vocabulary from the prototype.
 
 ## Next up
 
