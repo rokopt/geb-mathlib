@@ -207,14 +207,33 @@ import-direction rules above are enforced by
   `WType.elim` fold `wValidData`/`wValidStep` alongside the tree's root
   index in a single pass, with correctness lemma
   `wValidBool_eq_true_iff`. `Classical.choice`-free.
-- `Geb/Mathlib/Computability/BellantoniCook.lean` — the function class `B`
-  of [HeraudNowak2011] § 3.2: its arity relation as a `SlicePFunctor` over
-  `ℕ × ℕ`, its syntax as that functor's slice W-type, and its semantics by
-  the W-type's eliminator. Depends on
+- `Geb/Mathlib/Computability/BellantoniCook/Basic.lean` — the function
+  class `B` of [HeraudNowak2011] § 3.2: its arity relation as a
+  `SlicePFunctor` over `ℕ × ℕ`, its syntax as that functor's slice
+  W-type, and its semantics by the W-type's eliminator. `compChildren`
+  orders a `comp` node's children as `Direction` gives them. Depends on
   `Geb.Mathlib.Data.PFunctor.Slice.W` and
   `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `evalRec` depends on
   `propext`; `finEnumCompDirection`, `sigFinitary`, `evalValue`,
   `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
+- `Geb/Mathlib/Computability/BellantoniCook/Tree.lean` — a recognizer
+  for the preorder spellings of binary trees, as three expressions of
+  `B`. `comb` is a `safeRec` carrying the stack depth and the underflow
+  verdict in one value: the depth in unary offset by one while no node
+  bit has been read below depth two, and the absorbing `[false]` once
+  one has; `eqOne` tests a bitstring for length one; `isTree` applies
+  `eqOne` to the scan's predecessor. `combSem_eq` identifies the scan
+  with `BinTree.depth` and `BinTree.ok`; `eqOneSem_eq` identifies the
+  one-test with a length test;
+  `isTreeSem_eq_singleton_iff_valid` identifies the recognizer with
+  `BinTree.Valid`, and `isTreeSem_eq_singleton_iff_exists_print`
+  composes that with `BinTree.valid_iff_exists_print` to give acceptance
+  of exactly the spellings of trees. The recognizer is a single scan
+  rather than a recursive descent, a descent needing recursion on a safe
+  argument, which the class forbids; each bit is read once. Depends on
+  `Geb.Mathlib.Computability.BellantoniCook.Basic`,
+  `Geb.Mathlib.Data.PFunctor.Slice.Decidable` and
+  `Geb.Mathlib.Data.Tree.Preorder`.
 - `Geb/Mathlib/Data/PFunctor/Presheaf/Decidable.lean` — decidability of
   the presheaf functor's naturality predicates.
   `PresheafDomPFunctorData.decidableIsNatural` decides `IsNatural`

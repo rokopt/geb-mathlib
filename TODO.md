@@ -24,6 +24,7 @@
   - [Finite categories as a full subcategory of `Cat`](#finite-categories-as-a-full-subcategory-of-cat)
   - [Bellantoni-Cook](#bellantoni-cook)
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
+  - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -412,7 +413,7 @@ Depends on the `FinCat` workstream.
 ### Bellantoni-Cook
 
 Three items, in dependency order, over
-`Geb/Mathlib/Computability/BellantoniCook.lean`.
+`Geb/Mathlib/Computability/BellantoniCook/Basic.lean`.
 
 1. `MultiPoly`, the multivariate polynomial library of the reference
    development. Required by its `BC_to_Cobham.v:2`, by its
@@ -453,6 +454,40 @@ Four items over `Geb/Mathlib/Data/Tree/`.
 4. Relate `print` to `DyckWord.equivTree`, connecting this encoding to
    mathlib's Catalan-number apparatus. Wanted only if a counting result
    is ever needed.
+
+### The Bellantoni-Cook tree recognizer
+
+Five items over `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`.
+
+1. The tree recursor — the analogue of `safeRec` on the encoded tree,
+   whose step receives the two subtree spellings in normal position and
+   the two recursive values in safe position. Its soundness is a new
+   theorem, not a corollary: [HeraudNowak2011] Proposition 2 is proved by
+   induction over the constructors of `B`, and a tree recursor is a
+   further constructor. The expected argument is that the step inherits
+   the maximum bound, giving
+   `|f(node l r)| ≤ p(|l| + |r|) + max(|f l|, |f r|, |ā|)`, and induction
+   on height gives a polynomial. Depends on this recognizer's scan for
+   the split point.
+2. Extract the unfolding and environment lemmas into their own module
+   once a second Bellantoni-Cook function needs them.
+3. The labelled variant, tracking the corresponding item in
+   § Binary trees and their preorder encoding.
+4. Verify the claim of [DalLagoMartiniZorzi2010] § 1 that polynomiality
+   extends to constructors `s₁ × ⋯ × sₙ → s` under the constraint that
+   `s` occurs at most once among the `sᵢ`. Nothing in the design depends
+   on it.
+5. A linear-logic strand. [Hofmann2000]'s abstract states soundness for
+   recursion over trees in a system it describes as modally and linearly
+   typed, and the light and soft linear logics tune one family of
+   systems to several complexity classes. The motivation to record is
+   that tunability. Against it: those systems are reported to need more
+   elaborate syntax or encodings than the function algebras, and a
+   well-typed term there does not carry its own bound — the type
+   derivation is needed to extract it, which tells against the
+   representation strategy used here, in which the program is the term.
+   Any pursuit of this item begins by verifying both claims against
+   primary sources.
 
 ## Triggers (do when condition fires)
 
@@ -673,10 +708,20 @@ Four items over `Geb/Mathlib/Data/Tree/`.
   `finEnumCompDirection` appears**: move them to
   `Geb/Mathlib/Data/FinEnum.lean`, the repository's home for choice-free
   `FinEnum` support. They are `scoped` in
-  `Geb/Mathlib/Computability/BellantoniCook.lean`.
+  `Geb/Mathlib/Computability/BellantoniCook/Basic.lean`.
 - **A consumer needs `DecidableEq` or `Repr` for `BellantoniCook.BC`**:
   derive them on `Shape` and lift along `sig.W`'s subtype.
 - **A workstream needs the polytime checker of [HeraudNowak2011] as a
   term-level artifact**: add an untyped `Ast` and
   `check : Ast → Option ((n s : ℕ) × BellantoniCook.BCOf n s)` over
   `SlicePFunctor.decidableWValid`.
+- **`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc/` gains a second
+  module, or either `FreeCoprodCompDisc.lean` is edited for another
+  reason**: split `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`
+  and `GebTests/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` into
+  directory indexes over `Basic.lean` files, as
+  `Geb/Mathlib/Computability/BellantoniCook.lean` was split. Both
+  `FreeCoprodCompDisc/` directories currently have no index of their own:
+  `CategoryTheory.lean` imports the module and its `NatTrans` sibling
+  directly, indexing two levels, which is what CONTRIBUTING.md § Repo
+  structure's "one indexing file per directory" rules out.
