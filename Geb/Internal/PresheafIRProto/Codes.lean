@@ -828,56 +828,6 @@ def sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
 
 end Sigma
 
-section VaryingWitness
-
-/-!
-The positive counterpart of `not_hasBijectiveReindex_arityVaries`: a `δ` whose
-arity varies over the shape presheaf carries `arityVaries`'s arity, and so
-falls outside the bound. It is not `arityVaries` itself, and nothing here
-constructs an isomorphism: `adjoinArityVarying`'s directions are
-`ArityB a ⊕ PEmpty`, `arityVaries`'s are `ArityB a`. The base is `unitPsh`,
-whose shape presheaf has one element over each output object and which has no
-directions, so every
-direction of the `δ` comes from the adjoined arity.
--/
-
-/-- The decoding target on `Fin 1` with every fibre a singleton,
-so the decodings of any arity into it are expected to form a singleton and the
-recursion to degenerate; nothing here states that. -/
-def termPsh : (Fin 1)ᵒᵖ ⥤ Type where
-  obj _ := PUnit
-  map _ := ↾ fun _ ↦ PUnit.unit
-
-/-- An output-varying arity over the walking arrow: empty over `0`, inhabited
-over `1`, reindexed along `0 ⟶ 1` by the map out of the empty type. The base of
-the worked example below. -/
-def arityVariesBase : BaseArity.{0, 0, 0, 0, 0} (Fin 1) (Fin 2) where
-  fam b :=
-    { carrier := ArityB b
-      proj := fun _ ↦ 0
-      restr := fun {_ _} _f d ↦ ⟨d.1, Subsingleton.elim _ _⟩ }
-  reindex := fun {_ _} g {_} d ↦
-    ⟨⟨Fin.castLE (leOfHom g) d.1.down⟩, Subsingleton.elim _ _⟩
-
-/-- Each fibre of `arityVariesBase` has at most one element. -/
-theorem arityVariesBase_dir_ext (b : Fin 2) (i : Fin 1)
-    (x y : (arityVariesBase.fam b).Dir i) : x = y :=
-  Subtype.ext (Subsingleton.elim (α := ArityB b) x.1 y.1)
-
-/-- The arity is functorial; its content is the variation of the fibres, not
-the laws. -/
-theorem isFunctorial_arityVariesBase : arityVariesBase.IsFunctorial where
-  restr_id := by intro b i; funext d; exact arityVariesBase_dir_ext _ _ _ _
-  restr_comp := by intro b i i' i'' f g; funext d; exact arityVariesBase_dir_ext _ _ _ _
-  reindex_id := by intro b i; funext d; exact arityVariesBase_dir_ext _ _ _ _
-  reindex_comp := by intro b b' b'' g h i; funext d; exact arityVariesBase_dir_ext _ _ _ _
-  reindex_naturality := by
-    intro b b' g i i' f
-    funext d
-    exact arityVariesBase_dir_ext _ _ _ _
-
-end VaryingWitness
-
 section Decoding
 
 variable {I : Type uI} [Category.{vI} I]
@@ -1064,14 +1014,49 @@ def delta {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, vJ} I 
 
 end Decoding
 
-section FusedWitness
+section WorkedExample
 
 /-!
-That the fused `δ` keeps the output-varying arity, checked rather than argued:
-at the terminal decoding, where the recursion degenerates, `delta` at an
-output-varying arity still lies outside the bound of
-`hasBijectiveReindex_adjoinArityConst`.
+A worked instance of `δ` at an arity that varies over the output object: over
+the walking arrow, empty over `0` and inhabited over `1`.
+`interp_deltaCodeVaries` in § CodeType is the check that the rule and its code
+compute at it.
 -/
+
+/-- The decoding target on `Fin 1` with every fibre a singleton,
+so the decodings of any arity into it are expected to form a singleton and the
+recursion to degenerate; nothing here states that. -/
+def termPsh : (Fin 1)ᵒᵖ ⥤ Type where
+  obj _ := PUnit
+  map _ := ↾ fun _ ↦ PUnit.unit
+
+/-- An output-varying arity over the walking arrow: empty over `0`, inhabited
+over `1`, reindexed along `0 ⟶ 1` by the map out of the empty type. The base of
+the worked example below. -/
+def arityVariesBase : BaseArity.{0, 0, 0, 0, 0} (Fin 1) (Fin 2) where
+  fam b :=
+    { carrier := ArityB b
+      proj := fun _ ↦ 0
+      restr := fun {_ _} _f d ↦ ⟨d.1, Subsingleton.elim _ _⟩ }
+  reindex := fun {_ _} g {_} d ↦
+    ⟨⟨Fin.castLE (leOfHom g) d.1.down⟩, Subsingleton.elim _ _⟩
+
+/-- Each fibre of `arityVariesBase` has at most one element. -/
+theorem arityVariesBase_dir_ext (b : Fin 2) (i : Fin 1)
+    (x y : (arityVariesBase.fam b).Dir i) : x = y :=
+  Subtype.ext (Subsingleton.elim (α := ArityB b) x.1 y.1)
+
+/-- The arity is functorial; its content is the variation of the fibres, not
+the laws. -/
+theorem isFunctorial_arityVariesBase : arityVariesBase.IsFunctorial where
+  restr_id := by intro b i; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  restr_comp := by intro b i i' i'' f g; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  reindex_id := by intro b i; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  reindex_comp := by intro b b' b'' g h i; funext d; exact arityVariesBase_dir_ext _ _ _ _
+  reindex_naturality := by
+    intro b b' g i i' f
+    funext d
+    exact arityVariesBase_dir_ext _ _ _ _
 
 /-- A decoding into `termPsh`. Every fibre of `termPsh` is a singleton, so this
 is the only one, though nothing here states that. -/
@@ -1092,7 +1077,7 @@ def deltaVaries : PresheafPFunctor.{0, 0, 0, 0, 0, 0} (ElObj.{0, 0, 0} termPsh) 
   delta arityVariesBase isFunctorial_arityVariesBase termPsh
     (iotaPresheaf (I := ElObj.{0, 0, 0} termPsh) decVariesElt)
 
-end FusedWitness
+end WorkedExample
 
 section CodeType
 
