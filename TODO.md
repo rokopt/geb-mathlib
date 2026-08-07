@@ -45,22 +45,27 @@ carrying the induction-recursion. The prototype under
 `Geb/Internal/PresheafIRProto/` is the design's
 validated part; the design record is
 [docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md](docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md),
-which names five branches and is removed with the last of them:
+which names four branches and is removed with the last of them:
 
 - W-a: morphisms of presheaf p.r.a. functors, their action and the hom-set
   bijection; their composition and category structure; and the bundled
   restatements and natural-transformation identification, in a
   `Classical`-allowed module. Upstream-eligible.
 - W-b: the semantic operations, the decoding layer, the code type, the
-  interpretation and the bound's vocabulary, upstream-eligible.
-- W-c: the bound — transport of `HasBijectiveReindex` along an isomorphism, and
-  the constant-arity fragment's code type and induction.
+  interpretation and the leaf's section, upstream-eligible.
 - W-d: code-level morphisms and their representation theorem.
 - W-e: the collapse `PSh(𝕀)/D ≃ PSh(el(D))`.
 
-W-a, W-b and W-e depend on nothing; W-c and W-d each depend on W-a and W-b.
+W-a, W-b and W-e depend on nothing; W-d depends on W-a and W-b. W-c, which
+would have carried a bound on what a restricted leaf reaches, is withdrawn:
+the leaf admits every presheaf p.r.a. functor, so there is no generated
+fragment for such a bound to be about. Its letter is not reused.
+
 Completeness needs no branch: the code type's leaf rule injects a presheaf
 p.r.a. functor as it stands, so every such functor has a code definitionally.
+`praCodeOf` names the leaf as a section of the interpretation, and
+`leftInverse_interp_praCodeOf` and `surjective_interp` state that `interp`
+retracts onto it.
 
 ## Next up
 
