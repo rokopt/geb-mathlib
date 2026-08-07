@@ -23,6 +23,7 @@
   - [PRA functors over finite-specification base categories](#pra-functors-over-finite-specification-base-categories)
   - [Finite categories as a full subcategory of `Cat`](#finite-categories-as-a-full-subcategory-of-cat)
   - [Bellantoni-Cook](#bellantoni-cook)
+  - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -424,6 +425,34 @@ Three items, in dependency order, over
 3. Cobham's class and the translations of Theorems 1 and 2. Depends on 1
    and 2. Returns the characterization of the polynomial-time functions,
    and is the consumer that justifies the definitions already committed.
+
+### Binary trees and their preorder encoding
+
+Four items over `Geb/Mathlib/Data/Tree/`.
+
+1. Labelled trees, the initial algebra of `Fin k + X × X`, and the
+   corresponding encoding. Requires a decision on the label field's
+   spelling, and a recognizer whose scanning state carries a phase.
+2. Define `ConcreteSyntax.Ast` from `BinTree`, removing the duplication
+   between them. The item becomes actionable once a concrete-syntax
+   module lands on `main` carrying the initial algebra of
+   `Fin k + X × X` with its own `leaf`, `fork`, induction principle and
+   parse/print retraction; the import rules bar `Geb/Mathlib/` from
+   reaching `Geb/Internal/`, so the dependency runs the other way.
+3. Resolve the overlap with `Mathlib/Data/Tree/Basic.lean`, which
+   declares `BinaryTree` with `numNodes`, `numLeaves` and `height`.
+   `Mathlib/Data/Tree/` holds `Basic.lean`, `Get.lean`, `RBMap.lean` and
+   `Traversable.lean`, so `Binary.lean` is a free filename and there is
+   no name clash; what an upstream PR would have to argue is a second
+   binary tree beside `BinaryTree`, measured differently — `BinTree.size`
+   counts leaves alongside internal nodes, so at `BinaryTree Unit` it is
+   `numNodes + numLeaves`, which `numLeaves_eq_numNodes_succ` makes
+   `2 * numNodes + 1`. Whether `size` should instead be stated through a
+   transfer to `numNodes` is the second half of the question, and whether
+   the name `size` survives beside those three is the third.
+4. Relate `print` to `DyckWord.equivTree`, connecting this encoding to
+   mathlib's Catalan-number apparatus. Wanted only if a counting result
+   is ever needed.
 
 ## Triggers (do when condition fires)
 
