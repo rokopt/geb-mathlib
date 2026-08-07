@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.Computability.BellantoniCook.Basic
+import GebTests.Mathlib.Computability.BellantoniCook.Tree
 
 /-!
 # BellantoniCook tests — index
