@@ -45,7 +45,8 @@ carrying the induction-recursion. The prototype under
 `Geb/Internal/PresheafIRProto/` is the design's
 validated part; the design record is
 [docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md](docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md),
-which names four branches and is removed with the last of them:
+which names four upstream branches, and one before them that carries the
+prototype, and is removed with the last:
 
 - W-a: morphisms of presheaf p.r.a. functors, their action and the hom-set
   bijection; their composition and category structure; and the bundled

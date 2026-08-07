@@ -85,20 +85,31 @@ Removing exactly these empties five `section` wrappers — `Degeneracy` and
 `IotaConst` in `Basic.lean`, `Coprod`, `Incompleteness` and `Closure` in
 `Codes.lean`. Each wrapper goes with its contents, together with the `variable`
 line it scopes, which `docs/rules/lean-coding.md` § Structure and typeclass
-patterns requires be removed once unused. Three of `Basic.lean`'s imports lose
-their consumers there. `Mathlib.CategoryTheory.Discrete.Basic` goes outright,
+patterns requires be removed once unused. Four imports lose their consumers. `Functor.lean`'s
+`Mathlib.CategoryTheory.Yoneda` goes with
+`iotaPresheafData_A_eq_iotaConstData_yoneda`, `yoneda` occurring in that module
+nowhere else and no surviving import implying it; the other three are
+`Basic.lean`'s. `Mathlib.CategoryTheory.Discrete.Basic` goes outright,
 `Discrete` occurring in that file only in `iotaDiscreteShapeEquiv`.
 `Mathlib.CategoryTheory.Category.Preorder` and `Mathlib.Order.Fin.Basic` are
 still needed, but by `Codes.lean` — `leOfHom` and the `Category (Fin 2)`
 instance at `arityVariesBase`, `Cat.of (Fin 2)` at `deltaCodeVaries` — which
 imports neither directly, so both move there rather than being suppressed with
 `-- shake: keep`. `scripts/pre-push.sh` runs `lake shake` as a blocking step,
-so leaving any of the three in place fails the checklist. `Reindex` in
+so leaving any of the four in place fails the checklist. The three added
+declarations need no import of their own: `Function.LeftInverse` and
+`Function.Surjective` are already in `Codes.lean`'s closure. `Reindex` in
 `Basic.lean` retains `ArityB`
 and `subsingleton_arityB` and keeps its name, which names the
 `PresheafPFunctorData.reindex` field rather than the bound; `VaryingWitness`
-and `FusedWitness` in `Codes.lean` retain the worked example and are renamed
-for it, their present names being vocabulary of the bound.
+and `FusedWitness` in `Codes.lean` retain the worked example and merge into
+one section named
+`WorkedExample`, their present names being vocabulary of the bound and the
+split between them having been the bound's two witnesses. `ArityB` stays an
+`abbrev`: nothing turns on the attribute once its stated rationale goes, and
+changing it is a second concern. `Basic.lean`'s numbered claims list keeps the
+numbering of the two claims that survive rather than renumbering, so that the
+prose around it needs no rewrite.
 
 `ShapeArity.const` is the one removal that costs an exposition rather than only
 a proof. It was the prototype's only realization of an arity constant over the
@@ -108,7 +119,8 @@ on the constant side. That is consistent with the *Unelaborated* marking there:
 with nothing to compare against, there is nothing the comparison could have
 been proved about.
 
-This revision also adds three declarations to the prototype — `praCodeOf`,
+The design carries three declarations the prototype does not yet contain —
+`praCodeOf`,
 `leftInverse_interp_praCodeOf` and `surjective_interp`, obligation 5's content
 in named form. They are the only prototype declarations this document names
 that it does not already contain; every other name cited below is present.
@@ -119,8 +131,9 @@ prototype's module docstrings, its `/-! … -/` section docstrings and the
 docstrings of declarations no branch ports are none of those. So the trim
 rewrites, in the same step: all three module docstrings, as obligation 4
 apportions them; the `Reindex`, `VaryingWitness` and `FusedWitness` section
-docstrings; the declaration docstrings obligation 4 lists; `CodeShape`'s, which
-asserts flatly the claim § The rules and their relation to small induction
+docstrings; the declaration docstrings obligation 4 lists; `CodeShape`'s and
+`interp_praCode_interp`'s, which both
+assert flatly the claim § The rules and their relation to small induction
 recursion marks *Unelaborated*; `ArityB`'s, whose "an `abbrev` so the
 `PFunctor` projection reduces to it" describes a projection that goes with
 `arityVariesData`, `ArityB`'s surviving consumer indexing by output object
@@ -137,8 +150,10 @@ with the `/-- … -/` docstring § Documentation requires and each entered in th
 module docstring's `## Main definitions` or `## Main statements` as its kind
 dictates.
 
-The retirement, the repair and those three additions are neither ported by nor
-assigned to any of the four branches. They are the work of the prototype's own
+The retirement, the repair and the writing of those three declarations are
+assigned to no upstream branch. Obligation 4 ports the three onward to
+`Geb/Mathlib/` once they exist, and ports nothing of the other two. They are
+the work of the prototype's own
 branch, the
 one carrying this document, and land before W-a, W-b, W-d and W-e begin: the
 declarations retired are ported by no obligation, so no branch's removal clause
@@ -152,15 +167,20 @@ transcribes. It compiles, is linted, and is audited by
 `GebMeta.detectNonstandardAxiom`; every declaration cited below is
 `Classical.choice`-free except where noted. Where this document and the
 prototype's elaborated content disagree, the prototype is right; its prose
-carries no such authority. The two transient handoffs
+carries no such authority. Those three properties are asserted of the
+prototype as it stands, so they do not yet cover `praCodeOf`,
+`leftInverse_interp_praCodeOf` and `surjective_interp`; establishing them
+there, `Codes.lean` not being on `GebMeta.classicalAllowedModules`, is part of
+the prototype branch's acceptance. The two transient handoffs
 `docs/superpowers/specs/2026-07-30-presheaf-pra-handoff.md` and
 `2026-08-02-presheaf-pra-codes-handoff.md` predate this document's current
 state and describe rules, obligations and branches it no longer has; where they
 disagree with it, this document governs, and they are removed with it.
 Claims marked *Inference, not elaborated* or
-*Unelaborated* are not elaborated there; the first follows from what is
-elaborated without any declaration stating it, the second is asserted with
-neither a declaration nor a source. Every other claim names the declaration
+*Unelaborated* are not elaborated there; the first follows from what the
+prototype elaborates, though no declaration states it, and the second is not
+established here at all — asserted outright, or imported from a source that is
+named but not formalized. Every other claim names the declaration
 that establishes it, with three classes of exception, each flagged where it
 arises: readings of a construction, backed by structure fields rather than by
 theorems (§ Stage 1: morphisms and the representation theorem, facts 2 and 4);
@@ -168,8 +188,10 @@ the discrete analogues named in § Definitions: transcription or novel's
 `Status` cells, no one of which is an elaborated identification;
 and statements about ambient mathematics rather than about this development —
 § Stage 1: morphisms and the representation theorem, fact 2's appeal to Yoneda
-in any locally small category, and § Motivation's first bullet on presheaves
-over the walking arrow, neither of which this development bears on.
+in any locally small category, § Motivation's first bullet on presheaves over
+the walking arrow, and § The rules and their relation to small induction
+recursion's aside that `y j₀` is terminal exactly when `j₀` is; none of the
+three is about this development.
 
 The prototype is not deliverable content. Each branch removes the part of it
 that branch ports, rather than the whole surviving until the last branch. W-a
@@ -189,15 +211,15 @@ against the names it has just established in `Geb/Mathlib/`, and the prototype
 gains imports of the new modules, which `Geb/Internal/` is permitted. Only
 `SliceHom`, `sliceHomApp` and `Functoriality` stand free of both ports; the
 `ObjFib` / `objFibRestr` / `objFibMap` layer is not ported either but W-a
-deletes it, its one consumer being the theorem W-a ports away.
+deletes it: its consumers are the representation theorem's own chain, which
+W-a restates against `objPresheaf` and `mapPresheaf`, so they go together.
 `BaseArity.functor` is ported by obligation 4 into
 W-b's allowlisted module. Whichever of W-d and W-e lands last removes the
 remainder
 together with this document, the `TODO.md` § In progress entry for this
 workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
-dangle once the prototype is gone, the two transient handoffs
-`docs/superpowers/specs/2026-07-30-presheaf-pra-handoff.md` and
-`2026-08-02-presheaf-pra-codes-handoff.md`, the plan, the directory index
+dangle once the prototype is gone, the two transient handoffs § Scope of this
+document names, the plan, the directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
 the `Geb.Internal.PresheafIRProto.Functor` entry in
@@ -205,7 +227,10 @@ the `Geb.Internal.PresheafIRProto.Functor` entry in
 `docs/index.md`, which describes a directory that is gone (`GebTests/Internal/`
 has its own bullet and survives), and the two module-docstring mentions of
 `Geb.Internal` — a bullet in `Geb.lean`, a clause in `GebTests.lean` —
-`GebTests/Internal/` itself surviving as the axiom-linter fixtures; W-d
+`GebTests/Internal/` itself surviving as the axiom-linter fixtures. That last
+removal is an assignment rather than an instance of the per-branch rule above:
+W-d and W-e port nothing out of the prototype, so the rule leaves them nothing
+to remove, and what remains has to fall to someone. W-d
 and W-e are mutually unordered, so either may land last and which does is
 not determined in advance, and the removal is a condition on the last rather
 than an assignment to a named branch. Carrying the
@@ -346,7 +371,8 @@ Theorem 3 of [HancockMcBrideGhaniMalatestaAltenkirch2013], present here as
 `IR.interpHomEquiv` — so the second point is about the `Fam(C)` generalization,
 not about `IR I O`:
 
-- *Inference, not elaborated* — the prototype constructs no initial algebras (§
+- A statement of ambient mathematics, per § Scope of this document's third
+  exception class — the prototype constructs no initial algebras (§
   Non-goals) and no walking-arrow endofunctor. Only one of the two index sets
   varies under iteration. In the endofunctor case the initial algebra generates
   a type together with a decoding into a fixed type. A presheaf on the
@@ -414,8 +440,8 @@ and the two universe-formability demonstrations `arityPresheafHomAtUB` and
 | `pshHomEquivNatFamily` | the representation theorem in full |
 
 Four facts follow. The first and third name the declarations that establish
-them; the second and fourth are readings of the construction, backed by
-structure fields rather than by theorems:
+them; the fourth is a reading of the construction, backed by structure fields
+rather than by theorems, and the second is a statement of ambient mathematics:
 
 1. Shape-map-forward and arity-map-backward data classify the natural families
    between presheaf p.r.a. functors: `pshHomEquivNatFamily` is a bijection
@@ -519,8 +545,10 @@ and a morphism `(j, d) ⟶ (j', d')` is `g : j ⟶ j'` with `D(g)(d') = d`. That
 is `ElObj D` on the nose, `elCategory` giving exactly those homs, so `el(D)`
 names the prototype's own base and not its opposite. mathlib's `Elements` of a
 presheaf lands in `𝕀ᵒᵖ`, so the corresponding mathlib term is `D.Elementsᵒᵖ`.
-*Inference, not elaborated*: that the base category whose presheaves are the
-slice `PSh(𝕀)/D` is `el(D)`, which is obligation 6's deliverable, and that
+*Unelaborated*: that the base category whose presheaves are the
+slice `PSh(𝕀)/D` is `el(D)`, which is obligation 6's deliverable and which
+mathlib supplies but this development does not, and *Inference, not
+elaborated*: that
 `ElObj D` agrees with `D.Elementsᵒᵖ`, which nothing compares.
 
 The semantic counterpart of that split is the
@@ -642,9 +670,9 @@ none of them a new operation:
 `deltaVaries` is `delta` at that arity, its continuation the constant functor
 at a representable; `deltaCodeVaries` is a code whose interpretation is that
 functor, and `interp_deltaCodeVaries`, itself definitional, is the check that
-the rule and its code compute. That every fibre of `termPsh` is a singleton,
-so that `decUnit` is the only decoding into it, is stated nowhere, and the
-example does not rest on it.
+the rule and its code compute. *Unelaborated*: that every fibre of `termPsh`
+is a singleton, so that
+`decUnit` is the only decoding into it. The example does not rest on it.
 
 ### Why no inductive-inductive definition is needed
 
@@ -656,12 +684,10 @@ than by output objects: `adjoinArityData` is then free of it.
 
 Nor does the recursion force mutuality. That `δ` has a single subcode slot at
 a base its arity determines is elaborated — `CodeDir` gives its direction type
-as `PUnit`, `CodeNext` the base, and `deltaCode` takes the one subcode.
-*Inference, not elaborated*, being the collapse of § The setting is indexed
-induction-recursion, not induction-recursion again: that a continuation so
-presented is equivalent to a family of codes indexed by decodings, which is the
-same base change `sigmaPsh` makes semantically and which no declaration
-states.
+as `PUnit`, `CodeNext` the base, and `deltaCode` takes the one subcode. That a
+continuation so presented is equivalent to a family of codes indexed by
+decodings is the collapse of § The setting is indexed induction-recursion, not
+induction-recursion again, and carries that section's *Unelaborated* mark.
 
 The code type is the W-type of a slice polynomial functor on `Cat`
 (`codePFunctor`, `Code`), not an inductive family. `Cat.{v, u}` is closed under
@@ -699,10 +725,10 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | `adjoinArity`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
 | `sigmaPsh`, the base change along `ElObj S → J` | Transcription of Section 6's `σ` as a semantic operation, generalized from a family over a set to a base change along a category of elements; it is not a code rule. Its discrete analogue in this repository is not identified: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`, but open question 4 leaves that degeneration open and nothing establishes it |
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
-| `ShapeArity` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. *Inference, not elaborated*: that this is the unbundled data of a functor `el(T₁) ⥤ (Iᵒᵖ ⥤ Type)`, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern |
+| `ShapeArity` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. § Why `δ`'s arity varies over the output object marks its reading as a functor `el(T₁) ⥤ (Iᵒᵖ ⥤ Type)` an inference, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern |
 | `BaseArity`, `BaseArity.pullback` — the arity indexed by output objects, and its pullback along `q` | Novel |
 | `DomArity.presheaf`, `BaseArity.famPresheaf`, `BaseArity.reindexHom`, `BaseArity.functor` — the fibrewise form of an arity, the presheaf it gives at each output object, the morphism each output morphism induces, and the four bundled as a functor `J ⥤ (Iᵒᵖ ⥤ Type uB)` | Novel presentations of a standard identification. The content is that a `DomArity` is a discrete fibration over `I`, hence a presheaf on it, and that `BaseArity` is that functorially in the output — the arity side of [nLabParametricRightAdjoint]'s two-sided discrete fibration, which § The setting is indexed induction-recursion, not induction-recursion marks as inference. `functor` writes `⥤` into a functor category and so is in `Functor.lean` |
-| `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I; *Inference, not elaborated*: that it agrees with mathlib's `S.Elementsᵒᵖ`, which nothing here compares it to. It is written out rather than reused to avoid `Opposite` transport, and obligation 4 revisits the choice |
+| `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I. § The setting is indexed induction-recursion, not induction-recursion marks its agreement with mathlib's `S.Elementsᵒᵖ` an inference. It is written out rather than reused to avoid `Opposite` transport, and obligation 4 revisits the choice |
 | `CodeShape`, `CodeDir`, `CodeNext`, `codePFunctor`, `Code` | Novel. Indexing by a base category, with `δ` replacing it by a category of elements, has no counterpart in the cited literature; nor does a leaf that injects the denoted functors, which is what `CodeShape`'s first summand is |
 | `codeAlgOn`, `codeAlg`, `interp` — the interpretation | Novel at this level; the discrete analogue is `IR.interpObj` |
 | The code-level morphism type (obligation 7) | Novel at this level; the discrete analogue is `IR.Hom` |
@@ -722,6 +748,7 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | `arityPresheafHomAtUB`, `arityPresheafHomULifted` — the universes at which the bundled hom is formable | Novel; retained in the prototype as the derivation and ported by nothing |
 | `genericFib`, `idElt`, `ofSigmaFib`, `reindexArityHom`, `pshHomSigma`, `domHomSigma` — the fibre-level intermediates of the representation theorem | Novel presentations; those the theorem needs travel with obligation 1, the rest are retained derivation |
 | The unbundled-data layers and their law predicates — each `…Data` beside the structure it underlies (`iotaPresheafData`, `adjoinArityData`, `sigmaPshData`), the three `IsFunctorial` predicates (`DomArity.IsFunctorial`, `ShapeArity.IsFunctorial`, `BaseArity.IsFunctorial`), `DomArity.Dir`, and the component maps the representation theorem is assembled from (`ofArityHomElt`, `idArityHom`, `natTransOfArityHom`, `postcompArityHom`, `natFamilyPshHom`, `pshHomFamily`, `natFamilyShape`, `natFamilyArity`) | Novel presentations, each carrying no mathematics beyond the structure it splits: the data/law separation is the repository's standing pattern for keeping a construction choice-free, not a claim about the objects |
+| The transport and law lemmas the ports carry — the five `σ` laws with their nine transport lemmas, `BaseArity.isFunctorial_pullback` with `reindex_eqToHom`, `reindex_comp_apply` and `reindex_cast_shape`, `elCategory_id_val`, `elCategory_comp_val`, `elCategory_eqToHom_val`, `elEqToHom` with `elEqToHom_eq`, `adjoinArity_cast_inl` and `_cast_inr`, `fibreArity_restr_val`, `isFunctorial_fibreArity`, `decArity_reindex_val` and `isFunctorial_decArity` | Novel, and proof-engineering rather than mathematics: each discharges a transport that the chosen presentation introduces, and none states anything about the objects that the structure it serves does not already carry |
 | `ArityB`, `termPsh`, `arityVariesBase`, `decUnit`, `decVariesElt`, `deltaVaries`, `deltaCodeVaries` — the worked example of § The decoding-dependent continuation | Novel. Fixtures, carrying no mathematics beyond the computation they exhibit |
 | `PshMor` — a morphism from a `DomArity` to a presheaf, unbundled | Novel presentation; it is the presheaf reading of Section 6's sections `(p : P) → D (i p)` |
 | `fibreArity` — the arity a decoding adjoins | Novel |
@@ -814,7 +841,10 @@ unproved.
    the replacement. W-a deletes that layer from the prototype in the same step,
    rather than leaving it under § Scope of this document's removal rule, which
    retains a declaration only while something consumes it, and the layer's one consumer
-   is the representation theorem W-a is porting away. The `functor` form is a
+   is the representation theorem's own chain, which W-a restates. One listed
+   item, `objFibMap_eq_objFibRestr_apply`, is stated in the layer's own terms,
+   so W-a restates it against `objPresheaf` and `mapPresheaf` and renames it
+   accordingly; open question 9 covers the naming. The `functor` form is a
    corollary and belongs in a module
    on `GebMeta.classicalAllowedModules`, together with `arityHomEquivNatTrans`
    and `objEquivSigmaHom`, the prototype's two bundled restatements. The ported
@@ -860,9 +890,10 @@ unproved.
    `decArity_reindex_val`; `adjoinArity_cast_inl` and `adjoinArity_cast_inr`;
    the two code constructors `praCode` and
    `deltaCode` with their computation rules `interp_praCode`,
-   `interp_deltaCode`, `interp_praCode_interp` and `interp_fst` — the four
-   theorems, not the two constructors, being what nothing else in this
-   obligation's list depends on, so the closure clause does not reach them;
+   `interp_deltaCode`, `interp_praCode_interp` and `interp_fst`. Of these only
+   `interp_fst` is reached by the closure clause, `interp_deltaCode`'s
+   statement applying it; the other three and the two constructors are listed
+   because nothing else in this obligation's list depends on them;
    `praCodeOf` with `leftInverse_interp_praCodeOf` and `surjective_interp`,
    obligation 5's content in named form; the worked example `ArityB`,
    `subsingleton_arityB`, `termPsh`, `arityVariesBase`,
@@ -897,8 +928,10 @@ unproved.
    `CategoryOfElements`' API removes the transport obstructions the five `σ`
    laws work around, since those are artefacts of
    presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
-   of the mathematics. Docstrings port under obligation 1's clause. The
-   declaration docstrings this bears on are `iotaPresheaf`, `PshMor`,
+   of the mathematics. Docstrings port under obligation 1's clause; the
+   prototype's own copies were repaired by the trim, per § Scope of this
+   document, so what this clause governs is the ported form. The
+   declaration docstrings it bears on are `iotaPresheaf`, `PshMor`,
    `sigmaPsh`, `decArity`, `delta`, `arityVariesBase` and `deltaCodeVaries`.
    `decArity`'s is the second, after `sigmaPsh`'s, that asserts in the strong
    form the claim
@@ -1081,8 +1114,8 @@ To be answered by the work rather than before it.
 ## Non-goals
 
 - Positive inductive-recursive definitions over `Fam(C)`
-  ([GhaniNordvallForsbergMalatesta2015]). *Inference, not elaborated*, on the
-  reading § Motivation records: over `Fam(C)` the code-level
+  ([GhaniNordvallForsbergMalatesta2015]). On the reading § Motivation records
+  and marks *Unelaborated*: over `Fam(C)` the code-level
   full-and-faithfulness is available only by Remark 3.4's route, defining the
   interpretation simultaneously with the codes. The
   presheaf setting is not claimed to have it: obligation 7 is where it would
@@ -1148,11 +1181,11 @@ is unchanged, though the preprint adds numbered subsections the proceedings
 runs in. The preprint is not merely a renumbering: it carries a different title
 and a different author order, so the key
 `HancockMcBrideGhaniMalatestaAltenkirch2013` names the proceedings version
-alone. *Unelaborated*: that its Corollary 19 states more than the proceedings'
-Corollary 2, which this document asserts and does not source.
+alone.
 Correcting and extending the note is recorded in [TODO.md](../../../TODO.md) §
-Citation corrections deferred to their own branch. The correction is due
-already rather than at a future branch. Of the results
+Citation corrections deferred to their own branch, which is where it is done
+rather than in any branch of this workstream, though it is due now rather than
+at a future one. Of the results
 the existing note does not cover, Lemma 4, Lemma 3, Lemma 2, Lemma 1 and
 Definition 5 are each cited in persistent content — Lemma 1 at three sites in
 `Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and once in its test mirror —
