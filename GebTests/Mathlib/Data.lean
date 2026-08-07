@@ -9,6 +9,7 @@ import GebTests.Mathlib.Data.Fin
 import GebTests.Mathlib.Data.FinEnum
 import GebTests.Mathlib.Data.List
 import GebTests.Mathlib.Data.PFunctor
+import GebTests.Mathlib.Data.Tree
 import GebTests.Mathlib.Data.UnionFind
 import GebTests.Mathlib.Data.Vector
 import GebTests.Mathlib.Data.W
