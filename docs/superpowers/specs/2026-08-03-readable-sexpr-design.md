@@ -19,7 +19,7 @@
   - [The delimiting hypothesis cannot be dropped](#the-delimiting-hypothesis-cannot-be-dropped)
   - [What the decimal layer supplies](#what-the-decimal-layer-supplies)
   - [The child loop is reused](#the-child-loop-is-reused)
-  - [Alternatives considered](#alternatives-considered)
+- [Alternatives considered](#alternatives-considered)
 - [Lean shape](#lean-shape)
 - [Persistent documentation](#persistent-documentation)
 - [Deferred](#deferred)
@@ -48,17 +48,25 @@ and whitespace-free by construction, so neither has a readable form.
 The readable fragment specified below lies inside [R7RS] `<datum>`,
 so a reader conforming to that grammar accepts it without new code,
 and tools that operate on parenthesized text rather than through a
-library binding — paredit, parinfer — apply to it directly. The
-library side is current: `janestreet/sexplib` and `janestreet/sexp`
-were last pushed 2026-07-10 under MIT, where `zv/sexpr` was last
-pushed 2017-05-31.
+library binding — paredit, parinfer — apply to it directly. Of
+parinfer's two modes only Paren Mode is intended to leave the AST
+unchanged, which the page states as a desideratum rather than a
+proved property, so only it composes with a retraction law; § Survey
+of readable S-expression formats and § Deferred record this. The
+library side is maintained:
+`janestreet/sexplib` and `janestreet/sexp` were both last pushed
+2026-07-10 under MIT — one datum rather than two, their timestamps
+being identical to the second.
 § Canonical S-expressions (RFC 9804) of
 [docs/concrete-syntaxes.md](../../concrete-syntaxes.md) records that
 the canonical encoding's ecosystem is instead "concentrated in the
-SPKI/PGP niche".
+SPKI/PGP niche". `zv/sexpr`'s last push, 2017-05-31, is evidence on
+neither side of that contrast: § Survey of readable S-expression
+formats records that it reads canonical and readable variants alike.
 
-§ The bootstrap set states a condition for this work, in its switch
-thresholds:
+§ The bootstrap set of
+[docs/concrete-syntaxes.md](../../concrete-syntaxes.md) states a
+condition for this work, in its switch thresholds:
 
 > Add the csexp advanced form ahead of both if the textual form is
 > read and written by hand often enough for the canonical form's
@@ -74,9 +82,12 @@ for the frequency to be measurable would mean accumulating
 hand-written trees in the bootstrap syntax, which § Canonical
 S-expressions (RFC 9804) records as "designed for hashing and
 signing". That is an
-argument from anticipated use, not from the threshold, and the
-threshold is recorded as the condition it is: this spec does not claim
-to have met it.
+argument from anticipated use, not from the threshold, which stands
+uncounted. Nor does the argument discriminate finely: the
+accumulation it names continues until trees can be read as written,
+which § Recorded consequences records this stage does not reach. What
+it establishes is the order — the form has to exist before it can be
+written in — not the urgency.
 
 The grammar adopted also differs from the one the threshold names, for
 the reason in § Why not the RFC 9804 advanced form.
@@ -88,18 +99,54 @@ not remove.
 
 § The bootstrap set of
 [docs/concrete-syntaxes.md](../../concrete-syntaxes.md) fixes
-data-model diversity as the purpose of
-writing more than one syntax, and this stage supplies no new data
-model for the abstract syntax: it is one `Rose k` spelled twice. (Its
-host model does differ from csexp's, which § Why not the RFC 9804
-advanced form sets out — but that difference yields a spelling,
-not
-a second model to test the architecture against.) It therefore does
-not validate syntax independence and does not discharge stage 1b; the
-JSON core profile still carries that obligation. What it validates
-is a different property, that one abstract syntax supports two
-spellings differing in readability and in available tooling,
-and it is scheduled on that ground alone.
+data-model diversity as the purpose of writing more than one syntax,
+and the data model it means is the format's, not the abstract
+syntax's: it characterises csexp's as "nested lists of byte strings —
+no maps, no numbers, no scalar types". On that criterion this stage is
+not neutral. The readable fragment's model is non-negative integers
+and lists, which differs from csexp's on the numeric and scalar axes
+that sentence names, and coincides with what the same section credits
+the JSON core profile with, "arrays and small non-negative integers".
+§ Why not the RFC 9804 advanced form turns on precisely that
+difference: [RFC9804]'s "model is octet-strings only, so it has no
+number datum", where [R7RS] and [EDN] have one.
+
+So the stage does exercise data-model diversity in the sense that
+section fixes: the pair it forms with the canonical spelling spans two
+models where the two existing spellings span one. It does not add a
+third model, its own being the JSON core profile's.
+
+What it does not do is discharge stage 1b. Three things 1b carries do
+not arrive with it: the bracket-and-comma grammar, the unverified
+`Lean.Json` oracle § The bootstrap set names for differential testing,
+and the cross-language reach that section gives as why "JSON and then
+CBOR carry the interchange role". A fourth difference is not a fourth
+reason: this stage constructs no host-model type, § Lean shape
+declining the [R7RS] `<datum>` datatype that would correspond to
+`CSexp` and giving a reason specific to this syntax. Whether 1b
+constructs one is not fixed anywhere — § Roadmap glosses it as
+reusing "the decimal layer unchanged" with new work "the
+bracket-and-comma grammar and the whitespace the profile permits",
+and says nothing of a datatype — so the difference is not usable as a
+reason in either direction. What it does separate is 1a′ from stage
+1a, which built `CSexp`.
+
+The stage is scheduled on none of these: the ground is the one
+§ Problem states, that the readable form is intended to become the
+form in which trees are written. What it additionally validates, that
+one `Rose k` supports two spellings differing in readability and in
+available tooling, is not that ground either.
+
+That ground fixes an order of existence and use — the form has to
+exist before it can be written in — and § Problem records that it does
+not establish urgency. It therefore does not by itself put 1a′ ahead
+of 1b rather than after it, the more so as the JSON core profile's
+`[0, [2, 1]]` is readable text too. What separates them is that the
+readable S-expression form is the one intended to become the writing
+form, where JSON and CBOR "carry the interchange role"; that is a
+preference between two readable candidates, not a consequence of the
+argument. The insertion point ahead of 1b is recorded here as a
+scheduling choice, not as something this spec derives.
 
 § Roadmap's stage table gains a row between 1a and 1b, taking the
 `next` status that 1b holds, which becomes `after 1a′`:
@@ -108,9 +155,34 @@ and it is scheduled on that ground alone.
 | --- | --- | --- |
 | 1a′ | readable S-expressions, bare tree, retraction proved | next |
 
+§ Roadmap's opening sentence, "get the bare tree round-tripping in
+three syntaxes", tracks § The bootstrap set's three — canonical
+S-expressions, the JSON core profile, deterministic CBOR — and rows
+1a, 1b and 1c. It counts formats and not models: § The bootstrap set
+says of the third that "CBOR is not dropped: it shares JSON's data
+model". 1a′ is a fourth format, so the sentence is corrected to four.
+The existing rose spelling is not a precedent for leaving it at
+three: § Local
+verification calls it "a second spelling over the grammar this stage
+implements rather than a second syntax in the sense [The bootstrap
+set] fixes, supplying no data model the binary spelling does not",
+where "this stage" is 1a. Neither half holds of 1a′, which is over a
+different grammar and does supply a data model the canonical spelling
+does not.
+
+Stage 1d's gloss calls the cross-syntax agreement theorem "a corollary
+of the retractions preceding it, every syntax parsing to the same
+`Ast`". The readable spelling parses to an `Ast k` through
+`parseViaRose`, so it joins what that corollary ranges over and adds
+no technique to it. Stage 1b's gloss is § Recorded consequences'
+subject.
+
 ## Survey of readable S-expression formats
 
-Three tiers, distinguished by what there is to cite against.
+Three tiers. The first two are distinguished by what there is to cite
+against, a specification independent of an implementation or an
+implementation standing as one; the third holds what defines no format
+at all.
 
 **Specified independently of an implementation.** None of the three is
 on a standards track. [RFC9804] is Informational on the IETF stream.
@@ -178,8 +250,7 @@ type name appears in the README only, not in the crate source. It is
 evidence that one engine can serve canonical and readable forms, and
 no more: it ships no licence file, its
 `Cargo.toml` declaring `MIT/Apache-2.0`, and its README's list of
-predefined configurations does not match its own configuration table,
-so which ones exist was not established.
+predefined configurations does not match its own configuration table.
 
 ### How far the formats agree
 
@@ -189,7 +260,7 @@ seven elements, the fourth itself a list, under all three.
 
 The parser accepts more than the printer emits, and three
 disagreements concern constructs this grammar must either accept or
-reject, recorded rather than elided:
+reject:
 
 - Leading zeros. [R7RS] `<uinteger R> → <digit R>+` admits `007` and
   reads it as 7; [EDN] forbids it, "No integer other than 0 may begin
@@ -197,13 +268,16 @@ reject, recorded rather than elided:
   side this grammar takes.
 - Commas. [EDN] counts `,` as whitespace — "Commas `,` are also
   considered whitespace, other than within strings" — so `(0, 1, 2)`
-  is idiomatic EDN that this grammar rejects.
+  is well-formed EDN that this grammar rejects.
 - Which characters are whitespace. `sexplib` counts form feed where
-  [R7RS] does not, so `(0\f1)` is two elements under `sexplib` and
-  unreadable under [R7RS]; [R7RS]'s `<line ending>` admits a bare
-  return, where `sexplib`'s lexer accepts it neither as whitespace nor
-  inside an atom and fails outright. § Grammar states which side this
-  grammar takes.
+  [R7RS] § 7.1.1's grammar does not, so `(0\f1)` is two elements under
+  `sexplib` and outside that grammar. The disagreement is with the
+  grammar and not with [R7RS] conformance: § 2.2 permits an
+  implementation to provide "additional whitespace characters such as
+  page break". In the other direction [R7RS]'s `<line ending>` admits
+  a bare return, where `sexplib`'s lexer accepts it neither as
+  whitespace nor inside an atom and fails outright. § Grammar states
+  which side this grammar takes.
 
 The remaining disagreements concern constructs the bare tree does not
 use: string escaping, numeric towers beyond non-negative integers,
@@ -243,7 +317,7 @@ Declining the advanced form is conformant rather than a deviation:
 atom characters under the rule quoted above, so `(0 1 2 (3 4) 5 6 7)`
 is a well-formed `sexp` and the Jane Street `sexp` query tool applies
 to it as printed. What adopting `sexplib`'s atom rule in full would
-buy is acceptance of its full atom syntax on input as well.
+add is acceptance of its full atom syntax on input as well.
 
 That is not adopted now on two grounds. There is no specification of
 it independent of the implementation, so there is nothing to
@@ -303,6 +377,7 @@ Phrase layer:
 document = *ws tree *ws
 tree     = numeral / list
 list     = "(" *ws numeral *( *ws tree ) *ws ")"
+numeral  = 1*DIGIT   ; maximal munch, per the lexical layer above
 ws       = SP / HTAB / CR / LF
 ```
 
@@ -313,10 +388,12 @@ and `(0 (1))` are both well-formed and denote the same tree.
 `document` admits surrounding whitespace so that a file with a leading
 indent or a trailing newline parses.
 
-This whitespace class is a subset of [R7RS]'s, whose `<line ending>`
-includes a bare return. It is not a subset of `sexplib`'s, which by
-its § Lexical conventions of s-expression excludes carriage return and
-includes form feed.
+This whitespace class is a subset of the one [R7RS] § 7.1.1's grammar
+fixes, whose `<line ending>` includes a bare return, and hence of
+every conforming reader's, since § 2.2's latitude is to add
+characters and not to remove them. It is not a subset of `sexplib`'s,
+which by its § Lexical conventions of s-expression excludes carriage
+return and includes form feed.
 
 ### Printer
 
@@ -336,31 +413,36 @@ node i ch, n > 0  ↦  '(' :: (decOf i.val
 
 A single space precedes every child, including one that is itself
 parenthesized. What the uniformity yields is that every element of the
-flattened block is a cons by construction, which is what § What the
+child block before flattening is a cons by construction, which is what § What the
 decimal layer supplies uses for the arity bound and what the
 whitespace skip steps past; a printer suppressing the space before a
 parenthesized child would need a case split per child at both sites.
 
 The arity-zero spelling equation holds by `rfl`. The other does not,
 in the form the retraction proof consumes. `WType.elim` hands the step
-function the children already recursed, so the clause yields
-`List.ofFn (fun j ↦ print (ch j))`, while `parseChildren_print` is
-stated over a `List (Rose k)` and so needs the block as
-`(List.ofFn ch).map (fun t ↦ ' ' :: print t)`. Those are not
+function the children already recursed: writing
+`f : Rose.Arity (i, n) → Rose k` for the node's own children, the `ch`
+above is `fun j ↦ print (f j)`, so the clause yields the block over
+`List.ofFn (fun j ↦ print (f j))`, while `parseChildren_print` is
+stated over a `List (Rose k)` and so needs it as
+`(List.ofFn f).map (fun t ↦ ' ' :: print t)`. Those are not
 definitionally equal; the connecting lemma is core's `List.map_ofFn`,
 needed on both sides — the `WType.elim` side and the `List (Rose k)` side — so
-the second equation is a `rfl` step, an `if_neg` discharging the arity
-split, two rewrites, and a closing `rfl`.
+the second equation unfolds the recursor, reduces the arity split, and
+closes with those two rewrites and a `rfl`. The split is a `match` on
+the recursor's sigma argument, not an `if`, so what reduces it is a
+bare `simp only []`, as `Csexp.parseAst_printAst` already uses.
 
 ### Where the decoder is laxer than the printer
 
 Three families the parser accepts and the printer never emits:
 
-- Whitespace variants. Every optional `*ws` in the grammar above is a
-  spelling the printer does not produce: `(0  1)`, `(0 1 )`, `(0(1))`,
-  `( 0 1 )`, and any leading or trailing whitespace on the document.
-  This is the largest of the three families and the one the tests
-  exercise most.
+- Whitespace variants. The printer instantiates one `*ws` in the
+  grammar above, the separator before each child, and always as a
+  single space; every other instantiation is a spelling it does not
+  produce: `(0  1)`, `(0 1 )`, `(0(1))`, `( 0 1 )`, and any leading
+  or trailing whitespace on the document. This is the family the
+  tests exercise most.
 - A childless node parenthesized: `(6)` and `6` denote the same tree,
   and the printer emits `6`.
 - A numeral with leading zeros, which `Csexp.digitsVal` already
@@ -404,13 +486,29 @@ input rather than on fuel, and is carried by a recursor as
   maintains the stripping invariant. A tree is either a bare numeral
   or a parenthesized list, so this branches on whether the first
   character is `(`. It strips at four sites: after `(`, after the
-  label in each of the two branches, and after the child list. The
-  strip after the parenthesized branch's label is the one the grammar
-  makes least obvious and the one whose omission breaks the retraction —
-  `Rose.parseChildren` tests its input's head against `')'`
+  label in each of the two branches, and after the child list. Three
+  of the four are retraction-critical and the fourth is not, which is
+  the reverse of what the grammar suggests. The strip after the
+  parenthesized branch's label is the one the grammar makes least
+  obvious: `Rose.parseChildren` tests its input's head against `')'`
   immediately, so it must be called on `skipWs cs1`, or `(0 1 2)`
-  fails at its first child. The canonical form has neither the branch
-  nor the strips.
+  fails at its first child. The other two critical strips are the
+  returning ones, after the label in the bare-numeral branch and after
+  the child list. Every child is printed as `' ' :: print t`. The
+  first child's space is consumed by the strip named above, after the
+  parenthesized branch's label; every later child's is consumed by the
+  returning strip of the sibling before it — the first of those two
+  when that sibling is childless, the second when it is
+  parenthesized. Omit either and
+  `parseChildren` hands `' ' :: …` to `childParse`, where `readNat`
+  returns `none`: `(0 1 2)` fails without the first, `(0 (1 4) 2)`
+  without the second. The strip after `(` is the one whose omission
+  the retraction cannot see, the printer emitting nothing between `(`
+  and the label; what it buys is `( 0 1 )`. It is not free in the
+  proof: keeping it is what obliges the two `skipWs`-over-`decOf`
+  facts § What the decimal layer supplies lists, `parse_print` having
+  to show it is the identity there. The canonical form has neither
+  the branch nor the strips.
 - `parseAux` — `Nat.rec` over the fuel, undecremented as the child
   loop's bound and decremented as the child parser's fuel, as in
   `Geb.Rose.parseAux`.
@@ -459,7 +557,7 @@ returns is `skipWs rest`, not `rest`:
 ```lean
 theorem parseAux_print {k : Nat} (r : Rose k) :
     ∀ (f : Nat) (rest : List Char), (print r).length ≤ f →
-      (∀ c cs, rest = c :: cs → charDigit c = none) →
+      (∀ c cs, rest = c :: cs → Csexp.charDigit c = none) →
       parseAux k f (print r ++ rest) = some (r, skipWs rest)
 ```
 
@@ -484,7 +582,7 @@ The delimiting hypothesis has three discharge sites, not two:
   is vacuous and `skipWs [] = []`.
 
 The hypothesis is a cost of the spelling § Shape fixes, and the
-direction of that implication is worth stating precisely. A printer
+direction of that implication is the following. A printer
 that always parenthesized would emit strings opening with `(` and
 closing with `)`, so no
 printed numeral could abut the caller's remainder and `parseAux_print`
@@ -515,10 +613,14 @@ module proves `readNat (decOf n ++ rest) = some (n, rest)` under the
 delimiting hypothesis, from `readDigits_append`, `digitsVal_decOf`,
 and that `decOf` is non-empty and all digits.
 
-Three further facts are new for the same reason. Two are consumed
-where `parseStep` strips after a label:
+Three further facts are new for the same reason. Two are consumed at
+the strip after `(`, the one site whose input on printer output is
+`decOf`-headed, being `decOf i ++ block ++ ')' :: rest`:
 `skipWs (decOf n ++ rest) = decOf n ++ rest`, and beneath it that a
-digit character is not whitespace. The third is consumed in the
+digit character is not whitespace. The strips after a label do not
+face `decOf`: in the bare-numeral branch `readNat` has consumed the
+numeral already, and in the parenthesized branch the child block
+begins with `' '` at arity `≥ 1`. The third is consumed in the
 arity-zero branch of `parseAux_print`, which must show `parseStep`'s
 `c = '('` test fails on `decOf i ++ rest` — that a digit character is
 not `'('`. A fourth is its sibling, that a digit character is not
@@ -560,8 +662,8 @@ head is a digit, which is what the head lemma and
 through `readNat`'s emptiness guard, as `readVerbatim_append` consumes
 it today. The
 child's own fuel obligation, `Lⱼ ≤ g`, is the second of the two
-inequalities and comes from the child's spelling being a sublist of
-the flattened block.
+inequalities and comes from `' ' :: print t` being an element of the
+block before flattening, so that `1 + Lⱼ` is one summand of `L`.
 
 ### The child loop is reused
 
@@ -617,18 +719,21 @@ development. Each syntax proves its own
 in the delimiting hypothesis, which is precisely what a shared
 statement would have to abstract over.
 
-### Alternatives considered
+## Alternatives considered
 
-The arrangements below were considered. They vary along dimensions
-worth naming, but the dimensions do not yield a closure argument, and
-this section does not claim one: the list is what was considered, not
-what exists.
+The arrangements below vary along the dimensions named first. The
+dimensions do not yield a closure argument, so the list is a set of
+arrangements and not an exhaustion of them.
 
 - **Where whitespace is consumed.** The entry point, the tree parser's
-  head, its tail, the child loop — or nowhere, or a pass run before
-  the parser. A design chooses a *subset*, not a value: the chosen one
-  strips at the entry point and at the tail, and § Proof obligations
-  names four sites within the latter.
+  head, its interior, its tail, the child loop — or nowhere, or a pass
+  run before the parser. A design chooses a subset of those sites, not
+  one of them: the chosen one strips at the entry point and within the
+  tree parser, at the four sites § Proof obligations names. Two of
+  those are interior — after `(`, and after the label in the
+  parenthesized branch, which precedes the child-loop call — and two
+  are tails, after the label in the bare-numeral branch and after the
+  child list.
 - **What happens to `Geb.Rose.parseChildren`.** Reused where it
   stands, relocated and reused, generalised over a parameter, edited
   in place, or duplicated. The chosen design relocates.
@@ -636,10 +741,12 @@ what exists.
   under a pre-pass.
 - **The printer.** § Printer's spelling is held fixed below, but it is
   not forced. Always parenthesizing removes the delimiting hypothesis
-  outright, as § The delimiting hypothesis cannot be dropped states,
-  and suppressing the space before a parenthesized child changes the
-  cons-ness the arity bound uses. Those alternatives are recorded
-  there and in § Recorded consequences rather than here.
+  outright, as § The delimiting hypothesis cannot be dropped and
+  § Recorded consequences state, and suppressing the space before a
+  parenthesized child changes the cons-ness the arity bound uses,
+  which § Printer states as an alternative and § What the decimal
+  layer supplies consumes. Those alternatives are recorded at those
+  places rather than here.
 
 The accepted language is not a further dimension; it is what the first
 two determine, and it is the observable each arrangement is judged on.
@@ -674,10 +781,11 @@ and records which was taken.
   parser's accepted language to whitespace that syntax never emits;
   and giving up the syntactic `some (r, [])` match at the entry point,
   since the remainder must then be tested modulo whitespace.
-- **Put the skip inside a duplicated loop.** The combination of the
-  previous two, and the cell at which the previous bullet's first two
-  costs vanish: nothing shared is edited and the canonical language
-  does not widen. It costs a duplicated definition and two equation
+- **Put the skip inside a duplicated loop.** The previous bullet's
+  concrete in-loop skip crossed with duplication, the last value on
+  the dimension above, and the arrangement at which the previous
+  bullet's first two costs vanish: nothing shared is edited and the
+  canonical language does not widen. It costs a duplicated definition and two equation
   lemmas instead, and still tests the remainder modulo whitespace.
 - **Reuse the loop where it stands.** The readable module imports
   `Geb.Internal.CanonicalSExpr` and uses `Rose.parseChildren` in
@@ -702,8 +810,9 @@ and records which was taken.
   `Geb.Rose.parseChildren` is reused verbatim. That removes `isWs`,
   `skipWs` and its equations, two of the five decimal lemmas — the one
   about `skipWs` over `decOf` and digit-is-not-whitespace, the other
-  three surviving because the step still branches on `(` and the loop
-  still tests `)` — the `skipWs rest` conclusion, and the stripping
+  three surviving because the parser still reads a decimal label, the
+  step still branches on `(` and the loop still tests `)` — the
+  `skipWs rest` conclusion, and the stripping
   discipline of § The child loop is reused, though not that section's
   module move, which the reuse still needs.
   It costs `parseStep` an optional-leading-space case, since the
@@ -714,9 +823,10 @@ and records which was taken.
   printer's output, plus omitted separators, plus the two lax families
   no whitespace discipline touches: a parenthesized childless node and
   leading zeros.
-- **Printer-exact interior, document-level strip.** The previous cell
-  with `skipWs` at the entry point only. A leading indent parses, and
-  `(0(1))` still parses. A trailing newline does not, unless this cell
+- **Printer-exact interior, document-level strip.** The previous
+  arrangement with `skipWs` at the entry point only. A leading indent
+  parses, and `(0(1))` still parses. A trailing newline does not,
+  unless this arrangement
   also tests the remainder modulo whitespace rather than matching
   `[]` — the same cost charged above to putting the skip in the shared
   loop. What it gives up against § Grammar is `( 0 1 )`, `(0  1)`,
@@ -791,7 +901,8 @@ from `Ast k`, and the declaration `Rsexp.print` parallels is
 `Geb.Rose.print`.
 
 - `print : Rose k → List Char` and
-  `parse : Nat → List Char → Option (Rose k)`, with `isWs`, `skipWs`,
+  `parse (k : Nat) : List Char → Option (Rose k)`, the `Nat` being the
+  alphabet bound and not a fuel, as `Geb.Rose.parse` is written, with `isWs`, `skipWs`,
   `parseStep` and `parseAux` beneath them. `isWs : Char → Bool` is
   where § Grammar's `ws` class is pinned in Lean, and it is what the
   digit-is-not-whitespace lemma is stated against. The child loop is
@@ -815,20 +926,35 @@ Tests in `GebTests/Internal/ReadableSExpr.lean`, following the
 existing test modules, with three constraints those modules already
 meet. `#guard` runs its argument in the interpreter, so the module
 needs a `public meta import` of the module under test beside the
-ordinary one, each carrying `-- shake: keep` as both existing test
-modules do, per § Lean 4 module system and § Lake / build workflow of
-[docs/rules/lean-coding.md](../../rules/lean-coding.md). `![…]`
+ordinary one, per § Lean 4 module system and § Lake / build workflow of
+[docs/rules/lean-coding.md](../../rules/lean-coding.md). The meta
+import carries `-- shake: keep`, as it does in both existing test
+modules; whether the ordinary import carries one too differs between
+them, `GebTests/Internal/CanonicalSExpr.lean` marking every import
+line and `GebTests/Internal/ConcreteSyntax.lean` marking the meta one
+only. `![…]`
 notation for a node's children comes from
 `Mathlib.Data.Fin.VecNotation`, which reaches the canonical test
 module only through `Geb.Internal.CanonicalSExpr`; a module importing
 only the readable one imports it directly or builds children with
-`Fin.cons`. Reusing `sexp` adds an import of
-`GebTests.Internal.ConcreteSyntax`, where it is defined. And inputs
+`Fin.cons`. Importing it directly means both imports, not one: a
+`#guard` whose argument contains `![…]` fails to elaborate without a
+`public meta import` of it, `Matrix.vecEmpty` being inaccessible
+otherwise, by the same rule as the module under test. Reusing `sexp`
+adds two imports of
+`GebTests.Internal.ConcreteSyntax`, where it is defined: `sexp` is a
+non-`meta` `def`, so the same rule reaches it, and a `#guard` over it
+needs the `public meta import` beside the ordinary one, as the
+canonical test module already carries for that module. And inputs
 are `List Char` literals or fixtures, since
 core's `String.toList` depends on `Classical.choice`, which
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Constructive-only
-requires be minimised and `GebMeta.detectNonstandardAxiom` rejects
-outside its allowlist. The canonical atom fixtures are specific to the
+requires be minimised. The linter does not enforce this at that site:
+`Rose.instFinEnumArity`'s docstring records that "[a] `#guard` is not
+a declaration, so `GebMeta.detectNonstandardAxiom` would not catch a
+leak there", which is why `GebTests/Internal/ConcreteSyntax.lean`
+cites the rule rather than the linter where it records that core's
+`String.toList` is unavailable. The canonical atom fixtures are specific to the
 length-prefixed form; `sexp`, which only parenthesizes a body, is
 reusable as it stands.
 
@@ -850,14 +976,44 @@ lax families rather than the rejections.
 
 ## Persistent documentation
 
+The list below is not exhaustive, so the implementation does not work
+from it alone. It sweeps the documents mechanically —
+`docs/concrete-syntaxes.md`, `docs/index.md`, `TODO.md`,
+`docs/references.bib`, `docs/references.md`, and the Lean library and
+test modules entire, module docstrings, declaration docstrings and
+section comments alike — for every cardinal number qualifying a noun,
+every list of the syntax modules, of the discharged retractions or of
+the imports, every enumeration of the stages, and the strings
+`parseChildren`, `either module`, `both`, `two modules`, `three
+syntaxes`, `Rose.Arity`, `linear`, `repairs` and `second data model`,
+settling each against the state after this stage. Sweeping for
+cardinals rather than for theorem counts is what reaches
+§ References's "three works" and § Local verification's import census;
+sweeping for `second data model` is what reaches the two sites below
+that carry no count at all. The list records what is known to be
+affected, not all that is.
+
 - [docs/concrete-syntaxes.md](../../concrete-syntaxes.md): the survey
   above condensed into § Format-by-format evaluation, the stage row
   in § Roadmap, the profile decisions beside the canonical form's, and
   a statement in § The bootstrap set, where the switch thresholds
   are, that the condition is recorded uncounted and the stage
-  scheduled anyway, with a grammar other than the one it names.
-- [docs/references.bib](../../references.bib): entries for [R7RS] and
-  [EDN]. [RFC9804] is already present.
+  scheduled anyway, with a grammar other than the one it names. That
+  section's readability bullet also states that "[a] bootstrap built
+  on the canonical form alone gains nothing from the readability
+  argument until that second parser exists"; after 1a′ the bootstrap
+  has a readable form that is neither the advanced form nor a second
+  csexp parser, which § Why not the RFC 9804 advanced form is the
+  argument for. Its CBOR threshold, "[p]romote CBOR ahead of the JSON
+  core profile if a storage format is needed before a second
+  validation of syntax independence", turns on 1b supplying that
+  second validation, which § Roadmap position's criterion makes this
+  stage supply instead.
+- [docs/references.bib](../../references.bib): entries for [R7RS],
+  [EDN] and [RFC8259], the last cited for the whitespace production
+  § Roadmap's stage-1b gloss turns on. [RFC9804] is already present;
+  `docs/concrete-syntaxes.md` names RFC 8259 in prose without a bib
+  entry.
 - [docs/references.md](../../references.md): library and URL pointers
   for `sexplib`, `janestreet/sexp`, Real World OCaml's
   data-serialization chapter, parinfer, paredit and `zv/sexpr`, which
@@ -867,22 +1023,111 @@ lax families rather than the rejections.
   module's 52 theorems, 11 …" and "Of the module's 20 theorems, 4
   depend on no axioms …" — and names `Rose.parseChildren` as
   distinguishing the canonical parser. Moving two theorems between the
-  counted modules falsifies both censuses and both breakdowns.
-- [TODO.md](../../../TODO.md): the module and its follow-on work.
+  counted modules falsifies both censuses and both breakdowns. Its
+  § Design documents also states that
+  "`Geb/Internal/ConcreteSyntax.lean` and
+  `Geb/Internal/CanonicalSExpr.lean` implement its first stage", a
+  list a third module implementing stage 1a′ leaves incomplete.
+- `docs/concrete-syntaxes.md` § Status's scope statement, which lists
+  the sections "written here" and declares the rest, "between § The
+  AST and its isomorphisms and § References", inherited text that
+  "does not yet conform to [CONTRIBUTING.md] § Style and references".
+  § Format-by-format evaluation lies in that range, so a survey
+  condensed into it puts repository-written conformant prose inside
+  the block declared inherited.
+- `docs/concrete-syntaxes.md` § References, which states that
+  `docs/references.bib` "is authoritative for the bibliographic detail
+  of three works this list also carries" and whose standards list
+  names neither [R7RS] nor [EDN]. Citing them from
+  § Format-by-format evaluation leaves that list incomplete.
+- `docs/concrete-syntaxes.md` § Local verification's list of "[t]he
+  theorems the architecture rests on", whose last two entries
+  enumerate the discharged retractions — `Csexp.parse_print` on
+  `Ast k`, `Rose.parse_print` on `Rose k`, and
+  `Ast.parseViaRose_printViaRose` on `Ast k` — which this stage
+  extends by a second on `Rose k` and a third on `Ast k`, the fourth
+  and fifth overall.
+  The same section states that "[n]o declaration in either module
+  depends on `Classical.choice`" and that "[a]ll four build under the
+  toolchain pinned in `lean-toolchain`"; both counts change.
+- `docs/concrete-syntaxes.md` § Roadmap's gloss on stage 2, which says
+  "JSON and the csexp advanced form acquire string escaping" and that
+  "[w]hich csexp form carries the annotated syntax is not yet
+  settled". The readable form's atoms are not length-prefixed either,
+  so it joins the first enumeration and the unsettled question, which
+  § Deferred's atom-quoting entry is this stage's side of.
+- `docs/concrete-syntaxes.md` § Evaluating the candidates, whose table
+  scores the serious candidates on parser cost, tooling, readability
+  and canonical form. A fourth implemented format that is readable and
+  of low verified-parser cost leaves that table an incomplete
+  enumeration, and its readability column is what § The bootstrap
+  set's readability bullet turns on. The sweep's cardinal key does
+  land in this section, at "Three findings bear on the choice", but
+  that count is unaffected and settling it does not reach the table.
+- `docs/concrete-syntaxes.md` § One tree, every recommended encoding,
+  which spells the running example in csexp advanced, csexp canonical,
+  csexp annotated, JSON core, JSON annotated, CBOR core and CBOR
+  annotated. A section headed "every recommended encoding" acquires an
+  implemented one it does not carry, and the readable spelling it does
+  exhibit is the csexp advanced form, which § Why not the RFC 9804
+  advanced form declines. Its cardinals are byte counts and unaffected,
+  so the sweep does not reach it either.
+- Two sites that turn on a second data model existing, neither
+  carrying a count. `docs/concrete-syntaxes.md` § Local verification
+  lists among the "[r]emaining proof obligations, in dependency order:
+  the retraction law for a syntax over a second data model", which
+  § Roadmap position's criterion makes this stage discharge; and
+  § Temper's first condition is that the route "waits on a syntax over
+  a second data model existing and on interchange mattering", of which
+  this stage meets the first conjunct only, interchange reach being
+  what § Roadmap position records it does not supply.
+- `docs/concrete-syntaxes.md` § The bootstrap set, beyond the two
+  sites above: "[t]he order adopted is canonical S-expressions, then
+  the JSON core profile, then deterministic CBOR", which gains a
+  member, and the argument that "the pair {csexp, JSON core} stresses
+  syntax independence more than any pair drawn from the
+  array-and-map formats would", where the validating set is no longer
+  that pair. Its framing sentence, "Two considerations bear on the
+  order, and both favour the JSON core profile first", is weakened by
+  the readability consideration being met earlier.
+- `docs/concrete-syntaxes.md` § Complexity note, which faults
+  `Csexp.readDigits` for being "a strict `List.rec` that traverses the
+  rest of the input even when the first character is not a digit" and
+  says "[t]hree repairs would restore linearity". This stage adds an
+  instance of two of the three faults it names: `skipWs` recurses on
+  its input by `List.rec` in the same shape as `readDigits`, and
+  § Printer's clause re-appends at every level as `Csexp.printAst`
+  does, copying each child's spelling once per ancestor. The repair
+  count stops covering the development either way.
+- [TODO.md](../../../TODO.md): the module and its follow-on work, and
+  two existing entries. § Prose-conformance pass over the
+  concrete-syntax survey states the same scope § Status does and goes
+  stale with it, and its bibliographic item counts "roughly
+  thirty-five further works" in `docs/concrete-syntaxes.md` § References
+  without a `.bib` entry, a tally [R7RS] and [EDN] change.
+  § Concrete-syntax prototype names the two implementing modules and
+  calls the next item "the JSON core profile as the first syntax over
+  a second data model", which § Roadmap position's criterion makes
+  this stage instead.
 - `Geb/Internal/CanonicalSExpr.lean`'s module docstring, at two sites,
   both naming the moved loop: `## Main definitions` calls the parsers
-  "built from `Rose.parseChildren`", and the implementation notes open
-  "A rose node's arity is unbounded, so `Rose.parseChildren` reads
-  until the closing parenthesis".
+  "built from `Rose.parseChildren`", and the implementation notes'
+  second paragraph opens "A rose node's arity is unbounded, so
+  `Rose.parseChildren` reads until the closing parenthesis".
 - `Geb/Internal/ConcreteSyntax.lean`'s `## Main definitions`, which
-  gains `Rose.parseChildren`.
-- `Geb/Internal/ConcreteSyntax.lean`'s `Rose.Arity` docstring and its
-  module docstring's § Implementation notes: both enumerate the proofs
-  that need the family reducible, naming two here and
-  `Rose.parseAux_print` as the third downstream. The readable
-  `parseAux_print` performs the same `Fin n` against
-  `Rose.Arity (i, n)` transport, so both enumerations become
-  undercounts.
+  gains `Rose.parseChildren`, and its module docstring's summary,
+  which says the module "carries the format-independent core (the
+  abstract syntax, its annotated form, the rose presentation) and one
+  worked concrete syntax, the canonical S-expression form of
+  [RFC9804]": a parser loop shared by two spellings falls under
+  neither clause.
+- `Geb/Internal/ConcreteSyntax.lean`'s `Rose.Arity` docstring, its
+  module docstring's § Implementation notes, and `docs/concrete-syntaxes.md`
+  § Local verification's first fact about the encoding, which names
+  "`Ast.ofRose_snoc`, `Ast.toRose_ofRose` and `Rose.parseAux_print`":
+  all three enumerate the proofs that need the family reducible. The
+  readable `parseAux_print` performs the same `Fin n` against
+  `Rose.Arity (i, n)` transport, so all three become undercounts.
 - `Geb/Internal/ConcreteSyntax.lean`'s § Choice-free finite
   enumerations section comment, which says the `#guard`s in "the two
   `GebTests` syntax modules" decide equality at `Ast k`, at
@@ -905,10 +1150,34 @@ lax families rather than the rejections.
   and "20 more", repeated at three further points in the file. Adding
   a third library module and its test module falsifies both module
   lists and every count, and moving the child loop moves theorems
-  between the two counted modules.
+  between the two counted modules. The same section carries an import
+  census — "The first module's one import is …", "The second imports
+  the first and `Mathlib.Data.Fin.VecNotation`" — which a third
+  module extends, and opens its facts with "Four facts constrain how
+  the two modules and their tests are written". Its separate list of
+  three facts about the encoding states in the third that the
+  unbounded-arity loop and the `List`-to-W transport mean "neither
+  obligation arises at stages 1b and 1c", a stage enumeration that now
+  has 1a′ before them and a pair of obligations this stage discharges
+  again.
+- `docs/concrete-syntaxes.md` § Roadmap, at the sites § Roadmap
+  position names: its stage table, which gains the 1a′ row and moves
+  1b to `after 1a′`; its opening sentence, which counts "three
+  syntaxes" and which § Roadmap position corrects to four; and its
+  gloss on stage 1b, which
+  says "Its new work is the bracket-and-comma grammar and the
+  whitespace the profile permits". § Grammar's `ws` class admits the
+  same four characters as the `ws` production [RFC8259] § 2 gives, so
+  `isWs`, `skipWs`, their equations and two of the five decimal lemmas
+  are that whitespace work, written a stage early; what remains new to
+  1b is the bracket-and-comma grammar. That section also carries the
+  theorem counts the § Local verification bullet above covers. Its
+  gloss on stage 1d needs no edit: § Roadmap position shows it stands
+  verbatim with a fourth retraction preceding 1d.
 - `docs/concrete-syntaxes.md` § Status: it names the same four modules
   and describes `CanonicalSExpr` as "a second retraction over the same
-  grammar"; this stage adds a third.
+  grammar". This stage's retraction is over a different grammar, so
+  the sentence gains a clause rather than a count.
 
 ## Deferred
 
@@ -929,31 +1198,74 @@ lax families rather than the rejections.
   concern.
 - **Comments.** [R7RS], [EDN] and `sexplib` all provide them; nothing
   in the bare tree consumes one, and § Lexical comments are not
-  durable already records why they are not part of the durable model.
-- **Commas as whitespace.** Admitting them would widen the accepted
-  language to cover idiomatic [EDN]; no tree needs it.
+  durable of [docs/concrete-syntaxes.md](../../concrete-syntaxes.md)
+  already records why they are not part of the durable model.
+- **Commas as whitespace.** Admitting them would accept the
+  comma-separated spellings of the lists this grammar already covers,
+  which are well-formed [EDN]; no tree needs it, and [EDN]'s vectors,
+  maps, sets, strings, keywords and tagged elements stay outside the
+  grammar either way.
+- **Reading hand-written text as a `String`.** § Problem's ground is
+  that the readable form becomes the form in which trees are written,
+  and the parser consumes a `List Char`. Core's `String.toList`
+  depends on `Classical.choice`, so the bridge from a written file to
+  the parser's input is not choice-free as core supplies it; a
+  choice-free conversion is a change to no part of this design and is
+  not attempted here. The tests use `List Char` literals and fixtures
+  and do not meet the question.
 
 ## Recorded consequences
 
 - The rose presentation can annotate no more positions than the binary
   one, and strictly fewer as soon as the tree contains a fork —
-  § Which occurrences the rose presentation can name states this, and
-  states that it rests on a claim the development does not formalize.
+  § Which occurrences the rose presentation can name of
+  [docs/concrete-syntaxes.md](../../concrete-syntaxes.md) states this,
+  and states that it rests on a claim the development does not
+  formalize.
   It applies to the readable syntax as to the canonical rose spelling,
   and binds at stage 2, when annotations acquire positions.
-- The readable syntax is a second spelling over one data model, so
-  § The bootstrap set's argument for stage 1b is untouched by it.
+- The readable form carries the data model § The bootstrap set credits
+  the JSON core profile with, non-negative integers and lists, so the
+  pair it forms with the canonical spelling supplies the data-model
+  diversity that section makes the purpose of writing more than one
+  syntax. It does not discharge stage 1b, for the three reasons
+  § Roadmap position gives, and it does not weaken the case for 1b's
+  content; what it removes is 1b's standing as the first stage to
+  exercise a second data model.
+- The insertion point ahead of 1b is a scheduling choice and not a
+  consequence of § Problem's ground, which fixes an order of existence
+  and use only. § Roadmap position states what does and does not
+  follow from it.
 - The child loop is reused unchanged, and only its
   `parseChildren_print` is proved twice, once per child spelling.
   § The child loop is reused states the stripping discipline that
   makes the reuse possible; § Alternatives considered gives the four
   dimensions the arrangements vary along and the ten others
   considered.
-- `docs/concrete-syntaxes.md` goes stale in three ways: its two
-  enumerations of the syntax modules, its theorem censuses, which stop
-  covering the whole development, and two claims of uniqueness — one
-  that the rose spelling is the only place two obligations are
-  discharged, one counting the proofs that destructure `Rose.Shape`.
+- `docs/concrete-syntaxes.md` goes stale wherever it counts or
+  enumerates: its module lists, its theorem censuses, its import
+  census, its claim that the rose spelling is the only place two
+  obligations are discharged, its count of the proofs that
+  destructure `Rose.Shape` and of those needing `Rose.Arity`
+  reducible, and § Roadmap's stage glosses. § Persistent documentation
+  lists the sites and states that its list is not exhaustive, so no
+  count is given here.
+- Stage 1a′ writes part of stage 1b's stated work. § Roadmap glosses
+  1b's new work as "the bracket-and-comma grammar and the whitespace
+  the profile permits", and § Grammar's `ws` class admits the same
+  four characters as [RFC8259] § 2's `ws` production, so the
+  whitespace half is written here. It is written in
+  `Geb/Internal/ReadableSExpr.lean`, which stage 1b would have to
+  import, or move `isWs` and `skipWs` out of as this stage moves
+  `Rose.parseChildren`; the choice belongs to 1b. This is a
+  consequence of scheduling the stage now that is checkable rather
+  than anticipated, and it does not bear on § Problem's ground.
+- The stage does not reach the use its ground names. § Problem
+  schedules it so that the readable form becomes the form in which
+  trees are written; the parser consumes a `List Char`, and § Deferred
+  records that the bridge from written text is not choice-free as core
+  supplies it. The spelling exists at the end of this stage; writing
+  trees in it does not.
 - Printing a childless node as a bare numeral is what obliges the
   retraction lemma to carry a delimiting hypothesis. Always
   parenthesizing would remove the obligation and the spelling.
@@ -974,6 +1286,10 @@ lax families rather than the rejections.
   <https://standards.scheme.org/corrected-r7rs/r7rs.html>
 - [EDN] — *extensible data notation*.
   <https://github.com/edn-format/edn>
+- [RFC8259] — Bray (ed.), *The JavaScript Object Notation (JSON) Data
+  Interchange Format*, RFC Editor, December 2017, Standards Track.
+  § 2 grammar, for the `ws` production.
+  <https://www.rfc-editor.org/rfc/rfc8259.html>
 - [RFC9804] — Rivest and Eastlake, *Simple Public Key Infrastructure
   (SPKI) S-Expressions*, RFC Editor, June 2025, Informational.
   § 4.3 token representation, § 6 representation types, § 7.1 advanced
