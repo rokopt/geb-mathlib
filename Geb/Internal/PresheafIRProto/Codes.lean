@@ -8,6 +8,8 @@ module
 public import Geb.Internal.PresheafIRProto.Basic
 public import Geb.Mathlib.Data.PFunctor.Slice.W
 public import Mathlib.CategoryTheory.Category.Cat
+public import Mathlib.CategoryTheory.Category.Preorder
+public import Mathlib.Order.Fin.Basic
 
 /-!
 # Prototype: code combinators at the presheaf p.r.a. level
@@ -15,26 +17,21 @@ public import Mathlib.CategoryTheory.Category.Cat
 Throwaway exploration, not upstream-eligible content. Continues
 `PresheafIRProto.Basic` with the semantic counterparts of the code
 constructors of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013],
-generalized from families to presheaves. `Basic` supplies the `ι` case
-(`iotaPresheaf`, `iotaConst`); this module supplies `σ` and `δ`.
+generalized from families to presheaves. `Basic` supplies `iotaPresheaf`;
+this module supplies the semantic operations and the code type.
 
 ## Main definitions
 
-* `GebProto.coprodData` / `GebProto.coprod` — the coproduct of a family of
-  presheaf p.r.a. functors indexed by a type. The base change is `sigmaPsh`;
-  `coprod` enters only through `deltaRec`.
 * `GebProto.DomArity` — a presheaf on `I` unbundled, in the presentation
   `PresheafDomPFunctorData` uses for its arities.
-* `GebProto.ShapeArity` / `GebProto.ShapeArity.const` — the arity a `δ` adjoins,
-  varying over the shape presheaf, and the constant one.
+* `GebProto.ShapeArity` — the arity a `δ` adjoins, varying over the shape
+  presheaf.
 * `GebProto.adjoinArityData` / `GebProto.adjoinArity` — `δ`'s direction-adjoining
   half, which is not `δ`: adjoin a `ShapeArity` to every arity of a functor,
   leaving the shapes untouched.
 * `GebProto.BaseArity` / `GebProto.BaseArity.pullback` — the arity a code's `δ`
   carries, indexed by output objects rather than by shapes, and its pullback
   along a functor's shape-output map to the `ShapeArity` that `adjoinArity` consumes.
-* `GebProto.HasBijectiveReindex` — the property that every reindexing map is a
-  bijection.
 * `GebProto.ElObj` / `GebProto.elCategory` — the category of elements of a
   presheaf on `J`, as a base category. Presheaves on it are expected to be the
   slice `PSh(J)/S`; nothing here establishes that.
@@ -43,14 +40,9 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   to `J`.
 * `GebProto.elEqToHom` — the transport in the category of elements, with its
   underlying `J`-morphism definitionally an `eqToHom`.
-
-* `GebProto.arityVariesShapeArity` / `GebProto.adjoinArityVarying` — the arity of
-  `arityVaries` as a `ShapeArity` over `unitPsh`, and the `δ` at it.
 * `GebProto.PshMor` — a morphism from a `DomArity` to a presheaf, unbundled:
   the decodings a `δ`'s continuation may depend on.
 * `GebProto.fibreArity` — the arity a decoding adjoins, its fibres.
-* `GebProto.deltaRec` — the `δ` whose continuation depends on the decoding,
-  as a coproduct over the decodings of non-recursive `δ`s.
 * `GebProto.decPresheaf` / `GebProto.decArity` / `GebProto.delta` — the
   decodings of an output-varying arity as a presheaf on the output base, the
   arity indexed by that presheaf's elements, and the `δ` carrying both
@@ -64,54 +56,21 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   category of elements of its decoding presheaf.
 * `GebProto.Interp` — the interpretation's target, a presheaf p.r.a. functor
   paired with the base category it lands in.
-* `GebProto.DomArity.presheaf` / `GebProto.DomArity.ofPresheaf` /
-  `GebProto.DomArity.dirEquivOfPresheaf` /
-  `GebProto.DomArity.sigmaDirEquivCarrier` — the two conversions between the
-  total-space and the fibrewise presentation of an arity, and the round
-  trips.
+* `GebProto.DomArity.presheaf` — an arity's fibrewise presentation, as a
+  presheaf on the input base.
 * `GebProto.BaseArity.famPresheaf` / `GebProto.BaseArity.reindexHom` — an
   output-indexed arity's presheaf at each output object, and the morphism of
   presheaves each output morphism induces.
-* `GebProto.unitPsh` / `GebProto.unitPshData` / `GebProto.unitPshLift` /
-  `GebProto.unitPshLiftData` — the unit, and the unit at the shape universe the
-  representables force.
-* `GebProto.elSliceEquiv` — the collapse of a category of elements' slice to
-  its base's.
-* `GebProto.praWitnessLift` — the chain reaching the p.r.a. formula's data,
-  with `GebProto.praWitnessLiftShapeVal`,
-  `GebProto.praWitnessLiftShapeEquiv` and `GebProto.praWitnessLiftDirEquiv`
-  identifying its shape presheaf and its arity.
-* `GebProto.termPsh` / `GebProto.arityVariesBase` / `GebProto.deltaVaries` — the
-  fixtures witnessing that `δ` keeps the output-varying arity.
-* `GebProto.deltaCodeVaries` — a `δ` code whose interpretation lies outside the
-  bound.
+* `GebProto.termPsh` / `GebProto.arityVariesBase` / `GebProto.deltaVaries` —
+  the worked example's decoding target, its output-varying arity, and the
+  `δ` at it.
+* `GebProto.deltaCodeVaries` — a `δ` code at that arity.
 * `GebProto.codeAlgOn` / `GebProto.codeAlg` / `GebProto.interp` — the
   interpretation of a code node, the slice algebra it assembles into, and the
   fold.
 
 ## Main statements
 
-* `GebProto.hasBijectiveReindex_iotaPresheaf`,
-  `GebProto.hasBijectiveReindex_iotaConst`,
-  `GebProto.hasBijectiveReindex_coprod`,
-  `GebProto.hasBijectiveReindex_adjoinArityConst`, `GebProto.hasBijectiveReindex_unitPsh`,
-  `GebProto.hasBijectiveReindex_sigmaPsh`, `GebProto.hasBijectiveReindex_deltaRec`
-  — the three generator and four operation cases of the constant-arity
-  fragment's closure under bijective reindexing. The closure statement itself
-  is an induction over a code type for those rules, not built here.
-* `GebProto.hasBijectiveReindex_adjoinArity` — an `adjoinArity`'s reindexing is
-  bijective when both the subfunctor's and the adjoined arity's are. The
-  converse is not proved.
-* `GebProto.hasBijectiveReindex_of_isEmpty` /
-  `GebProto.not_hasBijectiveReindex_of_isEmpty` — the empty-direction criterion
-  and its negative dual, which the three generator cases and the three negative
-  witnesses respectively apply.
-* `GebProto.not_hasBijectiveReindex_arityVaries` — `arityVaries` is not such a
-  functor. That those rules do not generate it needs an induction over a code
-  type for them, which is not built here.
-* `GebProto.not_hasBijectiveReindex_adjoinArityVarying` — a `δ` at an arity that does
-  vary over the shape presheaf is not such a functor either, so the extended
-  rule reaches past the bound.
 * `GebProto.BaseArity.isFunctorial_pullback` — the pullback of a functorial
   `BaseArity` is functorial, so a code's `δ` need not mention its subcode's
   shapes.
@@ -128,19 +87,10 @@ generalized from families to presheaves. `Basic` supplies the `ι` case
   is what makes the interpretation surjective on objects.
 * `GebProto.interp_praCode_interp` — every code has the interpretation of a
   one-node code, so `δ` adds no functor the leaf does not already supply.
-* `GebProto.interp_deltaCodeVaries`,
-  `GebProto.not_hasBijectiveReindex_interp_deltaCodeVaries` — that bound
-  restated about a code rather than about the semantic operations.
-* `GebProto.elSliceEquiv_fst` — the collapse's underlying output object is the
-  base change's, so `sigmaPsh` over `iotaPresheaf` adds no shapes.
-* `GebProto.praWitnessLiftShapeVal_naturality`,
-  `GebProto.praWitnessLiftDirEquiv_restr` — the chain's fibrewise
-  correspondences with the target's shape and arity commute with restriction.
+* `GebProto.interp_deltaCodeVaries` — the check that `interp_deltaCode`'s
+  transports reduce at a closed instance.
 * `GebProto.interp_fst` — a code's index is the base its interpretation lands
   in.
-* `GebProto.not_hasBijectiveReindex_deltaVaries` — the fused `δ` at an
-  output-varying arity lies outside the bound, so fusing the decoding-indexed
-  continuation onto the rule does not cost the output-varying arity.
 
 ## Implementation notes
 
@@ -176,13 +126,6 @@ arity carrier universe is pinned to the base's, which the prototype does not
 need to vary. Nothing here is defined simultaneously with anything else, so no
 inductive-inductive definition or encoding of one is required.
 
-`iotaPresheaf`, `unitPshLift`, `sigmaPsh` and `adjoinArity` are semantic
-operations rather than code rules: a code built from any of them is `praCode`
-of the composite, which records nothing the composite does not. What they
-support is the measurement of restricted leaves — `elSliceEquiv`, the
-`HasBijectiveReindex` bound and `praWitnessLift` say what a leaf generated
-from them reaches and what it does not.
-
 ## References
 
 * [DybjerSetzer1999]
@@ -202,64 +145,6 @@ universe uI uJ uA uB uS uD vI vJ u v
 open CategoryTheory
 
 namespace GebProto
-
-section Coprod
-
-variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-
-/-- Operations of the coproduct of an `S`-indexed family of presheaf p.r.a.
-functors. This is not the base change, which is `sigmaPsh`. A shape is a
-shape of one summand tagged with its index; the directions, both restrictions
-and the reindexing are that summand's.
-The `J`-action never changes the tag, which is what makes each summand's laws
-suffice. -/
-def coprodData (S : Type uS) (sub : S → PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J) :
-    PresheafPFunctorData.{uI, uJ, max uS uA, uB, vI, vJ} I J where
-  A := Σ s : S, (sub s).A
-  B := fun x ↦ (sub x.1).B x.2
-  r := fun x ↦ (sub x.1.1).r ⟨x.1.2, x.2⟩
-  q := fun x ↦ (sub x.1).q x.2
-  directionRestr := fun a _ _ g d ↦ (sub a.1).directionRestr a.2 g d
-  shapeRestr := fun {_ _} g s ↦
-    ⟨⟨s.1.1, ((sub s.1.1).shapeRestr g ⟨s.1.2, s.2⟩).1⟩,
-      ((sub s.1.1).shapeRestr g ⟨s.1.2, s.2⟩).2⟩
-  reindex := fun {_ _} g s _ d ↦ (sub s.1.1).reindex g ⟨s.1.2, s.2⟩ d
-
-/-- The coproduct is a genuine `PresheafPFunctor`: every law is the
-corresponding law of the summand a shape came from, the tag being inert under
-both restrictions. The two transported laws hold by the summand's own, the two `cast`s being
-identified by proof irrelevance because the
-coproduct's `cast` and the summand's `cast` run between definitionally equal
-types, so proof irrelevance identifies them. -/
-def coprod (S : Type uS) (sub : S → PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) :
-    PresheafPFunctor.{uI, uJ, max uS uA, uB, vI, vJ} I J where
-  toPresheafPFunctorData := coprodData S fun s ↦ (sub s).toPresheafPFunctorData
-  isFunctorial :=
-    { directionRestr_id := fun a i ↦ (sub a.1).isFunctorial.directionRestr_id a.2 i
-      directionRestr_comp := by
-        intro a i i' i'' f g
-        exact (sub a.1).isFunctorial.directionRestr_comp a.2 f g
-      shapeRestr_id := by
-        intro j
-        funext s
-        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (congrArg Subtype.val
-          (congrFun ((sub s.1.1).isFunctorial.shapeRestr_id j) ⟨s.1.2, s.2⟩))))
-      shapeRestr_comp := by
-        intro j j' j'' g h
-        funext s
-        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (congrArg Subtype.val
-          (congrFun ((sub s.1.1).isFunctorial.shapeRestr_comp g h) ⟨s.1.2, s.2⟩))))
-      reindex_naturality := by
-        intro j j' g a i i' f
-        exact (sub a.1.1).isFunctorial.reindex_naturality g ⟨a.1.2, a.2⟩ f
-      reindex_id := by
-        intro j a i b
-        exact (sub a.1.1).isFunctorial.reindex_id ⟨a.1.2, a.2⟩ b
-      reindex_comp := by
-        intro j j' j'' g h a i b
-        exact (sub a.1.1).isFunctorial.reindex_comp g h ⟨a.1.2, a.2⟩ b }
-
-end Coprod
 
 section Arity
 
@@ -308,57 +193,6 @@ def presheaf (G : DomArity.{uI, uB, vI} I) (hG : G.IsFunctorial) : Iᵒᵖ ⥤ T
   map_comp f g := by
     ext c
     exact congrArg Subtype.val (congrFun (hG.restr_comp f.unop g.unop) c)
-
-/-- Every presheaf on the input base arises as an arity: its total space is the
-carrier and its projection the base-point map. -/
-def ofPresheaf (P : Iᵒᵖ ⥤ Type uB) : DomArity.{uI, max uI uB, vI} I where
-  carrier := Σ i : I, P.obj ⟨i⟩
-  proj := Sigma.fst
-  restr := fun {_ i'} f c ↦
-    match c with
-    | ⟨⟨_, x⟩, rfl⟩ => ⟨⟨i', P.map f.op x⟩, rfl⟩
-
-/-- `ofPresheaf` lands in the functorial arities, its two laws being `P`'s. -/
-theorem isFunctorial_ofPresheaf (P : Iᵒᵖ ⥤ Type uB) :
-    (ofPresheaf.{uI, uB, vI} P).IsFunctorial where
-  restr_id := by
-    intro i
-    funext c
-    obtain ⟨⟨_, x⟩, rfl⟩ := c
-    exact Subtype.ext (congrArg (Sigma.mk _) (Functor.map_id_apply P _ x))
-  restr_comp := by
-    intro i i' i'' f g
-    funext c
-    obtain ⟨⟨_, x⟩, rfl⟩ := c
-    exact Subtype.ext (congrArg (Sigma.mk _) (Functor.map_comp_apply P f.op g.op x))
-
-/-- The fibers of `ofPresheaf P` are `P`'s own values. Stated fiberwise rather
-than as an isomorphism of presheaves because `ofPresheaf` raises the carrier's
-universe from `uB` to `max uI uB`, so the two presheaves inhabit different
-functor categories. -/
-def dirEquivOfPresheaf (P : Iᵒᵖ ⥤ Type uB) (i : I) :
-    (ofPresheaf.{uI, uB, vI} P).Dir i ≃ P.obj ⟨i⟩ where
-  toFun := fun c ↦ match c with | ⟨⟨_, x⟩, rfl⟩ => x
-  invFun := fun x ↦ ⟨⟨i, x⟩, rfl⟩
-  left_inv := by rintro ⟨⟨_, x⟩, rfl⟩; rfl
-  right_inv := by intro x; rfl
-
-/-- That equivalence carries `ofPresheaf`'s restriction to `P`'s own action, so
-the two agree as presheaves and not merely fiberwise. -/
-theorem dirEquivOfPresheaf_restr (P : Iᵒᵖ ⥤ Type uB) ⦃i i' : I⦄ (f : i' ⟶ i)
-    (c : (ofPresheaf.{uI, uB, vI} P).Dir i) :
-    dirEquivOfPresheaf.{uI, uB, vI} P i' ((ofPresheaf P).restr f c) =
-      P.map f.op (dirEquivOfPresheaf P i c) := by
-  obtain ⟨⟨_, x⟩, rfl⟩ := c
-  rfl
-
-/-- The other round trip: an arity's carrier is the total space of its fibers,
-which is the object part of the category of elements of `presheaf`. -/
-def sigmaDirEquivCarrier (G : DomArity.{uI, uB, vI} I) : (Σ i : I, G.Dir i) ≃ G.carrier where
-  toFun := fun x ↦ x.2.1
-  invFun := fun c ↦ ⟨G.proj c, ⟨c, rfl⟩⟩
-  left_inv := by rintro ⟨_, ⟨c, rfl⟩⟩; rfl
-  right_inv := by intro c; rfl
 
 end DomArity
 
@@ -419,30 +253,6 @@ structure IsFunctorial (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
       P.reindex g s (P.reindex h (F.shapeRestr g s)
         (cast (congrArg (fun u : F.Shape j'' ↦ (P.fam u.1).Dir i)
           (congrFun (F.isFunctorial.shapeRestr_comp g h) s)) d))
-
-/-- The arity that adjoins the same presheaf `G` over every shape, its
-reindexing the identity. This is the presheaf reading of the `δ` rule of
-Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], whose arity is a set
-`P` labelled by `i : P → I` — an object of `Set/I`, which is a presheaf on a
-discrete `I`, and which carries no dependence on the output object. -/
-def const (F : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
-    (G : DomArity.{uI, uB, vI} I) : ShapeArity F where
-  fam := fun _ ↦ G
-  reindex := fun {_ _} _g _s {_} d ↦ d
-
-/-- A constant arity is functorial as soon as `G` is: its reindexing is the
-identity, and the two transported laws hold by proof irrelevance. -/
-theorem isFunctorial_const (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
-    (G : DomArity.{uI, uB, vI} I) (hG : G.IsFunctorial) :
-    IsFunctorial F (const F.toPresheafPFunctorData G) where
-  restr_id := fun _ i ↦ hG.restr_id i
-  restr_comp := by intro a i i' i'' f g; exact hG.restr_comp f g
-  reindex_naturality := by intro j j' g s i i' f; rfl
-  reindex_id := by intro j s i d; exact (cast_eq _ d).symm
-  reindex_comp := by
-    intro j j' j'' g h s i d
-    exact (cast_eq (congrArg (fun u : F.Shape j'' ↦ G.Dir i)
-      (congrFun (F.isFunctorial.shapeRestr_comp g h) s)) d).symm
 
 end ShapeArity
 
@@ -1002,9 +812,7 @@ theorem sigmaPsh_reindex_comp (S : Jᵒᵖ ⥤ Type uS)
 `ElObj S` forward along the projection to `J` yields a presheaf p.r.a. functor.
 Its shape presheaf is the total space of `S` paired with the subfunctor's
 shapes, which is what lets a later `δ` adjoin an arity varying over the
-elements of `S` — the capability that `arityVaries` has and a
-`δ` at a constant arity does not, `not_hasBijectiveReindex_arityVaries` and
-`hasBijectiveReindex_adjoinArityConst` separating the two. -/
+elements of `S`. -/
 def sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
     (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S)) :
     PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J where
@@ -1018,173 +826,7 @@ def sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
       reindex_id := sigmaPsh_reindex_id S F
       reindex_comp := sigmaPsh_reindex_comp S F }
 
-/-- The slice of `ElObj S` over an element collapses to the slice of `J` over
-its output object. `el(S) → J` is a discrete fibration, so a morphism into `y₀`
-is determined by its image in `J`, the source's `S`-component being forced. -/
-def elSliceEquiv (S : Jᵒᵖ ⥤ Type uS) (y₀ : ElObj.{uJ, uS, vJ} S) :
-    (Σ y' : ElObj.{uJ, uS, vJ} S, (y' ⟶ y₀)) ≃ (Σ j' : J, (j' ⟶ y₀.1)) where
-  toFun x := ⟨x.1.1, x.2.1⟩
-  invFun x := ⟨⟨x.1, S.map x.2.op y₀.2⟩, ⟨x.2, rfl⟩⟩
-  left_inv := by
-    rintro ⟨⟨j', s'⟩, ⟨g, hg⟩⟩
-    dsimp only at g hg ⊢
-    congr!
-  right_inv := by intro x; rfl
-
-/-- That collapse is over `J`: it commutes with the shape-output maps. So
-`sigmaPsh S (iotaPresheaf y₀)` and `iotaPresheaf y₀.1` have the same shape
-total space over each output object; the base change contributes no shapes of
-its own.
-
-This bounds `sigmaPsh`. Small induction recursion builds an arbitrary shape
-set as `σ S K` with `K : S → IR I O` a family of `ι`s, one output index per
-element; the presheaf base change takes a single functor over `ElObj S`, so
-that functor's own shapes take over and the composite collapses. An arbitrary
-shape presheaf is therefore not the shape total space of this composite, which
-is what the p.r.a. formula `F Z j = Σ (a : T₁ j), Hom (E ⟨j, a⟩) Z` requires;
-`praWitnessLift` produces it by putting the unit at the foot instead. That the
-restriction maps also agree is not compared here, and nothing rules out
-iterated combinations reaching an arbitrary shape presheaf. -/
-theorem elSliceEquiv_fst (S : Jᵒᵖ ⥤ Type uS) (y₀ : ElObj.{uJ, uS, vJ} S)
-    (x : Σ y' : ElObj.{uJ, uS, vJ} S, (y' ⟶ y₀)) :
-    (elSliceEquiv S y₀ x).1 =
-      (sigmaPshData S (iotaPresheafData.{uI, max uJ uS, uB, vI, vJ} (I := I) y₀)).q x :=
-  rfl
-
 end Sigma
-
-section Incompleteness
-
-variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-
-/-- Every reindexing map of `F` is a bijection. Read informally, and not
-established here: the fibres of `objPresheaf F` are then cartesian over the
-shape presheaf, restricting a shape along `g : j' ⟶ j` neither discarding nor
-inventing directions. -/
-def HasBijectiveReindex (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) : Prop :=
-  ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (a : F.Shape j) (i : I),
-    Function.Bijective (F.reindex g a (i := i))
-
-/-- A functor with empty direction fibers has bijective reindexing: every
-reindexing map is a map between empty types. -/
-theorem hasBijectiveReindex_of_isEmpty (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
-    (h : ∀ (a : F.A) (i : I), IsEmpty (F.Direction a i)) : HasBijectiveReindex F :=
-  fun _ _ _ a i ↦ ⟨fun x _ _ ↦ (h _ i).elim x, fun y ↦ (h a.1 i).elim y⟩
-
-/-- Conversely, reindexing is not bijective when a direction over a shape has
-no preimage: the source fibre is empty and the target inhabited. -/
-theorem not_hasBijectiveReindex_of_isEmpty
-    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) ⦃j j' : J⦄ (g : j' ⟶ j)
-    (a : F.Shape j) (i : I) (w : F.Direction a.1 i)
-    (h : IsEmpty (F.Direction (F.shapeRestr g a).1 i)) : ¬ HasBijectiveReindex F :=
-  fun hb ↦ ((hb g a i).2 w).elim fun d _ ↦ h.false d
-
-/-- The constant functor at a representable has bijective reindexing: it has no
-directions at all. -/
-theorem hasBijectiveReindex_iotaPresheaf (j₀ : J) :
-    HasBijectiveReindex (iotaPresheaf.{uI, uJ, uB, vI, vJ} (I := I) j₀) :=
-  hasBijectiveReindex_of_isEmpty _ fun _ _ ↦ ⟨fun x ↦ PEmpty.elim x.1⟩
-
-/-- The constant functor at an arbitrary presheaf has bijective reindexing, for
-the same reason. -/
-theorem hasBijectiveReindex_iotaConst (P : Jᵒᵖ ⥤ Type uB) :
-    HasBijectiveReindex (iotaConst.{uI, uJ, uB, vI, vJ} (I := I) P) :=
-  hasBijectiveReindex_of_isEmpty _ fun _ _ ↦ ⟨fun x ↦ PEmpty.elim x.1⟩
-
-/-- Bijective reindexing is inherited by coproducts: a coproduct's reindexing is
-the reindexing of the summand a shape came from. -/
-theorem hasBijectiveReindex_coprod (S : Type uS)
-    (sub : S → PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
-    (h : ∀ s, HasBijectiveReindex (sub s)) :
-    HasBijectiveReindex (coprod S sub) := by
-  intro j j' g a i
-  exact h a.1.1 g ⟨a.1.2, a.2⟩ i
-
-/-- `adjoinArity` inherits bijective reindexing from the subfunctor's and the
-adjoined arity's together: the two summands of a direction
-are reindexed independently, one by each. Only this direction is proved; the
-converse is not used. -/
-theorem hasBijectiveReindex_adjoinArity (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J)
-    (P : ShapeArity F.toPresheafPFunctorData) (hP : P.IsFunctorial F)
-    (hF : HasBijectiveReindex F)
-    (hPb : ∀ ⦃j j' : J⦄ (g : j' ⟶ j) (s : F.Shape j) (i : I),
-      Function.Bijective (P.reindex g s (i := i))) :
-    HasBijectiveReindex (adjoinArity F P hP) := by
-  intro j j' g a i
-  refine ⟨?_, ?_⟩
-  · rintro ⟨b₁, h₁⟩ ⟨b₂, h₂⟩ hd
-    cases b₁ with
-    | inl c₁ =>
-        cases b₂ with
-        | inl c₂ =>
-            have hv : (Sum.inl (P.reindex g a ⟨c₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
-                Sum.inl (P.reindex g a ⟨c₂, h₂⟩).1 := congrArg Subtype.val hd
-            exact Subtype.ext (congrArg (fun x : (P.fam (F.shapeRestr g a).1).Dir i ↦
-              (Sum.inl x.1 : (P.fam (F.shapeRestr g a).1).carrier ⊕ F.B (F.shapeRestr g a).1))
-              ((hPb g a i).1 (Subtype.ext (Sum.inl.inj hv))))
-        | inr b₂ =>
-            have hv : (Sum.inl (P.reindex g a ⟨c₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
-                Sum.inr (F.reindex g a ⟨b₂, h₂⟩).1 := congrArg Subtype.val hd
-            cases hv
-    | inr b₁ =>
-        cases b₂ with
-        | inl c₂ =>
-            have hv : (Sum.inr (F.reindex g a ⟨b₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
-                Sum.inl (P.reindex g a ⟨c₂, h₂⟩).1 := congrArg Subtype.val hd
-            cases hv
-        | inr b₂ =>
-            have hv : (Sum.inr (F.reindex g a ⟨b₁, h₁⟩).1 : (P.fam a.1).carrier ⊕ F.B a.1) =
-                Sum.inr (F.reindex g a ⟨b₂, h₂⟩).1 := congrArg Subtype.val hd
-            exact Subtype.ext (congrArg (fun x : F.Direction (F.shapeRestr g a).1 i ↦
-              (Sum.inr x.1 : (P.fam (F.shapeRestr g a).1).carrier ⊕ F.B (F.shapeRestr g a).1))
-              ((hF g a i).1 (Subtype.ext (Sum.inr.inj hv))))
-  · rintro ⟨b, h⟩
-    cases b with
-    | inl c =>
-        obtain ⟨e, he⟩ := (hPb g a i).2 ⟨c, h⟩
-        exact ⟨⟨Sum.inl e.1, e.2⟩,
-          Subtype.ext (congrArg (fun x : (P.fam a.1).Dir i ↦
-            (Sum.inl x.1 : (P.fam a.1).carrier ⊕ F.B a.1)) he)⟩
-    | inr b =>
-        obtain ⟨e, he⟩ := (hF g a i).2 ⟨b, h⟩
-        exact ⟨⟨Sum.inr e.1, e.2⟩,
-          Subtype.ext (congrArg (fun x : F.Direction a.1 i ↦
-            (Sum.inr x.1 : (P.fam a.1).carrier ⊕ F.B a.1)) he)⟩
-
-/-- Bijective reindexing is inherited by `δ` at a constant arity, whose
-reindexing is the identity.
-
-This is one operation case of the constant-arity fragment's closure under
-bijective reindexing, alongside `hasBijectiveReindex_coprod`, `hasBijectiveReindex_sigmaPsh`,
-`hasBijectiveReindex_deltaRec` and the three generator cases. The closure statement itself — that
-everything the presheaf reading of the `ι` / `σ` / `δ` rules of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] generates has bijective reindexing
-— is an induction over a code type for those rules, which is not built here. -/
-theorem hasBijectiveReindex_adjoinArityConst (G : DomArity.{uI, uB, vI} I) (hG : G.IsFunctorial)
-    (F : PresheafPFunctor.{uI, uJ, uA, uB, vI, vJ} I J) (hF : HasBijectiveReindex F) :
-    HasBijectiveReindex (adjoinArity F (ShapeArity.const F.toPresheafPFunctorData G)
-      (ShapeArity.isFunctorial_const F G hG)) :=
-  hasBijectiveReindex_adjoinArity F _ _ hF (by intro j j' g s i; exact Function.bijective_id)
-
-/-- The witness: `arityVaries` has non-bijective reindexing. Its shape presheaf
-has one element over each output object, yet the arity over `1` is inhabited
-while the arity over `0` is empty, so reindexing along `0 ⟶ 1` is the map out
-of the empty type.
-
-It is the fixture the constant-arity fragment's closure would exclude: with
-`hasBijectiveReindex_adjoinArityConst` and the fragment's other six cases, an
-induction over a code type for the `ι` / `σ` / `δ` rules of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] would show `arityVaries` is not
-generated, so `δ` must admit arities that vary over the output object. That
-induction and that code type are not built here. The cases are also syntactic
-— they bound what the constructions produce on the nose, not up to isomorphism
-of the interpreted functors. -/
-theorem not_hasBijectiveReindex_arityVaries : ¬ HasBijectiveReindex arityVaries :=
-  not_hasBijectiveReindex_of_isEmpty arityVaries
-    (homOfLE (show (0 : Fin 2) ≤ 1 by omega)) ⟨(1 : Fin 2), rfl⟩ (0 : Fin 1)
-    ⟨⟨(0 : Fin 1)⟩, rfl⟩ ⟨fun d ↦ d.1.down.elim0⟩
-
-end Incompleteness
 
 section VaryingWitness
 
@@ -1199,53 +841,6 @@ directions, so every
 direction of the `δ` comes from the adjoined arity.
 -/
 
-/-- Operations of the unit for `δ`: one shape over each output object, no
-directions. Its shape presheaf has one element over each output object. -/
-def unitPshData (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
-    PresheafPFunctorData.{uI, uJ, uJ, uB, vI, vJ} I J where
-  A := J
-  B := fun _ ↦ PEmpty
-  r := fun x ↦ PEmpty.elim x.2
-  q := id
-  directionRestr := fun _ {_ _} _g d ↦ PEmpty.elim d.1
-  shapeRestr := fun {_ j'} _g _s ↦ ⟨j', rfl⟩
-  reindex := fun {_ _} _g _s {_} d ↦ PEmpty.elim d.1
-
-/-- The unit for `δ` is a `PresheafPFunctor`: every `Shape j` is the singleton
-`{j}`, and every direction fiber is empty. -/
-def unitPsh (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
-    PresheafPFunctor.{uI, uJ, uJ, uB, vI, vJ} I J where
-  toPresheafPFunctorData := unitPshData I J
-  isFunctorial :=
-    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ ⟨fun x _ ↦ PEmpty.elim x.1⟩)
-      (by intro j; funext s; exact Subtype.ext s.2.symm)
-      (by intro j j' j'' g h; funext s; rfl)
-
-/-- The unit at the shape universe the representables force. `unitPsh`'s shape
-type is `J` itself, at `uJ`, where `iotaPresheaf`'s is the total space of a
-hom-family, at `max uJ vJ`. `praWitnessLift` needs the unit at the second, so
-that the chain it heads lives at the shape universe `Interp` pins; this lifts
-the shape type to reach it. -/
-def unitPshLiftData (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
-    PresheafPFunctorData.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
-  A := ULift.{vJ} J
-  B := fun _ ↦ PEmpty
-  r := fun x ↦ PEmpty.elim x.2
-  q := ULift.down
-  directionRestr := fun _ {_ _} _g d ↦ PEmpty.elim d.1
-  shapeRestr := fun {_ j'} _g _s ↦ ⟨⟨j'⟩, rfl⟩
-  reindex := fun {_ _} _g _a {_} d ↦ PEmpty.elim d.1
-
-/-- The lifted unit is a genuine `PresheafPFunctor`: its direction fibers are
-empty and its shape presheaf has one element over each output object. -/
-def unitPshLift (I : Type uI) [Category.{vI} I] (J : Type uJ) [Category.{vJ} J] :
-    PresheafPFunctor.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
-  toPresheafPFunctorData := unitPshLiftData I J
-  isFunctorial :=
-    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ ⟨fun x _ ↦ PEmpty.elim x.1⟩)
-      (by intro j; funext s; exact Subtype.ext (congrArg ULift.up s.2.symm))
-      (by intro j j' j'' g h; funext s; rfl)
-
 /-- The decoding target on `Fin 1` with every fibre a singleton,
 so the decodings of any arity into it are expected to form a singleton and the
 recursion to degenerate; nothing here states that. -/
@@ -1253,8 +848,9 @@ def termPsh : (Fin 1)ᵒᵖ ⥤ Type where
   obj _ := PUnit
   map _ := ↾ fun _ ↦ PUnit.unit
 
-/-- `arityVaries`'s arity as an output-varying `BaseArity`: empty over `0`,
-inhabited over `1`, reindexed along `0 ⟶ 1` by the map out of the empty type. -/
+/-- An output-varying arity over the walking arrow: empty over `0`, inhabited
+over `1`, reindexed along `0 ⟶ 1` by the map out of the empty type. The base of
+the worked example below. -/
 def arityVariesBase : BaseArity.{0, 0, 0, 0, 0} (Fin 1) (Fin 2) where
   fam b :=
     { carrier := ArityB b
@@ -1280,145 +876,7 @@ theorem isFunctorial_arityVariesBase : arityVariesBase.IsFunctorial where
     funext d
     exact arityVariesBase_dir_ext _ _ _ _
 
-/-- The arity of `arityVaries` as a `ShapeArity` over `unitPsh`: the pullback
-of `arityVariesBase` along the unit's shape-output map, which is the identity,
-so the two present the same fibres. -/
-@[reducible] def arityVariesShapeArity : ShapeArity (unitPshData (Fin 1) (Fin 2)) :=
-  arityVariesBase.pullback (unitPshData (Fin 1) (Fin 2))
-
-/-- The arity is functorial, by `BaseArity.isFunctorial_pullback`. -/
-theorem isFunctorial_arityVariesShapeArity :
-    arityVariesShapeArity.IsFunctorial (unitPsh (Fin 1) (Fin 2)) :=
-  arityVariesBase.isFunctorial_pullback isFunctorial_arityVariesBase
-    (unitPsh (Fin 1) (Fin 2))
-
-/-- The `δ` at the varying arity, over the unit. Its universes are pinned so
-that the two theorems below elaborate without universe metavariables. -/
-def adjoinArityVarying : PresheafPFunctor.{0, 0, 0, 0, 0, 0} (Fin 1) (Fin 2) :=
-  adjoinArity (unitPsh (Fin 1) (Fin 2)) arityVariesShapeArity isFunctorial_arityVariesShapeArity
-
-/-- The `δ`'s directions over the shape at `0` are empty: the adjoined arity is
-empty there, and `unitPsh` contributes none. -/
-theorem adjoinArityVarying_source_empty
-    (d : adjoinArityVarying.Direction (0 : Fin 2) (0 : Fin 1)) : False := by
-  obtain ⟨b, -⟩ := d
-  cases b with
-  | inl c => exact (ULift.down c).elim0
-  | inr e => exact e.elim
-
-/-- The `δ` at that varying arity has non-bijective reindexing, so it lies
-outside the class `hasBijectiveReindex_adjoinArityConst` bounds. Admitting arities
-that vary over the shape presheaf therefore takes the construction outside the
-bound. Whether it reaches `arityVaries` itself is not established: the
-directions differ by a `PEmpty` summand and no isomorphism is constructed. -/
-theorem not_hasBijectiveReindex_adjoinArityVarying :
-    ¬ HasBijectiveReindex adjoinArityVarying :=
-  not_hasBijectiveReindex_of_isEmpty adjoinArityVarying
-    (homOfLE (show (0 : Fin 2) ≤ 1 by omega)) ⟨(1 : Fin 2), rfl⟩ (0 : Fin 1)
-    ⟨Sum.inl (ULift.up (0 : Fin 1)), rfl⟩ ⟨adjoinArityVarying_source_empty⟩
-
-/-- The chain that reaches the p.r.a. formula's data: `sigmaPsh` at an
-arbitrary shape presheaf `T`, over `adjoinArity` at an arbitrary output-indexed
-arity, over the unit. `unitPshLift` rather than `unitPsh` at the foot, so that
-the result lives at the shape universe `Interp` pins; the two differ only by
-`ULift`. -/
-def praWitnessLift
-    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
-    (hA : A.IsFunctorial) :
-    PresheafPFunctor.{uI, uJ, max uJ uS vJ, uB, vI, vJ} I J :=
-  sigmaPsh T (adjoinArity (unitPshLift I (ElObj.{uJ, uS, vJ} T)) (A.pullback _)
-    (A.isFunctorial_pullback hA _))
-
-/-- The `T`-component of a shape of the chain, transported to the object that
-shape lies over. Named rather than written inline so that the naturality lemma
-can be stated about it with no `Equiv` coercion in the way, which is what
-blocks reduction. -/
-def praWitnessLiftShapeVal
-    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
-    (hA : A.IsFunctorial) {j : J} (x : (praWitnessLift T A hA).Shape j) : T.obj ⟨j⟩ :=
-  cast (congrArg (fun k ↦ T.obj ⟨k⟩) x.2) x.1.down.2
-
-/-- It is natural in `J`, so the fibrewise correspondence between the chain's
-shapes and `T` commutes with restriction. -/
-theorem praWitnessLiftShapeVal_naturality
-    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
-    (hA : A.IsFunctorial) ⦃j j' : J⦄ (g : j' ⟶ j)
-    (x : (praWitnessLift T A hA).Shape j) :
-    praWitnessLiftShapeVal T A hA ((praWitnessLift T A hA).shapeRestr g x) =
-      T.map g.op (praWitnessLiftShapeVal T A hA x) := by
-  obtain ⟨⟨⟨jj, t⟩⟩, hj⟩ := x
-  have hj' : jj = j := hj
-  subst hj'
-  dsimp only [praWitnessLiftShapeVal, praWitnessLift, sigmaPsh, sigmaPshData, adjoinArity,
-    adjoinArityData, unitPshLift, unitPshLiftData]
-  simp only [eqToHom_refl, Category.comp_id]
-  rfl
-
-/-- Its shapes over `j` correspond to `T.obj ⟨j⟩`. With
-`praWitnessLiftShapeVal_naturality` the correspondence commutes with
-restriction. Not stated as an isomorphism of presheaves: the chain's shape
-fibres lie at `max uJ uS vJ` where `T`'s lie at `uS`, so the two inhabit
-different functor categories, as `dirEquivOfPresheaf` explains for arities. -/
-def praWitnessLiftShapeEquiv
-    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
-    (hA : A.IsFunctorial) (j : J) :
-    (praWitnessLift T A hA).Shape j ≃ T.obj ⟨j⟩ where
-  toFun x := praWitnessLiftShapeVal T A hA x
-  invFun t := ⟨⟨⟨j, t⟩⟩, rfl⟩
-  left_inv := by rintro ⟨⟨⟨j', t⟩⟩, rfl⟩; rfl
-  right_inv := by intro t; rfl
-
-/-- Its directions at a shape are that shape's arity. -/
-def praWitnessLiftDirEquiv
-    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
-    (hA : A.IsFunctorial) (a : (praWitnessLift T A hA).A) (i : I) :
-    (praWitnessLift T A hA).Direction a i ≃ (A.fam a.down).Dir i where
-  toFun d := match d with | ⟨Sum.inl c, h⟩ => ⟨c, h⟩ | ⟨Sum.inr e, _⟩ => e.elim
-  invFun c := ⟨Sum.inl c.1, c.2⟩
-  left_inv := by
-    rintro ⟨c | e, h⟩
-    · rfl
-    · exact e.elim
-  right_inv := by intro c; rfl
-
-/-- And compatibly with restriction along an input morphism, so the arity too
-is matched as a presheaf. -/
-theorem praWitnessLiftDirEquiv_restr
-    {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-    (T : Jᵒᵖ ⥤ Type uS) (A : BaseArity.{uI, max uJ uS, uB, vI, vJ} I (ElObj T))
-    (hA : A.IsFunctorial) (a : (praWitnessLift T A hA).A) ⦃i i' : I⦄ (f : i' ⟶ i)
-    (d : (praWitnessLift T A hA).Direction a i) :
-    praWitnessLiftDirEquiv T A hA a i' ((praWitnessLift T A hA).directionRestr a f d) =
-      (A.fam a.down).restr f (praWitnessLiftDirEquiv T A hA a i d) := by
-  obtain ⟨c | e, h⟩ := d
-  · rfl
-  · exact e.elim
-
 end VaryingWitness
-
-section Closure
-
-variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-
-/-- The unit has bijective reindexing: it has no directions at all. -/
-theorem hasBijectiveReindex_unitPsh :
-    HasBijectiveReindex (unitPsh.{uI, uJ, uB, vI, vJ} I J) :=
-  hasBijectiveReindex_of_isEmpty _ fun _ _ ↦ ⟨fun x ↦ PEmpty.elim x.1⟩
-
-/-- Bijective reindexing is inherited by the `σ` base change: its reindexing is
-its subfunctor's, at the lifted morphism. -/
-theorem hasBijectiveReindex_sigmaPsh (S : Jᵒᵖ ⥤ Type uS)
-    (F : PresheafPFunctor.{uI, max uJ uS, uA, uB, vI, vJ} I (ElObj S))
-    (hF : HasBijectiveReindex F) : HasBijectiveReindex (sigmaPsh S F) := by
-  intro j j' g s i
-  exact hF (sigmaLiftHom S F.toPresheafPFunctorData g s) ⟨s.1, rfl⟩ i
-
-end Closure
 
 section Decoding
 
@@ -1428,8 +886,7 @@ variable {I : Type uI} [Category.{vI} I]
 `IR.delta`'s `B → I`, and of the sections `(p : P) → D (i p)` of Section 6 of
 [HancockMcBrideGhaniMalatestaAltenkirch2013]: the decodings `δ`'s continuation
 depends on. `δ` takes one continuation over `ElObj (decPresheaf …)` rather than
-a family indexed by these; `deltaRec` is the construction that does index a
-family of functors by them.
+a family indexed by these.
 
 Unbundled for the usual reason: `P ⟶ D` between objects of a presheaf category
 would draw in `Classical.choice`. -/
@@ -1488,45 +945,6 @@ theorem isFunctorial_fibreArity {G : DomArity.{uI, uD, vI} I} (hG : G.IsFunctori
         {q : G.Dir y'.1 // s.app q = y'.2}) g).symm
     exact congrFun (hG.restr_comp f.1 g.1) p.1
 
-/-- The recursive `δ`: adjoin the decoding's fibre arity and let the
-continuation depend on that decoding. This is a semantic operation; it is the rule of Section 6 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013], whose subcode family is indexed
-by the sections `(p : P) → D (i p)`, generalized to presheaves — the sections
-become `PshMor G D`.
-
-It needs no new construction: regrouping `IR.delta`'s coproduct over
-assignments by the decoding they induce presents it as a coproduct, over the
-decodings, of the non-recursive `δ` at the corresponding fibre arity. Both
-`coprod` and `adjoinArity` already carry all seven functor laws, so this does
-too. -/
-def deltaRec {J : Type uJ} [Category.{vJ} J] {G : DomArity.{uI, uD, vI} I}
-    (hG : G.IsFunctorial) {D : Iᵒᵖ ⥤ Type uD}
-    (K : PshMor G D →
-      PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
-        (ElObj.{uI, uD, vI} D) J) :
-    PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
-      (ElObj.{uI, uD, vI} D) J :=
-  coprod (PshMor G D) fun s ↦
-    adjoinArity (K s) (ShapeArity.const (K s).toPresheafPFunctorData (fibreArity s))
-      (ShapeArity.isFunctorial_const (K s) (fibreArity s) (isFunctorial_fibreArity hG s))
-
-/-- The recursive `δ` inherits bijective reindexing from its continuations: the
-arity it adjoins at a decoding is that decoding's fibre arity, which is
-constant over the output object, so `ShapeArity.const`'s reindexing is the
-identity. The recursion therefore does not by itself reach past the bound of
-`hasBijectiveReindex_adjoinArityConst`; `delta` is what does, per
-`not_hasBijectiveReindex_deltaVaries`. -/
-theorem hasBijectiveReindex_deltaRec {J : Type uJ} [Category.{vJ} J]
-    {G : DomArity.{uI, uD, vI} I} (hG : G.IsFunctorial) {D : Iᵒᵖ ⥤ Type uD}
-    (K : PshMor G D →
-      PresheafPFunctor.{max uI uD, uJ, max uI uD vI uA, max uI uD, vI, vJ}
-        (ElObj.{uI, uD, vI} D) J)
-    (hK : ∀ s, HasBijectiveReindex (K s)) :
-    HasBijectiveReindex (deltaRec.{uI, uJ, uA, uD, vI, vJ} hG K) :=
-  hasBijectiveReindex_coprod _ _ fun s ↦
-    hasBijectiveReindex_adjoinArityConst (fibreArity s) (isFunctorial_fibreArity hG s)
-      (K s) (hK s)
-
 /-- The decoding presheaf of an output-varying arity: over the output object
 `b`, the decodings of the arity there. Restriction along `g : b' ⟶ b` is
 precomposition with `A.reindex g`, which is what makes the decodings vary
@@ -1553,9 +971,9 @@ def decPresheaf {J : Type uJ} [Category.{vJ} J] (A : BaseArity.{uI, uJ, uD, vI, 
 
 /-- The arity `δ` adjoins, indexed by the objects of `ElObj (decPresheaf …)`.
 Each such object carries its own decoding, so the arity over it is that
-decoding's fibre arity — and the arity therefore varies over the output, which is the capability
-`not_hasBijectiveReindex_arityVaries` and
-`hasBijectiveReindex_adjoinArityConst` separate.
+decoding's fibre arity, so the arity varies over the output object. That this
+is a proper generalization of the constant arity of Section 6 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] is not established here.
 
 Reindexing along a morphism of elements applies `A.reindex` to the fibre
 element; the morphism's own condition says the two decodings agree after that,
@@ -1617,17 +1035,16 @@ It decomposes as `sigmaPsh (decPresheaf A hA D) ∘ adjoinArity`: the inner
 factor adjoins the directions and the outer one takes the coproduct over the
 decodings, `decPresheaf` at `b` being the decodings at `b`. That coproduct is
 the shape half of [DybjerSetzer1999]'s `δ` under the regrouping
-`Σ_{g : P → X} ⟦F (f ∘ g)⟧ = Σ_{d : P → D} (sections of f over d) × ⟦F d⟧`,
-which `deltaRec` uses as well. That regrouping is stated here and in
-`deltaRec`, and no declaration establishes it as an equation.
+`Σ_{g : P → X} ⟦F (f ∘ g)⟧ = Σ_{d : P → D} (sections of f over d) × ⟦F d⟧`.
+That regrouping is stated here and nowhere established as an equation.
 
 No `A` field grows in the process, and that is not an accident. A shape
 presheaf here is a total space `A` fibred by `q`, so a coproduct over the
 fibres of a discrete fibration is a *re-fibring* of the same total space, not
 an enlargement of it: `sigmaPsh` leaves `A` untouched, and `Σ_{s ∈ S j} F.Shape
-⟨j, s⟩` and `F.A` over `ElObj S` are the same total space, which is
-`elSliceEquiv` again. `coprod` does enlarge `A`, its index being a bare type
-rather than the fibres of a fibration.
+⟨j, s⟩` and `F.A` over `ElObj S` are the same total space — stated here and
+established by no declaration. A coproduct indexed by a bare type rather than
+by the fibres of a fibration would enlarge `A`; no operation here takes one.
 
 It needs no operation beyond those already proved. Over the base
 `ElObj (decPresheaf A hA D)` every object carries its own decoding, so
@@ -1662,8 +1079,9 @@ def decUnit (b : Fin 2) : PshMor (arityVariesBase.fam b) termPsh where
   app := fun {_} _ ↦ PUnit.unit
   naturality := by intros; rfl
 
-/-- The element of the decoding presheaf that the `ι` continuation is taken at:
-the arity is inhabited over `1`, which is where reindexing fails. -/
+/-- The element of the decoding presheaf that the continuation is taken at:
+the arity is inhabited over `1`, where reindexing is the map out of the empty
+type. -/
 def decVariesElt :
     ElObj.{0, 0, 0} (decPresheaf arityVariesBase isFunctorial_arityVariesBase termPsh) :=
   ⟨1, decUnit 1⟩
@@ -1673,23 +1091,6 @@ at the representable `y decVariesElt`. -/
 def deltaVaries : PresheafPFunctor.{0, 0, 0, 0, 0, 0} (ElObj.{0, 0, 0} termPsh) (Fin 2) :=
   delta arityVariesBase isFunctorial_arityVariesBase termPsh
     (iotaPresheaf (I := ElObj.{0, 0, 0} termPsh) decVariesElt)
-
-/-- `δ` at an output-varying arity has non-bijective reindexing, so it lies
-outside the bound of `hasBijectiveReindex_adjoinArityConst`. Carrying the
-decoding-indexed continuation on the rule does not cost the output-varying
-arity: both features are present at once. -/
-theorem not_hasBijectiveReindex_deltaVaries :
-    ¬ HasBijectiveReindex deltaVaries :=
-  not_hasBijectiveReindex_of_isEmpty deltaVaries
-    (homOfLE (show (0 : Fin 2) ≤ 1 by omega)) ⟨⟨decVariesElt, 𝟙 _⟩, rfl⟩
-    ⟨(0 : Fin 1), PUnit.unit⟩
-    ⟨Sum.inl ⟨⟨(0 : Fin 1), PUnit.unit⟩,
-      ⟨⟨⟨(0 : Fin 1)⟩, Subsingleton.elim _ _⟩, rfl⟩⟩, rfl⟩
-    ⟨fun d ↦ by
-      obtain ⟨b, -⟩ := d
-      cases b with
-      | inl c => exact (c.2.1.1.down).elim0
-      | inr e => exact e.elim⟩
 
 end FusedWitness
 
@@ -1707,9 +1108,9 @@ presheaf (`δ`).
 with the codes is a theorem. Here the target is already a type, so the codes
 take it as their leaf; the interpretation is then surjective on objects by
 construction and the content sits in `δ` being an operation on presheaf p.r.a.
-functors at all, which is the content of `delta`'s type. What a code records is
-a derivation, and the same two rules over a restricted leaf make closure under
-`δ` a question again.
+functors at all, which is the content of `delta`'s type. That what a code
+records beyond its interpretation is a derivation is a reading, established by
+no declaration here.
 
 `δ` carries the recursion: a continuation depending functorially on the
 decoding is one code over `ElObj (decPresheaf …)`, not a family of codes
@@ -1809,9 +1210,10 @@ theorem interp_praCode (𝔹 : Cat.{v, u})
     (F : PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) 𝔹) :
     interp.{u, v} I D (praCode I D 𝔹 F) = ⟨𝔹, F⟩ := rfl
 
-/-- Every code has the interpretation of a one-node code. So `δ` adds no
-functor that `pra` does not already supply, and what a code carries beyond its
-interpretation is the derivation. Equivalently,
+/-- Every code has the interpretation of a one-node code, so `δ` adds no
+functor that `pra` does not already supply. That what a code carries beyond
+its interpretation is a derivation is a reading and is established nowhere.
+Equivalently,
 `fun K ↦ praCode (interp K).1 (interp K).2` leaves `interp` unchanged. It does
 not say that the two codes differ, and for a `pra` code they do not. -/
 theorem interp_praCode_interp (K : Code.{u, v} I D) :
@@ -1834,12 +1236,10 @@ theorem interp_deltaCode (𝔹 : Cat.{v, u}) (A : BaseArity.{u, u, u, u, v} I �
         PresheafPFunctor.{u, u, max u v, u, u, v} (ElObj.{u, u, u} D) 𝔻)
         ((interp_fst I D K).trans hK)) (interp I D K).2)⟩ := rfl
 
-/-- A `δ` code whose interpretation lies outside the bound of
-`hasBijectiveReindex_adjoinArityConst`, restating
-`not_hasBijectiveReindex_deltaVaries` about a code rather than about the
-semantic operations. It says nothing about what the constant-arity fragment
-admits: that fragment's own code type is not built here, and this code type's
-leaf admits every presheaf p.r.a. functor. -/
+/-- A `δ` code at an output-varying arity, with `interp_deltaCodeVaries` below
+the check that `interp_deltaCode`'s transports reduce at a closed instance. It
+says nothing about what a constant-arity rule admits: no such rule is built
+here, and this code type's leaf admits every presheaf p.r.a. functor. -/
 def deltaCodeVaries : Code.{0, 0} (Fin 1) termPsh :=
   deltaCode (Fin 1) termPsh (Cat.of (Fin 2)) arityVariesBase isFunctorial_arityVariesBase
     (praCode (Fin 1) termPsh
@@ -1850,11 +1250,6 @@ def deltaCodeVaries : Code.{0, 0} (Fin 1) termPsh :=
 /-- Its interpretation is the `δ` at the output-varying arity. -/
 theorem interp_deltaCodeVaries :
     interp (Fin 1) termPsh deltaCodeVaries = ⟨Cat.of (Fin 2), deltaVaries⟩ := rfl
-
-/-- So a code's interpretation lies outside the bound. -/
-theorem not_hasBijectiveReindex_interp_deltaCodeVaries :
-    ¬ HasBijectiveReindex (interp (Fin 1) termPsh deltaCodeVaries).2 :=
-  not_hasBijectiveReindex_deltaVaries
 
 end CodeType
 
