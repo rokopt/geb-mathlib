@@ -85,8 +85,11 @@ than edits them.
 **Interfaces:**
 
 - Consumes: nothing.
-- Produces: nothing. This task only removes; no later task depends on its
-  output beyond the file continuing to build.
+- Produces: no declaration. It does create one repair for a later task:
+  `iotaPresheaf`'s docstring (`Basic.lean:161`) names the theorem deleted
+  here, and Task 4 Step 7 rewrites it. That cross-reference dangles across
+  commits 1 to 3; the branch is reviewed and pushed as a whole, so no
+  published state carries it.
 
 - [ ] **Step 1: Confirm the declaration is the module's only `yoneda` user**
 
@@ -116,9 +119,13 @@ and end
       (iotaConstData.{uI, uJ, vJ, vI, vJ} (I := I) (yoneda.obj j₀)).A := rfl
 ```
 
+The block is bounded by a blank line on both sides; close the pair up to one,
+as Tasks 2 and 4 also do. Nothing downstream catches a double blank.
+
 - [ ] **Step 3: Delete the now-vacuous `## Main statements` section**
 
-Delete the whole section — the heading, its blank line and its single bullet:
+Delete lines 45-49 — the heading, its blank line and its single bullet —
+then close up the blank lines at 44 and 50 that become adjacent:
 
 ```markdown
 ## Main statements
@@ -153,14 +160,21 @@ Delete line 10:
 public import Mathlib.CategoryTheory.Yoneda
 ```
 
-- [ ] **Step 6: Build**
+- [ ] **Step 6: Check the universe line by hand**
+
+Lean emits no diagnostic for an unused `universe` name, so this cannot be
+checked by building. Confirm each name on `Functor.lean`'s `universe` line
+still occurs in a surviving declaration; `uA` at `:76` and `uZ` at `:102` do.
+Delete from that line any that does not.
+
+- [ ] **Step 7: Build**
 
 Run: `lake build Geb.Internal.PresheafIRProto`
 Expected: exit 0, no errors. `arityPresheafHomULifted` still elaborates —
 `uliftFunctor` comes from `Mathlib.CategoryTheory.Types.Basic`, which survives
 through `Geb.Mathlib.Data.PFunctor.Presheaf.Basic`.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 jj describe -m "refactor(proto): retire the shape-type equality and its import
@@ -239,9 +253,11 @@ for u in uI uJ uA uB uS uD vI vJ u v; do
 done
 ```
 
-Expected: every count non-zero. `uK` and `vK` are held by the `σ` transport
-lemmas, `uS` by `sigmaPsh`, `uD` by the `Decoding` section, so none should
-fall to zero; delete from the `universe` line any that does.
+Expected: every count non-zero — `uS` is held by `sigmaPsh` and `uD` by the
+`Decoding` section. Delete from that `universe` line any name that falls to
+zero. `Codes.lean` carries a second `universe` line for the `σ` transport
+lemmas; `uK` and `vK` are held by those lemmas, which survive, so it needs no
+edit.
 
 - [ ] **Step 4: Add the two imports Task 4 will strip from `Basic.lean`**
 
@@ -300,8 +316,8 @@ with
 
 ```lean
 decoding's fibre arity, so the arity varies over the output object. That this
-is a proper generalization of Section 6's constant arity is not established
-here.
+is a proper generalization of the constant arity of Section 6 of
+[HancockMcBrideGhaniMalatestaAltenkirch2013] is not established here.
 ```
 
 - [ ] **Step 8: Repair `delta`'s docstring**
@@ -409,12 +425,13 @@ Equivalently,
 
 - [ ] **Step 14: Repair the module docstring**
 
-Four edits.
+Five edits.
 
 1. In the summary, replace "`Basic` supplies the `ι` case (`iotaPresheaf`,
    `iotaConst`); this module supplies `σ` and `δ`." with "`Basic` supplies
    `iotaPresheaf`; this module supplies the semantic operations and the code
-   type."
+   type." That phrase spans a line break (`Codes.lean:18-19`), so a literal
+   single-line search fails; match across the newline.
 2. In `## Main definitions`, delete every bullet naming a retired
    declaration: `coprodData`/`coprod`, `HasBijectiveReindex`, `unitPsh*`,
    `elSliceEquiv`, `praWitnessLift`, `deltaRec`, and
@@ -535,7 +552,8 @@ section docstring.
 
 Rename `section FusedWitness` / `end FusedWitness` to
 `section WorkedExample` / `end WorkedExample`, and paste the four cut
-declarations at its head, before `decUnit`.
+declarations after the section's `/-! … -/` docstring and before `decUnit`,
+so the section docstring stays first as everywhere else in the file.
 
 - [ ] **Step 4: Replace the section docstring**
 
@@ -694,16 +712,29 @@ Five edits.
    survivor, is no part of the generator development.
 4. `## Main definitions`: delete the bullets for `iotaDiscreteShapeEquiv`,
    `iotaConst`/`iotaConstData` and the `ArityB` / `arityVaries` /
-   `arityVariesShapeEquiv` group; add a bullet for `ArityB` alone.
+   `arityVariesShapeEquiv` group, replacing the last with:
+
+   ```markdown
+   * `GebProto.ArityB` — the fibre family the worked example in `Codes` is
+     built on.
+   ```
+
 5. `## Main statements`: leave unchanged. Its one bullet,
    `pshHomFib_objFibRestr`, survives.
 
-- [ ] **Step 10: Build**
+- [ ] **Step 10: Check the universe line by hand**
+
+As in Tasks 1 and 2: Lean reports no unused `universe`, so confirm by hand
+that each name on `Basic.lean:113` still occurs in a surviving declaration.
+`uX` survives at `:433`, `uZ` at `:459`, `uA` at `:420`. Delete any that does
+not.
+
+- [ ] **Step 11: Build**
 
 Run: `lake build Geb.Internal.PresheafIRProto`
 Expected: exit 0.
 
-- [ ] **Step 11: Verify no retired name survives anywhere in the prototype**
+- [ ] **Step 12: Verify no retired name survives anywhere in the prototype**
 
 Run:
 
@@ -713,7 +744,7 @@ grep -rn 'iotaConst\|iotaDiscreteShapeEquiv\|arityVariesData\|arityVariesShapeEq
 
 Expected: no output.
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
 jj describe -m "refactor(proto): retire the iota generators and the fixture
@@ -853,7 +884,7 @@ Run:
 
 ```bash
 grep -rn '2026-07-30-presheaf-pra-handoff\|2026-08-02-presheaf-pra-codes-handoff' \
-  --include='*.md' . | grep -v '^\./docs/superpowers/plans/'
+  --include='*.md' --exclude-dir=.lake . | grep -v '^\./docs/superpowers/plans/'
 ```
 
 Expected: hits only inside
@@ -871,8 +902,8 @@ grep -cE '^(@\[[^]]*\] )?(def|theorem|abbrev|instance) ' \
   Geb/Internal/PresheafIRProto/Functor.lean
 ```
 
-Expected: 5. The anchor matters: an unanchored `grep -c 'instance '` also
-matches prose inside docstrings and reports 6. If the anchored count is not 5,
+Expected: 5. The anchor matters — without it the count picks up prose inside
+docstrings. If the anchored count is not 5,
 a declaration was lost or kept in error in Task 1 — fix the file, not the
 design record, whose § Scope claim of six declarations with five remaining is
 correct.
@@ -895,7 +926,7 @@ rather than adding `-- shake: keep`.
 
 - [ ] **Step 5: Remove this plan**
 
-[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape orders the branch
+[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape orders the branch
 so that its final commits remove its spec and plan. The design record has a
 documented exception — it is the record for four further branches and goes
 with the last of them — and this plan has none.
@@ -904,10 +935,18 @@ with the last of them — and this plan has none.
 rm docs/superpowers/plans/2026-08-07-presheaf-pra-prototype-trim.md
 ```
 
-Re-run `markdownlint-cli2 '**/*.md'` and `doctoc --dryrun --update-only .`
-afterwards; both should still pass, the plan having no inbound links.
+- [ ] **Step 6: Re-run the gate on the state that will be pushed**
 
-- [ ] **Step 6: Commit**
+Steps 1 and 5 removed three Markdown files after the Step 4 run, so that run
+does not cover the final tree. The design record's acceptance for this branch
+is that it passes `scripts/pre-push.sh`, which means this state, not the
+earlier one.
+
+Run: `scripts/pre-push.sh`
+Expected: exit 0. It is fast the second time — `lake build` is incremental and
+nothing under `Geb/` changed since Step 4.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 jj describe -m "doc(proto): remove the spent handoffs and this branch's plan
@@ -917,7 +956,7 @@ has; the design record governs and is removed with the last branch."
 jj new
 ```
 
-- [ ] **Step 7: Report the final state**
+- [ ] **Step 8: Report the final state**
 
 Report to the user: the commit list from `main` to `@`, the `pre-push.sh`
 result, and the line counts of the three prototype modules before and after.
