@@ -7,12 +7,9 @@ module
 
 public import Geb.Mathlib.Data.PFunctor.Presheaf.Basic
 public import Geb.Mathlib.Data.PFunctor.IndRec.Hom
-public import Mathlib.CategoryTheory.Discrete.Basic
-public import Mathlib.CategoryTheory.Category.Preorder
-public import Mathlib.Order.Fin.Basic
 
 /-!
-# Prototype: morphisms of presheaf p.r.a. functors, and the `ι` generators
+# Prototype: morphisms of presheaf p.r.a. functors, and the `ι` generator
 
 Throwaway exploration, not upstream-eligible content. Every declaration here is
 `Classical.choice`-free; the bundled restatement of the p.r.a. formula, which
@@ -28,31 +25,19 @@ formula as the equivalence `F.obj Z ≃ Σ a : F.A, ArityHom F a Z`
 representation theorem `pshHomEquivNatFamily` classifying the natural families
 between two such functors by shape-map-forward and arity-map-backward data,
 with `DomHom` / `domHomEquivNatFamily` as its domain-level warm-up. The
-smaller, first in the file, is the constant-functor generators and the fixtures
-that bound what they generate. The code type itself and its two rules are in the sibling
+smaller, first in the file, is the constant functor at a representable. The
+code type itself and its two rules are in the sibling
 `PresheafIRProto.Codes` module; nothing here is a code constructor.
 
-The generator development tests the following claims:
+Two claims are tested here:
 
 1. `iotaPresheaf` — the constant (`iota`) case generalizes to the functor
    constant at the representable `y j₀`, whose shape type is the total space
    `Σ j', (j' ⟶ j₀)` of that representable rather than a single shape.
-2. `iotaDiscreteShapeEquiv` — for a discrete `J` that shape type collapses to
-   `PUnit`. No identification with the discrete-base `ι` of
-   `Geb.Mathlib.Data.PFunctor.IndRec.Slice` is established; the two are at
-   different universe instantiations, and that module is not imported here.
-3. `iotaConst` — the constant functor at an arbitrary presheaf on `J`, which
-   is what a completeness result in the style of Lemma 1 of
-   [HancockMcBrideGhaniMalatestaAltenkirch2013] needs and which `iota` and
-   `sigma` are not expected to reach, those generating only coproducts of
-   representables. Nothing here establishes that non-reachability.
-4. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
+2. `Functoriality` — that `IR.rec` reaches the subcodes, which is all it
    establishes. Its witness type is built from `IR.Hom`, whose `ι`-clause is
    propositional equality of indices and so ignores `C₀`'s morphisms; it is
    not the type the source requires.
-5. `arityVaries` — a functor whose shape presheaf is fibrewise a singleton.
-   That its `reindex` is not invertible is proved in the sibling `Codes`
-   module.
 
 ## Main definitions
 
@@ -63,13 +48,9 @@ The generator development tests the following claims:
   discrete base, and its action.
 * `GebProto.iotaPresheaf` / `iotaPresheafData` — the constant functor at a
   representable, and its operations.
-* `GebProto.iotaDiscreteShapeEquiv` — the discrete degeneracy of its shape type.
-* `GebProto.iotaConst` / `iotaConstData` — the constant functor at an arbitrary
-  presheaf, and its operations.
 * `GebProto.Functoriality` — the witness family attached over pre-codes.
-* `GebProto.ArityB`, `GebProto.arityVaries` / `arityVariesData`,
-  `GebProto.arityVariesShapeEquiv` — the fixture functor, its arity, its
-  operations, and its shape presheaf being fibrewise a singleton.
+* `GebProto.ArityB` — the fibre family the worked example in `Codes` is
+  built on.
 * `GebProto.shapePresheaf` / `GebProto.arityPresheaf` — the shape presheaf `T₁`
   and the arity presheaf `E(a)`, as `Functor` values built from the raw fields.
 * `GebProto.ArityHom` / `GebProto.ofArityHomElt` /
@@ -122,7 +103,7 @@ variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
 
 /-- Where every direction fiber is a subsingleton, the five direction-side
 functor laws are all `Subsingleton.elim` and only the two shape-side laws carry
-content. Every constant functor here is of that kind. -/
+content. `iotaPresheaf` is of that kind. -/
 theorem isFunctorial_of_subsingletonDirection
     (D : PresheafPFunctorData.{uI, uJ, uA, uB, vI, vJ} I J)
     (h : ∀ (a : D.A) (i : I), Subsingleton (D.Direction a i))
@@ -157,8 +138,7 @@ instance subsingleton_iotaDirection (j₀ : J)
 
 /-- The functor whose shape type is the total space of the representable
 `y j₀` and which has no directions, as a `PresheafPFunctor`. That its shape
-presheaf is `y j₀` is not established here; see
-`iotaPresheafData_A_eq_iotaConstData_yoneda`, which equates shape types only.
+presheaf is `y j₀` is not established here.
 The shape-side laws are the category laws of `J`; the direction-side laws hold
 because every direction fiber is empty. -/
 def iotaPresheaf (j₀ : J) : PresheafPFunctor.{uI, uJ, max uJ vJ, uB, vI, vJ} I J where
@@ -179,76 +159,6 @@ def iotaPresheaf (j₀ : J) : PresheafPFunctor.{uI, uJ, max uJ vJ, uB, vI, vJ} I
         exact Category.assoc _ _ _)
 
 end Iota
-
-section Degeneracy
-
-variable {O : Type uJ}
-
-/-- Claim 2: for a discrete `J` the generalized iota's shape type collapses to
-`PUnit`. This is not an identification with the discrete-base `ι`'s shape
-type, which is at a different universe instantiation. -/
-def iotaDiscreteShapeEquiv (o : O) :
-    (Σ j' : Discrete O, (j' ⟶ (⟨o⟩ : Discrete O))) ≃ PUnit.{uJ + 1} where
-  toFun := fun _ ↦ PUnit.unit
-  invFun := fun _ ↦ ⟨⟨o⟩, 𝟙 _⟩
-  left_inv := by
-    rintro ⟨⟨a⟩, ⟨⟨(h : a = o)⟩⟩⟩
-    cases h
-    rfl
-  right_inv := by rintro ⟨⟩; rfl
-
-end Degeneracy
-
-section IotaConst
-
-variable {I : Type uI} [Category.{vI} I] {J : Type uJ} [Category.{vJ} J]
-
-/-- Claim 3: the constant functor at an arbitrary presheaf `P` on `J`. Shapes
-are the total space of `P` (its category of elements), the shape-output map is
-the projection, there are no directions, and `shapeRestr` is `P`'s own
-restriction. This is what a completeness result in the style of Lemma 1 of
-[HancockMcBrideGhaniMalatestaAltenkirch2013] needs and what `iota` + `sigma`
-are not expected to reach, those generating only coproducts of representables.
-Nothing here establishes that non-reachability. -/
-def iotaConstData (P : Jᵒᵖ ⥤ Type uB) :
-    PresheafPFunctorData.{uI, uJ, max uJ uB, uB, vI, vJ} I J where
-  A := Σ j : J, P.obj ⟨j⟩
-  B := fun _ ↦ PEmpty
-  r := fun x ↦ PEmpty.elim x.2
-  q := fun x ↦ x.1
-  directionRestr := fun _ {_ _} _g d ↦ PEmpty.elim d.1
-  shapeRestr := fun {_ j'} g s ↦
-    ⟨⟨j', P.map g.op (cast (congrArg (fun x ↦ P.obj ⟨x⟩) s.2) s.1.2)⟩, rfl⟩
-  reindex := fun {_ _} _g _a {_} d ↦ PEmpty.elim d.1
-
-/-- Every direction fiber of `iotaConstData` is empty, hence a subsingleton;
-this discharges all five direction-side functor laws. -/
-instance subsingleton_iotaConstDirection (P : Jᵒᵖ ⥤ Type uB)
-    (a : (iotaConstData.{uI, uJ, uB, vI, vJ} (I := I) P).A) (i : I) :
-    Subsingleton ((iotaConstData.{uI, uJ, uB, vI, vJ} (I := I) P).Direction a i) :=
-  ⟨fun x _ ↦ PEmpty.elim x.1⟩
-
-/-- The constant functor at `P` is a genuine `PresheafPFunctor`: the shape-side
-laws are `P`'s own functor laws. -/
-def iotaConst (P : Jᵒᵖ ⥤ Type uB) :
-    PresheafPFunctor.{uI, uJ, max uJ uB, uB, vI, vJ} I J where
-  toPresheafPFunctorData := iotaConstData P
-  isFunctorial :=
-    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ inferInstance)
-      (by
-        intro j
-        funext s
-        obtain ⟨⟨jj, p⟩, rfl⟩ := s
-        exact Subtype.ext (Sigma.ext rfl (heq_of_eq (by simp [iotaConstData]))))
-      (by
-        intro j j' j'' g h
-        funext s
-        obtain ⟨⟨jj, p⟩, rfl⟩ := s
-        refine Subtype.ext (Sigma.ext rfl (heq_of_eq ?_))
-        simp only [iotaConstData, Function.comp_apply, cast_eq]
-        exact Functor.map_comp_apply P g.op h.op p)
-
-end IotaConst
 
 section Functoriality
 
@@ -308,26 +218,13 @@ IR's `F→` witnesses functoriality of subcodes in the input labelling
 (`A → C`), which is the `directionRestr` side, whereas `reindex` witnesses
 functoriality of the arity assignment over `el(T₁)` — the output side.
 
-`arityVaries` below is a functor for which the obligation has content, and a
-small one. Its shape presheaf is fibrewise a singleton: one shape over each of
-`0` and
-`1`. But its arity is `Fin 1` at the shape over `1` and `Fin 0` at the shape
-over `0`, so `reindex` along `0 ⟶ 1` is the map out of the empty type — not
-invertible.
-
-This is what rules out attaching arities per code-path. A code built from `ι`
-at a presheaf, `σ` over a set, and `δ` adjoining a fixed arity assigns to each
-shape the arity accumulated along its path through the code tree; restriction
-of a shape never changes that path, so such a code can only denote functors
-whose `reindex` is an isomorphism. `arityVaries` would therefore have no such
-code even though its shape presheaf is as simple as a shape presheaf gets. That
-argument is stated here and elaborated nowhere: the code type it quantifies
-over is not built, and the closure it needs is `Codes`' `HasBijectiveReindex`
-family.
+`ArityB` below is the fibre family the worked example in `Codes` is built on:
+one direction at `1`, none at `0`, so that reindexing along `0 ⟶ 1` is the map
+out of the empty type.
 -/
 
-/-- The arity of the shape `a`: one direction at `1`, none at `0`. An `abbrev`
-so the `PFunctor` projection reduces to it. -/
+/-- The arity of the output object `a`: one direction at `1`, none at `0`.
+`Codes`' `arityVariesBase` takes its fibres from this. -/
 abbrev ArityB (a : Fin 2) : Type := ULift (Fin a.val)
 
 /-- Each fibre of `ArityB` is a subsingleton: `Fin 0` is empty and `Fin 1` is a
@@ -338,55 +235,6 @@ instance subsingleton_arityB (a : Fin 2) : Subsingleton (ArityB a) :=
     have hy := y.down.isLt
     have ha := a.isLt
     omega))⟩
-
-/-- Operations of a small functor whose `reindex` is not invertible: over the
-walking arrow, one shape at each object, with one direction at `1` and none
-at `0`. `reindex` along `0 ⟶ 1` is `Fin.castLE`, here the map out of `Fin 0`. -/
-@[reducible] def arityVariesData : PresheafPFunctorData (Fin 1) (Fin 2) where
-  A := Fin 2
-  B := ArityB
-  r := fun _ ↦ 0
-  q := fun a ↦ a
-  directionRestr := fun _ {_ _} _g d ↦ ⟨d.1, Subsingleton.elim _ _⟩
-  shapeRestr := fun {_ j'} _g _s ↦ ⟨j', rfl⟩
-  reindex := fun {j j'} g a {_} d ↦ by
-    obtain ⟨aa, (rfl : aa = j)⟩ := a
-    exact ⟨⟨Fin.castLE (leOfHom g) d.1.down⟩, Subsingleton.elim _ _⟩
-
-/-- Each direction fiber has at most one element, so the five direction-side
-laws hold by `Subsingleton.elim`. The content is unaffected: the fibers are
-empty at the shape over `0` and inhabited at the shape over `1`, which is
-exactly what makes `reindex` non-invertible. -/
-instance subsingleton_arityVariesDirection (a : arityVariesData.A) (i : Fin 1) :
-    Subsingleton (arityVariesData.Direction a i) :=
-  ⟨fun x y ↦ Subtype.ext (Subsingleton.elim (α := ArityB a) x.1 y.1)⟩
-
-/-- The functor: the shape-side laws are trivial because every `Shape j` is the
-singleton `{j}`. -/
-def arityVaries : PresheafPFunctor (Fin 1) (Fin 2) where
-  toPresheafPFunctorData := arityVariesData
-  isFunctorial :=
-    isFunctorial_of_subsingletonDirection _ (fun _ _ ↦ inferInstance)
-      (by intro j; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
-      (by intro j j' j'' g h; funext s; obtain ⟨ss, (rfl : ss = j)⟩ := s; rfl)
-
-/-- The arity is empty at the shape over `0`. -/
-theorem arityVariesData_B_zero : arityVariesData.B ⟨0, by omega⟩ = ULift (Fin 0) := rfl
-
-/-- And inhabited at the shape over `1`. The two computations are recorded
-separately; `not_hasBijectiveReindex_arityVaries` derives the emptiness it needs
-directly rather than through either. -/
-theorem arityVariesData_B_one : arityVariesData.B ⟨1, by omega⟩ = ULift (Fin 1) := rfl
-
-/-- Every `Shape j` is a singleton, fibrewise. That is all this establishes:
-terminality in `PSh(J)` would need the restriction square as well, which a
-family of equivalences does not state, and the variation of the arity above
-these shapes is proved in the sibling `Codes` module. -/
-def arityVariesShapeEquiv (j : Fin 2) : arityVariesData.Shape j ≃ PUnit where
-  toFun := fun _ ↦ PUnit.unit
-  invFun := fun _ ↦ ⟨j, rfl⟩
-  left_inv := by rintro ⟨ss, (rfl : ss = j)⟩; rfl
-  right_inv := fun _ ↦ rfl
 
 end Reindex
 
