@@ -28,8 +28,7 @@
 ## Scope of this document
 
 This specifies a workstream on morphisms of presheaf parametric-right-adjoint
-functors and on codes denoting them, in two stages. The leaf rule injects a
-presheaf p.r.a. functor at the universes `CodeShape` pins. Stage 1's content is
+functors and on codes denoting them, in two stages. Stage 1's content is
 settled and machine-checked, up to the category structure and the
 natural-transformation identification recorded as obligations 2 and 3. Stage 2
 is elaborated: the two rules, the code type and the
@@ -44,7 +43,7 @@ be complete over; the vocabulary that stated one is removed rather than carried
 unconsumed, per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost. The
 cost is recorded where it falls: § Why `δ`'s arity varies over the output
 object marks *Unelaborated* the claim that an output-varying arity is
-unreachable by a constant-arity rule, which no declaration now establishes.
+unreachable by a constant-arity rule, which no declaration ever established.
 
 The declarations removed with it are named individually below, so that the
 retained set is determined by this document rather than by inspection. There
@@ -85,7 +84,9 @@ Removing exactly these empties five `section` wrappers — `Degeneracy` and
 `IotaConst` in `Basic.lean`, `Coprod`, `Incompleteness` and `Closure` in
 `Codes.lean`. Each wrapper goes with its contents, together with the `variable`
 line it scopes, which `docs/rules/lean-coding.md` § Structure and typeclass
-patterns requires be removed once unused. Four imports lose their consumers. `Functor.lean`'s
+patterns requires be removed once unused. Four imports lose their consumers in
+the file that carries them.
+`Functor.lean`'s
 `Mathlib.CategoryTheory.Yoneda` goes with
 `iotaPresheafData_A_eq_iotaConstData_yoneda`, `yoneda` occurring in that module
 nowhere else and no surviving import implying it; the other three are
@@ -95,7 +96,10 @@ nowhere else and no surviving import implying it; the other three are
 still needed, but by `Codes.lean` — `leOfHom` and the `Category (Fin 2)`
 instance at `arityVariesBase`, `Cat.of (Fin 2)` at `deltaCodeVaries` — which
 imports neither directly, so both move there rather than being suppressed with
-`-- shake: keep`. `scripts/pre-push.sh` runs `lake shake` as a blocking step,
+`-- shake: keep`. Both move as `public import`: `arityVariesBase`'s type names
+the `Category (Fin 2)` instance, so it is re-exported content, and
+`scripts/pre-push.sh` runs `lake shake --add-public`, which distinguishes the
+two forms. `scripts/pre-push.sh` runs `lake shake` as a blocking step,
 so leaving any of the four in place fails the checklist. The three added
 declarations need no import of their own: `Function.LeftInverse` and
 `Function.Surjective` are already in `Codes.lean`'s closure. `Reindex` in
@@ -104,12 +108,15 @@ and `subsingleton_arityB` and keeps its name, which names the
 `PresheafPFunctorData.reindex` field rather than the bound; `VaryingWitness`
 and `FusedWitness` in `Codes.lean` retain the worked example and merge into
 one section named
-`WorkedExample`, their present names being vocabulary of the bound and the
-split between them having been the bound's two witnesses. `ArityB` stays an
+`WorkedExample`, placed where `FusedWitness` now is, `VaryingWitness`'s four
+survivors moving down past the retained `Decoding` section on which `decUnit`
+depends through `PshMor`; their present names are vocabulary of the bound and
+the split between them was the bound's two witnesses. `ArityB` stays an
 `abbrev`: nothing turns on the attribute once its stated rationale goes, and
-changing it is a second concern. `Basic.lean`'s numbered claims list keeps the
-numbering of the two claims that survive rather than renumbering, so that the
-prose around it needs no rewrite.
+changing it is a second concern. `Basic.lean`'s numbered claims list is
+renumbered
+from one: nothing references a claim by number once the retired declarations
+go, and a markdown ordered list renumbers itself when rendered in any case.
 
 `ShapeArity.const` is the one removal that costs an exposition rather than only
 a proof. It was the prototype's only realization of an arity constant over the
@@ -131,7 +138,8 @@ prototype's module docstrings, its `/-! … -/` section docstrings and the
 docstrings of declarations no branch ports are none of those. So the trim
 rewrites, in the same step: all three module docstrings, as obligation 4
 apportions them; the `Reindex`, `VaryingWitness` and `FusedWitness` section
-docstrings; the declaration docstrings obligation 4 lists; `CodeShape`'s and
+docstrings; the declaration docstrings obligation 4 lists, `decVariesElt`'s
+among them; `CodeShape`'s and
 `interp_praCode_interp`'s, which both
 assert flatly the claim § The rules and their relation to small induction
 recursion marks *Unelaborated*; `ArityB`'s, whose "an `abbrev` so the
@@ -183,7 +191,7 @@ established here at all — asserted outright, or imported from a source that is
 named but not formalized. Every other claim names the declaration
 that establishes it, with three classes of exception, each flagged where it
 arises: readings of a construction, backed by structure fields rather than by
-theorems (§ Stage 1: morphisms and the representation theorem, facts 2 and 4);
+theorems (§ Stage 1: morphisms and the representation theorem, fact 4);
 the discrete analogues named in § Definitions: transcription or novel's
 `Status` cells, no one of which is an elaborated identification;
 and statements about ambient mathematics rather than about this development —
@@ -219,13 +227,18 @@ remainder
 together with this document, the `TODO.md` § In progress entry for this
 workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
 dangle once the prototype is gone, the two transient handoffs § Scope of this
-document names, the plan, the directory index
+document names, any plan written for a branch of this workstream, the
+directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
 the `Geb.Internal.PresheafIRProto.Functor` entry in
-`GebMeta.classicalAllowedModules`, the `Geb/Internal/` bullet in
-`docs/index.md`, which describes a directory that is gone (`GebTests/Internal/`
-has its own bullet and survives), and the two module-docstring mentions of
+`GebMeta.classicalAllowedModules`, the `Geb/Internal/` structure bullet in
+`docs/index.md`, which describes a directory that is gone — the clause naming
+`GebTests/Internal/` sits inside the `GebTests/` bullet and survives — while
+`CONTRIBUTING.md` § Repo structure, `docs/rules/upstream-eligible.md` and
+`scripts/lint-imports.sh` state the same subtree policy and are left alone,
+the policy outliving this one directory, and the two module-docstring mentions
+of
 `Geb.Internal` — a bullet in `Geb.lean`, a clause in `GebTests.lean` —
 `GebTests/Internal/` itself surviving as the axiom-linter fixtures. That last
 removal is an assignment rather than an instance of the per-branch rule above:
@@ -275,7 +288,7 @@ the correspondence is definitional rather than earned.
 | Rule | Small `IR` | Here | Status |
 | --- | --- | --- | --- |
 | `ι`, `σ` | generate the shape data: `ι` takes `o : O`, denoting `o' ↦ (o' = o)`; `σ` takes `S : Set` and a family `K : S → IR I O`, denoting a coproduct | absent as rules. The leaf takes a `PresheafPFunctor (el(D)) 𝔹` outright | `praCode`; `interp_praCode` folds it back unchanged |
-| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` in the same directions role, with functorial output-indexing; that each `fam j` is a discrete fibration is the reading the Status cell marks; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Inference, not elaborated*; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
+| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` in the same directions role, with functorial output-indexing; that each `fam j` is a discrete fibration is the reading the Status cell marks; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Unelaborated*, the notion being that source's and formalized nowhere here; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
 
 The principle governing `δ`'s generalization is the same one: replace equality
 by a morphism, `Hom(x, y)` being `x = y` in a discrete category.
@@ -423,7 +436,7 @@ Settled up to the category structure and the identification recorded as
 obligations 2 and 3. `Geb/Internal/PresheafIRProto/Basic.lean` carries it,
 choice-free; `Functor.lean` carries what depends on `Classical.choice` through
 `CategoryTheory.Functor.category` — `BaseArity.functor` among them, per
-§ Stage 2: the code system —: `arityHomEquivNatTrans` and
+§ Stage 2: the code system. They are `arityHomEquivNatTrans` and
 `objEquivSigmaHom`, which write `⟶` between objects of a presheaf category;
 and the two universe-formability demonstrations `arityPresheafHomAtUB` and
 `arityPresheafHomULifted`, which do the same.
@@ -653,8 +666,11 @@ output-indexed version, and `ShapeArity` has no counterpart.
 
 `delta` carries an arity varying over the output object and a continuation
 depending on the decoding, both by construction: the arity it takes is a
-`BaseArity`, and the continuation is summed over `decPresheaf`. *Unelaborated*:
-that the two features are independent — the declaration that checked it was a
+`BaseArity`, and the continuation is summed over `decPresheaf`. That both are
+present at once is therefore definitional. *Unelaborated*: that
+the output-varying arity stays effective once the decoding-dependent
+continuation is fused onto it — that the fused rule reaches functors the
+constant-arity one does not. The declaration that checked it was a
 `HasBijectiveReindex` witness and is removed with that family. Three steps,
 none of them a new operation:
 
@@ -670,9 +686,11 @@ none of them a new operation:
 `deltaVaries` is `delta` at that arity, its continuation the constant functor
 at a representable; `deltaCodeVaries` is a code whose interpretation is that
 functor, and `interp_deltaCodeVaries`, itself definitional, is the check that
-the rule and its code compute. *Unelaborated*: that every fibre of `termPsh`
-is a singleton, so that
-`decUnit` is the only decoding into it. The example does not rest on it.
+the rule and its code compute. *Inference, not elaborated*: that every fibre of
+`termPsh` is a singleton, so that `decUnit` is the only decoding into it —
+`termPsh.obj` is `PUnit` definitionally and `PshMor`'s only data field is
+`app`, so it follows and no declaration states it. The example does not rest
+on it.
 
 ### Why no inductive-inductive definition is needed
 
@@ -727,7 +745,7 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
 | `ShapeArity` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. § Why `δ`'s arity varies over the output object marks its reading as a functor `el(T₁) ⥤ (Iᵒᵖ ⥤ Type)` an inference, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern |
 | `BaseArity`, `BaseArity.pullback` — the arity indexed by output objects, and its pullback along `q` | Novel |
-| `DomArity.presheaf`, `BaseArity.famPresheaf`, `BaseArity.reindexHom`, `BaseArity.functor` — the fibrewise form of an arity, the presheaf it gives at each output object, the morphism each output morphism induces, and the four bundled as a functor `J ⥤ (Iᵒᵖ ⥤ Type uB)` | Novel presentations of a standard identification. The content is that a `DomArity` is a discrete fibration over `I`, hence a presheaf on it, and that `BaseArity` is that functorially in the output — the arity side of [nLabParametricRightAdjoint]'s two-sided discrete fibration, which § The setting is indexed induction-recursion, not induction-recursion marks as inference. `functor` writes `⥤` into a functor category and so is in `Functor.lean` |
+| `DomArity.presheaf`, `BaseArity.famPresheaf`, `BaseArity.reindexHom`, `BaseArity.functor` — the fibrewise form of an arity, the presheaf it gives at each output object, the morphism each output morphism induces, and those three with `isFunctorial_fam` bundled as a functor `J ⥤ (Iᵒᵖ ⥤ Type uB)` | Novel presentations of a standard identification. The content is that a `DomArity` is a discrete fibration over `I`, hence a presheaf on it, and that `BaseArity` is that functorially in the output — the arity side of [nLabParametricRightAdjoint]'s two-sided discrete fibration, which § The setting is indexed induction-recursion, not induction-recursion marks *Unelaborated*. `functor` writes `⥤` into a functor category and so is in `Functor.lean` |
 | `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I. § The setting is indexed induction-recursion, not induction-recursion marks its agreement with mathlib's `S.Elementsᵒᵖ` an inference. It is written out rather than reused to avoid `Opposite` transport, and obligation 4 revisits the choice |
 | `CodeShape`, `CodeDir`, `CodeNext`, `codePFunctor`, `Code` | Novel. Indexing by a base category, with `δ` replacing it by a category of elements, has no counterpart in the cited literature; nor does a leaf that injects the denoted functors, which is what `CodeShape`'s first summand is |
 | `codeAlgOn`, `codeAlg`, `interp` — the interpretation | Novel at this level; the discrete analogue is `IR.interpObj` |
@@ -827,8 +845,8 @@ unproved.
    `ShapeHom`, `objEquivSigmaArityHom` with `ofArityHomElt` and
    `value_ofArityHom`, `reindexArityHom`, `sigmaArityHom_ext`, `idArityHom`,
    `natTransOfArityHom`, `postcompArityHom`, `map_symm_arityHom`, `idPshHom`,
-   `PshNatFamily`, and the round-trip lemmas `natFamily_generic`,
-   `natFamilyPshHom`, `objFibMap_eq_objFibRestr_apply`,
+   `PshNatFamily`, the inverse `natFamilyPshHom`, and the round-trip lemmas
+   `natFamily_generic`, `objFibMap_eq_objFibRestr_apply`,
    and `natFamilyArity_pshHomFamily`. `PshHom` carries `@[ext]`, so its
    extensionality lemma travels with the structure rather than as a listed
    item. This port is
@@ -840,7 +858,8 @@ unproved.
    `objPresheaf.map` and `mapPresheaf.app` verbatim, so nothing of it survives
    the replacement. W-a deletes that layer from the prototype in the same step,
    rather than leaving it under § Scope of this document's removal rule, which
-   retains a declaration only while something consumes it, and the layer's one consumer
+   retains a declaration only while something consumes it, and the layer's one
+   consumer
    is the representation theorem's own chain, which W-a restates. One listed
    item, `objFibMap_eq_objFibRestr_apply`, is stated in the layer's own terms,
    so W-a restates it against `objPresheaf` and `mapPresheaf` and renames it
@@ -893,17 +912,10 @@ unproved.
    `interp_deltaCode`, `interp_praCode_interp` and `interp_fst`. Of these only
    `interp_fst` is reached by the closure clause, `interp_deltaCode`'s
    statement applying it; the other three and the two constructors are listed
-   because nothing else in this obligation's list depends on them;
+   because nothing else in the library half of this obligation's list depends
+   on them, `deltaCodeVaries` being in the test half below;
    `praCodeOf` with `leftInverse_interp_praCodeOf` and `surjective_interp`,
-   obligation 5's content in named form; the worked example `ArityB`,
-   `subsingleton_arityB`, `termPsh`, `arityVariesBase`,
-   `arityVariesBase_dir_ext`, `isFunctorial_arityVariesBase`, `decUnit`,
-   `decVariesElt`, `deltaVaries`, `deltaCodeVaries` and
-   `interp_deltaCodeVaries`, the only check that `interp_deltaCode`'s
-   transports reduce at a closed instance once
-   `not_hasBijectiveReindex_interp_deltaCodeVaries` goes with the bound,
-   `interp_deltaCode` itself stating
-   the computation with those transports written out; the
+   obligation 5's content in named form; the
    five `σ` laws
    (`sigmaPsh_shapeRestr_id`, `_shapeRestr_comp`, `_reindex_naturality`,
    `_reindex_id`, `_reindex_comp`) with the transport lemmas they use
@@ -925,14 +937,36 @@ unproved.
    the first has an explicit call site; the other two fire inside the `σ` laws'
    `simp` calls, deleting them leaving three goals unsolved, so all seven
    count. Weigh also whether
+   The worked example does not go to `Geb/Mathlib/`. `ArityB`,
+   `subsingleton_arityB`, `termPsh`, `arityVariesBase`,
+   `arityVariesBase_dir_ext`, `isFunctorial_arityVariesBase`, `decUnit`,
+   `decVariesElt`, `deltaVaries`, `deltaCodeVaries` and
+   `interp_deltaCodeVaries` are fixtures and one check, consumed by nothing
+   outside themselves, so they belong in the `GebTests/Mathlib/` mirror this
+   obligation's modules carry — `interp_deltaCodeVaries` being the only check
+   that `interp_deltaCode`'s transports reduce at a closed instance once
+   `not_hasBijectiveReindex_interp_deltaCodeVaries` goes with the bound, and
+   `interp_deltaCode` itself stating the computation with those transports
+   written out. Open question 3 asks whether that example should be replaced by
+   one exercising `shapeRestr`, `reindex` and `reindexCompat` together, and
+   open question 8 whether this obligation should port the code type and the
+   interpretation at all. Shipping them in an upstream-eligible subtree with
+   no library
+   consumer would be cost without return under
+   [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
    `CategoryOfElements`' API removes the transport obstructions the five `σ`
    laws work around, since those are artefacts of
    presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
-   of the mathematics. Docstrings port under obligation 1's clause; the
-   prototype's own copies were repaired by the trim, per § Scope of this
-   document, so what this clause governs is the ported form. The
-   declaration docstrings it bears on are `iotaPresheaf`, `PshMor`,
-   `sigmaPsh`, `decArity`, `delta`, `arityVariesBase` and `deltaCodeVaries`.
+   of the mathematics. Docstrings port under obligation 1's clause. The trim
+   has already repaired the
+   prototype's copies, per § Scope of this document, so for these the clause
+   bites only where the ported form differs — a docstring naming a prototype
+   declaration this obligation does not port, or one whose subject is renamed
+   upstream. The declaration docstrings the trim repairs, and against which the
+   ported form is checked, are `iotaPresheaf`, `PshMor`,
+   `sigmaPsh`, `decArity`, `delta`, `arityVariesBase`, `decVariesElt` — whose
+   "which is where reindexing fails" names the retired predicate — and
+   `deltaCodeVaries`.
    `decArity`'s is the second, after `sigmaPsh`'s, that asserts in the strong
    form the claim
    § Why `δ`'s arity varies over the output object marks *Unelaborated*, its
@@ -941,12 +975,13 @@ unproved.
    `hasBijectiveReindex_adjoinArityConst` separate" naming two retired
    theorems. `deltaVaries`
    is not among them, the docstring naming the bound there being
-   `not_hasBijectiveReindex_deltaVaries`'s, which is itself removed. Three
-   `/-! … -/` section docstrings go the same way: `Basic.lean`'s `Reindex`,
-   whose argument is the removed material entire, and `Codes.lean`'s
-   `VaryingWitness` and `FusedWitness`, the second of which asserts in the
-   strong form the claim § The decoding-dependent continuation marks
-   *Unelaborated*. All three module docstrings are affected, not two:
+   `not_hasBijectiveReindex_deltaVaries`'s, which is itself removed. Two
+   `/-! … -/` section docstrings are written in their place: `Basic.lean`'s
+   `Reindex`, whose argument is the removed material entire, and the merged
+   `WorkedExample`, replacing `VaryingWitness`'s and `FusedWitness`'s, the
+   latter of which asserts in the strong form the claim § The
+   decoding-dependent continuation marks *Unelaborated*. All three module
+   docstrings are affected, not two:
    `Basic.lean`'s summary and its numbered claims list, whose claims 2, 3 and 5
    are wholly about retired declarations, together with its
    `## Main definitions` — but not its `## Main statements`, whose one bullet
@@ -957,7 +992,9 @@ unproved.
    whose only bullet is the retired shape-type equality, so that section is
    deleted rather than emptied, `docs/rules/lean-coding.md` § Documentation
    requiring a vacuous section be omitted and never left as a placeholder.
-5. **Completeness.** Discharged; no branch carries it. Every
+5. **Completeness.** Discharged: nothing remains to prove. The prototype's own
+   branch writes the three declarations that state it and obligation 4 ports
+   them, so what no branch carries is the proof, not the content. Every
    `PresheafPFunctor` over the interpretation's own input base — `interp` lands
    in `Σ 𝔹, PresheafPFunctor (el(D)) 𝔹`, so the question is about functors
    out of `el(D)` at the universes `CodeShape` pins, not about
@@ -1096,8 +1133,10 @@ To be answered by the work rather than before it.
    W-b's acceptance.
 9. Which `Geb/Mathlib/` modules the ports occupy, and what the upstream names
    are. The acceptance cells say "in `Geb/Mathlib/`" and no more; obligation 1
-   lists about twenty-five declarations and obligation 4 about sixty, with no
-   file split, and § Branches' `docs/index.md` clause is written to branch on
+   lists about twenty-five declarations and obligation 4 seventy named
+   explicitly, with eight more named only as "the code type and the
+   interpretation", with no file split, and § Branches' `docs/index.md` clause
+   is written to branch on
    whether a directory bullet already exists without saying which case obtains.
    One upstream name is fixed — `PshHom` becomes `PresheafPFunctor.Hom` — and
    no other. This bears on more than tidiness: § Scope of this document
@@ -1200,9 +1239,10 @@ repository file cites yet, so of this workstream's own citations those two and
 Definition 7 would newly bind W-a; the correction is due before any branch
 regardless, on
 Lemma 1's account. Theorem 3, which
-W-d cites, the existing note already covers, so W-d is unconstrained. W-b's
-other citation
-of the paper is to the `δ` rule by section, and section numbering is unchanged.
+W-d cites, the existing note already covers, so W-d is unconstrained. W-b
+cites the paper twice: § Definitions' `praCode` row cites Lemma 1, which
+the note above places, and obligation 4's `δ` material cites Section 6. The
+second is to a section, and section numbering is unchanged.
 That ordering constraint is recorded in `TODO.md` too, this document being
 removed with the last branch.
 

@@ -127,8 +127,8 @@ Concern shape.
   `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`,
   `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`, `IndRec/Functor.lean`,
   `IndRec/Universes.lean` and `docs/references.bib` — and `docs/index.md`
-  spells the wrong order out in prose at three further places (lines 275, 336
-  and 393) without using the key, so a key-only search under-scopes the branch.
+  spells the wrong order out in prose at three further places without using
+  the key, so a key-only search under-scopes the branch.
   `docs/references.bib`'s own note also names the work in the wrong order.
 - **`docs/references.bib`'s note on
   `HancockMcBrideGhaniMalatestaAltenkirch2013` is unverified and incomplete.**
