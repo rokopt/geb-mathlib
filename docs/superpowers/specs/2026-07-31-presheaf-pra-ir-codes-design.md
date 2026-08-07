@@ -112,8 +112,9 @@ one section named
 survivors moving down past the retained `Decoding` section on which `decUnit`
 depends through `PshMor`; their present names are vocabulary of the bound and
 the split between them was the bound's two witnesses. `ArityB` stays an
-`abbrev`: nothing turns on the attribute once its stated rationale goes, and
-changing it is a second concern. `Basic.lean`'s numbered claims list is
+`abbrev`: nothing turns on the reducibility it carries once its stated
+rationale goes, and changing the form is a second concern. `Basic.lean`'s
+numbered claims list is
 renumbered from one — nothing references a claim by number once the retired
 declarations go — and the sentence framing it as what "the generator
 development tests" is rewritten, `iotaPresheaf` being the only generator left
@@ -135,7 +136,7 @@ prototype does not
 already contain; every other name cited below is present.
 
 The trim carries its own documentation repair, which no obligation reaches:
-obligation 1's clause is about a *ported* declaration's docstring, and the
+obligation 1's clause is about a ported declaration's docstring, and the
 prototype's module docstrings, its `/-! … -/` section docstrings and the
 docstrings of declarations no branch ports are none of those. So the trim
 rewrites, in the same step: all three module docstrings, as obligation 4
@@ -235,8 +236,7 @@ workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
 dangle once the prototype is gone — with the `## In progress` heading above
 it, that entry being its only child, and the heading's doctoc line — the two
 transient handoffs § Scope of this
-document names, any plan written for a branch of this workstream, the
-directory index
+document names, the directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
 that index, leaving it empty — the `public import Geb.Internal` in `Geb.lean`,
 the `Geb.Internal.PresheafIRProto.Functor` entry in
@@ -444,11 +444,14 @@ and obligation 7 is where the code-level property is discharged.
 Settled up to the category structure and the identification recorded as
 obligations 2 and 3. `Geb/Internal/PresheafIRProto/Basic.lean` carries it,
 choice-free; `Functor.lean` carries what depends on `Classical.choice` through
-`CategoryTheory.Functor.category` — `BaseArity.functor` among them, per
-§ Stage 2: the code system. They are `arityHomEquivNatTrans` and
-`objEquivSigmaHom`, which write `⟶` between objects of a presheaf category;
-and the two universe-formability demonstrations `arityPresheafHomAtUB` and
-`arityPresheafHomULifted`, which do the same.
+`CategoryTheory.Functor.category`. Of Stage 1's share of that module,
+`arityHomEquivNatTrans` and `objEquivSigmaHom` write `⟶` between objects of a
+presheaf category, and the two universe-formability demonstrations
+`arityPresheafHomAtUB` and `arityPresheafHomULifted` do the same. The module's
+fifth declaration, `BaseArity.functor`, is Stage 2 content: § Stage 2: the code
+system says `Codes.lean` carries Stage 2 choice-free, and `BaseArity.functor`
+is the one exception, living here because it writes `⥤` into a functor
+category.
 
 | Declaration | Content |
 | --- | --- |
@@ -784,12 +787,12 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | `decPresheaf` — the decodings of an output-varying arity, as a presheaf on the output base | Novel |
 | `decArity` — that arity, indexed by the elements of `decPresheaf` | Novel |
 | `delta` — the `δ` carrying both features. Both are by construction: the arity it takes is a `BaseArity`, and the continuation is summed over `decPresheaf`. `deltaVaries` exhibits an output-varying instance, and no declaration states that the constant-arity case fails to reach it | Novel; it is Section 6's `δ` rule with the arity generalized over the output object, § Why `δ`'s arity varies over the output object marking the separation from the constant-arity rule *Unelaborated* |
-| `praCodeOf`, `leftInverse_interp_praCodeOf`, `surjective_interp` — the leaf as a section of the interpretation | Novel. The split-epimorphism form of obligation 5's content: `praCodeOf` is `praCode` uncurried over `Interp`, and the two theorems state that `interp` retracts onto it. The first holds by `rfl`, `Interp` being a `Sigma` and so carrying structure eta; the second is `LeftInverse.surjective` of it |
+| `praCodeOf`, `leftInverse_interp_praCodeOf`, `surjective_interp` — the leaf as a section of the interpretation | Novel. The split-epimorphism form of obligation 5's content: `praCodeOf` is `praCode` uncurried over `Interp`, and the two theorems state that `interp` retracts onto it. The first closes by `fun _ ↦ rfl`, `Interp` being a `Sigma` and so carrying structure eta; the second is `LeftInverse.surjective` of it |
 
 ## Branches
 
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape binds one concern
-per branch. A fifth branch precedes them and carries no *unproved* obligation,
+per branch. A fifth branch precedes them; it carries no unproved obligation,
 only the writing of obligation 5's content: the prototype's own, which adds
 this document, retires the fifty-two declarations
 § Scope of this document lists, repairs the documentation that retirement
@@ -886,7 +889,15 @@ unproved.
    terms: a ported declaration whose docstring names a retired or unported
    declaration has that docstring rewritten, `docs/rules/lean-coding.md`
    § Documentation making the docstring and its cross-references part of the
-   deliverable.
+   deliverable. The clause reaches the prototype as well as the port. A branch
+   that deletes declarations from `Basic.lean` or `Functor.lean` repairs those
+   modules' own docstrings in the same commit — their `## Main definitions` and
+   `## Main statements` bullets for what it deleted, `Functor.lean`'s summary
+   count, and any section whose last bullet goes, which § Documentation
+   requires be deleted rather than emptied. Otherwise the interval between that
+   branch and the last leaves dangling cross-references on `main`, which is the
+   hazard § Scope of this document gives the trim to avoid; the trim removes
+   fifty-two declarations and each port removes more.
 2. **Category structure** (W-a). Composition on `PshHom` (`idPshHom` already
    supplies the identity), that composition is associative with that identity
    as unit, and that the bijection of obligation 1 carries them to the
@@ -978,10 +989,13 @@ unproved.
    bites only where the ported form differs — a docstring naming a prototype
    declaration this obligation does not port, or one whose subject is renamed
    upstream. The declaration docstrings the trim repairs, and against which the
-   ported form is checked, are `iotaPresheaf`, `PshMor`,
-   `sigmaPsh`, `decArity`, `delta`, `arityVariesBase`, `decVariesElt` — whose
-   "which is where reindexing fails" names the retired predicate — and
-   `deltaCodeVaries`.
+   ported form is checked, are the twelve § Scope of this document lists, of
+   which this obligation ports `iotaPresheaf`, `PshMor`, `sigmaPsh`,
+   `decArity`, `delta`, `CodeShape` inside the code type,
+   `interp_praCode_interp`, `isFunctorial_of_subsingletonDirection` by the
+   closure clause, and — into the test mirror — `ArityB`, `arityVariesBase`,
+   `decVariesElt` and `deltaCodeVaries`. Two of them are worth naming for what
+   they say rather than for what they cite.
    `decArity`'s is the second, after `sigmaPsh`'s, that asserts in the strong
    form the claim
    § Why `δ`'s arity varies over the output object marks *Unelaborated*, its
@@ -1024,7 +1038,8 @@ unproved.
    uncurried over `Interp` — and `leftInverse_interp_praCodeOf` and
    `surjective_interp` state that `interp` retracts onto it, so the
    discharge is a named statement rather than a reading of two computation
-   rules. `leftInverse_interp_praCodeOf` holds by `rfl`, `Interp` being a
+   rules. `leftInverse_interp_praCodeOf` closes by `fun _ ↦ rfl`, `Interp`
+   being a
    `Sigma` and so carrying structure eta; `surjective_interp` is
    `LeftInverse.surjective` of it, an existential and so not itself an
    equality. Obligation 4 ports all three.
