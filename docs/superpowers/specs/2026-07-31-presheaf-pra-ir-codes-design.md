@@ -46,14 +46,15 @@ cost is recorded where it falls: § Why `δ`'s arity varies over the output
 object marks *Unelaborated* the claim that an output-varying arity is
 unreachable by a constant-arity rule, which no declaration now establishes.
 
-The declarations removed with it, named individually so that the retained set
-is determined by this document rather than by inspection. Fifty-two in all:
-forty-one from `Codes.lean`, ten from `Basic.lean`, one from `Functor.lean`.
+The declarations removed with it are named individually below, so that the
+retained set is determined by this document rather than by inspection. There
+are fifty-two: forty-one in `Codes.lean`, ten in `Basic.lean`, one in
+`Functor.lean`.
 
 | Family | Declarations | Removed because |
 | --- | --- | --- |
 | The bound (`Codes.lean`) | `HasBijectiveReindex`; `hasBijectiveReindex_of_isEmpty`, `not_hasBijectiveReindex_of_isEmpty`, `hasBijectiveReindex_iotaPresheaf`, `hasBijectiveReindex_iotaConst`, `hasBijectiveReindex_coprod`, `hasBijectiveReindex_adjoinArity`, `hasBijectiveReindex_adjoinArityConst`, `not_hasBijectiveReindex_arityVaries`, `not_hasBijectiveReindex_adjoinArityVarying`, `hasBijectiveReindex_unitPsh`, `hasBijectiveReindex_sigmaPsh`, `hasBijectiveReindex_deltaRec`, `not_hasBijectiveReindex_deltaVaries`, `not_hasBijectiveReindex_interp_deltaCodeVaries` — fifteen, being the definition and its fourteen theorems | the bound itself |
-| The type-indexed coproduct (`Codes.lean`) | `coprodData`, `coprod` | its only consumer is `deltaRec` |
+| The type-indexed coproduct (`Codes.lean`) | `coprodData`, `coprod` | its two consumers, `deltaRec` and `hasBijectiveReindex_coprod`, are both retired |
 | The decoding-indexed `δ` (`Codes.lean`) | `deltaRec` | superseded by `delta`, which keeps the output-varying arity where `deltaRec` does not; it belonged to the bound, not to the rules |
 | The constant arity (`Codes.lean`) | `ShapeArity.const`, `ShapeArity.isFunctorial_const` | their only consumers are `deltaRec` and `hasBijectiveReindex_adjoinArityConst` |
 | The unit (`Codes.lean`) | `unitPshData`, `unitPsh`, `unitPshLiftData`, `unitPshLift` | a generator of the bound's fragment and the foot of `praWitnessLift`; no rule names a unit, `CodeShape` and `codeAlgOn` referencing none |
@@ -71,8 +72,9 @@ forty-one from `Codes.lean`, ten from `Basic.lean`, one from `Functor.lean`.
 `arityPresheafHomULifted` and `BaseArity.functor`, and every later count of
 that module in this document is five.
 
-Four declarations in those neighbourhoods are retained, each having a consumer
-outside the removed set: `ArityB`, which `arityVariesBase` uses for its fibres,
+Four clusters in those neighbourhoods are retained, seven declarations in all,
+each having a consumer outside the removed set: `ArityB`, which
+`arityVariesBase` uses for its fibres,
 with `subsingleton_arityB`, whose surviving consumer is
 `arityVariesBase_dir_ext` and is reached by instance search rather than by
 name, so no grep finds it; `iotaPresheaf` with `iotaPresheafData` and
@@ -84,10 +86,14 @@ Removing exactly these empties five `section` wrappers — `Degeneracy` and
 `IotaConst` in `Basic.lean`, `Coprod`, `Incompleteness` and `Closure` in
 `Codes.lean`. Each wrapper goes with its contents, together with the `variable`
 line it scopes, which `docs/rules/lean-coding.md` § Structure and typeclass
-patterns requires be removed once unused. `Reindex` in `Basic.lean` retains
-`ArityB` and `subsingleton_arityB`, and `VaryingWitness` and `FusedWitness` in
-`Codes.lean` retain the worked example; those three are renamed for what they
-now hold, their present names being vocabulary of the bound.
+patterns requires be removed once unused. It also leaves
+`Mathlib.CategoryTheory.Discrete.Basic` unused in `Basic.lean`, `Discrete`
+occurring there only in `iotaDiscreteShapeEquiv`, so `lake shake` reports that
+import removable and it goes too. `Reindex` in `Basic.lean` retains `ArityB`
+and `subsingleton_arityB` and keeps its name, which names the
+`PresheafPFunctorData.reindex` field rather than the bound; `VaryingWitness`
+and `FusedWitness` in `Codes.lean` retain the worked example and are renamed
+for it, their present names being vocabulary of the bound.
 
 `ShapeArity.const` is the one removal that costs an exposition rather than only
 a proof. It was the prototype's only realization of an arity constant over the
@@ -101,6 +107,15 @@ This revision also adds three declarations to the prototype — `praCodeOf`,
 `leftInverse_interp_praCodeOf` and `surjective_interp`, obligation 5's content
 in named form. They are the only prototype declarations this document names
 that it does not already contain; every other name cited below is present.
+
+The retirement and those three additions are neither ported by nor assigned to
+any of the four branches. They are the work of the prototype's own branch, the
+one carrying this document, and land before W-a, W-b, W-d and W-e begin: the
+declarations retired are ported by no obligation, so no branch's removal clause
+reaches them, and obligation 4's docstring clause presupposes that the trim has
+already happened. Carrying the bound's vocabulary alongside the ports would put
+it on `main` unconsumed, against
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
 The prototype at `Geb/Internal/PresheafIRProto/` is the source this document
 transcribes. It compiles, is linted, and is audited by
@@ -141,9 +156,10 @@ names `objEquivSigmaArityHom`, `ArityHom` and the four shared `ArityHom`
 declarations — so each of W-a and W-b also rewrites the retained remainder
 against the names it has just established in `Geb/Mathlib/`, and the prototype
 gains imports of the new modules, which `Geb/Internal/` is permitted. Only
-`SliceHom`, `sliceHomApp`, `Functoriality` and the
-`ObjFib` / `objFibRestr` / `objFibMap` layer stand free of both ports,
-`BaseArity.functor` being ported by obligation 4 into
+`SliceHom`, `sliceHomApp` and `Functoriality` stand free of both ports; the
+`ObjFib` / `objFibRestr` / `objFibMap` layer is not ported either but W-a
+deletes it, its one consumer being the theorem W-a ports away.
+`BaseArity.functor` is ported by obligation 4 into
 W-b's allowlisted module. Whichever of W-d and W-e lands last removes the
 remainder
 together with this document, the `TODO.md` § In progress entry for this
@@ -168,8 +184,8 @@ which exist to record how the design was reached rather than to be delivered:
 the domain-level warm-up (`DomHom`, `DomNatFamily`, `domHomEquivNatFamily` and
 their lemmas), the `ObjFib` / `objFibRestr` / `objFibMap` layer, which
 duplicates `objPresheaf` and `mapPresheaf` on the nose and is retained only
-because the representation theorem is stated against it — obligation 1 restates
-that chain and drops the layer — the slice-level morphism formula (`SliceHom`,
+while the representation theorem is stated against it — obligation 1 restates
+that chain and deletes the layer — the slice-level morphism formula (`SliceHom`,
 `sliceHomApp`),
 `Functoriality`, the universe-formability
 demonstrations in `Functor.lean` (`arityPresheafHomAtUB`,
@@ -206,8 +222,9 @@ the correspondence is definitional rather than earned.
 The principle governing `δ`'s generalization is the same one: replace equality
 by a morphism, `Hom(x, y)` being `x = y` in a discrete category. *Inference,
 not elaborated*: that the rule therefore collapses to its small-IR counterpart
-over a discrete base. Open question 4 leaves that degeneration open; no
-declaration bears on it.
+over a discrete base. *Unelaborated* rather than an inference, no declaration
+bearing on it and `Codes.lean` not importing `IndRec` at all. Open question 4
+leaves that degeneration open.
 
 The leaf has three consequences, the first two of them costs.
 
@@ -668,6 +685,7 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | `arityHomEquivNatTrans` — the bundling isomorphism `ArityHom ≃ (arityPresheaf ⟶ Z)` | Novel; it is the elaborated form of the `ArityHom` row's identification |
 | `arityPresheafHomAtUB`, `arityPresheafHomULifted` — the universes at which the bundled hom is formable | Novel; retained in the prototype as the derivation and ported by nothing |
 | `genericFib`, `idElt`, `ofSigmaFib`, `reindexArityHom`, `pshHomSigma`, `domHomSigma` — the fibre-level intermediates of the representation theorem | Novel presentations; those the theorem needs travel with obligation 1, the rest are retained derivation |
+| The unbundled-data layers and their law predicates — each `…Data` beside the structure it underlies (`iotaPresheafData`, `adjoinArityData`, `sigmaPshData`), the three `IsFunctorial` predicates (`DomArity.IsFunctorial`, `ShapeArity.IsFunctorial`, `BaseArity.IsFunctorial`), `DomArity.Dir`, and the component maps the representation theorem is assembled from (`ofArityHomElt`, `idArityHom`, `natTransOfArityHom`, `postcompArityHom`, `natFamilyPshHom`, `pshHomFamily`, `natFamilyShape`, `natFamilyArity`) | Novel presentations, each carrying no mathematics beyond the structure it splits: the data/law separation is the repository's standing pattern for keeping a construction choice-free, not a claim about the objects |
 | `ArityB`, `termPsh`, `arityVariesBase`, `decUnit`, `decVariesElt`, `deltaVaries`, `deltaCodeVaries` — the worked example of § The decoding-dependent continuation | Novel. Fixtures, carrying no mathematics beyond the computation they exhibit |
 | `PshMor` — a morphism from a `DomArity` to a presheaf, unbundled | Novel presentation; it is the presheaf reading of Section 6's sections `(p : P) → D (i p)` |
 | `fibreArity` — the arity a decoding adjoins | Novel |
@@ -747,7 +765,11 @@ unproved.
    prototype's parallel `ObjFib` / `objFibRestr` / `objFibMap` layer entirely:
    `ObjFib` is `objPresheaf`'s object part at `j.unop` and the two actions are
    `objPresheaf.map` and `mapPresheaf.app` verbatim, so nothing of it survives
-   the replacement. The `functor` form is a corollary and belongs in a module
+   the replacement. W-a deletes that layer from the prototype in the same step,
+   rather than leaving it under § Scope's removal rule: the rule retains a
+   declaration only while something consumes it, and the layer's one consumer
+   is the representation theorem W-a is porting away. The `functor` form is a
+   corollary and belongs in a module
    on `GebMeta.classicalAllowedModules`, together with `arityHomEquivNatTrans`
    and `objEquivSigmaHom`, the prototype's two bundled restatements. The ported
    chain needs `PresheafPFunctor.value_objRestrElt`, which is `private` in
@@ -831,17 +853,27 @@ unproved.
    presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
    of the mathematics. Docstrings port under obligation 1's clause. The
    declaration docstrings this bears on are `iotaPresheaf`, `PshMor`,
-   `sigmaPsh`, `delta`, `arityVariesBase` and `deltaCodeVaries`; `deltaVaries`
+   `sigmaPsh`, `decArity`, `delta`, `arityVariesBase` and `deltaCodeVaries`.
+   `decArity`'s is the second that asserts in the strong form the claim
+   § Why `δ`'s arity varies over the output object marks *Unelaborated*, its
+   "the arity therefore varies over the output, which is the capability
+   `not_hasBijectiveReindex_arityVaries` and
+   `hasBijectiveReindex_adjoinArityConst` separate" naming two retired
+   theorems. `deltaVaries`
    is not among them, the docstring naming the bound there being
    `not_hasBijectiveReindex_deltaVaries`'s, which is itself removed. Three
    `/-! … -/` section docstrings go the same way: `Basic.lean`'s `Reindex`,
    whose argument is the removed material entire, and `Codes.lean`'s
    `VaryingWitness` and `FusedWitness`, the second of which asserts in the
-   strong form the claim § Why `δ`'s arity varies over the output object marks
+   strong form the claim § The decoding-dependent continuation marks
    *Unelaborated*. All three module docstrings are affected, not two:
-   `Basic.lean`'s `## Main definitions` and `## Main statements`, `Codes.lean`'s
-   those two and its `## Implementation notes` — `Basic.lean` has no such
-   section — and `Functor.lean`'s summary count and its `## Main statements`,
+   `Basic.lean`'s summary and its numbered claims list, whose claims 2, 3 and 5
+   are wholly about retired declarations, together with its
+   `## Main definitions` — but not its `## Main statements`, whose one bullet
+   survives; `Codes.lean`'s summary, which names `iotaConst`, with its
+   `## Main definitions`, `## Main statements` and `## Implementation notes`,
+   `Basic.lean` having no section of the last kind; and
+   `Functor.lean`'s summary count and its `## Main statements`,
    whose only bullet is the retired shape-type equality, so that section is
    deleted rather than emptied, `docs/rules/lean-coding.md` § Documentation
    requiring a vacuous section be omitted and never left as a placeholder.
@@ -982,6 +1014,21 @@ To be answered by the work rather than before it.
    W-b's acceptance cell names the code type outright, so the deferral would
    also cut obligation 4 back to its semantic-operation results and restate
    W-b's acceptance.
+9. Which `Geb/Mathlib/` modules the ports occupy, and what the upstream names
+   are. The acceptance cells say "in `Geb/Mathlib/`" and no more; obligation 1
+   lists about twenty-five declarations and obligation 4 about sixty, with no
+   file split, and § Branches' `docs/index.md` clause is written to branch on
+   whether a directory bullet already exists without saying which case obtains.
+   One upstream name is fixed — `PshHom` becomes `PresheafPFunctor.Hom` — and
+   no other. This bears on more than tidiness: § Scope requires each of W-a and
+   W-b to rewrite the retained remainder against the names it has established,
+   and both edit `Basic.lean` and `Functor.lean`, so with no scheme fixed the
+   rebase of whichever lands second is undetermined. It is left to the branches
+   rather than settled here because the decomposition follows from what each
+   port turns out to need, and because settling it would be a second concern in
+   this document under [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern
+   shape. Each branch fixes its own layout and names as its first task, and
+   whichever lands second reconciles.
 
 ## Non-goals
 
