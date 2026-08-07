@@ -114,9 +114,10 @@ depends through `PshMor`; their present names are vocabulary of the bound and
 the split between them was the bound's two witnesses. `ArityB` stays an
 `abbrev`: nothing turns on the attribute once its stated rationale goes, and
 changing it is a second concern. `Basic.lean`'s numbered claims list is
-renumbered
-from one: nothing references a claim by number once the retired declarations
-go, and a markdown ordered list renumbers itself when rendered in any case.
+renumbered from one — nothing references a claim by number once the retired
+declarations go — and the sentence framing it as what "the generator
+development tests" is rewritten, `iotaPresheaf` being the only generator left
+and `Functoriality`, the other survivor, no part of the generator development.
 
 `ShapeArity.const` is the one removal that costs an exposition rather than only
 a proof. It was the prototype's only realization of an arity constant over the
@@ -129,8 +130,9 @@ been proved about.
 The design carries three declarations the prototype does not yet contain —
 `praCodeOf`,
 `leftInverse_interp_praCodeOf` and `surjective_interp`, obligation 5's content
-in named form. They are the only prototype declarations this document names
-that it does not already contain; every other name cited below is present.
+in named form. They are the only declarations this document names that the
+prototype does not
+already contain; every other name cited below is present.
 
 The trim carries its own documentation repair, which no obligation reaches:
 obligation 1's clause is about a *ported* declaration's docstring, and the
@@ -194,12 +196,16 @@ arises: readings of a construction, backed by structure fields rather than by
 theorems (§ Stage 1: morphisms and the representation theorem, fact 4);
 the discrete analogues named in § Definitions: transcription or novel's
 `Status` cells, no one of which is an elaborated identification;
-and statements about ambient mathematics rather than about this development —
+and statements about ambient category theory or about mathlib's contents,
+which are about neither this development nor the literature it transcribes —
 § Stage 1: morphisms and the representation theorem, fact 2's appeal to Yoneda
 in any locally small category, § Motivation's first bullet on presheaves over
-the walking arrow, and § The rules and their relation to small induction
-recursion's aside that `y j₀` is terminal exactly when `j₀` is; none of the
-three is about this development.
+the walking arrow, § The rules and their relation to small induction
+recursion's aside that `y j₀` is terminal exactly when `j₀` is, § The setting
+is indexed induction-recursion, not induction-recursion's reading of a
+discrete fibration as a presheaf and its naming of the mathlib composite that
+obligation 6 builds from, and the same composite where obligation 6 repeats
+it.
 
 The prototype is not deliverable content. Each branch removes the part of it
 that branch ports, rather than the whole surviving until the last branch. W-a
@@ -226,7 +232,9 @@ W-b's allowlisted module. Whichever of W-d and W-e lands last removes the
 remainder
 together with this document, the `TODO.md` § In progress entry for this
 workstream, whose markdown link and `Geb/Internal/PresheafIRProto/` path both
-dangle once the prototype is gone, the two transient handoffs § Scope of this
+dangle once the prototype is gone — with the `## In progress` heading above
+it, that entry being its only child, and the heading's doctoc line — the two
+transient handoffs § Scope of this
 document names, any plan written for a branch of this workstream, the
 directory index
 `Geb/Internal/PresheafIRProto.lean`, `Geb/Internal.lean` — whose sole import is
@@ -262,11 +270,10 @@ that chain and deletes the layer — the slice-level morphism formula (`SliceHom
 demonstrations in `Functor.lean` (`arityPresheafHomAtUB`,
 `arityPresheafHomULifted`), and the small computation check
 `domHom_eq_pi_sigma_arityHom`. None is reachable from the code system. The
-worked example is not among them: obligation 4 ports it,
-`interp_deltaCodeVaries` being the only check that `interp_deltaCode`'s
-transports reduce at a closed instance. Within the domain-level
-warm-up, whose `DomHom`, `DomNatFamily` and
-`domHom_eq_pi_sigma_arityHom` the previous paragraph already places, the line
+worked example is not among them: obligation 4 ports it, and states there what
+it is for. Within the domain-level
+warm-up, whose `DomHom`, `DomNatFamily` and `domHomEquivNatFamily` the
+previous paragraph already places, the line
 falls thus: `idArityHom`, `natTransOfArityHom`,
 `postcompArityHom` and `map_symm_arityHom` are shared with the `PshHom` layer
 and are ported by obligation 1; `idElt`, `map_idElt`,
@@ -288,7 +295,7 @@ the correspondence is definitional rather than earned.
 | Rule | Small `IR` | Here | Status |
 | --- | --- | --- | --- |
 | `ι`, `σ` | generate the shape data: `ι` takes `o : O`, denoting `o' ↦ (o' = o)`; `σ` takes `S : Set` and a family `K : S → IR I O`, denoting a coproduct | absent as rules. The leaf takes a `PresheafPFunctor (el(D)) 𝔹` outright | `praCode`; `interp_praCode` folds it back unchanged |
-| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` in the same directions role, with functorial output-indexing; that each `fam j` is a discrete fibration is the reading the Status cell marks; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Unelaborated*, the notion being that source's and formalized nowhere here; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
+| `δ` | takes `B : Set` and a continuation `(B → I) → IR I O`, one map serving as both the directions' labelling and their decoding | takes a `BaseArity 𝕀 𝔹` in the same directions role, with functorial output-indexing; that each `fam j` is a discrete fibration is what the Status cell records as confirmed; one subcode over `el(decPresheaf …)`, the decodings summed | Confirmed that the arity datum is a presheaf on `I`, functorially in the output: `DomArity.presheaf` and `BaseArity.functor`. That this is [nLabParametricRightAdjoint]'s two-sided discrete fibration is *Unelaborated*, the notion being that source's and formalized nowhere here; see § The setting is indexed induction-recursion, not induction-recursion. `interp_deltaCode` |
 
 The principle governing `δ`'s generalization is the same one: replace equality
 by a morphism, `Hom(x, y)` being `x = y` in a discrete category.
@@ -357,9 +364,11 @@ terminal exactly when `j₀` is.) It is retained as the continuation of the
 Two facts recur across the confirmations and are stated once here rather than
 at each site. First, a total space costs one universe, a family of fibres
 indexed by the base being larger than either: `Interp`'s shape universe is
-`max u v` rather than `u`, and admitting the representables into the leaf is
-what costs it, `iotaPresheaf`'s shape type being a hom-family's total space at
-`max uJ vJ` where a bare output-object index sits at `uJ`. Open question 1
+`max u v` rather than `u`. *Inference, not elaborated*: that admitting the
+representables into the leaf is what costs it, `iotaPresheaf`'s shape type
+being a hom-family's total space at `max uJ vJ` where a bare output-object
+index sits at `uJ`, which is read off the two shape types and stated by no
+declaration. Open question 1
 records what a leaf restricted below the representables would save. Second,
 the boundary between the choice-free core and the
 `GebMeta.classicalAllowedModules` wrapper falls in one place — writing `⟶`
@@ -619,8 +628,10 @@ here is a total space `A` fibred by `q` (`SlicePFunctor.Shape` is the fibre of
 `q`), so a coproduct over the fibres of a discrete fibration is a re-fibring of
 the same total space rather than an enlargement: `sigmaPsh` leaves `A`
 untouched,
-and `Σ_{s ∈ S j} F.Shape ⟨j, s⟩` and `F.A` over `ElObj S` are the same total
-space. A coproduct indexed by a bare type rather than by the fibres of a
+and *Unelaborated*, the declaration that carried it having been the retired
+`elSliceEquiv`: that `Σ_{s ∈ S j} F.Shape ⟨j, s⟩` and `F.A` over `ElObj S` are
+the same total space. A coproduct indexed by a bare type rather than by the
+fibres of a
 fibration would enlarge `A`; no operation here takes one.
 
 `δ`'s continuation sits over a category of elements the arity determines, so
@@ -778,8 +789,9 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 ## Branches
 
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape binds one concern
-per branch. A fifth branch precedes them and carries no obligation: the
-prototype's own, which adds this document, retires the fifty-two declarations
+per branch. A fifth branch precedes them and carries no *unproved* obligation,
+only the writing of obligation 5's content: the prototype's own, which adds
+this document, retires the fifty-two declarations
 § Scope of this document lists, repairs the documentation that retirement
 breaks, and adds `praCodeOf` with `leftInverse_interp_praCodeOf` and
 `surjective_interp`. Its acceptance is that `Geb/Internal/PresheafIRProto/`
@@ -936,7 +948,12 @@ unproved.
    `elCategory_eqToHom_val`, `elCategory_id_val` and `elCategory_comp_val`. Only
    the first has an explicit call site; the other two fire inside the `σ` laws'
    `simp` calls, deleting them leaving three goals unsolved, so all seven
-   count. Weigh also whether
+   count. Weigh also whether `CategoryOfElements`' API removes the transport
+   obstructions the five `σ` laws work around, since those are artefacts of
+   presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
+   of the mathematics — *Unelaborated*, nothing here having measured that API
+   against them.
+
    The worked example does not go to `Geb/Mathlib/`. `ArityB`,
    `subsingleton_arityB`, `termPsh`, `arityVariesBase`,
    `arityVariesBase_dir_ext`, `isFunctorial_arityVariesBase`, `decUnit`,
@@ -947,17 +964,15 @@ unproved.
    that `interp_deltaCode`'s transports reduce at a closed instance once
    `not_hasBijectiveReindex_interp_deltaCodeVaries` goes with the bound, and
    `interp_deltaCode` itself stating the computation with those transports
-   written out. Open question 3 asks whether that example should be replaced by
-   one exercising `shapeRestr`, `reindex` and `reindexCompat` together, and
-   open question 8 whether this obligation should port the code type and the
-   interpretation at all. Shipping them in an upstream-eligible subtree with
-   no library
+   written out. Shipping them in an upstream-eligible subtree with no library
    consumer would be cost without return under
-   [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
-   `CategoryOfElements`' API removes the transport obstructions the five `σ`
-   laws work around, since those are artefacts of
-   presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
-   of the mathematics. Docstrings port under obligation 1's clause. The trim
+   [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost. Open question 3
+   asks whether that example should be replaced by one exercising
+   `shapeRestr`, `reindex` and `reindexCompat` together, and open question 8
+   whether this obligation should port the code type and the interpretation at
+   all.
+
+   Docstrings port under obligation 1's clause. The trim
    has already repaired the
    prototype's copies, per § Scope of this document, so for these the clause
    bites only where the ported form differs — a docstring naming a prototype
@@ -1013,9 +1028,9 @@ unproved.
    `Sigma` and so carrying structure eta; `surjective_interp` is
    `LeftInverse.surjective` of it, an existential and so not itself an
    equality. Obligation 4 ports all three.
-6. **The collapse** (W-e). The equivalence `PSh(𝕀)/D ≃ PSh(el(D))`, which the
-   § The setting is indexed induction-recursion, not induction-recursion
-   section marks as an inference, and on which the input-side design, the
+6. **The collapse** (W-e). The equivalence `PSh(𝕀)/D ≃ PSh(el(D))`, which
+   § The setting is indexed induction-recursion, not induction-recursion marks
+   *Unelaborated*, and on which the input-side design, the
    no-mutuality argument of § Why no inductive-inductive definition is needed,
    and open question 2 all rest. In mathlib it is the composite of
    `overEquivPresheafCostructuredArrow` and
@@ -1118,15 +1133,14 @@ To be answered by the work rather than before it.
    all. `delta` and the semantic operations carry the content and are wanted
    upstream on their own merits. The interpretation is surjective on objects
    by construction, and § The rules and their relation to small induction
-   recursion records as inference — not as established —
+   recursion marks *Unelaborated* — not established —
    that `Code` and `interp` therefore record derivations and nothing else;
    open question 6 leaves open whether they record anything a morphism theory
    can use. Obligation 4 lists them; whether that
    half meets § Code is cost is not settled by this document. Deferring the
-   code type to W-d is not free: `deltaCodeVaries` is a `Code`
-   term, `interp_deltaCodeVaries` is a statement about its interpretation and
-   the only check that `interp_deltaCode`'s transports reduce at a closed
-   instance, `praCodeOf` and its two theorems are statements about `interp`,
+   code type to W-d has costs of its own: `deltaCodeVaries` is a `Code`
+   term, `interp_deltaCodeVaries` is the closed-instance check obligation 4
+   describes, `praCodeOf` and its two theorems are statements about `interp`,
    and
    W-b's acceptance cell names the code type outright, so the deferral would
    also cut obligation 4 back to its semantic-operation results and restate
@@ -1189,7 +1203,9 @@ the proceedings' Example 1 onward shifts, because the preprint's counter
 absorbs the examples. Across every numbered result this repository cites or a
 branch of this workstream will cite — Corollary 4 being cited only by the
 transient handoff, Theorem 4 only by `TODO.md` § Theorems 2 and 4 for `IR`
-codes, and Definitions 6 and 7 and Theorem 1 only prospectively —
+codes, and Definition 6 and Theorem 1 only prospectively, and Definition 7
+only by the
+transient prototype —
 the proceedings' Definition 2, Definition 3, Definition 5, Definition 6,
 Definition 7, Definition 8, Example 1, Lemma 1, Lemma 2, Lemma 3, Lemma 4,
 Theorem 1, Theorem 2, Theorem 3, Theorem 4, Corollary 2 and Corollary 4 are
