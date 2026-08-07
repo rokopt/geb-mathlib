@@ -43,42 +43,51 @@ what a generated fragment reaches, and this design has no generated fragment to
 be complete over; the vocabulary that stated one is removed rather than carried
 unconsumed, per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost. The
 cost is recorded where it falls: § Why `δ`'s arity varies over the output
-object marks as unelaborated the claim that an output-varying arity is
+object marks *Unelaborated* the claim that an output-varying arity is
 unreachable by a constant-arity rule, which no declaration now establishes.
 
-The declarations removed with it, listed in full so that the retained set is
-determined by this document rather than by inspection:
+The declarations removed with it, named individually so that the retained set
+is determined by this document rather than by inspection. Fifty-two in all:
+forty-one from `Codes.lean`, ten from `Basic.lean`, one from `Functor.lean`.
 
-- from `Codes.lean` — `HasBijectiveReindex` with `hasBijectiveReindex_of_isEmpty`
-  and `not_hasBijectiveReindex_of_isEmpty`, its seven closure cases and its
-  three negative theorems; `coprodData` and `coprod`; `deltaRec`;
-  `unitPshData`, `unitPsh`, `unitPshLiftData` and `unitPshLift`;
-  `arityVariesShapeArity`, `isFunctorial_arityVariesShapeArity`,
-  `adjoinArityVarying` and `adjoinArityVarying_source_empty`; `praWitnessLift`
-  with `praWitnessLiftShapeVal`, `praWitnessLiftShapeVal_naturality`,
-  `praWitnessLiftShapeEquiv`, `praWitnessLiftDirEquiv` and
-  `praWitnessLiftDirEquiv_restr`; `elSliceEquiv` and `elSliceEquiv_fst`;
-  `ShapeArity.const` and `ShapeArity.isFunctorial_const`; and
-  `DomArity.ofPresheaf` with `isFunctorial_ofPresheaf`, `dirEquivOfPresheaf`,
-  `dirEquivOfPresheaf_restr` and `sigmaDirEquivCarrier`;
-- from `Basic.lean` — `iotaConstData`, `iotaConst` and
-  `subsingleton_iotaConstDirection`; `iotaDiscreteShapeEquiv`; and
-  `arityVariesData`, `subsingleton_arityVariesDirection`, `arityVaries`,
-  `arityVariesData_B_zero`, `arityVariesData_B_one` and
-  `arityVariesShapeEquiv`;
-- from `Functor.lean` — `iotaPresheafData_A_eq_iotaConstData_yoneda`, whose
-  statement names `iotaConstData`. It is the sixth of that module's six
-  declarations; the five that remain are `arityHomEquivNatTrans`,
-  `objEquivSigmaHom`, `arityPresheafHomAtUB`, `arityPresheafHomULifted` and
-  `BaseArity.functor`, and every later count of that module in this document
-  is five.
+| Family | Declarations | Removed because |
+| --- | --- | --- |
+| The bound (`Codes.lean`) | `HasBijectiveReindex`; `hasBijectiveReindex_of_isEmpty`, `not_hasBijectiveReindex_of_isEmpty`, `hasBijectiveReindex_iotaPresheaf`, `hasBijectiveReindex_iotaConst`, `hasBijectiveReindex_coprod`, `hasBijectiveReindex_adjoinArity`, `hasBijectiveReindex_adjoinArityConst`, `not_hasBijectiveReindex_arityVaries`, `not_hasBijectiveReindex_adjoinArityVarying`, `hasBijectiveReindex_unitPsh`, `hasBijectiveReindex_sigmaPsh`, `hasBijectiveReindex_deltaRec`, `not_hasBijectiveReindex_deltaVaries`, `not_hasBijectiveReindex_interp_deltaCodeVaries` — fifteen, being the definition and its fourteen theorems | the bound itself |
+| The type-indexed coproduct (`Codes.lean`) | `coprodData`, `coprod` | its only consumer is `deltaRec` |
+| The decoding-indexed `δ` (`Codes.lean`) | `deltaRec` | superseded by `delta`, which keeps the output-varying arity where `deltaRec` does not; it belonged to the bound, not to the rules |
+| The constant arity (`Codes.lean`) | `ShapeArity.const`, `ShapeArity.isFunctorial_const` | their only consumers are `deltaRec` and `hasBijectiveReindex_adjoinArityConst` |
+| The unit (`Codes.lean`) | `unitPshData`, `unitPsh`, `unitPshLiftData`, `unitPshLift` | a generator of the bound's fragment and the foot of `praWitnessLift`; no rule names a unit, `CodeShape` and `codeAlgOn` referencing none |
+| The varying-arity `δ` (`Codes.lean`) | `arityVariesShapeArity`, `isFunctorial_arityVariesShapeArity`, `adjoinArityVarying`, `adjoinArityVarying_source_empty` | witnesses of the bound |
+| The p.r.a. chain (`Codes.lean`) | `praWitnessLift`, `praWitnessLiftShapeVal`, `praWitnessLiftShapeVal_naturality`, `praWitnessLiftShapeEquiv`, `praWitnessLiftDirEquiv`, `praWitnessLiftDirEquiv_restr` | it exhibits the p.r.a. formula's data as reached by the semantic operations, which is the statement a restricted leaf would need and an unrestricted one does not |
+| The slice collapse (`Codes.lean`) | `elSliceEquiv`, `elSliceEquiv_fst` | they measure what a `σ`-over-`ι` leaf reaches |
+| The arity round trips (`Codes.lean`) | `DomArity.ofPresheaf`, `isFunctorial_ofPresheaf`, `dirEquivOfPresheaf`, `dirEquivOfPresheaf_restr`, `sigmaDirEquivCarrier` | the presheaf-to-arity direction and the round trips; no operation consumes them |
+| The constant functor at a presheaf (`Basic.lean`) | `iotaConstData`, `subsingleton_iotaConstDirection`, `iotaConst` | a generator of the bound's fragment |
+| The discrete degeneracy (`Basic.lean`) | `iotaDiscreteShapeEquiv` | it measures `ι` as a generator |
+| The `arityVaries` fixture (`Basic.lean`) | `arityVariesData`, `subsingleton_arityVariesDirection`, `arityVaries`, `arityVariesData_B_zero`, `arityVariesData_B_one`, `arityVariesShapeEquiv` | the functor the bound was stated about |
+| The shape-type equality (`Functor.lean`) | `iotaPresheafData_A_eq_iotaConstData_yoneda` | its statement names `iotaConstData` |
+
+`Functor.lean` has six declarations; the five that remain are
+`arityHomEquivNatTrans`, `objEquivSigmaHom`, `arityPresheafHomAtUB`,
+`arityPresheafHomULifted` and `BaseArity.functor`, and every later count of
+that module in this document is five.
 
 Four declarations in those neighbourhoods are retained, each having a consumer
-outside the removed set: `ArityB` and `subsingleton_arityB`, which
-`arityVariesBase` uses for its fibres; `iotaPresheaf` with `iotaPresheafData`
-and `subsingleton_iotaDirection`, which the worked example takes as its
-continuation; `isFunctorial_of_subsingletonDirection`, whose remaining consumer
-is `iotaPresheaf` alone; and `DomArity.presheaf`, which `famPresheaf` uses.
+outside the removed set: `ArityB`, which `arityVariesBase` uses for its fibres,
+with `subsingleton_arityB`, whose surviving consumer is
+`arityVariesBase_dir_ext` and is reached by instance search rather than by
+name, so no grep finds it; `iotaPresheaf` with `iotaPresheafData` and
+`subsingleton_iotaDirection`, which the worked example takes as its
+continuation; `isFunctorial_of_subsingletonDirection`, whose one remaining
+consumer is `iotaPresheaf`; and `DomArity.presheaf`, which `famPresheaf` uses.
+
+Removing exactly these empties five `section` wrappers — `Degeneracy` and
+`IotaConst` in `Basic.lean`, `Coprod`, `Incompleteness` and `Closure` in
+`Codes.lean`. Each wrapper goes with its contents, together with the `variable`
+line it scopes, which `docs/rules/lean-coding.md` § Structure and typeclass
+patterns requires be removed once unused. `Reindex` in `Basic.lean` retains
+`ArityB` and `subsingleton_arityB`, and `VaryingWitness` and `FusedWitness` in
+`Codes.lean` retain the worked example; those three are renamed for what they
+now hold, their present names being vocabulary of the bound.
 
 `ShapeArity.const` is the one removal that costs an exposition rather than only
 a proof. It was the prototype's only realization of an arity constant over the
@@ -87,6 +96,11 @@ output object — Section 6's `Set/I` arity — so after its removal the contras
 on the constant side. That is consistent with the *Unelaborated* marking there:
 with nothing to compare against, there is nothing the comparison could have
 been proved about.
+
+This revision also adds three declarations to the prototype — `praCodeOf`,
+`leftInverse_interp_praCodeOf` and `surjective_interp`, obligation 5's content
+in named form. They are the only prototype declarations this document names
+that it does not already contain; every other name cited below is present.
 
 The prototype at `Geb/Internal/PresheafIRProto/` is the source this document
 transcribes. It compiles, is linted, and is audited by
@@ -99,13 +113,17 @@ carries no such authority. The two transient handoffs
 state and describe rules, obligations and branches it no longer has; where they
 disagree with it, this document governs, and they are removed with it.
 Claims marked *Inference, not elaborated* or
-*Unelaborated* are not elaborated there. Every other claim names the declaration
+*Unelaborated* are not elaborated there; the first follows from what is
+elaborated without any declaration stating it, the second is asserted with
+neither a declaration nor a source. Every other claim names the declaration
 that establishes it, with three classes of exception, each flagged where it
 arises: readings of a construction, backed by structure fields rather than by
-theorems (§ Stage 1, facts 2 and 4); the discrete analogues named in §
-Definitions' `Status` cells, no one of which is an elaborated identification;
-and statements about ambient mathematics rather than about this development (§
-Stage 1, fact 2's appeal to Yoneda in any locally small category).
+theorems (§ Stage 1: morphisms and the representation theorem, facts 2 and 4);
+the discrete analogues named in § Definitions: transcription or novel's
+`Status` cells, no one of which is an elaborated identification;
+and statements about ambient mathematics rather than about this development
+(§ Stage 1: morphisms and the representation theorem, fact 2's appeal to
+Yoneda in any locally small category).
 
 The prototype is not deliverable content. Each branch removes the part of it
 that branch ports, rather than the whole surviving until the last branch. W-a
@@ -329,7 +347,7 @@ Settled up to the category structure and the identification recorded as
 obligations 2 and 3. `Geb/Internal/PresheafIRProto/Basic.lean` carries it,
 choice-free; `Functor.lean` carries what depends on `Classical.choice` through
 `CategoryTheory.Functor.category` — `BaseArity.functor` among them, per
-§ Stage 2 —: `arityHomEquivNatTrans` and
+§ Stage 2: the code system —: `arityHomEquivNatTrans` and
 `objEquivSigmaHom`, which write `⟶` between objects of a presheaf category;
 and the two universe-formability demonstrations `arityPresheafHomAtUB` and
 `arityPresheafHomULifted`, which do the same.
@@ -621,15 +639,16 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | The action of a `Hom`, and its naturality | Novel |
 | The representation theorem (`pshHomEquivNatFamily`) | Novel at this level. Its discrete analogue is Theorem 1 of [HancockMcBrideGhaniMalatestaAltenkirch2013] (which that paper states with a bracketed reference to Theorem 2.12 of the 2010 arXiv version of [GambinoKock2013]; the bracket number differs between the proceedings and the preprint, and whether the numbering 2.12 survives into the 2013 journal article is unchecked), together with Definition 7 for the indexed-container form. Theorem 3 of the same paper is the code-level statement, present as `IR.interpHomEquiv`, and is the analogue of proof obligation 7, not of this |
 | Identity, composition, and the category structure on `Hom` | Novel |
-| The `δ` code rule | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves: its sections `(p : P) → D (i p)` become `PshMor`, and the family of subcodes over them becomes one subcode over their category of elements. The further generalization of the arity from an object of `Set/I` to one varying over the output object is novel; § Why `δ`'s arity varies over the output object records that no declaration establishes the separation from the constant-arity rule, and marks the claim unelaborated |
+| The `δ` code rule | Transcription of Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013], generalized from families to presheaves: its sections `(p : P) → D (i p)` become `PshMor`, and the family of subcodes over them becomes one subcode over their category of elements. The further generalization of the arity from an object of `Set/I` to one varying over the output object is novel; § Why `δ`'s arity varies over the output object records that no declaration establishes the separation from the constant-arity rule, and marks the claim *Unelaborated* |
 | The leaf code rule `praCode` | Novel. It has no small-`IR` counterpart, `IR I O` having no primitive notion of the functors it denotes to inject; the closest statement in [HancockMcBrideGhaniMalatestaAltenkirch2013] is its Lemma 1, which constructs by hand what `praCode` takes as data |
-| `iotaPresheaf` — the constant functor at a representable | Transcription of `ι : O → IR I O` as a semantic operation, generalized by replacing equality with a morphism: `ι`'s interpretation sends `o'` to `o' = o`, and `iotaPresheaf j₀`'s shape type over `j'` is `Hom(j', j₀)`; § The rules marks the presheaf-level reading as inference. It is not a code rule; it is retained as the continuation of the `deltaVaries` worked example. No declaration identifies it with the discrete-base `ι` (`IR.toSlicePFunctorIota`, in a module the prototype does not import), the two being at different universe instantiations |
+| `iotaPresheaf` — the constant functor at a representable | Transcription of `ι : O → IR I O` as a semantic operation, generalized by replacing equality with a morphism: `ι`'s interpretation sends `o'` to `o' = o`, and `iotaPresheaf j₀`'s shape type over `j'` is `Hom(j', j₀)`; § The rules and their relation to small induction recursion marks the presheaf-level reading as inference. It is not a code rule; it is retained as the continuation of the `deltaVaries` worked example. No declaration identifies it with the discrete-base `ι` (`IR.toSlicePFunctorIota`, in a module the prototype does not import), the two being at different universe instantiations |
 | Indexing the code type by a base category, with `δ` replacing it by a category of elements | Novel |
 | `adjoinArity`, adjoining an arity | Novel at this level; the discrete analogue is `SliceDomPFunctor.prodSlice` against a representable |
 | `sigmaPsh`, the base change along `ElObj S → J` | Transcription of Section 6's `σ` as a semantic operation, generalized from a family over a set to a base change along a category of elements; it is not a code rule. Its discrete analogue in this repository is not identified: over a discrete base the category of elements is discrete, so the base change is expected to collapse into `SlicePFunctor.coprod`, but open question 4 leaves that degeneration open and nothing establishes it |
 | `DomArity` — a presheaf on `I`, unbundled | Novel presentation of a standard object, chosen so its directions plug into a `PresheafPFunctorData`'s without transport |
 | `ShapeArity` — the arity a `δ` adjoins, varying over the shape presheaf | Novel; it carries a family over `F.A` with a reindexing along `shapeRestr`. *Inference, not elaborated*: that this is the unbundled data of a functor `el(T₁) ⥤ (Iᵒᵖ ⥤ Type)`, there being no `ShapeArity.functor` to `BaseArity.functor`'s pattern |
 | `BaseArity`, `BaseArity.pullback` — the arity indexed by output objects, and its pullback along `q` | Novel |
+| `DomArity.presheaf`, `BaseArity.famPresheaf`, `BaseArity.reindexHom`, `BaseArity.functor` — the fibrewise form of an arity, the presheaf it gives at each output object, the morphism each output morphism induces, and the four bundled as a functor `J ⥤ (Iᵒᵖ ⥤ Type uB)` | Novel presentations of a standard identification. The content is that a `DomArity` is a discrete fibration over `I`, hence a presheaf on it, and that `BaseArity` is that functorially in the output — the arity side of [nLabParametricRightAdjoint]'s two-sided discrete fibration, which § The setting is indexed induction-recursion, not induction-recursion marks as inference. `functor` writes `⥤` into a functor category and so is in `Functor.lean` |
 | `ElObj`, `elCategory` — the category of elements as a base category | Transcription of the category of elements, [MacLaneMoerdijk1992] Chapter I; *Inference, not elaborated*: that it agrees with mathlib's `S.Elementsᵒᵖ`, which nothing here compares it to. It is written out rather than reused to avoid `Opposite` transport, and obligation 4 revisits the choice |
 | `CodeShape`, `CodeDir`, `CodeNext`, `codePFunctor`, `Code` | Novel. Indexing by a base category, with `δ` replacing it by a category of elements, has no counterpart in the cited literature; nor does a leaf that injects the denoted functors, which is what `CodeShape`'s first summand is |
 | `codeAlgOn`, `codeAlg`, `interp` — the interpretation | Novel at this level; the discrete analogue is `IR.interpObj` |
@@ -654,7 +673,7 @@ the case where the gap is widest: nothing identifies it with the discrete-base
 | `fibreArity` — the arity a decoding adjoins | Novel |
 | `decPresheaf` — the decodings of an output-varying arity, as a presheaf on the output base | Novel |
 | `decArity` — that arity, indexed by the elements of `decPresheaf` | Novel |
-| `delta` — the `δ` carrying both features. Both are by construction: the arity it takes is a `BaseArity`, and the continuation is summed over `decPresheaf`. `deltaVaries` exhibits an output-varying instance, and no declaration states that the constant-arity case fails to reach it | Novel; it is Section 6's `δ` rule with the arity generalized over the output object, § Why `δ`'s arity varies over the output object marking the separation from the constant-arity rule unelaborated |
+| `delta` — the `δ` carrying both features. Both are by construction: the arity it takes is a `BaseArity`, and the continuation is summed over `decPresheaf`. `deltaVaries` exhibits an output-varying instance, and no declaration states that the constant-arity case fails to reach it | Novel; it is Section 6's `δ` rule with the arity generalized over the output object, § Why `δ`'s arity varies over the output object marking the separation from the constant-arity rule *Unelaborated* |
 | `praCodeOf`, `leftInverse_interp_praCodeOf`, `surjective_interp` — the leaf as a section of the interpretation | Novel. The split-epimorphism form of obligation 5's content: `praCodeOf` is `praCode` uncurried over `Interp`, and the two theorems state that `interp` retracts onto it. The first holds by `rfl`, `Interp` being a `Sigma` and so carrying structure eta; the second is `LeftInverse.surjective` of it |
 
 ## Branches
@@ -687,8 +706,8 @@ a module a branch adds to that allowlist ("Feature branches append their own
 wrapper module names together with their test parallels"). It is practice
 rather than a requirement: the prototype's own allowlisted module has no test
 parallel. W-a, W-b and W-e each add
-one such module — W-a's carrying obligation 1's `functor`-form corollary and
-obligation 3's identification together, as its acceptance cell says, and W-b's
+one such module — W-a's carrying obligation 1's `functor`-form corollary, the
+two bundled restatements and obligation 3's identification together, and W-b's
 carrying `BaseArity.functor`, which writes `⥤` into a functor category — so
 each adds one allowlist pair.
 
@@ -782,7 +801,9 @@ unproved.
    `arityVariesBase_dir_ext`, `isFunctorial_arityVariesBase`, `decUnit`,
    `decVariesElt`, `deltaVaries`, `deltaCodeVaries` and
    `interp_deltaCodeVaries`, the only check that `interp_deltaCode`'s
-   transports reduce at a closed instance, `interp_deltaCode` itself stating
+   transports reduce at a closed instance once
+   `not_hasBijectiveReindex_interp_deltaCodeVaries` goes with the bound,
+   `interp_deltaCode` itself stating
    the computation with those transports written out; the
    five `σ` laws
    (`sigmaPsh_shapeRestr_id`, `_shapeRestr_comp`, `_reindex_naturality`,
@@ -809,12 +830,22 @@ unproved.
    laws work around, since those are artefacts of
    presenting the shape presheaf as a subtype of a `ULift`ed sigma rather than
    of the mathematics. Docstrings port under obligation 1's clause. The
-   declarations this bears on are those whose docstrings name the retired set:
-   `iotaPresheaf`, `sigmaPsh`, `delta`, `arityVariesBase`, `deltaVaries` and
-   `deltaCodeVaries`, together with both module docstrings, whose
-   `## Main definitions`, `## Main statements` and `## Implementation notes`
-   sections enumerate it.
-5. **Completeness.** *Discharged; no branch carries it.* Every
+   declaration docstrings this bears on are `iotaPresheaf`, `PshMor`,
+   `sigmaPsh`, `delta`, `arityVariesBase` and `deltaCodeVaries`; `deltaVaries`
+   is not among them, the docstring naming the bound there being
+   `not_hasBijectiveReindex_deltaVaries`'s, which is itself removed. Three
+   `/-! … -/` section docstrings go the same way: `Basic.lean`'s `Reindex`,
+   whose argument is the removed material entire, and `Codes.lean`'s
+   `VaryingWitness` and `FusedWitness`, the second of which asserts in the
+   strong form the claim § Why `δ`'s arity varies over the output object marks
+   *Unelaborated*. All three module docstrings are affected, not two:
+   `Basic.lean`'s `## Main definitions` and `## Main statements`, `Codes.lean`'s
+   those two and its `## Implementation notes` — `Basic.lean` has no such
+   section — and `Functor.lean`'s summary count and its `## Main statements`,
+   whose only bullet is the retired shape-type equality, so that section is
+   deleted rather than emptied, `docs/rules/lean-coding.md` § Documentation
+   requiring a vacuous section be omitted and never left as a placeholder.
+5. **Completeness.** Discharged; no branch carries it. Every
    `PresheafPFunctor` over the interpretation's own input base — `interp` lands
    in `Σ 𝔹, PresheafPFunctor (el(D)) 𝔹`, so the question is about functors
    out of `el(D)` at the universes `CodeShape` pins, not about
@@ -937,7 +968,8 @@ To be answered by the work rather than before it.
 8. Whether obligation 4 should port the code type and the interpretation at
    all. `delta` and the semantic operations carry the content and are wanted
    upstream on their own merits. The interpretation is surjective on objects
-   by construction, and § The rules records as inference — not as established —
+   by construction, and § The rules and their relation to small induction
+   recursion records as inference — not as established —
    that `Code` and `interp` therefore record derivations and nothing else;
    open question 6 leaves open whether they record anything a morphism theory
    can use. Obligation 4 lists them; whether that
