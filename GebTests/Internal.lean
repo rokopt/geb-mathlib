@@ -7,6 +7,9 @@ module -- shake: keep-all
 
 import GebTests.Internal.AxiomLinter
 import GebTests.Internal.AxiomLinterClassicalFixture
+import GebTests.Internal.CanonicalSExpr
+import GebTests.Internal.ConcreteSyntax
+import GebTests.Internal.ReadableSExpr
 
 /-!
 # GebTests.Internal — tests for downstream-only content

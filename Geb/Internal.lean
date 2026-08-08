@@ -5,8 +5,10 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Internal.PresheafIRProto
+public import Geb.Internal.CanonicalSExpr
+public import Geb.Internal.ConcreteSyntax
 
+public import Geb.Internal.ReadableSExpr
 /-!
 # Geb.Internal — downstream-only content
 
