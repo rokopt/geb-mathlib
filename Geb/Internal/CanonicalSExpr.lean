@@ -246,37 +246,6 @@ theorem exists_print_eq_cons {k : Nat} (r : Rose k) :
 
 /-! ## Parser -/
 
-/-- Read children until the closing parenthesis, delegating each to
-`childParse`. The `Nat` argument bounds the loop: it recurses on the
-remainder `childParse` returns, which is not a form Lean's structural
-recursion accepts. The loop consumes one unit per child and one on the
-closing parenthesis, so a node of `n` children needs `n + 1`. -/
-def parseChildren {k : Nat}
-    (childParse : List Char → Option (Rose k × List Char)) :
-    Nat → List Char → Option (List (Rose k) × List Char) :=
-  Nat.rec (motive := fun _ ↦ List Char → Option (List (Rose k) × List Char))
-    (fun _ ↦ none)
-    fun _ ih cs ↦
-      match cs with
-      | [] => none
-      | c :: cs' =>
-        if c = ')' then some ([], cs')
-        else (childParse (c :: cs')).bind fun p ↦
-          (ih p.2).map fun q ↦ (p.1 :: q.1, q.2)
-
-@[simp] theorem parseChildren_succ_close {k : Nat}
-    (childParse : List Char → Option (Rose k × List Char)) (f : Nat)
-    (rest : List Char) :
-    parseChildren childParse (f + 1) (')' :: rest) = some ([], rest) := rfl
-
-theorem parseChildren_succ_cons {k : Nat}
-    (childParse : List Char → Option (Rose k × List Char)) (f : Nat)
-    (c : Char) (cs : List Char) (h : c ≠ ')') :
-    parseChildren childParse (f + 1) (c :: cs)
-      = (childParse (c :: cs)).bind fun p ↦
-          (parseChildren childParse f p.2).map fun q ↦ (p.1 :: q.1, q.2) :=
-  if_neg h
-
 /-- One layer of the recursive descent: read a single s-expression,
 delegating each child to `childParse` and the loop over them to
 `parseChildren` with `loopFuel`. -/
