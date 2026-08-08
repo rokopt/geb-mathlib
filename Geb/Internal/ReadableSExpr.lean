@@ -318,5 +318,52 @@ theorem parseStep_other (k : Nat)
           else none
         | none => none := if_neg hc
 
+/-! ## The retraction law -/
+
+/-- The child loop reads back a printed child sequence, given a child
+parser that reads back each child from its own spelling and returns the
+stripped remainder, and one unit of fuel per child plus one for the
+closing parenthesis. The loop's input is stripped, as every call site's
+is; the remainder it returns is not, since `parseStep` strips what it
+returns. -/
+theorem parseChildren_print {k : Nat}
+    (childParse : List Char → Option (Rose k × List Char)) :
+    ∀ (ts : List (Rose k)) (fuel : Nat) (rest : List Char),
+      (∀ t ∈ ts, ∀ r : List Char,
+        (∀ c cs, r = c :: cs → Csexp.charDigit c = none) →
+        childParse (print t ++ r) = some (t, skipWs r)) →
+      ts.length < fuel →
+      Rose.parseChildren childParse fuel
+          (skipWs ((ts.map (fun t ↦ ' ' :: print t)).flatten ++ ')' :: rest))
+        = some (ts, rest) :=
+  List.rec (motive := fun ts ↦ ∀ (fuel : Nat) (rest : List Char),
+      (∀ t ∈ ts, ∀ r : List Char,
+        (∀ c cs, r = c :: cs → Csexp.charDigit c = none) →
+        childParse (print t ++ r) = some (t, skipWs r)) →
+      ts.length < fuel →
+      Rose.parseChildren childParse fuel
+          (skipWs ((ts.map (fun t ↦ ' ' :: print t)).flatten ++ ')' :: rest))
+        = some (ts, rest))
+    (fun fuel rest _ hfuel ↦ by
+      obtain ⟨g, rfl⟩ : ∃ g, fuel = g + 1 := ⟨fuel - 1, by omega⟩
+      rw [List.map_nil, List.flatten_nil, List.nil_append, skipWs_cons,
+        if_neg (by simp [close_not_ws]), Rose.parseChildren_succ_close])
+    (fun t ts ih fuel rest hchild hfuel ↦ by
+      obtain ⟨g, rfl⟩ : ∃ g, fuel = g + 1 := ⟨fuel - 1, by omega⟩
+      obtain ⟨c, cs, hc, hd⟩ := print_head t
+      have hlt : ts.length < g := by simp at hfuel; omega
+      have hne : c ≠ ')' := by
+        rcases hd with rfl | hd
+        · exact open_ne_close
+        · exact digit_not_close hd
+      have hcons : ∀ u : List Char, print t ++ u = c :: (cs ++ u) := fun u ↦ by
+        rw [hc, List.cons_append]
+      rw [List.map_cons, List.flatten_cons, List.append_assoc, List.cons_append,
+        skipWs_cons, if_pos (by simp [space_is_ws]), skipWs_print_append, hcons,
+        Rose.parseChildren_succ_cons _ _ _ _ hne, ← hcons,
+        hchild t (by simp) _ (block_append_head_not_digit ts rest),
+        Option.bind_some, ih g rest (fun x hx ↦ hchild x (by simp [hx])) hlt,
+        Option.map_some])
+
 end Rsexp
 end Geb
