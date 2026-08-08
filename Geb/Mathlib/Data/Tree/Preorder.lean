@@ -35,6 +35,7 @@ direction a single right-to-left pass carrying a counter can scan.
   zero.
 * `BinTree.ok` — every node bit is read at depth at least two.
 * `BinTree.Valid` — the two conditions together.
+* `DecidablePred BinTree.Valid` — the instance deciding it.
 
 ## Main statements
 
@@ -166,6 +167,11 @@ and `1 - 1` is exact, yet fails `ok`. -/
 /-- A bitstring spells a tree: `ok` holds of it, and it leaves a single
 tree on the stack. The tree is unique, by `print_injective`. -/
 @[expose] def Valid (w : List Bool) : Prop := ok w = true ∧ depth w = 1
+
+/-- `Valid` is a conjunction of two decidable equations, so membership is
+decidable. Instance search does not unfold the `def`, so the instance is
+supplied rather than inferred. -/
+instance : DecidablePred Valid := fun _ ↦ inferInstanceAs (Decidable (_ ∧ _))
 
 /-- A spelling's length is the tree's node count, so the input length is
 fuel enough for `parseAux` to read anything `print` emits. -/

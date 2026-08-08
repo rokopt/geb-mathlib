@@ -115,9 +115,11 @@ import-direction rules above are enforced by
   `valid_iff_exists_print` characterizes the encoding's image, and is
   what the Bellantoni-Cook recognizer's correctness is stated against,
   and `valid_iff_isSome_parse` reads that characterization as a decision
-  procedure, and `depth_le_length` bounds the stack depth by the word
-  length. Cites mathlib's `DyckWord` as the adjacent bijection it does
-  not reuse. Depends on `Geb.Mathlib.Data.Tree.Binary`.
+  procedure, `depth_le_length` bounds the stack depth by the word
+  length, and a `DecidablePred Valid` instance lets callers write an
+  `if BinTree.Valid w then … else …`. Cites mathlib's `DyckWord` as the
+  adjacent bijection it does not reuse. Depends on
+  `Geb.Mathlib.Data.Tree.Binary`.
 - `Geb/Mathlib/Data/PFunctor/Univariate/` — the categorical reading of
   mathlib's univariate `PFunctor`. `Functor.lean` packages the
   interpretation as `PFunctor.functor : Type v ⥤ Type (max v uA uB)`,
