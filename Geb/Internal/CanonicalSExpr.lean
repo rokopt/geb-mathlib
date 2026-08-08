@@ -43,8 +43,10 @@ differently.
   `Rose.print` its rendering and `Ast.printViaRose` its composite with
   the rose bijection.
 * `Rose.parse`, `Ast.parseViaRose` — the parsers matching `Rose.print`
-  and `Ast.printViaRose`, built from `Rose.parseChildren`, the bounded
-  loop over a node's children.
+  and `Ast.printViaRose`, built from `Geb.Rose.parseChildren`, the
+  bounded loop over a node's children that
+  `Geb.Internal.ConcreteSyntax` supplies to every spelling closing a
+  child list with `')'`.
 
 ## Main statements
 
@@ -66,7 +68,9 @@ from `Csexp.digitChar` — so `Csexp.print_eq_render_toCSexp` states
 conformance for the trees at hand. An atom type over octets would
 discharge the condition outright.
 
-A rose node's arity is unbounded, so `Rose.parseChildren` reads until the
+A rose node's arity is unbounded, so `Geb.Rose.parseChildren` — shared,
+and declared in `Geb.Internal.ConcreteSyntax` for that reason — reads
+until the
 closing parenthesis where `Geb.Csexp.parseStep` reads exactly two at a
 fork and none at a leaf. Two consequences follow. First, the loop needs
 a recursion bound, and it is `Rose.parseAux`'s own `Nat`, used at each

@@ -44,8 +44,9 @@ import-direction rules above are enforced by
   layer for the Geb abstract syntax tree: the round-trip laws, the
   annotation model, the content-addressing specification, the
   format-by-format evaluation, and the staging.
-  `Geb/Internal/ConcreteSyntax.lean` and
-  `Geb/Internal/CanonicalSExpr.lean` implement its first stage.
+  `Geb/Internal/ConcreteSyntax.lean`,
+  `Geb/Internal/CanonicalSExpr.lean` and
+  `Geb/Internal/ReadableSExpr.lean` implement its first stage.
 
 ## Implemented content
 
@@ -875,7 +876,10 @@ import-direction rules above are enforced by
   children are consumed as a snoclist. `Rose.ofList` builds a node from
   the list of its children, the constructor a parser of variable-arity
   nodes needs, and `Rose.ofList_ofFn` is the transport back to the
-  `Fin n`-indexed tuple.
+  `Fin n`-indexed tuple. `Rose.parseChildren` is the bounded loop
+  reading a node's children up to the closing parenthesis, shared by
+  every spelling of the rose presentation that closes a child list with
+  `')'`.
   `Retraction`, `format_idem` and
   `print_injective` state the law a concrete syntax must satisfy and
   derive formatter idempotence and printer injectivity from it once for
@@ -885,7 +889,7 @@ import-direction rules above are enforced by
   `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
   corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
   `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
-  depending on `Classical.choice`. Of the module's 52 theorems, 11
+  depending on `Classical.choice`. Of the module's 54 theorems, 13
   depend on no axioms, 8 on `propext` alone, 8 on `Quot.sound` alone,
   and the remaining 25 on `propext` and `Quot.sound`. No declaration
   depends on `Classical.choice`.
@@ -908,11 +912,33 @@ import-direction rules above are enforced by
   corollaries and `Ast.parseViaRose`/`Ast.parseViaRose_printViaRose` the
   same retraction transported across the rose bijection to `Ast k`. What
   distinguishes its parser from the implemented one is that a rose
-  node's arity is unbounded: `Rose.parseChildren` is the bounded loop
-  reading a node's children, and `Rose.parseAux_print` states its
+  node's arity is unbounded: it delegates a node's children to
+  `Rose.parseChildren`, which `Geb/Internal/ConcreteSyntax.lean`
+  supplies, and `Rose.parseAux_print` states its
   measure as the printed length. The module's `## Implementation notes`
   derives the two inequalities that measure has to satisfy and why the
   printed length is taken rather than a node count.
-  Of the module's 20 theorems, 4 depend on no axioms, 4 on
+  Of the module's 18 theorems, 2 depend on no axioms, 4 on
   `propext` alone, and the remaining 12 on `propext` and `Quot.sound`.
   No declaration depends on `Classical.choice`.
+- `Geb/Internal/ReadableSExpr.lean` — the readable spelling of the rose
+  presentation, a whitespace-separated parenthesized text where the
+  canonical form is length-prefixed and whitespace-free, so that
+  `fork (leaf 0) (fork (leaf 1) (leaf 2))` reads as `(0 (1 2))`. The
+  fragment lies inside the [R7RS] `<datum>` grammar; labels are decimal
+  numerals, which the [RFC9804] advanced form cannot spell as tokens.
+  `Rsexp.print` is the printer, a childless node printing as its bare
+  label; `Rsexp.parse` is the parser, built from `Rsexp.parseStep`,
+  `Rsexp.parseAux` and the shared `Rose.parseChildren`, with
+  `Rsexp.isWs` and `Rsexp.skipWs` the whitespace class and the skip the
+  stripping discipline runs. `Rsexp.parse_print` is the retraction,
+  `Rsexp.format_idem` and `Rsexp.print_injective` the two instantiated
+  corollaries, and `Rsexp.printViaRose`/`Rsexp.parseViaRose` with
+  `Rsexp.parseViaRose_printViaRose` the same law transported across the
+  rose bijection to `Ast k`. A bare numeral is delimited only by the
+  next character not being a digit, so `Rsexp.parseAux_print` carries a
+  side condition on the caller's remainder that the canonical
+  length-prefixed form does not need. Of the module's 29 theorems, 13
+  depend on no axioms, 1 on `propext` alone, and the remaining 15 on
+  `propext` and `Quot.sound`. No declaration depends on
+  `Classical.choice`.

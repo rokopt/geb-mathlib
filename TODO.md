@@ -577,13 +577,19 @@ Five items over `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`.
 
 `Geb/Internal/ConcreteSyntax.lean` implements the format-independent
 core and the canonical S-expression form of RFC 9804 restricted to the
-bare tree, and `Geb/Internal/CanonicalSExpr.lean` a second spelling of
-the same grammar, with tests in the corresponding `GebTests` modules.
+bare tree, `Geb/Internal/CanonicalSExpr.lean` a second spelling of
+the same grammar, and `Geb/Internal/ReadableSExpr.lean` a readable
+spelling of the rose presentation over a different grammar, with tests
+in the corresponding `GebTests` modules.
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Roadmap
-states the staging; the next items are the JSON core profile as the
-first syntax over a second data model, deterministic CBOR after it, the
+states the staging; the next items are the JSON core profile,
+deterministic CBOR after it, the
 cross-syntax agreement theorem, and the lift of every syntax from `Ast`
-to `Doc`.
+to `Doc`. The readable spelling is the first syntax over a second data
+model, non-negative integers and lists where the canonical encoding has
+octet strings, so what the JSON core profile adds is the
+bracket-and-comma grammar, the `Lean.Json` differential-testing oracle
+and cross-language reach.
 
 The occurrence vocabulary is absent, so the two design consequences that
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Which
@@ -624,11 +630,44 @@ core's recursion equation. Choice-free in core are `Nat.digitChar`,
 `Nat.length_toDigits_pos`, which is not enough to build on. Reopen if a
 choice-free recursion equation for `Nat.toDigits` lands upstream.
 
+Follow-on work on the readable spelling, none of it scheduled.
+
+- **Indentation.** The printer emits one line, which is deterministic
+  and needs no layout rule; a multi-line discipline is a formatter
+  refinement over the same grammar. Any such formatter must respect
+  that parinfer's Indent Mode is permitted to change the AST by design,
+  so only its Paren Mode composes with a retraction law.
+- **Atom quoting and escaping.** Reached at roadmap stage 2, when
+  `Ann`'s `Option String` and `List String` enter the syntax. Until
+  then every atom is `[0-9]+`.
+- **Named labels.** Labels are `Fin k` and print as numerals. A label
+  type carrying names would let one printer serve a syntax with
+  constructor names, and is a change to the rose layer with its own
+  concern.
+- **Comments.** R7RS, EDN and `sexplib` all provide them; nothing in
+  the bare tree consumes one, and
+  [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Lexical
+  comments are not durable records why they are not part of the durable
+  model.
+- **Commas as whitespace.** Admitting them would accept the
+  comma-separated spellings of the lists the grammar already covers,
+  which are well-formed EDN; no tree needs it, and EDN's vectors, maps,
+  sets, strings, keywords and tagged elements stay outside the grammar
+  either way.
+- **Reading hand-written text as a `String`.** The parser consumes a
+  `List Char`, and core's `String.toList` depends on
+  `Classical.choice`, so the bridge from a written file to the parser's
+  input is not choice-free as core supplies it; the tests use
+  `List Char` literals and fixtures instead. Trigger: a choice-free
+  conversion, which no part of the current design supplies.
+
 ### Prose-conformance pass over the concrete-syntax survey
 
 In [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md), § Local
 verification, § Roadmap with § Relation to existing repository content,
-§ Caveats, and the paragraphs elsewhere that describe this repository's
+§ Caveats, § Readable S-expressions (R7RS, EDN, sexplib) with the
+readable form's profile decisions in § Canonical S-expressions
+(RFC 9804), and the paragraphs elsewhere that describe this repository's
 implementation were written here; the rest, between § The AST and its
 isomorphisms and § References, is inherited text. The inherited material
 has not had a pass against
@@ -640,7 +679,8 @@ as well.
 
 One factual item rides along with that pass: the document's
 § References duplicates bibliographic detail that
-[docs/references.bib](docs/references.bib) holds for RFC 9804, RFC 6962
+[docs/references.bib](docs/references.bib) holds for RFC 9804, the
+Petit-Huguenin draft, R7RS, EDN, RFC 8259, RFC 6962
 and Uustalu and Vene 2011, and roughly thirty-five further works there
 have no `.bib` entry, several no searchable identifier.
 

@@ -17,8 +17,10 @@ idempotence and injectivity of `print` are corollaries, proved once
 here for every syntax.
 
 This module carries the format-independent core (the abstract syntax,
-its annotated form, the rose presentation) and one worked concrete
-syntax, the canonical S-expression form of [RFC9804].
+its annotated form, the rose presentation), one worked concrete
+syntax, the canonical S-expression form of [RFC9804], and the parser
+machinery more than one spelling shares: the decimal layer and the
+bounded loop over a rose node's children.
 
 Every tree type here is a `WType`, so its recursion is carried by
 `WType.elim`, `WType.para` and `WType.rec`.
@@ -36,6 +38,9 @@ Every tree type here is a `WType`, so its recursion is carried by
 * `Rose` — the rose-tree presentation of the same fixed point, with
   `Rose.node` and `Rose.ofList` its constructors and `Rose.snoc`
   appending a child to one.
+* `Rose.parseChildren` — the bounded loop reading a rose node's
+  children up to the closing parenthesis, shared by every spelling of
+  the rose presentation that closes a child list with `')'`.
 * `Retraction`, `format` — the law skeleton a concrete syntax proves.
 * `Csexp.print`, `Csexp.parse` — the [RFC9804] canonical S-expression
   syntax.
@@ -91,8 +96,9 @@ instances for `Fin n` and `Empty` are `Classical.choice`-dependent.
 `Rose.Arity` is an `abbrev` because a proof matching a child function's
 type against a lemma stated at `Fin n → _` needs it reducible;
 `Ast.ofRose_snoc` and `Ast.toRose_ofRose` are the two here, and
-`Rose.parseAux_print` the third, downstream. Its docstring names all
-three and says what the reducibility costs.
+`Rose.parseAux_print` and `Rsexp.parseAux_print` the third and fourth,
+downstream. Its docstring names all
+four and says what the reducibility costs.
 
 `Ast.Arity` and `Tree.Arity` are plain `def`s, which keeps instance
 search from reducing past them at a literal shape. No demand here
@@ -120,7 +126,7 @@ namespace Geb
 
 Every `Arity` family below is finitely enumerable, which is what lets
 `WType.instDecidableEq` decide equality of the corresponding tree type.
-The `#guard`s in the two `GebTests` syntax modules decide equality at
+The `#guard`s in the three `GebTests` syntax modules decide equality at
 `Ast k`, at `Tree k Ann` and at `Rose k`. The two enumerations are named
 because mathlib's `FinEnum.fin` and `FinEnum.empty` are built by
 `FinEnum.ofList`, whose proof obligations depend on `Classical.choice`,
@@ -388,7 +394,8 @@ family that has to be: `simp` and `rw` match at reducible transparency,
 so with a plain `def` a child function whose type reads
 `Rose.Arity (i, n) → _` in a goal fails to unify with a lemma stated at
 `Fin n → _`, and the proofs of `Ast.ofRose_snoc` and
-`Ast.toRose_ofRose` fail here, `Geb.Rose.parseAux_print`'s downstream.
+`Ast.toRose_ofRose` fail here, `Geb.Rose.parseAux_print`'s and
+`Geb.Rsexp.parseAux_print`'s downstream.
 The cost is that `instFinEnumArity` below is unreachable at a concrete
 shape: instance search reduces past this family to `Fin n` and selects
 mathlib's `Classical.choice`-dependent `FinEnum.fin`. Deciding equality
@@ -403,7 +410,7 @@ abbrev Arity {k : Nat} (s : Shape k) : Type := Fin s.2
 as the other two: `WType.instDecidableEq` asks for this family at a
 general shape, so deciding equality at a `Rose k` goes through this
 instance rather than mathlib's `Classical.choice`-dependent
-`FinEnum.fin`. Both `GebTests` syntax modules decide it. A `#guard`
+`FinEnum.fin`. All three `GebTests` syntax modules decide it. A `#guard`
 is not a declaration, so `GebMeta.detectNonstandardAxiom` would not
 catch a leak there. -/
 instance instFinEnumArity {k : Nat} (s : Shape k) : FinEnum (Arity s) :=

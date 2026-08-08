@@ -7,6 +7,7 @@
 - [Lean language](#lean-language)
 - [CSLib](#cslib)
 - [Alternative formalization targets](#alternative-formalization-targets)
+- [S-expression tooling](#s-expression-tooling)
 - [General mathematics](#general-mathematics)
 - [General category theory](#general-category-theory)
 - [Opposite categories](#opposite-categories)
@@ -134,6 +135,41 @@ mathlib → lean-pool → merely-true:
 
 Conditions for considering these targets are in
 `docs/process.md` § Alternative formalization targets.
+
+## S-expression tooling
+
+Tooling and exposition for the readable S-expression syntax
+`Geb/Internal/ReadableSExpr.lean` implements. The citable
+specifications it transcribes against — R7RS, EDN, RFC 9804 —
+are in `docs/references.bib`; the entries here are neither
+specifications nor citable literature.
+
+- [`janestreet/sexplib`](https://github.com/janestreet/sexplib)
+  — the OCaml S-expression library, MIT. Its `README.org` is the
+  only statement of the syntax it reads: § Lexical conventions of
+  s-expression, § Comments and § Grammar of s-expressions, with
+  string escapes deferred to OCaml's own conventions. Its data
+  model is `Atom of string | List of sexp list`.
+- [`janestreet/sexp`](https://github.com/janestreet/sexp) — the
+  command-line query tool over the same syntax. Its
+  `doc/query_semantics.md` is a denotational semantics for the
+  query language, not a grammar for the syntax.
+- [Real World OCaml, data serialization](https://dev.realworldocaml.org/data-serialization.html)
+  — expository description of the `sexplib` format; claims no
+  standardization for it.
+- [parinfer](https://shaunlebron.github.io/parinfer/) — an editor
+  behaviour, not a format. Of its two modes only Paren Mode is
+  intended to leave the AST unchanged, and the page states that
+  as a desideratum; Indent Mode "may change the AST (by design)",
+  so only Paren Mode composes with a retraction law.
+- [paredit](https://paredit.org/) — structural editing of
+  parenthesized text, distributed as Emacs Lisp.
+- [`zv/sexpr`](https://github.com/zv/sexpr) — a Rust parser
+  configurable to read canonical and readable variants alike;
+  evidence that one engine serves both. It ships no licence file,
+  its `Cargo.toml` declaring `MIT/Apache-2.0`, and its README's
+  list of predefined configurations does not match its own
+  configuration table.
 
 ## General mathematics
 

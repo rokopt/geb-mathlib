@@ -23,6 +23,7 @@
 - [Structural content-addressing specification](#structural-content-addressing-specification)
 - [Format-by-format evaluation](#format-by-format-evaluation)
   - [Canonical S-expressions (RFC 9804)](#canonical-s-expressions-rfc-9804)
+  - [Readable S-expressions (R7RS, EDN, sexplib)](#readable-s-expressions-r7rs-edn-sexplib)
   - [CBOR (RFC 8949 §4.2) and DAG-CBOR](#cbor-rfc-8949-42-and-dag-cbor)
   - [JSON, JCS (RFC 8785), DAG-JSON](#json-jcs-rfc-8785-dag-json)
   - [Protocol Buffers — rejected for any hash-bearing role](#protocol-buffers--rejected-for-any-hash-bearing-role)
@@ -64,16 +65,22 @@ with tests in
 carries canonical S-expressions as a data type and a second retraction
 over the same grammar, the rose spelling, with tests in
 [GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean).
+[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+carries a third retraction, over a different grammar: the same rose
+trees spelled as whitespace-separated parenthesized text, with tests in
+[GebTests/Internal/ReadableSExpr.lean](../GebTests/Internal/ReadableSExpr.lean).
 [Local verification](#local-verification) records the facts the
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
 
 This section, § Local verification, § Roadmap with § Relation to
 existing repository content, § Caveats, § References's opening
-paragraph, and the paragraphs elsewhere that describe this repository's
-implementation were written here. The rest, between § The AST and its
-isomorphisms and § References, is inherited text and does not yet
-conform to
+paragraph, § Readable S-expressions (R7RS, EDN, sexplib) together with
+the readable form's profile decisions in § Canonical S-expressions
+(RFC 9804), and the paragraphs elsewhere that describe this
+repository's implementation were written here. The rest, between § The
+AST and its isomorphisms and § References, is inherited text and does
+not yet conform to
 [CONTRIBUTING.md](../CONTRIBUTING.md) § Style and references. `TODO.md`
 § Prose-conformance pass over the concrete-syntax survey records the
 outstanding pass, in the same terms.
@@ -185,14 +192,18 @@ for storing combinator-calculus terms, and vice versa.
 ### Complexity note
 
 As algorithms, parsing, printing and the Merkle fold are linear in the
-size of the tree with a constant number of passes. Neither implemented
-map achieves that. `Csexp.printAst` re-appends at every level, so each
-node's output is copied once per ancestor. `Csexp.readVerbatim` evaluates
+size of the tree with a constant number of passes. No implemented map
+achieves that. `Csexp.printAst` and `Rsexp.print` re-append at every
+level, so each node's output is copied once per ancestor.
+`Csexp.readVerbatim` evaluates
 `r.length` over the whole remaining input at every atom, and
 `Csexp.readDigits` is a strict `List.rec` that traverses the rest of the
 input even when the first character is not a digit; the cost is the
-node count times the input length. Three repairs would restore
-linearity, at different cost. A `readDigits` that stops at the first
+node count times the input length. `Rsexp.skipWs` is a `List.rec` of
+the same shape, traversing the remaining input when the first character
+is not whitespace. Three repairs would restore
+linearity to the canonical maps, at different cost. A `readDigits`
+that stops at the first
 non-digit, and an accumulator-passing printer kept behind its present
 signature, change no statement: `readDigits_append`,
 `size_le_length_printAst` and `parseAst_printAst` all stand as written.
@@ -201,7 +212,10 @@ What they cost is the computation lemmas that hold by `rfl` today —
 and `readDigits_cons` for the reader — each of which needs a proof once
 its definition changes shape. A reader carrying the remaining length
 changes `readVerbatim`'s type, so `readVerbatim_append` is restated and
-the retraction chain built on it reproved.
+the retraction chain built on it reproved. Two of the three have a
+counterpart in the readable maps, whose repair costs the computation
+lemmas `Rsexp.skipWs_nil`, `Rsexp.skipWs_cons`, `Rsexp.print_zero` and
+`Rsexp.print_succ` in the same way.
 
 Parsing, printing and the fold are elementary — indeed they sit in the
 lower-elementary
@@ -649,6 +663,26 @@ injective:
 - Any list element whose head atom is `*ann` is an annotation and is
   skipped by the core decoder.
 
+The readable form of
+[Readable S-expressions (R7RS, EDN, sexplib)](#readable-s-expressions-r7rs-edn-sexplib)
+fixes three further decisions, at the format level:
+
+- A label is the same shortest decimal ASCII spelling, no leading
+  zeros, `"0"` for zero. A childless node is spelled as the bare label
+  and a node with children as the parenthesized label followed by its
+  children, each preceded by one space.
+- The decoder is laxer than the printer in three families: whitespace
+  at every position the grammar permits, where the printer emits one
+  space before each child and nothing elsewhere; a parenthesized
+  childless node, `(6)` where the printer emits `6`; and a numeral with
+  leading zeros, which follows [R7RS] rather than [EDN]. As above, the
+  retraction law constrains only the composite.
+- The divergence runs the other way once. A numeral is any maximal
+  digit run, while the parser rejects a label at or above `k`, a
+  `Rose k` having no such node, so `9` parses at `k = 10` and not at
+  `k = 3`. That is a property of the alphabet rather than of the
+  syntax.
+
 Tooling, stated honestly: implementations exist and are real. RFC 9804
 §1.1 names two — GNU Libgcrypt (used by GnuPG) and Ribose's RNP, whose
 `sexpp` is C++ — and refers to Appendix A for the rest. Appendix A lists
@@ -661,6 +695,83 @@ orders of magnitude smaller than JSON's, CBOR's, or bencode's, and it is
 concentrated in the SPKI/PGP niche. "Multiple open-source
 implementations exist" is literally true of csexp and misleading as a
 tooling claim.
+
+### Readable S-expressions (R7RS, EDN, sexplib)
+
+The readable spelling implemented here writes a node's label followed
+by its children, a childless node as the bare label: the rose node
+labelled `0` with six children, the third of them the node labelled `3`
+with the single child `4`, is `(0 1 2 (3 4) 5 6 7)`.
+It lies inside [R7RS] `<datum>`, so a reader conforming to that grammar
+accepts it without new code. Three tiers of candidate carry that shape,
+distinguished by what there is to cite against.
+
+*Specified independently of an implementation.* None of the three is on
+a standards track. [RFC9804] is Informational. [R7RS] issues from the
+Scheme Steering Committee's process rather than from a standards body,
+though its ancestor R4RS became the basis for the 1991 IEEE Scheme
+standard; its §7.1.2 gives `<datum>`, whose `<list>` production is
+`(<datum>*)` or `(<datum>+ . <datum>)`. [EDN] carries productions for
+integers and floating-point numbers, specifies the rest in prose, and
+describes its own specification as casual pending a rigorous grammar.
+
+*Implementation as specification.* Jane Street's `sexplib` has no
+specification independent of its implementation; its `README.org`
+states the lexical conventions, the comment syntax and the grammar,
+deferring string escapes to OCaml's conventions. Its data model is
+`Atom of string | List of sexp list`, and every character other than
+double quotes, parentheses, whitespace and comment introducers is an
+atom character. Real World OCaml describes the format without claiming
+standardization for it; the `query_semantics.md` document in
+`janestreet/sexp` is a semantics for a query language over
+S-expressions, not a grammar for the syntax.
+
+*Not formats.* parinfer and paredit are editor behaviours, paredit
+shipping as Emacs Lisp. parinfer has two modes and states its
+properties as desiderata: Paren Mode should never change the AST, while
+Indent Mode may change it by design, so only Paren Mode composes with a
+retraction law. `zv/sexpr` is a Rust parser whose README says it can be
+configured to read canonical and readable variants alike; it is
+evidence that one engine serves both and no more, shipping no licence
+file and a README whose list of predefined configurations does not
+match its own configuration table.
+
+On the spellings the implemented printer emits, [R7RS], [EDN] and
+`sexplib` denote the same tree shape. The parser accepts more than the
+printer emits, and three disagreements concern constructs the grammar
+must accept or reject: [R7RS] admits leading zeros where [EDN] forbids
+them, [EDN] counts `,` as whitespace, and `sexplib` counts form feed
+where [R7RS] §7.1.1's grammar does not, while rejecting the bare
+carriage return that grammar admits. The implemented whitespace class
+is space, horizontal tab, carriage return and line feed — a subset of
+[R7RS]'s, hence of every conforming reader's, since §2.2's latitude is
+to add characters and not to remove them, and not a subset of
+`sexplib`'s. The remaining disagreements concern constructs the bare
+tree does not use: string escaping, numeric towers beyond non-negative
+integers, dotted pairs, vectors, quotation abbreviations, comments,
+keywords and the datum labels of the `<datum>` production.
+
+The [RFC9804] advanced form is not the readable form taken. Its §4.3
+requires that an octet string given directly as a token not begin with
+a digit, the leading digit being reserved for a length prefix, so a
+decimal label would have to be written `"0"` or `1:0`. The cause is the
+data-model thinness the section above credits the canonical encoding
+for: [R7RS] and [EDN] forbid a digit initial in their unquoted
+identifier syntax too, and are unaffected because a digit-initial token
+reads as a number instead, where [RFC9804]'s model is octet strings
+only and has no number datum. Declining the advanced form is conformant
+rather than a deviation: its §6 makes the advanced representation
+OPTIONAL, and its §8 lists "no advanced representations (only canonical
+and basic)" among the restrictions an application may adopt.
+
+`sexplib`'s atom rule is not adopted either. It already reads this
+grammar's output, digits being ordinary atom characters, so the Jane
+Street `sexp` query tool applies to the printed form as it stands; what
+adopting the rule in full would add is acceptance of its atom syntax on
+input. There is no specification of that syntax independent of the
+implementation, and OCaml-style quoting and escaping is proof work the
+bare tree has no use for, its atoms being `[0-9]+` throughout. Adopting
+it later widens the atom production rather than replacing the grammar.
 
 ### CBOR (RFC 8949 §4.2) and DAG-CBOR
 
@@ -950,7 +1061,9 @@ which is the restriction that makes the JSON core profile cheap here.
 
 Two conditions on taking that route. It is an interchange question, so
 it waits on a syntax over a second data model existing and on
-interchange mattering; and
+interchange mattering; the first conjunct is met, [Roadmap](#roadmap)
+stage 1a′ supplying such a syntax, and the second is not, that stage
+supplying no cross-language reach. And
 Temper publishes no version or stability statement, so its maturity is
 re-checked at each revisit rather than assumed.
 
@@ -989,6 +1102,7 @@ breadth of maintained third-party libraries:
 | --- | --- | --- | --- | --- |
 | csexp canonical | very low | thin | no | normative |
 | csexp advanced | medium | thin | yes | n/a |
+| readable S-expressions | low | medium | yes | n/a |
 | CBOR §4.2 | low | broad | no | normative |
 | JSON core profile | very low | very broad | yes | via JCS |
 | JSON annotated | medium | very broad | yes | via JCS |
@@ -1022,32 +1136,46 @@ numbers, no scalar types — which stresses the abstraction further than
 a second array-and-map format would. A DAG-JSON and DAG-CBOR pair
 would share the identical IPLD data model and test it least.
 
-Two considerations bear on the order, and both favour the JSON core
-profile first.
+Two considerations bear on the order. Both favoured the JSON core
+profile first while neither was met; the first is met by the readable
+S-expression form, which is implemented, so only the second still
+favours it.
 
 - Canonical csexp has no readable form. Readability lives in the
-  advanced form, which is a second and larger parser. A bootstrap
-  built on the canonical form alone gains nothing from the
-  readability argument until that second parser exists, so
-  readability cannot rank canonical csexp above formats that lack it.
+  advanced form, which is a second and larger parser, so readability
+  cannot rank canonical csexp above formats that lack it. The
+  bootstrap no longer rests on the canonical form alone:
+  [Roadmap](#roadmap) stage 1a′ supplies a readable spelling of the
+  same trees which is neither the advanced form nor a second csexp
+  parser, for the reason
+  [Readable S-expressions (R7RS, EDN, sexplib)](#readable-s-expressions-r7rs-edn-sexplib)
+  gives.
 - The JSON *core* profile — `[0, [2, 1]]`, arrays and small
   non-negative integers — needs no string escapes, no floats and no
   Unicode handling. It is a different data model from csexp's at the
   lowest available verified-parser cost, and `Lean.Json` supplies an
   unverified oracle for differential testing immediately.
 
-The order adopted is canonical S-expressions, then the JSON core
-profile, then deterministic CBOR. The first position records what was
+The order adopted is canonical S-expressions, then the readable
+S-expression form, then the JSON core profile, then deterministic CBOR.
+The first position records what was
 implemented, not what the considerations above recommend: stage 1a is
 done in csexp, and re-doing it in JSON first would buy nothing the pair
-does not already validate.
+does not already validate. The second is a scheduling choice on the
+ground that the readable form is intended to become the form in which
+trees are written and the canonical form, designed for hashing and
+signing, cannot become that; the switch threshold below that would
+otherwise order it stands uncounted.
 
 Canonical csexp earns its place in the set on a separate ground: among
 the bootstrap-eligible candidates its data model shares least with the
-others, so the pair {csexp, JSON core} stresses syntax independence
-more than any pair drawn from the array-and-map formats would. That
-argues for inclusion, not for sequence — the pair is what validates,
-and swapping the two yields the same pair.
+others, so pairing it with any format over integers and lists stresses
+syntax independence more than any pair drawn from the array-and-map
+formats would. That argues for inclusion, not for sequence. The pair
+that validates is {csexp, readable S-expressions}: the readable form's
+data model is non-negative integers and lists, which is the JSON core
+profile's, so it supplies the diversity without displacing the rest of
+the JSON core profile's content.
 
 CBOR is not dropped: it shares JSON's data model, so once the JSON core
 is proved its incremental cost is the byte-level integer encoding alone,
@@ -1061,12 +1189,21 @@ interchange format, which is why JSON and then CBOR carry the
 interchange role.
 
 **Switch thresholds**, which bear on the syntaxes not yet written;
-canonical S-expressions are implemented, so none of them displaces it.
-Promote CBOR ahead of the JSON core profile if a storage format is
-needed before a second validation of syntax independence. Add the csexp
-advanced form ahead of both if the textual form is read and written by
-hand often enough for the canonical form's unreadability to cost more
-than the second parser. Add bencode if a second
+canonical S-expressions and the readable form are implemented, so none
+of them displaces either.
+Promoting CBOR ahead of the JSON core profile if a storage format is
+needed no longer turns on a second validation of syntax independence,
+which stage 1a′ supplies; what 1b still supplies is the
+bracket-and-comma grammar, the `Lean.Json` oracle for differential
+testing, and cross-language reach. The threshold that would add the
+csexp advanced form ahead of both — the textual form being read and
+written by hand often enough for the canonical form's unreadability to
+cost more than the second parser — is quantitative, and no count was
+taken against it; stage 1a′ was scheduled ahead of any measured need,
+and the grammar it adopts is not the advanced form the threshold names,
+for the reason
+[Readable S-expressions (R7RS, EDN, sexplib)](#readable-s-expressions-r7rs-edn-sexplib)
+gives. The threshold therefore stands uncounted. Add bencode if a second
 canonical-by-construction format is wanted: it is as small to verify and
 better tooled than canonical csexp, and it loses only on human
 readability, which the canonical form does not supply either.
@@ -1157,6 +1294,20 @@ letter, and `-` and `/` are `simple-punc`.
 (10:geb-doc/v11:3(4:fork(4:leaf1:0)(4:fork(4:leaf1:2)(4:leaf1:1))))
 ```
 
+Readable S-expression form, the rose presentation of the same tree with
+a label followed by its children — nine bytes:
+
+```text
+(0 (2 1))
+```
+
+This is the form
+[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+prints and parses. It carries neither the header nor the alphabet size,
+as the implemented bare-tree wire forms do not. The advanced form above
+spells the binary presentation with constructor tags and quoted labels;
+the bare decimal labels here are what that form cannot write as tokens.
+
 csexp annotated, advanced form; `(*ann …)` elements are annotations and
 erasure drops them:
 
@@ -1232,22 +1383,29 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-52 theorems, and
+54 theorems,
 [Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean),
-20 more, with tests in
-[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean)
+18 more, and
+[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean),
+29 more, with tests in
+[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean),
+[GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean)
 and
-[GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean).
-All four build under the toolchain pinned in `lean-toolchain` with
+[GebTests/Internal/ReadableSExpr.lean](../GebTests/Internal/ReadableSExpr.lean).
+All six build under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contain no `sorry`.
 The first module's one import is
 [Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean), and
 through it `Mathlib.Data.W.Basic` and
 [Geb/Mathlib/Data/FinEnum.lean](../Geb/Mathlib/Data/FinEnum.lean), which
 supplies the choice-free decidability instances fact 3 below relies on.
-The second imports the first and `Mathlib.Data.Fin.VecNotation`.
+The second imports the first and `Mathlib.Data.Fin.VecNotation`. The
+third imports the first alone: the child loop it shares with the second
+sits in the first for that reason, so neither spelling depends on the
+other.
 
-Four facts constrain how the two modules and their tests are written.
+Four facts constrain how the three modules and their tests are
+written.
 
 1. `Ast`, `Tree`, `Rose` and `CSexp` are W-types, and every recursion runs
    through `WType.elim`, `WType.para` or a recursor application.
@@ -1292,10 +1450,12 @@ number in any case, which leaves no node count to define and no
 counterpart to `Csexp.size_le_length_printAst` to prove. The bound is
 correspondingly loose: `sampleWide` is three nodes, and the tests assert
 that it parses at fuel three and not at two, against a printed length of
-fifteen.
+fifteen. `Rsexp.parseAux` supplies its `Nat` in the same two roles and
+takes the same measure, for the same reason.
 
-The implemented wire form is header-free and carries the bare tree
-alone: `Csexp.print` emits neither the `geb-doc/v1` header nor the
+The implemented wire forms are header-free and carry the bare tree
+alone: neither `Csexp.print` nor `Rsexp.print` emits the `geb-doc/v1`
+header or the
 alphabet size that
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding)
 shows. The bare-tree stages carry neither a format header nor a serialized
@@ -1310,22 +1470,30 @@ the running example of
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding),
 whose two right-hand labels are transposed.
 
-Axiom dependencies, from `#print axioms` over all 52 theorems:
+Axiom dependencies, from `#print axioms` over the first module's 54
+theorems:
 
 | Theorems | Axioms |
 | --- | --- |
-| 11, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
+| 13, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
 | 8, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
 | 8, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc`, `Rose.ofList_eq` | `Quot.sound` |
 | the remaining 25, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
 
 [Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
-adds 20 theorems. Four depend on no axiom, four on `propext` alone, and
+adds 18 theorems. Two depend on no axiom, four on `propext` alone, and
 the remaining 12 — `Rose.parse_print` and
 `Ast.parseViaRose_printViaRose` among them — on `propext` and
 `Quot.sound`.
 
-No declaration in either module depends on `Classical.choice`, and
+[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+adds 29. Thirteen depend on no axiom, one — `Rsexp.digit_not_ws` — on
+`propext` alone, and the remaining 15 — `Rsexp.parse_print` and
+`Rsexp.parseViaRose_printViaRose` among them — on `propext` and
+`Quot.sound`.
+
+No declaration in any of the three modules depends on
+`Classical.choice`, and
 `lake lint` enforces that through `GebMeta.detectNonstandardAxiom`.
 
 The theorems the architecture rests on:
@@ -1359,6 +1527,16 @@ The theorems the architecture rests on:
   than a second syntax in the sense
   [The bootstrap set](#the-bootstrap-set) fixes, supplying no data model
   the binary spelling does not.
+- `Rsexp.parse_print` discharges it for the readable spelling of the
+  rose presentation, over a different grammar and giving a second
+  retraction on `Rose k`, with `Rsexp.format_idem`
+  and `Rsexp.print_injective` the same two instantiations and
+  `Rsexp.parseViaRose_printViaRose` transporting it across the same
+  bijection to a third retraction on `Ast k`, the fifth overall. Its
+  data model is non-negative integers and lists, which the canonical
+  encoding's is not, so unlike the spelling above it is a syntax over a
+  second data model in the sense
+  [The bootstrap set](#the-bootstrap-set) fixes.
 
 Three facts about the encoding, for anyone extending the development:
 
@@ -1368,8 +1546,9 @@ Three facts about the encoding, for anyone extending the development:
    `Rose.Arity` has to be an `abbrev`: as a plain `def`
    a child function whose type reads `Rose.Arity (i, n) → _` in a goal
    will not unify with a lemma stating `Fin n → _`, definitional
-   equality notwithstanding, and `Ast.ofRose_snoc`, `Ast.toRose_ofRose`
-   and `Rose.parseAux_print` fail. Instance search unfolds reducible
+   equality notwithstanding, and `Ast.ofRose_snoc`, `Ast.toRose_ofRose`,
+   `Rose.parseAux_print` and `Rsexp.parseAux_print` fail. Instance
+   search unfolds reducible
    constants too, so a reducible family lets it whnf past
    `Ast.Arity .fork` to `Fin 2` and select mathlib's
    `Classical.choice`-dependent `FinEnum` rather than the named
@@ -1390,13 +1569,19 @@ Three facts about the encoding, for anyone extending the development:
    not have. The loop over a node's children needs a recursion bound,
    and the `List` that loop returns has to be transported into the
    node's `Fin n`-indexed tuple. `Rose.parseChildren` discharges the
-   first; `Rose.ofList` is the transport discharging the second, with
-   `Rose.ofList_ofFn` the equation justifying it. The bare-tree JSON
+   first, for every spelling that closes a child list with `')'`, which
+   is why it sits in the first module rather than beside either parser;
+   `Rose.ofList` is the transport discharging the second, with
+   `Rose.ofList_ofFn` the equation justifying it. Both spellings of the
+   rose presentation incur the pair, so each obligation is discharged
+   twice. The
+   bare-tree JSON
    and CBOR profiles above spell a fork as a two-element array, so
-   neither obligation arises at stages 1b and 1c.
+   neither obligation arises at stages 1b and 1c. The stages that
+   incur them are 1a and 1a′, both over the rose presentation.
 
-Remaining proof obligations, in dependency order: the retraction law for
-a syntax over a second data model; the cross-syntax agreement theorem;
+Remaining proof obligations, in dependency order: the cross-syntax
+agreement theorem;
 the lift of every syntax from `Ast` to `Doc`; injectivity of the
 annotation canonicalization `annCanon`, which
 [Structural content-addressing specification](#structural-content-addressing-specification)
@@ -1447,7 +1632,7 @@ and side-table document presentations.
 
 ## Roadmap
 
-The order is: get the bare tree round-tripping in three syntaxes, then
+The order is: get the bare tree round-tripping in four syntaxes, then
 lift to the annotated document, then hash. Settling `annCanon`, the
 multihash codes, the CID layout and the version numbers *normatively*
 first — as against writing them down as the candidate specification
@@ -1463,6 +1648,7 @@ everything feeding a hash.
 | Stage | Content | Status |
 | --- | --- | --- |
 | 1a | canonical S-expressions, bare tree, retraction proved | done |
+| 1a′ | readable S-expressions, bare tree, retraction proved | done |
 | 1b | JSON core profile, bare tree, retraction proved | next |
 | 1c | deterministic CBOR, bare tree, retraction proved | after 1b |
 | 1d | cross-syntax agreement theorem | after 1c |
@@ -1474,9 +1660,11 @@ The table covers the scheduled stages; stage 5 below is contingent on
 language features that do not exist yet.
 
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean)
-is 52 theorems, 26 of them in `Csexp`, and
+is 54 theorems, 26 of them in `Csexp`,
 [Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
-a further 20;
+a further 18 and
+[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+a further 29;
 [Local verification](#local-verification) breaks them down by axiom.
 That is the only measured quantity, and one
 implementation is too small a base to extrapolate a schedule from, so
@@ -1485,7 +1673,16 @@ the stages below are ordered by dependency and carry no estimate.
 Stage 1b introduces no new proof technique and reuses the decimal layer
 unchanged: the JSON core profile's integers are decimal ASCII, which is
 what `decOf` and `digitsVal` already encode and decode. Its new work is
-the bracket-and-comma grammar and the whitespace the profile permits.
+the bracket-and-comma grammar. The whitespace the profile permits is
+written already: [RFC8259] §2's `ws` production admits space,
+horizontal tab, carriage return and line feed, which is the class
+`Rsexp.isWs` fixes, so `isWs`, `skipWs`, their equations and two of the
+readable module's decimal lemmas serve 1b as they stand. They sit in
+[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean),
+which 1b imports or moves them out of into
+[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
+where `Rose.parseChildren` sits for that same reason; the choice
+belongs to 1b.
 Stage 1c is where a byte-level integer encoding first appears, and that
 round-trip lemma is what CBOR adds over JSON. Stage 1d is a corollary of
 the retractions preceding it, every syntax parsing to the same `Ast`.
@@ -1493,9 +1690,11 @@ the retractions preceding it, every syntax parsing to the same `Ast`.
 Stage 2 is the largest. Moving from `Ast k` to `Doc k = Tree k Ann` puts
 `Option String` and `List String` into the syntax. What that costs
 depends on the syntax: canonical csexp atoms and CBOR text strings are
-length-prefixed, so neither needs escaping, while JSON and the csexp
+length-prefixed, so neither needs escaping, while JSON, the readable
+S-expression form and the csexp
 advanced form acquire string escaping and the round-trip proofs acquire
-its inverse. Which csexp form carries the annotated syntax is not yet
+its inverse, none of their atoms being length-prefixed. Which
+S-expression form carries the annotated syntax is not yet
 settled; the canonical form is the one the roadmap schedules.
 
 The injectivity constraint on `printDoc` is discharged for free on
@@ -1631,14 +1830,19 @@ model, it tests nothing about data-model independence, for the reason
 [Local verification](#local-verification) gives. What
 distinguishes it from the implemented spelling is that a rose node's
 arity is unbounded: the parser reads until the closing parenthesis where
-the fixed-arity one reads exactly two children, so it carries a bounded
+the fixed-arity one reads exactly two children, so it runs a bounded
 inner loop
-(`Rose.parseChildren`) and
+(`Rose.parseChildren`, which
+[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean)
+declares) and
 its retraction rebuilds a W-type node from the `List` that loop returns
 (`Rose.ofList_ofFn`, a transport along `List.length_ofFn`). What it
 contributes is a second spelling over one grammar, the spelling that
-matches the abstract syntax's own reading, and the one place in this
-development where those two obligations are discharged.
+matches the abstract syntax's own reading. Both obligations are
+discharged twice in this development: the readable spelling of
+[Readable S-expressions (R7RS, EDN, sexplib)](#readable-s-expressions-r7rs-edn-sexplib)
+reads the same variable-arity nodes over a different grammar, reusing
+`Rose.parseChildren` for the first and `Rose.ofList` for the second.
 
 [FormalSExpr] is an expired individual submission with no IETF standing.
 Its value here is as a transcription target checked against the grammar,
@@ -1669,10 +1873,12 @@ case-split is the arity family, its `FinEnum` instance, the two
 constructors, and the four folds `Ast.size`, `Ast.toRose`,
 `Csexp.printAst` and `Ast.toCSexp`.
 `Ast.erase_trivialDoc` still drives its recursion by `WType.rec`
-directly, and four proofs destructure `Rose.Shape`, there being no
+directly, and six proofs destructure `Rose.Shape`, there being no
 `Rose.ind`: the rose bijection's `Ast.ofRose_snoc` and
-`Ast.toRose_ofRose`, and the parser's `Rose.exists_print_eq_cons` and
-`Rose.parseAux_print`. No `Repr` instance is derived for the four tree
+`Ast.toRose_ofRose`, the canonical parser's
+`Rose.exists_print_eq_cons` and
+`Rose.parseAux_print`, and the readable parser's `Rsexp.print_head` and
+`Rsexp.parseAux_print`. No `Repr` instance is derived for the four tree
 types, and nothing asks for one; `Ann`,
 an ordinary non-recursive structure, derives one.
 
@@ -1752,8 +1958,9 @@ machinery needs it, which the parse and print layer does not.
 ## References
 
 [docs/references.bib](references.bib) is authoritative for the
-bibliographic detail of three works this list also carries: RFC 9804 and
-Uustalu and Vene 2011, both cited from Lean source, and RFC 6962, cited from
+bibliographic detail of seven works this list also carries: RFC 9804,
+the Petit-Huguenin draft, R7RS, EDN, RFC 8259 and
+Uustalu and Vene 2011, all cited from Lean source, and RFC 6962, cited from
 [Merkle hashing as a catamorphism](#merkle-hashing-as-a-catamorphism)
 and [Prior art on content-addressed code](#prior-art-on-content-addressed-code)
 here, and from Lean source once roadmap stage 3 writes the fold.
@@ -1768,6 +1975,17 @@ Standards and specifications:
 - Bormann, C., and P. Hoffman, "Concise Binary Object Representation
   (CBOR)", STD 94, RFC 8949, December 2020; §4.2 deterministic
   encoding. <https://www.rfc-editor.org/rfc/rfc8949.html>
+- Shinn, A., J. Cowan, and A. A. Gleckler, Eds., "Revised⁷ Report on
+  the Algorithmic Language Scheme", 2013; errata-corrected edition
+  dated 19 December 2022; §4.1.3 procedure calls, §7.1.1 lexical
+  structure, §7.1.2 external representations.
+  <https://standards.scheme.org/corrected-r7rs/r7rs.html>
+- "edn: extensible data notation"; no author or date given.
+  <https://github.com/edn-format/edn>
+- Bray, T., Ed., "The JavaScript Object Notation (JSON) Data
+  Interchange Format", RFC 8259, Standards Track, December 2017; §2
+  grammar, for the `ws` production.
+  <https://www.rfc-editor.org/rfc/rfc8259.html>
 - Petit-Huguenin, M., "Formal Specification of S-Expressions",
   draft-petithuguenin-ufmrg-formal-sexpr-06, expired individual
   submission, intended status Informational, May 2025.
