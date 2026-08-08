@@ -466,5 +466,20 @@ theorem format_idem (k : Nat) (c : List Char) :
 theorem print_injective (k : Nat) : Function.Injective (print (k := k)) :=
   Geb.print_injective _ _ (retraction k)
 
+/-! ## The `Ast` composites -/
+
+/-- The readable spelling of an `Ast k`, through the rose bijection. -/
+def printViaRose {k : Nat} (a : Ast k) : List Char := print a.toRose
+
+/-- The parser matching `printViaRose`. -/
+def parseViaRose (k : Nat) (cs : List Char) : Option (Ast k) :=
+  (parse k cs).map Ast.ofRose
+
+/-- The retraction law for the `Ast` composites, transported along the
+rose retraction by `Ast.ofRose_toRose`. -/
+theorem parseViaRose_printViaRose {k : Nat} (a : Ast k) :
+    parseViaRose k (printViaRose a) = some a := by
+  rw [parseViaRose, printViaRose, parse_print, Option.map_some, Ast.ofRose_toRose]
+
 end Rsexp
 end Geb
