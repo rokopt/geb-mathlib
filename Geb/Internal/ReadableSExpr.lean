@@ -365,5 +365,106 @@ theorem parseChildren_print {k : Nat}
         Option.bind_some, ih g rest (fun x hx ↦ hchild x (by simp [hx])) hlt,
         Option.map_some])
 
+/-- The parser inverts the printer on printed input, given fuel at least
+the printed length. The remainder returned is the caller's stripped: a
+childless node's spelling ends in a digit, so the delimiting hypothesis
+on the remainder is what keeps the label from running on, and the
+stripping invariant makes what comes back `skipWs rest` rather than
+`rest`. -/
+theorem parseAux_print {k : Nat} (r : Rose k) :
+    ∀ (f : Nat) (rest : List Char), (print r).length ≤ f →
+      (∀ c cs, rest = c :: cs → Csexp.charDigit c = none) →
+      parseAux k f (print r ++ rest) = some (r, skipWs rest) :=
+  WType.rec (motive := fun r ↦ ∀ (f : Nat) (rest : List Char),
+      (print r).length ≤ f →
+      (∀ c cs, rest = c :: cs → Csexp.charDigit c = none) →
+      parseAux k f (print r ++ rest) = some (r, skipWs rest))
+    (fun s ch ih f rest hf hrest ↦ by
+      obtain ⟨i, n⟩ := s
+      change (print (Rose.node i ch)).length ≤ f at hf
+      change parseAux k f (print (Rose.node i ch) ++ rest)
+        = some (Rose.node i ch, skipWs rest)
+      cases n with
+      | zero =>
+        rw [print_zero] at hf ⊢
+        obtain ⟨c, cs, hc⟩ := decOf_eq_cons i.val
+        obtain ⟨g, rfl⟩ : ∃ g, f = g + 1 :=
+          ⟨f - 1, by rw [hc] at hf; simp only [List.length_cons] at hf; omega⟩
+        rw [parseAux_succ, hc, List.cons_append,
+          parseStep_other _ _ _ _ _
+            (digit_not_open (decOf_head_digit i.val c cs hc)),
+          ← List.cons_append, ← hc, readNat_append _ _ hrest]
+        simp only []
+        rw [dif_pos i.isLt]
+        exact congrArg (fun t ↦ some (t, skipWs rest))
+          (congrArg (Rose.node i) (funext fun j ↦ j.elim0))
+      | succ m =>
+        rw [print_succ] at hf ⊢
+        cases f with
+        | zero => simp at hf
+        | succ g =>
+          have hlen : (Csexp.decOf i.val).length
+              + (((List.ofFn ch).map (fun t ↦ ' ' :: print t)).flatten).length
+                + 2 ≤ g + 1 := by
+            simp only [List.length_cons, List.length_append] at hf
+            omega
+          have hL : (((List.ofFn ch).map (fun t ↦ ' ' :: print t)).flatten).length
+              ≤ g := by omega
+          have hchild : ∀ t ∈ List.ofFn ch, ∀ r : List Char,
+              (∀ c cs, r = c :: cs → Csexp.charDigit c = none) →
+              parseAux k g (print t ++ r) = some (t, skipWs r) := by
+            intro t ht r' hr'
+            obtain ⟨j, rfl⟩ := List.mem_ofFn.mp ht
+            refine ih j g r' ?_ hr'
+            have hmem : ' ' :: print (ch j)
+                ∈ (List.ofFn ch).map (fun t ↦ ' ' :: print t) :=
+              List.mem_map_of_mem (List.mem_ofFn.mpr ⟨j, rfl⟩)
+            have hsub : (' ' :: print (ch j)).length
+                ≤ (((List.ofFn ch).map (fun t ↦ ' ' :: print t)).flatten).length :=
+              (List.sublist_flatten_of_mem hmem).length_le
+            simp only [List.length_cons] at hsub
+            omega
+          have hfuel : (List.ofFn ch).length < g + 1 := by
+            have hpos : ∀ x ∈ ((List.ofFn ch).map (fun t ↦ ' ' :: print t)).map
+                List.length, 1 ≤ x := by
+              intro x hx
+              obtain ⟨y, hy, rfl⟩ := List.mem_map.mp hx
+              obtain ⟨t, _, rfl⟩ := List.mem_map.mp hy
+              simp
+            have h := List.length_le_sum_of_one_le _ hpos
+            rw [List.length_map, List.length_map, ← List.length_flatten] at h
+            omega
+          rw [List.cons_append, parseAux_succ, parseStep_open]
+          simp only [List.append_assoc, List.singleton_append]
+          rw [skipWs_decOf_append,
+            readNat_append _ _ (block_append_head_not_digit (List.ofFn ch) rest)]
+          simp only []
+          rw [dif_pos i.isLt,
+            parseChildren_print _ (List.ofFn ch) (g + 1) rest hchild hfuel,
+            Option.map_some, Rose.ofList_ofFn]) r
+
+/-- The retraction law for the readable spelling: printing a rose tree
+and parsing the result returns that tree. -/
+theorem parse_print {k : Nat} (r : Rose k) : parse k (print r) = some r := by
+  unfold parse
+  rw [skipWs_print, show print r = print r ++ [] by simp,
+    parseAux_print r _ [] (by simp) (by simp), skipWs_nil]
+
+/-! ## The generic corollaries, instantiated here -/
+
+/-- `Geb.Retraction` at the readable spelling. -/
+theorem retraction (k : Nat) : Retraction (parse k) (print (k := k)) :=
+  parse_print
+
+/-- `Geb.format_idem` at the readable spelling. -/
+theorem format_idem (k : Nat) (c : List Char) :
+    (format (parse k) print c).bind (format (parse k) print)
+      = format (parse k) print c :=
+  Geb.format_idem _ _ (retraction k) c
+
+/-- `Geb.print_injective` at the readable spelling. -/
+theorem print_injective (k : Nat) : Function.Injective (print (k := k)) :=
+  Geb.print_injective _ _ (retraction k)
+
 end Rsexp
 end Geb
