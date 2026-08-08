@@ -57,6 +57,12 @@ markers, then commit.
 - Avoid value-laden adjectives ("key", "important", "crucial",
   "elegant", "beautiful", "neat", "clever", "powerful",
   "interesting", "insight" used as labels).
+- Do not count a population the project keeps adding to ("54
+  theorems", "209 anonymous `example`s"): the next branch adding
+  one falsifies the count, and no reader acts on its exact value.
+  Name the members, or state the property they share. A number
+  describing a fixed object — a sample's node count, a fixture's
+  printed length — is not a count in this sense.
 - Generic user references ("the user" / "they" / "them"); no
   first names, email, or autobiographical detail. The exception
   is a designated project point of contact (e.g. the maintainer

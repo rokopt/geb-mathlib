@@ -83,6 +83,12 @@ They should not describe transient process artifacts such as:
 - **In-progress notes.** "TODO: rewrite this when we have time."
   "Try this approach if X fails." Active work belongs in
   `TODO.md` or the workstream's spec/plan, not in code comments.
+- **Counts of occurrences.** "Of the module's 54 theorems, 13
+  depend on no axioms." "209 anonymous `example`s remain."
+  A count over a population the project keeps adding to is
+  transient by construction: every branch that adds one member
+  falsifies it, and no reader acts differently at 54 than at 55.
+  Name the members, or state the property the population has.
 
 What's persistent and worth documenting:
 

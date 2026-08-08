@@ -146,6 +146,10 @@ presents superseded decisions as current. See `docs/process.md`
   what testing iteration discovered an issue, which task in our
   plan produced a file, or similar. Specs and plans are themselves
   transient process artifacts in this sense (see § Concern shape).
+  A count over a population the project keeps adding to is
+  transient in the same way — every branch adding a member
+  falsifies it — so name the members or state the property they
+  share rather than counting them.
   See `docs/process.md` § Document only the persistent.
 
 ### Submission policy
