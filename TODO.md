@@ -3,10 +3,8 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [In progress](#in-progress)
-  - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
 - [Next up](#next-up)
-  - [Removal of guard hash-command](#removal-of-guard-hash-command)
+  - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
@@ -38,18 +36,15 @@
 Active workstreams, in topological order. Workstreams complete → removed;
 content merged into the persistent documentation.
 
-## In progress
+## Next up
 
 ### Presheaf parametric-right-adjoint IR codes
 
 Morphisms of presheaf p.r.a. functors, and a code system denoting them: a leaf
 rule injecting a presheaf p.r.a. functor as it stands, and a `delta` rule
 carrying the induction-recursion. The prototype under
-`Geb/Internal/PresheafIRProto/` is the design's
-validated part; the design record is
-[docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md](docs/superpowers/specs/2026-07-31-presheaf-pra-ir-codes-design.md),
-which names four upstream branches, and one before them that carries the
-prototype, and is removed with the last:
+`Geb/Internal/PresheafIRProto/` is the design's validated part; four upstream
+branches remain:
 
 - W-a: morphisms of presheaf p.r.a. functors, their action and the hom-set
   bijection; their composition and category structure; and the bundled
@@ -67,23 +62,9 @@ fragment for such a bound to be about. Its letter is not reused.
 
 Completeness needs no branch: the code type's leaf rule injects a presheaf
 p.r.a. functor as it stands, so every such functor has a code definitionally.
-The prototype's own branch adds `praCodeOf`, naming the leaf as a section of
-the interpretation, with `leftInverse_interp_praCodeOf` and
-`surjective_interp` stating that `interp` retracts onto it; it also retires the
-bound's vocabulary from the prototype.
-
-## Next up
-
-### Removal of guard hash-command
-
-- **`#guards should be removed`: mathlib disallows `#guard`, so we should as
-  well; our coding standards are meant to be at least as strict as theirs, at
-  least for anything not under `Geb/Internal/`. `docs/lean-coding.md` has a
-  reference to uses of `#guard`; it should say that we shouldn't use it. One
-  possible exception is `AxiomLinter.lean`, which _is_ in `Geb/Internal/` and,
-  as an internal test file, might not need to adhere to that mathlib
-  convention. We should still make it do so if it can function equally well
-  without `#guard`.
+The prototype states this as `praCodeOf`, naming the leaf as a section of the
+interpretation, with `leftInverse_interp_praCodeOf` and `surjective_interp`
+stating that `interp` retracts onto it.
 
 ### Named examples for axiom auditing
 
@@ -98,8 +79,8 @@ bound's vocabulary from the prototype.
   applying `yoneda`, whose target is a functor category, sat in the choice-free
   prototype core; naming it showed the `Classical.choice` dependency and it
   moved to the allowlisted module.
-- Give every `example` a name, so that the axiom linter covers it. The 6 in
-  `Geb/` are now named; 209 in `GebTests/` remain at the time of writing.
+- Give every `example` a name, so that the axiom linter covers it. Those in
+  `Geb/` are all named; those in `GebTests/` remain.
 - Record the rule in [docs/rules/lean-coding.md](docs/rules/lean-coding.md),
   alongside the other axiom-hygiene material in § Constructive-only Lean code,
   stating the reason rather than only the rule.
@@ -461,7 +442,8 @@ at the same head symbol and so requires the explicit-supply mitigation
 that trade, having no need of `FinEnum`; this item does need it and should
 price it.
 
-Depends on the `FinCat` workstream.
+Its dependency, the `FinCat` workstream, is implemented under
+`Geb/Mathlib/CategoryTheory/FinCat/`.
 
 ### Finite categories as a full subcategory of `Cat`
 
@@ -492,7 +474,8 @@ force revision of `FinCat`'s identity convention or hom encoding, so it is
 taken after that workstream's interface has been exercised by the PRA item
 above.
 
-Depends on the `FinCat` workstream.
+Its dependency, the `FinCat` workstream, is implemented under
+`Geb/Mathlib/CategoryTheory/FinCat/`.
 
 ### Bellantoni-Cook
 
@@ -519,11 +502,11 @@ Four items over `Geb/Mathlib/Data/Tree/`.
    corresponding encoding. Requires a decision on the label field's
    spelling, and a recognizer whose scanning state carries a phase.
 2. Define `ConcreteSyntax.Ast` from `BinTree`, removing the duplication
-   between them. The item becomes actionable once a concrete-syntax
-   module lands on `main` carrying the initial algebra of
-   `Fin k + X × X` with its own `leaf`, `fork`, induction principle and
-   parse/print retraction; the import rules bar `Geb/Mathlib/` from
-   reaching `Geb/Internal/`, so the dependency runs the other way.
+   between them. `Geb/Internal/ConcreteSyntax.lean` carries the initial
+   algebra of `Fin k + X × X` with its own `leaf`, `fork`, induction
+   principle `Ast.ind` and parse/print retraction, so the condition on
+   this item is met; the import rules bar `Geb/Mathlib/` from reaching
+   `Geb/Internal/`, so the dependency runs the other way.
 3. Resolve the overlap with `Mathlib/Data/Tree/Basic.lean`, which
    declares `BinaryTree` with `numNodes`, `numLeaves` and `height`.
    `Mathlib/Data/Tree/` holds `Basic.lean`, `Get.lean`, `RBMap.lean` and
