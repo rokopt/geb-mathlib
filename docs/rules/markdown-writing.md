@@ -46,8 +46,10 @@ markers, then commit.
 - Internal links use repo-relative paths
   (`[name](docs/foo.md)`), not absolute or local-machine paths.
 - External links use full URLs.
-- Dead-link checks are not currently automated; verify manually
-  when adding links to external resources.
+- `scripts/check-md-links.sh`, run by the pre-push checklist,
+  fails when an internal link's target does not exist. It checks
+  the path only: a `#fragment` naming no heading passes, as does
+  a dead external URL, so verify both manually.
 
 ## Prose style
 

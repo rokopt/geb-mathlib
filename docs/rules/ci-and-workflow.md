@@ -68,7 +68,8 @@ Script self-tests:
 - `scripts/tests/test-lake-shake.sh`,
   `scripts/tests/test-extract-pr.sh`,
   `scripts/tests/test-axiom-linter.sh`,
-  `scripts/tests/test-lint-driver.sh`.
+  `scripts/tests/test-lint-driver.sh`,
+  `scripts/tests/test-check-md-links.sh`.
 - `scripts/tests/test-mathlib-bump-detect.sh`,
   `scripts/tests/test-jj-bump-detect.sh`,
   `scripts/tests/test-regenerate-integration.sh`,
@@ -79,6 +80,8 @@ Markdown and project-rule checks:
 
 - `doctoc --dryrun --update-only .` (TOC freshness; skipped when
   `doctoc` is absent) and `markdownlint-cli2 '**/*.md'`.
+- `scripts/check-md-links.sh` (every internal Markdown link target
+  exists; see `docs/rules/markdown-writing.md` § Link conventions).
 - `scripts/lake-update-warning.sh` (warns on a `lake-manifest.json`
   change outside a `bump/*` or `chore/bootstrap` branch).
 - Docs-coverage reminder: Lean changes under an upstream-eligible
