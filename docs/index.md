@@ -242,7 +242,9 @@ import-direction rules above are enforced by
   `isTreeSem_eq_singleton_iff_valid` identifies the recognizer with
   `BinTree.Valid`, and `isTreeSem_eq_singleton_iff_exists_print`
   composes that with `BinTree.valid_iff_exists_print` to give acceptance
-  of exactly the spellings of trees. The recognizer is a single scan
+  of exactly the spellings of trees; `isTreeSem_eq_ite` restates the
+  recognizer as the indicator of `BinTree.Valid`. The recognizer is a
+  single scan
   rather than a recursive descent, a descent needing recursion on a safe
   argument, which the class forbids; each bit is read once. Depends on
   `Geb.Mathlib.Computability.BellantoniCook.Basic`,
