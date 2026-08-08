@@ -5,9 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Mathlib.Computability.BellantoniCook.Basic
-import GebTests.Mathlib.Computability.BellantoniCook.Tree
+public import Geb.Mathlib.Data.Tree.Binary
+public import Geb.Mathlib.Data.Tree.Preorder
 
 /-!
-# BellantoniCook tests — index
+# Tree — index
 -/
