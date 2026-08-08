@@ -48,6 +48,8 @@ direction a single right-to-left pass carrying a counter can scan.
 * `BinTree.valid_iff_exists_print` — the valid words are exactly the
   spellings.
 * `BinTree.valid_iff_isSome_parse` — `parse` decides `Valid`.
+* `BinTree.depth_le_length` — the stack depth never exceeds the word
+  length.
 
 ## Implementation notes
 
@@ -132,6 +134,19 @@ a node bit pops two and pushes one. Subtraction is truncated at zero;
 
 @[simp] theorem depth_cons_true (v : List Bool) :
     depth (true :: v) = depth v - 1 := rfl
+
+/-- The stack depth never exceeds the word length. A leaf bit raises the
+depth by one and consumes one bit; a node bit lowers it, the subtraction
+being truncated at zero. -/
+theorem depth_le_length (w : List Bool) : depth w ≤ w.length :=
+  List.rec (motive := fun u ↦ depth u ≤ u.length) (Nat.le_refl 0)
+    (fun b v ih ↦ by
+      cases b
+      · rw [depth_cons_false, List.length_cons]
+        omega
+      · rw [depth_cons_true, List.length_cons]
+        omega)
+    w
 
 /-- Every node bit is read at a depth of at least two, so that popping
 two operands is defined. This is strictly stronger than absence of
