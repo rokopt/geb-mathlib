@@ -460,3 +460,135 @@
   doi     = {10.1016/j.entcs.2011.02.020},
   note    = {MSFP 2008},
 }
+
+@article{Strahm2003,
+  author  = {Strahm, Thomas},
+  title   = {Theories with self-application and computational complexity},
+  journal = {Information and Computation},
+  volume  = {185},
+  number  = {2},
+  pages   = {263--297},
+  year    = {2003},
+  doi     = {10.1016/S0890-5401(03)00086-5},
+  note    = {Section 2 defines bounded recursion on notation (BRN) and
+             bounded lexicographic recursion (BRL) over binary words, and
+             states in the same paragraph that in the proviso
+             $F(\vec{x}, y) \le K(\vec{x}, y)$, ``$x \le y$ signifies that
+             the length of the word $x$ is less than or equal to the length
+             of the word $y$'' --- so the proviso is a length bound,
+             agreeing with [HeraudNowak2011]. Theorem 1 gives the four
+             function-algebra characterizations. Only the left-to-right
+             inclusion of its item 2 is relied on here: the class carries
+             no stated growth restriction or space convention, and read
+             literally the equality fails, the smash being computable in
+             polynomial time and logarithmic work space while lying outside
+             the algebra. Section 4 attests ``cut-off'' for the clamp
+             operator and for truncated subtraction, and defines the
+             most-significant-part function msp.},
+}
+
+@incollection{Strahm2010,
+  author    = {Strahm, Thomas},
+  title     = {Weak theories of operations and types},
+  booktitle = {Ways of Proof Theory},
+  editor    = {Schindler, Ralf},
+  publisher = {Ontos Verlag / De Gruyter},
+  pages     = {441--468},
+  year      = {2010},
+  doi       = {10.1515/9783110324907.441},
+  note      = {Theorem 5 restates [Strahm2003] Theorem 1 without defining
+               either operator, deferring to it, so [Strahm2003] is the
+               source for BRN. Lemma 4's cut-off $t \mid s$ totalizes a
+               closed term inside the applicative theory, feeding the lower
+               bounds of Theorem 7; it replaces an over-long value by the
+               bound rather than truncating to the bound's length, and
+               compares no two function algebras. The 2009 item of the same
+               title is a Bulletin of Symbolic Logic abstract.},
+}
+
+@incollection{Clote1999,
+  author    = {Clote, Peter},
+  title     = {Computation models and function algebras},
+  booktitle = {Handbook of Computability Theory},
+  editor    = {Griffor, Edward R.},
+  series    = {Studies in Logic and the Foundations of Mathematics},
+  volume    = {140},
+  publisher = {Elsevier},
+  pages     = {589--681},
+  year      = {1999},
+  doi       = {10.1016/S0049-237X(99)80033-0},
+  note      = {Theorem 3.20 is the arithmetic analogue of [Strahm2003]
+               Theorem 1(2): over the naturals, with $*$ read as
+               $2^{|y|}x + y$, with a value rather than a length proviso
+               (Definition 3.18, which also carries an $x \ne 0$ guard
+               forced by $s_0(0) = 0$), and with $\times$ ordinary
+               multiplication rather than [Strahm2003]'s word
+               multiplication --- the two operations named $\times$ must be
+               distinguished before both sources are cited. Its GTimeSpace
+               is not a bare simultaneous-resource class: Definition 2.13
+               reads it as the functions of linear growth whose bitgraph
+               lies in the class, and its space measure counts work-tape
+               cells only. Footnote 10 records that limited and bounded
+               name the same schemes here, both carrying the side
+               condition; Definition 4.5's limited recursion on notation
+               carries it explicitly.},
+}
+
+@article{Thompson1972,
+  author  = {Thompson, David B.},
+  title   = {Subrecursiveness: machine-independent notions of computability
+             in restricted time and storage},
+  journal = {Mathematical Systems Theory},
+  volume  = {6},
+  pages   = {3--15},
+  year    = {1972},
+  doi     = {10.1007/BF01706069},
+  note    = {Paywalled and not read. The simultaneous polynomial-time
+             linear-space characterization is taken from [Strahm2003]
+             Theorem 1(2), which attributes it here; [Clote1999] Theorem
+             3.20 attributes its arithmetic analogue here as well, but
+             [Strahm2003] refers the reader to [Clote1999] for a uniform
+             presentation, so the two attributions are not independent. A
+             theoremsearch query for the statement returned no hit, that
+             index covering arXiv.},
+}
+
+@article{Ritchie1963,
+  author  = {Ritchie, Robert W.},
+  title   = {Classes of predictably computable functions},
+  journal = {Transactions of the American Mathematical Society},
+  volume  = {106},
+  pages   = {139--173},
+  year    = {1963},
+  doi     = {10.1090/S0002-9947-1963-0158822-2},
+  note    = {Not read. Cited for the identification of linear space with
+             the second Grzegorczyk class, via [Clote1999] Theorem 3.36
+             (functions) and Corollary 3.37 (predicates).},
+}
+
+@inproceedings{Cobham1965,
+  author    = {Cobham, Alan},
+  title     = {The intrinsic computational difficulty of functions},
+  booktitle = {Logic, Methodology and Philosophy of Science II},
+  editor    = {Bar-Hillel, Yehoshua},
+  publisher = {North-Holland},
+  pages     = {24--30},
+  year      = {1965},
+  note      = {Not read; no DOI, the volume predating the practice.
+               Bibliographic detail as [Strahm2003] and [Clote1999] give
+               it. Cited for the characterization of the polynomial-time
+               functions by bounded recursion on notation, which
+               [HeraudNowak2011] Section 3.1 states and does not prove.},
+}
+
+@techreport{Bellantoni1992,
+  author      = {Bellantoni, Stephen},
+  title       = {Predicative recursion and computational complexity},
+  institution = {University of Toronto, Department of Computer Science},
+  number      = {264/92},
+  year        = {1992},
+  month       = sep,
+  note        = {Not read; no DOI. Distinct from [BellantoniCook1992].
+                 Cited for the safe-recursion characterization of the
+                 second Grzegorczyk class, [Clote1999] Theorem 3.101.},
+}
