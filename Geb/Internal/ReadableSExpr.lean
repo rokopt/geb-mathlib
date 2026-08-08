@@ -248,5 +248,75 @@ theorem block_append_head_not_digit {k : Nat} (ts : List (Rose k))
     subst h1
     decide
 
+/-! ## Parser -/
+
+/-- One layer of the recursive descent. A tree is a bare numeral or a
+parenthesized list, so this branches on the first character. It strips
+whitespace at four sites: after `(`, after the label in each branch,
+and after the child list. The strip after the parenthesized branch's
+label is the one the grammar makes least obvious:
+`Rose.parseChildren` tests its input's head against `')'` immediately,
+so it must be called on stripped input or `(0 1 2)` fails at its first
+child. `parseStep` is called on stripped input and returns a stripped
+remainder; that invariant is what lets the shared loop be reused. -/
+def parseStep (k : Nat) (childParse : List Char → Option (Rose k × List Char))
+    (loopFuel : Nat) : List Char → Option (Rose k × List Char)
+  | [] => none
+  | c :: cs =>
+    if c = '(' then
+      match Csexp.readNat (skipWs cs) with
+      | some (m, cs1) =>
+        if h : m < k then
+          (Rose.parseChildren childParse loopFuel (skipWs cs1)).map
+            fun p ↦ (Rose.ofList ⟨m, h⟩ p.1, skipWs p.2)
+        else none
+      | none => none
+    else
+      match Csexp.readNat (c :: cs) with
+      | some (m, cs1) =>
+        if h : m < k then some (Rose.node ⟨m, h⟩ Fin.elim0, skipWs cs1)
+        else none
+      | none => none
+
+/-- Recursive descent over the readable spelling. The `Nat` bounds the
+recursion and serves in two roles at each layer: undecremented as the
+child loop's bound, and decremented as the child parser's fuel. -/
+def parseAux (k : Nat) : Nat → List Char → Option (Rose k × List Char) :=
+  Nat.rec (motive := fun _ ↦ List Char → Option (Rose k × List Char))
+    (fun _ ↦ none) fun f ih ↦ parseStep k ih (f + 1)
+
+@[simp] theorem parseAux_succ (k f : Nat) :
+    parseAux k (f + 1) = parseStep k (parseAux k f) (f + 1) := rfl
+
+/-- The parser of the readable spelling, rejecting trailing input. The
+leading strip and the stripping invariant together are what let a
+leading indent and a trailing newline parse. -/
+def parse (k : Nat) (cs : List Char) : Option (Rose k) :=
+  match parseAux k cs.length (skipWs cs) with
+  | some (r, []) => some r
+  | _ => none
+
+theorem parseStep_open (k : Nat)
+    (childParse : List Char → Option (Rose k × List Char))
+    (loopFuel : Nat) (cs : List Char) :
+    parseStep k childParse loopFuel ('(' :: cs)
+      = match Csexp.readNat (skipWs cs) with
+        | some (m, cs1) =>
+          if h : m < k then
+            (Rose.parseChildren childParse loopFuel (skipWs cs1)).map
+              fun p ↦ (Rose.ofList ⟨m, h⟩ p.1, skipWs p.2)
+          else none
+        | none => none := rfl
+
+theorem parseStep_other (k : Nat)
+    (childParse : List Char → Option (Rose k × List Char))
+    (loopFuel : Nat) (c : Char) (cs : List Char) (hc : c ≠ '(') :
+    parseStep k childParse loopFuel (c :: cs)
+      = match Csexp.readNat (c :: cs) with
+        | some (m, cs1) =>
+          if h : m < k then some (Rose.node ⟨m, h⟩ Fin.elim0, skipWs cs1)
+          else none
+        | none => none := if_neg hc
+
 end Rsexp
 end Geb
