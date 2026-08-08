@@ -232,9 +232,10 @@ import-direction rules above are enforced by
   W-type, and its semantics by the W-type's eliminator. `compChildren`
   orders a `comp` node's children as `Direction` gives them. Depends on
   `Geb.Mathlib.Data.PFunctor.Slice.W` and
-  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `evalRec` depends on
-  `propext`; `finEnumCompDirection`, `sigFinitary`, `evalValue`,
-  `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `sigFinitary` resolves
+  through `FinEnum.unit`, `FinEnum.finFin` and `FinEnum.finSum` under
+  `open scoped FinEnum`. `evalRec` depends on `propext`; `sigFinitary`,
+  `evalValue`, `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
 - `Geb/Mathlib/Computability/BellantoniCook/Tree.lean` — a recognizer
   for the preorder spellings of binary trees, as three expressions of
   `B`. `comb` is a `safeRec` carrying the stack depth and the underflow
