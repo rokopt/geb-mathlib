@@ -1383,16 +1383,15 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 
 The development is
 [Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-54 theorems,
-[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean),
-18 more, and
+[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+and
 [Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean),
-29 more, with tests in
+with tests in
 [GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean),
 [GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean)
 and
 [GebTests/Internal/ReadableSExpr.lean](../GebTests/Internal/ReadableSExpr.lean).
-All six build under the toolchain pinned in `lean-toolchain` with
+All of them build under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contain no `sorry`.
 The first module's one import is
 [Geb/Mathlib/Data/W/Basic.lean](../Geb/Mathlib/Data/W/Basic.lean), and
@@ -1471,27 +1470,30 @@ the running example of
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding),
 whose two right-hand labels are transposed.
 
-Axiom dependencies, from `#print axioms` over the first module's 54
-theorems:
+Axiom dependencies, from `#print axioms` over the first module's
+theorems. Every class below is occupied; the entries name theorems
+falling in each rather than counting them, since a count goes out of
+date with the next theorem added:
 
-| Theorems | Axioms |
+| Theorems, among them | Axioms |
 | --- | --- |
-| 13, among them `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
-| 8, among them `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
-| 8, among them `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc`, `Rose.ofList_eq` | `Quot.sound` |
-| the remaining 25, among them `Csexp.parse_print` | `propext`, `Quot.sound` |
+| `Tree.map_mk`, `Geb.print_injective`, `Csexp.charDigit_digitChar` | none |
+| `Ast.toRose_fork`, `Geb.format_idem`, `Csexp.printAst_leaf` | `propext` |
+| `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc`, `Rose.ofList_eq` | `Quot.sound` |
+| `Csexp.parse_print` | `propext`, `Quot.sound` |
 
 [Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
-adds 18 theorems. Two depend on no axiom, four on `propext` alone, and
-the remaining 12 — `Rose.parse_print` and
+divides the same way but for the `Quot.sound`-alone class, which is
+empty there: some of its theorems depend on no axiom, some on `propext`
+alone, and the rest — `Rose.parse_print` and
 `Ast.parseViaRose_printViaRose` among them — on `propext` and
 `Quot.sound`.
 
 [Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
-adds 29. Thirteen depend on no axiom, one — `Rsexp.digit_not_ws` — on
-`propext` alone, and the remaining 15 — `Rsexp.parse_print` and
-`Rsexp.parseViaRose_printViaRose` among them — on `propext` and
-`Quot.sound`.
+divides as the second module does: some depend on no axiom,
+`Rsexp.digit_not_ws` on `propext` alone, and the rest —
+`Rsexp.parse_print` and `Rsexp.parseViaRose_printViaRose` among them —
+on `propext` and `Quot.sound`.
 
 No declaration in any of the three modules depends on
 `Classical.choice`, and
@@ -1665,16 +1667,10 @@ everything feeding a hash.
 The table covers the scheduled stages; stage 5 below is contingent on
 language features that do not exist yet.
 
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean)
-is 54 theorems, 26 of them in `Csexp`,
-[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
-a further 18 and
-[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
-a further 29;
-[Local verification](#local-verification) breaks them down by axiom.
-That is the only measured quantity, and one
-implementation is too small a base to extrapolate a schedule from, so
-the stages below are ordered by dependency and carry no estimate.
+[Local verification](#local-verification) records which axioms the
+implemented modules' theorems reach. One implementation is too small a
+base to extrapolate a schedule from, so the stages below are ordered by
+dependency and carry no estimate.
 
 Stage 1b introduces no new proof technique and reuses the decimal layer
 unchanged: the JSON core profile's integers are decimal ASCII, which is
