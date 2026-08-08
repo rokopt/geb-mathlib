@@ -57,6 +57,7 @@ is itself `Classical`-dependent). Feature branches append their own
 wrapper module names together with their test parallels. -/
 def classicalAllowedModules : NameSet :=
   [`GebTests.Internal.AxiomLinterClassicalFixture,
+   `Geb.Internal.PresheafIRProto.Functor,
    `Geb.Mathlib.Data.PFunctor.Slice.Functor,
    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor,
    `GebTests.Mathlib.Data.PFunctor.Slice.Functor,
