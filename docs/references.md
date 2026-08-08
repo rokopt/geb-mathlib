@@ -140,9 +140,9 @@ Conditions for considering these targets are in
 
 Tooling and exposition for the readable S-expression syntax
 `Geb/Internal/ReadableSExpr.lean` implements. The citable
-specifications it transcribes against — R7RS, EDN, RFC 9804 —
-are in `docs/references.bib`; the entries here are neither
-specifications nor citable literature.
+specifications it transcribes against — R7RS, EDN, RFC 9804,
+RFC 8259 — are in `docs/references.bib`; the entries here are
+neither specifications nor citable literature.
 
 - [`janestreet/sexplib`](https://github.com/janestreet/sexplib)
   — the OCaml S-expression library, MIT. Its `README.org` is the

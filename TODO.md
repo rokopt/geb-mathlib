@@ -713,7 +713,6 @@ Correcting these is a separate concern from any current branch per
   `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` imports
   `Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinaryProducts`,
   which is transitively supplied by the next import,
-  `…LimitsOfProductsAndEqualizers`; `--keep-implied` keeps this import out of
   `scripts/pre-push.sh`'s `lake shake` report, but without that flag, `lake
   shake` reports it as removable, and reports the same pattern across the tree:
   `lake shake --add-public --keep-prefix Geb GebTests` reports 14

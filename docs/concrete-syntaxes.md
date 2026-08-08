@@ -1102,7 +1102,7 @@ breadth of maintained third-party libraries:
 | --- | --- | --- | --- | --- |
 | csexp canonical | very low | thin | no | normative |
 | csexp advanced | medium | thin | yes | n/a |
-| readable S-expressions | low | medium | yes | n/a |
+| readable S-expressions | low | broad | yes | n/a |
 | CBOR §4.2 | low | broad | no | normative |
 | JSON core profile | very low | very broad | yes | via JCS |
 | JSON annotated | medium | very broad | yes | via JCS |
@@ -1136,10 +1136,10 @@ numbers, no scalar types — which stresses the abstraction further than
 a second array-and-map format would. A DAG-JSON and DAG-CBOR pair
 would share the identical IPLD data model and test it least.
 
-Two considerations bear on the order. Both favoured the JSON core
-profile first while neither was met; the first is met by the readable
-S-expression form, which is implemented, so only the second still
-favours it.
+Two considerations bear on the order, and only one still favours
+placing the JSON core profile first: readability is already supplied
+by the implemented readable S-expression form, so only the JSON core
+profile's lower verified-parser cost counts in its favour.
 
 - Canonical csexp has no readable form. Readability lives in the
   advanced form, which is a second and larger parser, so readability
@@ -1459,8 +1459,9 @@ header or the
 alphabet size that
 [One tree, every recommended encoding](#one-tree-every-recommended-encoding)
 shows. The bare-tree stages carry neither a format header nor a serialized
-alphabet size: `Csexp.parse` takes `k` as a parameter, and a bare tree
-in a known syntax needs no self-description. The annotated encodings in
+alphabet size: `Csexp.parse` and `Rsexp.parse` both take `k` as a
+parameter, and a bare tree in a known syntax needs no self-description.
+The annotated encodings in
 that section carry both, and § CBOR's map-free resolution turns on the
 format tag being present.
 The tests pin the spelling: for the five-node tree
@@ -1573,8 +1574,13 @@ Three facts about the encoding, for anyone extending the development:
    is why it sits in the first module rather than beside either parser;
    `Rose.ofList` is the transport discharging the second, with
    `Rose.ofList_ofFn` the equation justifying it. Both spellings of the
-   rose presentation incur the pair, so each obligation is discharged
-   twice. The
+   rose presentation incur the pair, but the two obligations resolve
+   differently: the readable grammar's stripping discipline makes its
+   recursion-bound retraction proof, `Rsexp.parseChildren_print`, a
+   different statement from `Rose.parseChildren_print`, even though both
+   share the `Rose.parseChildren` definition, so that obligation is
+   discharged twice; the transport obligation is discharged once, by
+   that equation, and applied at both spellings' retraction proofs. The
    bare-tree JSON
    and CBOR profiles above spell a fork as a two-element array, so
    neither obligation arises at stages 1b and 1c. The stages that
@@ -1838,11 +1844,17 @@ declares) and
 its retraction rebuilds a W-type node from the `List` that loop returns
 (`Rose.ofList_ofFn`, a transport along `List.length_ofFn`). What it
 contributes is a second spelling over one grammar, the spelling that
-matches the abstract syntax's own reading. Both obligations are
-discharged twice in this development: the readable spelling of
+matches the abstract syntax's own reading. The readable spelling of
 [Readable S-expressions (R7RS, EDN, sexplib)](#readable-s-expressions-r7rs-edn-sexplib)
 reads the same variable-arity nodes over a different grammar, reusing
-`Rose.parseChildren` for the first and `Rose.ofList` for the second.
+`Rose.parseChildren`'s definition for the first obligation and
+`Rose.ofList`'s for the second, but the two obligations resolve
+differently there: the readable grammar's stripping discipline makes its
+recursion-bound retraction proof a distinct statement,
+`Rsexp.parseChildren_print`, from `Rose.parseChildren_print`, so that
+obligation is discharged twice, while the transport proof,
+`Rose.ofList_ofFn`, is unchanged and applied as-is at both spellings, so
+it is discharged once and incurred twice.
 
 [FormalSExpr] is an expired individual submission with no IETF standing.
 Its value here is as a transcription target checked against the grammar,
@@ -1977,8 +1989,9 @@ Standards and specifications:
   encoding. <https://www.rfc-editor.org/rfc/rfc8949.html>
 - Shinn, A., J. Cowan, and A. A. Gleckler, Eds., "Revised⁷ Report on
   the Algorithmic Language Scheme", 2013; errata-corrected edition
-  dated 19 December 2022; §4.1.3 procedure calls, §7.1.1 lexical
-  structure, §7.1.2 external representations.
+  dated 19 December 2022; §2.2 whitespace and comments, §4.1.3
+  procedure calls, §7.1.1 lexical structure, §7.1.2 external
+  representations.
   <https://standards.scheme.org/corrected-r7rs/r7rs.html>
 - "edn: extensible data notation"; no author or date given.
   <https://github.com/edn-format/edn>
