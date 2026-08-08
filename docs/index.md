@@ -848,7 +848,7 @@ import-direction rules above are enforced by
   `CategoryTheory.FinCat.Hom₂.instRepr` renders a 2-cell
   specification as its component vector. The `Bool`-validity fields
   are not rendered, carrying no information a reader of the table
-  needs. All three instances depend on `propext`.
+  needs. All of them depend on `propext`.
 - `Geb/Internal/PresheafIRProto/Basic.lean` — prototype of the morphism
   theory of presheaf parametric-right-adjoint functors, and of the
   constant functor at a representable. `GebProto.objEquivSigmaArityHom`
@@ -960,10 +960,9 @@ import-direction rules above are enforced by
   `Csexp.format_idem`/`Csexp.print_injective` its two instantiated
   corollaries. `finEnumFin` and `finEnumEmpty` name choice-free
   `FinEnum` constructions, mathlib's going through `FinEnum.ofList` and
-  depending on `Classical.choice`. Of the module's 54 theorems, 13
-  depend on no axioms, 8 on `propext` alone, 8 on `Quot.sound` alone,
-  and the remaining 25 on `propext` and `Quot.sound`. No declaration
-  depends on `Classical.choice`.
+  depending on `Classical.choice`. No theorem here depends on an axiom
+  beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - `Geb/Internal/CanonicalSExpr.lean` — canonical S-expressions as a data
   type. `Geb.CSexp` is the non-dependent form of the family
   [FormalSExpr] indexes by the octets representing it, and
@@ -989,9 +988,8 @@ import-direction rules above are enforced by
   measure as the printed length. The module's `## Implementation notes`
   derives the two inequalities that measure has to satisfy and why the
   printed length is taken rather than a node count.
-  Of the module's 18 theorems, 2 depend on no axioms, 4 on
-  `propext` alone, and the remaining 12 on `propext` and `Quot.sound`.
-  No declaration depends on `Classical.choice`.
+  No theorem here depends on an axiom beyond `propext` and
+  `Quot.sound`, and no declaration depends on `Classical.choice`.
 - `Geb/Internal/ReadableSExpr.lean` — the readable spelling of the rose
   presentation, a whitespace-separated parenthesized text where the
   canonical form is length-prefixed and whitespace-free, so that
@@ -1009,7 +1007,6 @@ import-direction rules above are enforced by
   rose bijection to `Ast k`. A bare numeral is delimited only by the
   next character not being a digit, so `Rsexp.parseAux_print` carries a
   side condition on the caller's remainder that the canonical
-  length-prefixed form does not need. Of the module's 29 theorems, 13
-  depend on no axioms, 1 on `propext` alone, and the remaining 15 on
-  `propext` and `Quot.sound`. No declaration depends on
+  length-prefixed form does not need. No theorem here depends on an
+  axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
