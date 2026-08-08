@@ -86,6 +86,12 @@ fi
 step "markdownlint-cli2 '**/*.md'"
 markdownlint-cli2 '**/*.md'
 
+step "scripts/check-md-links.sh"
+bash scripts/check-md-links.sh
+
+step "scripts/tests/test-check-md-links.sh"
+bash scripts/tests/test-check-md-links.sh
+
 step "scripts/tests/test-axiom-linter.sh"
 bash scripts/tests/test-axiom-linter.sh
 
