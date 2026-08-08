@@ -849,6 +849,77 @@ import-direction rules above are enforced by
   specification as its component vector. The `Bool`-validity fields
   are not rendered, carrying no information a reader of the table
   needs. All three instances depend on `propext`.
+- `Geb/Internal/PresheafIRProto/Basic.lean` — prototype of the morphism
+  theory of presheaf parametric-right-adjoint functors, and of the
+  constant functor at a representable. `GebProto.objEquivSigmaArityHom`
+  is the p.r.a. formula of [Weber2007] as the equivalence
+  `F.obj Z ≃ Σ a : F.A, ArityHom F a Z`, with the presheaf hom
+  unbundled as `GebProto.ArityHom` and so free of `Classical.choice`;
+  `GebProto.ObjFib`, `GebProto.objFibRestr`, `GebProto.objFibMap` and
+  `GebProto.ofSigmaFib` are its `j`-fibred form
+  `F Z j = Σ (a : T₁ j), Hom (E a) Z`. `GebProto.PshHom` is the
+  morphism data — a `GebProto.ShapeHom`, a backward arity map, and the
+  `el(T₁)` naturality of the latter across a transport along the
+  former's naturality — with `GebProto.pshHomFib` its action and
+  `GebProto.idPshHom` the identity. `GebProto.pshHomEquivNatFamily` is
+  the representation theorem, classifying the natural families between
+  two such functors by shape-map-forward and arity-map-backward data,
+  with `GebProto.domHomEquivNatFamily` its domain-level warm-up and
+  `GebProto.pshHomFib_objFibRestr` the content of `PshHom`'s
+  `reindexCompat` clause. `GebProto.iotaPresheaf` is the functor
+  constant at the representable `y j₀`, whose shape type is that
+  representable's total space rather than a single shape, and
+  `GebProto.isFunctorial_of_subsingletonDirection` discharges its five
+  direction-side laws by `Subsingleton.elim`. No theorem here depends on
+  an axiom beyond `propext` and `Quot.sound`, and no declaration depends
+  on `Classical.choice`.
+- `Geb/Internal/PresheafIRProto/Codes.lean` — prototype of the code
+  combinators, the semantic counterparts of the code constructors of
+  Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013] generalized
+  from families to presheaves. `GebProto.adjoinArity` is `δ`'s
+  direction-adjoining half, over the shape-indexed `GebProto.ShapeArity`
+  rather than an output-indexed arity, which is what keeps it free of
+  transports; `GebProto.BaseArity.pullback` converts the output-indexed
+  form a code carries into it, and
+  `GebProto.BaseArity.isFunctorial_pullback` is why a code's `δ` need
+  not mention its subcode's shapes. `GebProto.elCategory` is the
+  category of elements of a presheaf on `J`, used as a base category,
+  and `GebProto.sigmaPsh` the `σ` case pushing a functor over it forward
+  along the projection, its five non-inherited laws being
+  `GebProto.sigmaPsh_shapeRestr_id` through
+  `GebProto.sigmaPsh_reindex_comp`. `GebProto.delta` carries both the
+  decoding presheaf `GebProto.decPresheaf` and the arity
+  `GebProto.decArity` indexed by its elements. `GebProto.codePFunctor`
+  is the polynomial functor on `Cat` whose W-type `GebProto.Code` is the
+  code type, with `GebProto.praCode` and `GebProto.deltaCode` its two
+  constructors and `GebProto.interp` the fold; `GebProto.interp_praCode`
+  and `GebProto.interp_deltaCode` are the computation rules, each
+  definitional. `GebProto.praCodeOf` names the leaf as a section of
+  `interp`, and `GebProto.leftInverse_interp_praCodeOf` with
+  `GebProto.surjective_interp` state that the interpretation retracts
+  onto it, so the codes denote exactly the presheaf p.r.a. functors over
+  `GebProto.ElObj D` at the universes `CodeShape` pins;
+  `GebProto.interp_praCode_interp` is the corresponding statement that
+  `δ` adds no functor the leaf does not already supply. No theorem here
+  depends on an axiom beyond `propext` and `Quot.sound`, and no
+  declaration depends on `Classical.choice`.
+- `Geb/Internal/PresheafIRProto/Functor.lean` — the parts of the
+  prototype that write in a functor category, which
+  `CategoryTheory.Functor.category` makes `Classical.choice`-dependent,
+  so this module alone of the three is on
+  `GebMeta.classicalAllowedModules`.
+  `GebProto.arityHomEquivNatTrans` bundles the unbundled arity hom as a
+  `CategoryTheory.NatTrans` — the identity on both sides, a `NatTrans`
+  being its `app` field together with `naturality` — and
+  `GebProto.objEquivSigmaHom` transports the core's
+  `GebProto.objEquivSigmaArityHom` along it, so no part of the p.r.a.
+  formula is re-proved. `GebProto.arityPresheafHomAtUB` and
+  `GebProto.arityPresheafHomULifted` record the universes at which the
+  bundled hom is formable, and `GebProto.BaseArity.functor` bundles an
+  output-indexed arity as a functor `J ⥤ (Iᵒᵖ ⥤ Type uB)`, its two
+  functor laws proved here rather than transported. The module declares
+  no theorems, and every declaration in it depends on `propext`,
+  `Classical.choice` and `Quot.sound`.
 - `Geb/Internal/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
