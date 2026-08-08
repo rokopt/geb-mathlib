@@ -7,6 +7,8 @@ module
 
 public import Geb.Internal.ReadableSExpr  -- shake: keep; #guard needs it
 public meta import Geb.Internal.ReadableSExpr  -- shake: keep; #guard needs it
+public import GebTests.Internal.ConcreteSyntax  -- shake: keep; #guard needs it
+public meta import GebTests.Internal.ConcreteSyntax  -- shake: keep; #guard needs it
 public import Mathlib.Data.Fin.VecNotation
 
 /-!
@@ -17,14 +19,18 @@ every rejection path is unexercised by it, and no theorem evaluates
 `Rsexp.print`'s spelling — the `@[simp]` lemmas `Rsexp.print_zero` and
 `Rsexp.print_succ` pin it only up to unfolding. The assertions below check
 the printer's spelling at a concrete tree; evaluate the round trip
-`Rsexp.parse_print` states but does not run; exercise three families of
-input the parser admits but the printer never emits — whitespace variants,
-a parenthesized childless node, and the decimal layer's laxity on leading
-zeros, including the reinterpretation of a parenthesized single-child node
-`(0 1)` as the childless node `1`; evaluate the formatter `Geb.format` at
-this syntax, which `Rsexp.format_idem` states idempotent without running
-it; and exercise the rejection paths, including the two distinct routes to
-`none` at empty and at whitespace-only input.
+`Rsexp.parse_print` states but does not run; evaluate the `Ast` composites
+`Rsexp.printViaRose` and `Rsexp.parseViaRose` at `sampleAst`, reused from
+`GebTests.Internal.ConcreteSyntax`, whose round trip
+`Rsexp.parseViaRose_printViaRose` states but does not run; exercise three
+families of input the parser admits but the printer never emits —
+whitespace variants, a parenthesized childless node, and the decimal
+layer's laxity on leading zeros, including the reinterpretation of a
+parenthesized single-child node `(0 1)` as the childless node `1`;
+evaluate the formatter `Geb.format` at this syntax, which
+`Rsexp.format_idem` states idempotent without running it; and exercise
+the rejection paths, including the two distinct routes to `none` at
+empty and at whitespace-only input.
 
 Inputs are `List Char`; core's `String.toList` depends on
 `Classical.choice`, which
@@ -61,6 +67,17 @@ def sampleRose : Rose 8 :=
 
 #guard Rsexp.parse 8 (Rsexp.print sampleRose) == some sampleRose
 
+/-! ## The `Ast` composites, evaluated
+
+`Rsexp.printViaRose` and `Rsexp.parseViaRose` compose `Rsexp.print` and
+`Rsexp.parse` with the rose bijection; `Rsexp.parseViaRose_printViaRose`
+states their round trip but does not run it. `sampleAst` is reused from
+`GebTests.Internal.ConcreteSyntax`, so the spelling can be compared
+against the one that module pins for the same tree. -/
+
+#guard String.ofList (Rsexp.printViaRose sampleAst) == "(0 (1 2))"
+#guard Rsexp.parseViaRose 3 (Rsexp.printViaRose sampleAst) == some sampleAst
+
 /-! ## Inputs the parser accepts but the printer never emits -/
 
 -- pin that each compared input parses: every assertion below is an
@@ -70,6 +87,7 @@ def sampleRose : Rose 8 :=
 -- whitespace variants the printer never emits
 #guard Rsexp.parse 8 ['(', '0', ' ', ' ', '1', ')'] == Rsexp.parse 8 ['(', '0', ' ', '1', ')']
 #guard Rsexp.parse 8 ['(', '0', ' ', '1', ' ', ')'] == Rsexp.parse 8 ['(', '0', ' ', '1', ')']
+#guard Rsexp.parse 8 ['(', '0', '\t', '1', '\r', ')'] == Rsexp.parse 8 ['(', '0', ' ', '1', ')']
 #guard (Rsexp.parse 8 ['(', '0', ' ', '(', '1', ')', ')']).isSome
 #guard Rsexp.parse 8 ['(', '0', '(', '1', ')', ')']
     == Rsexp.parse 8 ['(', '0', ' ', '(', '1', ')', ')']

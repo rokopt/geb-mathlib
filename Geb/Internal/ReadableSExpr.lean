@@ -117,6 +117,7 @@ theorem print_succ {k n : Nat} (i : Fin k) (f : Fin (n + 1) → Rose k) :
               ++ [')'])) := by
   unfold print Rose.node
   rw [WType.elim_mk]
+  -- reduce the match `WType.elim_mk` exposed, picking the `n.succ` arm
   simp only []
   rw [List.map_ofFn, List.map_ofFn]
   rfl
@@ -394,6 +395,7 @@ theorem parseAux_print {k : Nat} (r : Rose k) :
           parseStep_other _ _ _ _ _
             (digit_not_open (decOf_head_digit i.val c cs hc)),
           ← List.cons_append, ← hc, readNat_append _ _ hrest]
+        -- reduce the match on the `some` just produced, exposing the label-bound check
         simp only []
         rw [dif_pos i.isLt]
         exact congrArg (fun t ↦ some (t, skipWs rest))
@@ -438,6 +440,7 @@ theorem parseAux_print {k : Nat} (r : Rose k) :
           simp only [List.append_assoc, List.singleton_append]
           rw [skipWs_decOf_append,
             readNat_append _ _ (block_append_head_not_digit (List.ofFn ch) rest)]
+          -- reduce the match on the `some` just produced, exposing the label-bound check
           simp only []
           rw [dif_pos i.isLt,
             parseChildren_print _ (List.ofFn ch) (g + 1) rest hchild hfuel,
