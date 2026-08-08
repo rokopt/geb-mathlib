@@ -159,11 +159,18 @@ each occurrence with a pointer to the upstream rule.
   keys. The bibliographic detail lives only in the `.bib`.
 - No development-history references in docstrings (e.g.,
   "previously did X"); history is for commit logs.
+- No counts of a population the module keeps adding to (e.g.
+  "of the module's 54 theorems, 13 depend on no axioms"); the
+  next declaration falsifies the count. State the property the
+  population has instead. `docs/` entries describing a module
+  follow the same rule; see
+  [docs/rules/markdown-writing.md](markdown-writing.md)
+  § Prose style.
 
 **Adversarial-reviewer instruction**: scan our `.lean` files
 for missing module/declaration docstrings, missing required
 sections in module docstrings, history-references inside
-docstrings, and post-hoc axiom-celebration.
+docstrings, occurrence counts, and post-hoc axiom-celebration.
 
 ## Authoritative upstream guides (CSLib)
 
