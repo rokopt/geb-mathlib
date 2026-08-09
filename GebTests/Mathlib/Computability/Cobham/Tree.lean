@@ -42,6 +42,10 @@ obstruct reduction, so a consumer reaching the scan through `combOf` gets the
 function every statement of the module is about. -/
 theorem combSem_eq_eval : transport combOf.2 combOf.1.eval = combSem := rfl
 
+/-- The meaning `isTreeSem` reads at the raw tree is the meaning the
+recognizer carries, as `combSem_eq_eval` for the scan. -/
+theorem isTreeSem_eq_eval : transport isTreeOf.2 isTreeOf.1.eval = isTreeSem := rfl
+
 /-- The empty word has depth zero and satisfies `ok`, so the scan returns the
 offset depth `[true]`. -/
 theorem combSem_empty : combSem ![[]] = [true] := rfl

@@ -28,9 +28,17 @@ what places the scan in `C` rather than merely in the syntax `sig` describes.
 The one-test on the scan's predecessor is the recognizer, correct against the
 `Valid` predicate of the encoding. Composed with
 `BinTree.valid_iff_exists_print`, `isTreeSem_eq_singleton_iff_exists_print`
-states that an expression of `C` accepts exactly the spellings of trees, and
-`isTreeSem_eq_ite` pins its value on the rejecting branch as well, so the
-correctness is a property of the function and not only of the accepted set.
+states that an expression of `C` accepts exactly the spellings of trees.
+`isTreeSem_eq_ite` pins its value on the rejecting branch as well: the two
+`iff` statements alone do not imply it, since a recognizer returning
+`[false]` rather than `[]` on a rejected word would satisfy both while
+disagreeing with `isTreeSem_eq_ite` there, so the correctness the latter
+states is a property of the function and not only of the accepted set.
+
+`isTree_smashFree` places `isTree` in the subalgebra `SmashFree` names,
+`[ε, I, s₀, s₁, ∗; COMP, BRN]`; with [Strahm2003] Theorem 1(2), deciding
+`BinTree.Valid` is computable simultaneously in polynomial time and linear
+space.
 
 ## Main definitions
 
@@ -68,6 +76,8 @@ of `C` carrying admissibility, and the ascription `…Of` at its reduced arity.
   words satisfying `BinTree.Valid`.
 * `Cobham.isTreeSem_eq_singleton_iff_exists_print` — equivalently, exactly
   the spellings of trees.
+* `Cobham.isTree_smashFree` — the recognizer lies in the subalgebra
+  `SmashFree` names.
 
 ## Implementation notes
 
@@ -89,6 +99,13 @@ or the depth in unary offset by one, and the depth never exceeds the word
 length, while the bound child `S₁` returns one bit more than the recursion
 variable. Reading `comb` back through `C.eval` returns `combSem`, both being
 the same transport along `fst_eval`.
+
+That bound is a bound on the value `combSem` produces at each step, not a
+bound on the cost of evaluating the expression that computes it: nothing in
+this module measures a number of reduction steps or an amount of space
+consumed while doing so. `isTree_smashFree` states only that `isTree` avoids
+the `smash` generator; the polynomial-time, linear-space reading of that
+membership is [Strahm2003] Theorem 1(2), cited and not reproved here.
 
 `cond` and `pred` are `boundedRec` nodes in this algebra rather than
 generators, so a step's meaning reduces only once the value it scrutinizes is
@@ -118,10 +135,12 @@ on it, rather than by `rfl`.
 ## References
 
 * [Cobham1965]
+* [Strahm2003]
 
 ## Tags
 
-Cobham, bounded recursion on notation, binary tree, preorder, stack depth
+Cobham, bounded recursion on notation, binary tree, preorder, stack depth,
+smash-free, polynomial time, linear space
 -/
 
 namespace Cobham
@@ -573,6 +592,12 @@ theorem isTreeSem_eq_singleton_iff_valid (w : List Bool) :
 theorem isTreeSem_eq_singleton_iff_exists_print (w : List Bool) :
     isTreeSem ![w] = [true] ↔ ∃ t, BinTree.print t = w :=
   (isTreeSem_eq_singleton_iff_valid w).trans (BinTree.valid_iff_exists_print w)
+
+/-- The recognizer lies in the smash-free subalgebra. With
+[Strahm2003] Theorem 1(2)'s left-to-right inclusion, the decision of
+`BinTree.Valid` is computable simultaneously in polynomial time and linear
+space. -/
+theorem isTree_smashFree : SmashFree isTree := by decide
 
 end
 

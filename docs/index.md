@@ -1043,3 +1043,21 @@ import-direction rules above are enforced by
   `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `sigFinitary` resolves
   through `FinEnum.unit`, `FinEnum.finFin` and `FinEnum.finSum` under
   `open scoped FinEnum`. `Classical.choice`-free.
+- `Geb/Mathlib/Computability/Cobham/Tree.lean` — a recognizer for the
+  preorder spellings of binary trees, as an expression of `C`. `comb` is a
+  `boundedRec` node carrying the stack depth and the underflow verdict in
+  one value: the depth in unary offset by one while no node bit has been
+  read below depth two, and the absorbing `[false]` once one has; `eqOne`
+  tests a bitstring for length one; `isTree` composes `eqOne` with the
+  scan's predecessor, carrying no `boundedRec` node of its own. `combSem_eq`
+  identifies the scan with `BinTree.depth` and `BinTree.ok`; `eqOneSem_eq`
+  identifies the one-test with a length test; `isTreeSem_eq_ite` pins the
+  recognizer's value on both branches; `isTreeSem_eq_singleton_iff_valid`
+  identifies the recognizer with `BinTree.Valid`, and
+  `isTreeSem_eq_singleton_iff_exists_print` composes that with
+  `BinTree.valid_iff_exists_print` to give acceptance of exactly the
+  spellings of trees. `isTree_smashFree` places the recognizer in the
+  subalgebra `SmashFree` names; with [Strahm2003] Theorem 1(2), deciding
+  `BinTree.Valid` is computable simultaneously in polynomial time and
+  linear space. Depends on `Geb.Mathlib.Computability.Cobham.Basic` and
+  `Geb.Mathlib.Data.Tree.Preorder`. `Classical.choice`-free.
