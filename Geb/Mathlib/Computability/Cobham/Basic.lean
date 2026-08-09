@@ -12,17 +12,37 @@ public import Geb.Mathlib.Data.PFunctor.Univariate.Finitary
 public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
-# The signature of Cobham's class of bitstring functions
+# Cobham's class of bitstring functions
 
-The syntactic signature of a Cobham-style function algebra on bitstrings, whose
-recursion scheme is bounded recursion on notation [Cobham1965], together with its
-interpretation over every `sig`-tree. Terms are built from a constant zero,
-projections, two successors, a smash and a concat generator, and are closed under a
-composition and a bounded recursion. `sig` fixes the shape of the syntax alone — each
-constructor's arity and the arity relation its subterms must satisfy — and `eval`
-gives the meaning of any tree respecting that relation. Cobham's class itself is the
-subtype `C` of trees whose recursions additionally respect the length bound the
-scheme imposes, carrying `eval` down to `C.eval`.
+The syntax of a Cobham-style function algebra on bitstrings, whose recursion scheme
+is bounded recursion on notation [Cobham1965], together with its interpretation over
+every `sig`-tree. Terms are built from a constant zero, projections, two successors,
+a smash and a concat generator, and are closed under a composition and a bounded
+recursion. [HeraudNowak2011]'s grammar for `C` (`O | Πⁱₙ | S_b | # | Compⁿ | Rec`) has
+no concatenation generator; the `concat` generator here is added, grounded in
+[Strahm2003]'s operator list `[ε, I, s₀, s₁, ∗; COMP, BRN]`, and is what makes the
+smash-free bound `SmashFree` names expressible at all. `sig` fixes the shape of the
+syntax alone — each constructor's arity and the arity relation its subterms must
+satisfy — and `eval` gives the meaning of any tree respecting that relation. Cobham's
+class itself is the subtype `C` of trees whose recursions additionally respect the
+length bound the scheme imposes, carrying `eval` down to `C.eval`.
+
+A bitstring is `List Bool`, its head the word's last bit. `succ b` — `S_b` in
+[HeraudNowak2011]'s notation, `s₀`/`s₁` in [Strahm2003]'s — prepends by consing `b`.
+`boundedRec`'s recursion `evalRec` — [HeraudNowak2011]'s `Rec` — peels that head at
+each step, passing the remaining bitstring on as the new recursion variable. `concat`
+— `∗` in [Strahm2003]'s list — reads its second argument as the earlier part of the
+word and its first as the later part, `fun x ↦ x 1 ++ x 0`, consistent with the same
+convention.
+
+`SmashFree` names the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, which [Strahm2003]
+Theorem 1(2) contains in the functions computable simultaneously in polynomial time
+and linear space, a characterization [Strahm2003] attributes to [Thompson1972] and
+[Strahm2010] Theorem 5 restates. [Clote1999] Theorem 3.20 gives an arithmetic
+analogue over the naturals. Linear space alone is the second Grzegorczyk class
+[Ritchie1963] (via [Clote1999] Theorem 3.36 and its Corollary 3.37), the class
+Bellantoni's safe recursion also characterizes [Bellantoni1992] (via [Clote1999]
+Theorem 3.101).
 
 ## Main definitions
 
@@ -69,6 +89,10 @@ scheme imposes, carrying `eval` down to `C.eval`.
 
 ## Implementation notes
 
+Every `def` in this module is `@[expose]`, so a wrapper module and the tests can
+unfold them across the module boundary; the `sigFinitary` instance, the
+`Decidable (SmashFree ·)` instance, and the four theorems need no such tag.
+
 `concatRaw` and `smashRaw` are named apart from the expressions built on them
 because instance search finds `Decidable (sig.WValid w)` when `w` is a constant but
 not when it is a literal `WType.mk` application, with or without an ascription, so
@@ -85,15 +109,14 @@ choice-free `FinEnum.unit` and `FinEnum.finSum`, and its other branches resolve
 them to win resolution over mathlib's `Classical.choice`-dependent counterparts,
 which `lake lint` rejects.
 
-A bitstring is represented as a `List Bool` whose head is the word's last bit, so
-`succ b` prepends by consing `b`. `evalValue` is a separate definition from
-`evalStep` because the match on `Shape` must generalize the compatibility hypothesis,
-which arrives bundled in `SliceDomPFunctor.Obj`. A child's meaning carries the index
-it was built at rather than the index `rc` prescribes, equal but not definitionally
-so; `transport` carries it across, with the motive of `▸` fixed once instead of at
-each use site. `evalValue`'s `boundedRec` clause does not consult its bound child's
-meaning: the bound is a side condition on admissibility, imposed by
-`RecBoundedValue`, not part of a tree's value.
+`evalValue` is a separate definition from `evalStep` because the match on `Shape`
+must generalize the compatibility hypothesis, which arrives bundled in
+`SliceDomPFunctor.Obj`. A child's meaning carries the index it was built at rather
+than the index `rc` prescribes, equal but not definitionally so; `transport` carries
+it across, with the motive of `▸` fixed once instead of at each use site.
+`evalValue`'s `boundedRec` clause does not consult its bound child's meaning: the
+bound is a side condition on admissibility, imposed by `RecBoundedValue`, not part
+of a tree's value.
 
 `eval` is a slice morphism, so the index it returns agrees with `arity` only by
 `SlicePFunctor.W.comp_elim`, a `funext` theorem; `C.eval` is therefore
@@ -108,13 +131,18 @@ is in scope, which would otherwise make each body self-referential.
 
 ## References
 
+* [Bellantoni1992]
+* [Clote1999]
 * [Cobham1965]
 * [HeraudNowak2011]
+* [Ritchie1963]
 * [Strahm2003]
+* [Strahm2010]
+* [Thompson1972]
 
 ## Tags
 
-Cobham, bounded recursion on notation, W-type, polynomial functor
+Cobham, bounded recursion on notation, linear space, W-type, polynomial functor
 -/
 
 namespace Cobham

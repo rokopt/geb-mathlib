@@ -479,8 +479,7 @@ Its dependency, the `FinCat` workstream, is implemented under
 
 ### Bellantoni-Cook
 
-Three items, in dependency order, over
-`Geb/Mathlib/Computability/BellantoniCook/Basic.lean`.
+Three items, in dependency order, each over its own destination file.
 
 1. `MultiPoly`, the multivariate polynomial library of the reference
    development. Required by its `BC_to_Cobham.v:2`, by its
@@ -490,9 +489,20 @@ Three items, in dependency order, over
    Returns the polynomial apparatus items 2 and 3 are stated over.
 2. Proposition 2, the polymax bounding of `B`. Depends on 1. Returns the
    length bound the translation of item 3 requires.
-3. Cobham's class and the translations of Theorems 1 and 2. Depends on 1
-   and 2. Returns the characterization of the polynomial-time functions,
-   and is the consumer that justifies the definitions already committed.
+3. The translations of Theorems 1 and 2 between `B`
+   (`Geb/Mathlib/Computability/BellantoniCook/Basic.lean`) and Cobham's
+   class `C`, the latter now implemented at
+   `Geb/Mathlib/Computability/Cobham/Basic.lean`. Still depends on 1 and
+   2: item 1's `MultiPoly` is required by both translation directions,
+   and item 2 returns the length bound the `B → C` direction needs to
+   build a `boundedRec` node's bound term explicitly — a dependence `C`'s
+   own construction, needing neither, did not incur. The `C → B`
+   direction additionally needs a `∗` case: `concat` has no counterpart
+   in [HeraudNowak2011]'s grammar for `C`, which the reference
+   development's `Cobham_to_BC.v` formalizes, so translating a `concat`
+   node is work beyond it. Returns the characterization of the
+   polynomial-time functions, and is the consumer that justifies the
+   definitions already committed.
 
 ### Binary trees and their preorder encoding
 
@@ -845,16 +855,19 @@ Correcting these is a separate concern from any current branch per
   enumerate import forms and both predate the module system's `meta` forms.
   Trigger: the next branch that revises `scripts/extract-pr.sh`, or the first
   extraction of either module.
-- **Verify the attested textbook locators**: three locators are recorded from
-  secondary attestation and none is verified against its primary source.
+- **Verify the attested locators**: three locators are recorded from secondary
+  attestation and none is verified against its primary source.
   [nLabSkeletalCategory] attests Mac Lane, _Categories for the Working
   Mathematician_ (1971), p. 91 and Riehl, _Category Theory in Context_ (2017),
   p. 34 for the skeleton of a category; [nLabFinSet] attests Johnstone,
   _Sketches of an Elephant_, example 2.1.2 for the category of finite sets
   being an elementary topos. Attestation by a secondary source is not
-  verification, on the [Pare1974] precedent. Trigger: the acquisition of any of
-  the three primary sources, which discharges that locator and leaves the entry
-  standing for the others.
+  verification, on the [Pare1974] precedent. Four further primary sources are
+  cited unread, on the same footing: `docs/references.bib` attests
+  [Thompson1972] and [Cobham1965] through [Strahm2003] and [Clote1999], and
+  [Ritchie1963] and [Bellantoni1992] through [Clote1999] alone. Trigger: the
+  acquisition of any of the seven primary sources, which discharges that
+  locator or attribution and leaves the entry standing for the others.
 - **Reconcile `## Main statements` across the test modules**:
   `GebTests/Mathlib/CategoryTheory/FinSetSkel/ElementaryTopos.lean` carries
   the section, and its siblings do not although each declares named
