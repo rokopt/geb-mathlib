@@ -48,6 +48,13 @@ scheme imposes, carrying `eval` down to `C.eval`.
 * `Cobham.C.eval` — the meaning of an expression, at its own arity.
 * `Cobham.concatRaw` / `Cobham.smashRaw` — the two generators as single nodes.
 * `Cobham.concatOf` / `Cobham.smashOf` — those nodes as expressions of arity two.
+* `Cobham.predRaw` / `Cobham.pred` — the predecessor, as a raw tree and as an
+  expression of arity one.
+* `Cobham.predSem` — the meaning of the predecessor.
+* `Cobham.concatCompRaw` — the concatenation of two expressions of a common arity.
+* `Cobham.condRaw` / `Cobham.cond` — the four-way conditional, as a raw tree and as
+  an expression of arity four.
+* `Cobham.condSem` — the meaning of the conditional.
 * `Cobham.smashFreeBool` — whether no `smash` node occurs anywhere in a raw tree.
 * `Cobham.SmashFree` — the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, excluding
   the `smash` generator.
@@ -56,6 +63,9 @@ scheme imposes, carrying `eval` down to `C.eval`.
 
 * `Cobham.fst_eval` — the index component of a tree's interpretation is its arity.
 * `Cobham.recBounded_mk` — `RecBounded` unfolded one level, on a raw node.
+* `Cobham.predSem_eq` — the predecessor drops the word's last bit.
+* `Cobham.condSem_eq` — the conditional branches on the emptiness and parity of its
+  first argument.
 
 ## Implementation notes
 
@@ -332,6 +342,113 @@ vacuous and its hereditary conjunct empty. -/
 /-- The `smash` generator as an expression of arity two, as `concatOf`. -/
 @[expose] def smashOf : COf 2 :=
   ⟨⟨⟨smashRaw, by decide⟩, ⟨trivial, fun b ↦ b.elim0⟩⟩, rfl⟩
+
+/-- The predecessor as a single `boundedRec` node, transcribing
+[HeraudNowak2011] § 4's `Rec O Π⁰₂ Π⁰₂ Π⁰₁`: base the constant empty bitstring,
+both steps the first of their two arguments, bound the sole argument. In an
+`evalRec` step environment the first slot holds the bitstring remaining after the
+last bit is peeled, so both steps return that remainder. -/
+@[expose] def predRaw : sig.toPFunctor.W :=
+  WType.mk (.boundedRec 0)
+    ![WType.mk .zero Fin.elim0, WType.mk (.proj 2 0) Fin.elim0,
+      WType.mk (.proj 2 0) Fin.elim0, WType.mk (.proj 1 0) Fin.elim0]
+
+/-- The predecessor as an expression of arity one. Its recursion respects the bound
+because its value at `y` is `y` with its last bit dropped, of length `|y| - 1`, while
+the bound child returns `y`; at the empty bitstring the value is empty. -/
+@[expose] def pred : COf 1 :=
+  ⟨⟨⟨predRaw, by decide⟩, by
+      refine ⟨fun x ↦ ?_, ?_⟩
+      · change _ ≤ (x 0).length
+        refine List.rec ?_ (fun b _ _ ↦ ?_) (x 0)
+        · exact Nat.le_refl 0
+        · cases b <;> exact Nat.le_succ _
+      · refine fun b : Fin 4 ↦ ?_
+        match b with
+        | 0 | 1 | 2 | 3 => exact ⟨trivial, fun d ↦ d.elim0⟩⟩, rfl⟩
+
+/-- The meaning of the predecessor, at arity one. -/
+@[expose] def predSem : Sem 1 := transport pred.2 pred.1.eval
+
+/-- The predecessor drops the word's last bit, which is the Lean list's head. -/
+theorem predSem_eq (u : List Bool) : predSem ![u] = u.tail := by
+  match u with
+  | [] => rfl
+  | b :: _ => cases b <;> rfl
+
+/-- The concatenation of two `n`-ary expressions: a `comp` node of arity `n` whose
+head is the `concat` generator, applied to `a` and `b` in that order. Its value at
+any environment is `b`'s list followed by `a`'s, of length the sum of the two. -/
+@[expose] def concatCompRaw (n : ℕ) (a b : sig.toPFunctor.W) : sig.toPFunctor.W :=
+  WType.mk (.comp n 2) fun d ↦
+    match d with
+    | .inl () => concatRaw
+    | .inr i => ![a, b] i
+
+/-- The four-way conditional as a single `boundedRec` node, transcribing
+[HeraudNowak2011] § 4's `Rec Π⁰₃ Π⁴₅ Π³₅ j` in its base and step children. `Rec`
+peels the word's last bit, so `Π⁴₅` is the step taken on a last bit `0` and `Π³₅`
+the step taken on a last bit `1`; the base is taken on the empty word.
+
+The bound child departs from [HeraudNowak2011], which takes `#(S₁x, #(S₁y, S₁z))`
+over the three branch arguments, the `S₁` wrappers keeping the smash's length
+product away from zero at the empty word. The smash generator is excluded from the
+subalgebra `SmashFree` names, so the bound here is instead the concatenation of the
+same three arguments, of length `|x| + |y| + |z|`, which dominates each of them at
+every environment including the empty one. -/
+@[expose] def condRaw : sig.toPFunctor.W :=
+  WType.mk (.boundedRec 3)
+    ![WType.mk (.proj 3 0) Fin.elim0, WType.mk (.proj 5 4) Fin.elim0,
+      WType.mk (.proj 5 3) Fin.elim0,
+      concatCompRaw 4
+        (concatCompRaw 4 (WType.mk (.proj 4 1) Fin.elim0) (WType.mk (.proj 4 2) Fin.elim0))
+        (WType.mk (.proj 4 3) Fin.elim0)]
+
+/-- The four-way conditional as an expression of arity four. Its recursion respects
+the bound because its value is one of the three branch arguments, each no longer
+than their concatenation. -/
+@[expose] def cond : COf 4 :=
+  ⟨⟨⟨condRaw, by decide⟩, by
+      refine ⟨fun x ↦ ?_, ?_⟩
+      · have h1 : (x 1).length ≤ (x 3 ++ (x 2 ++ x 1)).length := by
+          simp only [List.length_append]
+          omega
+        have h2 : (x 2).length ≤ (x 3 ++ (x 2 ++ x 1)).length := by
+          simp only [List.length_append]
+          omega
+        have h3 : (x 3).length ≤ (x 3 ++ (x 2 ++ x 1)).length := by
+          simp only [List.length_append]
+          omega
+        refine List.rec ?_ (fun b _ _ ↦ ?_) (x 0)
+        · exact h1
+        · cases b
+          · exact h3
+          · exact h2
+      · refine fun b : Fin 4 ↦ ?_
+        match b with
+        | 0 | 1 | 2 => exact ⟨trivial, fun d ↦ d.elim0⟩
+        | 3 =>
+          refine ⟨trivial, fun d ↦ ?_⟩
+          match d with
+          | .inl () | .inr 1 => exact ⟨trivial, fun c ↦ c.elim0⟩
+          | .inr 0 =>
+            refine ⟨trivial, fun e ↦ ?_⟩
+            match e with
+            | .inl () | .inr 0 | .inr 1 => exact ⟨trivial, fun c ↦ c.elim0⟩⟩, rfl⟩
+
+/-- The meaning of the conditional, at arity four. -/
+@[expose] def condSem : Sem 4 := transport cond.2 cond.1.eval
+
+/-- The conditional returns its second, third or fourth argument according as its
+first is empty, odd or even, the parity being read off the Lean list's head. -/
+theorem condSem_eq (u v w z : List Bool) :
+    condSem ![u, v, w, z] =
+      match u with
+      | [] => v
+      | true :: _ => w
+      | false :: _ => z := by
+  match u with
+  | [] | true :: _ | false :: _ => rfl
 
 /-- Whether no `smash` node occurs anywhere in a raw tree. -/
 @[expose] def smashFreeBool : sig.toPFunctor.W → Bool :=

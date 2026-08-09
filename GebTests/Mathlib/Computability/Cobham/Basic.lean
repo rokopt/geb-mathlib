@@ -16,7 +16,10 @@ confirming `smash`'s length formula; and a two-argument `boundedRec` term
 discriminating recursion on the first argument from recursion on the last.
 Admissibility is exercised in both directions: a `boundedRec` term whose
 recursion stays within its bound and one whose recursion outgrows it, the
-latter refuted at a literal environment.
+latter refuted at a literal environment. The derived predecessor and
+conditional are evaluated at literal environments, the conditional at all
+three of its scrutinee cases against pairwise distinct branch arguments, and
+both are checked to be smash-free.
 
 ## Main statements
 
@@ -212,3 +215,31 @@ def smashFreeHereditaryCheck : Bool :=
       decide (Cobham.SmashFree smashFreeNestedTerm)
 
 example : smashFreeHereditaryCheck = true := by decide
+
+/-- `pred` drops the Lean list's head, which is the word's last bit, and fixes the
+empty word. -/
+def predCheck : Bool :=
+  decide (predSem ![[true, false, true]] = [false, true]) && decide (predSem ![[]] = [])
+
+example : predCheck = true := by decide
+
+/-- The three-way dispatch of `cond`, at three branch arguments pairwise distinct
+in both value and length. The empty scrutinee selects the second argument, a
+scrutinee whose last bit is `1` the third, and one whose last bit is `0` the
+fourth. Transposing the two step children of `condRaw` would return `[true, true]`
+where `[true]` is asserted and `[true]` where `[true, true]` is asserted, so this
+discriminates that transposition independently of how `condSem_eq` is stated. -/
+def condDispatchCheck : Bool :=
+  decide (condSem ![[], [false], [true], [true, true]] = [false]) &&
+    decide (condSem ![[true], [false], [true], [true, true]] = [true]) &&
+      decide (condSem ![[false], [false], [true], [true, true]] = [true, true])
+
+example : condDispatchCheck = true := by decide
+
+/-- `pred` and `cond` lie in the subalgebra `SmashFree` names: the bound child of
+`condRaw` concatenates the three branch arguments where [HeraudNowak2011] smashes
+them. -/
+def smashFreeDerivedCheck : Bool :=
+  decide (Cobham.SmashFree pred.1) && decide (Cobham.SmashFree cond.1)
+
+example : smashFreeDerivedCheck = true := by decide
