@@ -128,3 +128,87 @@ theorem recBounded_boundedRecBoundTerm : RecBounded boundedRecBoundTerm := by
   · refine fun b : Fin 4 ↦ ?_
     match b with
     | 0 | 1 | 2 | 3 => exact ⟨trivial, fun d ↦ d.elim0⟩
+
+open scoped FinEnum in
+/-- A smash node is rejected wherever it sits. -/
+def smashFreeCheck : Bool :=
+  decide (Cobham.SmashFree Cobham.concatOf.1) &&
+    decide (¬ Cobham.SmashFree Cobham.smashOf.1)
+
+example : smashFreeCheck = true := by decide
+
+/-- A `comp`-headed raw tree whose sole argument is the shape given, its head a
+`proj 1 0` node of the matching arity, isolating which node makes `smashFreeBool`
+differ. -/
+def compOfRaw (child : sig.toPFunctor.W) : sig.toPFunctor.W :=
+  WType.mk (.comp 2 1) fun d ↦
+    match d with
+    | .inl () => WType.mk (.proj 1 0) Fin.elim0
+    | .inr _ => child
+
+/-- A `comp` node whose argument is `smash`, one level below the root. -/
+def smashBelowRootRaw : sig.toPFunctor.W := compOfRaw smashRaw
+
+/-- `smashBelowRootRaw`, admissible as a `sig`-tree. -/
+theorem smashBelowRootRaw_admissible : sig.WValid smashBelowRootRaw := by decide
+
+/-- `smashBelowRootRaw` as an expression, its recursion bound vacuous at every node
+since both nodes are `comp`. -/
+def smashBelowRootTerm : C :=
+  ⟨⟨smashBelowRootRaw, smashBelowRootRaw_admissible⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩⟩
+
+/-- A `comp` node whose argument is `smashBelowRootRaw`, so `smash` sits two levels
+below the root. -/
+def smashNestedRaw : sig.toPFunctor.W := compOfRaw smashBelowRootRaw
+
+/-- `smashNestedRaw`, admissible as a `sig`-tree. -/
+theorem smashNestedRaw_admissible : sig.WValid smashNestedRaw := by decide
+
+/-- `smashNestedRaw` as an expression. -/
+def smashNestedTerm : C :=
+  ⟨⟨smashNestedRaw, smashNestedRaw_admissible⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr _ => smashBelowRootTerm.2⟩⟩
+
+/-- A `comp` node whose argument is `concat`, structurally parallel to
+`smashBelowRootRaw` but with `smash` replaced by `concat`. -/
+def concatBelowRootRaw : sig.toPFunctor.W := compOfRaw concatRaw
+
+/-- `concatBelowRootRaw`, admissible as a `sig`-tree. -/
+theorem concatBelowRootRaw_admissible : sig.WValid concatBelowRootRaw := by decide
+
+/-- `concatBelowRootRaw` as an expression. -/
+def concatBelowRootTerm : C :=
+  ⟨⟨concatBelowRootRaw, concatBelowRootRaw_admissible⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩⟩
+
+/-- A `comp` node whose argument is `concatBelowRootRaw`, smash-free two levels
+below the root as well as at the root and at depth one. -/
+def smashFreeNestedRaw : sig.toPFunctor.W := compOfRaw concatBelowRootRaw
+
+/-- `smashFreeNestedRaw`, admissible as a `sig`-tree. -/
+theorem smashFreeNestedRaw_admissible : sig.WValid smashFreeNestedRaw := by decide
+
+/-- `smashFreeNestedRaw` as an expression. -/
+def smashFreeNestedTerm : C :=
+  ⟨⟨smashFreeNestedRaw, smashFreeNestedRaw_admissible⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr _ => concatBelowRootTerm.2⟩⟩
+
+/-- `SmashFree` rejects a `smash` node one level below the root, and two levels
+below the root, catching a check that inspects only the root's own shape or only
+its immediate children; and accepts a term smash-free at every depth, catching a
+check that rejects `comp` nodes outright or that never recurses past depth one. -/
+def smashFreeHereditaryCheck : Bool :=
+  decide (¬ Cobham.SmashFree smashBelowRootTerm) &&
+    decide (¬ Cobham.SmashFree smashNestedTerm) &&
+      decide (Cobham.SmashFree smashFreeNestedTerm)
+
+example : smashFreeHereditaryCheck = true := by decide

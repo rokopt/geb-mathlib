@@ -48,6 +48,9 @@ scheme imposes, carrying `eval` down to `C.eval`.
 * `Cobham.C.eval` — the meaning of an expression, at its own arity.
 * `Cobham.concatRaw` / `Cobham.smashRaw` — the two generators as single nodes.
 * `Cobham.concatOf` / `Cobham.smashOf` — those nodes as expressions of arity two.
+* `Cobham.smashFreeBool` — whether no `smash` node occurs anywhere in a raw tree.
+* `Cobham.SmashFree` — the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, excluding
+  the `smash` generator.
 
 ## Main statements
 
@@ -329,6 +332,24 @@ vacuous and its hereditary conjunct empty. -/
 /-- The `smash` generator as an expression of arity two, as `concatOf`. -/
 @[expose] def smashOf : COf 2 :=
   ⟨⟨⟨smashRaw, by decide⟩, ⟨trivial, fun b ↦ b.elim0⟩⟩, rfl⟩
+
+/-- Whether no `smash` node occurs anywhere in a raw tree. -/
+@[expose] def smashFreeBool : sig.toPFunctor.W → Bool :=
+  WType.elim Bool fun x ↦
+    match x with
+    | ⟨.smash, _⟩ => false
+    | ⟨_, c⟩ => decide (∀ b, c b = true)
+
+/-- An expression of the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, which
+[Strahm2003] Theorem 1(2) contains in the functions computable
+simultaneously in polynomial time and linear space. Hereditary: a
+top-node test would not exclude `#` from subterms. -/
+@[expose] def SmashFree (e : C) : Prop := smashFreeBool e.1.1 = true
+
+/-- `SmashFree` is decidable, its `Bool` equation unfolded explicitly since a bare
+`inferInstance` does not see through the definition. -/
+instance (e : C) : Decidable (SmashFree e) :=
+  inferInstanceAs (Decidable (smashFreeBool e.1.1 = true))
 
 end
 
