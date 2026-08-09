@@ -35,8 +35,11 @@ what places the scan in `C` rather than merely in the syntax `sig` describes.
   step of the scan, of arity two.
 * `Cobham.comb` — the stack depth and the underflow verdict in one value, of
   arity one.
-* `Cobham.combSem` — the scan's meaning at its arity, over which every
-  statement of the module is stated.
+* `Cobham.eqOne` — whether a bitstring has length one, of arity one.
+* `Cobham.isTree` — the recognizer, of arity one.
+* `Cobham.combSem`, `Cobham.eqOneSem`, `Cobham.isTreeSem` — the meaning of
+  each of the three at its arity, over which every statement of the module
+  is stated.
 
 Each expression appears in three tiers: a raw tree `…Raw`, the expression `…`
 of `C` carrying admissibility, and the ascription `…Of` at its reduced arity.
@@ -48,6 +51,10 @@ of `C` carrying admissibility, and the ascription `…Of` at its reduced arity.
   recursion variable, with the recursive value exposed.
 * `Cobham.combSem_eq` — the scan computes `BinTree.depth` in unary, offset by
   one, while `BinTree.ok` holds, and `[false]` once it has failed.
+* `Cobham.eqOneSem_eq` — `eqOne` accepts exactly the bitstrings of length
+  one.
+* `Cobham.isTreeSem_apply` — one step of the recognizer: the one-test on
+  the scan's predecessor.
 
 ## Implementation notes
 
@@ -83,6 +90,17 @@ constructor layer of the value.
 type-checks. A meaning taken through the `Sigma` projection instead has a type
 headed by that projection rather than by an arrow, and `rw` under it fails as
 not type-correct at `implicit` transparency.
+
+`eqOne` and `isTree` are `comp` compositions of `pred`, `cond` and `comb`,
+carrying no `boundedRec` node of their own, so each admissibility obligation
+is discharged by `recBounded_mk` over the node's children, reusing the
+embedded subexpression's own `RecBounded` component rather than repeating its
+proof. Unlike a primitive predecessor shape, `pred` here is itself a
+`boundedRec` node (`predRaw`), so its value on the scan's result does not
+reduce on a symbolic word: `isTreeSem_apply` is proved, as
+`combSem_cons_false` and `combSem_cons_true` are, by rewriting to the
+composition's own application, generalizing the scan's value, and matching
+on it, rather than by `rfl`.
 
 ## References
 
@@ -393,6 +411,123 @@ than the recursion variable. -/
 
 /-- `comb` at its declared arity. -/
 @[expose] def combOf : COf 1 := ⟨comb, rfl⟩
+
+/-- The inner conditional of `eqOne`: whether the predecessor of the argument
+is empty. -/
+@[expose] def eqOneInnerRaw : sig.toPFunctor.W :=
+  WType.mk (.comp 1 4) fun d ↦
+    match d with
+    | .inl () => condRaw
+    | .inr i =>
+      ![WType.mk (.comp 1 1) (fun e ↦
+          match e with
+          | .inl () => predRaw
+          | .inr _ => WType.mk (.proj 1 0) Fin.elim0),
+        oneAtRaw 1, zeroAtRaw 1, zeroAtRaw 1] i
+
+/-- The inner conditional as an expression of arity one. -/
+@[expose] def eqOneInner : C :=
+  ⟨⟨eqOneInnerRaw, by decide⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => cond.1.2
+      | .inr 0 =>
+        ⟨trivial, fun e ↦ match e with
+          | .inl () => pred.1.2
+          | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩
+      | .inr 1 => (oneAt 1).2
+      | .inr 2 => (zeroAt 1).2
+      | .inr 3 => (zeroAt 1).2⟩⟩
+
+/-- `eqOneInner` at its declared arity. -/
+@[expose] def eqOneInnerOf : COf 1 := ⟨eqOneInner, rfl⟩
+
+/-- The raw tree of the one-test: the empty bitstring is not one, and
+otherwise the argument is one exactly when its predecessor is empty. -/
+@[expose] def eqOneRaw : sig.toPFunctor.W :=
+  WType.mk (.comp 1 4) fun d ↦
+    match d with
+    | .inl () => condRaw
+    | .inr i =>
+      ![WType.mk (.proj 1 0) Fin.elim0, zeroAtRaw 1, eqOneInnerRaw, eqOneInnerRaw] i
+
+/-- Whether a bitstring has length one, as an expression of arity one. -/
+@[expose] def eqOne : C :=
+  ⟨⟨eqOneRaw, by decide⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => cond.1.2
+      | .inr 0 => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr 1 => (zeroAt 1).2
+      | .inr 2 => eqOneInner.2
+      | .inr 3 => eqOneInner.2⟩⟩
+
+/-- `eqOne` at its declared arity. -/
+@[expose] def eqOneOf : COf 1 := ⟨eqOne, rfl⟩
+
+/-- The one-test's meaning at its arity, taken at the raw tree rather than at
+`eqOne`, as `combSem`. -/
+@[expose] def eqOneSem : Sem 1 :=
+  transport (fst_eval ⟨eqOneRaw, by decide⟩) (eval ⟨eqOneRaw, by decide⟩).2
+
+/-- The one-test at an arbitrary environment is the test at the canonical
+one. -/
+theorem eqOneSem_env (f : Fin 1 → List Bool) : eqOneSem f = eqOneSem ![f 0] :=
+  congrArg eqOneSem (funext fun i ↦ match i with | ⟨0, _⟩ => rfl)
+
+/-- The one-test accepts exactly the bitstrings of length one. It is not a
+recursion, so its three cases are decided by matching. -/
+theorem eqOneSem_eq (u : List Bool) :
+    eqOneSem ![u] = if u.length = 1 then [true] else [] := by
+  match u with
+  | [] => rfl
+  | [b] => cases b <;> rfl
+  | b :: c :: v =>
+    cases b <;> cases c <;>
+      (change ([] : List Bool) = _
+       rw [if_neg (by simp only [List.length_cons]; omega)])
+
+/-- The raw tree of the recognizer: the one-test on the scan's predecessor. -/
+@[expose] def isTreeRaw : sig.toPFunctor.W :=
+  WType.mk (.comp 1 1) fun d ↦
+    match d with
+    | .inl () => eqOneRaw
+    | .inr _ =>
+      WType.mk (.comp 1 1) fun e ↦
+        match e with
+        | .inl () => predRaw
+        | .inr _ => combRaw
+
+/-- The recognizer: whether a bitstring is the preorder spelling of a binary
+tree, as an expression of arity one. -/
+@[expose] def isTree : C :=
+  ⟨⟨isTreeRaw, by decide⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => eqOne.2
+      | .inr _ =>
+        ⟨trivial, fun e ↦ match e with
+          | .inl () => pred.1.2
+          | .inr _ => comb.2⟩⟩⟩
+
+/-- `isTree` at its declared arity. -/
+@[expose] def isTreeOf : COf 1 := ⟨isTree, rfl⟩
+
+/-- The recognizer's meaning at its arity, taken at the raw tree rather than
+at `isTree`, as `combSem`. -/
+@[expose] def isTreeSem : Sem 1 :=
+  transport (fst_eval ⟨isTreeRaw, by decide⟩) (eval ⟨isTreeRaw, by decide⟩).2
+
+/-- One step of the recognizer: the one-test on the scan's predecessor. The
+scan's value is `[false]` on failure, whose predecessor is empty, and
+otherwise the depth in unary offset by one, whose predecessor has length the
+depth. -/
+theorem isTreeSem_apply (w : List Bool) :
+    isTreeSem ![w] = eqOneSem (fun _ ↦ (combSem ![w]).tail) := by
+  change eqOneSem (fun _ ↦ predSem (fun _ ↦ combSem ![w])) = _
+  generalize combSem ![w] = r
+  congr 1
+  funext _
+  match r with
+  | [] => rfl
+  | b :: v => cases b <;> rfl
 
 end
 
