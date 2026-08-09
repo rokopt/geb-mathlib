@@ -1021,3 +1021,25 @@ import-direction rules above are enforced by
   length-prefixed form does not need. No theorem here depends on an
   axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
+- `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
+  algebra on bitstrings, recursing by bounded recursion on notation
+  [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,
+  its syntax `sig`'s slice W-type, and its semantics `eval` by the
+  W-type's eliminator. Adds a `concat` generator beyond
+  [HeraudNowak2011]'s grammar, grounded in [Strahm2003]'s operator list
+  `[ε, I, s₀, s₁, ∗; COMP, BRN]`. Cobham's class `C` restricts to the
+  trees whose `boundedRec` nodes respect the length bound
+  `RecBoundedValue` states, with `C.eval` the meaning at an expression's
+  own arity; `concatOf`/`smashOf` are the two generators as expressions
+  of arity two. `pred` and `cond` are the derived predecessor and
+  four-way conditional, transcribing [HeraudNowak2011] § 4's `Rec` terms
+  with a concatenation bound in place of its smash bound. `SmashFree`
+  names the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, which
+  [Strahm2003] Theorem 1(2) contains in the functions computable
+  simultaneously in polynomial time and linear space [Thompson1972].
+  Depends on `Geb.Mathlib.Data.FinEnum`,
+  `Geb.Mathlib.Data.PFunctor.Slice.W`,
+  `Geb.Mathlib.Data.PFunctor.Slice.Decidable` and
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `sigFinitary` resolves
+  through `FinEnum.unit`, `FinEnum.finFin` and `FinEnum.finSum` under
+  `open scoped FinEnum`. `Classical.choice`-free.

@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.Computability.BellantoniCook
+import GebTests.Mathlib.Computability.Cobham
 
 /-!
 # Computability tests — index
