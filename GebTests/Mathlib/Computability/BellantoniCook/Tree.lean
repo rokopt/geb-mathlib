@@ -13,11 +13,14 @@ import Geb.Mathlib.Computability.BellantoniCook.Tree
 The recognizer accepting three spellings and rejecting four words — the
 empty word, a word whose scan fails at a node bit, a word whose scan
 succeeds at a depth other than one, and a permutation of an accepted
-spelling — together with the scan on a word whose depth exceeds one.
+spelling — together with the scan on a word whose depth exceeds one, and
+a guard pinning the recognizer's value on an accepted and on a rejected
+word ahead of `BellantoniCook.isTreeSem_eq_ite`.
 
 ## Main statements
 
-The eight assertions below.
+Each names the recognizer's or the scan's value on a specific bitstring,
+checked by `rfl` or by `decide`.
 
 ## Tags
 
@@ -65,3 +68,10 @@ theorem isTreeSem_permuted : isTreeSem ![[false, false, true]] ![] = [] := rfl
 the recognizer. -/
 theorem combSem_two_leaves :
     combSem ![[false, false]] ![] = [true, true, true] := rfl
+
+/-- The recognizer's value on a spelling and on a non-spelling. -/
+def isTreeIteCheck : Bool :=
+  decide (BellantoniCook.isTreeSem ![[true, false, false]] ![] = [true]) &&
+    decide (BellantoniCook.isTreeSem ![[true, false]] ![] = [])
+
+example : isTreeIteCheck = true := by decide
