@@ -14,14 +14,17 @@ import Geb.Mathlib.Computability.Cobham.Basic
 bit-order convention that a Lean list's head is a bitstring's last bit and
 confirming `smash`'s length formula; and a two-argument `boundedRec` term
 discriminating recursion on the first argument from recursion on the last.
+Admissibility is exercised in both directions: a `boundedRec` term whose
+recursion stays within its bound and one whose recursion outgrows it, the
+latter refuted at a literal environment.
 
 ## Main statements
 
-The four assertions below.
+The assertions below.
 
 ## Tags
 
-Cobham, bounded recursion on notation, bitstring generators
+Cobham, bounded recursion on notation, bitstring generators, admissibility
 -/
 
 set_option linter.privateModule false
@@ -89,3 +92,39 @@ threaded through, so the same environment would evaluate to `[true]`, the
 first argument, rather than the `[false, false]` asserted here. -/
 theorem eval_boundedRecOrderTerm :
     (eval boundedRecOrderTerm).2 ![[true], [false, false]] = [false, false] := rfl
+
+/-- `C.eval` agrees with the underlying tree's interpretation: the transport along
+`fst_eval` that carries the meaning to the expression's own arity does not obstruct
+reduction. -/
+theorem eval_concatOf :
+    concatOf.1.eval ![[true], [false, false]] = [false, false, true] := rfl
+
+/-- The order-discriminating term is not admissible: its recursion returns the
+second argument while its bound child (`proj 2 0`) returns the first, so at
+`![[true], [false, false]]` the value has length two and the bound length one.
+`RecBounded` therefore rejects a recursion that outgrows its bound, rather than
+holding of every tree. -/
+theorem not_recBounded_boundedRecOrderTerm : ¬ RecBounded boundedRecOrderTerm :=
+  fun h ↦ absurd (h.1 ![[true], [false, false]]) (by decide)
+
+/-- The order-discriminating term with its bound child replaced by `proj 2 1`, which
+returns the same argument the recursion threads through. -/
+def boundedRecBoundTermRaw : sig.toPFunctor.W :=
+  WType.mk (.boundedRec 1)
+    ![WType.mk (.proj 1 0) Fin.elim0, WType.mk (.proj 3 2) Fin.elim0,
+      WType.mk (.proj 3 2) Fin.elim0, WType.mk (.proj 2 1) Fin.elim0]
+
+/-- The bounded term, admissible. -/
+def boundedRecBoundTerm : sig.W := ⟨boundedRecBoundTermRaw, by decide⟩
+
+/-- A `boundedRec` node whose bound holds: the recursion returns the second argument
+at every recursion variable, which is what the bound child returns too. Together with
+`not_recBounded_boundedRecOrderTerm` this pins the `boundedRec` clause of
+`RecBoundedValue` to a condition that some recursions meet and others fail. -/
+theorem recBounded_boundedRecBoundTerm : RecBounded boundedRecBoundTerm := by
+  refine ⟨fun x ↦ le_of_eq (congrArg List.length ?_), ?_⟩
+  · refine List.rec rfl (fun b _ _ ↦ ?_) (x 0)
+    cases b <;> rfl
+  · refine fun b : Fin 4 ↦ ?_
+    match b with
+    | 0 | 1 | 2 | 3 => exact ⟨trivial, fun d ↦ d.elim0⟩

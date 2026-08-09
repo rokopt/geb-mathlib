@@ -7,7 +7,7 @@ module
 
 public import Geb.Mathlib.Data.FinEnum
 public import Geb.Mathlib.Data.PFunctor.Slice.W
-public import Geb.Mathlib.Data.PFunctor.Slice.Decidable -- shake: keep
+public import Geb.Mathlib.Data.PFunctor.Slice.Decidable
 public import Geb.Mathlib.Data.PFunctor.Univariate.Finitary
 public import Mathlib.Logic.Equiv.Fin.Basic
 
@@ -20,9 +20,9 @@ interpretation over every `sig`-tree. Terms are built from a constant zero,
 projections, two successors, a smash and a concat generator, and are closed under a
 composition and a bounded recursion. `sig` fixes the shape of the syntax alone — each
 constructor's arity and the arity relation its subterms must satisfy — and `eval`
-gives the meaning of any tree respecting that relation; the admissible terms, those
-whose recursions additionally respect a length bound, are left to where the module's
-contents are complete.
+gives the meaning of any tree respecting that relation. Cobham's class itself is the
+subtype `C` of trees whose recursions additionally respect the length bound the
+scheme imposes, carrying `eval` down to `C.eval`.
 
 ## Main definitions
 
@@ -40,12 +40,26 @@ contents are complete.
 * `Cobham.eval` — the interpretation of a `sig`-tree, by the slice W-type's
   eliminator.
 * `Cobham.arity` — the arity of a `sig`-tree.
+* `Cobham.RecBoundedValue` — the length bound one node imposes.
+* `Cobham.RecBounded` — `RecBoundedValue` at every node, hereditarily.
+* `Cobham.C` — Cobham's class: the trees satisfying `RecBounded`.
+* `Cobham.C.arity` — the arity of an expression.
+* `Cobham.COf` — the expressions of a given arity.
+* `Cobham.C.eval` — the meaning of an expression, at its own arity.
+* `Cobham.concatRaw` / `Cobham.smashRaw` — the two generators as single nodes.
+* `Cobham.concatOf` / `Cobham.smashOf` — those nodes as expressions of arity two.
+
+## Main statements
+
+* `Cobham.fst_eval` — the index component of a tree's interpretation is its arity.
+* `Cobham.recBounded_mk` — `RecBounded` unfolded one level, on a raw node.
 
 ## Implementation notes
 
-`SlicePFunctor.decidableWValid` is imported for a later task that commits the first
-`⟨_, by decide⟩` term against `sig`; this module commits none and so does not
-reference it, but importing it here avoids adding an import mid-module.
+`concatRaw` and `smashRaw` are named apart from the expressions built on them
+because instance search finds `Decidable (sig.WValid w)` when `w` is a constant but
+not when it is a literal `WType.mk` application, with or without an ascription, so
+`decide` discharges admissibility only of a named tree.
 
 `Direction`, `rc` and `q` are `@[reducible]`. Instance search does not delta-reduce a
 semireducible definition, and `sigFinitary` resolves `FinEnum (sig.B a)` against the
@@ -65,8 +79,19 @@ which arrives bundled in `SliceDomPFunctor.Obj`. A child's meaning carries the i
 it was built at rather than the index `rc` prescribes, equal but not definitionally
 so; `transport` carries it across, with the motive of `▸` fixed once instead of at
 each use site. `evalValue`'s `boundedRec` clause does not consult its bound child's
-meaning: the bound is a side condition on admissibility, introduced where the
-admissible terms are, not part of a tree's value.
+meaning: the bound is a side condition on admissibility, imposed by
+`RecBoundedValue`, not part of a tree's value.
+
+`eval` is a slice morphism, so the index it returns agrees with `arity` only by
+`SlicePFunctor.W.comp_elim`, a `funext` theorem; `C.eval` is therefore
+`transport (fst_eval _) (eval _).2` rather than the second projection alone, and the
+index equation `RecBoundedValue` consumes is the node's compatibility composed with
+`fst_eval`. `recBounded_mk` is stated on the raw `⟨WType.mk a f, _⟩` rather than on
+`SlicePFunctor.W.mk`, at which the `WType.rec` of `RecProp` iota-reduces and the
+unfolding is definitional; the index equation is a hypothesis, definitional proof
+irrelevance making the choice of proof term immaterial. `C.arity` and `C.eval`
+qualify `arity` and `eval` because the namespace of the declaration being elaborated
+is in scope, which would otherwise make each body self-referential.
 
 ## References
 
@@ -222,6 +247,88 @@ arity, by the slice W-type's eliminator. -/
 
 /-- The arity of a `sig`-tree. -/
 @[expose] def arity : sig.W → ℕ := sig.wIndex
+
+/-- The index component of a tree's interpretation is the tree's arity. `eval` is a
+morphism in the slice over `ℕ`, so composing it with the index projection gives
+`sig.wIndex`; this is that equation read at a single tree, the form `transport`
+consumes. -/
+theorem fst_eval (z : sig.W) : (eval z).1 = arity z :=
+  congrFun (SlicePFunctor.W.comp_elim sig (Σ n, Sem n) (Sigma.fst (β := Sem)) evalStep rfl) z
+
+/-- The recursion bound of one node, from its children and the proof that each
+child's evaluated index is the one `rc` prescribes. It is vacuous at every shape but
+`boundedRec`, where it is the side condition of bounded recursion on notation
+[Cobham1965]: at every environment, the recursion's value is no longer than the
+meaning of the bound child. `evalValue`'s `boundedRec` clause supplies the bounded
+quantity, read at the same environment. -/
+@[expose] def RecBoundedValue : (a : Shape) → (c : Direction a → sig.W) →
+    (∀ b, (eval (c b)).1 = rc a b) → Prop
+  | .zero, _, _ => True
+  | .proj _ _, _, _ => True
+  | .succ _, _, _ => True
+  | .smash, _, _ => True
+  | .concat, _, _ => True
+  | .comp _ _, _, _ => True
+  | .boundedRec n, c, h => ∀ x : Fin (n + 1) → List Bool,
+      (evalRec (transport (h 0) (eval (c 0)).2) (transport (h 1) (eval (c 1)).2)
+          (transport (h 2) (eval (c 2)).2) (x 0) (Fin.tail x)).length ≤
+        (transport (h 3) (eval (c 3)).2 x).length
+
+/-- The admissibility of a `sig`-tree: every node satisfies `RecBoundedValue`,
+hereditarily. The fold over the tree is carried by the slice W-type's `Prop`-valued
+paramorphism `SlicePFunctor.W.RecProp`; the index equation `RecBoundedValue` requires
+is the node's compatibility (`SliceDomPFunctor.compatible_iff`) composed with
+`fst_eval`, since compatibility constrains a child's `wIndex` rather than the index
+its interpretation carries. -/
+@[expose] def RecBounded : sig.W → Prop :=
+  SlicePFunctor.W.RecProp (fun x ih ↦
+    RecBoundedValue x.1.1 x.1.2
+        (fun b ↦ (fst_eval (x.1.2 b)).trans
+          ((sig.toSliceDomPFunctor.compatible_iff _ x.1.1 x.1.2).mp x.2 b)) ∧
+      ∀ b, ih b)
+
+/-- One-level unfolding of `RecBounded` on a raw node `⟨WType.mk a f, hv⟩`: the
+root's `RecBoundedValue` together with admissibility of every child. Stated on the
+raw tree rather than on `SlicePFunctor.W.mk`, so that `WType.rec` iota-reduces and
+the equation is definitional. -/
+theorem recBounded_mk (a : Shape) (f : Direction a → sig.toPFunctor.W)
+    (hv : sig.WValid (WType.mk a f))
+    (h : ∀ b, (eval ⟨f b, ((sig.wValid_mk a f).mp hv).1 b⟩).1 = rc a b) :
+    RecBounded ⟨WType.mk a f, hv⟩ =
+      (RecBoundedValue a (fun b ↦ ⟨f b, ((sig.wValid_mk a f).mp hv).1 b⟩) h ∧
+        ∀ b, RecBounded ⟨f b, ((sig.wValid_mk a f).mp hv).1 b⟩) :=
+  rfl
+
+/-- Cobham's class as a type of expressions: the `sig`-trees whose recursions
+respect the length bound. -/
+@[expose] def C : Type := { e : sig.W // RecBounded e }
+
+/-- The arity of an expression, that of the underlying tree. -/
+@[expose] def C.arity (e : C) : ℕ := Cobham.arity e.1
+
+/-- The expressions of a given arity. -/
+@[expose] def COf (n : ℕ) : Type := { e : C // e.arity = n }
+
+/-- The meaning of an expression, at its own arity. The underlying tree's
+interpretation carries the index `eval` computed, equal to the arity by `fst_eval`
+but not definitionally so, hence the `transport`. -/
+@[expose] def C.eval (e : C) : Sem e.arity :=
+  transport (fst_eval e.1) (Cobham.eval e.1).2
+
+/-- The `concat` generator as a single node, its `Direction` being empty. -/
+@[expose] def concatRaw : sig.toPFunctor.W := WType.mk .concat Fin.elim0
+
+/-- The `concat` generator as an expression of arity two, its `RecBoundedValue`
+vacuous and its hereditary conjunct empty. -/
+@[expose] def concatOf : COf 2 :=
+  ⟨⟨⟨concatRaw, by decide⟩, ⟨trivial, fun b ↦ b.elim0⟩⟩, rfl⟩
+
+/-- The `smash` generator as a single node, its `Direction` being empty. -/
+@[expose] def smashRaw : sig.toPFunctor.W := WType.mk .smash Fin.elim0
+
+/-- The `smash` generator as an expression of arity two, as `concatOf`. -/
+@[expose] def smashOf : COf 2 :=
+  ⟨⟨⟨smashRaw, by decide⟩, ⟨trivial, fun b ↦ b.elim0⟩⟩, rfl⟩
 
 end
 
