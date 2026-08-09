@@ -25,6 +25,13 @@ which the successor `S₁` expresses as a term of arity one. That is the side
 condition of bounded recursion on notation [Cobham1965], and discharging it is
 what places the scan in `C` rather than merely in the syntax `sig` describes.
 
+The one-test on the scan's predecessor is the recognizer, correct against the
+`Valid` predicate of the encoding. Composed with
+`BinTree.valid_iff_exists_print`, `isTreeSem_eq_singleton_iff_exists_print`
+states that an expression of `C` accepts exactly the spellings of trees, and
+`isTreeSem_eq_ite` pins its value on the rejecting branch as well, so the
+correctness is a property of the function and not only of the accepted set.
+
 ## Main definitions
 
 * `Cobham.zeroAt`, `Cobham.oneAt`, `Cobham.falseAt` — the empty bitstring and
@@ -55,6 +62,12 @@ of `C` carrying admissibility, and the ascription `…Of` at its reduced arity.
   one.
 * `Cobham.isTreeSem_apply` — one step of the recognizer: the one-test on
   the scan's predecessor.
+* `Cobham.isTreeSem_eq_ite` — the recognizer's value on both branches:
+  `[true]` on a word satisfying `BinTree.Valid` and `[]` on every other.
+* `Cobham.isTreeSem_eq_singleton_iff_valid` — `isTree` accepts exactly the
+  words satisfying `BinTree.Valid`.
+* `Cobham.isTreeSem_eq_singleton_iff_exists_print` — equivalently, exactly
+  the spellings of trees.
 
 ## Implementation notes
 
@@ -528,6 +541,38 @@ theorem isTreeSem_apply (w : List Bool) :
   match r with
   | [] => rfl
   | b :: v => cases b <;> rfl
+
+/-- The recognizer's value on both branches: a rejected word receives the
+empty bitstring, not merely something other than `[true]`. The one-test's
+argument arrives as a `fun`-binder, which `eqOneSem_env` normalises to the
+canonical environment before `eqOneSem_eq` applies. -/
+theorem isTreeSem_eq_ite (w : List Bool) :
+    isTreeSem ![w] = if BinTree.Valid w then [true] else [] := by
+  rw [isTreeSem_apply, eqOneSem_env]
+  simp only [eqOneSem_eq, combSem_eq]
+  by_cases h : BinTree.ok w = true
+  · rw [if_pos h]
+    simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]
+    by_cases hd : BinTree.depth w = 1
+    · rw [if_pos hd, if_pos ⟨h, hd⟩]
+    · rw [if_neg hd, if_neg fun hv : BinTree.Valid w ↦ hd hv.2]
+  · rw [if_neg h, if_neg (by decide : ¬ ([false] : List Bool).tail.length = 1),
+      if_neg fun hv : BinTree.Valid w ↦ h hv.1]
+
+/-- The recognizer accepts exactly the words satisfying `BinTree.Valid`. -/
+theorem isTreeSem_eq_singleton_iff_valid (w : List Bool) :
+    isTreeSem ![w] = [true] ↔ BinTree.Valid w := by
+  rw [isTreeSem_eq_ite]
+  by_cases h : BinTree.Valid w
+  · rw [if_pos h]
+    exact ⟨fun _ ↦ h, fun _ ↦ rfl⟩
+  · rw [if_neg h]
+    exact ⟨fun hw ↦ absurd hw (by nofun), fun hv ↦ absurd hv h⟩
+
+/-- The recognizer accepts exactly the preorder spellings of binary trees. -/
+theorem isTreeSem_eq_singleton_iff_exists_print (w : List Bool) :
+    isTreeSem ![w] = [true] ↔ ∃ t, BinTree.print t = w :=
+  (isTreeSem_eq_singleton_iff_valid w).trans (BinTree.valid_iff_exists_print w)
 
 end
 
