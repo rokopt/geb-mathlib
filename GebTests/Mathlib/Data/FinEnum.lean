@@ -58,3 +58,17 @@ example : subtypeTrue = true := by decide
 example : subtypeFalse = false := by decide
 example : funTrue = true := by decide
 example : funFalse = false := by decide
+
+open scoped FinEnum in
+/-- The enumerations have the cardinalities the instances declare. -/
+def finEnumCardCheck : Bool :=
+  decide (FinEnum.card Unit = 1) &&
+    decide (FinEnum.card (Fin 4) = 4) &&
+    decide (FinEnum.card (Unit ⊕ Fin 3) = 4)
+
+example : finEnumCardCheck = true := by decide
+
+open scoped FinEnum in
+/-- The composite instance the Cobham signature will resolve. -/
+@[instance_reducible] def finEnumSumProbe : FinEnum (Unit ⊕ Fin 3) :=
+  inferInstance

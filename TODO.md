@@ -594,9 +594,11 @@ mathlib's `FinEnum.fin` and `FinEnum.empty`, which reach
 `Classical.choice` through `FinEnum.ofList`. `Geb.finEnumFin` duplicates
 `finEnumFin2` and `finEnumFin0` in
 `GebTests/Mathlib/Data/PFunctor/Presheaf/Fixtures.lean`, which take the
-same `Equiv.refl` route for the same reason; `Geb.finEnumEmpty` is
-`FinEnum Empty`, built from an explicit `Empty ≃ Fin 0`, and duplicates
-nothing. Moving all of them beside
+same `Equiv.refl` route for the same reason, and duplicates the shared
+`FinEnum.finFin` in `Geb/Mathlib/Data/FinEnum.lean`; `Geb.finEnumEmpty`
+is `FinEnum Empty`, built from an explicit `Empty ≃ Fin 0`, and
+subsumes none of the shared instances there (`FinEnum.unit` and
+`FinEnum.finSum` do not reach it). Moving all of them beside
 the choice-free decidability instances in `Geb/Mathlib/Data/FinEnum.lean`
 is a separate concern from the syntax layer, so it belongs on its own
 branch per [CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
@@ -864,11 +866,6 @@ Correcting these is a separate concern from any current branch per
   whose bitstring type is the notation `bs := list bool`; that type is
   `List Bool` directly here, so the port is unaffected by the additional
   dependency.
-- **A second consumer of `BellantoniCook.finEnumFin` or
-  `finEnumCompDirection` appears**: move them to
-  `Geb/Mathlib/Data/FinEnum.lean`, the repository's home for choice-free
-  `FinEnum` support. They are `scoped` in
-  `Geb/Mathlib/Computability/BellantoniCook/Basic.lean`.
 - **A consumer needs `DecidableEq` or `Repr` for `BellantoniCook.BC`**:
   derive them on `Shape` and lift along `sig.W`'s subtype.
 - **A workstream needs the polytime checker of [HeraudNowak2011] as a

@@ -193,15 +193,20 @@ import-direction rules above are enforced by
   `MemW` states fiber membership on a raw W-tree, so that it can be
   decided by a fold, and `memW_iff_exists_obj` identifies it with the
   carrier's fiber. `Classical.choice`-free.
-- `Geb/Mathlib/Data/FinEnum.lean` — three choice-free `Decidable`
-  instances for mathlib's `FinEnum`: `FinEnum.decidableForallFinEnum`
+- `Geb/Mathlib/Data/FinEnum.lean` — choice-free `Decidable` instances
+  for mathlib's `FinEnum`: `FinEnum.decidableForallFinEnum`
   (a bounded `∀`), `FinEnum.decidableForallSubtype` (a bounded `∀` over
   a decidable subtype, without forming a `FinEnum` on the subtype), and
   `FinEnum.decidablePiFinEnum` (`DecidableEq` of functions out of a
   finitely enumerable domain, given `DecidableEq` of the codomain).
   Each routes through `List.decidableBAll` over `FinEnum.toList`, unlike
   mathlib's own route through `Fintype`, which is `Classical.choice`-
-  dependent. `Classical.choice`-free.
+  dependent. Also choice-free `scoped instance`s of `FinEnum` itself —
+  `FinEnum.unit`, `FinEnum.finFin`, `FinEnum.finSum` — replacing
+  mathlib's `FinEnum.punit`, `FinEnum.fin`, and `FinEnum.sum`,
+  which route through `FinEnum.ofList` and are `Classical.choice`-
+  dependent; resolved in preference to mathlib's under
+  `open scoped FinEnum`. `Classical.choice`-free.
 - `Geb/Mathlib/Data/PFunctor/Univariate/Finitary.lean` —
   `PFunctor.Finitary`, the condition that every shape has finitely many
   directions (`∀ a, FinEnum (P.B a)`). A reducible `abbrev` on
@@ -227,9 +232,10 @@ import-direction rules above are enforced by
   W-type, and its semantics by the W-type's eliminator. `compChildren`
   orders a `comp` node's children as `Direction` gives them. Depends on
   `Geb.Mathlib.Data.PFunctor.Slice.W` and
-  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `evalRec` depends on
-  `propext`; `finEnumCompDirection`, `sigFinitary`, `evalValue`,
-  `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `sigFinitary` resolves
+  through `FinEnum.unit`, `FinEnum.finFin` and `FinEnum.finSum` under
+  `open scoped FinEnum`. `evalRec` depends on `propext`; `sigFinitary`,
+  `evalValue`, `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
 - `Geb/Mathlib/Computability/BellantoniCook/Tree.lean` — a recognizer
   for the preorder spellings of binary trees, as three expressions of
   `B`. `comb` is a `safeRec` carrying the stack depth and the underflow
