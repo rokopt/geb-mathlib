@@ -50,14 +50,19 @@ space.
   step of the scan, of arity two.
 * `Cobham.comb` — the stack depth and the underflow verdict in one value, of
   arity one.
+* `Cobham.eqOneInner` — whether the predecessor of the argument is empty, of
+  arity one.
 * `Cobham.eqOne` — whether a bitstring has length one, of arity one.
 * `Cobham.isTree` — the recognizer, of arity one.
 * `Cobham.combSem`, `Cobham.eqOneSem`, `Cobham.isTreeSem` — the meaning of
-  each of the three at its arity, over which every statement of the module
-  is stated.
+  the scan, the length test and the recognizer at its arity, over which
+  every statement of the module is stated.
 
-Each expression appears in three tiers: a raw tree `…Raw`, the expression `…`
-of `C` carrying admissibility, and the ascription `…Of` at its reduced arity.
+Every expression is given as a raw tree `…Raw` and as the expression `…` of `C`
+carrying admissibility. The ascription `…Of` at the reduced arity is given
+for the scan, the length test and the recognizer, matching the interface
+`BellantoniCook.comb`, `BellantoniCook.eqOne` and `BellantoniCook.isTree`
+present, and for an expression whose reduced arity a proof reads.
 
 ## Main statements
 
@@ -66,6 +71,10 @@ of `C` carrying admissibility, and the ascription `…Of` at its reduced arity.
   recursion variable, with the recursive value exposed.
 * `Cobham.combSem_eq` — the scan computes `BinTree.depth` in unary, offset by
   one, while `BinTree.ok` holds, and `[false]` once it has failed.
+* `Cobham.combSem_eq_eval`, `Cobham.isTreeSem_eq_eval` — the meaning read at
+  the raw tree is the meaning the expression of `C` carries.
+* `Cobham.eqOneSem_env` — the one-test at an arbitrary environment is the
+  test at the canonical one.
 * `Cobham.eqOneSem_eq` — `eqOne` accepts exactly the bitstrings of length
   one.
 * `Cobham.isTreeSem_apply` — one step of the recognizer: the one-test on
@@ -98,7 +107,8 @@ together with `BinTree.depth_le_length`: the value is `[false]`, of length one,
 or the depth in unary offset by one, and the depth never exceeds the word
 length, while the bound child `S₁` returns one bit more than the recursion
 variable. Reading `comb` back through `C.eval` returns `combSem`, both being
-the same transport along `fst_eval`.
+the same transport along `fst_eval`, which `combSem_eq_eval` states and
+`isTreeSem_eq_eval` states for the recognizer.
 
 That bound is a bound on the value `combSem` produces at each step, not a
 bound on the cost of evaluating the expression that computes it: nothing in
@@ -123,7 +133,8 @@ not type-correct at `implicit` transparency.
 
 `eqOne` and `isTree` are `comp` compositions of `pred`, `cond` and `comb`,
 carrying no `boundedRec` node of their own, so each admissibility obligation
-is discharged by `recBounded_mk` over the node's children, reusing the
+is discharged by the anonymous constructor pairing the node's own condition,
+vacuous at a `comp`, with a case analysis over its children, reusing the
 embedded subexpression's own `RecBounded` component rather than repeating its
 proof. Unlike a primitive predecessor shape, `pred` here is itself a
 `boundedRec` node (`predRaw`), so its value on the scan's result does not
@@ -444,6 +455,11 @@ than the recursion variable. -/
 /-- `comb` at its declared arity. -/
 @[expose] def combOf : COf 1 := ⟨comb, rfl⟩
 
+/-- The meaning `combSem` reads at the raw tree is the meaning `comb` carries:
+the statements about the scan are statements about the member of `C` whose
+recursion bound `comb` discharges. -/
+theorem combSem_eq_eval : transport combOf.2 combOf.1.eval = combSem := rfl
+
 /-- The inner conditional of `eqOne`: whether the predecessor of the argument
 is empty. -/
 @[expose] def eqOneInnerRaw : sig.toPFunctor.W :=
@@ -492,7 +508,7 @@ otherwise the argument is one exactly when its predecessor is empty. -/
       | .inr 2 => eqOneInner.2
       | .inr 3 => eqOneInner.2⟩⟩
 
-/-- `eqOne` at its declared arity. -/
+/-- `eqOne` at its declared arity, as `combOf` and `isTreeOf`. -/
 @[expose] def eqOneOf : COf 1 := ⟨eqOne, rfl⟩
 
 /-- The one-test's meaning at its arity, taken at the raw tree rather than at
@@ -547,6 +563,11 @@ at `isTree`, as `combSem`. -/
 @[expose] def isTreeSem : Sem 1 :=
   transport (fst_eval ⟨isTreeRaw, by decide⟩) (eval ⟨isTreeRaw, by decide⟩).2
 
+/-- The meaning `isTreeSem` reads at the raw tree is the meaning `isTree`
+carries, as `combSem_eq_eval` for the scan: the correctness statements below
+are statements about the member of `C` that `isTree_smashFree` concerns. -/
+theorem isTreeSem_eq_eval : transport isTreeOf.2 isTreeOf.1.eval = isTreeSem := rfl
+
 /-- One step of the recognizer: the one-test on the scan's predecessor. The
 scan's value is `[false]` on failure, whose predecessor is empty, and
 otherwise the depth in unary offset by one, whose predecessor has length the
@@ -562,13 +583,10 @@ theorem isTreeSem_apply (w : List Bool) :
   | b :: v => cases b <;> rfl
 
 /-- The recognizer's value on both branches: a rejected word receives the
-empty bitstring, not merely something other than `[true]`. The one-test's
-argument arrives as a `fun`-binder, which `eqOneSem_env` normalises to the
-canonical environment before `eqOneSem_eq` applies. -/
+empty bitstring, not merely something other than `[true]`. -/
 theorem isTreeSem_eq_ite (w : List Bool) :
     isTreeSem ![w] = if BinTree.Valid w then [true] else [] := by
-  rw [isTreeSem_apply, eqOneSem_env]
-  simp only [eqOneSem_eq, combSem_eq]
+  rw [isTreeSem_apply, eqOneSem_env, eqOneSem_eq, combSem_eq]
   by_cases h : BinTree.ok w = true
   · rw [if_pos h]
     simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]

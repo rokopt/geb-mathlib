@@ -18,7 +18,10 @@ failing `ok`, and on a word that is `ok` but leaves the wrong depth.
 
 ## Main statements
 
-The assertions below.
+The scan's values are the offset depth on a word satisfying `ok` and the
+absorbing failure flag once a node bit has been read below depth two, and the
+recognizer's values are `[true]` on a spelling and the empty bitstring on a
+word failing `ok` or leaving a depth other than one.
 
 ## Tags
 
@@ -35,16 +38,6 @@ def combArity : COf 1 := combOf
 
 /-- The recognizer at its declared arity. -/
 def isTreeArity : COf 1 := isTreeOf
-
-/-- The meaning `combSem` reads at the raw tree is the meaning the expression
-carries: the transport along `fst_eval` that `C.eval` performs does not
-obstruct reduction, so a consumer reaching the scan through `combOf` gets the
-function every statement of the module is about. -/
-theorem combSem_eq_eval : transport combOf.2 combOf.1.eval = combSem := rfl
-
-/-- The meaning `isTreeSem` reads at the raw tree is the meaning the
-recognizer carries, as `combSem_eq_eval` for the scan. -/
-theorem isTreeSem_eq_eval : transport isTreeOf.2 isTreeOf.1.eval = isTreeSem := rfl
 
 /-- The empty word has depth zero and satisfies `ok`, so the scan returns the
 offset depth `[true]`. -/
