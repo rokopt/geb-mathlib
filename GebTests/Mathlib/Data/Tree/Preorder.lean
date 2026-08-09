@@ -21,7 +21,11 @@ accepted spelling and a rejected word.
 
 ## Main statements
 
-The fifteen assertions below.
+The assertions below give concrete values of the encoding, its parser,
+`depth`, `ok`, and `Valid` on the worked trees and words above,
+instances of `depth_le_length`'s bound at the extremes and at a mixed
+word, and instances of `decide (BinTree.Valid ·)` on a valid and an
+invalid word.
 
 ## Tags
 
@@ -92,3 +96,18 @@ theorem valid_print_preorderSample :
 /-- `Valid` itself on the word whose depth conjunct fails. -/
 theorem not_valid_two_leaves : ¬ Valid [false, false] :=
   fun h ↦ absurd h.2 (by decide)
+
+/-- `depth_le_length` at the empty word. -/
+theorem depth_le_length_nil : depth ([] : List Bool) ≤ ([] : List Bool).length := by decide
+
+/-- `depth_le_length` at a word of leaf bits only. -/
+theorem depth_le_length_leaves : depth [false, false, false] ≤ 3 := by decide
+
+/-- `depth_le_length` at a word mixing a node bit with leaf bits. -/
+theorem depth_le_length_mixed : depth [true, false, false] ≤ 3 := by decide
+
+/-- The `DecidablePred Valid` instance accepts a valid word. -/
+theorem decide_valid_leaf : decide (Valid [false]) = true := by decide
+
+/-- The `DecidablePred Valid` instance rejects an invalid word. -/
+theorem decide_not_valid_two_leaves : decide (Valid [true, false]) = false := by decide
