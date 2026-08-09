@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Mathlib.Computability.Cobham.Basic
+import GebTests.Mathlib.Computability.Cobham.Tree
 
 /-!
 # Cobham tests — index
