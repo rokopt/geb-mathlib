@@ -29,6 +29,7 @@
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
   - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
   - [Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`](#lambda-arrow-in-gebtestsmathlibcategorytheoryelementarytoposlean)
+  - [Spec and plan lifecycle beyond one topic branch](#spec-and-plan-lifecycle-beyond-one-topic-branch)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -524,7 +525,8 @@ Four items over `Geb/Mathlib/Data/Tree/`.
 
 ### The Bellantoni-Cook tree recognizer
 
-Five items over `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`.
+Items for the Bellantoni-Cook tree recognizer, each covering its own
+destination.
 
 1. The tree recursor — the analogue of `safeRec` on the encoded tree,
    whose step receives the two subtree spellings in normal position and
@@ -555,6 +557,19 @@ Five items over `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`.
    representation strategy used here, in which the program is the term.
    Any pursuit of this item begins by verifying both claims against
    primary sources.
+6. Route A: proving a time and space bound for a tree recognizer against
+   `Cslib.Computability.Machines.Turing.MultiTape.Deterministic`'s
+   `ComputableInTimeAndSpace`. That module supplies `MultiTapeTM`, `Cfg`,
+   `step`, `configs`, `spaceUsed` and `visitedByTapeHead` among others,
+   but no machine constructions, worked examples or composition
+   combinators. Three constraints: the subtree rules place any statement
+   relating `BinTree.Valid` to that predicate in `Geb/Internal/`, since
+   `Geb/Cslib/` may not import `Geb.Mathlib.*` and `Geb/Mathlib/` may not
+   import `Cslib.*`; `DecidableInTimeAndSpace` is stated over
+   `Turing.MultiTapeTM.indicator`, an `open Classical in noncomputable
+   def`, so `ComputableInTimeAndSpace` over a decidable indicator is the
+   form to use; and the result speaks of one machine and one language,
+   not of any function-algebra expression.
 
 ### Concrete-syntax prototype
 
@@ -676,6 +691,15 @@ frontmatter, and its § Coding style lists `↦` among the Unicode forms
 mathlib uses; every other `.lean` file in the repository follows it.
 Correcting these is a separate concern from any current branch per
 [CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
+
+### Spec and plan lifecycle beyond one topic branch
+
+[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape orders spec and plan
+commits for a workstream that is one topic branch. It says nothing about
+a series of branches merging separately into an append-only `main`, nor
+about a topic branch with two topic-branch parents. Since that ordering
+was introduced, `main` has never carried two specs at once, so no
+practice settles either question. Settle both.
 
 ## Triggers (do when condition fires)
 
@@ -875,6 +899,54 @@ Correcting these is a separate concern from any current branch per
   term-level artifact**: add an untyped `Ast` and
   `check : Ast → Option ((n s : ℕ) × BellantoniCook.BCOf n s)` over
   `SlicePFunctor.decidableWValid`.
+- **Allowing `Geb/Cslib/` to import `Geb.Mathlib.*`**: the case for it is
+  the reason `docs/rules/upstream-eligible.md` gives, that unupstreamed
+  mathlib-targeted content is unavailable to a CSLib PR, holds equally of
+  one `Geb/Mathlib/` module importing another. The case against it, which
+  the change must answer: extraction of a `Geb/Mathlib/` module orders
+  PRs within one review queue, whereas a `Geb/Cslib/` module importing
+  `Geb.Mathlib.*` waits on mathlib merge, mathlib release and CSLib's own
+  mathlib bump, three cadences the project does not set, against
+  CONTRIBUTING § Floodgate test's "on short notice". The converse
+  direction stays barred on its own reason: mathlib does not depend on
+  CSLib, so no ordering makes a `Geb/Mathlib/` module's `Cslib.*` import
+  extractable. The change set discovered so far:
+  - `scripts/lint-imports.sh` — the two Cslib `check_subtree` calls, with
+    `Geb.Mathlib.` added to both the allowed-prefix and the
+    leakage-prefix list, since extraction rewrites that prefix too; and
+    the header comment block restating the allowed-import table.
+  - `scripts/extract-pr.sh` — the `Geb/Cslib/*` and `GebTests/Cslib/*`
+    arms set one `rewrite_prefix` each, so a `Geb.Mathlib.` import is
+    emitted verbatim and the extracted file does not compile. A second
+    rewrite pair is needed.
+  - `scripts/tests/test-lint-imports.sh` — the case asserting exit 1 on
+    `import Geb.Mathlib.Foo` in `Geb/Cslib/` must be inverted; a
+    `GebTests/Cslib/` parallel case does not exist and should be added.
+  - `scripts/tests/test-extract-pr.sh` — a case for the new rewrite.
+  - `docs/rules/upstream-eligible.md` — the `Geb/Cslib/` and
+    `GebTests/Cslib/` table rows, the § Floodgate test sentence asserting
+    that each subtree's extractability is independent of the other,
+    which the change falsifies, and the closing cross-subtree paragraph.
+  - `docs/process.md` § Floodgate test, which carries the rationale.
+  - Adjacent and not bundled: `Batteries.` is arguably missing from the
+    `Geb/Cslib/` allowed list by the same argument, CSLib depending on
+    mathlib which depends on Batteries.
+
+  Trigger: a `Geb/Cslib/` module needing content from `Geb/Mathlib/`.
+- **A recursion combinator for `Geb/Mathlib/Computability/Cobham/`**:
+  discharging the `Rec` bound of [HeraudNowak2011] § 3.1 once for all
+  users rather than at each use, by truncating each layer against the
+  bound, with an agreement law relating it to naive recursion, at the
+  arities `Cobham.COf n` already tracks, and a naming question, the
+  module carrying no settled name for it.
+  [BeckmannBussFriedmanMuellerThapen2017] Definition 2.7's syntactic
+  Cobham recursion, which removes the embedding proviso by returning `0`
+  where the condition fails, is the nearest published precedent for a
+  recursion scheme discharging its own bound, and is not this
+  construction. Deferred: at the Cobham tree recognizer's three
+  recursions it is net cost, the agreement law's hypothesis needing the
+  naive recursion's unfolding lemmas anyway. Trigger: a Cobham module
+  reaching a fourth recursion.
 - **`Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc/` gains a second
   module, or either `FreeCoprodCompDisc.lean` is edited for another
   reason**: split `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean`
