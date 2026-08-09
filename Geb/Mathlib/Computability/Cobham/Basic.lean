@@ -71,7 +71,7 @@ Theorem 3.101).
 * `Cobham.predRaw` / `Cobham.pred` — the predecessor, as a raw tree and as an
   expression of arity one.
 * `Cobham.predSem` — the meaning of the predecessor.
-* `Cobham.concatCompRaw` — the concatenation of two expressions of a common arity.
+* `Cobham.concatCompRaw` — the concatenation of two raw trees of a common arity.
 * `Cobham.condRaw` / `Cobham.cond` — the four-way conditional, as a raw tree and as
   an expression of arity four.
 * `Cobham.condSem` — the meaning of the conditional.
@@ -91,7 +91,7 @@ Theorem 3.101).
 
 Every `def` in this module is `@[expose]`, so a wrapper module and the tests can
 unfold them across the module boundary; the `sigFinitary` instance, the
-`Decidable (SmashFree ·)` instance, and the four theorems need no such tag.
+`Decidable (SmashFree ·)` instance, and the theorems need no such tag.
 
 `concatRaw` and `smashRaw` are named apart from the expressions built on them
 because instance search finds `Decidable (sig.WValid w)` when `w` is a constant but
@@ -404,7 +404,7 @@ theorem predSem_eq (u : List Bool) : predSem ![u] = u.tail := by
   | [] => rfl
   | b :: _ => cases b <;> rfl
 
-/-- The concatenation of two `n`-ary expressions: a `comp` node of arity `n` whose
+/-- The concatenation of two `n`-ary raw trees: a `comp` node of arity `n` whose
 head is the `concat` generator, applied to `a` and `b` in that order. Its value at
 any environment is `b`'s list followed by `a`'s, of length the sum of the two. -/
 @[expose] def concatCompRaw (n : ℕ) (a b : sig.toPFunctor.W) : sig.toPFunctor.W :=

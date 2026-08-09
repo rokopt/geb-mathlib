@@ -23,7 +23,16 @@ both are checked to be smash-free.
 
 ## Main statements
 
-The assertions below.
+The evaluations agree with the bit-order convention and with `smash`'s length
+formula, and pin the argument `boundedRec` recurses on; `RecBounded` separates a
+recursion meeting its bound from one outgrowing it; and `SmashFree` rejects a
+`smash` node at any depth while accepting a term carrying none, the derived
+predecessor and conditional among them.
+
+## References
+
+* [HeraudNowak2011]
+* [Strahm2003]
 
 ## Tags
 
