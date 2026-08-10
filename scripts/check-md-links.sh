@@ -4,9 +4,9 @@
 #
 # Report Markdown links whose target does not exist.
 #
-# With no arguments, scans the `.md` files `git ls-files` reports from
-# the repository root, so an uncommitted scratch document is not held to
-# the rule. With arguments, scans exactly those files, resolving them
+# With no arguments, scans the tracked `.md` files reported from the
+# repository root, so an uncommitted scratch document is not held to the
+# rule. With arguments, scans exactly those files, resolving them
 # against the current directory.
 #
 # A link target is resolved relative to the directory of the file
@@ -33,9 +33,25 @@ set -uo pipefail
 
 failed=0
 
+# Report the tracked `.md` files, one per line, relative to the
+# repository root (the caller's directory).
+#
+# jj is the working VCS, so it is authoritative wherever `.jj` exists: a
+# workspace added with `jj workspace add` has no `.git` at all, and in a
+# colocated workspace the git index is an export of jj's state that is
+# refreshed only when a jj command snapshots the working copy. `git
+# ls-files` covers the remaining case, a plain git checkout such as CI's.
+list_tracked_md() {
+  if [ -d .jj ]; then
+    jj file list -- 'glob:**/*.md'
+  else
+    git ls-files '*.md'
+  fi
+}
+
 check_file() {
   local file="$1" dir target path resolved
-  # `git ls-files` reports a file whose deletion is staged but whose
+  # The file listing reports a file whose deletion is recorded but whose
   # removal has not been committed; it has no links left to check.
   [ -f "$file" ] || return 0
   dir="$(dirname "$file")"
@@ -65,9 +81,17 @@ if [ "$#" -gt 0 ]; then
   done
 else
   cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)" || exit 1
+  # A listing that fails is not a listing of nothing: reporting success
+  # on it would report a check that never ran. A repository tracking no
+  # Markdown is a listing of nothing, and passes.
+  if ! files="$(list_tracked_md)"; then
+    echo "check-md-links: could not list the tracked .md files" >&2
+    exit 1
+  fi
   while IFS= read -r f; do
+    [ -n "$f" ] || continue
     check_file "$f"
-  done < <(git ls-files '*.md')
+  done <<<"$files"
 fi
 
 if [ "$failed" -ne 0 ]; then
