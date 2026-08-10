@@ -81,12 +81,16 @@ Theorem 3.101).
 * `Cobham.smashFreeBool` — whether no `smash` node occurs anywhere in a raw tree.
 * `Cobham.SmashFree` — the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, excluding
   the `smash` generator.
+* `Cobham.predIter`, `Cobham.predIterOf` — the iterated predecessor.
 
 ## Main statements
 
 * `Cobham.fst_eval` — the index component of a tree's interpretation is its arity.
 * `Cobham.recBounded_mk` — `RecBounded` unfolded one level, on a raw node.
 * `Cobham.predSem_eq` — the predecessor drops the word's last bit.
+* `Cobham.wIndexRoot_predIterRaw`, `Cobham.wValid_predIterRaw`,
+  `Cobham.recBounded_predIterRaw` — the iterated predecessor's arity,
+  admissibility and recursion bound.
 * `Cobham.condSem_eq` — the conditional branches on the emptiness and parity of its
   first argument.
 * `Cobham.transport_transport` — transport along a composite equality is
@@ -450,6 +454,54 @@ theorem predSem_eq (u : List Bool) : predSem ![u] = u.tail := by
   match u with
   | [] => rfl
   | b :: _ => cases b <;> rfl
+
+/-- The `k`-fold predecessor of the sole argument. -/
+@[expose] def predIterRaw : ℕ → sig.toPFunctor.W :=
+  Nat.rec (WType.mk (.proj 1 0) Fin.elim0)
+    fun _ ih ↦
+      WType.mk (.comp 1 1) fun d ↦
+        match d with
+        | .inl () => predRaw
+        | .inr _ => ih
+
+/-- The iterated predecessor has arity one, at every iterate. -/
+theorem wIndexRoot_predIterRaw (k : ℕ) : sig.wIndexRoot (predIterRaw k) = 1 := by
+  cases k with
+  | zero => rfl
+  | succ _ => rfl
+
+/-- The iterated predecessor is admissible, at every iterate. -/
+theorem wValid_predIterRaw (k : ℕ) : sig.WValid (predIterRaw k) :=
+  Nat.rec ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩
+    (fun j ih ↦
+      ⟨fun d ↦ match d with
+        | .inl () => pred.1.1.2
+        | .inr _ => ih,
+      funext fun d ↦ match d with
+        | .inl () =>
+          (sig.wIndexValid_index_eq_wIndexRoot predRaw).trans pred.2
+        | .inr _ =>
+          (sig.wIndexValid_index_eq_wIndexRoot (predIterRaw j)).trans
+            (wIndexRoot_predIterRaw j)⟩)
+    k
+
+/-- The iterated predecessor carries the predecessor's recursions and no
+other. -/
+theorem recBounded_predIterRaw (k : ℕ) :
+    RecBounded ⟨predIterRaw k, wValid_predIterRaw k⟩ :=
+  Nat.rec ⟨trivial, fun c ↦ c.elim0⟩
+    (fun _ ih ↦ ⟨trivial, fun d ↦ match d with
+      | .inl () => pred.1.2
+      | .inr _ => ih⟩)
+    k
+
+/-- The iterated predecessor as an expression. -/
+@[expose] def predIter (k : ℕ) : C :=
+  ⟨⟨predIterRaw k, wValid_predIterRaw k⟩, recBounded_predIterRaw k⟩
+
+/-- `predIter` at its declared arity. -/
+@[expose] def predIterOf (k : ℕ) : COf 1 :=
+  ⟨predIter k, wIndexRoot_predIterRaw k⟩
 
 /-- The concatenation of two `n`-ary raw trees: a `comp` node of arity `n` whose
 head is the `concat` generator, applied to `a` and `b` in that order. Its value at
