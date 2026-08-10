@@ -6,7 +6,8 @@
 - [Read these first](#read-these-first)
 - [Where the workstream stands](#where-the-workstream-stands)
 - [Facts established by building](#facts-established-by-building)
-- [B2: the scan combinator](#b2-the-scan-combinator)
+- [B2: the scan combinator (done)](#b2-the-scan-combinator-done)
+- [B6: the generic ranked recognizer](#b6-the-generic-ranked-recognizer)
 - [B3: the fold](#b3-the-fold)
 - [B4: absorbing `BinTree`](#b4-absorbing-bintree)
 - [B5: the time and space bound](#b5-the-time-and-space-bound)
@@ -127,13 +128,28 @@ reinstate them from any older document.
     `public import` of the declaring module and `@[expose]`. Group
     `public import`s before plain `import`s, separated by a blank line.
 
-## B2: the scan combinator
+## B2: the scan combinator (done)
 
 Done. `Geb/Mathlib/Computability/Cobham/Scan.lean` gives the scan
 combinator, and `Geb/Mathlib/Computability/Cobham/Tree.lean`'s recognizer
 is rebuilt on it. See [docs/index.md](../../index.md), entries for
 `Geb/Mathlib/Computability/Cobham/Scan.lean` and
 `Geb/Mathlib/Computability/Cobham/Tree.lean`.
+
+The generic ranked recognizer was carried out of B2 into a branch of its
+own, B6, described below: the combinator is the two-symbol recognizer's
+scan, and instantiating it at an arbitrary `RankedAlphabet` is separate
+work.
+
+## B6: the generic ranked recognizer
+
+`Geb/Mathlib/Computability/Cobham/`. Depends on B1 and B2.
+
+The ranked recognizer as an instance of the scan combinator. The layout of
+`RankedAlphabet.Scan` as a bitstring is undecided, and the step must
+dispatch on `2 ^ width` block values against `RankedAlphabet.arOf`, so the
+dispatch is built by recursion on `width` rather than written out. See
+[TODO.md](../../../TODO.md) § Extensions of the tree recognizers.
 
 ## B3: the fold
 
@@ -207,11 +223,12 @@ linear on a right comb.
 
 ## What completion means
 
-B1 to B4 stand without B5. The workstream is complete when B4 has landed and no
-tree encoding is defined twice; B5 is a separate undertaking whose failure
-costs nothing already built.
+B1 to B4 and B6 stand without B5. The workstream is complete when B4 has
+landed, so that no tree encoding is defined twice, and B6 has landed, so that
+the recognizer is stated at an arbitrary ranked alphabet; B5 is a separate
+undertaking whose failure costs nothing already built.
 
-Three deferrals are recorded in [TODO.md](../../../TODO.md), not part of
+Deferrals are recorded in [TODO.md](../../../TODO.md), not part of
 the branches above: the namespace prefix in a declaration body, the
 placement of the choice-free `Nat` residue lemmas, and the citation status
 of `BarringtonCorbett1989` together with the three succinct-tree
