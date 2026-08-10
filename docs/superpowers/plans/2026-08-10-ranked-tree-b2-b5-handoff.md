@@ -1,4 +1,4 @@
-# Tree-recognizer extensions B2 to B5 — session handoff
+# Tree-recognizer extensions — workstream record
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -7,6 +7,7 @@
 - [Where the workstream stands](#where-the-workstream-stands)
 - [Facts established by building](#facts-established-by-building)
 - [B2: the scan combinator (done)](#b2-the-scan-combinator-done)
+- [The case combinator (done)](#the-case-combinator-done)
 - [B6: the generic ranked recognizer](#b6-the-generic-ranked-recognizer)
 - [B3: the fold](#b3-the-fold)
 - [B4: absorbing `BinTree`](#b4-absorbing-bintree)
@@ -25,23 +26,31 @@
   [docs/rules/markdown-writing.md](../../rules/markdown-writing.md),
   [docs/rules/ci-and-workflow.md](../../rules/ci-and-workflow.md).
 - [TODO.md](../../../TODO.md) § Extensions of the tree recognizers. It carries
-  B2 to B5 with their dependencies and the design constraints below. It is the
-  persistent record; the specification that stated them was removed with B1,
-  per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape.
+  every roadmap item with its dependencies and the design constraints below,
+  and records which are done. It is the persistent record; the specification
+  that stated B1 was removed with it, per
+  [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape.
 - [docs/index.md](../../index.md), entries for
   `Geb/Mathlib/Data/Tree/Ranked/*` and
   `Geb/Mathlib/Computability/Cobham/*`.
 
-There is no specification for B2 to B5. Each gets its own brainstorming phase,
-its own spec and plan, its own adversarial review to convergence, and its own
-branch. Do not treat this document as a spec: it records state and constraints,
-not decisions.
+B6 and B3 are specified, in
+[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
+§ Segment 2 and § Segment 3; that document is transient and is removed in
+the final commits of segment 3. B4 and B5 have no specification: each gets
+its own brainstorming phase, its own spec and plan, its own adversarial
+review to convergence, and its own segment. Do not treat this document as a
+spec: it records state and constraints, not decisions.
 
 ## Where the workstream stands
 
-B1 is merged. Confirm that before trusting the rest of this document:
-`lake build Geb.Mathlib.Data.Tree.Ranked` succeeds and
-`git log --oneline main | head` shows the ranked-encoding commits.
+B1, B2 and the case combinator are done and unpushed, on one line off
+`main`; B6, B3, B4 and B5 are not started. The per-item table in
+[the session handoff](2026-08-10-tree-recognizer-session-handoff.md)
+§ Status of every roadmap item is the current record, and this document
+describes what each remaining item is.
+
+B1 is not merged. Nothing in this workstream has been pushed.
 
 `Geb/Mathlib/Data/Tree/Ranked/` holds four modules:
 
@@ -141,19 +150,34 @@ own, B6, described below: the combinator is the two-symbol recognizer's
 scan, and instantiating it at an arbitrary `RankedAlphabet` is separate
 work.
 
+## The case combinator (done)
+
+Done. `Geb/Mathlib/Computability/Cobham/Cases.lean` gives definition by
+cases over a fixed number of scrutinee bits, and `Cobham/Basic.lean` the
+constant-word, iterated-predecessor and diagonal combinators its branches
+are built from. It carries no roadmap letter: it is shared machinery both
+B6 and B3 need, since a dispatch over `2 ^ width` block values cannot be
+written out at a symbolic width. See [docs/index.md](../../index.md).
+
 ## B6: the generic ranked recognizer
 
-`Geb/Mathlib/Computability/Cobham/`. Depends on B1 and B2.
-
-The ranked recognizer as an instance of the scan combinator. The layout of
-`RankedAlphabet.Scan` as a bitstring is undecided, and the step must
-dispatch on `2 ^ width` block values against `RankedAlphabet.arOf`, so the
-dispatch is built by recursion on `width` rather than written out. See
-[TODO.md](../../../TODO.md) § Extensions of the tree recognizers.
+`Geb/Mathlib/Computability/Cobham/RankedTree.lean`. Depends on B1, B2 and
+the case combinator. Specified to implementation detail in
+[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
+§ Segment 2, which settles the `RankedAlphabet.Scan` bit layout the
+earlier revisions of this document recorded as undecided: the liveness
+flag, then the incomplete block in a fixed-width slot delimited by a
+sentinel, then the pending count in unary as the tail. The dispatch is the
+case combinator at `width + maxArity + 2` bits.
 
 ## B3: the fold
 
-`Geb/Mathlib/Computability/Cobham/Fold.lean`. Depends on B2.
+`Geb/Mathlib/Computability/Cobham/Fold.lean`. Depends on B2 and the case
+combinator. Specified in
+[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
+§ Segment 3. It is a deliverable of the workstream for later workstreams
+to build on rather than a dependency of anything here, so it has no
+consumer in the repository on landing, which is its expected condition.
 
 The catamorphism at a finite carrier, whose step's configurable part carries no
 restriction of its own, both of the conditions the construction imposes being
@@ -223,10 +247,14 @@ linear on a right comb.
 
 ## What completion means
 
+Four items remain, in this order: B6, then B3, then B4, then B5.
+
 B1 to B4 and B6 stand without B5. The workstream is complete when B4 has
-landed, so that no tree encoding is defined twice, and B6 has landed, so that
-the recognizer is stated at an arbitrary ranked alphabet; B5 is a separate
-undertaking whose failure costs nothing already built.
+landed, so that no tree encoding is defined twice, and B6 has landed, so
+that the recognizer is stated at an arbitrary ranked alphabet. B3 is a
+deliverable in its own right. B5 is a separate undertaking whose failure
+costs nothing already built, and whose difficulty is unbounded by anything
+done so far.
 
 Deferrals are recorded in [TODO.md](../../../TODO.md), not part of
 the branches above: the namespace prefix in a declaration body, the

@@ -80,6 +80,8 @@ first that consumes it, so that segments 2 and 3 add only their own module,
 their own statements, and what segment 2 adds to `Data/Tree/Ranked/`. Segment 3
 depends on segment 1 and not on segment 2.
 
+Segment 1 has landed; segments 2 and 3 are not started.
+
 | Segment | New module | `Cobham/Basic.lean` | Elsewhere |
 | --- | --- | --- | --- |
 | 1 | `Cases.lean` | `semAt`; the `zeroAt` family; `prepend`, `constAt`, `predIter`, `diag` | `Scan.lean`, `Tree.lean` through `semAt` |
@@ -870,16 +872,19 @@ reduction of `casesSem` at `p = 7` against a branch family varying in every
 bit, closing by `rfl` in well under a second. The three `Classical.choice`
 claims in § Constraints were each measured.
 
-Segment 1 is compiled in full. The prototype now also carries `predIterRaw`,
-`predIter`, `predIterOf`, `prependRaw`, `prepend`, `prependOf`, `constAt`,
-`constAtOf`, `diagRaw`, `diag`, `diagOf` with their arity, admissibility and
-recursion-bound lemmas; `recBounded_shiftW`, `recBounded_casesW`, `cases`,
-`casesOf`, `casesSem_eq_eval`; and `bits_ofFn`, `bits_succ_tail`, `ofFn_bits`
-and the six word characterisations. Each measures `[propext, Quot.sound]`, taken
-declaration by declaration: `lake lint` lints the `Geb` umbrella's import
-closure and `Geb/Internal.lean` does not import the prototype, so the linter
-never reached it, and `scripts/tests/test-lint-driver.sh` reports it as
-escaping. The test mirror's assertions were compiled against it.
+**Segment 1 has landed.** It is in the tree at `feat/cobham-cases`, not in a
+prototype: `Cobham/Cases.lean` with its mirror, and the `semAt`, `zeroAt`,
+`predIter`, `prepend`, `constAt` and `diag` families in `Cobham/Basic.lean`.
+`lake build`, `lake test`, `lake lint`, `lake lint -- GebTests` and
+`scripts/pre-push.sh` all pass over it. § Segment 1 below is therefore a record
+of what was built rather than a specification of what to build; the segments
+still to build are 2 and 3.
+
+While segment 1 was a prototype under `Geb/Internal/`, its axioms had to be
+measured declaration by declaration: `lake lint` lints the `Geb` umbrella's
+import closure, `Geb/Internal.lean` did not import the prototype, and
+`scripts/tests/test-lint-driver.sh` reported it as escaping the linter. That
+consideration applies to segment 2's and segment 3's prototypes in turn.
 
 `ofFn_bits` proved through `List.ext_getElem` and `omega` measured
 `[propext, Classical.choice, Quot.sound]`; the structural induction over the
