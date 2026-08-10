@@ -33,6 +33,8 @@ composition with `proj 2 1`.
   of the scan, at arity one.
 * `Cobham.baseWord`, `Cobham.stepWord`, `Cobham.scanStepWord` — the words a
   base and a step contribute, and the semantic step of the fold.
+* `Cobham.scan`, `Cobham.scanOf` — the scanner as an expression of `C`, and
+  at its declared arity.
 
 ## Main statements
 
@@ -46,6 +48,10 @@ composition with `proj 2 1`.
   scan on the empty word, on one bit, and as a `List.foldr`.
 * `Cobham.baseWord_eq_eval`, `Cobham.stepWord_eq_eval` — each component's
   word is the one its expression of `C` carries.
+* `Cobham.recBounded_boundRaw`, `Cobham.recBounded_liftRaw` — the bound child
+  and a lifted step carry no recursion of their own.
+* `Cobham.scanSem_eq_eval` — the meaning read at the raw tree is the meaning
+  the expression carries.
 
 ## Implementation notes
 
@@ -282,6 +288,60 @@ theorem scanSem_eq (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ)
   List.rec (scanSem_nil base step₀ step₁ growth)
     (fun b v ih ↦ (scanSem_cons base step₀ step₁ growth b v).trans
       (congrArg (scanStepWord step₀ step₁ b) ih)) w
+
+/-- The bound child carries no recursion of its own, at every growth. -/
+theorem recBounded_boundRaw (growth : ℕ) :
+    RecBounded ⟨boundRaw growth, wValid_boundRaw growth⟩ :=
+  Nat.rec ⟨trivial, fun c ↦ c.elim0⟩
+    (fun _ ih ↦ ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr _ => ih⟩)
+    growth
+
+/-- A lifted step carries the recursions of what it lifts and no other, the
+`comp` node's own condition being vacuous. -/
+theorem recBounded_liftRaw (step : COf 1) :
+    RecBounded ⟨liftRaw step.1.1.1, wValid_liftRaw _ step.1.1.2 step.2⟩ :=
+  ⟨trivial, fun d ↦ match d with
+    | .inl () => step.1.2
+    | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩
+
+/-- The scanner as an expression of `C`: the scan node with its recursion
+bound discharged from a bound on the value the scan produces. The bound is an
+argument rather than a field of a structure, no consumer holding a scanner as
+a value. -/
+@[expose] def scan (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ)
+    (hbound : ∀ w : List Bool,
+      (scanSem base step₀ step₁ growth ![w]).length ≤ w.length + growth) : C :=
+  ⟨scanW base step₀ step₁ growth, by
+    refine ⟨fun x ↦ ?_, ?_⟩
+    · rw [(funext fun i ↦ i.elim0 : Fin.tail x = Fin.tail ![x 0])]
+      change _ ≤ (boundSem growth x).length
+      rw [boundSem_eq, List.length_append, List.length_replicate]
+      exact Nat.le_trans (hbound (x 0)) (Nat.le_of_eq (Nat.add_comm _ _))
+    · refine fun b : Fin 4 ↦ ?_
+      match b with
+      | 0 => exact base.1.2
+      | 1 => exact recBounded_liftRaw step₀
+      | 2 => exact recBounded_liftRaw step₁
+      | 3 => exact recBounded_boundRaw growth⟩
+
+/-- `scan` at its declared arity. -/
+@[expose] def scanOf (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ)
+    (hbound : ∀ w : List Bool,
+      (scanSem base step₀ step₁ growth ![w]).length ≤ w.length + growth) :
+    COf 1 :=
+  ⟨scan base step₀ step₁ growth hbound, rfl⟩
+
+/-- The meaning read at the raw tree is the meaning the expression carries.
+Unlike a component's arity, the scan node's own reduces whatever its children
+are, so this is a `rfl` at variable base, steps and growth. -/
+theorem scanSem_eq_eval (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ)
+    (hbound : ∀ w : List Bool,
+      (scanSem base step₀ step₁ growth ![w]).length ≤ w.length + growth) :
+    transport (scanOf base step₀ step₁ growth hbound).2
+      (scanOf base step₀ step₁ growth hbound).1.eval =
+      scanSem base step₀ step₁ growth := rfl
 
 end
 
