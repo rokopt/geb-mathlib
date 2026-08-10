@@ -325,7 +325,7 @@ theorem wIndexRoot_casesRaw (p : ℕ) (br : (Fin p → Bool) → sig.toPFunctor.
 theorem wValid_casesRaw : ∀ (p : ℕ) (br : (Fin p → Bool) → sig.toPFunctor.W),
     (∀ v, sig.WValid (br v)) → (∀ v, sig.wIndexRoot (br v) = 1) →
     sig.WValid (casesRaw p br)
-theorem recBounded_casesRaw : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1),
+theorem recBounded_casesW : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1),
     RecBounded (casesW p br)
 ```
 
@@ -363,7 +363,7 @@ theorem casesSem_eq_eval (p : ℕ) (br : (Fin p → Bool) → COf 1) :
     transport (casesOf p br).2 (casesOf p br).1.eval = casesSem p br
 ```
 
-`cases` and `casesOf` carry no side condition. `recBounded_casesRaw` discharges
+`cases` and `casesOf` carry no side condition. `recBounded_casesW` discharges
 it componentwise from the branches' own, by a `Nat.rec` generalizing over the
 branch family exactly as `wValid_casesRaw` does: every node the recursion
 introduces is a `comp`, where `RecBoundedValue` is `True`, and its children are
@@ -864,14 +864,24 @@ reduction of `casesSem` at `p = 7` against a branch family varying in every
 bit, closing by `rfl` in well under a second. The three `Classical.choice`
 claims in § Constraints were each measured.
 
-Not built: `cases`, `casesOf`, `recBounded_casesRaw`, `casesSem_eq_eval`;
-`prependRaw` with its admissibility, `ofFn_bits`; `isRankedRaw`,
-`acceptTestRaw` and `acceptTest`; `rankedSem_eq`, `foldSem_eq` and every
-`…_eq_eval`. What was built of the `prepend` family is `prependOf` and
-`constAtOf` at a literal arity with their word lemmas, not the raw tree or its
-admissibility at a symbolic one; and what was built of the verdict is the
-`R.width + 3` window's separating property at `narrowAlphabet`, not any
-expression computing it.
+Segment 1 is compiled in full. The prototype now also carries `predIterRaw`,
+`predIter`, `predIterOf`, `prependRaw`, `prepend`, `prependOf`, `constAt`,
+`constAtOf`, `diagRaw`, `diag`, `diagOf` with their arity, admissibility and
+recursion-bound lemmas; `recBounded_shiftW`, `recBounded_casesW`, `cases`,
+`casesOf`, `casesSem_eq_eval`; and `bits_ofFn`, `bits_succ_tail`, `ofFn_bits`
+and the six word characterisations. `lake lint` passes over all of it, and the
+test mirror's assertions were compiled against it.
+
+`ofFn_bits` proved through `List.ext_getElem` and `omega` measured
+`[propext, Classical.choice, Quot.sound]`; the structural induction over the
+width that replaces it is clean. That is the `omega` route § Constraints names,
+observed rather than predicted.
+
+Not built: `isRankedRaw`, `acceptTestRaw` and `acceptTest`; `decodeState`,
+`nextPrefix` and `dropCount` as functions of a bit family at symbolic width;
+`rankedSem_eq`, `foldSem_eq` and segments 2 and 3's `…_eq_eval`. What was built
+of the verdict is the `R.width + 3` window's separating property at
+`narrowAlphabet`, not any expression computing it.
 
 ## Risks and open questions
 
