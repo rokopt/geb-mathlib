@@ -66,6 +66,16 @@ than an equation of `Scan`. Both are required by kernel reduction: a derived
 than reducing it. A decidable test is not itself the obstruction, as
 `decodeBlock` shows by branching on one and reducing.
 
+`exists_spell_append_of_live_of_buf_nil_of_one_le_depth` is likewise bounded
+by an explicit `ℕ` and driven by `Nat.rec`. Its step applies the hypothesis
+once per child of the head symbol, through
+`exists_children_append_of_le_depth`, which takes that hypothesis as an
+argument; every use sits at the same bound, so no well-founded recursion is
+needed. The step splits off the word's leading block rather than its trailing
+one: `spell` is prefix notation while the scan reads right to left, so the
+head symbol's block is read last, from the state the scan of everything after
+it leaves.
+
 `spell_injective` is derived from `Computability.Encoding.encode_injective`
 through `encoding` rather than proved directly, the encoding and its descent
 being exactly that structure's three fields.
@@ -423,6 +433,12 @@ instance (R : RankedAlphabet) : DecidablePred R.Valid :=
 @[simp] theorem scanFrom_cons (R : RankedAlphabet) (b : Bool) (w : List Bool)
     (s : Scan) : R.scanFrom (b :: w) s = R.scanStep b (R.scanFrom w s) := rfl
 
+@[simp] theorem scanFinal_nil (R : RankedAlphabet) :
+    R.scanFinal [] = ⟨[], 0, true⟩ := rfl
+
+@[simp] theorem scanFinal_cons (R : RankedAlphabet) (b : Bool) (w : List Bool) :
+    R.scanFinal (b :: w) = R.scanStep b (R.scanFinal w) := rfl
+
 /-- The scan of a concatenation reads the later part first. -/
 theorem scanFrom_append (R : RankedAlphabet) (u v : List Bool) (s : Scan) :
     R.scanFrom (u ++ v) s = R.scanFrom u (R.scanFrom v s) :=
@@ -503,6 +519,252 @@ theorem scanFrom_spell (R : RankedAlphabet) (t : R.Term) (d : ℕ) :
 theorem valid_spell (R : RankedAlphabet) (t : R.Term) : R.Valid (R.spell t) := by
   rw [Valid, validBool, scanFinal, scanFrom_spell R t 0]
   rfl
+
+/-- The residue of a successor, in terms of the residue. Stated here rather
+than taken from `Nat`'s division API for the reason `mod_two_mul` is: the
+modulus is a variable, so `omega` cannot discharge it, and the lemmas of that
+API which do state it depend on `Classical.choice`. -/
+theorem add_one_mod (a n : ℕ) (hn : 0 < n) :
+    (a + 1) % n = if a % n + 1 = n then 0 else a % n + 1 := by
+  have hsplit : (a + 1) % n = (a % n + 1) % n := by
+    conv_lhs => rw [← Nat.div_add_mod a n]
+    rw [Nat.add_assoc, Nat.mul_add_mod]
+  rw [hsplit]
+  split
+  · rename_i h
+    rw [h, Nat.mod_self]
+  · rename_i h
+    have hr : a % n < n := Nat.mod_lt _ hn
+    exact Nat.mod_eq_of_lt (by omega)
+
+/-- A step leaving the scan live: the state before it was live, and the step
+either accumulated the bit into an incomplete block or completed one, in
+which case its symbol popped that symbol's arity and pushed one. -/
+theorem scanStep_eq_of_live (R : RankedAlphabet) (b : Bool) (s : Scan)
+    (h : (R.scanStep b s).live = true) :
+    s.live = true ∧
+      (((b :: s.buf).length ≠ R.width ∧ R.scanStep b s = ⟨b :: s.buf, s.depth, true⟩) ∨
+        ∃ r, (b :: s.buf).length = R.width ∧
+          R.arOf (decodeBits (b :: s.buf)) = some r ∧ r ≤ s.depth ∧
+          R.scanStep b s = ⟨[], s.depth - r + 1, true⟩) := by
+  cases hlive : s.live with
+  | false =>
+    simp only [scanStep, hlive] at h
+    exact Bool.noConfusion h
+  | true =>
+    refine ⟨rfl, ?_⟩
+    cases hc : decide ((b :: s.buf).length = R.width) with
+    | false =>
+      refine Or.inl ⟨of_decide_eq_false hc, ?_⟩
+      simp only [scanStep, hlive, hc]
+    | true =>
+      cases har : R.arOf (decodeBits (b :: s.buf)) with
+      | none =>
+        simp only [scanStep, hlive, hc, har] at h
+        exact Bool.noConfusion h
+      | some r =>
+        cases hle : decide (r ≤ s.depth) with
+        | false =>
+          simp only [scanStep, hlive, hc, har, hle] at h
+          exact Bool.noConfusion h
+        | true =>
+          exact Or.inr ⟨r, of_decide_eq_true hc, rfl, of_decide_eq_true hle, by
+            simp only [scanStep, hlive, hc, har, hle]⟩
+
+/-- A live scan's incomplete block holds the word's length modulo the width:
+block boundaries align with the word's right end. -/
+theorem length_buf_scanFinal_of_live (R : RankedAlphabet) :
+    ∀ w : List Bool, (R.scanFinal w).live = true →
+      (R.scanFinal w).buf.length = w.length % R.width :=
+  List.rec (fun _ ↦ by simp only [scanFinal_nil, List.length_nil, Nat.zero_mod])
+    (fun b v ih hlive ↦ by
+      rw [scanFinal_cons] at hlive ⊢
+      obtain ⟨hv, hcase⟩ := scanStep_eq_of_live R b (R.scanFinal v) hlive
+      have ihv := ih hv
+      rcases hcase with ⟨hne, heq⟩ | ⟨r, hlen, _, _, heq⟩
+      · simp only [heq, List.length_cons] at hne ⊢
+        rw [ihv] at hne
+        rw [ihv, add_one_mod _ _ R.width_pos, if_neg hne]
+      · simp only [List.length_cons] at hlen
+        rw [ihv] at hlen
+        simp only [heq, List.length_nil, List.length_cons]
+        rw [add_one_mod _ _ R.width_pos, if_pos hlen])
+
+/-- The converse of `scanFrom_code`: a live scan over a full block exhibits
+that block as a symbol's code. -/
+theorem exists_code_of_scanFrom_live (R : RankedAlphabet) (blk : List Bool)
+    (s : Scan) (hlen : blk.length = R.width) (hbuf : s.buf = [])
+    (hs : s.live = true) (h : (R.scanFrom blk s).live = true) :
+    ∃ i : Fin R.card, R.code i = blk ∧ R.arity i ≤ s.depth ∧
+      R.scanFrom blk s = ⟨[], s.depth - R.arity i + 1, true⟩ := by
+  obtain ⟨sbuf, sdepth, slive⟩ := s
+  simp only at hbuf hs
+  subst hbuf
+  subst hs
+  obtain ⟨b, v, hblk⟩ : ∃ b v, blk = b :: v := by
+    match hb : blk with
+    | [] =>
+      rw [List.length_nil] at hlen
+      exact absurd hlen.symm (Nat.ne_of_gt R.width_pos)
+    | b :: v => exact ⟨b, v, rfl⟩
+  subst hblk
+  have hshort : v.length + ([] : List Bool).length < R.width := by
+    rw [List.length_cons] at hlen
+    simp only [List.length_nil]
+    omega
+  rw [scanFrom_cons, scanFrom_short R sdepth [] v hshort, List.append_nil] at h ⊢
+  obtain ⟨-, hcase⟩ := scanStep_eq_of_live R b ⟨v, sdepth, true⟩ h
+  simp only at hcase
+  rcases hcase with ⟨hne, -⟩ | ⟨r, -, har, hle, heq⟩
+  · exact absurd hlen hne
+  · rw [arOf] at har
+    split at har
+    · rename_i hlt
+      have hr : R.arity ⟨decodeBits (b :: v), hlt⟩ = r := Option.some.inj har
+      refine ⟨⟨decodeBits (b :: v), hlt⟩, ?_, hr ▸ hle, ?_⟩
+      · refine List.ext_getElem (by rw [length_code, hlen]) ?_
+        intro n h₁ h₂
+        rw [getElem_code_eq R _ n h₁, testBit_decodeBits (b :: v) n h₂]
+      · rw [hr, heq]
+    · exact absurd har (by simp)
+
+/-- A live scan with no incomplete block and nothing pending has read
+nothing. -/
+theorem eq_nil_of_live_of_buf_nil_of_depth_eq_zero (R : RankedAlphabet)
+    (w : List Bool) (hlive : (R.scanFinal w).live = true)
+    (hbuf : (R.scanFinal w).buf = []) (hd : (R.scanFinal w).depth = 0) : w = [] := by
+  match w with
+  | [] => rfl
+  | b :: v =>
+    rw [scanFinal_cons] at hlive hbuf hd
+    obtain ⟨-, hcase⟩ := scanStep_eq_of_live R b (R.scanFinal v) hlive
+    rcases hcase with ⟨-, heq⟩ | ⟨r, -, -, -, heq⟩
+    · rw [heq] at hbuf
+      exact absurd hbuf (by simp)
+    · rw [heq] at hd
+      exact absurd hd (by simp)
+
+/-- Reading off as many complete subterms as the pending count allows: a live
+scan with no incomplete block and at least `k` pending subterms has `k`
+spellings as a prefix. The extraction of one subterm is the hypothesis `ih`,
+at the same bound, as in `parseChildren_flatten`. -/
+theorem exists_children_append_of_le_depth (R : RankedAlphabet) (n : ℕ)
+    (ih : ∀ w : List Bool, w.length ≤ n → (R.scanFinal w).live = true →
+      (R.scanFinal w).buf = [] → 1 ≤ (R.scanFinal w).depth →
+        ∃ t rest, R.spell t ++ rest = w ∧ (R.scanFinal rest).live = true ∧
+          (R.scanFinal rest).buf = [] ∧
+          (R.scanFinal rest).depth + 1 = (R.scanFinal w).depth) :
+    ∀ (k : ℕ) (v : List Bool), v.length ≤ n → (R.scanFinal v).live = true →
+      (R.scanFinal v).buf = [] → k ≤ (R.scanFinal v).depth →
+        ∃ (ch : Fin k → R.Term) (rest : List Bool),
+          (List.ofFn fun d ↦ R.spell (ch d)).flatten ++ rest = v ∧
+          (R.scanFinal rest).live = true ∧ (R.scanFinal rest).buf = [] ∧
+          (R.scanFinal rest).depth + k = (R.scanFinal v).depth :=
+  Nat.rec
+    (fun v _ hlive hbuf _ ↦
+      ⟨Fin.elim0, v, by simp only [List.ofFn_zero, List.flatten_nil, List.nil_append],
+        hlive, hbuf, rfl⟩)
+    (fun k ihk v hv hlive hbuf hk ↦ by
+      obtain ⟨t, v₁, ht, hlive₁, hbuf₁, hd₁⟩ := ih v hv hlive hbuf (by omega)
+      have hv₁ : v₁.length ≤ n := by
+        have hle : v₁.length ≤ v.length := by rw [← ht, List.length_append]; omega
+        omega
+      obtain ⟨ch, rest, hch, hlive₂, hbuf₂, hd₂⟩ :=
+        ihk v₁ hv₁ hlive₁ hbuf₁ (by omega)
+      refine ⟨Fin.cons t ch, rest, ?_, hlive₂, hbuf₂, by omega⟩
+      rw [List.ofFn_succ]
+      simp only [Fin.cons_zero, Fin.cons_succ]
+      rw [List.flatten_cons, List.append_assoc, hch, ht])
+
+/-- A word whose scan is live, carries no incomplete block and leaves at least
+one subterm pending has a complete spelling as a prefix. -/
+theorem exists_spell_append_of_live_of_buf_nil_of_one_le_depth (R : RankedAlphabet) :
+    ∀ (n : ℕ) (w : List Bool), w.length ≤ n →
+      (R.scanFinal w).live = true → (R.scanFinal w).buf = [] →
+      1 ≤ (R.scanFinal w).depth →
+        ∃ t rest, R.spell t ++ rest = w ∧
+          (R.scanFinal rest).live = true ∧ (R.scanFinal rest).buf = [] ∧
+          (R.scanFinal rest).depth + 1 = (R.scanFinal w).depth :=
+  Nat.rec
+    (fun w hw _ _ hd ↦ by
+      have hnil : w = [] := List.eq_nil_of_length_eq_zero (Nat.le_zero.mp hw)
+      subst hnil
+      exact absurd hd (by simp))
+    (fun n ihn w hw hlive hbuf hd ↦ by
+      have hmod : w.length % R.width = 0 := by
+        rw [← length_buf_scanFinal_of_live R w hlive, hbuf, List.length_nil]
+      have hne : w ≠ [] := by
+        intro hcon
+        subst hcon
+        exact absurd hd (by simp)
+      have hwidth : R.width ≤ w.length := by
+        by_contra hcon
+        rw [Nat.mod_eq_of_lt (Nat.lt_of_not_le hcon)] at hmod
+        exact hne (List.eq_nil_of_length_eq_zero hmod)
+      obtain ⟨blk, rest, hsplit, hlenblk⟩ :
+          ∃ blk rest, blk ++ rest = w ∧ blk.length = R.width :=
+        ⟨w.take R.width, w.drop R.width, List.take_append_drop _ _,
+          by rw [List.length_take]; omega⟩
+      have hlensum : R.width + rest.length = w.length := by
+        rw [← hsplit, List.length_append, hlenblk]
+      have hscan : R.scanFinal w = R.scanFrom blk (R.scanFinal rest) := by
+        conv_lhs => rw [← hsplit]
+        rw [scanFinal, scanFrom_append]
+        rfl
+      have hlive' : (R.scanFinal rest).live = true := by
+        cases hc : (R.scanFinal rest).live with
+        | true => rfl
+        | false =>
+          rw [hscan, scanFrom_not_live R blk _ hc] at hlive
+          exact Bool.noConfusion hlive
+      have hbuf' : (R.scanFinal rest).buf = [] := by
+        refine List.eq_nil_of_length_eq_zero ?_
+        rw [length_buf_scanFinal_of_live R rest hlive',
+          ← Nat.add_mod_left R.width rest.length, hlensum]
+        exact hmod
+      obtain ⟨i, hcode, hari, hstep⟩ :=
+        exists_code_of_scanFrom_live R blk (R.scanFinal rest) hlenblk hbuf' hlive'
+          (by rw [← hscan]; exact hlive)
+      obtain ⟨ch, rest', hch, hlive'', hbuf'', hd''⟩ :=
+        exists_children_append_of_le_depth R n ihn (R.arity i) rest
+          (by have := R.width_pos; omega) hlive' hbuf' hari
+      refine ⟨Term.mk R i ch, rest', ?_, hlive'', hbuf'', ?_⟩
+      · rw [spell_mk, hcode, List.append_assoc, hch, hsplit]
+      · rw [hscan, hstep]
+        simp only []
+        omega)
+
+/-- Every valid word is a spelling: the converse of `valid_spell`. -/
+theorem exists_spell_of_valid (R : RankedAlphabet) {w : List Bool} (h : R.Valid w) :
+    ∃ t, R.spell t = w := by
+  rw [Valid, validBool] at h
+  simp only [Bool.and_eq_true, List.isEmpty_iff, beq_iff_eq] at h
+  obtain ⟨⟨hlive, hbuf⟩, hd⟩ := h
+  obtain ⟨t, rest, he, hlive', hbuf', hd'⟩ :=
+    exists_spell_append_of_live_of_buf_nil_of_one_le_depth R w.length w le_rfl
+      hlive hbuf (by omega)
+  have hz : (R.scanFinal rest).depth = 0 := by omega
+  have hnil : rest = [] :=
+    eq_nil_of_live_of_buf_nil_of_depth_eq_zero R rest hlive' hbuf' hz
+  subst hnil
+  exact ⟨t, by simpa using he⟩
+
+/-- The encoding's image is exactly the valid words: the characterization the
+recognizer's correctness is stated against. -/
+theorem valid_iff_exists_spell (R : RankedAlphabet) (w : List Bool) :
+    R.Valid w ↔ ∃ t, R.spell t = w :=
+  ⟨exists_spell_of_valid R, fun ⟨t, ht⟩ ↦ ht ▸ valid_spell R t⟩
+
+/-- The descent decides validity: a word is valid exactly when `parse`
+accepts it. -/
+theorem valid_iff_isSome_parse (R : RankedAlphabet) (w : List Bool) :
+    R.Valid w ↔ (R.parse w).isSome := by
+  rw [valid_iff_exists_spell]
+  refine ⟨fun ⟨t, ht⟩ ↦ ?_, fun h ↦ ?_⟩
+  · rw [← ht, parse_spell]
+    rfl
+  · obtain ⟨t, ht⟩ := Option.isSome_iff_exists.mp h
+    exact ⟨t, (parse_eq_some_iff R).mp ht⟩
 
 end
 
