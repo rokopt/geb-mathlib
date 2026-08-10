@@ -1104,6 +1104,11 @@ import-direction rules above are enforced by
   through `FinEnum.unit`, `FinEnum.finFin` and `FinEnum.finSum` under
   `open scoped FinEnum`. `transport_transport` gives transport along a
   composite equality as the composition of two transports.
+  Also `semAt`, the meaning of a tree at a given arity, named once rather than
+  spelled at each site; the empty bitstring at an arbitrary arity `zeroAt`;
+  and the combinators branches are built from — `prepend` and `constAt`
+  prepending a fixed word, `predIter` the iterated predecessor, and `diag` a
+  binary expression at its sole argument in both positions.
   `Classical.choice`-free.
 - `Geb/Mathlib/Computability/Cobham/Scan.lean` — the scan combinator: a
   right-to-left fold over a bitstring whose state is a bitstring, as a
@@ -1137,3 +1142,17 @@ import-direction rules above are enforced by
   linear space. Depends on `Geb.Mathlib.Computability.Cobham.Basic`,
   `Geb.Mathlib.Computability.Cobham.Scan` and
   `Geb.Mathlib.Data.Tree.Preorder`. `Classical.choice`-free.
+- `Geb/Mathlib/Computability/Cobham/Cases.lean` — definition by cases: a
+  combinator selecting among `2 ^ p` expressions of arity one by the low `p`
+  bits of a scrutinee, and applying the selected one to a second argument.
+  `casesRaw` is built by recursion on the number of bits dispatched on, each
+  level a `cond` node whose scrutinee is argument zero and whose branches
+  shift that argument into the recursive subtree; `wValid_casesRaw` gives
+  admissibility from the branches' own, and `recBounded_casesW` the recursion
+  bound, so the combinator imposes no condition on what it selects among.
+  `casesSem_eq` identifies the meaning with the branch the scrutinee selects.
+  Also the words the combinators of `Cobham/Basic.lean` contribute:
+  `stepWord_predIterOf`, `stepWord_prependOf`, `baseWord_prependOf`,
+  `baseWord_constAtOf`, `stepWord_constAtOf` and `stepWord_diagOf`. Depends on
+  `Geb.Mathlib.Computability.Cobham.Basic` and
+  `Geb.Mathlib.Computability.Cobham.Scan`. `Classical.choice`-free.
