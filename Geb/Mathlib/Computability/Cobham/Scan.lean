@@ -86,6 +86,10 @@ The composed form is what keeps `scanSem_nil` a `rfl` and lets
 its head at `fun _ : Fin 1 ↦ r`, while `stepWord` applies it at `![r]`, and
 the two agree only by `funext`.
 
+The meanings this module reads at a raw tree are taken through `Cobham.semAt`,
+which names the composite of `fst_eval` with the tree's arity equation once
+rather than spelling it at each site.
+
 ## References
 
 * [Cobham1965]
@@ -200,8 +204,7 @@ theorem arity_scanW (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) :
 
 /-- The meaning of the bound child at its arity. -/
 @[expose] def boundSem (growth : ℕ) : Sem 1 :=
-  transport ((fst_eval _).trans (arity_boundRaw growth))
-    (eval ⟨boundRaw growth, wValid_boundRaw growth⟩).2
+  semAt 1 ⟨boundRaw growth, wValid_boundRaw growth⟩ (arity_boundRaw growth)
 
 /-- The bound child prepends `growth` bits to the recursion variable. Stated
 at an arbitrary environment, which is the form the recursion bound reads it
@@ -220,17 +223,16 @@ a scanner is characterized before the expression carrying that bound
 exists. -/
 @[expose] def scanSem (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) :
     Sem 1 :=
-  transport ((fst_eval _).trans (arity_scanW base step₀ step₁ growth))
-    (eval (scanW base step₀ step₁ growth)).2
+  semAt 1 (scanW base step₀ step₁ growth) (arity_scanW base step₀ step₁ growth)
 
 /-- The word a base contributes, read at the raw tree. -/
 @[expose] def baseWord (base : COf 0) : List Bool :=
-  transport ((fst_eval base.1.1).trans base.2) (eval base.1.1).2 Fin.elim0
+  semAt 0 base.1.1 base.2 Fin.elim0
 
 /-- The word a step contributes at the state it reads, read at the raw
 tree. -/
 @[expose] def stepWord (step : COf 1) (r : List Bool) : List Bool :=
-  transport ((fst_eval step.1.1).trans step.2) (eval step.1.1).2 ![r]
+  semAt 1 step.1.1 step.2 ![r]
 
 /-- The semantic step of a scan: the bit selects which step reads the
 state. -/

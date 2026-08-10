@@ -60,6 +60,7 @@ Theorem 3.101).
 * `Cobham.eval` — the interpretation of a `sig`-tree, by the slice W-type's
   eliminator.
 * `Cobham.arity` — the arity of a `sig`-tree.
+* `Cobham.semAt` — the meaning of a tree at a given arity.
 * `Cobham.RecBoundedValue` — the length bound one node imposes.
 * `Cobham.RecBounded` — `RecBoundedValue` at every node, hereditarily.
 * `Cobham.C` — Cobham's class: the trees satisfying `RecBounded`.
@@ -314,6 +315,10 @@ morphism in the slice over `ℕ`, so composing it with the index projection give
 consumes. -/
 theorem fst_eval (z : sig.W) : (eval z).1 = arity z :=
   congrFun (SlicePFunctor.W.comp_elim sig (Σ n, Sem n) (Sigma.fst (β := Sem)) evalStep rfl) z
+
+/-- The meaning of a tree at a given arity. -/
+@[expose] def semAt (n : ℕ) (e : sig.W) (he : arity e = n) : Sem n :=
+  transport ((fst_eval e).trans he) (eval e).2
 
 /-- The recursion bound of one node, from its children and the proof that each
 child's evaluated index is the one `rc` prescribes. It is vacuous at every shape but

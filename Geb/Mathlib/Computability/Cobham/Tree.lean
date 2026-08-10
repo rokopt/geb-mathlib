@@ -147,6 +147,10 @@ reduce on a symbolic word: `isTreeSem_apply` is proved by rewriting to the
 composition's own application, generalizing the scan's value, and matching
 on it, rather than by `rfl`.
 
+The meanings this module reads at a raw tree are taken through `Cobham.semAt`,
+which names the composite of `fst_eval` with the tree's arity equation once
+rather than spelling it at each site.
+
 ## References
 
 * [Cobham1965]
@@ -501,7 +505,7 @@ otherwise the argument is one exactly when its predecessor is empty. -/
 /-- The one-test's meaning at its arity, taken at the raw tree rather than at
 `eqOne`, as `combSem`. -/
 @[expose] def eqOneSem : Sem 1 :=
-  transport (fst_eval ⟨eqOneRaw, by decide⟩) (eval ⟨eqOneRaw, by decide⟩).2
+  semAt 1 ⟨eqOneRaw, by decide⟩ rfl
 
 /-- The one-test at an arbitrary environment is the test at the canonical
 one. -/
@@ -548,7 +552,7 @@ tree, as an expression of arity one. -/
 /-- The recognizer's meaning at its arity, taken at the raw tree rather than
 at `isTree`, as `combSem`. -/
 @[expose] def isTreeSem : Sem 1 :=
-  transport (fst_eval ⟨isTreeRaw, by decide⟩) (eval ⟨isTreeRaw, by decide⟩).2
+  semAt 1 ⟨isTreeRaw, by decide⟩ rfl
 
 /-- The meaning `isTreeSem` reads at the raw tree is the meaning `isTree`
 carries, as `combSem_eq_eval` for the scan: the correctness statements below
