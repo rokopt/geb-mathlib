@@ -27,6 +27,8 @@
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
   - [Extensions of the tree recognizers](#extensions-of-the-tree-recognizers)
+  - [The namespace prefix in a declaration body](#the-namespace-prefix-in-a-declaration-body)
+  - [Placement of the choice-free `Nat` residue lemmas](#placement-of-the-choice-free-nat-residue-lemmas)
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
   - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
   - [Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`](#lambda-arrow-in-gebtestsmathlibcategorytheoryelementarytoposlean)
@@ -584,46 +586,99 @@ destination.
 
 ### Extensions of the tree recognizers
 
-Four investigations, over `Geb/Mathlib/Data/Tree/`,
-`Geb/Mathlib/Computability/Cobham/Tree.lean` and
-`Geb/Mathlib/Computability/BellantoniCook/Tree.lean`. Items 1 and 4 subsume
-the labelled-tree items recorded under § Binary trees and their preorder
-encoding and § The Bellantoni-Cook tree recognizer; item 2 subsumes the
-tree recursor recorded under the latter. Each investigation is settled
-before any of them is planned, since a shared construction covering
-several would change what each costs.
+Five branches over `Geb/Mathlib/Data/Tree/`,
+`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/`. They answer the four
+investigations this entry previously recorded: labelled leaves and ranked
+alphabets are one construction and are B1; the generic iterator is B3; the
+sharper cost bound is B5. They subsume the labelled-tree items recorded under
+§ Binary trees and their preorder encoding and § The Bellantoni-Cook tree
+recognizer, and the tree recursor recorded under the latter.
 
-1. Leaves labelled from a finite alphabet: the initial algebra of
-   `Fin k + X × X` and its encoding, with the label spelled as a
-   fixed-width block of bits beside the leaf marker, and a scanning
-   state carrying the number of label bits still to read.
-2. A generic iterator over a recognized encoding — a fold or
-   paramorphism whose step is configurable, under whatever restriction
-   on the step keeps the result in the smash-free subalgebra. Settle
-   what restriction that is: a step of bounded output length, a step
-   drawn from a constrained subalgebra, or both. [DalLagoMartiniZorzi2010]
-   is the reference for what unbounded branching recursion costs.
-3. A bound on the recognizer's cost sharper than the polynomial-time,
-   linear-space membership `isTree_smashFree` gives with [Strahm2003]
-   Theorem 1(2). The algebra carries no cost semantics, so the bound is
-   stated over a machine model: Cslib's `MultiTapeTM`, whose
-   `ComputesFunInTimeAndSpace` measures time and space together and
-   carries an alphabet embedding, so a work-tape symbol holds a whole
-   stack frame. The target is `ComputableInTimeAndSpace` at
-   `fun n ↦ a * n + b` and `fun n ↦ n + b`, stated over a computable
-   decision function rather than through `DecidableInTimeAndSpace`,
-   whose `indicator` is `Classical`-dependent. `Geb/Mathlib/` cannot
-   import `Cslib.*` and `Geb/Cslib/` cannot import `Geb.Mathlib.*`, so
-   the statement is confined to `Geb/Internal/`. Record what the
-   measurement of the algebra term itself gives instead: `pred` and
-   `cond` are `boundedRec` nodes rather than generators, so under a
-   strict reading each costs one unit per bit of its scrutinee, and the
-   scan's total is the sum of the stack depths — quadratic in the word
-   length on a left comb, linear on a right comb.
-4. Trees over a ranked alphabet: `Fin k` labels, each carrying its own
-   arity, encoded in Łukasiewicz prefix notation, recognized by the same
-   scan with the counter decremented by the arity rather than by one.
-   Item 1 is the case of two arities.
+The unifying object is a right-to-left scan whose state holds one stack cell
+per pending subterm. The recognizer in
+`Geb/Mathlib/Computability/Cobham/Tree.lean` is that scan at code width one
+with an empty payload, up to the state its failure is recorded in.
+
+- **B1 is done.** `Geb/Mathlib/Data/Tree/Ranked/` gives `RankedAlphabet` and
+  its term algebra, the preorder encoding `spell` and its fuel-bounded
+  recursive descent, the validity scan, `valid_iff_exists_spell` identifying
+  the encoding's image with the scan's language, and
+  `RankedAlphabet.Binary.termEquiv` exhibiting `BinTree` as the two-symbol
+  instance with `spell_termEquiv` and `valid_iff`. See
+  [docs/index.md](docs/index.md).
+- **B2**, depending on B1: `Geb/Mathlib/Computability/Cobham/Scan.lean` — the
+  `Scanner` combinator, the ranked recognizer as an instance, and the present
+  `isTree` re-expressed as the width-one instance. `Scanner`'s two step
+  functions are `COf 1` lifted by `comp` with `proj 2 1`, not `COf 2`:
+  `Cobham.evalRec`'s step takes the remaining suffix first and the recursive
+  value second, so a `COf 2` step cannot be a `List.foldr` step, and
+  `combFalseStep` and `combTrueStep` both reference slot 1 only. A length
+  bound stated over the fold needs the fold inlined or moved to a smart
+  constructor, and `growth = 0` needs its own clause.
+- **B3**, depending on B2: `Geb/Mathlib/Computability/Cobham/Fold.lean` — the
+  catamorphism at a finite carrier, with a step whose configurable part
+  carries no restriction of its own, both conditions being discharged from
+  finiteness. Its `run_spell` is stated between a `List Bool` and the `p`-bit
+  encoding of the carrier, which must be named; the two are not the same type.
+- **B4**, depending on B1 and B2: `BinTree` absorbed into
+  `RankedAlphabet.Term` and the duplication removed. `BinTree` has six
+  in-repo consumers.
+- **B5**, depending on B2: `Geb/Internal/` — linear time and space against
+  Cslib's `MultiTapeTM`, over `ComputableInTimeAndSpace` applied to a
+  computable decision function rather than `DecidableInTimeAndSpace`, whose
+  `indicator` is `noncomputable` and `Classical`. `ComputableInTimeAndSpace`
+  takes three arguments and existentially quantifies the machine alphabet, and
+  the function it is applied to returns a list rather than a `Bool`; the
+  embedding is of input and output, and it is the existential alphabet, not
+  the embedding, that admits wide work-tape symbols. `Geb/Mathlib/` may not
+  import `Cslib.*` and `Geb/Cslib/` may not import `Geb.Mathlib.*`, so the
+  statement is confined to `Geb/Internal/`. This branch differs in kind from
+  the others and its difficulty is unbounded by anything done so far; B1 to B4
+  stand without it.
+
+Deferred, and part of none of the five: the Bellantoni-Cook port of
+`Scanner`, whose signature is over arities in normal and safe position and so
+is a branch rather than a transcription; the paramorphism whose step receives
+a subterm's spelling, which the head-locality of the state layout admits only
+at quadratic cost; a fold at an infinite carrier, which needs the `smash`
+generator; and the depth-first unary degree sequence encoding, whose condition
+for adoption is unbounded arity.
+
+`BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
+absent from `docs/references.bib`: neither its bibliographic detail nor the
+DLOGTIME-uniform TC⁰ claim attributed to it has been verified against the
+article. The branch that first needs it verifies it against the primary source
+before recording the key, per
+[AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for the succinct
+tree-encoding references the design cites for context —
+`BenoitDemaineMunroRamanRamanRao2005`, `Mehlhorn1980` and
+`BraunmuhlVerbeek1983` — which are verified but unused, and so are added by
+the branch that first cites them.
+
+### The namespace prefix in a declaration body
+
+[docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Naming conventions
+says "Do not include the namespace in the declaration body's identifiers; rely
+on `namespace` to scope". `Geb/Mathlib/Data/Tree/Preorder.lean` writes
+`BinTree.induction` at four sites inside `namespace BinTree`, and
+`Geb/Mathlib/Data/Tree/Ranked/Basic.lean` writes `Term.mk` inside
+`theorem Term.induction`. Upstream's own guide states the rule for lemma
+names rather than declaration bodies, so what is diverged from is a local
+strengthening. Settle whether the rule binds declaration bodies, and either
+amend it or correct the sites; deciding it belongs on its own branch, the
+sites spanning branches whose concern it is not.
+
+### Placement of the choice-free `Nat` residue lemmas
+
+`RankedAlphabet.mod_two_mul` (`Geb/Mathlib/Data/Tree/Ranked/Code.lean`) and
+`RankedAlphabet.add_one_mod` (`.../Ranked/Preorder.lean`) are facts about `ℕ`
+with no ranked-alphabet content, stated there because mathlib's counterparts
+depend on `Classical.choice` and `omega` cannot discharge a residue identity
+whose modulus is a variable. Under `open RankedAlphabet` they present bare
+beside `Nat`'s own residue API. The repository's pattern for a supplement to a
+mathlib module is a module mirroring its path, as
+`Geb/Mathlib/Data/Vector/OfFn.lean` and `Geb/Mathlib/Logic/Equiv/Basic.lean`
+do, which would put them under `Geb/Mathlib/Data/Nat/`.
 
 ### Concrete-syntax prototype
 
