@@ -41,8 +41,7 @@ composition with `proj 2 1`.
 * `Cobham.wValid_boundRaw`, `Cobham.wValid_liftRaw`, `Cobham.wValid_scanRaw`
   — admissibility of the three trees, the last from its components'.
 * `Cobham.wIndexRoot_boundRaw`, `Cobham.wIndexRoot_liftRaw`,
-  `Cobham.wIndexRoot_scanRaw`, `Cobham.arity_boundRaw`,
-  `Cobham.arity_scanW` — their arities.
+  `Cobham.arity_boundRaw`, `Cobham.arity_scanW` — their arities.
 * `Cobham.boundSem_eq` — the bound child prepends `growth` bits.
 * `Cobham.scanSem_nil`, `Cobham.scanSem_cons`, `Cobham.scanSem_eq` — the
   scan on the empty word, on one bit, and as a `List.foldr`.
@@ -168,10 +167,6 @@ lifted steps and a bound child. -/
     sig.toPFunctor.W :=
   WType.mk (.boundedRec 0)
     ![base, liftRaw step₀, liftRaw step₁, boundRaw growth]
-
-/-- The scan node has arity one. -/
-theorem wIndexRoot_scanRaw (base step₀ step₁ : sig.toPFunctor.W) (growth : ℕ) :
-    sig.wIndexRoot (scanRaw base step₀ step₁ growth) = 1 := rfl
 
 /-- The scan node is admissible when its base is, at arity zero, and its two
 steps are, at arity one. These index equations are where the raw layer and
