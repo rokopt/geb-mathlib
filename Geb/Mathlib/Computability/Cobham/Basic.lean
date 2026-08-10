@@ -86,6 +86,8 @@ Theorem 3.101).
 * `Cobham.predSem_eq` — the predecessor drops the word's last bit.
 * `Cobham.condSem_eq` — the conditional branches on the emptiness and parity of its
   first argument.
+* `Cobham.transport_transport` — transport along a composite equality is
+  the composition of two transports.
 
 ## Implementation notes
 
@@ -233,6 +235,17 @@ argument, returning a bitstring. -/
 /-- Transport of a meaning along an equality of arities. Named so that the motive of
 `▸` is fixed once rather than inferred at each use in `evalValue`. -/
 @[expose] def transport {i j : ℕ} (h : i = j) (v : Sem i) : Sem j := h ▸ v
+
+/-- Transport composes. A transport along a composite equality and the
+composition of two transports agree, which is not definitional when
+neither index reduces: at a variable expression the arity equation is
+opaque, so neither `Eq.rec` fires. Named for its left-hand side, as
+core's `cast_cast` is. -/
+theorem transport_transport {i j k : ℕ} (h : i = j) (g : j = k) (v : Sem i) :
+    transport g (transport h v) = transport (h.trans g) v := by
+  subst h
+  subst g
+  rfl
 
 /-- The recursion `boundedRec` performs on its recursion variable, by `List.rec`,
 matching [HeraudNowak2011]'s `Rec` (`f(y·i, x) = h_i(y, f(y,x), x)`), not
