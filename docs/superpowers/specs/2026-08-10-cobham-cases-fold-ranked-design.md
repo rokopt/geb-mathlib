@@ -55,14 +55,19 @@ Segment 1 exists because segment 2 needs it: the recognizer's step must resolve
 `RankedAlphabet.arOf` at a completed block, whose width is a parameter rather
 than a literal, so the dispatch cannot be written out.
 
-Segment 3 has no consumer in the repository, and is sequenced last for that
-reason. What it delivers is `foldSem_eq`: the statement that an expression of
-Cobham's class computes the encoded state of the deterministic automaton
-`(α, init, step)` after reading a word. That is not an instance of segment 2,
-whose state is unbounded. Whether it is a published statement is an open
-question below; it is not described here as a containment of the finite-state
-transductions, there being no output function and no acceptance condition in
-the interface.
+Segment 3 is a deliverable of this workstream rather than a dependency of
+anything in it, and is the output later workstreams are expected to build on.
+What it delivers is `foldSem_eq`: the statement that an expression of Cobham's
+class computes the encoded state of the deterministic automaton
+`(α, init, step)` after reading a word, for an arbitrary carrier admitting a
+bit encoding. That is not an instance of segment 2, whose state is unbounded,
+and having no consumer in the repository is its expected condition on landing,
+not a cost to be justified against
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost. It is sequenced
+last because nothing here depends on it. Whether it is a published statement is
+an open question below; it is not described as a containment of the
+finite-state transductions, there being no output function and no acceptance
+condition in the interface.
 
 ## Segments, and where each declaration lands
 
