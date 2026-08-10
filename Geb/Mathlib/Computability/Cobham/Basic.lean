@@ -82,6 +82,9 @@ Theorem 3.101).
 * `Cobham.SmashFree` — the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, excluding
   the `smash` generator.
 * `Cobham.predIter`, `Cobham.predIterOf` — the iterated predecessor.
+* `Cobham.prepend`, `Cobham.prependOf` — a fixed word prepended to an
+  expression.
+* `Cobham.constAt`, `Cobham.constAtOf` — the constant word at a given arity.
 
 ## Main statements
 
@@ -95,6 +98,9 @@ Theorem 3.101).
   first argument.
 * `Cobham.transport_transport` — transport along a composite equality is
   the composition of two transports.
+* `Cobham.wIndexRoot_prependRaw`, `Cobham.wValid_prependRaw`,
+  `Cobham.recBounded_prependRaw` — prepending preserves the arity,
+  admissibility and the recursion bound.
 
 ## Implementation notes
 
@@ -502,6 +508,62 @@ theorem recBounded_predIterRaw (k : ℕ) :
 /-- `predIter` at its declared arity. -/
 @[expose] def predIterOf (k : ℕ) : COf 1 :=
   ⟨predIter k, wIndexRoot_predIterRaw k⟩
+
+/-- A fixed word prepended to what an expression of arity `n` computes. -/
+@[expose] def prependRaw (n : ℕ) (u : List Bool) (e : sig.toPFunctor.W) :
+    sig.toPFunctor.W :=
+  List.rec e (fun b _ ih ↦
+    WType.mk (.comp n 1) fun d ↦
+      match d with
+      | .inl () => WType.mk (.succ b) Fin.elim0
+      | .inr _ => ih) u
+
+/-- Prepending preserves the arity. -/
+theorem wIndexRoot_prependRaw (n : ℕ) (u : List Bool) (e : sig.toPFunctor.W)
+    (he : sig.wIndexRoot e = n) : sig.wIndexRoot (prependRaw n u e) = n := by
+  cases u with
+  | nil => exact he
+  | cons _ _ => rfl
+
+/-- Prepending preserves admissibility. -/
+theorem wValid_prependRaw (n : ℕ) (e : sig.toPFunctor.W) (hv : sig.WValid e)
+    (he : sig.wIndexRoot e = n) :
+    ∀ u : List Bool, sig.WValid (prependRaw n u e) :=
+  List.rec hv (fun _ v ih ↦
+    ⟨fun d ↦ match d with
+      | .inl () => ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩
+      | .inr _ => ih,
+    funext fun d ↦ match d with
+      | .inl () => rfl
+      | .inr _ =>
+        (sig.wIndexValid_index_eq_wIndexRoot (prependRaw n v e)).trans
+          (wIndexRoot_prependRaw n v e he)⟩)
+
+/-- Prepending introduces no recursion of its own. -/
+theorem recBounded_prependRaw (n : ℕ) (e : sig.toPFunctor.W)
+    (hv : sig.WValid e) (he : sig.wIndexRoot e = n) (hr : RecBounded ⟨e, hv⟩) :
+    ∀ u : List Bool,
+      RecBounded ⟨prependRaw n u e, wValid_prependRaw n e hv he u⟩ :=
+  List.rec hr (fun _ _ ih ↦
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr _ => ih⟩)
+
+/-- A fixed word prepended to an expression. -/
+@[expose] def prepend {n : ℕ} (u : List Bool) (e : COf n) : C :=
+  ⟨⟨prependRaw n u e.1.1.1, wValid_prependRaw n _ e.1.1.2 e.2 u⟩,
+    recBounded_prependRaw n _ e.1.1.2 e.2 e.1.2 u⟩
+
+/-- `prepend` at its declared arity. -/
+@[expose] def prependOf {n : ℕ} (u : List Bool) (e : COf n) : COf n :=
+  ⟨prepend u e, wIndexRoot_prependRaw n u e.1.1.1 e.2⟩
+
+/-- The constant word at a given arity. -/
+@[expose] def constAt (n : ℕ) (u : List Bool) : C := prepend u (zeroAtOf n)
+
+/-- `constAt` at its declared arity. -/
+@[expose] def constAtOf (n : ℕ) (u : List Bool) : COf n :=
+  ⟨constAt n u, wIndexRoot_prependRaw n u _ (zeroAtOf n).2⟩
 
 /-- The concatenation of two `n`-ary raw trees: a `comp` node of arity `n` whose
 head is the `concat` generator, applied to `a` and `b` in that order. Its value at
