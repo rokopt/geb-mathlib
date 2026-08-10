@@ -13,12 +13,42 @@ step() {
 }
 
 step "lake exe cache get"
-# Fetch the full mathlib olean cache up front, mirroring CI's
+# Fetch the full mathlib olean cache, mirroring CI's
 # leanprover/lean-action. Without it, after a toolchain bump only
 # the oleans that `Geb` directly imports are present, and the
 # `lake shake` smoke test below (which injects an arbitrary mathlib
 # import) fails with "out of date oleans; fetch them from a cache".
-lake exe cache get
+#
+# Fetch only when the dependency set changes. `cache get` unpacks
+# every module whose local Lake trace records a `depHash` other than
+# the one in the cache archive (mathlib's
+# `Cache.IO.needsDecompression`). For part of the dependency tree the
+# two disagree while the artifacts are byte-identical — among them
+# `Mathlib.Tactic.Linter.Header`, which `Mathlib.Init` imports and
+# hence nearly all of mathlib depends on — so an unconditional fetch
+# overwrites a locally built tree that Lake then rebuilds, and the
+# two tools alternate on every push.
+#
+# The cache directory (`MATHLIB_CACHE_DIR`, else `XDG_CACHE_HOME`,
+# else `~/.cache/mathlib`) is shared by every jj workspace, and a
+# download lands on the fixed name `<hash>.ltar.part` before being
+# renamed into place, so two workspaces fetching at once write the
+# same file. `flock` serialises them where it is available.
+cache_stamp=".lake/cache-get.stamp"
+if [ -f "$cache_stamp" ] \
+   && cat lean-toolchain lake-manifest.json | cmp -s - "$cache_stamp"; then
+  echo "dependency set unchanged since the last fetch; skipping."
+else
+  mkdir -p "$(dirname "$cache_stamp")"
+  cache_dir="${MATHLIB_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/mathlib}"
+  if command -v flock >/dev/null 2>&1; then
+    mkdir -p "$cache_dir"
+    flock "$cache_dir/.pre-push.lock" lake exe cache get
+  else
+    lake exe cache get
+  fi
+  cat lean-toolchain lake-manifest.json > "$cache_stamp"
+fi
 
 step "lake build"
 lake build
