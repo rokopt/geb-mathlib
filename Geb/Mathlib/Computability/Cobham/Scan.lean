@@ -29,6 +29,10 @@ composition with `proj 2 1`.
 * `Cobham.scanRaw` — the `boundedRec` node over a base, two lifted steps and
   a bound child.
 * `Cobham.scanW` — that node over expressions, carrying admissibility.
+* `Cobham.boundSem`, `Cobham.scanSem` — the meanings of the bound child and
+  of the scan, at arity one.
+* `Cobham.baseWord`, `Cobham.stepWord`, `Cobham.scanStepWord` — the words a
+  base and a step contribute, and the semantic step of the fold.
 
 ## Main statements
 
@@ -37,6 +41,11 @@ composition with `proj 2 1`.
 * `Cobham.wIndexRoot_boundRaw`, `Cobham.wIndexRoot_liftRaw`,
   `Cobham.wIndexRoot_scanRaw`, `Cobham.arity_boundRaw`,
   `Cobham.arity_scanW` — their arities.
+* `Cobham.boundSem_eq` — the bound child prepends `growth` bits.
+* `Cobham.scanSem_nil`, `Cobham.scanSem_cons`, `Cobham.scanSem_eq` — the
+  scan on the empty word, on one bit, and as a `List.foldr`.
+* `Cobham.baseWord_eq_eval`, `Cobham.stepWord_eq_eval` — each component's
+  word is the one its expression of `C` carries.
 
 ## Implementation notes
 
@@ -55,6 +64,22 @@ this module use.
 A child family indexed by `Fin 4` is bound as `fun d : Fin 4 ↦ …`. Instance
 search stops at reducible transparency on the projection `sig.B a`, so
 without the ascription a numeral index fails to elaborate.
+
+Each component's meaning is transported along the composition of `fst_eval`
+with the component's arity equation, in one step rather than two.
+`transport` along an equation whose sides reduce to the same literal
+disappears by proof irrelevance; along an opaque equation it does not, and a
+transport along a composite equality is then not definitionally the
+composition of two transports. The scan node's own arity reduces to one
+whatever its children are, so its transport disappears; a component's arity
+equation is `base.2` or `step.2` at a variable, which reduces to nothing.
+The composed form is what keeps `scanSem_nil` a `rfl` and lets
+`scanSem_cons`'s `change` land, at the price of making the two bridges to
+`C.eval` theorems rather than definitions.
+
+`scanSem_cons` is not definitional in its last step: the lifted step applies
+its head at `fun _ : Fin 1 ↦ r`, while `stepWord` applies it at `![r]`, and
+the two agree only by `funext`.
 
 ## References
 
@@ -171,6 +196,92 @@ theorem wValid_scanRaw (base step₀ step₁ : sig.toPFunctor.W) (growth : ℕ)
 /-- The scan node's arity, in the form `fst_eval` composes with. -/
 theorem arity_scanW (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) :
     arity (scanW base step₀ step₁ growth) = 1 := rfl
+
+/-- The meaning of the bound child at its arity. -/
+@[expose] def boundSem (growth : ℕ) : Sem 1 :=
+  transport ((fst_eval _).trans (arity_boundRaw growth))
+    (eval ⟨boundRaw growth, wValid_boundRaw growth⟩).2
+
+/-- The bound child prepends `growth` bits to the recursion variable. Stated
+at an arbitrary environment, which is the form the recursion bound reads it
+at; at `![u]` it does not match the goal `RecBoundedValue` presents. -/
+theorem boundSem_eq : ∀ (growth : ℕ) (x : Fin 1 → List Bool),
+    boundSem growth x = List.replicate growth true ++ x 0 :=
+  Nat.rec (fun _ ↦ rfl)
+    (fun g ih x ↦ by
+      change true :: boundSem g x = _
+      rw [ih x]
+      rfl)
+
+/-- The meaning of a scan at its arity, read at the raw tree. `Cobham.eval`
+asks only for admissibility as a `sig`-tree, not for the recursion bound, so
+a scanner is characterized before the expression carrying that bound
+exists. -/
+@[expose] def scanSem (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) :
+    Sem 1 :=
+  transport ((fst_eval _).trans (arity_scanW base step₀ step₁ growth))
+    (eval (scanW base step₀ step₁ growth)).2
+
+/-- The word a base contributes, read at the raw tree. -/
+@[expose] def baseWord (base : COf 0) : List Bool :=
+  transport ((fst_eval base.1.1).trans base.2) (eval base.1.1).2 Fin.elim0
+
+/-- The word a step contributes at the state it reads, read at the raw
+tree. -/
+@[expose] def stepWord (step : COf 1) (r : List Bool) : List Bool :=
+  transport ((fst_eval step.1.1).trans step.2) (eval step.1.1).2 ![r]
+
+/-- The semantic step of a scan: the bit selects which step reads the
+state. -/
+@[expose] def scanStepWord (step₀ step₁ : COf 1) (b : Bool) (r : List Bool) :
+    List Bool :=
+  if b then stepWord step₁ r else stepWord step₀ r
+
+/-- The base's word is the one its expression of `C` carries. Not a `rfl`:
+a component's arity equation is opaque at a variable, so the transport along
+the composite and the composition of two transports differ. -/
+theorem baseWord_eq_eval (base : COf 0) :
+    baseWord base = transport base.2 base.1.eval Fin.elim0 :=
+  (congrFun (transport_transport (fst_eval base.1.1) base.2 (eval base.1.1).2)
+    Fin.elim0).symm
+
+/-- A step's word is the one its expression of `C` carries, as
+`baseWord_eq_eval` for the base. -/
+theorem stepWord_eq_eval (step : COf 1) (r : List Bool) :
+    stepWord step r = transport step.2 step.1.eval ![r] :=
+  (congrFun (transport_transport (fst_eval step.1.1) step.2 (eval step.1.1).2)
+    ![r]).symm
+
+/-- The scan's value on the empty bitstring is the base's word. -/
+theorem scanSem_nil (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) :
+    scanSem base step₀ step₁ growth ![[]] = baseWord base := rfl
+
+/-- One step of the scan: the bit selects the step, which reads the value the
+scan of the rest of the word returns. -/
+theorem scanSem_cons (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ)
+    (b : Bool) (w : List Bool) :
+    scanSem base step₀ step₁ growth ![b :: w] =
+      scanStepWord step₀ step₁ b (scanSem base step₀ step₁ growth ![w]) := by
+  have hfun : ∀ r : List Bool, (fun _ : Fin 1 ↦ r) = ![r] :=
+    fun r ↦ funext fun i ↦ match i with | ⟨0, _⟩ => rfl
+  cases b
+  · change transport ((fst_eval step₀.1.1).trans step₀.2) (eval step₀.1.1).2
+      (fun _ ↦ scanSem base step₀ step₁ growth ![w]) = _
+    exact congrArg _ (hfun _)
+  · change transport ((fst_eval step₁.1.1).trans step₁.2) (eval step₁.1.1).2
+      (fun _ ↦ scanSem base step₀ step₁ growth ![w]) = _
+    exact congrArg _ (hfun _)
+
+/-- A scanner computes the right fold of its steps over the word, from its
+base. It holds at every growth, `evalValue`'s `boundedRec` clause not
+consulting its bound child. -/
+theorem scanSem_eq (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ)
+    (w : List Bool) :
+    scanSem base step₀ step₁ growth ![w] =
+      w.foldr (scanStepWord step₀ step₁) (baseWord base) :=
+  List.rec (scanSem_nil base step₀ step₁ growth)
+    (fun b v ih ↦ (scanSem_cons base step₀ step₁ growth b v).trans
+      (congrArg (scanStepWord step₀ step₁ b) ih)) w
 
 end
 
