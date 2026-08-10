@@ -32,11 +32,17 @@ docstring records why.
   `Cobham.ofFn_bits` — peeling, dropping, and the round trip against
   `List.ofFn`. `ofFn_bits` recovers the scrutinee, truncated and zero-padded,
   from the family its bits spell.
-* `Cobham.wValid_casesRaw`, `Cobham.recBounded_casesW` — admissibility and the
-  recursion bound, from the branches' own.
+* `Cobham.wIndexRoot_shiftRaw`, `Cobham.wValid_shiftRaw`,
+  `Cobham.arity_shiftW`, `Cobham.recBounded_shiftW` — the shift's arity,
+  admissibility and recursion bound.
 * `Cobham.semAt_shiftW`, `Cobham.casesSem_eq`, `Cobham.casesSem_eq_eval` — the
   shift's meaning, the branch the scrutinee selects, and the identification
   with the meaning the expression carries.
+* `Cobham.wIndexRoot_casesRaw`, `Cobham.arity_casesW` — the case tree's
+  arity.
+* `Cobham.wValid_casesRaw` — admissibility, from the branches' own.
+* `Cobham.recBounded_casesW` — the recursion bound, from the branches' own
+  together with those `cond` and `pred` already carry.
 * `Cobham.stepWord_predIterOf`, `Cobham.stepWord_prependOf`,
   `Cobham.baseWord_prependOf`, `Cobham.baseWord_constAtOf`,
   `Cobham.stepWord_constAtOf`, `Cobham.stepWord_diagOf` — the words the
@@ -58,9 +64,10 @@ branch, which reads a scrutinee shorter than `p` as zero-padded and keeps
 `ofFn_bits` is proved by structural induction on the width. The route through
 `List.ext_getElem` and `omega` depends on `Classical.choice`.
 
-The six word characterisations are stated here rather than beside the
-definitions they characterise, `baseWord` and `stepWord` being declared in
-`Cobham/Scan.lean`, which imports `Cobham/Basic.lean`.
+The word characterisations naming `baseWord` or `stepWord` are stated here
+rather than beside the definitions they characterise, `baseWord` and
+`stepWord` being declared in `Cobham/Scan.lean`, which imports
+`Cobham/Basic.lean`.
 
 ## References
 
@@ -75,7 +82,8 @@ namespace Cobham
 
 public section
 
-/-- Bit `j` of a scrutinee word, `false` past its end. -/
+/-- The bits of a scrutinee word, indexed by `Fin p`, `false` past the word's
+end. -/
 @[expose] def bits (p : ℕ) (w : List Bool) : Fin p → Bool :=
   fun j ↦ w.getD j false
 
@@ -176,7 +184,8 @@ theorem semAt_shiftW (e : sig.W) (he : arity e = 2) (sel x : List Bool) :
     | b :: _ => cases b <;> rfl
   | 1 => rfl
 
-/-- A shifted tree introduces no recursion of its own. -/
+/-- A shifted tree's recursion bound, from what it shifts together with the
+predecessor's own. -/
 theorem recBounded_shiftW (e : sig.W) (he : arity e = 2) (hr : RecBounded e) :
     RecBounded (shiftW e he) :=
   ⟨trivial, fun d ↦ match d with
@@ -294,7 +303,8 @@ theorem casesSem_eq : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1)
         rw [h, ih]
         rfl)
 
-/-- The case tree carries the branches' recursions and no other. -/
+/-- The case tree's recursion bound, from the branches' own together with
+those `cond` and `pred` already carry. -/
 theorem recBounded_casesW : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1),
     RecBounded (casesW p br) :=
   Nat.rec (fun br ↦ recBounded_liftRaw (br Fin.elim0))

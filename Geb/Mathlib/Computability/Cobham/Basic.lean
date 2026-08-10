@@ -67,13 +67,19 @@ Theorem 3.101).
 * `Cobham.C.arity` — the arity of an expression.
 * `Cobham.COf` — the expressions of a given arity.
 * `Cobham.C.eval` — the meaning of an expression, at its own arity.
-* `Cobham.concatRaw` / `Cobham.smashRaw` — the two generators as single nodes.
-* `Cobham.concatOf` / `Cobham.smashOf` — those nodes as expressions of arity two.
 * `Cobham.zeroAt`, `Cobham.zeroAtOf` — the empty bitstring at an arbitrary
   arity.
+* `Cobham.concatRaw` / `Cobham.smashRaw` — the two generators as single nodes.
+* `Cobham.concatOf` / `Cobham.smashOf` — those nodes as expressions of arity two.
 * `Cobham.predRaw` / `Cobham.pred` — the predecessor, as a raw tree and as an
   expression of arity one.
 * `Cobham.predSem` — the meaning of the predecessor.
+* `Cobham.predIter`, `Cobham.predIterOf` — the iterated predecessor.
+* `Cobham.prepend`, `Cobham.prependOf` — a fixed word prepended to an
+  expression.
+* `Cobham.constAt`, `Cobham.constAtOf` — the constant word at a given arity.
+* `Cobham.diag`, `Cobham.diagOf` — a binary expression at its sole argument in
+  both positions.
 * `Cobham.concatCompRaw` — the concatenation of two raw trees of a common arity.
 * `Cobham.condRaw` / `Cobham.cond` — the four-way conditional, as a raw tree and as
   an expression of arity four.
@@ -81,31 +87,25 @@ Theorem 3.101).
 * `Cobham.smashFreeBool` — whether no `smash` node occurs anywhere in a raw tree.
 * `Cobham.SmashFree` — the subalgebra `[ε, I, s₀, s₁, ∗; COMP, BRN]`, excluding
   the `smash` generator.
-* `Cobham.predIter`, `Cobham.predIterOf` — the iterated predecessor.
-* `Cobham.prepend`, `Cobham.prependOf` — a fixed word prepended to an
-  expression.
-* `Cobham.constAt`, `Cobham.constAtOf` — the constant word at a given arity.
-* `Cobham.diag`, `Cobham.diagOf` — a binary expression at its sole argument in
-  both positions.
 
 ## Main statements
 
+* `Cobham.transport_transport` — transport along a composite equality is
+  the composition of two transports.
 * `Cobham.fst_eval` — the index component of a tree's interpretation is its arity.
 * `Cobham.recBounded_mk` — `RecBounded` unfolded one level, on a raw node.
 * `Cobham.predSem_eq` — the predecessor drops the word's last bit.
 * `Cobham.wIndexRoot_predIterRaw`, `Cobham.wValid_predIterRaw`,
   `Cobham.recBounded_predIterRaw` — the iterated predecessor's arity,
   admissibility and recursion bound.
-* `Cobham.condSem_eq` — the conditional branches on the emptiness and parity of its
-  first argument.
-* `Cobham.transport_transport` — transport along a composite equality is
-  the composition of two transports.
 * `Cobham.wIndexRoot_prependRaw`, `Cobham.wValid_prependRaw`,
   `Cobham.recBounded_prependRaw` — prepending preserves the arity,
   admissibility and the recursion bound.
 * `Cobham.wIndexRoot_diagRaw`, `Cobham.wValid_diagRaw`,
   `Cobham.recBounded_diagRaw` — the diagonal's arity, admissibility and
   recursion bound.
+* `Cobham.condSem_eq` — the conditional branches on the emptiness and parity of its
+  first argument.
 
 ## Implementation notes
 

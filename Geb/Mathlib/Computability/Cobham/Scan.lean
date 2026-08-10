@@ -141,9 +141,10 @@ theorem arity_boundRaw (growth : ℕ) :
     arity ⟨boundRaw growth, wValid_boundRaw growth⟩ = 1 :=
   wIndexRoot_boundRaw growth
 
-/-- A step of arity one, carried into the shape `evalRec` applies: a `comp`
-node whose head is the step and whose sole argument reaches the recursive
-value through `proj 2 1`. -/
+/-- An arity-one tree applied to argument one of an arity-two tree: a `comp`
+node whose head is the arity-one tree and whose sole argument is
+`proj 2 1`. Motivating instance: a scanner's step, carried into the shape
+`evalRec` applies, whose argument one holds the recursive value. -/
 @[expose] def liftRaw (e : sig.toPFunctor.W) : sig.toPFunctor.W :=
   WType.mk (.comp 2 1) fun d ↦
     match d with
