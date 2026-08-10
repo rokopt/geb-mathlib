@@ -188,8 +188,14 @@ In `Tree.lean`'s `## Main definitions`, line 46 reads:
 * `Cobham.zeroAt`, `Cobham.oneAt`, `Cobham.falseAt` — the empty bitstring and
 ```
 
-Rewrite that bullet so it names only `Cobham.oneAt` and `Cobham.falseAt`, and
-add to `Basic.lean`'s `## Main definitions`, after the `Cobham.smashOf` bullet:
+Replace it with:
+
+```text
+* `Cobham.oneAt`, `Cobham.falseAt` — the one-bit strings at an arbitrary
+```
+
+and add to `Basic.lean`'s `## Main definitions`, after the `Cobham.smashOf`
+bullet:
 
 ```text
 * `Cobham.zeroAt`, `Cobham.zeroAtOf` — the empty bitstring at an arbitrary
@@ -197,9 +203,16 @@ add to `Basic.lean`'s `## Main definitions`, after the `Cobham.smashOf` bullet:
 ```
 
 In `Tree.lean`'s `## Implementation notes`, line 101 names `zeroAtRaw` among
-the trees carrying a free arity; leave that sentence in place but drop
-`zeroAtRaw` from its list, and add the same observation to `Basic.lean`'s
-`## Implementation notes`, naming `zeroAtRaw`.
+the trees carrying a free arity. Leave the sentence in place and drop
+`zeroAtRaw` from its list, so it reads "`oneAtRaw` and `falseAtRaw` carry a
+free arity, at which `decide` does not apply", and add at the end of
+`Basic.lean`'s `## Implementation notes`:
+
+```text
+`zeroAtRaw` carries a free arity, at which `decide` does not apply; its
+admissibility is the pair of an `Unit ⊕ Fin m` case analysis and the `funext`
+the index condition asks for.
+```
 
 - [ ] **Step 4: Build**
 
@@ -308,7 +321,8 @@ close unchanged — `scanSem_nil`, `scanSem_eq_eval`, `scanSem_cons`,
 `baseWord_eq_eval`, `stepWord_eq_eval`, `boundSem_eq`, `combSem_def`,
 `combSem_nil`, `combSem_cons_false`, `combSem_cons_true`, `combSem_eq`,
 `length_combSem_le`, `eqOneSem_env`, `eqOneSem_eq`, `isTreeSem_apply`,
-`isTreeSem_eq_ite`, `isTreeSem_eq_eval` and `isTree_smashFree`. If any fails,
+`isTreeSem_eq_ite`, `isTreeSem_eq_eval`, `scanSem_eq`, `combSem_eq_eval` and
+`isTree_smashFree`. If any fails,
 stop and report; do not weaken a `rfl` to a tactic proof.
 
 - [ ] **Step 5: Test and lint**
@@ -449,7 +463,13 @@ result type `C`, so an implicit binder could not be synthesized at any call
 site. `prependRaw`'s is explicit for a different reason — it appears in the
 `.comp n 1` node it builds, and its argument is a raw tree carrying no arity —
 where `prepend` and `prependOf` take it implicitly, reading it off `e : COf n`.
-Both depart from the spec, which gives `prependRaw` without the arity.
+Both depart from the spec, which gives `prependRaw` without the arity. Two
+further departures, in each case because the plan's form is the one that
+compiled: `constAtOf`'s second component is
+`wIndexRoot_prependRaw n u _ (zeroAtOf n).2` where the spec writes `rfl`, which
+cannot close at a symbolic word; and `stepWord_prependOf` in Task 9 binds
+`(e : COf 1) (r : List Bool)` before quantifying over `u`, where the spec
+writes `(u r : List Bool) (e : COf 1)`.
 
 - [ ] **Step 1: Write the declarations**
 
@@ -641,8 +661,11 @@ jj commit Geb/Mathlib/Computability/Cobham/Basic.lean \
 
 **Interfaces:**
 
-- Consumes: `Cobham.semAt`, `Cobham.predRaw`, `Cobham.pred` (Basic);
-  `Cobham.liftRaw` (Scan).
+- Consumes: `Cobham.semAt`, `Cobham.predRaw`, `Cobham.pred`, `Cobham.arity`,
+  `Cobham.RecBounded`, `Cobham.sig` (Basic). Nothing here names `Cobham.liftRaw`
+  or `Cobham.stepWord`; `Cases.lean` imports `Cobham/Scan.lean` for Tasks 8
+  and 9, so its import is unused until then and `lake shake` is not run before
+  Task 12.
 - Produces: `Cobham.bits (p : ℕ) (w : List Bool) : Fin p → Bool`,
   `Cobham.bits_succ`, `Cobham.bits_succ_tail`, `Cobham.bits_ofFn`,
   `Cobham.ofFn_bits`, `Cobham.shiftRaw`, `Cobham.wIndexRoot_shiftRaw`,
@@ -671,10 +694,8 @@ Then the module docstring, verbatim:
 
 A combinator selecting among `2 ^ p` expressions of arity one by the low `p`
 bits of a scrutinee, and applying the selected one to a second argument. It
-imposes no condition on the expressions it selects among: every node the
-recursion introduces is a `comp`, whose `RecBoundedValue` is `True`, over
-`proj` together with the trees underlying `cond` and `pred`, which carry their
-own recursion bounds already.
+imposes no condition on the expressions it selects among; `Cobham.cases`'s
+docstring records why.
 
 ## Main definitions
 
@@ -690,9 +711,8 @@ own recursion bounds already.
 
 * `Cobham.bits_succ`, `Cobham.bits_succ_tail`, `Cobham.bits_ofFn`,
   `Cobham.ofFn_bits` — peeling, dropping, and the round trip against
-  `List.ofFn`. The round trip is consumed by the branch families of the
-  generic ranked recognizer and of the fold, which read a bit family as a
-  `List Bool`.
+  `List.ofFn`. `ofFn_bits` recovers the scrutinee, truncated and zero-padded,
+  from the family its bits spell.
 * `Cobham.wValid_casesRaw`, `Cobham.recBounded_casesW` — admissibility and the
   recursion bound, from the branches' own.
 * `Cobham.semAt_shiftW`, `Cobham.casesSem_eq`, `Cobham.casesSem_eq_eval` — the
@@ -1169,7 +1189,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Computability.Cobham.Cases
+import Geb.Mathlib.Computability.Cobham.Cases
 
 /-!
 # Definition by cases over Cobham's class, exercised
@@ -1325,16 +1345,25 @@ entry, which it is a sibling of, both depending on `Cobham/Basic.lean` and
   bound, so the combinator imposes no condition on what it selects among.
   `casesSem_eq` identifies the meaning with the branch the scrutinee selects.
   Also the words the combinators of `Cobham/Basic.lean` contribute:
-  `stepWord_predIterOf`, `stepWord_prependOf`, `baseWord_constAtOf`,
-  `stepWord_constAtOf` and `stepWord_diagOf`. Depends on
+  `stepWord_predIterOf`, `stepWord_prependOf`, `baseWord_prependOf`,
+  `baseWord_constAtOf`, `stepWord_constAtOf` and `stepWord_diagOf`. Depends on
   `Geb.Mathlib.Computability.Cobham.Basic` and
-  `Geb.Mathlib.Computability.Cobham.Scan`.
+  `Geb.Mathlib.Computability.Cobham.Scan`. `Classical.choice`-free.
 ```
 
-Then revise the existing `Cobham/Basic.lean` entry to record `semAt`, the
-`zeroAt` family arriving from `Cobham/Tree.lean`, and the `predIter`,
-`prepend`, `constAt` and `diag` families; and the `Cobham/Tree.lean` entry to
-record the `zeroAt` family leaving.
+Then append to the existing `Cobham/Basic.lean` entry, before its closing
+"`Classical.choice`-free.":
+
+```text
+  Also `semAt`, the meaning of a tree at a given arity, named once rather than
+  spelled at each site; the empty bitstring at an arbitrary arity `zeroAt`;
+  and the combinators branches are built from — `prepend` and `constAt`
+  prepending a fixed word, `predIter` the iterated predecessor, and `diag` a
+  binary expression at its sole argument in both positions.
+```
+
+and delete `Cobham.zeroAt` from the `Cobham/Tree.lean` entry's list of the
+constants it provides, leaving `Cobham.oneAt` and `Cobham.falseAt`.
 
 - [ ] **Step 3: Revise `TODO.md`**
 
@@ -1354,6 +1383,12 @@ Make that last reference a link, `docs/index.md` in both halves, as the B1 and
 B2 bullets beside it do; it is written bare here only so that
 `scripts/check-md-links.sh`, which does not skip fenced blocks, resolves it
 against `TODO.md`'s location rather than this file's.
+
+Then revise B3's note. It reads that `run_spell` is "stated between a
+`List Bool` and the `p`-bit encoding of the carrier, which must be named"; the
+encoding is `List.ofFn ∘ enc` and `bits_ofFn` is its inverse, so replace that
+clause with "stated between a `List Bool` and `List.ofFn` of the carrier's
+encoding, the two not being the same type".
 
 Then append to the paragraph beginning `Deferred:`:
 

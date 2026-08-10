@@ -216,8 +216,10 @@ Their characterisations name `baseWord` and `stepWord`, so they are stated in
 `Cases.lean` rather than in `Basic.lean`:
 
 ```lean
-theorem stepWord_prependOf (u r : List Bool) (e : COf 1) :
-    stepWord (prependOf u e) r = u ++ stepWord e r
+theorem stepWord_prependOf (e : COf 1) (r : List Bool) :
+    ∀ u : List Bool, stepWord (prependOf u e) r = u ++ stepWord e r
+theorem baseWord_prependOf (e : COf 0) :
+    ∀ u : List Bool, baseWord (prependOf u e) = u ++ baseWord e
 theorem baseWord_constAtOf (u : List Bool) : baseWord (constAtOf u) = u
 theorem stepWord_constAtOf (u r : List Bool) : stepWord (constAtOf u) r = u
 theorem stepWord_predIterOf (k : ℕ) (u : List Bool) :
@@ -242,6 +244,8 @@ none of these.
 
 theorem bits_succ (p : ℕ) (w : List Bool) :
     bits (p + 1) w = Fin.cons (w.getD 0 false) (bits p w.tail)
+theorem bits_succ_tail (p : ℕ) (w : List Bool) :
+    (fun i : Fin p ↦ bits (p + 1) w i.succ) = bits p w.tail
 theorem bits_ofFn {p : ℕ} (f : Fin p → Bool) : bits p (List.ofFn f) = f
 theorem ofFn_bits (p : ℕ) (w : List Bool) :
     List.ofFn (bits p w) = w.take p ++ List.replicate (p - w.length) false
@@ -281,6 +285,8 @@ theorem arity_shiftW (e : sig.W) (he : arity e = 2) : arity (shiftW e he) = 2
 theorem semAt_shiftW (e : sig.W) (he : arity e = 2) (sel x : List Bool) :
     semAt 2 (shiftW e he) (arity_shiftW e he) ![sel, x] =
       semAt 2 e he ![sel.tail, x]
+theorem recBounded_shiftW (e : sig.W) (he : arity e = 2) (hr : RecBounded e) :
+    RecBounded (shiftW e he)
 ```
 
 The scrutinee is consumed by shifting it into the recursive subtree, rather
