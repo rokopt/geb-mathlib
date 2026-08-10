@@ -40,8 +40,9 @@ Three concerns over `Geb/Mathlib/Computability/Cobham/`:
    arity one by the low `p` bits of a scrutinee, and applying the selected one
    to a second argument, together with the constant-word, iterated-predecessor
    and diagonal combinators its consumers build branches from.
-2. **The generic ranked recognizer.** The validity scan of
-   `RankedAlphabet.Preorder` as an expression of Cobham's class, at an
+2. **The generic ranked recognizer.** `RankedAlphabet.validBool`, the validity
+   scan of `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean`, as an
+   expression of Cobham's class, at an
    arbitrary ranked alphabet, together with the theorem identifying it at the
    two-symbol alphabet with the recognizer `Cobham/Tree.lean` already carries.
    This closes B6 of [TODO.md](../../../TODO.md) § Extensions of the tree
@@ -70,13 +71,14 @@ above, each with a bookmark at its boundary, so that each is submitted as its
 own pull request while the graph stays linear and conflict-free.
 
 Every shared declaration lands in segment 1, which is the segment before the
-first that consumes it, so that segments 2 and 3 add only their own module and
-their own statements. Segment 3 depends on segment 1 and not on segment 2.
+first that consumes it, so that segments 2 and 3 add only their own module,
+their own statements, and what segment 2 adds to `Data/Tree/Ranked/`. Segment 3
+depends on segment 1 and not on segment 2.
 
 | Segment | New module | `Cobham/Basic.lean` | Elsewhere |
 | --- | --- | --- | --- |
-| 1 | `Cases.lean` | `semAt`; the `zeroAt` family moved in; `prepend`, `constAt`, `predIter`, `diag` with their `…Of` forms | `Scan.lean` and `Tree.lean` restated through `semAt` |
-| 2 | `RankedTree.lean` | — | four statements added to `Data/Tree/Ranked/` |
+| 1 | `Cases.lean` | `semAt`; the `zeroAt` family; `prepend`, `constAt`, `predIter`, `diag` | `Scan.lean`, `Tree.lean` through `semAt` |
+| 2 | `RankedTree.lean` | — | a definition and four statements in `Data/Tree/Ranked/` |
 | 3 | `Fold.lean` | — | — |
 
 A characterisation naming `baseWord` or `stepWord` cannot be stated in
@@ -87,21 +89,29 @@ imports `Scan.lean` for `liftRaw` and `stepWord` in any case.
 Each of `prepend`, `constAt`, `predIter` and `diag` follows the family shape
 `Cobham/Scan.lean` and `Cobham/Tree.lean` both use, so far as it needs to: a
 `…Raw` tree with its `wIndexRoot`, `wValid` and `RecBounded` lemmas, the `C`
-expression, and the `…Of` form. `constAt u := prepend u (zeroAtOf n)` needs no
-raw tree or admissibility of its own, being a composite of two that have them.
+expression, and the `…Of` form. `constAt` needs no raw tree or
+admissibility of its own, being a composite of two that have them; its arity is
+explicit, appearing in neither an argument type nor the result type of `C`.
 
 ## Transcription status of each definition
 
 Per [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Cite the literature when
-transcribing, every definition below is novel — an assembly of the generators
-`Cobham/Basic.lean` transcribes from [HeraudNowak2011] and [Cobham1965].
+transcribing, every definition below is novel. Those of segment 1 and the two
+folds are assemblies of the generators `Cobham/Basic.lean` transcribes from
+[HeraudNowak2011] and [Cobham1965]. `maxArity` is a derived quantity of
+`RankedAlphabet`, and `bufBits`, `stateWord` and `decodeState` are a choice of
+bit layout for `RankedAlphabet.Scan`; none is drawn from a source.
 
 Two statements realized here may be published rather than novel: that an
 expression of the class computes a finite automaton's encoded state, which
 segment 3 realizes, and that the languages of ranked-term preorder spellings
 lie in the class, which segment 2 realizes. Neither is cited to a work yet. The
-search is an open question below, settled before either module docstring is
-written, per [AGENTS.md](../../../AGENTS.md) § Verify agent claims.
+search is an open question below, settled before the plan for the segment
+realizing each, per [AGENTS.md](../../../AGENTS.md) § Verify agent claims: a
+statement that turns out to be published is a transcription, whose interface
+[docs/rules/lean-coding.md](../../rules/lean-coding.md) § Structure and
+typeclass patterns fixes to its source, which can bear on the state layout
+segment 2 settles.
 
 ## Constraints this design is bound by
 
@@ -153,12 +163,19 @@ and `Sem`, on which it depends. It is not new content: `boundSem`, `scanSem`,
 `baseWord` and `stepWord` in `Cobham/Scan.lean` spell out the composite, and
 `eqOneSem` and `isTreeSem` in `Cobham/Tree.lean` spell out its `he := rfl`
 case. All six are restated through it in this segment, so that the pattern is
-named once rather than repeated at each site.
+named once rather than repeated at each site. Restating them is refactoring
+outside the subject of this segment, which
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape would ordinarily
+put on its own branch; it is bundled here by decision, the alternative being to
+leave a new name beside six hand-spelled copies of what it names.
 
-The restatement preserves the proofs that read through those definitions:
+The restatement was measured against a copy rather than assumed:
 `scanSem_nil`, `scanSem_eq_eval`, `combSem_nil` and `isTreeSem_eq_eval` still
-close by `rfl`, and `scanSem_cons`'s `change` still lands. This was measured
-against a copy rather than assumed.
+close by `rfl`, and `scanSem_cons`'s `change` still lands. Not measured, and
+measured first in the segment: `eqOneSem_env`, `eqOneSem_eq`,
+`isTreeSem_apply`, `combSem_cons_false` and `combSem_cons_true`, each of which
+reads through a restated definition by `change` or `congrArg`; and
+`isTree_smashFree`, whose `decide` folds over the relocated `zeroAtRaw`.
 
 ### The shared combinators
 
@@ -174,8 +191,8 @@ apply". The move is a relocation of unchanged text.
 @[expose] def prependRaw (u : List Bool) (e : sig.toPFunctor.W) : sig.toPFunctor.W
 @[expose] def prepend {n : ℕ} (u : List Bool) (e : COf n) : C
 @[expose] def prependOf {n : ℕ} (u : List Bool) (e : COf n) : COf n
-@[expose] def constAt {n : ℕ} (u : List Bool) : C
-@[expose] def constAtOf {n : ℕ} (u : List Bool) : COf n := prependOf u (zeroAtOf n)
+@[expose] def constAt (n : ℕ) (u : List Bool) : C := prepend u (zeroAtOf n)
+@[expose] def constAtOf (n : ℕ) (u : List Bool) : COf n := ⟨constAt n u, rfl⟩
 @[expose] def predIterRaw (k : ℕ) : sig.toPFunctor.W
 @[expose] def predIter (k : ℕ) : C
 @[expose] def predIterOf (k : ℕ) : COf 1
@@ -194,7 +211,7 @@ Their characterisations name `baseWord` and `stepWord`, so they are stated in
 `Cases.lean` rather than in `Basic.lean`:
 
 ```lean
-theorem stepWord_prependOf {n : ℕ} (u r : List Bool) (e : COf n) :
+theorem stepWord_prependOf (u r : List Bool) (e : COf 1) :
     stepWord (prependOf u e) r = u ++ stepWord e r
 theorem baseWord_constAtOf (u : List Bool) : baseWord (constAtOf u) = u
 theorem stepWord_constAtOf (u r : List Bool) : stepWord (constAtOf u) r = u
@@ -205,11 +222,12 @@ theorem stepWord_diagOf (e : COf 2) (u : List Bool) :
 ```
 
 `stepWord_prependOf` is what turns segment 2's step into a prefix followed by a
-drop; `stepWord_constAtOf` is its `e := zeroAtOf n` case and does not supply
-it. `stepWord_constAtOf` carries no `{n}` binder, `stepWord` forcing its
-argument to `COf 1`. `Cobham.baseWord_eq_eval` states only that `baseWord`
-agrees with what the expression carries, and says nothing about the value, so
-it supplies none of these.
+drop; `stepWord_constAtOf` is the case `e := zeroAtOf n` of
+`stepWord_prependOf` and does not supply `stepWord_prependOf` in turn.
+`stepWord_constAtOf` carries no `{n}` binder, `stepWord` forcing its argument
+to `COf 1`. `Cobham.baseWord_eq_eval` states only that `baseWord` agrees with
+what the expression carries, and says nothing about the value, so it supplies
+none of these.
 
 ### Selection by the bits of a scrutinee
 
@@ -220,13 +238,18 @@ it supplies none of these.
 theorem bits_succ (p : ℕ) (w : List Bool) :
     bits (p + 1) w = Fin.cons (w.getD 0 false) (bits p w.tail)
 theorem bits_ofFn {p : ℕ} (f : Fin p → Bool) : bits p (List.ofFn f) = f
+theorem ofFn_bits (p : ℕ) (w : List Bool) :
+    List.ofFn (bits p w) = w.take p ++ List.replicate (p - w.length) false
 ```
 
 Bit `j` of the scrutinee, `false` past its end. Reading a short scrutinee as
 zero-padded, rather than conditioning the semantic theorem on `p ≤ w.length`,
 keeps `casesSem_eq` free of a hypothesis, and in the tree it costs nothing:
 `cond`'s empty branch is directed at the same subtree as its head-`false`
-branch. `bits_ofFn` is what segment 3's step consumes.
+branch. `bits_ofFn` is what segment 3's step consumes; `ofFn_bits` is its
+converse and is what carries segment 2's `decodeState`, which reads `List.ofFn
+v`, to `decodeState_stateWord_of_lt`, which supplies `bits (dispatchWidth R)
+(stateWord R s)`.
 
 ### The scrutinee shift
 
@@ -297,6 +320,8 @@ theorem wIndexRoot_casesRaw (p : ℕ) (br : (Fin p → Bool) → sig.toPFunctor.
 theorem wValid_casesRaw : ∀ (p : ℕ) (br : (Fin p → Bool) → sig.toPFunctor.W),
     (∀ v, sig.WValid (br v)) → (∀ v, sig.wIndexRoot (br v) = 1) →
     sig.WValid (casesRaw p br)
+theorem recBounded_casesRaw : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1),
+    RecBounded (casesW p br)
 ```
 
 The motive reindexes the branch family at each level by `Fin.cons`. `cond`'s
@@ -333,14 +358,14 @@ theorem casesSem_eq_eval (p : ℕ) (br : (Fin p → Bool) → COf 1) :
     transport (casesOf p br).2 (casesOf p br).1.eval = casesSem p br
 ```
 
-`cases` and `casesOf` carry no side condition. `RecBounded` is discharged
-componentwise from the branches' own, by a `Nat.rec` mirroring
-`wValid_casesRaw`: every node the recursion introduces is a `comp`, where
-`RecBoundedValue` is `True`, and its children are `proj` together with the
-trees underlying `cond : COf 4` and `pred : COf 1`, which already carry their
-own `RecBounded` as `cond.1.2` and `pred.1.2`. Neither is a `comp` node; what
-makes them free here is that their conditions are discharged where they are
-defined, not that those conditions are vacuous.
+`cases` and `casesOf` carry no side condition. `recBounded_casesRaw` discharges
+it componentwise from the branches' own, by a `Nat.rec` generalizing over the
+branch family exactly as `wValid_casesRaw` does: every node the recursion
+introduces is a `comp`, where `RecBoundedValue` is `True`, and its children are
+`proj` together with the trees underlying `cond : COf 4` and `pred : COf 1`,
+which already carry their own `RecBounded` as `cond.1.2` and `pred.1.2`.
+Neither is a `comp` node; what makes them free here is that their conditions
+are discharged where they are defined, not that those conditions are vacuous.
 
 `casesSem_eq_eval` is not a `rfl`, unlike the scan combinator's counterpart:
 `arity_casesW` is a theorem rather than a definitional equality, so the
@@ -374,9 +399,9 @@ ambiguously against the directory `Geb/Mathlib/Data/Tree/Ranked/`.
 @[expose] def dispatchWidth (R : RankedAlphabet) : ℕ :=
   R.width + R.maxArity + 2
 
-theorem length_bufBits (R : RankedAlphabet) (buf : List Bool)
+theorem length_bufBits_of_lt (R : RankedAlphabet) (buf : List Bool)
     (h : buf.length < R.width) : (bufBits R buf).length = R.width
-theorem length_stateWord (R : RankedAlphabet) (s : RankedAlphabet.Scan)
+theorem length_stateWord_of_lt (R : RankedAlphabet) (s : RankedAlphabet.Scan)
     (h : s.buf.length < R.width) :
     (stateWord R s).length = 1 + R.width + s.depth
 ```
@@ -395,13 +420,14 @@ than the `2 * R.width` a separate fill counter would. The slot's length is
 invariant under accumulation — the padding shrinks as `buf` grows — which is
 why the fields after it never move.
 
-`length_bufBits`'s hypothesis is not decoration. `Nat` subtraction being
+`length_bufBits_of_lt`'s hypothesis is not decoration. `Nat` subtraction being
 truncated, a `buf` of length `R.width` or more yields a slot of length
 `buf.length + 1`, and `stateWord` is then not injective: at `R.width = 2` the
 states `⟨[false, true], 0, true⟩` and `⟨[false], 1, true⟩` share the word
 `[true, true, false, true]`. The invariant excluding this is
-`length_buf_scanFinal`, in
-[Additions to the ranked-encoding modules](#additions-to-the-ranked-encoding-modules).
+`length_buf_scanFinal_lt`, in
+[Additions to the ranked-encoding
+modules](#additions-to-the-ranked-encoding-modules).
 
 `depth` is unary. Binary would need a Cobham-definable truncated subtraction
 for `depth - r + 1`, and `Cobham/Tree.lean`'s recognizer represents its depth
@@ -420,8 +446,8 @@ where the slot ends.
 ```lean
 @[expose] def decodeState (R : RankedAlphabet)
     (v : Fin (dispatchWidth R) → Bool) : RankedAlphabet.Scan
-theorem decodeState_stateWord (R : RankedAlphabet) (s : RankedAlphabet.Scan)
-    (h : s.buf.length < R.width) :
+theorem decodeState_stateWord_of_lt (R : RankedAlphabet)
+    (s : RankedAlphabet.Scan) (h : s.buf.length < R.width) :
     decodeState R (bits (dispatchWidth R) (stateWord R s)) =
       { s with depth := min s.depth (R.maxArity + 1) }
 ```
@@ -438,8 +464,8 @@ arises, and the definition depends on no axiom.
 
 It returns a `RankedAlphabet.Scan` rather than a tuple, that record being
 exactly the three fields. Since `Scan` derives no `DecidableEq`,
-`decodeState_stateWord` is swept field by field in the mirror rather than as
-one equation.
+`decodeState_stateWord_of_lt` is swept field by field in the mirror rather than
+as one equation.
 
 ### The recognizer
 
@@ -459,11 +485,13 @@ theorem rankedSem_def (R : RankedAlphabet) :
     rankedSem R = scanSem (constAtOf (stateWord R ⟨[], 0, true⟩))
       (rankedStep R false) (rankedStep R true) (R.width + 1)
 
-theorem dropCount_cap (R : RankedAlphabet) (b : Bool) (s : RankedAlphabet.Scan) :
+theorem dropCount_min_depth (R : RankedAlphabet) (b : Bool)
+    (s : RankedAlphabet.Scan) :
     dropCount R b { s with depth := min s.depth (R.maxArity + 1) } = dropCount R b s
-theorem nextPrefix_cap (R : RankedAlphabet) (b : Bool) (s : RankedAlphabet.Scan) :
+theorem nextPrefix_min_depth (R : RankedAlphabet) (b : Bool)
+    (s : RankedAlphabet.Scan) :
     nextPrefix R b { s with depth := min s.depth (R.maxArity + 1) } = nextPrefix R b s
-theorem stateWord_scanStep (R : RankedAlphabet) (b : Bool)
+theorem stateWord_scanStep_of_lt (R : RankedAlphabet) (b : Bool)
     (s : RankedAlphabet.Scan) (h : s.buf.length < R.width) :
     stateWord R (R.scanStep b s) =
       nextPrefix R b s ++ (stateWord R s).drop (dropCount R b s)
@@ -490,34 +518,37 @@ state unchanged there, buffer included; on the two failure clauses it is
 clause `true :: bufBits R (b :: s.buf)`; and on the pop
 `true :: bufBits R [] ++ [true]`, the trailing bit being the pushed subterm.
 
-`dropCount_cap` and `nextPrefix_cap` are what let the step lemma compose with
-the decoder. `decodeState_stateWord` recovers the state only up to capping
-`depth` at `R.maxArity + 1`, while `stateWord_scanStep` is stated at `s`; the
-two agree because the only depth-dependence in either is the `r ≤ s.depth` test
-of `scanStep`, and `le_maxArity_of_arOf_eq_some` gives
+`dropCount_min_depth` and `nextPrefix_min_depth` are what let the step lemma
+compose with the decoder. `decodeState_stateWord_of_lt` recovers the state only
+up to capping `depth` at `R.maxArity + 1`, while `stateWord_scanStep_of_lt` is
+stated at `s`; the two agree because the only depth-dependence in either is the
+`r ≤ s.depth` test of `scanStep`, and `le_maxArity_of_arOf_eq_some` gives
 `r ≤ R.maxArity < R.maxArity + 1`. That is what that lemma is for.
 
-`stateWord_scanStep` is the step lemma the module rests on, and `rankedSem_eq`
-is its `List.rec` over `w` through `scanSem_eq`, with `length_buf_scanFinal`
-supplying the hypothesis at each state, `decodeState_stateWord` carrying it to
-the bit family the branch is selected by, the two capping lemmas closing the
-gap, and `stepWord_prependOf` with `stepWord_predIterOf` turning the selected
-branch into the prefix-and-drop the step lemma states.
+`stateWord_scanStep_of_lt` is the step lemma the module rests on, and
+`rankedSem_eq` is its `List.rec` over `w` through `scanSem_eq`, with
+`length_buf_scanFinal_lt` supplying the hypothesis at each state,
+`decodeState_stateWord_of_lt` carrying it to the bit family the branch is
+selected by, the two capping lemmas closing the gap, and `stepWord_prependOf`
+with `stepWord_predIterOf` turning the selected branch into the prefix-and-drop
+the step lemma states.
 
-`length_rankedSem_le` follows: `length_stateWord` gives
-`1 + R.width + s.depth`, and `depth_scanFinal_le` gives `depth ≤ |w|`. The
-sharper `depth ≤ ⌊|w| / R.width⌋` is true but needs the block-alignment lemma
-on top of it, and the bound consumed does not require it. At the empty word the
-bound is `R.width + 1 ≤ 0 + R.width + 1`, tight. It is stated at `scanSem`,
-which is the form `Cobham.scan` consumes and the form `Tree.lean` states
-`length_combSem_le` in; `rankedSem_def` bridges the two, as `combSem_def` does
-there.
+`length_rankedSem_le` follows: `length_stateWord_of_lt` gives
+`1 + R.width + s.depth`, and `depth_scanFinal_le_length` gives `depth ≤ |w|`.
+The sharper `depth ≤ ⌊|w| / R.width⌋` is true but needs the block-alignment
+lemma on top of it, and the bound consumed does not require it. At the empty
+word the bound is `R.width + 1 ≤ 0 + R.width + 1`, tight. It is stated at
+`scanSem`, which is the form `Cobham.scan` consumes and the form `Tree.lean`
+states `length_combSem_le` in; `rankedSem_def` bridges the two, as
+`combSem_def` does there.
 
 ### The verdict and the bridge
 
 ```lean
 @[expose] def acceptWord (R : RankedAlphabet) : List Bool :=
   stateWord R ⟨[], 1, true⟩
+@[expose] def acceptTestRaw (R : RankedAlphabet) : sig.toPFunctor.W
+@[expose] def acceptTest (R : RankedAlphabet) : COf 1
 @[expose] def isRankedRaw (R : RankedAlphabet) : sig.toPFunctor.W
 @[expose] def isRanked (R : RankedAlphabet) : C
 @[expose] def isRankedOf (R : RankedAlphabet) : COf 1
@@ -550,12 +581,14 @@ rather than on `Fin (R.width + 3) → Bool`, whose instance routes through
 `isRankedRaw` composes that test with `ranked R` through a `comp 1 1` node, as
 `Cobham/Tree.lean`'s `isTreeRaw` composes `eqOneRaw` with `combRaw`.
 `isRankedSem_apply` states the composition's value, and is not a `rfl` for the
-reason `isTreeSem_apply`'s docstring records: `cond` inside the test is a
-`boundedRec` node, so the proof rewrites to the composition's own application,
-generalizes the scan's value, and matches on it.
+reason `Cobham/Tree.lean`'s `## Implementation notes` record for
+`isTreeSem_apply`: `pred` in the composition is a `boundedRec` node, so the
+proof rewrites to the composition's own application, generalizes the scan's
+value, and matches on it.
 
 `isRankedSem_eq_ite` pins the value on the rejecting branch as well as the
-accepting one, for the reason `isTreeSem_eq_ite` records: the `iff` alone
+accepting one, for the reason `Cobham/Tree.lean`'s module docstring records for
+`isTreeSem_eq_ite`: the `iff` alone
 admits a recognizer returning `[false]` on a rejected word, so correctness as a
 function is not implied by correctness of the accepted set. Both `iff`
 statements are proved from their two implications rather than by `omega`, which
@@ -623,9 +656,11 @@ that the encoding "must be named"; naming it is unnecessary once it is
 `List.ofFn ∘ enc`, and the type distinction the note is about survives,
 `foldSem … ![w]` being a `List Bool` and `w.foldr step init` an `α`.
 
-`foldr` is the right fold because the list's head is the word's last bit, so a
-right fold reads the word right-to-left, which is the direction
-`Cobham.evalRec` recurses in and which `Cobham.scanSem_eq` states.
+`foldr` is the fold `Cobham.scanSem_eq` presents the scan as, and the direction
+`Cobham.evalRec` recurses in: `evalRec` peels the list's head, which is the
+word's last bit, and the recursive value it passes alongside is the fold of the
+remainder. The statement is over the Lean list on both sides, so no convention
+about which end of the word the list's head denotes enters it.
 
 `length_foldSem_le` does not take `hdec`: every state the scan produces is a
 `List.ofFn` of an `enc` value — the base by `baseWord_constAtOf`, each step by
@@ -642,11 +677,11 @@ the branch the case tree selects with `step b a`.
 
 ## Additions to the ranked-encoding modules
 
-Four statements segment 2 consumes that `Geb/Mathlib/Data/Tree/Ranked/` does
-not carry. Each is added to the module whose subject it is, in segment 2, and
-each is written unprefixed inside that module's existing `namespace
-RankedAlphabet` block, an explicit prefix inside it elaborating to a doubled
-name.
+A definition and four statements segment 2 consumes that
+`Geb/Mathlib/Data/Tree/Ranked/` does not carry. Each is added to the module
+whose subject it is, in segment 2, and each is written unprefixed inside that
+module's existing `namespace RankedAlphabet` block, an explicit prefix inside
+it elaborating to a doubled name.
 
 In `Ranked/Basic.lean`:
 
@@ -674,14 +709,14 @@ theorem le_maxArity_of_arOf_eq_some (R : RankedAlphabet) {v r : ℕ}
 `arOf` returns `some (R.arity ⟨v, h⟩)` when `v < R.card` and `none` otherwise,
 so every arity it yields lies in the image of `R.arity`. This is what makes
 `dispatchWidth`'s `R.maxArity + 1` depth window sufficient, and it is consumed
-by `dropCount_cap` and `nextPrefix_cap`.
+by `dropCount_min_depth` and `nextPrefix_min_depth`.
 
 In `Ranked/Preorder.lean`:
 
 ```lean
-theorem length_buf_scanFinal (R : RankedAlphabet) (w : List Bool) :
+theorem length_buf_scanFinal_lt (R : RankedAlphabet) (w : List Bool) :
     (R.scanFinal w).buf.length < R.width
-theorem depth_scanFinal_le (R : RankedAlphabet) (w : List Bool) :
+theorem depth_scanFinal_le_length (R : RankedAlphabet) (w : List Bool) :
     (R.scanFinal w).depth ≤ w.length
 ```
 
@@ -689,8 +724,8 @@ theorem depth_scanFinal_le (R : RankedAlphabet) (w : List Bool) :
 `w.length % R.width`; the unconditional statement additionally needs that a
 dead scan carries `buf = []`, which holds because both failure clauses of
 `scanStep` return `⟨[], _, false⟩` and a dead state absorbs.
-`depth_scanFinal_le` is a `List.rec`: every clause leaves `depth` alone except
-the pop, which yields `depth - r + 1 ≤ depth + 1`.
+`depth_scanFinal_le_length` is a `List.rec`: every clause leaves `depth` alone
+except the pop, which yields `depth - r + 1 ≤ depth + 1`.
 
 ## What is out of scope
 
@@ -726,10 +761,10 @@ no `.lean` file.
 - **`RankedTree.lean`** — `isRankedSem` against `RankedAlphabet.validBool` at
   `RankedAlphabet.Binary.binRanked` and at `narrowAlphabet`, whose
   `card < 2 ^ width` makes a block spell no symbol so that the `arOf = none`
-  branch is reached; `decodeState_stateWord` at each reachable `buf` length,
-  swept field by field since `Scan` derives no `DecidableEq`; and `bufBits` at
-  a `buf` of length `R.width` to pin that `length_bufBits`'s hypothesis is
-  consumed rather than decorative.
+  branch is reached; `decodeState_stateWord_of_lt` at each reachable `buf`
+length, swept field by field since `Scan` derives no `DecidableEq`; and
+`bufBits` at a `buf` of length `R.width` to pin that `length_bufBits_of_lt`'s
+hypothesis is consumed rather than decorative.
 - **`Fold.lean`** — a carrier whose `dec` is not injective off the image of
   `enc`, so that the retraction hypothesis is exercised rather than trivially
   satisfied.
@@ -755,6 +790,13 @@ The index modules `Geb/Mathlib/Computability/Cobham.lean` and
 `GebTests/Mathlib/Computability/Cobham.lean` gain an import of each new module
 in its segment; without both, the new modules are not built.
 
+Segment 2's additions to
+`Geb/Mathlib/Data/Tree/Ranked/{Basic,Code,Preorder}.lean` carry their own
+mirrors in `GebTests/Mathlib/Data/Tree/Ranked/`, which already exist, and their
+own `docs/index.md` revisions. `docs/index.md`'s entry for `Cobham/Basic.lean`
+is revised in segment 1 for `semAt`, the combinator families and the `zeroAt`
+family arriving.
+
 Each new module, source and mirror alike, carries the module docstring sections
 [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Documentation
 mandates, in order and non-vacuously, and a `/-- … -/` docstring on every `def`
@@ -767,9 +809,9 @@ restatement through `semAt` and for the `zeroAt` family leaving `Tree.lean`'s
 
 The `## Implementation notes` sections carry the decisions recorded here that
 outlive this document: the scrutinee shift, the `bufBits` sentinel, the unary
-`depth`, `decodeState`'s route through `List.ofFn`, the three `Classical.choice`
-routes avoided, and the reason `length_foldSem_le` precedes the retraction
-hypothesis and does not take it.
+`depth`, `decodeState`'s route through `List.ofFn`, the three
+`Classical.choice` routes avoided, and the reason `length_foldSem_le` precedes
+the retraction hypothesis and does not take it.
 
 Commit subjects follow
 [docs/rules/ci-and-workflow.md](../../rules/ci-and-workflow.md)
@@ -784,9 +826,10 @@ the final commits of the last segment needing it, per
 `semAt`, `shiftRaw`, `wIndexRoot_shiftRaw`, `wValid_shiftRaw`, `shiftW`,
 `arity_shiftW`, `semAt_shiftW`, `casesRaw`, `wIndexRoot_casesRaw`,
 `wValid_casesRaw`, `casesW`, `arity_casesW`, `casesSem`, `bits_succ` and
-`casesSem_eq`. It declares `namespace Cobham` and so collides with the real
-module, is absent from `Geb/Internal.lean` while it sits there, and is deleted
-before `Cobham/Cases.lean` lands. Established there:
+`casesSem_eq`. It declares `namespace Cobham` under the same names the real
+module will, is absent from `Geb/Internal.lean` while it sits there — the build
+reaches it through `lakefile.toml`'s `Geb.*` glob — and is deleted before
+`Cobham/Cases.lean` lands. Established there:
 
 - `Nat.rec` at the motive
   `((Fin p → Bool) → sig.toPFunctor.W) → sig.toPFunctor.W` elaborates, and the
@@ -794,20 +837,21 @@ before `Cobham/Cases.lean` lands. Established there:
 - `wValid_casesRaw`, `semAt_shiftW` and `casesSem_eq` each measure
   `[propext, Quot.sound]`.
 - `casesSem (p + 1) br ![b :: t, x]` is definitionally the shifted subtree's
-  meaning, so the successor step of `casesSem_eq` needs no `change`; only its
-  base case rewrites first.
+  meaning, so the successor step of `casesSem_eq` needs no `change`; it opens
+  by rewriting with `bits_succ`, and the base case by the `Fin.elim0` equality.
 
 Established against throwaway modules since deleted, and rebuilt as each
 segment's plan is written rather than taken on trust: the `semAt` restatement
 preserving `scanSem_nil`, `scanSem_eq_eval`, `combSem_nil`,
 `isTreeSem_eq_eval` and `scanSem_cons`'s `change`; `decodeState` via
 `List.ofFn` inverting `bufBits` and returning the capped depth, at no axiom;
-`dropCount`, `nextPrefix` and the decomposition `stateWord_scanStep` at
-`narrowAlphabet` over every reachable state and both bits; `dropCount_cap` and
-`nextPrefix_cap` likewise; the `R.width + 3` verdict window separating every
-non-accepting reachable state; `maxArity`, `dispatchWidth`, `List.ofFn` and
-`Matrix.vecCons` reducing in the kernel at `narrowAlphabet`'s shape;
-`length_buf_scanFinal`, `depth_scanFinal_le`, `maxArity`, `arity_le_maxArity`,
+`dropCount`, `nextPrefix` and the decomposition `stateWord_scanStep_of_lt` at
+`narrowAlphabet` over every reachable state and both bits;
+`dropCount_min_depth` and `nextPrefix_min_depth` likewise; the `R.width + 3`
+verdict window separating every non-accepting reachable state; `maxArity`,
+`dispatchWidth`, `List.ofFn` and `Matrix.vecCons` reducing in the kernel at
+`narrowAlphabet`'s shape; `length_buf_scanFinal_lt`,
+`depth_scanFinal_le_length`, `maxArity`, `arity_le_maxArity`,
 `le_maxArity_of_arOf_eq_some` and `bits_ofFn` at symbolic `R`; the `constAtOf`
 word lemmas with no constraint on `dec`; `diagOf` and `predIterOf` with their
 semantic lemmas; `acceptWord R = stateWord R ⟨[], 1, true⟩` by `rfl`; and a
@@ -815,9 +859,14 @@ reduction of `casesSem` at `p = 7` against a branch family varying in every
 bit, closing by `rfl` in well under a second. The three `Classical.choice`
 claims in § Constraints were each measured.
 
-Not built: `cases`, `casesOf`, `casesSem_eq_eval`; `prependRaw` and its family;
-`isRankedRaw` and the verdict layer; `rankedSem_eq`, `foldSem_eq` and every
-`…_eq_eval`.
+Not built: `cases`, `casesOf`, `recBounded_casesRaw`, `casesSem_eq_eval`;
+`prependRaw` with its admissibility, `ofFn_bits`; `isRankedRaw`,
+`acceptTestRaw` and `acceptTest`; `rankedSem_eq`, `foldSem_eq` and every
+`…_eq_eval`. What was built of the `prepend` family is `prependOf` and
+`constAtOf` at a literal arity with their word lemmas, not the raw tree or its
+admissibility at a symbolic one; and what was built of the verdict is the
+`R.width + 3` window's separating property at `narrowAlphabet`, not any
+expression computing it.
 
 ## Risks and open questions
 
@@ -825,7 +874,7 @@ Not built: `cases`, `casesOf`, `casesSem_eq_eval`; `prependRaw` and its family;
 | --- | --- | --- |
 | `decodeState`, `nextPrefix` and `dropCount` are built only at `narrowAlphabet` | Segment 2's step may not generalize to symbolic `R` | Prototype at symbolic `R` before segment 2's plan, as segment 1 was; the `List.ofFn` route removes the `Fin` bound-threading that made it hard |
 | Elaboration and kernel cost of the sweeps | A mirror that does not build inside the project's budget | Sweep to a measured length rather than a conventional one; `maxArity` and `dispatchWidth` are known to reduce to numerals |
-| `stateWord` is injective only under `length_buf_scanFinal` | A step lemma false off the reachable states | The invariant is a named lemma consumed by `length_bufBits` and `length_stateWord`, and a mirror pins a state violating it |
+| `stateWord` is injective only under `length_buf_scanFinal_lt` | A step lemma false off the reachable states | The invariant is a named lemma consumed by `length_bufBits_of_lt` and `length_stateWord_of_lt`, and a mirror pins a state violating it |
 | Whether the two statements are published | A missing citation, or a wrongly claimed novelty | Search with `theoremsearch` and `arxiv-mcp-server` for both before either module docstring is written; record any key found in `docs/references.bib` |
 | The `oneAtOf`, `falseAtOf` and `predPred` deferrals | Duplications carried for no reason | Measured, not argued, by whichever branch takes them up: substitute and see whether `combSem_nil` and `isTreeSem_eq_eval` still close by `rfl` |
 
