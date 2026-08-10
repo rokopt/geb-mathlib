@@ -7,7 +7,7 @@
 - [The combinator](#the-combinator)
 - [Main statements](#main-statements)
 - [Rebuilding the recognizer](#rebuilding-the-recognizer)
-- [The roadmap entry](#the-roadmap-entry)
+- [The roadmap and the handoff](#the-roadmap-and-the-handoff)
 - [Verification](#verification)
 - [Risks](#risks)
 - [Out of scope](#out-of-scope)
@@ -28,9 +28,9 @@ the layout of `RankedAlphabet.Scan` as a bitstring.
 
 No Lean file this branch touches is a Lean file B1 touches: B1's source
 commits are confined to `Geb/Mathlib/Data/Tree/Ranked/`,
-`GebTests/Mathlib/Data/Tree/Ranked/` and the two `Tree.lean` index
-modules above them. The two branches do share `TODO.md` and
-`docs/index.md`, and the roadmap entry this branch rewrites is text B1
+`GebTests/Mathlib/Data/Tree/Ranked/` and the index modules above them in
+both trees. The two branches do share `TODO.md`, `docs/index.md` and the
+handoff plan, and the roadmap entry this branch rewrites is text B1
 wrote, so they are ordered rather than interchangeable. The branch is
 stacked on B1 accordingly.
 
@@ -88,28 +88,32 @@ children's own (`SlicePFunctor.wValid_mk` constrains
   `wIndexRoot_scanRaw` and `wValid_scanRaw`, the latter taking six
   hypotheses: each of base, `step₀` and `step₁` admissible and at its
   prescribed arity, zero for the base and one for the steps.
+- `scanW (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) : sig.W` —
+  the node over expressions, its admissibility from `wValid_scanRaw` at
+  the components' own; `arity_scanW` states that its arity is one, by
+  `rfl`. It is named rather than written inline at each of its four use
+  sites, its term carrying ten arguments; and it is not named `…Of`,
+  which in this development means the expression at its declared arity,
+  a `COf n`, as `combOf` and `isTreeOf` do. The suffix `W` names the
+  slice W-type it lands in, the step between `…Raw` and the member
+  of `C`.
 
-The node over expressions is written inline as
-`⟨scanRaw base.1.1.1 step₀.1.1.1 step₁.1.1.1 growth, wValid_scanRaw …⟩`
-wherever it is needed, as `Cobham.combSem` writes `⟨combRaw, by decide⟩`
-inline; `arity_scanRaw` states that its arity is one, by `rfl`. Naming
-that intermediate would need a suffix the development does not have:
-`…Of` means the expression at its declared arity, a `COf n`, as `combOf`
-and `isTreeOf` do, and the established shape is `…Raw`, then the member
-of `C`, then `…Of`.
+The values a base and a step contribute are bitstrings rather than
+functions of an environment, and are named `…Word` accordingly. They are
+not `…Sem`, which in this development means a `Sem n`, as
+`Cobham.predSem`, `condSem`, `combSem`, `eqOneSem` and `isTreeSem` all
+are; nor `…Value`, which in `Cobham` already means the one-node,
+non-hereditary form of a like-named notion, as `evalValue` and
+`RecBoundedValue` do — and `evalValue` returns a `Sem`, so that suffix
+would carry the opposite of the distinction being drawn:
 
-Two meanings are values rather than functions of an environment, and are
-named `…Value` accordingly; `…Sem` in this development means a `Sem n`,
-as `Cobham.predSem`, `condSem`, `combSem`, `eqOneSem` and `isTreeSem`
-all are:
-
-- `baseValue (base : COf 0) : List Bool` —
+- `baseWord (base : COf 0) : List Bool` —
   `transport ((fst_eval base.1.1).trans base.2) (eval base.1.1).2`
   at `Fin.elim0`.
-- `stepValue (step : COf 1) (r : List Bool) : List Bool` — the same at
+- `stepWord (step : COf 1) (r : List Bool) : List Bool` — the same at
   `![r]`.
-- `scanStepValue (step₀ step₁ : COf 1) (b : Bool) (r : List Bool)` — the
-  bit selects which step reads the state.
+- `scanStepWord (step₀ step₁ : COf 1) (b : Bool) (r : List Bool) :
+  List Bool` — the bit selects which step reads the state.
 - `boundSem (growth : ℕ) : Sem 1` — the bound child's meaning.
 - `scanSem (base : COf 0) (step₀ step₁ : COf 1) (growth : ℕ) : Sem 1`.
 
@@ -135,7 +139,7 @@ definition it concerns, with its entry in that module's
 `## Main statements`. It is named for its left-hand side, as core's
 `cast_cast` is.
 
-- `scan base step₀ step₁ growth (hbound) : C` — the expression, its
+- `scan base step₀ step₁ growth hbound : C` — the expression, its
   `RecBounded` discharged from `hbound`, `boundSem_eq`, and the
   components' own, through `recBounded_boundRaw` and
   `recBounded_liftRaw`.
@@ -152,11 +156,12 @@ before the expression carrying its bound exists — which is also why
 being what the caller must bound.
 
 The bound is an argument to `scan` rather than a field of a structure
-because no consumer needs a scanner as a value: the four components are
-supplied at one call site each, and a structure would add a type whose
-only use is to be destructured immediately. A field could state the
-bound — `scanSem` takes exactly the fields that would precede it — so
-what rules the structure out is cost, not expressibility.
+because no consumer holds a scanner as a value: each call site supplies
+the four components and consumes the resulting expression, so a
+structure would add a type whose only use is to be taken apart again. A
+field could state the bound — `scanSem` takes exactly the fields that
+would precede it — so what rules the structure out is cost, not
+whether it can be written.
 
 `growth` is a natural number rather than an expression of arity one with
 a semantic bound of its own. A constant covers `Cobham.comb` at one, a
@@ -172,12 +177,12 @@ bound term and characterize its meaning.
 
 - `scanSem_nil` — the scanner's value on the empty bitstring is the
   base's, by `rfl` in the composed-transport form.
-- `scanSem_cons` — one step: `scanSem … ![b :: w]` is `scanStepValue` at
+- `scanSem_cons` — one step: `scanSem … ![b :: w]` is `scanStepWord` at
   `b` and `scanSem … ![w]`. Proved by `change` to the step's own
   application in the composed-transport form, then `congrArg` over
   `(fun _ : Fin 1 ↦ r) = ![r]`, which is a `funext` and not a `rfl`.
 - `scanSem_eq` — `scanSem base step₀ step₁ growth ![w] =
-  w.foldr (scanStepValue step₀ step₁) (baseValue base)`, by `List.rec`
+  w.foldr (scanStepWord step₀ step₁) (baseWord base)`, by `List.rec`
   from the two above. It holds for every `growth`, `evalValue`'s
   `boundedRec` clause not consulting its bound child.
 - `scanSem_eq_eval` — the meaning read at the raw tree is the meaning
@@ -191,13 +196,15 @@ bound term and characterize its meaning.
   exposing the `comp` node's value. Stated at an arbitrary environment,
   which is the form the recursion bound reads it at; stated at `![u]` it
   does not match the goal `RecBoundedValue` presents.
-- `baseValue_eq_eval`, `stepValue_eq_eval` — each component's value is
+- `baseWord_eq_eval`, `stepWord_eq_eval` — each component's value is
   the one its expression of `C` carries, by `transport_transport`.
   Unlike `scanSem_eq_eval` these are not `rfl`, the component arities
   being opaque.
 
-`scan`'s bound obligation additionally opens by rewriting
-`Fin.tail x` to `Fin.tail ![x 0]`, as `Cobham.comb`'s does.
+`scan`'s bound obligation additionally rewrites `Fin.tail x` to
+`Fin.tail ![x 0]`, as `Cobham.comb`'s does; `comb` reaches that rewrite
+after a `change`, and `scan` before one, the bound child's meaning being
+a `Nat.rec` rather than a single `succ` node.
 
 ## Rebuilding the recognizer
 
@@ -255,31 +262,36 @@ corrected:
 each gain an import of the new module; `lakefile.toml`'s `globs` build
 every module regardless, so nothing fails if this is forgotten.
 
-## The roadmap entry
+## The roadmap and the handoff
 
-TODO.md § Extensions of the tree recognizers is rewritten. Left
-unedited it states that B2 delivers the ranked recognizer, and names a
-`Scanner` structure this branch deliberately does not build. The
-rewritten entry:
+Two transient documents in the working tree describe B2 as pending and
+describe it wrongly once this branch lands. Both are corrected here, per
+CONTRIBUTING.md § Concern shape, under which no active branch presents
+superseded decisions as current.
 
-- describes B2 as the combinator and the rebuilt recognizer, drops the
-  ranked recognizer from it, and drops its "depending on B1", which the
-  narrowing removes: what remains of B2 is confined to
-  `Geb/Mathlib/Computability/Cobham/`, which carries no
-  `RankedAlphabet` content;
-- adds the ranked recognizer as its own entry, depending on B2 and B1,
-  carrying the two constraints § Out of scope records;
+TODO.md § Extensions of the tree recognizers is rewritten. Left unedited
+it states that B2 delivers the ranked recognizer, and names a `Scanner`
+structure this branch deliberately does not build. The rewritten
+section:
+
+- records B2 as delivered, in the form B1 uses — "**B2 is done.**"
+  naming what `Geb/Mathlib/Computability/Cobham/Scan.lean` gives and
+  pointing at [docs/index.md](../../index.md) — rather than restating
+  it as pending work the same branch commits;
+- adds the ranked recognizer as B6, labelled so that it can be cited as
+  the others are, depending on B2 and B1, carrying the two constraints
+  § Out of scope records;
 - removes the section's opening count of branches rather than correcting
   it, and the "part of none of the five" later in the section, per
   CONTRIBUTING.md § Document only the persistent: this branch is itself
   the instance that falsifies such a count, and the members are named
   already;
-- removes the design paragraph this branch resolves — the length bound
-  stated over the fold, `growth = 0` needing its own clause, and the
-  `COf 1`-not-`COf 2` reading of `evalRec`'s step — these being realized
-  code rather than open questions, together with its claim that
-  `combFalseStep` and `combTrueStep` "both reference slot 1 only", which
-  the arity-one rewrite falsifies;
+- removes from the B2 text the two sentences this branch resolves — the
+  length bound stated over the fold with `growth = 0` needing its own
+  clause, and the `COf 1`-not-`COf 2` reading of `evalRec`'s step —
+  these being realized code rather than open questions, together with
+  the claim that `combFalseStep` and `combTrueStep` "both reference slot
+  1 only", which the arity-one rewrite falsifies;
 - removes the name `Scanner` from the B2 text and from the deferred
   Bellantoni-Cook port, which names the structure that is not built;
 - leaves the B3, B4 and B5 dependency lines against B2 in place. They
@@ -287,6 +299,16 @@ rewritten entry:
   and B5 are ordered after this branch because each rewrites or measures
   the module it rewrites. None of the three needs the ranked
   recognizer.
+
+[The handoff plan](../plans/2026-08-10-ranked-tree-b2-b5-handoff.md) is corrected
+in the same commits and for the same reason. It remains in the tree,
+being still needed for B3 to B5, and it is not this branch's to remove.
+Its § B2 states the object as a `Scanner` combinator carrying the ranked
+recognizer as an instance, prescribes an interface whose bound cannot
+name `stepSem`/`baseSem` as fields, and records `growth = 0` as needing
+its own clause; that section is replaced by a pointer to the delivered
+module. Its two "part of the five" counts go the way TODO.md's do, and
+the name `Scanner` goes from its deferral list.
 
 ## Verification
 
@@ -314,8 +336,9 @@ unchanged, and its passing is the evidence that the rewrite of
 
 `docs/index.md` gains the entry for `Scan.lean`, placed between the
 entries for `Cobham/Basic.lean` and `Cobham/Tree.lean` as its
-topological order requires, and the entry for `Tree.lean` gains the new
-import in its dependency line.
+topological order requires; the entry for `Tree.lean` gains the new
+import in its dependency line; and the entry for `Basic.lean` gains
+`transport_transport`, that module's interface growing by it.
 
 ## Risks
 
@@ -325,11 +348,13 @@ discharges admissibility of both steps rewritten to arity one, of the
 scan node assembled from them, and of the recognizer built over that
 node; `smashFreeBool` reduces to `true` over both the assembled node and
 the recognizer, which is `Cobham.isTree_smashFree`'s own obligation; and
-the assembled scan's meaning reduces by `rfl` at each of the six literal
-words the existing test mirror asserts, which is what lets that mirror
-stay unchanged. The steps carry `condRaw`, itself a `boundedRec` node
-over nested `concatCompRaw`, so this is not the two-node probe the first
-round of this spec relied on.
+every `rfl` the existing test mirror asserts reproduces over the
+rebuild, both the six on the scan's meaning and the four on the
+recognizer's, which reduce further, through `predRaw` and `eqOneRaw`'s
+`cond` over the scan's value. That is what lets the mirror stay
+unchanged. The steps carry `condRaw`, itself a `boundedRec` node over
+nested `concatCompRaw`, so the probe is at the size the rebuild
+assembles.
 
 What remains unsettled is confined to the rebuilt `Tree.lean`: the
 arity-one rewrite changes how a step's meaning reduces on a symbolic
