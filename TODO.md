@@ -586,8 +586,8 @@ destination.
 
 ### Extensions of the tree recognizers
 
-Five branches over `Geb/Mathlib/Data/Tree/`,
-`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/`. They answer the four
+Branches over `Geb/Mathlib/Data/Tree/`,
+`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/` answer the four
 investigations this entry previously recorded: labelled leaves and ranked
 alphabets are one construction and are B1; the generic iterator is B3; the
 sharper cost bound is B5. They subsume the labelled-tree items recorded under
@@ -606,15 +606,15 @@ with an empty payload, up to the state its failure is recorded in.
   `RankedAlphabet.Binary.termEquiv` exhibiting `BinTree` as the two-symbol
   instance with `spell_termEquiv` and `valid_iff`. See
   [docs/index.md](docs/index.md).
-- **B2**, depending on B1: `Geb/Mathlib/Computability/Cobham/Scan.lean` — the
-  `Scanner` combinator, the ranked recognizer as an instance, and the present
-  `isTree` re-expressed as the width-one instance. `Scanner`'s two step
-  functions are `COf 1` lifted by `comp` with `proj 2 1`, not `COf 2`:
-  `Cobham.evalRec`'s step takes the remaining suffix first and the recursive
-  value second, so a `COf 2` step cannot be a `List.foldr` step, and
-  `combFalseStep` and `combTrueStep` both reference slot 1 only. A length
-  bound stated over the fold needs the fold inlined or moved to a smart
-  constructor, and `growth = 0` needs its own clause.
+- **B2 is done.** `Geb/Mathlib/Computability/Cobham/Scan.lean` gives the
+  scan combinator `scanRaw`, its fold characterization `scanSem_eq`, and
+  the recognizer's scan in `Geb/Mathlib/Computability/Cobham/Tree.lean`
+  rebuilt on it. See [docs/index.md](docs/index.md).
+- **B6**, depending on B2 and B1: the generic ranked recognizer as a
+  scanner instance. The layout of `RankedAlphabet.Scan` as a bitstring is
+  undecided, and the step must dispatch on `2 ^ width` block values
+  against `RankedAlphabet.arOf`, so the dispatch is built by recursion on
+  `width` rather than written out.
 - **B3**, depending on B2: `Geb/Mathlib/Computability/Cobham/Fold.lean` — the
   catamorphism at a finite carrier, with a step whose configurable part
   carries no restriction of its own, both conditions being discharged from
@@ -636,13 +636,13 @@ with an empty payload, up to the state its failure is recorded in.
   the others and its difficulty is unbounded by anything done so far; B1 to B4
   stand without it.
 
-Deferred, and part of none of the five: the Bellantoni-Cook port of
-`Scanner`, whose signature is over arities in normal and safe position and so
-is a branch rather than a transcription; the paramorphism whose step receives
-a subterm's spelling, which the head-locality of the state layout admits only
-at quadratic cost; a fold at an infinite carrier, which needs the `smash`
-generator; and the depth-first unary degree sequence encoding, whose condition
-for adoption is unbounded arity.
+Deferred: the Bellantoni-Cook port of the scan combinator, whose signature
+is over arities in normal and safe position and so is a branch rather than
+a transcription; the paramorphism whose step receives a subterm's
+spelling, which the head-locality of the state layout admits only at
+quadratic cost; a fold at an infinite carrier, which needs the `smash`
+generator; and the depth-first unary degree sequence encoding, whose
+condition for adoption is unbounded arity.
 
 `BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
 absent from `docs/references.bib`: neither its bibliographic detail nor the
