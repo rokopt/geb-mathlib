@@ -1102,10 +1102,25 @@ import-direction rules above are enforced by
   `Geb.Mathlib.Data.PFunctor.Slice.Decidable` and
   `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`. `sigFinitary` resolves
   through `FinEnum.unit`, `FinEnum.finFin` and `FinEnum.finSum` under
-  `open scoped FinEnum`. `Classical.choice`-free.
+  `open scoped FinEnum`. `transport_transport` gives transport along a
+  composite equality as the composition of two transports.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Computability/Cobham/Scan.lean` — the scan combinator: a
+  right-to-left fold over a bitstring whose state is a bitstring, as a
+  `boundedRec` node of `C`. `scanRaw` assembles the node from a base, two
+  steps of arity one lifted into `evalRec`'s step shape by `liftRaw`, and
+  the bound child `boundRaw` prepending `growth` bits; `wValid_scanRaw`
+  gives its admissibility from its components' own together with their
+  index equations. `scanSem` is the meaning read at the raw tree, before
+  any recursion bound exists, and `scanSem_eq` identifies it with
+  `List.foldr` of `scanStepWord` from `baseWord`. `scan` takes a length
+  bound on that meaning and produces the member of `C`, with
+  `scanSem_eq_eval` reading the meaning back through `C.eval`. Depends on
+  `Geb.Mathlib.Computability.Cobham.Basic`. `Classical.choice`-free.
 - `Geb/Mathlib/Computability/Cobham/Tree.lean` — a recognizer for the
-  preorder spellings of binary trees, as an expression of `C`. `comb` is a
-  `boundedRec` node carrying the stack depth and the underflow verdict in
+  preorder spellings of binary trees, as an expression of `C`. `comb` is
+  `Cobham.scan` at `combFalseStep` and `combTrueStep`, the leaf and node
+  steps of the fold, carrying the stack depth and the underflow verdict in
   one value: the depth in unary offset by one while no node bit has been
   read below depth two, and the absorbing `[false]` once one has; `eqOne`
   tests a bitstring for length one; `isTree` composes `eqOne` with the
@@ -1119,5 +1134,6 @@ import-direction rules above are enforced by
   spellings of trees. `isTree_smashFree` places the recognizer in the
   subalgebra `SmashFree` names; with [Strahm2003] Theorem 1(2), deciding
   `BinTree.Valid` is computable simultaneously in polynomial time and
-  linear space. Depends on `Geb.Mathlib.Computability.Cobham.Basic` and
+  linear space. Depends on `Geb.Mathlib.Computability.Cobham.Basic`,
+  `Geb.Mathlib.Computability.Cobham.Scan` and
   `Geb.Mathlib.Data.Tree.Preorder`. `Classical.choice`-free.
