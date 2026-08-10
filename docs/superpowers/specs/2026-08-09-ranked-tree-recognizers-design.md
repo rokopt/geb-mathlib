@@ -64,35 +64,70 @@ A ranked alphabet is a finitary polynomial functor whose shape type is
 the W-type of `BinTree.Direction`.
 
 ```lean
-structure Ranked where
+structure RankedAlphabet where
   card : ℕ
   width : ℕ
-  card_le : card ≤ 2 ^ width
-  ar : Fin card → ℕ
+  width_pos : 0 < width
+  card_le_two_pow_width : card ≤ 2 ^ width
+  arity : Fin card → ℕ
 
-@[expose] def Ranked.Term (R : Ranked) : Type :=
-  WType fun i : Fin R.card ↦ Fin (R.ar i)
+@[expose] def RankedAlphabet.Term (R : RankedAlphabet) : Type :=
+  WType fun i : Fin R.card ↦ Fin (R.arity i)
 ```
 
-`width` is the number of bits spelling one symbol and `card_le` admits
-alphabets whose size is not a power of two, at the price of a block that
-decodes to `card` or beyond spelling no symbol and being rejected. At
-`width = 1` and `card = 2` the condition is vacuous, which is why the
-present recognizer carries no such test.
+The declaration is named apart from the directory holding it, as
+`Data/Tree/Binary.lean` holds `BinTree`.
 
-The present encoding is `R = ⟨2, 1, _, ![0, 2]⟩`: code `0` is the symbol of
-arity zero, code `1` the symbol of arity two.
+`width` is the number of bits spelling one symbol and
+`card_le_two_pow_width` admits alphabets whose size is not a power of two,
+at the price of a block that decodes to `card` or beyond spelling no symbol
+and being rejected. At `width = 1` and `card = 2` the condition is vacuous,
+which is why the present recognizer carries no such test.
+
+`width_pos` is not decoration: at `width = 0` every block is empty, so
+`spell` sends the unique term of a one-symbol alphabet to the empty word
+while `Valid` rejects it, and the bijection below is false. It is also what
+makes one layer of the descent shorten its input.
+
+The present encoding is
+`⟨2, 1, Nat.one_pos, by decide, ![0, 2]⟩`: code `0` is the symbol of arity
+zero, code `1` the symbol of arity two.
+
+Each definition of this specification is novel in the sense
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Cite the literature when
+transcribing asks a brainstorming-phase spec to record, with two
+exceptions. The encoding `spell` transcribes prefix (Łukasiewicz)
+notation, which `Data/Tree/Preorder.lean` already names in prose as the
+idea of prefix notation and which the modules built here name in their
+`## References`. `Fold` transcribes the catamorphism, and the paramorphism
+it is contrasted with is [Meertens1992]'s. `RankedAlphabet`,
+`RankedAlphabet.Term`, `Scan`, `Valid` and `Scanner` are novel
+presentations of standard material rather than transcriptions of a
+particular source's definitions.
 
 ## The encoding
 
 ```lean
-@[expose] def spell (R : Ranked) : R.Term → List Bool :=
+@[expose] def spell (R : RankedAlphabet) : R.Term → List Bool :=
   WType.elim _ fun ⟨i, ch⟩ ↦ code R i ++ (List.ofFn ch).flatten
 ```
 
-At the present alphabet this is `BinTree.print` itself: `code node ++
-print l ++ print r` is `true :: (print l ++ print r)`, and `code leaf` is
-`[false]`.
+At the present alphabet this is `BinTree.print` transported along the
+equivalence `termEquiv` that B1 constructs: `code node ++ print l ++
+print r` is `true :: (print l ++ print r)`, and `code leaf` is `[false]`,
+so the two agree on corresponding arguments rather than being the same
+function of the same type.
+
+The alphabet is not built on the repository's `PFunctor` layer, though
+`RankedAlphabet` names one and `Term` is its W-type. `PFunctor` carries a
+shape `Type` and a direction family into `Type`, where the spelling needs
+the shape to be `Fin card` with a decidable code and the directions to be
+`Fin` of an arity; going through `PFunctor` would carry those as side
+conditions rather than as the data, and the descent and the scan both read
+them as data. `Cobham.sig` uses `SlicePFunctor` for a signature whose
+indices matter; here they do not. The cost of the choice is that a later
+branch wanting the initial-algebra apparatus of
+`Data/PFunctor/Univariate/W.lean` at `Term` must supply the coercion.
 
 The processing order of a `boundedRec` is the reverse of the list order —
 `evalRec` peels the head last — so a symbol's block is read before the
@@ -103,14 +138,24 @@ Validity is no longer the conjunction `ok w = true ∧ depth w = 1` that
 `BinTree.Valid` is, because the fold now carries an incomplete block:
 
 ```lean
-structure Scan where
+structure RankedAlphabet.Scan where
   buf : List Bool
   depth : ℕ
   live : Bool
 
-@[expose] def Valid (R : Ranked) (w : List Bool) : Prop :=
-  w.foldr (scanStep R) ⟨[], 0, true⟩ = ⟨[], 1, true⟩
+@[expose] def RankedAlphabet.validBool (R : RankedAlphabet) (w : List Bool) : Bool :=
+  (R.scanFinal w).live && (R.scanFinal w).buf.isEmpty && (R.scanFinal w).depth == 1
+
+@[expose] def RankedAlphabet.Valid (R : RankedAlphabet) (w : List Bool) : Prop :=
+  R.validBool w = true
 ```
+
+`Valid` is a `Bool` equation rather than an equation of `Scan` because a
+derived `DecidableEq Scan` does not reduce at a symbolic fold, leaving
+`decide` stuck on the instance; the `Bool` form is also the idiom
+`BinTree.ok` already uses. The obstruction is a `Decidable` instance that
+does not itself reduce, not the use of a decidable test: `decodeBlock`
+below branches on one and reduces.
 
 At `width = 1` the buffer is empty between steps, and `Valid` splits back
 into the two conditions, so `Preorder.lean`'s statements are recovered as
@@ -122,10 +167,11 @@ t = w` is proved through a fuel-bounded recursive descent, as
 
 ```lean
 structure Scanner where
-  step : COf 2
+  step₀ step₁ : COf 2
   base : COf 0
   growth : ℕ
-  step_smashFree : SmashFree step.1
+  step₀_smashFree : SmashFree step₀.1
+  step₁_smashFree : SmashFree step₁.1
   base_smashFree : SmashFree base.1
   length_le : ∀ w, (w.foldr stepSem (baseSem ![])).length ≤
     growth * w.length + (baseSem ![]).length
@@ -133,9 +179,18 @@ structure Scanner where
 def Scanner.run (S : Scanner) : COf 1
 
 theorem Scanner.run_sem (S : Scanner) (w : List Bool) :
-    runSem S ![w] = w.foldr S.stepSem S.baseSem
+    runSem S ![w] = w.foldr S.stepSem (S.baseSem ![])
 theorem Scanner.run_smashFree (S : Scanner) : SmashFree S.run.1
 ```
+
+The step is a pair and not a single expression because `Cobham.evalRec` is
+`List.rec g (fun b v ih x ↦ (if b then h₁ else h₀) …)`: the bit read is
+consumed by the choice between the two step children, and is not among
+their arguments. A single `step : COf 2` could not see it, and
+`Scanner.stepSem : Bool → List Bool → List Bool`, which `run_sem`'s
+`List.foldr` over `List Bool` demands, is assembled from the pair. The
+present recognizer already has this shape, in `combFalseStep` and
+`combTrueStep`.
 
 `Scanner.run` is a single `boundedRec` node whose bound child is the
 `growth`-fold `concat` of the recursion variable with itself, of length
@@ -152,9 +207,11 @@ The instances are the present recognizer, the labelled recognizer, the
 ranked recognizer and the fold. Acceptance is a constant-size `cond` test
 composed onto `run`; `isTree` is `accept ∘ run`.
 
-`Scanner` also meets the condition recorded in `TODO.md` § The
-Bellantoni-Cook tree recognizer for extracting the unfolding and
-environment lemmas into their own module, that a second function need them.
+`TODO.md` § The Bellantoni-Cook tree recognizer records a condition for
+extracting that module's unfolding and environment lemmas, that a second
+Bellantoni-Cook function need them. `Scanner` does not meet it: it is a
+Cobham-algebra construction, and the Bellantoni-Cook port is deferred. The
+condition is met when that port lands.
 
 ## The state layout
 
@@ -227,7 +284,12 @@ parameters, a code width and a payload width:
 
 At width one a block completes as it is read, so the buffer is empty between
 steps and the state is `List.replicate (d + 1) true`, which is what `comb`
-computes. Factor 3 is therefore met without a further argument.
+computes on the live branch. The identification is up to the encoding of the
+failed state: `combSem_eq` returns `[false]` once `BinTree.ok` has failed,
+where `scanStep` clears the buffer, freezes the count and clears the
+liveness flag, so on `[true, false]` the two disagree on the count while
+agreeing on the verdict. Factor 3 is met modulo that encoding, which the
+failed-state row of the layout supplies.
 
 `Scanner`'s interface takes the fixed-width header's virtue without its
 cost: it is stated over an encoding and a decoding of an abstract state
@@ -240,10 +302,11 @@ That obligation is what the layout determines.
 [BenoitDemaineMunroRamanRamanRao2005] § 3 writes "the unary degree sequence
 of each node but in a depth-first traversal of the tree", the depth-first
 unary degree sequence, and its Theorem 3.1 gives a balanced parenthesis
-string of length `2n` for an ordinal tree on `n` nodes, the
-information-theoretic bound; its cardinal-tree bound is
-`(⌈lg k⌉ + 2) n + o(n)` bits. That representation is the Łukasiewicz word
-with each arity spelled in unary.
+string of length `2n` for an ordinal tree on `n` nodes; its Theorem 3.2
+gives `2n + o(n)` bits, optimal to within lower-order terms, the
+information-theoretic bound being `lg Cₙ = 2n - Θ(lg n)`. Its cardinal-tree
+bound is `(⌈lg k⌉ + 2) n + o(n)` bits. That representation is the
+Łukasiewicz word with each arity spelled in unary.
 
 Spelling the arity in unary collapses the buffer to a pending-arity count,
 so the unary-prefix layout serves the whole ranked case. It is not adopted
@@ -257,8 +320,8 @@ which it is optimal.
 ## The fold
 
 ```lean
-structure Fold (R : Ranked) (p : ℕ) where
-  step : (i : Fin R.card) → (Fin (R.ar i) → Fin (2 ^ p)) → Fin (2 ^ p)
+structure Fold (R : RankedAlphabet) (p : ℕ) where
+  step : (i : Fin R.card) → (Fin (R.arity i) → Fin (2 ^ p)) → Fin (2 ^ p)
 
 def Fold.toScanner (F : Fold R p) : Scanner
 
@@ -278,9 +341,12 @@ infinite carrier, where a value bounded by a polynomial requires the
 
 A paramorphism whose additional argument is a finite function of the
 subterm is a fold into a product and is covered. A paramorphism whose step
-receives a subterm's spelling is not: the spellings are of unbounded
-length, so locating a cell boundary costs a scan of the stack at each step.
-That is a property of the scheme rather than of a cost model.
+receives a subterm's spelling is not, and the obstruction is one of state
+layout rather than of cost: a cell holding a spelling is of unbounded
+width, so its boundary does not sit at a constant distance from the head,
+and § The state layout's governing constraint fails. Locating that boundary
+is therefore a scan rather than a constant number of head operations, in
+any cost model that charges for one.
 
 [DalLagoMartiniZorzi2010] is the reference for what unbounded branching
 recursion costs. Its Theorem 1 covers tiered recursion over an arbitrary
@@ -311,13 +377,28 @@ the input is consumed right to left, and each input symbol costs a constant
 number of steps.
 
 ```lean
-theorem decideValid_computableInTimeAndSpace (R : Ranked) :
-    ComputableInTimeAndSpace (decideValid R) (fun n ↦ a * n + b) (fun n ↦ n + b)
+theorem decideValid_computableInTimeAndSpace (R : RankedAlphabet)
+    (toMachineSymbol : Bool ↪ Fin sym) :
+    ComputableInTimeAndSpace (R.decideValid) toMachineSymbol
+      (fun n ↦ R.width * n + R.width) (fun n ↦ n + R.width)
 ```
+
+The embedding is the load-bearing argument of the paragraph above: it is
+what lets one work-tape symbol hold a whole stack cell, and
+`ComputesFunInTimeAndSpace` carries it explicitly.
+
+Linear space is not a lower bound on the problem. The language is
+input-driven in the sense of [Mehlhorn1980], which introduced input-driven
+pushdown automata, and [BraunmuhlVerbeek1983] recognizes every such
+language in logarithmic space; secondary sources report
+[BarringtonCorbett1989] placing the one-sided Dyck languages lower still,
+in DLOGTIME-uniform TC⁰. What the bound above states is therefore a
+property of the one-pass counter method, sharpening the class membership
+`isTree_smashFree` gives rather than the problem's complexity.
 
 Two constraints fix where this lives. `Geb/Mathlib/` may not import
 `Cslib.*` and `Geb/Cslib/` may not import `Geb.Mathlib.*`, so a statement
-naming both `Cslib` and `Ranked.Valid` is confined to `Geb/Internal/`. And
+naming both `Cslib` and `RankedAlphabet.Valid` is confined to `Geb/Internal/`. And
 `DecidableInTimeAndSpace` is stated through `indicator`, which is
 `noncomputable` and depends on `Classical.choice`; the statement is made
 over `ComputableInTimeAndSpace` applied to a computable decision function
@@ -332,10 +413,10 @@ named Route A and deferred.
 
 | Branch | Content | Depends on |
 | --- | --- | --- |
-| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — the alphabet, the term algebra, `spell`, the descent, `Valid`, the bijection, the equivalence with `BinTree`, and the width-one specializations | — |
+| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — the alphabet, the term algebra, `spell`, the descent, `Valid`, the bijection, the equivalence with `BinTree`, the two width-one specializations `spell_termEquiv` and `valid_iff`, and the `docs/references.bib` entries this specification cites | — |
 | B2 | `Geb/Mathlib/Computability/Cobham/Scan.lean` — `Scanner`, the ranked recognizer, and `isTree` re-expressed as the width-one instance | B1 |
 | B3 | `Geb/Mathlib/Computability/Cobham/Fold.lean` — the fold and `Fold.run_spell` | B2 |
-| B4 | `BinTree` absorbed into `Ranked.Term`, and the duplication removed | B1, B2 |
+| B4 | `BinTree` absorbed into `RankedAlphabet.Term`, and the duplication removed | B1, B2 |
 | B5 | `Geb/Internal/` — the time and space bound against Cslib's `MultiTapeTM` | B2 |
 
 B2 carries `Scanner` together with two of its instances: a combinator
@@ -390,11 +471,12 @@ text, the other two from their published venues.
 
 ## References
 
-- [BarringtonCorbett1989] — one-sided Dyck languages, structured
-  context-free languages and bracketed context-free languages in
-  DLOGTIME-uniform TC⁰, which places the recognized language far below
-  linear space and records that linear space is a property of the one-pass
-  method rather than of the problem.
+- [BarringtonCorbett1989] — reported by secondary sources to place the
+  one-sided Dyck languages, structured context-free languages and bracketed
+  context-free languages in DLOGTIME-uniform TC⁰. Both the bibliographic
+  detail and this content claim are unverified against the article; § The
+  cost bound attributes the claim to those sources rather than asserting
+  it.
 - [BenoitDemaineMunroRamanRamanRao2005] — the depth-first unary degree
   sequence, the alternative encoding.
 - [BraunmuhlVerbeek1983] — input-driven languages recognized in logarithmic
