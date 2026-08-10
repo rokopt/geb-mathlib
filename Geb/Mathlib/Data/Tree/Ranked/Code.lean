@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.Tree.Ranked.Basic
-public import Mathlib.Data.Nat.Bitwise
+public import Mathlib.Algebra.GroupWithZero.Nat
 
 /-!
 # Symbol codes
