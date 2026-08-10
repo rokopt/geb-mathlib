@@ -869,8 +869,11 @@ Segment 1 is compiled in full. The prototype now also carries `predIterRaw`,
 `constAtOf`, `diagRaw`, `diag`, `diagOf` with their arity, admissibility and
 recursion-bound lemmas; `recBounded_shiftW`, `recBounded_casesW`, `cases`,
 `casesOf`, `casesSem_eq_eval`; and `bits_ofFn`, `bits_succ_tail`, `ofFn_bits`
-and the six word characterisations. `lake lint` passes over all of it, and the
-test mirror's assertions were compiled against it.
+and the six word characterisations. Each measures `[propext, Quot.sound]`, taken
+declaration by declaration: `lake lint` lints the `Geb` umbrella's import
+closure and `Geb/Internal.lean` does not import the prototype, so the linter
+never reached it, and `scripts/tests/test-lint-driver.sh` reports it as
+escaping. The test mirror's assertions were compiled against it.
 
 `ofFn_bits` proved through `List.ext_getElem` and `omega` measured
 `[propext, Classical.choice, Quot.sound]`; the structural induction over the

@@ -42,11 +42,17 @@ reduce under case analysis.
 
 **Tech stack:** Lean 4 (toolchain pinned by `lean-toolchain`), mathlib, `lake`.
 
-Every code block in Tasks 2 to 9 is transcribed from
-`Geb/Internal/CasesSpike.lean`, which compiled and passed `lake lint` before
-Task 1 removes it. Copy those blocks; do not retype them from memory. Task 10's
-mirror is not from the prototype — it is written here, and its assertions are
-the ones to watch.
+Every code block in Tasks 4 to 9 is transcribed from
+`Geb/Internal/CasesSpike.lean`, which compiled before Task 1 removes it, every
+declaration in it measuring `[propext, Quot.sound]` by direct measurement.
+`lake lint` does not reach it: it lints the `Geb` umbrella's import closure,
+and `Geb/Internal.lean` does not import the prototype. Copy those blocks; do
+not retype them from memory. Task 10's mirror was compiled against the
+prototype too, under the prototype's own names,
+so its assertions are known to close. Tasks 2 and 3 are the exception: Task 2's
+text is cut from `Cobham/Tree.lean` and Task 3's restatements were established
+against a throwaway module since deleted, so they are the two whose builds are
+worth watching.
 
 ## Global constraints
 
@@ -101,9 +107,13 @@ the ones to watch.
 ### Task 1: Remove the prototype
 
 `Geb/Internal/CasesSpike.lean` declares `Cobham.semAt`, `Cobham.predIterRaw`
-and twenty more of the names the tasks below add, in the same namespace, and it
-imports `Cobham/Basic.lean`. Every build from Task 3 onward fails with
-`Cobham.semAt has already been declared` while it is present, so it goes first.
+and the rest of the names the tasks below add, in the same namespace, and it
+imports `Cobham/Basic.lean`, `Cobham/Scan.lean` and `Cobham/Tree.lean`. Every
+build from Task 3 onward fails with `Cobham.semAt has already been declared`
+while it is present, so it goes first. It also fails a gate on its own account:
+`scripts/tests/test-lint-driver.sh`, which `scripts/pre-push.sh` runs, reports
+`Geb.Internal.CasesSpike` as unreachable from the `Geb` umbrella and so
+escaping the linter.
 
 The code blocks below were transcribed from it while it compiled and passed
 `lake lint`; from Task 1 onward they, and not it, are the source.
@@ -131,10 +141,9 @@ Expected: success.
 - [ ] **Step 3: Record that there is nothing to commit**
 
 The prototype is an uncommitted working-tree artifact, as the scan
-combinator's was. Before this task `jj status` shows
-`A Geb/Internal/CasesSpike.lean` and nothing else; after it the working copy is
-clean, so removing the prototype produces no commit. Confirm with `jj status`
-and move on without committing.
+combinator's was: `jj status` shows it as added rather than modified, so
+removing it leaves nothing to record. Confirm with `jj status` that the working
+copy is otherwise clean, and move on without committing.
 
 ---
 
@@ -201,9 +210,10 @@ Expected: success. `Tree.lean`'s `oneAtRaw` and `falseAtRaw` are defined over
 - [ ] **Step 5: Check the axiom gate and the moved tree's `decide`**
 
 Run: `lake lint`
-Expected: `-- Linting passed for Geb.` This is what confirms
-`isTree_smashFree`, which is `by decide` and folds over `zeroAtRaw`, still
-closes.
+Expected: `-- Linting passed for Geb.` Step 4 is what confirms that
+`isTree_smashFree`, which is `by decide` and folds over the relocated
+`zeroAtRaw`, still closes; this step confirms the permitted axiom set is
+unchanged.
 
 - [ ] **Step 6: Commit**
 
@@ -281,20 +291,25 @@ These two spell the `he := rfl` case, `Eq.trans h rfl` being definitionally
 
 - [ ] **Step 3a: Record the restatement in both module docstrings**
 
-Add to `Cobham/Scan.lean`'s `## Implementation notes` and to
-`Cobham/Tree.lean`'s: that the module's meanings are read through
-`Cobham.semAt`, which names the composite of `fst_eval` with the arity
-equation once rather than at each site.
+At the end of `Cobham/Scan.lean`'s `## Implementation notes`, and again at the
+end of `Cobham/Tree.lean`'s, add:
+
+```text
+The meanings this module reads at a raw tree are taken through `Cobham.semAt`,
+which names the composite of `fst_eval` with the tree's arity equation once
+rather than spelling it at each site.
+```
 
 - [ ] **Step 4: Build**
 
 Run: `lake build`
 Expected: success. The proofs that read through the six definitions must still
 close unchanged — `scanSem_nil`, `scanSem_eq_eval`, `scanSem_cons`,
-`baseWord_eq_eval`, `stepWord_eq_eval`, `combSem_nil`, `combSem_cons_false`,
-`combSem_cons_true`, `eqOneSem_env`, `eqOneSem_eq`, `isTreeSem_apply`,
-`isTreeSem_eq_eval`. If any fails, stop and
-report; do not weaken a `rfl` to a tactic proof.
+`baseWord_eq_eval`, `stepWord_eq_eval`, `boundSem_eq`, `combSem_def`,
+`combSem_nil`, `combSem_cons_false`, `combSem_cons_true`, `combSem_eq`,
+`length_combSem_le`, `eqOneSem_env`, `eqOneSem_eq`, `isTreeSem_apply`,
+`isTreeSem_eq_ite`, `isTreeSem_eq_eval` and `isTree_smashFree`. If any fails,
+stop and report; do not weaken a `rfl` to a tactic proof.
 
 - [ ] **Step 5: Test and lint**
 
@@ -383,18 +398,18 @@ theorem recBounded_predIterRaw (k : ℕ) :
 
 - [ ] **Step 2: Add the module-docstring entries**
 
-To `## Main definitions`:
+At the end of `## Main definitions`:
 
 ```text
 * `Cobham.predIter`, `Cobham.predIterOf` — the iterated predecessor.
 ```
 
-To `## Main statements`:
+At the end of `## Main statements`:
 
 ```text
 * `Cobham.wIndexRoot_predIterRaw`, `Cobham.wValid_predIterRaw`,
-  `Cobham.recBounded_predIterRaw` — its arity, admissibility and recursion
-  bound.
+  `Cobham.recBounded_predIterRaw` — the iterated predecessor's arity,
+  admissibility and recursion bound.
 ```
 
 - [ ] **Step 3: Build and lint**
@@ -419,7 +434,7 @@ jj commit Geb/Mathlib/Computability/Cobham/Basic.lean \
 
 **Interfaces:**
 
-- Consumes: `Cobham.zeroAtOf` (Task 1), `Cobham.COf`, `Cobham.RecBounded`.
+- Consumes: `Cobham.zeroAtOf` (Task 2), `Cobham.COf`, `Cobham.RecBounded`.
 - Produces:
   `Cobham.prependRaw (n : ℕ) (u : List Bool) (e : sig.toPFunctor.W) : sig.toPFunctor.W`,
   `Cobham.wIndexRoot_prependRaw`, `Cobham.wValid_prependRaw`,
@@ -500,7 +515,7 @@ theorem recBounded_prependRaw (n : ℕ) (e : sig.toPFunctor.W)
 
 - [ ] **Step 2: Add the module-docstring entries**
 
-To `## Main definitions`:
+At the end of `## Main definitions`:
 
 ```text
 * `Cobham.prepend`, `Cobham.prependOf` — a fixed word prepended to an
@@ -508,7 +523,7 @@ To `## Main definitions`:
 * `Cobham.constAt`, `Cobham.constAtOf` — the constant word at a given arity.
 ```
 
-To `## Main statements`:
+At the end of `## Main statements`:
 
 ```text
 * `Cobham.wIndexRoot_prependRaw`, `Cobham.wValid_prependRaw`,
@@ -589,14 +604,14 @@ theorem recBounded_diagRaw (e : sig.W) (he : arity e = 2)
 
 - [ ] **Step 2: Add the module-docstring entries**
 
-To `## Main definitions`:
+At the end of `## Main definitions`:
 
 ```text
 * `Cobham.diag`, `Cobham.diagOf` — a binary expression at its sole argument in
   both positions.
 ```
 
-To `## Main statements`:
+At the end of `## Main statements`:
 
 ```text
 * `Cobham.wIndexRoot_diagRaw`, `Cobham.wValid_diagRaw`,
@@ -675,7 +690,9 @@ own recursion bounds already.
 
 * `Cobham.bits_succ`, `Cobham.bits_succ_tail`, `Cobham.bits_ofFn`,
   `Cobham.ofFn_bits` — peeling, dropping, and the round trip against
-  `List.ofFn`.
+  `List.ofFn`. The round trip is consumed by the branch families of the
+  generic ranked recognizer and of the fold, which read a bit family as a
+  `List Bool`.
 * `Cobham.wValid_casesRaw`, `Cobham.recBounded_casesW` — admissibility and the
   recursion bound, from the branches' own.
 * `Cobham.semAt_shiftW`, `Cobham.casesSem_eq`, `Cobham.casesSem_eq_eval` — the
@@ -864,7 +881,7 @@ jj commit Geb/Mathlib/Computability/Cobham/Cases.lean \
 
 - Consumes: `Cobham.shiftRaw`, `Cobham.wValid_shiftRaw`,
   `Cobham.wIndexRoot_shiftRaw`, `Cobham.semAt_shiftW`, `Cobham.bits`,
-  `Cobham.bits_succ` (Task 6); `Cobham.liftRaw`, `Cobham.wValid_liftRaw`,
+  `Cobham.bits_succ` (Task 7); `Cobham.liftRaw`, `Cobham.wValid_liftRaw`,
   `Cobham.wIndexRoot_liftRaw`, `Cobham.stepWord` (Scan); `Cobham.condRaw`,
   `Cobham.cond` (Basic).
 - Produces: `Cobham.casesRaw`, `Cobham.wIndexRoot_casesRaw`,
@@ -959,8 +976,7 @@ theorem casesSem_eq : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1)
     (fun br sel x ↦ by
       have hb : bits 0 sel = Fin.elim0 := funext fun i ↦ i.elim0
       rw [hb]
-      change transport ((fst_eval (br Fin.elim0).1.1).trans (br Fin.elim0).2)
-        (eval (br Fin.elim0).1.1).2 (fun _ ↦ x) = _
+      change semAt 1 (br Fin.elim0).1.1 (br Fin.elim0).2 (fun _ ↦ x) = _
       exact congrArg _ (funext fun i ↦ match i with | ⟨0, _⟩ => rfl))
     (fun p ih br sel x ↦ by
       rw [bits_succ]
@@ -1159,8 +1175,14 @@ public import Geb.Mathlib.Computability.Cobham.Cases
 # Definition by cases over Cobham's class, exercised
 
 Fixtures for `Geb/Mathlib/Computability/Cobham/Cases.lean`: a branch family
-distinct at every index, the case tree over it, and the combinators the
-branches are built from.
+distinct at every index, and the combinators the branches are built from.
+`combinators_apply` names `casesOf`, which is the constant `lake shake` infers
+the import from.
+
+## Main definitions
+
+* `sampleBranches`, `sampleBranchesOneBit` — branch families over two bits and
+  over one.
 
 ## Main statements
 
@@ -1193,12 +1215,8 @@ def sampleBranches : (Fin 2 → Bool) → COf 1 := fun v ↦
     if v 1 then [false] else [])
 
 /-- A one-bit branch family, for the diagonal. -/
-def sampleBranches1 : (Fin 1 → Bool) → COf 1 := fun v ↦
+def sampleBranchesOneBit : (Fin 1 → Bool) → COf 1 := fun v ↦
   constAtOf 1 (if v 0 then [true] else [])
-
-/-- The case tree over `sampleBranches`. It is the module's only reference to
-`casesOf`, and so the constant `lake shake` infers the import from. -/
-def sampleCases : COf 2 := casesOf 2 sampleBranches
 
 /-- Each of the four branches is selected by its own scrutinee. -/
 theorem sampleCases_dispatch :
@@ -1227,7 +1245,7 @@ theorem combinators_apply :
         [false, true, false] ∧
       stepWord (constAtOf 1 [true]) [false, false] = [true] ∧
       baseWord (constAtOf 0 [true, false]) = [true, false] ∧
-      stepWord (diagOf (casesOf 1 sampleBranches1)) [true] = [true] := by
+      stepWord (diagOf (casesOf 1 sampleBranchesOneBit)) [true] = [true] := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [stepWord_predIterOf]
     rfl
@@ -1292,34 +1310,75 @@ import GebTests.Mathlib.Computability.Cobham.Cases
 
 - [ ] **Step 2: Add the `docs/index.md` entries**
 
-Add an entry for `Geb/Mathlib/Computability/Cobham/Cases.lean` in the shape the
-entries for `Cobham/Scan.lean` and `Cobham/Tree.lean` use, naming what the
-module provides and what depends on it. Revise the existing entry for
-`Cobham/Basic.lean` to record `semAt`, the `zeroAt` family arriving from
-`Cobham/Tree.lean`, and the `predIter`, `prepend`, `constAt` and `diag`
-families; revise the entry for `Cobham/Tree.lean` to record the family
-leaving.
+Insert immediately after the `Geb/Mathlib/Computability/Cobham/Tree.lean`
+entry, which it is a sibling of, both depending on `Cobham/Basic.lean` and
+`Cobham/Scan.lean`:
+
+```text
+- `Geb/Mathlib/Computability/Cobham/Cases.lean` — definition by cases: a
+  combinator selecting among `2 ^ p` expressions of arity one by the low `p`
+  bits of a scrutinee, and applying the selected one to a second argument.
+  `casesRaw` is built by recursion on the number of bits dispatched on, each
+  level a `cond` node whose scrutinee is argument zero and whose branches
+  shift that argument into the recursive subtree; `wValid_casesRaw` gives
+  admissibility from the branches' own, and `recBounded_casesW` the recursion
+  bound, so the combinator imposes no condition on what it selects among.
+  `casesSem_eq` identifies the meaning with the branch the scrutinee selects.
+  Also the words the combinators of `Cobham/Basic.lean` contribute:
+  `stepWord_predIterOf`, `stepWord_prependOf`, `baseWord_constAtOf`,
+  `stepWord_constAtOf` and `stepWord_diagOf`. Depends on
+  `Geb.Mathlib.Computability.Cobham.Basic` and
+  `Geb.Mathlib.Computability.Cobham.Scan`.
+```
+
+Then revise the existing `Cobham/Basic.lean` entry to record `semAt`, the
+`zeroAt` family arriving from `Cobham/Tree.lean`, and the `predIter`,
+`prepend`, `constAt` and `diag` families; and the `Cobham/Tree.lean` entry to
+record the `zeroAt` family leaving.
 
 - [ ] **Step 3: Revise `TODO.md`**
 
-In § Extensions of the tree recognizers, record that the case combinator has
-landed, in the shape the B1 and B2 bullets use, and add to the deferrals that
-`Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate `constAtOf` and that
-its `predPred` duplicates `predIter 2`, each left in place because substituting
-them changes the definitional unfolding that `combSem_nil` and
-`isTreeSem_eq_eval` read through, which is unmeasured.
+In § Extensions of the tree recognizers, insert immediately before the `B6`
+bullet. The case combinator carries no letter of its own, being the shared
+machinery B6 and B3 are built from rather than a roadmap item:
+
+```text
+- **The case combinator is done.**
+  `Geb/Mathlib/Computability/Cobham/Cases.lean` gives definition by cases over
+  a fixed number of scrutinee bits, and `Cobham/Basic.lean` the constant-word,
+  iterated-predecessor and diagonal combinators its branches are built from.
+  B6 and B3 both consume them. See docs/index.md.
+```
+
+Make that last reference a link, `docs/index.md` in both halves, as the B1 and
+B2 bullets beside it do; it is written bare here only so that
+`scripts/check-md-links.sh`, which does not skip fenced blocks, resolves it
+against `TODO.md`'s location rather than this file's.
+
+Then append to the paragraph beginning `Deferred:`:
+
+```text
+Also deferred: `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate
+`constAtOf`, and its `predPred` duplicates `predIter 2`. Each is left in place
+because substituting the general form changes the definitional unfolding that
+`combSem_nil` and `isTreeSem_eq_eval` read through, and whether those proofs
+survive the substitution is unmeasured.
+```
 
 - [ ] **Step 4: Check the Markdown gates**
 
 Run:
 
 ```bash
-doctoc --notitle --update-only . && \
+doctoc --dryrun --update-only . && \
   npx markdownlint-cli2 '**/*.md' && \
   scripts/check-md-links.sh
 ```
 
-Expected: no markdownlint issues, all link targets resolve.
+Expected: no markdownlint issues, all link targets resolve. `--dryrun` is the
+form `scripts/pre-push.sh` runs. If it reports a table of contents out of date,
+regenerate with `doctoc --notitle --update-only .`, which is the style the
+committed documents carry.
 
 - [ ] **Step 5: Build and commit**
 
@@ -1354,7 +1413,37 @@ If `lake shake` reports an import of `Cases.lean` as removable in the mirror,
 the cause is an assertion made inside an anonymous `example` rather than a
 named `def`; fix the mirror rather than suppressing the report.
 
-- [ ] **Step 3: Set the segment bookmark**
+- [ ] **Step 3: Remove this plan**
+
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape orders a branch as
+spec and plan, then implementation, then the commits removing them. This plan
+covers segment 1 only and is spent once segment 1 lands:
+
+```bash
+rm docs/superpowers/plans/2026-08-10-cobham-cases.md
+jj commit docs/superpowers/plans/2026-08-10-cobham-cases.md \
+  -m "doc(cobham): remove the transient plan"
+```
+
+The design document
+`docs/superpowers/specs/2026-08-10-cobham-cases-fold-ranked-design.md` is
+**not** removed here: it covers segments 2 and 3 as well, and is removed in the
+final commits of the last of them.
+
+- [ ] **Step 4: Re-run the Markdown gates**
+
+Run:
+
+```bash
+doctoc --dryrun --update-only . && \
+  npx markdownlint-cli2 '**/*.md' && \
+  scripts/check-md-links.sh
+```
+
+Expected: all three pass. Removing the plan removes a link target; confirm
+nothing else pointed at it.
+
+- [ ] **Step 5: Set the segment bookmark**
 
 ```bash
 jj bookmark create feat/cobham-cases -r @-
