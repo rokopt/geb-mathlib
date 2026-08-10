@@ -19,7 +19,7 @@
   - [Task 6: rebuilding the recognizer](#task-6-rebuilding-the-recognizer)
   - [Task 7: the documentation index](#task-7-the-documentation-index)
   - [Task 8: the roadmap and the handoff](#task-8-the-roadmap-and-the-handoff)
-  - [Task 9: removing the prototype and verifying the branch](#task-9-removing-the-prototype-and-verifying-the-branch)
+  - [Task 9: verifying the branch](#task-9-verifying-the-branch)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -119,7 +119,7 @@ modifies the goal to be terminal, and `linter.style.show` requires a
 | `docs/index.md` | Modified: entries for the new and changed modules. |
 | `TODO.md` | Modified: the roadmap entry. |
 | `docs/superpowers/plans/2026-08-10-ranked-tree-b2-b5-handoff.md` | Modified: its § B2 and its counts. |
-| `Geb/Internal/ScanSpike.lean` | Deleted in Task 9. |
+| `Geb/Internal/ScanSpike.lean` | Deleted before Task 2. |
 
 ---
 
@@ -1352,29 +1352,21 @@ jj commit TODO.md docs/superpowers/plans/2026-08-10-ranked-tree-b2-b5-handoff.md
 
 ---
 
-### Task 9: removing the prototype and verifying the branch
+### Task 9: verifying the branch
 
-**Files:**
-
-- Delete: `Geb/Internal/ScanSpike.lean`
-
-The prototype exists only as evidence for the spec. Its content is now
+`Geb/Internal/ScanSpike.lean`, the prototype, is removed before Task 2
+rather than here: it carries `open Cobham` and its own `scanRaw`, so once
+Task 2 introduces `Cobham.scanRaw` the name is ambiguous and every
+subsequent build gate fails. Its content is now
 `Geb/Mathlib/Computability/Cobham/Scan.lean` and its checks are the test
-mirror; leaving it would be a second copy of the combinator under a name no
-consumer uses, which CONTRIBUTING.md § Code is cost rules out.
+mirror.
 
-- [ ] **Step 1: confirm nothing imports it**
+- [ ] **Step 1: confirm it is gone**
 
 Run: `grep -rn "ScanSpike" --include=*.lean --include=*.md --include=*.toml .`
-Expected: matches only in `Geb/Internal/ScanSpike.lean` itself.
+Expected: no matches.
 
-- [ ] **Step 2: delete it**
-
-```bash
-rm Geb/Internal/ScanSpike.lean
-```
-
-- [ ] **Step 3: full verification**
+- [ ] **Step 2: full verification**
 
 Run: `lake build`
 Expected: builds clean.
