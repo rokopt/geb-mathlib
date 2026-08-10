@@ -52,8 +52,7 @@ theorem sampleCases_dispatch :
       casesSem 2 sampleBranches ![[true, false], []] = [true] ∧
       casesSem 2 sampleBranches ![[false, true], []] = [false] ∧
       casesSem 2 sampleBranches ![[true, true], []] = [true, true] := by
-  refine ⟨?_, ?_, ?_, ?_⟩ <;>
-    rw [casesSem_eq] <;> rfl
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> rfl
 
 /-- A scrutinee shorter than the dispatch width reads as zero-padded, and one
 longer than it ignores the high bits. -/
@@ -61,12 +60,12 @@ theorem sampleCases_padding :
     casesSem 2 sampleBranches ![[], []] = [] ∧
       casesSem 2 sampleBranches ![[true], []] = [true] ∧
       casesSem 2 sampleBranches ![[true, true, true], []] = [true, true] := by
-  refine ⟨?_, ?_, ?_⟩ <;>
-    rw [casesSem_eq] <;> rfl
+  refine ⟨?_, ?_, ?_⟩ <;> rfl
 
-/-- The combinators the branches are built from. The first two need an explicit
-`rfl` after the rewrite: `rw` closes only by its own `rfl` at reducible
-transparency, which leaves the list computation standing. -/
+/-- The combinators the branches are built from. Three of the five conjuncts —
+the predecessor, prepend and diagonal — need an explicit `rfl` after the
+rewrite: `rw` closes only by its own `rfl` at reducible transparency, which
+leaves the list computation standing. -/
 theorem combinators_apply :
     stepWord (predIterOf 2) [true, false, true] = [true] ∧
       stepWord (prependOf [false, true] (predIterOf 1)) [true, false] =
