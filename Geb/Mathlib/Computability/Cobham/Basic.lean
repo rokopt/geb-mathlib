@@ -85,6 +85,8 @@ Theorem 3.101).
 * `Cobham.prepend`, `Cobham.prependOf` — a fixed word prepended to an
   expression.
 * `Cobham.constAt`, `Cobham.constAtOf` — the constant word at a given arity.
+* `Cobham.diag`, `Cobham.diagOf` — a binary expression at its sole argument in
+  both positions.
 
 ## Main statements
 
@@ -101,6 +103,9 @@ Theorem 3.101).
 * `Cobham.wIndexRoot_prependRaw`, `Cobham.wValid_prependRaw`,
   `Cobham.recBounded_prependRaw` — prepending preserves the arity,
   admissibility and the recursion bound.
+* `Cobham.wIndexRoot_diagRaw`, `Cobham.wValid_diagRaw`,
+  `Cobham.recBounded_diagRaw` — the diagonal's arity, admissibility and
+  recursion bound.
 
 ## Implementation notes
 
@@ -564,6 +569,43 @@ theorem recBounded_prependRaw (n : ℕ) (e : sig.toPFunctor.W)
 /-- `constAt` at its declared arity. -/
 @[expose] def constAtOf (n : ℕ) (u : List Bool) : COf n :=
   ⟨constAt n u, wIndexRoot_prependRaw n u _ (zeroAtOf n).2⟩
+
+/-- A binary expression applied to its sole argument in both positions. -/
+@[expose] def diagRaw (e : sig.toPFunctor.W) : sig.toPFunctor.W :=
+  WType.mk (.comp 1 2) fun d ↦
+    match d with
+    | .inl () => e
+    | .inr _ => WType.mk (.proj 1 0) Fin.elim0
+
+/-- The diagonal has arity one, whatever it diagonalises. -/
+theorem wIndexRoot_diagRaw (e : sig.toPFunctor.W) :
+    sig.wIndexRoot (diagRaw e) = 1 := rfl
+
+/-- The diagonal is admissible when what it diagonalises is, at arity two. -/
+theorem wValid_diagRaw (e : sig.toPFunctor.W) (hv : sig.WValid e)
+    (he : sig.wIndexRoot e = 2) : sig.WValid (diagRaw e) :=
+  ⟨fun d ↦ match d with
+    | .inl () => hv
+    | .inr _ => ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩,
+  funext fun d ↦ match d with
+    | .inl () => (sig.wIndexValid_index_eq_wIndexRoot e).trans he
+    | .inr _ => rfl⟩
+
+/-- The diagonal introduces no recursion of its own. -/
+theorem recBounded_diagRaw (e : sig.W) (he : arity e = 2)
+    (hr : RecBounded e) :
+    RecBounded ⟨diagRaw e.1, wValid_diagRaw e.1 e.2 he⟩ :=
+  ⟨trivial, fun d ↦ match d with
+    | .inl () => hr
+    | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩
+
+/-- The diagonal as an expression. -/
+@[expose] def diag (e : COf 2) : C :=
+  ⟨⟨diagRaw e.1.1.1, wValid_diagRaw e.1.1.1 e.1.1.2 e.2⟩,
+    recBounded_diagRaw e.1.1 e.2 e.1.2⟩
+
+/-- `diag` at its declared arity. -/
+@[expose] def diagOf (e : COf 2) : COf 1 := ⟨diag e, wIndexRoot_diagRaw _⟩
 
 /-- The concatenation of two `n`-ary raw trees: a `comp` node of arity `n` whose
 head is the `concat` generator, applied to `a` and `b` in that order. Its value at
