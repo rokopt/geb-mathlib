@@ -43,8 +43,8 @@ space.
 
 ## Main definitions
 
-* `Cobham.zeroAt`, `Cobham.oneAt`, `Cobham.falseAt` — the empty bitstring and
-  the one-bit strings `[true]` and `[false]`, at an arbitrary arity.
+* `Cobham.oneAt`, `Cobham.falseAt` — the one-bit strings at an arbitrary
+  arity.
 * `Cobham.inc` — prepending `true`, of arity one.
 * `Cobham.predPred` — the argument with two bits dropped, of arity one.
 * `Cobham.combFalseStep`, `Cobham.combTrueStep` — the leaf step and the node
@@ -98,8 +98,8 @@ present, and for an expression whose reduced arity a proof reads.
 Each raw tree is named apart from the expression built on it because instance
 search finds `Decidable (sig.WValid w)` when `w` is a constant but not when it
 is a literal `WType.mk` application, so `decide` discharges admissibility only
-of a named tree. `zeroAtRaw`, `oneAtRaw` and `falseAtRaw` carry a free arity,
-at which `decide` does not apply; their admissibility is the pair of an
+of a named tree. `oneAtRaw` and `falseAtRaw` carry a free arity, at which
+`decide` does not apply; their admissibility is the pair of an
 `Unit ⊕ Fin m` case analysis and the `funext` that the index condition asks
 for. The admissibility of an expression embedding `pred` or `cond` reuses that
 expression's own component rather than repeating its proof.
@@ -161,29 +161,6 @@ smash-free, polynomial time, linear space
 namespace Cobham
 
 public section
-
-/-- The empty bitstring at an arbitrary arity. -/
-@[expose] def zeroAtRaw (n : ℕ) : sig.toPFunctor.W :=
-  WType.mk (.comp n 0) fun d ↦
-    match d with
-    | .inl () => WType.mk .zero Fin.elim0
-    | .inr i => i.elim0
-
-/-- The empty bitstring as an expression of arity `n`. -/
-@[expose] def zeroAt (n : ℕ) : C :=
-  ⟨⟨zeroAtRaw n,
-      ⟨fun d ↦ match d with
-        | .inl () => ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩
-        | .inr i => i.elim0,
-      funext fun d ↦ match d with
-        | .inl () => rfl
-        | .inr i => i.elim0⟩⟩,
-    ⟨trivial, fun d ↦ match d with
-      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
-      | .inr i => i.elim0⟩⟩
-
-/-- `zeroAt n` at its declared arity. -/
-@[expose] def zeroAtOf (n : ℕ) : COf n := ⟨zeroAt n, rfl⟩
 
 /-- The one-bit string `[true]` at an arbitrary arity. -/
 @[expose] def oneAtRaw (n : ℕ) : sig.toPFunctor.W :=

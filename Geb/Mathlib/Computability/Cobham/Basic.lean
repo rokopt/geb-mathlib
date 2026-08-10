@@ -68,6 +68,8 @@ Theorem 3.101).
 * `Cobham.C.eval` — the meaning of an expression, at its own arity.
 * `Cobham.concatRaw` / `Cobham.smashRaw` — the two generators as single nodes.
 * `Cobham.concatOf` / `Cobham.smashOf` — those nodes as expressions of arity two.
+* `Cobham.zeroAt`, `Cobham.zeroAtOf` — the empty bitstring at an arbitrary
+  arity.
 * `Cobham.predRaw` / `Cobham.pred` — the predecessor, as a raw tree and as an
   expression of arity one.
 * `Cobham.predSem` — the meaning of the predecessor.
@@ -130,6 +132,10 @@ unfolding is definitional; the index equation is a hypothesis, definitional proo
 irrelevance making the choice of proof term immaterial. `C.arity` and `C.eval`
 qualify `arity` and `eval` because the namespace of the declaration being elaborated
 is in scope, which would otherwise make each body self-referential.
+
+`zeroAtRaw` carries a free arity, at which `decide` does not apply; its
+admissibility is the pair of an `Unit ⊕ Fin m` case analysis and the `funext`
+the index condition asks for.
 
 ## References
 
@@ -368,6 +374,29 @@ interpretation carries the index `eval` computed, equal to the arity by `fst_eva
 but not definitionally so, hence the `transport`. -/
 @[expose] def C.eval (e : C) : Sem e.arity :=
   transport (fst_eval e.1) (Cobham.eval e.1).2
+
+/-- The empty bitstring at an arbitrary arity. -/
+@[expose] def zeroAtRaw (n : ℕ) : sig.toPFunctor.W :=
+  WType.mk (.comp n 0) fun d ↦
+    match d with
+    | .inl () => WType.mk .zero Fin.elim0
+    | .inr i => i.elim0
+
+/-- The empty bitstring as an expression of arity `n`. -/
+@[expose] def zeroAt (n : ℕ) : C :=
+  ⟨⟨zeroAtRaw n,
+      ⟨fun d ↦ match d with
+        | .inl () => ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩
+        | .inr i => i.elim0,
+      funext fun d ↦ match d with
+        | .inl () => rfl
+        | .inr i => i.elim0⟩⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
+      | .inr i => i.elim0⟩⟩
+
+/-- `zeroAt n` at its declared arity. -/
+@[expose] def zeroAtOf (n : ℕ) : COf n := ⟨zeroAt n, rfl⟩
 
 /-- The `concat` generator as a single node, its `Direction` being empty. -/
 @[expose] def concatRaw : sig.toPFunctor.W := WType.mk .concat Fin.elim0
