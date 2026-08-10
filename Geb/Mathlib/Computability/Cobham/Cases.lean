@@ -188,6 +188,112 @@ theorem recBounded_shiftW (e : sig.W) (he : arity e = 2) (hr : RecBounded e) :
           | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩
       | 1 => ⟨trivial, fun c ↦ c.elim0⟩⟩
 
+/-- The case tree over `p` bits of argument zero, applying the selected branch
+to argument one. `cond`'s empty branch points at its head-`false` branch, which
+reads a short scrutinee as zero-padded; each level shifts the scrutinee, so the
+branch index is read off the low bits in order. -/
+@[expose] def casesRaw :
+    (p : ℕ) → ((Fin p → Bool) → sig.toPFunctor.W) → sig.toPFunctor.W :=
+  Nat.rec (motive := fun p ↦
+      ((Fin p → Bool) → sig.toPFunctor.W) → sig.toPFunctor.W)
+    (fun br ↦ liftRaw (br Fin.elim0))
+    (fun _ ih br ↦
+      WType.mk (.comp 2 4) fun d ↦
+        match d with
+        | .inl () => condRaw
+        | .inr i =>
+          ![WType.mk (.proj 2 0) Fin.elim0,
+            shiftRaw (ih (fun t ↦ br (Fin.cons false t))),
+            shiftRaw (ih (fun t ↦ br (Fin.cons true t))),
+            shiftRaw (ih (fun t ↦ br (Fin.cons false t)))] i)
+
+/-- The case tree has arity two, whatever it branches over. -/
+theorem wIndexRoot_casesRaw (p : ℕ) (br : (Fin p → Bool) → sig.toPFunctor.W) :
+    sig.wIndexRoot (casesRaw p br) = 2 := by
+  cases p with
+  | zero => exact wIndexRoot_liftRaw _
+  | succ _ => rfl
+
+/-- The case tree is admissible when every branch is, at arity one. The motive
+generalizes over the branch family, the recursive calls reindexing it. -/
+theorem wValid_casesRaw : ∀ (p : ℕ) (br : (Fin p → Bool) → sig.toPFunctor.W),
+    (∀ v, sig.WValid (br v)) → (∀ v, sig.wIndexRoot (br v) = 1) →
+    sig.WValid (casesRaw p br) :=
+  Nat.rec (fun _ hv ha ↦ wValid_liftRaw _ (hv _) (ha _))
+    (fun p ih _ hv ha ↦
+      ⟨fun d ↦ match d with
+        | .inl () => cond.1.1.2
+        | .inr i =>
+          match i with
+          | 0 => ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩
+          | 1 => wValid_shiftRaw _ (ih _ (fun _ ↦ hv _) (fun _ ↦ ha _))
+              (wIndexRoot_casesRaw p _)
+          | 2 => wValid_shiftRaw _ (ih _ (fun _ ↦ hv _) (fun _ ↦ ha _))
+              (wIndexRoot_casesRaw p _)
+          | 3 => wValid_shiftRaw _ (ih _ (fun _ ↦ hv _) (fun _ ↦ ha _))
+              (wIndexRoot_casesRaw p _),
+      funext fun d ↦ match d with
+        | .inl () => (sig.wIndexValid_index_eq_wIndexRoot condRaw).trans cond.2
+        | .inr i =>
+          match i with
+          | 0 => rfl
+          | 1 => (sig.wIndexValid_index_eq_wIndexRoot _).trans
+              (wIndexRoot_shiftRaw _)
+          | 2 => (sig.wIndexValid_index_eq_wIndexRoot _).trans
+              (wIndexRoot_shiftRaw _)
+          | 3 => (sig.wIndexValid_index_eq_wIndexRoot _).trans
+              (wIndexRoot_shiftRaw _)⟩)
+
+/-- The case tree over expressions, carrying its admissibility. -/
+@[expose] def casesW (p : ℕ) (br : (Fin p → Bool) → COf 1) : sig.W :=
+  ⟨casesRaw p (fun v ↦ (br v).1.1.1),
+    wValid_casesRaw p _ (fun v ↦ (br v).1.1.2) (fun v ↦ (br v).2)⟩
+
+/-- The case tree's arity, in the form `fst_eval` composes with. -/
+theorem arity_casesW (p : ℕ) (br : (Fin p → Bool) → COf 1) :
+    arity (casesW p br) = 2 :=
+  wIndexRoot_casesRaw p _
+
+/-- The meaning of a case tree at its arity, read at the raw tree. -/
+@[expose] def casesSem (p : ℕ) (br : (Fin p → Bool) → COf 1) : Sem 2 :=
+  semAt 2 (casesW p br) (arity_casesW p br)
+
+/-- A case tree applies the branch its scrutinee selects to argument one, the
+scrutinee zero-padded past its end. -/
+theorem casesSem_eq : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1)
+    (sel x : List Bool),
+    casesSem p br ![sel, x] = stepWord (br (bits p sel)) x :=
+  Nat.rec
+    (fun br sel x ↦ by
+      have hb : bits 0 sel = Fin.elim0 := funext fun i ↦ i.elim0
+      rw [hb]
+      change semAt 1 (br Fin.elim0).1.1 (br Fin.elim0).2 (fun _ ↦ x) = _
+      exact congrArg _ (funext fun i ↦ match i with | ⟨0, _⟩ => rfl))
+    (fun p ih br sel x ↦ by
+      rw [bits_succ]
+      match sel with
+      | [] =>
+        have h : casesSem (p + 1) br ![[], x] =
+            casesSem p (fun s ↦ br (Fin.cons false s)) ![[], x] :=
+          semAt_shiftW (casesW p fun s ↦ br (Fin.cons false s))
+            (arity_casesW p _) [] x
+        rw [h, ih]
+        rfl
+      | true :: t =>
+        have h : casesSem (p + 1) br ![true :: t, x] =
+            casesSem p (fun s ↦ br (Fin.cons true s)) ![t, x] :=
+          semAt_shiftW (casesW p fun s ↦ br (Fin.cons true s))
+            (arity_casesW p _) (true :: t) x
+        rw [h, ih]
+        rfl
+      | false :: t =>
+        have h : casesSem (p + 1) br ![false :: t, x] =
+            casesSem p (fun s ↦ br (Fin.cons false s)) ![t, x] :=
+          semAt_shiftW (casesW p fun s ↦ br (Fin.cons false s))
+            (arity_casesW p _) (false :: t) x
+        rw [h, ih]
+        rfl)
+
 end
 
 end Cobham
