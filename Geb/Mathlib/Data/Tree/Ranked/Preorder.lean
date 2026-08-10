@@ -36,6 +36,7 @@ is postfix notation in processing order.
 * `RankedAlphabet.Scan`, `RankedAlphabet.scanStep`,
   `RankedAlphabet.scanFrom`, `RankedAlphabet.scanFinal` — the scan.
 * `RankedAlphabet.validBool`, `RankedAlphabet.Valid` — what it accepts.
+* `DecidablePred RankedAlphabet.Valid` — the instance deciding it.
 
 ## Main statements
 
@@ -61,9 +62,10 @@ generated equation lemmas; `parseChildren_succ` and `decodeBits_cons` are
 stated for the rewrites that need them.
 
 `scanStep` matches on `Bool` values and `Valid` is a `Bool` equation rather
-than an equation of `Scan`. Both are required by kernel reduction: a derived
-`DecidableEq` at a symbolic fold leaves `decide` stuck on the instance rather
-than reducing it. A decidable test is not itself the obstruction, as
+than an equation of `Scan`. Both are required by kernel reduction: an equation
+of `Scan` would be decided through a derived `DecidableEq`, which at a
+symbolic fold leaves `decide` stuck on the instance rather than reducing it,
+so `Scan` derives none. A decidable test is not itself the obstruction, as
 `decodeBlock` shows by branching on one and reducing.
 
 `exists_spell_append_of_live_of_buf_nil_of_one_le_depth` is likewise bounded
@@ -115,15 +117,6 @@ theorem length_spell (R : RankedAlphabet) (t : R.Term) :
             = List.map (fun b ↦ R.width * b) (List.ofFn fun d ↦ (ch d).size) by
           rw [List.map_ofFn]; rfl, List.sum_map_mul_left, List.map_id']) t
 
-/-- A spelling is at least one block long. -/
-theorem width_le_length_spell (R : RankedAlphabet) (t : R.Term) :
-    R.width ≤ (R.spell t).length := by
-  rw [length_spell]
-  refine Nat.le_mul_of_pos_right _ ?_
-  refine Term.induction (motive := fun t ↦ 0 < t.size) (fun i ch _ ↦ ?_) t
-  rw [size_mk]
-  omega
-
 /-- Read one block: the symbol it spells and the unconsumed remainder, absent
 when the word is short of a block or the block spells no symbol. -/
 @[expose] def decodeBlock (R : RankedAlphabet) (w : List Bool) :
@@ -145,6 +138,8 @@ when the word is short of a block or the block spells no symbol. -/
         | none => none
         | some (f, w₂) => some (Fin.cons t f, w₂)
 
+/-- `parseChildren` unfolded on a positive count. `parseChildren` is a bare
+`Nat.rec`, for which Lean generates no equation lemma. -/
 theorem parseChildren_succ {R : RankedAlphabet}
     (child : List Bool → Option (R.Term × List Bool)) (n : ℕ) (w : List Bool) :
     parseChildren child (n + 1) w =
@@ -197,24 +192,6 @@ theorem decodeBlock_code_append (R : RankedAlphabet) (i : Fin R.card)
       from ⟨by rw [decodeBits_code]; exact i.isLt, hlen⟩)]
   congr 1
   exact Prod.ext (Fin.val_injective (decodeBits_code R i)) rfl
-
-/-- A child's node count is at most the sum over the children. Proved from
-`List.rec` and `omega` rather than through the ordered-algebra API, whose
-route to the same bound passes through instances the axiom linter rejects
-for this module. -/
-theorem size_le_sum_ofFn {R : RankedAlphabet} {n : ℕ} (ch : Fin n → R.Term)
-    (d : Fin n) : (ch d).size ≤ (List.ofFn fun e ↦ (ch e).size).sum := by
-  have hsum : ∀ (l : List ℕ) (x : ℕ), x ∈ l → x ≤ l.sum := fun l ↦
-    List.rec (fun x hx ↦ absurd hx (by simp))
-      (fun a t iht x hx ↦ by
-        rcases List.mem_cons.mp hx with h | h
-        · subst h
-          rw [List.sum_cons]
-          omega
-        · have := iht x h
-          rw [List.sum_cons]
-          omega) l
-  exact hsum _ _ (List.mem_ofFn.mpr ⟨d, rfl⟩)
 
 /-- Reading `n` children off the concatenation of their spellings returns them
 and the remainder. -/
@@ -284,11 +261,6 @@ fields they are. -/
 /-- Distinct terms have distinct spellings. -/
 theorem spell_injective (R : RankedAlphabet) : Function.Injective R.spell :=
   (R.encoding).encode_injective
-
-/-- The `n`th bit of a block is the `n`th bit of the symbol's index. -/
-theorem getElem_code_eq (R : RankedAlphabet) (i : Fin R.card) (n : ℕ)
-    (h : n < (R.code i).length) : (R.code i)[n] = i.val.testBit n := by
-  simp only [code, List.getElem_map, List.getElem_range]
 
 /-- Whatever a block read returns, it reads that symbol's block. -/
 theorem decodeBlock_eq_some (R : RankedAlphabet) {w rest : List Bool}
@@ -384,7 +356,6 @@ count of pending subterms, and whether the scan has failed. -/
   depth : ℕ
   /-- Whether the scan has not yet failed. -/
   live : Bool
-deriving DecidableEq, Repr
 
 /-- One step of the scan, reading one bit. A failed state absorbs. An
 incomplete block takes the bit; a complete one is decoded, and its symbol

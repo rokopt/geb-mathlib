@@ -129,7 +129,8 @@ import-direction rules above are enforced by
   `Fin` of its arity. `Term.mk` names the constructor at the alphabet's
   own arities, so a caller writes the arity once rather than meeting
   `Fin (arity ⟨v, h⟩)` where `Fin 0` was expected; `Term.size` counts
-  nodes and `Term.induction` gives induction in that presentation.
+  nodes, `size_le_sum_ofFn` bounds a child's count by the sum over the
+  children, and `Term.induction` gives induction in that presentation.
   `width_pos` is what supplies the descent's fuel through
   `t.size ≤ width * t.size`. Depends on mathlib's
   `Mathlib/Data/W/Basic.lean`.
@@ -138,13 +139,14 @@ import-direction rules above are enforced by
   first, padded to the alphabet's width; `decodeBits` is the value a
   block denotes and `arOf` the arity of the symbol it denotes, absent
   where it denotes none. `length_code`, `decodeBits_code`,
-  `arOf_decodeBits_code` and `testBit_decodeBits` make the padding
-  lossless and identify a block's entries with its value's bits.
+  `arOf_decodeBits_code`, `testBit_decodeBits` and `getElem_code_eq` make
+  the padding lossless and identify a block's entries both with its
+  value's bits and with the symbol index's.
   `mod_two_mul` states the residue split the decoding needs, choice-free:
   mathlib's `Nat.mod_mul` says the same and depends on
   `Classical.choice`, and `omega` cannot discharge it because the modulus
   is a variable. Depends on `Geb.Mathlib.Data.Tree.Ranked.Basic` and
-  mathlib's `Mathlib/Data/Nat/Bitwise.lean`.
+  mathlib's `Mathlib/Algebra/GroupWithZero/Nat.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean` — the preorder encoding
   of ranked terms and its inverse, generalising
   `Geb/Mathlib/Data/Tree/Preorder.lean` from two unlabelled shapes to any
@@ -165,7 +167,7 @@ import-direction rules above are enforced by
   word's right end, and `add_one_mod` is the residue-of-a-successor
   identity it runs on, stated choice-free for the reason `mod_two_mul`
   is. Depends on `Geb.Mathlib.Data.Tree.Ranked.Code` and mathlib's
-  `Computability/Encoding.lean`.
+  `Algebra/BigOperators/Ring/List.lean` and `Computability/Encoding.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` — the alphabet of one
   nullary and one binary symbol, one bit to a block, exhibiting
   `BinTree` as a term algebra. `binRanked` is the alphabet, `leafSym`

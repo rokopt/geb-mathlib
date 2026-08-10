@@ -95,15 +95,19 @@ zero, code `1` the symbol of arity two.
 
 Each definition of this specification is novel in the sense
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Cite the literature when
-transcribing asks a brainstorming-phase spec to record, with two
-exceptions. The encoding `spell` transcribes prefix (Łukasiewicz)
-notation, which `Data/Tree/Preorder.lean` already names in prose as the
-idea of prefix notation and which the modules built here name in their
-`## References`. `Fold` transcribes the catamorphism, and the paramorphism
-it is contrasted with is [Meertens1992]'s. `RankedAlphabet`,
-`RankedAlphabet.Term`, `Scan`, `Valid` and `Scanner` are novel
+transcribing asks a brainstorming-phase spec to record, with one
+exception. `Fold` transcribes the catamorphism, and the paramorphism it is
+contrasted with is [Meertens1992]'s. `RankedAlphabet`,
+`RankedAlphabet.Term`, `spell`, `Scan`, `Valid` and `Scanner` are novel
 presentations of standard material rather than transcriptions of a
-particular source's definitions.
+particular source's definitions. `spell` in particular is a fixed-width
+block encoding of a ranked term algebra, whose idea is prefix
+(Łukasiewicz) notation but whose definition transcribes no source's; it
+names that idea in prose, as `Data/Tree/Preorder.lean` names it at width
+one, and so carries no `## References` section, per
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Cite the literature when
+transcribing on what a comment owes for material that is not itself a
+transcription.
 
 ## The encoding
 
@@ -413,7 +417,7 @@ named Route A and deferred.
 
 | Branch | Content | Depends on |
 | --- | --- | --- |
-| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — the alphabet, the term algebra, `spell`, the descent, `Valid`, the bijection, the equivalence with `BinTree`, the two width-one specializations `spell_termEquiv` and `valid_iff`, and the `docs/references.bib` entries this specification cites | — |
+| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — the alphabet, the term algebra, `spell`, the descent, `Valid`, the bijection, the equivalence with `BinTree`, the two width-one specializations `spell_termEquiv` and `valid_iff` | — |
 | B2 | `Geb/Mathlib/Computability/Cobham/Scan.lean` — `Scanner`, the ranked recognizer, and `isTree` re-expressed as the width-one instance | B1 |
 | B3 | `Geb/Mathlib/Computability/Cobham/Fold.lean` — the fold and `Fold.run_spell` | B2 |
 | B4 | `BinTree` absorbed into `RankedAlphabet.Term`, and the duplication removed | B1, B2 |

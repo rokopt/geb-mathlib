@@ -20,6 +20,7 @@ mirrors.
 ## Main definitions
 
 * `sampleAlphabet` — the alphabet.
+* `narrowAlphabet` — an alphabet with a block spelling no symbol.
 * `sampleNullary`, `sampleBinary` — the two terms.
 * `wordsUpTo` — the words over `Bool` of at most a given length.
 
@@ -40,6 +41,11 @@ open RankedAlphabet
 /-- Four symbols of arities zero to three, two bits to a block. Its `card` is
 `2 ^ width`, so every block spells a symbol. -/
 def sampleAlphabet : RankedAlphabet := ⟨4, 2, by decide, by decide, ![0, 1, 2, 3]⟩
+
+/-- Three symbols of arities zero to two, two bits to a block. Its `card` is
+below `2 ^ width`, so the block `[true, true]` spells no symbol and the
+rejection `arOf` returns `none` for is reachable from a word. -/
+def narrowAlphabet : RankedAlphabet := ⟨3, 2, by decide, by decide, ![0, 1, 2]⟩
 
 /-- The nullary symbol. A symbol index is named rather than written at each
 use site: an index whose bound proof is an unassigned metavariable blocks

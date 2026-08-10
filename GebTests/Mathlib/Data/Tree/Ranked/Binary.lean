@@ -5,8 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.Tree.Ranked.Binary
 public import GebTests.Mathlib.Data.Tree.Ranked.Basic
+
+import Geb.Mathlib.Data.Tree.Ranked.Binary
 
 /-!
 # The two-symbol alphabet on worked trees
@@ -21,8 +22,8 @@ length at most eight.
 
 ## Main statements
 
-The assertions below give the blocks of the two symbols, the spelling of the
-worked tree's image, and the agreement of the alphabet's scan with
+The assertions below give the spelling of the worked tree's image, the value
+`BinTree.print` gives there, and the agreement of the alphabet's scan with
 `BinTree.Valid` over the enumeration.
 
 ## Tags
@@ -37,13 +38,6 @@ open RankedAlphabet.Binary
 /-- The tree the assertions below are stated at: a node whose left child is a
 two-leaf node and whose right child is a leaf. -/
 def binarySample : BinTree := BinTree.node (BinTree.node BinTree.leaf BinTree.leaf) BinTree.leaf
-
-/-- The nullary symbol's block is the `false` bit `BinTree.print` spells a
-leaf by. -/
-theorem code_leafSym_eq : binRanked.code leafSym = [false] := by decide
-
-/-- The binary symbol's block is the `true` bit it spells a node by. -/
-theorem code_nodeSym_eq : binRanked.code nodeSym = [true] := by decide
 
 /-- The equivalence carries the spelling to `BinTree.print`, at the worked
 tree. -/

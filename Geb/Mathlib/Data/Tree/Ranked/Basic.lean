@@ -29,6 +29,8 @@ alphabet of one symbol of arity zero and one of arity two.
 ## Main statements
 
 * `RankedAlphabet.Term.induction` — induction in the `Term.mk` presentation.
+* `RankedAlphabet.size_le_sum_ofFn` — a child's node count is at most the sum
+  over the children.
 
 ## Implementation notes
 
@@ -97,6 +99,24 @@ theorem Term.induction {R : RankedAlphabet} {motive : R.Term → Prop}
 @[simp] theorem size_mk {R : RankedAlphabet} (i : Fin R.card)
     (ch : Fin (R.arity i) → R.Term) :
     (Term.mk R i ch).size = (List.ofFn fun d ↦ (ch d).size).sum + 1 := rfl
+
+/-- A child's node count is at most the sum over the children. Proved from
+`List.rec` and `omega` rather than through the ordered-algebra API, whose
+route to the same bound passes through instances the axiom linter rejects
+for this module. -/
+theorem size_le_sum_ofFn {R : RankedAlphabet} {n : ℕ} (ch : Fin n → R.Term)
+    (d : Fin n) : (ch d).size ≤ (List.ofFn fun e ↦ (ch e).size).sum := by
+  have hsum : ∀ (l : List ℕ) (x : ℕ), x ∈ l → x ≤ l.sum := fun l ↦
+    List.rec (fun x hx ↦ absurd hx (by simp))
+      (fun a t iht x hx ↦ by
+        rcases List.mem_cons.mp hx with h | h
+        · subst h
+          rw [List.sum_cons]
+          omega
+        · have := iht x h
+          rw [List.sum_cons]
+          omega) l
+  exact hsum _ _ (List.mem_ofFn.mpr ⟨d, rfl⟩)
 
 end
 

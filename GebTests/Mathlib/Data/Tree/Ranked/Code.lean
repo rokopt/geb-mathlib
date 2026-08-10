@@ -5,8 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.Tree.Ranked.Code
 public import GebTests.Mathlib.Data.Tree.Ranked.Basic
+
+import Geb.Mathlib.Data.Tree.Ranked.Code
 
 /-!
 # Symbol codes on a worked alphabet

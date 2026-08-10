@@ -37,9 +37,11 @@ one function up to that equivalence, not merely bijections onto one language.
 writing `⟨0, by decide⟩`: a symbol index whose bound proof is still an
 unassigned metavariable blocks `arity` from reducing, so the child family's
 domain is then neither `Fin 0` nor `Fin 2` and the family does not elaborate.
-Where a bound is needed against a symbol index that is a pattern variable,
-`show (0 : ℕ) < 2 from _` supplies it: `decide` refuses a goal containing a
-free variable, and `omega` cannot unfold the alphabet.
+Against a symbol index that is a pattern variable, a child index's bound is
+ascribed rather than proved where it stands: the goal `0 < binRanked.arity
+⟨1, h⟩` carries the free variable `h`, which `decide` refuses, and presents
+the arity as an atom, which `omega` cannot unfold. `show (0 : ℕ) < 2` replaces
+it with the definitionally equal closed goal.
 
 `code_leafSym` and `code_nodeSym` are proved by `decide` rather than by `rfl`.
 `Nat.land`, which `Nat.testBit` runs through, is not exposed, so a block does
@@ -71,8 +73,10 @@ public section
 @[expose] def node (l r : binRanked.Term) : binRanked.Term :=
   Term.mk binRanked nodeSym fun d ↦ if d.val = 0 then l else r
 
+/-- The nullary symbol's block is the single `false` bit. -/
 theorem code_leafSym : binRanked.code leafSym = [false] := by decide
 
+/-- The binary symbol's block is the single `true` bit. -/
 theorem code_nodeSym : binRanked.code nodeSym = [true] := by decide
 
 @[simp] theorem spell_leaf : binRanked.spell leaf = [false] := by
@@ -102,6 +106,7 @@ theorem code_nodeSym : binRanked.code nodeSym = [true] := by decide
       BinTree.node (ch ⟨0, show (0 : ℕ) < 2 by omega⟩) (ch ⟨1, show (1 : ℕ) < 2 by omega⟩)
     | ⟨⟨n + 2, h⟩, _⟩ => absurd (show n + 2 < 2 from h) (by omega)
 
+/-- Reading a binary tree as a term and back recovers the tree. -/
 theorem toBinTree_ofBinTree (t : BinTree) : toBinTree (ofBinTree t) = t :=
   BinTree.induction (motive := fun t ↦ toBinTree (ofBinTree t) = t)
     rfl
@@ -109,6 +114,7 @@ theorem toBinTree_ofBinTree (t : BinTree) : toBinTree (ofBinTree t) = t :=
       change BinTree.node (toBinTree (ofBinTree l)) (toBinTree (ofBinTree r)) = _
       rw [ihl, ihr]) t
 
+/-- Reading a term as a binary tree and back recovers the term. -/
 theorem ofBinTree_toBinTree : ∀ u : binRanked.Term, ofBinTree (toBinTree u) = u :=
   Term.induction (motive := fun u ↦ ofBinTree (toBinTree u) = u)
     (fun i ch ih ↦ by

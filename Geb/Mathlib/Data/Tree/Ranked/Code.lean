@@ -29,6 +29,8 @@ denoting no symbol has no arity.
 * `RankedAlphabet.arOf_decodeBits_code` — and so has that symbol's arity.
 * `RankedAlphabet.testBit_decodeBits` — a block's entries are its value's
   bits.
+* `RankedAlphabet.getElem_code_eq` — and a block's entries are the bits of
+  the symbol's index.
 
 ## Implementation notes
 
@@ -60,6 +62,8 @@ first, padded to the alphabet's width. -/
 @[expose] def decodeBits : List Bool → ℕ :=
   List.rec 0 fun b _ ih ↦ 2 * ih + (if b then 1 else 0)
 
+/-- `decodeBits` unfolded on a non-empty block. `decodeBits` is a bare
+`List.rec`, for which Lean generates no equation lemma. -/
 theorem decodeBits_cons (b : Bool) (l : List Bool) :
     decodeBits (b :: l) = 2 * decodeBits l + (if b then 1 else 0) := rfl
 
@@ -108,6 +112,11 @@ theorem decodeBits_code (R : RankedAlphabet) (i : Fin R.card) :
 theorem arOf_decodeBits_code (R : RankedAlphabet) (i : Fin R.card) :
     R.arOf (decodeBits (R.code i)) = some (R.arity i) := by
   rw [decodeBits_code, arOf, dif_pos i.isLt]
+
+/-- The `n`th bit of a block is the `n`th bit of the symbol's index. -/
+theorem getElem_code_eq (R : RankedAlphabet) (i : Fin R.card) (n : ℕ)
+    (h : n < (R.code i).length) : (R.code i)[n] = i.val.testBit n := by
+  simp only [code, List.getElem_map, List.getElem_range]
 
 /-- The `n`th bit of a block's value is the block's `n`th entry. -/
 theorem testBit_decodeBits : ∀ (bs : List Bool) (n : ℕ) (_ : n < bs.length),

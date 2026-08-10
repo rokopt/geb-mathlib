@@ -5,24 +5,25 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Mathlib.Data.Tree.Ranked.Preorder
 public import GebTests.Mathlib.Data.Tree.Ranked.Basic
+
+import Geb.Mathlib.Data.Tree.Ranked.Preorder
 
 /-!
 # The preorder encoding on worked terms
 
 The spelling of `sampleNullary` and `sampleBinary`, the descent recovering
-each, and the scan's three rejections: a word carrying two terms, a word
-ending mid-block, and a word whose symbol has more arity than the pending
-count. The scan and the descent are then compared on every word of length at
-most six.
+each, and the scan's four rejections: a word carrying two terms, a word ending
+mid-block, a word whose symbol has more arity than the pending count, and a
+word carrying a block that spells no symbol. The scan and the descent are then
+compared on every word of length at most eight.
 
 ## Main statements
 
 The assertions below give the spelling of each worked term, the descent's
-value on each spelling, `Valid` on the two spellings and on the three
-rejected words, and the agreement of `validBool` with `Option.isSome ∘ parse`
-over the enumeration.
+value on each spelling, `Valid` on the two spellings and on the four rejected
+words, and the agreement of `validBool` with `Option.isSome ∘ parse` over the
+enumeration at both alphabets.
 
 ## Implementation notes
 
@@ -82,9 +83,27 @@ theorem not_valid_mid_block : ¬ sampleAlphabet.Valid [false, false, false] := b
 count: the binary symbol's block alone leaves nothing for it to apply to. -/
 theorem not_valid_underflow : ¬ sampleAlphabet.Valid [false, true] := by decide
 
+/-- A word over `narrowAlphabet` carrying a block that spells no symbol. It is
+the shortest such word, and no word over `sampleAlphabet` reaches that
+rejection: every one of that alphabet's blocks spells a symbol. -/
+theorem not_valid_no_symbol : ¬ narrowAlphabet.Valid [true, true] := by decide
+
+/-- `narrowAlphabet` accepts its nullary symbol's spelling, so the rejection
+above separates the two alphabets rather than rejecting everything. -/
+theorem valid_narrow_nullary : narrowAlphabet.Valid [false, false] := by decide
+
 /-- The scan and the descent accept the same words: `valid_iff_isSome_parse`
-at every word of length at most six. -/
+at every word of length at most eight. The bound is eight rather than six
+because the shortest accepted word using `sampleAlphabet`'s arity-three symbol
+has length eight. -/
 theorem validBool_eq_isSome_parse :
-    (wordsUpTo 6).all (fun w ↦
+    (wordsUpTo 8).all (fun w ↦
       sampleAlphabet.validBool w == (sampleAlphabet.parse w).isSome) = true := by
+  set_option maxRecDepth 100000 in decide
+
+/-- And at an alphabet some of whose blocks spell no symbol, where the scan
+and the descent must agree on that rejection too. -/
+theorem narrow_validBool_eq_isSome_parse :
+    (wordsUpTo 8).all (fun w ↦
+      narrowAlphabet.validBool w == (narrowAlphabet.parse w).isSome) = true := by
   set_option maxRecDepth 100000 in decide
