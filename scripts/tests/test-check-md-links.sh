@@ -111,7 +111,13 @@ assert_repo_case() {
 # intervening snapshot into a git index. The dangling target proves the
 # files were read rather than skipped.
 jj_root="$test_dir/jj-repo"
-jj git init "$jj_root" >/dev/null 2>&1
+# A jj that is absent or fails to initialise leaves a directory under
+# neither VCS, which is the unlistable-repository scenario below rather
+# than this one; report the prerequisite instead of the substitution.
+if ! jj git init "$jj_root" >/dev/null 2>&1; then
+  echo "test-check-md-links: jj git init failed; jj is required" >&2
+  exit 1
+fi
 printf '[a](gone.md)\n' >"$jj_root/doc.md"
 assert_repo_case "jj workspace enumerates working-copy files" \
   1 "doc.md: link target does not exist: gone.md" "$jj_root"

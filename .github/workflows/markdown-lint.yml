@@ -19,6 +19,8 @@ jobs:
         with:
           globs: '**/*.md'
           config: '.markdownlint-cli2.jsonc'
+      - name: Install pinned jj
+        run: bash scripts/install-jj.sh
       - name: scripts/check-md-links.sh
         run: bash scripts/check-md-links.sh
       - name: scripts/tests/test-check-md-links.sh
