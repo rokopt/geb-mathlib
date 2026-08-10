@@ -51,7 +51,16 @@ Build and Lean linters:
   required because `lake build` alone fetches only the oleans
   `Geb` imports; the `lake shake` step injects an arbitrary
   mathlib import and needs that module's olean present, which
-  after a toolchain bump it otherwise would not be.
+  after a toolchain bump it otherwise would not be. The fetch runs
+  only when `lean-toolchain` or `lake-manifest.json` differs from
+  the copy recorded at the last fetch (`.lake/cache-get.stamp`),
+  and holds a lock in the cache directory while it runs. Both
+  guards follow from `cache get` unpacking each module whose local
+  Lake `depHash` differs from the archive's: part of the dependency
+  tree disagrees on that hash while the artifacts are identical, so
+  an unguarded fetch overwrites a locally built tree that Lake
+  rebuilds, and the cache directory is shared across jj workspaces
+  while downloads use a fixed temporary name.
 - `lake build`, `lake test`, `lake lint`.
 - `lake build GebTests` then `lake lint -- GebTests`. The axiom
   env_linter (`GebMeta.detectNonstandardAxiom`) runs under both
