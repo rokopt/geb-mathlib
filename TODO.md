@@ -26,6 +26,7 @@
   - [Bellantoni-Cook](#bellantoni-cook)
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
+  - [Extensions of the tree recognizers](#extensions-of-the-tree-recognizers)
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
   - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
   - [Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`](#lambda-arrow-in-gebtestsmathlibcategorytheoryelementarytoposlean)
@@ -580,6 +581,49 @@ destination.
    def`, so `ComputableInTimeAndSpace` over a decidable indicator is the
    form to use; and the result speaks of one machine and one language,
    not of any function-algebra expression.
+
+### Extensions of the tree recognizers
+
+Four investigations, over `Geb/Mathlib/Data/Tree/`,
+`Geb/Mathlib/Computability/Cobham/Tree.lean` and
+`Geb/Mathlib/Computability/BellantoniCook/Tree.lean`. Items 1 and 4 subsume
+the labelled-tree items recorded under § Binary trees and their preorder
+encoding and § The Bellantoni-Cook tree recognizer; item 2 subsumes the
+tree recursor recorded under the latter. Each investigation is settled
+before any of them is planned, since a shared construction covering
+several would change what each costs.
+
+1. Leaves labelled from a finite alphabet: the initial algebra of
+   `Fin k + X × X` and its encoding, with the label spelled as a
+   fixed-width block of bits beside the leaf marker, and a scanning
+   state carrying the number of label bits still to read.
+2. A generic iterator over a recognized encoding — a fold or
+   paramorphism whose step is configurable, under whatever restriction
+   on the step keeps the result in the smash-free subalgebra. Settle
+   what restriction that is: a step of bounded output length, a step
+   drawn from a constrained subalgebra, or both. [DalLagoMartiniZorzi2010]
+   is the reference for what unbounded branching recursion costs.
+3. A bound on the recognizer's cost sharper than the polynomial-time,
+   linear-space membership `isTree_smashFree` gives with [Strahm2003]
+   Theorem 1(2). The algebra carries no cost semantics, so the bound is
+   stated over a machine model: Cslib's `MultiTapeTM`, whose
+   `ComputesFunInTimeAndSpace` measures time and space together and
+   carries an alphabet embedding, so a work-tape symbol holds a whole
+   stack frame. The target is `ComputableInTimeAndSpace` at
+   `fun n ↦ a * n + b` and `fun n ↦ n + b`, stated over a computable
+   decision function rather than through `DecidableInTimeAndSpace`,
+   whose `indicator` is `Classical`-dependent. `Geb/Mathlib/` cannot
+   import `Cslib.*` and `Geb/Cslib/` cannot import `Geb.Mathlib.*`, so
+   the statement is confined to `Geb/Internal/`. Record what the
+   measurement of the algebra term itself gives instead: `pred` and
+   `cond` are `boundedRec` nodes rather than generators, so under a
+   strict reading each costs one unit per bit of its scrutinee, and the
+   scan's total is the sum of the stack depths — quadratic in the word
+   length on a left comb, linear on a right comb.
+4. Trees over a ranked alphabet: `Fin k` labels, each carrying its own
+   arity, encoded in Łukasiewicz prefix notation, recognized by the same
+   scan with the counter decremented by the arity rather than by one.
+   Item 1 is the case of two arities.
 
 ### Concrete-syntax prototype
 
