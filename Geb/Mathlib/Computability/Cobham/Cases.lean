@@ -294,6 +294,87 @@ theorem casesSem_eq : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1)
         rw [h, ih]
         rfl)
 
+/-- The case tree carries the branches' recursions and no other. -/
+theorem recBounded_casesW : ∀ (p : ℕ) (br : (Fin p → Bool) → COf 1),
+    RecBounded (casesW p br) :=
+  Nat.rec (fun br ↦ recBounded_liftRaw (br Fin.elim0))
+    (fun p ih br ↦
+      ⟨trivial, fun d ↦ match d with
+        | .inl () => cond.1.2
+        | .inr i =>
+          match i with
+          | 0 => ⟨trivial, fun c ↦ c.elim0⟩
+          | 1 => recBounded_shiftW _ (arity_casesW p _)
+              (ih (fun t ↦ br (Fin.cons false t)))
+          | 2 => recBounded_shiftW _ (arity_casesW p _)
+              (ih (fun t ↦ br (Fin.cons true t)))
+          | 3 => recBounded_shiftW _ (arity_casesW p _)
+              (ih (fun t ↦ br (Fin.cons false t)))⟩)
+
+/-- The case tree as an expression. Definition by cases imposes no condition on
+the expressions it selects among: every node the recursion introduces is a
+`comp`, whose `RecBoundedValue` is `True`, over `proj` together with the trees
+underlying `cond` and `pred`, which carry their own recursion bounds already. -/
+@[expose] def cases (p : ℕ) (br : (Fin p → Bool) → COf 1) : C :=
+  ⟨casesW p br, recBounded_casesW p br⟩
+
+/-- `cases` at its declared arity. -/
+@[expose] def casesOf (p : ℕ) (br : (Fin p → Bool) → COf 1) : COf 2 :=
+  ⟨cases p br, arity_casesW p br⟩
+
+/-- The meaning read at the raw tree is the meaning the expression carries.
+Unlike the scan combinator's counterpart this is not a `rfl`: `arity_casesW` is
+a theorem rather than a definitional equality, so the transport it carries is
+opaque. -/
+theorem casesSem_eq_eval (p : ℕ) (br : (Fin p → Bool) → COf 1) :
+    transport (casesOf p br).2 (casesOf p br).1.eval = casesSem p br :=
+  transport_transport (fst_eval (casesW p br)) (arity_casesW p br)
+    (eval (casesW p br)).2
+
+/-- The iterated predecessor drops `k` bits. -/
+theorem stepWord_predIterOf : ∀ (k : ℕ) (u : List Bool),
+    stepWord (predIterOf k) u = u.drop k :=
+  Nat.rec (fun _ ↦ rfl)
+    (fun j ih u ↦ by
+      have hfun : (fun _ : Fin 1 ↦ stepWord (predIterOf j) u) =
+          ![stepWord (predIterOf j) u] :=
+        funext fun i ↦ match i with | ⟨0, _⟩ => rfl
+      have h : stepWord (predIterOf (j + 1)) u =
+          predSem ![stepWord (predIterOf j) u] := congrArg predSem hfun
+      rw [h, predSem_eq, ih u, List.tail_drop])
+
+/-- Prepending a word prepends it to the value a step contributes. -/
+theorem stepWord_prependOf (e : COf 1) (r : List Bool) :
+    ∀ u : List Bool, stepWord (prependOf u e) r = u ++ stepWord e r :=
+  List.rec rfl (fun b v ih ↦ by
+    change b :: stepWord (prependOf v e) r = _
+    rw [ih]
+    rfl)
+
+/-- Prepending a word to a nullary expression prepends it to the value. -/
+theorem baseWord_prependOf (e : COf 0) :
+    ∀ u : List Bool, baseWord (prependOf u e) = u ++ baseWord e :=
+  List.rec rfl (fun b v ih ↦ by
+    change b :: baseWord (prependOf v e) = _
+    rw [ih]
+    rfl)
+
+/-- The constant word is the base it contributes. -/
+theorem baseWord_constAtOf (u : List Bool) : baseWord (constAtOf 0 u) = u :=
+  (baseWord_prependOf (zeroAtOf 0) u).trans (List.append_nil u)
+
+/-- The constant word is the value a step contributes, whatever it reads. -/
+theorem stepWord_constAtOf (u r : List Bool) :
+    stepWord (constAtOf 1 u) r = u :=
+  (stepWord_prependOf (zeroAtOf 1) r u).trans (List.append_nil u)
+
+/-- The diagonal reads its argument in both positions. -/
+theorem stepWord_diagOf (e : COf 2) (u : List Bool) :
+    stepWord (diagOf e) u = semAt 2 e.1.1 e.2 ![u, u] := by
+  have hfun : (fun _ : Fin 2 ↦ u) = ![u, u] :=
+    funext fun i ↦ match i with | 0 => rfl | 1 => rfl
+  exact congrArg (semAt 2 e.1.1 e.2) hfun
+
 end
 
 end Cobham
