@@ -650,10 +650,13 @@ generator; and the depth-first unary degree sequence encoding, whose
 condition for adoption is unbounded arity.
 
 Also deferred: `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate
-`constAtOf`, and its `predPred` duplicates `predIter 2`. Each is left in place
-because substituting the general form changes the definitional unfolding that
-`combSem_nil` and `isTreeSem_eq_eval` read through, and whether those proofs
-survive the substitution is unmeasured.
+`constAtOf`, and its `predPred` duplicates `predIter 2`. Substituting the
+general form is definitionally transparent — `oneAtRaw`, `falseAtRaw` and
+`predPredRaw` reduce to the corresponding `prependRaw`/`predIterRaw`
+applications by `rfl`, so `combSem_nil` and `isTreeSem_eq_eval` read through
+the substitution unchanged. Each is left in place because removing the
+duplication is a separate concern from this branch's, not because the
+substitution is risky.
 
 `BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
 absent from `docs/references.bib`: neither its bibliographic detail nor the

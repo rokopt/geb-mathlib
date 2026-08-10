@@ -1106,9 +1106,10 @@ import-direction rules above are enforced by
   composite equality as the composition of two transports.
   Also `semAt`, the meaning of a tree at a given arity, named once rather than
   spelled at each site; the empty bitstring at an arbitrary arity `zeroAt`;
-  and the combinators branches are built from — `prepend` and `constAt`
-  prepending a fixed word, `predIter` the iterated predecessor, and `diag` a
-  binary expression at its sole argument in both positions.
+  and the combinators branches are built from — `prepend` prepending a fixed
+  word to an expression and `constAt` the constant word at a given arity,
+  `predIter` the iterated predecessor, and `diag` a binary expression at its
+  sole argument in both positions.
   `Classical.choice`-free.
 - `Geb/Mathlib/Computability/Cobham/Scan.lean` — the scan combinator: a
   right-to-left fold over a bitstring whose state is a bitstring, as a
@@ -1149,8 +1150,10 @@ import-direction rules above are enforced by
   level a `cond` node whose scrutinee is argument zero and whose branches
   shift that argument into the recursive subtree; `wValid_casesRaw` gives
   admissibility from the branches' own, and `recBounded_casesW` the recursion
-  bound, so the combinator imposes no condition on what it selects among.
-  `casesSem_eq` identifies the meaning with the branch the scrutinee selects.
+  bound from the branches' own together with what `cond` and `pred` already
+  carry, so the combinator imposes no further condition on what it selects
+  among. `casesSem_eq` identifies the meaning with the branch the scrutinee
+  selects.
   Also the words the combinators of `Cobham/Basic.lean` contribute:
   `stepWord_predIterOf`, `stepWord_prependOf`, `baseWord_prependOf`,
   `baseWord_constAtOf`, `stepWord_constAtOf` and `stepWord_diagOf`. Depends on
