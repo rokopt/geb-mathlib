@@ -89,6 +89,11 @@ of length at most eight. -/
 theorem length_wordsUpTo_eight : (wordsUpTo 8).length = 511 := by
   set_option maxRecDepth 100000 in decide
 
+/-- The enumeration the `Cobham/Fold` mirror's sweep holds every word of
+length at most seven. -/
+theorem length_wordsUpTo_seven : (wordsUpTo 7).length = 255 := by
+  set_option maxRecDepth 100000 in decide
+
 /-- The largest arity at an alphabet whose arities run up to three. -/
 theorem maxArity_sampleAlphabet : sampleAlphabet.maxArity = 3 := by decide
 
