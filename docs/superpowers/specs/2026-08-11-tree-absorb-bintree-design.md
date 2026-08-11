@@ -182,7 +182,10 @@ not carry, so each moves rather than dying.
   keep, together with its second clause — that validity is stated in the
   direction a single right-to-left pass carrying a counter can scan.
   `Ranked/Preorder.lean` does not mention `DyckWord`; both clauses move to its
-  module docstring, generalized to the pending count and the liveness flag.
+  module docstring, generalized to the pending count and the liveness flag —
+  and to three conditions rather than two, `valid_iff_scanFinal` adding the
+  empty buffer that width one makes vacuous. Transcribed unaltered the clause
+  would be false there.
   `docs/index.md` echoes it inside the entry for the deleted
   module, so the echo moves to that module's entry with it — deleting the
   entry alone would leave the record in one of its two homes.
@@ -327,8 +330,9 @@ it, so the `omega` stays within the permitted axioms.
 condition `simp` discharges here, so as simp rules they would be inert; and no
 counterpart of the deleted `depth_nil` and `ok_nil` is added, the recognizers'
 base case closing by `rfl` through the projections without one, which was
-compiled. `Ranked/Binary.lean`'s Implementation notes carry those reasons, the
-`@[expose]` one, and why `decide_length_eq_width` needs its case analysis; its
+compiled. `Ranked/Binary.lean`'s Implementation notes carry the `@[simp]`
+reason, the `@[expose]` one, `scanStep_of_not_live`'s placement, and why
+`decide_length_eq_width` needs its case analysis; its
 `## Main definitions` and `## Main statements` carry the new declarations. That
 docstring work is in the same commit as the declarations, so no commit ships a
 module whose docstring omits a public `def`.
@@ -494,7 +498,7 @@ in `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean`.
 | --- | --- |
 | `preorderSample` | redefined at `binRanked.Term` as `node (node leaf leaf) leaf`, merging with the `binarySample` that mirror already declares. Its docstring records that its `size` is five, counting leaves alongside internal nodes; that carries over to `RankedAlphabet.Term.size`, which counts the same way |
 | `print_leaf_eq` | dropped: restated over `spell` it is `binRanked.spell leaf = [false]`, which is `RankedAlphabet.Binary.spell_leaf`, an `@[simp]` theorem the branch keeps. A mirror restating a library lemma is code without a return |
-| `print_node_leaf_leaf_eq` | restated over `binRanked.spell`, by `decide` rather than `rfl`: `Nat.land`, which `code` runs through, is not exposed, so a block does not reduce during elaboration while the kernel evaluates it — the reason `Ranked/Binary.lean`'s own `code_leafSym` is `by decide` |
+| `print_node_leaf_leaf_eq` | restated over `binRanked.spell`, by `decide` rather than `rfl`: `Nat.land`, which `Nat.testBit` runs through, is not exposed, so a block does not reduce during elaboration while the kernel evaluates it — the reason `Ranked/Binary.lean`'s own `code_leafSym` is `by decide` |
 | `print_preorderSample_eq` | collapses into the surviving mirror's `spell_binarySample`: once `preorderSample` and `binarySample` are one term, the two statements are the same equation. The surviving name is kept |
 | `parse_print_leaf`, `parse_print_node_leaf_leaf`, `parse_print_preorderSample` | restated over `binRanked.parse`, by `decide`, in the form `(binRanked.parse w).map binRanked.spell = some w` that `GebTests/…/Ranked/Preorder.lean` already uses for its two descent assertions |
 | `parse_nil`, `parse_truncated`, `parse_trailing` | restated over `binRanked.parse`, by `decide`, in the form `(binRanked.parse w).map binRanked.spell = none` rather than `binRanked.parse w = none`: the latter is an equation in `Option binRanked.Term`, needing a `DecidableEq` on the W-type that the sibling mirror's Implementation notes record avoiding. These are the descent's three rejection mechanisms — empty input, a child's failure, trailing input. `GebTests/…/Ranked/Preorder.lean` asserts two descent values and sweeps `validBool` against `isSome parse`, but exhibits no rejection value, so these are restated rather than dropped |
@@ -644,7 +648,10 @@ first.
   B5 and that the workstream is complete when B4 has landed. Its § Facts
   established by building gains what this branch established, its opening
   paragraph attributing the new items to this segment as it attributes the
-  existing ones.
+  existing ones. Its § Read these first says B4 and B5 each get their own
+  brainstorming phase, spec, plan and segment, which this branch makes true of
+  B5 alone. Restating § B4's heading changes that document's table of
+  contents, so `doctoc` regenerates it, which the pre-push checklist verifies.
 
 [TODO.md](../../../TODO.md) is amended in the same branch:
 
@@ -660,14 +667,9 @@ first.
   `Cobham/RankedTree.lean`'s, with `isTree_smashFree` and the
   [Strahm2003] Theorem 1(2) corollary as the residue that is not. Without
   this entry the deferral is lost at merge, the spec being transient.
-- § Extensions of the tree recognizers gains two further deferrals: a
+- § Extensions of the tree recognizers gains one further deferral: a
   sweep-scale cross-check of `Cobham.isTreeSem` against `binRanked.validBool`,
-  which § Verification declines to add here, and the `Nat.le_zero.mp` site in
-  `Ranked/Preorder.lean` that takes a bound from the single lemma stating it,
-  against § Constructive-only Lean code's fourth rule. The second was
-  attempted in passing, this branch editing that module's docstring anyway;
-  `omega` does not discharge the goal there, so it stays a deferral rather
-  than a one-line correction.
+  which § Verification declines to add here.
 - A section of its own records the `.vale.ini` question § Out of scope
   describes. It belongs beside neither this workstream nor B5, concerning
   repository tooling rather than tree recognizers, and filing it under
@@ -751,8 +753,9 @@ first.
   is owed before the deletion commit rather than at the end of the branch.
 - **The `open` brings more than the counter form bare.** `open
   RankedAlphabet.Binary` puts the whole namespace into both recognizers
-  unqualified — the counter form and all fourteen of its lemmas, which is what
-  they consume, and beside them `binRanked`, `leaf`, `node`, `leafSym`,
+  unqualified — the counter form and all fourteen of its lemmas, six of which
+  the recognizers consume and eight of which serve only inside
+  `Ranked/Binary.lean`, and beside them `binRanked`, `leaf`, `node`, `leafSym`,
   `nodeSym` and the `code` and `spell` lemmas — and, until the deletion
   commit, `termEquiv` and
   its companions too. Nothing collides today: neither recognizer's namespace
@@ -837,6 +840,9 @@ before merge, so it does not transcribe it.
   theorem name.
 - `Geb/Mathlib/Computability/Cobham/RankedTree.lean` carries the collapsed
   bridge and its restated docstring.
+- `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean` carries one changed proof step:
+  the `Nat.le_zero.mp` correction § What `Ranked/Binary.lean` gains describes.
+  Its docstring restatement is not in the tree.
 
 Not in the tree: the Bellantoni-Cook module and its mirror, both
 `Data/Tree/` mirrors, the deletions, `Ranked/Binary.lean`'s docstring
