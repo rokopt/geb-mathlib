@@ -23,6 +23,7 @@ what the fixture is chosen to exhibit.
 * `counterEnc`, `counterDec`, `counterStep` — the carrier's encoding, its
   decoding, and the step a bit induces.
 * `counterFold` — the fold's value as a function of the word.
+* `counterShift` — an order-sensitive step, whose branches do not commute.
 
 ## Main statements
 
@@ -34,6 +35,8 @@ what the fixture is chosen to exhibit.
   the retraction hypothesis at this decoding.
 * `counterFold_sweep` — the same agreement computed in the kernel over every
   word of length at most seven.
+* `counterShift_values` — a word and its reverse take different values under
+  `counterShift`, exhibiting the fold's consumption order.
 
 ## Implementation notes
 
@@ -97,6 +100,17 @@ retraction hypothesis at a decoding that is not injective. -/
 theorem counterFold_eq (w : List Bool) :
     counterFold w = List.ofFn (counterEnc (w.foldr counterStep 0)) :=
   foldSem_eq counterEnc counterDec 0 counterStep counterDec_counterEnc.1 w
+
+/-- An order-sensitive step: a `true` bit advances the counter, a `false` bit
+doubles it. Unlike `counterStep`, its two branches do not commute. -/
+def counterShift : Bool → Fin 3 → Fin 3 := fun b a ↦ if b then a + 1 else a + a
+
+/-- The fold consumes the word's head first: a word and its reverse take
+different values, which no step with commuting branches could exhibit. -/
+theorem counterShift_values :
+    foldSem counterEnc counterDec 0 counterShift ![[true, false]] = [true, false] ∧
+      foldSem counterEnc counterDec 0 counterShift ![[false, true]] = [false, true] := by
+  decide
 
 /-- The same agreement read off the reduced values, over every word of length
 at most seven. -/
