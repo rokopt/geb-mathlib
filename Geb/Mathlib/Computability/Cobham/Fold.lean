@@ -1,0 +1,104 @@
+/-
+Copyright (c) 2026 Terence Rokop. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Terence Rokop
+-/
+module
+
+public import Geb.Mathlib.Computability.Cobham.Cases
+
+/-!
+# The fold at a carrier with a bit encoding
+
+The catamorphism of a list of bits at a carrier admitting a `p`-bit encoding,
+as an instance of the scan combinator. The carrier is arbitrary; its
+finiteness enters only through the existence of the encoding, and `dec` is
+unconstrained off the image of `enc`.
+
+## Main definitions
+
+* `Cobham.foldStep` — the fold's step, a dispatch on the encoded state.
+* `Cobham.foldSem` — the meaning of the scan at the encoded base and the two
+  steps.
+* `Cobham.fold`, `Cobham.foldOf` — the fold as an expression of `C`, and at
+  its declared arity.
+
+## Main statements
+
+* `Cobham.stepWord_foldStep` — the word the step contributes.
+* `Cobham.foldSem_nil`, `Cobham.foldSem_cons` — the fold on the empty word and
+  on one bit.
+* `Cobham.length_foldSem` — every state the fold produces has the encoding's
+  width.
+* `Cobham.length_foldSem_le` — the growth bound that width gives, in the form
+  the scan combinator asks for.
+* `Cobham.foldSem_eq_eval` — the meaning read at the raw tree is the meaning
+  the expression carries.
+* `Cobham.foldSem_eq` — the fold computes the carrier-level fold, encoded.
+
+## Implementation notes
+
+Neither the encoding-to-word nor the carrier-level fold is named: they are
+`List.ofFn (enc a)` and `w.foldr step init`, spelled at the length a name
+would cost. The two sides of `foldSem_eq` inhabit different types before
+`List.ofFn ∘ enc` is applied, so the encoding is applied rather than the two
+equated.
+
+`foldr` is the fold `Cobham.scanSem_eq` presents the scan as, and the
+direction `Cobham.evalRec` recurses in. The statement is over the Lean list on
+both sides, so no convention about which end of the word the list's head
+denotes enters it.
+
+`length_foldSem` and the bound `length_foldSem_le` that weakens it precede the
+retraction hypothesis and do not take it: every state the scan produces is a
+`List.ofFn` of an `enc` value — the base by `baseWord_constAtOf`, each step by
+`stepWord_constAtOf` — so its length is the encoding's width whatever `dec`
+does. Consequently `fold`, `foldOf` and `foldSem_eq_eval` take no retraction
+hypothesis either.
+
+`Fintype` and `FinEnum` appear nowhere, which keeps the module clear of the
+ordered-algebra and `Finset` instances the axiom rules warn about. The module
+takes no decision and carries no `Decidable` instance, so
+`DecidableEq (Fin p → Bool)`, which resolves through
+`Fintype.decidablePiFintype` and depends on `Classical.choice`, does not
+arise; a consumer deciding an equality of states decides it over `List Bool`,
+the states already being `List.ofFn` values.
+
+## References
+
+* [Cobham1965]
+
+## Tags
+
+Cobham, bounded recursion on notation, fold, catamorphism
+-/
+
+namespace Cobham
+
+public section
+
+universe u
+
+variable {α : Type u} {p : ℕ} (enc : α → Fin p → Bool)
+    (dec : (Fin p → Bool) → α) (init : α) (step : Bool → α → α)
+
+/-- The fold's step at a bit: decode the state, apply the carrier-level step,
+and spell the result. The dispatch is over the `p` bits of the state, which the
+diagonal supplies in both the scrutinee and the argument position. -/
+@[expose] def foldStep (b : Bool) : COf 1 :=
+  diagOf (casesOf p fun v ↦ constAtOf 1 (List.ofFn (enc (step b (dec v)))))
+
+/-- The step spells the carrier-level step of the state it decodes. -/
+theorem stepWord_foldStep (b : Bool) (u : List Bool) :
+    stepWord (foldStep enc dec step b) u =
+      List.ofFn (enc (step b (dec (bits p u)))) := by
+  change stepWord (diagOf (casesOf p fun v ↦
+    constAtOf 1 (List.ofFn (enc (step b (dec v)))))) u = _
+  rw [stepWord_diagOf]
+  change casesSem p (fun v ↦ constAtOf 1 (List.ofFn (enc (step b (dec v)))))
+    ![u, u] = _
+  rw [casesSem_eq, stepWord_constAtOf]
+
+end
+
+end Cobham
