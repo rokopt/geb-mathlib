@@ -25,42 +25,38 @@
 - [The workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) — the
   branch-by-branch record and the Lean facts each cost a failed build to
   learn. Read it before writing any Lean here.
-- [The design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md) —
-  its § Segment 2 and § Segment 3 are the specification for the next two
-  pieces of work. Its § Segment 1 is built and is history.
 - [TODO.md](../../../TODO.md) § Extensions of the tree recognizers, and
   [docs/index.md](../../index.md) for what is implemented.
 
+B4 has no specification. Its first phase is
+`superpowers:brainstorming`, not planning: a spec, then a plan, each
+carried to adversarial review convergence, per
+[AGENTS.md](../../../AGENTS.md) § Adversarial review of specs and plans.
+
 ## Which document owns what
 
-Two handoffs and one design sit in this tree, and they are not
-interchangeable. Keep an edit in the one that owns the subject.
+Two handoffs sit in this tree, and they are not interchangeable. Keep an
+edit in the one that owns the subject.
 
 - [The workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) owns
   the description of each remaining branch, the constraints each carries,
   the deferrals, and the accumulated Lean facts. It outlives this session.
-- [The design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md) owns
-  the specification of segments 2 and 3. It is transient in the sense
-  [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape gives, and is
-  removed in the final commits of segment 3.
 - This document owns the state of the line, what the last session
   delivered, and what to pick up next. Replace it when that state changes.
 
 ## Status of every roadmap item
 
-The roadmap letters and the design's segment numbers are different
-schemes, and conflating them has already caused one misreading. The case
-combinator carries no letter: it is shared machinery both B6 and B3 need,
-introduced because a dispatch over `2 ^ width` block values cannot be
-written out at a symbolic width.
+The case combinator carries no letter: it is shared machinery both B6 and
+B3 needed, introduced because a dispatch over `2 ^ width` block values
+cannot be written out at a symbolic width.
 
 | Item | What it is | Status |
 | --- | --- | --- |
 | B1 | `Geb/Mathlib/Data/Tree/Ranked/` — ranked alphabets, the preorder encoding, the validity scan, `BinTree` as the two-symbol instance | Done, unpushed |
 | B2 | `Cobham/Scan.lean` — the scan combinator, and `Cobham/Tree.lean` rebuilt on it | Done, unpushed |
 | — | `Cobham/Cases.lean` — definition by cases, with the constant-word, iterated-predecessor and diagonal combinators in `Cobham/Basic.lean` | Done, unpushed |
-| B6 | `Cobham/RankedTree.lean` — the generic ranked recognizer. Design § Segment 2 | Done, unpushed |
-| B3 | `Cobham/Fold.lean` — the catamorphism at a carrier with a bit encoding. Design § Segment 3 | **Not started** |
+| B6 | `Cobham/RankedTree.lean` — the generic ranked recognizer | Done, unpushed |
+| B3 | `Cobham/Fold.lean` — the catamorphism at a carrier with a bit encoding | Done, unpushed |
 | B4 | `BinTree` absorbed into `RankedAlphabet.Term`, the duplication in `Data/Tree/Preorder.lean` removed | Not started |
 | B5 | `Geb/Internal/` — linear time and space against Cslib's `MultiTapeTM` | Not started |
 
@@ -75,74 +71,67 @@ each segment as its own pull request, so the segments stay separately
 submittable while the commits stay in one chain.
 
 ```text
-main                              cfb6e2c7
-  └─ feat/ranked-tree-recognizers  B1
-       └─ feat/cobham-scanner      B2   0aef6df3
-            └─ feat/cobham-cases   e560f184
-                 └─ feat/cobham-ranked-tree  5964baff
+main                                   312c5adf
+  └─ feat/ranked-tree-recognizers      2f50f879
+       └─ feat/cobham-scanner          8cbff06f
+            └─ feat/cobham-cases       5ea87784
+                 └─ feat/cobham-ranked-tree  79aaea40
+                      └─ feat/cobham-fold
 ```
 
-`main` moved to `cfb6e2c7` (a Lean toolchain auto-update) after the line
-was cut. Nothing on the line depends on it; rebase before pushing.
+`main` is the line's base and has not moved since the line was cut: it is
+`312c5adf`, and `main..@` contains only this line's own commits. No rebase
+is needed before pushing.
 
-At `5964baff` the tree is clean and every gate passes: `lake build`,
-`lake test`, `lake lint`, `lake lint -- GebTests`, `scripts/lint-imports.sh`
-and `scripts/pre-push.sh` in full, which adds `lake shake` and the
-Markdown, table-of-contents and link checks.
+`feat/cobham-fold` is this segment's bookmark; it is set after this
+session's final commit, not before, so that it does not omit the commit
+removing this segment's own transient documents.
 
 ## What this session delivered
 
-The generic ranked recognizer, closing B6, in the commits from `f6cf8de4`
-to `5964baff`.
+The catamorphism at a carrier with a bit encoding, closing B3, in the
+commits from `822a80e3` to `d2a618e1`.
 
-- `Cobham/RankedTree.lean` — the scan state as a bitstring (`bufBits`,
-  `stateWord`, `dispatchWidth`); its decoder `decodeState` and inversion;
-  the step's decomposition (`dropCount`, `nextPrefix`); the step and scan
-  as expressions of the class (`rankedStep`, `rankedSem`, `ranked`,
-  `rankedOf`); the verdict test; and the bridge
-  (`isRankedSem_eq_singleton_iff_valid`,
-  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem`) to `Cobham/Tree.lean`'s
-  recognizer.
-- `Geb/Mathlib/Data/Tree/Ranked/{Basic,Code,Preorder}.lean` gained
-  `maxArity`, `arity_le_maxArity`, `le_maxArity_of_arOf_eq_some`,
-  `length_buf_scanFinal_lt`, `depth_scanFinal_le_length` and
-  `valid_iff_scanFinal`.
-- `GebTests/Mathlib/Computability/Cobham/RankedTree.lean` mirrors the
-  module, and the `GebTests/Mathlib/Data/Tree/Ranked/` mirrors extend to
-  the new statements.
-- `docs/index.md` and `TODO.md` record it; the segment's own plan is
-  removed in its final commits.
+- `Cobham/Fold.lean` — the step as a dispatch on the encoded state
+  (`foldStep`, `stepWord_foldStep`); the fold's meaning as the scan at the
+  encoded base and the two steps (`foldSem`, `foldSem_nil`, `foldSem_cons`);
+  the length invariant and the expression (`length_foldSem`,
+  `length_foldSem_le`, `fold`, `foldOf`, `foldSem_eq_eval`); and the
+  carrier-level fold (`foldSem_eq`), which identifies the value with
+  `List.ofFn` of the encoding of `w.foldr step init` under the retraction
+  hypothesis `∀ a, dec (enc a) = a`. The carrier is arbitrary; neither
+  `Fintype` nor `FinEnum` appears.
+- `GebTests/Mathlib/Computability/Cobham/Fold.lean` mirrors the module, at
+  a three-element carrier whose decoding is not injective off the image of
+  its encoding, so the retraction hypothesis is exercised rather than
+  trivially satisfied; `counterShift` and `counterShift_values` add a
+  second step whose branches do not commute, exhibiting the fold's
+  consumption order by giving a word and its reverse different values.
+- `GebTests/Mathlib/Data/Tree/Ranked/Basic.lean` gained
+  `length_wordsUpTo_seven`, the length the mirror's sweep uses.
+- `docs/index.md` and `TODO.md` record it.
 
-A prototype at `Geb/Internal/RankedTreeSpike.lean`, compiled at a symbolic
-`RankedAlphabet` during planning, was transcribed into the modules above
-and then deleted; its declarations' axioms were measured there and fell
-within `{propext, Quot.sound}`.
+A prototype at `Geb/Internal/FoldSpike.lean` and
+`Geb/Internal/FoldSpikeMirror.lean`, compiled at a symbolic carrier and
+encoding width during planning, was transcribed into the modules above and
+then deleted; its declarations' axioms were measured there and fell within
+`{propext, Quot.sound}`.
 
 ## What to pick up next
 
-**Segment 3: the fold at a finite carrier, closing B3.** The design's
-§ Segment 3 is its specification. It depends on B2 and the case
-combinator, both in place; the carrier is arbitrary, entering only through
-an encoding to and a decoding from `Fin p → Bool` at a symbolic `p`,
-neither `Fintype` nor `FinEnum` appearing.
+**B4: absorbing `BinTree` into `RankedAlphabet.Term`.** B4 has no
+specification, unlike B3 and B6 before it: the next session's first phase
+is `superpowers:brainstorming`, followed by its own spec, plan and
+adversarial review to convergence, per
+[AGENTS.md](../../../AGENTS.md) § Adversarial review of specs and plans.
+It depends on B1 and B2, both in place.
 
-Its content is `foldSem_eq`, which equates the scan's value with
-`List.ofFn` of the carrier's encoding of the carrier-level fold `w.foldr
-step init`, under the retraction hypothesis `∀ a, dec (enc a) = a`; the
-proof is a `List.rec` through `Cobham.scanSem_eq` and `bits_ofFn`.
-`length_foldSem_le` needs no retraction hypothesis, every state the scan
-produces already being a `List.ofFn` of an `enc` value of length `p`.
-Neither the encoding-to-word nor the carrier-level fold is named: both are
-spelled at the length a name would cost, and this revises the note in
-[TODO.md](../../../TODO.md) § Extensions of the tree recognizers that the
-encoding "must be named."
-
-Segment 3 also removes
-[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md) in
-its final commits, and so must reword the sentence in
-[TODO.md](../../../TODO.md) that refers to "the succinct tree-encoding
-references the design cites for context"; see
-[the workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) § B3.
+[The workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) § B4
+records what is absorbed — `termEquiv`, `spell_termEquiv` and `valid_iff`
+are the bridge B1 delivers, and `binRanked.parse w = (BinTree.parse
+w).map termEquiv` is the shape every further bridge takes — which modules
+name `BinTree`, and the staging decision that leaves the duplication in
+`Geb/Mathlib/Data/Tree/Preorder.lean` on `main` until B4 lands.
 
 ## Context the next session will want
 
@@ -156,11 +145,11 @@ tasks with no fix round at all. The plan carried transcribed compiled
 code, so implementers transcribed rather than composed.
 
 **A task-scoped review cannot see a module-scoped defect.** Every per-task
-review of the last segment came back clean; the whole-segment review then
-found two docstrings asserting the opposite of what their proofs did, and
-a pair of tests that opened with a rewrite which replaced the construction
-under test before anything computed. Budget for a final review that reads
-the segment as one body of work.
+review of the case-combinator segment came back clean; the whole-segment
+review then found two docstrings asserting the opposite of what their
+proofs did, and a pair of tests that opened with a rewrite which replaced
+the construction under test before anything computed. Budget for a final
+review that reads the segment as one body of work.
 
 **Two routes into `Classical.choice` are live in this material.** `omega`
 discharging an `Iff` goal pulls it in, so an equivalence is proved from
@@ -181,15 +170,16 @@ node applies its head at `fun i : Fin m ↦ …` while the lemma reads
 `![…]`; the two agree only by `funext`, and `congrArg f h` fails unless
 `h`'s two sides are written out explicitly first.
 
+**`rw` does not unfold a `def`.** `stepWord_foldStep` needed a `change` to
+the unfolded form before `stepWord_diagOf` applied, and a second `change`
+to present the goal as `casesSem` before `casesSem_eq` applied; `rw` is
+syntactic and does not search up to delta-reduction.
+
 ## Loose ends
 
 - `docs/references.bib` still has no key for `BarringtonCorbett1989`, nor
   for the three succinct-tree references. They are verified but uncited,
   and belong to the branch that first cites one, expected to be B5.
-- The design document is carried to segment 3 and removed there. Until
-  then a merged segment leaves it in `main`'s working tree, which
-  [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Concern shape otherwise
-  forbids; this is a recorded decision, not an oversight.
 - `Cobham/Tree.lean`'s `oneAtOf`, `falseAtOf` and `predPred` duplicate
   `constAtOf` and `predIter 2`. The substitution is definitionally
   transparent — measured, not argued — so removing the duplication is a

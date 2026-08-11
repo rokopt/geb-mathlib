@@ -9,7 +9,7 @@
 - [B2: the scan combinator (done)](#b2-the-scan-combinator-done)
 - [The case combinator (done)](#the-case-combinator-done)
 - [B6: the generic ranked recognizer (done)](#b6-the-generic-ranked-recognizer-done)
-- [B3: the fold](#b3-the-fold)
+- [B3: the fold (done)](#b3-the-fold-done)
 - [B4: absorbing `BinTree`](#b4-absorbing-bintree)
 - [B5: the time and space bound](#b5-the-time-and-space-bound)
 - [What completion means](#what-completion-means)
@@ -34,18 +34,15 @@
   `Geb/Mathlib/Data/Tree/Ranked/*` and
   `Geb/Mathlib/Computability/Cobham/*`.
 
-B6 and B3 are specified, in
-[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
-§ Segment 2 and § Segment 3; that document is transient and is removed in
-the final commits of segment 3. B4 and B5 have no specification: each gets
+B4 and B5 have no specification: each gets
 its own brainstorming phase, its own spec and plan, its own adversarial
 review to convergence, and its own segment. Do not treat this document as a
 spec: it records state and constraints, not decisions.
 
 ## Where the workstream stands
 
-B1, B2, the case combinator and B6 are done and unpushed, on one line off
-`main`; B3, B4 and B5 are not started. The per-item table in
+B1, B2, the case combinator, B6 and B3 are done and unpushed, on one line
+off `main`; B4 and B5 are not started. The per-item table in
 [the session handoff](2026-08-10-tree-recognizer-session-handoff.md)
 § Status of every roadmap item is the current record, and this document
 describes what each remaining item is.
@@ -82,8 +79,10 @@ descent and against `BinTree.Valid` over every word of length at most eight.
 
 ## Facts established by building
 
-Each of these cost a failed build: items 1 to 11 during B1, items 12 to 16
-during segment 2. The three marked corrected were stated wrongly in the
+Items 1 to 16 each cost a failed build — 1 to 11 during B1, 12 to 16 during
+the ranked-recognizer segment. Items 17 to 23 were established during the
+fold segment, several by measurement rather than by a failed build. The
+three marked corrected were stated wrongly in the
 previous handoff and cost a second failed build; do not reinstate them from
 any older document.
 
@@ -154,14 +153,48 @@ any older document.
     `omega`.
 15. **`List.takeWhile_replicate` depends on `Classical.choice`**, through
     `List.filter_replicate`, whose proof is a `simp_all` and so does not
-    show it in the source. This is a fourth route beyond the three the
-    design names; the two-case reduction that replaces it measures clean.
-    `DecidableEq (Fin n → Bool)` was measured the same way and does depend
-    on `Classical.choice`, while `DecidableEq (List Bool)` depends on
-    nothing.
+    show it in the source. This is a fourth route beyond `omega`
+    discharging an `Iff` goal, `DecidableEq (Fin n → Bool)` resolving
+    through `Fintype.decidablePiFintype`, and `RankedAlphabet.Scan`
+    deriving no `DecidableEq`; the two-case reduction that replaces it
+    measures clean. `DecidableEq (Fin n → Bool)` was measured the same way
+    and does depend on `Classical.choice`, while `DecidableEq (List Bool)`
+    depends on nothing.
 16. **Two concurrent `lake build` invocations corrupt package `.trace`
     files** and fail unrelated mathlib targets. The `lean-lsp` tools that
     run Lean count as a second process. Build alone.
+17. **`constAtOf` takes the arity explicitly**, `constAtOf (n : ℕ)
+    (u : List Bool) : COf n`; the calls are `constAtOf 0 …` for the base
+    and `constAtOf 1 …` for a branch.
+18. **`rw` does not unfold `foldStep`.** `stepWord_foldStep` opens with a
+    `change` to the `diagOf (casesOf …)` form before `stepWord_diagOf`
+    applies, and needs a second `change` to present the goal as `casesSem`
+    before `casesSem_eq` applies.
+19. **`scanSem_cons` is not a `rfl`**, so `foldSem ![b :: w]` is not
+    definitionally the step applied to `foldSem ![w]` and a `change` does
+    not reach it. `foldSem_cons` is stated and proved from `scanSem_cons`,
+    its last step `cases b <;> rfl` discharging `scanStepWord`'s `if`.
+20. **`Cobham.scanSem_eq_eval` instantiates directly at this base and
+    step**, and `Cobham.scanOf` likewise, so `foldSem_eq_eval` and `foldOf`
+    reuse them rather than restating them as `rfl` and `⟨fold …, rfl⟩`.
+    Both forms compile and both measure `[propext, Quot.sound]`; the
+    instantiating form is the one `Cobham/RankedTree.lean` uses.
+    `scanSem_eq_eval` is itself a `rfl`, unlike `casesSem_eq_eval`, whose
+    transport is opaque.
+21. **`#eval` of a fold value fails** with "Could not find native
+    implementation of external declaration `Cobham.constAt`" — the
+    cross-module IR gap
+    [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Lean 4
+    module system records. The mirror asserts by `decide`, which the
+    kernel evaluates and which needs no `public meta import`.
+22. **The sweep budget is seven.** At 255 words the sweep closes in about
+    twelve seconds under `set_option maxRecDepth 100000 in decide`; at 511
+    words it reaches the 200000-heartbeat `isDefEq` limit and fails. At
+    127 words it closes in about six seconds.
+23. **`linter.hashCommand` logs at info, not error**, so `#print axioms`
+    is available inside a `Geb/` module for measuring a prototype. It
+    remains barred from committed library code by review, not by the
+    linter.
 
 ## B2: the scan combinator (done)
 
@@ -196,36 +229,22 @@ two-symbol alphabet with the recognizer `Cobham/Tree.lean` carries. See
 `Geb/Mathlib/Computability/Cobham/RankedTree.lean` and
 `Geb/Mathlib/Data/Tree/Ranked/{Basic,Code,Preorder}.lean`.
 
-Depended on B1, B2 and the case combinator. Built to implementation detail
-in [the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
-§ Segment 2, which settled the `RankedAlphabet.Scan` bit layout the
-earlier revisions of this document recorded as undecided: the liveness
-flag, then the incomplete block in a fixed-width slot delimited by a
-sentinel, then the pending count in unary as the tail. The dispatch is the
-case combinator at `width + maxArity + 2` bits.
+Depended on B1, B2 and the case combinator. The `RankedAlphabet.Scan` bit
+layout is the liveness flag, then the incomplete block in a fixed-width
+slot delimited by a sentinel, then the pending count in unary as the tail.
+The dispatch is the case combinator at `width + maxArity + 2` bits.
 
-## B3: the fold
+## B3: the fold (done)
 
-`Geb/Mathlib/Computability/Cobham/Fold.lean`. Depends on B2 and the case
-combinator. Specified in
-[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
-§ Segment 3. It is a deliverable of the workstream for later workstreams
-to build on rather than a dependency of anything here, so it has no
-consumer in the repository on landing, which is its expected condition.
-
-The catamorphism at a finite carrier, whose step's configurable part carries no
-restriction of its own, both of the conditions the construction imposes being
-discharged from finiteness alone.
-
-`Fold.run_spell` relates a `List Bool` to the carrier's `p`-bit encoding. The
-two are not the same type, and a statement that equates them directly is
-ill-typed; name the encoding.
-
-[TODO.md](../../../TODO.md) § Extensions of the tree recognizers refers to
-"the succinct tree-encoding references the design cites for context," a
-persistent document naming a transient one. This branch removes the design
-in its final commits, per [CONTRIBUTING.md](../../../CONTRIBUTING.md)
-§ Concern shape, so it rewords that sentence to stand without the design.
+**B3 is done.** `Geb/Mathlib/Computability/Cobham/Fold.lean` gives the
+catamorphism of a list of bits at a carrier admitting a `p`-bit encoding,
+as an expression of Cobham's class; see [docs/index.md](../../index.md)
+for what it carries, this document's branch descriptions being for work
+not yet started. It is a deliverable of the workstream for later
+workstreams to build on rather than a dependency of anything here, so
+having no consumer in the repository on landing is its expected condition,
+not a cost to be justified against
+[CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
 ## B4: absorbing `BinTree`
 
@@ -287,7 +306,7 @@ linear on a right comb.
 
 ## What completion means
 
-Three items remain, in this order: B3, then B4, then B5.
+Two items remain, in this order: B4, then B5.
 
 B1 to B4 and B6 stand without B5. The workstream is complete when B4 has
 landed, so that no tree encoding is defined twice, B6 having already
@@ -311,11 +330,11 @@ state layout admits only at quadratic cost; a fold at an infinite carrier,
 which needs the `smash` generator; and the depth-first unary degree
 sequence encoding, whose condition for adoption is unbounded arity.
 
-`scripts/pre-push.sh` emits a non-blocking WARN that a commit belonging to
-the previous segment carries a 73-character subject, one over
+`scripts/pre-push.sh` emits a non-blocking WARN that commit `5cfd5ef1`, of
+the case-combinator segment, carries a 73-character subject, one over
 [docs/rules/ci-and-workflow.md](../../rules/ci-and-workflow.md)
 § Commit-message convention's "under 72 when possible." That commit is not
-part of this segment, so it is left alone; the WARN is open and
+part of any remaining branch, so it is left alone; the WARN is open and
 non-blocking.
 
 ## Process this session must follow
