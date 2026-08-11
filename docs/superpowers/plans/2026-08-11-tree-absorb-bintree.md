@@ -108,7 +108,7 @@ gains, and commit it.
 | `Geb/Mathlib/Computability/Cobham/Tree.lean` | 3 | the two-symbol recognizer, stated over the counter form and `binRanked.Valid` |
 | `Geb/Mathlib/Computability/Cobham/RankedTree.lean` | 3 | the generic recognizer; its bridge theorem collapses |
 | `Geb/Mathlib/Computability/BellantoniCook/Tree.lean` | 4 | the same, in `B` |
-| `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean` | 5, 6 | worked words for the alphabet, its spelling, its descent and its counter form |
+| `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean` | 5 | worked words for the alphabet, its spelling, its descent and its counter form |
 | `GebTests/Mathlib/Data/Tree/Ranked/Basic.lean` | 5 | the shared fixtures; its sweep inventory loses the retired mirror |
 | `GebTests/Mathlib/Computability/BellantoniCook/Tree.lean` | 5 | worked words for the `B` recognizer; three names lose `print` |
 | `Geb/Mathlib/Data/Tree/Binary.lean` | 6 | **deleted** |
@@ -178,6 +178,15 @@ lake build Geb.Mathlib.Data.Tree.Ranked.Binary
 ```
 
 Expected: `Built Geb.Mathlib.Data.Tree.Ranked.Binary`, no errors.
+
+Note what this build covers. `jj commit <paths>` commits the named paths and
+leaves the rest in the new working copy, so this build sees Tasks 2 and 3's
+edits as well: it verifies more than the commit, not the commit alone.
+That is sound here — the commit leaves the previous `Cobham/*.lean`, which
+still resolve `BinTree.ok`, `BinTree.depth` and
+`RankedAlphabet.Binary.valid_iff` from the modules this branch has not yet
+deleted — and the same holds of Task 2. From Task 4 on, the working copy and
+the commit coincide.
 
 - [ ] **Step 4: Check the axioms**
 
@@ -611,8 +620,7 @@ the W-type, which the sibling mirror's Implementation notes record avoiding.
 - [ ] **Step 3: Add the counter form's worked words**
 
 ```lean
-/-- The asymmetric term's spelling is valid. Its deleted counterpart was
-`⟨rfl, rfl⟩` against a conjunction; validity is now a `Bool` equation. -/
+/-- Validity itself on the asymmetric term's spelling. -/
 theorem valid_spell_binarySample :
     binRanked.Valid [true, true, false, false, false] := by decide
 
@@ -632,8 +640,9 @@ theorem not_valid_node_at_depth_one : ¬ binRanked.Valid [false, true, false] :=
 subterms pending. -/
 theorem depth_two_leaves : depth [false, false] = 2 := by decide
 
-/-- The liveness half of that word. Together with the two above, validity's
-conjuncts are separated in both directions. -/
+/-- The liveness half of that word. Together with the pair at
+`[false, true, false]`, validity's conjuncts are separated in both
+directions. -/
 theorem ok_two_leaves : ok [false, false] = true := by decide
 
 /-- And it is not valid. -/
@@ -696,9 +705,33 @@ most eight. -/
 - [ ] **Step 6: Restate that mirror's module docstring**
 
 Its title, summary, `## Main definitions`, `## Main statements` and `## Tags`
-all describe the equivalence with `BinTree`. The module's subject is now the
-two-symbol alphabet's spelling, its descent and the counter form of its scan.
-Keep the section order; keep `## Tags` to the module's enduring theme.
+all describe the equivalence with `BinTree`. Replace them with:
+
+```lean
+/-!
+# The two-symbol alphabet on worked words
+
+The spelling of a worked term, the descent's value on two spellings and its
+three rejections, and the counter form of the validity scan at the words that
+separate validity's two conjuncts.
+
+## Main definitions
+
+* `binarySample` — the term the assertions are stated at.
+
+## Main statements
+
+The assertions below give the worked term's spelling, the descent's value on
+two spellings and its rejection of the empty, the truncated and the trailing
+word, the pending count and the liveness verdict at a word failing each
+conjunct of validity, and the decision of validity at an accepting and a
+rejecting word.
+
+## Tags
+
+binary tree, ranked alphabet, preorder, descent, scan
+-/
+```
 
 - [ ] **Step 7: Build the mirror**
 
@@ -773,10 +806,40 @@ public import Geb.Mathlib.Data.Tree.Preorder
 Its title and summary say the term algebra is equivalent to `BinTree` and
 that the equivalence carries `spell` to `BinTree.print`; `## Main
 definitions` lists `termEquiv`; `## Main statements` lists `spell_termEquiv`
-and `valid_iff`; `## Tags` ends with the word "equivalence." The module's
-subject is
-now the two-symbol alphabet and the counter form of its scan. Keep the
-counter-form entries Task 1 added, and keep the Implementation notes.
+and `valid_iff`; `## Tags` ends with the word "equivalence." Replace the
+title, the summary, those bullets and the tag list with the following,
+keeping the counter-form entries Task 1 added and the whole of Implementation
+notes:
+
+```lean
+/-!
+# The two-symbol ranked alphabet
+
+The alphabet of one nullary and one binary symbol, spelled by one bit each.
+Its terms are the unlabelled binary trees, the initial algebra of
+`F X = 1 + X × X`, and its preorder encoding is `RankedAlphabet.spell` at
+this alphabet.
+
+At width one every block is a single bit, so the validity scan carries no
+incomplete block and its state reduces to a pending count and a liveness
+verdict. This module names that counter form and gives it one bit at a time,
+which is the shape a recognizer over the encoding is stated against.
+
+## Main definitions
+
+* `RankedAlphabet.Binary.binRanked` — the alphabet.
+* `RankedAlphabet.Binary.leaf`, `RankedAlphabet.Binary.node` — the two forms
+  of its terms.
+* `RankedAlphabet.Binary.depth`, `RankedAlphabet.Binary.ok` — the validity
+  scan's pending count and its liveness verdict, read off a whole word.
+```
+
+`## Main statements` keeps the counter-form bullets Task 1 added and loses the
+`spell_termEquiv` and `valid_iff` ones. `## Tags` becomes
+
+```lean
+binary tree, ranked alphabet, term algebra, preorder, scan
+```
 
 - [ ] **Step 3: Delete the three modules and edit the two indices**
 
@@ -834,14 +897,37 @@ and `Ranked/Basic.lean` already records its own `@[expose]` reason.
 
 - [ ] **Step 5: Restate the two remaining orphaned docstrings**
 
-In `Ranked/Basic.lean`: "The unlabelled binary trees of
-`Data/Tree/Binary.lean` are the terms of the alphabet of one symbol of arity
-zero and one of arity two" — restate over `RankedAlphabet.Binary`, which is
-now where those terms live; and "`Term` is `@[expose]`, as `BinTree` is" —
-state the reason without the comparison.
+In `Ranked/Basic.lean`, two sentences. Replace
 
-In `Ranked/Preorder.lean`: "`Data/Tree/Preorder.lean` is the case of one
-symbol of arity zero and one of arity two" — name `RankedAlphabet.Binary`.
+```lean
+The unlabelled binary trees of `Data/Tree/Binary.lean` are the terms of the
+alphabet of one symbol of arity zero and one of arity two.
+```
+
+with
+
+```lean
+The unlabelled binary trees are the terms of `RankedAlphabet.Binary`'s
+alphabet, of one symbol of arity zero and one of arity two.
+```
+
+and in its Implementation notes replace "`Term` is `@[expose]`, as `BinTree`
+is: without it …" with "`Term` is `@[expose]`: without it …", keeping the
+rest of that sentence unchanged.
+
+In `Ranked/Preorder.lean`, replace
+
+```lean
+`Data/Tree/Preorder.lean` is the case of one symbol of arity zero and one of
+arity two.
+```
+
+with
+
+```lean
+`RankedAlphabet.Binary` is the case of one symbol of arity zero and one of
+arity two.
+```
 
 - [ ] **Step 6: Build, lint, and check for residue**
 
@@ -908,9 +994,9 @@ jj commit -m "refactor(tree): delete the absorbed binary-tree encoding"
 - Add the deferral: a sweep-scale cross-check of `Cobham.isTreeSem` against
   `binRanked.validBool`, noting that at length six it follows from
   `isRankedSem_eq_validBool_binRanked` and the bridge theorem, so the
-  deferral is worth taking only above that, and that the workstream record's
-  item 22 measured a lighter computation reaching the heartbeat limit at 511
-  words.
+  deferral is worth taking only above that, and that a lighter computation was measured
+  reaching the 200000-heartbeat `isDefEq` limit at 511 words, so a sweep above
+  length seven may not elaborate at all.
 
 - [ ] **Step 3: Edit `TODO.md` § The Bellantoni-Cook tree recognizer**
 
@@ -1033,9 +1119,9 @@ roadmap entries.
 the others, its difficulty unbounded by anything done so far.
 
 § Context the next session will want keeps its existing entries — they remain
-true — and § Loose ends keeps the `docs/references.bib` entry and drops the
-`oneAtOf`/`falseAtOf` entry only if Task 7 recorded it in `TODO.md`
-(it does not; leave it).
+true — and § Loose ends keeps both of its entries: the `docs/references.bib`
+keys are still uncited, and the `oneAtOf`/`falseAtOf` duplication is still
+open, `TODO.md` § Extensions of the tree recognizers carrying it as well.
 
 - [ ] **Step 2: Amend the workstream record**
 
