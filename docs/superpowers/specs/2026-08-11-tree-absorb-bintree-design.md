@@ -38,12 +38,15 @@ while the whole of `Data/Tree/Ranked/` and
 `Cobham/{Scan,Cases,RankedTree,Fold}.lean` are unpushed on the line this
 branch extends.
 
-After it, one encoding of binary trees is defined in the repository:
+After it, one unlabelled binary-tree encoding is defined under
+`Geb/Mathlib/`:
 `RankedAlphabet.Binary.binRanked.Term` is the two-symbol tree,
 `binRanked.spell` its preorder encoding, `binRanked.parse` its
 fuel-bounded descent, and `binRanked.Valid` its language. The
 `BinTree` type, its own encoding, and the equivalence bridging the two
-developments are all deleted.
+developments are all deleted. `Geb/Internal/ConcreteSyntax.lean` keeps its
+own labelled `Ast` with its own printer and descent; that duplication is
+`TODO.md` § Binary trees item 2's subject and is untouched here.
 
 Every definition below is a projection or a specialization of a
 declaration already in `Geb/Mathlib/Data/Tree/Ranked/`. No definition or
@@ -139,8 +142,9 @@ bare beside `Nat`'s own residue API, which is the subject of a deferral
 `TODO.md` already records, so taking it would widen that deferral's surface
 across two long modules. Under the narrow open `Binary.ok` does not resolve
 at all, and bare `ok` and `depth` collide with nothing: neither recognizer's
-namespace declares either, which the build confirms. `valid_iff_exists_spell`
-is then named `RankedAlphabet.valid_iff_exists_spell` at its one use.
+namespace declares either, which the build confirms. `valid_iff_exists_spell` is
+then reached by generalized field notation, `binRanked.valid_iff_exists_spell`,
+at its one use.
 
 ## Orphaned references
 
@@ -194,6 +198,16 @@ not carry, so each moves rather than dying.
   rejects. The count of three belongs to `binRanked`, where a block is one
   bit and every block spells a symbol, and § Verification uses it only
   there.
+- **The initial-algebra characterization** (`Data/Tree/Binary.lean`
+  docstring): that these trees are the initial algebra of `F X = 1 + X × X`.
+  Nothing surviving says that of `binRanked.Term`, and `TODO.md` § Binary
+  trees items 1 and 2 are phrased in those terms, so it moves to
+  `Ranked/Binary.lean`'s restated docstring. Two neighbouring notes die with
+  their subject rather than moving: that `Direction` follows the
+  polynomial-functor modules' fibre-naming convention, and that it sends
+  `leaf` to `Fin 0` rather than `Empty` so both fibres lie in one family. The
+  ranked family is `fun i ↦ Fin (R.arity i)` by construction, so neither
+  observation has anything left to be about.
 - **`size`'s upstream adjacency** (`Data/Tree/Binary.lean`): that extracted
   upstream it would sit beside `BinaryTree.numNodes`, `numLeaves` and
   `height` and is none of the three. The observation now concerns
@@ -251,14 +265,35 @@ of the branch, when `BellantoniCook/Tree.lean` joins that closure.
 | `depth_cons_false_of_ok` | `depth (false :: w) = depth w + 1` | the four `scanStep` lemmas |
 | `depth_cons_true_of_ok_of_two_le_depth` | `depth (true :: w) = depth w - 1` | the four `scanStep` lemmas |
 
+The two names are the deleted module's. `depth` projects `Scan.depth` and
+matches it; `ok` projects `Scan.live` and does not, and the parent namespace's
+convention for a `Bool` beside a `Prop` is `validBool` beside `Valid`. `live`
+was considered and rejected: liveness is a property of a scan state, whereas
+these are functions of a word, and `ok w` reads as a verdict on `w` where
+`live w` reads as a category error. `validBool` is taken and means something
+stronger — validity is the verdict together with an empty buffer and one
+pending subterm — so the pair stays `depth` and `ok`.
+
+Defining `depth` and `ok` at all was weighed against writing
+`(binRanked.scanFinal w).depth` and `.live` at every site and stating the four
+`cons`-lemmas over those projections, which would add no names beside the
+`Scan` fields and raise no collision question. The two definitions are kept
+because the `cons`-lemmas need a subject to be about — a rewrite rule over a
+projection of a `foldr` reads as a fact about the fold rather than about a
+counter — and because the recognizers' statements are what a reader reads, and
+they carry the counter's meaning better at one word than at a projection.
+`depth_le_length` is the one declaration that does not earn its place that
+way: it is a wrapper `Nat.succ_le_succ (binRanked.depth_scanFinal_le_length u)`
+could replace at its single use site, and it is kept only because the deleted
+API had the name.
+
 `buf_scanFinal_eq_nil` names its bound as a hypothesis and discharges it
 by `omega` rather than applying `Nat.lt_one_iff`, per
 [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Constructive-only
 Lean code, whose fourth rule bars taking a `Nat` order bound from the
 single lemma that states it. `ok_cons_true` takes its two-way split from
-`Nat.lt_or_ge`, which is a lemma of the order API the same rule warns about;
-the warrant there is not the route but the measurement, `lake lint` passing
-over the closure that consumes it.
+`Nat.lt_or_ge`, which needs no exemption: case analysis is the other route
+that rule permits outright.
 
 `Ranked/Preorder.lean` reaches `List.eq_nil_of_length_eq_zero` at three
 sites by routes other than this one, one of them `Nat.le_zero.mp` — which is
@@ -298,9 +333,10 @@ Facts the compilation settled:
   it four times.
 - A projection of a `Scan` constructor does not reduce syntactically, as
   [the workstream record](../plans/2026-08-10-ranked-tree-b2-b5-handoff.md)
-  § Facts established by building item 12 states; `ok_cons_true` and
-  `depth_cons_true_of_ok_of_two_le_depth` each need a `dsimp only` after
-  the step rewrite.
+  § Facts established by building item 12 states;
+  `depth_cons_true_of_ok_of_two_le_depth` needs a `dsimp only` after the
+  step
+  rewrite, and `ok_cons_true` one in each branch of its case split.
 - `depth` unfolds under `simp only [depth]` at a hypothesis and the goal
   together, which `depth_cons_true_of_ok_of_two_le_depth` needs so that
   `omega` sees `2 ≤ depth w` and `depth w - 2 + 1` in one language.
@@ -319,8 +355,7 @@ The deleted `depth` was a standalone counter with truncating subtraction,
 so `depth (false :: v) = depth v + 1` held of every word. The scan
 records failure in `live` and leaves `depth` alone thereafter, so the two
 depth `cons`-lemmas carry an `ok w = true` hypothesis. The two `ok`
-`cons`-lemmas are unconditional, and are the old ones verbatim, as are
-`ok_nil` and `depth_nil`.
+`cons`-lemmas are unconditional, and are the old ones verbatim.
 
 Both recognizer proofs open with `cases hok : ok v`, and in the
 `ok v = false` branch neither depth lemma is used, so every site that
@@ -364,10 +399,11 @@ induction on the word is therefore the conjunction, guarded:
 At `[]` the scan is `⟨[], 0, true⟩` and the deleted counters are `0` and
 `true`. At `false :: v` both push. At `true :: v` the case split on `ok v`
 carries it, the two depths coinciding because `depth v - 2 + 1` and
-`depth v - 1` agree wherever `2 ≤ depth v` — which is the conjunct of
-`ok (true :: v)`, not of `ok v`: at `v = [false]`, `ok v` holds and
-`1 - 2 + 1` is `1` while `1 - 1` is `0`. Where `ok` fails the two diverge,
-the deleted counter continuing to subtract while the scan freezes.
+`depth v - 1` agree wherever `2 ≤ depth v`, which is the conjunct of
+`ok (true :: v)` rather than of `ok v`. Below that threshold the scan does not
+compute `depth v - 2 + 1` at all: it freezes the count and clears the liveness
+flag, while the deleted counter keeps subtracting. At `v = [false]` that is
+the difference between a frozen `1` and a subtracted `0`.
 
 That conjunction was also checked by computation during design, over every
 word of length at most eight, in the guarded form the induction takes. The
@@ -440,8 +476,7 @@ unused and every declaration measures within `{propext, Quot.sound}`.
 
 The deleted mirror `GebTests/Mathlib/Data/Tree/Preorder.lean` holds
 twenty-one declarations. Each is accounted for, and every restatement lands
-in `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean` unless the row says
-otherwise.
+in `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean`.
 
 | Declarations | Disposition |
 | --- | --- |
@@ -450,7 +485,7 @@ otherwise.
 | `print_node_leaf_leaf_eq` | restated over `binRanked.spell`, by `decide` rather than `rfl`: `Nat.land`, which `code` runs through, is not exposed, so a block does not reduce during elaboration while the kernel evaluates it — the reason `Ranked/Binary.lean`'s own `code_leafSym` is `by decide` |
 | `print_preorderSample_eq` | collapses into the surviving mirror's `spell_binarySample`: once `preorderSample` and `binarySample` are one term, the two statements are the same equation. The surviving name is kept |
 | `parse_print_leaf`, `parse_print_node_leaf_leaf`, `parse_print_preorderSample` | restated over `binRanked.parse`, by `decide`, in the form `(binRanked.parse w).map binRanked.spell = some w` that `GebTests/…/Ranked/Preorder.lean` already uses for its two descent assertions |
-| `parse_nil`, `parse_truncated`, `parse_trailing` | restated over `binRanked.parse`, by `decide`. These are the descent's three rejection mechanisms — empty input, a child's failure, trailing input. `GebTests/…/Ranked/Preorder.lean` asserts two descent values and sweeps `validBool` against `isSome parse`, but exhibits no rejection value, so these are restated rather than dropped |
+| `parse_nil`, `parse_truncated`, `parse_trailing` | restated over `binRanked.parse`, by `decide`, in the form `(binRanked.parse w).map binRanked.spell = none` rather than `binRanked.parse w = none`: the latter is an equation in `Option binRanked.Term`, needing a `DecidableEq` on the W-type that the sibling mirror's Implementation notes record avoiding. These are the descent's three rejection mechanisms — empty input, a child's failure, trailing input. `GebTests/…/Ranked/Preorder.lean` asserts two descent values and sweeps `validBool` against `isSome parse`, but exhibits no rejection value, so these are restated rather than dropped |
 | `depth_node_at_depth_one`, `ok_node_at_depth_one`, `depth_two_leaves`, `ok_two_leaves` | restated over `Binary.depth` and `Binary.ok`. These are the words separating validity's two conjuncts in both directions, and both survive the counter change: at `[false, true, false]` the scan reads `false` to depth one, then fails on `true` at depth one and freezes there, giving `depth = 1` and `ok = false`; at `[false, false]`, `depth = 2` and `ok = true` |
 | `valid_print_preorderSample`, `not_valid_two_leaves` | restated over `binRanked.Valid`, both changing shape: the first was `⟨rfl, rfl⟩` against a conjunction and the second `fun h ↦ absurd h.2 (by decide)`, and the predicate is now a `Bool` equation, so each becomes a `decide` |
 | `depth_le_length_nil`, `depth_le_length_leaves`, `depth_le_length_mixed` | all three restated over `Binary.depth_le_length`, at the empty word, at leaf bits only, and at a mixed word |
@@ -466,25 +501,47 @@ agreement statement and goes; the sweep is replaced below; the
 `## Main statements` and `## Tags` all describe the equivalence and are
 rewritten.
 
-The sweep in that mirror comparing `binRanked.validBool` against
-`decide (BinTree.Valid w)` loses its subject, both sides becoming one
-function once the two developments are one, and is deleted with nothing put
-in its place.
+The sweep in that mirror is
+`(wordsUpTo 8).all (fun w ↦ binRanked.validBool w == decide (BinTree.Valid w))`
+— the ranked scan against the deleted counter, over 511 words, which is
+`valid_iff` checked by computation. Its subject is `BinTree.Valid`, so once
+that is deleted the sweep is not merely vacuous but inexpressible. It is
+deleted with nothing put in its place.
 
-Nothing replaces it because nothing needs to. What the deleted sweep gave
-that the worked words do not is a check that the recognizer and the scan
-still agree when computed rather than proved — that `decide` reduces each to
-what its proofs are about, so that an `@[expose]` regression or a
-definitional drift fails a test rather than passing silently. A literal value
-assertion does that strictly better than an agreement assertion: `isTreeSem
-![w] = [true]` fails if that side's reduction drifts, while an agreement can
-hold with both sides wrong, and a pair of literal assertions at one word
-implies the agreement at that word. The check is therefore bought by pinning
-both routes at shared words, which this branch does anyway.
+What is lost is precise, and it is not what a recognizer-against-scan sweep
+would give. The retired sweep evaluated `binRanked.validBool` against a second
+and independent implementation of the same language over 511 words. After the
+branch there is no second implementation of that language to evaluate against,
+because having only one is the branch's purpose, so no sweep of that kind is
+available at any length. Computational coverage of `validBool` at `binRanked`
+therefore drops from 511 words to the worked words the mirrors pin, and the
+sweeps that survive in `GebTests/…/Ranked/Preorder.lean` do not compensate:
+they are at `sampleAlphabet` and `narrowAlphabet`, never at `binRanked`. The
+ground for accepting that is that the scan at `binRanked` is an instance of
+the generic scan those sweeps do exercise at 511 words, and that the
+recognizer over it is proved rather than sampled.
 
-It holds at three words, one accepting and two rejecting. Nothing here is a
-new assertion; the requirement is only that the two sets of worked words
-continue to meet, which the restatements above must preserve.
+A recognizer-against-scan sweep — `Cobham.isTreeSem ![w] == [true]` against
+`binRanked.validBool w` — is a different assertion, which the retired sweep
+never made, and adding it is new work rather than a replacement. § Out of scope
+declines it here and § Documentation records it in `TODO.md`. Two things are
+worth stating about it, since it is the first thing to reach for. Its
+proposition is a decidable instance of a theorem in its own import closure
+once `isTreeSem_eq_singleton_iff_valid` is restated over `binRanked.Valid`,
+`binRanked.Valid w` being `binRanked.validBool w = true` by definition. And it
+cannot catch a mis-stated step lemma: every declaration between the counter
+form and the recognizer is a theorem the kernel checks, so such a lemma either
+fails to prove or is true.
+
+What that sweep would check, and the only thing it would, is that the two
+sides still agree when computed rather than proved — that `decide` reduces
+each to what its proofs are about. That much the branch already has, at three
+words, from assertions it restates anyway. A literal value assertion buys it
+more strongly than an agreement assertion, since an agreement can hold with
+both sides wrong while a value cannot, and a pair of literal assertions at one
+word implies the agreement there. The requirement this places on the branch is
+not new code but a constraint on which words the two mirrors pin: they must
+keep meeting at an accepting word and at a rejecting one.
 
 | Word | `isTreeSem` pinned in `GebTests/…/Cobham/Tree.lean` | the scan pinned in `GebTests/…/Ranked/Binary.lean` |
 | --- | --- | --- |
@@ -493,14 +550,7 @@ continue to meet, which the restatements above must preserve.
 | `[false, false]` | `isTreeSem_wrong_depth`, `= []`, by `rfl` | `depth = 2`, `ok = true`, and `¬ binRanked.Valid`, restated from `depth_two_leaves`, `ok_two_leaves` and `not_valid_two_leaves` |
 
 Each is kernel-evaluated, by `rfl` on the recognizer side and `decide` on the
-scan side, so a drift in either route's reduction fails one of them. What is
-deliberately given up is sweep-scale coverage at the two-symbol
-alphabet: it drops from 511 words to these three. The sweeps that survive in
-`GebTests/…/Ranked/Preorder.lean` are at `sampleAlphabet` and
-`narrowAlphabet`, not at `binRanked`, so they do not compensate for it. The
-scan at `binRanked` is a case of the generic scan those sweeps exercise, and
-the recognizer over it is proved rather than sampled, which is the ground for
-accepting the drop.
+scan side, so a drift in either route's reduction fails one of them.
 
 `GebTests/Mathlib/Computability/Cobham/Tree.lean` is therefore not edited at
 all, and needs no new import, no `open` and no docstring change: its
@@ -599,10 +649,13 @@ about the pair is changed beyond the import removals.
   work is implied, but the commit order — additions, then consumer
   restatements, then deletions — is what keeps each commit building.
 - **The import swap enlarges both recognizers' closures.** They reach
-  `Data/Tree/Preorder.lean` today, whose only import is `Mathlib.Data.W.Basic`;
-  after the swap they reach `Ranked/Binary.lean` and so
+  `Data/Tree/Preorder.lean` today, and through it `Data/Tree/Binary.lean` and
+  `Mathlib.Data.W.Basic`; after the swap they reach `Ranked/Binary.lean` and
+  through it `Ranked/{Basic,Code,Preorder}.lean`, hence
   `Mathlib.Computability.Encoding`, `Mathlib.Algebra.BigOperators.Ring.List`
-  and `Mathlib.Data.Fin.VecNotation`. This repository treats closure growth as
+  and `Mathlib.Algebra.GroupWithZero.Nat`. `Mathlib.Data.Fin.VecNotation` is
+  not part of the delta: both recognizers write `![…]` today. This
+  repository treats closure growth as
   its principal axiom hazard —
   [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Constructive-only
   Lean code's first rule warns that a narrow measurement can be the opposite
@@ -644,11 +697,17 @@ about the pair is changed beyond the import removals.
 - **A sweep-scale cross-check of the recognizer against the scan.**
   § Verification gives the reason it is not added here and § Documentation
   records it in `TODO.md`.
-- **The remaining deferrals `TODO.md` records** — the placement of the
-  choice-free `Nat` residue lemmas, `oneAtOf` and `falseAtOf`
-  duplicating `constAtOf`, and the citation status of
-  `BarringtonCorbett1989` — none of which this branch touches. The
-  namespace-prefix deferral is not among them; § Documentation amends it.
+- **The deferrals `TODO.md` records**, among them the placement of the
+  choice-free `Nat` residue lemmas, `oneAtOf` and `falseAtOf` duplicating
+  `constAtOf`, `predPred` duplicating `predIter 2`, the citation status of
+  `BarringtonCorbett1989` and the three succinct-tree references, the
+  Bellantoni-Cook port of the scan combinator, the paramorphism, a fold at an
+  infinite carrier, and the degree-sequence encoding. One deserves naming
+  because this branch comes close to it: whether `combSem` generates an
+  equation lemma, whose resolution would correct a docstring in
+  `Cobham/Tree.lean` — a module this branch rewrites docstrings in. It is not
+  settled here, and the docstring in question is left as it stands. The
+  namespace-prefix deferral is not on this list; § Documentation amends it.
 
 ## Appendix: what is in the tree, and what is not
 
@@ -677,13 +736,16 @@ before merge, so it does not transcribe it.
   - `depth_cons_true_of_ok_of_two_le_depth`
 
 - `Geb/Mathlib/Computability/Cobham/Tree.lean` carries the import swap, the
-  `open`, and every statement § The consumers lists for it, restated and
-  building.
+  `open`, every statement § The consumers lists for it, and all of its
+  docstrings — the module docstring and each declaration docstring naming a
+  deleted name. It contains no occurrence of `BinTree` or of the pre-rename
+  theorem name.
 - `Geb/Mathlib/Computability/Cobham/RankedTree.lean` carries the collapsed
   bridge and its restated docstring.
 
-Not in the tree: the Bellantoni-Cook module and both test mirrors, the
-deletions, and the documentation edits.
+Not in the tree: the Bellantoni-Cook module and its mirror, both
+`Data/Tree/` mirrors, the deletions, the `Ranked/{Basic,Preorder,Binary}.lean`
+docstring restatements, and the `docs/index.md` and `TODO.md` edits.
 
 One check cannot be in the tree at all, since it names `BinTree.ok`, which
 this branch deletes. It is the computational half of the counter-form
