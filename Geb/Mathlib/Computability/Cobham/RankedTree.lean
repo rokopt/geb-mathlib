@@ -11,9 +11,8 @@ public import Geb.Mathlib.Data.Tree.Ranked.Preorder
 /-!
 # The generic ranked recognizer
 
-The state of the validity scan of
-`Geb/Mathlib/Data/Tree/Ranked/Preorder.lean`, at an arbitrary ranked alphabet,
-laid out as a bitstring.
+The validity scan of `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean`, at an
+arbitrary ranked alphabet, as an expression of Cobham's class.
 
 ## Main definitions
 
@@ -23,6 +22,10 @@ laid out as a bitstring.
 * `Cobham.decodeState` — the inverse of the state layout.
 * `Cobham.dropCount`, `Cobham.nextPrefix` — the bits a step drops and
   prepends.
+* `Cobham.rankedStep`, `Cobham.rankedSem` — the recognizer's step and the
+  meaning of its scan.
+* `Cobham.ranked`, `Cobham.rankedOf` — the scan as an expression of `C`, and
+  at its declared arity.
 
 ## Main statements
 
@@ -37,6 +40,11 @@ laid out as a bitstring.
   pending count at the depth window changes neither.
 * `Cobham.stateWord_scanStep_of_lt` — a step rewrites a bounded prefix and
   drops a bounded number of bits.
+* `Cobham.stepWord_rankedStep_of_lt`, `Cobham.rankedSem_eq` — the expression
+  computes the scan, one step and then on every input.
+* `Cobham.length_rankedSem_le` — the recursion bound the scanner asks for.
+* `Cobham.rankedSem_eq_eval` — the meaning read at the raw tree is the meaning
+  the expression carries.
 
 ## Implementation notes
 
@@ -89,6 +97,10 @@ otherwise those bits are the count itself.
 `RankedAlphabet.le_maxArity_of_arOf_eq_some` is what makes the window
 sufficient, and it is what `dropCount_min_depth` and `nextPrefix_min_depth`
 consume.
+
+## References
+
+* [Cobham1965]
 
 ## Tags
 
@@ -312,6 +324,74 @@ theorem stateWord_scanStep_of_lt (R : RankedAlphabet) (b : Bool) (s : Scan)
         · dsimp only
           rw [hdropr r, stateWord, List.replicate_succ, List.append_assoc]
           rfl
+
+/-- One step of the recognizer: dispatch on the state's leading bits, prepend
+the rebuilt prefix and drop the consumed bits. Every branch has that one
+shape. -/
+@[expose] def rankedStep (R : RankedAlphabet) (b : Bool) : COf 1 :=
+  diagOf (casesOf (dispatchWidth R) fun v ↦
+    prependOf (nextPrefix R b (decodeState R v))
+      (predIterOf (dropCount R b (decodeState R v))))
+
+/-- The recognizer's scan, at the two steps and the growth the state layout
+allows. -/
+@[expose] def rankedSem (R : RankedAlphabet) : Sem 1 :=
+  scanSem (constAtOf 0 (stateWord R ⟨[], 0, true⟩)) (rankedStep R false)
+    (rankedStep R true) (R.width + 1)
+
+/-- A step of the expression computes a step of the scan, on a state whose
+incomplete block is short of the width. This is where the decoder, the two
+capping lemmas and the step lemma meet. -/
+theorem stepWord_rankedStep_of_lt (R : RankedAlphabet) (b : Bool) (s : Scan)
+    (h : s.buf.length < R.width) :
+    stepWord (rankedStep R b) (stateWord R s) = stateWord R (R.scanStep b s) := by
+  rw [rankedStep, stepWord_diagOf]
+  change casesSem (dispatchWidth R) _ ![stateWord R s, stateWord R s] = _
+  rw [casesSem_eq, stepWord_prependOf, stepWord_predIterOf,
+    decodeState_stateWord_of_lt R s h, nextPrefix_min_depth, dropCount_min_depth,
+    stateWord_scanStep_of_lt R b s h]
+
+/-- The expression computes the scan's state word on every input. -/
+theorem rankedSem_eq (R : RankedAlphabet) (w : List Bool) :
+    rankedSem R ![w] = stateWord R (R.scanFinal w) := by
+  rw [rankedSem, scanSem_eq]
+  refine List.rec ?_ ?_ w
+  · rw [List.foldr_nil, baseWord_constAtOf, scanFinal_nil]
+  · intro b v ih
+    rw [List.foldr_cons, ih, scanFinal_cons]
+    cases b
+    · exact stepWord_rankedStep_of_lt R false _ (length_buf_scanFinal_lt R v)
+    · exact stepWord_rankedStep_of_lt R true _ (length_buf_scanFinal_lt R v)
+
+/-- The value never exceeds the input by more than the state's fixed part, so
+the scanner's recursion bound holds at growth `R.width + 1`. Stated at
+`scanSem`, which is the form `Cobham.scan` consumes. At the empty word the
+bound is tight. -/
+theorem length_rankedSem_le (R : RankedAlphabet) (w : List Bool) :
+    (scanSem (constAtOf 0 (stateWord R ⟨[], 0, true⟩)) (rankedStep R false)
+      (rankedStep R true) (R.width + 1) ![w]).length ≤ w.length + (R.width + 1) := by
+  have hlen := length_stateWord_of_lt R (R.scanFinal w) (length_buf_scanFinal_lt R w)
+  have hdepth := depth_scanFinal_le_length R w
+  rw [← rankedSem, rankedSem_eq, hlen]
+  omega
+
+/-- The scan as an expression of the class, its recursion bound discharged by
+`length_rankedSem_le`. -/
+@[expose] def ranked (R : RankedAlphabet) : C :=
+  scan (constAtOf 0 (stateWord R ⟨[], 0, true⟩)) (rankedStep R false)
+    (rankedStep R true) (R.width + 1) (length_rankedSem_le R)
+
+/-- `ranked` at its declared arity. -/
+@[expose] def rankedOf (R : RankedAlphabet) : COf 1 :=
+  scanOf (constAtOf 0 (stateWord R ⟨[], 0, true⟩)) (rankedStep R false)
+    (rankedStep R true) (R.width + 1) (length_rankedSem_le R)
+
+/-- The meaning `rankedSem` reads at the raw tree is the meaning `ranked`
+carries. -/
+theorem rankedSem_eq_eval (R : RankedAlphabet) :
+    transport (rankedOf R).2 (rankedOf R).1.eval = rankedSem R :=
+  scanSem_eq_eval (constAtOf 0 (stateWord R ⟨[], 0, true⟩)) (rankedStep R false)
+    (rankedStep R true) (R.width + 1) (length_rankedSem_le R)
 
 end
 
