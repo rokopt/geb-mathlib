@@ -1172,8 +1172,9 @@ import-direction rules above are enforced by
   `stateWord` lays the scan state out as a bitstring — the liveness flag, the
   incomplete block in a slot of the alphabet's width delimited by `bufBits`'s
   sentinel and padding, then the pending count in unary — and `decodeState`
-  inverts a bounded prefix of it back to a `Scan`, through `List.ofFn` rather
-  than `Fin` arithmetic so the module needs no `Fintype`-derived decidability.
+  inverts a bounded prefix of it back to a `Scan`, up to capping the pending
+  count at the depth window `R.maxArity + 1`, through `List.ofFn` rather than
+  `Fin` arithmetic so the module needs no `Fintype`-derived decidability.
   `rankedStep` dispatches on that prefix with `casesOf`, rewriting a bounded
   prefix (`nextPrefix`) and dropping a bounded number of bits (`dropCount`) per
   step; `rankedSem`, `ranked` and `rankedOf` carry the recursion with
@@ -1187,9 +1188,10 @@ import-direction rules above are enforced by
   recognizer's value on both branches; `isRankedSem_eq_singleton_iff_valid`
   identifies it with `RankedAlphabet.Valid`, and
   `isRankedSem_binRanked_eq_singleton_iff_isTreeSem` specialises the alphabet to
-  `RankedAlphabet.Binary.binRanked` to identify the recognizer with
-  `Cobham.isTree`. Neither `SmashFree (ranked R)` nor `SmashFree (isRanked R)`
-  is stated; `Cobham/Tree.lean` keeps the subject of `isTree_smashFree` and the
+  `RankedAlphabet.Binary.binRanked` to identify the language it accepts with
+  the language `Cobham.isTree` accepts. Neither `SmashFree (ranked R)` nor
+  `SmashFree (isRanked R)` is stated; `Cobham/Tree.lean` keeps the subject of
+  `isTree_smashFree` and the
   [Strahm2003] Theorem 1(2) reasoning. Depends on
   `Geb.Mathlib.Computability.Cobham.Cases`,
   `Geb.Mathlib.Computability.Cobham.Tree` and

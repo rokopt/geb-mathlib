@@ -118,6 +118,18 @@ theorem decodeState_partial_buf :
       (bits (dispatchWidth narrowAlphabet)
         (stateWord narrowAlphabet ⟨[true], 1, true⟩))).buf = [true] := by decide
 
+/-- And its pending count. -/
+theorem decodeState_partial_depth :
+    (decodeState narrowAlphabet
+      (bits (dispatchWidth narrowAlphabet)
+        (stateWord narrowAlphabet ⟨[true], 1, true⟩))).depth = 1 := by decide
+
+/-- And its flag. -/
+theorem decodeState_partial_live :
+    (decodeState narrowAlphabet
+      (bits (dispatchWidth narrowAlphabet)
+        (stateWord narrowAlphabet ⟨[true], 1, true⟩))).live = true := by decide
+
 /-- And a failed state's flag. -/
 theorem decodeState_dead_live :
     (decodeState narrowAlphabet

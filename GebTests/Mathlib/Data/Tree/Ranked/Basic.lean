@@ -75,13 +75,17 @@ theorem size_sampleNullary : sampleNullary.size = 1 := rfl
 /-- A binary term over two nullary children is three. -/
 theorem size_sampleBinary : sampleBinary.size = 3 := rfl
 
-/-- The enumeration the `Preorder` mirror sweeps holds every word of length
-at most six. -/
+/-- The enumeration the `Cobham/RankedTree` mirror's `narrow` and `binRanked`
+sweeps hold every word of length at most six. -/
 theorem length_wordsUpTo_six : (wordsUpTo 6).length = 127 := by
   set_option maxRecDepth 100000 in decide
 
-/-- The enumeration the `Binary` mirror sweeps holds every word of length at
-most eight. -/
+/-- The enumeration the `Cobham/RankedTree` mirror's `sampleAlphabet` sweep
+holds every word of length at most five. -/
+theorem length_wordsUpTo_five : (wordsUpTo 5).length = 63 := by decide
+
+/-- The enumeration the `Preorder` and `Binary` mirrors sweep holds every word
+of length at most eight. -/
 theorem length_wordsUpTo_eight : (wordsUpTo 8).length = 511 := by
   set_option maxRecDepth 100000 in decide
 
