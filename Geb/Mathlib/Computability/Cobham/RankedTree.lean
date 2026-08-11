@@ -26,6 +26,8 @@ arbitrary ranked alphabet, as an expression of Cobham's class.
   meaning of its scan.
 * `Cobham.ranked`, `Cobham.rankedOf` — the scan as an expression of `C`, and
   at its declared arity.
+* `Cobham.acceptWord`, `Cobham.acceptTest` — the accepting state's word and
+  the test deciding it.
 
 ## Main statements
 
@@ -45,6 +47,9 @@ arbitrary ranked alphabet, as an expression of Cobham's class.
 * `Cobham.length_rankedSem_le` — the recursion bound the scanner asks for.
 * `Cobham.rankedSem_eq_eval` — the meaning read at the raw tree is the meaning
   the expression carries.
+* `Cobham.ofFn_bits_stateWord_eq_iff` — the verdict window separates the
+  accepting state from every other reachable one.
+* `Cobham.stepWord_acceptTest` — the test's value at the state it reads.
 
 ## Implementation notes
 
@@ -73,8 +78,8 @@ The pending count is unary. Binary would need a truncated subtraction
 definable in the class, and `Cobham/Tree.lean`'s recognizer represents its own
 depth in unary already.
 
-`ofFn_bits_stateWord` is stated at an arbitrary window rather than at
-`dispatchWidth`.
+`ofFn_bits_stateWord` is stated at an arbitrary window, the dispatch and the
+verdict reading different ones.
 
 The branch family's domain is `Fin (dispatchWidth R) → Bool` at a symbolic
 width, so recovering the fields index by index would carry a bound proof at
@@ -151,7 +156,7 @@ theorem dropWhile_bufBits (R : RankedAlphabet) (buf : List Bool) :
 
 /-- The state word truncated to a window past the slot and zero-padded: the
 flag, the slot, and the pending count capped at the window. Stated at an
-arbitrary window rather than at `dispatchWidth`. -/
+arbitrary window, the dispatch and the verdict reading different ones. -/
 theorem ofFn_bits_stateWord (R : RankedAlphabet) (s : Scan) (p m : ℕ)
     (hp : p = 1 + R.width + m) (h : s.buf.length < R.width) :
     List.ofFn (bits p (stateWord R s)) =
@@ -392,6 +397,73 @@ theorem rankedSem_eq_eval (R : RankedAlphabet) :
     transport (rankedOf R).2 (rankedOf R).1.eval = rankedSem R :=
   scanSem_eq_eval (constAtOf 0 (stateWord R ⟨[], 0, true⟩)) (rankedStep R false)
     (rankedStep R true) (R.width + 1) (length_rankedSem_le R)
+
+/-- The accepting state's word: live, no incomplete block, one pending
+subterm. -/
+@[expose] def acceptWord (R : RankedAlphabet) : List Bool :=
+  stateWord R ⟨[], 1, true⟩
+
+/-- The verdict window separates the accepting state from every other state
+whose block is short of the width. It reads one bit past the accepting word,
+so a pending count above one is rejected. -/
+theorem ofFn_bits_stateWord_eq_iff (R : RankedAlphabet) (s : Scan)
+    (h : s.buf.length < R.width) :
+    List.ofFn (bits (R.width + 3) (stateWord R s)) = acceptWord R ++ [false] ↔
+      (s.live = true ∧ s.buf = [] ∧ s.depth = 1) := by
+  have hbuf : (bufBits R s.buf).length = R.width := length_bufBits_of_lt R s.buf h
+  have hnil : (bufBits R ([] : List Bool)).length = R.width :=
+    length_bufBits_of_lt R [] R.width_pos
+  have hleft := ofFn_bits_stateWord R s (R.width + 3) 2 (by omega) h
+  have hright : acceptWord R ++ [false] =
+      true :: (bufBits R [] ++ ([true] ++ [false])) := by
+    rw [acceptWord, stateWord, List.cons_append, List.cons_append,
+      List.append_assoc]
+    rfl
+  rw [hleft, hright]
+  constructor
+  · intro heq
+    injection heq with hhead htail
+    have hlen : (bufBits R s.buf).length = (bufBits R []).length := by
+      rw [hbuf, hnil]
+    obtain ⟨hslot, hrest⟩ := List.append_inj htail hlen
+    have hbufnil : s.buf = [] := by
+      have hd := congrArg (List.dropWhile (fun b ↦ !b)) hslot
+      rw [dropWhile_bufBits, dropWhile_bufBits] at hd
+      injection hd with _ hd'
+    refine ⟨hhead, hbufnil, ?_⟩
+    match hdep : s.depth with
+    | 0 =>
+      rw [hdep] at hrest
+      exact absurd hrest (by decide)
+    | 1 => rfl
+    | (n + 2) =>
+      rw [hdep, Nat.min_eq_left (by omega), (by omega : 2 - (n + 2) = 0)] at hrest
+      exact absurd hrest (by decide)
+  · intro hs
+    rw [hs.1, hs.2.1, hs.2.2]
+    rfl
+
+/-- The verdict test: the branch at the accepting window returns `[true]`, and
+every other branch the empty bitstring. The decision is taken on `List Bool`,
+whose `DecidableEq` depends on no axiom, rather than on
+`Fin (R.width + 3) → Bool`, whose instance routes through
+`Fintype.decidablePiFintype` and `Classical.choice`. -/
+@[expose] def acceptTest (R : RankedAlphabet) : COf 1 :=
+  diagOf (casesOf (R.width + 3) fun v ↦
+    if List.ofFn v = acceptWord R ++ [false] then constAtOf 1 [true]
+    else constAtOf 1 [])
+
+/-- The verdict test's value at the state it reads. -/
+theorem stepWord_acceptTest (R : RankedAlphabet) (u : List Bool) :
+    stepWord (acceptTest R) u =
+      if List.ofFn (bits (R.width + 3) u) = acceptWord R ++ [false] then [true]
+      else [] := by
+  rw [acceptTest, stepWord_diagOf]
+  change casesSem (R.width + 3) _ ![u, u] = _
+  rw [casesSem_eq]
+  by_cases hb : List.ofFn (bits (R.width + 3) u) = acceptWord R ++ [false]
+  · rw [if_pos hb, if_pos hb, stepWord_constAtOf]
+  · rw [if_neg hb, if_neg hb, stepWord_constAtOf]
 
 end
 
