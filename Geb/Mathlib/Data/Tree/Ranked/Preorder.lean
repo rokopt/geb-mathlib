@@ -49,6 +49,11 @@ is postfix notation in processing order.
 * `RankedAlphabet.valid_iff_isSome_parse` — the descent decides validity.
 * `RankedAlphabet.length_buf_scanFinal_of_live` — a live scan's incomplete
   block holds the word's length modulo the width.
+* `RankedAlphabet.length_buf_scanFinal_lt` — the incomplete block never fills.
+* `RankedAlphabet.depth_scanFinal_le_length` — the pending count is at most
+  the word's length.
+* `RankedAlphabet.valid_iff_scanFinal` — validity as three conditions on the
+  final state.
 
 ## Implementation notes
 
@@ -560,6 +565,74 @@ theorem length_buf_scanFinal_of_live (R : RankedAlphabet) :
         rw [ihv] at hlen
         simp only [heq, List.length_nil, List.length_cons]
         rw [add_one_mod _ _ R.width_pos, if_pos hlen])
+
+/-- The incomplete block never fills, whether or not the scan has failed.
+Stated unconditionally, which is the form a bitstring layout of the state
+consumes; the `List.rec` below establishes the live and failed cases at once
+rather than through `length_buf_scanFinal_of_live`. -/
+theorem length_buf_scanFinal_lt (R : RankedAlphabet) (w : List Bool) :
+    (R.scanFinal w).buf.length < R.width :=
+  List.rec R.width_pos
+    (fun b v ih ↦ by
+      rw [scanFinal_cons, scanStep]
+      cases (R.scanFinal v).live
+      · exact ih
+      · simp only []
+        cases hc : decide ((b :: (R.scanFinal v).buf).length = R.width)
+        · simp only [List.length_cons] at hc ⊢
+          have := of_decide_eq_false hc
+          omega
+        · simp only []
+          cases R.arOf (decodeBits (b :: (R.scanFinal v).buf))
+          · exact R.width_pos
+          · simp only []
+            cases decide (_ ≤ (R.scanFinal v).depth) <;> exact R.width_pos) w
+
+/-- The pending count is at most the word's length: every clause but the pop
+leaves it alone, and the pop raises it by at most one. -/
+theorem depth_scanFinal_le_length (R : RankedAlphabet) (w : List Bool) :
+    (R.scanFinal w).depth ≤ w.length :=
+  List.rec (Nat.le_refl 0)
+    (fun b v ih ↦ by
+      have hlen : (b :: v).length = v.length + 1 := rfl
+      rw [scanFinal_cons, scanStep]
+      cases (R.scanFinal v).live
+      · simp only []
+        omega
+      · simp only []
+        cases decide ((b :: (R.scanFinal v).buf).length = R.width)
+        · simp only []
+          omega
+        · simp only []
+          cases R.arOf (decodeBits (b :: (R.scanFinal v).buf))
+          · simp only []
+            omega
+          · simp only []
+            cases decide (_ ≤ (R.scanFinal v).depth)
+            · simp only []
+              omega
+            · simp only []
+              omega) w
+
+/-- Validity as the three conditions on the final state, which is the form a
+statement about the state word consumes. The two directions take different
+routes: the forward one splits `validBool`'s conjunction and reads each
+component, and the backward one closes by reduction once the fields are
+substituted. -/
+theorem valid_iff_scanFinal (R : RankedAlphabet) (w : List Bool) :
+    R.Valid w ↔ ((R.scanFinal w).live = true ∧ (R.scanFinal w).buf = [] ∧
+      (R.scanFinal w).depth = 1) := by
+  constructor
+  · intro hv
+    have hb : ((R.scanFinal w).live && (R.scanFinal w).buf.isEmpty &&
+        ((R.scanFinal w).depth == 1)) = true := hv
+    rw [Bool.and_eq_true, Bool.and_eq_true] at hb
+    exact ⟨hb.1.1, List.isEmpty_iff.mp hb.1.2, of_decide_eq_true hb.2⟩
+  · intro hf
+    change ((R.scanFinal w).live && (R.scanFinal w).buf.isEmpty &&
+      ((R.scanFinal w).depth == 1)) = true
+    rw [hf.1, hf.2.1, hf.2.2]
+    rfl
 
 /-- The converse of `scanFrom_code`: a live scan over a full block exhibits
 that block as a symbol's code. -/
