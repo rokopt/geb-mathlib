@@ -33,17 +33,17 @@ what the fixture is chosen to exhibit.
   out.
 * `counterFold_eq` — the fold's agreement with the carrier-level fold, from
   the retraction hypothesis at this decoding.
-* `counterFold_sweep` — the same agreement computed in the kernel over every
-  word of length at most seven.
 * `counterShift_values` — a word and its reverse take different values under
   `counterShift`, exhibiting the fold's consumption order.
+* `counterFold_sweep` — the same agreement computed in the kernel over every
+  word of length at most seven.
 
 ## Implementation notes
 
-The assertions reduce in the kernel, by `decide`. `#eval` is not available:
-the fold's value calls `Cobham.constAt`, a non-`meta` declaration of another
-module of this package, whose IR is not available to meta code across the
-boundary, so evaluation fails where elaboration does not.
+The assertions reduce in the kernel, by `decide`; `#eval` would require a
+`public meta import` of the module under test, since the fold's value calls
+`Cobham.constAt`, a non-`meta` declaration of another module of this package,
+whose IR is not otherwise available to meta code across the boundary.
 
 The sweep length is measured rather than conventional. At length seven the
 sweep closes under `set_option maxRecDepth 100000 in decide`; at length eight
@@ -105,8 +105,9 @@ theorem counterFold_eq (w : List Bool) :
 doubles it. Unlike `counterStep`, its two branches do not commute. -/
 def counterShift : Bool → Fin 3 → Fin 3 := fun b a ↦ if b then a + 1 else a + a
 
-/-- The fold consumes the word's head first: a word and its reverse take
-different values, which no step with commuting branches could exhibit. -/
+/-- The word's last bit is consumed first and the head's step applied to the
+fold of the rest: a word and its reverse take different values, which no step
+with commuting branches could exhibit. -/
 theorem counterShift_values :
     foldSem counterEnc counterDec 0 counterShift ![[true, false]] = [true, false] ∧
       foldSem counterEnc counterDec 0 counterShift ![[false, true]] = [false, true] := by
