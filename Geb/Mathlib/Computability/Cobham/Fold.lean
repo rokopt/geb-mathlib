@@ -57,9 +57,8 @@ does. Consequently `fold`, `foldOf` and `foldSem_eq_eval` take no retraction
 hypothesis either.
 
 The carrier `α` carries no `Fintype` or `FinEnum` instance; its finiteness
-enters only through `enc`, which keeps the module clear of the
-ordered-algebra and `Finset` instances the axiom rules warn about. The module
-takes no decision and carries no `Decidable` instance, so
+enters only through `enc`. The module takes no decision and carries no
+`Decidable` instance, so
 `DecidableEq (Fin p → Bool)`, which resolves through
 `Fintype.decidablePiFintype` and depends on `Classical.choice`, does not
 arise; a consumer deciding an equality of states decides it over `List Bool`,
@@ -132,8 +131,8 @@ theorem length_foldSem : ∀ w : List Bool,
 /-- The growth bound the scan combinator asks for, tight at the empty word.
 Stated at `scanSem`'s definition body rather than at `foldSem`, which is the
 form `Cobham.scan` consumes; the proof rests on `foldSem` being
-definitionally that term, which holds only while `foldSem` stays
-`@[expose]`. -/
+definitionally that term. `@[expose]` on `foldSem` is what lets the mirror
+reduce it by `decide` across the module boundary. -/
 theorem length_foldSem_le (w : List Bool) :
     (scanSem (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
       (foldStep enc dec step true) p ![w]).length ≤ w.length + p :=
