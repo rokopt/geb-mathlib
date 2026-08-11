@@ -120,7 +120,8 @@ That last line is not optional. `scripts/pre-push.sh` runs
 other import of that mirror implies it, so leaving it fails the branch's own
 gate.
 
-Neither recognizer imports `Geb.Mathlib.Data.Tree.Ranked.Binary` today; of
+Neither recognizer imported `Geb.Mathlib.Data.Tree.Ranked.Binary` before this
+branch; of
 the source modules only `Cobham/RankedTree.lean` and the directory index
 `Data/Tree/Ranked.lean` do. For both recognizers, then, this is a new
 import rather than a redirected one. Both replacements are `public`,
@@ -257,9 +258,12 @@ few measuring it narrowly.
 [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Constructive-only
 Lean code's first rule asks for the measurement to be taken in the closure
 of the module that consumes the declarations. That closure is the restated
-`Cobham/Tree.lean`'s, which is enlarged by the import swap — see § Risks —
-and the passing lint is taken with the swap in place, so it is the
-measurement that binds rather than a narrow one. It is run again at the end
+`Cobham/Tree.lean`'s, which is enlarged by the import swap — see § Risks. The
+passing lint is taken with the swap in place, so it is not the narrow
+measurement that rule warns of; it is not yet the binding one either, since
+`Ranked/Binary.lean` still imports `Data/Tree/Preorder.lean` until the
+deletion commit, making the present closure a superset of the final one. It
+is run again at the end
 of the branch, when `BellantoniCook/Tree.lean` joins that closure.
 
 | Declaration | Statement | Provenance |
@@ -316,8 +320,8 @@ single lemma that states it. `ok_cons_true` takes its two-way split from
 that rule permits outright.
 
 `Ranked/Preorder.lean` reaches `List.eq_nil_of_length_eq_zero` at three
-sites by routes other than this one, one of them `Nat.le_zero.mp` — the single
-lemma stating its bound, and so the thing the fourth rule bars. That predates
+sites, one of which reached it by `Nat.le_zero.mp` — the single lemma stating
+its bound, and so the thing the fourth rule bars. That predates
 this branch and is corrected in it, the branch editing that module anyway. The
 correction is not `by omega` alone: the `Nat.rec` base case presents the bound
 as `w.length ≤ Nat.zero`, and `omega` treats the unreduced `Nat.zero` as an
@@ -808,8 +812,13 @@ before merge, so it does not transcribe it.
   between `spell_node` and `ofBinTree`, and its module docstring *amended* for
   it — the new definitions and the principal new statements entered under
   `## Main definitions` and `## Main statements`, and the `@[expose]`,
-  `@[simp]` and `cases b`
-  rationales under Implementation notes. The docstring's equivalence content
+  `@[simp]`, `cases b` and `scanStep_of_not_live`-placement rationales under
+  Implementation notes. It also carries docstrings newly added to the
+  surviving `spell_leaf` and `spell_node`, which had none — required of every
+  theorem by
+  [docs/rules/lean-coding.md](../../rules/lean-coding.md) § Comment and
+  docstring rules, and written here because the branch restates that module's
+  documentation anyway. The docstring's equivalence content
   is untouched and still names `BinTree`, `termEquiv`, `spell_termEquiv` and
   `valid_iff`, because those declarations still exist; § Orphaned references'
   full restatement of the title, summary, those bullets and the "equivalence"
