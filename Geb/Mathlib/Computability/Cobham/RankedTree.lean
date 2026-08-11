@@ -6,13 +6,15 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Computability.Cobham.Cases
-public import Geb.Mathlib.Data.Tree.Ranked.Preorder
+public import Geb.Mathlib.Computability.Cobham.Tree
+public import Geb.Mathlib.Data.Tree.Ranked.Binary
 
 /-!
 # The generic ranked recognizer
 
 The validity scan of `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean`, at an
-arbitrary ranked alphabet, as an expression of Cobham's class.
+arbitrary ranked alphabet, composed with a verdict test into a recognizer, as
+an expression of Cobham's class.
 
 ## Main definitions
 
@@ -28,6 +30,9 @@ arbitrary ranked alphabet, as an expression of Cobham's class.
   at its declared arity.
 * `Cobham.acceptWord`, `Cobham.acceptTest` — the accepting state's word and
   the test deciding it.
+* `Cobham.isRankedRaw`, `Cobham.isRanked`, `Cobham.isRankedOf`,
+  `Cobham.isRankedSem` — the recognizer's raw tree, the expression of `C` over
+  it, that expression at its declared arity, and its meaning.
 
 ## Main statements
 
@@ -50,6 +55,16 @@ arbitrary ranked alphabet, as an expression of Cobham's class.
 * `Cobham.ofFn_bits_stateWord_eq_iff` — the verdict window separates the
   accepting state from every other reachable one.
 * `Cobham.stepWord_acceptTest` — the test's value at the state it reads.
+* `Cobham.wValid_isRankedRaw` — the raw tree's admissibility, from its two
+  components'.
+* `Cobham.isRankedSem_apply`, `Cobham.isRankedSem_eq_ite` — the composition's
+  value, and the value on both branches.
+* `Cobham.isRankedSem_eq_singleton_iff_valid` — the recognizer accepts exactly
+  the words spelling a term.
+* `Cobham.isRankedSem_eq_eval` — the meaning read at the raw tree is the
+  meaning the expression carries.
+* `Cobham.isRankedSem_binRanked_eq_singleton_iff_isTreeSem` — at the
+  two-symbol alphabet it accepts the language `Cobham.isTree` accepts.
 
 ## Implementation notes
 
@@ -103,13 +118,37 @@ otherwise those bits are the count itself.
 sufficient, and it is what `dropCount_min_depth` and `nextPrefix_min_depth`
 consume.
 
+Neither `SmashFree (ranked R)` nor `SmashFree (isRanked R)` is stated here.
+`smashFreeBool` is a `WType.elim` over the whole tree, so at a symbolic
+alphabet it is not `decide`-dischargeable and needs a recursion mirroring
+`wValid_casesRaw`, and at a concrete alphabet it forces every node. Nothing in
+this module uses `smash`, so the statement is expected to hold and is left to
+the branch that needs it. `Cobham/Tree.lean` keeps `comb` and
+`isTree`, so `isTree_smashFree` and the [Strahm2003] Theorem 1(2) reasoning
+keep their subject.
+
+No equivalence here is discharged by `omega`, which pulls `Classical.choice`
+on an `Iff` goal; each is built from its two implications or from
+`Iff.trans`.
+
+`isRankedSem_eq_ite` pins the value on the rejecting branch as well as the
+accepting one. `isRankedSem_eq_singleton_iff_valid` alone would admit a
+recognizer returning `[false]` on a rejected word, so correctness as a
+function is not implied by correctness of the accepted set.
+
+The containment this module realizes is an instance of Cobham's
+characterisation of the polynomial-time functions; what it delivers is an
+explicit expression computing the decision, not a new theorem.
+
 ## References
 
 * [Cobham1965]
+* [Strahm2003]
 
 ## Tags
 
-Cobham, bounded recursion on notation, ranked alphabet, preorder, scan
+Cobham, bounded recursion on notation, ranked alphabet, preorder, scan,
+recognizer
 -/
 
 namespace Cobham
@@ -464,6 +503,84 @@ theorem stepWord_acceptTest (R : RankedAlphabet) (u : List Bool) :
   by_cases hb : List.ofFn (bits (R.width + 3) u) = acceptWord R ++ [false]
   · rw [if_pos hb, if_pos hb, stepWord_constAtOf]
   · rw [if_neg hb, if_neg hb, stepWord_constAtOf]
+
+/-- The raw tree of the recognizer: the verdict test on the scan. -/
+@[expose] def isRankedRaw (R : RankedAlphabet) : sig.toPFunctor.W :=
+  WType.mk (.comp 1 1) fun d ↦
+    match d with
+    | .inl () => (acceptTest R).1.1.1
+    | .inr _ => (rankedOf R).1.1.1
+
+/-- The recognizer's tree is admissible, from its two components'. `decide`
+does not apply: at a symbolic alphabet nothing reduces, so the pair of a case
+analysis and the index condition's `funext` is written out. -/
+theorem wValid_isRankedRaw (R : RankedAlphabet) : sig.WValid (isRankedRaw R) :=
+  ⟨fun d ↦ match d with
+    | .inl () => (acceptTest R).1.1.2
+    | .inr _ => (rankedOf R).1.1.2,
+  funext fun d ↦ match d with
+    | .inl () => (sig.wIndexValid_index_eq_wIndexRoot _).trans (acceptTest R).2
+    | .inr _ => (sig.wIndexValid_index_eq_wIndexRoot _).trans (rankedOf R).2⟩
+
+/-- The recognizer as an expression of the class: whether a bitstring spells a
+term of the alphabet. -/
+@[expose] def isRanked (R : RankedAlphabet) : C :=
+  ⟨⟨isRankedRaw R, wValid_isRankedRaw R⟩,
+    ⟨trivial, fun d ↦ match d with
+      | .inl () => (acceptTest R).1.2
+      | .inr _ => (rankedOf R).1.2⟩⟩
+
+/-- `isRanked` at its declared arity. -/
+@[expose] def isRankedOf (R : RankedAlphabet) : COf 1 := ⟨isRanked R, rfl⟩
+
+/-- The recognizer's meaning at its arity, read at the raw tree. -/
+@[expose] def isRankedSem (R : RankedAlphabet) : Sem 1 :=
+  semAt 1 ⟨isRankedRaw R, wValid_isRankedRaw R⟩ rfl
+
+/-- The meaning `isRankedSem` reads at the raw tree is the meaning `isRanked`
+carries. -/
+theorem isRankedSem_eq_eval (R : RankedAlphabet) :
+    transport (isRankedOf R).2 (isRankedOf R).1.eval = isRankedSem R := rfl
+
+/-- One step of the recognizer: the verdict test on the scan's value. The
+composition applies its head at `fun _ : Fin 1 ↦ r` while `stepWord` applies it
+at `![r]`, and the two agree only by `funext`. -/
+theorem isRankedSem_apply (R : RankedAlphabet) (w : List Bool) :
+    isRankedSem R ![w] = stepWord (acceptTest R) (rankedSem R ![w]) :=
+  congrArg (semAt 1 (acceptTest R).1.1 (acceptTest R).2)
+    (funext fun i ↦ match i with | ⟨0, _⟩ => rfl)
+
+/-- The recognizer's value on both branches: a rejected word receives the empty
+bitstring, not merely something other than `[true]`. -/
+theorem isRankedSem_eq_ite (R : RankedAlphabet) (w : List Bool) :
+    isRankedSem R ![w] = if R.Valid w then [true] else [] := by
+  have hsep := ofFn_bits_stateWord_eq_iff R (R.scanFinal w)
+    (length_buf_scanFinal_lt R w)
+  rw [isRankedSem_apply, rankedSem_eq, stepWord_acceptTest]
+  by_cases hv : R.Valid w
+  · rw [if_pos hv, if_pos (hsep.mpr ((valid_iff_scanFinal R w).mp hv))]
+  · rw [if_neg hv, if_neg fun hw ↦ hv ((valid_iff_scanFinal R w).mpr (hsep.mp hw))]
+
+/-- The recognizer accepts exactly the words spelling a term. -/
+theorem isRankedSem_eq_singleton_iff_valid (R : RankedAlphabet) (w : List Bool) :
+    isRankedSem R ![w] = [true] ↔ R.Valid w := by
+  rw [isRankedSem_eq_ite]
+  by_cases hv : R.Valid w
+  · rw [if_pos hv]
+    exact ⟨fun _ ↦ hv, fun _ ↦ rfl⟩
+  · rw [if_neg hv]
+    exact ⟨fun hw ↦ absurd hw (by nofun), fun h ↦ absurd h hv⟩
+
+/-- At the two-symbol alphabet the generic recognizer accepts the language the
+recognizer of `Cobham/Tree.lean` accepts. Every link relates semantic
+predicates on `List Bool`, so neither `binRanked`'s `width` and `maxArity` nor
+the two recognizers' differing failure conventions need reconciling. -/
+theorem isRankedSem_binRanked_eq_singleton_iff_isTreeSem (w : List Bool) :
+    isRankedSem RankedAlphabet.Binary.binRanked ![w] = [true] ↔
+      isTreeSem ![w] = [true] :=
+  (isRankedSem_eq_singleton_iff_valid _ w).trans
+    ((RankedAlphabet.Binary.valid_iff w).trans
+      (isTreeSem_eq_singleton_iff_valid w).symm)
 
 end
 
