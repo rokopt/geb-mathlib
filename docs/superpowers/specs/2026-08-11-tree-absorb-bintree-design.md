@@ -273,10 +273,10 @@ of the branch, when `BellantoniCook/Tree.lean` joins that closure.
 | `scanStep_true_of_live_of_buf_nil_of_two_le_depth` | `binRanked.scanStep true s = ⟨[], s.depth - 2 + 1, true⟩` | `scanStep` unfolded |
 | `scanStep_true_of_live_of_buf_nil_of_depth_lt_two` | `binRanked.scanStep true s = ⟨[], s.depth, false⟩` | `scanStep` unfolded |
 | `scanStep_of_not_live` | `binRanked.scanStep b s = s` | `scanStep` unfolded |
-| `ok_cons_false` | `ok (false :: w) = ok w` | the four `scanStep` lemmas |
-| `ok_cons_true` | `ok (true :: w) = (ok w && decide (2 ≤ depth w))` | the four `scanStep` lemmas |
-| `depth_cons_false_of_ok` | `depth (false :: w) = depth w + 1` | the four `scanStep` lemmas |
-| `depth_cons_true_of_ok_of_two_le_depth` | `depth (true :: w) = depth w - 1` | the four `scanStep` lemmas |
+| `ok_cons_false` | `ok (false :: w) = ok w` | `scanStep_of_not_live` and the `false` step lemma |
+| `ok_cons_true` | `ok (true :: w) = (ok w && decide (2 ≤ depth w))` | `scanStep_of_not_live` and both `true` step lemmas |
+| `depth_cons_false_of_ok` | `depth (false :: w) = depth w + 1` | the `false` step lemma |
+| `depth_cons_true_of_ok_of_two_le_depth` | `depth (true :: w) = depth w - 1` | the `two_le_depth` step lemma, then `omega` |
 
 The two names are the deleted module's. `live` has the better claim on the
 naming rule, matching the field it projects as `depth` does; `ok` is kept
@@ -313,10 +313,14 @@ single lemma that states it. `ok_cons_true` takes its two-way split from
 that rule permits outright.
 
 `Ranked/Preorder.lean` reaches `List.eq_nil_of_length_eq_zero` at three
-sites by routes other than this one, one of them `Nat.le_zero.mp` — which is
-the single lemma stating its bound, and so is the thing the fourth rule bars.
-That predates this branch and is not fixed here; § Documentation records it
-in `TODO.md` instead.
+sites by routes other than this one, one of them `Nat.le_zero.mp` — the single
+lemma stating its bound, and so the thing the fourth rule bars. That predates
+this branch and is corrected in it, the branch editing that module anyway. The
+correction is not `by omega` alone: the `Nat.rec` base case presents the bound
+as `w.length ≤ Nat.zero`, and `omega` treats the unreduced `Nat.zero` as an
+atom, so the bound is first named at a literal (`have hzero : w.length ≤ 0 :=
+hw`) and then discharged — which is the rule's own form. Both lints pass over
+it, so the `omega` stays within the permitted axioms.
 
 `ok_cons_false` and `ok_cons_true` carry `@[simp]`; the two depth
 `cons`-lemmas do not, neither `ok w = true` nor `2 ≤ depth w` being a side
@@ -328,78 +332,6 @@ compiled. `Ranked/Binary.lean`'s Implementation notes carry those reasons, the
 `## Main definitions` and `## Main statements` carry the new declarations. That
 docstring work is in the same commit as the declarations, so no commit ships a
 module whose docstring omits a public `def`.
-
-The two names are the deleted module's, and that is the ground for keeping
-them: every site that changes is then a substitution, in the recognizers' `rw`
-chains and in their docstrings alike, rather than a rewriting. `live` would
-match the field `ok` projects, as `depth` matches the field it projects, and
-the module's own docstring calls `ok` the liveness verdict — so the name is a
-concession to continuity, not the name the projection would get on its own.
-`validBool`, which is the parent namespace's `Bool` name, is taken and means
-something stronger: validity is the verdict together with an empty buffer and
-one pending subterm.
-
-Defining `depth` and `ok` at all was weighed against writing
-`(binRanked.scanFinal w).depth` and `.live` at every site and stating the four
-`cons`-lemmas over those projections, which would add no names beside the
-`Scan` fields and raise no collision question. The two definitions are kept
-because the `cons`-lemmas need a subject to be about — a rewrite rule over a
-projection of a `foldr` reads as a fact about the fold rather than about a
-counter — and because the recognizers' statements are what a reader reads, and
-they carry the counter's meaning better at one word than at a projection.
-`depth_le_length` is a wrapper — `Nat.succ_le_succ
-(binRanked.depth_scanFinal_le_length u)` closes its one proof site without it
-— and it earns its place by being named rather than applied: it is the bound
-`Cobham/Tree.lean`'s Implementation notes and `length_combSem_le`'s docstring
-cite as the reason the recursion bound holds, and the bound the restated
-mirror instances at three words. A cited name is what those five references
-need; a term written out at the site would leave them citing a generic
-lemma about a scan
-state where the reader is reading about a counter.
-
-`buf_scanFinal_eq_nil` names its bound as a hypothesis and discharges it
-by `omega` rather than applying `Nat.lt_one_iff`, per
-[docs/rules/lean-coding.md](../../rules/lean-coding.md) § Constructive-only
-Lean code, whose fourth rule bars taking a `Nat` order bound from the
-single lemma that states it. `ok_cons_true` takes its two-way split from
-`Nat.lt_or_ge`, which needs no exemption: case analysis is the other route
-that rule permits outright.
-
-`Ranked/Preorder.lean` reaches `List.eq_nil_of_length_eq_zero` at three
-sites by routes other than this one, one of them `Nat.le_zero.mp` — which is
-the single lemma stating its bound, and so is the thing the fourth rule bars.
-That predates this branch and is not fixed here; § Documentation records it
-in `TODO.md` instead.
-
-`ok_cons_false` and `ok_cons_true` carry `@[simp]`, on the one ground that
-also decides the other two cases: the branch leaves the simp set as it found
-it. The deleted `ok_cons_false` and `ok_cons_true` were `@[simp]`, so their
-counterparts are; the deleted `depth_cons_false` and `depth_cons_true` were
-too, but their counterparts are conditional and would be inert, so the set
-shrinks there by necessity rather than by choice; and `depth_nil` and `ok_nil`
-have no counterpart at all, so nothing of theirs is registered. No proof in
-this branch reaches any of them by `simp` — both recognizers name them in `rw`
-chains — so preservation, not use, is what the attribute tracks here. No
-counterpart of the deleted `depth_nil` and
-`ok_nil` is
-added: the recognizers' base case closes by `rfl` through the projections
-without one, which was compiled, and a lemma no proof names is a
-registration without a return. The two depth `cons`-lemmas carry no `@[simp]`
-either, and the reason is not that a conditional simp rule misbehaves — one
-whose hypothesis
-`simp` cannot discharge does not fire at all, leaving no side goal. It is
-that neither `ok w = true` nor `2 ≤ depth w` is a side condition `simp`
-discharges on its own here, so as simp rules the two would be inert
-wherever they were reached, and an inert rule is a registration without a
-return. The four `scanStep` lemmas and the three `decide` lemmas are not
-simp rules either; they exist to be named in a `rw` chain.
-`Ranked/Binary.lean`'s Implementation notes record the reason.
-
-The two depth `cons`-lemmas being unregistered shrinks the simp set: their
-deleted counterparts `BinTree.depth_cons_false` and `BinTree.depth_cons_true`
-were `@[simp]`. No surviving proof reaches them through `simp`; both
-recognizers name them in `rw` chains, which is why the restatement is a
-rewrite substitution rather than a simp-set migration.
 
 Facts the compilation settled:
 
@@ -636,7 +568,8 @@ assertions it restates anyway. A literal value assertion buys it more strongly
 than an agreement assertion, since an agreement can hold with both sides wrong
 while a value cannot, and a pair of literal assertions at one word implies the
 agreement there. The requirement this places on the branch is one added
-assertion — the third row's `¬ binRanked.Valid` — together with a constraint on
+assertion — `¬ binRanked.Valid [false, true, false]` — together with a
+constraint on
 which words the two mirrors pin: they must keep meeting at an accepting word
 and at a rejecting one.
 
@@ -693,17 +626,25 @@ first.
 - [The session handoff](../plans/2026-08-10-tree-recognizer-session-handoff.md)
   carries B4 as not started, and a § What to pick up next that is this branch.
   It says of itself that it owns the state of the line and is replaced when
-  that state changes, so this branch replaces it: the status table, the line
-  diagram, what the last session delivered, and what to pick up next, which
-  becomes B5.
+  that state changes, so this branch rewrites it whole rather than amending
+  it: its § Read these first asserts that B4 has no specification and that its
+  first phase is brainstorming, its status table carries B4 as not started, and
+  its line diagram, its record of what the last session delivered and its
+  § What to pick up next all describe the state this branch leaves behind.
+  What replaces them is the line as it then stands, with B5 as what to pick up
+  next.
 - [The workstream record](../plans/2026-08-10-ranked-tree-b2-b5-handoff.md)
   outlives this branch, B5 still needing it, so it is amended rather than
   replaced. Its § Where the workstream stands, its inventory of
   `Ranked/Binary.lean` (which lists `termEquiv`, `spell_termEquiv` and
   `valid_iff`), its sentence on what the mirrors sweep, and its § B4 — which
   prescribes a bridge-corollary design this spec supersedes, and states that
-  the duplication is on `main` until B4 lands — are all restated. Its § Facts
-  established by building gains what this branch established.
+  the duplication is on `main` until B4 lands — are all restated, as is its
+  § What completion means, which says two items remain in the order B4 then
+  B5 and that the workstream is complete when B4 has landed. Its § Facts
+  established by building gains what this branch established, its opening
+  paragraph attributing the new items to this segment as it attributes the
+  existing ones.
 
 [TODO.md](../../../TODO.md) is amended in the same branch:
 
@@ -809,9 +750,11 @@ first.
   same swap and is not yet restated, so its lint is the one still owed, and it
   is owed before the deletion commit rather than at the end of the branch.
 - **The `open` brings more than the counter form bare.** `open
-  RankedAlphabet.Binary` puts `depth`, `ok`, `binRanked`, `leaf`, `node`,
-  `leafSym`, `nodeSym` and the four `code`/`spell` lemmas into both
-  recognizers unqualified — and, until the deletion commit, `termEquiv` and
+  RankedAlphabet.Binary` puts the whole namespace into both recognizers
+  unqualified — the counter form and all fourteen of its lemmas, which is what
+  they consume, and beside them `binRanked`, `leaf`, `node`, `leafSym`,
+  `nodeSym` and the `code` and `spell` lemmas — and, until the deletion
+  commit, `termEquiv` and
   its companions too. Nothing collides today: neither recognizer's namespace
   declares any of them, and the build confirms it. `leaf` and `node` are the
   plausible future collision in modules whose prose is about leaf and node
