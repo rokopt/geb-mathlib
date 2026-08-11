@@ -132,8 +132,9 @@ import-direction rules above are enforced by
   nodes, `size_le_sum_ofFn` bounds a child's count by the sum over the
   children, and `Term.induction` gives induction in that presentation.
   `width_pos` is what supplies the descent's fuel through
-  `t.size ≤ width * t.size`. Depends on mathlib's
-  `Mathlib/Data/W/Basic.lean`.
+  `t.size ≤ width * t.size`. `maxArity` is the largest arity of a symbol,
+  zero at an alphabet with no symbols, and `arity_le_maxArity` bounds every
+  symbol's arity by it. Depends on mathlib's `Mathlib/Data/W/Basic.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Code.lean` — the block spelling a
   symbol: `code` is the symbol's index in binary, least significant bit
   first, padded to the alphabet's width; `decodeBits` is the value a
@@ -145,7 +146,9 @@ import-direction rules above are enforced by
   `mod_two_mul` states the residue split the decoding needs, choice-free:
   mathlib's `Nat.mod_mul` says the same and depends on
   `Classical.choice`, and `omega` cannot discharge it because the modulus
-  is a variable. Depends on `Geb.Mathlib.Data.Tree.Ranked.Basic` and
+  is a variable. `le_maxArity_of_arOf_eq_some` bounds an arity `arOf`
+  yields by the alphabet's largest, since `arOf` returns only arities in
+  `arity`'s image. Depends on `Geb.Mathlib.Data.Tree.Ranked.Basic` and
   mathlib's `Mathlib/Algebra/GroupWithZero/Nat.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean` — the preorder encoding
   of ranked terms and its inverse, generalising
@@ -166,7 +169,11 @@ import-direction rules above are enforced by
   `length_buf_scanFinal_of_live` is what aligns block boundaries with the
   word's right end, and `add_one_mod` is the residue-of-a-successor
   identity it runs on, stated choice-free for the reason `mod_two_mul`
-  is. Depends on `Geb.Mathlib.Data.Tree.Ranked.Code` and mathlib's
+  is. `length_buf_scanFinal_lt` bounds the incomplete block strictly
+  below the width at every state the scan reaches; `depth_scanFinal_le_length`
+  bounds the pending count by the word's length; `valid_iff_scanFinal`
+  restates validity as three conditions on the final state. Depends on
+  `Geb.Mathlib.Data.Tree.Ranked.Code` and mathlib's
   `Algebra/BigOperators/Ring/List.lean` and `Computability/Encoding.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` — the alphabet of one
   nullary and one binary symbol, one bit to a block, exhibiting
@@ -1159,3 +1166,31 @@ import-direction rules above are enforced by
   `baseWord_constAtOf`, `stepWord_constAtOf` and `stepWord_diagOf`. Depends on
   `Geb.Mathlib.Computability.Cobham.Basic` and
   `Geb.Mathlib.Computability.Cobham.Scan`. `Classical.choice`-free.
+- `Geb/Mathlib/Computability/Cobham/RankedTree.lean` — the validity scan of
+  `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean`, at an arbitrary ranked alphabet,
+  composed with a verdict test into a recognizer, as an expression of `C`.
+  `stateWord` lays the scan state out as a bitstring — the liveness flag, the
+  incomplete block in a slot of the alphabet's width delimited by `bufBits`'s
+  sentinel and padding, then the pending count in unary — and `decodeState`
+  inverts a bounded prefix of it back to a `Scan`, through `List.ofFn` rather
+  than `Fin` arithmetic so the module needs no `Fintype`-derived decidability.
+  `rankedStep` dispatches on that prefix with `casesOf`, rewriting a bounded
+  prefix (`nextPrefix`) and dropping a bounded number of bits (`dropCount`) per
+  step; `rankedSem`, `ranked` and `rankedOf` carry the recursion with
+  `Cobham.scan`, its bound discharged by `length_rankedSem_le`. `acceptWord` is
+  the accepting state's word and `acceptTest` the test separating it from every
+  other state the scan reaches; `isRankedRaw`, `isRanked`, `isRankedOf` and
+  `isRankedSem` compose that test onto the scan. `stateWord_scanStep_of_lt` and
+  `stepWord_rankedStep_of_lt` connect a step of the expression to a step of
+  `RankedAlphabet.scanStep`, and `rankedSem_eq` extends that to
+  `RankedAlphabet.scanFinal` on the whole word. `isRankedSem_eq_ite` pins the
+  recognizer's value on both branches; `isRankedSem_eq_singleton_iff_valid`
+  identifies it with `RankedAlphabet.Valid`, and
+  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem` specialises the alphabet to
+  `RankedAlphabet.Binary.binRanked` to identify the recognizer with
+  `Cobham.isTree`. Neither `SmashFree (ranked R)` nor `SmashFree (isRanked R)`
+  is stated; `Cobham/Tree.lean` keeps the subject of `isTree_smashFree` and the
+  [Strahm2003] Theorem 1(2) reasoning. Depends on
+  `Geb.Mathlib.Computability.Cobham.Cases`,
+  `Geb.Mathlib.Computability.Cobham.Tree` and
+  `Geb.Mathlib.Data.Tree.Ranked.Binary`. `Classical.choice`-free.

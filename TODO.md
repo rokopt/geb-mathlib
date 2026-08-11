@@ -615,11 +615,16 @@ with an empty payload, up to the state its failure is recorded in.
   a fixed number of scrutinee bits, and `Cobham/Basic.lean` the constant-word,
   iterated-predecessor and diagonal combinators its branches are built from.
   B6 and B3 both consume them. See [docs/index.md](docs/index.md).
-- **B6**, depending on B2 and B1: the generic ranked recognizer as a
-  scanner instance. The layout of `RankedAlphabet.Scan` as a bitstring is
-  undecided, and the step must dispatch on `2 ^ width` block values
-  against `RankedAlphabet.arOf`, so the dispatch is built by recursion on
-  `width` rather than written out.
+- **B6 is done.** `Geb/Mathlib/Computability/Cobham/RankedTree.lean` gives
+  the generic ranked recognizer as an expression of `C`: `stateWord` lays
+  `RankedAlphabet.Scan` out as a bitstring, `rankedStep` dispatches on a
+  bounded prefix of it with the case combinator, and `rankedSem`/`ranked`
+  carry the recursion with `Cobham.scan`.
+  `isRankedSem_eq_singleton_iff_valid` identifies the recognizer with
+  `RankedAlphabet.Valid`, and
+  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem` recovers the language
+  `Cobham/Tree.lean`'s recognizer accepts at the two-symbol alphabet. See
+  [docs/index.md](docs/index.md).
 - **B3**, depending on B2: `Geb/Mathlib/Computability/Cobham/Fold.lean` — the
   catamorphism at a finite carrier, with a step whose configurable part
   carries no restriction of its own, both conditions being discharged from
@@ -657,6 +662,14 @@ applications by `rfl`, so `combSem_nil` and `isTreeSem_eq_eval` read through
 the substitution unchanged. Each is left in place because removing the
 duplication is a separate concern from this branch's, not because the
 substitution is risky.
+
+Also deferred: whether `Cobham/Tree.lean`'s `combSem`, a parameterless `def`,
+generates an equation lemma the way `RankedTree.lean`'s `rankedSem` does.
+`combSem_def`'s docstring states that a `def` carries no equation lemma, while
+`length_rankedSem_le` here rewrites by `rankedSem`'s generated one; whether the
+same holds of `combSem` is untried. Check whether `rw [combSem]` closes where
+`combSem_def` is used, and correct the docstring in `Cobham/Tree.lean` only if
+it does. A short branch of its own either way.
 
 `BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
 absent from `docs/references.bib`: neither its bibliographic detail nor the
