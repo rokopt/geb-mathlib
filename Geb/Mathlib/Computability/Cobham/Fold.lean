@@ -119,6 +119,38 @@ theorem foldSem_cons (b : Bool) (w : List Bool) :
     (foldStep enc dec step false) (foldStep enc dec step true) p b w).trans
     (by cases b <;> rfl)
 
+/-- Every state the fold produces has the encoding's width, whatever `dec`
+does off the image of `enc`. -/
+theorem length_foldSem : ∀ w : List Bool,
+    (foldSem enc dec init step ![w]).length = p :=
+  List.rec
+    (by rw [foldSem_nil, List.length_ofFn])
+    (fun b v _ ↦ by
+      rw [foldSem_cons, stepWord_foldStep, List.length_ofFn])
+
+/-- The growth bound the scan combinator asks for, tight at the empty word. -/
+theorem length_foldSem_le (w : List Bool) :
+    (scanSem (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
+      (foldStep enc dec step true) p ![w]).length ≤ w.length + p :=
+  (length_foldSem enc dec init step w).le.trans (Nat.le_add_left p w.length)
+
+/-- The fold as an expression of `C`. -/
+@[expose] def fold : C :=
+  scan (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
+    (foldStep enc dec step true) p (length_foldSem_le enc dec init step)
+
+/-- `fold` at its declared arity. -/
+@[expose] def foldOf : COf 1 :=
+  scanOf (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
+    (foldStep enc dec step true) p (length_foldSem_le enc dec init step)
+
+/-- The meaning read at the raw tree is the meaning the expression carries. -/
+theorem foldSem_eq_eval :
+    transport (foldOf enc dec init step).2 (foldOf enc dec init step).1.eval =
+      foldSem enc dec init step :=
+  scanSem_eq_eval (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
+    (foldStep enc dec step true) p (length_foldSem_le enc dec init step)
+
 end
 
 end Cobham
