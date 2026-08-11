@@ -1208,5 +1208,6 @@ import-direction rules above are enforced by
   retraction hypothesis `∀ a, dec (enc a) = a`; `length_foldSem` does not take
   that hypothesis, every state the scan produces being a `List.ofFn` of an
   `enc` value whatever `dec` does off the image of `enc`. The carrier is
-  arbitrary and neither `Fintype` nor `FinEnum` appears. Depends on
+  arbitrary and carries no `Fintype` or `FinEnum` instance; its finiteness
+  enters only through `enc`. Depends on
   `Geb.Mathlib.Computability.Cobham.Cases`. `Classical.choice`-free.

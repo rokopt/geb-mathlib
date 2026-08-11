@@ -56,7 +56,8 @@ retraction hypothesis and do not take it: every state the scan produces is a
 does. Consequently `fold`, `foldOf` and `foldSem_eq_eval` take no retraction
 hypothesis either.
 
-`Fintype` and `FinEnum` appear nowhere, which keeps the module clear of the
+The carrier `α` carries no `Fintype` or `FinEnum` instance; its finiteness
+enters only through `enc`, which keeps the module clear of the
 ordered-algebra and `Finset` instances the axiom rules warn about. The module
 takes no decision and carries no `Decidable` instance, so
 `DecidableEq (Fin p → Bool)`, which resolves through
