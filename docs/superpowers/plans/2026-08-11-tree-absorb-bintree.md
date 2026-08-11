@@ -182,11 +182,15 @@ Expected: `Built Geb.Mathlib.Data.Tree.Ranked.Binary`, no errors.
 Note what this build covers. `jj commit <paths>` commits the named paths and
 leaves the rest in the new working copy, so this build sees Tasks 2 and 3's
 edits as well: it verifies more than the commit, not the commit alone.
-That is sound here — the commit leaves the previous `Cobham/*.lean`, which
-still resolve `BinTree.ok`, `BinTree.depth` and
-`RankedAlphabet.Binary.valid_iff` from the modules this branch has not yet
-deleted — and the same holds of Task 2. From Task 4 on, the working copy and
-the commit coincide.
+That is sound here, and the check is worth stating so a reviewer can re-run
+it: the commit leaves the previous `Cobham/*.lean`, which still resolve
+`BinTree.ok`, `BinTree.depth` and `RankedAlphabet.Binary.valid_iff` from the
+modules this branch has not yet deleted; the previous `Cobham/Tree.lean` does
+not import `Ranked/Binary.lean` at all; and the previous
+`Cobham/RankedTree.lean`, which does, contains no occurrence of
+`RankedAlphabet.Binary.ok` or `.depth`, so the two new `@[simp]` lemmas have
+no head symbol to fire on. The same holds of Task 2, whose change is
+proof-internal. From Task 4 on, the working copy and the commit coincide.
 
 - [ ] **Step 4: Check the axioms**
 
@@ -482,7 +486,8 @@ theorem isTreeSem_eq_ite (w : List Bool) :
 
 - [ ] **Step 7: Restate the module docstring**
 
-Five places name `BinTree`. Replace as follows, keeping every line under 100
+Five occurrences across five bullets name `BinTree` or the renamed theorem.
+Replace as follows, keeping every line under 100
 characters and re-wrapping the paragraphs you touch:
 
 - the summary's "Composed with `BinTree.valid_iff_exists_print`,
@@ -763,9 +768,12 @@ bitstring — so it needs no change.
 
 ```bash
 lake build && lake build GebTests && lake lint && lake lint -- GebTests
+lake shake --add-public --keep-implied --keep-prefix Geb GebTests
 ```
 
-Expected: no errors, both lints pass.
+Expected: no errors, both lints pass, and no output from `lake shake`. The
+shake run belongs here rather than in Task 6: Step 4 removes an import, and
+this is the commit that would carry a stale one.
 
 - [ ] **Step 10: Commit**
 
@@ -868,26 +876,32 @@ again.
 
 - [ ] **Step 4: Move the three pieces of persistent documentation**
 
-Into `Ranked/Preorder.lean`'s module docstring:
+Into `Ranked/Preorder.lean`'s module docstring, each into the section its
+source occupied:
 
-- the `DyckWord` comparison — that validity is stated as conditions in the
-  manner of mathlib's `DyckWord`, whose `count_U_eq_count_D` and
+- **Into the summary**, beside the existing prefix-notation paragraph, where
+  it sat in the deleted module: the `DyckWord` comparison — that validity is
+  stated as conditions in the manner of mathlib's `DyckWord`, whose
+  `count_U_eq_count_D` and
   `count_D_le_count_U` play the roles the pending count and the liveness flag
   play here, and in the direction a single right-to-left pass carrying a
   counter can scan. Generalise the count: `valid_iff_scanFinal` gives three
   conditions, the third being the empty buffer that width one makes vacuous.
   Transcribed unaltered the clause would be false here.
-- the fuel argument — that fuel exhaustion is not a rejection mechanism of
-  its own, each layer consuming a whole block, which `width_pos` makes at
+- **Into Implementation notes**, beside the existing paragraph on `parseAux`
+  recursing over an explicit bound, where it sat in the deleted module: the
+  fuel argument — that fuel exhaustion is not a rejection mechanism of its
+  own, each layer consuming a whole block, which `width_pos` makes at
   least one bit, so the invariant that the fuel is at least the remaining
   length holds from the initial length down. The generic descent's rejections
   are `decodeBlock`'s two, input short of a block and a block spelling no
   symbol, together with a child's failure and the trailing input `parse`
   rejects.
 
-Into `Ranked/Binary.lean`'s docstring: the initial-algebra characterisation,
+`Ranked/Binary.lean`'s docstring needs nothing further here: Step 2's
+replacement summary already carries the initial-algebra characterisation,
 that these terms are the initial algebra of `F X = 1 + X × X`. Three
-neighbouring notes die with their subject: `Direction`'s fibre-naming
+neighbouring notes in the deleted module die with their subject: `Direction`'s fibre-naming
 convention, its sending `leaf` to `Fin 0` rather than `Empty`, and why it is
 `@[expose]` — the ranked family is `fun i ↦ Fin (R.arity i)` by construction,
 and `Ranked/Basic.lean` already records its own `@[expose]` reason.
@@ -915,19 +929,24 @@ and in its Implementation notes replace "`Term` is `@[expose]`, as `BinTree`
 is: without it …" with "`Term` is `@[expose]`: without it …", keeping the
 rest of that sentence unchanged.
 
-In `Ranked/Preorder.lean`, replace
+In `Ranked/Preorder.lean`, the sentence sits mid-paragraph and spans an
+existing line break. Replace
 
 ```lean
-`Data/Tree/Preorder.lean` is the case of one symbol of arity zero and one of
-arity two.
+The idea is that of prefix notation, in which a symbol is followed by exactly
+as many operands as its arity. `Data/Tree/Preorder.lean` is the case of one
+symbol of arity zero and one of arity two.
 ```
 
 with
 
 ```lean
-`RankedAlphabet.Binary` is the case of one symbol of arity zero and one of
-arity two.
+The idea is that of prefix notation, in which a symbol is followed by exactly
+as many operands as its arity. `RankedAlphabet.Binary` is the case of one
+symbol of arity zero and one of arity two.
 ```
+
+The names differ in length, so re-wrap the paragraph after the substitution.
 
 - [ ] **Step 6: Build, lint, and check for residue**
 
@@ -1103,9 +1122,11 @@ main                                   312c5adf
                            └─ refactor/tree-absorb-bintree
 ```
 
-Fill each commit id from `jj log`; the last is this segment's final commit,
-and its bookmark is set after that commit rather than before, so that it does
-not omit the commit removing this segment's own transient documents.
+The ids above are the current bookmark targets; confirm them with
+`jj bookmark list`. The last line carries no id because this segment's final
+commit does not exist until Task 9, and its bookmark is set after that commit
+rather than before, so that it does not omit the commit removing this
+segment's own transient documents.
 
 § What this session delivered becomes the absorption: the counter form of the
 validity scan at width one in `Ranked/Binary.lean`; the two recognizers and
@@ -1128,15 +1149,30 @@ open, `TODO.md` § Extensions of the tree recognizers carrying it as well.
 It outlives this branch, B5 still needing it, so amend rather than replace:
 
 - § Read these first says B4 and B5 each get their own brainstorming phase,
-  spec, plan and segment — true of B5 alone now.
-- § Where the workstream stands.
-- Its inventory of `Ranked/Binary.lean`, which lists `termEquiv`,
-  `spell_termEquiv` and `valid_iff`.
-- Its sentence on what the mirrors sweep.
-- § B4, which prescribes a bridge-corollary design the spec supersedes and
-  says the duplication is on `main` until B4 lands.
-- § What completion means, which says two items remain in the order B4 then
-  B5 and that the workstream is complete when B4 has landed.
+  spec, plan and segment. It becomes true of B5 alone.
+- § Where the workstream stands says B4 and B5 are not started. It becomes:
+  B1, B2, the case combinator, B6, B3 and B4 are done and unpushed on one
+  line off `main`; B5 is not started.
+- Its inventory of `Ranked/Binary.lean` lists `termEquiv`, `spell_termEquiv`
+  and `valid_iff`. Those three are deleted; the inventory becomes the
+  alphabet, its two constructors, the block and spelling lemmas, and the
+  counter form of the validity scan.
+- Its sentence "the mirrors … sweep `validBool` against the descent and
+  against `BinTree.Valid` over every word of length at most eight" loses its
+  second conjunct: the mirrors sweep `validBool` against the descent.
+- § B4's heading gains the `(done)` suffix, matching its
+  siblings `## B2: the scan combinator (done)`, `## B6: the generic ranked
+  recognizer (done)` and `## B3: the fold (done)`. Its body, which prescribes
+  a bridge-corollary design the spec supersedes and says the duplication is
+  on `main` until B4 lands, becomes a done-entry naming what landed:
+  `Ranked/Binary.lean`'s counter form, the two recognizers and the bridge
+  theorem restated over it, and the deletion of `Data/Tree/{Binary,Preorder}`
+  and their mirror.
+- § What completion means says two items remain in the order B4 then B5, and
+  that the workstream is complete when B4 has landed. It becomes: one item
+  remains, B5; the workstream's completion condition is met, no tree encoding
+  now being defined twice, and B5 is a separate undertaking whose failure
+  costs nothing already built.
 - § Facts established by building gains what this branch established, its
   opening paragraph attributing the new items to this segment as it
   attributes the existing ones. The facts worth recording: that
