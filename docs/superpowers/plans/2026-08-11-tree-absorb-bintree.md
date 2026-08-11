@@ -11,15 +11,15 @@
 - [Global constraints](#global-constraints)
 - [What is already in the working tree](#what-is-already-in-the-working-tree)
 - [File map](#file-map)
-  - [Task 1: Commit the counter form](#task-1-commit-the-counter-form)
-  - [Task 2: Commit the residue-lemma correction](#task-2-commit-the-residue-lemma-correction)
-  - [Task 3: Commit the Cobham restatement](#task-3-commit-the-cobham-restatement)
-  - [Task 4: Restate the Bellantoni-Cook recognizer](#task-4-restate-the-bellantoni-cook-recognizer)
-  - [Task 5: Restate the two test mirrors](#task-5-restate-the-two-test-mirrors)
-  - [Task 6: Delete the absorbed modules](#task-6-delete-the-absorbed-modules)
-  - [Task 7: Restate the catalogue and the roadmap](#task-7-restate-the-catalogue-and-the-roadmap)
-  - [Task 8: Dispose of the two plan documents](#task-8-dispose-of-the-two-plan-documents)
-  - [Task 9: Remove this plan and the spec, and gate the branch](#task-9-remove-this-plan-and-the-spec-and-gate-the-branch)
+- [Task 1: Commit the counter form](#task-1-commit-the-counter-form)
+- [Task 2: Commit the residue-lemma correction](#task-2-commit-the-residue-lemma-correction)
+- [Task 3: Commit the Cobham restatement](#task-3-commit-the-cobham-restatement)
+- [Task 4: Restate the Bellantoni-Cook recognizer](#task-4-restate-the-bellantoni-cook-recognizer)
+- [Task 5: Restate the two test mirrors](#task-5-restate-the-two-test-mirrors)
+- [Task 6: Delete the absorbed modules](#task-6-delete-the-absorbed-modules)
+- [Task 7: Restate the catalogue and the roadmap](#task-7-restate-the-catalogue-and-the-roadmap)
+- [Task 8: Dispose of the two plan documents](#task-8-dispose-of-the-two-plan-documents)
+- [Task 9: Remove this plan and the spec, and gate the branch](#task-9-remove-this-plan-and-the-spec-and-gate-the-branch)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -49,8 +49,9 @@ Where this plan and the spec disagree, the spec is wrong and both are fixed.
   `lake env lean`; avoid `lake clean`. Run Lean alone: a second concurrent
   Lean process, the `lean-lsp` tools included, corrupts package `.trace`
   files and fails unrelated mathlib targets.
-- **Line length** 100 characters in `.lean`, 80 in `.md`. Indentation two
-  spaces, no tabs.
+- **Line length** 100 characters in `.lean`; in `.md`, whatever
+  `markdownlint-cli2` enforces — 80 in prose, with tables and fenced code
+  exempt by `.markdownlint-cli2.jsonc`. Indentation two spaces, no tabs.
 - **No `sorry`, no `admit`, no `noncomputable`, no `native_decide`.**
   `Classical` is minimised; every declaration this branch adds or edits must
   measure within `{propext, Quot.sound}`, which `lake lint` checks.
@@ -108,6 +109,7 @@ gains, and commit it.
 | `Geb/Mathlib/Computability/Cobham/RankedTree.lean` | 3 | the generic recognizer; its bridge theorem collapses |
 | `Geb/Mathlib/Computability/BellantoniCook/Tree.lean` | 4 | the same, in `B` |
 | `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean` | 5, 6 | worked words for the alphabet, its spelling, its descent and its counter form |
+| `GebTests/Mathlib/Data/Tree/Ranked/Basic.lean` | 5 | the shared fixtures; its sweep inventory loses the retired mirror |
 | `GebTests/Mathlib/Computability/BellantoniCook/Tree.lean` | 5 | worked words for the `B` recognizer; three names lose `print` |
 | `Geb/Mathlib/Data/Tree/Binary.lean` | 6 | **deleted** |
 | `Geb/Mathlib/Data/Tree/Preorder.lean` | 6 | **deleted** |
@@ -118,7 +120,7 @@ gains, and commit it.
 
 ---
 
-### Task 1: Commit the counter form
+## Task 1: Commit the counter form
 
 **Files:**
 
@@ -195,7 +197,7 @@ jj commit Geb/Mathlib/Data/Tree/Ranked/Binary.lean \
 
 ---
 
-### Task 2: Commit the residue-lemma correction
+## Task 2: Commit the residue-lemma correction
 
 **Files:**
 
@@ -242,12 +244,12 @@ specifically: `omega` proving a non-`False` goal can pull in
 
 ```bash
 jj commit Geb/Mathlib/Data/Tree/Ranked/Preorder.lean \
-  -m "fix(tree): bound the descent's base case by omega"
+  -m "style(tree): bound the descent's base case by omega"
 ```
 
 ---
 
-### Task 3: Commit the Cobham restatement
+## Task 3: Commit the Cobham restatement
 
 **Files:**
 
@@ -277,9 +279,15 @@ Check: the import swap to `public import Geb.Mathlib.Data.Tree.Ranked.Binary`;
 
 ```bash
 grep -c "BinTree\|exists_print" Geb/Mathlib/Computability/Cobham/Tree.lean
+awk 'length>90 {print FILENAME":"NR": "length}' \
+  Geb/Mathlib/Computability/Cobham/Tree.lean
 ```
 
-Expected: `0`.
+Expected: `0` from the grep, and no output from the `awk`. The second check is
+for paragraphs edited without re-wrapping: a name substitution inside a
+docstring leaves a long line or an orphan stub that no linter catches, the
+limit being 100. Every paragraph the diff touches must read as one wrapped
+block.
 
 - [ ] **Step 2: Read the collapsed bridge**
 
@@ -301,7 +309,7 @@ conventions.
 - [ ] **Step 3: Build and lint**
 
 ```bash
-lake build && lake lint && lake lint -- GebTests
+lake build && lake build GebTests && lake lint && lake lint -- GebTests
 ```
 
 Expected: no errors; `-- Linting passed for Geb.` and
@@ -317,7 +325,7 @@ jj commit Geb/Mathlib/Computability/Cobham/Tree.lean \
 
 ---
 
-### Task 4: Restate the Bellantoni-Cook recognizer
+## Task 4: Restate the Bellantoni-Cook recognizer
 
 **Files:**
 
@@ -497,7 +505,7 @@ means the qualified form was used under the narrow `open`.
 - [ ] **Step 9: Check the whole build, the axioms and the residual names**
 
 ```bash
-lake build && lake lint && lake lint -- GebTests
+lake build && lake build GebTests && lake lint && lake lint -- GebTests
 grep -c "BinTree\|exists_print" Geb/Mathlib/Computability/BellantoniCook/Tree.lean
 ```
 
@@ -512,11 +520,12 @@ jj commit Geb/Mathlib/Computability/BellantoniCook/Tree.lean \
 
 ---
 
-### Task 5: Restate the two test mirrors
+## Task 5: Restate the two test mirrors
 
 **Files:**
 
 - Modify: `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean`
+- Modify: `GebTests/Mathlib/Data/Tree/Ranked/Basic.lean`
 - Modify: `GebTests/Mathlib/Computability/BellantoniCook/Tree.lean`
 
 **Interfaces:**
@@ -575,6 +584,11 @@ theorem parse_spell_binarySample :
     (binRanked.parse [true, true, false, false, false]).map binRanked.spell =
       some [true, true, false, false, false] := by decide
 
+/-- And on a node over two leaves. -/
+theorem parse_spell_node_leaf_leaf :
+    (binRanked.parse [true, false, false]).map binRanked.spell =
+      some [true, false, false] := by decide
+
 /-- The descent rejects the empty word: it has nothing to read. -/
 theorem parse_nil : (binRanked.parse ([] : List Bool)).map binRanked.spell = none := by
   decide
@@ -597,6 +611,11 @@ the W-type, which the sibling mirror's Implementation notes record avoiding.
 - [ ] **Step 3: Add the counter form's worked words**
 
 ```lean
+/-- The asymmetric term's spelling is valid. Its deleted counterpart was
+`⟨rfl, rfl⟩` against a conjunction; validity is now a `Bool` equation. -/
+theorem valid_spell_binarySample :
+    binRanked.Valid [true, true, false, false, false] := by decide
+
 /-- A word failing liveness alone: its pending count is one, yet it reads a
 node bit with one subterm pending. -/
 theorem depth_node_at_depth_one : depth [false, true, false] = 1 := by decide
@@ -652,14 +671,36 @@ together with the blank line that separated the `public` group from the plain
 import. `wordsUpTo` was its only use. Leaving it fails
 `lake shake --add-public --keep-implied`, which the pre-push checklist runs.
 
-- [ ] **Step 5: Restate that mirror's module docstring**
+- [ ] **Step 5: Restate the sweep inventory in the fixture module**
+
+`GebTests/Mathlib/Data/Tree/Ranked/Basic.lean` carries
+
+```lean
+/-- The enumeration the `Preorder` and `Binary` mirrors sweep holds every word
+of length at most eight. -/
+theorem length_wordsUpTo_eight : (wordsUpTo 8).length = 511 := by
+```
+
+Those are the two siblings in `GebTests/…/Ranked/`, and Step 4 retires the
+`Binary` one's sweep. Restate the docstring over the mirror that still sweeps
+there:
+
+```lean
+/-- The enumeration the `Preorder` mirror sweeps holds every word of length at
+most eight. -/
+```
+
+`length_wordsUpTo_six`'s docstring needs no change: it names the
+`Cobham/RankedTree` mirror's sweeps, which this branch does not touch.
+
+- [ ] **Step 6: Restate that mirror's module docstring**
 
 Its title, summary, `## Main definitions`, `## Main statements` and `## Tags`
 all describe the equivalence with `BinTree`. The module's subject is now the
 two-symbol alphabet's spelling, its descent and the counter form of its scan.
 Keep the section order; keep `## Tags` to the module's enduring theme.
 
-- [ ] **Step 6: Build the mirror**
+- [ ] **Step 7: Build the mirror**
 
 ```bash
 lake build GebTests.Mathlib.Data.Tree.Ranked.Binary
@@ -670,7 +711,7 @@ regression upstream; a `maxRecDepth` error means a `set_option maxRecDepth
 100000 in` is needed on that assertion, though none of the above should need
 one.
 
-- [ ] **Step 7: Rename the three Bellantoni-Cook mirror theorems**
+- [ ] **Step 8: Rename the three Bellantoni-Cook mirror theorems**
 
 In `GebTests/Mathlib/Computability/BellantoniCook/Tree.lean`, rename
 
@@ -681,27 +722,30 @@ isTreeSem_print_asymmetric  →  isTreeSem_spell_asymmetric
 ```
 
 Their statements, values and tactics are unchanged: the words are the same
-bitstrings either way. Adjust that module's docstring where it names them.
+bitstrings either way. That module's docstring names none of the three — it
+says only that each names the recognizer's or the scan's value on a specific
+bitstring — so it needs no change.
 
-- [ ] **Step 8: Build and lint everything**
+- [ ] **Step 9: Build and lint everything**
 
 ```bash
-lake build && lake lint && lake lint -- GebTests
+lake build && lake build GebTests && lake lint && lake lint -- GebTests
 ```
 
 Expected: no errors, both lints pass.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 jj commit GebTests/Mathlib/Data/Tree/Ranked/Binary.lean \
+          GebTests/Mathlib/Data/Tree/Ranked/Basic.lean \
           GebTests/Mathlib/Computability/BellantoniCook/Tree.lean \
   -m "test(tree): mirror the two-symbol encoding and its counter form"
 ```
 
 ---
 
-### Task 6: Delete the absorbed modules
+## Task 6: Delete the absorbed modules
 
 **Files:**
 
@@ -802,7 +846,7 @@ symbol of arity zero and one of arity two" — name `RankedAlphabet.Binary`.
 - [ ] **Step 6: Build, lint, and check for residue**
 
 ```bash
-lake build && lake lint && lake lint -- GebTests
+lake build && lake build GebTests && lake lint && lake lint -- GebTests
 grep -rn "BinTree" --include=*.lean Geb GebTests
 ```
 
@@ -810,7 +854,12 @@ Expected: no build errors, both lints pass, and the grep returns nothing.
 
 - [ ] **Step 7: Check the imports are minimal**
 
+`lake shake` reads built oleans for every library it scans, and
+`lakefile.toml`'s `defaultTargets` is `Geb` alone, so `GebTests` is built
+explicitly first — the order `scripts/pre-push.sh` itself uses.
+
 ```bash
+lake build GebTests
 lake shake --add-public --keep-implied --keep-prefix Geb GebTests
 ```
 
@@ -826,7 +875,7 @@ jj commit -m "refactor(tree): delete the absorbed binary-tree encoding"
 
 ---
 
-### Task 7: Restate the catalogue and the roadmap
+## Task 7: Restate the catalogue and the roadmap
 
 **Files:**
 
@@ -891,12 +940,19 @@ whether one site still warrants a branch of its own is open.
 
 - [ ] **Step 6: Add the tooling deferral**
 
-In a `TODO.md` section about repository tooling rather than tree
-recognizers, record the `.vale.ini` question: the tree carries a Vale
-configuration that no gate runs, whose default package set flags the spaced
-em-dash every committed document using one writes and the filename
-`TODO.md`; adopting it with those rules downgraded, or removing it, is its
-own branch.
+`TODO.md` has no section about repository tooling; add one. Its heading is
+
+```markdown
+### Vale configuration
+```
+
+and it goes immediately before `### The namespace prefix in a declaration
+body`, which is the first of the file's process-and-tooling entries rather
+than a mathematical workstream. Its content: the tree carries a Vale
+configuration that neither `scripts/pre-push.sh` nor any workflow runs, whose
+default package set flags the spaced em-dash every committed document using
+one writes, and the filename `TODO.md`; adopting it with those rules
+downgraded, or removing it, is its own branch.
 
 - [ ] **Step 7: Lint the Markdown**
 
@@ -916,7 +972,7 @@ jj commit docs/index.md TODO.md \
 
 ---
 
-### Task 8: Dispose of the two plan documents
+## Task 8: Dispose of the two plan documents
 
 **Files:**
 
@@ -929,12 +985,57 @@ and B5's session is instructed to read them first.
 - [ ] **Step 1: Rewrite the session handoff**
 
 It says of itself that it owns the state of the line and is replaced when
-that state changes. Rewrite it whole: its § Read these first asserts B4 has
-no specification and that its first phase is brainstorming; its status table
-carries B4 as not started; its line diagram, its record of what the last
-session delivered and its § What to pick up next all describe the state this
-branch leaves behind. What replaces them is the line as it then stands, with
-B5 as what to pick up next.
+that state changes. Keep its § Read these first list of binding documents,
+dropping its final paragraph (which asserts B4 has no specification and that
+its first phase is brainstorming), and keep § Which document owns what
+unchanged. Replace the rest as follows.
+
+Status table:
+
+```markdown
+| Item | What it is | Status |
+| --- | --- | --- |
+| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — ranked alphabets, the preorder encoding, the validity scan | Done, unpushed |
+| B2 | `Cobham/Scan.lean` — the scan combinator, and `Cobham/Tree.lean` rebuilt on it | Done, unpushed |
+| — | `Cobham/Cases.lean` — definition by cases, with its combinators in `Cobham/Basic.lean` | Done, unpushed |
+| B6 | `Cobham/RankedTree.lean` — the generic ranked recognizer | Done, unpushed |
+| B3 | `Cobham/Fold.lean` — the catamorphism at a carrier with a bit encoding | Done, unpushed |
+| B4 | `BinTree` absorbed into `RankedAlphabet.Term`, the duplication removed | Done, unpushed |
+| B5 | `Geb/Internal/` — linear time and space against Cslib's `MultiTapeTM` | Not started |
+```
+
+The B1 row loses the clause crediting `BinTree` as the two-symbol instance.
+The line diagram gains a segment:
+
+```text
+main                                   312c5adf
+  └─ feat/ranked-tree-recognizers      2f50f879
+       └─ feat/cobham-scanner          8cbff06f
+            └─ feat/cobham-cases       5ea87784
+                 └─ feat/cobham-ranked-tree  79aaea40
+                      └─ feat/cobham-fold    c368339d
+                           └─ refactor/tree-absorb-bintree
+```
+
+Fill each commit id from `jj log`; the last is this segment's final commit,
+and its bookmark is set after that commit rather than before, so that it does
+not omit the commit removing this segment's own transient documents.
+
+§ What this session delivered becomes the absorption: the counter form of the
+validity scan at width one in `Ranked/Binary.lean`; the two recognizers and
+the bridge theorem restated over it and over `binRanked.Valid`; the deletion
+of `Data/Tree/{Binary,Preorder}.lean` and their mirror; and the catalogue and
+roadmap entries.
+
+§ What to pick up next becomes B5, whose description the workstream record's
+§ B5 carries, with the note that it depends on B2, that it is confined to
+`Geb/Internal/` by the subtree import rules, and that it differs in kind from
+the others, its difficulty unbounded by anything done so far.
+
+§ Context the next session will want keeps its existing entries — they remain
+true — and § Loose ends keeps the `docs/references.bib` entry and drops the
+`oneAtOf`/`falseAtOf` entry only if Task 7 recorded it in `TODO.md`
+(it does not; leave it).
 
 - [ ] **Step 2: Amend the workstream record**
 
@@ -978,7 +1079,7 @@ jj commit docs/superpowers/plans/ \
 
 ---
 
-### Task 9: Remove this plan and the spec, and gate the branch
+## Task 9: Remove this plan and the spec, and gate the branch
 
 Specs and plans are transient: they record how the current state was reached,
 not what it is, so they belong in history rather than on an active branch.
