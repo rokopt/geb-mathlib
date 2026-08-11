@@ -8,7 +8,7 @@
 - [Facts established by building](#facts-established-by-building)
 - [B2: the scan combinator (done)](#b2-the-scan-combinator-done)
 - [The case combinator (done)](#the-case-combinator-done)
-- [B6: the generic ranked recognizer](#b6-the-generic-ranked-recognizer)
+- [B6: the generic ranked recognizer (done)](#b6-the-generic-ranked-recognizer-done)
 - [B3: the fold](#b3-the-fold)
 - [B4: absorbing `BinTree`](#b4-absorbing-bintree)
 - [B5: the time and space bound](#b5-the-time-and-space-bound)
@@ -44,8 +44,8 @@ spec: it records state and constraints, not decisions.
 
 ## Where the workstream stands
 
-B1, B2 and the case combinator are done and unpushed, on one line off
-`main`; B6, B3, B4 and B5 are not started. The per-item table in
+B1, B2, the case combinator and B6 are done and unpushed, on one line off
+`main`; B3, B4 and B5 are not started. The per-item table in
 [the session handoff](2026-08-10-tree-recognizer-session-handoff.md)
 § Status of every roadmap item is the current record, and this document
 describes what each remaining item is.
@@ -82,9 +82,10 @@ descent and against `BinTree.Valid` over every word of length at most eight.
 
 ## Facts established by building
 
-Each of these cost a failed build during B1. The three marked corrected were
-stated wrongly in the previous handoff and cost a second failed build; do not
-reinstate them from any older document.
+Each of these cost a failed build: items 1 to 11 during B1, items 12 to 16
+during segment 2. The three marked corrected were stated wrongly in the
+previous handoff and cost a second failed build; do not reinstate them from
+any older document.
 
 1. **`Term.mk R i ch`, never `R.Term.mk i ch`.** Generalized field notation
    resolves `R.Term` first, and a `Type` carries no `mk`.
@@ -136,6 +137,31 @@ reinstate them from any older document.
     `@[expose] public section`. Fixtures shared across test modules need a
     `public import` of the declaring module and `@[expose]`. Group
     `public import`s before plain `import`s, separated by a blank line.
+12. **A projection of a `Scan` constructor does not reduce syntactically.**
+    After `obtain ⟨buf, depth, live⟩ := s`, or under `{ s with depth := … }`,
+    the goal carries `{ buf := buf, … }.live` rather than `live`. A `cases`
+    on a scrutinee written in the fields then matches nothing and silently
+    splits nothing, and the following `rw` fails with a pattern that is
+    visibly present in the printed goal. `dsimp only` reduces them, and is
+    needed once after the definitions are unfolded and again after each
+    `cases`.
+13. **`rw` closes a goal by `rfl` at reducible transparency only.** A branch
+    ending in an equation true by unfolding an `@[expose] def` needs an
+    explicit `rfl` after the rewrite.
+14. **`rw [List.length_cons]` inside a chain rewrites the first matching
+    instantiation**, which under `scanStep`'s unfolding is the block's
+    length rather than the word's. Supply the word's length as a `have` for
+    `omega`.
+15. **`List.takeWhile_replicate` depends on `Classical.choice`**, through
+    `List.filter_replicate`, whose proof is a `simp_all` and so does not
+    show it in the source. This is a fourth route beyond the three the
+    design names; the two-case reduction that replaces it measures clean.
+    `DecidableEq (Fin n → Bool)` was measured the same way and does depend
+    on `Classical.choice`, while `DecidableEq (List Bool)` depends on
+    nothing.
+16. **Two concurrent `lake build` invocations corrupt package `.trace`
+    files** and fail unrelated mathlib targets. The `lean-lsp` tools that
+    run Lean count as a second process. Build alone.
 
 ## B2: the scan combinator (done)
 
@@ -159,12 +185,20 @@ are built from. It carries no roadmap letter: it is shared machinery both
 B6 and B3 need, since a dispatch over `2 ^ width` block values cannot be
 written out at a symbolic width. See [docs/index.md](../../index.md).
 
-## B6: the generic ranked recognizer
+## B6: the generic ranked recognizer (done)
 
-`Geb/Mathlib/Computability/Cobham/RankedTree.lean`. Depends on B1, B2 and
-the case combinator. Specified to implementation detail in
-[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
-§ Segment 2, which settles the `RankedAlphabet.Scan` bit layout the
+Done. `Geb/Mathlib/Computability/Cobham/RankedTree.lean` expresses
+`RankedAlphabet.validBool`, the validity scan of the preorder encoding, as
+a member of Cobham's class at an arbitrary ranked alphabet, and
+`isRankedSem_binRanked_eq_singleton_iff_isTreeSem` identifies it at the
+two-symbol alphabet with the recognizer `Cobham/Tree.lean` carries. See
+[docs/index.md](../../index.md), entries for
+`Geb/Mathlib/Computability/Cobham/RankedTree.lean` and
+`Geb/Mathlib/Data/Tree/Ranked/{Basic,Code,Preorder}.lean`.
+
+Depended on B1, B2 and the case combinator. Built to implementation detail
+in [the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md)
+§ Segment 2, which settled the `RankedAlphabet.Scan` bit layout the
 earlier revisions of this document recorded as undecided: the liveness
 flag, then the incomplete block in a fixed-width slot delimited by a
 sentinel, then the pending count in unary as the tail. The dispatch is the
@@ -186,6 +220,12 @@ discharged from finiteness alone.
 `Fold.run_spell` relates a `List Bool` to the carrier's `p`-bit encoding. The
 two are not the same type, and a statement that equates them directly is
 ill-typed; name the encoding.
+
+[TODO.md](../../../TODO.md) § Extensions of the tree recognizers refers to
+"the succinct tree-encoding references the design cites for context," a
+persistent document naming a transient one. This branch removes the design
+in its final commits, per [CONTRIBUTING.md](../../../CONTRIBUTING.md)
+§ Concern shape, so it rewords that sentence to stand without the design.
 
 ## B4: absorbing `BinTree`
 
@@ -247,14 +287,14 @@ linear on a right comb.
 
 ## What completion means
 
-Four items remain, in this order: B6, then B3, then B4, then B5.
+Three items remain, in this order: B3, then B4, then B5.
 
 B1 to B4 and B6 stand without B5. The workstream is complete when B4 has
-landed, so that no tree encoding is defined twice, and B6 has landed, so
-that the recognizer is stated at an arbitrary ranked alphabet. B3 is a
-deliverable in its own right. B5 is a separate undertaking whose failure
-costs nothing already built, and whose difficulty is unbounded by anything
-done so far.
+landed, so that no tree encoding is defined twice, B6 having already
+landed, so that the recognizer is stated at an arbitrary ranked alphabet.
+B3 is a deliverable in its own right. B5 is a separate undertaking whose
+failure costs nothing already built, and whose difficulty is unbounded by
+anything done so far.
 
 Deferrals are recorded in [TODO.md](../../../TODO.md), not part of
 the branches above: the namespace prefix in a declaration body, the
@@ -270,6 +310,13 @@ whose step receives a subterm's spelling, which the head-locality of the
 state layout admits only at quadratic cost; a fold at an infinite carrier,
 which needs the `smash` generator; and the depth-first unary degree
 sequence encoding, whose condition for adoption is unbounded arity.
+
+`scripts/pre-push.sh` emits a non-blocking WARN that a commit belonging to
+the previous segment carries a 73-character subject, one over
+[docs/rules/ci-and-workflow.md](../../rules/ci-and-workflow.md)
+§ Commit-message convention's "under 72 when possible." That commit is not
+part of this segment, so it is left alone; the WARN is open and
+non-blocking.
 
 ## Process this session must follow
 
