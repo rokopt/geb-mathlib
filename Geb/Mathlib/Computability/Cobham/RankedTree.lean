@@ -20,6 +20,7 @@ laid out as a bitstring.
 * `Cobham.bufBits` — the incomplete block in a slot of the alphabet's width.
 * `Cobham.stateWord` — the scan state as a bitstring.
 * `Cobham.dispatchWidth` — the number of state bits a step dispatches on.
+* `Cobham.decodeState` — the inverse of the state layout.
 
 ## Main statements
 
@@ -28,6 +29,8 @@ laid out as a bitstring.
 * `Cobham.dropWhile_bufBits` — the slot past its padding.
 * `Cobham.ofFn_bits_stateWord` — the state word truncated to a window and
   zero-padded.
+* `Cobham.decodeState_stateWord_of_lt` — the decoder inverts the layout up to
+  capping the pending count at the depth window.
 
 ## Implementation notes
 
@@ -58,6 +61,19 @@ depth in unary already.
 
 `ofFn_bits_stateWord` is stated at an arbitrary window rather than at
 `dispatchWidth`.
+
+The branch family's domain is `Fin (dispatchWidth R) → Bool` at a symbolic
+width, so recovering the fields index by index would carry a bound proof at
+every step. `decodeState` avoids that by passing through `List.ofFn` and
+reading the fields with the `List` API. This also keeps the module clear of
+`DecidableEq (Fin n → Bool)`, which resolves through
+`Fintype.decidablePiFintype`, measured as depending on `Classical.choice`,
+while `DecidableEq (List Bool)` measures clean.
+
+The run of `false` past the slot is cleared by a two-case reduction rather
+than by `List.takeWhile_replicate`, which was measured to depend on
+`Classical.choice` through `List.filter_replicate`. A proof shortened back
+onto that lemma fails `lake lint`.
 
 ## Tags
 
@@ -126,6 +142,46 @@ theorem ofFn_bits_stateWord (R : RankedAlphabet) (s : Scan) (p m : ℕ)
   rw [ofFn_bits, hpad, stateWord, List.cons_append, hdw, List.take_succ_cons,
     List.take_length_add_append, List.take_replicate, List.cons_append,
     List.append_assoc]
+
+/-- The inverse of the state layout, read off `List.ofFn` of the bit family:
+the flag is the head, the block is the slot past its padding and sentinel, and
+the pending count is the run of `true` that follows the slot. Every operation
+is structural, so no `Fin` arithmetic and no `Fintype`-derived decidability
+arises. -/
+@[expose] def decodeState (R : RankedAlphabet)
+    (v : Fin (dispatchWidth R) → Bool) : Scan :=
+  ⟨(((List.ofFn v).tail.take R.width).dropWhile (fun b ↦ !b)).tail,
+    (((List.ofFn v).tail.drop R.width).takeWhile id).length,
+    (List.ofFn v).headD false⟩
+
+/-- The decoder inverts the layout, up to capping the pending count at the
+depth window `R.maxArity + 1`. -/
+theorem decodeState_stateWord_of_lt (R : RankedAlphabet) (s : Scan)
+    (h : s.buf.length < R.width) :
+    decodeState R (bits (dispatchWidth R) (stateWord R s)) =
+      { s with depth := min s.depth (R.maxArity + 1) } := by
+  have hbuf : (bufBits R s.buf).length = R.width := length_bufBits_of_lt R s.buf h
+  have hword := ofFn_bits_stateWord R s (dispatchWidth R) (R.maxArity + 1)
+    (by rw [dispatchWidth]; omega) h
+  have hslot : ((List.ofFn (bits (dispatchWidth R) (stateWord R s))).tail.take
+      R.width) = bufBits R s.buf := by
+    rw [hword, List.tail_cons, List.take_left' hbuf]
+  have htail : ((List.ofFn (bits (dispatchWidth R) (stateWord R s))).tail.drop
+      R.width) = List.replicate (min (R.maxArity + 1) s.depth) true ++
+        List.replicate (R.maxArity + 1 - s.depth) false := by
+    rw [hword, List.tail_cons, List.drop_left' hbuf]
+  refine Scan.ext ?_ ?_ ?_
+  · rw [decodeState, hslot, dropWhile_bufBits]
+    rfl
+  · have hfalse : ∀ j : ℕ, (List.replicate j false).takeWhile id = [] := fun j ↦
+      match j with
+      | 0 => rfl
+      | _ + 1 => rfl
+    rw [decodeState, htail,
+      List.takeWhile_append_of_pos (fun a ha ↦ by rw [List.eq_of_mem_replicate ha]; rfl),
+      hfalse, List.append_nil, List.length_replicate]
+    exact Nat.min_comm _ _
+  · rw [decodeState, hword, List.headD_cons]
 
 end
 
