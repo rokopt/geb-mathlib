@@ -99,6 +99,26 @@ theorem stepWord_foldStep (b : Bool) (u : List Bool) :
     ![u, u] = _
   rw [casesSem_eq, stepWord_constAtOf]
 
+/-- The fold's meaning: the scan at the encoded base and the two steps, with
+the encoding's width as the growth bound. -/
+@[expose] def foldSem : Sem 1 :=
+  scanSem (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
+    (foldStep enc dec step true) p
+
+/-- The fold on the empty word is the encoded initial value. -/
+theorem foldSem_nil : foldSem enc dec init step ![[]] = List.ofFn (enc init) :=
+  (scanSem_nil (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
+    (foldStep enc dec step true) p).trans (baseWord_constAtOf _)
+
+/-- One step of the fold: the bit selects the step, which reads the value the
+fold of the rest of the word returns. -/
+theorem foldSem_cons (b : Bool) (w : List Bool) :
+    foldSem enc dec init step ![b :: w] =
+      stepWord (foldStep enc dec step b) (foldSem enc dec init step ![w]) :=
+  (scanSem_cons (constAtOf 0 (List.ofFn (enc init)))
+    (foldStep enc dec step false) (foldStep enc dec step true) p b w).trans
+    (by cases b <;> rfl)
+
 end
 
 end Cobham
