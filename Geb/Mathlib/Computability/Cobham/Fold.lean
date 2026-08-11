@@ -151,6 +151,16 @@ theorem foldSem_eq_eval :
   scanSem_eq_eval (constAtOf 0 (List.ofFn (enc init))) (foldStep enc dec step false)
     (foldStep enc dec step true) p (length_foldSem_le enc dec init step)
 
+/-- The fold computes the carrier-level fold of the word, encoded. This is
+where the retraction hypothesis enters: the state the scan carries is an
+encoded carrier value, so decoding it returns that value. -/
+theorem foldSem_eq (hdec : ∀ a, dec (enc a) = a) : ∀ w : List Bool,
+    foldSem enc dec init step ![w] = List.ofFn (enc (w.foldr step init)) :=
+  List.rec (foldSem_nil enc dec init step)
+    (fun b v ih ↦ by
+      rw [foldSem_cons, ih, stepWord_foldStep, bits_ofFn, hdec]
+      rfl)
+
 end
 
 end Cobham
