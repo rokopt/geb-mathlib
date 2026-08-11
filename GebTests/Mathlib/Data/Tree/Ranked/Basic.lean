@@ -13,9 +13,9 @@ public import Mathlib.Data.Fin.VecNotation
 
 The alphabet the assertions of this directory's mirrors are stated at: four
 symbols of arities zero to three, spelled by two bits each, so that a block
-carries more than one bit and the arities are not all equal. Two of its terms
-and an enumeration of short words are declared here and used by the other
-mirrors.
+carries more than one bit and the arities are not all equal, and its largest
+arity is neither zero nor the alphabet's own size. Two of its terms and an
+enumeration of short words are declared here and used by the other mirrors.
 
 ## Main definitions
 
@@ -26,8 +26,9 @@ mirrors.
 
 ## Main statements
 
-The assertions below give the node counts of the two terms and the length of
-the enumeration the other mirrors sweep.
+The assertions below give the node counts of the two terms, the largest
+arity of each alphabet, and the length of the enumeration the other mirrors
+sweep.
 
 ## Tags
 
@@ -83,5 +84,11 @@ theorem length_wordsUpTo_six : (wordsUpTo 6).length = 127 := by
 most eight. -/
 theorem length_wordsUpTo_eight : (wordsUpTo 8).length = 511 := by
   set_option maxRecDepth 100000 in decide
+
+/-- The largest arity at an alphabet whose arities run up to three. -/
+theorem maxArity_sampleAlphabet : sampleAlphabet.maxArity = 3 := by decide
+
+/-- And at the narrow alphabet, whose arities stop at two. -/
+theorem maxArity_narrowAlphabet : narrowAlphabet.maxArity = 2 := by decide
 
 end

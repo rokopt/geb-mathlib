@@ -25,12 +25,15 @@ alphabet of one symbol of arity zero and one of arity two.
 * `RankedAlphabet.Term` — the term algebra.
 * `RankedAlphabet.Term.mk` — the constructor, at the alphabet's own arities.
 * `RankedAlphabet.Term.size` — the number of nodes.
+* `RankedAlphabet.maxArity` — the largest arity of a symbol.
 
 ## Main statements
 
 * `RankedAlphabet.Term.induction` — induction in the `Term.mk` presentation.
 * `RankedAlphabet.size_le_sum_ofFn` — a child's node count is at most the sum
   over the children.
+* `RankedAlphabet.arity_le_maxArity` — every symbol's arity is at most the
+  largest.
 
 ## Implementation notes
 
@@ -117,6 +120,25 @@ theorem size_le_sum_ofFn {R : RankedAlphabet} {n : ℕ} (ch : Fin n → R.Term)
           rw [List.sum_cons]
           omega) l
   exact hsum _ _ (List.mem_ofFn.mpr ⟨d, rfl⟩)
+
+/-- The largest arity of a symbol of the alphabet, and zero at an alphabet
+with no symbols. -/
+@[expose] def maxArity (R : RankedAlphabet) : ℕ :=
+  (List.ofFn R.arity).foldr max 0
+
+/-- Every symbol's arity is at most the largest. Proved from `List.rec` and the
+two `Nat.le_max` lemmas rather than through the ordered-algebra API, which is
+the discipline `size_le_sum_ofFn` records for the sum. -/
+theorem arity_le_maxArity (R : RankedAlphabet) (i : Fin R.card) :
+    R.arity i ≤ R.maxArity := by
+  have hmem : ∀ (l : List ℕ) (x : ℕ), x ∈ l → x ≤ l.foldr max 0 := fun l ↦
+    List.rec (fun x hx ↦ absurd hx (by simp))
+      (fun a t iht x hx ↦ by
+        rcases List.mem_cons.mp hx with h | h
+        · subst h
+          exact Nat.le_max_left _ _
+        · exact Nat.le_trans (iht x h) (Nat.le_max_right _ _)) l
+  exact hmem _ _ (List.mem_ofFn.mpr ⟨i, rfl⟩)
 
 end
 
