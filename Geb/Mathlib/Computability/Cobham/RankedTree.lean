@@ -21,6 +21,8 @@ laid out as a bitstring.
 * `Cobham.stateWord` — the scan state as a bitstring.
 * `Cobham.dispatchWidth` — the number of state bits a step dispatches on.
 * `Cobham.decodeState` — the inverse of the state layout.
+* `Cobham.dropCount`, `Cobham.nextPrefix` — the bits a step drops and
+  prepends.
 
 ## Main statements
 
@@ -31,6 +33,10 @@ laid out as a bitstring.
   zero-padded.
 * `Cobham.decodeState_stateWord_of_lt` — the decoder inverts the layout up to
   capping the pending count at the depth window.
+* `Cobham.dropCount_min_depth`, `Cobham.nextPrefix_min_depth` — capping the
+  pending count at the depth window changes neither.
+* `Cobham.stateWord_scanStep_of_lt` — a step rewrites a bounded prefix and
+  drops a bounded number of bits.
 
 ## Implementation notes
 
@@ -74,6 +80,15 @@ The run of `false` past the slot is cleared by a two-case reduction rather
 than by `List.takeWhile_replicate`, which was measured to depend on
 `Classical.choice` through `List.filter_replicate`. A proof shortened back
 onto that lemma fails `lake lint`.
+
+The dispatch reads the flag and the slot together with the low
+`R.maxArity + 1` bits of the pending count, which give
+`min depth (R.maxArity + 1)`. Those bits decide `r ≤ depth` for every symbol:
+if the count is at least `R.maxArity + 1` then every arity is below it, and
+otherwise those bits are the count itself.
+`RankedAlphabet.le_maxArity_of_arOf_eq_some` is what makes the window
+sufficient, and it is what `dropCount_min_depth` and `nextPrefix_min_depth`
+consume.
 
 ## Tags
 
@@ -182,6 +197,121 @@ theorem decodeState_stateWord_of_lt (R : RankedAlphabet) (s : Scan)
       hfalse, List.append_nil, List.length_replicate]
     exact Nat.min_comm _ _
   · rw [decodeState, hword, List.headD_cons]
+
+/-- The bits a step drops from the state word: the flag and the slot, together
+with the popped subterms where a completed block's symbol pops. -/
+@[expose] def dropCount (R : RankedAlphabet) (b : Bool) (s : Scan) : ℕ :=
+  match s.live with
+  | false => 1 + R.width
+  | true =>
+    match decide ((b :: s.buf).length = R.width) with
+    | false => 1 + R.width
+    | true =>
+      match R.arOf (decodeBits (b :: s.buf)) with
+      | none => 1 + R.width
+      | some r =>
+        match decide (r ≤ s.depth) with
+        | false => 1 + R.width
+        | true => 1 + R.width + r
+
+/-- The bits a step prepends to the state word: the rebuilt flag and slot,
+together with the pushed subterm where a completed block's symbol pops. -/
+@[expose] def nextPrefix (R : RankedAlphabet) (b : Bool) (s : Scan) :
+    List Bool :=
+  match s.live with
+  | false => false :: bufBits R s.buf
+  | true =>
+    match decide ((b :: s.buf).length = R.width) with
+    | false => true :: bufBits R (b :: s.buf)
+    | true =>
+      match R.arOf (decodeBits (b :: s.buf)) with
+      | none => false :: bufBits R []
+      | some r =>
+        match decide (r ≤ s.depth) with
+        | false => false :: bufBits R []
+        | true => true :: bufBits R [] ++ [true]
+
+/-- Capping the pending count at the depth window `R.maxArity + 1` leaves the
+bits dropped unchanged: the only test reading the count compares it with an
+arity, which is at most the largest. -/
+theorem dropCount_min_depth (R : RankedAlphabet) (b : Bool) (s : Scan) :
+    dropCount R b { s with depth := min s.depth (R.maxArity + 1) } =
+      dropCount R b s := by
+  obtain ⟨buf, depth, live⟩ := s
+  rw [dropCount, dropCount]
+  dsimp only
+  cases live
+  · rfl
+  · cases har : R.arOf (decodeBits (b :: buf))
+    · rfl
+    · rename_i r
+      have hr : r ≤ R.maxArity := le_maxArity_of_arOf_eq_some R har
+      dsimp only
+      rcases Nat.le_total depth (R.maxArity + 1) with hle | hle
+      · rw [Nat.min_eq_left hle]
+      · rw [decide_eq_true (by omega : r ≤ min depth (R.maxArity + 1)),
+          decide_eq_true (by omega : r ≤ depth)]
+
+/-- Capping the pending count leaves the bits prepended unchanged, as
+`dropCount_min_depth`. -/
+theorem nextPrefix_min_depth (R : RankedAlphabet) (b : Bool) (s : Scan) :
+    nextPrefix R b { s with depth := min s.depth (R.maxArity + 1) } =
+      nextPrefix R b s := by
+  obtain ⟨buf, depth, live⟩ := s
+  rw [nextPrefix, nextPrefix]
+  dsimp only
+  cases live
+  · rfl
+  · cases har : R.arOf (decodeBits (b :: buf))
+    · rfl
+    · rename_i r
+      have hr : r ≤ R.maxArity := le_maxArity_of_arOf_eq_some R har
+      dsimp only
+      rcases Nat.le_total depth (R.maxArity + 1) with hle | hle
+      · rw [Nat.min_eq_left hle]
+      · rw [decide_eq_true (by omega : r ≤ min depth (R.maxArity + 1)),
+          decide_eq_true (by omega : r ≤ depth)]
+
+/-- A step of the scan rewrites a bounded prefix of the state word and drops a
+bounded number of its bits: the flag and the slot are rebuilt, and the pending
+count in the tail is popped by the arity of a completed block's symbol. -/
+theorem stateWord_scanStep_of_lt (R : RankedAlphabet) (b : Bool) (s : Scan)
+    (h : s.buf.length < R.width) :
+    stateWord R (R.scanStep b s) =
+      nextPrefix R b s ++ (stateWord R s).drop (dropCount R b s) := by
+  have hpre : (s.live :: bufBits R s.buf).length = 1 + R.width := by
+    rw [List.length_cons, length_bufBits_of_lt R s.buf h]
+    omega
+  have hdrop : (stateWord R s).drop (1 + R.width) =
+      List.replicate s.depth true := List.drop_left' hpre
+  have hdropr : ∀ r : ℕ, (stateWord R s).drop (1 + R.width + r) =
+      List.replicate (s.depth - r) true := fun r ↦ by
+    rw [← List.drop_drop, hdrop, List.drop_replicate]
+  obtain ⟨buf, depth, live⟩ := s
+  rw [scanStep, dropCount, nextPrefix]
+  dsimp only
+  cases live
+  · dsimp only
+    rw [hdrop]
+    rfl
+  · cases hc : decide ((b :: buf).length = R.width)
+    · dsimp only
+      rw [hdrop]
+      rfl
+    · dsimp only
+      cases har : R.arOf (decodeBits (b :: buf))
+      · dsimp only
+        rw [hdrop]
+        rfl
+      · rename_i r
+        dsimp only
+        cases hle : decide (r ≤ depth)
+        · dsimp only
+          rw [hdrop]
+          rfl
+        · dsimp only
+          rw [hdropr r, stateWord, List.replicate_succ, List.append_assoc]
+          rfl
 
 end
 
