@@ -731,7 +731,8 @@ theorem exists_spell_append_of_live_of_buf_nil_of_one_le_depth (R : RankedAlphab
           (R.scanFinal rest).depth + 1 = (R.scanFinal w).depth :=
   Nat.rec
     (fun w hw _ _ hd ↦ by
-      have hnil : w = [] := List.eq_nil_of_length_eq_zero (Nat.le_zero.mp hw)
+      have hzero : w.length ≤ 0 := hw
+      have hnil : w = [] := List.eq_nil_of_length_eq_zero (by omega)
       subst hnil
       exact absurd hd (by simp))
     (fun n ihn w hw hlive hbuf hd ↦ by
