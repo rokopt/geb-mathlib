@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Computability.Cobham.Basic
+public import Geb.Mathlib.Computability.Cobham.Scan
 public import Geb.Mathlib.Computability.Cobham.Tree
 
 /-!

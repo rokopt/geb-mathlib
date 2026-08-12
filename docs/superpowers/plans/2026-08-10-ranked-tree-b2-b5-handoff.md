@@ -6,7 +6,8 @@
 - [Read these first](#read-these-first)
 - [Where the workstream stands](#where-the-workstream-stands)
 - [Facts established by building](#facts-established-by-building)
-- [B2: the scan combinator](#b2-the-scan-combinator)
+- [B2: the scan combinator (done)](#b2-the-scan-combinator-done)
+- [B6: the generic ranked recognizer](#b6-the-generic-ranked-recognizer)
 - [B3: the fold](#b3-the-fold)
 - [B4: absorbing `BinTree`](#b4-absorbing-bintree)
 - [B5: the time and space bound](#b5-the-time-and-space-bound)
@@ -127,41 +128,28 @@ reinstate them from any older document.
     `public import` of the declaring module and `@[expose]`. Group
     `public import`s before plain `import`s, separated by a blank line.
 
-## B2: the scan combinator
+## B2: the scan combinator (done)
 
-`Geb/Mathlib/Computability/Cobham/Scan.lean`. Depends on B1. This is the next
-branch.
+Done. `Geb/Mathlib/Computability/Cobham/Scan.lean` gives the scan
+combinator, and `Geb/Mathlib/Computability/Cobham/Tree.lean`'s recognizer
+is rebuilt on it. See [docs/index.md](../../index.md), entries for
+`Geb/Mathlib/Computability/Cobham/Scan.lean` and
+`Geb/Mathlib/Computability/Cobham/Tree.lean`.
 
-The object is a `Scanner` combinator over the Cobham function algebra: a
-right-to-left scan whose state is a bitstring holding one stack cell per
-pending subterm, with the ranked recognizer as one instance and the merged
-`Cobham.isTree` re-expressed as the width-one instance.
+The generic ranked recognizer was carried out of B2 into a branch of its
+own, B6, described below: the combinator is the two-symbol recognizer's
+scan, and instantiating it at an arbitrary `RankedAlphabet` is separate
+work.
 
-What exists to build on, in `Geb/Mathlib/Computability/Cobham/`:
+## B6: the generic ranked recognizer
 
-- `Basic.lean` — `sig`, `C`, `COf n`, `Sem n`, `eval`, `evalRec`,
-  `SmashFree` and its `Decidable` instance, and the generators `pred`, `cond`,
-  `concatOf`, `smashOf`.
-- `Tree.lean` — `zeroAtOf`, `oneAtOf`, `falseAtOf`, `incOf`, `predPredOf`,
-  `combFalseStepOf`, `combTrueStepOf`, `combOf`, `eqOneOf`, `isTreeOf`;
-  `combSem_eq` identifying the scan with `BinTree.depth` and `BinTree.ok`;
-  `isTreeSem_eq_singleton_iff_valid`; and `isTree_smashFree`.
+`Geb/Mathlib/Computability/Cobham/`. Depends on B1 and B2.
 
-Two corrections, both verified against the source rather than inherited:
-
-- **The step functions are `COf 1` lifted, not `COf 2`.**
-  `Cobham.evalRec {n} (g : Sem n) (h₀ h₁ : Sem (n + 2))` applies its step to
-  `Fin.cons v (Fin.cons (ih x) x)`: slot 0 is the remaining suffix, slot 1 is
-  the recursive value, slots 2 upward the ambient environment. So a step is
-  `Sem (n + 2)`, and at `n = 0` a `COf 2` — but a `List.foldr` step, which is
-  what a scan wants, is a function of the state alone. `combFalseStepRaw` and
-  `combTrueStepRaw` show the shape: each is a `comp` whose every argument
-  reaches the state through `proj 2 1`, and neither references slot 0.
-  `Scanner`'s interface should therefore take `step₀ step₁ : COf 1` and lift
-  them by `comp` with `proj 2 1`.
-- **A length bound cannot name `stepSem`/`baseSem` as fields**, because they
-  are not fields. Inline the fold in the statement, or move the bound to a
-  smart constructor. `growth = 0` needs its own clause.
+The ranked recognizer as an instance of the scan combinator. The layout of
+`RankedAlphabet.Scan` as a bitstring is undecided, and the step must
+dispatch on `2 ^ width` block values against `RankedAlphabet.arOf`, so the
+dispatch is built by recursion on `width` rather than written out. See
+[TODO.md](../../../TODO.md) § Extensions of the tree recognizers.
 
 ## B3: the fold
 
@@ -235,23 +223,25 @@ linear on a right comb.
 
 ## What completion means
 
-B1 to B4 stand without B5. The workstream is complete when B4 has landed and no
-tree encoding is defined twice; B5 is a separate undertaking whose failure
-costs nothing already built.
+B1 to B4 and B6 stand without B5. The workstream is complete when B4 has
+landed, so that no tree encoding is defined twice, and B6 has landed, so that
+the recognizer is stated at an arbitrary ranked alphabet; B5 is a separate
+undertaking whose failure costs nothing already built.
 
-Three deferrals are recorded in [TODO.md](../../../TODO.md) and are not part of
-any of the five: the namespace prefix in a declaration body, the placement of
-the choice-free `Nat` residue lemmas, and the citation status of
-`BarringtonCorbett1989` together with the three succinct-tree references, which
-are verified but uncited and so belong to the branch that first cites one.
+Deferrals are recorded in [TODO.md](../../../TODO.md), not part of
+the branches above: the namespace prefix in a declaration body, the
+placement of the choice-free `Nat` residue lemmas, and the citation status
+of `BarringtonCorbett1989` together with the three succinct-tree
+references, which are verified but uncited and so belong to the branch
+that first cites one.
 
-Also deferred, and part of none of the five: the Bellantoni-Cook port of
-`Scanner`, whose signature is over arities in normal and safe position and so
-is a branch rather than a transcription; the paramorphism whose step receives a
-subterm's spelling, which the head-locality of the state layout admits only at
-quadratic cost; a fold at an infinite carrier, which needs the `smash`
-generator; and the depth-first unary degree sequence encoding, whose condition
-for adoption is unbounded arity.
+Also deferred, not part of the branches above: the Bellantoni-Cook port of
+the scan combinator, whose signature is over arities in normal and safe
+position and so is a branch rather than a transcription; the paramorphism
+whose step receives a subterm's spelling, which the head-locality of the
+state layout admits only at quadratic cost; a fold at an infinite carrier,
+which needs the `smash` generator; and the depth-first unary degree
+sequence encoding, whose condition for adoption is unbounded arity.
 
 ## Process this session must follow
 

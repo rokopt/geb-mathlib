@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Computability.Cobham.Basic
+public import Geb.Mathlib.Computability.Cobham.Scan
 public import Geb.Mathlib.Data.Tree.Preorder
 
 /-!
@@ -21,7 +22,7 @@ reproduces, that value's two predecessors being empty. Each bit is read once.
 
 The recursion is a `boundedRec` node, so admissibility requires a bound: the
 scan's value is never longer than the recursion variable by more than one bit,
-which the successor `S₁` expresses as a term of arity one. That is the side
+which the scanner's bound child expresses at growth one. That is the side
 condition of bounded recursion on notation [Cobham1965], and discharging it is
 what places the scan in `C` rather than merely in the syntax `sig` describes.
 
@@ -47,7 +48,7 @@ space.
 * `Cobham.inc` — prepending `true`, of arity one.
 * `Cobham.predPred` — the argument with two bits dropped, of arity one.
 * `Cobham.combFalseStep`, `Cobham.combTrueStep` — the leaf step and the node
-  step of the scan, of arity two.
+  step of the scan, of arity one.
 * `Cobham.comb` — the stack depth and the underflow verdict in one value, of
   arity one.
 * `Cobham.eqOneInner` — whether the predecessor of the argument is empty, of
@@ -66,11 +67,15 @@ present, and for an expression whose reduced arity a proof reads.
 
 ## Main statements
 
+* `Cobham.combSem_def` — the scan's meaning is the scanner's, at the two
+  steps.
 * `Cobham.combSem_nil`, `Cobham.combSem_cons_false`,
   `Cobham.combSem_cons_true` — the scan unfolded at each constructor of the
   recursion variable, with the recursive value exposed.
 * `Cobham.combSem_eq` — the scan computes `BinTree.depth` in unary, offset by
   one, while `BinTree.ok` holds, and `[false]` once it has failed.
+* `Cobham.length_combSem_le` — the recursion bound `scan` asks for, which
+  `comb`, `combOf` and `combSem_eq_eval` each pass to the scanner.
 * `Cobham.combSem_eq_eval`, `Cobham.isTreeSem_eq_eval` — the meaning read at
   the raw tree is the meaning the expression of `C` carries.
 * `Cobham.eqOneSem_env` — the one-test at an arbitrary environment is the
@@ -105,10 +110,10 @@ recursion bound, so the scan is characterized by `combSem_eq` before the
 expression carrying that bound exists. The bound is then that characterization
 together with `BinTree.depth_le_length`: the value is `[false]`, of length one,
 or the depth in unary offset by one, and the depth never exceeds the word
-length, while the bound child `S₁` returns one bit more than the recursion
-variable. Reading `comb` back through `C.eval` returns `combSem`, both being
-the same transport along `fst_eval`, which `combSem_eq_eval` states and
-`isTreeSem_eq_eval` states for the recognizer.
+length, while the scanner's bound child, at growth one, returns one bit
+more than the recursion variable. `combSem` is the scanner's meaning at its
+arity, and `combSem_eq_eval` reads it back through `C.eval`, as
+`isTreeSem_eq_eval` does for the recognizer.
 
 That bound is a bound on the value `combSem` produces at each step, not a
 bound on the cost of evaluating the expression that computes it: nothing in
@@ -119,12 +124,12 @@ membership is [Strahm2003] Theorem 1(2), cited and not reproved here.
 
 `cond` and `pred` are `boundedRec` nodes in this algebra rather than
 generators, so a step's meaning reduces only once the value it scrutinizes is
-in constructor form: `combSem_cons_false` and `combSem_cons_true` are therefore
-not definitional, and each is proved by rewriting the scan to the step's own
-application at the recursive value, generalizing that value, and matching on
-it. The node step's guard drops two bits through two `pred` nodes, each of
-which peels a bit only at a literal, so the match reaches the fourth
-constructor layer of the value.
+in constructor form: `combSem_cons_false` and `combSem_cons_true` are
+therefore not definitional. Each is a corollary of `scanSem_cons`, proved by
+rewriting to the step's own application at the recursive value, generalizing
+that value, and matching on it. The node step's guard drops two bits through
+two `pred` nodes, each of which peels a bit only at a literal, so the match
+reaches the fourth constructor layer of the value.
 
 `combSem` names the meaning at the reduced arity, so that rewriting under it
 type-checks. A meaning taken through the `Sigma` projection instead has a type
@@ -138,8 +143,7 @@ vacuous at a `comp`, with a case analysis over its children, reusing the
 embedded subexpression's own `RecBounded` component rather than repeating its
 proof. Unlike a primitive predecessor shape, `pred` here is itself a
 `boundedRec` node (`predRaw`), so its value on the scan's result does not
-reduce on a symbolic word: `isTreeSem_apply` is proved, as
-`combSem_cons_false` and `combSem_cons_true` are, by rewriting to the
+reduce on a symbolic word: `isTreeSem_apply` is proved by rewriting to the
 composition's own application, generalizing the scan's value, and matching
 on it, rather than by `rfl`.
 
@@ -271,58 +275,59 @@ bitstring, or a depth below two. -/
 @[expose] def predPredOf : COf 1 := ⟨predPred, rfl⟩
 
 /-- The leaf step: push a level onto a live value, whose head is `true`, and
-return the failure flag on a value that is empty or has head `false`. The
-recursive value is the second of the step's two arguments. -/
+return the failure flag on a value that is empty or has head `false`. Of
+arity one, the state being the sole argument a fold's step reads. -/
 @[expose] def combFalseStepRaw : sig.toPFunctor.W :=
-  WType.mk (.comp 2 4) fun d ↦
+  WType.mk (.comp 1 4) fun d ↦
     match d with
     | .inl () => condRaw
     | .inr i =>
-      ![WType.mk (.proj 2 1) Fin.elim0, falseAtRaw 2,
-        WType.mk (.comp 2 1) (fun e ↦
+      ![WType.mk (.proj 1 0) Fin.elim0, falseAtRaw 1,
+        WType.mk (.comp 1 1) (fun e ↦
           match e with
           | .inl () => incRaw
-          | .inr _ => WType.mk (.proj 2 1) Fin.elim0),
-        falseAtRaw 2] i
+          | .inr _ => WType.mk (.proj 1 0) Fin.elim0),
+        falseAtRaw 1] i
 
-/-- The leaf step as an expression of arity two. -/
+/-- The leaf step as an expression of arity one. -/
 @[expose] def combFalseStep : C :=
   ⟨⟨combFalseStepRaw, by decide⟩,
     ⟨trivial, fun d ↦ match d with
       | .inl () => cond.1.2
       | .inr 0 => ⟨trivial, fun c ↦ c.elim0⟩
-      | .inr 1 => (falseAt 2).2
+      | .inr 1 => (falseAt 1).2
       | .inr 2 =>
         ⟨trivial, fun e ↦ match e with
           | .inl () => inc.2
           | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩
-      | .inr 3 => (falseAt 2).2⟩⟩
+      | .inr 3 => (falseAt 1).2⟩⟩
 
 /-- `combFalseStep` at its declared arity. -/
-@[expose] def combFalseStepOf : COf 2 := ⟨combFalseStep, rfl⟩
+@[expose] def combFalseStepOf : COf 1 := ⟨combFalseStep, rfl⟩
 
-/-- The node step: pop a level when at least two remain, and return the failure
-flag otherwise. An existing failure propagates, its guard being empty. -/
+/-- The node step: pop a level when at least two remain, and return the
+failure flag otherwise. An existing failure propagates, its guard being
+empty. Of arity one, as `combFalseStep`. -/
 @[expose] def combTrueStepRaw : sig.toPFunctor.W :=
-  WType.mk (.comp 2 4) fun d ↦
+  WType.mk (.comp 1 4) fun d ↦
     match d with
     | .inl () => condRaw
     | .inr i =>
-      ![WType.mk (.comp 2 1) (fun e ↦
+      ![WType.mk (.comp 1 1) (fun e ↦
           match e with
           | .inl () => predPredRaw
-          | .inr _ => WType.mk (.proj 2 1) Fin.elim0),
-        falseAtRaw 2,
-        WType.mk (.comp 2 1) (fun e ↦
+          | .inr _ => WType.mk (.proj 1 0) Fin.elim0),
+        falseAtRaw 1,
+        WType.mk (.comp 1 1) (fun e ↦
           match e with
           | .inl () => predRaw
-          | .inr _ => WType.mk (.proj 2 1) Fin.elim0),
-        WType.mk (.comp 2 1) (fun e ↦
+          | .inr _ => WType.mk (.proj 1 0) Fin.elim0),
+        WType.mk (.comp 1 1) (fun e ↦
           match e with
           | .inl () => predRaw
-          | .inr _ => WType.mk (.proj 2 1) Fin.elim0)] i
+          | .inr _ => WType.mk (.proj 1 0) Fin.elim0)] i
 
-/-- The node step as an expression of arity two. -/
+/-- The node step as an expression of arity one. -/
 @[expose] def combTrueStep : C :=
   ⟨⟨combTrueStepRaw, by decide⟩,
     ⟨trivial, fun d ↦ match d with
@@ -331,7 +336,7 @@ flag otherwise. An existing failure propagates, its guard being empty. -/
         ⟨trivial, fun e ↦ match e with
           | .inl () => predPred.2
           | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩
-      | .inr 1 => (falseAt 2).2
+      | .inr 1 => (falseAt 1).2
       | .inr 2 =>
         ⟨trivial, fun e ↦ match e with
           | .inl () => pred.1.2
@@ -342,20 +347,25 @@ flag otherwise. An existing failure propagates, its guard being empty. -/
           | .inr _ => ⟨trivial, fun c ↦ c.elim0⟩⟩⟩⟩
 
 /-- `combTrueStep` at its declared arity. -/
-@[expose] def combTrueStepOf : COf 2 := ⟨combTrueStep, rfl⟩
+@[expose] def combTrueStepOf : COf 1 := ⟨combTrueStep, rfl⟩
 
-/-- The raw tree of the scan. The base is `[true]`, the empty bitstring having
-depth zero and satisfying `ok`; the bound is `S₁`, whose value is one longer
-than the recursion variable. -/
+/-- The raw tree of the scan, as a scanner: base `[true]`, the empty bitstring
+having depth zero and satisfying `ok`; growth one, the value being never
+longer than the recursion variable by more than one bit. -/
 @[expose] def combRaw : sig.toPFunctor.W :=
-  WType.mk (.boundedRec 0)
-    ![oneAtRaw 0, combFalseStepRaw, combTrueStepRaw, WType.mk (.succ true) Fin.elim0]
+  scanRaw (oneAtRaw 0) combFalseStepRaw combTrueStepRaw 1
 
-/-- The scan's meaning at its arity, taken at the raw tree. `Cobham.eval`
-asks only for admissibility as a `sig`-tree, so the scan is characterized
-before the expression carrying its recursion bound is formed. -/
+/-- The scan's meaning at its arity, as the scanner's. `Cobham.eval` asks
+only for admissibility as a `sig`-tree, so the scan is characterized before
+the expression carrying its recursion bound exists. -/
 @[expose] def combSem : Sem 1 :=
-  transport (fst_eval ⟨combRaw, by decide⟩) (eval ⟨combRaw, by decide⟩).2
+  scanSem (oneAtOf 0) combFalseStepOf combTrueStepOf 1
+
+/-- The scan is the scanner at its two steps. Stated because a `def` carries
+no equation lemma: the `cons` lemmas rewrite by it, and `length_combSem_le`
+rewrites by it in reverse, its statement being the one `scan` asks for. -/
+theorem combSem_def :
+    combSem = scanSem (oneAtOf 0) combFalseStepOf combTrueStepOf 1 := rfl
 
 /-- The scan's value on the empty bitstring: depth zero, offset by one. -/
 theorem combSem_nil : combSem ![[]] = [true] := rfl
@@ -368,8 +378,10 @@ theorem combSem_cons_false (v : List Bool) :
        | [] => [false]
        | true :: _ => true :: combSem ![v]
        | false :: _ => [false]) := by
-  change transport combFalseStepOf.2 combFalseStepOf.1.eval ![v, combSem ![v]] = _
-  generalize combSem ![v] = r
+  rw [combSem_def, scanSem_cons]
+  change stepWord combFalseStepOf (scanSem (oneAtOf 0) combFalseStepOf
+    combTrueStepOf 1 ![v]) = _
+  generalize scanSem (oneAtOf 0) combFalseStepOf combTrueStepOf 1 ![v] = r
   match r with
   | [] | true :: _ | false :: _ => rfl
 
@@ -382,8 +394,10 @@ theorem combSem_cons_true (v : List Bool) :
        | [] => [false]
        | true :: _ => (combSem ![v]).tail
        | false :: _ => (combSem ![v]).tail) := by
-  change transport combTrueStepOf.2 combTrueStepOf.1.eval ![v, combSem ![v]] = _
-  generalize combSem ![v] = r
+  rw [combSem_def, scanSem_cons]
+  change stepWord combTrueStepOf (scanSem (oneAtOf 0) combFalseStepOf
+    combTrueStepOf 1 ![v]) = _
+  generalize scanSem (oneAtOf 0) combFalseStepOf combTrueStepOf 1 ![v] = r
   match r with
   | [] => rfl
   | [c] => cases c <;> rfl
@@ -427,38 +441,34 @@ theorem combSem_eq (w : List Bool) :
       · rw [h1]; rfl
       · rw [hm]; rfl
 
-/-- The stack depth and the underflow verdict of a bitstring in one value. Its
-recursion respects the bound because the value is `[false]`, of length one, or
-the depth in unary offset by one, and the depth never exceeds the word length
-(`BinTree.depth_le_length`), while the bound child `S₁` returns one bit more
-than the recursion variable. -/
+/-- The scan's value exceeds the recursion variable by at most one bit: it is
+`[false]`, of length one, or the depth in unary offset by one, and the depth
+never exceeds the word length (`BinTree.depth_le_length`). This is the
+recursion bound `scan` asks for, at the growth its bound child carries. -/
+theorem length_combSem_le (u : List Bool) :
+    (scanSem (oneAtOf 0) combFalseStepOf combTrueStepOf 1 ![u]).length ≤
+      u.length + 1 := by
+  rw [← combSem_def, combSem_eq]
+  cases BinTree.ok u
+  · exact Nat.le_add_left 1 u.length
+  · rw [if_pos rfl, List.length_replicate]
+    exact Nat.succ_le_succ (BinTree.depth_le_length u)
+
+/-- The stack depth and the underflow verdict of a bitstring in one value, as
+the scanner at the two steps, with `length_combSem_le` discharging its
+recursion bound. -/
 @[expose] def comb : C :=
-  ⟨⟨combRaw, by decide⟩, by
-    have hb : ∀ u : List Bool, (combSem ![u]).length ≤ u.length + 1 := by
-      intro u
-      rw [combSem_eq]
-      cases BinTree.ok u
-      · exact Nat.le_add_left 1 u.length
-      · rw [if_pos rfl, List.length_replicate]
-        exact Nat.succ_le_succ (BinTree.depth_le_length u)
-    refine ⟨fun x ↦ ?_, ?_⟩
-    · change _ ≤ (x 0).length + 1
-      rw [(funext fun i ↦ i.elim0 : Fin.tail x = Fin.tail ![x 0])]
-      exact hb (x 0)
-    · refine fun b : Fin 4 ↦ ?_
-      match b with
-      | 0 => exact (oneAt 0).2
-      | 1 => exact combFalseStep.2
-      | 2 => exact combTrueStep.2
-      | 3 => exact ⟨trivial, fun c ↦ c.elim0⟩⟩
+  scan (oneAtOf 0) combFalseStepOf combTrueStepOf 1 length_combSem_le
 
 /-- `comb` at its declared arity. -/
-@[expose] def combOf : COf 1 := ⟨comb, rfl⟩
+@[expose] def combOf : COf 1 :=
+  scanOf (oneAtOf 0) combFalseStepOf combTrueStepOf 1 length_combSem_le
 
 /-- The meaning `combSem` reads at the raw tree is the meaning `comb` carries:
 the statements about the scan are statements about the member of `C` whose
 recursion bound `comb` discharges. -/
-theorem combSem_eq_eval : transport combOf.2 combOf.1.eval = combSem := rfl
+theorem combSem_eq_eval : transport combOf.2 combOf.1.eval = combSem :=
+  scanSem_eq_eval (oneAtOf 0) combFalseStepOf combTrueStepOf 1 length_combSem_le
 
 /-- The inner conditional of `eqOne`: whether the predecessor of the argument
 is empty. -/
