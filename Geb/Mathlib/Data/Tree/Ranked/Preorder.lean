@@ -99,6 +99,11 @@ one: `spell` is prefix notation while the scan reads right to left, so the
 head symbol's block is read last, from the state the scan of everything after
 it leaves.
 
+The base case ascribes `w.length ≤ 0` to `hzero` before appealing to `omega`:
+`Nat.rec`'s base case presents the bound as `w.length ≤ Nat.zero`, and `omega`
+treats the unreduced `Nat.zero` as an opaque atom, so the ascription at the
+literal `0` is what makes the hypothesis usable.
+
 `spell_injective` is derived from `Computability.Encoding.encode_injective`
 through `encoding` rather than proved directly, the encoding and its descent
 being exactly that structure's three fields.

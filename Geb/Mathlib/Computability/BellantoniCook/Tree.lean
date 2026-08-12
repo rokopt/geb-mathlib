@@ -156,7 +156,7 @@ empty. -/
       ![predPredRaw, falseAtRaw 1 1, decRaw, decRaw])
 
 /-- The raw tree of the scan. The base is `[true]`, the empty bitstring
-having depth zero and satisfying `ok`. -/
+having depth zero and satisfying `RankedAlphabet.Binary.ok`. -/
 @[expose] def combRaw : sig.toPFunctor.W :=
   WType.mk (.safeRec 0 0) ![oneAtRaw 0 0, combFalseStepRaw, combTrueStepRaw]
 
@@ -249,8 +249,9 @@ theorem combSem_cons_true (v : List Bool) :
        | true :: _ => (combSem ![v] ![]).tail
        | false :: _ => (combSem ![v] ![]).tail) := rfl
 
-/-- The scan computes the stack depth in unary, offset by one, while the scan
-is live, and the absorbing value `[false]` once it has failed. -/
+/-- The scan computes the stack depth in unary, offset by one, while
+`RankedAlphabet.Binary.ok` holds, and the absorbing value `[false]` once it
+has failed. -/
 theorem combSem_eq (w : List Bool) :
     combSem ![w] ![] =
       if ok w then List.replicate (depth w + 1) true

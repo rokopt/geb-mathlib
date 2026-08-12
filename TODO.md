@@ -523,7 +523,15 @@ Items over `Geb/Mathlib/Data/Tree/`.
    `Ast.ind` and parse/print retraction, so the condition on this item
    is met; the import rules bar `Geb/Mathlib/` from reaching
    `Geb/Internal/`, so the dependency runs the other way.
-3. Relate `binRanked.spell` to `DyckWord.equivTree`, connecting this
+3. Whether `RankedAlphabet.Term.size`
+   (`Geb/Mathlib/Data/Tree/Ranked/Basic.lean`), which counts leaves alongside
+   internal nodes, should be stated through a transfer to mathlib's
+   `BinaryTree.numNodes`, and whether the name `size` survives beside
+   `numNodes`, `numLeaves` and `height` —
+   `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` presents the two-symbol
+   alphabet's terms as the unlabelled binary trees, in the same
+   `Mathlib/Data/Tree/` file-path family `BinaryTree` occupies.
+4. Relate `binRanked.spell` to `DyckWord.equivTree`, connecting this
    encoding to mathlib's Catalan-number apparatus. Wanted only if a
    counting result is ever needed.
 
@@ -687,6 +695,14 @@ from `GebTests/Mathlib/Computability/Cobham/RankedTree.lean`'s
 taking only above that budget. A lighter computation was measured reaching
 the 200000-heartbeat `isDefEq` limit at 511 words, so a sweep above length
 seven may not elaborate at all.
+
+Also deferred: aligning
+`Geb/Mathlib/Computability/BellantoniCook/Tree.lean`'s
+`isTreeSem_eq_singleton_iff_valid` and `isTreeSem_eq_ite`, which each carry
+the same `ok`/`depth` case analysis rather than sharing it, with
+`Geb/Mathlib/Computability/Cobham/Tree.lean`, which states the `ite` form
+first and derives the `iff` from it in a few lines. A short branch of its
+own.
 
 `BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
 absent from `docs/references.bib`: neither its bibliographic detail nor the

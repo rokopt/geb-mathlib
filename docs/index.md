@@ -158,8 +158,8 @@ import-direction rules above are enforced by
   reduces to a pending count and a liveness verdict: `depth` and `ok`
   read the two off a whole word, `buf_scanFinal_eq_nil` records that no
   incomplete block survives a step, `depth_le_length` bounds the
-  pending count by the word length — the bound the tree recognizers'
-  recursion asks for — and `valid_iff_ok_and_depth_eq_one` restates
+  pending count by the word length — the bound `Cobham.length_combSem_le`
+  asks for — and `valid_iff_ok_and_depth_eq_one` restates
   validity as the two conditions on that counter form, the third
   holding of every word at width one. `ok_cons_false`, `ok_cons_true`,
   `depth_cons_false_of_ok` and `depth_cons_true_of_ok_of_two_le_depth`

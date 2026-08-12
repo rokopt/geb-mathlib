@@ -13,13 +13,13 @@ public import Geb.Mathlib.Data.Tree.Ranked.Binary
 # The preorder stack scan in Cobham's class
 
 An expression of `C` computing, in a single right-to-left pass over a
-bitstring, the stack depth of the word read as the preorder spelling of a term
-of `RankedAlphabet.Binary.binRanked`, together with the scan's liveness
-verdict. The two are carried in one recursive value, told apart by its head:
-while no node bit has been read below depth two the value is the depth in
-unary offset by one, so its head is
-`true`; once one has been, the value is `[false]`, which the node step
-reproduces, that value's two predecessors being empty. Each bit is read once.
+bitstring, the stack depth of the word read as the preorder spelling of a
+term of `RankedAlphabet.Binary.binRanked`, together with the scan's
+liveness verdict. The two are carried in one recursive value, told apart
+by its head: while no node bit has been read below depth two the value is
+the depth in unary offset by one, so its head is `true`; once one has
+been, the value is `[false]`, which the node step reproduces, that
+value's two predecessors being empty. Each bit is read once.
 
 The recursion is a `boundedRec` node, so admissibility requires a bound: the
 scan's value is never longer than the recursion variable by more than one bit,
@@ -336,8 +336,8 @@ empty. Of arity one, as `combFalseStep`. -/
 @[expose] def combTrueStepOf : COf 1 := ⟨combTrueStep, rfl⟩
 
 /-- The raw tree of the scan, as a scanner: base `[true]`, the empty bitstring
-having depth zero and satisfying `ok`; growth one, the value being never
-longer than the recursion variable by more than one bit. -/
+having depth zero and satisfying `RankedAlphabet.Binary.ok`; growth one, the
+value being never longer than the recursion variable by more than one bit. -/
 @[expose] def combRaw : sig.toPFunctor.W :=
   scanRaw (oneAtRaw 0) combFalseStepRaw combTrueStepRaw 1
 
@@ -390,8 +390,9 @@ theorem combSem_cons_true (v : List Bool) :
   | c :: d :: w =>
     cases c <;> cases d <;> (match w with | [] | true :: _ | false :: _ => rfl)
 
-/-- The scan computes the stack depth in unary, offset by one, while `ok`
-holds, and the absorbing value `[false]` once it has failed. -/
+/-- The scan computes the stack depth in unary, offset by one, while
+`RankedAlphabet.Binary.ok` holds, and the absorbing value `[false]` once it
+has failed. -/
 theorem combSem_eq (w : List Bool) :
     combSem ![w] =
       if ok w then List.replicate (depth w + 1) true

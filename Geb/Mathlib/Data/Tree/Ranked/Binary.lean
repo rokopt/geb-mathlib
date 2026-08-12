@@ -34,7 +34,7 @@ which is the shape a recognizer over the encoding is stated against.
 * `RankedAlphabet.Binary.buf_scanFinal_eq_nil` — at width one no incomplete
   block survives a step.
 * `RankedAlphabet.Binary.depth_le_length` — the pending count never exceeds
-  the word length, which is the bound the recognizers' recursion asks for.
+  the word length, which is the bound `Cobham.length_combSem_le` asks for.
 * `RankedAlphabet.Binary.valid_iff_ok_and_depth_eq_one` — validity is the two
   conditions on the counter form, the third holding of every word.
 * `RankedAlphabet.Binary.ok_cons_false`,
@@ -54,6 +54,11 @@ ascribed rather than proved where it stands: the goal `0 < binRanked.arity
 ⟨1, h⟩` carries the free variable `h`, which `decide` refuses, and presents
 the arity as an atom, which `omega` cannot unfold. `show (0 : ℕ) < 2` replaces
 it with the definitionally equal closed goal.
+
+`spell_leaf` and `spell_node` have no consumer in this module: they are kept
+as the alphabet's characteristic spelling equations, stating what the
+preorder encoding is at this alphabet, and so belong to its public interface
+rather than to internal machinery.
 
 `depth` and `ok` are `@[expose]`, as the declarations they project are: a
 consuming module's `rfl` and `decide` reduce through them only if they unfold
@@ -198,7 +203,8 @@ theorem scanStep_of_not_live (b : Bool) (s : Scan) (hl : s.live = false) :
   · rw [scanStep_of_not_live false _ h, h]
   · rw [scanStep_false_of_live_of_buf_nil _ h (buf_scanFinal_eq_nil w)]
 
-/-- A node bit fails exactly when fewer than two subterms are pending. -/
+/-- A node bit fails when the scan has already failed, or when fewer than two
+subterms are pending. -/
 @[simp] theorem ok_cons_true (w : List Bool) :
     ok (true :: w) = (ok w && decide (2 ≤ depth w)) := by
   rw [ok, ok, depth, scanFinal_cons]
