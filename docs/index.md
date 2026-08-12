@@ -1196,3 +1196,18 @@ import-direction rules above are enforced by
   `Geb.Mathlib.Computability.Cobham.Cases`,
   `Geb.Mathlib.Computability.Cobham.Tree` and
   `Geb.Mathlib.Data.Tree.Ranked.Binary`. `Classical.choice`-free.
+- `Geb/Mathlib/Computability/Cobham/Fold.lean` — the catamorphism of a list of
+  bits at a carrier admitting a `p`-bit encoding, as an expression of Cobham's
+  class. `foldStep` is the case combinator at the `p` bits of the state, its
+  branches the constant words spelling the carrier-level step's result, and
+  the diagonal supplies the state in both the scrutinee and the argument
+  position; `foldSem` is the scan's meaning at that step and at the encoded
+  initial value, and `fold` carries the recursion with `Cobham.scan`, its
+  bound discharged by `length_foldSem_le`. `foldSem_eq` identifies the value
+  with `List.ofFn` of the encoding of `w.foldr step init`, under the
+  retraction hypothesis `∀ a, dec (enc a) = a`; `length_foldSem` does not take
+  that hypothesis, every state the scan produces being a `List.ofFn` of an
+  `enc` value whatever `dec` does off the image of `enc`. The carrier is
+  arbitrary and carries no `Fintype` or `FinEnum` instance; its finiteness
+  enters only through `enc`. Depends on
+  `Geb.Mathlib.Computability.Cobham.Cases`. `Classical.choice`-free.

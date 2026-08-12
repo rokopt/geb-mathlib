@@ -625,11 +625,15 @@ with an empty payload, up to the state its failure is recorded in.
   `isRankedSem_binRanked_eq_singleton_iff_isTreeSem` recovers the language
   `Cobham/Tree.lean`'s recognizer accepts at the two-symbol alphabet. See
   [docs/index.md](docs/index.md).
-- **B3**, depending on B2: `Geb/Mathlib/Computability/Cobham/Fold.lean` — the
-  catamorphism at a finite carrier, with a step whose configurable part
-  carries no restriction of its own, both conditions being discharged from
-  finiteness. Its `run_spell` is stated between a `List Bool` and
-  `List.ofFn` of the carrier's encoding, the two not being the same type.
+- **B3 is done.** `Geb/Mathlib/Computability/Cobham/Fold.lean` gives the
+  catamorphism at a carrier admitting a `p`-bit encoding as an expression of
+  `C`: `foldStep` dispatches on the state's bits with the case combinator and
+  `fold` carries the recursion with `Cobham.scan`. `foldSem_eq` identifies the
+  value with the carrier-level `w.foldr step init`, encoded, under the
+  retraction hypothesis. The encoding is not named: it is
+  `List.ofFn (enc a)`, and the type distinction survives, `foldSem … ![w]`
+  being a `List Bool` and `w.foldr step init` an `α`. See
+  [docs/index.md](docs/index.md).
 - **B4**, depending on B1 and B2: `BinTree` absorbed into
   `RankedAlphabet.Term` and the duplication removed. `BinTree` has six
   in-repo consumers.
@@ -677,10 +681,10 @@ DLOGTIME-uniform TC⁰ claim attributed to it has been verified against the
 article. The branch that first needs it verifies it against the primary source
 before recording the key, per
 [AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for the succinct
-tree-encoding references the design cites for context —
+tree-encoding references
 `BenoitDemaineMunroRamanRamanRao2005`, `Mehlhorn1980` and
-`BraunmuhlVerbeek1983` — which are verified but unused, and so are added by
-the branch that first cites them.
+`BraunmuhlVerbeek1983` — verified but unused, and so added by the branch that
+first cites them.
 
 ### The namespace prefix in a declaration body
 

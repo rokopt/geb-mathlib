@@ -7,6 +7,7 @@ module
 
 public import Geb.Mathlib.Computability.Cobham.Basic
 public import Geb.Mathlib.Computability.Cobham.Cases
+public import Geb.Mathlib.Computability.Cobham.Fold
 public import Geb.Mathlib.Computability.Cobham.RankedTree
 public import Geb.Mathlib.Computability.Cobham.Scan
 public import Geb.Mathlib.Computability.Cobham.Tree
