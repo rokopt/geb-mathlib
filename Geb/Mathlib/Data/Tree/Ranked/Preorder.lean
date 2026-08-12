@@ -18,8 +18,16 @@ right-to-left scan accepts, the scan carrying an incomplete block, the count
 of pending subterms and a liveness flag.
 
 The idea is that of prefix notation, in which a symbol is followed by exactly
-as many operands as its arity. `Data/Tree/Preorder.lean` is the case of one
+as many operands as its arity. `RankedAlphabet.Binary` is the case of one
 symbol of arity zero and one of arity two.
+
+Validity is stated as three conditions, in the manner of mathlib's
+`DyckWord`, whose fields `count_U_eq_count_D` and `count_D_le_count_U` play
+the roles the pending count and the liveness flag play here, and in the
+direction a single right-to-left pass carrying a counter can scan.
+`valid_iff_scanFinal` adds a third, that the incomplete block is empty: at a
+general width that condition is not implied by the other two, so stating
+validity as only the first two, as `DyckWord` does, would be false here.
 
 A `boundedRec` of a Cobham-style function algebra processes a list from its
 far end, so in that reading a symbol's block is read before the blocks of its
@@ -61,6 +69,14 @@ is postfix notation in processing order.
 child is parsed from a remainder the previous call computes, which is not a
 structural subterm. `parse` supplies the input's length, and `length_spell`
 with `width_pos` shows that bound admits every word `spell` emits.
+
+Fuel exhaustion is not a rejection mechanism of its own. Each `parseStep`
+layer consumes a whole block, which `width_pos` makes at least one bit, so
+the invariant that the fuel is at least the remaining length holds from
+`parse`'s initial `w.length` down to wherever the descent stops. The
+descent's own rejections are `decodeBlock`'s two — the input falls short of
+a block, or the block spells no symbol — together with a child's failure and
+the trailing input `parse` rejects.
 
 `parseChildren` is a `Nat.rec` and `decodeBits` a `List.rec`, so neither has
 generated equation lemmas; `parseChildren_succ` and `decodeBits_cons` are

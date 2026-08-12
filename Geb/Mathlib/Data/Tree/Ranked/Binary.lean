@@ -6,32 +6,31 @@ Authors: Terence Rokop
 module
 
 public import Geb.Mathlib.Data.Tree.Ranked.Preorder
-public import Geb.Mathlib.Data.Tree.Preorder
 public import Mathlib.Data.Fin.VecNotation
 
 /-!
-# Binary trees as the terms of a two-symbol ranked alphabet
+# The two-symbol ranked alphabet
 
 The alphabet of one nullary and one binary symbol, spelled by one bit each.
-Its term algebra is equivalent to `BinTree`, and the equivalence carries
-`RankedAlphabet.spell` to `BinTree.print` on the nose: the two encodings are
-one function up to that equivalence, not merely bijections onto one language.
+Its terms are the unlabelled binary trees, the initial algebra of
+`F X = 1 + X × X`, and its preorder encoding is `RankedAlphabet.spell` at
+this alphabet.
+
+At width one every block is a single bit, so the validity scan carries no
+incomplete block and its state reduces to a pending count and a liveness
+verdict. This module names that counter form and gives it one bit at a time,
+which is the shape a recognizer over the encoding is stated against.
 
 ## Main definitions
 
 * `RankedAlphabet.Binary.binRanked` — the alphabet.
 * `RankedAlphabet.Binary.leaf`, `RankedAlphabet.Binary.node` — the two forms
   of its terms.
-* `RankedAlphabet.Binary.termEquiv` — the equivalence with `BinTree`.
 * `RankedAlphabet.Binary.depth`, `RankedAlphabet.Binary.ok` — the validity
   scan's pending count and its liveness verdict, read off a whole word.
 
 ## Main statements
 
-* `RankedAlphabet.Binary.spell_termEquiv` — the equivalence carries the
-  spelling to `BinTree.print`.
-* `RankedAlphabet.Binary.valid_iff` — and so carries the scan's language to
-  `BinTree.Valid`.
 * `RankedAlphabet.Binary.buf_scanFinal_eq_nil` — at width one no incomplete
   block survives a step.
 * `RankedAlphabet.Binary.depth_le_length` — the pending count never exceeds
@@ -76,7 +75,7 @@ not reduce during elaboration, while the kernel evaluates it.
 
 ## Tags
 
-binary tree, ranked alphabet, term algebra, preorder, equivalence
+binary tree, ranked alphabet, term algebra, preorder, scan
 -/
 
 namespace RankedAlphabet.Binary
@@ -229,73 +228,6 @@ theorem depth_cons_true_of_ok_of_two_le_depth (w : List Bool) (h : ok w = true)
     scanStep_true_of_live_of_buf_nil_of_two_le_depth _ h (buf_scanFinal_eq_nil w) h2]
   dsimp only
   omega
-
-/-- A binary tree read as a term. -/
-@[expose] def ofBinTree : BinTree → binRanked.Term :=
-  WType.elim binRanked.Term fun x ↦
-    match x with
-    | ⟨.leaf, _⟩ => leaf
-    | ⟨.node, ch⟩ => node (ch (0 : Fin 2)) (ch (1 : Fin 2))
-
-/-- A term read as a binary tree. -/
-@[expose] def toBinTree : binRanked.Term → BinTree :=
-  WType.elim BinTree fun x ↦
-    match x with
-    | ⟨⟨0, _⟩, _⟩ => BinTree.leaf
-    | ⟨⟨1, _⟩, ch⟩ =>
-      BinTree.node (ch ⟨0, show (0 : ℕ) < 2 by omega⟩) (ch ⟨1, show (1 : ℕ) < 2 by omega⟩)
-    | ⟨⟨n + 2, h⟩, _⟩ => absurd (show n + 2 < 2 from h) (by omega)
-
-/-- Reading a binary tree as a term and back recovers the tree. -/
-theorem toBinTree_ofBinTree (t : BinTree) : toBinTree (ofBinTree t) = t :=
-  BinTree.induction (motive := fun t ↦ toBinTree (ofBinTree t) = t)
-    rfl
-    (fun l r ihl ihr ↦ by
-      change BinTree.node (toBinTree (ofBinTree l)) (toBinTree (ofBinTree r)) = _
-      rw [ihl, ihr]) t
-
-/-- Reading a term as a binary tree and back recovers the term. -/
-theorem ofBinTree_toBinTree : ∀ u : binRanked.Term, ofBinTree (toBinTree u) = u :=
-  Term.induction (motive := fun u ↦ ofBinTree (toBinTree u) = u)
-    (fun i ch ih ↦ by
-      match i with
-      | ⟨0, hi⟩ =>
-        change leaf = _
-        exact congrArg _ (funext fun d ↦ absurd (show d.val < 0 from d.isLt) (by omega))
-      | ⟨1, hi⟩ =>
-        have h0 := ih ⟨0, show (0 : ℕ) < 2 by omega⟩
-        have h1 := ih ⟨1, show (1 : ℕ) < 2 by omega⟩
-        change node (ofBinTree (toBinTree (ch _))) (ofBinTree (toBinTree (ch _))) = _
-        rw [h0, h1, node]
-        exact congrArg _ (funext fun d ↦ by
-          match d with
-          | ⟨0, _⟩ => rfl
-          | ⟨1, _⟩ => rfl)
-      | ⟨n + 2, hi⟩ => exact absurd (show n + 2 < 2 from hi) (by omega))
-
-/-- Binary trees are the terms of the two-symbol alphabet. -/
-@[expose] def termEquiv : BinTree ≃ binRanked.Term where
-  toFun := ofBinTree
-  invFun := toBinTree
-  left_inv := toBinTree_ofBinTree
-  right_inv := ofBinTree_toBinTree
-
-/-- The equivalence carries the spelling to `BinTree.print`. -/
-theorem spell_termEquiv (t : BinTree) :
-    binRanked.spell (termEquiv t) = BinTree.print t :=
-  BinTree.induction (motive := fun t ↦ binRanked.spell (ofBinTree t) = BinTree.print t)
-    spell_leaf
-    (fun l r ihl ihr ↦ by
-      change binRanked.spell (node (ofBinTree l) (ofBinTree r)) = _
-      rw [spell_node, ihl, ihr, BinTree.print_node]) t
-
-/-- The scan of the two-symbol alphabet accepts exactly the words
-`BinTree.Valid` accepts. -/
-theorem valid_iff (w : List Bool) : binRanked.Valid w ↔ BinTree.Valid w := by
-  rw [valid_iff_exists_spell, BinTree.valid_iff_exists_print]
-  refine ⟨fun ⟨u, hu⟩ ↦ ⟨termEquiv.symm u, ?_⟩, fun ⟨t, ht⟩ ↦ ⟨termEquiv t, ?_⟩⟩
-  · rw [← hu, ← spell_termEquiv, Equiv.apply_symm_apply]
-  · rw [spell_termEquiv, ht]
 
 end
 

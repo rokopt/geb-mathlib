@@ -5,8 +5,6 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Mathlib.Data.Tree.Binary
-public import Geb.Mathlib.Data.Tree.Preorder
 public import Geb.Mathlib.Data.Tree.Ranked
 
 /-!
