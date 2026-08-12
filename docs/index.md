@@ -120,6 +120,66 @@ import-direction rules above are enforced by
   `if BinTree.Valid w then … else …`. Cites mathlib's `DyckWord` as the
   adjacent bijection it does not reuse. Depends on
   `Geb.Mathlib.Data.Tree.Binary`.
+- `Geb/Mathlib/Data/Tree/Ranked/Basic.lean` — ranked alphabets and their
+  term algebras. `RankedAlphabet` carries a symbol count `card`, a common
+  block width `width` with `width_pos`, the bound
+  `card_le_two_pow_width` making the blocks lossless, and an arity per
+  symbol; `Term` is the W-type of the finitary polynomial functor whose
+  shape type is `Fin card` and whose direction family sends a symbol to
+  `Fin` of its arity. `Term.mk` names the constructor at the alphabet's
+  own arities, so a caller writes the arity once rather than meeting
+  `Fin (arity ⟨v, h⟩)` where `Fin 0` was expected; `Term.size` counts
+  nodes, `size_le_sum_ofFn` bounds a child's count by the sum over the
+  children, and `Term.induction` gives induction in that presentation.
+  `width_pos` is what supplies the descent's fuel through
+  `t.size ≤ width * t.size`. Depends on mathlib's
+  `Mathlib/Data/W/Basic.lean`.
+- `Geb/Mathlib/Data/Tree/Ranked/Code.lean` — the block spelling a
+  symbol: `code` is the symbol's index in binary, least significant bit
+  first, padded to the alphabet's width; `decodeBits` is the value a
+  block denotes and `arOf` the arity of the symbol it denotes, absent
+  where it denotes none. `length_code`, `decodeBits_code`,
+  `arOf_decodeBits_code`, `testBit_decodeBits` and `getElem_code_eq` make
+  the padding lossless and identify a block's entries both with its
+  value's bits and with the symbol index's.
+  `mod_two_mul` states the residue split the decoding needs, choice-free:
+  mathlib's `Nat.mod_mul` says the same and depends on
+  `Classical.choice`, and `omega` cannot discharge it because the modulus
+  is a variable. Depends on `Geb.Mathlib.Data.Tree.Ranked.Basic` and
+  mathlib's `Mathlib/Algebra/GroupWithZero/Nat.lean`.
+- `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean` — the preorder encoding
+  of ranked terms and its inverse, generalising
+  `Geb/Mathlib/Data/Tree/Preorder.lean` from two unlabelled shapes to any
+  ranked alphabet. `spell` emits a symbol's block followed by its
+  children's spellings, in index order; `decodeBlock`, `parseChildren`,
+  `parseStep`, `parseAux` and `parse` are the fuel-bounded recursive
+  descent, and `encoding` packages the two as a
+  `Computability.Encoding`, from which `spell_injective` follows.
+  `Scan`, `scanStep`, `scanFrom` and `scanFinal` are the single
+  right-to-left pass carrying an incomplete block, the count of pending
+  subterms and a liveness flag; `validBool` and `Valid` are what it
+  accepts, with a `DecidablePred` instance. `parse_spell` and
+  `parse_eq_some_iff` give the retraction and its converse;
+  `valid_spell` and `valid_iff_exists_spell` characterize the encoding's
+  image as exactly the accepted words, and `valid_iff_isSome_parse` reads
+  that characterization as a decision procedure.
+  `length_buf_scanFinal_of_live` is what aligns block boundaries with the
+  word's right end, and `add_one_mod` is the residue-of-a-successor
+  identity it runs on, stated choice-free for the reason `mod_two_mul`
+  is. Depends on `Geb.Mathlib.Data.Tree.Ranked.Code` and mathlib's
+  `Algebra/BigOperators/Ring/List.lean` and `Computability/Encoding.lean`.
+- `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` — the alphabet of one
+  nullary and one binary symbol, one bit to a block, exhibiting
+  `BinTree` as a term algebra. `binRanked` is the alphabet, `leafSym`
+  and `nodeSym` its symbols, `leaf` and `node` the two forms of its
+  terms, and `termEquiv : BinTree ≃ binRanked.Term` the equivalence.
+  `spell_termEquiv` carries `spell` to `BinTree.print` on the nose, so
+  the two encodings are one function up to that equivalence rather than
+  two bijections onto one language, and `valid_iff` carries the scan's
+  language to `BinTree.Valid`. Depends on
+  `Geb.Mathlib.Data.Tree.Ranked.Preorder`,
+  `Geb.Mathlib.Data.Tree.Preorder` and mathlib's
+  `Data/Fin/VecNotation.lean`.
 - `Geb/Mathlib/Data/PFunctor/Univariate/` — the categorical reading of
   mathlib's univariate `PFunctor`. `Functor.lean` packages the
   interpretation as `PFunctor.functor : Type v ⥤ Type (max v uA uB)`,

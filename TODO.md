@@ -26,6 +26,9 @@
   - [Bellantoni-Cook](#bellantoni-cook)
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
+  - [Extensions of the tree recognizers](#extensions-of-the-tree-recognizers)
+  - [The namespace prefix in a declaration body](#the-namespace-prefix-in-a-declaration-body)
+  - [Placement of the choice-free `Nat` residue lemmas](#placement-of-the-choice-free-nat-residue-lemmas)
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
   - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
   - [Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`](#lambda-arrow-in-gebtestsmathlibcategorytheoryelementarytoposlean)
@@ -580,6 +583,102 @@ destination.
    def`, so `ComputableInTimeAndSpace` over a decidable indicator is the
    form to use; and the result speaks of one machine and one language,
    not of any function-algebra expression.
+
+### Extensions of the tree recognizers
+
+Five branches over `Geb/Mathlib/Data/Tree/`,
+`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/`. They answer the four
+investigations this entry previously recorded: labelled leaves and ranked
+alphabets are one construction and are B1; the generic iterator is B3; the
+sharper cost bound is B5. They subsume the labelled-tree items recorded under
+§ Binary trees and their preorder encoding and § The Bellantoni-Cook tree
+recognizer, and the tree recursor recorded under the latter.
+
+The unifying object is a right-to-left scan whose state holds one stack cell
+per pending subterm. The recognizer in
+`Geb/Mathlib/Computability/Cobham/Tree.lean` is that scan at code width one
+with an empty payload, up to the state its failure is recorded in.
+
+- **B1 is done.** `Geb/Mathlib/Data/Tree/Ranked/` gives `RankedAlphabet` and
+  its term algebra, the preorder encoding `spell` and its fuel-bounded
+  recursive descent, the validity scan, `valid_iff_exists_spell` identifying
+  the encoding's image with the scan's language, and
+  `RankedAlphabet.Binary.termEquiv` exhibiting `BinTree` as the two-symbol
+  instance with `spell_termEquiv` and `valid_iff`. See
+  [docs/index.md](docs/index.md).
+- **B2**, depending on B1: `Geb/Mathlib/Computability/Cobham/Scan.lean` — the
+  `Scanner` combinator, the ranked recognizer as an instance, and the present
+  `isTree` re-expressed as the width-one instance. `Scanner`'s two step
+  functions are `COf 1` lifted by `comp` with `proj 2 1`, not `COf 2`:
+  `Cobham.evalRec`'s step takes the remaining suffix first and the recursive
+  value second, so a `COf 2` step cannot be a `List.foldr` step, and
+  `combFalseStep` and `combTrueStep` both reference slot 1 only. A length
+  bound stated over the fold needs the fold inlined or moved to a smart
+  constructor, and `growth = 0` needs its own clause.
+- **B3**, depending on B2: `Geb/Mathlib/Computability/Cobham/Fold.lean` — the
+  catamorphism at a finite carrier, with a step whose configurable part
+  carries no restriction of its own, both conditions being discharged from
+  finiteness. Its `run_spell` is stated between a `List Bool` and the `p`-bit
+  encoding of the carrier, which must be named; the two are not the same type.
+- **B4**, depending on B1 and B2: `BinTree` absorbed into
+  `RankedAlphabet.Term` and the duplication removed. `BinTree` has six
+  in-repo consumers.
+- **B5**, depending on B2: `Geb/Internal/` — linear time and space against
+  Cslib's `MultiTapeTM`, over `ComputableInTimeAndSpace` applied to a
+  computable decision function rather than `DecidableInTimeAndSpace`, whose
+  `indicator` is `noncomputable` and `Classical`. `ComputableInTimeAndSpace`
+  takes three arguments and existentially quantifies the machine alphabet, and
+  the function it is applied to returns a list rather than a `Bool`; the
+  embedding is of input and output, and it is the existential alphabet, not
+  the embedding, that admits wide work-tape symbols. `Geb/Mathlib/` may not
+  import `Cslib.*` and `Geb/Cslib/` may not import `Geb.Mathlib.*`, so the
+  statement is confined to `Geb/Internal/`. This branch differs in kind from
+  the others and its difficulty is unbounded by anything done so far; B1 to B4
+  stand without it.
+
+Deferred, and part of none of the five: the Bellantoni-Cook port of
+`Scanner`, whose signature is over arities in normal and safe position and so
+is a branch rather than a transcription; the paramorphism whose step receives
+a subterm's spelling, which the head-locality of the state layout admits only
+at quadratic cost; a fold at an infinite carrier, which needs the `smash`
+generator; and the depth-first unary degree sequence encoding, whose condition
+for adoption is unbounded arity.
+
+`BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
+absent from `docs/references.bib`: neither its bibliographic detail nor the
+DLOGTIME-uniform TC⁰ claim attributed to it has been verified against the
+article. The branch that first needs it verifies it against the primary source
+before recording the key, per
+[AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for the succinct
+tree-encoding references the design cites for context —
+`BenoitDemaineMunroRamanRamanRao2005`, `Mehlhorn1980` and
+`BraunmuhlVerbeek1983` — which are verified but unused, and so are added by
+the branch that first cites them.
+
+### The namespace prefix in a declaration body
+
+[docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Naming conventions
+says "Do not include the namespace in the declaration body's identifiers; rely
+on `namespace` to scope". `Geb/Mathlib/Data/Tree/Preorder.lean` writes
+`BinTree.induction` at four sites inside `namespace BinTree`, and
+`Geb/Mathlib/Data/Tree/Ranked/Basic.lean` writes `Term.mk` inside
+`theorem Term.induction`. Upstream's own guide states the rule for lemma
+names rather than declaration bodies, so what is diverged from is a local
+strengthening. Settle whether the rule binds declaration bodies, and either
+amend it or correct the sites; deciding it belongs on its own branch, the
+sites spanning branches whose concern it is not.
+
+### Placement of the choice-free `Nat` residue lemmas
+
+`RankedAlphabet.mod_two_mul` (`Geb/Mathlib/Data/Tree/Ranked/Code.lean`) and
+`RankedAlphabet.add_one_mod` (`.../Ranked/Preorder.lean`) are facts about `ℕ`
+with no ranked-alphabet content, stated there because mathlib's counterparts
+depend on `Classical.choice` and `omega` cannot discharge a residue identity
+whose modulus is a variable. Under `open RankedAlphabet` they present bare
+beside `Nat`'s own residue API. The repository's pattern for a supplement to a
+mathlib module is a module mirroring its path, as
+`Geb/Mathlib/Data/Vector/OfFn.lean` and `Geb/Mathlib/Logic/Equiv/Basic.lean`
+do, which would put them under `Geb/Mathlib/Data/Nat/`.
 
 ### Concrete-syntax prototype
 
