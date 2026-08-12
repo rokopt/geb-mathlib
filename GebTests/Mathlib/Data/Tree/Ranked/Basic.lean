@@ -45,7 +45,7 @@ def sampleAlphabet : RankedAlphabet := ⟨4, 2, by decide, by decide, ![0, 1, 2,
 
 /-- Three symbols of arities zero to two, two bits to a block. Its `card` is
 below `2 ^ width`, so the block `[true, true]` spells no symbol and the
-rejection `arOf` returns `none` for is reachable from a word. -/
+rejection `arOf` returns `none` for it is reachable from a word. -/
 def narrowAlphabet : RankedAlphabet := ⟨3, 2, by decide, by decide, ![0, 1, 2]⟩
 
 /-- The nullary symbol. A symbol index is named rather than written at each
