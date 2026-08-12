@@ -194,7 +194,7 @@ theorem skipWs_decOf_append (n : Nat) (rest : List Char) :
     skipWs (Csexp.decOf n ++ rest) = Csexp.decOf n ++ rest := by
   obtain ⟨c, cs, hc⟩ := decOf_eq_cons n
   rw [hc, List.cons_append, skipWs_cons,
-    if_neg (by simp [digit_not_ws (decOf_head_digit n c cs hc)])]
+    ite_eq_right (by simp [digit_not_ws (decOf_head_digit n c cs hc)])]
 
 /-! ## The head of a spelling -/
 
@@ -220,7 +220,7 @@ theorem skipWs_print_append {k : Nat} (r : Rose k) (rest : List Char) :
     rcases hd with rfl | hd
     · exact open_not_ws
     · exact digit_not_ws hd
-  rw [hc, List.cons_append, skipWs_cons, if_neg (by simp [hw])]
+  rw [hc, List.cons_append, skipWs_cons, ite_eq_right (by simp [hw])]
 
 /-- The `rest = []` instance of `skipWs_print_append`, which is the form
 the entry point uses. -/
@@ -317,7 +317,7 @@ theorem parseStep_other (k : Nat)
         | some (m, cs1) =>
           if h : m < k then some (Rose.node ⟨m, h⟩ Fin.elim0, skipWs cs1)
           else none
-        | none => none := if_neg hc
+        | none => none := ite_eq_right hc
 
 /-! ## The retraction law -/
 
@@ -348,7 +348,7 @@ theorem parseChildren_print {k : Nat}
     (fun fuel rest _ hfuel ↦ by
       obtain ⟨g, rfl⟩ : ∃ g, fuel = g + 1 := ⟨fuel - 1, by omega⟩
       rw [List.map_nil, List.flatten_nil, List.nil_append, skipWs_cons,
-        if_neg (by simp [close_not_ws]), Rose.parseChildren_succ_close])
+        ite_eq_right (by simp [close_not_ws]), Rose.parseChildren_succ_close])
     (fun t ts ih fuel rest hchild hfuel ↦ by
       obtain ⟨g, rfl⟩ : ∃ g, fuel = g + 1 := ⟨fuel - 1, by omega⟩
       obtain ⟨c, cs, hc, hd⟩ := print_head t
@@ -360,7 +360,7 @@ theorem parseChildren_print {k : Nat}
       have hcons : ∀ u : List Char, print t ++ u = c :: (cs ++ u) := fun u ↦ by
         rw [hc, List.cons_append]
       rw [List.map_cons, List.flatten_cons, List.append_assoc, List.cons_append,
-        skipWs_cons, if_pos (by simp [space_is_ws]), skipWs_print_append, hcons,
+        skipWs_cons, ite_eq_left (by simp [space_is_ws]), skipWs_print_append, hcons,
         Rose.parseChildren_succ_cons _ _ _ _ hne, ← hcons,
         hchild t (by simp) _ (block_append_head_not_digit ts rest),
         Option.bind_some, ih g rest (fun x hx ↦ hchild x (by simp [hx])) hlt,
@@ -397,7 +397,7 @@ theorem parseAux_print {k : Nat} (r : Rose k) :
           ← List.cons_append, ← hc, readNat_append _ _ hrest]
         -- reduce the match on the `some` just produced, exposing the label-bound check
         simp only []
-        rw [dif_pos i.isLt]
+        rw [dite_eq_left i.isLt]
         exact congrArg (fun t ↦ some (t, skipWs rest))
           (congrArg (Rose.node i) (funext fun j ↦ j.elim0))
       | succ m =>
@@ -442,7 +442,7 @@ theorem parseAux_print {k : Nat} (r : Rose k) :
             readNat_append _ _ (block_append_head_not_digit (List.ofFn ch) rest)]
           -- reduce the match on the `some` just produced, exposing the label-bound check
           simp only []
-          rw [dif_pos i.isLt,
+          rw [dite_eq_left i.isLt,
             parseChildren_print _ (List.ofFn ch) (g + 1) rest hchild hfuel,
             Option.map_some, Rose.ofList_ofFn]) r
 

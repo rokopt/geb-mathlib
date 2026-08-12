@@ -285,7 +285,7 @@ private def reindexVal2 (j' j : Fin 3) : Fin 2 → Fin 2 :=
 
 /-- `reindexVal2` is the identity along an output-index-fixing morphism. -/
 private theorem reindexVal2_id (j : Fin 3) (x : Fin 2) : reindexVal2 j j x = x := by
-  rw [reindexVal2, if_neg (fun h ↦ h.2 h.1)]
+  rw [reindexVal2, ite_eq_right (fun h ↦ h.2 h.1)]
   rfl
 
 /-- Composition law for the value map, along a chain `j'' ≤ j' ≤ j`. -/

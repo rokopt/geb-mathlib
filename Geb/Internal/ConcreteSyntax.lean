@@ -497,7 +497,7 @@ theorem parseChildren_succ_cons {k : Nat}
     parseChildren childParse (f + 1) (c :: cs)
       = (childParse (c :: cs)).bind fun p ↦
           (parseChildren childParse f p.2).map fun q ↦ (p.1 :: q.1, q.2) :=
-  if_neg h
+  ite_eq_right h
 
 end Rose
 
@@ -719,15 +719,15 @@ theorem digitsVal_decOf (n : Nat) : digitsVal (decOf n) = some n := by
   · have hlt : ∀ d ∈ (digitsLE n).reverse, d < 10 := by
       intro d hd
       exact digitsLE_lt n d (List.mem_reverse.mp hd)
-    rw [if_neg h, mapM_charDigit_digitChar _ hlt]
+    rw [ite_eq_right h, mapM_charDigit_digitChar _ hlt]
     simp [ofLE_digitsLE]
 
 theorem decOf_all_digits (n : Nat) : ∀ c ∈ decOf n, (charDigit c).isSome := by
   intro c hc
   unfold decOf at hc
   by_cases h : n = 0
-  · subst h; rw [if_pos rfl, List.mem_singleton] at hc; subst hc; decide
-  · rw [if_neg h] at hc
+  · subst h; rw [ite_eq_left rfl, List.mem_singleton] at hc; subst hc; decide
+  · rw [ite_eq_right h] at hc
     obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
     have : d < 10 := digitsLE_lt n d (List.mem_reverse.mp hd)
     simp [charDigit_digitChar d this]
@@ -736,7 +736,7 @@ theorem decOf_ne_nil (n : Nat) : decOf n ≠ [] := by
   unfold decOf
   by_cases h : n = 0
   · subst h; simp
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     simp [digitsLE_ne_nil h]
 
 /-! ### Reading a decimal prefix -/
@@ -909,7 +909,7 @@ theorem parseAst_printAst {k : Nat} (a : Ast k) :
           List.append_assoc, List.nil_append]
         rw [readVerbatim_append]
         have hne : forkTok ≠ leafTok := by decide
-        simp only [if_neg hne]
+        simp only [ite_eq_right hne]
         rw [ihl f _ hl]
         -- reduce the match on the `some` just produced, exposing the second child
         simp only []

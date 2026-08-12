@@ -304,7 +304,7 @@ theorem eqOneSem_eq (u : List Bool) :
   | b :: c :: v =>
     cases b <;> cases c <;>
       (change ([] : List Bool) = _
-       rw [if_neg (by simp only [List.length_cons]; omega)])
+       rw [ite_eq_right (by simp only [List.length_cons]; omega)])
 
 /-- One step of the recognizer: the one-test on the scan's predecessor.
 The scan's value is `[false]` on failure, whose predecessor is empty, and
@@ -320,16 +320,16 @@ theorem isTreeSem_eq_singleton_iff_valid (w : List Bool) :
   rw [isTreeSem_apply, eqOneSem_env]
   simp only [eqOneSem_eq, combSem_eq]
   by_cases h : ok w = true
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]
     by_cases hd : depth w = 1
-    · rw [if_pos hd]
+    · rw [ite_eq_left hd]
       exact ⟨fun _ ↦ (valid_iff_ok_and_depth_eq_one w).mpr ⟨h, hd⟩, fun _ ↦ rfl⟩
-    · rw [if_neg hd]
+    · rw [ite_eq_right hd]
       refine ⟨fun hw ↦ absurd hw (by nofun), ?_⟩
       rintro hv
       exact absurd ((valid_iff_ok_and_depth_eq_one w).mp hv).2 hd
-  · rw [if_neg h, if_neg (by decide : ¬ ([false] : List Bool).tail.length = 1)]
+  · rw [ite_eq_right h, ite_eq_right (by decide : ¬ ([false] : List Bool).tail.length = 1)]
     refine ⟨fun hw ↦ absurd hw (by nofun), ?_⟩
     rintro hv
     exact absurd ((valid_iff_ok_and_depth_eq_one w).mp hv).1 h
@@ -347,14 +347,14 @@ theorem isTreeSem_eq_ite (w : List Bool) :
     isTreeSem ![w] ![] = if binRanked.Valid w then [true] else [] := by
   rw [isTreeSem_apply, eqOneSem_env, eqOneSem_eq, combSem_eq]
   by_cases h : ok w = true
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]
     by_cases hd : depth w = 1
-    · rw [if_pos hd, if_pos ((valid_iff_ok_and_depth_eq_one w).mpr ⟨h, hd⟩)]
-    · rw [if_neg hd,
-        if_neg fun hv ↦ hd ((valid_iff_ok_and_depth_eq_one w).mp hv).2]
-  · rw [if_neg h, if_neg (by decide : ¬ ([false] : List Bool).tail.length = 1),
-      if_neg fun hv ↦ h ((valid_iff_ok_and_depth_eq_one w).mp hv).1]
+    · rw [ite_eq_left hd, ite_eq_left ((valid_iff_ok_and_depth_eq_one w).mpr ⟨h, hd⟩)]
+    · rw [ite_eq_right hd,
+        ite_eq_right fun hv ↦ hd ((valid_iff_ok_and_depth_eq_one w).mp hv).2]
+  · rw [ite_eq_right h, ite_eq_right (by decide : ¬ ([false] : List Bool).tail.length = 1),
+      ite_eq_right fun hv ↦ h ((valid_iff_ok_and_depth_eq_one w).mp hv).1]
 
 end
 

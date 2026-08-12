@@ -100,13 +100,13 @@ def embOf {objCount : Nat} {nonIdCount : Fin objCount → Fin objCount → Nat}
 theorem homCountOf_of_ne {objCount : Nat}
     {nonIdCount : Fin objCount → Fin objCount → Nat} {i j : Fin objCount} (hij : ¬ i = j) :
     homCountOf objCount nonIdCount i j = nonIdCount i j :=
-  (congrArg (nonIdCount i j + ·) (if_neg hij)).trans (Nat.add_zero _)
+  (congrArg (nonIdCount i j + ·) (ite_eq_right hij)).trans (Nat.add_zero _)
 
 /-- On the diagonal it contributes one. -/
 theorem homCountOf_diag {objCount : Nat}
     {nonIdCount : Fin objCount → Fin objCount → Nat} (i : Fin objCount) :
     homCountOf objCount nonIdCount i i = nonIdCount i i + 1 :=
-  congrArg (nonIdCount i i + ·) (if_pos rfl)
+  congrArg (nonIdCount i i + ·) (ite_eq_left rfl)
 
 /-- An index at or beyond the client's count exists only on the
 diagonal: off the diagonal the conditional in `homCountOf` contributes
@@ -218,7 +218,7 @@ theorem id_comp (S : FinCat) {i k : Fin S.objCount} (g : S.Mor i k) :
     S.compTotal (S.id i) g = g := by
   have hlt : ¬ ((S.id i).val < S.nonIdCount i i) := Nat.lt_irrefl _
   unfold compTotal compTotalOf
-  rw [dif_neg hlt]
+  rw [dite_eq_right hlt]
   rfl
 
 /-- The reserved identity is a right identity for the total
@@ -228,9 +228,9 @@ theorem comp_id (S : FinCat) {i j : Fin S.objCount} (f : S.Mor i j) :
   have hlt : ¬ ((S.id j).val < S.nonIdCount j j) := Nat.lt_irrefl _
   unfold compTotal compTotalOf
   by_cases hf : f.val < S.nonIdCount i j
-  · rw [dif_pos hf, dif_neg hlt]
+  · rw [dite_eq_left hf, dite_eq_right hlt]
     rfl
-  · rw [dif_neg hf]
+  · rw [dite_eq_right hf]
     exact Fin.ext (val_eq_of_le f (Nat.not_lt.mp hf)).symm
 
 /-- The specification with no objects. `deriving Inhabited` fails,

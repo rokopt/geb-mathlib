@@ -113,7 +113,7 @@ theorem decodeBits_code (R : RankedAlphabet) (i : Fin R.card) :
 /-- A block spelling a symbol has that symbol's arity. -/
 theorem arOf_decodeBits_code (R : RankedAlphabet) (i : Fin R.card) :
     R.arOf (decodeBits (R.code i)) = some (R.arity i) := by
-  rw [decodeBits_code, arOf, dif_pos i.isLt]
+  rw [decodeBits_code, arOf, dite_eq_left i.isLt]
 
 /-- The `n`th bit of a block is the `n`th bit of the symbol's index. -/
 theorem getElem_code_eq (R : RankedAlphabet) (i : Fin R.card) (n : ℕ)
@@ -132,7 +132,7 @@ theorem testBit_decodeBits : ∀ (bs : List Bool) (n : ℕ) (_ : n < bs.length),
       | succ n =>
         rw [decodeBits_cons, Nat.testBit_add_one]
         have hd : (2 * decodeBits bs + (if b then 1 else 0)) / 2 = decodeBits bs := by
-          cases b <;> (simp only [Bool.false_eq_true, if_false, if_true]; omega)
+          cases b <;> (simp only [Bool.false_eq_true, ite_false, ite_true]; omega)
         rw [hd, ih n (by simpa using h)]
         simp)
 
