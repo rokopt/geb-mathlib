@@ -90,36 +90,6 @@ import-direction rules above are enforced by
   of an unwanted countability hypothesis. Depends on mathlib's
   `Data/W/Basic.lean` and `Geb/Mathlib/Data/FinEnum.lean`; no category
   theory.
-- `Geb/Mathlib/Data/Tree/Binary.lean` — unlabelled binary trees as the
-  W-type of a two-element shape family: `BinTree.Shape`,
-  `BinTree.Direction` (`Fin 0` at a leaf, `Fin 2` at a node),
-  `BinTree := WType Direction`, the constructors `leaf` and `node`,
-  `size` counting nodes and leaves alike, and `BinTree.induction`, which
-  gives induction in the two-constructor presentation so that no
-  downstream proof mentions `WType.rec`. `Direction` is `@[expose]`
-  because the module system does not unfold a non-exposed definition and
-  `WType.mk .leaf Fin.elim0` would not elaborate without it. Depends on
-  mathlib's `Mathlib/Data/W/Basic.lean`.
-- `Geb/Mathlib/Data/Tree/Preorder.lean` — the preorder encoding of
-  binary trees as bitstrings and its inverse. `BinTree.print` spells a
-  leaf `[false]` and a node a `true` bit followed by its children;
-  `parseStep`, `parseAux` and `parse` are the fuel-bounded
-  recursive descent, bounded by an explicit `ℕ` because a child is
-  parsed from a remainder the previous call computes;
-  `depth` and `ok` are the stack depth read right to left and the
-  condition that every node bit is read at depth at least two, and
-  `Valid w` is their conjunction with `depth w = 1`. `parse_print` and
-  `print_injective` give the retraction and injectivity;
-  `parseAux_eq_some` and `parse_eq_some_iff` give the other direction,
-  so the parser is the printer's inverse and not merely its retraction;
-  `valid_iff_exists_print` characterizes the encoding's image, and is
-  what the Bellantoni-Cook recognizer's correctness is stated against,
-  and `valid_iff_isSome_parse` reads that characterization as a decision
-  procedure, `depth_le_length` bounds the stack depth by the word
-  length, and a `DecidablePred Valid` instance lets callers write an
-  `if BinTree.Valid w then … else …`. Cites mathlib's `DyckWord` as the
-  adjacent bijection it does not reuse. Depends on
-  `Geb.Mathlib.Data.Tree.Binary`.
 - `Geb/Mathlib/Data/Tree/Ranked/Basic.lean` — ranked alphabets and their
   term algebras. `RankedAlphabet` carries a symbol count `card`, a common
   block width `width` with `width_pos`, the bound
@@ -151,12 +121,10 @@ import-direction rules above are enforced by
   `arity`'s image. Depends on `Geb.Mathlib.Data.Tree.Ranked.Basic` and
   mathlib's `Mathlib/Algebra/GroupWithZero/Nat.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean` — the preorder encoding
-  of ranked terms and its inverse, generalising
-  `Geb/Mathlib/Data/Tree/Preorder.lean` from two unlabelled shapes to any
-  ranked alphabet. `spell` emits a symbol's block followed by its
-  children's spellings, in index order; `decodeBlock`, `parseChildren`,
-  `parseStep`, `parseAux` and `parse` are the fuel-bounded recursive
-  descent, and `encoding` packages the two as a
+  of ranked terms and its inverse. `spell` emits a symbol's block
+  followed by its children's spellings, in index order; `decodeBlock`,
+  `parseChildren`, `parseStep`, `parseAux` and `parse` are the
+  fuel-bounded recursive descent, and `encoding` packages the two as a
   `Computability.Encoding`, from which `spell_injective` follows.
   `Scan`, `scanStep`, `scanFrom` and `scanFinal` are the single
   right-to-left pass carrying an incomplete block, the count of pending
@@ -172,20 +140,31 @@ import-direction rules above are enforced by
   is. `length_buf_scanFinal_lt` bounds the incomplete block strictly
   below the width at every state the scan reaches; `depth_scanFinal_le_length`
   bounds the pending count by the word's length; `valid_iff_scanFinal`
-  restates validity as three conditions on the final state. Depends on
+  restates validity as three conditions on the final state, in the manner
+  of mathlib's `DyckWord`, whose fields `count_U_eq_count_D` and
+  `count_D_le_count_U` play the roles the pending count and the liveness
+  flag play here. `valid_iff_scanFinal`'s third condition, that the
+  incomplete block is empty, is not implied by the other two at a general
+  width, so stating validity as only the first two, as `DyckWord` does,
+  would be false here. Depends on
   `Geb.Mathlib.Data.Tree.Ranked.Code` and mathlib's
   `Algebra/BigOperators/Ring/List.lean` and `Computability/Encoding.lean`.
 - `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` — the alphabet of one
-  nullary and one binary symbol, one bit to a block, exhibiting
-  `BinTree` as a term algebra. `binRanked` is the alphabet, `leafSym`
-  and `nodeSym` its symbols, `leaf` and `node` the two forms of its
-  terms, and `termEquiv : BinTree ≃ binRanked.Term` the equivalence.
-  `spell_termEquiv` carries `spell` to `BinTree.print` on the nose, so
-  the two encodings are one function up to that equivalence rather than
-  two bijections onto one language, and `valid_iff` carries the scan's
-  language to `BinTree.Valid`. Depends on
-  `Geb.Mathlib.Data.Tree.Ranked.Preorder`,
-  `Geb.Mathlib.Data.Tree.Preorder` and mathlib's
+  nullary and one binary symbol, one bit to a block, exhibiting the
+  unlabelled binary trees as a term algebra. `binRanked` is the
+  alphabet, `leafSym` and `nodeSym` its symbols, and `leaf` and `node`
+  the two forms of its terms. At width one every block is a single bit,
+  so the validity scan carries no incomplete block and its state
+  reduces to a pending count and a liveness verdict: `depth` and `ok`
+  read the two off a whole word, `buf_scanFinal_eq_nil` records that no
+  incomplete block survives a step, `depth_le_length` bounds the
+  pending count by the word length — the bound the tree recognizers'
+  recursion asks for — and `valid_iff_ok_and_depth_eq_one` restates
+  validity as the two conditions on that counter form, the third
+  holding of every word at width one. `ok_cons_false`, `ok_cons_true`,
+  `depth_cons_false_of_ok` and `depth_cons_true_of_ok_of_two_le_depth`
+  give the counter form one bit at a time. Depends on
+  `Geb.Mathlib.Data.Tree.Ranked.Preorder` and mathlib's
   `Data/Fin/VecNotation.lean`.
 - `Geb/Mathlib/Data/PFunctor/Univariate/` — the categorical reading of
   mathlib's univariate `PFunctor`. `Functor.lean` packages the
@@ -304,25 +283,25 @@ import-direction rules above are enforced by
   `open scoped FinEnum`. `evalRec` depends on `propext`; `sigFinitary`,
   `evalValue`, `evalStep` and `BC.eval` on `propext` and `Quot.sound`.
 - `Geb/Mathlib/Computability/BellantoniCook/Tree.lean` — a recognizer
-  for the preorder spellings of binary trees, as three expressions of
-  `B`. `comb` is a `safeRec` carrying the stack depth and the underflow
-  verdict in one value: the depth in unary offset by one while no node
-  bit has been read below depth two, and the absorbing `[false]` once
-  one has; `eqOne` tests a bitstring for length one; `isTree` applies
-  `eqOne` to the scan's predecessor. `combSem_eq` identifies the scan
-  with `BinTree.depth` and `BinTree.ok`; `eqOneSem_eq` identifies the
-  one-test with a length test;
-  `isTreeSem_eq_singleton_iff_valid` identifies the recognizer with
-  `BinTree.Valid`, and `isTreeSem_eq_singleton_iff_exists_print`
-  composes that with `BinTree.valid_iff_exists_print` to give acceptance
-  of exactly the spellings of trees; `isTreeSem_eq_ite` restates the
-  recognizer as the indicator of `BinTree.Valid`. The recognizer is a
-  single scan
-  rather than a recursive descent, a descent needing recursion on a safe
-  argument, which the class forbids; each bit is read once. Depends on
-  `Geb.Mathlib.Computability.BellantoniCook.Basic`,
+  for the preorder spellings of `binRanked`'s terms, as three
+  expressions of `B`. `comb` is a `safeRec` carrying the stack depth and
+  the underflow verdict in one value: the depth in unary offset by one
+  while no node bit has been read below depth two, and the absorbing
+  `[false]` once one has; `eqOne` tests a bitstring for length one;
+  `isTree` applies `eqOne` to the scan's predecessor. `combSem_eq`
+  identifies the scan with `RankedAlphabet.Binary.depth` and
+  `RankedAlphabet.Binary.ok`; `eqOneSem_eq` identifies the one-test with
+  a length test; `isTreeSem_eq_singleton_iff_valid` identifies the
+  recognizer with `binRanked.Valid`, and
+  `isTreeSem_eq_singleton_iff_exists_spell` composes that with
+  `RankedAlphabet.valid_iff_exists_spell` to give acceptance of exactly
+  the spellings of `binRanked`'s terms; `isTreeSem_eq_ite` restates the
+  recognizer as the indicator of `binRanked.Valid`. The recognizer is a
+  single scan rather than a recursive descent, a descent needing
+  recursion on a safe argument, which the class forbids; each bit is
+  read once. Depends on `Geb.Mathlib.Computability.BellantoniCook.Basic`,
   `Geb.Mathlib.Data.PFunctor.Slice.Decidable` and
-  `Geb.Mathlib.Data.Tree.Preorder`.
+  `Geb.Mathlib.Data.Tree.Ranked.Binary`.
 - `Geb/Mathlib/Data/PFunctor/Presheaf/Decidable.lean` — decidability of
   the presheaf functor's naturality predicates.
   `PresheafDomPFunctorData.decidableIsNatural` decides `IsNatural`
@@ -1131,25 +1110,27 @@ import-direction rules above are enforced by
   `scanSem_eq_eval` reading the meaning back through `C.eval`. Depends on
   `Geb.Mathlib.Computability.Cobham.Basic`. `Classical.choice`-free.
 - `Geb/Mathlib/Computability/Cobham/Tree.lean` — a recognizer for the
-  preorder spellings of binary trees, as an expression of `C`. `comb` is
-  `Cobham.scan` at `combFalseStep` and `combTrueStep`, the leaf and node
-  steps of the fold, carrying the stack depth and the underflow verdict in
-  one value: the depth in unary offset by one while no node bit has been
-  read below depth two, and the absorbing `[false]` once one has; `eqOne`
-  tests a bitstring for length one; `isTree` composes `eqOne` with the
-  scan's predecessor, carrying no `boundedRec` node of its own. `combSem_eq`
-  identifies the scan with `BinTree.depth` and `BinTree.ok`; `eqOneSem_eq`
-  identifies the one-test with a length test; `isTreeSem_eq_ite` pins the
-  recognizer's value on both branches; `isTreeSem_eq_singleton_iff_valid`
-  identifies the recognizer with `BinTree.Valid`, and
-  `isTreeSem_eq_singleton_iff_exists_print` composes that with
-  `BinTree.valid_iff_exists_print` to give acceptance of exactly the
-  spellings of trees. `isTree_smashFree` places the recognizer in the
-  subalgebra `SmashFree` names; with [Strahm2003] Theorem 1(2), deciding
-  `BinTree.Valid` is computable simultaneously in polynomial time and
+  preorder spellings of `binRanked`'s terms, as an expression of `C`.
+  `comb` is `Cobham.scan` at `combFalseStep` and `combTrueStep`, the
+  leaf and node steps of the fold, carrying the stack depth and the
+  underflow verdict in one value: the depth in unary offset by one
+  while no node bit has been read below depth two, and the absorbing
+  `[false]` once one has; `eqOne` tests a bitstring for length one;
+  `isTree` composes `eqOne` with the scan's predecessor, carrying no
+  `boundedRec` node of its own. `combSem_eq` identifies the scan with
+  `RankedAlphabet.Binary.depth` and `RankedAlphabet.Binary.ok`;
+  `eqOneSem_eq` identifies the one-test with a length test;
+  `isTreeSem_eq_ite` pins the recognizer's value on both branches;
+  `isTreeSem_eq_singleton_iff_valid` identifies the recognizer with
+  `binRanked.Valid`, and `isTreeSem_eq_singleton_iff_exists_spell`
+  composes that with `RankedAlphabet.valid_iff_exists_spell` to give
+  acceptance of exactly the spellings of `binRanked`'s terms.
+  `isTree_smashFree` places the recognizer in the subalgebra
+  `SmashFree` names; with [Strahm2003] Theorem 1(2), deciding
+  `binRanked.Valid` is computable simultaneously in polynomial time and
   linear space. Depends on `Geb.Mathlib.Computability.Cobham.Basic`,
   `Geb.Mathlib.Computability.Cobham.Scan` and
-  `Geb.Mathlib.Data.Tree.Preorder`. `Classical.choice`-free.
+  `Geb.Mathlib.Data.Tree.Ranked.Binary`. `Classical.choice`-free.
 - `Geb/Mathlib/Computability/Cobham/Cases.lean` — definition by cases: a
   combinator selecting among `2 ^ p` expressions of arity one by the low `p`
   bits of a scrutinee, and applying the selected one to a second argument.
