@@ -43,8 +43,8 @@ space.
 
 ## Main definitions
 
-* `Cobham.zeroAt`, `Cobham.oneAt`, `Cobham.falseAt` — the empty bitstring and
-  the one-bit strings `[true]` and `[false]`, at an arbitrary arity.
+* `Cobham.oneAt`, `Cobham.falseAt` — the one-bit strings at an arbitrary
+  arity.
 * `Cobham.inc` — prepending `true`, of arity one.
 * `Cobham.predPred` — the argument with two bits dropped, of arity one.
 * `Cobham.combFalseStep`, `Cobham.combTrueStep` — the leaf step and the node
@@ -98,8 +98,8 @@ present, and for an expression whose reduced arity a proof reads.
 Each raw tree is named apart from the expression built on it because instance
 search finds `Decidable (sig.WValid w)` when `w` is a constant but not when it
 is a literal `WType.mk` application, so `decide` discharges admissibility only
-of a named tree. `zeroAtRaw`, `oneAtRaw` and `falseAtRaw` carry a free arity,
-at which `decide` does not apply; their admissibility is the pair of an
+of a named tree. `oneAtRaw` and `falseAtRaw` carry a free arity, at which
+`decide` does not apply; their admissibility is the pair of an
 `Unit ⊕ Fin m` case analysis and the `funext` that the index condition asks
 for. The admissibility of an expression embedding `pred` or `cond` reuses that
 expression's own component rather than repeating its proof.
@@ -147,6 +147,10 @@ reduce on a symbolic word: `isTreeSem_apply` is proved by rewriting to the
 composition's own application, generalizing the scan's value, and matching
 on it, rather than by `rfl`.
 
+The meanings this module reads at a raw tree are taken through `Cobham.semAt`,
+which names the composite of `fst_eval` with the tree's arity equation once
+rather than spelling it at each site.
+
 ## References
 
 * [Cobham1965]
@@ -161,29 +165,6 @@ smash-free, polynomial time, linear space
 namespace Cobham
 
 public section
-
-/-- The empty bitstring at an arbitrary arity. -/
-@[expose] def zeroAtRaw (n : ℕ) : sig.toPFunctor.W :=
-  WType.mk (.comp n 0) fun d ↦
-    match d with
-    | .inl () => WType.mk .zero Fin.elim0
-    | .inr i => i.elim0
-
-/-- The empty bitstring as an expression of arity `n`. -/
-@[expose] def zeroAt (n : ℕ) : C :=
-  ⟨⟨zeroAtRaw n,
-      ⟨fun d ↦ match d with
-        | .inl () => ⟨fun c ↦ c.elim0, funext fun c ↦ c.elim0⟩
-        | .inr i => i.elim0,
-      funext fun d ↦ match d with
-        | .inl () => rfl
-        | .inr i => i.elim0⟩⟩,
-    ⟨trivial, fun d ↦ match d with
-      | .inl () => ⟨trivial, fun c ↦ c.elim0⟩
-      | .inr i => i.elim0⟩⟩
-
-/-- `zeroAt n` at its declared arity. -/
-@[expose] def zeroAtOf (n : ℕ) : COf n := ⟨zeroAt n, rfl⟩
 
 /-- The one-bit string `[true]` at an arbitrary arity. -/
 @[expose] def oneAtRaw (n : ℕ) : sig.toPFunctor.W :=
@@ -524,7 +505,7 @@ otherwise the argument is one exactly when its predecessor is empty. -/
 /-- The one-test's meaning at its arity, taken at the raw tree rather than at
 `eqOne`, as `combSem`. -/
 @[expose] def eqOneSem : Sem 1 :=
-  transport (fst_eval ⟨eqOneRaw, by decide⟩) (eval ⟨eqOneRaw, by decide⟩).2
+  semAt 1 ⟨eqOneRaw, by decide⟩ rfl
 
 /-- The one-test at an arbitrary environment is the test at the canonical
 one. -/
@@ -571,7 +552,7 @@ tree, as an expression of arity one. -/
 /-- The recognizer's meaning at its arity, taken at the raw tree rather than
 at `isTree`, as `combSem`. -/
 @[expose] def isTreeSem : Sem 1 :=
-  transport (fst_eval ⟨isTreeRaw, by decide⟩) (eval ⟨isTreeRaw, by decide⟩).2
+  semAt 1 ⟨isTreeRaw, by decide⟩ rfl
 
 /-- The meaning `isTreeSem` reads at the raw tree is the meaning `isTree`
 carries, as `combSem_eq_eval` for the scan: the correctness statements below

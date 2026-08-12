@@ -610,6 +610,11 @@ with an empty payload, up to the state its failure is recorded in.
   scan combinator `scanRaw`, its fold characterization `scanSem_eq`, and
   the recognizer's scan in `Geb/Mathlib/Computability/Cobham/Tree.lean`
   rebuilt on it. See [docs/index.md](docs/index.md).
+- **The case combinator is done.**
+  `Geb/Mathlib/Computability/Cobham/Cases.lean` gives definition by cases over
+  a fixed number of scrutinee bits, and `Cobham/Basic.lean` the constant-word,
+  iterated-predecessor and diagonal combinators its branches are built from.
+  B6 and B3 both consume them. See [docs/index.md](docs/index.md).
 - **B6**, depending on B2 and B1: the generic ranked recognizer as a
   scanner instance. The layout of `RankedAlphabet.Scan` as a bitstring is
   undecided, and the step must dispatch on `2 ^ width` block values
@@ -618,8 +623,8 @@ with an empty payload, up to the state its failure is recorded in.
 - **B3**, depending on B2: `Geb/Mathlib/Computability/Cobham/Fold.lean` — the
   catamorphism at a finite carrier, with a step whose configurable part
   carries no restriction of its own, both conditions being discharged from
-  finiteness. Its `run_spell` is stated between a `List Bool` and the `p`-bit
-  encoding of the carrier, which must be named; the two are not the same type.
+  finiteness. Its `run_spell` is stated between a `List Bool` and
+  `List.ofFn` of the carrier's encoding, the two not being the same type.
 - **B4**, depending on B1 and B2: `BinTree` absorbed into
   `RankedAlphabet.Term` and the duplication removed. `BinTree` has six
   in-repo consumers.
@@ -643,6 +648,15 @@ spelling, which the head-locality of the state layout admits only at
 quadratic cost; a fold at an infinite carrier, which needs the `smash`
 generator; and the depth-first unary degree sequence encoding, whose
 condition for adoption is unbounded arity.
+
+Also deferred: `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate
+`constAtOf`, and its `predPred` duplicates `predIter 2`. Substituting the
+general form is definitionally transparent — `oneAtRaw`, `falseAtRaw` and
+`predPredRaw` reduce to the corresponding `prependRaw`/`predIterRaw`
+applications by `rfl`, so `combSem_nil` and `isTreeSem_eq_eval` read through
+the substitution unchanged. Each is left in place because removing the
+duplication is a separate concern from this branch's, not because the
+substitution is risky.
 
 `BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
 absent from `docs/references.bib`: neither its bibliographic detail nor the
