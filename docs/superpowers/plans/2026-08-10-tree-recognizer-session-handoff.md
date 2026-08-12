@@ -28,11 +28,6 @@
 - [TODO.md](../../../TODO.md) § Extensions of the tree recognizers, and
   [docs/index.md](../../index.md) for what is implemented.
 
-B4 has no specification. Its first phase is
-`superpowers:brainstorming`, not planning: a spec, then a plan, each
-carried to adversarial review convergence, per
-[AGENTS.md](../../../AGENTS.md) § Adversarial review of specs and plans.
-
 ## Which document owns what
 
 Two handoffs sit in this tree, and they are not interchangeable. Keep an
@@ -52,12 +47,12 @@ cannot be written out at a symbolic width.
 
 | Item | What it is | Status |
 | --- | --- | --- |
-| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — ranked alphabets, the preorder encoding, the validity scan, `BinTree` as the two-symbol instance | Done, unpushed |
+| B1 | `Geb/Mathlib/Data/Tree/Ranked/` — ranked alphabets, the preorder encoding, the validity scan | Done, unpushed |
 | B2 | `Cobham/Scan.lean` — the scan combinator, and `Cobham/Tree.lean` rebuilt on it | Done, unpushed |
 | — | `Cobham/Cases.lean` — definition by cases, with the constant-word, iterated-predecessor and diagonal combinators in `Cobham/Basic.lean` | Done, unpushed |
 | B6 | `Cobham/RankedTree.lean` — the generic ranked recognizer | Done, unpushed |
 | B3 | `Cobham/Fold.lean` — the catamorphism at a carrier with a bit encoding | Done, unpushed |
-| B4 | `BinTree` absorbed into `RankedAlphabet.Term`, the duplication in `Data/Tree/Preorder.lean` removed | Not started |
+| B4 | `BinTree` absorbed into `RankedAlphabet.Term`, the duplication removed | Done, unpushed |
 | B5 | `Geb/Internal/` — linear time and space against Cslib's `MultiTapeTM` | Not started |
 
 Nothing has been pushed. [AGENTS.md](../../../AGENTS.md) § No `jj git push`
@@ -76,62 +71,51 @@ main                                   312c5adf
        └─ feat/cobham-scanner          8cbff06f
             └─ feat/cobham-cases       5ea87784
                  └─ feat/cobham-ranked-tree  79aaea40
-                      └─ feat/cobham-fold
+                      └─ feat/cobham-fold    c368339d
+                           └─ refactor/tree-absorb-bintree
 ```
 
 `main` is the line's base and has not moved since the line was cut: it is
 `312c5adf`, and `main..@` contains only this line's own commits. No rebase
 is needed before pushing.
 
-`feat/cobham-fold` is this segment's bookmark; it is set after this
-session's final commit, not before, so that it does not omit the commit
-removing this segment's own transient documents.
+`refactor/tree-absorb-bintree` is this segment's bookmark; it is set after
+this session's final commit, not before, so that it does not omit the
+commit removing this segment's own transient documents.
 
 ## What this session delivered
 
-The catamorphism at a carrier with a bit encoding, closing B3, in the
-commits from `822a80e3` to `d2a618e1`.
+The absorption of `BinTree` into `RankedAlphabet.Term` at `binRanked`,
+closing B4.
 
-- `Cobham/Fold.lean` — the step as a dispatch on the encoded state
-  (`foldStep`, `stepWord_foldStep`); the fold's meaning as the scan at the
-  encoded base and the two steps (`foldSem`, `foldSem_nil`, `foldSem_cons`);
-  the length invariant and the expression (`length_foldSem`,
-  `length_foldSem_le`, `fold`, `foldOf`, `foldSem_eq_eval`); and the
-  carrier-level fold (`foldSem_eq`), which identifies the value with
-  `List.ofFn` of the encoding of `w.foldr step init` under the retraction
-  hypothesis `∀ a, dec (enc a) = a`. The carrier is arbitrary; neither
-  `Fintype` nor `FinEnum` appears.
-- `GebTests/Mathlib/Computability/Cobham/Fold.lean` mirrors the module, at
-  a three-element carrier whose decoding is not injective off the image of
-  its encoding, so the retraction hypothesis is exercised rather than
-  trivially satisfied; `counterShift` and `counterShift_values` add a
-  second step whose branches do not commute, exhibiting the fold's
-  consumption order by giving a word and its reverse different values.
-- `GebTests/Mathlib/Data/Tree/Ranked/Basic.lean` gained
-  `length_wordsUpTo_seven`, the length the mirror's sweep uses.
+- `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` gained the counter form of the
+  validity scan at width one: `depth` and `ok`, and the lemmas giving them
+  content, replacing the incomplete-block state that a width-one alphabet
+  never carries.
+- `Geb/Mathlib/Computability/Cobham/RankedTree.lean`'s recognizer and
+  `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`'s recognizer, and
+  `Cobham/RankedTree.lean`'s bridge theorem identifying the two, are
+  restated over `binRanked.Term` and `binRanked.Valid`.
+- `Geb/Mathlib/Data/Tree/Binary.lean` and
+  `Geb/Mathlib/Data/Tree/Preorder.lean`, and their mirror
+  `GebTests/Mathlib/Data/Tree/Preorder.lean`, are deleted:
+  `RankedAlphabet.Binary.binRanked.Term`, with `binRanked.spell`,
+  `binRanked.parse` and `binRanked.Valid`, is now the only unlabelled
+  binary-tree encoding under `Geb/Mathlib/`.
+- `GebTests/Mathlib/Data/Tree/Ranked/Binary.lean` and
+  `GebTests/Mathlib/Data/Tree/Ranked/Preorder.lean` carry the worked words
+  the deleted mirror carried.
 - `docs/index.md` and `TODO.md` record it.
-
-A prototype at `Geb/Internal/FoldSpike.lean` and
-`Geb/Internal/FoldSpikeMirror.lean`, compiled at a symbolic carrier and
-encoding width during planning, was transcribed into the modules above and
-then deleted; its declarations' axioms were measured there and fell within
-`{propext, Quot.sound}`.
 
 ## What to pick up next
 
-**B4: absorbing `BinTree` into `RankedAlphabet.Term`.** B4 has no
-specification, unlike B3 and B6 before it: the next session's first phase
-is `superpowers:brainstorming`, followed by its own spec, plan and
-adversarial review to convergence, per
-[AGENTS.md](../../../AGENTS.md) § Adversarial review of specs and plans.
-It depends on B1 and B2, both in place.
-
-[The workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) § B4
-records what is absorbed — `termEquiv`, `spell_termEquiv` and `valid_iff`
-are the bridge B1 delivers, and `binRanked.parse w = (BinTree.parse
-w).map termEquiv` is the shape every further bridge takes — which modules
-name `BinTree`, and the staging decision that leaves the duplication in
-`Geb/Mathlib/Data/Tree/Preorder.lean` on `main` until B4 lands.
+**B5: the time and space bound**, in `Geb/Internal/`. It depends on B2,
+which is in place. It is confined to `Geb/Internal/` by the subtree import
+rules — `Geb/Mathlib/` may not import `Cslib.*` and `Geb/Cslib/` may not
+import `Geb.Mathlib.*` — and it differs in kind from the others, its
+difficulty unbounded by anything done so far.
+[The workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) § B5
+carries its description.
 
 ## Context the next session will want
 

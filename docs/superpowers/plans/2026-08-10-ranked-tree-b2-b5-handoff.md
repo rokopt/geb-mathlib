@@ -10,7 +10,7 @@
 - [The case combinator (done)](#the-case-combinator-done)
 - [B6: the generic ranked recognizer (done)](#b6-the-generic-ranked-recognizer-done)
 - [B3: the fold (done)](#b3-the-fold-done)
-- [B4: absorbing `BinTree`](#b4-absorbing-bintree)
+- [B4: absorbing `BinTree` (done)](#b4-absorbing-bintree-done)
 - [B5: the time and space bound](#b5-the-time-and-space-bound)
 - [What completion means](#what-completion-means)
 - [Process this session must follow](#process-this-session-must-follow)
@@ -34,15 +34,15 @@
   `Geb/Mathlib/Data/Tree/Ranked/*` and
   `Geb/Mathlib/Computability/Cobham/*`.
 
-B4 and B5 have no specification: each gets
-its own brainstorming phase, its own spec and plan, its own adversarial
-review to convergence, and its own segment. Do not treat this document as a
-spec: it records state and constraints, not decisions.
+B5 has no specification: it gets its own brainstorming phase, its own spec
+and plan, its own adversarial review to convergence, and its own segment.
+Do not treat this document as a spec: it records state and constraints,
+not decisions.
 
 ## Where the workstream stands
 
-B1, B2, the case combinator, B6 and B3 are done and unpushed, on one line
-off `main`; B4 and B5 are not started. The per-item table in
+B1, B2, the case combinator, B6, B3 and B4 are done and unpushed, on one
+line off `main`; B5 is not started. The per-item table in
 [the session handoff](2026-08-10-tree-recognizer-session-handoff.md)
 § Status of every roadmap item is the current record, and this document
 describes what each remaining item is.
@@ -64,25 +64,27 @@ B1 is not merged. Nothing in this workstream has been pushed.
   `scanStep`, `scanFrom`, `scanFinal`, `validBool`, `Valid` with its
   `DecidablePred` instance; and the image characterisation
   `valid_iff_exists_spell` and `valid_iff_isSome_parse`.
-- `Binary.lean` — `binRanked`, `leafSym`, `nodeSym`, `leaf`, `node`,
-  `termEquiv : BinTree ≃ binRanked.Term`, `spell_termEquiv`, `valid_iff`.
+- `Binary.lean` — `binRanked`, the two constructors `leaf` and `node`, the
+  block and spelling lemmas (`code_leafSym`, `code_nodeSym`, `spell_leaf`,
+  `spell_node`), and the counter form of the validity scan at width one
+  (`depth`, `ok`, and the lemmas giving them content).
 
-Every declaration measures `[propext, Quot.sound]`. `spell_termEquiv` is an
-equality of words, so the merged two-symbol encoding is an instance of the
-ranked one rather than a parallel construction; `valid_iff` carries the scan's
-language to `BinTree.Valid`.
+Every declaration measures `[propext, Quot.sound]`. `binRanked.Term`, with
+`binRanked.spell`, `binRanked.parse` and `binRanked.Valid`, is the unlabelled
+binary-tree encoding: no parallel construction remains.
 
 The mirrors under `GebTests/Mathlib/Data/Tree/Ranked/` declare the fixtures
 `sampleAlphabet` (`card = 2 ^ width`), `narrowAlphabet` (`card < 2 ^ width`, so
 one block spells no symbol) and `wordsUpTo`, and sweep `validBool` against the
-descent and against `BinTree.Valid` over every word of length at most eight.
+descent over every word of length at most eight.
 
 ## Facts established by building
 
 Items 1 to 16 each cost a failed build — 1 to 11 during B1, 12 to 16 during
 the ranked-recognizer segment. Items 17 to 23 were established during the
-fold segment, several by measurement rather than by a failed build. The
-three marked corrected were stated wrongly in the
+fold segment, several by measurement rather than by a failed build. Items
+24 to 26 were established during the absorption segment. The three marked
+corrected were stated wrongly in the
 previous handoff and cost a second failed build; do not reinstate them from
 any older document.
 
@@ -195,6 +197,16 @@ any older document.
     is available inside a `Geb/` module for measuring a prototype. It
     remains barred from committed library code by review, not by the
     linter.
+24. **`decide (([b] : List Bool).length = binRanked.width)` does not
+    iota-reduce inside `scanStep`'s `match`**, though `binRanked.width`
+    itself reduces to `1`. The equality is proved separately, by cases on
+    `b`, and rewritten in.
+25. **`depth` unfolds under `simp only [depth]` at a hypothesis and the
+    goal together**, rather than needing a separate `simp only [depth] at
+    h` and `simp only [depth]` on the goal.
+26. **`omega` treats an unreduced `Nat.zero` as an atom.** A `Nat.rec`
+    base case's bound is named at a literal first, before `omega` is
+    called on it.
 
 ## B2: the scan combinator (done)
 
@@ -246,30 +258,20 @@ having no consumer in the repository on landing is its expected condition,
 not a cost to be justified against
 [CONTRIBUTING.md](../../../CONTRIBUTING.md) § Code is cost.
 
-## B4: absorbing `BinTree`
+## B4: absorbing `BinTree` (done)
 
-Depends on B1 and B2.
-
-`BinTree` is absorbed into `RankedAlphabet.Term` at `binRanked`, and the
-duplication in `Geb/Mathlib/Data/Tree/Preorder.lean` — `print`, `parse`,
-`parseAux_eq_some`, `parse_eq_some_iff`, `print_injective`,
-`valid_iff_exists_print`, `valid_iff_isSome_parse`, `depth`, `ok` — is removed.
-
-`termEquiv`, `spell_termEquiv` and `valid_iff` are the bridge B1 delivers, and
-every further bridge is a short corollary of them; `binRanked.parse w =
-(BinTree.parse w).map termEquiv` is the shape of the rest.
-
-The modules naming `BinTree` are `Geb/Mathlib/Data/Tree/Binary.lean` (its
-definition), `Geb/Mathlib/Data/Tree/Preorder.lean`,
-`Geb/Mathlib/Computability/Cobham/Tree.lean`,
-`Geb/Mathlib/Computability/BellantoniCook/Tree.lean`,
-`Geb/Mathlib/Data/Tree/Ranked/Basic.lean` (docstring only),
-`Geb/Mathlib/Data/Tree/Ranked/Binary.lean`, and the mirrors
-`GebTests/Mathlib/Data/Tree/Preorder.lean` and
-`GebTests/Mathlib/Data/Tree/Ranked/Binary.lean`.
-
-Until B4 lands, the duplication is on `main`. That is the declared staging, not
-an oversight.
+Done. `BinTree` is absorbed into `RankedAlphabet.Term` at `binRanked`:
+`Geb/Mathlib/Data/Tree/Ranked/Binary.lean` gained the counter form of the
+validity scan at width one (`depth`, `ok`, and the lemmas giving them
+content); `Geb/Mathlib/Computability/Cobham/RankedTree.lean`'s two
+recognizers and its bridge theorem identifying them are restated over
+`binRanked.Term` and `binRanked.Valid`; and
+`Geb/Mathlib/Data/Tree/Binary.lean` and
+`Geb/Mathlib/Data/Tree/Preorder.lean`, with their mirror
+`GebTests/Mathlib/Data/Tree/Preorder.lean`, are deleted.
+`RankedAlphabet.Binary.binRanked.Term`, with `binRanked.spell`,
+`binRanked.parse` and `binRanked.Valid`, is the only unlabelled
+binary-tree encoding under `Geb/Mathlib/`. See [docs/index.md](../../index.md).
 
 ## B5: the time and space bound
 
@@ -306,14 +308,13 @@ linear on a right comb.
 
 ## What completion means
 
-Two items remain, in this order: B4, then B5.
+One item remains: B5.
 
-B1 to B4 and B6 stand without B5. The workstream is complete when B4 has
-landed, so that no tree encoding is defined twice, B6 having already
-landed, so that the recognizer is stated at an arbitrary ranked alphabet.
-B3 is a deliverable in its own right. B5 is a separate undertaking whose
-failure costs nothing already built, and whose difficulty is unbounded by
-anything done so far.
+The workstream's completion condition is met: no tree encoding is now
+defined twice, B4 having landed, and B6 having already landed, so that the
+recognizer is stated at an arbitrary ranked alphabet. B3 is a deliverable
+in its own right. B5 is a separate undertaking whose failure costs nothing
+already built, and whose difficulty is unbounded by anything done so far.
 
 Deferrals are recorded in [TODO.md](../../../TODO.md), not part of
 the branches above: the namespace prefix in a declaration body, the
