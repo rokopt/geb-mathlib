@@ -144,11 +144,11 @@ theorem beq_eq_true_iff {α : Type uA} {β : α → Type uB} [DecidableEq α]
         match ‹DecidableEq α› a a' with
         | isTrue h => by
             subst h
-            rw [beq_mk, dif_pos rfl, decide_eq_true_iff]
+            rw [beq_mk, dite_eq_left rfl, decide_eq_true_iff]
             exact ⟨fun hb ↦ congrArg (mk a) (funext fun b ↦ (ih b (f' b)).mp (hb b)),
               fun he b ↦ (ih b (f' b)).mpr (congrFun (eq_of_heq (mk.inj he).2) b)⟩
         | isFalse h => by
-            rw [beq_mk, dif_neg h]
+            rw [beq_mk, dite_eq_right h]
             exact ⟨fun hb ↦ Bool.noConfusion hb, fun he ↦ absurd (mk.inj he).1 h⟩)
     s t
 

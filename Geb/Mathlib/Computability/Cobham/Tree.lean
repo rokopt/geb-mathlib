@@ -440,7 +440,7 @@ theorem length_combSem_le (u : List Bool) :
   rw [← combSem_def, combSem_eq]
   cases ok u
   · exact Nat.le_add_left 1 u.length
-  · rw [if_pos rfl, List.length_replicate]
+  · rw [ite_eq_left rfl, List.length_replicate]
     exact Nat.succ_le_succ (depth_le_length u)
 
 /-- The stack depth and the underflow verdict of a bitstring in one value, as
@@ -530,7 +530,7 @@ theorem eqOneSem_eq (u : List Bool) :
   | b :: c :: v =>
     cases b <;> cases c <;>
       (change ([] : List Bool) = _
-       rw [if_neg (by simp only [List.length_cons]; omega)])
+       rw [ite_eq_right (by simp only [List.length_cons]; omega)])
 
 /-- The raw tree of the recognizer: the one-test on the scan's predecessor. -/
 @[expose] def isTreeRaw : sig.toPFunctor.W :=
@@ -587,14 +587,14 @@ theorem isTreeSem_eq_ite (w : List Bool) :
     isTreeSem ![w] = if binRanked.Valid w then [true] else [] := by
   rw [isTreeSem_apply, eqOneSem_env, eqOneSem_eq, combSem_eq]
   by_cases h : ok w = true
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]
     by_cases hd : depth w = 1
-    · rw [if_pos hd, if_pos ((valid_iff_ok_and_depth_eq_one w).mpr ⟨h, hd⟩)]
-    · rw [if_neg hd,
-        if_neg fun hv ↦ hd ((valid_iff_ok_and_depth_eq_one w).mp hv).2]
-  · rw [if_neg h, if_neg (by decide : ¬ ([false] : List Bool).tail.length = 1),
-      if_neg fun hv ↦ h ((valid_iff_ok_and_depth_eq_one w).mp hv).1]
+    · rw [ite_eq_left hd, ite_eq_left ((valid_iff_ok_and_depth_eq_one w).mpr ⟨h, hd⟩)]
+    · rw [ite_eq_right hd,
+        ite_eq_right fun hv ↦ hd ((valid_iff_ok_and_depth_eq_one w).mp hv).2]
+  · rw [ite_eq_right h, ite_eq_right (by decide : ¬ ([false] : List Bool).tail.length = 1),
+      ite_eq_right fun hv ↦ h ((valid_iff_ok_and_depth_eq_one w).mp hv).1]
 
 /-- The recognizer accepts exactly the words the two-symbol alphabet's scan
 accepts. -/
@@ -602,9 +602,9 @@ theorem isTreeSem_eq_singleton_iff_valid (w : List Bool) :
     isTreeSem ![w] = [true] ↔ binRanked.Valid w := by
   rw [isTreeSem_eq_ite]
   by_cases h : binRanked.Valid w
-  · rw [if_pos h]
+  · rw [ite_eq_left h]
     exact ⟨fun _ ↦ h, fun _ ↦ rfl⟩
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     exact ⟨fun hw ↦ absurd hw (by nofun), fun hv ↦ absurd hv h⟩
 
 /-- The recognizer accepts exactly the preorder spellings of the two-symbol

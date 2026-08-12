@@ -215,20 +215,20 @@ theorem restr_over (a : Shp) (t : Fin 2) (h : t ≤ qFix a) :
 
 /-- Restriction to a shape's own output index is the identity. -/
 theorem restr_self (a : Shp) : restrShapeTo a (qFix a) = a :=
-  if_pos rfl
+  ite_eq_left rfl
 
 /-- The shape restriction is functorial in the index. -/
 theorem restr_comp (a : Shp) (s t : Fin 2) (hts : t ≤ s) (hs : s ≤ qFix a) :
     restrShapeTo a t = restrShapeTo (restrShapeTo a s) t := by
   by_cases hsq : s = qFix a
-  · rw [show restrShapeTo a s = a from if_pos hsq]
+  · rw [show restrShapeTo a s = a from ite_eq_left hsq]
   · have hlt : s < qFix a := lt_of_le_of_ne hs hsq
     have ht0 : t = 0 := by omega
     have hqa : qFix a = 1 := by omega
     have hL : restrShapeTo a t = Shp.L0a := by
-      unfold restrShapeTo; rw [ht0, hqa]; exact if_neg (by decide)
+      unfold restrShapeTo; rw [ht0, hqa]; exact ite_eq_right (by decide)
     have hR : restrShapeTo (restrShapeTo a s) t = Shp.L0a := by
-      rw [show restrShapeTo a s = Shp.L0a from if_neg hsq]
+      rw [show restrShapeTo a s = Shp.L0a from ite_eq_right hsq]
       unfold restrShapeTo; exact ite_self _
     rw [hL, hR]
 

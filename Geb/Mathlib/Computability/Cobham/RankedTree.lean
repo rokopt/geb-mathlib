@@ -501,8 +501,8 @@ theorem stepWord_acceptTest (R : RankedAlphabet) (u : List Bool) :
   change casesSem (R.width + 3) _ ![u, u] = _
   rw [casesSem_eq]
   by_cases hb : List.ofFn (bits (R.width + 3) u) = acceptWord R ++ [false]
-  · rw [if_pos hb, if_pos hb, stepWord_constAtOf]
-  · rw [if_neg hb, if_neg hb, stepWord_constAtOf]
+  · rw [ite_eq_left hb, ite_eq_left hb, stepWord_constAtOf]
+  · rw [ite_eq_right hb, ite_eq_right hb, stepWord_constAtOf]
 
 /-- The raw tree of the recognizer: the verdict test on the scan. -/
 @[expose] def isRankedRaw (R : RankedAlphabet) : sig.toPFunctor.W :=
@@ -558,17 +558,17 @@ theorem isRankedSem_eq_ite (R : RankedAlphabet) (w : List Bool) :
     (length_buf_scanFinal_lt R w)
   rw [isRankedSem_apply, rankedSem_eq, stepWord_acceptTest]
   by_cases hv : R.Valid w
-  · rw [if_pos hv, if_pos (hsep.mpr ((valid_iff_scanFinal R w).mp hv))]
-  · rw [if_neg hv, if_neg fun hw ↦ hv ((valid_iff_scanFinal R w).mpr (hsep.mp hw))]
+  · rw [ite_eq_left hv, ite_eq_left (hsep.mpr ((valid_iff_scanFinal R w).mp hv))]
+  · rw [ite_eq_right hv, ite_eq_right fun hw ↦ hv ((valid_iff_scanFinal R w).mpr (hsep.mp hw))]
 
 /-- The recognizer accepts exactly the words spelling a term. -/
 theorem isRankedSem_eq_singleton_iff_valid (R : RankedAlphabet) (w : List Bool) :
     isRankedSem R ![w] = [true] ↔ R.Valid w := by
   rw [isRankedSem_eq_ite]
   by_cases hv : R.Valid w
-  · rw [if_pos hv]
+  · rw [ite_eq_left hv]
     exact ⟨fun _ ↦ hv, fun _ ↦ rfl⟩
-  · rw [if_neg hv]
+  · rw [ite_eq_right hv]
     exact ⟨fun hw ↦ absurd hw (by nofun), fun h ↦ absurd h hv⟩
 
 /-- At the two-symbol alphabet the generic recognizer accepts the language the

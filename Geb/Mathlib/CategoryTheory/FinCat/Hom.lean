@@ -168,7 +168,7 @@ theorem mapTotal_emb (F : Hom S T) {i j : Fin S.objCount}
     (f : Fin (S.nonIdCount i j)) : F.mapTotal (S.emb f) = F.map i j f := by
   have hlt : (S.emb f).val < S.nonIdCount i j := f.isLt
   unfold Hom.mapTotal mapTotalOf
-  rw [dif_pos hlt]
+  rw [dite_eq_left hlt]
   rfl
 
 /-- The total map preserves the reserved identity. -/
@@ -176,7 +176,7 @@ theorem mapTotal_id (F : Hom S T) (i : Fin S.objCount) :
     F.mapTotal (S.id i) = T.id (F.objMap i) := by
   have hlt : ¬ ((S.id i).val < S.nonIdCount i i) := Nat.lt_irrefl _
   unfold Hom.mapTotal mapTotalOf
-  rw [dif_neg hlt]
+  rw [dite_eq_right hlt]
 
 /-- The total map preserves the total composition, on all pairs of
 morphisms. -/
@@ -201,9 +201,9 @@ theorem id_mapTotalOf (S : FinCat) {i j : Fin S.objCount} (x : S.Mor i j) :
     mapTotalOf (fun i ↦ i) (fun _ _ f ↦ S.emb f) x = x := by
   unfold mapTotalOf
   by_cases hx : x.val < S.nonIdCount i j
-  · rw [dif_pos hx]
+  · rw [dite_eq_left hx]
     rfl
-  · rw [dif_neg hx]
+  · rw [dite_eq_right hx]
     have hij := S.eq_of_nonIdCount_le x (Nat.not_lt.mp hx)
     subst hij
     exact Fin.ext (S.val_eq_of_nonIdCount_le x (Nat.not_lt.mp hx)).symm
@@ -217,14 +217,14 @@ theorem comp_mapTotalOf {S T U : FinCat} (F : Hom S T) (G : Hom T U)
   by_cases hx : x.val < S.nonIdCount i j
   · have h1 : mapTotalOf (fun i ↦ G.objMap (F.objMap i))
         (fun i j f ↦ G.mapTotal (F.map i j f)) x = G.mapTotal (F.map i j ⟨x.val, hx⟩) :=
-      dif_pos hx
-    have h2 : F.mapTotal x = F.map i j ⟨x.val, hx⟩ := dif_pos hx
+      dite_eq_left hx
+    have h2 : F.mapTotal x = F.map i j ⟨x.val, hx⟩ := dite_eq_left hx
     rw [h1, h2]
   · have hij := S.eq_of_nonIdCount_le x (Nat.not_lt.mp hx)
     subst hij
     rw [show x = S.id i from Fin.ext (S.val_eq_of_nonIdCount_le x (Nat.not_lt.mp hx)),
       F.mapTotal_id, G.mapTotal_id]
-    exact dif_neg (Nat.lt_irrefl _)
+    exact dite_eq_right (Nat.lt_irrefl _)
 
 /-- The identity 1-cell. -/
 protected def id (S : FinCat) : Hom S S where

@@ -214,7 +214,7 @@ theorem decodeBlock_code_append (R : RankedAlphabet) (i : Fin R.card)
     rw [List.length_append, length_code]
     omega
   simp only [decodeBlock, htake, hdrop,
-    dif_pos (show decodeBits (R.code i) < R.card ∧ R.width ≤ (R.code i ++ rest).length
+    dite_eq_left (show decodeBits (R.code i) < R.card ∧ R.width ≤ (R.code i ++ rest).length
       from ⟨by rw [decodeBits_code]; exact i.isLt, hlen⟩)]
   congr 1
   exact Prod.ext (Fin.val_injective (decodeBits_code R i)) rfl
@@ -581,11 +581,11 @@ theorem length_buf_scanFinal_of_live (R : RankedAlphabet) :
       rcases hcase with ⟨hne, heq⟩ | ⟨r, hlen, _, _, heq⟩
       · simp only [heq, List.length_cons] at hne ⊢
         rw [ihv] at hne
-        rw [ihv, add_one_mod _ _ R.width_pos, if_neg hne]
+        rw [ihv, add_one_mod _ _ R.width_pos, ite_eq_right hne]
       · simp only [List.length_cons] at hlen
         rw [ihv] at hlen
         simp only [heq, List.length_nil, List.length_cons]
-        rw [add_one_mod _ _ R.width_pos, if_pos hlen])
+        rw [add_one_mod _ _ R.width_pos, ite_eq_left hlen])
 
 /-- The incomplete block never fills, whether or not the scan has failed.
 Stated unconditionally, which is the form a bitstring layout of the state
