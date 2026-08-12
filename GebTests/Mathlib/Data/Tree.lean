@@ -5,7 +5,6 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Mathlib.Data.Tree.Preorder
 import GebTests.Mathlib.Data.Tree.Ranked
 
 /-!

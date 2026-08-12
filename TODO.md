@@ -27,6 +27,7 @@
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
   - [Extensions of the tree recognizers](#extensions-of-the-tree-recognizers)
+  - [Vale configuration](#vale-configuration)
   - [The namespace prefix in a declaration body](#the-namespace-prefix-in-a-declaration-body)
   - [Placement of the choice-free `Nat` residue lemmas](#placement-of-the-choice-free-nat-residue-lemmas)
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
@@ -510,31 +511,29 @@ Three items, in dependency order, each over its own destination file.
 
 ### Binary trees and their preorder encoding
 
-Four items over `Geb/Mathlib/Data/Tree/`.
+Items over `Geb/Mathlib/Data/Tree/`.
 
 1. Labelled trees, the initial algebra of `Fin k + X × X`, and the
    corresponding encoding. Requires a decision on the label field's
    spelling, and a recognizer whose scanning state carries a phase.
-2. Define `ConcreteSyntax.Ast` from `BinTree`, removing the duplication
-   between them. `Geb/Internal/ConcreteSyntax.lean` carries the initial
-   algebra of `Fin k + X × X` with its own `leaf`, `fork`, induction
-   principle `Ast.ind` and parse/print retraction, so the condition on
-   this item is met; the import rules bar `Geb/Mathlib/` from reaching
+2. Define `ConcreteSyntax.Ast` from the labelled ranked alphabet item 1
+   describes, removing the duplication between them.
+   `Geb/Internal/ConcreteSyntax.lean` carries the initial algebra of
+   `Fin k + X × X` with its own `leaf`, `fork`, induction principle
+   `Ast.ind` and parse/print retraction, so the condition on this item
+   is met; the import rules bar `Geb/Mathlib/` from reaching
    `Geb/Internal/`, so the dependency runs the other way.
-3. Resolve the overlap with `Mathlib/Data/Tree/Basic.lean`, which
-   declares `BinaryTree` with `numNodes`, `numLeaves` and `height`.
-   `Mathlib/Data/Tree/` holds `Basic.lean`, `Get.lean`, `RBMap.lean` and
-   `Traversable.lean`, so `Binary.lean` is a free filename and there is
-   no name clash; what an upstream PR would have to argue is a second
-   binary tree beside `BinaryTree`, measured differently — `BinTree.size`
-   counts leaves alongside internal nodes, so at `BinaryTree Unit` it is
-   `numNodes + numLeaves`, which `numLeaves_eq_numNodes_succ` makes
-   `2 * numNodes + 1`. Whether `size` should instead be stated through a
-   transfer to `numNodes` is the second half of the question, and whether
-   the name `size` survives beside those three is the third.
-4. Relate `print` to `DyckWord.equivTree`, connecting this encoding to
-   mathlib's Catalan-number apparatus. Wanted only if a counting result
-   is ever needed.
+3. Whether `RankedAlphabet.Term.size`
+   (`Geb/Mathlib/Data/Tree/Ranked/Basic.lean`), which counts leaves alongside
+   internal nodes, should be stated through a transfer to mathlib's
+   `BinaryTree.numNodes`, and whether the name `size` survives beside
+   `numNodes`, `numLeaves` and `height` —
+   `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` presents the two-symbol
+   alphabet's terms as the unlabelled binary trees, in the same
+   `Mathlib/Data/Tree/` file-path family `BinaryTree` occupies.
+4. Relate `binRanked.spell` to `DyckWord.equivTree`, connecting this
+   encoding to mathlib's Catalan-number apparatus. Wanted only if a
+   counting result is ever needed.
 
 ### The Bellantoni-Cook tree recognizer
 
@@ -576,7 +575,7 @@ destination.
    `step`, `configs`, `spaceUsed` and `visitedByTapeHead` among others,
    but no machine constructions, worked examples or composition
    combinators. Three constraints: the subtree rules place any statement
-   relating `BinTree.Valid` to that predicate in `Geb/Internal/`, since
+   relating `binRanked.Valid` to that predicate in `Geb/Internal/`, since
    `Geb/Cslib/` may not import `Geb.Mathlib.*` and `Geb/Mathlib/` may not
    import `Cslib.*`; `DecidableInTimeAndSpace` is stated over
    `Turing.MultiTapeTM.indicator`, an `open Classical in noncomputable
@@ -603,9 +602,11 @@ with an empty payload, up to the state its failure is recorded in.
   its term algebra, the preorder encoding `spell` and its fuel-bounded
   recursive descent, the validity scan, `valid_iff_exists_spell` identifying
   the encoding's image with the scan's language, and
-  `RankedAlphabet.Binary.termEquiv` exhibiting `BinTree` as the two-symbol
-  instance with `spell_termEquiv` and `valid_iff`. See
-  [docs/index.md](docs/index.md).
+  `RankedAlphabet.Binary.binRanked`, the two-symbol instance, with the
+  counter form the scan reduces to at width one
+  (`RankedAlphabet.Binary.depth`, `RankedAlphabet.Binary.ok`,
+  `valid_iff_ok_and_depth_eq_one`) that a recognizer over the encoding is
+  stated against. See [docs/index.md](docs/index.md).
 - **B2 is done.** `Geb/Mathlib/Computability/Cobham/Scan.lean` gives the
   scan combinator `scanRaw`, its fold characterization `scanSem_eq`, and
   the recognizer's scan in `Geb/Mathlib/Computability/Cobham/Tree.lean`
@@ -634,9 +635,11 @@ with an empty payload, up to the state its failure is recorded in.
   `List.ofFn (enc a)`, and the type distinction survives, `foldSem … ![w]`
   being a `List Bool` and `w.foldr step init` an `α`. See
   [docs/index.md](docs/index.md).
-- **B4**, depending on B1 and B2: `BinTree` absorbed into
-  `RankedAlphabet.Term` and the duplication removed. `BinTree` has six
-  in-repo consumers.
+- **B4 is done.** `Geb/Mathlib/Data/Tree/Binary.lean` and
+  `Geb/Mathlib/Data/Tree/Preorder.lean` are deleted;
+  `RankedAlphabet.Binary.binRanked.Term`, with `spell`, `parse` and
+  `Valid`, is the unlabelled binary-tree encoding's sole remaining home
+  under `Geb/Mathlib/`. See [docs/index.md](docs/index.md).
 - **B5**, depending on B2: `Geb/Internal/` — linear time and space against
   Cslib's `MultiTapeTM`, over `ComputableInTimeAndSpace` applied to a
   computable decision function rather than `DecidableInTimeAndSpace`, whose
@@ -675,6 +678,32 @@ same holds of `combSem` is untried. Check whether `rw [combSem]` closes where
 `combSem_def` is used, and correct the docstring in `Cobham/Tree.lean` only if
 it does. A short branch of its own either way.
 
+Also deferred: whether `Cobham/Tree.lean`'s recognizer `isTree` is redundant
+beside `Cobham/RankedTree.lean`'s `isRanked` at `binRanked`, now that
+`isRankedSem_binRanked_eq_singleton_iff_isTreeSem` identifies the languages
+the two accept. `isTree_smashFree` and the [Strahm2003] Theorem 1(2)
+corollary it supports are the residue that is not: `isRanked` at `binRanked`
+is not itself shown `SmashFree`, so the polynomial-time-and-linear-space
+membership `Cobham/Tree.lean` states has no counterpart in
+`Cobham/RankedTree.lean`.
+
+Also deferred: a sweep-scale cross-check of `Cobham.isTreeSem` against
+`binRanked.validBool`, beyond length six. At length six and below it follows
+from `GebTests/Mathlib/Computability/Cobham/RankedTree.lean`'s
+`isRankedSem_eq_validBool_binRanked` together with the bridge theorem
+`isRankedSem_binRanked_eq_singleton_iff_isTreeSem`, so the deferral is worth
+taking only above that budget. A lighter computation was measured reaching
+the 200000-heartbeat `isDefEq` limit at 511 words, so a sweep above length
+seven may not elaborate at all.
+
+Also deferred: aligning
+`Geb/Mathlib/Computability/BellantoniCook/Tree.lean`'s
+`isTreeSem_eq_singleton_iff_valid` and `isTreeSem_eq_ite`, which each carry
+the same `ok`/`depth` case analysis rather than sharing it, with
+`Geb/Mathlib/Computability/Cobham/Tree.lean`, which states the `ite` form
+first and derives the `iff` from it in a few lines. A short branch of its
+own.
+
 `BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
 absent from `docs/references.bib`: neither its bibliographic detail nor the
 DLOGTIME-uniform TC⁰ claim attributed to it has been verified against the
@@ -686,18 +715,25 @@ tree-encoding references
 `BraunmuhlVerbeek1983` — verified but unused, and so added by the branch that
 first cites them.
 
+### Vale configuration
+
+The tree carries a Vale configuration (`.vale.ini` and `styles/`) that
+neither `scripts/pre-push.sh` nor any workflow runs. Its default package
+set flags the spaced em-dash every committed document using one writes,
+and the filename `TODO.md`. Adopting it, with those rules downgraded, or
+removing it, is its own branch.
+
 ### The namespace prefix in a declaration body
 
 [docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Naming conventions
 says "Do not include the namespace in the declaration body's identifiers; rely
-on `namespace` to scope". `Geb/Mathlib/Data/Tree/Preorder.lean` writes
-`BinTree.induction` at four sites inside `namespace BinTree`, and
-`Geb/Mathlib/Data/Tree/Ranked/Basic.lean` writes `Term.mk` inside
-`theorem Term.induction`. Upstream's own guide states the rule for lemma
-names rather than declaration bodies, so what is diverged from is a local
-strengthening. Settle whether the rule binds declaration bodies, and either
-amend it or correct the sites; deciding it belongs on its own branch, the
-sites spanning branches whose concern it is not.
+on `namespace` to scope". `Geb/Mathlib/Data/Tree/Ranked/Basic.lean` writes
+`Term.mk` inside `theorem Term.induction`. Upstream's own guide states the
+rule for lemma names rather than declaration bodies, so what is diverged from
+is a local strengthening. Settle whether the rule binds declaration bodies,
+and either amend it or correct the site. Whether one remaining site still
+warrants a branch of its own, rather than folding the correction into
+whatever branch next touches the file, is open.
 
 ### Placement of the choice-free `Nat` residue lemmas
 

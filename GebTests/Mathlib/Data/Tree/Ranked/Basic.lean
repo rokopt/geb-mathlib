@@ -45,7 +45,7 @@ def sampleAlphabet : RankedAlphabet := ⟨4, 2, by decide, by decide, ![0, 1, 2,
 
 /-- Three symbols of arities zero to two, two bits to a block. Its `card` is
 below `2 ^ width`, so the block `[true, true]` spells no symbol and the
-rejection `arOf` returns `none` for is reachable from a word. -/
+rejection `arOf` returns `none` for it is reachable from a word. -/
 def narrowAlphabet : RankedAlphabet := ⟨3, 2, by decide, by decide, ![0, 1, 2]⟩
 
 /-- The nullary symbol. A symbol index is named rather than written at each
@@ -84,8 +84,8 @@ theorem length_wordsUpTo_six : (wordsUpTo 6).length = 127 := by
 holds every word of length at most five. -/
 theorem length_wordsUpTo_five : (wordsUpTo 5).length = 63 := by decide
 
-/-- The enumeration the `Preorder` and `Binary` mirrors sweep holds every word
-of length at most eight. -/
+/-- The enumeration the `Preorder` mirror sweeps holds every word of length at
+most eight. -/
 theorem length_wordsUpTo_eight : (wordsUpTo 8).length = 511 := by
   set_option maxRecDepth 100000 in decide
 

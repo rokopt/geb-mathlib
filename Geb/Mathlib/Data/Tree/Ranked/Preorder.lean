@@ -18,8 +18,16 @@ right-to-left scan accepts, the scan carrying an incomplete block, the count
 of pending subterms and a liveness flag.
 
 The idea is that of prefix notation, in which a symbol is followed by exactly
-as many operands as its arity. `Data/Tree/Preorder.lean` is the case of one
+as many operands as its arity. `RankedAlphabet.Binary` is the case of one
 symbol of arity zero and one of arity two.
+
+Validity is stated as three conditions, in the manner of mathlib's
+`DyckWord`, whose fields `count_U_eq_count_D` and `count_D_le_count_U` play
+the roles the pending count and the liveness flag play here, and in the
+direction a single right-to-left pass carrying a counter can scan.
+`valid_iff_scanFinal` adds a third, that the incomplete block is empty: at a
+general width that condition is not implied by the other two, so stating
+validity as only the first two, as `DyckWord` does, would be false here.
 
 A `boundedRec` of a Cobham-style function algebra processes a list from its
 far end, so in that reading a symbol's block is read before the blocks of its
@@ -62,6 +70,14 @@ child is parsed from a remainder the previous call computes, which is not a
 structural subterm. `parse` supplies the input's length, and `length_spell`
 with `width_pos` shows that bound admits every word `spell` emits.
 
+Fuel exhaustion is not a rejection mechanism of its own. Each `parseStep`
+layer consumes a whole block, which `width_pos` makes at least one bit, so
+the invariant that the fuel is at least the remaining length holds from
+`parse`'s initial `w.length` down to wherever the descent stops. The
+descent's own rejections are `decodeBlock`'s two — the input falls short of
+a block, or the block spells no symbol — together with a child's failure and
+the trailing input `parse` rejects.
+
 `parseChildren` is a `Nat.rec` and `decodeBits` a `List.rec`, so neither has
 generated equation lemmas; `parseChildren_succ` and `decodeBits_cons` are
 stated for the rewrites that need them.
@@ -82,6 +98,11 @@ needed. The step splits off the word's leading block rather than its trailing
 one: `spell` is prefix notation while the scan reads right to left, so the
 head symbol's block is read last, from the state the scan of everything after
 it leaves.
+
+The base case ascribes `w.length ≤ 0` to `hzero` before appealing to `omega`:
+`Nat.rec`'s base case presents the bound as `w.length ≤ Nat.zero`, and `omega`
+treats the unreduced `Nat.zero` as an opaque atom, so the ascription at the
+literal `0` is what makes the hypothesis usable.
 
 `spell_injective` is derived from `Computability.Encoding.encode_injective`
 through `encoding` rather than proved directly, the encoding and its descent
@@ -731,7 +752,8 @@ theorem exists_spell_append_of_live_of_buf_nil_of_one_le_depth (R : RankedAlphab
           (R.scanFinal rest).depth + 1 = (R.scanFinal w).depth :=
   Nat.rec
     (fun w hw _ _ hd ↦ by
-      have hnil : w = [] := List.eq_nil_of_length_eq_zero (Nat.le_zero.mp hw)
+      have hzero : w.length ≤ 0 := hw
+      have hnil : w = [] := List.eq_nil_of_length_eq_zero (by omega)
       subst hnil
       exact absurd hd (by simp))
     (fun n ihn w hw hlive hbuf hd ↦ by

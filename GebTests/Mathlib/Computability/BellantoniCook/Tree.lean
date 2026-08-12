@@ -36,15 +36,15 @@ references a constant of the module under test. -/
 def isTreeArity : BCOf 1 0 := isTreeOf
 
 /-- The spelling of the leaf is accepted. -/
-theorem isTreeSem_print_leaf : isTreeSem ![[false]] ![] = [true] := rfl
+theorem isTreeSem_spell_leaf : isTreeSem ![[false]] ![] = [true] := rfl
 
 /-- The spelling of the two-leaf node is accepted. -/
-theorem isTreeSem_print_node : isTreeSem ![[true, false, false]] ![] = [true] :=
+theorem isTreeSem_spell_node : isTreeSem ![[true, false, false]] ![] = [true] :=
   rfl
 
 /-- The spelling of an asymmetric tree of two nodes and three leaves is
 accepted. -/
-theorem isTreeSem_print_asymmetric :
+theorem isTreeSem_spell_asymmetric :
     isTreeSem ![[true, true, false, false, false]] ![] = [true] := rfl
 
 /-- The empty word is rejected: it leaves no tree on the stack. -/

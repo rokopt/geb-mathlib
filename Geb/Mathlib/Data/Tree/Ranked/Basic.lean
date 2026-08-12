@@ -16,8 +16,8 @@ of the finitary polynomial functor whose shape type is `Fin card` and whose
 direction family sends a symbol to `Fin` of its arity, so that all recursion
 over terms is carried by `WType.elim` and `WType.rec`.
 
-The unlabelled binary trees of `Data/Tree/Binary.lean` are the terms of the
-alphabet of one symbol of arity zero and one of arity two.
+The unlabelled binary trees are the terms of `RankedAlphabet.Binary`'s
+alphabet, of one symbol of arity zero and one of arity two.
 
 ## Main definitions
 
@@ -44,8 +44,8 @@ block is empty, so a one-symbol alphabet spells its unique term by the empty
 word while the validity scan rejects that word, and the encoding is no
 longer a bijection onto the words it accepts.
 
-`Term` is `@[expose]`, as `BinTree` is: without it `WType.mk` applications
-against `Fin (R.arity i)` do not elaborate across the module boundary.
+`Term` is `@[expose]`: without it `WType.mk` applications against
+`Fin (R.arity i)` do not elaborate across the module boundary.
 
 `Term.mk` exists because `WType.mk` at a concrete alphabet presents a child
 family at type `Fin (R.arity ⟨v, h⟩)`, which is not syntactically `Fin 0` at

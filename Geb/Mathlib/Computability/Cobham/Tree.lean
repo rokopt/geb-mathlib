@@ -7,18 +7,19 @@ module
 
 public import Geb.Mathlib.Computability.Cobham.Basic
 public import Geb.Mathlib.Computability.Cobham.Scan
-public import Geb.Mathlib.Data.Tree.Preorder
+public import Geb.Mathlib.Data.Tree.Ranked.Binary
 
 /-!
 # The preorder stack scan in Cobham's class
 
 An expression of `C` computing, in a single right-to-left pass over a
 bitstring, the stack depth of the word read as the preorder spelling of a
-binary tree, together with the verdict of `BinTree.ok`. The two are carried in
-one recursive value, told apart by its head: while no node bit has been read
-below depth two the value is the depth in unary offset by one, so its head is
-`true`; once one has been, the value is `[false]`, which the node step
-reproduces, that value's two predecessors being empty. Each bit is read once.
+term of `RankedAlphabet.Binary.binRanked`, together with the scan's
+liveness verdict. The two are carried in one recursive value, told apart
+by its head: while no node bit has been read below depth two the value is
+the depth in unary offset by one, so its head is `true`; once one has
+been, the value is `[false]`, which the node step reproduces, that
+value's two predecessors being empty. Each bit is read once.
 
 The recursion is a `boundedRec` node, so admissibility requires a bound: the
 scan's value is never longer than the recursion variable by more than one bit,
@@ -28,8 +29,9 @@ what places the scan in `C` rather than merely in the syntax `sig` describes.
 
 The one-test on the scan's predecessor is the recognizer, correct against the
 `Valid` predicate of the encoding. Composed with
-`BinTree.valid_iff_exists_print`, `isTreeSem_eq_singleton_iff_exists_print`
-states that an expression of `C` accepts exactly the spellings of trees.
+`RankedAlphabet.valid_iff_exists_spell`,
+`isTreeSem_eq_singleton_iff_exists_spell` states that an expression of `C`
+accepts exactly the spellings of terms.
 `isTreeSem_eq_ite` pins its value on the rejecting branch as well: the two
 `iff` statements alone do not imply it, since a recognizer returning
 `[false]` rather than `[]` on a rejected word would satisfy both while
@@ -38,8 +40,8 @@ states is a property of the function and not only of the accepted set.
 
 `isTree_smashFree` places `isTree` in the subalgebra `SmashFree` names,
 `[ε, I, s₀, s₁, ∗; COMP, BRN]`; with [Strahm2003] Theorem 1(2), deciding
-`BinTree.Valid` is computable simultaneously in polynomial time and linear
-space.
+`RankedAlphabet.Valid` at `RankedAlphabet.Binary.binRanked` is computable
+simultaneously in polynomial time and linear space.
 
 ## Main definitions
 
@@ -72,8 +74,9 @@ present, and for an expression whose reduced arity a proof reads.
 * `Cobham.combSem_nil`, `Cobham.combSem_cons_false`,
   `Cobham.combSem_cons_true` — the scan unfolded at each constructor of the
   recursion variable, with the recursive value exposed.
-* `Cobham.combSem_eq` — the scan computes `BinTree.depth` in unary, offset by
-  one, while `BinTree.ok` holds, and `[false]` once it has failed.
+* `Cobham.combSem_eq` — the scan computes `RankedAlphabet.Binary.depth` in
+  unary, offset by one, while `RankedAlphabet.Binary.ok` holds, and `[false]`
+  once it has failed.
 * `Cobham.length_combSem_le` — the recursion bound `scan` asks for, which
   `comb`, `combOf` and `combSem_eq_eval` each pass to the scanner.
 * `Cobham.combSem_eq_eval`, `Cobham.isTreeSem_eq_eval` — the meaning read at
@@ -85,11 +88,11 @@ present, and for an expression whose reduced arity a proof reads.
 * `Cobham.isTreeSem_apply` — one step of the recognizer: the one-test on
   the scan's predecessor.
 * `Cobham.isTreeSem_eq_ite` — the recognizer's value on both branches:
-  `[true]` on a word satisfying `BinTree.Valid` and `[]` on every other.
+  `[true]` on a word `binRanked`'s scan accepts and `[]` on every other.
 * `Cobham.isTreeSem_eq_singleton_iff_valid` — `isTree` accepts exactly the
-  words satisfying `BinTree.Valid`.
-* `Cobham.isTreeSem_eq_singleton_iff_exists_print` — equivalently, exactly
-  the spellings of trees.
+  words `binRanked`'s scan accepts.
+* `Cobham.isTreeSem_eq_singleton_iff_exists_spell` — equivalently, exactly
+  the spellings of `binRanked`'s terms.
 * `Cobham.isTree_smashFree` — the recognizer lies in the subalgebra
   `SmashFree` names.
 
@@ -108,11 +111,11 @@ expression's own component rather than repeating its proof.
 `Cobham.eval` asks only for admissibility as a `sig`-tree, not for the
 recursion bound, so the scan is characterized by `combSem_eq` before the
 expression carrying that bound exists. The bound is then that characterization
-together with `BinTree.depth_le_length`: the value is `[false]`, of length one,
-or the depth in unary offset by one, and the depth never exceeds the word
-length, while the scanner's bound child, at growth one, returns one bit
-more than the recursion variable. `combSem` is the scanner's meaning at its
-arity, and `combSem_eq_eval` reads it back through `C.eval`, as
+together with `RankedAlphabet.Binary.depth_le_length`: the value is `[false]`,
+of length one, or the depth in unary offset by one, and the depth never
+exceeds the word length, while the scanner's bound child, at growth one,
+returns one bit more than the recursion variable. `combSem` is the scanner's
+meaning at its arity, and `combSem_eq_eval` reads it back through `C.eval`, as
 `isTreeSem_eq_eval` does for the recognizer.
 
 That bound is a bound on the value `combSem` produces at each step, not a
@@ -163,6 +166,8 @@ smash-free, polynomial time, linear space
 -/
 
 namespace Cobham
+
+open RankedAlphabet.Binary
 
 public section
 
@@ -331,8 +336,8 @@ empty. Of arity one, as `combFalseStep`. -/
 @[expose] def combTrueStepOf : COf 1 := ⟨combTrueStep, rfl⟩
 
 /-- The raw tree of the scan, as a scanner: base `[true]`, the empty bitstring
-having depth zero and satisfying `ok`; growth one, the value being never
-longer than the recursion variable by more than one bit. -/
+having depth zero and satisfying `RankedAlphabet.Binary.ok`; growth one, the
+value being never longer than the recursion variable by more than one bit. -/
 @[expose] def combRaw : sig.toPFunctor.W :=
   scanRaw (oneAtRaw 0) combFalseStepRaw combTrueStepRaw 1
 
@@ -385,55 +390,58 @@ theorem combSem_cons_true (v : List Bool) :
   | c :: d :: w =>
     cases c <;> cases d <;> (match w with | [] | true :: _ | false :: _ => rfl)
 
-/-- The scan computes the stack depth in unary, offset by one, while `ok`
-holds, and the absorbing value `[false]` once it has failed. -/
+/-- The scan computes the stack depth in unary, offset by one, while
+`RankedAlphabet.Binary.ok` holds, and the absorbing value `[false]` once it
+has failed. -/
 theorem combSem_eq (w : List Bool) :
     combSem ![w] =
-      if BinTree.ok w then List.replicate (BinTree.depth w + 1) true
+      if ok w then List.replicate (depth w + 1) true
       else [false] := by
   refine List.rec (motive := fun u ↦ combSem ![u] =
-    if BinTree.ok u then List.replicate (BinTree.depth u + 1) true else [false])
+    if ok u then List.replicate (depth u + 1) true else [false])
     rfl ?_ w
   intro b v ih
-  cases hok : BinTree.ok v
+  cases hok : ok v
   · have hv : combSem ![v] = [false] := by rw [ih, hok]; rfl
     cases b
-    · rw [combSem_cons_false, hv, BinTree.ok_cons_false, hok]
+    · rw [combSem_cons_false, hv, ok_cons_false, hok]
       rfl
-    · rw [combSem_cons_true, hv, BinTree.ok_cons_true, hok]
+    · rw [combSem_cons_true, hv, ok_cons_true, hok]
       rfl
-  · have hv : combSem ![v] = List.replicate (BinTree.depth v + 1) true := by
+  · have hv : combSem ![v] = List.replicate (depth v + 1) true := by
       rw [ih, hok]; rfl
     cases b
-    · rw [combSem_cons_false, hv, BinTree.ok_cons_false, hok,
-        BinTree.depth_cons_false]
+    · rw [combSem_cons_false, hv, ok_cons_false, hok,
+        depth_cons_false_of_ok v hok]
       rfl
-    · rw [combSem_cons_true, hv, BinTree.ok_cons_true, hok,
-        BinTree.depth_cons_true]
+    · rw [combSem_cons_true, hv, ok_cons_true, hok]
       -- the guard's two predecessors reduce only on a numeral of at least that
-      -- size, so the depth is split into constructor forms
+      -- size, so the depth is split into constructor forms; the conditional
+      -- depth lemma applies only in the third case, the first two closing on
+      -- the failed branch
       have hsplit : ∀ d : ℕ, d = 0 ∨ d = 1 ∨ ∃ m, d = m + 2 := fun d ↦
         match d with
         | 0 => Or.inl rfl
         | 1 => Or.inr (Or.inl rfl)
         | (m + 2) => Or.inr (Or.inr ⟨m, rfl⟩)
-      obtain (h0 | h1 | ⟨m, hm⟩) := hsplit (BinTree.depth v)
+      obtain (h0 | h1 | ⟨m, hm⟩) := hsplit (depth v)
       · rw [h0]; rfl
       · rw [h1]; rfl
-      · rw [hm]; rfl
+      · rw [depth_cons_true_of_ok_of_two_le_depth v hok (by omega), hm]; rfl
 
 /-- The scan's value exceeds the recursion variable by at most one bit: it is
 `[false]`, of length one, or the depth in unary offset by one, and the depth
-never exceeds the word length (`BinTree.depth_le_length`). This is the
-recursion bound `scan` asks for, at the growth its bound child carries. -/
+never exceeds the word length (`RankedAlphabet.Binary.depth_le_length`). This
+is the recursion bound `scan` asks for, at the growth its bound child
+carries. -/
 theorem length_combSem_le (u : List Bool) :
     (scanSem (oneAtOf 0) combFalseStepOf combTrueStepOf 1 ![u]).length ≤
       u.length + 1 := by
   rw [← combSem_def, combSem_eq]
-  cases BinTree.ok u
+  cases ok u
   · exact Nat.le_add_left 1 u.length
   · rw [if_pos rfl, List.length_replicate]
-    exact Nat.succ_le_succ (BinTree.depth_le_length u)
+    exact Nat.succ_le_succ (depth_le_length u)
 
 /-- The stack depth and the underflow verdict of a bitstring in one value, as
 the scanner at the two steps, with `length_combSem_le` discharging its
@@ -576,36 +584,39 @@ theorem isTreeSem_apply (w : List Bool) :
 /-- The recognizer's value on both branches: a rejected word receives the
 empty bitstring, not merely something other than `[true]`. -/
 theorem isTreeSem_eq_ite (w : List Bool) :
-    isTreeSem ![w] = if BinTree.Valid w then [true] else [] := by
+    isTreeSem ![w] = if binRanked.Valid w then [true] else [] := by
   rw [isTreeSem_apply, eqOneSem_env, eqOneSem_eq, combSem_eq]
-  by_cases h : BinTree.ok w = true
+  by_cases h : ok w = true
   · rw [if_pos h]
     simp only [List.tail_replicate, List.length_replicate, Nat.add_sub_cancel]
-    by_cases hd : BinTree.depth w = 1
-    · rw [if_pos hd, if_pos ⟨h, hd⟩]
-    · rw [if_neg hd, if_neg fun hv : BinTree.Valid w ↦ hd hv.2]
+    by_cases hd : depth w = 1
+    · rw [if_pos hd, if_pos ((valid_iff_ok_and_depth_eq_one w).mpr ⟨h, hd⟩)]
+    · rw [if_neg hd,
+        if_neg fun hv ↦ hd ((valid_iff_ok_and_depth_eq_one w).mp hv).2]
   · rw [if_neg h, if_neg (by decide : ¬ ([false] : List Bool).tail.length = 1),
-      if_neg fun hv : BinTree.Valid w ↦ h hv.1]
+      if_neg fun hv ↦ h ((valid_iff_ok_and_depth_eq_one w).mp hv).1]
 
-/-- The recognizer accepts exactly the words satisfying `BinTree.Valid`. -/
+/-- The recognizer accepts exactly the words the two-symbol alphabet's scan
+accepts. -/
 theorem isTreeSem_eq_singleton_iff_valid (w : List Bool) :
-    isTreeSem ![w] = [true] ↔ BinTree.Valid w := by
+    isTreeSem ![w] = [true] ↔ binRanked.Valid w := by
   rw [isTreeSem_eq_ite]
-  by_cases h : BinTree.Valid w
+  by_cases h : binRanked.Valid w
   · rw [if_pos h]
     exact ⟨fun _ ↦ h, fun _ ↦ rfl⟩
   · rw [if_neg h]
     exact ⟨fun hw ↦ absurd hw (by nofun), fun hv ↦ absurd hv h⟩
 
-/-- The recognizer accepts exactly the preorder spellings of binary trees. -/
-theorem isTreeSem_eq_singleton_iff_exists_print (w : List Bool) :
-    isTreeSem ![w] = [true] ↔ ∃ t, BinTree.print t = w :=
-  (isTreeSem_eq_singleton_iff_valid w).trans (BinTree.valid_iff_exists_print w)
+/-- The recognizer accepts exactly the preorder spellings of the two-symbol
+alphabet's terms. -/
+theorem isTreeSem_eq_singleton_iff_exists_spell (w : List Bool) :
+    isTreeSem ![w] = [true] ↔ ∃ t, binRanked.spell t = w :=
+  (isTreeSem_eq_singleton_iff_valid w).trans (binRanked.valid_iff_exists_spell w)
 
 /-- The recognizer lies in the smash-free subalgebra. With
 [Strahm2003] Theorem 1(2)'s left-to-right inclusion, the decision of
-`BinTree.Valid` is computable simultaneously in polynomial time and linear
-space. -/
+`RankedAlphabet.Valid` at the two-symbol alphabet is computable
+simultaneously in polynomial time and linear space. -/
 theorem isTree_smashFree : SmashFree isTree := by decide
 
 end

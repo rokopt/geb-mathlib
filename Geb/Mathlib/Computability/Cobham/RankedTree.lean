@@ -572,15 +572,14 @@ theorem isRankedSem_eq_singleton_iff_valid (R : RankedAlphabet) (w : List Bool) 
     exact ⟨fun hw ↦ absurd hw (by nofun), fun h ↦ absurd h hv⟩
 
 /-- At the two-symbol alphabet the generic recognizer accepts the language the
-recognizer of `Cobham/Tree.lean` accepts. Every link relates semantic
-predicates on `List Bool`, so neither `binRanked`'s `width` and `maxArity` nor
-the two scans' differing failure conventions need reconciling. -/
+recognizer of `Cobham/Tree.lean` accepts. Both links relate semantic
+predicates on `List Bool`, and both name one scan, so neither `binRanked`'s
+`width` and `maxArity` nor a pair of failure conventions need reconciling. -/
 theorem isRankedSem_binRanked_eq_singleton_iff_isTreeSem (w : List Bool) :
     isRankedSem RankedAlphabet.Binary.binRanked ![w] = [true] ↔
       isTreeSem ![w] = [true] :=
   (isRankedSem_eq_singleton_iff_valid _ w).trans
-    ((RankedAlphabet.Binary.valid_iff w).trans
-      (isTreeSem_eq_singleton_iff_valid w).symm)
+    (isTreeSem_eq_singleton_iff_valid w).symm
 
 end
 
