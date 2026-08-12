@@ -59,7 +59,7 @@ written out at a symbolic width.
 | B1 | `Geb/Mathlib/Data/Tree/Ranked/` — ranked alphabets, the preorder encoding, the validity scan, `BinTree` as the two-symbol instance | Done, unpushed |
 | B2 | `Cobham/Scan.lean` — the scan combinator, and `Cobham/Tree.lean` rebuilt on it | Done, unpushed |
 | — | `Cobham/Cases.lean` — definition by cases, with the constant-word, iterated-predecessor and diagonal combinators in `Cobham/Basic.lean` | Done, unpushed |
-| B6 | `Cobham/RankedTree.lean` — the generic ranked recognizer. Design § Segment 2 | **Not started** |
+| B6 | `Cobham/RankedTree.lean` — the generic ranked recognizer. Design § Segment 2 | Done, unpushed |
 | B3 | `Cobham/Fold.lean` — the catamorphism at a carrier with a bit encoding. Design § Segment 3 | **Not started** |
 | B4 | `BinTree` absorbed into `RankedAlphabet.Term`, the duplication in `Data/Tree/Preorder.lean` removed | Not started |
 | B5 | `Geb/Internal/` — linear time and space against Cslib's `MultiTapeTM` | Not started |
@@ -79,57 +79,70 @@ main                              cfb6e2c7
   └─ feat/ranked-tree-recognizers  B1
        └─ feat/cobham-scanner      B2   0aef6df3
             └─ feat/cobham-cases   e560f184
+                 └─ feat/cobham-ranked-tree  5964baff
 ```
 
 `main` moved to `cfb6e2c7` (a Lean toolchain auto-update) after the line
 was cut. Nothing on the line depends on it; rebase before pushing.
 
-At `e560f184` the tree is clean and every gate passes: `lake build`
-(1261 jobs), `lake test`, `lake lint`, `lake lint -- GebTests`, and
-`scripts/pre-push.sh` in full, which adds the import linter, `lake shake`,
-and the Markdown, table-of-contents and link checks.
+At `5964baff` the tree is clean and every gate passes: `lake build`,
+`lake test`, `lake lint`, `lake lint -- GebTests`, `scripts/lint-imports.sh`
+and `scripts/pre-push.sh` in full, which adds `lake shake` and the
+Markdown, table-of-contents and link checks.
 
 ## What this session delivered
 
-The case combinator, in the commits from `150a4387` to `e560f184`.
+The generic ranked recognizer, closing B6, in the commits from `f6cf8de4`
+to `5964baff`.
 
-- `Cobham/Cases.lean` — `bits` and its round trip against `List.ofFn`; the
-  scrutinee shift; the case tree `casesRaw` with its admissibility and
-  recursion bound; `casesSem_eq` identifying the meaning with the branch
-  the scrutinee selects; and the words the `Cobham/Basic.lean` combinators
-  contribute.
-- `Cobham/Basic.lean` gained `semAt`, the `zeroAt` family moved in from
-  `Cobham/Tree.lean`, and the `predIter`, `prepend`/`constAt` and `diag`
-  families.
-- `Cobham/Scan.lean` and `Cobham/Tree.lean` had six definitions restated
-  through `semAt`, which names once what they each spelled out.
-- `GebTests/Mathlib/Computability/Cobham/Cases.lean` mirrors the module.
-- `docs/index.md` and `TODO.md` record it; the segment's own plan was
+- `Cobham/RankedTree.lean` — the scan state as a bitstring (`bufBits`,
+  `stateWord`, `dispatchWidth`); its decoder `decodeState` and inversion;
+  the step's decomposition (`dropCount`, `nextPrefix`); the step and scan
+  as expressions of the class (`rankedStep`, `rankedSem`, `ranked`,
+  `rankedOf`); the verdict test; and the bridge
+  (`isRankedSem_eq_singleton_iff_valid`,
+  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem`) to `Cobham/Tree.lean`'s
+  recognizer.
+- `Geb/Mathlib/Data/Tree/Ranked/{Basic,Code,Preorder}.lean` gained
+  `maxArity`, `arity_le_maxArity`, `le_maxArity_of_arOf_eq_some`,
+  `length_buf_scanFinal_lt`, `depth_scanFinal_le_length` and
+  `valid_iff_scanFinal`.
+- `GebTests/Mathlib/Computability/Cobham/RankedTree.lean` mirrors the
+  module, and the `GebTests/Mathlib/Data/Tree/Ranked/` mirrors extend to
+  the new statements.
+- `docs/index.md` and `TODO.md` record it; the segment's own plan is
   removed in its final commits.
 
-A `chore(vale)` commit at the base of the segment wires up the project's
-Vale vocabulary, which `.vale.ini` had never selected. It is a separate
-concern carried here by decision.
+A prototype at `Geb/Internal/RankedTreeSpike.lean`, compiled at a symbolic
+`RankedAlphabet` during planning, was transcribed into the modules above
+and then deleted; its declarations' axioms were measured there and fell
+within `{propext, Quot.sound}`.
 
 ## What to pick up next
 
-**Segment 2: the generic ranked recognizer, closing B6.** The design's
-§ Segment 2 is its specification and is written to implementation detail.
-It depends on the case combinator, which is now in place, and on B1's
-`RankedAlphabet.Preorder`.
+**Segment 3: the fold at a finite carrier, closing B3.** The design's
+§ Segment 3 is its specification. It depends on B2 and the case
+combinator, both in place; the carrier is arbitrary, entering only through
+an encoding to and a decoding from `Fin p → Bool` at a symbolic `p`,
+neither `Fintype` nor `FinEnum` appearing.
 
-Its largest unbuilt piece is `decodeState`: the inverse of the state
-layout, as a function of a bit family at a symbolic `dispatchWidth`. The
-design routes it through `List.ofFn` and the `List` API rather than
-indexing a `Fin` family, which removes the bound-threading that made it
-hard, but none of it is compiled. Four statements it consumes are also
-unbuilt and are specified in § Additions to the ranked-encoding modules.
+Its content is `foldSem_eq`, which equates the scan's value with
+`List.ofFn` of the carrier's encoding of the carrier-level fold `w.foldr
+step init`, under the retraction hypothesis `∀ a, dec (enc a) = a`; the
+proof is a `List.rec` through `Cobham.scanSem_eq` and `bits_ofFn`.
+`length_foldSem_le` needs no retraction hypothesis, every state the scan
+produces already being a `List.ofFn` of an `enc` value of length `p`.
+Neither the encoding-to-word nor the carrier-level fold is named: both are
+spelled at the length a name would cost, and this revises the note in
+[TODO.md](../../../TODO.md) § Extensions of the tree recognizers that the
+encoding "must be named."
 
-Prototype `decodeState`, `nextPrefix` and `dropCount` at a symbolic `R`
-before writing that segment's plan. The step arithmetic was verified by
-hand at `narrowAlphabet` over every reachable state, and the step lemma
-`stateWord_scanStep_of_lt` was proved in Lean for arbitrary `R` during
-review, but both were built against throwaway modules since deleted.
+Segment 3 also removes
+[the design](../specs/2026-08-10-cobham-cases-fold-ranked-design.md) in
+its final commits, and so must reword the sentence in
+[TODO.md](../../../TODO.md) that refers to "the succinct tree-encoding
+references the design cites for context"; see
+[the workstream handoff](2026-08-10-ranked-tree-b2-b5-handoff.md) § B3.
 
 ## Context the next session will want
 

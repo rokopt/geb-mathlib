@@ -16,14 +16,19 @@ The spelling of `sampleNullary` and `sampleBinary`, the descent recovering
 each, and the scan's four rejections: a word carrying two terms, a word ending
 mid-block, a word whose symbol has more arity than the pending count, and a
 word carrying a block that spells no symbol. The scan and the descent are then
-compared on every word of length at most eight.
+compared on every word of length at most eight, and the scan's final state is
+exhibited on a word ending mid-block (its buffer, pending count and
+liveness) and on a word whose block spells no symbol (its buffer and
+liveness).
 
 ## Main statements
 
 The assertions below give the spelling of each worked term, the descent's
 value on each spelling, `Valid` on the two spellings and on the four rejected
-words, and the agreement of `validBool` with `Option.isSome ∘ parse` over the
-enumeration at both alphabets.
+words, the agreement of `validBool` with `Option.isSome ∘ parse` over the
+enumeration at both alphabets, and the scan's final `buf`, `depth` and `live`
+fields on a partial word and its final `buf` and `live` fields on a word
+whose block spells no symbol.
 
 ## Implementation notes
 
@@ -107,3 +112,25 @@ theorem narrow_validBool_eq_isSome_parse :
     (wordsUpTo 8).all (fun w ↦
       narrowAlphabet.validBool w == (narrowAlphabet.parse w).isSome) = true := by
   set_option maxRecDepth 100000 in decide
+
+/-- A word ending mid-block leaves that block incomplete. -/
+theorem scanFinal_narrow_partial_buf :
+    (narrowAlphabet.scanFinal [false]).buf = [false] := by decide
+
+/-- And leaves nothing pending, no block having completed. -/
+theorem scanFinal_narrow_partial_depth :
+    (narrowAlphabet.scanFinal [false]).depth = 0 := by decide
+
+/-- And leaves the scan live. -/
+theorem scanFinal_narrow_partial_live :
+    (narrowAlphabet.scanFinal [false]).live = true := by decide
+
+/-- A block spelling no symbol fails the scan and clears the block, which is
+what makes `RankedAlphabet.length_buf_scanFinal_lt` hold unconditionally
+rather than only on a live scan. -/
+theorem scanFinal_narrow_dead_buf :
+    (narrowAlphabet.scanFinal [true, true]).buf = [] := by decide
+
+/-- And leaves it failed. -/
+theorem scanFinal_narrow_dead_live :
+    (narrowAlphabet.scanFinal [true, true]).live = false := by decide

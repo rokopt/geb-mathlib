@@ -31,6 +31,8 @@ denoting no symbol has no arity.
   bits.
 * `RankedAlphabet.getElem_code_eq` — and a block's entries are the bits of
   the symbol's index.
+* `RankedAlphabet.le_maxArity_of_arOf_eq_some` — an arity a block yields is at
+  most the largest.
 
 ## Implementation notes
 
@@ -133,6 +135,17 @@ theorem testBit_decodeBits : ∀ (bs : List Bool) (n : ℕ) (_ : n < bs.length),
           cases b <;> (simp only [Bool.false_eq_true, if_false, if_true]; omega)
         rw [hd, ih n (by simpa using h)]
         simp)
+
+/-- Every arity a block yields is at most the largest, `arOf` returning an
+arity only in the image of `arity`. -/
+theorem le_maxArity_of_arOf_eq_some (R : RankedAlphabet) {v r : ℕ}
+    (h : R.arOf v = some r) : r ≤ R.maxArity := by
+  rw [arOf] at h
+  split at h
+  · rename_i hlt
+    rw [← Option.some.inj h]
+    exact arity_le_maxArity R ⟨v, hlt⟩
+  · exact absurd h (by nofun)
 
 end
 

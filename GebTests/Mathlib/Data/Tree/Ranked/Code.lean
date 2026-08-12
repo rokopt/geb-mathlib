@@ -10,16 +10,18 @@ public import GebTests.Mathlib.Data.Tree.Ranked.Basic
 import Geb.Mathlib.Data.Tree.Ranked.Code
 
 /-!
-# Symbol codes on a worked alphabet
+# Symbol codes on worked alphabets
 
-The blocks of `sampleAlphabet`, their decoding, and the arity they carry,
-including the value beyond the alphabet at which `arOf` is absent.
+The blocks of `sampleAlphabet` and `narrowAlphabet`, their decoding, and the
+arity they carry, including the value beyond each alphabet at which `arOf`
+is absent.
 
 ## Main statements
 
 The assertions below give the blocks of the nullary and binary symbols, the
 value each block denotes, the arity each carries, and the absence of an arity
-at a value no symbol has.
+at a value no symbol has. `narrowAlphabet`'s binary symbol shows the bound
+`RankedAlphabet.le_maxArity_of_arOf_eq_some` attained rather than slack.
 
 ## Tags
 
@@ -55,3 +57,13 @@ theorem arOf_four : sampleAlphabet.arOf 4 = none := by decide
 /-- A block's entries are the bits of the value it denotes. -/
 theorem testBit_decodeBits_sampleSym2 :
     (decodeBits (sampleAlphabet.code sampleSym2)).testBit 1 = true := by decide
+
+/-- The narrow alphabet's binary symbol's block yields its arity, and that
+arity is the alphabet's largest, so the bound is attained rather than
+slack. -/
+theorem arOf_narrow_two_eq_maxArity :
+    narrowAlphabet.arOf 2 = some narrowAlphabet.maxArity := by decide
+
+/-- A block spelling no symbol yields no arity, so the bound is vacuous
+there. -/
+theorem arOf_narrow_three : narrowAlphabet.arOf 3 = none := by decide
