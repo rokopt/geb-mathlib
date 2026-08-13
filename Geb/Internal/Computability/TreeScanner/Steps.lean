@@ -41,6 +41,9 @@ twice.
 - `seekCfg_exit`, `plantCfg_step` — the two phase boundaries: the seek's
   exit step, which writes the first marker, and the planting step, which
   writes the second and enters the sweep.
+- `sweepCfg_step` — the sweep phase: one step against the closed form,
+  matching the machine's state and work head to the scan's liveness and
+  pending count one bit at a time.
 
 ## Implementation notes
 
@@ -399,5 +402,95 @@ theorem plantCfg_step (w : List Bool) :
     omega
 
 end Plant
+
+section Sweep
+
+/-- One sweep step consumes the bit to the input head's left: the state stays
+live exactly where the scan extended by that bit stays live, and the work
+head carries the extended scan's pending count. -/
+theorem sweepCfg_step (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
+    treeScanner.step (sweepCfg w (k + 1) h) = sweepCfg w k (by omega) := by
+  have hdrop : w.drop k = w[k] :: w.drop (k + 1) := List.drop_eq_getElem_cons (by omega)
+  have hpos : moveInputPos (sweepCfg w (k + 1) h).inputPos SignType.neg =
+      (sweepCfg w k (by omega : k ≤ w.length)).inputPos := by
+    rw [moveInputPos_neg_of_ne_left _
+      (by simp only [Ne, Fin.ext_iff, sweepCfg_inputPos_val, Fin.val_zero]; omega)]
+    exact Fin.ext (by simp only [sweepCfg_inputPos_val]; omega)
+  by_cases hok : ok (w.drop (k + 1)) = true
+  · have hst : (sweepCfg w (k + 1) h).state = some stLive := by
+      rw [sweepCfg_state, ite_eq_left hok]
+    cases hbit : w[k] with
+    | false =>
+      have hokk : ok (w.drop k) = true := by
+        rw [hdrop, hbit, ok_cons_false]
+        exact hok
+      have hdk : depth (w.drop k) = depth (w.drop (k + 1)) + 1 := by
+        rw [hdrop, hbit, depth_cons_false_of_ok _ hok]
+      rw [step_of_state _ _ stLive hst, tr_live_leaf w k h hbit]
+      refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+      · rw [sweepCfg_state, ite_eq_left hokk]
+      · exact hpos
+      · funext i
+        rfl
+      · funext i
+        rw [sweepCfg_workTapePos, sweepCfg_workTapePos, hdk, SignType.coe_one]
+        omega
+    | true =>
+      by_cases hd : 2 ≤ depth (w.drop (k + 1))
+      · have hokk : ok (w.drop k) = true := by
+          rw [hdrop, hbit, ok_cons_true, hok, decide_eq_true hd]
+          rfl
+        have hdk : depth (w.drop k) = depth (w.drop (k + 1)) - 1 := by
+          rw [hdrop, hbit]
+          exact depth_cons_true_of_ok_of_two_le_depth _ hok hd
+        rw [step_of_state _ _ stLive hst, tr_live_node_deep w k h hbit hd]
+        refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+        · rw [sweepCfg_state, ite_eq_left hokk]
+        · exact hpos
+        · funext i
+          rfl
+        · funext i
+          rw [sweepCfg_workTapePos, sweepCfg_workTapePos, hdk, SignType.coe_neg_one]
+          omega
+      · have hd2 : depth (w.drop (k + 1)) < 2 := by omega
+        have hokk : ok (w.drop k) = false := by
+          rw [hdrop, hbit, ok_cons_true, hok, decide_eq_false hd]
+          rfl
+        have hdk : depth (w.drop k) = depth (w.drop (k + 1)) := by
+          rw [hdrop, hbit, depth, depth, RankedAlphabet.scanFinal_cons,
+            scanStep_true_of_live_of_buf_nil_of_depth_lt_two _ hok
+              (buf_scanFinal_eq_nil _) hd2]
+        rw [step_of_state _ _ stLive hst, tr_live_node_shallow w k h hbit hd2]
+        refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+        · rw [sweepCfg_state, hokk]
+          rfl
+        · exact hpos
+        · funext i
+          rfl
+        · funext i
+          rw [sweepCfg_workTapePos, sweepCfg_workTapePos, hdk, SignType.coe_zero]
+          omega
+  · rw [Bool.not_eq_true] at hok
+    have hst : (sweepCfg w (k + 1) h).state = some stDead := by
+      rw [sweepCfg_state, hok]
+      rfl
+    have hokk : ok (w.drop k) = false := by
+      rw [hdrop, ok, RankedAlphabet.scanFinal_cons, scanStep_of_not_live _ _ hok]
+      exact hok
+    have hdk : depth (w.drop k) = depth (w.drop (k + 1)) := by
+      rw [hdrop, depth, depth, RankedAlphabet.scanFinal_cons,
+        scanStep_of_not_live _ _ hok]
+    rw [step_of_state _ _ stDead hst, tr_dead_mid w k h]
+    refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+    · rw [sweepCfg_state, hokk]
+      rfl
+    · exact hpos
+    · funext i
+      rfl
+    · funext i
+      rw [sweepCfg_workTapePos, sweepCfg_workTapePos, hdk, SignType.coe_zero]
+      omega
+
+end Sweep
 
 end Geb.TreeScanner
