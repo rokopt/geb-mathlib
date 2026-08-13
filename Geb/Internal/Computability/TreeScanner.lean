@@ -7,6 +7,7 @@ module
 
 public import Geb.Internal.Computability.TreeScanner.Machine
 public import Geb.Internal.Computability.TreeScanner.Steps
+public import Geb.Internal.Computability.TreeScanner.Bound
 
 /-!
 # The tree scanner
