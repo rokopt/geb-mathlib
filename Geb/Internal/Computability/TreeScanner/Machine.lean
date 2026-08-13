@@ -224,4 +224,12 @@ theorem sweepCfg_workTapeSymbols_eq (w : List Bool) (k : ℕ) (h : k ≤ w.lengt
 theorem seekCfg_zero (w : List Bool) :
     seekCfg w 0 (Nat.zero_le _) = treeScanner.initCfg (w.map boolEmb) := rfl
 
+/-- At width one no incomplete block survives, so the decision function is the
+pair of conditions the machine computes: whether the scan stayed live, and
+whether the pending count is `1`. -/
+theorem validBool_eq_ok_and_depth (w : List Bool) :
+    binRanked.validBool w = (ok w && depth w == 1) := by
+  unfold RankedAlphabet.validBool ok depth
+  rw [buf_scanFinal_eq_nil, List.isEmpty_nil, Bool.and_true]
+
 end Geb.TreeScanner
