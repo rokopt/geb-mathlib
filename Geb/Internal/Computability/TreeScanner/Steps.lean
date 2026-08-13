@@ -73,7 +73,12 @@ reduce.
 
 A resolution lemma takes no liveness hypothesis. `tr` receives the state
 as an explicit argument, so the resolution cannot consult liveness; the
-state is supplied by the caller from `sweepCfg_state`.
+state is supplied by the caller from `sweepCfg_state_live` or
+`sweepCfg_state_dead`.
+
+The sections group by kind up to the emission facts — `InputSymbol`,
+`Transition`, `OutputSymbol` — and by phase thereafter — `Seek`, `Plant`,
+`Sweep`, `Emission`.
 
 ## Tags
 
@@ -311,18 +316,15 @@ theorem outputSymbol_sweepCfg_succ (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.le
     treeScanner.outputSymbol (sweepCfg w (k + 1) h) = none := by
   unfold outputSymbol
   by_cases hok : ok (w.drop (k + 1)) = true
-  · have hst : (sweepCfg w (k + 1) h).state = some stLive := by
-      rw [sweepCfg_state, ite_eq_left hok]
-    simp only [hst]
+  · simp only [sweepCfg_state_live w (k + 1) h hok]
     cases hbit : w[k] with
     | false => rw [tr_live_leaf w k h hbit]
     | true =>
       by_cases hd : 2 ≤ depth (w.drop (k + 1))
       · rw [tr_live_node_deep w k h hbit hd]
       · rw [tr_live_node_shallow w k h hbit (by omega)]
-  · have hst : (sweepCfg w (k + 1) h).state = some stDead := by
-      rw [sweepCfg_state, ite_eq_right hok]
-    simp only [hst]
+  · rw [Bool.not_eq_true] at hok
+    simp only [sweepCfg_state_dead w (k + 1) h hok]
     rw [tr_dead_mid w k h]
 
 end OutputSymbol
@@ -423,8 +425,7 @@ theorem sweepCfg_step (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
       (by simp only [Ne, Fin.ext_iff, sweepCfg_inputPos_val, Fin.val_zero]; omega)]
     exact Fin.ext (by simp only [sweepCfg_inputPos_val]; omega)
   by_cases hok : ok (w.drop (k + 1)) = true
-  · have hst : (sweepCfg w (k + 1) h).state = some stLive := by
-      rw [sweepCfg_state, ite_eq_left hok]
+  · have hst := sweepCfg_state_live w (k + 1) h hok
     cases hbit : w[k] with
     | false =>
       have hokk : ok (w.drop k) = true := by
@@ -477,16 +478,13 @@ theorem sweepCfg_step (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
           rw [sweepCfg_workTapePos, sweepCfg_workTapePos, hdk, SignType.coe_zero]
           omega
   · rw [Bool.not_eq_true] at hok
-    have hst : (sweepCfg w (k + 1) h).state = some stDead := by
-      rw [sweepCfg_state, hok]
-      rfl
     have hokk : ok (w.drop k) = false := by
       rw [hdrop, ok, RankedAlphabet.scanFinal_cons, scanStep_of_not_live _ _ hok]
       exact hok
     have hdk : depth (w.drop k) = depth (w.drop (k + 1)) := by
       rw [hdrop, depth, depth, RankedAlphabet.scanFinal_cons,
         scanStep_of_not_live _ _ hok]
-    rw [step_of_state _ _ stDead hst, tr_dead_mid w k h]
+    rw [step_of_state _ _ stDead (sweepCfg_state_dead w (k + 1) h hok), tr_dead_mid w k h]
     refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
     · rw [sweepCfg_state, hokk]
       rfl
@@ -529,15 +527,12 @@ section Emission
 theorem sweepCfg_zero_halts (w : List Bool) :
     (treeScanner.step (sweepCfg w 0 (Nat.zero_le _))).state = none := by
   by_cases hok : ok w = true
-  · have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stLive := by
-      rw [sweepCfg_state, List.drop_zero, ite_eq_left hok]
-    rw [step_of_state _ _ stLive hst]
+  · rw [step_of_state _ _ stLive (sweepCfg_state_live w 0 (Nat.zero_le _) hok)]
     by_cases hd : depth w = 1
     · rw [tr_live_end_accept w hd]
     · rw [tr_live_end_reject w hd]
-  · have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stDead := by
-      rw [sweepCfg_state, List.drop_zero, ite_eq_right hok]
-    rw [step_of_state _ _ stDead hst, tr_dead_end]
+  · rw [Bool.not_eq_true] at hok
+    rw [step_of_state _ _ stDead (sweepCfg_state_dead w 0 (Nat.zero_le _) hok), tr_dead_end]
 
 /-- The emitted symbol is the decision function's value: the machine's
 end-of-input cases — dead, live with the second marker under the work head,
@@ -548,19 +543,14 @@ theorem outputSymbol_sweepCfg_zero (w : List Bool) :
   rw [validBool_eq_ok_and_depth]
   unfold outputSymbol
   by_cases hok : ok w = true
-  · have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stLive := by
-      rw [sweepCfg_state, List.drop_zero, ite_eq_left hok]
-    simp only [hst]
+  · simp only [sweepCfg_state_live w 0 (Nat.zero_le _) hok]
     by_cases hd : depth w = 1
     · rw [tr_live_end_accept w hd, hok, hd]
       rfl
     · rw [tr_live_end_reject w hd, hok, beq_eq_false_iff_ne.mpr hd]
       rfl
   · rw [Bool.not_eq_true] at hok
-    have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stDead := by
-      rw [sweepCfg_state, List.drop_zero, hok]
-      rfl
-    simp only [hst]
+    simp only [sweepCfg_state_dead w 0 (Nat.zero_le _) hok]
     rw [tr_dead_end, hok]
     rfl
 

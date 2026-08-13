@@ -1082,9 +1082,11 @@ import-direction rules above are enforced by
   (`seekCfg_state`, `seekCfg_inputPos_val`, `seekCfg_workTapePos`,
   `seekCfg_workTapes`, `plantCfg_state`, `plantCfg_inputPos_val`,
   `plantCfg_workTapePos`, `plantCfg_workTapes`, `sweepCfg_state`,
-  `sweepCfg_inputPos_val`, `sweepCfg_workTapePos`, `sweepCfg_workTapes`) and
-  `sweepCfg`'s work-symbol resolution as `sweepCfg_workTapeSymbols` and its
-  unapplied form `sweepCfg_workTapeSymbols_eq`. `seekCfg_zero` identifies
+  `sweepCfg_inputPos_val`, `sweepCfg_workTapePos`, `sweepCfg_workTapes`),
+  `sweepCfg`'s state at a live and at a failed scan as
+  `sweepCfg_state_live` and `sweepCfg_state_dead`, and `sweepCfg`'s
+  work-symbol function in the unapplied form the transition consumes as
+  `sweepCfg_workTapeSymbols_eq`. `seekCfg_zero` identifies
   `seekCfg w 0` with `treeScanner.initCfg`, and `validBool_eq_ok_and_depth`
   restates `binRanked.validBool` as the pair of conditions — liveness and a
   pending count of `1` — the machine's emitting step computes. A node bit

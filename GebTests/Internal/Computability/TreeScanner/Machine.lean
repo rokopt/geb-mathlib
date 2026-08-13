@@ -26,14 +26,14 @@ public import Geb.Internal.Computability.TreeScanner.Machine
 ## Implementation notes
 
 The module is admitted to `GebMeta.classicalAllowedModules`. Measurement
-(`#print axioms`, equivalently the `lean-lsp` `lean_verify` tool) finds
-`sampleWords` axiom-free but `sampleOutputs` and `sampleOutputs_eq`
-depending on `Classical.choice`: the taint enters through
-`treeScanner.outputString`, which reads the input via
+(`#print axioms`) finds `sampleWords` axiom-free but `sampleOutputs` and
+`sampleOutputs_eq` depending on `Classical.choice`: the taint enters
+through `treeScanner.outputString`, which reads the input via
 `Turing.MultiTapeTM.Cfg.inputSymbol`, the same root `Steps.lean`'s
 implementation notes name for that module's `Classical.choice`
-dependency. The mirror is the `GebTests` parallel of `Steps.lean` in this
-sense, and is admitted on that basis.
+dependency. The module's own subject is the correspondence between
+`treeScanner` and Cslib's `Turing.MultiTapeTM.outputString`, so the
+allowlist's primary criterion covers it outright.
 
 ## Tags
 
@@ -46,7 +46,7 @@ open Geb.TreeScanner Turing MultiTapeTM RankedAlphabet.Binary
 
 /-- The words the mirror checks. -/
 def sampleWords : List (List Bool) :=
-  [[], [false], [true], [true, false], [false, true, false],
+  [[], [false], [true], [false, false], [true, false], [false, true, false],
    [true, true, false, false, false]]
 
 /-- The scanner's output on each sample word. -/
