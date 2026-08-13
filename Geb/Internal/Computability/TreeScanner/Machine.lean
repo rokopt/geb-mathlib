@@ -30,6 +30,14 @@ language.
 
 - `validBool_eq_ok_and_depth` — the decision function as the pair of
   conditions the machine computes.
+- `seekCfg_state`, `seekCfg_inputPos_val`, `seekCfg_workTapePos`,
+  `seekCfg_workTapes`, `plantCfg_state`, `plantCfg_inputPos_val`,
+  `plantCfg_workTapePos`, `plantCfg_workTapes`, `sweepCfg_state`,
+  `sweepCfg_inputPos_val`, `sweepCfg_workTapePos`, `sweepCfg_workTapes` —
+  the field projections of the three configurations.
+- `sweepCfg_workTapeSymbols`, `sweepCfg_workTapeSymbols_eq` — the sweep
+  configuration's work-symbol resolution, applied and unapplied.
+- `seekCfg_zero` — `seekCfg` at index `0` is `treeScanner.initCfg`.
 
 ## Implementation notes
 
@@ -107,5 +115,113 @@ def treeScanner : MultiTapeTM 1 (Fin 2) (Fin 4) where
                     outS := none, q' := some stDead }
       | none => { inputMove := 0, workActions := fun _ ↦ (none, 0),
                   outS := some 0, q' := none }
+
+/-- The configuration after `t` seek steps: the input head at `t + 1`,
+the work tape blank and its head at cell `0`. At `t = 0` this is
+`initCfg`. -/
+def seekCfg (w : List Bool) (t : ℕ) (h : t ≤ w.length) :
+    Cfg 1 (Fin 2) (Fin 4) (w.map boolEmb) where
+  state := some stSeek
+  inputPos := ⟨t + 1, by simp only [List.length_map]; omega⟩
+  workTapes _ _ := none
+  workTapePos _ := 0
+
+/-- The configuration after the seek's exit step: the first marker
+written, the work head at cell `1`, the input head at position
+`w.length`. -/
+def plantCfg (w : List Bool) : Cfg 1 (Fin 2) (Fin 4) (w.map boolEmb) where
+  state := some stPlant
+  inputPos := ⟨w.length, by simp only [List.length_map]; omega⟩
+  workTapes _ z := if z = 0 then some 0 else none
+  workTapePos _ := 1
+
+/-- The configuration at the sweep boundary where `w.drop k` has been
+consumed: the count is that suffix's pending depth and the state is live
+exactly when the suffix's scan has not failed. -/
+def sweepCfg (w : List Bool) (k : ℕ) (h : k ≤ w.length) :
+    Cfg 1 (Fin 2) (Fin 4) (w.map boolEmb) where
+  state := if ok (w.drop k) then some stLive else some stDead
+  inputPos := ⟨k, by simp only [List.length_map]; omega⟩
+  workTapes _ z := if z = 0 then some 0 else if z = 1 then some 1 else none
+  workTapePos _ := (depth (w.drop k) : ℤ)
+
+section CfgProjections
+
+variable (w : List Bool) (t k : ℕ) (h : t ≤ w.length) (h' : k ≤ w.length)
+
+/-- `seekCfg` is in the seeking state. -/
+@[simp] theorem seekCfg_state : (seekCfg w t h).state = some stSeek := rfl
+
+/-- `seekCfg`'s input head is at `t + 1`. -/
+@[simp] theorem seekCfg_inputPos_val : (seekCfg w t h).inputPos.val = t + 1 := rfl
+
+/-- `seekCfg`'s work head is at cell `0`. -/
+@[simp] theorem seekCfg_workTapePos (i : Fin 1) : (seekCfg w t h).workTapePos i = 0 := rfl
+
+/-- `seekCfg`'s work tape is blank everywhere. Not `@[simp]`: a step lemma
+cites this rather than letting `simp` unfold `seekCfg` in place. -/
+theorem seekCfg_workTapes (i : Fin 1) (z : ℤ) : (seekCfg w t h).workTapes i z = none := rfl
+
+/-- `plantCfg` is in the planting state. -/
+@[simp] theorem plantCfg_state : (plantCfg w).state = some stPlant := rfl
+
+/-- `plantCfg`'s input head is at `w.length`. -/
+@[simp] theorem plantCfg_inputPos_val : (plantCfg w).inputPos.val = w.length := rfl
+
+/-- `plantCfg`'s work head is at cell `1`. -/
+@[simp] theorem plantCfg_workTapePos (i : Fin 1) : (plantCfg w).workTapePos i = 1 := rfl
+
+/-- `plantCfg`'s work tape holds the first marker at cell `0` and is blank
+elsewhere. Not `@[simp]`: a step lemma cites this rather than letting
+`simp` unfold `plantCfg` in place. -/
+theorem plantCfg_workTapes (i : Fin 1) (z : ℤ) :
+    (plantCfg w).workTapes i z = if z = 0 then some 0 else none := rfl
+
+/-- `sweepCfg`'s state is live exactly where the consumed suffix's scan
+has not failed. -/
+theorem sweepCfg_state :
+    (sweepCfg w k h').state = if ok (w.drop k) then some stLive else some stDead := rfl
+
+/-- `sweepCfg`'s input head is at `k`. -/
+@[simp] theorem sweepCfg_inputPos_val : (sweepCfg w k h').inputPos.val = k := rfl
+
+/-- `sweepCfg`'s work head is at the consumed suffix's pending depth. -/
+@[simp] theorem sweepCfg_workTapePos (i : Fin 1) :
+    (sweepCfg w k h').workTapePos i = (depth (w.drop k) : ℤ) := rfl
+
+/-- `sweepCfg`'s work tape holds the first marker at cell `0`, the second
+at cell `1`, and is blank elsewhere. Not `@[simp]`: a step lemma cites
+this rather than letting `simp` unfold `sweepCfg` in place. -/
+theorem sweepCfg_workTapes (i : Fin 1) (z : ℤ) :
+    (sweepCfg w k h').workTapes i z = if z = 0 then some 0 else if z = 1 then some 1 else none :=
+  rfl
+
+end CfgProjections
+
+/-- `sweepCfg`'s work symbol separates a pending depth of `0`, of `1`, and
+of at least `2`. -/
+theorem sweepCfg_workTapeSymbols (w : List Bool) (k : ℕ) (h : k ≤ w.length) :
+    (sweepCfg w k h).workTapeSymbols 0 =
+      if depth (w.drop k) = 0 then some 0
+      else if depth (w.drop k) = 1 then some 1 else none := by
+  unfold Cfg.workTapeSymbols sweepCfg
+  dsimp only
+  split_ifs <;> first | rfl | omega
+
+/-- The unapplied form of `sweepCfg_workTapeSymbols`, the form a transition
+resolution against `tr` needs: `tr` takes the work-symbol function, not its
+value at `0`. -/
+theorem sweepCfg_workTapeSymbols_eq (w : List Bool) (k : ℕ) (h : k ≤ w.length) :
+    (sweepCfg w k h).workTapeSymbols =
+      fun _ ↦ if depth (w.drop k) = 0 then some 0
+        else if depth (w.drop k) = 1 then some 1 else none := by
+  funext i
+  unfold Cfg.workTapeSymbols sweepCfg
+  dsimp only
+  split_ifs <;> first | rfl | omega
+
+/-- `seekCfg` at index `0` is `treeScanner`'s initial configuration. -/
+theorem seekCfg_zero (w : List Bool) :
+    seekCfg w 0 (Nat.zero_le _) = treeScanner.initCfg (w.map boolEmb) := rfl
 
 end Geb.TreeScanner
