@@ -38,6 +38,9 @@ twice.
 - `seekCfg_step`, `configs_seek` — the seek phase: one step against the
   closed form, and the configuration and the output at every step up to
   the input's length.
+- `seekCfg_exit`, `plantCfg_step` — the two phase boundaries: the seek's
+  exit step, which writes the first marker, and the planting step, which
+  writes the second and enters the sweep.
 
 ## Implementation notes
 
@@ -355,6 +358,46 @@ theorem configs_seek (w : List Bool) :
     · rw [outputString_succ, ho, hc, outputSymbol_seekCfg]
       rfl
 
+/-- At the input's right end the seek step writes the first marker at cell
+`0`, moves the work head right to cell `1` and the input head left. -/
+theorem seekCfg_exit (w : List Bool) :
+    treeScanner.step (seekCfg w w.length (Nat.le_refl _)) = plantCfg w := by
+  have hpos : moveInputPos (seekCfg w w.length (Nat.le_refl _)).inputPos SignType.neg =
+      (plantCfg w).inputPos := by
+    rw [moveInputPos_neg_of_ne_left _
+      (by simp only [Ne, Fin.ext_iff, seekCfg_inputPos_val, Fin.val_zero]; omega)]
+    exact Fin.ext (by simp only [seekCfg_inputPos_val, plantCfg_inputPos_val]; omega)
+  rw [step_of_state _ _ stSeek (seekCfg_state w w.length (Nat.le_refl _)), tr_seek_exit]
+  refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+  · rfl
+  · exact hpos
+  · funext i z
+    rw [seekCfg_workTapePos, Function.update_apply, seekCfg_workTapes, plantCfg_workTapes]
+  · funext i
+    rfl
+
 end Seek
+
+section Plant
+
+/-- The planting step writes the second marker at cell `1` and returns the
+work head to cell `0`, leaving the input head where it stands. -/
+theorem plantCfg_step (w : List Bool) :
+    treeScanner.step (plantCfg w) = sweepCfg w w.length (Nat.le_refl _) := by
+  have hdepth : depth ([] : List Bool) = 0 := rfl
+  rw [step_of_state _ _ stPlant (plantCfg_state w), tr_plant]
+  refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+  · rw [sweepCfg_state, List.drop_length]
+    rfl
+  · exact moveInputPos_zero _
+  · funext i z
+    rw [plantCfg_workTapePos, Function.update_apply, plantCfg_workTapes, sweepCfg_workTapes]
+    split_ifs <;> first | rfl | omega
+  · funext i
+    rw [sweepCfg_workTapePos, List.drop_length, plantCfg_workTapePos, hdepth,
+      SignType.coe_neg_one]
+    omega
+
+end Plant
 
 end Geb.TreeScanner
