@@ -35,6 +35,9 @@ twice.
   resolved at each case.
 - `outputSymbol_seekCfg`, `outputSymbol_plantCfg`,
   `outputSymbol_sweepCfg_succ` — the configurations that emit nothing.
+- `seekCfg_step`, `configs_seek` — the seek phase: one step against the
+  closed form, and the configuration and the output at every step up to
+  the input's length.
 
 ## Implementation notes
 
@@ -311,5 +314,47 @@ theorem outputSymbol_sweepCfg_succ (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.le
     rw [tr_dead_mid w k h]
 
 end Emission
+
+section Seek
+
+/-- Short of the input's right end one seek step advances the input head by
+one cell and leaves the blank work tape and its head untouched. -/
+theorem seekCfg_step (w : List Bool) (t : ℕ) (h : t + 1 ≤ w.length) :
+    treeScanner.step (seekCfg w t (by omega)) = seekCfg w (t + 1) h := by
+  have hpos : moveInputPos (seekCfg w t (Nat.le_of_lt h)).inputPos SignType.pos =
+      (seekCfg w (t + 1) h).inputPos := by
+    rw [moveInputPos_pos_of_ne_right _
+      (by rw [seekCfg_inputPos_val, List.length_map]; omega)]
+    exact Fin.ext rfl
+  rw [step_of_state _ _ stSeek (seekCfg_state w t (Nat.le_of_lt h)), tr_seek_mid w t h]
+  refine Cfg.ext ?_ ?_ ?_ ?_ <;> dsimp only
+  · rfl
+  · exact hpos
+  · funext i
+    rfl
+  · funext i
+    rfl
+
+/-- The seek phase's configuration and output at every step up to the
+input's length: the closed form of `seekCfg`, and nothing emitted. Both
+conjuncts run in one recursion, the output obligation being what the
+composition across the phase boundary needs alongside the configuration. -/
+theorem configs_seek (w : List Bool) :
+    ∀ t, ∀ h : t ≤ w.length,
+      treeScanner.configs (treeScanner.initCfg (w.map boolEmb)) t = seekCfg w t h ∧
+      treeScanner.outputString (treeScanner.initCfg (w.map boolEmb)) t = [] := by
+  refine Nat.rec ?_ ?_
+  · intro _
+    refine ⟨?_, rfl⟩
+    rw [configs_zero, seekCfg_zero]
+  · intro t ih h
+    obtain ⟨hc, ho⟩ := ih (by omega)
+    refine ⟨?_, ?_⟩
+    · rw [configs_succ_eq_step', hc]
+      exact seekCfg_step w t h
+    · rw [outputString_succ, ho, hc, outputSymbol_seekCfg]
+      rfl
+
+end Seek
 
 end Geb.TreeScanner
