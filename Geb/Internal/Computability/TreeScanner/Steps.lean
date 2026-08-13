@@ -1,0 +1,315 @@
+/-
+Copyright (c) 2026 Terence Rokop. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Terence Rokop
+-/
+module
+
+public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+public import Geb.Internal.Computability.TreeScanner.Machine
+
+/-!
+# The tree scanner's transition, resolved
+
+`treeScanner.tr` resolved at each configuration the machine reaches, one
+statement per case of its transition table, together with the
+input-symbol projections those resolutions consume and the emission facts
+they yield.
+
+`Turing.MultiTapeTM.step` and `Turing.MultiTapeTM.outputSymbol` apply
+`tm.tr q cfg.inputSymbol cfg.workTapeSymbols` to identical arguments, so
+one resolution per case serves both a step lemma and the matching
+no-emission lemma, and the input symbol is resolved once rather than
+twice.
+
+## Main statements
+
+- `step_of_state` — a step from a known state, in the form that names
+  `tr`.
+- `seekCfg_inputSymbol`, `seekCfg_inputSymbol_end`,
+  `sweepCfg_inputSymbol_succ`, `sweepCfg_inputSymbol_zero` — the input
+  symbol at each configuration.
+- `tr_seek_mid`, `tr_seek_exit`, `tr_plant`, `tr_live_leaf`,
+  `tr_live_node_deep`, `tr_live_node_shallow`, `tr_live_end_accept`,
+  `tr_live_end_reject`, `tr_dead_mid`, `tr_dead_end` — the transition
+  resolved at each case.
+- `outputSymbol_seekCfg`, `outputSymbol_plantCfg`,
+  `outputSymbol_sweepCfg_succ` — the configurations that emit nothing.
+
+## Implementation notes
+
+The module is admitted to `GebMeta.classicalAllowedModules`. Its subject
+is the machine's behaviour under `Turing.MultiTapeTM.step`,
+`Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, and
+its statements read the input through
+`Turing.MultiTapeTM.Cfg.inputSymbol`; each of those depends on
+`Classical.choice` through Cslib's `Cfg.inputSymbol` and
+`inputSymbolInner`, so nothing here can be stated choice-free.
+
+`treeScanner`'s transition is an `ite` chain on state equality against
+named definitions wrapping a `match` on `Option (Fin 2)`. Unfolded the
+chain presents as `if ⟨3, _⟩ = ⟨0, _⟩ then …`, which no `simp` set
+resolves and `rfl` does, so each resolution rewrites its arguments to
+literals and closes by `rfl`. Where a case reads the work symbol, an
+equation collapsing the work tape to a constant function comes first:
+rewriting by `sweepCfg_workTapeSymbols_eq` alone leaves an `ite` on an
+opaque depth inside the argument of `tr`, and the transition does not
+reduce.
+
+A resolution lemma takes no liveness hypothesis. `tr` receives the state
+as an explicit argument, so the resolution cannot consult liveness; the
+state is supplied by the caller from `sweepCfg_state`.
+
+## Tags
+
+Turing machine, transition, tree, preorder encoding
+-/
+
+@[expose] public section
+
+namespace Geb.TreeScanner
+
+open Turing MultiTapeTM RankedAlphabet.Binary
+
+/-- A machine's step from a known state, in the form that names `tr`. -/
+theorem step_of_state {k : ℕ} {Symbol State : Type} {input : List Symbol}
+    (tm : MultiTapeTM k Symbol State) (cfg : Cfg k Symbol State input)
+    (q : State) (hq : cfg.state = some q) :
+    tm.step cfg =
+      { state := (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).q'
+        inputPos := moveInputPos cfg.inputPos
+          (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).inputMove
+        workTapes := fun i ↦
+          match ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workActions i).1 with
+          | none => cfg.workTapes i
+          | some s => Function.update (cfg.workTapes i) (cfg.workTapePos i) s
+        workTapePos := fun i ↦ cfg.workTapePos i +
+          ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workActions i).2 } := by
+  unfold step
+  rw [hq]
+  rfl
+
+section InputSymbol
+
+/-- Short of the input's right end the seek configuration reads the bit at
+its own index. -/
+theorem seekCfg_inputSymbol (w : List Bool) (t : ℕ) (h : t < w.length) :
+    (seekCfg w t (Nat.le_of_lt h)).inputSymbol = some (boolEmb w[t]) := by
+  have hi := inputSymbolInner (cfg := seekCfg w t (Nat.le_of_lt h)) t
+    (by rw [seekCfg_inputPos_val]; omega) (by rw [List.length_map]; exact h)
+  rw [hi, List.getElem_map]
+
+/-- At the input's right end the seek configuration reads blank. This takes
+`Turing.MultiTapeTM.Cfg.inputSymbol`'s second guard, an equality at `ℕ`. -/
+theorem seekCfg_inputSymbol_end (w : List Bool) :
+    (seekCfg w w.length (Nat.le_refl _)).inputSymbol = none := by
+  have hend : ((seekCfg w w.length (Nat.le_refl _)).inputPos : ℕ) =
+      (w.map boolEmb).length + 1 := by
+    rw [seekCfg_inputPos_val, List.length_map]
+  unfold Cfg.inputSymbol
+  split_ifs <;> rfl
+
+/-- At a positive index the sweep configuration reads the bit one cell to
+the left of its index. -/
+theorem sweepCfg_inputSymbol_succ (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
+    (sweepCfg w (k + 1) h).inputSymbol = some (boolEmb w[k]) := by
+  have hi := inputSymbolInner (cfg := sweepCfg w (k + 1) h) k
+    (by rw [sweepCfg_inputPos_val]; omega) (by rw [List.length_map]; omega)
+  rw [hi, List.getElem_map]
+
+/-- At the input's left end the sweep configuration reads blank. This takes
+`Turing.MultiTapeTM.Cfg.inputSymbol`'s first guard, an equality at
+`Fin (n + 2)`. -/
+theorem sweepCfg_inputSymbol_zero (w : List Bool) :
+    (sweepCfg w 0 (Nat.zero_le _)).inputSymbol = none := by
+  unfold Cfg.inputSymbol
+  split_ifs with h₁ h₂
+  · rfl
+  · rfl
+  · exact absurd (Fin.ext rfl) h₁
+
+end InputSymbol
+
+section Transition
+
+/-- Short of the input's right end the seek step advances the input head. -/
+theorem tr_seek_mid (w : List Bool) (t : ℕ) (h : t < w.length) :
+    treeScanner.tr stSeek (seekCfg w t (Nat.le_of_lt h)).inputSymbol
+        (seekCfg w t (Nat.le_of_lt h)).workTapeSymbols =
+      { inputMove := 1, workActions := fun _ ↦ (none, 0),
+        outS := none, q' := some stSeek } := by
+  rw [seekCfg_inputSymbol w t h]
+  rfl
+
+/-- At the input's right end the seek step writes the first marker and
+enters the planting state. -/
+theorem tr_seek_exit (w : List Bool) :
+    treeScanner.tr stSeek (seekCfg w w.length (Nat.le_refl _)).inputSymbol
+        (seekCfg w w.length (Nat.le_refl _)).workTapeSymbols =
+      { inputMove := -1, workActions := fun _ ↦ (some (some 0), 1),
+        outS := none, q' := some stPlant } := by
+  rw [seekCfg_inputSymbol_end]
+  rfl
+
+/-- The planting step writes the second marker at cell `1`, returns the work
+head to cell `0` and enters the live state. It is uniform in the input
+symbol: its row of the transition table is a catch-all in the input
+column. -/
+theorem tr_plant (w : List Bool) :
+    treeScanner.tr stPlant (plantCfg w).inputSymbol (plantCfg w).workTapeSymbols =
+      { inputMove := 0, workActions := fun _ ↦ (some (some 1), -1),
+        outS := none, q' := some stLive } := rfl
+
+/-- A live sweep over a leaf bit raises the pending count by one, moving
+the work head right. -/
+theorem tr_live_leaf (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length)
+    (hbit : w[k] = false) :
+    treeScanner.tr stLive (sweepCfg w (k + 1) h).inputSymbol
+        (sweepCfg w (k + 1) h).workTapeSymbols =
+      { inputMove := -1, workActions := fun _ ↦ (none, 1),
+        outS := none, q' := some stLive } := by
+  rw [sweepCfg_inputSymbol_succ, hbit]
+  rfl
+
+/-- A live sweep over a node bit with at least two pending consumes two and
+pushes one, so it stays live and lowers the pending count by one, moving
+the work head left. -/
+theorem tr_live_node_deep (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length)
+    (hbit : w[k] = true) (hd : 2 ≤ depth (w.drop (k + 1))) :
+    treeScanner.tr stLive (sweepCfg w (k + 1) h).inputSymbol
+        (sweepCfg w (k + 1) h).workTapeSymbols =
+      { inputMove := -1, workActions := fun _ ↦ (none, -1),
+        outS := none, q' := some stLive } := by
+  have hw : (sweepCfg w (k + 1) h).workTapeSymbols = fun _ ↦ (none : Option (Fin 2)) := by
+    rw [sweepCfg_workTapeSymbols_eq]
+    funext i
+    split_ifs <;> first | rfl | omega
+  rw [sweepCfg_inputSymbol_succ, hbit, hw]
+  rfl
+
+/-- A live sweep over a node bit with fewer than two pending has met a node
+with too few subterms to its right, and dies. -/
+theorem tr_live_node_shallow (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length)
+    (hbit : w[k] = true) (hd : depth (w.drop (k + 1)) < 2) :
+    treeScanner.tr stLive (sweepCfg w (k + 1) h).inputSymbol
+        (sweepCfg w (k + 1) h).workTapeSymbols =
+      { inputMove := -1, workActions := fun _ ↦ (none, 0),
+        outS := none, q' := some stDead } := by
+  rw [sweepCfg_inputSymbol_succ, hbit]
+  by_cases hd0 : depth (w.drop (k + 1)) = 0
+  · have hw : (sweepCfg w (k + 1) h).workTapeSymbols = fun _ ↦ (some 0 : Option (Fin 2)) := by
+      rw [sweepCfg_workTapeSymbols_eq]
+      funext i
+      split_ifs
+      rfl
+    rw [hw]
+    rfl
+  · have hw : (sweepCfg w (k + 1) h).workTapeSymbols = fun _ ↦ (some 1 : Option (Fin 2)) := by
+      rw [sweepCfg_workTapeSymbols_eq]
+      funext i
+      split_ifs <;> first | rfl | omega
+    rw [hw]
+    rfl
+
+/-- A live sweep at the input's left end with exactly one pending emits
+acceptance and halts. -/
+theorem tr_live_end_accept (w : List Bool) (hd : depth w = 1) :
+    treeScanner.tr stLive (sweepCfg w 0 (Nat.zero_le _)).inputSymbol
+        (sweepCfg w 0 (Nat.zero_le _)).workTapeSymbols =
+      { inputMove := 0, workActions := fun _ ↦ (none, 0),
+        outS := some 1, q' := none } := by
+  have hw : (sweepCfg w 0 (Nat.zero_le _)).workTapeSymbols =
+      fun _ ↦ (some 1 : Option (Fin 2)) := by
+    rw [sweepCfg_workTapeSymbols_eq, List.drop_zero]
+    funext i
+    split_ifs <;> first | rfl | omega
+  rw [sweepCfg_inputSymbol_zero, hw]
+  rfl
+
+/-- A live sweep at the input's left end with a pending count other than one
+emits rejection and halts. -/
+theorem tr_live_end_reject (w : List Bool) (hd : depth w ≠ 1) :
+    treeScanner.tr stLive (sweepCfg w 0 (Nat.zero_le _)).inputSymbol
+        (sweepCfg w 0 (Nat.zero_le _)).workTapeSymbols =
+      { inputMove := 0, workActions := fun _ ↦ (none, 0),
+        outS := some 0, q' := none } := by
+  rw [sweepCfg_inputSymbol_zero]
+  by_cases hd0 : depth w = 0
+  · have hw : (sweepCfg w 0 (Nat.zero_le _)).workTapeSymbols =
+        fun _ ↦ (some 0 : Option (Fin 2)) := by
+      rw [sweepCfg_workTapeSymbols_eq, List.drop_zero]
+      funext i
+      split_ifs
+      rfl
+    rw [hw]
+    rfl
+  · have hw : (sweepCfg w 0 (Nat.zero_le _)).workTapeSymbols =
+        fun _ ↦ (none : Option (Fin 2)) := by
+      rw [sweepCfg_workTapeSymbols_eq, List.drop_zero]
+      funext i
+      split_ifs
+      rfl
+    rw [hw]
+    rfl
+
+/-- A dead sweep short of the input's left end walks on unchanged. -/
+theorem tr_dead_mid (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
+    treeScanner.tr stDead (sweepCfg w (k + 1) h).inputSymbol
+        (sweepCfg w (k + 1) h).workTapeSymbols =
+      { inputMove := -1, workActions := fun _ ↦ (none, 0),
+        outS := none, q' := some stDead } := by
+  rw [sweepCfg_inputSymbol_succ]
+  rfl
+
+/-- A dead sweep at the input's left end emits rejection and halts. -/
+theorem tr_dead_end (w : List Bool) :
+    treeScanner.tr stDead (sweepCfg w 0 (Nat.zero_le _)).inputSymbol
+        (sweepCfg w 0 (Nat.zero_le _)).workTapeSymbols =
+      { inputMove := 0, workActions := fun _ ↦ (none, 0),
+        outS := some 0, q' := none } := by
+  rw [sweepCfg_inputSymbol_zero]
+  rfl
+
+end Transition
+
+section Emission
+
+/-- The seek phase emits nothing, at its exit step as at every other. -/
+theorem outputSymbol_seekCfg (w : List Bool) (t : ℕ) (h : t ≤ w.length) :
+    treeScanner.outputSymbol (seekCfg w t h) = none := by
+  unfold outputSymbol
+  simp only [seekCfg_state]
+  by_cases ht : t = w.length
+  · subst ht
+    rw [tr_seek_exit]
+  · rw [tr_seek_mid w t (by omega)]
+
+/-- The planting step emits nothing. -/
+theorem outputSymbol_plantCfg (w : List Bool) :
+    treeScanner.outputSymbol (plantCfg w) = none := by
+  unfold outputSymbol
+  simp only [plantCfg_state]
+  rw [tr_plant]
+
+/-- The sweep emits nothing short of the input's left end, live or dead. -/
+theorem outputSymbol_sweepCfg_succ (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
+    treeScanner.outputSymbol (sweepCfg w (k + 1) h) = none := by
+  unfold outputSymbol
+  by_cases hok : ok (w.drop (k + 1)) = true
+  · have hst : (sweepCfg w (k + 1) h).state = some stLive := by
+      rw [sweepCfg_state, ite_eq_left hok]
+    simp only [hst]
+    cases hbit : w[k] with
+    | false => rw [tr_live_leaf w k h hbit]
+    | true =>
+      by_cases hd : 2 ≤ depth (w.drop (k + 1))
+      · rw [tr_live_node_deep w k h hbit hd]
+      · rw [tr_live_node_shallow w k h hbit (by omega)]
+  · have hst : (sweepCfg w (k + 1) h).state = some stDead := by
+      rw [sweepCfg_state, ite_eq_right hok]
+    simp only [hst]
+    rw [tr_dead_mid w k h]
+
+end Emission
+
+end Geb.TreeScanner

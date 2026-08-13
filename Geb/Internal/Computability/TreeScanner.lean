@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Internal.Computability.TreeScanner.Machine
+public import Geb.Internal.Computability.TreeScanner.Steps
 
 /-!
 # The tree scanner

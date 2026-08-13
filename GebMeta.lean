@@ -49,12 +49,13 @@ def standardAxioms : NameSet :=
   (({} : NameSet).insert ``propext).insert ``Quot.sound
 
 /-- Exact module names additionally permitted to depend on
-`Classical.choice` (and only `Classical.choice`): the axiom-linter
-test fixture, the categorical wrappers over mathlib's
-`Classical`-dependent category theory, and the parallel test modules
-that exercise those wrappers (a test of a `Classical`-allowed wrapper
-is itself `Classical`-dependent). Feature branches append their own
-wrapper module names together with their test parallels. -/
+`Classical.choice` (and only `Classical.choice`): a module whose subject
+is the correspondence between a concept developed here and a concept of
+an external Lean library (Batteries, mathlib, CSLib) that itself uses
+`Classical.choice`, the `GebTests` parallel of such a module (a test of a
+`Classical`-allowed module is itself `Classical`-dependent), and the
+axiom-linter's own test fixture. Feature branches append the module names
+their own such correspondences occupy. -/
 def classicalAllowedModules : NameSet :=
   [`GebTests.Internal.AxiomLinterClassicalFixture,
    `Geb.Internal.PresheafIRProto.Functor,
@@ -83,7 +84,8 @@ def classicalAllowedModules : NameSet :=
    `Geb.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos,
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos,
    `Geb.Mathlib.CategoryTheory.FinCat.FinCategory,
-   `GebTests.Mathlib.CategoryTheory.FinCat.FinCategory].foldl (·.insert ·)
+   `GebTests.Mathlib.CategoryTheory.FinCat.FinCategory,
+   `Geb.Internal.Computability.TreeScanner.Steps].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
