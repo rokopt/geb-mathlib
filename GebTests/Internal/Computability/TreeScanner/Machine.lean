@@ -31,9 +31,10 @@ The module is admitted to `GebMeta.classicalAllowedModules`. Measurement
 through `treeScanner.outputString`, which reads the input via
 `Turing.MultiTapeTM.Cfg.inputSymbol`, the same root `Steps.lean`'s
 implementation notes name for that module's `Classical.choice`
-dependency. The module's own subject is the correspondence between
-`treeScanner` and Cslib's `Turing.MultiTapeTM.outputString`, so the
-allowlist's primary criterion covers it outright.
+dependency. The module has no choice-free content of its own left to
+state: its subject is the correspondence between `treeScanner` and
+Cslib's `Turing.MultiTapeTM.outputString`, and `sampleWords` is
+packaging, the literal the other two declarations are stated over.
 
 ## Tags
 

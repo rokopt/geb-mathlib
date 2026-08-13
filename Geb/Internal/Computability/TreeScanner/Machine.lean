@@ -16,7 +16,7 @@ A deterministic multi-tape Turing machine deciding
 work head's position, with distinct markers at cells `0` and `1` so that
 one read separates a count of `0`, of `1`, and of `2` or more — the
 three-way distinction a node bit's guard and the final test between them
-require. The machine is the one-counter recognizer for a prefix-code term
+require. The machine is a one-counter recognizer for a prefix-code term
 language.
 
 ## Main definitions

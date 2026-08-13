@@ -17,9 +17,9 @@ the output, and `spaceUsed_linear` supplies the space bound at one work tape.
 
 ## Main statements
 
-- `computableInTimeAndSpace_validBool` — the branch's headline theorem: `binRanked.validBool`,
-  singleton-listed, is `Turing.MultiTapeTM.ComputableInTimeAndSpace` in `fun n ↦ 2 * n + 3` steps
-  and `fun n ↦ 2 * n + 4` cells.
+- `computableInTimeAndSpace_validBool` — `binRanked.validBool`, singleton-listed, is
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` in `fun n ↦ 2 * n + 3` steps and
+  `fun n ↦ 2 * n + 4` cells.
 
 ## Implementation notes
 
