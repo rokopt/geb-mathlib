@@ -1092,8 +1092,12 @@ import-direction rules above are enforced by
   pending count of `1` — the machine's emitting step computes. A node bit
   whose pending count underflows below `2` moves the machine to `stDead`,
   which then walks the input head left, ignoring the work tape, matching
-  `RankedAlphabet.scanStep`'s absorbing failure.
-  `Classical.choice`-free. Depends on Cslib's
+  `RankedAlphabet.scanStep`'s absorbing failure. The source module is
+  `Classical.choice`-free; its
+  `GebTests/Internal/Computability/TreeScanner/Machine.lean` mirror is
+  listed in `GebMeta.classicalAllowedModules`, since it reads the machine's
+  output through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
+  `Classical.choice` through Cslib's `inputSymbolInner`. Depends on Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic` and
   `Geb.Mathlib.Data.Tree.Ranked.Binary`.
 - `Geb/Internal/Computability/TreeScanner/Steps.lean` — the machine's
@@ -1116,12 +1120,12 @@ import-direction rules above are enforced by
   finer-grained substeps. `sweepCfg_zero_halts` and
   `outputSymbol_sweepCfg_zero` are the emitting step at the input's left
   end, and `halts_at` and `outputString_eq` compose the three phases into
-  the halting step count and the emitted output. The source module and its
-  `GebTests/Internal/Computability/TreeScanner/Machine.lean` mirror are
-  listed in `GebMeta.classicalAllowedModules`: their statements read the
+  the halting step count and the emitted output. The source module is
+  listed in `GebMeta.classicalAllowedModules`: its statements read the
   input through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
   `Classical.choice` through Cslib's `inputSymbolInner`. Depends on
-  `Geb.Internal.Computability.TreeScanner.Machine`.
+  `Geb.Internal.Computability.TreeScanner.Machine` and Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Internal/Computability/TreeScanner/Bound.lean` —
   `computableInTimeAndSpace_validBool`: `treeScanner` is
   `Turing.MultiTapeTM.ComputableInTimeAndSpace` at

@@ -451,12 +451,14 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
   the content of their universal properties go in modules choice-free over
   the underlying data; mathlib structures and `Prop` instances go in a
   wrapper whose fields are those terms. Admit to
-  `GebMeta.classicalAllowedModules` only such a wrapper, a
-  module whose subject is the correspondence between a concept developed
-  here and a concept of an external Lean library — Batteries, mathlib,
-  CSLib — that itself uses `Classical.choice`, their `GebTests`
-  parallels, and the linter's own test fixture. A wrapper may carry content
-  where that content cannot be stated choice-free.
+  `GebMeta.classicalAllowedModules` only a module with no choice-free
+  content of its own left to state: such a wrapper, whose content is
+  packaging, or a module whose subject is the correspondence between a
+  concept developed here and a concept of an external Lean library —
+  Batteries, mathlib, CSLib — that itself uses `Classical.choice`; their
+  `GebTests` parallels; and the linter's own test fixture. A module with
+  choice-free content of its own is held to the strict set. A wrapper may
+  carry content where that content cannot be stated choice-free.
 - **Bound `Fin` and `Nat` arithmetic by `omega` or by cases.** Establish a
   bound over individually named hypotheses, or by case analysis, rather
   than by the single lemma that states it: the choice-dependent and

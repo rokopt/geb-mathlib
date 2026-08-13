@@ -659,6 +659,11 @@ repository, so it belongs to neither upstream-eligible subtree and is
 recorded here as its own item. Its pull request description is
 user-authored, per [CONTRIBUTING.md](CONTRIBUTING.md) § Submission policy.
 
+`Geb/Internal/Computability/TreeScanner/Steps.lean`'s `step_of_state`, a
+step from a known state over an arbitrary machine, configuration and state,
+is a second candidate for that pull request: Cslib states `step_of_halt`
+beside it and no companion for a configuration that has not halted.
+
 Neither patch reaches `Turing.MultiTapeTM.spaceUsed`'s `Finset.image` root,
 through `Turing.MultiTapeTM.visitedByTapeHead`: mathlib's `Finset.image`
 depends on `Classical.choice`, a dependence neither this repository nor
