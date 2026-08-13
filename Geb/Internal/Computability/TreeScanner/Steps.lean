@@ -45,6 +45,11 @@ twice.
   closed form, matching the machine's state and work head to the scan's
   liveness and pending count one bit at a time, and the configuration and
   the output at every step down to the input's left end.
+- `sweepCfg_zero_halts`, `outputSymbol_sweepCfg_zero` — the emitting step at
+  the input's left end: the machine halts, and the symbol it emits is
+  `RankedAlphabet.Binary.binRanked.validBool` at the input.
+- `halts_at`, `outputString_eq` — the three phases composed: the machine
+  halts after `2 * w.length + 3` steps having emitted that one symbol.
 
 ## Implementation notes
 
@@ -282,7 +287,7 @@ theorem tr_dead_end (w : List Bool) :
 
 end Transition
 
-section Emission
+section OutputSymbol
 
 /-- The seek phase emits nothing, at its exit step as at every other. -/
 theorem outputSymbol_seekCfg (w : List Bool) (t : ℕ) (h : t ≤ w.length) :
@@ -320,7 +325,7 @@ theorem outputSymbol_sweepCfg_succ (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.le
     simp only [hst]
     rw [tr_dead_mid w k h]
 
-end Emission
+end OutputSymbol
 
 section Seek
 
@@ -517,5 +522,79 @@ theorem configs_sweep (w : List Bool) :
       rfl
 
 end Sweep
+
+section Emission
+
+/-- At the input's left end the machine halts, live or dead. -/
+theorem sweepCfg_zero_halts (w : List Bool) :
+    (treeScanner.step (sweepCfg w 0 (Nat.zero_le _))).state = none := by
+  by_cases hok : ok w = true
+  · have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stLive := by
+      rw [sweepCfg_state, List.drop_zero, ite_eq_left hok]
+    rw [step_of_state _ _ stLive hst]
+    by_cases hd : depth w = 1
+    · rw [tr_live_end_accept w hd]
+    · rw [tr_live_end_reject w hd]
+  · have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stDead := by
+      rw [sweepCfg_state, List.drop_zero, ite_eq_right hok]
+    rw [step_of_state _ _ stDead hst, tr_dead_end]
+
+/-- The emitted symbol is the decision function's value: the machine's
+end-of-input cases — dead, live with the second marker under the work head,
+and live otherwise — are the cases of `ok w && depth w == 1`. -/
+theorem outputSymbol_sweepCfg_zero (w : List Bool) :
+    treeScanner.outputSymbol (sweepCfg w 0 (Nat.zero_le _)) =
+      some (boolEmb (binRanked.validBool w)) := by
+  rw [validBool_eq_ok_and_depth]
+  unfold outputSymbol
+  by_cases hok : ok w = true
+  · have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stLive := by
+      rw [sweepCfg_state, List.drop_zero, ite_eq_left hok]
+    simp only [hst]
+    by_cases hd : depth w = 1
+    · rw [tr_live_end_accept w hd, hok, hd]
+      rfl
+    · rw [tr_live_end_reject w hd, hok, beq_eq_false_iff_ne.mpr hd]
+      rfl
+  · rw [Bool.not_eq_true] at hok
+    have hst : (sweepCfg w 0 (Nat.zero_le _)).state = some stDead := by
+      rw [sweepCfg_state, List.drop_zero, hok]
+      rfl
+    simp only [hst]
+    rw [tr_dead_end, hok]
+    rfl
+
+/-- The machine halts after `2 * w.length + 3` steps: `w.length` seek steps,
+the seek's exit step, the planting step, `w.length` sweep steps, and the
+emitting step. -/
+theorem halts_at (w : List Bool) :
+    (treeScanner.configs (treeScanner.initCfg (w.map boolEmb))
+      (2 * w.length + 3)).state = none := by
+  rw [show 2 * w.length + 3 = w.length + 1 + 1 + w.length + 1 by omega,
+    configs_succ_eq_step', configs_add, configs_succ_eq_step', configs_succ_eq_step',
+    (configs_seek w w.length (Nat.le_refl _)).1, seekCfg_exit, plantCfg_step,
+    (configs_sweep w w.length 0 (by omega)).1]
+  exact sweepCfg_zero_halts w
+
+/-- Over the same `2 * w.length + 3` steps the machine emits one symbol, the
+decision function's value at the input. -/
+theorem outputString_eq (w : List Bool) :
+    treeScanner.outputString (treeScanner.initCfg (w.map boolEmb))
+        (2 * w.length + 3) =
+      [boolEmb (binRanked.validBool w)] := by
+  have hcfg : treeScanner.configs (treeScanner.initCfg (w.map boolEmb)) (w.length + 1 + 1) =
+      sweepCfg w w.length (Nat.le_refl _) := by
+    rw [configs_succ_eq_step', configs_succ_eq_step',
+      (configs_seek w w.length (Nat.le_refl _)).1, seekCfg_exit]
+    exact plantCfg_step w
+  rw [show 2 * w.length + 3 = w.length + 1 + 1 + w.length + 1 by omega, outputString_succ,
+    outputString_add_eq_append, hcfg, configs_add, hcfg,
+    (configs_sweep w w.length 0 (by omega)).2, (configs_sweep w w.length 0 (by omega)).1,
+    outputSymbol_sweepCfg_zero, outputString_succ, outputString_succ, configs_succ_eq_step',
+    (configs_seek w w.length (Nat.le_refl _)).1, (configs_seek w w.length (Nat.le_refl _)).2,
+    seekCfg_exit, outputSymbol_seekCfg, outputSymbol_plantCfg]
+  rfl
+
+end Emission
 
 end Geb.TreeScanner
