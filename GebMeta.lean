@@ -49,13 +49,15 @@ def standardAxioms : NameSet :=
   (({} : NameSet).insert ``propext).insert ``Quot.sound
 
 /-- Exact module names additionally permitted to depend on
-`Classical.choice` (and only `Classical.choice`): a module whose subject
-is the correspondence between a concept developed here and a concept of
-an external Lean library (Batteries, mathlib, CSLib) that itself uses
-`Classical.choice`, the `GebTests` parallel of such a module (a test of a
-`Classical`-allowed module is itself `Classical`-dependent), and the
+`Classical.choice` (and only `Classical.choice`): a module with no
+choice-free content of its own left to state, either because it is a
+wrapper whose content is packaging or because its subject is the
+correspondence between a concept developed here and a concept of an
+external Lean library (Batteries, mathlib, CSLib) that itself uses
+`Classical.choice`; the `GebTests` parallel of such a module (a test of a
+`Classical`-allowed module is itself `Classical`-dependent); and the
 axiom-linter's own test fixture. Feature branches append the module names
-their own such correspondences occupy. -/
+their own such modules occupy. -/
 def classicalAllowedModules : NameSet :=
   [`GebTests.Internal.AxiomLinterClassicalFixture,
    `Geb.Internal.PresheafIRProto.Functor,

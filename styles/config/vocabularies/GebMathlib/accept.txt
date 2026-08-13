@@ -77,11 +77,8 @@ misdescribe
 seek's
 subcase
 subcases
-substep
 substeps
 underflow
 underflows
-unimported
-unallowlisted
 summands
 stdin

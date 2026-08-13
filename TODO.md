@@ -621,13 +621,12 @@ independent of the others and none scheduled.
   form first and derives the `iff` from it in a few lines. A short branch
   of its own.
 
-`BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
-absent from `docs/references.bib`: neither its bibliographic detail nor the
-DLOGTIME-uniform TC⁰ claim attributed to it has been verified against the
-article. The branch that first needs it verifies it against the primary source
-before recording the key, per
-[AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for the succinct
-tree-encoding references
+`BarringtonCorbett1989` is deliberately absent from `docs/references.bib`:
+neither its bibliographic detail nor the DLOGTIME-uniform TC⁰ claim
+attributed to it has been verified against the article. The branch that
+first needs it verifies it against the primary source before recording the
+key, per [AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for
+the succinct tree-encoding references
 `BenoitDemaineMunroRamanRamanRao2005`, `Mehlhorn1980` and
 `BraunmuhlVerbeek1983` — verified but unused, and so added by the branch that
 first cites them.
