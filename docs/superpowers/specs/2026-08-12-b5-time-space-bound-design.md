@@ -930,9 +930,14 @@ The branch is checked by, and is not complete until:
 anything done so far, and the handoff calls the segment exploratory. The
 concrete exposures, each with the measurement that retires it:
 
-- The transition function may not reduce under `simp only` at `Fin`
-  literals, in which case the machine is encoded differently. Stage 0
-  measures three encodings.
+- The transition function may not resolve at `Fin` literals, in which case
+  the machine is encoded differently. Stage 0 measured it on the first of
+  three encodings: the `ite` chain on state equality resolves by `rfl`, and
+  under `simp only` it does not resolve in either direction of the chain, so
+  the encoding stands. The resolution has two levels: each arm of `tr`
+  resolves by `rfl` at literal arguments, and the configuration-level
+  resolution of § The proof architecture is that arm lemma preceded by
+  rewrites of the input-symbol and work-symbol projections.
 - The step lemma may not resolve `Cfg.workTapeSymbols` at an opaque head
   position, which would force a different representation of the count.
   Stage 0 measures it.
@@ -1011,12 +1016,14 @@ to the coefficients of § The statement and to every design assumption
    work tape with two markers, a head position that is an opaque function
    of the step, an emitted symbol chosen by a work-tape read, and two
    composed phases. It measures:
-   - which of three transition encodings reduces under `simp only`: a
+   - which of three transition encodings resolves, and by what tactic: a
      match on `Fin` literals, a match on `Fin.mk` patterns, or a
-     vector-valued `tr` through `Matrix.vecCons`; and in each, whether a
-     branch that ignores the work symbol reduces with that symbol left
-     opaque, and whether a branch that ignores the input symbol reduces
-     with that symbol left opaque, which is what the two constraints of
+     vector-valued `tr` through `Matrix.vecCons`. The first resolves by
+     `rfl` and not by `simp only`, so the other two were not measured; and
+     in the first, whether a branch that ignores the work symbol reduces
+     with that symbol left opaque, and whether a branch that ignores the
+     input symbol reduces with that symbol left opaque, which is what the
+     two constraints of
      § The machine assume;
    - whether a step lemma resolves `Cfg.workTapeSymbols` at an opaque
      head position across a three-way marker split, and what the working
@@ -1047,13 +1054,26 @@ to the coefficients of § The statement and to every design assumption
      from `0` is what removes the shifted index and the `n = 0` route —
      so a negative result costs the two lines of the prototype's route;
    - whether `configs_add` and `outputString_add_eq_append` compose two
-     toy phases, neither having been used by either prototype;
+     toy phases, neither having been used by either prototype. The spike
+     composes one phase theorem with itself, so what it measures is the
+     two lemmas' application and rewrite direction; the handoff between
+     two different configuration families, which is where § The proof
+     architecture's obligation to rewrite by the preceding phase's theorem
+     lives, is unmeasured;
    - whether the two-index motive with `by omega` inside a family
      application elaborates, with both conjuncts bundled;
    - whether a `decide` at the mirror's intended word length closes, and
      at what `maxRecDepth`. This one is measured in the companion module,
      across a module boundary, because that is the condition the mirror
-     faces and an in-module `example` does not.
+     faces and an in-module `example` does not. Stage 0 measured it: the
+     six-word list closes at the default `maxRecDepth`. The spike halts
+     within four steps on every one of the six words, so the remainder of
+     each `2 * |w| + 3` evaluation is halted steps on a tape with one
+     written cell. What the measurement bounds is a short run padded that
+     way; the kernel cost of the scanner's own run, active for all
+     `2 * |w| + 3` steps over a tape that grows with the count, is not
+     measured. § Artifacts states the fallback the mirror takes if it
+     exceeds the budget.
 1. The machine, its four named states, `boolEmb`, the three
    configurations, the `tr`-resolution lemmas, and the seek and plant
    phases' configuration theorem.
