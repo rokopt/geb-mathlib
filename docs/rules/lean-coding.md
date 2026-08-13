@@ -427,9 +427,11 @@ rationale.
   `{propext, Quot.sound}` by default; declarations defined in the
   exact modules listed in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only
-  `Classical.choice`). The allowlist exists so thin wrappers over
-  mathlib's `Classical.choice`-dependent category theory (e.g.
-  `Over`) can reuse it while the constructive core stays strict.
+  `Classical.choice`). The allowlist exists so that a module
+  relating our concepts to a `Classical.choice`-dependent concept
+  of an external Lean library — mathlib's category theory (e.g.
+  `Over`), CSLib's Turing machines — can do so while the
+  constructive core stays strict.
   It runs in CI and the pre-push checklist;
   `scripts/tests/test-axiom-linter.sh` smoke-tests it.
 
@@ -449,8 +451,10 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
   the content of their universal properties go in modules choice-free over
   the underlying data; mathlib structures and `Prop` instances go in a
   wrapper whose fields are those terms. Admit to
-  `GebMeta.classicalAllowedModules` only such a wrapper, a module whose own
-  subject is a `Classical`-dependent mathlib structure, their `GebTests`
+  `GebMeta.classicalAllowedModules` only such a wrapper, a
+  module whose subject is the correspondence between a concept developed
+  here and a concept of an external Lean library — Batteries, mathlib,
+  CSLib — that itself uses `Classical.choice`, their `GebTests`
   parallels, and the linter's own test fixture. A wrapper may carry content
   where that content cannot be stated choice-free.
 - **Bound `Fin` and `Nat` arithmetic by `omega` or by cases.** Establish a
