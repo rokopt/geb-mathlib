@@ -41,9 +41,10 @@ twice.
 - `seekCfg_exit`, `plantCfg_step` — the two phase boundaries: the seek's
   exit step, which writes the first marker, and the planting step, which
   writes the second and enters the sweep.
-- `sweepCfg_step` — the sweep phase: one step against the closed form,
-  matching the machine's state and work head to the scan's liveness and
-  pending count one bit at a time.
+- `sweepCfg_step`, `configs_sweep` — the sweep phase: one step against the
+  closed form, matching the machine's state and work head to the scan's
+  liveness and pending count one bit at a time, and the configuration and
+  the output at every step down to the input's left end.
 
 ## Implementation notes
 
@@ -490,6 +491,30 @@ theorem sweepCfg_step (w : List Bool) (k : ℕ) (h : k + 1 ≤ w.length) :
     · funext i
       rw [sweepCfg_workTapePos, sweepCfg_workTapePos, hdk, SignType.coe_zero]
       omega
+
+/-- The sweep phase's configuration and output at every step down to the
+input's left end: the closed form of `sweepCfg`, and nothing emitted. The
+family descends in its index while the step count ascends, so the motive
+carries the equation linking the two and nothing subtracts. Both conjuncts
+run in one recursion, the output obligation being what the composition
+across the phase boundary needs alongside the configuration. -/
+theorem configs_sweep (w : List Bool) :
+    ∀ j, ∀ k, ∀ h : k + j = w.length,
+      treeScanner.configs (sweepCfg w w.length (Nat.le_refl _)) j =
+          sweepCfg w k (by omega) ∧
+        treeScanner.outputString (sweepCfg w w.length (Nat.le_refl _)) j = [] := by
+  refine Nat.rec ?_ ?_
+  · intro k hk
+    have hkn : k = w.length := by omega
+    subst hkn
+    exact ⟨configs_zero, rfl⟩
+  · intro j ih k hk
+    obtain ⟨hc, ho⟩ := ih (k + 1) (by omega)
+    refine ⟨?_, ?_⟩
+    · rw [configs_succ_eq_step', hc]
+      exact sweepCfg_step w k (by omega)
+    · rw [outputString_succ, ho, hc, outputSymbol_sweepCfg_succ w k (by omega)]
+      rfl
 
 end Sweep
 
