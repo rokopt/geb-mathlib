@@ -1067,6 +1067,78 @@ import-direction rules above are enforced by
   length-prefixed form does not need. No theorem here depends on an
   axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
+- `Geb/Internal/Computability/TreeScanner/Machine.lean` — a deterministic
+  multi-tape Turing machine over Cslib's `Turing.MultiTapeTM` deciding
+  `RankedAlphabet.Binary.binRanked.validBool`. `boolEmb` embeds the input
+  alphabet into the one-tape machine alphabet `Fin 2`; `stSeek`, `stPlant`,
+  `stLive` and `stDead` are the four named states, and `treeScanner` is the
+  machine. The pending count `RankedAlphabet.Binary.depth` tracks is the
+  work head's position: distinct markers at cells `0` and `1` separate a
+  count of `0`, of `1`, and of at least `2` in a single read, avoiding the
+  restoring substeps a mark-based count would need after an
+  overreading subcase. `seekCfg`, `plantCfg` and `sweepCfg` are the
+  closed-form configurations of the seek, plant and sweep phases, with
+  their field projections stated as lemmas
+  (`seekCfg_state`, `seekCfg_inputPos_val`, `seekCfg_workTapePos`,
+  `seekCfg_workTapes`, `plantCfg_state`, `plantCfg_inputPos_val`,
+  `plantCfg_workTapePos`, `plantCfg_workTapes`, `sweepCfg_state`,
+  `sweepCfg_inputPos_val`, `sweepCfg_workTapePos`, `sweepCfg_workTapes`),
+  `sweepCfg`'s state at a live and at a failed scan as
+  `sweepCfg_state_live` and `sweepCfg_state_dead`, and `sweepCfg`'s
+  work-symbol function in the unapplied form the transition consumes as
+  `sweepCfg_workTapeSymbols_eq`. `seekCfg_zero` identifies
+  `seekCfg w 0` with `treeScanner.initCfg`, and `validBool_eq_ok_and_depth`
+  restates `binRanked.validBool` as the pair of conditions — liveness and a
+  pending count of `1` — the machine's emitting step computes. A node bit
+  whose pending count underflows below `2` moves the machine to `stDead`,
+  which then walks the input head left, ignoring the work tape, matching
+  `RankedAlphabet.scanStep`'s absorbing failure. The source module is
+  `Classical.choice`-free; its
+  `GebTests/Internal/Computability/TreeScanner/Machine.lean` mirror is
+  listed in `GebMeta.classicalAllowedModules`, since it reads the machine's
+  output through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
+  `Classical.choice` through Cslib's `inputSymbolInner`. Depends on Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic` and
+  `Geb.Mathlib.Data.Tree.Ranked.Binary`.
+- `Geb/Internal/Computability/TreeScanner/Steps.lean` — the machine's
+  behaviour under `Turing.MultiTapeTM.step`, `.configs` and
+  `.outputString`. `step_of_state` restates a step in the form that names
+  `tr`; `seekCfg_inputSymbol`, `seekCfg_inputSymbol_end`,
+  `sweepCfg_inputSymbol_succ` and `sweepCfg_inputSymbol_zero` are the input
+  symbol at each configuration, and `tr_seek_mid`, `tr_seek_exit`,
+  `tr_plant`, `tr_live_leaf`, `tr_live_node_deep`, `tr_live_node_shallow`,
+  `tr_live_end_accept`, `tr_live_end_reject`, `tr_dead_mid` and
+  `tr_dead_end` resolve the transition across the subcases of state and
+  input symbol, each also discharging the matching no-emission fact
+  (`outputSymbol_seekCfg`, `outputSymbol_plantCfg`,
+  `outputSymbol_sweepCfg_succ`) through the shared argument the two share.
+  `seekCfg_step` and `configs_seek` give the seek phase — one step against
+  the closed form, and the configuration and output at every step up to
+  the input's length; `seekCfg_exit` and `plantCfg_step` are the two phase
+  boundaries; `sweepCfg_step` and `configs_sweep` give the sweep phase in
+  the same shape, one machine step per bit rather than a sequence of
+  finer-grained substeps. `sweepCfg_zero_halts` and
+  `outputSymbol_sweepCfg_zero` are the emitting step at the input's left
+  end, and `halts_at` and `outputString_eq` compose the three phases into
+  the halting step count and the emitted output. The source module is
+  listed in `GebMeta.classicalAllowedModules`: its statements read the
+  input through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
+  `Classical.choice` through Cslib's `inputSymbolInner`. Depends on
+  `Geb.Internal.Computability.TreeScanner.Machine` and Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
+- `Geb/Internal/Computability/TreeScanner/Bound.lean` —
+  `computableInTimeAndSpace_validBool`: `treeScanner` is
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` at
+  `fun w : List Bool ↦ [binRanked.validBool w]`, time bound
+  `fun n ↦ 2 * n + 3` and space bound `fun n ↦ 2 * n + 4`. The time bound
+  is the sum of the seek, plant and sweep phase lengths from `Steps.lean`;
+  the space bound follows from it by `spaceUsed_linear` at one work tape.
+  The source module is listed in `GebMeta.classicalAllowedModules`: its
+  space conjunct rests on `Turing.MultiTapeTM.spaceUsed`, a
+  `Finset.image` through `Turing.MultiTapeTM.visitedByTapeHead`, and
+  mathlib's `Finset.image` depends on `Classical.choice`. Depends on
+  `Geb.Internal.Computability.TreeScanner.Steps` and Cslib's
+  `Computability.Machines.Turing.MultiTape.TapeLemmas`.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,

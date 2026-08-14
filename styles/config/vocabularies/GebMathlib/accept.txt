@@ -70,3 +70,15 @@ unreferenced
 workstream
 workstreams
 Zulip
+allowlist
+allowlisted
+linter's
+misdescribe
+seek's
+subcase
+subcases
+substeps
+underflow
+underflows
+summands
+stdin

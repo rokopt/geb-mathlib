@@ -152,8 +152,10 @@ dependence on what search selects. The module split also bounds the
 allowlist. The boundary is drawn at what can be stated, not at how much a
 module contains: a module reaches `GebMeta.classicalAllowedModules` when it
 has no choice-free content of its own left to state, either because its
-content is packaging or because its subject is a mathlib structure that is
-itself `Classical`-dependent. A module with choice-free content of its own
+content is packaging or because its subject is the correspondence
+between a concept developed here and a concept of an external Lean
+library — Batteries, mathlib, CSLib — that is itself
+`Classical`-dependent. A module with choice-free content of its own
 is held to the strict set, so the constructive core cannot widen by
 accident. The remaining admissions follow from that reading rather than
 extending it: a test parallel inherits the dependence of the module it

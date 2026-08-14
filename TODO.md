@@ -26,7 +26,9 @@
   - [Bellantoni-Cook](#bellantoni-cook)
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
-  - [Extensions of the tree recognizers](#extensions-of-the-tree-recognizers)
+  - [Deferred items from the tree recognizers](#deferred-items-from-the-tree-recognizers)
+  - [A sharper space bound for the tree scanner](#a-sharper-space-bound-for-the-tree-scanner)
+  - [Choice-free patch to Cslib's multi-tape Turing machine API](#choice-free-patch-to-cslibs-multi-tape-turing-machine-api)
   - [Vale configuration](#vale-configuration)
   - [The namespace prefix in a declaration body](#the-namespace-prefix-in-a-declaration-body)
   - [Placement of the choice-free `Nat` residue lemmas](#placement-of-the-choice-free-nat-residue-lemmas)
@@ -513,17 +515,14 @@ Three items, in dependency order, each over its own destination file.
 
 Items over `Geb/Mathlib/Data/Tree/`.
 
-1. Labelled trees, the initial algebra of `Fin k + X × X`, and the
-   corresponding encoding. Requires a decision on the label field's
-   spelling, and a recognizer whose scanning state carries a phase.
-2. Define `ConcreteSyntax.Ast` from the labelled ranked alphabet item 1
-   describes, removing the duplication between them.
-   `Geb/Internal/ConcreteSyntax.lean` carries the initial algebra of
-   `Fin k + X × X` with its own `leaf`, `fork`, induction principle
-   `Ast.ind` and parse/print retraction, so the condition on this item
-   is met; the import rules bar `Geb/Mathlib/` from reaching
-   `Geb/Internal/`, so the dependency runs the other way.
-3. Whether `RankedAlphabet.Term.size`
+1. Define `ConcreteSyntax.Ast` from `RankedAlphabet`, the labelled ranked
+   alphabet documented in [docs/index.md](docs/index.md), removing the
+   duplication between them. `Geb/Internal/ConcreteSyntax.lean` carries the
+   initial algebra of `Fin k + X × X` with its own `leaf`, `fork`,
+   induction principle `Ast.ind` and parse/print retraction, so the
+   condition on this item is met; the import rules bar `Geb/Mathlib/` from
+   reaching `Geb/Internal/`, so the dependency runs the other way.
+2. Whether `RankedAlphabet.Term.size`
    (`Geb/Mathlib/Data/Tree/Ranked/Basic.lean`), which counts leaves alongside
    internal nodes, should be stated through a transfer to mathlib's
    `BinaryTree.numNodes`, and whether the name `size` survives beside
@@ -531,7 +530,7 @@ Items over `Geb/Mathlib/Data/Tree/`.
    `Geb/Mathlib/Data/Tree/Ranked/Binary.lean` presents the two-symbol
    alphabet's terms as the unlabelled binary trees, in the same
    `Mathlib/Data/Tree/` file-path family `BinaryTree` occupies.
-4. Relate `binRanked.spell` to `DyckWord.equivTree`, connecting this
+3. Relate `binRanked.spell` to `DyckWord.equivTree`, connecting this
    encoding to mathlib's Catalan-number apparatus. Wanted only if a
    counting result is ever needed.
 
@@ -552,8 +551,8 @@ destination.
    the split point.
 2. Extract the unfolding and environment lemmas into their own module
    once a second Bellantoni-Cook function needs them.
-3. The labelled variant, tracking the corresponding item in
-   § Binary trees and their preorder encoding.
+3. The labelled variant, tracking `RankedAlphabet`, the labelled ranked
+   alphabet documented in [docs/index.md](docs/index.md).
 4. Verify the claim of [DalLagoMartiniZorzi2010] § 1 that polynomiality
    extends to constructors `s₁ × ⋯ × sₙ → s` under the constraint that
    `s` occurs at most once among the `sᵢ`. Nothing in the design depends
@@ -569,151 +568,107 @@ destination.
    representation strategy used here, in which the program is the term.
    Any pursuit of this item begins by verifying both claims against
    primary sources.
-6. Route A: proving a time and space bound for a tree recognizer against
-   `Cslib.Computability.Machines.Turing.MultiTape.Deterministic`'s
-   `ComputableInTimeAndSpace`. That module supplies `MultiTapeTM`, `Cfg`,
-   `step`, `configs`, `spaceUsed` and `visitedByTapeHead` among others,
-   but no machine constructions, worked examples or composition
-   combinators. Three constraints: the subtree rules place any statement
-   relating `binRanked.Valid` to that predicate in `Geb/Internal/`, since
-   `Geb/Cslib/` may not import `Geb.Mathlib.*` and `Geb/Mathlib/` may not
-   import `Cslib.*`; `DecidableInTimeAndSpace` is stated over
-   `Turing.MultiTapeTM.indicator`, an `open Classical in noncomputable
-   def`, so `ComputableInTimeAndSpace` over a decidable indicator is the
-   form to use; and the result speaks of one machine and one language,
-   not of any function-algebra expression.
 
-### Extensions of the tree recognizers
+### Deferred items from the tree recognizers
 
-Branches over `Geb/Mathlib/Data/Tree/`,
-`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/` answer the four
-investigations this entry previously recorded: labelled leaves and ranked
-alphabets are one construction and are B1; the generic iterator is B3; the
-sharper cost bound is B5. They subsume the labelled-tree items recorded under
-§ Binary trees and their preorder encoding and § The Bellantoni-Cook tree
-recognizer, and the tree recursor recorded under the latter.
+Deferred while the ranked-tree recognizers over `Geb/Mathlib/Data/Tree/`,
+`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/` were built, each
+independent of the others and none scheduled.
 
-The unifying object is a right-to-left scan whose state holds one stack cell
-per pending subterm. The recognizer in
-`Geb/Mathlib/Computability/Cobham/Tree.lean` is that scan at code width one
-with an empty payload, up to the state its failure is recorded in.
+- The Bellantoni-Cook port of the scan combinator, whose signature is over
+  arities in normal and safe position and so is a branch rather than a
+  transcription; the paramorphism whose step receives a subterm's
+  spelling, which the head-locality of the state layout admits only at
+  quadratic cost; a fold at an infinite carrier, which needs the `smash`
+  generator; and the depth-first unary degree sequence encoding, whose
+  condition for adoption is unbounded arity.
+- `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate `constAtOf`, and
+  its `predPred` duplicates `predIter 2`. Substituting the general form is
+  definitionally transparent — `oneAtRaw`, `falseAtRaw` and `predPredRaw`
+  reduce to the corresponding `prependRaw`/`predIterRaw` applications by
+  `rfl`, so `combSem_nil` and `isTreeSem_eq_eval` read through the
+  substitution unchanged. Each is left in place because removing the
+  duplication is a separate concern, not because the substitution is
+  risky.
+- Whether `Cobham/Tree.lean`'s `combSem`, a parameterless `def`, generates
+  an equation lemma the way `RankedTree.lean`'s `rankedSem` does.
+  `combSem_def`'s docstring states that a `def` carries no equation
+  lemma, while `length_rankedSem_le` here rewrites by `rankedSem`'s
+  generated one; whether the same holds of `combSem` is untried. Check
+  whether `rw [combSem]` closes where `combSem_def` is used, and correct
+  the docstring in `Cobham/Tree.lean` only if it does. A short branch of
+  its own either way.
+- Whether `Cobham/Tree.lean`'s recognizer `isTree` is redundant beside
+  `Cobham/RankedTree.lean`'s `isRanked` at `binRanked`, now that
+  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem` identifies the
+  languages the two accept. `isTree_smashFree` and the [Strahm2003]
+  Theorem 1(2) corollary it supports are the residue that is not:
+  `isRanked` at `binRanked` is not itself shown `SmashFree`, so the
+  polynomial-time-and-linear-space membership `Cobham/Tree.lean` states
+  has no counterpart in `Cobham/RankedTree.lean`.
+- A sweep-scale cross-check of `Cobham.isTreeSem` against
+  `binRanked.validBool`, beyond length six. At length six and below it
+  follows from `GebTests/Mathlib/Computability/Cobham/RankedTree.lean`'s
+  `isRankedSem_eq_validBool_binRanked` together with the bridge theorem
+  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem`, so the deferral is
+  worth taking only above that budget. A lighter computation was measured
+  reaching the 200000-heartbeat `isDefEq` limit at 511 words, so a sweep
+  above length seven may not elaborate at all.
+- Aligning `Geb/Mathlib/Computability/BellantoniCook/Tree.lean`'s
+  `isTreeSem_eq_singleton_iff_valid` and `isTreeSem_eq_ite`, which each
+  carry the same `ok`/`depth` case analysis rather than sharing it, with
+  `Geb/Mathlib/Computability/Cobham/Tree.lean`, which states the `ite`
+  form first and derives the `iff` from it in a few lines. A short branch
+  of its own.
 
-- **B1 is done.** `Geb/Mathlib/Data/Tree/Ranked/` gives `RankedAlphabet` and
-  its term algebra, the preorder encoding `spell` and its fuel-bounded
-  recursive descent, the validity scan, `valid_iff_exists_spell` identifying
-  the encoding's image with the scan's language, and
-  `RankedAlphabet.Binary.binRanked`, the two-symbol instance, with the
-  counter form the scan reduces to at width one
-  (`RankedAlphabet.Binary.depth`, `RankedAlphabet.Binary.ok`,
-  `valid_iff_ok_and_depth_eq_one`) that a recognizer over the encoding is
-  stated against. See [docs/index.md](docs/index.md).
-- **B2 is done.** `Geb/Mathlib/Computability/Cobham/Scan.lean` gives the
-  scan combinator `scanRaw`, its fold characterization `scanSem_eq`, and
-  the recognizer's scan in `Geb/Mathlib/Computability/Cobham/Tree.lean`
-  rebuilt on it. See [docs/index.md](docs/index.md).
-- **The case combinator is done.**
-  `Geb/Mathlib/Computability/Cobham/Cases.lean` gives definition by cases over
-  a fixed number of scrutinee bits, and `Cobham/Basic.lean` the constant-word,
-  iterated-predecessor and diagonal combinators its branches are built from.
-  B6 and B3 both consume them. See [docs/index.md](docs/index.md).
-- **B6 is done.** `Geb/Mathlib/Computability/Cobham/RankedTree.lean` gives
-  the generic ranked recognizer as an expression of `C`: `stateWord` lays
-  `RankedAlphabet.Scan` out as a bitstring, `rankedStep` dispatches on a
-  bounded prefix of it with the case combinator, and `rankedSem`/`ranked`
-  carry the recursion with `Cobham.scan`.
-  `isRankedSem_eq_singleton_iff_valid` identifies the recognizer with
-  `RankedAlphabet.Valid`, and
-  `isRankedSem_binRanked_eq_singleton_iff_isTreeSem` recovers the language
-  `Cobham/Tree.lean`'s recognizer accepts at the two-symbol alphabet. See
-  [docs/index.md](docs/index.md).
-- **B3 is done.** `Geb/Mathlib/Computability/Cobham/Fold.lean` gives the
-  catamorphism at a carrier admitting a `p`-bit encoding as an expression of
-  `C`: `foldStep` dispatches on the state's bits with the case combinator and
-  `fold` carries the recursion with `Cobham.scan`. `foldSem_eq` identifies the
-  value with the carrier-level `w.foldr step init`, encoded, under the
-  retraction hypothesis. The encoding is not named: it is
-  `List.ofFn (enc a)`, and the type distinction survives, `foldSem … ![w]`
-  being a `List Bool` and `w.foldr step init` an `α`. See
-  [docs/index.md](docs/index.md).
-- **B4 is done.** `Geb/Mathlib/Data/Tree/Binary.lean` and
-  `Geb/Mathlib/Data/Tree/Preorder.lean` are deleted;
-  `RankedAlphabet.Binary.binRanked.Term`, with `spell`, `parse` and
-  `Valid`, is the unlabelled binary-tree encoding's sole remaining home
-  under `Geb/Mathlib/`. See [docs/index.md](docs/index.md).
-- **B5**, depending on B2: `Geb/Internal/` — linear time and space against
-  Cslib's `MultiTapeTM`, over `ComputableInTimeAndSpace` applied to a
-  computable decision function rather than `DecidableInTimeAndSpace`, whose
-  `indicator` is `noncomputable` and `Classical`. `ComputableInTimeAndSpace`
-  takes three arguments and existentially quantifies the machine alphabet, and
-  the function it is applied to returns a list rather than a `Bool`; the
-  embedding is of input and output, and it is the existential alphabet, not
-  the embedding, that admits wide work-tape symbols. `Geb/Mathlib/` may not
-  import `Cslib.*` and `Geb/Cslib/` may not import `Geb.Mathlib.*`, so the
-  statement is confined to `Geb/Internal/`. This branch differs in kind from
-  the others and its difficulty is unbounded by anything done so far; B1 to B4
-  stand without it.
-
-Deferred: the Bellantoni-Cook port of the scan combinator, whose signature
-is over arities in normal and safe position and so is a branch rather than
-a transcription; the paramorphism whose step receives a subterm's
-spelling, which the head-locality of the state layout admits only at
-quadratic cost; a fold at an infinite carrier, which needs the `smash`
-generator; and the depth-first unary degree sequence encoding, whose
-condition for adoption is unbounded arity.
-
-Also deferred: `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate
-`constAtOf`, and its `predPred` duplicates `predIter 2`. Substituting the
-general form is definitionally transparent — `oneAtRaw`, `falseAtRaw` and
-`predPredRaw` reduce to the corresponding `prependRaw`/`predIterRaw`
-applications by `rfl`, so `combSem_nil` and `isTreeSem_eq_eval` read through
-the substitution unchanged. Each is left in place because removing the
-duplication is a separate concern from this branch's, not because the
-substitution is risky.
-
-Also deferred: whether `Cobham/Tree.lean`'s `combSem`, a parameterless `def`,
-generates an equation lemma the way `RankedTree.lean`'s `rankedSem` does.
-`combSem_def`'s docstring states that a `def` carries no equation lemma, while
-`length_rankedSem_le` here rewrites by `rankedSem`'s generated one; whether the
-same holds of `combSem` is untried. Check whether `rw [combSem]` closes where
-`combSem_def` is used, and correct the docstring in `Cobham/Tree.lean` only if
-it does. A short branch of its own either way.
-
-Also deferred: whether `Cobham/Tree.lean`'s recognizer `isTree` is redundant
-beside `Cobham/RankedTree.lean`'s `isRanked` at `binRanked`, now that
-`isRankedSem_binRanked_eq_singleton_iff_isTreeSem` identifies the languages
-the two accept. `isTree_smashFree` and the [Strahm2003] Theorem 1(2)
-corollary it supports are the residue that is not: `isRanked` at `binRanked`
-is not itself shown `SmashFree`, so the polynomial-time-and-linear-space
-membership `Cobham/Tree.lean` states has no counterpart in
-`Cobham/RankedTree.lean`.
-
-Also deferred: a sweep-scale cross-check of `Cobham.isTreeSem` against
-`binRanked.validBool`, beyond length six. At length six and below it follows
-from `GebTests/Mathlib/Computability/Cobham/RankedTree.lean`'s
-`isRankedSem_eq_validBool_binRanked` together with the bridge theorem
-`isRankedSem_binRanked_eq_singleton_iff_isTreeSem`, so the deferral is worth
-taking only above that budget. A lighter computation was measured reaching
-the 200000-heartbeat `isDefEq` limit at 511 words, so a sweep above length
-seven may not elaborate at all.
-
-Also deferred: aligning
-`Geb/Mathlib/Computability/BellantoniCook/Tree.lean`'s
-`isTreeSem_eq_singleton_iff_valid` and `isTreeSem_eq_ite`, which each carry
-the same `ok`/`depth` case analysis rather than sharing it, with
-`Geb/Mathlib/Computability/Cobham/Tree.lean`, which states the `ite` form
-first and derives the `iff` from it in a few lines. A short branch of its
-own.
-
-`BarringtonCorbett1989` is a candidate reference for B5 and is deliberately
-absent from `docs/references.bib`: neither its bibliographic detail nor the
-DLOGTIME-uniform TC⁰ claim attributed to it has been verified against the
-article. The branch that first needs it verifies it against the primary source
-before recording the key, per
-[AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for the succinct
-tree-encoding references
+`BarringtonCorbett1989` is deliberately absent from `docs/references.bib`:
+neither its bibliographic detail nor the DLOGTIME-uniform TC⁰ claim
+attributed to it has been verified against the article. The branch that
+first needs it verifies it against the primary source before recording the
+key, per [AGENTS.md](AGENTS.md) § Verify agent claims. The same holds for
+the succinct tree-encoding references
 `BenoitDemaineMunroRamanRamanRao2005`, `Mehlhorn1980` and
 `BraunmuhlVerbeek1983` — verified but unused, and so added by the branch that
 first cites them.
+
+### A sharper space bound for the tree scanner
+
+`Geb/Internal/Computability/TreeScanner/Bound.lean`'s
+`computableInTimeAndSpace_validBool` gives a space bound affine in the step
+count. A sharper bound, `spaceUsed ≤ n + 2`, follows from
+`RankedAlphabet.Binary.depth_le_length` and a computation of
+`Turing.MultiTapeTM.visitedByTapeHead` as a `Finset` image, since the count
+never exceeds the word length and the plant step's excursion to cell `1`
+adds nothing above that except at `n = 0`.
+
+Pursuing it raises whether `treeScanner`'s marks representation — the
+pending count as the work head's position, as opposed to a run of marks
+read off the tape — would then be preferable, since a sharper bound wanting
+the count readable from the tape rather than from the head position would
+need it.
+
+### Choice-free patch to Cslib's multi-tape Turing machine API
+
+Cleaning the first root is one line in
+`Turing.MultiTapeTM.Cfg.inputSymbol`'s index bound, verified to leave all of
+Cslib building; cleaning the third is a reproof of
+`Turing.MultiTapeTM.inputSymbolInner`, not yet attempted. Both together
+would make the time-side API choice-free for downstream users; either alone
+would not. It is a Cslib pull request rather than content of this
+repository, so it belongs to neither upstream-eligible subtree and is
+recorded here as its own item. Its pull request description is
+user-authored, per [CONTRIBUTING.md](CONTRIBUTING.md) § Submission policy.
+
+`Geb/Internal/Computability/TreeScanner/Steps.lean`'s `step_of_state`, a
+step from a known state over an arbitrary machine, configuration and state,
+is a second candidate for that pull request: Cslib states `step_of_halt`
+beside it and no companion for a configuration that has not halted.
+
+Neither patch reaches `Turing.MultiTapeTM.spaceUsed`'s `Finset.image` root,
+through `Turing.MultiTapeTM.visitedByTapeHead`: mathlib's `Finset.image`
+depends on `Classical.choice`, a dependence neither this repository nor
+Cslib can remove without redefining the space measure. See § Triggers (do
+when condition fires), below.
 
 ### Vale configuration
 
@@ -891,6 +846,20 @@ practice settles either question. Settle both.
   `Geb/Mathlib/Data/Fin/Basic.lean` and its test parallel are deleted and
   `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean` is restated over `Fin.divNat`,
   `Fin.modNat` and `Fin.mkDivMod`.
+- **Choice-free tree-scanner allowlist entries**:
+  `Geb/Internal/Computability/TreeScanner/Steps.lean`, `Bound.lean` and the
+  `GebTests/Internal/Computability/TreeScanner/Machine.lean` mirror are in
+  `GebMeta.classicalAllowedModules` because Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol` and
+  `Turing.MultiTapeTM.inputSymbolInner` depend on `Classical.choice` (see
+  § Choice-free patch to Cslib's multi-tape Turing machine API). Trigger:
+  both are cleaned upstream and the pin moves past them, at which point
+  `Steps.lean` and the mirror recover choice-free content of their own;
+  leaving their entries in place past that point would misdescribe the
+  allowlist's criterion, so the entries are removed, leaving only
+  `Bound.lean` admitted — `Turing.MultiTapeTM.spaceUsed`'s `Finset.image`
+  root is a separate, unremovable dependence that keeps `Bound.lean`
+  admitted regardless.
 - **`lake shake --keep-implied` versus mathlib CI's plain `lake shake`**: a
   repo-wide decision, on a separate branch, on whether to drop `--keep-implied`
   from `scripts/pre-push.sh:42` and minimise imports across the affected files,
