@@ -26,6 +26,7 @@
   - [Bellantoni-Cook](#bellantoni-cook)
   - [Binary trees and their preorder encoding](#binary-trees-and-their-preorder-encoding)
   - [The Bellantoni-Cook tree recognizer](#the-bellantoni-cook-tree-recognizer)
+  - [The fold over recognized terms](#the-fold-over-recognized-terms)
   - [Deferred items from the tree recognizers](#deferred-items-from-the-tree-recognizers)
   - [A sharper space bound for the tree scanner](#a-sharper-space-bound-for-the-tree-scanner)
   - [Choice-free patch to Cslib's multi-tape Turing machine API](#choice-free-patch-to-cslibs-multi-tape-turing-machine-api)
@@ -569,6 +570,70 @@ destination.
    Any pursuit of this item begins by verifying both claims against
    primary sources.
 
+### The fold over recognized terms
+
+`Geb/Internal/Computability/CobhamFoldProto/` generalizes
+`Cobham/RankedTree.lean`'s recognizer to a fold at an algebra of the ranked
+alphabet, computing `RankedAlphabet.parse` followed by the algebra morphism out
+of the term algebra. It carries two constructions over one semantic core: one at
+a carrier with a fixed-width bit encoding, whose steps dispatch on a constant
+window, and one at the carrier `List Bool` with the algebra's operations
+supplied as expressions of the class. Each is tied to the shared semantic layer
+separately — `foldOutSem_eq` and `foldOutSemV_eq` — and
+`foldOut_algOfFixed` relates the folds their algebras denote there, up to
+the encoding, at a carrier that stays within a fixed width. The output words
+agree on an accepted word; on a rejected one they differ at `p > 0`, the
+fixed-width construction emitting `false :: List.replicate p false` where the
+bitstring construction emits `[false]`, and coincide at `p = 0`.
+The agreement is therefore stated at the `Option` level. These items remain
+before any of it is upstream-eligible.
+
+- Neither construction is exercised on an input at the expression level. The
+  samples evaluate the semantic fold, and the `decide` on `unitExpr` checks
+  tree shape rather than value, so no expression's output word has been computed
+  from an input word.
+- The bitstring construction's smash-freeness is conditional on the algebra's:
+  `smashFree_foldOutExprV` assumes each `algOf i` smash-free, the expressions
+  being spliced into the tree unconstrained. Whether the linear-growth
+  condition that `stackSize_le_of_growth` consumes itself forces the algebra
+  into the subalgebra is unestablished, as is the converse of
+  `smashFree_foldOutExprV`. That superlinear growth of the fold's values forces
+  `smash`, `concat` giving only linear multiples of the input, is argued
+  informally and formalized nowhere.
+- The fixed-width construction does not scale in the carrier's width. Its
+  dispatch tree has `2 ^ dispatchWidthF` branches and, `Cobham.casesRaw`
+  recursing with three children per level, a normal form growing by about a
+  factor of three per bit of dispatch width. The term itself elaborates at any
+  width, `Cobham.casesOf` taking its branch family as a function; what the width
+  ends is normalization, a `decide` about the term exceeding the default
+  heartbeat budget from a dispatch width of eleven, so beyond a carrier of a few
+  bits every statement must be symbolic. The bitstring construction has no such
+  growth, its dispatch reading only the flag, the slot and the count; its cost
+  is in time instead, each step walking the state.
+- Three parameterizations the prototype introduces belong upstream, each in the
+  merged module whose special case it generalizes: the bound child and the
+  arity-two scan node `scan2Raw` into
+  `Geb/Mathlib/Computability/Cobham/Scan.lean`, and the state decoder's window
+  into `Geb/Mathlib/Computability/Cobham/RankedTree.lean`, whose
+  `Cobham.decodeState` is `Geb.CobhamFold.decodeVAt` at the dispatch window and
+  shares its body verbatim. `scanBRaw_boundRaw` identifies `Cobham.scanRaw` as the
+  additive instance, so the substitution is definitionally transparent, but it
+  touches merged modules and the consumers `Cobham/Tree.lean`,
+  `Cobham/RankedTree.lean`, `Cobham/Fold.lean` and
+  `GebTests/Mathlib/Computability/Cobham/Scan.lean`.
+- A general-alphabet, general-carrier Turing machine for the linear-time bound.
+  `Geb/Internal/Computability/TreeScanner/` decides `binRanked.validBool` in
+  `2 * n + 3` steps with the pending count as the work head's position, writing
+  no work cell outside the two it marks; a fold needs the stack's contents on
+  the tape. A machine reading them costs `(2 + R.maxArity / R.width) * n` steps
+  and `n / R.width` work cells, which at `binRanked` is worse than the existing
+  machine, and a general-alphabet recognizer machine is a prerequisite. Nothing
+  of this is formalized, beyond the work-cell count, which is
+  `Geb.CobhamFold.width_mul_depth_scanFinal_le` applied to each suffix of the
+  input. The machine sketch applies at a finite carrier only, its state count
+  being `|α| ^ R.maxArity` and its work alphabet `|α|` and a constant; the
+  bitstring construction's steps are not constant-time in any case.
+
 ### Deferred items from the tree recognizers
 
 Deferred while the ranked-tree recognizers over `Geb/Mathlib/Data/Tree/`,
@@ -579,9 +644,26 @@ independent of the others and none scheduled.
   arities in normal and safe position and so is a branch rather than a
   transcription; the paramorphism whose step receives a subterm's
   spelling, which the head-locality of the state layout admits only at
-  quadratic cost; a fold at an infinite carrier, which needs the `smash`
-  generator; and the depth-first unary degree sequence encoding, whose
-  condition for adoption is unbounded arity.
+  quadratic cost; and the depth-first unary degree sequence encoding, whose
+  condition for adoption is unbounded arity. The fold at an infinite carrier is
+  built, at the carrier `List Bool`, by
+  `Geb/Internal/Computability/CobhamFoldProto/Variable.lean`, and
+  `smashFree_foldOutExprV` shows it smash-free when the algebra's own
+  expressions are, the machinery contributing only `comp`, `proj`, `succ`,
+  `zero`, `concat` and `boundedRec` nodes and the algebra's expressions being
+  spliced in unconstrained. So an infinite carrier does not by itself force the
+  generator.
+- `Cobham/RankedTree.lean` and `Cobham/Fold.lean` say `DecidableEq (Fin n →
+  Bool)` resolves through `Fintype.decidablePiFintype`. It resolves through
+  `Geb/Mathlib/Data/FinEnum.lean`'s choice-free `FinEnum.decidablePiFinEnum` at
+  mathlib's `FinEnum.fin`, which is where the `Classical.choice` dependence
+  enters; the conclusion each module draws is unaffected. Correcting merged
+  upstream-eligible modules is a branch of its own.
+- `Cobham/Tree.lean`'s `isTree_smashFree` names the predicate `Cobham.SmashFree`
+  subject-first, where mathlib's naming guide names a theorem by its conclusion
+  read in order, giving the `smashFree_isTree` form that
+  `Geb/Internal/Computability/CobhamFoldProto/` uses throughout. Renaming it
+  touches a merged upstream-eligible module, so it is a branch of its own.
 - `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate `constAtOf`, and
   its `predPred` duplicates `predIter 2`. Substituting the general form is
   definitionally transparent — `oneAtRaw`, `falseAtRaw` and `predPredRaw`
@@ -605,7 +687,12 @@ independent of the others and none scheduled.
   Theorem 1(2) corollary it supports are the residue that is not:
   `isRanked` at `binRanked` is not itself shown `SmashFree`, so the
   polynomial-time-and-linear-space membership `Cobham/Tree.lean` states
-  has no counterpart in `Cobham/RankedTree.lean`.
+  has no counterpart in `Cobham/RankedTree.lean`. What that deferral lacks, a
+  symbolic route in place of the kernel evaluation `decide` performs, is
+  available in `Geb/Internal/Computability/CobhamFoldProto/SmashFree.lean` as
+  `instFinEnumSigB`, `smashFreeBool_mk_iff` and the branch-family recursion
+  `smashFreeBool_casesRaw`, though the subtree import rules keep
+  `Cobham/RankedTree.lean` from citing them.
 - A sweep-scale cross-check of `Cobham.isTreeSem` against
   `binRanked.validBool`, beyond length six. At length six and below it
   follows from `GebTests/Mathlib/Computability/Cobham/RankedTree.lean`'s

@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Internal.Computability.CobhamFoldProto
 public import Geb.Internal.Computability.TreeScanner
 
 /-!

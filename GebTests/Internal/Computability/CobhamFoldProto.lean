@@ -5,9 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Internal.Computability.CobhamFoldProto
-import GebTests.Internal.Computability.TreeScanner
+import GebTests.Internal.Computability.CobhamFoldProto.Fold
 
 /-!
-# Computability tests — index
+# The fold over recognized terms — tests index
 -/

@@ -1248,7 +1248,6 @@ import-direction rules above are enforced by
   `SmashFree (isRanked R)` is stated; `Cobham/Tree.lean` keeps the subject of
   `isTree_smashFree` and the
   [Strahm2003] Theorem 1(2) reasoning. Depends on
-  `Geb.Mathlib.Computability.Cobham.Cases`,
   `Geb.Mathlib.Computability.Cobham.Tree` and
   `Geb.Mathlib.Data.Tree.Ranked.Binary`. `Classical.choice`-free.
 - `Geb/Mathlib/Computability/Cobham/Fold.lean` — the catamorphism of a list of
@@ -1266,3 +1265,172 @@ import-direction rules above are enforced by
   arbitrary and carries no `Fintype` or `FinEnum` instance; its finiteness
   enters only through `enc`. Depends on
   `Geb.Mathlib.Computability.Cobham.Cases`. `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Bound.lean` — the scan
+  combinator at a linear growth bound. `Cobham.scan`'s bound child prepends
+  `growth` bits to the recursion variable, admitting a state that exceeds the
+  input by an additive constant only; `multRaw` is the `mult`-fold
+  self-concatenation of that variable, built from `Cobham.concatCompRaw`, and
+  `boundMulRaw` prepends `growth` bits to it, with `length_multSem` and
+  `length_boundMulSem` giving their lengths exactly. `projOf` is the projection
+  and `compOf`, `comp1Of` and `concatCompOf` the compositions the fold
+  constructions are assembled from — the fixed-width one using `comp1Of`, the
+  bitstring one all four — and `scan2Raw` with `wValid_scan2Raw` is the scan
+  node at steps of arity two, which read the remaining word as well as the
+  recursive
+  value. `scanBRaw`, `scanBW` and `scanBSem` take the bound child as a
+  parameter and lift arity-one steps into that node, `scanBRaw_boundRaw`
+  identifying `Cobham.scanRaw` as the instance at the additive child, and
+  `scanBSem_nil`, `scanBSem_cons` and `scanBSem_eq` hold at every bound child,
+  `Cobham.evalValue`'s `boundedRec` clause not consulting it. `scanMul` and
+  `scanMulOf` carry the bound `mult * |w| + growth`. `concat` is a generator of
+  the subalgebra `Cobham.SmashFree` names, so the multiplicative bound stays
+  inside it, which `Geb.CobhamFold.smashFreeBool_boundMulRaw` states at every
+  multiplicity and growth. Depends on `Geb.Mathlib.Computability.Cobham.Scan`.
+  `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Fold.lean` — the fold scan of a
+  preorder spelling. `FoldScan` replaces `RankedAlphabet.Scan`'s pending count
+  by a stack of carrier values and `foldScanStep` replaces the pop-push by an
+  application of an algebra, `symOf` refining `RankedAlphabet.arOf` to the
+  symbol and `arOf_eq_map_symOf` making the two scans branch alike. `toScan`
+  projects onto `RankedAlphabet.Scan` by the stack's length, and
+  `toScan_foldScanStep` proves it a step homomorphism at every carrier and
+  algebra, `toScan_foldScanFinal` extending it to whole words. `Term.fold` is
+  the algebra morphism out of the term algebra and `Term.fold_unique` its
+  initiality. `foldScanFrom_code`, `foldScanFrom_ofFn` and `foldScanFrom_spell`
+  establish that the stack's head is child zero, and `foldOut` with
+  `foldOut_eq` identifies the fold with `RankedAlphabet.parse` followed by
+  `Term.fold`. `width_mul_depth_add_length_buf_scanFinal_le` and its corollary
+  `width_mul_depth_scanFinal_le` sharpen
+  `RankedAlphabet.depth_scanFinal_le_length` by the alphabet's width, the
+  invariant carrying the incomplete block's length. Depends on
+  `Geb.Mathlib.Data.Tree.Ranked.Preorder` and `Geb.Mathlib.Data.W.Basic`.
+  `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Layout.lean` — the fold scan's
+  state as a bitstring. `entryBits` gives each stack entry a `true` presence
+  marker followed by the `p` encoding bits, `stackBits` concatenates them and
+  `stateWordF` prefixes the liveness flag and `Cobham.bufBits`'s slot; the
+  marker is what separates an entry from the `false` padding `Cobham.bits`
+  supplies past a word's end, which a carrier value encoding to all `false`
+  would otherwise be confused with. `dispatchWidthF` reads `R.maxArity + 1`
+  entries, the extra one deciding whether a symbol's arity is available.
+  `decodeStack`, `decodeStateAt` and `decodeStateF` invert the layout, with
+  `decodeStateAt_stateWordF_of_lt` inverting it up to truncating the stack at
+  the window; `dropCountF_take_stack` and `nextPrefixF_take_stack` show that
+  truncation changes neither the bits dropped nor the bits prepended, and
+  `stateWordF_foldScanStep_of_lt` gives a step as a bounded prefix rewrite.
+  Depends on `Geb.Internal.Computability.CobhamFoldProto.Fold` and
+  `Geb.Mathlib.Computability.Cobham.RankedTree`. `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Expr.lean` — the fold as an
+  expression of Cobham's class. `foldStepF` dispatches on the state's leading
+  bits with `Cobham.casesOf`, prepending the rebuilt prefix and dropping the
+  consumed bits; `foldSemF` is the scan's meaning and `foldSemF_eq` identifies
+  it with the fold scan's state word, `length_foldSemF_le` discharging the
+  recursion bound at any multiplier meeting `p + 1 ≤ mult * R.width`.
+  `foldExprF` and `foldExprOfF` are the scan as a member of `Cobham.C`.
+  `readoutWidth`, `outWord`, `readState` and `readOf` are the readout, with
+  `length_outWord`, `headD_outWord` and `bits_tail_outWord` giving its width,
+  the marker separating its two branches and the recoverability of the value;
+  `foldOutOf`, `foldOutExpr` and `foldOutSem` compose it onto the scan by
+  `comp1Of`, and
+  `foldOutSem_eq` with `foldOutSem_eq_parse` identify the expression's value
+  with `RankedAlphabet.parse` followed by the fold, spelled by `outWord`.
+  `Cobham.SmashFree` is not stated here; `CobhamFoldProto/SmashFree.lean` states
+  it symbolically as `smashFree_foldOutExpr`.
+  Depends on `Geb.Internal.Computability.CobhamFoldProto.Bound` and
+  `Geb.Internal.Computability.CobhamFoldProto.Layout`. `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Degenerate.lean` — the fold at
+  the terminal algebra. `encUnit`, `decUnit` and `algUnit` are the empty
+  encoding of `Unit` and the terminal algebra; `dispatchWidthF_zero`,
+  `readoutWidth_zero`, `stackBits_unit`, `stateWordF_unit`, `dropCountF_unit`
+  and `nextPrefixF_unit` identify the dispatch window, the readout window, the
+  stack's layout, the state word and both halves of a step with the
+  recognizer's, and `foldOut_unit` with `foldOutSem_unit_eq_ite` place the
+  accepted language at `RankedAlphabet.Valid`. The two are not one expression:
+  `boundMulRaw_ne_boundRaw` separates the two bound children at multiplicity
+  one, at every growth, and the rejecting words differ, `outWord` spelling both
+  branches at the width `p + 1` where `Cobham.isRankedSem_eq_ite` gives the
+  empty bitstring. Depends on
+  `Geb.Internal.Computability.CobhamFoldProto.Expr`. `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/SelfDelim.lean` — self-delimiting
+  bitstrings in Cobham's class. `entryWord` spells a payload as its length in
+  unary, a `false` sentinel, then the payload. `scan2W`, `scan2` and
+  `scan2Sem` carry the scan node at steps of arity two, which read the remaining
+  word in slot zero as well as the recursive value in slot one; `Cobham.scan`
+  lifts arity-one steps and so exposes only the latter; the node `scan2Raw`
+  itself is `Bound.lean`'s. `firstBitOf`,
+  `unaryOf`, `takeUnaryOf`, `dropUnaryOf`, `dropEntryOf` and `takeEntryOf` are
+  the parsing primitives, with `takeEntrySem_entryWord` and
+  `dropEntrySem_entryWord` giving an entry's payload and remainder.
+  `dropUnaryOf`, `dropEntryOf` and `takeEntryOf` read slot zero; `takeEntryOf`
+  is the one whose use of it is least avoidable, its recursion appending a bit
+  at
+  the payload's end, which is not a head operation: the `concat` generator
+  supplies the append and `firstBitOf` after `dropEntryOf` supplies the bit.
+  `idOf` is the identity and
+  `dropEntriesOf` with `entryOf` iterate the primitives to reach the `j`-th
+  entry; the composition combinators they are built from live in
+  `Geb/Internal/Computability/CobhamFoldProto/Bound.lean`. Every primitive's
+  value is
+  no longer than its argument, so each takes `Cobham.boundRaw 0` as its bound
+  child, and each costs a pass over the whole word whatever it reads,
+  `Cobham.evalRec` recursing to the empty word regardless. Depends on
+  `Geb.Internal.Computability.CobhamFoldProto.Bound`. `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Variable.lean` — the fold at the
+  carrier `List Bool`, with the algebra's operations supplied as expressions of
+  Cobham's class, so the carrier is unrestricted. `stateWordV` is
+  `Cobham.stateWord` of the projected state followed by a `false` sentinel and
+  `stackWordV`'s self-delimiting stack, which keeps the pending count inside the
+  dispatch window `Cobham.dispatchWidth` and so keeps the branch family the
+  recognizer's width whatever the carrier; the sentinel stops
+  `decodeState_stateWordV`'s run from continuing into the first entry's own
+  unary prefix. `branchV` and `foldStepV` are one step, `stepWord_foldStepV`
+  identifying it with `foldScanStep`, the algebra entering only through the
+  hypothesis reading each expression's meaning as the carrier-level operation.
+  `foldSemV`, `foldExprV` and `foldExprOfV` carry the scan, its bound discharged
+  by `length_foldSemV_le` under the hypothesis that the pending values stay
+  linear in the input — which is what linear space forces, the state holding
+  every pending value. `readoutWidthV`, `outWordV` and `readOfV` are the
+  readout, composed onto the
+  scan by `foldOutOfV`, `foldOutExprV` and `foldOutSemV`, with `foldOutSemV_eq`
+  identifying the expression's value with `Geb.CobhamFold.foldOut` spelled by
+  `outWordV`. `algOfFixed` transports a fixed-width carrier's algebra and
+  `foldOut_algOfFixed` relates the two at the shared semantic layer, the folds
+  their algebras denote agreeing there up to the encoding, a corollary of
+  `foldOut_map`, itself
+  one of `Term.fold_map`; the two output words agree on an accepted word and
+  differ on
+  a rejected one at `p > 0`, coinciding at `p = 0`, so the agreement is stated
+  at the `Option` level. `potential_foldScanStep_le`,
+  `potential_foldScanFinal_le` and `stackSize_le_of_growth` discharge that
+  linearity hypothesis from a per-symbol condition on the algebra alone — that
+  each operation lengthens its arguments' total by at most a constant `c` — the
+  scan's potential `R.width * stackSize + c * |buf|` rising by at most `c` per
+  input bit and starting at zero. `length_fold_le_of_growth` bounds the folded
+  value itself, `|Term.fold R alg t| ≤ c * t.size`, under the same condition.
+  Depends on
+  `Geb.Internal.Computability.CobhamFoldProto.Bound`,
+  `Geb.Internal.Computability.CobhamFoldProto.Fold`,
+  `Geb.Internal.Computability.CobhamFoldProto.SelfDelim` and
+  `Geb.Mathlib.Computability.Cobham.RankedTree`. `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/SmashFree.lean` — membership of
+  both constructions' expressions in the subalgebra `Cobham.SmashFree` names:
+  `smashFree_foldOutExpr` unconditionally, at a symbolic alphabet and carrier
+  width, and `smashFree_foldOutExprV` at a symbolic alphabet under the
+  hypothesis that the algebra's own expressions are smash-free, the bitstring
+  construction splicing them into its tree. `Cobham.smashFreeBool` is a
+  `WType.elim` whose node clause applies `decide` to a quantification over
+  `Cobham.sig.B`, and two obstructions stand between it and a symbolic claim.
+  Instance search does not delta-reduce the semireducible `Cobham.sig` to match
+  `Cobham.sig.B a` against `Cobham.sigFinitary`'s branches, which are stated at
+  the literal `Cobham.Direction`, so `instFinEnumSigB` names the enumeration at
+  the form the quantification reads; and the `WType.elim` does not reduce at a
+  variable shape, so `smashFreeBool_mk_iff`
+  splits the shape, giving at each shape but `smash` an equivalence between
+  a node's smash-freeness and its children's. Those implications compose through
+  the combinators, `smashFreeBool_casesRaw` carrying the branch family's
+  recursion, to the two theorems above. With [Strahm2003] Theorem 1(2)'s
+  left-to-right inclusion each is then computable simultaneously in polynomial
+  time and linear space. Depends on
+  `Geb.Internal.Computability.CobhamFoldProto.Expr` and
+  `Geb.Internal.Computability.CobhamFoldProto.Variable`.
+  `Classical.choice`-free.
