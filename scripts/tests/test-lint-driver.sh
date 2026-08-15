@@ -9,17 +9,25 @@
 # `Geb.*` module in its own environment (many times the memory) and
 # exhausts a standard CI runner.
 #
-# Two properties are checked:
+# Three properties are checked:
 #   1. Invocation form: `lake lint` runs the driver on root module
 #      `Geb`, not the "Automatically detecting modules" path. This
 #      depends on `lintDriverArgs = ["Geb"]` in lakefile.toml.
-#   2. Coverage completeness: every `Geb.*` source module is
-#      transitively imported by the `Geb` umbrella, so linting the
-#      root module reaches every declaration the no-argument path
-#      would have. A module orphaned from the umbrella would escape
-#      the linter entirely under the root-module invocation.
+#   2. Coverage completeness: every `Geb.*` and `GebManual.*` source
+#      module is transitively imported by its own umbrella (`Geb`,
+#      `GebManual`), so linting the root module reaches every
+#      declaration the no-argument path would have. A module
+#      orphaned from its umbrella would escape the linter entirely
+#      under the root-module invocation. `GebManual`'s generator
+#      root `Main` sits outside the `manual/GebManual/` prefix by
+#      design and so outside this scan. `lake lint` itself (§1
+#      above) runs on `Geb` only, so this section checks
+#      `GebManual` coverage statically rather than by executing the
+#      manual's lint.
+#   3. `doc-build.yml` retains the `scripts/manual.sh build` step,
+#      the only place the manual is linted.
 #
-# Exit 0 if both hold; non-zero otherwise.
+# Exit 0 if all three hold; non-zero otherwise.
 
 set -uo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -46,36 +54,52 @@ if grep -qF 'Automatically detecting modules to lint' <<<"$out"; then
 fi
 
 # --- 2. Coverage completeness (no module orphaned from the umbrella) -----
-# Module name to file path: dots map to slashes; the root module
-# `Geb` lives at `Geb.lean`, the rest under `Geb/`.
-mod_to_file() { echo "${1//.//}.lean"; }
+# Module name to file path within a library's srcDir; dots map to
+# slashes. Geb lives at the package root; GebManual under manual/
+# (lakefile.toml srcDir), whose generator root Main is outside the
+# GebManual prefix by design and so outside this scan.
+mod_to_file() { echo "${2}${1//.//}.lean"; }
 
-all_mods="$( { echo Geb; find Geb -name '*.lean' | sed -E 's,/,.,g; s,\.lean$,,'; } | sort -u )"
-
-# Transitive closure of `import Geb.*` reachable from the `Geb` root.
-reachable="Geb"
-frontier="Geb"
-while [[ -n "$frontier" ]]; do
-  next=""
-  for m in $frontier; do
-    f="$(mod_to_file "$m")"
-    [[ -f "$f" ]] || continue
-    imps="$(grep -oE '^(public )?import Geb(\.[A-Za-z0-9_]+)+' "$f" | sed -E 's/^(public )?import //')"
-    for i in $imps; do
-      if ! grep -qxF "$i" <<<"$reachable"; then
-        reachable="$reachable"$'\n'"$i"
-        next="$next $i"
-      fi
+check_coverage() {
+  local root="$1" prefix="$2"
+  local all_mods reachable frontier next m f imps i orphans
+  all_mods="$( { echo "$root"; find "${prefix}${root}" -name '*.lean' \
+    | sed -E "s,^${prefix},,; s,/,.,g; s,\.lean$,,"; } | sort -u )"
+  reachable="$root"
+  frontier="$root"
+  while [[ -n "$frontier" ]]; do
+    next=""
+    for m in $frontier; do
+      f="$(mod_to_file "$m" "$prefix")"
+      [[ -f "$f" ]] || continue
+      imps="$(grep -oE "^(public )?import ${root}(\.[A-Za-z0-9_]+)+" "$f" \
+        | sed -E 's/^(public )?import //')"
+      for i in $imps; do
+        if ! grep -qxF "$i" <<<"$reachable"; then
+          reachable="$reachable"$'\n'"$i"
+          next="$next $i"
+        fi
+      done
     done
+    frontier="$next"
   done
-  frontier="$next"
-done
-reachable="$(sort -u <<<"$reachable")"
+  reachable="$(sort -u <<<"$reachable")"
+  orphans="$(comm -23 <(echo "$all_mods") <(echo "$reachable"))"
+  if [[ -n "$orphans" ]]; then
+    echo "FAIL: $root modules not reachable from the '$root' umbrella (would escape lint):" >&2
+    echo "$orphans" | sed 's/^/  /' >&2
+    failed=1
+  fi
+}
 
-orphans="$(comm -23 <(echo "$all_mods") <(echo "$reachable"))"
-if [[ -n "$orphans" ]]; then
-  echo "FAIL: Geb modules not reachable from the 'Geb' umbrella (would escape lint):" >&2
-  echo "$orphans" | sed 's/^/  /' >&2
+check_coverage Geb ""
+check_coverage GebManual "manual/"
+
+# --- 3. doc-build.yml retains the manual build step ----------------------
+# The manual is linted only by scripts/manual.sh build in
+# doc-build.yml; losing that step would silently drop the lint.
+if ! grep -qF 'scripts/manual.sh build' .github/workflows/doc-build.yml; then
+  echo "FAIL: doc-build.yml lost the 'scripts/manual.sh build' step" >&2
   failed=1
 fi
 
