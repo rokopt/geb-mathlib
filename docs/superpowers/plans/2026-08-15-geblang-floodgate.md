@@ -114,20 +114,23 @@ Context a fresh executor cannot recover from the spec.
   a fresh empty change, so do not run `jj new` afterward. Advance the
   bookmark after each commit with
   `jj bookmark move feat/geblang-literate --to @-`. Never push.
-- **Run the Markdown linters on every document you write**, rather
-  than relying on a hook to run them: whether one fires depends on
-  the harness configuration, but `markdownlint-cli2` binds through
-  `scripts/pre-push.sh` and Vale through `.vale.ini` regardless. Vale
-  at error level rejects spaced em dashes, the Latin abbreviation for
-  `for example`, the capitalised spelling of `Cslib`, the clipped
-  form of `repository`, and colloquialisms. Its project vocabulary is
+- **Run the Markdown linters on every document you write.**
+  `markdownlint-cli2 '**/*.md'` binds through `scripts/pre-push.sh`
+  and must be clean. Vale does not: nothing in `scripts/` or
+  `.github/workflows/` invokes it, and whether an editor hook does
+  depends on the harness. Run it anyway, with
+  `vale --minAlertLevel=error <file>`, but read it differentially:
+  several files this plan edits are already dirty, so the criterion
+  is no *new* alert against the file's output before your edit, not a
+  clean report. Vale at error level rejects spaced em dashes, the
+  Latin abbreviation for `for example`, the capitalised spelling of
+  `Cslib`, the clipped form of `repository`, and colloquialisms. Its
+  project vocabulary is
   `styles/config/vocabularies/GebMathlib/accept.txt`, one term per
   line; add a genuinely recurring technical term there rather than
   contorting prose, and reword a one-off informal word instead.
   Identifiers inside backticks are outside Vale's scope, so write
-  `GebLang` in backticks in prose. The check is
-  `vale --minAlertLevel=error <file>` and
-  `markdownlint-cli2 '**/*.md'`.
+  `GebLang` in backticks in prose.
 - **The script self-tests stage synthetic trees.** Read
   `scripts/tests/test-lint-imports.sh` and
   `scripts/tests/test-extract-pr.sh` before writing a new case:
@@ -273,7 +276,8 @@ if [ $# -ne 2 ]; then
   exit 1
 fi
 
-src="$1"
+# Tolerate a leading ./, which `find .` produces.
+src="${1#./}"
 fork="$2"
 
 if [ ! -f "$src" ]; then
@@ -295,11 +299,11 @@ import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
 # (a trailing comment, when there is one).
 import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 
-# Verso role markup, applied off import lines in the arms whose
+# Verso role markup, applied off import lines in the one arm whose
 # sources carry it: `{role}`x`` becomes `` `x` ``. `doc.verso` is set
 # for the GebLang library alone, so an unconverted role would render
-# as literal braces upstream, and no other arm has anything to
-# convert.
+# as literal braces upstream, and no other arm, GebTests/Lang/
+# included, has anything to convert.
 #
 # The braces hold a bare identifier and nothing else. Widening the
 # pattern to admit role arguments would also match Lean written
@@ -307,10 +311,18 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # both open with a letter and close before a backtick, and both occur
 # in this repository's docstrings today. A role taking arguments is
 # therefore left unconverted rather than risking that; add its exact
-# form here when one is first used.
+# form here when one is first used, and expect it to ship as literal
+# braces until then.
+#
+# The narrow pattern still matches one thing that is not a role: a
+# lone brace-delimited identifier ending a code span, as in
+# `` `Nat.rec {motive}` ``. Confining the strip to the one arm that
+# needs it bounds that to GebLang/ docstrings, whose author is
+# writing Verso and will not spell an implicit argument that way
+# without meaning a role.
 role_strip='s/[{][A-Za-z][A-Za-z0-9_]*[}]`/`/g'
 
-# convert_roles is 1 for the two arms reading doc.verso sources.
+# convert_roles is 1 for the one arm reading doc.verso sources.
 role_filter() {
   if [ "$convert_roles" -eq 1 ]; then
     sed -E "/^${import_kw_re}/!${role_strip}"
@@ -437,7 +449,10 @@ GebLang. @src'
       cslib) dst_rel="CslibTests/${src#GebTests/Lang/}" ;;
       *)     dst_rel="MathlibTest/${src#GebTests/Lang/}" ;;
     esac
-    convert_roles=1
+    # GebTests/Lang/ belongs to the GebTests library, which does not
+    # set doc.verso, so its docstrings are Markdown and carry no
+    # roles to convert.
+    convert_roles=0
     rewrites='GebLang. @src
 GebTests.Lang. @test'
     ;;
@@ -643,12 +658,18 @@ module
 import Cslib.Init
 import Geb.Mathlib.Thing
 import GebTests.Cslib.Helper
+import GebLang.Foo.Base
+import GebLang.Cs.Deep
 EOF
 bash "$SCRIPT" GebTests/Cslib/Wide.lean fork11 >/dev/null
 out=fork11/CslibTests/Wide.lean
 has   "GebTests/Cslib rewrites Geb.Mathlib." "import Mathlib.Thing" "$out"
 has   "GebTests/Cslib rewrites its test self-prefix" \
       "import CslibTests.Helper" "$out"
+has   "GebTests/Cslib rewrites a mathlib-track GebLang import" \
+      "import Mathlib.Foo.Base" "$out"
+has   "GebTests/Cslib rewrites a cslib-track GebLang import" \
+      "import Cslib.Cs.Deep" "$out"
 ```
 
 The conversion is stated by the pair of assertions on
@@ -764,6 +785,13 @@ Create `scripts/check-transitive-imports.sh`:
 #
 # Runs against the working directory, as scripts/lint-imports.sh does,
 # so the self-test can stage a synthetic tree.
+#
+# Pass 1 recomputes each root's closure from scratch and greps every
+# file in it twice, so the cost grows with the number of roots times
+# the average closure size. At the tree this lands on that is a few
+# seconds, several times what lint-imports.sh takes over the same
+# files. Memoising reaches_cslib per file is the repair if the
+# checklist comes to feel slow; it is not worth the state today.
 #
 # Exit 0 on clean. Exit 1 on any violation.
 
@@ -1136,7 +1164,31 @@ The message changes from `outside ^import line` to
 `outside an import path`, since a trailing comment on an import line
 is now a violation and the old wording would misdescribe it.
 
-- [ ] **Step 3: add the two new subtree entries**
+- [ ] **Step 3: let the import-keyword pattern span repeated spaces**
+
+`import_kw_re` ends in a literal single space, so a doubled space
+after the keyword defeats both Rule 1's collection and Rule 2's
+blanking: `import  Geb.Mathlib.A` is reported as a forbidden import
+(Rule 1 sees no keyword and the fallback rejects it) and its module
+path is then searched as prose, producing a spurious second
+diagnostic. Change
+
+```bash
+  local import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import '
+```
+
+to
+
+```bash
+  local import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
+```
+
+matching the form `scripts/extract-pr.sh` uses. No file in the tree
+is written that way, so nothing changes today; the blanking Step 2
+introduced is what would otherwise turn the malformed line into two
+messages instead of one.
+
+- [ ] **Step 4: add the two new subtree entries**
 
 After the four existing `check_subtree` calls, add:
 
@@ -1157,7 +1209,7 @@ The find roots are the directories, so the `GebLang.lean` umbrella
 outside the check, as `Geb/Mathlib.lean` and `GebTests/Mathlib.lean`
 already do.
 
-- [ ] **Step 4: extend the header comment**
+- [ ] **Step 5: extend the header comment**
 
 In the header's subtree table, add the two new rows after the existing
 four:
@@ -1280,7 +1332,7 @@ becomes
 # their module path is exempt from the no-prefix-leakage rule).
 ```
 
-- [ ] **Step 5: update the self-test's message assertions**
+- [ ] **Step 6: update the self-test's message assertions**
 
 Run:
 
@@ -1296,15 +1348,34 @@ On macOS, `sed -i ''` takes the empty backup suffix.
 
 Case 36 asserted that a comment containing the word `import` is not an
 import line. Its fixture stays valid under the narrowed exemption, the
-comment not starting the line; retitle it so the assertion it makes is
-the one the rule now states:
+comment not starting the line; retitle it, and restate its comment,
+so both say what the rule now states. The comment, which reads
+
+```bash
+# Case 36: the leakage exemption is anchored at the start of the line.
+# A comment merely containing the word `import` is not an import line,
+# so a self-prefix in it is still leakage.
+```
+
+becomes
+
+```bash
+# Case 36: the leakage exemption covers an import line's module path.
+# A self-prefix anywhere else, including in a comment that merely
+# contains the word `import`, is still leakage.
+```
+
+and the assertion becomes
 
 ```bash
 assert_case "a self-prefix in a comment is not an import path" 1 \
   "'Geb.Mathlib.' outside an import path"
 ```
 
-- [ ] **Step 6: add the new self-test cases**
+Cases 8 and 9 carry the milder "prefix leakage outside import line"
+in their comments; restate those two the same way.
+
+- [ ] **Step 7: add the new self-test cases**
 
 Extend `setup_empty` so the two new roots exist:
 
@@ -1425,7 +1496,7 @@ assert_case "leakage prefix in an import line's comment tail" 1 \
 Case 45 is the narrowed exemption of Step 2; before it, the whole
 import line was exempt and this fixture passed clean.
 
-- [ ] **Step 7: run the linter and its self-test**
+- [ ] **Step 8: run the linter and its self-test**
 
 Run:
 
@@ -1442,7 +1513,7 @@ If the linter reports a violation in the two files plan 1 created,
 fix the source rather than the rule: the spec's import rules bind
 them.
 
-- [ ] **Step 8: remove the resolved `TODO.md` entry**
+- [ ] **Step 9: remove the resolved `TODO.md` entry**
 
 Delete the whole `TODO.md` § Triggers entry beginning
 
@@ -1453,7 +1524,7 @@ Delete the whole `TODO.md` § Triggers entry beginning
 through the end of its `Trigger:` sentence. Step 2 narrowed the
 exemption, which is what the entry asked for.
 
-- [ ] **Step 9: commit**
+- [ ] **Step 10: commit**
 
 ```bash
 jj commit -m 'feat(scripts): lint the GebLang subtrees and narrow rule 2'
@@ -1547,7 +1618,9 @@ becomes, re-flowed because the first sentence ends mid-line
 # core- and Batteries-targeted content.
 ```
 
-Add after it:
+Add the following immediately after the `GebLang` paragraph that
+Task 3 Step 5 inserted, so the three rationale paragraphs read
+Batteries, then `GebLang`, then `Geb.Mathlib.*`:
 
 ```bash
 # `Geb.Mathlib.*` is admitted to the Cslib subtrees because Cslib
@@ -2155,8 +2228,9 @@ and the `Cslib.Init` bullet gains its conditional form:
 
 - [ ] **Step 6: add the extraction bullet to `docs/rules/lean-coding.md`**
 
-In § Literate modules (`GebLang`), which plan 1 created, add a fourth
-bullet:
+In § Literate modules (`GebLang`), which plan 1 created with six
+bullets, add a seventh after the bullet on what each pipeline
+renders:
 
 ```markdown
 - `scripts/extract-pr.sh` converts the roles to plain Markdown when a
@@ -2519,10 +2593,33 @@ only this scan reaches:
 - `docs/rules/upstream-eligible.md` § Two-track development's opening
   paragraph, on explorations that build on upstream-quality code.
 
-One more instance is caused by this plan rather than found by it:
+- `manual/GebManual/Introduction.lean`, whose upstream-directed
+  paragraph enumerates `Geb/Mathlib/`, `Geb/Cslib/` and
+  `Geb/Internal/` as the whole of the layout. That file is in no
+  other task's list; add `GebLang/` to the enumeration, and note that
+  the manual builds only through `scripts/manual.sh build`.
+
+Two further instances neither scan reaches, both left stale by this
+plan's own work rather than found by it:
+
+- `docs/rules/lean-coding.md`'s two "binding upstream references"
+  sentences, one naming `Geb/Mathlib/` content and one naming
+  `Geb/Cslib/` content. After Task 5 Step 5 the Cslib guides bind
+  Cslib-track `GebLang/` modules too, and the mathlib guides bind
+  mathlib-track ones. The sentences are 139 lines apart, so no
+  windowed scan pairs them. Extend both to name `GebLang/` by track.
+- `scripts/tests/test-extract-pr.sh`'s header, which says the test
+  covers "destination-path mapping per subtree and the import-line
+  prefix rewrite (`Geb.<Subtree>. -> <Subtree>.`)". After Task 1 the
+  destinations are track-dependent, `GebLang.` is rewritten by the
+  imported module's track, and Verso roles are converted. Restate it.
+  It is the twin of the `test-lint-imports.sh` header sentence named
+  below.
+
+One more is caused by this plan rather than found by it:
 `scripts/tests/test-lint-imports.sh`'s header says it stages
 synthetic `Geb/{Mathlib,Cslib}` and `GebTests/{Mathlib,Cslib}`
-subtrees, which Task 3 Step 6's `setup_empty` change falsifies.
+subtrees, which Task 3 Step 7's `setup_empty` change falsifies.
 Correct it to name the two new roots as well.
 
 - [ ] **Step 3: fix the `ci.yml` rationale comment**
@@ -2585,7 +2682,8 @@ the `GebLang/` bullet (Task 5 above).
 
 - [ ] **Step 6: fix whatever else the sweep found**
 
-Apply the same treatment to every remaining defect from Step 1. Record
+Apply the same treatment to every remaining defect from Steps 1 and
+2. Record
 each file changed in the task report; the sweep is the spec's verified
 task, so the report is the evidence that it ran.
 
