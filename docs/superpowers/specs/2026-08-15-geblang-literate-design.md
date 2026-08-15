@@ -290,7 +290,10 @@ case: for every Cslib-track `GebTests/Lang/` module (one whose
 closure reaches `Cslib.*`), each imported `GebTests.Lang.`
 sibling must itself be Cslib-track, since a mathlib-track
 sibling ships to a test tree the Cslib test tree cannot import
-(§ Import rules). Pre-push and `ci.yml` run it beside
+(§ Import rules). One direction suffices: track is
+closure-defined, so a module importing a Cslib-track sibling is
+itself Cslib-track, and the reverse crossing cannot occur.
+Pre-push and `ci.yml` run it beside
 `lint-imports.sh`. A self-test
 (`scripts/tests/test-check-transitive-imports.sh`) verifies the
 passing state and induced failures from both root kinds,
@@ -394,7 +397,8 @@ into the destination's test tree as the existing mirrors do;
   style and naming, the module system, constructive-only
   discipline, citation rules, and the LLM-contribution policy.
   `docs/rules/upstream-eligible.md` extends its `paths:` to
-  `GebLang/**` and `GebTests/Lang/**` (not the `GebLang.lean`
+  `GebLang/**`, `GebTests/Lang.lean`, and `GebTests/Lang/**`
+  (not the `GebLang.lean`
   umbrella, which imports `GebMeta` and is exempt from the
   content rules, a stated deviation from the
   umbrella-plus-directory pattern of the existing entries; the
@@ -467,9 +471,9 @@ into the destination's test tree as the existing mirrors do;
   `mk_all-check` rationale comment in `ci.yml`, the
   `docs/index.md` phrase describing `GebTests/` as mirroring
   `Geb/`, the `GebMeta.lean` docstring's namespace enumeration,
-  and the docs-coverage reminder's message text in
-  `scripts/pre-push.sh`, and the cache-fetch rationale comment
-  in `scripts/pre-push.sh` naming only `Geb`'s imports. The
+  the docs-coverage reminder's message text in
+  `scripts/pre-push.sh`, and that script's cache-fetch rationale
+  comment naming only `Geb`'s imports. The
   sweep is a verified task (§ Verification), so an instance the
   grep misses is a defect, not a gap in this list.
 - `docs/process.md`: its § Floodgate test rationale is revised
