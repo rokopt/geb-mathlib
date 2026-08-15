@@ -30,9 +30,11 @@ language, written in Verso's literate style: prose in ordinary
 module and declaration docstrings, rendered both by `doc-gen4` (as
 for the existing code) and by Verso's literate HTML pipeline (as a
 static site). `GebLang` sits at the bottom of the repository's
-dependency order: it imports nothing of this repository outside
-itself, only mathlib, Batteries, and Cslib (and what they carry
-from Lean core), and every existing subtree may import it. This
+dependency order: its content modules import nothing of this
+repository outside `GebLang`, only mathlib, Batteries, and Cslib
+(and what they carry from Lean core; the umbrella additionally
+imports `GebMeta` to register the axiom linter, per § Library and
+layering), and every existing subtree may import it. This
 workstream builds the infrastructure (library,
 layering rules, both extraction pipelines, commands, CI, and one
 placeholder module with one placeholder test) and defers real
@@ -138,14 +140,34 @@ The dependency order places `GebLang` at the bottom:
   `GebTests.Lang.*`, and the libraries `GebLang/` itself may.
 
 `scripts/lint-imports.sh` encodes the new entries, and its header
-comment and self-test extend accordingly. The floodgate statement
-in `CONTRIBUTING.md` changes to its transitive form:
-dependency-ordered PRs remain shippable at all times, with a
-module's `GebLang` dependencies shipped first, each retargeted by
-its own import closure (mathlib-track when it reaches no
-`Cslib.*`; Cslib-track otherwise). `GebLang` itself is written to
-the upstream-eligible standards, so shipping it is a retargeting
-decision, not a rewrite.
+comment and self-test extend accordingly. Leakage prefixes follow
+the existing rule: `GebLang.` is the new entry's self-prefix
+(forbidden outside import lines in `GebLang/`), and it joins the
+leakage prefixes of the `Geb/Mathlib/` and `Geb/Cslib/` entries,
+since a `GebLang.`-qualified reference in an extracted body would
+dangle upstream exactly as a `Geb.Mathlib.`-qualified one would.
+A `GebLang` module that imports any `Cslib.*` module must import
+`Cslib.Init` (Cslib's `checkInitImports` requirement, stated
+conditionally so that mathlib-track modules are not forced to
+import Cslib); `lint-imports.sh` enforces the conditional form.
+
+The floodgate statement in `CONTRIBUTING.md` changes to its
+transitive form: dependency-ordered PRs remain shippable at all
+times, with a module's `GebLang` dependencies shipped first, each
+retargeted by its own import closure (mathlib-track when it
+reaches no `Cslib.*`; Cslib-track otherwise). `GebLang` is
+written to the upstream-eligible standards, so retargeting is
+mechanical: the extraction rewrites import prefixes (as
+`scripts/extract-pr.sh` already does for the `Geb/` subtrees) and
+converts Verso-role docstring markup to its plain-Markdown
+degradation (a role such as a checked name reference becomes a
+code span), both deterministic rewrites of the same class.
+Extending `scripts/extract-pr.sh` (and its self-test) to
+`GebLang` sources (path acceptance, prefix rewriting, a
+destination mapping, the docstring conversion) is deferred to
+the first content workstream, when real module names and
+destinations exist; `TODO.md` records the deferral, and no
+`GebLang` content may ship before that tooling lands.
 
 Cross-track ordering is accepted by design in one direction: a
 `Geb/Cslib/` module may import a mathlib-track `GebLang` module,
@@ -166,9 +188,13 @@ A `Geb/Mathlib/` module whose `GebLang` dependencies reach
 `scripts/check-transitive-imports.sh` detects this: a source-level
 walk of the repository-internal import closure (the technique of
 `scripts/tests/test-lint-driver.sh`'s coverage scan) from every
-`Geb/Mathlib/` module, following `Geb.*` and `GebLang.*` imports
-transitively, failing if the closure contains an `import Cslib`
-line. Pre-push and `ci.yml` run it beside `lint-imports.sh`. A
+`Geb/Mathlib/` and `GebTests/Mathlib/` module (the mirror
+extracts upstream too), following `Geb.*`, `GebTests.*`, and
+`GebLang.*` imports transitively, failing if the closure contains
+an `import Cslib` line. On a lint-clean tree the walk cannot
+enter `Geb/Cslib/` (no allowed import reaches it from the
+mathlib-track roots), so a failure is a genuine misplacement, not
+a false positive. Pre-push and `ci.yml` run it beside `lint-imports.sh`. A
 self-test (`scripts/tests/test-check-transitive-imports.sh`)
 verifies both the passing state and an induced failure, following
 the existing script-test conventions.
@@ -195,7 +221,8 @@ is required: without it the facet renders and builds every
 library and executable of the package (§ Context), `GebManual`
 included. `docstrings_as_text` renders declaration docstrings as
 page prose, the `teorth/analysis` setting. Further keys
-(ordering, per-module titles, themes) arrive with content.
+(ordering, per-module titles, themes) are deferred until content
+exists.
 
 ### Commands
 
@@ -221,15 +248,19 @@ edit is incremental.
   existing `Geb:docs` (doc-gen4 for the new library),
   `bash scripts/literate.sh build`, and a `geb-literate` artifact
   upload of the literate site (path from
-  `lake query :literateHtml`); the paths filter gains `GebLang/**`,
-  `GebTests/**` (if absent), `scripts/literate.sh`, and
-  `literate.toml`.
+  `lake query :literateHtml`); the paths filter gains
+  `GebLang.lean` (the umbrella carries the landing page's prose),
+  `GebLang/**`, `scripts/literate.sh`, and `literate.toml`
+  (`GebTests/**` is already present).
 - `scripts/pre-push.sh`: adds `lake lint -- GebLang`, the widened
   `lake shake`, and the transitive-import check. The literate
   HTML build stays out of pre-push, as the manual's does.
 - `scripts/tests/test-lint-driver.sh`: the coverage scan gains
   `check_coverage GebLang ""` (the library lives at the package
-  root, so the existing generalization applies directly).
+  root, so the existing generalization applies directly), and its
+  workflow check gains the `scripts/literate.sh build` literal
+  beside the manual's, one literal per product, so `doc-build.yml`
+  cannot silently lose the literate build.
 
 ### Tests
 
@@ -241,8 +272,9 @@ test driver path, the new import rules, and the lint path end to
 end. `GebTests.lean` gains `public import GebTests.Lang` (and a
 `GebTests/Lang.lean` index, per the one-indexing-file-per-directory
 layout) so the test driver and `lake lint -- GebTests` reach the
-module. It is removed when real tests arrive; its module
-docstring says so.
+module. It is removed when real tests arrive; that expectation is
+recorded in `TODO.md`, not in the docstring, which states only
+what the module tests.
 
 ### Standards and rule documents
 
@@ -278,9 +310,13 @@ module docstring proves per-module page rendering. The landing
 page's prose is the `GebLang.lean` umbrella's module docstring
 (`landing_page = "GebLang"` in § Literate rendering). The
 declaration is chosen at implementation to be subsumable by the
-first content workstream; its docstring states that it anchors the
-pipelines pending that workstream, and the module is replaced, not
-grown, when content lands.
+first content workstream; its docstring states its enduring
+purpose (anchoring the two documentation pipelines), the
+replacement expectation is recorded in `TODO.md` (docstrings
+carry no development-history references), and the module is
+replaced, not grown, when content lands. The placeholder is not
+subject to extraction, so its `{name}` role does not contradict
+§ Import rules' docstring-conversion story.
 
 ## Alternatives considered
 
@@ -290,7 +326,7 @@ grown, when content lands.
   a new library would duplicate that machinery for one
   placeholder.
 - A `Geb/Lang/` subtree instead of a top-level library. Rejected:
-  the `Geb` library's `globs = ["Geb.*"]` would sweep it into the
+  the `Geb` library's `globs = ["Geb.*"]` would place it inside the
   existing build, lint, and floodgate machinery, all of which
   distinguish the `Geb/` subtrees by path; a sibling
   library leaves them untouched.
