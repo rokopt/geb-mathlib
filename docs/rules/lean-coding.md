@@ -26,6 +26,7 @@ paths:
   - [Structure and typeclass patterns](#structure-and-typeclass-patterns)
 - [Constructive-only Lean code](#constructive-only-lean-code)
 - [sorry, admit, and underscores](#sorry-admit-and-underscores)
+- [Verso manual modules (manual/)](#verso-manual-modules-manual)
 - [Lean 4 skill workflows](#lean-4-skill-workflows)
 - [`lean-lsp` MCP search and proof tools](#lean-lsp-mcp-search-and-proof-tools)
 
@@ -506,6 +507,35 @@ so the restriction is enforced only by grep and by review.
   a placeholder for an unfilled term or hypothesis, use an
   underscore (`_`). Underscores are considered errors by elaboration,
   highlighting what is missing.
+
+## Verso manual modules (manual/)
+
+- The manual's modules import the specific `Geb` modules they
+  reference, never `GebMeta`, so `lake lint -- GebManual` runs
+  without the axiom linter: the constructive discipline governs
+  the formalization, and the manual's document objects are
+  rendering data whose terms depend on Verso's own axiom usage.
+  If a `Geb` module the manual imports ever pulls in `GebMeta`
+  transitively, this boundary must be revisited.
+- Bibliography entries are top-level `def`s whose names are the
+  `docs/references.bib` keys, UpperCamelCase, departing from
+  lowerCamelCase term naming: the key identity across the `.bib`,
+  the Lean source, and the rendered citations outweighs the
+  naming rule. The `.bib` entry is authoritative; the Lean entry
+  is a rendering transcription corrected against it.
+- `manual/Main.lean` alone does not declare `module`: under the
+  module system its `main` compiles private and the executable
+  fails to link (`ld.lld: error: undefined symbol: main`).
+- Under `module` form, `Bibliography.lean` needs a plain `import
+  Verso.Doc.Concrete.InlineString` (the `inlines!` macro is not
+  re-exported through `VersoManual`) and its bibliography entries
+  are `public def`s (a module-private `def` cannot be a `{citep}`
+  target from another module).
+- The `def`s `#doc` elaborates carry no docstrings and are
+  exempted from `docBlame` in `scripts/nolints.json`; the manual
+  library's `leanOptions` disable `linter.hashCommand` (`#doc` is
+  the document syntax) and widen `verso.code.warnLineLength`
+  to 100.
 
 ## Lean 4 skill workflows
 

@@ -39,6 +39,12 @@ See `lakefile.toml` for the full dependency declaration.
   decision history.
 - [`docs/references.md`](docs/references.md) — Lean library and
   mathematical reference catalog.
+- The Geb manual (Verso): `scripts/manual.sh build` builds and
+  generates it (`manual/_out/html-multi/`);
+  `scripts/manual.sh serve` serves it and prints the URL. There
+  is no watch mode: after editing under `manual/`, re-run
+  `build` and refresh the browser. Built in CI by `doc-build.yml`,
+  not by `lake build`.
 
 ## Process
 

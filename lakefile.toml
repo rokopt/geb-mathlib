@@ -14,6 +14,19 @@ weak.linter.flexible = true
 weak.linter.style.header = true
 weak.warningAsError = true
 
+# Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
+# the toolchain version. Verso's tags are named after Lean
+# toolchains; if a bump targets a toolchain Verso has not yet
+# tagged, the bump waits for the tag (`update.yml` reports the
+# failed update rather than committing it). Declared ahead of
+# doc-gen4 and mathlib so that, under Lake's reverse-order root
+# resolution, mathlib's plausible pin and doc-gen4's MD4Lean pin
+# take precedence over verso's branch-pinned requires.
+[[require]]
+name = "verso"
+scope = "leanprover"
+rev = "v4.34.0-rc1"
+
 [[require]]
 name = "cslib"
 scope = "leanprover"
@@ -61,3 +74,25 @@ weak.linter.hashCommand = false
 
 [[lean_lib]]
 name = "GebMeta"
+
+# The Verso manual: document library and generator executable,
+# with sources under manual/. Excluded from defaultTargets and the
+# test driver, so lake build, lake test, and the default lake lint
+# compile nothing new; scripts/manual.sh build (run by
+# doc-build.yml in CI) is the only builder. linter.hashCommand is
+# disabled because #doc, the Verso document command, is the
+# library's content; verso.code.warnLineLength widens Verso's
+# code-line warning to the repository's line width.
+[[lean_lib]]
+name = "GebManual"
+srcDir = "manual"
+
+[lean_lib.leanOptions]
+weak.verso.code.warnLineLength = 100
+weak.linter.hashCommand = false
+
+[[lean_exe]]
+name = "geb-manual"
+srcDir = "manual"
+root = "Main"
+supportInterpreter = true

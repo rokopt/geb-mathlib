@@ -33,6 +33,8 @@ The repository is laid out narrow-and-deep, with one indexing
 - `GebTests/` — test library mirroring `Geb/`'s structure, with
   `GebTests/Mathlib/`, `GebTests/Cslib/`, and
   `GebTests/Internal/` subdirectories.
+- `manual/` — the Verso manual (build and serve commands:
+  `README.md` § Documentation).
 
 The directory split denotes upstream eligibility; the
 import-direction rules above are enforced by
