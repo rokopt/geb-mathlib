@@ -220,6 +220,20 @@ self-test:
   (their closures are all mathlib-track), and the two `Cslib`
   arms rewrite `Geb.Mathlib.` to `Mathlib.` and `GebLang.` by
   the imported module's track.
+- Test-sibling imports rewrite to the destination test tree:
+  the existing `GebTests/` arms gain the
+  `GebTests.<subtree>.`-to-test-tree rewrite their sources
+  already need (real sibling imports exist today and extract
+  with their prefixes intact, a pre-existing gap with no
+  `TODO.md` entry, folded in here since this workstream revises
+  the script), and
+  `GebTests.Lang.` rewrites by the imported sibling's track.
+- A `GebTests/Lang/` module's sibling imports must not cross
+  tracks: a Cslib-track test importing a mathlib-track sibling
+  would need the Cslib test tree to import mathlib's, which no
+  upstream ordering can make compile. The transitive-import
+  check enforces this (§ Transitive-import check); the rule file
+  states it.
 - Every rewrite covers all four import forms (`import`,
   `public import`, `meta import`, `public meta import`). This
   folds in the standing `TODO.md` item on the rewrite's
@@ -271,7 +285,12 @@ only the two the coverage scan's pattern recognizes. On a
 lint-clean tree the walk cannot
 enter `Geb/Cslib/` (no allowed import reaches it from the
 mathlib-track roots), so a failure is a genuine misplacement, not
-a false positive. Pre-push and `ci.yml` run it beside
+a false positive. A second pass covers the test subtree's mixed
+case: for every Cslib-track `GebTests/Lang/` module (one whose
+closure reaches `Cslib.*`), each imported `GebTests.Lang.`
+sibling must itself be Cslib-track, since a mathlib-track
+sibling ships to a test tree the Cslib test tree cannot import
+(§ Import rules). Pre-push and `ci.yml` run it beside
 `lint-imports.sh`. A self-test
 (`scripts/tests/test-check-transitive-imports.sh`) verifies the
 passing state and induced failures from both root kinds,
@@ -540,13 +559,17 @@ fixture for the extraction exercise of § Import rules.
   `Geb/Mathlib/` and `Geb/Cslib/` fixtures, `Geb.Mathlib.*` and
   `Batteries.*` imports are accepted in `Geb/Cslib/` fixtures,
   a `Geb.Cslib.*` import in a `Geb/Mathlib/` fixture is
-  still rejected, induced `GebLang.` leakage in a `Geb/Mathlib/`
+  still rejected, the same acceptance and rejection cases run in
+  the `GebTests/Mathlib/` and `GebTests/Cslib/` mirror fixtures,
+  induced `GebLang.` leakage in a `Geb/Mathlib/`
   fixture and `Geb.Mathlib.` leakage in a `Geb/Cslib/` fixture
   are rejected, and a leakage prefix in an import line's
   trailing comment is rejected (the narrowed Rule 2 exemption).
 - `scripts/check-transitive-imports.sh` passes on the tree, and
   its self-test induces and detects failures from both root
-  kinds (`Geb/Mathlib/` and `GebTests/Mathlib/`).
+  kinds (`Geb/Mathlib/` and `GebTests/Mathlib/`) and from the
+  second pass (a Cslib-track `GebTests/Lang/` fixture importing
+  a mathlib-track sibling).
 - `scripts/extract-pr.sh`'s self-test covers the extension: a
   mathlib-track and a Cslib-track `GebLang/` fixture and a
   `GebTests/Lang/` fixture each map to the right destination
@@ -555,6 +578,8 @@ fixture for the extraction exercise of § Import rules.
   the destination prefix); the widened arms' new rewrites
   (`GebLang.` in the `Mathlib` arms, `Geb.Mathlib.` and
   per-track `GebLang.` in the `Cslib` arms) each have a case;
+  the test-sibling rewrites (`GebTests.<subtree>.` in the
+  existing arms, per-track `GebTests.Lang.`) each have a case;
   a `meta import` form rewrites; and a fixture docstring's Verso
   role converts to a bare code span. The tool also runs against
   the placeholder module, output inspected and discarded.
