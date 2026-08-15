@@ -289,7 +289,11 @@ edit is incremental.
   its concepts belong in `docs/index.md`). The literate HTML
   build stays out of pre-push, as the manual's does.
   `docs/rules/ci-and-workflow.md` § Pre-push checklist gains the
-  new steps and the widened reminder enumeration.
+  new steps and the widened reminder enumeration, and its two
+  sentences enumerating the lint invocations and the cache
+  rationale's import closure are updated for the third root
+  library. The `scripts/tests/test-lint-driver.sh` header's
+  coverage sentence gains `GebLang.*`.
 - `scripts/tests/test-lint-driver.sh`: the coverage scan gains
   `check_coverage GebLang ""` (the library lives at the package
   root, so the existing generalization applies directly), and its
@@ -344,7 +348,13 @@ extraction path.
   that `scripts/lint-imports.sh` enforces its table stays true
   at every merged state; the pending widening is described in
   the floodgate prose with its activation point, and in
-  `TODO.md`.
+  `TODO.md`. Its § Two-track development gains `GebLang` as a
+  porting destination (the section currently names the two
+  `Geb/` subtrees as the only ones), and its section on Cslib-specific
+  constraints section's scope extends to Cslib-track `GebLang`
+  modules: they ship to Cslib, so the notation-locality,
+  PR-title, and pre-coordination constraints bind them at
+  authoring time as they bind `Geb/Cslib/`.
 - `docs/rules/lean-coding.md` gains a literate-conventions
   section: module docstrings are the rendered page prose;
   `doc.verso` roles are available in `GebLang` (and only there);
@@ -368,19 +378,23 @@ extraction path.
   section heading (with its TOC entry) that enumerate
   `Geb/Mathlib/` and `Geb/Cslib/` gain `GebLang/`.
 - `README.md` § Process: the line stating where
-  `upstream-eligible.md` applies gains the new paths.
+  `upstream-eligible.md` applies gains the new paths, and the
+  introduction's upstream-route enumeration (mathlib via
+  `Geb/Mathlib/`, Cslib via `Geb/Cslib/`) gains `GebLang`.
 - `TODO.md` § Verso adoption is revised: the doc-gen4 half of
   its scope-1 gate is met at the pin (verified by this
   workstream), the extraction-time docstring conversion
   (§ Import rules) supersedes the entry's
   mathlib-migration-based mechanism for `GebLang`, and the
-  scope-2 exposition bullet is related to the literate site this
-  workstream builds.
+  scope-2 exposition bullet gains a reference to the literate
+  site this workstream builds.
 - `docs/process.md`: its § Floodgate test rationale is revised
   for the transitive form (a third eligible location; extraction
   dependency-ordered through `GebLang` rather than independent
   per subtree), since the process document carries the rationale
-  for every rule being changed.
+  for every rule being changed, and its two-track porting
+  sentence (code ported into `Geb/Mathlib/` or `Geb/Cslib/`)
+  gains `GebLang`.
 
 ### Placeholder content
 
@@ -457,8 +471,9 @@ subject to extraction, so its `{name}` role does not contradict
   module without Cslib imports needs no `Cslib.Init`).
 - `TODO.md` carries the deferred-cluster entry (§ Import rules),
   the placeholder-replacement expectations (§ Tests,
-  § Placeholder content), and the revised § Verso adoption entry
-  (§ Standards and rule documents).
+  § Placeholder content), the revised § Verso adoption entry,
+  and the cross-track entry's half of the mutual
+  cross-reference (§ Standards and rule documents).
 - `scripts/tests/test-lint-driver.sh` passes with the `GebLang`
   coverage scan.
 - `scripts/pre-push.sh` passes end to end.
