@@ -292,14 +292,14 @@ edit is incremental.
   new steps and the widened reminder enumeration, and its two
   sentences enumerating the lint invocations and the cache
   rationale's import closure are updated for the third root
-  library. The `scripts/tests/test-lint-driver.sh` header's
-  coverage sentence gains `GebLang.*`.
+  library.
 - `scripts/tests/test-lint-driver.sh`: the coverage scan gains
   `check_coverage GebLang ""` (the library lives at the package
-  root, so the existing generalization applies directly), and its
+  root, so the existing generalization applies directly), its
   workflow check gains the `scripts/literate.sh build` literal
   beside the manual's, one literal per product, so `doc-build.yml`
-  cannot silently lose the literate build.
+  cannot silently lose the literate build, and its header's
+  coverage sentence gains `GebLang.*`.
 
 ### Tests
 
@@ -350,8 +350,8 @@ extraction path.
   the floodgate prose with its activation point, and in
   `TODO.md`. Its § Two-track development gains `GebLang` as a
   porting destination (the section currently names the two
-  `Geb/` subtrees as the only ones), and its section on Cslib-specific
-  constraints section's scope extends to Cslib-track `GebLang`
+  `Geb/` subtrees as the only ones), and the scope of its section
+  on Cslib-specific constraints extends to Cslib-track `GebLang`
   modules: they ship to Cslib, so the notation-locality,
   PR-title, and pre-coordination constraints bind them at
   authoring time as they bind `Geb/Cslib/`.
@@ -361,10 +361,13 @@ extraction path.
   the docstring markup must remain acceptable to both pipelines.
   Its description of the axiom linter's coverage (`Geb` and
   `GebTests` declarations) gains `GebLang`.
-- `README.md` documents the library and the
-  `scripts/literate.sh` commands, and its § Upstream targets
+- `README.md`, in one pass: § Documentation gains the library
+  and the `scripts/literate.sh` commands; § Upstream targets
   gains `GebLang` with the destination-open, activation-gated
-  posture; `docs/index.md` § Directory structure gains
+  posture, including its recast-and-move sentence; § Process's
+  applies-under line gains the new paths; and the introduction's
+  upstream-route enumeration gains `GebLang`.
+- `docs/index.md` § Directory structure gains
   `GebLang/`, adds `GebLang.*` to the `Geb/Internal/` bullet's
   import enumeration (that allowance activates now), and adds
   `GebTests/Lang/` to the `GebTests/` bullet's subdirectory
@@ -373,21 +376,35 @@ extraction path.
 - `CONTRIBUTING.md`: the floodgate paragraph's transitive
   rewording with its activation point (§ Import rules),
   `GebLang` in the § Repo structure line, and `GebLang/` added
-  to the LLM-contribution-policy sentence's binding locations.
+  to the LLM-contribution-policy sentence's binding locations,
+  with the bullet's closing sentence ("both subtrees") reworded
+  to match.
 - `AGENTS.md`: the § AI authoring sentence and the path-scoped
   section heading (with its TOC entry) that enumerate
   `Geb/Mathlib/` and `Geb/Cslib/` gain `GebLang/`.
-- `README.md` § Process: the line stating where
-  `upstream-eligible.md` applies gains the new paths, and the
-  introduction's upstream-route enumeration (mathlib via
-  `Geb/Mathlib/`, Cslib via `Geb/Cslib/`) gains `GebLang`.
 - `TODO.md` § Verso adoption is revised: the doc-gen4 half of
   its scope-1 gate is met at the pin (verified by this
   workstream), the extraction-time docstring conversion
   (§ Import rules) supersedes the entry's
   mathlib-migration-based mechanism for `GebLang`, and the
   scope-2 exposition bullet gains a reference to the literate
-  site this workstream builds.
+  site this workstream builds. The cross-track entry's pointer
+  to the independence sentence of § Floodgate test is
+  reconciled with that sentence's transitive rewording.
+- Enumeration sweep: beyond the instances named above,
+  implementation greps the committed corpus for statements that
+  enumerate the upstream-eligible locations, porting
+  destinations, subtree or mirror structure, or root libraries,
+  and updates each for `GebLang`. Known instances from review:
+  the `GebTests.lean` module docstring's mirror enumeration
+  (gains the `GebTests.Lang`-tests-`GebLang` clause), the
+  `mk_all-check` rationale comment in `ci.yml`, the
+  `docs/index.md` phrase describing `GebTests/` as mirroring
+  `Geb/`, the `GebMeta.lean` docstring's namespace enumeration,
+  and the docs-coverage reminder's message text in
+  `scripts/pre-push.sh`. The sweep is a verified task
+  (§ Verification), so a straggler is a defect, not a gap in
+  this list.
 - `docs/process.md`: its § Floodgate test rationale is revised
   for the transitive form (a third eligible location; extraction
   dependency-ordered through `GebLang` rather than independent
@@ -474,6 +491,10 @@ subject to extraction, so its `{name}` role does not contradict
   § Placeholder content), the revised § Verso adoption entry,
   and the cross-track entry's half of the mutual
   cross-reference (§ Standards and rule documents).
+- The enumeration sweep of § Standards and rule documents has
+  run: a grep of the committed corpus for upstream-location,
+  porting-destination, subtree, mirror, and root-library
+  enumerations finds no statement left false by `GebLang`.
 - `scripts/tests/test-lint-driver.sh` passes with the `GebLang`
   coverage scan.
 - `scripts/pre-push.sh` passes end to end.
