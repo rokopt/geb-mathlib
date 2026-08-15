@@ -70,7 +70,7 @@ it.
 - Modify: `lakefile.toml` (requires section, before `cslib`)
 - Modify: `lake-manifest.json` (via `lake update verso`, not by
   hand)
-- Modify: `.github/workflows/update.yml:43` (step name only)
+- Modify: `.github/workflows/update.yml:42` (step name only)
 
 **Interfaces:**
 
@@ -125,8 +125,9 @@ required.)
 Run: `jj diff lake-manifest.json` and the two `grep`s from Step 1.
 Expected: new entries for `verso` (`inputRev` `v4.34.0-rc1`),
 `subverso`, `illuminate`; the `plausible` and `MD4Lean` revs are
-byte-identical to Step 1. If either moved, stop: the require is in
-the wrong position; re-check Step 2 placement.
+byte-identical to Step 1. If either moved, stop and re-check the
+Step 2 placement; if the placement is already correct and they
+still moved, stop and report the diff rather than iterating.
 
 - [ ] **Step 5: Verify nothing new compiles**
 
@@ -247,12 +248,12 @@ module
 
 public import VersoManual
 
-open Verso.Genre Manual
-
 /-! # Manual root
 
 The root `Part` of the Geb manual. Chapters are included here.
 -/
+
+open Verso.Genre Manual
 
 #doc (Manual) "Geb" =>
 
@@ -273,13 +274,13 @@ module
 
 import GebManual
 
-open Verso.Genre.Manual
-
 /-! # Generator entry point
 
 Passes the root `Part` to `manualMain`. Outside the `GebManual`
 module prefix, so `lake lint -- GebManual` does not reach it.
 -/
+
+open Verso.Genre.Manual
 
 /-- Generate the Geb manual. -/
 def main (args : List String) : IO UInt32 :=
@@ -304,6 +305,10 @@ with a module-system visibility error: remove the `module` line
 from the other `manual/` files; re-run, and record the exact
 error and the surviving file set for Task 8's rule delta. Any
 other error is a genuine defect: diagnose before changing form.
+This check spans Steps 5 and 6 jointly: a module-system failure
+surfacing only at Step 6 (in `Main.lean`'s `%doc` or its import
+of the library) takes the same fallback, starting with
+`Main.lean`'s own `module` line.
 
 - [ ] **Step 6: Build and run the generator**
 
@@ -383,7 +388,7 @@ are illustrative; use the printed ones):
 
 ```json
 [
-  ["docBlame", "«Geb»"]
+  ["docBlame", "GebManual.Root.«the canonical document object name»"]
 ]
 ```
 
@@ -431,10 +436,11 @@ linter: no manual module imports GebMeta.'
 **Interfaces:**
 
 - Consumes: `GebManual.Root` (Task 2), `scripts/nolints.json`
-  (Task 3), library modules `Geb.Mathlib.Data.W.Basic`
-  (`WType.elim`, `WType.elim_mk`, `WType.elim_unique`,
-  `WType.para`, `WType.para_mk`), `docs/references.bib` entry
-  `Meertens1992`.
+  (Task 3), the module `Geb.Mathlib.Data.W.Basic`
+  (`WType.elim_mk`, `WType.elim_unique`, `WType.para`,
+  `WType.para_mk`, plus mathlib's `WType` and `WType.elim`
+  re-exported through its `public import`), `docs/references.bib`
+  entry `Meertens1992`.
 - Produces: modules `GebManual.Introduction`, `GebManual.WTypes`,
   `GebManual.Bibliography` (bibliography `def Meertens1992`).
 
@@ -446,7 +452,9 @@ its outcome).
 
 Create `manual/GebManual/Bibliography.lean` (field values
 transcribed from `docs/references.bib:209-218`; the entry shape is
-Verso's `Article`, as in the precedent):
+Verso's `Article`, as in the precedent; author names render in the
+precedent's initialed form, `L. Meertens`, while the `.bib`
+remains authoritative for the full name and every other field):
 
 ```lean
 /-
@@ -458,15 +466,15 @@ module
 
 public import VersoManual
 
-open Verso.Genre.Manual
-
 /-! # Bibliography
 
 The works the manual cites, as Verso bibliography entries.
 `docs/references.bib` is the authoritative record; these are
 rendering transcriptions keyed identically (the UpperCamelCase
-names mirror the bib keys; see `docs/rules/lean-coding.md`).
+names mirror the bib keys).
 -/
+
+open Verso.Genre.Manual
 
 /-- Meertens, on paramorphisms. -/
 def Meertens1992 : Article := {
@@ -496,9 +504,9 @@ module
 
 public import VersoManual
 
-open Verso.Genre Manual
-
 /-! # Introduction chapter -/
+
+open Verso.Genre Manual
 
 #doc (Manual) "Introduction" =>
 
@@ -536,10 +544,10 @@ public import VersoManual
 public import GebManual.Bibliography
 import Geb.Mathlib.Data.W.Basic
 
+/-! # W-types chapter -/
+
 open Verso.Genre Manual
 open Verso.Genre.Manual.InlineLean
-
-/-! # W-types chapter -/
 
 #doc (Manual) "W-types and term algebras" =>
 
@@ -597,7 +605,12 @@ lake lint -- GebManual 2>&1 | tee /tmp/manual-lint-2.txt
 
 Expected: the build succeeds (`{name}` roles fail elaboration if
 a referenced declaration or the signature block does not match
-the source; fix the document, not the source); the lint fails only
+the source; fix the document, not the source). If a mathlib style
+or header linter fails under `warningAsError` once
+`Geb.Mathlib.Data.W.Basic` joins the closure, apply Task 3
+Step 3's procedure: disable that one linter in the library's
+`leanOptions` and note it for Task 8's rule delta. Otherwise the
+lint fails only
 with `docBlame` on the two new `#doc` `def`s. Add those names to
 `scripts/nolints.json` (keep the array sorted by declaration
 name), re-run, expect PASS. `Meertens1992` must NOT need an
@@ -710,11 +723,16 @@ Run:
 
 ```bash
 bash scripts/manual.sh serve &
-sleep 3
-curl -fsS "http://127.0.0.1:8000/" >/dev/null && echo SERVE-OK
-kill %1
+serve_pid=$!
+curl -fsS --retry 30 --retry-delay 1 --retry-all-errors \
+  "http://127.0.0.1:8000/" -o /dev/null && echo SERVE-OK
+kill "$serve_pid"
+pkill -f verso-serve || true
 ```
 
+(`curl --retry` does the waiting, so no foreground `sleep` is
+needed; the `pkill` catches the server child if the `exec`'d
+`lake` wrapper's death orphans it.)
 Expected: `SERVE-OK`. If port 8000 was already taken, read the
 URL from the serve banner and `curl` that instead; the check is
 that the printed URL serves the manual.
@@ -1036,8 +1054,11 @@ Run, in order, expecting every check to pass:
 ```bash
 bash scripts/manual.sh build
 bash scripts/manual.sh serve &
-sleep 3 && curl -fsS "http://127.0.0.1:8000/" | grep -qi geb && echo SERVE-OK
-kill %1
+serve_pid=$!
+curl -fsS --retry 30 --retry-delay 1 --retry-all-errors \
+  "http://127.0.0.1:8000/" | grep -qi geb && echo SERVE-OK
+kill "$serve_pid"
+pkill -f verso-serve || true
 lake lint -- GebManual   # PASS without GebMeta in scope
 bash scripts/tests/test-lint-driver.sh
 ```
@@ -1045,6 +1066,15 @@ bash scripts/tests/test-lint-driver.sh
 Also confirm in a browser (user-visible check, can be deferred to
 the user's review): the served manual renders both chapters, the
 `{name}` hovers, and the bibliography.
+
+Two spec § Verification items are deferred past this task by
+design: the `doc-build.yml` pass requires a push, which happens
+only after the user's line-by-line review; and the
+clean-`.lake`-state build is exercised only by the fresh checkout
+in CI (simulating it locally would discard the mathlib cache).
+The build-before-lint order in `scripts/manual.sh` is what
+protects that cold path; the first CI run on the branch is its
+proof.
 
 - [ ] **Step 2: Pre-push checklist**
 
