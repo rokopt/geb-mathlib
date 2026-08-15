@@ -305,22 +305,30 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # as literal braces upstream, and no other arm, GebTests/Lang/
 # included, has anything to convert.
 #
-# The braces hold a bare identifier and nothing else. Widening the
-# pattern to admit role arguments would also match Lean written
-# inside a code span: `Cat.{v, u}` and `` `{g : B → k.1 // p g}` ``
-# both open with a letter and close before a backtick, and both occur
-# in this repository's docstrings today. A role taking arguments is
-# therefore left unconverted rather than risking that; add its exact
-# form here when one is first used, and expect it to ship as literal
-# braces until then.
+# The braces hold a bare identifier and nothing else, and the group
+# must open the line or follow a character that can neither end a Lean
+# identifier nor close a code span. Both restrictions are load-bearing
+# against Lean written inside a code span:
 #
-# The narrow pattern still matches one thing that is not a role: a
-# lone brace-delimited identifier ending a code span, as in
-# `` `Nat.rec {motive}` ``. Confining the strip to the one arm that
-# needs it bounds that to GebLang/ docstrings, whose author is
-# writing Verso and will not spell an implicit argument that way
-# without meaning a role.
-role_strip='s/[{][A-Za-z][A-Za-z0-9_]*[}]`/`/g'
+#   `Cat.{v, u}`               multi-token, excluded by the first
+#   `{g : B → k.1 // p g}`     multi-token, excluded by the first
+#   `Type.{u}`                 single-token, excluded by the second
+#                              (the brace group follows a `.`)
+#   `{S}`                      single-token, excluded by the second
+#                              (the brace group follows a backtick)
+#
+# The single-token forms are the ones that matter here: a universe
+# ascription is written that way throughout this repository's Lean,
+# and a singleton or an implicit binder group is written that way in
+# prose. Without the leading context the pattern eats them, and eats
+# them inside a role's own argument, since the substitution is global.
+#
+# A role taking arguments is left unconverted rather than widening the
+# first restriction; add its exact form here when one is first used,
+# and expect it to ship as literal braces until then. A role abutting
+# a preceding span's closing backtick is likewise left alone, which no
+# Verso prose writes.
+role_strip='s/(^|[^A-Za-z0-9_.`])[{][A-Za-z][A-Za-z0-9_]*[}]`/\1`/g'
 
 # convert_roles is 1 for the one arm reading doc.verso sources.
 #
@@ -548,14 +556,21 @@ cat > GebLang/Foo/Bar.lean <<'EOF'
 module
 public import GebLang.Foo.Base
 
-/-- Anchors {name}`Nat` in a docstring. -/
+/-- Anchors {name}`Nat` in a docstring, beside Lean the conversion
+must not touch: {lit}`Type.{u}` and {lit}`{S}` carry a brace group of
+the same shape as a role, and `{p}` is a code span with no role at
+all. -/
 EOF
 bash "$SCRIPT" GebLang/Foo/Bar.lean fork4 >/dev/null
 out=fork4/Mathlib/Foo/Bar.lean
 exists "mathlib-track GebLang -> Mathlib path" "$out"
 has   "mathlib-track sibling rewritten" "public import Mathlib.Foo.Base" "$out"
 lacks "Verso role markup removed" '{name}' "$out"
+lacks "lit role markup removed" '{lit}' "$out"
 has   "code span survives the conversion" '`Nat`' "$out"
+has   "universe ascription survives conversion" '`Type.{u}`' "$out"
+has   "binder group survives conversion" '`{S}`' "$out"
+has   "role-less code span untouched" '`{p}`' "$out"
 
 # A Cslib-track GebLang module importing a mathlib-track sibling: the
 # sibling is rewritten by its own track, not by the destination.
@@ -617,9 +632,8 @@ has   "cslib test sibling rewritten to CslibTests" "import CslibTests.CsSib" "$o
 # The widened Mathlib arms rewrite GebLang. and the test self-prefix.
 # The docstring here carries Lean that the role-conversion pattern
 # must not touch: a universe ascription and a subtype, each inside a
-# code span, each opening with a letter and closing before a backtick.
-# This arm does not convert roles at all, and the pattern would leave
-# these alone even if it did.
+# code span. This arm does not convert roles at all; the GebLang/
+# fixture below covers the same shapes in the arm that does.
 mkdir -p fork8
 cat > Geb/Mathlib/Foo/Wide.lean <<'EOF'
 module
@@ -1257,9 +1271,11 @@ and add, after the `Batteries.*` rationale paragraph:
 # scripts/extract-pr.sh reads to pick a destination.
 ```
 
-Three further passages of the header state the superseded whole-line
+Five further passages of the header state the superseded whole-line
 exemption or the unconditional init rule, and change with the
-mechanism.
+mechanism: the opening paragraph, the `check_subtree` usage comment,
+its `<required-init>` sentence, the test-root paragraph, and the
+Rule 2 sentence.
 
 The opening paragraph, which reads
 
@@ -1286,18 +1302,24 @@ becomes, re-flowed because the second sentence ends mid-line
 # minimised-imports enforcement only operates on module-form files.
 ```
 
-The `check_subtree` usage comment, which reads
+The `check_subtree` usage comment's two lines about the first
+separator, which read
 
 ```bash
 # (each such prefix must not appear outside import lines), the second
+# separates the find-roots from the allowed-import prefixes.
 ```
 
-becomes
+become
 
 ```bash
 # (each such prefix must not appear outside an import line's module
-# path), the second
+# path), the second separates the find-roots from the allowed-import
+# prefixes.
 ```
+
+That replaces two lines with three, the sentence's tail included, so
+no short line is left between two full ones.
 
 The `<required-init>` sentence of the same usage block, which reads
 
@@ -1382,8 +1404,11 @@ becomes
 
 ```bash
 # Case 36: the leakage exemption covers an import line's module path.
-# A self-prefix anywhere else, including in a comment that merely
-# contains the word `import`, is still leakage.
+# A self-prefix anywhere else on a line that does not begin with an
+# import keyword, a comment merely containing the word `import`
+# included, is still leakage. A prose line whose own first token is
+# `import` has its second token blanked like an import line's, the
+# two being the same shape.
 ```
 
 and the assertion becomes
@@ -1879,7 +1904,9 @@ import rules restrict `Geb/Mathlib/` modules to `Mathlib.*`,
 `Batteries.*` and `Geb.Mathlib.*` imports, so a dependency of such a
 module cannot live in `Geb/Internal/`; a module restating Lean core
 or Batteries API therefore sits in `Geb/Mathlib/` while its upstream
-is neither mathlib4 nor CSLib.
+is neither mathlib4 nor CSLib. That destination is open, per
+`TODO.md` § Upstream destination of core- and Batteries-targeted
+content.
 ```
 
 and becomes
@@ -2532,9 +2559,11 @@ Run:
 doctoc --update-only . && markdownlint-cli2 '**/*.md' && bash scripts/check-md-links.sh
 ```
 
-Expected: exit 0 from each. `doctoc` inserts a `**Table of Contents**`
-title line into any TOC it regenerates; delete it, the repository's
-TOCs carrying none.
+Expected: exit 0 from each. Every file this task touches already has
+`doctoc` markers, and `--update-only` leaves a marked table of
+contents without a title line just as it found it, so no
+`**Table of Contents**` line should appear; if one does, the file was
+given markers for the first time and the line is deleted.
 
 - [ ] **Step 13: commit**
 
@@ -2624,6 +2653,12 @@ only this scan reaches:
 - `docs/rules/upstream-eligible.md` § Two-track development's opening
   paragraph, on explorations that build on upstream-quality code.
 
+- `TODO.md` § Verso adoption, scope 1, which calls Verso-markup
+  docstrings contraindicated for the upstream-eligible subtrees on
+  the grounds that they would read as foreign to reviewers. Plan 1
+  revises that entry for the doc-gen4 half of its gate; this
+  workstream also makes `GebLang/` upstream-eligible with Verso
+  docstrings converted at extraction, which the entry should say.
 - `manual/GebManual/Introduction.lean`, whose upstream-directed
   paragraph enumerates `Geb/Mathlib/`, `Geb/Cslib/` and
   `Geb/Internal/` as the whole of the layout. That file is in no
@@ -2654,12 +2689,10 @@ Two more are caused by this plan rather than found by it:
   Task 1 falsifies as a description of the script. The entry's own
   claim survives, the `Geb/Mathlib/` arm converting no roles, so
   restate the clause rather than removing the entry.
-
-The other:
-`scripts/tests/test-lint-imports.sh`'s header says it stages
-synthetic `Geb/{Mathlib,Cslib}` and `GebTests/{Mathlib,Cslib}`
-subtrees, which Task 3 Step 7's `setup_empty` change falsifies.
-Correct it to name the two new roots as well.
+- `scripts/tests/test-lint-imports.sh`'s header says it stages
+  synthetic `Geb/{Mathlib,Cslib}` and `GebTests/{Mathlib,Cslib}`
+  subtrees, which Task 3 Step 7's `setup_empty` change falsifies.
+  Correct it to name the two new roots as well.
 
 - [ ] **Step 3: fix the `ci.yml` rationale comment**
 
@@ -2721,8 +2754,8 @@ the `GebLang/` bullet (Task 5 above).
 
 - [ ] **Step 6: fix whatever else the sweep found**
 
-Apply the same treatment to every remaining defect from Steps 1 and
-2. Record
+Apply the same treatment to every remaining defect found by either
+scan. Record
 each file changed in the task report; the sweep is the spec's verified
 task, so the report is the evidence that it ran.
 

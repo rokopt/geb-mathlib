@@ -95,3 +95,5 @@ retargeting
 frontmatter
 heredoc
 worklist
+functor
+functors
