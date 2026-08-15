@@ -115,25 +115,32 @@ Context a fresh executor cannot recover from the spec.
   a fresh empty change, so do not run `jj new` afterward. Advance the
   bookmark after each commit with
   `jj bookmark move feat/geblang-literate --to @-`. Never push.
-- **Run the Markdown linters on every document you write**, rather
-  than relying on a hook to run them: whether one fires depends on
-  the harness configuration, but `markdownlint-cli2` binds through
-  `scripts/pre-push.sh` and Vale through `.vale.ini` regardless. Vale
-  at error level rejects spaced em dashes, the Latin abbreviation for
-  `for example`, the capitalised spelling of `Cslib`, the clipped
-  form of `repository`, and colloquialisms. Its project vocabulary is
+- **Run the Markdown linters on every document you write.**
+  `markdownlint-cli2 '**/*.md'` binds through `scripts/pre-push.sh`
+  and must be clean. Vale does not: nothing in `scripts/` or
+  `.github/workflows/` invokes it, and whether an editor hook does
+  depends on the harness. Run it anyway, with
+  `vale --minAlertLevel=error <file>`, but read it differentially:
+  several files this plan edits are already dirty, so the criterion
+  is no *new* alert against the file's output before your edit, not a
+  clean report. Vale at error level rejects spaced em dashes, the
+  Latin abbreviation for `for example`, the capitalised spelling of
+  `Cslib`, the clipped form of `repository`, and colloquialisms. Its
+  project vocabulary is
   `styles/config/vocabularies/GebMathlib/accept.txt`, one term per
   line; add a genuinely recurring technical term there rather than
   contorting prose, and reword a one-off informal word instead.
   Identifiers inside backticks are outside Vale's scope, so write
-  `GebLang` in backticks in prose. The check is
-  `vale --minAlertLevel=error <file>` and
-  `markdownlint-cli2 '**/*.md'`.
-- **Build costs.** `lake build GebLang` is cheap. The first
-  `lake build :literateHtml` compiles the `verso-literate`
+  `GebLang` in backticks in prose.
+- **Build costs.** `lake build GebLang` is cheap. Two steps are not.
+  The first `lake build :literateHtml` compiles the `verso-literate`
   executables from source and takes minutes; later runs after a
-  docstring edit are incremental. Run `lake exe cache get` before the
-  first build in a cold workspace.
+  docstring edit are incremental. The first `lake build GebLang:docs`
+  is comparable in a workspace with no `.lake/build/doc`: it compiles
+  doc-gen4 and its SQLite dependency from source and then generates
+  the core documentation for `Init`, `Std`, `Lake` and `Lean` before
+  reaching this library. Run `lake exe cache get` before the first
+  build in a cold workspace.
 - **Foreground `sleep` is blocked** for executors. Poll a served site
   with `curl --retry` rather than sleeping, and clean up with
   `pkill -f verso-serve`.
@@ -275,6 +282,12 @@ under the {option}`doc.verso` option. -/
 def gebLangAnchor : Nat := 0
 ```
 
+`@[expose] public section` follows the `Geb/Mathlib/` sources rather
+than the plain `public section` that other modules here use: content
+replacing this module will be consumed across module boundaries, and
+starting exposed avoids a later visibility change. Either form
+elaborates.
+
 The declaration is replaced, not grown, when content lands; Task 6
 records that expectation in `TODO.md`. Note the Verso list marker
 `*`, the role on every code span, and the absence of the `GebLang.`
@@ -351,22 +364,32 @@ and prints `Running linter on specified modules: [Geb, GebLang]` and
 a passing line for each. That is why the run is not free, and why it
 is worth knowing that `scripts/literate.sh build` re-lints `Geb`.
 Batteries' `runLinter` prints each linter's `noErrorsFound` string
-only on the failure path
-(`.lake/packages/batteries/scripts/runLinter.lean:180` against
-`Batteries/Tactic/Lint/Frontend.lean`), so a passing run does not
-name the axiom linter. That the axiom linter ran is established by
-the umbrella's `GebMeta` import registering the `@[env_linter]`; to
-see it fire, temporarily give the placeholder a
-`Classical.choice`-dependent proof and confirm the run fails.
+only on the failure path, through `formatLinterResults`; the passing
+path prints the one line per module at
+`.lake/packages/batteries/scripts/runLinter.lean:180`. A passing run
+therefore does not name the axiom linter.
+
+That the axiom linter ran is established by the umbrella's `GebMeta`
+import registering the `@[env_linter]`, and by
+`scripts/tests/test-axiom-linter.sh`, which the pre-push checklist
+runs. Do not try to make it fire on the placeholder: every
+`Classical.choice`-dependent inhabitant of `Nat` is `noncomputable`,
+which `CONTRIBUTING.md` § Constructive-only forbids outright.
 
 - [ ] **Step 7: confirm the default build covers the library**
 
-Run: `lake query :defaultTargets`
+Run:
 
-Expected: `Geb` and `GebLang`, from the change of Step 1. Then run
-`lake build` and expect exit 0. A warm `lake build` prints
-`Build completed successfully` without naming its targets, which is
-why the target list is checked separately.
+```bash
+lake build -v 2>&1 | grep ':default'
+```
+
+Expected: a `Ran «geb-mathlib»/Geb:default` line and a
+`Ran «geb-mathlib»/GebLang:default` line. Before Step 1 only the
+first appears, which is what this step checks. A plain `lake build`
+prints `Build completed successfully` without naming its targets, and
+Lake has no target-listing query (`lake query :defaultTargets` is an
+unknown facet), so the verbose build is the check.
 
 - [ ] **Step 8: commit**
 
@@ -601,7 +624,8 @@ usage: scripts/literate.sh {build|serve}
          incremental.
   serve  Serve the rendered site with verso-serve, which prints the
          URL it binds (port 8000, or a higher free port when 8000 is
-         taken).
+         taken). Its first run compiles verso-serve, one more
+         executable than 'build' needs.
 
 There is no watch mode: after editing a docstring, re-run 'build' and
 refresh the browser. Lake rebuilds only the changed modules.
@@ -747,6 +771,30 @@ gap unconditionally. This is a deviation from the spec's § Context on
 a matter of fact, so it is on the list of items for the user's review;
 the spec's own § Verification anticipates a gap and asks for it to be
 recorded, which is what this task does.
+
+**A configuration that would close the gap, not adopted here.** Lean
+core registers `doc.verso.module` beside `doc.verso`
+(`Lean/DocString/Extension.lean:120`), described as "whether to use
+Verso syntax in module docstrings (falls back to `doc.verso` if not
+set)". Setting `doc.verso.module = false` alongside
+`doc.verso = true` would leave declaration docstrings as checked
+Verso, with their roles, and make module docstrings ordinary
+Markdown. Both pipelines would then carry the module prose: doc-gen4
+reads Markdown module docstrings, and Verso's literate renderer has a
+Markdown path for them
+(`verso/src/verso-literate/VersoLiterateMain.lean:400-401`, the
+`MD4Lean.parse` branch producing `.markdownModDoc`). The cost is that
+a module docstring could no longer use a role.
+
+This plan does not adopt it. The spec's § Library and layering gives
+the `[lean_lib.leanOptions]` block verbatim, with `doc.verso = true`
+and nothing else, and adding a second option changes the library's
+authoring model, so it is the user's decision rather than the
+executor's. It is the third item on the list for the user's review,
+recorded here with the measurement rather than left undiscovered.
+Step 2 below measures the plan's configuration as specified; if the
+user adopts the option, Steps 2 and 3 are re-run against it and the
+`TODO.md` entry is not written.
 
 - [ ] **Step 1: build the documentation**
 
@@ -954,24 +1002,30 @@ lines 62 to 64 becomes
 # build `GebTests` explicitly here.
 ```
 
-and the cache-fetch rationale's opening, which reads
+and the cache-fetch rationale's first paragraph, which reads
 
 ```bash
 # Fetch the full mathlib olean cache, mirroring CI's
 # leanprover/lean-action. Without it, after a toolchain bump only
 # the oleans that `Geb` directly imports are present, and the
+# `lake shake` smoke test below (which injects an arbitrary mathlib
+# import) fails with "out of date oleans; fetch them from a cache".
 ```
 
 becomes
 
 ```bash
 # Fetch the full mathlib olean cache, mirroring CI's
-# leanprover/lean-action. Without it, after a toolchain bump only
-# the oleans that the root libraries `Geb` and `GebLang` directly
-# import are present, and the
+# leanprover/lean-action. Without it, after a toolchain bump only the
+# oleans that the root libraries `Geb` and `GebLang` directly import
+# are present, and the `lake shake` smoke test below (which injects
+# an arbitrary mathlib import) fails with "out of date oleans; fetch
+# them from a cache".
 ```
 
-leaving the rest of that comment paragraph unchanged.
+That replaces the paragraph's first six lines, re-flowed: pinning
+fewer would leave a short line mid-paragraph. The paragraphs that
+follow, on when the fetch runs and on the lock, are unchanged.
 
 Widen the docs-coverage reminder. The guard, which reads
 
@@ -1046,7 +1100,7 @@ Extend the workflow check at lines 98 to 104 to one literal per
 product:
 
 ```bash
-# --- 3. doc-build.yml retains the product build steps ----------------
+# --- 3. doc-build.yml retains the product build steps --------------------
 # The manual is linted only by scripts/manual.sh build, and the
 # literate site is rendered only by scripts/literate.sh build, both in
 # doc-build.yml; losing either step would silently drop that product.
@@ -1180,8 +1234,12 @@ which reads
 `- [Verso manual modules (manual/)](#verso-manual-modules-manual)`:
 
 ```markdown
-- [Literate modules (GebLang)](#literate-modules-geblang)
+- [Literate modules (`GebLang`)](#literate-modules-geblang)
 ```
+
+The backticks are kept in the entry text: the heading carries them,
+and `doctoc` reproduces a heading's inline code in its entry, as the
+file's existing entries show.
 
 and add the section itself after § Verso manual modules (manual/),
 before § Lean 4 skill workflows:
@@ -1306,21 +1364,23 @@ becomes
   GebTests GebLang`.
 ```
 
-The `lake exe cache get` bullet's second sentence, which reads
+The `lake exe cache get` bullet's two lines naming the root library,
+which read
 
 ```markdown
-  The cache fetch is
   required because `lake build` alone fetches only the oleans
-  `Geb` imports;
+  `Geb` imports; the `lake shake` step injects an arbitrary
 ```
 
-becomes
+become, re-flowed because the sentence ends mid-line
 
 ```markdown
-  The cache fetch is
   required because `lake build` alone fetches only the oleans the
-  root libraries `Geb` and `GebLang` import;
+  root libraries `Geb` and `GebLang` import; the `lake shake` step
+  injects an arbitrary
 ```
+
+leaving the rest of the bullet unchanged.
 
 The docs-coverage bullet
 
@@ -1374,7 +1434,7 @@ with
 ```markdown
   1. Docstrings in `.lean` files: neither half of the gate is met at the
      pin. doc-gen4 flattens a Verso declaration docstring to Markdown and
-     drops a Verso module docstring altogether (§ Triggers, doc-gen4 does
+     drops a Verso module docstring altogether (§ Triggers, doc-gen4 drops
      not render `GebLang`'s Verso docstrings), and mathlib has not
      migrated. Still contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`,
      whose Verso-markup docstrings would read as foreign to mathlib
