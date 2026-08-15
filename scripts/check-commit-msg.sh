@@ -12,9 +12,8 @@
 #
 # jj does not run git commit hooks, so this is invoked over a commit
 # range by pre-push.sh and by CI rather than as a per-commit hook.
-# Imperative mood is not machine-checkable and is left to review; an
-# over-72-character subject warns but does not fail (the convention
-# states a target, not a hard limit).
+# Imperative mood is not machine-checkable and is left to review; the
+# 72-character subject limit is enforced.
 
 set -uo pipefail
 
@@ -48,7 +47,8 @@ while IFS= read -r subject; do
       ;;
   esac
   if [ "${#subject}" -gt 72 ]; then
-    echo "WARN: subject exceeds 72 characters (${#subject}): $subject" >&2
+    echo "FAIL: subject exceeds 72 characters (${#subject}): $subject" >&2
+    failed=1
   fi
 done
 

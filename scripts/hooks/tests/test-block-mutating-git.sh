@@ -38,7 +38,6 @@ assert_allow() {
     echo "FAIL [$name]: expected no stdout (silent allow), got: $out"
     return 1
   fi
-  echo "PASS [$name]"
 }
 
 # A prompt case: hook exits 0 but emits a JSON document with
@@ -63,7 +62,6 @@ assert_prompt() {
     echo "FAIL [$name]: expected hookSpecificOutput.permissionDecision = \"ask\", got: ${decision:-<empty>}"
     return 1
   fi
-  echo "PASS [$name]"
 }
 
 # Allow cases — unconditional read-only subcommands.
@@ -265,9 +263,7 @@ assert_jq_missing() {
     echo "FAIL [jq missing]: expected no output, got: $out"
     return 1
   fi
-  echo "PASS [jq missing]"
 }
 assert_jq_missing
 
-echo ""
-echo "All smoke tests passed."
+echo "test-block-mutating-git.sh: all smoke tests passed"

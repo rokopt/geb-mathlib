@@ -13,9 +13,7 @@ SCRIPT="$here/../check-commit-msg.sh"
 failed=0
 
 accept() { # name subject
-  if printf '%s\n' "$2" | bash "$SCRIPT" >/dev/null 2>&1; then
-    echo "PASS [accept]: $1"
-  else
+  if ! printf '%s\n' "$2" | bash "$SCRIPT" >/dev/null 2>&1; then
     echo "FAIL [accept]: $1 -- '$2' rejected"
     failed=1
   fi
@@ -24,8 +22,6 @@ reject() { # name subject
   if printf '%s\n' "$2" | bash "$SCRIPT" >/dev/null 2>&1; then
     echo "FAIL [reject]: $1 -- '$2' accepted"
     failed=1
-  else
-    echo "PASS [reject]: $1"
   fi
 }
 
@@ -52,12 +48,16 @@ reject "missing colon-space"  'feat add presheaf functor'
 reject "empty subject"        'feat: '
 reject "capitalised no-type (PR #45 regression)" 'Rename polynomial positions to directions'
 
+# The 72-character subject limit, checked either side of the boundary.
+# `feat: ` occupies 6 characters, so the bodies are 66 and 67 long.
+body() { printf '%*s' "$1" '' | tr ' ' 'a'; }
+accept "subject of exactly 72 characters" "feat: $(body 66)"
+reject "subject of 73 characters"         "feat: $(body 67)"
+
 # A multi-line batch with one bad subject fails overall.
 if printf '%s\n%s\n' 'feat: ok one' 'Bad two' | bash "$SCRIPT" >/dev/null 2>&1; then
   echo "FAIL [batch]: a batch containing a violation was accepted"
   failed=1
-else
-  echo "PASS [batch]: batch with a violation rejected"
 fi
 
 if [ "$failed" -ne 0 ]; then

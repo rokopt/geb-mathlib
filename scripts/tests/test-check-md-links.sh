@@ -41,7 +41,6 @@ assert_case() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS [$name]"
 }
 
 mkdir -p "$test_dir/docs/rules"
@@ -104,7 +103,6 @@ assert_repo_case() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS [$name]"
 }
 
 # Under jj, a file the working copy holds is enumerated without an

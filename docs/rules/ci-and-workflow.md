@@ -33,7 +33,8 @@ for mathlib's full convention.
 
 Types: `feat | fix | doc | style | refactor | test | chore | perf | ci`.
 Imperative present tense, no capital, no trailing period. Subject
-under 72 characters when possible.
+at most 72 characters: `scripts/check-commit-msg.sh` rejects a
+longer one, so the bound is enforced rather than advisory.
 
 Documented footers: `Closes #123, #456`, `BREAKING CHANGE: ...`,
 `- [ ] depends on: #XXXX`. Mathlib's published convention does not
@@ -41,11 +42,25 @@ include `Moves:` or `Deletions:`, so nor does ours.
 
 ## Pre-push checklist
 
-`scripts/pre-push.sh` is the authoritative checklist; it exits
-non-zero on any failure. This summary groups what it runs; consult
-the script for the exact order.
+The checklist is split by what a change touches. `scripts/pre-push.sh`
+checks repository content: the Lean sources and the Markdown that
+the build system acts on. `scripts/test-tooling.sh` runs the build
+system's own self-tests. `scripts/pre-push-full.sh` runs both, in
+that order, and is the one to run for a change touching the build
+system itself; content-only changes need `scripts/pre-push.sh`
+alone. Each exits non-zero on any failure. This summary groups what
+they run; consult the scripts for the exact order.
 
-Build and Lean linters:
+`scripts/test-tooling.sh` discovers its tests by glob over
+`scripts/tests/test-*.sh` and `scripts/hooks/tests/test-*.sh`, so a
+new test script runs by virtue of existing. Several of those tests
+drive `lake` against the live project, which is why
+`pre-push-full.sh` runs `pre-push.sh` first: they need the built
+tree and populated olean cache its `lake exe cache get` and
+`lake build` steps leave behind. Running `test-tooling.sh` on its
+own requires a prior `lake build`.
+
+`scripts/pre-push.sh` runs the build and Lean linters:
 
 - `lake exe cache get` populates the full mathlib olean cache
   (mirroring CI's `leanprover/lean-action`). The cache fetch is
@@ -72,22 +87,11 @@ Build and Lean linters:
 - `lake shake --add-public --keep-implied --keep-prefix Geb
   GebTests`.
 
-Script self-tests:
+then the Markdown and project-rule checks:
 
-- `scripts/lint-imports.sh` and `scripts/tests/test-lint-imports.sh`.
-- `scripts/tests/test-lake-shake.sh`,
-  `scripts/tests/test-extract-pr.sh`,
-  `scripts/tests/test-axiom-linter.sh`,
-  `scripts/tests/test-lint-driver.sh`,
-  `scripts/tests/test-check-md-links.sh`.
-- `scripts/tests/test-mathlib-bump-detect.sh`,
-  `scripts/tests/test-jj-bump-detect.sh`,
-  `scripts/tests/test-regenerate-integration.sh`,
-  `scripts/tests/test-diff-against-main.sh`.
-- `scripts/hooks/tests/test-block-mutating-git.sh`.
-
-Markdown and project-rule checks:
-
+- `scripts/lint-imports.sh` (the subtree import rules; see
+  `docs/rules/upstream-eligible.md`).
+- `scripts/check-commit-msg.sh` over the branch's commit subjects.
 - `doctoc --dryrun --update-only .` (TOC freshness; skipped when
   `doctoc` is absent) and `markdownlint-cli2 '**/*.md'`.
 - `scripts/check-md-links.sh` (every internal Markdown link target
@@ -97,14 +101,31 @@ Markdown and project-rule checks:
 - Docs-coverage reminder: Lean changes under an upstream-eligible
   or the `Geb/Internal/` subtree without a `docs/index.md` change.
 
-Informational reminders (printed, not enforced):
+`scripts/test-tooling.sh` runs the script and hook self-tests. Each
+exercises the tool named in its own filename against staged
+fixtures:
 
-- (PR-candidate) PR descriptions, Zulip messages, and GitHub
-  comments are user-authored ("use your own words"); the user
-  reviews the diff line-by-line before any push.
-- (Lean-content) run `lean4:golf` on changed proofs and
-  `lean4:review` on the diff; (PR-candidate)
-  `pr-review-toolkit:review-pr`.
+- `scripts/tests/test-lint-imports.sh`,
+  `scripts/tests/test-lake-shake.sh`,
+  `scripts/tests/test-extract-pr.sh`,
+  `scripts/tests/test-axiom-linter.sh`,
+  `scripts/tests/test-lint-driver.sh`,
+  `scripts/tests/test-check-md-links.sh`,
+  `scripts/tests/test-check-commit-msg.sh`.
+- `scripts/tests/test-mathlib-bump-detect.sh`,
+  `scripts/tests/test-jj-bump-detect.sh`,
+  `scripts/tests/test-regenerate-integration.sh`,
+  `scripts/tests/test-diff-against-main.sh`.
+- `scripts/hooks/tests/test-block-mutating-git.sh`.
+
+The scripts report what the checks found and nothing else. Project
+rules that bind the contributor rather than the tree, and the tool
+invocations an agent is expected to make, live in the Markdown that
+states them; restating either in build output addresses the reader
+who runs the checklist as though they were its subject. The
+docs-coverage notice above is the one printed line that does not
+fail the run, because the check behind it is a heuristic over the
+branch diff rather than a decision about the tree.
 
 ## Verso manual build
 

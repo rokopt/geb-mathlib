@@ -41,19 +41,15 @@ jj new >/dev/null 2>&1
 echo changed > changed.txt
 
 # 1. The primary revset must parse (rc 0) under the active jj.
-if jj log --no-graph -r "$DIFF_AGAINST_MAIN_PRIMARY_REVSET" \
-     -T 'change_id.short() ++ "\n"' >/dev/null 2>&1; then
-  echo "PASS: primary revset parses ($DIFF_AGAINST_MAIN_PRIMARY_REVSET)"
-else
+if ! jj log --no-graph -r "$DIFF_AGAINST_MAIN_PRIMARY_REVSET" \
+       -T 'change_id.short() ++ "\n"' >/dev/null 2>&1; then
   echo "FAIL: primary revset does not parse under $(jj --version)"
   failed=1
 fi
 
 # 2. diff_against_main lists the file added on the branch.
 out="$(diff_against_main)"
-if printf '%s\n' "$out" | grep -qx 'changed.txt'; then
-  echo "PASS: diff_against_main lists the changed file"
-else
+if ! printf '%s\n' "$out" | grep -qx 'changed.txt'; then
   echo "FAIL: diff_against_main missing changed.txt; got: $out"
   failed=1
 fi

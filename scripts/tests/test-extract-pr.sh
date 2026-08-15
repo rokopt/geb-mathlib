@@ -17,15 +17,15 @@ trap 'rm -rf "$tmp"' EXIT
 cd "$tmp" || exit 1
 
 has() { # name needle file
-  if grep -qF "$2" "$3"; then echo "PASS: $1"; else
+  if ! grep -qF "$2" "$3"; then
     echo "FAIL: $1 (missing '$2' in $3)"; failed=1; fi
 }
 lacks() { # name needle file
   if grep -qF "$2" "$3"; then
-    echo "FAIL: $1 (unexpected '$2' in $3)"; failed=1; else echo "PASS: $1"; fi
+    echo "FAIL: $1 (unexpected '$2' in $3)"; failed=1; fi
 }
 exists() { # name path
-  if [ -f "$2" ]; then echo "PASS: $1"; else echo "FAIL: $1 (no $2)"; failed=1; fi
+  if [ ! -f "$2" ]; then echo "FAIL: $1 (no $2)"; failed=1; fi
 }
 
 # Geb/Mathlib -> Mathlib/, import and public import rewritten.

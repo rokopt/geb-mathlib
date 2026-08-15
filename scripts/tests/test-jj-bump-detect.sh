@@ -29,7 +29,6 @@ assert_eq() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS: $name"
 }
 
 assert_status() {
@@ -40,7 +39,6 @@ assert_status() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS: $name"
 }
 
 # Version selection: bare pin against the v-prefixed release tag.
@@ -80,6 +78,5 @@ assert_status "musl asset present" 0 "$?"
 release_has_asset 0.44.0 <<<"$release_json"
 assert_status "musl asset absent for other version" 1 "$?"
 
-echo ""
 echo "test-jj-bump-detect.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

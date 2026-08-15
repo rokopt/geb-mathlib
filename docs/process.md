@@ -431,9 +431,12 @@ is one such checkpoint), and when they change, update
 PR descriptions, Zulip messages, GitHub issue/PR comments are
 user-authored. Mathlib's policy is unconditional ("use your own
 words"). Multi-layered enforcement: hard rule in
-`CONTRIBUTING.md` § Rules § Submission policy,
-pre-push reminder in `scripts/pre-push.sh`, PR template checkbox,
-user-review-before-push gate. The redundancy is intentional.
+`CONTRIBUTING.md` § Rules § Submission policy, PR template
+checkbox, user-review-before-push gate. The redundancy is
+intentional. Build output is not one of the layers: `scripts/`
+reports what the checks found, and restating a project rule there
+would address the reader who runs the checklist as though they
+were the agent the rule binds.
 
 ## Generic user references
 

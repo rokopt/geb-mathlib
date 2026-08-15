@@ -44,7 +44,6 @@ assert_case() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS: $name"
 }
 
 # Case 1: empty subtrees (only .gitkeep placeholders).
@@ -434,6 +433,5 @@ EOF
 assert_case "comment containing 'import' is not an import line" 1 \
   "'Geb.Mathlib.' outside ^import line"
 
-echo ""
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"
