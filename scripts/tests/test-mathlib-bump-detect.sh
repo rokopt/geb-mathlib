@@ -27,7 +27,6 @@ assert_eq() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS: $name"
 }
 
 assert_eq "newer rc is selected" "v4.31.0-rc1" \
@@ -53,6 +52,5 @@ TOML
 assert_eq "reads the mathlib pin, not cslib" "v4.30.0-rc2" \
   "$(read_mathlib_pin "$fixture")"
 
-echo ""
 echo "test-mathlib-bump-detect.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

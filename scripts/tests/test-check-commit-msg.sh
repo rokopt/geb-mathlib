@@ -13,9 +13,7 @@ SCRIPT="$here/../check-commit-msg.sh"
 failed=0
 
 accept() { # name subject
-  if printf '%s\n' "$2" | bash "$SCRIPT" >/dev/null 2>&1; then
-    echo "PASS [accept]: $1"
-  else
+  if ! printf '%s\n' "$2" | bash "$SCRIPT" >/dev/null 2>&1; then
     echo "FAIL [accept]: $1 -- '$2' rejected"
     failed=1
   fi
@@ -24,8 +22,6 @@ reject() { # name subject
   if printf '%s\n' "$2" | bash "$SCRIPT" >/dev/null 2>&1; then
     echo "FAIL [reject]: $1 -- '$2' accepted"
     failed=1
-  else
-    echo "PASS [reject]: $1"
   fi
 }
 
@@ -56,8 +52,6 @@ reject "capitalised no-type (PR #45 regression)" 'Rename polynomial positions to
 if printf '%s\n%s\n' 'feat: ok one' 'Bad two' | bash "$SCRIPT" >/dev/null 2>&1; then
   echo "FAIL [batch]: a batch containing a violation was accepted"
   failed=1
-else
-  echo "PASS [batch]: batch with a violation rejected"
 fi
 
 if [ "$failed" -ne 0 ]; then

@@ -29,7 +29,6 @@ assert() {
     failed=$((failed + 1))
     return
   fi
-  echo "PASS: $name"
 }
 
 work="$(mktemp -d)"
@@ -45,14 +44,14 @@ jjr() {
 # Two children of `base` edit the same line differently; their
 # fan-in is a two-sided conflict on f.txt.
 printf 'base\n' > "$work/repo/f.txt"
-jjr describe -m base >/dev/null
-jjr bookmark create base -r @ >/dev/null
-jjr new base -m side-a >/dev/null
+jjr describe -m base >/dev/null 2>&1
+jjr bookmark create base -r @ >/dev/null 2>&1
+jjr new base -m side-a >/dev/null 2>&1
 printf 'a\n' > "$work/repo/f.txt"
-jjr bookmark create side-a -r @ >/dev/null
-jjr new base -m side-b >/dev/null
+jjr bookmark create side-a -r @ >/dev/null 2>&1
+jjr new base -m side-b >/dev/null 2>&1
 printf 'b\n' > "$work/repo/f.txt"
-jjr bookmark create side-b -r @ >/dev/null
+jjr bookmark create side-b -r @ >/dev/null 2>&1
 jjr new side-a side-b -m fanin >/dev/null 2>&1
 
 # working_copy_has_conflicts evaluates the ambient `jj` against the
@@ -61,12 +60,11 @@ conflicted=no
 ( cd "$work/repo" && working_copy_has_conflicts ) && conflicted=yes
 assert "conflicted fan-in is detected" "yes" "$conflicted"
 
-jjr new base -m clean >/dev/null
+jjr new base -m clean >/dev/null 2>&1
 clean=no
 ( cd "$work/repo" && working_copy_has_conflicts ) && clean=yes
 assert "clean commit is not flagged" "no" "$clean"
 
-echo ""
 echo "test-regenerate-integration.sh: $checked case(s) checked," \
      "$failed failure(s)"
 exit "$failed"

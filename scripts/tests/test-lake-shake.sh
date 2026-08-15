@@ -41,9 +41,7 @@ checked=0
 assert_flag() {
   local flag="$1"
   checked=$((checked + 1))
-  if grep -qF -- "$flag" <<<"$help_output"; then
-    echo "PASS: $flag"
-  else
+  if ! grep -qF -- "$flag" <<<"$help_output"; then
     echo "FAIL: $flag not in 'lake shake --help' output" >&2
     failed=$((failed + 1))
   fi
@@ -94,10 +92,8 @@ positive_case() {
   shake_exit=$?
 
   checked=$((checked + 1))
-  if [[ "$shake_exit" -ne 0 ]] \
-     && grep -qF "Mathlib.Algebra.Group.Basic" <<<"$shake_output"; then
-    echo "PASS: lake shake detected injected unused import"
-  else
+  if [[ "$shake_exit" -eq 0 ]] \
+     || ! grep -qF "Mathlib.Algebra.Group.Basic" <<<"$shake_output"; then
     echo "FAIL: lake shake did NOT detect injected unused import" >&2
     echo "  exit: $shake_exit" >&2
     echo "  output: '$shake_output'" >&2
@@ -112,6 +108,5 @@ positive_case
 # pre-push run.
 (cd "$repo_root" && lake build Geb >/dev/null 2>&1) || true
 
-echo ""
 echo "test-lake-shake.sh: $checked check(s) ran, $failed failure(s)"
 exit "$failed"
