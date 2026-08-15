@@ -120,7 +120,10 @@ ordinary Lean code whose import closure the default build already
 provides (mathlib through its binary cache, Cslib built from
 source as now), so it belongs in the default build, unlike the
 manual. The umbrella imports `GebMeta` (as `Geb.lean` and
-`GebTests.lean` do) so the axiom linter registers for
+`GebTests.lean` do, including their
+`-- shake: keep-all, shake: keep-downstream` annotation on the
+`module` line, which keeps the widened `lake shake` from
+flagging the index imports) so the axiom linter registers for
 `lake lint -- GebLang`; `GebMeta` is meta-tooling, not a content
 subtree, so the layering constraint is unaffected.
 `lintDriverArgs` stays `["Geb"]`; `GebLang` is linted by explicit
@@ -402,9 +405,10 @@ extraction path.
   `docs/index.md` phrase describing `GebTests/` as mirroring
   `Geb/`, the `GebMeta.lean` docstring's namespace enumeration,
   and the docs-coverage reminder's message text in
-  `scripts/pre-push.sh`. The sweep is a verified task
-  (§ Verification), so a straggler is a defect, not a gap in
-  this list.
+  `scripts/pre-push.sh`, and the cache-fetch rationale comment
+  in `scripts/pre-push.sh` naming only `Geb`'s imports. The
+  sweep is a verified task (§ Verification), so an instance the
+  grep misses is a defect, not a gap in this list.
 - `docs/process.md`: its § Floodgate test rationale is revised
   for the transitive form (a third eligible location; extraction
   dependency-ordered through `GebLang` rather than independent
