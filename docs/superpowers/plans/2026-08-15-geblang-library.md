@@ -256,12 +256,11 @@ Authors: Terence Rokop
 module
 
 /-!
-# Anchor for the Geb language's core data structures
+# Anchor for the library's documentation pipelines
 
-The library's content occupies this module. Its prose is the
-literate site's page for the module and doc-gen4's module
-description, so the module anchors both documentation pipelines
-against a source with a docstring of each kind.
+This module's prose is the literate site's page for the module, and
+its declaration carries a docstring of the other kind, so the two
+pipelines have a source of each to render.
 
 ## Main definitions
 
@@ -323,8 +322,8 @@ import GebMeta
 
 {lit}`GebLang` holds the core data structures of the Geb language. It
 sits at the bottom of this repository's dependency order: its modules
-import mathlib, Batteries and Cslib, and each other, and every other
-library here may import them.
+import mathlib, Batteries and Cslib, and each other, and nothing of
+this repository.
 
 The library is written in Verso's literate style. A module docstring
 is the prose of the module's page, and declaration docstrings render
@@ -561,9 +560,10 @@ Create `literate.toml` at the repository root:
 # site to the GebLang library: the literateHtml package facet
 # otherwise enumerates every library and executable of the package,
 # so an unscoped run would render and build Geb, GebTests, GebMeta,
-# GebManual and the manual generator's Main. The filter runs in the
-# planner before any module is fetched, so the scoping also bounds
-# what is compiled.
+# GebManual and the manual generator's Main. The planner reads every
+# library's and executable's module list and then filters, and only
+# the surviving modules have their literate facets built, so the
+# scoping bounds what is compiled as well as what is rendered.
 #
 # The root-level keys precede the table headers: a key placed after
 # [[targets]] becomes a key of that target entry and is silently
@@ -702,13 +702,19 @@ Run:
 
 ```bash
 out="$(mktemp -d)"
-bash scripts/literate.sh serve &
-curl --retry 10 --retry-delay 1 --retry-connrefused -s http://localhost:8000/ -o "$out/landing.html"
+lake build verso-serve
+bash scripts/literate.sh serve >"$out/serve.log" 2>&1 &
+curl --retry 60 --retry-delay 2 --retry-max-time 600 --retry-connrefused \
+  -s http://localhost:8000/ -o "$out/landing.html"
 curl --retry 5 --retry-connrefused -s http://localhost:8000/ -w '%{http_code}\n' -o /dev/null
 echo "$out"
 ```
 
-Expected: HTTP 200. Read `$out/landing.html` and confirm the landing
+Expected: HTTP 200. `lake build verso-serve` first, and a generous
+retry budget: `serve` compiles one executable that `build` does not,
+so its first run in a fresh workspace takes minutes before anything
+binds. The server's own output goes to `$out/serve.log`, which is
+where to read the port it chose. Read `$out/landing.html` and confirm the landing
 page carries the umbrella's prose, then locate the `GebLang.Basic`
 page and confirm the `{name}` role on `Nat` renders as a resolved
 reference rather than as literal braces. If `verso-serve` binds a
@@ -772,29 +778,31 @@ a matter of fact, so it is on the list of items for the user's review;
 the spec's own § Verification anticipates a gap and asks for it to be
 recorded, which is what this task does.
 
-**A configuration that would close the gap, not adopted here.** Lean
-core registers `doc.verso.module` beside `doc.verso`
+**A configuration that would close the gap, considered and
+rejected.** Lean core registers `doc.verso.module` beside `doc.verso`
 (`Lean/DocString/Extension.lean:120`), described as "whether to use
 Verso syntax in module docstrings (falls back to `doc.verso` if not
 set)". Setting `doc.verso.module = false` alongside
 `doc.verso = true` would leave declaration docstrings as checked
-Verso, with their roles, and make module docstrings ordinary
-Markdown. Both pipelines would then carry the module prose: doc-gen4
-reads Markdown module docstrings, and Verso's literate renderer has a
-Markdown path for them
-(`verso/src/verso-literate/VersoLiterateMain.lean:400-401`, the
-`MD4Lean.parse` branch producing `.markdownModDoc`). The cost is that
-a module docstring could no longer use a role.
+Verso and make module docstrings ordinary Markdown, which both
+pipelines carry: doc-gen4 reads Markdown module docstrings, and
+Verso's literate renderer has a Markdown path for them
+(`verso/src/verso-literate/VersoLiterateMain.lean:399-401`, the
+`MD4Lean.parse` branch producing `.markdownModDoc`). It would close
+the gap above at the cost of a module docstring no longer being able
+to use a role.
 
-This plan does not adopt it. The spec's § Library and layering gives
-the `[lean_lib.leanOptions]` block verbatim, with `doc.verso = true`
-and nothing else, and adding a second option changes the library's
-authoring model, so it is the user's decision rather than the
-executor's. It is the third item on the list for the user's review,
-recorded here with the measurement rather than left undiscovered.
-Step 2 below measures the plan's configuration as specified; if the
-user adopts the option, Steps 2 and 3 are re-run against it and the
-`TODO.md` entry is not written.
+The user has rejected it: `GebLang` is Verso throughout, module
+docstrings included. The option exists for a package that wants
+checked declaration docstrings while leaving a body of existing
+Markdown module docstrings alone; this library starts empty, so it
+has nothing to stay compatible with, and taking the escape hatch
+would trade a checked authoring model for a rendering convenience.
+The gap is recorded in `TODO.md` and closes when doc-gen4 grows a
+Verso module-doc path, which its own source says is intended
+(`DocGen4/DB/Schema.lean`, `-- TODO: Add module_docs_verso table`).
+`lakefile.toml` therefore carries `doc.verso = true` and nothing
+else, as the spec's § Library and layering specifies.
 
 - [ ] **Step 1: build the documentation**
 
@@ -1023,8 +1031,8 @@ becomes
 # them from a cache".
 ```
 
-That replaces the paragraph's first six lines, re-flowed: pinning
-fewer would leave a short line mid-paragraph. The paragraphs that
+That replaces the whole five-line paragraph, re-flowed: pinning fewer
+lines would leave a short one mid-paragraph. The paragraphs that
 follow, on when the fetch runs and on the lock, are unchanged.
 
 Widen the docs-coverage reminder. The guard, which reads
@@ -1058,12 +1066,14 @@ become
 ```
 
 In the same edit, update the stub-implementation comment above the
-guard. Its first three lines, which read
+guard. Its whole paragraph, which reads
 
 ```bash
 # Stub implementation: surface a reminder when .lean files in
 # Geb/Mathlib/, Geb/Cslib/, or Geb/Internal/ change without
 # docs/index.md being touched in the same branch's diff. A full
+# implementation would parse new top-level declarations and check
+# docs/index.md mentions them; deferred to a future upgrade.
 ```
 
 become
@@ -1364,23 +1374,28 @@ becomes
   GebTests GebLang`.
 ```
 
-The `lake exe cache get` bullet's two lines naming the root library,
-which read
+The `lake exe cache get` bullet's first sentence group, which reads
 
 ```markdown
   required because `lake build` alone fetches only the oleans
   `Geb` imports; the `lake shake` step injects an arbitrary
+  mathlib import and needs that module's olean present, which
+  after a toolchain bump it otherwise would not be. The fetch runs
 ```
 
-become, re-flowed because the sentence ends mid-line
+becomes, re-flowed through to the end of the pinned region so no
+short line is left mid-paragraph
 
 ```markdown
   required because `lake build` alone fetches only the oleans the
   root libraries `Geb` and `GebLang` import; the `lake shake` step
-  injects an arbitrary
+  injects an arbitrary mathlib import and needs that module's olean
+  present, which after a toolchain bump it otherwise would not be.
+  The fetch runs
 ```
 
-leaving the rest of the bullet unchanged.
+leaving the rest of the bullet, from `only when \`lean-toolchain\``
+onward, unchanged.
 
 The docs-coverage bullet
 
@@ -1433,16 +1448,17 @@ with
 
 ```markdown
   1. Docstrings in `.lean` files: neither half of the gate is met at the
-     pin. doc-gen4 flattens a Verso declaration docstring to Markdown and
-     drops a Verso module docstring altogether (§ Triggers, doc-gen4 drops
-     not render `GebLang`'s Verso docstrings), and mathlib has not
-     migrated. Still contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`,
-     whose Verso-markup docstrings would read as foreign to mathlib
-     reviewers and would lose content on the doc-gen4 site. `GebLang` is
-     not gated on either half: its pages come from the literate site,
-     which renders both docstring kinds, and `scripts/extract-pr.sh`
-     converts the markup to plain Markdown at extraction, so no
-     unconverted markup reaches an upstream reviewer.
+     pin. doc-gen4 converts a Verso declaration docstring to Markdown,
+     which reaches the page substantially intact, but drops a Verso
+     module docstring altogether (§ Triggers, doc-gen4 drops a `GebLang`
+     module docstring); and mathlib has not migrated. Still
+     contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`, whose
+     Verso-markup docstrings would read as foreign to mathlib reviewers
+     and whose module prose would not reach the doc-gen4 site.
+     `GebLang` is not gated on either half: its pages come from the
+     literate site, which renders both docstring kinds, and
+     `scripts/extract-pr.sh` converts the markup to plain Markdown at
+     extraction, so no unconverted markup reaches an upstream reviewer.
 ```
 
 and extend scope 2's bullet. That bullet runs from
@@ -1513,7 +1529,11 @@ jj bookmark move feat/geblang-literate --to @-
 
 Run: `bash scripts/pre-push.sh`
 
-Expected: exit 0, ending with the `pre-push: clean.` line. This is the
+Expected: exit 0, ending with the `pre-push: clean.` line. Expect a
+`REMINDER (docs-coverage)` block on the way: Task 5 Step 3 put
+`GebLang/` in that reminder's pattern, `GebLang/Basic.lean` is in the
+branch diff, and `docs/index.md` is plan 2's to touch. The reminder
+is printed, not enforced, and plan 2 Task 5 resolves it. This is the
 plan's end-to-end verification. The workflow files themselves are
 verified by CI after the user's review and push, as for the manual
 workstream.
