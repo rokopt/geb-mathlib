@@ -54,7 +54,8 @@ The experimental repository (the `geb-lean` package of the `geb`
 repository, `https://github.com/anoma/geb`) introduced a Verso
 manual for its ramified-recurrence area in the merges titled
 "Verso manual for ramified recurrence" and "Fix Verso build
-dependencies" (2026-07-22). Its architecture, adopted here:
+dependencies" (merged 2026-07-23 UTC). Its architecture, adopted
+here:
 
 - `verso` required at the tag named after the Lean toolchain,
   declared ahead of mathlib so mathlib's transitive pins survive
@@ -146,23 +147,24 @@ scope = "leanprover"
 rev = "v4.34.0-rc1"
 ```
 
-At `v4.34.0-rc1`, verso requires `subverso`, `MD4Lean`,
+At `v4.34.0-rc1`, Verso requires `subverso`, `MD4Lean`,
 `plausible`, and `illuminate`, each at branch `main`. Two of these
 overlap pins the repository already carries: `plausible` is among
 the mathlib transitive pins the declared-last comment protects, and
 `MD4Lean` arrives already pinned through `doc-gen4`. Verso is
 therefore declared ahead of both `doc-gen4` and `mathlib`, so
 that under Lake's reverse-order root resolution both existing
-pins take precedence over verso's branch requires.
+pins take precedence over Verso's branch requires.
 
 `update.yml` rewrites every `rev = "..."` line in `lakefile.toml`
-to the target toolchain tag, so the verso pin participates in the
-existing bump automation unchanged. Two failure modes exist at
-bump time: a target toolchain Verso has not tagged, and drift in
-verso's branch-pinned transitives, which `lake update` re-resolves
-to branch heads. Both surface through the workflow's existing
-build-before-commit behavior as a reported failure rather than a
-committed breakage.
+to the target toolchain tag, so the `verso` pin participates in
+the existing bump automation; the workflow's step name, which
+names the requires the rewrite covers, gains the new member. Two
+failure modes exist at bump time: a target toolchain Verso has
+not tagged, and drift in Verso's branch-pinned transitives, which
+`lake update` re-resolves to branch heads. Both surface through
+the workflow's existing build-before-commit behavior as a
+reported failure rather than a committed breakage.
 
 ### Layout
 
@@ -200,10 +202,14 @@ supportInterpreter = true
 ```
 
 `GebManual` joins neither `defaultTargets` nor the test driver, so
-`lake build`, `lake test`, and the default `lake lint` are
-unaffected and no contributor compiles Verso implicitly. `Main` is
-outside the `GebManual` module prefix, so `lake lint -- GebManual`
-does not reach it. `.gitignore` gains `/manual/_out`.
+`lake build`, `lake test`, and the default `lake lint` compile
+nothing new and no contributor compiles Verso implicitly. The
+manifest change does have one-time effects: a workspace load
+materializes the new checkouts (`verso`, `subverso`,
+`illuminate`), and the pre-push `cache get` stamp mismatches once,
+forcing one refetch. `Main` is outside the `GebManual` module
+prefix, so `lake lint -- GebManual` does not reach it.
+`.gitignore` gains `/manual/_out`.
 
 ### Generator executable
 
@@ -228,17 +234,26 @@ The snippet is abbreviated: the file carries the copyright header
 and, where feasible, the `module` discipline
 `docs/rules/lean-coding.md` requires, as do the document modules.
 No surveyed Verso project declares `module` in a `#doc` file
-(verso's own guide, reference-manual, verso-templates, and the
+(Verso's own guide, reference-manual, verso-templates, and the
 experimental repository all use plain imports), so whether `#doc`
 elaborates inside a `module`-form file is settled during
-implementation (§ Verification). If it does not, the document
-modules stay in non-`module` form and the exemption is recorded
-in `docs/rules/lean-coding.md`, as the experimental repository
-recorded the same exemption.
+implementation (§ Verification). The experimental repository
+recorded the obstruction it hit: at its pin, `#doc` emitted a
+non-`public` `def`, unexported under `module` and so unreachable
+by `%doc` and `{include}`. At `v4.34.0-rc1` that mechanism is
+gone (Verso's `Doc/Concrete.lean` is itself `module`-form and
+`#doc` emits a `public def`), so the expected outcome is
+feasibility. If it fails regardless, the document modules stay in
+non-`module` form and the exemption is recorded in
+`docs/rules/lean-coding.md`, as the experimental repository
+recorded it.
 
 ### Build, serve, reload
 
-`scripts/manual.sh` with two verbs:
+`scripts/manual.sh` with two verbs, resolving the repository root
+and running from it as the existing scripts do (`runLinter`
+resolves `scripts/nolints.json`, and the generator resolves
+`--output manual/_out`, against the working directory):
 
 - `build`: `lake build GebManual`, `lake lint -- GebManual`,
   `lake exe geb-manual --output manual/_out` (Lake's `exe` command
@@ -248,8 +263,9 @@ recorded the same exemption.
   fix established, and CI runs this same script, so local and CI
   invocations cannot diverge.
 - `serve`: `lake exe verso-serve manual/_out/html-multi`.
-  `verso-serve` binds port 8000, falls back to the next free port,
-  and prints the URL it actually serves.
+  `verso-serve` binds `127.0.0.1`, starts at port 8000 (scanning
+  upward, bounded, when it is taken), and prints the URL it
+  actually serves.
 
 Reload after an edit is: re-run `build`, refresh the browser. The
 script's usage text states this; neither Verso nor any surveyed
@@ -258,8 +274,10 @@ project offers a watch mode to reuse.
 ### CI
 
 `doc-build.yml` (the existing doc-gen4 workflow) gains
-`manual/**` and `scripts/manual.sh` in its `paths` filter and two
-steps after the doc-gen4 build:
+`manual/**`, `scripts/manual.sh`, and `scripts/nolints.json` in
+its `paths` filter (the manual lint consumes the nolints file, so
+a change to it must trigger the workflow) and two steps after the
+doc-gen4 build:
 
 ```yaml
 - run: bash scripts/manual.sh build
@@ -277,7 +295,7 @@ Publication (GitHub Pages) is out of scope, as it was in the
 experimental repository; the uploaded artifact is the CI-visible
 product.
 
-Cost: the step compiles verso and its transitive dependencies from
+Cost: the step compiles Verso and its transitive dependencies from
 source (no binary cache covers them) inside the job's existing
 `timeout-minutes: 60`; if the addition approaches that budget, the
 manual moves to its own job. `lake lint -- GebManual` appends its
@@ -355,7 +373,11 @@ The initial document is a project overview:
   the authoritative record per `CONTRIBUTING.md` § Cite the
   literature; the Lean entries are a rendering transcription of
   it, and a divergence between the two is corrected against the
-  `.bib`.
+  `.bib`. Verso resolves a citation key to a top-level `def`, so
+  the shared keys (UpperCamelCase in the `.bib`) depart from the
+  lowerCamelCase term-naming rule; the exemption, justified by
+  cross-artifact key identity, is recorded in
+  `docs/rules/lean-coding.md`.
 
 ### Documentation updates
 
@@ -437,4 +459,4 @@ The initial document is a project overview:
 - Experimental repository: the `geb-lean` package of
   `https://github.com/anoma/geb`, merges "Verso manual for
   ramified recurrence" and "Fix Verso build dependencies"
-  (2026-07-22).
+  (merged 2026-07-23 UTC).
