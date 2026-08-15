@@ -170,8 +170,9 @@ Created by this plan:
 - `literate.toml` (literate site configuration, repository root).
 - `scripts/literate.sh` (build and serve verbs).
 
-Modified by this plan: `lakefile.toml`, `GebTests.lean`, `ci.yml`,
-`doc-build.yml`, `scripts/pre-push.sh`,
+Modified by this plan: `lakefile.toml`, `GebTests.lean`,
+`.github/workflows/ci.yml`, `.github/workflows/doc-build.yml`,
+`scripts/pre-push.sh`,
 `scripts/tests/test-lint-driver.sh`, `docs/rules/lean-coding.md`,
 `docs/rules/ci-and-workflow.md`, `TODO.md`. `README.md` is left to
 plan 2, which revises it in the one pass the spec's § Standards and
@@ -344,6 +345,11 @@ in list markers (`*`, not `-`) and in role syntax.
 Run: `lake lint -- GebLang`
 
 Expected: exit 0 and the line `-- Linting passed for GebLang.`.
+The output also names `Geb`: `lintDriverArgs` precede the command
+line's arguments, so this invocation runs the driver on `Geb GebLang`
+and prints `Running linter on specified modules: [Geb, GebLang]` and
+a passing line for each. That is why the run is not free, and why it
+is worth knowing that `scripts/literate.sh build` re-lints `Geb`.
 Batteries' `runLinter` prints each linter's `noErrorsFound` string
 only on the failure path
 (`.lake/packages/batteries/scripts/runLinter.lean:180` against
@@ -355,10 +361,12 @@ see it fire, temporarily give the placeholder a
 
 - [ ] **Step 7: confirm the default build covers the library**
 
-Run: `lake build`
+Run: `lake query :defaultTargets`
 
-Expected: exit 0, and `GebLang` among the targets built (the
-`defaultTargets` change of Step 1).
+Expected: `Geb` and `GebLang`, from the change of Step 1. Then run
+`lake build` and expect exit 0. A warm `lake build` prints
+`Build completed successfully` without naming its targets, which is
+why the target list is checked separately.
 
 - [ ] **Step 8: commit**
 
@@ -393,7 +401,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebLang.Basic
+public import GebLang.Basic  -- shake: keep; #guard needs it
 public meta import GebLang.Basic  -- shake: keep; #guard needs it
 
 /-!
@@ -418,12 +426,20 @@ declaration from another module of this package: `#guard` runs its
 argument in the interpreter, and the interpreter needs the imported
 module's IR available to meta code. The LSP is not an oracle for this,
 so the claim is settled by `lake build` alone
-(`docs/rules/lean-coding.md` § Lean 4 module system). Its
-`-- shake: keep; #guard needs it` annotation matches every existing
-counterpart in the tree (`GebTests/Mathlib/CategoryTheory/FinCat/`
-`Repr.lean:10`, among others): the import leaves no constant
-reference in the olean, so `lake shake` reports it as removable
-without the annotation.
+(`docs/rules/lean-coding.md` § Lean 4 module system).
+
+Both lines carry `-- shake: keep; #guard needs it`, not just the
+`meta` one. This module declares nothing, so neither import leaves a
+constant reference in the olean and `lake shake` reports both as
+removable; `lake shake` matches the annotation per import line and
+distinguishes the `meta` form, so annotating one does not cover the
+other. `GebTests/Internal/CanonicalSExpr.lean:8-11`, whose content is
+likewise only `#guard`s, annotates both lines of each of its two
+pairs.
+`GebTests/Mathlib/Data/UnionFind/OfEdges.lean:8-9` annotates only the
+`meta` line because that module's own declarations reference the
+plain import. Task 5 Step 7 runs `lake shake`, so a missing
+annotation surfaces there, one task after this one.
 
 The docstrings here are mathlib-conventional Markdown: `doc.verso` is
 set for the `GebLang` library, not for `GebTests`.
@@ -483,8 +499,8 @@ subtree.
 Run: `lake test`
 
 Expected: exit 0. A failing `#guard` reports at its own line; a
-missing `public meta import` reports as an interpreter failure rather
-than an elaboration error.
+missing `public meta import` reports as an elaboration error naming
+the inaccessible constant and suggesting the import to add.
 
 - [ ] **Step 5: lint the test library**
 
@@ -553,9 +569,10 @@ Create `scripts/literate.sh`, mirroring `scripts/manual.sh`:
 #
 # Build or serve the Verso literate site for the GebLang library.
 # Runs from the repository root regardless of the invoking directory:
-# literate.toml, the site's output path, and the lint's nolints path
-# (scripts/nolints.json) are all resolved against the working
-# directory.
+# the lint's nolints path (scripts/nolints.json) is resolved against
+# the working directory. literate.toml and the site's output path are
+# resolved against the package root by the literateHtml facet, so
+# they are unaffected either way.
 #
 # CI (doc-build.yml) runs the build verb. The library itself is in
 # defaultTargets, so an ordinary lake build compiles it; only the
@@ -624,14 +641,11 @@ Expected: a single line naming a directory under `.lake/build`. The
 path, so any extra line breaks them. If the command prints more than
 the path, record the deviation and stop; do not work around it.
 
-Run it twice. The facet's `checkDeployActions`
-(`.lake/packages/verso/lakefile.lean`) logs a GitHub Pages setup line
-on its first run and then writes a sentinel under `.lake/build`, so
-the first invocation in a fresh workspace can print more than the
-path. Step 5's `build` consumes that first run, which is why
-`scripts/literate.sh serve` and the CI capture in Task 5 are safe in
-order; a bare `serve` in a fresh workspace is not, and that is the
-reason the usage text tells the reader to `build` first.
+`lake query --help` states that it reports progress on standard
+error and outputs results on standard out, so the facet's own log
+lines (the GitHub Pages setup notice it prints on a first run) do not
+reach the path capture. Confirm it anyway: this is the assumption the
+`serve` verb and the CI artifact upload both rest on.
 
 - [ ] **Step 7: confirm the site's scope**
 
@@ -642,9 +656,12 @@ site="$(lake query :literateHtml)"
 find "$site" -name '*.html' | sed "s,^$site/,,"
 ```
 
-Expected: page files for `GebLang` and `GebLang.Basic` only. No page
-for a `Geb`, `GebTests`, `GebMeta` or `GebManual` module, and none
-for the manual generator's `Main` (spec § Verification).
+Expected: a site-root `index.html`, a `search/index.html`, and one
+`index.html` per `GebLang` module directory. The renderer writes a
+directory per module rather than a file per module, so the assertion
+is about which module directories exist: no directory for a `Geb`,
+`GebTests`, `GebMeta` or `GebManual` module, and none for the manual
+generator's `Main` (spec § Verification).
 
 Check the page inventory rather than the page text: `show_imports`
 defaults to `true`
@@ -703,12 +720,17 @@ check has been run against the pin
 (`.lake/packages/doc-gen4`, `db53577d4634df2604840cabb4bc74685300afe4`),
 and the support is not there:
 
-- Declaration docstrings survive, flattened to Markdown. The HTML
+- Declaration docstrings survive, converted to Markdown. The HTML
   stage discards the Verso tree:
   `DocGen4/Output/DocString.lean:388-389` reads
-  `-- TODO: natively render Verso docstrings` / `| .inr (_, md) => md`.
-  A `{name}` role therefore renders as an unlinked code span rather
-  than as a resolved reference.
+  `-- TODO: natively render Verso docstrings` / `| .inr (_, md) => md`,
+  the Markdown having been produced by `versoDocToMarkdown`
+  (`DocGen4/Process/NameInfo.lean:80`). A `{name}` role becomes a
+  plain code span, which doc-gen4 then auto-links like any other
+  (`DocGen4/Output/DocString.lean:260-265`, `autoLinkInline`). The
+  rendered page is therefore close to what a Markdown docstring
+  produces; the role's checking is not lost either, elaboration
+  having performed it.
 - Module docstrings are dropped entirely. Under `doc.verso` a
   `/-! -/` block is stored in `versoModuleDocExt` and not in the
   Markdown-payload `moduleDocExt`
@@ -739,36 +761,43 @@ Run:
 
 ```bash
 page=.lake/build/doc/GebLang/Basic.html
-grep -c 'gebLangAnchor' "$page"
-grep -c 'Anchor for the Geb language' "$page"
-grep -o '{name}' "$page" | head
-grep -o 'href="[^"]*Nat[^"]*"' "$page" | head
+grep -c 'gebLangAnchor' "$page" || true
+grep -c 'Anchor for the Geb language' "$page" || true
+grep -o '{name}' "$page" | head || true
+grep -o 'href="[^"]*Nat[^"]*"' "$page" | head || true
 ```
 
 Expected at the current pin: the declaration is present (first count
-non-zero); the module docstring's title is absent (second count zero);
-no literal `{name}` markup appears; and the `Nat` reference is a bare
-code span with no link. Record the four outputs in the task report:
-they are the measurement the spec asks for, and a later doc-gen4 bump
-is re-checked against them.
+non-zero); the module docstring's title is absent (second count zero,
+which is the gap); no literal `{name}` markup appears; and the `Nat`
+reference is auto-linked, doc-gen4 linking inline code spans
+(`DocGen4/Output/DocString.lean`, `autoLinkInline`) whether they came
+from a role or from Markdown. Record the four outputs in the task
+report: they are the measurement the spec asks for, and a later
+doc-gen4 bump is re-checked against them.
+
+The `|| true` on each line is needed because `grep -c` exits 1 on a
+zero count, which is the expected result of the second command.
 
 - [ ] **Step 3: record the gap**
 
 Append to `TODO.md` § Triggers:
 
 ```markdown
-- **doc-gen4 does not render `GebLang`'s Verso docstrings**: at the
-  pinned doc-gen4 a declaration docstring reaches the page flattened
-  to Markdown, so a `{name}` role renders as an unlinked code span
+- **doc-gen4 drops a `GebLang` module docstring**: `doc.verso` stores
+  a module docstring in the Verso module-doc extension, and the
+  pinned doc-gen4 reads only the Markdown-payload one
+  (`DocGen4/Process/Analyze.lean`, `getModuleDoc?`), so a `GebLang`
+  module's prose is absent from its API-reference page.
+  `DocGen4/DB/Schema.lean` carries the matching
+  `-- TODO: Add module_docs_verso table`. Declaration docstrings are
+  unaffected in substance: they reach the page converted to Markdown
   (`DocGen4/Output/DocString.lean`, `-- TODO: natively render Verso
-  docstrings`), and a module docstring does not reach the page at
-  all, doc-gen4 reading only the Markdown-payload module-doc
-  extension while `doc.verso` stores the Verso one
-  (`DocGen4/Process/Analyze.lean`; `DocGen4/DB/Schema.lean`,
-  `-- TODO: Add module_docs_verso table`). The literate site renders
-  both. Trigger: a doc-gen4 pin bump, at which point the four
-  measurements of the `GebLang` documentation build are re-taken and
-  this entry is removed once they resolve.
+  docstrings`), where a role's code span is auto-linked as a
+  Markdown one is. The literate site renders both kinds. Trigger: a
+  doc-gen4 pin bump, at which point the measurements of the `GebLang`
+  documentation build are re-taken and this entry is removed once the
+  module docstring reaches the page.
 ```
 
 - [ ] **Step 4: commit**
@@ -889,9 +918,18 @@ and before its upload, rather than inside `scripts/literate.sh`,
 which drives the literate product alone. The upload-artifact SHA is
 the one already pinned twice in this file; keep the tag comment.
 
+Leave `timeout-minutes: 60` as it stands, and record in the task
+report how long the local `scripts/literate.sh build` of Task 3 Step
+5 took. This job now runs the full build, two doc-gen4 builds, the
+manual, and a first-run literate render that compiles three Verso
+executables from source. If the local figure suggests the budget is
+close, say so rather than raising it speculatively; the first CI run
+after the user's push settles it.
+
 - [ ] **Step 3: extend `scripts/pre-push.sh`**
 
-Four edits.
+Four edits. Keep the blank line the file puts between consecutive
+`step` blocks.
 
 Add the lint step after the existing `lake lint -- GebTests` step
 (after line 69):
@@ -979,12 +1017,14 @@ become
 ```bash
 # Stub implementation: surface a reminder when .lean files in
 # Geb/Mathlib/, Geb/Cslib/, Geb/Internal/, or GebLang/ change
-# without docs/index.md being touched in the same branch's diff.
-# A full
+# without docs/index.md being touched in the same branch's diff. A
+# full implementation would parse new top-level declarations and
+# check docs/index.md mentions them; deferred to a future upgrade.
 ```
 
-leaving the two lines that follow (`# implementation would parse ...`
-and `# docs/index.md mentions them; ...`) in place.
+That replaces the whole five-line paragraph, re-flowed: the added
+directory pushes the text along and pinning only the first three
+lines would leave a two-word line behind.
 
 - [ ] **Step 4: extend `scripts/tests/test-lint-driver.sh`**
 
@@ -1079,17 +1119,17 @@ Run: `bash scripts/tests/test-lint-driver.sh`
 Expected: `test-lint-driver: ok`, exit 0. A failure naming `GebLang`
 orphans means a `GebLang/` module is unreachable from the umbrella.
 
-- [ ] **Step 6: check the workflow files parse**
+- [ ] **Step 6: check the edited workflow files parse**
 
 Run:
 
 ```bash
-markdownlint-cli2 '**/*.md' >/dev/null && echo 'markdown ok'
 python3 -c 'import yaml,sys; [yaml.safe_load(open(f)) for f in sys.argv[1:]]; print("yaml ok")' \
   .github/workflows/ci.yml .github/workflows/doc-build.yml
 ```
 
-Expected: `yaml ok`. If `python3` or its `yaml` module is absent, skip
+Expected: `yaml ok`. This task touches no Markdown, so the Markdown
+linters are not run here. If `python3` or its `yaml` module is absent, skip
 this step and rely on the workflow run after the push.
 
 - [ ] **Step 7: run the shake step the workflows now run**
@@ -1165,12 +1205,41 @@ docstrings are written for both.
   without it renders the markup literally; that is why the
   upstream-eligible subtrees keep mathlib-conventional Markdown
   docstrings.
+- Every code span carries a role: `{name}` for a constant that must
+  resolve, `{option}` for a Lean option, `{lit}` for anything else.
+  A span with no role warns (`doc.verso.suggestions`, which defaults
+  on), and the package's `weak.warningAsError` makes the warning an
+  error.
+- A `{name}` role resolves at elaboration, so it cannot name a
+  constant the same module declares later. Use `{lit}` for a
+  same-module name; a module docstring may `{name}` a constant an
+  imported module declares.
 - Literate sources are ordinary Lean files: no `#doc`, no Verso
   imports, no Verso commands. `linter.hashCommand` stays enabled for
   them, the `module` discipline applies unchanged, and building the
   library compiles no Verso. Verso compiles only when the site is
   rendered.
+- The two pipelines do not render the same amount. The literate site
+  renders module and declaration docstrings both; the pinned doc-gen4
+  renders declaration docstrings, converted to Markdown, and drops
+  module docstrings (`TODO.md` § Triggers). Write for the literate
+  site, which is the library's own presentation, and expect the API
+  reference to carry the declarations alone until the pin moves.
 ````
+
+The last two bullets record what this workstream measured. They are
+the reason the section exists in a persistent document rather than
+only in this plan: a plan is deleted at the end of the branch, and
+the next `GebLang` author would otherwise rediscover both by build
+failure.
+
+The spec's § Standards and rule documents asks this section to state
+that the docstring markup must remain acceptable to both pipelines.
+That sentence cannot be written as worded, Task 4 having
+established that one pipeline drops module docstrings outright. The
+final bullet states the true relation instead. This is a deviation
+from the spec's wording, on the same finding the plan escalates in
+Task 4.
 
 Also extend the axiom-linter sentence in § Constructive-only Lean
 code, which currently reads
@@ -1189,6 +1258,9 @@ to
   depends on an axiom outside its permitted set.
 ```
 
+leaving the rest of that bullet, from "The permitted set is
+`{propext, Quot.sound}` by default" onward, unchanged.
+
 - [ ] **Step 2: extend `docs/rules/ci-and-workflow.md`**
 
 Add a TOC entry after `- [Verso manual build](#verso-manual-build)`:
@@ -1197,7 +1269,7 @@ Add a TOC entry after `- [Verso manual build](#verso-manual-build)`:
 - [Literate site build](#literate-site-build)
 ```
 
-In § Pre-push checklist, extend the two build bullets. The bullet
+In § Pre-push checklist, extend four bullets. The bullet
 
 ```markdown
 - `lake build GebTests` then `lake lint -- GebTests`. The axiom
