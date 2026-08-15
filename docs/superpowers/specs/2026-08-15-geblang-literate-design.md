@@ -145,11 +145,15 @@ The dependency order places `GebLang` at the bottom:
   unconditional per subtree). The direct-import form suffices
   because the upstream check is transitive over the import graph:
   a Cslib-track module importing only extracted `GebLang`
-  siblings inherits `Cslib.Init` through them.
+  siblings inherits `Cslib.Init` through them. Only a plain or
+  `public` import of `Cslib.Init` satisfies the requirement,
+  matching the existing Rule 1b form, which excludes `meta`
+  imports; the trigger accepts all four forms while the
+  satisfying import must not be `meta`.
 - A Cslib-track `GebLang` module may keep its `Batteries.*`
   imports: Cslib itself imports Batteries directly, so the
-  extraction target accepts them. This is laxer than the
-  repository's own `Geb/Cslib/` lists, which exclude
+  extraction target accepts them. This is less restrictive than
+  the repository's own `Geb/Cslib/` lists, which exclude
   `Batteries.*`; the rule file states the asymmetry.
 
 `scripts/lint-imports.sh` encodes the `GebLang/` and
@@ -318,7 +322,9 @@ extraction path.
   `GebLang/**` and `GebTests/Lang/**` (not the `GebLang.lean`
   umbrella, which imports `GebMeta` and is exempt from the
   content rules, a stated deviation from the
-  umbrella-plus-directory pattern of the existing entries),
+  umbrella-plus-directory pattern of the existing entries; the
+  `GebTests/Lang.lean` index, which imports no `GebMeta`, is
+  included, following that pattern),
   states the per-module destination-open posture (the existing
   core/Batteries-targeted precedent), revises its § Floodgate
   test to the transitive form (extraction is dependency-ordered
@@ -335,12 +341,17 @@ extraction path.
   section: module docstrings are the rendered page prose;
   `doc.verso` roles are available in `GebLang` (and only there);
   the docstring markup must remain acceptable to both pipelines.
+  Its description of the axiom linter's coverage (`Geb` and
+  `GebTests` declarations) gains `GebLang`.
 - `README.md` documents the library and the
   `scripts/literate.sh` commands, and its § Upstream targets
   gains `GebLang` with the destination-open, activation-gated
   posture; `docs/index.md` § Directory structure gains
-  `GebLang/`; `docs/rules/ci-and-workflow.md` records the
-  literate build's CI placement.
+  `GebLang/`, adds `GebLang.*` to the `Geb/Internal/` bullet's
+  import enumeration (that allowance activates now), and adds
+  `GebTests/Lang/` to the `GebTests/` bullet's subdirectory
+  list; `docs/rules/ci-and-workflow.md` records the literate
+  build's CI placement.
 - `CONTRIBUTING.md`: the floodgate paragraph's transitive
   rewording with its activation point (§ Import rules) and
   `GebLang` in the § Repo structure line.
@@ -408,18 +419,20 @@ subject to extraction, so its `{name}` role does not contradict
   `bash scripts/literate.sh serve` serves a site whose landing
   page shows the umbrella's prose and whose placeholder-module
   page shows the `{name}` role resolved; no `Geb`, `GebTests`,
-  `GebMeta`, or `GebManual` module appears in the site.
+  `GebMeta`, or `GebManual` module, and not the generator's
+  `Main`, appears in the site.
 - `lake build GebLang:docs` succeeds and the pinned doc-gen4
   renders the Verso-format docstring (checked during
   implementation; if the pin predates doc-gen4's Verso support,
   the docstring renders legibly as text and the gap is recorded
   for the next doc-gen4 bump).
 - `scripts/lint-imports.sh` passes, and its self-test extension
-  exercises the new entries: an induced `import Geb` in a
-  `GebLang/` module is rejected, an induced `GebLang.` leakage
-  outside import lines is rejected, and the conditional
-  `Cslib.Init` rule is exercised in both directions (a
-  `Cslib.*`-importing module without `Cslib.Init` fails; a
+  exercises both new entries: an induced `import Geb` in a
+  `GebLang/` module is rejected, induced `GebLang.` leakage
+  (in `GebLang/`) and `GebTests.Lang.` leakage (in
+  `GebTests/Lang/`) outside import lines are rejected, and the
+  conditional `Cslib.Init` rule is exercised in both directions
+  (a `Cslib.*`-importing module without `Cslib.Init` fails; a
   module without Cslib imports needs no `Cslib.Init`).
 - `TODO.md` carries the deferred-cluster entry (§ Import rules)
   and the placeholder-replacement expectations (§ Tests,
