@@ -34,13 +34,14 @@ dependency order: its content modules import nothing of this
 repository outside `GebLang`, only mathlib, Batteries, and Cslib
 (and what they carry from Lean core; the umbrella additionally
 imports `GebMeta` to register the axiom linter, per § Library and
-layering). `Geb/Internal/` and its test mirror may import it from
-this workstream on; the upstream-eligible subtrees may once the
-consumption cluster of § Import rules lands. This workstream
-builds the infrastructure (library, layering rules, both
-documentation pipelines, commands, CI, and one placeholder
-module with one placeholder test) and defers real content, and
-the extraction tooling, to follow-on workstreams.
+layering). Every existing subtree may import it from this
+workstream on: the import allowances land together with the
+extraction tooling that keeps them shippable, in this
+workstream. This workstream builds the infrastructure (library,
+layering rules, both documentation pipelines, the extraction
+extension, commands, CI, and one placeholder module with one
+placeholder test) and defers only real content to follow-on
+workstreams.
 
 ## Transcription or novelty
 
@@ -154,9 +155,11 @@ The dependency order places `GebLang` at the bottom:
   satisfying import must not be `meta`.
 - A Cslib-track `GebLang` module may keep its `Batteries.*`
   imports: Cslib itself imports Batteries directly, so the
-  extraction target accepts them. This is less restrictive than
-  the repository's own `Geb/Cslib/` lists, which exclude
-  `Batteries.*`; the rule file states the asymmetry.
+  extraction target accepts them. For the same reason the
+  `Geb/Cslib/` and `GebTests/Cslib/` lists gain `Batteries.*` in
+  this workstream: their prior exclusion was an omission
+  relative to Cslib's own practice, fixed here rather than
+  documented as an inconsistency.
 
 `scripts/lint-imports.sh` encodes the `GebLang/` and
 `GebTests/Lang/` entries in this workstream, with `GebLang.` as
@@ -165,55 +168,62 @@ the library entry's self-prefix and `GebTests.Lang.` (beside
 existing mirror pattern; its header comment and self-test extend
 accordingly.
 
-This workstream does not widen any existing allowed-import list:
-until the extraction tooling handles `GebLang` sources, a
-`Geb/Mathlib/` or `Geb/Cslib/` module importing `GebLang.*`
-would break the lint-enforced floodgate, so the allowance and
-the tooling must land together. The consumption cluster is
-assigned to the first `GebLang` content workstream, recorded in
-`TODO.md`; it comprises `GebLang.*` in the allowed lists of
-`Geb/Mathlib/`, `Geb/Cslib/`, and their `GebTests` mirrors,
-`GebLang.` in those four entries' leakage prefixes (a
-`GebLang.`-qualified reference in an extracted body would dangle
-upstream exactly as a `Geb.Mathlib.`-qualified one would), the
-transitive-import check below, and the `scripts/extract-pr.sh`
-extension (path acceptance, prefix rewriting, a destination
-mapping, the docstring conversion) with its self-test.
-(`Geb/Internal/` and its mirror are unrestricted in
-`scripts/lint-imports.sh`, so they may import `GebLang.*` from
-this workstream on, involving no extraction.)
+The existing allowed-import lists widen in this same workstream,
+landing together with the extraction tooling that keeps every
+widened import shippable, so the lint-enforced floodgate holds
+at every merged state:
 
-The rule documents adopt the transitive floodgate policy now,
-stating its activation point: dependency-ordered PRs remain
-shippable at all times, with a module's `GebLang` dependencies
+- `Geb/Mathlib/` and `GebTests/Mathlib/` gain `GebLang.*`.
+- `Geb/Cslib/` and `GebTests/Cslib/` gain `GebLang.*`,
+  `Geb.Mathlib.*`, and `Batteries.*`. The `Geb.Mathlib.*`
+  allowance fixes an omission: Cslib itself imports mathlib, so
+  a Cslib-destined module may depend on mathlib-destined
+  content, shipped in dependency order like any other
+  within-repository dependency.
+- Leakage prefixes follow: `GebLang.` joins the four entries'
+  leakage prefixes, and `Geb.Mathlib.` joins the two `Cslib`
+  entries' (a qualified reference in an extracted body would
+  dangle upstream; extraction rewrites import lines only).
+- `Geb/Internal/` and its mirror are unrestricted in
+  `scripts/lint-imports.sh` and may import `GebLang.*` with no
+  list to amend.
+
+`scripts/extract-pr.sh` is extended in this workstream, with its
+self-test: it accepts `GebLang/` sources; the destination is
+track-based path mirroring (`GebLang/Foo/Bar.lean` ships as
+`Mathlib/Foo/Bar.lean` when the module's closure reaches no
+`Cslib.*`, as `Cslib/Foo/Bar.lean` otherwise); it rewrites
+`GebLang.` import prefixes to the destination's prefix and, in
+Cslib-destined sources, `Geb.Mathlib.` prefixes to `Mathlib.`;
+and it strips Verso-role markup from docstrings, leaving plain
+Markdown (a checked name reference becomes a bare code span).
+The stripping is a conversion the tooling performs, distinct
+from the degradation an unconverted docstring would display
+(role braces rendered literally); shipped files carry the
+converted form. The extension is exercised now against the
+placeholder module and the self-test's synthetic fixtures.
+
+The rule documents adopt the transitive floodgate policy, active
+from this workstream: dependency-ordered PRs remain shippable at
+all times, with a module's within-repository dependencies
 shipped first, each retargeted by its own import closure
 (mathlib-track when it reaches no `Cslib.*`; Cslib-track
-otherwise). `GebLang` is written to the upstream-eligible
-standards, so retargeting is mechanical: the extraction rewrites
-import prefixes (as `scripts/extract-pr.sh` already does for the
-`Geb/` subtrees) and strips Verso-role markup from docstrings,
-leaving plain Markdown (a checked name reference becomes a bare
-code span). The stripping is a conversion the tooling performs,
-distinct from the degradation an unconverted docstring would
-display (role braces rendered literally); shipped files carry
-the converted form.
-
-Cross-track ordering is accepted by design in one direction: a
-`Geb/Cslib/` module may import a mathlib-track `GebLang` module,
-and shipping it then waits for the mathlib PR to merge and for
-Cslib's mathlib pin to advance. This is the dependency shape
-`docs/rules/upstream-eligible.md` forbids between `Geb/Cslib/`
-and `Geb/Mathlib/`; for `GebLang`, the shared bottom layer, the
-ordering cost is accepted rather than forbidden, and the rule
-file documents the asymmetry (§ Standards and rule documents).
-The converse direction needs no allowance: a `GebLang` module in
-any `Geb/Mathlib/` closure is forced mathlib-track by the
-transitive-import check.
+otherwise). Cross-track dependency is uniform policy, in one
+direction only: Cslib-destined content (in `Geb/Cslib/` or
+Cslib-track `GebLang`) may depend on mathlib-destined content
+(in `Geb/Mathlib/` or mathlib-track `GebLang`), shipping after
+its dependencies merge and Cslib's mathlib pin advances, exactly
+as Cslib itself depends on mathlib. The reverse direction is
+forbidden: mathlib-destined content depends on no Cslib-destined
+content, enforced directly by `Geb/Mathlib/`'s allowed lists and
+transitively by the check below. The `TODO.md` entry weighing
+`Geb/Cslib/` imports of `Geb.Mathlib.*` is resolved by this
+decision and removed, its rationale recorded in
+`docs/process.md`.
 
 ### Transitive-import check
 
-Deferred to the first content workstream with the consumption
-cluster above; designed here so that workstream inherits it. A
+A
 `Geb/Mathlib/` module whose `GebLang` dependencies reach
 `Cslib.*` has become Cslib-track and belongs in `Geb/Cslib/`.
 `scripts/check-transitive-imports.sh` detects this: a source-level
@@ -316,10 +326,10 @@ end. `GebTests.lean` gains `public import GebTests.Lang` (and a
 layout) so the test driver and `lake lint -- GebTests` reach the
 module. It is removed when real tests arrive; that expectation is
 recorded in `TODO.md`, not in the docstring, which states only
-what the module tests. Whether `GebTests/Lang/` tests extract
-upstream with their subjects is deferred with the consumption
-cluster (§ Import rules); until then the subtree has no
-extraction path.
+what the module tests. `GebTests/Lang/` tests extract with their
+subjects under the same track-based mapping (§ Import rules),
+into the destination's test tree as the existing mirrors do;
+`scripts/extract-pr.sh`'s extension covers them.
 
 ### Standards and rule documents
 
@@ -339,19 +349,14 @@ extraction path.
   through `GebLang`, no longer independent between subtrees),
   adds `GebLang/` and `GebTests/Lang/` rows to its
   subtree-import-rules table (with the conditional `Cslib.Init`
-  requirement noted on both), updates its in-body applies-to
-  sentence with the new paths, and documents the accepted
-  `Geb/Cslib/` cross-track ordering (§ Import rules) with a
-  cross-reference to the `TODO.md` entry that records the same
-  ordering cost as the case against allowing `Geb/Cslib/` to
-  import `Geb.Mathlib.*`: the two evaluations differ
-  deliberately, and each document points at the other. The
-  widening of the four existing rows is
-  deferred with the consumption cluster, so the file's statement
-  that `scripts/lint-imports.sh` enforces its table stays true
-  at every merged state; the pending widening is described in
-  the floodgate prose with its activation point, and in
-  `TODO.md`. Its § Two-track development gains `GebLang` as a
+  requirement noted on both), widens the four existing rows in
+  lockstep with the lint (`GebLang.*` everywhere;
+  `Geb.Mathlib.*` and `Batteries.*` in the two `Cslib` rows),
+  replaces the passage forbidding `Geb/Cslib/` imports of
+  `Geb.Mathlib.*` with the dependency-ordered allowance
+  (§ Import rules), and updates its in-body applies-to
+  sentence with the new paths. Its § Two-track development gains
+  `GebLang` as a
   porting destination (the section currently names the two
   `Geb/` subtrees as the only ones), and the scope of its section
   on Cslib-specific constraints extends to Cslib-track `GebLang`
@@ -366,18 +371,18 @@ extraction path.
   `GebTests` declarations) gains `GebLang`.
 - `README.md`, in one pass: § Documentation gains the library
   and the `scripts/literate.sh` commands; § Upstream targets
-  gains `GebLang` with the destination-open, activation-gated
-  posture, including its recast-and-move sentence; § Process's
+  gains `GebLang` with the destination-open posture, including
+  its recast-and-move sentence; § Process's
   applies-under line gains the new paths; and the introduction's
   upstream-route enumeration gains `GebLang`.
 - `docs/index.md` § Directory structure gains
-  `GebLang/`, adds `GebLang.*` to the `Geb/Internal/` bullet's
-  import enumeration (that allowance activates now), and adds
+  `GebLang/`, updates the subtree bullets' import enumerations
+  for every widened list, and adds
   `GebTests/Lang/` to the `GebTests/` bullet's subdirectory
   list; `docs/rules/ci-and-workflow.md` records the literate
   build's CI placement.
 - `CONTRIBUTING.md`: the floodgate paragraph's transitive
-  rewording with its activation point (§ Import rules),
+  rewording (§ Import rules),
   `GebLang` in the § Repo structure line, and `GebLang/` added
   to the LLM-contribution-policy sentence's binding locations,
   with the bullet's closing sentence ("both subtrees") reworded
@@ -391,9 +396,10 @@ extraction path.
   (§ Import rules) supersedes the entry's
   mathlib-migration-based mechanism for `GebLang`, and the
   scope-2 exposition bullet gains a reference to the literate
-  site this workstream builds. The cross-track entry's pointer
-  to the independence sentence of § Floodgate test is
-  reconciled with that sentence's transitive rewording.
+  site this workstream builds. The entry weighing `Geb/Cslib/`
+  imports of `Geb.Mathlib.*` is removed as resolved by this
+  workstream (§ Import rules), its rationale recorded in
+  `docs/process.md`.
 - Enumeration sweep: beyond the instances named above,
   implementation greps the committed corpus for statements that
   enumerate the upstream-eligible locations, porting
@@ -412,10 +418,12 @@ extraction path.
 - `docs/process.md`: its § Floodgate test rationale is revised
   for the transitive form (a third eligible location; extraction
   dependency-ordered through `GebLang` rather than independent
-  per subtree), since the process document carries the rationale
-  for every rule being changed, and its two-track porting
-  sentence (code ported into `Geb/Mathlib/` or `Geb/Cslib/`)
-  gains `GebLang`.
+  per subtree), and gains the rationale for the cross-track
+  allowance (Cslib depends on mathlib, so Cslib-destined content
+  may depend on mathlib-destined content, shipped in dependency
+  order), since the process document carries the rationale for
+  every rule being changed; its two-track porting sentence (code
+  ported into `Geb/Mathlib/` or `Geb/Cslib/`) gains `GebLang`.
 
 ### Placeholder content
 
@@ -483,18 +491,31 @@ subject to extraction, so its `{name}` role does not contradict
   the docstring renders legibly as text and the gap is recorded
   for the next doc-gen4 bump).
 - `scripts/lint-imports.sh` passes, and its self-test extension
-  exercises both new entries: an induced `import Geb` in a
-  `GebLang/` module is rejected, induced `GebLang.` leakage
-  (in `GebLang/`) and `GebTests.Lang.` leakage (in
-  `GebTests/Lang/`) outside import lines are rejected, and the
-  conditional `Cslib.Init` rule is exercised in both directions
-  (a `Cslib.*`-importing module without `Cslib.Init` fails; a
-  module without Cslib imports needs no `Cslib.Init`).
-- `TODO.md` carries the deferred-cluster entry (§ Import rules),
-  the placeholder-replacement expectations (§ Tests,
-  § Placeholder content), the revised § Verso adoption entry,
-  and the cross-track entry's half of the mutual
-  cross-reference (§ Standards and rule documents).
+  exercises the new entries and every widened list: an induced
+  `import Geb` in a `GebLang/` module is rejected, induced
+  `GebLang.` leakage (in `GebLang/`) and `GebTests.Lang.`
+  leakage (in `GebTests/Lang/`) outside import lines are
+  rejected, the conditional `Cslib.Init` rule is exercised in
+  both directions (a `Cslib.*`-importing module without
+  `Cslib.Init` fails; a module without Cslib imports needs no
+  `Cslib.Init`), `GebLang.*` imports are accepted in
+  `Geb/Mathlib/` and `Geb/Cslib/` fixtures, `Geb.Mathlib.*` and
+  `Batteries.*` imports are accepted in `Geb/Cslib/` fixtures,
+  and a `Geb.Cslib.*` import in a `Geb/Mathlib/` fixture is
+  still rejected.
+- `scripts/check-transitive-imports.sh` passes on the tree, and
+  its self-test induces and detects failures from both root
+  kinds (`Geb/Mathlib/` and `GebTests/Mathlib/`).
+- `scripts/extract-pr.sh`'s self-test covers the `GebLang`
+  extension: a mathlib-track and a Cslib-track fixture each map
+  to the right destination path, `GebLang.` and (for the
+  Cslib-destined fixture) `Geb.Mathlib.` import prefixes
+  rewrite, and a fixture docstring's Verso role converts to a
+  bare code span.
+- `TODO.md` carries the placeholder-replacement expectations
+  (§ Tests, § Placeholder content) and the revised § Verso
+  adoption entry, and no longer carries the resolved
+  `Geb/Cslib/`-imports entry (§ Standards and rule documents).
 - The enumeration sweep of § Standards and rule documents has
   run: a grep of the committed corpus for upstream-location,
   porting-destination, subtree, mirror, and root-library
