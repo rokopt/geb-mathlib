@@ -94,11 +94,10 @@ Defects in that implementation, corrected here:
   documentation states the build, browse, and reload workflow
   (§ Build, serve, reload).
 
-Later review rounds cannot consult the experimental repository
-directly; the precedent details that only it evidences (the
-`Verso.Genre.Manual.InlineLean` open, the `docBlame` entries the
-generated `def`s need, the naming of those `def`s) are re-verified
-during implementation rather than assumed (§ Verification).
+The experimental repository is public, so its details (the
+`Verso.Genre.Manual.InlineLean` open, the nolints entries its
+manual carries, its CI step) are verifiable directly; review
+round 2 verified them against `anoma/geb`.
 
 ### Ecosystem
 
@@ -132,8 +131,8 @@ during implementation rather than assumed (§ Verification).
 
 ### Dependency
 
-`lakefile.toml` gains, above the mathlib require (whose
-declared-last comment continues to hold):
+`lakefile.toml` gains, above both the `doc-gen4` and `mathlib`
+requires (whose declared-last comment continues to hold):
 
 ```toml
 # Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
@@ -152,10 +151,9 @@ At `v4.34.0-rc1`, verso requires `subverso`, `MD4Lean`,
 overlap pins the repository already carries: `plausible` is among
 the mathlib transitive pins the declared-last comment protects, and
 `MD4Lean` arrives already pinned through `doc-gen4`. Verso is
-therefore declared first among the git requires (above `doc-gen4`
-as well as `mathlib`), so that under Lake's reverse-order root
-resolution both existing pins take precedence over verso's branch
-requires.
+therefore declared ahead of both `doc-gen4` and `mathlib`, so
+that under Lake's reverse-order root resolution both existing
+pins take precedence over verso's branch requires.
 
 `update.yml` rewrites every `rev = "..."` line in `lakefile.toml`
 to the target toolchain tag, so the verso pin participates in the
@@ -227,8 +225,16 @@ def main (args : List String) : IO UInt32 :=
 ```
 
 The snippet is abbreviated: the file carries the copyright header
-and module discipline `docs/rules/lean-coding.md` requires, as do
-the document modules, less any exemption recorded per § Linting.
+and, where feasible, the `module` discipline
+`docs/rules/lean-coding.md` requires, as do the document modules.
+No surveyed Verso project declares `module` in a `#doc` file
+(verso's own guide, reference-manual, verso-templates, and the
+experimental repository all use plain imports), so whether `#doc`
+elaborates inside a `module`-form file is settled during
+implementation (§ Verification). If it does not, the document
+modules stay in non-`module` form and the exemption is recorded
+in `docs/rules/lean-coding.md`, as the experimental repository
+recorded the same exemption.
 
 ### Build, serve, reload
 
@@ -246,8 +252,8 @@ the document modules, less any exemption recorded per § Linting.
   and prints the URL it actually serves.
 
 Reload after an edit is: re-run `build`, refresh the browser. The
-script's usage text states this; there is no watch mode anywhere in
-the Verso ecosystem to reuse.
+script's usage text states this; neither Verso nor any surveyed
+project offers a watch mode to reuse.
 
 ### CI
 
@@ -284,10 +290,13 @@ argument to `lintDriverArgs`, so the driver lints `Geb` before
 - `scripts/nolints.json` is introduced (the nolints path the
   batteries `runLinter` hardcodes; the repository has none yet)
   with `docBlame` entries for the `def`s Verso elaborates from
-  `#doc` blocks and for the bibliography entries. The precedent's
-  `topNamespace` exemptions have no counterpart here: under this
-  repository's pins, Cslib's `topNamespace` linter carries no
-  `env_linter` attribute, so `runLinter` never runs it.
+  `#doc` blocks, and for those only: the bibliography `def`s are
+  hand-written and carry docstrings under this repository's
+  rules, so they need no exemption. The precedent's
+  `topNamespace` exemptions likewise have no counterpart here:
+  under this repository's pins, Cslib's `topNamespace` linter
+  carries no `env_linter` attribute, so `runLinter` never runs
+  it.
 - The axiom linter (`GebMeta.detectNonstandardAxiom`) registers
   through `GebMeta`, which `Geb.lean` and `GebTests.lean` import
   for that purpose. The manual's modules import the specific `Geb`
@@ -301,10 +310,11 @@ argument to `lintDriverArgs`, so the driver lints `Geb` before
   that the manual lint environment does not register the linter,
   and this design point is revisited if a `Geb` module the manual
   imports ever pulls in `GebMeta` transitively.
-- The package `leanOptions` (`mathlibStandardSet`, `flexible`,
-  `style.header`, `warningAsError`) append onto the manual
-  library's, so every linter warning in a document module is an
-  error. The accommodations known in advance are
+- The manual library's `leanOptions` append onto the package's
+  (`mathlibStandardSet`, `flexible`, `style.header`,
+  `warningAsError`), so the library overrides individual linters
+  and inherits the rest, and every remaining linter warning in a
+  document module is an error. The accommodations known in advance are
   `linter.hashCommand` off (the `#doc` command is the document
   syntax) and Verso's code line-length warning at 100. Any further
   linter the document modules cannot satisfy (the style and header
@@ -315,7 +325,9 @@ argument to `lintDriverArgs`, so the driver lints `Geb` before
   exactly the set a clean build requires, no wider.
 - `scripts/tests/test-lint-driver.sh` extends by static checks
   only: its reachability scan covers `manual/` (no module orphaned
-  from `GebManual.lean`), and a workflow check asserts
+  from `GebManual.lean`; the scan's module-to-path mapping must
+  account for `srcDir`, and `Main` is exempt, being outside the
+  library's closure by design), and a workflow check asserts
   `doc-build.yml` retains the `scripts/manual.sh build` step. The
   executed-lint check is not extended to `GebManual`: the script
   runs in `pre-push.sh` and `ci.yml`, and executing the manual
@@ -334,7 +346,7 @@ The initial document is a project overview:
   (`Geb/Mathlib/` and `Geb/Cslib/` upstream-eligible,
   `Geb/Internal/` downstream-only) and the upstreaming intent.
 - One area chapter seeded from the content catalogued in
-  `docs/index.md`, thin at first, using `{name}` roles and
+  `docs/index.md`, initially brief, using `{name}` roles and
   `signature` blocks against `Geb` declarations so the references
   are type-checked. Further chapters are added per area by later
   workstreams.
@@ -390,8 +402,8 @@ The initial document is a project overview:
 
 - `bash scripts/manual.sh build` succeeds from a clean `.lake`
   state for the manual targets (build, lint, generate).
-- `bash scripts/manual.sh serve` serves the output;
-  `http://localhost:8000/` renders the manual with working `{name}`
+- `bash scripts/manual.sh serve` serves the output; the URL
+  `verso-serve` prints renders the manual with working `{name}`
   hovers and the bibliography.
 - `doc-build.yml` passes on the topic branch, including the
   artifact upload.
@@ -405,10 +417,9 @@ The initial document is a project overview:
 - The manual lint environment does not register
   `GebMeta.detectNonstandardAxiom` (§ Linting), checked during
   implementation.
-- The precedent details only the experimental repository
-  evidences (the `Verso.Genre.Manual.InlineLean` open, the
-  `docBlame` entries the generated `def`s need, the naming of
-  those `def`s) are re-verified during implementation.
+- `#doc` elaborates inside a `module`-form file, or the fallback
+  of § Generator executable (non-`module` document files with a
+  recorded exemption) is taken; settled during implementation.
 
 ## References
 
