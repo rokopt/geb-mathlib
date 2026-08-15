@@ -2,9 +2,13 @@
 #
 # scripts/pre-push.sh
 #
-# Run the pre-push checklist before any push to a remote. Exits
-# non-zero on any failure; the user must explicitly authorise the
-# push after a clean run.
+# Check repository content before a push to a remote: the Lean
+# sources and the Markdown that the build system acts on. The
+# build system's own self-tests are a separate concern and live in
+# scripts/test-tooling.sh; scripts/pre-push-full.sh runs both, and
+# is the one to run for a change touching the build system itself.
+#
+# Exits non-zero on any failure.
 
 set -euo pipefail
 
@@ -71,35 +75,8 @@ lake lint -- GebTests
 step "lake shake (minimised imports)"
 lake shake --add-public --keep-implied --keep-prefix Geb GebTests
 
-step "scripts/tests/test-lake-shake.sh"
-bash scripts/tests/test-lake-shake.sh
-
 step "scripts/lint-imports.sh"
 bash scripts/lint-imports.sh
-
-step "scripts/tests/test-lint-imports.sh"
-bash scripts/tests/test-lint-imports.sh
-
-step "scripts/tests/test-extract-pr.sh"
-bash scripts/tests/test-extract-pr.sh
-
-step "scripts/tests/test-mathlib-bump-detect.sh"
-bash scripts/tests/test-mathlib-bump-detect.sh
-
-step "scripts/tests/test-jj-bump-detect.sh"
-bash scripts/tests/test-jj-bump-detect.sh
-
-step "scripts/tests/test-regenerate-integration.sh"
-bash scripts/tests/test-regenerate-integration.sh
-
-step "scripts/tests/test-diff-against-main.sh"
-bash scripts/tests/test-diff-against-main.sh
-
-step "scripts/hooks/tests/test-block-mutating-git.sh"
-bash scripts/hooks/tests/test-block-mutating-git.sh
-
-step "scripts/tests/test-check-commit-msg.sh"
-bash scripts/tests/test-check-commit-msg.sh
 
 step "scripts/check-commit-msg.sh (branch commits)"
 jj log --no-graph -r 'fork_point(main | @)..@ ~ merges()' \
@@ -118,15 +95,6 @@ markdownlint-cli2 '**/*.md'
 
 step "scripts/check-md-links.sh"
 bash scripts/check-md-links.sh
-
-step "scripts/tests/test-check-md-links.sh"
-bash scripts/tests/test-check-md-links.sh
-
-step "scripts/tests/test-axiom-linter.sh"
-bash scripts/tests/test-axiom-linter.sh
-
-step "scripts/tests/test-lint-driver.sh"
-bash scripts/tests/test-lint-driver.sh
 
 step "scripts/lake-update-warning.sh"
 bash scripts/lake-update-warning.sh

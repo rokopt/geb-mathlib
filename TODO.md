@@ -862,7 +862,8 @@ practice settles either question. Settle both.
   admitted regardless.
 - **`lake shake --keep-implied` versus mathlib CI's plain `lake shake`**: a
   repo-wide decision, on a separate branch, on whether to drop `--keep-implied`
-  from `scripts/pre-push.sh:42` and minimise imports across the affected files,
+  from the `lake shake` step in `scripts/pre-push.sh` and minimise imports
+  across the affected files,
   or to record why the project diverges from mathlib CI here.
   `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean` imports
   `Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinaryProducts`,

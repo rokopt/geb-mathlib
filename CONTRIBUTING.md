@@ -86,8 +86,9 @@ does not run config commands on a contributor's behalf.
    `docs/process.md`).
 3. Develop on a topic branch (`feat/<topic>`, `fix/<topic>`, etc.);
    use `jj` (the working VCS).
-4. Run `scripts/pre-push.sh` and have a contributor (or yourself)
-   review the diff line-by-line before pushing.
+4. Run `scripts/pre-push.sh`, or `scripts/pre-push-full.sh` when the
+   change touches the build system itself, and have a contributor (or
+   yourself) review the diff line-by-line before pushing.
 
 ## Rules
 
