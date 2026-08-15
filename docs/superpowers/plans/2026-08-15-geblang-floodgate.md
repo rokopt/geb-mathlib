@@ -53,12 +53,25 @@ This is the second of the two plans that spec mandates
 Copied from the spec and the repository rules; every task's
 requirements implicitly include this section.
 
-- **The floodgate invariant holds commit by commit.** At every commit
-  on this branch, every file in an upstream-eligible location can be
-  extracted to a compiling upstream PR with no source-code changes.
-  This is what fixes the commit ordering below: a widened
-  allowed-import list must not precede the tooling that keeps the
-  newly permitted imports shippable.
+- **The floodgate invariant holds commit by commit, from this plan's
+  first commit on.** At every commit from Task 1 onward, every file in
+  an upstream-eligible location can be extracted to a compiling
+  upstream PR with no source-code changes. This is what fixes the
+  commit ordering below: a widened allowed-import list must not
+  precede the tooling that keeps the newly permitted imports
+  shippable.
+
+  One window escapes it, and that window is inside plan 1 rather than
+  here. Plan 1 creates `GebLang/Basic.lean` and
+  `GebTests/Lang/Basic.lean`, and until this plan's Task 1
+  `scripts/extract-pr.sh` rejects both roots outright and leaves their
+  Verso role markup unconverted. The window is a consequence of the
+  spec's mandated plan split, which puts the library before the
+  floodgate work; no ordering of the two plans closes it, since the
+  extraction extension has nothing to extract until the library
+  exists. Task 1 is this plan's first commit precisely so the window
+  is as short as the split allows. It is on the list of items for the
+  user's review.
 - Shell scripts stay portable to bash 3.2: no `mapfile`, no
   `readarray`, no associative arrays (`declare -A`), no `\b` inside a
   `sed` expression (GNU only; `grep -E` already uses `\b` in this
@@ -94,16 +107,20 @@ Context a fresh executor cannot recover from the spec.
   a fresh empty change, so do not run `jj new` afterward. Advance the
   bookmark after each commit with
   `jj bookmark move feat/geblang-literate --to @-`. Never push.
-- **Markdown writes are hook-linted** at error level by Vale and
-  `markdownlint-cli2`. Vale rejects spaced em dashes, the Latin
-  abbreviation for `for example`, the capitalised spelling of
-  `Cslib`, the clipped form of `repository`, and colloquialisms. Its
-  project vocabulary is
+- **Run the Markdown linters on every document you write**, rather
+  than relying on a hook to run them: whether one fires depends on
+  the harness configuration, but `markdownlint-cli2` binds through
+  `scripts/pre-push.sh` and Vale through `.vale.ini` regardless. Vale
+  at error level rejects spaced em dashes, the Latin abbreviation for
+  `for example`, the capitalised spelling of `Cslib`, the clipped
+  form of `repository`, and colloquialisms. Its project vocabulary is
   `styles/config/vocabularies/GebMathlib/accept.txt`, one term per
   line; add a genuinely recurring technical term there rather than
   contorting prose, and reword a one-off informal word instead.
   Identifiers inside backticks are outside Vale's scope, so write
-  `GebLang` in backticks in prose.
+  `GebLang` in backticks in prose. The check is
+  `vale --minAlertLevel=error <file>` and
+  `markdownlint-cli2 '**/*.md'`.
 - **The script self-tests stage synthetic trees.** Read
   `scripts/tests/test-lint-imports.sh` and
   `scripts/tests/test-extract-pr.sh` before writing a new case:
@@ -227,6 +244,13 @@ write the file whole:
 # makes compile. `scripts/check-transitive-imports.sh` enforces that;
 # this script assumes it.
 #
+# Two repository files can name one upstream destination:
+# GebLang/Foo.lean and Geb/Mathlib/Foo.lean both map to
+# Mathlib/Foo.lean, and their test parallels both to
+# MathlibTest/Foo.lean. The second extraction overwrites the first.
+# Nothing detects the collision; the destination path is printed on
+# every run, so read it.
+#
 # Test-directory layouts (verified per upstream):
 #   mathlib4: source under Mathlib/, tests under MathlibTest/
 #     (singular; renamed from `test/` historically).
@@ -267,8 +291,11 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # Verso role markup, applied off import lines: `{role}`x`` becomes
 # `` `x` ``. `doc.verso` is set for the GebLang library alone, so an
 # unconverted role would render as literal braces upstream. The
-# pattern requires the closing brace to be followed immediately by a
-# backtick, which no Lean expression produces.
+# pattern requires a brace-delimited identifier followed immediately
+# by a backtick, which is rare outside a role: an implicit binder
+# abutting a syntax quotation would match. The arms for the four
+# `Geb`/`GebTests` subtrees run it too, their sources carrying
+# Markdown docstrings where the pattern has nothing to match.
 role_strip='s/\{[A-Za-z][A-Za-z0-9_]*[^}]*\}`/`/g'
 
 # module_file <Module.Name>: the repository path of a module, whose
@@ -1051,14 +1078,16 @@ Replace the Rule 2 block (lines 153 to 171) with:
     # path of an import line is blanked before the search, in all four
     # import forms, so a prefix named in the line's trailing comment
     # is checked like any other prose. `grep -n` numbers the blanked
-    # copy, whose line count is the file's.
+    # copy, whose line count is the file's; the diagnostic takes the
+    # number from there and the text from the file, so it quotes what
+    # the author wrote rather than the blanked copy.
     for lp in "${leakage_prefixes[@]}"; do
       prefix_re="${lp//./\\.}"
       if sed -E "s/^(${import_kw_re})[^[:space:]]+/\\1/" "$f" \
            | grep -nE "\\b${prefix_re}" >/dev/null; then
         sed -E "s/^(${import_kw_re})[^[:space:]]+/\\1/" "$f" \
-          | grep -nE "\\b${prefix_re}" | while IFS= read -r ln; do
-          echo "$f:$ln: '${lp}' outside an import path" >&2
+          | grep -nE "\\b${prefix_re}" | cut -d: -f1 | while IFS= read -r ln; do
+          echo "$f:$ln:$(sed -n "${ln}p" "$f"): '${lp}' outside an import path" >&2
         done
         errors=$((errors + 1))
       fi
@@ -1108,7 +1137,8 @@ and add, after the `Batteries.*` rationale paragraph:
 ```bash
 # GebLang holds the Geb language's core data structures, at the bottom
 # of the dependency order: its modules import no other library of this
-# repository, and every subtree above may import them. Each module is
+# repository, and the subtrees above import them once their allowed
+# lists admit the prefix (the commit after this one). Each module is
 # retargeted by its own import closure — mathlib-track when the
 # closure reaches no Cslib.*, Cslib-track otherwise — so the
 # Cslib.Init requirement is conditional here rather than per subtree,
@@ -1116,7 +1146,44 @@ and add, after the `Batteries.*` rationale paragraph:
 # scripts/extract-pr.sh reads to pick a destination.
 ```
 
-Also update the header's Rule 2 sentence, which reads
+Three further passages of the header state the superseded whole-line
+exemption or the unconditional init rule, and change with the
+mechanism.
+
+The opening paragraph, which reads
+
+```bash
+# Each upstream-eligible subtree has an allowed-import list and a
+# self-prefix that must not appear outside import lines. Files in
+# Geb/Cslib/ and GebTests/Cslib/ additionally must import `Cslib.Init`
+# per CSLib's `checkInitImports` requirement.
+```
+
+becomes
+
+```bash
+# Each upstream-eligible subtree has an allowed-import list and one or
+# more self-prefixes that must not appear outside the module path of
+# an import line. Files in Geb/Cslib/ and GebTests/Cslib/ must import
+# `Cslib.Init` per Cslib's `checkInitImports` requirement, and files
+# in GebLang/ and GebTests/Lang/ must when they import any Cslib.*
+# module.
+```
+
+The `check_subtree` usage comment, which reads
+
+```bash
+# (each such prefix must not appear outside import lines), the second
+```
+
+becomes
+
+```bash
+# (each such prefix must not appear outside an import line's module
+# path), the second
+```
+
+And the Rule 2 sentence, which reads
 
 ```bash
 # `public import` lines are recognised the same as plain `import`
@@ -1124,7 +1191,7 @@ Also update the header's Rule 2 sentence, which reads
 # and they count as import lines for the no-prefix-leakage rule).
 ```
 
-to
+becomes
 
 ```bash
 # `public import` lines are recognised the same as plain `import`
@@ -1195,8 +1262,20 @@ EOF
 assert_case "GebLang conditional init triggered" 1 \
   "missing required 'import Cslib.Init'"
 
-# Case 39: the trigger fires on a meta import of a Cslib module, and
-# an ordinary import of Cslib.Init satisfies it.
+# Case 39: the trigger fires on a `meta import` of a Cslib module,
+# which is the form the unconditional rule's satisfying import
+# excludes.
+setup_empty
+cat > "$test_dir/GebLang/MetaOnly.lean" <<'EOF'
+module
+
+meta import Cslib.Foundations.Thing
+EOF
+assert_case "GebLang conditional init triggered by a meta import" 1 \
+  "missing required 'import Cslib.Init'"
+
+# Case 40: an ordinary import of Cslib.Init satisfies the triggered
+# requirement.
 setup_empty
 cat > "$test_dir/GebLang/MetaCslib.lean" <<'EOF'
 module
@@ -1206,7 +1285,7 @@ meta import Cslib.Foundations.Thing
 EOF
 assert_case "GebLang conditional init satisfied" 0 "clean (1 file(s) checked)"
 
-# Case 40: a GebLang file importing Geb.
+# Case 41: a GebLang file importing Geb.
 setup_empty
 cat > "$test_dir/GebLang/Bad.lean" <<'EOF'
 module
@@ -1216,7 +1295,7 @@ EOF
 assert_case "GebLang forbidding a Geb import" 1 \
   "forbidden import 'import Geb'"
 
-# Case 41: GebLang self-prefix leakage.
+# Case 42: GebLang self-prefix leakage.
 setup_empty
 cat > "$test_dir/GebLang/Leak.lean" <<'EOF'
 module
@@ -1228,7 +1307,7 @@ EOF
 assert_case "GebLang self-prefix leakage" 1 \
   "'GebLang.' outside an import path"
 
-# Case 42: GebTests/Lang sibling imports are allowed.
+# Case 43: GebTests/Lang sibling imports are allowed.
 setup_empty
 cat > "$test_dir/GebTests/Lang/Index.lean" <<'EOF'
 module
@@ -1239,7 +1318,7 @@ import GebTests.Lang.Sub
 EOF
 assert_case "GebTests/Lang sibling import" 0 "clean (1 file(s) checked)"
 
-# Case 43: GebTests/Lang test self-prefix leakage.
+# Case 44: GebTests/Lang test self-prefix leakage.
 setup_empty
 cat > "$test_dir/GebTests/Lang/Leak.lean" <<'EOF'
 module
@@ -1251,7 +1330,7 @@ EOF
 assert_case "GebTests/Lang test self-prefix leakage" 1 \
   "'GebTests.Lang.' outside an import path"
 
-# Case 44: a leakage prefix in an import line's trailing comment.
+# Case 45: a leakage prefix in an import line's trailing comment.
 setup_empty
 cat > "$test_dir/GebTests/Lang/CommentTail.lean" <<'EOF'
 module
@@ -1262,7 +1341,7 @@ assert_case "leakage prefix in an import line's comment tail" 1 \
   "'GebTests.Lang.' outside an import path"
 ```
 
-Case 44 is the narrowed exemption of Step 2; before it, the whole
+Case 45 is the narrowed exemption of Step 2; before it, the whole
 import line was exempt and this fixture passed clean.
 
 - [ ] **Step 7: run the linter and its self-test**
@@ -1332,11 +1411,12 @@ check_subtree "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib
   -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang."
 ```
 
-Three widened lists and their leakage consequences: `GebLang.*` joins all
-four allowed lists and all four leakage-prefix lists; `Geb.Mathlib.*`
-and `Batteries.*` join the two Cslib lists, and `Geb.Mathlib.` joins
-the two Cslib leakage-prefix lists, a qualified reference in an
-extracted body otherwise dangling upstream.
+Three widened prefixes across the four lists, with their leakage
+consequences: `GebLang.*` joins all four allowed lists and all four
+leakage-prefix lists; `Geb.Mathlib.*` and `Batteries.*` join the two
+Cslib lists, and `Geb.Mathlib.` joins the two Cslib leakage-prefix
+lists, a qualified reference in an extracted body otherwise dangling
+upstream.
 
 - [ ] **Step 2: update the header table**
 
@@ -1356,25 +1436,37 @@ The four existing rows of the header's table become:
 #                         (plus mandatory `import Cslib.Init`)
 ```
 
-and the `Batteries.*` rationale paragraph, which reads
+and the `Batteries.*` rationale paragraph, whose whole text reads
 
 ```bash
 # `Batteries.*` is admitted to the mathlib-targeted subtrees because
 # mathlib depends on Batteries and imports its modules directly, so a
-# Batteries import survives extraction to mathlib4.
+# Batteries import survives extraction to mathlib4. That rationale
+# applies to a module whose own upstream target is mathlib4; the
+# restriction to these prefixes can also force a module into
+# Geb/Mathlib/ whose target is Lean core or Batteries, since a
+# dependency of a Geb/Mathlib/ module cannot live in Geb/Internal/.
+# Such a module is not extracted to mathlib4 at all, and its
+# destination is open, per TODO.md § Upstream destination of core- and
+# Batteries-targeted content.
 ```
 
-becomes
+becomes, re-flowed because the first sentence ends mid-line
 
 ```bash
 # `Batteries.*` is admitted to every upstream-eligible subtree because
 # mathlib depends on Batteries and imports its modules directly, and
-# Cslib does the same, so a Batteries import survives extraction to
-# either upstream.
+# Cslib depends on mathlib and does the same, so a Batteries import
+# survives extraction to either upstream. A second rationale binds the
+# mathlib-targeted subtrees alone: the restriction to these prefixes
+# can force a module into Geb/Mathlib/ whose target is Lean core or
+# Batteries, since a dependency of a Geb/Mathlib/ module cannot live
+# in Geb/Internal/. Such a module is not extracted to mathlib4 at all,
+# and its destination is open, per TODO.md § Upstream destination of
+# core- and Batteries-targeted content.
 ```
 
-leaving the rest of that paragraph, on core- and Batteries-targeted
-modules, unchanged. Add after it:
+Add after it:
 
 ```bash
 # `Geb.Mathlib.*` is admitted to the Cslib subtrees because Cslib
@@ -1423,7 +1515,7 @@ assert_case "Geb/Cslib Batteries import" 0 "clean (1 file(s) checked)"
 Append:
 
 ```bash
-# Case 45: GebLang.* is accepted in the source subtrees.
+# Case 46: GebLang.* is accepted in the source subtrees.
 setup_empty
 cat > "$test_dir/Geb/Mathlib/UsesLang.lean" <<'EOF'
 module
@@ -1439,7 +1531,7 @@ EOF
 assert_case "GebLang import accepted in source subtrees" 0 \
   "clean (2 file(s) checked)"
 
-# Case 46: GebLang.* is accepted in the test mirrors.
+# Case 47: GebLang.* is accepted in the test mirrors.
 setup_empty
 cat > "$test_dir/GebTests/Mathlib/UsesLang.lean" <<'EOF'
 module
@@ -1457,7 +1549,7 @@ EOF
 assert_case "GebLang import accepted in test mirrors" 0 \
   "clean (2 file(s) checked)"
 
-# Case 47: the mathlib subtree still cannot import Cslib-destined
+# Case 48: the mathlib subtree still cannot import Cslib-destined
 # content.
 setup_empty
 cat > "$test_dir/Geb/Mathlib/Bad.lean" <<'EOF'
@@ -1468,7 +1560,7 @@ EOF
 assert_case "Geb/Mathlib forbidding Geb.Cslib import" 1 \
   "forbidden import 'import Geb.Cslib.Foo'"
 
-# Case 48: GebLang. leakage in a Geb/Mathlib/ body.
+# Case 49: GebLang. leakage in a Geb/Mathlib/ body.
 setup_empty
 cat > "$test_dir/Geb/Mathlib/LangLeak.lean" <<'EOF'
 module
@@ -1480,7 +1572,7 @@ EOF
 assert_case "GebLang leakage in Geb/Mathlib" 1 \
   "'GebLang.' outside an import path"
 
-# Case 49: Geb.Mathlib. leakage in a Geb/Cslib/ body, which
+# Case 50: Geb.Mathlib. leakage in a Geb/Cslib/ body, which
 # extraction would leave dangling upstream.
 setup_empty
 cat > "$test_dir/Geb/Cslib/MathlibLeak.lean" <<'EOF'
@@ -1494,7 +1586,7 @@ EOF
 assert_case "Geb.Mathlib leakage in Geb/Cslib" 1 \
   "'Geb.Mathlib.' outside an import path"
 
-# Case 50: the same two rejections in the test mirrors.
+# Case 51: Geb.Mathlib. leakage in the GebTests/Cslib/ mirror.
 setup_empty
 cat > "$test_dir/GebTests/Cslib/MathlibLeak.lean" <<'EOF'
 module
@@ -1505,7 +1597,33 @@ def Geb.Mathlib.foo : Nat := 0
 EOF
 assert_case "Geb.Mathlib leakage in GebTests/Cslib" 1 \
   "'Geb.Mathlib.' outside an import path"
+
+# Case 52: GebLang. leakage in the GebTests/Mathlib/ mirror.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/LangLeak.lean" <<'EOF'
+module
+
+import GebLang.Foo
+
+def GebLang.foo : Nat := 0
+EOF
+assert_case "GebLang leakage in GebTests/Mathlib" 1 \
+  "'GebLang.' outside an import path"
+
+# Case 53: the test mirror still cannot import Cslib-destined content.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/BadCslib.lean" <<'EOF'
+module
+
+import Geb.Cslib.Foo
+EOF
+assert_case "GebTests/Mathlib forbidding Geb.Cslib import" 1 \
+  "forbidden import 'import Geb.Cslib.Foo'"
 ```
+
+Cases 52 and 53 are the mirror parallels the spec's § Verification
+asks for beside cases 49 and 48: the mirror runs the same acceptance
+and rejection cases as its source root.
 
 - [ ] **Step 5: run the linter and both self-tests**
 
@@ -1629,6 +1747,7 @@ jj bookmark move feat/geblang-literate --to @-
 - Modify: `README.md`
 - Modify: `CONTRIBUTING.md`
 - Modify: `AGENTS.md`
+- Modify: `TODO.md`
 
 **Interfaces:**
 
@@ -2116,7 +2235,27 @@ becomes
 with the matching TOC entry updated. Run `doctoc --update-only .`
 rather than hand-editing the anchor.
 
-- [ ] **Step 11: run the Markdown checks**
+- [ ] **Step 11: record the spelling inconsistency this leaves**
+
+The edits of Steps 4 and 5 write `Cslib`, the spelling the project
+vocabulary accepts, into a document whose heading
+`## CSLib-specific constraints` and several untouched sentences use
+the other one. Normalising the whole document is a separate concern
+under `CONTRIBUTING.md` § Concern shape, so record it rather than
+bundling it. Add to `TODO.md` § Triggers:
+
+```markdown
+- **Normalise the spelling of `Cslib` in the committed corpus**: the
+  project vocabulary
+  (`styles/config/vocabularies/GebMathlib/accept.txt`) accepts
+  `Cslib`, and Vale rejects the capitalised form, but documents
+  predating the vocabulary carry it, `docs/rules/upstream-eligible.md`
+  most heavily, including a section heading and its table-of-contents
+  entry. Trigger: a branch whose concern is the documents themselves,
+  which retitles the section and re-runs `doctoc`.
+```
+
+- [ ] **Step 12: run the Markdown checks**
 
 Run:
 
@@ -2128,7 +2267,7 @@ Expected: exit 0 from each. `doctoc` inserts a `**Table of Contents**`
 title line into any TOC it regenerates; delete it, the repository's
 TOCs carrying none.
 
-- [ ] **Step 12: commit**
+- [ ] **Step 13: commit**
 
 ```bash
 jj commit -m 'doc(geblang): state the GebLang layering and floodgate rules'
@@ -2159,6 +2298,7 @@ grep -rn --include='*.md' --include='*.lean' --include='*.sh' \
   --include='*.yml' --include='*.toml' \
   --exclude-dir=.lake --exclude-dir=.jj --exclude-dir=.remember \
   --exclude-dir=.superpowers --exclude-dir=node_modules \
+  --exclude-dir=superpowers \
   -e 'both subtrees' -e 'two subtrees' -e 'each subtree' \
   -e 'either subtree' -e 'defaultTargets' -e 'root librar' \
   -e 'mirror' -e 'Geb\.\*' -e 'GebTests\.\*' \
@@ -2171,6 +2311,12 @@ Read every hit. A hit is a defect when the statement enumerates the
 upstream-eligible locations, the porting destinations, the subtree or
 mirror structure, or the root libraries, and omits `GebLang`. A hit
 that names a specific subtree for its own sake is not.
+
+`--exclude-dir=superpowers` drops `docs/superpowers/`: the spec, the
+two plans and the review records are transient documents that the
+branch's final commits remove, so they are not part of the committed
+corpus the sweep is over. Without the exclusion they are roughly half
+the hits.
 
 - [ ] **Step 2: fix the `ci.yml` rationale comment**
 
@@ -2252,7 +2398,7 @@ plan, and the Markdown checks.
 - [ ] **Step 7: commit**
 
 ```bash
-jj commit -m 'doc(geblang): sweep the enumerations for the third library'
+jj commit -m 'doc(geblang): sweep the enumerations for GebLang'
 jj bookmark move feat/geblang-literate --to @-
 ```
 
