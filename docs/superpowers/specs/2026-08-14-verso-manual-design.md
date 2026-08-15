@@ -50,9 +50,11 @@ same keys.
 
 ### Experimental repository
 
-The experimental repository (`geb/geb-lean`) introduced a Verso
-manual for its ramified-recurrence area on 2026-07-22. Its
-architecture, adopted here:
+The experimental repository (the `geb-lean` package of the `geb`
+repository, `https://github.com/anoma/geb`) introduced a Verso
+manual for its ramified-recurrence area in the merges titled
+"Verso manual for ramified recurrence" and "Fix Verso build
+dependencies" (2026-07-22). Its architecture, adopted here:
 
 - `verso` required at the tag named after the Lean toolchain,
   declared ahead of mathlib so mathlib's transitive pins survive
@@ -75,16 +77,15 @@ architecture, adopted here:
 Defects in that implementation, corrected here:
 
 - Its CI step initially ran `lake lint` without a preceding
-  `lake build`. `lake lint` loads `.olean` files but does not
-  compile them, and the library is outside `defaultTargets`, so a
-  clean CI checkout failed with `unknown module prefix`; developer
-  machines with warm `.lake` trees never reproduced it. The fix
-  (its PR #281) prepended `lake build <lib>`. Here the build, lint,
-  and generate commands live in one script run identically by CI
-  and locally, so the divergence cannot recur silently.
+  `lake build`; with the library outside `defaultTargets`, a clean
+  CI checkout failed with `unknown module prefix`, while developer
+  machines with warm `.lake` trees never reproduced it. Its fix
+  prepended `lake build <lib>`. Here the build, lint, and generate
+  commands live in one script run identically by CI and locally,
+  so the ordering is fixed in one place.
 - Document sources sat as a fourth top-level module tree beside the
-  code, tests, and axiom checks, with the executable root loose at
-  the package root; generated HTML landed in `_out/` at the package
+  code, tests, and axiom checks, with the executable root at the
+  package root; generated HTML landed in `_out/` at the package
   root (Verso's default). Here everything Verso-related lives under
   one directory (§ Layout).
 - No serve or reload instructions existed anywhere; the build
@@ -92,6 +93,12 @@ Defects in that implementation, corrected here:
   Here a script provides `build` and `serve` verbs and the
   documentation states the build, browse, and reload workflow
   (§ Build, serve, reload).
+
+Later review rounds cannot consult the experimental repository
+directly; the precedent details that only it evidences (the
+`Verso.Genre.Manual.InlineLean` open, the `docBlame` entries the
+generated `def`s need, the naming of those `def`s) are re-verified
+during implementation rather than assumed (§ Verification).
 
 ### Ecosystem
 
@@ -103,20 +110,23 @@ Defects in that implementation, corrected here:
   layout of [verso-templates](https://github.com/leanprover/verso-templates)
   and of Verso projects generally
   ([fp-lean](https://github.com/leanprover/fp-lean),
-  [teorth/analysis](https://github.com/teorth/analysis),
   [reference-manual](https://github.com/leanprover/reference-manual)).
-  Projects whose documents import their formalization keep the
-  documents in the same Lake package (teorth/analysis); separate
-  doc packages (fp-lean's `book/`) suit projects that quote code
-  via SubVerso anchors instead of importing it.
+  A document that imports the code it references must share the
+  code's toolchain, so such documents sit in the code's Lake
+  package; separate doc packages (fp-lean's `book/`) suit projects
+  that quote code via SubVerso anchors instead of importing it.
+  ([teorth/analysis](https://github.com/teorth/analysis) follows a
+  third shape, Verso's literate flow over docstrings, not adopted
+  here.)
 - Local preview: the `verso` package ships a `verso-serve`
   executable (`lake exe verso-serve <output-dir>`, port 8000).
-  No Verso project has a watch or auto-reload mechanism; the
-  observed workflow everywhere is re-run the generator (Lake
-  rebuilds only the changed modules), then refresh the browser.
+  Neither Verso nor any surveyed project has a watch or
+  auto-reload mechanism; the observed workflow is re-run the
+  generator (Lake rebuilds only the changed modules), then refresh
+  the browser.
 - Verso has no binary cache analogous to mathlib's; it and its
-  transitive dependencies (SubVerso, MD4Lean) compile from source
-  on first build.
+  transitive dependencies (`subverso`, `MD4Lean`, `plausible`,
+  `illuminate`) compile from source on first build.
 
 ## Design
 
@@ -137,11 +147,24 @@ scope = "leanprover"
 rev = "v4.34.0-rc1"
 ```
 
+At `v4.34.0-rc1`, verso requires `subverso`, `MD4Lean`,
+`plausible`, and `illuminate`, each at branch `main`. Two of these
+overlap pins the repository already carries: `plausible` is among
+the mathlib transitive pins the declared-last comment protects, and
+`MD4Lean` arrives already pinned through `doc-gen4`. Verso is
+therefore declared first among the git requires (above `doc-gen4`
+as well as `mathlib`), so that under Lake's reverse-order root
+resolution both existing pins take precedence over verso's branch
+requires.
+
 `update.yml` rewrites every `rev = "..."` line in `lakefile.toml`
 to the target toolchain tag, so the verso pin participates in the
-existing bump automation unchanged. The failure mode is a target
-toolchain Verso has not tagged; the workflow's existing
-build-before-commit behavior surfaces it as a reported failure.
+existing bump automation unchanged. Two failure modes exist at
+bump time: a target toolchain Verso has not tagged, and drift in
+verso's branch-pinned transitives, which `lake update` re-resolves
+to branch heads. Both surface through the workflow's existing
+build-before-commit behavior as a reported failure rather than a
+committed breakage.
 
 ### Layout
 
@@ -203,17 +226,24 @@ def main (args : List String) : IO UInt32 :=
     })
 ```
 
+The snippet is abbreviated: the file carries the copyright header
+and module discipline `docs/rules/lean-coding.md` requires, as do
+the document modules, less any exemption recorded per § Linting.
+
 ### Build, serve, reload
 
 `scripts/manual.sh` with two verbs:
 
 - `build`: `lake build GebManual`, `lake lint -- GebManual`,
-  `lake exe geb-manual -- --output manual/_out`. The explicit
-  build-before-lint order is the corrected form of the
-  experimental repository's CI defect, and CI runs this same
-  script, so local and CI invocations cannot diverge.
-- `serve`: `lake exe verso-serve manual/_out/html-multi`, printing
-  the URL (`http://localhost:8000/`) before starting.
+  `lake exe geb-manual --output manual/_out` (Lake's `exe` command
+  forwards the trailing arguments to the program verbatim, with no
+  `--` separator; `manualMain` rejects an unknown `--` argument).
+  Build precedes lint, the order the experimental repository's CI
+  fix established, and CI runs this same script, so local and CI
+  invocations cannot diverge.
+- `serve`: `lake exe verso-serve manual/_out/html-multi`.
+  `verso-serve` binds port 8000, falls back to the next free port,
+  and prints the URL it actually serves.
 
 Reload after an edit is: re-run `build`, refresh the browser. The
 script's usage text states this; there is no watch mode anywhere in
@@ -241,23 +271,56 @@ Publication (GitHub Pages) is out of scope, as it was in the
 experimental repository; the uploaded artifact is the CI-visible
 product.
 
+Cost: the step compiles verso and its transitive dependencies from
+source (no binary cache covers them) inside the job's existing
+`timeout-minutes: 60`; if the addition approaches that budget, the
+manual moves to its own job. `lake lint -- GebManual` appends its
+argument to `lintDriverArgs`, so the driver lints `Geb` before
+`GebManual`, the same behavior and cost as the existing
+`lake lint -- GebTests` invocation in `ci.yml`.
+
 ### Linting
 
-- `scripts/nolints.json` is introduced (the batteries `runLinter`
-  nolints file; the repository has none yet) with `docBlame`
-  entries for the `def`s Verso elaborates from `#doc` blocks and
-  `topNamespace` entries for bibliography keys.
-- The manual library's `leanOptions` disable `linter.hashCommand`
-  (the `#doc` command is the document syntax) and set Verso's code
-  line-length warning to 100, per the precedent.
-- `scripts/tests/test-lint-driver.sh` extends its guard to
-  `GebManual` and `doc-build.yml` analogously to the experimental
-  repository's guard extension; the exact form follows the
-  script's existing table during implementation.
-- Rule deltas the manual forces (generated `def`s without
-  docstrings, top-level bibliography `def`s, any header or module
-  conventions the document modules cannot satisfy) are recorded in
-  `docs/rules/lean-coding.md` with their rationale.
+- `scripts/nolints.json` is introduced (the nolints path the
+  batteries `runLinter` hardcodes; the repository has none yet)
+  with `docBlame` entries for the `def`s Verso elaborates from
+  `#doc` blocks and for the bibliography entries. The precedent's
+  `topNamespace` exemptions have no counterpart here: under this
+  repository's pins, Cslib's `topNamespace` linter carries no
+  `env_linter` attribute, so `runLinter` never runs it.
+- The axiom linter (`GebMeta.detectNonstandardAxiom`) registers
+  through `GebMeta`, which `Geb.lean` and `GebTests.lean` import
+  for that purpose. The manual's modules import the specific `Geb`
+  modules they reference, not `GebMeta`, so
+  `lake lint -- GebManual` runs without the axiom linter. This
+  scope boundary is intended: the constructive discipline governs
+  the formalization, while the manual's document objects are
+  rendering data whose terms depend on Verso's own axiom usage,
+  which the repository does not constrain. The boundary is
+  recorded in `docs/rules/lean-coding.md`; implementation verifies
+  that the manual lint environment does not register the linter,
+  and this design point is revisited if a `Geb` module the manual
+  imports ever pulls in `GebMeta` transitively.
+- The package `leanOptions` (`mathlibStandardSet`, `flexible`,
+  `style.header`, `warningAsError`) append onto the manual
+  library's, so every linter warning in a document module is an
+  error. The accommodations known in advance are
+  `linter.hashCommand` off (the `#doc` command is the document
+  syntax) and Verso's code line-length warning at 100. Any further
+  linter the document modules cannot satisfy (the style and header
+  linters over `#doc` syntax are the candidates) is disabled in
+  the library's `leanOptions` during implementation, each with its
+  rationale recorded in `docs/rules/lean-coding.md`.
+  `weak.warningAsError` stays on, so the accommodation set is
+  exactly the set a clean build requires, no wider.
+- `scripts/tests/test-lint-driver.sh` extends by static checks
+  only: its reachability scan covers `manual/` (no module orphaned
+  from `GebManual.lean`), and a workflow check asserts
+  `doc-build.yml` retains the `scripts/manual.sh build` step. The
+  executed-lint check is not extended to `GebManual`: the script
+  runs in `pre-push.sh` and `ci.yml`, and executing the manual
+  lint there would compile Verso in both, contradicting § Layout's
+  exclusions.
 
 ### Content
 
@@ -276,14 +339,20 @@ The initial document is a project overview:
   are type-checked. Further chapters are added per area by later
   workstreams.
 - `Bibliography.lean` carries entries only for works the chapters
-  cite, keyed as in `docs/references.bib`.
+  cite, keyed as in `docs/references.bib`. The `.bib` file remains
+  the authoritative record per `CONTRIBUTING.md` § Cite the
+  literature; the Lean entries are a rendering transcription of
+  it, and a divergence between the two is corrected against the
+  `.bib`.
 
 ### Documentation updates
 
-- `README.md` and `docs/index.md` gain a section naming the manual,
-  its build command, its serve command and URL, and the reload
-  workflow (the three facts the experimental repository never
-  wrote down).
+- `README.md` gains a section naming the manual, its build
+  command, its serve command, and the reload workflow (the three
+  facts the experimental repository never wrote down).
+  `docs/index.md` gains only a pointer to the manual: its charter
+  is the catalogue of implemented content, so the commands live in
+  `README.md`.
 - `docs/rules/ci-and-workflow.md` records the manual's CI-only
   build status and the script; `docs/rules/lean-coding.md` records
   the exemptions per § Linting.
@@ -297,15 +366,15 @@ The initial document is a project overview:
   manifest and bump surface without decoupling anything.
 - The experimental repository's layout (document tree and
   executable root at the package top level). Rejected: it is the
-  layout complaint this design exists to fix; `srcDir` achieves
-  the same targets under one directory.
+  layout defect recorded in § Precedents; `srcDir` achieves the
+  same targets under one directory.
 - `verso-blueprint` (the formalization-blueprint genre). Not
   adopted: the goal is a manual presenting the language, not a
   proof-dependency blueprint; the genre can be revisited if a
   blueprint is wanted later.
-- A watch/auto-reload mechanism. Not built: nothing exists to
-  reuse in the ecosystem, and the rebuild-and-refresh workflow is
-  the established practice everywhere Verso is used.
+- A watch/auto-reload mechanism. Not built: nothing was found to
+  reuse in Verso or the surveyed projects, and rebuild-and-refresh
+  is the established practice in all of them.
 
 ## Out of scope
 
@@ -333,6 +402,13 @@ The initial document is a project overview:
   invocation are confirmed against the pinned Verso and Lake
   versions during implementation (they are reported by the
   research, not yet exercised in this repository).
+- The manual lint environment does not register
+  `GebMeta.detectNonstandardAxiom` (§ Linting), checked during
+  implementation.
+- The precedent details only the experimental repository
+  evidences (the `Verso.Genre.Manual.InlineLean` open, the
+  `docBlame` entries the generated `def`s need, the naming of
+  those `def`s) are re-verified during implementation.
 
 ## References
 
@@ -342,9 +418,12 @@ The initial document is a project overview:
   (`v4.34.0-rc1` present).
 - Templates: `https://github.com/leanprover/verso-templates`
   (document library + generator executable + `_out/html-multi`).
-- Precedent projects: `https://github.com/teorth/analysis`
-  (same-package manual over mathlib),
+- Precedent projects:
   `https://github.com/leanprover/fp-lean` (separate doc package),
-  `https://github.com/leanprover/reference-manual`.
-- Experimental repository: `geb/geb-lean`, PRs #280 (manual) and
-  #281 (CI build-before-lint fix).
+  `https://github.com/leanprover/reference-manual`,
+  `https://github.com/teorth/analysis` (literate docstring flow, a
+  shape not adopted here).
+- Experimental repository: the `geb-lean` package of
+  `https://github.com/anoma/geb`, merges "Verso manual for
+  ramified recurrence" and "Fix Verso build dependencies"
+  (2026-07-22).

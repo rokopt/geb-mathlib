@@ -89,3 +89,7 @@ nolints
 toolchains
 upstreaming
 prepended
+hardcode
+hardcoded
+hardcodes
+reachability
