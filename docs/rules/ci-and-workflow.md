@@ -33,7 +33,8 @@ for mathlib's full convention.
 
 Types: `feat | fix | doc | style | refactor | test | chore | perf | ci`.
 Imperative present tense, no capital, no trailing period. Subject
-under 72 characters when possible.
+at most 72 characters: `scripts/check-commit-msg.sh` rejects a
+longer one, so the bound is enforced rather than advisory.
 
 Documented footers: `Closes #123, #456`, `BREAKING CHANGE: ...`,
 `- [ ] depends on: #XXXX`. Mathlib's published convention does not
