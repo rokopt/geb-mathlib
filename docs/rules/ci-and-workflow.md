@@ -118,14 +118,14 @@ fixtures:
   `scripts/tests/test-diff-against-main.sh`.
 - `scripts/hooks/tests/test-block-mutating-git.sh`.
 
-Informational reminders (printed, not enforced):
-
-- (PR-candidate) PR descriptions, Zulip messages, and GitHub
-  comments are user-authored ("use your own words"); the user
-  reviews the diff line-by-line before any push.
-- (Lean-content) run `lean4:golf` on changed proofs and
-  `lean4:review` on the diff; (PR-candidate)
-  `pr-review-toolkit:review-pr`.
+The scripts report what the checks found and nothing else. Project
+rules that bind the contributor rather than the tree, and the tool
+invocations an agent is expected to make, live in the Markdown that
+states them; restating either in build output addresses the reader
+who runs the checklist as though they were its subject. The
+docs-coverage notice above is the one printed line that does not
+fail the run, because the check behind it is a heuristic over the
+branch diff rather than a decision about the tree.
 
 ## Verso manual build
 

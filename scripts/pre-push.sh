@@ -125,40 +125,4 @@ if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal)/.*\.lean$
   fi
 fi
 
-# PR-candidate reminder: triggers on feat/, fix/, refactor/, migrate/
-# bookmarks anywhere in the unpushed range (commits reachable from @ but
-# not from a remote bookmark). A jj bookmark pins a commit and does not
-# follow the working copy, so the topic bookmark is rarely on @ itself;
-# checking only @ would miss it. Exact-prefix matching (per-bookmark
-# loop) so names like `chore/feat-tooling` do not spuriously match.
-is_pr_candidate=0
-while IFS= read -r bm; do
-  case "$bm" in
-    feat/*|fix/*|refactor/*|migrate/*) is_pr_candidate=1; break ;;
-  esac
-done < <(jj log -r 'bookmarks() & (remote_bookmarks()..@)' \
-           -T 'local_bookmarks ++ "\n"' --no-graph 2>/dev/null \
-         | tr ',' '\n' | sed 's/[[:space:]]*$//' | sed 's/^[[:space:]]*//')
-
-if [ "$is_pr_candidate" -eq 1 ]; then
-  cat >&2 <<'EOF'
-
-REMINDER (PR-candidate branch detected):
-
-- PR descriptions, Zulip messages, and GitHub issue/PR comments
-  must be authored by the user, not by an AI agent. (Mathlib's
-  LLM policy: "use your own words.")
-- The user must review the diff line-by-line before any push.
-EOF
-fi
-
-# Lean-content reminder (informational; does not prompt).
-if diff_against_main | grep -qE '\.lean$'; then
-  echo "" >&2
-  echo "REMINDER (Lean content changed):" >&2
-  echo "  - Run lean4:golf on changed proofs (polish step)." >&2
-  echo "  - Run lean4:review on the diff." >&2
-  echo "  - For PR-candidate branches, run pr-review-toolkit:review-pr." >&2
-fi
-
-echo "pre-push: clean. The user must still review the diff line-by-line and authorise the push."
+echo "pre-push: clean."
