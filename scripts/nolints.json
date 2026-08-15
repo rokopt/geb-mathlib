@@ -1,3 +1,5 @@
 [
-  ["docBlame", "GebManual.Root.«the canonical document object name»"]
+  ["docBlame", "GebManual.Introduction.«the canonical document object name»"],
+  ["docBlame", "GebManual.Root.«the canonical document object name»"],
+  ["docBlame", "GebManual.WTypes.«the canonical document object name»"]
 ]

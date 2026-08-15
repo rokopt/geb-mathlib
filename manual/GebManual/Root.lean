@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 public import VersoManual
+public import GebManual.Introduction
+public import GebManual.WTypes
 
 /-! # Manual root
 
@@ -16,4 +18,6 @@ open Verso.Genre Manual
 
 #doc (Manual) "Geb" =>
 
-The Geb manual.
+{include 0 GebManual.Introduction}
+
+{include 0 GebManual.WTypes}
