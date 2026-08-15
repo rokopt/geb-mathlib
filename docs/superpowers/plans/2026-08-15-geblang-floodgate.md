@@ -323,9 +323,17 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 role_strip='s/[{][A-Za-z][A-Za-z0-9_]*[}]`/`/g'
 
 # convert_roles is 1 for the one arm reading doc.verso sources.
+#
+# No line is exempt. An earlier form exempted import lines, which also
+# exempted any docstring line opening with the word `import` and
+# shipped its roles unconverted; no address distinguishes the two,
+# a module path and an English word being the same shape. Exempting
+# nothing is both simpler and right: an import line's module path
+# holds no braces, and a role in its trailing comment wants
+# converting like any other.
 role_filter() {
   if [ "$convert_roles" -eq 1 ]; then
-    sed -E "/^${import_kw_re}/!${role_strip}"
+    sed -E "${role_strip}"
   else
     cat
   fi
@@ -341,9 +349,14 @@ module_file() {
 # track_of <file>: prints `cslib` when the repository-internal import
 # closure of <file>, followed through its `GebLang.` and
 # `GebTests.Lang.` imports, carries any `Cslib.*` import; prints
-# `mathlib` otherwise. The worklist is carried in space-separated
-# strings rather than an associative array, which bash 3.2 (the system
-# bash on macOS) does not provide; repository paths contain no spaces.
+# `mathlib` otherwise. A module with no file on disk contributes
+# nothing to the walk, so an import naming one resolves to
+# mathlib-track and is emitted under `Mathlib.`; `lake build` is what
+# catches the missing module, neither this script nor
+# scripts/lint-imports.sh checking existence. The worklist is carried
+# in space-separated strings rather than an associative array, which
+# bash 3.2 (the system bash on macOS) does not provide; repository
+# paths contain no spaces.
 track_of() {
   local seen=" " frontier="$1" next f m
   while [ -n "$frontier" ]; do
@@ -467,8 +480,9 @@ dst="$fork/$dst_rel"
 mkdir -p "$(dirname "$dst")"
 
 # Copy, rewriting each import line's module path by the arm's table and
-# converting Verso roles elsewhere in the arms that carry them. The
-# rewrite is anchored to the
+# converting Verso roles elsewhere in the arm that carries them. The
+# read loop terminates every line, so a source with no final newline
+# gains one; upstream wants it. The rewrite is anchored to the
 # import keyword and applied to the module path alone, rather than by a
 # within-line `\b` word boundary, which is non-portable (GNU sed only;
 # not BSD or macOS, the same constraint block-mutating-git.sh
@@ -723,7 +737,11 @@ grep 'meta import' /tmp/meta-extract/MathlibTest/Data/UnionFind/OfEdges.lean
 
 Expected: the `meta import` line names `Mathlib.`, not `Geb.Mathlib.`.
 
-- [ ] **Step 7: commit**
+- [ ] **Step 7: run the Markdown checks and commit**
+
+This task edited `TODO.md`, so run
+`markdownlint-cli2 '**/*.md'` and `doctoc --dryrun --update-only .`
+before committing; both must be clean.
 
 ```bash
 jj commit -m 'feat(scripts): extract GebLang by import-closure track'
@@ -1045,8 +1063,9 @@ becomes
 ```markdown
 - `scripts/lint-imports.sh` and `scripts/tests/test-lint-imports.sh`.
 - `scripts/check-transitive-imports.sh` and
-  `scripts/tests/test-check-transitive-imports.sh`. The first bounds
-  each module's direct imports, the second the closure: a
+  `scripts/tests/test-check-transitive-imports.sh`.
+  `scripts/lint-imports.sh` bounds each module's direct imports;
+  `scripts/check-transitive-imports.sh` bounds the closure: a
   `Geb/Mathlib/` or `GebTests/Mathlib/` module whose `GebLang`
   dependencies reach `Cslib.*` is Cslib-track and belongs under the
   Cslib subtree.
@@ -1167,11 +1186,13 @@ is now a violation and the old wording would misdescribe it.
 - [ ] **Step 3: let the import-keyword pattern span repeated spaces**
 
 `import_kw_re` ends in a literal single space, so a doubled space
-after the keyword defeats both Rule 1's collection and Rule 2's
-blanking: `import  Geb.Mathlib.A` is reported as a forbidden import
-(Rule 1 sees no keyword and the fallback rejects it) and its module
-path is then searched as prose, producing a spurious second
-diagnostic. Change
+after the keyword defeats Rule 2's blanking: the module path of
+`import  Geb.Mathlib.A` survives the blanking step and is then
+searched as prose, producing a second diagnostic beside the
+forbidden-import one Rule 1 already emits. Rule 1 is unaffected
+either way, its own prefix comparison running over the line with the
+`public` and `meta` keywords stripped rather than over this pattern.
+Change
 
 ```bash
   local import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import '
@@ -1228,11 +1249,11 @@ and add, after the `Batteries.*` rationale paragraph:
 # GebLang holds the Geb language's core data structures, at the bottom
 # of the dependency order: its modules import no other library of this
 # repository, and the subtrees above import them, their allowed lists
-# admitting the prefix. Each module is
-# retargeted by its own import closure — mathlib-track when the
-# closure reaches no Cslib.*, Cslib-track otherwise — so the
-# Cslib.Init requirement is conditional here rather than per subtree,
-# and scripts/check-transitive-imports.sh checks the closures that
+# admitting the prefix. Each module is retargeted by its own import
+# closure, mathlib-track when the closure reaches no Cslib.* and
+# Cslib-track otherwise, so the Cslib.Init requirement is conditional
+# here rather than per subtree, and
+# scripts/check-transitive-imports.sh checks the closures that
 # scripts/extract-pr.sh reads to pick a destination.
 ```
 
@@ -1372,8 +1393,10 @@ assert_case "a self-prefix in a comment is not an import path" 1 \
   "'Geb.Mathlib.' outside an import path"
 ```
 
-Cases 8 and 9 carry the milder "prefix leakage outside import line"
-in their comments; restate those two the same way.
+Cases 8 and 9 carry the same wording in their own comments,
+`# Case 8: Mathlib prefix leakage outside import line.` and
+`# Case 9: Cslib prefix leakage outside import line.`; both become
+`outside an import path.`
 
 - [ ] **Step 7: add the new self-test cases**
 
@@ -1524,7 +1547,11 @@ Delete the whole `TODO.md` § Triggers entry beginning
 through the end of its `Trigger:` sentence. Step 2 narrowed the
 exemption, which is what the entry asked for.
 
-- [ ] **Step 10: commit**
+- [ ] **Step 10: run the Markdown checks and commit**
+
+This task edited `TODO.md`, so run
+`markdownlint-cli2 '**/*.md'` and `doctoc --dryrun --update-only .`
+before committing; both must be clean.
 
 ```bash
 jj commit -m 'feat(scripts): lint the GebLang subtrees and narrow rule 2'
@@ -1863,10 +1890,14 @@ import rules restrict `Geb/Mathlib/` modules to `Mathlib.*`,
 `Batteries.*`, `Geb.Mathlib.*` and `GebLang.*` imports, so a
 dependency of such a module cannot live in `Geb/Internal/`; a module
 restating Lean core or Batteries API therefore sits in `Geb/Mathlib/`
-while its upstream is neither mathlib4 nor Cslib.
+while its upstream is neither mathlib4 nor Cslib. That destination is
+open, per `TODO.md` § Upstream destination of core- and
+Batteries-targeted content.
 ```
 
-leaving the sentence that follows, on the open destination, unchanged.
+That replaces the paragraph whole, its closing sentence included, so
+the re-flow reaches the end rather than leaving a long line against
+short neighbours.
 
 Task 6's greps do not reach this paragraph: its enumeration is spelled
 `Geb.Mathlib.*`, which the sweep's `Geb\.\*` pattern does not match.
@@ -2616,7 +2647,15 @@ plan's own work rather than found by it:
   It is the twin of the `test-lint-imports.sh` header sentence named
   below.
 
-One more is caused by this plan rather than found by it:
+Two more are caused by this plan rather than found by it:
+
+- `TODO.md` § Repo-relative paths in upstream-eligible docstrings
+  says `scripts/extract-pr.sh` rewrites import lines only, which
+  Task 1 falsifies as a description of the script. The entry's own
+  claim survives, the `Geb/Mathlib/` arm converting no roles, so
+  restate the clause rather than removing the entry.
+
+The other:
 `scripts/tests/test-lint-imports.sh`'s header says it stages
 synthetic `Geb/{Mathlib,Cslib}` and `GebTests/{Mathlib,Cslib}`
 subtrees, which Task 3 Step 7's `setup_empty` change falsifies.
