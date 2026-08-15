@@ -11,6 +11,7 @@ paths:
 
 - [Commit-message convention (mathlib-derived)](#commit-message-convention-mathlib-derived)
 - [Pre-push checklist](#pre-push-checklist)
+- [Verso manual build](#verso-manual-build)
 - [Action pinning policy](#action-pinning-policy)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -104,6 +105,19 @@ Informational reminders (printed, not enforced):
 - (Lean-content) run `lean4:golf` on changed proofs and
   `lean4:review` on the diff; (PR-candidate)
   `pr-review-toolkit:review-pr`.
+
+## Verso manual build
+
+The manual (`lean_lib GebManual`, `lean_exe geb-manual`, sources
+under `manual/`) builds only through `scripts/manual.sh build`:
+`lake build GebManual`, `lake lint -- GebManual`,
+`lake exe geb-manual --output manual/_out`, in that order: build
+precedes lint so a clean checkout lints built oleans. CI runs the
+script in `doc-build.yml` and uploads the HTML as the `geb-manual`
+artifact. The manual is outside `defaultTargets`, the test driver,
+and the pre-push checklist, so no contributor builds Verso
+implicitly; `scripts/tests/test-lint-driver.sh` § 3 guards the
+workflow step.
 
 ## Action pinning policy
 
