@@ -39,7 +39,7 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-      - name: Set mathlib, cslib, doc-gen4 revs to the target tag
+      - name: Set verso, mathlib, cslib, doc-gen4 revs to the target tag
         run: |
           sed -i -E 's/^rev = "[^"]*"/rev = "'"${TARGET}"'"/' lakefile.toml
           echo "lakefile.toml require revisions set to ${TARGET}:"
