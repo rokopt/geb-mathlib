@@ -72,14 +72,30 @@ requirements implicitly include this section.
   `*` and not with `-`, and a checked constant reference is written
   ``{name}`Foo` ``. Every other library keeps mathlib-conventional
   Markdown docstrings.
+- **Every code span in a `GebLang` docstring carries a role.**
+  `doc.verso.suggestions` defaults to `true`, so a code span with no
+  role emits the warning `Code element could be more specific.`, and
+  the package-level `weak.warningAsError = true` in `lakefile.toml`
+  turns that into an error. Use `{name}` for a constant that must resolve,
+  `{option}` for a Lean option, and `{lit}` for text that is neither.
+  Verified against `Lean/Elab/DocString.lean` and by elaborating the
+  sources of Task 1 under the full option set of `lakefile.toml`.
+- **A `{name}` role does not forward-reference within a module.** The
+  role resolves at elaboration, so a module docstring cannot name a
+  constant its own file declares later; it can name one an imported
+  module declares. Use `{lit}` for a same-file name.
 - `GebLang/` modules import only `Mathlib.*`, `Batteries.*`, `Cslib.*`
   and `GebLang.*`. The `GebLang.lean` umbrella additionally imports
   `GebMeta`, as `Geb.lean` and `GebTests.lean` do.
-- The self-prefix `GebLang.` appears only in the module path of an
-  import line: not in namespace declarations, declaration bodies,
-  docstrings or comments. The same holds for `GebTests.Lang.` in
-  `GebTests/Lang/`. Plan 2 makes `scripts/lint-imports.sh` enforce
-  this; the sources this plan writes already satisfy it.
+- In a `GebLang/` module the self-prefix `GebLang.` appears only in
+  the module path of an import line: not in namespace declarations,
+  declaration bodies, docstrings or comments. The same holds for
+  `GebTests.Lang.` in `GebTests/Lang/`. Plan 2 makes
+  `scripts/lint-imports.sh` enforce this over those two directories;
+  the sources this plan writes under them already satisfy it. The
+  `GebLang.lean` umbrella is outside the rule, as `Geb/Mathlib.lean`
+  is outside its subtree's, so its docstring may name
+  `GebLang.Basic`.
 - `lintDriverArgs` stays `["Geb"]`. `GebLang` is linted by an explicit
   `lake lint -- GebLang`, the `GebTests` pattern.
 - Markdown: 80-character lines outside tables and code blocks;
@@ -99,16 +115,20 @@ Context a fresh executor cannot recover from the spec.
   a fresh empty change, so do not run `jj new` afterward. Advance the
   bookmark after each commit with
   `jj bookmark move feat/geblang-literate --to @-`. Never push.
-- **Markdown writes are hook-linted** at error level by Vale and
-  `markdownlint-cli2`. Vale rejects spaced em dashes, the Latin
-  abbreviation for `for example`, the capitalised spelling of
-  `Cslib`, the clipped form of `repository`, and colloquialisms. Its
-  project vocabulary is
+- **Run the Markdown linters on every document you write**, rather
+  than relying on a hook to run them: whether one fires depends on
+  the harness configuration, but `markdownlint-cli2` binds through
+  `scripts/pre-push.sh` and Vale through `.vale.ini` regardless. Vale
+  at error level rejects spaced em dashes, the Latin abbreviation for
+  `for example`, the capitalised spelling of `Cslib`, the clipped
+  form of `repository`, and colloquialisms. Its project vocabulary is
   `styles/config/vocabularies/GebMathlib/accept.txt`, one term per
   line; add a genuinely recurring technical term there rather than
   contorting prose, and reword a one-off informal word instead.
   Identifiers inside backticks are outside Vale's scope, so write
-  `GebLang` in backticks in prose.
+  `GebLang` in backticks in prose. The check is
+  `vale --minAlertLevel=error <file>` and
+  `markdownlint-cli2 '**/*.md'`.
 - **Build costs.** `lake build GebLang` is cheap. The first
   `lake build :literateHtml` compiles the `verso-literate`
   executables from source and takes minutes; later runs after a
@@ -119,6 +139,14 @@ Context a fresh executor cannot recover from the spec.
   `pkill -f verso-serve`.
 - **Never use `lake env lean`**; it drops `lakefile.toml` options and
   reports spurious errors. Use `lake build`.
+- **`GebLang/Basic.lean` imports nothing, so the mathlib linters do
+  not run on it.** `mathlibStandardSet`, `linter.flexible` and
+  `linter.style.header` are `weak.`-prefixed options naming linters
+  that mathlib registers; a module outside mathlib's import closure
+  registers none of them. The style constraints of this plan's
+  § Global constraints bind that file by review, not by tooling. The
+  Verso checks in its docstrings do run, elaboration being what
+  performs them.
 - **Script self-tests stage synthetic trees.** Read
   `scripts/tests/test-lint-imports.sh` and
   `scripts/tests/test-extract-pr.sh` for the fixture pattern before
@@ -229,7 +257,7 @@ against a source with a docstring of each kind.
 
 ## Main definitions
 
-* {name}`gebLangAnchor`, the declaration whose docstring exercises
+* {lit}`gebLangAnchor`, the declaration whose docstring exercises
   the declaration-level pipeline.
 
 ## Tags
@@ -242,14 +270,23 @@ geb, language
 /-- A declaration whose docstring renders in both of the library's
 documentation pipelines: as page prose in the literate site, and in
 doc-gen4's reference. Its checked {name}`Nat` reference elaborates
-under `doc.verso`. -/
+under the {option}`doc.verso` option. -/
 def gebLangAnchor : Nat := 0
 ```
 
 The declaration is replaced, not grown, when content lands; Task 6
 records that expectation in `TODO.md`. Note the Verso list marker
-`*`, the `{name}` roles, and the absence of the `GebLang.` prefix
-anywhere outside an import path.
+`*`, the role on every code span, and the absence of the `GebLang.`
+prefix anywhere outside an import path.
+
+The `## Main definitions` entry takes `{lit}` rather than `{name}`
+because a `{name}` role does not forward-reference within a module:
+with `{name}` there, `lean` reports an unknown-constant error naming
+`gebLangAnchor`. The declaration docstring
+below it does carry a checked `{name}` role, which is what the spec's
+§ Placeholder content asks for. This file and the umbrella of Step 4
+were both elaborated under the full option set of `lakefile.toml`,
+`weak.warningAsError = true` included, and exit 0 as written.
 
 - [ ] **Step 4: write the umbrella**
 
@@ -270,8 +307,8 @@ import GebMeta
 /-!
 # The Geb language
 
-`GebLang` holds the core data structures of the Geb language. It sits
-at the bottom of this repository's dependency order: its modules
+{lit}`GebLang` holds the core data structures of the Geb language. It
+sits at the bottom of this repository's dependency order: its modules
 import mathlib, Batteries and Cslib, and each other, and every other
 library here may import them.
 
@@ -282,9 +319,12 @@ doc-gen4's API reference.
 
 ## Main definitions
 
-* {name}`gebLangAnchor`, in `GebLang.Basic`.
+* {name}`gebLangAnchor`, in the {lit}`GebLang.Basic` module.
 -/
 ```
+
+Here the `{name}` role does resolve: the umbrella imports the module
+that declares the constant.
 
 The `-- shake: keep-all, shake: keep-downstream` annotation on the
 `module` line matches `Geb.lean` and `GebTests.lean` and keeps the
@@ -303,11 +343,15 @@ in list markers (`*`, not `-`) and in role syntax.
 
 Run: `lake lint -- GebLang`
 
-Expected: exit 0, and the output names the axiom linter's
-`All declarations depend only on permitted axioms.` result. This
-confirms the umbrella's `GebMeta` import registers
-`GebMeta.detectNonstandardAxiom` for this root module, and that the
-placeholder passes it.
+Expected: exit 0 and the line `-- Linting passed for GebLang.`.
+Batteries' `runLinter` prints each linter's `noErrorsFound` string
+only on the failure path
+(`.lake/packages/batteries/scripts/runLinter.lean:180` against
+`Batteries/Tactic/Lint/Frontend.lean`), so a passing run does not
+name the axiom linter. That the axiom linter ran is established by
+the umbrella's `GebMeta` import registering the `@[env_linter]`; to
+see it fire, temporarily give the placeholder a
+`Classical.choice`-dependent proof and confirm the run fails.
 
 - [ ] **Step 7: confirm the default build covers the library**
 
@@ -350,7 +394,7 @@ Authors: Terence Rokop
 module
 
 public import GebLang.Basic
-public meta import GebLang.Basic
+public meta import GebLang.Basic  -- shake: keep; #guard needs it
 
 /-!
 # Tests for the Geb language's anchor module
@@ -374,7 +418,12 @@ declaration from another module of this package: `#guard` runs its
 argument in the interpreter, and the interpreter needs the imported
 module's IR available to meta code. The LSP is not an oracle for this,
 so the claim is settled by `lake build` alone
-(`docs/rules/lean-coding.md` § Lean 4 module system).
+(`docs/rules/lean-coding.md` § Lean 4 module system). Its
+`-- shake: keep; #guard needs it` annotation matches every existing
+counterpart in the tree (`GebTests/Mathlib/CategoryTheory/FinCat/`
+`Repr.lean:10`, among others): the import leaves no constant
+reference in the olean, so `lake shake` reports it as removable
+without the annotation.
 
 The docstrings here are mathlib-conventional Markdown: `doc.verso` is
 set for the `GebLang` library, not for `GebTests`.
@@ -575,33 +624,53 @@ Expected: a single line naming a directory under `.lake/build`. The
 path, so any extra line breaks them. If the command prints more than
 the path, record the deviation and stop; do not work around it.
 
+Run it twice. The facet's `checkDeployActions`
+(`.lake/packages/verso/lakefile.lean`) logs a GitHub Pages setup line
+on its first run and then writes a sentinel under `.lake/build`, so
+the first invocation in a fresh workspace can print more than the
+path. Step 5's `build` consumes that first run, which is why
+`scripts/literate.sh serve` and the CI capture in Task 5 are safe in
+order; a bare `serve` in a fresh workspace is not, and that is the
+reason the usage text tells the reader to `build` first.
+
 - [ ] **Step 7: confirm the site's scope**
 
 Run:
 
 ```bash
-ls "$(lake query :literateHtml)"
-grep -rl 'GebManual\|GebMeta\|GebTests' "$(lake query :literateHtml)" || echo 'no foreign module pages'
+site="$(lake query :literateHtml)"
+find "$site" -name '*.html' | sed "s,^$site/,,"
 ```
 
-Expected: the second command prints `no foreign module pages`. No
-`Geb`, `GebTests`, `GebMeta` or `GebManual` module, and not the
-manual generator's `Main`, appears in the site (spec § Verification).
+Expected: page files for `GebLang` and `GebLang.Basic` only. No page
+for a `Geb`, `GebTests`, `GebMeta` or `GebManual` module, and none
+for the manual generator's `Main` (spec § Verification).
+
+Check the page inventory rather than the page text: `show_imports`
+defaults to `true`
+(`.lake/packages/verso/src/verso-literate/VersoLiterate/Config.lean`)
+and the renderer emits each page's import list
+(`src/verso-literate-html/LiterateHtmlMain.lean:279`), so the
+`GebLang` page legitimately contains the string `GebMeta`, which the
+umbrella imports. A content grep would report that as a scope
+failure.
 
 - [ ] **Step 8: serve the site and inspect both pages**
 
 Run:
 
 ```bash
+out="$(mktemp -d)"
 bash scripts/literate.sh serve &
-curl --retry 10 --retry-delay 1 --retry-connrefused -s http://localhost:8000/ -o /tmp/literate-landing.html
+curl --retry 10 --retry-delay 1 --retry-connrefused -s http://localhost:8000/ -o "$out/landing.html"
 curl --retry 5 --retry-connrefused -s http://localhost:8000/ -w '%{http_code}\n' -o /dev/null
+echo "$out"
 ```
 
-Expected: HTTP 200. Read `/tmp/literate-landing.html` and confirm the
-landing page carries the umbrella's prose, then locate the
-`GebLang.Basic` page and confirm the `{name}` roles render as resolved
-references rather than as literal braces. If `verso-serve` binds a
+Expected: HTTP 200. Read `$out/landing.html` and confirm the landing
+page carries the umbrella's prose, then locate the `GebLang.Basic`
+page and confirm the `{name}` role on `Nat` renders as a resolved
+reference rather than as literal braces. If `verso-serve` binds a
 higher port, take the port from its own output.
 
 Clean up: `pkill -f verso-serve`
@@ -617,63 +686,97 @@ jj bookmark move feat/geblang-literate --to @-
 
 **Files:**
 
-- Modify: `TODO.md` (only in the conditional branch of Step 3)
+- Modify: `TODO.md`
 
 **Interfaces:**
 
 - Consumes: the `GebLang` library target (Task 1).
-- Produces: the verified fact that the pinned doc-gen4 renders
-  Verso-format docstrings, which Task 5 relies on when adding
-  `lake build GebLang:docs` to `doc-build.yml`, and which plan 2's
-  `TODO.md` task cites when revising § Verso adoption.
+- Produces: the measured behaviour of the pinned doc-gen4 on
+  Verso-format docstrings, and the `TODO.md` entry recording the gap
+  it leaves. Task 6's § Verso adoption revision cites the measurement.
+
+The spec's § Context states that the pinned doc-gen4 renders
+Verso-format docstrings natively, so that the same source feeds both
+pipelines, and § Verification asks for that to be checked during
+implementation, with a fallback if the pin predates the support. The
+check has been run against the pin
+(`.lake/packages/doc-gen4`, `db53577d4634df2604840cabb4bc74685300afe4`),
+and the support is not there:
+
+- Declaration docstrings survive, flattened to Markdown. The HTML
+  stage discards the Verso tree:
+  `DocGen4/Output/DocString.lean:388-389` reads
+  `-- TODO: natively render Verso docstrings` / `| .inr (_, md) => md`.
+  A `{name}` role therefore renders as an unlinked code span rather
+  than as a resolved reference.
+- Module docstrings are dropped entirely. Under `doc.verso` a
+  `/-! -/` block is stored in `versoModuleDocExt` and not in the
+  Markdown-payload `moduleDocExt`
+  (`Lean/Elab/BuiltinCommand.lean`, `elabModuleDoc`), and doc-gen4
+  reads only the latter
+  (`DocGen4/Process/Analyze.lean:154`, `getModuleDoc?`);
+  `DocGen4/DB/Schema.lean:166` carries the matching
+  `-- TODO: Add module_docs_verso table`.
+  `DocGen4/DB/VersoDocString.lean` exists, but it serializes Verso
+  docstrings into the SQLite database; it does not render them.
+
+The steps below therefore measure rather than assume, and record the
+gap unconditionally. This is a deviation from the spec's § Context on
+a matter of fact, so it is on the list of items for the user's review;
+the spec's own § Verification anticipates a gap and asks for it to be
+recorded, which is what this task does.
 
 - [ ] **Step 1: build the documentation**
 
 Run: `lake build GebLang:docs`
 
-Expected: exit 0.
+Expected: exit 0. The doc build succeeds whatever the docstring
+format; what differs is what reaches the page.
 
-- [ ] **Step 2: inspect the rendered docstrings**
+- [ ] **Step 2: measure what reached the page**
 
 Run:
 
 ```bash
-grep -o '{name}' .lake/build/doc/GebLang/Basic.html | head
-grep -c 'gebLangAnchor' .lake/build/doc/GebLang/Basic.html
+page=.lake/build/doc/GebLang/Basic.html
+grep -c 'gebLangAnchor' "$page"
+grep -c 'Anchor for the Geb language' "$page"
+grep -o '{name}' "$page" | head
+grep -o 'href="[^"]*Nat[^"]*"' "$page" | head
 ```
 
-Expected: the first command prints nothing (the role markup is
-resolved, not rendered literally) and the second prints a non-zero
-count. The pinned doc-gen4 (`v4.34.0-rc1`) carries
-`DocGen4/DB/VersoDocString.lean`, the Verso docstring renderer, so
-this is the expected outcome.
+Expected at the current pin: the declaration is present (first count
+non-zero); the module docstring's title is absent (second count zero);
+no literal `{name}` markup appears; and the `Nat` reference is a bare
+code span with no link. Record the four outputs in the task report:
+they are the measurement the spec asks for, and a later doc-gen4 bump
+is re-checked against them.
 
-- [ ] **Step 3: record a gap only if one appears**
+- [ ] **Step 3: record the gap**
 
-If, and only if, Step 2 shows literal `{name}` markup in the output,
-the pin predates doc-gen4's Verso support. In that case the docstring
-still renders legibly as text; append to `TODO.md` § Triggers:
+Append to `TODO.md` § Triggers:
 
 ```markdown
-- **doc-gen4 renders `GebLang` Verso roles literally**: the pinned
-  doc-gen4 emits the `{name}` role markup verbatim rather than as a
-  resolved reference, so the API reference shows braces where the
-  literate site shows a link. Trigger: the next doc-gen4 pin bump,
-  at which point the rendering is re-checked and this entry is
-  removed once it resolves.
+- **doc-gen4 does not render `GebLang`'s Verso docstrings**: at the
+  pinned doc-gen4 a declaration docstring reaches the page flattened
+  to Markdown, so a `{name}` role renders as an unlinked code span
+  (`DocGen4/Output/DocString.lean`, `-- TODO: natively render Verso
+  docstrings`), and a module docstring does not reach the page at
+  all, doc-gen4 reading only the Markdown-payload module-doc
+  extension while `doc.verso` stores the Verso one
+  (`DocGen4/Process/Analyze.lean`; `DocGen4/DB/Schema.lean`,
+  `-- TODO: Add module_docs_verso table`). The literate site renders
+  both. Trigger: a doc-gen4 pin bump, at which point the four
+  measurements of the `GebLang` documentation build are re-taken and
+  this entry is removed once they resolve.
 ```
 
-Otherwise make no edit and record in the task report that the pinned
-doc-gen4 renders the roles resolved.
-
-- [ ] **Step 4: commit only if Step 3 added an entry**
+- [ ] **Step 4: commit**
 
 ```bash
 jj commit -m 'doc(geblang): record the doc-gen4 Verso rendering gap'
 jj bookmark move feat/geblang-literate --to @-
 ```
-
-If Step 3 made no edit, there is nothing to commit; proceed to Task 5.
 
 ## Task 5: CI and pre-push wiring
 
@@ -756,10 +859,20 @@ to 16) to
       - 'scripts/nolints.json'
 ```
 
-and append to the steps, after the existing manual upload:
+Insert `lake build GebLang:docs` immediately after the existing
+`- run: lake build Geb:docs` step and before the `geb-docs` upload
+that follows it, so the new library's pages are inside the uploaded
+`.lake/build/doc` tree:
 
 ```yaml
+      - run: lake build Geb:docs
       - run: lake build GebLang:docs
+      - name: Upload generated documentation
+```
+
+Then append to the end of the steps, after the existing manual upload:
+
+```yaml
       - run: bash scripts/literate.sh build
       - name: Locate the generated literate site
         run: echo "LITERATE_HTML=$(lake query :literateHtml)" >> "$GITHUB_ENV"
@@ -771,10 +884,10 @@ and append to the steps, after the existing manual upload:
           if-no-files-found: error
 ```
 
-`lake build GebLang:docs` is placed with the other doc-gen4 build
-rather than inside `scripts/literate.sh`, which drives the literate
-product alone. The upload-artifact SHA is the one already pinned twice
-in this file; keep the tag comment.
+`lake build GebLang:docs` is placed with the other doc-gen4 build,
+and before its upload, rather than inside `scripts/literate.sh`,
+which drives the literate product alone. The upload-artifact SHA is
+the one already pinned twice in this file; keep the tag comment.
 
 - [ ] **Step 3: extend `scripts/pre-push.sh`**
 
@@ -803,7 +916,15 @@ lines 62 to 64 becomes
 # build `GebTests` explicitly here.
 ```
 
-and the cache-fetch rationale sentence at lines 17 to 19 becomes
+and the cache-fetch rationale's opening, which reads
+
+```bash
+# Fetch the full mathlib olean cache, mirroring CI's
+# leanprover/lean-action. Without it, after a toolchain bump only
+# the oleans that `Geb` directly imports are present, and the
+```
+
+becomes
 
 ```bash
 # Fetch the full mathlib olean cache, mirroring CI's
@@ -814,13 +935,28 @@ and the cache-fetch rationale sentence at lines 17 to 19 becomes
 
 leaving the rest of that comment paragraph unchanged.
 
-Widen the docs-coverage reminder. Line 149 becomes
+Widen the docs-coverage reminder. The guard, which reads
+
+```bash
+if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal)/.*\.lean$'; then
+```
+
+becomes
 
 ```bash
 if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal|GebLang)/.*\.lean$'; then
 ```
 
-and the reminder's message text (lines 153 to 155) becomes
+and the reminder's four message lines, which read
+
+```bash
+    echo "  Lean files under Geb/Mathlib/, Geb/Cslib/, or" >&2
+    echo "  Geb/Internal/ changed, but docs/index.md was not" >&2
+    echo "  touched. Verify each new concept is reflected in" >&2
+    echo "  docs/index.md." >&2
+```
+
+become
 
 ```bash
     echo "  Lean files under Geb/Mathlib/, Geb/Cslib/," >&2
@@ -829,25 +965,38 @@ and the reminder's message text (lines 153 to 155) becomes
     echo "  concept is reflected in docs/index.md." >&2
 ```
 
-replacing the four existing `echo` lines of that block. Update the
-stub-implementation comment at lines 138 to 140 in the same edit, so
-it names the same four directories:
+In the same edit, update the stub-implementation comment above the
+guard. Its first three lines, which read
+
+```bash
+# Stub implementation: surface a reminder when .lean files in
+# Geb/Mathlib/, Geb/Cslib/, or Geb/Internal/ change without
+# docs/index.md being touched in the same branch's diff. A full
+```
+
+become
 
 ```bash
 # Stub implementation: surface a reminder when .lean files in
 # Geb/Mathlib/, Geb/Cslib/, Geb/Internal/, or GebLang/ change
 # without docs/index.md being touched in the same branch's diff.
+# A full
 ```
+
+leaving the two lines that follow (`# implementation would parse ...`
+and `# docs/index.md mentions them; ...`) in place.
 
 - [ ] **Step 4: extend `scripts/tests/test-lint-driver.sh`**
 
 Three edits.
 
-Add the coverage scan after line 96
-(`check_coverage GebManual "manual/"`):
+Add the coverage scan between the two existing calls, so the three
+read in the order the header text below names them:
 
 ```bash
+check_coverage Geb ""
 check_coverage GebLang ""
+check_coverage GebManual "manual/"
 ```
 
 `GebLang` lives at the package root, so the existing generalization
@@ -871,15 +1020,38 @@ if ! grep -qF 'scripts/literate.sh build' .github/workflows/doc-build.yml; then
 fi
 ```
 
-Update the header comment's two affected sentences. In the numbered
-list, item 2's first sentence becomes
+Update the header comment. Item 2 of the numbered list currently
+reads
+
+```bash
+#   2. Coverage completeness: every `Geb.*` and `GebManual.*` source
+#      module is transitively imported by its own umbrella (`Geb`,
+#      `GebManual`), so linting the root module reaches every
+#      declaration the no-argument path would have. A module
+#      orphaned from its umbrella would escape the linter entirely
+#      under the root-module invocation. `GebManual`'s generator
+#      root `Main` sits outside the `manual/GebManual/` prefix by
+#      design and so outside this scan. `lake lint` itself (§1
+#      above) runs on `Geb` only, so this section checks
+#      `GebManual` coverage statically rather than by executing the
+#      manual's lint.
+```
+
+and becomes
 
 ```bash
 #   2. Coverage completeness: every `Geb.*`, `GebLang.*` and
-#      `GebManual.*` source module is transitively imported by its own
-#      umbrella (`Geb`, `GebLang`, `GebManual`), so linting the root
-#      module reaches every declaration the no-argument path would
-#      have.
+#      `GebManual.*` source module is transitively imported by its
+#      own umbrella (`Geb`, `GebLang`, `GebManual`), so linting the
+#      root module reaches every declaration the no-argument path
+#      would have. A module orphaned from its umbrella would escape
+#      the linter entirely under the root-module invocation.
+#      `GebManual`'s generator root `Main` sits outside the
+#      `manual/GebManual/` prefix by design and so outside this
+#      scan. `lake lint` itself (§1 above) runs on `Geb` only, so
+#      this section checks `GebLang` and `GebManual` coverage
+#      statically rather than by executing their own lint
+#      invocations.
 ```
 
 and item 3 becomes
@@ -963,7 +1135,9 @@ jj bookmark move feat/geblang-literate --to @-
 
 - [ ] **Step 1: add the literate conventions to `docs/rules/lean-coding.md`**
 
-Add a TOC entry after `- [Verso manual modules (manual/)](#verso-manual-modules-manual)`:
+Add a TOC entry after the § Verso manual modules (manual/) entry,
+which reads
+`- [Verso manual modules (manual/)](#verso-manual-modules-manual)`:
 
 ```markdown
 - [Literate modules (GebLang)](#literate-modules-geblang)
@@ -1126,25 +1300,30 @@ In the § Verso adoption entry under § Triggers, replace scope 1,
 with
 
 ```markdown
-  1. Docstrings in `.lean` files: the doc-gen4 half of the gate is met at
-     the pin, which renders Verso-format docstrings
-     (`DocGen4/DB/VersoDocString.lean`); the mathlib-migration half is not.
-     Still contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`, whose
-     Verso-markup docstrings would read as foreign to mathlib reviewers.
-     `GebLang` is not gated on the migration: its docstrings are Verso
-     markup under `doc.verso`, and `scripts/extract-pr.sh` converts them to
-     plain Markdown at extraction, so no unconverted markup reaches an
-     upstream reviewer.
+  1. Docstrings in `.lean` files: neither half of the gate is met at the
+     pin. doc-gen4 flattens a Verso declaration docstring to Markdown and
+     drops a Verso module docstring altogether (§ Triggers, doc-gen4 does
+     not render `GebLang`'s Verso docstrings), and mathlib has not
+     migrated. Still contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`,
+     whose Verso-markup docstrings would read as foreign to mathlib
+     reviewers and would lose content on the doc-gen4 site. `GebLang` is
+     not gated on either half: its pages come from the literate site,
+     which renders both docstring kinds, and `scripts/extract-pr.sh`
+     converts the markup to plain Markdown at extraction, so no
+     unconverted markup reaches an upstream reviewer.
 ```
 
-and extend scope 2's bullet,
+and extend scope 2's bullet. That bullet runs from
 
 ```markdown
   2. Persistent prose (`docs/`, a future Geb-language exposition): gated on the
      prose growing substantial and describing stable, existing code.
 ```
 
-with a following sentence:
+to its closing sentence naming the documents that remain Markdown
+regardless (`CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
+`docs/process.md`, `docs/rules/*`). Append at the end of the bullet,
+after that closing sentence:
 
 ```markdown
      The `GebLang` literate site (`scripts/literate.sh`) already renders that
@@ -1152,9 +1331,15 @@ with a following sentence:
      between extending it and a separate Verso document.
 ```
 
-The `scripts/extract-pr.sh` conversion this text names lands in plan
-2; both plans are on the same branch and the branch is not pushed
-between them, so the statement is true at every merged state.
+This text carries the one forward dependency of plan 1 on plan 2: the
+`scripts/extract-pr.sh` conversion it names lands in plan 2's Task 1,
+so between this commit and that one the sentence describes a tool
+behaviour that does not yet exist. Both plans are on the same branch
+and the branch is not pushed between them, so the statement is true
+at every merged state, which is the standard `CONTRIBUTING.md`
+§ Floodgate test applies to a branch's intermediate commits. If the
+two plans are ever executed on separate branches, this sentence moves
+to plan 2.
 
 - [ ] **Step 4: record the placeholder-replacement expectations**
 
