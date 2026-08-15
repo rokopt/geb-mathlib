@@ -62,9 +62,8 @@ this workstream.
   package (its users-guide text says default targets; the
   lakefile's fold is over `pkg.leanLibs` and `pkg.leanExes`), so
   a run without `literate.toml` would include `Geb`, `GebTests`,
-  `GebMeta`,
-  `GebManual`, and the generator's `Main`, and would build them
-  all. `literate.toml`'s `[[targets]]` filtering runs in the
+  `GebMeta`, `GebManual`, and the generator's `Main`, and would
+  build them all. `literate.toml`'s `[[targets]]` filtering runs in the
   planner before any module is fetched, so scoping the site also
   bounds what it compiles.
 - Literate source files are ordinary Lean files: no `#doc`, no
@@ -284,11 +283,13 @@ edit is incremental.
   `GebLang.lean` (the umbrella carries the landing page's prose),
   `GebLang/**`, `scripts/literate.sh`, and `literate.toml`
   (`GebTests/**` is already present).
-- `scripts/pre-push.sh`: adds `lake lint -- GebLang` and the
-  widened `lake shake`. The literate HTML build stays out of
-  pre-push, as the manual's does.
+- `scripts/pre-push.sh`: adds `lake lint -- GebLang`, the
+  widened `lake shake`, and `GebLang/` in the docs-coverage
+  reminder's path pattern (the library is content-bearing, so
+  its concepts belong in `docs/index.md`). The literate HTML
+  build stays out of pre-push, as the manual's does.
   `docs/rules/ci-and-workflow.md` § Pre-push checklist gains the
-  new steps.
+  new steps and the widened reminder enumeration.
 - `scripts/tests/test-lint-driver.sh`: the coverage scan gains
   `check_coverage GebLang ""` (the library lives at the package
   root, so the existing generalization applies directly), and its
@@ -329,9 +330,16 @@ extraction path.
   core/Batteries-targeted precedent), revises its § Floodgate
   test to the transitive form (extraction is dependency-ordered
   through `GebLang`, no longer independent between subtrees),
-  adds a `GebLang` row to its subtree-import-rules table, and
-  documents the accepted `Geb/Cslib/` cross-track ordering
-  (§ Import rules). The widening of the four existing rows is
+  adds `GebLang/` and `GebTests/Lang/` rows to its
+  subtree-import-rules table (with the conditional `Cslib.Init`
+  requirement noted on both), updates its in-body applies-to
+  sentence with the new paths, and documents the accepted
+  `Geb/Cslib/` cross-track ordering (§ Import rules) with a
+  cross-reference to the `TODO.md` entry that records the same
+  ordering cost as the case against allowing `Geb/Cslib/` to
+  import `Geb.Mathlib.*`: the two evaluations differ
+  deliberately, and each document points at the other. The
+  widening of the four existing rows is
   deferred with the consumption cluster, so the file's statement
   that `scripts/lint-imports.sh` enforces its table stays true
   at every merged state; the pending widening is described in
@@ -353,8 +361,21 @@ extraction path.
   list; `docs/rules/ci-and-workflow.md` records the literate
   build's CI placement.
 - `CONTRIBUTING.md`: the floodgate paragraph's transitive
-  rewording with its activation point (§ Import rules) and
-  `GebLang` in the § Repo structure line.
+  rewording with its activation point (§ Import rules),
+  `GebLang` in the § Repo structure line, and `GebLang/` added
+  to the LLM-contribution-policy sentence's binding locations.
+- `AGENTS.md`: the § AI authoring sentence and the path-scoped
+  section heading (with its TOC entry) that enumerate
+  `Geb/Mathlib/` and `Geb/Cslib/` gain `GebLang/`.
+- `README.md` § Process: the line stating where
+  `upstream-eligible.md` applies gains the new paths.
+- `TODO.md` § Verso adoption is revised: the doc-gen4 half of
+  its scope-1 gate is met at the pin (verified by this
+  workstream), the extraction-time docstring conversion
+  (§ Import rules) supersedes the entry's
+  mathlib-migration-based mechanism for `GebLang`, and the
+  scope-2 exposition bullet is related to the literate site this
+  workstream builds.
 - `docs/process.md`: its § Floodgate test rationale is revised
   for the transitive form (a third eligible location; extraction
   dependency-ordered through `GebLang` rather than independent
@@ -434,9 +455,10 @@ subject to extraction, so its `{name}` role does not contradict
   conditional `Cslib.Init` rule is exercised in both directions
   (a `Cslib.*`-importing module without `Cslib.Init` fails; a
   module without Cslib imports needs no `Cslib.Init`).
-- `TODO.md` carries the deferred-cluster entry (§ Import rules)
-  and the placeholder-replacement expectations (§ Tests,
-  § Placeholder content).
+- `TODO.md` carries the deferred-cluster entry (§ Import rules),
+  the placeholder-replacement expectations (§ Tests,
+  § Placeholder content), and the revised § Verso adoption entry
+  (§ Standards and rule documents).
 - `scripts/tests/test-lint-driver.sh` passes with the `GebLang`
   coverage scan.
 - `scripts/pre-push.sh` passes end to end.
