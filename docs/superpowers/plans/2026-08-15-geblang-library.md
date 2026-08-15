@@ -713,9 +713,10 @@ echo "$out"
 Expected: HTTP 200. `lake build verso-serve` first, and a generous
 retry budget: `serve` compiles one executable that `build` does not,
 so its first run in a fresh workspace takes minutes before anything
-binds. The server's own output goes to `$out/serve.log`, which is
-where to read the port it chose. Read `$out/landing.html` and confirm the landing
-page carries the umbrella's prose, then locate the `GebLang.Basic`
+binds. The server's own output goes to `$out/serve.log`.
+
+Read `$out/landing.html` and confirm the landing page carries the
+umbrella's prose, then locate the `GebLang.Basic`
 page and confirm the `{name}` role on `Nat` renders as a resolved
 reference rather than as literal braces. If `verso-serve` binds a
 higher port, take the port from its own output.
@@ -773,9 +774,14 @@ and the support is not there:
   docstrings into the SQLite database; it does not render them.
 
 The steps below therefore measure rather than assume, and record the
-gap unconditionally. This is a deviation from the spec's § Context on
-a matter of fact, so it is on the list of items for the user's review;
-the spec's own § Verification anticipates a gap and asks for it to be
+gap unconditionally. This deviates from the spec on a matter of fact
+in two places: from § Context, which states that the pinned doc-gen4
+renders Verso docstrings natively, and from § Standards and rule
+documents, which
+has the `TODO.md` revision record the doc-gen4 half of its scope-1
+gate as met at the pin. Task 6 Step 3 writes the opposite of that
+second sentence. Both are on the list for the user's review; the
+spec's own § Verification anticipates a gap and asks for it to be
 recorded, which is what this task does.
 
 **A configuration that would close the gap, considered and
@@ -818,7 +824,7 @@ Run:
 ```bash
 page=.lake/build/doc/GebLang/Basic.html
 grep -c 'gebLangAnchor' "$page" || true
-grep -c 'Anchor for the Geb language' "$page" || true
+grep -c 'Anchor for the library' "$page" || true
 grep -o '{name}' "$page" | head || true
 grep -o 'href="[^"]*Nat[^"]*"' "$page" | head || true
 ```
@@ -832,8 +838,10 @@ from a role or from Markdown. Record the four outputs in the task
 report: they are the measurement the spec asks for, and a later
 doc-gen4 bump is re-checked against them.
 
-The `|| true` on each line is needed because `grep -c` exits 1 on a
-zero count, which is the expected result of the second command.
+The `|| true` is there because `grep -c` exits 1 on a zero count,
+which is the expected result of the second command. On the two
+`grep -o … | head` lines it is inert, a pipeline taking its status
+from `head`; it is kept for uniformity.
 
 - [ ] **Step 3: record the gap**
 
@@ -911,7 +919,11 @@ with
         run: lake lint -- GebLang
 ```
 
-and widen the shake step at line 82 from
+The `mk_all-check` rationale three lines above the step you are
+editing also enumerates the libraries and is left alone here: the
+spec allocates it to plan 2's enumeration sweep, which corrects it.
+
+Widen the shake step at line 82 from
 
 ```yaml
         run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests
@@ -1092,7 +1104,7 @@ lines would leave a two-word line behind.
 
 - [ ] **Step 4: extend `scripts/tests/test-lint-driver.sh`**
 
-Three edits.
+Four edits.
 
 Add the coverage scan between the two existing calls, so the three
 read in the order the header text below names them:
@@ -1263,8 +1275,9 @@ into a static site (`scripts/literate.sh`, `literate.toml`). Its
 docstrings are written for both.
 
 - A module docstring is the prose of the module's page. Declaration
-  docstrings render as prose beside their code, which is what
-  `docstrings_as_text = true` in `literate.toml` selects.
+  docstrings render as prose text rather than inside code boxes,
+  which is what `docstrings_as_text = true` in `literate.toml`
+  selects.
 - `lakefile.toml` sets `doc.verso = true` for the `GebLang` library
   alone, so its docstrings are checked Verso markup rather than
   Markdown: a header is a `#` line, a list item starts with `*`, and
@@ -1295,11 +1308,13 @@ docstrings are written for both.
   reference to carry the declarations alone until the pin moves.
 ````
 
-The last two bullets record what this workstream measured. They are
-the reason the section exists in a persistent document rather than
-only in this plan: a plan is deleted at the end of the branch, and
-the next `GebLang` author would otherwise rediscover both by build
-failure.
+The bullets on roles, on forward reference, and on the two
+pipelines' differing coverage record what this workstream measured.
+They are the reason the section exists in a persistent document
+rather than only in this plan: a plan is deleted at the end of the
+branch, and the next `GebLang` author would otherwise rediscover the
+role requirement and the forward-reference restriction by build
+failure, and the doc-gen4 gap by a page with no prose on it.
 
 The spec's § Standards and rule documents asks this section to state
 that the docstring markup must remain acceptable to both pipelines.
@@ -1374,28 +1389,51 @@ becomes
   GebTests GebLang`.
 ```
 
-The `lake exe cache get` bullet's first sentence group, which reads
+The `lake exe cache get` bullet, whole. It reads
 
 ```markdown
+- `lake exe cache get` populates the full mathlib olean cache
+  (mirroring CI's `leanprover/lean-action`). The cache fetch is
   required because `lake build` alone fetches only the oleans
   `Geb` imports; the `lake shake` step injects an arbitrary
   mathlib import and needs that module's olean present, which
   after a toolchain bump it otherwise would not be. The fetch runs
+  only when `lean-toolchain` or `lake-manifest.json` differs from
+  the copy recorded at the last fetch (`.lake/cache-get.stamp`),
+  and holds a lock in the cache directory while it runs. Both
+  guards follow from `cache get` unpacking each module whose local
+  Lake `depHash` differs from the archive's: part of the dependency
+  tree disagrees on that hash while the artifacts are identical, so
+  an unguarded fetch overwrites a locally built tree that Lake
+  rebuilds, and the cache directory is shared across jj workspaces
+  while downloads use a fixed temporary name.
 ```
 
-becomes, re-flowed through to the end of the pinned region so no
-short line is left mid-paragraph
+and becomes
 
 ```markdown
+- `lake exe cache get` populates the full mathlib olean cache
+  (mirroring CI's `leanprover/lean-action`). The cache fetch is
   required because `lake build` alone fetches only the oleans the
   root libraries `Geb` and `GebLang` import; the `lake shake` step
-  injects an arbitrary mathlib import and needs that module's olean
-  present, which after a toolchain bump it otherwise would not be.
-  The fetch runs
+  injects an arbitrary mathlib import and needs that module's
+  olean present, which after a toolchain bump it otherwise would
+  not be. The fetch runs only when `lean-toolchain` or
+  `lake-manifest.json` differs from the copy recorded at the last
+  fetch (`.lake/cache-get.stamp`), and holds a lock in the cache
+  directory while it runs. Both guards follow from `cache get`
+  unpacking each module whose local Lake `depHash` differs from the
+  archive's: part of the dependency tree disagrees on that hash
+  while the artifacts are identical, so an unguarded fetch
+  overwrites a locally built tree that Lake rebuilds, and the cache
+  directory is shared across jj workspaces while downloads use a
+  fixed temporary name.
 ```
 
-leaving the rest of the bullet, from `only when \`lean-toolchain\``
-onward, unchanged.
+The whole bullet is pinned because the sentence that changes ends
+mid-line: two earlier attempts at this edit pinned a prefix of the
+paragraph and each left a short line stranded between two full ones.
+No smaller region can be re-flowed cleanly.
 
 The docs-coverage bullet
 
@@ -1513,10 +1551,13 @@ Run:
 doctoc --update-only . && markdownlint-cli2 '**/*.md' && bash scripts/check-md-links.sh
 ```
 
-Expected: exit 0 from each. `doctoc` inserts a `**Table of Contents**`
-title line into any TOC it regenerates; delete it, since the
-repository's TOCs carry none. If `doctoc` is absent, verify the two
-TOC entries added in Steps 1 and 2 by hand.
+Expected: exit 0 from each. Every file this task touches already has
+`doctoc` markers, and `--update-only` leaves a marked table of
+contents without a title line just as it found it, so no
+`**Table of Contents**` line should appear; if one does, the file was
+given markers for the first time and the line is deleted. If `doctoc`
+is absent, verify the two table-of-contents entries added in Steps 1
+and 2 by hand.
 
 - [ ] **Step 6: commit**
 
