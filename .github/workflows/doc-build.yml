@@ -11,6 +11,9 @@ on:
       - 'docs/**'
       - 'lakefile.toml'
       - 'lean-toolchain'
+      - 'manual/**'
+      - 'scripts/manual.sh'
+      - 'scripts/nolints.json'
   workflow_dispatch:
 
 permissions:
@@ -37,4 +40,11 @@ jobs:
         with:
           name: geb-docs
           path: .lake/build/doc
+          if-no-files-found: error
+      - run: bash scripts/manual.sh build
+      - name: Upload the generated manual
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: geb-manual
+          path: manual/_out/html-multi
           if-no-files-found: error
