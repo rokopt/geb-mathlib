@@ -30,9 +30,10 @@ language, written in Verso's literate style: prose in ordinary
 module and declaration docstrings, rendered both by `doc-gen4` (as
 for the existing code) and by Verso's literate HTML pipeline (as a
 static site). `GebLang` sits at the bottom of the repository's
-dependency order: it imports only the standard libraries (Lean
-core, Batteries, mathlib, Cslib), and every existing subtree may
-import it. This workstream builds the infrastructure (library,
+dependency order: it imports nothing of this repository outside
+itself, only mathlib, Batteries, and Cslib (and what they carry
+from Lean core), and every existing subtree may import it. This
+workstream builds the infrastructure (library,
 layering rules, both extraction pipelines, commands, CI, and one
 placeholder module with one placeholder test) and defers real
 content to follow-on workstreams.
@@ -50,11 +51,18 @@ this workstream.
 - Verso's literate flow ships inside the pinned `verso` package
   (`v4.34.0-rc1`; the feature landed in `v4.29.0`). Its Lake
   facets arrive with the require: `lake build :literateHtml`
-  extracts each module of the root package's default targets,
   renders module docstrings as page prose and declarations as
   highlighted code, and emits a static site;
-  `lake query :literateHtml` prints the output path. An optional
-  `literate.toml` at the package root scopes and orders the site.
+  `lake query :literateHtml` prints the output path. At this pin
+  the facet enumerates every library and executable of the root
+  package (its users-guide text says default targets; the
+  lakefile's fold is over `pkg.leanLibs` and `pkg.leanExes`), so
+  a run without `literate.toml` would include `Geb`, `GebTests`,
+  `GebMeta`,
+  `GebManual`, and the generator's `Main`, and would build them
+  all. `literate.toml`'s `[[targets]]` filtering runs in the
+  planner before any module is fetched, so scoping the site also
+  bounds what it compiles.
 - Literate source files are ordinary Lean files: no `#doc`, no
   Verso imports, no Verso commands. Consequently
   `linter.hashCommand` stays enabled for them, the `module`
@@ -105,12 +113,13 @@ doc.verso = true
 ```
 
 and `defaultTargets` becomes `["Geb", "GebLang"]`: the library is
-ordinary Lean code whose import closure is served by the mathlib
-binary cache, so it belongs in the default build, unlike the
+ordinary Lean code whose import closure the default build already
+provides (mathlib through its binary cache, Cslib built from
+source as now), so it belongs in the default build, unlike the
 manual. The umbrella imports `GebMeta` (as `Geb.lean` and
 `GebTests.lean` do) so the axiom linter registers for
-`lake lint -- GebLang`; `GebMeta` is meta-tooling, not one of the
-three content subtrees, so the layering constraint is unaffected.
+`lake lint -- GebLang`; `GebMeta` is meta-tooling, not a content
+subtree, so the layering constraint is unaffected.
 `lintDriverArgs` stays `["Geb"]`; `GebLang` is linted by explicit
 `lake lint -- GebLang`, the `GebTests` pattern.
 
@@ -120,19 +129,35 @@ The dependency order places `GebLang` at the bottom:
 
 - `GebLang/` modules import only `Mathlib.*`, `Batteries.*`,
   `Cslib.*`, and `GebLang.*`, and never `Geb.*` or `GebTests.*`.
-- `GebLang.*` joins the allowed-import lists of `Geb/Mathlib/`,
-  `Geb/Cslib/`, `Geb/Internal/`, and their `GebTests` mirrors.
+- `GebLang.*` joins the allowed-import lists of `Geb/Mathlib/`
+  and `Geb/Cslib/` and their `GebTests` mirrors.
+  (`Geb/Internal/` and its mirror are unrestricted in
+  `scripts/lint-imports.sh`, so they may import `GebLang.*` with
+  no list to amend.)
 - `GebTests/Lang/` (§ Tests) may import `GebLang.*`,
-  `GebTests.Lang.*`, and the standard libraries.
+  `GebTests.Lang.*`, and the libraries `GebLang/` itself may.
 
-`scripts/lint-imports.sh` encodes all three. The floodgate
-statement in `CONTRIBUTING.md` changes to its transitive form:
+`scripts/lint-imports.sh` encodes the new entries, and its header
+comment and self-test extend accordingly. The floodgate statement
+in `CONTRIBUTING.md` changes to its transitive form:
 dependency-ordered PRs remain shippable at all times, with a
 module's `GebLang` dependencies shipped first, each retargeted by
 its own import closure (mathlib-track when it reaches no
 `Cslib.*`; Cslib-track otherwise). `GebLang` itself is written to
 the upstream-eligible standards, so shipping it is a retargeting
 decision, not a rewrite.
+
+Cross-track ordering is accepted by design in one direction: a
+`Geb/Cslib/` module may import a mathlib-track `GebLang` module,
+and shipping it then waits for the mathlib PR to merge and for
+Cslib's mathlib pin to advance. This is the dependency shape
+`docs/rules/upstream-eligible.md` forbids between `Geb/Cslib/`
+and `Geb/Mathlib/`; for `GebLang`, the shared bottom layer, the
+ordering cost is accepted rather than forbidden, and the rule
+file documents the asymmetry (§ Standards and rule documents).
+The converse direction needs no allowance: a `GebLang` module in
+any `Geb/Mathlib/` closure is forced mathlib-track by the
+transitive-import check below.
 
 ### Transitive-import check
 
@@ -153,21 +178,24 @@ the existing script-test conventions.
 `literate.toml` at the repository root:
 
 ```toml
-[[targets]]
-library = "GebLang"
-
 docstrings_as_text = true
 landing_page = "GebLang"
 
 [metadata]
 title = "The Geb language"
+
+[[targets]]
+library = "GebLang"
 ```
 
-The `[[targets]]` scoping is load-bearing: without it the
-`literateHtml` facet sweeps every default target, and `Geb` would
-enter the site. `docstrings_as_text` renders declaration
-docstrings as page prose, the `teorth/analysis` setting. Further
-keys (ordering, per-module titles, themes) arrive with content.
+The root-level keys precede every table header: a key placed
+after `[[targets]]` becomes a key of that target entry and is
+silently ignored by the target decoder. The `[[targets]]` scoping
+is required: without it the facet renders and builds every
+library and executable of the package (§ Context), `GebManual`
+included. `docstrings_as_text` renders declaration docstrings as
+page prose, the `teorth/analysis` setting. Further keys
+(ordering, per-module titles, themes) arrive with content.
 
 ### Commands
 
@@ -210,8 +238,11 @@ the subtree structure. One module,
 `GebTests/Lang/Basic.lean`, holding a `#guard` (or trivial
 `example`) exercising the placeholder declaration, validating the
 test driver path, the new import rules, and the lint path end to
-end. It is removed when real tests arrive; its module docstring
-says so.
+end. `GebTests.lean` gains `public import GebTests.Lang` (and a
+`GebTests/Lang.lean` index, per the one-indexing-file-per-directory
+layout) so the test driver and `lake lint -- GebTests` reach the
+module. It is removed when real tests arrive; its module
+docstring says so.
 
 ### Standards and rule documents
 
@@ -219,8 +250,13 @@ says so.
   style and naming, the module system, constructive-only
   discipline, citation rules, and the LLM-contribution policy.
   `docs/rules/upstream-eligible.md` extends its `paths:` to
-  `GebLang/**` and states the per-module destination-open posture
-  (the existing core/Batteries-targeted precedent).
+  `GebLang/**`, states the per-module destination-open posture
+  (the existing core/Batteries-targeted precedent), revises its
+  § Floodgate test to the transitive form (extraction is
+  dependency-ordered through `GebLang`, no longer independent
+  between subtrees), adds a `GebLang` row and the widened allowed
+  lists to its subtree-import-rules table, and documents the
+  accepted `Geb/Cslib/` cross-track ordering (§ Import rules).
 - `docs/rules/lean-coding.md` gains a literate-conventions
   section: module docstrings are the rendered page prose;
   `doc.verso` roles are available in `GebLang` (and only there);
@@ -237,8 +273,10 @@ says so.
 
 `GebLang/Basic.lean` holds a single small declaration with a
 docstring, exercising both pipelines: its docstring uses one
-checked `{name}` role (proving `doc.verso` elaboration) and the
-module docstring supplies the landing page's first prose. The
+checked `{name}` role (proving `doc.verso` elaboration), and its
+module docstring proves per-module page rendering. The landing
+page's prose is the `GebLang.lean` umbrella's module docstring
+(`landing_page = "GebLang"` in § Literate rendering). The
 declaration is chosen at implementation to be subsumable by the
 first content workstream; its docstring states that it anchors the
 pipelines pending that workstream, and the module is replaced, not
@@ -249,11 +287,12 @@ grown, when content lands.
 - A separate `GebLangTests` library. Rejected: the existing
   `GebTests` library already carries the test driver registration,
   the `#guard` allowance, the axiom linter, and shake coverage;
-  a new library would duplicate that plumbing for one placeholder.
+  a new library would duplicate that machinery for one
+  placeholder.
 - A `Geb/Lang/` subtree instead of a top-level library. Rejected:
   the `Geb` library's `globs = ["Geb.*"]` would sweep it into the
   existing build, lint, and floodgate machinery, all of which
-  distinguish the three current subtrees by path; a sibling
+  distinguish the `Geb/` subtrees by path; a sibling
   library leaves them untouched.
 - Enabling `doc.verso` package-wide. Rejected: upstream-eligible
   docstrings must render correctly in consumers that do not set
@@ -282,8 +321,9 @@ grown, when content lands.
   (its umbrella imports `GebMeta`) and the placeholder passes it.
 - `bash scripts/literate.sh build` succeeds;
   `bash scripts/literate.sh serve` serves a site whose landing
-  page shows the placeholder module's prose with the `{name}` role
-  resolved.
+  page shows the umbrella's prose and whose placeholder-module
+  page shows the `{name}` role resolved; no `Geb`, `GebTests`,
+  `GebMeta`, or `GebManual` module appears in the site.
 - `lake build GebLang:docs` succeeds and the pinned doc-gen4
   renders the Verso-format docstring (checked during
   implementation; if the pin predates doc-gen4's Verso support,
@@ -312,6 +352,6 @@ grown, when content lands.
   `https://github.com/leanprover/doc-gen4`
   (`DocGen4/DB/VersoDocString.lean`).
 - Precedent: `https://github.com/teorth/analysis` (`literate.toml`,
-  `build-web.sh`, literate site + doc-gen4 stitching).
+  `build-web.sh`, literate site and doc-gen4 side by side).
 - The manual workstream's spec and outcomes: repository history
-  (branch `doc/verso-manual`, merged 2026-08-15).
+  (the `doc/verso-manual` merge).
