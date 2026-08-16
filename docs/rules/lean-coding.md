@@ -599,6 +599,13 @@ docstrings are written for both.
   does not invoke it.
   A module invoking it carries both `import GebMeta` and
   `meta import GebMeta`, the second annotated `-- shake: keep`.
+- `scripts/extract-pr.sh` converts the roles to plain Markdown when a
+  module is extracted, a checked name reference becoming a bare code
+  span, so the checked markup stays local to this repository and the
+  shipped file carries the converted form. It converts exactly the
+  three roles named above. Lean core registers others, `{lean}` and
+  `{tactic}` among them; using one here means adding its name to that
+  script's `role_strip`, or it ships as literal braces.
 
 ## Lean 4 skill workflows
 

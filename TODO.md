@@ -1227,3 +1227,23 @@ practice settles either question. Settle both.
   `GebLang/Init.lean` or `GebLang/Tactic.lean` would shadow one of them
   silently. Trigger: a second repository module taking a basename another
   already extracts to, at which point extraction gains a collision check.
+- **Normalise the vocabulary of `docs/rules/upstream-eligible.md` and
+  its neighbours**: two migrations are half-done and neither belongs
+  to a workstream whose concern is something else. The project
+  vocabulary (`styles/config/vocabularies/GebMathlib/accept.txt`)
+  accepts `Cslib` and Vale rejects the capitalised form, but files
+  predating the vocabulary carry it: `docs/rules/upstream-eligible.md`
+  most heavily, including a section heading and its
+  table-of-contents entry, and `docs/references.md` likewise, with a
+  section heading and its entry. The other carriers are
+  `CONTRIBUTING.md`, `README.md`, `TODO.md`, `docs/process.md`,
+  `docs/rules/lean-coding.md`, `Geb.lean`,
+  `Geb/Cslib.lean`, `GebTests/Cslib.lean`, `GebMeta.lean`,
+  `manual/GebManual/Introduction.lean` and `scripts/lint-imports.sh`,
+  whose header keeps one such line. Separately,
+  `docs/rules/upstream-eligible.md` now calls `GebLang/` and
+  `GebTests/Lang/` upstream-eligible locations rather than subtrees,
+  while its heading, its table's first column and several sentences
+  still say subtree. Trigger: a branch whose concern is those files
+  themselves, which renames the two section headings and re-runs
+  `doctoc`.
