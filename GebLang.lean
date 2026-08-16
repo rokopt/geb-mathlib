@@ -8,6 +8,7 @@ module -- shake: keep-all, shake: keep-downstream
 public import GebLang.Basic
 
 import GebMeta
+import Lean.DocString.Syntax
 
 /-!
 # The Geb language

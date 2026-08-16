@@ -5,6 +5,10 @@ Authors: Terence Rokop
 -/
 module
 
+import GebMeta
+import Lean.DocString.Syntax
+meta import GebMeta  -- shake: keep; supplies the mathlib_linters command
+
 /-!
 # Anchor for the library's documentation pipelines
 
@@ -21,6 +25,8 @@ pipelines have a source of each to render.
 
 geb, language
 -/
+
+mathlib_linters
 
 @[expose] public section
 
