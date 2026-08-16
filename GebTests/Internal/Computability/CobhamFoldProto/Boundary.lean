@@ -6,51 +6,32 @@ Authors: Terence Rokop
 module
 
 public import Geb.Internal.Computability.CobhamFoldProto
-public import Geb.Mathlib.Data.W.Basic
 public meta import Geb.Internal.Computability.CobhamFoldProto  -- shake: keep; #guard needs it
 
 /-!
-# The term algebra's destructor, at the semantic layer
+# The delimited-children algebra, at the semantic layer
 
-The algebra from which a subterm's spelling is recovered, and the
-paramorphism it instantiates.
+The algebra from which a subterm's spelling is recovered.
 
-`algPara` carries a subterm's spelling beside the step's value, the value
-delimited so the two are separable. The delimiting does not nest: each level
-reads only the spelling half of a child's value, so a subterm's boundary is
-reached by a fold. `algCh` is the instance whose step returns the children's
-spellings, each delimited. Read through its take-half the fold is
-`WType.para`, so the recursion scheme is [Meertens1992]'s, computed at the
-bitstring representation rather than introduced here.
+`algCh` delimits each child's spelling, and the delimiting does not nest:
+each level reads only the spelling half of a child's value, so a subterm's
+boundary is reached by a fold.
 
 ## Main definitions
 
-* `GebTests.CobhamFold.ParaStep`, `GebTests.CobhamFold.algPara` — the
-  paramorphism's step, and the paramorphism as a fold.
-* `GebTests.CobhamFold.algCh` — the delimited-children algebra, one of its
-  instances.
+* `GebTests.CobhamFold.algCh` — the delimited-children algebra.
 * `GebTests.CobhamFold.childSem` — a child's spelling, from a fold's value.
 * `GebTests.CobhamFold.destSample`, `GebTests.CobhamFold.valueBounded` — the
   sample term whose children differ, and the length bound read at it.
 
 ## Main statements
 
-* `GebTests.CobhamFold.dropEntry_algPara` — the value's second half is the
-  spelling, whatever the step.
-* `GebTests.CobhamFold.takeEntry_algPara` — the paramorphism's defining
-  equation.
-* `GebTests.CobhamFold.algPara_eq_para` — it is `WType.para` at the step that
-  sees each child's spelling.
-* `GebTests.CobhamFold.dropEntry_algCh`, `GebTests.CobhamFold.takeEntry_algCh`
-  — those two at the delimited-children instance.
-
-## References
-
-* [Meertens1992]
+* `GebTests.CobhamFold.dropEntry_algCh`,
+  `GebTests.CobhamFold.takeEntry_algCh` — its value's two halves.
 
 ## Tags
 
-Cobham, ranked tree, subterm, paramorphism, self-delimiting
+Cobham, ranked tree, subterm, self-delimiting
 -/
 
 @[expose] public section
@@ -58,60 +39,6 @@ Cobham, ranked tree, subterm, paramorphism, self-delimiting
 namespace GebTests.CobhamFold
 
 open Cobham Geb.CobhamFold RankedAlphabet RankedAlphabet.Binary
-
-/-- A paramorphism's step: it receives each child's spelling beside its value.
-Distinct from `WType.paraStep`, which pairs a subtree with its value; here the
-subtree is replaced by its spelling, so the step is a function on
-bitstrings. -/
-abbrev ParaStep (R : RankedAlphabet) :=
-  (i : Fin R.card) → (Fin (R.arity i) → List Bool × List Bool) → List Bool
-
-/-- The paramorphism as a fold, at a carrier pairing a subterm's spelling with
-its value, the value delimited so the two are separable. -/
-def algPara (R : RankedAlphabet) (phi : ParaStep R) (i : Fin R.card)
-    (f : Fin (R.arity i) → List Bool) : List Bool :=
-  entryWord (phi i fun d ↦ (dropEntrySem ![f d], takeEntrySem ![f d])) ++
-    (R.code i ++ (List.ofFn fun d ↦ dropEntrySem ![f d]).flatten)
-
-/-- The value's second half is the spelling, whatever the step, so the
-delimiting does not nest: each level reads only this half of a child's
-value. -/
-theorem dropEntry_algPara (R : RankedAlphabet) (phi : ParaStep R) (t : R.Term) :
-    dropEntrySem ![Term.fold R (algPara R phi) t] = R.spell t :=
-  Term.induction (motive := fun t ↦
-      dropEntrySem ![Term.fold R (algPara R phi) t] = R.spell t)
-    (fun i ch ih ↦ by
-      rw [Term.fold_mk, algPara, dropEntrySem_entryWord, spell_mk]
-      exact congrArg (fun g ↦ R.code i ++ (List.ofFn g).flatten) (funext ih)) t
-
-/-- The step is applied to each child's spelling and value, which is the
-paramorphism's defining equation. -/
-theorem takeEntry_algPara (R : RankedAlphabet) (phi : ParaStep R)
-    (i : Fin R.card) (ch : Fin (R.arity i) → R.Term) :
-    takeEntrySem ![Term.fold R (algPara R phi) (Term.mk R i ch)] =
-      phi i fun d ↦ (R.spell (ch d),
-        takeEntrySem ![Term.fold R (algPara R phi) (ch d)]) := by
-  rw [Term.fold_mk, algPara, takeEntrySem_entryWord]
-  exact congrArg (phi i) (funext fun d ↦
-    congrArg (·, _) (dropEntry_algPara R phi (ch d)))
-
-/-- Read through its take-half, the fold at `algPara` is `WType.para` at the
-step that sees each child's spelling in place of the subtree: the recursion
-scheme is the existing one, computed at the bitstring representation. -/
-theorem algPara_eq_para (R : RankedAlphabet) (phi : ParaStep R) (t : R.Term) :
-    takeEntrySem ![Term.fold R (algPara R phi) t] =
-      WType.para (α := Fin R.card) (β := fun i ↦ Fin (R.arity i)) (List Bool)
-        (fun x ↦ phi x.1 fun d ↦ (R.spell (x.2 d).1, (x.2 d).2)) t :=
-  Term.induction (motive := fun t ↦
-      takeEntrySem ![Term.fold R (algPara R phi) t] =
-        WType.para (α := Fin R.card) (β := fun i ↦ Fin (R.arity i)) (List Bool)
-          (fun x ↦ phi x.1 fun d ↦ (R.spell (x.2 d).1, (x.2 d).2)) t)
-    (fun i ch ih ↦ by
-      have h := WType.para_mk (α := Fin R.card) (β := fun i ↦ Fin (R.arity i))
-        (γ := List Bool)
-        (fun x ↦ phi x.1 fun d ↦ (R.spell (x.2 d).1, (x.2 d).2)) i ch
-      exact ((takeEntry_algPara R phi i ch).trans
-        (congrArg (phi i) (funext fun d ↦ congrArg (_, ·) (ih d)))).trans h.symm) t
 
 /-- The delimited-children algebra: the paramorphism whose step returns its
 children's spellings, each delimited. -/
