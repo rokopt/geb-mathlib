@@ -1158,17 +1158,6 @@ practice settles either question. Settle both.
   arbitrary, so it cannot be referred to from persistent code or documentation
   at all. `TODO.md` is where workstreams are named, being the roadmap that
   defines them.
-- **`scripts/extract-pr.sh` does not rewrite `meta import` lines**: its rewrite
-  is anchored to `^(public import|import)`, so a `public meta import` of a
-  self-prefixed sibling is emitted with the `Geb.Mathlib.` prefix intact and
-  the extracted file does not compile. The two such lines are
-  `GebTests/Mathlib/Data/UnionFind/OfEdges.lean` and
-  `GebTests/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, where the
-  `#guard` assertions need the module under test available to meta code. This
-  is the rewriter's counterpart to the `lint-imports.sh` item above: both
-  enumerate import forms and both predate the module system's `meta` forms.
-  Trigger: the next branch that revises `scripts/extract-pr.sh`, or the first
-  extraction of either module.
 - **Verify the attested locators**: three locators are recorded from secondary
   attestation and none is verified against its primary source.
   [nLabSkeletalCategory] attests Mac Lane, _Categories for the Working
