@@ -32,6 +32,8 @@ computed, and `algPara_eq_para` identifies the two.
   its complement.
 * `Geb.CobhamFold.ParaStep`, `Geb.CobhamFold.algPara` — the paramorphism's
   step, and the paramorphism as a fold.
+* `Geb.CobhamFold.algCh` — the delimited-children algebra, one instance of
+  the paramorphism.
 
 ## Main statements
 
@@ -48,6 +50,11 @@ computed, and `algPara_eq_para` identifies the two.
 * `Geb.CobhamFold.sum_ofFn_length_eq_length_flatten`,
   `Geb.CobhamFold.growth_algPara` — a family's total length, and the
   per-symbol growth a bounded step gives.
+* `Geb.CobhamFold.dropEntry_algCh`, `Geb.CobhamFold.takeEntry_algCh` — the
+  paramorphism's two laws at `Geb.CobhamFold.algCh`.
+* `Geb.CobhamFold.length_algCh`,
+  `Geb.CobhamFold.five_mul_length_dropEntrySem_algCh_le` — its length at
+  arbitrary arguments, and the bound its outputs satisfy.
 
 ## References
 
@@ -194,6 +201,67 @@ theorem growth_algPara (R : RankedAlphabet) (phi : ParaStep R) (cphi : ℕ)
   rw [algPara, List.length_append, length_entryWord, List.length_append,
     R.length_code, sum_ofFn_length_eq_length_flatten]
   simp only [List.map_ofFn, Function.comp_def, sum_ofFn_length_eq_length_flatten] at hstep hw ⊢
+  omega
+
+/-- The delimited-children algebra: the paramorphism whose step returns its
+children's spellings, each delimited. -/
+def algCh (R : RankedAlphabet) : (i : Fin R.card) →
+    (Fin (R.arity i) → List Bool) → List Bool :=
+  algPara R fun _ g ↦ (List.ofFn fun d ↦ entryWord (g d).1).flatten
+
+/-- Its value's second half is the spelling. -/
+theorem dropEntry_algCh (R : RankedAlphabet) (t : R.Term) :
+    dropEntrySem ![Term.fold R (algCh R) t] = R.spell t :=
+  dropEntry_algPara R _ t
+
+/-- Its first half is the children's spellings, each delimited, so the `j`-th
+child is `Geb.CobhamFold.entryOf j` of it. -/
+theorem takeEntry_algCh (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) :
+    takeEntrySem ![Term.fold R (algCh R) (Term.mk R i ch)] =
+      (List.ofFn fun d ↦ entryWord (R.spell (ch d))).flatten :=
+  takeEntry_algPara R _ i ch
+
+/-- A family's delimited spelling is the stack layout at the list it names. -/
+theorem stackWordV_ofFn {n : ℕ} (g : Fin n → List Bool) :
+    stackWordV (List.ofFn g) = (List.ofFn fun d ↦ entryWord (g d)).flatten := by
+  rw [stackWordV, List.flatMap_def, List.map_ofFn]
+  rfl
+
+/-- The value's second half is the symbol's block followed by the children's
+own second halves, whatever the arguments. -/
+theorem dropEntrySem_algCh (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool) :
+    dropEntrySem ![algCh R i f] =
+      R.code i ++ (List.ofFn fun d ↦ dropEntrySem ![f d]).flatten := by
+  rw [algCh, algPara, dropEntrySem_entryWord]
+
+/-- Its length, at arbitrary arguments: five times the children's second
+halves, two bits per child, the sentinel and the block. -/
+theorem length_algCh (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool) :
+    (algCh R i f).length =
+      5 * ((List.ofFn fun d ↦ dropEntrySem ![f d]).flatten).length +
+        2 * R.arity i + 1 + R.width := by
+  have hlen := length_stackWordV (List.ofFn fun d ↦ dropEntrySem ![f d])
+  rw [stackWordV_ofFn, stackSize] at hlen
+  rw [algCh, algPara, List.length_append, length_entryWord, List.length_append,
+    R.length_code]
+  simp only [List.length_ofFn] at hlen ⊢
+  omega
+
+/-- Every value the delimited-children algebra produces carries its second
+half within a fixed multiple of its own length. It needs no induction
+hypothesis, holding at arbitrary arguments, and holds with equality at a
+nullary symbol. This is what a potential argument runs over where the
+per-symbol growth condition fails: `algCh` duplicates its children's
+payloads, delimited and plain, so `|algCh R i f|` is bounded by a multiple of
+the children's total rather than by that total plus a constant. -/
+theorem five_mul_length_dropEntrySem_algCh_le (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool) :
+    5 * (dropEntrySem ![algCh R i f]).length + 1 ≤
+      (algCh R i f).length + 4 * R.width := by
+  rw [dropEntrySem_algCh, List.length_append, R.length_code, length_algCh]
   omega
 
 end Geb.CobhamFold
