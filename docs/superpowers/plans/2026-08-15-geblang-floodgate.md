@@ -2515,10 +2515,12 @@ In § Upstream targets, add after the existing paragraph:
 ```markdown
 Content in `GebLang/` is upstream-eligible per module: a module whose
 import closure reaches no `Cslib.*` extracts to mathlib4, and one
-whose closure reaches it extracts to Cslib. Some `Geb/Internal/` code
-may eventually be recast into `GebLang/` in the same way it may be
-recast into either `Geb/` subtree.
+whose closure reaches it extracts to Cslib.
 ```
+
+The recast route needs no sentence of its own here: the amended
+closing sentence above already names `GebLang/` among the
+destinations `Geb/Internal/` code may be moved to.
 
 and extend the closing sentence of the existing paragraph
 
@@ -2658,8 +2660,8 @@ bundling it. Add to `TODO.md` § Triggers:
   most heavily, including a section heading and its
   table-of-contents entry, and `docs/references.md` likewise, with a
   section heading and its entry. The other carriers are
-  `CONTRIBUTING.md`, `README.md`, `TODO.md`, `docs/index.md`,
-  `docs/process.md`, `docs/rules/lean-coding.md`, `Geb.lean`,
+  `CONTRIBUTING.md`, `README.md`, `TODO.md`, `docs/process.md`,
+  `docs/rules/lean-coding.md`, `Geb.lean`,
   `Geb/Cslib.lean`, `GebTests/Cslib.lean`, `GebMeta.lean`,
   `manual/GebManual/Introduction.lean` and `scripts/lint-imports.sh`,
   whose header keeps one such line through this plan's five edits to
