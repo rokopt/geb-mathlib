@@ -91,10 +91,7 @@ TOCs
 stderr
 retarget
 retargeted
-retargeting
 frontmatter
-heredoc
-worklist
 functor
 functors
 parser
