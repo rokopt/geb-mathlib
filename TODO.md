@@ -1024,6 +1024,20 @@ practice settles either question. Settle both.
   - Verso for transient feature-branch design docs (scope 3); a change to the
     current Markdown-based brainstorming and writing-plans flow, so it needs
     its own scoping.
+- **doc-gen4 drops a `GebLang` module docstring**: `doc.verso` stores
+  a module docstring in the Verso module-doc extension, and the
+  pinned doc-gen4 reads only the Markdown-payload one
+  (`DocGen4/Process/Analyze.lean`, `getModuleDoc?`), so a `GebLang`
+  module's prose is absent from its API-reference page.
+  `DocGen4/DB/Schema.lean` carries the matching
+  `-- TODO: Add module_docs_verso table`. Declaration docstrings are
+  unaffected in substance: they reach the page converted to Markdown
+  (`DocGen4/Output/DocString.lean`, `-- TODO: natively render Verso
+  docstrings`), where a role's code span is auto-linked as a
+  Markdown one is. The literate site renders both kinds. Trigger: a
+  doc-gen4 pin bump, at which point the measurements of the `GebLang`
+  documentation build are re-taken and this entry is removed once the
+  module docstring reaches the page.
 - **Project-specific `geb-development` skill**: when recurring patterns
   accumulate that fit neither `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
   `docs/process.md`, `docs/rules/*.md`, nor existing `.claude/rules/*.md`.
