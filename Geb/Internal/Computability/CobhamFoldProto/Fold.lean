@@ -47,6 +47,8 @@ fold is the unique algebra morphism out of it.
   followed by the arity.
 * `Geb.CobhamFold.toScan_foldScanStep`, `Geb.CobhamFold.toScan_foldScanFinal` —
   the projection is a step homomorphism, and carries the whole scan.
+* `Geb.CobhamFold.mem_stack_foldScanFinal` — every value on the scan's stack
+  is one the algebra produced.
 * `Geb.CobhamFold.foldScanFrom_code` — a completed block pops its arity's worth
   of stack and pushes the algebra applied to them.
 * `Geb.CobhamFold.foldScanFrom_ofFn` — a family of spellings pushes one value
@@ -264,6 +266,45 @@ def foldScanFinal (R : RankedAlphabet)
     (w : List Bool) (s : FoldScan α) :
     foldScanFrom R alg (b :: w) s = foldScanStep R alg b (foldScanFrom R alg w s) :=
   rfl
+
+/-- Every value on the fold scan's stack is one the algebra produced: the
+stack starts empty, and the completing pop is the only clause that pushes. -/
+theorem mem_stack_foldScanFinal (R : RankedAlphabet)
+    (alg : (i : Fin R.card) → (Fin (R.arity i) → α) → α) (P : α → Prop)
+    (hpush : ∀ (i : Fin R.card) (f : Fin (R.arity i) → α), P (alg i f)) :
+    ∀ (w : List Bool), ∀ v ∈ (foldScanFinal R alg w).stack, P v :=
+  List.rec (fun v hv ↦ absurd hv (by simp [foldScanFinal, foldScanFrom]))
+    fun b u ih v hv ↦ by
+    have hcons : foldScanFinal R alg (b :: u) =
+        foldScanStep R alg b (foldScanFinal R alg u) := rfl
+    rw [hcons, foldScanStep] at hv
+    -- `foldScanFinal R alg u` is a term, not a local variable, so `obtain` on
+    -- it would introduce fresh locals and rewrite neither `hv` nor `ih`. The
+    -- named equation is what carries the split into both.
+    rcases hfs : foldScanFinal R alg u with ⟨buf, stack, live⟩
+    rw [hfs] at hv ih
+    dsimp only at hv ih ⊢
+    cases live
+    · exact ih v hv
+    · dsimp only at hv
+      by_cases hlen : (b :: buf).length = R.width
+      · rw [ite_eq_left hlen] at hv
+        match hsym : symOf R (decodeBits (b :: buf)) with
+        | none =>
+          rw [hsym] at hv
+          exact ih v hv
+        | some i =>
+          rw [hsym] at hv
+          dsimp only at hv
+          by_cases hst : R.arity i ≤ stack.length
+          · rw [dite_eq_left hst] at hv
+            rcases List.mem_cons.mp hv with h | h
+            · exact h ▸ hpush i _
+            · exact ih v (List.mem_of_mem_drop h)
+          · rw [dite_eq_right hst] at hv
+            exact ih v hv
+      · rw [ite_eq_right hlen] at hv
+        exact ih v hv
 
 /-- The fold scan of a concatenation reads the later part first. -/
 theorem foldScanFrom_append (R : RankedAlphabet)

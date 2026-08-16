@@ -34,6 +34,8 @@ computed, and `algPara_eq_para` identifies the two.
   step, and the paramorphism as a fold.
 * `Geb.CobhamFold.algCh` — the delimited-children algebra, one instance of
   the paramorphism.
+* `Geb.CobhamFold.chGrowth` — the per-symbol growth the delimited-children
+  algebra meets under its own invariant.
 
 ## Main statements
 
@@ -55,6 +57,30 @@ computed, and `algPara_eq_para` identifies the two.
 * `Geb.CobhamFold.length_algCh`,
   `Geb.CobhamFold.five_mul_length_dropEntrySem_algCh_le` — its length at
   arbitrary arguments, and the bound its outputs satisfy.
+* `Geb.CobhamFold.growth_algCh_of_dropEntrySem_le`,
+  `Geb.CobhamFold.stackSize_algCh_le` — the per-symbol growth condition at
+  `Geb.CobhamFold.algCh`, and the linearity hypothesis it discharges.
+
+## Implementation notes
+
+`algCh` does not meet the per-symbol growth condition
+`Geb.CobhamFold.stackSize_le_of_growth` consumes, and not because
+`dropEntrySem` fails to shrink — `length_dropEntrySem_le` bounds its result
+by its argument. It duplicates its children's payloads, delimited and plain,
+so its length is bounded by a multiple of the children's total rather than by
+that total plus a constant. A multiplicative condition alone would not give
+the linearity hypothesis either, a fold whose values multiply at every level
+being exponential in depth. The route taken instead is
+`five_mul_length_dropEntrySem_algCh_le`, a property of the algebra's own
+outputs that needs no induction hypothesis,
+carried along the scan by `mem_stack_foldScanFinal` and consumed by a
+potential argument in the shape
+`Geb.CobhamFold.potential_foldScanStep_le`'s.
+
+`Variable.lean` states the potential chain at a growth condition restricted
+to values satisfying a predicate the scan's stack carries, and derives the
+unrestricted forms from it at the trivial predicate. The restriction is what
+`algCh` needs and what the unrestricted condition does not give.
 
 ## References
 
@@ -263,6 +289,69 @@ theorem five_mul_length_dropEntrySem_algCh_le (R : RankedAlphabet) (i : Fin R.ca
       (algCh R i f).length + 4 * R.width := by
   rw [dropEntrySem_algCh, List.length_append, R.length_code, length_algCh]
   omega
+
+/-- The per-symbol growth the delimited-children algebra meets under its own
+invariant, attained at a symbol of maximum arity whose children are all
+nullary. -/
+def chGrowth (R : RankedAlphabet) : ℕ :=
+  4 * R.maxArity * R.width + R.maxArity + R.width + 1
+
+/-- The children's second halves, bounded by their own lengths under the
+invariant, over a list rather than a family. -/
+private theorem five_mul_length_flatten_dropEntrySem_le (R : RankedAlphabet) :
+    ∀ l : List (List Bool),
+      (∀ x ∈ l, 5 * (dropEntrySem ![x]).length + 1 ≤ x.length + 4 * R.width) →
+      5 * ((l.map fun x ↦ dropEntrySem ![x]).flatten).length + l.length ≤
+        l.flatten.length + 4 * R.width * l.length :=
+  List.rec (fun _ ↦ Nat.le_refl 0) fun a t ih h ↦ by
+    have ha := h a List.mem_cons_self
+    have ht := ih fun x hx ↦ h x (List.mem_cons_of_mem a hx)
+    -- `omega` atomises `4 * R.width * (t.length + 1)` and
+    -- `4 * R.width * t.length` separately, so the step is supplied by hand.
+    have hd : 4 * R.width * (t.length + 1) = 4 * R.width * t.length + 4 * R.width := by
+      rw [Nat.mul_add, Nat.mul_one]
+    simp only [List.map_cons, List.flatten_cons, List.length_append,
+      List.length_cons]
+    omega
+
+/-- The delimited-children algebra lengthens by at most `chGrowth R` per
+symbol, at arguments satisfying the invariant its own outputs satisfy. It
+does not meet the condition at arbitrary arguments: it duplicates its
+children's payloads, delimited and plain. -/
+theorem growth_algCh_of_dropEntrySem_le (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool)
+    (hf : ∀ d, 5 * (dropEntrySem ![f d]).length + 1 ≤
+      (f d).length + 4 * R.width) :
+    (algCh R i f).length ≤
+      (List.ofFn fun d ↦ (f d).length).sum + chGrowth R := by
+  have hlist := five_mul_length_flatten_dropEntrySem_le R (List.ofFn f)
+    (fun x hx ↦ by
+      obtain ⟨d, hd⟩ := List.mem_ofFn.mp hx
+      exact hd ▸ hf d)
+  have harity : R.arity i ≤ R.maxArity := R.arity_le_maxArity i
+  -- `omega` is linear: it atomises `4 * R.width * R.arity i` and
+  -- `4 * R.maxArity * R.width` separately and has no rule taking
+  -- `R.arity i ≤ R.maxArity` from one to the other, so the monotonicity and
+  -- the commutation are supplied by hand.
+  have hmono : 4 * R.width * R.arity i ≤ 4 * R.width * R.maxArity :=
+    Nat.mul_le_mul_left _ harity
+  have hcomm : 4 * R.width * R.maxArity = 4 * R.maxArity * R.width := by
+    rw [Nat.mul_assoc, Nat.mul_comm R.width, ← Nat.mul_assoc]
+  rw [length_algCh, chGrowth, sum_ofFn_length_eq_length_flatten]
+  simp only [List.map_ofFn, Function.comp_def, List.length_ofFn] at hlist ⊢
+  omega
+
+/-- The pending values stay linear in the input at the delimited-children
+algebra, which is the hypothesis `Geb.CobhamFold.foldOutOfV` takes. The
+per-symbol growth condition does not apply, so the bound runs through the
+invariant `five_mul_length_dropEntrySem_algCh_le` and a potential argument
+over it, which charges each input bit at most `chGrowth R` and so needs no
+assumption about how the pending subterms are laid out. -/
+theorem stackSize_algCh_le (R : RankedAlphabet) (w : List Bool) :
+    stackSize (foldScanFinal R (algCh R) w).stack ≤ chGrowth R * w.length :=
+  stackSize_le_of_growth_of_invariant R (algCh R)
+    (fun v ↦ 5 * (dropEntrySem ![v]).length + 1 ≤ v.length + 4 * R.width)
+    (chGrowth R) (five_mul_length_dropEntrySem_algCh_le R) (growth_algCh_of_dropEntrySem_le R) w
 
 end Geb.CobhamFold
 

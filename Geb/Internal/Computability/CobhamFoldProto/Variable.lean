@@ -64,6 +64,12 @@ carrier is unrestricted and the algebra is whatever the class can define.
   `Geb.CobhamFold.stackSize_le_of_growth` — the same condition bounds the scan's
   potential `R.width * stackSize + c * |buf|`, and so discharges the
   linear-growth hypothesis `length_foldSemV_le` takes.
+* `Geb.CobhamFold.potential_foldScanStep_le_of_invariant`,
+  `Geb.CobhamFold.potential_foldScanFinal_le_of_invariant`,
+  `Geb.CobhamFold.stackSize_le_of_growth_of_invariant` — the same three with
+  the growth condition assumed only of values satisfying a predicate the
+  scan's stack carries, which an algebra duplicating its children's payloads
+  needs; the unrestricted forms are these at the trivial predicate.
 * `Geb.CobhamFold.foldOutSemV_eq` — the expression computes
   `Geb.CobhamFold.foldOut`, spelled by `outWordV`; with `foldOut_eq` this is
   `RankedAlphabet.parse` followed by the algebra morphism.
@@ -865,18 +871,22 @@ private theorem sum_ofFn_getElem : ∀ (r : ℕ) (st : List (List Bool)) (h : r 
         rw [List.ofFn_succ, List.sum_cons, List.take_succ_cons, stackSize_cons]
         exact congrArg (a.length + ·) (ih t (Nat.le_of_succ_le_succ h))
 
-/-- One step raises the potential `R.width * stackSize + c * |buf|` by at most
-`c`. Every clause but the completing pop leaves the stack alone, and the pop
-adds at most `c` to it while clearing a block worth `R.width` bits. -/
-theorem potential_foldScanStep_le (R : RankedAlphabet)
-    (alg : (i : Fin R.card) → (Fin (R.arity i) → List Bool) → List Bool) (c : ℕ)
+/-- One step raises the potential `R.width * stackSize + c * |buf|` by at
+most `c`, the growth condition assumed only of arguments the stack holds.
+`Geb.CobhamFold.potential_foldScanStep_le` is this where the condition holds
+at arbitrary arguments. -/
+theorem potential_foldScanStep_le_of_invariant (R : RankedAlphabet)
+    (alg : (i : Fin R.card) → (Fin (R.arity i) → List Bool) → List Bool)
+    (P : List Bool → Prop) (c : ℕ)
     (hgrow : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool),
+      (∀ d, P (f d)) →
       (alg i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + c)
-    (b : Bool) (s : FoldScan (List Bool)) :
+    (b : Bool) (s : FoldScan (List Bool)) (hs : ∀ v ∈ s.stack, P v) :
     R.width * stackSize (foldScanStep R alg b s).stack +
         c * (foldScanStep R alg b s).buf.length ≤
       R.width * stackSize s.stack + c * s.buf.length + c := by
   obtain ⟨buf, stack, live⟩ := s
+  dsimp only at hs
   rw [foldScanStep]
   dsimp only
   cases live
@@ -899,7 +909,11 @@ theorem potential_foldScanStep_le (R : RankedAlphabet)
         · rw [dite_eq_left hst]
           dsimp only
           have hsum := sum_ofFn_getElem (R.arity i) stack hst
-          have halg := hgrow i fun d ↦ stack[d.val]'(Nat.lt_of_lt_of_le d.isLt hst)
+          -- the popped arguments are members of the stack, so `hs` supplies
+          -- `P` at each
+          have halg := hgrow i
+            (fun d ↦ stack[d.val]'(Nat.lt_of_lt_of_le d.isLt hst))
+            fun d ↦ hs _ (List.getElem_mem _)
           rw [hsum] at halg
           have hsplit := stackSize_take_add_drop stack (R.arity i)
           have hnew : stackSize ((alg i fun d ↦
@@ -928,10 +942,31 @@ theorem potential_foldScanStep_le (R : RankedAlphabet)
       simp only [List.length_cons]
       omega
 
-/-- The potential never exceeds `c` per input bit. -/
-theorem potential_foldScanFinal_le (R : RankedAlphabet)
+/-- One step raises the potential `R.width * stackSize + c * |buf|` by at most
+`c`. Every clause but the completing pop leaves the stack alone, and the pop
+adds at most `c` to it while clearing a block worth `R.width` bits. -/
+theorem potential_foldScanStep_le (R : RankedAlphabet)
     (alg : (i : Fin R.card) → (Fin (R.arity i) → List Bool) → List Bool) (c : ℕ)
     (hgrow : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool),
+      (alg i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + c)
+    (b : Bool) (s : FoldScan (List Bool)) :
+    R.width * stackSize (foldScanStep R alg b s).stack +
+        c * (foldScanStep R alg b s).buf.length ≤
+      R.width * stackSize s.stack + c * s.buf.length + c :=
+  potential_foldScanStep_le_of_invariant R alg (fun _ ↦ True) c
+    (fun i f _ ↦ hgrow i f) b s fun _ _ ↦ trivial
+
+/-- The potential never exceeds `c` per input bit, the growth condition
+assumed only of values satisfying `P`, which
+`Geb.CobhamFold.mem_stack_foldScanFinal` carries along the scan.
+`Geb.CobhamFold.potential_foldScanFinal_le` is this at the trivial
+predicate. -/
+theorem potential_foldScanFinal_le_of_invariant (R : RankedAlphabet)
+    (alg : (i : Fin R.card) → (Fin (R.arity i) → List Bool) → List Bool)
+    (P : List Bool → Prop) (c : ℕ)
+    (hpush : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool), P (alg i f))
+    (hgrow : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool),
+      (∀ d, P (f d)) →
       (alg i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + c) :
     ∀ w : List Bool,
       R.width * stackSize (foldScanFinal R alg w).stack +
@@ -940,14 +975,43 @@ theorem potential_foldScanFinal_le (R : RankedAlphabet)
       rw [List.length_nil, Nat.mul_zero]
       exact Nat.le_of_eq rfl)
     fun b v ih ↦ by
-      have hstep :=
-        potential_foldScanStep_le R alg c hgrow b (foldScanFinal R alg v)
+      have hstep := potential_foldScanStep_le_of_invariant R alg P c hgrow b
+        (foldScanFinal R alg v) (mem_stack_foldScanFinal R alg P hpush v)
       have hcons : foldScanFinal R alg (b :: v) =
           foldScanStep R alg b (foldScanFinal R alg v) := rfl
       have hc : c * (v.length + 1) = c * v.length + c := by
         rw [Nat.mul_add, Nat.mul_one]
       rw [hcons, List.length_cons]
       omega
+
+/-- An algebra whose values satisfy an invariant under which it lengthens by
+at most a constant per symbol keeps the pending values linear in the input.
+`Geb.CobhamFold.stackSize_le_of_growth` is this at the trivial invariant. -/
+theorem stackSize_le_of_growth_of_invariant (R : RankedAlphabet)
+    (alg : (i : Fin R.card) → (Fin (R.arity i) → List Bool) → List Bool)
+    (P : List Bool → Prop) (c : ℕ)
+    (hpush : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool), P (alg i f))
+    (hgrow : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool),
+      (∀ d, P (f d)) →
+      (alg i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + c)
+    (w : List Bool) :
+    stackSize (foldScanFinal R alg w).stack ≤ c * w.length := by
+  have h := potential_foldScanFinal_le_of_invariant R alg P c hpush hgrow w
+  have hm : stackSize (foldScanFinal R alg w).stack ≤
+      R.width * stackSize (foldScanFinal R alg w).stack :=
+    Nat.le_mul_of_pos_left _ R.width_pos
+  omega
+
+/-- The potential never exceeds `c` per input bit. -/
+theorem potential_foldScanFinal_le (R : RankedAlphabet)
+    (alg : (i : Fin R.card) → (Fin (R.arity i) → List Bool) → List Bool) (c : ℕ)
+    (hgrow : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool),
+      (alg i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + c) :
+    ∀ w : List Bool,
+      R.width * stackSize (foldScanFinal R alg w).stack +
+        c * (foldScanFinal R alg w).buf.length ≤ c * w.length :=
+  potential_foldScanFinal_le_of_invariant R alg (fun _ ↦ True) c
+    (fun _ _ ↦ trivial) fun i f _ ↦ hgrow i f
 
 /-- An algebra that lengthens by at most a constant per symbol keeps the pending
 values linear in the input, which is the hypothesis
@@ -958,12 +1022,9 @@ theorem stackSize_le_of_growth (R : RankedAlphabet)
     (hgrow : ∀ (i : Fin R.card) (f : Fin (R.arity i) → List Bool),
       (alg i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + c)
     (w : List Bool) :
-    stackSize (foldScanFinal R alg w).stack ≤ c * w.length := by
-  have h := potential_foldScanFinal_le R alg c hgrow w
-  have hm : stackSize (foldScanFinal R alg w).stack ≤
-      R.width * stackSize (foldScanFinal R alg w).stack :=
-    Nat.le_mul_of_pos_left _ R.width_pos
-  omega
+    stackSize (foldScanFinal R alg w).stack ≤ c * w.length :=
+  stackSize_le_of_growth_of_invariant R alg (fun _ ↦ True) c
+    (fun _ _ ↦ trivial) (fun i f _ ↦ hgrow i f) w
 
 end Geb.CobhamFold
 
