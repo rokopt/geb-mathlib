@@ -1,5 +1,5 @@
 name = "geb-mathlib"
-defaultTargets = ["Geb"]
+defaultTargets = ["Geb", "GebLang"]
 testDriver = "GebTests"
 lintDriver = "batteries/runLinter"
 lintDriverArgs = ["Geb"]
@@ -74,6 +74,19 @@ weak.linter.hashCommand = false
 
 [[lean_lib]]
 name = "GebMeta"
+
+# The Geb language, in Verso's literate style. `doc.verso` switches
+# this library's docstrings to checked Verso markup, which both
+# doc-gen4 and the literate pipeline render; it is set per-library so
+# the upstream-eligible subtrees keep mathlib-conventional Markdown
+# docstrings, which render correctly in consumers that do not set the
+# option.
+[[lean_lib]]
+name = "GebLang"
+globs = ["GebLang.*"]
+
+[lean_lib.leanOptions]
+doc.verso = true
 
 # The Verso manual: document library and generator executable,
 # with sources under manual/. Excluded from defaultTargets and the
