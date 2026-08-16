@@ -412,7 +412,8 @@ def takeEntryOf : COf 1 :=
 theorem stepWord_compOf {m : ℕ} (head : COf m) (args : Fin m → COf 1)
     (u : List Bool) :
     stepWord (compOf head args) u =
-      semAt m head.1.1 head.2 fun i ↦ stepWord (args i) u := rfl
+      semAt m head.1.1 head.2 fun i ↦ stepWord (args i) u :=
+  semAt_compOf head args ![u]
 
 /-- An arity-one composition's value at an arity-one step. -/
 theorem stepWord_comp1Of (e a : COf 1) (u : List Bool) :

@@ -201,6 +201,13 @@ theorem semAt_concatCompOf (n : ℕ) (a b : COf n) (x : Fin n → List Bool) :
     semAt n (concatCompOf n a b).1.1 (concatCompOf n a b).2 x =
       semAt n b.1.1 b.2 x ++ semAt n a.1.1 a.2 x := rfl
 
+/-- A composition's meaning at every arity. `Geb.CobhamFold.stepWord_compOf`
+is this at arity one. -/
+theorem semAt_compOf {n m : ℕ} (head : COf m) (args : Fin m → COf n)
+    (x : Fin n → List Bool) :
+    semAt n (compOf head args).1.1 (compOf head args).2 x =
+      semAt m head.1.1 head.2 fun i ↦ semAt n (args i).1.1 (args i).2 x := rfl
+
 /-- The `mult`-fold self-concatenation of the recursion variable, of arity one:
 the empty bitstring at `mult = 0`, and one more copy of the sole argument at
 each successor. -/

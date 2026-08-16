@@ -21,9 +21,15 @@ initiality `Term.fold_unique` carries [GambinoHyland2004]. The carrier
 it — so what the equation says is that `algMk` is the initial algebra's
 structure map transported along the encoding.
 
+`mkOf` computes that map inside the class: the symbol's block prepended to
+`flattenOf`, a `Nat.rec` on the arity whose step composes the arity-`n` tail
+against the shifted projections, so no `def` calls itself.
+
 ## Main definitions
 
 * `Geb.CobhamFold.algMk` — the initial algebra's structure map.
+* `Geb.CobhamFold.flattenOf` — the concatenation of an arity's slots.
+* `Geb.CobhamFold.mkOf` — the structure map as an expression of the class.
 
 ## Main statements
 
@@ -31,6 +37,10 @@ structure map transported along the encoding.
 * `Geb.CobhamFold.length_algMk` — it lengthens by the alphabet's width.
 * `Geb.CobhamFold.foldOut_algMk` — the fold at that map is the identity on
   the recognized language.
+* `Geb.CobhamFold.flattenOf_succ` — the slot concatenation at a successor,
+  which `Nat.rec` generates no equation lemma for.
+* `Geb.CobhamFold.semAt_flattenOf`, `Geb.CobhamFold.semAt_mkOf` — what those
+  two expressions compute.
 
 ## References
 
@@ -39,12 +49,14 @@ structure map transported along the encoding.
 
 ## Tags
 
-Cobham, ranked tree, initial algebra, term algebra, preorder encoding
+Cobham, ranked tree, initial algebra, term algebra, preorder encoding, expression
 -/
 
 @[expose] public section
 
 namespace Geb.CobhamFold
+
+open Cobham
 
 /-- The initial algebra's structure map, at the carrier `List Bool`: a
 symbol's block followed by its children's spellings. -/
@@ -72,6 +84,44 @@ theorem foldOut_algMk (R : RankedAlphabet) (w : List Bool) :
   cases h : R.parse w with
   | none => rfl
   | some t => exact congrArg some (R.parse_eq_some_iff.mp h)
+
+/-- The concatenation of an arity's slots, in index order. Built by `Nat.rec`
+on the arity, the arity-`n` tail composed against the shifted projections, so
+no `def` calls itself. -/
+def flattenOf : (n : ℕ) → COf n :=
+  Nat.rec (zeroAtOf 0) fun n ih ↦
+    concatCompOf (n + 1) (compOf ih fun i ↦ projOf (n + 1) i.succ)
+      (projOf (n + 1) 0)
+
+/-- One more slot concatenates onto the shifted tail, its own value first.
+`flattenOf` is a bare `Nat.rec`, for which Lean generates no equation
+lemma. -/
+theorem flattenOf_succ (n : ℕ) :
+    flattenOf (n + 1) =
+      concatCompOf (n + 1) (compOf (flattenOf n) fun i ↦ projOf (n + 1) i.succ)
+        (projOf (n + 1) 0) := rfl
+
+/-- It computes the concatenation of its slots. The single unfolding step is
+definitional but the closed form is not, `List.ofFn_succ` itself not being
+`rfl`. -/
+theorem semAt_flattenOf : ∀ (n : ℕ) (x : Fin n → List Bool),
+    semAt n (flattenOf n).1.1 (flattenOf n).2 x = (List.ofFn x).flatten :=
+  Nat.rec (fun x ↦ by rw [List.ofFn_zero, List.flatten_nil]; rfl)
+    fun n ih x ↦ by
+      rw [flattenOf_succ, semAt_concatCompOf, semAt_projOf, semAt_compOf]
+      simp only [semAt_projOf]
+      rw [ih fun i ↦ x i.succ, List.ofFn_succ, List.flatten_cons]
+
+/-- The initial algebra's structure map as an expression of Cobham's class:
+the symbol's block prepended to the concatenation of the slots. -/
+def mkOf (R : RankedAlphabet) (i : Fin R.card) : COf (R.arity i) :=
+  prependOf (R.code i) (flattenOf (R.arity i))
+
+/-- The expression computes the structure map. -/
+theorem semAt_mkOf (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool) :
+    semAt (R.arity i) (mkOf R i).1.1 (mkOf R i).2 f = algMk R i f := by
+  rw [mkOf, semAt_prependOf, semAt_flattenOf, algMk]
 
 end Geb.CobhamFold
 
