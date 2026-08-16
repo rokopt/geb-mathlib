@@ -38,8 +38,9 @@ Applies whenever a `.lean` file is open or being edited.
 ## Authoritative upstream guides (mathlib)
 
 These are the binding upstream references for `Geb/Mathlib/`
-content. Adversarial reviewers must check our `Geb/Mathlib/`
-content for violations against each:
+content and for mathlib-track `GebLang/` modules. Adversarial
+reviewers must check our `Geb/Mathlib/` content, and every
+mathlib-track `GebLang/` module, for violations against each:
 
 - Contributing index:
   `https://leanprover-community.github.io/contribute/index.html`
@@ -177,8 +178,9 @@ docstrings, occurrence counts, and post-hoc axiom-celebration.
 ## Authoritative upstream guides (CSLib)
 
 These are the binding upstream references for `Geb/Cslib/`
-content. Adversarial reviewers must check our `Geb/Cslib/`
-content against the contribution guide:
+content and for Cslib-track `GebLang/` modules. Adversarial
+reviewers must check our `Geb/Cslib/` content, and every
+Cslib-track `GebLang/` module, against the contribution guide:
 
 - Contribution guide:
   `https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md`

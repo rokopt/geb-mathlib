@@ -265,7 +265,8 @@ PR-candidate.
   (`upstreaming-dashboard-action` deferred until `Geb/Mathlib/`
   has substantive content for it to dashboard.)
 - Linters: `markdownlint-cli2`, `scripts/lint-imports.sh`,
-  `lake lint` (drives `batteries/runLinter`).
+  `scripts/check-transitive-imports.sh`, `lake lint` (drives
+  `batteries/runLinter`).
 
 ## References
 

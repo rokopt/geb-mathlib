@@ -1140,16 +1140,16 @@ practice settles either question. Settle both.
   submission, which outlives the FinSetSkel development.
 - **Repo-relative paths in upstream-eligible docstrings**: docstrings under
   `Geb/Mathlib/` name paths that carry no meaning for a mathlib reviewer, and
-  `scripts/extract-pr.sh` rewrites import lines only, so such prose survives
-  extraction unchanged. Instances include the module path in
-  `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` and the same pattern
-  in `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`. Repo-wide, so no one
-  workstream's to fix. Trigger: a repo-wide pass over upstream-eligible
-  docstrings, on its own branch. Workstream labels were a second instance of
-  this and are gone: a workstream is a transient concept whose name is
-  arbitrary, so it cannot be referred to from persistent code or documentation
-  at all. `TODO.md` is where workstreams are named, being the roadmap that
-  defines them.
+  `scripts/extract-pr.sh`'s `Geb/Mathlib/` arm rewrites import lines only, so
+  such prose survives extraction unchanged. Instances include the module
+  path in `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` and the
+  same pattern in `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`. Repo-wide,
+  so no one workstream's to fix. Trigger: a repo-wide pass over
+  upstream-eligible docstrings, on its own branch. Workstream labels were a
+  second instance of this and are gone: a workstream is a transient concept
+  whose name is arbitrary, so it cannot be referred to from persistent code
+  or documentation at all. `TODO.md` is where workstreams are named, being
+  the roadmap that defines them.
 - **Verify the attested locators**: three locators are recorded from secondary
   attestation and none is verified against its primary source.
   [nLabSkeletalCategory] attests Mac Lane, _Categories for the Working

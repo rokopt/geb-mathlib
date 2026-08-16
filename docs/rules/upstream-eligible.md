@@ -53,9 +53,10 @@ that upstream justification bar.
 
 `Geb/Internal/` holds code that is not (yet) upstream-eligible:
 work in progress not yet at mathlib/CSLib quality, explorations
-that build on upstream-quality code in `Geb/Mathlib/` or
-`Geb/Cslib/` without themselves meeting that bar, and code too
-specialized to this project to be in scope for either upstream.
+that build on upstream-quality code in `Geb/Mathlib/`,
+`Geb/Cslib/` or `GebLang/` without themselves meeting that bar,
+and code too specialized to this project to be in scope for
+either upstream.
 The split is driven by quality, scope, and dependency-readiness,
 not by authorship: AI-drafted and human-written code follow the
 same rules in every subtree.

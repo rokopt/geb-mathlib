@@ -3,9 +3,9 @@
 # scripts/tests/test-lint-imports.sh
 #
 # Smoke test for scripts/lint-imports.sh. Stages synthetic
-# Geb/{Mathlib,Cslib} and GebTests/{Mathlib,Cslib} subtrees under
-# a temp directory and runs the linter against scenarios covering
-# clean and violating inputs for each subtree.
+# Geb/{Mathlib,Cslib}, GebTests/{Mathlib,Cslib}, GebLang and
+# GebTests/Lang roots under a temp directory and runs the linter
+# against scenarios covering clean and violating inputs for each.
 #
 # Exit 0 if all scenarios pass; exit non-zero with the failure
 # count otherwise.
