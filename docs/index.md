@@ -1378,7 +1378,12 @@ import-direction rules above are enforced by
   value is
   no longer than its argument, so each takes `Cobham.boundRaw 0` as its bound
   child, and each costs a pass over the whole word whatever it reads,
-  `Cobham.evalRec` recursing to the empty word regardless. Depends on
+  `Cobham.evalRec` recursing to the empty word regardless.
+  `two_mul_length_takeEntrySem_add_length_dropEntrySem_le` combines the two
+  length bounds into the weighted one — a `true` lengthens the payload by at
+  most one bit while the remainder loses one — which is what bounds a
+  paramorphism step's contribution at an arbitrary argument rather than only at
+  a fold's value. Depends on
   `Geb.Internal.Computability.CobhamFoldProto.Bound`. `Classical.choice`-free.
 - `Geb/Internal/Computability/CobhamFoldProto/Variable.lean` — the fold at the
   carrier `List Bool`, with the algebra's operations supplied as expressions of

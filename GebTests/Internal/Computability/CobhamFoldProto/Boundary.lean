@@ -41,8 +41,6 @@ bitstring representation rather than introduced here.
   equation.
 * `GebTests.CobhamFold.algPara_eq_para` — it is `WType.para` at the step that
   sees each child's spelling.
-* `GebTests.CobhamFold.two_mul_length_takeEntrySem_add_length_dropEntrySem_le`
-  — the payload counted twice and the remainder fit inside the word.
 * `GebTests.CobhamFold.dropEntry_algCh`, `GebTests.CobhamFold.takeEntry_algCh`
   — those two at the delimited-children instance.
 
@@ -60,31 +58,6 @@ Cobham, ranked tree, subterm, paramorphism, self-delimiting
 namespace GebTests.CobhamFold
 
 open Cobham Geb.CobhamFold RankedAlphabet RankedAlphabet.Binary
-
-/-- The payload and the remainder together fit inside the word, the payload
-counted twice: a `true` lengthens the payload by at most one bit while the
-remainder loses one, so the weighted total does not grow. This is what bounds
-a general paramorphism step's contribution; `Geb.CobhamFold.SelfDelim` has the
-two halves separately. -/
-theorem two_mul_length_takeEntrySem_add_length_dropEntrySem_le :
-    ∀ w : List Bool,
-      2 * (takeEntrySem ![w]).length + (dropEntrySem ![w]).length ≤ w.length :=
-  List.rec (Nat.le_refl 0) fun b v ih ↦ by
-    rw [takeEntrySem_cons, dropEntrySem_cons, List.length_cons]
-    cases b
-    · rw [ite_eq_right (by simp), ite_eq_right (by simp), List.length_nil]
-      omega
-    · rw [ite_eq_left rfl, ite_eq_left rfl, List.length_append, List.length_tail,
-        firstBitSem_eq]
-      match hd : dropEntrySem ![v] with
-      | [] =>
-        rw [hd] at ih
-        simp only [List.length_nil]
-        omega
-      | c :: t =>
-        rw [hd, List.length_cons] at ih
-        simp only [List.length_cons, List.length_nil]
-        omega
 
 /-- A paramorphism's step: it receives each child's spelling beside its value.
 Distinct from `WType.paraStep`, which pairs a subtree with its value; here the

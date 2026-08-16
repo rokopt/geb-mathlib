@@ -57,6 +57,8 @@ payload would not be extractable and the algebra could not be applied.
 * `Geb.CobhamFold.takeEntrySem_entryWord`,
   `Geb.CobhamFold.dropEntrySem_entryWord` — the payload and the remainder of a
   self-delimiting entry.
+* `Geb.CobhamFold.two_mul_length_takeEntrySem_add_length_dropEntrySem_le` —
+  the payload counted twice and the remainder fit inside the word.
 
 * `Geb.CobhamFold.scan2Sem_eq_eval` — the meaning read at the raw tree is the
   meaning the expression carries.
@@ -397,6 +399,30 @@ theorem length_takeEntrySem_le : ∀ w : List Bool,
         | [] => exact Nat.zero_le 1
         | _ :: _ => exact Nat.le_refl 1
       omega
+
+/-- The payload and the remainder together fit inside the word, the payload
+counted twice: a `true` lengthens the payload by at most one bit while the
+remainder loses one, so the weighted total does not grow. This is what bounds
+a general paramorphism step's contribution. -/
+theorem two_mul_length_takeEntrySem_add_length_dropEntrySem_le :
+    ∀ w : List Bool,
+      2 * (takeEntrySem ![w]).length + (dropEntrySem ![w]).length ≤ w.length :=
+  List.rec (Nat.le_refl 0) fun b v ih ↦ by
+    rw [takeEntrySem_cons, dropEntrySem_cons, List.length_cons]
+    cases b
+    · rw [ite_eq_right (by simp), ite_eq_right (by simp), List.length_nil]
+      omega
+    · rw [ite_eq_left rfl, ite_eq_left rfl, List.length_append, List.length_tail,
+        firstBitSem_eq]
+      match hd : dropEntrySem ![v] with
+      | [] =>
+        rw [hd] at ih
+        simp only [List.length_nil]
+        omega
+      | c :: t =>
+        rw [hd, List.length_cons] at ih
+        simp only [List.length_cons, List.length_nil]
+        omega
 
 /-- The payload of a self-delimiting entry, as an expression of arity one. -/
 def takeEntryOf : COf 1 :=
