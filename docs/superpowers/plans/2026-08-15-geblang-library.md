@@ -68,10 +68,11 @@ requirements implicitly include this section.
   ```
 
 - `GebLang` docstrings are Verso markup (`doc.verso = true` on that
-  library alone). Verso headers are `#` lines, list items start with
-  `*` and not with `-`, and a checked constant reference is written
-  ``{name}`Foo` ``. Every other library keeps mathlib-conventional
-  Markdown docstrings.
+  library alone). A header is a `#` line and a checked constant
+  reference is written ``{name}`Foo` ``; `*`, `-` and `+` all open a
+  list, so this library writes `-`, as the rest of the repository
+  does. Every other library keeps mathlib-conventional Markdown
+  docstrings.
 - **Every code span in a `GebLang` docstring carries a role.**
   `doc.verso.suggestions` defaults to `true`, so a code span with no
   role emits the warning `Code element could be more specific.`, and
@@ -179,8 +180,8 @@ Created by this plan:
 
 Modified by this plan: `lakefile.toml`, `GebTests.lean`,
 `.github/workflows/ci.yml`, `.github/workflows/doc-build.yml`,
-`scripts/pre-push.sh`,
-`scripts/tests/test-lint-driver.sh`, `docs/rules/lean-coding.md`,
+`scripts/pre-push.sh`, `scripts/tests/test-lint-driver.sh`,
+`docs/rules/lean-coding.md`,
 `docs/rules/ci-and-workflow.md`, `TODO.md`. `README.md` is left to
 plan 2, which revises it in the one pass the spec's § Standards and
 rule documents calls for.
@@ -264,7 +265,7 @@ pipelines have a source of each to render.
 
 ## Main definitions
 
-* {lit}`gebLangAnchor`, the declaration whose docstring exercises
+- {lit}`gebLangAnchor`, the declaration whose docstring exercises
   the declaration-level pipeline.
 
 ## Tags
@@ -281,24 +282,23 @@ under the {option}`doc.verso` option. -/
 def gebLangAnchor : Nat := 0
 ```
 
-`@[expose] public section` follows the `Geb/Mathlib/` sources rather
-than the plain `public section` that other modules here use: content
-replacing this module will be consumed across module boundaries, and
-starting exposed avoids a later visibility change. Either form
-elaborates.
+`@[expose] public section` is the form used everywhere outside
+`Geb/Mathlib/` and the majority form inside it: content replacing
+this module will be consumed across module boundaries, and starting
+exposed avoids a later visibility change. Either form elaborates.
 
 The declaration is replaced, not grown, when content lands; Task 6
-records that expectation in `TODO.md`. Note the Verso list marker
-`*`, the role on every code span, and the absence of the `GebLang.`
-prefix anywhere outside an import path.
+records that expectation in `TODO.md`. Note the role on every code
+span and the absence of the `GebLang.` prefix anywhere outside an
+import path.
 
 The `## Main definitions` entry takes `{lit}` rather than `{name}`
 because a `{name}` role does not forward-reference within a module:
 with `{name}` there, `lean` reports an unknown-constant error naming
-`gebLangAnchor`. The declaration docstring
-below it does carry a checked `{name}` role, which is what the spec's
-§ Placeholder content asks for. This file and the umbrella of Step 4
-were both elaborated under the full option set of `lakefile.toml`,
+`gebLangAnchor`. The declaration docstring below it does carry a
+checked `{name}` role, which is what the spec's § Placeholder content
+asks for. This file and the umbrella of Step 4 were both elaborated
+under the full option set of `lakefile.toml`,
 `weak.warningAsError = true` included, and exit 0 as written.
 
 - [ ] **Step 4: write the umbrella**
@@ -332,7 +332,7 @@ doc-gen4's API reference.
 
 ## Main definitions
 
-* {name}`gebLangAnchor`, in the {lit}`GebLang.Basic` module.
+- {name}`gebLangAnchor`, in the {lit}`GebLang.Basic` module.
 -/
 ```
 
@@ -349,8 +349,9 @@ import registers the axiom linter for `lake lint -- GebLang`.
 Run: `lake build GebLang`
 
 Expected: exit 0, no warnings. A Verso parse error in a docstring
-reports at the docstring's position; the two docstring dialects differ
-in list markers (`*`, not `-`) and in role syntax.
+reports at the docstring's position. Role syntax is what the two
+docstring dialects differ in; list markers are not, `*`, `-` and `+`
+all opening a list in both.
 
 - [ ] **Step 6: lint the library**
 
@@ -455,12 +456,12 @@ Both lines carry `-- shake: keep; #guard needs it`, not just the
 constant reference in the olean and `lake shake` reports both as
 removable; `lake shake` matches the annotation per import line and
 distinguishes the `meta` form, so annotating one does not cover the
-other. `GebTests/Internal/CanonicalSExpr.lean:8-11`, whose content is
-likewise only `#guard`s, annotates both lines of each of its two
-pairs.
-`GebTests/Mathlib/Data/UnionFind/OfEdges.lean:8-9` annotates only the
-`meta` line because that module's own declarations reference the
-plain import. Task 5 Step 7 runs `lake shake`, so a missing
+other. `GebTests/Internal/CanonicalSExpr.lean:8-11` annotates both
+lines of each of its two pairs, for the same reason: only its
+`#guard`s reference those imports, its own declarations referencing a
+third module. `GebTests/Mathlib/Data/UnionFind/OfEdges.lean:8-9`
+annotates only the `meta` line, that module's own declarations
+referencing the plain import. Task 5 Step 7 runs `lake shake`, so a missing
 annotation surfaces there, one task after this one.
 
 The docstrings here are mathlib-conventional Markdown: `doc.verso` is
@@ -716,10 +717,10 @@ so its first run in a fresh workspace takes minutes before anything
 binds. The server's own output goes to `$out/serve.log`.
 
 Read `$out/landing.html` and confirm the landing page carries the
-umbrella's prose, then locate the `GebLang.Basic`
-page and confirm the `{name}` role on `Nat` renders as a resolved
-reference rather than as literal braces. If `verso-serve` binds a
-higher port, take the port from its own output.
+umbrella's prose, then locate the `GebLang.Basic` page and confirm
+the `{name}` role on `Nat` renders as a resolved reference rather
+than as literal braces. If `verso-serve` binds a higher port, take it
+from the server's log.
 
 Clean up: `pkill -f verso-serve`
 
@@ -777,9 +778,8 @@ The steps below therefore measure rather than assume, and record the
 gap unconditionally. This deviates from the spec on a matter of fact
 in two places: from § Context, which states that the pinned doc-gen4
 renders Verso docstrings natively, and from § Standards and rule
-documents, which
-has the `TODO.md` revision record the doc-gen4 half of its scope-1
-gate as met at the pin. Task 6 Step 3 writes the opposite of that
+documents, which has the `TODO.md` revision record the doc-gen4 half
+of its scope-1 gate as met at the pin. Task 6 Step 3 writes the opposite of that
 second sentence. Both are on the list for the user's review; the
 spec's own § Verification anticipates a gap and asks for it to be
 recorded, which is what this task does.
@@ -920,8 +920,10 @@ with
 ```
 
 The `mk_all-check` rationale three lines above the step you are
-editing also enumerates the libraries and is left alone here: the
-spec allocates it to plan 2's enumeration sweep, which corrects it.
+editing also enumerates the libraries and is left alone here. Plan 2's
+enumeration sweep corrects it. Three of that sweep's other instances
+are pulled forward into this plan, because they sit inside paragraphs
+this plan has to re-flow anyway; this one does not.
 
 Widen the shake step at line 82 from
 
@@ -1280,8 +1282,10 @@ docstrings are written for both.
   selects.
 - `lakefile.toml` sets `doc.verso = true` for the `GebLang` library
   alone, so its docstrings are checked Verso markup rather than
-  Markdown: a header is a `#` line, a list item starts with `*`, and
-  a checked reference to a constant is written ``{name}`Foo` ``. The
+  Markdown: a header is a `#` line and a checked reference to a
+  constant is written ``{name}`Foo` ``. Verso opens a list on `*`,
+  `-` or `+` alike, and this library writes `-`, as the rest of the
+  repository does. The
   option is compile-time, so a consumer compiling the same file
   without it renders the markup literally; that is why the
   upstream-eligible subtrees keep mathlib-conventional Markdown
@@ -1554,10 +1558,9 @@ doctoc --update-only . && markdownlint-cli2 '**/*.md' && bash scripts/check-md-l
 Expected: exit 0 from each. Every file this task touches already has
 `doctoc` markers, and `--update-only` leaves a marked table of
 contents without a title line just as it found it, so no
-`**Table of Contents**` line should appear; if one does, the file was
-given markers for the first time and the line is deleted. If `doctoc`
-is absent, verify the two table-of-contents entries added in Steps 1
-and 2 by hand.
+`**Table of Contents**` line should appear. If `doctoc` is absent,
+verify the two table-of-contents entries added in Steps 1 and 2 by
+hand.
 
 - [ ] **Step 6: commit**
 
