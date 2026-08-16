@@ -14,6 +14,7 @@ public import Geb.Internal.Computability.CobhamFoldProto.Variable
 public import Geb.Internal.Computability.CobhamFoldProto.SmashFree
 public import Geb.Internal.Computability.CobhamFoldProto.Degenerate
 public import Geb.Internal.Computability.CobhamFoldProto.Initial
+public import Geb.Internal.Computability.CobhamFoldProto.Destruct
 
 /-!
 # The fold over recognized terms
