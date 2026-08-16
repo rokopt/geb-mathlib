@@ -8,12 +8,15 @@ lintDriverArgs = ["Geb"]
 # Verso's literate module facet re-serialises a module's Lean options as
 # `-D<name>=<value>` arguments to the verso-literate executable, whose
 # option parser rejects a name the environment does not register and does
-# not honour the `weak.` prefix that makes `lean` skip one. A `GebLang`
-# module registers none of mathlib's linters, having no mathlib in its
-# import closure, so a package-level declaration would reach the literate
-# pipeline as an unknown option and fail the render. `warningAsError` is
-# registered by Lean core, so it carries no prefix and reaches every
-# pipeline.
+# not honour the `weak.` prefix that makes `lean` skip one.
+# The executable parses those arguments before it loads the module, so a
+# module's own imports do not help: a package-level declaration would
+# reach the literate pipeline as an unknown option and fail the render
+# whatever a `GebLang` module imports. `warningAsError` is registered by
+# Lean core, so it carries no prefix and reaches every pipeline.
+# The three-line `weak.linter.*` block is repeated in every `lean_lib`
+# and `lean_exe` below except `GebLang`; adding an option to mathlib's
+# set means editing each of them.
 [leanOptions]
 pp.unicode.fun = true
 autoImplicit = false

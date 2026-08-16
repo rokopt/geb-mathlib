@@ -15,8 +15,9 @@ import Lean.DocString.Syntax
 
 {lit}`GebLang` holds the core data structures of the Geb language. It
 sits at the bottom of this repository's dependency order: its modules
-import mathlib, Batteries and Cslib, and each other, and nothing of
-this repository.
+import mathlib, Batteries and Cslib, and each other, and of this
+repository only {lit}`GebMeta`, which supplies the axiom linter and the
+{lit}`mathlib_linters` command.
 
 The library is written in Verso's literate style. A module docstring
 is the prose of the module's page, and declaration docstrings render

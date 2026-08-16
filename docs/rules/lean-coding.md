@@ -597,6 +597,8 @@ docstrings are written for both.
   enable it. Adding a further option is one edit, to
   `GebMeta.mathlibLinterOptions`. The umbrella declares nothing of its own and
   does not invoke it.
+  A module invoking it carries both `import GebMeta` and
+  `meta import GebMeta`, the second annotated `-- shake: keep`.
 
 ## Lean 4 skill workflows
 
