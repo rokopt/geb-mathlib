@@ -98,16 +98,15 @@ EOF
 assert_case "Mathlib bare umbrella" 1 \
   "bare umbrella 'import Mathlib'"
 
-# Case 6: Cslib file importing Geb.Mathlib (strict-rule violation).
+# Case 6: Cslib file importing Geb.Mathlib (dependency-ordered).
 setup_empty
-cat > "$test_dir/Geb/Cslib/Bad.lean" <<'EOF'
+cat > "$test_dir/Geb/Cslib/Dep.lean" <<'EOF'
 module
 
 import Cslib.Init
 import Geb.Mathlib.Foo
 EOF
-assert_case "Cslib forbidding Geb.Mathlib import" 1 \
-  "forbidden import 'import Geb.Mathlib.Foo'"
+assert_case "Cslib importing Geb.Mathlib" 0 "clean (1 file(s) checked)"
 
 # Case 7: Cslib file with bare umbrella import.
 setup_empty
@@ -340,7 +339,8 @@ import Batteries.Data.UnionFind
 EOF
 assert_case "Geb/Mathlib Batteries import" 0 "clean (1 file(s) checked)"
 
-# Case 29: Geb/Cslib importing Batteries (admitted to Mathlib subtrees only).
+# Case 29: Geb/Cslib importing Batteries (Cslib depends on mathlib,
+# which depends on Batteries).
 setup_empty
 cat > "$test_dir/Geb/Cslib/Batt.lean" <<'EOF'
 module
@@ -348,8 +348,7 @@ module
 import Cslib.Init
 import Batteries.Data.UnionFind
 EOF
-assert_case "Geb/Cslib forbidding Batteries import" 1 \
-  "forbidden import 'import Batteries.Data.UnionFind'"
+assert_case "Geb/Cslib Batteries import" 0 "clean (1 file(s) checked)"
 
 # Case 30: bare `import Batteries` umbrella.
 setup_empty
@@ -583,6 +582,137 @@ meta import Cslib.Init
 EOF
 assert_case "meta import Cslib.Init does not satisfy required-init" 1 \
   "missing required 'import Cslib.Init'"
+
+# Case 50: GebLang.* is accepted in the source subtrees.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/UsesLang.lean" <<'EOF'
+module
+
+import GebLang.Foo
+EOF
+cat > "$test_dir/Geb/Cslib/UsesLang.lean" <<'EOF'
+module
+
+import Cslib.Init
+import GebLang.Foo
+EOF
+assert_case "GebLang import accepted in source subtrees" 0 \
+  "clean (2 file(s) checked)"
+
+# Case 51: GebLang.* is accepted in the test mirrors.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/UsesLang.lean" <<'EOF'
+module
+
+import GebLang.Foo
+EOF
+cat > "$test_dir/GebTests/Cslib/UsesLang.lean" <<'EOF'
+module
+
+import Cslib.Init
+import Geb.Mathlib.Thing
+import Batteries.Data.UnionFind
+import GebLang.Foo
+EOF
+assert_case "GebLang import accepted in test mirrors" 0 \
+  "clean (2 file(s) checked)"
+
+# Case 52: the mathlib subtree still cannot import Cslib-destined
+# content.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/Bad.lean" <<'EOF'
+module
+
+import Geb.Cslib.Foo
+EOF
+assert_case "Geb/Mathlib forbidding Geb.Cslib import" 1 \
+  "forbidden import 'import Geb.Cslib.Foo'"
+
+# Case 53: GebLang. leakage in a Geb/Mathlib/ body.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/LangLeak.lean" <<'EOF'
+module
+
+import GebLang.Foo
+
+def GebLang.foo : Nat := 0
+EOF
+assert_case "GebLang leakage in Geb/Mathlib" 1 \
+  "'GebLang.' outside an import path"
+
+# Case 54: Geb.Mathlib. leakage in a Geb/Cslib/ body, which
+# extraction would leave dangling upstream.
+setup_empty
+cat > "$test_dir/Geb/Cslib/MathlibLeak.lean" <<'EOF'
+module
+
+import Cslib.Init
+import Geb.Mathlib.Foo
+
+def Geb.Mathlib.foo : Nat := 0
+EOF
+assert_case "Geb.Mathlib leakage in Geb/Cslib" 1 \
+  "'Geb.Mathlib.' outside an import path"
+
+# Case 55: Geb.Mathlib. leakage in the GebTests/Cslib/ mirror.
+setup_empty
+cat > "$test_dir/GebTests/Cslib/MathlibLeak.lean" <<'EOF'
+module
+
+import Cslib.Init
+
+def Geb.Mathlib.foo : Nat := 0
+EOF
+assert_case "Geb.Mathlib leakage in GebTests/Cslib" 1 \
+  "'Geb.Mathlib.' outside an import path"
+
+# Case 56: GebLang. leakage in the GebTests/Mathlib/ mirror.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/LangLeak.lean" <<'EOF'
+module
+
+import GebLang.Foo
+
+def GebLang.foo : Nat := 0
+EOF
+assert_case "GebLang leakage in GebTests/Mathlib" 1 \
+  "'GebLang.' outside an import path"
+
+# Case 57: the test mirror still cannot import Cslib-destined content.
+setup_empty
+cat > "$test_dir/GebTests/Mathlib/BadCslib.lean" <<'EOF'
+module
+
+import Geb.Cslib.Foo
+EOF
+assert_case "GebTests/Mathlib forbidding Geb.Cslib import" 1 \
+  "forbidden import 'import Geb.Cslib.Foo'"
+
+# Case 58: GebLang. leakage in a Geb/Cslib/ body.
+setup_empty
+cat > "$test_dir/Geb/Cslib/LangLeak.lean" <<'EOF'
+module
+
+import Cslib.Init
+import GebLang.Foo
+
+def GebLang.foo : Nat := 0
+EOF
+assert_case "GebLang leakage in Geb/Cslib" 1 \
+  "'GebLang.' outside an import path"
+
+# Case 59: GebLang. leakage in the GebTests/Cslib/ mirror.
+setup_empty
+cat > "$test_dir/GebTests/Cslib/LangLeak.lean" <<'EOF'
+module
+
+import Cslib.Init
+import GebLang.Foo
+
+def GebLang.foo : Nat := 0
+EOF
+assert_case "GebLang leakage in GebTests/Cslib" 1 \
+  "'GebLang.' outside an import path"
 
 echo "test-lint-imports.sh: $checked case(s) checked, $failed failure(s)"
 exit "$failed"

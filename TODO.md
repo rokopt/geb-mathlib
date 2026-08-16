@@ -1180,40 +1180,6 @@ practice settles either question. Settle both.
   term-level artifact**: add an untyped `Ast` and
   `check : Ast → Option ((n s : ℕ) × BellantoniCook.BCOf n s)` over
   `SlicePFunctor.decidableWValid`.
-- **Allowing `Geb/Cslib/` to import `Geb.Mathlib.*`**: the case for it is
-  the reason `docs/rules/upstream-eligible.md` gives, that unupstreamed
-  mathlib-targeted content is unavailable to a CSLib PR, holds equally of
-  one `Geb/Mathlib/` module importing another. The case against it, which
-  the change must answer: extraction of a `Geb/Mathlib/` module orders
-  PRs within one review queue, whereas a `Geb/Cslib/` module importing
-  `Geb.Mathlib.*` waits on mathlib merge, mathlib release and CSLib's own
-  mathlib bump, three cadences the project does not set, against
-  CONTRIBUTING § Floodgate test's "on short notice". The converse
-  direction stays barred on its own reason: mathlib does not depend on
-  CSLib, so no ordering makes a `Geb/Mathlib/` module's `Cslib.*` import
-  extractable. The change set discovered so far:
-  - `scripts/lint-imports.sh` — the two Cslib `check_subtree` calls, with
-    `Geb.Mathlib.` added to both the allowed-prefix and the
-    leakage-prefix list, since extraction rewrites that prefix too; and
-    the header comment block restating the allowed-import table.
-  - `scripts/extract-pr.sh` — the `Geb/Cslib/*` and `GebTests/Cslib/*`
-    arms set one `rewrite_prefix` each, so a `Geb.Mathlib.` import is
-    emitted verbatim and the extracted file does not compile. A second
-    rewrite pair is needed.
-  - `scripts/tests/test-lint-imports.sh` — the case asserting exit 1 on
-    `import Geb.Mathlib.Foo` in `Geb/Cslib/` must be inverted; a
-    `GebTests/Cslib/` parallel case does not exist and should be added.
-  - `scripts/tests/test-extract-pr.sh` — a case for the new rewrite.
-  - `docs/rules/upstream-eligible.md` — the `Geb/Cslib/` and
-    `GebTests/Cslib/` table rows, the § Floodgate test sentence asserting
-    that each subtree's extractability is independent of the other,
-    which the change falsifies, and the closing cross-subtree paragraph.
-  - `docs/process.md` § Floodgate test, which carries the rationale.
-  - Adjacent and not bundled: `Batteries.` is arguably missing from the
-    `Geb/Cslib/` allowed list by the same argument, CSLib depending on
-    mathlib which depends on Batteries.
-
-  Trigger: a `Geb/Cslib/` module needing content from `Geb/Mathlib/`.
 - **A recursion combinator for `Geb/Mathlib/Computability/Cobham/`**:
   discharging the `Rec` bound of [HeraudNowak2011] § 3.1 once for all
   users rather than at each use, by truncating each layer against the
@@ -1242,3 +1208,22 @@ practice settles either question. Settle both.
   section, and its siblings do not although each declares named theorems.
   `docs/rules/lean-coding.md` § Documentation requires a section when it has
   content. Trigger: the next occasion to revise those modules.
+- **A dotless namespace reference escapes the leakage rule**: the
+  self-prefixes `scripts/lint-imports.sh` bars outside an import path all
+  carry a trailing dot, so `open GebLang` or `open Geb.Mathlib` passes the
+  linter and extracts verbatim into an upstream file, where the namespace
+  does not exist. No file exhibits it, `GebLang/Basic.lean` declaring no
+  namespace of its own. Trigger: the first upstream-eligible module that
+  opens a repository namespace, at which point the leakage rule gains a
+  dotless form or extraction rewrites it.
+- **Two modules sharing a basename collapse to one upstream import**:
+  `GebLang/Foo.lean` and `Geb/Mathlib/Foo.lean` both extract to
+  `Mathlib/Foo.lean`, so a file importing both emits one import line twice
+  and loses a dependency, with no diagnostic. `scripts/extract-pr.sh`
+  documents the destination overwrite; the import-line collapse is not
+  visible in what it prints. The shape is expressible only now that a
+  mathlib-track file may import `GebLang.*`. `Mathlib/Init.lean`,
+  `Mathlib/Tactic.lean` and `Cslib/Init.lean` exist upstream, so a
+  `GebLang/Init.lean` or `GebLang/Tactic.lean` would shadow one of them
+  silently. Trigger: a second repository module taking a basename another
+  already extracts to, at which point extraction gains a collision check.

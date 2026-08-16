@@ -13,11 +13,16 @@
 # module system (start with the `module` keyword), since `lake shake`
 # minimised-imports enforcement only operates on module-form files.
 #
-#   Geb/Mathlib/       →  Mathlib.*, Batteries.*, Geb.Mathlib.*
+#   Geb/Mathlib/       →  Mathlib.*, Batteries.*, Geb.Mathlib.*,
+#                         GebLang.*
 #   GebTests/Mathlib/  →  Mathlib.*, Batteries.*, Geb.Mathlib.*,
-#                         GebTests.Mathlib.*
-#   Geb/Cslib/         →  Mathlib.*, Cslib.*, Geb.Cslib.*
-#   GebTests/Cslib/    →  Mathlib.*, Cslib.*, Geb.Cslib.*, GebTests.Cslib.*
+#                         GebTests.Mathlib.*, GebLang.*
+#   Geb/Cslib/         →  Mathlib.*, Batteries.*, Cslib.*,
+#                         Geb.Cslib.*, Geb.Mathlib.*, GebLang.*
+#                         (plus mandatory `import Cslib.Init`)
+#   GebTests/Cslib/    →  Mathlib.*, Batteries.*, Cslib.*,
+#                         Geb.Cslib.*, GebTests.Cslib.*,
+#                         Geb.Mathlib.*, GebLang.*
 #                         (plus mandatory `import Cslib.Init`)
 #   GebLang/           →  Mathlib.*, Batteries.*, Cslib.*, GebLang.*,
 #                         GebMeta, Lean.DocString.Syntax (plus
@@ -26,16 +31,16 @@
 #   GebTests/Lang/     →  Mathlib.*, Batteries.*, Cslib.*, GebLang.*,
 #                         GebTests.Lang.* (same conditional init rule)
 #
-# `Batteries.*` is admitted to the mathlib-targeted subtrees because
-# mathlib depends on Batteries and imports its modules directly, so a
-# Batteries import survives extraction to mathlib4. That rationale
-# applies to a module whose own upstream target is mathlib4; the
-# restriction to these prefixes can also force a module into
-# Geb/Mathlib/ whose target is Lean core or Batteries, since a
-# dependency of a Geb/Mathlib/ module cannot live in Geb/Internal/.
-# Such a module is not extracted to mathlib4 at all, and its
-# destination is open, per TODO.md § Upstream destination of core- and
-# Batteries-targeted content.
+# `Batteries.*` is admitted to every upstream-eligible subtree because
+# mathlib depends on Batteries and imports its modules directly, and
+# Cslib depends on mathlib and does the same, so a Batteries import
+# survives extraction to either upstream. A second rationale binds the
+# mathlib-targeted subtrees alone: the restriction to these prefixes
+# can force a module into Geb/Mathlib/ whose target is Lean core or
+# Batteries, since a dependency of a Geb/Mathlib/ module cannot live
+# in Geb/Internal/. Such a module is not extracted to mathlib4 at all,
+# and its destination is open, per TODO.md § Upstream destination of
+# core- and Batteries-targeted content.
 #
 # GebLang holds the Geb language's core data structures, at the bottom
 # of the dependency order: its modules import no other library of this
@@ -50,6 +55,13 @@
 # allowed-import list rather than a `*`-suffixed prefix: they are the
 # literate pipeline's own load-bearing imports, not extractable
 # content, and extraction strips them.
+#
+# `Geb.Mathlib.*` is admitted to the Cslib subtrees because Cslib
+# depends on mathlib: a Cslib-destined module may depend on
+# mathlib-destined content, shipped in dependency order, after the
+# mathlib PR merges and Cslib's mathlib pin advances. The reverse
+# direction stays barred: mathlib does not depend on Cslib, so no
+# ordering makes a Geb/Mathlib/ module's Cslib.* import extractable.
 #
 # Test roots additionally permit their own `GebTests.<subtree>.*`
 # siblings (mirroring source self-imports); source roots cannot import
@@ -234,14 +246,14 @@ check_subtree() {
 # from the allowed list). Test roots additionally allow their own
 # `GebTests.<subtree>.*` siblings, and forbid leakage of both the
 # source and the test self-prefix.
-check_subtree "Geb.Mathlib." -- "" Geb/Mathlib \
-  -- "Mathlib." "Batteries." "Geb.Mathlib."
-check_subtree "Geb.Mathlib." "GebTests.Mathlib." -- "" GebTests/Mathlib \
-  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib."
-check_subtree "Geb.Cslib." -- "Cslib.Init" Geb/Cslib \
-  -- "Mathlib." "Cslib." "Geb.Cslib."
-check_subtree "Geb.Cslib." "GebTests.Cslib." -- "Cslib.Init" GebTests/Cslib \
-  -- "Mathlib." "Cslib." "Geb.Cslib." "GebTests.Cslib."
+check_subtree "Geb.Mathlib." "GebLang." -- "" Geb/Mathlib \
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebLang."
+check_subtree "Geb.Mathlib." "GebTests.Mathlib." "GebLang." -- "" GebTests/Mathlib \
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib." "GebLang."
+check_subtree "Geb.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib.Init" Geb/Cslib \
+  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "Geb.Mathlib." "GebLang."
+check_subtree "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib.Init" GebTests/Cslib \
+  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang."
 
 # GebLang sits at the bottom of the dependency order: its modules
 # import no other library of this repository. Its test mirror adds its
