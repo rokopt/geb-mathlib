@@ -10,14 +10,10 @@ public import Geb.Mathlib.Data.W.Basic
 public meta import Geb.Internal.Computability.CobhamFoldProto  -- shake: keep; #guard needs it
 
 /-!
-# The term algebra's operations, at the semantic layer
+# The term algebra's destructor, at the semantic layer
 
-The initial algebra's structure map transported along `RankedAlphabet.spell`,
-and the algebra from which a subterm's spelling is recovered.
-
-`algMk` is that structure map at the carrier `List Bool`: `Term.fold` at it is
-`RankedAlphabet.spell` itself, so the preorder encoding is the unique morphism
-from the term algebra into `algMk` rather than a construction beside it.
+The algebra from which a subterm's spelling is recovered, and the
+paramorphism it instantiates.
 
 `algPara` carries a subterm's spelling beside the step's value, the value
 delimited so the two are separable. The delimiting does not nest: each level
@@ -29,7 +25,6 @@ bitstring representation rather than introduced here.
 
 ## Main definitions
 
-* `GebTests.CobhamFold.algMk` — the initial algebra's structure map.
 * `GebTests.CobhamFold.ParaStep`, `GebTests.CobhamFold.algPara` — the
   paramorphism's step, and the paramorphism as a fold.
 * `GebTests.CobhamFold.algCh` — the delimited-children algebra, one of its
@@ -40,10 +35,6 @@ bitstring representation rather than introduced here.
 
 ## Main statements
 
-* `GebTests.CobhamFold.fold_algMk` — the fold at `algMk` is the spelling.
-* `GebTests.CobhamFold.length_algMk` — it lengthens by the alphabet's width.
-* `GebTests.CobhamFold.foldOut_algMk` — the fold at `algMk` is the identity on
-  the recognized language.
 * `GebTests.CobhamFold.dropEntry_algPara` — the value's second half is the
   spelling, whatever the step.
 * `GebTests.CobhamFold.takeEntry_algPara` — the paramorphism's defining
@@ -57,12 +48,11 @@ bitstring representation rather than introduced here.
 
 ## References
 
-* [GambinoHyland2004]
 * [Meertens1992]
 
 ## Tags
 
-Cobham, ranked tree, initial algebra, subterm, paramorphism, self-delimiting
+Cobham, ranked tree, subterm, paramorphism, self-delimiting
 -/
 
 @[expose] public section
@@ -70,33 +60,6 @@ Cobham, ranked tree, initial algebra, subterm, paramorphism, self-delimiting
 namespace GebTests.CobhamFold
 
 open Cobham Geb.CobhamFold RankedAlphabet RankedAlphabet.Binary
-
-/-- The initial algebra's structure map, at the carrier `List Bool`: a
-symbol's block followed by its children's spellings. -/
-def algMk (R : RankedAlphabet) (i : Fin R.card)
-    (f : Fin (R.arity i) → List Bool) : List Bool :=
-  R.code i ++ (List.ofFn f).flatten
-
-/-- The fold at that map is the preorder encoding, so `RankedAlphabet.spell`
-is the unique morphism from the term algebra into it, by the initiality
-`Geb.CobhamFold.Term.fold_unique` carries [GambinoHyland2004]. -/
-theorem fold_algMk (R : RankedAlphabet) : Term.fold R (algMk R) = R.spell := rfl
-
-/-- It lengthens its arguments' total by exactly the alphabet's width. -/
-theorem length_algMk (R : RankedAlphabet) (i : Fin R.card)
-    (f : Fin (R.arity i) → List Bool) :
-    (algMk R i f).length = (List.ofFn fun d ↦ (f d).length).sum + R.width := by
-  rw [algMk, List.length_append, R.length_code, List.length_flatten,
-    List.map_ofFn]
-  exact Nat.add_comm _ _
-
-/-- The fold at that map is the identity on the recognized language. -/
-theorem foldOut_algMk (R : RankedAlphabet) (w : List Bool) :
-    foldOut R (algMk R) w = (R.parse w).map (fun _ ↦ w) := by
-  rw [foldOut_eq]
-  cases h : R.parse w with
-  | none => rfl
-  | some t => exact congrArg some (R.parse_eq_some_iff.mp h)
 
 /-- The payload and the remainder together fit inside the word, the payload
 counted twice: a `true` lengthens the payload by at most one bit while the

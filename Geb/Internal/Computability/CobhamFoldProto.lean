@@ -13,6 +13,7 @@ public import Geb.Internal.Computability.CobhamFoldProto.Expr
 public import Geb.Internal.Computability.CobhamFoldProto.Variable
 public import Geb.Internal.Computability.CobhamFoldProto.SmashFree
 public import Geb.Internal.Computability.CobhamFoldProto.Degenerate
+public import Geb.Internal.Computability.CobhamFoldProto.Initial
 
 /-!
 # The fold over recognized terms
