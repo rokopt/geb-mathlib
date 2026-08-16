@@ -26,6 +26,12 @@ the cost a nested encoding would carry. `WType.para` already exists, so no
 recursion scheme is introduced here; `algPara` is the encoding at which it is
 computed, and `algPara_eq_para` identifies the two.
 
+Under the preorder encoding the structure map is the identity on
+representations, `RankedAlphabet.spell_mk` stating that a symbol's block
+followed by its children's spellings is the spelling of the term they build.
+The content of the inverse laws is therefore that a valid word determines the
+symbol and the children's spellings.
+
 ## Main definitions
 
 * `Geb.CobhamFold.codeOf`, `Geb.CobhamFold.dropCodeOf` — the block reader and
@@ -77,6 +83,12 @@ computed, and `algPara_eq_para` identifies the two.
 * `Geb.CobhamFold.smashFreeBool_chFoldOf`,
   `Geb.CobhamFold.smashFreeBool_childOf` — the fold and the child reader
   carry no `smash`, which is what `Cobham.SmashFree` names.
+* `Geb.CobhamFold.toSigma_mk` — the term algebra's destructor at the
+  `RankedAlphabet.Term.mk` presentation.
+* `Geb.CobhamFold.semAt_mkOf_spell` — the constructor's expression at the
+  children's spellings is the spelling of the term they build.
+* `Geb.CobhamFold.semAt_mkOf_childOf` — the constructor at the children the
+  destructor reads returns the word.
 
 ## Implementation notes
 
@@ -572,6 +584,40 @@ theorem smashFreeBool_childOf (R : RankedAlphabet) (j : ℕ) :
   smashFreeBool_comp1Of _ _ (smashFreeBool_entryOf j)
     (smashFreeBool_comp1Of _ _ smashFreeBool_takeEntryOf
       (smashFreeBool_chFoldOf R))
+
+/-- The term algebra's destructor at the `RankedAlphabet.Term.mk`
+presentation. `WType.ofSigma_toSigma` is the other inverse law, which mathlib
+already carries. -/
+theorem toSigma_mk (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) :
+    WType.toSigma (Term.mk R i ch) = ⟨i, ch⟩ := rfl
+
+/-- The constructor's expression at the children's spellings is the spelling
+of the term they build. Under the preorder encoding the structure map is the
+identity on representations, which is what `RankedAlphabet.spell_mk`
+states. -/
+theorem semAt_mkOf_spell (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) :
+    semAt (R.arity i) (mkOf R i).1.1 (mkOf R i).2 (fun d ↦ R.spell (ch d)) =
+      R.spell (Term.mk R i ch) := by
+  rw [semAt_mkOf, algMk, ← spell_mk]
+
+/-- The constructor at the children the destructor reads returns the word.
+It is stated under `R.parse w = some (Term.mk R i ch)` with `i` given rather
+than read, so no dispatch over the block is needed; `Geb.CobhamFold.childOf`
+and `Geb.CobhamFold.mkOf` are total and return an unspecified word off the
+recognized language. -/
+theorem semAt_mkOf_childOf (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) (w : List Bool)
+    (hw : R.parse w = some (Term.mk R i ch)) :
+    semAt (R.arity i) (mkOf R i).1.1 (mkOf R i).2
+        (fun d ↦ stepWord (childOf R d.val) w) = w := by
+  have hspell : R.spell (Term.mk R i ch) = w := R.parse_eq_some_iff.mp hw
+  have hchild : (fun d : Fin (R.arity i) ↦ stepWord (childOf R d.val) w) =
+      fun d ↦ R.spell (ch d) := by
+    funext d
+    rw [← hspell, stepWord_childOf R i ch d.val d.isLt]
+  rw [semAt_mkOf, algMk, hchild, ← spell_mk, hspell]
 
 end Geb.CobhamFold
 
