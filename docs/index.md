@@ -1285,7 +1285,12 @@ import-direction rules above are enforced by
   `scanMulOf` carry the bound `mult * |w| + growth`. `concat` is a generator of
   the subalgebra `Cobham.SmashFree` names, so the multiplicative bound stays
   inside it, which `Geb.CobhamFold.smashFreeBool_boundMulRaw` states at every
-  multiplicity and growth. Depends on `Geb.Mathlib.Computability.Cobham.Scan`.
+  multiplicity and growth.
+  `semAt_compOf` reads a composition's meaning at every arity, as
+  `semAt_prependOf`, `semAt_constAtOf`, `semAt_projOf` and
+  `semAt_concatCompOf` do for their own combinators;
+  `CobhamFoldProto/SelfDelim.lean`'s `stepWord_compOf` is its arity-one
+  instance. Depends on `Geb.Mathlib.Computability.Cobham.Scan`.
   `Classical.choice`-free.
 - `Geb/Internal/Computability/CobhamFoldProto/Fold.lean` — the fold scan of a
   preorder spelling. `FoldScan` replaces `RankedAlphabet.Scan`'s pending count
@@ -1433,4 +1438,30 @@ import-direction rules above are enforced by
   time and linear space. Depends on
   `Geb.Internal.Computability.CobhamFoldProto.Expr` and
   `Geb.Internal.Computability.CobhamFoldProto.Variable`.
+  `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Initial.lean` — the initial
+  algebra's structure map at the carrier `List Bool`, and that map as an
+  expression of Cobham's class. `algMk` is a symbol's block followed by its
+  children's spellings, so `fold_algMk` reads `Term.fold` at it as
+  `RankedAlphabet.spell` itself by `rfl`: `algMk` is the step `spell`'s own
+  `WType.elim` runs, named apart from it, and the preorder encoding is the
+  unique morphism from the term algebra into it by the initiality
+  `Term.fold_unique` carries. The carrier is not itself initial, the
+  spellings being a proper subalgebra of `List Bool`, so what the equation
+  says is that `algMk` is the structure map transported along the encoding.
+  `length_algMk` reads its growth as exactly `R.width`, and `foldOut_algMk`
+  reads the fold as the identity on the recognized language. `flattenOf`
+  concatenates an arity's slots, by `Nat.rec` on the arity with the
+  arity-`n` tail composed against the shifted projections, and `mkOf`
+  prepends the symbol's block to it; `semAt_flattenOf` and `semAt_mkOf` say
+  what each computes. `growth_algMk`,
+  `stackSize_algMk_le`, `smashFreeBool_flattenOf` and `smashFreeBool_mkOf`
+  discharge the obligations `foldOutExprV` and `smashFree_foldOutExprV` take,
+  the multiplier constraint `2 * R.width + 2 ≤ mult` remaining a hypothesis
+  since the multiplier is the caller's. `foldOutSemV_algMk` characterises the
+  expression's output word for every input word — `outWordV` of the input on
+  the recognized language and the absence marker off it — without evaluating
+  the readout's dispatch, and `smashFree_foldOutExprV_mkOf` places the
+  expression in the subalgebra `Cobham.SmashFree` names. Depends on
+  `Geb.Internal.Computability.CobhamFoldProto.SmashFree`.
   `Classical.choice`-free.

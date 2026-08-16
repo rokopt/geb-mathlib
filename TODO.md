@@ -591,7 +591,12 @@ before any of it is upstream-eligible.
 - Neither construction is exercised on an input at the expression level. The
   samples evaluate the semantic fold, and the `decide` on `unitExpr` checks
   tree shape rather than value, so no expression's output word has been computed
-  from an input word.
+  from an input word. `Geb.CobhamFold.foldOutSemV_algMk` characterises one
+  expression's output word for every input word, at the algebra rebuilding its
+  argument, but characterises it symbolically rather than computing it: the
+  readout dispatches on `2 ^ readoutWidthV R` branches, so the characterisation
+  is by proof rather than by normalization. What remains outstanding is an
+  output word computed from an input word.
 - The bitstring construction's smash-freeness is conditional on the algebra's:
   `smashFree_foldOutExprV` assumes each `algOf i` smash-free, the expressions
   being spliced into the tree unconstrained. Whether the linear-growth
