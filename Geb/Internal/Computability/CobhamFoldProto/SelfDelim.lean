@@ -54,6 +54,8 @@ payload would not be extractable and the algebra could not be applied.
   `Geb.CobhamFold.stepWord_dropUnaryOf`,
   `Geb.CobhamFold.stepWord_dropEntryOf`,
   `Geb.CobhamFold.stepWord_takeEntryOf` — what each primitive computes.
+* `Geb.CobhamFold.take_succ_append_take_one` — a truncation splits at its
+  last bit.
 * `Geb.CobhamFold.takeEntrySem_entryWord`,
   `Geb.CobhamFold.dropEntrySem_entryWord` — the payload and the remainder of a
   self-delimiting entry.
@@ -564,7 +566,7 @@ theorem dropEntrySem_replicate (X : List Bool) : ∀ k : ℕ,
 
 /-- Splitting a truncation at its last bit. Proved here rather than by
 `List.take_add`, which was measured to depend on `Classical.choice`. -/
-private theorem take_succ_append_take_one : ∀ (k : ℕ) (X : List Bool),
+theorem take_succ_append_take_one : ∀ (k : ℕ) (X : List Bool),
     X.take (k + 1) = X.take k ++ (X.drop k).take 1 :=
   Nat.rec (fun X ↦ by rw [List.take_zero, List.nil_append, List.drop_zero])
     fun k ih X ↦ match X with

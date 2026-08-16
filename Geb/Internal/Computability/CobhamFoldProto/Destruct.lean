@@ -37,6 +37,9 @@ computed, and `algPara_eq_para` identifies the two.
 * `Geb.CobhamFold.chGrowth` — the per-symbol growth the delimited-children
   algebra meets under its own invariant.
 * `Geb.CobhamFold.algChOf` — that algebra as an expression of the class.
+* `Geb.CobhamFold.chFoldOf` — the delimited-children fold as an expression.
+* `Geb.CobhamFold.childSem`, `Geb.CobhamFold.childOf` — a child's spelling,
+  read from a fold's value and read by an expression.
 
 ## Main statements
 
@@ -63,6 +66,17 @@ computed, and `algPara_eq_para` identifies the two.
   `Geb.CobhamFold.algCh`, and the linearity hypothesis it discharges.
 * `Geb.CobhamFold.semAt_algChOf`, `Geb.CobhamFold.smashFreeBool_algChOf` —
   what `Geb.CobhamFold.algChOf` computes, and that it carries no `smash`.
+* `Geb.CobhamFold.takeEntrySem_cons_true` — the presence marker is absorbed
+  into the entry's unary prefix, so one further bit is read from what follows
+  the entry.
+* `Geb.CobhamFold.fold_algCh_mk` — the fold's value at a constructed term.
+* `Geb.CobhamFold.childSem_mk`, `Geb.CobhamFold.childSem_of_le`,
+  `Geb.CobhamFold.stepWord_childOf`,
+  `Geb.CobhamFold.stepWord_childOf_of_le` — the child reader recovers a
+  child's spelling and is total.
+* `Geb.CobhamFold.smashFreeBool_chFoldOf`,
+  `Geb.CobhamFold.smashFreeBool_childOf` — the fold and the child reader
+  carry no `smash`, which is what `Cobham.SmashFree` names.
 
 ## Implementation notes
 
@@ -84,6 +98,14 @@ potential argument in the shape
 to values satisfying a predicate the scan's stack carries, and derives the
 unrestricted forms from it at the trivial predicate. The restriction is what
 `algCh` needs and what the unrestricted condition does not give.
+
+`Geb.CobhamFold.foldOutExprV`'s readout emits `Geb.CobhamFold.outWordV`,
+which prefixes a presence marker. The marker is absorbed into the entry's
+unary prefix rather than left beside it, so one further bit is read from what
+follows the entry. Each equation is therefore stated in the "entries followed
+by an arbitrary remainder" form, which `takeEntrySem` at an `entryWord`
+tolerates, and the case past the last child is proved against that extra bit
+rather than in its absence.
 
 ## References
 
@@ -394,6 +416,162 @@ theorem smashFreeBool_algChOf (R : RankedAlphabet) (i : Fin R.card) :
         fun d ↦ smashFreeBool_comp1Of _ _ smashFreeBool_entryWordOf
           (smashFreeBool_comp1Of _ _ smashFreeBool_dropEntryOf
             (smashFreeBool_projOf (R.arity i) d))))
+
+/-- Splitting a truncation one bit past a prefix.
+`Geb.CobhamFold.take_succ_append_take_one` is the same split at an arbitrary
+index. Neither reaches for `List.take_add`, which `SelfDelim.lean` records as
+`Classical.choice`-dependent. -/
+private theorem take_append_length_add_one (u rest : List Bool) :
+    (u ++ rest).take (u.length + 1) = u ++ rest.take 1 := by
+  rw [take_succ_append_take_one u.length (u ++ rest), List.take_left' rfl,
+    List.drop_left' rfl]
+
+/-- The presence marker is absorbed into the entry's unary prefix rather than
+left beside it, so the payload read from a marked value is the value's own
+payload followed by one further bit of what the entry leaves. -/
+theorem takeEntrySem_cons_true (u rest : List Bool) :
+    takeEntrySem ![true :: (entryWord u ++ rest)] = u ++ rest.take 1 := by
+  have hshape : true :: (entryWord u ++ rest) =
+      List.replicate (u.length + 1) true ++ false :: (u ++ rest) := by
+    rw [entryWord, List.replicate_succ]
+    simp only [List.cons_append, List.append_assoc]
+  rw [hshape, takeEntrySem_replicate, take_append_length_add_one]
+
+/-- The payload primitive reads nothing from a word of at most one bit. -/
+theorem takeEntrySem_of_length_le_one : ∀ r : List Bool, r.length ≤ 1 →
+    takeEntrySem ![r] = []
+  | [], _ => takeEntrySem_nil
+  | b :: t, h => by
+    have ht : t = [] := List.eq_nil_of_length_eq_zero (by
+      rw [List.length_cons] at h
+      omega)
+    rw [ht, takeEntrySem_cons]
+    cases b
+    · rw [ite_eq_right (by simp)]
+    · rw [ite_eq_left rfl, takeEntrySem_nil, dropEntrySem_nil, firstBitSem_eq]
+      rfl
+
+/-- Dropping entries never lengthens a word. -/
+theorem length_stepWord_dropEntriesOf_le : ∀ (k : ℕ) (r : List Bool),
+    (stepWord (dropEntriesOf k) r).length ≤ r.length :=
+  Nat.rec (fun r ↦ by rw [dropEntriesOf_zero, stepWord_idOf])
+    fun k ih r ↦ by
+      rw [stepWord_dropEntriesOf_succ]
+      exact Nat.le_trans (ih _) (length_dropEntrySem_le r)
+
+/-- Dropping entries composes. -/
+theorem stepWord_dropEntriesOf_add : ∀ (n k : ℕ) (x : List Bool),
+    stepWord (dropEntriesOf (n + k)) x =
+      stepWord (dropEntriesOf k) (stepWord (dropEntriesOf n) x) :=
+  Nat.rec (fun k x ↦ by rw [Nat.zero_add, dropEntriesOf_zero, stepWord_idOf])
+    fun n ih k x ↦ by
+      rw [Nat.succ_add, stepWord_dropEntriesOf_succ, ih k,
+        stepWord_dropEntriesOf_succ]
+
+/-- The fold's value at a constructed term, in the shape the entry
+primitives read: the children's delimited spellings as one entry, then the
+symbol's block and the children's spellings plain. -/
+theorem fold_algCh_mk (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) :
+    Term.fold R (algCh R) (Term.mk R i ch) =
+      entryWord (stackWordV (List.ofFn fun d ↦ R.spell (ch d))) ++
+        (R.code i ++ (List.ofFn fun d ↦ R.spell (ch d)).flatten) := by
+  rw [Term.fold_mk, algCh, algPara, stackWordV_ofFn]
+  exact congrArg (fun g ↦ entryWord ((List.ofFn fun d ↦ entryWord (g d)).flatten) ++
+      (R.code i ++ (List.ofFn g).flatten))
+    (funext fun d ↦ dropEntry_algPara R _ (ch d))
+
+/-- The `j`-th child's spelling, read from a term's fold value. -/
+def childSem (R : RankedAlphabet) (j : ℕ) (t : R.Term) : List Bool :=
+  stepWord (entryOf j) (takeEntrySem ![Term.fold R (algCh R) t])
+
+/-- It recovers the `j`-th child's spelling. -/
+theorem childSem_mk (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) (j : ℕ) (h : j < R.arity i) :
+    childSem R j (Term.mk R i ch) = R.spell (ch ⟨j, h⟩) := by
+  rw [childSem, takeEntry_algCh, ← stackWordV_ofFn,
+    stepWord_entryOf_stackWordV,
+    List.drop_eq_getElem_cons (by rw [List.length_ofFn]; exact h)]
+  exact List.getElem_ofFn _
+
+/-- And returns the empty word past the last child, so it is total. -/
+theorem childSem_of_le (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) (j : ℕ) (h : R.arity i ≤ j) :
+    childSem R j (Term.mk R i ch) = [] := by
+  rw [childSem, takeEntry_algCh, ← stackWordV_ofFn,
+    stepWord_entryOf_stackWordV,
+    List.drop_eq_nil_of_le (by rw [List.length_ofFn]; exact h)]
+  rfl
+
+/-- The delimited-children fold as an expression, at its declared arity. The
+multiplier is `foldOutOfV`'s bound taken with equality, so it carries no
+hypothesis of its own. -/
+def chFoldOf (R : RankedAlphabet) : COf 1 :=
+  foldOutOfV R (algChOf R) (algCh R) (semAt_algChOf R) (2 * chGrowth R + 2)
+    (chGrowth R) (stackSize_algCh_le R) (Nat.le_refl _)
+
+/-- The `j`-th child's spelling, as an expression of Cobham's class: the
+`j`-th entry of the fold's payload. -/
+def childOf (R : RankedAlphabet) (j : ℕ) : COf 1 :=
+  comp1Of (entryOf j) (comp1Of takeEntryOf (chFoldOf R))
+
+/-- The fold expression's value, spelled by `Geb.CobhamFold.outWordV`. -/
+theorem stepWord_chFoldOf (R : RankedAlphabet) (w : List Bool) :
+    stepWord (chFoldOf R) w = outWordV (foldOut R (algCh R) w) :=
+  foldOutSemV_eq R (algChOf R) (algCh R) (semAt_algChOf R)
+    (2 * chGrowth R + 2) (chGrowth R) (stackSize_algCh_le R) (Nat.le_refl _) w
+
+/-- The `j`-th child's spelling, recovered from the spelling of the term. -/
+theorem stepWord_childOf (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) (j : ℕ) (h : j < R.arity i) :
+    stepWord (childOf R j) (R.spell (Term.mk R i ch)) = R.spell (ch ⟨j, h⟩) := by
+  have hlen : (List.ofFn fun d ↦ R.spell (ch d)).length = R.arity i :=
+    List.length_ofFn
+  rw [childOf, stepWord_comp1Of, stepWord_comp1Of, stepWord_takeEntryOf,
+    stepWord_chFoldOf, foldOut_spell]
+  change stepWord (entryOf j)
+    (takeEntrySem ![true :: Term.fold R (algCh R) (Term.mk R i ch)]) = _
+  rw [fold_algCh_mk, takeEntrySem_cons_true,
+    stepWord_entryOf_stackWordV_append j _ _ (by rw [hlen]; exact h),
+    List.getElem_ofFn]
+
+/-- And the empty word past the last child, so the expression is total. -/
+theorem stepWord_childOf_of_le (R : RankedAlphabet) (i : Fin R.card)
+    (ch : Fin (R.arity i) → R.Term) (j : ℕ) (h : R.arity i ≤ j) :
+    stepWord (childOf R j) (R.spell (Term.mk R i ch)) = [] := by
+  have hlen : (List.ofFn fun d ↦ R.spell (ch d)).length = R.arity i :=
+    List.length_ofFn
+  have hshort : ((R.code i ++
+      (List.ofFn fun d ↦ R.spell (ch d)).flatten).take 1).length ≤ 1 :=
+    Nat.le_trans (Nat.le_of_eq List.length_take) (Nat.min_le_left 1 _)
+  rw [childOf, stepWord_comp1Of, stepWord_comp1Of, stepWord_takeEntryOf,
+    stepWord_chFoldOf, foldOut_spell]
+  change stepWord (entryOf j)
+    (takeEntrySem ![true :: Term.fold R (algCh R) (Term.mk R i ch)]) = _
+  rw [fold_algCh_mk, takeEntrySem_cons_true, stepWord_entryOf,
+    ← Nat.add_sub_cancel' h, stepWord_dropEntriesOf_add,
+    stepWord_dropEntriesOf_stackWordV_append (R.arity i) _ _ (by rw [hlen]),
+    List.drop_eq_nil_of_le (Nat.le_of_eq hlen), stackWordV_nil,
+    List.nil_append]
+  exact takeEntrySem_of_length_le_one _
+    (Nat.le_trans (length_stepWord_dropEntriesOf_le _ _) hshort)
+
+/-- The delimited-children fold carries no `smash`, its algebra's own
+expressions carrying none. -/
+theorem smashFreeBool_chFoldOf (R : RankedAlphabet) :
+    smashFreeBool (chFoldOf R).1.1.1 = true :=
+  smashFree_foldOutExprV R (algChOf R) (smashFreeBool_algChOf R) (algCh R)
+    (semAt_algChOf R) (2 * chGrowth R + 2) (chGrowth R) (stackSize_algCh_le R)
+    (Nat.le_refl _)
+
+/-- So does the child reader, so with [Strahm2003] Theorem 1(2)'s
+left-to-right inclusion it is computable simultaneously in polynomial time
+and linear space. -/
+theorem smashFreeBool_childOf (R : RankedAlphabet) (j : ℕ) :
+    smashFreeBool (childOf R j).1.1.1 = true :=
+  smashFreeBool_comp1Of _ _ (smashFreeBool_entryOf j)
+    (smashFreeBool_comp1Of _ _ smashFreeBool_takeEntryOf
+      (smashFreeBool_chFoldOf R))
 
 end Geb.CobhamFold
 

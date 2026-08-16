@@ -11,12 +11,11 @@ public meta import Geb.Internal.Computability.CobhamFoldProto  -- shake: keep; #
 /-!
 # A subterm's spelling, on samples
 
-`GebTests.CobhamFold.childSem` at the two-symbol alphabet, and the fold's
-value read against the term's node count.
+`Geb.CobhamFold.childSem` at the two-symbol alphabet, checked by `#guard`,
+and the fold's value read against the term's node count.
 
 ## Main definitions
 
-* `GebTests.CobhamFold.childSem` — a child's spelling, from a fold's value.
 * `GebTests.CobhamFold.destSample`, `GebTests.CobhamFold.valueBounded` — the
   sample term whose children differ, and the length bound read at it.
 
@@ -30,10 +29,6 @@ Cobham, ranked tree, subterm
 namespace GebTests.CobhamFold
 
 open Cobham Geb.CobhamFold RankedAlphabet RankedAlphabet.Binary
-
-/-- The `j`-th child's spelling, read from a term's fold value. -/
-def childSem (R : RankedAlphabet) (j : ℕ) (t : R.Term) : List Bool :=
-  stepWord (entryOf j) (takeEntrySem ![Term.fold R (algCh R) t])
 
 /-- A sample term whose two children differ. -/
 def destSample : binRanked.Term := node leaf (node leaf leaf)

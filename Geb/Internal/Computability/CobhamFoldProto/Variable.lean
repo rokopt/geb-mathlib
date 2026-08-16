@@ -49,6 +49,10 @@ carrier is unrestricted and the algebra is whatever the class can define.
   stack's layout and its length.
 * `Geb.CobhamFold.stepWord_dropEntriesOf_stackWordV`,
   `Geb.CobhamFold.stepWord_entryOf_stackWordV` — the primitives read the stack.
+* `Geb.CobhamFold.stepWord_dropEntriesOf_stackWordV_append`,
+  `Geb.CobhamFold.stepWord_entryOf_stackWordV_append` — the same two reads at
+  a stack layout followed by an arbitrary remainder, which each need the
+  count to be within the stack.
 * `Geb.CobhamFold.decodeState_stateWordV` — the dispatch window decodes the
   flag, the block and the count capped at the window.
 * `Geb.CobhamFold.stepWord_foldStepV` — a step of the expression computes a step
@@ -242,6 +246,33 @@ theorem stepWord_entryOf_stackWordV (j : ℕ) (st : List (List Bool)) :
   match hd : st.drop j with
   | [] => rw [stackWordV_nil]; rfl
   | a :: t => rw [stackWordV_cons, takeEntrySem_entryWord]; rfl
+
+/-- Dropping as many entries as a stack layout holds leaves what follows
+it. `Geb.CobhamFold.stepWord_dropEntriesOf_stackWordV` is this at the empty
+remainder, where the hypothesis is unnecessary. -/
+theorem stepWord_dropEntriesOf_stackWordV_append :
+    ∀ (k : ℕ) (st : List (List Bool)) (rest : List Bool), k ≤ st.length →
+      stepWord (dropEntriesOf k) (stackWordV st ++ rest) =
+        stackWordV (st.drop k) ++ rest :=
+  Nat.rec (fun st rest _ ↦ by rw [dropEntriesOf_zero, stepWord_idOf,
+      List.drop_zero])
+    fun k ih st rest h ↦ match st with
+      | [] => absurd h (Nat.not_succ_le_zero k)
+      | a :: t => by
+        rw [stackWordV_cons, List.append_assoc, stepWord_dropEntriesOf_succ,
+          dropEntrySem_entryWord, ih t rest (Nat.le_of_succ_le_succ h),
+          List.drop_succ_cons]
+
+/-- The `j`-th entry of a stack layout is its `j`-th value, whatever follows
+the layout. `Geb.CobhamFold.stepWord_entryOf_stackWordV` is this at the empty
+remainder, read through `List.headD`. -/
+theorem stepWord_entryOf_stackWordV_append (j : ℕ) (st : List (List Bool))
+    (rest : List Bool) (h : j < st.length) :
+    stepWord (entryOf j) (stackWordV st ++ rest) = st[j] := by
+  rw [stepWord_entryOf,
+    stepWord_dropEntriesOf_stackWordV_append j st rest (Nat.le_of_lt h),
+    List.drop_eq_getElem_cons h, stackWordV_cons, List.append_assoc,
+    takeEntrySem_entryWord]
 
 /-- The run of `true` a window over a unary count reads, when the count is
 followed by a `false` sentinel and the window may overrun the word. Whether the
