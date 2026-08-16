@@ -1068,7 +1068,14 @@ practice settles either question. Settle both.
   Verso pin bump whose facet filters names the executable cannot register, at
   which point the options return to `lakefile.toml` and the command, its
   per-module invocations and the extraction rules that strip them are
-  removed.
+  removed. Measured against a mathlib-importing `GebLang` module: the command
+  reaches `linter.flexible` (a deliberate flexible-tactic violation failed the
+  build with the command present and stayed silent without it, everything
+  else identical); `linter.style.header` stayed silent even with the option
+  added to the command's list, confirming it is out of reach for the timing
+  reason `docs/rules/lean-coding.md` § Literate modules already states, not
+  for `isInLibraryRoot`, since the module was directly imported by
+  `GebLang.lean`.
 - **Project-specific `geb-development` skill**: when recurring patterns
   accumulate that fit neither `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
   `docs/process.md`, `docs/rules/*.md`, nor existing `.claude/rules/*.md`.
