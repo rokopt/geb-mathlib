@@ -1290,7 +1290,10 @@ import-direction rules above are enforced by
   `semAt_prependOf`, `semAt_constAtOf`, `semAt_projOf` and
   `semAt_concatCompOf` do for their own combinators;
   `CobhamFoldProto/SelfDelim.lean`'s `stepWord_compOf` is its arity-one
-  instance. Depends on `Geb.Mathlib.Computability.Cobham.Scan`.
+  instance.
+  `semAt_comp1Of` reads an arity-one expression's meaning at an `n`-ary
+  argument, `CobhamFoldProto/SelfDelim.lean`'s `stepWord_comp1Of` being its
+  arity-one instance. Depends on `Geb.Mathlib.Computability.Cobham.Scan`.
   `Classical.choice`-free.
 - `Geb/Internal/Computability/CobhamFoldProto/Fold.lean` — the fold scan of a
   preorder spelling. `FoldScan` replaces `RankedAlphabet.Scan`'s pending count
@@ -1307,7 +1310,11 @@ import-direction rules above are enforced by
   `Term.fold`. `width_mul_depth_add_length_buf_scanFinal_le` and its corollary
   `width_mul_depth_scanFinal_le` sharpen
   `RankedAlphabet.depth_scanFinal_le_length` by the alphabet's width, the
-  invariant carrying the incomplete block's length. Depends on
+  invariant carrying the incomplete block's length.
+  `mem_stack_foldScanFinal` reads the stack as holding only values the algebra
+  produced, the completing pop being the only clause that pushes; it is what
+  lets a growth condition be assumed of the scan's own values rather than of
+  arbitrary arguments. Depends on
   `Geb.Mathlib.Data.Tree.Ranked.Preorder` and `Geb.Mathlib.Data.W.Basic`.
   `Classical.choice`-free.
 - `Geb/Internal/Computability/CobhamFoldProto/Layout.lean` — the fold scan's
@@ -1417,6 +1424,18 @@ import-direction rules above are enforced by
   scan's potential `R.width * stackSize + c * |buf|` rising by at most `c` per
   input bit and starting at zero. `length_fold_le_of_growth` bounds the folded
   value itself, `|Term.fold R alg t| ≤ c * t.size`, under the same condition.
+  `potential_foldScanStep_le_of_invariant`,
+  `potential_foldScanFinal_le_of_invariant` and
+  `stackSize_le_of_growth_of_invariant` are those three at a growth condition
+  restricted to values satisfying a predicate the stack's entries carry, which
+  an algebra duplicating its children's payloads needs and the unrestricted
+  form does not give; each unrestricted form is re-derived from its
+  generalisation at the trivial predicate.
+  `stepWord_dropEntriesOf_stackWordV_append` and
+  `stepWord_entryOf_stackWordV_append` read the same layout followed by an
+  arbitrary remainder, which a readout prefixing a presence marker leaves past
+  the entries; they need `k ≤ st.length` where the totals do not, so both
+  forms stand.
   Depends on
   `Geb.Internal.Computability.CobhamFoldProto.Bound`,
   `Geb.Internal.Computability.CobhamFoldProto.Fold`,
@@ -1470,3 +1489,50 @@ import-direction rules above are enforced by
   expression in the subalgebra `Cobham.SmashFree` names. Depends on
   `Geb.Internal.Computability.CobhamFoldProto.SmashFree`.
   `Classical.choice`-free.
+- `Geb/Internal/Computability/CobhamFoldProto/Destruct.lean` — the inverse of
+  the initial algebra's structure map, as expressions of Cobham's class, and
+  the paramorphism at the same representation. `codeOf` and `dropCodeOf` read
+  a word's leading block and what follows it through a constant unary prefix
+  that makes the word a self-delimiting entry whose payload is that block, so
+  no dispatch over the block is needed. `algPara` is the paramorphism as a
+  fold, at a carrier pairing a subterm's spelling with the step's value, the
+  value delimited so the two are separable; the delimiting does not nest,
+  each level reading only the spelling half of a child's value, which is what
+  a value linear in the subterm would need; `TODO.md` records that linearity
+  as unproved at a symbolic alphabet. `dropEntry_algPara` and
+  `takeEntry_algPara`
+  are its two laws and `algPara_eq_para` identifies it with `WType.para` at
+  the step that sees each child's spelling in place of the subtree, so the
+  recursion scheme is [Meertens1992]'s rather than one introduced here.
+  `growth_algPara` gives the per-symbol growth `2 * cphi + R.width + 1` for a
+  step bounded by its children's values, resting on `SelfDelim.lean`'s
+  weighted bound and so holding at arbitrary arguments. `algCh` is the
+  instance whose step returns the children's spellings, each delimited, and
+  it is the one that fails the growth condition, duplicating its children's
+  payloads; `five_mul_length_dropEntrySem_algCh_le` is the property of its
+  outputs that replaces it; `Fold.lean`'s `mem_stack_foldScanFinal` carries
+  that property along the scan, and `Variable.lean`'s potential chain,
+  generalised there to take a predicate the stack's values satisfy, runs the
+  argument with the growth condition so restricted, giving
+  `stackSize_algCh_le` at the constant
+  `chGrowth`. `algChOf` computes `algCh` inside the class, reusing
+  `Initial.lean`'s `flattenOf` through `compOf`; `smashFreeBool_algChOf` says
+  that expression carries no `smash`, and `smashFreeBool_chFoldOf` and
+  `smashFreeBool_childOf` carry that through the fold and the child reader,
+  placing both in the subalgebra `Cobham.SmashFree` names. `childSem` and
+  `childOf` read the `j`-th child's spelling, semantically and as an
+  expression, `chFoldOf` carrying the fold the expression reads from and
+  `stepWord_chFoldOf` its value; both readers are total, `childSem_of_le`
+  and `stepWord_childOf_of_le` returning the empty word past the last child,
+  and the expression's
+  equations are stated in the "entries followed by an arbitrary remainder"
+  form because the readout's presence marker is absorbed into the entry's
+  unary prefix. `toSigma_mk` bridges mathlib's `WType.toSigma` to
+  `RankedAlphabet.Term.mk`, `semAt_mkOf_spell` reads the constructor at the
+  children's spellings as the spelling of the term they build, and
+  `semAt_mkOf_childOf` closes the round trip:
+  the constructor at the children the destructor reads returns the word,
+  under `R.parse w = some (Term.mk R i ch)` with the symbol given rather than
+  read. Depends on
+  `Geb.Internal.Computability.CobhamFoldProto.Initial` and
+  `Geb.Mathlib.Data.W.Basic`. `Classical.choice`-free.

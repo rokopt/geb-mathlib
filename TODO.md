@@ -638,6 +638,13 @@ before any of it is upstream-eligible.
   input. The machine sketch applies at a finite carrier only, its state count
   being `|α| ^ R.maxArity` and its work alphabet `|α|` and a constant; the
   bitstring construction's steps are not constant-time in any case.
+- No single expression destructs an unknown symbol.
+  `Geb.CobhamFold.semAt_mkOf_childOf` is stated under
+  `R.parse w = some (Term.mk R i ch)` with the symbol given rather than read,
+  so no dispatch over the block is needed; `Geb.CobhamFold.childOf` and
+  `Geb.CobhamFold.mkOf` are total and return an unspecified word off the
+  recognized language. A guarded total form is available by composing
+  `Cobham.isRankedOf` and is not built.
 
 ### Deferred items from the tree recognizers
 
@@ -647,9 +654,7 @@ independent of the others and none scheduled.
 
 - The Bellantoni-Cook port of the scan combinator, whose signature is over
   arities in normal and safe position and so is a branch rather than a
-  transcription; the paramorphism whose step receives a subterm's
-  spelling, which the head-locality of the state layout admits only at
-  quadratic cost; and the depth-first unary degree sequence encoding, whose
+  transcription; and the depth-first unary degree sequence encoding, whose
   condition for adoption is unbounded arity. The fold at an infinite carrier is
   built, at the carrier `List Bool`, by
   `Geb/Internal/Computability/CobhamFoldProto/Variable.lean`, and
@@ -658,6 +663,16 @@ independent of the others and none scheduled.
   `zero`, `concat` and `boundedRec` nodes and the algebra's expressions being
   spliced in unconstrained. So an infinite carrier does not by itself force the
   generator.
+
+  `Geb.CobhamFold.algPara` computes the paramorphism whose step receives a
+  subterm's spelling, carrying the spelling in the fold's carrier rather than
+  reading it from the state, so the head-locality the quadratic-cost estimate
+  rests on does not bind. What the carrier costs is a value linear in the
+  subterm, which is unproved at a symbolic alphabet:
+  `Geb.CobhamFold.stackSize_algCh_le` bounds the pending values' total by a
+  multiple of the input word's length, not a subterm's fold value by that
+  subterm. Nothing here measures reduction steps, so this replaces the
+  estimate's premise rather than its arithmetic.
 - `Cobham/RankedTree.lean` and `Cobham/Fold.lean` say `DecidableEq (Fin n →
   Bool)` resolves through `Fintype.decidablePiFintype`. It resolves through
   `Geb/Mathlib/Data/FinEnum.lean`'s choice-free `FinEnum.decidablePiFinEnum` at
