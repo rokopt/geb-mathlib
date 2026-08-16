@@ -46,15 +46,34 @@ against the shifted projections, so no `def` calls itself.
   hypothesis it discharges.
 * `Geb.CobhamFold.smashFreeBool_flattenOf`,
   `Geb.CobhamFold.smashFreeBool_mkOf` — those expressions carry no `smash`.
+* `Geb.CobhamFold.foldOutSemV_algMk` — the expression at that algebra returns
+  its own input on the recognized language, characterised for every input
+  word; `## Implementation notes` records why it is characterised rather than
+  computed.
+* `Geb.CobhamFold.smashFree_foldOutExprV_mkOf` — that expression lies in the
+  subalgebra `Cobham.SmashFree` names.
+
+## Implementation notes
+
+Nothing here is evaluated. `readoutWidthV R` is six at
+`RankedAlphabet.Binary.binRanked`, so the readout dispatches on `2 ^ 6`
+branches. `foldOutSemV_algMk` characterises the output word for every input
+word instead, which needs no branch of that tree.
+
+`algMk` and the step `RankedAlphabet.spell`'s own `WType.elim` runs agree by
+`rfl` rather than sharing one definition: factoring that step out of `spell`
+would touch `Geb/Mathlib/Data/Tree/Ranked/Preorder.lean`.
 
 ## References
 
 * [Cobham1965]
 * [GambinoHyland2004]
+* [Strahm2003]
 
 ## Tags
 
-Cobham, ranked tree, initial algebra, term algebra, preorder encoding, expression, smash-free
+Cobham, ranked tree, initial algebra, term algebra, preorder encoding,
+expression, smash-free, catamorphism
 -/
 
 @[expose] public section
@@ -157,6 +176,28 @@ theorem smashFreeBool_flattenOf : ∀ n : ℕ,
 theorem smashFreeBool_mkOf (R : RankedAlphabet) (i : Fin R.card) :
     smashFreeBool (mkOf R i).1.1.1 = true :=
   smashFreeBool_prependOf _ _ (smashFreeBool_flattenOf (R.arity i))
+
+/-- The expression at the structure map returns its own input, spelled by
+`Geb.CobhamFold.outWordV`, on the recognized language and the absence marker
+off it. The output word is characterised for every input word rather than
+computed from one, the readout's dispatch having `2 ^ readoutWidthV R`
+branches. -/
+theorem foldOutSemV_algMk (R : RankedAlphabet) (mult : ℕ)
+    (hmult : 2 * R.width + 2 ≤ mult) (w : List Bool) :
+    foldOutSemV R (mkOf R) (algMk R) (semAt_mkOf R) mult R.width
+        (stackSize_algMk_le R) hmult ![w] =
+      outWordV ((R.parse w).map fun _ ↦ w) := by
+  rw [foldOutSemV_eq, foldOut_algMk]
+
+/-- That expression lies in the subalgebra `Cobham.SmashFree` names, so with
+[Strahm2003] Theorem 1(2)'s left-to-right inclusion it is computable
+simultaneously in polynomial time and linear space. -/
+theorem smashFree_foldOutExprV_mkOf (R : RankedAlphabet) (mult : ℕ)
+    (hmult : 2 * R.width + 2 ≤ mult) :
+    SmashFree (foldOutExprV R (mkOf R) (algMk R) (semAt_mkOf R) mult R.width
+      (stackSize_algMk_le R) hmult) :=
+  smashFree_foldOutExprV R (mkOf R) (smashFreeBool_mkOf R) (algMk R)
+    (semAt_mkOf R) mult R.width (stackSize_algMk_le R) hmult
 
 end Geb.CobhamFold
 
