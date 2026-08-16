@@ -13,19 +13,21 @@
 #   1. Invocation form: `lake lint` runs the driver on root module
 #      `Geb`, not the "Automatically detecting modules" path. This
 #      depends on `lintDriverArgs = ["Geb"]` in lakefile.toml.
-#   2. Coverage completeness: every `Geb.*` and `GebManual.*` source
-#      module is transitively imported by its own umbrella (`Geb`,
-#      `GebManual`), so linting the root module reaches every
-#      declaration the no-argument path would have. A module
-#      orphaned from its umbrella would escape the linter entirely
-#      under the root-module invocation. `GebManual`'s generator
-#      root `Main` sits outside the `manual/GebManual/` prefix by
-#      design and so outside this scan. `lake lint` itself (§1
-#      above) runs on `Geb` only, so this section checks
-#      `GebManual` coverage statically rather than by executing the
-#      manual's lint.
-#   3. `doc-build.yml` retains the `scripts/manual.sh build` step,
-#      the only place the manual is linted.
+#   2. Coverage completeness: every `Geb.*`, `GebLang.*` and
+#      `GebManual.*` source module is transitively imported by its
+#      own umbrella (`Geb`, `GebLang`, `GebManual`), so linting the
+#      root module reaches every declaration the no-argument path
+#      would have. A module orphaned from its umbrella would escape
+#      the linter entirely under the root-module invocation.
+#      `GebManual`'s generator root `Main` sits outside the
+#      `manual/GebManual/` prefix by design and so outside this
+#      scan. `lake lint` itself (§1 above) runs on `Geb` only, so
+#      this section checks `GebLang` and `GebManual` coverage
+#      statically rather than by executing their own lint
+#      invocations.
+#   3. `doc-build.yml` retains the `scripts/manual.sh build` and
+#      `scripts/literate.sh build` steps, the only places the manual
+#      is linted and the literate site is rendered.
 #
 # Exit 0 if all three hold; non-zero otherwise.
 
@@ -55,9 +57,9 @@ fi
 
 # --- 2. Coverage completeness (no module orphaned from the umbrella) -----
 # Module name to file path within a library's srcDir; dots map to
-# slashes. Geb lives at the package root; GebManual under manual/
-# (lakefile.toml srcDir), whose generator root Main is outside the
-# GebManual prefix by design and so outside this scan.
+# slashes. Geb and GebLang live at the package root; GebManual under
+# manual/ (lakefile.toml srcDir), whose generator root Main is outside
+# the GebManual prefix by design and so outside this scan.
 mod_to_file() { echo "${2}${1//.//}.lean"; }
 
 check_coverage() {
@@ -93,13 +95,19 @@ check_coverage() {
 }
 
 check_coverage Geb ""
+check_coverage GebLang ""
 check_coverage GebManual "manual/"
 
-# --- 3. doc-build.yml retains the manual build step ----------------------
-# The manual is linted only by scripts/manual.sh build in
-# doc-build.yml; losing that step would silently drop the lint.
+# --- 3. doc-build.yml retains the product build steps --------------------
+# The manual is linted only by scripts/manual.sh build, and the
+# literate site is rendered only by scripts/literate.sh build, both in
+# doc-build.yml; losing either step would silently drop that product.
 if ! grep -qF 'scripts/manual.sh build' .github/workflows/doc-build.yml; then
   echo "FAIL: doc-build.yml lost the 'scripts/manual.sh build' step" >&2
+  failed=1
+fi
+if ! grep -qF 'scripts/literate.sh build' .github/workflows/doc-build.yml; then
+  echo "FAIL: doc-build.yml lost the 'scripts/literate.sh build' step" >&2
   failed=1
 fi
 

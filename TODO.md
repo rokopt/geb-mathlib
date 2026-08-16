@@ -1000,16 +1000,26 @@ practice settles either question. Settle both.
 - **Verso adoption** (three scopes with distinct gates; doc-gen4 and Verso are
   complementary, not alternatives — doc-gen4 generates the API reference, Verso
   authors hand-written prose):
-  1. Docstrings in `.lean` files: gated on doc-gen4 gaining Verso-aware
-     rendering and mathlib migrating to Verso; contraindicated for
-     `Geb/Mathlib/` and `Geb/Cslib/` until both hold (Verso-markup docstrings
-     would read as foreign to mathlib reviewers and would not render on the
-     doc-gen4 site).
+  1. Docstrings in `.lean` files: neither half of the gate is met at the
+     pin. doc-gen4 converts a Verso declaration docstring to Markdown,
+     which reaches the page substantially intact, but drops a Verso
+     module docstring altogether (§ Triggers, doc-gen4 drops a `GebLang`
+     module docstring); and mathlib has not migrated. Still
+     contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`, whose
+     Verso-markup docstrings would read as foreign to mathlib reviewers
+     and whose module prose would not reach the doc-gen4 site.
+     `GebLang` is not gated on either half: its pages come from the
+     literate site, which renders both docstring kinds, and
+     `scripts/extract-pr.sh` converts the markup to plain Markdown at
+     extraction, so no unconverted markup reaches an upstream reviewer.
   2. Persistent prose (`docs/`, a future Geb-language exposition): gated on the
      prose growing substantial and describing stable, existing code.
      `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, `docs/process.md`, and
      `docs/rules/*` remain Markdown regardless (GitHub rendering, tool and
      `@import` consumption, markdownlint, doctoc).
+     The `GebLang` literate site (`scripts/literate.sh`) already renders that
+     library's docstrings as exposition, so a Geb-language exposition chooses
+     between extending it and a separate Verso document.
   3. Transient design docs on feature branches: no external gate; candidate for
      a local-only Verso build to evaluate authoring ergonomics and
      type-checking of embedded Lean.
@@ -1024,6 +1034,48 @@ practice settles either question. Settle both.
   - Verso for transient feature-branch design docs (scope 3); a change to the
     current Markdown-based brainstorming and writing-plans flow, so it needs
     its own scoping.
+- **doc-gen4 drops a `GebLang` module docstring**: `doc.verso` stores
+  a module docstring in the Verso module-doc extension, and the
+  pinned doc-gen4 reads only the Markdown-payload one
+  (`DocGen4/Process/Analyze.lean`, `getModuleDoc?`), so a `GebLang`
+  module's prose is absent from its API-reference page.
+  `DocGen4/DB/Schema.lean` carries the matching
+  `-- TODO: Add module_docs_verso table`. Declaration docstrings are
+  unaffected in substance: they reach the page converted to Markdown
+  (`DocGen4/Output/DocString.lean`, `-- TODO: natively render Verso
+  docstrings`), where a role's code span is auto-linked as a
+  Markdown one is. The literate site renders both kinds. Trigger: a
+  doc-gen4 pin bump, at which point the measurements of the `GebLang`
+  documentation build are re-taken and this entry is removed once the
+  module docstring reaches the page.
+- **Replace `GebLang/Basic.lean`**: the module holds one anchor
+  declaration so that both documentation pipelines have a module
+  docstring and a declaration docstring to render. Trigger: the first
+  `GebLang` content workstream, which replaces the module rather than
+  growing it.
+- **Remove `GebTests/Lang/Basic.lean`**: the module holds one `#guard`
+  against the anchor declaration, validating the test driver path and
+  the lint path for the `GebLang` library. Trigger: the arrival of
+  real `GebTests/Lang/` tests, which supersede it.
+- **Verso's literate facet forwards unregistered Lean options**: the
+  `literate` module facet re-serialises a module's Lake options as `-D`
+  arguments to `verso-literate`, whose parser rejects a name the environment
+  does not register, does not honour Lake's `weak.` prefix, and parses those
+  arguments before loading the module. A mathlib linter option therefore
+  cannot sit in the Lake options of a library the pipeline renders, which is
+  why `lakefile.toml` declares mathlib's linters per library and `GebLang`
+  reaches two of them through `GebMeta.mathlib_linters` instead. Trigger: a
+  Verso pin bump whose facet filters names the executable cannot register, at
+  which point the options return to `lakefile.toml` and the command, its
+  per-module invocations and the extraction rules that strip them are
+  removed. Measured against a mathlib-importing `GebLang` module: the command
+  reaches `linter.flexible` (a deliberate flexible-tactic violation failed the
+  build with the command present and stayed silent without it, everything
+  else identical); `linter.style.header` stayed silent even with the option
+  added to the command's list, confirming it is out of reach for the timing
+  reason `docs/rules/lean-coding.md` § Literate modules already states, not
+  for `isInLibraryRoot`, since the module was directly imported by
+  `GebLang.lean`.
 - **Project-specific `geb-development` skill**: when recurring patterns
   accumulate that fit neither `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
   `docs/process.md`, `docs/rules/*.md`, nor existing `.claude/rules/*.md`.
@@ -1093,37 +1145,18 @@ practice settles either question. Settle both.
   (`Geb/Mathlib/Data/UnionFind/OfEdges.lean` itself does not: its own upstream
   target is Batteries.) Trigger: the preparation of that module's upstream
   submission, which outlives the FinSetSkel development.
-- **Check the leakage prefix in an import line's comment tail**:
-  `scripts/lint-imports.sh` Rule 2 exempts a whole import line from the
-  self-prefix check, so a self-prefix in a trailing comment on an import line
-  passes clean — verified by adding `public import Geb.Mathlib.Bar  -- see
-  Geb.Mathlib.Baz` under `GebTests/Mathlib/`. Not a regression: the rule has
-  always exempted whole lines. The fix direction is to exempt the import path
-  alone and apply the prefix check to the line's comment tail. Trigger: the
-  next branch that revises `scripts/lint-imports.sh`.
 - **Repo-relative paths in upstream-eligible docstrings**: docstrings under
   `Geb/Mathlib/` name paths that carry no meaning for a mathlib reviewer, and
-  `scripts/extract-pr.sh` rewrites import lines only, so such prose survives
-  extraction unchanged. Instances include the module path in
-  `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` and the same pattern
-  in `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`. Repo-wide, so no one
-  workstream's to fix. Trigger: a repo-wide pass over upstream-eligible
-  docstrings, on its own branch. Workstream labels were a second instance of
-  this and are gone: a workstream is a transient concept whose name is
-  arbitrary, so it cannot be referred to from persistent code or documentation
-  at all. `TODO.md` is where workstreams are named, being the roadmap that
-  defines them.
-- **`scripts/extract-pr.sh` does not rewrite `meta import` lines**: its rewrite
-  is anchored to `^(public import|import)`, so a `public meta import` of a
-  self-prefixed sibling is emitted with the `Geb.Mathlib.` prefix intact and
-  the extracted file does not compile. The two such lines are
-  `GebTests/Mathlib/Data/UnionFind/OfEdges.lean` and
-  `GebTests/Mathlib/CategoryTheory/FinSetSkel/Quotient.lean`, where the
-  `#guard` assertions need the module under test available to meta code. This
-  is the rewriter's counterpart to the `lint-imports.sh` item above: both
-  enumerate import forms and both predate the module system's `meta` forms.
-  Trigger: the next branch that revises `scripts/extract-pr.sh`, or the first
-  extraction of either module.
+  `scripts/extract-pr.sh`'s `Geb/Mathlib/` arm rewrites import lines only, so
+  such prose survives extraction unchanged. Instances include the module
+  path in `Geb/Mathlib/CategoryTheory/FinSetSkel/Coequalizer.lean` and the
+  same pattern in `Geb/Mathlib/Data/PFunctor/IndRec/Basic.lean`. Repo-wide,
+  so no one workstream's to fix. Trigger: a repo-wide pass over
+  upstream-eligible docstrings, on its own branch. Workstream labels were a
+  second instance of this and are gone: a workstream is a transient concept
+  whose name is arbitrary, so it cannot be referred to from persistent code
+  or documentation at all. `TODO.md` is where workstreams are named, being
+  the roadmap that defines them.
 - **Verify the attested locators**: three locators are recorded from secondary
   attestation and none is verified against its primary source.
   [nLabSkeletalCategory] attests Mac Lane, _Categories for the Working
@@ -1154,40 +1187,6 @@ practice settles either question. Settle both.
   term-level artifact**: add an untyped `Ast` and
   `check : Ast → Option ((n s : ℕ) × BellantoniCook.BCOf n s)` over
   `SlicePFunctor.decidableWValid`.
-- **Allowing `Geb/Cslib/` to import `Geb.Mathlib.*`**: the case for it is
-  the reason `docs/rules/upstream-eligible.md` gives, that unupstreamed
-  mathlib-targeted content is unavailable to a CSLib PR, holds equally of
-  one `Geb/Mathlib/` module importing another. The case against it, which
-  the change must answer: extraction of a `Geb/Mathlib/` module orders
-  PRs within one review queue, whereas a `Geb/Cslib/` module importing
-  `Geb.Mathlib.*` waits on mathlib merge, mathlib release and CSLib's own
-  mathlib bump, three cadences the project does not set, against
-  CONTRIBUTING § Floodgate test's "on short notice". The converse
-  direction stays barred on its own reason: mathlib does not depend on
-  CSLib, so no ordering makes a `Geb/Mathlib/` module's `Cslib.*` import
-  extractable. The change set discovered so far:
-  - `scripts/lint-imports.sh` — the two Cslib `check_subtree` calls, with
-    `Geb.Mathlib.` added to both the allowed-prefix and the
-    leakage-prefix list, since extraction rewrites that prefix too; and
-    the header comment block restating the allowed-import table.
-  - `scripts/extract-pr.sh` — the `Geb/Cslib/*` and `GebTests/Cslib/*`
-    arms set one `rewrite_prefix` each, so a `Geb.Mathlib.` import is
-    emitted verbatim and the extracted file does not compile. A second
-    rewrite pair is needed.
-  - `scripts/tests/test-lint-imports.sh` — the case asserting exit 1 on
-    `import Geb.Mathlib.Foo` in `Geb/Cslib/` must be inverted; a
-    `GebTests/Cslib/` parallel case does not exist and should be added.
-  - `scripts/tests/test-extract-pr.sh` — a case for the new rewrite.
-  - `docs/rules/upstream-eligible.md` — the `Geb/Cslib/` and
-    `GebTests/Cslib/` table rows, the § Floodgate test sentence asserting
-    that each subtree's extractability is independent of the other,
-    which the change falsifies, and the closing cross-subtree paragraph.
-  - `docs/process.md` § Floodgate test, which carries the rationale.
-  - Adjacent and not bundled: `Batteries.` is arguably missing from the
-    `Geb/Cslib/` allowed list by the same argument, CSLib depending on
-    mathlib which depends on Batteries.
-
-  Trigger: a `Geb/Cslib/` module needing content from `Geb/Mathlib/`.
 - **A recursion combinator for `Geb/Mathlib/Computability/Cobham/`**:
   discharging the `Rec` bound of [HeraudNowak2011] § 3.1 once for all
   users rather than at each use, by truncating each layer against the
@@ -1216,3 +1215,68 @@ practice settles either question. Settle both.
   section, and its siblings do not although each declares named theorems.
   `docs/rules/lean-coding.md` § Documentation requires a section when it has
   content. Trigger: the next occasion to revise those modules.
+- **A dotless namespace reference escapes the leakage rule**: the
+  self-prefixes `scripts/lint-imports.sh` bars outside an import path all
+  carry a trailing dot, so `open GebLang` or `open Geb.Mathlib` passes the
+  linter and extracts verbatim into an upstream file, where the namespace
+  does not exist. No file exhibits it, `GebLang/Basic.lean` declaring no
+  namespace of its own. Trigger: the first upstream-eligible module that
+  opens a repository namespace, at which point the leakage rule gains a
+  dotless form or extraction rewrites it.
+- **Two modules sharing a basename collapse to one upstream import**:
+  `GebLang/Foo.lean` and `Geb/Mathlib/Foo.lean` both extract to
+  `Mathlib/Foo.lean`, so a file importing both emits one import line twice
+  and loses a dependency, with no diagnostic. `scripts/extract-pr.sh`
+  documents the destination overwrite; the import-line collapse is not
+  visible in what it prints. The shape is expressible only now that a
+  mathlib-track file may import `GebLang.*`. `Mathlib/Init.lean`,
+  `Mathlib/Tactic.lean` and `Cslib/Init.lean` exist upstream, so a
+  `GebLang/Init.lean` or `GebLang/Tactic.lean` would shadow one of them
+  silently. Trigger: a second repository module taking a basename another
+  already extracts to, at which point extraction gains a collision check.
+- **Normalise the vocabulary of `docs/rules/upstream-eligible.md` and
+  its neighbours**: two migrations are half-done and neither belongs
+  to a workstream whose concern is something else. The project
+  vocabulary (`styles/config/vocabularies/GebMathlib/accept.txt`)
+  accepts `Cslib` and Vale rejects the capitalised form, but files
+  predating the vocabulary carry it: `docs/rules/upstream-eligible.md`
+  most heavily, including a section heading and its
+  table-of-contents entry, and `docs/references.md` likewise, with a
+  section heading and its entry. The other carriers are
+  `CONTRIBUTING.md`, `README.md`, `TODO.md`, `docs/process.md`,
+  `docs/rules/lean-coding.md`, `Geb.lean`,
+  `Geb/Cslib.lean`, `GebTests/Cslib.lean`, `GebMeta.lean`,
+  `manual/GebManual/Introduction.lean` and `scripts/lint-imports.sh`,
+  whose header keeps one such line. Separately,
+  `docs/rules/upstream-eligible.md` now calls `GebLang/` and
+  `GebTests/Lang/` upstream-eligible locations rather than subtrees,
+  while its heading, its table's first column and several sentences
+  still say subtree. Trigger: a branch whose concern is those files
+  themselves, which renames the two section headings and re-runs
+  `doctoc`.
+- **The three import-scanning scripts each carry their own copy of the
+  import-line pattern**: `scripts/extract-pr.sh`,
+  `scripts/lint-imports.sh` and `scripts/check-transitive-imports.sh`
+  each bind the four import forms separately, and two of them each
+  carry their own module-path mapping and closure walk. Each comment
+  says the pattern is bound once so its users cannot disagree, which
+  holds within a file and not across the three, and a disagreement
+  between them about what an import admits is what a floodgate hole
+  looks like. `scripts/lib/diff-against-main.sh` shows the sourcing
+  pattern that would let them share one definition. Trigger: the next
+  change that touches the import pattern in more than one of the three.
+- **Nothing checks that a `GebLang` module invokes `mathlib_linters`**:
+  `docs/rules/lean-coding.md` § Literate modules states the convention,
+  and no check enforces it, so a module omitting the invocation ships
+  upstream having been seen by none of mathlib's linters, silently.
+  Trigger: the first `GebLang` content workstream, which is when the
+  omission becomes possible to make.
+- **`scripts/check-transitive-imports.sh` omits `-e` where its sibling
+  sets it**: it runs under `set -uo pipefail` and
+  `scripts/lint-imports.sh` under `set -euo pipefail`, with nothing
+  recording why. The omission appears not to be load-bearing: forcing
+  `-e` leaves both the self-test and a run over the whole tree passing,
+  and the `for m in $(imported_internal …)` substitution that looks like
+  the reason is exempt from `-e` propagation. Trigger: the next change
+  to either script's error handling, at which point the two are aligned
+  or the difference is explained.

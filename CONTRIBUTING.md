@@ -155,14 +155,15 @@ presents superseded decisions as current. See `docs/process.md`
 
 ### Submission policy
 
-- **LLM-contribution policy** binds any work in `Geb/Mathlib/`
-  or `Geb/Cslib/`. mathlib and CSLib permit LLM-generated code,
+- **LLM-contribution policy** binds any work in `Geb/Mathlib/`,
+  `Geb/Cslib/`, or `GebLang/`. mathlib and CSLib permit LLM-generated code,
   with no per-contributor or first-PR exception, provided the
   contributor understands every line and can justify each design
   decision to reviewers without AI assistance. Disclosure of
   which tools were used and how is mandatory, and a pull request
   containing a substantial amount of LLM-generated code carries
-  the `LLM-generated` label. We apply this bar to both subtrees.
+  the `LLM-generated` label. We apply this bar to every
+  upstream-eligible location.
   Source pages (re-check periodically; subject to upstream
   revision):
   [mathlib § Use of AI](https://leanprover-community.github.io/contribute/index.html#use-of-ai),
@@ -227,11 +228,14 @@ Lean placeholder syntax: see
 
 ### Floodgate test
 
-At all times, the repo is ready to ship dependency-ordered PRs on
-short notice with no source-code changes. `scripts/lint-imports.sh`
-enforces this by rejecting forbidden imports in `Geb/Mathlib/`
-and `Geb/Cslib/` files, and the `Geb.Mathlib.` / `Geb.Cslib.`
-prefixes outside import lines in their respective subtrees.
+At all times, the repository is ready to ship dependency-ordered PRs
+on short notice with no source-code changes.
+`scripts/lint-imports.sh` enforces this by rejecting forbidden
+imports and self-prefixes outside an import path in every
+upstream-eligible location;
+`scripts/check-transitive-imports.sh` enforces the closure rules the
+direct-import lists cannot see. Extraction is dependency-ordered
+through `GebLang/`, each module retargeted by its own import closure.
 
 ### Each phase produces an artifact
 
@@ -243,7 +247,7 @@ persist. A phase is not complete until its artifact exists.
 
 ## Repo structure
 
-`Geb/Mathlib/*` and `Geb/Cslib/*` upstream-eligible |
+`Geb/Mathlib/*`, `Geb/Cslib/*` and `GebLang/*` upstream-eligible |
 `Geb/Internal/*` downstream-only. Narrow-and-deep dirs with one
 indexing file per directory. `main` = append-only stable;
 `integration` = regenerated fan-in view; topic branches per
@@ -261,7 +265,8 @@ PR-candidate.
   (`upstreaming-dashboard-action` deferred until `Geb/Mathlib/`
   has substantive content for it to dashboard.)
 - Linters: `markdownlint-cli2`, `scripts/lint-imports.sh`,
-  `lake lint` (drives `batteries/runLinter`).
+  `scripts/check-transitive-imports.sh`, `lake lint` (drives
+  `batteries/runLinter`).
 
 ## References
 

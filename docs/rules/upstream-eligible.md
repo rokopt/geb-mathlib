@@ -8,6 +8,9 @@ paths:
   - "Geb/Cslib/**"
   - "GebTests/Cslib.lean"
   - "GebTests/Cslib/**"
+  - "GebLang/**"
+  - "GebTests/Lang.lean"
+  - "GebTests/Lang/**"
 ---
 
 # Upstream-eligible content rules
@@ -24,7 +27,12 @@ paths:
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 Applies to anything under `Geb/Mathlib/`, `GebTests/Mathlib/`,
-`Geb/Cslib/`, or `GebTests/Cslib/`.
+`Geb/Cslib/`, `GebTests/Cslib/`, `GebLang/`, or `GebTests/Lang/`,
+and to the `GebTests/Lang.lean` index. The `GebLang.lean` umbrella
+is excluded: it is a library root, the peer of `Geb.lean` and
+`GebTests.lean`, rather than a subtree index like `GebTests/Lang.lean`,
+so the content rules, addressed to a location's own files, do not
+bind it.
 
 Work in the file globs this rule applies to is also bound by
 [CONTRIBUTING.md § Submission policy](../../CONTRIBUTING.md),
@@ -45,70 +53,113 @@ that upstream justification bar.
 
 `Geb/Internal/` holds code that is not (yet) upstream-eligible:
 work in progress not yet at mathlib/CSLib quality, explorations
-that build on upstream-quality code in `Geb/Mathlib/` or
-`Geb/Cslib/` without themselves meeting that bar, and code too
-specialized to this project to be in scope for either upstream.
+that build on upstream-quality code in `Geb/Mathlib/`,
+`Geb/Cslib/` or `GebLang/` without themselves meeting that bar,
+and code too specialized to this project to be in scope for
+either upstream.
 The split is driven by quality, scope, and dependency-readiness,
 not by authorship: AI-drafted and human-written code follow the
 same rules in every subtree.
 
 When Internal content is later brought to upstream quality:
 
-1. Port it into `Geb/Mathlib/Foo.lean` or `Geb/Cslib/Foo.lean`
-   depending on the upstream target, satisfying the subtree
-   import rules below. The two subtrees are the only destinations
-   for ported content, but `Geb/Mathlib/` is not exclusively
+1. Port it into `Geb/Mathlib/Foo.lean`, `Geb/Cslib/Foo.lean` or
+   `GebLang/Foo.lean` depending on the upstream target, satisfying
+   the subtree import rules below. `Geb/Mathlib/` is not exclusively
    mathlib4-targeted: where the import rules below leave no
    alternative, a module there may instead target Lean core or
    Batteries, a destination open per `TODO.md` § Upstream
-   destination of core- and Batteries-targeted content.
+   destination of core- and Batteries-targeted content. `GebLang/`
+   is destination-open per module in a second sense: its modules
+   carry the Geb language's core data structures and ship to mathlib
+   or to Cslib according to each module's own import closure
+   (§ Subtree import rules).
 2. When the upstream PR is accepted and we re-pin to a fresh
    master that includes it, migrate dependents via `jj rebase`.
    The Internal version is then removed.
 
 ## Floodgate test
 
-At all times, the repo must be ready to ship dependency-ordered
-PRs on short notice with no source-code changes. After any
-non-trivial change, ask: "does this break extraction?" Each
-upstream subtree's extractability is independent of the other
-(the strict import rules below ensure this).
+At all times, the repository must be ready to ship
+dependency-ordered PRs on short notice with no source-code changes.
+After any non-trivial change, ask whether it breaks extraction.
+Extraction is dependency-ordered through `GebLang/` rather than
+independent between the subtrees: a module's within-repository
+dependencies ship first, each retargeted by its own import closure,
+mathlib-track when the closure reaches no `Cslib.*` and Cslib-track
+otherwise. `scripts/lint-imports.sh` bounds each module's direct
+imports and `scripts/check-transitive-imports.sh` bounds the
+closures, so a `Geb/Mathlib/` module cannot acquire a Cslib-track
+dependency unnoticed.
 
 ## Subtree import rules
 
-Each upstream-eligible subtree has an allowed-import list and one or
-more self-prefixes that must not appear outside `^import` lines. A
-test root mirrors its source root: it additionally imports its own
-`GebTests.<subtree>.*` siblings, and forbids leakage of both the
+Each upstream-eligible location has an allowed-import list and one or
+more self-prefixes that must not appear outside the module path of an
+import line. A test root mirrors its source root: it additionally
+imports its own sibling modules, and forbids leakage of both the
 source self-prefix and the test self-prefix. Source roots cannot
-import test modules.
+import test modules. `GebLang/` and its mirror `GebTests/Lang/` are
+locations in this sense without being subtrees of `Geb/`.
 
 | Subtree | Allowed imports | Self-prefixes (no leakage) |
 | --- | --- | --- |
-| `Geb/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*` | `Geb.Mathlib.` |
-| `GebTests/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*`, `GebTests.Mathlib.*` | `Geb.Mathlib.`, `GebTests.Mathlib.` |
-| `Geb/Cslib/` | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*` | `Geb.Cslib.` |
-| `GebTests/Cslib/` | `Mathlib.*`, `Cslib.*`, `Geb.Cslib.*`, `GebTests.Cslib.*` | `Geb.Cslib.`, `GebTests.Cslib.` |
+| `Geb/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*`, `GebLang.*` | `Geb.Mathlib.`, `GebLang.` |
+| `GebTests/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*`, `GebTests.Mathlib.*`, `GebLang.*` | `Geb.Mathlib.`, `GebTests.Mathlib.`, `GebLang.` |
+| `Geb/Cslib/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `Geb.Cslib.*`, `Geb.Mathlib.*`, `GebLang.*` | `Geb.Cslib.`, `Geb.Mathlib.`, `GebLang.` |
+| `GebTests/Cslib/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `Geb.Cslib.*`, `GebTests.Cslib.*`, `Geb.Mathlib.*`, `GebLang.*` | `Geb.Cslib.`, `GebTests.Cslib.`, `Geb.Mathlib.`, `GebLang.` |
+| `GebLang/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `GebLang.*` (plus `GebMeta`, `Lean.DocString.Syntax`, and `Cslib.Init` when the file imports any `Cslib.*`) | `GebLang.` |
+| `GebTests/Lang/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `GebLang.*`, `GebTests.Lang.*` (plus `Cslib.Init` when the file imports any `Cslib.*`) | `GebLang.`, `GebTests.Lang.` |
 
-`Batteries.*` is admitted to the mathlib-targeted subtrees because
-mathlib depends on Batteries and imports its modules directly, so a
-Batteries import survives extraction to mathlib4. Batteries modules
-that no `Mathlib.*` module imports are reachable no other way.
+`Batteries.*` is admitted to every upstream-eligible location because
+mathlib depends on Batteries and imports its modules directly, and
+Cslib does the same, so a Batteries import survives extraction to
+either upstream. Batteries modules that no `Mathlib.*` module imports
+are reachable no other way.
 
-That rationale applies to a module whose own upstream target is
-mathlib4. The restriction to these prefixes can also force a module
-into `Geb/Mathlib/` whose target is Lean core or Batteries — a
-dependency of a `Geb/Mathlib/` module cannot live in `Geb/Internal/` —
-and such a module is not extracted to mathlib4 at all. Its destination
-is open, per `TODO.md` § Upstream destination of core- and
+A second rationale binds the mathlib-targeted subtrees alone. The
+restriction to these prefixes can force a module into `Geb/Mathlib/`
+whose target is Lean core or Batteries, a dependency of a
+`Geb/Mathlib/` module being unable to live in `Geb/Internal/`, and
+such a module is not extracted to mathlib4 at all. Its destination is
+open, per `TODO.md` § Upstream destination of core- and
 Batteries-targeted content.
+
+`GebLang/`'s allowed-import list makes a fixed exception for `GebMeta`
+and `Lean.DocString.Syntax`, matched as exact module paths rather than
+as namespace prefixes, so `GebMeta.Anything` is not admitted. `GebMeta`
+supplies the `mathlib_linters` command that reaches two of mathlib's
+linter options from inside a literate-rendered module
+(`docs/rules/lean-coding.md` § Literate modules); `Lean.DocString.Syntax`
+is required of every module whose docstrings carry Verso role markup,
+because `lake shake` demands a module import what it uses and the role
+syntax records a compile-time use. Extraction removes both import lines
+along with the `mathlib_linters` command line, per
+`scripts/extract-pr.sh`'s `strip_line` function: none of the three has
+meaning upstream.
+
+`GebLang/` and `GebTests/Lang/` carry a conditional form of Cslib's
+`Cslib.Init` requirement: a module that imports any `Cslib.*` module,
+in any of the four import forms, imports `Cslib.Init` itself, and a
+module that imports none is not forced to. Only a plain or `public`
+import of `Cslib.Init` satisfies the requirement, matching the two
+Cslib subtrees' unconditional form. The direct-import form suffices
+because Cslib's own check is transitive: a Cslib-track module
+importing only extracted `GebLang` siblings inherits `Cslib.Init`
+through them.
+
+A `GebTests/Lang/` module's sibling imports do not cross tracks. A
+Cslib-track test importing a mathlib-track sibling would need the
+Cslib test tree to import mathlib's, which no upstream ordering makes
+compile; `scripts/check-transitive-imports.sh` rejects it.
 
 Bare umbrella imports (`import Mathlib`, `import Batteries`,
 `import Cslib`) are forbidden — extraction requires specific module
 imports.
 
-A self-prefix appears **only** in `^import` lines that
-reference siblings in the same subtree. Do NOT use a self-prefix in:
+A self-prefix appears **only** in the module path of any permitted
+import. An import line's trailing comment is checked like any other
+prose. Do not use a self-prefix in:
 
 - namespace declarations
   (`namespace Computability.Primrec`,
@@ -117,25 +168,36 @@ reference siblings in the same subtree. Do NOT use a self-prefix in:
   (use `open` or the bare name),
 - docstrings or comments.
 
-`scripts/lint-imports.sh` enforces these rules; the smoke test is
-`scripts/tests/test-lint-imports.sh`.
+`scripts/lint-imports.sh` enforces these rules and
+`scripts/check-transitive-imports.sh` enforces the closure rules
+above them; the smoke tests are
+`scripts/tests/test-lint-imports.sh` and
+`scripts/tests/test-check-transitive-imports.sh`.
 
 The cross-subtree boundary follows the upstream dependency
-relationship: mathlib does not depend on CSLib (so `Geb/Mathlib/`
-files cannot import from `Cslib.*` or `Geb.Cslib.*`), and CSLib
-depends on mathlib only through the upstream `Mathlib.*` modules
-(so `Geb/Cslib/` files cannot import from `Geb.Mathlib.*` —
-unupstreamed mathlib-targeted content is not yet available to a
-CSLib PR). `Geb/Internal/` may import from any of the above.
+relationship, in one direction. mathlib does not depend on Cslib, so
+`Geb/Mathlib/` files cannot import from `Cslib.*` or `Geb.Cslib.*`,
+and no `GebLang` module they import may reach `Cslib.*` either.
+Cslib does depend on mathlib, so `Geb/Cslib/` files may import
+`Geb.Mathlib.*` and `GebLang.*` of either track: a mathlib-track
+dependency ships first and the Cslib PR follows once it merges and
+Cslib's mathlib pin advances, while a Cslib-track one ships to Cslib
+alongside it. `Geb/Internal/` may import from any of the above, with
+no list to amend.
 
 ## CSLib-specific constraints
 
-CSLib's `CONTRIBUTING.md` adds the following requirements beyond
-mathlib's style. Files in `Geb/Cslib/` (and `GebTests/Cslib/`):
+Cslib's `CONTRIBUTING.md` adds the following requirements beyond
+mathlib's style. They bind files in `Geb/Cslib/` and
+`GebTests/Cslib/`, and Cslib-track modules of `GebLang/` and
+`GebTests/Lang/`, which ship to Cslib and so carry them at authoring
+time:
 
-- **Import `Cslib.Init`**: every CSLib-targeted file imports
-  `Cslib.Init`, which configures CSLib's default linting and
-  tactics. CSLib's CI runs `lake exe checkInitImports`.
+- **Import `Cslib.Init`**: every Cslib-targeted file imports
+  `Cslib.Init`, which configures Cslib's default linting and
+  tactics. Cslib's CI runs `lake exe checkInitImports`. In
+  `GebLang/` and `GebTests/Lang/` the requirement is conditional on
+  the file importing any `Cslib.*` module (§ Subtree import rules).
 - **Local notation**: notation that could apply to multiple
   types is either locally scoped (`local notation`,
   `scoped notation`) or introduced via a typeclass — not as

@@ -12,6 +12,7 @@ paths:
 - [Commit-message convention (mathlib-derived)](#commit-message-convention-mathlib-derived)
 - [Pre-push checklist](#pre-push-checklist)
 - [Verso manual build](#verso-manual-build)
+- [Literate site build](#literate-site-build)
 - [Action pinning policy](#action-pinning-policy)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -64,33 +65,41 @@ own requires a prior `lake build`.
 
 - `lake exe cache get` populates the full mathlib olean cache
   (mirroring CI's `leanprover/lean-action`). The cache fetch is
-  required because `lake build` alone fetches only the oleans
-  `Geb` imports; the `lake shake` step injects an arbitrary
-  mathlib import and needs that module's olean present, which
-  after a toolchain bump it otherwise would not be. The fetch runs
-  only when `lean-toolchain` or `lake-manifest.json` differs from
-  the copy recorded at the last fetch (`.lake/cache-get.stamp`),
-  and holds a lock in the cache directory while it runs. Both
-  guards follow from `cache get` unpacking each module whose local
-  Lake `depHash` differs from the archive's: part of the dependency
-  tree disagrees on that hash while the artifacts are identical, so
-  an unguarded fetch overwrites a locally built tree that Lake
-  rebuilds, and the cache directory is shared across jj workspaces
-  while downloads use a fixed temporary name.
+  required because `lake build` alone fetches only the oleans the
+  root libraries `Geb` and `GebLang` import; the `lake shake` step
+  injects an arbitrary mathlib import and needs that module's
+  olean present, which after a toolchain bump it otherwise would
+  not be. The fetch runs only when `lean-toolchain` or
+  `lake-manifest.json` differs from the copy recorded at the last
+  fetch (`.lake/cache-get.stamp`), and holds a lock in the cache
+  directory while it runs. Both guards follow from `cache get`
+  unpacking each module whose local Lake `depHash` differs from the
+  archive's: part of the dependency tree disagrees on that hash
+  while the artifacts are identical, so an unguarded fetch
+  overwrites a locally built tree that Lake rebuilds, and the cache
+  directory is shared across jj workspaces while downloads use a
+  fixed temporary name.
 - `lake build`, `lake test`, `lake lint`.
-- `lake build GebTests` then `lake lint -- GebTests`. The axiom
-  env_linter (`GebMeta.detectNonstandardAxiom`) runs under both
-  `lake lint` invocations (`Geb` and `GebTests`), failing when a
+- `lake build GebTests` then `lake lint -- GebTests`, then
+  `lake lint -- GebLang`. The axiom env_linter
+  (`GebMeta.detectNonstandardAxiom`) runs under all three `lake lint`
+  invocations (`Geb`, `GebTests` and `GebLang`), failing when a
   declaration depends on an axiom outside `{propext, Quot.sound}`,
   except that modules in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only that).
 - `lake shake --add-public --keep-implied --keep-prefix Geb
-  GebTests`.
+  GebTests GebLang`.
 
 then the Markdown and project-rule checks:
 
 - `scripts/lint-imports.sh` (the subtree import rules; see
   `docs/rules/upstream-eligible.md`).
+- `scripts/check-transitive-imports.sh` (the closure rules the
+  direct-import lists cannot see). `scripts/lint-imports.sh` bounds
+  each module's direct imports; this bounds the closure: a
+  `Geb/Mathlib/` or `GebTests/Mathlib/` module whose `GebLang`
+  dependencies reach `Cslib.*` is Cslib-track and belongs under the
+  Cslib subtree.
 - `scripts/check-commit-msg.sh` over the branch's commit subjects.
 - `doctoc --dryrun --update-only .` (TOC freshness; skipped when
   `doctoc` is absent) and `markdownlint-cli2 '**/*.md'`.
@@ -99,13 +108,15 @@ then the Markdown and project-rule checks:
 - `scripts/lake-update-warning.sh` (warns on a `lake-manifest.json`
   change outside a `bump/*` or `chore/bootstrap` branch).
 - Docs-coverage reminder: Lean changes under an upstream-eligible
-  or the `Geb/Internal/` subtree without a `docs/index.md` change.
+  subtree, `Geb/Internal/`, or `GebLang/` without a `docs/index.md`
+  change.
 
 `scripts/test-tooling.sh` runs the script and hook self-tests. Each
 exercises the tool named in its own filename against staged
 fixtures:
 
 - `scripts/tests/test-lint-imports.sh`,
+  `scripts/tests/test-check-transitive-imports.sh`,
   `scripts/tests/test-lake-shake.sh`,
   `scripts/tests/test-extract-pr.sh`,
   `scripts/tests/test-axiom-linter.sh`,
@@ -139,6 +150,32 @@ artifact. The manual is outside `defaultTargets`, the test driver,
 and the pre-push checklist, so no contributor builds Verso
 implicitly; `scripts/tests/test-lint-driver.sh` § 3 guards the
 workflow step.
+
+## Literate site build
+
+The literate site (the `GebLang` library rendered by Verso's
+literate pipeline) builds only through `scripts/literate.sh build`:
+`lake build GebLang`, `lake lint -- GebLang`,
+`lake build :literateHtml`, in that order, so a clean checkout lints
+built oleans. `literate.toml` scopes the site to the `GebLang`
+library; without that scoping the package facet renders and builds
+every library and executable of the package. CI runs the script in
+`doc-build.yml` and uploads the HTML as the `geb-literate` artifact,
+beside `lake build GebLang:docs` for the doc-gen4 reference. The
+rendering stays out of the pre-push checklist, as the manual's does,
+because the first run compiles Verso from source; the library itself
+is in `defaultTargets`, so an ordinary `lake build` compiles it.
+`scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
+
+A doc-gen4 build needs `DOCGEN_SRC=file` when it is run outside CI.
+doc-gen4 resolves source links by running `git remote get-url origin` in the
+package directory: a secondary `jj` workspace has no `.git` directory, and in
+the colocated workspace the command succeeds but returns an `ssh://` URL,
+which doc-gen4 does not accept, taking `git@host:org/repo.git` and
+`https://host/org/repo` alone. The variable selects the source-link scheme
+(`github`, `vscode` or `file`) and changes nothing else about the generated
+pages, so a local measurement of page content is unaffected by it. CI's
+checkout provides an `https` remote, so the workflows set nothing.
 
 ## Action pinning policy
 

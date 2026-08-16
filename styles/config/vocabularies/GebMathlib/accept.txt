@@ -89,3 +89,13 @@ upstreaming
 prepended
 TOCs
 stderr
+retarget
+retargeted
+frontmatter
+functor
+functors
+parser
+parsers
+colocated
+basename
+dotless

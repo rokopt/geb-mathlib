@@ -16,8 +16,10 @@ A Lean 4 + mathlib formalisation of Geb, a categorical programming
 language whose first-class notions include "programming language"
 itself. The repository develops mathematical content in a style
 shaped to be plausibly upstreamable to mathlib4 (via the
-`Geb/Mathlib/` subtree) or CSLib (via `Geb/Cslib/`) alongside
-downstream-only content (under `Geb/Internal/`).
+`Geb/Mathlib/` subtree) or Cslib (via `Geb/Cslib/`), with the Geb
+language's core data structures in `GebLang/`, which ships to either
+upstream per module, alongside downstream-only content (under
+`Geb/Internal/`).
 
 ## Dependencies
 
@@ -45,6 +47,12 @@ See `lakefile.toml` for the full dependency declaration.
   is no watch mode: after editing under `manual/`, re-run
   `build` and refresh the browser. Built in CI by `doc-build.yml`,
   not by `lake build`.
+- The `GebLang` literate site (Verso): `scripts/literate.sh build`
+  builds the library, lints it, and renders the site;
+  `scripts/literate.sh serve` serves it and prints the URL. It has no
+  watch mode: after editing a docstring, re-run `build` and refresh
+  the browser. Built in CI by `doc-build.yml`; the library
+  itself is in the default `lake build`.
 
 ## Process
 
@@ -61,7 +69,8 @@ Path-scoped rules live in [docs/rules/](docs/rules/):
 
 - `lean-coding.md` — applies to all `.lean` files.
 - `upstream-eligible.md` — applies under `Geb/Mathlib/`,
-  `Geb/Cslib/`, `GebTests/Mathlib/`, and `GebTests/Cslib/`.
+  `Geb/Cslib/`, `GebTests/Mathlib/`, `GebTests/Cslib/`, `GebLang/`,
+  and `GebTests/Lang/`.
 - `markdown-writing.md` — applies to all `.md` files.
 - `ci-and-workflow.md` — applies to `.github/workflows/` and
   `scripts/`.
@@ -88,5 +97,10 @@ computer-science topics
 overlapping [CSLib](https://github.com/leanprover/cslib) targets
 CSLib instead and lives in `Geb/Cslib/`. Code in `Geb/Internal/`
 is not eligible for upstream submission; some of it may eventually be
-recast into an upstream-eligible form and moved to `Geb/Mathlib/` or
-`Geb/Cslib/`, while other Internal code has no upstream home.
+recast into an upstream-eligible form and moved to `Geb/Mathlib/`,
+`Geb/Cslib/`, or `GebLang/`, while other Internal code has no
+upstream home.
+
+Content in `GebLang/` is upstream-eligible per module: a module whose
+import closure reaches no `Cslib.*` extracts to mathlib4, and one
+whose closure reaches it extracts to Cslib.

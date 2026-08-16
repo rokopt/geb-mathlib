@@ -220,8 +220,8 @@ use time keeps committed content trustworthy.
 work in progress, explorations that build on upstream-quality
 code without themselves meeting that bar, and code too
 specialized to this project for mathlib or CSLib. Code is ported
-into `Geb/Mathlib/` or `Geb/Cslib/` when it reaches upstream
-quality, with dependents migrated via `jj rebase` after the
+into `Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/` when it reaches
+upstream quality, with dependents migrated via `jj rebase` after the
 upstream PR is accepted. The split lets velocity and upstream-
 readiness each get the discipline that suits them, without one
 blocking the other. It is driven by quality, scope, and
@@ -229,24 +229,46 @@ dependency-readiness, not by authorship: AI-drafted and
 human-written code follow the same rules in every subtree (see
 `docs/rules/upstream-eligible.md` § Two-track development).
 
-The upstream target is not a mathlib-or-CSLib binary. The subtree
+The upstream target is not a mathlib-or-Cslib binary. The subtree
 import rules restrict `Geb/Mathlib/` modules to `Mathlib.*`,
-`Batteries.*` and `Geb.Mathlib.*` imports, so a dependency of such a
-module cannot live in `Geb/Internal/`; a module restating Lean core
-or Batteries API therefore sits in `Geb/Mathlib/` while its upstream
-is neither mathlib4 nor CSLib. That destination is open, per
-`TODO.md` § Upstream destination of core- and Batteries-targeted
-content.
+`Batteries.*`, `Geb.Mathlib.*` and `GebLang.*` imports, so a
+dependency of such a module cannot live in `Geb/Internal/`; a module
+restating Lean core or Batteries API therefore sits in `Geb/Mathlib/`
+while its upstream is neither mathlib4 nor Cslib. That destination is
+open, per `TODO.md` § Upstream destination of core- and
+Batteries-targeted content.
 
 ## Floodgate test
 
-At all times, the repo is ready to ship dependency-ordered PRs on
-short notice with no source-code changes.
+At all times, the repository is ready to ship dependency-ordered PRs
+on short notice with no source-code changes.
 `scripts/lint-imports.sh` enforces the import-direction and
-no-prefix-leakage rules. The test is what makes
-"upstream-eligible" a binding property of `Geb/Mathlib/` and
-`Geb/Cslib/` rather than an aspiration: at any moment, every
-file in either subtree can be extracted to a PR upstream.
+no-prefix-leakage rules, and
+`scripts/check-transitive-imports.sh` enforces the closure rules the
+direct-import lists cannot see. The test is what makes
+"upstream-eligible" a binding property of `Geb/Mathlib/`,
+`Geb/Cslib/` and `GebLang/` rather than an aspiration: at any
+moment, every file in any of them can be extracted to a PR
+upstream.
+
+The three locations are not independent of one another. A `GebLang`
+module is retargeted by its own import closure, mathlib-track when
+the closure reaches no `Cslib.*` and Cslib-track otherwise, so
+extraction is dependency-ordered through `GebLang` rather than
+independent per subtree: a module's within-repository dependencies
+ship first, each to the upstream its own closure selects.
+
+Cross-track dependency is uniform policy in one direction.
+Cslib-destined content may depend on mathlib-destined content,
+shipping after its dependencies merge and Cslib's mathlib pin
+advances, exactly as Cslib itself depends on mathlib. Three cadences
+the project does not set stand between the two PRs, which is the cost
+the floodgate test's "on short notice" weighs; the ordering is
+nevertheless available, whereas the reverse is not. Mathlib-destined
+content depends on no Cslib-destined content: mathlib does not depend
+on Cslib, so no ordering makes such a PR extractable, and
+`Geb/Mathlib/`'s allowed lists bar it directly while
+`scripts/check-transitive-imports.sh` bars it through `GebLang`.
 
 ## Alternative formalization targets
 

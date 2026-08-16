@@ -27,6 +27,7 @@ paths:
 - [Constructive-only Lean code](#constructive-only-lean-code)
 - [sorry, admit, and underscores](#sorry-admit-and-underscores)
 - [Verso manual modules (manual/)](#verso-manual-modules-manual)
+- [Literate modules (`GebLang`)](#literate-modules-geblang)
 - [Lean 4 skill workflows](#lean-4-skill-workflows)
 - [`lean-lsp` MCP search and proof tools](#lean-lsp-mcp-search-and-proof-tools)
 
@@ -37,8 +38,9 @@ Applies whenever a `.lean` file is open or being edited.
 ## Authoritative upstream guides (mathlib)
 
 These are the binding upstream references for `Geb/Mathlib/`
-content. Adversarial reviewers must check our `Geb/Mathlib/`
-content for violations against each:
+content and for mathlib-track `GebLang/` modules. Adversarial
+reviewers must check our `Geb/Mathlib/` content, and every
+mathlib-track `GebLang/` module, for violations against each:
 
 - Contributing index:
   `https://leanprover-community.github.io/contribute/index.html`
@@ -176,8 +178,9 @@ docstrings, occurrence counts, and post-hoc axiom-celebration.
 ## Authoritative upstream guides (CSLib)
 
 These are the binding upstream references for `Geb/Cslib/`
-content. Adversarial reviewers must check our `Geb/Cslib/`
-content against the contribution guide:
+content and for Cslib-track `GebLang/` modules. Adversarial
+reviewers must check our `Geb/Cslib/` content, and every
+Cslib-track `GebLang/` module, against the contribution guide:
 
 - Contribution guide:
   `https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md`
@@ -423,8 +426,8 @@ rationale.
 - Minimise `Classical`; flag/justify each invocation in our own
   code.
 - The `GebMeta.detectNonstandardAxiom` `@[env_linter]` fails
-  `lake lint` when any `Geb` or `GebTests` declaration depends on
-  an axiom outside its permitted set. The permitted set is
+  `lake lint` when any `Geb`, `GebTests` or `GebLang` declaration
+  depends on an axiom outside its permitted set. The permitted set is
   `{propext, Quot.sound}` by default; declarations defined in the
   exact modules listed in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only
@@ -536,6 +539,75 @@ so the restriction is enforced only by grep and by review.
   library's `leanOptions` disable `linter.hashCommand` (`#doc` is
   the document syntax) and widen `verso.code.warnLineLength`
   to 100.
+
+## Literate modules (`GebLang`)
+
+The `GebLang` library is rendered twice from one set of sources: by
+doc-gen4 into the API reference, and by Verso's literate pipeline
+into a static site (`scripts/literate.sh`, `literate.toml`). Its
+docstrings are written for both.
+
+- A module docstring is the prose of the module's page. Declaration
+  docstrings render as prose text rather than inside code boxes,
+  which is what `docstrings_as_text = true` in `literate.toml`
+  selects.
+- `lakefile.toml` sets `doc.verso = true` for the `GebLang` library
+  alone, so its docstrings are checked Verso markup rather than
+  Markdown: a header is a `#` line and a checked reference to a
+  constant is written ``{name}`Foo` ``. Verso opens a list on `*`,
+  `-` or `+` alike, and this library writes `-`, as the rest of the
+  repository does. The option is compile-time, so a consumer
+  compiling the same file without it renders the markup literally;
+  that is why the upstream-eligible subtrees keep
+  mathlib-conventional Markdown docstrings.
+- Every code span carries a role: `{name}` for a constant that must
+  resolve, `{option}` for a Lean option, `{lit}` for anything else.
+  A span with no role warns (`doc.verso.suggestions`, which defaults
+  on), and the package's `warningAsError` makes the warning an error.
+- A `{name}` role resolves at elaboration, so it cannot name a
+  constant the same module declares later. Use `{lit}` for a
+  same-module name; a module docstring may `{name}` a constant an
+  imported module declares.
+- Literate sources are ordinary Lean files: no `#doc`, no Verso
+  imports, no Verso commands. `linter.hashCommand` stays enabled for
+  them, the `module` discipline applies unchanged, and building the
+  library compiles no Verso. Verso compiles only when the site is
+  rendered.
+- The two pipelines do not render the same amount. The literate site
+  renders module and declaration docstrings both; the pinned doc-gen4
+  renders declaration docstrings, converted to Markdown, and drops
+  module docstrings (`TODO.md` § Triggers). Write for the literate
+  site, which is the library's own presentation, and expect the API
+  reference to carry the declarations alone until the pin moves.
+- Every module imports `Lean.DocString.Syntax`. Verso role markup in a
+  docstring records a compile-time use of Lean core's Verso document-syntax
+  module, and `lake shake` requires the module to import what it uses. The
+  requirement follows from `doc.verso` rather than from any particular
+  declaration, so it holds for every module of the library.
+- mathlib's linters reach the library through the `mathlib_linters` command
+  (`GebMeta`), which a module declaring anything invokes after its module
+  docstring, rather than through `lakefile.toml`. Verso's literate module facet
+  re-serialises a module's Lake options as `-D` arguments to an executable whose
+  parser rejects a name it does not register, and it parses them before loading
+  the module, so a mathlib linter option in the library's Lake options fails the
+  render whatever the module imports. The command sets those options in the
+  invoking file's scope, which the facet never reads. It reaches
+  `linter.mathlibStandardSet` and `linter.flexible`. `linter.style.header` is
+  out of reach: it acts only on commands ending at or before a file's first
+  module docstring, and requires that docstring to be the first command after
+  the imports, so a command placed to satisfy that requirement runs too late to
+  enable it. Adding a further option is one edit, to
+  `GebMeta.mathlibLinterOptions`. The umbrella declares nothing of its own and
+  does not invoke it.
+  A module invoking it carries both `import GebMeta` and
+  `meta import GebMeta`, the second annotated `-- shake: keep`.
+- `scripts/extract-pr.sh` converts the roles to plain Markdown when a
+  module is extracted, a checked name reference becoming a bare code
+  span, so the checked markup stays local to this repository and the
+  shipped file carries the converted form. It converts exactly the
+  three roles named above. Lean core registers others, `{lean}` and
+  `{tactic}` among them; using one here means adding its name to that
+  script's `role_strip`, or it ships as literal braces.
 
 ## Lean 4 skill workflows
 
