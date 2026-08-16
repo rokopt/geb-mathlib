@@ -41,6 +41,11 @@ against the shifted projections, so no `def` calls itself.
   which `Nat.rec` generates no equation lemma for.
 * `Geb.CobhamFold.semAt_flattenOf`, `Geb.CobhamFold.semAt_mkOf` — what those
   two expressions compute.
+* `Geb.CobhamFold.growth_algMk`, `Geb.CobhamFold.stackSize_algMk_le` — the
+  per-symbol growth condition at the constant `R.width`, and the linearity
+  hypothesis it discharges.
+* `Geb.CobhamFold.smashFreeBool_flattenOf`,
+  `Geb.CobhamFold.smashFreeBool_mkOf` — those expressions carry no `smash`.
 
 ## References
 
@@ -49,7 +54,7 @@ against the shifted projections, so no `def` calls itself.
 
 ## Tags
 
-Cobham, ranked tree, initial algebra, term algebra, preorder encoding, expression
+Cobham, ranked tree, initial algebra, term algebra, preorder encoding, expression, smash-free
 -/
 
 @[expose] public section
@@ -122,6 +127,36 @@ theorem semAt_mkOf (R : RankedAlphabet) (i : Fin R.card)
     (f : Fin (R.arity i) → List Bool) :
     semAt (R.arity i) (mkOf R i).1.1 (mkOf R i).2 f = algMk R i f := by
   rw [mkOf, semAt_prependOf, semAt_flattenOf, algMk]
+
+/-- The growth condition at the constant `R.width`, which `length_algMk`
+gives with equality. -/
+theorem growth_algMk (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool) :
+    (algMk R i f).length ≤ (List.ofFn fun d ↦ (f d).length).sum + R.width :=
+  Nat.le_of_eq (length_algMk R i f)
+
+/-- The pending values stay linear in the input, at the same constant. This
+is the hypothesis `Geb.CobhamFold.foldOutExprV` takes, discharged by
+`Geb.CobhamFold.stackSize_le_of_growth` from the per-symbol condition
+alone. -/
+theorem stackSize_algMk_le (R : RankedAlphabet) (w : List Bool) :
+    stackSize (foldScanFinal R (algMk R) w).stack ≤ R.width * w.length :=
+  stackSize_le_of_growth R (algMk R) R.width (growth_algMk R) w
+
+/-- The slot concatenation carries no `smash`: the empty bitstring at arity
+zero, and a `concat` composition of projections at every successor. -/
+theorem smashFreeBool_flattenOf : ∀ n : ℕ,
+    smashFreeBool (flattenOf n).1.1.1 = true :=
+  Nat.rec (smashFreeBool_zeroAtOf 0) fun n ih ↦
+    smashFreeBool_concatCompOf (n + 1) _ _
+      (smashFreeBool_compOf _ _ ih fun i ↦ smashFreeBool_projOf (n + 1) i.succ)
+      (smashFreeBool_projOf (n + 1) 0)
+
+/-- The structure map's expression carries no `smash`, which is
+`Geb.CobhamFold.smashFree_foldOutExprV`'s hypothesis at this algebra. -/
+theorem smashFreeBool_mkOf (R : RankedAlphabet) (i : Fin R.card) :
+    smashFreeBool (mkOf R i).1.1.1 = true :=
+  smashFreeBool_prependOf _ _ (smashFreeBool_flattenOf (R.arity i))
 
 end Geb.CobhamFold
 
