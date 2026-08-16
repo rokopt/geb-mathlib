@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module -- shake: keep-all, shake: keep-downstream
 
 public import GebLang.Basic
-public import GebLang.Probe
 
 import GebMeta
 import Lean.DocString.Syntax
