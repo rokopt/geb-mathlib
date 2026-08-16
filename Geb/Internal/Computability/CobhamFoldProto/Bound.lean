@@ -208,6 +208,13 @@ theorem semAt_compOf {n m : ℕ} (head : COf m) (args : Fin m → COf n)
     semAt n (compOf head args).1.1 (compOf head args).2 x =
       semAt m head.1.1 head.2 fun i ↦ semAt n (args i).1.1 (args i).2 x := rfl
 
+/-- An arity-one expression's meaning at an `n`-ary argument.
+`Geb.CobhamFold.stepWord_comp1Of` is this at arity one. -/
+theorem semAt_comp1Of {n : ℕ} (e : COf 1) (a : COf n) (x : Fin n → List Bool) :
+    semAt n (comp1Of e a).1.1 (comp1Of e a).2 x =
+      stepWord e (semAt n a.1.1 a.2 x) :=
+  congrArg (semAt 1 e.1.1 e.2) (funext fun i ↦ match i with | ⟨0, _⟩ => rfl)
+
 /-- The `mult`-fold self-concatenation of the recursion variable, of arity one:
 the empty bitstring at `mult = 0`, and one more copy of the sole argument at
 each successor. -/

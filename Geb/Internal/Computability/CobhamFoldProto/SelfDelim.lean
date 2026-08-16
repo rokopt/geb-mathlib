@@ -444,7 +444,7 @@ theorem stepWord_compOf {m : ℕ} (head : COf m) (args : Fin m → COf 1)
 /-- An arity-one composition's value at an arity-one step. -/
 theorem stepWord_comp1Of (e a : COf 1) (u : List Bool) :
     stepWord (comp1Of e a) u = stepWord e (stepWord a u) :=
-  congrArg (semAt 1 e.1.1 e.2) (funext fun i ↦ match i with | ⟨0, _⟩ => rfl)
+  semAt_comp1Of e a ![u]
 
 /-- A concatenation's value at an arity-one step. -/
 theorem stepWord_concatCompOf (a b : COf 1) (u : List Bool) :

@@ -36,6 +36,7 @@ computed, and `algPara_eq_para` identifies the two.
   the paramorphism.
 * `Geb.CobhamFold.chGrowth` — the per-symbol growth the delimited-children
   algebra meets under its own invariant.
+* `Geb.CobhamFold.algChOf` — that algebra as an expression of the class.
 
 ## Main statements
 
@@ -60,6 +61,8 @@ computed, and `algPara_eq_para` identifies the two.
 * `Geb.CobhamFold.growth_algCh_of_dropEntrySem_le`,
   `Geb.CobhamFold.stackSize_algCh_le` — the per-symbol growth condition at
   `Geb.CobhamFold.algCh`, and the linearity hypothesis it discharges.
+* `Geb.CobhamFold.semAt_algChOf`, `Geb.CobhamFold.smashFreeBool_algChOf` —
+  what `Geb.CobhamFold.algChOf` computes, and that it carries no `smash`.
 
 ## Implementation notes
 
@@ -90,7 +93,8 @@ unrestricted forms from it at the trivial predicate. The restriction is what
 
 ## Tags
 
-Cobham, ranked tree, destructor, self-delimiting, subterm, paramorphism
+Cobham, ranked tree, destructor, self-delimiting, subterm, paramorphism,
+smash-free
 -/
 
 @[expose] public section
@@ -352,6 +356,44 @@ theorem stackSize_algCh_le (R : RankedAlphabet) (w : List Bool) :
   stackSize_le_of_growth_of_invariant R (algCh R)
     (fun v ↦ 5 * (dropEntrySem ![v]).length + 1 ≤ v.length + 4 * R.width)
     (chGrowth R) (five_mul_length_dropEntrySem_algCh_le R) (growth_algCh_of_dropEntrySem_le R) w
+
+/-- The delimited-children algebra as an expression of Cobham's class. Each
+slot contributes its own second half, plain in the first argument and
+delimited in the second; `Geb.CobhamFold.flattenOf` concatenates a family
+through `Geb.CobhamFold.compOf`, so no new combinator is introduced. -/
+def algChOf (R : RankedAlphabet) (i : Fin R.card) : COf (R.arity i) :=
+  concatCompOf (R.arity i)
+    (prependOf (R.code i)
+      (compOf (flattenOf (R.arity i)) fun d ↦
+        comp1Of dropEntryOf (projOf (R.arity i) d)))
+    (comp1Of entryWordOf
+      (compOf (flattenOf (R.arity i)) fun d ↦
+        comp1Of entryWordOf (comp1Of dropEntryOf (projOf (R.arity i) d))))
+
+/-- The expression computes the algebra. -/
+theorem semAt_algChOf (R : RankedAlphabet) (i : Fin R.card)
+    (f : Fin (R.arity i) → List Bool) :
+    semAt (R.arity i) (algChOf R i).1.1 (algChOf R i).2 f = algCh R i f := by
+  rw [algChOf, semAt_concatCompOf, semAt_prependOf, semAt_comp1Of,
+    semAt_compOf, semAt_compOf, semAt_flattenOf, semAt_flattenOf, algCh,
+    algPara]
+  simp only [semAt_comp1Of, semAt_projOf, stepWord_dropEntryOf,
+    stepWord_entryWordOf]
+
+/-- The expression carries no `smash`, which is
+`Geb.CobhamFold.smashFree_foldOutExprV`'s hypothesis at this algebra. -/
+theorem smashFreeBool_algChOf (R : RankedAlphabet) (i : Fin R.card) :
+    smashFreeBool (algChOf R i).1.1.1 = true :=
+  smashFreeBool_concatCompOf (R.arity i) _ _
+    (smashFreeBool_prependOf _ _
+      (smashFreeBool_compOf _ _ (smashFreeBool_flattenOf (R.arity i))
+        fun d ↦ smashFreeBool_comp1Of _ _ smashFreeBool_dropEntryOf
+          (smashFreeBool_projOf (R.arity i) d)))
+    (smashFreeBool_comp1Of _ _ smashFreeBool_entryWordOf
+      (smashFreeBool_compOf _ _ (smashFreeBool_flattenOf (R.arity i))
+        fun d ↦ smashFreeBool_comp1Of _ _ smashFreeBool_entryWordOf
+          (smashFreeBool_comp1Of _ _ smashFreeBool_dropEntryOf
+            (smashFreeBool_projOf (R.arity i) d))))
 
 end Geb.CobhamFold
 
