@@ -45,7 +45,10 @@ def destSample : binRanked.Term := node leaf (node leaf leaf)
 #guard childSem binRanked 1 destSample = [true, false, false]
 
 /-- At `binRanked`, the fold's value stays within six times the term's node
-count. The factor is this alphabet's; no general bound is proved here. -/
+count. `Geb.CobhamFold.length_fold_algCh_le` proves the general bound
+`chGrowth R * (R.width * t.size)`, which is twelve times the node count here;
+the factor six is this alphabet's and is checked on the terms below rather
+than proved. -/
 def valueBounded (t : binRanked.Term) : Bool :=
   (Term.fold binRanked (algCh binRanked) t).length ≤ 6 * t.size
 
