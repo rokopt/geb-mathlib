@@ -1138,14 +1138,6 @@ practice settles either question. Settle both.
   (`Geb/Mathlib/Data/UnionFind/OfEdges.lean` itself does not: its own upstream
   target is Batteries.) Trigger: the preparation of that module's upstream
   submission, which outlives the FinSetSkel development.
-- **Check the leakage prefix in an import line's comment tail**:
-  `scripts/lint-imports.sh` Rule 2 exempts a whole import line from the
-  self-prefix check, so a self-prefix in a trailing comment on an import line
-  passes clean — verified by adding `public import Geb.Mathlib.Bar  -- see
-  Geb.Mathlib.Baz` under `GebTests/Mathlib/`. Not a regression: the rule has
-  always exempted whole lines. The fix direction is to exempt the import path
-  alone and apply the prefix check to the line's comment tail. Trigger: the
-  next branch that revises `scripts/lint-imports.sh`.
 - **Repo-relative paths in upstream-eligible docstrings**: docstrings under
   `Geb/Mathlib/` name paths that carry no meaning for a mathlib reviewer, and
   `scripts/extract-pr.sh` rewrites import lines only, so such prose survives
