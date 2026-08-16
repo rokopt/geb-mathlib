@@ -161,7 +161,8 @@ Created by this plan:
 - `scripts/check-transitive-imports.sh` (the closure check).
 - `scripts/tests/test-check-transitive-imports.sh` (its self-test).
 
-Modified by this plan: `scripts/extract-pr.sh`,
+Modified by this plan: `docs/aristotle.md`,
+`manual/GebManual/Introduction.lean`, `scripts/extract-pr.sh`,
 `scripts/tests/test-extract-pr.sh`, `scripts/lint-imports.sh`,
 `scripts/tests/test-lint-imports.sh`, `scripts/pre-push.sh`,
 `.github/workflows/ci.yml`, `docs/rules/upstream-eligible.md`,
@@ -221,8 +222,8 @@ write the file whole:
 # `Geb/Mathlib/`, `GebTests/Mathlib/`, `Geb/Cslib/`, `GebTests/Cslib/`,
 # `GebLang/`, or `GebTests/Lang/`, and a target upstream-fork worktree
 # path, copy the file to its upstream destination, rewriting the
-# repository-internal module prefixes in import lines and converting
-# Verso role markup in everything else.
+# repository-internal module prefixes in each import line's module
+# path and converting Verso role markup on every line.
 #
 # Usage:
 #   scripts/extract-pr.sh <src-path> <upstream-fork-root>
@@ -299,36 +300,34 @@ import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
 # (a trailing comment, when there is one).
 import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 
-# Verso role markup, applied off import lines in the one arm whose
+# Verso role markup, converted on every line in the one arm whose
 # sources carry it: `{role}`x`` becomes `` `x` ``. `doc.verso` is set
 # for the GebLang library alone, so an unconverted role would render
 # as literal braces upstream, and no other arm, GebTests/Lang/
 # included, has anything to convert.
 #
-# The braces hold a bare identifier and nothing else, and the group
-# must open the line or follow a character that can neither end a Lean
-# identifier nor close a code span. Both restrictions are load-bearing
-# against Lean written inside a code span:
+# The braces hold one of the role names this repository writes, which
+# docs/rules/lean-coding.md § Literate modules fixes as a closed set:
+# `name` for a constant that must resolve, `option` for a Lean option,
+# `lit` for anything else. Matching that set rather than any
+# identifier is what keeps the substitution off Lean, because a brace
+# group holding an identifier is ordinary Lean and appears inside code
+# spans constantly:
 #
-#   `Cat.{v, u}`               multi-token, excluded by the first
-#   `{g : B → k.1 // p g}`     multi-token, excluded by the first
-#   `Type.{u}`                 single-token, excluded by the second
-#                              (the brace group follows a `.`)
-#   `{S}`                      single-token, excluded by the second
-#                              (the brace group follows a backtick)
+#   `s ∪ {a}`   `x ∈ {a}`   `insert a {b}`   `theorem foo {n}`
+#   `Type.{u}`  `{S}`       `Cat.{v, u}`     `{g : B → k.1 // p g}`
 #
-# The single-token forms are the ones that matter here: a universe
-# ascription is written that way throughout this repository's Lean,
-# and a singleton or an implicit binder group is written that way in
-# prose. Without the leading context the pattern eats them, and eats
-# them inside a role's own argument, since the substitution is global.
+# Every one of those survives, and every leading context a role
+# appears in converts: line start, space, parenthesis, bracket, list
+# marker, emphasis underscore. The leading-context clause is defence
+# in depth behind the vocabulary, not the guard itself.
 #
-# A role taking arguments is left unconverted rather than widening the
-# first restriction; add its exact form here when one is first used,
-# and expect it to ship as literal braces until then. A role abutting
-# a preceding span's closing backtick is likewise left alone, which no
-# Verso prose writes.
-role_strip='s/(^|[^A-Za-z0-9_.`])[{][A-Za-z][A-Za-z0-9_]*[}]`/\1`/g'
+# A role outside the set, including any role taking arguments, is left
+# unconverted and ships as literal braces. That is the intended
+# failure: braces upstream are visible and get fixed, where deleted
+# mathematics is not. Add a new role's exact name here when one is
+# first used.
+role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`/\1`/g'
 
 # convert_roles is 1 for the one arm reading doc.verso sources.
 #
@@ -488,7 +487,7 @@ dst="$fork/$dst_rel"
 mkdir -p "$(dirname "$dst")"
 
 # Copy, rewriting each import line's module path by the arm's table and
-# converting Verso roles elsewhere in the arm that carries them. The
+# converting Verso roles on every line in the arm that carries them. The
 # read loop terminates every line, so a source with no final newline
 # gains one; upstream wants it. The rewrite is anchored to the
 # import keyword and applied to the module path alone, rather than by a
@@ -726,15 +725,16 @@ cat /tmp/geblang-extract/Mathlib/Basic.lean
 
 Expected: the destination is `Mathlib/Basic.lean` (the placeholder's
 closure reaches no `Cslib.*`), and the printed file carries
-`` `gebLangAnchor` `` and `` `Nat` `` as bare code spans with no
-`{name}` markup. Nothing ships; inspect the output and discard it.
+`` `gebLangAnchor` ``, `` `Nat` `` and `` `doc.verso` `` as bare code
+spans, with no `{lit}`, `{name}` or `{option}` markup left. Nothing
+ships; inspect the output and discard it.
 
 - [ ] **Step 6: remove the resolved `TODO.md` entry**
 
 Delete the whole `TODO.md` § Triggers entry beginning
 
 ```markdown
-- **`scripts/extract-pr.sh` does not rewrite `meta import` lines**:
+- **`scripts/extract-pr.sh` does not rewrite `meta import` lines**: its rewrite
 ```
 
 through the end of its `Trigger:` sentence. The rewrite now covers all
@@ -2249,9 +2249,10 @@ relationship, in one direction. Mathlib does not depend on Cslib, so
 `Geb/Mathlib/` files cannot import from `Cslib.*` or `Geb.Cslib.*`,
 and no `GebLang` module they import may reach `Cslib.*` either.
 Cslib does depend on mathlib, so `Geb/Cslib/` files may import
-`Geb.Mathlib.*` and mathlib-track `GebLang.*`: the dependency ships
-first, and the Cslib PR follows once it merges and Cslib's mathlib
-pin advances. `Geb/Internal/` may import from any of the above, with
+`Geb.Mathlib.*` and `GebLang.*` of either track: a mathlib-track
+dependency ships first and the Cslib PR follows once it merges and
+Cslib's mathlib pin advances, while a Cslib-track one ships to Cslib
+alongside it. `Geb/Internal/` may import from any of the above, with
 no list to amend.
 ```
 
@@ -2540,15 +2541,21 @@ under `CONTRIBUTING.md` § Concern shape, so record it rather than
 bundling it. Add to `TODO.md` § Triggers:
 
 ```markdown
-- **Normalise the spelling of `Cslib` in the committed corpus**: the
-  project vocabulary
-  (`styles/config/vocabularies/GebMathlib/accept.txt`) accepts
-  `Cslib`, and Vale rejects the capitalised form, but files predating
-  the vocabulary carry it: `docs/rules/upstream-eligible.md` most
-  heavily, including a section heading and its table-of-contents
-  entry, and `scripts/lint-imports.sh`'s header among the scripts.
-  Trigger: a branch whose concern is those files themselves, which
-  retitles the section and re-runs `doctoc`.
+- **Normalise the vocabulary of `docs/rules/upstream-eligible.md` and
+  its neighbours**: two migrations are half-done and neither belongs
+  to a workstream whose concern is something else. The project
+  vocabulary (`styles/config/vocabularies/GebMathlib/accept.txt`)
+  accepts `Cslib` and Vale rejects the capitalised form, but files
+  predating the vocabulary carry it: `docs/rules/upstream-eligible.md`
+  most heavily, including a section heading and its
+  table-of-contents entry, and also `CONTRIBUTING.md`, `README.md`,
+  `docs/process.md`, `docs/rules/lean-coding.md`, `GebMeta.lean` and
+  `scripts/lint-imports.sh`'s header. Separately,
+  `docs/rules/upstream-eligible.md` now calls `GebLang/` and
+  `GebTests/Lang/` upstream-eligible locations rather than subtrees,
+  while its heading, its table's first column and several sentences
+  still say subtree. Trigger: a branch whose concern is those files
+  themselves, which retitles the section and re-runs `doctoc`.
 ```
 
 - [ ] **Step 12: run the Markdown checks**
@@ -2652,7 +2659,6 @@ only this scan reaches:
   break. That file is in no other task's file list.
 - `docs/rules/upstream-eligible.md` § Two-track development's opening
   paragraph, on explorations that build on upstream-quality code.
-
 - `TODO.md` § Verso adoption, scope 1, which calls Verso-markup
   docstrings contraindicated for the upstream-eligible subtrees on
   the grounds that they would read as foreign to reviewers. Plan 1
