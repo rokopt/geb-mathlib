@@ -9,26 +9,33 @@ public import Geb.Internal.Computability.CobhamFoldProto
 public meta import Geb.Internal.Computability.CobhamFoldProto  -- shake: keep; #guard needs it
 
 /-!
-# A subterm's spelling, on samples
+# The term algebra's destructor, on samples
 
-`Geb.CobhamFold.childSem` at the two-symbol alphabet, checked by `#guard`,
-and the fold's value read against the term's node count.
+`Geb.CobhamFold.childSem` at the two-symbol alphabet, checked by `#guard`
+against a term whose two children differ, and the fold's value read against
+the term's node count.
+
+The samples exercise the semantic layer.
+`Geb.CobhamFold.stepWord_childOf` identifies the expression with it
+symbolically, so no sample forces the readout's `Cobham.casesOf` tree, whose
+branch family is `2 ^ Geb.CobhamFold.readoutWidthV R` wide.
 
 ## Main definitions
 
-* `GebTests.CobhamFold.destSample`, `GebTests.CobhamFold.valueBounded` — the
-  sample term whose children differ, and the length bound read at it.
+* `GebTests.CobhamFold.destSample` — a term whose two children differ.
+* `GebTests.CobhamFold.valueBounded` — the length bound read at that
+  alphabet.
 
 ## Tags
 
-Cobham, ranked tree, subterm
+Cobham, ranked tree, destructor, subterm, test
 -/
 
 @[expose] public section
 
 namespace GebTests.CobhamFold
 
-open Cobham Geb.CobhamFold RankedAlphabet RankedAlphabet.Binary
+open Geb.CobhamFold RankedAlphabet RankedAlphabet.Binary
 
 /-- A sample term whose two children differ. -/
 def destSample : binRanked.Term := node leaf (node leaf leaf)
@@ -48,3 +55,5 @@ def valueBounded (t : binRanked.Term) : Bool :=
 #guard valueBounded (node (node leaf leaf) (node leaf leaf))
 
 end GebTests.CobhamFold
+
+end

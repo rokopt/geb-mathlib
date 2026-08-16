@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Internal.Computability.CobhamFoldProto.Boundary
+import GebTests.Internal.Computability.CobhamFoldProto.Destruct
 import GebTests.Internal.Computability.CobhamFoldProto.Fold
 
 /-!
