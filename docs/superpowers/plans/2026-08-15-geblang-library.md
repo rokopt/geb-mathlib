@@ -70,7 +70,7 @@ requirements implicitly include this section.
 - `GebLang` docstrings are Verso markup (`doc.verso = true` on that
   library alone). A header is a `#` line and a checked constant
   reference is written ``{name}`Foo` ``; `*`, `-` and `+` all open a
-  list, so this library writes `-`, as the rest of the repository
+  list, and this library writes `-`, as the rest of the repository
   does. Every other library keeps mathlib-conventional Markdown
   docstrings.
 - **Every code span in a `GebLang` docstring carries a role.**
@@ -147,14 +147,15 @@ Context a fresh executor cannot recover from the spec.
   `pkill -f verso-serve`.
 - **Never use `lake env lean`**; it drops `lakefile.toml` options and
   reports spurious errors. Use `lake build`.
-- **`GebLang/Basic.lean` imports nothing, so the mathlib linters do
-  not run on it.** `mathlibStandardSet`, `linter.flexible` and
-  `linter.style.header` are `weak.`-prefixed options naming linters
-  that mathlib registers; a module outside mathlib's import closure
-  registers none of them. The style constraints of this plan's
-  § Global constraints bind that file by review, not by tooling. The
-  Verso checks in its docstrings do run, elaboration being what
-  performs them.
+- **None of the four Lean files this plan creates has mathlib in its
+  import closure, so the mathlib linters run on none of them.**
+  `mathlibStandardSet`, `linter.flexible` and `linter.style.header`
+  are `weak.`-prefixed options naming linters that mathlib registers;
+  a module outside mathlib's import closure registers none of them,
+  and `GebMeta` does not carry mathlib in either. The style
+  constraints of this plan's § Global constraints bind those files by
+  review, not by tooling. The Verso checks in their docstrings do
+  run, elaboration being what performs them.
 - **Script self-tests stage synthetic trees.** Read
   `scripts/tests/test-lint-imports.sh` and
   `scripts/tests/test-extract-pr.sh` for the fixture pattern before
@@ -1285,11 +1286,10 @@ docstrings are written for both.
   Markdown: a header is a `#` line and a checked reference to a
   constant is written ``{name}`Foo` ``. Verso opens a list on `*`,
   `-` or `+` alike, and this library writes `-`, as the rest of the
-  repository does. The
-  option is compile-time, so a consumer compiling the same file
-  without it renders the markup literally; that is why the
-  upstream-eligible subtrees keep mathlib-conventional Markdown
-  docstrings.
+  repository does. The option is compile-time, so a consumer
+  compiling the same file without it renders the markup literally;
+  that is why the upstream-eligible subtrees keep
+  mathlib-conventional Markdown docstrings.
 - Every code span carries a role: `{name}` for a constant that must
   resolve, `{option}` for a Lean option, `{lit}` for anything else.
   A span with no role warns (`doc.verso.suggestions`, which defaults
