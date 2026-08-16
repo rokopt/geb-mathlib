@@ -145,24 +145,28 @@ role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g'
 # strip_line <line>: true when the GebLang/ arm's third pass deletes
 # <line> outright: an import line naming `GebMeta` or
 # `Lean.DocString.Syntax`, in any of the four import forms, with or
-# without a trailing comment; or a line whose only content is the
-# `mathlib_linters` command. None of the three has meaning upstream:
-# `GebMeta` and its two import lines exist only to reach mathlib's
-# linters from inside a `doc.verso` module (docs/rules/lean-coding.md
-# § Literate modules), the `Lean.DocString.Syntax` import is an
-# artifact of the Verso role markup the copy loop's docstring gate
-# scopes role_strip to, and the command itself is registered nowhere
-# upstream. Anchored the way the import-prefix rewrite is: an import
-# line by the import-keyword regex the script already binds once, the
-# command line by a whole-line match. A docstring line that merely
-# contains the word `GebMeta`, or an English sentence whose first word
-# is `import`, is prose and is not this function's concern, and
-# neither is a fenced code block's body line reading `mathlib_linters`
-# or `import GebMeta`: the copy loop's docstring gate keeps this
-# function from being called on any line inside a docstring at all, a
-# real import line or command line never being inside one.
+# without a trailing comment; or the `mathlib_linters` command line,
+# with or without a trailing comment, the same tolerance the import
+# forms get. None of the three has meaning upstream: `GebMeta` and
+# its two import lines exist only to reach mathlib's linters from
+# inside a `doc.verso` module (docs/rules/lean-coding.md § Literate
+# modules), the `Lean.DocString.Syntax` import is an artifact of the
+# Verso role markup the copy loop's docstring gate scopes role_strip
+# to, and the command itself is registered nowhere upstream. Anchored
+# the way the import-prefix rewrite is: an import line by the
+# import-keyword regex the script already binds once, the command
+# line by `mathlib_linters_re`, anchored the same way at both ends so
+# a trailing comment is admitted but a bare mention mid-line is not. A
+# docstring line that merely contains the word `GebMeta`, or an
+# English sentence whose first word is `import`, is prose and is not
+# this function's concern, and neither is a fenced code block's body
+# line reading `mathlib_linters` or `import GebMeta`: the copy loop's
+# docstring gate keeps this function from being called on any line
+# inside a docstring at all, a real import line or command line never
+# being inside one.
+mathlib_linters_re='^mathlib_linters[[:space:]]*(--.*)?$'
 strip_line() {
-  [ "$1" = "mathlib_linters" ] && return 0
+  [[ "$1" =~ $mathlib_linters_re ]] && return 0
   if [[ "$1" =~ $import_line_re ]]; then
     case "${BASH_REMATCH[4]}" in
       GebMeta|Lean.DocString.Syntax) return 0 ;;
@@ -375,9 +379,15 @@ mkdir -p "$(dirname "$dst")"
 # (the `mathlib_linters` command does) does not leave two consecutive
 # blank lines behind; the flag is set on the stripped line and
 # consumed, blank or not, by the very next line, so it never survives
-# past one line's lookahead. Role conversion runs last, on the
-# rewritten line, so a role in an import line's trailing comment
-# still converts, on the arm where both apply.
+# past one line's lookahead. The flag is re-armed by each stripped
+# line in turn, so this is also the normal shape of a GebLang/
+# module's output, not only a single-line edge case: a run of several
+# stripped imports followed by one blank line collapses the same way,
+# leaving the surviving import abutting whatever follows (typically
+# the module docstring). Role conversion is gated on being inside a
+# docstring, and an import line is never inside one, so a role in an
+# import line's trailing comment is not converted and ships as
+# literal braces, whichever arm is running.
 #
 # The read loop terminates every line, so a source with no final
 # newline gains one; upstream wants it. The rewrite is anchored to the

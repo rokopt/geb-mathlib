@@ -1254,3 +1254,29 @@ practice settles either question. Settle both.
   still say subtree. Trigger: a branch whose concern is those files
   themselves, which renames the two section headings and re-runs
   `doctoc`.
+- **The three import-scanning scripts each carry their own copy of the
+  import-line pattern**: `scripts/extract-pr.sh`,
+  `scripts/lint-imports.sh` and `scripts/check-transitive-imports.sh`
+  each bind the four import forms separately, and two of them each
+  carry their own module-path mapping and closure walk. Each comment
+  says the pattern is bound once so its users cannot disagree, which
+  holds within a file and not across the three, and a disagreement
+  between them about what an import admits is what a floodgate hole
+  looks like. `scripts/lib/diff-against-main.sh` shows the sourcing
+  pattern that would let them share one definition. Trigger: the next
+  change that touches the import pattern in more than one of the three.
+- **Nothing checks that a `GebLang` module invokes `mathlib_linters`**:
+  `docs/rules/lean-coding.md` § Literate modules states the convention,
+  and no check enforces it, so a module omitting the invocation ships
+  upstream having been seen by none of mathlib's linters, silently.
+  Trigger: the first `GebLang` content workstream, which is when the
+  omission becomes possible to make.
+- **`scripts/check-transitive-imports.sh` omits `-e` where its sibling
+  sets it**: it runs under `set -uo pipefail` and
+  `scripts/lint-imports.sh` under `set -euo pipefail`, with nothing
+  recording why. The omission appears not to be load-bearing: forcing
+  `-e` leaves both the self-test and a run over the whole tree passing,
+  and the `for m in $(imported_internal …)` substitution that looks like
+  the reason is exempt from `-e` propagation. Trigger: the next change
+  to either script's error handling, at which point the two are aligned
+  or the difference is explained.

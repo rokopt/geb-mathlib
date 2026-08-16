@@ -29,10 +29,10 @@ paths:
 Applies to anything under `Geb/Mathlib/`, `GebTests/Mathlib/`,
 `Geb/Cslib/`, `GebTests/Cslib/`, `GebLang/`, or `GebTests/Lang/`,
 and to the `GebTests/Lang.lean` index. The `GebLang.lean` umbrella
-is excluded: `scripts/lint-imports.sh` roots at the `GebLang`
-directory rather than the umbrella file, and
-`scripts/extract-pr.sh` matches `GebLang/*` only, so the umbrella is
-neither linted nor extractable, and the content rules do not bind it.
+is excluded: it is a library root, the peer of `Geb.lean` and
+`GebTests.lean`, rather than a subtree index like `GebTests/Lang.lean`,
+so the content rules, addressed to a location's own files, do not
+bind it.
 
 Work in the file globs this rule applies to is also bound by
 [CONTRIBUTING.md § Submission policy](../../CONTRIBUTING.md),

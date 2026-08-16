@@ -24,7 +24,7 @@ minimised and tracked module by module. The second is
 upstream-directed: content is authored to be plausibly
 upstreamable, with `Geb/Mathlib/` targeting mathlib4,
 `Geb/Cslib/` targeting CSLib, `GebLang/` targeting mathlib4 or
-CSLib per module's own import closure, and `Geb/Internal/`
+CSLib by each module's own import closure, and `Geb/Internal/`
 holding the downstream-only remainder.
 
 The chapters that follow present the implemented mathematics one

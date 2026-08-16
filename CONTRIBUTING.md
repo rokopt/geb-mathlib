@@ -231,8 +231,8 @@ Lean placeholder syntax: see
 At all times, the repository is ready to ship dependency-ordered PRs
 on short notice with no source-code changes.
 `scripts/lint-imports.sh` enforces this by rejecting forbidden
-imports in `Geb/Mathlib/`, `Geb/Cslib/` and `GebLang/` files, and the
-self-prefixes outside an import path;
+imports and self-prefixes outside an import path in every
+upstream-eligible location;
 `scripts/check-transitive-imports.sh` enforces the closure rules the
 direct-import lists cannot see. Extraction is dependency-ordered
 through `GebLang/`, each module retargeted by its own import closure.

@@ -291,6 +291,27 @@ has   "content after the stripped command survives" \
 no_double_blank \
       "no doubled blank line around either stripped run" "$out"
 
+# The `mathlib_linters` command with a trailing comment: strip_line's
+# whole-line test widened to admit one, matching how the import forms
+# are already handled. Left as an exact-string match, this survives
+# extraction and reaches an upstream file where nothing registers it.
+mkdir -p fork18
+cat > GebLang/Foo/StripComment.lean <<'EOF'
+module
+
+mathlib_linters  -- turn on the linters
+
+@[expose] public section
+EOF
+bash "$SCRIPT" GebLang/Foo/StripComment.lean fork18 >/dev/null
+out=fork18/Mathlib/Foo/StripComment.lean
+exists "commented mathlib_linters fixture -> Mathlib path" "$out"
+lacks "commented mathlib_linters command stripped" "mathlib_linters" "$out"
+lacks "trailing comment on the command line gone" \
+      "turn on the linters" "$out"
+has   "content after the stripped command survives" \
+      "@[expose] public section" "$out"
+
 # The docstring gate (fix round 2): role conversion is scoped to
 # lines inside a docstring, and the strip pass to lines outside one.
 # `{name}`Nat`` appears in three contexts here — a single-line
