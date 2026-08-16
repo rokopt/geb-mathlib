@@ -950,6 +950,9 @@ chmod +x scripts/check-transitive-imports.sh
 bash scripts/check-transitive-imports.sh
 ```
 
+Step 3's self-test gets the same bit when it is written, matching the
+rest of `scripts/tests/`.
+
 Expected: `check-transitive-imports.sh: clean (N file(s) checked)`,
 exit 0, with `N` the number of files in the two mathlib-track roots
 plus `GebTests/Lang/`.
@@ -1054,7 +1057,12 @@ exit "$failed"
 
 - [ ] **Step 4: run the self-test**
 
-Run: `bash scripts/tests/test-check-transitive-imports.sh`
+Run:
+
+```bash
+chmod +x scripts/tests/test-check-transitive-imports.sh
+bash scripts/tests/test-check-transitive-imports.sh
+```
 
 Expected: five `PASS` lines and `0 failure(s)`, exit 0.
 
@@ -1974,18 +1982,26 @@ so the enumeration in Lean source is invisible to a sweep written for
 prose. They are corrected here, in the commit that falsifies them,
 for the reason Step 7 gives for the `docs/process.md` paragraph.
 
-In `Geb/Mathlib.lean`, the sentence
+In `Geb/Mathlib.lean`, the paragraph
 
 ```lean
+Modules under this namespace are intended for eventual upstream
 extraction to mathlib4, and import only from `Mathlib.*`, `Batteries.*`
-or `Geb.Mathlib.*`.
+or `Geb.Mathlib.*`. Where those import rules leave no alternative, a
+module here may instead target Lean core or Batteries; that destination
+is open, per `TODO.md` § Upstream destination of core- and
+Batteries-targeted content.
 ```
 
-becomes
+becomes, re-flowed because the sentence that changes ends mid-line
 
 ```lean
+Modules under this namespace are intended for eventual upstream
 extraction to mathlib4, and import only from `Mathlib.*`,
-`Batteries.*`, `Geb.Mathlib.*` or `GebLang.*`.
+`Batteries.*`, `Geb.Mathlib.*` or `GebLang.*`. Where those import
+rules leave no alternative, a module here may instead target Lean core
+or Batteries; that destination is open, per `TODO.md` § Upstream
+destination of core- and Batteries-targeted content.
 ```
 
 In `Geb/Cslib.lean`, the sentence
@@ -2409,8 +2425,8 @@ The bullet list becomes:
     imports from `Mathlib.*`, `Batteries.*`, `Cslib.*`,
     `Geb.Cslib.*`, `Geb.Mathlib.*`, and `GebLang.*` only.
   - `Geb/Internal/` — content not intended for upstream
-    extraction; may import from `Mathlib.*`, `Cslib.*`,
-    `Geb.Mathlib.*`, `Geb.Cslib.*`, `GebLang.*`, or
+    extraction; may import from `Mathlib.*`, `Batteries.*`,
+    `Cslib.*`, `Geb.Mathlib.*`, `Geb.Cslib.*`, `GebLang.*`, or
     `Geb.Internal.*`.
 - `GebLang/` — the Geb language's core data structures, at the
   bottom of the dependency order; imports from `Mathlib.*`,
@@ -2645,8 +2661,9 @@ bundling it. Add to `TODO.md` § Triggers:
   `CONTRIBUTING.md`, `README.md`, `TODO.md`, `docs/index.md`,
   `docs/process.md`, `docs/rules/lean-coding.md`, `Geb.lean`,
   `Geb/Cslib.lean`, `GebTests/Cslib.lean`, `GebMeta.lean`,
-  `manual/GebManual/Introduction.lean`, `scripts/extract-pr.sh` and
-  `scripts/lint-imports.sh`. Separately,
+  `manual/GebManual/Introduction.lean` and `scripts/lint-imports.sh`,
+  whose header keeps one such line through this plan's five edits to
+  it. Separately,
   `docs/rules/upstream-eligible.md` now calls `GebLang/` and
   `GebTests/Lang/` upstream-eligible locations rather than subtrees,
   while its heading, its table's first column and several sentences
@@ -2854,7 +2871,9 @@ grep -n 'GebLang' docs/index.md
 Expected: the `GebTests.lean` docstring's mirror enumeration names
 `GebTests.Lang` (plan 1, Task 2); `scripts/pre-push.sh` names
 `GebLang` in the docs-coverage pattern, its message, the shake
-invocation, the lint step and the cache rationale (plan 1, Task 5);
+invocation, the lint step, the cache rationale and the
+`defaultTargets` comment above the shake prerequisite (plan 1,
+Task 5);
 `scripts/tests/test-lint-driver.sh` carries the coverage scan and the
 literate workflow literal (plan 1, Task 5); `docs/index.md` carries
 the `GebLang/` bullet (Task 5 above).
