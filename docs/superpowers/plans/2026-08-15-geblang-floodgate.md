@@ -75,10 +75,15 @@ requirements implicitly include this section.
   necessity: Task 1's script change and its self-test run on synthetic
   fixtures and would pass with no `GebLang/` in the tree, so they
   could in principle land first. Task 1 is this plan's first commit so
-  that the window is as short as the split allows. Whether it matters
-  turns on whether `GebLang/` counts as an upstream-eligible location
-  before the rule documents declare it one. Task 6's closing step
-  reports it to the user along with the rest of the branch's state.
+  that the window is as short as the split allows.
+
+  The window is intended, by the user's direction. Plan 1's closing
+  step creates the bookmark `feat/geblang-library` at its last commit,
+  which exhibits the boundary in the `jj` history and leaves the pair
+  free to ship as one pull request or as two in dependency order.
+  Either way the window is interior to the branch: `GebLang/` is not a
+  declared upstream-eligible location until Task 5 revises the rule
+  documents, so no state offered upstream exhibits it.
 - Shell scripts stay portable to bash 3.2: no `mapfile`, no
   `readarray`, no associative arrays (`declare -A`), no `\b` inside a
   `sed` expression (GNU only; `grep -E` already uses `\b` in this

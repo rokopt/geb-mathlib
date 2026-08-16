@@ -776,14 +776,19 @@ and the support is not there:
   docstrings into the SQLite database; it does not render them.
 
 The steps below therefore measure rather than assume, and record the
-gap unconditionally. This deviates from the spec on a matter of fact
-in two places: from § Context, which states that the pinned doc-gen4
-renders Verso docstrings natively, and from § Standards and rule
-documents, which has the `TODO.md` revision record the doc-gen4 half
-of its scope-1 gate as met at the pin. Task 6 Step 3 writes the opposite of that
-second sentence. Both are on the list for the user's review; the
-spec's own § Verification anticipates a gap and asks for it to be
-recorded, which is what this task does.
+gap unconditionally. This contradicts the spec on a matter of fact in
+two places: § Context states that the pinned doc-gen4 renders Verso
+docstrings natively, and § Standards and rule documents has the
+`TODO.md` revision record the doc-gen4 half of its scope-1 gate as met
+at the pin. Task 6 Step 3 writes the opposite of that second sentence.
+
+The measurement overrules both, by the user's direction. Nothing turns
+on the disagreement: the spec's own § Verification anticipates a gap
+and asks for it to be recorded, which is what this task does, and the
+spec is deleted in the branch's final commits, so neither sentence
+reaches the permanent corpus. What does reach it is the `TODO.md`
+entry of Step 3 and the § Literate modules bullet of Task 6 Step 1,
+both written from the measurement.
 
 **A configuration that would close the gap, considered and
 rejected.** Lean core registers `doc.verso.module` beside `doc.verso`
@@ -1322,11 +1327,10 @@ failure, and the doc-gen4 gap by a page with no prose on it.
 
 The spec's § Standards and rule documents asks this section to state
 that the docstring markup must remain acceptable to both pipelines.
-That sentence cannot be written as worded, Task 4 having
-established that one pipeline drops module docstrings outright. The
-final bullet states the true relation instead. This is a deviation
-from the spec's wording, on the same finding the plan escalates in
-Task 4.
+That sentence cannot be written as worded, Task 4 having established
+that one pipeline drops module docstrings outright. The final bullet
+states the true relation instead, on the same measurement that
+overrules the spec in Task 4.
 
 Also extend the axiom-linter sentence in § Constructive-only Lean
 code, which currently reads
@@ -1581,3 +1585,17 @@ is printed, not enforced, and plan 2 Task 5 resolves it. This is the
 plan's end-to-end verification. The workflow files themselves are
 verified by CI after the user's review and push, as for the manual
 workstream.
+
+- [ ] **Step 8: mark the boundary between the two plans**
+
+```bash
+jj bookmark create feat/geblang-library --revision @-
+```
+
+The bookmark exhibits the grouping in the `jj` history: everything up
+to it is this plan, everything after is
+`docs/superpowers/plans/2026-08-15-geblang-floodgate.md`. It also
+leaves the pair free to ship either way, as one pull request over the
+whole branch or as two in dependency order, without the history
+having to be rearranged to decide. Do not push it; the topic bookmark
+`feat/geblang-literate` continues to advance over plan 2's commits.
