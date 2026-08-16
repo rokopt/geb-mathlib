@@ -18,10 +18,11 @@ step() {
 
 step "lake exe cache get"
 # Fetch the full mathlib olean cache, mirroring CI's
-# leanprover/lean-action. Without it, after a toolchain bump only
-# the oleans that `Geb` directly imports are present, and the
-# `lake shake` smoke test below (which injects an arbitrary mathlib
-# import) fails with "out of date oleans; fetch them from a cache".
+# leanprover/lean-action. Without it, after a toolchain bump only the
+# oleans that the root libraries `Geb` and `GebLang` directly import
+# are present, and the `lake shake` smoke test below (which injects
+# an arbitrary mathlib import) fails with "out of date oleans; fetch
+# them from a cache".
 #
 # Fetch only when the dependency set changes. `cache get` unpacks
 # every module whose local Lake trace records a `depHash` other than
@@ -64,16 +65,19 @@ step "lake lint"
 lake lint
 
 # `lake shake` requires built oleans for every library it scans.
-# `lake build` alone honours `defaultTargets` (Geb only), so build
-# `GebTests` explicitly here.
+# `lake build` alone honours `defaultTargets` (Geb and GebLang), so
+# build `GebTests` explicitly here.
 step "lake build GebTests (prerequisite for lake shake)"
 lake build GebTests
 
 step "lake lint GebTests (axiom + style linters on tests)"
 lake lint -- GebTests
 
+step "lake lint GebLang (axiom + style linters on the language library)"
+lake lint -- GebLang
+
 step "lake shake (minimised imports)"
-lake shake --add-public --keep-implied --keep-prefix Geb GebTests
+lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang
 
 step "scripts/lint-imports.sh"
 bash scripts/lint-imports.sh
@@ -103,10 +107,10 @@ step "docs-coverage check (concept docs in same branch)"
 # Project rule: any new concept added to source code must be
 # documented in docs/index.md in the same branch.
 # Stub implementation: surface a reminder when .lean files in
-# Geb/Mathlib/, Geb/Cslib/, or Geb/Internal/ change without
-# docs/index.md being touched in the same branch's diff. A full
-# implementation would parse new top-level declarations and check
-# docs/index.md mentions them; deferred to a future upgrade.
+# Geb/Mathlib/, Geb/Cslib/, Geb/Internal/, or GebLang/ change
+# without docs/index.md being touched in the same branch's diff. A
+# full implementation would parse new top-level declarations and
+# check docs/index.md mentions them; deferred to a future upgrade.
 #
 # diff_against_main (diff against the merge-base with main) is shared
 # with lake-update-warning.sh.
@@ -114,14 +118,14 @@ step "docs-coverage check (concept docs in same branch)"
 # shellcheck source=lib/diff-against-main.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/diff-against-main.sh"
 
-if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal)/.*\.lean$'; then
+if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal|GebLang)/.*\.lean$'; then
   if ! diff_against_main | grep -q '^docs/index.md$'; then
     echo "" >&2
     echo "REMINDER (docs-coverage):" >&2
-    echo "  Lean files under Geb/Mathlib/, Geb/Cslib/, or" >&2
-    echo "  Geb/Internal/ changed, but docs/index.md was not" >&2
-    echo "  touched. Verify each new concept is reflected in" >&2
-    echo "  docs/index.md." >&2
+    echo "  Lean files under Geb/Mathlib/, Geb/Cslib/," >&2
+    echo "  Geb/Internal/, or GebLang/ changed, but" >&2
+    echo "  docs/index.md was not touched. Verify each new" >&2
+    echo "  concept is reflected in docs/index.md." >&2
   fi
 fi
 

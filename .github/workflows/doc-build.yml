@@ -7,11 +7,15 @@ on:
     branches: [main]
     paths:
       - 'Geb/**'
+      - 'GebLang.lean'
+      - 'GebLang/**'
       - 'GebTests/**'
       - 'docs/**'
       - 'lakefile.toml'
       - 'lean-toolchain'
+      - 'literate.toml'
       - 'manual/**'
+      - 'scripts/literate.sh'
       - 'scripts/manual.sh'
       - 'scripts/nolints.json'
   workflow_dispatch:
@@ -35,6 +39,7 @@ jobs:
           test: false
           lint: false
       - run: lake build Geb:docs
+      - run: lake build GebLang:docs
       - name: Upload generated documentation
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
@@ -47,4 +52,13 @@ jobs:
         with:
           name: geb-manual
           path: manual/_out/html-multi
+          if-no-files-found: error
+      - run: bash scripts/literate.sh build
+      - name: Locate the generated literate site
+        run: echo "LITERATE_HTML=$(lake query :literateHtml)" >> "$GITHUB_ENV"
+      - name: Upload the generated literate site
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: geb-literate
+          path: ${{ env.LITERATE_HTML }}
           if-no-files-found: error

@@ -68,18 +68,20 @@ jobs:
           # aggregator for mk_all to check.
           mk_all-check: false
       # `lake shake` requires built oleans for every library it
-      # scans. `build: true` above honours `defaultTargets` (Geb
-      # only), so build `GebTests` explicitly here.
+      # scans. `build: true` above honours `defaultTargets` (Geb and
+      # GebLang), so build `GebTests` explicitly here.
       - name: lake build GebTests (prerequisite for lake shake)
         run: lake build GebTests
       - name: lake lint GebTests (axiom + style linters on tests)
         run: lake lint -- GebTests
+      - name: lake lint GebLang (axiom + style linters on the language library)
+        run: lake lint -- GebLang
       - name: scripts/tests/test-axiom-linter.sh
         run: bash scripts/tests/test-axiom-linter.sh
       - name: scripts/tests/test-lint-driver.sh
         run: bash scripts/tests/test-lint-driver.sh
       - name: lake shake (minimised imports)
-        run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests
+        run: lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang
       - name: scripts/tests/test-lake-shake.sh
         run: bash scripts/tests/test-lake-shake.sh
 
