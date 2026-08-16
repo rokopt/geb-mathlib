@@ -1000,16 +1000,26 @@ practice settles either question. Settle both.
 - **Verso adoption** (three scopes with distinct gates; doc-gen4 and Verso are
   complementary, not alternatives — doc-gen4 generates the API reference, Verso
   authors hand-written prose):
-  1. Docstrings in `.lean` files: gated on doc-gen4 gaining Verso-aware
-     rendering and mathlib migrating to Verso; contraindicated for
-     `Geb/Mathlib/` and `Geb/Cslib/` until both hold (Verso-markup docstrings
-     would read as foreign to mathlib reviewers and would not render on the
-     doc-gen4 site).
+  1. Docstrings in `.lean` files: neither half of the gate is met at the
+     pin. doc-gen4 converts a Verso declaration docstring to Markdown,
+     which reaches the page substantially intact, but drops a Verso
+     module docstring altogether (§ Triggers, doc-gen4 drops a `GebLang`
+     module docstring); and mathlib has not migrated. Still
+     contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`, whose
+     Verso-markup docstrings would read as foreign to mathlib reviewers
+     and whose module prose would not reach the doc-gen4 site.
+     `GebLang` is not gated on either half: its pages come from the
+     literate site, which renders both docstring kinds, and
+     `scripts/extract-pr.sh` converts the markup to plain Markdown at
+     extraction, so no unconverted markup reaches an upstream reviewer.
   2. Persistent prose (`docs/`, a future Geb-language exposition): gated on the
      prose growing substantial and describing stable, existing code.
      `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, `docs/process.md`, and
      `docs/rules/*` remain Markdown regardless (GitHub rendering, tool and
      `@import` consumption, markdownlint, doctoc).
+     The `GebLang` literate site (`scripts/literate.sh`) already renders that
+     library's docstrings as exposition, so a Geb-language exposition chooses
+     between extending it and a separate Verso document.
   3. Transient design docs on feature branches: no external gate; candidate for
      a local-only Verso build to evaluate authoring ergonomics and
      type-checking of embedded Lean.
@@ -1038,6 +1048,27 @@ practice settles either question. Settle both.
   doc-gen4 pin bump, at which point the measurements of the `GebLang`
   documentation build are re-taken and this entry is removed once the
   module docstring reaches the page.
+- **Replace `GebLang/Basic.lean`**: the module holds one anchor
+  declaration so that both documentation pipelines have a module
+  docstring and a declaration docstring to render. Trigger: the first
+  `GebLang` content workstream, which replaces the module rather than
+  growing it.
+- **Remove `GebTests/Lang/Basic.lean`**: the module holds one `#guard`
+  against the anchor declaration, validating the test driver path and
+  the lint path for the `GebLang` library. Trigger: the arrival of
+  real `GebTests/Lang/` tests, which supersede it.
+- **Verso's literate facet forwards unregistered Lean options**: the
+  `literate` module facet re-serialises a module's Lake options as `-D`
+  arguments to `verso-literate`, whose parser rejects a name the environment
+  does not register, does not honour Lake's `weak.` prefix, and parses those
+  arguments before loading the module. A mathlib linter option therefore
+  cannot sit in the Lake options of a library the pipeline renders, which is
+  why `lakefile.toml` declares mathlib's linters per library and `GebLang`
+  reaches two of them through `GebMeta.mathlib_linters` instead. Trigger: a
+  Verso pin bump whose facet filters names the executable cannot register, at
+  which point the options return to `lakefile.toml` and the command, its
+  per-module invocations and the extraction rules that strip them are
+  removed.
 - **Project-specific `geb-development` skill**: when recurring patterns
   accumulate that fit neither `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
   `docs/process.md`, `docs/rules/*.md`, nor existing `.claude/rules/*.md`.
