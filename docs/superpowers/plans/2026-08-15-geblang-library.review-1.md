@@ -159,4 +159,3 @@ beyond what the spec anticipated, and are the user's to weigh:
 
 The author has not revised the spec, per the handoff. The plan
 proceeds under the spec's own fallback and records the gap.
-</content>

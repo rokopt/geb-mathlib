@@ -152,4 +152,3 @@ reverses it, and narrows what is actually lost:
 
 The escalation stands on the narrower ground, and the plan's recorded
 `TODO.md` entry now matches it.
-</content>

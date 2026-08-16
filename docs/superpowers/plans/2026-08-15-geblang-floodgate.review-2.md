@@ -175,4 +175,3 @@ The `scripts/lint-imports.sh` edits are unchanged by this round
 except in header comments, so the reviewer's own run of them stands:
 53 self-test cases with no failure, and `clean (197 file(s) checked)`
 against the real tree plus plan 1's two files.
-</content>

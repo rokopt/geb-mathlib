@@ -161,4 +161,3 @@ property. Two considerations: the branch is not pushed between the
 plans, so no merged state exhibits it; and the files in the window are
 a placeholder declaration and a `#guard`, which no upstream PR would
 carry.
-</content>

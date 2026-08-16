@@ -65,10 +65,10 @@ requirements implicitly include this section.
   here. Plan 1 creates `GebLang/Basic.lean` and
   `GebTests/Lang/Basic.lean`; until this plan's Task 1
   `scripts/extract-pr.sh` rejects both roots outright and leaves their
-  Verso role markup unconverted, and until Task 3 neither file is
-  under `scripts/lint-imports.sh` or under
-  `docs/rules/upstream-eligible.md`'s `paths:`, so nothing enforces
-  their import rules either.
+  Verso role markup unconverted; neither file is under
+  `scripts/lint-imports.sh` until Task 3, nor under
+  `docs/rules/upstream-eligible.md`'s `paths:` until Task 5, so
+  nothing enforces their import rules over that longer span either.
 
   The window follows from the spec's mandated plan split, which puts
   the library before the floodgate work, not from a technical
@@ -77,8 +77,8 @@ requirements implicitly include this section.
   could in principle land first. Task 1 is this plan's first commit so
   that the window is as short as the split allows. Whether it matters
   turns on whether `GebLang/` counts as an upstream-eligible location
-  before the rule documents declare it one; it is on the list of items
-  for the user's review.
+  before the rule documents declare it one. Task 6's closing step
+  reports it to the user along with the rest of the branch's state.
 - Shell scripts stay portable to bash 3.2: no `mapfile`, no
   `readarray`, no associative arrays (`declare -A`), no `\b` inside a
   `sed` expression (GNU only; `grep -E` already uses `\b` in this
@@ -143,10 +143,12 @@ Context a fresh executor cannot recover from the spec.
   the working directory; keep that property when adding
   `scripts/check-transitive-imports.sh`, whose self-test depends on
   it.
-- **Build costs.** `lake build GebLang` is cheap. The first
-  `lake build :literateHtml` compiles Verso's literate executables
-  from source and takes minutes. This plan changes no Lean source, so
-  only `scripts/pre-push.sh` rebuilds anything.
+- **Build costs.** This plan edits three `Geb/` umbrella docstrings
+  (Task 4) and `GebMeta.lean` (Task 6). `GebMeta` is imported by
+  `Geb.lean`, `GebTests.lean` and `GebLang.lean`, so the final
+  `scripts/pre-push.sh` run after Task 6 is a full rebuild rather
+  than the no-op the rest of the plan's edits would leave. Budget for
+  it.
 - **Foreground `sleep` is blocked** for executors. Poll with
   `curl --retry` rather than sleeping, and clean up a served site with
   `pkill -f verso-serve`.
@@ -161,7 +163,8 @@ Created by this plan:
 - `scripts/check-transitive-imports.sh` (the closure check).
 - `scripts/tests/test-check-transitive-imports.sh` (its self-test).
 
-Modified by this plan: `docs/aristotle.md`,
+Modified by this plan: `docs/aristotle.md`, `Geb/Cslib.lean`,
+`Geb/Internal.lean`, `Geb/Mathlib.lean`,
 `manual/GebManual/Introduction.lean`, `scripts/extract-pr.sh`,
 `scripts/tests/test-extract-pr.sh`, `scripts/lint-imports.sh`,
 `scripts/tests/test-lint-imports.sh`, `scripts/pre-push.sh`,
@@ -306,28 +309,37 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # as literal braces upstream, and no other arm, GebTests/Lang/
 # included, has anything to convert.
 #
-# The braces hold one of the role names this repository writes, which
-# docs/rules/lean-coding.md § Literate modules fixes as a closed set:
-# `name` for a constant that must resolve, `option` for a Lean option,
-# `lit` for anything else. Matching that set rather than any
-# identifier is what keeps the substitution off Lean, because a brace
-# group holding an identifier is ordinary Lean and appears inside code
-# spans constantly:
+# Two restrictions, and both are needed. The braces hold one of the
+# role names this repository writes, which docs/rules/lean-coding.md
+# § Literate modules fixes as a closed set: `name` for a constant that
+# must resolve, `option` for a Lean option, `lit` for anything else.
+# And the match runs through the code span's closing backtick, so the
+# span is consumed in one pass.
 #
-#   `s ∪ {a}`   `x ∈ {a}`   `insert a {b}`   `theorem foo {n}`
-#   `Type.{u}`  `{S}`       `Cat.{v, u}`     `{g : B → k.1 // p g}`
+# The second restriction is what keeps the substitution off Lean. A
+# brace group holding an identifier is ordinary Lean and appears
+# inside code spans constantly, the role names included, since `name`,
+# `lit` and `option` are themselves ordinary identifiers:
 #
-# Every one of those survives, and every leading context a role
-# appears in converts: line start, space, parenthesis, bracket, list
-# marker, emphasis underscore. The leading-context clause is defence
-# in depth behind the vocabulary, not the guard itself.
+#   `s ∪ {a}`   `theorem foo {n}`   `Type.{u}`   `{S}`
+#   `freeVars (var name) = {name}`  `opts = {option}`
+#
+# Without consuming the span, sed's `g` flag resumes scanning inside
+# the span it has just opened and eats the second group as another
+# match, so the last two lose their singleton. With it, a group inside
+# a span is never rescanned and every line above survives.
+#
+# Every leading context a role appears in converts: line start, space,
+# parenthesis, bracket, list marker, emphasis underscore. The second
+# of two abutting roles does not, the closing backtick of the first
+# being in the excluded leading class; no Verso prose writes that.
 #
 # A role outside the set, including any role taking arguments, is left
 # unconverted and ships as literal braces. That is the intended
 # failure: braces upstream are visible and get fixed, where deleted
 # mathematics is not. Add a new role's exact name here when one is
 # first used.
-role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`/\1`/g'
+role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g'
 
 # convert_roles is 1 for the one arm reading doc.verso sources.
 #
@@ -557,19 +569,28 @@ public import GebLang.Foo.Base
 
 /-- Anchors {name}`Nat` in a docstring, beside Lean the conversion
 must not touch: {lit}`Type.{u}` and {lit}`{S}` carry a brace group of
-the same shape as a role, and `{p}` is a code span with no role at
-all. -/
+the same shape as a role, `{p}` is a code span with no role at all,
+and {lit}`freeVars (var name) = {name}` ends a span with a group
+spelled exactly like one. -/
 EOF
 bash "$SCRIPT" GebLang/Foo/Bar.lean fork4 >/dev/null
 out=fork4/Mathlib/Foo/Bar.lean
 exists "mathlib-track GebLang -> Mathlib path" "$out"
 has   "mathlib-track sibling rewritten" "public import Mathlib.Foo.Base" "$out"
-lacks "Verso role markup removed" '{name}' "$out"
-lacks "lit role markup removed" '{lit}' "$out"
+lacks "name role converted" '{name}`Nat`' "$out"
+lacks "lit role converted" '{lit}' "$out"
 has   "code span survives the conversion" '`Nat`' "$out"
 has   "universe ascription survives conversion" '`Type.{u}`' "$out"
 has   "binder group survives conversion" '`{S}`' "$out"
 has   "role-less code span untouched" '`{p}`' "$out"
+has   "singleton set at a span's end survives" \
+      '`freeVars (var name) = {name}`' "$out"
+
+# The first `lacks` names the exact role application rather than the
+# bare word or the role form: the fixture's last span legitimately
+# ends in `{name}` followed by the span's own closing backtick, so
+# both looser tests would read surviving mathematics as unconverted
+# markup. `{lit}` survives nowhere, so the bare word serves there.
 
 # A Cslib-track GebLang module importing a mathlib-track sibling: the
 # sibling is rewritten by its own track, not by the destination.
@@ -820,10 +841,9 @@ Create `scripts/check-transitive-imports.sh`:
 #
 # Pass 1 recomputes each root's closure from scratch and greps every
 # file in it twice, so the cost grows with the number of roots times
-# the average closure size. At the tree this lands on that is a few
-# seconds, several times what lint-imports.sh takes over the same
-# files. Memoising reaches_cslib per file is the repair if the
-# checklist comes to feel slow; it is not worth the state today.
+# the average closure size, and runs several times slower than
+# scripts/lint-imports.sh over the same files. Caching reaches_cslib
+# per file is the repair when that ratio starts to matter.
 #
 # Exit 0 on clean. Exit 1 on any violation.
 
@@ -1204,8 +1224,11 @@ after the keyword defeats Rule 2's blanking: the module path of
 `import  Geb.Mathlib.A` survives the blanking step and is then
 searched as prose, producing a second diagnostic beside the
 forbidden-import one Rule 1 already emits. Rule 1 is unaffected
-either way, its own prefix comparison running over the line with the
-`public` and `meta` keywords stripped rather than over this pattern.
+either way: its collection grep does use this pattern, and the
+keyword followed by one literal space already matches a
+doubled-space line;
+what rejects the line is the prefix comparison that follows, which
+runs over the line with the `public` and `meta` keywords stripped.
 Change
 
 ```bash
@@ -1262,11 +1285,11 @@ and add, after the `Batteries.*` rationale paragraph:
 ```bash
 # GebLang holds the Geb language's core data structures, at the bottom
 # of the dependency order: its modules import no other library of this
-# repository, and the subtrees above import them, their allowed lists
-# admitting the prefix. Each module is retargeted by its own import
-# closure, mathlib-track when the closure reaches no Cslib.* and
-# Cslib-track otherwise, so the Cslib.Init requirement is conditional
-# here rather than per subtree, and
+# repository, and every subtree above it may depend on it once its
+# allowed list admits the prefix. Each module is retargeted by its own
+# import closure, mathlib-track when the closure reaches no Cslib.*
+# and Cslib-track otherwise, so the Cslib.Init requirement is
+# conditional here rather than per subtree, and
 # scripts/check-transitive-imports.sh checks the closures that
 # scripts/extract-pr.sh reads to pick a destination.
 ```
@@ -1589,6 +1612,9 @@ jj bookmark move feat/geblang-literate --to @-
 
 - Modify: `scripts/lint-imports.sh`
 - Modify: `scripts/tests/test-lint-imports.sh`
+- Modify: `Geb/Mathlib.lean`
+- Modify: `Geb/Cslib.lean`
+- Modify: `Geb/Internal.lean`
 - Modify: `docs/process.md`
 - Modify: `TODO.md`
 
@@ -1672,7 +1698,9 @@ becomes, re-flowed because the first sentence ends mid-line
 
 Add the following immediately after the `GebLang` paragraph that
 Task 3 Step 5 inserted, so the three rationale paragraphs read
-Batteries, then `GebLang`, then `Geb.Mathlib.*`:
+Batteries, then `GebLang`, then `Geb.Mathlib.*`. Separate all three
+with a bare `#` line, as the header's other paragraphs are
+separated:
 
 ```bash
 # `Geb.Mathlib.*` is admitted to the Cslib subtrees because Cslib
@@ -1931,7 +1959,68 @@ Task 6's greps do not reach this paragraph: its enumeration is spelled
 That is why it is corrected here, in the commit that falsifies it,
 rather than left to the sweep.
 
-- [ ] **Step 8: extend `docs/process.md` § Two-track development**
+- [ ] **Step 8: correct the three subtree umbrella docstrings**
+
+`Geb/Mathlib.lean`, `Geb/Cslib.lean` and `Geb/Internal.lean` each
+enumerate their namespace's allowed imports in the module docstring,
+and Step 1 falsifies the first two. `Geb/Internal.lean` is falsified
+by omission: Task 5 Step 7 adds `GebLang.*` to the `docs/index.md`
+bullet that parallels it, so leaving it alone would have two
+documents state contradictory import rules.
+
+Neither sweep in Task 6 reaches them. Both patterns look for the path
+form `Geb/Mathlib/`, and these docstrings use the dotted module form,
+so the enumeration in Lean source is invisible to a sweep written for
+prose. They are corrected here, in the commit that falsifies them,
+for the reason Step 7 gives for the `docs/process.md` paragraph.
+
+In `Geb/Mathlib.lean`, the sentence
+
+```lean
+extraction to mathlib4, and import only from `Mathlib.*`, `Batteries.*`
+or `Geb.Mathlib.*`.
+```
+
+becomes
+
+```lean
+extraction to mathlib4, and import only from `Mathlib.*`,
+`Batteries.*`, `Geb.Mathlib.*` or `GebLang.*`.
+```
+
+In `Geb/Cslib.lean`, the sentence
+
+```lean
+extraction to CSLib and import only from `Mathlib.*`, `Cslib.*`,
+or `Geb.Cslib.*`.
+```
+
+becomes
+
+```lean
+extraction to CSLib and import only from `Mathlib.*`, `Batteries.*`,
+`Cslib.*`, `Geb.Cslib.*`, `Geb.Mathlib.*` or `GebLang.*`.
+```
+
+In `Geb/Internal.lean`, the sentence
+
+```lean
+extraction. They may import from `Mathlib.*`, `Cslib.*`,
+`Geb.Mathlib.*`, `Geb.Cslib.*`, or `Geb.Internal.*`.
+```
+
+becomes
+
+```lean
+extraction. They may import from `Mathlib.*`, `Batteries.*`,
+`Cslib.*`, `Geb.Mathlib.*`, `Geb.Cslib.*`, `GebLang.*` or
+`Geb.Internal.*`.
+```
+
+These are the only enumerations of the allowed lists in Lean source
+outside `scripts/lint-imports.sh`'s header.
+
+- [ ] **Step 9: extend `docs/process.md` § Two-track development**
 
 The sentence
 
@@ -1951,7 +2040,7 @@ upstream quality, with dependents migrated via `jj rebase` after the
 upstream PR is accepted.
 ```
 
-- [ ] **Step 9: remove the resolved `TODO.md` entry**
+- [ ] **Step 10: remove the resolved `TODO.md` entry**
 
 Delete the whole `TODO.md` § Triggers entry beginning
 
@@ -1966,7 +2055,7 @@ this task plus Tasks 1 and 5. The list's closing note, that
 `Batteries.` is arguably missing from the `Geb/Cslib/` allowed list,
 is resolved by Step 1 as well.
 
-- [ ] **Step 10: run the Markdown checks and commit**
+- [ ] **Step 11: run the Markdown checks and commit**
 
 Run:
 
@@ -2245,7 +2334,7 @@ becomes
 
 ```markdown
 The cross-subtree boundary follows the upstream dependency
-relationship, in one direction. Mathlib does not depend on Cslib, so
+relationship, in one direction. mathlib does not depend on Cslib, so
 `Geb/Mathlib/` files cannot import from `Cslib.*` or `Geb.Cslib.*`,
 and no `GebLang` module they import may reach `Cslib.*` either.
 Cslib does depend on mathlib, so `Geb/Cslib/` files may import
@@ -2295,7 +2384,10 @@ renders:
 - `scripts/extract-pr.sh` converts the roles to plain Markdown when a
   module is extracted, a checked name reference becoming a bare code
   span, so the checked markup stays local to this repository and the
-  shipped file carries the converted form.
+  shipped file carries the converted form. It converts exactly the
+  three roles named above. Lean core registers others, `{lean}` and
+  `{tactic}` among them; using one here means adding its name to that
+  script's `role_strip`, or it ships as literal braces.
 ```
 
 - [ ] **Step 7: revise `docs/index.md` § Directory structure**
@@ -2361,9 +2453,9 @@ In § Documentation, add after the manual bullet:
 ```markdown
 - The `GebLang` literate site (Verso): `scripts/literate.sh build`
   builds the library, lints it, and renders the site;
-  `scripts/literate.sh serve` serves it and prints the URL. There is
-  no watch mode: after editing a docstring, re-run `build` and
-  refresh the browser. Built in CI by `doc-build.yml`; the library
+  `scripts/literate.sh serve` serves it and prints the URL. It has no
+  watch mode: after editing a docstring, re-run `build` and refresh
+  the browser. Built in CI by `doc-build.yml`; the library
   itself is in the default `lake build`.
 ```
 
@@ -2548,14 +2640,19 @@ bundling it. Add to `TODO.md` § Triggers:
   accepts `Cslib` and Vale rejects the capitalised form, but files
   predating the vocabulary carry it: `docs/rules/upstream-eligible.md`
   most heavily, including a section heading and its
-  table-of-contents entry, and also `CONTRIBUTING.md`, `README.md`,
-  `docs/process.md`, `docs/rules/lean-coding.md`, `GebMeta.lean` and
-  `scripts/lint-imports.sh`'s header. Separately,
+  table-of-contents entry, and `docs/references.md` likewise, with a
+  section heading and its entry. The other carriers are
+  `CONTRIBUTING.md`, `README.md`, `TODO.md`, `docs/index.md`,
+  `docs/process.md`, `docs/rules/lean-coding.md`, `Geb.lean`,
+  `Geb/Cslib.lean`, `GebTests/Cslib.lean`, `GebMeta.lean`,
+  `manual/GebManual/Introduction.lean`, `scripts/extract-pr.sh` and
+  `scripts/lint-imports.sh`. Separately,
   `docs/rules/upstream-eligible.md` now calls `GebLang/` and
   `GebTests/Lang/` upstream-eligible locations rather than subtrees,
   while its heading, its table's first column and several sentences
   still say subtree. Trigger: a branch whose concern is those files
-  themselves, which retitles the section and re-runs `doctoc`.
+  themselves, which renames the two section headings and re-runs
+  `doctoc`.
 ```
 
 - [ ] **Step 12: run the Markdown checks**
@@ -2621,7 +2718,10 @@ that names a specific subtree for its own sake is not.
 two plans and the review records are transient documents that the
 branch's final commits remove, so they are not part of the committed
 corpus the sweep is over. Without the exclusion they are roughly half
-the hits.
+the hits. The scan below also skips `.claude`, whose `rules/`
+directory holds symlinks into `docs/rules/`: `grep -r` does not
+follow them, but `open()` does, so without the skip every hit there
+appears twice.
 
 - [ ] **Step 2: run the multi-line sweep**
 
@@ -2633,7 +2733,7 @@ python3 - <<'EOF' > /tmp/geblang-sweep-multiline.txt
 import os, re
 pat = re.compile(r'Geb/Mathlib/.{0,120}?Geb/Cslib/', re.S)
 skip = {'.lake', '.jj', '.remember', '.superpowers', 'node_modules',
-        'superpowers', 'styles', '.git'}
+        'superpowers', 'styles', '.git', '.claude'}
 for root, dirs, names in os.walk('.'):
     dirs[:] = [d for d in dirs if d not in skip]
     for n in names:
@@ -2667,9 +2767,10 @@ only this scan reaches:
   docstrings converted at extraction, which the entry should say.
 - `manual/GebManual/Introduction.lean`, whose upstream-directed
   paragraph enumerates `Geb/Mathlib/`, `Geb/Cslib/` and
-  `Geb/Internal/` as the whole of the layout. That file is in no
-  other task's list; add `GebLang/` to the enumeration, and note that
-  the manual builds only through `scripts/manual.sh build`.
+  `Geb/Internal/` as the whole of the layout. Add `GebLang/` to the
+  enumeration. The manual is outside every default build and outside
+  the pre-push checklist, so run `bash scripts/manual.sh build` after
+  the edit to compile it; the first run compiles Verso from source.
 
 Two further instances neither scan reaches, both left stale by this
 plan's own work rather than found by it:
@@ -2790,4 +2891,3 @@ jj bookmark move feat/geblang-literate --to @-
 Both plans are then executed. The workflow files are verified by CI
 after the user's review and push, as for the manual workstream; no
 push happens without that review.
-</content>
