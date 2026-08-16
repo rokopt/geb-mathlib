@@ -668,11 +668,13 @@ independent of the others and none scheduled.
   subterm's spelling, carrying the spelling in the fold's carrier rather than
   reading it from the state, so the head-locality the quadratic-cost estimate
   rests on does not bind. What the carrier costs is a value linear in the
-  subterm, which is unproved at a symbolic alphabet:
-  `Geb.CobhamFold.stackSize_algCh_le` bounds the pending values' total by a
-  multiple of the input word's length, not a subterm's fold value by that
-  subterm. Nothing here measures reduction steps, so this replaces the
-  estimate's premise rather than its arithmetic.
+  subterm, which `Geb.CobhamFold.length_fold_algCh_le` establishes at a
+  symbolic alphabet: `Geb.CobhamFold.stackSize_algCh_le` bounds the pending
+  values' total by a multiple of the input word's length, and at a subterm's
+  own spelling the scan ends with that subterm's value alone pending, so the
+  bound reads as `chGrowth R * (R.width * t.size)` on that value. Nothing
+  here measures reduction steps, so this replaces the estimate's premise
+  rather than its arithmetic.
 - `Cobham/RankedTree.lean` and `Cobham/Fold.lean` say `DecidableEq (Fin n →
   Bool)` resolves through `Fintype.decidablePiFintype`. It resolves through
   `Geb/Mathlib/Data/FinEnum.lean`'s choice-free `FinEnum.decidablePiFinEnum` at

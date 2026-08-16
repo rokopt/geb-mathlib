@@ -1498,41 +1498,39 @@ import-direction rules above are enforced by
   fold, at a carrier pairing a subterm's spelling with the step's value, the
   value delimited so the two are separable; the delimiting does not nest,
   each level reading only the spelling half of a child's value, which is what
-  a value linear in the subterm would need; `TODO.md` records that linearity
-  as unproved at a symbolic alphabet. `dropEntry_algPara` and
-  `takeEntry_algPara`
-  are its two laws and `algPara_eq_para` identifies it with `WType.para` at
-  the step that sees each child's spelling in place of the subtree, so the
-  recursion scheme is [Meertens1992]'s rather than one introduced here.
-  `growth_algPara` gives the per-symbol growth `2 * cphi + R.width + 1` for a
-  step bounded by its children's values, resting on `SelfDelim.lean`'s
-  weighted bound and so holding at arbitrary arguments. `algCh` is the
-  instance whose step returns the children's spellings, each delimited, and
-  it is the one that fails the growth condition, duplicating its children's
-  payloads; `five_mul_length_dropEntrySem_algCh_le` is the property of its
-  outputs that replaces it; `Fold.lean`'s `mem_stack_foldScanFinal` carries
-  that property along the scan, and `Variable.lean`'s potential chain,
-  generalised there to take a predicate the stack's values satisfy, runs the
-  argument with the growth condition so restricted, giving
-  `stackSize_algCh_le` at the constant
-  `chGrowth`. `algChOf` computes `algCh` inside the class, reusing
-  `Initial.lean`'s `flattenOf` through `compOf`; `smashFreeBool_algChOf` says
-  that expression carries no `smash`, and `smashFreeBool_chFoldOf` and
-  `smashFreeBool_childOf` carry that through the fold and the child reader,
-  placing both in the subalgebra `Cobham.SmashFree` names. `childSem` and
-  `childOf` read the `j`-th child's spelling, semantically and as an
-  expression, `chFoldOf` carrying the fold the expression reads from and
-  `stepWord_chFoldOf` its value; both readers are total, `childSem_of_le`
-  and `stepWord_childOf_of_le` returning the empty word past the last child,
-  and the expression's
-  equations are stated in the "entries followed by an arbitrary remainder"
-  form because the readout's presence marker is absorbed into the entry's
-  unary prefix. `toSigma_mk` bridges mathlib's `WType.toSigma` to
-  `RankedAlphabet.Term.mk`, `semAt_mkOf_spell` reads the constructor at the
-  children's spellings as the spelling of the term they build, and
-  `semAt_mkOf_childOf` closes the round trip:
-  the constructor at the children the destructor reads returns the word,
-  under `R.parse w = some (Term.mk R i ch)` with the symbol given rather than
-  read. Depends on
+  a value linear in the subterm needs, and `length_fold_algCh_le` establishes
+  that linearity. `dropEntry_algPara` and `takeEntry_algPara` are its two
+  laws and `algPara_eq_para` identifies it with `WType.para` at the step that
+  sees each child's spelling in place of the subtree, so the recursion scheme
+  is [Meertens1992]'s rather than one introduced here. `growth_algPara` gives
+  the per-symbol growth `2 * cphi + R.width + 1` for a step bounded by its
+  children's values, resting on `SelfDelim.lean`'s weighted bound and so
+  holding at arbitrary arguments. `algCh` is the instance whose step returns
+  the children's spellings, each delimited, and it is the one that fails the
+  growth condition, duplicating its children's payloads;
+  `five_mul_length_dropEntrySem_algCh_le` is the property of its outputs that
+  replaces it; `Fold.lean`'s `mem_stack_foldScanFinal` carries that property
+  along the scan, and `Variable.lean`'s potential chain, generalised there to
+  take a predicate the stack's values satisfy, runs the argument with the
+  growth condition so restricted, giving `stackSize_algCh_le` at the constant
+  `chGrowth`, from which `length_fold_algCh_le` reads a subterm's own value
+  at that subterm's spelling. `algChOf` computes `algCh` inside the class,
+  reusing `Initial.lean`'s `flattenOf` through `compOf`;
+  `smashFreeBool_algChOf` says that expression carries no `smash`, and
+  `smashFreeBool_chFoldOf` and `smashFreeBool_childOf` carry that through the
+  fold and the child reader, placing both in the subalgebra
+  `Cobham.SmashFree` names. `childSem` and `childOf` read the `j`-th child's
+  spelling, semantically and as an expression, `chFoldOf` carrying the fold
+  the expression reads from and `stepWord_chFoldOf` its value; both readers
+  are total, `childSem_of_le` and `stepWord_childOf_of_le` returning the
+  empty word past the last child, and the expression's equations are stated
+  in the "entries followed by an arbitrary remainder" form because the
+  readout's presence marker is absorbed into the entry's unary prefix.
+  `toSigma_mk` bridges mathlib's `WType.toSigma` to `RankedAlphabet.Term.mk`,
+  `semAt_mkOf_spell` reads the constructor at the children's spellings as the
+  spelling of the term they build, and `semAt_mkOf_childOf` closes the round
+  trip: the constructor at the children the destructor reads returns the
+  word, under `R.parse w = some (Term.mk R i ch)` with the symbol given
+  rather than read. Depends on
   `Geb.Internal.Computability.CobhamFoldProto.Initial` and
   `Geb.Mathlib.Data.W.Basic`. `Classical.choice`-free.

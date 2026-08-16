@@ -70,6 +70,8 @@ symbol and the children's spellings.
 * `Geb.CobhamFold.growth_algCh_of_dropEntrySem_le`,
   `Geb.CobhamFold.stackSize_algCh_le` — the per-symbol growth condition at
   `Geb.CobhamFold.algCh`, and the linearity hypothesis it discharges.
+* `Geb.CobhamFold.length_fold_algCh_le` — that fold's value at a term is
+  linear in the term, the linearity in the input word read at a spelling.
 * `Geb.CobhamFold.semAt_algChOf`, `Geb.CobhamFold.smashFreeBool_algChOf` —
   what `Geb.CobhamFold.algChOf` computes, and that it carries no `smash`.
 * `Geb.CobhamFold.takeEntrySem_cons_true` — the presence marker is absorbed
@@ -104,7 +106,7 @@ being exponential in depth. The route taken instead is
 outputs that needs no induction hypothesis,
 carried along the scan by `mem_stack_foldScanFinal` and consumed by a
 potential argument in the shape
-`Geb.CobhamFold.potential_foldScanStep_le`'s.
+`Geb.CobhamFold.potential_foldScanStep_le_of_invariant`'s.
 
 `Variable.lean` states the potential chain at a growth condition restricted
 to values satisfying a predicate the scan's stack carries, and derives the
@@ -191,7 +193,7 @@ its value, the value delimited so the two are separable. -/
 def algPara (R : RankedAlphabet) (phi : ParaStep R) (i : Fin R.card)
     (f : Fin (R.arity i) → List Bool) : List Bool :=
   entryWord (phi i fun d ↦ (dropEntrySem ![f d], takeEntrySem ![f d])) ++
-    (R.code i ++ (List.ofFn fun d ↦ dropEntrySem ![f d]).flatten)
+    algMk R i fun d ↦ dropEntrySem ![f d]
 
 /-- The value's second half is the spelling, whatever the step, so the
 delimiting does not nest: each level reads only this half of a child's
@@ -201,8 +203,8 @@ theorem dropEntry_algPara (R : RankedAlphabet) (phi : ParaStep R) (t : R.Term) :
   Term.induction (motive := fun t ↦
       dropEntrySem ![Term.fold R (algPara R phi) t] = R.spell t)
     (fun i ch ih ↦ by
-      rw [Term.fold_mk, algPara, dropEntrySem_entryWord, spell_mk]
-      exact congrArg (fun g ↦ R.code i ++ (List.ofFn g).flatten) (funext ih)) t
+      rw [Term.fold_mk, algPara, dropEntrySem_entryWord]
+      exact congrArg (algMk R i) (funext ih)) t
 
 /-- The step is applied to each child's spelling and value, which is the
 paramorphism's defining equation. -/
@@ -262,8 +264,7 @@ theorem growth_algPara (R : RankedAlphabet) (phi : ParaStep R) (cphi : ℕ)
       (List.ofFn fun d ↦ (f d).length).sum + (2 * cphi + R.width + 1) := by
   have hstep := hphi i fun d ↦ (dropEntrySem ![f d], takeEntrySem ![f d])
   have hw := two_mul_length_flatten_take_add_drop_le (List.ofFn f)
-  rw [algPara, List.length_append, length_entryWord, List.length_append,
-    R.length_code, sum_ofFn_length_eq_length_flatten]
+  rw [algPara, List.length_append, length_entryWord, length_algMk]
   simp only [List.map_ofFn, Function.comp_def, sum_ofFn_length_eq_length_flatten] at hstep hw ⊢
   omega
 
@@ -298,7 +299,7 @@ theorem dropEntrySem_algCh (R : RankedAlphabet) (i : Fin R.card)
     (f : Fin (R.arity i) → List Bool) :
     dropEntrySem ![algCh R i f] =
       R.code i ++ (List.ofFn fun d ↦ dropEntrySem ![f d]).flatten := by
-  rw [algCh, algPara, dropEntrySem_entryWord]
+  rw [algCh, algPara, dropEntrySem_entryWord, algMk]
 
 /-- Its length, at arbitrary arguments: five times the children's second
 halves, two bits per child, the sentinel and the block. -/
@@ -309,9 +310,8 @@ theorem length_algCh (R : RankedAlphabet) (i : Fin R.card)
         2 * R.arity i + 1 + R.width := by
   have hlen := length_stackWordV (List.ofFn fun d ↦ dropEntrySem ![f d])
   rw [stackWordV_ofFn, stackSize] at hlen
-  rw [algCh, algPara, List.length_append, length_entryWord, List.length_append,
-    R.length_code]
-  simp only [List.length_ofFn] at hlen ⊢
+  rw [algCh, algPara, List.length_append, length_entryWord, length_algMk]
+  simp only [List.length_ofFn, sum_ofFn_length_eq_length_flatten] at hlen ⊢
   omega
 
 /-- Every value the delimited-children algebra produces carries its second
@@ -391,6 +391,18 @@ theorem stackSize_algCh_le (R : RankedAlphabet) (w : List Bool) :
     (fun v ↦ 5 * (dropEntrySem ![v]).length + 1 ≤ v.length + 4 * R.width)
     (chGrowth R) (five_mul_length_dropEntrySem_algCh_le R) (growth_algCh_of_dropEntrySem_le R) w
 
+/-- A subterm's value is linear in that subterm, and not only in the word the
+scan reads: at a spelling the scan ends with that value alone pending, so
+`stackSize_algCh_le` there bounds the value itself, and
+`RankedAlphabet.length_spell` turns the word's length into the subterm's node
+count. -/
+theorem length_fold_algCh_le (R : RankedAlphabet) (t : R.Term) :
+    (Term.fold R (algCh R) t).length ≤ chGrowth R * (R.width * t.size) := by
+  have h := stackSize_algCh_le R (R.spell t)
+  rw [foldScanFinal, foldScanFrom_spell, length_spell] at h
+  simp only [stackSize_cons, stackSize_nil] at h
+  omega
+
 /-- The delimited-children algebra as an expression of Cobham's class. Each
 slot contributes its own second half, plain in the first argument and
 delimited in the second; `Geb.CobhamFold.flattenOf` concatenates a family
@@ -410,7 +422,7 @@ theorem semAt_algChOf (R : RankedAlphabet) (i : Fin R.card)
     semAt (R.arity i) (algChOf R i).1.1 (algChOf R i).2 f = algCh R i f := by
   rw [algChOf, semAt_concatCompOf, semAt_prependOf, semAt_comp1Of,
     semAt_compOf, semAt_compOf, semAt_flattenOf, semAt_flattenOf, algCh,
-    algPara]
+    algPara, algMk]
   simp only [semAt_comp1Of, semAt_projOf, stepWord_dropEntryOf,
     stepWord_entryWordOf]
 
@@ -490,7 +502,7 @@ theorem fold_algCh_mk (R : RankedAlphabet) (i : Fin R.card)
         (R.code i ++ (List.ofFn fun d ↦ R.spell (ch d)).flatten) := by
   rw [Term.fold_mk, algCh, algPara, stackWordV_ofFn]
   exact congrArg (fun g ↦ entryWord ((List.ofFn fun d ↦ entryWord (g d)).flatten) ++
-      (R.code i ++ (List.ofFn g).flatten))
+      algMk R i g)
     (funext fun d ↦ dropEntry_algPara R _ (ch d))
 
 /-- The `j`-th child's spelling, read from a term's fold value. -/

@@ -264,8 +264,9 @@ theorem stepWord_dropEntriesOf_stackWordV_append :
           List.drop_succ_cons]
 
 /-- The `j`-th entry of a stack layout is its `j`-th value, whatever follows
-the layout. `Geb.CobhamFold.stepWord_entryOf_stackWordV` is this at the empty
-remainder, read through `List.headD`. -/
+the layout. `Geb.CobhamFold.stepWord_entryOf_stackWordV` agrees with it where
+`j < st.length`; neither is an instance of the other, that one being
+unconditional in `j` and read through `List.headD`. -/
 theorem stepWord_entryOf_stackWordV_append (j : ℕ) (st : List (List Bool))
     (rest : List Bool) (h : j < st.length) :
     stepWord (entryOf j) (stackWordV st ++ rest) = st[j] := by
