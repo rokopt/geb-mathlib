@@ -82,6 +82,9 @@ lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang
 step "scripts/lint-imports.sh"
 bash scripts/lint-imports.sh
 
+step "scripts/check-transitive-imports.sh"
+bash scripts/check-transitive-imports.sh
+
 step "scripts/check-commit-msg.sh (branch commits)"
 jj log --no-graph -r 'fork_point(main | @)..@ ~ merges()' \
   -T 'description.first_line() ++ "\n"' | bash scripts/check-commit-msg.sh

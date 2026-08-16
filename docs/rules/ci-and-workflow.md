@@ -94,6 +94,12 @@ then the Markdown and project-rule checks:
 
 - `scripts/lint-imports.sh` (the subtree import rules; see
   `docs/rules/upstream-eligible.md`).
+- `scripts/check-transitive-imports.sh` (the closure rules the
+  direct-import lists cannot see). `scripts/lint-imports.sh` bounds
+  each module's direct imports; this bounds the closure: a
+  `Geb/Mathlib/` or `GebTests/Mathlib/` module whose `GebLang`
+  dependencies reach `Cslib.*` is Cslib-track and belongs under the
+  Cslib subtree.
 - `scripts/check-commit-msg.sh` over the branch's commit subjects.
 - `doctoc --dryrun --update-only .` (TOC freshness; skipped when
   `doctoc` is absent) and `markdownlint-cli2 '**/*.md'`.
@@ -110,6 +116,7 @@ exercises the tool named in its own filename against staged
 fixtures:
 
 - `scripts/tests/test-lint-imports.sh`,
+  `scripts/tests/test-check-transitive-imports.sh`,
   `scripts/tests/test-lake-shake.sh`,
   `scripts/tests/test-extract-pr.sh`,
   `scripts/tests/test-axiom-linter.sh`,

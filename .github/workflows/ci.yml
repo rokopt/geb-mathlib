@@ -30,6 +30,10 @@ jobs:
         run: bash scripts/lint-imports.sh
       - name: scripts/tests/test-lint-imports.sh
         run: bash scripts/tests/test-lint-imports.sh
+      - name: scripts/check-transitive-imports.sh
+        run: bash scripts/check-transitive-imports.sh
+      - name: scripts/tests/test-check-transitive-imports.sh
+        run: bash scripts/tests/test-check-transitive-imports.sh
       - name: scripts/tests/test-extract-pr.sh
         run: bash scripts/tests/test-extract-pr.sh
       - name: scripts/tests/test-check-commit-msg.sh
