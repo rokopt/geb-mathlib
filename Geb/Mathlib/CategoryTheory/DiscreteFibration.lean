@@ -8,6 +8,7 @@ module
 public import Mathlib.CategoryTheory.Comma.Arrow
 public import Mathlib.CategoryTheory.Elements
 public import Mathlib.CategoryTheory.FiberedCategory.Fiber
+public import Mathlib.CategoryTheory.FiberedCategory.Fibered
 public import Mathlib.CategoryTheory.FiberedCategory.HomLift
 public import Mathlib.CategoryTheory.Types.Basic
 public import Mathlib.Tactic.Attr.Core
@@ -36,7 +37,14 @@ Arrow B ---right---> B
 is `IsDiscreteFibration p : Prop`, "`codPair p : Arrow C → Arrow B ×_B C`
 is a bijection".  `DiscreteFibration p → IsDiscreteFibration p` is proved
 without choice; the converse `IsDiscreteFibration.toDiscreteFibration`
-needs choice and is isolated.
+needs choice and is isolated.  `isDiscreteFibration_iff_nonempty` is the
+resulting equivalence of the two formulations.
+
+Relating the notion to mathlib's fibred-category API: every morphism is
+cartesian (`DiscreteFibration.isCartesian`), so a discrete fibration is a
+fibred category (`DiscreteFibration.isFibered`), and its fibres are
+discrete categories (`DiscreteFibration.fiber_eq_of_hom` and
+`DiscreteFibration.fiber_hom_ext`).
 
 The nLab "discussion via category of elements", mechanised:
 
@@ -56,11 +64,13 @@ The nLab "discussion via category of elements", mechanised:
 Axiom budget (see the audit at the end of the file): every declaration
 depends on at most `propext` and `Quot.sound`, except
 
-* `IsDiscreteFibration.toDiscreteFibration` / `.nonempty`, which use
-  `Classical.choice` on purpose, and
+* `IsDiscreteFibration.toDiscreteFibration` / `.nonempty` and
+  `isDiscreteFibration_iff_nonempty`, which use `Classical.choice` on
+  purpose, and
 * the packaged statements mentioning `⋙` (`toElements_comp_π`,
   `ofElements_comp`, `toElements_comp_ofElements`,
-  `ofElements_comp_toElements`) and `fiberPresheafIso` (built with
+  `ofElements_comp_toElements`, `elementsEquivalence`) and
+  `fiberPresheafIso` (built with
   `NatIso.ofComponents`), which inherit `Classical.choice` from
   mathlib's `Functor.comp` and `NatIso.ofComponents`, whose proof
   obligations mathlib discharges by classical automation.  Their
@@ -191,6 +201,61 @@ theorem eq_liftArrow {b : B} {c : C} (g : b ⟶ p.obj c) {c' : C}
   subst h1
   rw [eq_of_heq h2]
 
+/-- A morphism lying over an identity has equal endpoints. -/
+theorem eq_of_isHomLift_id {S : B} {a b : C} (ψ : a ⟶ b)
+    [p.IsHomLift (𝟙 S) ψ] : a = b :=
+  (D.src_eq (eqToHom (IsHomLift.codomain_eq p (𝟙 S) ψ).symm) ψ
+      (IsHomLift.domain_eq p (𝟙 S) ψ)
+      (by simpa using IsHomLift.fac' p (𝟙 S) ψ)).symm.trans
+    (D.src_eq (eqToHom (IsHomLift.codomain_eq p (𝟙 S) ψ).symm) (𝟙 b)
+      (IsHomLift.codomain_eq p (𝟙 S) ψ) (by simp))
+
+/-- The endpoints of a morphism of a fibre agree.  With `fiber_hom_ext`
+below, the fibres of a discrete fibration are discrete categories. -/
+theorem fiber_eq_of_hom {S : B} {a b : p.Fiber S} (φ : a ⟶ b) : a = b :=
+  Functor.Fiber.fiberInclusion_obj_inj
+    (D.eq_of_isHomLift_id (S := S) (Functor.Fiber.fiberInclusion.map φ))
+
+/-- Parallel morphisms of a fibre agree, since `p` is faithful. -/
+theorem fiber_hom_ext {S : B} {a b : p.Fiber S} (φ ψ : a ⟶ b) : φ = ψ :=
+  Functor.Fiber.hom_ext (D.map_injective
+    ((IsHomLift.fac' p (𝟙 S) (Functor.Fiber.fiberInclusion.map φ)).trans
+      (IsHomLift.fac' p (𝟙 S) (Functor.Fiber.fiberInclusion.map ψ)).symm))
+
+/-- Every morphism over `f` is cartesian in mathlib's sense: uniqueness of
+lifts supplies the universal property outright. -/
+theorem isCartesian {R S : B} {a b : C} (f : R ⟶ S) (φ : a ⟶ b)
+    [p.IsHomLift f φ] : p.IsCartesian f φ where
+  universal_property {a'} φ' _ := by
+    have key : (⟨a', φ'⟩ : Σ c, c ⟶ b) = ⟨a, φ⟩ :=
+      (D.unique (f ≫ eqToHom (IsHomLift.codomain_eq p f φ).symm) φ'
+          (IsHomLift.domain_eq p f φ')
+          (by simpa using IsHomLift.fac' p f φ')).trans
+        (D.unique (f ≫ eqToHom (IsHomLift.codomain_eq p f φ).symm) φ
+          (IsHomLift.domain_eq p f φ)
+          (by simpa using IsHomLift.fac' p f φ)).symm
+    obtain ⟨ha, hφ⟩ := Sigma.mk.inj_iff.1 key
+    subst ha
+    obtain rfl := eq_of_heq hφ
+    refine ⟨𝟙 _, ⟨IsHomLift.id (IsHomLift.domain_eq p f φ'),
+      Category.id_comp _⟩, fun χ hχ => D.map_injective ?_⟩
+    have := hχ.1
+    rw [p.map_id]
+    simpa using IsHomLift.fac' p (𝟙 R) χ
+
+/-- Every object of `C` admits a cartesian lift of every morphism into its
+image. -/
+theorem isPreFibered : p.IsPreFibered where
+  exists_isCartesian' f :=
+    ⟨D.src f, D.hom f, have := D.isHomLift_hom f; D.isCartesian _ _⟩
+
+/-- A discrete fibration is a fibred category. -/
+theorem isFibered : p.IsFibered where
+  toIsPreFibered := D.isPreFibered
+  comp := by
+    intro _ _ _ f g _ _ _ φ ψ _ _
+    exact D.isCartesian (f ≫ g) (φ ≫ ψ)
+
 end DiscreteFibration
 
 /-! ## 3. The codomain square -/
@@ -279,6 +344,13 @@ noncomputable def IsDiscreteFibration.toDiscreteFibration {p : C ⥤ B}
 theorem IsDiscreteFibration.nonempty {p : C ⥤ B}
     (H : IsDiscreteFibration p) : Nonempty (DiscreteFibration p) :=
   ⟨H.toDiscreteFibration⟩
+
+/-- The two formulations agree: the codomain square is a pullback exactly
+when lifting data exists.  Lifting data is a `Subsingleton`, so the
+`Nonempty` on the right loses nothing. -/
+theorem isDiscreteFibration_iff_nonempty {p : C ⥤ B} :
+    IsDiscreteFibration p ↔ Nonempty (DiscreteFibration p) :=
+  ⟨fun H => H.nonempty, fun ⟨D⟩ => D.isDiscreteFibration⟩
 
 /-! ## 4. The category of elements of a presheaf -/
 
@@ -572,6 +644,14 @@ theorem ofElements_comp_toElements :
       ⟨_, D.coElements_eq_toElements_obj y⟩
     change D.toElements.map (D.ofElements.map f) = 𝟙 _ ≫ f ≫ 𝟙 _
     rw [D.toElements_map_ofElements_map, Category.id_comp, Category.comp_id])
+
+/-- The two functors assemble into an equivalence, so a discrete fibration
+over `B` is the category of elements of its own fibre presheaf.  Both
+composites are identity functors on the nose, so the unit and counit are
+`eqToIso`s. -/
+def elementsEquivalence : C ≌ D.fiberPresheaf.CoElements :=
+  .mk D.toElements D.ofElements (eqToIso D.toElements_comp_ofElements.symm)
+    (eqToIso D.ofElements_comp_toElements)
 
 end DiscreteFibration
 
