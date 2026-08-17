@@ -139,23 +139,7 @@ instance : Subsingleton (DiscreteFibration p) := by
 
 end DiscreteFibration
 
-/-! ## 2. Equality of arrows and mathlib's `IsHomLift` -/
-
-/-- Two arrows are equal iff their endpoints are equal and the homs agree
-up to the induced transports.  The only place `HEq` on homs is unpacked. -/
-theorem arrow_mk_eq_iff {X Y X' Y' : B} (f : X ⟶ Y) (g : X' ⟶ Y') :
-    Arrow.mk f = Arrow.mk g ↔
-      ∃ (hX : X = X') (hY : Y = Y'),
-        f = eqToHom hX ≫ g ≫ eqToHom hY.symm := by
-  constructor
-  · intro h
-    have hX : X = X' := congrArg Comma.left h
-    have hY : Y = Y' := congrArg Comma.right h
-    subst hX hY
-    exact ⟨rfl, rfl, by simpa using (Arrow.mk_inj _ _).1 h⟩
-  · rintro ⟨hX, hY, hfg⟩
-    subst hX hY
-    simpa using congrArg Arrow.mk hfg
+/-! ## 2. Mathlib's `IsHomLift` -/
 
 /-- Mathlib's `IsHomLift` is the proposition
 `Arrow.mk (p.map φ) = Arrow.mk f`. -/
@@ -164,11 +148,11 @@ theorem isHomLift_iff_arrow_mk_eq (p : C ⥤ B) {R S : B} {a b : C}
     p.IsHomLift f φ ↔ Arrow.mk (p.map φ) = Arrow.mk f := by
   constructor
   · intro h
-    exact (arrow_mk_eq_iff _ _).2
+    exact (Arrow.mk_eq_mk_iff _ _).2
       ⟨IsHomLift.domain_eq p f φ, IsHomLift.codomain_eq p f φ,
         IsHomLift.fac' p f φ⟩
   · intro h
-    obtain ⟨hR, hS, hf⟩ := (arrow_mk_eq_iff _ _).1 h
+    obtain ⟨hR, hS, hf⟩ := (Arrow.mk_eq_mk_iff _ _).1 h
     exact IsHomLift.of_fac' p f φ hR hS hf
 
 namespace DiscreteFibration
@@ -182,7 +166,7 @@ def liftArrow {b : B} {c : C} (g : b ⟶ p.obj c) : Arrow C :=
 
 theorem arrow_mk_map_hom {b : B} {c : C} (g : b ⟶ p.obj c) :
     Arrow.mk (p.map (D.hom g)) = Arrow.mk g :=
-  (arrow_mk_eq_iff _ _).2 ⟨D.obj_src g, rfl, by simp [D.map_hom]⟩
+  (Arrow.mk_eq_mk_iff _ _).2 ⟨D.obj_src g, rfl, by simp [D.map_hom]⟩
 
 theorem isHomLift_hom {b : B} {c : C} (g : b ⟶ p.obj c) :
     p.IsHomLift g (D.hom g) :=
@@ -192,7 +176,7 @@ theorem isHomLift_hom {b : B} {c : C} (g : b ⟶ p.obj c) :
 theorem eq_liftArrow {b : B} {c : C} (g : b ⟶ p.obj c) {c' : C}
     (h : c' ⟶ c) (hh : Arrow.mk (p.map h) = Arrow.mk g) :
     Arrow.mk h = D.liftArrow g := by
-  obtain ⟨e, hY, hf⟩ := (arrow_mk_eq_iff _ _).1 hh
+  obtain ⟨e, hY, hf⟩ := (Arrow.mk_eq_mk_iff _ _).1 hh
   have hu := D.unique g h e (by simpa using hf)
   obtain ⟨h1, h2⟩ := Sigma.mk.inj_iff.1 hu
   simp only [liftArrow]
@@ -275,14 +259,14 @@ noncomputable def IsDiscreteFibration.toDiscreteFibration {p : C ⥤ B}
         congrArg (fun q : CodPullback p => q.1.1.left) (hl _)
       map_hom := fun {b c} g => ?_
       unique := fun {b c} g {c'} h eh hh => ?_ }
-  · obtain ⟨hX, hY, hf⟩ := (arrow_mk_eq_iff _ _).1 (hm g)
+  · obtain ⟨hX, hY, hf⟩ := (Arrow.mk_eq_mk_iff _ _).1 (hm g)
     simp only [Functor.map_comp, eqToHom_map, hf]
     simp
   · refine sigma_eq_of_arrow_eq h _ ?_ (hr g)
     apply H.equiv.injective
     rw [H.equiv.apply_symm_apply, H.equiv_apply]
     exact Subtype.ext (Prod.ext
-      ((arrow_mk_eq_iff _ _).2 ⟨eh, rfl, by simpa using hh⟩).symm rfl)
+      ((Arrow.mk_eq_mk_iff _ _).2 ⟨eh, rfl, by simpa using hh⟩).symm rfl)
 
 theorem IsDiscreteFibration.nonempty {p : C ⥤ B}
     (H : IsDiscreteFibration p) : Nonempty (DiscreteFibration p) :=
