@@ -1,12 +1,14 @@
+/-
+Copyright (c) 2026 Terence Rokop. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Terence Rokop
+-/
 module
 
-import Mathlib.CategoryTheory.Comma.Arrow
-import Mathlib.CategoryTheory.FiberedCategory.HomLift
-import Mathlib.CategoryTheory.Types.Basic
-
-set_option autoImplicit false
-set_option relaxedAutoImplicit false
-set_option linter.privateModule false
+public import Mathlib.CategoryTheory.Comma.Arrow
+public import Mathlib.CategoryTheory.FiberedCategory.HomLift
+public import Mathlib.CategoryTheory.Types.Basic
+public import Mathlib.Tactic.Attr.Core
 
 /-!
 # Discrete fibrations, presheaves, and categories of elements
@@ -62,11 +64,13 @@ depends on at most `propext` and `Quot.sound`, except
   the `propext`/`Quot.sound` budget.
 -/
 
-namespace Geb
-
-open CategoryTheory Opposite
+@[expose] public section
 
 universe v₁ v₂ v₃ u₁ u₂
+
+namespace CategoryTheory
+
+open Opposite
 
 variable {C : Type u₁} [Category.{v₁} C] {B : Type u₂} [Category.{v₂} B]
 
@@ -289,7 +293,9 @@ theorem IsDiscreteFibration.nonempty {p : C ⥤ B}
 /-- Objects of the category of elements of `F : Bᵒᵖ ⥤ Type v`: pairs of an
 object `b` and an element of `F b`. -/
 structure Elts (F : Bᵒᵖ ⥤ Type v₃) : Type (max u₂ v₃) where
+  /-- The object of `B` the element lies over. -/
   base : B
+  /-- The element of `F` at `base`. -/
   elt : F.obj (op base)
 
 namespace Elts
@@ -591,4 +597,4 @@ def fibrePshIso :
 
 end Elts
 
-end Geb
+end CategoryTheory
