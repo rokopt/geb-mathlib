@@ -7,6 +7,7 @@ module
 
 public import Mathlib.CategoryTheory.Comma.Arrow
 public import Mathlib.CategoryTheory.Elements
+public import Mathlib.CategoryTheory.FiberedCategory.Fiber
 public import Mathlib.CategoryTheory.FiberedCategory.HomLift
 public import Mathlib.CategoryTheory.Types.Basic
 public import Mathlib.Tactic.Attr.Core
@@ -391,27 +392,22 @@ end Functor.CoElements
 
 namespace DiscreteFibration
 
-/-- The fibre of `p` over `b`, as a type. -/
-abbrev Fibre (p : C ⥤ B) (b : B) : Type u₁ := { c : C // p.obj c = b }
-
 variable {p : C ⥤ B} (D : DiscreteFibration p)
 include D
 
 /-- Restriction along `g : b ⟶ b'` of a fibre element `c'` over `b'`: the
 domain of the unique lift of `g` with codomain `c'`. -/
-def restrict {b b' : B} (g : b ⟶ b') (c' : Fibre p b') : Fibre p b :=
+def restrict {b b' : B} (g : b ⟶ b') (c' : p.Fiber b') : p.Fiber b :=
   ⟨D.src (g ≫ eqToHom c'.2.symm), D.obj_src _⟩
 
-@[simp] theorem restrict_val {b b' : B} (g : b ⟶ b') (c' : Fibre p b') :
+@[simp] theorem restrict_val {b b' : B} (g : b ⟶ b') (c' : p.Fiber b') :
     (D.restrict g c').1 = D.src (g ≫ eqToHom c'.2.symm) := rfl
 
-theorem restrict_id {b : B} (c : Fibre p b) : D.restrict (𝟙 b) c = c := by
-  obtain ⟨c, hc⟩ := c
-  subst hc
-  exact Subtype.ext (by simpa using D.src_id c)
+theorem restrict_id {b : B} (c : p.Fiber b) : D.restrict (𝟙 b) c = c :=
+  Subtype.ext (D.src_eq _ (𝟙 c.1) c.2 (by simp))
 
 theorem restrict_comp {b b' b'' : B} (g : b ⟶ b') (g' : b' ⟶ b'')
-    (c : Fibre p b'') :
+    (c : p.Fiber b'') :
     D.restrict (g ≫ g') c = D.restrict g (D.restrict g' c) := by
   apply Subtype.ext
   exact D.src_eq ((g ≫ g') ≫ eqToHom c.2.symm)
@@ -421,7 +417,7 @@ theorem restrict_comp {b b' b'' : B} (g : b ⟶ b') (g' : b' ⟶ b'')
 
 /-- The fibre presheaf `b ↦ p⁻¹(b)` of a discrete fibration. -/
 def fibrePsh : Bᵒᵖ ⥤ Type u₁ where
-  obj b := Fibre p b.unop
+  obj b := p.Fiber b.unop
   map g := TypeCat.ofHom fun c => D.restrict g.unop c
   map_id _ := ConcreteCategory.hom_ext _ _ fun c => D.restrict_id c
   map_comp g g' :=
@@ -432,10 +428,10 @@ the object arguments carried by the coercion in `fibrePsh_map`'s left-hand
 side, which would take that lemma out of simp-normal form.  Mathlib omits
 the corresponding `yoneda_obj_obj` for the same reason, supplying
 `unif_hint`s instead. -/
-theorem fibrePsh_obj (b : Bᵒᵖ) : D.fibrePsh.obj b = Fibre p b.unop := rfl
+theorem fibrePsh_obj (b : Bᵒᵖ) : D.fibrePsh.obj b = p.Fiber b.unop := rfl
 
 @[simp] theorem fibrePsh_map {b b' : Bᵒᵖ} (g : b ⟶ b')
-    (c : Fibre p b.unop) : D.fibrePsh.map g c = D.restrict g.unop c := rfl
+    (c : p.Fiber b.unop) : D.fibrePsh.map g c = D.restrict g.unop c := rfl
 
 /-! ## 6. `C ≅ ∫(fibrePsh D)` over `B` -/
 
@@ -547,7 +543,7 @@ theorem toElements_comp_ofElements : D.toElements ⋙ D.ofElements = 𝟭 C :=
 
 /-- An element of a fibre is `toElements` of its underlying object of
 `C`. -/
-theorem mk_eq_toElements_obj {b : B} (c : Fibre p b) :
+theorem mk_eq_toElements_obj {b : B} (c : p.Fiber b) :
     Functor.CoElements.mk (F := D.fibrePsh) b c = D.toElements.obj c.1 := by
   obtain ⟨c, rfl⟩ := c
   rfl
@@ -587,7 +583,7 @@ variable (F : Bᵒᵖ ⥤ Type v₃)
 
 /-- Choice-free and universe-free form of `fibrePshIso` below: the fibre of
 `π F` over `b` is in bijection with `F b`. -/
-def fibrePshEquiv (b : B) : DiscreteFibration.Fibre (π F) b ≃ F.obj (op b)
+def fibrePshEquiv (b : B) : (π F).Fiber b ≃ F.obj (op b)
     where
   toFun x := F.map (eqToHom x.2.symm).op x.1.elt
   invFun y := ⟨mk b y, rfl⟩
@@ -605,7 +601,7 @@ def fibrePshEquiv (b : B) : DiscreteFibration.Fibre (π F) b ≃ F.obj (op b)
 /-- Naturality of `fibrePshEquiv`: restriction in the fibre presheaf of
 `π F` is restriction in `F`. -/
 theorem fibrePshEquiv_restrict {b b' : B} (g : b ⟶ b')
-    (x : DiscreteFibration.Fibre (π F) b') :
+    (x : (π F).Fiber b') :
     fibrePshEquiv F b ((discreteFibration F).restrict g x) =
       F.map g.op (fibrePshEquiv F b' x) := by
   obtain ⟨x, hb⟩ := x
