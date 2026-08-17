@@ -20,7 +20,7 @@ each `g : b ⟶ p.obj c`, a lift `hom g : src g ⟶ c` over `g` together with
 the statement that it is the *only* lift (Loregian–Riehl, *Categorical
 notions of fibration*, Def. 2.1.1).  Since lifts are unique, the structure
 is a `Subsingleton`: carrying it as data costs nothing, and it lets the
-fibre presheaf be *defined* without `Classical.choice`.
+fiber presheaf be *defined* without `Classical.choice`.
 
 The pullback-square formulation (Loregian–Riehl Def. 2.1.3; nLab,
 *discrete fibration*, internal formulation)
@@ -44,14 +44,14 @@ The nLab "discussion via category of elements", mechanised:
   presented over `B` (mathlib's `Functor.Elements` presents it over
   `Bᵒᵖ`), with projection `Functor.CoElements.π F : F.CoElements ⥤ B` and
   `Functor.CoElements.discreteFibration F`.
-* `DiscreteFibration.fibrePsh D : Bᵒᵖ ⥤ Type u`, the fibre presheaf
+* `DiscreteFibration.fiberPresheaf D : Bᵒᵖ ⥤ Type u`, the fiber presheaf
   `b ↦ p⁻¹(b)`, restriction along `g` being "domain of the unique lift".
 * `DiscreteFibration.toElements` / `DiscreteFibration.ofElements`
-  exhibiting `C` as isomorphic to `(fibrePsh D).CoElements` *over `B`*:
+  exhibiting `C` as isomorphic to `(fiberPresheaf D).CoElements` *over `B`*:
   both composites are identity functors and both functors commute with
   the projections.
-* `Functor.CoElements.fibrePshIso F`:
-  `(Functor.CoElements.discreteFibration F).fibrePsh ≅ F`.
+* `Functor.CoElements.fiberPresheafIso F`:
+  `(Functor.CoElements.discreteFibration F).fiberPresheaf ≅ F`.
 
 Axiom budget (see the audit at the end of the file): every declaration
 depends on at most `propext` and `Quot.sound`, except
@@ -60,7 +60,7 @@ depends on at most `propext` and `Quot.sound`, except
   `Classical.choice` on purpose, and
 * the packaged statements mentioning `⋙` (`toElements_comp_π`,
   `ofElements_comp`, `toElements_comp_ofElements`,
-  `ofElements_comp_toElements`) and `fibrePshIso` (built with
+  `ofElements_comp_toElements`) and `fiberPresheafIso` (built with
   `NatIso.ofComponents`), which inherit `Classical.choice` from
   mathlib's `Functor.comp` and `NatIso.ofComponents`, whose proof
   obligations mathlib discharges by classical automation.  Their
@@ -68,7 +68,7 @@ depends on at most `propext` and `Quot.sound`, except
   `obj_ofElements_obj`, `map_ofElements_map`,
   `ofElements_obj_toElements_obj`, `ofElements_map_toElements_map`,
   `coElements_eq_toElements_obj`, `toElements_map_ofElements_map`,
-  `fibrePshEquiv`, `fibrePshEquiv_restrict`) carry the same content within
+  `fiberPresheafEquiv`, `fiberPresheafEquiv_restrict`) carry the same content within
   the `propext`/`Quot.sound` budget.
 -/
 
@@ -388,14 +388,14 @@ theorem isDiscreteFibration_π (F : Bᵒᵖ ⥤ Type v₃) :
 
 end Functor.CoElements
 
-/-! ## 5. The fibre presheaf of a discrete fibration -/
+/-! ## 5. The fiber presheaf of a discrete fibration -/
 
 namespace DiscreteFibration
 
 variable {p : C ⥤ B} (D : DiscreteFibration p)
 include D
 
-/-- Restriction along `g : b ⟶ b'` of a fibre element `c'` over `b'`: the
+/-- Restriction along `g : b ⟶ b'` of a fiber element `c'` over `b'`: the
 domain of the unique lift of `g` with codomain `c'`. -/
 def restrict {b b' : B} (g : b ⟶ b') (c' : p.Fiber b') : p.Fiber b :=
   ⟨D.src (g ≫ eqToHom c'.2.symm), D.obj_src _⟩
@@ -415,37 +415,37 @@ theorem restrict_comp {b b' b'' : B} (g : b ⟶ b') (g' : b' ⟶ b'')
       D.hom (g' ≫ eqToHom c.2.symm))
     (D.obj_src _) (by simp [D.map_hom])
 
-/-- The fibre presheaf `b ↦ p⁻¹(b)` of a discrete fibration. -/
-def fibrePsh : Bᵒᵖ ⥤ Type u₁ where
+/-- The fiber presheaf `b ↦ p⁻¹(b)` of a discrete fibration. -/
+def fiberPresheaf : Bᵒᵖ ⥤ Type u₁ where
   obj b := p.Fiber b.unop
   map g := TypeCat.ofHom fun c => D.restrict g.unop c
   map_id _ := ConcreteCategory.hom_ext _ _ fun c => D.restrict_id c
   map_comp g g' :=
     ConcreteCategory.hom_ext _ _ fun c => D.restrict_comp g'.unop g.unop c
 
-/-- The fibre presheaf's value on objects.  Not a `simp` lemma: it rewrites
-the object arguments carried by the coercion in `fibrePsh_map`'s left-hand
+/-- The fiber presheaf's value on objects.  Not a `simp` lemma: it rewrites
+the object arguments carried by the coercion in `fiberPresheaf_map`'s left-hand
 side, which would take that lemma out of simp-normal form.  Mathlib omits
 the corresponding `yoneda_obj_obj` for the same reason, supplying
 `unif_hint`s instead. -/
-theorem fibrePsh_obj (b : Bᵒᵖ) : D.fibrePsh.obj b = p.Fiber b.unop := rfl
+theorem fiberPresheaf_obj (b : Bᵒᵖ) : D.fiberPresheaf.obj b = p.Fiber b.unop := rfl
 
-@[simp] theorem fibrePsh_map {b b' : Bᵒᵖ} (g : b ⟶ b')
-    (c : p.Fiber b.unop) : D.fibrePsh.map g c = D.restrict g.unop c := rfl
+@[simp] theorem fiberPresheaf_map {b b' : Bᵒᵖ} (g : b ⟶ b')
+    (c : p.Fiber b.unop) : D.fiberPresheaf.map g c = D.restrict g.unop c := rfl
 
-/-! ## 6. `C ≅ ∫(fibrePsh D)` over `B` -/
+/-! ## 6. `C ≅ ∫(fiberPresheaf D)` over `B` -/
 
 attribute [local simp] eqToHom_map
 
-/-- An element of the fibre presheaf at `x` lies over `x.base`.  This
-restates the fibre element's own property, whose type reads
+/-- An element of the fiber presheaf at `x` lies over `x.base`.  This
+restates the fiber element's own property, whose type reads
 `p.obj x.elt.1 = unop (op x.base)`: the `unop (op _)` blocks the `eqToHom`
 composites below from matching. -/
-theorem obj_elt (x : D.fibrePsh.CoElements) : p.obj x.elt.1 = x.base :=
+theorem obj_elt (x : D.fiberPresheaf.CoElements) : p.obj x.elt.1 = x.base :=
   x.elt.2
 
 /-- `c ↦ (p c, c)`. -/
-def toElements : C ⥤ D.fibrePsh.CoElements where
+def toElements : C ⥤ D.fiberPresheaf.CoElements where
   obj c := Functor.CoElements.mk (p.obj c) ⟨c, rfl⟩
   map {c c'} f :=
     Functor.CoElements.homMk (p.map f)
@@ -456,23 +456,23 @@ def toElements : C ⥤ D.fibrePsh.CoElements where
 
 @[simp] theorem toElements_obj (c : C) :
     D.toElements.obj c =
-      Functor.CoElements.mk (F := D.fibrePsh) (p.obj c) ⟨c, rfl⟩ := rfl
+      Functor.CoElements.mk (F := D.fiberPresheaf) (p.obj c) ⟨c, rfl⟩ := rfl
 
 @[simp] theorem homBase_toElements_map {c c' : C} (f : c ⟶ c') :
     Functor.CoElements.homBase (D.toElements.map f) = p.map f := rfl
 
-theorem obj_eq_src {x y : D.fibrePsh.CoElements} (f : x ⟶ y) :
+theorem obj_eq_src {x y : D.fiberPresheaf.CoElements} (f : x ⟶ y) :
     x.elt.1 = D.src (Functor.CoElements.homBase f ≫ eqToHom (D.obj_elt y).symm) :=
   (congrArg Subtype.val (Functor.CoElements.map_homBase_elt f)).symm
 
 /-- The unique lift of `homBase f`, transported to a morphism between the
 underlying objects of `C`. -/
-def ofElementsMap {x y : D.fibrePsh.CoElements} (f : x ⟶ y) :
+def ofElementsMap {x y : D.fiberPresheaf.CoElements} (f : x ⟶ y) :
     x.elt.1 ⟶ y.elt.1 :=
   eqToHom (D.obj_eq_src f) ≫
     D.hom (Functor.CoElements.homBase f ≫ eqToHom (D.obj_elt y).symm)
 
-theorem map_ofElementsMap {x y : D.fibrePsh.CoElements} (f : x ⟶ y) :
+theorem map_ofElementsMap {x y : D.fiberPresheaf.CoElements} (f : x ⟶ y) :
     p.map (D.ofElementsMap f) =
       eqToHom (D.obj_elt x) ≫ Functor.CoElements.homBase f ≫
         eqToHom (D.obj_elt y).symm := by
@@ -480,7 +480,7 @@ theorem map_ofElementsMap {x y : D.fibrePsh.CoElements} (f : x ⟶ y) :
   simp
 
 /-- `(b, c) ↦ c`. -/
-def ofElements : D.fibrePsh.CoElements ⥤ C where
+def ofElements : D.fiberPresheaf.CoElements ⥤ C where
   obj x := x.elt.1
   map f := D.ofElementsMap f
   map_id x :=
@@ -491,10 +491,10 @@ def ofElements : D.fibrePsh.CoElements ⥤ C where
         D.map_ofElementsMap]
       simp)
 
-@[simp] theorem ofElements_obj (x : D.fibrePsh.CoElements) :
+@[simp] theorem ofElements_obj (x : D.fiberPresheaf.CoElements) :
     D.ofElements.obj x = x.elt.1 := rfl
 
-theorem map_ofElements_map {x y : D.fibrePsh.CoElements} (f : x ⟶ y) :
+theorem map_ofElements_map {x y : D.fiberPresheaf.CoElements} (f : x ⟶ y) :
     p.map (D.ofElements.map f) =
       eqToHom (D.obj_elt x) ≫ Functor.CoElements.homBase f ≫
         eqToHom (D.obj_elt y).symm :=
@@ -507,21 +507,21 @@ itself (whose functor laws are discharged by classical automation), not
 from anything proved here. -/
 
 theorem π_toElements_obj (c : C) :
-    (Functor.CoElements.π D.fibrePsh).obj (D.toElements.obj c) = p.obj c := rfl
+    (Functor.CoElements.π D.fiberPresheaf).obj (D.toElements.obj c) = p.obj c := rfl
 
 theorem π_toElements_map {c c' : C} (f : c ⟶ c') :
-    (Functor.CoElements.π D.fibrePsh).map (D.toElements.map f) = p.map f := rfl
+    (Functor.CoElements.π D.fiberPresheaf).map (D.toElements.map f) = p.map f := rfl
 
-theorem obj_ofElements_obj (x : D.fibrePsh.CoElements) :
-    p.obj (D.ofElements.obj x) = (Functor.CoElements.π D.fibrePsh).obj x :=
+theorem obj_ofElements_obj (x : D.fiberPresheaf.CoElements) :
+    p.obj (D.ofElements.obj x) = (Functor.CoElements.π D.fiberPresheaf).obj x :=
   D.obj_elt x
 
 /-- `toElements` lies over `B`. -/
 theorem toElements_comp_π :
-    D.toElements ⋙ Functor.CoElements.π D.fibrePsh = p := rfl
+    D.toElements ⋙ Functor.CoElements.π D.fiberPresheaf = p := rfl
 
 /-- `ofElements` lies over `B`. -/
-theorem ofElements_comp : D.ofElements ⋙ p = Functor.CoElements.π D.fibrePsh :=
+theorem ofElements_comp : D.ofElements ⋙ p = Functor.CoElements.π D.fiberPresheaf :=
   Functor.ext (fun x => D.obj_elt x) (fun x y f => by
     rw [Functor.comp_map, D.map_ofElements_map]
     rfl)
@@ -541,16 +541,16 @@ theorem toElements_comp_ofElements : D.toElements ⋙ D.ofElements = 𝟭 C :=
     change D.ofElements.map (D.toElements.map f) = 𝟙 _ ≫ f ≫ 𝟙 _
     rw [D.ofElements_map_toElements_map, Category.id_comp, Category.comp_id])
 
-/-- An element of a fibre is `toElements` of its underlying object of
+/-- An element of a fiber is `toElements` of its underlying object of
 `C`. -/
 theorem mk_eq_toElements_obj {b : B} (c : p.Fiber b) :
-    Functor.CoElements.mk (F := D.fibrePsh) b c = D.toElements.obj c.1 := by
+    Functor.CoElements.mk (F := D.fiberPresheaf) b c = D.toElements.obj c.1 := by
   obtain ⟨c, rfl⟩ := c
   rfl
 
-/-- Every object of the category of elements of `fibrePsh D` is
+/-- Every object of the category of elements of `fiberPresheaf D` is
 `toElements` of its underlying object of `C`. -/
-theorem coElements_eq_toElements_obj (x : D.fibrePsh.CoElements) :
+theorem coElements_eq_toElements_obj (x : D.fiberPresheaf.CoElements) :
     x = D.toElements.obj x.elt.1 :=
   (Functor.CoElements.mk_base_elt x).symm.trans (D.mk_eq_toElements_obj x.elt)
 
@@ -564,7 +564,7 @@ theorem toElements_map_ofElements_map {c c' : C}
     rw [Category.id_comp, Category.comp_id])
 
 theorem ofElements_comp_toElements :
-    D.ofElements ⋙ D.toElements = 𝟭 D.fibrePsh.CoElements :=
+    D.ofElements ⋙ D.toElements = 𝟭 D.fiberPresheaf.CoElements :=
   Functor.ext (fun x => (D.coElements_eq_toElements_obj x).symm) (fun x y f => by
     obtain ⟨c, rfl⟩ : ∃ c, x = D.toElements.obj c :=
       ⟨_, D.coElements_eq_toElements_obj x⟩
@@ -575,15 +575,15 @@ theorem ofElements_comp_toElements :
 
 end DiscreteFibration
 
-/-! ## 7. The other round trip: `fibrePsh (π F) ≅ F` -/
+/-! ## 7. The other round trip: `fiberPresheaf (π F) ≅ F` -/
 
 namespace Functor.CoElements
 
 variable (F : Bᵒᵖ ⥤ Type v₃)
 
-/-- Choice-free and universe-free form of `fibrePshIso` below: the fibre of
+/-- Choice-free and universe-free form of `fiberPresheafIso` below: the fiber of
 `π F` over `b` is in bijection with `F b`. -/
-def fibrePshEquiv (b : B) : (π F).Fiber b ≃ F.obj (op b)
+def fiberPresheafEquiv (b : B) : (π F).Fiber b ≃ F.obj (op b)
     where
   toFun x := F.map (eqToHom x.2.symm).op x.1.elt
   invFun y := ⟨mk b y, rfl⟩
@@ -598,12 +598,12 @@ def fibrePshEquiv (b : B) : (π F).Fiber b ≃ F.obj (op b)
     show F.map (𝟙 (op b)) y = y from
       ConcreteCategory.congr_hom (F.map_id _) y
 
-/-- Naturality of `fibrePshEquiv`: restriction in the fibre presheaf of
+/-- Naturality of `fiberPresheafEquiv`: restriction in the fiber presheaf of
 `π F` is restriction in `F`. -/
-theorem fibrePshEquiv_restrict {b b' : B} (g : b ⟶ b')
+theorem fiberPresheafEquiv_restrict {b b' : B} (g : b ⟶ b')
     (x : (π F).Fiber b') :
-    fibrePshEquiv F b ((discreteFibration F).restrict g x) =
-      F.map g.op (fibrePshEquiv F b' x) := by
+    fiberPresheafEquiv F b ((discreteFibration F).restrict g x) =
+      F.map g.op (fiberPresheafEquiv F b' x) := by
   obtain ⟨x, hb⟩ := x
   subst hb
   change F.map (𝟙 _) (F.map (g ≫ 𝟙 _).op x.elt) =
@@ -611,16 +611,16 @@ theorem fibrePshEquiv_restrict {b b' : B} (g : b ⟶ b')
   rw [Category.comp_id, F.map_id, F.map_id]
   rfl
 
-/-- The fibre presheaf of `π F` is naturally isomorphic to `F` (up to the
-universe lift forced by `F.CoElements : Type (max u₂ v₃)`): the fibre over
+/-- The fiber presheaf of `π F` is naturally isomorphic to `F` (up to the
+universe lift forced by `F.CoElements : Type (max u₂ v₃)`): the fiber over
 `b` is `{x : F.CoElements // x.base = b}`, and `x ↦ x.elt`, transported
 along `x.base = b`, is a bijection onto `F b`. -/
-def fibrePshIso :
-    (discreteFibration F).fibrePsh ≅ F ⋙ uliftFunctor.{u₂, v₃} :=
+def fiberPresheafIso :
+    (discreteFibration F).fiberPresheaf ≅ F ⋙ uliftFunctor.{u₂, v₃} :=
   NatIso.ofComponents
-    (fun b => ((fibrePshEquiv F b.unop).trans Equiv.ulift.symm).toIso)
+    (fun b => ((fiberPresheafEquiv F b.unop).trans Equiv.ulift.symm).toIso)
     (fun {b b'} g => ConcreteCategory.hom_ext _ _ fun x => by
-      have h := fibrePshEquiv_restrict F g.unop x
+      have h := fiberPresheafEquiv_restrict F g.unop x
       rw [Quiver.Hom.op_unop] at h
       exact congrArg ULift.up h)
 
