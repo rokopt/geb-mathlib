@@ -75,6 +75,7 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Mathlib.Data.PFunctor.Presheaf.Functor,
    `Geb.Mathlib.Data.PFunctor.Univariate.Initial,
    `GebTests.Mathlib.Data.PFunctor.Univariate.Initial,
+   `Geb.Mathlib.CategoryTheory.DiscreteFibration,
    `Geb.Mathlib.CategoryTheory.Grothendieck,
    `GebTests.Mathlib.CategoryTheory.Grothendieck,
    `Geb.Mathlib.CategoryTheory.FinSetSkel.Skeleton,
