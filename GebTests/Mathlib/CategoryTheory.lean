@@ -5,6 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
+import GebTests.Mathlib.CategoryTheory.DiscreteFibration
+import GebTests.Mathlib.CategoryTheory.DiscreteFibration.Packaged
 import GebTests.Mathlib.CategoryTheory.ElementaryTopos
 import GebTests.Mathlib.CategoryTheory.FinCat
 import GebTests.Mathlib.CategoryTheory.FinSetSkel
