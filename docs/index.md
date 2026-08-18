@@ -91,6 +91,35 @@ checklist and in CI.
   and test modules are listed in `GebMeta.classicalAllowedModules`
   because mathlib's `Grothendieck` and `Cat.opFunctor` are
   `Classical.choice`-dependent.
+- `Geb/Mathlib/CategoryTheory/DiscreteFibration/` — discrete
+  fibrations of categories [LoregianRiehl2018]. `Basic.lean` carries
+  the lifting data as a structure `DiscreteFibration p`: for each
+  `g : b ⟶ p.obj c` a lift `hom g : src g ⟶ c`, unique among lifts.
+  Uniqueness makes the structure a `Subsingleton`, so carrying it as
+  data costs nothing and the fibre presheaf is definable without
+  `Classical.choice`. It also relates the notion to mathlib's
+  fibred-category API: `isHomLift_iff_arrow_mk_eq` identifies
+  `Functor.IsHomLift` with equality of arrows, every morphism is
+  cartesian (`isCartesian`), so a discrete fibration is a fibred
+  category (`isFibered`), and the fibres are discrete categories
+  (`fiber_eq_of_hom`, `fiber_hom_ext`). `Pullback.lean` gives the
+  internal formulation, that the square of codomain maps
+  `Arrow C → C`, `Arrow B → B` is a pullback of types
+  (`IsDiscreteFibration`). `Elements.lean` defines
+  `Functor.CoElements F` as the opposite of mathlib's
+  `Functor.Elements`, presenting the category of elements of a
+  presheaf over `B` rather than over `Bᵒᵖ`, with its projection `π F`
+  and the lifting data on it. `FiberPresheaf.lean` defines the fibre
+  presheaf `b ↦ p⁻¹(b)` and the functors `toElements`/`ofElements`
+  between `C` and the category of elements of that presheaf, with the
+  elementwise statements that they lie over `B` and are mutually
+  inverse. `Packaged.lean` holds the forms that bundle this content
+  into a mathlib construction — the converse
+  `IsDiscreteFibration.toDiscreteFibration`, the equalities of
+  composite functors, `elementsEquivalence` and `fiberPresheafIso` —
+  and is the only module of the group in
+  `GebMeta.classicalAllowedModules`, the other four staying within
+  `propext` and `Quot.sound`.
 - `Geb/Mathlib/Data/W/Basic.lean` — the two laws of the W-type fold
   mathlib does not state: the computation rule `WType.elim_mk` and
   uniqueness `WType.elim_unique`. Together with mathlib's `WType.elim`
