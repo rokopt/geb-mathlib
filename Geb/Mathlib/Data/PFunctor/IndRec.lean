@@ -15,6 +15,7 @@ public import Geb.Mathlib.Data.PFunctor.IndRec.Container
 public import Geb.Mathlib.Data.PFunctor.IndRec.Slice
 public import Geb.Mathlib.Data.PFunctor.IndRec.W
 public import Geb.Mathlib.Data.PFunctor.IndRec.Indexed
+public import Geb.Mathlib.Data.PFunctor.IndRec.Language
 
 /-!
 # IndRec — index

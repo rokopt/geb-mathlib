@@ -15,6 +15,7 @@ import GebTests.Mathlib.Data.PFunctor.IndRec.Container
 import GebTests.Mathlib.Data.PFunctor.IndRec.Slice
 import GebTests.Mathlib.Data.PFunctor.IndRec.W
 import GebTests.Mathlib.Data.PFunctor.IndRec.Indexed
+import GebTests.Mathlib.Data.PFunctor.IndRec.Language
 
 /-!
 # IndRec tests — index
