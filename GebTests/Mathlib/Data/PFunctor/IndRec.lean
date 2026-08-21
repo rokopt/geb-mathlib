@@ -13,6 +13,7 @@ import GebTests.Mathlib.Data.PFunctor.IndRec.Category
 import GebTests.Mathlib.Data.PFunctor.IndRec.Universes
 import GebTests.Mathlib.Data.PFunctor.IndRec.Container
 import GebTests.Mathlib.Data.PFunctor.IndRec.Slice
+import GebTests.Mathlib.Data.PFunctor.IndRec.W
 
 /-!
 # IndRec tests — index
