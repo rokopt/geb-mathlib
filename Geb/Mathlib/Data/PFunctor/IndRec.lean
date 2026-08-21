@@ -16,6 +16,7 @@ public import Geb.Mathlib.Data.PFunctor.IndRec.Slice
 public import Geb.Mathlib.Data.PFunctor.IndRec.W
 public import Geb.Mathlib.Data.PFunctor.IndRec.Indexed
 public import Geb.Mathlib.Data.PFunctor.IndRec.Language
+public import Geb.Mathlib.Data.PFunctor.IndRec.BoveCapretta
 
 /-!
 # IndRec — index
