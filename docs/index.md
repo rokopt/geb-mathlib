@@ -463,7 +463,9 @@ checklist and in CI.
   `IR.rec_mk` and the functor laws (see the
   `Geb/Mathlib/Data/PFunctor/IndRec/Functor.lean` entry below). The
   initial algebras of the interpreted endofunctors (the `IR I I`
-  case) are deferred (see `TODO.md` § Complete Theorem 2.4 for
+  case) are constructed in
+  `Geb/Mathlib/Data/PFunctor/IndRec/W.lean`, below; their
+  uniqueness is deferred (see `TODO.md` § Complete Theorem 2.4 for
   `IndRec`). `IR.precomp` precomposes a code along a coproduct (the `γ^i` of
   Hancock–McBride–Ghani–Malatesta–Altenkirch, Definition 3's
   discussion and Lemma 4, which asserts existence only; this
@@ -567,6 +569,84 @@ checklist and in CI.
   translates a simple container (a `PFunctor`) to an `IR` code over
   the unit type (Hancock–McBride–Ghani–Malatesta–Altenkirch
   Example 1). `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` — the two
+  code-level translations between `IR` codes and slice polynomial
+  functors (Hancock–McBride–Ghani–Malatesta–Altenkirch Lemmas 1 and
+  2 / Definition 5): `IR.sliceCode` from a `SlicePFunctor` to a
+  code, and `IR.toSlicePFunctor` from a code to a `SlicePFunctor`,
+  the latter by `IR.elimAlg` from per-constructor components
+  (`IR.toSlicePFunctorIota`, `IR.toSlicePFunctorSigma`,
+  `IR.toSlicePFunctorDelta`) with its computation rules.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/IndRec/W.lean` — the data type and
+  decoder an endo-code describes
+  (Hancock–McBride–Ghani–Malatesta–Altenkirch Section 3's `µ γ`,
+  `decode γ` and `in`): `IR.W` is the W-type
+  (`Geb/Mathlib/Data/PFunctor/Slice/W.lean`) of the code's slice
+  polynomial functor, `IR.wDecode` that W-type's structure map, and
+  `IR.W.mk` the algebra structure map, with algebra law
+  `IR.wDecode_mk`. Routing through the translation is what makes
+  the fixed point available: a data type defined directly as the
+  fixed point of `IR.interpObj γ` would be rejected for a code
+  variable `γ`. `IR.W.mk` needs a node of the direct interpretation
+  presented as a node of the translated polynomial — one direction
+  of Lemma 2 — and that presentation is folded together with the
+  interpretation and the functor into `IR.PosSlice`, computed by
+  `IR.posSlice`. The fold is by the eliminator `IR.elim` and not the
+  recursor `IR.rec`, so it computes definitionally and the tower
+  above it reduces on closed codes; `IR.posSlice_interp` and
+  `IR.posSlice_spf` identify its first two components with
+  `IR.interpObj` and `IR.toSlicePFunctor`. Stated for codes whose
+  index universe does not exceed their arity universes.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/IndRec/Indexed.lean` — codes for small
+  indexed induction-recursion
+  (Hancock–McBride–Ghani–Malatesta–Altenkirch Section 6). `IIR I D
+  J E` describes a family of inductive-recursive definitions,
+  indexed by `I` on the way in and `J` on the way out with `D` and
+  `E` the decoding type at each index; it is the W-type of
+  `IIR.pFunctor`, with constructors `IIR.iota` (naming the output
+  index it lands at as well as the value it decodes to),
+  `IIR.sigma`, `IIR.delta` (carrying an index assignment choosing
+  each recursive field's input index) and the single-field
+  `IIR.delta1`. `IIR.interp` is the direct interpretation as a
+  functor between families of slices (`IIR.FamSlice`), and
+  `IIR.toIR` the reduction to an `IR` code over the total spaces,
+  which turns the index assignment into a dependent sum over the
+  pointwise condition that the recursive fields landed where it
+  demands. `IIR.W` and `IIR.wDecode` derive the indexed family of
+  data types and their decoders from `IR.W` and `IR.wDecode` of the
+  reduced code, by cutting into fibres over the index.
+  `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/IndRec/Language.lean` — the language
+  of sums and products (Hancock–McBride–Ghani–Malatesta–Altenkirch
+  Example 2): numerical expressions closed under constants, finite
+  sums and finite products, each decoding to its value. The code
+  `Language.code` is an endo-code over `ℕ`; `Language.Expr` and
+  `Language.value` are the expressions and their values, and
+  `Language.lit`, `Language.sum` and `Language.prod` the
+  constructors — the summand family of `Language.sum` indexed by
+  `Fin` of the *value* of the bound, which is what makes the
+  definition inductive-recursive. `Language.value_sumFirstFive`
+  checks the paper's example expression against the value it
+  states. `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/IndRec/BoveCapretta.lean` — the
+  Bove–Capretta domain of a call-by-value evaluator
+  (Hancock–McBride–Ghani–Malatesta–Altenkirch Example 3, applying
+  Bove–Capretta). `BoveCapretta.Tm` is the untyped lambda terms in
+  de Bruijn form, as the W-type of a polynomial functor, with
+  `BoveCapretta.tmShift`, `BoveCapretta.tmSubst` and
+  `BoveCapretta.subst0` its substitution operations, all computed
+  by `WType.elim`. `BoveCapretta.code` is the `IIR` code of the
+  evaluator's domain, whose application case chooses how to carry
+  on from the value the first recursive field delivers and takes
+  its third field at an index built from the second's — the use of
+  the delivered values that an inductive family without the
+  simultaneous decoding could not express. `BoveCapretta.Dom` and
+  `BoveCapretta.eval` are the domain predicate and the evaluator
+  reading a value off a domain element, and
+  `BoveCapretta.eval_identityApp` evaluates the self-application of
+  the identity. `Classical.choice`-free.
 - `Geb/Mathlib/Data/Vector/OfFn.lean` — a choice-free `ofFn` for
   root `Vector`. Core's `Vector.ofFn` indexing lemmas depend on
   `Classical.choice` through the private `Array.getElem_ofFn_go`;
