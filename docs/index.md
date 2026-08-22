@@ -1135,6 +1135,53 @@ checklist and in CI.
   functor laws proved here rather than transported. The module declares
   no theorems, and every declaration in it depends on `propext`,
   `Classical.choice` and `Quot.sound`.
+- `Geb/Prototypes/PresheafUniverse/Basic.lean` — prototype of the
+  dependent-type universe of [GhaniNordvallForsbergMalatesta2015] as a
+  presheaf polynomial endofunctor, in place of the inductive-recursive
+  presentation of `Geb/Mathlib/Data/PFunctor/IndRec/Universes.lean`. The
+  base category is the preorder on `Fin 2`, that is, the walking arrow:
+  a presheaf on it is a map from terms to codes, so the decoding of a
+  code is the fiber of that map over it rather than a function into a
+  universe of types, and the functor is an endofunctor on a presheaf
+  category rather than on a slice of `Type` over itself.
+  `GebProto.PresheafUniverse.Shp` is the shape type — the base-type code,
+  the two binder codes, one term shape per element of the base type, and
+  the pair term — and `GebProto.PresheafUniverse.Dir` its arities, both
+  finite. `GebProto.PresheafUniverse.codeShp` and
+  `GebProto.PresheafUniverse.codeDir` are the shape and direction
+  restrictions to the code object, `GebProto.PresheafUniverse.reindexDir`
+  the arity reindexing along them, and
+  `GebProto.PresheafUniverse.universeFunctor` the resulting
+  `PresheafPFunctor`, with `GebProto.PresheafUniverse.finiteUniverse` its
+  finiteness evidence, so its W-type fibers are decided by
+  `FinitePresheafPFunctor.memWBool`. Because an arity is fixed
+  independently of the input presheaf, the family a `sigma` or `pi` code
+  carries in the inductive-recursive presentation is not expressible: the
+  two binder codes take a single subcode in each argument and so denote
+  the non-dependent product and function space, and `pi` has no
+  introduction shape. What the finite arities do capture is the family
+  evaluated at a term, through the naturality of a direction assignment.
+  No theorem here depends on an axiom beyond `propext` and `Quot.sound`,
+  and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/PresheafUniverse/Trees.lean` — the codes and terms of
+  that universe as W-trees. `GebProto.PresheafUniverse.node` builds an
+  admissible tree, `GebProto.PresheafUniverse.baseCode`,
+  `GebProto.PresheafUniverse.sigmaCode` and
+  `GebProto.PresheafUniverse.piCode` the codes, and
+  `GebProto.PresheafUniverse.litTerm` with
+  `GebProto.PresheafUniverse.pairTerm` the terms.
+  `GebProto.PresheafUniverse.typeOf` is the root-restriction along the
+  walking arrow's non-identity morphism
+  `GebProto.PresheafUniverse.arrowHom`, that is, the typing map;
+  `GebProto.PresheafUniverse.typeOf_litTerm` and
+  `GebProto.PresheafUniverse.typeOf_pairTerm` compute it on the two term
+  constructors, the latter being the statement that the presheaf
+  restriction of a pair is the `sigma` code of its components' types.
+  Hereditary naturality of a term tree is its well-typedness, which the
+  mirror `GebTests/Prototypes/PresheafUniverse/Trees.lean` exhibits by
+  deciding fiber membership for a well-typed and an ill-typed pair. No
+  theorem here depends on an axiom beyond `propext` and `Quot.sound`, and
+  no declaration depends on `Classical.choice`.
 - `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
