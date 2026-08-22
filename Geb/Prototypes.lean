@@ -9,6 +9,7 @@ public import Geb.Prototypes.CanonicalSExpr
 public import Geb.Prototypes.Computability
 public import Geb.Prototypes.ConcreteSyntax
 public import Geb.Prototypes.PresheafIRProto
+public import Geb.Prototypes.PresheafIRUniv
 public import Geb.Prototypes.ReadableSExpr
 
 /-!
