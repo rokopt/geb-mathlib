@@ -108,7 +108,7 @@ then the Markdown and project-rule checks:
 - `scripts/lake-update-warning.sh` (warns on a `lake-manifest.json`
   change outside a `bump/*` or `chore/bootstrap` branch).
 - Docs-coverage reminder: Lean changes under an upstream-eligible
-  subtree, `Geb/Internal/`, or `GebLang/` without a `docs/index.md`
+  subtree, `Geb/Prototypes/`, or `GebLang/` without a `docs/index.md`
   change.
 
 `scripts/test-tooling.sh` runs the script and hook self-tests. Each

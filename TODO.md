@@ -51,7 +51,7 @@ content merged into the persistent documentation.
 Morphisms of presheaf p.r.a. functors, and a code system denoting them: a leaf
 rule injecting a presheaf p.r.a. functor as it stands, and a `delta` rule
 carrying the induction-recursion. The prototype under
-`Geb/Internal/PresheafIRProto/` is the design's validated part; four upstream
+`Geb/Prototypes/PresheafIRProto/` is the design's validated part; four upstream
 branches remain:
 
 - W-a: morphisms of presheaf p.r.a. functors, their action and the hom-set
@@ -345,7 +345,7 @@ Batteries rather than mathlib4 belongs. Such content exists because
 `docs/rules/upstream-eligible.md` § Subtree import rules restricts
 `Geb/Mathlib/` modules to `Mathlib.*`, `Batteries.*` and `Geb.Mathlib.*`
 imports: a dependency of a `Geb/Mathlib/` module cannot live in
-`Geb/Internal/`, so a module restating core or Batteries API sits under
+`Geb/Prototypes/`, so a module restating core or Batteries API sits under
 `Geb/Mathlib/` while its upstream is neither mathlib4 nor CSLib. In scope is
 every module under `Geb/Mathlib/`, and every `GebTests/Mathlib/` parallel,
 whose declarations restate or replace declarations of Lean core or Batteries
@@ -518,11 +518,11 @@ Items over `Geb/Mathlib/Data/Tree/`.
 
 1. Define `ConcreteSyntax.Ast` from `RankedAlphabet`, the labelled ranked
    alphabet documented in [docs/index.md](docs/index.md), removing the
-   duplication between them. `Geb/Internal/ConcreteSyntax.lean` carries the
+   duplication between them. `Geb/Prototypes/ConcreteSyntax.lean` carries the
    initial algebra of `Fin k + X × X` with its own `leaf`, `fork`,
    induction principle `Ast.ind` and parse/print retraction, so the
    condition on this item is met; the import rules bar `Geb/Mathlib/` from
-   reaching `Geb/Internal/`, so the dependency runs the other way.
+   reaching `Geb/Prototypes/`, so the dependency runs the other way.
 2. Whether `RankedAlphabet.Term.size`
    (`Geb/Mathlib/Data/Tree/Ranked/Basic.lean`), which counts leaves alongside
    internal nodes, should be stated through a transfer to mathlib's
@@ -572,7 +572,7 @@ destination.
 
 ### The fold over recognized terms
 
-`Geb/Internal/Computability/CobhamFoldProto/` generalizes
+`Geb/Prototypes/Computability/CobhamFoldProto/` generalizes
 `Cobham/RankedTree.lean`'s recognizer to a fold at an algebra of the ranked
 alphabet, computing `RankedAlphabet.parse` followed by the algebra morphism out
 of the term algebra. It carries two constructions over one semantic core: one at
@@ -627,7 +627,7 @@ before any of it is upstream-eligible.
   `Cobham/RankedTree.lean`, `Cobham/Fold.lean` and
   `GebTests/Mathlib/Computability/Cobham/Scan.lean`.
 - A general-alphabet, general-carrier Turing machine for the linear-time bound.
-  `Geb/Internal/Computability/TreeScanner/` decides `binRanked.validBool` in
+  `Geb/Prototypes/Computability/TreeScanner/` decides `binRanked.validBool` in
   `2 * n + 3` steps with the pending count as the work head's position, writing
   no work cell outside the two it marks; a fold needs the stack's contents on
   the tape. A machine reading them costs `(2 + R.maxArity / R.width) * n` steps
@@ -649,7 +649,7 @@ before any of it is upstream-eligible.
 ### Deferred items from the tree recognizers
 
 Deferred while the ranked-tree recognizers over `Geb/Mathlib/Data/Tree/`,
-`Geb/Mathlib/Computability/Cobham/` and `Geb/Internal/` were built, each
+`Geb/Mathlib/Computability/Cobham/` and `Geb/Prototypes/` were built, each
 independent of the others and none scheduled.
 
 - The Bellantoni-Cook port of the scan combinator, whose signature is over
@@ -657,7 +657,7 @@ independent of the others and none scheduled.
   transcription; and the depth-first unary degree sequence encoding, whose
   condition for adoption is unbounded arity. The fold at an infinite carrier is
   built, at the carrier `List Bool`, by
-  `Geb/Internal/Computability/CobhamFoldProto/Variable.lean`, and
+  `Geb/Prototypes/Computability/CobhamFoldProto/Variable.lean`, and
   `smashFree_foldOutExprV` shows it smash-free when the algebra's own
   expressions are, the machinery contributing only `comp`, `proj`, `succ`,
   `zero`, `concat` and `boundedRec` nodes and the algebra's expressions being
@@ -684,7 +684,7 @@ independent of the others and none scheduled.
 - `Cobham/Tree.lean`'s `isTree_smashFree` names the predicate `Cobham.SmashFree`
   subject-first, where mathlib's naming guide names a theorem by its conclusion
   read in order, giving the `smashFree_isTree` form that
-  `Geb/Internal/Computability/CobhamFoldProto/` uses throughout. Renaming it
+  `Geb/Prototypes/Computability/CobhamFoldProto/` uses throughout. Renaming it
   touches a merged upstream-eligible module, so it is a branch of its own.
 - `Cobham/Tree.lean`'s `oneAtOf` and `falseAtOf` duplicate `constAtOf`, and
   its `predPred` duplicates `predIter 2`. Substituting the general form is
@@ -711,7 +711,7 @@ independent of the others and none scheduled.
   polynomial-time-and-linear-space membership `Cobham/Tree.lean` states
   has no counterpart in `Cobham/RankedTree.lean`. What that deferral lacks, a
   symbolic route in place of the kernel evaluation `decide` performs, is
-  available in `Geb/Internal/Computability/CobhamFoldProto/SmashFree.lean` as
+  available in `Geb/Prototypes/Computability/CobhamFoldProto/SmashFree.lean` as
   `instFinEnumSigB`, `smashFreeBool_mk_iff` and the branch-family recursion
   `smashFreeBool_casesRaw`, though the subtree import rules keep
   `Cobham/RankedTree.lean` from citing them.
@@ -742,7 +742,7 @@ first cites them.
 
 ### A sharper space bound for the tree scanner
 
-`Geb/Internal/Computability/TreeScanner/Bound.lean`'s
+`Geb/Prototypes/Computability/TreeScanner/Bound.lean`'s
 `computableInTimeAndSpace_validBool` gives a space bound affine in the step
 count. A sharper bound, `spaceUsed ≤ n + 2`, follows from
 `RankedAlphabet.Binary.depth_le_length` and a computation of
@@ -768,7 +768,7 @@ repository, so it belongs to neither upstream-eligible subtree and is
 recorded here as its own item. Its pull request description is
 user-authored, per [CONTRIBUTING.md](CONTRIBUTING.md) § Submission policy.
 
-`Geb/Internal/Computability/TreeScanner/Steps.lean`'s `step_of_state`, a
+`Geb/Prototypes/Computability/TreeScanner/Steps.lean`'s `step_of_state`, a
 step from a known state over an arbitrary machine, configuration and state,
 is a second candidate for that pull request: Cslib states `step_of_halt`
 beside it and no companion for a configuration that has not halted.
@@ -813,10 +813,10 @@ do, which would put them under `Geb/Mathlib/Data/Nat/`.
 
 ### Concrete-syntax prototype
 
-`Geb/Internal/ConcreteSyntax.lean` implements the format-independent
+`Geb/Prototypes/ConcreteSyntax.lean` implements the format-independent
 core and the canonical S-expression form of RFC 9804 restricted to the
-bare tree, `Geb/Internal/CanonicalSExpr.lean` a second spelling of
-the same grammar, and `Geb/Internal/ReadableSExpr.lean` a readable
+bare tree, `Geb/Prototypes/CanonicalSExpr.lean` a second spelling of
+the same grammar, and `Geb/Prototypes/ReadableSExpr.lean` a readable
 spelling of the rose presentation over a different grammar, with tests
 in the corresponding `GebTests` modules.
 [docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Roadmap
@@ -956,8 +956,8 @@ practice settles either question. Settle both.
   `Geb/Mathlib/Logic/Equiv/Fin/Basic.lean` is restated over `Fin.divNat`,
   `Fin.modNat` and `Fin.mkDivMod`.
 - **Choice-free tree-scanner allowlist entries**:
-  `Geb/Internal/Computability/TreeScanner/Steps.lean`, `Bound.lean` and the
-  `GebTests/Internal/Computability/TreeScanner/Machine.lean` mirror are in
+  `Geb/Prototypes/Computability/TreeScanner/Steps.lean`, `Bound.lean` and the
+  `GebTests/Prototypes/Computability/TreeScanner/Machine.lean` mirror are in
   `GebMeta.classicalAllowedModules` because Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol` and
   `Turing.MultiTapeTM.inputSymbolInner` depend on `Classical.choice` (see
@@ -1089,7 +1089,7 @@ practice settles either question. Settle both.
   burdensome.
 - **Reconcile test-module import visibility**: `GebTests/` modules disagree on
   whether to `public import` the module under test: most do, a minority use
-  plain `import`; `GebTests/Internal/`'s `public meta import` lines are in the
+  plain `import`; `GebTests/Prototypes/`'s `public meta import` lines are in the
   same category. Import visibility changes what a module re-exports, so it is
   deferred. Trigger: the next branch that revises the test modules' interfaces.
 - **Decide a test-declaration privacy discipline**: test modules mix `private`

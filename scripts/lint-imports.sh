@@ -38,7 +38,7 @@
 # mathlib-targeted subtrees alone: the restriction to these prefixes
 # can force a module into Geb/Mathlib/ whose target is Lean core or
 # Batteries, since a dependency of a Geb/Mathlib/ module cannot live
-# in Geb/Internal/. Such a module is not extracted to mathlib4 at all,
+# in Geb/Prototypes/. Such a module is not extracted to mathlib4 at all,
 # and its destination is open, per TODO.md § Upstream destination of
 # core- and Batteries-targeted content.
 #

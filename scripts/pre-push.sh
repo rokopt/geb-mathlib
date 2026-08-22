@@ -110,7 +110,7 @@ step "docs-coverage check (concept docs in same branch)"
 # Project rule: any new concept added to source code must be
 # documented in docs/index.md in the same branch.
 # Stub implementation: surface a reminder when .lean files in
-# Geb/Mathlib/, Geb/Cslib/, Geb/Internal/, or GebLang/ change
+# Geb/Mathlib/, Geb/Cslib/, Geb/Prototypes/, or GebLang/ change
 # without docs/index.md being touched in the same branch's diff. A
 # full implementation would parse new top-level declarations and
 # check docs/index.md mentions them; deferred to a future upgrade.
@@ -121,12 +121,12 @@ step "docs-coverage check (concept docs in same branch)"
 # shellcheck source=lib/diff-against-main.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/diff-against-main.sh"
 
-if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Internal|GebLang)/.*\.lean$'; then
+if diff_against_main | grep -qE '^(Geb/Mathlib|Geb/Cslib|Geb/Prototypes|GebLang)/.*\.lean$'; then
   if ! diff_against_main | grep -q '^docs/index.md$'; then
     echo "" >&2
     echo "REMINDER (docs-coverage):" >&2
     echo "  Lean files under Geb/Mathlib/, Geb/Cslib/," >&2
-    echo "  Geb/Internal/, or GebLang/ changed, but" >&2
+    echo "  Geb/Prototypes/, or GebLang/ changed, but" >&2
     echo "  docs/index.md was not touched. Verify each new" >&2
     echo "  concept is reflected in docs/index.md." >&2
   fi

@@ -32,8 +32,8 @@
 Findings on two questions: generalizing the ranked-tree recognizer of
 `Geb/Mathlib/Computability/Cobham/RankedTree.lean` to a fold at an algebra of
 the ranked alphabet, and the reach of the linear-time bound of
-`Geb/Internal/Computability/TreeScanner/Bound.lean`. The prototype is
-`Geb/Internal/Computability/CobhamFoldProto/`.
+`Geb/Prototypes/Computability/TreeScanner/Bound.lean`. The prototype is
+`Geb/Prototypes/Computability/CobhamFoldProto/`.
 
 The prototype carries two expression-layer constructions over one semantic core.
 The first is at a carrier with a fixed-width bit encoding
@@ -51,7 +51,7 @@ unchanged by both.
 
 This document is a transient artifact under `CONTRIBUTING.md` § Concern shape
 and is removed in the branch's final commits. The prototype modules are not: they
-are `Geb/Internal/` source, indexed in `docs/index.md`, and their follow-on work
+are `Geb/Prototypes/` source, indexed in `docs/index.md`, and their follow-on work
 is recorded in `TODO.md` § The fold over recognized terms.
 
 ## Question 1: generalizing the recognizer to a fold
@@ -166,7 +166,7 @@ the tree rather than per bit of the input.
 
 At the carrier `Unit`, whose encoding is empty, an entry is `[true]` and the
 layout is `Cobham.stateWord`. The module
-`Geb/Internal/Computability/CobhamFoldProto/Degenerate.lean` states the
+`Geb/Prototypes/Computability/CobhamFoldProto/Degenerate.lean` states the
 coincidences: `dispatchWidthF_zero` and `readoutWidth_zero` for the two windows,
 `stackBits_unit` and `stateWordF_unit` for the layout, `dropCountF_unit` and
 `nextPrefixF_unit` for both halves of a step, and `foldOut_unit` with
@@ -254,7 +254,7 @@ Four things separate it from the existing one, and none is a small edit:
 
 1. The machine reads and writes stack cells. `treeScanner`'s work tape is blank
    but for two markers, and every invariant in
-   `Geb/Internal/Computability/TreeScanner/Steps.lean` is stated on closed-form
+   `Geb/Prototypes/Computability/TreeScanner/Steps.lean` is stated on closed-form
    configurations that exploit that. A machine carrying data on the work tape
    needs configurations parameterized by the stack's contents.
 2. The constants do not survive, and are worse at `binRanked`, as above.
@@ -285,7 +285,7 @@ closure property: the class is closed under folding over recognized terms
 whenever the algebra's operations lie in it and the fold's values stay linearly
 bounded.
 
-`Geb/Internal/Computability/CobhamFoldProto/Variable.lean` builds it. The
+`Geb/Prototypes/Computability/CobhamFoldProto/Variable.lean` builds it. The
 subsections below record what building it settled.
 
 ### The remaining word is what makes it possible
@@ -398,7 +398,7 @@ its count region being one bit at an alphabet whose symbols are all nullary.
 
 ## Prototype
 
-`Geb/Internal/Computability/CobhamFoldProto/`, building `Classical.choice`-free
+`Geb/Prototypes/Computability/CobhamFoldProto/`, building `Classical.choice`-free
 under `lake lint` and `lake lint -- GebTests`, with `lake test` passing:
 
 | Module | Content |
@@ -412,7 +412,7 @@ under `lake lint` and `lake lint -- GebTests`, with `lake test` passing:
 | `Variable.lean` | the fold at the carrier `List Bool`, `foldExprV` and `foldOutExprV` in `Cobham.C`, `foldOut_algOfFixed`, and the growth bridge `length_fold_le_of_growth`, `potential_foldScanStep_le`, `potential_foldScanFinal_le`, `stackSize_le_of_growth` |
 | `SmashFree.lean` | `instFinEnumSigB`, `smashFreeBool_mk_iff`, the combinator lemmas, `smashFree_foldOutExpr`, `smashFree_foldOutExprV` |
 
-`GebTests/Internal/Computability/CobhamFoldProto/Fold.lean` evaluates the fold
+`GebTests/Prototypes/Computability/CobhamFoldProto/Fold.lean` evaluates the fold
 at the two-symbol alphabet under an algebra counting nodes modulo four, checks
 it against `Term.fold`, and checks absence at a word spelling no term. It also
 bears on the order in which the scan presents a symbol's children to the
@@ -530,5 +530,5 @@ terms so that they survive this document's removal:
   instantiates.
 - `Geb/Mathlib/Computability/Cobham/RankedTree.lean` — the recognizer being
   generalized.
-- `Geb/Internal/Computability/TreeScanner/Bound.lean` — the linear-time bound
+- `Geb/Prototypes/Computability/TreeScanner/Bound.lean` — the linear-time bound
   discussed in § Question 2.
