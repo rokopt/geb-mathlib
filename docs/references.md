@@ -139,7 +139,7 @@ Conditions for considering these targets are in
 ## S-expression tooling
 
 Tooling and exposition for the readable S-expression syntax
-`Geb/Internal/ReadableSExpr.lean` implements. The citable
+`Geb/Prototypes/ReadableSExpr.lean` implements. The citable
 specifications it transcribes against — R7RS, EDN, RFC 9804,
 RFC 8259 — are in `docs/references.bib`; the entries here are
 neither specifications nor citable literature.

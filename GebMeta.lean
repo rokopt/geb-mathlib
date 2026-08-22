@@ -67,8 +67,8 @@ external Lean library (Batteries, mathlib, CSLib) that itself uses
 axiom-linter's own test fixture. Feature branches append the module names
 their own such modules occupy. -/
 def classicalAllowedModules : NameSet :=
-  [`GebTests.Internal.AxiomLinterClassicalFixture,
-   `Geb.Internal.PresheafIRProto.Functor,
+  [`GebTests.Prototypes.AxiomLinterClassicalFixture,
+   `Geb.Prototypes.PresheafIRProto.Functor,
    `Geb.Mathlib.Data.PFunctor.Slice.Functor,
    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor,
    `GebTests.Mathlib.Data.PFunctor.Slice.Functor,
@@ -97,9 +97,9 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Mathlib.CategoryTheory.FinSetSkel.ElementaryTopos,
    `Geb.Mathlib.CategoryTheory.FinCat.FinCategory,
    `GebTests.Mathlib.CategoryTheory.FinCat.FinCategory,
-   `Geb.Internal.Computability.TreeScanner.Steps,
-   `Geb.Internal.Computability.TreeScanner.Bound,
-   `GebTests.Internal.Computability.TreeScanner.Machine].foldl (·.insert ·)
+   `Geb.Prototypes.Computability.TreeScanner.Steps,
+   `Geb.Prototypes.Computability.TreeScanner.Bound,
+   `GebTests.Prototypes.Computability.TreeScanner.Machine].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the

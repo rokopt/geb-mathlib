@@ -248,10 +248,10 @@ persist. A phase is not complete until its artifact exists.
 ## Repo structure
 
 `Geb/Mathlib/*`, `Geb/Cslib/*` and `GebLang/*` upstream-eligible |
-`Geb/Internal/*` downstream-only. Narrow-and-deep dirs with one
-indexing file per directory. `main` = append-only stable;
-`integration` = regenerated fan-in view; topic branches per
-PR-candidate.
+`Geb/Prototypes/*` prototypes, their expression unsettled.
+Narrow-and-deep dirs with one indexing file per directory.
+`main` = append-only stable; `integration` = regenerated fan-in
+view; topic branches per PR-candidate.
 
 ## Tooling
 

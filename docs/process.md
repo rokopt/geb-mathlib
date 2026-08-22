@@ -216,15 +216,19 @@ use time keeps committed content trustworthy.
 
 ## Two-track development
 
-`Geb/Internal/` holds code that is not (yet) upstream-eligible:
-work in progress, explorations that build on upstream-quality
-code without themselves meeting that bar, and code too
-specialized to this project for mathlib or CSLib. Code is ported
-into `Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/` when it reaches
-upstream quality, with dependents migrated via `jj rebase` after the
-upstream PR is accepted. The split lets velocity and upstream-
-readiness each get the discipline that suits them, without one
-blocking the other. It is driven by quality, scope, and
+`Geb/Prototypes/` holds prototypes: code that works out a
+construction the language is to have, established far enough to
+show how the construction goes, while the expression written so
+far is not yet settled as the one to keep. The directory is named
+for that state rather than for its consequence: a prototype is
+not upstream-eligible because its form is still open, and it
+stops being a prototype when the form closes. Code is ported into
+`Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/` when its expression is
+settled and it reaches upstream quality, with dependents migrated
+via `jj rebase` after the upstream PR is accepted. The split lets
+velocity and upstream-readiness each get the discipline that
+suits them, without one blocking the other. It is driven by
+whether a module's expression is settled, and by
 dependency-readiness, not by authorship: AI-drafted and
 human-written code follow the same rules in every subtree (see
 `docs/rules/upstream-eligible.md` § Two-track development).
@@ -232,7 +236,7 @@ human-written code follow the same rules in every subtree (see
 The upstream target is not a mathlib-or-Cslib binary. The subtree
 import rules restrict `Geb/Mathlib/` modules to `Mathlib.*`,
 `Batteries.*`, `Geb.Mathlib.*` and `GebLang.*` imports, so a
-dependency of such a module cannot live in `Geb/Internal/`; a module
+dependency of such a module cannot live in `Geb/Prototypes/`; a module
 restating Lean core or Batteries API therefore sits in `Geb/Mathlib/`
 while its upstream is neither mathlib4 nor Cslib. That destination is
 open, per `TODO.md` § Upstream destination of core- and

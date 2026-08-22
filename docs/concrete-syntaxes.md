@@ -58,17 +58,17 @@ the concrete role, and states the implementation roadmap.
 
 The format-independent core and the first concrete syntax are
 implemented in
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
+[Geb/Prototypes/ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean),
 with tests in
-[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean).
-[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+[GebTests/Prototypes/ConcreteSyntax.lean](../GebTests/Prototypes/ConcreteSyntax.lean).
+[Geb/Prototypes/CanonicalSExpr.lean](../Geb/Prototypes/CanonicalSExpr.lean)
 carries canonical S-expressions as a data type and a second retraction
 over the same grammar, the rose spelling, with tests in
-[GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean).
-[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+[GebTests/Prototypes/CanonicalSExpr.lean](../GebTests/Prototypes/CanonicalSExpr.lean).
+[Geb/Prototypes/ReadableSExpr.lean](../Geb/Prototypes/ReadableSExpr.lean)
 carries a third retraction, over a different grammar: the same rose
 trees spelled as whitespace-separated parenthesized text, with tests in
-[GebTests/Internal/ReadableSExpr.lean](../GebTests/Internal/ReadableSExpr.lean).
+[GebTests/Prototypes/ReadableSExpr.lean](../GebTests/Prototypes/ReadableSExpr.lean).
 [Local verification](#local-verification) records the facts the
 implementation fixes; [Roadmap](#roadmap) states the staging and
 supersedes the format-by-format sections where the two differ.
@@ -1302,7 +1302,7 @@ a label followed by its children — nine bytes:
 ```
 
 This is the form
-[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+[Geb/Prototypes/ReadableSExpr.lean](../Geb/Prototypes/ReadableSExpr.lean)
 prints and parses. It carries neither the header nor the alphabet size,
 as the implemented bare-tree wire forms do not. The advanced form above
 spells the binary presentation with constructor tags and quoted labels;
@@ -1382,15 +1382,15 @@ Ninety-one bytes. The block CID of these bytes is the storage address;
 ## Local verification
 
 The development is
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
-[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+[Geb/Prototypes/ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean),
+[Geb/Prototypes/CanonicalSExpr.lean](../Geb/Prototypes/CanonicalSExpr.lean)
 and
-[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean),
+[Geb/Prototypes/ReadableSExpr.lean](../Geb/Prototypes/ReadableSExpr.lean),
 with tests in
-[GebTests/Internal/ConcreteSyntax.lean](../GebTests/Internal/ConcreteSyntax.lean),
-[GebTests/Internal/CanonicalSExpr.lean](../GebTests/Internal/CanonicalSExpr.lean)
+[GebTests/Prototypes/ConcreteSyntax.lean](../GebTests/Prototypes/ConcreteSyntax.lean),
+[GebTests/Prototypes/CanonicalSExpr.lean](../GebTests/Prototypes/CanonicalSExpr.lean)
 and
-[GebTests/Internal/ReadableSExpr.lean](../GebTests/Internal/ReadableSExpr.lean).
+[GebTests/Prototypes/ReadableSExpr.lean](../GebTests/Prototypes/ReadableSExpr.lean).
 All of them build under the toolchain pinned in `lean-toolchain` with
 `autoImplicit` and `relaxedAutoImplicit` false and contain no `sorry`.
 The first module's one import is
@@ -1482,14 +1482,14 @@ date with the next theorem added:
 | `Tree.map_extract_duplicate`, `Ast.erase_trivialDoc`, `Rose.ofList_eq` | `Quot.sound` |
 | `Csexp.parse_print` | `propext`, `Quot.sound` |
 
-[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+[Geb/Prototypes/CanonicalSExpr.lean](../Geb/Prototypes/CanonicalSExpr.lean)
 divides the same way but for the `Quot.sound`-alone class, which is
 empty there: some of its theorems depend on no axiom, some on `propext`
 alone, and the rest — `Rose.parse_print` and
 `Ast.parseViaRose_printViaRose` among them — on `propext` and
 `Quot.sound`.
 
-[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean)
+[Geb/Prototypes/ReadableSExpr.lean](../Geb/Prototypes/ReadableSExpr.lean)
 divides as the second module does: some depend on no axiom,
 `Rsexp.digit_not_ws` on `propext` alone, and the rest —
 `Rsexp.parse_print` and `Rsexp.parseViaRose_printViaRose` among them —
@@ -1680,9 +1680,9 @@ written already: [RFC8259] §2's `ws` production admits space,
 horizontal tab, carriage return and line feed, which is the class
 `Rsexp.isWs` fixes, so `isWs`, `skipWs`, their equations and two of the
 readable module's decimal lemmas serve 1b as they stand. They sit in
-[Geb/Internal/ReadableSExpr.lean](../Geb/Internal/ReadableSExpr.lean),
+[Geb/Prototypes/ReadableSExpr.lean](../Geb/Prototypes/ReadableSExpr.lean),
 which 1b imports or moves them out of into
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean),
+[Geb/Prototypes/ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean),
 where `Rose.parseChildren` sits for that same reason; the choice
 belongs to 1b.
 Stage 1c is where a byte-level integer encoding first appears, and that
@@ -1781,7 +1781,7 @@ data CanonicalSExpr : List Bits8 -> Type where
 being `Csexp.decOf`; `MkCanonicalList`'s is the parenthesization
 `Csexp.printAst` performs, `40` and `41` being the parentheses. The
 correspondence is exact, and
-[Geb/Internal/CanonicalSExpr.lean](../Geb/Internal/CanonicalSExpr.lean)
+[Geb/Prototypes/CanonicalSExpr.lean](../Geb/Prototypes/CanonicalSExpr.lean)
 transcribes the non-dependent family as `CSexp`, an atom-or-list W-type,
 with `CSexp.render` as the index function. `Csexp.print` factors through
 it: `Csexp.print_eq_render_toCSexp` states that the printer's output is
@@ -1819,7 +1819,7 @@ with the curried reading `Ast.toRose` fixes. On the five-node tree
 (1:0(1:1(1:2)))
 ```
 
-and `GebTests.Internal.CanonicalSExpr` pins both. `Ast.printViaRose`
+and `GebTests.Prototypes.CanonicalSExpr` pins both. `Ast.printViaRose`
 composes the rose bijection with the second, so it encodes the same
 trees in far fewer octets, carrying neither constructor tags nor binary
 scaffolding.
@@ -1835,7 +1835,7 @@ arity is unbounded: the parser reads until the closing parenthesis where
 the fixed-arity one reads exactly two children, so it runs a bounded
 inner loop
 (`Rose.parseChildren`, which
-[Geb/Internal/ConcreteSyntax.lean](../Geb/Internal/ConcreteSyntax.lean)
+[Geb/Prototypes/ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean)
 declares) and
 its retraction rebuilds a W-type node from the `List` that loop returns
 (`Rose.ofList_ofFn`, a transport along `List.length_ofFn`). What it

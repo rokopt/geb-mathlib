@@ -18,8 +18,8 @@ itself. The repository develops mathematical content in a style
 shaped to be plausibly upstreamable to mathlib4 (via the
 `Geb/Mathlib/` subtree) or Cslib (via `Geb/Cslib/`), with the Geb
 language's core data structures in `GebLang/`, which ships to either
-upstream per module, alongside downstream-only content (under
-`Geb/Internal/`).
+upstream per module, alongside prototypes (under
+`Geb/Prototypes/`) whose expression is not yet settled.
 
 ## Dependencies
 
@@ -95,11 +95,13 @@ destination is open, per [TODO.md](TODO.md) § Upstream destination
 of core- and Batteries-targeted content. Content addressing
 computer-science topics
 overlapping [CSLib](https://github.com/leanprover/cslib) targets
-CSLib instead and lives in `Geb/Cslib/`. Code in `Geb/Internal/`
-is not eligible for upstream submission; some of it may eventually be
-recast into an upstream-eligible form and moved to `Geb/Mathlib/`,
-`Geb/Cslib/`, or `GebLang/`, while other Internal code has no
-upstream home.
+CSLib instead and lives in `Geb/Cslib/`. Code in `Geb/Prototypes/`
+is a prototype: it works out a construction the language is to
+have, without its written form being settled as the one to keep.
+A prototype is not eligible for upstream submission while its
+expression is provisional; once the expression is settled it is
+recast into upstream-eligible form and moved to `Geb/Mathlib/`,
+`Geb/Cslib/`, or `GebLang/`.
 
 Content in `GebLang/` is upstream-eligible per module: a module whose
 import closure reaches no `Cslib.*` extracts to mathlib4, and one

@@ -46,22 +46,24 @@ For upstream-eligible subtrees, AI authoring follows
 an agent may draft, and the user commits only after understanding
 every line, being able to justify each design decision to
 reviewers without AI, and disclosing tool use. Work under
-`Geb/Internal/` is reviewed by the user at commit time without
-that upstream justification bar.
+Work under `Geb/Prototypes/` is reviewed by the user at commit
+time without that upstream justification bar.
 
 ## Two-track development
 
-`Geb/Internal/` holds code that is not (yet) upstream-eligible:
-work in progress not yet at mathlib/CSLib quality, explorations
-that build on upstream-quality code in `Geb/Mathlib/`,
-`Geb/Cslib/` or `GebLang/` without themselves meeting that bar,
-and code too specialized to this project to be in scope for
-either upstream.
-The split is driven by quality, scope, and dependency-readiness,
-not by authorship: AI-drafted and human-written code follow the
-same rules in every subtree.
+`Geb/Prototypes/` holds prototypes: code that works out a
+construction the language is to have, established far enough to
+show how the construction goes, without its written form being
+settled as the one to keep. A prototype may build on
+upstream-quality code in `Geb/Mathlib/`, `Geb/Cslib/` or
+`GebLang/` without itself meeting that bar. While its expression
+is provisional it is not upstream-eligible.
+The split is driven by whether a module's expression is settled,
+and by dependency-readiness, not by authorship: AI-drafted and
+human-written code follow the same rules in every subtree.
 
-When Internal content is later brought to upstream quality:
+When a prototype's expression is settled and the code is brought
+to upstream quality:
 
 1. Port it into `Geb/Mathlib/Foo.lean`, `Geb/Cslib/Foo.lean` or
    `GebLang/Foo.lean` depending on the upstream target, satisfying
@@ -76,7 +78,7 @@ When Internal content is later brought to upstream quality:
    (§ Subtree import rules).
 2. When the upstream PR is accepted and we re-pin to a fresh
    master that includes it, migrate dependents via `jj rebase`.
-   The Internal version is then removed.
+   The prototype is then removed.
 
 ## Floodgate test
 
@@ -120,7 +122,7 @@ are reachable no other way.
 A second rationale binds the mathlib-targeted subtrees alone. The
 restriction to these prefixes can force a module into `Geb/Mathlib/`
 whose target is Lean core or Batteries, a dependency of a
-`Geb/Mathlib/` module being unable to live in `Geb/Internal/`, and
+`Geb/Mathlib/` module being unable to live in `Geb/Prototypes/`, and
 such a module is not extracted to mathlib4 at all. Its destination is
 open, per `TODO.md` § Upstream destination of core- and
 Batteries-targeted content.
@@ -182,7 +184,7 @@ Cslib does depend on mathlib, so `Geb/Cslib/` files may import
 `Geb.Mathlib.*` and `GebLang.*` of either track: a mathlib-track
 dependency ships first and the Cslib PR follows once it merges and
 Cslib's mathlib pin advances, while a Cslib-track one ships to Cslib
-alongside it. `Geb/Internal/` may import from any of the above, with
+alongside it. `Geb/Prototypes/` may import from any of the above, with
 no list to amend.
 
 ## CSLib-specific constraints

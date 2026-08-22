@@ -27,10 +27,12 @@ The repository is laid out narrow-and-deep, with one indexing
     intended for eventual upstream extraction to Cslib;
     imports from `Mathlib.*`, `Batteries.*`, `Cslib.*`,
     `Geb.Cslib.*`, `Geb.Mathlib.*`, and `GebLang.*` only.
-  - `Geb/Internal/` — content not intended for upstream
-    extraction; may import from `Mathlib.*`, `Batteries.*`,
+  - `Geb/Prototypes/` — prototypes: constructions the language is
+    to have, whose written form is not yet settled, and which are
+    therefore not yet upstream-eligible; may import from
+    `Mathlib.*`, `Batteries.*`,
     `Cslib.*`, `Geb.Mathlib.*`, `Geb.Cslib.*`, `GebLang.*`, or
-    `Geb.Internal.*`.
+    `Geb.Prototypes.*`.
 - `GebLang/` — the Geb language's core data structures, at the
   bottom of the dependency order; imports from `Mathlib.*`,
   `Batteries.*`, `Cslib.*`, `GebLang.*`, `GebMeta`, and
@@ -43,7 +45,7 @@ The repository is laid out narrow-and-deep, with one indexing
   style and rendered twice (`docs/rules/lean-coding.md` § Literate
   modules).
 - `GebTests/` — test library mirroring `Geb/`'s structure, with
-  `GebTests/Mathlib/`, `GebTests/Cslib/`, and `GebTests/Internal/`
+  `GebTests/Mathlib/`, `GebTests/Cslib/`, and `GebTests/Prototypes/`
   subdirectories, plus `GebTests/Lang/`, which tests `GebLang/`.
 - `manual/` — the Verso manual (build and serve commands:
   `README.md` § Documentation).
@@ -60,9 +62,9 @@ checklist and in CI.
   layer for the Geb abstract syntax tree: the round-trip laws, the
   annotation model, the content-addressing specification, the
   format-by-format evaluation, and the staging.
-  `Geb/Internal/ConcreteSyntax.lean`,
-  `Geb/Internal/CanonicalSExpr.lean` and
-  `Geb/Internal/ReadableSExpr.lean` implement its first stage.
+  `Geb/Prototypes/ConcreteSyntax.lean`,
+  `Geb/Prototypes/CanonicalSExpr.lean` and
+  `Geb/Prototypes/ReadableSExpr.lean` implement its first stage.
 
 ## Implemented content
 
@@ -1031,7 +1033,7 @@ checklist and in CI.
   specification as its component vector. The `Bool`-validity fields
   are not rendered, carrying no information a reader of the table
   needs. All of them depend on `propext`.
-- `Geb/Internal/PresheafIRProto/Basic.lean` — prototype of the morphism
+- `Geb/Prototypes/PresheafIRProto/Basic.lean` — prototype of the morphism
   theory of presheaf parametric-right-adjoint functors, and of the
   constant functor at a representable. `GebProto.objEquivSigmaArityHom`
   is the p.r.a. formula of [Weber2007] as the equivalence
@@ -1055,7 +1057,7 @@ checklist and in CI.
   direction-side laws by `Subsingleton.elim`. No theorem here depends on
   an axiom beyond `propext` and `Quot.sound`, and no declaration depends
   on `Classical.choice`.
-- `Geb/Internal/PresheafIRProto/Codes.lean` — prototype of the code
+- `Geb/Prototypes/PresheafIRProto/Codes.lean` — prototype of the code
   combinators, the semantic counterparts of the code constructors of
   Section 6 of [HancockMcBrideGhaniMalatestaAltenkirch2013] generalized
   from families to presheaves. `GebProto.adjoinArity` is `δ`'s
@@ -1085,7 +1087,7 @@ checklist and in CI.
   `δ` adds no functor the leaf does not already supply. No theorem here
   depends on an axiom beyond `propext` and `Quot.sound`, and no
   declaration depends on `Classical.choice`.
-- `Geb/Internal/PresheafIRProto/Functor.lean` — the parts of the
+- `Geb/Prototypes/PresheafIRProto/Functor.lean` — the parts of the
   prototype that write in a functor category, which
   `CategoryTheory.Functor.category` makes `Classical.choice`-dependent,
   so this module alone of the three is on
@@ -1102,7 +1104,7 @@ checklist and in CI.
   functor laws proved here rather than transported. The module declares
   no theorems, and every declaration in it depends on `propext`,
   `Classical.choice` and `Quot.sound`.
-- `Geb/Internal/ConcreteSyntax.lean` — prototype of the concrete-syntax
+- `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
   a recursor application. `Geb.Ast k` is the initial algebra of
@@ -1145,7 +1147,7 @@ checklist and in CI.
   depending on `Classical.choice`. No theorem here depends on an axiom
   beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
-- `Geb/Internal/CanonicalSExpr.lean` — canonical S-expressions as a data
+- `Geb/Prototypes/CanonicalSExpr.lean` — canonical S-expressions as a data
   type. `Geb.CSexp` is the non-dependent form of the family
   [FormalSExpr] indexes by the octets representing it, and
   `CSexp.render` is that index function: an atom renders as
@@ -1158,21 +1160,21 @@ checklist and in CI.
   spelling a node as its label applied to its arguments, with
   `Rose.print` its rendering and `Ast.printViaRose` its composite with
   the rose bijection; the two encodings of one tree differ, as
-  `GebTests.Internal.CanonicalSExpr` exhibits. `Rose.parse` reads the
+  `GebTests.Prototypes.CanonicalSExpr` exhibits. `Rose.parse` reads the
   second spelling back and `Rose.parse_print` is its retraction, with
   `Rose.format_idem`/`Rose.print_injective` the two instantiated
   corollaries and `Ast.parseViaRose`/`Ast.parseViaRose_printViaRose` the
   same retraction transported across the rose bijection to `Ast k`. What
   distinguishes its parser from the implemented one is that a rose
   node's arity is unbounded: it delegates a node's children to
-  `Rose.parseChildren`, which `Geb/Internal/ConcreteSyntax.lean`
+  `Rose.parseChildren`, which `Geb/Prototypes/ConcreteSyntax.lean`
   supplies, and `Rose.parseAux_print` states its
   measure as the printed length. The module's `## Implementation notes`
   derives the two inequalities that measure has to satisfy and why the
   printed length is taken rather than a node count.
   No theorem here depends on an axiom beyond `propext` and
   `Quot.sound`, and no declaration depends on `Classical.choice`.
-- `Geb/Internal/ReadableSExpr.lean` — the readable spelling of the rose
+- `Geb/Prototypes/ReadableSExpr.lean` — the readable spelling of the rose
   presentation, a whitespace-separated parenthesized text where the
   canonical form is length-prefixed and whitespace-free, so that
   `fork (leaf 0) (fork (leaf 1) (leaf 2))` reads as `(0 (1 2))`. The
@@ -1192,7 +1194,7 @@ checklist and in CI.
   length-prefixed form does not need. No theorem here depends on an
   axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
-- `Geb/Internal/Computability/TreeScanner/Machine.lean` — a deterministic
+- `Geb/Prototypes/Computability/TreeScanner/Machine.lean` — a deterministic
   multi-tape Turing machine over Cslib's `Turing.MultiTapeTM` deciding
   `RankedAlphabet.Binary.binRanked.validBool`. `boolEmb` embeds the input
   alphabet into the one-tape machine alphabet `Fin 2`; `stSeek`, `stPlant`,
@@ -1219,13 +1221,13 @@ checklist and in CI.
   which then walks the input head left, ignoring the work tape, matching
   `RankedAlphabet.scanStep`'s absorbing failure. The source module is
   `Classical.choice`-free; its
-  `GebTests/Internal/Computability/TreeScanner/Machine.lean` mirror is
+  `GebTests/Prototypes/Computability/TreeScanner/Machine.lean` mirror is
   listed in `GebMeta.classicalAllowedModules`, since it reads the machine's
   output through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
   `Classical.choice` through Cslib's `inputSymbolInner`. Depends on Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic` and
   `Geb.Mathlib.Data.Tree.Ranked.Binary`.
-- `Geb/Internal/Computability/TreeScanner/Steps.lean` — the machine's
+- `Geb/Prototypes/Computability/TreeScanner/Steps.lean` — the machine's
   behaviour under `Turing.MultiTapeTM.step`, `.configs` and
   `.outputString`. `step_of_state` restates a step in the form that names
   `tr`; `seekCfg_inputSymbol`, `seekCfg_inputSymbol_end`,
@@ -1249,9 +1251,9 @@ checklist and in CI.
   listed in `GebMeta.classicalAllowedModules`: its statements read the
   input through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
   `Classical.choice` through Cslib's `inputSymbolInner`. Depends on
-  `Geb.Internal.Computability.TreeScanner.Machine` and Cslib's
+  `Geb.Prototypes.Computability.TreeScanner.Machine` and Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic`.
-- `Geb/Internal/Computability/TreeScanner/Bound.lean` —
+- `Geb/Prototypes/Computability/TreeScanner/Bound.lean` —
   `computableInTimeAndSpace_validBool`: `treeScanner` is
   `Turing.MultiTapeTM.ComputableInTimeAndSpace` at
   `fun w : List Bool ↦ [binRanked.validBool w]`, time bound
@@ -1262,7 +1264,7 @@ checklist and in CI.
   space conjunct rests on `Turing.MultiTapeTM.spaceUsed`, a
   `Finset.image` through `Turing.MultiTapeTM.visitedByTapeHead`, and
   mathlib's `Finset.image` depends on `Classical.choice`. Depends on
-  `Geb.Internal.Computability.TreeScanner.Steps` and Cslib's
+  `Geb.Prototypes.Computability.TreeScanner.Steps` and Cslib's
   `Computability.Machines.Turing.MultiTape.TapeLemmas`.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
@@ -1388,7 +1390,7 @@ checklist and in CI.
   arbitrary and carries no `Fintype` or `FinEnum` instance; its finiteness
   enters only through `enc`. Depends on
   `Geb.Mathlib.Computability.Cobham.Cases`. `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Bound.lean` — the scan
+- `Geb/Prototypes/Computability/CobhamFoldProto/Bound.lean` — the scan
   combinator at a linear growth bound. `Cobham.scan`'s bound child prepends
   `growth` bits to the recursion variable, admitting a state that exceeds the
   input by an additive constant only; `multRaw` is the `mult`-fold
@@ -1418,7 +1420,7 @@ checklist and in CI.
   argument, `CobhamFoldProto/SelfDelim.lean`'s `stepWord_comp1Of` being its
   arity-one instance. Depends on `Geb.Mathlib.Computability.Cobham.Scan`.
   `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Fold.lean` — the fold scan of a
+- `Geb/Prototypes/Computability/CobhamFoldProto/Fold.lean` — the fold scan of a
   preorder spelling. `FoldScan` replaces `RankedAlphabet.Scan`'s pending count
   by a stack of carrier values and `foldScanStep` replaces the pop-push by an
   application of an algebra, `symOf` refining `RankedAlphabet.arOf` to the
@@ -1440,7 +1442,7 @@ checklist and in CI.
   arbitrary arguments. Depends on
   `Geb.Mathlib.Data.Tree.Ranked.Preorder` and `Geb.Mathlib.Data.W.Basic`.
   `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Layout.lean` — the fold scan's
+- `Geb/Prototypes/Computability/CobhamFoldProto/Layout.lean` — the fold scan's
   state as a bitstring. `entryBits` gives each stack entry a `true` presence
   marker followed by the `p` encoding bits, `stackBits` concatenates them and
   `stateWordF` prefixes the liveness flag and `Cobham.bufBits`'s slot; the
@@ -1453,9 +1455,9 @@ checklist and in CI.
   the window; `dropCountF_take_stack` and `nextPrefixF_take_stack` show that
   truncation changes neither the bits dropped nor the bits prepended, and
   `stateWordF_foldScanStep_of_lt` gives a step as a bounded prefix rewrite.
-  Depends on `Geb.Internal.Computability.CobhamFoldProto.Fold` and
+  Depends on `Geb.Prototypes.Computability.CobhamFoldProto.Fold` and
   `Geb.Mathlib.Computability.Cobham.RankedTree`. `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Expr.lean` — the fold as an
+- `Geb/Prototypes/Computability/CobhamFoldProto/Expr.lean` — the fold as an
   expression of Cobham's class. `foldStepF` dispatches on the state's leading
   bits with `Cobham.casesOf`, prepending the rebuilt prefix and dropping the
   consumed bits; `foldSemF` is the scan's meaning and `foldSemF_eq` identifies
@@ -1471,9 +1473,9 @@ checklist and in CI.
   with `RankedAlphabet.parse` followed by the fold, spelled by `outWord`.
   `Cobham.SmashFree` is not stated here; `CobhamFoldProto/SmashFree.lean` states
   it symbolically as `smashFree_foldOutExpr`.
-  Depends on `Geb.Internal.Computability.CobhamFoldProto.Bound` and
-  `Geb.Internal.Computability.CobhamFoldProto.Layout`. `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Degenerate.lean` — the fold at
+  Depends on `Geb.Prototypes.Computability.CobhamFoldProto.Bound` and
+  `Geb.Prototypes.Computability.CobhamFoldProto.Layout`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/CobhamFoldProto/Degenerate.lean` — the fold at
   the terminal algebra. `encUnit`, `decUnit` and `algUnit` are the empty
   encoding of `Unit` and the terminal algebra; `dispatchWidthF_zero`,
   `readoutWidth_zero`, `stackBits_unit`, `stateWordF_unit`, `dropCountF_unit`
@@ -1485,8 +1487,8 @@ checklist and in CI.
   one, at every growth, and the rejecting words differ, `outWord` spelling both
   branches at the width `p + 1` where `Cobham.isRankedSem_eq_ite` gives the
   empty bitstring. Depends on
-  `Geb.Internal.Computability.CobhamFoldProto.Expr`. `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/SelfDelim.lean` — self-delimiting
+  `Geb.Prototypes.Computability.CobhamFoldProto.Expr`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/CobhamFoldProto/SelfDelim.lean` — self-delimiting
   bitstrings in Cobham's class. `entryWord` spells a payload as its length in
   unary, a `false` sentinel, then the payload. `scan2W`, `scan2` and
   `scan2Sem` carry the scan node at steps of arity two, which read the remaining
@@ -1504,7 +1506,7 @@ checklist and in CI.
   `idOf` is the identity and
   `dropEntriesOf` with `entryOf` iterate the primitives to reach the `j`-th
   entry; the composition combinators they are built from live in
-  `Geb/Internal/Computability/CobhamFoldProto/Bound.lean`. Every primitive's
+  `Geb/Prototypes/Computability/CobhamFoldProto/Bound.lean`. Every primitive's
   value is
   no longer than its argument, so each takes `Cobham.boundRaw 0` as its bound
   child, and each costs a pass over the whole word whatever it reads,
@@ -1514,8 +1516,8 @@ checklist and in CI.
   most one bit while the remainder loses one — which is what bounds a
   paramorphism step's contribution at an arbitrary argument rather than only at
   a fold's value. Depends on
-  `Geb.Internal.Computability.CobhamFoldProto.Bound`. `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Variable.lean` — the fold at the
+  `Geb.Prototypes.Computability.CobhamFoldProto.Bound`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/CobhamFoldProto/Variable.lean` — the fold at the
   carrier `List Bool`, with the algebra's operations supplied as expressions of
   Cobham's class, so the carrier is unrestricted. `stateWordV` is
   `Cobham.stateWord` of the projected state followed by a `false` sentinel and
@@ -1560,11 +1562,11 @@ checklist and in CI.
   the entries; they need `k ≤ st.length` where the totals do not, so both
   forms stand.
   Depends on
-  `Geb.Internal.Computability.CobhamFoldProto.Bound`,
-  `Geb.Internal.Computability.CobhamFoldProto.Fold`,
-  `Geb.Internal.Computability.CobhamFoldProto.SelfDelim` and
+  `Geb.Prototypes.Computability.CobhamFoldProto.Bound`,
+  `Geb.Prototypes.Computability.CobhamFoldProto.Fold`,
+  `Geb.Prototypes.Computability.CobhamFoldProto.SelfDelim` and
   `Geb.Mathlib.Computability.Cobham.RankedTree`. `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/SmashFree.lean` — membership of
+- `Geb/Prototypes/Computability/CobhamFoldProto/SmashFree.lean` — membership of
   both constructions' expressions in the subalgebra `Cobham.SmashFree` names:
   `smashFree_foldOutExpr` unconditionally, at a symbolic alphabet and carrier
   width, and `smashFree_foldOutExprV` at a symbolic alphabet under the
@@ -1583,10 +1585,10 @@ checklist and in CI.
   recursion, to the two theorems above. With [Strahm2003] Theorem 1(2)'s
   left-to-right inclusion each is then computable simultaneously in polynomial
   time and linear space. Depends on
-  `Geb.Internal.Computability.CobhamFoldProto.Expr` and
-  `Geb.Internal.Computability.CobhamFoldProto.Variable`.
+  `Geb.Prototypes.Computability.CobhamFoldProto.Expr` and
+  `Geb.Prototypes.Computability.CobhamFoldProto.Variable`.
   `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Initial.lean` — the initial
+- `Geb/Prototypes/Computability/CobhamFoldProto/Initial.lean` — the initial
   algebra's structure map at the carrier `List Bool`, and that map as an
   expression of Cobham's class. `algMk` is a symbol's block followed by its
   children's spellings, so `fold_algMk` reads `Term.fold` at it as
@@ -1610,9 +1612,9 @@ checklist and in CI.
   the recognized language and the absence marker off it — without evaluating
   the readout's dispatch, and `smashFree_foldOutExprV_mkOf` places the
   expression in the subalgebra `Cobham.SmashFree` names. Depends on
-  `Geb.Internal.Computability.CobhamFoldProto.SmashFree`.
+  `Geb.Prototypes.Computability.CobhamFoldProto.SmashFree`.
   `Classical.choice`-free.
-- `Geb/Internal/Computability/CobhamFoldProto/Destruct.lean` — the inverse of
+- `Geb/Prototypes/Computability/CobhamFoldProto/Destruct.lean` — the inverse of
   the initial algebra's structure map, as expressions of Cobham's class, and
   the paramorphism at the same representation. `codeOf` and `dropCodeOf` read
   a word's leading block and what follows it through a constant unary prefix
@@ -1655,5 +1657,5 @@ checklist and in CI.
   trip: the constructor at the children the destructor reads returns the
   word, under `R.parse w = some (Term.mk R i ch)` with the symbol given
   rather than read. Depends on
-  `Geb.Internal.Computability.CobhamFoldProto.Initial` and
+  `Geb.Prototypes.Computability.CobhamFoldProto.Initial` and
   `Geb.Mathlib.Data.W.Basic`. `Classical.choice`-free.

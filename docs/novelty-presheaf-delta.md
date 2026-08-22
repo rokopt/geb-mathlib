@@ -24,7 +24,7 @@ the sources examined; it is not itself a claim of publication-grade novelty.
 
 ## Claim
 
-`GebProto.delta` in `Geb/Internal/PresheafIRProto/Codes.lean` — the `δ`
+`GebProto.delta` in `Geb/Prototypes/PresheafIRProto/Codes.lean` — the `δ`
 constructor of a code system whose semantics are presheaf parametric
 right-adjoint (p.r.a.) functors — has no precedent in the sources listed
 under [Sources examined](#sources-examined). No source was found presenting
@@ -95,7 +95,7 @@ presheaves.
 
 ### Presheaf p.r.a. `δ`
 
-`GebProto.delta` (in `Geb/Internal/PresheafIRProto/Codes.lean`), with
+`GebProto.delta` (in `Geb/Prototypes/PresheafIRProto/Codes.lean`), with
 `A : BaseArity I J` an output-varying arity, `D : Iᵒᵖ ⥤ Type` a decoding
 target, and `F` a presheaf p.r.a. functor:
 
