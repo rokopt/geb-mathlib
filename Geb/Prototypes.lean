@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.CanonicalSExpr
 public import Geb.Prototypes.Computability
 public import Geb.Prototypes.ConcreteSyntax
+public import Geb.Prototypes.FinCardUniverse
 public import Geb.Prototypes.PresheafIRProto
 public import Geb.Prototypes.PresheafUniverse
 public import Geb.Prototypes.ReadableSExpr

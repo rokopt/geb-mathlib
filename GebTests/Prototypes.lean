@@ -10,6 +10,7 @@ import GebTests.Prototypes.AxiomLinterClassicalFixture
 import GebTests.Prototypes.CanonicalSExpr
 import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
+import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.PresheafUniverse
 import GebTests.Prototypes.ReadableSExpr
 

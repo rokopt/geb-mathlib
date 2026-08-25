@@ -1182,6 +1182,51 @@ checklist and in CI.
   deciding fiber membership for a well-typed and an ill-typed pair. No
   theorem here depends on an axiom beyond `propext` and `Quot.sound`, and
   no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FinCardUniverse/Basic.lean` — prototype of the same
+  universe over a base category that is not discrete: `Card`, the finite
+  cardinals with functions between their elements as morphisms.
+  `GebProto.FinCardUniverse.Code` is the code formers — one nullary former
+  per object and one binder former at an object and a family of objects
+  indexed by its elements — with `GebProto.FinCardUniverse.Idx` and
+  `GebProto.FinCardUniverse.bound` their generic directions and the objects
+  those are indexed by. `GebProto.FinCardUniverse.Shp` and
+  `GebProto.FinCardUniverse.Dir` are the total spaces of the shape presheaf
+  `Σ_c y(out c)` and the arity presheaf `Σ_k y(bound c k)`, so every
+  restriction map is precomposition and the seven laws
+  (`GebProto.FinCardUniverse.directionRestr_id_law` through
+  `GebProto.FinCardUniverse.reindex_comp_law`) are the category laws.
+  `GebProto.FinCardUniverse.universeFunctor` is the resulting
+  `PresheafPFunctor`, parameterized by the type former, and
+  `GebProto.FinCardUniverse.sigmaUniverse` and
+  `GebProto.FinCardUniverse.piUniverse` its two instances, which differ only in
+  the shape-output map `q`. The base is defined here rather than taken to be
+  `Geb/Mathlib/CategoryTheory/FinSetSkel`, which has the same objects: that
+  category seals `FinSetSkel.Hom` `irreducible` so morphism equality is
+  decidable without `Classical.choice`, and the seal blocks the definitional
+  associativity the arity reindexing and the `ReindexId` and `ReindexComp`
+  transports rely on. No theorem here depends on an axiom beyond `propext` and
+  `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FinCardUniverse/Value.lean` — what that functor computes.
+  `GebProto.FinCardUniverse.famPresheaf` embeds a family of codes as the
+  coproduct of representables `Σ_u y(d u)`, and
+  `GebProto.FinCardUniverse.arityHomEquiv` computes the arity homs into it: one
+  code and one morphism `bound k ⟶ d u` per generic direction, where the
+  inductive-recursive presentation over a discrete base has an equality.
+  `GebProto.FinCardUniverse.junkArity` is the consequence — a binder shape
+  declaring the empty object accepting a code that denotes the singleton,
+  `GebProto.FinCardUniverse.junk_decoding_ne` — with
+  `GebProto.FinCardUniverse.junkObj` the element of the functor's value it
+  gives through the p.r.a. formula and
+  `GebProto.FinCardUniverse.out_emptyBind` the statement that the object the
+  resulting code decodes to is fixed by the shape's declaration rather than by
+  the code bound. `GebProto.FinCardUniverse.sigmaFormer_covariant` and
+  `GebProto.FinCardUniverse.piFormer_not_covariant` reproduce Example 3.6 of
+  [GhaniNordvallForsbergMalatesta2015] at the smallest scale that hosts it: the
+  empty dependent product is the singleton and the dependent product of the
+  counterexample family is empty, so the covariant action the dependent-product
+  former would need is a map from the singleton to the empty object. No theorem
+  here depends on an axiom beyond `propext` and `Quot.sound`, and no
+  declaration depends on `Classical.choice`.
 - `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
