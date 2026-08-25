@@ -1227,6 +1227,36 @@ checklist and in CI.
   former would need is a map from the singleton to the empty object. No theorem
   here depends on an axiom beyond `propext` and `Quot.sound`, and no
   declaration depends on `Classical.choice`.
+- `Geb/Prototypes/UniverseVariance.lean` — which morphisms of the decoding
+  category the universe's type formers are functorial along. Example 3.6 of
+  [GhaniNordvallForsbergMalatesta2015] rules out all functions and answers with
+  the groupoid of isomorphisms; this module records that invertibility is more
+  than the interpretation needs. `GebProto.UniverseVariance.Split` is a function
+  with a chosen section, composing contravariantly in the sections
+  (`GebProto.UniverseVariance.Split.id_comp`,
+  `GebProto.UniverseVariance.Split.comp_id`,
+  `GebProto.UniverseVariance.Split.comp_assoc`).
+  `GebProto.UniverseVariance.sigmaMap` is the dependent-sum former's action,
+  which needs no backward map, and `GebProto.UniverseVariance.piMap` the
+  dependent-product former's, which runs the reindexing backwards along the
+  chosen section and transports along the right-inverse witness — the same move
+  the discrete case makes along an equality of decodings.
+  `GebProto.UniverseVariance.piMap_id` and
+  `GebProto.UniverseVariance.piMap_comp` are its functor laws, which is the
+  claim; `GebProto.UniverseVariance.not_piMap` is the counterexample along an
+  arbitrary function, the one `Geb/Prototypes/FinCardUniverse/Value.lean`
+  reproduces in its finite model, where
+  `GebProto.FinCardUniverse.counterMap_not_split` records that the morphism
+  there admits no section. `GebProto.UniverseVariance.Split.ofEquiv` places the
+  groupoid inside the class and the mirror
+  `GebTests/Prototypes/UniverseVariance.lean` exhibits a split epimorphism that
+  is not injective, so the containment is strict in both directions.
+  `GebProto.UniverseVariance.twIdEquivSplit` identifies the class: a morphism
+  between identity arrows in the twisted-arrow category is exactly such a pair,
+  so the decoding category a universe closed under both formers can be
+  interpreted over is at least the diagonal of `Tw(C)`. No theorem here depends
+  on an axiom beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or

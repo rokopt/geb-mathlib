@@ -187,4 +187,11 @@ theorem piFormer_not_covariant :
     IsEmpty (piFormer ⟨0⟩ counterFamReindexed ⟶ piFormer ⟨1⟩ counterFam) :=
   ⟨fun f ↦ (f ⟨0, Nat.zero_lt_one⟩).elim0⟩
 
+/-- The counterexample's morphism admits no section: a section would be a map
+from the singleton to the empty object. What the dependent-product former's
+action needs is exactly such a section, which is the subject of
+`Geb/Prototypes/UniverseVariance.lean`. -/
+theorem counterMap_not_split : ¬ Nonempty ((⟨1⟩ : Card) ⟶ ⟨0⟩) :=
+  fun ⟨g⟩ ↦ (g ⟨0, Nat.zero_lt_one⟩).elim0
+
 end GebProto.FinCardUniverse

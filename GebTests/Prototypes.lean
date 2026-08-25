@@ -13,6 +13,7 @@ import GebTests.Prototypes.ConcreteSyntax
 import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.PresheafUniverse
 import GebTests.Prototypes.ReadableSExpr
+import GebTests.Prototypes.UniverseVariance
 
 /-!
 # GebTests.Prototypes — tests for prototype content
