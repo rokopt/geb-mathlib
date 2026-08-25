@@ -1227,12 +1227,13 @@ checklist and in CI.
   former would need is a map from the singleton to the empty object. No theorem
   here depends on an axiom beyond `propext` and `Quot.sound`, and no
   declaration depends on `Classical.choice`.
-- `Geb/Prototypes/UniverseVariance.lean` — which morphisms of the decoding
-  category the universe's type formers are functorial along. Example 3.6 of
-  [GhaniNordvallForsbergMalatesta2015] rules out all functions and answers with
-  the groupoid of isomorphisms; this module records that invertibility is more
-  than the interpretation needs. `GebProto.UniverseVariance.Split` is a function
-  with a chosen section, composing contravariantly in the sections
+- `Geb/Prototypes/UniverseVariance/Basic.lean` — which morphisms of the
+  decoding category the universe's type formers are functorial along. Example
+  3.6 of [GhaniNordvallForsbergMalatesta2015] rules out all functions and
+  answers with the groupoid of isomorphisms; this module records that
+  invertibility is more than the interpretation needs.
+  `GebProto.UniverseVariance.Split` is a function with a chosen section,
+  composing contravariantly in the sections
   (`GebProto.UniverseVariance.Split.id_comp`,
   `GebProto.UniverseVariance.Split.comp_id`,
   `GebProto.UniverseVariance.Split.comp_assoc`).
@@ -1249,14 +1250,40 @@ checklist and in CI.
   `GebProto.FinCardUniverse.counterMap_not_split` records that the morphism
   there admits no section. `GebProto.UniverseVariance.Split.ofEquiv` places the
   groupoid inside the class and the mirror
-  `GebTests/Prototypes/UniverseVariance.lean` exhibits a split epimorphism that
-  is not injective, so the containment is strict in both directions.
-  `GebProto.UniverseVariance.twIdEquivSplit` identifies the class: a morphism
-  between identity arrows in the twisted-arrow category is exactly such a pair,
-  so the decoding category a universe closed under both formers can be
+  `GebTests/Prototypes/UniverseVariance/Basic.lean` exhibits a split
+  epimorphism that is not injective, so the containment is strict in both
+  directions. `GebProto.UniverseVariance.twIdEquivSplit` identifies the class: a
+  morphism between identity arrows in the twisted-arrow category is exactly such
+  a pair, so the decoding category a universe closed under both formers can be
   interpreted over is at least the diagonal of `Tw(C)`. No theorem here depends
   on an axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
+- `Geb/Prototypes/UniverseVariance/Universe.lean` — Examples 3.5 and 3.6 of
+  [GhaniNordvallForsbergMalatesta2015] over that base.
+  `GebProto.UniverseVariance.Fam` is a family of types and
+  `GebProto.UniverseVariance.FamHom` a map of codes together with an
+  embedding-projection pair between the decodings, the form the chosen section
+  takes once the decoding maps are packaged; it composes as a category
+  (`GebProto.UniverseVariance.FamHom.id_comp` and its siblings).
+  `GebProto.UniverseVariance.univObj` is the universe functor on objects,
+  parameterized by a base type and a type former, and
+  `GebProto.UniverseVariance.univCodeMap` its action on codes, which reindexes
+  the binder's family along the projection — the `replace` of the discrete
+  presentation, and the reason both formers' retraction proofs carry a transport
+  (`GebProto.UniverseVariance.heq_proj_cast`,
+  `GebProto.UniverseVariance.cast_proj_emb`).
+  `GebProto.UniverseVariance.sigmaUnivHom` is Example 3.5's morphism map and
+  `GebProto.UniverseVariance.piUnivHom` Example 3.6's, the one that does not
+  exist over `Set`. `GebProto.UniverseVariance.univCodeMap_id` and
+  `GebProto.UniverseVariance.univCodeMap_comp` are the functor laws of the
+  action on codes; the laws for the decoding components are not formalized, the
+  formers' laws in isolation being `Basic`'s
+  `GebProto.UniverseVariance.piMap_id` and
+  `GebProto.UniverseVariance.piMap_comp`. The device — restricting to the
+  subcategory of embeddings so that a mixed-variance functor becomes covariant —
+  is Theorem 5.8 of [LindenhoviusMisloveZamdzhiev2021], transported to the
+  inductive-recursive setting. No theorem here depends on an axiom beyond
+  `propext` and `Quot.sound`, and no declaration depends on `Classical.choice`.
 - `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
