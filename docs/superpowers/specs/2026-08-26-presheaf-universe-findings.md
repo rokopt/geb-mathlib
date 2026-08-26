@@ -11,6 +11,7 @@
   - [Variance, and the morphisms the formers act along](#variance-and-the-morphisms-the-formers-act-along)
   - [Where `Fam(C)` sits inside `PSh(C)`](#where-famc-sits-inside-pshc)
   - [Strictness, universal elements, and the stability ladder](#strictness-universal-elements-and-the-stability-ladder)
+  - [Paranaturality and the free theorem](#paranaturality-and-the-free-theorem)
   - [Terminology](#terminology)
   - [Claims tested and rejected](#claims-tested-and-rejected)
   - [Mechanical findings](#mechanical-findings)
@@ -29,7 +30,8 @@ over a base category rather than over `Type` treated as discrete. The
 inductive-recursive presentation this departs from is
 `Geb/Mathlib/Data/PFunctor/IndRec/Universes.lean`; the prototypes are
 `Geb/Prototypes/PresheafUniverse/`, `Geb/Prototypes/FinCardUniverse/`,
-`Geb/Prototypes/UniverseVariance/`, and `Geb/Prototypes/FamBoundary.lean`.
+`Geb/Prototypes/UniverseVariance/`, `Geb/Prototypes/FamBoundary.lean`, and
+`Geb/Prototypes/ParanaturalRank.lean`.
 
 This document is a transient process artifact in the sense of
 `CONTRIBUTING.md` § Concern shape: remove it in the final
@@ -238,6 +240,45 @@ how far a morphism moves the universal element:
 | arbitrarily | any | positive IR over `Set`, `Setᵒᵖ` |
 | no universal elements | — | presheaf p.r.a. |
 
+### Paranaturality and the free theorem
+
+Paranaturality is strong dinaturality, and whether it is parametricity turns on
+the difunctor structure a negative occurrence carries.
+`Geb/Prototypes/ParanaturalRank.lean` reproduces at `Unit` and `Bool` the
+separation [Neumann2023] Section 6.2 names, which retracts that paper's version
+1 identification of the two.
+
+At `∀ X, ((X → X) → X) → X` the free theorem's hypothesis on `j : I → J`,
+`p : (I → I) → I` and `q : (J → J) → J` relates `p` and `q` at every pair of
+endomorphisms `j` intertwines (`ParanaturalHom`); the hypothesis the twisted
+exponential produces reaches only the pairs `(r ∘ j, j ∘ r)` cut out by a
+function `r : J → I` (`TwistedHom`). `twistedHom_of_paranaturalHom` is one
+containment, and `twistedHom_unitBool` with `not_paranaturalHom_unitBool`
+refutes the other: the one function `Bool → Unit` gives the twisted hypothesis
+its single instance, and the identity pair, which the map into `Bool` picking
+out `true` intertwines, is outside its range. The twisted hypothesis is
+therefore the weaker of the two, and the condition it imposes on a
+transformation the stronger. `selfApply`, the term `Λ X. λ p. p (λ x. x)`, is
+what that stronger condition excludes: `selfApply_paranatural` satisfies the
+free theorem at every instance, `not_selfApply_twisted` fails the twisted
+condition at the separating one.
+
+The separation is at the expected rank and runs the other way. A
+dependent-product code applied to a dependent-product code makes the domain of
+the outer former the value of another former, so the bound object occurs
+negatively inside a negative position, which `((X → X) → X) → X` has and
+`(X → X) → X` does not. But paranaturality is not too weak there. Strong
+dinaturality over the twisted exponential is too strong, and [Neumann2023]
+Section 6.2 records that the paranatural exponential gives this type the free
+theorem's condition, which is `ParanaturalHom`. What the rank costs is the
+difunctor structure carried at a nested negative occurrence, not the passage to
+relations.
+
+Both hypotheses are transcribed as Section 6.2 states them rather than derived
+from a formalization of the two exponentials, so what is established is that the
+two conditions differ, not that they are the conditions those structures
+produce.
+
 ### Terminology
 
 "Generic" is reserved for the parametric-right-adjoint sense: a morphism
@@ -261,6 +302,11 @@ Recorded so they are not re-derived:
 - Restricting the shapes and arities to coproducts of slices does not recover
   strictness: `shapePshEquiv` and `arityPshEquiv` show the prototype already has
   that form.
+- "Paranatural transformations are too weak for a universe at the rank where a
+  dependent-product code takes a dependent-product code" has the direction
+  backwards. The two conditions do separate at that rank, but the twisted
+  exponential's is the stronger and it is the one that excludes a term of the
+  type; the paranatural exponential carries the free theorem.
 
 ### Mechanical findings
 
@@ -306,8 +352,10 @@ Bibliographic detail is in `docs/references.bib`.
   1805.00067 — Dunphy and Reddy's parametric limits in reflexive graph
   categories, described there as well known and as insufficiently general to
   subsume Reynolds' own model; proof-relevant parametricity after Orsanigo.
-- Neumann, *Paranatural Category Theory*, arXiv 2307.09289 — strong dinatural
-  transformations, advertised for initial algebras, terminal coalgebras and
+- [Neumann2023] — paranatural category theory, arXiv 2307.09289. Definition 2.7
+  is paranaturality; Section 6.2, present in version 2 only, retracts version
+  1's identification of parametricity with strong dinaturality and names the
+  separating type. Advertised also for initial algebras, terminal coalgebras and
   bisimulations.
 - Pavlovic, *Logic of Fusion*, arXiv 2007.15697, Proposition 3.1 — an initial
   algebra's homs as parametric transformations, with a parameter.
@@ -326,13 +374,15 @@ embedding-projection device to induction-recursion.
    conjecture to test first: full faithfulness fails in `Fam(C)` because
    `Fam(C)` lacks the colimits a left Kan extension needs, in which case
    computing the extension in `PSh(C)` and landing in `Fam(C)` may restore it.
-2. Do paranatural transformations suffice for a universe, or is the relational
-   form needed? The expectation is the latter: a dependent-product code applied
-   to a dependent-product code passes the rank at which strong dinaturality and
-   parametricity diverge, and `GebLean/ParanaturalTopos.lean` in the old
-   experimental tree records that endoprofunctors with paranatural
-   transformations lack equalizers, which a parametric-right-adjoint development
-   needs.
+2. Do endoprofunctors and paranatural transformations lack equalizers? A
+   parametric-right-adjoint development needs them.
+   `GebLean/ParanaturalTopos.lean` in the old experimental tree asserts the lack
+   in prose and formalizes the two closure conditions an equalizer's diagonal
+   would have to satisfy (`EqualizerClosedUnderCov`,
+   `EqualizerClosedUnderContra`), together with their equivalence when the
+   target's off-diagonal actions are injective, but exhibits no pair of
+   paranatural transformations whose diagonal equalizer fails to extend. The
+   assertion is what decides whether the difunctor ambient can host stage 2.
 3. The general membership criterion for `Fam(C)` — every connected component of
    the category of elements has a terminal object, in both directions — is
    stated but not formalized; only the two brackets are.
@@ -346,19 +396,18 @@ embedding-projection device to induction-recursion.
 
 ## Proposed order
 
-1. Question 2, the rank test for paranaturality. Independent of the others, and
-   one worked instance settles it, as `piFormer_not_covariant` settled Example
-   3.6.
-2. Question 1, codes and full faithfulness. The research problem, and what the
+1. Question 1, codes and full faithfulness. The research problem, and what the
    split base now supports: both formers are functorial over it, in the bound
    object and in the binder's family alike.
+2. Question 2, the equalizer assertion. A counterexample or a construction, and
+   the closure conditions it turns on are already formalized in the old tree.
 3. Question 3, the general criterion. Optional; it tidies `FamBoundary`.
 4. Stage 3, after quotient inductive-inductive tooling exists.
 
 ## Handoff
 
-The branch is `feat/presheaf-universe-prototypes`, nine commits on `main`,
-unpushed. Verify with
+The branch is `feat/presheaf-universe-prototypes`, on `main`, unpushed. Verify
+with
 
 ```text
 lake build && lake test && lake lint && lake lint -- GebTests
@@ -367,21 +416,21 @@ bash scripts/lint-imports.sh && bash scripts/check-transitive-imports.sh
 markdownlint-cli2 '**/*.md' && bash scripts/check-md-links.sh
 ```
 
-Pick up at question 2, the rank test for paranaturality. It depends on nothing
-else on the branch, and one worked instance settles it, as
-`piFormer_not_covariant` settled Example 3.6. The instance to attempt is a
-dependent-product code applied to a dependent-product code, which is where the
-expectation places the divergence. The References section names the two sources
-— Neumann for strong dinaturality, Sojakova and Johann for the relational form
-— and `GebLean/ParanaturalTopos.lean` in the old experimental tree records the
-equalizer obstruction.
-
-For question 1 instead, what it rests on is in
-`Geb/Prototypes/UniverseVariance/`: `Retract.lean` for the two formers'
-functoriality over the split base, in the bound object and in the binder's
-family alike, and `Universe.lean` for the two morphism maps and their functor
-laws. `GebProto.FinCardUniverse.Card` remains the base whose category laws hold
-definitionally, which is what keeps the transports tractable. The left Kan
-extension the conjecture is about is the one
+Pick up at question 1, codes and full faithfulness — the stage-2 equivalence,
+and now the only question on the branch whose prerequisites are all present.
+What it rests on is in `Geb/Prototypes/UniverseVariance/`: `Retract.lean` for
+the two formers' functoriality over the split base, in the bound object and in
+the binder's family alike, and `Universe.lean` for the two morphism maps and
+their functor laws. `GebProto.FinCardUniverse.Card` remains the base whose
+category laws hold definitionally, which is what keeps the transports tractable.
+The left Kan extension the conjecture is about is the one
 [GhaniNordvallForsbergMalatesta2015] characterizes `δ` by, and whose failure for
-non-discrete `C` is what costs the interpretation its full faithfulness.
+non-discrete `C` is what costs the interpretation its full faithfulness; the
+conjecture to test first is that computing it in `PSh(C)` and landing in
+`Fam(C)` restores what `Fam(C)`'s missing colimits cost.
+
+Question 2, the equalizer assertion, is the cheaper one and does not depend on
+it. `GebLean/ParanaturalTopos.lean` in the old experimental tree has the two
+closure conditions already formalized; what is missing is a pair of paranatural
+transformations whose diagonal equalizer fails to extend, or a proof that none
+exists.
