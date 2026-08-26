@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Prototypes.FinCardUniverse.Basic
+import GebTests.Prototypes.FinCardUniverse.Restriction
 import GebTests.Prototypes.FinCardUniverse.Value
 
 /-!

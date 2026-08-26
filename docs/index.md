@@ -1182,6 +1182,46 @@ checklist and in CI.
   deciding fiber membership for a well-typed and an ill-typed pair. No
   theorem here depends on an axiom beyond `propext` and `Quot.sound`, and
   no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FamBoundary.lean` — where the free coproduct completion
+  `Fam(C)` sits inside `PSh(C)`, which is what decides whether a universe built
+  over presheaves can be read back as a family of codes.
+  `GebProto.FamBoundary.famPsh` is a family of objects as the coproduct of
+  representables `Σ_u y(d u)` and `GebProto.FamBoundary.IsFamPsh` membership in
+  the image, as an unbundled natural isomorphism so that no hom of a functor
+  category is named. `GebProto.FamBoundary.isFamPsh_praPsh` is the positive
+  result: a sum over shapes of a representable times a set — the shape of the
+  p.r.a. formula's value — is a family presheaf whatever the set, the free
+  coproduct completion being closed under set-indexed coproducts. So the
+  coercion multiplicity of `Geb/Prototypes/FinCardUniverse/Value.lean` is no
+  obstruction to restricting; it lands in the code type. What obstructs is the
+  shape presheaf, `T₁` being `T(1)`:
+  `GebProto.FamBoundary.isFamPsh_topPsh_of_terminal` shows the terminal presheaf
+  is a family presheaf when the base has a terminal object, and
+  `GebProto.FamBoundary.not_isFamPsh_topPsh` shows it is not over the walking
+  parallel pair, which has none — `GebProto.FamBoundary.isEmpty_one_to_zero` and
+  `GebProto.FamBoundary.left_ne_right` being why neither of its objects is
+  terminal. The category of elements of the terminal presheaf is the base
+  itself, so these are the general criterion — a presheaf lies in `Fam(C)`
+  exactly when every connected component of its category of elements has a
+  terminal object — read at the terminal presheaf; the general criterion is not
+  formalized. No theorem here depends on an axiom beyond `propext` and
+  `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
+  value read back as a family of codes.
+  `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
+  total space of the family presheaf on `GebProto.FinCardUniverse.Code` with
+  decoding `GebProto.FinCardUniverse.out`, which is the hypothesis
+  `GebProto.FamBoundary.isFamPsh_praPsh` needs, and
+  `GebProto.FinCardUniverse.genericShape` names the shape carrying the identity
+  — the terminal object of that component of the elements.
+  `GebProto.FinCardUniverse.famCode` and `GebProto.FinCardUniverse.famDec` are
+  the resulting codes and decoding: a code former together with an arity hom,
+  decoding by the former alone. `GebProto.FinCardUniverse.famDec_eq` is the
+  point — the decoding does not mention the arity hom, so two codes with the
+  same former decode alike however differently they bind, which is what
+  separates the value from an inductive-recursive family. No theorem here
+  depends on an axiom beyond `propext` and `Quot.sound`, and no declaration
+  depends on `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Basic.lean` — prototype of the same
   universe over a base category that is not discrete: `Card`, the finite
   cardinals with functions between their elements as morphisms.

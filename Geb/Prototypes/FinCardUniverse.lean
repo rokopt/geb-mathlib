@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.FinCardUniverse.Basic
+public import Geb.Prototypes.FinCardUniverse.Restriction
 public import Geb.Prototypes.FinCardUniverse.Value
 
 /-!
