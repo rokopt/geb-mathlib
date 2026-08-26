@@ -1366,6 +1366,30 @@ checklist and in CI.
   is Theorem 5.8 of [LindenhoviusMisloveZamdzhiev2021], transported to the
   inductive-recursive setting. No theorem here depends on an axiom beyond
   `propext` and `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/ParanaturalRank.lean` — where strong dinaturality and
+  parametricity part. Paranaturality is strong dinaturality
+  ([Neumann2023] Definition 2.7), and whether it is parametricity turns on the
+  difunctor structure carried at a negative occurrence. At
+  `∀ X, ((X → X) → X) → X`, the type [Neumann2023] Section 6.2 names as the
+  simplest separating one, `GebProto.ParanaturalRank.ParanaturalHom` is the free
+  theorem's hypothesis — `p` and `q` related at every pair of endomorphisms `j`
+  intertwines — and `GebProto.ParanaturalRank.TwistedHom` the hypothesis the
+  twisted exponential produces, which reaches only the pairs cut out by a
+  function backwards.
+  `GebProto.ParanaturalRank.twistedHom_of_paranaturalHom` is one containment;
+  `GebProto.ParanaturalRank.twistedHom_unitBool` and
+  `GebProto.ParanaturalRank.not_paranaturalHom_unitBool` refute the other at
+  `Unit` and `Bool`. So the condition the twisted exponential imposes on a
+  transformation is the stronger, and
+  `GebProto.ParanaturalRank.selfApply` — the term `Λ X. λ p. p (λ x. x)` — is
+  what it excludes: `GebProto.ParanaturalRank.selfApply_paranatural` satisfies
+  the free theorem at every instance and
+  `GebProto.ParanaturalRank.not_selfApply_twisted` fails the twisted condition
+  at the separating one. Both hypotheses are transcribed as Section 6.2 states
+  them, so what is established is that the two conditions differ, not that they
+  are the conditions the two structures produce. No theorem here depends on an
+  axiom beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
