@@ -152,6 +152,25 @@ an embedding-projection pair — and `FamHom` composition is `Split` composition
 so the retraction is inherited. `piUnivHom` is the morphism map the paper shows
 cannot be given over `Set` or `Setᵒᵖ`.
 
+`Geb/Prototypes/UniverseVariance/Retract.lean` frees the binder's family. Its
+data is a `Split` on the bound object together with a `Split` at each index of
+the family over the source, the family over the source being arbitrary rather
+than the reindexing of the one over the target — the shape a decoding takes once
+the codes have moved as well. `sigmaSplit` and `piSplit` produce a `Split`
+between the two formers' values from that data, and `sigmaSplit_id`,
+`sigmaSplit_comp`, `piSplit_id` and `piSplit_comp` are the functor laws. So both
+formers carry the retraction, and the reindexing along the section is derived
+rather than assumed: no coherence between the two levels enters the data.
+Strictness up to retraction is therefore a property of the ambient, not
+structure the codes carry.
+
+`sigmaUnivHom` and `piUnivHom` are that construction at `FamHom`'s data, so the
+morphism maps are functorial in their decoding components as well as on codes:
+`sigmaUnivHom_id`, `sigmaUnivHom_comp`, `piUnivHom_id` and `piUnivHom_comp`,
+through the extensionality `FamHom.ext`. The transport bookkeeping is
+`Split.sect_cast` and `Split.toFun_cast`, a family of `Split`s read at two
+indices which the section identifies only propositionally.
+
 ### Where `Fam(C)` sits inside `PSh(C)`
 
 `Fam(C)`, the free set-indexed coproduct completion (Remarks 2.3 of
@@ -302,56 +321,43 @@ embedding-projection device to induction-recursion.
 
 ## Open questions
 
-1. Is "the actual decoding is a retract of the declared one" preserved by the
-   two type formers? The binder's family is indexed by the declared object while
-   the children are indexed by the actual one, so the comparison needs a
-   reindexing along the section. If that coherence must be assumed rather than
-   derived, strictness up to retraction is structure the codes carry, not a
-   property of the ambient.
-2. The functor laws for the decoding components of `sigmaUnivHom` and
-   `piUnivHom` are not formalized. Only the action on codes is
-   (`univCodeMap_id`, `univCodeMap_comp`).
-3. Can inductive-recursive codes be defined over the split base so that the
+1. Can inductive-recursive codes be defined over the split base so that the
    interpretation is full and faithful? This is the stage-2 equivalence. A
    conjecture to test first: full faithfulness fails in `Fam(C)` because
    `Fam(C)` lacks the colimits a left Kan extension needs, in which case
    computing the extension in `PSh(C)` and landing in `Fam(C)` may restore it.
-4. Do paranatural transformations suffice for a universe, or is the relational
+2. Do paranatural transformations suffice for a universe, or is the relational
    form needed? The expectation is the latter: a dependent-product code applied
    to a dependent-product code passes the rank at which strong dinaturality and
    parametricity diverge, and `GebLean/ParanaturalTopos.lean` in the old
    experimental tree records that endoprofunctors with paranatural
    transformations lack equalizers, which a parametric-right-adjoint development
    needs.
-5. The general membership criterion for `Fam(C)` — every connected component of
+3. The general membership criterion for `Fam(C)` — every connected component of
    the category of elements has a terminal object, in both directions — is
    stated but not formalized; only the two brackets are.
-6. Whether the split-epimorphism rung is folklore in the recursive-domain-
+4. Whether the split-epimorphism rung is folklore in the recursive-domain-
    equations literature under another name. The searches were aimed at
    induction-recursion, not at that literature.
-7. Stage 3 needs quotient inductive-inductive definitions for its initial
+5. Stage 3 needs quotient inductive-inductive definitions for its initial
    algebras, so it also raises the metatheoretic cost;
    [GhaniNordvallForsbergMalatesta2015] deliberately keeps its metatheory at
    inductive-inductive definitions.
 
 ## Proposed order
 
-1. Question 1, closure of the retract relation under the two formers. Small, and
-   it decides whether the split rung supports an interpretation at all.
-2. Question 2, the decoding-component functor laws. Moderate, and it upgrades an
-   existing module rather than starting one. Transport bookkeeping, not
-   conceptual.
-3. Question 4, the rank test for paranaturality. Independent of the others, and
+1. Question 2, the rank test for paranaturality. Independent of the others, and
    one worked instance settles it, as `piFormer_not_covariant` settled Example
    3.6.
-4. Question 5, the general criterion. Optional; it tidies `FamBoundary`.
-5. Question 3, codes and full faithfulness. The research problem, to be started
-   after 1 and 2 report.
-6. Stage 3, after quotient inductive-inductive tooling exists.
+2. Question 1, codes and full faithfulness. The research problem, and what the
+   split base now supports: both formers are functorial over it, in the bound
+   object and in the binder's family alike.
+3. Question 3, the general criterion. Optional; it tidies `FamBoundary`.
+4. Stage 3, after quotient inductive-inductive tooling exists.
 
 ## Handoff
 
-The branch is `feat/presheaf-universe-prototypes`, seven commits on `main`,
+The branch is `feat/presheaf-universe-prototypes`, nine commits on `main`,
 unpushed. Verify with
 
 ```text
@@ -361,21 +367,21 @@ bash scripts/lint-imports.sh && bash scripts/check-transitive-imports.sh
 markdownlint-cli2 '**/*.md' && bash scripts/check-md-links.sh
 ```
 
-Pick up at question 1. What it needs is already present:
-`GebProto.UniverseVariance.Split` with `piMap` and `sigmaMap` and their laws;
-`GebProto.UniverseVariance.FamHom`, whose comparison maps are exactly the split
-epimorphisms in question; and `GebProto.FinCardUniverse.Card` as a base whose
-category laws hold definitionally, which is what keeps the transports tractable.
+Pick up at question 2, the rank test for paranaturality. It depends on nothing
+else on the branch, and one worked instance settles it, as
+`piFormer_not_covariant` settled Example 3.6. The instance to attempt is a
+dependent-product code applied to a dependent-product code, which is where the
+expectation places the divergence. The References section names the two sources
+— Neumann for strong dinaturality, Sojakova and Johann for the relational form
+— and `GebLean/ParanaturalTopos.lean` in the old experimental tree records the
+equalizer obstruction.
 
-A statement to attempt first, in `Geb/Prototypes/UniverseVariance/`: given a
-`Split X' X` and a family `Y : X → Type` together with, for each `x'`, a `Split`
-from `Y (f x')` to some `Y' x'`, is there a `Split` from `former X Y` to
-`former X' Y'` for each of the two formers, and does it compose? The
-dependent-sum case is expected to go through directly; the dependent-product
-case is where the reindexing along the section enters, and is the one to write
-first, since a failure there answers the question without the rest.
-
-If that succeeds, question 2 becomes worth finishing, and the two together are
-what a stage-2 interpretation over the split base would rest on. If it fails,
-record the obstruction in this document and move to question 4, which does not
-depend on it.
+For question 1 instead, what it rests on is in
+`Geb/Prototypes/UniverseVariance/`: `Retract.lean` for the two formers'
+functoriality over the split base, in the bound object and in the binder's
+family alike, and `Universe.lean` for the two morphism maps and their functor
+laws. `GebProto.FinCardUniverse.Card` remains the base whose category laws hold
+definitionally, which is what keeps the transports tractable. The left Kan
+extension the conjecture is about is the one
+[GhaniNordvallForsbergMalatesta2015] characterizes `δ` by, and whose failure for
+non-discrete `C` is what costs the interpretation its full faithfulness.
