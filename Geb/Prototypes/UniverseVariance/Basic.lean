@@ -75,6 +75,7 @@ namespace GebProto.UniverseVariance
 /-- A function together with a chosen section: a split epimorphism whose section
 is data rather than a property. The dependent-product former is functorial along
 these; see `piMap`. -/
+@[ext]
 structure Split (A : Type u) (B : Type u) where
   /-- The function. -/
   toFun : A → B

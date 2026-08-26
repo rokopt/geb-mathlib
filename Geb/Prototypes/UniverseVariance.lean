@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.UniverseVariance.Basic
+public import Geb.Prototypes.UniverseVariance.Retract
 public import Geb.Prototypes.UniverseVariance.Universe
 
 /-!

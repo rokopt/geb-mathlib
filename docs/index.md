@@ -1316,6 +1316,28 @@ checklist and in CI.
   interpreted over is at least the diagonal of `Tw(C)`. No theorem here depends
   on an axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
+- `Geb/Prototypes/UniverseVariance/Retract.lean` — the two type formers' action
+  when the binder's family moves as well. `Basic` moves the bound object along a
+  `GebProto.UniverseVariance.Split` and reads the family through the
+  reindexing; here the family over the source is arbitrary, related to the one
+  over the target by a `Split` at each index, which is the shape a decoding
+  takes once the codes have moved too.
+  `GebProto.UniverseVariance.sigmaSplit` and
+  `GebProto.UniverseVariance.piSplit` are the two actions, and
+  `GebProto.UniverseVariance.sigmaSplit_id`,
+  `GebProto.UniverseVariance.sigmaSplit_comp`,
+  `GebProto.UniverseVariance.piSplit_id` and
+  `GebProto.UniverseVariance.piSplit_comp` their functor laws. So both formers
+  carry "the decoding is a retract of the declared one" from the bound object
+  and the binder's family to the former's value, and no coherence between the
+  two levels is assumed: the section on the bound object is what supplies the
+  reindexing the dependent-product former runs backwards.
+  `GebProto.UniverseVariance.Split.sect_cast` and
+  `GebProto.UniverseVariance.Split.toFun_cast` are the transports the
+  composition laws need — a family of `Split`s read at two indices which the
+  section identifies only propositionally. No theorem here depends on an axiom
+  beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - `Geb/Prototypes/UniverseVariance/Universe.lean` — Examples 3.5 and 3.6 of
   [GhaniNordvallForsbergMalatesta2015] over that base.
   `GebProto.UniverseVariance.Fam` is a family of types and
@@ -1327,17 +1349,19 @@ checklist and in CI.
   parameterized by a base type and a type former, and
   `GebProto.UniverseVariance.univCodeMap` its action on codes, which reindexes
   the binder's family along the projection — the `replace` of the discrete
-  presentation, and the reason both formers' retraction proofs carry a transport
-  (`GebProto.UniverseVariance.heq_proj_cast`,
-  `GebProto.UniverseVariance.cast_proj_emb`).
+  presentation.
   `GebProto.UniverseVariance.sigmaUnivHom` is Example 3.5's morphism map and
   `GebProto.UniverseVariance.piUnivHom` Example 3.6's, the one that does not
   exist over `Set`. `GebProto.UniverseVariance.univCodeMap_id` and
   `GebProto.UniverseVariance.univCodeMap_comp` are the functor laws of the
-  action on codes; the laws for the decoding components are not formalized, the
-  formers' laws in isolation being `Basic`'s
-  `GebProto.UniverseVariance.piMap_id` and
-  `GebProto.UniverseVariance.piMap_comp`. The device — restricting to the
+  action on codes, and `GebProto.UniverseVariance.sigmaUnivHom_id`,
+  `GebProto.UniverseVariance.sigmaUnivHom_comp`,
+  `GebProto.UniverseVariance.piUnivHom_id` and
+  `GebProto.UniverseVariance.piUnivHom_comp` those of the morphism maps
+  themselves, decoding components included: each decoding component is
+  `Retract`'s action of the corresponding former at the binder's data, so its
+  laws are that module's, applied through the extensionality
+  `GebProto.UniverseVariance.FamHom.ext`. The device — restricting to the
   subcategory of embeddings so that a mixed-variance functor becomes covariant —
   is Theorem 5.8 of [LindenhoviusMisloveZamdzhiev2021], transported to the
   inductive-recursive setting. No theorem here depends on an axiom beyond

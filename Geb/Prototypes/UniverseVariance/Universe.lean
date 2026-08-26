@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.UniverseVariance.Basic
+public import Geb.Prototypes.UniverseVariance.Retract
 
 /-!
 # Prototype: the two universe examples over the split-epimorphism base
@@ -29,9 +29,11 @@ covariant, as in Theorem 5.8 of [LindenhoviusMisloveZamdzhiev2021] — transport
 to the inductive-recursive setting.
 
 The code map `univCodeMap` reindexes the binder's family along `proj`. That is
-the `replace` of the discrete presentation, and it is why the two formers'
-retraction proofs carry a transport: the family is read at
-`proj u (emb u x)` where the source reads it at `x`.
+the `replace` of the discrete presentation. The decoding component at a binder
+code is the corresponding former's action on the pair of the `Split` at the
+bound code and the `Split` at each code the binder binds, so both morphism maps
+are `Geb/Prototypes/UniverseVariance/Retract.lean` applied to `FamHom`'s data,
+and their functor laws are that module's.
 
 ## Main definitions
 
@@ -51,12 +53,11 @@ retraction proofs carry a transport: the family is read at
 
 ## Main statements
 
-* `FamHom.id_comp` / `comp_id` / `comp_assoc` — `FamHom` composes as a category.
-* `univCodeMap_id` / `univCodeMap_comp` — the action on codes is functorial. The
-  functor laws for the decoding components are not formalized; the formers'
-  laws in isolation are `Basic.piMap_id` and `Basic.piMap_comp`.
-* `heq_proj_cast` / `cast_proj_emb` — the two transport lemmas the formers'
-  retraction proofs need.
+* `FamHom.id_comp` / `comp_id` / `comp_assoc` — `FamHom` composes as a category,
+  and `FamHom.ext` is its extensionality.
+* `univCodeMap_id` / `univCodeMap_comp` — the action on codes is functorial.
+* `sigmaUnivHom_id` / `sigmaUnivHom_comp` / `piUnivHom_id` / `piUnivHom_comp` —
+  both morphism maps are functorial, decoding components included.
 
 ## References
 
@@ -128,6 +129,17 @@ theorem id_comp {A B : Fam} (m : FamHom A B) : (FamHom.id A).comp m = m := rfl
 /-- Composition with the identity on the right. -/
 theorem comp_id {A B : Fam} (m : FamHom A B) : m.comp (FamHom.id B) = m := rfl
 
+/-- Two morphisms of families with the same code map and the same
+embedding-projection pair at each code are equal. -/
+theorem ext {A B : Fam} {m m' : FamHom A B} (h : m.code = m'.code)
+    (h' : ∀ u, m.ep u ≍ m'.ep u) : m = m' := by
+  cases m with
+  | mk c e =>
+    cases m' with
+    | mk c' e' =>
+      cases h
+      exact congrArg (FamHom.mk c) (funext fun u ↦ eq_of_heq (h' u))
+
 /-- Composition is associative. -/
 theorem comp_assoc {A B C D : Fam} (m : FamHom A B) (m' : FamHom B C)
     (m'' : FamHom C D) : (m.comp m').comp m'' = m.comp (m'.comp m'') := rfl
@@ -173,31 +185,6 @@ theorem univCodeMap_comp {A B C : Fam} (m : FamHom A B) (m' : FamHom B C) :
   funext c
   cases c <;> rfl
 
-/-! ## The transport lemmas
-
-Both formers' retraction proofs compare a value read at `x` with one read at
-`proj u (emb u x)`. Abstracting the equality between those two indices makes
-both provable by case analysis on it. -/
-
-/-- The projection of an embedded value, transported across an equality of
-indices, is the original value, heterogeneously. -/
-theorem heq_proj_cast {A B : Fam} (m : FamHom A B) {u : A.Code}
-    (v : A.dec u → A.Code) {a a' : A.dec u} (h : a' = a) (z : A.dec (v a)) :
-    m.proj (v a')
-      (cast (congrArg (fun w ↦ B.dec (m.code (v w))) h.symm) (m.emb (v a) z)) ≍ z := by
-  cases h
-  exact heq_of_eq (m.proj_emb (v a) z)
-
-/-- The projection of an embedded value at a shifted index, transported back, is
-the original value. -/
-theorem cast_proj_emb {A B : Fam} (m : FamHom A B) {u : A.Code}
-    (v : A.dec u → A.Code) {a a' : A.dec u} (h : a' = a)
-    (s : (x : A.dec u) → A.dec (v x)) :
-    cast (congrArg (fun w ↦ A.dec (v w)) h)
-      (m.proj (v a') (m.emb (v a') (s a'))) = s a := by
-  cases h
-  exact m.proj_emb (v a) (s a)
-
 /-! ## Example 3.5: the dependent-sum universe -/
 
 /-- The dependent-sum former. -/
@@ -212,14 +199,31 @@ def sigmaUnivHom {A B : Fam} (base : Type) (m : FamHom A B) :
   code := univCodeMap m
   ep
     | .inl _ => Split.id base
+    | .inr ⟨u, v⟩ => sigmaSplit (m.ep u) fun y ↦ m.ep (v (m.proj u y))
+
+/-- The dependent-sum universe's morphism map preserves the identity. -/
+theorem sigmaUnivHom_id (base : Type) (A : Fam) :
+    sigmaUnivHom base (FamHom.id A) = FamHom.id (univObj base sigmaFormer A) :=
+  FamHom.ext (univCodeMap_id A) fun c ↦ by
+    match c with
+    | .inl _ => rfl
+    | .inr ⟨_, _⟩ => exact heq_of_eq (sigmaSplit_id _)
+
+/-- The dependent-sum universe's morphism map preserves composition, decoding
+components included: `sigmaSplit_comp` at each binder code. -/
+theorem sigmaUnivHom_comp {A B C : Fam} (base : Type) (m : FamHom A B) (m' : FamHom B C) :
+    sigmaUnivHom base (m.comp m') = (sigmaUnivHom base m).comp (sigmaUnivHom base m') :=
+  FamHom.ext (univCodeMap_comp m m') fun c ↦ by
+    match c with
+    | .inl _ => rfl
     | .inr ⟨u, v⟩ =>
-        { toFun := fun q ↦ ⟨m.proj u q.1, m.proj (v (m.proj u q.1)) q.2⟩
-          sect := fun p ↦
-            ⟨m.emb u p.1,
-              cast (congrArg (fun w ↦ B.dec (m.code (v w))) (m.proj_emb u p.1).symm)
-                (m.emb (v p.1) p.2)⟩
-          toFun_sect := fun p ↦
-            Sigma.ext (m.proj_emb u p.1) (heq_proj_cast m v (m.proj_emb u p.1) p.2) }
+      exact heq_of_eq (sigmaSplit_comp
+        (Y := fun x ↦ A.dec (v x))
+        (Y' := fun y ↦ B.dec (m.code (v (m.proj u y))))
+        (Y'' := fun z ↦ C.dec (m'.code (m.code (v (m.proj u (m'.proj (m.code u) z))))))
+        (m'.ep (m.code u)) (m.ep u)
+        (fun y ↦ m.ep (v (m.proj u y)))
+        (fun z ↦ m'.ep (m.code (v (m.proj u (m'.proj (m.code u) z))))))
 
 /-! ## Example 3.6: the dependent-product universe
 
@@ -238,12 +242,30 @@ def piUnivHom {A B : Fam} (base : Type) (m : FamHom A B) :
   code := univCodeMap m
   ep
     | .inl _ => Split.id base
+    | .inr ⟨u, v⟩ => piSplit (m.ep u) fun y ↦ m.ep (v (m.proj u y))
+
+/-- The dependent-product universe's morphism map preserves the identity. -/
+theorem piUnivHom_id (base : Type) (A : Fam) :
+    piUnivHom base (FamHom.id A) = FamHom.id (univObj base piFormer A) :=
+  FamHom.ext (univCodeMap_id A) fun c ↦ by
+    match c with
+    | .inl _ => rfl
+    | .inr ⟨_, _⟩ => exact heq_of_eq (piSplit_id _)
+
+/-- The dependent-product universe's morphism map preserves composition, decoding
+components included: `piSplit_comp` at each binder code. -/
+theorem piUnivHom_comp {A B C : Fam} (base : Type) (m : FamHom A B) (m' : FamHom B C) :
+    piUnivHom base (m.comp m') = (piUnivHom base m).comp (piUnivHom base m') :=
+  FamHom.ext (univCodeMap_comp m m') fun c ↦ by
+    match c with
+    | .inl _ => rfl
     | .inr ⟨u, v⟩ =>
-        { toFun := fun t x ↦
-            cast (congrArg (fun w ↦ A.dec (v w)) (m.proj_emb u x))
-              (m.proj (v (m.proj u (m.emb u x))) (t (m.emb u x)))
-          sect := fun s y ↦ m.emb (v (m.proj u y)) (s (m.proj u y))
-          toFun_sect := fun s ↦
-            funext fun x ↦ cast_proj_emb m v (m.proj_emb u x) s }
+      exact heq_of_eq (piSplit_comp
+        (Y := fun x ↦ A.dec (v x))
+        (Y' := fun y ↦ B.dec (m.code (v (m.proj u y))))
+        (Y'' := fun z ↦ C.dec (m'.code (m.code (v (m.proj u (m'.proj (m.code u) z))))))
+        (m'.ep (m.code u)) (m.ep u)
+        (fun y ↦ m.ep (v (m.proj u y)))
+        (fun z ↦ m'.ep (m.code (v (m.proj u (m'.proj (m.code u) z))))))
 
 end GebProto.UniverseVariance

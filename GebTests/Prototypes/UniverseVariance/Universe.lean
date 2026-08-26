@@ -77,3 +77,19 @@ example : univCodeMap (FamHom.id famUnit) unitBinder = unitBinder :=
 example : univCodeMap (epUnitBool.comp (FamHom.id famBool)) unitBinder
     = univCodeMap (FamHom.id famBool) (univCodeMap epUnitBool unitBinder) :=
   congrFun (univCodeMap_comp epUnitBool (FamHom.id famBool)) unitBinder
+
+/-! ## Functoriality of the morphism maps, decoding components included -/
+
+example : sigmaUnivHom Nat (FamHom.id famUnit) = FamHom.id (univObj Nat sigmaFormer famUnit) :=
+  sigmaUnivHom_id Nat famUnit
+
+example : piUnivHom Nat (FamHom.id famUnit) = FamHom.id (univObj Nat piFormer famUnit) :=
+  piUnivHom_id Nat famUnit
+
+example : sigmaUnivHom Nat (epUnitBool.comp (FamHom.id famBool))
+    = (sigmaUnivHom Nat epUnitBool).comp (sigmaUnivHom Nat (FamHom.id famBool)) :=
+  sigmaUnivHom_comp Nat epUnitBool (FamHom.id famBool)
+
+example : piUnivHom Nat (epUnitBool.comp (FamHom.id famBool))
+    = (piUnivHom Nat epUnitBool).comp (piUnivHom Nat (FamHom.id famBool)) :=
+  piUnivHom_comp Nat epUnitBool (FamHom.id famBool)
