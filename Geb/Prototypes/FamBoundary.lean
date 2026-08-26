@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Mathlib.CategoryTheory.Limits.Shapes.Equalizers
+public import Mathlib.CategoryTheory.EqToHom
 public import Mathlib.Logic.Equiv.Defs
 
 /-!
@@ -199,5 +200,103 @@ theorem not_isFamPsh_topPsh : ¬ IsFamPsh (topPsh WalkingParallelPair) := by
   generalize hdu : d u = X at f key
   cases f
   exact left_ne_right (key _ _)
+
+/-! ## Generic elements
+
+A family presheaf's category of elements is a coproduct of slices, and a code is
+recovered as the terminal object of its component: the element carrying the
+identity. That element is what an inductive-recursive constraint on a direction
+would ask for — asking for it says `d u = i` on the nose, where asking for an
+arbitrary element says only `i ⟶ d u`.
+
+The constraint cannot be imposed while keeping every morphism of families,
+because genericity is not stable: a morphism sends the generic element of `u` to
+its own decoding map, which is generic only when that map is a transport.
+`isGeneric_famMorApp` is the stability on the morphisms that do preserve it —
+the split cartesian fragment, which is Dybjer and Setzer's setting.
+
+`IsSplitCoercion` weakens the constraint from "the coercion is a transport" to
+"the coercion is a split epimorphism", and `isSplitCoercion_famMorApp` is the
+corresponding stability: it holds on the morphisms whose decoding maps are split
+epimorphisms. So there is a constraint strictly weaker than genericity that
+survives non-invertible morphisms, which is the setting
+`Geb/Prototypes/UniverseVariance/` shows both type formers act over. -/
+
+/-- The generic element of a code's component: the code with the identity. -/
+def generic (U : Type) (d : U → C) (u : U) : (famPsh U d).obj ⟨d u⟩ :=
+  ⟨u, 𝟙 (d u)⟩
+
+/-- An element is generic when its coercion is a transport: the object it lies
+over is the code's decoding, on the nose. -/
+def IsGeneric {U : Type} {d : U → C} {c : Cᵒᵖ} (x : (famPsh U d).obj c) : Prop :=
+  ∃ h : c.unop = d x.1, x.2 = eqToHom h
+
+/-- A morphism of families: a map of codes and, for each code, a morphism of
+decodings. -/
+structure FamMor (U : Type) (d : U → C) (U' : Type) (d' : U' → C) where
+  /-- The map of codes. -/
+  code : U → U'
+  /-- The comparison of decodings. -/
+  dec : ∀ u, d u ⟶ d' (code u)
+
+/-- The action of a morphism of families on the family presheaves. -/
+def famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    (m : FamMor U d U' d') {c : Cᵒᵖ} (x : (famPsh U d).obj c) : (famPsh U' d').obj c :=
+  ⟨m.code x.1, x.2 ≫ m.dec x.1⟩
+
+/-- The action is natural. -/
+theorem famMorApp_natural {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    (m : FamMor U d U' d') ⦃c c' : Cᵒᵖ⦄ (f : c ⟶ c') (x : (famPsh U d).obj c) :
+    famMorApp m ((famPsh U d).map f x) = (famPsh U' d').map f (famMorApp m x) :=
+  congrArg (Sigma.mk (m.code x.1)) (Category.assoc _ _ _)
+
+/-- A morphism preserves generic elements when every decoding comparison is a
+transport. These are the split cartesian morphisms, and Dybjer and Setzer's
+`Fam |C|` is the fragment they span. -/
+def PreservesGeneric {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    (m : FamMor U d U' d') : Prop :=
+  ∀ u, ∃ h : d u = d' (m.code u), m.dec u = eqToHom h
+
+/-- Genericity is stable under the morphisms that preserve it. -/
+theorem isGeneric_famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    {m : FamMor U d U' d'} (hm : PreservesGeneric m) {c : Cᵒᵖ}
+    {x : (famPsh U d).obj c} (hx : IsGeneric x) : IsGeneric (famMorApp m x) := by
+  obtain ⟨h₁, hx₁⟩ := hx
+  obtain ⟨h₂, hm₂⟩ := hm x.1
+  refine ⟨h₁.trans h₂, ?_⟩
+  change x.2 ≫ m.dec x.1 = _
+  rw [hx₁, hm₂, eqToHom_trans]
+  rfl
+
+/-- The weakened constraint: the coercion is a split epimorphism. -/
+def IsSplitCoercion {U : Type} {d : U → C} {c : Cᵒᵖ} (x : (famPsh U d).obj c) : Prop :=
+  ∃ s : d x.1 ⟶ c.unop, s ≫ x.2 = 𝟙 (d x.1)
+
+/-- A generic element satisfies the weakened constraint, so it is a genuine
+weakening. -/
+theorem isSplitCoercion_of_isGeneric {U : Type} {d : U → C} {c : Cᵒᵖ}
+    {x : (famPsh U d).obj c} (hx : IsGeneric x) : IsSplitCoercion x := by
+  obtain ⟨h, hx₁⟩ := hx
+  refine ⟨eqToHom h.symm, ?_⟩
+  rw [hx₁, eqToHom_trans, eqToHom_refl]
+
+/-- A morphism whose decoding comparisons are split epimorphisms. -/
+def SplitDec {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    (m : FamMor U d U' d') : Prop :=
+  ∀ u, ∃ t : d' (m.code u) ⟶ d u, t ≫ m.dec u = 𝟙 (d' (m.code u))
+
+/-- The weakened constraint is stable under those morphisms: a constraint
+strictly weaker than genericity survives morphisms that are not transports, and
+need not be invertible. -/
+theorem isSplitCoercion_famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    {m : FamMor U d U' d'} (hm : SplitDec m) {c : Cᵒᵖ}
+    {x : (famPsh U d).obj c} (hx : IsSplitCoercion x) :
+    IsSplitCoercion (famMorApp m x) := by
+  obtain ⟨s, hs⟩ := hx
+  obtain ⟨t, ht⟩ := hm x.1
+  refine ⟨t ≫ s, ?_⟩
+  change (t ≫ s) ≫ x.2 ≫ m.dec x.1 = _
+  rw [← Category.assoc, Category.assoc t s x.2, hs, Category.comp_id, ht]
+  rfl
 
 end GebProto.FamBoundary

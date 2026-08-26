@@ -51,6 +51,38 @@ theorem topFamOverPUnit : IsFamPsh (topPsh (Discrete PUnit)) :=
   isFamPsh_topPsh_of_terminal ⟨PUnit.unit⟩
     fun c ↦ ⟨⟨Discrete.eqToHom (by subsingleton)⟩, fun f ↦ by subsingleton⟩
 
+/-! ## Generic elements
+
+Genericity is not stable under arbitrary morphisms of families: over the walking
+parallel pair, the morphism carrying the code decoding to `zero` onto the one
+decoding to `one` sends the generic element to a non-generic one. -/
+
+/-- The morphism of families that moves the generic element. -/
+def moveGeneric :
+    FamMor PUnit (fun _ ↦ WalkingParallelPair.zero) PUnit
+      (fun _ ↦ WalkingParallelPair.one) where
+  code := id
+  dec _ := WalkingParallelPairHom.left
+
+/-- It does not preserve generic elements. -/
+theorem not_preservesGeneric_moveGeneric : ¬ PreservesGeneric moveGeneric := by
+  rintro h
+  obtain ⟨h₀, -⟩ := h PUnit.unit
+  exact WalkingParallelPair.noConfusion h₀
+
+/-- The generic element it moves. -/
+def genericZero :
+    (famPsh PUnit (fun _ ↦ WalkingParallelPair.zero)).obj ⟨WalkingParallelPair.zero⟩ :=
+  generic PUnit (fun _ ↦ WalkingParallelPair.zero) PUnit.unit
+
+theorem isGeneric_genericZero : IsGeneric genericZero :=
+  ⟨rfl, rfl⟩
+
+/-- Its image is not generic: the two objects differ. -/
+theorem not_isGeneric_image : ¬ IsGeneric (famMorApp moveGeneric genericZero) := by
+  rintro ⟨h₀, -⟩
+  exact WalkingParallelPair.noConfusion h₀
+
 /-! ## The p.r.a. formula's value
 
 Whatever the multiplicities, the value is a family presheaf: the multiplicity

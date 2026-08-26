@@ -1204,14 +1204,32 @@ checklist and in CI.
   itself, so these are the general criterion — a presheaf lies in `Fam(C)`
   exactly when every connected component of its category of elements has a
   terminal object — read at the terminal presheaf; the general criterion is not
-  formalized. No theorem here depends on an axiom beyond `propext` and
-  `Quot.sound`, and no declaration depends on `Classical.choice`.
+  formalized. `GebProto.FamBoundary.generic` and
+  `GebProto.FamBoundary.IsGeneric` name the element an inductive-recursive
+  constraint would ask a direction for — the code with the identity, terminal in
+  its component — and `GebProto.FamBoundary.isGeneric_famMorApp` is its
+  stability, on exactly the morphisms of families
+  (`GebProto.FamBoundary.FamMor`) whose decoding comparisons are transports:
+  the split cartesian fragment, which is Dybjer and Setzer's setting.
+  `GebProto.FamBoundary.IsSplitCoercion` weakens the constraint to "the coercion
+  is a split epimorphism" and
+  `GebProto.FamBoundary.isSplitCoercion_famMorApp` shows it stable under
+  morphisms whose decoding comparisons are split epimorphisms, with
+  `GebProto.FamBoundary.isSplitCoercion_of_isGeneric` showing the weakening
+  proper — a constraint short of genericity that survives non-invertible
+  morphisms, over the same class `Geb/Prototypes/UniverseVariance/` shows both
+  type formers act along. No theorem here depends on an axiom beyond `propext`
+  and `Quot.sound`, and no declaration depends on `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
   total space of the family presheaf on `GebProto.FinCardUniverse.Code` with
   decoding `GebProto.FinCardUniverse.out`, which is the hypothesis
-  `GebProto.FamBoundary.isFamPsh_praPsh` needs, and
+  `GebProto.FamBoundary.isFamPsh_praPsh` needs;
+  `GebProto.FinCardUniverse.arityPshEquiv` does the same for each arity, so both
+  halves of the functor's data are coproducts of representables and strictness
+  fails all the same — the coercion enters when mapping into the input, not from
+  the shapes or arities. And
   `GebProto.FinCardUniverse.genericShape` names the shape carrying the identity
   — the terminal object of that component of the elements.
   `GebProto.FinCardUniverse.famCode` and `GebProto.FinCardUniverse.famDec` are

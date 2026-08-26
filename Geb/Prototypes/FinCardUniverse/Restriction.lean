@@ -46,7 +46,8 @@ it.
 
 ## Main statements
 
-* `shapePshEquiv` — the shape type is the total space of a family presheaf.
+* `shapePshEquiv` / `arityPshEquiv` — the shape type and each arity are total
+  spaces of family presheaves, so both are coproducts of slices.
 * `famDec_eq` — the decoding does not mention the arity hom.
 
 ## References
@@ -71,6 +72,19 @@ morphism into what that former's output decodes to. This is the hypothesis
 def shapePshEquiv (former : Former) :
     Shp former ≃ Σ j : Card, (famPsh Code (out former)).obj ⟨j⟩ where
   toFun a := ⟨a.2.1, a.1, a.2.2⟩
+  invFun p := ⟨p.2.1, p.1, p.2.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- The arity of a shape is also the total space of a family presheaf: on the
+generic directions, with decoding `bound`. So both halves of the functor's data
+are coproducts of representables — coproducts of slices, in the element picture
+— and strictness still fails. The coercion does not come from the shape or the
+arity being general presheaves; it comes from mapping *into* the input, where
+`Z(i) = Σ_u (i ⟶ d u)` replaces the fibre `{u | d u = i}`. -/
+def arityPshEquiv (former : Former) (a : Shp former) :
+    Dir a ≃ Σ i : Card, (famPsh (Idx a.1) (bound a.1)).obj ⟨i⟩ where
+  toFun b := ⟨b.2.1, b.1, b.2.2⟩
   invFun p := ⟨p.2.1, p.1, p.2.2⟩
   left_inv _ := rfl
   right_inv _ := rfl
