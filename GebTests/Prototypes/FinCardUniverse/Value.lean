@@ -50,7 +50,7 @@ differently. -/
 def twoFam : Bool → Card := fun b ↦ if b then ⟨1⟩ else ⟨0⟩
 
 /-- For each code of `twoFam`, an arity hom for `junkShape` binding it: the
-generic direction asks only for a morphism out of the declared empty object. -/
+summand asks only for a morphism out of the declared empty object. -/
 def bindArity (b : Bool) :
     (k : Idx emptyBindCode) → Σ u : Bool, (bound emptyBindCode k ⟶ twoFam u)
   | .inl _ => ⟨b, fun i ↦ i.elim0⟩

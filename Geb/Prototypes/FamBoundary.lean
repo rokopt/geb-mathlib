@@ -201,34 +201,46 @@ theorem not_isFamPsh_topPsh : ¬ IsFamPsh (topPsh WalkingParallelPair) := by
   cases f
   exact left_ne_right (key _ _)
 
-/-! ## Generic elements
+/-! ## Universal elements
 
 A family presheaf's category of elements is a coproduct of slices, and a code is
 recovered as the terminal object of its component: the element carrying the
-identity. That element is what an inductive-recursive constraint on a direction
+identity — the universal element of that representable summand, in the sense of
+the Yoneda correspondence, and Lawvere's generic figure.
+
+The word "generic" is avoided here. In the parametric-right-adjoint literature
+this repository cites ([Weber2007], [nLabParametricRightAdjoint]) a morphism
+`f : B ⟶ T A` is *T-generic* when every commuting square over it has a unique
+`T`-fill, and `T` is a parametric right adjoint exactly when every map into a
+`T`-value factors as a generic followed by a `T`-image. Under that factorization
+it is the *coercion* that is the generic part and the universal element that is
+the trivially-factoring one, so calling the latter generic would invert the
+established usage in the one setting where it is in play.
+
+The universal element is what an inductive-recursive constraint on a direction
 would ask for — asking for it says `d u = i` on the nose, where asking for an
 arbitrary element says only `i ⟶ d u`.
 
 The constraint cannot be imposed while keeping every morphism of families,
-because genericity is not stable: a morphism sends the generic element of `u` to
-its own decoding map, which is generic only when that map is a transport.
-`isGeneric_famMorApp` is the stability on the morphisms that do preserve it —
+because universality is not stable: a morphism sends the universal element of `u` to
+its own decoding map, which is universal only when that map is a transport.
+`isUniversalElement_famMorApp` is the stability on the morphisms that do preserve it —
 the split cartesian fragment, which is Dybjer and Setzer's setting.
 
 `IsSplitCoercion` weakens the constraint from "the coercion is a transport" to
 "the coercion is a split epimorphism", and `isSplitCoercion_famMorApp` is the
 corresponding stability: it holds on the morphisms whose decoding maps are split
-epimorphisms. So there is a constraint strictly weaker than genericity that
+epimorphisms. So there is a constraint strictly weaker than universality that
 survives non-invertible morphisms, which is the setting
 `Geb/Prototypes/UniverseVariance/` shows both type formers act over. -/
 
-/-- The generic element of a code's component: the code with the identity. -/
-def generic (U : Type) (d : U → C) (u : U) : (famPsh U d).obj ⟨d u⟩ :=
+/-- The universal element of a code's component: the code with the identity. -/
+def universalElement (U : Type) (d : U → C) (u : U) : (famPsh U d).obj ⟨d u⟩ :=
   ⟨u, 𝟙 (d u)⟩
 
-/-- An element is generic when its coercion is a transport: the object it lies
+/-- An element is universal when its coercion is a transport: the object it lies
 over is the code's decoding, on the nose. -/
-def IsGeneric {U : Type} {d : U → C} {c : Cᵒᵖ} (x : (famPsh U d).obj c) : Prop :=
+def IsUniversalElement {U : Type} {d : U → C} {c : Cᵒᵖ} (x : (famPsh U d).obj c) : Prop :=
   ∃ h : c.unop = d x.1, x.2 = eqToHom h
 
 /-- A morphism of families: a map of codes and, for each code, a morphism of
@@ -250,17 +262,17 @@ theorem famMorApp_natural {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
     famMorApp m ((famPsh U d).map f x) = (famPsh U' d').map f (famMorApp m x) :=
   congrArg (Sigma.mk (m.code x.1)) (Category.assoc _ _ _)
 
-/-- A morphism preserves generic elements when every decoding comparison is a
+/-- A morphism preserves universal elements when every decoding comparison is a
 transport. These are the split cartesian morphisms, and Dybjer and Setzer's
 `Fam |C|` is the fragment they span. -/
-def PreservesGeneric {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+def PreservesUniversalElement {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
     (m : FamMor U d U' d') : Prop :=
   ∀ u, ∃ h : d u = d' (m.code u), m.dec u = eqToHom h
 
 /-- Genericity is stable under the morphisms that preserve it. -/
-theorem isGeneric_famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
-    {m : FamMor U d U' d'} (hm : PreservesGeneric m) {c : Cᵒᵖ}
-    {x : (famPsh U d).obj c} (hx : IsGeneric x) : IsGeneric (famMorApp m x) := by
+theorem isUniversalElement_famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
+    {m : FamMor U d U' d'} (hm : PreservesUniversalElement m) {c : Cᵒᵖ}
+    {x : (famPsh U d).obj c} (hx : IsUniversalElement x) : IsUniversalElement (famMorApp m x) := by
   obtain ⟨h₁, hx₁⟩ := hx
   obtain ⟨h₂, hm₂⟩ := hm x.1
   refine ⟨h₁.trans h₂, ?_⟩
@@ -272,10 +284,10 @@ theorem isGeneric_famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
 def IsSplitCoercion {U : Type} {d : U → C} {c : Cᵒᵖ} (x : (famPsh U d).obj c) : Prop :=
   ∃ s : d x.1 ⟶ c.unop, s ≫ x.2 = 𝟙 (d x.1)
 
-/-- A generic element satisfies the weakened constraint, so it is a genuine
+/-- A universal element satisfies the weakened constraint, so it is a genuine
 weakening. -/
-theorem isSplitCoercion_of_isGeneric {U : Type} {d : U → C} {c : Cᵒᵖ}
-    {x : (famPsh U d).obj c} (hx : IsGeneric x) : IsSplitCoercion x := by
+theorem isSplitCoercion_of_isUniversalElement {U : Type} {d : U → C} {c : Cᵒᵖ}
+    {x : (famPsh U d).obj c} (hx : IsUniversalElement x) : IsSplitCoercion x := by
   obtain ⟨h, hx₁⟩ := hx
   refine ⟨eqToHom h.symm, ?_⟩
   rw [hx₁, eqToHom_trans, eqToHom_refl]
@@ -286,7 +298,7 @@ def SplitDec {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
   ∀ u, ∃ t : d' (m.code u) ⟶ d u, t ≫ m.dec u = 𝟙 (d' (m.code u))
 
 /-- The weakened constraint is stable under those morphisms: a constraint
-strictly weaker than genericity survives morphisms that are not transports, and
+strictly weaker than universality survives morphisms that are not transports, and
 need not be invertible. -/
 theorem isSplitCoercion_famMorApp {U : Type} {d : U → C} {U' : Type} {d' : U' → C}
     {m : FamMor U d U' d'} (hm : SplitDec m) {c : Cᵒᵖ}

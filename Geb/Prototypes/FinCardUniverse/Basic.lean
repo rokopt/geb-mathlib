@@ -34,7 +34,7 @@ are two instances of one functor differing only in the shape-output map `q`.
   functions as morphisms) and their elements.
 * `Code` / `Former` / `out` — the code formers, a type former, and the object a
   code former's output decodes to.
-* `Idx` / `bound` — the generic directions of a code former and the object each
+* `Idx` / `bound` — the representable summands of a code former's arity and the object each
   is indexed by: `bind`'s are the code being bound and the family under the
   binder.
 * `Shp` / `Dir` — the shapes and directions: the total spaces of the shape
@@ -129,13 +129,13 @@ def out (former : Former) : Code → Card
   | .iota c => c
   | .bind S T => former S T
 
-/-- The generic directions of a code former: `iota` has none, `bind` has the
+/-- The representable summands of a code former's arity: `iota` has none, `bind` has the
 code it binds and one code per element of the bound object. -/
 def Idx : Code → Type
   | .iota _ => Empty
   | .bind S _ => Unit ⊕ El S
 
-/-- The object a generic direction is indexed by. -/
+/-- The object a summand is indexed by. -/
 def bound : (c : Code) → Idx c → Card
   | .iota _, k => k.elim
   | .bind S _, .inl _ => S

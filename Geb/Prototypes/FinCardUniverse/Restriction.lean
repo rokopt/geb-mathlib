@@ -38,7 +38,7 @@ it.
 
 ## Main definitions
 
-* `genericShape` — the shape at a code former carrying the identity: the
+* `universalShape` — the shape at a code former carrying the identity: the
   terminal object of that component of the shape presheaf's elements.
 * `famCode` / `famDec` — the codes and decoding of the family the value
   presents: a code former together with an arity hom, decoding by the former
@@ -77,7 +77,7 @@ def shapePshEquiv (former : Former) :
   right_inv _ := rfl
 
 /-- The arity of a shape is also the total space of a family presheaf: on the
-generic directions, with decoding `bound`. So both halves of the functor's data
+representable summands, with decoding `bound`. So both halves of the functor's data
 are coproducts of representables — coproducts of slices, in the element picture
 — and strictness still fails. The coercion does not come from the shape or the
 arity being general presheaves; it comes from mapping *into* the input, where
@@ -89,18 +89,18 @@ def arityPshEquiv (former : Former) (a : Shp former) :
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- The generic shape at a code former: the one over the object its output
+/-- The universal shape at a code former: the one over the object its output
 decodes to, carrying the identity. It is the terminal object of that component
 of the shape presheaf's category of elements, which is what makes the shape
 presheaf a family presheaf. -/
-def genericShape (former : Former) (c : Code) : Shp former :=
+def universalShape (former : Former) (c : Code) : Shp former :=
   ⟨c, out former c, 𝟙 _⟩
 
 /-- The codes of the family the universe functor's value presents: a code former
-together with an arity hom at its generic shape — the codes it binds, and the
+together with an arity hom at its universal shape — the codes it binds, and the
 coercions witnessing that they fit. -/
 def famCode (former : Former) (Z : Cardᵒᵖ ⥤ Type) : Type :=
-  Σ c : Code, ArityHom (universeFunctor former) (genericShape former c) Z
+  Σ c : Code, ArityHom (universeFunctor former) (universalShape former c) Z
 
 /-- The decoding of such a code: the object the code former's output decodes to,
 read off the shape alone. -/
@@ -112,7 +112,7 @@ former decode alike however differently they bind. This is what separates the
 value from an inductive-recursive family, whose binder codes decode by the
 decodings of the codes they bind. -/
 theorem famDec_eq (former : Former) (Z : Cardᵒᵖ ⥤ Type) (c : Code)
-    (x y : ArityHom (universeFunctor former) (genericShape former c) Z) :
+    (x y : ArityHom (universeFunctor former) (universalShape former c) Z) :
     famDec former Z ⟨c, x⟩ = famDec former Z ⟨c, y⟩ :=
   rfl
 

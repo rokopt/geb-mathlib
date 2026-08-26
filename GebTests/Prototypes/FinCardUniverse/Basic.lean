@@ -57,7 +57,7 @@ example : out sigmaFormer (.iota ⟨2⟩) = ⟨2⟩ := rfl
 example : bound (.bind ⟨2⟩ (fun _ ↦ ⟨3⟩)) (.inl ()) = ⟨2⟩ := rfl
 example : bound (.bind ⟨2⟩ (fun _ ↦ ⟨3⟩)) (.inr ⟨1, Nat.one_lt_two⟩) = ⟨3⟩ := rfl
 
-/-- The `iota` codes are leaves: they have no generic directions. -/
+/-- The `iota` codes are leaves: they have no arity summands. -/
 theorem idxIotaEmpty (c : Card) : IsEmpty (Idx (.iota c)) := inferInstanceAs (IsEmpty Empty)
 
 /-- The two universes have the same arities at corresponding shapes: the type

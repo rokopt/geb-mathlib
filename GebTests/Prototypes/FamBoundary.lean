@@ -51,35 +51,36 @@ theorem topFamOverPUnit : IsFamPsh (topPsh (Discrete PUnit)) :=
   isFamPsh_topPsh_of_terminal ⟨PUnit.unit⟩
     fun c ↦ ⟨⟨Discrete.eqToHom (by subsingleton)⟩, fun f ↦ by subsingleton⟩
 
-/-! ## Generic elements
+/-! ## Universal elements
 
 Genericity is not stable under arbitrary morphisms of families: over the walking
 parallel pair, the morphism carrying the code decoding to `zero` onto the one
-decoding to `one` sends the generic element to a non-generic one. -/
+decoding to `one` sends the universal element to a non-universal one. -/
 
-/-- The morphism of families that moves the generic element. -/
-def moveGeneric :
+/-- The morphism of families that moves the universal element. -/
+def moveUniversal :
     FamMor PUnit (fun _ ↦ WalkingParallelPair.zero) PUnit
       (fun _ ↦ WalkingParallelPair.one) where
   code := id
   dec _ := WalkingParallelPairHom.left
 
-/-- It does not preserve generic elements. -/
-theorem not_preservesGeneric_moveGeneric : ¬ PreservesGeneric moveGeneric := by
+/-- It does not preserve universal elements. -/
+theorem not_preservesGeneric_moveUniversal : ¬ PreservesUniversalElement moveUniversal := by
   rintro h
   obtain ⟨h₀, -⟩ := h PUnit.unit
   exact WalkingParallelPair.noConfusion h₀
 
-/-- The generic element it moves. -/
-def genericZero :
+/-- The universal element it moves. -/
+def universalZero :
     (famPsh PUnit (fun _ ↦ WalkingParallelPair.zero)).obj ⟨WalkingParallelPair.zero⟩ :=
-  generic PUnit (fun _ ↦ WalkingParallelPair.zero) PUnit.unit
+  universalElement PUnit (fun _ ↦ WalkingParallelPair.zero) PUnit.unit
 
-theorem isGeneric_genericZero : IsGeneric genericZero :=
+theorem isUniversalElement_universalZero : IsUniversalElement universalZero :=
   ⟨rfl, rfl⟩
 
-/-- Its image is not generic: the two objects differ. -/
-theorem not_isGeneric_image : ¬ IsGeneric (famMorApp moveGeneric genericZero) := by
+/-- Its image is not universal: the two objects differ. -/
+theorem not_isUniversalElement_image :
+    ¬ IsUniversalElement (famMorApp moveUniversal universalZero) := by
   rintro ⟨h₀, -⟩
   exact WalkingParallelPair.noConfusion h₀
 

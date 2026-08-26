@@ -22,8 +22,8 @@ A family of codes `(U, d : U → Card)` — an object of the free coproduct
 completion `Fam(Card)` — becomes the presheaf `famPresheaf U d`, the coproduct
 of representables `Σ_u y(d u)`. The p.r.a. formula then reads the functor's
 value at that presheaf off the arity homs, and `arityHomEquiv` computes them:
-an arity hom for the shape at a code former is a choice, for each generic
-direction `k`, of a code `u` together with a morphism `bound k ⟶ d u`.
+an arity hom for the shape at a code former is a choice, for each
+summand `k` of its arity, of a code `u` together with a morphism `bound k ⟶ d u`.
 
 That morphism is where the two presentations part. The inductive-recursive
 presentation of the same universe
@@ -51,7 +51,7 @@ children.
 * `famPresheaf` — a family of codes as a presheaf, the coproduct of
   representables `Σ_u y(d u)`.
 * `arityHomEquiv` — the arity homs into such a presheaf: one code and one
-  coercion per generic direction.
+  coercion per arity summand.
 * `oneFam` / `emptyBindCode` / `junkShape` / `junkArity` / `junkObj` — the family
   with one code denoting the singleton, the binder code declaring the empty
   object, and the element of the functor's value that binds the one against the
@@ -98,8 +98,8 @@ def famPresheaf (U : Type) (d : U → Card) : Cardᵒᵖ ⥤ Type where
 /-! ## The arity homs -/
 
 /-- The arity homs into a family presheaf: an arity hom for the shape `a` is a
-choice, for each generic direction `k`, of a code `u` together with a morphism
-`bound k ⟶ d u`. Forward is evaluation at the generic directions and backward is
+choice, for each arity summand `k`, of a code `u` together with a morphism
+`bound k ⟶ d u`. Forward is evaluation at the summands' universal directions and backward is
 precomposition, the two round trips being Yoneda.
 
 The morphism is the point of the computation. The inductive-recursive
@@ -133,9 +133,9 @@ to. -/
 def junkShape : Shp sigmaFormer := ⟨emptyBindCode, ⟨0⟩, 𝟙 _⟩
 
 /-- An arity hom for `junkShape` binding the single code of `oneFam`: the
-generic direction asks for a morphism `⟨0⟩ ⟶ ⟨1⟩`, which the empty function
+summand asks for a morphism `⟨0⟩ ⟶ ⟨1⟩`, which the empty function
 supplies, where the inductive-recursive presentation would demand `⟨1⟩ = ⟨0⟩`.
-The second generic direction family is empty. -/
+The second summand family is empty. -/
 def junkArity : (k : Idx emptyBindCode) → Σ u : Unit, (bound emptyBindCode k ⟶ oneFam u)
   | .inl _ => ⟨(), fun i ↦ i.elim0⟩
   | .inr s => s.elim0

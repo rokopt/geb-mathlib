@@ -1204,10 +1204,10 @@ checklist and in CI.
   itself, so these are the general criterion — a presheaf lies in `Fam(C)`
   exactly when every connected component of its category of elements has a
   terminal object — read at the terminal presheaf; the general criterion is not
-  formalized. `GebProto.FamBoundary.generic` and
-  `GebProto.FamBoundary.IsGeneric` name the element an inductive-recursive
+  formalized. `GebProto.FamBoundary.universalElement` and
+  `GebProto.FamBoundary.IsUniversalElement` name the element an inductive-recursive
   constraint would ask a direction for — the code with the identity, terminal in
-  its component — and `GebProto.FamBoundary.isGeneric_famMorApp` is its
+  its component — and `GebProto.FamBoundary.isUniversalElement_famMorApp` is its
   stability, on exactly the morphisms of families
   (`GebProto.FamBoundary.FamMor`) whose decoding comparisons are transports:
   the split cartesian fragment, which is Dybjer and Setzer's setting.
@@ -1215,8 +1215,8 @@ checklist and in CI.
   is a split epimorphism" and
   `GebProto.FamBoundary.isSplitCoercion_famMorApp` shows it stable under
   morphisms whose decoding comparisons are split epimorphisms, with
-  `GebProto.FamBoundary.isSplitCoercion_of_isGeneric` showing the weakening
-  proper — a constraint short of genericity that survives non-invertible
+  `GebProto.FamBoundary.isSplitCoercion_of_isUniversalElement` showing the weakening
+  proper — a constraint short of universality that survives non-invertible
   morphisms, over the same class `Geb/Prototypes/UniverseVariance/` shows both
   type formers act along. No theorem here depends on an axiom beyond `propext`
   and `Quot.sound`, and no declaration depends on `Classical.choice`.
@@ -1230,7 +1230,7 @@ checklist and in CI.
   halves of the functor's data are coproducts of representables and strictness
   fails all the same — the coercion enters when mapping into the input, not from
   the shapes or arities. And
-  `GebProto.FinCardUniverse.genericShape` names the shape carrying the identity
+  `GebProto.FinCardUniverse.universalShape` names the shape carrying the identity
   — the terminal object of that component of the elements.
   `GebProto.FinCardUniverse.famCode` and `GebProto.FinCardUniverse.famDec` are
   the resulting codes and decoding: a code former together with an arity hom,
@@ -1246,8 +1246,8 @@ checklist and in CI.
   `GebProto.FinCardUniverse.Code` is the code formers — one nullary former
   per object and one binder former at an object and a family of objects
   indexed by its elements — with `GebProto.FinCardUniverse.Idx` and
-  `GebProto.FinCardUniverse.bound` their generic directions and the objects
-  those are indexed by. `GebProto.FinCardUniverse.Shp` and
+  `GebProto.FinCardUniverse.bound` its arity's representable summands and
+  the objects those are indexed by. `GebProto.FinCardUniverse.Shp` and
   `GebProto.FinCardUniverse.Dir` are the total spaces of the shape presheaf
   `Σ_c y(out c)` and the arity presheaf `Σ_k y(bound c k)`, so every
   restriction map is precomposition and the seven laws
@@ -1268,7 +1268,7 @@ checklist and in CI.
   `GebProto.FinCardUniverse.famPresheaf` embeds a family of codes as the
   coproduct of representables `Σ_u y(d u)`, and
   `GebProto.FinCardUniverse.arityHomEquiv` computes the arity homs into it: one
-  code and one morphism `bound k ⟶ d u` per generic direction, where the
+  code and one morphism `bound k ⟶ d u` per summand, where the
   inductive-recursive presentation over a discrete base has an equality.
   `GebProto.FinCardUniverse.junkArity` is the consequence — a binder shape
   declaring the empty object accepting a code that denotes the singleton,
