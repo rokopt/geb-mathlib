@@ -15,6 +15,7 @@ import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafUniverse
 import GebTests.Prototypes.ReadableSExpr
+import GebTests.Prototypes.RelSeparation
 import GebTests.Prototypes.UniverseVariance
 
 /-!
