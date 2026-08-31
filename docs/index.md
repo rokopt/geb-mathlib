@@ -77,7 +77,9 @@ checklist and in CI.
   `arrowPEmptyEquiv` equates empty-valued function types across
   universes. `Equiv.arrowCongrLeftC` transports a function type along
   an equivalence of its domain. `Classical.choice`-free.
-- `Geb/Mathlib/CategoryTheory/Grothendieck.lean` — covariant and
+- `Geb/Mathlib/CategoryTheory/Grothendieck/` — the Grothendieck
+  constructions for 1-functors and the functors between them.
+  `Basic.lean` carries the covariant and
   contravariant Grothendieck constructions for 1-functors.
   `Grothendieck.functorToCat` packages mathlib's covariant
   construction as a functor to `Cat`. `GrothendieckOp F` is the
@@ -92,7 +94,34 @@ checklist and in CI.
   (`functor` into `Over`, `functorToCat` into `Cat`). The source
   and test modules are listed in `GebMeta.classicalAllowedModules`
   because mathlib's `Grothendieck` and `Cat.opFunctor` are
-  `Classical.choice`-dependent.
+  `Classical.choice`-dependent. `Functor/To.lean` and `Functor/From.lean`
+  characterise the functors into and out of a Grothendieck construction, of
+  either variance, by bundled data: `FunctorToData` (a base functor, a fiber
+  object over each object, a fiber morphism over each morphism, and identity
+  and composition coherence) and `FunctorFromData` (a fiber functor over each
+  base object and a transition transformation over each base morphism, with
+  the same two coherences). Each carries a category structure whose morphisms
+  are the corresponding bundled transformations. `functorToDataIsoCat` is an
+  isomorphism of categories with the functor category into the construction,
+  both round trips holding by `rfl`; `functorFromDataEquivCat` is only an
+  equivalence with the functor category out of it, because extracting the
+  fiber functors restricts along `Grothendieck.ι` and so recovers them up to
+  the canonical isomorphism `ιCompFunctorFromData` rather than on the nose.
+  The contravariant data are the covariant data for `G ⋙ Cat.opFunctor` in the
+  opposite category, with constructors and accessors phrased in morphisms of
+  `C`; `Functor.leftOpEquiv` supplies the transport for the out-of direction.
+  `Functor/Between.lean` substitutes the first description into the second:
+  `FunctorCovToCovData` and its three variance counterparts carry a
+  `FunctorToData` over each fiber and a `NatTransToData` over each morphism of
+  the base, so the description is by data throughout rather than by functors
+  and transformations into the codomain. Each carries a category whose
+  morphisms likewise carry a `NatTransToData` over each fiber, is isomorphic
+  to the corresponding category of `FunctorFromData` by comparisons that are
+  mutually inverse on the nose (`functorCovToCovDataEquivFromData` and its
+  counterparts, with identity unit and counit), and hence equivalent to the
+  functor category (`functorCovToCovDataEquivCat`,
+  `functorCovToContraDataEquivCat`, `functorContraToCovDataEquivCat`,
+  `functorContraToContraDataEquivCat`).
 - `Geb/Mathlib/CategoryTheory/DiscreteFibration/` — discrete
   fibrations of categories [LoregianRiehl2018]. `Basic.lean` carries
   the lifting data as a structure `DiscreteFibration p`: for each
