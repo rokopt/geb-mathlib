@@ -186,9 +186,18 @@ names below are indicative. Select by activity.
 
 - Lean code work, proving, and mathlib search: the `lean4` skill's
   workflows ([docs/rules/lean-coding.md](docs/rules/lean-coding.md)
-  § Lean 4 skill workflows), the `lean-lsp` MCP's search and proof
-  tools (§ `lean-lsp` MCP search and proof tools), and the `serena`
-  MCP for symbol-level navigation and editing.
+  § Lean 4 skill workflows) and the `lean-lsp` MCP's search and
+  proof tools (§ `lean-lsp` MCP search and proof tools).
+- A finite combinatorial question — whether a bounded instance has
+  a satisfying assignment, a counterexample, or an optimum — before
+  attempting a Lean proof of it or after the `lean4` skill's
+  `disprove` finds no refutation: the `MCP Solver` MCP
+  (`MCP_Solver`), which states the question as a constraint model
+  and solves it.
+- A fact about the project or the user's preferences that should
+  survive the session: the `memory` MCP, a knowledge graph read at
+  the start of a session and written when the user asks that
+  something be remembered.
 - A defect or missing workflow in the `lean4` skill, or an insight
   its maintainers would want: the `lean4-contribute` skill drafts
   the issue for the `lean4-skills` repository. That repository is
