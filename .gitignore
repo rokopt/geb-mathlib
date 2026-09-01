@@ -11,5 +11,8 @@
 # `vale sync` and not authored here. The project vocabulary under
 # `styles/config/` is authored, and `.vale.ini` names it, so it is tracked.
 styles/*
+node_modules/
 !styles/config/
 /manual/_out
+package-lock.json
+package.json
