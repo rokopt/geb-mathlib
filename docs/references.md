@@ -52,8 +52,8 @@ when transcribing).
   `theorem_type`, the LaTeX statement `body`, a plain-language
   `slogan`, and a similarity score; optional filters include
   `sources`, `authors`, `types`, `year_range`, `citation_range`,
-  and `n_results`. Use it during brainstorming and spec phases to
-  locate a published statement and its searchable identifier, as
+  and `n_results`. Use it before transcribing published mathematics
+  to locate the statement and its searchable identifier, as
   `CONTRIBUTING.md` § Cite the literature when transcribing
   requires. It indexes the informal literature, not mathlib; for
   formal statements use Loogle and the `lean_*` tools. The endpoint

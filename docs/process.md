@@ -6,12 +6,10 @@
 - [Repository structure](#repository-structure)
 - [Code is cost](#code-is-cost)
 - [Document only the persistent](#document-only-the-persistent)
-- [Specs and plans are transient](#specs-and-plans-are-transient)
 - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
 - [Constructive-only discipline](#constructive-only-discipline)
 - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
 - [Documentation under `docs/`](#documentation-under-docs)
-- [Adversarial review](#adversarial-review)
 - [Verify agent claims](#verify-agent-claims)
 - [Two-track development](#two-track-development)
 - [Floodgate test](#floodgate-test)
@@ -82,7 +80,7 @@ They should not describe transient process artifacts such as:
   to understand the comments.
 - **In-progress notes.** "TODO: rewrite this when we have time."
   "Try this approach if X fails." Active work belongs in
-  `TODO.md` or the workstream's spec/plan, not in code comments.
+  `TODO.md`, not in code comments.
 - **Counts of occurrences.** "Of the module's 54 theorems, 13
   depend on no axioms." "209 anonymous `example`s remain."
   A count over a population the project keeps adding to is
@@ -102,27 +100,6 @@ What's persistent and worth documenting:
 The principle is: when this codebase is years old, the comments
 should still read as useful context. Anything that won't survive
 that test belongs elsewhere.
-
-## Specs and plans are transient
-
-The file-level corollary of "Document only the persistent". A spec
-is a worked-out route to a target state; a plan is the task
-sequence that reaches it. Once the change is complete, everything
-persistent has moved into the live code, its `docs/` entries, and
-any `TODO.md` notes on follow-on work; the spec and plan retain
-only the record of how that state was reached. They are therefore
-removed in the final commits of the topic branch (`CONTRIBUTING.md`
-§ Concern shape gives the branch ordering), leaving no spec or plan
-file on an active branch.
-
-Two costs motivate the removal. A spec or plan left in the working
-tree presents superseded intentions as if current — later work may
-have changed direction without rewriting the original plan. And it
-forces every reader to reconcile the plan against the code, an
-obligation that grows as the code evolves away from it. The git
-history preserves the spec and plan in full for anyone tracing how
-a decision was reached; the active branch carries only what the
-code currently is.
 
 ## Illustrate only with the archetypal
 
@@ -189,28 +166,13 @@ rule that binds development; `docs/references.md` catalogues
 external library and mathematical references organised by topic.
 Both are reader-facing alongside `docs/index.md`.
 
-## Adversarial review
-
-Specs and plans go through fresh-context adversarial review until
-convergence (no blockers, no serious findings), before the user
-reviews the artifact and before execution begins. The reviewer is a
-NEW general-purpose `Agent` invocation per round (not
-`SendMessage` to a continuing agent), reading the artifact at the
-given path without the authoring conversation's context, and
-consulting authoritative sources as § Verify agent claims
-requires. Findings are categorised blocker / serious / minor
-/ cosmetic-taste; the author responds in writing to every finding
-(fix / defer with rationale / reject as cosmetic-taste). The
-discipline catches bugs the author cannot see; the fresh context
-ensures the reviewer is not subject to the author's blind spots.
-
 ## Verify agent claims
 
 Any factual claim about an external system (mathlib, Lean,
 third-party tools, jj, GitHub conventions, library APIs) is
 provisional until verified against authoritative sources.
 Committed artifacts include the citation alongside the claim.
-Adversarial reviewers explicitly check for unverified claims. AI-agent memory
+Reviewers explicitly check for unverified claims. AI-agent memory
 is unreliable for facts about external systems; verification at
 use time keeps committed content trustworthy.
 
@@ -447,9 +409,10 @@ briefly prohibited new-contributor LLM code (PR #827,
 reworded the section (PR #850, 2026-05-27), and added the
 label-by-comment mechanism for the `LLM-generated` label (PR #855,
 2026-05-28). The linked source
-pages are the authority; re-check them periodically (the
-adversarial-review re-fetch in `AGENTS.md` § Adversarial review
-is one such checkpoint), and when they change, update
+pages are the authority; re-check them periodically (the re-fetch
+at each review of upstream-eligible content,
+`docs/rules/lean-coding.md` § Authoritative upstream guides
+(mathlib), is one such checkpoint), and when they change, update
 `CONTRIBUTING.md`, `AGENTS.md`, and this file together.
 
 ## No LLM-drafted user-facing text

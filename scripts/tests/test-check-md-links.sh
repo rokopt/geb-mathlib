@@ -74,11 +74,11 @@ assert_case "link inside code span ignored" 0 "" code-span.md
 assert_case "every dangling target reported" 1 "2 unresolved link target(s)" multi.md
 assert_case "clean and dangling files together" 1 "gone.md" root-ok.md multi.md
 
-# The regression this checker exists for: a document that outlives the
-# transient file it links (CONTRIBUTING.md § Concern shape removes specs
-# and plans in a branch's final commits).
-printf '[spec](docs/superpowers/specs/design.md)\n' >"$test_dir/outlived-spec.md"
-assert_case "link to removed transient spec" 1 "docs/superpowers/specs/design.md" outlived-spec.md
+# The regression this checker exists for: a document that outlives a
+# transient file it links, such as a design note removed once its content
+# has moved into the code.
+printf '[note](docs/notes/design.md)\n' >"$test_dir/outlived-note.md"
+assert_case "link to removed transient note" 1 "docs/notes/design.md" outlived-note.md
 
 # The no-argument path enumerates the tracked `.md` files. Run a copy of
 # the checker from a synthetic repository root so the enumeration is the

@@ -6,7 +6,6 @@
 - [Audience](#audience)
 - [Agent-specific rules](#agent-specific-rules)
   - [No `jj git push` without user line-by-line review](#no-jj-git-push-without-user-line-by-line-review)
-  - [Adversarial review of specs and plans](#adversarial-review-of-specs-and-plans)
   - [Verify agent claims](#verify-agent-claims)
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
@@ -42,20 +41,6 @@ understanding).
 
 This includes first-creation pushes, force-pushes,
 branch-deletes, tag-pushes.
-
-### Adversarial review of specs and plans
-
-Specs and plans go through fresh-context adversarial review
-rounds until convergence — no blocker and no serious findings —
-before the user reviews the artifact and before execution
-begins. Each round is a new general-purpose `Agent` invocation,
-never a `SendMessage` to a continuing agent, so no round
-inherits the previous reviewer's conclusions. Findings are
-categorised blocker / serious / minor / cosmetic-taste; the
-author responds in writing to every finding: fix, defer with
-rationale, or reject as cosmetic-taste. Re-fetch the upstream
-guides on every round; they are subject to upstream revision.
-See [docs/process.md](docs/process.md) § Adversarial review.
 
 ### Verify agent claims
 
@@ -163,12 +148,6 @@ names below are indicative. Select by activity.
   `sequential-thinking` MCP where a task benefits from explicit
   multi-step reasoning: hypothesis generation and verification,
   branching exploration, or revision of earlier steps.
-
-Skills that write spec and plan files under `docs/superpowers/`
-leave them in the working tree. Those files are spec and plan
-documents like any other: the lifespan rules in
-[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape apply, so remove
-them in the final commits of the topic branch.
 
 ## Path-scoped rules
 

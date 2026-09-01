@@ -38,9 +38,9 @@ Applies whenever a `.lean` file is open or being edited.
 ## Authoritative upstream guides (mathlib)
 
 These are the binding upstream references for `Geb/Mathlib/`
-content and for mathlib-track `GebLang/` modules. Adversarial
-reviewers must check our `Geb/Mathlib/` content, and every
-mathlib-track `GebLang/` module, for violations against each:
+content and for mathlib-track `GebLang/` modules. Reviewers check
+our `Geb/Mathlib/` content, and every mathlib-track `GebLang/`
+module, for violations against each:
 
 - Contributing index:
   `https://leanprover-community.github.io/contribute/index.html`
@@ -55,8 +55,8 @@ mathlib-track `GebLang/` module, for violations against each:
 
 Bullet-point highlights extracted from each guide appear below.
 The full guides supersede this digest; re-fetch and re-verify
-on every adversarial-review round (the guides are subject to
-revision by the leanprover-community).
+at each review (the guides are subject to revision by the
+leanprover-community).
 
 ### Commit messages (from `commit.html`)
 
@@ -67,8 +67,8 @@ and documented footers) is stated once in
 `docs/rules/ci-and-workflow.md` § Commit-message convention; it
 binds every commit, not only `.lean` changes.
 
-**Adversarial-reviewer instruction**: scan every commit message
-in the plan and the actual git history for indicative or
+**Reviewer instruction**: scan every commit message on the
+branch for indicative or
 past-tense verbs ("Adds", "Carries", "Pins", "Creates", "Sets",
 "Adopted"), capitalised first letters of subjects, trailing
 periods, and out-of-list types; flag each occurrence.
@@ -99,7 +99,7 @@ periods, and out-of-list types; flag each occurrence.
   CONTRIBUTING.md § Style and references for the scoped
   exception to the generic-user-reference rule.
 
-**Adversarial-reviewer instruction**: scan our `.lean` files
+**Reviewer instruction**: scan our `.lean` files
 for indentation drift, lines exceeding 100 characters,
 multi-declaration lines, ASCII forms where mathlib uses Unicode,
 and namespace/section nesting violations.
@@ -130,7 +130,7 @@ and namespace/section nesting violations.
   `_iff_…` follow specific positional conventions; check the
   upstream guide for the full table before naming.
 
-**Adversarial-reviewer instruction**: scan our `.lean` files
+**Reviewer instruction**: scan our `.lean` files
 for ALL_CAPS or `snake_case` identifiers, namespace prefixes
 inside declarations, and non-standard operator suffixes; flag
 each occurrence with a pointer to the upstream rule.
@@ -170,7 +170,7 @@ each occurrence with a pointer to the upstream rule.
   [docs/rules/markdown-writing.md](markdown-writing.md)
   § Prose style.
 
-**Adversarial-reviewer instruction**: scan our `.lean` files
+**Reviewer instruction**: scan our `.lean` files
 for missing module/declaration docstrings, missing required
 sections in module docstrings, history-references inside
 docstrings, occurrence counts, and post-hoc axiom-celebration.
@@ -178,9 +178,9 @@ docstrings, occurrence counts, and post-hoc axiom-celebration.
 ## Authoritative upstream guides (CSLib)
 
 These are the binding upstream references for `Geb/Cslib/`
-content and for Cslib-track `GebLang/` modules. Adversarial
-reviewers must check our `Geb/Cslib/` content, and every
-Cslib-track `GebLang/` module, against the contribution guide:
+content and for Cslib-track `GebLang/` modules. Reviewers check
+our `Geb/Cslib/` content, and every Cslib-track `GebLang/` module,
+against the contribution guide:
 
 - Contribution guide:
   `https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md`

@@ -36,7 +36,6 @@
   - [Concrete-syntax prototype](#concrete-syntax-prototype)
   - [Prose-conformance pass over the concrete-syntax survey](#prose-conformance-pass-over-the-concrete-syntax-survey)
   - [Lambda arrow in `GebTests/Mathlib/CategoryTheory/ElementaryTopos.lean`](#lambda-arrow-in-gebtestsmathlibcategorytheoryelementarytoposlean)
-  - [Spec and plan lifecycle beyond one topic branch](#spec-and-plan-lifecycle-beyond-one-topic-branch)
 - [Triggers (do when condition fires)](#triggers-do-when-condition-fires)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -158,12 +157,12 @@ Concern shape.
 
 ### Polynomial functors
 
-The polynomial-functor roadmap below is a partial order of separate
-planning–implementation cycles. Items with disjoint file sets that do not
-depend on one another may be taken in either order. Each item's full spec and
-plan are written only after the items it depends on are implemented: the
-project is too large to fix every earlier interface on the first attempt, so
-interface corrections in an earlier item can invalidate a later item's plan.
+The polynomial-functor roadmap below is a partial order of separate items.
+Items with disjoint file sets that do not depend on one another may be taken
+in either order. An item is worked out only after the items it depends on are
+implemented: the project is too large to fix every earlier interface on the
+first attempt, so interface corrections in an earlier item can change a later
+item's shape.
 Each item lives on its own topic branch and migrates to persistent
 documentation under `docs/index.md` on completion.
 
@@ -934,15 +933,6 @@ mathlib uses; every other `.lean` file in the repository follows it.
 Correcting these is a separate concern from any current branch per
 [CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape.
 
-### Spec and plan lifecycle beyond one topic branch
-
-[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape orders spec and plan
-commits for a workstream that is one topic branch. It says nothing about
-a series of branches merging separately into an append-only `main`, nor
-about a topic branch with two topic-branch parents. Since that ordering
-was introduced, `main` has never carried two specs at once, so no
-practice settles either question. Settle both.
-
 ## Triggers (do when condition fires)
 
 - **Choice-free bound for `Fin.divNat` in Batteries**:
@@ -1028,12 +1018,11 @@ practice settles either question. Settle both.
   validated the mechanism: Verso and mathlib coexist in one lake project at
   v4.32.0-rc1, embedded Lean type-checks (a mismatch fails the build with a
   locatable error), and within-document references resolve. Two follow-up
-  workstreams, each its own spec/plan cycle when taken up:
+  workstreams:
   - Persistent Geb-language exposition seed chapter in Verso (scope 2), once
     exposition-worthy prose exists.
-  - Verso for transient feature-branch design docs (scope 3); a change to the
-    current Markdown-based brainstorming and writing-plans flow, so it needs
-    its own scoping.
+  - Verso for transient feature-branch design docs (scope 3), should such
+    documents recur.
 - **doc-gen4 drops a `GebLang` module docstring**: `doc.verso` stores
   a module docstring in the Verso module-doc extension, and the
   pinned doc-gen4 reads only the Markdown-payload one
