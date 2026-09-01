@@ -25,3 +25,6 @@ Hook scripts in `scripts/hooks/` follow Claude Code's hook contract
   non-zero exits are errors.
 - Smoke-test in `scripts/hooks/tests/test-<hook>.sh`; CI runs the
   smoke tests.
+- `.claude/settings.json` installs the SessionStart hooks only.
+  `block-mutating-git.sh` is opt-in, installed by a contributor in
+  `.claude/settings.local.json` per its header.

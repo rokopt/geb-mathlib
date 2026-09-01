@@ -77,7 +77,7 @@ to upstream quality:
    or to Cslib according to each module's own import closure
    (§ Subtree import rules).
 2. When the upstream PR is accepted and we re-pin to a fresh
-   master that includes it, migrate dependents via `jj rebase`.
+   master that includes it, migrate dependents by rebasing.
    The prototype is then removed.
 
 ## Floodgate test

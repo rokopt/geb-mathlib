@@ -5,7 +5,8 @@
 
 - [Audience](#audience)
 - [Agent-specific rules](#agent-specific-rules)
-  - [No `jj git push` without user line-by-line review](#no-jj-git-push-without-user-line-by-line-review)
+  - [Version control follows the checkout](#version-control-follows-the-checkout)
+  - [No push without user line-by-line review](#no-push-without-user-line-by-line-review)
   - [Verify agent claims](#verify-agent-claims)
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
@@ -41,10 +42,29 @@ Work in upstream-eligible subtrees is governed by
 governs LLM-generated code (mandatory disclosure and line-by-line
 understanding).
 
-### No `jj git push` without user line-by-line review
+### Version control follows the checkout
 
-This includes first-creation pushes, force-pushes,
-branch-deletes, tag-pushes.
+With its git backend, `jj` leaves no metadata that distinguishes
+its commits from git's, so the repository does not mandate either.
+An agent uses whichever the checkout it is working in was created
+with. The test: `jj` is in use when `jj root` succeeds and names
+the directory `git rev-parse --show-toplevel` names, or git names
+none; otherwise `git` is in use. The two agree at the root of a
+colocated repository, and a workspace added with `jj workspace add`
+carries its own `.jj/` and no `.git`; a git worktree of a colocated
+repository carries `.git` and no `.jj/`, so `jj root` fails there
+or, for a worktree nested inside the repository, names the parent
+instead. Where `jj` is in use, every state-mutating operation goes
+through it, since a colocated checkout's git index is an export of
+jj's state that a raw mutating `git` command desynchronises.
+`scripts/hooks/block-mutating-git.sh` is a Claude Code hook a
+contributor may install locally to enforce that (see its header);
+the repository does not install it.
+
+### No push without user line-by-line review
+
+Neither `git push` nor `jj git push`. This includes first-creation
+pushes, force-pushes, branch-deletes, tag-pushes.
 
 ### Verify agent claims
 

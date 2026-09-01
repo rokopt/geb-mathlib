@@ -15,6 +15,7 @@
 - [Two-track development](#two-track-development)
 - [Floodgate test](#floodgate-test)
 - [Alternative formalization targets](#alternative-formalization-targets)
+- [Version control follows the checkout](#version-control-follows-the-checkout)
 - [main and integration](#main-and-integration)
 - [Mathlib bump procedure](#mathlib-bump-procedure)
 - [jj bump procedure](#jj-bump-procedure)
@@ -220,7 +221,7 @@ not upstream-eligible because its form is still open, and it
 stops being a prototype when the form closes. Code is ported into
 `Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/` when its expression is
 settled and it reaches upstream quality, with dependents migrated
-via `jj rebase` after the upstream PR is accepted. The split lets
+by rebasing after the upstream PR is accepted. The split lets
 velocity and upstream-readiness each get the discipline that
 suits them, without one blocking the other. It is driven by
 whether a module's expression is settled, and by
@@ -299,6 +300,21 @@ targets' requirements; that discipline is not relaxed to match a
 looser target. These remain fallbacks: mathlib and CSLib are the
 primary targets, and the two-track workflow
 (§ Two-track development) is unchanged.
+
+## Version control follows the checkout
+
+`jj` with its git backend writes ordinary git commits and leaves no
+metadata that tells a `jj` user's work from a `git` user's, so a
+contributor's choice between them is invisible to the repository
+and is not the repository's to make. `AGENTS.md` § Version control
+follows the checkout therefore has an agent detect the choice from
+the checkout rather than assume one. The detection compares
+`jj root` with `git rev-parse --show-toplevel` because a git
+worktree nested inside a colocated repository is the case a bare
+`.jj/` lookup gets wrong: `jj root` walks up to the parent's
+`.jj/`, while the worktree itself is git's. The mutating-git hook
+is opt-in for the same reason: installed unconditionally, it would
+prompt a `git` user on every commit.
 
 ## main and integration
 

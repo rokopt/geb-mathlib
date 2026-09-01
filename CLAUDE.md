@@ -23,10 +23,14 @@ Skill and MCP guidance is agent-generic and lives in
 
 ## Rules
 
-- **No raw mutating `git` subcommands.** The PreToolUse hook at
-  `scripts/hooks/block-mutating-git.sh` is an allow-list of read-only
-  forms; mutating forms (and unknown forms) trigger a permission
-  prompt. Use `jj` for state-mutating operations.
+- **Optional `jj` insurance.** `.claude/settings.json` installs
+  SessionStart hooks only. `scripts/hooks/block-mutating-git.sh`, a
+  PreToolUse hook that turns any mutating `git` form into a
+  permission prompt in a `jj` checkout, is not installed; a
+  contributor who wants that insurance adds it to
+  `.claude/settings.local.json` as the script's header shows.
+  Which VCS an agent uses is decided by
+  [AGENTS.md](AGENTS.md) § Version control follows the checkout.
 
 ## References
 

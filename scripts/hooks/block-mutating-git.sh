@@ -6,6 +6,20 @@
 # implementation is an allow-list of read-only `git` forms;
 # anything not on the list triggers a permission prompt.
 #
+# Not installed by the repository: AGENTS.md § Version control
+# follows the checkout has an agent use jj or git according to how
+# the checkout was created, so the hook is opt-in insurance for a
+# contributor who works in a jj checkout and wants every mutating
+# `git` form surfaced. It is specific to Claude Code (the hook
+# contract below is Claude Code's); to install it, add to the
+# untracked `.claude/settings.local.json`:
+#
+#   {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [{"type":
+#     "command", "command":
+#     "${CLAUDE_PROJECT_DIR}/scripts/hooks/block-mutating-git.sh"}]}]}}
+#
+# The hook is inert outside a jj checkout (see the .jj check below).
+#
 # Hook contract (per Claude Code documentation):
 #   - JSON read from stdin: {"tool_input": {"command": "..."}}
 #   - Exit 0 with no output: allow silently
