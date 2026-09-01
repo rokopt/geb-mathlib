@@ -6,6 +6,7 @@
 - [Repository structure](#repository-structure)
 - [Code is cost](#code-is-cost)
 - [Document only the persistent](#document-only-the-persistent)
+- [Modes of operation](#modes-of-operation)
 - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
 - [Constructive-only discipline](#constructive-only-discipline)
 - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
@@ -100,6 +101,34 @@ What's persistent and worth documenting:
 The principle is: when this codebase is years old, the comments
 should still read as useful context. Anything that won't survive
 that test belongs elsewhere.
+
+## Modes of operation
+
+`AGENTS.md` § Modes of operation names prototyping, code review and
+pair programming, and no mode begins with a written specification
+or plan. A mathematical development is not foreseeable in prose:
+the questions a construction raises are settled by writing and
+compiling Lean, so a specification detailed enough to follow is
+the implementation restated in a form that does not type-check,
+and the remainder of such a document restates the process rules
+that bind every workstream, which `CONTRIBUTING.md`, `AGENTS.md`
+and `docs/rules/` state once. Prototyping puts the exploration
+where it is checked, under `Geb/Prototypes/`, and the versioned
+prototype is the record of how a question was settled.
+
+The prototyping mode's stopping rule, and its instruction to leave
+the code in place, exist because the judgement that a concept is
+ill-specified, contradictory or out of practical reach is the
+user's to make, and the agent's evidence for it is the code that
+reached the difficulty.
+
+Code review apportions angles among fresh-context reviewers because
+a reviewer that inherits another's conclusions inherits its blind
+spots; the discipline catches what the author cannot see.
+
+Pair programming bounds the size of each turn because the user is
+attending: a long unattended development is reviewed all at once,
+which is the prototyping mode's shape, not this one's.
 
 ## Illustrate only with the archetypal
 

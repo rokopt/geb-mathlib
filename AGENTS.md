@@ -10,6 +10,10 @@
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
   - [Aristotle (external LLM prover)](#aristotle-external-llm-prover)
+- [Modes of operation](#modes-of-operation)
+  - [Prototyping](#prototyping)
+  - [Code review](#code-review)
+  - [Pair programming](#pair-programming)
 - [Skills and MCP servers](#skills-and-mcp-servers)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
@@ -107,6 +111,61 @@ without AI, and discloses its use. Returned proofs are re-verified
 under the repository's toolchain and constructive discipline
 before use. See [docs/aristotle.md](docs/aristotle.md) for
 invocations and operational notes.
+
+## Modes of operation
+
+The user directs an agent in one of the modes below, or in any
+other mode the user describes. No mode begins with a written
+specification or plan: a mathematical development is settled by
+writing and compiling Lean, so planning what code to write is done
+in the session, with a `brainstorming` skill and the
+`sequential-thinking` MCP where installed (§ Skills and MCP
+servers). See [docs/process.md](docs/process.md) § Modes of
+operation for the rationale.
+
+### Prototyping
+
+The agent resolves a programming or mathematical question by
+writing and compiling Lean under `Geb/Prototypes/`, continuing
+through an extended development until it has a proven-correct
+implementation of the concept in question. The code is committed
+whatever its fate: it may be discarded later, or polished and
+ported to another subtree
+([docs/rules/upstream-eligible.md](docs/rules/upstream-eligible.md)
+§ Two-track development), and either way it is versioned for
+future reference.
+
+The agent stops short of that only on coming to suspect that the
+concept cannot be implemented, or not practically: it may be
+ill-specified or contradictory, or require infrastructure that
+neither mathlib, Cslib nor this repository has, such as the
+formalization of a large mathematical theory. It then explains to
+the user why it suspects so, leaves the code in place for the user
+to examine, and lets the user decide how to proceed.
+
+### Code review
+
+The agent examines changes the user has made, one or more
+changesets, and proposes changes from many angles, which may be
+apportioned among subagents (the `pr-review-toolkit` skill's
+agents where installed), each a fresh context that inherits no
+other reviewer's conclusions. Mathematical and implementation
+correctness come first; every other property the coding rules
+demand is also checked: mathlib, CSLib and local style compliance
+([docs/rules/lean-coding.md](docs/rules/lean-coding.md), including
+its reviewer instructions), higher-order constructions over
+piece-by-piece ones, refactoring of duplication, the constructive
+discipline, and the rest. Findings are categorised blocker /
+serious / minor / cosmetic-taste, and the user decides on each.
+
+### Pair programming
+
+The agent and the user alternate in a live session. As the user
+requests, the agent reviews a short chunk of the user's code and
+then waits for the next, or writes a short chunk the user asks for
+and proposes it for the user's review. The user is attending, so
+the agent writes a small amount of code per turn, in contrast to
+prototyping, where it may work unattended for a long time.
 
 ## Skills and MCP servers
 

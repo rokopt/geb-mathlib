@@ -80,7 +80,9 @@ does not run config commands on a contributor's behalf.
 1. Read this file from top to bottom; the rules here bind every
    contribution. If you use an AI agent, also read `AGENTS.md`;
    if you use Claude Code, also read `CLAUDE.md`.
-2. Pick a workstream from `TODO.md`, or propose a new one.
+2. Pick a workstream from `TODO.md`, or propose a new one. If you
+   direct an AI agent, `AGENTS.md` § Modes of operation names ways
+   to do so.
 3. Develop on a topic branch (`feat/<topic>`, `fix/<topic>`, etc.);
    use `jj` (the working VCS).
 4. Run `scripts/pre-push.sh`, or `scripts/pre-push-full.sh` when the
