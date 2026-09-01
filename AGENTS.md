@@ -200,10 +200,12 @@ names below are indicative. Select by activity.
   something be remembered.
 - A defect or missing workflow in the `lean4` skill, or an insight
   its maintainers would want: the `lean4-contribute` skill drafts
-  the issue for the `lean4-skills` repository. That repository is
-  not a mathlib-facing channel, so § No LLM-drafted text in
-  mathlib-facing channels does not bind the draft; the user
-  reviews it before filing.
+  a GitHub issue for the `lean4-skills` repository. On producing
+  the draft, the agent reminds the user that the text is a summary
+  for the user, and recommends that they rewrite it in their own
+  words before filing, so that it complies with mathlib's
+  own-words standard (§ No LLM-drafted text in mathlib-facing
+  channels) whichever channel it reaches.
 - Reviewing changes: the `pr-review-toolkit` skill, whose agents
   each review from one angle.
 - Writing or reviewing any code: the `ponytail` skill, which holds
