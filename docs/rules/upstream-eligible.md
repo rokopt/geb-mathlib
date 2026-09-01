@@ -45,7 +45,7 @@ For upstream-eligible subtrees, AI authoring follows
 [AGENTS.md § AI authoring (upstream-eligible work)](../../AGENTS.md):
 an agent may draft, and the user commits only after understanding
 every line, being able to justify each design decision to
-reviewers without AI, and disclosing tool use. Work under
+reviewers without AI, and disclosing tool use.
 Work under `Geb/Prototypes/` is reviewed by the user at commit
 time without that upstream justification bar.
 
