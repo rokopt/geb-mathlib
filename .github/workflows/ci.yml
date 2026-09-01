@@ -109,6 +109,8 @@ jobs:
         run: bash scripts/tests/test-regenerate-integration.sh
       - name: scripts/tests/test-diff-against-main.sh
         run: bash scripts/tests/test-diff-against-main.sh
+      - name: scripts/tests/test-vcs.sh
+        run: bash scripts/tests/test-vcs.sh
 
   bump_detect_tests:
     name: Bump detect-script tests

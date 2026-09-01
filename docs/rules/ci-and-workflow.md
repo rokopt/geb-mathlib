@@ -101,6 +101,10 @@ then the Markdown and project-rule checks:
   dependencies reach `Cslib.*` is Cslib-track and belongs under the
   Cslib subtree.
 - `scripts/check-commit-msg.sh` over the branch's commit subjects.
+  This step, the branch diff behind the two checks below it, and
+  the branch name `scripts/lake-update-warning.sh` reads come from
+  whichever VCS the checkout uses, as `scripts/lib/vcs.sh` decides
+  per `AGENTS.md` § Version control follows the checkout.
 - `doctoc --dryrun --update-only .` (TOC freshness; skipped when
   `doctoc` is absent) and `markdownlint-cli2 '**/*.md'`.
 - `scripts/check-md-links.sh` (every internal Markdown link target
@@ -126,7 +130,8 @@ fixtures:
 - `scripts/tests/test-mathlib-bump-detect.sh`,
   `scripts/tests/test-jj-bump-detect.sh`,
   `scripts/tests/test-regenerate-integration.sh`,
-  `scripts/tests/test-diff-against-main.sh`.
+  `scripts/tests/test-diff-against-main.sh`,
+  `scripts/tests/test-vcs.sh`.
 - `scripts/hooks/tests/test-block-mutating-git.sh`.
 
 The scripts report what the checks found and nothing else. Project

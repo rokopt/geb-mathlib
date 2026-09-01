@@ -10,18 +10,27 @@
 
 set -euo pipefail
 
-if ! command -v jj >/dev/null 2>&1; then
-  exit 0
-fi
-
 # diff_against_main (diff against the merge-base with main) is shared
-# with pre-push.sh.
+# with pre-push.sh; it sources lib/vcs.sh, which defines vcs_in_use.
 # shellcheck source-path=SCRIPTDIR
 # shellcheck source=lib/diff-against-main.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/diff-against-main.sh"
 
-# Get current bookmark(s) one per line; trim each, then exact-prefix
-# match against allowed forms.
+# The current branch names, one per line: under jj the bookmarks of
+# @, under git the checked-out branch.
+branch_names() {
+  case "$(vcs_in_use)" in
+    jj)
+      jj log -r @ -T 'bookmarks ++ "\n"' --no-graph 2>/dev/null \
+        | tr ',' '\n' | sed 's/[[:space:]]*$//' | sed 's/^[[:space:]]*//'
+      ;;
+    git)
+      git branch --show-current 2>/dev/null
+      ;;
+  esac
+}
+
+# Exact-prefix match each name against the allowed forms.
 allowed=0
 while IFS= read -r bm; do
   case "$bm" in
@@ -30,8 +39,7 @@ while IFS= read -r bm; do
       break
       ;;
   esac
-done < <(jj log -r @ -T 'bookmarks ++ "\n"' --no-graph 2>/dev/null \
-         | tr ',' '\n' | sed 's/[[:space:]]*$//' | sed 's/^[[:space:]]*//')
+done < <(branch_names)
 
 if [ "$allowed" -eq 0 ]; then
   changed=$(diff_against_main)

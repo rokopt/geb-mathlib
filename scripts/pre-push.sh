@@ -86,8 +86,24 @@ step "scripts/check-transitive-imports.sh"
 bash scripts/check-transitive-imports.sh
 
 step "scripts/check-commit-msg.sh (branch commits)"
-jj log --no-graph -r 'fork_point(main | @)..@ ~ merges()' \
-  -T 'description.first_line() ++ "\n"' | bash scripts/check-commit-msg.sh
+# The branch's commit subjects under whichever VCS the checkout uses
+# (scripts/lib/vcs.sh); sourced here rather than above so the lake
+# steps run before anything reads the repository's VCS state.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/vcs.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/vcs.sh"
+branch_commit_subjects() {
+  case "$(vcs_in_use)" in
+    jj)
+      jj log --no-graph -r 'fork_point(main | @)..@ ~ merges()' \
+        -T 'description.first_line() ++ "\n"'
+      ;;
+    git)
+      git log --no-merges --format=%s "$(git merge-base main HEAD)..HEAD"
+      ;;
+  esac
+}
+branch_commit_subjects | bash scripts/check-commit-msg.sh
 
 step "doctoc --dryrun --update-only ."
 if command -v doctoc >/dev/null 2>&1; then
