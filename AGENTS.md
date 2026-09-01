@@ -11,7 +11,7 @@
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
   - [Aristotle (external LLM prover)](#aristotle-external-llm-prover)
-  - [Sequential thinking](#sequential-thinking)
+- [Skills and MCP servers](#skills-and-mcp-servers)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
   - [When editing files under Geb/Mathlib/, Geb/Cslib/ or GebLang/](#when-editing-files-under-gebmathlib-gebcslib-or-geblang)
@@ -94,16 +94,16 @@ If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
 and prove Lean. Consider it when a task exceeds the in-editor
 tooling: to formalize a definition or theorem available only in a
-published paper, or when a goal resists the `lean4:autoprove` and
-`lean4:sorry-filler-deep` passes.
+published paper, or when a goal resists the `lean4` skill's
+`autoprove` and `sorry-filler-deep` passes.
 
 For mathematics available only in published sources, locate the
 reference with `theoremsearch` (`theorem_search`) or
 `arxiv-mcp-server` (`search_papers`, `read_paper`) — see
 [CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md)
-— then draft the Lean with the `lean4:autoformalize` workflow
-(end-to-end formalization from the informal source) or
-`lean4:formalize` (interactive drafting plus proving); see
+— then draft the Lean with the `lean4` skill's `autoformalize`
+workflow (end-to-end formalization from the informal source) or
+`formalize` (interactive drafting plus proving); see
 [docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4
 skill workflows. Escalate formalizations or proofs that exceed
 the in-editor tooling to Aristotle (below).
@@ -121,15 +121,39 @@ under the repository's toolchain and constructive discipline
 before use. See [docs/aristotle.md](docs/aristotle.md) for
 invocations and operational notes.
 
-### Sequential thinking
+## Skills and MCP servers
 
-The `sequential-thinking` MCP is available to any agent whose
-harness loads it. Consider it when a task benefits from
-explicit multi-step reasoning: hypothesis generation and
-verification, branching exploration, or revision of earlier
-steps. It complements the `superpowers:brainstorming` and
-`superpowers:writing-plans` skills during the corresponding
-phases.
+The skills and MCP servers below are the tooling this project's
+agents use. Each is loaded by the harness, and the invocation form
+is host-dependent. Select by activity.
+
+- Lean code work and mathlib search: the `lean4` skill's workflows
+  ([docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4
+  skill workflows), the `lean-lsp` MCP's search and proof tools
+  (§ `lean-lsp` MCP search and proof tools), and the `serena` MCP
+  for symbol-level navigation and editing.
+- Literature search and citation: the `theoremsearch` MCP
+  (`theorem_search`), the `arxiv-mcp-server` MCP (`search_papers`,
+  `read_paper`), and the `deep-research` skill for multi-source
+  cited surveys. See § Verify agent claims.
+- Brainstorming, writing a plan, executing a plan: the
+  `brainstorming`, `writing-plans` and `executing-plans` (or
+  `subagent-driven-development`) skills. The `sequential-thinking`
+  MCP complements them where a task benefits from explicit
+  multi-step reasoning: hypothesis generation and verification,
+  branching exploration, or revision of earlier steps.
+- Independent tasks, bugs, and new features: the
+  `dispatching-parallel-agents`, `systematic-debugging` and
+  `test-driven-development` skills.
+- Pre-commit: the `verification-before-completion` skill. Code
+  review: the `pr-review-toolkit` skill. Receiving review: the
+  `receiving-code-review` skill.
+
+Skills that write spec and plan files under `docs/superpowers/`
+leave them in the working tree. Those files are spec and plan
+documents like any other: the lifespan rules in
+[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape apply, so remove
+them in the final commits of the topic branch.
 
 ## Path-scoped rules
 

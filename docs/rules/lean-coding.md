@@ -501,8 +501,8 @@ so the restriction is enforced only by grep and by review.
 
 - **`sorry`** is permitted between commits as a stand-in while
   working with a development tool that requires placeholders
-  during proof development (e.g.,
-  `lean4:sorry-filler-deep`, `lean4:autoprove`). It is never
+  during proof development (e.g., the `lean4` skill's
+  `sorry-filler-deep` and `autoprove` passes). It is never
   permitted in committed code.
 - **`admit`** is never permitted, not even between commits.
   Use `sorry` (audited as above) when a placeholder is needed.
@@ -627,13 +627,12 @@ for the recurring Lean development activities. Select by activity.
 | Diagnosis | `doctor` | As needed |
 | Save progress | `checkpoint` | At milestones |
 
-**Invocation form is host-dependent.** On Claude Code with the
-`lean4-skills` plugin installed, these are slash commands
-(`/lean4:prove`, `/lean4:autoprove`, etc.). On other harnesses
-that load the skill but not the plugin (e.g. OpenCode), invoke
-them in natural language ("run the guided `prove` workflow on
-`Foo.lean:42`"). The underlying cycle engine and outputs are the
-same; only the surface syntax differs.
+**Invocation form is host-dependent.** A harness that installs the
+skill as a plugin exposes the workflows as commands
+(`lean4:prove`, `lean4:autoprove`, etc.); one that loads the skill
+alone takes them in natural language ("run the guided `prove`
+workflow on `Foo.lean:42`"). The underlying cycle engine and
+outputs are the same; only the surface syntax differs.
 
 ## `lean-lsp` MCP search and proof tools
 
