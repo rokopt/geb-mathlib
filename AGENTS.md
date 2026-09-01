@@ -135,7 +135,10 @@ it is the one skill known to target Lean, the project's primary
 language, so an agent that finds it absent says so once, as a
 suggestion, and then proceeds.
 
-The invocation form is host-dependent. Select by activity.
+The invocation form is host-dependent, and a skill's command set
+changes between versions, so before using a skill, list the
+commands it currently provides and select from that list; the
+names below are indicative. Select by activity.
 
 - Lean code work, proving, and mathlib search: the `lean4` skill's
   workflows ([docs/rules/lean-coding.md](docs/rules/lean-coding.md)

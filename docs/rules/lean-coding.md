@@ -636,7 +636,10 @@ skill as a plugin exposes the workflows as commands
 (`lean4:prove`, `lean4:autoprove`, etc.); one that loads the skill
 alone takes them in natural language ("run the guided `prove`
 workflow on `Foo.lean:42`"). The underlying cycle engine and
-outputs are the same; only the surface syntax differs.
+outputs are the same; only the surface syntax differs. The table
+is indicative: list the commands the installed version provides
+before selecting one, as [AGENTS.md](../../AGENTS.md) § Skills and
+MCP servers directs for every skill.
 
 ## `lean-lsp` MCP search and proof tools
 
