@@ -155,8 +155,13 @@ demand is also checked: mathlib, CSLib and local style compliance
 ([docs/rules/lean-coding.md](docs/rules/lean-coding.md), including
 its reviewer instructions), higher-order constructions over
 piece-by-piece ones, refactoring of duplication, the constructive
-discipline, and the rest. Findings are categorised blocker /
-serious / minor / cosmetic-taste, and the user decides on each.
+discipline, and the rest. A finding states what kind of problem it
+is rather than a severity grade: that a proof or definition is
+mathematically incorrect says everything a grade would; and where
+a concept has more than one standard name, the finding says so
+and says which name the reviewer judges to have the better
+connotations in that context, which makes it a matter of taste
+without a label. The user decides on each finding.
 
 ### Pair programming
 

@@ -124,7 +124,11 @@ reached the difficulty.
 
 Code review apportions angles among fresh-context reviewers because
 a reviewer that inherits another's conclusions inherits its blind
-spots; the discipline catches what the author cannot see.
+spots; the discipline catches what the author cannot see. A finding
+states its kind rather than a grade on a scale because a scale's
+distinctions are too vague to act on, whereas the kind of problem
+determines the action: an incorrect proof is repaired, a choice
+between standard names is the author's to make.
 
 Pair programming bounds the size of each turn because the user is
 attending: a long unattended development is reviewed all at once,
