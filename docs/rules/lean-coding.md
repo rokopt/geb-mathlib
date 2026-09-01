@@ -622,11 +622,13 @@ this section and the next.
 | Drafting from informal math | `draft`, `formalize`, `autoformalize` | Try `autoformalize` early |
 | Proving a stated lemma | `prove`, `autoprove` | Try `autoprove` when stuck |
 | Filling stubborn `sorry`s | `sorry-filler-deep` | When fast pass fails or proofs are complex |
+| Suspecting a statement is false | `disprove` | Before abandoning a goal as unprovable |
+| Removing a nonconstructive axiom | `axiom-eliminator` | When `lake lint` reports one |
 | Polishing a proof | `golf` | Post-process before commit |
 | Refactoring existing Lean code | `refactor` | During refactors |
 | Pre-commit Lean review | `review` | Before any Lean commit |
 | Exploring mathlib | `learn` | As needed |
-| Diagnosis | `doctor` | As needed |
+| Diagnosis | `diagnose` | As needed |
 | Save progress | `checkpoint` | At milestones |
 
 **Invocation form is host-dependent.** A harness that installs the

@@ -109,9 +109,10 @@ workflow (end-to-end formalization from the informal source) or
 skill workflows. Escalate formalizations or proofs that exceed
 the in-editor tooling to Aristotle (below).
 
-It is a metered hosted service,
-so the agent asks the contributor whether to use it before
-invoking it, even when it is available. Its output is
+It is a metered, rate-limited hosted service whose calls add
+latency, so before embarking on a project the agent asks the user
+whether to use it in that project, even when it is available, and
+does not invoke it otherwise. Its output is
 LLM-generated code, governed by the
 same policy as any other AI tool
 ([CONTRIBUTING.md § Submission policy](CONTRIBUTING.md)): it may
@@ -136,27 +137,29 @@ suggestion, and then proceeds.
 
 The invocation form is host-dependent. Select by activity.
 
-- Lean code work and mathlib search: the `lean4` skill's workflows
-  ([docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4
-  skill workflows), the `lean-lsp` MCP's search and proof tools
-  (§ `lean-lsp` MCP search and proof tools), and the `serena` MCP
-  for symbol-level navigation and editing.
+- Lean code work, proving, and mathlib search: the `lean4` skill's
+  workflows ([docs/rules/lean-coding.md](docs/rules/lean-coding.md)
+  § Lean 4 skill workflows), the `lean-lsp` MCP's search and proof
+  tools (§ `lean-lsp` MCP search and proof tools), and the `serena`
+  MCP for symbol-level navigation and editing.
+- A defect or missing workflow in the `lean4` skill, or an insight
+  its maintainers would want: the `lean4-contribute` skill drafts
+  the issue for the `lean4-skills` repository. That repository is
+  not a mathlib-facing channel, so § No LLM-drafted text in
+  mathlib-facing channels does not bind the draft; the user
+  reviews it before filing.
+- Reviewing changes: the `pr-review-toolkit` skill, whose agents
+  each review from one angle.
+- Writing or reviewing any code: the `ponytail` skill, which holds
+  to the minimal solution that works, the discipline
+  [CONTRIBUTING.md](CONTRIBUTING.md) § Code is cost states.
 - Literature search and citation: the `theoremsearch` MCP
-  (`theorem_search`), the `arxiv-mcp-server` MCP (`search_papers`,
-  `read_paper`), and the `deep-research` skill for multi-source
-  cited surveys. See § Verify agent claims.
-- Brainstorming, writing a plan, executing a plan: the
-  `brainstorming`, `writing-plans` and `executing-plans` (or
-  `subagent-driven-development`) skills. The `sequential-thinking`
-  MCP complements them where a task benefits from explicit
+  (`theorem_search`) and the `arxiv-mcp-server` MCP
+  (`search_papers`, `read_paper`). See § Verify agent claims.
+- Planning what code to write: a `brainstorming` skill, and the
+  `sequential-thinking` MCP where a task benefits from explicit
   multi-step reasoning: hypothesis generation and verification,
   branching exploration, or revision of earlier steps.
-- Independent tasks, bugs, and new features: the
-  `dispatching-parallel-agents`, `systematic-debugging` and
-  `test-driven-development` skills.
-- Pre-commit: the `verification-before-completion` skill. Code
-  review: the `pr-review-toolkit` skill. Receiving review: the
-  `receiving-code-review` skill.
 
 Skills that write spec and plan files under `docs/superpowers/`
 leave them in the working tree. Those files are spec and plan

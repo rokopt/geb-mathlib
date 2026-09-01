@@ -25,9 +25,10 @@ contributor's environment. The instructions below apply only when
 the `aristotle` CLI and an `ARISTOTLE_API_KEY` are present.
 
 Aristotle is a hosted, metered service: invoking it consumes the
-contributor's account resources. Before using it, an agent asks the
-contributor whether they want Aristotle used for the task at hand,
-even when it is available.
+contributor's account resources, it is rate-limited, and each call
+adds latency. Before embarking on a project, an agent asks the
+contributor whether they want Aristotle used in that project, even
+when it is available, and does not invoke it otherwise.
 
 ## When to use
 
