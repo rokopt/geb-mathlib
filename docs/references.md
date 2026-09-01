@@ -45,8 +45,8 @@ when transcribing).
   published mathematics — arXiv, the Stacks Project, ProofWiki, the
   Open Logic Project, the CRing Project, Stacks and Moduli, the
   HoTT book, and An Infinitely Large Napkin — by semantic
-  similarity. It is available in-session as the `theoremsearch`
-  MCP, whose single tool `theorem_search` takes a natural-language
+  similarity. Where the `theoremsearch` MCP is installed, its
+  single tool `theorem_search` takes a natural-language
   `query` and returns, per hit, the source-specific paper
   identifier (an arXiv id for arXiv hits), authors, year,
   `theorem_type`, the LaTeX statement `body`, a plain-language

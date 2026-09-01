@@ -611,9 +611,11 @@ docstrings are written for both.
 
 ## Lean 4 skill workflows
 
-The `lean4` skill (installed from `lean4-skills` at
-`~/.agents/skills/lean4/` or equivalent) provides named workflows
-for the recurring Lean development activities. Select by activity.
+Where the `lean4` skill (from `lean4-skills`) is installed, it
+provides named workflows for the recurring Lean development
+activities. Select by activity. The conditional reading of
+[AGENTS.md](../../AGENTS.md) § Skills and MCP servers applies to
+this section and the next.
 
 | Activity | Workflow | When |
 | --- | --- | --- |
@@ -636,8 +638,8 @@ outputs are the same; only the surface syntax differs.
 
 ## `lean-lsp` MCP search and proof tools
 
-The `lean-lsp` MCP server exposes these search and proof tools to
-any harness that loads it. Select by question.
+Where the `lean-lsp` MCP server is installed, it exposes these
+search and proof tools. Select by question.
 
 | Need | Tool |
 | --- | --- |

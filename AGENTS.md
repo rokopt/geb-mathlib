@@ -66,8 +66,8 @@ locate and verify it against the primary source using available
 paper-search tooling (e.g. an arXiv search) before recording the
 citation identifier required by
 [CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md).
-The `theoremsearch` MCP (`theorem_search`) locates published
-statements and their searchable identifiers across the informal
+Where installed, the `theoremsearch` MCP (`theorem_search`) locates
+published statements and their searchable identifiers across the informal
 literature (arXiv, the Stacks Project, ProofWiki, and others); see
 [docs/references.md](docs/references.md) § Searchable.
 
@@ -98,8 +98,9 @@ published paper, or when a goal resists the `lean4` skill's
 `autoprove` and `sorry-filler-deep` passes.
 
 For mathematics available only in published sources, locate the
-reference with `theoremsearch` (`theorem_search`) or
-`arxiv-mcp-server` (`search_papers`, `read_paper`) — see
+reference with the `theoremsearch` (`theorem_search`) or
+`arxiv-mcp-server` (`search_papers`, `read_paper`) MCP where
+installed — see
 [CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md)
 — then draft the Lean with the `lean4` skill's `autoformalize`
 workflow (end-to-end formalization from the informal source) or
@@ -123,9 +124,17 @@ invocations and operational notes.
 
 ## Skills and MCP servers
 
-The skills and MCP servers below are the tooling this project's
-agents use. Each is loaded by the harness, and the invocation form
-is host-dependent. Select by activity.
+Nothing in this repository assumes a skill or MCP server is
+installed. Every mention of one, in this file and in the files it
+references, reads: if it is installed, consider using it in the
+situations named and in any others where it applies. Where one is
+not installed, work with the tooling that is, and do not report
+its absence to the user. The one exception is the `lean4` skill:
+it is the one skill known to target Lean, the project's primary
+language, so an agent that finds it absent says so once, as a
+suggestion, and then proceeds.
+
+The invocation form is host-dependent. Select by activity.
 
 - Lean code work and mathlib search: the `lean4` skill's workflows
   ([docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4
