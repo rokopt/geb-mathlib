@@ -1,6 +1,4 @@
 {
-  // VCS is jj, not git; hide the built-in Git integration.
-  "git.enabled": false,
   // Editor and file conventions matching mathlib style.
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
