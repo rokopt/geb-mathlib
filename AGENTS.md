@@ -6,6 +6,7 @@
 - [Audience](#audience)
 - [Agent-specific rules](#agent-specific-rules)
   - [Version control follows the checkout](#version-control-follows-the-checkout)
+  - [Session-start checks](#session-start-checks)
   - [No push without user line-by-line review](#no-push-without-user-line-by-line-review)
   - [Verify agent claims](#verify-agent-claims)
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
@@ -60,6 +61,17 @@ jj's state that a raw mutating `git` command desynchronises.
 `scripts/hooks/block-mutating-git.sh` is a Claude Code hook a
 contributor may install locally to enforce that (see its header);
 the repository does not install it.
+
+### Session-start checks
+
+Before a task that builds, run `scripts/toolchain-watch.sh`, which
+reports whether the toolchain pin matches mathlib's; a mismatch is
+a bump branch's concern rather than the task's. Before a task that
+may commit, check whether commit signing is configured and, if so,
+whether its key is cached (`scripts/hooks/check-signing-key.sh`
+shows the checks for gpg and ssh), and tell the user when it is
+not, since a commit would then block on a passphrase prompt. Under
+Claude Code, `.claude/settings.json` runs both at session start.
 
 ### No push without user line-by-line review
 
