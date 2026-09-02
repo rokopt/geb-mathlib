@@ -115,8 +115,8 @@ If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
 and prove Lean. Consider it when a task exceeds the in-editor
 tooling: to formalize a definition or theorem available only in a
-published paper, or when a goal resists the `lean4` skill's
-`autoprove` and `sorry-filler-deep` passes.
+published paper, or when a goal resists the `lean4` skill's `prove`
+and `autoprove` workflows.
 
 For mathematics available only in published sources, locate the
 reference with the `theoremsearch` (`theorem_search`) or
