@@ -6,6 +6,7 @@
 - [Audience](#audience)
 - [Agent-specific rules](#agent-specific-rules)
   - [Version control follows the checkout](#version-control-follows-the-checkout)
+  - [Session-start checks](#session-start-checks)
   - [No push without user line-by-line review](#no-push-without-user-line-by-line-review)
   - [Verify agent claims](#verify-agent-claims)
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
@@ -61,6 +62,17 @@ jj's state that a raw mutating `git` command desynchronises.
 contributor may install locally to enforce that (see its header);
 the repository does not install it.
 
+### Session-start checks
+
+Before a task that builds, run `scripts/toolchain-watch.sh`, which
+reports whether the toolchain pin matches mathlib's; a mismatch is
+a bump branch's concern rather than the task's. Before a task that
+may commit, check whether commit signing is configured and, if so,
+whether its key is cached (`scripts/hooks/check-signing-key.sh`
+shows the checks for gpg and ssh), and tell the user when it is
+not, since a commit would then block on a passphrase prompt. Under
+Claude Code, `.claude/settings.json` runs both at session start.
+
 ### No push without user line-by-line review
 
 Neither `git push` nor `jj git push`. This includes first-creation
@@ -69,7 +81,7 @@ pushes, force-pushes, branch-deletes, tag-pushes.
 ### Verify agent claims
 
 Verify agent claims against authoritative sources before
-committing them to artifacts; include citations. When the claim
+committing them to code or documentation; include citations. When the claim
 is the attribution of a mathematical definition or theorem,
 locate and verify it against the primary source using available
 paper-search tooling (e.g. an arXiv search) before recording the
@@ -103,8 +115,8 @@ If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
 and prove Lean. Consider it when a task exceeds the in-editor
 tooling: to formalize a definition or theorem available only in a
-published paper, or when a goal resists the `lean4` skill's
-`autoprove` and `sorry-filler-deep` passes.
+published paper, or when a goal resists the `lean4` skill's `prove`
+and `autoprove` workflows.
 
 For mathematics available only in published sources, locate the
 reference with the `theoremsearch` (`theorem_search`) or
@@ -153,7 +165,10 @@ whatever its fate: it may be discarded later, or polished and
 ported to another subtree
 ([docs/rules/upstream-eligible.md](docs/rules/upstream-eligible.md)
 § Two-track development), and either way it is versioned for
-future reference.
+future reference. Experimental Lean of any kind, in any mode, is
+written inside the codebase rather than under a temporary
+directory, so that it compiles against the project's build and can
+be versioned.
 
 The agent stops short of that only on coming to suspect that the
 concept cannot be implemented, or not practically: it may be

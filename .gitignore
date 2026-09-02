@@ -2,11 +2,12 @@
 .cache
 .lake
 **/__pycache__/
+# Directories created by some tools that users or agents might choose to use.
 .remember/
 .superpowers/
-.claude/settings.local.json
 .poolside/
 .qoder/
+.claude/settings.local.json
 # Vale's StylesPath holds vendored style packages, which are fetched by
 # `vale sync` and not authored here. The project vocabulary under
 # `styles/config/` is authored, and `.vale.ini` names it, so it is tracked.

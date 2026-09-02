@@ -40,6 +40,5 @@ Skill and MCP guidance is agent-generic and lives in
   CONTRIBUTING (auto-loaded via @import above).
 - [docs/rules/](docs/rules/) — path-scoped rule files.
 - [.claude/rules/](.claude/rules/) — Claude Code's path-scoped
-  loader: symlinks to docs/rules/ plus the two Claude-only
-  delta files.
+  loader: symlinks to docs/rules/ plus Claude-only delta files.
 - [docs/process.md](docs/process.md) — rationale for every rule.

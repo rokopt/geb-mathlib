@@ -38,8 +38,8 @@ when that tooling is insufficient, not as a first resort.
 - Formalizing mathematics available only in a published paper:
   pass the informal statement, with a directory of context files,
   to `submit`, or a skeleton file to `formalize`.
-- Goals that resist the `lean4` skill's `autoprove` and
-  `sorry-filler-deep` passes.
+- Goals that resist the `lean4` skill's `prove` and `autoprove`
+  workflows.
 - Proofs expected to need long search time: submit without
   `--wait` and retrieve later (see § Long-running proofs).
 

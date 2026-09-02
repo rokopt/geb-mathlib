@@ -74,7 +74,10 @@ does not run config commands on a contributor's behalf.
    is read from `lean-toolchain`).
 6. Run `lake exe cache get` then `lake build` to verify the
    build chain.
-7. Install `doctoc` to enable pre-push TOC regeneration of
+7. Install `markdownlint-cli2`, which `scripts/pre-push.sh` and
+   CI require: `npm install -g markdownlint-cli2` (or your
+   preferred install path).
+8. Install `doctoc` to enable pre-push TOC regeneration of
    committed Markdown:
    `npm install -g doctoc` (or your preferred install path).
    The pre-push checklist skips the TOC check when `doctoc` is

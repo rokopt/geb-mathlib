@@ -352,9 +352,13 @@ Actions tab — not in the pull request's merge-box checks (a
 so the reviewer checks the commit's checks (via the pull request's
 Commits list) or the Actions run before merging. A
 contributor reviews the diff line-by-line
-and merges. After merge to `main`, the contributor mass-rebases
-active topic branches with `scripts/rebase-topics.sh main` and
-regenerates `integration` with `scripts/regenerate-integration.sh`.
+and merges. The procedure runs on GitHub, on `update.yml`'s
+schedule or by its manual dispatch; a bump is not run locally.
+After the merge to `main`, `regenerate-integration.yml` regenerates
+`integration` with `scripts/regenerate-integration.sh`. Topic
+branches are not rebased by CI: each is rebased onto the new `main`
+by whoever next works on it, or all at once with
+`scripts/rebase-topics.sh main`, a `jj` script.
 The detector tracks release tags, not `master`.
 
 ## jj bump procedure
@@ -405,9 +409,9 @@ The weekly cadence matches the dependabot interval for other
 CI-tooling pins; jj releases roughly monthly, so the schedule
 detects a new release within a week of publication.
 
-A contributor reviews the bump PR diff and merges. After merge
-to `main`, the contributor mass-rebases active topic branches and
-regenerates `integration` as in the mathlib bump procedure.
+A contributor reviews the bump PR diff and merges. The procedure
+runs on GitHub, and after the merge `integration` is regenerated and
+topic branches are rebased as in the mathlib bump procedure.
 
 ## LKG/FKB pipeline
 
@@ -468,10 +472,10 @@ at each review of upstream-eligible content,
 
 PR descriptions, Zulip messages, GitHub issue/PR comments are
 user-authored. Mathlib's policy is unconditional ("use your own
-words"). Multi-layered enforcement: hard rule in
-`CONTRIBUTING.md` § Rules § Submission policy, PR template
-checkbox, user-review-before-push gate. The redundancy is
-intentional. Build output is not one of the layers: `scripts/`
+words"). Two enforcement layers: the rule in `CONTRIBUTING.md`
+§ Rules § Submission policy and the user-review-before-push gate.
+The redundancy is intentional. Build output is not one of the
+layers: `scripts/`
 reports what the checks found, and restating a project rule there
 would address the reader who runs the checklist as though they
 were the agent the rule binds.

@@ -501,8 +501,8 @@ so the restriction is enforced only by grep and by review.
 
 - **`sorry`** is permitted between commits as a stand-in while
   working with a development tool that requires placeholders
-  during proof development (e.g., the `lean4` skill's
-  `sorry-filler-deep` and `autoprove` passes). It is never
+  during proof development (e.g., the `lean4` skill's `autoprove`
+  workflow). It is never
   permitted in committed code.
 - **`admit`** is never permitted, not even between commits.
   Use `sorry` (audited as above) when a placeholder is needed.
@@ -621,9 +621,7 @@ this section and the next.
 | --- | --- | --- |
 | Drafting from informal math | `draft`, `formalize`, `autoformalize` | Try `autoformalize` early |
 | Proving a stated lemma | `prove`, `autoprove` | Try `autoprove` when stuck |
-| Filling stubborn `sorry`s | `sorry-filler-deep` | When fast pass fails or proofs are complex |
 | Suspecting a statement is false | `disprove` | Before abandoning a goal as unprovable |
-| Removing a nonconstructive axiom | `axiom-eliminator` | When `lake lint` reports one |
 | Polishing a proof | `golf` | Post-process before commit |
 | Refactoring existing Lean code | `refactor` | During refactors |
 | Pre-commit Lean review | `review` | Before any Lean commit |
