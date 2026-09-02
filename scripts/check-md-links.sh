@@ -36,17 +36,20 @@ failed=0
 # Report the tracked `.md` files, one per line, relative to the
 # repository root (the caller's directory).
 #
-# jj is the working VCS, so it is authoritative wherever `.jj` exists: a
-# workspace added with `jj workspace add` has no `.git` at all, and in a
-# colocated workspace the git index is an export of jj's state that is
-# refreshed only when a jj command snapshots the working copy. `git
-# ls-files` covers the remaining case, a plain git checkout such as CI's.
+# Which VCS the checkout uses is decided by lib/vcs.sh. Under jj its
+# listing is authoritative: a workspace added with `jj workspace add`
+# has no `.git` at all, and in a colocated workspace the git index is
+# an export of jj's state that is refreshed only when a jj command
+# snapshots the working copy. `git ls-files` covers a git checkout,
+# CI's among them.
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/vcs.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/vcs.sh"
 list_tracked_md() {
-  if [ -d .jj ]; then
-    jj file list -- 'glob:**/*.md'
-  else
-    git ls-files '*.md'
-  fi
+  case "$(vcs_in_use)" in
+    jj) jj file list -- 'glob:**/*.md' ;;
+    git) git ls-files '*.md' ;;
+  esac
 }
 
 check_file() {
