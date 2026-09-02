@@ -5,20 +5,6 @@ on:
     - cron: '0 9 1 * *'
   pull_request:
     branches: [main]
-    paths:
-      - 'Geb/**'
-      - 'GebLang.lean'
-      - 'GebLang/**'
-      - 'GebMeta.lean'
-      - 'GebTests/**'
-      - 'docs/**'
-      - 'lakefile.toml'
-      - 'lean-toolchain'
-      - 'literate.toml'
-      - 'manual/**'
-      - 'scripts/literate.sh'
-      - 'scripts/manual.sh'
-      - 'scripts/nolints.json'
   workflow_dispatch:
 
 permissions:
