@@ -537,40 +537,55 @@ EOF
 assert_case "leakage prefix in an import line's comment tail" 1 \
   "'GebTests.Lang.' outside an import path"
 
-# Case 46: GebLang's two fixed-exception entries (GebMeta,
-# Lean.DocString.Syntax), in both plain and `meta import` form.
+# Case 46: the fixed-exception entry (Lean.DocString.Syntax), in both
+# plain and `meta import` form, in GebLang/.
 setup_empty
 cat > "$test_dir/GebLang/Meta.lean" <<'EOF'
 module
 
-import GebMeta
 import Lean.DocString.Syntax
-meta import GebMeta
+meta import Lean.DocString.Syntax
 EOF
-assert_case "GebLang fixed-exception imports" 0 "clean (1 file(s) checked)"
+assert_case "GebLang fixed-exception import" 0 "clean (1 file(s) checked)"
 
-# Case 47: a fixed-exception entry is an exact module path, not a
+# Case 47: the fixed-exception entry is an exact module path, not a
 # `*`-suffixed prefix; a submodule of it is still forbidden.
 setup_empty
 cat > "$test_dir/GebLang/MetaSub.lean" <<'EOF'
 module
 
-import GebMeta.Internal.Secrets
 import Lean.DocString.SyntaxHacks
 EOF
-assert_case "GebLang fixed-exception entries do not admit a submodule" 1 \
-  "forbidden import 'import GebMeta.Internal.Secrets'"
+assert_case "GebLang fixed-exception entry does not admit a submodule" 1 \
+  "forbidden import 'import Lean.DocString.SyntaxHacks'"
 
-# Case 48: the fixed-exception widening is GebLang/'s alone; a
-# GebTests/Lang file importing GebMeta is still forbidden.
+# Case 48: the fixed-exception entry is admitted in every location,
+# the literate style being the default in each; here Geb/Mathlib/ and
+# GebTests/Lang/.
 setup_empty
-cat > "$test_dir/GebTests/Lang/Meta.lean" <<'EOF'
+cat > "$test_dir/Geb/Mathlib/Lit.lean" <<'EOF'
 module
 
-import GebMeta
+import Lean.DocString.Syntax
 EOF
-assert_case "GebTests/Lang does not admit GebMeta" 1 \
-  "forbidden import 'import GebMeta'"
+cat > "$test_dir/GebTests/Lang/Lit.lean" <<'EOF'
+module
+
+import Lean.DocString.Syntax
+EOF
+assert_case "every location admits the fixed-exception import" 0 \
+  "clean (2 file(s) checked)"
+
+# Case 48b: the fixed exception does not open the `Lean.` prefix; a
+# neighbouring core module stays forbidden.
+setup_empty
+cat > "$test_dir/Geb/Mathlib/Core.lean" <<'EOF'
+module
+
+import Lean.Elab.Command
+EOF
+assert_case "the fixed exception does not admit other Lean modules" 1 \
+  "forbidden import 'import Lean.Elab.Command'"
 
 # Case 49: a `meta import Cslib.Init` does not satisfy the required-init
 # check, even as the file's only mention of the init module.

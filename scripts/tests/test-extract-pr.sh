@@ -238,79 +238,98 @@ has   "GebTests/Cslib rewrites a mathlib-track GebLang import" \
 has   "GebTests/Cslib rewrites a cslib-track GebLang import" \
       "import Cslib.Cs.Deep" "$out"
 
-# The GebLang/ arm's strip pass (amendment.md R2). `GebMeta` is
-# imported in all four keyword forms; `Lean.DocString.Syntax` and
-# `mathlib_linters` are each deleted outright too. The fixture
-# mirrors GebLang/Basic.lean's own shape rather than a shape picked
-# for convenience: a blank line separates `module` from the import
-# block, as it does in the real file, and content follows
-# `mathlib_linters` rather than the command being the file's last
-# line. Both blanks sit on a side of a stripped run that the
-# blank-line rule must suppress; a fixture with `module` abutting the
-# imports, or with `mathlib_linters` as the last line, cannot exhibit
-# a doubled blank in either the correct or the broken version of the
-# rule, which is why an earlier form of this fixture passed with the
-# rule disabled. A docstring mentioning `GebMeta` as an ordinary
-# word, and a docstring sentence whose first word is `import`, are
-# prose and survive; the strip pass and the ordinary import-rewrite
-# table both leave them untouched.
+# The GebLang/ arm's strip pass. `Lean.DocString.Syntax` is imported
+# in all four keyword forms, and every form is deleted outright. The
+# fixture mirrors a GebLang/ module's own shape rather than a shape
+# picked for convenience: a blank line separates `module` from the
+# import block, as it does in the real files, and content follows the
+# block. The blank after the stripped run follows a blank already
+# written out, so the blank-line rule must suppress it; a fixture with
+# `module` abutting the imports cannot exhibit a doubled blank in
+# either the correct or the broken version of the rule. A docstring
+# mentioning the module's
+# name as an ordinary word, and a docstring sentence whose first word
+# is `import`, are prose and survive; the strip pass and the ordinary
+# import-rewrite table both leave them untouched.
 mkdir -p fork12
 cat > GebLang/Foo/Strip.lean <<'EOF'
 module
 
-import GebMeta
 import Lean.DocString.Syntax
-public import GebMeta
-public meta import GebMeta
-meta import GebMeta  -- shake: keep; supplies the mathlib_linters command
+public import Lean.DocString.Syntax
+public meta import Lean.DocString.Syntax
+meta import Lean.DocString.Syntax  -- shake: keep; role markup
 
-/-- This docstring mentions GebMeta as an ordinary word, to confirm
-that prose survives the strip pass.
+/-- This docstring mentions Lean.DocString.Syntax as an ordinary word,
+to confirm that prose survives the strip pass.
 import statements sometimes appear in prose text, not only as an
 actual Lean import; neither the strip pass nor the rewrite table may
 touch this sentence, since its module-shaped word matches neither. -/
-
-mathlib_linters
 
 @[expose] public section
 EOF
 bash "$SCRIPT" GebLang/Foo/Strip.lean fork12 >/dev/null
 out=fork12/Mathlib/Foo/Strip.lean
 exists "GebLang strip-pass fixture -> Mathlib path" "$out"
-lacks "all four GebMeta import forms stripped" "import GebMeta" "$out"
+lacks "all four Lean.DocString.Syntax import forms stripped" \
+      "import Lean.DocString.Syntax" "$out"
 lacks "stripped meta import's trailing comment gone" \
-      "shake: keep; supplies the mathlib_linters command" "$out"
-lacks "Lean.DocString.Syntax import stripped" "Lean.DocString.Syntax" "$out"
-lacks "mathlib_linters command stripped" "mathlib_linters" "$out"
-has   "docstring mentioning GebMeta as prose survives" \
-      "mentions GebMeta as an ordinary word" "$out"
+      "shake: keep; role markup" "$out"
+has   "docstring mentioning the module as prose survives" \
+      "mentions Lean.DocString.Syntax as an ordinary word" "$out"
 has   "docstring sentence starting with the word import survives" \
       "import statements sometimes appear in prose text" "$out"
-has   "content after the stripped command survives" \
+has   "content after the stripped run survives" \
       "@[expose] public section" "$out"
 no_double_blank \
-      "no doubled blank line around either stripped run" "$out"
+      "no doubled blank line around the stripped run" "$out"
 
-# The `mathlib_linters` command with a trailing comment: strip_line's
-# whole-line test widened to admit one, matching how the import forms
-# are already handled. Left as an exact-string match, this survives
-# extraction and reaches an upstream file where nothing registers it.
-mkdir -p fork18
-cat > GebLang/Foo/StripComment.lean <<'EOF'
+# A literate Geb/Mathlib/ module: the strip pass and the role
+# conversion run on every arm, not on GebLang/ alone. The
+# `set_option doc.verso true` line, with a trailing comment, and the
+# `Lean.DocString.Syntax` import are deleted; roles convert; an
+# escaped bracket becomes the bare bracket of mathlib's `[Key]`
+# citation form; and the mathematics between them is byte-identical.
+mkdir -p fork19
+cat > Geb/Mathlib/Foo/Lit.lean <<'EOF'
 module
 
-mathlib_linters  -- turn on the linters
+public import Mathlib.Foo.Base
+import Lean.DocString.Syntax
 
-@[expose] public section
+set_option doc.verso true  -- checked docstrings
+
+/-! # A literate module
+
+{name}`Nat` and {lit}`x ↦ x`, citing \[Key2001\].
+-/
+
+/-- The successor, per \[Key2001\]. -/
+def a (n : Nat) : Nat := n + 1
 EOF
-bash "$SCRIPT" GebLang/Foo/StripComment.lean fork18 >/dev/null
-out=fork18/Mathlib/Foo/StripComment.lean
-exists "commented mathlib_linters fixture -> Mathlib path" "$out"
-lacks "commented mathlib_linters command stripped" "mathlib_linters" "$out"
-lacks "trailing comment on the command line gone" \
-      "turn on the linters" "$out"
-has   "content after the stripped command survives" \
-      "@[expose] public section" "$out"
+bash "$SCRIPT" Geb/Mathlib/Foo/Lit.lean fork19 >/dev/null
+out=fork19/Mathlib/Foo/Lit.lean
+exists "literate Geb/Mathlib fixture -> Mathlib path" "$out"
+lacks "set_option doc.verso line stripped" "doc.verso" "$out"
+lacks "Lean.DocString.Syntax import stripped" "Lean.DocString.Syntax" "$out"
+has   "module docstring roles convert" \
+      '`Nat` and `x ↦ x`, citing [Key2001].' "$out"
+has   "declaration docstring escape converts" \
+      'The successor, per [Key2001].' "$out"
+has   "the surviving import is rewritten in place" \
+      "public import Mathlib.Foo.Base" "$out"
+has   "code is byte-identical" "def a (n : Nat) : Nat := n + 1" "$out"
+no_double_blank "no doubled blank line around the stripped run" "$out"
+# The surviving import and the module docstring stay separated by the
+# one blank line the source had: the blank after the stripped import
+# follows a non-blank line and is kept, the one after the stripped
+# command follows that kept blank and is dropped.
+if [ "$(sed -n '3p' "$out")" != "public import Mathlib.Foo.Base" ] \
+   || [ -n "$(sed -n '4p' "$out")" ] \
+   || [ "$(sed -n '5p' "$out")" != "/-! # A literate module" ]; then
+  echo "FAIL: one blank line kept between the imports and the module docstring"
+  failed=1
+fi
 
 # The docstring gate (fix round 2): role conversion is scoped to
 # lines inside a docstring, and the strip pass to lines outside one.
@@ -327,7 +346,7 @@ mkdir -p fork13
 cat > GebLang/Foo/Gate.lean <<'EOF'
 module
 
-import GebMeta
+import Lean.DocString.Syntax
 
 /-- Single-line docstring role converts: {name}`Nat`. -/
 
@@ -354,12 +373,12 @@ has   "code line outside any docstring is byte-identical" \
       'def a : List Name := [{name}`foo, `bar]' "$out"
 has   "plain block comment role stays unconverted" \
       'not a docstring: {name}`Nat` stays literal.' "$out"
-lacks "real import GebMeta outside a docstring is still stripped" \
-      "import GebMeta" "$out"
+lacks "real import Lean.DocString.Syntax outside a docstring is still stripped" \
+      "import Lean.DocString.Syntax" "$out"
 
 # A fenced code block inside a docstring, whose body line reads
-# `mathlib_linters`: the strip pass, scoped to outside a docstring,
-# must not touch it. A real command line is never inside a
+# `import Lean.DocString.Syntax`: the strip pass, scoped to outside a
+# docstring, must not touch it. A real import line is never inside a
 # docstring, so nothing a real extraction needs is lost by the scope.
 mkdir -p fork14
 cat > GebLang/Foo/Fence.lean <<'EOF'
@@ -367,21 +386,20 @@ module
 
 /-- A docstring containing a fenced code block.
 ```
-mathlib_linters
+import Lean.DocString.Syntax
 ```
 -/
 EOF
 bash "$SCRIPT" GebLang/Foo/Fence.lean fork14 >/dev/null
 out=fork14/Mathlib/Foo/Fence.lean
 exists "docstring-fenced-code fixture -> Mathlib path" "$out"
-has   "fenced mathlib_linters line survives inside the docstring" \
-      "mathlib_linters" "$out"
+has   "fenced import line survives inside the docstring" \
+      "import Lean.DocString.Syntax" "$out"
 
-# The re-reviewer's compounding case (fix round 3): a `/- ... -/`
-# block comment nested inside a docstring must not end the docstring
-# at its own `-/`. A single doc_state flag ended it there, so a
-# fenced `mathlib_linters` body line past the nested comment read as
-# outside the docstring and was silently deleted; the depth counter
+# A `/- ... -/` block comment nested inside a docstring must not end
+# the docstring at its own `-/`. A single doc_state flag would end it
+# there, so a fenced import line past the nested comment would read
+# as outside the docstring and be silently deleted; the depth counter
 # only returns to the outer docstring's level at the nested comment's
 # close, so the fence past it is still inside.
 mkdir -p fork15
@@ -391,39 +409,19 @@ module
 /-- Docstring text.
 /- inner block comment -/
 ```
-mathlib_linters
+import Lean.DocString.Syntax
 ```
 -/
 EOF
 bash "$SCRIPT" GebLang/Foo/NestedFence.lean fork15 >/dev/null
 out=fork15/Mathlib/Foo/NestedFence.lean
 exists "nested-comment fenced fixture -> Mathlib path" "$out"
-has   "fenced mathlib_linters past a nested comment survives" \
-      "mathlib_linters" "$out"
-
-# Same shape, the `import GebMeta` variant: the strip pass must not
-# reach inside the docstring here either.
-mkdir -p fork16
-cat > GebLang/Foo/NestedImport.lean <<'EOF'
-module
-
-/-- Docstring text.
-/- inner block comment -/
-```
-import GebMeta
-```
--/
-EOF
-bash "$SCRIPT" GebLang/Foo/NestedImport.lean fork16 >/dev/null
-out=fork16/Mathlib/Foo/NestedImport.lean
-exists "nested-comment import fixture -> Mathlib path" "$out"
-has   "fenced import GebMeta past a nested comment survives" \
-      "import GebMeta" "$out"
+has   "fenced import line past a nested comment survives" \
+      "import Lean.DocString.Syntax" "$out"
 
 # A role appearing after a nested block comment, in the same
-# docstring, now converts. Under the single-flag gate this shipped as
-# literal braces, since the nested comment's `-/` had already cleared
-# the flag; this fixture pins the improvement.
+# docstring, converts: the depth counter keeps the docstring open past
+# the nested comment's `-/`.
 mkdir -p fork17
 cat > GebLang/Foo/NestedRole.lean <<'EOF'
 module

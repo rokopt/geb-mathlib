@@ -7,9 +7,8 @@
 # `GebLang/`, or `GebTests/Lang/`, and a target upstream-fork worktree
 # path, copy the file to its upstream destination, rewriting the
 # repository-internal module prefixes in each import line's module
-# path, converting Verso role markup inside a docstring, and, for the
-# `GebLang/` arm alone, deleting outside any docstring the lines that
-# have no meaning upstream.
+# path, converting Verso role markup inside a docstring, and deleting
+# outside any docstring the two lines that have no meaning upstream.
 #
 # Usage:
 #   scripts/extract-pr.sh <src-path> <upstream-fork-root>
@@ -86,11 +85,13 @@ import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
 # (a trailing comment, when there is one).
 import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 
-# Verso role markup, converted inside a docstring in the one arm
-# whose sources carry it: `{role}`x`` becomes `` `x` ``. `doc.verso`
-# is set for the GebLang library alone, so an unconverted role would
-# render as literal braces upstream, and no other arm, GebTests/Lang/
-# included, has anything to convert.
+# Verso role markup, converted inside a docstring: `{role}`x``
+# becomes `` `x` ``, and an escaped bracket `\[` or `\]`, the form a
+# literal bracket takes under `doc.verso`, becomes the bare bracket that
+# mathlib's `[Key]` citation form is written with. An unconverted role
+# would render as literal braces upstream; a docstring carrying neither
+# roles nor escapes passes through unchanged, so the conversion runs on
+# every arm.
 #
 # Two restrictions, and both are needed. The braces hold one of the
 # role names this repository writes, which docs/rules/lean-coding.md
@@ -122,13 +123,11 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # failure: braces upstream are visible and get fixed, where deleted
 # mathematics is not. Add a new role's exact name here when one is
 # first used.
-role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g'
+role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g; s/\\([][])/\1/g'
 
-# convert_roles is 1 for the one arm reading doc.verso sources. It
-# gates applying role_strip at all; the docstring gate in the copy
-# loop below further restricts each application to a line inside a
-# docstring. A role-shaped brace group outside a docstring is
-# ordinary Lean, not markup, e.g. in
+# The docstring gate in the copy loop below restricts each application
+# of role_strip to a line inside a docstring. A role-shaped brace group
+# outside a docstring is ordinary Lean, not markup, e.g. in
 # `def a : List Name := [{name}`foo, `bar]`, a singleton set literal
 # followed by a `Name` literal, and role_strip would convert it
 # wrongly if it ran there. `lit`, `name` and `option` are themselves
@@ -142,34 +141,29 @@ role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g'
 # line's own brace groups, which is the regression this docstring
 # gate exists to prevent.
 
-# strip_line <line>: true when the GebLang/ arm's third pass deletes
-# <line> outright: an import line naming `GebMeta` or
-# `Lean.DocString.Syntax`, in any of the four import forms, with or
-# without a trailing comment; or the `mathlib_linters` command line,
-# with or without a trailing comment, the same tolerance the import
-# forms get. None of the three has meaning upstream: `GebMeta` and
-# its two import lines exist only to reach mathlib's linters from
-# inside a `doc.verso` module (docs/rules/lean-coding.md § Literate
-# modules), the `Lean.DocString.Syntax` import is an artifact of the
-# Verso role markup the copy loop's docstring gate scopes role_strip
-# to, and the command itself is registered nowhere upstream. Anchored
-# the way the import-prefix rewrite is: an import line by the
-# import-keyword regex the script already binds once, the command
-# line by `mathlib_linters_re`, anchored the same way at both ends so
-# a trailing comment is admitted but a bare mention mid-line is not. A
-# docstring line that merely contains the word `GebMeta`, or an
-# English sentence whose first word is `import`, is prose and is not
-# this function's concern, and neither is a fenced code block's body
-# line reading `mathlib_linters` or `import GebMeta`: the copy loop's
-# docstring gate keeps this function from being called on any line
-# inside a docstring at all, a real import line or command line never
-# being inside one.
-mathlib_linters_re='^mathlib_linters[[:space:]]*(--.*)?$'
+# strip_line <line>: true when the strip pass deletes <line> outright:
+# an import line naming `Lean.DocString.Syntax`, in any of the four
+# import forms, or the `set_option doc.verso true` command line, each
+# with or without a trailing comment. Neither has meaning upstream:
+# both are what a literate module carries so that its docstrings are
+# checked Verso markup (docs/rules/lean-coding.md § Literate modules),
+# and the copy loop converts that markup to Markdown. The import line
+# is anchored the way the import-prefix rewrite is, by the
+# import-keyword regex the script already binds once; the command line
+# by `doc_verso_re`, anchored at both ends so a trailing comment is
+# admitted but a bare mention mid-line is not. A docstring line that
+# merely contains the module's name, or an English sentence whose
+# first word is `import`, is prose and is not this function's concern,
+# and neither is a fenced code block's body line reading
+# `import Lean.DocString.Syntax`: the copy loop's docstring gate keeps
+# this function from being called on any line inside a docstring at
+# all, a real import or command line never being inside one.
+doc_verso_re='^set_option[[:space:]]+doc\.verso[[:space:]]+true[[:space:]]*(--.*)?$'
 strip_line() {
-  [[ "$1" =~ $mathlib_linters_re ]] && return 0
+  [[ "$1" =~ $doc_verso_re ]] && return 0
   if [[ "$1" =~ $import_line_re ]]; then
     case "${BASH_REMATCH[4]}" in
-      GebMeta|Lean.DocString.Syntax) return 0 ;;
+      Lean.DocString.Syntax) return 0 ;;
     esac
   fi
   return 1
@@ -253,8 +247,6 @@ case "$src" in
     # open, per TODO.md § Upstream destination of core- and
     # Batteries-targeted content, and this mapping waits on its outcome.
     dst_rel="Mathlib/${src#Geb/Mathlib/}"
-    convert_roles=0
-    strip_pass=0
     rewrites='Geb.Mathlib. Mathlib.
 GebLang. Mathlib.'
     ;;
@@ -263,24 +255,18 @@ GebLang. Mathlib.'
     # consequence for the test parallel of a core- or Batteries-targeted
     # module; this mapping waits on the same TODO.md item's outcome.
     dst_rel="MathlibTest/${src#GebTests/Mathlib/}"
-    convert_roles=0
-    strip_pass=0
     rewrites='Geb.Mathlib. Mathlib.
 GebTests.Mathlib. MathlibTest.
 GebLang. Mathlib.'
     ;;
   Geb/Cslib/*)
     dst_rel="Cslib/${src#Geb/Cslib/}"
-    convert_roles=0
-    strip_pass=0
     rewrites='Geb.Cslib. Cslib.
 Geb.Mathlib. Mathlib.
 GebLang. @src'
     ;;
   GebTests/Cslib/*)
     dst_rel="CslibTests/${src#GebTests/Cslib/}"
-    convert_roles=0
-    strip_pass=0
     rewrites='Geb.Cslib. Cslib.
 GebTests.Cslib. CslibTests.
 Geb.Mathlib. Mathlib.
@@ -294,8 +280,6 @@ GebLang. @src'
       cslib) dst_rel="Cslib/${src#GebLang/}" ;;
       *)     dst_rel="Mathlib/${src#GebLang/}" ;;
     esac
-    convert_roles=1
-    strip_pass=1
     rewrites='GebLang. @src'
     ;;
   GebTests/Lang/*)
@@ -303,14 +287,6 @@ GebLang. @src'
       cslib) dst_rel="CslibTests/${src#GebTests/Lang/}" ;;
       *)     dst_rel="MathlibTest/${src#GebTests/Lang/}" ;;
     esac
-    # GebTests/Lang/ belongs to the GebTests library, which does not
-    # set doc.verso, so its docstrings are Markdown and carry no
-    # roles to convert, and it carries neither `GebMeta` nor
-    # `Lean.DocString.Syntax` (docs/rules/lean-coding.md
-    # § Literate modules), so it has nothing for the strip pass to
-    # remove either.
-    convert_roles=0
-    strip_pass=0
     rewrites='GebLang. @src
 GebTests.Lang. @test'
     ;;
@@ -369,25 +345,23 @@ mkdir -p "$(dirname "$dst")"
 # cannot contain the first shape, so the counter cannot desync on one
 # that does.
 #
-# Copy, deleting the GebLang/ arm's non-upstream lines outside any
-# docstring, rewriting each remaining import line's module path by
-# the arm's table, and converting Verso roles inside a docstring in
-# the arm that carries them. The strip pass runs before the rewrite
+# Copy, deleting the two non-upstream lines outside any docstring,
+# rewriting each remaining import line's module path by the arm's
+# table, and converting Verso roles inside a docstring. The strip pass
+# runs before the rewrite
 # table: a stripped line's module path (if any) never reaches it.
-# After a stripped line, a single immediately following blank line is
-# skipped too, so deleting a line that sits between two blank lines
-# (the `mathlib_linters` command does) does not leave two consecutive
-# blank lines behind; the flag is set on the stripped line and
-# consumed, blank or not, by the very next line, so it never survives
-# past one line's lookahead. The flag is re-armed by each stripped
-# line in turn, so this is also the normal shape of a GebLang/
-# module's output, not only a single-line edge case: a run of several
-# stripped imports followed by one blank line collapses the same way,
-# leaving the surviving import abutting whatever follows (typically
-# the module docstring). Role conversion is gated on being inside a
+# A blank line immediately following a stripped run is skipped when
+# the last line written out was itself blank, so deleting a line that
+# sits between two blank lines does not leave two consecutive blank
+# lines behind, while a run that sits between a non-blank line and a
+# blank one keeps that blank: the surviving imports stay separated
+# from the module docstring by the one blank line the source had. The
+# flag is set on each stripped line and consumed, blank or not, by
+# the very next line that is not stripped, so it never survives past
+# one line's lookahead. Role conversion is gated on being inside a
 # docstring, and an import line is never inside one, so a role in an
 # import line's trailing comment is not converted and ships as
-# literal braces, whichever arm is running.
+# literal braces.
 #
 # The read loop terminates every line, so a source with no final
 # newline gains one; upstream wants it. The rewrite is anchored to the
@@ -398,7 +372,8 @@ mkdir -p "$(dirname "$dst")"
 # longer identifier, and confines the rewrite to the module path, so a
 # prefix named in an import line's trailing comment survives as prose.
 {
-  strip_skip_blank=0
+  after_strip=0
+  last_blank=1
   depth=0
   doc_outer=0
   while IFS= read -r line || [ -n "$line" ]; do
@@ -422,16 +397,15 @@ mkdir -p "$(dirname "$dst")"
       if [ "$depth" -ge 1 ] && [ "$doc_outer" -eq 1 ]; then in_doc=1; fi
     done < <(grep -oE '/--|/-!|-/|/-' <<< "$line")
 
-    if [ "$strip_pass" -eq 1 ]; then
-      if [ "$strip_skip_blank" -eq 1 ]; then
-        strip_skip_blank=0
-        [ -z "$line" ] && continue
-      fi
-      if [ "$in_doc" -eq 0 ] && strip_line "$line"; then
-        strip_skip_blank=1
-        continue
-      fi
+    if [ "$in_doc" -eq 0 ] && strip_line "$line"; then
+      after_strip=1
+      continue
     fi
+    if [ "$after_strip" -eq 1 ]; then
+      after_strip=0
+      if [ -z "$line" ] && [ "$last_blank" -eq 1 ]; then continue; fi
+    fi
+    if [ -z "$line" ]; then last_blank=1; else last_blank=0; fi
     if [[ "$line" =~ $import_line_re ]]; then
       kw="${BASH_REMATCH[1]}"
       mod="${BASH_REMATCH[4]}"
@@ -451,7 +425,7 @@ REWRITES
     else
       out="$line"
     fi
-    if [ "$convert_roles" -eq 1 ] && [ "$in_doc" -eq 1 ]; then
+    if [ "$in_doc" -eq 1 ]; then
       printf '%s\n' "$out" | sed -E "${role_strip}"
     else
       printf '%s\n' "$out"

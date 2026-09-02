@@ -110,7 +110,7 @@ locations in this sense without being subtrees of `Geb/`.
 | `GebTests/Mathlib/` | `Mathlib.*`, `Batteries.*`, `Geb.Mathlib.*`, `GebTests.Mathlib.*`, `GebLang.*` | `Geb.Mathlib.`, `GebTests.Mathlib.`, `GebLang.` |
 | `Geb/Cslib/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `Geb.Cslib.*`, `Geb.Mathlib.*`, `GebLang.*` | `Geb.Cslib.`, `Geb.Mathlib.`, `GebLang.` |
 | `GebTests/Cslib/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `Geb.Cslib.*`, `GebTests.Cslib.*`, `Geb.Mathlib.*`, `GebLang.*` | `Geb.Cslib.`, `GebTests.Cslib.`, `Geb.Mathlib.`, `GebLang.` |
-| `GebLang/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `GebLang.*` (plus `GebMeta`, `Lean.DocString.Syntax`, and `Cslib.Init` when the file imports any `Cslib.*`) | `GebLang.` |
+| `GebLang/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `GebLang.*` (plus `Lean.DocString.Syntax`, and `Cslib.Init` when the file imports any `Cslib.*`) | `GebLang.` |
 | `GebTests/Lang/` | `Mathlib.*`, `Batteries.*`, `Cslib.*`, `GebLang.*`, `GebTests.Lang.*` (plus `Cslib.Init` when the file imports any `Cslib.*`) | `GebLang.`, `GebTests.Lang.` |
 
 `Batteries.*` is admitted to every upstream-eligible location because
@@ -127,18 +127,15 @@ such a module is not extracted to mathlib4 at all. Its destination is
 open, per `TODO.md` § Upstream destination of core- and
 Batteries-targeted content.
 
-`GebLang/`'s allowed-import list makes a fixed exception for `GebMeta`
-and `Lean.DocString.Syntax`, matched as exact module paths rather than
-as namespace prefixes, so `GebMeta.Anything` is not admitted. `GebMeta`
-supplies the `mathlib_linters` command that reaches two of mathlib's
-linter options from inside a literate-rendered module
-(`docs/rules/lean-coding.md` § Literate modules); `Lean.DocString.Syntax`
+`GebLang/`'s allowed-import list makes a fixed exception for
+`Lean.DocString.Syntax`, matched as an exact module path rather than
+as a namespace prefix, so a submodule of it is not admitted. The import
 is required of every module whose docstrings carry Verso role markup,
 because `lake shake` demands a module import what it uses and the role
-syntax records a compile-time use. Extraction removes both import lines
-along with the `mathlib_linters` command line, per
-`scripts/extract-pr.sh`'s `strip_line` function: none of the three has
-meaning upstream.
+syntax records a compile-time use
+(`docs/rules/lean-coding.md` § Literate modules). Extraction removes
+the import line, per `scripts/extract-pr.sh`'s `strip_line` function:
+it has no meaning upstream.
 
 `GebLang/` and `GebTests/Lang/` carry a conditional form of Cslib's
 `Cslib.Init` requirement: a module that imports any `Cslib.*` module,
