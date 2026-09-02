@@ -472,10 +472,10 @@ at each review of upstream-eligible content,
 
 PR descriptions, Zulip messages, GitHub issue/PR comments are
 user-authored. Mathlib's policy is unconditional ("use your own
-words"). Multi-layered enforcement: hard rule in
-`CONTRIBUTING.md` § Rules § Submission policy, PR template
-checkbox, user-review-before-push gate. The redundancy is
-intentional. Build output is not one of the layers: `scripts/`
+words"). Two enforcement layers: the rule in `CONTRIBUTING.md`
+§ Rules § Submission policy and the user-review-before-push gate.
+The redundancy is intentional. Build output is not one of the
+layers: `scripts/`
 reports what the checks found, and restating a project rule there
 would address the reader who runs the checklist as though they
 were the agent the rule binds.

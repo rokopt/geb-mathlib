@@ -1071,6 +1071,8 @@ Correcting these is a separate concern from any current branch per
   Default is to wait for friction.
 - **Author `.github/PULL_REQUEST_TEMPLATE/` for our repo**: trigger when the
   first PR against our own repo is opened (most likely the bump-PR cron).
+  Part of that work is recording the template's own-words checkbox as an
+  enforcement layer in `docs/process.md` § No LLM-drafted user-facing text.
 - **Curated `notes` / `journal` directory**: trigger if recurring ad-hoc
   explorations accumulate that don't fit `docs/`.
 - **Migrate `update.yml` from `GITHUB_TOKEN` to a PAT**: trigger if the manual
