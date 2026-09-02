@@ -45,7 +45,7 @@ For upstream-eligible subtrees, AI authoring follows
 [AGENTS.md § AI authoring (upstream-eligible work)](../../AGENTS.md):
 an agent may draft, and the user commits only after understanding
 every line, being able to justify each design decision to
-reviewers without AI, and disclosing tool use. Work under
+reviewers without AI, and disclosing tool use.
 Work under `Geb/Prototypes/` is reviewed by the user at commit
 time without that upstream justification bar.
 
@@ -77,7 +77,7 @@ to upstream quality:
    or to Cslib according to each module's own import closure
    (§ Subtree import rules).
 2. When the upstream PR is accepted and we re-pin to a fresh
-   master that includes it, migrate dependents via `jj rebase`.
+   master that includes it, migrate dependents by rebasing.
    The prototype is then removed.
 
 ## Floodgate test

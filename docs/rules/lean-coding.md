@@ -38,9 +38,9 @@ Applies whenever a `.lean` file is open or being edited.
 ## Authoritative upstream guides (mathlib)
 
 These are the binding upstream references for `Geb/Mathlib/`
-content and for mathlib-track `GebLang/` modules. Adversarial
-reviewers must check our `Geb/Mathlib/` content, and every
-mathlib-track `GebLang/` module, for violations against each:
+content and for mathlib-track `GebLang/` modules. Reviewers check
+our `Geb/Mathlib/` content, and every mathlib-track `GebLang/`
+module, for violations against each:
 
 - Contributing index:
   `https://leanprover-community.github.io/contribute/index.html`
@@ -55,8 +55,8 @@ mathlib-track `GebLang/` module, for violations against each:
 
 Bullet-point highlights extracted from each guide appear below.
 The full guides supersede this digest; re-fetch and re-verify
-on every adversarial-review round (the guides are subject to
-revision by the leanprover-community).
+at each review (the guides are subject to revision by the
+leanprover-community).
 
 ### Commit messages (from `commit.html`)
 
@@ -67,8 +67,8 @@ and documented footers) is stated once in
 `docs/rules/ci-and-workflow.md` § Commit-message convention; it
 binds every commit, not only `.lean` changes.
 
-**Adversarial-reviewer instruction**: scan every commit message
-in the plan and the actual git history for indicative or
+**Reviewer instruction**: scan every commit message on the
+branch for indicative or
 past-tense verbs ("Adds", "Carries", "Pins", "Creates", "Sets",
 "Adopted"), capitalised first letters of subjects, trailing
 periods, and out-of-list types; flag each occurrence.
@@ -99,7 +99,7 @@ periods, and out-of-list types; flag each occurrence.
   CONTRIBUTING.md § Style and references for the scoped
   exception to the generic-user-reference rule.
 
-**Adversarial-reviewer instruction**: scan our `.lean` files
+**Reviewer instruction**: scan our `.lean` files
 for indentation drift, lines exceeding 100 characters,
 multi-declaration lines, ASCII forms where mathlib uses Unicode,
 and namespace/section nesting violations.
@@ -130,7 +130,7 @@ and namespace/section nesting violations.
   `_iff_…` follow specific positional conventions; check the
   upstream guide for the full table before naming.
 
-**Adversarial-reviewer instruction**: scan our `.lean` files
+**Reviewer instruction**: scan our `.lean` files
 for ALL_CAPS or `snake_case` identifiers, namespace prefixes
 inside declarations, and non-standard operator suffixes; flag
 each occurrence with a pointer to the upstream rule.
@@ -170,7 +170,7 @@ each occurrence with a pointer to the upstream rule.
   [docs/rules/markdown-writing.md](markdown-writing.md)
   § Prose style.
 
-**Adversarial-reviewer instruction**: scan our `.lean` files
+**Reviewer instruction**: scan our `.lean` files
 for missing module/declaration docstrings, missing required
 sections in module docstrings, history-references inside
 docstrings, occurrence counts, and post-hoc axiom-celebration.
@@ -178,9 +178,9 @@ docstrings, occurrence counts, and post-hoc axiom-celebration.
 ## Authoritative upstream guides (CSLib)
 
 These are the binding upstream references for `Geb/Cslib/`
-content and for Cslib-track `GebLang/` modules. Adversarial
-reviewers must check our `Geb/Cslib/` content, and every
-Cslib-track `GebLang/` module, against the contribution guide:
+content and for Cslib-track `GebLang/` modules. Reviewers check
+our `Geb/Cslib/` content, and every Cslib-track `GebLang/` module,
+against the contribution guide:
 
 - Contribution guide:
   `https://github.com/leanprover/cslib/blob/main/CONTRIBUTING.md`
@@ -501,8 +501,8 @@ so the restriction is enforced only by grep and by review.
 
 - **`sorry`** is permitted between commits as a stand-in while
   working with a development tool that requires placeholders
-  during proof development (e.g.,
-  `lean4:sorry-filler-deep`, `lean4:autoprove`). It is never
+  during proof development (e.g., the `lean4` skill's
+  `sorry-filler-deep` and `autoprove` passes). It is never
   permitted in committed code.
 - **`admit`** is never permitted, not even between commits.
   Use `sorry` (audited as above) when a placeholder is needed.
@@ -611,34 +611,40 @@ docstrings are written for both.
 
 ## Lean 4 skill workflows
 
-The `lean4` skill (installed from `lean4-skills` at
-`~/.agents/skills/lean4/` or equivalent) provides named workflows
-for the recurring Lean development activities. Select by activity.
+Where the `lean4` skill (from `lean4-skills`) is installed, it
+provides named workflows for the recurring Lean development
+activities. Select by activity. The conditional reading of
+[AGENTS.md](../../AGENTS.md) § Skills and MCP servers applies to
+this section and the next.
 
 | Activity | Workflow | When |
 | --- | --- | --- |
 | Drafting from informal math | `draft`, `formalize`, `autoformalize` | Try `autoformalize` early |
 | Proving a stated lemma | `prove`, `autoprove` | Try `autoprove` when stuck |
 | Filling stubborn `sorry`s | `sorry-filler-deep` | When fast pass fails or proofs are complex |
+| Suspecting a statement is false | `disprove` | Before abandoning a goal as unprovable |
+| Removing a nonconstructive axiom | `axiom-eliminator` | When `lake lint` reports one |
 | Polishing a proof | `golf` | Post-process before commit |
 | Refactoring existing Lean code | `refactor` | During refactors |
 | Pre-commit Lean review | `review` | Before any Lean commit |
 | Exploring mathlib | `learn` | As needed |
-| Diagnosis | `doctor` | As needed |
+| Diagnosis | `diagnose` | As needed |
 | Save progress | `checkpoint` | At milestones |
 
-**Invocation form is host-dependent.** On Claude Code with the
-`lean4-skills` plugin installed, these are slash commands
-(`/lean4:prove`, `/lean4:autoprove`, etc.). On other harnesses
-that load the skill but not the plugin (e.g. OpenCode), invoke
-them in natural language ("run the guided `prove` workflow on
-`Foo.lean:42`"). The underlying cycle engine and outputs are the
-same; only the surface syntax differs.
+**Invocation form is host-dependent.** A harness that installs the
+skill as a plugin exposes the workflows as commands
+(`lean4:prove`, `lean4:autoprove`, etc.); one that loads the skill
+alone takes them in natural language ("run the guided `prove`
+workflow on `Foo.lean:42`"). The underlying cycle engine and
+outputs are the same; only the surface syntax differs. The table
+is indicative: list the commands the installed version provides
+before selecting one, as [AGENTS.md](../../AGENTS.md) § Skills and
+MCP servers directs for every skill.
 
 ## `lean-lsp` MCP search and proof tools
 
-The `lean-lsp` MCP server exposes these search and proof tools to
-any harness that loads it. Select by question.
+Where the `lean-lsp` MCP server is installed, it exposes these
+search and proof tools. Select by question.
 
 | Need | Tool |
 | --- | --- |

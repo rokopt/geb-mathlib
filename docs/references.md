@@ -45,15 +45,15 @@ when transcribing).
   published mathematics — arXiv, the Stacks Project, ProofWiki, the
   Open Logic Project, the CRing Project, Stacks and Moduli, the
   HoTT book, and An Infinitely Large Napkin — by semantic
-  similarity. It is available in-session as the `theoremsearch`
-  MCP, whose single tool `theorem_search` takes a natural-language
+  similarity. Where the `theoremsearch` MCP is installed, its
+  single tool `theorem_search` takes a natural-language
   `query` and returns, per hit, the source-specific paper
   identifier (an arXiv id for arXiv hits), authors, year,
   `theorem_type`, the LaTeX statement `body`, a plain-language
   `slogan`, and a similarity score; optional filters include
   `sources`, `authors`, `types`, `year_range`, `citation_range`,
-  and `n_results`. Use it during brainstorming and spec phases to
-  locate a published statement and its searchable identifier, as
+  and `n_results`. Use it before transcribing published mathematics
+  to locate the statement and its searchable identifier, as
   `CONTRIBUTING.md` § Cite the literature when transcribing
   requires. It indexes the informal literature, not mathlib; for
   formal statements use Loogle and the `lean_*` tools. The endpoint

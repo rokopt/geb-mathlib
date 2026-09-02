@@ -6,16 +6,16 @@
 - [Repository structure](#repository-structure)
 - [Code is cost](#code-is-cost)
 - [Document only the persistent](#document-only-the-persistent)
-- [Specs and plans are transient](#specs-and-plans-are-transient)
+- [Modes of operation](#modes-of-operation)
 - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
 - [Constructive-only discipline](#constructive-only-discipline)
 - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
 - [Documentation under `docs/`](#documentation-under-docs)
-- [Adversarial review](#adversarial-review)
 - [Verify agent claims](#verify-agent-claims)
 - [Two-track development](#two-track-development)
 - [Floodgate test](#floodgate-test)
 - [Alternative formalization targets](#alternative-formalization-targets)
+- [Version control follows the checkout](#version-control-follows-the-checkout)
 - [main and integration](#main-and-integration)
 - [Mathlib bump procedure](#mathlib-bump-procedure)
 - [jj bump procedure](#jj-bump-procedure)
@@ -82,7 +82,7 @@ They should not describe transient process artifacts such as:
   to understand the comments.
 - **In-progress notes.** "TODO: rewrite this when we have time."
   "Try this approach if X fails." Active work belongs in
-  `TODO.md` or the workstream's spec/plan, not in code comments.
+  `TODO.md`, not in code comments.
 - **Counts of occurrences.** "Of the module's 54 theorems, 13
   depend on no axioms." "209 anonymous `example`s remain."
   A count over a population the project keeps adding to is
@@ -103,26 +103,37 @@ The principle is: when this codebase is years old, the comments
 should still read as useful context. Anything that won't survive
 that test belongs elsewhere.
 
-## Specs and plans are transient
+## Modes of operation
 
-The file-level corollary of "Document only the persistent". A spec
-is a worked-out route to a target state; a plan is the task
-sequence that reaches it. Once the change is complete, everything
-persistent has moved into the live code, its `docs/` entries, and
-any `TODO.md` notes on follow-on work; the spec and plan retain
-only the record of how that state was reached. They are therefore
-removed in the final commits of the topic branch (`CONTRIBUTING.md`
-§ Concern shape gives the branch ordering), leaving no spec or plan
-file on an active branch.
+`AGENTS.md` § Modes of operation names prototyping, code review and
+pair programming, and no mode begins with a written specification
+or plan. A mathematical development is not foreseeable in prose:
+the questions a construction raises are settled by writing and
+compiling Lean, so a specification detailed enough to follow is
+the implementation restated in a form that does not type-check,
+and the remainder of such a document restates the process rules
+that bind every workstream, which `CONTRIBUTING.md`, `AGENTS.md`
+and `docs/rules/` state once. Prototyping puts the exploration
+where it is checked, under `Geb/Prototypes/`, and the versioned
+prototype is the record of how a question was settled.
 
-Two costs motivate the removal. A spec or plan left in the working
-tree presents superseded intentions as if current — later work may
-have changed direction without rewriting the original plan. And it
-forces every reader to reconcile the plan against the code, an
-obligation that grows as the code evolves away from it. The git
-history preserves the spec and plan in full for anyone tracing how
-a decision was reached; the active branch carries only what the
-code currently is.
+The prototyping mode's stopping rule, and its instruction to leave
+the code in place, exist because the judgement that a concept is
+ill-specified, contradictory or out of practical reach is the
+user's to make, and the agent's evidence for it is the code that
+reached the difficulty.
+
+Code review apportions angles among fresh-context reviewers because
+a reviewer that inherits another's conclusions inherits its blind
+spots; the discipline catches what the author cannot see. A finding
+states its kind rather than a grade on a scale because a scale's
+distinctions are too vague to act on, whereas the kind of problem
+determines the action: an incorrect proof is repaired, a choice
+between standard names is the author's to make.
+
+Pair programming bounds the size of each turn because the user is
+attending: a long unattended development is reviewed all at once,
+which is the prototyping mode's shape, not this one's.
 
 ## Illustrate only with the archetypal
 
@@ -189,28 +200,13 @@ rule that binds development; `docs/references.md` catalogues
 external library and mathematical references organised by topic.
 Both are reader-facing alongside `docs/index.md`.
 
-## Adversarial review
-
-Specs and plans go through fresh-context adversarial review until
-convergence (no blockers, no serious findings), before the user
-reviews the artifact and before execution begins. The reviewer is a
-NEW general-purpose `Agent` invocation per round (not
-`SendMessage` to a continuing agent), reading the artifact at the
-given path without the authoring conversation's context, and
-consulting authoritative sources as § Verify agent claims
-requires. Findings are categorised blocker / serious / minor
-/ cosmetic-taste; the author responds in writing to every finding
-(fix / defer with rationale / reject as cosmetic-taste). The
-discipline catches bugs the author cannot see; the fresh context
-ensures the reviewer is not subject to the author's blind spots.
-
 ## Verify agent claims
 
 Any factual claim about an external system (mathlib, Lean,
 third-party tools, jj, GitHub conventions, library APIs) is
 provisional until verified against authoritative sources.
 Committed artifacts include the citation alongside the claim.
-Adversarial reviewers explicitly check for unverified claims. AI-agent memory
+Reviewers explicitly check for unverified claims. AI-agent memory
 is unreliable for facts about external systems; verification at
 use time keeps committed content trustworthy.
 
@@ -225,7 +221,7 @@ not upstream-eligible because its form is still open, and it
 stops being a prototype when the form closes. Code is ported into
 `Geb/Mathlib/`, `Geb/Cslib/` or `GebLang/` when its expression is
 settled and it reaches upstream quality, with dependents migrated
-via `jj rebase` after the upstream PR is accepted. The split lets
+by rebasing after the upstream PR is accepted. The split lets
 velocity and upstream-readiness each get the discipline that
 suits them, without one blocking the other. It is driven by
 whether a module's expression is settled, and by
@@ -304,6 +300,21 @@ targets' requirements; that discipline is not relaxed to match a
 looser target. These remain fallbacks: mathlib and CSLib are the
 primary targets, and the two-track workflow
 (§ Two-track development) is unchanged.
+
+## Version control follows the checkout
+
+`jj` with its git backend writes ordinary git commits and leaves no
+metadata that tells a `jj` user's work from a `git` user's, so a
+contributor's choice between them is invisible to the repository
+and is not the repository's to make. `AGENTS.md` § Version control
+follows the checkout therefore has an agent detect the choice from
+the checkout rather than assume one. The detection compares
+`jj root` with `git rev-parse --show-toplevel` because a git
+worktree nested inside a colocated repository is the case a bare
+`.jj/` lookup gets wrong: `jj root` walks up to the parent's
+`.jj/`, while the worktree itself is git's. The mutating-git hook
+is opt-in for the same reason: installed unconditionally, it would
+prompt a `git` user on every commit.
 
 ## main and integration
 
@@ -447,9 +458,10 @@ briefly prohibited new-contributor LLM code (PR #827,
 reworded the section (PR #850, 2026-05-27), and added the
 label-by-comment mechanism for the `LLM-generated` label (PR #855,
 2026-05-28). The linked source
-pages are the authority; re-check them periodically (the
-adversarial-review re-fetch in `AGENTS.md` § Adversarial review
-is one such checkpoint), and when they change, update
+pages are the authority; re-check them periodically (the re-fetch
+at each review of upstream-eligible content,
+`docs/rules/lean-coding.md` § Authoritative upstream guides
+(mathlib), is one such checkpoint), and when they change, update
 `CONTRIBUTING.md`, `AGENTS.md`, and this file together.
 
 ## No LLM-drafted user-facing text

@@ -5,13 +5,17 @@
 
 - [Audience](#audience)
 - [Agent-specific rules](#agent-specific-rules)
-  - [No `jj git push` without user line-by-line review](#no-jj-git-push-without-user-line-by-line-review)
-  - [Adversarial review of specs and plans](#adversarial-review-of-specs-and-plans)
+  - [Version control follows the checkout](#version-control-follows-the-checkout)
+  - [No push without user line-by-line review](#no-push-without-user-line-by-line-review)
   - [Verify agent claims](#verify-agent-claims)
   - [No LLM-drafted text in mathlib-facing channels (enforcement)](#no-llm-drafted-text-in-mathlib-facing-channels-enforcement)
   - [AI authoring (upstream-eligible work)](#ai-authoring-upstream-eligible-work)
   - [Aristotle (external LLM prover)](#aristotle-external-llm-prover)
-  - [Sequential thinking](#sequential-thinking)
+- [Modes of operation](#modes-of-operation)
+  - [Prototyping](#prototyping)
+  - [Code review](#code-review)
+  - [Pair programming](#pair-programming)
+- [Skills and MCP servers](#skills-and-mcp-servers)
 - [Path-scoped rules](#path-scoped-rules)
   - [When editing .lean files](#when-editing-lean-files)
   - [When editing files under Geb/Mathlib/, Geb/Cslib/ or GebLang/](#when-editing-files-under-gebmathlib-gebcslib-or-geblang)
@@ -38,24 +42,29 @@ Work in upstream-eligible subtrees is governed by
 governs LLM-generated code (mandatory disclosure and line-by-line
 understanding).
 
-### No `jj git push` without user line-by-line review
+### Version control follows the checkout
 
-This includes first-creation pushes, force-pushes,
-branch-deletes, tag-pushes.
+With its git backend, `jj` leaves no metadata that distinguishes
+its commits from git's, so the repository does not mandate either.
+An agent uses whichever the checkout it is working in was created
+with. The test: `jj` is in use when `jj root` succeeds and names
+the directory `git rev-parse --show-toplevel` names, or git names
+none; otherwise `git` is in use. The two agree at the root of a
+colocated repository, and a workspace added with `jj workspace add`
+carries its own `.jj/` and no `.git`; a git worktree of a colocated
+repository carries `.git` and no `.jj/`, so `jj root` fails there
+or, for a worktree nested inside the repository, names the parent
+instead. Where `jj` is in use, every state-mutating operation goes
+through it, since a colocated checkout's git index is an export of
+jj's state that a raw mutating `git` command desynchronises.
+`scripts/hooks/block-mutating-git.sh` is a Claude Code hook a
+contributor may install locally to enforce that (see its header);
+the repository does not install it.
 
-### Adversarial review of specs and plans
+### No push without user line-by-line review
 
-Specs and plans go through fresh-context adversarial review
-rounds until convergence — no blocker and no serious findings —
-before the user reviews the artifact and before execution
-begins. Each round is a new general-purpose `Agent` invocation,
-never a `SendMessage` to a continuing agent, so no round
-inherits the previous reviewer's conclusions. Findings are
-categorised blocker / serious / minor / cosmetic-taste; the
-author responds in writing to every finding: fix, defer with
-rationale, or reject as cosmetic-taste. Re-fetch the upstream
-guides on every round; they are subject to upstream revision.
-See [docs/process.md](docs/process.md) § Adversarial review.
+Neither `git push` nor `jj git push`. This includes first-creation
+pushes, force-pushes, branch-deletes, tag-pushes.
 
 ### Verify agent claims
 
@@ -66,8 +75,8 @@ locate and verify it against the primary source using available
 paper-search tooling (e.g. an arXiv search) before recording the
 citation identifier required by
 [CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md).
-The `theoremsearch` MCP (`theorem_search`) locates published
-statements and their searchable identifiers across the informal
+Where installed, the `theoremsearch` MCP (`theorem_search`) locates
+published statements and their searchable identifiers across the informal
 literature (arXiv, the Stacks Project, ProofWiki, and others); see
 [docs/references.md](docs/references.md) § Searchable.
 
@@ -94,23 +103,25 @@ If Harmonic's Aristotle is available in the environment (the
 `aristotle` CLI plus an API key), an agent may use it to formalize
 and prove Lean. Consider it when a task exceeds the in-editor
 tooling: to formalize a definition or theorem available only in a
-published paper, or when a goal resists the `lean4:autoprove` and
-`lean4:sorry-filler-deep` passes.
+published paper, or when a goal resists the `lean4` skill's
+`autoprove` and `sorry-filler-deep` passes.
 
 For mathematics available only in published sources, locate the
-reference with `theoremsearch` (`theorem_search`) or
-`arxiv-mcp-server` (`search_papers`, `read_paper`) — see
+reference with the `theoremsearch` (`theorem_search`) or
+`arxiv-mcp-server` (`search_papers`, `read_paper`) MCP where
+installed — see
 [CONTRIBUTING.md § Cite the literature when transcribing](CONTRIBUTING.md)
-— then draft the Lean with the `lean4:autoformalize` workflow
-(end-to-end formalization from the informal source) or
-`lean4:formalize` (interactive drafting plus proving); see
+— then draft the Lean with the `lean4` skill's `autoformalize`
+workflow (end-to-end formalization from the informal source) or
+`formalize` (interactive drafting plus proving); see
 [docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4
 skill workflows. Escalate formalizations or proofs that exceed
 the in-editor tooling to Aristotle (below).
 
-It is a metered hosted service,
-so the agent asks the contributor whether to use it before
-invoking it, even when it is available. Its output is
+It is a metered, rate-limited hosted service whose calls add
+latency, so before embarking on a project the agent asks the user
+whether to use it in that project, even when it is available, and
+does not invoke it otherwise. Its output is
 LLM-generated code, governed by the
 same policy as any other AI tool
 ([CONTRIBUTING.md § Submission policy](CONTRIBUTING.md)): it may
@@ -121,15 +132,117 @@ under the repository's toolchain and constructive discipline
 before use. See [docs/aristotle.md](docs/aristotle.md) for
 invocations and operational notes.
 
-### Sequential thinking
+## Modes of operation
 
-The `sequential-thinking` MCP is available to any agent whose
-harness loads it. Consider it when a task benefits from
-explicit multi-step reasoning: hypothesis generation and
-verification, branching exploration, or revision of earlier
-steps. It complements the `superpowers:brainstorming` and
-`superpowers:writing-plans` skills during the corresponding
-phases.
+The user directs an agent in one of the modes below, or in any
+other mode the user describes. No mode begins with a written
+specification or plan: a mathematical development is settled by
+writing and compiling Lean, so planning what code to write is done
+in the session, with a `brainstorming` skill and the
+`sequential-thinking` MCP where installed (§ Skills and MCP
+servers). See [docs/process.md](docs/process.md) § Modes of
+operation for the rationale.
+
+### Prototyping
+
+The agent resolves a programming or mathematical question by
+writing and compiling Lean under `Geb/Prototypes/`, continuing
+through an extended development until it has a proven-correct
+implementation of the concept in question. The code is committed
+whatever its fate: it may be discarded later, or polished and
+ported to another subtree
+([docs/rules/upstream-eligible.md](docs/rules/upstream-eligible.md)
+§ Two-track development), and either way it is versioned for
+future reference.
+
+The agent stops short of that only on coming to suspect that the
+concept cannot be implemented, or not practically: it may be
+ill-specified or contradictory, or require infrastructure that
+neither mathlib, Cslib nor this repository has, such as the
+formalization of a large mathematical theory. It then explains to
+the user why it suspects so, leaves the code in place for the user
+to examine, and lets the user decide how to proceed.
+
+### Code review
+
+The agent examines changes the user has made, one or more
+changesets, and proposes changes from many angles, which may be
+apportioned among subagents (the `pr-review-toolkit` skill's
+agents where installed), each a fresh context that inherits no
+other reviewer's conclusions. Mathematical and implementation
+correctness come first; every other property the coding rules
+demand is also checked: mathlib, CSLib and local style compliance
+([docs/rules/lean-coding.md](docs/rules/lean-coding.md), including
+its reviewer instructions), higher-order constructions over
+piece-by-piece ones, refactoring of duplication, the constructive
+discipline, and the rest. A finding states what kind of problem it
+is rather than a severity grade: that a proof or definition is
+mathematically incorrect says everything a grade would; and where
+a concept has more than one standard name, the finding says so
+and says which name the reviewer judges to have the better
+connotations in that context, which makes it a matter of taste
+without a label. The user decides on each finding.
+
+### Pair programming
+
+The agent and the user alternate in a live session. As the user
+requests, the agent reviews a short chunk of the user's code and
+then waits for the next, or writes a short chunk the user asks for
+and proposes it for the user's review. The user is attending, so
+the agent writes a small amount of code per turn, in contrast to
+prototyping, where it may work unattended for a long time.
+
+## Skills and MCP servers
+
+Nothing in this repository assumes a skill or MCP server is
+installed. Every mention of one, in this file and in the files it
+references, reads: if it is installed, consider using it in the
+situations named and in any others where it applies. Where one is
+not installed, work with the tooling that is, and do not report
+its absence to the user. The one exception is the `lean4` skill:
+it is the one skill known to target Lean, the project's primary
+language, so an agent that finds it absent says so once, as a
+suggestion, and then proceeds.
+
+The invocation form is host-dependent, and a skill's command set
+changes between versions, so before using a skill, list the
+commands it currently provides and select from that list; the
+names below are indicative. Select by activity.
+
+- Lean code work, proving, and mathlib search: the `lean4` skill's
+  workflows ([docs/rules/lean-coding.md](docs/rules/lean-coding.md)
+  § Lean 4 skill workflows) and the `lean-lsp` MCP's search and
+  proof tools (§ `lean-lsp` MCP search and proof tools).
+- A finite combinatorial question — whether a bounded instance has
+  a satisfying assignment, a counterexample, or an optimum — before
+  attempting a Lean proof of it or after the `lean4` skill's
+  `disprove` finds no refutation: the `MCP Solver` MCP
+  (`MCP_Solver`), which states the question as a constraint model
+  and solves it.
+- A fact about the project or the user's preferences that should
+  survive the session: the `memory` MCP, a knowledge graph read at
+  the start of a session and written when the user asks that
+  something be remembered.
+- A defect or missing workflow in the `lean4` skill, or an insight
+  its maintainers would want: the `lean4-contribute` skill drafts
+  a GitHub issue for the `lean4-skills` repository. On producing
+  the draft, the agent reminds the user that the text is a summary
+  for the user, and recommends that they rewrite it in their own
+  words before filing, so that it complies with mathlib's
+  own-words standard (§ No LLM-drafted text in mathlib-facing
+  channels) whichever channel it reaches.
+- Reviewing changes: the `pr-review-toolkit` skill, whose agents
+  each review from one angle.
+- Writing or reviewing any code: the `ponytail` skill, which holds
+  to the minimal solution that works, the discipline
+  [CONTRIBUTING.md](CONTRIBUTING.md) § Code is cost states.
+- Literature search and citation: the `theoremsearch` MCP
+  (`theorem_search`) and the `arxiv-mcp-server` MCP
+  (`search_papers`, `read_paper`). See § Verify agent claims.
+- Planning what code to write: a `brainstorming` skill, and the
+  `sequential-thinking` MCP where a task benefits from explicit
+  multi-step reasoning: hypothesis generation and verification,
+  branching exploration, or revision of earlier steps.
 
 ## Path-scoped rules
 

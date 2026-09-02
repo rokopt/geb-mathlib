@@ -5,9 +5,6 @@
 
 - [Audience](#audience)
 - [Rules](#rules)
-- [Phase-driven workflow](#phase-driven-workflow)
-- [Tooling](#tooling)
-- [When to consider creating a project-specific skill](#when-to-consider-creating-a-project-specific-skill)
 - [References](#references)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -18,56 +15,22 @@ This file binds Claude Code. It supplements
 [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md),
 which apply to every contributor and every AI agent
 respectively; the rules below are the Claude-specific additions.
+Skill and MCP guidance is agent-generic and lives in
+[AGENTS.md](AGENTS.md) § Skills and MCP servers.
 
 @AGENTS.md
 @CONTRIBUTING.md
 
 ## Rules
 
-- **No raw mutating `git` subcommands.** The PreToolUse hook at
-  `scripts/hooks/block-mutating-git.sh` is an allow-list of read-only
-  forms; mutating forms (and unknown forms) trigger a permission
-  prompt. Use `jj` for state-mutating operations.
-
-## Phase-driven workflow
-
-| Phase | Always-on skill | Helper |
-| --- | --- | --- |
-| Brainstorming | `superpowers:brainstorming` | — |
-| Writing-plan | `superpowers:writing-plans` | — |
-| Executing-plan | `superpowers:executing-plans` (or `superpowers:subagent-driven-development`) | phase-relevant Lean skills |
-| Lean code work, mathlib search, literature search and citation | see [docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Lean 4 skill workflows and § `lean-lsp` MCP search and proof tools; literature search uses `theoremsearch` (`theorem_search`), `arxiv-mcp-server` (`search_papers`, `read_paper`), and `deep-research` for multi-source cited surveys | `lean-lsp`, `serena` |
-| Pre-commit | `superpowers:verification-before-completion` | — |
-| Receiving review | `superpowers:receiving-code-review` | — |
-
-The `superpowers` brainstorming, writing-plans, and
-executing-plans skills write spec and plan files under
-`docs/superpowers/specs/` and `docs/superpowers/plans/` and leave
-them in the working tree. Those files are spec and plan documents
-like any other: the lifespan rules in
-[CONTRIBUTING.md](CONTRIBUTING.md) § Concern shape apply, so remove
-them in the final commits of the topic branch.
-
-## Tooling
-
-- Skills: `superpowers:*`, `lean4:*`, `claude-md-management:*`,
-  `code-review:*`, `pr-review-toolkit:*`, `commit-commands:*`,
-  `security-review`, `deep-research`; plus
-  `dispatching-parallel-agents`, `systematic-debugging`,
-  `test-driven-development`, `remember`, `session-report`,
-  `fewer-permission-prompts`, `claude-automation-recommender`
-  (one-shot).
-- MCPs: `lean-lsp`, `serena`, `arxiv-mcp-server`. `session-report` and
-  `claude-automation-recommender` are one-shot health checks worth
-  running at workstream boundaries.
-
-## When to consider creating a project-specific skill
-
-If recurring patterns accumulate that don't fit `CONTRIBUTING.md`,
-`AGENTS.md`, `CLAUDE.md`, `docs/process.md`, `docs/rules/*.md`,
-or existing `.claude/rules/*.md`, use
-`skill-creator:skill-creator` to generate a `geb-development`
-skill. Default is to wait for friction.
+- **Optional `jj` insurance.** `.claude/settings.json` installs
+  SessionStart hooks only. `scripts/hooks/block-mutating-git.sh`, a
+  PreToolUse hook that turns any mutating `git` form into a
+  permission prompt in a `jj` checkout, is not installed; a
+  contributor who wants that insurance adds it to
+  `.claude/settings.local.json` as the script's header shows.
+  Which VCS an agent uses is decided by
+  [AGENTS.md](AGENTS.md) § Version control follows the checkout.
 
 ## References
 

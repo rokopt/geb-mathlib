@@ -14,7 +14,6 @@
   - [Style and references](#style-and-references)
   - [Constructive-only](#constructive-only)
   - [Floodgate test](#floodgate-test)
-  - [Each phase produces an artifact](#each-phase-produces-an-artifact)
 - [Repo structure](#repo-structure)
 - [Tooling](#tooling)
 - [References](#references)
@@ -42,7 +41,12 @@ fan-in view of `main` plus active topic branches.
 
 ## Setup
 
-Suggested steps to run after cloning the repository. The jj
+Suggested steps to run after cloning the repository. Either `git`
+or `jj` serves as the working VCS; with its git backend, `jj` is
+indistinguishable to other contributors, and an agent follows
+whichever the checkout uses
+([AGENTS.md](AGENTS.md) § Version control follows the checkout).
+Steps 1 to 3 apply to a contributor who chooses `jj`. The jj
 configuration below is recommended local config; the project
 does not run config commands on a contributor's behalf.
 
@@ -61,10 +65,11 @@ does not run config commands on a contributor's behalf.
    `git.private-commits = 'conflicts()'` makes `jj git push -b
    <name>` fail on a conflict commit (which would be rejected
    in a submitted PR).
-4. Configure your per-developer `~/.config/jj/config.toml`
-   `[signing]` block (`behavior = "own"`,
-   `backend = "gpg"` or `"ssh"`, `key = "..."`) so commits are
-   signed.
+4. Configure commit signing: under `jj`, the per-developer
+   `~/.config/jj/config.toml` `[signing]` block
+   (`behavior = "own"`, `backend = "gpg"` or `"ssh"`,
+   `key = "..."`); under `git`, `commit.gpgsign`, `gpg.format` and
+   `user.signingkey`.
 5. Install the Lean toolchain via `elan` (the toolchain version
    is read from `lean-toolchain`).
 6. Run `lake exe cache get` then `lake build` to verify the
@@ -81,11 +86,11 @@ does not run config commands on a contributor's behalf.
 1. Read this file from top to bottom; the rules here bind every
    contribution. If you use an AI agent, also read `AGENTS.md`;
    if you use Claude Code, also read `CLAUDE.md`.
-2. Pick a workstream from `TODO.md` (or propose a new one and
-   brainstorm a spec following the process described in
-   `docs/process.md`).
-3. Develop on a topic branch (`feat/<topic>`, `fix/<topic>`, etc.);
-   use `jj` (the working VCS).
+2. Pick a workstream from `TODO.md`, or propose a new one. If you
+   direct an AI agent, `AGENTS.md` § Modes of operation names ways
+   to do so.
+3. Develop on a topic branch (`feat/<topic>`, `fix/<topic>`, etc.)
+   with `git` or `jj`.
 4. Run `scripts/pre-push.sh`, or `scripts/pre-push-full.sh` when the
    change touches the build system itself, and have a contributor (or
    yourself) review the diff line-by-line before pushing.
@@ -98,25 +103,6 @@ does not run config commands on a contributor's behalf.
   find code worth refactoring outside the current branch's scope,
   create a separate branch for it rather than bundling it with
   unrelated work.
-
-Each feature's spec, plan, and code co-evolve on the same topic
-branch, but only the code and its persistent documentation are
-permanent. Specs and plans are transient: they record how the
-current state was reached, not what it is, so they belong in
-history, not on an active branch. The branch is ordered
-accordingly:
-
-1. Commits adding the spec and plan (and their adversarial-review
-   iterations).
-2. Commits implementing the change, including its persistent
-   documentation under `docs/` and any `TODO.md` notes on
-   follow-on work.
-3. Commits removing the spec and plan.
-
-After merge to `main`, the spec and plan remain reachable in
-history but are absent from the working tree, so no active branch
-presents superseded decisions as current. See `docs/process.md`
-§ Specs and plans are transient.
 
 ### Code is cost
 
@@ -145,12 +131,10 @@ presents superseded decisions as current. See `docs/process.md`
   its contracts, non-obvious external constraints. They do not
   describe transient process artifacts: how the code used to be,
   what testing iteration discovered an issue, which task in our
-  plan produced a file, or similar. Specs and plans are themselves
-  transient process artifacts in this sense (see § Concern shape).
-  A count over a population the project keeps adding to is
-  transient in the same way — every branch adding a member
-  falsifies it — so name the members or state the property they
-  share rather than counting them.
+  plan produced a file, or similar. A count over a population the
+  project keeps adding to is transient in the same way — every
+  branch adding a member falsifies it — so name the members or
+  state the property they share rather than counting them.
   See `docs/process.md` § Document only the persistent.
 
 ### Submission policy
@@ -175,14 +159,13 @@ presents superseded decisions as current. See `docs/process.md`
   mathlib's policy and unchanged by the code policy above.
 - **Cite the literature when transcribing.** Every definition or
   theorem taken from published mathematics carries a literature
-  reference with a searchable identifier in its plan, spec, and
-  Lean source. Each workstream's brainstorming-phase spec marks
-  each definition as transcription or novel. (Comments, however,
-  do not. Comments only cite literary context, either stating
-  what is being transcribed, or known context for what is being
-  defined if it is not itself a transcription.) In `.lean` files,
-  citations live in the module docstring's `## References`
-  section or inside the declaration's `/-- ... -/` docstring. The
+  reference with a searchable identifier in its Lean source. A
+  docstring cites literary context only: what is being
+  transcribed, or, for a definition that is not itself a
+  transcription, the known context for what is being defined. In
+  `.lean` files, citations live in the module docstring's
+  `## References` section or inside the declaration's `/-- ... -/`
+  docstring. The
   bibliographic detail for each cited work lives once in
   `docs/references.bib`, keyed by a citation key; docstrings refer
   to a work by that key in `[Key]` form (mathlib's convention), so
@@ -237,14 +220,6 @@ upstream-eligible location;
 direct-import lists cannot see. Extraction is dependency-ordered
 through `GebLang/`, each module retargeted by its own import closure.
 
-### Each phase produces an artifact
-
-Every phase of a workstream leaves a durable artifact: brainstorming
-produces a spec, planning produces a plan, and implementation
-produces the code and its `docs/` entries. The spec and plan are
-transient (see § Concern shape); the code and its documentation
-persist. A phase is not complete until its artifact exists.
-
 ## Repo structure
 
 `Geb/Mathlib/*`, `Geb/Cslib/*` and `GebLang/*` upstream-eligible |
@@ -255,7 +230,8 @@ view; topic branches per PR-candidate.
 
 ## Tooling
 
-- VCS: `jj` v0.41+ in colocated mode; lease-protected pushes.
+- VCS: `git`, or `jj` v0.41+ in colocated mode; lease-protected
+  pushes.
 - Build: `lake` (the mathlib `rev` pin is bumped by the
   `update.yml` cron).
 - CI: GitHub Actions via `leanprover/lean-action@v1`; mathlib bumps
