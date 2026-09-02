@@ -86,8 +86,9 @@ assert_case "link to removed transient note" 1 "docs/notes/design.md" outlived-n
 assert_repo_case() {
   local name="$1" expected_exit="$2" expected_substr="$3" root="$4"
   checked=$((checked + 1))
-  mkdir -p "$root/scripts"
+  mkdir -p "$root/scripts/lib"
   cp "$checker" "$root/scripts/check-md-links.sh"
+  cp "$repo_root/scripts/lib/vcs.sh" "$root/scripts/lib/vcs.sh"
   local output exit_code
   output="$(cd "$root" && bash scripts/check-md-links.sh 2>&1)"
   exit_code=$?
