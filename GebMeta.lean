@@ -7,29 +7,21 @@ module
 
 public meta import Batteries.Tactic.Lint.Basic
 public meta import Lean.Util.CollectAxioms
-public meta import Lean.Elab.ElabRules
 
 /-!
-# Axiom-hygiene linter and mathlib linter options
+# Axiom-hygiene linter
 
 `detectNonstandardAxiom` is an `@[env_linter]` that fails
 `lake lint` when a declaration depends on any axiom outside the
 permitted set for its module. For most modules the permitted set
 is `{propext, Quot.sound}`; modules in `classicalAllowedModules`
-additionally permit `Classical.choice`. `mathlib_linters` is a
-command that sets two of mathlib's registered linter options in
-the invoking file's scope, for a library whose Lake options
-cannot carry them.
+additionally permit `Classical.choice`.
 
 ## Main definitions
 
 * `GebMeta.detectNonstandardAxiom` — the linter.
 * `GebMeta.classicalAllowedModules` — the exact module names
   additionally permitted to depend on `Classical.choice`.
-* `GebMeta.mathlibLinterOptions` — the linter options
-  `mathlib_linters` sets.
-* `mathlib_linters` — the command that sets
-  `mathlibLinterOptions` in the invoking file's scope.
 
 ## Implementation notes
 
@@ -141,30 +133,5 @@ declaration whose module is unresolvable is held to the strict set. -/
   noErrorsFound := "All declarations depend only on permitted axioms."
   errorsFound := "Declarations depend on non-standard axioms."
   isFast := true
-
-/-- The linter options `mathlib_linters` sets. mathlib registers these, so
-they are set and ignored in a module with no mathlib in its import closure.
-`linter.style.header` is absent: it acts only on commands ending at or before
-a file's first module docstring, and its own check requires that docstring to
-be the first command after the imports, so a command placed to satisfy that
-check runs too late to enable it. -/
-def mathlibLinterOptions : List Name :=
-  [`linter.mathlibStandardSet, `linter.flexible]
-
-/-- Sets `mathlibLinterOptions` in the invoking file, from the invocation
-onward.
-
-A library whose docstrings Verso's literate pipeline renders cannot carry
-these in its Lake options: the pipeline's module facet re-serialises a
-module's Lean options as `-D` arguments to an executable that rejects a name
-it does not register, and it parses those arguments before it loads the
-module, so the module's own imports do not help. Options set in a scope are
-not part of a module's Lake options and never reach it. -/
-syntax "mathlib_linters" : command
-
-elab_rules : command
-  | `(mathlib_linters) => do
-    Lean.Elab.Command.modifyScope fun s =>
-      { s with opts := mathlibLinterOptions.foldl (fun o n => o.setBool n true) s.opts }
 
 end GebMeta
