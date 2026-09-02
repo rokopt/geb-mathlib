@@ -81,7 +81,7 @@ pushes, force-pushes, branch-deletes, tag-pushes.
 ### Verify agent claims
 
 Verify agent claims against authoritative sources before
-committing them to artifacts; include citations. When the claim
+committing them to code or documentation; include citations. When the claim
 is the attribution of a mathematical definition or theorem,
 locate and verify it against the primary source using available
 paper-search tooling (e.g. an arXiv search) before recording the
