@@ -990,18 +990,15 @@ Correcting these is a separate concern from any current branch per
 - **Verso adoption** (three scopes with distinct gates; doc-gen4 and Verso are
   complementary, not alternatives — doc-gen4 generates the API reference, Verso
   authors hand-written prose):
-  1. Docstrings in `.lean` files: neither half of the gate is met at the
-     pin. doc-gen4 converts a Verso declaration docstring to Markdown,
-     which reaches the page substantially intact, but drops a Verso
-     module docstring altogether (§ Triggers, doc-gen4 drops a `GebLang`
-     module docstring); and mathlib has not migrated. Still
-     contraindicated for `Geb/Mathlib/` and `Geb/Cslib/`, whose
-     Verso-markup docstrings would read as foreign to mathlib reviewers
-     and whose module prose would not reach the doc-gen4 site.
-     `GebLang` is not gated on either half: its pages come from the
-     literate site, which renders both docstring kinds, and
-     `scripts/extract-pr.sh` converts the markup to plain Markdown at
-     extraction, so no unconverted markup reaches an upstream reviewer.
+  1. Docstrings in `.lean` files: adopted for every new module
+     (`docs/rules/lean-coding.md` § Literate modules), whose pages
+     come from the literate site and the manual, which render both
+     docstring kinds, while `scripts/extract-pr.sh` converts the
+     markup to plain Markdown at extraction, so no unconverted markup
+     reaches an upstream reviewer. What remains gated is the doc-gen4
+     reference, which drops a Verso module docstring (§ Triggers,
+     doc-gen4 drops a `doc.verso` module docstring); modules written
+     before the rule keep their Markdown docstrings.
   2. Persistent prose (`docs/`, a future Geb-language exposition): gated on the
      prose growing substantial and describing stable, existing code.
      `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`, `docs/process.md`, and
@@ -1023,10 +1020,10 @@ Correcting these is a separate concern from any current branch per
     exposition-worthy prose exists.
   - Verso for transient feature-branch design docs (scope 3), should such
     documents recur.
-- **doc-gen4 drops a `GebLang` module docstring**: `doc.verso` stores
+- **doc-gen4 drops a `doc.verso` module docstring**: `doc.verso` stores
   a module docstring in the Verso module-doc extension, and the
   pinned doc-gen4 reads only the Markdown-payload one
-  (`DocGen4/Process/Analyze.lean`, `getModuleDoc?`), so a `GebLang`
+  (`DocGen4/Process/Analyze.lean`, `getModuleDoc?`), so a literate
   module's prose is absent from its API-reference page.
   `DocGen4/DB/Schema.lean` carries the matching
   `-- TODO: Add module_docs_verso table`. Declaration docstrings are
@@ -1037,6 +1034,29 @@ Correcting these is a separate concern from any current branch per
   doc-gen4 pin bump, at which point the measurements of the `GebLang`
   documentation build are re-taken and this entry is removed once the
   module docstring reaches the page.
+- **Verso's manual renders a Markdown module docstring wrongly**:
+  `VersoLiterate.modToPage`, the conversion `includeLiterate` runs on
+  a module's literate JSON, maps a Markdown soft line break to nothing,
+  joining the words on either side of it, and makes a heading a child
+  of the preceding heading of the same level, so sibling sections nest
+  ever deeper; the literate site's own renderer
+  (`verso-literate-html`) does both correctly, and a `doc.verso`
+  module takes a different conversion that is correct in the manual
+  too. Modules written before the literate rule keep Markdown
+  docstrings and so are includable in the manual only with those
+  defects. Trigger: a Verso pin bump, at which point including such a
+  module (any pre-rule `Geb` module) shows whether the conversion has
+  been fixed upstream.
+- **mathlib's header linter inspects root-imported modules only**:
+  `linter.style.header` runs on a module only when its library root
+  imports it directly (`isInLibraryRoot`, a parse of `<Root>.lean`'s
+  imports). `Geb.lean` imports its three index modules alone, so the
+  linter checks those and no content module; `GebLang.lean` imports
+  its modules directly, so it checks them all. The extracted file is
+  checked by mathlib's own CI regardless. Trigger: a decision to have
+  `Geb.lean` import every module directly, mathlib's own arrangement,
+  which `lake shake`'s `keep-all` and `keep-downstream` markers on
+  the umbrella already anticipate.
 - **Replace `GebLang/Basic.lean`**: the module holds one anchor
   declaration so that both documentation pipelines have a module
   docstring and a declaration docstring to render. Trigger: the first
@@ -1046,25 +1066,6 @@ Correcting these is a separate concern from any current branch per
   against the anchor declaration, validating the test driver path and
   the lint path for the `GebLang` library. Trigger: the arrival of
   real `GebTests/Lang/` tests, which supersede it.
-- **Verso's literate facet forwards unregistered Lean options**: the
-  `literate` module facet re-serialises a module's Lake options as `-D`
-  arguments to `verso-literate`, whose parser rejects a name the environment
-  does not register, does not honour Lake's `weak.` prefix, and parses those
-  arguments before loading the module. A mathlib linter option therefore
-  cannot sit in the Lake options of a library the pipeline renders, which is
-  why `lakefile.toml` declares mathlib's linters per library and `GebLang`
-  reaches two of them through `GebMeta.mathlib_linters` instead. Trigger: a
-  Verso pin bump whose facet filters names the executable cannot register, at
-  which point the options return to `lakefile.toml` and the command, its
-  per-module invocations and the extraction rules that strip them are
-  removed. Measured against a mathlib-importing `GebLang` module: the command
-  reaches `linter.flexible` (a deliberate flexible-tactic violation failed the
-  build with the command present and stayed silent without it, everything
-  else identical); `linter.style.header` stayed silent even with the option
-  added to the command's list, confirming it is out of reach for the timing
-  reason `docs/rules/lean-coding.md` § Literate modules already states, not
-  for `isInLibraryRoot`, since the module was directly imported by
-  `GebLang.lean`.
 - **Project-specific `geb-development` skill**: when recurring patterns
   accumulate that fit neither `CONTRIBUTING.md`, `AGENTS.md`, `CLAUDE.md`,
   `docs/process.md`, `docs/rules/*.md`, nor existing `.claude/rules/*.md`.
@@ -1256,12 +1257,6 @@ Correcting these is a separate concern from any current branch per
   looks like. `scripts/lib/diff-against-main.sh` shows the sourcing
   pattern that would let them share one definition. Trigger: the next
   change that touches the import pattern in more than one of the three.
-- **Nothing checks that a `GebLang` module invokes `mathlib_linters`**:
-  `docs/rules/lean-coding.md` § Literate modules states the convention,
-  and no check enforces it, so a module omitting the invocation ships
-  upstream having been seen by none of mathlib's linters, silently.
-  Trigger: the first `GebLang` content workstream, which is when the
-  omission becomes possible to make.
 - **`scripts/check-transitive-imports.sh` omits `-e` where its sibling
   sets it**: it runs under `set -uo pipefail` and
   `scripts/lint-imports.sh` under `set -euo pipefail`, with nothing

@@ -168,7 +168,9 @@ ported to another subtree
 future reference. Experimental Lean of any kind, in any mode, is
 written inside the codebase rather than under a temporary
 directory, so that it compiles against the project's build and can
-be versioned.
+be versioned, and in the literate form every new module takes
+([docs/rules/lean-coding.md](docs/rules/lean-coding.md) § Literate
+modules), so that it can be linked into the manual if it is kept.
 
 The agent stops short of that only on coming to suspect that the
 concept cannot be implemented, or not practically: it may be
@@ -264,9 +266,11 @@ names below are indicative. Select by activity.
 ### When editing .lean files
 
 Lean style, naming, docstring, and module-system rules bind
-every .lean file in this repository.
+every .lean file in this repository. Every new module is literate:
+its docstrings are checked Verso markup that renders as a manual
+page, whether or not the manual links it.
 See [docs/rules/lean-coding.md](docs/rules/lean-coding.md) for
-the full text.
+the full text, § Literate modules for that rule.
 
 ### When editing files under Geb/Mathlib/, Geb/Cslib/ or GebLang/
 

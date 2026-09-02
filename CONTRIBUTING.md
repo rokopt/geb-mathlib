@@ -189,6 +189,12 @@ does not run config commands on a contributor's behalf.
   (`Copyright (c) <year> <names>. All rights reserved.` /
   `Authors: <names>`): the names identify authorship as mathlib
   requires and are exempt from this rule.
+- **Literate Lean.** Every new `.lean` module under `Geb/` or
+  `GebLang/` is written so that Verso renders it as a manual page,
+  its docstrings checked markup with references to the code
+  resolved at elaboration, whether or not the manual links it. See
+  `docs/rules/lean-coding.md` § Literate modules and
+  `docs/process.md` § Literate Lean by default.
 
 Formal, precise, mathematical, dry, unopinionated.
 Cite known mathematics where applicable; reference standard
