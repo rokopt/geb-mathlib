@@ -106,7 +106,8 @@ then the Markdown and project-rule checks:
   whichever VCS the checkout uses, as `scripts/lib/vcs.sh` decides
   per `AGENTS.md` § Version control follows the checkout.
 - `doctoc --dryrun --update-only .` (TOC freshness; skipped when
-  `doctoc` is absent) and `markdownlint-cli2 '**/*.md'`.
+  `doctoc` is absent) and `markdownlint-cli2 '**/*.md'` (required:
+  the run fails when it is absent).
 - `scripts/check-md-links.sh` (every internal Markdown link target
   exists; see `docs/rules/markdown-writing.md` § Link conventions).
 - `scripts/lake-update-warning.sh` (warns on a `lake-manifest.json`
