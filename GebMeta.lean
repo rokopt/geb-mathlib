@@ -55,11 +55,19 @@ wrapper whose content is packaging or because its subject is the
 correspondence between a concept developed here and a concept of an
 external Lean library (Batteries, mathlib, CSLib) that itself uses
 `Classical.choice`; the `GebTests` parallel of such a module (a test of a
-`Classical`-allowed module is itself `Classical`-dependent); and the
-axiom-linter's own test fixture. Feature branches append the module names
-their own such modules occupy. -/
+`Classical`-allowed module is itself `Classical`-dependent); the
+axiom-linter's own test fixture; and every `GebManual` module holding a
+`#doc` document or a bibliography entry, whose document objects depend on
+`Classical.choice` through Verso's own definitions, so that a literate
+module under `manual/` is held to the strict set while the chapters that
+include it are not. Feature branches append the module names their own
+such modules occupy. -/
 def classicalAllowedModules : NameSet :=
   [`GebTests.Prototypes.AxiomLinterClassicalFixture,
+   `GebManual.Bibliography,
+   `GebManual.Introduction,
+   `GebManual.Root,
+   `GebManual.WTypes,
    `Geb.Prototypes.PresheafIRProto.Functor,
    `Geb.Mathlib.Data.PFunctor.Slice.Functor,
    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor,

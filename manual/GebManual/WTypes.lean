@@ -38,3 +38,9 @@ WType.para {α : Type uA} {β : α → Type uB} (γ : Type uC)
 Its computation rule is {name}`WType.para_mk`: the paramorphism at
 a node applies the step to the node's children paired with their
 own paramorphisms.
+
+The module itself follows, rendered from its source: its module
+docstring as the prose of the section, and each declaration beside
+its docstring.
+
+{includeLiterate "." Geb.Mathlib.Data.W.Basic "The module Geb.Mathlib.Data.W.Basic" (level := 1)}

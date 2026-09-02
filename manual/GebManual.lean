@@ -7,7 +7,11 @@ module
 
 public import GebManual.Root
 
+import GebMeta
+
 /-! # GebManual
 
-Library index for the Geb manual.
+Library index for the Geb manual. Imports `GebMeta` so that its
+axiom linter is in the environment `lake lint -- GebManual` builds
+from this module.
 -/

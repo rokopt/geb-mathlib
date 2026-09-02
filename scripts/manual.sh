@@ -8,8 +8,11 @@
 # (scripts/nolints.json) and the generator's --output path are
 # both resolved against the working directory.
 #
-# CI (doc-build.yml) runs the build verb; the manual is otherwise
-# outside every default build, test, and lint path.
+# CI (doc-build.yml) and scripts/pre-push-full.sh run the build
+# verb; the manual is otherwise outside every default build, test,
+# and lint path. A chapter that includes a literate module runs
+# `lake query +Mod:literate` in a subprocess while it elaborates,
+# which builds that module's literate facet on demand.
 
 set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
