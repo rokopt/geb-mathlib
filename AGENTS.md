@@ -165,7 +165,10 @@ whatever its fate: it may be discarded later, or polished and
 ported to another subtree
 ([docs/rules/upstream-eligible.md](docs/rules/upstream-eligible.md)
 § Two-track development), and either way it is versioned for
-future reference.
+future reference. Experimental Lean of any kind, in any mode, is
+written inside the codebase rather than under a temporary
+directory, so that it compiles against the project's build and can
+be versioned.
 
 The agent stops short of that only on coming to suspect that the
 concept cannot be implemented, or not practically: it may be

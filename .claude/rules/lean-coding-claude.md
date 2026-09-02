@@ -22,5 +22,4 @@ Additions specific to Claude Code, on top of the canonical
   trigger manual approval prompts. Write intermediate output to a
   file under `/tmp` or in the working tree and read it back.
 - Use the `Write` tool / direct file edits rather than shell
-  commands for experimental code; place experiments inside the
-  codebase, not under `/tmp`.
+  commands for experimental code.
