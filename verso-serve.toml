@@ -1,0 +1,14 @@
+# Mounts for verso-serve, which reads this file from the working
+# directory (scripts/manual.sh serve and scripts/literate.sh serve run
+# it from the repository root). The layout is the one pages.yml
+# deploys: the manual at the root, the literate site under literate/,
+# so the links between the two sites resolve locally as they do on
+# GitHub Pages. Each mount is the output of its build verb.
+
+[[mounts]]
+path = "/"
+dir = "manual/_out/html-multi"
+
+[[mounts]]
+path = "/literate"
+dir = ".lake/build/literate-html"
