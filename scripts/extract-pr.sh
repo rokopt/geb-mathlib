@@ -85,20 +85,20 @@ import_kw_re='(public[[:space:]]+)?(meta[[:space:]]+)?import[[:space:]]+'
 # (a trailing comment, when there is one).
 import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 
-# Verso role markup, converted inside a docstring: `{role}`x``
+# Verso role markup, converted inside a docstring: `{cite}`Key``
+# becomes mathlib's bare `[Key]` citation form, any other `{role}`x``
 # becomes `` `x` ``, and an escaped bracket `\[` or `\]`, the form a
-# literal bracket takes under `doc.verso`, becomes the bare bracket that
-# mathlib's `[Key]` citation form is written with. An unconverted role
-# would render as literal braces upstream; a docstring carrying neither
-# roles nor escapes passes through unchanged, so the conversion runs on
-# every arm.
+# literal bracket takes under `doc.verso`, becomes the bare bracket. An
+# unconverted role would render as literal braces upstream; a docstring
+# carrying neither roles nor escapes passes through unchanged, so the
+# conversion runs on every arm.
 #
 # Two restrictions, and both are needed. The braces hold one of the
 # role names this repository writes, which docs/rules/lean-coding.md
-# § Literate modules fixes as a closed set: `name` for a constant that
-# must resolve, `option` for a Lean option, `lit` for anything else.
-# And the match runs through the code span's closing backtick, so the
-# span is consumed in one pass.
+# § Literate modules fixes as a closed set: `cite` for a bibliography
+# key, `name` for a constant that must resolve, `option` for a Lean
+# option, `lit` for anything else. And the match runs through the code
+# span's closing backtick, so the span is consumed in one pass.
 #
 # The second restriction is what keeps the substitution off Lean. A
 # brace group holding an identifier is ordinary Lean and appears
@@ -123,7 +123,7 @@ import_line_re="^(${import_kw_re})([^[:space:]]+)(.*)$"
 # failure: braces upstream are visible and get fixed, where deleted
 # mathematics is not. Add a new role's exact name here when one is
 # first used.
-role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g; s/\\([][])/\1/g'
+role_strip='s/(^|[^A-Za-z0-9.`])[{]cite[}]`([^`]*)`/\1[\2]/g; s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g; s/\\([][])/\1/g'
 
 # The docstring gate in the copy loop below restricts each application
 # of role_strip to a line inside a docstring. A role-shaped brace group
@@ -142,12 +142,13 @@ role_strip='s/(^|[^A-Za-z0-9.`])[{](lit|name|option)[}]`([^`]*)`/\1`\3`/g; s/\\(
 # gate exists to prevent.
 
 # strip_line <line>: true when the strip pass deletes <line> outright:
-# an import line naming `Lean.DocString.Syntax`, in any of the four
-# import forms, or the `set_option doc.verso true` command line, each
-# with or without a trailing comment. Neither has meaning upstream:
-# both are what a literate module carries so that its docstrings are
-# checked Verso markup (docs/rules/lean-coding.md § Literate modules),
-# and the copy loop converts that markup to Markdown. The import line
+# an import line naming `Lean.DocString.Syntax` or `GebMeta`, in any
+# of the four import forms, or the `set_option doc.verso true` command
+# line, each with or without a trailing comment. None has meaning
+# upstream: they are what a literate module carries so that its
+# docstrings are checked Verso markup with the `{cite}` role
+# (docs/rules/lean-coding.md § Literate modules), and the copy loop
+# converts that markup to Markdown. An import line
 # is anchored the way the import-prefix rewrite is, by the
 # import-keyword regex the script already binds once; the command line
 # by `doc_verso_re`, anchored at both ends so a trailing comment is
@@ -163,7 +164,7 @@ strip_line() {
   [[ "$1" =~ $doc_verso_re ]] && return 0
   if [[ "$1" =~ $import_line_re ]]; then
     case "${BASH_REMATCH[4]}" in
-      Lean.DocString.Syntax) return 0 ;;
+      Lean.DocString.Syntax|GebMeta) return 0 ;;
     esac
   fi
   return 1
@@ -345,7 +346,7 @@ mkdir -p "$(dirname "$dst")"
 # cannot contain the first shape, so the counter cannot desync on one
 # that does.
 #
-# Copy, deleting the two non-upstream lines outside any docstring,
+# Copy, deleting the non-upstream lines outside any docstring,
 # rewriting each remaining import line's module path by the arm's
 # table, and converting Verso roles inside a docstring. The strip pass
 # runs before the rewrite

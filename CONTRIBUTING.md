@@ -171,8 +171,10 @@ does not run config commands on a contributor's behalf.
   docstring. The
   bibliographic detail for each cited work lives once in
   `docs/references.bib`, keyed by a citation key; docstrings refer
-  to a work by that key in `[Key]` form (mathlib's convention), so
-  a work cited from several modules is described in one place.
+  to a work by that key in `[Key]` form (mathlib's convention), a
+  literate module by the ``{cite}`Key` `` role that extraction
+  converts to that form, so a work cited from several modules is
+  described in one place.
   `docs/references.md` is the complementary catalogue of library
   and URL pointers, not citable literature.
 

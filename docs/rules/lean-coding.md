@@ -161,8 +161,10 @@ each occurrence with a pointer to the upstream rule.
   doc-gen4 renders them as links. In a literate module they are
   ``{name}`Foo.bar` ``, checked at elaboration.
 - Literature citations reference a key in `docs/references.bib`
-  in `[Key]` form; the `## References` section lists the cited
-  keys. The bibliographic detail lives only in the `.bib`.
+  in `[Key]` form, which a literate module writes as
+  ``{cite}`Key` `` (§ Literate modules); the `## References`
+  section lists the cited keys. The bibliographic detail lives
+  only in the `.bib`.
 - No development-history references in docstrings (e.g.,
   "previously did X"); history is for commit logs.
 - No counts of a population the module keeps adding to (e.g.
@@ -540,9 +542,16 @@ their Markdown docstrings; they render too, and are not converted.
 - Docstrings are checked Verso markup rather than Markdown, under the
   `doc.verso` option: a header is a `#` line and a checked reference to
   a constant is written ``{name}`Foo` ``. Verso opens a list on `*`,
-  `-` or `+` alike. A literal bracket is escaped, so a citation in
-  mathlib's `[Key]` form is written `\[Key\]`, with the `[Key]` link
-  form being reserved for links. `lakefile.toml` sets the option for
+  `-` or `+` alike. A citation is written ``{cite}`Key` ``: the role,
+  defined in `GebMeta`, resolves the key in `docs/references.bib` at
+  elaboration, failing on an unknown key, and renders as the key in
+  brackets with the formatted entry disclosed on click, in the
+  literate site and the manual alike; doc-gen4 shows the key alone. A
+  module using it carries `meta import GebMeta`, annotated
+  `-- shake: keep`, since the role runs at elaboration and leaves no
+  constant reference for `lake shake` to see. Any other literal
+  bracket is escaped, `\[` and `\]`, the `[text]` form being
+  reserved for links. `lakefile.toml` sets the option for
   the `GebLang` library, whose umbrella imports its modules directly; a
   module of any other library sets it itself, `set_option doc.verso
   true` between the imports and the module docstring. The two forms
@@ -553,8 +562,9 @@ their Markdown docstrings; they render too, and are not converted.
   neither form (§ Extraction below). The option is compile-time, so a
   consumer compiling the same file without it renders the markup
   literally, which is why extraction converts it.
-- Every code span carries a role: `{name}` for a constant that must
-  resolve, `{option}` for a Lean option, `{lit}` for anything else.
+- Every code span carries a role: `{cite}` for a bibliography key,
+  `{name}` for a constant that must resolve, `{option}` for a Lean
+  option, `{lit}` for anything else.
   A span with no role warns (`doc.verso.suggestions`, which defaults
   on), and the package's `warningAsError` makes the warning an error.
 - A `{name}` role resolves at elaboration, as an identifier at that
@@ -592,11 +602,12 @@ their Markdown docstrings; they render too, and are not converted.
   Lake `leanOptions` entry therefore holds only an option Lean core
   registers.
 - Extraction. `scripts/extract-pr.sh` converts a module to the
-  Markdown form upstream expects: inside a docstring, a role's code span
-  becomes a bare code span and an escaped bracket becomes the bare
-  bracket; outside any docstring, the `set_option doc.verso true` line
-  and the `Lean.DocString.Syntax` import are deleted. It converts
-  exactly the three roles named above. Lean core registers others,
+  Markdown form upstream expects: inside a docstring, a `{cite}` role
+  becomes the bare `[Key]` form, any other role's code span becomes a
+  bare code span, and an escaped bracket becomes the bare bracket;
+  outside any docstring, the `set_option doc.verso true` line and the
+  `Lean.DocString.Syntax` and `GebMeta` imports are deleted. It
+  converts exactly the four roles named above. Lean core registers others,
   `{lean}` and `{tactic}` among them; using one here means adding its
   name to that script's `role_strip`, or it ships as literal braces.
 - The axiom linter (`GebMeta.detectNonstandardAxiom`) and

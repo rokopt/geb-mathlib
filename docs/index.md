@@ -35,9 +35,9 @@ The repository is laid out narrow-and-deep, with one indexing
     `Geb.Prototypes.*`.
 - `GebLang/` — the Geb language's core data structures, at the
   bottom of the dependency order; imports from `Mathlib.*`,
-  `Batteries.*`, `Cslib.*`, `GebLang.*`, and
-  `Lean.DocString.Syntax` only. The last is a fixed exception,
-  the literate pipeline's own load-bearing import rather than
+  `Batteries.*`, `Cslib.*`, `GebLang.*`, `Lean.DocString.Syntax`
+  and `GebMeta` only. The last two are fixed exceptions, the
+  literate pipeline's own load-bearing imports rather than
   content of this repository's own libraries
   (`docs/rules/upstream-eligible.md` § Subtree import rules). Each
   module is upstream-eligible and ships to mathlib4 or to Cslib

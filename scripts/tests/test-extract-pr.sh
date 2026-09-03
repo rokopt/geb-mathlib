@@ -286,25 +286,27 @@ no_double_blank \
 
 # A literate Geb/Mathlib/ module: the strip pass and the role
 # conversion run on every arm, not on GebLang/ alone. The
-# `set_option doc.verso true` line, with a trailing comment, and the
-# `Lean.DocString.Syntax` import are deleted; roles convert; an
-# escaped bracket becomes the bare bracket of mathlib's `[Key]`
-# citation form; and the mathematics between them is byte-identical.
+# `set_option doc.verso true` line, with a trailing comment, the
+# `Lean.DocString.Syntax` import and the `GebMeta` meta import are
+# deleted; a `{cite}` role becomes mathlib's `[Key]` citation form,
+# other roles become bare code spans, an escaped bracket becomes the
+# bare bracket; and the mathematics between them is byte-identical.
 mkdir -p fork19
 cat > Geb/Mathlib/Foo/Lit.lean <<'EOF'
 module
 
 public import Mathlib.Foo.Base
 import Lean.DocString.Syntax
+meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
 set_option doc.verso true  -- checked docstrings
 
 /-! # A literate module
 
-{name}`Nat` and {lit}`x ↦ x`, citing \[Key2001\].
+{name}`Nat` and {lit}`x ↦ x`, citing {cite}`Key2001` and \[Key2002\].
 -/
 
-/-- The successor, per \[Key2001\]. -/
+/-- The successor, per {cite}`Key2001`. -/
 def a (n : Nat) : Nat := n + 1
 EOF
 bash "$SCRIPT" Geb/Mathlib/Foo/Lit.lean fork19 >/dev/null
@@ -312,9 +314,10 @@ out=fork19/Mathlib/Foo/Lit.lean
 exists "literate Geb/Mathlib fixture -> Mathlib path" "$out"
 lacks "set_option doc.verso line stripped" "doc.verso" "$out"
 lacks "Lean.DocString.Syntax import stripped" "Lean.DocString.Syntax" "$out"
-has   "module docstring roles convert" \
-      '`Nat` and `x ↦ x`, citing [Key2001].' "$out"
-has   "declaration docstring escape converts" \
+lacks "GebMeta meta import stripped" "GebMeta" "$out"
+has   "module docstring roles and cite convert" \
+      '`Nat` and `x ↦ x`, citing [Key2001] and [Key2002].' "$out"
+has   "declaration docstring cite converts" \
       'The successor, per [Key2001].' "$out"
 has   "the surviving import is rewritten in place" \
       "public import Mathlib.Foo.Base" "$out"

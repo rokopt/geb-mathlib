@@ -537,29 +537,31 @@ EOF
 assert_case "leakage prefix in an import line's comment tail" 1 \
   "'GebTests.Lang.' outside an import path"
 
-# Case 46: the fixed-exception entry (Lean.DocString.Syntax), in both
-# plain and `meta import` form, in GebLang/.
+# Case 46: the fixed-exception entries (Lean.DocString.Syntax,
+# GebMeta), in plain and `meta import` form, in GebLang/.
 setup_empty
 cat > "$test_dir/GebLang/Meta.lean" <<'EOF'
 module
 
 import Lean.DocString.Syntax
 meta import Lean.DocString.Syntax
+meta import GebMeta
 EOF
-assert_case "GebLang fixed-exception import" 0 "clean (1 file(s) checked)"
+assert_case "GebLang fixed-exception imports" 0 "clean (1 file(s) checked)"
 
-# Case 47: the fixed-exception entry is an exact module path, not a
+# Case 47: a fixed-exception entry is an exact module path, not a
 # `*`-suffixed prefix; a submodule of it is still forbidden.
 setup_empty
 cat > "$test_dir/GebLang/MetaSub.lean" <<'EOF'
 module
 
 import Lean.DocString.SyntaxHacks
+import GebMeta.Internal.Secrets
 EOF
-assert_case "GebLang fixed-exception entry does not admit a submodule" 1 \
+assert_case "GebLang fixed-exception entries do not admit a submodule" 1 \
   "forbidden import 'import Lean.DocString.SyntaxHacks'"
 
-# Case 48: the fixed-exception entry is admitted in every location,
+# Case 48: the fixed-exception entries are admitted in every location,
 # the literate style being the default in each; here Geb/Mathlib/ and
 # GebTests/Lang/.
 setup_empty
@@ -567,13 +569,15 @@ cat > "$test_dir/Geb/Mathlib/Lit.lean" <<'EOF'
 module
 
 import Lean.DocString.Syntax
+meta import GebMeta
 EOF
 cat > "$test_dir/GebTests/Lang/Lit.lean" <<'EOF'
 module
 
 import Lean.DocString.Syntax
+meta import GebMeta
 EOF
-assert_case "every location admits the fixed-exception import" 0 \
+assert_case "every location admits the fixed-exception imports" 0 \
   "clean (2 file(s) checked)"
 
 # Case 48b: the fixed exception does not open the `Lean.` prefix; a

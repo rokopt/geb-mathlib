@@ -30,9 +30,10 @@
 #   GebTests/Lang/     →  Mathlib.*, Batteries.*, Cslib.*, GebLang.*,
 #                         GebTests.Lang.* (same conditional init rule)
 #
-# Every location additionally admits the exact module path
-# Lean.DocString.Syntax, which a literate module imports for its Verso
-# docstring markup (docs/rules/lean-coding.md § Literate modules).
+# Every location additionally admits the exact module paths
+# Lean.DocString.Syntax and GebMeta, which a literate module imports
+# for its Verso docstring markup and for the `{cite}` docstring role
+# (docs/rules/lean-coding.md § Literate modules).
 #
 # `Batteries.*` is admitted to every upstream-eligible subtree because
 # mathlib depends on Batteries and imports its modules directly, and
@@ -54,10 +55,10 @@
 # conditional here rather than per subtree, and
 # scripts/check-transitive-imports.sh checks the closures that
 # scripts/extract-pr.sh reads to pick a destination.
-# Lean.DocString.Syntax is a fixed exception to every allowed-import
-# list rather than a `*`-suffixed prefix: it is the literate pipeline's
-# own load-bearing import, not extractable content, and extraction
-# strips it.
+# Lean.DocString.Syntax and GebMeta are fixed exceptions to every
+# allowed-import list rather than `*`-suffixed prefixes: they are the
+# literate pipeline's own load-bearing imports, not extractable
+# content, and extraction strips them.
 #
 # `Geb.Mathlib.*` is admitted to the Cslib subtrees because Cslib
 # depends on mathlib: a Cslib-destined module may depend on
@@ -170,8 +171,8 @@ check_subtree() {
           ;;
       esac
       # An allowed entry ending in `.` is a namespace prefix; one that
-      # does not is an exact module path (Lean.DocString.Syntax),
-      # matched whole so it does not also
+      # does not is an exact module path (Lean.DocString.Syntax,
+      # GebMeta), matched whole so it does not also
       # admit an unwanted submodule, with a trailing comment on the
       # import line still permitted.
       ok=0
@@ -250,13 +251,13 @@ check_subtree() {
 # `GebTests.<subtree>.*` siblings, and forbid leakage of both the
 # source and the test self-prefix.
 check_subtree "Geb.Mathlib." "GebLang." -- "" Geb/Mathlib \
-  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax"
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
 check_subtree "Geb.Mathlib." "GebTests.Mathlib." "GebLang." -- "" GebTests/Mathlib \
-  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib." "GebLang." "Lean.DocString.Syntax"
+  -- "Mathlib." "Batteries." "Geb.Mathlib." "GebTests.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
 check_subtree "Geb.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib.Init" Geb/Cslib \
-  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax"
+  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
 check_subtree "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib.Init" GebTests/Cslib \
-  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax"
+  -- "Mathlib." "Batteries." "Cslib." "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
 
 # GebLang sits at the bottom of the dependency order: its modules
 # import no other library of this repository. Its test mirror adds its
@@ -264,9 +265,9 @@ check_subtree "Geb.Cslib." "GebTests.Cslib." "Geb.Mathlib." "GebLang." -- "Cslib
 # their modules being mathlib-track or Cslib-track per module rather
 # than per subtree.
 check_subtree "GebLang." -- "?Cslib.Init" GebLang \
-  -- "Mathlib." "Batteries." "Cslib." "GebLang." "Lean.DocString.Syntax"
+  -- "Mathlib." "Batteries." "Cslib." "GebLang." "Lean.DocString.Syntax" "GebMeta"
 check_subtree "GebLang." "GebTests.Lang." -- "?Cslib.Init" GebTests/Lang \
-  -- "Mathlib." "Batteries." "Cslib." "GebLang." "GebTests.Lang." "Lean.DocString.Syntax"
+  -- "Mathlib." "Batteries." "Cslib." "GebLang." "GebTests.Lang." "Lean.DocString.Syntax" "GebMeta"
 
 if [ "$errors" -gt 0 ]; then
   echo "lint-imports.sh: $errors violation(s) found" >&2
