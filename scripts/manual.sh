@@ -22,7 +22,13 @@ case "${1:-}" in
   build)
     lake build GebManual
     lake lint -- GebManual
-    lake exe geb-manual --output manual/_out
+    # The generator links a dependency's C sources (leansqlite's
+    # bundled SQLite), whose compiler warnings Lake logs, and replays
+    # on every later run, at its informational level. Warnings and
+    # errors, the levels a Lean message of this repository reaches,
+    # stay visible; the two steps above compile the manual's own Lean
+    # at the default level.
+    lake exe --log-level=warning geb-manual --output manual/_out
     ;;
   serve)
     exec lake exe verso-serve manual/_out/html-multi

@@ -159,7 +159,15 @@ runs the axiom linter over the manual
 (`docs/rules/lean-coding.md` § Verso manual modules). A chapter that
 includes a literate module runs `lake query +Mod:literate` in a
 subprocess while it elaborates, which builds that module's literate
-facet on demand. CI runs the script in `doc-build.yml`, for every
+facet on demand. The generator step, like `doc-build.yml`'s doc-gen4
+steps, runs with `--log-level=warning`: each links a dependency's C
+sources (`leansqlite`'s bundled SQLite), whose compiler warnings Lake
+logs, and replays on every later run, at its informational level, so
+that a contributor does not take them for a warning in code of this
+repository. Warnings and errors stay visible, and a Lean warning in
+this repository is an error under `warningAsError`; the steps that
+compile this repository's Lean run at the default level. CI runs the
+script in `doc-build.yml`, for every
 pull request and on a monthly schedule, and uploads the HTML as the
 `geb-manual` artifact; `scripts/pre-push-full.sh` runs it locally.
 The manual is outside `defaultTargets`, the test driver, and

@@ -25,8 +25,12 @@ jobs:
           build: true
           test: false
           lint: false
-      - run: lake build Geb:docs
-      - run: lake build GebLang:docs
+      # doc-gen4 links a dependency's C sources (leansqlite's bundled
+      # SQLite), whose compiler warnings Lake logs at its informational
+      # level; warnings and errors of this repository's Lean, compiled
+      # by the step above at the default level, stay visible.
+      - run: lake build Geb:docs --log-level=warning
+      - run: lake build GebLang:docs --log-level=warning
       - name: Upload generated documentation
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
