@@ -31,7 +31,9 @@ case "${1:-}" in
     lake exe --log-level=warning geb-manual --output manual/_out
     ;;
   serve)
-    exec lake exe verso-serve manual/_out/html-multi
+    # verso-serve.toml mounts the manual and the literate site
+    # together, as pages.yml deploys them.
+    exec lake exe verso-serve
     ;;
   *)
     cat >&2 <<'EOF'
@@ -39,9 +41,11 @@ usage: scripts/manual.sh {build|serve}
 
   build  Build the GebManual library, lint it, and generate the
          HTML into manual/_out/html-multi.
-  serve  Serve manual/_out/html-multi with verso-serve, which
-         prints the URL it binds (port 8000, or a higher free
-         port when 8000 is taken).
+  serve  Serve the manual at / and the literate site (built by
+         scripts/literate.sh build) at /literate, the layout
+         GitHub Pages serves, with verso-serve, which prints the
+         URL it binds (port 8000, or a higher free port when 8000
+         is taken).
 
 There is no watch mode: after editing, re-run 'build' and refresh
 the browser. Lake rebuilds only the changed modules.

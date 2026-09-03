@@ -46,7 +46,8 @@ See `lakefile.toml` for the full dependency declaration.
 - [The Geb manual](https://rokopt.github.io/geb-mathlib/) (Verso),
   the root of the published site: `scripts/manual.sh build` builds and
   generates it (`manual/_out/html-multi/`);
-  `scripts/manual.sh serve` serves it and prints the URL. Its
+  `scripts/manual.sh serve` serves it, with the literate site at
+  `literate/` as GitHub Pages does, and prints the URL. Its
   chapters include literate modules from the Lean libraries by name
   (`docs/rules/lean-coding.md` § Literate modules). There is no
   watch mode: after editing under `manual/` or an included module,
@@ -57,7 +58,8 @@ See `lakefile.toml` for the full dependency declaration.
   (Verso), every module of `Geb/` and `GebLang/` rendered as a page
   under `literate/` of the published site: `scripts/literate.sh build` builds the
   libraries, lints them, and renders the site;
-  `scripts/literate.sh serve` serves it and prints the URL. It has no
+  `scripts/literate.sh serve` serves it at `literate/` under the
+  manual, as GitHub Pages does, and prints the URL. It has no
   watch mode: after editing a docstring, re-run `build` and refresh
   the browser. Built in CI by `doc-build.yml` and by
   `scripts/pre-push-full.sh`, and deployed by `pages.yml`; the

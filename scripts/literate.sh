@@ -28,8 +28,9 @@ case "${1:-}" in
     lake build :literateHtml
     ;;
   serve)
-    site="$(lake query :literateHtml)"
-    exec lake exe verso-serve "$site"
+    # verso-serve.toml mounts the literate site and the manual
+    # together, as pages.yml deploys them.
+    exec lake exe verso-serve
     ;;
   *)
     cat >&2 <<'EOF'
@@ -39,10 +40,12 @@ usage: scripts/literate.sh {build|serve}
          the literate site. The first run compiles Verso's literate
          executables from source, which takes minutes; later runs
          are incremental.
-  serve  Serve the rendered site with verso-serve, which prints the
-         URL it binds (port 8000, or a higher free port when 8000 is
-         taken). Its first run compiles verso-serve, one more
-         executable than 'build' needs.
+  serve  Serve the rendered site at /literate and the manual (built
+         by scripts/manual.sh build) at /, the layout GitHub Pages
+         serves, with verso-serve, which prints the URL it binds
+         (port 8000, or a higher free port when 8000 is taken). Its
+         first run compiles verso-serve, one more executable than
+         'build' needs.
 
 There is no watch mode: after editing a docstring, re-run 'build' and
 refresh the browser. Lake rebuilds only the changed modules.
