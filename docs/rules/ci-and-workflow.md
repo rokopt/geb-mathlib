@@ -170,6 +170,9 @@ compile this repository's Lean run at the default level. CI runs the
 script in `doc-build.yml`, for every
 pull request and on a monthly schedule, and uploads the HTML as the
 `geb-manual` artifact; `scripts/pre-push-full.sh` runs it locally.
+`pages.yml` runs it on every push to `main` and deploys the HTML
+to GitHub Pages at the site root, beside the literate site
+(§ Literate site build).
 The manual is outside `defaultTargets`, the test driver, and
 `scripts/pre-push.sh`, so a content-only change builds no Verso;
 `scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
@@ -190,7 +193,11 @@ it is the check that each module is renderable, which
 one. CI runs the script in `doc-build.yml`, for every pull request,
 and uploads the HTML as the `geb-literate` artifact, beside
 `lake build Geb:docs` and `lake build GebLang:docs` for the doc-gen4
-reference; `scripts/pre-push-full.sh` runs it locally. The rendering
+reference; `scripts/pre-push-full.sh` runs it locally, and `pages.yml`
+deploys it to GitHub Pages under `literate/` beside the manual
+(§ Verso manual build); that workflow is derived from the one
+`lake exe verso setup-literate` generates, and its header says why
+it is not that file. The rendering
 stays out of `scripts/pre-push.sh`, as the manual's does, because
 the first run compiles Verso from source; the libraries themselves
 are the `defaultTargets`, so an ordinary `lake build` compiles them.

@@ -1,0 +1,81 @@
+# Deploys the Verso manual at the site root and the literate site
+# under `literate/` on every push to main. Derived from the workflow
+# `lake exe verso setup-literate` generates, which deploys the
+# literate site alone; it lives under another name because Verso's
+# literateHtml facet compares a file of the generated name against
+# its template on every build and warns when they differ. Do not run
+# that command here: it would add a second workflow deploying to the
+# same Pages site. Actions are pinned per
+# docs/rules/ci-and-workflow.md § Action pinning policy.
+
+name: Deploy to GitHub Pages
+
+on:
+    push:
+        branches: [main]
+    # Allows manual deployment from the Actions tab
+    workflow_dispatch:
+
+# Permissions required for GitHub Pages deployment:
+#   contents:read  — to check out the repository
+#   pages:write    — to publish to GitHub Pages
+#   id-token:write — for OIDC authentication with the Pages deployment API
+#     (GitHub Pages uses short-lived OIDC tokens instead of long-lived secrets)
+permissions:
+    contents: read
+    pages: write
+    id-token: write
+
+# Prevent concurrent deployments: if a new push arrives while a deployment
+# is in progress, the new one waits (cancel-in-progress: false) rather than
+# canceling the running deployment, which could leave the site in a broken state.
+concurrency:
+    group: pages
+    cancel-in-progress: false
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+            # leanprover/lean-action handles:
+            #   - Installing elan (the Lean version manager)
+            #   - Reading lean-toolchain to select the right Lean version
+            #   - Caching .lake for faster subsequent builds
+            # We disable its default build/test since the steps below build
+            # what the site needs.
+            - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596  # v1
+              with:
+                  build: false
+                  test: false
+
+            # The manual (scripts/manual.sh, docs/rules/ci-and-workflow.md
+            # § Verso manual build) at the site root; the literate site
+            # (the :literateHtml package facet, scoped by literate.toml)
+            # under literate/, where manual/GebManual/Introduction.lean
+            # links it. Both emit relative links only, so each renders
+            # correctly wherever it is placed.
+            - name: Build the manual and the literate site
+              run: |
+                  bash scripts/manual.sh build
+                  site="$(lake query :literateHtml)"
+                  mkdir -p _site
+                  cp -r manual/_out/html-multi/. _site/
+                  cp -r "$site" _site/literate
+
+            - name: Upload Pages artifact
+              uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+              with:
+                  path: _site
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

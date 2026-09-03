@@ -31,3 +31,7 @@ which are therefore not yet directed at either upstream.
 The chapters that follow present the implemented mathematics one
 area at a time, in dependency order, with type-checked references
 into the source.
+
+The libraries are also rendered in full by Verso's literate
+pipeline, one page per module, at
+[the literate site](/literate/).
