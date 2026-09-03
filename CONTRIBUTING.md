@@ -171,8 +171,10 @@ does not run config commands on a contributor's behalf.
   docstring. The
   bibliographic detail for each cited work lives once in
   `docs/references.bib`, keyed by a citation key; docstrings refer
-  to a work by that key in `[Key]` form (mathlib's convention), so
-  a work cited from several modules is described in one place.
+  to a work by that key in `[Key]` form (mathlib's convention), a
+  literate module by the ``{cite}`Key` `` role that extraction
+  converts to that form, so a work cited from several modules is
+  described in one place.
   `docs/references.md` is the complementary catalogue of library
   and URL pointers, not citable literature.
 
@@ -189,6 +191,12 @@ does not run config commands on a contributor's behalf.
   (`Copyright (c) <year> <names>. All rights reserved.` /
   `Authors: <names>`): the names identify authorship as mathlib
   requires and are exempt from this rule.
+- **Literate Lean.** Every new `.lean` module under `Geb/` or
+  `GebLang/` is written so that Verso renders it as a manual page,
+  its docstrings checked markup with references to the code
+  resolved at elaboration, whether or not the manual links it. See
+  `docs/rules/lean-coding.md` § Literate modules and
+  `docs/process.md` § Literate Lean by default.
 
 Formal, precise, mathematical, dry, unopinionated.
 Cite known mathematics where applicable; reference standard

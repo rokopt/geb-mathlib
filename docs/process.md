@@ -7,6 +7,7 @@
 - [Code is cost](#code-is-cost)
 - [Document only the persistent](#document-only-the-persistent)
 - [Modes of operation](#modes-of-operation)
+- [Literate Lean by default](#literate-lean-by-default)
 - [Illustrate only with the archetypal](#illustrate-only-with-the-archetypal)
 - [Constructive-only discipline](#constructive-only-discipline)
 - [Avoid colloquialisms and metaphors](#avoid-colloquialisms-and-metaphors)
@@ -135,6 +136,48 @@ Pair programming bounds the size of each turn because the user is
 attending: a long unattended development is reviewed all at once,
 which is the prototyping mode's shape, not this one's.
 
+## Literate Lean by default
+
+Every new module of `Geb/` and `GebLang/` is written so that Verso's
+literate pipeline renders it as a manual page, and a chapter of the
+manual under `manual/` includes such a module by name
+(`docs/rules/lean-coding.md` § Literate modules). The rule separates
+readiness from linking. A module is renderable from the moment it is
+written, and the rendering is checked whenever the literate site is
+built, which CI does for every pull request; whether a chapter
+includes it is decided by the manual's narrative, so a prototype
+kept for reference need never appear in the manual, and a settled
+development is linked without being rewritten. One source serves the
+library, the API reference and the manual, so exposition and code
+cannot drift apart, and a reference in prose to a constant is
+checked at elaboration as the code is. Citations follow the same
+principle: `docs/references.bib` is the one record of the
+bibliographic detail, a literate module's `{cite}` role resolves a
+key in it at elaboration, and the manual's citable entries are
+generated from it rather than transcribed.
+
+The checked markup is enabled per module rather than per library
+because a library-wide option would reach every module written
+before the rule, whose Markdown docstrings are not converted.
+`GebLang` is the exception, taking the option from `lakefile.toml`:
+its umbrella imports its modules directly, where mathlib's header
+linter rejects any command before the module docstring. Verso
+renders a Markdown docstring as well, but the path by which the
+manual includes such a module loses a paragraph's line breaks and
+nests sibling headings, so the checked markup is what makes a module
+manual-ready rather than only site-ready.
+
+mathlib's linters reach every module through Lake's `moreLeanArgs`
+rather than its `leanOptions` because Verso's literate facet forwards
+a module's `leanOptions` to an executable that rejects an option it
+does not register; the arrangement keeps every module of every
+library renderable without a per-module command. The manual is
+linted for axioms like any library, and every chapter module is
+listed in `GebMeta.classicalAllowedModules`, because a Verso document
+object depends on `Classical.choice` through Verso's own definitions;
+the list names exact modules, so a literate module kept under
+`manual/` stays held to the strict set.
+
 ## Illustrate only with the archetypal
 
 A corollary of "Document only the persistent". When a rule or
@@ -198,7 +241,10 @@ new mathematical concept.
 `docs/process.md` (this file) contains the rationale for each
 rule that binds development; `docs/references.md` catalogues
 external library and mathematical references organised by topic.
-Both are reader-facing alongside `docs/index.md`.
+Both are reader-facing alongside `docs/index.md`. The manual under
+`manual/` presents the implemented content itself, chapter by
+chapter, including the literate modules it discusses
+(§ Literate Lean by default).
 
 ## Verify agent claims
 

@@ -8,8 +8,11 @@
 # (scripts/nolints.json) and the generator's --output path are
 # both resolved against the working directory.
 #
-# CI (doc-build.yml) runs the build verb; the manual is otherwise
-# outside every default build, test, and lint path.
+# CI (doc-build.yml) and scripts/pre-push-full.sh run the build
+# verb; the manual is otherwise outside every default build, test,
+# and lint path. A chapter that includes a literate module runs
+# `lake query +Mod:literate` in a subprocess while it elaborates,
+# which builds that module's literate facet on demand.
 
 set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,7 +22,13 @@ case "${1:-}" in
   build)
     lake build GebManual
     lake lint -- GebManual
-    lake exe geb-manual --output manual/_out
+    # The generator links a dependency's C sources (leansqlite's
+    # bundled SQLite), whose compiler warnings Lake logs, and replays
+    # on every later run, at its informational level. Warnings and
+    # errors, the levels a Lean message of this repository reaches,
+    # stay visible; the two steps above compile the manual's own Lean
+    # at the default level.
+    lake exe --log-level=warning geb-manual --output manual/_out
     ;;
   serve)
     exec lake exe verso-serve manual/_out/html-multi

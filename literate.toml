@@ -1,11 +1,14 @@
-# Verso literate site configuration. The [[targets]] entry scopes the
-# site to the GebLang library: the literateHtml package facet
-# otherwise enumerates every library and executable of the package,
-# so an unscoped run would render and build Geb, GebTests, GebMeta,
-# GebManual and the manual generator's Main. The planner reads every
-# library's and executable's module list and then filters, and only
-# the surviving modules have their literate facets built, so the
-# scoping bounds what is compiled as well as what is rendered.
+# Verso literate site configuration. The [[targets]] entries scope the
+# site to the GebLang and Geb libraries, every module of which is
+# literate (docs/rules/lean-coding.md § Literate modules), so
+# rendering the site is the check that each of them is: the
+# literateHtml package facet otherwise enumerates every library and
+# executable of the package, so an unscoped run would also render and
+# build GebTests, GebMeta, GebManual and the manual generator's Main.
+# The planner reads every library's and executable's module list and
+# then filters, and only the surviving modules have their literate
+# facets built, so the scoping bounds what is compiled as well as
+# what is rendered.
 #
 # The root-level keys precede the table headers: a key placed after
 # [[targets]] becomes a key of that target entry and is silently
@@ -18,3 +21,6 @@ title = "The Geb language"
 
 [[targets]]
 library = "GebLang"
+
+[[targets]]
+library = "Geb"

@@ -4,25 +4,37 @@ testDriver = "GebTests"
 lintDriver = "batteries/runLinter"
 lintDriverArgs = ["Geb"]
 
-# mathlib's linters are declared per library below rather than here.
-# Verso's literate module facet re-serialises a module's Lean options as
+# Lean options registered by Lean core go in `leanOptions`; every other
+# option, mathlib's linters among them, goes in `moreLeanArgs` (and
+# `moreServerOptions`, which carries the same settings to the language
+# server). Verso's literate module facet re-serialises `leanOptions` as
 # `-D<name>=<value>` arguments to the verso-literate executable, whose
-# option parser rejects a name the environment does not register and does
-# not honour the `weak.` prefix that makes `lean` skip one.
-# The executable parses those arguments before it loads the module, so a
-# module's own imports do not help: a package-level declaration would
-# reach the literate pipeline as an unknown option and fail the render
-# whatever a `GebLang` module imports. `warningAsError` is registered by
-# Lean core, so it carries no prefix and reaches every pipeline.
-# The three-line `weak.linter.*` block is repeated in every `lean_lib`
-# and `lean_exe` below except `GebLang`; adding an option to mathlib's
-# set means editing each of them.
+# option parser rejects a name the executable does not register and
+# does not honour the `weak.` prefix that makes `lean` skip one; it
+# parses those arguments before loading the module, so the module's own
+# imports do not help. `moreLeanArgs` reach `lean` alone, which honours
+# `weak.`, and never reach the facet, so every module of every library
+# stays renderable by the literate pipeline
+# (docs/rules/lean-coding.md § Literate modules).
+#
+# mathlib's linters, for every library and executable of the package.
+moreLeanArgs = [
+  "-Dweak.linter.mathlibStandardSet=true",
+  "-Dweak.linter.flexible=true",
+  "-Dweak.linter.style.header=true",
+]
+
 [leanOptions]
 pp.unicode.fun = true
 autoImplicit = false
 relaxedAutoImplicit = false
 maxSynthPendingDepth = 3
 warningAsError = true
+
+[moreServerOptions]
+weak.linter.mathlibStandardSet = true
+weak.linter.flexible = true
+weak.linter.style.header = true
 
 # Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
 # the toolchain version. Verso's tags are named after Lean
@@ -63,11 +75,6 @@ rev = "v4.34.0-rc2"
 name = "Geb"
 globs = ["Geb.*"]
 
-[lean_lib.leanOptions]
-weak.linter.mathlibStandardSet = true
-weak.linter.flexible = true
-weak.linter.style.header = true
-
 [[lean_lib]]
 name = "GebTests"
 globs = ["GebTests.*"]
@@ -82,29 +89,25 @@ globs = ["GebTests.*"]
 # and `decide` both fail on those and `native_decide` is forbidden
 # outright. mathlib draws the same line: its `lean_lib MathlibTest`
 # carries no `leanOptions`, so `mathlibStandardSet` never reaches it.
-# mathlib's set is declared per library (see the note above the package
-# options); the entry below disables the one linter, an option of its own
-# taking precedence over the set that would otherwise enable it.
-[lean_lib.leanOptions]
-weak.linter.mathlibStandardSet = true
-weak.linter.flexible = true
-weak.linter.style.header = true
+# The entry below disables the one linter, an option of its own taking
+# precedence over the set that would otherwise enable it; it is a
+# mathlib option, so it goes in `moreLeanArgs` (see the note above the
+# package options).
+moreLeanArgs = ["-Dweak.linter.hashCommand=false"]
+
+[lean_lib.moreServerOptions]
 weak.linter.hashCommand = false
 
 [[lean_lib]]
 name = "GebMeta"
 
-[lean_lib.leanOptions]
-weak.linter.mathlibStandardSet = true
-weak.linter.flexible = true
-weak.linter.style.header = true
-
 # The Geb language, in Verso's literate style. `doc.verso` switches
 # this library's docstrings to checked Verso markup, which both
-# doc-gen4 and the literate pipeline render; it is set per-library so
-# the upstream-eligible subtrees keep mathlib-conventional Markdown
-# docstrings, which render correctly in consumers that do not set the
-# option.
+# doc-gen4 and the literate pipeline render. A literate module of any
+# other library sets the option itself; this library takes it from
+# here because its umbrella imports its modules directly, where
+# mathlib's header linter would reject a command before the module
+# docstring (docs/rules/lean-coding.md § Literate modules).
 [[lean_lib]]
 name = "GebLang"
 globs = ["GebLang.*"]
@@ -119,15 +122,18 @@ doc.verso = true
 # doc-build.yml in CI) is the only builder. linter.hashCommand is
 # disabled because #doc, the Verso document command, is the
 # library's content; verso.code.warnLineLength widens Verso's
-# code-line warning to the repository's line width.
+# code-line warning to the repository's line width. Neither option
+# is registered by Lean core, so both go in `moreLeanArgs` (see the
+# note above the package options).
 [[lean_lib]]
 name = "GebManual"
 srcDir = "manual"
+moreLeanArgs = [
+  "-Dweak.verso.code.warnLineLength=100",
+  "-Dweak.linter.hashCommand=false",
+]
 
-[lean_lib.leanOptions]
-weak.linter.mathlibStandardSet = true
-weak.linter.flexible = true
-weak.linter.style.header = true
+[lean_lib.moreServerOptions]
 weak.verso.code.warnLineLength = 100
 weak.linter.hashCommand = false
 
@@ -136,8 +142,3 @@ name = "geb-manual"
 srcDir = "manual"
 root = "Main"
 supportInterpreter = true
-
-[lean_exe.leanOptions]
-weak.linter.mathlibStandardSet = true
-weak.linter.flexible = true
-weak.linter.style.header = true

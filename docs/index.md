@@ -35,20 +35,22 @@ The repository is laid out narrow-and-deep, with one indexing
     `Geb.Prototypes.*`.
 - `GebLang/` — the Geb language's core data structures, at the
   bottom of the dependency order; imports from `Mathlib.*`,
-  `Batteries.*`, `Cslib.*`, `GebLang.*`, `GebMeta`, and
-  `Lean.DocString.Syntax` only. The last two are fixed exceptions,
-  the literate pipeline's own load-bearing imports rather than
+  `Batteries.*`, `Cslib.*`, `GebLang.*`, `Lean.DocString.Syntax`
+  and `GebMeta` only. The last two are fixed exceptions, the
+  literate pipeline's own load-bearing imports rather than
   content of this repository's own libraries
   (`docs/rules/upstream-eligible.md` § Subtree import rules). Each
   module is upstream-eligible and ships to mathlib4 or to Cslib
-  according to its own import closure. Written in Verso's literate
-  style and rendered twice (`docs/rules/lean-coding.md` § Literate
-  modules).
+  according to its own import closure. Its modules, like every new
+  module of `Geb/`, are literate and rendered by the literate site,
+  the manual and doc-gen4 alike (`docs/rules/lean-coding.md`
+  § Literate modules).
 - `GebTests/` — test library mirroring `Geb/`'s structure, with
   `GebTests/Mathlib/`, `GebTests/Cslib/`, and `GebTests/Prototypes/`
   subdirectories, plus `GebTests/Lang/`, which tests `GebLang/`.
-- `manual/` — the Verso manual (build and serve commands:
-  `README.md` § Documentation).
+- `manual/` — the Verso manual, whose chapters include literate
+  modules from the libraries above by name (build and serve
+  commands: `README.md` § Documentation).
 
 The directory split denotes upstream eligibility; the
 import-direction rules above are enforced by

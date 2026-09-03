@@ -74,8 +74,8 @@ check_coverage() {
     for m in $frontier; do
       f="$(mod_to_file "$m" "$prefix")"
       [[ -f "$f" ]] || continue
-      imps="$(grep -oE "^(public )?import ${root}(\.[A-Za-z0-9_]+)+" "$f" \
-        | sed -E 's/^(public )?import //')"
+      imps="$(grep -oE "^(public )?(meta )?import ${root}(\.[A-Za-z0-9_]+)+" "$f" \
+        | sed -E 's/^(public )?(meta )?import //')"
       for i in $imps; do
         if ! grep -qxF "$i" <<<"$reachable"; then
           reachable="$reachable"$'\n'"$i"

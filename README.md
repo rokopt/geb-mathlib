@@ -43,16 +43,21 @@ See `lakefile.toml` for the full dependency declaration.
   mathematical reference catalog.
 - The Geb manual (Verso): `scripts/manual.sh build` builds and
   generates it (`manual/_out/html-multi/`);
-  `scripts/manual.sh serve` serves it and prints the URL. There
-  is no watch mode: after editing under `manual/`, re-run
-  `build` and refresh the browser. Built in CI by `doc-build.yml`,
-  not by `lake build`.
-- The `GebLang` literate site (Verso): `scripts/literate.sh build`
-  builds the library, lints it, and renders the site;
+  `scripts/manual.sh serve` serves it and prints the URL. Its
+  chapters include literate modules from the Lean libraries by name
+  (`docs/rules/lean-coding.md` § Literate modules). There is no
+  watch mode: after editing under `manual/` or an included module,
+  re-run `build` and refresh the browser. Built in CI by
+  `doc-build.yml` and by `scripts/pre-push-full.sh`, not by
+  `lake build`.
+- The literate site (Verso), every module of `Geb/` and `GebLang/`
+  rendered as a page: `scripts/literate.sh build` builds the
+  libraries, lints them, and renders the site;
   `scripts/literate.sh serve` serves it and prints the URL. It has no
   watch mode: after editing a docstring, re-run `build` and refresh
-  the browser. Built in CI by `doc-build.yml`; the library
-  itself is in the default `lake build`.
+  the browser. Built in CI by `doc-build.yml` and by
+  `scripts/pre-push-full.sh`; the libraries themselves are the
+  default `lake build`.
 
 ## Process
 

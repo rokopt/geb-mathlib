@@ -6,27 +6,13 @@ Authors: Terence Rokop
 module
 
 public import VersoManual
-import Verso.Doc.Concrete.InlineString
+public meta import GebManual.BibTeX
 
 /-! # Bibliography
 
-The works the manual cites, as Verso bibliography entries.
-`docs/references.bib` is the authoritative record; these are
-rendering transcriptions keyed identically (the UpperCamelCase
-names mirror the bib keys).
+The works the manual cites, as Verso bibliography entries, one per
+entry of `docs/references.bib` and named by its citation key
+(`GebManual.BibTeX`).
 -/
 
-open Verso.Genre.Manual
-
-/-- Meertens, on paramorphisms. -/
-public def Meertens1992 : Article := {
-  title := inlines!"Paramorphisms",
-  authors := #[inlines!"L. Meertens"],
-  journal := inlines!"Formal Aspects of Computing",
-  year := 1992,
-  month := none,
-  volume := inlines!"4",
-  number := inlines!"5",
-  pages := some (413, 424),
-  url := some "https://doi.org/10.1007/BF01211391"
-}
+bibliography_entries
