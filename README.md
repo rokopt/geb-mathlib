@@ -19,7 +19,9 @@ shaped to be plausibly upstreamable to mathlib4 (via the
 `Geb/Mathlib/` subtree) or Cslib (via `Geb/Cslib/`), with the Geb
 language's core data structures in `GebLang/`, which ships to either
 upstream per module, alongside prototypes (under
-`Geb/Prototypes/`) whose expression is not yet settled.
+`Geb/Prototypes/`) whose expression is not yet settled. The manual
+and the rendered libraries are published at
+[rokopt.github.io/geb-mathlib](https://rokopt.github.io/geb-mathlib/).
 
 ## Dependencies
 
@@ -41,7 +43,8 @@ See `lakefile.toml` for the full dependency declaration.
   decision history.
 - [`docs/references.md`](docs/references.md) — Lean library and
   mathematical reference catalog.
-- The Geb manual (Verso): `scripts/manual.sh build` builds and
+- [The Geb manual](https://rokopt.github.io/geb-mathlib/) (Verso),
+  the root of the published site: `scripts/manual.sh build` builds and
   generates it (`manual/_out/html-multi/`);
   `scripts/manual.sh serve` serves it and prints the URL. Its
   chapters include literate modules from the Lean libraries by name
@@ -49,15 +52,16 @@ See `lakefile.toml` for the full dependency declaration.
   watch mode: after editing under `manual/` or an included module,
   re-run `build` and refresh the browser. Built in CI by
   `doc-build.yml` and by `scripts/pre-push-full.sh`, not by
-  `lake build`.
-- The literate site (Verso), every module of `Geb/` and `GebLang/`
-  rendered as a page: `scripts/literate.sh build` builds the
+  `lake build`; deployed by `pages.yml`.
+- [The literate site](https://rokopt.github.io/geb-mathlib/literate/)
+  (Verso), every module of `Geb/` and `GebLang/` rendered as a page
+  under `literate/` of the published site: `scripts/literate.sh build` builds the
   libraries, lints them, and renders the site;
   `scripts/literate.sh serve` serves it and prints the URL. It has no
   watch mode: after editing a docstring, re-run `build` and refresh
   the browser. Built in CI by `doc-build.yml` and by
-  `scripts/pre-push-full.sh`; the libraries themselves are the
-  default `lake build`.
+  `scripts/pre-push-full.sh`, and deployed by `pages.yml`; the
+  libraries themselves are the default `lake build`.
 
 ## Process
 
