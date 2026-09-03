@@ -19,6 +19,6 @@ def main (args : List String) : IO UInt32 :=
   manualMain (%doc GebManual.Root)
     (options := args)
     (config := {
-      sourceLink := some "https://github.com/rokopt/geb-mathlib",
+      sourceLink := some "/literate/",
       issueLink := some "https://github.com/rokopt/geb-mathlib/issues"
     })
