@@ -150,7 +150,11 @@ kept for reference need never appear in the manual, and a settled
 development is linked without being rewritten. One source serves the
 library, the API reference and the manual, so exposition and code
 cannot drift apart, and a reference in prose to a constant is
-checked at elaboration as the code is.
+checked at elaboration as the code is. Citations follow the same
+principle: `docs/references.bib` is the one record of the
+bibliographic detail, a literate module's `{cite}` role resolves a
+key in it at elaboration, and the manual's citable entries are
+generated from it rather than transcribed.
 
 The checked markup is enabled per module rather than per library
 because a library-wide option would reach every module written

@@ -632,14 +632,20 @@ their Markdown docstrings; they render too, and are not converted.
   document object a `#doc` elaborates, and a bibliography entry, depend
   on `Classical.choice` through Verso's own definitions, so every module
   holding one is listed in `GebMeta.classicalAllowedModules`, chapter by
-  chapter; a literate module kept under `manual/` and included by a
-  chapter is held to the strict set like any other.
-- Bibliography entries are top-level `def`s whose names are the
-  `docs/references.bib` keys, UpperCamelCase, departing from
-  lowerCamelCase term naming: the key identity across the `.bib`,
-  the Lean source, and the rendered citations outweighs the
-  naming rule. The `.bib` entry is authoritative; the Lean entry
-  is a rendering transcription corrected against it.
+  chapter, as is `GebManual.BibTeX`, elaboration code whose monads
+  depend on it; a
+  literate module kept under `manual/` and included by a chapter is
+  held to the strict set like any other.
+- Bibliography entries are generated: `bibliography_entries`
+  (`GebManual.BibTeX`), invoked by `GebManual.Bibliography`, declares
+  one `Citable` per entry of `docs/references.bib`, named by its key,
+  UpperCamelCase as the keys are, so a chapter cites with
+  `{citep Key}[]` and nothing is transcribed by hand. Verso's manual
+  genre defines four citable kinds, article, in-proceedings, thesis
+  and arXiv; an entry of another kind is declared as an article whose
+  journal is its publisher, institution or `howpublished` field. The
+  file is read by `GebMeta.loadBibliography`, which the `{cite}`
+  docstring role shares.
 - `manual/Main.lean` alone does not declare `module`: under the
   module system its `main` compiles private and the executable
   fails to link (`ld.lld: error: undefined symbol: main`).

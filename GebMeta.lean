@@ -78,14 +78,16 @@ correspondence between a concept developed here and a concept of an
 external Lean library (Batteries, mathlib, CSLib) that itself uses
 `Classical.choice`; the `GebTests` parallel of such a module (a test of a
 `Classical`-allowed module is itself `Classical`-dependent); the
-axiom-linter's own test fixture; and every `GebManual` module holding a
-`#doc` document or a bibliography entry, whose document objects depend on
-`Classical.choice` through Verso's own definitions, so that a literate
-module under `manual/` is held to the strict set while the chapters that
-include it are not. Feature branches append the module names their own
-such modules occupy. -/
+axiom-linter's own test fixture; every `GebManual` module holding a
+`#doc` document or a bibliography entry, whose document objects depend
+on `Classical.choice` through Verso's own definitions, so that a
+literate module under `manual/` is held to the strict set while the
+chapters that include it are not; and `GebManual.BibTeX`, elaboration
+code whose monads depend on it. Feature branches append the module
+names their own such modules occupy. -/
 def classicalAllowedModules : NameSet :=
   [`GebTests.Prototypes.AxiomLinterClassicalFixture,
+   `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.Introduction,
    `GebManual.Root,
