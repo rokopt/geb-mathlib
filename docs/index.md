@@ -1305,6 +1305,32 @@ checklist and in CI.
   `GebTests/Prototypes/LargeIR/Grothendieck.lean` are listed in
   `GebMeta.classicalAllowedModules`, the choice-free content being in
   `Morphism.lean`.
+- `Geb/Prototypes/LargeIR/General.lean` — the general case: which presheaf
+  polynomial endofunctors on the walking arrow are codes.
+  `GebProto.LargeIR.elemEquiv` computes the value of any such functor at a
+  walking-arrow presheaf in dependent-type terms, as a shape, a base
+  assignment of its level-`0` directions in `Z 0`, and an assignment of its
+  level-`1` directions in the fibres over the base assignment at the
+  restricted directions; `GebProto.LargeIR.objLevel` splits it by level and
+  `GebProto.LargeIR.objLevel_objRestr` computes the restriction on it. The
+  code exists under `GebProto.LargeIR.BaseCartesian`, that the reindexing of
+  level-`0` directions from a level-`1` shape's restriction is a bijection: it
+  is `GebProto.LargeIR.genCode`: a `σ` over the level-`0` shapes `a`, then
+  `δ (D₀ a)`, then a `σ` over `Π d : D₁ a, A (ρ d)`, then `ι` of the fibre,
+  with `GebProto.LargeIR.genFibre` the level-`1` shapes over a level-`0` shape
+  carrying assignments that restrict to `w`, and
+  `GebProto.LargeIR.genCodeEquiv` the isomorphism of the functor's output
+  presheaf with the presheaf of the code's interpretation.
+  `GebProto.LargeIR.arrowPshBaseCartesian` exhibits the transcription of a
+  slice polynomial functor as an instance. The condition is not an artefact:
+  without it a level-`1` shape carries a level-`0` direction whose value is an
+  element of the index type unconstrained by the level-`0` element below, so
+  the fibre has the index type as a factor, which the interpretation of no
+  code has, decodings mentioning the index type only through the decoded
+  family; that argument is stated in the module and not formalized. The
+  mirror `GebTests/Prototypes/LargeIR/General.lean` reads the two elements of
+  the `Basic` mirror through the general isomorphism. No declaration depends
+  on `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
