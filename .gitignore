@@ -8,6 +8,7 @@
 .poolside/
 .qoder/
 .claude/settings.local.json
+.zvec-grep/
 # Vale's StylesPath holds vendored style packages, which are fetched by
 # `vale sync` and not authored here. The project vocabulary under
 # `styles/config/` is authored, and `.vale.ini` names it, so it is tracked.
