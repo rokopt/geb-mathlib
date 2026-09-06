@@ -13,9 +13,10 @@ public import Geb.Prototypes.FinCardUniverse
 public import Geb.Prototypes.LargeIR
 public import Geb.Prototypes.ParanaturalRank
 public import Geb.Prototypes.PresheafIRProto
-public import Geb.Prototypes.RelSeparation
+public import Geb.Prototypes.PresheafIRUniv
 public import Geb.Prototypes.PresheafUniverse
 public import Geb.Prototypes.ReadableSExpr
+public import Geb.Prototypes.RelSeparation
 public import Geb.Prototypes.UniverseVariance
 
 /-!

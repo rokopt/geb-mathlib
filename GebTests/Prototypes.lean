@@ -13,6 +13,7 @@ import GebTests.Prototypes.ConcreteSyntax
 import GebTests.Prototypes.FamBoundary
 import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.ParanaturalRank
+import GebTests.Prototypes.PresheafIRUniv
 import GebTests.Prototypes.PresheafUniverse
 import GebTests.Prototypes.ReadableSExpr
 import GebTests.Prototypes.RelSeparation
