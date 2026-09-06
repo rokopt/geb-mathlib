@@ -1220,6 +1220,31 @@ checklist and in CI.
   morphisms, over the same class `Geb/Prototypes/UniverseVariance/` shows both
   type formers act along. No theorem here depends on an axiom beyond `propext`
   and `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Basic.lean` — a slice polynomial functor
+  `Type/X → Type/Y` transcribed into a presheaf polynomial endofunctor on the
+  walking arrow, whose presheaves are `Fam(Type)`, and what the transcription
+  computes. `GebProto.LargeIR.arrowPsh` places `Y` at level `0`, the shapes
+  at level `1`, and gives every shape the constant direction presheaf `X` at
+  level `0`; `GebProto.LargeIR.objEquiv` computes its value at a presheaf `Z`
+  as `GebProto.LargeIR.Levels`: level `0` is `Y × (X → Z 0)`, and level `1`
+  over `(y, f₀)` is the slice functor at the pullback
+  `GebProto.LargeIR.pullbackAlong` of `Z 1 → Z 0` along `f₀`. The base map is
+  free because a polynomial functor on `Fam(Type)` sees the base of its
+  argument only through homs into it, so the transcription is the left Kan
+  extension of the slice functor along the fibre inclusion `Type/X → Fam(Type)`
+  and not the slice functor itself; the surviving `Σ (f₀ : X → Z 0)` is the
+  `δ` constructor of large inductive-recursive codes, with `X` the arity and
+  `Z 0` the universe. `GebProto.LargeIR.pullbackIdEquiv` identifies the
+  level-`1` fibre over `(y, id)` at an input `GebProto.LargeIR.ofSlice p` with
+  the slice functor's value, `GebProto.LargeIR.cmp` is the comparison map,
+  `GebProto.LargeIR.map_cmp` its naturality in the object of `Type/X`, and
+  `GebProto.LargeIR.toLevels_objRestr_cmp` that its image restricts along
+  `0 ⟶ 1` to `(y, id)`. `GebProto.LargeIR.isNatural_iff` reduces naturality of
+  a direction assignment over the walking arrow to its equation along the one
+  non-identity morphism. The mirror `GebTests/Prototypes/LargeIR.lean` computes
+  the value at an object `Fin 3 → Bool` for the functor `A ↦ A true × A false`,
+  including a level-`1` element over the base map `not`, which the slice
+  functor alone cannot express. No declaration depends on `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the

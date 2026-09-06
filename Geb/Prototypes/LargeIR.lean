@@ -9,4 +9,12 @@ public import Geb.Prototypes.LargeIR.Basic
 
 /-!
 # LargeIR — index
+
+Prototype transcription of a slice polynomial functor `Type/X → Type/Y` into
+a presheaf polynomial endofunctor on the walking arrow, whose presheaves are
+the free coproduct completion `Fam(Type)`, and the computation of what the
+endofunctor does: the base map `X → Z 0` survives as data of the value, which
+is the `δ` constructor of large inductive-recursive codes rather than the
+slice functor itself. See `Basic` for the construction and the comparison map
+along the identity section.
 -/

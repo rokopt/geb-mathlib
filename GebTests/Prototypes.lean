@@ -12,6 +12,7 @@ import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
 import GebTests.Prototypes.FamBoundary
 import GebTests.Prototypes.FinCardUniverse
+import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafIRUniv
 import GebTests.Prototypes.PresheafUniverse
