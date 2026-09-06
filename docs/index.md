@@ -1632,6 +1632,32 @@ checklist and in CI.
   length-prefixed form does not need. No theorem here depends on an
   axiom beyond `propext` and `Quot.sound`, and no declaration depends on
   `Classical.choice`.
+- [CanonicalSExpr/IO.lean](../Geb/Prototypes/CanonicalSExpr/IO.lean) and
+  [ReadableSExpr/IO.lean](../Geb/Prototypes/ReadableSExpr/IO.lean) — file
+  wrappers using Lean's standard
+  [file operations](https://lean-lang.org/doc/api/Init/System/IO.html).
+  `Csexp.readFile`/`writeFile` operate on tagged binary trees;
+  `Rose.readFile`/`writeFile` on canonical rose expressions;
+  `Rsexp.readFile`/`writeFile` on readable rose expressions.
+  Rose results compose with `Option.map Ast.ofRose`, and binary trees
+  with `Ast.toRose` before writing. `CSexp.writeFile` writes a general
+  ASCII expression, rejecting non-ASCII atoms before opening the output.
+  Reads return `IO (Option ...)`, separating parser rejection from
+  filesystem exceptions. Files are read in full; writes create or
+  truncate the destination without adding a newline.
+  [ConcreteSyntax/Command.lean](../Geb/Prototypes/ConcreteSyntax/Command.lean)
+  provides `lake exe sexpr check FORMAT K INPUT` and
+  `lake exe sexpr convert FROM TO K INPUT OUTPUT`. Formats are
+  `canonical`, `canonical-rose`, and `readable`; every label must be
+  less than `K`. For example,
+  `lake exe sexpr convert readable canonical 3 input.sexp output.sexp`
+  parses readable input, converts it to `Ast 3`, and writes the tagged
+  canonical encoding. Errors produce a nonzero exit status and a
+  diagnostic on standard error. Parsing precedes opening the output;
+  writes are not atomic. The parsers retain their existing acceptance
+  rules, rather than enforcing strict RFC validation.
+  [SExprIO tests](../GebTests/Prototypes/SExprIO.lean) exercise file
+  round trips, conversions, and error handling under `lake test`.
 - `Geb/Prototypes/Computability/TreeScanner/Machine.lean` — a deterministic
   multi-tape Turing machine over Cslib's `Turing.MultiTapeTM` deciding
   `RankedAlphabet.Binary.binRanked.validBool`. `boolEmb` embeds the input

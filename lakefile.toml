@@ -138,6 +138,10 @@ weak.verso.code.warnLineLength = 100
 weak.linter.hashCommand = false
 
 [[lean_exe]]
+name = "sexpr"
+root = "SexprMain"
+
+[[lean_exe]]
 name = "geb-manual"
 srcDir = "manual"
 root = "Main"
