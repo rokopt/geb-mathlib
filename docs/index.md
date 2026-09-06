@@ -1331,6 +1331,24 @@ checklist and in CI.
   mirror `GebTests/Prototypes/LargeIR/General.lean` reads the two elements of
   the `Basic` mirror through the general isomorphism. No declaration depends
   on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Binder.lean` — why a universe's dependent-product
+  former is not a walking-arrow presheaf polynomial functor. The former's code
+  `δ 1 (fun T₀ ↦ δ (T₀ ()) (fun T₁ ↦ ι (Π T₁)))` has a `δ` whose arity is a
+  decoding, and on families it is `(U, T) ↦ Σ a, Σ (b : T a → U), Π x, T (b x)`,
+  contravariant in the fibre `T a`, which is the variance that confines the
+  large inductive-recursive interpretation to `Fam(Cᵒᵖ)` or groupoids and
+  made `Geb/Prototypes/PresheafIRUniv/` take binary formers.
+  `GebProto.LargeIR.PiFormerValue` is the former's level-`1` value at a
+  walking-arrow presheaf, `GebProto.LargeIR.termsPsh` the presheaf with one
+  code and `n` terms, at which `GebProto.LargeIR.piFormerEquiv` computes the
+  value as `Fin n → Fin n`, and `GebProto.LargeIR.not_piFormer` shows no
+  walking-arrow presheaf polynomial functor has level-`1` values in bijection
+  with the former's at every such presheaf, the bijections at `n = 0` and
+  `n = 1` forcing a single level-`1` shape without level-`1` directions, whose
+  value at `n = 2` is a point. The mirror
+  `GebTests/Prototypes/LargeIR/Binder.lean` computes the former's value on the
+  swap of two terms and applies the theorem to the transcription of a slice
+  polynomial functor. No declaration depends on `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
