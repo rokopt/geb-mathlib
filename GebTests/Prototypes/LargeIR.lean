@@ -11,6 +11,7 @@ import GebTests.Prototypes.LargeIR.Morphism
 import GebTests.Prototypes.LargeIR.Grothendieck
 import GebTests.Prototypes.LargeIR.General
 import GebTests.Prototypes.LargeIR.Binder
+import GebTests.Prototypes.LargeIR.Product
 
 /-!
 # LargeIR tests — index
