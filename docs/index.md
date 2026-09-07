@@ -1135,6 +1135,286 @@ checklist and in CI.
   functor laws proved here rather than transported. The module declares
   no theorems, and every declaration in it depends on `propext`,
   `Classical.choice` and `Quot.sound`.
+- `Geb/Prototypes/PresheafUniverse/Basic.lean` — prototype of the
+  dependent-type universe of [GhaniNordvallForsbergMalatesta2015] as a
+  presheaf polynomial endofunctor, in place of the inductive-recursive
+  presentation of `Geb/Mathlib/Data/PFunctor/IndRec/Universes.lean`. The
+  base category is the preorder on `Fin 2`, that is, the walking arrow:
+  a presheaf on it is a map from terms to codes, so the decoding of a
+  code is the fiber of that map over it rather than a function into a
+  universe of types, and the functor is an endofunctor on a presheaf
+  category rather than on a slice of `Type` over itself.
+  `GebProto.PresheafUniverse.Shp` is the shape type — the base-type code,
+  the two binder codes, one term shape per element of the base type, and
+  the pair term — and `GebProto.PresheafUniverse.Dir` its arities, both
+  finite. `GebProto.PresheafUniverse.codeShp` and
+  `GebProto.PresheafUniverse.codeDir` are the shape and direction
+  restrictions to the code object, `GebProto.PresheafUniverse.reindexDir`
+  the arity reindexing along them, and
+  `GebProto.PresheafUniverse.universeFunctor` the resulting
+  `PresheafPFunctor`, with `GebProto.PresheafUniverse.finiteUniverse` its
+  finiteness evidence, so its W-type fibers are decided by
+  `FinitePresheafPFunctor.memWBool`. Because an arity is fixed
+  independently of the input presheaf, the family a `sigma` or `pi` code
+  carries in the inductive-recursive presentation is not expressible: the
+  two binder codes take a single subcode in each argument and so denote
+  the non-dependent product and function space, and `pi` has no
+  introduction shape. What the finite arities do capture is the family
+  evaluated at a term, through the naturality of a direction assignment.
+  No theorem here depends on an axiom beyond `propext` and `Quot.sound`,
+  and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/PresheafUniverse/Trees.lean` — the codes and terms of
+  that universe as W-trees. `GebProto.PresheafUniverse.node` builds an
+  admissible tree, `GebProto.PresheafUniverse.baseCode`,
+  `GebProto.PresheafUniverse.sigmaCode` and
+  `GebProto.PresheafUniverse.piCode` the codes, and
+  `GebProto.PresheafUniverse.litTerm` with
+  `GebProto.PresheafUniverse.pairTerm` the terms.
+  `GebProto.PresheafUniverse.typeOf` is the root-restriction along the
+  walking arrow's non-identity morphism
+  `GebProto.PresheafUniverse.arrowHom`, that is, the typing map;
+  `GebProto.PresheafUniverse.typeOf_litTerm` and
+  `GebProto.PresheafUniverse.typeOf_pairTerm` compute it on the two term
+  constructors, the latter being the statement that the presheaf
+  restriction of a pair is the `sigma` code of its components' types.
+  Hereditary naturality of a term tree is its well-typedness, which the
+  mirror `GebTests/Prototypes/PresheafUniverse/Trees.lean` exhibits by
+  deciding fiber membership for a well-typed and an ill-typed pair. No
+  theorem here depends on an axiom beyond `propext` and `Quot.sound`, and
+  no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FamBoundary.lean` — where the free coproduct completion
+  `Fam(C)` sits inside `PSh(C)`, which is what decides whether a universe built
+  over presheaves can be read back as a family of codes.
+  `GebProto.FamBoundary.famPsh` is a family of objects as the coproduct of
+  representables `Σ_u y(d u)` and `GebProto.FamBoundary.IsFamPsh` membership in
+  the image, as an unbundled natural isomorphism so that no hom of a functor
+  category is named. `GebProto.FamBoundary.isFamPsh_praPsh` is the positive
+  result: a sum over shapes of a representable times a set — the shape of the
+  p.r.a. formula's value — is a family presheaf whatever the set, the free
+  coproduct completion being closed under set-indexed coproducts. So the
+  coercion multiplicity of `Geb/Prototypes/FinCardUniverse/Value.lean` is no
+  obstruction to restricting; it lands in the code type. What obstructs is the
+  shape presheaf, `T₁` being `T(1)`:
+  `GebProto.FamBoundary.isFamPsh_topPsh_of_terminal` shows the terminal presheaf
+  is a family presheaf when the base has a terminal object, and
+  `GebProto.FamBoundary.not_isFamPsh_topPsh` shows it is not over the walking
+  parallel pair, which has none — `GebProto.FamBoundary.isEmpty_one_to_zero` and
+  `GebProto.FamBoundary.left_ne_right` being why neither of its objects is
+  terminal. The category of elements of the terminal presheaf is the base
+  itself, so these are the general criterion — a presheaf lies in `Fam(C)`
+  exactly when every connected component of its category of elements has a
+  terminal object — read at the terminal presheaf; the general criterion is not
+  formalized. `GebProto.FamBoundary.universalElement` and
+  `GebProto.FamBoundary.IsUniversalElement` name the element an inductive-recursive
+  constraint would ask a direction for — the code with the identity, terminal in
+  its component — and `GebProto.FamBoundary.isUniversalElement_famMorApp` is its
+  stability, on exactly the morphisms of families
+  (`GebProto.FamBoundary.FamMor`) whose decoding comparisons are transports:
+  the split cartesian fragment, which is Dybjer and Setzer's setting.
+  `GebProto.FamBoundary.IsSplitCoercion` weakens the constraint to "the coercion
+  is a split epimorphism" and
+  `GebProto.FamBoundary.isSplitCoercion_famMorApp` shows it stable under
+  morphisms whose decoding comparisons are split epimorphisms, with
+  `GebProto.FamBoundary.isSplitCoercion_of_isUniversalElement` showing the weakening
+  proper — a constraint short of universality that survives non-invertible
+  morphisms, over the same class `Geb/Prototypes/UniverseVariance/` shows both
+  type formers act along. No theorem here depends on an axiom beyond `propext`
+  and `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Basic.lean` — a slice polynomial functor
+  `Type/X → Type/Y` transcribed into a presheaf polynomial endofunctor on the
+  walking arrow, whose presheaves are `Fam(Type)`, and what the transcription
+  computes. `GebProto.LargeIR.arrowPsh` places `Y` at level `0`, the shapes
+  at level `1`, and gives every shape the constant direction presheaf `X` at
+  level `0`; `GebProto.LargeIR.objEquiv` computes its value at a presheaf `Z`
+  as `GebProto.LargeIR.Levels`: level `0` is `Y × (X → Z 0)`, and level `1`
+  over `(y, f₀)` is the slice functor at the pullback
+  `GebProto.LargeIR.pullbackAlong` of `Z 1 → Z 0` along `f₀`. The base map is
+  free because a polynomial functor on `Fam(Type)` sees the base of its
+  argument only through homs into it, so the transcription is the left Kan
+  extension of the slice functor along the fibre inclusion `Type/X → Fam(Type)`
+  and not the slice functor itself; the surviving `Σ (f₀ : X → Z 0)` is the
+  `δ` constructor of large inductive-recursive codes, with `X` the arity and
+  `Z 0` the universe. `GebProto.LargeIR.pullbackIdEquiv` identifies the
+  level-`1` fibre over `(y, id)` at an input `GebProto.LargeIR.ofSlice p` with
+  the slice functor's value, `GebProto.LargeIR.cmp` is the comparison map,
+  `GebProto.LargeIR.map_cmp` its naturality in the object of `Type/X`, and
+  `GebProto.LargeIR.toLevels_objRestr_cmp` that its image restricts along
+  `0 ⟶ 1` to `(y, id)`. `GebProto.LargeIR.isNatural_iff` reduces naturality of
+  a direction assignment over the walking arrow to its equation along the one
+  non-identity morphism. The mirror `GebTests/Prototypes/LargeIR.lean` computes
+  the value at an object `Fin 3 → Bool` for the functor `A ↦ A true × A false`,
+  including a level-`1` element over the base map `not`, which the slice
+  functor alone cannot express. No declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
+  value read back as a family of codes.
+  `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
+  total space of the family presheaf on `GebProto.FinCardUniverse.Code` with
+  decoding `GebProto.FinCardUniverse.out`, which is the hypothesis
+  `GebProto.FamBoundary.isFamPsh_praPsh` needs;
+  `GebProto.FinCardUniverse.arityPshEquiv` does the same for each arity, so both
+  halves of the functor's data are coproducts of representables and strictness
+  fails all the same — the coercion enters when mapping into the input, not from
+  the shapes or arities. And
+  `GebProto.FinCardUniverse.universalShape` names the shape carrying the identity
+  — the terminal object of that component of the elements.
+  `GebProto.FinCardUniverse.famCode` and `GebProto.FinCardUniverse.famDec` are
+  the resulting codes and decoding: a code former together with an arity hom,
+  decoding by the former alone. `GebProto.FinCardUniverse.famDec_eq` is the
+  point — the decoding does not mention the arity hom, so two codes with the
+  same former decode alike however differently they bind, which is what
+  separates the value from an inductive-recursive family. No theorem here
+  depends on an axiom beyond `propext` and `Quot.sound`, and no declaration
+  depends on `Classical.choice`.
+- `Geb/Prototypes/FinCardUniverse/Basic.lean` — prototype of the same
+  universe over a base category that is not discrete: `Card`, the finite
+  cardinals with functions between their elements as morphisms.
+  `GebProto.FinCardUniverse.Code` is the code formers — one nullary former
+  per object and one binder former at an object and a family of objects
+  indexed by its elements — with `GebProto.FinCardUniverse.Idx` and
+  `GebProto.FinCardUniverse.bound` its arity's representable summands and
+  the objects those are indexed by. `GebProto.FinCardUniverse.Shp` and
+  `GebProto.FinCardUniverse.Dir` are the total spaces of the shape presheaf
+  `Σ_c y(out c)` and the arity presheaf `Σ_k y(bound c k)`, so every
+  restriction map is precomposition and the seven laws
+  (`GebProto.FinCardUniverse.directionRestr_id_law` through
+  `GebProto.FinCardUniverse.reindex_comp_law`) are the category laws.
+  `GebProto.FinCardUniverse.universeFunctor` is the resulting
+  `PresheafPFunctor`, parameterized by the type former, and
+  `GebProto.FinCardUniverse.sigmaUniverse` and
+  `GebProto.FinCardUniverse.piUniverse` its two instances, which differ only in
+  the shape-output map `q`. The base is defined here rather than taken to be
+  `Geb/Mathlib/CategoryTheory/FinSetSkel`, which has the same objects: that
+  category seals `FinSetSkel.Hom` `irreducible` so morphism equality is
+  decidable without `Classical.choice`, and the seal blocks the definitional
+  associativity the arity reindexing and the `ReindexId` and `ReindexComp`
+  transports rely on. No theorem here depends on an axiom beyond `propext` and
+  `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FinCardUniverse/Value.lean` — what that functor computes.
+  `GebProto.FinCardUniverse.famPresheaf` embeds a family of codes as the
+  coproduct of representables `Σ_u y(d u)`, and
+  `GebProto.FinCardUniverse.arityHomEquiv` computes the arity homs into it: one
+  code and one morphism `bound k ⟶ d u` per summand, where the
+  inductive-recursive presentation over a discrete base has an equality.
+  `GebProto.FinCardUniverse.junkArity` is the consequence — a binder shape
+  declaring the empty object accepting a code that denotes the singleton,
+  `GebProto.FinCardUniverse.junk_decoding_ne` — with
+  `GebProto.FinCardUniverse.junkObj` the element of the functor's value it
+  gives through the p.r.a. formula and
+  `GebProto.FinCardUniverse.out_emptyBind` the statement that the object the
+  resulting code decodes to is fixed by the shape's declaration rather than by
+  the code bound. `GebProto.FinCardUniverse.sigmaFormer_covariant` and
+  `GebProto.FinCardUniverse.piFormer_not_covariant` reproduce Example 3.6 of
+  [GhaniNordvallForsbergMalatesta2015] at the smallest scale that hosts it: the
+  empty dependent product is the singleton and the dependent product of the
+  counterexample family is empty, so the covariant action the dependent-product
+  former would need is a map from the singleton to the empty object. No theorem
+  here depends on an axiom beyond `propext` and `Quot.sound`, and no
+  declaration depends on `Classical.choice`.
+- `Geb/Prototypes/UniverseVariance/Basic.lean` — which morphisms of the
+  decoding category the universe's type formers are functorial along. Example
+  3.6 of [GhaniNordvallForsbergMalatesta2015] rules out all functions and
+  answers with the groupoid of isomorphisms; this module records that
+  invertibility is more than the interpretation needs.
+  `GebProto.UniverseVariance.Split` is a function with a chosen section,
+  composing contravariantly in the sections
+  (`GebProto.UniverseVariance.Split.id_comp`,
+  `GebProto.UniverseVariance.Split.comp_id`,
+  `GebProto.UniverseVariance.Split.comp_assoc`).
+  `GebProto.UniverseVariance.sigmaMap` is the dependent-sum former's action,
+  which needs no backward map, and `GebProto.UniverseVariance.piMap` the
+  dependent-product former's, which runs the reindexing backwards along the
+  chosen section and transports along the right-inverse witness — the same move
+  the discrete case makes along an equality of decodings.
+  `GebProto.UniverseVariance.piMap_id` and
+  `GebProto.UniverseVariance.piMap_comp` are its functor laws, which is the
+  claim; `GebProto.UniverseVariance.not_piMap` is the counterexample along an
+  arbitrary function, the one `Geb/Prototypes/FinCardUniverse/Value.lean`
+  reproduces in its finite model, where
+  `GebProto.FinCardUniverse.counterMap_not_split` records that the morphism
+  there admits no section. `GebProto.UniverseVariance.Split.ofEquiv` places the
+  groupoid inside the class and the mirror
+  `GebTests/Prototypes/UniverseVariance/Basic.lean` exhibits a split
+  epimorphism that is not injective, so the containment is strict in both
+  directions. `GebProto.UniverseVariance.twIdEquivSplit` identifies the class: a
+  morphism between identity arrows in the twisted-arrow category is exactly such
+  a pair, so the decoding category a universe closed under both formers can be
+  interpreted over is at least the diagonal of `Tw(C)`. No theorem here depends
+  on an axiom beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
+- `Geb/Prototypes/UniverseVariance/Retract.lean` — the two type formers' action
+  when the binder's family moves as well. `Basic` moves the bound object along a
+  `GebProto.UniverseVariance.Split` and reads the family through the
+  reindexing; here the family over the source is arbitrary, related to the one
+  over the target by a `Split` at each index, which is the shape a decoding
+  takes once the codes have moved too.
+  `GebProto.UniverseVariance.sigmaSplit` and
+  `GebProto.UniverseVariance.piSplit` are the two actions, and
+  `GebProto.UniverseVariance.sigmaSplit_id`,
+  `GebProto.UniverseVariance.sigmaSplit_comp`,
+  `GebProto.UniverseVariance.piSplit_id` and
+  `GebProto.UniverseVariance.piSplit_comp` their functor laws. So both formers
+  carry "the decoding is a retract of the declared one" from the bound object
+  and the binder's family to the former's value, and no coherence between the
+  two levels is assumed: the section on the bound object is what supplies the
+  reindexing the dependent-product former runs backwards.
+  `GebProto.UniverseVariance.Split.sect_cast` and
+  `GebProto.UniverseVariance.Split.toFun_cast` are the transports the
+  composition laws need — a family of `Split`s read at two indices which the
+  section identifies only propositionally. No theorem here depends on an axiom
+  beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
+- `Geb/Prototypes/UniverseVariance/Universe.lean` — Examples 3.5 and 3.6 of
+  [GhaniNordvallForsbergMalatesta2015] over that base.
+  `GebProto.UniverseVariance.Fam` is a family of types and
+  `GebProto.UniverseVariance.FamHom` a map of codes together with an
+  embedding-projection pair between the decodings, the form the chosen section
+  takes once the decoding maps are packaged; it composes as a category
+  (`GebProto.UniverseVariance.FamHom.id_comp` and its siblings).
+  `GebProto.UniverseVariance.univObj` is the universe functor on objects,
+  parameterized by a base type and a type former, and
+  `GebProto.UniverseVariance.univCodeMap` its action on codes, which reindexes
+  the binder's family along the projection — the `replace` of the discrete
+  presentation.
+  `GebProto.UniverseVariance.sigmaUnivHom` is Example 3.5's morphism map and
+  `GebProto.UniverseVariance.piUnivHom` Example 3.6's, the one that does not
+  exist over `Set`. `GebProto.UniverseVariance.univCodeMap_id` and
+  `GebProto.UniverseVariance.univCodeMap_comp` are the functor laws of the
+  action on codes, and `GebProto.UniverseVariance.sigmaUnivHom_id`,
+  `GebProto.UniverseVariance.sigmaUnivHom_comp`,
+  `GebProto.UniverseVariance.piUnivHom_id` and
+  `GebProto.UniverseVariance.piUnivHom_comp` those of the morphism maps
+  themselves, decoding components included: each decoding component is
+  `Retract`'s action of the corresponding former at the binder's data, so its
+  laws are that module's, applied through the extensionality
+  `GebProto.UniverseVariance.FamHom.ext`. The device — restricting to the
+  subcategory of embeddings so that a mixed-variance functor becomes covariant —
+  is Theorem 5.8 of [LindenhoviusMisloveZamdzhiev2021], transported to the
+  inductive-recursive setting. No theorem here depends on an axiom beyond
+  `propext` and `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/ParanaturalRank.lean` — where strong dinaturality and
+  parametricity part. Paranaturality is strong dinaturality
+  ([Neumann2023] Definition 2.7), and whether it is parametricity turns on the
+  difunctor structure carried at a negative occurrence. At
+  `∀ X, ((X → X) → X) → X`, the type [Neumann2023] Section 6.2 names as the
+  simplest separating one, `GebProto.ParanaturalRank.ParanaturalHom` is the free
+  theorem's hypothesis — `p` and `q` related at every pair of endomorphisms `j`
+  intertwines — and `GebProto.ParanaturalRank.TwistedHom` the hypothesis the
+  twisted exponential produces, which reaches only the pairs cut out by a
+  function backwards.
+  `GebProto.ParanaturalRank.twistedHom_of_paranaturalHom` is one containment;
+  `GebProto.ParanaturalRank.twistedHom_unitBool` and
+  `GebProto.ParanaturalRank.not_paranaturalHom_unitBool` refute the other at
+  `Unit` and `Bool`. So the condition the twisted exponential imposes on a
+  transformation is the stronger, and
+  `GebProto.ParanaturalRank.selfApply` — the term `Λ X. λ p. p (λ x. x)` — is
+  what it excludes: `GebProto.ParanaturalRank.selfApply_paranatural` satisfies
+  the free theorem at every instance and
+  `GebProto.ParanaturalRank.not_selfApply_twisted` fails the twisted condition
+  at the separating one. Both hypotheses are transcribed as Section 6.2 states
+  them, so what is established is that the two conditions differ, not that they
+  are the conditions the two structures produce. No theorem here depends on an
+  axiom beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - `Geb/Prototypes/ConcreteSyntax.lean` — prototype of the concrete-syntax
   layer for the Geb abstract syntax tree. Every tree type here is a
   `WType`, so its recursion runs through `WType.elim`, `WType.para` or
