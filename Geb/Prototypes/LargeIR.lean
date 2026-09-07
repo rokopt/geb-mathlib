@@ -10,6 +10,7 @@ public import Geb.Prototypes.LargeIR.Code
 public import Geb.Prototypes.LargeIR.Morphism
 public import Geb.Prototypes.LargeIR.Grothendieck
 public import Geb.Prototypes.LargeIR.General
+public import Geb.Prototypes.LargeIR.Binder
 
 /-!
 # LargeIR — index
@@ -28,5 +29,7 @@ a contravariant Grothendieck construction with the code's action as an
 endofunctor of it. `General` states the general case: a presheaf polynomial
 endofunctor on the walking arrow is a code exactly when it is base-cartesian,
 its reindexing a bijection on level-`0` directions, and the transcription is
-an instance.
+an instance. `Binder` states why a universe's dependent-product former is not
+one: its binder quantifies over a decoding, and no walking-arrow presheaf
+polynomial functor has its values.
 -/
