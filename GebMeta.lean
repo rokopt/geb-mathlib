@@ -93,6 +93,8 @@ def classicalAllowedModules : NameSet :=
    `GebManual.Root,
    `GebManual.WTypes,
    `Geb.Prototypes.PresheafIRProto.Functor,
+   `Geb.Prototypes.LargeIR.Grothendieck,
+   `GebTests.Prototypes.LargeIR.Grothendieck,
    `Geb.Mathlib.Data.PFunctor.Slice.Functor,
    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor,
    `GebTests.Mathlib.Data.PFunctor.Slice.Functor,

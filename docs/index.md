@@ -1268,6 +1268,43 @@ checklist and in CI.
   reads the two elements of the `Basic` mirror through the isomorphism as the
   `δ` assignments `id` and `not` with their decoded fibres. No declaration
   depends on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Morphism.lean` — the agreement extended to
+  morphisms. `GebProto.LargeIR.FamHom` is a morphism of `Fam(Type)` proper, a
+  map of index types with a map of decodings over it, and
+  `GebProto.LargeIR.codeMap` the action of the code's interpretation on it:
+  the `δ` assignment is postcomposed with the map of index types and the
+  decoding carried along by `GebProto.LargeIR.fibreValueMap`, the
+  functoriality of the slice functor's fibre in the family, which is the
+  positivity of the code's continuation; `GebProto.LargeIR.codeMap_id` and
+  `GebProto.LargeIR.codeMap_comp` are its functor laws.
+  `GebProto.LargeIR.arrowHom` is the walking-arrow presheaf morphism of a
+  commuting square over a base change, through which
+  `GebProto.LargeIR.natTransOfFamHom` and `GebProto.LargeIR.famHomOfNatTrans`
+  pass between morphisms of presheaves and of families.
+  `GebProto.LargeIR.base_map` and `GebProto.LargeIR.total_map` are the
+  naturality of `GebProto.LargeIR.arrowPshCodeEquiv` in the input presheaf,
+  the transcription's `PresheafPFunctor.mapPresheaf` on one side and the
+  code's action on the other, so that the two are the same functor on
+  `Fam(Type)` up to the isomorphism; both are proved on the inverse
+  equivalences, where the sides agree by unfolding. The mirror
+  `GebTests/Prototypes/LargeIR/Morphism.lean` applies the naturality to the
+  square over `not`, which sends the `δ` assignment `id` to `not`. No
+  declaration depends on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Grothendieck.lean` — `Fam(Type)` as the
+  contravariant Grothendieck construction `GebProto.LargeIR.FamGr` of
+  `GebProto.LargeIR.famFib`, the functor `Typeᵒᵖ ⥤ Cat` sending an index type
+  to the category of families over it and a map of index types to
+  precomposition, `CategoryTheory.Pi.comap`, which is strictly functorial.
+  `GebProto.LargeIR.objGrEquiv` identifies its objects with
+  `CategoryTheory.FreeCoprodCompDisc` at `Type` and
+  `GebProto.LargeIR.homGrEquiv` its morphisms with
+  `GebProto.LargeIR.FamHom`; `GebProto.LargeIR.codeFunctor` packages the
+  code's action as an endofunctor of the construction, its laws holding by
+  `rfl`. The module names `CategoryTheory.Cat` and so depends on
+  `Classical.choice`; it and its mirror
+  `GebTests/Prototypes/LargeIR/Grothendieck.lean` are listed in
+  `GebMeta.classicalAllowedModules`, the choice-free content being in
+  `Morphism.lean`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the

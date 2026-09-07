@@ -7,6 +7,8 @@ module
 
 import GebTests.Prototypes.LargeIR.Basic
 import GebTests.Prototypes.LargeIR.Code
+import GebTests.Prototypes.LargeIR.Morphism
+import GebTests.Prototypes.LargeIR.Grothendieck
 
 /-!
 # LargeIR tests — index

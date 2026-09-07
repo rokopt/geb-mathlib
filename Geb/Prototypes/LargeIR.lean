@@ -7,6 +7,8 @@ module
 
 public import Geb.Prototypes.LargeIR.Basic
 public import Geb.Prototypes.LargeIR.Code
+public import Geb.Prototypes.LargeIR.Morphism
+public import Geb.Prototypes.LargeIR.Grothendieck
 
 /-!
 # LargeIR — index
@@ -19,5 +21,8 @@ is the `δ` constructor of large inductive-recursive codes rather than the
 slice functor itself. See `Basic` for the construction and the comparison map
 along the identity section, and `Code` for the reading of the value as the
 interpretation of that `δ` code in the repository's `IndRec.IR` at index type
-`Type`.
+`Type`; `Morphism` extends the agreement to morphisms of `Fam(Type)` proper,
+on which the code acts positively, and `Grothendieck` packages `Fam(Type)` as
+a contravariant Grothendieck construction with the code's action as an
+endofunctor of it.
 -/
