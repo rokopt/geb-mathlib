@@ -9,6 +9,7 @@ import GebTests.Prototypes.LargeIR.Basic
 import GebTests.Prototypes.LargeIR.Code
 import GebTests.Prototypes.LargeIR.Morphism
 import GebTests.Prototypes.LargeIR.Grothendieck
+import GebTests.Prototypes.LargeIR.General
 
 /-!
 # LargeIR tests — index

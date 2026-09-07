@@ -9,6 +9,7 @@ public import Geb.Prototypes.LargeIR.Basic
 public import Geb.Prototypes.LargeIR.Code
 public import Geb.Prototypes.LargeIR.Morphism
 public import Geb.Prototypes.LargeIR.Grothendieck
+public import Geb.Prototypes.LargeIR.General
 
 /-!
 # LargeIR — index
@@ -24,5 +25,8 @@ interpretation of that `δ` code in the repository's `IndRec.IR` at index type
 `Type`; `Morphism` extends the agreement to morphisms of `Fam(Type)` proper,
 on which the code acts positively, and `Grothendieck` packages `Fam(Type)` as
 a contravariant Grothendieck construction with the code's action as an
-endofunctor of it.
+endofunctor of it. `General` states the general case: a presheaf polynomial
+endofunctor on the walking arrow is a code exactly when it is base-cartesian,
+its reindexing a bijection on level-`0` directions, and the transcription is
+an instance.
 -/
