@@ -1349,6 +1349,29 @@ checklist and in CI.
   `GebTests/Prototypes/LargeIR/Binder.lean` computes the former's value on the
   swap of two terms and applies the theorem to the transcription of a slice
   polynomial functor. No declaration depends on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Product.lean` — the walking arrow over an index
+  type. `GebProto.LargeIR.Product.Idx` is the category of pairs of a level and
+  an index, ordered by level with the index fixed, whose presheaves are
+  `X`-indexed families of arrows, the objects `(U : X → Type, T : Π x, U x → Type)`
+  of indexed induction-recursion; a direction at `(j, x)` names its index by
+  its object and only an element of `U x` through a function.
+  `GebProto.LargeIR.Product.elemEquiv` computes the value of any presheaf
+  polynomial functor out of it in dependent-type terms, with
+  `GebProto.LargeIR.Product.isNatural_iff` reducing naturality to the fibre
+  condition at each index. `GebProto.LargeIR.Product.prodPsh` transcribes a
+  slice polynomial functor `Type/X → Type/Y` with a base that is constantly a
+  point, `GebProto.LargeIR.Product.ofSliceX` embeds `Type/X`, and
+  `GebProto.LargeIR.Product.levelOneEquiv` identifies the transcription's
+  level-`1` value at an embedded object over `(1, y)` with the slice functor's
+  value over `y` on the nose, `GebProto.LargeIR.Product.map_cmp` naturally in
+  the object. For an endofunctor `GebProto.LargeIR.Product.wFixed` exhibits the
+  slice W-type `SlicePFunctor.W` as a fixed point of the transcription, so the
+  iteration on the initial object of `Type/X`, which stays over the point, is
+  the iteration of the slice functor: what the walking arrow alone could not
+  do, the product does, while keeping the base as data. The mirror
+  `GebTests/Prototypes/LargeIR/Product.lean` reads two alternating chains over
+  `Bool` through the fixed-point isomorphism. No declaration depends on
+  `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
