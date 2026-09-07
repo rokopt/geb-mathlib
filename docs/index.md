@@ -1241,10 +1241,33 @@ checklist and in CI.
   `GebProto.LargeIR.toLevels_objRestr_cmp` that its image restricts along
   `0 ⟶ 1` to `(y, id)`. `GebProto.LargeIR.isNatural_iff` reduces naturality of
   a direction assignment over the walking arrow to its equation along the one
-  non-identity morphism. The mirror `GebTests/Prototypes/LargeIR.lean` computes
+  non-identity morphism. The mirror `GebTests/Prototypes/LargeIR/Basic.lean` computes
   the value at an object `Fin 3 → Bool` for the functor `A ↦ A true × A false`,
   including a level-`1` element over the base map `not`, which the slice
   functor alone cannot express. No declaration depends on `Classical.choice`.
+- `Geb/Prototypes/LargeIR/Code.lean` — that transcription read back as a large
+  inductive-recursive code in the repository's `IndRec.IR` at index type
+  `Type`. `GebProto.LargeIR.code` is
+  `σ Y (fun y ↦ δ X (fun A ↦ ι (fibreValue P y A)))`, whose `σ` contributes the
+  output index, whose `δ` contributes the base map as the `δ` rule's assignment
+  `g : A → U`, and whose `ι` decodes to `GebProto.LargeIR.fibreValue`, the slice
+  functor's fibre applied to the decoded family. `GebProto.LargeIR.famOfPsh` is
+  the family `(U, T)` of a walking-arrow presheaf and
+  `GebProto.LargeIR.pshOfFam` the presheaf of a family;
+  `GebProto.LargeIR.PshEquiv` is an isomorphism of walking-arrow presheaves,
+  unbundled so that no functor category is named.
+  `GebProto.LargeIR.arrowPshCodeEquiv` is the isomorphism of the transcription's
+  output presheaf with the presheaf of `IndRec.IR.interpObj` of the code at the
+  family of the input, composed from `GebProto.LargeIR.objPresheafEquiv`, the
+  output presheaf as `GebProto.LargeIR.levelsPsh`, and
+  `GebProto.LargeIR.levelsCodeEquiv`. The agreement is at the level of objects:
+  `CategoryTheory.FreeCoprodCompDisc` completes `Type` as a discrete category,
+  whose morphisms compare decodings by equality, so the morphism action of
+  large inductive-recursive definitions, which compares them by functions, is
+  outside what it expresses. The mirror `GebTests/Prototypes/LargeIR/Code.lean`
+  reads the two elements of the `Basic` mirror through the isomorphism as the
+  `δ` assignments `id` and `not` with their decoded fibres. No declaration
+  depends on `Classical.choice`.
 - `Geb/Prototypes/FinCardUniverse/Restriction.lean` — the universe functor's
   value read back as a family of codes.
   `GebProto.FinCardUniverse.shapePshEquiv` identifies the shape type as the
