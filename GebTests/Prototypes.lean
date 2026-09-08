@@ -19,6 +19,7 @@ import GebTests.Prototypes.PresheafUniverse
 import GebTests.Prototypes.ReadableSExpr
 import GebTests.Prototypes.RelSeparation
 import GebTests.Prototypes.UniverseVariance
+import GebTests.Prototypes.SExprIO
 
 /-!
 # GebTests.Prototypes — tests for prototype content
