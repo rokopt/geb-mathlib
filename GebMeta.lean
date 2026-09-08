@@ -129,6 +129,16 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Mathlib.CategoryTheory.FinCat.FinCategory,
    `Geb.Prototypes.Computability.TreeScanner.Steps,
    `Geb.Prototypes.Computability.TreeScanner.Bound,
+   `Geb.Prototypes.Computability.BitTree.Steps,
+   `Geb.Prototypes.Computability.BitTree.Bound,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Steps,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Carry,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Return,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Macro,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Simulation,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.BitStep,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Execution,
+   `Geb.Prototypes.Computability.BitTree.BinaryMachine.Bound,
    `GebTests.Prototypes.Computability.TreeScanner.Machine].foldl (·.insert ·)
     ({} : NameSet)
 

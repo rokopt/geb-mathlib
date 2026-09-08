@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.CobhamFoldProto
+public import Geb.Prototypes.Computability.BitTree
 public import Geb.Prototypes.Computability.TreeScanner
 
 /-!
