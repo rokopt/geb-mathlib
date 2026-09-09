@@ -1782,6 +1782,21 @@ checklist and in CI.
   fuel; `decode` requires complete input consumption, and
   `validBool_iff_existsUnique` characterizes acceptance. `CodeExamples.lean`
   checks binary-size boundaries, empty payloads and trailing input.
+- `Geb/Prototypes/Computability/BitTree/Elias/RepresentationSize.lean` —
+  representation size, independently of recognizer work space. For every
+  positive `k`, average payload length at least `36 * k ^ 2 + 10 * k + 1`
+  ensures `k * (encode t).length ≤ (k + 1) * B`, where `B` is total
+  payload length. `representation_redundancy_vanishes` gives the
+  quantified `B + o(B)` limit for arbitrary families with diverging
+  average payload length, uniformly in node count and shape.
+  `RepresentationLowerBound.lean` counts fixed-length bitstrings and
+  embeds them in fixed-fork-count trees, proving that every lossless
+  binary code needs at least `B` bits in the worst case.
+  `length_encode_le_competitor` combines these bounds to compare with
+  any lossless code's worst-case bound on the same fork/payload-size
+  class. The asymptotic claim requires growing average payload length;
+  it supplies no random-access or navigation index. [Navarro2016]
+  supplies the multivariable little-o context.
 - `Geb/Prototypes/Computability/BitTree/Elias/Bound.lean` —
   `Geb.BitTree.Elias.Machine.computableInTimeAndSpace_validBool` proves
   the delta-length recognizer uses at most `5 * n ^ 2 + 16 * n + 2`
