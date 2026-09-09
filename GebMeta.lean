@@ -139,6 +139,18 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.BitTree.BinaryMachine.BitStep,
    `Geb.Prototypes.Computability.BitTree.BinaryMachine.Execution,
    `Geb.Prototypes.Computability.BitTree.BinaryMachine.Bound,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineSteps,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineCounter,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineRead,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineEmpty,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachinePayload,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineHeader,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineHeaderBound,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineSimpleBound,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineBit,
+   `Geb.Prototypes.Computability.BitTree.Elias.MachineEnd,
+   `Geb.Prototypes.Computability.BitTree.Elias.Execution,
+   `Geb.Prototypes.Computability.BitTree.Elias.Bound,
    `GebTests.Prototypes.Computability.TreeScanner.Machine].foldl (·.insert ·)
     ({} : NameSet)
 

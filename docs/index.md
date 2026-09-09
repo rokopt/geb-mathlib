@@ -1765,6 +1765,52 @@ checklist and in CI.
   `GebMeta.classicalAllowedModules` because CSLib's execution and
   visited-cell APIs use `Classical.choice`. The tree encoding, scanner,
   counter arithmetic and accounting proofs are constructive.
+- `Geb/Prototypes/Computability/BitTree/Elias/Code.lean` — Elias delta
+  coding of `n + 1`, allowing zero-length payloads. `readNat` identifies
+  one canonical prefix and retains the unconsumed suffix. Roundtrip and
+  prefix uniqueness are constructive. `length_encodeNat` gives the exact
+  header length `(n + 1).size + 2 * ((n + 1).size.size - 1)`, bounded by
+  `3 * (n + 1).size`. `CodeBits.lean` supplies canonical positive binary
+  words and fixed-width reads. The construction follows [Elias1975].
+- `Geb/Prototypes/Computability/BitTree/Elias/Tree.lean` — the same
+  bitstring-labeled full binary trees with one tag per node and raw
+  payloads preceded by delta-coded lengths. `length_encode` separates
+  the `2 * I + 1` shape bits, `B` raw payload bits and the sum of the
+  delta headers over leaves. The length overhead is logarithmic per
+  leaf; it need not be sublinear in the whole tree's size when there
+  are many short payloads. `readTree` parses a tree prefix with explicit
+  fuel; `decode` requires complete input consumption, and
+  `validBool_iff_existsUnique` characterizes acceptance. `CodeExamples.lean`
+  checks binary-size boundaries, empty payloads and trailing input.
+- `Geb/Prototypes/Computability/BitTree/Elias/RepresentationSize.lean` —
+  representation size, independently of recognizer work space. For every
+  positive `k`, average payload length at least `36 * k ^ 2 + 10 * k + 1`
+  ensures `k * (encode t).length ≤ (k + 1) * B`, where `B` is total
+  payload length. `representation_redundancy_vanishes` gives the
+  quantified `B + o(B)` limit for arbitrary families with diverging
+  average payload length, uniformly in node count and shape.
+  `RepresentationLowerBound.lean` counts fixed-length bitstrings and
+  embeds them in fixed-fork-count trees, proving that every lossless
+  binary code needs at least `B` bits in the worst case.
+  `length_encode_le_competitor` combines these bounds to compare with
+  any lossless code's worst-case bound on the same fork/payload-size
+  class. The asymptotic claim requires growing average payload length;
+  it supplies no random-access or navigation index. [Navarro2016]
+  supplies the multivariable little-o context.
+- `Geb/Prototypes/Computability/BitTree/Elias/Bound.lean` —
+  `Geb.BitTree.Elias.Machine.computableInTimeAndSpace_validBool` proves
+  the delta-length recognizer uses at most `5 * n ^ 2 + 16 * n + 2`
+  transitions and `4 * (n + 2)` visited work cells. The input head
+  consumes each bit once. Four work tapes hold a pending-subtree count,
+  the initial zero-prefix count, and two binary fields. Countdown
+  routines scan the full stored width; the quadratic bound includes
+  malformed inputs with length fields exceeding the remaining input.
+  `ScannerCorrect.lean` equates the streaming scanner with the decoder;
+  `MachineAccounting.lean` bounds field widths and transition costs.
+  The machine execution and resource proofs are listed in
+  `GebMeta.classicalAllowedModules` because CSLib's execution and
+  visited-cell APIs use `Classical.choice`. The encoding, scalar
+  scanner, finite-word operations and accounting remain constructive.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,
