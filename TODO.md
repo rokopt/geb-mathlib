@@ -773,23 +773,34 @@ and none scheduled.
   and `Ast.ofRose` of `Geb/Prototypes/ConcreteSyntax.lean` give at `Fin k`
   labels. The rose tree there is labelled at `Fin k`, so the isomorphism
   needs a rose tree over an arbitrary label type first.
-- `Steps.lean`'s `cfgOf_inputSymbol` and `cfgOf_inputSymbol_end` repeat
+- `Steps.lean`'s `inputSymbol_of_inputPos` and `inputSymbol_end` are
+  stated at this machine's configuration type. Generalised over the tape
+  count, the alphabets and the embedding and placed beside the shared
+  `step_of_state`, they derive
   `Geb/Prototypes/Computability/TreeScanner/Steps.lean`'s
-  `seekCfg_inputSymbol` and `seekCfg_inputSymbol_end` at another
-  configuration with the same input position. A statement over any
-  configuration whose input position is `k + 1`, beside the shared
-  `step_of_state`, would derive all four; it touches the merged module, so
-  it is a branch of its own.
+  `seekCfg_inputSymbol` and `seekCfg_inputSymbol_end`; it touches the merged
+  module, so it is a branch of its own.
 - The Elias delta code in place of the gamma code for a leaf's length,
   `log₂ L + 2 log₂ log₂ L` bits per leaf against the gamma code's
   `2 log₂ L`. The reader nests the gamma reader inside itself, a second
   digit phase and a second counter, and the scan and machine gain the phases
   and states that nesting takes; the order of the bounds is unchanged, so
   the case for it is the constant on the length-code term alone.
-- The space bound is the trivial one, `n + 2` from `spaceUsed_linear`. The
-  cells visited are the pending counts reached, at most a third of the
-  input's length, so a sharper bound is a constant factor; the computation
-  of `Turing.MultiTapeTM.visitedByTapeHead` it needs is that of § A sharper
+- The pending count in binary. The first tape holds it in unary, so the
+  space bound `10 * n + 4` is linear though the second tape holds a leaf's
+  length in `log₂ n` digits; a pending count in binary on the first tape,
+  incremented at a pair bit and decremented at a leaf's close by the borrow
+  the second tape already runs, would bring the machine to `O(log n)` space
+  at an amortised constant per bit, a different space class. The
+  `Geb.BitTreeScanner.Good` invariant, `Geb.BitTreeScanner.cost`,
+  `Geb.BitTreeScanner.cfgAt` and the borrow lemmas of `Steps.lean` are the
+  parts it reuses; what it adds is an increment with a carry, its
+  intermediate closed forms, and a potential covering both counters.
+- The space bound is the trivial one, `2 * t + 2` from `spaceUsed_linear`
+  at the halting time `t`. The cells visited are the pending counts reached
+  on the first tape and the digit cells on the second, so a sharper bound is
+  a constant factor while the pending count is unary; the computation of
+  `Turing.MultiTapeTM.visitedByTapeHead` it needs is that of § A sharper
   space bound for the tree scanner.
 
 ### Choice-free patch to Cslib's multi-tape Turing machine API

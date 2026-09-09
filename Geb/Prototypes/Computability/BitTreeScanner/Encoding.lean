@@ -41,7 +41,7 @@ A tree of {lit}`p` pairs and {lit}`m` payload bits is spelled by
 * {lit}`Geb.BitTreeScanner.BitTree` — the free monad of {lit}`square` at {lit}`List Bool`.
 * {lit}`Geb.BitTreeScanner.leaf`, {lit}`Geb.BitTreeScanner.pair` — the two forms of its
   trees.
-* {lit}`Geb.BitTreeScanner.valueLE` — the number a list of binary digits denotes,
+* {lit}`Geb.BitTreeScanner.ofBits` — the number a list of binary digits denotes,
   least significant digit first, the inverse of {name}`Nat.bits`.
 * {lit}`Geb.BitTreeScanner.gamma` — the Elias gamma code.
 * {lit}`Geb.BitTreeScanner.leafBody` — the body of a leaf: the gamma code of its
@@ -53,12 +53,12 @@ A tree of {lit}`p` pairs and {lit}`m` payload bits is spelled by
 
 ## Main statements
 
-* {lit}`Geb.BitTreeScanner.valueLE_bits`, {lit}`Geb.BitTreeScanner.bits_valueLE` — the
+* {lit}`Geb.BitTreeScanner.ofBits_bits`, {lit}`Geb.BitTreeScanner.bits_ofBits` — the
   digits and their value invert each other, on the digit lists whose most
   significant digit is a one.
 * {lit}`Geb.BitTreeScanner.exists_bits_eq_append_true` — a positive number's digits
   end in a one.
-* {lit}`Geb.BitTreeScanner.gamma_valueLE` — the gamma code of a digit list's value,
+* {lit}`Geb.BitTreeScanner.gamma_ofBits` — the gamma code of a digit list's value,
   the form a reader of the code recovers.
 * {lit}`Geb.BitTreeScanner.length_gamma` — the gamma code's length is twice the
   number of digits less one.
@@ -89,8 +89,8 @@ digits is mathlib's {lit}`Nat.size`, which is {lit}`⌊log₂ N⌋ + 1` at
 {lit}`N ≥ 1`, but that module's lemmas depend on {lit}`Classical.choice`, and
 the length counts here stay choice-free by not citing them. The digit lists a
 reader accumulates are least significant first, since it reads the most
-significant digit first and prepends, so {lit}`valueLE` is stated on that
-order and the round trip {lit}`bits_valueLE` is stated on the lists ending in
+significant digit first and prepends, so {lit}`ofBits` is stated on that
+order and the round trip {lit}`bits_ofBits` is stated on the lists ending in
 a one, which are exactly the lists {name}`Nat.bits` produces at a positive
 number.
 
@@ -131,33 +131,33 @@ section Gamma
 
 /-- The number a list of binary digits denotes, least significant digit
 first. -/
-def valueLE (d : List Bool) : ℕ := d.foldr (fun b n ↦ Nat.bit b n) 0
+def ofBits (d : List Bool) : ℕ := d.foldr (fun b n ↦ Nat.bit b n) 0
 
 /-- The empty digit list denotes zero. -/
-@[simp] theorem valueLE_nil : valueLE [] = 0 := rfl
+@[simp] theorem ofBits_nil : ofBits [] = 0 := rfl
 
 /-- A digit list denotes its head appended to the value of its tail at the
 little end. -/
-@[simp] theorem valueLE_cons (b : Bool) (d : List Bool) :
-    valueLE (b :: d) = Nat.bit b (valueLE d) := rfl
+@[simp] theorem ofBits_cons (b : Bool) (d : List Bool) :
+    ofBits (b :: d) = Nat.bit b (ofBits d) := rfl
 
 /-- The value of a number's digits is the number. -/
-theorem valueLE_bits (n : ℕ) : valueLE n.bits = n :=
-  Nat.binaryRec' (motive := fun n ↦ valueLE n.bits = n) (by rw [Nat.zero_bits]; rfl)
-    (fun b n h ih ↦ by rw [Nat.bits_append_bit n b h, valueLE_cons, ih]) n
+theorem ofBits_bits (n : ℕ) : ofBits n.bits = n :=
+  Nat.binaryRec' (motive := fun n ↦ ofBits n.bits = n) (by rw [Nat.zero_bits]; rfl)
+    (fun b n h ih ↦ by rw [Nat.bits_append_bit n b h, ofBits_cons, ih]) n
 
 /-- A digit list ending in a one denotes a positive number. -/
-theorem valueLE_append_true_pos (r : List Bool) : 0 < valueLE (r ++ [true]) :=
-  List.rec (motive := fun r ↦ 0 < valueLE (r ++ [true])) (by decide)
-    (fun b _ ih ↦ by rw [List.cons_append, valueLE_cons, Nat.bit_val]; omega) r
+theorem ofBits_append_true_pos (r : List Bool) : 0 < ofBits (r ++ [true]) :=
+  List.rec (motive := fun r ↦ 0 < ofBits (r ++ [true])) (by decide)
+    (fun b _ ih ↦ by rw [List.cons_append, ofBits_cons, Nat.bit_val]; omega) r
 
 /-- The digits of the value of a digit list ending in a one are that list. -/
-theorem bits_valueLE (r : List Bool) : (valueLE (r ++ [true])).bits = r ++ [true] :=
-  List.rec (motive := fun r ↦ (valueLE (r ++ [true])).bits = r ++ [true])
-    (by rw [List.nil_append, valueLE_cons, valueLE_nil]; exact Nat.one_bits)
+theorem bits_ofBits (r : List Bool) : (ofBits (r ++ [true])).bits = r ++ [true] :=
+  List.rec (motive := fun r ↦ (ofBits (r ++ [true])).bits = r ++ [true])
+    (by rw [List.nil_append, ofBits_cons, ofBits_nil]; exact Nat.one_bits)
     (fun b r ih ↦ by
-      rw [List.cons_append, valueLE_cons,
-        Nat.bits_append_bit _ _ (fun h ↦ absurd h (Nat.ne_of_gt (valueLE_append_true_pos r))),
+      rw [List.cons_append, ofBits_cons,
+        Nat.bits_append_bit _ _ (fun h ↦ absurd h (Nat.ne_of_gt (ofBits_append_true_pos r))),
         ih]) r
 
 /-- A positive number's digits end in a one. -/
@@ -181,9 +181,9 @@ def gamma (n : ℕ) : List Bool := List.replicate (n.bits.length - 1) false ++ n
 /-- The gamma code of the value of a digit list ending in a one: as many zeros
 as the list has digits below the one, the one, and those digits reversed, which
 is the form a reader of the code recovers. -/
-theorem gamma_valueLE (r : List Bool) :
-    gamma (valueLE (r ++ [true])) = List.replicate r.length false ++ true :: r.reverse := by
-  rw [gamma, bits_valueLE, List.length_append, List.length_singleton, Nat.add_sub_cancel,
+theorem gamma_ofBits (r : List Bool) :
+    gamma (ofBits (r ++ [true])) = List.replicate r.length false ++ true :: r.reverse := by
+  rw [gamma, bits_ofBits, List.length_append, List.length_singleton, Nat.add_sub_cancel,
     List.reverse_append, List.reverse_singleton, List.singleton_append]
 
 /-- The gamma code of a number has twice as many bits as the number has digits,

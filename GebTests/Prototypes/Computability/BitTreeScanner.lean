@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Prototypes.Computability.BitTreeScanner.Encoding
+import GebTests.Prototypes.Computability.BitTreeScanner.Machine
 
 /-!
 # One-pass tree scanner tests — index

@@ -7,10 +7,15 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Encoding
 public import Geb.Prototypes.Computability.BitTreeScanner.Scan
+public import Geb.Prototypes.Computability.BitTreeScanner.Cost
+public import Geb.Prototypes.Computability.BitTreeScanner.Machine
+public import Geb.Prototypes.Computability.BitTreeScanner.Steps
+public import Geb.Prototypes.Computability.BitTreeScanner.Bound
 
 /-!
 # The one-pass tree scanner
 
 Index for the modules on binary trees with bitstrings at the leaves: their
-prefix encoding and the scan recognizing it.
+prefix encoding, the scan recognizing it, the machine's cost model, and the
+one-pass machine with its bound.
 -/
