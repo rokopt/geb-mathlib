@@ -29,6 +29,7 @@
   - [The fold over recognized terms](#the-fold-over-recognized-terms)
   - [Deferred items from the tree recognizers](#deferred-items-from-the-tree-recognizers)
   - [A sharper space bound for the tree scanner](#a-sharper-space-bound-for-the-tree-scanner)
+  - [Deferred items from the one-pass tree scanner](#deferred-items-from-the-one-pass-tree-scanner)
   - [Choice-free patch to Cslib's multi-tape Turing machine API](#choice-free-patch-to-cslibs-multi-tape-turing-machine-api)
   - [Vale configuration](#vale-configuration)
   - [The namespace prefix in a declaration body](#the-namespace-prefix-in-a-declaration-body)
@@ -754,6 +755,45 @@ pending count as the work head's position, as opposed to a run of marks
 read off the tape — would then be preferable, since a sharper bound wanting
 the count readable from the tape rather than from the head position would
 need it.
+
+### Deferred items from the one-pass tree scanner
+
+Items over `Geb/Prototypes/Computability/BitTreeScanner/`, the recognizer of
+binary trees with bitstrings at the leaves, each independent of the others
+and none scheduled.
+
+- A parser inverting `Geb.BitTreeScanner.spell`, with the retraction law and a
+  `Computability.Encoding`, as `RankedAlphabet.parse` and
+  `RankedAlphabet.encoding` give the ranked-term encoding.
+  `Geb.BitTreeScanner.valid_iff_exists_spell` identifies the accepted words with
+  the spellings without it; injectivity of `spell` is the part a parser
+  adds.
+- The isomorphism between `Geb.BitTreeScanner.BitTree` and a rose tree
+  labelled by bitstrings, by the left-spine correspondence that `Ast.toRose`
+  and `Ast.ofRose` of `Geb/Prototypes/ConcreteSyntax.lean` give at `Fin k`
+  labels. The rose tree there is labelled at `Fin k`, so the isomorphism
+  needs a rose tree over an arbitrary label type first.
+- `Steps.lean`'s `cfgOf_inputSymbol` and `cfgOf_inputSymbol_end` repeat
+  `Geb/Prototypes/Computability/TreeScanner/Steps.lean`'s
+  `seekCfg_inputSymbol` and `seekCfg_inputSymbol_end` at another
+  configuration with the same input position. A statement over any
+  configuration whose input position is `k + 1`, beside the shared
+  `step_of_state`, would derive all four; it touches the merged module, so
+  it is a branch of its own.
+- The per-payload-bit overhead of the prefix code. A leaf's body costs two
+  bits per payload bit. A block code with one continuation bit per block of
+  `B` bits, the last block carrying its length in a fixed width, costs about
+  `1 + 1 / B` bits per payload bit and is still recognized by a finite-state
+  leaf phase, so the machine keeps its time and space bounds with states
+  multiplied by about `B`. Elias-gamma lengths cost `m + O(log m)` per leaf,
+  the succinct bound, but the leaf phase then needs a counter, and its
+  linear-time bound is amortized rather than one step per bit. Neither
+  changes the order of the bounds, which is what the prototype is for.
+- The space bound is the trivial one, `n + 2` from `spaceUsed_linear`. The
+  cells visited are the pending counts reached, at most a third of the
+  input's length, so a sharper bound is a constant factor; the computation
+  of `Turing.MultiTapeTM.visitedByTapeHead` it needs is that of § A sharper
+  space bound for the tree scanner.
 
 ### Choice-free patch to Cslib's multi-tape Turing machine API
 
