@@ -461,6 +461,191 @@ theorem borrowLength_le_length (l : List Digit) : borrowLength l ≤ l.length :=
       | 1 => rw [borrowLength_cons_one]; omega
       | 2 => rw [borrowLength_cons_two]; omega) l
 
+/-- Below the carry's length a digit is a two. -/
+theorem getD_of_lt_carryLength (l : List Digit) : ∀ i, i < carryLength l → l.getD i 0 = 2 :=
+  List.rec (motive := fun l ↦ ∀ i, i < carryLength l → l.getD i 0 = 2)
+    (fun _ h ↦ absurd h (Nat.not_lt_zero _))
+    (fun d l ih i hi ↦ by
+      match d with
+      | 0 => rw [carryLength_cons_zero] at hi; exact absurd hi (Nat.not_lt_zero _)
+      | 1 => rw [carryLength_cons_one] at hi; exact absurd hi (Nat.not_lt_zero _)
+      | 2 =>
+        cases i with
+        | zero => rfl
+        | succ i => rw [carryLength_cons_two] at hi; exact ih i (by omega)) l
+
+/-- At the carry's length the digit is not a two. -/
+theorem getD_carryLength_ne_two (l : List Digit) : l.getD (carryLength l) 0 ≠ 2 :=
+  List.rec (motive := fun l ↦ l.getD (carryLength l) 0 ≠ 2) (by decide)
+    (fun d l ih ↦ by
+      match d with
+      | 0 => rw [carryLength_cons_zero, List.getD_cons_zero]; decide
+      | 1 => rw [carryLength_cons_one, List.getD_cons_zero]; decide
+      | 2 => rw [carryLength_cons_two, List.getD_cons_succ]; exact ih) l
+
+/-- Below the borrow's length a digit is a zero. -/
+theorem getD_of_lt_borrowLength (l : List Digit) : ∀ i, i < borrowLength l → l.getD i 0 = 0 :=
+  List.rec (motive := fun l ↦ ∀ i, i < borrowLength l → l.getD i 0 = 0)
+    (fun _ h ↦ absurd h (Nat.not_lt_zero _))
+    (fun d l ih i hi ↦ by
+      match d with
+      | 0 =>
+        cases i with
+        | zero => rfl
+        | succ i => rw [borrowLength_cons_zero] at hi; exact ih i (by omega)
+      | 1 => rw [borrowLength_cons_one] at hi; exact absurd hi (Nat.not_lt_zero _)
+      | 2 => rw [borrowLength_cons_two] at hi; exact absurd hi (Nat.not_lt_zero _)) l
+
+/-- The increment lengthens the counter exactly when the carry runs through
+every digit. -/
+theorem length_inc (l : List Digit) : (inc l).length = max l.length (carryLength l + 1) :=
+  List.rec (motive := fun l ↦ (inc l).length = max l.length (carryLength l + 1)) rfl
+    (fun d l ih ↦ by
+      rw [List.length_cons]
+      match d with
+      | 0 => rw [inc_cons_zero, carryLength_cons_zero, List.length_cons]; omega
+      | 1 => rw [inc_cons_one, carryLength_cons_one, List.length_cons]; omega
+      | 2 => rw [inc_cons_two, carryLength_cons_two, List.length_cons, ih]; omega) l
+
+/-- The increment turns the digits below the carry's length into ones. -/
+theorem getD_inc_of_lt (l : List Digit) : ∀ i, i < carryLength l → (inc l).getD i 0 = 1 :=
+  List.rec (motive := fun l ↦ ∀ i, i < carryLength l → (inc l).getD i 0 = 1)
+    (fun _ h ↦ absurd h (Nat.not_lt_zero _))
+    (fun d l ih i hi ↦ by
+      match d with
+      | 0 => rw [carryLength_cons_zero] at hi; exact absurd hi (Nat.not_lt_zero _)
+      | 1 => rw [carryLength_cons_one] at hi; exact absurd hi (Nat.not_lt_zero _)
+      | 2 =>
+        rw [inc_cons_two]
+        cases i with
+        | zero => rfl
+        | succ i => rw [carryLength_cons_two] at hi; exact ih i (by omega)) l
+
+/-- The increment raises the digit at the carry's length: a one becomes a two,
+a zero or the blank above the top a one. -/
+theorem getD_inc_carryLength (l : List Digit) :
+    (inc l).getD (carryLength l) 0 = if l.getD (carryLength l) 0 = 1 then 2 else 1 :=
+  List.rec (motive := fun l ↦
+      (inc l).getD (carryLength l) 0 = if l.getD (carryLength l) 0 = 1 then 2 else 1) rfl
+    (fun d l ih ↦ by
+      match d with
+      | 0 => rfl
+      | 1 => rfl
+      | 2 =>
+        rw [inc_cons_two, carryLength_cons_two, List.getD_cons_succ, List.getD_cons_succ, ih]) l
+
+/-- The increment leaves the digits above the carry's length. -/
+theorem getD_inc_of_gt (l : List Digit) :
+    ∀ i, carryLength l < i → (inc l).getD i 0 = l.getD i 0 :=
+  List.rec (motive := fun l ↦ ∀ i, carryLength l < i → (inc l).getD i 0 = l.getD i 0)
+    (fun i hi ↦ by
+      rw [inc_nil]
+      cases i with
+      | zero => exact absurd hi (Nat.lt_irrefl 0)
+      | succ i => rfl)
+    (fun d l ih i hi ↦ by
+      match d with
+      | 0 =>
+        rw [inc_cons_zero]
+        cases i with
+        | zero => rw [carryLength_cons_zero] at hi; exact absurd hi (Nat.lt_irrefl 0)
+        | succ i => rfl
+      | 1 =>
+        rw [inc_cons_one]
+        cases i with
+        | zero => rw [carryLength_cons_one] at hi; exact absurd hi (Nat.lt_irrefl 0)
+        | succ i => rfl
+      | 2 =>
+        rw [inc_cons_two]
+        cases i with
+        | zero => rw [carryLength_cons_two] at hi; exact absurd hi (Nat.not_lt_zero _)
+        | succ i => rw [carryLength_cons_two] at hi; exact ih i (by omega)) l
+
+/-- The decrement shortens the counter exactly when a one at the top absorbs
+the borrow. -/
+theorem length_dec (l : List Digit) :
+    (dec l).length =
+      if l.getD (borrowLength l) 0 = 1 ∧ borrowLength l + 1 = l.length then l.length - 1
+      else l.length :=
+  List.rec (motive := fun l ↦ (dec l).length =
+      if l.getD (borrowLength l) 0 = 1 ∧ borrowLength l + 1 = l.length then l.length - 1
+      else l.length) rfl
+    (fun d l ih ↦ by
+      match d with
+      | 0 =>
+        rw [dec_cons_zero, borrowLength_cons_zero, List.getD_cons_succ, List.length_cons,
+          List.length_cons, ih]
+        have := borrowLength_le_length l
+        by_cases h : l.getD (borrowLength l) 0 = 1 ∧ borrowLength l + 1 = l.length
+        · rw [ite_eq_left h, ite_eq_left ⟨h.1, by omega⟩]
+          omega
+        · rw [ite_eq_right h, ite_eq_right (fun h' ↦ h ⟨h'.1, by omega⟩)]
+      | 1 =>
+        cases l with
+        | nil => rfl
+        | cons e l =>
+          rw [dec_cons_one_cons, borrowLength_cons_one]
+          simp only [List.length_cons]
+          rw [ite_eq_right (fun h ↦ by omega)]
+      | 2 =>
+        rw [dec_cons_two, borrowLength_cons_two, ite_eq_right (fun h ↦ nomatch h.1)]
+        simp only [List.length_cons]) l
+
+/-- The decrement turns the digits below the borrow's length into ones. -/
+theorem getD_dec_of_lt (l : List Digit) : ∀ i, i < borrowLength l → (dec l).getD i 0 = 1 :=
+  List.rec (motive := fun l ↦ ∀ i, i < borrowLength l → (dec l).getD i 0 = 1)
+    (fun _ h ↦ absurd h (Nat.not_lt_zero _))
+    (fun d l ih i hi ↦ by
+      match d with
+      | 0 =>
+        rw [dec_cons_zero]
+        cases i with
+        | zero => rfl
+        | succ i => rw [borrowLength_cons_zero] at hi; exact ih i (by omega)
+      | 1 => rw [borrowLength_cons_one] at hi; exact absurd hi (Nat.not_lt_zero _)
+      | 2 => rw [borrowLength_cons_two] at hi; exact absurd hi (Nat.not_lt_zero _)) l
+
+/-- The decrement lowers the digit at the borrow's length: a two becomes a
+one, and a one a zero, or blank when it was the top. -/
+theorem getD_dec_borrowLength (l : List Digit) :
+    (dec l).getD (borrowLength l) 0 = if l.getD (borrowLength l) 0 = 2 then 1 else 0 :=
+  List.rec (motive := fun l ↦
+      (dec l).getD (borrowLength l) 0 = if l.getD (borrowLength l) 0 = 2 then 1 else 0) rfl
+    (fun d l ih ↦ by
+      match d with
+      | 0 =>
+        rw [dec_cons_zero, borrowLength_cons_zero, List.getD_cons_succ, List.getD_cons_succ, ih]
+      | 1 =>
+        cases l with
+        | nil => rfl
+        | cons e l => rfl
+      | 2 => rfl) l
+
+/-- The decrement leaves the digits above the borrow's length. -/
+theorem getD_dec_of_gt (l : List Digit) :
+    ∀ i, borrowLength l < i → (dec l).getD i 0 = l.getD i 0 :=
+  List.rec (motive := fun l ↦ ∀ i, borrowLength l < i → (dec l).getD i 0 = l.getD i 0)
+    (fun _ _ ↦ rfl)
+    (fun d l ih i hi ↦ by
+      match d with
+      | 0 =>
+        rw [dec_cons_zero]
+        cases i with
+        | zero => rw [borrowLength_cons_zero] at hi; exact absurd hi (Nat.not_lt_zero _)
+        | succ i => rw [borrowLength_cons_zero] at hi; exact ih i (by omega)
+      | 1 =>
+        cases i with
+        | zero => rw [borrowLength_cons_one] at hi; exact absurd hi (Nat.lt_irrefl 0)
+        | succ i =>
+          cases l with
+          | nil => rfl
+          | cons e l => rw [dec_cons_one_cons]; rfl
+      | 2 =>
+        rw [dec_cons_two]
+        cases i with
+        | zero => rw [borrowLength_cons_two] at hi; exact absurd hi (Nat.lt_irrefl 0)
+        | succ i => rfl) l
+
 end Redundant
 
 section Replay

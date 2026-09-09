@@ -112,7 +112,8 @@ inductive Mode where
   | count
   /-- The one expected tree complete, nothing pending. -/
   | done
-  /-- Failed: a bit read after completion. -/
+  /-- Failed: a bit read after completion, or a gamma code's zero beyond the
+  bound, the width kept. -/
   | dead
   deriving DecidableEq, Repr, Inhabited
 
@@ -233,7 +234,7 @@ def scanStep (W : ℕ) (s : Scan) (b : Bool) : Scan :=
   | .term, true => ⟨.term, s.count + 1, 0, []⟩
   | .term, false => ⟨.zeros, s.count, 0, []⟩
   | .zeros, false =>
-    if W < s.width then ⟨.dead, s.count, 0, []⟩ else ⟨.zeros, s.count, s.width + 1, []⟩
+    if W < s.width then ⟨.dead, s.count, s.width, []⟩ else ⟨.zeros, s.count, s.width + 1, []⟩
   | .zeros, true => settleDigits s.count (s.width + 1) [true]
   | .bits, _ => settleDigits s.count s.width (b :: s.digits)
   | .count, _ => settleCount s.count s.width (decList s.digits)
@@ -318,7 +319,7 @@ theorem scanStep_zeros_false (c w : ℕ) (d : List Bool) (h : w ≤ W) :
 /-- A zero of the gamma code beyond the bound fails: no leaf within the word
 has so long a length. -/
 theorem scanStep_zeros_false_of_lt (c w : ℕ) (d : List Bool) (h : W < w) :
-    scanStep W ⟨.zeros, c, w, d⟩ false = ⟨.dead, c, 0, []⟩ := by
+    scanStep W ⟨.zeros, c, w, d⟩ false = ⟨.dead, c, w, []⟩ := by
   change (if W < w then _ else _) = _
   rw [ite_eq_left h]
 

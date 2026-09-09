@@ -773,7 +773,7 @@ and none scheduled.
   and `Ast.ofRose` of `Geb/Prototypes/ConcreteSyntax.lean` give at `Fin k`
   labels. The rose tree there is labelled at `Fin k`, so the isomorphism
   needs a rose tree over an arbitrary label type first.
-- `Steps.lean`'s `inputSymbol_of_inputPos` and `inputSymbol_end` are
+- `Steps/Basic.lean`'s `inputSymbol_of_inputPos` and `inputSymbol_end` are
   stated at this machine's configuration type. Generalised over the tape
   count, the alphabets and the embedding and placed beside the shared
   `step_of_state`, they derive
@@ -786,18 +786,17 @@ and none scheduled.
   digit phase and a second counter, and the scan and machine gain the phases
   and states that nesting takes; the order of the bounds is unchanged, so
   the case for it is the constant on the length-code term alone.
-- The pending count in binary, which
-  `Geb/Prototypes/Computability/BitTreeScanner/Counter.lean` now keeps in a
-  redundant binary counter; the machine over it, with an initial pass
-  counting the input's length as the ruler the bound is checked against, is
-  the following commits' concern. What remains open is the constant: the
-  potential covering both counters gives the bound the machine states.
-- The space bound is the trivial one, `2 * t + 2` from `spaceUsed_linear`
-  at the halting time `t`. The cells visited are the pending counts reached
-  on the first tape and the digit cells on the second, so a sharper bound is
-  a constant factor while the pending count is unary; the computation of
-  `Turing.MultiTapeTM.visitedByTapeHead` it needs is that of § A sharper
-  space bound for the tree scanner.
+- The constants of `Geb.BitTreeScanner.computableInTimeAndSpace_validBool`,
+  `14 * n + 4` steps and `3 * (n.bits.length + 4)` cells. The two passes
+  appear to be the minimum for logarithmic space: informally, a one-pass
+  machine must hold a gamma code's digits across the payload they measure
+  before it has seen the input's length, and on an invalid input those
+  digits are unbounded relative to the length's; no proof of the lower
+  bound is recorded. The constant is the sum of the counting pass's four
+  per bit, the return's one and the scan's nine, each an amortised bound
+  with slack, and a decrement of the pending count at a one at the lowest
+  digit takes the borrow's uniform four steps where a special case would
+  take three.
 
 ### Choice-free patch to Cslib's multi-tape Turing machine API
 
@@ -991,17 +990,21 @@ Correcting these is a separate concern from any current branch per
   `Fin.modNat` and `Fin.mkDivMod`.
 - **Choice-free tree-scanner allowlist entries**:
   `Geb/Prototypes/Computability/TreeScanner/Steps.lean`, `Bound.lean` and the
-  `GebTests/Prototypes/Computability/TreeScanner/Machine.lean` mirror are in
-  `GebMeta.classicalAllowedModules` because Cslib's
+  `GebTests/Prototypes/Computability/TreeScanner/Machine.lean` mirror, and
+  likewise `Geb/Prototypes/Computability/BitTreeScanner/Steps/Basic.lean`,
+  `Seek.lean`, `Count.lean`, `Leaf.lean`, `Bit.lean`, `Run.lean`,
+  `Bound.lean` and the
+  `GebTests/Prototypes/Computability/BitTreeScanner/Machine.lean` mirror, are
+  in `GebMeta.classicalAllowedModules` because Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol` and
   `Turing.MultiTapeTM.inputSymbolInner` depend on `Classical.choice` (see
   § Choice-free patch to Cslib's multi-tape Turing machine API). Trigger:
   both are cleaned upstream and the pin moves past them, at which point
-  `Steps.lean` and the mirror recover choice-free content of their own;
-  leaving their entries in place past that point would misdescribe the
-  allowlist's criterion, so the entries are removed, leaving only
-  `Bound.lean` admitted — `Turing.MultiTapeTM.spaceUsed`'s `Finset.image`
-  root is a separate, unremovable dependence that keeps `Bound.lean`
+  the step modules and the mirrors recover choice-free content of their
+  own; leaving their entries in place past that point would misdescribe the
+  allowlist's criterion, so the entries are removed, leaving only the two
+  `Bound.lean` modules admitted — `Turing.MultiTapeTM.spaceUsed`'s
+  `Finset.image` root is a separate, unremovable dependence that keeps them
   admitted regardless.
 - **`lake shake --keep-implied` versus mathlib CI's plain `lake shake`**: a
   repo-wide decision, on a separate branch, on whether to drop `--keep-implied`
