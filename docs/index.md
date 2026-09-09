@@ -1782,6 +1782,20 @@ checklist and in CI.
   fuel; `decode` requires complete input consumption, and
   `validBool_iff_existsUnique` characterizes acceptance. `CodeExamples.lean`
   checks binary-size boundaries, empty payloads and trailing input.
+- `Geb/Prototypes/Computability/BitTree/Elias/Bound.lean` —
+  `Geb.BitTree.Elias.Machine.computableInTimeAndSpace_validBool` proves
+  the delta-length recognizer uses at most `5 * n ^ 2 + 16 * n + 2`
+  transitions and `4 * (n + 2)` visited work cells. The input head
+  consumes each bit once. Four work tapes hold a pending-subtree count,
+  the initial zero-prefix count, and two binary fields. Countdown
+  routines scan the full stored width; the quadratic bound includes
+  malformed inputs with length fields exceeding the remaining input.
+  `ScannerCorrect.lean` equates the streaming scanner with the decoder;
+  `MachineAccounting.lean` bounds field widths and transition costs.
+  The machine execution and resource proofs are listed in
+  `GebMeta.classicalAllowedModules` because CSLib's execution and
+  visited-cell APIs use `Classical.choice`. The encoding, scalar
+  scanner, finite-word operations and accounting remain constructive.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,

@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.Computability.BitTree.Elias.Bound
 public import Geb.Prototypes.Computability.BitTree.Elias.Tree
 public import Geb.Prototypes.Computability.BitTree.Elias.CodeExamples
 
@@ -14,4 +15,5 @@ set_option doc.verso true
 # Elias-length encoding of bitstring trees
 
 Binary tree tags with delta-coded leaf lengths, raw payloads, and verified decoding.
+The streaming recognizer has explicit quadratic-time and linear-work-space bounds.
 -/
