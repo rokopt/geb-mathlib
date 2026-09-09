@@ -780,15 +780,12 @@ and none scheduled.
   configuration whose input position is `k + 1`, beside the shared
   `step_of_state`, would derive all four; it touches the merged module, so
   it is a branch of its own.
-- The per-payload-bit overhead of the prefix code. A leaf's body costs two
-  bits per payload bit. A block code with one continuation bit per block of
-  `B` bits, the last block carrying its length in a fixed width, costs about
-  `1 + 1 / B` bits per payload bit and is still recognized by a finite-state
-  leaf phase, so the machine keeps its time and space bounds with states
-  multiplied by about `B`. Elias-gamma lengths cost `m + O(log m)` per leaf,
-  the succinct bound, but the leaf phase then needs a counter, and its
-  linear-time bound is amortized rather than one step per bit. Neither
-  changes the order of the bounds, which is what the prototype is for.
+- The Elias delta code in place of the gamma code for a leaf's length,
+  `log₂ L + 2 log₂ log₂ L` bits per leaf against the gamma code's
+  `2 log₂ L`. The reader nests the gamma reader inside itself, a second
+  digit phase and a second counter, and the scan and machine gain the phases
+  and states that nesting takes; the order of the bounds is unchanged, so
+  the case for it is the constant on the length-code term alone.
 - The space bound is the trivial one, `n + 2` from `spaceUsed_linear`. The
   cells visited are the pending counts reached, at most a third of the
   input's length, so a sharper bound is a constant factor; the computation
