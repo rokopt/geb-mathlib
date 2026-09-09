@@ -1730,6 +1730,41 @@ checklist and in CI.
   mathlib's `Finset.image` depends on `Classical.choice`. Depends on
   `Geb.Prototypes.Computability.TreeScanner.Steps` and Cslib's
   `Computability.Machines.Turing.MultiTape.TapeLemmas`.
+- `Geb/Prototypes/Computability/BitTree/Encoding.lean` — the W-type of
+  `X ↦ List Bool + X × X`, with leaf and fork constructors and a direct
+  bit encoding. Forks use `1`; leaves start with `0`, escape each payload
+  bit `b` as `1b`, and end with `0`. `validBool_iff_existsUnique`
+  characterizes accepted words as encodings of exactly one tree.
+  `length_encode_forks` gives `3 * I + 2 + 2 * B` bits for `I` forks
+  and `B` payload bits. `Scanner.lean` implements the unified left-to-right
+  scan, distinguishing structural tags from payload bits in finite control.
+  `Examples.lean` checks empty leaves, payloads, incomplete encodings and
+  trailing trees.
+- `Geb/Prototypes/Computability/BitTree/Bound.lean` —
+  `Geb.BitTree.computableInTimeAndSpace_validBool` proves the unified
+  recognizer takes at most `n + 3` transitions and `n + 2` visited work
+  cells on inputs of length `n`. `Machine.lean` supplies a machine with
+  one work tape and seven states; `Steps.lean` simulates every input prefix.
+  The input head reads each bit once after two initialization transitions.
+  The work head represents the pending-subtree count, with one marker
+  detecting completion of the last leaf. The space theorem bounds the
+  visited positions directly, including blank cells.
+- `Geb/Prototypes/Computability/BitTree/BinaryMachine/Bound.lean` —
+  `Geb.BitTree.BinaryMachine.computableInTimeAndSpace_validBool` proves
+  the same recognition function computable simultaneously in `6 * n + 5`
+  steps and `3 * ((n + 2).size + 1)` visited work cells. The input head
+  consumes each bit once and stays stationary during counter updates.
+  Two work tapes hold the monotonically increasing counts of forks plus
+  one and completed leaves; a third head counts unequal digit positions.
+  `Counter.lean` proves the binary-increment potential identity;
+  `Accounting.lean` sums the resulting costs over the scanner's transitions.
+  `Carry.lean`, `Return.lean`, `Macro.lean` and `BitStep.lean` establish
+  the actual machine transitions and intermediate head bounds;
+  `Execution.lean` composes them over every input prefix. The execution
+  and resource correspondence modules are listed in
+  `GebMeta.classicalAllowedModules` because CSLib's execution and
+  visited-cell APIs use `Classical.choice`. The tree encoding, scanner,
+  counter arithmetic and accounting proofs are constructive.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,
