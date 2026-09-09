@@ -9,6 +9,7 @@ public import Geb.Prototypes.Computability.BitTree.Encoding
 public import Geb.Prototypes.Computability.BitTree.Bound
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine
 public import Geb.Prototypes.Computability.BitTree.Examples
+public import Geb.Prototypes.Computability.BitTree.Elias
 
 set_option doc.verso true
 

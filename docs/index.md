@@ -1765,6 +1765,23 @@ checklist and in CI.
   `GebMeta.classicalAllowedModules` because CSLib's execution and
   visited-cell APIs use `Classical.choice`. The tree encoding, scanner,
   counter arithmetic and accounting proofs are constructive.
+- `Geb/Prototypes/Computability/BitTree/Elias/Code.lean` — Elias delta
+  coding of `n + 1`, allowing zero-length payloads. `readNat` identifies
+  one canonical prefix and retains the unconsumed suffix. Roundtrip and
+  prefix uniqueness are constructive. `length_encodeNat` gives the exact
+  header length `(n + 1).size + 2 * ((n + 1).size.size - 1)`, bounded by
+  `3 * (n + 1).size`. `CodeBits.lean` supplies canonical positive binary
+  words and fixed-width reads. The construction follows [Elias1975].
+- `Geb/Prototypes/Computability/BitTree/Elias/Tree.lean` — the same
+  bitstring-labeled full binary trees with one tag per node and raw
+  payloads preceded by delta-coded lengths. `length_encode` separates
+  the `2 * I + 1` shape bits, `B` raw payload bits and the sum of the
+  delta headers over leaves. The length overhead is logarithmic per
+  leaf; it need not be sublinear in the whole tree's size when there
+  are many short payloads. `readTree` parses a tree prefix with explicit
+  fuel; `decode` requires complete input consumption, and
+  `validBool_iff_existsUnique` characterizes acceptance. `CodeExamples.lean`
+  checks binary-size boundaries, empty payloads and trailing input.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,
