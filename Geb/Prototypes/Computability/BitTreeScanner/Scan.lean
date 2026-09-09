@@ -24,9 +24,15 @@ then the payload bits remaining, decremented as each is read.
 
 The counter is the pending count of {lit}`RankedAlphabet.Binary.depth` less
 one, so that it is never negative and the completed scan is a mode rather
-than a count. Validity is one condition on the final state, that its mode is
-the completed one, and {lit}`Geb.BitTreeScanner.valid_iff_exists_spell` identifies
-the words satisfying it with the spellings.
+than a count. The scan is run at a bound: a gamma code with more zeros than
+the bound fails at once. A word is scanned at its length's digit count, which
+no leaf within it exceeds, since a leaf's payload fits in the word; the bound
+is what keeps a reader's digit cells logarithmic in the word on every input,
+a reader that stored an unbounded run of zeros' digits being linear in the
+word on the inputs it rejects. Validity is one condition on the final state,
+that its mode is the completed one, and
+{lit}`Geb.BitTreeScanner.valid_iff_exists_spell` identifies the words satisfying it
+with the spellings.
 
 ## Main definitions
 
@@ -40,7 +46,9 @@ the words satisfying it with the spellings.
   after a payload bit and after a length digit, closing the leaf when no
   payload remains and starting the countdown when the digits are complete.
 * {lit}`Geb.BitTreeScanner.scanStep`, {lit}`Geb.BitTreeScanner.scanFrom`,
-  {lit}`Geb.BitTreeScanner.init`, {lit}`Geb.BitTreeScanner.scanFinal` — the scan.
+  {lit}`Geb.BitTreeScanner.init`, {lit}`Geb.BitTreeScanner.bound`, {lit}`Geb.BitTreeScanner.scanAt`,
+  {lit}`Geb.BitTreeScanner.scanFinal` — the scan, at a bound on a gamma code's zeros,
+  and the bound a word is scanned at: its length's digit count.
 * {lit}`Geb.BitTreeScanner.validBool`, {lit}`Geb.BitTreeScanner.Valid` — what it accepts.
 
 ## Main statements
@@ -48,15 +56,16 @@ the words satisfying it with the spellings.
 * {lit}`Geb.BitTreeScanner.ofBits_decList`, {lit}`Geb.BitTreeScanner.allFalse_iff` — the
   decrement lowers the value by one, and the zero test is the value's.
 * {lit}`Geb.BitTreeScanner.scanFrom_spell` — a spelling scanned from the expecting
-  mode at any pending count completes that count.
+  mode at any pending count completes that count, at any bound its length is
+  below the power of two of.
 * {lit}`Geb.BitTreeScanner.valid_spell` — every spelling is valid.
 * {lit}`Geb.BitTreeScanner.exists_spell_of_valid` — every valid word is a spelling.
 * {lit}`Geb.BitTreeScanner.valid_iff_exists_spell` — the valid words are exactly the
   spellings.
 * {lit}`Geb.BitTreeScanner.eq_nil_of_spell_eq_spell_append` — no spelling is a
   proper prefix of another: the encoding is a prefix code.
-* {lit}`Geb.BitTreeScanner.scanFinal_take_succ` — the scan of a prefix extended by
-  one bit, the form a machine step against the scan consumes.
+* {lit}`Geb.BitTreeScanner.scanAt_take_succ` — the scan of a prefix extended by one
+  bit, the form a machine step against the scan consumes.
 
 ## Implementation notes
 
@@ -219,25 +228,34 @@ leaf bit opens a leaf; a leaf's gamma code is its zeros, each widening the
 digit cells, then a one and as many digits, most significant first, as zeros
 were read; each payload bit lowers the remaining count; after completion any
 bit fails, and failure absorbs. -/
-def scanStep (s : Scan) (b : Bool) : Scan :=
+def scanStep (W : ℕ) (s : Scan) (b : Bool) : Scan :=
   match s.mode, b with
   | .term, true => ⟨.term, s.count + 1, 0, []⟩
   | .term, false => ⟨.zeros, s.count, 0, []⟩
-  | .zeros, false => ⟨.zeros, s.count, s.width + 1, []⟩
+  | .zeros, false =>
+    if W < s.width then ⟨.dead, s.count, 0, []⟩ else ⟨.zeros, s.count, s.width + 1, []⟩
   | .zeros, true => settleDigits s.count (s.width + 1) [true]
   | .bits, _ => settleDigits s.count s.width (b :: s.digits)
   | .count, _ => settleCount s.count s.width (decList s.digits)
   | .done, _ => ⟨.dead, s.count, 0, []⟩
   | .dead, _ => s
 
-/-- The scan of a word from a state, reading the word's head first. -/
-def scanFrom (w : List Bool) (s : Scan) : Scan := w.foldl scanStep s
+/-- The scan of a word from a state at a bound, reading the word's head
+first. -/
+def scanFrom (W : ℕ) (w : List Bool) (s : Scan) : Scan := w.foldl (scanStep W) s
 
 /-- The initial state: expecting one tree, nothing pending. -/
 def init : Scan := ⟨.term, 0, 0, []⟩
 
-/-- The scan of a word from the initial state. -/
-def scanFinal (w : List Bool) : Scan := scanFrom w init
+/-- The bound a word is scanned at: its length's digit count, which no gamma
+code within it has more zeros than. -/
+def bound (w : List Bool) : ℕ := w.length.bits.length
+
+/-- The scan of a word from the initial state at a bound. -/
+def scanAt (W : ℕ) (w : List Bool) : Scan := scanFrom W w init
+
+/-- The scan of a word from the initial state at its own bound. -/
+def scanFinal (w : List Bool) : Scan := scanAt (bound w) w
 
 /-- Whether a word spells a tree: the scan completes. -/
 def validBool (w : List Bool) : Bool := decide ((scanFinal w).mode = .done)
@@ -281,95 +299,110 @@ theorem settleDigits_of_length_ne (c w : ℕ) (d : List Bool) (h : d.length ≠ 
     settleDigits c w d = ⟨.bits, c, w, d⟩ := by
   rw [settleDigits, ite_eq_right h]
 
+variable (W : ℕ)
+
 /-- A pair bit raises the pending count. -/
 @[simp] theorem scanStep_term_true (c w : ℕ) (d : List Bool) :
-    scanStep ⟨.term, c, w, d⟩ true = ⟨.term, c + 1, 0, []⟩ := rfl
+    scanStep W ⟨.term, c, w, d⟩ true = ⟨.term, c + 1, 0, []⟩ := rfl
 
 /-- A leaf bit opens a leaf. -/
 @[simp] theorem scanStep_term_false (c w : ℕ) (d : List Bool) :
-    scanStep ⟨.term, c, w, d⟩ false = ⟨.zeros, c, 0, []⟩ := rfl
+    scanStep W ⟨.term, c, w, d⟩ false = ⟨.zeros, c, 0, []⟩ := rfl
 
-/-- A zero of the gamma code widens the digit cells. -/
-@[simp] theorem scanStep_zeros_false (c w : ℕ) (d : List Bool) :
-    scanStep ⟨.zeros, c, w, d⟩ false = ⟨.zeros, c, w + 1, []⟩ := rfl
+/-- A zero of the gamma code within the bound widens the digit cells. -/
+theorem scanStep_zeros_false (c w : ℕ) (d : List Bool) (h : w ≤ W) :
+    scanStep W ⟨.zeros, c, w, d⟩ false = ⟨.zeros, c, w + 1, []⟩ := by
+  change (if W < w then _ else _) = _
+  rw [ite_eq_right (by omega)]
+
+/-- A zero of the gamma code beyond the bound fails: no leaf within the word
+has so long a length. -/
+theorem scanStep_zeros_false_of_lt (c w : ℕ) (d : List Bool) (h : W < w) :
+    scanStep W ⟨.zeros, c, w, d⟩ false = ⟨.dead, c, 0, []⟩ := by
+  change (if W < w then _ else _) = _
+  rw [ite_eq_left h]
 
 /-- The one of the gamma code is its most significant digit. -/
 @[simp] theorem scanStep_zeros_true (c w : ℕ) (d : List Bool) :
-    scanStep ⟨.zeros, c, w, d⟩ true = settleDigits c (w + 1) [true] := rfl
+    scanStep W ⟨.zeros, c, w, d⟩ true = settleDigits c (w + 1) [true] := rfl
 
 /-- A digit of the gamma code is prepended, being less significant than those
 read. -/
 @[simp] theorem scanStep_bits (c w : ℕ) (d : List Bool) (b : Bool) :
-    scanStep ⟨.bits, c, w, d⟩ b = settleDigits c w (b :: d) := by
+    scanStep W ⟨.bits, c, w, d⟩ b = settleDigits c w (b :: d) := by
   cases b <;> rfl
 
 /-- A payload bit lowers the remaining count. -/
 @[simp] theorem scanStep_count (c w : ℕ) (d : List Bool) (b : Bool) :
-    scanStep ⟨.count, c, w, d⟩ b = settleCount c w (decList d) := by
+    scanStep W ⟨.count, c, w, d⟩ b = settleCount c w (decList d) := by
   cases b <;> rfl
 
 /-- A bit after completion fails. -/
 @[simp] theorem scanStep_done (c w : ℕ) (d : List Bool) (b : Bool) :
-    scanStep ⟨.done, c, w, d⟩ b = ⟨.dead, c, 0, []⟩ := by
+    scanStep W ⟨.done, c, w, d⟩ b = ⟨.dead, c, 0, []⟩ := by
   cases b <;> rfl
 
 /-- Failure absorbs. -/
 @[simp] theorem scanStep_dead (c w : ℕ) (d : List Bool) (b : Bool) :
-    scanStep ⟨.dead, c, w, d⟩ b = ⟨.dead, c, w, d⟩ := by
+    scanStep W ⟨.dead, c, w, d⟩ b = ⟨.dead, c, w, d⟩ := by
   cases b <;> rfl
 
 /-- The empty word leaves the state. -/
-@[simp] theorem scanFrom_nil (s : Scan) : scanFrom [] s = s := rfl
+@[simp] theorem scanFrom_nil (s : Scan) : scanFrom W [] s = s := rfl
 
 /-- The scan of the empty word is the initial state. -/
-@[simp] theorem scanFinal_nil : scanFinal [] = init := rfl
+@[simp] theorem scanAt_nil : scanAt W [] = init := rfl
 
 /-- The scan reads the head bit first. -/
 @[simp] theorem scanFrom_cons (b : Bool) (w : List Bool) (s : Scan) :
-    scanFrom (b :: w) s = scanFrom w (scanStep s b) := rfl
+    scanFrom W (b :: w) s = scanFrom W w (scanStep W s b) := rfl
 
 /-- The scan of a concatenation reads the earlier part first. -/
 theorem scanFrom_append (u v : List Bool) (s : Scan) :
-    scanFrom (u ++ v) s = scanFrom v (scanFrom u s) := List.foldl_append
+    scanFrom W (u ++ v) s = scanFrom W v (scanFrom W u s) := List.foldl_append
 
 /-- A failed scan reads no further. -/
 theorem scanFrom_dead (w : List Bool) (c wd : ℕ) (d : List Bool) :
-    scanFrom w ⟨.dead, c, wd, d⟩ = ⟨.dead, c, wd, d⟩ :=
-  List.rec (motive := fun w ↦ scanFrom w ⟨.dead, c, wd, d⟩ = ⟨.dead, c, wd, d⟩) rfl
+    scanFrom W w ⟨.dead, c, wd, d⟩ = ⟨.dead, c, wd, d⟩ :=
+  List.rec (motive := fun w ↦ scanFrom W w ⟨.dead, c, wd, d⟩ = ⟨.dead, c, wd, d⟩) rfl
     (fun b _ ih ↦ by rw [scanFrom_cons, scanStep_dead]; exact ih) w
 
 /-- The scan of a prefix extended by one bit is the scan of the prefix followed
 by that bit. -/
-theorem scanFinal_take_succ (w : List Bool) (k : ℕ) (h : k < w.length) :
-    scanFinal (w.take (k + 1)) = scanStep (scanFinal (w.take k)) w[k] := by
-  rw [List.take_succ_eq_append_getElem h, scanFinal, scanFinal, scanFrom_append]
+theorem scanAt_take_succ (w : List Bool) (k : ℕ) (h : k < w.length) :
+    scanAt W (w.take (k + 1)) = scanStep W (scanAt W (w.take k)) w[k] := by
+  rw [List.take_succ_eq_append_getElem h, scanAt, scanAt, scanFrom_append]
   rfl
 
 end Equations
 
 section Soundness
 
-/-- The zeros of a gamma code widen the digit cells by their number. -/
+variable (W : ℕ)
+
+/-- The zeros of a gamma code within the bound widen the digit cells by their
+number. -/
 theorem scanFrom_replicate_false (j : ℕ) :
-    ∀ c w, scanFrom (List.replicate j false) ⟨.zeros, c, w, []⟩ = ⟨.zeros, c, w + j, []⟩ :=
-  Nat.rec (motive := fun j ↦ ∀ c w,
-      scanFrom (List.replicate j false) ⟨.zeros, c, w, []⟩ = ⟨.zeros, c, w + j, []⟩)
-    (fun _ _ ↦ rfl)
-    (fun j ih c w ↦ by
-      rw [List.replicate_succ, scanFrom_cons, scanStep_zeros_false, ih, Nat.add_assoc,
-        Nat.add_comm 1 j]) j
+    ∀ c w, w + j ≤ W + 1 →
+      scanFrom W (List.replicate j false) ⟨.zeros, c, w, []⟩ = ⟨.zeros, c, w + j, []⟩ :=
+  Nat.rec (motive := fun j ↦ ∀ c w, w + j ≤ W + 1 →
+      scanFrom W (List.replicate j false) ⟨.zeros, c, w, []⟩ = ⟨.zeros, c, w + j, []⟩)
+    (fun _ _ _ ↦ rfl)
+    (fun j ih c w hw ↦ by
+      rw [List.replicate_succ, scanFrom_cons, scanStep_zeros_false W _ _ _ (by omega),
+        ih c (w + 1) (by omega), Nat.add_assoc, Nat.add_comm 1 j]) j
 
 /-- Reading digits in the digit mode accumulates them, least significant first,
 and settles when they fill the width. -/
 theorem scanFrom_bits (rest : List Bool) :
     ∀ (c w : ℕ) (d : List Bool), d.length < w → d.length + rest.length ≤ w →
-      scanFrom rest ⟨.bits, c, w, d⟩ =
+      scanFrom W rest ⟨.bits, c, w, d⟩ =
         if d.length + rest.length = w then settleCount c w (decList (rest.reverse ++ d))
         else ⟨.bits, c, w, rest.reverse ++ d⟩ :=
   List.rec
     (motive := fun rest ↦ ∀ (c w : ℕ) (d : List Bool), d.length < w →
       d.length + rest.length ≤ w →
-      scanFrom rest ⟨.bits, c, w, d⟩ =
+      scanFrom W rest ⟨.bits, c, w, d⟩ =
         if d.length + rest.length = w then settleCount c w (decList (rest.reverse ++ d))
         else ⟨.bits, c, w, rest.reverse ++ d⟩)
     (fun c w d hlt _ ↦ by
@@ -397,10 +430,10 @@ theorem scanFrom_bits (rest : List Bool) :
 closes the leaf. -/
 theorem scanFrom_settleCount (s : List Bool) :
     ∀ (c w : ℕ) (d : List Bool), ofBits d = s.length →
-      scanFrom s (settleCount c w d) = close c :=
+      scanFrom W s (settleCount c w d) = close c :=
   List.rec
     (motive := fun s ↦ ∀ (c w : ℕ) (d : List Bool), ofBits d = s.length →
-      scanFrom s (settleCount c w d) = close c)
+      scanFrom W s (settleCount c w d) = close c)
     (fun c w d h ↦ by
       rw [settleCount_of_allFalse _ _ _ ((allFalse_iff d).mpr h), scanFrom_nil])
     (fun b s ih c w d h ↦ by
@@ -415,61 +448,73 @@ theorem scanFrom_settleCount (s : List Bool) :
 mode after as many zeros as digits, starts the countdown at one less than the
 digits' value. -/
 theorem scanFrom_true_reverse (r : List Bool) (c : ℕ) :
-    scanFrom (true :: r.reverse) ⟨.zeros, c, r.length, []⟩ =
+    scanFrom W (true :: r.reverse) ⟨.zeros, c, r.length, []⟩ =
       settleCount c (r.length + 1) (decList (r ++ [true])) := by
   rw [scanFrom_cons, scanStep_zeros_true]
   cases r with
   | nil => rfl
   | cons b r =>
     rw [settleDigits_of_length_ne _ _ _ (by rw [List.length_singleton, List.length_cons]; omega),
-      scanFrom_bits _ c _ [true] (by rw [List.length_singleton, List.length_cons]; omega)
+      scanFrom_bits W _ c _ [true] (by rw [List.length_singleton, List.length_cons]; omega)
         (by rw [List.length_singleton, List.length_reverse]; omega),
       ite_eq_left (by rw [List.length_singleton, List.length_reverse]; omega),
       List.reverse_reverse]
 
-/-- A leaf body read from the zeros mode at no zeros closes the leaf: the gamma
-code's zeros and digits start the countdown at the payload's length, and the
-payload runs it down. -/
-theorem scanFrom_leafBody (s : List Bool) (c : ℕ) :
-    scanFrom (leafBody s) ⟨.zeros, c, 0, []⟩ = close c := by
+/-- A leaf body whose length has at most the bound's digits, read from the
+zeros mode at no zeros, closes the leaf: the gamma code's zeros and digits
+start the countdown at the payload's length, and the payload runs it down. -/
+theorem scanFrom_leafBody (s : List Bool) (c : ℕ) (h : (s.length + 1).bits.length ≤ W + 1) :
+    scanFrom W (leafBody s) ⟨.zeros, c, 0, []⟩ = close c := by
   obtain ⟨r, hr⟩ := exists_bits_eq_append_true (s.length + 1) (Nat.succ_pos _)
   have hval : ofBits (r ++ [true]) = s.length + 1 := by rw [← hr, ofBits_bits]
+  rw [hr, List.length_append, List.length_singleton] at h
   rw [leafBody, gamma, hr, List.length_append, List.length_singleton, Nat.add_sub_cancel,
     List.reverse_append, List.reverse_singleton, List.singleton_append, List.append_assoc,
-    scanFrom_append, scanFrom_replicate_false, Nat.zero_add, scanFrom_append,
+    scanFrom_append, scanFrom_replicate_false W _ c 0 (by omega), Nat.zero_add, scanFrom_append,
     scanFrom_true_reverse]
-  exact scanFrom_settleCount s c _ _ (by
+  exact scanFrom_settleCount W s c _ _ (by
     have := ofBits_decList _ (Nat.ne_of_gt (ofBits_append_true_pos r))
     omega)
 
-/-- A spelling read in the expecting mode completes the pending count. -/
-theorem scanFrom_spell (t : BitTree) : ∀ c, scanFrom (spell t) ⟨.term, c, 0, []⟩ = close c :=
-  PFunctor.FreeM.rec (motive := fun t ↦ ∀ c, scanFrom (spell t) ⟨.term, c, 0, []⟩ = close c)
-    (fun s c ↦ by rw [spell_pure, scanFrom_cons, scanStep_term_false, scanFrom_leafBody])
-    (fun a k ih c ↦ by
-      rw [spell_liftBind, scanFrom_cons, scanStep_term_true, scanFrom_append, ih false,
-        close_succ, ih true]) t
+/-- A spelling shorter than the power of two at the bound, read in the
+expecting mode, completes the pending count: every leaf's length has at most
+the bound's digits. -/
+theorem scanFrom_spell (t : BitTree) :
+    ∀ c, (spell t).length < 2 ^ W → scanFrom W (spell t) ⟨.term, c, 0, []⟩ = close c :=
+  PFunctor.FreeM.rec
+    (motive := fun t ↦ ∀ c, (spell t).length < 2 ^ W →
+      scanFrom W (spell t) ⟨.term, c, 0, []⟩ = close c)
+    (fun s c h ↦ by
+      rw [spell_pure, List.length_cons, length_leafBody] at h
+      rw [spell_pure, scanFrom_cons, scanStep_term_false, scanFrom_leafBody W s c
+        (le_trans ((bits_length_le_iff (s.length + 1) W).mpr (by omega)) (Nat.le_succ W))])
+    (fun a k ih c h ↦ by
+      rw [spell_liftBind, List.length_cons, List.length_append] at h
+      rw [spell_liftBind, scanFrom_cons, scanStep_term_true, scanFrom_append,
+        ih false (c + 1) (by omega), close_succ, ih true c (by omega)]) t
 
 /-- Every spelling is valid. -/
 theorem valid_spell (t : BitTree) : Valid (spell t) := by
-  unfold Valid validBool scanFinal init
-  rw [scanFrom_spell t 0]
+  unfold Valid validBool scanFinal scanAt init
+  rw [scanFrom_spell (bound (spell t)) t 0 (lt_two_pow_bits_length _)]
   rfl
 
 end Soundness
 
 section Completeness
 
+variable (W : ℕ)
+
 /-- A word completing the scan from the countdown begins with as many bits as
 the digits denote, the remainder completing the scan from the state the leaf
 leaves. -/
 theorem exists_of_settleCount (w : List Bool) :
-    ∀ (c width : ℕ) (d : List Bool), (scanFrom w (settleCount c width d)).mode = .done →
-      ∃ s v, w = s ++ v ∧ s.length = ofBits d ∧ (scanFrom v (close c)).mode = .done :=
+    ∀ (c width : ℕ) (d : List Bool), (scanFrom W w (settleCount c width d)).mode = .done →
+      ∃ s v, w = s ++ v ∧ s.length = ofBits d ∧ (scanFrom W v (close c)).mode = .done :=
   List.rec
     (motive := fun w ↦ ∀ (c width : ℕ) (d : List Bool),
-      (scanFrom w (settleCount c width d)).mode = .done →
-      ∃ s v, w = s ++ v ∧ s.length = ofBits d ∧ (scanFrom v (close c)).mode = .done)
+      (scanFrom W w (settleCount c width d)).mode = .done →
+      ∃ s v, w = s ++ v ∧ s.length = ofBits d ∧ (scanFrom W v (close c)).mode = .done)
     (fun c width d h ↦ by
       cases hf : allFalse d with
       | true =>
@@ -494,12 +539,12 @@ theorem exists_of_settleCount (w : List Bool) :
 digits' value less one. -/
 theorem exists_of_settleDigits_full (w : List Bool) (c width : ℕ) (r : List Bool)
     (hfull : (r ++ [true]).length = width)
-    (h : (scanFrom w (settleDigits c width (r ++ [true]))).mode = .done) :
+    (h : (scanFrom W w (settleDigits c width (r ++ [true]))).mode = .done) :
     ∃ rest s v, w = rest ++ s ++ v ∧ (r ++ [true]).length + rest.length = width ∧
       s.length + 1 = ofBits (rest.reverse ++ (r ++ [true])) ∧
-      (scanFrom v (close c)).mode = .done := by
+      (scanFrom W v (close c)).mode = .done := by
   rw [settleDigits_of_length_eq _ _ _ hfull] at h
-  obtain ⟨s, v, hw, hlen, hv⟩ := exists_of_settleCount w c width _ h
+  obtain ⟨s, v, hw, hlen, hv⟩ := exists_of_settleCount W w c width _ h
   refine ⟨[], s, v, by rw [hw, List.nil_append], by rw [List.length_nil, hfull, Nat.add_zero], ?_,
     hv⟩
   rw [List.reverse_nil, List.nil_append, hlen]
@@ -510,24 +555,24 @@ still to read, then as many payload bits as the whole digits denote less one,
 the remainder completing the scan from the state the leaf leaves. -/
 theorem exists_of_settleDigits (w : List Bool) :
     ∀ (c width : ℕ) (r : List Bool), (r ++ [true]).length ≤ width →
-      (scanFrom w (settleDigits c width (r ++ [true]))).mode = .done →
+      (scanFrom W w (settleDigits c width (r ++ [true]))).mode = .done →
       ∃ rest s v, w = rest ++ s ++ v ∧ (r ++ [true]).length + rest.length = width ∧
         s.length + 1 = ofBits (rest.reverse ++ (r ++ [true])) ∧
-        (scanFrom v (close c)).mode = .done :=
+        (scanFrom W v (close c)).mode = .done :=
   List.rec
     (motive := fun w ↦ ∀ (c width : ℕ) (r : List Bool), (r ++ [true]).length ≤ width →
-      (scanFrom w (settleDigits c width (r ++ [true]))).mode = .done →
+      (scanFrom W w (settleDigits c width (r ++ [true]))).mode = .done →
       ∃ rest s v, w = rest ++ s ++ v ∧ (r ++ [true]).length + rest.length = width ∧
         s.length + 1 = ofBits (rest.reverse ++ (r ++ [true])) ∧
-        (scanFrom v (close c)).mode = .done)
+        (scanFrom W v (close c)).mode = .done)
     (fun c width r _ h ↦ by
       by_cases hfull : (r ++ [true]).length = width
-      · exact exists_of_settleDigits_full [] c width r hfull h
+      · exact exists_of_settleDigits_full W [] c width r hfull h
       · rw [settleDigits_of_length_ne _ _ _ hfull, scanFrom_nil] at h
         exact nomatch h)
     (fun b w ih c width r hle h ↦ by
       by_cases hfull : (r ++ [true]).length = width
-      · exact exists_of_settleDigits_full (b :: w) c width r hfull h
+      · exact exists_of_settleDigits_full W (b :: w) c width r hfull h
       · rw [settleDigits_of_length_ne _ _ _ hfull, scanFrom_cons, scanStep_bits,
           ← List.cons_append] at h
         obtain ⟨rest, s, v, hw, hlen, hval, hv⟩ := ih c width (b :: r)
@@ -544,27 +589,30 @@ one, as many digits as zeros in all, then as many payload bits as the digits
 denote less one, the remainder completing the scan from the state the leaf
 leaves. -/
 theorem exists_of_zeros (w : List Bool) :
-    ∀ (c j : ℕ), (scanFrom w ⟨.zeros, c, j, []⟩).mode = .done →
+    ∀ (c j : ℕ), (scanFrom W w ⟨.zeros, c, j, []⟩).mode = .done →
       ∃ k rest s v, w = List.replicate k false ++ true :: (rest ++ s ++ v) ∧
         rest.length = j + k ∧ s.length + 1 = ofBits (rest.reverse ++ [true]) ∧
-        (scanFrom v (close c)).mode = .done :=
+        (scanFrom W v (close c)).mode = .done :=
   List.rec
-    (motive := fun w ↦ ∀ (c j : ℕ), (scanFrom w ⟨.zeros, c, j, []⟩).mode = .done →
+    (motive := fun w ↦ ∀ (c j : ℕ), (scanFrom W w ⟨.zeros, c, j, []⟩).mode = .done →
       ∃ k rest s v, w = List.replicate k false ++ true :: (rest ++ s ++ v) ∧
         rest.length = j + k ∧ s.length + 1 = ofBits (rest.reverse ++ [true]) ∧
-        (scanFrom v (close c)).mode = .done)
+        (scanFrom W v (close c)).mode = .done)
     (fun _ _ h ↦ by rw [scanFrom_nil] at h; exact nomatch h)
     (fun b w ih c j h ↦ by
       cases b with
       | false =>
-        rw [scanFrom_cons, scanStep_zeros_false] at h
+        by_cases hW : W < j
+        · rw [scanFrom_cons, scanStep_zeros_false_of_lt W _ _ _ hW, scanFrom_dead] at h
+          exact nomatch h
+        rw [scanFrom_cons, scanStep_zeros_false W _ _ _ (by omega)] at h
         obtain ⟨k, rest, s, v, hw, hlen, hval, hv⟩ := ih c (j + 1) h
         exact ⟨k + 1, rest, s, v, by rw [hw, List.replicate_succ, List.cons_append],
           by omega, hval, hv⟩
       | true =>
         rw [scanFrom_cons, scanStep_zeros_true] at h
         obtain ⟨rest, s, v, hw, hlen, hval, hv⟩ :=
-          exists_of_settleDigits w c (j + 1) []
+          exists_of_settleDigits W w c (j + 1) []
             (by rw [List.nil_append, List.length_singleton]; omega) h
         refine ⟨0, rest, s, v, by rw [hw]; rfl, ?_, hval, hv⟩
         rw [List.nil_append, List.length_singleton] at hlen
@@ -576,12 +624,12 @@ leaves. The recursion is on the bound: the pair case applies its hypothesis
 to the remainder the left child leaves, which is not a structural subterm of
 the word. -/
 theorem exists_spell_append_of_length_le (n : ℕ) :
-    ∀ w : List Bool, w.length ≤ n → ∀ c, (scanFrom w ⟨.term, c, 0, []⟩).mode = .done →
-      ∃ t v, w = spell t ++ v ∧ (scanFrom v (close c)).mode = .done :=
+    ∀ w : List Bool, w.length ≤ n → ∀ c, (scanFrom W w ⟨.term, c, 0, []⟩).mode = .done →
+      ∃ t v, w = spell t ++ v ∧ (scanFrom W v (close c)).mode = .done :=
   Nat.rec
     (motive := fun n ↦ ∀ w : List Bool, w.length ≤ n → ∀ c,
-      (scanFrom w ⟨.term, c, 0, []⟩).mode = .done →
-        ∃ t v, w = spell t ++ v ∧ (scanFrom v (close c)).mode = .done)
+      (scanFrom W w ⟨.term, c, 0, []⟩).mode = .done →
+        ∃ t v, w = spell t ++ v ∧ (scanFrom W v (close c)).mode = .done)
     (fun w hw c h ↦ by
       cases w with
       | nil => exact nomatch h
@@ -594,7 +642,7 @@ theorem exists_spell_append_of_length_le (n : ℕ) :
         cases b with
         | false =>
           rw [scanFrom_cons, scanStep_term_false] at h
-          obtain ⟨k, rest, s, v, hw', hlen, hval, hv⟩ := exists_of_zeros w c 0 h
+          obtain ⟨k, rest, s, v, hw', hlen, hval, hv⟩ := exists_of_zeros W w c 0 h
           refine ⟨leaf s, v, ?_, hv⟩
           rw [hw', spell_leaf, leafBody, hval, gamma_ofBits, List.length_reverse,
             List.reverse_reverse, hlen, Nat.zero_add]
@@ -614,7 +662,7 @@ theorem exists_spell_append_of_length_le (n : ℕ) :
 /-- A word completing the scan from the completed mode is empty: a bit read
 after completion fails, and failure absorbs. -/
 theorem eq_nil_of_mode_scanFrom_done_eq_done (w : List Bool) (c wd : ℕ) (d : List Bool)
-    (h : (scanFrom w ⟨.done, c, wd, d⟩).mode = .done) : w = [] := by
+    (h : (scanFrom W w ⟨.done, c, wd, d⟩).mode = .done) : w = [] := by
   cases w with
   | nil => rfl
   | cons b w =>
@@ -623,10 +671,10 @@ theorem eq_nil_of_mode_scanFrom_done_eq_done (w : List Bool) (c wd : ℕ) (d : L
 
 /-- Every valid word is a spelling. -/
 theorem exists_spell_of_valid {w : List Bool} (h : Valid w) : ∃ t, spell t = w := by
-  have h' : (scanFrom w ⟨.term, 0, 0, []⟩).mode = .done := of_decide_eq_true h
-  obtain ⟨t, v, hw, hv⟩ := exists_spell_append_of_length_le w.length w le_rfl 0 h'
+  have h' : (scanFrom (bound w) w ⟨.term, 0, 0, []⟩).mode = .done := of_decide_eq_true h
+  obtain ⟨t, v, hw, hv⟩ := exists_spell_append_of_length_le (bound w) w.length w le_rfl 0 h'
   rw [close_zero] at hv
-  rw [eq_nil_of_mode_scanFrom_done_eq_done v 0 0 [] hv, List.append_nil] at hw
+  rw [eq_nil_of_mode_scanFrom_done_eq_done (bound w) v 0 0 [] hv, List.append_nil] at hw
   exact ⟨t, hw.symm⟩
 
 /-- The valid words are exactly the spellings. -/
@@ -637,10 +685,15 @@ theorem valid_iff_exists_spell (w : List Bool) : Valid w ↔ ∃ t, spell t = w 
 of the shorter and fails on any bit after it. -/
 theorem eq_nil_of_spell_eq_spell_append (t t' : BitTree) (v : List Bool)
     (h : spell t = spell t' ++ v) : v = [] := by
-  have hv : (scanFrom v (close 0)).mode = .done := by
-    rw [← scanFrom_spell t' 0, ← scanFrom_append, ← h, scanFrom_spell t 0]
+  have hlt : (spell t).length < 2 ^ bound (spell t) := lt_two_pow_bits_length _
+  have hlt' : (spell t').length < 2 ^ bound (spell t) := by
+    have := congrArg List.length h
+    rw [List.length_append] at this
+    omega
+  have hv : (scanFrom (bound (spell t)) v (close 0)).mode = .done := by
+    rw [← scanFrom_spell _ t' 0 hlt', ← scanFrom_append, ← h, scanFrom_spell _ t 0 hlt]
     rfl
-  exact eq_nil_of_mode_scanFrom_done_eq_done v 0 0 [] hv
+  exact eq_nil_of_mode_scanFrom_done_eq_done _ v 0 0 [] hv
 
 end Completeness
 

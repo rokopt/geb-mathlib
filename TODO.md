@@ -786,16 +786,12 @@ and none scheduled.
   digit phase and a second counter, and the scan and machine gain the phases
   and states that nesting takes; the order of the bounds is unchanged, so
   the case for it is the constant on the length-code term alone.
-- The pending count in binary. The first tape holds it in unary, so the
-  space bound `10 * n + 4` is linear though the second tape holds a leaf's
-  length in `log₂ n` digits; a pending count in binary on the first tape,
-  incremented at a pair bit and decremented at a leaf's close by the borrow
-  the second tape already runs, would bring the machine to `O(log n)` space
-  at an amortised constant per bit, a different space class. The
-  `Geb.BitTreeScanner.Good` invariant, `Geb.BitTreeScanner.cost`,
-  `Geb.BitTreeScanner.cfgAt` and the borrow lemmas of `Steps.lean` are the
-  parts it reuses; what it adds is an increment with a carry, its
-  intermediate closed forms, and a potential covering both counters.
+- The pending count in binary, which
+  `Geb/Prototypes/Computability/BitTreeScanner/Counter.lean` now keeps in a
+  redundant binary counter; the machine over it, with an initial pass
+  counting the input's length as the ruler the bound is checked against, is
+  the following commits' concern. What remains open is the constant: the
+  potential covering both counters gives the bound the machine states.
 - The space bound is the trivial one, `2 * t + 2` from `spaceUsed_linear`
   at the halting time `t`. The cells visited are the pending counts reached
   on the first tape and the digit cells on the second, so a sharper bound is
