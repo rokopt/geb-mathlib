@@ -414,7 +414,8 @@ checklist and in CI.
   `memWBool` adds the index test; `wValidBool_eq_true_iff` and
   `memWBool_eq_true_iff` are their correctness lemmas, the latter
   stated against `PresheafPFunctor.MemW`, so `decidableMemW` decides
-  the whole fiber condition by a single fold. Forwarding instances for
+  the whole fiber condition by combining the admissibility and naturality
+  folds with the root-index test. Forwarding instances for
   `decidableWValid` and `decidableIsHereditarilyNatural`;
   `decidableEqW` provides `DecidableEq` on raw W-trees.
   `Classical.choice`-free.
