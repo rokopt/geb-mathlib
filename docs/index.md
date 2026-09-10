@@ -1992,6 +1992,31 @@ checklist and in CI.
   depends on `Classical.choice`. Depends on
   `Geb.Prototypes.Computability.BitTreeScanner.Steps` and mathlib's
   `Data.Int.Interval`.
+- `Geb/Prototypes/Computability/BitTree/EliasBinary/Bound.lean` —
+  `Geb.BitTree.EliasBinary.computableInTimeAndSpace_validBool` proves
+  that the same Elias-length tree language is recognized in at most
+  `25 * n + 6` transitions and `9 * ((2 * n + 2).size + 3)` visited work
+  cells, so the size bound of `Elias/RepresentationSize.lean` is met by
+  a linear-time, logarithmic-space recognizer. The machine reads the
+  input twice: `PassOne.lean` counts its length into binary counters
+  whose width serves as a ruler for zero runs and length fields, and
+  the second pass consumes each bit in constant amortized time.
+  `Machine.lean` holds the transition table over nine work tapes, three
+  pairs of a register with a monotone binary counter and a mismatch
+  marker (`Layout.lean`), the length pair mirrored so that its most
+  significant bit is read first. `Account.lean` and `Cost.lean` give
+  the streaming scanner's abstract state and a potential function
+  under which each bit costs a constant; `Need.lean` shows a scan
+  cannot accept before the input is as long as the counters demand,
+  which justifies capping the fields at the ruler. `Increment.lean`,
+  `Represent.lean` and `Steps.lean` establish the counter routine, the
+  tape invariants and the single transitions; `Simple.lean`,
+  `Zeros.lean`, `SizeRead.lean`, `LengthRead.lean` and `Payload.lean`
+  realize one bit in each scanner phase; `BitStep.lean` and
+  `Execution.lean` compose them over every input prefix. The modules
+  stating facts about CSLib executions are listed in
+  `GebMeta.classicalAllowedModules`; the scanner accounting, the cost
+  potential and the counter arithmetic are constructive.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,
