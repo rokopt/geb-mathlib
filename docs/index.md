@@ -1824,146 +1824,174 @@ checklist and in CI.
   the round trip on the lists ending in a one, `exists_bits_eq_append_true`
   that a positive number's digits are such a list, `gamma_ofBits` the code
   of such a list's value in the form a reader recovers, and `length_gamma`
-  its length, twice the number of digits less one. The bits at which the
-  spelling branches are those of the recursive two-bit-per-node scheme
-  [Jacobson1989] § 1 states for unlabelled binary trees, with each leaf's
-  payload in place after its bit; `pairs`, `payload` and `gammaLength` count
-  a tree's pairs,
-  payload bits and length-code bits, and `length_spell` shows a tree of `p`
-  pairs and `m` payload bits spelled by `2 * p + 1 + m` bits plus its
-  leaves' gamma codes, with `length_leafBody` the leaf's share. `spell` and
-  the three counts are `PFunctor.FreeM.liftM` into the continuation monad
-  `Cont`, since the code generator does not compile `PFunctor.FreeM.rec` and
-  a self-recursive definition is barred; the equations `spell_pure`,
+  its length, twice the number of digits less one; `bits_length_le_iff`,
+  `lt_two_pow_bits_length` and `bits_length_mono` relate the digit count to
+  the powers of two. The bits at which the spelling branches are those of
+  the recursive two-bit-per-node scheme [Jacobson1989] § 1 states for
+  unlabelled binary trees, with each leaf's payload in place after its bit;
+  `pairs`, `payload` and `gammaLength` count a tree's pairs, payload bits
+  and length-code bits, and `length_spell` shows a tree of `p` pairs and
+  `m` payload bits spelled by `2 * p + 1 + m` bits plus its leaves' gamma
+  codes, with `length_leafBody` the leaf's share. `spell` and the three
+  counts are `PFunctor.FreeM.liftM` into the continuation monad `Cont`,
+  since the code generator does not compile `PFunctor.FreeM.rec` and a
+  self-recursive definition is barred; the equations `spell_pure`,
   `spell_liftBind`, `spell_leaf` and `spell_pair` hold by `rfl`. Depends on
   Cslib's `Foundations.Data.PFunctor.Free` and mathlib's
   `Control.Monad.Cont` and `Data.Nat.Bits`.
 - `Geb/Prototypes/Computability/BitTreeScanner/Scan.lean` — the left-to-right
-  scan accepting exactly the spellings. `Mode` is the scan's mode — expecting
-  a tree, reading a leaf's gamma-code zeros, its digits or its payload,
-  completed, or failed — and `Scan` carries a mode, the count of trees
-  pending beyond the one in progress, which is `RankedAlphabet.Binary.depth`
-  less one so that completion is a mode rather than a count, the width of
-  the leaf's digit cells, and its digits least significant first, the
-  length as read and then the payload remaining. `decList` is the decrement
-  of a digit list, a `List.foldr` into a function of whether the borrow has
-  been absorbed since the code generator does not compile `List.rec`, with
+  scan accepting exactly the spellings, run at a bound on a gamma code's
+  zeros. `Mode` is the scan's mode — expecting a tree, reading a leaf's
+  gamma-code zeros, its digits or its payload, completed, or failed — and
+  `Scan` carries a mode, the count of trees pending beyond the one in
+  progress, which is `RankedAlphabet.Binary.depth` less one so that
+  completion is a mode rather than a count, the width of the leaf's digit
+  cells, and its digits least significant first, the length as read and
+  then the payload remaining. `decList` is the decrement of a digit list, a
+  `List.foldr` into a function of whether the borrow has been absorbed
+  since the code generator does not compile `List.rec`, with
   `ofBits_decList` lowering the value by one and `allFalse_iff` the zero
   test; `settleCount` closes the leaf when no payload remains and
   `settleDigits` starts the countdown when the digits fill the width;
-  `close` is the state a completed tree leaves, `scanStep` the step,
-  `scanFrom` its `List.foldl`, `scanFinal` the scan from `init`, and
-  `validBool` and `Valid` what it accepts, one condition: the final mode is
-  the completed one. `scanFrom_replicate_false`, `scanFrom_bits`,
-  `scanFrom_settleCount`, `scanFrom_true_reverse` and `scanFrom_leafBody`
-  are soundness phase by phase, and `scanFrom_spell` a spelling scanned from
-  the expecting mode completing its pending count, giving `valid_spell`;
-  `exists_of_settleCount`, `exists_of_settleDigits`, `exists_of_zeros` and
-  `exists_spell_append_of_length_le` are completeness, the last recursing on
-  a bound on the word's length since the pair case applies its hypothesis to
-  the remainder the left child leaves, giving `exists_spell_of_valid` and
-  `valid_iff_exists_spell`; `eq_nil_of_spell_eq_spell_append` shows no
-  spelling a proper prefix of another, so the encoding is a prefix code.
-  `scanFinal_take_succ` is the scan of a prefix extended by one bit, the
-  form a machine step consumes. Depends on
-  `Geb.Prototypes.Computability.BitTreeScanner.Encoding`.
-- `Geb/Prototypes/Computability/BitTreeScanner/Cost.lean` — the scan's
-  invariant and the machine's cost per bit. `Good` is the invariant of the
-  states the scan reaches: nothing held outside a leaf, the digits read
-  ending in a one and short of the width, the countdown holding a positive
-  count that fills the width; `good_init`, `good_scanStep` and
-  `good_scanFinal` establish it. `borrowLength` is the length of a decrement's borrow,
-  the zeros below the lowest one, with `borrowLength_le_length`, `borrowLength_lt_length`,
-  `count_false_decList`, `eq_of_allFalse_decList` and the `getD` lemmas
-  describing the digits before and after a decrement. `chainCost`,
-  `failCost`, `pendingCount`, `pendingDigits` and `cost` are the machine
-  steps a bit costs, including the work done before the next bit — the
-  first decrement after a leaf's length and the failed decrement that
-  detects its payload's end — and `endCost` the steps from the input's end
-  to the halt; `runAux` and `time` sum them over a word. `potential`
-  weights the zero digits and the width, `cost_add_potential_le` shows a
-  bit costs at most five steps amortised, and `time_add_endCost_le` gives
-  `5 * n + 1` with the steps to the halt. Depends on
+  `close` is the state a completed tree leaves, `scanStep` the step at a
+  bound, failing at a zero beyond it, `scanFrom` its `List.foldl`, `bound`
+  a word's length's digit count, `scanAt` the scan from `init` at a bound,
+  `scanFinal` the scan at the word's own bound, and `validBool` and `Valid`
+  what it accepts, one condition: the final mode is the completed one. The
+  bound is what keeps a reader's digit cells logarithmic on every input.
+  `scanFrom_replicate_false`, `scanFrom_bits`, `scanFrom_settleCount`,
+  `scanFrom_true_reverse` and `scanFrom_leafBody` are soundness phase by
+  phase, and `scanFrom_spell` a spelling shorter than the bound's power of
+  two scanned from the expecting mode completing its pending count, giving
+  `valid_spell`; `exists_of_settleCount`, `exists_of_settleDigits`,
+  `exists_of_zeros` and `exists_spell_append_of_length_le` are
+  completeness, the last recursing on a bound on the word's length since
+  the pair case applies its hypothesis to the remainder the left child
+  leaves, giving `exists_spell_of_valid` and `valid_iff_exists_spell`;
+  `eq_nil_of_spell_eq_spell_append` shows no spelling a proper prefix of
+  another, so the encoding is a prefix code. `scanAt_take_succ` is the
+  scan of a prefix extended by one bit, the form a machine step consumes.
+  Depends on `Geb.Prototypes.Computability.BitTreeScanner.Encoding`.
+- `Geb/Prototypes/Computability/BitTreeScanner/Counter.lean` — the redundant
+  binary counter of [Okasaki1998] Chapter 9 for the pending count, digits
+  `Redundant.Digit` zero to two least significant first, with `value` the
+  number denoted, `inc` turning a run of twos into ones and raising the
+  digit above, `dec` turning a run of zeros into ones and lowering the
+  digit above, erasing a top digit that would become zero, and `nlz` the
+  canonical form without leading zero; `value_inc` and `value_dec` change
+  the value by one, `nlz_inc` and `nlz_dec` preserve the form,
+  `value_eq_zero_iff` makes the zero test one read, and
+  `length_le_bits_length` bounds the digits by the value's. `carryLength`,
+  `borrowLength` and `nonOnes` are the chain lengths and the potential,
+  with `nonOnes_inc_add_carryLength_le` and
+  `nonOnes_dec_add_borrowLength_le` the amortisation: a chain turns as many
+  digits into ones as it passes. `closes`, `treeStep`, `runTree` and
+  `treeAt` replay the pending count in the counter alongside the scan, a
+  pair bit incrementing and a leaf's close decrementing, and `GoodTree`,
+  `scanStep_eq_close_of_closes`, `goodTree_treeStep` and `goodTree_treeAt`
+  show the replay denotes the scan's count. Depends on
   `Geb.Prototypes.Computability.BitTreeScanner.Scan`.
-- `Geb/Prototypes/Computability/BitTreeScanner/Machine.lean` — a
-  deterministic multi-tape Turing machine over Cslib's `Turing.MultiTapeTM`
-  deciding `Geb.BitTreeScanner.validBool` in one left-to-right pass, with two work
-  tapes over the alphabet `Fin 4`. `boolEmb` embeds the input bits as the
-  two digits; `stFirst` through `stDead` are the eleven states, `advance`,
-  `stay` and `halt` the three shapes of transition, and `bitTreeScanner` the
-  machine. The first tape keeps the pending count as its head position with
-  a marker at cell `0`, as the ranked-term scanner does; the second keeps a
-  leaf's length in binary, least significant digit at cell `1` beside a base
-  marker at cell `0`, written as the gamma code's digits arrive and counted
-  down as the payload is read, a decrement borrowing outward through the
-  zeros and returning to the base, and a decrement running into blank
-  finding the count at zero, erasing the digits and leaving the leaf.
-  `digitsAt`, `tape1`, `tapeDigits`, `tape2`, `head2` and `stateOf` are the
-  tapes, the second head and the state as functions of the scan's state;
-  `cfgAt` is the closed-form configuration at any scan state after a
-  prefix, through which the runs between bits pass, and `cfgOf` is `cfgAt`
-  at the scan's state after the prefix, with its field projections
-  `cfgAt_state`, `cfgAt_inputPos_val`, `cfgAt_workTapes_zero`,
-  `cfgAt_workTapes_one` and `cfgOf_eq`, `workTapeSymbols_eq` the work-symbol
-  function as a pair,
-  and `cfgOf_zero` identifying the closed form at the empty prefix with
-  `bitTreeScanner.initCfg`. The source module is `Classical.choice`-free;
-  its `GebTests/Prototypes/Computability/BitTreeScanner/Machine.lean` mirror
-  is listed in `GebMeta.classicalAllowedModules`, since it reads the
-  machine's output through `Turing.MultiTapeTM.Cfg.inputSymbol`, which
-  depends on `Classical.choice` through Cslib's `inputSymbolInner`. Depends
-  on `Geb.Prototypes.Computability.BitTreeScanner.Scan`, mathlib's
-  `Data.Fin.VecNotation` and Cslib's
+- `Geb/Prototypes/Computability/BitTreeScanner/Cost.lean` — the cost model
+  of the two-pass machine and its amortised bound. `Good` is the invariant
+  of the states the scan reaches at a bound, `good_scanAt` its
+  preservation, `count_le_length` and `length_treeAt_le` the pending
+  count's bound by the prefix's length and the counter's digits by the
+  bound; `incCost` and `decCost` are the steps a chain of the pending
+  count's counter takes, `chainCost` and `failCost` a chain of the leaf's
+  count and the failed decrement that closes a leaf, `pendingCount` and
+  `pendingDigits` the work a payload bit and a length digit carry before
+  the next bit, `cost` the steps a bit costs and `endCost` the steps from
+  the input's end to the halt, `time` their sum over a word; `potential`
+  weights the leaf's zero digits and width and the pending count's digits
+  that are not one, `cost_add_potential_le` bounds a bit's cost against it
+  by nine, and `time_add_endCost_le` gives `9 * n + 1` for the scan of `n`
+  bits. `incB` and `carryLengthB` are the ordinary binary increment and its
+  carry, `bits_succ` identifying the increment with `Nat.bits` of the
+  successor, `seekIncCost` and `seekTime` the counting pass's steps, and
+  `seekTime_le` its bound `4 * n` by the potential `count_true_incB_add_carryLengthB_le`
+  accounts. `borrowLength` and the `getD_decList_*` equations describe the
+  leaf count's decrement cell by cell, as the `getD_incB_*` equations do
+  the ordinary increment's. `settleTree` and `settleTreeDigits` are the
+  counter after the work a payload bit and a length digit carry, with
+  `treeStep_zeros_true`, `treeStep_bits` and `treeStep_count` identifying
+  them with the replay's step; `totalTime` is the machine's steps to the
+  halt, the counting pass's, the return's and the scan's, and
+  `totalTime_le` its bound `14 * n + 4`. Depends on
+  `Geb.Prototypes.Computability.BitTreeScanner.Counter`.
+- `Geb/Prototypes/Computability/BitTreeScanner/Machine.lean` — the two-pass
+  three-tape machine `bitTreeScanner` over the alphabet `Fin 4` and the
+  states `stInit` through `stDead`: the first pass counts the input's
+  length in binary on the ruler tape, the second runs `scanStep` at the
+  bound the count gives, the pending count as a redundant counter on the
+  first tape, a leaf's length on the second, and the ruler's digits
+  bounding a gamma code's zeros, its head moving up one cell per zero and
+  finding blank exactly when the code exceeds the bound. `tapeDigits`,
+  `tapeCount`, `tapeLeaf`, `headLeaf`, `headRuler` and `stateOf` read the
+  tapes, heads and state off a scan state and a counter, `seekCfg` and
+  `backCfg` are the closed forms of the counting pass and the return over
+  the input, `cfgAt` the closed form of the scan at a scan state and a
+  counter after a prefix, and `cfgOf` that at the scan's state and counter
+  after the prefix, read off `scanAt` and `treeAt`. Depends on
+  `Geb.Prototypes.Computability.BitTreeScanner.Cost` and Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic`.
-- `Geb/Prototypes/Computability/BitTreeScanner/Steps.lean` — the machine's
-  behaviour under `Turing.MultiTapeTM.step`, `.configs` and
-  `.outputString`. `inputSymbol_of_inputPos` and `inputSymbol_end` are the
-  input symbol at any configuration whose head is past a prefix;
-  `tr_first_pair` through `tr_dead_end`, with `tr_borrowState_zero`,
-  `tr_borrowState_one` and `tr_returnState_digit` for the decrement rows at
-  either phase, resolve the transition at each case of its table, over an
-  arbitrary work-symbol function where the row does not read it and at a
-  pair literal where it does; `step_advance`,
-  `step_stay` and `step_halt` are the three shapes of step, and `run_step`
-  and `run_seq` compose runs with their outputs. `borrowCfg` and
-  `returnCfg` are the intermediate closed forms of a decrement, with
-  `configs_borrowCfg`, `borrowCfg_flip`, `configs_returnCfg` and
-  `configs_decrement` its `2 * borrowLength d + 1` steps; `clearCfg` those of the
-  erasure, with `borrowCfg_blank`, `configs_clearCfg`, `clearCfg_exit` and
-  `configs_fail` its `2 * d.length + 2` steps; `configs_pendingCount` and
-  `configs_pendingDigits` are the work after a payload bit and after a
-  leaf's length, through `cfgAt_bits_full_step`, `configs_decrement` and
-  `returnCfg_init_exit`. `advance_cfgAt` is a bit's step from the closed
-  form given the resolved transition and the field equalities, discharged
-  per mode by `cfgAt_step_zero`, `cfgAt_step_term`, `cfgAt_step_zeros`,
-  `cfgAt_step_bits`, `cfgAt_step_count` and `cfgAt_step_end` into
-  `cfgAt_step_succ`; `configs_cfgOf` composes them into the configuration
-  and output at the time each prefix is consumed, `cfgOf_end` is the
-  input's end, and `halts_at` and `outputString_eq` give the halt after
-  `time w + endCost (scanFinal w)` steps with `Geb.BitTreeScanner.validBool`
-  emitted. The source module is listed in `GebMeta.classicalAllowedModules`:
-  its statements read the input through `Turing.MultiTapeTM.Cfg.inputSymbol`,
-  which depends on `Classical.choice` through Cslib's `inputSymbolInner`.
-  Depends on `Geb.Prototypes.Computability.BitTreeScanner.Cost`,
-  `Geb.Prototypes.Computability.BitTreeScanner.Machine` and
-  `Geb.Prototypes.Computability.TreeScanner.Steps`, whose `step_of_state` it
-  shares.
+- `Geb/Prototypes/Computability/BitTreeScanner/Tapes.lean` — the tapes at the
+  closed forms, cell by cell: `tapeBase`, `tapeLeaf_blank`,
+  `tapeLeaf_zeros_zero`, `tapeLeaf_dead`, `tapeLeaf_zeros_succ` and
+  `tapeLeaf_bits_full` the leaf tape at each phase, `tapeDigits_incB` the
+  ruler tape after an increment, `tapeDigits_decList` the leaf tape after a
+  decrement, and `tapeCount_inc` and `tapeCount_dec` the count tape after a
+  chain of the pending count, each the equation a chain's absorbing step
+  writes; `raise` is the symbol a carry writes at the digit absorbing it.
+  Held to the standard axiom set: cells are located by cases on the atomic
+  inequalities bounding them, since `omega` closing a conjunction or reading
+  a negated one depends on `Classical.choice`, and a digit above a list's
+  end is read through `getD_of_length_le` in place of mathlib's
+  `List.getD_eq_default`. Depends on
+  `Geb.Prototypes.Computability.BitTreeScanner.Cost` and
+  `Geb.Prototypes.Computability.BitTreeScanner.Machine`.
+- `Geb/Prototypes/Computability/BitTreeScanner/Steps.lean` — index of the
+  modules composing the machine's steps into runs. `Steps/Cfg.lean`, held
+  to the standard axiom set, has `next`, the configuration a step lands on
+  given the transition's actions, `headBound` and `HeadsLE` bounding every
+  head by three cells above the word's bound, the closed forms of every
+  chain (`seekCarryCfg`, `incCarryCfg`, `decBorrowCfg`, `borrowCfg`,
+  `clearCfg` and their companions) with the `headsLE_*` lemmas keeping
+  each within the bound, and `cfgAt_count`, `clearCfg_zero` and
+  `mainCfg_eq_cfgAt` identifying the closed forms a chain begins or ends
+  at with the scan's. The remaining modules but `Steps/Transition.lean` are
+  admitted to `GebMeta.classicalAllowedModules`, since their statements
+  read the input through `Turing.MultiTapeTM.Cfg.inputSymbol`.
+  `Steps/Basic.lean` has the step at each shape of transition and `Run`, a
+  number of steps between two configurations emitting nothing with the
+  heads within the bound throughout, composed by `run_step`, `run_seq`,
+  `run_family` and `run_family_down`; `Steps/Transition.lean` resolves the
+  transition at each case of its table, by `rfl`; `Steps/Seek.lean` runs
+  the counting pass,
+  `run_seekInc` one bit's increment in `seekIncCost` steps and `run_first`
+  from the initial configuration to the scan's start; `Steps/Count.lean`
+  runs the pending count's chains, `run_inc` a pair bit's increment in
+  `incCost` steps and `run_close` a leaf's closing decrement in `decCost`
+  steps; `Steps/Leaf.lean` runs the leaf count's chains, `run_decrement`,
+  `run_fail`, `run_pendingCount` and `run_pendingDigits`; `Steps/Bit.lean`
+  gives `run_cfgAt_step`, a bit at any state satisfying the invariants in
+  `cost` steps to the closed form at the scan's next state; and
+  `Steps/Run.lean` composes the whole computation, `halts_at`,
+  `outputString_eq` and `headsLE_configs` the halt after `totalTime` steps,
+  the emitted decision and the heads within the bound throughout.
+  Depends on `Geb.Prototypes.Computability.BitTreeScanner.Machine` and
+  `Geb.Prototypes.Computability.TreeScanner.Steps`.
 - `Geb/Prototypes/Computability/BitTreeScanner/Bound.lean` —
-  `computableInTimeAndSpace_validBool`: `bitTreeScanner` is
-  `Turing.MultiTapeTM.ComputableInTimeAndSpace` at
-  `fun w : List Bool ↦ [Geb.BitTreeScanner.validBool w]`, time bound
-  `fun n ↦ 5 * n + 1` and space bound `fun n ↦ 10 * n + 4`. The time bound
-  is the amortised cost model's, a payload bit's borrow being as long as
-  `log₂ n` but the borrows over a leaf summing to a constant per bit; the
-  space bound follows from it by `spaceUsed_linear` at two work tapes, the
-  unary pending count on the first tape keeping the total linear though the
-  second holds only `log₂ n` digits. The source module is listed in
-  `GebMeta.classicalAllowedModules`: its space conjunct rests on
+  `computableInTimeAndSpace_validBool`: `validBool`, singleton-listed, is
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` in `14 * n + 4` steps and
+  `3 * (n.bits.length + 4)` cells, logarithmic space; the time is
+  `totalTime_le`, and `spaceUsed_le` counts the cells each head visits as
+  at most those from `0` to `headBound`. The module is listed in
+  `GebMeta.classicalAllowedModules`: the space conjunct rests on
   `Turing.MultiTapeTM.spaceUsed`, a `Finset.image` through
   `Turing.MultiTapeTM.visitedByTapeHead`, and mathlib's `Finset.image`
   depends on `Classical.choice`. Depends on
-  `Geb.Prototypes.Computability.BitTreeScanner.Steps` and Cslib's
-  `Computability.Machines.Turing.MultiTape.TapeLemmas`.
+  `Geb.Prototypes.Computability.BitTreeScanner.Steps` and mathlib's
+  `Data.Int.Interval`.
 - `Geb/Mathlib/Computability/Cobham/Basic.lean` — a Cobham-style function
   algebra on bitstrings, recursing by bounded recursion on notation
   [Cobham1965]: its arity relation `sig` as a `SlicePFunctor` over `ℕ`,

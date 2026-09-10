@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 import GebTests.Prototypes.Computability.BitTreeScanner.Encoding
+import GebTests.Prototypes.Computability.BitTreeScanner.Counter
 import GebTests.Prototypes.Computability.BitTreeScanner.Machine
 
 /-!

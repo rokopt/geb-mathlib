@@ -95,9 +95,6 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.PresheafIRProto.Functor,
    `Geb.Prototypes.LargeIR.Grothendieck,
    `GebTests.Prototypes.LargeIR.Grothendieck,
-   `Geb.Prototypes.Computability.BitTreeScanner.Steps,
-   `Geb.Prototypes.Computability.BitTreeScanner.Bound,
-   `GebTests.Prototypes.Computability.BitTreeScanner.Machine,
    `Geb.Mathlib.Data.PFunctor.Slice.Functor,
    `Geb.Mathlib.Data.PFunctor.Presheaf.Functor,
    `GebTests.Mathlib.Data.PFunctor.Slice.Functor,
@@ -154,7 +151,15 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.BitTree.Elias.MachineEnd,
    `Geb.Prototypes.Computability.BitTree.Elias.Execution,
    `Geb.Prototypes.Computability.BitTree.Elias.Bound,
-   `GebTests.Prototypes.Computability.TreeScanner.Machine].foldl (·.insert ·)
+   `GebTests.Prototypes.Computability.TreeScanner.Machine,
+   `Geb.Prototypes.Computability.BitTreeScanner.Steps.Basic,
+   `Geb.Prototypes.Computability.BitTreeScanner.Steps.Seek,
+   `Geb.Prototypes.Computability.BitTreeScanner.Steps.Count,
+   `Geb.Prototypes.Computability.BitTreeScanner.Steps.Leaf,
+   `Geb.Prototypes.Computability.BitTreeScanner.Steps.Bit,
+   `Geb.Prototypes.Computability.BitTreeScanner.Steps.Run,
+   `Geb.Prototypes.Computability.BitTreeScanner.Bound,
+   `GebTests.Prototypes.Computability.BitTreeScanner.Machine].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the

@@ -58,6 +58,10 @@ A tree of {lit}`p` pairs and {lit}`m` payload bits is spelled by
   significant digit is a one.
 * {lit}`Geb.BitTreeScanner.exists_bits_eq_append_true` — a positive number's digits
   end in a one.
+* {lit}`Geb.BitTreeScanner.bits_length_le_iff`, {lit}`Geb.BitTreeScanner.lt_two_pow_bits_length`,
+  {lit}`Geb.BitTreeScanner.bits_length_mono` — the digit count against the powers of
+  two, which is what bounds a gamma code's zeros by the input's digit
+  count.
 * {lit}`Geb.BitTreeScanner.gamma_ofBits` — the gamma code of a digit list's value,
   the form a reader of the code recovers.
 * {lit}`Geb.BitTreeScanner.length_gamma` — the gamma code's length is twice the
@@ -172,6 +176,35 @@ theorem exists_bits_eq_append_true (n : ℕ) (h : 0 < n) : ∃ r, n.bits = r ++ 
         exact ⟨[], rfl⟩
       · obtain ⟨r, hr⟩ := ih hn
         exact ⟨b :: r, by rw [hr, List.cons_append]⟩) n h
+
+/-- A number has at most {lit}`k` binary digits exactly when it is below the
+{lit}`k`-th power of two. -/
+theorem bits_length_le_iff (n k : ℕ) : n.bits.length ≤ k ↔ n < 2 ^ k :=
+  Nat.binaryRec' (motive := fun n ↦ ∀ k, n.bits.length ≤ k ↔ n < 2 ^ k)
+    (fun k ↦ by
+      rw [Nat.zero_bits, List.length_nil]
+      exact ⟨fun _ ↦ Nat.two_pow_pos k, fun _ ↦ Nat.zero_le k⟩)
+    (fun b n h ih k ↦ by
+      rw [Nat.bits_append_bit n b h, List.length_cons, Nat.bit_val]
+      cases k with
+      | zero =>
+        refine ⟨fun hk ↦ absurd hk (by omega), fun hk ↦ ?_⟩
+        rw [Nat.pow_zero] at hk
+        have hn : n = 0 := by omega
+        rw [h hn, Bool.toNat_true] at hk
+        omega
+      | succ k =>
+        rw [Nat.add_le_add_iff_right, ih k, Nat.pow_succ]
+        cases b <;> simp only [Bool.toNat_true, Bool.toNat_false] <;>
+          exact ⟨fun hk ↦ by omega, fun hk ↦ by omega⟩) n k
+
+/-- A number is below the power of two at its digit count. -/
+theorem lt_two_pow_bits_length (n : ℕ) : n < 2 ^ n.bits.length :=
+  (bits_length_le_iff n n.bits.length).mp le_rfl
+
+/-- The digit count is monotone. -/
+theorem bits_length_mono {m n : ℕ} (h : m ≤ n) : m.bits.length ≤ n.bits.length :=
+  (bits_length_le_iff m _).mpr (lt_of_le_of_lt h (lt_two_pow_bits_length n))
 
 /-- The Elias gamma code of a positive number: as many zeros as its bit length
 less one, then its digits from the most significant. At zero, the empty
