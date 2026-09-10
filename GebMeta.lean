@@ -159,7 +159,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.BitTreeScanner.Steps.Bit,
    `Geb.Prototypes.Computability.BitTreeScanner.Steps.Run,
    `Geb.Prototypes.Computability.BitTreeScanner.Bound,
-   `GebTests.Prototypes.Computability.BitTreeScanner.Machine].foldl (·.insert ·)
+   `GebTests.Prototypes.Computability.BitTreeScanner.Machine,
    `Geb.Prototypes.Computability.BitTree.EliasBinary.Increment,
    `Geb.Prototypes.Computability.BitTree.EliasBinary.Steps,
    `Geb.Prototypes.Computability.BitTree.EliasBinary.Simple,
