@@ -447,8 +447,9 @@ rationale.
   It runs in CI and the pre-push checklist;
   `scripts/tests/test-axiom-linter.sh` smoke-tests it.
 
-Seven rules govern keeping a module choice-free. Where a rule rests on an
-axiom measurement, that measurement was taken at v4.33.0-rc1.
+The rules below govern keeping a module choice-free. Where a rule rests
+on an axiom measurement, that measurement was taken at v4.33.0-rc1 unless
+the rule says otherwise.
 
 - **Measure monomorphically, in the consuming closure.** Take an axiom
   measurement from a monomorphic declaration at the instances used, and in
@@ -477,6 +478,21 @@ axiom measurement, that measurement was taken at v4.33.0-rc1.
   choice-free lemmas of `Nat`'s division and order API interleave under no
   separating convention, and neither the name nor the namespace separates
   them.
+- **Split a conjunction before `omega`.** With mathlib imported, `omega`
+  closing a goal of the form `A ∧ B` depends on `Classical.choice`, while
+  the same call on each conjunct alone does not, over `Nat` and over `Int`
+  with `Nat` casts alike; the goal's shape, not its arithmetic, decides
+  the measurement. Write `constructor <;> omega` or `⟨by omega, by omega⟩`
+  rather than a single `omega` on the conjunction. Measured at
+  v4.34.0-rc2.
+- **Eliminate a `Fin n` by `match`, not `fin_cases`.** `fin_cases` on a
+  `Fin n` hypothesis depends on `Classical.choice`. A `match` with one arm
+  per numeral, `match k with | 0 => .. | 1 => ..`, does not, and neither
+  does a lemma stating the eliminator once, `∀ i : Fin n, P i` from the
+  `n` instances `P 0`, .., `P (n - 1)`, proved by that `match` and applied
+  with `refine` and an explicit motive `(P := fun i ↦ ..)`. The same
+  applies to a `Fin n`-indexed family of tapes or components whose
+  members a proof treats one at a time. Measured at v4.34.0-rc2.
 - **Transport a dependent codomain with `Equiv.piCongrRight`; state domain
   transport yourself.** `Equiv`'s combinators divide by which side of the
   arrow they move: `Equiv.arrowCongr`, `Equiv.arrowCongr'`,
