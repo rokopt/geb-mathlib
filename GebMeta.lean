@@ -160,6 +160,18 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.BitTreeScanner.Steps.Run,
    `Geb.Prototypes.Computability.BitTreeScanner.Bound,
    `GebTests.Prototypes.Computability.BitTreeScanner.Machine].foldl (·.insert ·)
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Increment,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Steps,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Simple,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.PassOne,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Zeros,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.SizeRead,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.LengthRead,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Payload,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.BitStep,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Execution,
+   `Geb.Prototypes.Computability.BitTree.EliasBinary.Bound,
+   `GebTests.Prototypes.Computability.TreeScanner.Machine].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
