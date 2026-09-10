@@ -320,6 +320,15 @@ checklist and in CI.
   `MemW` states fiber membership on a raw W-tree, so that it can be
   decided by a fold, and `memW_iff_exists_obj` identifies it with the
   carrier's fiber. `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Presheaf/WalkingArrow.lean` — families over
+  ordinary W-types. `PresheafPFunctor.WalkingArrow.BaseIndependent`
+  requires every direction of a base-level shape to lie at the base of
+  the walking arrow `0 ⟶ 1`, represented by `Fin 2`. `basePFunctor`
+  extracts the ordinary polynomial, `baseObjEquiv` identifies its action
+  with the base component, and `baseWEquiv` identifies its mathlib W-type
+  with the base of the presheaf W-type. `DependentW` is the family of
+  fibres of restriction, indexed by that ordinary W-type; `index_mk`
+  computes constructor indices and `totalEquiv` recovers the total space.
 - `Geb/Mathlib/Data/FinEnum.lean` — choice-free `Decidable` instances
   for mathlib's `FinEnum`: `FinEnum.decidableForallFinEnum`
   (a bounded `∀`), `FinEnum.decidableForallSubtype` (a bounded `∀` over
