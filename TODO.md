@@ -29,6 +29,7 @@
   - [The fold over recognized terms](#the-fold-over-recognized-terms)
   - [Deferred items from the tree recognizers](#deferred-items-from-the-tree-recognizers)
   - [A sharper space bound for the tree scanner](#a-sharper-space-bound-for-the-tree-scanner)
+  - [Deferred items from the one-pass tree scanner](#deferred-items-from-the-one-pass-tree-scanner)
   - [Choice-free patch to Cslib's multi-tape Turing machine API](#choice-free-patch-to-cslibs-multi-tape-turing-machine-api)
   - [Vale configuration](#vale-configuration)
   - [The namespace prefix in a declaration body](#the-namespace-prefix-in-a-declaration-body)
@@ -754,6 +755,53 @@ pending count as the work head's position, as opposed to a run of marks
 read off the tape — would then be preferable, since a sharper bound wanting
 the count readable from the tape rather than from the head position would
 need it.
+
+### Deferred items from the one-pass tree scanner
+
+Items over `Geb/Prototypes/Computability/BitTreeScanner/`, the recognizer of
+binary trees with bitstrings at the leaves, each independent of the others
+and none scheduled.
+
+- A parser inverting `Geb.BitTreeScanner.spell`, with the retraction law and a
+  `Computability.Encoding`, as `RankedAlphabet.parse` and
+  `RankedAlphabet.encoding` give the ranked-term encoding.
+  `Geb.BitTreeScanner.valid_iff_exists_spell` identifies the accepted words with
+  the spellings without it; injectivity of `spell` is the part a parser
+  adds.
+- The isomorphism between `Geb.BitTreeScanner.BitTree` and a rose tree
+  labelled by bitstrings, by the left-spine correspondence that `Ast.toRose`
+  and `Ast.ofRose` of `Geb/Prototypes/ConcreteSyntax.lean` give at `Fin k`
+  labels. The rose tree there is labelled at `Fin k`, so the isomorphism
+  needs a rose tree over an arbitrary label type first.
+- `Steps.lean`'s `inputSymbol_of_inputPos` and `inputSymbol_end` are
+  stated at this machine's configuration type. Generalised over the tape
+  count, the alphabets and the embedding and placed beside the shared
+  `step_of_state`, they derive
+  `Geb/Prototypes/Computability/TreeScanner/Steps.lean`'s
+  `seekCfg_inputSymbol` and `seekCfg_inputSymbol_end`; it touches the merged
+  module, so it is a branch of its own.
+- The Elias delta code in place of the gamma code for a leaf's length,
+  `log₂ L + 2 log₂ log₂ L` bits per leaf against the gamma code's
+  `2 log₂ L`. The reader nests the gamma reader inside itself, a second
+  digit phase and a second counter, and the scan and machine gain the phases
+  and states that nesting takes; the order of the bounds is unchanged, so
+  the case for it is the constant on the length-code term alone.
+- The pending count in binary. The first tape holds it in unary, so the
+  space bound `10 * n + 4` is linear though the second tape holds a leaf's
+  length in `log₂ n` digits; a pending count in binary on the first tape,
+  incremented at a pair bit and decremented at a leaf's close by the borrow
+  the second tape already runs, would bring the machine to `O(log n)` space
+  at an amortised constant per bit, a different space class. The
+  `Geb.BitTreeScanner.Good` invariant, `Geb.BitTreeScanner.cost`,
+  `Geb.BitTreeScanner.cfgAt` and the borrow lemmas of `Steps.lean` are the
+  parts it reuses; what it adds is an increment with a carry, its
+  intermediate closed forms, and a potential covering both counters.
+- The space bound is the trivial one, `2 * t + 2` from `spaceUsed_linear`
+  at the halting time `t`. The cells visited are the pending counts reached
+  on the first tape and the digit cells on the second, so a sharper bound is
+  a constant factor while the pending count is unary; the computation of
+  `Turing.MultiTapeTM.visitedByTapeHead` it needs is that of § A sharper
+  space bound for the tree scanner.
 
 ### Choice-free patch to Cslib's multi-tape Turing machine API
 
