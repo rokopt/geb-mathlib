@@ -60,6 +60,9 @@ checklist and in CI.
 
 ## Design documents
 
+- [bitstring-metalogic.md](bitstring-metalogic.md) — recognized and
+  quotient types over bitstrings, syntactic proof checking, simultaneous
+  polynomial-time and linear-space bounds, and single-step reduction.
 - [concrete-syntaxes.md](concrete-syntaxes.md) — the concrete-syntax
   layer for the Geb abstract syntax tree: the round-trip laws, the
   annotation model, the content-addressing specification, the
