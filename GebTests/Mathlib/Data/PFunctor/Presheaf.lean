@@ -11,6 +11,7 @@ import GebTests.Mathlib.Data.PFunctor.Presheaf.Finite
 import GebTests.Mathlib.Data.PFunctor.Presheaf.Fixtures
 import GebTests.Mathlib.Data.PFunctor.Presheaf.Functor
 import GebTests.Mathlib.Data.PFunctor.Presheaf.W
+import GebTests.Mathlib.Data.PFunctor.Presheaf.WalkingArrow
 
 /-!
 # Presheaf tests — index
