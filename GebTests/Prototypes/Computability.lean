@@ -10,6 +10,7 @@ import GebTests.Prototypes.Computability.CobhamFoldProto
 import GebTests.Prototypes.Computability.TreeScanner
 import GebTests.Prototypes.Computability.SizeBounded
 import GebTests.Prototypes.Computability.Mazzanti
+import GebTests.Prototypes.Computability.Triage
 
 /-!
 # Computability tests — index

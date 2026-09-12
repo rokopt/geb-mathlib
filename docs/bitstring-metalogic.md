@@ -19,6 +19,7 @@ bounds have been proved in Lean.
 - [Tree-calculus reduction](#tree-calculus-reduction)
   - [The variant in the linked article](#the-variant-in-the-linked-article)
   - [Reusing the bit-tree carrier](#reusing-the-bit-tree-carrier)
+  - [Implemented value/application representation](#implemented-valueapplication-representation)
   - [Size of one contraction](#size-of-one-contraction)
   - [Finding and contracting one redex](#finding-and-contracting-one-redex)
   - [Iteration and generated equality](#iteration-and-generated-equality)
@@ -395,6 +396,57 @@ length is exactly `a + 2*l`. This representation has no graph sharing,
 compressed subtrees, or hidden decoding cost. A tagged representation
 of the visual constructors is also possible, with constant overhead
 per node, but is not required for the resource argument.
+
+### Implemented value/application representation
+
+The [triage prototype](../Geb/Prototypes/Computability/Triage.lean)
+uses explicit application nodes and value constructors, following the
+[branch-first reference evaluator](https://treecalcul.us/implementation/).
+Its grammar is `V ::= Leaf | Stem V | Fork V V` and
+`E ::= Value V | App E E`. The two W-types enforce that applications
+cannot occur beneath a value constructor.
+
+This is a separate tagged encoding from the applicative representation
+above. Write `L(bs)` for a bit-tree leaf and `B(x,y)` for a bit-tree fork:
+
+| Constructor | Binary tree | Serialized prefix |
+| --- | --- | --- |
+| `Leaf` | `L([])` | `00` |
+| `Stem v` | `B(L([0]), encode(v))` | `10100` followed by `v` |
+| `Fork v w` | `B(L([1]), B(encode(v), encode(w)))` | `101101` followed by `v,w` |
+| `App e f` | `B(L([0,0]), B(encode(e), encode(f)))` | `10101001` followed by `e,f` |
+
+`decode` validates these prefixes, constructor arities, and the value
+restriction. Its round-trip theorems characterize the accepted words
+exactly; `validBool_of_recognize` proves that acceptance implies the
+existing binary-tree recognizer's acceptance. A binary tree with an
+application inside a stem, for example, passes the generic recognizer
+and fails the triage recognizer.
+
+`reduce` returns `invalid`, `value`, or `next word`. It reduces an
+application's argument first, then its function, then applies one
+absorption or triage rule to the resulting values. A duplication rule
+returns application syntax; it does not execute the new applications.
+`reduce_next_sound` proves one contextual contraction, and
+`reduce_value_iff` proves that exactly encoded values are terminal.
+
+The explicit traversal machine stores untouched siblings in its
+context stack. Its proved bounds, for an input encoding of length `n`,
+are `4*n + 2` abstract transitions and `2*n + 2` bits for every
+serialized intermediate configuration. The successor has at most
+`2*n` bits, including both copies of a duplicated subtree.
+The serializer emits fixed constructor headers through continuations
+instead of repeatedly concatenating completed subtree encodings.
+
+These are abstract-transition and serialized-state bounds.
+`Machine.work_run_bound` proves a quadratic accumulated-cost bound
+under an explicit hypothesis that each transition costs at most a
+constant times its retained serialized data size plus one. No verified
+multitape implementation discharges that hypothesis yet. Resource
+proofs for the complete bitstring parser, transition implementation,
+and serializer are still needed for an end-to-end
+`ComputableInTimeAndSpace` theorem. The bounds below remain
+algorithmic arguments for a sequential implementation.
 
 ### Size of one contraction
 
