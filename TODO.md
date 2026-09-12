@@ -14,6 +14,7 @@
     - [4. Relative (co)free (co)monads](#4-relative-cofree-comonads)
     - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
+  - [The non-size-increasing algebra as the resource discipline](#the-non-size-increasing-algebra-as-the-resource-discipline)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [`FinSetSkel` under `namespace CategoryTheory`](#finsetskel-under-namespace-categorytheory)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
@@ -310,6 +311,36 @@ identity keeps the identity cases out of the quantifier entirely, the identity
 laws holding by construction, so the morphism factor is the non-identity count
 rather than the total. As above this is an upper bound only, the `Bool`
 conjunction short-circuiting on rejection.
+
+### The non-size-increasing algebra as the resource discipline
+
+`Geb/Prototypes/Computability/Mazzanti/` transcribes [Mazzanti2016]'s
+algebra `S(sbs₀, sbs₁)` over bitstrings and writes
+`Geb.BitTree.validBool` in it, with non-size-increase proved for every
+expression (`Geb.Mazzanti.nsi_eval`) and no side condition per recursion.
+What is cited rather than proved is the paper's Lemma 2.2 and Theorem 5.7,
+the polynomial-time and linear-space reading of membership. Follow-ups:
+
+- A cost model on the algebra's own evaluator: a time count and a maximal
+  intermediate length, with a polynomial bound on the former and the bound
+  `max(|x|, k)` on the latter proved by the same induction as
+  `Geb.Mazzanti.nsi_eval`. This is the paper's Lemma 2.2 in the algebra's
+  model, not a machine bound; a compilation to Cslib's multi-tape machines
+  with resource accounting would be the machine bound.
+- The other bit-tree encodings (`BitTree/Elias`, `BitTree/EliasBinary`,
+  `BitTreeScanner`) as expressions, each needing a comparison between a
+  binary length field and a unary count.
+- The operations of `docs/bitstring-metalogic.md` that grow their output by a
+  constant, the single machine transition among them, are not
+  non-size-increasing as stated. In the algebra they take a budget argument
+  whose length bounds the output, as `sbs` bounds by its second argument,
+  which is the form in which a linear space bound is a parameter rather
+  than an accident of the input.
+- The relation to `Cobham.SmashFree`: every expression of the algebra is
+  computable by one of the subalgebra, the bound of each recursion being
+  the concatenation of the recursion variable with a constant, through
+  [Mazzanti2016] Theorem 5.3's encoding of simultaneous recursion into a
+  single one.
 
 ### Upstream placement of categorical wrappers
 

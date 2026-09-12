@@ -2439,3 +2439,44 @@ checklist and in CI.
   rather than read. Depends on
   `Geb.Prototypes.Computability.CobhamFoldProto.Initial` and
   `Geb.Mathlib.Data.W.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/Mazzanti/Basic.lean` — the function algebra
+  `S(sbs₀, sbs₁)` of [Mazzanti2016] over bitstrings, whose expressions are
+  the admissible trees of a slice polynomial functor signature with no
+  further condition: the constants, projections and two size-bounded
+  successors `sbs_b(x, y)`, prepending `b` to `x` when the result is no
+  longer than `y`, closed under substitution and simultaneous recursion on
+  notation. `Geb.Mazzanti.evalSRN` is the recursion, by `List.rec`, at a
+  family of registers. `Geb.Mazzanti.NSI k f` states that `f` is
+  non-size-increasing with constant `k`, and `Geb.Mazzanti.nsi_eval` proves
+  it for every expression, with the constant `Geb.Mazzanti.nsiConst` read off
+  the syntax: the bitstring form of the paper's Lemma 2.1. Where
+  `Cobham.C` requires a bound to be proved for each `boundedRec` node, the
+  algebra here has no side condition, non-size-increase being a theorem
+  about every term rather than an obligation per recursion. Depends on
+  `Geb.Mathlib.Computability.Cobham.Basic`, whose `Cobham.Sem` and
+  `Cobham.transport` it reuses. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/Mazzanti/Combinators.lean` — each shape as a
+  constructor of expressions of a declared arity, `Geb.Mazzanti.SOf`,
+  carrying admissibility, so that no `decide` is discharged for an
+  expression built from them; the tail, the four-way conditional and the
+  diagonal on top of them; and the meaning equations, each a `rfl` except
+  `Geb.Mazzanti.sem_srnOf`, whose step family is identified with the
+  children's meanings by a case split on the bit. Depends on
+  `Geb.Prototypes.Computability.Mazzanti.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/Mazzanti/BitTree.lean` — the recognizer
+  `Geb.BitTree.validBool` as an expression `Geb.Mazzanti.isBitTree` of the
+  algebra: a simultaneous recursion with three registers, the unread input,
+  the scanner's mode as a two-bit code, and the pending-tree count minus one
+  in unary, run over the word as a counter with the word as parameter, so
+  that the left-to-right scan is one linear pass with a constant step. The
+  count is incremented by the size-bounded successor with the word as bound
+  and never reaches it. `Geb.Mazzanti.regs_eq` is the invariant, the
+  registers after a prefix holding the remaining word and the coded scanner
+  state; `Geb.Mazzanti.isBitTreeSem_eq` gives the recognizer's value on both
+  branches and `Geb.Mazzanti.isBitTreeSem_eq_singleton_iff` identifies the
+  accepted words with the encodings of trees. `Geb.Mazzanti.nsi_isBitTree`
+  is its non-size-increase by the closure theorem alone, at constant two.
+  The polynomial-time, linear-space reading is [Mazzanti2016] Theorem 5.7,
+  cited and not reproved. Depends on
+  `Geb.Prototypes.Computability.Mazzanti.Combinators` and
+  `Geb.Prototypes.Computability.BitTree.Encoding`. `Classical.choice`-free.

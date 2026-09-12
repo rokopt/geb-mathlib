@@ -7,6 +7,7 @@ module
 
 import GebTests.Prototypes.Computability.BitTreeScanner
 import GebTests.Prototypes.Computability.CobhamFoldProto
+import GebTests.Prototypes.Computability.Mazzanti
 import GebTests.Prototypes.Computability.TreeScanner
 
 /-!
