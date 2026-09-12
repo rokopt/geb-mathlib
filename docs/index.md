@@ -1687,6 +1687,27 @@ checklist and in CI.
   rules, rather than enforcing strict RFC validation.
   [SExprIO tests](../GebTests/Prototypes/SExprIO.lean) exercise file
   round trips, conversions, and error handling under `lake test`.
+- [Mazzanti's function algebra](../Geb/Prototypes/Computability/Mazzanti.lean)
+  implements the numerical syntax of `S(sbs₀, sbs₁)` as an
+  arity-indexed polynomial W-type. Constants, projections,
+  size-bounded successors, substitution, and simultaneous recursion
+  require only syntactic arity checks. The evaluator infers a fixed
+  size cutoff, and `Expr.nonSizeIncreasing_eval` proves size soundness.
+  `BitTree.eval_checker` identifies an algebra expression with the
+  existing tree-and-payload recognizer through a leading-one encoding;
+  `BitTree.recognize_resources` transfers the existing machine's
+  simultaneous bounds `n + 3` time and `n + 2` space to its singleton
+  output. This transfer does not establish a bound for the Lean
+  evaluator. The general machine characterization in Mazzanti's
+  Theorem 5.7 remains unformalized.
+  The development also proves that the empty/singleton convention is
+  literally length-nonincreasing exactly when empty input is rejected,
+  that the algebra has no internal unrestricted universal evaluator,
+  and that the unshared tree-calculus duplication contraction violates
+  non-size-increase. See the
+  [resource-target discussion](bitstring-metalogic.md#non-size-increasing-function-algebra)
+  for the distinction between checking syntax, checking certificates,
+  and executing encoded programs.
 - `Geb/Prototypes/Computability/TreeScanner/Machine.lean` — a deterministic
   multi-tape Turing machine over Cslib's `Turing.MultiTapeTM` deciding
   `RankedAlphabet.Binary.binRanked.validBool`. `boolEmb` embeds the input

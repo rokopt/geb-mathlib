@@ -10,6 +10,7 @@ public import Geb.Prototypes.Computability.CobhamFoldProto
 public import Geb.Prototypes.Computability.BitTree
 public import Geb.Prototypes.Computability.TreeScanner
 public import Geb.Prototypes.Computability.SizeBounded
+public import Geb.Prototypes.Computability.Mazzanti
 
 /-!
 # Computability
