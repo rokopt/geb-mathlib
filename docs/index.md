@@ -427,6 +427,22 @@ checklist and in CI.
   folds with the root-index test. Forwarding instances for
   `decidableWValid` and `decidableIsHereditarilyNatural`;
   `decidableEqW` provides `DecidableEq` on raw W-trees.
+- `Geb/Mathlib/Data/PFunctor/Presheaf/Arrow.lean` — types dependent
+  on a W-type, as a presheaf polynomial endofunctor on the walking
+  arrow (mathlib's preorder category on `Fin 2`, whose presheaves are
+  type families). `PFunctor.dependent P fam` is the endofunctor
+  assembled from a base `PFunctor` `P` and a family `fam` giving each
+  shape `a` of `P` a `SliceDomPFunctor` over `P.B a`; its value at `0`
+  reads only the input's value at `0`, so its W-type's fiber over `0`
+  is `P.W` (`baseEquiv`, through the folds `toBase` and `ofBase`) and
+  its fiber over `1` is a type family over `P.W`. `Fiber t` is that
+  family, the fiber of the W-type's restriction map along the arrow
+  (`fiber_iff` restates the condition through `toBase`), and
+  `fiberEquiv` / `fiberMkEquiv` are its computation rule: the fiber over
+  `WType.mk a f` is the value of `fam a` on the family of fibers over
+  the children `f`. `isHereditarilyNatural_mk_iff_arrow` reduces
+  hereditary naturality on the walking arrow to its one non-identity
+  morphism. `Classical.choice`-free.
   `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
   coproduct completion of a type `D` treated as a discrete category:
