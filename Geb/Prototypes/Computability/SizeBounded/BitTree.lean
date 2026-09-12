@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.Mazzanti.Combinators
+public import Geb.Prototypes.Computability.SizeBounded.Combinators
 public import Geb.Prototypes.Computability.BitTree.Encoding
 meta import GebMeta -- shake: keep
 
@@ -16,9 +16,9 @@ set_option doc.verso true
 
 {name}`Geb.BitTree.validBool` — the left-to-right scan recognizing the encodings
 of binary trees with bitstrings at the leaves, with a finite control and a
-pending-tree counter — as an expression of {name}`Geb.Mazzanti.S`. The
+pending-tree counter — as an expression of {name}`Geb.SizeBounded.S`. The
 expression is correct against the scan on every word, and it is
-non-size-increasing by {name}`Geb.Mazzanti.nsi_eval` with no argument specific
+non-size-increasing by {name}`Geb.SizeBounded.nsi_eval` with no argument specific
 to it: the polynomial-time, linear-space reading of its membership is
 {cite}`Mazzanti2016` Theorem 5.7.
 
@@ -89,7 +89,7 @@ non-size-increasing, simultaneous recursion on notation, binary tree, bitstring,
 recognizer, linear time
 -/
 
-namespace Geb.Mazzanti
+namespace Geb.SizeBounded
 
 open Geb.BitTree (Mode State step finish scan validBool Active)
 
@@ -422,4 +422,4 @@ theorem nsiConst_isBitTree : nsiConst isBitTree.1.1 = 2 := by decide
 
 end
 
-end Geb.Mazzanti
+end Geb.SizeBounded

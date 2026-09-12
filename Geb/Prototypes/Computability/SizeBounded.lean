@@ -5,10 +5,10 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.Mazzanti.Basic
-public import Geb.Prototypes.Computability.Mazzanti.Combinators
-public import Geb.Prototypes.Computability.Mazzanti.BitTree
-public import Geb.Prototypes.Computability.Mazzanti.Cost
+public import Geb.Prototypes.Computability.SizeBounded.Basic
+public import Geb.Prototypes.Computability.SizeBounded.Combinators
+public import Geb.Prototypes.Computability.SizeBounded.BitTree
+public import Geb.Prototypes.Computability.SizeBounded.Cost
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true

@@ -5,8 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Prototypes.Computability.Mazzanti.Cost
-import Geb.Prototypes.Computability.Mazzanti.Combinators
+import Geb.Prototypes.Computability.SizeBounded.Cost
+import Geb.Prototypes.Computability.SizeBounded.Combinators
 
 /-!
 # The cost model on worked bitstrings
@@ -29,7 +29,7 @@ non-size-increasing, cost model, polynomial time, linear space
 
 set_option linter.privateModule false
 
-open Geb.Mazzanti
+open Geb.SizeBounded
 
 /-- The tail's account, named so that this module references a constant of the
 module under test. -/

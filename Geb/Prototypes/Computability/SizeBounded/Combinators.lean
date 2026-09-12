@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.Mazzanti.Basic
+public import Geb.Prototypes.Computability.SizeBounded.Basic
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true
@@ -13,8 +13,8 @@ set_option doc.verso true
 /-!
 # Expression combinators of the non-size-increasing algebra
 
-Each shape of {name}`Geb.Mazzanti.sig` as a constructor of expressions of a
-declared arity, {name}`Geb.Mazzanti.SOf`, carrying admissibility, together with
+Each shape of {name}`Geb.SizeBounded.sig` as a constructor of expressions of a
+declared arity, {name}`Geb.SizeBounded.SOf`, carrying admissibility, together with
 the equations their meanings satisfy; and on top of them the tail, the four-way
 conditional and the diagonal, each a single recursion or substitution node.
 Every expression built here is admissible by construction, so no
@@ -45,16 +45,16 @@ takes a bound on the value it produces.
 
 # Implementation notes
 
-The meaning of an expression of a declared arity, {name}`Geb.Mazzanti.SOf.sem`,
-is a single transport along the composite of {name}`Geb.Mazzanti.fst_eval` with
-the arity equation, and {name}`Geb.Mazzanti.evalValue` transports each child
+The meaning of an expression of a declared arity, {name}`Geb.SizeBounded.SOf.sem`,
+is a single transport along the composite of {name}`Geb.SizeBounded.fst_eval` with
+the arity equation, and {name}`Geb.SizeBounded.evalValue` transports each child
 along the composite of the same theorem with the node's compatibility. Two
 transports along proofs of one equation are definitionally equal by proof
 irrelevance, so every node equation here is a {lit}`rfl`; the double transport
 that makes {lit}`Cobham.baseWord_eq_eval` a theorem does not arise.
 
 Admissibility of a node is the pair of its children's admissibility and the
-{lit}`funext` identifying their arities with what {name}`Geb.Mazzanti.rc`
+{lit}`funext` identifying their arities with what {name}`Geb.SizeBounded.rc`
 prescribes, the latter through
 {name}`SlicePFunctor.wIndexValid_index_eq_wIndexRoot`, as in
 {lit}`Cobham.wValid_scanRaw`.
@@ -69,7 +69,7 @@ non-size-increasing, simultaneous recursion on notation, function algebra,
 combinator
 -/
 
-namespace Geb.Mazzanti
+namespace Geb.SizeBounded
 
 open Cobham (Sem)
 
@@ -236,4 +236,4 @@ theorem sem_sbsApp {n : ℕ} (b : Bool) (e bound : SOf n) (x : Fin n → List Bo
 
 end
 
-end Geb.Mazzanti
+end Geb.SizeBounded

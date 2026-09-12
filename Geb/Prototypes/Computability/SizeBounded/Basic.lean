@@ -98,7 +98,7 @@ non-size-increasing, simultaneous recursion on notation, function algebra,
 polynomial time, linear space, W-type, polynomial functor
 -/
 
-namespace Geb.Mazzanti
+namespace Geb.SizeBounded
 
 open scoped FinEnum
 open Cobham (Sem transport)
@@ -402,4 +402,4 @@ theorem nsi_sem {n : ℕ} (e : SOf n) : NSI (nsiConst e.1.1) e.sem :=
 
 end
 
-end Geb.Mazzanti
+end Geb.SizeBounded

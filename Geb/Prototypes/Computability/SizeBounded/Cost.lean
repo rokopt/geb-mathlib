@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.Mazzanti.Basic
+public import Geb.Prototypes.Computability.SizeBounded.Basic
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true
@@ -28,7 +28,7 @@ The time of a base form is the length of what it reads and writes; substitution
 and recursion add one unit per node visited. The length accounted for is the
 greatest among the arguments read, the values produced, and, in a recursion,
 every intermediate state. The value component of the account is the meaning
-{name}`Geb.Mazzanti.eval` assigns, by {lit}`valueC_eq`.
+{name}`Geb.SizeBounded.eval` assigns, by {lit}`valueC_eq`.
 
 # Main definitions
 
@@ -39,7 +39,7 @@ every intermediate state. The value component of the account is the meaning
 * {lit}`envMax` — the greatest length among the arguments.
 * {lit}`evalSRNC`, {lit}`srnBasesC`, {lit}`srnStepsC`, {lit}`evalValueC`,
   {lit}`evalStepC`, {lit}`evalC` — the accounted evaluator, mirroring
-  {name}`Geb.Mazzanti.eval` layer by layer.
+  {name}`Geb.SizeBounded.eval` layer by layer.
 * {lit}`accountAt`, {lit}`SOf.account` — the account of an expression at a
   given arity.
 * {lit}`NSIC` — an accounted meaning is non-size-increasing in value and in
@@ -56,7 +56,7 @@ every intermediate state. The value component of the account is the meaning
 * {lit}`nsiC_eval`, {lit}`space_le` — every length the evaluator accounts for
   is at most the argument bound or the expression's constant: linear space.
 * {lit}`costData_fst` — the constant the cost fold carries is
-  {name}`Geb.Mazzanti.nsiConst`.
+  {name}`Geb.SizeBounded.nsiConst`.
 * {lit}`time_le`, {lit}`isPolyBounded_timePoly`, {lit}`time_le_poly` — the
   evaluator's time is bounded by the expression's polynomial, which is a
   polynomial: polynomial time.
@@ -68,7 +68,7 @@ instrumentation of the first, since a fold's carrier is fixed at its
 definition; {lit}`valueC_eq` recovers the first from the second. The non-size-
 increase of the accounted values is proved again, as {lit}`nsiC_evalValueC`,
 because the time bound of a recursion step needs the lengths of the recursive
-values at that step, which the identification with {name}`Geb.Mazzanti.eval`
+values at that step, which the identification with {name}`Geb.SizeBounded.eval`
 gives only at the root.
 
 The polynomial is carried as a function {lit}`ℕ → ℕ` with a separate proof that
@@ -89,7 +89,7 @@ non-size-increasing, simultaneous recursion on notation, polynomial time, linear
 space, cost model
 -/
 
-namespace Geb.Mazzanti
+namespace Geb.SizeBounded
 
 open Cobham (Sem transport)
 
@@ -189,7 +189,7 @@ head read at the arguments' values; a recursion is {lit}`evalSRNC`. -/
         max (finMax m fun i ↦ (gs i).space) r.space⟩
   | .srn _ _ j, c, h => fun x ↦ evalSRNC (srnBasesC c h) (srnStepsC c h) (x 0) j (Fin.tail x)
 
-/-- {lit}`evalValueC` as an algebra for {name}`Geb.Mazzanti.sig` in the slice over
+/-- {lit}`evalValueC` as an algebra for {name}`Geb.SizeBounded.sig` in the slice over
 {lit}`ℕ`. -/
 @[expose] def evalStepC :
     sig.toSliceDomPFunctor.Obj (Sigma.fst (β := SemC)) → Σ i, SemC i :=
@@ -400,7 +400,7 @@ theorem nsiC_srn {a b kg kh : ℕ} {g : Fin b → SemC a} {h : Bool → Fin b �
     nsiC_srn_aux hg hh (Fin.tail x) m (fun i ↦ hx i.succ) (x 0) (hx 0) j
 
 /-- One accounted node is non-size-increasing with the constant
-{name}`Geb.Mazzanti.nsiValue` assigns when each child's is with the constant given
+{name}`Geb.SizeBounded.nsiValue` assigns when each child's is with the constant given
 for it. -/
 theorem nsiC_evalValueC (a : Shape) (c : Direction a → Σ i, SemC i)
     (h : ∀ b, (c b).1 = rc a b) (k : Direction a → ℕ) (hk : ∀ b, NSIC (k b) (c b).2) :
@@ -423,7 +423,7 @@ theorem nsiC_evalValueC (a : Shape) (c : Direction a → Σ i, SemC i)
         (Nat.le_max_right _ _)) (nsiC_transportC _ (hk (.inr (.inr l))))
 
 /-- Every expression's account is non-size-increasing in value and greatest
-length, with the constant {name}`Geb.Mazzanti.nsiConst`. -/
+length, with the constant {name}`Geb.SizeBounded.nsiConst`. -/
 theorem nsiC_evalC : ∀ e : S, NSIC (nsiConst e.1) (evalC e).2 :=
   SlicePFunctor.W.induction fun x ih ↦ nsiC_evalValueC x.1.1 (fun b ↦ evalC (x.1.2 b)) _ _ ih
 
@@ -525,7 +525,7 @@ read at the recursion's own bound, since a step reads the recursive values. -/
 /-- The polynomial of a tree. -/
 @[expose] def timePoly (w : sig.toPFunctor.W) : ℕ → ℕ := (costData w).2
 
-/-- The constant the cost fold carries is {name}`Geb.Mazzanti.nsiConst`. -/
+/-- The constant the cost fold carries is {name}`Geb.SizeBounded.nsiConst`. -/
 theorem costData_fst : ∀ w : sig.toPFunctor.W, (costData w).1 = nsiConst w :=
   WType.rec fun a _ ih ↦ congrArg (nsiValue a) (funext ih)
 
@@ -692,4 +692,4 @@ theorem time_le_poly {n : ℕ} (e : SOf n) : ∃ c d, ∀ (x : Fin n → List Bo
 
 end
 
-end Geb.Mazzanti
+end Geb.SizeBounded

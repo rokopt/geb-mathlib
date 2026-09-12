@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Prototypes.Computability.Mazzanti.Combinators
+import Geb.Prototypes.Computability.SizeBounded.Combinators
 
 /-!
 # The combinators on worked bitstrings
@@ -28,7 +28,7 @@ non-size-increasing, simultaneous recursion on notation, combinator
 
 set_option linter.privateModule false
 
-open Geb.Mazzanti
+open Geb.SizeBounded
 
 /-- The tail, named so that this module references a constant of the module under
 test. -/

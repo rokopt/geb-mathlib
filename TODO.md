@@ -314,17 +314,17 @@ conjunction short-circuiting on rejection.
 
 ### The non-size-increasing algebra as the resource discipline
 
-`Geb/Prototypes/Computability/Mazzanti/` transcribes [Mazzanti2016]'s
+`Geb/Prototypes/Computability/SizeBounded/` transcribes [Mazzanti2016]'s
 algebra `S(sbs₀, sbs₁)` over bitstrings and writes
 `Geb.BitTree.validBool` in it, with non-size-increase proved for every
-expression (`Geb.Mazzanti.nsi_eval`) and no side condition per recursion.
+expression (`Geb.SizeBounded.nsi_eval`) and no side condition per recursion.
 What is cited rather than proved is the paper's Theorem 5.7, the
 machine-level polynomial-time and linear-space reading of membership.
 Follow-ups:
 
-- `Mazzanti/Cost.lean` proves the paper's Lemma 2.2 in the model of the
-  algebra's own evaluator: `Geb.Mazzanti.time_le_poly` and
-  `Geb.Mazzanti.space_le`. The machine bound remains: a compilation of that
+- `SizeBounded/Cost.lean` proves the paper's Lemma 2.2 in the model of the
+  algebra's own evaluator: `Geb.SizeBounded.time_le_poly` and
+  `Geb.SizeBounded.space_le`. The machine bound remains: a compilation of that
   evaluator to Cslib's multi-tape machines whose step and cell counts are the
   ones accounted for, composed with the bounds so that every expression, the
   recognizers among them, is `Turing.MultiTapeTM.ComputableInTimeAndSpace`

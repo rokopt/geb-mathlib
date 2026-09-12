@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Prototypes.Computability.Mazzanti.BitTree
+import Geb.Prototypes.Computability.SizeBounded.BitTree
 
 /-!
 # The bit-tree recognizer on worked bitstrings
@@ -27,7 +27,7 @@ non-size-increasing, binary tree, bitstring, recognizer
 
 set_option linter.privateModule false
 
-open Geb.Mazzanti
+open Geb.SizeBounded
 
 /-- The recognizer, named so that this module references a constant of the module
 under test. -/
