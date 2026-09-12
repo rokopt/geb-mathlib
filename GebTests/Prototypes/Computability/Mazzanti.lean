@@ -7,6 +7,7 @@ module
 
 import GebTests.Prototypes.Computability.Mazzanti.Combinators
 import GebTests.Prototypes.Computability.Mazzanti.BitTree
+import GebTests.Prototypes.Computability.Mazzanti.Cost
 
 /-!
 # The non-size-increasing function algebra — tests index

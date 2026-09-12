@@ -2480,3 +2480,17 @@ checklist and in CI.
   cited and not reproved. Depends on
   `Geb.Prototypes.Computability.Mazzanti.Combinators` and
   `Geb.Prototypes.Computability.BitTree.Encoding`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/Mazzanti/Cost.lean` — an evaluator of the
+  algebra that accounts for its work: `Geb.Mazzanti.evalC` returns with
+  each value the time taken and the greatest length of any value read or
+  produced, `Geb.Mazzanti.valueC_eq` identifying its value with
+  `Geb.Mazzanti.eval`. `Geb.Mazzanti.space_le` bounds every accounted
+  length by the argument bound or the expression's constant, and
+  `Geb.Mazzanti.time_le_poly` bounds the time by a polynomial in the
+  argument bound, the polynomial `Geb.Mazzanti.timePoly` being read off the
+  syntax with the constant: the bitstring form of [Mazzanti2016] Lemma 2.2
+  in the model of the algebra's own evaluator, which holds one value per
+  node at a time. The distance to a machine bound is the compilation of
+  this evaluator into a multi-tape machine whose step and cell counts are
+  those accounted for. Depends on
+  `Geb.Prototypes.Computability.Mazzanti.Basic`. `Classical.choice`-free.
