@@ -13,6 +13,8 @@ public import Geb.Prototypes.Computability.SizeBounded.Iteration
 public import Geb.Prototypes.Computability.SizeBounded.Machine
 public import Geb.Prototypes.Computability.SizeBounded.MachineBound
 public import Geb.Prototypes.Computability.SizeBounded.Polynomial
+public import Geb.Prototypes.Computability.SizeBounded.MachineBound
+public import Geb.Prototypes.Computability.SizeBounded.MachineTransport
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true

@@ -89,6 +89,7 @@ def classicalAllowedModules : NameSet :=
   [`GebTests.Prototypes.AxiomLinterClassicalFixture,
    `Geb.Prototypes.Computability.SizeBounded.Polynomial,
    `Geb.Prototypes.Computability.SizeBounded.MachineBound,
+   `Geb.Prototypes.Computability.SizeBounded.MachineTransport,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.Introduction,
