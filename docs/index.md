@@ -2439,3 +2439,58 @@ checklist and in CI.
   rather than read. Depends on
   `Geb.Prototypes.Computability.CobhamFoldProto.Initial` and
   `Geb.Mathlib.Data.W.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Basic.lean` — the function algebra
+  `S(sbs₀, sbs₁)` of [Mazzanti2016] over bitstrings, whose expressions are
+  the admissible trees of a slice polynomial functor signature with no
+  further condition: the constants, projections and two size-bounded
+  successors `sbs_b(x, y)`, prepending `b` to `x` when the result is no
+  longer than `y`, closed under substitution and simultaneous recursion on
+  notation. `Geb.SizeBounded.evalSRN` is the recursion, by `List.rec`, at a
+  family of registers. `Geb.SizeBounded.NSI k f` states that `f` is
+  non-size-increasing with constant `k`, and `Geb.SizeBounded.nsi_eval` proves
+  it for every expression, with the constant `Geb.SizeBounded.nsiConst` read off
+  the syntax: the bitstring form of the paper's Lemma 2.1. Where
+  `Cobham.C` requires a bound to be proved for each `boundedRec` node, the
+  algebra here has no side condition, non-size-increase being a theorem
+  about every term rather than an obligation per recursion. Depends on
+  `Geb.Mathlib.Computability.Cobham.Basic`, whose `Cobham.Sem` and
+  `Cobham.transport` it reuses. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Combinators.lean` — each shape as a
+  constructor of expressions of a declared arity, `Geb.SizeBounded.SOf`,
+  carrying admissibility, so that no `decide` is discharged for an
+  expression built from them; the tail, the four-way conditional and the
+  diagonal on top of them; and the meaning equations, each a `rfl` except
+  `Geb.SizeBounded.sem_srnOf`, whose step family is identified with the
+  children's meanings by a case split on the bit. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/BitTree.lean` — the recognizer
+  `Geb.BitTree.validBool` as an expression `Geb.SizeBounded.isBitTree` of the
+  algebra: a simultaneous recursion with three registers, the unread input,
+  the scanner's mode as a two-bit code, and the pending-tree count minus one
+  in unary, run over the word as a counter with the word as parameter, so
+  that the left-to-right scan is one linear pass with a constant step. The
+  count is incremented by the size-bounded successor with the word as bound
+  and never reaches it. `Geb.SizeBounded.regs_eq` is the invariant, the
+  registers after a prefix holding the remaining word and the coded scanner
+  state; `Geb.SizeBounded.isBitTreeSem_eq` gives the recognizer's value on both
+  branches and `Geb.SizeBounded.isBitTreeSem_eq_singleton_iff` identifies the
+  accepted words with the encodings of trees. `Geb.SizeBounded.nsi_isBitTree`
+  is its non-size-increase by the closure theorem alone, at constant two.
+  The polynomial-time, linear-space reading is [Mazzanti2016] Theorem 5.7,
+  cited and not reproved. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Combinators` and
+  `Geb.Prototypes.Computability.BitTree.Encoding`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Cost.lean` — an evaluator of the
+  algebra that accounts for its work: `Geb.SizeBounded.evalC` returns with
+  each value the time taken and the greatest length of any value read or
+  produced, `Geb.SizeBounded.valueC_eq` identifying its value with
+  `Geb.SizeBounded.eval`. `Geb.SizeBounded.space_le` bounds every accounted
+  length by the argument bound or the expression's constant, and
+  `Geb.SizeBounded.time_le_poly` bounds the time by a polynomial in the
+  argument bound, the polynomial `Geb.SizeBounded.timePoly` being read off the
+  syntax with the constant: the bitstring form of [Mazzanti2016] Lemma 2.2
+  in the model of the algebra's own evaluator, which holds one value per
+  node at a time. The distance to a machine bound is the compilation of
+  this evaluator into a multi-tape machine whose step and cell counts are
+  those accounted for. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Basic`. `Classical.choice`-free.

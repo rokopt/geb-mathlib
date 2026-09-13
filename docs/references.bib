@@ -736,3 +736,29 @@
                Geb/Prototypes/Computability/BitTreeScanner/Counter.lean keeps
                a pending count.},
 }
+
+@article{Mazzanti2016,
+  author  = {Mazzanti, S.},
+  title   = {Unbounded recursion and non-size-increasing functions},
+  journal = {Electronic Notes in Theoretical Computer Science},
+  volume  = {322},
+  pages   = {197--210},
+  year    = {2016},
+  doi     = {10.1016/j.entcs.2016.03.014},
+  note    = {Section 2 defines the size-bounded binary successors
+             $\mathit{sbs}_i(x, y) = s_i(x)$ if $|s_i(x)| \le |y|$ and $x$
+             otherwise, simultaneous recursion on notation (SRN) with no
+             side condition, and the algebra $S(F) = \mathrm{clos}(F,
+             \{C_n\}; \mathit{SUBST}, \mathit{SRN})$; Lemma 2.1 states that
+             $S(F)$ is non-size-increasing when $F$ is, and Lemma 2.2 that
+             it is polynomial-time when $F$ is, both without proof.
+             Theorem 5.7 identifies $S(\mathit{sbs}_0, \mathit{sbs}_1)$ with
+             the non-size-increasing functions computable simultaneously in
+             polynomial time and linear space, through Theorem 5.2, the
+             algebra $\mathrm{clos}(C_0, s_0, s_1, \max, \mathit{quad};
+             \mathit{SUBST}, \mathit{BRN})$ it attributes to [Clote1999]
+             Theorem 3.45. The paper works over the naturals in binary
+             notation, where $s_0(0) = 0$ forces the guard $x > 0$ in the
+             $i = 0$ recursion clause; over bitstrings both successors are
+             injective and the guard is vacuous.},
+}
