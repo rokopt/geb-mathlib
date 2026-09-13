@@ -1687,6 +1687,25 @@ checklist and in CI.
   rules, rather than enforcing strict RFC validation.
   [SExprIO tests](../GebTests/Prototypes/SExprIO.lean) exercise file
   round trips, conversions, and error handling under `lake test`.
+- [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
+  represents values with leaf, stem, and fork constructors, and expressions
+  as application trees over values. Its tagged binary-tree encoding prevents
+  applications beneath value constructors. `decode_encode` and
+  `encode_of_decode` prove the decoder's round trips; `recognize_iff` and
+  `validBool_of_recognize` identify the recognized subset of binary-tree
+  bitstrings. `reduce` distinguishes invalid input, a terminal value, and
+  a successor. `reduce_next_sound` proves one contextual contraction;
+  `reduce_value_iff` proves that terminal inputs are exactly values.
+  `Machine.execute_eq_step` connects an explicit argument-first traversal
+  machine to the semantics. Its traversal uses at most `4 * n + 2` abstract
+  transitions, and `stateCode_run_length_le` bounds every serialized state
+  by `2 * n + 2` bits. The successor itself has at most `2 * n` bits.
+  `work_run_bound` derives a quadratic work bound from an explicit
+  linear-cost hypothesis for individual transitions. A verified tape
+  implementation and end-to-end parser/serializer resource bounds remain
+  necessary for a `ComputableInTimeAndSpace` theorem. The implementation
+  and its resource model are described in the
+  [metalogic design](bitstring-metalogic.md#implemented-valueapplication-representation).
 - [Mazzanti's function algebra](../Geb/Prototypes/Computability/Mazzanti.lean)
   implements the numerical syntax of `S(sbs₀, sbs₁)` as an
   arity-indexed polynomial W-type. Constants, projections,
