@@ -131,6 +131,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.TreeScanner.Bound,
    `Geb.Prototypes.Computability.BitTree.Steps,
    `Geb.Prototypes.Computability.BitTree.Bound,
+   `Geb.Prototypes.Computability.Mazzanti.Bound,
    `Geb.Prototypes.Computability.BitTree.BinaryMachine.Steps,
    `Geb.Prototypes.Computability.BitTree.BinaryMachine.Carry,
    `Geb.Prototypes.Computability.BitTree.BinaryMachine.Return,

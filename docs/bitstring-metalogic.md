@@ -13,6 +13,7 @@ bounds have been proved in Lean.
 - [Syntactic categories and recognition](#syntactic-categories-and-recognition)
 - [Certificate size and smaller checker classes](#certificate-size-and-smaller-checker-classes)
 - [Selected resource target](#selected-resource-target)
+- [Non-size-increasing function algebra](#non-size-increasing-function-algebra)
 - [Recognition, evaluation, and categorical structure](#recognition-evaluation-and-categorical-structure)
 - [A single Turing-machine transition](#a-single-turing-machine-transition)
 - [Tree-calculus reduction](#tree-calculus-reduction)
@@ -221,6 +222,63 @@ containing `G`. It need not contain every function satisfying the
 ambient resource bound. Different encodings, proof formats, and
 primitive operations can produce incomparable choices; no unique
 smallest familiar complexity class has been established.
+
+## Non-size-increasing function algebra
+
+[Mazzanti, *Unbounded Recursion and Non-size-increasing
+Functions*](https://doi.org/10.1016/j.entcs.2016.03.014), Section 2,
+defines non-size-increase by a fixed cutoff:
+`|f(x₁, …, xₐ)| ≤ max(|x₁|, …, |xₐ|, k)` for some constant `k`.
+It does not require the literal bound `|f(x)| ≤ |x|`. Singleton
+Boolean outputs therefore qualify even at empty input, with cutoff
+one. Empty rejection and zero-bit acceptance meet the literal bound
+exactly when the empty input is rejected. Changing between these
+fixed output conventions preserves the polynomial-time,
+linear-space target, with a corresponding change to acceptance.
+
+The paper's algebra `S(sbs₀, sbs₁)` contains constants, projections,
+and size-bounded binary successors, and is closed under substitution
+and simultaneous recursion on binary notation. Its recursion scheme
+has no supplied bound expression or semantic bound proof. Well-formed
+programs are checked syntactically, and their size invariant is a
+theorem about the algebra. Theorem 5.7 identifies its functions with
+the non-size-increasing functions computable simultaneously in
+polynomial time and linear space. Corollary 5.8 specializes this to
+Boolean predicates.
+
+The [Lean prototype](../Geb/Prototypes/Computability/Mazzanti.lean)
+implements this syntax and proves its size invariant.
+`BitTree.eval_checker` proves that an expression computes the existing
+tree-and-payload decision function. The numerical input has a leading
+one, preserving every original bit; the existing `fromPayload` and
+`payload` lemmas establish the encoding's round trip and its one-bit
+overhead. `BitTree.recognize_resources` combines non-size-increase
+with the existing machine's simultaneous linear bounds. The proof
+uses extensional equality with that machine's function, rather than
+the unformalized general characterization. A verified evaluation
+strategy and translation to the machine model are still needed for
+a reusable time-and-space theorem for arbitrary expressions.
+
+This algebra is a candidate language for syntax and explicit-proof
+checkers measured against their complete inputs. A full checker still
+requires a fixed calculus, encoding, and specification of local
+checking operations. Neither the algebra nor small Boolean outputs
+make proof search, normalization, or generated equality inexpensive.
+Syntactic checking of encoded recognizers also differs from executing
+them: `Expr.not_universal` proves that no expression internally
+evaluates every unary expression from an arbitrary numerical coding.
+Checking explicit computation histories or executing with an explicit
+resource budget does not assert that unrestricted specification.
+
+The restriction is stronger for operations that construct outputs.
+The unshared duplication contraction described below has outputs
+larger than arbitrarily large inputs. The prototype proves that no
+fixed cutoff accommodates it. Such a contraction cannot itself be
+an `S` endofunction under this encoding. Its Boolean relation checker
+can instead receive both input and proposed output as data. Fixed
+tuples of bounded components or a supplied capacity parameter are
+other possible interfaces, but require an explicit encoding and do
+not make concatenation into one growing output non-size-increasing.
 
 ## Recognition, evaluation, and categorical structure
 
