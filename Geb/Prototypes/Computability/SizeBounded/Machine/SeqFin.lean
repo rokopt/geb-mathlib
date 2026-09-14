@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Seq
+public import Geb.Mathlib.Data.FinEnum
 
 set_option doc.verso true
 
@@ -23,6 +24,8 @@ composite of the family's transformers.
 
 * {lit}`idle` — the machine that halts at once, doing nothing.
 * {lit}`seqFin` — sequencing a family of machines indexed by {lit}`Fin m`.
+* {lit}`seqFinEnum` — a choice-free enumeration of a sequenced family's
+  state.
 * {lit}`composeFin` — the composite of a family of transformers.
 
 # Main statements
@@ -46,6 +49,7 @@ Turing machine, sequencing, composition, recursion
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
+open scoped FinEnum
 
 public section
 
@@ -115,6 +119,15 @@ theorem seqFin_succ {k m : ℕ} (S : Fin (m + 1) → Type)
     seqFin (m + 1) S P =
       ⟨(seqFin m (fun i ↦ S i.castSucc) (fun i ↦ P i.castSucc)).1 ⊕ S (Fin.last m),
         seq (seqFin m (fun i ↦ S i.castSucc) (fun i ↦ P i.castSucc)).2 (P (Fin.last m))⟩ := rfl
+
+/-- A choice-free enumeration of a sequenced family's state. -/
+@[expose, instance_reducible] def seqFinEnum {k : ℕ} : (m : ℕ) → (S : Fin m → Type) →
+    (P : (i : Fin m) → MultiTapeTM k Bool (S i)) → ((i : Fin m) → FinEnum (S i)) →
+    FinEnum (seqFin m S P).1 :=
+  Nat.rec (fun _ _ _ ↦ FinEnum.unit)
+    (fun m ih S P E ↦
+      @FinEnum.finSum _ _ (ih (fun i ↦ S i.castSucc) (fun i ↦ P i.castSucc) (fun i ↦ E i.castSucc))
+        (E (Fin.last m)))
 
 /-- The composite of a family of transformers, in index order. -/
 @[expose] def composeFin {k : ℕ} : (m : ℕ) →
