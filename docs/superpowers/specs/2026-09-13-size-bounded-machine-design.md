@@ -208,7 +208,15 @@ is made at implementation, whichever gives the shorter proof.
 - `loop`: the simultaneous recursion with `b` components over registers
   `X` (the recursion argument, read only), `V` (the processed suffix), `b`
   value registers and `b` scratch registers. It begins with `const [] V`,
-  since an enclosing loop may run it more than once. One iteration walks
+  since an enclosing loop may run it more than once. The processed-suffix
+  register is extended by the algebra's own bounded successor, `sbs c V X`
+  into a scratch register copied back into `V`, rather than by a plain
+  append: `sbsSem` conses on every reachable valuation, where `V` is
+  shorter than `X` while `R` is non-empty, and is bounded on every
+  valuation, which is what the loop's contract requires of its bodies. The
+  loop consumes its recursion register, so the compiler runs it on a
+  scratch reverse copy of the recursion argument made by `copyRev`. One
+  iteration walks
   `X` and `V` in lockstep until `V` reads blank, at which point `X`'s head
   is at cell `|V|`; if `X` reads blank, return and halt; otherwise return
   both heads, run the `b` step programs for the bit read into the scratch
@@ -234,8 +242,10 @@ a proof `free + regs ≤ k`, returning a state type with a `FinEnum`
 instance and a machine over `Fin k` tapes; the proof is what lets a fresh
 register `free + i` be a `Fin k`, and the fold's step threads it to the
 children. `regs` is zero for the base forms, `m` plus the maximum over the
-children for `comp n m`, and `2 b + 1` plus the maximum over the children
-for `srn a b j`; the maximum is taken because siblings run in sequence and
+children for `comp n m`, and `2 b + 3` plus the maximum over the children
+for `srn a b j`: the reversed copy of the recursion argument, the processed
+suffix, the successor's scratch register, and `b` value and `b` scratch
+registers; the maximum is taken because siblings run in sequence and
 may share scratch. For a top-level `e : SOf 1`, `k = 2 + regs e`: the
 input register, the top-level output register, and the scratch. No tape
 reindexing is ever needed: every program of one top-level expression lives
@@ -317,10 +327,12 @@ literate module:
 
 - `Register.lean`: the layout predicate and its lemmas, on tape contents
   alone.
-- `Program.lean`: the contract predicate; monotonicity in `T` and `B`; the
-  absorbing-halt lemmas; the bound `spaceUsedByTape ≤ B + 2` from a path
-  clause, which mentions `spaceUsedByTape` and so lives here rather than
-  in `Register.lean`.
+- `Program.lean`: the contract predicate; monotonicity in `T` (the contract
+  is not monotone in `B`, whose bound is also a hypothesis; every primitive
+  is stated for all `B`, and the compiler fixes one `B` for the whole
+  expression); the absorbing-halt lemmas; the bound
+  `spaceUsedByTape ≤ B + 2` from a path clause, which mentions
+  `spaceUsedByTape` and so lives here rather than in `Register.lean`.
 - `Seq.lean`: sequencing, `seqFin`, and their lifting lemmas.
 - `Const.lean`, `Copy.lean`, `Sbs.lean`: the primitives.
 - `Loop.lean`: the recursion loop.
