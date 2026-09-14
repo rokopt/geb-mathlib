@@ -39,6 +39,7 @@ the bound.
 * {lit}`tapeOf_injective` — the layout determines the word.
 * {lit}`drop_length_sub_succ`, {lit}`reverse_take_succ` — the list equations
   the copying phases step by.
+* {lit}`Bounded.mono` — a valuation within one bound is within a larger one.
 
 # Tags
 
@@ -75,7 +76,7 @@ theorem tapeOf_cons (b : Bool) (w : List Bool) :
       split_ifs with hlt
       · rfl
       · rw [List.length_reverse] at hlt
-        have : z.toNat ≠ w.length := by omega
+        have hne : z.toNat ≠ w.length := by omega
         simp only [List.getElem?_singleton, List.length_reverse]
         rw [ite_eq_right (by omega)]
         rw [List.getElem?_eq_none (by simp; omega)]
@@ -154,6 +155,10 @@ theorem reverse_take_succ (w : List Bool) (s : ℕ) (hs : s < w.length) :
 /-- Every word of the valuation has length at most {lit}`B`. -/
 @[expose] def Bounded {k : ℕ} (σ : Fin k → List Bool) (B : ℕ) : Prop :=
   ∀ i, (σ i).length ≤ B
+
+/-- A valuation within one bound is within any larger bound. -/
+theorem Bounded.mono {k : ℕ} {σ : Fin k → List Bool} {B B' : ℕ} (h : Bounded σ B) (hB : B ≤ B') :
+    Bounded σ B' := fun i ↦ (h i).trans hB
 
 end
 

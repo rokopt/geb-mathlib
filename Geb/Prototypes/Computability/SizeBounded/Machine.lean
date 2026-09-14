@@ -18,7 +18,8 @@ set_option doc.verso true
 /-!
 # The machine calculus
 
-Index for the modules on the machine calculus: registers holding bitstrings
-on the work tapes of a {name}`Turing.MultiTapeTM`, and the programs built
-from them.
+Index for the modules on the machine calculus: the register layout on the
+work tapes of a {name}`Turing.MultiTapeTM` and the contract a program of the
+calculus satisfies, the sequencing of programs, the phase machines that move
+one head, the primitives sequenced from them, and the recursion loop.
 -/

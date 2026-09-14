@@ -152,7 +152,6 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         workTapePos := Function.update cfg.workTapePos i 0 }
       (p + 2).toNat B := by
   have hpB : p ≤ B := hp ▸ (hpos i).2
-  have hn : ((p + 1).toNat : ℤ) = p + 1 := Int.toNat_of_nonneg (by omega)
   have hsym : ∀ s : ℕ, (retCfg i cfg p s).workTapeSymbols i = tapeOf w (p - s) := by
     intro s
     change cfg.workTapes i (Function.update cfg.workTapePos i (p - s) i) = _

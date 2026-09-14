@@ -19,6 +19,7 @@ set_option doc.verso true
 
 Index for the modules on {cite}`Mazzanti2016`'s algebra {lit}`S(sbs₀, sbs₁)` over
 bitstrings: its syntax and non-size-increase theorem, its expression
-combinators, the bit-tree recognizer written in it, and the cost model in
-which every expression runs in polynomial time and linear space.
+combinators, the bit-tree recognizer written in it, the cost model in
+which every expression runs in polynomial time and linear space, and the
+machine calculus compiling its expressions into Cslib multi-tape machines.
 -/

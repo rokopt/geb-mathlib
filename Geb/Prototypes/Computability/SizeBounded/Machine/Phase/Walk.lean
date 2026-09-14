@@ -5,7 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
+import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
 set_option doc.verso true
 
@@ -139,7 +140,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
       rw [moveInputPos_zero]
     · funext l
-      simp only []
+      dsimp only
       by_cases hl : l = j
       · rw [hl, ite_eq_left rfl]
         change Function.update (Function.update cfg.workTapes j (tapeOf (w.drop (w.length - s))) j)
@@ -161,7 +162,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
             Function.update cfg.workTapes j (tapeOf (w.drop (w.length - (s + 1)))) l
           rw [Function.update_of_ne hl, Function.update_of_ne hl]
     · funext l
-      simp only []
+      dsimp only
       by_cases hl : l = j
       · rw [hl, ite_eq_left rfl]
         change Function.update (Function.update cfg.workTapePos i (s : ℤ)) j (s : ℤ) j +
@@ -329,7 +330,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
       rw [moveInputPos_zero]
     · funext l
-      simp only []
+      dsimp only
       by_cases hl : l = j
       · rw [hl, ite_eq_left rfl]
         change Function.update (Function.update cfg.workTapes j (tapeOf (w.take s).reverse) j)
@@ -352,7 +353,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
             Function.update cfg.workTapes j (tapeOf (w.take (s + 1)).reverse) l
           rw [Function.update_of_ne hl, Function.update_of_ne hl]
     · funext l
-      simp only []
+      dsimp only
       by_cases hl : l = j
       · rw [hl, ite_eq_left rfl]
         change Function.update (Function.update cfg.workTapePos i ((w.length : ℤ) - 1 - s)) j
@@ -396,7 +397,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
         Function.update cfg.workTapes j (tapeOf w.reverse) l
       rw [List.take_length]
     · funext l
-      simp only []
+      dsimp only
       by_cases hl : l = j
       · rw [hl, ite_eq_right (fun h ↦ hij h.symm)]
         change Function.update (Function.update cfg.workTapePos i

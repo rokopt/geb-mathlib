@@ -94,7 +94,7 @@ theorem loopF_bounded {k : ℕ} (R : Fin k) (FF FT : (Fin k → List Bool) → F
     rw [loopF_cons]
     exact ih _ (by omega) hb
 
-/-- The loop transforms the valuation by {lit}`loopF` at the word on {lit}`R`,
+/-- The loop transforms the valuation by {name}`loopF` at the word on {lit}`R`,
 within {lit}`B * (T + 2 * B + 6) + 3` steps, provided each body transforms
 within {lit}`T`, keeps {lit}`R`, and keeps the bound. -/
 theorem Transforms.caseLoop {k : ℕ} {SF ST : Type} (R : Fin k)

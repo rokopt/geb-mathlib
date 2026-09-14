@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Register
-public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
+import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 
 set_option doc.verso true
 

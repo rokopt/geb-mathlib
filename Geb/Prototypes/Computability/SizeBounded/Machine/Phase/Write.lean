@@ -5,7 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
+import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
 set_option doc.verso true
 

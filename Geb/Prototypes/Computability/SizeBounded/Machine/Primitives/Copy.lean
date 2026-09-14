@@ -8,18 +8,15 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write
 
 set_option doc.verso true
 
 /-!
-# Copying and appending
+# Copying
 
-Two primitives of the calculus move words between registers. {lit}`copy i j`
+One primitive of the calculus moves a word between registers. {lit}`copy i j`
 empties the destination, sweeps the source's word onto it and parks both
-heads. {lit}`appendBit b i` walks to the blank after a register's word,
-writes a bit there and parks the head, which conses the bit onto the word.
-Each is a sequence of phase machines, and each transforms the register
+heads. It is a sequence of phase machines, and it transforms the register
 valuation by a {name}`Function.update`.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
@@ -31,12 +28,11 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 # Main definitions
 
 * {lit}`copy` — copy one register onto another.
-* {lit}`appendBit` — cons a bit onto a register's word.
 
 # Main statements
 
-* {lit}`copy_transforms`, {lit}`appendBit_transforms` — the contract of each
-  primitive, naming its transformer and its step bound.
+* {lit}`copy_transforms` — the contract of the primitive, naming its
+  transformer and its step bound.
 
 # Tags
 
@@ -53,10 +49,6 @@ public section
 both. -/
 @[expose] def copy {k : ℕ} (i j : Fin k) :=
   seq (clear j) (seq (copyWalk i j) (seq (returnTape i) (returnTape j)))
-
-/-- Cons {lit}`b` onto register {lit}`i`: walk to its end, write, park. -/
-@[expose] def appendBit {k : ℕ} (b : Bool) (i : Fin k) :=
-  seq (walkEnd i) (seq (writeBit b i) (returnTape i))
 
 /-- {name}`copy` transforms the valuation by copying {lit}`i` to {lit}`j`, in
 {lit}`5 * B + 12` steps. -/
@@ -161,68 +153,6 @@ theorem copy_transforms {k : ℕ} (i j : Fin k) (hij : i ≠ j) (B : ℕ) :
       change tapeOf (Function.update σ j (σ i) l) =
         Function.update cfg.workTapes j (tapeOf (σ i)) l
       by_cases hl : l = j
-      · rw [hl, Function.update_self, Function.update_self]
-      · rw [Function.update_of_ne hl, Function.update_of_ne hl, hσ l]
-    · rfl
-
-/-- {name}`appendBit` transforms the valuation by consing {lit}`b` onto
-{lit}`i`, in {lit}`2 * B + 5` steps. -/
-theorem appendBit_transforms {k : ℕ} (b : Bool) (i : Fin k) (B : ℕ) :
-    Transforms (appendBit b i) (fun σ ↦ Function.update σ i (b :: σ i)) (2 * B + 5) B := by
-  intro _ cfg σ hq hpark hσ hB _
-  have hBi : (σ i).length ≤ B := hB i
-  have hpos : ∀ l, -1 ≤ cfg.workTapePos l ∧ cfg.workTapePos l ≤ B := by
-    intro l
-    rw [hpark l]
-    constructor <;> omega
-  have hself : Function.update cfg.workTapePos i (0 : ℤ) = cfg.workTapePos := by
-    rw [show (0 : ℤ) = cfg.workTapePos i from (hpark i).symm, Function.update_eq_self]
-  have hbnd : ∀ l, -1 ≤ Function.update cfg.workTapePos i ((σ i).length : ℤ) l ∧
-      Function.update cfg.workTapePos i ((σ i).length : ℤ) l ≤ B :=
-    fun l ↦ update_workTapePos_bounds i hpos _ (by omega) (by omega) l
-  have r₁ := walkEnd_runsTo i { cfg with state := some (walkEnd i).q₀ } rfl (σ i) (hσ i)
-    (hpark i) B hBi hpos
-  have r₂ := writeBit_runsTo b i
-    { cfg with
-      state := some (writeBit b i).q₀
-      workTapePos := Function.update cfg.workTapePos i ((σ i).length : ℤ) }
-    rfl (σ i) (hσ i)
-    (by change Function.update cfg.workTapePos i ((σ i).length : ℤ) i = ((σ i).length : ℤ)
-        rw [Function.update_self])
-    B hbnd
-  have r₃ := returnTape_runsTo i
-    { cfg with
-      state := some (returnTape i).q₀
-      workTapes := Function.update cfg.workTapes i (tapeOf (b :: σ i))
-      workTapePos := Function.update cfg.workTapePos i ((σ i).length : ℤ) }
-    rfl (b :: σ i)
-    (by change Function.update cfg.workTapes i (tapeOf (b :: σ i)) i = tapeOf (b :: σ i)
-        rw [Function.update_self])
-    ((σ i).length : ℤ)
-    (by change Function.update cfg.workTapePos i ((σ i).length : ℤ) i = ((σ i).length : ℤ)
-        rw [Function.update_self])
-    (by omega) (by rw [List.length_cons]; omega) B hbnd
-  rw [Function.update_idem, hself,
-    show (((σ i).length : ℤ) + 2).toNat = (σ i).length + 2 from by omega] at r₃
-  have h₂₃ := r₂.seq r₃
-  rw [← liftL_start (writeBit b i) (returnTape i)
-    { cfg with
-      state := some (seq (writeBit b i) (returnTape i)).q₀
-      workTapePos := Function.update cfg.workTapePos i ((σ i).length : ℤ) } rfl] at h₂₃
-  have hall := r₁.seq h₂₃
-  rw [← liftL_start (walkEnd i) (seq (writeBit b i) (returnTape i)) cfg hq] at hall
-  rw [show after cfg (Function.update σ i (b :: σ i)) =
-      liftR (liftR { cfg with
-        state := none
-        workTapes := Function.update cfg.workTapes i (tapeOf (b :: σ i)) }) from ?_]
-  · exact ⟨_, by omega, hall⟩
-  · apply Cfg.ext
-    · rfl
-    · rfl
-    · funext l
-      change tapeOf (Function.update σ i (b :: σ i) l) =
-        Function.update cfg.workTapes i (tapeOf (b :: σ i)) l
-      by_cases hl : l = i
       · rw [hl, Function.update_self, Function.update_self]
       · rw [Function.update_of_ne hl, Function.update_of_ne hl, hσ l]
     · rfl
