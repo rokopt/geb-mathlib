@@ -5,9 +5,10 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 public import Geb.Prototypes.Computability.SizeBounded.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk -- shake: keep
+import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
 set_option doc.verso true
 
