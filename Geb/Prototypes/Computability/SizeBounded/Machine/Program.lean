@@ -168,22 +168,22 @@ the tapes holding {lit}`σ`. -/
     (cfg : Cfg k Bool State input) (σ : Fin k → List Bool) : Cfg k Bool State input :=
   { cfg with state := none, workTapes := fun i ↦ tapeOf (σ i) }
 
-/-- {lit}`after` holds the valuation. -/
+/-- {name}`after` holds the valuation. -/
 @[simp] theorem after_workTapes {k : ℕ} {State : Type} {input : List Bool}
     (cfg : Cfg k Bool State input) (σ : Fin k → List Bool) (i : Fin k) :
     (after cfg σ).workTapes i = tapeOf (σ i) := rfl
 
-/-- {lit}`after` keeps the heads. -/
+/-- {name}`after` keeps the heads. -/
 @[simp] theorem after_workTapePos {k : ℕ} {State : Type} {input : List Bool}
     (cfg : Cfg k Bool State input) (σ : Fin k → List Bool) :
     (after cfg σ).workTapePos = cfg.workTapePos := rfl
 
-/-- {lit}`after` keeps the input head. -/
+/-- {name}`after` keeps the input head. -/
 @[simp] theorem after_inputPos {k : ℕ} {State : Type} {input : List Bool}
     (cfg : Cfg k Bool State input) (σ : Fin k → List Bool) :
     (after cfg σ).inputPos = cfg.inputPos := rfl
 
-/-- {lit}`after` is halted. -/
+/-- {name}`after` is halted. -/
 @[simp] theorem after_state {k : ℕ} {State : Type} {input : List Bool}
     (cfg : Cfg k Bool State input) (σ : Fin k → List Bool) : (after cfg σ).state = none := rfl
 
