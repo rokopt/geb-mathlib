@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Bound
 
 set_option doc.verso true
 
