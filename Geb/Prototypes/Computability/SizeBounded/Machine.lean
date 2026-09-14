@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Register
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 
 set_option doc.verso true
 
