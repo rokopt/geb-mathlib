@@ -175,7 +175,8 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.Computability.TreeScanner.Machine,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Program,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Seq,
-   `Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin].foldl (·.insert ·)
+   `Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin,
+   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
