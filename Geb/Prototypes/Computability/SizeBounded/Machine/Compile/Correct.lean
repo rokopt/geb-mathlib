@@ -48,7 +48,7 @@ Turing machine, compilation, correctness, register, size-bounded
 namespace Geb.SizeBounded.Machine
 
 open Cobham (Sem transport)
-open Geb.SizeBounded (Shape Direction rc q evalValue nsiValue sbsSem)
+open Geb.SizeBounded (Direction rc evalValue nsiValue sbsSem)
 
 public section
 
@@ -87,7 +87,7 @@ theorem correct_const {k n : ℕ} (w : List Bool) (c : Direction (.const n w) �
     (Tf : Direction (.const n w) → ℕ → ℕ) :
     Correct (compileValue (.const n w) c h) (evalValue (.const n w) s hs)
       (nsiValue (.const n w) K) (stepValue (.const n w) Tf) := by
-  intro env out free hfree hinj henv hout hne B hK
+  intro _ out _ _ _ _ _ _ B hK
   refine ⟨fun σ ↦ Function.update σ out w, const_transforms w out B, fun σ ↦ ?_,
     fun σ i _ hi ↦ Function.update_of_ne hi _ _, fun σ hσ i ↦ ?_⟩
   · exact Function.update_self ..
@@ -105,7 +105,7 @@ theorem correct_proj {k n : ℕ} (i : Fin n) (c : Direction (.proj n i) → Σ i
     (Tf : Direction (.proj n i) → ℕ → ℕ) :
     Correct (compileValue (.proj n i) c h) (evalValue (.proj n i) s hs)
       (nsiValue (.proj n i) K) (stepValue (.proj n i) Tf) := by
-  intro env out free hfree hinj henv hout hne B hK
+  intro env out _ _ _ _ _ hne B _
   refine ⟨fun σ ↦ Function.update σ out (σ (env i)), copy_transforms (env i) out (hne i) B,
     fun σ ↦ ?_, fun σ l _ hl ↦ Function.update_of_ne hl _ _, fun σ hσ l ↦ ?_⟩
   · exact Function.update_self ..
@@ -123,7 +123,7 @@ theorem correct_sbs {k : ℕ} (b : Bool) (c : Direction (.sbs b) → Σ i, Compi
     (Tf : Direction (.sbs b) → ℕ → ℕ) :
     Correct (compileValue (.sbs b) c h) (evalValue (.sbs b) s hs)
       (nsiValue (.sbs b) K) (stepValue (.sbs b) Tf) := by
-  intro env out free hfree hinj henv hout hne B hK
+  intro env out _ _ hinj _ _ hne B _
   have h01 : (0 : Fin 2) ≠ 1 := by decide
   have hxy : env 0 ≠ env 1 := fun heq ↦ h01 (hinj heq)
   refine ⟨fun σ ↦ Function.update σ out (sbsSem b (σ (env 0)) (σ (env 1))),
