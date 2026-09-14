@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
-public import Geb.Prototypes.Computability.SizeBounded.Basic
+public import Geb.Mathlib.Computability.Cobham.Basic
 
 set_option doc.verso true
 
