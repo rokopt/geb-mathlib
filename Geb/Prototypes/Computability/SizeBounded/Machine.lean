@@ -12,6 +12,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile
 
 set_option doc.verso true
 
@@ -21,5 +22,6 @@ set_option doc.verso true
 Index for the modules on the machine calculus: the register layout on the
 work tapes of a {name}`Turing.MultiTapeTM` and the contract a program of the
 calculus satisfies, the sequencing of programs, the phase machines that move
-one head, the primitives sequenced from them, and the recursion loop.
+one head, the primitives sequenced from them, the recursion loop, and the
+compilation of the size-bounded algebra into the calculus.
 -/
