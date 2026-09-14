@@ -5,8 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 public import Geb.Prototypes.Computability.SizeBounded.Basic
+import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk -- shake: keep
 
 set_option doc.verso true
 
