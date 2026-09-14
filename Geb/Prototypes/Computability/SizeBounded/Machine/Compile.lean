@@ -14,6 +14,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Body
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.LoopEval
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.SrnInit
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem
 
 set_option doc.verso true
 
