@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.CopyRev
 
 set_option doc.verso true
 
