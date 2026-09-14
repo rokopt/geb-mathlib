@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Register
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Seq
 
 set_option doc.verso true
 
