@@ -37,6 +37,10 @@ composite, agreeing with the composite's steps and output; consequently a
   emits what the mirrored component emits.
 * {lit}`Reaches.liftL`, {lit}`Reaches.liftR` — a reach of a component lifts
   to a reach of the composite.
+* {lit}`RunsTo.seq` — runs of the components compose into a run of the
+  composite.
+* {lit}`Transforms.seq` — the composite satisfies the contract of the
+  composite of the transformers.
 
 # Tags
 
@@ -251,6 +255,38 @@ theorem Reaches.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
   pos := fun t' ht' i ↦ by
     rw [seq_configs_right P Q cfg t', liftR_workTapePos]
     exact h.pos t' ht' i
+
+/-- Runs compose: a run of {lit}`P` to {lit}`cfg₁` followed by a run of
+{lit}`Q` from {lit}`cfg₁` restarted in {lit}`Q`'s initial state. -/
+theorem RunsTo.seq {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+    {P : MultiTapeTM k Bool S₁} {Q : MultiTapeTM k Bool S₂}
+    {cfg cfg₁ : Cfg k Bool S₁ input} {cfg₂ : Cfg k Bool S₂ input} {t₁ t₂ B : ℕ}
+    (h₁ : RunsTo P cfg cfg₁ t₁ B)
+    (h₂ : RunsTo Q { cfg₁ with state := some Q.q₀ } cfg₂ t₂ B) :
+    RunsTo (seq P Q) (liftL Q cfg) (liftR cfg₂) (t₁ + t₂) B where
+  toReaches := (h₁.toReaches.liftL Q).trans
+    (by rw [liftL_halt Q cfg₁ h₁.halted]; exact h₂.toReaches.liftR P)
+  halted := by rw [liftR_state, h₂.halted, Option.map_none]
+
+/-- Contracts compose: the composite transforms by the composite of the
+transformers, provided the first transformer keeps the valuation within the
+bound. -/
+theorem Transforms.seq {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
+    {Q : MultiTapeTM k Bool S₂} {F G : (Fin k → List Bool) → Fin k → List Bool} {T₁ T₂ B : ℕ}
+    (hP : Transforms P F T₁ B) (hQ : Transforms Q G T₂ B)
+    (hF : ∀ σ, Bounded σ B → Bounded (F σ) B) :
+    Transforms (seq P Q) (fun σ ↦ G (F σ)) (T₁ + T₂) B := by
+  intro _ cfg σ hq hpark hσ hB hGF
+  rw [liftL_start P Q cfg hq]
+  set cfg₀ := { cfg with state := some P.q₀ }
+  obtain ⟨t₁, ht₁, r₁⟩ := hP cfg₀ σ rfl hpark hσ hB (hF σ hB)
+  obtain ⟨t₂, ht₂, r₂⟩ := hQ { after cfg₀ (F σ) with state := some Q.q₀ } (F σ)
+    rfl hpark (fun i ↦ rfl) (hF σ hB) hGF
+  refine ⟨t₁ + t₂, by omega, ?_⟩
+  rw [show after (liftL Q cfg₀) (G (F σ)) =
+      liftR (after { after cfg₀ (F σ) with state := some Q.q₀ } (G (F σ))) from by
+    apply Cfg.ext <;> rfl]
+  exact r₁.seq r₂
 
 end
 
