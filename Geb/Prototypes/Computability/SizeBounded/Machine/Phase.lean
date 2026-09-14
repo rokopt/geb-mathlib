@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
 
 set_option doc.verso true
 
