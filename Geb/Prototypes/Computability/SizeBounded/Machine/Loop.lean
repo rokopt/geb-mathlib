@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Phases
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Iter
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Transforms
 
 set_option doc.verso true
 
