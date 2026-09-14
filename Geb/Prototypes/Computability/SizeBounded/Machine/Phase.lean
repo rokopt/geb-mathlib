@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk
 
 set_option doc.verso true
 
