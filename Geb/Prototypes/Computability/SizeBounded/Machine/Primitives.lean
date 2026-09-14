@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const
 
 set_option doc.verso true
 
