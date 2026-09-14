@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Phases
 
 set_option doc.verso true
 
