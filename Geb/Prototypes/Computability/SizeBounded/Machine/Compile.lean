@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Bound
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
 
 set_option doc.verso true
 
