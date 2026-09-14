@@ -11,6 +11,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Seq
 public import Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop
 
 set_option doc.verso true
 
