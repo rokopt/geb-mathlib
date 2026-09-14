@@ -9,6 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Combinators
 public import Geb.Prototypes.Computability.SizeBounded.BitTree
 public import Geb.Prototypes.Computability.SizeBounded.Cost
+public import Geb.Prototypes.Computability.SizeBounded.Machine
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true
