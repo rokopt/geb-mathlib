@@ -182,7 +182,8 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Sbs,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy,
-   `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const].foldl (·.insert ·)
+   `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const,
+   `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the
