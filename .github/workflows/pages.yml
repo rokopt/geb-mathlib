@@ -43,12 +43,15 @@ jobs:
             #   - Installing elan (the Lean version manager)
             #   - Reading lean-toolchain to select the right Lean version
             #   - Caching .lake for faster subsequent builds
-            # We disable its default build/test since the steps below build
-            # what the site needs.
+            # Its build, test and lint steps are disabled: the step below
+            # builds what the site needs, and `lint`, left at its
+            # default, would auto-detect the lakefile's lint driver and
+            # run `lake lint` against a tree nothing has built.
             - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596  # v1
               with:
                   build: false
                   test: false
+                  lint: false
 
             # The manual (scripts/manual.sh, docs/rules/ci-and-workflow.md
             # § Verso manual build) at the site root; the literate site
