@@ -80,7 +80,7 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
     RunsTo (writeBit b i) cfg
       { cfg with state := none, workTapes := Function.update cfg.workTapes i (tapeOf (b :: w)) }
       1 B := by
-  have hstep : (writeBit b i).configs cfg 1 =
+  have hhalt : (writeBit b i).step cfg =
       { cfg with
         state := none
         workTapes := Function.update cfg.workTapes i (tapeOf (b :: w)) } := by
@@ -89,8 +89,7 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
           { inputMove := 0
             workActions := fun j ↦ if j = i then (some (some b), 0) else (none, 0)
             outS := none, q' := none } := fun _ _ ↦ rfl
-    rw [configs_succ_eq_step' (tm := writeBit b i) (cfg := cfg) (t := 0), configs_zero,
-      step_of_state _ _ () hq, htr]
+    rw [step_of_state _ _ () hq, htr]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -114,23 +113,16 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
       · rw [ite_eq_right hj]
         change cfg.workTapePos j + ((0 : SignType) : ℤ) = cfg.workTapePos j
         rw [SignType.coe_zero, add_zero]
-  refine ⟨⟨⟨?_, hstep, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [show t' = 0 by omega, configs_zero, hq]
+  have hlive : cfg.state ≠ none := by
+    rw [hq]
     exact Option.some_ne_none _
-  · intro t' ht' j
-    rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
-    · rw [h0, configs_zero]
-      exact hpos j
-    · rw [h1, hstep]
-      exact hpos j
-  · rw [outputString_succ, configs_zero]
-    have hout : (writeBit b i).outputSymbol cfg = none := by
-      unfold outputSymbol
-      rw [hq]
-      rfl
-    rw [hout]
+  have hout : (writeBit b i).outputSymbol cfg = none := by
+    unfold outputSymbol
+    rw [hq]
     rfl
+  exact RunsTo.ofFamily (writeBit b i) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
+    (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ j ↦ hpos j)
+    (fun j ↦ hpos j)
 
 /-- The configuration of {name}`constWalk` after {lit}`s` steps from an empty
 parked register. -/
@@ -261,32 +253,11 @@ theorem constWalk_runsTo {k : ℕ} {input : List Bool} (w : List Bool) (i : Fin 
       rw [Nat.sub_zero, List.drop_length, ← hw, Function.update_eq_self]
     · change Function.update cfg.workTapePos i ((0 : ℕ) : ℤ) = cfg.workTapePos
       rw [show (((0 : ℕ) : ℤ)) = cfg.workTapePos i by omega, Function.update_eq_self]
-  have key : ∀ s : ℕ, s ≤ w.length →
-      (constWalk w i).configs cfg s = constCfg w i cfg s ∧
-        (constWalk w i).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' j
-    by_cases hlt : t' ≤ w.length
-    · rw [(key t' hlt).1]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-    · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  have key := RunsTo.ofFamily (constWalk w i) (constCfg w i cfg) w.length B _
+    (fun _ _ ↦ Option.some_ne_none _) hstep hhalt rfl (fun s _ ↦ hout s)
+    (fun s hs j ↦ update_workTapePos_bounds i hpos (s : ℤ) (by omega) (by omega) j)
+    (fun j ↦ update_workTapePos_bounds i hpos (w.length : ℤ) (by omega) (by omega) j)
+  rwa [hzero] at key
 
 end
 

@@ -235,32 +235,11 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
         · rw [hli, Function.update_self]
           omega
         · rw [Function.update_of_ne hli]
-  have key : ∀ s : ℕ, s ≤ w.length →
-      (copyWalk i j).configs cfg s = copyCfg i j cfg w s ∧
-        (copyWalk i j).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' l
-    by_cases hlt : t' ≤ w.length
-    · rw [(key t' hlt).1]
-      exact hbound (t' : ℤ) (t' : ℤ) (by omega) (by omega) (by omega) (by omega) l
-    · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact hbound (w.length : ℤ) (w.length : ℤ) (by omega) (by omega) (by omega) (by omega) l
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  have key := RunsTo.ofFamily (copyWalk i j) (copyCfg i j cfg w) w.length B _
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
+    (fun s hs l ↦ hbound (s : ℤ) (s : ℤ) (by omega) (by omega) (by omega) (by omega) l)
+    (fun l ↦ hbound (w.length : ℤ) (w.length : ℤ) (by omega) (by omega) (by omega) (by omega) l)
+  rwa [hzero] at key
 
 /-- The configuration of {name}`revWalk` after {lit}`s` steps from a start in
 its initial state with {lit}`i`'s head at cell {lit}`w.length - 1` of a
@@ -445,33 +424,12 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
         · rw [hli, Function.update_self]
           omega
         · rw [Function.update_of_ne hli]
-  have key : ∀ s : ℕ, s ≤ w.length →
-      (revWalk i j).configs cfg s = revCfg i j cfg w s ∧
-        (revWalk i j).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' l
-    by_cases hlt : t' ≤ w.length
-    · rw [(key t' hlt).1]
-      exact hbound ((w.length : ℤ) - 1 - t') (t' : ℤ) (by omega) (by omega) (by omega)
-        (by omega) l
-    · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact hbound 0 (w.length : ℤ) (by omega) (by omega) (by omega) (by omega) l
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  have key := RunsTo.ofFamily (revWalk i j) (revCfg i j cfg w) w.length B _
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
+    (fun s hs l ↦ hbound ((w.length : ℤ) - 1 - s) (s : ℤ) (by omega) (by omega) (by omega)
+      (by omega) l)
+    (fun l ↦ hbound 0 (w.length : ℤ) (by omega) (by omega) (by omega) (by omega) l)
+  rwa [hzero] at key
 
 end
 

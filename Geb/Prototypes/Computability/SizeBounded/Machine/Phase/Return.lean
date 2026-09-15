@@ -97,12 +97,11 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
         state := none
         workTapePos := Function.update cfg.workTapePos i (cfg.workTapePos i - 1) }
       1 B := by
-  have hstep : (moveLeft i).configs cfg 1 =
+  have hhalt : (moveLeft i).step cfg =
       { cfg with
         state := none
         workTapePos := Function.update cfg.workTapePos i (cfg.workTapePos i - 1) } := by
-    rw [configs_succ_eq_step' (tm := moveLeft i) (cfg := cfg) (t := 0), configs_zero,
-      step_of_state _ _ () hq]
+    rw [step_of_state _ _ () hq]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = cfg.inputPos
@@ -115,24 +114,17 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
       · subst hj
         rw [Function.update_self, ite_eq_left rfl, SignType.coe_neg_one, ← sub_eq_add_neg]
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
-  refine ⟨⟨⟨?_, hstep, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [show t' = 0 by omega, configs_zero, hq]
+  have hlive : cfg.state ≠ none := by
+    rw [hq]
     exact Option.some_ne_none _
-  · intro t' ht' j
-    rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
-    · rw [h0, configs_zero]
-      exact hpos j
-    · rw [h1, hstep]
-      have hB := (hpos i).2
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-  · rw [outputString_succ, configs_zero]
-    have hout : (moveLeft i).outputSymbol cfg = none := by
-      unfold outputSymbol
-      rw [hq]
-      rfl
-    rw [hout]
+  have hout : (moveLeft i).outputSymbol cfg = none := by
+    unfold outputSymbol
+    rw [hq]
     rfl
+  have hB := (hpos i).2
+  exact RunsTo.ofFamily (moveLeft i) (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
+    (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ j ↦ hpos j)
+    (fun j ↦ update_workTapePos_bounds i hpos _ (by omega) (by omega) j)
 
 /-- The configuration of {name}`retLeft` after {lit}`s` steps from a start in
 its initial state whose head on tape {lit}`i` is at cell {lit}`p`. -/
@@ -210,7 +202,6 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
-  have hout : ∀ s : ℕ, (retLeft i).outputSymbol (retCfg i cfg p s) = none := fun _ ↦ rfl
   have hzero : retCfg i cfg p 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm
@@ -218,32 +209,13 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     · rfl
     · change Function.update cfg.workTapePos i (p - ((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show p - ((0 : ℕ) : ℤ) = cfg.workTapePos i by omega, Function.update_eq_self]
-  have key : ∀ s : ℕ, s ≤ (p + 1).toNat →
-      (retLeft i).configs cfg s = retCfg i cfg p s ∧ (retLeft i).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key (p + 1).toNat (le_refl _)
-  have ht : (p + 2).toNat = (p + 1).toNat + 1 := by omega
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [ht, configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' j
-    by_cases hlt : t' ≤ (p + 1).toNat
-    · rw [(key t' hlt).1]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-    · rw [show t' = (p + 1).toNat + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-  · rw [ht, outputString_succ, hon, hcn, hout _]
-    rfl
+  rw [show (p + 2).toNat = (p + 1).toNat + 1 by omega]
+  have key := RunsTo.ofFamily (retLeft i) (retCfg i cfg p) (p + 1).toNat B _
+    (fun _ _ ↦ Option.some_ne_none ()) (fun s hs ↦ hstep s (by omega)) hhalt rfl
+    (fun _ _ ↦ rfl)
+    (fun s hs j ↦ update_workTapePos_bounds i hpos (p - s) (by omega) (by omega) j)
+    (fun j ↦ update_workTapePos_bounds i hpos 0 (by omega) (by omega) j)
+  rwa [hzero] at key
 
 /-- {name}`returnTape` from cell {lit}`p` with {lit}`0 ≤ p ≤ w.length` runs
 {lit}`p + 2` steps and parks the head. -/

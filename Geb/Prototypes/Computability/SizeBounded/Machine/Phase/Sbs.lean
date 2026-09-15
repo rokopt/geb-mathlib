@@ -343,34 +343,14 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
       omega
     · rw [ite_eq_right h]
       omega
-  have key : ∀ s : ℕ, s ≤ u.length →
-      (sbsWalk b x y j).configs cfg s = sbsCfg x y j cfg u v s ∧
-        (sbsWalk b x y j).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key u.length (le_refl _)
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' l
-    by_cases hlt : t' ≤ u.length
-    · rw [(key t' hlt).1]
-      exact hbound (t' : ℤ) ((min t' v.length : ℕ) : ℤ) (t' : ℤ) (by omega) (by omega) (by omega)
-        (by omega) (by omega) (by omega) l
-    · rw [show t' = u.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact hbound (u.length : ℤ) ((min u.length v.length : ℕ) : ℤ) ((sbsSem b u v).length : ℤ)
-        (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) l
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  have key := RunsTo.ofFamily (sbsWalk b x y j) (sbsCfg x y j cfg u v) u.length B _
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
+    (fun s hs l ↦ hbound (s : ℤ) ((min s v.length : ℕ) : ℤ) (s : ℤ) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) l)
+    (fun l ↦ hbound (u.length : ℤ) ((min u.length v.length : ℕ) : ℤ)
+      ((sbsSem b u v).length : ℤ) (by omega) (by omega) (by omega) (by omega) (by omega)
+      (by omega) l)
+  rwa [hzero] at key
 
 end
 

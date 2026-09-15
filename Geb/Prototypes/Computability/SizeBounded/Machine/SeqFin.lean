@@ -61,10 +61,8 @@ public section
 /-- {name}`idle` transforms by the identity in one step. -/
 theorem idle_transforms {k : ℕ} (B : ℕ) : Transforms (idle (k := k)) (fun σ ↦ σ) 1 B := by
   intro _ cfg σ hq hpark hσ hB _
-  have hstep : idle.configs cfg 1 = after cfg σ := by
-    have e1 : idle.configs cfg 1 = idle.step (idle.configs cfg 0) :=
-      configs_succ_eq_step' (tm := idle) (cfg := cfg) (t := 0)
-    rw [e1, configs_zero, step_of_state _ _ () hq]
+  have hhalt : idle.step cfg = after cfg σ := by
+    rw [step_of_state _ _ () hq]
     apply Cfg.ext
     · rfl
     · change moveInputPos cfg.inputPos 0 = (after cfg σ).inputPos
@@ -75,29 +73,20 @@ theorem idle_transforms {k : ℕ} (B : ℕ) : Transforms (idle (k := k)) (fun σ
     · change (fun i ↦ cfg.workTapePos i + (0 : ℤ)) = (after cfg σ).workTapePos
       funext i
       rw [add_zero, after_workTapePos]
-  refine ⟨1, le_refl 1, ⟨⟨⟨?_, hstep, ?_⟩, ?_⟩, ?_⟩⟩
-  · intro t' ht'
-    have ht0 : t' = 0 := by omega
-    rw [ht0, configs_zero, hq]
+  have hlive : cfg.state ≠ none := by
+    rw [hq]
     exact Option.some_ne_none _
-  · intro t' ht' i
-    have : t' = 0 ∨ t' = 1 := by omega
-    rcases this with h0 | h1
-    · rw [h0, configs_zero, hpark i]
-      constructor <;> omega
-    · rw [h1, hstep, after_workTapePos, hpark i]
-      constructor <;> omega
-  · have e1 : idle.outputString cfg 1 = idle.outputString cfg 0 ++
-        (idle.outputSymbol (idle.configs cfg 0)).toList :=
-      outputString_succ idle cfg 0
-    rw [e1, configs_zero]
-    have hout : idle.outputSymbol cfg = none := by
-      unfold outputSymbol
-      rw [hq]
-      rfl
-    rw [hout]
+  have hout : idle.outputSymbol cfg = none := by
+    unfold outputSymbol
+    rw [hq]
     rfl
-  · rfl
+  have hbound : ∀ i, -1 ≤ cfg.workTapePos i ∧ cfg.workTapePos i ≤ B := by
+    intro i
+    rw [hpark i]
+    constructor <;> omega
+  exact ⟨1, le_refl 1, RunsTo.ofFamily idle (fun _ ↦ cfg) 0 B _ (fun _ _ ↦ hlive)
+    (fun _ h ↦ absurd h (by omega)) hhalt rfl (fun _ _ ↦ hout) (fun _ _ i ↦ hbound i)
+    (fun i ↦ hbound i)⟩
 
 /-- Sequencing a family of machines indexed by {lit}`Fin m`, in index order,
 by recursion on {lit}`m`. The state is an iterated binary sum, so that the

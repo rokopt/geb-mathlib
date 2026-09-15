@@ -158,31 +158,11 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     · rfl
     · change Function.update cfg.workTapePos i (((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show (((0 : ℕ) : ℤ)) = cfg.workTapePos i by omega, Function.update_eq_self]
-  have key : ∀ s : ℕ, s ≤ w.length →
-      (walkEnd i).configs cfg s = walkCfg i cfg s ∧ (walkEnd i).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' j
-    by_cases hlt : t' ≤ w.length
-    · rw [(key t' hlt).1]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-    · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  have key := RunsTo.ofFamily (walkEnd i) (walkCfg i cfg) w.length B _
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
+    (fun s hs j ↦ update_workTapePos_bounds i hpos (s : ℤ) (by omega) (by omega) j)
+    (fun j ↦ update_workTapePos_bounds i hpos (w.length : ℤ) (by omega) (by omega) j)
+  rwa [hzero] at key
 
 /-- The configuration of {name}`blankLeft` after {lit}`s` steps from a start
 in its initial state at cell {lit}`w.length - 1` of a register holding
@@ -327,32 +307,12 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
         cfg.workTapePos
       rw [show ((w.length : ℤ) - 1 - ((0 : ℕ) : ℤ)) = cfg.workTapePos i by omega,
         Function.update_eq_self]
-  have key : ∀ s : ℕ, s ≤ w.length →
-      (blankLeft i).configs cfg s = blankCfg i cfg w s ∧
-        (blankLeft i).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' j
-    by_cases hlt : t' ≤ w.length
-    · rw [(key t' hlt).1]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-    · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  have key := RunsTo.ofFamily (blankLeft i) (blankCfg i cfg w) w.length B _
+    (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
+    (fun s hs j ↦ update_workTapePos_bounds i hpos ((w.length : ℤ) - 1 - s) (by omega)
+      (by omega) j)
+    (fun j ↦ update_workTapePos_bounds i hpos 0 (by omega) (by omega) j)
+  rwa [hzero] at key
 
 /-- {name}`clear` from a parked register holding {lit}`w` runs
 {lit}`2 * w.length + 3` steps, empties it and parks. -/
