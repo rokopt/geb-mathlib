@@ -8,7 +8,8 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Basic
 public import Geb.Mathlib.Data.Vector.OfFn
 public import Mathlib.Algebra.Order.BigOperators.Group.List
-import Mathlib.Algebra.Order.Ring.Nat
+public import Mathlib.Algebra.Order.Group.Nat
+public import Mathlib.Tactic.Bound.Init
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true
