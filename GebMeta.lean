@@ -187,6 +187,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Transport,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Main,
+   `Geb.Prototypes.Computability.SizeBounded.Machine.Exec,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs,

@@ -18,6 +18,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Bound
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Transport
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Main
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Exec
 
 set_option doc.verso true
 
