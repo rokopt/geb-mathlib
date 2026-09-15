@@ -318,17 +318,12 @@ conjunction short-circuiting on rejection.
 algebra `S(sbs₀, sbs₁)` over bitstrings and writes
 `Geb.BitTree.validBool` in it, with non-size-increase proved for every
 expression (`Geb.SizeBounded.nsi_eval`) and no side condition per recursion.
-What is cited rather than proved is the paper's Theorem 5.7, the
-machine-level polynomial-time and linear-space reading of membership.
-Follow-ups:
+`Geb.SizeBounded.Machine.computableInTimeAndSpace_sem` proves the paper's
+Theorem 5.7, the machine-level polynomial-time and linear-space reading of
+membership, for every unary expression, by a multi-tape machine compiled
+from the expression's syntax; the converse, completeness, is not
+formalized. Follow-ups:
 
-- `SizeBounded/Cost.lean` proves the paper's Lemma 2.2 in the model of the
-  algebra's own evaluator: `Geb.SizeBounded.time_le_poly` and
-  `Geb.SizeBounded.space_le`. The machine bound remains: a compilation of that
-  evaluator to Cslib's multi-tape machines whose step and cell counts are the
-  ones accounted for, composed with the bounds so that every expression, the
-  recognizers among them, is `Turing.MultiTapeTM.ComputableInTimeAndSpace`
-  at a polynomial and a linear function.
 - The other bit-tree encodings (`BitTree/Elias`, `BitTree/EliasBinary`,
   `BitTreeScanner`) as expressions, each needing a comparison between a
   binary length field and a unary count.

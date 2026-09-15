@@ -1717,8 +1717,10 @@ checklist and in CI.
   `BitTree.recognize_resources` transfers the existing machine's
   simultaneous bounds `n + 3` time and `n + 2` space to its singleton
   output. This transfer does not establish a bound for the Lean
-  evaluator. The general machine characterization in Mazzanti's
-  Theorem 5.7 remains unformalized.
+  evaluator. The soundness half of Mazzanti's Theorem 5.7, the machine
+  characterization, is proved for the bitstring algebra by
+  `Geb.SizeBounded.Machine.computableInTimeAndSpace_sem`; completeness
+  remains unformalized.
   The development also proves that the empty/singleton convention is
   literally length-nonincreasing exactly when empty input is rejected,
   that the algebra has no internal unrestricted universal evaluator,
@@ -2516,8 +2518,8 @@ checklist and in CI.
   branches and `Geb.SizeBounded.isBitTreeSem_eq_singleton_iff` identifies the
   accepted words with the encodings of trees. `Geb.SizeBounded.nsi_isBitTree`
   is its non-size-increase by the closure theorem alone, at constant two.
-  The polynomial-time, linear-space reading is [Mazzanti2016] Theorem 5.7,
-  cited and not reproved. Depends on
+  The polynomial-time, linear-space reading, [Mazzanti2016] Theorem 5.7, is
+  `Geb.SizeBounded.Machine.computableInTimeAndSpace_sem`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Combinators` and
   `Geb.Prototypes.Computability.BitTree.Encoding`. `Classical.choice`-free.
 - `Geb/Prototypes/Computability/SizeBounded/Cost.lean` — an evaluator of the
@@ -2534,3 +2536,192 @@ checklist and in CI.
   this evaluator into a multi-tape machine whose step and cell counts are
   those accounted for. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Machine.lean` — the machine
+  calculus: a register holds a bitstring on a work tape in the reversed
+  layout `Geb.SizeBounded.Machine.tapeOf`, cell `z` the word's `z`th bit
+  from the end. `Geb.SizeBounded.Machine.Transforms` is the contract a
+  program of the calculus meets: from a parked configuration holding a
+  register valuation, `Geb.SizeBounded.Machine.RunsTo` a halted
+  configuration holding the valuation's image under the program's
+  transformer, within a step bound, whenever both valuations are within a
+  length bound; `Geb.SizeBounded.Machine.Emits` restates the run by its
+  emitted output. `Geb.SizeBounded.Machine.seq` and
+  `Geb.SizeBounded.Machine.seqFin` sequence two programs and a finite
+  family of them, composing their transformers, and
+  `Geb.SizeBounded.Machine.Emits.ofFamily` reads a run through a family of
+  live configurations in closed form. `Register.lean` is
+  `Classical.choice`-free; `Program.lean`, `Emit.lean`, `Seq.lean` and
+  `SeqFin.lean` are listed in `GebMeta.classicalAllowedModules`: their
+  statements mention `Turing.MultiTapeTM.configs`,
+  `Turing.MultiTapeTM.outputString` and
+  `Turing.MultiTapeTM.spaceUsedByTape`, each depending on
+  `Classical.choice` through Cslib's `Turing.MultiTapeTM.Cfg.inputSymbol`
+  or mathlib's `Finset.image`. Depends on Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic` and
+  `Computability.Machines.Turing.MultiTape.TapeLemmas` and on
+  `Geb.Mathlib.Data.FinEnum`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Phase.lean` — the phase
+  machines the primitives are sequenced from, each with its closed-form
+  run: `returnTape` returns a head to cell `0` (`Phase/Return.lean`);
+  `clear` empties a register from a parked head (`Phase/Clear.lean`);
+  `copyWalk` and `revWalk` copy a register, and its reverse, onto an empty
+  one (`Phase/Walk.lean`); `sbsWalk` is the size-bounded successor's sweep
+  (`Phase/Sbs.lean`); `writeBit` and `constWalk` write one bit and a
+  constant word (`Phase/Write.lean`); `inRight`, `inBack` and `inLeft` load
+  the input into a register (`Phase/Input.lean`); and `emitLeft` emits a
+  register's word (`Phase/Output.lean`). Every module of the directory is
+  listed in `GebMeta.classicalAllowedModules`: each phase's statements mention
+  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  depending on `Classical.choice` through Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Program`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Emit`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Seq` and
+  `Geb.Prototypes.Computability.SizeBounded.Basic`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Primitives.lean` — the
+  primitives sequenced from the phase machines, each transforming the
+  register valuation by a `Function.update`:
+  `Geb.SizeBounded.Machine.copy` (`Primitives/Copy.lean`),
+  `Geb.SizeBounded.Machine.const` (`Primitives/Const.lean`),
+  `Geb.SizeBounded.Machine.sbs`, at `Geb.SizeBounded.sbsSem`
+  (`Primitives/Sbs.lean`), and `Geb.SizeBounded.Machine.copyRev`, at
+  `List.reverse` (`Primitives/CopyRev.lean`), each with its `Transforms`
+  contract. Every module of the directory is listed in
+  `GebMeta.classicalAllowedModules`: each primitive's statements mention
+  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  depending on `Classical.choice` through Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Sbs` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Loop.lean` — the
+  recursion loop: `Geb.SizeBounded.Machine.caseLoop` peels the bits of a
+  register's word one at a time, from the head, running a body per bit and
+  halting when the register empties (`Loop/Basic.lean`); its three control
+  phases between two bodies (`Loop/Phases.lean`); one iteration,
+  `caseLoop_iter`, composing the phases with a body's run
+  (`Loop/Iter.lean`); and its contract, `Geb.SizeBounded.Machine.loopF`
+  the transformer and `Transforms.caseLoop` the loop's `Transforms`
+  statement, recursion on the register's word applying each bit's body in
+  order (`Loop/Transforms.lean`). Every module of the directory is listed
+  in `GebMeta.classicalAllowedModules`: each mentions
+  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  depending on `Classical.choice` through Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Program` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Compile.lean` — the
+  compilation of the algebra into the calculus: `compile` folds the
+  signature into a program by the slice W-type's eliminator, in the shape
+  of the model fold `Geb.SizeBounded.eval` (`Compile/Basic.lean`);
+  `stepBound` reads a step bound off the syntax (`Compile/Bound.lean`);
+  `Correct` is the contract a compiled program meets
+  (`Compile/Correct.lean`); the valuation a family of fresh writers
+  produces (`Compile/Family.lean`); the substitution case, `correct_comp`
+  (`Compile/Comp.lean`); the transformer of a recursion body,
+  `srnBody_transforms` (`Compile/Body.lean`); the loop computes
+  simultaneous recursion, `loopF_evalSRN` (`Compile/LoopEval.lean`); the
+  valuation entering the loop, `srnInit_valuation` (`Compile/SrnInit.lean`);
+  the recursion case, `correct_srn` (`Compile/Srn.lean`); and
+  `SOf.correct`, that every expression's compilation meets the contract
+  (`Compile/Theorem.lean`). `Basic.lean`, `Bound.lean`, `Family.lean`,
+  `LoopEval.lean` and `SrnInit.lean` are `Classical.choice`-free;
+  `Correct.lean`, `Comp.lean`, `Body.lean`, `Srn.lean` and `Theorem.lean`
+  are listed in `GebMeta.classicalAllowedModules`, since their contracts
+  are stated over `Transforms`, which mentions
+  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  depending on `Classical.choice` through Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.CopyRev`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Transforms`,
+  `Geb.Prototypes.Computability.SizeBounded.Basic`,
+  `Geb.Mathlib.Data.FinEnum` and
+  `Geb.Mathlib.Computability.Cobham.Basic`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Bound.lean` — the two
+  resources the compilation spends, read off an expression's syntax:
+  `Geb.SizeBounded.Machine.regsBound` folds the register need of each node
+  over the tree and identifies the result with the compiled program's
+  register need, and `Geb.SizeBounded.Machine.isPolyBounded_stepBound`
+  proves `Geb.SizeBounded.Machine.stepBound` bounded by a polynomial in
+  the length bound, node by node from the closure lemmas of
+  `Geb.SizeBounded.IsPolyBounded`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Bound` and
+  `Geb.Prototypes.Computability.SizeBounded.Cost`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Wrapper.lean` — the
+  machine of an expression: `Geb.SizeBounded.Machine.reader` loads the
+  input into a register and parks its head, and
+  `Geb.SizeBounded.Machine.writer` emits a register's word;
+  `Geb.SizeBounded.Machine.machine` sequences the reader, the compiled
+  program of a unary expression and the writer, over `regsBound e.1.1 + 2`
+  registers. `Geb.SizeBounded.Machine.machine_emits` composes the
+  reader's run, the compiled program's contract
+  `Geb.SizeBounded.Machine.SOf.correct` and the writer's emission into the
+  machine's emission of the expression's value. The module is listed in
+  `GebMeta.classicalAllowedModules`: its statements mention
+  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  depending on `Classical.choice` through Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Seq`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Output`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem`
+  and `Geb.Prototypes.Computability.SizeBounded.Machine.Bound`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Transport.lean` — a
+  `Turing.MultiTapeTM` over `Bool` and an arbitrary state type, relabeled
+  by `Geb.SizeBounded.Machine.relabel` over the symbols `Fin 2` and the
+  states `Fin s` along an equivalence of the state type: symbols travel by
+  `finTwoEquiv` and states by the equivalence, so that the relabeled
+  machine runs the original one step for step. `configs_relabel`,
+  `outputString_relabel`, `initCfg_relabel` and `spaceUsed_relabel` are
+  the commutation lemmas the relabeling meets, the last needed because
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` is stated over the symbols
+  `Fin 2`. The module is listed in `GebMeta.classicalAllowedModules`: its
+  statements mention `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends
+  on `Classical.choice`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Program`, mathlib's
+  `Logic.Equiv.Defs` and Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Main.lean` —
+  `Geb.SizeBounded.Machine.computableInTimeAndSpace_sem`: the meaning of a
+  unary expression of the algebra is
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` at a polynomial time bound
+  and a linear space bound, on the machine `Geb.SizeBounded.Machine.machine`
+  relabeled by `Geb.SizeBounded.Machine.relabel` over `Fin 2` and an
+  initial segment of the naturals, the run `machine_emits` names. The
+  machine reading of [Mazzanti2016] Theorem 5.7, for every unary
+  expression, by the compiled program of the expression rather than the
+  paper's Theorem 5.3 encoding of simultaneous recursion into a single
+  one. The module is listed in `GebMeta.classicalAllowedModules`: its
+  statement mentions `Turing.MultiTapeTM.ComputableInTimeAndSpace`, which
+  depends on `Classical.choice` through Cslib's
+  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Transport`.
+- `Geb/Prototypes/Computability/SizeBounded/Machine/Exec.lean` — an
+  executable configuration: `Turing.MultiTapeTM.Cfg` carries its tapes and
+  heads as functions, so `Turing.MultiTapeTM.step` builds each successor's
+  fields as closures over its predecessor's and an iteration costs
+  exponential time in the step count; `Geb.SizeBounded.Machine.ExecCfg`
+  holds each tape as a `Std.HashMap` and the heads as a `Vector`,
+  computing every field once per step, so an iteration costs linear time.
+  `Geb.SizeBounded.Machine.ExecCfg.toCfg` sends an executable
+  configuration to the configuration it denotes, and
+  `Geb.SizeBounded.Machine.toCfg_execStep` and `toCfg_execStep_iterate`
+  identify `Geb.SizeBounded.Machine.execStep` and its iterates with
+  `Turing.MultiTapeTM.step` and `.configs` under that denotation. The
+  module is listed in `GebMeta.classicalAllowedModules`: its statements
+  mention `Turing.MultiTapeTM.step`, which depends on `Classical.choice`
+  through `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Program`, Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic` and
+  `Std.Data.HashMap.Lemmas`.
