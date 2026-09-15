@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Phases
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # One iteration of the recursion loop
 
@@ -23,10 +22,10 @@ set to {lit}`r`. The body runs under its contract and halts, and its halting
 step lifts to the seek state, where the next iteration begins.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statement mentions {name}`Turing.MultiTapeTM.configs` and
+statement mentions {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main statements
 
@@ -37,6 +36,8 @@ statement mentions {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, loop, recursion, register
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -112,7 +113,8 @@ theorem caseLoop_iter {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
       ({ state := some bodyF.q₀
          inputPos := cfg.inputPos
          workTapes := fun i ↦ tapeOf (Function.update σ R r i)
-         workTapePos := cfg.workTapePos } : Cfg k Bool SF input)
+         workTapePos := cfg.workTapePos
+         output := cfg.output } : Cfg k Bool SF input)
       (Function.update σ R r) rfl hpark (fun _ ↦ rfl) hupd hb
     refine ⟨r.length + 2 + 1 + (r.length + 1) + t, by omega, hchain.trans ?_⟩
     have hl := hrun.toReaches.liftBodyF R bodyT
@@ -124,7 +126,8 @@ theorem caseLoop_iter {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
       ({ state := some bodyT.q₀
          inputPos := cfg.inputPos
          workTapes := fun i ↦ tapeOf (Function.update σ R r i)
-         workTapePos := cfg.workTapePos } : Cfg k Bool ST input)
+         workTapePos := cfg.workTapePos
+         output := cfg.output } : Cfg k Bool ST input)
       (Function.update σ R r) rfl hpark (fun _ ↦ rfl) hupd hb
     refine ⟨r.length + 2 + 1 + (r.length + 1) + t, by omega, hchain.trans ?_⟩
     have hl := hrun.toReaches.liftBodyT R bodyF

@@ -10,8 +10,7 @@ public import Geb.Prototypes.Computability.BitTree.Machine
 public import Geb.Prototypes.Computability.BitTree.Elias.CodeBits
 public import Mathlib.Data.List.Induction
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The bit-tree recognizer as an expression of the algebra
 
@@ -43,6 +42,8 @@ about the denotational Lean evaluator is made here.
 
 bitstring, recognizer, function algebra, simultaneous recursion
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

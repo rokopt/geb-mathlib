@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Cost
 public import Geb.Prototypes.Computability.BitTreeScanner.Machine
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
 /-!
 # The two-pass tree scanner's output against `validBool`
@@ -32,9 +33,10 @@ public import Geb.Prototypes.Computability.BitTreeScanner.Machine
 ## Implementation notes
 
 The module is admitted to `GebMeta.classicalAllowedModules`. Its subject is
-the correspondence between `bitTreeScanner` and Cslib's
-`Turing.MultiTapeTM.outputString`, which reads the input via
-`Turing.MultiTapeTM.Cfg.inputSymbol`, the root
+the correspondence between `bitTreeScanner` and the output emitted along a
+run of Cslib's `Turing.MultiTapeTM.runFrom`
+(`Turing.MultiTapeTM.outputString`), which reads the input via
+`Turing.Cfg.inputSymbol`, the root
 `Geb/Prototypes/Computability/BitTreeScanner/Steps/Basic.lean`'s
 implementation notes name for that module's `Classical.choice` dependency;
 `sampleWords` is packaging, the literal the other declarations are stated
@@ -79,9 +81,9 @@ theorem sampleOutputs_eq :
 before. -/
 theorem halted_sampleWords :
     sampleWords.map (fun w ↦
-      (decide ((bitTreeScanner.configs (bitTreeScanner.initCfg (w.map boolEmb))
+      (decide ((bitTreeScanner.runFrom (bitTreeScanner.initCfg (w.map boolEmb))
           (totalTime w)).state = none),
-        decide ((bitTreeScanner.configs (bitTreeScanner.initCfg (w.map boolEmb))
+        decide ((bitTreeScanner.runFrom (bitTreeScanner.initCfg (w.map boolEmb))
           (totalTime w - 1)).state = none))) =
       sampleWords.map fun _ ↦ (true, false) := by
   decide +kernel

@@ -10,8 +10,7 @@ import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Comp
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Correctness of the compilation
 
@@ -57,6 +56,8 @@ encoding of simultaneous recursion into a single recursion.
 
 Turing machine, compilation, correctness, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

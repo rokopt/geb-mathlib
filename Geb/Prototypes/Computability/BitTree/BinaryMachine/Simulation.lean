@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Machine
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Input transitions of the binary-counter recognizer
 
@@ -26,6 +25,8 @@ counter-increment phase. The work tapes are unchanged during this transition.
 
 Turing machine, simulation, binary tree, binary counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -65,10 +66,12 @@ theorem inputSymbol_end {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) inp
   unfold Cfg.inputSymbol
   split_ifs <;> rfl
 
-/-- At the right end marker only the finite control changes to the halting state. -/
+/-- At the right end marker the finite control changes to the halting state and the decision
+is emitted. -/
 theorem step_end {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (m : Mode) (hq : cfg.state = some (modeState m)) (hi : cfg.inputSymbol = none) :
-    machine.step cfg = { cfg with state := none } := by
+    machine.step cfg =
+      { cfg with state := none, output := cfg.output ++ [boolEmb (decide (m = .done))] } := by
   rw [step_of_state _ _ _ hq, hi, tr_end]
   apply Cfg.ext <;> simp [finish]
 
@@ -85,13 +88,13 @@ theorem outputSymbol_end {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) in
 /-- Bounds on consecutive execution segments combine into a bound on their concatenation. -/
 theorem headBound_add {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
     (width a b : ℕ)
-    (ha : ∀ t ≤ a, HeadBound width (machine.configs cfg t))
-    (hb : ∀ t ≤ b, HeadBound width (machine.configs (machine.configs cfg a) t)) :
-    ∀ t ≤ a + b, HeadBound width (machine.configs cfg t) := by
+    (ha : ∀ t ≤ a, HeadBound width (machine.runFrom cfg t))
+    (hb : ∀ t ≤ b, HeadBound width (machine.runFrom (machine.runFrom cfg a) t)) :
+    ∀ t ≤ a + b, HeadBound width (machine.runFrom cfg t) := by
   intro t ht
   by_cases h : t ≤ a
   · exact ha t h
-  · rw [show t = a + (t - a) by omega, configs_add]
+  · rw [show t = a + (t - a) by omega, runFrom_add]
     exact hb (t - a) (by omega)
 
 end Geb.BitTree.BinaryMachine

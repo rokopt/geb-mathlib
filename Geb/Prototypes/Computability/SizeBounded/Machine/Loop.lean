@@ -10,11 +10,12 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Phases
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Iter
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Transforms
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The recursion loop
 
 Index for the modules on the loop of the machine calculus: the machine that
 peels the bits of a register's word one at a time and runs a body for each.
 -/
+
+set_option doc.verso true

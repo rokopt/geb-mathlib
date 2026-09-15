@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Layout
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A binary-counter machine for Elias-length trees
 
@@ -45,6 +44,8 @@ two and three are tagged digits. A mismatch tape carries a marker at its origin.
 
 Turing machine, binary counter, Elias delta code, bitstring tree
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -140,41 +141,41 @@ def siteNext : Fin 6 → Control
   | 5 => stPayloadBit
 
 /-- A transition consuming one input symbol without changing work tapes. -/
-def consume (q : Control) : TransitionOut 9 (Fin 4) Control where
-  inputMove := 1
-  workActions _ := (none, 0)
-  outS := none
-  q' := some q
+def consume (q : Control) : Action 9 (Fin 4) Control where
+  inputTape := 1
+  workTapes _ := (none, 0)
+  output := none
+  state := some q
 
 /-- A stationary transition with the given work actions. -/
 def act (q : Control) (w : Fin 9 → Option (Option (Fin 4)) × SignType) :
-    TransitionOut 9 (Fin 4) Control where
-  inputMove := 0
-  workActions := w
-  outS := none
-  q' := some q
+    Action 9 (Fin 4) Control where
+  inputTape := 0
+  workTapes := w
+  output := none
+  state := some q
 
 /-- A transition consuming one input symbol with the given work actions. -/
 def consumeAct (q : Control) (w : Fin 9 → Option (Option (Fin 4)) × SignType) :
-    TransitionOut 9 (Fin 4) Control where
-  inputMove := 1
-  workActions := w
-  outS := none
-  q' := some q
+    Action 9 (Fin 4) Control where
+  inputTape := 1
+  workTapes := w
+  output := none
+  state := some q
 
 /-- Move the input head one cell left while rewinding. -/
-def rewindTr : TransitionOut 9 (Fin 4) Control where
-  inputMove := -1
-  workActions _ := (none, 0)
-  outS := none
-  q' := some stRewind
+def rewindTr : Action 9 (Fin 4) Control where
+  inputTape := -1
+  workTapes _ := (none, 0)
+  output := none
+  state := some stRewind
 
 /-- Emit one boolean and halt. -/
-def finish (b : Bool) : TransitionOut 9 (Fin 4) Control where
-  inputMove := 0
-  workActions _ := (none, 0)
-  outS := some (boolEmb b)
-  q' := none
+def finish (b : Bool) : Action 9 (Fin 4) Control where
+  inputTape := 0
+  workTapes _ := (none, 0)
+  output := some (boolEmb b)
+  state := none
 
 /-- The untagged digit symbol of a bit. -/
 def plain (b : Bool) : Fin 4 := if b then 1 else 0
@@ -254,7 +255,7 @@ def phaseTr (q : Control) (work : Fin 9 → Option (Fin 4)) : Control × Actions
   else (stDead, stay)
 
 /-- The initialization transition. -/
-def initTr : TransitionOut 9 (Fin 4) Control :=
+def initTr : Action 9 (Fin 4) Control :=
   act stCount (fun i ↦
     if i = 0 then (some (some 3), 0)
     else if i = 1 then (some (some 2), 0)

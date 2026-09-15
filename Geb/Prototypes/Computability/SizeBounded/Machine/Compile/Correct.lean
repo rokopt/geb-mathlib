@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Bound
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Correctness of the compiled programs
 
@@ -46,6 +45,8 @@ equations of {name}`Function.update`.
 
 Turing machine, compilation, correctness, register, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

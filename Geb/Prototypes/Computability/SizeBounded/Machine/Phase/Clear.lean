@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The clearing phases
 
@@ -20,10 +19,10 @@ the two through a {name}`Geb.SizeBounded.Machine.moveLeft` that steps from
 the blank after the word onto the word's last cell.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -43,6 +42,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 Turing machine, register, head position
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -54,21 +55,21 @@ first blank, without moving. -/
 @[expose] def walkEnd {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
   q₀ := ()
   tr _ _ work :=
-    { inputMove := 0
-      workActions := fun j ↦ (none, if j = i then (if (work i).isSome then 1 else 0) else 0)
-      outS := none
-      q' := if (work i).isSome then some () else none }
+    { inputTape := 0
+      workTapes := fun j ↦ (none, if j = i then (if (work i).isSome then 1 else 0) else 0)
+      output := none
+      state := if (work i).isSome then some () else none }
 
 /-- Move the head of tape {lit}`i` left while it reads a bit, blanking each
 bit read; on reading a blank, move right and halt. -/
 @[expose] def blankLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
   q₀ := ()
   tr _ _ work :=
-    { inputMove := 0
-      workActions := fun j ↦
+    { inputTape := 0
+      workTapes := fun j ↦
         if j = i then (if (work i).isSome then (some none, -1) else (none, 1)) else (none, 0)
-      outS := none
-      q' := if (work i).isSome then some () else none }
+      output := none
+      state := if (work i).isSome then some () else none }
 
 /-- Empty register {lit}`i` from a parked head: walk to its end, then blank
 leftwards and park. -/
@@ -123,6 +124,7 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (walkEnd i).step (walkCfg i cfg w.length) =
       { cfg with
         state := none
@@ -150,6 +152,7 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         rw [Function.update_self, ite_eq_left rfl, ite_eq_right (by simp), SignType.coe_zero,
           add_zero]
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout : ∀ s : ℕ, (walkEnd i).outputSymbol (walkCfg i cfg s) = none := fun _ ↦ rfl
   have hzero : walkCfg i cfg 0 = cfg := by
     apply Cfg.ext
@@ -158,6 +161,7 @@ theorem walkEnd_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     · rfl
     · change Function.update cfg.workTapePos i (((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show (((0 : ℕ) : ℤ)) = cfg.workTapePos i by omega, Function.update_eq_self]
+    · rfl
   have key := RunsTo.ofFamily (walkEnd i) (walkCfg i cfg) w.length B _
     (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
     (fun s hs j ↦ update_workTapePos_bounds i hpos (s : ℤ) (by omega) (by omega) j)
@@ -204,7 +208,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
           rw [List.length_drop]; omega,
         List.drop_eq_getElem_cons hs, tapeOf_update_none]
     have hact : ∀ j : Fin k, ((blankLeft i).tr () (blankCfg i cfg w s).inputSymbol
-        (blankCfg i cfg w s).workTapeSymbols).workActions j =
+        (blankCfg i cfg w s).workTapeSymbols).workTapes j =
         if j = i then ((some none : Option (Option Bool)), (-1 : SignType)) else (none, 0) := by
       intro j
       change (if j = i then (if ((blankCfg i cfg w s).workTapeSymbols i).isSome
@@ -247,6 +251,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
             ((0 : SignType) : ℤ) =
           Function.update cfg.workTapePos i ((w.length : ℤ) - 1 - ((s + 1 : ℕ) : ℤ)) j
         rw [Function.update_of_ne hj, Function.update_of_ne hj, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hpB : (w.length : ℤ) - 1 ≤ B := hp ▸ (hpos i).2
   have hhalt : (blankLeft i).step (blankCfg i cfg w w.length) =
       { cfg with
@@ -257,7 +262,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
       rw [hsym _, tapeOf_neg _ _ (by omega)]
       rfl
     have hact : ∀ j : Fin k, ((blankLeft i).tr () (blankCfg i cfg w w.length).inputSymbol
-        (blankCfg i cfg w w.length).workTapeSymbols).workActions j =
+        (blankCfg i cfg w w.length).workTapeSymbols).workTapes j =
         if j = i then ((none : Option (Option Bool)), (1 : SignType)) else (none, 0) := by
       intro j
       change (if j = i then (if ((blankCfg i cfg w w.length).workTapeSymbols i).isSome
@@ -296,6 +301,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
         change Function.update cfg.workTapePos i ((w.length : ℤ) - 1 - ((w.length : ℕ) : ℤ)) j +
             ((0 : SignType) : ℤ) = Function.update cfg.workTapePos i 0 j
         rw [Function.update_of_ne hj, Function.update_of_ne hj, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout : ∀ s : ℕ, (blankLeft i).outputSymbol (blankCfg i cfg w s) = none := fun _ ↦ rfl
   have hzero : blankCfg i cfg w 0 = cfg := by
     apply Cfg.ext
@@ -307,6 +313,7 @@ theorem blankLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k 
         cfg.workTapePos
       rw [show ((w.length : ℤ) - 1 - ((0 : ℕ) : ℤ)) = cfg.workTapePos i by omega,
         Function.update_eq_self]
+    · rfl
   have key := RunsTo.ofFamily (blankLeft i) (blankCfg i cfg w) w.length B _
     (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
     (fun s hs j ↦ update_workTapePos_bounds i hpos ((w.length : ℤ) - 1 - s) (by omega)

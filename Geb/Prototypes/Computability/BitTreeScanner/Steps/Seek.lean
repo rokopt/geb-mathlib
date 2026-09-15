@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.BitTreeScanner.Cost
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Basic
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Transition
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's first pass
 
@@ -42,6 +41,8 @@ implementation notes explain.
 Turing machine, binary counter, carry, two passes
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTreeScanner
@@ -69,7 +70,7 @@ theorem seekCfg_step_one (h : i < w.length) (hk : 0 < carryLengthB i.bits) :
     (by rw [hsym, inputSymbol_of_inputPos w _ i h rfl]; exact tr_seek_one _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -107,7 +108,7 @@ theorem seekCarryCfg_step (j : ℕ) (hjk : j < carryLengthB i.bits) :
     (some (some 0), 1) rfl (by rw [hsym]; exact tr_seekCarry_one _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j' z
     match j' with
     | 0 => rfl
@@ -158,7 +159,7 @@ theorem seekCarryCfg_flip :
     (by rw [hsym]; exact tr_seekCarry_low _ _ _ _ hlow)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -197,7 +198,7 @@ theorem seekBackCfg_step (j : ℕ) (hj : j < carryLengthB i.bits) :
     (none, -1) rfl (by rw [hsym]; exact tr_seekBack_digit _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · rfl
   · funext j'
     match j' with
@@ -222,7 +223,7 @@ theorem seekBackCfg_exit (h : i < w.length) :
     (by rw [hsym, inputSymbol_of_inputPos w _ i h rfl]; exact tr_seekBack_base _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (seekBackCfg w i hi 0).inputPos SignType.pos =
       (seekCfg w (i + 1) h).inputPos
     rw [moveInputPos_pos_of_ne_right _ (by change i + 1 ≠ _; rw [List.length_map]; omega)]
@@ -258,7 +259,7 @@ theorem seekCfg_step_low (h : i < w.length) (hk : carryLengthB i.bits = 0) :
     (by rw [hsym, inputSymbol_of_inputPos w _ i h rfl]; exact tr_seek_low _ _ _ _ hlow)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (seekCfg w i hi).inputPos SignType.pos = (seekCfg w (i + 1) h).inputPos
     rw [moveInputPos_pos_of_ne_right _ (by change i + 1 ≠ _; rw [List.length_map]; omega)]
     exact Fin.ext rfl
@@ -330,7 +331,7 @@ theorem initCfg_step :
     (some (some 3), 1) (some (some 3), 0) (some (some 3), 1) rfl (tr_init _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (bitTreeScanner.initCfg (w.map boolEmb)).inputPos 0 = _
     rw [moveInputPos_zero]
     exact Fin.ext (Fin.val_one _)
@@ -379,7 +380,7 @@ theorem seekCfg_exit :
     (none, -1) rfl (by rw [inputSymbol_end w _ rfl]; exact tr_seek_end _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (seekCfg w w.length le_rfl).inputPos SignType.neg =
       (backCfg w w.length le_rfl).inputPos
     rw [moveInputPos_neg_of_ne_left _ (fun h ↦ by
@@ -405,7 +406,7 @@ theorem backCfg_step (i : ℕ) (hi : i < w.length) :
     (by rw [inputSymbol_of_inputPos w _ i hi rfl]; exact tr_back_bit _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (backCfg w (i + 1) hi).inputPos SignType.neg = (backCfg w i _).inputPos
     rw [moveInputPos_neg_of_ne_left _ (fun h ↦ by
       have := congrArg Fin.val h
@@ -424,7 +425,7 @@ theorem backCfg_exit :
     rfl (by rw [inputSymbol_start w _ rfl]; exact tr_back_start _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (backCfg w 0 (Nat.zero_le _)).inputPos SignType.pos =
       (cfgAt w 0 (Nat.zero_le _) init []).inputPos
     rw [moveInputPos_pos_of_ne_right _ (by change 0 ≠ _; rw [List.length_map]; omega)]

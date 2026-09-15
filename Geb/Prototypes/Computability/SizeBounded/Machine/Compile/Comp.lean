@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Correctness of a substitution node's compilation
 
@@ -35,6 +34,8 @@ bound {name}`Geb.SizeBounded.Machine.stepValue` assigns the node.
 
 Turing machine, compilation, correctness, substitution, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

@@ -10,8 +10,7 @@ public import Geb.Prototypes.Computability.BitTree.Elias.MachineConfig
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Mathlib.Tactic.FinCases
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Reading input at delta-decoder boundaries
 
@@ -35,6 +34,8 @@ whose implementation uses {lit}`Classical.choice`.
 Elias delta code, Turing machine, input, simulation
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTree.Elias.Machine
@@ -48,16 +49,17 @@ theorem step_read {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (hr : q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨ q = stLengthBit ∨
       q = stPayloadBit ∨ q = stDone ∨ q = stDead) :
     machine.step cfg =
-      { state := (read q (boolEmb b)).q'
+      { state := (read q (boolEmb b)).state
         inputPos := moveInputPos cfg.inputPos 1
         workTapes := fun i ↦
-          match ((read q (boolEmb b)).workActions i).1 with
+          match ((read q (boolEmb b)).workTapes i).1 with
           | none => cfg.workTapes i
           | some s => Function.update (cfg.workTapes i) (cfg.workTapePos i) s
         workTapePos := fun i ↦ cfg.workTapePos i +
-          ((read q (boolEmb b)).workActions i).2 } := by
+          ((read q (boolEmb b)).workTapes i).2
+        output := cfg.output } := by
   rw [Geb.TreeScanner.step_of_state _ _ q hq, hin, tr_read q _ _ hr, read_inputMove]
-  refine Cfg.ext rfl rfl ?_ rfl
+  refine Cfg.ext rfl rfl ?_ rfl (by rw [read_outS]; exact List.append_nil _)
   funext i z
   rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
     cases b <;> fin_cases i <;> rfl
@@ -71,7 +73,7 @@ theorem outputSymbol_read {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control in
     machine.outputSymbol cfg = none := by
   unfold outputSymbol
   rw [hq]
-  change (machine.tr q cfg.inputSymbol cfg.workTapeSymbols).outS = none
+  change (machine.tr q cfg.inputSymbol cfg.workTapeSymbols).output = none
   rw [hin, tr_read q _ _ hr, read_outS]
 
 /-- A fork increases pending trees; a leaf initializes its implicit leading length bit. -/
@@ -82,7 +84,7 @@ theorem step_tree (input : List (Fin 3)) (pos : Fin (input.length + 2))
       if b then scanCfg input (moveInputPos pos 1) stTree (pending + 1) zeros bs cs
       else scanCfg input (moveInputPos pos 1) stZeros pending zeros bs (true :: cs) := by
   rw [step_read _ stTree b rfl hin (Or.inl rfl)]
-  cases b <;> refine Cfg.ext rfl rfl ?_ ?_
+  cases b <;> refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext i
     fin_cases i <;> first | rfl | exact wordTape_cons cs true
   · funext i
@@ -99,7 +101,7 @@ theorem step_zeros (input : List (Fin 3)) (pos : Fin (input.length + 2))
       if b then scanCfg input (moveInputPos pos 1) stSizeCheck pending zeros (true :: bs) cs
       else scanCfg input (moveInputPos pos 1) stZeros pending (zeros + 1) bs cs := by
   rw [step_read _ stZeros b rfl hin (Or.inr (Or.inl rfl))]
-  cases b <;> refine Cfg.ext rfl rfl ?_ ?_
+  cases b <;> refine Cfg.ext rfl rfl ?_ ?_ rfl
   · rfl
   · funext i
     fin_cases i <;> simp [read, stTree, stZeros, boolEmb_apply, consume, jump, scanCfg]
@@ -116,7 +118,7 @@ theorem step_size (input : List (Fin 3)) (pos : Fin (input.length + 2))
     machine.step (scanCfg input pos stSizeBit pending (zeros + 1) bs cs) =
       scanCfg input (moveInputPos pos 1) stSizeCheck pending zeros (b :: bs) cs := by
   rw [step_read _ stSizeBit b rfl hin (Or.inr (Or.inr (Or.inl rfl)))]
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext i
     fin_cases i <;> simp only [read, stTree, stZeros, stSizeBit, boolEmb_apply, consume,
       jump, scanCfg, stSizeCheck, ↓reduceIte, Fin.reduceFinMk, Fin.isValue, Fin.reduceEq]
@@ -132,7 +134,7 @@ theorem step_length (input : List (Fin 3)) (pos : Fin (input.length + 2))
     machine.step (scanCfg input pos stLengthBit pending zeros bs cs) =
       scanCfg input (moveInputPos pos 1) (stDecrement false) pending zeros bs (b :: cs) := by
   rw [step_read _ stLengthBit b rfl hin (Or.inr (Or.inr (Or.inr (Or.inl rfl))))]
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext i
     fin_cases i <;> simp only [read, stTree, stZeros, stSizeBit, stLengthBit, boolEmb_apply,
       consume, jump, scanCfg, stDecrement, ↓reduceIte, Fin.reduceFinMk, Fin.isValue, Fin.reduceEq]
@@ -148,7 +150,7 @@ theorem step_payload (input : List (Fin 3)) (pos : Fin (input.length + 2))
     machine.step (scanCfg input pos stPayloadBit pending zeros bs cs) =
       scanCfg input (moveInputPos pos 1) (stDecrement true) pending zeros bs cs := by
   rw [step_read _ stPayloadBit b rfl hin (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))]
-  refine Cfg.ext rfl rfl rfl ?_
+  refine Cfg.ext rfl rfl rfl ?_ rfl
   funext i
   change (scanCfg input pos stPayloadBit pending zeros bs cs).workTapePos i + 0 = _
   exact Int.add_zero _
@@ -169,7 +171,7 @@ theorem step_sizeCheck (input : List (Fin 3)) (pos : Fin (input.length + 2))
       rw [wordTape_succ]
       simp
   rw [Geb.TreeScanner.step_of_state _ _ stSizeCheck rfl, ht]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ rfl
   funext i
   change (scanCfg input pos stSizeCheck pending zeros bs cs).workTapePos i + 0 = _
   exact Int.add_zero _

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
 public import Geb.Mathlib.Computability.Cobham.Basic
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The valuation entering the recursion loop
 
@@ -33,6 +32,8 @@ updates and so are read unchanged.
 
 Turing machine, compilation, recursion, register allocation, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

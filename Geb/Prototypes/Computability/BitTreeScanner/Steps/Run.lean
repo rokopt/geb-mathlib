@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Seek
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Bit
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's run
 
@@ -27,7 +27,7 @@ configuration along the way keeps its heads within the bound.
 * {lit}`Geb.BitTreeScanner.cfgOf_end` — the steps from the input's end to the
   halt, emitting the decision function's value.
 * {lit}`Geb.BitTreeScanner.halts_at`, {lit}`Geb.BitTreeScanner.outputString_eq`,
-  {lit}`Geb.BitTreeScanner.headsLE_configs` — the machine halts after
+  {lit}`Geb.BitTreeScanner.headsLE_runFrom` — the machine halts after
   {name}`Geb.BitTreeScanner.totalTime` steps having emitted the decision function's
   value, its heads within the bound throughout.
 
@@ -41,6 +41,8 @@ implementation notes explain.
 
 Turing machine, tree, prefix code, Elias gamma code, two passes
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -81,16 +83,16 @@ theorem halt_step (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (q : Fi
     (b : Fin 4) (hq : cfg.state = some q)
     (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols = halt b)
     (hh : HeadsLE w cfg) :
-    (bitTreeScanner.configs cfg 1).state = none ∧ bitTreeScanner.outputString cfg 1 = [b] ∧
-      ∀ j ≤ 1, HeadsLE w (bitTreeScanner.configs cfg j) := by
+    (bitTreeScanner.runFrom cfg 1).state = none ∧ bitTreeScanner.outputString cfg 1 = [b] ∧
+      ∀ j ≤ 1, HeadsLE w (bitTreeScanner.runFrom cfg j) := by
   obtain ⟨h1, h2, h3⟩ := step_halt cfg q hq b htr
   refine ⟨h1, ?_, ?_⟩
   · change bitTreeScanner.outputString _ (0 + 1) = [b]
-    rw [outputString_succ, configs_zero, h3]
+    rw [outputString_succ, runFrom_zero, h3]
     rfl
   · intro j hj
     match j with
-    | 0 => rw [configs_zero]; exact hh
+    | 0 => rw [runFrom_zero]; exact hh
     | 1 =>
       intro i
       change 0 ≤ (bitTreeScanner.step cfg).workTapePos i ∧
@@ -102,11 +104,11 @@ theorem halt_step (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (q : Fi
 halts after {name}`Geb.BitTreeScanner.endCost` steps, the symbol it emits is the
 decision function's value, and its heads stay within the bound. -/
 theorem cfgOf_end :
-    (bitTreeScanner.configs (cfgOf w w.length le_rfl) (endCost (scanFinal w))).state = none ∧
+    (bitTreeScanner.runFrom (cfgOf w w.length le_rfl) (endCost (scanFinal w))).state = none ∧
       bitTreeScanner.outputString (cfgOf w w.length le_rfl) (endCost (scanFinal w)) =
         [boolEmb (validBool w)] ∧
       ∀ j ≤ endCost (scanFinal w),
-        HeadsLE w (bitTreeScanner.configs (cfgOf w w.length le_rfl) j) := by
+        HeadsLE w (bitTreeScanner.runFrom (cfgOf w w.length le_rfl) j) := by
   have hgood : Good (bound w) (scanFinal w) := good_scanAt (bound w) w
   have htree : GoodTree (scanFinal w) (treeAt (bound w) w) := goodTree_treeAt (bound w) w
   have hl := length_treeAt_le w w.length le_rfl
@@ -122,9 +124,9 @@ theorem cfgOf_end :
       (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l).state = some q →
       bitTreeScanner.tr q none (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l).workTapeSymbols =
         halt b →
-      (bitTreeScanner.configs (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) 1).state = none ∧
+      (bitTreeScanner.runFrom (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) 1).state = none ∧
         bitTreeScanner.outputString (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) 1 = [b] ∧
-        ∀ j ≤ 1, HeadsLE w (bitTreeScanner.configs (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) j) :=
+        ∀ j ≤ 1, HeadsLE w (bitTreeScanner.runFrom (cfgAt w w.length le_rfl ⟨m, c, wd, d⟩ l) j) :=
     fun q b hq htr ↦ halt_step w _ q b hq (by rw [hin]; exact htr)
       (headsLE_cfgAt w w.length le_rfl _ hgood l)
   cases m with
@@ -157,7 +159,7 @@ theorem cfgOf_end :
       cfgAt_count w w.length le_rfl l c wd d]
     obtain ⟨hc, ho, hh⟩ := run_decrement w w.length le_rfl l false d hd (by omega)
     refine ⟨?_, ?_, ?_⟩
-    · rw [configs_add, hc]
+    · rw [runFrom_add, hc]
       exact (halt_step w (returnCfg w w.length le_rfl l false d 0) stReturn 0 rfl
         (by
           rw [inputSymbol_end w _ rfl, workTapeSymbols_eq]
@@ -172,7 +174,7 @@ theorem cfgOf_end :
     · intro j hj
       by_cases hjm : j ≤ 2 * borrowLength d + 1
       · exact hh j hjm
-      · rw [show j = 2 * borrowLength d + 1 + (j - (2 * borrowLength d + 1)) by omega, configs_add,
+      · rw [show j = 2 * borrowLength d + 1 + (j - (2 * borrowLength d + 1)) by omega, runFrom_add,
           hc]
         exact (halt_step w (returnCfg w w.length le_rfl l false d 0) stReturn 0 rfl
           (by
@@ -189,9 +191,9 @@ theorem cfgOf_end :
 
 /-- The machine halts after {lit}`totalTime w` steps. -/
 theorem halts_at :
-    (bitTreeScanner.configs (bitTreeScanner.initCfg (w.map boolEmb)) (totalTime w)).state =
+    (bitTreeScanner.runFrom (bitTreeScanner.initCfg (w.map boolEmb)) (totalTime w)).state =
       none := by
-  rw [totalTime, configs_add, (run_total w).1]
+  rw [totalTime, runFrom_add, (run_total w).1]
   exact (cfgOf_end w).1
 
 /-- Over the same steps the machine emits one symbol, the decision function's
@@ -204,16 +206,16 @@ theorem outputString_eq :
   rfl
 
 /-- Throughout the computation the heads stay within the bound. -/
-theorem headsLE_configs :
+theorem headsLE_runFrom :
     ∀ j ≤ totalTime w,
-      HeadsLE w (bitTreeScanner.configs (bitTreeScanner.initCfg (w.map boolEmb)) j) := by
+      HeadsLE w (bitTreeScanner.runFrom (bitTreeScanner.initCfg (w.map boolEmb)) j) := by
   intro j hj
   rw [totalTime] at hj
   by_cases hjm : j ≤ seekTime w.length + w.length + 3 + time (bound w) w
   · exact (run_total w).2.2 j hjm
   · rw [show j = seekTime w.length + w.length + 3 + time (bound w) w +
         (j - (seekTime w.length + w.length + 3 + time (bound w) w)) by omega,
-      configs_add, (run_total w).1]
+      runFrom_add, (run_total w).1]
     exact (cfgOf_end w).2.2 _ (by omega)
 
 end Geb.BitTreeScanner

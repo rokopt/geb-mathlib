@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.Scanner
 public import Mathlib.Tactic.NormNum
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A lower bound on the input a scanner state still requires
 
@@ -32,6 +31,8 @@ a state early decides the same language.
 
 Elias delta code, streaming recognizer, lower bound
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

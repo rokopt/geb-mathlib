@@ -10,8 +10,7 @@ public import Mathlib.Tactic.FinCases
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Difference
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Machine
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Binary-machine transition invariants
 
@@ -22,14 +21,16 @@ configuration sequence.
 
 ## Main statements
 
-* {lit}`configs_binaryHeads_eq`: the binary heads are aligned at every time.
-* {lit}`configs_inputPos_mono`: the input positions form a monotone sequence.
-* {lit}`configs_start`: the two initialization transitions.
+* {lit}`runFrom_binaryHeads_eq`: the binary heads are aligned at every time.
+* {lit}`runFrom_inputPos_mono`: the input positions form a monotone sequence.
+* {lit}`runFrom_start`: the two initialization transitions.
 
 ## Tags
 
 Turing machine, simulation, binary counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -46,19 +47,19 @@ theorem step_binaryHeads_eq {input : List (Fin 4)}
   cases cfg.state with
   | none => exact h
   | some q =>
-    dsimp only
+    dsimp only [Action.apply]
     rw [h, binaryHeads_move_eq]
 
 /-- Both binary heads are aligned at every time in the execution. -/
-theorem configs_binaryHeads_eq (input : List (Fin 4)) (t : ℕ) :
-    (machine.configs (machine.initCfg input) t).workTapePos 0 =
-      (machine.configs (machine.initCfg input) t).workTapePos 1 := by
+theorem runFrom_binaryHeads_eq (input : List (Fin 4)) (t : ℕ) :
+    (machine.runFrom (machine.initCfg input) t).workTapePos 0 =
+      (machine.runFrom (machine.initCfg input) t).workTapePos 1 := by
   apply Nat.rec (motive := fun t ↦
-    (machine.configs (machine.initCfg input) t).workTapePos 0 =
-      (machine.configs (machine.initCfg input) t).workTapePos 1) ?_ ?_ t
+    (machine.runFrom (machine.initCfg input) t).workTapePos 0 =
+      (machine.runFrom (machine.initCfg input) t).workTapePos 1) ?_ ?_ t
   · rfl
   · intro t ih
-    rw [configs_succ_eq_step']
+    rw [runFrom_succ_eq_step']
     exact step_binaryHeads_eq _ ih
 
 /-- The input head never moves left in one machine step. -/
@@ -71,20 +72,20 @@ theorem step_inputPos_le {input : List (Fin 4)}
   | some q => exact le_moveInputPos _ _ (inputMove_ne_neg q _ _)
 
 /-- The input positions form a monotone sequence throughout execution. -/
-theorem configs_inputPos_mono (input : List (Fin 4)) :
-    Monotone (fun t ↦ (machine.configs (machine.initCfg input) t).inputPos.val) := by
+theorem runFrom_inputPos_mono (input : List (Fin 4)) :
+    Monotone (fun t ↦ (machine.runFrom (machine.initCfg input) t).inputPos.val) := by
   apply monotone_nat_of_le_succ
   intro t
-  rw [configs_succ_eq_step']
+  rw [runFrom_succ_eq_step']
   exact step_inputPos_le _
 
 /-- After two transitions, scanning starts with one pending tree. -/
-theorem configs_start (input : List (Fin 4)) :
-    machine.configs (machine.initCfg input) 2 = startCfg input := by
-  rw [show 2 = 0 + 1 + 1 from rfl, configs_succ_eq_step', configs_succ_eq_step',
-    configs_zero]
+theorem runFrom_start (input : List (Fin 4)) :
+    machine.runFrom (machine.initCfg input) 2 = startCfg input := by
+  rw [show 2 = 0 + 1 + 1 from rfl, runFrom_succ_eq_step', runFrom_succ_eq_step',
+    runFrom_zero]
   dsimp [MultiTapeTM.step, initCfg, machine, stInit, stStart]
-  refine Cfg.ext ?_ ?_ ?_ ?_
+  refine Cfg.ext ?_ ?_ ?_ ?_ rfl
   · rfl
   · simp [startCfg]
   · funext i z

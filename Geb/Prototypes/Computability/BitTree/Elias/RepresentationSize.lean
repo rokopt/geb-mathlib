@@ -11,8 +11,7 @@ public import Geb.Prototypes.Computability.BitTree.Counter
 meta import GebMeta -- shake: keep
 public import Geb.Prototypes.Computability.BitTree.Elias.Tree
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Asymptotic size of the Elias tree representation
 
@@ -47,6 +46,8 @@ verified delta-code length formula.
 
 Elias delta code, representation size, asymptotic succinctness, redundancy
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

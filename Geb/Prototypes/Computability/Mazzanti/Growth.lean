@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.Mazzanti.Words
 public import Geb.Prototypes.Computability.BitTree.Encoding
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A growth obstruction for tree-calculus contraction
 
@@ -38,6 +37,8 @@ non-size-increase condition, despite the linear bound on one contraction's outpu
 
 tree calculus, bitstring, non-size-increasing function, output size
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

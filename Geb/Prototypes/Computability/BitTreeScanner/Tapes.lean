@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTreeScanner.Cost
 public import Geb.Prototypes.Computability.BitTreeScanner.Machine
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's tapes, cell by cell
 
@@ -52,6 +51,8 @@ mathlib's {lit}`List.getD_eq_default`, which also depends on it.
 
 Turing machine, tape, binary counter, carry, borrow
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

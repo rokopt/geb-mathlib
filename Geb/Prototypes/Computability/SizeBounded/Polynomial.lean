@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Cost
 public import Mathlib.Algebra.Polynomial.Eval.Defs
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Polynomial representation of the evaluator's time bound
 
@@ -32,6 +31,8 @@ which depend on classical choice. The evaluator and its arithmetic bounds remain
 
 polynomial, complexity, cost model, bitstring
 -/
+
+set_option doc.verso true
 
 public section
 

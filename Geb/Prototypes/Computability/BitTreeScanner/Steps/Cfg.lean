@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Tapes
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's closed forms
 
@@ -60,6 +59,8 @@ time, since {lit}`omega` closing a conjunction depends on
 Turing machine, configuration, closed form, space bound
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTreeScanner
@@ -83,7 +84,8 @@ def applyAct (a : Act) (t : ℤ → Option (Fin 4)) (p : ℤ) : ℤ → Option (
   | some x => Function.update t p x
 
 /-- The configuration a step lands on, given the successor state, the input
-head's move and the tapes' actions. -/
+head's move and the tapes' actions; the output tape is unchanged, since no
+transition short of the halting one emits. -/
 def next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q' : Fin stateCount) (m : SignType)
     (a₀ a₁ a₂ : Act) : Cfg 3 (Fin 4) (Fin stateCount) input where
   state := some q'
@@ -93,6 +95,7 @@ def next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q' : Fin stateCount) (m :
     applyAct a₂ (cfg.workTapes 2) (cfg.workTapePos 2)]
   workTapePos := ![cfg.workTapePos 0 + (a₀.2 : ℤ), cfg.workTapePos 1 + (a₁.2 : ℤ),
     cfg.workTapePos 2 + (a₂.2 : ℤ)]
+  output := cfg.output
 
 end Step
 
@@ -114,7 +117,8 @@ theorem headsLE_mk (st : Option (Fin stateCount)) (pos : Fin ((w.map boolEmb).le
     (tapes : Fin 3 → ℤ → Option (Fin 4)) (p₀ p₁ p₂ : ℤ) (h₀ : 0 ≤ p₀ ∧ p₀ ≤ headBound w)
     (h₁ : 0 ≤ p₁ ∧ p₁ ≤ headBound w) (h₂ : 0 ≤ p₂ ∧ p₂ ≤ headBound w) :
     HeadsLE w
-      { state := st, inputPos := pos, workTapes := tapes, workTapePos := ![p₀, p₁, p₂] } := by
+      { state := st, inputPos := pos, workTapes := tapes, workTapePos := ![p₀, p₁, p₂],
+        output := [] } := by
   intro i
   match i with
   | 0 => exact h₀
@@ -189,6 +193,7 @@ def seekCarryCfg (j : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) wher
   workTapes := ![tapeCount [], tapeDigits [],
     fun z ↦ if 1 ≤ z ∧ z ≤ j then some 0 else tapeDigits i.bits z]
   workTapePos := ![1, 0, (j : ℤ) + 1]
+  output := []
 
 /-- The configuration returning from a carry of the count, at cell
 {lit}`j`: the count incremented, the head at cell {lit}`j`. -/
@@ -197,6 +202,7 @@ def seekBackCfg (j : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   inputPos := ⟨i + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount [], tapeDigits [], tapeDigits (i + 1).bits]
   workTapePos := ![1, 0, (j : ℤ)]
+  output := []
 
 /-- The count's digits are within the bound. -/
 theorem bits_length_le_headBound (hi : i ≤ w.length) : (i.bits.length : ℤ) + 1 ≤ headBound w := by
@@ -244,6 +250,7 @@ def incCarryCfg (j : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   workTapes := ![fun z ↦ if 1 ≤ z ∧ z ≤ j then some 1 else tapeCount l z, tapeBase,
     tapeDigits w.length.bits]
   workTapePos := ![(j : ℤ) + 1, 0, 0]
+  output := []
 
 /-- The configuration returning from a carry of the pending count, at cell
 {lit}`j`: the count incremented, the head at cell {lit}`j`. -/
@@ -252,6 +259,7 @@ def incBackCfg (j : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount (Redundant.inc l), tapeBase, tapeDigits w.length.bits]
   workTapePos := ![(j : ℤ), 0, 0]
+  output := []
 
 /-- The heads of the closed form at a state expecting a tree are within the
 bound. -/
@@ -297,6 +305,7 @@ def decBorrowCfg (j : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) wher
   workTapes := ![fun z ↦ if 1 ≤ z ∧ z ≤ j then some 1 else tapeCount l z, tapeBase,
     tapeDigits w.length.bits]
   workTapePos := ![(j : ℤ) + 1, 0, 0]
+  output := []
 
 /-- The count tape after a borrow absorbed at a one, which is lowered to a
 zero, before the test for its being the top. -/
@@ -311,6 +320,7 @@ def decTopCfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![decTape l, tapeBase, tapeDigits w.length.bits]
   workTapePos := ![(Redundant.borrowLength l : ℤ) + 2, 0, 0]
+  output := []
 
 /-- The configuration erasing the lowered top digit: the head at it. -/
 def decEraseCfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
@@ -318,6 +328,7 @@ def decEraseCfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![decTape l, tapeBase, tapeDigits w.length.bits]
   workTapePos := ![(Redundant.borrowLength l : ℤ) + 1, 0, 0]
+  output := []
 
 /-- The configuration returning from a borrow of the pending count, at cell
 {lit}`j`: the count decremented, the head at cell {lit}`j`. -/
@@ -326,6 +337,7 @@ def decBackCfg (j : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount (Redundant.dec l), tapeBase, tapeDigits w.length.bits]
   workTapePos := ![(j : ℤ), 0, 0]
+  output := []
 
 /-- The heads of a borrow's closed form are within the bound. -/
 theorem headsLE_decBorrowCfg (hl : l.length ≤ bound w) (j : ℕ)
@@ -370,6 +382,7 @@ def mainCfg (l : List Redundant.Digit) : Cfg 3 (Fin 4) (Fin stateCount) (w.map b
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount l, tapeBase, tapeDigits w.length.bits]
   workTapePos := ![1, 0, 0]
+  output := []
 
 /-- The heads of the configuration expecting the next tree are within the
 bound. -/
@@ -382,7 +395,7 @@ theorem headsLE_mainCfg (l : List Redundant.Digit) : HeadsLE w (mainCfg w k hk l
 state expecting a tree. -/
 theorem mainCfg_eq_cfgAt (c : ℕ) (l : List Redundant.Digit) :
     mainCfg w k hk l = cfgAt w k hk ⟨.term, c, 0, []⟩ l := by
-  refine Cfg.ext rfl rfl ?_ rfl
+  refine Cfg.ext rfl rfl ?_ rfl rfl
   funext j
   match j with
   | 0 => rfl
@@ -414,6 +427,7 @@ def borrowCfg (first : Bool) (d : List Bool) (i : ℕ) :
   workTapes := ![tapeCount l, fun z ↦ if 1 ≤ z ∧ z ≤ i then some 1 else tapeDigits d z,
     tapeDigits w.length.bits]
   workTapePos := ![1, (i : ℤ) + 1, 0]
+  output := []
 
 /-- The configuration returning from a borrow over the digits {lit}`d`, at
 cell {lit}`i`: the digits decremented, the head at cell {lit}`i`. -/
@@ -423,6 +437,7 @@ def returnCfg (first : Bool) (d : List Bool) (i : ℕ) :
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount l, tapeDigits (decList d), tapeDigits w.length.bits]
   workTapePos := ![1, (i : ℤ), 0]
+  output := []
 
 /-- The heads of a borrow's closed form are within the bound. -/
 theorem headsLE_borrowCfg (first : Bool) (d : List Bool) (hd : d.length ≤ bound w + 2) (i : ℕ)
@@ -457,6 +472,7 @@ def clearCfg (i : ℕ) : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb) where
   workTapes := ![tapeCount l, fun z ↦ if 1 ≤ z ∧ z ≤ i then some 1 else tapeBase z,
     tapeDigits w.length.bits]
   workTapePos := ![1, (i : ℤ), 0]
+  output := []
 
 /-- The heads of the erasure's closed form are within the bound. -/
 theorem headsLE_clearCfg (i : ℕ) (hi : i ≤ bound w + 2) : HeadsLE w (clearCfg w k hk l i) :=
@@ -467,7 +483,7 @@ theorem headsLE_clearCfg (i : ℕ) (hi : i ≤ bound w + 2) : HeadsLE w (clearCf
 /-- The erasure's end is the configuration the pending count's decrement
 begins from. -/
 theorem clearCfg_zero : clearCfg w k hk l 0 = decBorrowCfg w k hk l 0 := by
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -483,7 +499,7 @@ theorem clearCfg_zero : clearCfg w k hk l 0 = decBorrowCfg w k hk l 0 := by
 that begins a decrement. -/
 theorem cfgAt_count (c wd : ℕ) (d : List Bool) :
     cfgAt w k hk ⟨.count, c, wd, d⟩ l = borrowCfg w k hk l false d 0 := by
-  refine Cfg.ext rfl rfl ?_ rfl
+  refine Cfg.ext rfl rfl ?_ rfl rfl
   funext j z
   match j with
   | 0 => rfl

@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Steps
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Increment
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The tree and terminal phases
 
@@ -19,13 +19,15 @@ transition, followed by an increment at the fork tag.
 
 ## Main statements
 
-* {lit}`configs_bit_tree` realizes a bit read in the tree state.
-* {lit}`configs_bit_done` and {lit}`configs_bit_dead` realize a bit read in a terminal state.
+* {lit}`runFrom_bit_tree` realizes a bit read in the tree state.
+* {lit}`runFrom_bit_done` and {lit}`runFrom_bit_dead` realize a bit read in a terminal state.
 
 ## Tags
 
 Turing machine, simulation, binary tree
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -49,7 +51,7 @@ theorem step_read_stay {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input
     (htr : scanTr q b cfg.workTapeSymbols = (q', stay)) :
     machine.step cfg = readCfg cfg q' := by
   rw [step_of_state _ _ _ hq, hi, tr_scan q hread, htr]
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl
   · funext i
@@ -70,24 +72,24 @@ theorem outputString_one_read {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Contro
       q = stDone ∨ q = stDead)
     (hi : cfg.inputSymbol = some (boolEmb b)) :
     machine.outputString cfg 1 = [] := by
-  rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero,
+  rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero,
     outputSymbol_scan cfg q hq hread b hi]
   rfl
 
 /-- Head bounds over a single transition that preserves them. -/
 theorem headBound_one {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (width : ℕ)
     (h0 : HeadBound width cfg) (h1 : HeadBound width (machine.step cfg)) :
-    ∀ u ≤ 1, HeadBound width (machine.configs cfg u) := by
+    ∀ u ≤ 1, HeadBound width (machine.runFrom cfg u) := by
   intro u hu
   have hu' : u = 0 ∨ u = 1 := by omega
   rcases hu' with rfl | rfl
   · exact h0
-  · rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero]
+  · rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero]
     exact h1
 
 /-- A bit read in the tree state: a fork tag increments the forks counter, a leaf tag enters
 the zero run. -/
-theorem configs_bit_tree {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_bit_tree {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a : Account) (b : Bool) (n width : ℕ) (hv : AccountValid n a)
     (h : Represents width cfg a) (hi : cfg.inputSymbol = some (boolEmb b))
     (hw1 : a.forks.size + 1 ≤ width) (hw2 : (a.forks + 1).size + 1 ≤ width)
@@ -110,8 +112,8 @@ theorem configs_bit_tree {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
     have hcost : macroCost a false = 1 := by simp [macroCost, hcap, hs]
     have hacc : accountStep a false = ⟨(.zeros 0, k), a.forks, a.leaves, 0⟩ := by
       simp [accountStep, hcap, hs, Elias.Scanner.step, leafEnds, nextTotal]
-    have hc1 : machine.configs cfg 1 = readCfg cfg stZeros := by
-      rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hstep]
+    have hc1 : machine.runFrom cfg 1 = readCfg cfg stZeros := by
+      rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hstep]
     have ht := readCfg_workTapes cfg stZeros
     have hp := readCfg_workTapePos cfg stZeros
     refine ⟨?_, ?_, ?_, ?_⟩
@@ -138,17 +140,17 @@ theorem configs_bit_tree {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
       simp [macroCost, hcap, hs, inc]
     have hacc : accountStep a true = ⟨(.tree, k + 1), a.forks + 1, a.leaves, 0⟩ := by
       simp [accountStep, hcap, hs, Elias.Scanner.step, leafEnds, nextTotal]
-    have hc1 : machine.configs cfg 1 = readCfg cfg (stCarry 2) := by
-      rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hstep]
+    have hc1 : machine.runFrom cfg 1 = readCfg cfg (stCarry 2) := by
+      rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hstep]
     have ht := readCfg_workTapes cfg (stCarry 2)
     have hp := readCfg_workTapePos cfg (stCarry 2)
     have hpend' : PairRep pendingLayout 0 width (readCfg cfg (stCarry 2)) a.forks a.leaves :=
       hpend.congr ht hp
     have hle := hv.leaves_le
     have hw2' : (a.forks + 1).size ≤ width := by omega
-    obtain ⟨hrep, hstate, hin, hunt, _, hout⟩ := configs_increment (readCfg cfg (stCarry 2)) 2 0
+    obtain ⟨hrep, hstate, hin, hunt, _, hout⟩ := runFrom_increment (readCfg cfg (stCarry 2)) 2 0
       width a.forks a.leaves a.forks rfl hpend' rfl hw2'
-    have hbounds := configs_increment_head_bounds (readCfg cfg (stCarry 2)) 2 0 width a.forks
+    have hbounds := runFrom_increment_head_bounds (readCfg cfg (stCarry 2)) 2 0 width a.forks
       a.leaves a.forks rfl hpend' rfl hw2' (by
         intro p hp
         have := Geb.BitTree.Counter.flips_bits_le_succ_size a.forks
@@ -160,10 +162,10 @@ theorem configs_bit_tree {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
       rw [ite_eq_right (by omega)]
     simp only [incremented, siteSel, Bool.false_eq_true, ↓reduceIte] at hrep
     rw [hcont] at hstate
-    have hcadd : machine.configs cfg (1 + (2 * Geb.BitTree.Counter.flips a.forks.bits + 1)) =
-        machine.configs (readCfg cfg (stCarry 2))
+    have hcadd : machine.runFrom cfg (1 + (2 * Geb.BitTree.Counter.flips a.forks.bits + 1)) =
+        machine.runFrom (readCfg cfg (stCarry 2))
           (2 * Geb.BitTree.Counter.flips a.forks.bits + 1) := by
-      rw [configs_add, hc1]
+      rw [runFrom_add, hc1]
     refine ⟨?_, ?_, ?_, ?_⟩
     · rw [hcost, hcadd, hacc]
       refine Represents.ofLive (n := n) hstate ⟨hrep.toPairData, ?_, ?_, ?_⟩ (hacc ▸ hv') hw2
@@ -211,7 +213,7 @@ theorem configs_bit_tree {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
         exact h.bound i
 
 /-- A bit read after acceptance rejects. -/
-theorem configs_bit_done {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_bit_done {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a : Account) (b : Bool) (width : ℕ)
     (h : Represents width cfg a) (hi : cfg.inputSymbol = some (boolEmb b))
     (k : ℕ) (hs : a.state = (.done, k)) : BitSpec cfg a b width := by
@@ -223,8 +225,8 @@ theorem configs_bit_done {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
   have hcost : macroCost a b = 1 := by simp [macroCost, hcap, hs]
   have hacc : accountStep a b = ⟨(.dead, k), a.forks, a.leaves, 0⟩ := by
     simp [accountStep, hcap, hs, Elias.Scanner.step, leafEnds, nextTotal]
-  have hc1 : machine.configs cfg 1 = readCfg cfg stDead := by
-    rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hstep]
+  have hc1 : machine.runFrom cfg 1 = readCfg cfg stDead := by
+    rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hstep]
   refine ⟨?_, ?_, ?_, ?_⟩
   · rw [hcost, hc1, hacc]
     exact Represents.dead rfl rfl h.bound
@@ -236,7 +238,7 @@ theorem configs_bit_done {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
     exact headBound_one cfg width h.bound (by rw [hstep]; exact h.bound)
 
 /-- A bit read after rejection keeps rejecting. -/
-theorem configs_bit_dead {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_bit_dead {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a : Account) (b : Bool) (width : ℕ)
     (h : Represents width cfg a) (hi : cfg.inputSymbol = some (boolEmb b))
     (k : ℕ) (hs : a.state = (.dead, k)) : BitSpec cfg a b width := by
@@ -248,8 +250,8 @@ theorem configs_bit_dead {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
   have hcost : macroCost a b = 1 := by simp [macroCost, hcap, hs]
   have hacc : accountStep a b = ⟨(.dead, k), a.forks, a.leaves, 0⟩ := by
     simp [accountStep, hcap, hs, Elias.Scanner.step, leafEnds, nextTotal]
-  have hc1 : machine.configs cfg 1 = readCfg cfg stDead := by
-    rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hstep]
+  have hc1 : machine.runFrom cfg 1 = readCfg cfg stDead := by
+    rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hstep]
   refine ⟨?_, ?_, ?_, ?_⟩
   · rw [hcost, hc1, hacc]
     exact Represents.dead rfl rfl h.bound

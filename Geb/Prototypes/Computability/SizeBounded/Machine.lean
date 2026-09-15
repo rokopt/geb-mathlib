@@ -16,12 +16,10 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Bound
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Transport
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Main
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Exec
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The machine calculus
 
@@ -31,3 +29,5 @@ calculus satisfies, the sequencing of programs, the phase machines that move
 one head, the primitives sequenced from them, the recursion loop, and the
 compilation of the size-bounded algebra into the calculus.
 -/
+
+set_option doc.verso true

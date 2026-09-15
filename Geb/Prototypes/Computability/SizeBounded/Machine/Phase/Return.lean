@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Seq
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The return phases
 
@@ -20,10 +19,10 @@ while it reads a bit and, on the blank before the word, one cell right;
 {lit}`0` to the blank after the word returns to cell {lit}`0`.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -45,6 +44,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, register, head position
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -68,18 +69,18 @@ theorem update_workTapePos_bounds {k B : ℕ} {f : Fin k → ℤ} (i : Fin k)
 @[expose] def moveLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
   q₀ := ()
   tr _ _ _ :=
-    { inputMove := 0, workActions := fun j ↦ (none, if j = i then -1 else 0),
-      outS := none, q' := none }
+    { inputTape := 0, workTapes := fun j ↦ (none, if j = i then -1 else 0),
+      output := none, state := none }
 
 /-- Move the head of tape {lit}`i` left while it reads a bit; on reading a
 blank, move right and halt. -/
 @[expose] def retLeft {k : ℕ} (i : Fin k) : MultiTapeTM k Bool Unit where
   q₀ := ()
   tr _ _ work :=
-    { inputMove := 0
-      workActions := fun j ↦ (none, if j = i then (if (work i).isSome then -1 else 1) else 0)
-      outS := none
-      q' := if (work i).isSome then some () else none }
+    { inputTape := 0
+      workTapes := fun j ↦ (none, if j = i then (if (work i).isSome then -1 else 1) else 0)
+      output := none
+      state := if (work i).isSome then some () else none }
 
 /-- Return the head of tape {lit}`i` to cell {lit}`0` from any cell of its
 word or the blank after it: one unconditional move left, then
@@ -114,6 +115,7 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
       · subst hj
         rw [Function.update_self, ite_eq_left rfl, SignType.coe_neg_one, ← sub_eq_add_neg]
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hlive : cfg.state ≠ none := by
     rw [hq]
     exact Option.some_ne_none _
@@ -175,6 +177,7 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (retLeft i).step (retCfg i cfg p (p + 1).toNat) =
       { cfg with state := none, workTapePos := Function.update cfg.workTapePos i 0 } := by
     have hnone : ((retCfg i cfg p (p + 1).toNat).workTapeSymbols i).isSome = false := by
@@ -202,6 +205,7 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hzero : retCfg i cfg p 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm
@@ -209,6 +213,7 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     · rfl
     · change Function.update cfg.workTapePos i (p - ((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show p - ((0 : ℕ) : ℤ) = cfg.workTapePos i by omega, Function.update_eq_self]
+    · rfl
   rw [show (p + 2).toNat = (p + 1).toNat + 1 by omega]
   have key := RunsTo.ofFamily (retLeft i) (retCfg i cfg p) (p + 1).toNat B _
     (fun _ _ ↦ Option.some_ne_none ()) (fun s hs ↦ hstep s (by omega)) hhalt rfl
@@ -262,6 +267,7 @@ theorem returnTape_runsTo {k : ℕ} {input : List Bool} (i : Fin k)
       · subst hj
         rw [Function.update_self, Function.update_self]
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, Function.update_of_ne hj]
+    · rfl
 
 end
 

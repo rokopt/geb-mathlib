@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Encoding
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Values and applications of triage calculus
 
@@ -40,6 +39,8 @@ These tags distinguish application from value construction without graph sharing
 
 tree calculus, triage calculus, W-type, bitstring, encoding
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

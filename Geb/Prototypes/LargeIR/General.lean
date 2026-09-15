@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.LargeIR.Code
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: base-cartesian presheaf polynomial endofunctors on the walking arrow are codes
 
@@ -83,6 +82,8 @@ that argument is not formalized here.
 prototype, presheaf, walking arrow, parametric right adjoint,
 inductive-recursive, code, cartesian
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

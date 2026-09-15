@@ -6,10 +6,10 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps
+public import Geb.Prototypes.Computability.MultiTape.Rename
 public import Mathlib.Data.Int.Interval
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's time and space bound
 
@@ -18,7 +18,7 @@ in time affine in the input length and space logarithmic in it:
 {name}`Geb.BitTreeScanner.halts_at` and
 {name}`Geb.BitTreeScanner.outputString_eq` give the halting time as
 {name}`Geb.BitTreeScanner.totalTime`, which {name}`Geb.BitTreeScanner.totalTime_le` bounds
-by {lit}`14 * n + 4`, and {name}`Geb.BitTreeScanner.headsLE_configs` keeps
+by {lit}`14 * n + 4`, and {name}`Geb.BitTreeScanner.headsLE_runFrom` keeps
 every head within {name}`Geb.BitTreeScanner.headBound`, three cells above the
 input length's digit count, so each tape visits at most that many cells and
 one.
@@ -36,16 +36,24 @@ top.
 
 * {lit}`Geb.BitTreeScanner.spaceUsed_le` — the space used over the whole
   computation is at most {lit}`3 * (bound w + 4)`.
-* {lit}`Geb.BitTreeScanner.computableInTimeAndSpace_validBool` —
-  {name}`Geb.BitTreeScanner.validBool`, singleton-listed, is
-  {name}`Turing.MultiTapeTM.ComputableInTimeAndSpace` in {lit}`14 * n + 4`
-  steps and {lit}`3 * (n.bits.length + 4)` cells.
+* {lit}`Geb.BitTreeScanner.computableInTimeAndSpace_validBool` — the machine
+  computes {name}`Geb.BitTreeScanner.validBool`, singleton-listed, in the
+  sense of {name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace`, in
+  {lit}`14 * n + 4` steps and {lit}`3 * (n.bits.length + 4)` cells.
 
 ## Implementation notes
 
+The bound is stated as the machine-specific predicate
+{name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace`, the input and output
+encoded along {name}`Geb.BitTreeScanner.boolEmb`, rather than as
+{name}`Turing.MultiTapeTM.ComputableInTimeAndSpace`, whose machines read and
+write {lit}`Bool`: the machine's alphabet is {lit}`Fin 4`, and the binary
+re-encoding of its work alphabet that would witness the latter is the
+remaining step.
+
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`. Its subject
 is the correspondence between the machine and Cslib's
-{name}`Turing.MultiTapeTM.ComputableInTimeAndSpace`, whose space conjunct rests
+{name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace`, whose space conjunct rests
 on {name}`Turing.MultiTapeTM.spaceUsed`, a {name}`Finset.image` through
 {name}`Turing.MultiTapeTM.visitedByTapeHead`; mathlib's {name}`Finset.image`
 depends on {lit}`Classical.choice`, a root neither this repository nor Cslib
@@ -56,6 +64,8 @@ can remove without redefining the space measure.
 Turing machine, time complexity, space complexity, logarithmic space, tree,
 Elias gamma code, amortised analysis
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -68,7 +78,7 @@ variable (w : List Bool)
 /-- A tape whose head stays within the bound over a run visits at most the
 cells from {lit}`0` to the bound. -/
 theorem spaceUsedByTape_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t : ℕ)
-    (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.configs cfg j)) (i : Fin 3) :
+    (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.runFrom cfg j)) (i : Fin 3) :
     bitTreeScanner.spaceUsedByTape cfg t i ≤ bound w + 4 := by
   rw [spaceUsedByTape]
   refine le_trans (Finset.card_le_card (t := Finset.Icc 0 (headBound w)) ?_) ?_
@@ -84,7 +94,7 @@ theorem spaceUsedByTape_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)
 /-- The space used over a run whose heads stay within the bound is at most
 {lit}`3 * (bound w + 4)`. -/
 theorem spaceUsed_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t : ℕ)
-    (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.configs cfg j)) :
+    (h : ∀ j ≤ t, HeadsLE w (bitTreeScanner.runFrom cfg j)) :
     bitTreeScanner.spaceUsed cfg t ≤ 3 * (bound w + 4) := by
   rw [spaceUsed]
   refine le_trans (Finset.sum_le_sum fun i _ ↦ spaceUsedByTape_le w cfg t h i) ?_
@@ -93,14 +103,18 @@ theorem spaceUsed_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (t :
 
 /-- The two-pass tree scanner computes {name}`Geb.BitTreeScanner.validBool`,
 singleton-listed, in {lit}`14 * n + 4` steps and {lit}`3 * (n.bits.length + 4)`
-cells of space. -/
+cells of space, the input and output encoded along
+{name}`Geb.BitTreeScanner.boolEmb`. The statement is the machine-specific
+{name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace` rather than
+{name}`Turing.MultiTapeTM.ComputableInTimeAndSpace`, since the machine's alphabet
+is {lit}`Fin 4` rather than {lit}`Bool`. -/
 theorem computableInTimeAndSpace_validBool :
-    ComputableInTimeAndSpace (fun w : List Bool ↦ [validBool w])
-      (fun n ↦ 14 * n + 4) (fun n ↦ 3 * (n.bits.length + 4)) := by
-  refine ⟨3, 4, stateCount, boolEmb, bitTreeScanner, fun w ↦ ?_⟩
-  refine ⟨totalTime w, totalTime_le w,
+    bitTreeScanner.ComputesFunInTimeAndSpace (listEmb boolEmb) (listEmb boolEmb)
+      (fun w : List Bool ↦ [validBool w]) (fun w ↦ 14 * w.length + 4)
+      (fun w ↦ 3 * (w.length.bits.length + 4)) := fun w ↦
+  ⟨totalTime w, totalTime_le w,
     bitTreeScanner.spaceUsed (bitTreeScanner.initCfg (w.map boolEmb)) (totalTime w),
-    spaceUsed_le w _ _ (headsLE_configs w), halts_at w, ?_, rfl⟩
-  exact outputString_eq w
+    spaceUsed_le w _ _ (headsLE_runFrom w), halts_at w,
+    by rw [initCfg_runFrom_output]; exact outputString_eq w, rfl⟩
 
 end Geb.BitTreeScanner

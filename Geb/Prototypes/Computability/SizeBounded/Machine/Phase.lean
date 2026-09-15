@@ -13,11 +13,12 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Output
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The phase machines
 
 Index for the modules on the phases the primitives of the machine calculus
 are sequenced from: the machines that move one work head, and their runs.
 -/
+
+set_option doc.verso true

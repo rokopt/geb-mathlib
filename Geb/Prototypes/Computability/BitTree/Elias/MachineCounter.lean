@@ -8,9 +8,9 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineSteps
 public import Geb.Prototypes.Computability.BitTree.Elias.Counter
 public import Geb.Prototypes.Computability.TreeScanner.Steps
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Execution of binary countdowns
 
@@ -20,13 +20,15 @@ more, retaining whether the decremented counter contains a one.
 
 ## Main statements
 
-* {lit}`configs_decrement` gives the exact countdown result and transition count.
-* {lit}`configs_decrement_headBound` bounds every intermediate work-tape head.
+* {lit}`runFrom_decrement` gives the exact countdown result and transition count.
+* {lit}`runFrom_decrement_headBound` bounds every intermediate work-tape head.
 
 ## Tags
 
 Turing machine, binary counter, decrement, simulation
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -45,12 +47,12 @@ theorem counterAction_none_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Contr
       machine.outputSymbol (counterCfg cfg v bs q p) = none := by
   constructor
   · rw [step_of_state _ _ q rfl, htr]
-    refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+    refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
     · funext i z
       by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi]
     · funext i
       by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi, hp]
-  · change (machine.tr q _ _).outS = none
+  · change (machine.tr q _ _).output = none
     rw [htr]
     rfl
 
@@ -66,7 +68,7 @@ theorem counterAction_write_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Cont
       machine.outputSymbol (counterCfg cfg v bs q p) = none := by
   constructor
   · rw [step_of_state _ _ q rfl, htr]
-    refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+    refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
     · funext i z
       by_cases hi : i = counterTape v
       · simp only [counterAction, counterCfg, jump, hi, ↓reduceIte]
@@ -74,7 +76,7 @@ theorem counterAction_write_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Cont
       · simp [counterAction, counterCfg, jump, hi]
     · funext i
       by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi, hp]
-  · change (machine.tr q _ _).outS = none
+  · change (machine.tr q _ _).output = none
     rw [htr]
     rfl
 
@@ -84,7 +86,7 @@ theorem step_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input
     machine.step (counterCfg cfg v bs (stDecrement v) (bs.length + 1)) =
       counterCfg cfg v bs (stBorrow v false) bs.length := by
   rw [step_of_state _ _ (stDecrement v) rfl, tr_decrement]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i z
     by_cases hi : i = counterTape v <;> simp [counterAction, counterCfg, jump, hi]
   · funext i
@@ -94,7 +96,7 @@ theorem step_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input
 theorem outputSymbol_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (bs : List Bool) :
     machine.outputSymbol (counterCfg cfg v bs (stDecrement v) (bs.length + 1)) = none := by
-  change (machine.tr (stDecrement v) _ _).outS = none
+  change (machine.tr (stDecrement v) _ _).output = none
   rw [tr_decrement]
   rfl
 
@@ -129,35 +131,35 @@ theorem left_zero_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
   · rfl
 
 /-- The leftward scan accumulates the disjunction of all unvisited higher digits. -/
-theorem configs_left {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_left {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (higher : List Bool) : ∀ lower seen,
-    machine.configs (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length)
+    machine.runFrom (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length)
         higher.length =
       counterCfg cfg v (lower ++ higher) (stLeft v (seen || higher.any id)) 0 ∧
     machine.outputString (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length)
         higher.length = [] := by
   apply List.rec (motive := fun higher ↦ ∀ lower seen,
-    machine.configs (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length)
+    machine.runFrom (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length)
         higher.length =
       counterCfg cfg v (lower ++ higher) (stLeft v (seen || higher.any id)) 0 ∧
     machine.outputString (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length)
         higher.length = []) ?_ ?_ higher
   · intro lower seen
-    simp only [List.length_nil, configs_zero, List.any_nil, Bool.or_false]
+    simp only [List.length_nil, runFrom_zero, List.any_nil, Bool.or_false]
     exact ⟨trivial, rfl⟩
   · intro b higher ih lower seen
     obtain ⟨hs, ho⟩ := left_cons_run cfg v seen b lower higher
     obtain ⟨hc, hout⟩ := ih (lower ++ [b]) (seen || b)
     simp only [List.append_assoc, List.singleton_append] at hc hout
     constructor
-    · rw [List.length_cons, configs_succ_eq_step, hs, hc]
+    · rw [List.length_cons, runFrom_succ_eq_step, hs, hc]
       simp only [List.any_cons, id_eq, Bool.or_assoc]
     · let current := counterCfg cfg v (lower ++ b :: higher)
         (stLeft v seen) (higher.length + 1)
       change machine.outputString current (higher.length + 1) = []
       rw [show higher.length + 1 = 1 + higher.length by omega, outputString_add_eq_append]
       have hone : machine.outputString current 1 = [] := by
-        rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero, ho]
+        rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero, ho]
         rfl
       rw [hone]
       change [] ++ machine.outputString (machine.step current) higher.length = []
@@ -196,13 +198,13 @@ theorem right_end_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
   · simp
 
 /-- Starting inside the word, the rightward scan reaches its blank and resumes decoding. -/
-theorem configs_right {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_right {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v seen : Bool) (bs : List Bool) (t : ℕ) : ∀ p, 0 < p → p + t = bs.length + 1 →
-    machine.configs (counterCfg cfg v bs (stRight v seen) p) (t + 1) =
+    machine.runFrom (counterCfg cfg v bs (stRight v seen) p) (t + 1) =
       counterCfg cfg v bs (afterDecrement v seen) (bs.length + 1) ∧
     machine.outputString (counterCfg cfg v bs (stRight v seen) p) (t + 1) = [] := by
   apply Nat.rec (motive := fun t ↦ ∀ p, 0 < p → p + t = bs.length + 1 →
-    machine.configs (counterCfg cfg v bs (stRight v seen) p) (t + 1) =
+    machine.runFrom (counterCfg cfg v bs (stRight v seen) p) (t + 1) =
       counterCfg cfg v bs (afterDecrement v seen) (bs.length + 1) ∧
     machine.outputString (counterCfg cfg v bs (stRight v seen) p) (t + 1) = []) ?_ ?_ t
   · intro p _ hp
@@ -211,7 +213,7 @@ theorem configs_right {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     obtain ⟨hs, ho⟩ := right_end_run cfg v seen bs
     constructor
     · exact hs
-    · rw [outputString_succ, configs_zero, ho]
+    · rw [outputString_succ, runFrom_zero, ho]
       rfl
   · intro t ih p hp hpt
     cases p with
@@ -220,12 +222,12 @@ theorem configs_right {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
       obtain ⟨hs, ho⟩ := right_pos_run cfg v seen bs j (by omega)
       obtain ⟨hc, hout⟩ := ih (j + 2) (by omega) (by omega)
       constructor
-      · rw [configs_succ_eq_step, hs, hc]
+      · rw [runFrom_succ_eq_step, hs, hc]
       · let current := counterCfg cfg v bs (stRight v seen) (j + 1)
         change machine.outputString current (t + 1 + 1) = []
         rw [show t + 1 + 1 = 1 + (t + 1) by omega, outputString_add_eq_append]
         have hone : machine.outputString current 1 = [] := by
-          rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero, ho]
+          rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero, ho]
           rfl
         rw [hone]
         change [] ++ machine.outputString (machine.step current) (t + 1) = []
@@ -269,16 +271,16 @@ theorem borrow_true_run {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control inpu
   · exact wordTape_update_split lower higher true false
 
 /-- Borrowing and the subsequent scan together visit each remaining digit exactly once. -/
-theorem configs_borrow {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_borrow {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (higher : List Bool) : ∀ lower seen, 0 < Counter.value higher →
-    machine.configs (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length)
+    machine.runFrom (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length)
         higher.length =
       counterCfg cfg v (lower ++ Counter.decrement higher)
         (stLeft v (seen || (Counter.decrement higher).any id)) 0 ∧
     machine.outputString (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length)
         higher.length = [] := by
   apply List.rec (motive := fun higher ↦ ∀ lower seen, 0 < Counter.value higher →
-    machine.configs (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length)
+    machine.runFrom (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length)
         higher.length =
       counterCfg cfg v (lower ++ Counter.decrement higher)
         (stLeft v (seen || (Counter.decrement higher).any id)) 0 ∧
@@ -297,14 +299,14 @@ theorem configs_borrow {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input
       obtain ⟨hc, hout⟩ := ih (lower ++ [true]) true hh
       simp only [List.append_assoc, List.singleton_append, Bool.true_or] at hc hout
       constructor
-      · rw [List.length_cons, configs_succ_eq_step, hs, hc]
+      · rw [List.length_cons, runFrom_succ_eq_step, hs, hc]
         simp [Counter.decrement]
       · let current := counterCfg cfg v (lower ++ false :: higher)
           (stBorrow v seen) (higher.length + 1)
         change machine.outputString current (higher.length + 1) = []
         rw [show higher.length + 1 = 1 + higher.length by omega, outputString_add_eq_append]
         have hone : machine.outputString current 1 = [] := by
-          rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero, ho]
+          rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero, ho]
           rfl
         rw [hone]
         change [] ++ machine.outputString (machine.step current) higher.length = []
@@ -312,17 +314,17 @@ theorem configs_borrow {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input
         rfl
     | true =>
       obtain ⟨hs, ho⟩ := borrow_true_run cfg v seen lower higher
-      obtain ⟨hc, hout⟩ := configs_left cfg v higher (lower ++ [false]) seen
+      obtain ⟨hc, hout⟩ := runFrom_left cfg v higher (lower ++ [false]) seen
       simp only [List.append_assoc, List.singleton_append] at hc hout
       constructor
-      · rw [List.length_cons, configs_succ_eq_step, hs, hc]
+      · rw [List.length_cons, runFrom_succ_eq_step, hs, hc]
         simp [Counter.decrement]
       · let current := counterCfg cfg v (lower ++ true :: higher)
           (stBorrow v seen) (higher.length + 1)
         change machine.outputString current (higher.length + 1) = []
         rw [show higher.length + 1 = 1 + higher.length by omega, outputString_add_eq_append]
         have hone : machine.outputString current 1 = [] := by
-          rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero, ho]
+          rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero, ho]
           rfl
         rw [hone]
         change [] ++ machine.outputString (machine.step current) higher.length = []
@@ -330,59 +332,59 @@ theorem configs_borrow {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input
         rfl
 
 /-- A single silent transition is a one-step execution with empty output. -/
-theorem configs_output_one {input : List (Fin 3)}
+theorem runFrom_output_one {input : List (Fin 3)}
     (cfg next : Cfg 4 (Fin 3) Control input)
     (hs : machine.step cfg = next) (ho : machine.outputSymbol cfg = none) :
-    machine.configs cfg 1 = next ∧ machine.outputString cfg 1 = [] := by
+    machine.runFrom cfg 1 = next ∧ machine.outputString cfg 1 = [] := by
   constructor
   · exact hs
-  · rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero, ho]
+  · rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero, ho]
     rfl
 
 /-- A positive fixed-width counter decrements and tests its result in twice its width plus three
 transitions, preserving the input and all other tapes and emitting nothing. -/
-theorem configs_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_decrement {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (bs : List Bool) (hbs : 0 < Counter.value bs) :
-    machine.configs (counterCfg cfg v bs (stDecrement v) (bs.length + 1))
+    machine.runFrom (counterCfg cfg v bs (stDecrement v) (bs.length + 1))
         (2 * bs.length + 3) =
       counterCfg cfg v (Counter.decrement bs)
         (afterDecrement v ((Counter.decrement bs).any id)) (bs.length + 1) ∧
     machine.outputString (counterCfg cfg v bs (stDecrement v) (bs.length + 1))
         (2 * bs.length + 3) = [] := by
-  have hentry := configs_output_one _ _ (step_decrement cfg v bs)
+  have hentry := runFrom_output_one _ _ (step_decrement cfg v bs)
     (outputSymbol_decrement cfg v bs)
-  have hborrow := configs_borrow cfg v bs [] false hbs
+  have hborrow := runFrom_borrow cfg v bs [] false hbs
   simp only [List.nil_append, Bool.false_or] at hborrow
   obtain ⟨hz, hoz⟩ := left_zero_run cfg v ((Counter.decrement bs).any id)
     (Counter.decrement bs)
-  have hturn := configs_output_one _ _ hz hoz
-  have hright := configs_right cfg v ((Counter.decrement bs).any id)
+  have hturn := runFrom_output_one _ _ hz hoz
+  have hright := runFrom_right cfg v ((Counter.decrement bs).any id)
     (Counter.decrement bs) bs.length 1 (by omega) (by rw [Counter.length_decrement]; omega)
   rw [Counter.length_decrement] at hright
-  have hfirst := configs_output_add _ _ _ 1 bs.length hentry hborrow
-  have hsecond := configs_output_add _ _ _ (1 + bs.length) 1 hfirst hturn
-  have hall := configs_output_add _ _ _ (1 + bs.length + 1) (bs.length + 1) hsecond hright
+  have hfirst := runFrom_output_add _ _ _ 1 bs.length hentry hborrow
+  have hsecond := runFrom_output_add _ _ _ (1 + bs.length) 1 hfirst hturn
+  have hall := runFrom_output_add _ _ _ (1 + bs.length + 1) (bs.length + 1) hsecond hright
   simpa only [show 1 + bs.length + 1 + (bs.length + 1) = 2 * bs.length + 3 by omega] using hall
 
 /-- A bounded starting configuration followed by a bounded tail gives a bounded successor run. -/
 theorem headBound_succ {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (n width : ℕ) (hcfg : HeadBound width cfg)
-    (hnext : ∀ t ≤ n, HeadBound width (machine.configs (machine.step cfg) t))
-    (t : ℕ) (ht : t ≤ n + 1) : HeadBound width (machine.configs cfg t) := by
+    (hnext : ∀ t ≤ n, HeadBound width (machine.runFrom (machine.step cfg) t))
+    (t : ℕ) (ht : t ≤ n + 1) : HeadBound width (machine.runFrom cfg t) := by
   cases t with
   | zero => exact hcfg
   | succ t =>
-    rw [configs_succ_eq_step]
+    rw [runFrom_succ_eq_step]
     exact hnext t (by omega)
 
 /-- Every prefix of the leftward scan stays between the origin and its starting head. -/
-theorem configs_left_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_left_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (higher : List Bool) (width : ℕ) (hcfg : HeadBound width cfg) :
     ∀ lower seen, higher.length ≤ width → ∀ t ≤ higher.length,
-      HeadBound width (machine.configs
+      HeadBound width (machine.runFrom
         (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length) t) := by
   apply List.rec (motive := fun higher ↦ ∀ lower seen, higher.length ≤ width →
-    ∀ t ≤ higher.length, HeadBound width (machine.configs
+    ∀ t ≤ higher.length, HeadBound width (machine.runFrom
       (counterCfg cfg v (lower ++ higher) (stLeft v seen) higher.length) t)) ?_ ?_ higher
   · intro lower seen hw t ht
     have he : t = 0 := by simpa using ht
@@ -397,13 +399,13 @@ theorem configs_left_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Contr
       ih (lower ++ [b]) (seen || b) (by simp only [List.length_cons] at hw; omega) r hr
 
 /-- Borrowing and its leftward scan stay in the initial head interval. -/
-theorem configs_borrow_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_borrow_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v : Bool) (higher : List Bool) (width : ℕ) (hcfg : HeadBound width cfg) :
     ∀ lower seen, 0 < Counter.value higher → higher.length ≤ width → ∀ t ≤ higher.length,
-      HeadBound width (machine.configs
+      HeadBound width (machine.runFrom
         (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length) t) := by
   apply List.rec (motive := fun higher ↦ ∀ lower seen, 0 < Counter.value higher →
-    higher.length ≤ width → ∀ t ≤ higher.length, HeadBound width (machine.configs
+    higher.length ≤ width → ∀ t ≤ higher.length, HeadBound width (machine.runFrom
       (counterCfg cfg v (lower ++ higher) (stBorrow v seen) higher.length) t)) ?_ ?_ higher
   · intro lower seen h
     simp [Counter.value] at h
@@ -424,17 +426,17 @@ theorem configs_borrow_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Con
     | true =>
       rw [List.length_cons, (borrow_true_run cfg v seen lower higher).1]
       simpa only [List.append_assoc, List.singleton_append] using
-        configs_left_headBound cfg v higher width hcfg (lower ++ [false]) seen hwidth r hr
+        runFrom_left_headBound cfg v higher width hcfg (lower ++ [false]) seen hwidth r hr
 
 /-- Every prefix of the rightward scan stays at or before the right-hand blank. -/
-theorem configs_right_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_right_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (v seen : Bool) (bs : List Bool) (width : ℕ) (hcfg : HeadBound width cfg)
     (hw : bs.length + 1 ≤ width) (n : ℕ) : ∀ p, 0 < p → p + n = bs.length + 1 →
     ∀ t ≤ n + 1, HeadBound width
-      (machine.configs (counterCfg cfg v bs (stRight v seen) p) t) := by
+      (machine.runFrom (counterCfg cfg v bs (stRight v seen) p) t) := by
   apply Nat.rec (motive := fun n ↦ ∀ p, 0 < p → p + n = bs.length + 1 →
     ∀ t ≤ n + 1, HeadBound width
-      (machine.configs (counterCfg cfg v bs (stRight v seen) p) t)) ?_ ?_ n
+      (machine.runFrom (counterCfg cfg v bs (stRight v seen) p) t)) ?_ ?_ n
   · intro p _ hp t ht
     have he : p = bs.length + 1 := by omega
     subst p
@@ -442,7 +444,7 @@ theorem configs_right_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Cont
     intro r hr
     have he : r = 0 := by omega
     subst r
-    rw [configs_zero, (right_end_run cfg v seen bs).1]
+    rw [runFrom_zero, (right_end_run cfg v seen bs).1]
     exact headBound_counterCfg cfg v _ _ _ width hcfg hw
   · intro n ih p hp hn t ht
     cases p with
@@ -456,22 +458,22 @@ theorem configs_right_headBound {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Cont
 
 /-- All countdown prefixes preserve any nonnegative head bound containing the represented word
 and its right-hand blank. -/
-theorem configs_decrement_headBound {input : List (Fin 3)}
+theorem runFrom_decrement_headBound {input : List (Fin 3)}
     (cfg : Cfg 4 (Fin 3) Control input) (v : Bool) (bs : List Bool) (width : ℕ)
     (hcfg : HeadBound width cfg) (hw : bs.length + 1 ≤ width)
     (hbs : 0 < Counter.value bs) (t : ℕ) (ht : t ≤ 2 * bs.length + 3) :
-    HeadBound width (machine.configs
+    HeadBound width (machine.runFrom
       (counterCfg cfg v bs (stDecrement v) (bs.length + 1)) t) := by
-  have hborrow := (configs_borrow cfg v bs [] false hbs).1
+  have hborrow := (runFrom_borrow cfg v bs [] false hbs).1
   simp only [List.nil_append, Bool.false_or] at hborrow
-  have hright : ∀ r ≤ bs.length + 1, HeadBound width (machine.configs
+  have hright : ∀ r ≤ bs.length + 1, HeadBound width (machine.runFrom
       (counterCfg cfg v (Counter.decrement bs)
         (stRight v ((Counter.decrement bs).any id)) 1) r) := by
-    apply configs_right_headBound cfg v _ _ width hcfg
+    apply runFrom_right_headBound cfg v _ _ width hcfg
       (by simpa only [Counter.length_decrement] using hw) bs.length 1 (by omega)
     rw [Counter.length_decrement]
     omega
-  have hturn : ∀ r ≤ 1 + (bs.length + 1), HeadBound width (machine.configs
+  have hturn : ∀ r ≤ 1 + (bs.length + 1), HeadBound width (machine.runFrom
       (counterCfg cfg v (Counter.decrement bs)
         (stLeft v ((Counter.decrement bs).any id)) 0) r) := by
     intro r hr
@@ -479,12 +481,12 @@ theorem configs_decrement_headBound {input : List (Fin 3)}
       (headBound_counterCfg cfg v _ _ 0 width hcfg (by omega)) ?_ r (by omega)
     rw [(left_zero_run cfg v ((Counter.decrement bs).any id) (Counter.decrement bs)).1]
     exact hright
-  have htail : ∀ r ≤ bs.length + (1 + (bs.length + 1)), HeadBound width (machine.configs
+  have htail : ∀ r ≤ bs.length + (1 + (bs.length + 1)), HeadBound width (machine.runFrom
       (counterCfg cfg v bs (stBorrow v false) bs.length) r) := by
     apply headBound_add _ bs.length (1 + (bs.length + 1)) width
     · intro r hr
       simpa only [List.nil_append] using
-        configs_borrow_headBound cfg v bs width hcfg [] false hbs (by omega) r hr
+        runFrom_borrow_headBound cfg v bs width hcfg [] false hbs (by omega) r hr
     · rw [hborrow]
       exact hturn
   apply headBound_succ _ (bs.length + (1 + (bs.length + 1))) width

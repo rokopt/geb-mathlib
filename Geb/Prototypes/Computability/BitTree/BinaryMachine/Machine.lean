@@ -8,8 +8,7 @@ module
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
 public import Geb.Prototypes.Computability.BitTree.Scanner
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A binary-counter machine for trees with bitstring leaves
 
@@ -39,6 +38,8 @@ when consuming a bit; carry and return transitions leave the input head fixed.
 
 Turing machine, binary counter, bitstring, tree
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -97,30 +98,30 @@ def stCarryLeaf : Fin 10 := 8
 def stReturn : Fin 10 := 9
 
 /-- A transition consuming one input symbol without changing work tapes. -/
-def consume (q : Fin 10) : TransitionOut 3 (Fin 4) (Fin 10) where
-  inputMove := 1
-  workActions _ := (none, 0)
-  outS := none
-  q' := some q
+def consume (q : Fin 10) : Action 3 (Fin 4) (Fin 10) where
+  inputTape := 1
+  workTapes _ := (none, 0)
+  output := none
+  state := some q
 
 /-- Emit one boolean and halt. -/
-def finish (b : Bool) : TransitionOut 3 (Fin 4) (Fin 10) where
-  inputMove := 0
-  workActions _ := (none, 0)
-  outS := some (boolEmb b)
-  q' := none
+def finish (b : Bool) : Action 3 (Fin 4) (Fin 10) where
+  inputTape := 0
+  workTapes _ := (none, 0)
+  output := some (boolEmb b)
+  state := none
 
 /-- Flip the selected counter's current bit and maintain the mismatch count.
 Carry transitions move both binary heads right; the first zero ends the carry. -/
 def carry (leaf : Bool) (work : Fin 3 → Option (Fin 4)) :
-    TransitionOut 3 (Fin 4) (Fin 10) :=
+    Action 3 (Fin 4) (Fin 10) :=
   let selected : Fin 3 := if leaf then 1 else 0
-  { inputMove := 0
-    workActions := fun i ↦
+  { inputTape := 0
+    workTapes := fun i ↦
       if i = 2 then (none, mismatchMove (work 0) (work 1))
       else (if i = selected then some (some (flipped (work i))) else none, 1)
-    outS := none
-    q' := some (if digit (work selected) then
+    output := none
+    state := some (if digit (work selected) then
       (if leaf then stCarryLeaf else stCarryFork) else stReturn) }
 
 /-- A three-work-tape recognizer whose counters are incremented monotonically. -/
@@ -128,26 +129,26 @@ def machine : MultiTapeTM 3 (Fin 4) (Fin 10) where
   q₀ := stInit
   tr q input work :=
     if q = stInit then
-      { inputMove := 0
-        workActions := fun i ↦
+      { inputTape := 0
+        workTapes := fun i ↦
           if i = 0 then (some (some 3), 0)
           else if i = 1 then (some (some 2), 0)
           else (some (some 0), 1)
-        outS := none
-        q' := some stStart }
+        output := none
+        state := some stStart }
     else if q = stStart then
-      { inputMove := 0, workActions := fun _ ↦ (none, 0),
-        outS := none, q' := some stTree }
+      { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+        output := none, state := some stTree }
     else if q = stCarryFork then carry false work
     else if q = stCarryLeaf then carry true work
     else if q = stReturn then
       if origin (work 0) then
-        { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none,
-          q' := some (if work 2 == some 0 then stDone else stTree) }
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
+          state := some (if work 2 == some 0 then stDone else stTree) }
       else
-        { inputMove := 0,
-          workActions := fun i ↦ (none, if i = 2 then 0 else -1),
-          outS := none, q' := some stReturn }
+        { inputTape := 0,
+          workTapes := fun i ↦ (none, if i = 2 then 0 else -1),
+          output := none, state := some stReturn }
     else
       match input with
       | none => finish (q == stDone)
@@ -159,7 +160,7 @@ def machine : MultiTapeTM 3 (Fin 4) (Fin 10) where
 
 /-- Every input transition is stationary or moves right. -/
 theorem inputMove_ne_neg (q : Fin 10) (input : Option (Fin 4))
-    (work : Fin 3 → Option (Fin 4)) : (machine.tr q input work).inputMove ≠ -1 := by
+    (work : Fin 3 → Option (Fin 4)) : (machine.tr q input work).inputTape ≠ -1 := by
   cases input <;> simp only [machine] <;> split_ifs <;> first
     | exact (by decide : (0 : SignType) ≠ -1)
     | exact (by decide : (1 : SignType) ≠ -1)
@@ -167,8 +168,8 @@ theorem inputMove_ne_neg (q : Fin 10) (input : Option (Fin 4))
 /-- All transitions move the two binary heads by the same displacement. -/
 theorem binaryHeads_move_eq (q : Fin 10) (input : Option (Fin 4))
     (work : Fin 3 → Option (Fin 4)) :
-    ((machine.tr q input work).workActions 0).2 =
-      ((machine.tr q input work).workActions 1).2 := by
+    ((machine.tr q input work).workTapes 0).2 =
+      ((machine.tr q input work).workTapes 1).2 := by
   cases input <;> simp only [machine] <;> split_ifs <;> simp [carry, consume, finish]
 
 /-- A stationary or right-moving displacement cannot lower an input position. -/
@@ -204,6 +205,7 @@ def startCfg (input : List (Fin 4)) : Cfg 3 (Fin 4) (Fin 10) input where
   workTapes i z := if z = 0 then some (if i = 0 then 3 else if i = 1 then 2 else 0)
     else none
   workTapePos i := if i = 2 then 1 else 0
+  output := []
 
 /-- The digits read at nonnegative positions of a work tape. -/
 def digits {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
@@ -222,6 +224,7 @@ def returnCfg {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input)
   inputPos := cfg.inputPos
   workTapes := cfg.workTapes
   workTapePos i := if i = 2 then cfg.workTapePos 2 else p
+  output := cfg.output
 
 /-- The configuration reached when the return's final state change has completed. -/
 def returnedCfg {input : List (Fin 4)} (cfg : Cfg 3 (Fin 4) (Fin 10) input) :
@@ -235,7 +238,7 @@ theorem returnCfg_self {input : List (Fin 4)}
     (hq : cfg.state = some stReturn)
     (hp0 : cfg.workTapePos 0 = p) (hp1 : cfg.workTapePos 1 = p) :
     returnCfg cfg p = cfg := by
-  refine Cfg.ext hq.symm rfl rfl ?_
+  refine Cfg.ext hq.symm rfl rfl ?_ rfl
   funext i
   exact Fin.cases hp0.symm (Fin.cases hp1.symm (Fin.cases rfl (fun i ↦ Fin.elim0 i))) i
 

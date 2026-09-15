@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTreeScanner.Scan
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The redundant binary counter for the pending count
 
@@ -90,6 +89,8 @@ literals, and the canonical form's test is a {name}`decide` rather than
 
 binary counter, redundant number system, amortised analysis, pending count
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

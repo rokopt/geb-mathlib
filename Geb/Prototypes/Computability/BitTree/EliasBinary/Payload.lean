@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Steps
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Increment
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The payload phase
 
@@ -25,13 +25,15 @@ counter.
 
 ## Main statements
 
-* {lit}`configs_erase` describes the erasure walk.
-* {lit}`configs_bit_payload_aux` realizes a bit read in the payload state.
+* {lit}`runFrom_erase` describes the erasure walk.
+* {lit}`runFrom_bit_payload_aux` realizes a bit read in the payload state.
 
 ## Tags
 
 Turing machine, simulation, Elias delta code, payload
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -106,11 +108,11 @@ theorem cell_length (lsb : ℤ) (j : ℕ) : cell lsb (siteLayout 5).dir j = lsb 
 
 /-- After an increment, every cell of the selected tape above the bit-change count is
 unchanged. -/
-theorem configs_increment_selected {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_increment_selected {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (k : Fin 6) (lsb : ℤ) (width a b n : ℕ) (hn : n = if siteSel k then b else a)
     (h : PairRep (siteLayout k) lsb width cfg a b) (hq : cfg.state = some (stCarry k)) :
     ∀ z, (∀ j, j < flips n.bits → z ≠ cell lsb (siteLayout k).dir j) →
-      (machine.configs cfg (2 * flips n.bits + 1)).workTapes (siteSelected k) z =
+      (machine.runFrom cfg (2 * flips n.bits + 1)).workTapes (siteSelected k) z =
         cfg.workTapes (siteSelected k) z := by
   intro z hz
   have hbits : ∀ j, digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir j =
@@ -122,15 +124,15 @@ theorem configs_increment_selected {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) C
     · simp only [siteSelected, hsel, ↓reduceIte, hn]
       exact congrFun h.secondDigits j
   obtain ⟨hstate, hpos0, hpos1, _, _, _, _, hcells, _, horig, _, _⟩ :=
-    configs_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
+    runFrom_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
   set f := flips n.bits with hf
-  set after := machine.configs cfg f with hafter
+  set after := machine.runFrom cfg f with hafter
   have ho : ∀ z, origin (after.workTapes (siteLayout k).first z) = decide (z = lsb) :=
     fun z ↦ (horig z).trans (h.originTag z)
   have hrep := returnCfg_self after k lsb f hstate hpos0 hpos1
-  obtain ⟨hc, _⟩ := configs_return_done after k lsb ho f
+  obtain ⟨hc, _⟩ := runFrom_return_done after k lsb ho f
   rw [hrep] at hc
-  rw [show 2 * f + 1 = f + (f + 1) by omega, configs_add, ← hafter, hc]
+  rw [show 2 * f + 1 = f + (f + 1) by omega, runFrom_add, ← hafter, hc]
   exact hcells z (fun j hj ↦ hz j hj)
 
 /-! ## The erasure of the length pair -/
@@ -147,6 +149,7 @@ def eraseCfg (t : ℕ) : Cfg 9 (Fin 4) Control input where
   workTapes i := if i = 6 ∨ i = 7 then fun z ↦ if lsb - t < z then none else cfg.workTapes i z
     else cfg.workTapes i
   workTapePos i := if i = 6 ∨ i = 7 then lsb - t else cfg.workTapePos i
+  output := cfg.output
 
 /-- The configuration after the erasure, with both digit heads moved back one cell. -/
 def erasedCfg (t : ℕ) : Cfg 9 (Fin 4) Control input :=
@@ -160,7 +163,7 @@ theorem eraseCfg_self (hq : cfg.state = some stEraseLength) (hp6 : cfg.workTapeP
     (hp7 : cfg.workTapePos 7 = lsb)
     (hb : ∀ z, lsb < z → cfg.workTapes 6 z = none ∧ cfg.workTapes 7 z = none) :
     eraseCfg cfg lsb 0 = cfg := by
-  refine Cfg.ext hq.symm rfl ?_ ?_
+  refine Cfg.ext hq.symm rfl ?_ ?_ rfl
   · funext i z
     simp only [eraseCfg, Nat.cast_zero, Int.sub_zero]
     split_ifs with hi
@@ -192,7 +195,7 @@ theorem tr_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
 theorem step_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
     machine.step (eraseCfg cfg lsb t) = eraseCfg cfg lsb (t + 1) := by
   rw [step_of_state _ _ stEraseLength rfl, tr_erase cfg lsb t hne]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i z
     simp only [act, eraseCfg]
     split_ifs with hi
@@ -209,14 +212,14 @@ theorem step_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
 /-- Erasing a non-blank cell emits nothing. -/
 theorem outputSymbol_erase (t : ℕ) (hne : cfg.workTapes 6 (lsb - t) ≠ none) :
     machine.outputSymbol (eraseCfg cfg lsb t) = none := by
-  change (machine.tr stEraseLength _ _).outS = none
+  change (machine.tr stEraseLength _ _).output = none
   rw [tr_erase cfg lsb t hne]
   rfl
 
 /-- The erasure walk over non-blank cells: its configuration and its empty output. -/
-theorem configs_erase (m : ℕ) (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb - j) ≠ none)
+theorem runFrom_erase (m : ℕ) (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb - j) ≠ none)
     (t : ℕ) (ht : t ≤ m) :
-    machine.configs (eraseCfg cfg lsb 0) t = eraseCfg cfg lsb t ∧
+    machine.runFrom (eraseCfg cfg lsb 0) t = eraseCfg cfg lsb t ∧
       machine.outputString (eraseCfg cfg lsb 0) t = [] := by
   revert ht
   refine Nat.rec ?_ ?_ t
@@ -226,7 +229,7 @@ theorem configs_erase (m : ℕ) (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb -
     obtain ⟨hc, hout⟩ := ih (by omega)
     have hne := hfull t (by omega)
     constructor
-    · rw [configs_succ_eq_step', hc, step_erase cfg lsb t hne]
+    · rw [runFrom_succ_eq_step', hc, step_erase cfg lsb t hne]
     · rw [outputString_succ, hout, hc, outputSymbol_erase cfg lsb t hne]
       rfl
 
@@ -243,7 +246,7 @@ theorem tr_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
 theorem step_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
     machine.step (eraseCfg cfg lsb t) = erasedCfg cfg lsb t := by
   rw [step_of_state _ _ stEraseLength rfl, tr_erase_exit cfg lsb t hb]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     rfl
   · funext i
@@ -255,18 +258,18 @@ theorem step_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
 /-- The exit transition emits nothing. -/
 theorem outputSymbol_erase_exit (t : ℕ) (hb : cfg.workTapes 6 (lsb - t) = none) :
     machine.outputSymbol (eraseCfg cfg lsb t) = none := by
-  change (machine.tr stEraseLength _ _).outS = none
+  change (machine.tr stEraseLength _ _).output = none
   rw [tr_erase_exit cfg lsb t hb]
   rfl
 
 /-- The complete erasure of {lit}`m` cells ending at a blank: {lit}`m + 1` steps. -/
-theorem configs_erase_done (m : ℕ) (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb - j) ≠ none)
+theorem runFrom_erase_done (m : ℕ) (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb - j) ≠ none)
     (hb : cfg.workTapes 6 (lsb - m) = none) :
-    machine.configs (eraseCfg cfg lsb 0) (m + 1) = erasedCfg cfg lsb m ∧
+    machine.runFrom (eraseCfg cfg lsb 0) (m + 1) = erasedCfg cfg lsb m ∧
       machine.outputString (eraseCfg cfg lsb 0) (m + 1) = [] := by
-  obtain ⟨hc, hout⟩ := configs_erase cfg lsb m hfull m (Nat.le_refl _)
+  obtain ⟨hc, hout⟩ := runFrom_erase cfg lsb m hfull m (Nat.le_refl _)
   constructor
-  · rw [configs_succ_eq_step', hc, step_erase_exit cfg lsb m hb]
+  · rw [runFrom_succ_eq_step', hc, step_erase_exit cfg lsb m hb]
   · rw [outputString_succ, hout, hc, outputSymbol_erase_exit cfg lsb m hb]
     rfl
 
@@ -289,16 +292,16 @@ theorem erasedCfg_headBound (width t : ℕ) (h : HeadBound width cfg) (h1 : -1 �
   · exact h i
 
 /-- Every head bound holds throughout the complete erasure. -/
-theorem configs_erase_headBound (width m : ℕ)
+theorem runFrom_erase_headBound (width m : ℕ)
     (hfull : ∀ j, j < m → cfg.workTapes 6 (lsb - j) ≠ none)
     (hb : cfg.workTapes 6 (lsb - m) = none) (h : HeadBound width cfg) (h1 : lsb - m = -1)
     (h2 : lsb ≤ width) :
-    ∀ u, u ≤ m + 1 → HeadBound width (machine.configs (eraseCfg cfg lsb 0) u) := by
+    ∀ u, u ≤ m + 1 → HeadBound width (machine.runFrom (eraseCfg cfg lsb 0) u) := by
   intro u hu
   by_cases hum : u ≤ m
-  · rw [(configs_erase cfg lsb m hfull u hum).1]
+  · rw [(runFrom_erase cfg lsb m hfull u hum).1]
     exact eraseCfg_headBound cfg lsb width u h (by omega) h2
-  · rw [show u = m + 1 by omega, (configs_erase_done cfg lsb m hfull hb).1]
+  · rw [show u = m + 1 by omega, (runFrom_erase_done cfg lsb m hfull hb).1]
     exact erasedCfg_headBound cfg lsb width m h (by omega) (by omega)
 
 /-- Tapes outside the length pair are unchanged by the erasure. -/
@@ -343,7 +346,7 @@ theorem phaseRep_finish {input : List (Fin 4)} (width : ℕ) (cfg : Cfg 9 (Fin 4
 theorem outputString_one_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (b : Bool) (hq : cfg.state = some stPayloadBit) (hi : cfg.inputSymbol = some (boolEmb b)) :
     machine.outputString cfg 1 = [] := by
-  rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero,
+  rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero,
     outputSymbol_scan cfg stPayloadBit hq (by simp) b hi]
   rfl
 
@@ -354,7 +357,7 @@ theorem step_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     machine.step cfg =
       { cfg with state := some (stCarry 5), inputPos := moveInputPos cfg.inputPos 1 } := by
   rw [step_of_state _ _ _ hq, hi, tr_scan stPayloadBit (by simp), scanTr_payload]
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl
   · funext i
@@ -363,7 +366,7 @@ theorem step_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
 /-- A bit read in the payload state, given that the payload counter is blank below the
 origin: the counter is incremented, and when it reaches the register the length pair is
 erased and the leaves counter is incremented. -/
-theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a : Account) (b : Bool) (n width : ℕ) (hv : AccountValid n a)
     (h : Represents width cfg a) (hi : cfg.inputSymbol = some (boolEmb b))
     (hw1 : a.forks.size + 1 ≤ width) (hw3 : (a.leaves + 1).size ≤ width)
@@ -398,12 +401,12 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
   have hstep := step_payload cfg b hq hi
   set cfg1 : Cfg 9 (Fin 4) Control input :=
     { cfg with state := some (stCarry 5), inputPos := moveInputPos cfg.inputPos 1 } with hcfg1
-  have hc1 : machine.configs cfg 1 = cfg1 := by
-    rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hstep]
+  have hc1 : machine.runFrom cfg 1 = cfg1 := by
+    rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hstep]
   have ht1 : ∀ i, cfg1.workTapes i = cfg.workTapes i := fun _ ↦ rfl
   have hp1 : ∀ i, cfg1.workTapePos i = cfg.workTapePos i := fun _ ↦ rfl
   have hout1 := outputString_one_payload cfg b hq hi
-  have hh1 : ∀ u ≤ 1, HeadBound width (machine.configs cfg u) := by
+  have hh1 : ∀ u ≤ 1, HeadBound width (machine.runFrom cfg u) := by
     intro u hu
     have hu' : u = 0 ∨ u = 1 := by omega
     rcases hu' with rfl | rfl
@@ -421,19 +424,19 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
       (Geb.BitTree.Counter.size_mono (show a.total - r + 1 ≤ a.total by omega))
   set f := flips (a.total - r).bits with hf
   obtain ⟨hrep, hstate, hin, hunt, hcells, hout⟩ :=
-    configs_increment cfg1 5 lsb width a.total (a.total - r) (a.total - r) rfl hpair1 rfl hnext
+    runFrom_increment cfg1 5 lsb width a.total (a.total - r) (a.total - r) rfl hpair1 rfl hnext
   have hcell : ∀ p, p ≤ f → -1 ≤ cell lsb (siteLayout 5).dir p ∧
       cell lsb (siteLayout 5).dir p ≤ width := by
     intro p hp
     rw [cell_length]
     omega
-  have hbounds := configs_increment_head_bounds cfg1 5 lsb width a.total (a.total - r)
+  have hbounds := runFrom_increment_head_bounds cfg1 5 lsb width a.total (a.total - r)
     (a.total - r) rfl hpair1 rfl hnext hcell
-  have hsel := configs_increment_selected cfg1 5 lsb width a.total (a.total - r) (a.total - r)
+  have hsel := runFrom_increment_selected cfg1 5 lsb width a.total (a.total - r) (a.total - r)
     rfl hpair1 rfl
   simp only [incremented, siteSel, ↓reduceIte] at hrep hstate
-  set cfg2 := machine.configs cfg1 (2 * f + 1) with hcfg2
-  have hh2 : ∀ u ≤ 2 * f + 1, HeadBound width (machine.configs cfg1 u) := by
+  set cfg2 := machine.runFrom cfg1 (2 * f + 1) with hcfg2
+  have hh2 : ∀ u ≤ 2 * f + 1, HeadBound width (machine.runFrom cfg1 u) := by
     intro u hu i
     obtain ⟨hin', hout'⟩ := hbounds u hu i
     by_cases hmem : i = (siteLayout 5).first ∨ i = (siteLayout 5).second ∨
@@ -461,12 +464,12 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
   have hunt2 : ∀ i, i ≠ 6 → i ≠ 7 → i ≠ 8 →
       cfg2.workTapes i = cfg.workTapes i ∧ cfg2.workTapePos i = cfg.workTapePos i :=
     fun i h6 h7 h8 ↦ hunt i h6 h7 h8
-  have hcadd2 : machine.configs cfg (1 + (2 * f + 1)) = cfg2 := by
-    rw [configs_add, hc1]
+  have hcadd2 : machine.runFrom cfg (1 + (2 * f + 1)) = cfg2 := by
+    rw [runFrom_add, hc1]
   have hin2 : cfg2.inputPos = moveInputPos cfg.inputPos 1 := by rw [hin]
   have hout2 : machine.outputString cfg (1 + (2 * f + 1)) = [] :=
     outputString_add_nil cfg 1 _ hout1 (by rw [hc1]; exact hout)
-  have hhb2 : ∀ u ≤ 1 + (2 * f + 1), HeadBound width (machine.configs cfg u) :=
+  have hhb2 : ∀ u ≤ 1 + (2 * f + 1), HeadBound width (machine.runFrom cfg u) :=
     headBound_add cfg width 1 _ hh1 (by rw [hc1]; exact hh2)
   by_cases hr1 : r = 1
   · -- the counter reaches the register: erase the length pair and complete the leaf
@@ -502,9 +505,9 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
       rw [← cell_length]
       exact (hrep.firstBlank _).mpr (Nat.le_refl _)
     have hself := eraseCfg_self cfg2 lsb hstate hp6 hp7 hbeyond2
-    obtain ⟨hc3, hout3⟩ := configs_erase_done cfg2 lsb a.total.size hfull hblank6
+    obtain ⟨hc3, hout3⟩ := runFrom_erase_done cfg2 lsb a.total.size hfull hblank6
     rw [hself] at hc3 hout3
-    have hhb3 := configs_erase_headBound cfg2 lsb width a.total.size hfull hblank6
+    have hhb3 := runFrom_erase_headBound cfg2 lsb width a.total.size hfull hblank6
       (hh2 _ (Nat.le_refl _)) (by omega) (by omega)
     rw [hself] at hhb3
     set cfg3 := erasedCfg cfg2 lsb a.total.size with hcfg3
@@ -548,8 +551,8 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
         (hunt3 2 (by decide) (by decide))
     -- the leaves increment
     obtain ⟨hrep4, hstate4, hin4, hunt4, _, hout4⟩ :=
-      configs_increment cfg3 3 0 width a.forks a.leaves a.leaves rfl hpend3 rfl hw3
-    have hbounds4 := configs_increment_head_bounds cfg3 3 0 width a.forks a.leaves a.leaves
+      runFrom_increment cfg3 3 0 width a.forks a.leaves a.leaves rfl hpend3 rfl hw3
+    have hbounds4 := runFrom_increment_head_bounds cfg3 3 0 width a.forks a.leaves a.leaves
       rfl hpend3 rfl hw3 (by
         intro p hp
         have := Geb.BitTree.Counter.flips_bits_le_succ_size a.leaves
@@ -557,8 +560,8 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
         omega)
     simp only [incremented, siteSel, ↓reduceIte] at hrep4 hstate4
     set g := flips a.leaves.bits with hg
-    set cfg4 := machine.configs cfg3 (2 * g + 1) with hcfg4
-    have hhb4 : ∀ u ≤ 2 * g + 1, HeadBound width (machine.configs cfg3 u) := by
+    set cfg4 := machine.runFrom cfg3 (2 * g + 1) with hcfg4
+    have hhb4 : ∀ u ≤ 2 * g + 1, HeadBound width (machine.runFrom cfg3 u) := by
       intro u hu i
       obtain ⟨hin', hout'⟩ := hbounds4 u hu i
       by_cases hmem : i = (siteLayout 3).first ∨ i = (siteLayout 3).second ∨
@@ -567,9 +570,9 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
       · rw [not_or, not_or] at hmem
         rw [hout' hmem.1 hmem.2.1 hmem.2.2]
         exact hb3 i
-    have hcadd : machine.configs cfg (1 + (2 * f + 1) + (a.total.size + 1) + (2 * g + 1)) =
+    have hcadd : machine.runFrom cfg (1 + (2 * f + 1) + (a.total.size + 1) + (2 * g + 1)) =
         cfg4 := by
-      rw [configs_add cfg _ (2 * g + 1), configs_add cfg _ (a.total.size + 1), hcadd2, hc3]
+      rw [runFrom_add cfg _ (2 * g + 1), runFrom_add cfg _ (a.total.size + 1), hcadd2, hc3]
     refine ⟨?_, ?_, ?_, ?_⟩
     · rw [hcost, hcadd, hacc]
       refine Represents.ofLive (n := n) ?_ ⟨hrep4.toPairData, ?_, ?_, ?_⟩ (hacc ▸ hv') hw1
@@ -591,13 +594,13 @@ theorem configs_bit_payload {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control 
       refine outputString_add_nil cfg _ _ (outputString_add_nil cfg _ _ hout2 ?_) ?_
       · rw [hcadd2]
         exact hout3
-      · rw [configs_add, hcadd2, hc3]
+      · rw [runFrom_add, hcadd2, hc3]
         exact hout4
     · rw [hcost]
       refine headBound_add cfg width _ _ (headBound_add cfg width _ _ hhb2 ?_) ?_
       · rw [hcadd2]
         exact hhb3
-      · rw [configs_add, hcadd2, hc3]
+      · rw [runFrom_add, hcadd2, hc3]
         exact hhb4
   · -- the counter remains below the register
     have hcost : macroCost a b = 1 + (2 * f + 1) := by

@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Emissions
 
@@ -25,10 +24,10 @@ and an accumulator {lit}`o` collecting the emitted symbols, it reads off the
 emission. {lit}`RunsTo.ofFamily` is the case of a family emitting nothing.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs`,
+statements mention {name}`Turing.MultiTapeTM.runFrom`,
 {name}`Turing.MultiTapeTM.outputString` and
 {name}`Turing.MultiTapeTM.spaceUsed`, each depending on
-{lit}`Classical.choice` through Cslib's {name}`Turing.MultiTapeTM.Cfg.inputSymbol`
+{lit}`Classical.choice` through Cslib's {name}`Turing.Cfg.inputSymbol`
 or mathlib's {name}`Finset.image`.
 
 # Main definitions
@@ -51,6 +50,8 @@ or mathlib's {name}`Finset.image`.
 
 Turing machine, output, space complexity
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -87,12 +88,12 @@ theorem Arrives.ofFamily {k : ℕ} {State : Type} {input : List Bool}
     (hstep : ∀ s < n, tm.step (f s) = f (s + 1))
     (hpos : ∀ s ≤ n, ∀ i, -1 ≤ (f s).workTapePos i ∧ (f s).workTapePos i ≤ B) :
     Arrives tm (f 0) (f n) n B := by
-  have key : ∀ s, s ≤ n → tm.configs (f 0) s = f s := by
+  have key : ∀ s, s ≤ n → tm.runFrom (f 0) s = f s := by
     refine Nat.rec ?_ ?_
     · intro _
-      exact configs_zero
+      exact runFrom_zero
     · intro s ih hs
-      rw [configs_succ_eq_step', ih (by omega), hstep s (by omega)]
+      rw [runFrom_succ_eq_step', ih (by omega), hstep s (by omega)]
   exact ⟨fun t' ht' ↦ by rw [key t' (by omega)]; exact hlive t' ht',
     key n (le_refl n), fun t' ht' i ↦ by rw [key t' ht']; exact hpos t' ht' i⟩
 
@@ -104,9 +105,9 @@ theorem Reaches.ofFamily {k : ℕ} {State : Type} {input : List Bool}
     (hout : ∀ s < n, tm.outputSymbol (f s) = none)
     (hpos : ∀ s ≤ n, ∀ i, -1 ≤ (f s).workTapePos i ∧ (f s).workTapePos i ≤ B) :
     Reaches tm (f 0) (f n) n B := by
-  have key : ∀ s ≤ n, tm.configs (f 0) s = f s := fun s hs ↦
+  have key : ∀ s ≤ n, tm.runFrom (f 0) s = f s := fun s hs ↦
     (Arrives.ofFamily tm f s B (fun t ht ↦ hlive t (by omega))
-      (fun t ht ↦ hstep t (by omega)) (fun t ht ↦ hpos t (by omega))).configs_eq
+      (fun t ht ↦ hstep t (by omega)) (fun t ht ↦ hpos t (by omega))).runFrom_eq
   have hnil : ∀ s, s ≤ n → tm.outputString (f 0) s = [] := by
     refine Nat.rec ?_ ?_
     · intro _
@@ -129,26 +130,26 @@ theorem Emits.ofFamily {k : ℕ} {State : Type} {input : List Bool} (tm : MultiT
     (hpos : ∀ s ≤ n, ∀ i, -1 ≤ (f s).workTapePos i ∧ (f s).workTapePos i ≤ B)
     (hpos' : ∀ i, -1 ≤ cfg'.workTapePos i ∧ cfg'.workTapePos i ≤ B) :
     Emits tm (f 0) cfg' (o (n + 1)) (n + 1) B := by
-  have key : ∀ s, s ≤ n → tm.configs (f 0) s = f s ∧ tm.outputString (f 0) s = o s := by
+  have key : ∀ s, s ≤ n → tm.runFrom (f 0) s = f s ∧ tm.outputString (f 0) s = o s := by
     refine Nat.rec ?_ ?_
     · intro _
-      exact ⟨configs_zero, h0.symm⟩
+      exact ⟨runFrom_zero, h0.symm⟩
     · intro s ih hs
       obtain ⟨hc, ho⟩ := ih (by omega)
       refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
+      · rw [runFrom_succ_eq_step', hc, hstep s (by omega)]
       · rw [outputString_succ, ho, hc, hout s (by omega)]
   refine ⟨⟨?_, ?_, ?_⟩, ?_, hcfg'⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact hlive t' (by omega)
-  · rw [configs_succ_eq_step', (key n (le_refl n)).1, hhalt]
+  · rw [runFrom_succ_eq_step', (key n (le_refl n)).1, hhalt]
   · intro t' ht' i
     rcases Nat.lt_or_ge t' (n + 1) with h | h
     · rw [(key t' (by omega)).1]
       exact hpos t' (by omega) i
     · have : t' = n + 1 := by omega
-      rw [this, configs_succ_eq_step', (key n (le_refl n)).1, hhalt]
+      rw [this, runFrom_succ_eq_step', (key n (le_refl n)).1, hhalt]
       exact hpos' i
   · rw [outputString_succ, (key n (le_refl n)).1, (key n (le_refl n)).2, hout n (le_refl n)]
 

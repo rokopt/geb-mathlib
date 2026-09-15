@@ -6,10 +6,10 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Register
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Runs and the program contract
 
@@ -28,11 +28,12 @@ hands over to its second component at the first halting step of its first, so
 a run's step count must be that step.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs`,
+statements mention {name}`Turing.MultiTapeTM.runFrom`,
 {name}`Turing.MultiTapeTM.outputString` and
 {name}`Turing.MultiTapeTM.spaceUsedByTape`, each depending on
-{lit}`Classical.choice` through Cslib's {name}`Turing.MultiTapeTM.Cfg.inputSymbol`
-or mathlib's {name}`Finset.image`.
+{lit}`Classical.choice` through Cslib's {name}`Turing.Cfg.inputSymbol`
+or mathlib's {name}`Finset.image`. {name}`Turing.MultiTapeTM.outputString` is this
+repository's segment form of the output tape.
 
 # Main definitions
 
@@ -47,7 +48,7 @@ or mathlib's {name}`Finset.image`.
 * {lit}`step_of_state` — a step from a known state, naming {lit}`tr`.
 * {lit}`Arrives.trans`, {lit}`Reaches.trans` — arrivals and reaches compose.
 * {lit}`Reaches.mono`, {lit}`RunsTo.mono` — a larger head bound.
-* {lit}`RunsTo.halt_configs` — after a run the machine stays put.
+* {lit}`RunsTo.halt_runFrom` — after a run the machine stays put.
 * {lit}`spaceUsedByTape_le_of_pos` — the visited cells per tape are at most
   the bound plus two.
 * {lit}`Transforms.mono_time`, {lit}`Transforms.congr` — the contract at a
@@ -57,6 +58,8 @@ or mathlib's {name}`Finset.image`.
 
 Turing machine, program, contract, space complexity
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -71,15 +74,16 @@ theorem step_of_state {k : ℕ} {Symbol State : Type} {input : List Symbol}
     (tm : MultiTapeTM k Symbol State) (cfg : Cfg k Symbol State input)
     (q : State) (hq : cfg.state = some q) :
     tm.step cfg =
-      { state := (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).q'
+      { state := (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).state
         inputPos := moveInputPos cfg.inputPos
-          (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).inputMove
+          (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).inputTape
         workTapes := fun i ↦
-          match ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workActions i).1 with
+          match ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workTapes i).1 with
           | none => cfg.workTapes i
           | some s => Function.update (cfg.workTapes i) (cfg.workTapePos i) s
         workTapePos := fun i ↦ cfg.workTapePos i +
-          ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workActions i).2 } := by
+          ((tm.tr q cfg.inputSymbol cfg.workTapeSymbols).workTapes i).2
+        output := cfg.output ++ (tm.tr q cfg.inputSymbol cfg.workTapeSymbols).output.toList } := by
   unfold step
   rw [hq]
   rfl
@@ -89,12 +93,12 @@ at no earlier step, every head within {lit}`[-1, B]` throughout. -/
 structure Arrives {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
     (cfg cfg' : Cfg k Bool State input) (t B : ℕ) : Prop where
   /-- No step before {lit}`t` is halted. -/
-  live : ∀ t' < t, (tm.configs cfg t').state ≠ none
+  live : ∀ t' < t, (tm.runFrom cfg t').state ≠ none
   /-- The configuration at step {lit}`t`. -/
-  configs_eq : tm.configs cfg t = cfg'
+  runFrom_eq : tm.runFrom cfg t = cfg'
   /-- Every head stays within {lit}`[-1, B]`. -/
-  pos : ∀ t' ≤ t, ∀ i, -1 ≤ (tm.configs cfg t').workTapePos i ∧
-    (tm.configs cfg t').workTapePos i ≤ B
+  pos : ∀ t' ≤ t, ∀ i, -1 ≤ (tm.runFrom cfg t').workTapePos i ∧
+    (tm.runFrom cfg t').workTapePos i ≤ B
 
 /-- An arrival emitting nothing. -/
 structure Reaches {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
@@ -113,20 +117,20 @@ theorem Arrives.trans {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg₁ cfg₂ : Cfg k Bool State input} {t₁ t₂ B : ℕ}
     (h₁ : Arrives tm cfg cfg₁ t₁ B) (h₂ : Arrives tm cfg₁ cfg₂ t₂ B) :
     Arrives tm cfg cfg₂ (t₁ + t₂) B where
-  configs_eq := by rw [configs_add, h₁.configs_eq, h₂.configs_eq]
+  runFrom_eq := by rw [runFrom_add, h₁.runFrom_eq, h₂.runFrom_eq]
   live := by
     intro t' ht'
     by_cases h : t' < t₁
     · exact h₁.live t' h
     · have ht : t' = t₁ + (t' - t₁) := by omega
-      rw [ht, configs_add, h₁.configs_eq]
+      rw [ht, runFrom_add, h₁.runFrom_eq]
       exact h₂.live (t' - t₁) (by omega)
   pos := by
     intro t' ht' i
     by_cases h : t' < t₁
     · exact h₁.pos t' (le_of_lt h) i
     · have ht : t' = t₁ + (t' - t₁) := by omega
-      rw [ht, configs_add, h₁.configs_eq]
+      rw [ht, runFrom_add, h₁.runFrom_eq]
       exact h₂.pos (t' - t₁) (by omega) i
 
 /-- Reaches compose. -/
@@ -135,14 +139,14 @@ theorem Reaches.trans {k : ℕ} {State : Type} {input : List Bool}
     (h₁ : Reaches tm cfg cfg₁ t₁ B) (h₂ : Reaches tm cfg₁ cfg₂ t₂ B) :
     Reaches tm cfg cfg₂ (t₁ + t₂) B :=
   ⟨h₁.toArrives.trans h₂.toArrives, by
-    rw [outputString_add_eq_append, h₁.output, h₁.configs_eq, h₂.output]; rfl⟩
+    rw [outputString_add_eq_append, h₁.output, h₁.runFrom_eq, h₂.output]; rfl⟩
 
 /-- A reach within one bound is a reach within any larger bound. -/
 theorem Reaches.mono {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {t B B' : ℕ}
     (h : Reaches tm cfg cfg' t B) (hB : B ≤ B') : Reaches tm cfg cfg' t B' where
   live := h.live
-  configs_eq := h.configs_eq
+  runFrom_eq := h.runFrom_eq
   output := h.output
   pos := fun t' ht' i ↦ ⟨(h.pos t' ht' i).1, (h.pos t' ht' i).2.trans (by omega)⟩
 
@@ -154,18 +158,18 @@ theorem RunsTo.mono {k : ℕ} {State : Type} {input : List Bool}
   halted := h.halted
 
 /-- After a run the machine stays in the halted configuration. -/
-theorem RunsTo.halt_configs {k : ℕ} {State : Type} {input : List Bool}
+theorem RunsTo.halt_runFrom {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {t B : ℕ}
-    (h : RunsTo tm cfg cfg' t B) (s : ℕ) : tm.configs cfg (t + s) = cfg' := by
-  rw [configs_add, h.configs_eq]
-  exact configs_of_halts _ h.halted
+    (h : RunsTo tm cfg cfg' t B) (s : ℕ) : tm.runFrom cfg (t + s) = cfg' := by
+  rw [runFrom_add, h.runFrom_eq]
+  exact runFrom_of_halt _ h.halted
 
 /-- A tape whose head stays within {lit}`[-1, B]` over {lit}`t` steps visits at
 most {lit}`B + 2` cells. -/
 theorem spaceUsedByTape_le_of_pos {k : ℕ} {State : Type} {input : List Bool}
     (tm : MultiTapeTM k Bool State) (cfg : Cfg k Bool State input) (t B : ℕ) (i : Fin k)
-    (h : ∀ t' ≤ t, -1 ≤ (tm.configs cfg t').workTapePos i ∧
-      (tm.configs cfg t').workTapePos i ≤ B) :
+    (h : ∀ t' ≤ t, -1 ≤ (tm.runFrom cfg t').workTapePos i ∧
+      (tm.runFrom cfg t').workTapePos i ≤ B) :
     tm.spaceUsedByTape cfg t i ≤ B + 2 := by
   have hsub : tm.visitedByTapeHead cfg t i ⊆ Finset.Icc (-1 : ℤ) B := by
     intro z hz

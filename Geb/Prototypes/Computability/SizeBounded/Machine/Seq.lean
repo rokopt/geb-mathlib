@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Sequencing machines
 
@@ -31,7 +30,7 @@ composite, agreeing with the composite's steps and output; consequently an
 
 * {lit}`seq_step_left`, {lit}`seq_step_right` — the composite's step from a
   lifted configuration is the lift of the component's step.
-* {lit}`seq_configs_left`, {lit}`seq_configs_right` — the same at every step,
+* {lit}`seq_runFrom_left`, {lit}`seq_runFrom_right` — the same at every step,
   while {lit}`P` has not halted.
 * {lit}`seq_outputString_left`, {lit}`seq_outputString_right` — the composite
   emits what the mirrored component emits.
@@ -49,6 +48,8 @@ composite, agreeing with the composite's steps and output; consequently an
 Turing machine, sequencing, composition
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -64,9 +65,9 @@ initial state; in an {lit}`inr` state it is {lit}`Q`'s. -/
   tr q inp work :=
     match q with
     | .inl q => let o := P.tr q inp work
-      { o with q' := some (o.q'.elim (.inr Q.q₀) .inl) }
+      { o with state := some (o.state.elim (.inr Q.q₀) .inl) }
     | .inr q => let o := Q.tr q inp work
-      { o with q' := o.q'.map .inr }
+      { o with state := o.state.map .inr }
 
 /-- A {lit}`P`-configuration lifted into {lit}`seq P Q`: a halted one becomes
 {lit}`Q`'s start. -/
@@ -179,42 +180,42 @@ theorem liftL_state_ne_none : (liftL Q cfg).state ≠ none := by
 end Projections
 
 /-- While {lit}`P` has not halted, the composite mirrors {lit}`P`. -/
-theorem seq_configs_left {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+theorem seq_runFrom_left {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S₁) (Q : MultiTapeTM k Bool S₂)
     (cfg : Cfg k Bool S₁ input) :
-    ∀ t, (∀ t' < t, (P.configs cfg t').state ≠ none) →
-      (seq P Q).configs (liftL Q cfg) t = liftL Q (P.configs cfg t) :=
+    ∀ t, (∀ t' < t, (P.runFrom cfg t').state ≠ none) →
+      (seq P Q).runFrom (liftL Q cfg) t = liftL Q (P.runFrom cfg t) :=
   Nat.rec
-    (fun _ ↦ by rw [configs_zero, configs_zero])
+    (fun _ ↦ by rw [runFrom_zero, runFrom_zero])
     (fun t ih hlive ↦ by
       obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hlive t (by omega))
-      rw [configs_succ_eq_step', ih (fun t' ht' ↦ hlive t' (by omega)), configs_succ_eq_step',
-        seq_step_left P Q (P.configs cfg t) q hq])
+      rw [runFrom_succ_eq_step', ih (fun t' ht' ↦ hlive t' (by omega)), runFrom_succ_eq_step',
+        seq_step_left P Q (P.runFrom cfg t) q hq])
 
 /-- The composite mirrors {lit}`Q` from a lifted {lit}`Q`-configuration. -/
-theorem seq_configs_right {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+theorem seq_runFrom_right {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S₁) (Q : MultiTapeTM k Bool S₂)
     (cfg : Cfg k Bool S₂ input) (t : ℕ) :
-    (seq P Q).configs (liftR (S₁ := S₁) cfg) t = liftR (Q.configs cfg t) :=
+    (seq P Q).runFrom (liftR (S₁ := S₁) cfg) t = liftR (Q.runFrom cfg t) :=
   Nat.rec (motive := fun t ↦
-      (seq P Q).configs (liftR (S₁ := S₁) cfg) t = liftR (Q.configs cfg t))
-    (by rw [configs_zero, configs_zero])
-    (fun t ih ↦ by rw [configs_succ_eq_step', ih, configs_succ_eq_step', seq_step_right P Q])
+      (seq P Q).runFrom (liftR (S₁ := S₁) cfg) t = liftR (Q.runFrom cfg t))
+    (by rw [runFrom_zero, runFrom_zero])
+    (fun t ih ↦ by rw [runFrom_succ_eq_step', ih, runFrom_succ_eq_step', seq_step_right P Q])
     t
 
 /-- While {lit}`P` has not halted, the composite emits what {lit}`P` emits. -/
 theorem seq_outputString_left {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S₁) (Q : MultiTapeTM k Bool S₂)
     (cfg : Cfg k Bool S₁ input) :
-    ∀ t, (∀ t' < t, (P.configs cfg t').state ≠ none) →
+    ∀ t, (∀ t' < t, (P.runFrom cfg t').state ≠ none) →
       (seq P Q).outputString (liftL Q cfg) t = P.outputString cfg t :=
   Nat.rec
     (fun _ ↦ rfl)
     (fun t ih hlive ↦ by
       obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hlive t (by omega))
       rw [outputString_succ, outputString_succ, ih (fun t' ht' ↦ hlive t' (by omega)),
-        seq_configs_left P Q cfg t (fun t' ht' ↦ hlive t' (by omega)),
-        seq_outputSymbol_left P Q (P.configs cfg t) q hq])
+        seq_runFrom_left P Q cfg t (fun t' ht' ↦ hlive t' (by omega)),
+        seq_outputSymbol_left P Q (P.runFrom cfg t) q hq])
 
 /-- From a lifted {lit}`Q`-configuration the composite emits what {lit}`Q`
 emits. -/
@@ -226,8 +227,8 @@ theorem seq_outputString_right {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
       (seq P Q).outputString (liftR (S₁ := S₁) cfg) t = Q.outputString cfg t)
     rfl
     (fun t ih ↦ by
-      rw [outputString_succ, outputString_succ, ih, seq_configs_right P Q cfg t,
-        seq_outputSymbol_right P Q (Q.configs cfg t)])
+      rw [outputString_succ, outputString_succ, ih, seq_runFrom_right P Q cfg t,
+        seq_outputSymbol_right P Q (Q.runFrom cfg t)])
     t
 
 /-- An arrival of {lit}`P` lifts to an arrival of the composite. -/
@@ -236,11 +237,11 @@ theorem Arrives.liftL {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     {cfg cfg' : Cfg k Bool S₁ input} {t B : ℕ} (h : Arrives P cfg cfg' t B) :
     Arrives (seq P Q) (liftL Q cfg) (liftL Q cfg') t B where
   live := fun t' ht' ↦ by
-    rw [seq_configs_left P Q cfg t' (fun s hs ↦ h.live s (by omega))]
+    rw [seq_runFrom_left P Q cfg t' (fun s hs ↦ h.live s (by omega))]
     exact liftL_state_ne_none Q _
-  configs_eq := by rw [seq_configs_left P Q cfg t h.live, h.configs_eq]
+  runFrom_eq := by rw [seq_runFrom_left P Q cfg t h.live, h.runFrom_eq]
   pos := fun t' ht' i ↦ by
-    rw [seq_configs_left P Q cfg t' (fun s hs ↦ h.live s (by omega)), liftL_workTapePos]
+    rw [seq_runFrom_left P Q cfg t' (fun s hs ↦ h.live s (by omega)), liftL_workTapePos]
     exact h.pos t' ht' i
 
 /-- An arrival of {lit}`Q` lifts to an arrival of the composite. -/
@@ -249,11 +250,11 @@ theorem Arrives.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     {cfg cfg' : Cfg k Bool S₂ input} {t B : ℕ} (h : Arrives Q cfg cfg' t B) :
     Arrives (seq P Q) (liftR cfg) (liftR cfg') t B where
   live := fun t' ht' ↦ by
-    rw [seq_configs_right P Q cfg t', liftR_state, ne_eq, Option.map_eq_none_iff]
+    rw [seq_runFrom_right P Q cfg t', liftR_state, ne_eq, Option.map_eq_none_iff]
     exact h.live t' ht'
-  configs_eq := by rw [seq_configs_right P Q cfg t, h.configs_eq]
+  runFrom_eq := by rw [seq_runFrom_right P Q cfg t, h.runFrom_eq]
   pos := fun t' ht' i ↦ by
-    rw [seq_configs_right P Q cfg t', liftR_workTapePos]
+    rw [seq_runFrom_right P Q cfg t', liftR_workTapePos]
     exact h.pos t' ht' i
 
 /-- A run of {lit}`P` followed by an emission of {lit}`Q` from {lit}`P`'s final
@@ -268,7 +269,7 @@ theorem RunsTo.seqEmits {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (by rw [liftL_halt Q cfg₁ h₁.halted]; exact h₂.toArrives.liftR P)
   output := by
     rw [outputString_add_eq_append, seq_outputString_left P Q cfg t₁ h₁.live, h₁.output,
-      List.nil_append, seq_configs_left P Q cfg t₁ h₁.live, h₁.configs_eq,
+      List.nil_append, seq_runFrom_left P Q cfg t₁ h₁.live, h₁.runFrom_eq,
       liftL_halt _ _ h₁.halted, seq_outputString_right, h₂.output]
   halted := by rw [liftR_state, h₂.halted, Option.map_none]
 

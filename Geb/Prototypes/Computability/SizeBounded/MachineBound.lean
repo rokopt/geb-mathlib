@@ -7,10 +7,10 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.WordMachine
 public import Geb.Prototypes.Computability.SizeBounded.Combinators
+public import Geb.Prototypes.Computability.MultiTape.Rename
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Machine bounds for word-algebra primitives
 
@@ -26,11 +26,16 @@ The bounds include the final halting transition and cover empty inputs and outpu
 
 This module relates the algebra to CSLib's machine execution predicates, which depend on
 classical choice. It proves primitive cases, not a general compilation theorem for the algebra.
+The machines read and write {lit}`Fin 2`, so each bound is reached through
+{name}`Turing.MultiTapeTM.computableInTimeAndSpaceOfLength_of_finite` along
+{name}`finTwoEquiv` and {name}`Geb.TreeScanner.boolEmb`.
 
 ## Tags
 
 Turing machine, time complexity, space complexity, bitstring
 -/
+
+set_option doc.verso true
 
 public section
 
@@ -42,19 +47,19 @@ open Geb.TreeScanner (boolEmb)
 /-- Before the final transition, the constant machine's state is the number of bits emitted. -/
 theorem constantMachine_state (v : List Bool) (input : List (Fin 2)) :
     ∀ t, (ht : t ≤ v.length) →
-      ((constantMachine v).configs ((constantMachine v).initCfg input) t).state =
+      ((constantMachine v).runFrom ((constantMachine v).initCfg input) t).state =
         some ⟨t, by omega⟩ := by
   refine Nat.rec (fun _ ↦ rfl) (fun t ih ht ↦ ?_)
-  rw [configs_succ_eq_step']
+  rw [runFrom_succ_eq_step']
   unfold step
   rw [ih (by omega)]
-  simp only [constantMachine, show t < v.length by omega, ↓reduceDIte]
+  simp only [constantMachine, show t < v.length by omega, ↓reduceDIte, Action.apply]
 
 /-- The constant machine emits the next bit, or nothing at the final transition. -/
 theorem constantMachine_emits (v : List Bool) (input : List (Fin 2)) (t : ℕ)
     (ht : t ≤ v.length) :
     (constantMachine v).outputSymbol
-      ((constantMachine v).configs ((constantMachine v).initCfg input) t) =
+      ((constantMachine v).runFrom ((constantMachine v).initCfg input) t) =
         v[t]?.map boolEmb := by
   unfold outputSymbol
   rw [constantMachine_state v input t ht]
@@ -71,55 +76,58 @@ theorem constantMachine_output (v : List Bool) (input : List (Fin 2)) :
 
 /-- The transition after emitting the last bit halts the constant machine. -/
 theorem constantMachine_halts (v : List Bool) (input : List (Fin 2)) :
-    ((constantMachine v).configs ((constantMachine v).initCfg input) (v.length + 1)).state =
+    ((constantMachine v).runFrom ((constantMachine v).initCfg input) (v.length + 1)).state =
       none := by
-  rw [configs_succ_eq_step']
+  rw [runFrom_succ_eq_step']
   unfold step
   rw [constantMachine_state v input v.length (Nat.le_refl _)]
-  simp only [constantMachine, Nat.lt_irrefl, ↓reduceDIte]
+  simp only [constantMachine, Nat.lt_irrefl, ↓reduceDIte, Action.apply]
 
 /-- A constant word function takes its output length plus one transitions and no work cells. -/
 theorem computableInTimeAndSpace_const (v : List Bool) :
-    ComputableInTimeAndSpace (fun _ : List Bool ↦ v) (fun _ ↦ v.length + 1) (fun _ ↦ 0) := by
-  refine ⟨0, 2, v.length + 1, boolEmb, constantMachine v, fun w ↦ ?_⟩
+    ComputableInTimeAndSpaceOfLength (fun _ : List Bool ↦ v) (.refl _) (.refl _)
+      (fun _ ↦ v.length + 1) (fun _ ↦ 0) := by
+  refine computableInTimeAndSpaceOfLength_of_finite (tm := constantMachine v) finTwoEquiv
+    boolEmb (fun b ↦ by cases b <;> rfl) fun w ↦ ?_
   refine ⟨v.length + 1, Nat.le_refl _, 0, Nat.le_refl _, constantMachine_halts v _, ?_, ?_⟩
-  · rw [constantMachine_output v _ _ (Nat.le_refl _), List.take_of_length_le (by omega)]
+  · rw [initCfg_runFrom_output, constantMachine_output v _ _ (Nat.le_refl _),
+      List.take_of_length_le (by omega)]
   · exact spaceUsed_zero_tapes_eq_zero _ _ rfl
 
 /-- Before its final transition, the copy machine is live at the next input position. -/
 theorem identityMachine_state_pos (input : List (Fin 2)) :
     ∀ t, t ≤ input.length →
-      (identityMachine.configs (identityMachine.initCfg input) t).state = some 0 ∧
-      (identityMachine.configs (identityMachine.initCfg input) t).inputPos.val = t + 1 := by
+      (identityMachine.runFrom (identityMachine.initCfg input) t).state = some 0 ∧
+      (identityMachine.runFrom (identityMachine.initCfg input) t).inputPos.val = t + 1 := by
   refine Nat.rec (fun _ ↦ by simp [identityMachine]) (fun t ih ht ↦ ?_)
   obtain ⟨hq, hp⟩ := ih (by omega)
-  have hs := inputSymbolInner (cfg := identityMachine.configs (identityMachine.initCfg input) t)
+  have hs := inputSymbolInner (cfg := identityMachine.runFrom (identityMachine.initCfg input) t)
     t (by omega) (by omega : t < input.length)
-  simp only [configs_succ_eq_step']
+  simp only [runFrom_succ_eq_step']
   unfold step
   rw [hq]
-  change (identityMachine.configs (identityMachine.initCfg input) t).inputSymbol.map
+  change (identityMachine.runFrom (identityMachine.initCfg input) t).inputSymbol.map
       (fun _ ↦ (0 : Fin 1)) = some 0 ∧
-    (moveInputPos (identityMachine.configs (identityMachine.initCfg input) t).inputPos 1).val =
+    (moveInputPos (identityMachine.runFrom (identityMachine.initCfg input) t).inputPos 1).val =
       t.succ + 1
   rw [hs]
   constructor
   · rfl
   · have hm := moveInputPos_pos_of_ne_right
-      (identityMachine.configs (identityMachine.initCfg input) t).inputPos (by omega)
+      (identityMachine.runFrom (identityMachine.initCfg input) t).inputPos (by omega)
     exact (congrArg Fin.val hm).trans (by dsimp only; omega)
 
 /-- The copy machine emits the next input bit, or nothing at the right boundary. -/
 theorem identityMachine_emits (input : List (Fin 2)) (t : ℕ) (ht : t ≤ input.length) :
-    identityMachine.outputSymbol (identityMachine.configs (identityMachine.initCfg input) t) =
+    identityMachine.outputSymbol (identityMachine.runFrom (identityMachine.initCfg input) t) =
       input[t]? := by
   obtain ⟨hq, hp⟩ := identityMachine_state_pos input t ht
   unfold outputSymbol
   rw [hq]
-  change (identityMachine.configs (identityMachine.initCfg input) t).inputSymbol = input[t]?
+  change (identityMachine.runFrom (identityMachine.initCfg input) t).inputSymbol = input[t]?
   by_cases hlt : t < input.length
   · rw [inputSymbolInner t (by omega) hlt, List.getElem?_eq_getElem hlt]
-  · have heq : (identityMachine.configs (identityMachine.initCfg input) t).inputPos.val =
+  · have heq : (identityMachine.runFrom (identityMachine.initCfg input) t).inputPos.val =
         input.length + 1 := by omega
     unfold Cfg.inputSymbol
     split
@@ -136,41 +144,44 @@ theorem identityMachine_output (input : List (Fin 2)) :
 
 /-- The copy machine halts after the right input boundary is read. -/
 theorem identityMachine_halts (input : List (Fin 2)) :
-    (identityMachine.configs (identityMachine.initCfg input) (input.length + 1)).state =
+    (identityMachine.runFrom (identityMachine.initCfg input) (input.length + 1)).state =
       none := by
   have hq := (identityMachine_state_pos input input.length (Nat.le_refl _)).1
   have hs := identityMachine_emits input input.length (Nat.le_refl _)
   unfold outputSymbol at hs
   rw [hq] at hs
-  change (identityMachine.configs (identityMachine.initCfg input) input.length).inputSymbol =
+  change (identityMachine.runFrom (identityMachine.initCfg input) input.length).inputSymbol =
     input[input.length]? at hs
   rw [List.getElem?_length] at hs
-  rw [configs_succ_eq_step']
+  rw [runFrom_succ_eq_step']
   unfold step
   rw [hq]
   change Option.map (fun _ ↦ (0 : Fin 1))
-    (identityMachine.configs (identityMachine.initCfg input) input.length).inputSymbol = none
+    (identityMachine.runFrom (identityMachine.initCfg input) input.length).inputSymbol = none
   rw [hs]
   rfl
 
 /-- The unary projection takes input length plus one transitions and no work cells. -/
 theorem computableInTimeAndSpace_id :
-    ComputableInTimeAndSpace (fun w : List Bool ↦ w) (fun n ↦ n + 1) (fun _ ↦ 0) := by
-  refine ⟨0, 2, 1, boolEmb, identityMachine, fun w ↦ ?_⟩
+    ComputableInTimeAndSpaceOfLength (fun w : List Bool ↦ w) (.refl _) (.refl _)
+      (fun n ↦ n + 1) (fun _ ↦ 0) := by
+  refine computableInTimeAndSpaceOfLength_of_finite (tm := identityMachine) finTwoEquiv
+    boolEmb (fun b ↦ by cases b <;> rfl) fun w ↦ ?_
   refine ⟨(w.map boolEmb).length + 1, by simp, 0, Nat.le_refl _,
     identityMachine_halts _, ?_, ?_⟩
-  · rw [identityMachine_output _ _ (Nat.le_refl _), List.take_of_length_le (by omega)]
+  · rw [initCfg_runFrom_output, identityMachine_output _ _ (Nat.le_refl _),
+      List.take_of_length_le (by omega)]
   · exact spaceUsed_zero_tapes_eq_zero _ _ rfl
 
 /-- The unary constant expression has the constant machine's resource bounds. -/
 theorem computableInTimeAndSpace_constOf (v : List Bool) :
-    ComputableInTimeAndSpace (fun w ↦ (constOf 1 v).sem ![w])
+    ComputableInTimeAndSpaceOfLength (fun w ↦ (constOf 1 v).sem ![w]) (.refl _) (.refl _)
       (fun _ ↦ v.length + 1) (fun _ ↦ 0) := by
   simpa only [sem_constOf] using computableInTimeAndSpace_const v
 
 /-- The unary projection expression has the copy machine's resource bounds. -/
 theorem computableInTimeAndSpace_projOf :
-    ComputableInTimeAndSpace (fun w ↦ (projOf 1 0).sem ![w])
+    ComputableInTimeAndSpaceOfLength (fun w ↦ (projOf 1 0).sem ![w]) (.refl _) (.refl _)
       (fun n ↦ n + 1) (fun _ ↦ 0) := by
   simpa only [sem_projOf, Matrix.cons_val_zero] using computableInTimeAndSpace_id
 

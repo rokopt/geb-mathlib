@@ -7,10 +7,10 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineConfig
 public import Geb.Prototypes.Computability.TreeScanner.Steps
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 public import Mathlib.Tactic.FinCases
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Erasing completed delta fields
 
@@ -21,8 +21,8 @@ the longer field finishes. The pending-tree count is then decremented once.
 ## Main statements
 
 * {lit}`step_clearing` describes one simultaneous erasure transition.
-* {lit}`configs_clearing` describes all intermediate configurations.
-* {lit}`configs_clear_done` gives the exact cleanup cost and empty output.
+* {lit}`runFrom_clearing` describes all intermediate configurations.
+* {lit}`runFrom_clear_done` gives the exact cleanup cost and empty output.
 
 ## Implementation notes
 
@@ -35,6 +35,8 @@ execution layer rather than the pure tape representation.
 Elias delta code, Turing machine, cleanup, running time
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTree.Elias.Machine
@@ -42,26 +44,26 @@ namespace Geb.BitTree.Elias.Machine
 open Turing MultiTapeTM
 
 /-- Two consecutive phases with no output compose by adding their exact costs. -/
-theorem configs_output_add {input : List (Fin 3)}
+theorem runFrom_output_add {input : List (Fin 3)}
     (cfg mid last : Cfg 4 (Fin 3) Control input) (a b : ℕ)
-    (ha : machine.configs cfg a = mid ∧ machine.outputString cfg a = [])
-    (hb : machine.configs mid b = last ∧ machine.outputString mid b = []) :
-    machine.configs cfg (a + b) = last ∧ machine.outputString cfg (a + b) = [] := by
+    (ha : machine.runFrom cfg a = mid ∧ machine.outputString cfg a = [])
+    (hb : machine.runFrom mid b = last ∧ machine.outputString mid b = []) :
+    machine.runFrom cfg (a + b) = last ∧ machine.outputString cfg (a + b) = [] := by
   constructor
-  · rw [configs_add, ha.1, hb.1]
+  · rw [runFrom_add, ha.1, hb.1]
   · rw [outputString_add_eq_append, ha.1, ha.2, hb.2]
     rfl
 
 /-- Bounds for consecutive execution intervals compose at their shared configuration. -/
 theorem headBound_add {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (a b width : ℕ)
-    (ha : ∀ t ≤ a, HeadBound width (machine.configs cfg t))
-    (hb : ∀ t ≤ b, HeadBound width (machine.configs (machine.configs cfg a) t))
-    (t : ℕ) (ht : t ≤ a + b) : HeadBound width (machine.configs cfg t) := by
+    (ha : ∀ t ≤ a, HeadBound width (machine.runFrom cfg t))
+    (hb : ∀ t ≤ b, HeadBound width (machine.runFrom (machine.runFrom cfg a) t))
+    (t : ℕ) (ht : t ≤ a + b) : HeadBound width (machine.runFrom cfg t) := by
   by_cases h : t ≤ a
   · exact ha t h
   · have he : t = a + (t - a) := by omega
-    rw [he, configs_add]
+    rw [he, runFrom_add]
     exact hb (t - a) (by omega)
 
 /-- A nonempty cleanup phase takes the erasing branch of the transition table. -/
@@ -70,7 +72,7 @@ theorem tr_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     machine.tr stClear (clearingCfg cfg bs cs p r).inputSymbol
         (clearingCfg cfg bs cs p r).workTapeSymbols =
       { jump stClear with
-        workActions := fun i ↦
+        workTapes := fun i ↦
           if i = 2 then (if p = 0 then (none, 0) else (some none, -1))
           else if i = 3 then (if r = 0 then (none, 0) else (some none, -1))
           else (none, 0) } := by
@@ -99,7 +101,7 @@ theorem step_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r : ℕ) (h : 0 < p + r) :
     machine.step (clearingCfg cfg bs cs p r) = clearingCfg cfg bs cs (p - 1) (r - 1) := by
   rw [Geb.TreeScanner.step_of_state _ _ stClear rfl, tr_clearing cfg bs cs p r h]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     fin_cases i <;> cases p <;> cases r <;>
       simp only [clearingCfg, Fin.reduceFinMk, Fin.isValue, Fin.reduceEq, ↓reduceIte,
@@ -113,19 +115,19 @@ theorem step_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
 theorem outputSymbol_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r : ℕ) (h : 0 < p + r) :
     machine.outputSymbol (clearingCfg cfg bs cs p r) = none := by
-  change (machine.tr stClear _ _).outS = none
+  change (machine.tr stClear _ _).output = none
   rw [tr_clearing cfg bs cs p r h]
   rfl
 
 /-- At every erasure step the heads are their initial positions minus elapsed time. -/
-theorem configs_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r t : ℕ) (ht : t ≤ max p r) :
-    machine.configs (clearingCfg cfg bs cs p r) t =
+    machine.runFrom (clearingCfg cfg bs cs p r) t =
         clearingCfg cfg bs cs (p - t) (r - t) ∧
       machine.outputString (clearingCfg cfg bs cs p r) t = [] := by
   revert ht
   apply Nat.rec (motive := fun t ↦ t ≤ max p r →
-    machine.configs (clearingCfg cfg bs cs p r) t =
+    machine.runFrom (clearingCfg cfg bs cs p r) t =
         clearingCfg cfg bs cs (p - t) (r - t) ∧
       machine.outputString (clearingCfg cfg bs cs p r) t = []) ?_ ?_ t
   · intro _
@@ -134,7 +136,7 @@ theorem configs_clearing {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control inp
     obtain ⟨hc, hout⟩ := ih (by omega)
     have hp : 0 < p - t + (r - t) := by omega
     constructor
-    · rw [configs_succ_eq_step', hc, step_clearing cfg bs cs _ _ hp]
+    · rw [runFrom_succ_eq_step', hc, step_clearing cfg bs cs _ _ hp]
       congr 1
     · rw [outputString_succ, hout, hc, outputSymbol_clearing cfg bs cs _ _ hp]
       rfl
@@ -146,12 +148,12 @@ theorem step_clearing_zero {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control i
   have ht : machine.tr stClear (clearingCfg cfg bs cs 0 0).inputSymbol
       (clearingCfg cfg bs cs 0 0).workTapeSymbols =
       { jump stLeaf with
-        workActions := fun i ↦
+        workTapes := fun i ↦
           if i = 0 then (none, -1)
           else if i = 1 then (none, 0)
           else (none, 1) } := rfl
   rw [Geb.TreeScanner.step_of_state _ _ stClear rfl, ht]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     fin_cases i <;> rfl
   · funext i
@@ -163,16 +165,16 @@ theorem outputSymbol_clearing_zero {input : List (Fin 3)}
     machine.outputSymbol (clearingCfg cfg bs cs 0 0) = none := rfl
 
 /-- Both fields clear in the larger head position plus one transition. -/
-theorem configs_clear_done {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_clear_done {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r : ℕ) :
-    machine.configs (clearingCfg cfg bs cs p r) (max p r + 1) = clearedCfg cfg ∧
+    machine.runFrom (clearingCfg cfg bs cs p r) (max p r + 1) = clearedCfg cfg ∧
       machine.outputString (clearingCfg cfg bs cs p r) (max p r + 1) = [] := by
-  obtain ⟨hc, hout⟩ := configs_clearing cfg bs cs p r (max p r) (Nat.le_refl _)
+  obtain ⟨hc, hout⟩ := runFrom_clearing cfg bs cs p r (max p r) (Nat.le_refl _)
   have hp : p - max p r = 0 := by omega
   have hr : r - max p r = 0 := by omega
   rw [hp, hr] at hc
   constructor
-  · rw [configs_succ_eq_step', hc, step_clearing_zero]
+  · rw [runFrom_succ_eq_step', hc, step_clearing_zero]
   · rw [outputString_succ, hout, hc, outputSymbol_clearing_zero]
     rfl
 
@@ -180,7 +182,7 @@ theorem configs_clear_done {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control i
 theorem step_leaf {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
     machine.step (clearedCfg cfg) = completedCfg cfg := by
   rw [Geb.TreeScanner.step_of_state _ _ stLeaf rfl]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   change (clearedCfg cfg).workTapePos i + 0 = _
   exact Int.add_zero _
@@ -190,35 +192,35 @@ theorem outputSymbol_leaf {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control in
     machine.outputSymbol (clearedCfg cfg) = none := rfl
 
 /-- Erasing and completing a leaf takes two transitions beyond the larger head position. -/
-theorem configs_clear_ready {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+theorem runFrom_clear_ready {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (bs cs : List Bool) (p r : ℕ) :
-    machine.configs (clearingCfg cfg bs cs p r) (max p r + 2) = completedCfg cfg ∧
+    machine.runFrom (clearingCfg cfg bs cs p r) (max p r + 2) = completedCfg cfg ∧
       machine.outputString (clearingCfg cfg bs cs p r) (max p r + 2) = [] := by
-  obtain ⟨hc, hout⟩ := configs_clear_done cfg bs cs p r
+  obtain ⟨hc, hout⟩ := runFrom_clear_done cfg bs cs p r
   constructor
   · rw [show max p r + 2 = (max p r + 1) + 1 by omega,
-      configs_succ_eq_step', hc, step_leaf]
+      runFrom_succ_eq_step', hc, step_leaf]
   · rw [show max p r + 2 = (max p r + 1) + 1 by omega,
       outputString_succ, hout, hc, outputSymbol_leaf]
     rfl
 
 /-- Cleanup visits only the initial nonnegative head interval. -/
-theorem configs_clear_headBound {input : List (Fin 3)}
+theorem runFrom_clear_headBound {input : List (Fin 3)}
     (cfg : Cfg 4 (Fin 3) Control input) (bs cs : List Bool) (p r width : ℕ)
     (hcfg : HeadBound width cfg) (hp : p ≤ width) (hr : r ≤ width)
     (hpending : 1 ≤ cfg.workTapePos 0) (t : ℕ) (ht : t ≤ max p r + 2) :
-    HeadBound width (machine.configs (clearingCfg cfg bs cs p r) t) := by
+    HeadBound width (machine.runFrom (clearingCfg cfg bs cs p r) t) := by
   have h0 := hcfg 0
   have h1 := hcfg 1
   intro i
   by_cases hfirst : t ≤ max p r
-  · rw [(configs_clearing cfg bs cs p r t hfirst).1]
+  · rw [(runFrom_clearing cfg bs cs p r t hfirst).1]
     fin_cases i <;> simp [clearingCfg] <;> omega
   · by_cases hlast : t = max p r + 2
-    · rw [hlast, (configs_clear_ready cfg bs cs p r).1]
+    · rw [hlast, (runFrom_clear_ready cfg bs cs p r).1]
       fin_cases i <;> simp [completedCfg, clearedCfg] <;> omega
     · have he : t = max p r + 1 := by omega
-      rw [he, (configs_clear_done cfg bs cs p r).1]
+      rw [he, (runFrom_clear_done cfg bs cs p r).1]
       fin_cases i <;> simp [clearedCfg] <;> omega
 
 end Geb.BitTree.Elias.Machine

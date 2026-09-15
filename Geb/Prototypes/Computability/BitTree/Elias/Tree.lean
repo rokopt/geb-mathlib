@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Encoding
 public import Geb.Prototypes.Computability.BitTree.Elias.Code
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Binary trees with length-prefixed leaf payloads
 
@@ -32,6 +31,8 @@ lengths, so payload bits are stored without escaping.
 
 binary tree, bitstring, length prefix, encoding
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -8,9 +8,9 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineRead
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineCounter
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineNormalize
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The empty-payload transition
 
@@ -20,13 +20,15 @@ the leaf. The entire transition takes sixteen machine steps.
 
 ## Main statements
 
-* {lit}`configs_empty_leaf` proves the exact result and cost of the empty-leaf transition.
-* {lit}`configs_empty_leaf_headBound` bounds every intermediate work-tape head.
+* {lit}`runFrom_empty_leaf` proves the exact result and cost of the empty-leaf transition.
+* {lit}`runFrom_empty_leaf_headBound` bounds every intermediate work-tape head.
 
 ## Tags
 
 Elias delta code, Turing machine, empty leaf, simulation
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -35,16 +37,16 @@ namespace Geb.BitTree.Elias.Machine
 open Turing MultiTapeTM
 
 /-- Decrementing the one-bit width field reaches the payload countdown with a zero width. -/
-theorem configs_empty_width (input : List (Fin 3)) (pos : Fin (input.length + 2))
+theorem runFrom_empty_width (input : List (Fin 3)) (pos : Fin (input.length + 2))
     (pending : ℕ) :
-    machine.configs (scanCfg input pos (stDecrement false) pending 0 [true] [true]) 5 =
+    machine.runFrom (scanCfg input pos (stDecrement false) pending 0 [true] [true]) 5 =
       scanCfg input pos (stDecrement true) pending 0 [false] [true] ∧
     machine.outputString (scanCfg input pos (stDecrement false) pending 0 [true] [true]) 5 =
       [] := by
-  have h := configs_decrement
+  have h := runFrom_decrement
     (scanCfg input pos (stDecrement false) pending 0 [true] [true]) false [true]
     (by decide)
-  change machine.configs (counterCfg _ false [true] (stDecrement false) 2) 5 =
+  change machine.runFrom (counterCfg _ false [true] (stDecrement false) 2) 5 =
     counterCfg _ false [false] (stDecrement true) 2 ∧ _ at h
   have hstart := counterCfg_scanCfg_false input pos (stDecrement false) (stDecrement false)
     pending 0 [true] [true] [true]
@@ -56,16 +58,16 @@ theorem configs_empty_width (input : List (Fin 3)) (pos : Fin (input.length + 2)
   exact h
 
 /-- Decrementing the one-bit payload field reaches cleanup with both fields zero. -/
-theorem configs_empty_payload (input : List (Fin 3)) (pos : Fin (input.length + 2))
+theorem runFrom_empty_payload (input : List (Fin 3)) (pos : Fin (input.length + 2))
     (pending : ℕ) :
-    machine.configs (scanCfg input pos (stDecrement true) pending 0 [false] [true]) 5 =
+    machine.runFrom (scanCfg input pos (stDecrement true) pending 0 [false] [true]) 5 =
       scanCfg input pos stClear pending 0 [false] [false] ∧
     machine.outputString (scanCfg input pos (stDecrement true) pending 0 [false] [true]) 5 =
       [] := by
-  have h := configs_decrement
+  have h := runFrom_decrement
     (scanCfg input pos (stDecrement true) pending 0 [false] [true]) true [true]
     (by decide)
-  change machine.configs (counterCfg _ true [true] (stDecrement true) 2) 5 =
+  change machine.runFrom (counterCfg _ true [true] (stDecrement true) 2) 5 =
     counterCfg _ true [false] stClear 2 ∧ _ at h
   have hstart := counterCfg_scanCfg_true input pos (stDecrement true) (stDecrement true)
     pending 0 [false] [true] [true]
@@ -77,12 +79,12 @@ theorem configs_empty_payload (input : List (Fin 3)) (pos : Fin (input.length + 
   exact h
 
 /-- Erasing the two zero fields completes an empty leaf in four transitions. -/
-theorem configs_empty_clear (input : List (Fin 3)) (pos : Fin (input.length + 2))
+theorem runFrom_empty_clear (input : List (Fin 3)) (pos : Fin (input.length + 2))
     (pending : ℕ) (hp : 0 < pending) :
-    machine.configs (scanCfg input pos stClear pending 0 [false] [false]) 4 =
+    machine.runFrom (scanCfg input pos stClear pending 0 [false] [false]) 4 =
       modelCfg input pos (Scanner.finish pending) [] [] ∧
     machine.outputString (scanCfg input pos stClear pending 0 [false] [false]) 4 = [] := by
-  have h := configs_clear_ready (scanCfg input pos stClear pending 0 [false] [false])
+  have h := runFrom_clear_ready (scanCfg input pos stClear pending 0 [false] [false])
     [false] [false] 2 2
   have hn := clearingCfg_scanCfg input pos stClear pending 0 [false] [false]
   simp only [List.length_cons, List.length_nil, Nat.reduceAdd] at hn
@@ -90,65 +92,65 @@ theorem configs_empty_clear (input : List (Fin 3)) (pos : Fin (input.length + 2)
   exact h
 
 /-- Reading the shortest delta header finishes its empty leaf in sixteen silent steps. -/
-theorem configs_empty_leaf (input : List (Fin 3)) (pos : Fin (input.length + 2))
+theorem runFrom_empty_leaf (input : List (Fin 3)) (pos : Fin (input.length + 2))
     (pending : ℕ) (hp : 0 < pending)
     (hin : (scanCfg input pos stZeros pending 0 [] [true]).inputSymbol =
       some (boolEmb true)) :
-    machine.configs (scanCfg input pos stZeros pending 0 [] [true]) 16 =
+    machine.runFrom (scanCfg input pos stZeros pending 0 [] [true]) 16 =
       modelCfg input (moveInputPos pos 1) (Scanner.finish pending) [] [] ∧
     machine.outputString (scanCfg input pos stZeros pending 0 [] [true]) 16 = [] := by
   have hs := step_zeros input pos pending 0 [] [true] true hin
   simp only [↓reduceIte] at hs
-  have hread := configs_output_one _ _ hs
+  have hread := runFrom_output_one _ _ hs
     (outputSymbol_read _ stZeros true rfl hin (Or.inr (Or.inl rfl)))
   have hc := step_sizeCheck input (moveInputPos pos 1) pending 0 [true] [true]
   simp only [ite_true] at hc
-  have hcheck := configs_output_one _ _ hc
+  have hcheck := runFrom_output_one _ _ hc
     (outputSymbol_sizeCheck input (moveInputPos pos 1) pending 0 [true] [true])
-  have h2 := configs_output_add _ _ _ 1 1 hread hcheck
-  have h7 := configs_output_add _ _ _ 2 5 h2
-    (configs_empty_width input (moveInputPos pos 1) pending)
-  have h12 := configs_output_add _ _ _ 7 5 h7
-    (configs_empty_payload input (moveInputPos pos 1) pending)
-  exact configs_output_add _ _ _ 12 4 h12
-    (configs_empty_clear input (moveInputPos pos 1) pending hp)
+  have h2 := runFrom_output_add _ _ _ 1 1 hread hcheck
+  have h7 := runFrom_output_add _ _ _ 2 5 h2
+    (runFrom_empty_width input (moveInputPos pos 1) pending)
+  have h12 := runFrom_output_add _ _ _ 7 5 h7
+    (runFrom_empty_payload input (moveInputPos pos 1) pending)
+  exact runFrom_output_add _ _ _ 12 4 h12
+    (runFrom_empty_clear input (moveInputPos pos 1) pending hp)
 
 /-- Every prefix of the empty-leaf transition stays within the initial pending count and two
 binary-field cells. -/
-theorem configs_empty_leaf_headBound (input : List (Fin 3))
+theorem runFrom_empty_leaf_headBound (input : List (Fin 3))
     (pos : Fin (input.length + 2)) (pending width : ℕ) (hp : 0 < pending)
     (hpw : pending ≤ width) (hw : 2 ≤ width)
     (hin : (scanCfg input pos stZeros pending 0 [] [true]).inputSymbol =
       some (boolEmb true)) (t : ℕ) (ht : t ≤ 16) :
-    HeadBound width (machine.configs (scanCfg input pos stZeros pending 0 [] [true]) t) := by
+    HeadBound width (machine.runFrom (scanCfg input pos stZeros pending 0 [] [true]) t) := by
   have hb : ∀ q bs cs, bs.length ≤ 1 → cs.length ≤ 1 →
       HeadBound width (scanCfg input (moveInputPos pos 1) q pending 0 bs cs) := by
     intro q bs cs hbs hcs
     exact scanCfg_headBound _ _ _ _ _ _ _ _ hpw (by omega) (by omega) (by omega)
-  have hwdec : ∀ r ≤ 5, HeadBound width (machine.configs
+  have hwdec : ∀ r ≤ 5, HeadBound width (machine.runFrom
       (scanCfg input (moveInputPos pos 1) (stDecrement false) pending 0 [true] [true]) r) := by
     intro r hr
-    have h := configs_decrement_headBound
+    have h := runFrom_decrement_headBound
       (scanCfg input (moveInputPos pos 1) (stDecrement false) pending 0 [true] [true])
       false [true] width (hb _ _ _ (by decide) (by decide)) (by simpa using hw)
       (by decide) r hr
     rw [counterCfg_scanCfg_false input (moveInputPos pos 1) _ _ pending 0
       [true] [true] [true]] at h
     exact h
-  have hpdec : ∀ r ≤ 5, HeadBound width (machine.configs
+  have hpdec : ∀ r ≤ 5, HeadBound width (machine.runFrom
       (scanCfg input (moveInputPos pos 1) (stDecrement true) pending 0 [false] [true]) r) := by
     intro r hr
-    have h := configs_decrement_headBound
+    have h := runFrom_decrement_headBound
       (scanCfg input (moveInputPos pos 1) (stDecrement true) pending 0 [false] [true])
       true [true] width (hb _ _ _ (by decide) (by decide)) (by simpa using hw)
       (by decide) r hr
     rw [counterCfg_scanCfg_true input (moveInputPos pos 1) _ _ pending 0
       [false] [true] [true]] at h
     exact h
-  have hclear : ∀ r ≤ 4, HeadBound width (machine.configs
+  have hclear : ∀ r ≤ 4, HeadBound width (machine.runFrom
       (scanCfg input (moveInputPos pos 1) stClear pending 0 [false] [false]) r) := by
     intro r hr
-    have h := configs_clear_headBound
+    have h := runFrom_clear_headBound
       (scanCfg input (moveInputPos pos 1) stClear pending 0 [false] [false])
       [false] [false] 2 2 width (hb _ _ _ (by decide) (by decide)) hw hw
       (by change (1 : ℤ) ≤ pending; omega) r hr
@@ -156,12 +158,12 @@ theorem configs_empty_leaf_headBound (input : List (Fin 3))
     simp only [List.length_cons, List.length_nil, Nat.reduceAdd] at hn
     rw [hn] at h
     exact h
-  have htail : ∀ r ≤ 14, HeadBound width (machine.configs
+  have htail : ∀ r ≤ 14, HeadBound width (machine.runFrom
       (scanCfg input (moveInputPos pos 1) (stDecrement false) pending 0 [true] [true]) r) := by
     apply headBound_add _ 5 9 width hwdec
-    rw [(configs_empty_width input (moveInputPos pos 1) pending).1]
+    rw [(runFrom_empty_width input (moveInputPos pos 1) pending).1]
     apply headBound_add _ 5 4 width hpdec
-    rw [(configs_empty_payload input (moveInputPos pos 1) pending).1]
+    rw [(runFrom_empty_payload input (moveInputPos pos 1) pending).1]
     exact hclear
   have hs := step_zeros input pos pending 0 [] [true] true hin
   simp only [↓reduceIte] at hs

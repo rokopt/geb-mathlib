@@ -8,9 +8,9 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineBit
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineAccounting
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineEnd
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Whole-input execution of the Elias recognizer
 
@@ -20,12 +20,14 @@ the counter sweeps between successive input bits.
 
 ## Main statements
 
-* {lit}`configs_account` realizes every input prefix and bounds its visited space.
+* {lit}`runFrom_account` realizes every input prefix and bounds its visited space.
 
 ## Tags
 
 Elias delta code, Turing machine, execution, complexity
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -34,21 +36,21 @@ namespace Geb.BitTree.Elias.Machine
 open Turing MultiTapeTM
 
 /-- Every prefix realizes its account at the exact accumulated transition cost. -/
-theorem configs_account (w : List Bool) :
+theorem runFrom_account (w : List Bool) :
     ∀ t, (ht : t ≤ w.length) →
       let cost := 1 + runCost (w.take t)
       let a := account (w.take t)
-      machine.configs (machine.initCfg (w.map boolEmb)) cost =
+      machine.runFrom (machine.initCfg (w.map boolEmb)) cost =
           modelCfg (w.map boolEmb) ⟨t + 1, by simp only [List.length_map]; omega⟩
             a.1 a.2.1 a.2.2 ∧
         machine.outputString (machine.initCfg (w.map boolEmb)) cost = [] ∧
         ∀ u ≤ cost, HeadBound (w.length + 1)
-          (machine.configs (machine.initCfg (w.map boolEmb)) u) := by
+          (machine.runFrom (machine.initCfg (w.map boolEmb)) u) := by
   refine Nat.rec ?_ ?_
   · intro ht
-    change machine.configs (machine.initCfg (w.map boolEmb)) 1 = _ ∧ _
+    change machine.runFrom (machine.initCfg (w.map boolEmb)) 1 = _ ∧ _
     refine ⟨?_, outputString_start _, headBound_start _ _ (by omega)⟩
-    rw [configs_start]
+    rw [runFrom_start]
     congr 1
   · intro t ih ht
     have hlt : t < w.length := by omega
@@ -58,13 +60,13 @@ theorem configs_account (w : List Bool) :
       ⟨t + 1, by simp only [List.length_map]; omega⟩
     have hin := inputSymbol_at w t hlt
       (modelCfg (w.map boolEmb) pos a.1 a.2.1 a.2.2) rfl
-    obtain ⟨hs, hout⟩ := configs_bit (w.map boolEmb) pos a.1 a.2.1 a.2.2 w[t]
+    obtain ⟨hs, hout⟩ := runFrom_bit (w.map boolEmb) pos a.1 a.2.1 a.2.2 w[t]
       (account_active _) (account_words _) hin
     have hp := account_pending_le (w.take t)
     have hz := account_zeros_le (w.take t)
     obtain ⟨hb, hd⟩ := account_lengths_le (w.take t)
     have hlen : (w.take t).length = t := List.length_take_of_le (by omega)
-    have hbound := configs_bit_headBound (w.map boolEmb) pos a.1 a.2.1 a.2.2 w[t]
+    have hbound := runFrom_bit_headBound (w.map boolEmb) pos a.1 a.2.1 a.2.2 w[t]
       (account_active _) (account_words _) hin (w.length + 1)
       (by dsimp only [a]; omega) (by dsimp only [a]; omega)
       (by dsimp only [a]; omega) (by dsimp only [a]; omega)
@@ -80,8 +82,8 @@ theorem configs_account (w : List Bool) :
         dsimp only [pos]; simp only [List.length_map]; omega)
     dsimp only
     refine ⟨?_, ?_, ?_⟩
-    · rw [he, configs_add, hc]
-      change machine.configs (modelCfg (w.map boolEmb) pos a.1 a.2.1 a.2.2)
+    · rw [he, runFrom_add, hc]
+      change machine.runFrom (modelCfg (w.map boolEmb) pos a.1 a.2.1 a.2.2)
         (bitCost a.1.1 a.2.1 a.2.2 w[t]) = _
       rw [hs, hpos, account_take_succ w t hlt]
       rfl

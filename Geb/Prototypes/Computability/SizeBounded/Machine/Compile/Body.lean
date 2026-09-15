@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The transformer of a recursion body
 
@@ -34,6 +33,8 @@ read by {name}`Function.update_self` and {name}`Function.update_of_ne`.
 
 Turing machine, compilation, recursion, register allocation, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

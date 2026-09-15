@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Counter
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The scan's invariant and the machine's cost per bit
 
@@ -95,6 +94,8 @@ cost of a bit is a function of the scan's state and the counter together.
 
 amortised analysis, potential, binary counter, Turing machine, cost model
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

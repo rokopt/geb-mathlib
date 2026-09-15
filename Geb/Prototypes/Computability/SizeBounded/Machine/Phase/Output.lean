@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The emitting phase
 
@@ -21,10 +20,10 @@ cell {lit}`length - 1` holds the word's first element and whose cell
 {lit}`0` holds its last, so the walk emits the word in order.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -41,6 +40,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 Turing machine, output, register
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -54,11 +55,11 @@ blank. -/
   tr _ _ work :=
     match work i with
     | some b =>
-      { inputMove := 0
-        workActions := fun l ↦ if l = i then (none, -1) else (none, 0)
-        outS := some b
-        q' := some () }
-    | none => { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none }
+      { inputTape := 0
+        workTapes := fun l ↦ if l = i then (none, -1) else (none, 0)
+        output := some b
+        state := some () }
+    | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- The configuration of {name}`emitLeft` after {lit}`s` steps from the head at
 the last cell of a register holding {lit}`w`. -/
@@ -66,7 +67,8 @@ the last cell of a register holding {lit}`w`. -/
     (w : List Bool) (s : ℕ) : Cfg k Bool Unit input :=
   { cfg with
     state := some ()
-    workTapePos := Function.update cfg.workTapePos i ((w.length : ℤ) - 1 - s) }
+    workTapePos := Function.update cfg.workTapePos i ((w.length : ℤ) - 1 - s)
+    output := cfg.output ++ w.take s }
 
 /-- {name}`emitLeft` from the head at cell {lit}`w.length - 1` of a register
 holding {lit}`w` runs {lit}`w.length + 1` steps, emits {lit}`w`, and leaves the
@@ -76,19 +78,22 @@ theorem emitLeft_emits {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
     (hp : cfg.workTapePos i = (w.length : ℤ) - 1) (B : ℕ) (hB : w.length ≤ B)
     (hpos : ∀ j, -1 ≤ cfg.workTapePos j ∧ cfg.workTapePos j ≤ B) :
     Emits (emitLeft i) cfg
-      { cfg with state := none, workTapePos := Function.update cfg.workTapePos i (-1) }
+      { cfg with
+        state := none
+        workTapePos := Function.update cfg.workTapePos i (-1)
+        output := cfg.output ++ w }
       w (w.length + 1) B := by
   have htrSome : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (b : Bool), work i = some b →
       (emitLeft i).tr () inp work =
-        { inputMove := 0
-          workActions := fun l ↦ if l = i then (none, -1) else (none, 0)
-          outS := some b
-          q' := some () } := by
+        { inputTape := 0
+          workTapes := fun l ↦ if l = i then (none, -1) else (none, 0)
+          output := some b
+          state := some () } := by
     intro inp work b h
     simp only [emitLeft, h]
   have htrNone : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work i = none →
       (emitLeft i).tr () inp work =
-        { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none } := by
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } := by
     intro inp work h
     simp only [emitLeft, h]
   have hsym : ∀ s : ℕ, (emitCfg i cfg w s).workTapeSymbols i =
@@ -109,12 +114,12 @@ theorem emitLeft_emits {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
       (emitLeft i).step (emitCfg i cfg w s) = emitCfg i cfg w (s + 1) := by
     intro s hs
     have hfst : ∀ l : Fin k, (((emitLeft i).tr () (emitCfg i cfg w s).inputSymbol
-        (emitCfg i cfg w s).workTapeSymbols).workActions l).1 = none := by
+        (emitCfg i cfg w s).workTapeSymbols).workTapes l).1 = none := by
       intro l
       rw [htrSome _ _ _ (hbit s hs)]
       simp only [apply_ite Prod.fst, ite_self]
     have hsnd : ∀ l : Fin k, (((emitLeft i).tr () (emitCfg i cfg w s).inputSymbol
-        (emitCfg i cfg w s).workTapeSymbols).workActions l).2 =
+        (emitCfg i cfg w s).workTapeSymbols).workTapes l).2 =
         if l = i then (-1 : SignType) else 0 := by
       intro l
       rw [htrSome _ _ _ (hbit s hs)]
@@ -137,8 +142,13 @@ theorem emitLeft_emits {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         omega
       · rw [Function.update_of_ne hl, Function.update_of_ne hl, ite_eq_right hl,
           SignType.coe_zero, add_zero]
+    · change cfg.output ++ w.take s ++ [w[s]] = cfg.output ++ w.take (s + 1)
+      rw [List.take_succ_eq_append_getElem hs, List.append_assoc]
   have hhalt : (emitLeft i).step (emitCfg i cfg w w.length) =
-      { cfg with state := none, workTapePos := Function.update cfg.workTapePos i (-1) } := by
+      { cfg with
+        state := none
+        workTapePos := Function.update cfg.workTapePos i (-1)
+        output := cfg.output ++ w } := by
     rw [step_of_state _ _ () rfl, htrNone _ _ hnone]
     apply Cfg.ext
     · rfl
@@ -150,15 +160,17 @@ theorem emitLeft_emits {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
           ((0 : SignType) : ℤ) = Function.update cfg.workTapePos i (-1) l
       rw [show ((w.length : ℤ) - 1 - ((w.length : ℕ) : ℤ)) = -1 by omega, SignType.coe_zero,
         add_zero]
+    · change cfg.output ++ w.take w.length ++ [] = cfg.output ++ w
+      rw [List.take_length, List.append_nil]
   have hemit : ∀ s, (hs : s < w.length) →
       (emitLeft i).outputSymbol (emitCfg i cfg w s) = some w[s] := by
     intro s hs
     change ((emitLeft i).tr () (emitCfg i cfg w s).inputSymbol
-      (emitCfg i cfg w s).workTapeSymbols).outS = some w[s]
+      (emitCfg i cfg w s).workTapeSymbols).output = some w[s]
     rw [htrSome _ _ _ (hbit s hs)]
   have hemitNone : (emitLeft i).outputSymbol (emitCfg i cfg w w.length) = none := by
     change ((emitLeft i).tr () (emitCfg i cfg w w.length).inputSymbol
-      (emitCfg i cfg w w.length).workTapeSymbols).outS = none
+      (emitCfg i cfg w w.length).workTapeSymbols).output = none
     rw [htrNone _ _ hnone]
   have hout : ∀ s ≤ w.length, w.take (s + 1) =
       w.take s ++ ((emitLeft i).outputSymbol (emitCfg i cfg w s)).toList := by
@@ -179,11 +191,18 @@ theorem emitLeft_emits {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         cfg.workTapePos
       rw [show ((w.length : ℤ) - 1 - ((0 : ℕ) : ℤ)) = cfg.workTapePos i by omega,
         Function.update_eq_self]
+    · exact List.append_nil _
   have key : Emits (emitLeft i) (emitCfg i cfg w 0)
-      { cfg with state := none, workTapePos := Function.update cfg.workTapePos i (-1) }
+      { cfg with
+        state := none
+        workTapePos := Function.update cfg.workTapePos i (-1)
+        output := cfg.output ++ w }
       (w.take (w.length + 1)) (w.length + 1) B :=
     Emits.ofFamily (emitLeft i) (emitCfg i cfg w) (fun s ↦ w.take s) w.length B
-      { cfg with state := none, workTapePos := Function.update cfg.workTapePos i (-1) }
+      { cfg with
+        state := none
+        workTapePos := Function.update cfg.workTapePos i (-1)
+        output := cfg.output ++ w }
       (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl rfl hout
       (fun s hs l ↦
         update_workTapePos_bounds i hpos ((w.length : ℤ) - 1 - s) (by omega) (by omega) l)

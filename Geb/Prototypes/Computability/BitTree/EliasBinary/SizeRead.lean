@@ -6,9 +6,9 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Steps
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # One bit of the size field
 
@@ -21,12 +21,14 @@ length field. Either way the transition costs one machine step.
 
 * {lit}`step_sizeBit_plain` and {lit}`step_sizeBit_tagged` describe the two transitions
   field by field.
-* {lit}`configs_bit_size` realizes the account update of a size-field bit.
+* {lit}`runFrom_bit_size` realizes the account update of a size-field bit.
 
 ## Tags
 
 Turing machine, simulation, Elias delta code, size field
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -178,7 +180,7 @@ end Step
 /-! ## The bit -/
 
 /-- One bit of the size field realizes its account update in one step. -/
-theorem configs_bit_size {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_bit_size {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a : Account) (b : Bool) (n width : ℕ) (hv : AccountValid n a)
     (h : Represents width cfg a) (hi : cfg.inputSymbol = some (boolEmb b))
     (hw1 : a.forks.size + 1 ≤ width)
@@ -205,10 +207,10 @@ theorem configs_bit_size {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
   have hfp : cfg.workTapePos 0 = 0 := by rw [hl.forksPos, hs]; rfl
   have hvalid := accountStep_valid n a b hv
   rw [hacc] at hvalid
-  have hc1 : machine.configs cfg 1 = machine.step cfg := by
-    rw [show 1 = 0 + 1 from rfl, configs_succ_eq_step', configs_zero]
+  have hc1 : machine.runFrom cfg 1 = machine.step cfg := by
+    rw [show 1 = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero]
   have ho1 : machine.outputString cfg 1 = [] := by
-    rw [show 1 = 0 + 1 from rfl, outputString_succ, configs_zero,
+    rw [show 1 = 0 + 1 from rfl, outputString_succ, runFrom_zero,
       outputSymbol_scan cfg stSizeBit hq (by simp) b hi]
     rfl
   have hd3 := hsr.digits_register hr
@@ -445,7 +447,7 @@ theorem configs_bit_size {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control inp
   rw [hmc, hacc, hc1]
   refine ⟨hrep.1, hrep.2, ho1, fun u hu ↦ ?_⟩
   rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hu with rfl | rfl
-  · rw [configs_zero]
+  · rw [runFrom_zero]
     exact h.bound
   · rw [hc1]
     exact hrep.1.bound

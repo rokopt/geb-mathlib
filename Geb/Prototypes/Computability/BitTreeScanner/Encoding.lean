@@ -10,8 +10,7 @@ public import Mathlib.Control.Monad.Cont
 public import Mathlib.Data.Nat.Bits
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Binary trees with bitstrings at the leaves, and their prefix encoding
 
@@ -112,6 +111,8 @@ instance.
 binary tree, free monad, polynomial functor, prefix code, Elias gamma code,
 succinct encoding
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Scanner
 public import Geb.Prototypes.Computability.TreeScanner.Machine
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A single-pass machine for binary trees with bitstring leaves
 
@@ -27,6 +26,8 @@ Two initial steps position the work head and install the marker.
 binary tree, bitstring, Turing machine, recognizer
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTree
@@ -43,25 +44,25 @@ def modeState : Mode → Fin 7
   | .dead => 6
 
 /-- Consume one input bit, moving the counter head by the given displacement. -/
-def consume (q : Fin 7) (d : SignType) : TransitionOut 1 (Fin 2) (Fin 7) where
-  inputMove := 1
-  workActions _ := (none, d)
-  outS := none
-  q' := some q
+def consume (q : Fin 7) (d : SignType) : Action 1 (Fin 2) (Fin 7) where
+  inputTape := 1
+  workTapes _ := (none, d)
+  output := none
+  state := some q
 
 /-- A fused recognizer with one work tape and a unary pending-subtree counter. -/
 def unaryScanner : MultiTapeTM 1 (Fin 2) (Fin 7) where
   q₀ := 0
   tr q input work :=
     if q = 0 then
-      { inputMove := 0, workActions := fun _ ↦ (none, 1), outS := none, q' := some 1 }
+      { inputTape := 0, workTapes := fun _ ↦ (none, 1), output := none, state := some 1 }
     else if q = 1 then
-      { inputMove := 0, workActions := fun _ ↦ (some (some 0), 0),
-        outS := none, q' := some 2 }
+      { inputTape := 0, workTapes := fun _ ↦ (some (some 0), 0),
+        output := none, state := some 2 }
     else match input with
       | none =>
-        { inputMove := 0, workActions := fun _ ↦ (none, 0),
-          outS := some (boolEmb (q == 5)), q' := none }
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+          output := some (boolEmb (q == 5)), state := none }
       | some b =>
         if q = 2 then
           if b = 0 then consume 3 0 else consume 2 1
@@ -77,6 +78,7 @@ def plantCfg (w : List Bool) : Cfg 1 (Fin 2) (Fin 7) (w.map boolEmb) where
   inputPos := 1
   workTapes _ _ := none
   workTapePos _ := 1
+  output := []
 
 /-- A configuration at a prefix boundary, with its pure scanner state. -/
 def scanCfg (w : List Bool) (t : ℕ) (h : t ≤ w.length) (s : State) :
@@ -85,6 +87,7 @@ def scanCfg (w : List Bool) (t : ℕ) (h : t ≤ w.length) (s : State) :
   inputPos := ⟨t + 1, by simp only [List.length_map]; omega⟩
   workTapes _ z := if z = 1 then some 0 else none
   workTapePos _ := s.2
+  output := []
 
 /-- Fork tags increment the counter; string terminators decrement it. -/
 def counterMove (m : Mode) (b : Bool) : SignType :=

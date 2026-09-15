@@ -14,8 +14,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Basic
 public import Geb.Mathlib.Data.FinEnum
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Compiling the algebra into programs
 
@@ -66,6 +65,8 @@ programs stay choice-free.
 
 Turing machine, compilation, register, recursion, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

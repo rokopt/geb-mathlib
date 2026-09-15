@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Represent
 public import Geb.Prototypes.Computability.TreeScanner.Steps
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Single transitions of the scan
 
@@ -28,6 +28,8 @@ tagged digits that the phase proofs consume.
 
 Turing machine, simulation, transition
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -113,12 +115,14 @@ theorem outputSymbol_phase {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
   rw [tr_phase q hph]
   rfl
 
-/-- At the right end marker only the finite control changes to the halting state. -/
+/-- At the right end marker the finite control changes to the halting state and the
+accepting-state decision is appended to the output tape; nothing else changes. -/
 theorem step_end {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (q : Control)
     (hq : cfg.state = some q) (hread : q = stTree ∨ q = stZeros ∨ q = stSizeBit ∨
       q = stLengthBit ∨ q = stPayloadBit ∨ q = stDone ∨ q = stDead)
     (hi : cfg.inputSymbol = none) :
-    machine.step cfg = { cfg with state := none } := by
+    machine.step cfg =
+      { cfg with state := none, output := cfg.output ++ [boolEmb (q == stDone)] } := by
   rw [step_of_state _ _ _ hq, hi, tr_end q hread]
   apply Cfg.ext <;> simp [finish]
 
@@ -276,27 +280,27 @@ representation moves to the updated account, the input head advances by one, not
 emitted, and every head stays within the width throughout. -/
 def BitSpec {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (a : Account)
     (b : Bool) (width : ℕ) : Prop :=
-  Represents width (machine.configs cfg (macroCost a b)) (accountStep a b) ∧
-    (machine.configs cfg (macroCost a b)).inputPos = moveInputPos cfg.inputPos 1 ∧
+  Represents width (machine.runFrom cfg (macroCost a b)) (accountStep a b) ∧
+    (machine.runFrom cfg (macroCost a b)).inputPos = moveInputPos cfg.inputPos 1 ∧
     machine.outputString cfg (macroCost a b) = [] ∧
-    ∀ u ≤ macroCost a b, HeadBound width (machine.configs cfg u)
+    ∀ u ≤ macroCost a b, HeadBound width (machine.runFrom cfg u)
 
 /-- Bounds on consecutive execution segments combine into a bound on their concatenation. -/
 theorem headBound_add {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (width a b : ℕ)
-    (ha : ∀ t ≤ a, HeadBound width (machine.configs cfg t))
-    (hb : ∀ t ≤ b, HeadBound width (machine.configs (machine.configs cfg a) t)) :
-    ∀ t ≤ a + b, HeadBound width (machine.configs cfg t) := by
+    (ha : ∀ t ≤ a, HeadBound width (machine.runFrom cfg t))
+    (hb : ∀ t ≤ b, HeadBound width (machine.runFrom (machine.runFrom cfg a) t)) :
+    ∀ t ≤ a + b, HeadBound width (machine.runFrom cfg t) := by
   intro t ht
   by_cases h : t ≤ a
   · exact ha t h
-  · rw [show t = a + (t - a) by omega, configs_add]
+  · rw [show t = a + (t - a) by omega, runFrom_add]
     exact hb (t - a) (by omega)
 
 /-- Empty outputs of consecutive segments concatenate to an empty output. -/
 theorem outputString_add_nil {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a b : ℕ) (ha : machine.outputString cfg a = [])
-    (hb : machine.outputString (machine.configs cfg a) b = []) :
+    (hb : machine.outputString (machine.runFrom cfg a) b = []) :
     machine.outputString cfg (a + b) = [] := by
   rw [outputString_add_eq_append, ha, hb]
   rfl

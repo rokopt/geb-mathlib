@@ -8,8 +8,7 @@ module
 public import Geb.Mathlib.Computability.Cobham.Basic
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Mazzanti's algebra of non-size-increasing bitstring functions
 
@@ -99,6 +98,8 @@ arity rather than a nullary shape under a substitution, which spares the
 non-size-increasing, simultaneous recursion on notation, function algebra,
 polynomial time, linear space, W-type, polynomial functor
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded
 

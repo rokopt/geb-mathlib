@@ -568,14 +568,15 @@ their Markdown docstrings; they render too, and are not converted.
   constant reference for `lake shake` to see. Any other literal
   bracket is escaped, `\[` and `\]`, the `[text]` form being
   reserved for links. `lakefile.toml` sets the option for
-  the `GebLang` library, whose umbrella imports its modules directly; a
-  module of any other library sets it itself, `set_option doc.verso
-  true` between the imports and the module docstring. The two forms
-  exist because mathlib's header linter (`linter.style.header`) rejects
-  any command before the module docstring in a module its library root
-  imports directly, which `GebLang.lean` does and `Geb.lean`, importing
-  its three index modules alone, does not; the extracted file carries
-  neither form (§ Extraction below). The option is compile-time, so a
+  the `GebLang` library; a module of any other library sets it itself,
+  twice: `set_option doc.verso true in` immediately before the module
+  docstring, which parses that docstring as Verso, and `set_option
+  doc.verso true` immediately after it, for the declarations. mathlib's
+  header linter (`linter.style.header`) requires the module docstring
+  to be the first command after the imports and reads through a
+  `set_option … in` prefix to the command it governs, so the `in` form
+  is the one it admits; the extracted file carries neither line
+  (§ Extraction below). The option is compile-time, so a
   consumer compiling the same file without it renders the markup
   literally, which is why extraction converts it.
 - Every code span carries a role: `{cite}` for a bibliography key,
@@ -621,8 +622,9 @@ their Markdown docstrings; they render too, and are not converted.
   Markdown form upstream expects: inside a docstring, a `{cite}` role
   becomes the bare `[Key]` form, any other role's code span becomes a
   bare code span, and an escaped bracket becomes the bare bracket;
-  outside any docstring, the `set_option doc.verso true` line and the
-  `Lean.DocString.Syntax` and `GebMeta` imports are deleted. It
+  outside any docstring, both `set_option doc.verso true` lines, with
+  and without `in`, and the `Lean.DocString.Syntax` and `GebMeta`
+  imports are deleted. It
   converts exactly the four roles named above. Lean core registers others,
   `{lean}` and `{tactic}` among them; using one here means adding its
   name to that script's `role_strip`, or it ships as literal braces.

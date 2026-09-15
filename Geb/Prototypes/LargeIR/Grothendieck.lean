@@ -10,8 +10,7 @@ public import Geb.Mathlib.CategoryTheory.Grothendieck.Basic
 public import Mathlib.CategoryTheory.Pi.Basic
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: the free coproduct completion as a Grothendieck construction
 
@@ -57,6 +56,8 @@ interpretation of {cite}`GhaniNordvallForsbergMalatesta2015` for this code.
 prototype, free coproduct completion, Grothendieck construction,
 inductive-recursive, code
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

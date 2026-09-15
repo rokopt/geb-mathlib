@@ -7,8 +7,7 @@ module
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A machine for trees with Elias delta leaf lengths
 
@@ -24,11 +23,18 @@ in finite control. Thus a declared length never causes a unary allocation.
 * {lit}`machine` is the four-work-tape transition table.
 * {lit}`borrow`, {lit}`sweepLeft` and {lit}`sweepRight` implement a decrement.
 * {lit}`clear` erases both binary fields when a leaf finishes.
+* {lit}`counterCfg` changes one counter's contents, head and control within a context.
+
+## Main statements
+
+* {lit}`counterCfg_output`: a counter configuration retains the context's output tape.
 
 ## Tags
 
 Elias delta code, Turing machine, binary tree, countdown
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -85,31 +91,31 @@ def stRight (value seen : Bool) : Control :=
 def counterTape (value : Bool) : Fin 4 := if value then 3 else 2
 
 /-- A stationary state change with no output or tape writes. -/
-def jump (q : Control) : TransitionOut 4 (Fin 3) Control where
-  inputMove := 0
-  workActions _ := (none, 0)
-  outS := none
-  q' := some q
+def jump (q : Control) : Action 4 (Fin 3) Control where
+  inputTape := 0
+  workTapes _ := (none, 0)
+  output := none
+  state := some q
 
 /-- Consume one input bit and enter the given state. -/
-def consume (q : Control) : TransitionOut 4 (Fin 3) Control :=
-  { jump q with inputMove := 1 }
+def consume (q : Control) : Action 4 (Fin 3) Control :=
+  { jump q with inputTape := 1 }
 
 /-- Emit one boolean and halt. -/
-def finish (b : Bool) : TransitionOut 4 (Fin 3) Control :=
-  { jump stDead with outS := some (boolEmb b), q' := none }
+def finish (b : Bool) : Action 4 (Fin 3) Control :=
+  { jump stDead with output := some (boolEmb b), state := none }
 
 -- ponytail: full-width countdown sweeps give quadratic time;
 -- amortized local updates can improve it.
 /-- Move or write only the selected binary counter. -/
 def counterAction (value : Bool) (write : Option (Option (Fin 3)))
-    (move : SignType) (q : Control) : TransitionOut 4 (Fin 3) Control :=
+    (move : SignType) (q : Control) : Action 4 (Fin 3) Control :=
   { jump q with
-    workActions := fun i ↦ if i = counterTape value then (write, move) else (none, 0) }
+    workTapes := fun i ↦ if i = counterTape value then (write, move) else (none, 0) }
 
 /-- Subtract one, changing trailing zeros to ones until the first one is reached. -/
 def borrow (value seen : Bool) (work : Fin 4 → Option (Fin 3)) :
-    TransitionOut 4 (Fin 3) Control :=
+    Action 4 (Fin 3) Control :=
   if work (counterTape value) == some 2 then finish false
   else if work (counterTape value) == some 1 then
     counterAction value (some (some 0)) (-1) (stLeft value seen)
@@ -117,7 +123,7 @@ def borrow (value seen : Bool) (work : Fin 4 → Option (Fin 3)) :
 
 /-- Inspect higher digits, remembering whether any result digit is one. -/
 def sweepLeft (value seen : Bool) (work : Fin 4 → Option (Fin 3)) :
-    TransitionOut 4 (Fin 3) Control :=
+    Action 4 (Fin 3) Control :=
   if work (counterTape value) == some 2 then
     counterAction value none 1 (stRight value seen)
   else counterAction value none (-1)
@@ -130,47 +136,47 @@ def afterDecrement (value seen : Bool) : Control :=
 
 /-- Return to the blank immediately after the selected counter's last digit. -/
 def sweepRight (value seen : Bool) (work : Fin 4 → Option (Fin 3)) :
-    TransitionOut 4 (Fin 3) Control :=
+    Action 4 (Fin 3) Control :=
   if work (counterTape value) == none then jump (afterDecrement value seen)
   else counterAction value none 1 (stRight value seen)
 
 /-- Clear both binary fields in parallel, leaving their origin markers in place. -/
-def clear (work : Fin 4 → Option (Fin 3)) : TransitionOut 4 (Fin 3) Control :=
+def clear (work : Fin 4 → Option (Fin 3)) : Action 4 (Fin 3) Control :=
   if work 2 == some 2 && work 3 == some 2 then
     { jump stLeaf with
-      workActions := fun i ↦
+      workTapes := fun i ↦
         if i = 0 then (none, -1)
         else if i = 1 then (none, 0)
         else (none, 1) }
   else
     { jump stClear with
-      workActions := fun i ↦
+      workTapes := fun i ↦
         if i = 0 ∨ i = 1 ∨ work i = some 2 then (none, 0)
         else (some none, -1) }
 
 /-- Read the next external bit once every internal subroutine has finished. -/
-def read (q : Control) (b : Fin 3) : TransitionOut 4 (Fin 3) Control :=
+def read (q : Control) (b : Fin 3) : Action 4 (Fin 3) Control :=
   if q = stTree then
     if b == 1 then
-      { consume stTree with workActions := fun i ↦ (none, if i = 0 then 1 else 0) }
+      { consume stTree with workTapes := fun i ↦ (none, if i = 0 then 1 else 0) }
     else
       { consume stZeros with
-        workActions := fun i ↦ if i = 3 then (some (some 1), 1) else (none, 0) }
+        workTapes := fun i ↦ if i = 3 then (some (some 1), 1) else (none, 0) }
   else if q = stZeros then
     if b == 0 then
-      { consume stZeros with workActions := fun i ↦ (none, if i = 1 then 1 else 0) }
+      { consume stZeros with workTapes := fun i ↦ (none, if i = 1 then 1 else 0) }
     else
       { consume stSizeCheck with
-        workActions := fun i ↦ if i = 2 then (some (some 1), 1) else (none, 0) }
+        workTapes := fun i ↦ if i = 2 then (some (some 1), 1) else (none, 0) }
   else if q = stSizeBit then
     { consume stSizeCheck with
-      workActions := fun i ↦
+      workTapes := fun i ↦
         if i = 1 then (none, -1)
         else if i = 2 then (some (some b), 1)
         else (none, 0) }
   else if q = stLengthBit then
     { consume (stDecrement false) with
-      workActions := fun i ↦ if i = 3 then (some (some b), 1) else (none, 0) }
+      workTapes := fun i ↦ if i = 3 then (some (some b), 1) else (none, 0) }
   else if q = stPayloadBit then consume (stDecrement true)
   else consume stDead
 
@@ -180,7 +186,7 @@ def machine : MultiTapeTM 4 (Fin 3) Control where
   tr q input work :=
     if q = stInit then
       { jump stTree with
-        workActions := fun i ↦ (some (some 2), if i = 1 then 0 else 1) }
+        workTapes := fun i ↦ (some (some 2), if i = 1 then 0 else 1) }
     else if q = stSizeCheck then
       jump (if work 1 == some 2 then stDecrement false else stSizeBit)
     else if q = stDecrement false then counterAction false none (-1) (stBorrow false false)
@@ -243,12 +249,12 @@ theorem tr_end (q : Control) (work : Fin 4 → Option (Fin 3))
   rcases hq with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
 
 /-- Every external-bit transition advances the input head exactly once. -/
-theorem read_inputMove (q : Control) (b : Fin 3) : (read q b).inputMove = 1 := by
+theorem read_inputMove (q : Control) (b : Fin 3) : (read q b).inputTape = 1 := by
   simp only [read]
   split_ifs <;> rfl
 
 /-- No external-bit transition emits output. -/
-theorem read_outS (q : Control) (b : Fin 3) : (read q b).outS = none := by
+theorem read_outS (q : Control) (b : Fin 3) : (read q b).output = none := by
   simp only [read]
   split_ifs <;> rfl
 
@@ -266,6 +272,12 @@ def counterCfg {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
   inputPos := cfg.inputPos
   workTapes i := if i = counterTape value then wordTape bs else cfg.workTapes i
   workTapePos i := if i = counterTape value then p else cfg.workTapePos i
+  output := cfg.output
+
+/-- A counter configuration retains the context's output tape. -/
+@[simp] theorem counterCfg_output {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+    (value : Bool) (bs : List Bool) (q : Control) (p : ℕ) :
+    (counterCfg cfg value bs q p).output = cfg.output := rfl
 
 /-- The origin marker does not depend on the stored binary word. -/
 theorem wordTape_zero (bs : List Bool) : wordTape bs 0 = some 2 := rfl

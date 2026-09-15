@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineModel
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineConfig
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Normalization of counter and cleanup configurations
 
@@ -22,6 +21,8 @@ results in the common configuration used at input boundaries.
 Elias delta code, Turing machine, simulation
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTree.Elias.Machine
@@ -33,7 +34,7 @@ theorem counterCfg_scanCfg_false (input : List (Fin 3)) (pos : Fin (input.length
     (q q' : Control) (pending zeros : ℕ) (bs cs ds : List Bool) :
     counterCfg (scanCfg input pos q pending zeros bs cs) false ds q' (ds.length + 1) =
       scanCfg input pos q' pending zeros ds cs := by
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext i
     exact Fin.cases rfl (fun i ↦ Fin.cases rfl (fun i ↦
       Fin.cases rfl (fun i ↦ Fin.cases rfl (fun j ↦ Fin.elim0 j) i) i) i) i
@@ -48,7 +49,7 @@ theorem counterCfg_scanCfg_true (input : List (Fin 3)) (pos : Fin (input.length 
     (q q' : Control) (pending zeros : ℕ) (bs cs ds : List Bool) :
     counterCfg (scanCfg input pos q pending zeros bs cs) true ds q' (ds.length + 1) =
       scanCfg input pos q' pending zeros bs ds := by
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext i
     exact Fin.cases rfl (fun i ↦ Fin.cases rfl (fun i ↦
       Fin.cases rfl (fun i ↦ Fin.cases rfl (fun j ↦ Fin.elim0 j) i) i) i) i
@@ -64,7 +65,7 @@ theorem clearingCfg_scanCfg (input : List (Fin 3)) (pos : Fin (input.length + 2)
     clearingCfg (scanCfg input pos q pending zeros bs cs) bs cs
         (bs.length + 1) (cs.length + 1) =
       scanCfg input pos stClear pending zeros bs cs := by
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ rfl
   · funext i
     refine Fin.cases ?_ (fun i ↦ Fin.cases ?_ (fun i ↦
       Fin.cases ?_ (fun i ↦ Fin.cases ?_ (fun j ↦ Fin.elim0 j) i) i) i) i <;>
@@ -97,7 +98,7 @@ theorem completedCfg_scanCfg (input : List (Fin 3)) (pos : Fin (input.length + 2
   have hm := wordTape_pending_marker pending hp
   by_cases he : pending = 1
   · subst pending
-    refine Cfg.ext rfl rfl ?_ ?_
+    refine Cfg.ext rfl rfl ?_ ?_ rfl
     · funext i
       exact Fin.cases rfl (fun i ↦ Fin.cases rfl (fun i ↦
         Fin.cases rfl (fun i ↦ Fin.cases rfl (fun j ↦ Fin.elim0 j) i) i) i) i
@@ -107,7 +108,7 @@ theorem completedCfg_scanCfg (input : List (Fin 3)) (pos : Fin (input.length + 2
   · have hf : Scanner.finish pending = (.tree, pending - 1) :=
       ite_eq_right he
     rw [hf]
-    refine Cfg.ext ?_ rfl ?_ ?_
+    refine Cfg.ext ?_ rfl ?_ ?_ rfl
     · change some (if wordTape [] ((pending : ℤ) - 1) == some 2 then _ else _) = _
       rw [hm]
       simp only [he, decide_false, Bool.false_eq_true, ↓reduceIte]

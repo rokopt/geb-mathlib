@@ -82,13 +82,13 @@ instance category (F : Bᵒᵖ ⥤ Type v₃) : Category.{v₂} F.CoElements :=
 variable {F : Bᵒᵖ ⥤ Type v₃}
 
 /-- The object of `B` an element lies over. -/
-def base (x : F.CoElements) : B := (Opposite.unop x).1.unop
+def base (x : F.CoElements) : B := (Opposite.unop x).obj.unop
 
 /-- The element of `F` at `base x`. -/
-def elt (x : F.CoElements) : F.obj (op x.base) := (Opposite.unop x).2
+def elt (x : F.CoElements) : F.obj (op x.base) := (Opposite.unop x).val
 
 /-- An object of `F.CoElements` from an object of `B` and an element. -/
-def mk (b : B) (x : F.obj (op b)) : F.CoElements := Opposite.op ⟨op b, x⟩
+def mk (b : B) (x : F.obj (op b)) : F.CoElements := Opposite.op (F.elementsMk (op b) x)
 
 @[simp] theorem base_mk (b : B) (x : F.obj (op b)) : (mk b x).base = b := rfl
 
@@ -98,24 +98,24 @@ def mk (b : B) (x : F.obj (op b)) : F.CoElements := Opposite.op ⟨op b, x⟩
 
 /-- The morphism of `B` underlying a morphism of `F.CoElements`. -/
 def homBase {x y : F.CoElements} (f : x ⟶ y) : x.base ⟶ y.base :=
-  (Quiver.Hom.unop f).1.unop
+  (Quiver.Hom.unop f).hom.unop
 
 /-- The compatibility equation a morphism of `F.CoElements` satisfies. -/
 theorem map_homBase_elt {x y : F.CoElements} (f : x ⟶ y) :
-    F.map (homBase f).op y.elt = x.elt := (Quiver.Hom.unop f).2
+    F.map (homBase f).op y.elt = x.elt := (Quiver.Hom.unop f).map_val
 
 /-- A morphism of `F.CoElements` from a morphism of `B` and the
 compatibility equation. -/
 def homMk {x y : F.CoElements} (g : x.base ⟶ y.base)
     (hg : F.map g.op y.elt = x.elt) : x ⟶ y :=
-  Quiver.Hom.op (CategoryOfElements.homMk (Opposite.unop y) (Opposite.unop x) g.op hg)
+  Quiver.Hom.op (Functor.Elements.homMk (x := Opposite.unop y) (y := Opposite.unop x) g.op hg)
 
 @[simp] theorem homBase_homMk {x y : F.CoElements} (g : x.base ⟶ y.base)
     (hg : F.map g.op y.elt = x.elt) : homBase (homMk g hg) = g := rfl
 
 @[ext] theorem hom_ext {x y : F.CoElements} {f g : x ⟶ y}
     (h : homBase f = homBase g) : f = g :=
-  Quiver.Hom.unop_inj (Subtype.ext (Quiver.Hom.unop_inj h))
+  Quiver.Hom.unop_inj (Functor.Elements.hom_ext (Quiver.Hom.unop_inj h))
 
 @[simp] theorem homBase_id (x : F.CoElements) : homBase (𝟙 x) = 𝟙 x.base := rfl
 
