@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.Scanner
 public import Geb.Prototypes.Computability.BitTree.Elias.Code
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Streaming recognition of Elias delta headers
 
@@ -25,6 +24,8 @@ change phases on their last bit; incomplete fields retain a header phase and can
 
 Elias delta code, streaming recognizer, simulation
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

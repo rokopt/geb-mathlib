@@ -12,8 +12,7 @@ public import Geb.Mathlib.Data.PFunctor.Slice.Decidable
 public import Geb.Mathlib.Data.PFunctor.Univariate.Finitary
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Syntax of Mazzanti's function algebra
 
@@ -54,6 +53,8 @@ bound on Lean's evaluator, and do not formalize Theorem 5.7's machine characteri
 
 implicit complexity, function algebra, W-type, non-size-increasing function
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -286,7 +286,8 @@ no_double_blank \
 
 # A literate Geb/Mathlib/ module: the strip pass and the role
 # conversion run on every arm, not on GebLang/ alone. The
-# `set_option doc.verso true` line, with a trailing comment, the
+# two `set_option doc.verso true` lines, one with its `in` suffix and
+# one with a trailing comment, the
 # `Lean.DocString.Syntax` import and the `GebMeta` meta import are
 # deleted; a `{cite}` role becomes mathlib's `[Key]` citation form,
 # other roles become bare code spans, an escaped bracket becomes the
@@ -299,12 +300,13 @@ public import Mathlib.Foo.Base
 import Lean.DocString.Syntax
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true  -- checked docstrings
-
+set_option doc.verso true in
 /-! # A literate module
 
 {name}`Nat` and {lit}`x ↦ x`, citing {cite}`Key2001` and \[Key2002\].
 -/
+
+set_option doc.verso true  -- checked docstrings
 
 /-- The successor, per {cite}`Key2001`. -/
 def a (n : Nat) : Nat := n + 1

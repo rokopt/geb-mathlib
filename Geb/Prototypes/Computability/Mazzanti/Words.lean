@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.Mazzanti.BitTree
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Bitstring output conventions
 
@@ -39,6 +38,8 @@ the empty word.
 
 bitstring, non-size-increasing function, acceptance convention
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

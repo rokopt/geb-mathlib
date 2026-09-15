@@ -143,8 +143,9 @@ role_strip='s/(^|[^A-Za-z0-9.`])[{]cite[}]`([^`]*)`/\1[\2]/g; s/(^|[^A-Za-z0-9.`
 
 # strip_line <line>: true when the strip pass deletes <line> outright:
 # an import line naming `Lean.DocString.Syntax` or `GebMeta`, in any
-# of the four import forms, or the `set_option doc.verso true` command
-# line, each with or without a trailing comment. None has meaning
+# of the four import forms, or either `set_option doc.verso true`
+# command line, with or without its `in` suffix, each with or without
+# a trailing comment. None has meaning
 # upstream: they are what a literate module carries so that its
 # docstrings are checked Verso markup with the `{cite}` role
 # (docs/rules/lean-coding.md § Literate modules), and the copy loop
@@ -159,7 +160,7 @@ role_strip='s/(^|[^A-Za-z0-9.`])[{]cite[}]`([^`]*)`/\1[\2]/g; s/(^|[^A-Za-z0-9.`
 # `import Lean.DocString.Syntax`: the copy loop's docstring gate keeps
 # this function from being called on any line inside a docstring at
 # all, a real import or command line never being inside one.
-doc_verso_re='^set_option[[:space:]]+doc\.verso[[:space:]]+true[[:space:]]*(--.*)?$'
+doc_verso_re='^set_option[[:space:]]+doc\.verso[[:space:]]+true([[:space:]]+in)?[[:space:]]*(--.*)?$'
 strip_line() {
   [[ "$1" =~ $doc_verso_re ]] && return 0
   if [[ "$1" =~ $import_line_re ]]; then

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The loop's control phases
 
@@ -23,10 +22,10 @@ From a parked empty register the seek phase finds the blank at cell
 {lit}`0` instead, and two steps halt the machine.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -43,6 +42,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, loop, recursion, register
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -115,6 +116,7 @@ theorem caseLoop_seek {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (caseLoop R bodyF bodyT).step (caseSeekCfg R cfg (r.length + 1)) =
       { cfg with
         state := some (.inl 1)
@@ -145,6 +147,7 @@ theorem caseLoop_seek {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout : ∀ s : ℕ,
       (caseLoop R bodyF bodyT).outputSymbol (caseSeekCfg R cfg s) = none := fun _ ↦ rfl
   have hzero : caseSeekCfg (SF := SF) (ST := ST) R cfg 0 = cfg := by
@@ -154,6 +157,7 @@ theorem caseLoop_seek {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     · rfl
     · change Function.update cfg.workTapePos R (((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show (((0 : ℕ) : ℤ)) = cfg.workTapePos R by omega, Function.update_eq_self]
+    · rfl
   set tgt : Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input :=
     { cfg with
       state := some (.inl 1)
@@ -203,10 +207,10 @@ theorem caseLoop_back {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     change cfg.workTapes R (cfg.workTapePos R) = some c
     rw [hR, hp, tapeOf_cons, Function.update_self]
   have htr : (caseLoop R bodyF bodyT).tr (.inl 1) cfg.inputSymbol cfg.workTapeSymbols =
-      { inputMove := 0
-        workActions := fun j ↦ if j = R then (some none, -1) else (none, 0)
-        outS := none
-        q' := some (.inl (if c then 3 else 2)) } := by
+      { inputTape := 0
+        workTapes := fun j ↦ if j = R then (some none, -1) else (none, 0)
+        output := none
+        state := some (.inl (if c then 3 else 2)) } := by
     unfold caseLoop
     dsimp only
     rw [hsym]
@@ -216,7 +220,7 @@ theorem caseLoop_back {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         workTapes := Function.update cfg.workTapes R (tapeOf r)
         workTapePos := Function.update cfg.workTapePos R ((r.length : ℤ) - 1) } := by
     have hact : ∀ j : Fin k, ((caseLoop R bodyF bodyT).tr (.inl 1) cfg.inputSymbol
-        cfg.workTapeSymbols).workActions j =
+        cfg.workTapeSymbols).workTapes j =
         if j = R then ((some none : Option (Option Bool)), (-1 : SignType)) else (none, 0) := by
       intro j
       rw [htr]
@@ -249,6 +253,8 @@ theorem caseLoop_back {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         change cfg.workTapePos j + ((0 : SignType) : ℤ) =
           Function.update cfg.workTapePos R ((r.length : ℤ) - 1) j
         rw [Function.update_of_ne hj, SignType.coe_zero, add_zero]
+    · rw [htr]
+      exact List.append_nil _
   have hout : (caseLoop R bodyF bodyT).outputSymbol cfg = none := by
     unfold outputSymbol
     rw [hq]
@@ -256,17 +262,17 @@ theorem caseLoop_back {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     rw [htr]
   refine ⟨⟨?_, ?_, ?_⟩, ?_⟩
   · intro t' ht'
-    rw [show t' = 0 by omega, configs_zero, hq]
+    rw [show t' = 0 by omega, runFrom_zero, hq]
     exact Option.some_ne_none _
-  · rw [configs_succ_eq_step' (t := 0), configs_zero, hstep]
+  · rw [runFrom_succ_eq_step' (t := 0), runFrom_zero, hstep]
   · intro t' ht' j
     rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
-    · rw [h0, configs_zero]
+    · rw [h0, runFrom_zero]
       exact hpos j
-    · rw [h1, configs_succ_eq_step' (t := 0), configs_zero, hstep]
+    · rw [h1, runFrom_succ_eq_step' (t := 0), runFrom_zero, hstep]
       have hB := (hpos R).2
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
-  · rw [outputString_succ, configs_zero, hout]
+  · rw [outputString_succ, runFrom_zero, hout]
     rfl
 
 /-- The return phase: from the return state for {lit}`c` with {lit}`R`
@@ -287,11 +293,11 @@ theorem caseLoop_ret {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
       (r.length + 1) B := by
   have htr : ∀ (inp : Option Bool) (work : Fin k → Option Bool),
       (caseLoop R bodyF bodyT).tr (.inl (if c then 3 else 2)) inp work =
-        { inputMove := 0
-          workActions := fun j ↦ (none, if j = R
+        { inputTape := 0
+          workTapes := fun j ↦ (none, if j = R
             then (if (work R).isSome then -1 else 1) else 0)
-          outS := none
-          q' := some (if (work R).isSome then .inl (if c then 3 else 2)
+          output := none
+          state := some (if (work R).isSome then .inl (if c then 3 else 2)
             else if c then .inr (.inr bodyT.q₀) else .inr (.inl bodyF.q₀)) } := by
     intro inp work
     cases c <;> rfl
@@ -333,6 +339,7 @@ theorem caseLoop_ret {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (caseLoop R bodyF bodyT).step (caseRetCfg R cfg c ((r.length : ℤ) - 1) r.length) =
       { cfg with
         state := some (if c then .inr (.inr bodyT.q₀) else .inr (.inl bodyF.q₀))
@@ -363,11 +370,12 @@ theorem caseLoop_ret {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         omega
       · rw [Function.update_of_ne hj, Function.update_of_ne hj, ite_eq_right hj,
           SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout : ∀ s : ℕ, (caseLoop R bodyF bodyT).outputSymbol
       (caseRetCfg R cfg c ((r.length : ℤ) - 1) s) = none := by
     intro s
     unfold outputSymbol
-    change ((caseLoop R bodyF bodyT).tr (.inl (if c then 3 else 2)) _ _).outS = none
+    change ((caseLoop R bodyF bodyT).tr (.inl (if c then 3 else 2)) _ _).output = none
     rw [htr]
   have hzero : caseRetCfg (SF := SF) (ST := ST) R cfg c ((r.length : ℤ) - 1) 0 = cfg := by
     apply Cfg.ext
@@ -378,6 +386,7 @@ theorem caseLoop_ret {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         cfg.workTapePos
       rw [show ((r.length : ℤ) - 1 - ((0 : ℕ) : ℤ)) = cfg.workTapePos R by omega,
         Function.update_eq_self]
+    · rfl
   have hpB : (r.length : ℤ) - 1 ≤ B := hp ▸ (hpos R).2
   set tgt : Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input :=
     { cfg with
@@ -447,6 +456,7 @@ theorem caseLoop_exit {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
           hp]
         omega
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hsym₁ : (({ cfg with
       state := some (.inl 1)
       workTapePos := Function.update cfg.workTapePos R (-1 : ℤ) } :
@@ -462,10 +472,10 @@ theorem caseLoop_exit {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         state := some (.inl 1)
         workTapePos := Function.update cfg.workTapePos R (-1 : ℤ) } :
           Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input).workTapeSymbols =
-      { inputMove := 0
-        workActions := fun j ↦ (none, if j = R then 1 else 0)
-        outS := none
-        q' := none } := by
+      { inputTape := 0
+        workTapes := fun j ↦ (none, if j = R then 1 else 0)
+        output := none
+        state := none } := by
     unfold caseLoop
     dsimp only
     rw [hsym₁]
@@ -488,6 +498,7 @@ theorem caseLoop_exit {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         rw [Function.update_self, ite_eq_left rfl, SignType.coe_one, hp]
         omega
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout₀ : (caseLoop R bodyF bodyT).outputSymbol cfg = none := by
     unfold outputSymbol
     rw [hq]
@@ -497,31 +508,31 @@ theorem caseLoop_exit {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         state := some (.inl 1)
         workTapePos := Function.update cfg.workTapePos R (-1 : ℤ) } = none := by
     unfold outputSymbol
-    change ((caseLoop R bodyF bodyT).tr (.inl 1) _ _).outS = none
+    change ((caseLoop R bodyF bodyT).tr (.inl 1) _ _).output = none
     rw [htr₁]
-  have hc₁ : (caseLoop R bodyF bodyT).configs cfg 1 =
+  have hc₁ : (caseLoop R bodyF bodyT).runFrom cfg 1 =
       { cfg with
         state := some (.inl 1)
         workTapePos := Function.update cfg.workTapePos R (-1 : ℤ) } := by
-    rw [configs_succ_eq_step' (t := 0), configs_zero, hstep₁]
-  have hc₂ : (caseLoop R bodyF bodyT).configs cfg 2 = { cfg with state := none } := by
-    rw [show (2 : ℕ) = 1 + 1 by omega, configs_succ_eq_step', hc₁, hstep₂]
+    rw [runFrom_succ_eq_step' (t := 0), runFrom_zero, hstep₁]
+  have hc₂ : (caseLoop R bodyF bodyT).runFrom cfg 2 = { cfg with state := none } := by
+    rw [show (2 : ℕ) = 1 + 1 by omega, runFrom_succ_eq_step', hc₁, hstep₂]
   refine ⟨⟨⟨?_, hc₂, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
-    · rw [h0, configs_zero, hq]
+    · rw [h0, runFrom_zero, hq]
       exact Option.some_ne_none _
     · rw [h1, hc₁]
       exact Option.some_ne_none _
   · intro t' ht' j
     rcases show t' = 0 ∨ t' = 1 ∨ t' = 2 by omega with h0 | h1 | h2
-    · rw [h0, configs_zero]
+    · rw [h0, runFrom_zero]
       exact hpos j
     · rw [h1, hc₁]
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
     · rw [h2, hc₂]
       exact hpos j
-  · rw [show (2 : ℕ) = 1 + 1 by omega, outputString_succ, outputString_succ, configs_zero,
+  · rw [show (2 : ℕ) = 1 + 1 by omega, outputString_succ, outputString_succ, runFrom_zero,
       hout₀, hc₁, hout₁]
     rfl
 

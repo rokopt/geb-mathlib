@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Basic
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The step bound of a compiled program
 
@@ -38,6 +37,8 @@ bits' step bounds, iterated over the length bound.
 
 Turing machine, step bound, recursion on notation, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

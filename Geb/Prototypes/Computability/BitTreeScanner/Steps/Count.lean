@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.BitTreeScanner.Cost
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Basic
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Transition
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The pending count's chains
 
@@ -51,6 +50,8 @@ borrowing state's, so the family's state is the erasing state at cell
 Turing machine, redundant binary counter, carry, borrow, amortised analysis
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTreeScanner
@@ -77,7 +78,7 @@ theorem cfgAt_step_pair_low (h : k < w.length) (hb : w[k] = true)
       exact tr_main_pair_notTwo _ _ _ (by simpa using hlow))
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (cfgAt w k hk ⟨.term, c, 0, []⟩ l).inputPos SignType.pos =
       (cfgAt w (k + 1) h ⟨.term, c + 1, 0, []⟩ (Redundant.inc l)).inputPos
     rw [moveInputPos_pos_of_ne_right _ (by change k + 1 ≠ _; rw [List.length_map]; omega)]
@@ -116,7 +117,7 @@ theorem cfgAt_step_pair_two (h : k < w.length) (hb : w[k] = true)
       exact tr_main_pair_two _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -153,7 +154,7 @@ theorem incCarryCfg_step (j : ℕ) (hjk : j < Redundant.carryLength l) :
     (some (some 1), 1) idle idle rfl (by rw [hsym]; exact tr_incCarry_two _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j' z
     match j' with
     | 0 =>
@@ -198,7 +199,7 @@ theorem incCarryCfg_flip :
     rfl (by rw [hsym]; exact tr_incCarry_notTwo _ _ _ _ (tapeCount_carry l))
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -244,7 +245,7 @@ theorem incBackCfg_step (j : ℕ) (hj : j < Redundant.carryLength l) :
     idle idle rfl (by rw [hsym]; exact tr_incBack_digit _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · rfl
   · funext j'
     match j' with
@@ -271,7 +272,7 @@ theorem incBackCfg_exit (h : k < w.length) (hb : w[k] = true) :
       exact tr_incBack_base _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (incBackCfg w k hk l 0).inputPos SignType.pos =
       (cfgAt w (k + 1) h ⟨.term, c + 1, 0, []⟩ (Redundant.inc l)).inputPos
     rw [moveInputPos_pos_of_ne_right _ (by change k + 1 ≠ _; rw [List.length_map]; omega)]
@@ -351,7 +352,7 @@ theorem decBorrowCfg_step (j : ℕ) (hj : j < Redundant.borrowLength l) :
     (by
       change some stDecBorrow = some (if j + 1 = 0 then stClear else stDecBorrow)
       rw [ite_eq_right (Nat.succ_ne_zero j)])
-    (moveInputPos_zero _) ?_ ?_
+    (moveInputPos_zero _) ?_ ?_ rfl
   · funext j' z
     match j' with
     | 0 =>
@@ -383,7 +384,7 @@ theorem decBorrowCfg_flip_two_zero (hn : Redundant.nlz l = true) (h : l ≠ [])
     bitTreeScanner.step (decBorrowCfg w k hk l (Redundant.borrowLength l)) =
         { state := some stMain, inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩,
           workTapes := ![tapeCount (Redundant.dec l), tapeBase, tapeDigits w.length.bits],
-          workTapePos := ![1, 0, 0] } ∧
+          workTapePos := ![1, 0, 0], output := [] } ∧
       bitTreeScanner.outputSymbol (decBorrowCfg w k hk l (Redundant.borrowLength l)) = none := by
   have hlt := borrowLength_lt_length_of_nlz l hn h
   have hsym : (decBorrowCfg w k hk l (Redundant.borrowLength l)).workTapeSymbols =
@@ -398,7 +399,7 @@ theorem decBorrowCfg_flip_two_zero (hn : Redundant.nlz l = true) (h : l ≠ [])
     (by rw [hsym]; exact tr_clear_base_two _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -445,7 +446,7 @@ theorem decBorrowCfg_flip_two_pos (hn : Redundant.nlz l = true) (h : l ≠ [])
     (by rw [hsym]; exact tr_decBorrow_two _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -488,7 +489,7 @@ theorem decBorrowCfg_flip_one (hn : Redundant.nlz l = true) (h : l ≠ [])
     (some (some 0), 1) idle idle rfl (by rw [hsym]; exact tr_decBorrowCfg_one _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -535,7 +536,7 @@ theorem decTopCfg_step_digit (hn : Redundant.nlz l = true) (h : l ≠ [])
     rfl (by rw [hsym]; exact tr_decTop_digit _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -570,7 +571,7 @@ theorem decTopCfg_step_blank (htop : Redundant.borrowLength l + 1 = l.length) :
     rfl (by rw [hsym]; exact tr_decTop_blank _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · rfl
   · funext j
     match j with
@@ -593,7 +594,7 @@ theorem decEraseCfg_step (hn : Redundant.nlz l = true) (h : l ≠ [])
     idle idle rfl (tr_decErase _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>
@@ -630,7 +631,7 @@ theorem decBackCfg_step (j : ℕ) (hj : j < (Redundant.dec l).length) :
     idle idle rfl (by rw [hsym]; exact tr_decBack_digit _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · rfl
   · funext j'
     match j' with
@@ -647,7 +648,7 @@ theorem decBackCfg_exit :
     bitTreeScanner.step (decBackCfg w k hk l 0) =
         { state := some stMain, inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩,
           workTapes := ![tapeCount (Redundant.dec l), tapeBase, tapeDigits w.length.bits],
-          workTapePos := ![1, 0, 0] } ∧
+          workTapePos := ![1, 0, 0], output := [] } ∧
       bitTreeScanner.outputSymbol (decBackCfg w k hk l 0) = none := by
   have hsym : (decBackCfg w k hk l 0).workTapeSymbols = ![some 3, some 3, some 3] := by
     rw [workTapeSymbols_eq]
@@ -656,7 +657,7 @@ theorem decBackCfg_exit :
     rfl (by rw [hsym]; exact tr_decBack_base _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · rfl
   · funext j
     match j with
@@ -674,7 +675,7 @@ theorem run_decBack (hl : l.length ≤ bound w) (j : ℕ) (hj : j ≤ Redundant.
     Run w (decBackCfg w k hk l j)
       { state := some stMain, inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩,
         workTapes := ![tapeCount (Redundant.dec l), tapeBase, tapeDigits w.length.bits],
-        workTapePos := ![1, 0, 0] } (j + 1) :=
+        workTapePos := ![1, 0, 0], output := [] } (j + 1) :=
   run_seq _ _ _ _ _
     (run_family_down (decBackCfg w k hk l) j (fun i hi ↦ decBackCfg_step w k hk l i (by omega))
       (fun i hi ↦ headsLE_decBackCfg w k hk l hl i (by omega)))
@@ -768,7 +769,7 @@ theorem decBorrowCfg_nil_step :
     (by rw [hsym]; exact tr_clear_base_blank _ _)
   refine ⟨?_, hout⟩
   rw [hstep, close_zero]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 =>

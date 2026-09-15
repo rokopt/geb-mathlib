@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineModel
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Space and transition accounting for the Elias scanner
 
@@ -24,6 +23,8 @@ one per input bit, bounding both work space and the cost of each complete bit tr
 
 Elias delta code, complexity, binary counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

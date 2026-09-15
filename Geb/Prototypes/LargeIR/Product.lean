@@ -11,8 +11,7 @@ public import Mathlib.CategoryTheory.Category.Preorder
 public import Mathlib.Order.Fin.Basic
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: the walking arrow over an index type
 
@@ -83,6 +82,8 @@ over the constant point, is the iteration of {lit}`P`.
 prototype, presheaf, walking arrow, indexed inductive-recursive, slice
 polynomial functor, W-type
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

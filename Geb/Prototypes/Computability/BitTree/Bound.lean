@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Steps
 public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Geb.Prototypes.Computability.MultiTape.Rename
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Time and space bounds for the single-pass bitstring-tree recognizer
 
@@ -20,7 +20,9 @@ and one plus the input length.
 ## Main statements
 
 * {lit}`computableInTimeAndSpace_validBool` packages the recognizer in CSLib's
-  finite-alphabet, finite-state machine complexity predicate.
+  {lit}`ComputableInTimeAndSpaceOfLength`, reached through
+  {lit}`computableInTimeAndSpaceOfLength_of_finite` since the machine's alphabet is
+  {lit}`Fin 2` rather than {lit}`Bool`.
 
 ## Implementation notes
 
@@ -32,6 +34,8 @@ implementation and is not a lower bound on recognition space.
 
 binary tree, bitstring, time complexity, space complexity, Turing machine
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -49,18 +53,18 @@ theorem end_workTapePos (w : List Bool) (s : State) (i : Fin 1) :
 
 /-- Every visited work-head position is between zero and the input length plus one. -/
 theorem workTapePos_bounds (w : List Bool) (t : ℕ) (ht : t ≤ w.length + 3) (i : Fin 1) :
-    0 ≤ (unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb)) t).workTapePos i ∧
-      (unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb)) t).workTapePos i ≤
+    0 ≤ (unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) t).workTapePos i ∧
+      (unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) t).workTapePos i ≤
         (w.length + 1 : ℕ) := by
   rcases t with _ | t
   · simp
     omega
   rcases t with _ | t
-  · rw [show unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb)) 1 =
+  · rw [show unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) 1 =
         plantCfg w by exact init_step w]
     simp [plantCfg]
   by_cases h : t ≤ w.length
-  · rw [(configs_scan w t h).1]
+  · rw [(runFrom_scan w t h).1]
     change 0 ≤ ((scan (w.take t)).2 : ℤ) ∧ _
     have hc := scan_counter_le (w.take t)
     simp only [List.length_take] at hc
@@ -71,7 +75,7 @@ theorem workTapePos_bounds (w : List Bool) (t : ℕ) (ht : t ≤ w.length + 3) (
   · have he : t = w.length + 1 := by omega
     subst t
     rw [show w.length + 1 + 1 + 1 = (w.length + 2) + 1 by omega,
-      configs_succ_eq_step', (configs_scan w w.length (by omega)).1, end_workTapePos]
+      runFrom_succ_eq_step', (runFrom_scan w w.length (by omega)).1, end_workTapePos]
     have hc := scan_counter_le w
     simp only [List.take_length]
     exact ⟨Int.natCast_nonneg _, by exact_mod_cast hc⟩
@@ -96,11 +100,14 @@ theorem spaceUsed_le (w : List Bool) :
 
 /-- The unified recognizer runs in input length plus three steps and input length plus two cells. -/
 theorem computableInTimeAndSpace_validBool :
-    ComputableInTimeAndSpace (fun w : List Bool ↦ [validBool w])
+    ComputableInTimeAndSpaceOfLength (fun w : List Bool ↦ [validBool w]) (.refl _) (.refl _)
       (fun n ↦ n + 3) (fun n ↦ n + 2) := by
-  refine ⟨1, 2, 7, boolEmb, unaryScanner, fun w ↦ ?_⟩
-  exact ⟨w.length + 3, le_refl _,
+  refine computableInTimeAndSpaceOfLength_of_finite (tm := unaryScanner) finTwoEquiv boolEmb
+    (fun b ↦ by cases b <;> rfl) fun w ↦ ?_
+  refine ⟨w.length + 3, le_refl _,
     unaryScanner.spaceUsed (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3),
-    spaceUsed_le w, halts_at w, outputString_eq w, rfl⟩
+    spaceUsed_le w, halts_at w, ?_, rfl⟩
+  rw [initCfg_runFrom_output]
+  exact outputString_eq w
 
 end Geb.BitTree

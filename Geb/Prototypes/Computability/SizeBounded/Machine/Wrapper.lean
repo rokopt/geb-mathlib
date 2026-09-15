@@ -13,8 +13,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Bound
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The machine of an expression
 
@@ -39,10 +38,10 @@ matching it against the machine's second component is a definitional comparison
 of machines, which a local definition standing between the two sides defeats.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -65,6 +64,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, input tape, output, compilation, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -169,7 +170,10 @@ theorem writer_emits {k : ℕ} {input : List Bool} (i : Fin k)
     (w : List Bool) (hw : cfg.workTapes i = tapeOf w) (hpark : Parked cfg) (B : ℕ)
     (hB : w.length ≤ B) :
     Emits (writer i) cfg
-      { cfg with state := none, workTapePos := Function.update cfg.workTapePos i (-1) }
+      { cfg with
+        state := none
+        workTapePos := Function.update cfg.workTapePos i (-1)
+        output := cfg.output ++ w }
       w (2 * w.length + 3) B := by
   have hpos : ∀ l, -1 ≤ cfg.workTapePos l ∧ cfg.workTapePos l ≤ B := by
     intro l
@@ -210,11 +214,13 @@ theorem writer_emits {k : ℕ} {input : List Bool} (i : Fin k)
     show w.length + 1 + (1 + (w.length + 1)) = 2 * w.length + 3 from by omega] at h₁₂₃
   rw [show ({ cfg with
         state := none
-        workTapePos := Function.update cfg.workTapePos i (-1) } :
+        workTapePos := Function.update cfg.workTapePos i (-1)
+        output := cfg.output ++ w } :
       Cfg k Bool WriterState input) =
     liftR (liftR ({ cfg with
       state := (none : Option Unit)
-      workTapePos := Function.update cfg.workTapePos i (-1) } : Cfg k Bool Unit input)) from ?_]
+      workTapePos := Function.update cfg.workTapePos i (-1)
+      output := cfg.output ++ w } : Cfg k Bool Unit input)) from ?_]
   · exact h₁₂₃
   · apply Cfg.ext <;> rfl
 
@@ -280,7 +286,8 @@ theorem machine_emits (e : SOf 1) (w : List Bool) :
     ({ state := some (program e).tm.q₀
        inputPos := ⟨0, by omega⟩
        workTapes := Function.update (fun _ _ ↦ none) (⟨0, h0⟩ : Fin (tapes e)) (tapeOf w)
-       workTapePos := fun _ ↦ 0 } : Cfg (tapes e) Bool (program e).State w)
+       workTapePos := fun _ ↦ 0
+       output := [] } : Cfg (tapes e) Bool (program e).State w)
     (Function.update (fun _ ↦ ([] : List Bool)) (⟨0, h0⟩ : Fin (tapes e)) w)
     rfl (fun _ ↦ rfl)
     (fun i ↦ by
@@ -306,7 +313,8 @@ theorem machine_emits (e : SOf 1) (w : List Bool) :
        inputPos := ⟨0, by omega⟩
        workTapes := fun i ↦
          tapeOf (F (Function.update (fun _ ↦ ([] : List Bool)) (⟨0, h0⟩ : Fin (tapes e)) w) i)
-       workTapePos := fun _ ↦ 0 } : Cfg (tapes e) Bool WriterState w)
+       workTapePos := fun _ ↦ 0
+       output := [] } : Cfg (tapes e) Bool WriterState w)
     rfl (e.sem ![w])
     (by
       change tapeOf (F (Function.update (fun _ ↦ ([] : List Bool)) (⟨0, h0⟩ : Fin (tapes e)) w)

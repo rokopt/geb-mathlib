@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Combinators
 public import Geb.Prototypes.Computability.BitTree.Encoding
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The bit-tree recognizer in the non-size-increasing algebra
 
@@ -89,6 +88,8 @@ is zero in the two terminal modes, where the count is not read.
 non-size-increasing, simultaneous recursion on notation, binary tree, bitstring,
 recognizer, linear time
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded
 

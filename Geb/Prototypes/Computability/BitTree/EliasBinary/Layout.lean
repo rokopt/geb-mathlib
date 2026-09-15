@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Representation
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Counter layouts shared by the increment sites
 
@@ -32,6 +31,8 @@ transitions are stated once for any layout, so the same execution proofs serve e
 
 Turing machine, binary counter, layout
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -92,31 +93,31 @@ def digitsFrom {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (i : F
 /-- Flip the selected tape's current digit and maintain the mismatch count, moving the
 digit heads one cell towards higher significance. The first zero ends the carry. -/
 def carry (lay : Layout) (sel : Bool) (stC stR : Control)
-    (work : Fin 9 → Option (Fin 4)) : TransitionOut 9 (Fin 4) Control :=
+    (work : Fin 9 → Option (Fin 4)) : Action 9 (Fin 4) Control :=
   let s : Fin 9 := if sel then lay.second else lay.first
-  { inputMove := 0
-    workActions := fun i ↦
+  { inputTape := 0
+    workTapes := fun i ↦
       if i = lay.mism then (none, mismatchMove (work lay.first) (work lay.second))
       else if i = lay.first ∨ i = lay.second then
         (if i = s then some (some (flipped (work i))) else none, lay.dir)
       else (none, 0)
-    outS := none
-    q' := some (if digit (work s) then stC else stR) }
+    output := none
+    state := some (if digit (work s) then stC else stR) }
 
 /-- Move both digit heads towards the tagged cell; at the tag, read the mismatch marker to
 select the continuation for equal or unequal counters. -/
 def returnTr (lay : Layout) (stR stZ stN : Control)
-    (work : Fin 9 → Option (Fin 4)) : TransitionOut 9 (Fin 4) Control :=
+    (work : Fin 9 → Option (Fin 4)) : Action 9 (Fin 4) Control :=
   if origin (work lay.first) then
-    { inputMove := 0
-      workActions := fun _ ↦ (none, 0)
-      outS := none
-      q' := some (if work lay.mism == some 0 then stZ else stN) }
+    { inputTape := 0
+      workTapes := fun _ ↦ (none, 0)
+      output := none
+      state := some (if work lay.mism == some 0 then stZ else stN) }
   else
-    { inputMove := 0
-      workActions := fun i ↦ (none, if i = lay.first ∨ i = lay.second then -lay.dir else 0)
-      outS := none
-      q' := some stR }
+    { inputTape := 0
+      workTapes := fun i ↦ (none, if i = lay.first ∨ i = lay.second then -lay.dir else 0)
+      output := none
+      state := some stR }
 
 /-- The contents of a counter pair, without constraints on its digit heads. -/
 structure PairData {input : List (Fin 4)} (lay : Layout) (lsb : ℤ) (width : ℕ)

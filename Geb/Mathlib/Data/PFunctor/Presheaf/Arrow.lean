@@ -10,8 +10,7 @@ public import Mathlib.CategoryTheory.Category.Preorder
 public import Mathlib.Order.Fin.Basic
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Types dependent on a W-type: presheaf polynomial functors on the walking arrow
 
@@ -108,6 +107,8 @@ transport by {name}`cast_eq` and {name}`cast_heq`.
 polynomial functor, presheaf, parametric right adjoint, walking arrow, W-type,
 dependent type, PFunctor
 -/
+
+set_option doc.verso true
 
 public section
 

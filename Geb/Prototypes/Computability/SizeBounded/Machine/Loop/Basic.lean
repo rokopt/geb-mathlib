@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The recursion loop
 
@@ -23,10 +22,10 @@ consequently a {name}`Geb.SizeBounded.Machine.Reaches` of a body lifts to a
 {name}`Geb.SizeBounded.Machine.Reaches` of the loop.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -40,7 +39,7 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
   lifts to the seek state.
 * {lit}`caseLoop_step_bodyF`, {lit}`caseLoop_step_bodyT` — the loop's step
   from a lifted configuration is the lift of the body's step.
-* {lit}`caseLoop_configs_bodyF`, {lit}`caseLoop_configs_bodyT` — the same at
+* {lit}`caseLoop_runFrom_bodyF`, {lit}`caseLoop_runFrom_bodyT` — the same at
   every step, while the body has not halted.
 * {lit}`caseLoop_outputString_bodyF`, {lit}`caseLoop_outputString_bodyT` —
   the loop emits what the mirrored body emits.
@@ -51,6 +50,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, loop, recursion, register
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -82,34 +83,34 @@ replaced by the seek state. -/
   tr q inp work :=
     match q with
     | .inl ⟨0, _⟩ =>
-      { inputMove := 0
-        workActions := fun j ↦ (none, if j = R then (if (work R).isSome then 1 else -1) else 0)
-        outS := none
-        q' := some (.inl (if (work R).isSome then 0 else 1)) }
+      { inputTape := 0
+        workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then 1 else -1) else 0)
+        output := none
+        state := some (.inl (if (work R).isSome then 0 else 1)) }
     | .inl ⟨1, _⟩ =>
       match work R with
       | none =>
-        { inputMove := 0, workActions := fun j ↦ (none, if j = R then 1 else 0),
-          outS := none, q' := none }
+        { inputTape := 0, workTapes := fun j ↦ (none, if j = R then 1 else 0),
+          output := none, state := none }
       | some c =>
-        { inputMove := 0
-          workActions := fun j ↦ if j = R then (some none, -1) else (none, 0)
-          outS := none
-          q' := some (.inl (if c then 3 else 2)) }
+        { inputTape := 0
+          workTapes := fun j ↦ if j = R then (some none, -1) else (none, 0)
+          output := none
+          state := some (.inl (if c then 3 else 2)) }
     | .inl ⟨2, _⟩ =>
-      { inputMove := 0
-        workActions := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
-        outS := none
-        q' := some (if (work R).isSome then .inl 2 else .inr (.inl bodyF.q₀)) }
+      { inputTape := 0
+        workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
+        output := none
+        state := some (if (work R).isSome then .inl 2 else .inr (.inl bodyF.q₀)) }
     | .inl ⟨3, _⟩ =>
-      { inputMove := 0
-        workActions := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
-        outS := none
-        q' := some (if (work R).isSome then .inl 3 else .inr (.inr bodyT.q₀)) }
+      { inputTape := 0
+        workTapes := fun j ↦ (none, if j = R then (if (work R).isSome then -1 else 1) else 0)
+        output := none
+        state := some (if (work R).isSome then .inl 3 else .inr (.inr bodyT.q₀)) }
     | .inr (.inl q) => let o := bodyF.tr q inp work
-      { o with q' := some (o.q'.elim (.inl 0) (fun q ↦ .inr (.inl q))) }
+      { o with state := some (o.state.elim (.inl 0) (fun q ↦ .inr (.inl q))) }
     | .inr (.inr q) => let o := bodyT.tr q inp work
-      { o with q' := some (o.q'.elim (.inl 0) (fun q ↦ .inr (.inr q))) }
+      { o with state := some (o.state.elim (.inl 0) (fun q ↦ .inr (.inr q))) }
 
 /-- A body configuration lifted into the loop: a halted one becomes the seek
 state. -/
@@ -181,38 +182,38 @@ theorem caseLoop_outputSymbol_bodyT {k : ℕ} {SF ST : Type} {input : List Bool}
   rfl
 
 /-- While the body has not halted, the loop mirrors it. -/
-theorem caseLoop_configs_bodyF {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
+theorem caseLoop_runFrom_bodyF {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     (bodyF : MultiTapeTM k Bool SF) (bodyT : MultiTapeTM k Bool ST)
     (cfg : Cfg k Bool SF input) :
-    ∀ t, (∀ t' < t, (bodyF.configs cfg t').state ≠ none) →
-      (caseLoop R bodyF bodyT).configs (liftBodyF (ST := ST) cfg) t =
-        liftBodyF (ST := ST) (bodyF.configs cfg t) :=
+    ∀ t, (∀ t' < t, (bodyF.runFrom cfg t').state ≠ none) →
+      (caseLoop R bodyF bodyT).runFrom (liftBodyF (ST := ST) cfg) t =
+        liftBodyF (ST := ST) (bodyF.runFrom cfg t) :=
   Nat.rec
-    (fun _ ↦ by rw [configs_zero, configs_zero])
+    (fun _ ↦ by rw [runFrom_zero, runFrom_zero])
     (fun t ih hlive ↦ by
       obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hlive t (by omega))
-      rw [configs_succ_eq_step', ih (fun t' ht' ↦ hlive t' (by omega)), configs_succ_eq_step',
-        caseLoop_step_bodyF R bodyF bodyT (bodyF.configs cfg t) q hq])
+      rw [runFrom_succ_eq_step', ih (fun t' ht' ↦ hlive t' (by omega)), runFrom_succ_eq_step',
+        caseLoop_step_bodyF R bodyF bodyT (bodyF.runFrom cfg t) q hq])
 
-/-- As {name}`caseLoop_configs_bodyF`, for the body of the bit {lit}`true`. -/
-theorem caseLoop_configs_bodyT {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
+/-- As {name}`caseLoop_runFrom_bodyF`, for the body of the bit {lit}`true`. -/
+theorem caseLoop_runFrom_bodyT {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     (bodyF : MultiTapeTM k Bool SF) (bodyT : MultiTapeTM k Bool ST)
     (cfg : Cfg k Bool ST input) :
-    ∀ t, (∀ t' < t, (bodyT.configs cfg t').state ≠ none) →
-      (caseLoop R bodyF bodyT).configs (liftBodyT (SF := SF) cfg) t =
-        liftBodyT (SF := SF) (bodyT.configs cfg t) :=
+    ∀ t, (∀ t' < t, (bodyT.runFrom cfg t').state ≠ none) →
+      (caseLoop R bodyF bodyT).runFrom (liftBodyT (SF := SF) cfg) t =
+        liftBodyT (SF := SF) (bodyT.runFrom cfg t) :=
   Nat.rec
-    (fun _ ↦ by rw [configs_zero, configs_zero])
+    (fun _ ↦ by rw [runFrom_zero, runFrom_zero])
     (fun t ih hlive ↦ by
       obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hlive t (by omega))
-      rw [configs_succ_eq_step', ih (fun t' ht' ↦ hlive t' (by omega)), configs_succ_eq_step',
-        caseLoop_step_bodyT R bodyF bodyT (bodyT.configs cfg t) q hq])
+      rw [runFrom_succ_eq_step', ih (fun t' ht' ↦ hlive t' (by omega)), runFrom_succ_eq_step',
+        caseLoop_step_bodyT R bodyF bodyT (bodyT.runFrom cfg t) q hq])
 
 /-- While the body has not halted, the loop emits what the body emits. -/
 theorem caseLoop_outputString_bodyF {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     (bodyF : MultiTapeTM k Bool SF) (bodyT : MultiTapeTM k Bool ST)
     (cfg : Cfg k Bool SF input) :
-    ∀ t, (∀ t' < t, (bodyF.configs cfg t').state ≠ none) →
+    ∀ t, (∀ t' < t, (bodyF.runFrom cfg t').state ≠ none) →
       (caseLoop R bodyF bodyT).outputString (liftBodyF (ST := ST) cfg) t =
         bodyF.outputString cfg t :=
   Nat.rec
@@ -220,15 +221,15 @@ theorem caseLoop_outputString_bodyF {k : ℕ} {SF ST : Type} {input : List Bool}
     (fun t ih hlive ↦ by
       obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hlive t (by omega))
       rw [outputString_succ, outputString_succ, ih (fun t' ht' ↦ hlive t' (by omega)),
-        caseLoop_configs_bodyF R bodyF bodyT cfg t (fun t' ht' ↦ hlive t' (by omega)),
-        caseLoop_outputSymbol_bodyF R bodyF bodyT (bodyF.configs cfg t) q hq])
+        caseLoop_runFrom_bodyF R bodyF bodyT cfg t (fun t' ht' ↦ hlive t' (by omega)),
+        caseLoop_outputSymbol_bodyF R bodyF bodyT (bodyF.runFrom cfg t) q hq])
 
 /-- As {name}`caseLoop_outputString_bodyF`, for the body of the bit
 {lit}`true`. -/
 theorem caseLoop_outputString_bodyT {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     (bodyF : MultiTapeTM k Bool SF) (bodyT : MultiTapeTM k Bool ST)
     (cfg : Cfg k Bool ST input) :
-    ∀ t, (∀ t' < t, (bodyT.configs cfg t').state ≠ none) →
+    ∀ t, (∀ t' < t, (bodyT.runFrom cfg t').state ≠ none) →
       (caseLoop R bodyF bodyT).outputString (liftBodyT (SF := SF) cfg) t =
         bodyT.outputString cfg t :=
   Nat.rec
@@ -236,8 +237,8 @@ theorem caseLoop_outputString_bodyT {k : ℕ} {SF ST : Type} {input : List Bool}
     (fun t ih hlive ↦ by
       obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp (hlive t (by omega))
       rw [outputString_succ, outputString_succ, ih (fun t' ht' ↦ hlive t' (by omega)),
-        caseLoop_configs_bodyT R bodyF bodyT cfg t (fun t' ht' ↦ hlive t' (by omega)),
-        caseLoop_outputSymbol_bodyT R bodyF bodyT (bodyT.configs cfg t) q hq])
+        caseLoop_runFrom_bodyT R bodyF bodyT cfg t (fun t' ht' ↦ hlive t' (by omega)),
+        caseLoop_outputSymbol_bodyT R bodyF bodyT (bodyT.runFrom cfg t) q hq])
 
 /-- A reach of the body lifts to a reach of the loop. -/
 theorem Reaches.liftBodyF {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
@@ -245,12 +246,12 @@ theorem Reaches.liftBodyF {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin 
     {cfg cfg' : Cfg k Bool SF input} {t B : ℕ} (h : Reaches bodyF cfg cfg' t B) :
     Reaches (caseLoop R bodyF bodyT) (liftBodyF cfg) (liftBodyF cfg') t B where
   live := fun t' ht' ↦ by
-    rw [caseLoop_configs_bodyF R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
+    rw [caseLoop_runFrom_bodyF R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
     exact Option.some_ne_none _
-  configs_eq := by rw [caseLoop_configs_bodyF R bodyF bodyT cfg t h.live, h.configs_eq]
+  runFrom_eq := by rw [caseLoop_runFrom_bodyF R bodyF bodyT cfg t h.live, h.runFrom_eq]
   output := (caseLoop_outputString_bodyF R bodyF bodyT cfg t h.live).trans h.output
   pos := fun t' ht' i ↦ by
-    rw [caseLoop_configs_bodyF R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
+    rw [caseLoop_runFrom_bodyF R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
     exact h.pos t' ht' i
 
 /-- As {name}`Reaches.liftBodyF`, for the body of the bit {lit}`true`. -/
@@ -259,12 +260,12 @@ theorem Reaches.liftBodyT {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin 
     {cfg cfg' : Cfg k Bool ST input} {t B : ℕ} (h : Reaches bodyT cfg cfg' t B) :
     Reaches (caseLoop R bodyF bodyT) (liftBodyT cfg) (liftBodyT cfg') t B where
   live := fun t' ht' ↦ by
-    rw [caseLoop_configs_bodyT R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
+    rw [caseLoop_runFrom_bodyT R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
     exact Option.some_ne_none _
-  configs_eq := by rw [caseLoop_configs_bodyT R bodyF bodyT cfg t h.live, h.configs_eq]
+  runFrom_eq := by rw [caseLoop_runFrom_bodyT R bodyF bodyT cfg t h.live, h.runFrom_eq]
   output := (caseLoop_outputString_bodyT R bodyF bodyT cfg t h.live).trans h.output
   pos := fun t' ht' i ↦ by
-    rw [caseLoop_configs_bodyT R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
+    rw [caseLoop_runFrom_bodyT R bodyF bodyT cfg t' (fun s hs ↦ h.live s (by omega))]
     exact h.pos t' ht' i
 
 end

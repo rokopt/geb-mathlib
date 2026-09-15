@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.PresheafIRUniv.Basic
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: slice polynomial functors as presheaf polynomial endofunctors on the walking arrow
 
@@ -100,6 +99,8 @@ family, rather than the slice functor itself.
 prototype, presheaf, walking arrow, parametric right adjoint, slice polynomial
 functor, inductive-recursive, free coproduct completion
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

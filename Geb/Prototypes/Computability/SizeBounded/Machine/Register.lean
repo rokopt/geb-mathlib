@@ -5,10 +5,10 @@ Authors: Terence Rokop
 -/
 module
 
-public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+public import Cslib.Computability.Machines.Turing.MultiTape.Configuration
+public import Mathlib.Algebra.Order.Ring.Nat
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Registers of the machine calculus
 
@@ -48,9 +48,11 @@ the bound.
 Turing machine, register, bitstring
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
-open Turing MultiTapeTM
+open Turing
 
 public section
 
@@ -71,7 +73,10 @@ theorem tapeOf_cons (b : Bool) (w : List Bool) :
   unfold tapeOf
   by_cases hz : z = w.length
   · subst hz
-    simp
+    rw [Function.update_self, ite_eq_left (by omega), Int.toNat_natCast, List.reverse_cons,
+      List.getElem?_append_right (by rw [List.length_reverse]), List.length_reverse,
+      Nat.sub_self]
+    rfl
   · rw [Function.update_of_ne hz]
     split_ifs with h0
     · rw [List.reverse_cons, List.getElem?_append]

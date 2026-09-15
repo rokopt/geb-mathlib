@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.Triage.Syntax
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # One branch-first step of triage calculus
 
@@ -40,6 +39,8 @@ evaluating them.
 
 tree calculus, operational semantics, small step, evaluation context
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -6,13 +6,12 @@ Authors: Terence Rokop
 module
 
 public import Aesop
-public import Mathlib.Logic.IsEmpty.Defs
+public import Mathlib.Basic.IsEmpty.Defs
 public import Mathlib.Tactic.Attr.Core
 public import Mathlib.Tactic.Push
 public import Mathlib.Tactic.ToDual
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # One-pass scanner for binary trees with bitstring leaves
 
@@ -29,6 +28,8 @@ leaf terminators decrease it. Payload bits are read in their own mode.
 
 binary tree, recognizer, finite control, counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -9,9 +9,9 @@ public import Geb.Prototypes.Computability.BitTree.EliasBinary.Machine
 public import Geb.Prototypes.Computability.BitTree.Counter
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Mathlib.Tactic.FinCases
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # One increment at any site
 
@@ -23,12 +23,12 @@ proof serves the pending, size and length pairs.
 
 ## Main statements
 
-* {lit}`configs_carry_bits` identifies a carry from the tag with binary-list increment.
-* {lit}`configs_return_done` describes the complete return.
-* {lit}`configs_increment` implements one increment in twice its bit-change count plus one
+* {lit}`runFrom_carry_bits` identifies a carry from the tag with binary-list increment.
+* {lit}`runFrom_return_done` describes the complete return.
+* {lit}`runFrom_increment` implements one increment in twice its bit-change count plus one
   step, preserving the pair representation, every other tape, and the cells of the digit
   tapes outside the counter.
-* {lit}`configs_increment_head_bounds` bounds every visited digit and mismatch head.
+* {lit}`runFrom_increment_head_bounds` bounds every visited digit and mismatch head.
 
 ## Implementation notes
 
@@ -40,6 +40,8 @@ symbol access.
 
 Turing machine, binary counter, carry, return, simulation
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -146,11 +148,11 @@ variable {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input) (k : Fin 6)
 
 /-- A carry does not move the input head. -/
 theorem carry_inputMove (work : Fin 9 → Option (Fin 4)) :
-    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).inputMove = 0 := rfl
+    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).inputTape = 0 := rfl
 
 /-- The work action of a carry on the selected tape. -/
 theorem carry_action_selected (work : Fin 9 → Option (Fin 4)) :
-    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workActions
+    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workTapes
       (siteSelected k) = (some (some (flipped (work (siteSelected k)))), (siteLayout k).dir) := by
   have hm := siteSelected_ne_mism k
   have hmem := siteSelected_mem k
@@ -161,7 +163,7 @@ theorem carry_action_selected (work : Fin 9 → Option (Fin 4)) :
 
 /-- The work action of a carry on the other digit tape. -/
 theorem carry_action_other (work : Fin 9 → Option (Fin 4)) :
-    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workActions
+    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workTapes
       (siteOther k) = (none, (siteLayout k).dir) := by
   have hm := siteOther_ne_mism k
   have hmem := siteOther_mem k
@@ -174,7 +176,7 @@ theorem carry_action_other (work : Fin 9 → Option (Fin 4)) :
 
 /-- The work action of a carry on the mismatch tape. -/
 theorem carry_action_mism (work : Fin 9 → Option (Fin 4)) :
-    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workActions
+    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workTapes
       (siteLayout k).mism =
       (none, mismatchMove (work (siteLayout k).first) (work (siteLayout k).second)) := by
   simp [carry]
@@ -183,7 +185,7 @@ theorem carry_action_mism (work : Fin 9 → Option (Fin 4)) :
 theorem carry_action_untouched (work : Fin 9 → Option (Fin 4)) (i : Fin 9)
     (h1 : i ≠ (siteLayout k).first) (h2 : i ≠ (siteLayout k).second)
     (h3 : i ≠ (siteLayout k).mism) :
-    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workActions i =
+    (carry (siteLayout k) (siteSel k) (stCarry k) (stReturn k) work).workTapes i =
       (none, 0) := by
   simp [carry, h1, h2, h3]
 
@@ -367,13 +369,13 @@ theorem carry_head_eq (p t : ℕ) :
   simp only [cell, Nat.cast_add, Int.mul_add, Int.add_assoc]
 
 /-- Resetting an initial sequence of ones preserves the carry state and advances both heads. -/
-theorem configs_carry_prefix (p n : ℕ)
+theorem runFrom_carry_prefix (p n : ℕ)
     (hq : cfg.state = some (stCarry k))
     (hp0 : cfg.workTapePos (siteLayout k).first = cell lsb (siteLayout k).dir p)
     (hp1 : cfg.workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir p)
     (hones : ∀ j < n, digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir (p + j) = true)
     (t : ℕ) (ht : t ≤ n) :
-    let now := machine.configs cfg t
+    let now := machine.runFrom cfg t
     now.state = some (stCarry k) ∧
     now.workTapePos (siteLayout k).first = cell lsb (siteLayout k).dir (p + t) ∧
     now.workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir (p + t) ∧
@@ -397,11 +399,11 @@ theorem configs_carry_prefix (p n : ℕ)
       fun j hj ↦ (Nat.not_lt_zero j hj).elim, fun _ ↦ rfl, fun _ _ _ _ ↦ ⟨rfl, rfl⟩⟩
     funext j
     have hj : ¬(p ≤ j ∧ j < p + 0) := by omega
-    simp only [configs_zero, hj, ↓reduceIte]
+    simp only [runFrom_zero, hj, ↓reduceIte]
   · intro t ih ht
     obtain ⟨hstate, hpos0, hpos1, hin, hselected, hother, hmark, hcells, hwritten, horig,
       hunt⟩ := ih (by omega)
-    set now := machine.configs cfg t with hnow
+    set now := machine.runFrom cfg t with hnow
     have hpsel : now.workTapePos (siteSelected k) = cell lsb (siteLayout k).dir (p + t) := by
       rcases siteSelected_mem k with hs | hs <;> rw [hs] <;> assumption
     have hpoth : now.workTapePos (siteOther k) = cell lsb (siteLayout k).dir (p + t) := by
@@ -415,7 +417,7 @@ theorem configs_carry_prefix (p n : ℕ)
       simp only [Nat.lt_irrefl, and_false, ↓reduceIte]
       exact hone
     have hstep := step_carry_pos now k hstate
-    rw [configs_succ_eq_step']
+    rw [runFrom_succ_eq_step']
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · rw [step_carry_state now k hstate, hd]
       rfl
@@ -478,20 +480,20 @@ theorem outputString_carry_prefix (p n : ℕ)
     machine.outputString cfg (n + 1) = [] := by
   apply List.flatMap_eq_nil_iff.mpr
   intro t ht
-  have hq' := (configs_carry_prefix cfg k lsb p n hq hp0 hp1 hones t
+  have hq' := (runFrom_carry_prefix cfg k lsb p n hq hp0 hp1 hones t
     (by have h := List.mem_range.mp ht; omega)).1
   rw [outputSymbol_carry _ k hq']
   rfl
 
 /-- The complete carry from the tag: the digit list is incremented, every cell below the
 bit-change count is written, and nothing else changes. -/
-theorem configs_carry_bits (bs : List Bool)
+theorem runFrom_carry_bits (bs : List Bool)
     (hq : cfg.state = some (stCarry k))
     (hp0 : cfg.workTapePos (siteLayout k).first = lsb)
     (hp1 : cfg.workTapePos (siteLayout k).second = lsb)
     (hbits : ∀ j, digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir j = bs[j]?.getD false) :
     let f := flips bs
-    let now := machine.configs cfg f
+    let now := machine.runFrom cfg f
     now.state = some (stReturn k) ∧
     now.workTapePos (siteLayout k).first = cell lsb (siteLayout k).dir f ∧
     now.workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir f ∧
@@ -524,9 +526,9 @@ theorem configs_carry_bits (bs : List Bool)
   have hp1' : cfg.workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir 0 := by
     rw [hp1, cell_zero]
   obtain ⟨hstate, hpos0, hpos1, hin, hselected, hother, hmark, hcells, hwritten, horig, hunt⟩ :=
-    configs_carry_prefix cfg k lsb 0 (flips bs - 1) hq hp0' hp1' hones (flips bs - 1)
+    runFrom_carry_prefix cfg k lsb 0 (flips bs - 1) hq hp0' hp1' hones (flips bs - 1)
       (Nat.le_refl _)
-  set now := machine.configs cfg (flips bs - 1) with hnow
+  set now := machine.runFrom cfg (flips bs - 1) with hnow
   have hpsel : now.workTapePos (siteSelected k) = cell lsb (siteLayout k).dir (flips bs - 1) := by
     rcases siteSelected_mem k with hs | hs
     · rw [hs]
@@ -550,7 +552,7 @@ theorem configs_carry_bits (bs : List Bool)
   rw [he] at hout
   simp only [Nat.zero_add] at hpos0 hpos1 hselected hcells hwritten
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, hout⟩ <;>
-    (try rw [show flips bs = flips bs - 1 + 1 from he.symm, configs_succ_eq_step'])
+    (try rw [show flips bs = flips bs - 1 + 1 from he.symm, runFrom_succ_eq_step'])
   · rw [step_carry_state now k hstate, hd]
     rfl
   · rcases siteSelected_mem k with hs | hs
@@ -605,32 +607,32 @@ theorem configs_carry_bits (bs : List Bool)
     exact ⟨ht1.trans hu1, ht2.trans hu2⟩
 
 /-- The digit heads at every time of a carry from the tag, including its terminal state. -/
-theorem configs_carry_bits_pos (bs : List Bool)
+theorem runFrom_carry_bits_pos (bs : List Bool)
     (hq : cfg.state = some (stCarry k))
     (hp0 : cfg.workTapePos (siteLayout k).first = lsb)
     (hp1 : cfg.workTapePos (siteLayout k).second = lsb)
     (hbits : ∀ j, digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir j = bs[j]?.getD false)
     (t : ℕ) (ht : t ≤ flips bs) :
-    (machine.configs cfg t).workTapePos (siteLayout k).first = cell lsb (siteLayout k).dir t ∧
-    (machine.configs cfg t).workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir t ∧
+    (machine.runFrom cfg t).workTapePos (siteLayout k).first = cell lsb (siteLayout k).dir t ∧
+    (machine.runFrom cfg t).workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir t ∧
     (∀ i, i ≠ (siteLayout k).first → i ≠ (siteLayout k).second → i ≠ (siteLayout k).mism →
-      (machine.configs cfg t).workTapePos i = cfg.workTapePos i) := by
+      (machine.runFrom cfg t).workTapePos i = cfg.workTapePos i) := by
   by_cases he : t = flips bs
   · subst t
-    have h := configs_carry_bits cfg k lsb bs hq hp0 hp1 hbits
+    have h := runFrom_carry_bits cfg k lsb bs hq hp0 hp1 hbits
     exact ⟨h.2.1, h.2.2.1, fun i h1 h2 h3 ↦ (h.2.2.2.2.2.2.2.2.2.2.1 i h1 h2 h3).2⟩
   · have hones : ∀ j < flips bs - 1,
         digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir (0 + j) = true := by
       intro j hj
       rw [Nat.zero_add, hbits]
       exact Geb.BitTree.Counter.getD_eq_true_of_lt_flips bs j (by omega)
-    have h := configs_carry_prefix cfg k lsb 0 (flips bs - 1) hq (by rw [hp0, cell_zero])
+    have h := runFrom_carry_prefix cfg k lsb 0 (flips bs - 1) hq (by rw [hp0, cell_zero])
       (by rw [hp1, cell_zero]) hones t (by omega)
     exact ⟨by simpa using h.2.1, by simpa using h.2.2.1,
       fun i h1 h2 h3 ↦ (h.2.2.2.2.2.2.2.2.2.2 i h1 h2 h3).2⟩
 
 /-- The mismatch head at every time of a carry from the tag. -/
-theorem configs_carry_bits_mismatch (bs : List Bool) (width : ℕ)
+theorem runFrom_carry_bits_mismatch (bs : List Bool) (width : ℕ)
     (hq : cfg.state = some (stCarry k))
     (hp0 : cfg.workTapePos (siteLayout k).first = lsb)
     (hp1 : cfg.workTapePos (siteLayout k).second = lsb)
@@ -640,9 +642,9 @@ theorem configs_carry_bits_mismatch (bs : List Bool) (width : ℕ)
       (digitsFrom cfg (siteLayout k).first lsb (siteLayout k).dir)
       (digitsFrom cfg (siteLayout k).second lsb (siteLayout k).dir) : ℤ))
     (t : ℕ) (ht : t ≤ flips bs) :
-    (machine.configs cfg t).workTapePos (siteLayout k).mism = (mismatchCount width
-      (digitsFrom (machine.configs cfg t) (siteLayout k).first lsb (siteLayout k).dir)
-      (digitsFrom (machine.configs cfg t) (siteLayout k).second lsb (siteLayout k).dir) : ℤ) := by
+    (machine.runFrom cfg t).workTapePos (siteLayout k).mism = (mismatchCount width
+      (digitsFrom (machine.runFrom cfg t) (siteLayout k).first lsb (siteLayout k).dir)
+      (digitsFrom (machine.runFrom cfg t) (siteLayout k).second lsb (siteLayout k).dir) : ℤ) := by
   revert ht
   refine Nat.rec ?_ ?_ t
   · intro _
@@ -654,9 +656,9 @@ theorem configs_carry_bits_mismatch (bs : List Bool) (width : ℕ)
       intro j hj
       rw [Nat.zero_add, hbits]
       exact Geb.BitTree.Counter.getD_eq_true_of_lt_flips bs j (by omega)
-    have h := configs_carry_prefix cfg k lsb 0 (flips bs - 1) hq (by rw [hp0, cell_zero])
+    have h := runFrom_carry_prefix cfg k lsb 0 (flips bs - 1) hq (by rw [hp0, cell_zero])
       (by rw [hp1, cell_zero]) hones t (by omega)
-    rw [configs_succ_eq_step']
+    rw [runFrom_succ_eq_step']
     exact step_carry_mismatch _ k lsb width t h.1 (by simpa using h.2.1) (by simpa using h.2.2.1)
       (by omega) hprev
 
@@ -675,6 +677,7 @@ def returnCfg (p : ℕ) : Cfg 9 (Fin 4) Control input where
   workTapes := cfg.workTapes
   workTapePos i := if i = (siteLayout k).first ∨ i = (siteLayout k).second
     then cell lsb (siteLayout k).dir p else cfg.workTapePos i
+  output := cfg.output
 
 /-- The configuration reached when the return's final state change has completed. -/
 def returnedCfg : Cfg 9 (Fin 4) Control input :=
@@ -687,7 +690,7 @@ theorem returnCfg_self (p : ℕ) (hq : cfg.state = some (stReturn k))
     (hp0 : cfg.workTapePos (siteLayout k).first = cell lsb (siteLayout k).dir p)
     (hp1 : cfg.workTapePos (siteLayout k).second = cell lsb (siteLayout k).dir p) :
     returnCfg cfg k lsb p = cfg := by
-  refine Cfg.ext hq.symm rfl rfl ?_
+  refine Cfg.ext hq.symm rfl rfl ?_ rfl
   funext i
   simp only [returnCfg]
   split_ifs with h
@@ -701,11 +704,11 @@ theorem tr_return_pos (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.tr (stReturn k) (returnCfg cfg k lsb (p + 1)).inputSymbol
         (returnCfg cfg k lsb (p + 1)).workTapeSymbols =
-      { inputMove := 0
-        workActions := fun i ↦ (none, if i = (siteLayout k).first ∨ i = (siteLayout k).second
+      { inputTape := 0
+        workTapes := fun i ↦ (none, if i = (siteLayout k).first ∨ i = (siteLayout k).second
           then -(siteLayout k).dir else 0)
-        outS := none
-        q' := some (stReturn k) } := by
+        output := none
+        state := some (stReturn k) } := by
   have h : origin ((returnCfg cfg k lsb (p + 1)).workTapeSymbols (siteLayout k).first) = false := by
     simp only [Cfg.workTapeSymbols, returnCfg, true_or, ↓reduceIte]
     rw [ho, decide_eq_false]
@@ -721,7 +724,7 @@ theorem step_return_pos (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.step (returnCfg cfg k lsb (p + 1)) = returnCfg cfg k lsb p := by
   rw [step_of_state _ _ (stReturn k) rfl, tr_return_pos cfg k lsb p ho]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp only [returnCfg]
   split_ifs with h
@@ -733,13 +736,13 @@ theorem step_return_pos (p : ℕ)
 theorem outputSymbol_return_pos (p : ℕ)
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.outputSymbol (returnCfg cfg k lsb (p + 1)) = none := by
-  change (machine.tr (stReturn k) _ _).outS = none
+  change (machine.tr (stReturn k) _ _).output = none
   rw [tr_return_pos cfg k lsb p ho]
 
 /-- Every return configuration and its empty output, before the final state change. -/
-theorem configs_return
+theorem runFrom_return
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) (t p : ℕ) :
-    machine.configs (returnCfg cfg k lsb (p + t)) t = returnCfg cfg k lsb p ∧
+    machine.runFrom (returnCfg cfg k lsb (p + t)) t = returnCfg cfg k lsb p ∧
       machine.outputString (returnCfg cfg k lsb (p + t)) t = [] := by
   revert p
   refine Nat.rec ?_ ?_ t
@@ -749,7 +752,7 @@ theorem configs_return
     obtain ⟨hc, hout⟩ := ih (p + 1)
     rw [show p + (t + 1) = p + 1 + t by omega]
     constructor
-    · rw [configs_succ_eq_step', hc, step_return_pos cfg k lsb p ho]
+    · rw [runFrom_succ_eq_step', hc, step_return_pos cfg k lsb p ho]
     · rw [outputString_succ, hout, hc, outputSymbol_return_pos cfg k lsb p ho]
       rfl
 
@@ -758,8 +761,8 @@ theorem tr_return_zero
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.tr (stReturn k) (returnCfg cfg k lsb 0).inputSymbol
         (returnCfg cfg k lsb 0).workTapeSymbols =
-      { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none,
-        q' := some (if cfg.workTapes (siteLayout k).mism (cfg.workTapePos (siteLayout k).mism)
+      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none,
+        state := some (if cfg.workTapes (siteLayout k).mism (cfg.workTapePos (siteLayout k).mism)
           == some 0 then siteZero k else siteNext k) } := by
   have h : origin ((returnCfg cfg k lsb 0).workTapeSymbols (siteLayout k).first) = true := by
     simp only [Cfg.workTapeSymbols, returnCfg, true_or, ↓reduceIte]
@@ -778,7 +781,7 @@ theorem step_return_zero
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.step (returnCfg cfg k lsb 0) = returnedCfg cfg k lsb := by
   rw [step_of_state _ _ (stReturn k) rfl, tr_return_zero cfg k lsb ho]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [returnedCfg, returnCfg]
 
@@ -786,34 +789,34 @@ theorem step_return_zero
 theorem outputSymbol_return_zero
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) :
     machine.outputSymbol (returnCfg cfg k lsb 0) = none := by
-  change (machine.tr (stReturn k) _ _).outS = none
+  change (machine.tr (stReturn k) _ _).output = none
   rw [tr_return_zero cfg k lsb ho]
 
 /-- From significance {lit}`p`, the complete return takes exactly {lit}`p + 1` steps. -/
-theorem configs_return_done
+theorem runFrom_return_done
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb)) (p : ℕ) :
-    machine.configs (returnCfg cfg k lsb p) (p + 1) = returnedCfg cfg k lsb ∧
+    machine.runFrom (returnCfg cfg k lsb p) (p + 1) = returnedCfg cfg k lsb ∧
       machine.outputString (returnCfg cfg k lsb p) (p + 1) = [] := by
-  obtain ⟨hc, hout⟩ := configs_return cfg k lsb ho p 0
+  obtain ⟨hc, hout⟩ := runFrom_return cfg k lsb ho p 0
   simp only [Nat.zero_add] at hc hout
   constructor
-  · rw [configs_succ_eq_step', hc, step_return_zero cfg k lsb ho]
+  · rw [runFrom_succ_eq_step', hc, step_return_zero cfg k lsb ho]
   · rw [outputString_succ, hout, hc, outputSymbol_return_zero cfg k lsb ho]
     rfl
 
 /-- Every return configuration keeps its digit heads at a significance at most the start. -/
-theorem configs_return_pos
+theorem runFrom_return_pos
     (ho : ∀ z, origin (cfg.workTapes (siteLayout k).first z) = decide (z = lsb))
     (p t : ℕ) (ht : t ≤ p + 1) :
     ∃ q, q ≤ p ∧
-      (machine.configs (returnCfg cfg k lsb p) t).workTapePos (siteLayout k).first =
+      (machine.runFrom (returnCfg cfg k lsb p) t).workTapePos (siteLayout k).first =
         cell lsb (siteLayout k).dir q ∧
-      (machine.configs (returnCfg cfg k lsb p) t).workTapePos (siteLayout k).second =
+      (machine.runFrom (returnCfg cfg k lsb p) t).workTapePos (siteLayout k).second =
         cell lsb (siteLayout k).dir q ∧
       (∀ i, i ≠ (siteLayout k).first → i ≠ (siteLayout k).second →
-        (machine.configs (returnCfg cfg k lsb p) t).workTapePos i = cfg.workTapePos i) := by
+        (machine.runFrom (returnCfg cfg k lsb p) t).workTapePos i = cfg.workTapePos i) := by
   by_cases htp : t ≤ p
-  · have hc := (configs_return cfg k lsb ho t (p - t)).1
+  · have hc := (runFrom_return cfg k lsb ho t (p - t)).1
     rw [show p - t + t = p by omega] at hc
     rw [hc]
     refine ⟨p - t, by omega, by simp [returnCfg], by simp [returnCfg], ?_⟩
@@ -821,7 +824,7 @@ theorem configs_return_pos
     simp [returnCfg, h1, h2]
   · have he : t = p + 1 := by omega
     subst t
-    rw [(configs_return_done cfg k lsb ho p).1]
+    rw [(runFrom_return_done cfg k lsb ho p).1]
     refine ⟨0, Nat.zero_le _, by simp [returnedCfg, returnCfg], by simp [returnedCfg, returnCfg],
       ?_⟩
     intro i h1 h2
@@ -845,11 +848,11 @@ def incremented (a b : ℕ) : ℕ × ℕ :=
 /-- A complete carry and return implements one increment: the pair representation moves to
 the incremented values at the continuation state, the input head and every tape outside the
 layout are unchanged, and nothing is emitted. -/
-theorem configs_increment (width a b n : ℕ) (hn : n = if siteSel k then b else a)
+theorem runFrom_increment (width a b n : ℕ) (hn : n = if siteSel k then b else a)
     (h : PairRep (siteLayout k) lsb width cfg a b) (hq : cfg.state = some (stCarry k))
     (hnext : (n + 1).size ≤ width) :
     let f := flips n.bits
-    let now := machine.configs cfg (2 * f + 1)
+    let now := machine.runFrom cfg (2 * f + 1)
     PairRep (siteLayout k) lsb width now (incremented k a b).1 (incremented k a b).2 ∧
       now.state = some (continuation k (incremented k a b).1 (incremented k a b).2) ∧
       now.inputPos = cfg.inputPos ∧
@@ -869,16 +872,16 @@ theorem configs_increment (width a b n : ℕ) (hn : n = if siteSel k then b else
     · simp only [siteSelected, hsel, ↓reduceIte, hn]
       exact congrFun h.secondDigits j
   obtain ⟨hstate, hpos0, hpos1, hin, hselected, hother, hmark, hcells, hwritten, horig, hunt,
-    hout⟩ := configs_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
+    hout⟩ := runFrom_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
   have hw : f ≤ width := (Geb.BitTree.Counter.flips_bits_le_succ_size n).trans hnext
   have hm : cfg.workTapePos (siteLayout k).mism = (mismatchCount width
       (digitsFrom cfg (siteLayout k).first lsb (siteLayout k).dir)
       (digitsFrom cfg (siteLayout k).second lsb (siteLayout k).dir) : ℤ) := by
     rw [h.firstDigits, h.secondDigits]
     exact h.mismatchPos
-  have hmis := configs_carry_bits_mismatch cfg k lsb n.bits width hq h.firstPos h.secondPos hbits
+  have hmis := runFrom_carry_bits_mismatch cfg k lsb n.bits width hq h.firstPos h.secondPos hbits
     hw hm f (Nat.le_refl _)
-  set after := machine.configs cfg f with hafter
+  set after := machine.runFrom cfg f with hafter
   set a' := (incremented k a b).1 with ha'
   set b' := (incremented k a b).2 with hb'
   have hd0 : digitsFrom after (siteLayout k).first lsb (siteLayout k).dir = bitsAt a' := by
@@ -960,10 +963,10 @@ theorem configs_increment (width a b n : ℕ) (hn : n = if siteSel k then b else
       rw [← hs, hother, hs, ha'a]
       exact h.firstBlank j
   have hrep := returnCfg_self after k lsb f hstate hpos0 hpos1
-  obtain ⟨hc, hout'⟩ := configs_return_done after k lsb ho f
+  obtain ⟨hc, hout'⟩ := runFrom_return_done after k lsb ho f
   rw [hrep] at hc hout'
-  have hfinal : machine.configs cfg (2 * f + 1) = returnedCfg after k lsb := by
-    rw [show 2 * f + 1 = f + (f + 1) by omega, configs_add]
+  have hfinal : machine.runFrom cfg (2 * f + 1) = returnedCfg after k lsb := by
+    rw [show 2 * f + 1 = f + (f + 1) by omega, runFrom_add]
     exact hc
   have hzero : after.workTapes (siteLayout k).mism (after.workTapePos (siteLayout k).mism) ==
       some 0 ↔ a' = b' := by
@@ -1017,17 +1020,17 @@ theorem configs_increment (width a b n : ℕ) (hn : n = if siteSel k then b else
 
 /-- Every digit and mismatch head stays within the bounds during an increment, provided the
 cells up to the bit-change count are within them. -/
-theorem configs_increment_head_bounds (width a b n : ℕ) (hn : n = if siteSel k then b else a)
+theorem runFrom_increment_head_bounds (width a b n : ℕ) (hn : n = if siteSel k then b else a)
     (h : PairRep (siteLayout k) lsb width cfg a b) (hq : cfg.state = some (stCarry k))
     (hnext : (n + 1).size ≤ width)
     (hcell : ∀ p, p ≤ flips n.bits → -1 ≤ cell lsb (siteLayout k).dir p ∧
       cell lsb (siteLayout k).dir p ≤ width)
     (t : ℕ) (ht : t ≤ 2 * flips n.bits + 1) (i : Fin 9) :
     (i = (siteLayout k).first ∨ i = (siteLayout k).second ∨ i = (siteLayout k).mism →
-      -1 ≤ (machine.configs cfg t).workTapePos i ∧
-        (machine.configs cfg t).workTapePos i ≤ width) ∧
+      -1 ≤ (machine.runFrom cfg t).workTapePos i ∧
+        (machine.runFrom cfg t).workTapePos i ≤ width) ∧
     (i ≠ (siteLayout k).first → i ≠ (siteLayout k).second → i ≠ (siteLayout k).mism →
-      (machine.configs cfg t).workTapePos i = cfg.workTapePos i) := by
+      (machine.runFrom cfg t).workTapePos i = cfg.workTapePos i) := by
   set f := flips n.bits with hf
   have hw : f ≤ width := (Geb.BitTree.Counter.flips_bits_le_succ_size n).trans hnext
   have hbits : ∀ j, digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir j =
@@ -1045,12 +1048,12 @@ theorem configs_increment_head_bounds (width a b n : ℕ) (hn : n = if siteSel k
     exact h.mismatchPos
   by_cases htf : t ≤ f
   · obtain ⟨hp0, hp1, hunt⟩ :=
-      configs_carry_bits_pos cfg k lsb n.bits hq h.firstPos h.secondPos hbits t htf
-    have hm' := configs_carry_bits_mismatch cfg k lsb n.bits width hq h.firstPos h.secondPos
+      runFrom_carry_bits_pos cfg k lsb n.bits hq h.firstPos h.secondPos hbits t htf
+    have hm' := runFrom_carry_bits_mismatch cfg k lsb n.bits width hq h.firstPos h.secondPos
       hbits hw hm t htf
     have hcount := mismatchCount_le width
-      (digitsFrom (machine.configs cfg t) (siteLayout k).first lsb (siteLayout k).dir)
-      (digitsFrom (machine.configs cfg t) (siteLayout k).second lsb (siteLayout k).dir)
+      (digitsFrom (machine.runFrom cfg t) (siteLayout k).first lsb (siteLayout k).dir)
+      (digitsFrom (machine.runFrom cfg t) (siteLayout k).second lsb (siteLayout k).dir)
     have hc := hcell t (by omega)
     refine ⟨fun hi ↦ ?_, fun h1 h2 h3 ↦ hunt i h1 h2 h3⟩
     rcases hi with rfl | rfl | rfl
@@ -1060,20 +1063,20 @@ theorem configs_increment_head_bounds (width a b n : ℕ) (hn : n = if siteSel k
       exact hc
     · rw [hm']
       omega
-  · have hm' := configs_carry_bits_mismatch cfg k lsb n.bits width hq h.firstPos h.secondPos
+  · have hm' := runFrom_carry_bits_mismatch cfg k lsb n.bits width hq h.firstPos h.secondPos
       hbits hw hm f (Nat.le_refl _)
     have hcount := mismatchCount_le width
-      (digitsFrom (machine.configs cfg f) (siteLayout k).first lsb (siteLayout k).dir)
-      (digitsFrom (machine.configs cfg f) (siteLayout k).second lsb (siteLayout k).dir)
+      (digitsFrom (machine.runFrom cfg f) (siteLayout k).first lsb (siteLayout k).dir)
+      (digitsFrom (machine.runFrom cfg f) (siteLayout k).second lsb (siteLayout k).dir)
     obtain ⟨hstate, hpos0, hpos1, hin, hselected, hother, hmark, hcells, hwritten, horig, hunt,
-      hout⟩ := configs_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
-    set after := machine.configs cfg f with hafter
+      hout⟩ := runFrom_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
+    set after := machine.runFrom cfg f with hafter
     have ho : ∀ z, origin (after.workTapes (siteLayout k).first z) = decide (z = lsb) :=
       fun z ↦ (horig z).trans (h.originTag z)
     have hrep := returnCfg_self after k lsb f hstate hpos0 hpos1
-    obtain ⟨q, hq', hq0, hq1, hqu⟩ := configs_return_pos after k lsb ho f (t - f) (by omega)
+    obtain ⟨q, hq', hq0, hq1, hqu⟩ := runFrom_return_pos after k lsb ho f (t - f) (by omega)
     rw [hrep] at hq0 hq1 hqu
-    rw [show t = f + (t - f) by omega, configs_add]
+    rw [show t = f + (t - f) by omega, runFrom_add]
     have hc := hcell q (by omega)
     refine ⟨fun hi ↦ ?_, fun h1 h2 h3 ↦ ?_⟩
     · rcases hi with rfl | rfl | rfl

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Transforms
 public import Geb.Prototypes.Computability.SizeBounded.Basic
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The loop computes simultaneous recursion
 
@@ -35,6 +34,8 @@ when its bodies do.
 
 Turing machine, loop, recursion, simultaneous recursion, register
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

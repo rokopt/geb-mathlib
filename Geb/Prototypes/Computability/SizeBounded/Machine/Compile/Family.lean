@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Valuations after a family of fresh writers
 
@@ -40,6 +39,8 @@ recursion step passes to its body.
 
 Turing machine, composition, register allocation, injectivity
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

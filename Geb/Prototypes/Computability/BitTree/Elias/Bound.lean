@@ -8,9 +8,10 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.Execution
 public import Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect
 public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Geb.Prototypes.Computability.MultiTape.OutputString
+public import Geb.Prototypes.Computability.MultiTape.Rename
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Resource bounds for the Elias-length recognizer
 
@@ -19,7 +20,8 @@ The input tape is read-only and excluded from CSLib's work-space measure.
 
 ## Main statements
 
-* {lit}`computableInTimeAndSpace_validBool` proves simultaneous quadratic time and linear space.
+* {lit}`computableInTimeAndSpace_validBool` proves simultaneous quadratic time and linear space,
+  as {name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace` of the machine itself.
 * {lit}`spaceUsed_le_of_headBound` converts the four head intervals to a work-space bound.
 
 ## Implementation notes
@@ -29,10 +31,18 @@ fixed-width words, including leading zeros, between input reads. Length fields
 are kept in binary, so malformed inputs advertising enormous payloads still
 halt within the same polynomial bound.
 
+The bound is stated as the machine-specific predicate
+{name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace`, with the input and output encodings
+{lit}`listEmb boolEmb`, because the machine's alphabet is {lit}`Fin 3` rather than
+{lit}`Bool`, which {name}`Turing.MultiTapeTM.ComputableInTimeAndSpace` requires. A binary
+re-encoding of the work alphabet is the remaining step to that predicate.
+
 ## Tags
 
 Elias delta code, Turing machine, running time, work space
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -43,7 +53,7 @@ open Turing MultiTapeTM
 /-- Four heads confined to the same interval visit at most four times its number of cells. -/
 theorem spaceUsed_le_of_headBound {input : List (Fin 3)}
     (cfg : Cfg 4 (Fin 3) Control input) (width t : ℕ)
-    (h : ∀ u ≤ t, HeadBound width (machine.configs cfg u)) :
+    (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
     machine.spaceUsed cfg t ≤ 4 * (width + 1) := by
   have hsub (i : Fin 4) : machine.visitedByTapeHead cfg t i ⊆
       (Finset.range (width + 1)).image (fun n : ℕ ↦ (n : ℤ)) := by
@@ -62,11 +72,11 @@ theorem spaceUsed_le_of_headBound {input : List (Fin 3)}
 
 /-- After all input bits, one final transition halts. -/
 theorem halts_at (w : List Bool) :
-    (machine.configs (machine.initCfg (w.map boolEmb)) (1 + runCost w + 1)).state = none := by
-  have h := configs_account w w.length (Nat.le_refl _)
+    (machine.runFrom (machine.initCfg (w.map boolEmb)) (1 + runCost w + 1)).state = none := by
+  have h := runFrom_account w w.length (Nat.le_refl _)
   simp only [List.take_length] at h
   obtain ⟨hc, _, _⟩ := h
-  rw [configs_succ_eq_step', hc]
+  rw [runFrom_succ_eq_step', hc]
   rw [step_end _ (account w).1.1 rfl (inputSymbol_end _ (by
     simp only [modelCfg, scanCfg, List.length_map]))]
 
@@ -74,7 +84,7 @@ theorem halts_at (w : List Bool) :
 theorem outputString_eq (w : List Bool) :
     machine.outputString (machine.initCfg (w.map boolEmb)) (1 + runCost w + 1) =
       [boolEmb (Elias.validBool w)] := by
-  have h := configs_account w w.length (Nat.le_refl _)
+  have h := runFrom_account w w.length (Nat.le_refl _)
   simp only [List.take_length] at h
   obtain ⟨hc, ho, _⟩ := h
   rw [outputString_succ, ho, hc,
@@ -86,8 +96,8 @@ theorem outputString_eq (w : List Bool) :
 /-- The final halting transition preserves the work-head interval. -/
 theorem headBound_run (w : List Bool) :
     ∀ u ≤ 1 + runCost w + 1, HeadBound (w.length + 1)
-      (machine.configs (machine.initCfg (w.map boolEmb)) u) := by
-  have h := configs_account w w.length (Nat.le_refl _)
+      (machine.runFrom (machine.initCfg (w.map boolEmb)) u) := by
+  have h := runFrom_account w w.length (Nat.le_refl _)
   simp only [List.take_length] at h
   obtain ⟨hc, _, hh⟩ := h
   intro u hu
@@ -97,22 +107,28 @@ theorem headBound_run (w : List Bool) :
     subst u
     have hlast := hh (1 + runCost w) (Nat.le_refl _)
     rw [hc] at hlast
-    rw [configs_succ_eq_step', hc,
+    rw [runFrom_succ_eq_step', hc,
       step_end _ (account w).1.1 rfl (inputSymbol_end _ (by
         simp only [modelCfg, scanCfg, List.length_map]))]
     exact hlast
 
-/-- The one-pass Elias recognizer has simultaneous quadratic-time and linear-space bounds. -/
+/-- The one-pass Elias recognizer has simultaneous quadratic-time and linear-space bounds.
+The statement is the machine-specific predicate, the alphabet being {lit}`Fin 3` rather than
+{lit}`Bool`; a binary re-encoding of the work alphabet is the remaining step to
+{name}`Turing.MultiTapeTM.ComputableInTimeAndSpace`. -/
 theorem computableInTimeAndSpace_validBool :
-    ComputableInTimeAndSpace (fun w : List Bool ↦ [Elias.validBool w])
-      (fun n ↦ 5 * n ^ 2 + 16 * n + 2) (fun n ↦ 4 * (n + 2)) := by
-  refine ⟨4, 3, 25, boolEmb, machine, fun w ↦ ?_⟩
+    machine.ComputesFunInTimeAndSpace (listEmb boolEmb) (listEmb boolEmb)
+      (fun w : List Bool ↦ [Elias.validBool w])
+      (fun w ↦ 5 * w.length ^ 2 + 16 * w.length + 2) (fun w ↦ 4 * (w.length + 2)) := by
+  intro w
   refine ⟨1 + runCost w + 1, ?_,
     machine.spaceUsed (machine.initCfg (w.map boolEmb)) (1 + runCost w + 1),
     spaceUsed_le_of_headBound _ _ _ (headBound_run w),
-    halts_at w, outputString_eq w, rfl⟩
-  change 1 + runCost w + 1 ≤ 5 * w.length ^ 2 + 16 * w.length + 2
-  have h := runCost_le w
-  omega
+    halts_at w, ?_, rfl⟩
+  · change 1 + runCost w + 1 ≤ 5 * w.length ^ 2 + 16 * w.length + 2
+    have h := runCost_le w
+    omega
+  · rw [initCfg_runFrom_output]
+    exact outputString_eq w
 
 end Geb.BitTree.Elias.Machine

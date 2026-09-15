@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.Machine
 public import Mathlib.Logic.Function.Basic
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Configurations at delta-decoder phase boundaries
 
@@ -24,10 +23,17 @@ been erased.
 * {lit}`clearingCfg` describes the simultaneous erasure of two binary fields.
 * {lit}`clearedCfg` describes the state after both fields are erased.
 
+## Main statements
+
+* {lit}`clearingCfg_output` and {lit}`clearedCfg_output`: both configurations retain the
+  context's output tape.
+
 ## Tags
 
 Elias delta code, Turing machine, configuration
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -174,6 +180,11 @@ def clearingCfg {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     else if i = 3 then prefixTape cs r
     else cfg.workTapes i
   workTapePos i := if i = 2 then p else if i = 3 then r else cfg.workTapePos i
+  output := cfg.output
+
+/-- A clearing configuration retains the context's output tape. -/
+@[simp] theorem clearingCfg_output {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
+    (bs cs : List Bool) (p r : ℕ) : (clearingCfg cfg bs cs p r).output = cfg.output := rfl
 
 /-- Erasure finishes with both heads ready to append a fresh binary field. -/
 def clearedCfg {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
@@ -185,6 +196,11 @@ def clearedCfg {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
     if i = 0 then cfg.workTapePos 0 - 1
     else if i = 1 then cfg.workTapePos 1
     else 1
+  output := cfg.output
+
+/-- A cleared configuration retains the context's output tape. -/
+@[simp] theorem clearedCfg_output {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
+    (clearedCfg cfg).output = cfg.output := rfl
 
 /-- Completing a leaf selects the next constructor or the end-of-tree state. -/
 def completedCfg {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input) :
@@ -200,7 +216,7 @@ theorem headBound_counterCfg {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control
   intro i
   by_cases hi : i = counterTape v
   · simp only [counterCfg, hi, ite_true]
-    exact ⟨by omega, by exact_mod_cast hp⟩
+    exact ⟨by omega, Int.ofNat_le.mpr hp⟩
   · simpa only [counterCfg, hi, ite_false] using hcfg i
 
 end Geb.BitTree.Elias.Machine

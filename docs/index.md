@@ -1729,6 +1729,40 @@ checklist and in CI.
   [resource-target discussion](bitstring-metalogic.md#non-size-increasing-function-algebra)
   for the distinction between checking syntax, checking certificates,
   and executing encoded programs.
+- `Geb/Prototypes/Computability/MultiTape/OutputString.lean` — the output a
+  multi-tape machine emits along a segment of a run.
+  `Turing.MultiTapeTM.outputString tm cfg t` is the concatenation of the
+  symbols emitted at each of the first `t` steps from `cfg`, whatever
+  `cfg`'s own output tape holds; `outputString_succ`,
+  `outputString_add_eq_append`, `outputString_halt` and
+  `outputString_eq_of_halt` compose it along the run, and `runFrom_output`
+  and `initCfg_runFrom_output` relate it to the output tape Cslib's
+  `Turing.Cfg` carries, `(tm.runFrom cfg t).output = cfg.output ++
+  tm.outputString cfg t`. Cslib records a run's output on the configuration
+  alone; the machines built here are reasoned about segment by segment, so
+  their step lemmas are stated over the segment form. The module is listed
+  in `GebMeta.classicalAllowedModules`: its statements mention
+  `Turing.MultiTapeTM.runFrom`, which depends on `Classical.choice` through
+  Cslib's `Turing.Cfg.inputSymbol`. Depends on Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
+- `Geb/Prototypes/Computability/MultiTape/Rename.lean` — renaming a
+  multi-tape machine's alphabet and states along equivalences:
+  `Turing.MultiTapeTM.mapTM` on the machine and `Turing.Cfg.mapSym` on its
+  configurations, with `step_mapSym`, `runFrom_mapSym`,
+  `outputString_mapSym` and `spaceUsed_mapSym` the commutation lemmas, so
+  that `ComputesInTimeAndSpace.mapTM` and `ComputesFunInTimeAndSpace.mapTM`
+  preserve a machine's computations and both resource counts exactly.
+  `computableInTimeAndSpace_of_finite` witnesses Cslib's
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace`, whose machines read and
+  write `Bool` and carry a state type in `Type`, by a machine over any
+  two-symbol alphabet and any finite state type, and
+  `computableInTimeAndSpaceOfLength_of_finite` is its form for a function
+  on bit strings with bounds in the input length; `listEmb` is the
+  embedding of strings an embedding of symbols induces. The module is
+  listed in `GebMeta.classicalAllowedModules`: its statements mention
+  `Turing.Cfg.inputSymbol`, which depends on `Classical.choice`. Depends on
+  `Geb.Prototypes.Computability.MultiTape.OutputString` and Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Prototypes/Computability/TreeScanner/Machine.lean` — a deterministic
   multi-tape Turing machine over Cslib's `Turing.MultiTapeTM` deciding
   `RankedAlphabet.Binary.binRanked.validBool`. `boolEmb` embeds the input
@@ -1758,12 +1792,12 @@ checklist and in CI.
   `Classical.choice`-free; its
   `GebTests/Prototypes/Computability/TreeScanner/Machine.lean` mirror is
   listed in `GebMeta.classicalAllowedModules`, since it reads the machine's
-  output through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
+  output through `Turing.Cfg.inputSymbol`, which depends on
   `Classical.choice` through Cslib's `inputSymbolInner`. Depends on Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic` and
   `Geb.Mathlib.Data.Tree.Ranked.Binary`.
 - `Geb/Prototypes/Computability/TreeScanner/Steps.lean` — the machine's
-  behaviour under `Turing.MultiTapeTM.step`, `.configs` and
+  behaviour under `Turing.MultiTapeTM.step`, `.runFrom` and
   `.outputString`. `step_of_state` restates a step in the form that names
   `tr`; `seekCfg_inputSymbol`, `seekCfg_inputSymbol_end`,
   `sweepCfg_inputSymbol_succ` and `sweepCfg_inputSymbol_zero` are the input
@@ -1774,25 +1808,29 @@ checklist and in CI.
   input symbol, each also discharging the matching no-emission fact
   (`outputSymbol_seekCfg`, `outputSymbol_plantCfg`,
   `outputSymbol_sweepCfg_succ`) through the shared argument the two share.
-  `seekCfg_step` and `configs_seek` give the seek phase — one step against
+  `seekCfg_step` and `runFrom_seek` give the seek phase — one step against
   the closed form, and the configuration and output at every step up to
   the input's length; `seekCfg_exit` and `plantCfg_step` are the two phase
-  boundaries; `sweepCfg_step` and `configs_sweep` give the sweep phase in
+  boundaries; `sweepCfg_step` and `runFrom_sweep` give the sweep phase in
   the same shape, one machine step per bit rather than a sequence of
   finer-grained substeps. `sweepCfg_zero_halts` and
   `outputSymbol_sweepCfg_zero` are the emitting step at the input's left
   end, and `halts_at` and `outputString_eq` compose the three phases into
   the halting step count and the emitted output. The source module is
   listed in `GebMeta.classicalAllowedModules`: its statements read the
-  input through `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends on
+  input through `Turing.Cfg.inputSymbol`, which depends on
   `Classical.choice` through Cslib's `inputSymbolInner`. Depends on
   `Geb.Prototypes.Computability.TreeScanner.Machine` and Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Prototypes/Computability/TreeScanner/Bound.lean` —
   `computableInTimeAndSpace_validBool`: `treeScanner` is
-  `Turing.MultiTapeTM.ComputableInTimeAndSpace` at
-  `fun w : List Bool ↦ [binRanked.validBool w]`, time bound
-  `fun n ↦ 2 * n + 3` and space bound `fun n ↦ 2 * n + 4`. The time bound
+  `Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength` at
+  `fun w : List Bool ↦ [binRanked.validBool w]` with the identity
+  encodings, time bound `fun n ↦ 2 * n + 3` and space bound
+  `fun n ↦ 2 * n + 4`, through
+  `Turing.MultiTapeTM.computableInTimeAndSpaceOfLength_of_finite`, since
+  the machine's alphabet is `Fin 2` where Cslib's predicate reads `Bool`.
+  The time bound
   is the sum of the seek, plant and sweep phase lengths from `Steps.lean`;
   the space bound follows from it by `spaceUsed_linear` at one work tape.
   The source module is listed in `GebMeta.classicalAllowedModules`: its
@@ -1814,7 +1852,11 @@ checklist and in CI.
 - `Geb/Prototypes/Computability/BitTree/Bound.lean` —
   `Geb.BitTree.computableInTimeAndSpace_validBool` proves the unified
   recognizer takes at most `n + 3` transitions and `n + 2` visited work
-  cells on inputs of length `n`. `Machine.lean` supplies a machine with
+  cells on inputs of length `n`, as
+  `Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength` with the identity
+  encodings, through
+  `Turing.MultiTapeTM.computableInTimeAndSpaceOfLength_of_finite` since
+  the alphabet is `Fin 2`. `Machine.lean` supplies a machine with
   one work tape and seven states; `Steps.lean` simulates every input prefix.
   The input head reads each bit once after two initialization transitions.
   The work head represents the pending-subtree count, with one marker
@@ -1822,8 +1864,14 @@ checklist and in CI.
   visited positions directly, including blank cells.
 - `Geb/Prototypes/Computability/BitTree/BinaryMachine/Bound.lean` —
   `Geb.BitTree.BinaryMachine.computableInTimeAndSpace_validBool` proves
-  the same recognition function computable simultaneously in `6 * n + 5`
-  steps and `3 * ((n + 2).size + 1)` visited work cells. The input head
+  the same recognition function computed simultaneously in `6 * n + 5`
+  steps and `3 * ((n + 2).size + 1)` visited work cells. The statement is the machine-specific
+  `Turing.MultiTapeTM.ComputesFunInTimeAndSpace` with the bit strings
+  embedded by `listEmb boolEmb`, since Cslib's
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` quantifies over machines
+  reading and writing `Bool` and this machine's alphabet is `Fin 4`; a
+  binary re-encoding of the work alphabet is the step from one to the
+  other. The input head
   consumes each bit once and stays stationary during counter updates.
   Two work tapes hold the monotonically increasing counts of forks plus
   one and completed leaves; a third head counts unequal digit positions.
@@ -1871,7 +1919,13 @@ checklist and in CI.
 - `Geb/Prototypes/Computability/BitTree/Elias/Bound.lean` —
   `Geb.BitTree.Elias.Machine.computableInTimeAndSpace_validBool` proves
   the delta-length recognizer uses at most `5 * n ^ 2 + 16 * n + 2`
-  transitions and `4 * (n + 2)` visited work cells. The input head
+  transitions and `4 * (n + 2)` visited work cells. The statement is the machine-specific
+  `Turing.MultiTapeTM.ComputesFunInTimeAndSpace` with the bit strings
+  embedded by `listEmb boolEmb`, since Cslib's
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` quantifies over machines
+  reading and writing `Bool` and this machine's alphabet is `Fin 3`; a
+  binary re-encoding of the work alphabet is the step from one to the
+  other. The input head
   consumes each bit once. Four work tapes hold a pending-subtree count,
   the initial zero-prefix count, and two binary fields. Countdown
   routines scan the full stored width; the quadratic bound includes
@@ -2031,7 +2085,7 @@ checklist and in CI.
   `mainCfg_eq_cfgAt` identifying the closed forms a chain begins or ends
   at with the scan's. The remaining modules but `Steps/Transition.lean` are
   admitted to `GebMeta.classicalAllowedModules`, since their statements
-  read the input through `Turing.MultiTapeTM.Cfg.inputSymbol`.
+  read the input through `Turing.Cfg.inputSymbol`.
   `Steps/Basic.lean` has the step at each shape of transition and `Run`, a
   number of steps between two configurations emitting nothing with the
   heads within the bound throughout, composed by `run_step`, `run_seq`,
@@ -2047,14 +2101,20 @@ checklist and in CI.
   gives `run_cfgAt_step`, a bit at any state satisfying the invariants in
   `cost` steps to the closed form at the scan's next state; and
   `Steps/Run.lean` composes the whole computation, `halts_at`,
-  `outputString_eq` and `headsLE_configs` the halt after `totalTime` steps,
+  `outputString_eq` and `headsLE_runFrom` the halt after `totalTime` steps,
   the emitted decision and the heads within the bound throughout.
   Depends on `Geb.Prototypes.Computability.BitTreeScanner.Machine` and
   `Geb.Prototypes.Computability.TreeScanner.Steps`.
 - `Geb/Prototypes/Computability/BitTreeScanner/Bound.lean` —
-  `computableInTimeAndSpace_validBool`: `validBool`, singleton-listed, is
-  `Turing.MultiTapeTM.ComputableInTimeAndSpace` in `14 * n + 4` steps and
-  `3 * (n.bits.length + 4)` cells, logarithmic space; the time is
+  `computableInTimeAndSpace_validBool`: `bitTreeScanner` computes
+  `validBool`, singleton-listed, in `14 * n + 4` steps and
+  `3 * (n.bits.length + 4)` cells, logarithmic space. The statement is the machine-specific
+  `Turing.MultiTapeTM.ComputesFunInTimeAndSpace` with the bit strings
+  embedded by `listEmb boolEmb`, since Cslib's
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` quantifies over machines
+  reading and writing `Bool` and this machine's alphabet is `Fin 4`; a
+  binary re-encoding of the work alphabet is the step from one to the
+  other. The time is
   `totalTime_le`, and `spaceUsed_le` counts the cells each head visits as
   at most those from `0` to `headBound`. The module is listed in
   `GebMeta.classicalAllowedModules`: the space conjunct rests on
@@ -2068,7 +2128,13 @@ checklist and in CI.
   that the same Elias-length tree language is recognized in at most
   `25 * n + 6` transitions and `9 * ((2 * n + 2).size + 3)` visited work
   cells, so the size bound of `Elias/RepresentationSize.lean` is met by
-  a linear-time, logarithmic-space recognizer. The machine reads the
+  a linear-time, logarithmic-space recognizer. The statement is the machine-specific
+  `Turing.MultiTapeTM.ComputesFunInTimeAndSpace` with the bit strings
+  embedded by `listEmb boolEmb`, since Cslib's
+  `Turing.MultiTapeTM.ComputableInTimeAndSpace` quantifies over machines
+  reading and writing `Bool` and this machine's alphabet is `Fin 4`; a
+  binary re-encoding of the work alphabet is the step from one to the
+  other. The machine reads the
   input twice: `PassOne.lean` counts its length into binary counters
   whose width serves as a ruler for zero runs and length fields, and
   the second pass consumes each bit in constant amortized time.
@@ -2552,10 +2618,10 @@ checklist and in CI.
   live configurations in closed form. `Register.lean` is
   `Classical.choice`-free; `Program.lean`, `Emit.lean`, `Seq.lean` and
   `SeqFin.lean` are listed in `GebMeta.classicalAllowedModules`: their
-  statements mention `Turing.MultiTapeTM.configs`,
+  statements mention `Turing.MultiTapeTM.runFrom`,
   `Turing.MultiTapeTM.outputString` and
   `Turing.MultiTapeTM.spaceUsedByTape`, each depending on
-  `Classical.choice` through Cslib's `Turing.MultiTapeTM.Cfg.inputSymbol`
+  `Classical.choice` through Cslib's `Turing.Cfg.inputSymbol`
   or mathlib's `Finset.image`. Depends on Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic` and
   `Computability.Machines.Turing.MultiTape.TapeLemmas` and on
@@ -2571,9 +2637,9 @@ checklist and in CI.
   the input into a register (`Phase/Input.lean`); and `emitLeft` emits a
   register's word (`Phase/Output.lean`). Every module of the directory is
   listed in `GebMeta.classicalAllowedModules`: each phase's statements mention
-  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  `Turing.MultiTapeTM.runFrom` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
-  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Turing.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.Program`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Emit`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Seq` and
@@ -2588,9 +2654,9 @@ checklist and in CI.
   `List.reverse` (`Primitives/CopyRev.lean`), each with its `Transforms`
   contract. Every module of the directory is listed in
   `GebMeta.classicalAllowedModules`: each primitive's statements mention
-  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  `Turing.MultiTapeTM.runFrom` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
-  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Turing.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk`,
@@ -2607,9 +2673,9 @@ checklist and in CI.
   statement, recursion on the register's word applying each bit's body in
   order (`Loop/Transforms.lean`). Every module of the directory is listed
   in `GebMeta.classicalAllowedModules`: each mentions
-  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  `Turing.MultiTapeTM.runFrom` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
-  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Turing.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.Program` and
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Compile.lean` — the
@@ -2631,9 +2697,9 @@ checklist and in CI.
   `Correct.lean`, `Comp.lean`, `Body.lean`, `Srn.lean` and `Theorem.lean`
   are listed in `GebMeta.classicalAllowedModules`, since their contracts
   are stated over `Transforms`, which mentions
-  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  `Turing.MultiTapeTM.runFrom` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
-  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Turing.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const`,
@@ -2666,9 +2732,9 @@ checklist and in CI.
   `Geb.SizeBounded.Machine.SOf.correct` and the writer's emission into the
   machine's emission of the expression's value. The module is listed in
   `GebMeta.classicalAllowedModules`: its statements mention
-  `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
+  `Turing.MultiTapeTM.runFrom` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
-  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  `Turing.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.Seq`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Output`,
@@ -2676,39 +2742,24 @@ checklist and in CI.
   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem`
   and `Geb.Prototypes.Computability.SizeBounded.Machine.Bound`.
-- `Geb/Prototypes/Computability/SizeBounded/Machine/Transport.lean` — a
-  `Turing.MultiTapeTM` over `Bool` and an arbitrary state type, relabeled
-  by `Geb.SizeBounded.Machine.relabel` over the symbols `Fin 2` and the
-  states `Fin s` along an equivalence of the state type: symbols travel by
-  `finTwoEquiv` and states by the equivalence, so that the relabeled
-  machine runs the original one step for step. `configs_relabel`,
-  `outputString_relabel`, `initCfg_relabel` and `spaceUsed_relabel` are
-  the commutation lemmas the relabeling meets, the last needed because
-  `Turing.MultiTapeTM.ComputableInTimeAndSpace` is stated over the symbols
-  `Fin 2`. The module is listed in `GebMeta.classicalAllowedModules`: its
-  statements mention `Turing.MultiTapeTM.Cfg.inputSymbol`, which depends
-  on `Classical.choice`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Program`, mathlib's
-  `Logic.Equiv.Defs` and Cslib's
-  `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Main.lean` —
   `Geb.SizeBounded.Machine.computableInTimeAndSpace_sem`: the meaning of a
   unary expression of the algebra is
-  `Turing.MultiTapeTM.ComputableInTimeAndSpace` at a polynomial time bound
-  and a linear space bound, on the machine `Geb.SizeBounded.Machine.machine`
-  relabeled by `Geb.SizeBounded.Machine.relabel` over `Fin 2` and an
-  initial segment of the naturals, the run `machine_emits` names. The
+  `Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength` with the identity
+  encodings at a polynomial time bound and a linear space bound, witnessed
+  by the machine `Geb.SizeBounded.Machine.machine` itself, over `Bool` and
+  the finite state type its `FinEnum` instance enumerates, and the run
+  `machine_emits` names. The
   machine reading of [Mazzanti2016] Theorem 5.7, for every unary
   expression, by the compiled program of the expression rather than the
   paper's Theorem 5.3 encoding of simultaneous recursion into a single
   one. The module is listed in `GebMeta.classicalAllowedModules`: its
   statement mentions `Turing.MultiTapeTM.ComputableInTimeAndSpace`, which
   depends on `Classical.choice` through Cslib's
-  `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper` and
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Transport`.
+  `Turing.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Exec.lean` — an
-  executable configuration: `Turing.MultiTapeTM.Cfg` carries its tapes and
+  executable configuration: `Turing.Cfg` carries its tapes and
   heads as functions, so `Turing.MultiTapeTM.step` builds each successor's
   fields as closures over its predecessor's and an iteration costs
   exponential time in the step count; `Geb.SizeBounded.Machine.ExecCfg`
@@ -2718,10 +2769,10 @@ checklist and in CI.
   configuration to the configuration it denotes, and
   `Geb.SizeBounded.Machine.toCfg_execStep` and `toCfg_execStep_iterate`
   identify `Geb.SizeBounded.Machine.execStep` and its iterates with
-  `Turing.MultiTapeTM.step` and `.configs` under that denotation. The
+  `Turing.MultiTapeTM.step` and `.runFrom` under that denotation. The
   module is listed in `GebMeta.classicalAllowedModules`: its statements
   mention `Turing.MultiTapeTM.step`, which depends on `Classical.choice`
-  through `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
+  through `Turing.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.Program`, Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic` and
   `Std.Data.HashMap.Lemmas`.

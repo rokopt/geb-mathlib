@@ -10,8 +10,7 @@ public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Difference
 public import Geb.Prototypes.Computability.BitTree.Counter
 public import Mathlib.Data.Nat.Bitwise
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Representation invariants for binary counters
 
@@ -29,6 +28,8 @@ a complete execution.
 
 Turing machine, binary representation, simulation
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

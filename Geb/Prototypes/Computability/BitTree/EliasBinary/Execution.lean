@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.BitStep
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.PassOne
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Executions of the binary-counter recognizer
 
@@ -23,12 +23,14 @@ every head throughout.
 
 ## Main statements
 
-* {lit}`configs_account` realizes every prefix account within its cost.
+* {lit}`runFrom_account` realizes every prefix account within its cost.
 
 ## Tags
 
 Turing machine, execution, amortized complexity, Elias delta code
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -42,16 +44,16 @@ def prefixCost (n : ℕ) (w : List Bool) : ℕ :=
   1 + passOneCost n + (n + 2) + runCost n w
 
 /-- Every prefix boundary realizes the account and bounds the whole execution so far. -/
-theorem configs_account (w : List Bool) : ∀ t, t ≤ w.length →
+theorem runFrom_account (w : List Bool) : ∀ t, t ≤ w.length →
     let cost := prefixCost w.length (w.take t)
     let start := machine.initCfg (w.map boolEmb)
-    Represents (widthOf w.length) (machine.configs start cost) (account w.length (w.take t)) ∧
-      (machine.configs start cost).inputPos.val = t + 1 ∧
+    Represents (widthOf w.length) (machine.runFrom start cost) (account w.length (w.take t)) ∧
+      (machine.runFrom start cost).inputPos.val = t + 1 ∧
       machine.outputString start cost = [] ∧
-      ∀ u ≤ cost, HeadBound (widthOf w.length) (machine.configs start u) := by
+      ∀ u ≤ cost, HeadBound (widthOf w.length) (machine.runFrom start u) := by
   refine Nat.rec ?_ ?_
   · intro _
-    have h := configs_passOne w
+    have h := runFrom_passOne w
     simpa only [prefixCost, List.take_zero, runCost, List.foldl_nil, Nat.add_zero, account]
       using h
   · intro t ih ht
@@ -59,7 +61,7 @@ theorem configs_account (w : List Bool) : ∀ t, t ≤ w.length →
     have hlt : t < w.length := by omega
     obtain ⟨hw1, hw2, hw3⟩ := forks_size_lt_width w.length (w.take t) _ rfl
       (by simp only [List.length_take]; omega)
-    have hstep := configs_bit w t hlt _ hp (account w.length (w.take t)) (account_valid _ _)
+    have hstep := runFrom_bit w t hlt _ hp (account w.length (w.take t)) (account_valid _ _)
       hr hw1 hw2 hw3
     obtain ⟨hr', hp', ho', hb'⟩ := hstep
     have he : prefixCost w.length (w.take (t + 1)) =
@@ -68,9 +70,9 @@ theorem configs_account (w : List Bool) : ∀ t, t ≤ w.length →
       rw [runCost_take_succ w.length w t hlt]
       omega
     refine ⟨?_, ?_, ?_, ?_⟩
-    · rw [he, configs_add, account_take_succ w.length w t hlt]
+    · rw [he, runFrom_add, account_take_succ w.length w t hlt]
       exact hr'
-    · rw [he, configs_add]
+    · rw [he, runFrom_add]
       exact hp'
     · rw [he]
       exact outputString_add_nil _ _ _ ho ho'

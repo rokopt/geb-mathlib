@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.BitTree.Scanner
 public import Geb.Prototypes.Computability.BitTree.Counter
 public import Mathlib.Tactic.SplitIfs
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Two monotone counters for the tree scanner
 
@@ -33,6 +32,8 @@ Each counter only increases, so binary-counter amortization bounds the combined 
 
 binary counter, recognizer, amortized complexity
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

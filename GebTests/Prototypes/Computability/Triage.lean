@@ -8,14 +8,15 @@ module
 public import Geb.Prototypes.Computability.Triage -- shake: keep; #guard needs it
 public meta import Geb.Prototypes.Computability.Triage -- shake: keep; #guard needs it
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Executable triage checks
 
 The tests cover every absorption and triage rule, nested evaluation order,
 terminal values, malformed words, and binary trees violating the value grammar.
 -/
+
+set_option doc.verso true
 
 open Geb.Triage
 open Expr

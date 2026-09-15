@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Basic
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A cost model for the non-size-increasing algebra
 
@@ -88,6 +87,8 @@ bounded by that rather than by {lit}`m`.
 non-size-increasing, simultaneous recursion on notation, polynomial time, linear
 space, cost model
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded
 

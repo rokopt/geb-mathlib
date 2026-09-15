@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Count
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The leaf count's chains
 
@@ -41,6 +40,8 @@ implementation notes explain.
 Turing machine, binary counter, borrow, Elias gamma code
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTreeScanner
@@ -65,7 +66,7 @@ theorem borrowCfg_step (first : Bool) (d : List Bool) (i : ℕ) (hi : i < borrow
     (by rw [hsym]; exact tr_borrowState_zero _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -106,7 +107,7 @@ theorem borrowCfg_flip (first : Bool) (d : List Bool) (hd : allFalse d = false) 
     (by rw [hsym]; exact tr_borrowState_one _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -148,7 +149,7 @@ theorem returnCfg_step (first : Bool) (d : List Bool) (i : ℕ) (hi : i < d.leng
     (by rw [hsym]; exact tr_returnState_digit _ _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · rfl
   · funext j
     match j with
@@ -198,7 +199,7 @@ theorem borrowCfg_blank (d : List Bool) :
     (none, -1) idle rfl (by rw [hsym]; exact tr_borrow_blank _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -236,7 +237,7 @@ theorem clearCfg_step (i : ℕ) :
     (some none, -1) idle rfl (by rw [hsym]; exact tr_clear_digit _ _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -309,7 +310,7 @@ theorem cfgAt_bits_full_step (c : ℕ) (d : List Bool) :
     idle (none, 1) idle rfl (by rw [hsym]; exact tr_bits_base _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl
@@ -345,7 +346,7 @@ theorem returnCfg_init_exit (d : List Bool) :
     (none, 1) idle rfl (by rw [hsym]; exact tr_returnInit_base _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ rfl
   · funext j z
     match j with
     | 0 => rfl

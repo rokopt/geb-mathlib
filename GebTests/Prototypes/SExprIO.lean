@@ -10,8 +10,7 @@ public meta import Geb.Prototypes.ConcreteSyntax.Command -- shake: keep; #eval n
 public import GebTests.Prototypes.ConcreteSyntax
 public meta import GebTests.Prototypes.ConcreteSyntax -- shake: keep; #eval needs it
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # S-expression file I/O tests
 
@@ -27,6 +26,8 @@ statuses and exceptions, including failures that must preserve an existing outpu
 
 S-expression, file I/O, test
 -/
+
+set_option doc.verso true
 
 public section
 

@@ -10,8 +10,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk -- shake: keep
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The successor phase
 
@@ -25,10 +24,10 @@ head moved, exactly when the second head still reads a bit, which is the
 condition of {name}`Geb.SizeBounded.sbsSem`.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -45,6 +44,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 Turing machine, register, successor
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -60,15 +61,15 @@ reads a bit, and halt. -/
   tr _ _ work :=
     match work x with
     | some c =>
-      { inputMove := 0
-        workActions := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
+      { inputTape := 0
+        workTapes := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
           else if l = y then (none, if (work y).isSome then 1 else 0) else (none, 0)
-        outS := none, q' := some () }
+        output := none, state := some () }
     | none =>
-      { inputMove := 0
-        workActions := fun l ↦
+      { inputTape := 0
+        workTapes := fun l ↦
           if l = j then (if (work y).isSome then (some (some b), 1) else (none, 0)) else (none, 0)
-        outS := none, q' := none }
+        output := none, state := none }
 
 /-- The configuration of {name}`sbsWalk` after {lit}`s` steps from parked
 heads, tape {lit}`x` holding {lit}`u`, tape {lit}`y` holding {lit}`v` and tape
@@ -105,19 +106,19 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
       (u.length + 1) B := by
   have htrS : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (c : Bool), work x = some c →
       (sbsWalk b x y j).tr () inp work =
-        { inputMove := 0
-          workActions := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
+        { inputTape := 0
+          workTapes := fun l ↦ if l = j then (some (some c), 1) else if l = x then (none, 1)
             else if l = y then (none, if (work y).isSome then 1 else 0) else (none, 0)
-          outS := none, q' := some () } := by
+          output := none, state := some () } := by
     intro inp work c hc
     simp only [sbsWalk, hc]
   have htrN : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work x = none →
       (sbsWalk b x y j).tr () inp work =
-        { inputMove := 0
-          workActions := fun l ↦
+        { inputTape := 0
+          workTapes := fun l ↦
             if l = j then (if (work y).isSome then (some (some b), 1) else (none, 0))
             else (none, 0)
-          outS := none, q' := none } := by
+          output := none, state := none } := by
     intro inp work hc
     simp only [sbsWalk, hc]
   have hsymX : ∀ s : ℕ, (sbsCfg x y j cfg u v s).workTapeSymbols x = tapeOf u (s : ℤ) := by
@@ -239,6 +240,7 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
             rw [Function.update_of_ne hl, Function.update_of_ne hl, Function.update_of_ne hly,
               Function.update_of_ne hly, Function.update_of_ne hlx, Function.update_of_ne hlx,
               SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (sbsWalk b x y j).step (sbsCfg x y j cfg u v u.length) =
       { cfg with
         state := none
@@ -291,6 +293,7 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
             Function.update (Function.update (Function.update cfg.workTapePos x (u.length : ℤ)) y
               ((min u.length v.length : ℕ) : ℤ)) j (((b :: u).length : ℕ) : ℤ) l
           rw [Function.update_of_ne hl, Function.update_of_ne hl, SignType.coe_zero, add_zero]
+      · exact List.append_nil _
     · rw [hyN u.length (by omega), ite_eq_right (by simp), ite_eq_right h]
       simp only [ite_self]
       apply Cfg.ext
@@ -308,10 +311,11 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
           Function.update (Function.update (Function.update cfg.workTapePos x (u.length : ℤ)) y
             ((min u.length v.length : ℕ) : ℤ)) j ((u.length : ℕ) : ℤ) l
         rw [SignType.coe_zero, add_zero]
+      · exact List.append_nil _
   have hout : ∀ s : ℕ, (sbsWalk b x y j).outputSymbol (sbsCfg x y j cfg u v s) = none := by
     intro s
     change ((sbsWalk b x y j).tr () (sbsCfg x y j cfg u v s).inputSymbol
-      (sbsCfg x y j cfg u v s).workTapeSymbols).outS = none
+      (sbsCfg x y j cfg u v s).workTapeSymbols).output = none
     rcases hw : (sbsCfg x y j cfg u v s).workTapeSymbols x with _ | c
     · rw [htrN _ _ hw]
     · rw [htrS _ _ _ hw]
@@ -336,6 +340,7 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
           · rw [hlx, Function.update_self]
             omega
           · rw [Function.update_of_ne hlx]
+    · rfl
   have hlen : (sbsSem b u v).length ≤ B := by
     unfold sbsSem
     by_cases h : u.length + 1 ≤ v.length

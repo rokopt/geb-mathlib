@@ -12,8 +12,7 @@ public import Mathlib.Algebra.Order.Group.Nat
 public import Mathlib.Tactic.Bound.Init
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Iterative simultaneous recursion on words
 
@@ -45,6 +44,8 @@ operator on word values, not a compilation of its base and step functions to a T
 
 simultaneous recursion, bitstring, iteration, vector
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -102,7 +103,7 @@ def srnStorage {b : ℕ} (s : List Bool × Vector (List Bool) b) : ℕ :=
 theorem srnStorage_le {b : ℕ} (s : List Bool × Vector (List Bool) b) (L : ℕ)
     (hw : s.1.length ≤ L) (hv : ∀ j, (s.2.get j).length ≤ L) :
     srnStorage s ≤ (b + 1) * L := by
-  have hs := List.sum_le_card_nsmul (List.ofFn fun j ↦ (s.2.get j).length) L
+  have hs := List.sum_le_length_nsmul (List.ofFn fun j ↦ (s.2.get j).length) L
     (fun x hx ↦ by obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx; exact hv j)
   simp only [List.length_ofFn, Nat.nsmul_eq_mul] at hs
   exact (Nat.add_le_add hw hs).trans_eq (by rw [Nat.add_mul, Nat.one_mul, Nat.add_comm])

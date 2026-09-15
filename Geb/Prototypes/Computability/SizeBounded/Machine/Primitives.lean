@@ -10,8 +10,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.CopyRev
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The primitives
 
@@ -19,3 +18,5 @@ Index for the modules on the primitives of the machine calculus: the
 programs sequenced from the phase machines, each transforming the register
 valuation by an update of one register.
 -/
+
+set_option doc.verso true

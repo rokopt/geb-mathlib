@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.LargeIR.Code
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: the transcription and the code agree on morphisms
 
@@ -75,6 +74,8 @@ two sides agree by unfolding.
 prototype, presheaf, walking arrow, inductive-recursive, code, positive,
 naturality
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

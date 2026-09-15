@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.BitTree.EliasBinary.Need
 public import Geb.Prototypes.Computability.BitTree.Counter
 public import Mathlib.Data.List.Induction
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The account of the binary-counter recognizer
 
@@ -36,6 +35,8 @@ such a header could never be completed, so the decision is unchanged.
 
 Elias delta code, binary counter, recognizer, invariant
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

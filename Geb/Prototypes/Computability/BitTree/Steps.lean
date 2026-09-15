@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Machine
 public import Geb.Prototypes.Computability.TreeScanner.Steps
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Simulation of the bitstring-tree scanner
 
@@ -18,7 +18,7 @@ The simulation relates machine configurations to prefixes of the pure scan.
 
 ## Main statements
 
-* {lit}`configs_scan` identifies every scanning configuration and its empty output.
+* {lit}`runFrom_scan` identifies every scanning configuration and its empty output.
 * {lit}`halts_at` and {lit}`outputString_eq` give termination and the decision bit.
 
 ## Implementation notes
@@ -30,6 +30,8 @@ on classical choice. The scanner's data and transition function are constructive
 
 Turing machine, simulation, binary tree, recognizer
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -53,6 +55,7 @@ theorem plant_step (w : List Bool) :
   · rfl
   · funext i z
     simp [unaryScanner, plantCfg, scanCfg, Function.update_apply]
+  · rfl
   · rfl
 
 /-- The scanned prefix determines the next input symbol. -/
@@ -87,12 +90,13 @@ theorem scanCfg_step (w : List Bool) (t : ℕ) (h : t < w.length) (s : State)
   · rfl
   · funext i
     exact counterMove_add s.1 s.2 w[t] hs
+  · rfl
 
 /-- Scanning a bit emits no output. -/
 theorem outputSymbol_scanCfg (w : List Bool) (t : ℕ) (h : t < w.length) (s : State) :
     unaryScanner.outputSymbol (scanCfg w t (by omega) s) = none := by
   unfold outputSymbol
-  change (unaryScanner.tr (modeState s.1) _ _).outS = none
+  change (unaryScanner.tr (modeState s.1) _ _).output = none
   rw [scanCfg_inputSymbol w t h]
   rcases s with ⟨m, n⟩
   cases m <;> simp [unaryScanner, modeState, consume] <;> split_ifs <;> rfl
@@ -109,26 +113,26 @@ theorem outputSymbol_scanCfg_end (w : List Bool) (s : State) :
     unaryScanner.outputSymbol (scanCfg w w.length (by omega) s) =
       some (boolEmb (decide (s.1 = .done))) := by
   unfold outputSymbol
-  change (unaryScanner.tr (modeState s.1) _ _).outS = _
+  change (unaryScanner.tr (modeState s.1) _ _).output = _
   rw [scanCfg_inputSymbol_end]
   rcases s with ⟨m, n⟩
   cases m <;> rfl
 
 /-- Initialization takes two steps and emits nothing. -/
 theorem init_run (w : List Bool) :
-    unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb)) 2 =
+    unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) 2 =
         scanCfg w 0 (by omega) (.tree, 1) ∧
       unaryScanner.outputString (unaryScanner.initCfg (w.map boolEmb)) 2 = [] := by
   constructor
-  · change unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb)) (0 + 1 + 1) = _
-    rw [configs_succ_eq_step', configs_succ_eq_step',
-      configs_zero, init_step, plant_step]
+  · change unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) (0 + 1 + 1) = _
+    rw [runFrom_succ_eq_step', runFrom_succ_eq_step',
+      runFrom_zero, init_step, plant_step]
   · rfl
 
 /-- At every prefix boundary the machine realizes the pure scanner without output. -/
-theorem configs_scan (w : List Bool) :
+theorem runFrom_scan (w : List Bool) :
     ∀ t, ∀ h : t ≤ w.length,
-      unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb)) (t + 2) =
+      unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb)) (t + 2) =
           scanCfg w t h (scan (w.take t)) ∧
         unaryScanner.outputString (unaryScanner.initCfg (w.map boolEmb)) (t + 2) = [] := by
   refine Nat.rec ?_ ?_
@@ -139,17 +143,17 @@ theorem configs_scan (w : List Bool) :
     have ht : t < w.length := by omega
     rw [show t + 1 + 2 = (t + 2) + 1 by omega]
     constructor
-    · rw [configs_succ_eq_step', hc, scanCfg_step w t ht _
+    · rw [runFrom_succ_eq_step', hc, scanCfg_step w t ht _
         (fun hs ↦ scan_active_pos _ (Or.inr (Or.inl hs))), ← scan_take_succ w t ht]
     · rw [outputString_succ, ho, hc, outputSymbol_scanCfg w t ht]
       rfl
 
 /-- The recognizer halts after one transition per bit and three fixed transitions. -/
 theorem halts_at (w : List Bool) :
-    (unaryScanner.configs (unaryScanner.initCfg (w.map boolEmb))
+    (unaryScanner.runFrom (unaryScanner.initCfg (w.map boolEmb))
       (w.length + 3)).state = none := by
-  rw [show w.length + 3 = (w.length + 2) + 1 by omega, configs_succ_eq_step',
-    (configs_scan w w.length (by omega)).1]
+  rw [show w.length + 3 = (w.length + 2) + 1 by omega, runFrom_succ_eq_step',
+    (runFrom_scan w w.length (by omega)).1]
   exact scanCfg_halts w _
 
 /-- The sole output is the scanner's decision bit. -/
@@ -157,7 +161,7 @@ theorem outputString_eq (w : List Bool) :
     unaryScanner.outputString (unaryScanner.initCfg (w.map boolEmb)) (w.length + 3) =
       [boolEmb (validBool w)] := by
   rw [show w.length + 3 = (w.length + 2) + 1 by omega, outputString_succ,
-    (configs_scan w w.length (by omega)).1, (configs_scan w w.length (by omega)).2,
+    (runFrom_scan w w.length (by omega)).1, (runFrom_scan w w.length (by omega)).2,
     outputSymbol_scanCfg_end]
   simp [validBool]
 

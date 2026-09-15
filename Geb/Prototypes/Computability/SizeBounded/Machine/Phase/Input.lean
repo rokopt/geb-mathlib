@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The input-reading phases
 
@@ -23,10 +22,10 @@ head. The register then holds the input in the reversed layout of
 input into a register.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -47,6 +46,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 Turing machine, input tape, register
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -57,15 +58,15 @@ public section
 @[expose] def inRight {k : ℕ} : MultiTapeTM k Bool Unit where
   q₀ := ()
   tr _ inp _ :=
-    { inputMove := if inp.isSome then 1 else 0
-      workActions := fun _ ↦ (none, 0)
-      outS := none
-      q' := if inp.isSome then some () else none }
+    { inputTape := if inp.isSome then 1 else 0
+      workTapes := fun _ ↦ (none, 0)
+      output := none
+      state := if inp.isSome then some () else none }
 
 /-- Move the input head one cell left. -/
 @[expose] def inBack {k : ℕ} : MultiTapeTM k Bool Unit where
   q₀ := ()
-  tr _ _ _ := { inputMove := -1, workActions := fun _ ↦ (none, 0), outS := none, q' := none }
+  tr _ _ _ := { inputTape := -1, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- Walk the input head left, writing each symbol read at register {lit}`j`'s
 head and advancing that head, until the input head reads the blank before the
@@ -75,11 +76,11 @@ input. -/
   tr _ inp _ :=
     match inp with
     | some b =>
-      { inputMove := -1
-        workActions := fun l ↦ if l = j then (some (some b), 1) else (none, 0)
-        outS := none
-        q' := some () }
-    | none => { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none }
+      { inputTape := -1
+        workTapes := fun l ↦ if l = j then (some (some b), 1) else (none, 0)
+        output := none
+        state := some () }
+    | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- The configuration of {name}`inRight` after {lit}`s` steps from the input
 head at the first symbol. -/
@@ -96,11 +97,11 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
       (input.length + 1) B := by
   have htrSome : ∀ (b : Bool) (work : Fin k → Option Bool),
       (inRight (k := k)).tr () (some b) work =
-        { inputMove := SignType.pos, workActions := fun _ ↦ (none, 0), outS := none,
-          q' := some () } := fun _ _ ↦ rfl
+        { inputTape := SignType.pos, workTapes := fun _ ↦ (none, 0), output := none,
+          state := some () } := fun _ _ ↦ rfl
   have htrNone : ∀ work : Fin k → Option Bool,
       (inRight (k := k)).tr () none work =
-        { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none } :=
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } :=
     fun _ ↦ rfl
   have hstep : ∀ s < input.length,
       (inRight (k := k)).step (inRightCfg cfg s) = inRightCfg cfg (s + 1) := by
@@ -119,6 +120,7 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
     · funext i
       change cfg.workTapePos i + ((0 : SignType) : ℤ) = cfg.workTapePos i
       rw [SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (inRight (k := k)).step (inRightCfg cfg input.length) =
       { cfg with state := none, inputPos := ⟨input.length + 1, by omega⟩ } := by
     have hsym : (inRightCfg cfg input.length).inputSymbol = none := by
@@ -143,10 +145,12 @@ theorem inRight_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit inpu
     · funext i
       change cfg.workTapePos i + ((0 : SignType) : ℤ) = cfg.workTapePos i
       rw [SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hzero : inRightCfg cfg 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm
     · exact Fin.ext (by change min (1 + 0) (input.length + 1) = cfg.inputPos.val; omega)
+    · rfl
     · rfl
     · rfl
   have key := RunsTo.ofFamily (inRight (k := k)) (inRightCfg cfg) input.length B
@@ -176,9 +180,11 @@ theorem inBack_runsTo {k : ℕ} {input : List Bool} (cfg : Cfg k Bool Unit input
     · funext i
       change cfg.workTapePos i + ((0 : SignType) : ℤ) = cfg.workTapePos i
       rw [SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hzero : ({ cfg with state := some () } : Cfg k Bool Unit input) = cfg := by
     apply Cfg.ext
     · exact hq.symm
+    · rfl
     · rfl
     · rfl
     · rfl
@@ -217,10 +223,10 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
       (input.length + 1) B := by
   have htrNone : ∀ work : Fin k → Option Bool,
       (inLeft j).tr () none work =
-        { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none } :=
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } :=
     fun _ ↦ rfl
   have hout : ∀ (inp : Option Bool) (work : Fin k → Option Bool),
-      ((inLeft j).tr () inp work).outS = none := by
+      ((inLeft j).tr () inp work).output = none := by
     intro inp _
     cases inp <;> rfl
   have hstep : ∀ s < input.length,
@@ -238,7 +244,7 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
         tapeOf (input.drop (input.length - (s + 1))) := by
       rw [drop_length_sub_succ input s hs, tapeOf_cons, hlen, List.getElem_reverse]
     have hact : ∀ l : Fin k, ((inLeft j).tr () (some (input[input.length - 1 - s]'(by omega)))
-        (inLeftCfg j cfg s).workTapeSymbols).workActions l =
+        (inLeftCfg j cfg s).workTapeSymbols).workTapes l =
         if l = j then (some (some (input[input.length - 1 - s]'(by omega))), (1 : SignType))
           else ((none : Option (Option Bool)), (0 : SignType)) := fun _ ↦ rfl
     rw [step_of_state _ _ () rfl, hsym]
@@ -283,6 +289,7 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
         change Function.update cfg.workTapePos j (s : ℤ) l + ((0 : SignType) : ℤ) =
           Function.update cfg.workTapePos j ((s + 1 : ℕ) : ℤ) l
         rw [Function.update_of_ne hl, Function.update_of_ne hl, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (inLeft j).step (inLeftCfg j cfg input.length) =
       { cfg with
         state := none
@@ -309,6 +316,7 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
           ((0 : SignType) : ℤ) =
         Function.update cfg.workTapePos j (input.length : ℤ) l
       rw [SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hzero : inLeftCfg j cfg 0 = cfg := by
     apply Cfg.ext
     · exact hq.symm
@@ -318,6 +326,7 @@ theorem inLeft_runsTo {k : ℕ} {input : List Bool} (j : Fin k) (cfg : Cfg k Boo
       rw [Nat.sub_zero, List.drop_length, ← hj, Function.update_eq_self]
     · change Function.update cfg.workTapePos j (((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show (((0 : ℕ) : ℤ)) = cfg.workTapePos j by omega, Function.update_eq_self]
+    · rfl
   have key := RunsTo.ofFamily (inLeft j) (inLeftCfg j cfg) input.length B
     { cfg with
       state := none

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.Mazzanti.Words -- shake: keep; #guard needs it
 public meta import Geb.Prototypes.Computability.Mazzanti.Words -- shake: keep; #guard needs it
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Executable algebra checks
 
@@ -17,6 +16,8 @@ The compiled evaluator is compared with the scanner on short words, including
 empty input, leading zeroes, malformed encodings, forks, and escaped payloads.
 An arity mismatch is rejected by the raw syntax validator.
 -/
+
+set_option doc.verso true
 
 open Geb.Mazzanti
 open scoped FinEnum

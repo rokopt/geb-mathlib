@@ -11,8 +11,7 @@ import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.LoopEval
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.SrnInit
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Correctness of a recursion node's compilation
 
@@ -46,6 +45,8 @@ between the two sides defeats.
 
 Turing machine, compilation, correctness, recursion, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

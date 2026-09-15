@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.TreeScanner.Steps
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Cfg
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's steps and runs
 
@@ -42,12 +42,14 @@ closed forms without a rewrite chain, and the space bound is carried along.
 ## Implementation notes
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`. Its subject
-is the machine's behaviour under {name}`Turing.MultiTapeTM.step`,
-{name}`Turing.MultiTapeTM.configs` and {name}`Turing.MultiTapeTM.outputString`,
+is the machine's behaviour under {name}`Turing.MultiTapeTM.step` and
+{name}`Turing.MultiTapeTM.runFrom` and the output it emits along a run,
+{name}`Turing.MultiTapeTM.outputString` of
+{lit}`Geb.Prototypes.Computability.MultiTape.OutputString`,
 and its statements read the input through
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`; each of those depends on
+{name}`Turing.Cfg.inputSymbol`; each of those depends on
 {lit}`Classical.choice` through Cslib's {lit}`Cfg.inputSymbol` and
-{name}`Turing.MultiTapeTM.inputSymbolInner`, so nothing here can be stated
+{name}`Turing.inputSymbolInner`, so nothing here can be stated
 choice-free; the closed forms the steps land on and their head bounds, which
 can, are {lit}`Geb.Prototypes.Computability.BitTreeScanner.Steps.Cfg`'s.
 
@@ -55,6 +57,8 @@ can, are {lit}`Geb.Prototypes.Computability.BitTreeScanner.Steps.Cfg`'s.
 
 Turing machine, transition, run, space bound
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -76,7 +80,7 @@ theorem inputSymbol_of_inputPos (k : ℕ) (h : k < w.length) (hpos : cfg.inputPo
   rw [hi, List.getElem_map]
 
 /-- A configuration whose input head is past the whole input reads blank. This
-takes {name}`Turing.MultiTapeTM.Cfg.inputSymbol`'s second guard, an equality at
+takes {name}`Turing.Cfg.inputSymbol`'s second guard, an equality at
 {lit}`ℕ`. -/
 theorem inputSymbol_end (hpos : cfg.inputPos.val = w.length + 1) : cfg.inputSymbol = none := by
   have hend : (cfg.inputPos : ℕ) = (w.map boolEmb).length + 1 := by
@@ -100,7 +104,7 @@ actions and emits nothing. -/
 theorem step_next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin stateCount)
     (m : SignType) (a₀ a₁ a₂ : Act) (hq : cfg.state = some q)
     (htr : bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols =
-      { inputMove := m, workActions := ![a₀, a₁, a₂], outS := none, q' := some q' }) :
+      { inputTape := m, workTapes := ![a₀, a₁, a₂], output := none, state := some q' }) :
     bitTreeScanner.step cfg = next cfg q' m a₀ a₁ a₂ ∧
       bitTreeScanner.outputSymbol cfg = none := by
   obtain ⟨o₀, m₀⟩ := a₀
@@ -108,7 +112,7 @@ theorem step_next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin state
   obtain ⟨o₂, m₂⟩ := a₂
   refine ⟨?_, ?_⟩
   · rw [step_of_state _ _ q hq, htr]
-    refine Cfg.ext rfl rfl ?_ ?_
+    refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
     · funext i
       match i with
       | 0 => cases o₀ <;> rfl
@@ -121,7 +125,7 @@ theorem step_next (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q q' : Fin state
       | 2 => rfl
   · unfold outputSymbol
     rw [hq]
-    change (bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols).outS = none
+    change (bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols).output = none
     rw [htr]
 
 /-- A step whose transition reads a bit: the input head advances, each tape
@@ -170,7 +174,7 @@ theorem step_halt (cfg : Cfg 3 (Fin 4) (Fin stateCount) input) (q : Fin stateCou
     | 2 => exact add_zero _
   · unfold outputSymbol
     rw [hq]
-    change (bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols).outS = some b
+    change (bitTreeScanner.tr q cfg.inputSymbol cfg.workTapeSymbols).output = some b
     rw [htr]
     rfl
 
@@ -184,15 +188,15 @@ variable (w : List Bool)
 configuration reached, nothing emitted, and the heads within the bound at
 every step. -/
 def Run (cfg₁ cfg₂ : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (m : ℕ) : Prop :=
-  bitTreeScanner.configs cfg₁ m = cfg₂ ∧ bitTreeScanner.outputString cfg₁ m = [] ∧
-    ∀ j ≤ m, HeadsLE w (bitTreeScanner.configs cfg₁ j)
+  bitTreeScanner.runFrom cfg₁ m = cfg₂ ∧ bitTreeScanner.outputString cfg₁ m = [] ∧
+    ∀ j ≤ m, HeadsLE w (bitTreeScanner.runFrom cfg₁ j)
 
 variable {w}
 
 /-- The empty run. -/
 theorem run_zero (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (h : HeadsLE w cfg) :
     Run w cfg cfg 0 :=
-  ⟨configs_zero, rfl, fun j hj ↦ by rw [Nat.le_zero.mp hj, configs_zero]; exact h⟩
+  ⟨runFrom_zero, rfl, fun j hj ↦ by rw [Nat.le_zero.mp hj, runFrom_zero]; exact h⟩
 
 /-- A run of one step: the step's configuration, and nothing emitted. -/
 theorem run_step (cfg₁ cfg₂ : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb))
@@ -200,25 +204,25 @@ theorem run_step (cfg₁ cfg₂ : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)
     (h₁ : HeadsLE w cfg₁) (h₂ : HeadsLE w cfg₂) : Run w cfg₁ cfg₂ 1 := by
   refine ⟨h.1, ?_, ?_⟩
   · change bitTreeScanner.outputString cfg₁ (0 + 1) = []
-    rw [outputString_succ, configs_zero, h.2]
+    rw [outputString_succ, runFrom_zero, h.2]
     rfl
   · intro j hj
     match j with
-    | 0 => rw [configs_zero]; exact h₁
-    | 1 => rw [show bitTreeScanner.configs cfg₁ 1 = cfg₂ from h.1]; exact h₂
+    | 0 => rw [runFrom_zero]; exact h₁
+    | 1 => rw [show bitTreeScanner.runFrom cfg₁ 1 = cfg₂ from h.1]; exact h₂
 
 /-- Two runs in sequence. -/
 theorem run_seq (cfg₁ cfg₂ cfg₃ : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)) (m n : ℕ)
     (h₁ : Run w cfg₁ cfg₂ m) (h₂ : Run w cfg₂ cfg₃ n) : Run w cfg₁ cfg₃ (m + n) := by
   obtain ⟨hc₁, ho₁, hh₁⟩ := h₁
   obtain ⟨hc₂, ho₂, hh₂⟩ := h₂
-  refine ⟨by rw [configs_add, hc₁, hc₂], ?_, ?_⟩
+  refine ⟨by rw [runFrom_add, hc₁, hc₂], ?_, ?_⟩
   · rw [outputString_add_eq_append, ho₁, hc₁, ho₂]
     rfl
   · intro j hj
     by_cases hjm : j ≤ m
     · exact hh₁ j hjm
-    · rw [show j = m + (j - m) by omega, configs_add, hc₁]
+    · rw [show j = m + (j - m) by omega, runFrom_add, hc₁]
       exact hh₂ (j - m) (by omega)
 
 /-- The run along a family of configurations, each the step of the last,

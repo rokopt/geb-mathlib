@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Steps
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Increment
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # One bit of the length field
 
@@ -27,14 +27,16 @@ move the ruler head past the forks counter abandons the scan.
 
 ## Main statements
 
-* {lit}`configs_walk` iterates a one-step description of a family of configurations.
-* {lit}`configs_returnWalk` and {lit}`configs_eraseSize` describe the three walks.
-* {lit}`configs_bit_length` realizes one length-field bit in its macro cost.
+* {lit}`runFrom_walk` iterates a one-step description of a family of configurations.
+* {lit}`runFrom_returnWalk` and {lit}`runFrom_eraseSize` describe the three walks.
+* {lit}`runFrom_bit_length` realizes one length-field bit in its macro cost.
 
 ## Tags
 
 Turing machine, simulation, Elias delta code, length field
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -112,18 +114,18 @@ theorem PairRep.transfer {input : List (Fin 4)} {lay : Layout} {lsb : ℤ} {widt
 
 /-- A family of configurations closed under one step up to a bound is followed by the
 machine, emitting nothing. -/
-theorem configs_walk {input : List (Fin 4)} (F : ℕ → Cfg 9 (Fin 4) Control input) (n : ℕ)
+theorem runFrom_walk {input : List (Fin 4)} (F : ℕ → Cfg 9 (Fin 4) Control input) (n : ℕ)
     (hstep : ∀ p, p < n → machine.step (F p) = F (p + 1))
     (hout : ∀ p, p < n → machine.outputSymbol (F p) = none) (t : ℕ) (ht : t ≤ n) :
-    machine.configs (F 0) t = F t ∧ machine.outputString (F 0) t = [] := by
+    machine.runFrom (F 0) t = F t ∧ machine.outputString (F 0) t = [] := by
   revert ht
   refine Nat.rec ?_ ?_ t
   · intro _
-    exact ⟨configs_zero, rfl⟩
+    exact ⟨runFrom_zero, rfl⟩
   · intro t ih ht
     obtain ⟨hc, ho⟩ := ih (by omega)
     constructor
-    · rw [configs_succ_eq_step', hc, hstep t (by omega)]
+    · rw [runFrom_succ_eq_step', hc, hstep t (by omega)]
     · rw [outputString_succ, ho, hc, hout t (by omega)]
       rfl
 
@@ -135,6 +137,7 @@ def headsCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (q : Contr
   inputPos := c.inputPos
   workTapes := c.workTapes
   workTapePos i := if sel i then z else c.workTapePos i
+  output := c.output
 
 /-- Head bounds of a base configuration extend to the selected heads at a bounded cell. -/
 theorem headsCfg_headBound {input : List (Fin 4)} {c : Cfg 9 (Fin 4) Control input}
@@ -151,7 +154,7 @@ theorem headsCfg_headBound {input : List (Fin 4)} {c : Cfg 9 (Fin 4) Control inp
 theorem headsCfg_self {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (q : Control)
     (sel : Fin 9 → Prop) [DecidablePred sel] (z : ℤ) (hq : c.state = some q)
     (hpos : ∀ i, sel i → c.workTapePos i = z) : headsCfg c q sel z = c := by
-  refine Cfg.ext hq.symm rfl rfl ?_
+  refine Cfg.ext hq.symm rfl rfl ?_ rfl
   funext i
   simp only [headsCfg]
   split_ifs with h
@@ -171,7 +174,7 @@ theorem step_returnWalk {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     simp only [Cfg.workTapeSymbols, headsCfg, hj, ↓reduceIte]
     rw [horig, decide_eq_false hz]
   rw [step_of_state _ _ q rfl, tr_phase q hph, htr, hw]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp only [headsCfg, act, Bool.false_eq_true, ↓reduceIte]
   split_ifs
@@ -193,13 +196,13 @@ theorem step_returnWalk_end {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control in
     rw [horig]
     rfl
   rw [step_of_state _ _ q rfl, tr_phase q hph, htr, hw]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [headsCfg, act, stay]
 
 /-- A head-returning state walks its selected heads from a common cell to the tag and then
 changes its finite control, emitting nothing and keeping every other head fixed. -/
-theorem configs_returnWalk {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
+theorem runFrom_returnWalk {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     (q q' : Control) (j : Fin 9) (sel : Fin 9 → Prop) [DecidablePred sel]
     (hph : q = stSizeSetup ∨ q = stSizeInit ∨ q = stLengthEnd ∨ q = stTagLsb ∨
       q = stEraseSize ∨ q = stReturnSize ∨ q = stReturnF ∨ q = stEraseLength)
@@ -207,9 +210,9 @@ theorem configs_returnWalk {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control inp
       if origin (work j) then (q', stay) else (q, fun i ↦ (none, if sel i then -1 else 0)))
     (hj : sel j) (horig : ∀ z, origin (c.workTapes j z) = decide (z = 0))
     (hq : c.state = some q) (S : ℕ) (hpos : ∀ i, sel i → c.workTapePos i = S) :
-    machine.configs c (S + 1) = headsCfg c q' sel 0 ∧ machine.outputString c (S + 1) = [] ∧
+    machine.runFrom c (S + 1) = headsCfg c q' sel 0 ∧ machine.outputString c (S + 1) = [] ∧
       ∀ t ≤ S + 1, ∃ (q'' : Control) (z : ℤ), 0 ≤ z ∧ z ≤ (S : ℤ) ∧
-        machine.configs c t = headsCfg c q'' sel z := by
+        machine.runFrom c t = headsCfg c q'' sel z := by
   have hself := headsCfg_self c q sel S hq hpos
   have hstep : ∀ p, p < S → machine.step (headsCfg c q sel ((S : ℤ) - p)) =
       headsCfg c q sel ((S : ℤ) - (p + 1 : ℕ)) := by
@@ -219,12 +222,12 @@ theorem configs_returnWalk {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control inp
     omega
   have hout : ∀ p, p < S → machine.outputSymbol (headsCfg c q sel ((S : ℤ) - p)) = none :=
     fun _ _ ↦ outputSymbol_phase _ q rfl hph
-  have hw := configs_walk (fun p : ℕ ↦ headsCfg c q sel ((S : ℤ) - p)) S hstep hout
+  have hw := runFrom_walk (fun p : ℕ ↦ headsCfg c q sel ((S : ℤ) - p)) S hstep hout
   simp only [Nat.cast_zero, Int.sub_zero, hself] at hw
   have hS := hw S (Nat.le_refl _)
   rw [Int.sub_self] at hS
-  have hend : machine.configs c (S + 1) = headsCfg c q' sel 0 := by
-    rw [configs_succ_eq_step', hS.1, step_returnWalk_end c q q' j sel hph htr hj horig]
+  have hend : machine.runFrom c (S + 1) = headsCfg c q' sel 0 := by
+    rw [runFrom_succ_eq_step', hS.1, step_returnWalk_end c q q' j sel hph htr hj horig]
   refine ⟨hend, ?_, ?_⟩
   · rw [outputString_succ, hS.2, hS.1, outputSymbol_phase _ q rfl hph]
     rfl
@@ -246,6 +249,7 @@ def eraseSizeCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (q : C
     else if i = 4 then fun z ↦ if 0 ≤ z ∧ z < p then none else c.workTapes 4 z
     else c.workTapes i
   workTapePos i := if i = 3 ∨ i = 4 then p else c.workTapePos i
+  output := c.output
 
 /-- Head bounds of a base configuration extend to the erasure family within the width. -/
 theorem eraseSizeCfg_headBound {input : List (Fin 4)} {c : Cfg 9 (Fin 4) Control input}
@@ -262,7 +266,7 @@ erasure family. -/
 theorem eraseSizeCfg_self {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     (hq : c.state = some stEraseSize) (h3 : c.workTapePos 3 = 0) (h4 : c.workTapePos 4 = 0) :
     eraseSizeCfg c stEraseSize 0 = c := by
-  refine Cfg.ext hq.symm rfl ?_ ?_
+  refine Cfg.ext hq.symm rfl ?_ ?_ rfl
   · funext i z
     have hz : ¬(0 ≤ z ∧ z < ((0 : ℕ) : ℤ)) := by omega
     simp only [eraseSizeCfg]
@@ -289,7 +293,7 @@ theorem step_eraseSize {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     simp [Cfg.workTapeSymbols, eraseSizeCfg]
   rw [step_of_state _ _ stEraseSize rfl, tr_phase stEraseSize (by simp), phaseTr_eraseSize, hw,
     ite_eq_right hp, horig]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i z
     simp only [eraseSizeCfg, act]
     by_cases h3 : i = 3
@@ -319,31 +323,31 @@ theorem step_eraseSize_end {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control inp
     simp [Cfg.workTapeSymbols, eraseSizeCfg, hS]
   rw [step_of_state _ _ stEraseSize rfl, tr_phase stEraseSize (by simp), phaseTr_eraseSize, hw,
     ite_eq_left rfl]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp [eraseSizeCfg, act, stay]
 
 /-- The erasure walk: from the origin, the size heads clear the written register cells and
 their counter cells, the register keeping its tagged origin, then stop at the first blank
 register cell, emitting nothing. -/
-theorem configs_eraseSize {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (S : ℕ)
+theorem runFrom_eraseSize {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (S : ℕ)
     (hq : c.state = some stEraseSize) (h3 : c.workTapePos 3 = 0) (h4 : c.workTapePos 4 = 0)
     (horig : ∀ z, origin (c.workTapes 3 z) = decide (z = 0))
     (hblank : ∀ j : ℕ, c.workTapes 3 j = none ↔ S ≤ j) :
-    machine.configs c (S + 1) = eraseSizeCfg c stReturnSize S ∧
+    machine.runFrom c (S + 1) = eraseSizeCfg c stReturnSize S ∧
       machine.outputString c (S + 1) = [] ∧
-      ∀ t ≤ S + 1, ∃ q p, p ≤ S ∧ machine.configs c t = eraseSizeCfg c q p := by
+      ∀ t ≤ S + 1, ∃ q p, p ≤ S ∧ machine.runFrom c t = eraseSizeCfg c q p := by
   have hself := eraseSizeCfg_self c hq h3 h4
   have hstep : ∀ p, p < S → machine.step (eraseSizeCfg c stEraseSize p) =
       eraseSizeCfg c stEraseSize (p + 1) :=
     fun p hp ↦ step_eraseSize c horig p (fun h ↦ by have := (hblank p).mp h; omega)
   have hout : ∀ p, p < S → machine.outputSymbol (eraseSizeCfg c stEraseSize p) = none :=
     fun _ _ ↦ outputSymbol_phase _ stEraseSize rfl (by simp)
-  have hw := configs_walk (fun p ↦ eraseSizeCfg c stEraseSize p) S hstep hout
+  have hw := runFrom_walk (fun p ↦ eraseSizeCfg c stEraseSize p) S hstep hout
   simp only [hself] at hw
   have hS := hw S (Nat.le_refl _)
-  have hend : machine.configs c (S + 1) = eraseSizeCfg c stReturnSize S := by
-    rw [configs_succ_eq_step', hS.1, step_eraseSize_end c S ((hblank S).mpr (Nat.le_refl _))]
+  have hend : machine.runFrom c (S + 1) = eraseSizeCfg c stReturnSize S := by
+    rw [runFrom_succ_eq_step', hS.1, step_eraseSize_end c S ((hblank S).mpr (Nat.le_refl _))]
   refine ⟨hend, ?_, ?_⟩
   · rw [outputString_succ, hS.2, hS.1, outputSymbol_phase _ stEraseSize rfl (by simp)]
     rfl
@@ -362,12 +366,13 @@ def lengthEndCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) :
   inputPos := c.inputPos
   workTapes := c.workTapes
   workTapePos i := if i = 6 ∨ i = 7 then c.workTapePos i - 1 else c.workTapePos i
+  output := c.output
 
 /-- The length-end state steps both length heads back. -/
 theorem step_lengthEnd {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     (hq : c.state = some stLengthEnd) : machine.step c = lengthEndCfg c := by
   rw [step_of_state _ _ _ hq, tr_phase stLengthEnd (by simp), phaseTr_lengthEnd]
-  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) rfl ?_ (List.append_nil _)
   funext i
   simp only [lengthEndCfg, act]
   split_ifs
@@ -391,12 +396,13 @@ def tagLsbCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) :
   workTapePos i :=
     if i = 8 then c.workTapePos 8 + (mismatchMove (c.workTapeSymbols 6) (c.workTapeSymbols 7) : ℤ)
     else c.workTapePos i
+  output := c.output
 
 /-- The tagging state tags the length register's digit and starts the payload counter. -/
 theorem step_tagLsb {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input)
     (hq : c.state = some stTagLsb) : machine.step c = tagLsbCfg c := by
   rw [step_of_state _ _ _ hq, tr_phase stTagLsb (by simp), phaseTr_tagLsb]
-  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ (List.append_nil _)
   · funext i
     simp only [tagLsbCfg, act]
     split_ifs with h6 h7
@@ -424,6 +430,7 @@ def lengthBitCfg {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) (b : B
     if i = 0 ∨ i = 6 ∨ i = 7 then c.workTapePos i + 1
     else if i = 8 then c.workTapePos 8 + b.toNat
     else c.workTapePos i
+  output := c.output
 
 /-- Under a written ruler cell, the length-field state reads a bit and starts the size
 increment. -/
@@ -431,7 +438,7 @@ theorem step_lengthBit {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control input) 
     (hq : c.state = some stLengthBit) (hi : c.inputSymbol = some (boolEmb b))
     (h0 : c.workTapeSymbols 0 ≠ none) : machine.step c = lengthBitCfg c b := by
   rw [step_of_state _ _ _ hq, hi, tr_scan stLengthBit (by simp), scanTr_length, ite_eq_right h0]
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     simp only [lengthBitCfg, consumeAct]
     split_ifs <;> simp_all
@@ -445,7 +452,7 @@ theorem step_lengthBit_dead {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control in
     (h0 : c.workTapeSymbols 0 = none) :
     machine.step c = { c with state := some stDead, inputPos := moveInputPos c.inputPos 1 } := by
   rw [step_of_state _ _ _ hq, hi, tr_scan stLengthBit (by simp), scanTr_length, ite_eq_left h0]
-  refine Cfg.ext rfl rfl ?_ ?_
+  refine Cfg.ext rfl rfl ?_ ?_ (List.append_nil _)
   · funext i
     rfl
   · funext i
@@ -455,11 +462,11 @@ theorem step_lengthBit_dead {input : List (Fin 4)} (c : Cfg 9 (Fin 4) Control in
 
 /-- The cells of the incremented tape at or beyond the bit-change count are unchanged by the
 increment. -/
-theorem configs_increment_beyond {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_increment_beyond {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (k : Fin 6) (lsb : ℤ) (width a b n : ℕ) (hn : n = if siteSel k then b else a)
     (h : PairRep (siteLayout k) lsb width cfg a b) (hq : cfg.state = some (stCarry k))
     (j : ℕ) (hj : flips n.bits ≤ j) :
-    (machine.configs cfg (2 * flips n.bits + 1)).workTapes (siteSelected k)
+    (machine.runFrom cfg (2 * flips n.bits + 1)).workTapes (siteSelected k)
         (cell lsb (siteLayout k).dir j) =
       cfg.workTapes (siteSelected k) (cell lsb (siteLayout k).dir j) := by
   have hbits : ∀ j, digitsFrom cfg (siteSelected k) lsb (siteLayout k).dir j =
@@ -471,14 +478,14 @@ theorem configs_increment_beyond {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Con
     · simp only [siteSelected, hsel, ↓reduceIte, hn]
       exact congrFun h.secondDigits j
   obtain ⟨hstate, hpos0, hpos1, -, -, -, -, hcells, -, horig, -, -⟩ :=
-    configs_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
-  set after := machine.configs cfg (flips n.bits) with hafter
+    runFrom_carry_bits cfg k lsb n.bits hq h.firstPos h.secondPos hbits
+  set after := machine.runFrom cfg (flips n.bits) with hafter
   have ho : ∀ z, origin (after.workTapes (siteLayout k).first z) = decide (z = lsb) :=
     fun z ↦ (horig z).trans (h.originTag z)
   have hrep := returnCfg_self after k lsb (flips n.bits) hstate hpos0 hpos1
-  have hc := (configs_return_done after k lsb ho (flips n.bits)).1
+  have hc := (runFrom_return_done after k lsb ho (flips n.bits)).1
   rw [hrep] at hc
-  rw [show 2 * flips n.bits + 1 = flips n.bits + (flips n.bits + 1) by omega, configs_add, hc]
+  rw [show 2 * flips n.bits + 1 = flips n.bits + (flips n.bits + 1) by omega, runFrom_add, hc]
   change after.workTapes (siteSelected k) _ = _
   exact hcells _ (fun i hi he ↦ by
     have := cell_injective _ _ (siteLayout_proper k).dir_ne_zero _ _ he
@@ -489,7 +496,7 @@ set_option maxHeartbeats 400000 in
 /-- After the size counter reaches the size register: the length heads step back, the least
 significant digit is tagged and the payload counter started, the size pair is erased and its
 heads returned, and the ruler head returns, reaching the payload boundary without emitting. -/
-theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control input)
     (width v : ℕ) (b : Bool) (f l k : ℕ) (hv0 : 0 < v) (hnext : (v.size + 1).size ≤ width)
     (hvw : v.size + 1 ≤ width) (hst2 : c2.state = some stLengthEnd)
     (hp2 : PairRep sizeLayout 0 width c2 (1 + v.size) (v.size + 1))
@@ -503,10 +510,10 @@ theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control
     (hbeyond : ∀ j : ℕ, (v.size + 1).size ≤ j → c2.workTapes 4 j = none)
     (hb2 : HeadBound width c2) :
     let total := 1 + 1 + ((v.size + 1).size + 1) + ((v.size + 1).size + 1) + (v.size + 1)
-    let now := machine.configs c2 total
+    let now := machine.runFrom c2 total
     LiveRep width now ⟨(.payload (Nat.bit b v - 1), k), f, l, Nat.bit b v⟩ ∧
       now.state = some stPayloadBit ∧ now.inputPos = c2.inputPos ∧
-      machine.outputString c2 total = [] ∧ ∀ t ≤ total, HeadBound width (machine.configs c2 t) := by
+      machine.outputString c2 total = [] ∧ ∀ t ≤ total, HeadBound width (machine.runFrom c2 t) := by
   have hsb := size_bit b v hv0
   have hN := size_pos_of_pos v hv0
   have hS := size_pos_of_pos (v.size + 1) (by omega)
@@ -612,9 +619,9 @@ theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control
     have this : c2.workTapes 3 (cell 0 1 j) = none ↔ (1 + v.size).size ≤ j := hp2.firstBlank j
     rw [cell_nat, Nat.add_comm] at this
     exact this
-  obtain ⟨hc6, hout4, hbnd4⟩ := configs_eraseSize c4 S rfl hs3 hs4 horig3 hblank3
+  obtain ⟨hc6, hout4, hbnd4⟩ := runFrom_eraseSize c4 S rfl hs3 hs4 horig3 hblank3
   set c6 := eraseSizeCfg c4 stReturnSize S with hc6def
-  have hbC4 : ∀ t ≤ S + 1, HeadBound width (machine.configs c4 t) := by
+  have hbC4 : ∀ t ≤ S + 1, HeadBound width (machine.runFrom c4 t) := by
     intro t ht
     obtain ⟨q, p, hp, hcp⟩ := hbnd4 t ht
     rw [hcp]
@@ -633,12 +640,12 @@ theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control
   have hpos6 : ∀ i, (i = 3 ∨ i = 4) → c6.workTapePos i = S := fun i hi ↦ by
     rw [hc6def]
     simp [eraseSizeCfg, hi]
-  obtain ⟨hc8, hout6, hbnd6⟩ := configs_returnWalk c6 stReturnSize stReturnF 3
+  obtain ⟨hc8, hout6, hbnd6⟩ := runFrom_returnWalk c6 stReturnSize stReturnF 3
     (fun i ↦ i = 3 ∨ i = 4) (by simp) (fun w ↦ phaseTr_returnSize w) (Or.inl rfl) horig6 rfl
     S hpos6
   set c8 := headsCfg c6 stReturnF (fun i ↦ i = 3 ∨ i = 4) 0 with hc8def
   have hb6 : HeadBound width c6 := eraseSizeCfg_headBound hb4 (by omega)
-  have hbC6 : ∀ t ≤ S + 1, HeadBound width (machine.configs c6 t) := by
+  have hbC6 : ∀ t ≤ S + 1, HeadBound width (machine.runFrom c6 t) := by
     intro t ht
     obtain ⟨q, z, hz0, hzS, hcz⟩ := hbnd6 t ht
     rw [hcz]
@@ -652,37 +659,37 @@ theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control
     intro i hi
     subst hi
     exact hs0
-  obtain ⟨hc10, hout8, hbnd8⟩ := configs_returnWalk c8 stReturnF stPayloadBit 0
+  obtain ⟨hc10, hout8, hbnd8⟩ := runFrom_returnWalk c8 stReturnF stPayloadBit 0
     (fun i ↦ i = 0) (by simp) (fun w ↦ phaseTr_returnF w) rfl horig8 rfl v.size hpos8
   set c10 := headsCfg c8 stPayloadBit (fun i ↦ i = 0) 0 with hc10def
   have hb8 : HeadBound width c8 := headsCfg_headBound hb6 ⟨by omega, by omega⟩
-  have hbC8 : ∀ t ≤ v.size + 1, HeadBound width (machine.configs c8 t) := by
+  have hbC8 : ∀ t ≤ v.size + 1, HeadBound width (machine.runFrom c8 t) := by
     intro t ht
     obtain ⟨q, z, hz0, hzS, hcz⟩ := hbnd8 t ht
     rw [hcz]
     exact headsCfg_headBound hb8 ⟨by omega, by omega⟩
   -- the segments combine
-  have e3 : machine.configs c2 1 = c3 := by
-    rw [show (1 : ℕ) = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hc3]
-  have e4 : machine.configs c2 (1 + 1) = c4 := by
-    rw [configs_add, e3, show (1 : ℕ) = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hc4]
-  have e6 : machine.configs c2 (1 + 1 + (S + 1)) = c6 := by rw [configs_add, e4, hc6]
-  have e8 : machine.configs c2 (1 + 1 + (S + 1) + (S + 1)) = c8 := by rw [configs_add, e6, hc8]
-  have e10 : machine.configs c2 (1 + 1 + (S + 1) + (S + 1) + (v.size + 1)) = c10 := by
-    rw [configs_add, e8, hc10]
+  have e3 : machine.runFrom c2 1 = c3 := by
+    rw [show (1 : ℕ) = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hc3]
+  have e4 : machine.runFrom c2 (1 + 1) = c4 := by
+    rw [runFrom_add, e3, show (1 : ℕ) = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hc4]
+  have e6 : machine.runFrom c2 (1 + 1 + (S + 1)) = c6 := by rw [runFrom_add, e4, hc6]
+  have e8 : machine.runFrom c2 (1 + 1 + (S + 1) + (S + 1)) = c8 := by rw [runFrom_add, e6, hc8]
+  have e10 : machine.runFrom c2 (1 + 1 + (S + 1) + (S + 1) + (v.size + 1)) = c10 := by
+    rw [runFrom_add, e8, hc10]
   have o3 : machine.outputString c2 1 = [] := by
-    rw [show (1 : ℕ) = 0 + 1 from rfl, outputString_succ, configs_zero,
+    rw [show (1 : ℕ) = 0 + 1 from rfl, outputString_succ, runFrom_zero,
       outputSymbol_phase c2 stLengthEnd hst2 (by simp)]
     rfl
   have o4 : machine.outputString c2 (1 + 1) = [] :=
     outputString_add_nil c2 1 1 o3 (by
-      rw [e3, show (1 : ℕ) = 0 + 1 from rfl, outputString_succ, configs_zero,
+      rw [e3, show (1 : ℕ) = 0 + 1 from rfl, outputString_succ, runFrom_zero,
         outputSymbol_phase c3 stTagLsb rfl (by simp)]
       rfl)
   have o6 := outputString_add_nil c2 _ (S + 1) o4 (by rw [e4]; exact hout4)
   have o8 := outputString_add_nil c2 _ (S + 1) o6 (by rw [e6]; exact hout6)
   have o10 := outputString_add_nil c2 _ (v.size + 1) o8 (by rw [e8]; exact hout8)
-  have hbC : ∀ u ≤ 1, HeadBound width (machine.configs c2 u) := by
+  have hbC : ∀ u ≤ 1, HeadBound width (machine.runFrom c2 u) := by
     intro u hu
     rcases (show u = 0 ∨ u = 1 by omega) with rfl | rfl
     · exact hb2
@@ -693,7 +700,7 @@ theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control
     intro u hu
     rcases (show u = 0 ∨ u = 1 by omega) with rfl | rfl
     · exact hb3
-    · rw [show (1 : ℕ) = 0 + 1 from rfl, configs_succ_eq_step', configs_zero, hc4]
+    · rw [show (1 : ℕ) = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero, hc4]
       exact hb4)
   have hbE := headBound_add c2 width _ (S + 1) hbD (by rw [e4]; exact hbC4)
   have hbF := headBound_add c2 width _ (S + 1) hbE (by rw [e6]; exact hbC6)
@@ -810,7 +817,7 @@ theorem configs_lengthEnd {input : List (Fin 4)} (c2 cfg : Cfg 9 (Fin 4) Control
 /-! ## The main statement -/
 
 /-- One length-field bit realizes its account update in its macro cost. -/
-theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
+theorem runFrom_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control input)
     (a : Account) (b : Bool) (n width : ℕ) (hv : AccountValid n a)
     (h : Represents width cfg a) (hi : cfg.inputSymbol = some (boolEmb b))
     (hw1 : a.forks.size + 1 ≤ width)
@@ -837,7 +844,7 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
   have hsym0 : cfg.workTapeSymbols 0 = cfg.workTapes 0 ((v.size - 1 : ℕ) : ℤ) := by
     rw [Cfg.workTapeSymbols, hpos0]
   have hout1 : machine.outputString cfg 1 = [] := by
-    rw [show (1 : ℕ) = 0 + 1 from rfl, outputString_succ, configs_zero,
+    rw [show (1 : ℕ) = 0 + 1 from rfl, outputString_succ, runFrom_zero,
       outputSymbol_scan cfg stLengthBit hq (by simp) b hi]
     rfl
   by_cases hcap : a.forks.size ≤ v.size - 1
@@ -845,9 +852,9 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
     have hm : macroCost a b = 1 := by simp [macroCost, hc]
     have ha : accountStep a b = ⟨(.dead, 0), a.forks, a.leaves, 0⟩ := by simp [accountStep, hc]
     have h0 : cfg.workTapeSymbols 0 = none := by rw [hsym0]; exact (hfb _).mpr hcap
-    have hc1 : machine.configs cfg 1 =
+    have hc1 : machine.runFrom cfg 1 =
         { cfg with state := some stDead, inputPos := moveInputPos cfg.inputPos 1 } := by
-      rw [show (1 : ℕ) = 0 + 1 from rfl, configs_succ_eq_step', configs_zero,
+      rw [show (1 : ℕ) = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero,
         step_lengthBit_dead cfg b hq hi h0]
     have hb1 : HeadBound width
         { cfg with state := some stDead, inputPos := moveInputPos cfg.inputPos 1 } := h.bound
@@ -866,8 +873,8 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
       have := (hfb _).mp h0
       omega
     set c1 := lengthBitCfg cfg b with hc1def
-    have hc1 : machine.configs cfg 1 = c1 := by
-      rw [show (1 : ℕ) = 0 + 1 from rfl, configs_succ_eq_step', configs_zero,
+    have hc1 : machine.runFrom cfg 1 = c1 := by
+      rw [show (1 : ℕ) = 0 + 1 from rfl, runFrom_succ_eq_step', runFrom_zero,
         step_lengthBit cfg b hq hi h0]
     have hin1 : c1.inputPos = moveInputPos cfg.inputPos 1 := rfl
     have hp0 : c1.workTapePos 0 = (v.size : ℤ) := by
@@ -905,7 +912,7 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
         rw [hlen.mismPos]
         omega
       · exact h.bound i
-    have hbA : ∀ u ≤ 1, HeadBound width (machine.configs cfg u) := by
+    have hbA : ∀ u ≤ 1, HeadBound width (machine.runFrom cfg u) := by
       intro u hu
       rcases (show u = 0 ∨ u = 1 by omega) with rfl | rfl
       · exact h.bound
@@ -919,8 +926,8 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
       omega
     have hflips := Geb.BitTree.Counter.flips_bits_le_succ_size v.size
     obtain ⟨hp2, hst2, hin2, hun2, hcells2, hout2⟩ :=
-      configs_increment c1 4 0 width (r + v.size) v.size v.size rfl hpair1 rfl hnext
-    set c2 := machine.configs c1 (2 * flips v.size.bits + 1) with hc2def
+      runFrom_increment c1 4 0 width (r + v.size) v.size v.size rfl hpair1 rfl hnext
+    set c2 := machine.runFrom c1 (2 * flips v.size.bits + 1) with hc2def
     clear_value c2
     change PairRep sizeLayout 0 width c2 (r + v.size) (v.size + 1) at hp2
     change c2.state = some (if r + v.size = v.size + 1 then stLengthEnd else stLengthBit) at hst2
@@ -930,7 +937,7 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
       c2.workTapes 3 z = c1.workTapes 3 z ∧ c2.workTapes 4 z = c1.workTapes 4 z at hcells2
     have hbeyond : ∀ j : ℕ, (v.size + 1).size ≤ j → c2.workTapes 4 j = none := by
       intro j hj
-      have := configs_increment_beyond c1 4 0 width (r + v.size) v.size v.size rfl hpair1 rfl j
+      have := runFrom_increment_beyond c1 4 0 width (r + v.size) v.size v.size rfl hpair1 rfl j
         (by omega)
       rw [← hc2def] at this
       change c2.workTapes 4 (cell 0 1 j) = c1.workTapes 4 (cell 0 1 j) at this
@@ -938,7 +945,7 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
       rw [this]
       exact hx.counterBeyond j
         (by have := Geb.BitTree.Counter.size_mono (Nat.le_add_right v.size 1); omega)
-    have hbinc : ∀ t ≤ 2 * flips v.size.bits + 1, HeadBound width (machine.configs c1 t) := by
+    have hbinc : ∀ t ≤ 2 * flips v.size.bits + 1, HeadBound width (machine.runFrom c1 t) := by
       intro t ht i
       have hcell : ∀ p, p ≤ flips v.size.bits →
           -1 ≤ cell 0 (siteLayout 4).dir p ∧ cell 0 (siteLayout 4).dir p ≤ width := by
@@ -946,14 +953,14 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
         change -1 ≤ cell 0 1 p ∧ cell 0 1 p ≤ width
         rw [cell_nat]
         omega
-      obtain ⟨hin, hout⟩ := configs_increment_head_bounds c1 4 0 width (r + v.size) v.size
+      obtain ⟨hin, hout⟩ := runFrom_increment_head_bounds c1 4 0 width (r + v.size) v.size
         v.size rfl hpair1 rfl hnext hcell t ht i
       by_cases hi3 : i = 3 ∨ i = 4 ∨ i = 5
       · exact hin hi3
       · rw [hout (fun h ↦ hi3 (Or.inl h)) (fun h ↦ hi3 (Or.inr (Or.inl h)))
           (fun h ↦ hi3 (Or.inr (Or.inr h)))]
         exact hb1 i
-    have hbB : ∀ u ≤ 1 + (2 * flips v.size.bits + 1), HeadBound width (machine.configs cfg u) :=
+    have hbB : ∀ u ≤ 1 + (2 * flips v.size.bits + 1), HeadBound width (machine.runFrom cfg u) :=
       headBound_add cfg width 1 _ hbA (by rw [hc1]; exact hbinc)
     have hout12 : machine.outputString cfg (1 + (2 * flips v.size.bits + 1)) = [] :=
       outputString_add_nil cfg 1 _ hout1 (by rw [hc1]; exact hout2)
@@ -987,17 +994,17 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
       have ht6' : c2.workTapes 6 =
           Function.update (cfg.workTapes 6) (v.size : ℤ) (some (plain b)) := by
         rw [hu6.1, ht6]
-      obtain ⟨hlive, hst10, hin10, hout10, hb10⟩ := configs_lengthEnd c2 cfg width v b
+      obtain ⟨hlive, hst10, hin10, hout10, hb10⟩ := runFrom_lengthEnd c2 cfg width v b
         a.forks a.leaves k hv0 hnext (by omega) hst2 hp2 (by rw [hu0.2, hp0])
         (by rw [hu1.2]; exact hl.leavesPos) (by rw [hu6.2, hp6]) (by rw [hu7.2, hp7])
         (by rw [hu8.2, hp8]) hlen ht6' hu7.1 hu8.1 hpend2 hneg hbeyond
         (by have := hbinc _ (Nat.le_refl _); rwa [← hc2def] at this)
-      have e2 : machine.configs cfg (1 + (2 * flips v.size.bits + 1)) = c2 := by
-        rw [configs_add, hc1]
+      have e2 : machine.runFrom cfg (1 + (2 * flips v.size.bits + 1)) = c2 := by
+        rw [runFrom_add, hc1]
         exact hc2def.symm
-      have hfin : machine.configs cfg (macroCost a b) = machine.configs c2
+      have hfin : machine.runFrom cfg (macroCost a b) = machine.runFrom c2
           (1 + 1 + ((v.size + 1).size + 1) + ((v.size + 1).size + 1) + (v.size + 1)) := by
-        rw [hm, configs_add, e2]
+        rw [hm, runFrom_add, e2]
       unfold BitSpec
       rw [hfin, hm, ha]
       refine ⟨Represents.ofLive hst10 hlive hvalid hw1, by rw [hin10, hin2, hin1], ?_, ?_⟩
@@ -1007,8 +1014,8 @@ theorem configs_bit_length {input : List (Fin 4)} (cfg : Cfg 9 (Fin 4) Control i
         simp [macroCost, hc, hs, he, inc]
       have ha : accountStep a b = ⟨(.length (r - 1) (Nat.bit b v), k), a.forks, a.leaves, 0⟩ := by
         simp [accountStep, hc, hs, Geb.BitTree.Elias.Scanner.step, he, leafEnds, nextTotal]
-      have hfin : machine.configs cfg (macroCost a b) = c2 := by
-        rw [hm, configs_add, hc1]
+      have hfin : machine.runFrom cfg (macroCost a b) = c2 := by
+        rw [hm, runFrom_add, hc1]
         exact hc2def.symm
       rw [ite_eq_right (by omega)] at hst2
       rw [ha] at hvalid

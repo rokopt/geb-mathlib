@@ -6,9 +6,9 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.CodeBits
+import Mathlib.Util.CompileInductive -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Fixed-width binary countdown
 
@@ -31,6 +31,8 @@ existing width; numeric correctness is therefore stated for positive inputs.
 
 binary counter, decrement, borrow, fixed width
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

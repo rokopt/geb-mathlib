@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.LargeIR.General
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: the binder of a universe is not a walking-arrow functor
 
@@ -69,6 +68,8 @@ be natural.
 prototype, universe, dependent product, inductive-recursive, walking arrow,
 variance
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

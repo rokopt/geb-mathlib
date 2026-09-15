@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.BitTree.Elias.Scanner
 public import Geb.Prototypes.Computability.BitTree.Elias.Counter
 public import Geb.Prototypes.Computability.BitTree.Elias.Machine
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Binary words at scanner boundaries
 
@@ -28,6 +27,8 @@ these descriptions also records the phases where a field is empty or initialized
 
 Elias delta code, simulation, binary counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -67,6 +68,12 @@ def scanCfg (input : List (Fin 3)) (pos : Fin (input.length + 2)) (q : Control)
   workTapePos i :=
     if i = 0 then pending else if i = 1 then zeros
     else if i = 2 then bs.length + 1 else cs.length + 1
+  output := []
+
+/-- A boundary configuration's output tape is empty: the machine emits only when it halts. -/
+@[simp] theorem scanCfg_output (input : List (Fin 3)) (pos : Fin (input.length + 2)) (q : Control)
+    (pending zeros : ℕ) (bs cs : List Bool) :
+    (scanCfg input pos q pending zeros bs cs).output = [] := rfl
 
 /-- A normalized scalar state with its explicit binary field representations. -/
 def modelCfg (input : List (Fin 3)) (pos : Fin (input.length + 2)) (s : Scanner.State)

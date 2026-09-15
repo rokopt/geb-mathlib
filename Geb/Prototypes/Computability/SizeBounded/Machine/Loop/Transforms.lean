@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic
 import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Phases
 import Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Iter
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The recursion loop's contract
 
@@ -22,10 +21,10 @@ bound linear in the length bound and in the bodies' step bound, and the
 transformer preserves the length bound when both bodies' do.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statement mentions {name}`Turing.MultiTapeTM.configs` and
+statement mentions {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -42,6 +41,8 @@ statement mentions {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, loop, recursion, register
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -123,6 +124,7 @@ theorem Transforms.caseLoop {k : ℕ} {SF ST : Type} (R : Fin k)
         · rfl
         · funext i
           exact (hσ i).symm
+        · rfl
         · rfl
       refine ⟨2, by omega, ?_⟩
       rw [loopF_nil, htarget]

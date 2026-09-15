@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Leaf
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's steps at each bit
 
@@ -38,6 +37,8 @@ implementation notes explain.
 
 Turing machine, tree, prefix code, Elias gamma code, binary counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -72,7 +73,7 @@ theorem advance_cfgAt (h : k + 1 ≤ w.length) (s s' : Scan) (l l' : List Redund
       exact htr)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext ?_ ?_ ?_ ?_
+  refine Cfg.ext ?_ ?_ ?_ ?_ rfl
   · change some q' = some (stateOf s'.mode)
     rw [hq]
   · change moveInputPos (cfgAt w k (by omega) s l).inputPos SignType.pos =
@@ -285,7 +286,7 @@ theorem returnCfg_consume (d : List Bool) :
       exact tr_return_base_bit _ _ _)
   refine ⟨?_, hout⟩
   rw [hstep]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (returnCfg w k (by omega) l false d 0).inputPos SignType.pos =
       (borrowCfg w (k + 1) h l false (decList d) 0).inputPos
     rw [moveInputPos_pos_of_ne_right _ (by change k + 1 ≠ _; rw [List.length_map]; omega)]

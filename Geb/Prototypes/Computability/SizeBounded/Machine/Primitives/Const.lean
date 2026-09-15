@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Writing a constant
 
@@ -20,10 +19,10 @@ onto it and parks the head. It is a sequence of phase machines, and it
 transforms the register valuation by a {name}`Function.update`.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -38,6 +37,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, register, constant, program
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -115,6 +116,7 @@ theorem const_transforms {k : ℕ} (w : List Bool) (j : Fin k) (B : ℕ) :
       by_cases hl : l = j
       · rw [hl, Function.update_self, Function.update_self]
       · rw [Function.update_of_ne hl, Function.update_of_ne hl, hσ l]
+    · rfl
     · rfl
 
 end

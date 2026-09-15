@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.Elias.ScannerHeader
 public import Geb.Prototypes.Computability.BitTree.Elias.Tree
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Correctness of the streaming tree recognizer
 
@@ -27,6 +26,8 @@ single-root instance identifies the streaming recognizer with the canonical tree
 
 Elias delta code, binary tree, recognizer correctness
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

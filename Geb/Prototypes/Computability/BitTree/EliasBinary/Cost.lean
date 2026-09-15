@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Account
 public import Geb.Prototypes.Computability.BitTree.Elias.CodeBits
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Amortized time of the binary-counter recognizer
 
@@ -38,6 +37,8 @@ same way with its own potential.
 
 binary counter, amortized complexity, potential, Elias delta code
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

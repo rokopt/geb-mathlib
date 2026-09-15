@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps.Cfg
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The two-pass tree scanner's transition, resolved
 
@@ -38,6 +37,8 @@ a blank or a zero is resolved at a symbol given to be one of the two.
 
 Turing machine, transition, tree, prefix code, binary counter
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

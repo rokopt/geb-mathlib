@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Seq
 public import Geb.Mathlib.Data.FinEnum
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Sequencing a family
 
@@ -46,6 +45,8 @@ composite of the family's transformers.
 Turing machine, sequencing, composition, recursion
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -56,7 +57,7 @@ public section
 /-- The machine that halts at once, doing nothing. -/
 @[expose] def idle {k : ℕ} : MultiTapeTM k Bool Unit where
   q₀ := ()
-  tr _ _ _ := { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none }
+  tr _ _ _ := { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- {name}`idle` transforms by the identity in one step. -/
 theorem idle_transforms {k : ℕ} (B : ℕ) : Transforms (idle (k := k)) (fun σ ↦ σ) 1 B := by
@@ -73,6 +74,7 @@ theorem idle_transforms {k : ℕ} (B : ℕ) : Transforms (idle (k := k)) (fun σ
     · change (fun i ↦ cfg.workTapePos i + (0 : ℤ)) = (after cfg σ).workTapePos
       funext i
       rw [add_zero, after_workTapePos]
+    · exact List.append_nil _
   have hlive : cfg.state ≠ none := by
     rw [hq]
     exact Option.some_ne_none _

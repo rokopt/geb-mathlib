@@ -9,8 +9,7 @@ public import Mathlib.Data.Nat.BinaryRec
 public import Mathlib.Data.Nat.Notation
 public import Mathlib.Tactic.ToDual
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A bitwise scanner for delta-prefixed leaf payloads
 
@@ -28,6 +27,8 @@ is changed only by fork tags and completed leaf payloads.
 
 Elias delta code, binary tree, streaming recognizer
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Machine
 public import Geb.Prototypes.Computability.BitTree.EliasBinary.Cost
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The boundary representation of an account
 
@@ -39,6 +38,8 @@ complete counter pair.
 
 Turing machine, simulation, invariant, Elias delta code
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

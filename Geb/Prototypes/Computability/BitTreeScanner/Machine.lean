@@ -9,8 +9,7 @@ public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
 public import Mathlib.Data.Fin.VecNotation
 public import Geb.Prototypes.Computability.BitTreeScanner.Counter
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # A two-pass tree scanner in logarithmic space
 
@@ -60,10 +59,12 @@ leaf, which decrements the pending count.
 
 ## Main statements
 
-* {lit}`Geb.BitTreeScanner.cfgAt_state`,
-  {lit}`Geb.BitTreeScanner.cfgAt_inputPos_val`,
+* {lit}`Geb.BitTreeScanner.cfgAt_inputPos_val`,
+  {lit}`Geb.BitTreeScanner.seekCfg_output`,
+  {lit}`Geb.BitTreeScanner.backCfg_output`,
+  {lit}`Geb.BitTreeScanner.cfgAt_output`,
   {lit}`Geb.BitTreeScanner.cfgOf_eq` — the field projections of the closed
-  form.
+  forms.
 * {lit}`Geb.BitTreeScanner.workTapeSymbols_eq` — a configuration's
   work-symbol function as a triple, the form the transition consumes.
 * {lit}`Geb.BitTreeScanner.tapeDigits_of_lt`,
@@ -90,6 +91,8 @@ closed forms the machine runs exactly that bit's cost.
 Turing machine, tree, prefix code, Elias gamma code, binary counter,
 logarithmic space
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -189,24 +192,24 @@ def idle : Act := (none, 0)
 /-- The transition that reads a bit: the input head advances, the work tapes
 take their actions, nothing is emitted. -/
 def advance (q : Fin stateCount) (a₀ a₁ a₂ : Act) :
-    TransitionOut 3 (Fin 4) (Fin stateCount) :=
-  { inputMove := 1, workActions := ![a₀, a₁, a₂], outS := none, q' := some q }
+    Action 3 (Fin 4) (Fin stateCount) :=
+  { inputTape := 1, workTapes := ![a₀, a₁, a₂], output := none, state := some q }
 
 /-- The transition that works without reading: the input head stays, the work
 tapes take their actions, nothing is emitted. -/
-def stay (q : Fin stateCount) (a₀ a₁ a₂ : Act) : TransitionOut 3 (Fin 4) (Fin stateCount) :=
-  { inputMove := 0, workActions := ![a₀, a₁, a₂], outS := none, q' := some q }
+def stay (q : Fin stateCount) (a₀ a₁ a₂ : Act) : Action 3 (Fin 4) (Fin stateCount) :=
+  { inputTape := 0, workTapes := ![a₀, a₁, a₂], output := none, state := some q }
 
 /-- The transition that moves back over the input: the input head retreats,
 the work tapes take their actions, nothing is emitted. -/
 def retreat (q : Fin stateCount) (a₀ a₁ a₂ : Act) :
-    TransitionOut 3 (Fin 4) (Fin stateCount) :=
-  { inputMove := -1, workActions := ![a₀, a₁, a₂], outS := none, q' := some q }
+    Action 3 (Fin 4) (Fin stateCount) :=
+  { inputTape := -1, workTapes := ![a₀, a₁, a₂], output := none, state := some q }
 
 /-- The transition that reads the end: nothing moves, the given symbol is
 emitted, the machine halts. -/
-def halt (b : Fin 4) : TransitionOut 3 (Fin 4) (Fin stateCount) :=
-  { inputMove := 0, workActions := ![idle, idle, idle], outS := some b, q' := none }
+def halt (b : Fin 4) : Action 3 (Fin 4) (Fin stateCount) :=
+  { inputTape := 0, workTapes := ![idle, idle, idle], output := some b, state := none }
 
 /-- The machine. Three work tapes, each with a base marker at cell {lit}`0`
 from the first step on: the first holds the pending count as a redundant
@@ -494,6 +497,7 @@ def seekCfg (i : ℕ) (hi : i ≤ w.length) : Cfg 3 (Fin 4) (Fin stateCount) (w.
   inputPos := ⟨i + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount [], tapeDigits [], tapeDigits i.bits]
   workTapePos := ![1, 0, 1]
+  output := []
 
 /-- The closed-form configuration of the return over the input, at input
 position {lit}`i`. -/
@@ -502,6 +506,7 @@ def backCfg (i : ℕ) (hi : i ≤ w.length) : Cfg 3 (Fin 4) (Fin stateCount) (w.
   inputPos := ⟨i, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount [], tapeDigits [], tapeDigits w.length.bits]
   workTapePos := ![1, 0, 0]
+  output := []
 
 /-- The closed-form configuration of the scan at a scan state and a counter
 after a prefix of length {lit}`k`: the state of the scan's mode, the input
@@ -513,6 +518,7 @@ def cfgAt (k : ℕ) (hk : k ≤ w.length) (s : Scan) (l : List Redundant.Digit) 
   inputPos := ⟨k + 1, by simp only [List.length_map]; omega⟩
   workTapes := ![tapeCount l, tapeLeaf s, tapeDigits w.length.bits]
   workTapePos := ![1, headLeaf s, headRuler s]
+  output := []
 
 /-- The configuration after reading the prefix of length {lit}`k` and doing
 the work its last bit carries: {name}`cfgAt` at the scan's state and counter
@@ -524,6 +530,16 @@ variable (k : ℕ) (hk : k ≤ w.length) (s : Scan) (l : List Redundant.Digit)
 
 /-- {name}`cfgAt`'s input head is past the prefix. -/
 @[simp] theorem cfgAt_inputPos_val : (cfgAt w k hk s l).inputPos.val = k + 1 := rfl
+
+/-- {name}`seekCfg`'s output tape is empty: the machine emits only at its
+halting step. -/
+@[simp] theorem seekCfg_output (i : ℕ) (hi : i ≤ w.length) : (seekCfg w i hi).output = [] := rfl
+
+/-- {name}`backCfg`'s output tape is empty. -/
+@[simp] theorem backCfg_output (i : ℕ) (hi : i ≤ w.length) : (backCfg w i hi).output = [] := rfl
+
+/-- {name}`cfgAt`'s output tape is empty. -/
+@[simp] theorem cfgAt_output : (cfgAt w k hk s l).output = [] := rfl
 
 /-- {name}`cfgOf` is {name}`cfgAt` at the scan's state and counter after the
 prefix. -/

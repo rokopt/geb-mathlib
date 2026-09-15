@@ -7,15 +7,14 @@ module
 
 public import Mathlib.Logic.Function.Basic
 public import Aesop
+public import Mathlib.Basic.IsEmpty.Defs
 public import Mathlib.Data.Int.Notation
 public import Mathlib.Data.Nat.Notation
-public import Mathlib.Logic.IsEmpty.Defs
 public import Mathlib.Tactic.Attr.Core
 public import Mathlib.Tactic.Push
 public import Mathlib.Tactic.SplitIfs
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Maintaining the number of unequal binary digits
 
@@ -37,6 +36,8 @@ equal pair and negatively for an initially unequal pair.
 
 binary counter, Hamming distance, bit stream
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.Elias.MachineModel
 public import Geb.Prototypes.Computability.TreeScanner.Steps
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Reading the input and emitting the final verdict
 
@@ -26,6 +26,8 @@ or the right end marker. The end marker causes one output bit and halting.
 Elias delta code, Turing machine, input, halting
 -/
 
+set_option doc.verso true
+
 @[expose] public section
 
 namespace Geb.BitTree.Elias.Machine
@@ -33,12 +35,12 @@ namespace Geb.BitTree.Elias.Machine
 open Turing MultiTapeTM
 
 /-- Initialization installs the four origin markers and leaves one pending root. -/
-theorem configs_start (input : List (Fin 3)) :
-    machine.configs (machine.initCfg input) 1 =
+theorem runFrom_start (input : List (Fin 3)) :
+    machine.runFrom (machine.initCfg input) 1 =
       modelCfg input 1 (.tree, 1) [] [] := by
-  rw [configs_succ_eq_step']
+  rw [runFrom_succ_eq_step']
   rw [Geb.TreeScanner.step_of_state _ _ stInit rfl]
-  refine Cfg.ext rfl ?_ ?_ ?_
+  refine Cfg.ext rfl ?_ ?_ ?_ rfl
   · change moveInputPos (1 : Fin (input.length + 2)) 0 = 1
     rw [moveInputPos_zero]
   · funext i z
@@ -56,7 +58,7 @@ theorem outputString_start (input : List (Fin 3)) :
 
 /-- Initialization visits only the origin and its immediate right neighbor. -/
 theorem headBound_start (input : List (Fin 3)) (width : ℕ) (hw : 1 ≤ width) :
-    ∀ t ≤ 1, HeadBound width (machine.configs (machine.initCfg input) t) := by
+    ∀ t ≤ 1, HeadBound width (machine.runFrom (machine.initCfg input) t) := by
   intro t ht
   cases t with
   | zero =>
@@ -66,7 +68,7 @@ theorem headBound_start (input : List (Fin 3)) (width : ℕ) (hw : 1 ≤ width) 
   | succ t =>
     have he : t = 0 := by omega
     subst t
-    rw [configs_start]
+    rw [runFrom_start]
     exact scanCfg_headBound input 1 stTree 1 0 [] [] width hw (Nat.zero_le _) hw hw
 
 /-- The input symbol at an interior position is the corresponding encoded boolean. -/
@@ -82,12 +84,20 @@ theorem inputSymbol_end {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control inpu
   unfold Cfg.inputSymbol
   split_ifs <;> rfl
 
-/-- Reading the end marker in a normalized mode halts without changing any tape or head. -/
+/-- Reading the end marker in a normalized mode emits the verdict and halts without changing
+any tape or head. -/
 theorem step_end {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)
     (m : Scanner.Mode) (hq : cfg.state = some (modeState m)) (hi : cfg.inputSymbol = none) :
-    machine.step cfg = { cfg with state := none } := by
+    machine.step cfg =
+      { cfg with state := none, output := cfg.output ++ [boolEmb (decide (m = .done))] } := by
   rw [Geb.TreeScanner.step_of_state _ _ _ hq, hi, tr_end _ _ (modeState_read m)]
-  apply Cfg.ext <;> simp [finish, jump]
+  refine Cfg.ext rfl (moveInputPos_zero _) ?_ ?_ ?_
+  · funext i
+    rfl
+  · funext i
+    change _ + (0 : ℤ) = _
+    exact Int.add_zero _
+  · cases m <;> rfl
 
 /-- The final output bit says exactly whether the scanner completed its root. -/
 theorem outputSymbol_end {input : List (Fin 3)} (cfg : Cfg 4 (Fin 3) Control input)

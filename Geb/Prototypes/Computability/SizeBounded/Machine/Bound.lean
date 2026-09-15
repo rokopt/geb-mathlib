@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Bound
 public import Geb.Prototypes.Computability.SizeBounded.Cost
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The register need and the polynomial step bound
 
@@ -40,6 +39,8 @@ affine functions and constants.
 
 Turing machine, register allocation, step bound, polynomial time, size-bounded
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 

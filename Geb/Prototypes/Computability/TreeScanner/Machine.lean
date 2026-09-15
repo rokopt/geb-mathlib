@@ -33,8 +33,9 @@ language.
 - `seekCfg_state`, `seekCfg_inputPos_val`, `seekCfg_workTapePos`,
   `seekCfg_workTapes`, `plantCfg_state`, `plantCfg_inputPos_val`,
   `plantCfg_workTapePos`, `plantCfg_workTapes`, `sweepCfg_state`,
-  `sweepCfg_inputPos_val`, `sweepCfg_workTapePos`, `sweepCfg_workTapes` —
-  the field projections of the three configurations.
+  `sweepCfg_inputPos_val`, `sweepCfg_workTapePos`, `sweepCfg_workTapes`,
+  `seekCfg_output`, `plantCfg_output`, `sweepCfg_output` — the field
+  projections of the three configurations.
 - `sweepCfg_state_live`, `sweepCfg_state_dead` — the sweep
   configuration's state at a live and at a failed scan.
 - `sweepCfg_workTapeSymbols_eq` — the sweep configuration's work-symbol
@@ -82,35 +83,35 @@ def treeScanner : MultiTapeTM 1 (Fin 2) (Fin 4) where
   tr q inSym work :=
     if q = stSeek then
       match inSym with
-      | none => { inputMove := -1, workActions := fun _ ↦ (some (some 0), 1),
-                  outS := none, q' := some stPlant }
-      | some _ => { inputMove := 1, workActions := fun _ ↦ (none, 0),
-                    outS := none, q' := some stSeek }
+      | none => { inputTape := -1, workTapes := fun _ ↦ (some (some 0), 1),
+                  output := none, state := some stPlant }
+      | some _ => { inputTape := 1, workTapes := fun _ ↦ (none, 0),
+                    output := none, state := some stSeek }
     else if q = stPlant then
-      { inputMove := 0, workActions := fun _ ↦ (some (some 1), -1),
-        outS := none, q' := some stLive }
+      { inputTape := 0, workTapes := fun _ ↦ (some (some 1), -1),
+        output := none, state := some stLive }
     else if q = stLive then
       match inSym with
-      | some 0 => { inputMove := -1, workActions := fun _ ↦ (none, 1),
-                    outS := none, q' := some stLive }
+      | some 0 => { inputTape := -1, workTapes := fun _ ↦ (none, 1),
+                    output := none, state := some stLive }
       | some _ =>
         match work 0 with
-        | none => { inputMove := -1, workActions := fun _ ↦ (none, -1),
-                    outS := none, q' := some stLive }
-        | some _ => { inputMove := -1, workActions := fun _ ↦ (none, 0),
-                      outS := none, q' := some stDead }
+        | none => { inputTape := -1, workTapes := fun _ ↦ (none, -1),
+                    output := none, state := some stLive }
+        | some _ => { inputTape := -1, workTapes := fun _ ↦ (none, 0),
+                      output := none, state := some stDead }
       | none =>
         match work 0 with
-        | some 1 => { inputMove := 0, workActions := fun _ ↦ (none, 0),
-                      outS := some 1, q' := none }
-        | _ => { inputMove := 0, workActions := fun _ ↦ (none, 0),
-                 outS := some 0, q' := none }
+        | some 1 => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+                      output := some 1, state := none }
+        | _ => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+                 output := some 0, state := none }
     else
       match inSym with
-      | some _ => { inputMove := -1, workActions := fun _ ↦ (none, 0),
-                    outS := none, q' := some stDead }
-      | none => { inputMove := 0, workActions := fun _ ↦ (none, 0),
-                  outS := some 0, q' := none }
+      | some _ => { inputTape := -1, workTapes := fun _ ↦ (none, 0),
+                    output := none, state := some stDead }
+      | none => { inputTape := 0, workTapes := fun _ ↦ (none, 0),
+                  output := some 0, state := none }
 
 /-- The configuration after `t` seek steps: the input head at `t + 1`,
 the work tape blank and its head at cell `0`. At `t = 0` this is
@@ -121,6 +122,7 @@ def seekCfg (w : List Bool) (t : ℕ) (ht : t ≤ w.length) :
   inputPos := ⟨t + 1, by simp only [List.length_map]; omega⟩
   workTapes _ _ := none
   workTapePos _ := 0
+  output := []
 
 /-- The configuration after the seek's exit step: the first marker
 written, the work head at cell `1`, the input head at position
@@ -130,6 +132,7 @@ def plantCfg (w : List Bool) : Cfg 1 (Fin 2) (Fin 4) (w.map boolEmb) where
   inputPos := ⟨w.length, by simp only [List.length_map]; omega⟩
   workTapes _ z := if z = 0 then some 0 else none
   workTapePos _ := 1
+  output := []
 
 /-- The configuration at the sweep boundary where `w.drop k` has been
 consumed: the count is that suffix's pending depth and the state is live
@@ -140,6 +143,7 @@ def sweepCfg (w : List Bool) (k : ℕ) (hk : k ≤ w.length) :
   inputPos := ⟨k, by simp only [List.length_map]; omega⟩
   workTapes _ z := if z = 0 then some 0 else if z = 1 then some 1 else none
   workTapePos _ := (depth (w.drop k) : ℤ)
+  output := []
 
 section CfgProjections
 
@@ -158,6 +162,9 @@ variable (w : List Bool) (t k : ℕ) (ht : t ≤ w.length) (hk : k ≤ w.length)
 cites this rather than letting `simp` unfold `seekCfg` in place. -/
 theorem seekCfg_workTapes (i : Fin 1) (z : ℤ) : (seekCfg w t ht).workTapes i z = none := rfl
 
+/-- `seekCfg`'s output tape is empty. -/
+@[simp] theorem seekCfg_output : (seekCfg w t ht).output = [] := rfl
+
 /-- `plantCfg` is in the planting state. -/
 @[simp] theorem plantCfg_state : (plantCfg w).state = some stPlant := rfl
 
@@ -172,6 +179,9 @@ elsewhere. Not `@[simp]`: a step lemma cites this rather than letting
 `simp` unfold `plantCfg` in place. -/
 theorem plantCfg_workTapes (i : Fin 1) (z : ℤ) :
     (plantCfg w).workTapes i z = if z = 0 then some 0 else none := rfl
+
+/-- `plantCfg`'s output tape is empty. -/
+@[simp] theorem plantCfg_output : (plantCfg w).output = [] := rfl
 
 /-- `sweepCfg`'s state is live exactly where the consumed suffix's scan
 has not failed. -/
@@ -204,6 +214,9 @@ this rather than letting `simp` unfold `sweepCfg` in place. -/
 theorem sweepCfg_workTapes (i : Fin 1) (z : ℤ) :
     (sweepCfg w k hk).workTapes i z = if z = 0 then some 0 else if z = 1 then some 1 else none :=
   rfl
+
+/-- `sweepCfg`'s output tape is empty. -/
+@[simp] theorem sweepCfg_output : (sweepCfg w k hk).output = [] := rfl
 
 end CfgProjections
 

@@ -8,8 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The copying phases
 
@@ -22,10 +21,10 @@ receives the word's reverse, and moves the source's head right on halting,
 which parks it.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -44,6 +43,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 Turing machine, register, copying
 -/
 
+set_option doc.verso true
+
 namespace Geb.SizeBounded.Machine
 
 open Turing MultiTapeTM
@@ -57,12 +58,12 @@ right, until {lit}`i` reads a blank; halt without moving. -/
   tr _ _ work :=
     match work i with
     | some b =>
-      { inputMove := 0
-        workActions := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
+      { inputTape := 0
+        workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
           else (none, 0)
-        outS := none, q' := some () }
+        output := none, state := some () }
     | none =>
-      { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none }
+      { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none }
 
 /-- Copy tape {lit}`i` onto tape {lit}`j` cell by cell, {lit}`i`'s head moving
 left and {lit}`j`'s right, until {lit}`i` reads a blank; then move {lit}`i`
@@ -72,13 +73,13 @@ right and halt. -/
   tr _ _ work :=
     match work i with
     | some b =>
-      { inputMove := 0
-        workActions := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
+      { inputTape := 0
+        workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
           else (none, 0)
-        outS := none, q' := some () }
+        output := none, state := some () }
     | none =>
-      { inputMove := 0, workActions := fun l ↦ (none, if l = i then 1 else 0),
-        outS := none, q' := none }
+      { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
+        output := none, state := none }
 
 /-- The configuration of {name}`copyWalk` after {lit}`s` steps from parked
 heads, tape {lit}`i` holding {lit}`w` and tape {lit}`j` empty. -/
@@ -106,15 +107,15 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
       (w.length + 1) B := by
   have htrS : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (b : Bool), work i = some b →
       (copyWalk i j).tr () inp work =
-        { inputMove := 0
-          workActions := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
+        { inputTape := 0
+          workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, 1)
             else (none, 0)
-          outS := none, q' := some () } := by
+          output := none, state := some () } := by
     intro inp work b hb
     simp only [copyWalk, hb]
   have htrN : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work i = none →
       (copyWalk i j).tr () inp work =
-        { inputMove := 0, workActions := fun _ ↦ (none, 0), outS := none, q' := none } := by
+        { inputTape := 0, workTapes := fun _ ↦ (none, 0), output := none, state := none } := by
     intro inp work hb
     simp only [copyWalk, hb]
   have hsym : ∀ s : ℕ, (copyCfg i j cfg w s).workTapeSymbols i = tapeOf w (s : ℤ) := by
@@ -188,6 +189,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
               ((s + 1 : ℕ) : ℤ) l
           rw [Function.update_of_ne hl, Function.update_of_ne hl, Function.update_of_ne hli,
             Function.update_of_ne hli, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (copyWalk i j).step (copyCfg i j cfg w w.length) =
       { cfg with
         state := none
@@ -211,10 +213,11 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
           ((w.length : ℕ) : ℤ) l + ((0 : SignType) : ℤ) =
         Function.update (Function.update cfg.workTapePos i (w.length : ℤ)) j (w.length : ℤ) l
       rw [SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout : ∀ s : ℕ, (copyWalk i j).outputSymbol (copyCfg i j cfg w s) = none := by
     intro s
     change ((copyWalk i j).tr () (copyCfg i j cfg w s).inputSymbol
-      (copyCfg i j cfg w s).workTapeSymbols).outS = none
+      (copyCfg i j cfg w s).workTapeSymbols).output = none
     rcases hw : (copyCfg i j cfg w s).workTapeSymbols i with _ | b
     · rw [htrN _ _ hw]
     · rw [htrS _ _ _ hw]
@@ -235,6 +238,7 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
         · rw [hli, Function.update_self]
           omega
         · rw [Function.update_of_ne hli]
+    · rfl
   have key := RunsTo.ofFamily (copyWalk i j) (copyCfg i j cfg w) w.length B _
     (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
     (fun s hs l ↦ hbound (s : ℤ) (s : ℤ) (by omega) (by omega) (by omega) (by omega) l)
@@ -270,16 +274,16 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
       (w.length + 1) B := by
   have htrS : ∀ (inp : Option Bool) (work : Fin k → Option Bool) (b : Bool), work i = some b →
       (revWalk i j).tr () inp work =
-        { inputMove := 0
-          workActions := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
+        { inputTape := 0
+          workTapes := fun l ↦ if l = j then (some (some b), 1) else if l = i then (none, -1)
             else (none, 0)
-          outS := none, q' := some () } := by
+          output := none, state := some () } := by
     intro inp work b hb
     simp only [revWalk, hb]
   have htrN : ∀ (inp : Option Bool) (work : Fin k → Option Bool), work i = none →
       (revWalk i j).tr () inp work =
-        { inputMove := 0, workActions := fun l ↦ (none, if l = i then 1 else 0),
-          outS := none, q' := none } := by
+        { inputTape := 0, workTapes := fun l ↦ (none, if l = i then 1 else 0),
+          output := none, state := none } := by
     intro inp work hb
     simp only [revWalk, hb]
   have hsym : ∀ s : ℕ, (revCfg i j cfg w s).workTapeSymbols i =
@@ -358,6 +362,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
               ((w.length : ℤ) - 1 - ((s + 1 : ℕ) : ℤ))) j ((s + 1 : ℕ) : ℤ) l
           rw [Function.update_of_ne hl, Function.update_of_ne hl, Function.update_of_ne hli,
             Function.update_of_ne hli, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hhalt : (revWalk i j).step (revCfg i j cfg w w.length) =
       { cfg with
         state := none
@@ -400,10 +405,11 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
             Function.update (Function.update cfg.workTapePos i 0) j (w.length : ℤ) l
           rw [Function.update_of_ne hl, Function.update_of_ne hl, Function.update_of_ne hli,
             Function.update_of_ne hli, SignType.coe_zero, add_zero]
+    · exact List.append_nil _
   have hout : ∀ s : ℕ, (revWalk i j).outputSymbol (revCfg i j cfg w s) = none := by
     intro s
     change ((revWalk i j).tr () (revCfg i j cfg w s).inputSymbol
-      (revCfg i j cfg w s).workTapeSymbols).outS = none
+      (revCfg i j cfg w s).workTapeSymbols).output = none
     rcases hw : (revCfg i j cfg w s).workTapeSymbols i with _ | b
     · rw [htrN _ _ hw]
     · rw [htrS _ _ _ hw]
@@ -424,6 +430,7 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
         · rw [hli, Function.update_self]
           omega
         · rw [Function.update_of_ne hli]
+    · rfl
   have key := RunsTo.ofFamily (revWalk i j) (revCfg i j cfg w) w.length B _
     (fun _ _ ↦ Option.some_ne_none ()) hstep hhalt rfl (fun s _ ↦ hout s)
     (fun s hs l ↦ hbound ((w.length : ℤ) - 1 - s) (s : ℤ) (by omega) (by omega) (by omega)

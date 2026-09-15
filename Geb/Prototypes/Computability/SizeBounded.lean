@@ -14,11 +14,9 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine
 public import Geb.Prototypes.Computability.SizeBounded.MachineBound
 public import Geb.Prototypes.Computability.SizeBounded.Polynomial
 public import Geb.Prototypes.Computability.SizeBounded.MachineBound
-public import Geb.Prototypes.Computability.SizeBounded.MachineTransport
 meta import GebMeta -- shake: keep
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The non-size-increasing function algebra
 
@@ -28,3 +26,5 @@ combinators, the bit-tree recognizer written in it, the cost model in
 which every expression runs in polynomial time and linear space, and the
 machine calculus compiling its expressions into Cslib multi-tape machines.
 -/
+
+set_option doc.verso true

@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.TreeScanner.Machine
+public import Geb.Prototypes.Computability.MultiTape.OutputString
 
 /-!
 # The tree scanner's output against `validBool`
@@ -28,12 +29,12 @@ public import Geb.Prototypes.Computability.TreeScanner.Machine
 The module is admitted to `GebMeta.classicalAllowedModules`. Measurement
 (`#print axioms`) finds `sampleWords` axiom-free but `sampleOutputs` and
 `sampleOutputs_eq` depending on `Classical.choice`: the taint enters
-through `treeScanner.outputString`, which reads the input via
-`Turing.MultiTapeTM.Cfg.inputSymbol`, the same root `Steps.lean`'s
+through `treeScanner.runFrom`, which reads the input via
+`Turing.Cfg.inputSymbol`, the same root `Steps.lean`'s
 implementation notes name for that module's `Classical.choice`
 dependency. The module has no choice-free content of its own left to
 state: its subject is the correspondence between `treeScanner` and
-Cslib's `Turing.MultiTapeTM.outputString`, and `sampleWords` is
+the output emitted along a run of Cslib's `Turing.MultiTapeTM.runFrom`, and `sampleWords` is
 packaging, the literal the other two declarations are stated over.
 
 ## Tags

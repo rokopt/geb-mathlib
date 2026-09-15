@@ -16,8 +16,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.SrnInit
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Compiling the algebra
 
@@ -30,3 +29,5 @@ recursion body, the simultaneous recursion the loop computes, the valuation
 entering the loop, the recursion case, and the theorem that every expression's
 compilation meets the contract.
 -/
+
+set_option doc.verso true

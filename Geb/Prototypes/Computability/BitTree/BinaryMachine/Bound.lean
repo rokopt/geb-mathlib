@@ -7,9 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Execution
 public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
+public import Geb.Prototypes.Computability.MultiTape.Rename
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Linear-time recognition with logarithmic work space
 
@@ -29,10 +29,18 @@ The bound counts every visited work-tape cell, including blank cells. The
 read-only input tape is excluded by CSLib's space definition. Binary size is
 {name}`Nat.size`, the number of digits in the binary representation.
 
+The bound is stated as the machine-specific predicate
+{name}`Turing.MultiTapeTM.ComputesFunInTimeAndSpace` rather than as
+{name}`Turing.MultiTapeTM.ComputableInTimeAndSpace`, whose machines read and
+write {lit}`Bool`: the alphabet here is {lit}`Fin 4`, and a binary re-encoding
+of the work alphabet is the remaining step to CSLib's predicate.
+
 ## Tags
 
 binary tree, bitstring, Turing machine, linear time, logarithmic space
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
@@ -42,24 +50,24 @@ open Turing MultiTapeTM
 
 /-- After all input macros, one final transition halts the machine. -/
 theorem halts_at (w : List Bool) :
-    (machine.configs (machine.initCfg (w.map boolEmb)) (2 + runCost w + 1)).state = none := by
-  have h := configs_account w w.length (Nat.le_refl _)
+    (machine.runFrom (machine.initCfg (w.map boolEmb)) (2 + runCost w + 1)).state = none := by
+  have h := runFrom_account w w.length (Nat.le_refl _)
   simp only [List.take_length] at h
   obtain ⟨hr, hp, _, _⟩ := h
   have hi := inputSymbol_end
-    (machine.configs (machine.initCfg (w.map boolEmb)) (2 + runCost w))
+    (machine.runFrom (machine.initCfg (w.map boolEmb)) (2 + runCost w))
     (by simpa only [List.length_map] using hp)
-  rw [configs_succ_eq_step', step_end _ _ hr.state hi]
+  rw [runFrom_succ_eq_step', step_end _ _ hr.state hi]
 
 /-- The sole emitted bit is the decision of the unified scanner. -/
 theorem outputString_eq (w : List Bool) :
     machine.outputString (machine.initCfg (w.map boolEmb)) (2 + runCost w + 1) =
       [boolEmb (validBool w)] := by
-  have h := configs_account w w.length (Nat.le_refl _)
+  have h := runFrom_account w w.length (Nat.le_refl _)
   simp only [List.take_length] at h
   obtain ⟨hr, hp, ho, _⟩ := h
   have hi := inputSymbol_end
-    (machine.configs (machine.initCfg (w.map boolEmb)) (2 + runCost w))
+    (machine.runFrom (machine.initCfg (w.map boolEmb)) (2 + runCost w))
     (by simpa only [List.length_map] using hp)
   have hm : (account w).mode = (scan w).1 := congrArg Prod.fst (account_project w)
   rw [outputString_succ, ho, outputSymbol_end _ _ hr.state hi, hm]
@@ -68,7 +76,7 @@ theorem outputString_eq (w : List Bool) :
 /-- A bounded interval for every work head bounds the total visited work space. -/
 theorem spaceUsed_le_of_headBound {input : List (Fin 4)}
     (cfg : Cfg 3 (Fin 4) (Fin 10) input) (width t : ℕ)
-    (h : ∀ u ≤ t, HeadBound width (machine.configs cfg u)) :
+    (h : ∀ u ≤ t, HeadBound width (machine.runFrom cfg u)) :
     machine.spaceUsed cfg t ≤ 3 * (width + 1) := by
   have hsub (i : Fin 3) : machine.visitedByTapeHead cfg t i ⊆
       (Finset.range (width + 1)).image (fun n : ℕ ↦ (n : ℤ)) := by
@@ -88,8 +96,8 @@ theorem spaceUsed_le_of_headBound {input : List (Fin 4)}
 /-- All work-head positions remain within the chosen binary width, including the halt step. -/
 theorem headBound_run (w : List Bool) :
     ∀ u ≤ 2 + runCost w + 1, HeadBound (w.length + 2).size
-      (machine.configs (machine.initCfg (w.map boolEmb)) u) := by
-  have h := configs_account w w.length (Nat.le_refl _)
+      (machine.runFrom (machine.initCfg (w.map boolEmb)) u) := by
+  have h := runFrom_account w w.length (Nat.le_refl _)
   simp only [List.take_length] at h
   obtain ⟨hr, hp, _, hh⟩ := h
   intro u hu
@@ -98,20 +106,24 @@ theorem headBound_run (w : List Bool) :
   · have hu' : u = 2 + runCost w + 1 := by omega
     subst u
     have hi := inputSymbol_end
-      (machine.configs (machine.initCfg (w.map boolEmb)) (2 + runCost w))
+      (machine.runFrom (machine.initCfg (w.map boolEmb)) (2 + runCost w))
       (by simpa only [List.length_map] using hp)
-    rw [configs_succ_eq_step', step_end _ _ hr.state hi]
+    rw [runFrom_succ_eq_step', step_end _ _ hr.state hi]
     exact hr.headBound
 
-/-- Recognition takes linear time and logarithmic work space simultaneously. -/
+/-- Recognition takes linear time and logarithmic work space simultaneously. The statement
+is the machine-specific predicate, input and output embedded along {name}`boolEmb`, because
+the alphabet is {lit}`Fin 4` rather than {lit}`Bool`; a binary re-encoding of the work
+alphabet is the remaining step to {name}`Turing.MultiTapeTM.ComputableInTimeAndSpace`. -/
 theorem computableInTimeAndSpace_validBool :
-    ComputableInTimeAndSpace (fun w : List Bool ↦ [validBool w])
-      (fun n ↦ 6 * n + 5) (fun n ↦ 3 * ((n + 2).size + 1)) := by
-  refine ⟨3, 4, 10, boolEmb, machine, fun w ↦ ?_⟩
+    machine.ComputesFunInTimeAndSpace (listEmb boolEmb) (listEmb boolEmb)
+      (fun w : List Bool ↦ [validBool w])
+      (fun w ↦ 6 * w.length + 5) (fun w ↦ 3 * ((w.length + 2).size + 1)) := by
+  intro w
   refine ⟨2 + runCost w + 1, ?_,
     machine.spaceUsed (machine.initCfg (w.map boolEmb)) (2 + runCost w + 1),
     spaceUsed_le_of_headBound _ _ _ (headBound_run w),
-    halts_at w, outputString_eq w, rfl⟩
+    halts_at w, by rw [initCfg_runFrom_output]; exact outputString_eq w, rfl⟩
   change 2 + runCost w + 1 ≤ 6 * w.length + 5
   have h := runCost_le w
   omega

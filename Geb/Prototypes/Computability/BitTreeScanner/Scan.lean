@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Encoding
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # The left-to-right scan recognizing spelled trees
 
@@ -95,6 +94,8 @@ the bit there, so the equation is not {lit}`rfl` at a variable bit.
 
 binary tree, prefix code, scan, recognizer, counter automaton, Elias gamma code
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 

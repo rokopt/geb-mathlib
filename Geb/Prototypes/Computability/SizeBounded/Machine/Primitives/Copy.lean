@@ -9,8 +9,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Copying
 
@@ -20,10 +19,10 @@ heads. It is a sequence of phase machines, and it transforms the register
 valuation by a {name}`Function.update`.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules`: its
-statements mention {name}`Turing.MultiTapeTM.configs` and
+statements mention {name}`Turing.MultiTapeTM.runFrom` and
 {name}`Turing.MultiTapeTM.outputString`, each depending on
 {lit}`Classical.choice` through Cslib's
-{name}`Turing.MultiTapeTM.Cfg.inputSymbol`.
+{name}`Turing.Cfg.inputSymbol`.
 
 # Main definitions
 
@@ -38,6 +37,8 @@ statements mention {name}`Turing.MultiTapeTM.configs` and
 
 Turing machine, register, copying, program
 -/
+
+set_option doc.verso true
 
 namespace Geb.SizeBounded.Machine
 
@@ -155,6 +156,7 @@ theorem copy_transforms {k : ℕ} (i j : Fin k) (hij : i ≠ j) (B : ℕ) :
       by_cases hl : l = j
       · rw [hl, Function.update_self, Function.update_self]
       · rw [Function.update_of_ne hl, Function.update_of_ne hl, hσ l]
+    · rfl
     · rfl
 
 end

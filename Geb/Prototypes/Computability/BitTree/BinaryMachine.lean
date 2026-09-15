@@ -7,10 +7,11 @@ module
 
 public import Geb.Prototypes.Computability.BitTree.BinaryMachine.Bound
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Binary-counter recognition of trees with bitstring leaves
 
 The machine, execution correspondence and simultaneous time and space bounds.
 -/
+
+set_option doc.verso true

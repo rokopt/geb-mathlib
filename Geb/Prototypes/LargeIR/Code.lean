@@ -9,8 +9,7 @@ public import Geb.Prototypes.LargeIR.Basic
 public import Geb.Mathlib.Data.PFunctor.IndRec.Basic
 meta import GebMeta  -- shake: keep; supplies the cite docstring role
 
-set_option doc.verso true
-
+set_option doc.verso true in
 /-!
 # Prototype: the transcription read back as a large inductive-recursive code
 
@@ -86,6 +85,8 @@ completion expresses, and is not compared here.
 prototype, presheaf, walking arrow, inductive-recursive, code, free coproduct
 completion
 -/
+
+set_option doc.verso true
 
 @[expose] public section
 
