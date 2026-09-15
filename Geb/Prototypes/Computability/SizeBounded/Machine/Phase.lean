@@ -10,6 +10,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Sbs
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input
 
 set_option doc.verso true
 

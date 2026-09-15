@@ -182,6 +182,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Sbs,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write,
+   `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs,
