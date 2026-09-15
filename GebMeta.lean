@@ -87,6 +87,9 @@ code whose monads depend on it. Feature branches append the module
 names their own such modules occupy. -/
 def classicalAllowedModules : NameSet :=
   [`GebTests.Prototypes.AxiomLinterClassicalFixture,
+   `Geb.Prototypes.Computability.SizeBounded.Polynomial,
+   `Geb.Prototypes.Computability.SizeBounded.MachineBound,
+   `Geb.Prototypes.Computability.SizeBounded.MachineTransport,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.Introduction,

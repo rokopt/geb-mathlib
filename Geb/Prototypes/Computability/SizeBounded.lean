@@ -6,10 +6,15 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Basic
-public import Geb.Prototypes.Computability.SizeBounded.Combinators
 public import Geb.Prototypes.Computability.SizeBounded.BitTree
+public import Geb.Prototypes.Computability.SizeBounded.Combinators
 public import Geb.Prototypes.Computability.SizeBounded.Cost
+public import Geb.Prototypes.Computability.SizeBounded.Iteration
 public import Geb.Prototypes.Computability.SizeBounded.Machine
+public import Geb.Prototypes.Computability.SizeBounded.MachineBound
+public import Geb.Prototypes.Computability.SizeBounded.Polynomial
+public import Geb.Prototypes.Computability.SizeBounded.MachineBound
+public import Geb.Prototypes.Computability.SizeBounded.MachineTransport
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true
