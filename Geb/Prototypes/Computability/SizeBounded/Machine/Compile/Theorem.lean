@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Comp
 import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn
+meta import GebMeta -- shake: keep
 
 set_option doc.verso true
 
@@ -34,6 +35,11 @@ to the lemma for the node's shape.
 The forms of the two bounds as functions of the arguments' lengths — the length
 bound linear and the step bound polynomial — are established elsewhere.
 
+{lit}`SOf.correct` is the compiler's half of the soundness of
+{cite}`Mazzanti2016` Theorem 5.7: the compiled program computes the
+expression's meaning, the compiler replacing the paper's Theorem 5.3
+encoding of simultaneous recursion into a single recursion.
+
 # Main statements
 
 * {lit}`correct_compileValue` — one node meets the contract when its children
@@ -42,6 +48,10 @@ bound linear and the step bound polynomial — are established elsewhere.
   an indexed pair.
 * {lit}`SOf.correct` — the compiled program of an expression of a given arity
   computes its meaning.
+
+# References
+
+* {cite}`Mazzanti2016`
 
 # Tags
 
