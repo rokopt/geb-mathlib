@@ -37,6 +37,8 @@ equations of {name}`Function.update`.
 
 * {lit}`Correct.transport` — the contract transports along an equality of
   arities.
+* {lit}`CorrectSigma.atArity` — a child's correctness at the arity its parent
+  prescribes.
 * {lit}`correct_const`, {lit}`correct_proj`, {lit}`correct_sbs` — the three
   base forms meet the contract.
 
@@ -48,7 +50,7 @@ Turing machine, compilation, correctness, register, size-bounded
 namespace Geb.SizeBounded.Machine
 
 open Cobham (Sem transport)
-open Geb.SizeBounded (Direction rc evalValue nsiValue sbsSem)
+open Geb.SizeBounded (Direction rc evalValue nsiValue sbsSem length_sbsSem_le)
 
 public section
 
@@ -80,6 +82,15 @@ theorem Correct.transport {k i j : ℕ} (h : i = j) {p : Compiled k i} {f : Sem 
   subst h
   exact hp
 
+/-- A child's correctness at the arity its parent prescribes. -/
+theorem CorrectSigma.atArity {k : ℕ} {p : Σ i, Compiled k i} {m : Σ i, Sem i} {K : ℕ}
+    {Tf : ℕ → ℕ} (hk : CorrectSigma p m K Tf) {n : ℕ} (h : p.1 = n) (hm : m.1 = n) :
+    Correct (transportP h p.2) (transport hm m.2) K Tf := by
+  obtain ⟨e, hc⟩ := hk
+  have hc' := Correct.transport hm hc
+  rw [transportP_transportP] at hc'
+  exact hc'
+
 /-- A constant node is correct with its length as constant. -/
 theorem correct_const {k n : ℕ} (w : List Bool) (c : Direction (.const n w) → Σ i, Compiled k i)
     (h : ∀ b, (c b).1 = rc (.const n w) b) (s : Direction (.const n w) → Σ i, Sem i)
@@ -88,15 +99,9 @@ theorem correct_const {k n : ℕ} (w : List Bool) (c : Direction (.const n w) �
     Correct (compileValue (.const n w) c h) (evalValue (.const n w) s hs)
       (nsiValue (.const n w) K) (stepValue (.const n w) Tf) := by
   intro _ out _ _ _ _ _ _ B hK
-  refine ⟨fun σ ↦ Function.update σ out w, const_transforms w out B, fun σ ↦ ?_,
-    fun σ i _ hi ↦ Function.update_of_ne hi _ _, fun σ hσ i ↦ ?_⟩
-  · exact Function.update_self ..
-  · change (Function.update σ out w i).length ≤ B
-    rcases eq_or_ne i out with rfl | hi
-    · rw [Function.update_self]
-      exact hK
-    · rw [Function.update_of_ne hi]
-      exact hσ i
+  exact ⟨fun σ ↦ Function.update σ out w, const_transforms w out B,
+    fun _ ↦ Function.update_self .., fun σ i _ hi ↦ Function.update_of_ne hi _ _,
+    fun _ hσ ↦ hσ.update hK⟩
 
 /-- A projection node is correct with constant zero. -/
 theorem correct_proj {k n : ℕ} (i : Fin n) (c : Direction (.proj n i) → Σ i, Compiled k i)
@@ -106,15 +111,9 @@ theorem correct_proj {k n : ℕ} (i : Fin n) (c : Direction (.proj n i) → Σ i
     Correct (compileValue (.proj n i) c h) (evalValue (.proj n i) s hs)
       (nsiValue (.proj n i) K) (stepValue (.proj n i) Tf) := by
   intro env out _ _ _ _ _ hne B _
-  refine ⟨fun σ ↦ Function.update σ out (σ (env i)), copy_transforms (env i) out (hne i) B,
-    fun σ ↦ ?_, fun σ l _ hl ↦ Function.update_of_ne hl _ _, fun σ hσ l ↦ ?_⟩
-  · exact Function.update_self ..
-  · change (Function.update σ out (σ (env i)) l).length ≤ B
-    rcases eq_or_ne l out with rfl | hl
-    · rw [Function.update_self]
-      exact hσ (env i)
-    · rw [Function.update_of_ne hl]
-      exact hσ l
+  exact ⟨fun σ ↦ Function.update σ out (σ (env i)), copy_transforms (env i) out (hne i) B,
+    fun _ ↦ Function.update_self .., fun σ l _ hl ↦ Function.update_of_ne hl _ _,
+    fun _ hσ ↦ hσ.update (hσ (env i))⟩
 
 /-- A successor node is correct with constant zero. -/
 theorem correct_sbs {k : ℕ} (b : Bool) (c : Direction (.sbs b) → Σ i, Compiled k i)
@@ -126,22 +125,10 @@ theorem correct_sbs {k : ℕ} (b : Bool) (c : Direction (.sbs b) → Σ i, Compi
   intro env out _ _ hinj _ _ hne B _
   have h01 : (0 : Fin 2) ≠ 1 := by decide
   have hxy : env 0 ≠ env 1 := fun heq ↦ h01 (hinj heq)
-  refine ⟨fun σ ↦ Function.update σ out (sbsSem b (σ (env 0)) (σ (env 1))),
+  exact ⟨fun σ ↦ Function.update σ out (sbsSem b (σ (env 0)) (σ (env 1))),
     sbs_transforms b (env 0) (env 1) out hxy (hne 0) (hne 1) B,
-    fun σ ↦ ?_, fun σ l _ hl ↦ Function.update_of_ne hl _ _, fun σ hσ l ↦ ?_⟩
-  · exact Function.update_self ..
-  · change (Function.update σ out (sbsSem b (σ (env 0)) (σ (env 1))) l).length ≤ B
-    rcases eq_or_ne l out with rfl | hl
-    · rw [Function.update_self]
-      have h0 := hσ (env 0)
-      have h1 := hσ (env 1)
-      unfold sbsSem
-      split
-      · rw [List.length_cons]
-        omega
-      · omega
-    · rw [Function.update_of_ne hl]
-      exact hσ l
+    fun _ ↦ Function.update_self .., fun σ l _ hl ↦ Function.update_of_ne hl _ _,
+    fun _ hσ ↦ hσ.update (length_sbsSem_le b (hσ (env 0)) (hσ (env 1)))⟩
 
 end
 

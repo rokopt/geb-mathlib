@@ -59,7 +59,7 @@ public section
         + (B * (body + 2 * B + 6) + 3) + (5 * B + 12)
 
 /-- The step bound of an expression as a function of the length bound, read off
-its syntax by folding {lit}`stepValue` over the tree. -/
+its syntax by folding {name}`stepValue` over the tree. -/
 @[expose] def stepBound : sig.toPFunctor.W → ℕ → ℕ :=
   WType.elim (ℕ → ℕ) fun x ↦ stepValue x.1 x.2
 

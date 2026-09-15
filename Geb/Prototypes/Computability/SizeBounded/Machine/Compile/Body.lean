@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
 
 set_option doc.verso true
 
@@ -38,7 +38,7 @@ Turing machine, compilation, recursion, register allocation, size-bounded
 namespace Geb.SizeBounded.Machine
 
 open Cobham (Sem)
-open Geb.SizeBounded (sbsSem)
+open Geb.SizeBounded (sbsSem length_sbsSem_le)
 
 public section
 
@@ -71,30 +71,6 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
       (∀ σ (r : Fin k), r.val < free + 1 → G σ r = σ r) ∧
       (∀ σ, Bounded σ B → Bounded (G σ) B) := by
   choose F hFT hFout hFframe hFB using hsteps
-  -- a single update stays within the bound, and so does a pair of them
-  have hupd : ∀ (σ : Fin k → List Bool) (j : Fin k) (w : List Bool), Bounded σ B →
-      w.length ≤ B → Bounded (Function.update σ j w) B := by
-    intro σ j w hσ hw r
-    rcases eq_or_ne r j with rfl | hr
-    · rw [Function.update_self]
-      exact hw
-    · rw [Function.update_of_ne hr]
-      exact hσ r
-  have hupd2 : ∀ (σ : Fin k → List Bool) (j j' : Fin k) (w : List Bool), Bounded σ B →
-      w.length ≤ B →
-      Bounded (Function.update (Function.update σ j w) j'
-        (Function.update σ j w j)) B := by
-    intro σ j j' w hσ hw
-    have h := hupd σ j w hσ hw
-    exact hupd _ _ _ h (h _)
-  have hsbsLen : ∀ x y : List Bool, x.length ≤ B → y.length ≤ B →
-      (sbsSem i x y).length ≤ B := by
-    intro x y hx hy
-    unfold sbsSem
-    split
-    · rw [List.length_cons]
-      omega
-    · exact hx
   -- the registers the body allocates are pairwise distinct
   have hVX : (⟨free + 1, by omega⟩ : Fin k) ≠ X := by
     refine Fin.ne_of_val_ne ?_
@@ -170,28 +146,7 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
     omega
   have hsFX : ∀ σ : Fin k → List Bool, composeFin b F σ X = σ X := fun σ ↦ hsF σ X (by omega)
   -- the environment a step reads lies below the scratch registers
-  have henv : ∀ j : Fin (b + a + 1),
-      ((Fin.cons (⟨free + 1, by omega⟩ : Fin k)
-        (Fin.append (fun l : Fin b ↦ (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k))
-          params) : Fin (b + a + 1) → Fin k) j : ℕ) < free + 3 + b := by
-    intro j
-    cases j using Fin.cases with
-    | zero =>
-      rw [Fin.cons_zero]
-      change free + 1 < free + 3 + b
-      omega
-    | succ j =>
-      rw [Fin.cons_succ]
-      cases j using Fin.addCases with
-      | left l =>
-        rw [Fin.append_left]
-        have := l.isLt
-        change free + 3 + (l : ℕ) < free + 3 + b
-        omega
-      | right p =>
-        rw [Fin.append_right]
-        have := hparams p
-        omega
+  have henv := srnEnv_lt free hk params hparams
   have hg : ∀ (l : Fin b) (σ σ' : Fin k → List Bool),
       (∀ r : Fin k, r.val < free + 3 + b → σ r = σ' r) →
       hstep l (σ ∘ Fin.cons ⟨free + 1, by omega⟩
@@ -211,7 +166,7 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
       Bounded (composeFin b (fun l (σ : Fin k → List Bool) ↦ Function.update σ
         (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k)
         (σ ⟨free + 3 + b + l, by have := l.isLt; omega⟩)) σ) B :=
-    composeFin_bounded B b _ (fun l σ hσ ↦ hupd σ _ _ hσ (hσ _))
+    composeFin_bounded B b _ (fun _ _ hσ ↦ hσ.update (hσ _))
   refine ⟨_, Transforms.mono_time (Transforms.seq
     (Transforms.seqFin B T b _ _ F hFT hFB)
     (Transforms.seq
@@ -220,11 +175,11 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
           (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k)
           (σ ⟨free + 3 + b + l, by have := l.isLt; omega⟩))
         (fun l ↦ copy_transforms _ _ (hscr l) B)
-        (fun l σ hσ ↦ hupd σ _ _ hσ (hσ _)))
+        (fun _ _ hσ ↦ hσ.update (hσ _)))
       (Transforms.seq
         (sbs_transforms i ⟨free + 1, by omega⟩ X ⟨free + 2, by omega⟩ hVX hVTmp hXTmp B)
         (copy_transforms ⟨free + 2, by omega⟩ ⟨free + 1, by omega⟩ hTmpV B)
-        (fun σ hσ ↦ hupd σ _ _ hσ (hsbsLen _ _ (hσ _) (hσ _))))
+        (fun _ hσ ↦ hσ.update (length_sbsSem_le i (hσ _) (hσ _))))
       hcopiesB)
     (composeFin_bounded B b F hFB)) (by omega), ?_, ?_, ?_, ?_⟩
   · intro σ
@@ -251,8 +206,9 @@ theorem srnBody_transforms {k a b : ℕ} (i : Bool) (free : ℕ)
       hsF σ r (by omega)]
   · intro σ hσ
     have h2 := hcopiesB _ (composeFin_bounded B b F hFB σ hσ)
-    refine hupd2 _ _ _ _ h2 ?_
-    exact hsbsLen _ _ (h2 _) (h2 _)
+    refine Bounded.update (Bounded.update h2 ?_) ?_
+    · exact length_sbsSem_le i (h2 _) (h2 _)
+    · exact Bounded.update h2 (length_sbsSem_le i (h2 _) (h2 _)) _
 
 end
 

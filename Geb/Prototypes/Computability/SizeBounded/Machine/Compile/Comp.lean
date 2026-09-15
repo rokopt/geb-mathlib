@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
 
 set_option doc.verso true
 
@@ -57,12 +57,7 @@ theorem correct_comp {k n m : ℕ} (c : Direction (.comp n m) → Σ i, Compiled
       (finMax m fun i ↦ (c (.inr i)).2.regs)) ≤ k := hfree
   -- every child is correct at the arity the signature prescribes
   have hchild : ∀ d, Correct (transportP (h d) (c d).2) (transport (hs d) (s d).2)
-      (K d) (Tf d) := by
-    intro d
-    obtain ⟨e, hc⟩ := hk d
-    have hc' := Correct.transport (hs d) hc
-    rw [transportP_transportP] at hc'
-    exact hc'
+      (K d) (Tf d) := fun d ↦ (hk d).atArity (h d) (hs d)
   -- the fresh registers the arguments write
   have hrlt : ∀ i : Fin m, free + (i : ℕ) < k := fun i ↦ by have := i.isLt; omega
   set r : Fin m → Fin k := fun i ↦ ⟨free + i, hrlt i⟩

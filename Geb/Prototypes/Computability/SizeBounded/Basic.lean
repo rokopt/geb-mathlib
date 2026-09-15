@@ -56,6 +56,8 @@ recursive values in the next slots and the parameters after them.
 # Main statements
 
 * {lit}`fst_eval` — the index component of a tree's interpretation is its arity.
+* {lit}`length_sbsSem_le` — the size-bounded successor of bounded words is
+  bounded.
 * {lit}`le_finMax` — every value is at most the finite maximum.
 * {lit}`nsi_mono`, {lit}`nsi_transport` — the property is monotone in its
   constant and invariant under transport of the arity.
@@ -177,6 +179,15 @@ instance sigFinitary : sig.toPFunctor.Finitary
 {lit}`x` otherwise. -/
 @[expose] def sbsSem (b : Bool) (x y : List Bool) : List Bool :=
   if x.length + 1 ≤ y.length then b :: x else x
+
+/-- The size-bounded successor of bounded words is bounded. -/
+theorem length_sbsSem_le {B : ℕ} (b : Bool) {x y : List Bool} (hx : x.length ≤ B)
+    (hy : y.length ≤ B) : (sbsSem b x y).length ≤ B := by
+  unfold sbsSem
+  split
+  · rw [List.length_cons]
+    omega
+  · exact hx
 
 /-- Simultaneous recursion on notation, by {lit}`List.rec`: on the empty word each
 component is its base; on {lit}`i :: v` the {lit}`j`th component is the step

@@ -6,9 +6,10 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Body
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.LoopEval
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.SrnInit
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Body
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Family
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.LoopEval
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.SrnInit
 
 set_option doc.verso true
 
@@ -73,12 +74,7 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
   have hXlt : (env 0).val < free := henv 0
   -- every child is correct at the arity the signature prescribes
   have hchild : ∀ d, Correct (transportP (h d) (c d).2) (transport (hs d) (s d).2)
-      (K d) (Tf d) := by
-    intro d
-    obtain ⟨e, hc⟩ := hk d
-    have hc' := Correct.transport (hs d) hc
-    rw [transportP_transportP] at hc'
-    exact hc'
+      (K d) (Tf d) := fun d ↦ (hk d).atArity (h d) (hs d)
   -- the parameters lie below the first fresh register, and are distinct
   have hparams : ∀ p : Fin a, (Fin.tail env p).val < free := fun p ↦ henv p.succ
   have hpinj : Function.Injective (Fin.tail env) := by
@@ -114,28 +110,7 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
     · have h1 : (c (stepDir true l)).2.regs ≤ finMax b fun l ↦ (c (.inr (.inr l))).2.regs :=
         le_finMax b (fun l ↦ (c (.inr (.inr l))).2.regs) l
       omega
-  have hsenv : ∀ i : Fin (b + a + 1),
-      ((Fin.cons (⟨free + 1, by omega⟩ : Fin k)
-        (Fin.append (fun l : Fin b ↦ (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k))
-          (Fin.tail env)) : Fin (b + a + 1) → Fin k) i).val < free + 3 + b := by
-    intro i
-    cases i using Fin.cases with
-    | zero =>
-      rw [Fin.cons_zero]
-      change free + 1 < free + 3 + b
-      omega
-    | succ i =>
-      rw [Fin.cons_succ]
-      cases i using Fin.addCases with
-      | left l =>
-        rw [Fin.append_left]
-        have := l.isLt
-        change free + 3 + (l : ℕ) < free + 3 + b
-        omega
-      | right p =>
-        rw [Fin.append_right]
-        have := hparams p
-        omega
+  have hsenv := srnEnv_lt free hfk (Fin.tail env) hparams
   have hsteps := fun (i : Bool) (l : Fin b) ↦ hchild (stepDir i l)
     (Fin.cons (⟨free + 1, by omega⟩ : Fin k)
       (Fin.append (fun l : Fin b ↦ (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k))
@@ -179,20 +154,16 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
         (σ (env 0)).reverse) (⟨free + 1, by omega⟩ : Fin k) []) ∘ Fin.tail env =
         σ ∘ Fin.tail env :=
     fun σ ↦ funext fun p ↦ hinitlow σ _ (hparams p)
-  -- a single update stays within the bound
-  have hupd : ∀ (σ : Fin k → List Bool) (r : Fin k) (w : List Bool), Bounded σ B →
-      w.length ≤ B → Bounded (Function.update σ r w) B := by
-    intro σ r w hσ hw t
-    rcases eq_or_ne t r with rfl | ht
-    · rw [Function.update_self]
-      exact hw
-    · rw [Function.update_of_ne ht]
-      exact hσ t
+  -- the reversed recursion argument is within the bound
+  have hrev : ∀ σ : Fin k → List Bool, Bounded σ B → (σ (env 0)).reverse.length ≤ B :=
+    fun σ hσ ↦ by
+      rw [List.length_reverse]
+      exact hσ (env 0)
   have hinitB : ∀ σ : Fin k → List Bool, Bounded σ B →
       Bounded (composeFin b Fb (Function.update (Function.update σ (⟨free, by omega⟩ : Fin k)
         (σ (env 0)).reverse) (⟨free + 1, by omega⟩ : Fin k) [])) B := fun σ hσ ↦
     composeFin_bounded B b Fb hFbB _
-      (hupd _ _ _ (hupd _ _ _ hσ (by rw [List.length_reverse]; exact hσ _)) (Nat.zero_le B))
+      (Bounded.update (Bounded.update hσ (hrev σ hσ)) (Nat.zero_le B))
   -- the loop computes the simultaneous recursion
   have hloopeval := loopF_evalSRN (⟨free, by omega⟩ : Fin k) (⟨free + 1, by omega⟩ : Fin k)
     (env 0) (fun l : Fin b ↦ (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k)) (Fin.tail env)
@@ -236,8 +207,8 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
                 omega)) B)
             (fun σ hσ ↦ loopF_bounded _ GF GT B hGFB hGTB (σ _) σ (hσ _) hσ))
           (fun σ hσ ↦ composeFin_bounded B b Fb hFbB σ hσ))
-        (fun σ hσ ↦ hupd σ _ [] hσ (Nat.zero_le B)))
-      (fun σ hσ ↦ hupd σ _ _ hσ (by rw [List.length_reverse]; exact hσ _))) ?_,
+        (fun _ hσ ↦ Bounded.update (w := []) hσ (Nat.zero_le B)))
+      (fun σ hσ ↦ hσ.update (hrev σ hσ))) ?_,
     fun σ ↦ ?_, fun σ i hi hio ↦ ?_, fun σ hσ ↦ ?_⟩
   · dsimp only [stepValue]
     omega
@@ -270,7 +241,7 @@ theorem correct_srn {k a b : ℕ} (j : Fin b) (c : Direction (.srn a b j) → Σ
       (composeFin b Fb (Function.update (Function.update σ (⟨free, by omega⟩ : Fin k)
         (σ (env 0)).reverse) (⟨free + 1, by omega⟩ : Fin k) []) (⟨free, by omega⟩ : Fin k))
       _ (hinitB σ hσ _) (hinitB σ hσ)
-    exact hupd _ _ _ hb (hb _)
+    exact hb.update (hb _)
 
 end
 

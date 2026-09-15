@@ -23,5 +23,10 @@ set_option doc.verso true
 
 Index for the modules on the compilation of the size-bounded algebra into the
 machine calculus: the carrier of a compiled expression and the fold that
-assembles a node's program from its children's.
+assembles a node's program from its children's, the step bound read off an
+expression's syntax, the contract a compiled program meets, the valuations a
+family of fresh writers produces, the substitution case, the transformer of a
+recursion body, the simultaneous recursion the loop computes, the valuation
+entering the loop, the recursion case, and the theorem that every expression's
+compilation meets the contract.
 -/

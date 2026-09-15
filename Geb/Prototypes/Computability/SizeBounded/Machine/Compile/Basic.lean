@@ -97,6 +97,7 @@ structure Compiled (k n : ℕ) : Type 1 where
 /-- Transport of a compiled expression along an equality of arities. -/
 @[expose] def transportP {k i j : ℕ} (h : i = j) (v : Compiled k i) : Compiled k j := h ▸ v
 
+/-- Transport preserves the register need. -/
 theorem regs_transportP {k i j : ℕ} (h : i = j) (v : Compiled k i) :
     (transportP h v).regs = v.regs := by
   subst h
@@ -119,9 +120,11 @@ theorem transportP_transportP {k i j l : ℕ} (h : i = j) (g : j = l) (v : Compi
       2 * b + 3 + max (finMax b fun l ↦ r (.inl l))
         (max (finMax b fun l ↦ r (.inr (.inl l))) (finMax b fun l ↦ r (.inr (.inr l))))
 
+/-- The register need of a substitution node. -/
 theorem regsValue_comp (n m : ℕ) (r : Direction (.comp n m) → ℕ) :
     regsValue (.comp n m) r = m + max (r (.inl ())) (finMax m fun i ↦ r (.inr i)) := rfl
 
+/-- The register need of a recursion node. -/
 theorem regsValue_srn (a b : ℕ) (j : Fin b) (r : Direction (.srn a b j) → ℕ) :
     regsValue (.srn a b j) r = 2 * b + 3 + max (finMax b fun l ↦ r (.inl l))
       (max (finMax b fun l ↦ r (.inr (.inl l))) (finMax b fun l ↦ r (.inr (.inr l)))) := rfl
@@ -217,7 +220,7 @@ the selected value into the output register. -/
       srnProg R V X vals out j bases (srnBody false V X Tmp vals scr (steps false))
         (srnBody true V X Tmp vals scr (steps true))⟩
 
-/-- {lit}`compileValue` as an algebra for {name}`Geb.SizeBounded.sig` in the slice
+/-- {name}`compileValue` as an algebra for {name}`Geb.SizeBounded.sig` in the slice
 over {lit}`ℕ`. -/
 @[expose] def compileStep {k : ℕ} :
     sig.toSliceDomPFunctor.Obj (Sigma.fst (β := Compiled k)) → Σ i, Compiled k i :=

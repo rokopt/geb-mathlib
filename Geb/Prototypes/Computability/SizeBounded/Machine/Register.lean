@@ -40,6 +40,8 @@ the bound.
 * {lit}`drop_length_sub_succ`, {lit}`reverse_take_succ` — the list equations
   the copying phases step by.
 * {lit}`Bounded.mono` — a valuation within one bound is within a larger one.
+* {lit}`Bounded.update` — a bounded valuation stays bounded when one register
+  is overwritten by a bounded word.
 
 # Tags
 
@@ -159,6 +161,17 @@ theorem reverse_take_succ (w : List Bool) (s : ℕ) (hs : s < w.length) :
 /-- A valuation within one bound is within any larger bound. -/
 theorem Bounded.mono {k : ℕ} {σ : Fin k → List Bool} {B B' : ℕ} (h : Bounded σ B) (hB : B ≤ B') :
     Bounded σ B' := fun i ↦ (h i).trans hB
+
+/-- A bounded valuation stays bounded when one register is overwritten by a
+bounded word. -/
+theorem Bounded.update {k B : ℕ} {σ : Fin k → List Bool} {j : Fin k} {w : List Bool}
+    (hσ : Bounded σ B) (hw : w.length ≤ B) : Bounded (Function.update σ j w) B := fun i ↦
+  if h : i = j then by
+    rw [h, Function.update_self]
+    exact hw
+  else by
+    rw [Function.update_of_ne h]
+    exact hσ i
 
 end
 

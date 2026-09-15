@@ -33,6 +33,8 @@ recursion step passes to its body.
 * {lit}`composeFin_copy` — a family of copies into distinct destinations,
   none a source, acts as the simultaneous copy.
 * {lit}`srnEnv_injective` — the environment of a recursion step is injective.
+* {lit}`srnEnv_lt` — every register of the step environment lies below the
+  first scratch register.
 
 # Tags
 
@@ -155,6 +157,32 @@ theorem srnEnv_injective {k a b : ℕ} (free : ℕ) (hk : free + (2 * b + 3) ≤
     change free + 3 + (l : ℕ) = (params p : ℕ) at h
     have := hparams p
     omega
+
+/-- Every register of the step environment lies below the first scratch
+register. -/
+theorem srnEnv_lt {k a b : ℕ} (free : ℕ) (hk : free + (2 * b + 3) ≤ k)
+    (params : Fin a → Fin k) (hparams : ∀ p, (params p).val < free) :
+    ∀ s, ((Fin.cons (⟨free + 1, by omega⟩ : Fin k)
+      (Fin.append (fun l : Fin b ↦ (⟨free + 3 + l, by have := l.isLt; omega⟩ : Fin k))
+        params) : Fin (b + a + 1) → Fin k) s).val < free + 3 + b := by
+  intro s
+  cases s using Fin.cases with
+  | zero =>
+    rw [Fin.cons_zero]
+    change free + 1 < free + 3 + b
+    omega
+  | succ s =>
+    rw [Fin.cons_succ]
+    cases s using Fin.addCases with
+    | left l =>
+      rw [Fin.append_left]
+      have := l.isLt
+      change free + 3 + (l : ℕ) < free + 3 + b
+      omega
+    | right p =>
+      rw [Fin.append_right]
+      have := hparams p
+      omega
 
 end
 

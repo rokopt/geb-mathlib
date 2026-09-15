@@ -6,8 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Correct
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Comp
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Comp
+import Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn
 
 set_option doc.verso true
 
@@ -68,8 +68,8 @@ theorem correct_compileValue {k : ℕ} (a : Shape) (c : Direction a → Σ i, Co
   | comp n m => exact correct_comp c h s hs K Tf hk
   | srn a b j => exact correct_srn j c h s hs K Tf hk
 
-/-- Every expression's program is correct, with the constant {lit}`nsiConst` and
-the bound {lit}`stepBound` read off its syntax. -/
+/-- Every expression's program is correct, with the constant {name}`nsiConst` and
+the bound {name}`stepBound` read off its syntax. -/
 theorem correct_compile (k : ℕ) : ∀ e : S,
     CorrectSigma (compile k e) (eval e) (nsiConst e.1) (stepBound e.1) :=
   SlicePFunctor.W.induction fun x ih ↦
