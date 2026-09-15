@@ -2557,7 +2557,9 @@ checklist and in CI.
   `Turing.MultiTapeTM.spaceUsedByTape`, each depending on
   `Classical.choice` through Cslib's `Turing.MultiTapeTM.Cfg.inputSymbol`
   or mathlib's `Finset.image`. Depends on Cslib's
-  `Computability.Machines.Turing.MultiTape.Deterministic`.
+  `Computability.Machines.Turing.MultiTape.Deterministic` and
+  `Computability.Machines.Turing.MultiTape.TapeLemmas` and on
+  `Geb.Mathlib.Data.FinEnum`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Phase.lean` — the phase
   machines the primitives are sequenced from, each with its closed-form
   run: `returnTape` returns a head to cell `0` (`Phase/Return.lean`);
@@ -2572,8 +2574,10 @@ checklist and in CI.
   `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Program` and
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Seq`.
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Program`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Emit`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Seq` and
+  `Geb.Prototypes.Computability.SizeBounded.Basic`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Primitives.lean` — the
   primitives sequenced from the phase machines, each transforming the
   register valuation by a `Function.update`:
@@ -2587,7 +2591,11 @@ checklist and in CI.
   `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase`.
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Sbs` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Loop.lean` — the
   recursion loop: `Geb.SizeBounded.Machine.caseLoop` peels the bits of a
   register's word one at a time, from the head, running a body per bit and
@@ -2603,7 +2611,7 @@ checklist and in CI.
   depending on `Classical.choice` through Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Machine.Program` and
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase`.
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Compile.lean` — the
   compilation of the algebra into the calculus: `compile` folds the
   signature into a program by the slice W-type's eliminator, in the shape
@@ -2626,8 +2634,15 @@ checklist and in CI.
   `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Loop`,
-  `Geb.Prototypes.Computability.SizeBounded.Basic` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Sbs`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.CopyRev`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Basic`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Loop.Transforms`,
+  `Geb.Prototypes.Computability.SizeBounded.Basic`,
+  `Geb.Mathlib.Data.FinEnum` and
   `Geb.Mathlib.Computability.Cobham.Basic`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Bound.lean` — the two
   resources the compilation spends, read off an expression's syntax:
@@ -2637,7 +2652,8 @@ checklist and in CI.
   proves `Geb.SizeBounded.Machine.stepBound` bounded by a polynomial in
   the length bound, node by node from the closure lemmas of
   `Geb.SizeBounded.IsPolyBounded`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Bound` and
   `Geb.Prototypes.Computability.SizeBounded.Cost`. `Classical.choice`-free.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Wrapper.lean` — the
   machine of an expression: `Geb.SizeBounded.Machine.reader` loads the
@@ -2653,8 +2669,12 @@ checklist and in CI.
   `Turing.MultiTapeTM.configs` and `Turing.MultiTapeTM.outputString`, each
   depending on `Classical.choice` through Cslib's
   `Turing.MultiTapeTM.Cfg.inputSymbol`. Depends on
-  `Geb.Prototypes.Computability.SizeBounded.Machine.Seq`, the phase
-  machines, `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem`
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Seq`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Output`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Clear`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem`
   and `Geb.Prototypes.Computability.SizeBounded.Machine.Bound`.
 - `Geb/Prototypes/Computability/SizeBounded/Machine/Transport.lean` — a
   `Turing.MultiTapeTM` over `Bool` and an arbitrary state type, relabeled

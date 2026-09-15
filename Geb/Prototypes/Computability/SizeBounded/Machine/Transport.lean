@@ -71,13 +71,6 @@ theorem map_map_bitEmb (o : Option Bool) : (o.map bitEmb).map finTwoEquiv = o :=
   | none => rfl
   | some b => exact congrArg some (finTwoEquiv_bitEmb b)
 
-/-- The list of an optional symbol commutes with relabeling the symbol. -/
-theorem toList_map {α β : Type} (f : α → β) (o : Option α) :
-    (o.map f).toList = o.toList.map f := by
-  cases o with
-  | none => rfl
-  | some a => rfl
-
 /-- Moving the input head commutes with the cast between the position types of
 two inputs of equal length. -/
 theorem moveInputPos_cast {n m : ℕ} (h : n + 2 = m + 2) (p : Fin (n + 2)) (d : SignType) :
@@ -203,7 +196,7 @@ theorem outputString_relabel {k : ℕ} {State : Type} {input : List Bool} {s : �
   Nat.rec (by simp [outputString])
     (fun t ih ↦ by
       rw [outputString_succ, outputString_succ, ih, List.map_append, configs_relabel,
-        outputSymbol_relabel, toList_map]) t
+        outputSymbol_relabel, Option.toList_map]) t
 
 /-- The relabeled machine's initial configuration. -/
 theorem initCfg_relabel {k : ℕ} {State : Type} {s : ℕ} (tm : MultiTapeTM k Bool State)

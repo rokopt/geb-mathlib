@@ -35,9 +35,8 @@ composite, agreeing with the composite's steps and output; consequently an
   while {lit}`P` has not halted.
 * {lit}`seq_outputString_left`, {lit}`seq_outputString_right` — the composite
   emits what the mirrored component emits.
-* {lit}`Arrives.liftL`, {lit}`Arrives.liftR`, {lit}`Reaches.liftL`,
-  {lit}`Reaches.liftR` — an arrival or reach of a component lifts to one of
-  the composite.
+* {lit}`Arrives.liftL`, {lit}`Arrives.liftR` — an arrival of a component
+  lifts to one of the composite.
 * {lit}`RunsTo.seqEmits` — a run of {lit}`P` followed by an emission of
   {lit}`Q` is an emission of the composite.
 * {lit}`RunsTo.seq` — runs of the components compose into a run of the
@@ -244,13 +243,6 @@ theorem Arrives.liftL {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     rw [seq_configs_left P Q cfg t' (fun s hs ↦ h.live s (by omega)), liftL_workTapePos]
     exact h.pos t' ht' i
 
-/-- A reach of {lit}`P` lifts to a reach of the composite. -/
-theorem Reaches.liftL {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
-    {P : MultiTapeTM k Bool S₁} (Q : MultiTapeTM k Bool S₂)
-    {cfg cfg' : Cfg k Bool S₁ input} {t B : ℕ} (h : Reaches P cfg cfg' t B) :
-    Reaches (seq P Q) (liftL Q cfg) (liftL Q cfg') t B :=
-  ⟨h.toArrives.liftL Q, (seq_outputString_left P Q cfg t h.live).trans h.output⟩
-
 /-- An arrival of {lit}`Q` lifts to an arrival of the composite. -/
 theorem Arrives.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S₁) {Q : MultiTapeTM k Bool S₂}
@@ -263,13 +255,6 @@ theorem Arrives.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
   pos := fun t' ht' i ↦ by
     rw [seq_configs_right P Q cfg t', liftR_workTapePos]
     exact h.pos t' ht' i
-
-/-- A reach of {lit}`Q` lifts to a reach of the composite. -/
-theorem Reaches.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
-    (P : MultiTapeTM k Bool S₁) {Q : MultiTapeTM k Bool S₂}
-    {cfg cfg' : Cfg k Bool S₂ input} {t B : ℕ} (h : Reaches Q cfg cfg' t B) :
-    Reaches (seq P Q) (liftR cfg) (liftR cfg') t B :=
-  ⟨h.toArrives.liftR P, (seq_outputString_right P Q cfg t).trans h.output⟩
 
 /-- A run of {lit}`P` followed by an emission of {lit}`Q` from {lit}`P`'s final
 tapes is an emission of the composite. -/

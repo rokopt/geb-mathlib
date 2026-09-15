@@ -48,8 +48,8 @@ or mathlib's {name}`Finset.image`.
 * {lit}`Arrives.trans`, {lit}`Reaches.trans` — arrivals and reaches compose.
 * {lit}`Reaches.mono`, {lit}`RunsTo.mono` — a larger head bound.
 * {lit}`RunsTo.halt_configs` — after a run the machine stays put.
-* {lit}`spaceUsedByTape_le_of_pos`, {lit}`RunsTo.spaceUsedByTape_le` — the
-  visited cells per tape are at most the bound plus two.
+* {lit}`spaceUsedByTape_le_of_pos` — the visited cells per tape are at most
+  the bound plus two.
 * {lit}`Transforms.mono_time`, {lit}`Transforms.congr` — the contract at a
   larger step bound and at a pointwise equal transformer.
 
@@ -175,12 +175,6 @@ theorem spaceUsedByTape_le_of_pos {k : ℕ} {State : Type} {input : List Bool}
   rw [Int.card_Icc] at hcard
   unfold spaceUsedByTape
   omega
-
-/-- Over a run the head of each tape visits at most {lit}`B + 2` cells. -/
-theorem RunsTo.spaceUsedByTape_le {k : ℕ} {State : Type} {input : List Bool}
-    {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {t B : ℕ}
-    (h : RunsTo tm cfg cfg' t B) (i : Fin k) : tm.spaceUsedByTape cfg t i ≤ B + 2 :=
-  spaceUsedByTape_le_of_pos _ _ _ _ i fun t' ht' ↦ h.pos t' ht' i
 
 /-- The halted configuration with the heads and input head of {lit}`cfg` and
 the tapes holding {lit}`σ`. -/

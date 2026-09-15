@@ -39,6 +39,9 @@ or mathlib's {name}`Finset.image`.
 
 * {lit}`RunsTo.toEmits`, {lit}`Emits.toRunsTo` — a run is the emission of the
   empty word.
+* {lit}`Arrives.ofFamily`, {lit}`Reaches.ofFamily` — a closed-form family of
+  live configurations is an arrival at its last member, and a reach when it
+  emits nothing.
 * {lit}`Emits.ofFamily`, {lit}`RunsTo.ofFamily` — a closed-form family of
   configurations is an emission, and a run when it emits nothing.
 * {lit}`Emits.spaceUsedByTape_le`, {lit}`Emits.spaceUsed_le` — an emission's
@@ -75,6 +78,43 @@ theorem Emits.toRunsTo {k : ℕ} {State : Type} {input : List Bool} {tm : MultiT
     {cfg cfg' : Cfg k Bool State input} {t B : ℕ} (h : Emits tm cfg cfg' [] t B) :
     RunsTo tm cfg cfg' t B :=
   ⟨⟨h.toArrives, h.output⟩, h.halted⟩
+
+/-- A closed-form family of live configurations, each the step of the previous,
+is an arrival at its last member. -/
+theorem Arrives.ofFamily {k : ℕ} {State : Type} {input : List Bool}
+    (tm : MultiTapeTM k Bool State) (f : ℕ → Cfg k Bool State input) (n B : ℕ)
+    (hlive : ∀ s < n, (f s).state ≠ none)
+    (hstep : ∀ s < n, tm.step (f s) = f (s + 1))
+    (hpos : ∀ s ≤ n, ∀ i, -1 ≤ (f s).workTapePos i ∧ (f s).workTapePos i ≤ B) :
+    Arrives tm (f 0) (f n) n B := by
+  have key : ∀ s, s ≤ n → tm.configs (f 0) s = f s := by
+    refine Nat.rec ?_ ?_
+    · intro _
+      exact configs_zero
+    · intro s ih hs
+      rw [configs_succ_eq_step', ih (by omega), hstep s (by omega)]
+  exact ⟨fun t' ht' ↦ by rw [key t' (by omega)]; exact hlive t' ht',
+    key n (le_refl n), fun t' ht' i ↦ by rw [key t' ht']; exact hpos t' ht' i⟩
+
+/-- The family lemma for a reach: nothing emitted. -/
+theorem Reaches.ofFamily {k : ℕ} {State : Type} {input : List Bool}
+    (tm : MultiTapeTM k Bool State) (f : ℕ → Cfg k Bool State input) (n B : ℕ)
+    (hlive : ∀ s < n, (f s).state ≠ none)
+    (hstep : ∀ s < n, tm.step (f s) = f (s + 1))
+    (hout : ∀ s < n, tm.outputSymbol (f s) = none)
+    (hpos : ∀ s ≤ n, ∀ i, -1 ≤ (f s).workTapePos i ∧ (f s).workTapePos i ≤ B) :
+    Reaches tm (f 0) (f n) n B := by
+  have key : ∀ s ≤ n, tm.configs (f 0) s = f s := fun s hs ↦
+    (Arrives.ofFamily tm f s B (fun t ht ↦ hlive t (by omega))
+      (fun t ht ↦ hstep t (by omega)) (fun t ht ↦ hpos t (by omega))).configs_eq
+  have hnil : ∀ s, s ≤ n → tm.outputString (f 0) s = [] := by
+    refine Nat.rec ?_ ?_
+    · intro _
+      rfl
+    · intro s ih hs
+      rw [outputString_succ, ih (by omega), key s (by omega), hout s (by omega)]
+      rfl
+  exact ⟨Arrives.ofFamily tm f n B hlive hstep hpos, hnil n (le_refl n)⟩
 
 /-- A closed-form family of live configurations, each the step of the previous,
 the last of which steps to a halted configuration, is an emission: the accumulator

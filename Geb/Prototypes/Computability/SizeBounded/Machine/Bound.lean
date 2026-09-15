@@ -31,7 +31,6 @@ affine functions and constants.
 
 # Main statements
 
-* {lit}`regsBound_mk` — the fold's computation rule.
 * {lit}`regs_compileValue`, {lit}`regs_compile`, {lit}`SOf.regs` — the compiled
   program's register need is the syntactic one.
 * {lit}`isPolyBounded_stepValue`, {lit}`isPolyBounded_stepBound` — every
@@ -53,10 +52,6 @@ public section
 /-- The register need of an expression, read off its syntax by folding
 {name}`regsValue` over the tree. -/
 @[expose] def regsBound : sig.toPFunctor.W → ℕ := WType.elim ℕ fun x ↦ regsValue x.1 x.2
-
-/-- The fold's computation rule. -/
-theorem regsBound_mk (a : Shape) (f : Direction a → sig.toPFunctor.W) :
-    regsBound (WType.mk a f) = regsValue a fun d ↦ regsBound (f d) := rfl
 
 /-- One node's register need is {name}`regsValue` of its children's. -/
 theorem regs_compileValue {k : ℕ} (a : Shape) (c : Direction a → Σ i, Compiled k i)

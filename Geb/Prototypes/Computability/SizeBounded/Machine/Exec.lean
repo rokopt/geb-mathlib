@@ -91,18 +91,13 @@ structure ExecCfg (k : ℕ) (State : Type) (input : List Bool) where
   | some none => tape.erase z
   | some (some b) => tape.insert z b
 
-/-- The symbols under the heads. -/
-@[expose] def ExecCfg.symbols {k : ℕ} {State : Type} {input : List Bool}
-    (c : ExecCfg k State input) (i : Fin k) : Option Bool :=
-  c.tapes[i][c.heads[i]]?
-
 /-- One step, with every field computed once. -/
 @[expose] def execStep {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
     (c : ExecCfg k State input) : ExecCfg k State input :=
   match c.state with
   | none => c
   | some q =>
-    let o := tm.tr q c.toCfg.inputSymbol c.symbols
+    let o := tm.tr q c.toCfg.inputSymbol c.toCfg.workTapeSymbols
     { state := o.q'
       inputPos := moveInputPos c.inputPos o.inputMove
       tapes := Vector.ofFn fun i ↦ writeCell c.tapes[i] c.heads[i] (o.workActions i).1
@@ -113,7 +108,7 @@ structure ExecCfg (k : ℕ) (State : Type) (input : List Bool) where
     (tm : MultiTapeTM k Bool State) (c : ExecCfg k State input) : Option Bool :=
   match c.state with
   | none => none
-  | some q => (tm.tr q c.toCfg.inputSymbol c.symbols).outS
+  | some q => (tm.tr q c.toCfg.inputSymbol c.toCfg.workTapeSymbols).outS
 
 /-- A cell of a tape after a writing action: the tape's cell map, updated. -/
 theorem getElem?_writeCell (tape : Std.HashMap ℤ Bool) (y z : ℤ) (s : Option Bool) :
@@ -147,10 +142,6 @@ theorem toCfg_init {k : ℕ} {State : Type} (tm : MultiTapeTM k Bool State) (inp
   · funext i
     simp only [ExecCfg.toCfg, ExecCfg.init, Fin.getElem_fin, Vector.getElem_replicate, initCfg]
 
-/-- The symbols under the heads are the denoted configuration's. -/
-theorem symbols_eq {k : ℕ} {State : Type} {input : List Bool} (c : ExecCfg k State input) :
-    c.symbols = c.toCfg.workTapeSymbols := rfl
-
 /-- One executable step denotes one step. -/
 theorem toCfg_execStep {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
     (c : ExecCfg k State input) : (execStep tm c).toCfg = tm.step c.toCfg := by
@@ -161,7 +152,7 @@ theorem toCfg_execStep {k : ℕ} {State : Type} {input : List Bool} (tm : MultiT
     rw [hq]
   | some q =>
     rw [step_of_state tm c.toCfg q hq]
-    simp only [execStep, hq, symbols_eq]
+    simp only [execStep, hq]
     set o := tm.tr q c.toCfg.inputSymbol c.toCfg.workTapeSymbols
     apply Cfg.ext
     · rfl
@@ -180,7 +171,7 @@ theorem execOutputSymbol_eq {k : ℕ} {State : Type} {input : List Bool}
     execOutputSymbol tm c = tm.outputSymbol c.toCfg := by
   cases hq : c.state with
   | none => simp only [execOutputSymbol, outputSymbol, ExecCfg.toCfg, hq]
-  | some q => simp only [execOutputSymbol, outputSymbol, symbols_eq, ExecCfg.toCfg, hq]
+  | some q => simp only [execOutputSymbol, outputSymbol, ExecCfg.toCfg, hq]
 
 /-- Iterated executable steps denote the configurations. -/
 theorem toCfg_execStep_iterate {k : ℕ} {State : Type} {input : List Bool}

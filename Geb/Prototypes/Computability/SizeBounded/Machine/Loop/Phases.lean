@@ -154,33 +154,34 @@ theorem caseLoop_seek {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     · rfl
     · change Function.update cfg.workTapePos R (((0 : ℕ) : ℤ)) = cfg.workTapePos
       rw [show (((0 : ℕ) : ℤ)) = cfg.workTapePos R by omega, Function.update_eq_self]
-  have key : ∀ s : ℕ, s ≤ r.length + 1 →
-      (caseLoop R bodyF bodyT).configs cfg s = caseSeekCfg R cfg s ∧
-        (caseLoop R bodyF bodyT).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key (r.length + 1) (le_refl _)
-  have ht : r.length + 2 = (r.length + 1) + 1 := by omega
-  refine ⟨⟨?_, ?_, ?_⟩, ?_⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [ht, configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' j
-    by_cases hlt : t' ≤ r.length + 1
-    · rw [(key t' hlt).1]
-      exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
-    · rw [show t' = (r.length + 1) + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
-  · rw [ht, outputString_succ, hon, hcn, hout _]
-    rfl
+  set tgt : Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input :=
+    { cfg with
+      state := some (.inl 1)
+      workTapePos := Function.update cfg.workTapePos R (r.length : ℤ) } with htgt
+  set f : ℕ → Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input :=
+    fun s ↦ if s ≤ r.length + 1 then caseSeekCfg R cfg s else tgt
+  have hlo : ∀ s ≤ r.length + 1, f s = caseSeekCfg R cfg s := fun _ hs ↦ ite_eq_left hs
+  have hhi : ∀ s, r.length + 1 < s → f s = tgt := fun _ hs ↦ ite_eq_right (by omega)
+  have key := Reaches.ofFamily (caseLoop R bodyF bodyT) f (r.length + 2) B
+    (fun s hs ↦ by
+      rw [hlo s (by omega)]
+      exact Option.some_ne_none _)
+    (fun s hs ↦ by
+      rcases Nat.lt_or_ge s (r.length + 1) with h | h
+      · rw [hlo s (by omega), hlo (s + 1) (by omega)]
+        exact hstep s (by omega)
+      · rw [show s = r.length + 1 by omega, hlo _ (le_refl _), hhi _ (by omega)]
+        exact hhalt)
+    (fun s hs ↦ by
+      rw [hlo s (by omega)]
+      exact hout s)
+    (fun s hs j ↦ by
+      rcases Nat.lt_or_ge s (r.length + 2) with h | h
+      · rw [hlo s (by omega)]
+        exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
+      · rw [hhi s (by omega), htgt]
+        exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j)
+  rwa [hlo 0 (by omega), hzero, hhi _ (by omega)] at key
 
 /-- The back phase: from the back state with {lit}`R` holding {lit}`c :: r`
 and its head at cell {lit}`r.length`, one step blanks that cell, so that
@@ -377,33 +378,36 @@ theorem caseLoop_ret {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         cfg.workTapePos
       rw [show ((r.length : ℤ) - 1 - ((0 : ℕ) : ℤ)) = cfg.workTapePos R by omega,
         Function.update_eq_self]
-  have key : ∀ s : ℕ, s ≤ r.length →
-      (caseLoop R bodyF bodyT).configs cfg s = caseRetCfg R cfg c ((r.length : ℤ) - 1) s ∧
-        (caseLoop R bodyF bodyT).outputString cfg s = [] := by
-    refine Nat.rec ?_ ?_
-    · intro _
-      exact ⟨by rw [configs_zero, hzero], rfl⟩
-    · intro s ih hs
-      obtain ⟨hc, ho⟩ := ih (by omega)
-      refine ⟨?_, ?_⟩
-      · rw [configs_succ_eq_step', hc, hstep s (by omega)]
-      · rw [outputString_succ, ho, hc, hout s]
-        rfl
-  obtain ⟨hcn, hon⟩ := key r.length (le_refl _)
   have hpB : (r.length : ℤ) - 1 ≤ B := hp ▸ (hpos R).2
-  refine ⟨⟨?_, ?_, ?_⟩, ?_⟩
-  · intro t' ht'
-    rw [(key t' (by omega)).1]
-    exact Option.some_ne_none _
-  · rw [configs_succ_eq_step', hcn, hhalt]
-  · intro t' ht' j
-    by_cases hlt : t' ≤ r.length
-    · rw [(key t' hlt).1]
-      exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
-    · rw [show t' = r.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
-      exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
+  set tgt : Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input :=
+    { cfg with
+      state := some (if c then .inr (.inr bodyT.q₀) else .inr (.inl bodyF.q₀))
+      workTapePos := Function.update cfg.workTapePos R 0 } with htgt
+  set f : ℕ → Cfg k Bool (Fin 4 ⊕ (SF ⊕ ST)) input :=
+    fun s ↦ if s ≤ r.length then caseRetCfg R cfg c ((r.length : ℤ) - 1) s else tgt
+  have hlo : ∀ s ≤ r.length, f s = caseRetCfg R cfg c ((r.length : ℤ) - 1) s :=
+    fun _ hs ↦ ite_eq_left hs
+  have hhi : ∀ s, r.length < s → f s = tgt := fun _ hs ↦ ite_eq_right (by omega)
+  have key := Reaches.ofFamily (caseLoop R bodyF bodyT) f (r.length + 1) B
+    (fun s hs ↦ by
+      rw [hlo s (by omega)]
+      exact Option.some_ne_none _)
+    (fun s hs ↦ by
+      rcases Nat.lt_or_ge s r.length with h | h
+      · rw [hlo s (by omega), hlo (s + 1) (by omega)]
+        exact hstep s h
+      · rw [show s = r.length by omega, hlo _ (le_refl _), hhi _ (by omega)]
+        exact hhalt)
+    (fun s hs ↦ by
+      rw [hlo s (by omega)]
+      exact hout s)
+    (fun s hs j ↦ by
+      rcases Nat.lt_or_ge s (r.length + 1) with h | h
+      · rw [hlo s (by omega)]
+        exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
+      · rw [hhi s (by omega), htgt]
+        exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j)
+  rwa [hlo 0 (by omega), hzero, hhi _ (by omega)] at key
 
 /-- The exit: from the seek state with {lit}`R` empty and parked, two steps
 halt with every head where it was. -/
