@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 
 set_option doc.verso true
 
@@ -17,9 +17,9 @@ runs {lit}`P`, and from a configuration where {lit}`P` would halt continues
 instead as {lit}`Q` from {lit}`Q`'s initial state. Its state type is the sum
 of the two components' state types. {lit}`liftL` and {lit}`liftR` embed a
 configuration of {lit}`P` or of {lit}`Q` into a configuration of the
-composite, agreeing with the composite's steps and output; consequently a
-{name}`Geb.SizeBounded.Machine.Reaches` of a component lifts to a
-{name}`Geb.SizeBounded.Machine.Reaches` of the composite.
+composite, agreeing with the composite's steps and output; consequently an
+{name}`Geb.SizeBounded.Machine.Arrives` of a component lifts to an
+{name}`Geb.SizeBounded.Machine.Arrives` of the composite.
 
 # Main definitions
 
@@ -35,8 +35,11 @@ composite, agreeing with the composite's steps and output; consequently a
   while {lit}`P` has not halted.
 * {lit}`seq_outputString_left`, {lit}`seq_outputString_right` — the composite
   emits what the mirrored component emits.
-* {lit}`Reaches.liftL`, {lit}`Reaches.liftR` — a reach of a component lifts
-  to a reach of the composite.
+* {lit}`Arrives.liftL`, {lit}`Arrives.liftR`, {lit}`Reaches.liftL`,
+  {lit}`Reaches.liftR` — an arrival or reach of a component lifts to one of
+  the composite.
+* {lit}`RunsTo.seqEmits` — a run of {lit}`P` followed by an emission of
+  {lit}`Q` is an emission of the composite.
 * {lit}`RunsTo.seq` — runs of the components compose into a run of the
   composite.
 * {lit}`Transforms.seq` — the composite satisfies the contract of the
@@ -228,33 +231,61 @@ theorem seq_outputString_right {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
         seq_outputSymbol_right P Q (Q.configs cfg t)])
     t
 
-/-- A reach of {lit}`P` lifts to a reach of the composite. -/
-theorem Reaches.liftL {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+/-- An arrival of {lit}`P` lifts to an arrival of the composite. -/
+theorem Arrives.liftL {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     {P : MultiTapeTM k Bool S₁} (Q : MultiTapeTM k Bool S₂)
-    {cfg cfg' : Cfg k Bool S₁ input} {t B : ℕ} (h : Reaches P cfg cfg' t B) :
-    Reaches (seq P Q) (liftL Q cfg) (liftL Q cfg') t B where
+    {cfg cfg' : Cfg k Bool S₁ input} {t B : ℕ} (h : Arrives P cfg cfg' t B) :
+    Arrives (seq P Q) (liftL Q cfg) (liftL Q cfg') t B where
   live := fun t' ht' ↦ by
     rw [seq_configs_left P Q cfg t' (fun s hs ↦ h.live s (by omega))]
     exact liftL_state_ne_none Q _
   configs_eq := by rw [seq_configs_left P Q cfg t h.live, h.configs_eq]
-  output := (seq_outputString_left P Q cfg t h.live).trans h.output
   pos := fun t' ht' i ↦ by
     rw [seq_configs_left P Q cfg t' (fun s hs ↦ h.live s (by omega)), liftL_workTapePos]
+    exact h.pos t' ht' i
+
+/-- A reach of {lit}`P` lifts to a reach of the composite. -/
+theorem Reaches.liftL {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+    {P : MultiTapeTM k Bool S₁} (Q : MultiTapeTM k Bool S₂)
+    {cfg cfg' : Cfg k Bool S₁ input} {t B : ℕ} (h : Reaches P cfg cfg' t B) :
+    Reaches (seq P Q) (liftL Q cfg) (liftL Q cfg') t B :=
+  ⟨h.toArrives.liftL Q, (seq_outputString_left P Q cfg t h.live).trans h.output⟩
+
+/-- An arrival of {lit}`Q` lifts to an arrival of the composite. -/
+theorem Arrives.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+    (P : MultiTapeTM k Bool S₁) {Q : MultiTapeTM k Bool S₂}
+    {cfg cfg' : Cfg k Bool S₂ input} {t B : ℕ} (h : Arrives Q cfg cfg' t B) :
+    Arrives (seq P Q) (liftR cfg) (liftR cfg') t B where
+  live := fun t' ht' ↦ by
+    rw [seq_configs_right P Q cfg t', liftR_state, ne_eq, Option.map_eq_none_iff]
+    exact h.live t' ht'
+  configs_eq := by rw [seq_configs_right P Q cfg t, h.configs_eq]
+  pos := fun t' ht' i ↦ by
+    rw [seq_configs_right P Q cfg t', liftR_workTapePos]
     exact h.pos t' ht' i
 
 /-- A reach of {lit}`Q` lifts to a reach of the composite. -/
 theorem Reaches.liftR {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     (P : MultiTapeTM k Bool S₁) {Q : MultiTapeTM k Bool S₂}
     {cfg cfg' : Cfg k Bool S₂ input} {t B : ℕ} (h : Reaches Q cfg cfg' t B) :
-    Reaches (seq P Q) (liftR cfg) (liftR cfg') t B where
-  live := fun t' ht' ↦ by
-    rw [seq_configs_right P Q cfg t', liftR_state, ne_eq, Option.map_eq_none_iff]
-    exact h.live t' ht'
-  configs_eq := by rw [seq_configs_right P Q cfg t, h.configs_eq]
-  output := (seq_outputString_right P Q cfg t).trans h.output
-  pos := fun t' ht' i ↦ by
-    rw [seq_configs_right P Q cfg t', liftR_workTapePos]
-    exact h.pos t' ht' i
+    Reaches (seq P Q) (liftR cfg) (liftR cfg') t B :=
+  ⟨h.toArrives.liftR P, (seq_outputString_right P Q cfg t).trans h.output⟩
+
+/-- A run of {lit}`P` followed by an emission of {lit}`Q` from {lit}`P`'s final
+tapes is an emission of the composite. -/
+theorem RunsTo.seqEmits {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+    {P : MultiTapeTM k Bool S₁} {Q : MultiTapeTM k Bool S₂}
+    {cfg cfg₁ : Cfg k Bool S₁ input} {cfg₂ : Cfg k Bool S₂ input} {out : List Bool} {t₁ t₂ B : ℕ}
+    (h₁ : RunsTo P cfg cfg₁ t₁ B)
+    (h₂ : Emits Q { cfg₁ with state := some Q.q₀ } cfg₂ out t₂ B) :
+    Emits (seq P Q) (liftL Q cfg) (liftR cfg₂) out (t₁ + t₂) B where
+  toArrives := (h₁.toArrives.liftL Q).trans
+    (by rw [liftL_halt Q cfg₁ h₁.halted]; exact h₂.toArrives.liftR P)
+  output := by
+    rw [outputString_add_eq_append, seq_outputString_left P Q cfg t₁ h₁.live, h₁.output,
+      List.nil_append, seq_configs_left P Q cfg t₁ h₁.live, h₁.configs_eq,
+      liftL_halt _ _ h₁.halted, seq_outputString_right, h₂.output]
+  halted := by rw [liftR_state, h₂.halted, Option.map_none]
 
 /-- Runs compose: a run of {lit}`P` to {lit}`cfg₁` followed by a run of
 {lit}`Q` from {lit}`cfg₁` restarted in {lit}`Q`'s initial state. -/
@@ -263,10 +294,8 @@ theorem RunsTo.seq {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     {cfg cfg₁ : Cfg k Bool S₁ input} {cfg₂ : Cfg k Bool S₂ input} {t₁ t₂ B : ℕ}
     (h₁ : RunsTo P cfg cfg₁ t₁ B)
     (h₂ : RunsTo Q { cfg₁ with state := some Q.q₀ } cfg₂ t₂ B) :
-    RunsTo (seq P Q) (liftL Q cfg) (liftR cfg₂) (t₁ + t₂) B where
-  toReaches := (h₁.toReaches.liftL Q).trans
-    (by rw [liftL_halt Q cfg₁ h₁.halted]; exact h₂.toReaches.liftR P)
-  halted := by rw [liftR_state, h₂.halted, Option.map_none]
+    RunsTo (seq P Q) (liftL Q cfg) (liftR cfg₂) (t₁ + t₂) B :=
+  (h₁.seqEmits h₂.toEmits).toRunsTo
 
 /-- Contracts compose: the composite transforms by the composite of the
 transformers, provided the first transformer keeps the valuation within the

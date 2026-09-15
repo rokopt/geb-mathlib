@@ -13,15 +13,15 @@ set_option doc.verso true
 /-!
 # Runs and the program contract
 
-A reach: from a configuration a machine arrives at another in a given number
-of steps, halted at none of the earlier ones, emitting nothing, every head
-within the interval from {lit}`-1` to a bound. A run: a reach whose target is
-halted. The contract of a program of the calculus: from any parked
-configuration holding a register valuation, a run to the parked halted
-configuration holding the valuation's image under the program's transformer,
-within a step bound, whenever the valuation and its image are within the
-length bound. The transformer describes every register, so that sequencing
-two programs composes their transformers.
+An arrival: from a configuration a machine arrives at another in a given
+number of steps, halted at none of the earlier ones, every head within the
+interval from {lit}`-1` to a bound. A reach: an arrival emitting nothing. A
+run: a reach whose target is halted. The contract of a program of the
+calculus: from any parked configuration holding a register valuation, a run
+to the parked halted configuration holding the valuation's image under the
+program's transformer, within a step bound, whenever the valuation and its
+image are within the length bound. The transformer describes every register,
+so that sequencing two programs composes their transformers.
 
 The no-earlier-halt clause is what sequencing needs: the composite machine
 hands over to its second component at the first halting step of its first, so
@@ -36,7 +36,8 @@ or mathlib's {name}`Finset.image`.
 
 # Main definitions
 
-* {lit}`Reaches` — a reach between two configurations.
+* {lit}`Arrives` — an arrival between two configurations.
+* {lit}`Reaches` — an arrival emitting nothing.
 * {lit}`RunsTo` — a reach to a halted configuration.
 * {lit}`after` — the parked halted configuration holding a valuation.
 * {lit}`Transforms` — the program contract.
@@ -44,11 +45,11 @@ or mathlib's {name}`Finset.image`.
 # Main statements
 
 * {lit}`step_of_state` — a step from a known state, naming {lit}`tr`.
-* {lit}`Reaches.trans` — reaches compose.
+* {lit}`Arrives.trans`, {lit}`Reaches.trans` — arrivals and reaches compose.
 * {lit}`Reaches.mono`, {lit}`RunsTo.mono` — a larger head bound.
 * {lit}`RunsTo.halt_configs` — after a run the machine stays put.
-* {lit}`RunsTo.spaceUsedByTape_le` — a run's visited cells per tape are at
-  most the bound plus two.
+* {lit}`spaceUsedByTape_le_of_pos`, {lit}`RunsTo.spaceUsedByTape_le` — the
+  visited cells per tape are at most the bound plus two.
 * {lit}`Transforms.mono_time`, {lit}`Transforms.congr` — the contract at a
   larger step bound and at a pointwise equal transformer.
 
@@ -84,19 +85,22 @@ theorem step_of_state {k : ℕ} {Symbol State : Type} {input : List Symbol}
   rfl
 
 /-- From {lit}`cfg`, {lit}`tm` arrives at {lit}`cfg'` at step {lit}`t`, halted
-at no earlier step, emitting nothing, every head within {lit}`[-1, B]`
-throughout. -/
-structure Reaches {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
+at no earlier step, every head within {lit}`[-1, B]` throughout. -/
+structure Arrives {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
     (cfg cfg' : Cfg k Bool State input) (t B : ℕ) : Prop where
   /-- No step before {lit}`t` is halted. -/
   live : ∀ t' < t, (tm.configs cfg t').state ≠ none
   /-- The configuration at step {lit}`t`. -/
   configs_eq : tm.configs cfg t = cfg'
-  /-- Nothing is emitted. -/
-  output : tm.outputString cfg t = []
   /-- Every head stays within {lit}`[-1, B]`. -/
   pos : ∀ t' ≤ t, ∀ i, -1 ≤ (tm.configs cfg t').workTapePos i ∧
     (tm.configs cfg t').workTapePos i ≤ B
+
+/-- An arrival emitting nothing. -/
+structure Reaches {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
+    (cfg cfg' : Cfg k Bool State input) (t B : ℕ) : Prop extends Arrives tm cfg cfg' t B where
+  /-- Nothing is emitted. -/
+  output : tm.outputString cfg t = []
 
 /-- A reach to a halted configuration. -/
 structure RunsTo {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State)
@@ -104,11 +108,11 @@ structure RunsTo {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM 
   /-- The target is halted. -/
   halted : cfg'.state = none
 
-/-- Reaches compose. -/
-theorem Reaches.trans {k : ℕ} {State : Type} {input : List Bool}
+/-- Arrivals compose. -/
+theorem Arrives.trans {k : ℕ} {State : Type} {input : List Bool}
     {tm : MultiTapeTM k Bool State} {cfg cfg₁ cfg₂ : Cfg k Bool State input} {t₁ t₂ B : ℕ}
-    (h₁ : Reaches tm cfg cfg₁ t₁ B) (h₂ : Reaches tm cfg₁ cfg₂ t₂ B) :
-    Reaches tm cfg cfg₂ (t₁ + t₂) B where
+    (h₁ : Arrives tm cfg cfg₁ t₁ B) (h₂ : Arrives tm cfg₁ cfg₂ t₂ B) :
+    Arrives tm cfg cfg₂ (t₁ + t₂) B where
   configs_eq := by rw [configs_add, h₁.configs_eq, h₂.configs_eq]
   live := by
     intro t' ht'
@@ -117,7 +121,6 @@ theorem Reaches.trans {k : ℕ} {State : Type} {input : List Bool}
     · have ht : t' = t₁ + (t' - t₁) := by omega
       rw [ht, configs_add, h₁.configs_eq]
       exact h₂.live (t' - t₁) (by omega)
-  output := by simp [outputString_add_eq_append, h₁.output, h₁.configs_eq, h₂.output]
   pos := by
     intro t' ht' i
     by_cases h : t' < t₁
@@ -125,6 +128,14 @@ theorem Reaches.trans {k : ℕ} {State : Type} {input : List Bool}
     · have ht : t' = t₁ + (t' - t₁) := by omega
       rw [ht, configs_add, h₁.configs_eq]
       exact h₂.pos (t' - t₁) (by omega) i
+
+/-- Reaches compose. -/
+theorem Reaches.trans {k : ℕ} {State : Type} {input : List Bool}
+    {tm : MultiTapeTM k Bool State} {cfg cfg₁ cfg₂ : Cfg k Bool State input} {t₁ t₂ B : ℕ}
+    (h₁ : Reaches tm cfg cfg₁ t₁ B) (h₂ : Reaches tm cfg₁ cfg₂ t₂ B) :
+    Reaches tm cfg cfg₂ (t₁ + t₂) B :=
+  ⟨h₁.toArrives.trans h₂.toArrives, by
+    rw [outputString_add_eq_append, h₁.output, h₁.configs_eq, h₂.output]; rfl⟩
 
 /-- A reach within one bound is a reach within any larger bound. -/
 theorem Reaches.mono {k : ℕ} {State : Type} {input : List Bool}
@@ -149,18 +160,27 @@ theorem RunsTo.halt_configs {k : ℕ} {State : Type} {input : List Bool}
   rw [configs_add, h.configs_eq]
   exact configs_of_halts _ h.halted
 
-/-- Over a run the head of each tape visits at most {lit}`B + 2` cells. -/
-theorem RunsTo.spaceUsedByTape_le {k : ℕ} {State : Type} {input : List Bool}
-    {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {t B : ℕ}
-    (h : RunsTo tm cfg cfg' t B) (i : Fin k) : tm.spaceUsedByTape cfg t i ≤ B + 2 := by
+/-- A tape whose head stays within {lit}`[-1, B]` over {lit}`t` steps visits at
+most {lit}`B + 2` cells. -/
+theorem spaceUsedByTape_le_of_pos {k : ℕ} {State : Type} {input : List Bool}
+    (tm : MultiTapeTM k Bool State) (cfg : Cfg k Bool State input) (t B : ℕ) (i : Fin k)
+    (h : ∀ t' ≤ t, -1 ≤ (tm.configs cfg t').workTapePos i ∧
+      (tm.configs cfg t').workTapePos i ≤ B) :
+    tm.spaceUsedByTape cfg t i ≤ B + 2 := by
   have hsub : tm.visitedByTapeHead cfg t i ⊆ Finset.Icc (-1 : ℤ) B := by
     intro z hz
     obtain ⟨t', ht', rfl⟩ := mem_visitedByTapeHead.mp hz
-    exact Finset.mem_Icc.mpr (h.pos t' (by omega) i)
+    exact Finset.mem_Icc.mpr (h t' (by omega))
   have hcard := Finset.card_le_card hsub
   rw [Int.card_Icc] at hcard
   unfold spaceUsedByTape
   omega
+
+/-- Over a run the head of each tape visits at most {lit}`B + 2` cells. -/
+theorem RunsTo.spaceUsedByTape_le {k : ℕ} {State : Type} {input : List Bool}
+    {tm : MultiTapeTM k Bool State} {cfg cfg' : Cfg k Bool State input} {t B : ℕ}
+    (h : RunsTo tm cfg cfg' t B) (i : Fin k) : tm.spaceUsedByTape cfg t i ≤ B + 2 :=
+  spaceUsedByTape_le_of_pos _ _ _ _ i fun t' ht' ↦ h.pos t' ht' i
 
 /-- The halted configuration with the heads and input head of {lit}`cfg` and
 the tapes holding {lit}`σ`. -/

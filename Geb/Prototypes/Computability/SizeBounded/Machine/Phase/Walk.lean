@@ -248,19 +248,19 @@ theorem copyWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠
       · rw [outputString_succ, ho, hc, hout s]
         rfl
   obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨?_, ?_, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [configs_succ_eq_step', hcn, hhalt]
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' l
     by_cases hlt : t' ≤ w.length
     · rw [(key t' hlt).1]
       exact hbound (t' : ℤ) (t' : ℤ) (by omega) (by omega) (by omega) (by omega) l
     · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact hbound (w.length : ℤ) (w.length : ℤ) (by omega) (by omega) (by omega) (by omega) l
+  · rw [outputString_succ, hon, hcn, hout _]
+    rfl
 
 /-- The configuration of {name}`revWalk` after {lit}`s` steps from a start in
 its initial state with {lit}`i`'s head at cell {lit}`w.length - 1` of a
@@ -458,13 +458,11 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
       · rw [outputString_succ, ho, hc, hout s]
         rfl
   obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨?_, ?_, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [configs_succ_eq_step', hcn, hhalt]
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' l
     by_cases hlt : t' ≤ w.length
     · rw [(key t' hlt).1]
@@ -472,6 +470,8 @@ theorem revWalk_runsTo {k : ℕ} {input : List Bool} (i j : Fin k) (hij : i ≠ 
         (by omega) l
     · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact hbound 0 (w.length : ℤ) (by omega) (by omega) (by omega) (by omega) l
+  · rw [outputString_succ, hon, hcn, hout _]
+    rfl
 
 end
 

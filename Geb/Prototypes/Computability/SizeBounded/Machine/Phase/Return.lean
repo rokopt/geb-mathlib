@@ -115,17 +115,10 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
       · subst hj
         rw [Function.update_self, ite_eq_left rfl, SignType.coe_neg_one, ← sub_eq_add_neg]
       · rw [Function.update_of_ne hj, ite_eq_right hj, SignType.coe_zero, add_zero]
-  refine ⟨⟨?_, hstep, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, hstep, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [show t' = 0 by omega, configs_zero, hq]
     exact Option.some_ne_none _
-  · rw [outputString_succ, configs_zero]
-    have hout : (moveLeft i).outputSymbol cfg = none := by
-      unfold outputSymbol
-      rw [hq]
-      rfl
-    rw [hout]
-    rfl
   · intro t' ht' j
     rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
     · rw [h0, configs_zero]
@@ -133,6 +126,13 @@ theorem moveLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k B
     · rw [h1, hstep]
       have hB := (hpos i).2
       exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
+  · rw [outputString_succ, configs_zero]
+    have hout : (moveLeft i).outputSymbol cfg = none := by
+      unfold outputSymbol
+      rw [hq]
+      rfl
+    rw [hout]
+    rfl
 
 /-- The configuration of {name}`retLeft` after {lit}`s` steps from a start in
 its initial state whose head on tape {lit}`i` is at cell {lit}`p`. -/
@@ -231,19 +231,19 @@ theorem retLeft_runsTo {k : ℕ} {input : List Bool} (i : Fin k) (cfg : Cfg k Bo
         rfl
   obtain ⟨hcn, hon⟩ := key (p + 1).toNat (le_refl _)
   have ht : (p + 2).toNat = (p + 1).toNat + 1 := by omega
-  refine ⟨⟨?_, ?_, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [ht, configs_succ_eq_step', hcn, hhalt]
-  · rw [ht, outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' j
     by_cases hlt : t' ≤ (p + 1).toNat
     · rw [(key t' hlt).1]
       exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
     · rw [show t' = (p + 1).toNat + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
+  · rw [ht, outputString_succ, hon, hcn, hout _]
+    rfl
 
 /-- {name}`returnTape` from cell {lit}`p` with {lit}`0 ≤ p ≤ w.length` runs
 {lit}`p + 2` steps and parks the head. -/

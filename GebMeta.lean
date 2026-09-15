@@ -174,6 +174,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.BitTree.EliasBinary.Bound,
    `GebTests.Prototypes.Computability.TreeScanner.Machine,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Program,
+   `Geb.Prototypes.Computability.SizeBounded.Machine.Emit,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Seq,
    `Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Return,

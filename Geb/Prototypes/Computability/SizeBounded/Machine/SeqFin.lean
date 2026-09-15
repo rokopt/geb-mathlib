@@ -75,11 +75,18 @@ theorem idle_transforms {k : ℕ} (B : ℕ) : Transforms (idle (k := k)) (fun σ
     · change (fun i ↦ cfg.workTapePos i + (0 : ℤ)) = (after cfg σ).workTapePos
       funext i
       rw [add_zero, after_workTapePos]
-  refine ⟨1, le_refl 1, ⟨⟨?_, hstep, ?_, ?_⟩, ?_⟩⟩
+  refine ⟨1, le_refl 1, ⟨⟨⟨?_, hstep, ?_⟩, ?_⟩, ?_⟩⟩
   · intro t' ht'
     have ht0 : t' = 0 := by omega
     rw [ht0, configs_zero, hq]
     exact Option.some_ne_none _
+  · intro t' ht' i
+    have : t' = 0 ∨ t' = 1 := by omega
+    rcases this with h0 | h1
+    · rw [h0, configs_zero, hpark i]
+      constructor <;> omega
+    · rw [h1, hstep, after_workTapePos, hpark i]
+      constructor <;> omega
   · have e1 : idle.outputString cfg 1 = idle.outputString cfg 0 ++
         (idle.outputSymbol (idle.configs cfg 0)).toList :=
       outputString_succ idle cfg 0
@@ -90,13 +97,6 @@ theorem idle_transforms {k : ℕ} (B : ℕ) : Transforms (idle (k := k)) (fun σ
       rfl
     rw [hout]
     rfl
-  · intro t' ht' i
-    have : t' = 0 ∨ t' = 1 := by omega
-    rcases this with h0 | h1
-    · rw [h0, configs_zero, hpark i]
-      constructor <;> omega
-    · rw [h1, hstep, after_workTapePos, hpark i]
-      constructor <;> omega
   · rfl
 
 /-- Sequencing a family of machines indexed by {lit}`Fin m`, in index order,

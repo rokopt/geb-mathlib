@@ -356,13 +356,11 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
       · rw [outputString_succ, ho, hc, hout s]
         rfl
   obtain ⟨hcn, hon⟩ := key u.length (le_refl _)
-  refine ⟨⟨?_, ?_, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [configs_succ_eq_step', hcn, hhalt]
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' l
     by_cases hlt : t' ≤ u.length
     · rw [(key t' hlt).1]
@@ -371,6 +369,8 @@ theorem sbsWalk_runsTo {k : ℕ} {input : List Bool} (b : Bool) (x y j : Fin k)
     · rw [show t' = u.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact hbound (u.length : ℤ) ((min u.length v.length : ℕ) : ℤ) ((sbsSem b u v).length : ℤ)
         (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) l
+  · rw [outputString_succ, hon, hcn, hout _]
+    rfl
 
 end
 

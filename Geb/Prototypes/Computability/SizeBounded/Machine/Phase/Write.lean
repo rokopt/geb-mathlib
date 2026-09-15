@@ -114,10 +114,16 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
       · rw [ite_eq_right hj]
         change cfg.workTapePos j + ((0 : SignType) : ℤ) = cfg.workTapePos j
         rw [SignType.coe_zero, add_zero]
-  refine ⟨⟨?_, hstep, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, hstep, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [show t' = 0 by omega, configs_zero, hq]
     exact Option.some_ne_none _
+  · intro t' ht' j
+    rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
+    · rw [h0, configs_zero]
+      exact hpos j
+    · rw [h1, hstep]
+      exact hpos j
   · rw [outputString_succ, configs_zero]
     have hout : (writeBit b i).outputSymbol cfg = none := by
       unfold outputSymbol
@@ -125,12 +131,6 @@ theorem writeBit_runsTo {k : ℕ} {input : List Bool} (b : Bool) (i : Fin k)
       rfl
     rw [hout]
     rfl
-  · intro t' ht' j
-    rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
-    · rw [h0, configs_zero]
-      exact hpos j
-    · rw [h1, hstep]
-      exact hpos j
 
 /-- The configuration of {name}`constWalk` after {lit}`s` steps from an empty
 parked register. -/
@@ -274,19 +274,19 @@ theorem constWalk_runsTo {k : ℕ} {input : List Bool} (w : List Bool) (i : Fin 
       · rw [outputString_succ, ho, hc, hout s]
         rfl
   obtain ⟨hcn, hon⟩ := key w.length (le_refl _)
-  refine ⟨⟨?_, ?_, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, ?_, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [configs_succ_eq_step', hcn, hhalt]
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' j
     by_cases hlt : t' ≤ w.length
     · rw [(key t' hlt).1]
       exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
     · rw [show t' = w.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact update_workTapePos_bounds i hpos _ (by omega) (by omega) j
+  · rw [outputString_succ, hon, hcn, hout _]
+    rfl
 
 end
 

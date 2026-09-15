@@ -168,19 +168,19 @@ theorem caseLoop_seek {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         rfl
   obtain ⟨hcn, hon⟩ := key (r.length + 1) (le_refl _)
   have ht : r.length + 2 = (r.length + 1) + 1 := by omega
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨⟨?_, ?_, ?_⟩, ?_⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [ht, configs_succ_eq_step', hcn, hhalt]
-  · rw [ht, outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' j
     by_cases hlt : t' ≤ r.length + 1
     · rw [(key t' hlt).1]
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
     · rw [show t' = (r.length + 1) + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
+  · rw [ht, outputString_succ, hon, hcn, hout _]
+    rfl
 
 /-- The back phase: from the back state with {lit}`R` holding {lit}`c :: r`
 and its head at cell {lit}`r.length`, one step blanks that cell, so that
@@ -253,13 +253,11 @@ theorem caseLoop_back {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     rw [hq]
     dsimp only
     rw [htr]
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨⟨?_, ?_, ?_⟩, ?_⟩
   · intro t' ht'
     rw [show t' = 0 by omega, configs_zero, hq]
     exact Option.some_ne_none _
   · rw [configs_succ_eq_step' (t := 0), configs_zero, hstep]
-  · rw [outputString_succ, configs_zero, hout]
-    rfl
   · intro t' ht' j
     rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
     · rw [h0, configs_zero]
@@ -267,6 +265,8 @@ theorem caseLoop_back {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     · rw [h1, configs_succ_eq_step' (t := 0), configs_zero, hstep]
       have hB := (hpos R).2
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
+  · rw [outputString_succ, configs_zero, hout]
+    rfl
 
 /-- The return phase: from the return state for {lit}`c` with {lit}`R`
 holding {lit}`r` and its head at cell {lit}`r.length - 1`,
@@ -391,19 +391,19 @@ theorem caseLoop_ret {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
         rfl
   obtain ⟨hcn, hon⟩ := key r.length (le_refl _)
   have hpB : (r.length : ℤ) - 1 ≤ B := hp ▸ (hpos R).2
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨⟨?_, ?_, ?_⟩, ?_⟩
   · intro t' ht'
     rw [(key t' (by omega)).1]
     exact Option.some_ne_none _
   · rw [configs_succ_eq_step', hcn, hhalt]
-  · rw [outputString_succ, hon, hcn, hout _]
-    rfl
   · intro t' ht' j
     by_cases hlt : t' ≤ r.length
     · rw [(key t' hlt).1]
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
     · rw [show t' = r.length + 1 by omega, configs_succ_eq_step', hcn, hhalt]
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
+  · rw [outputString_succ, hon, hcn, hout _]
+    rfl
 
 /-- The exit: from the seek state with {lit}`R` empty and parked, two steps
 halt with every head where it was. -/
@@ -502,16 +502,13 @@ theorem caseLoop_exit {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
     rw [configs_succ_eq_step' (t := 0), configs_zero, hstep₁]
   have hc₂ : (caseLoop R bodyF bodyT).configs cfg 2 = { cfg with state := none } := by
     rw [show (2 : ℕ) = 1 + 1 by omega, configs_succ_eq_step', hc₁, hstep₂]
-  refine ⟨⟨?_, hc₂, ?_, ?_⟩, rfl⟩
+  refine ⟨⟨⟨?_, hc₂, ?_⟩, ?_⟩, rfl⟩
   · intro t' ht'
     rcases show t' = 0 ∨ t' = 1 by omega with h0 | h1
     · rw [h0, configs_zero, hq]
       exact Option.some_ne_none _
     · rw [h1, hc₁]
       exact Option.some_ne_none _
-  · rw [show (2 : ℕ) = 1 + 1 by omega, outputString_succ, outputString_succ, configs_zero,
-      hout₀, hc₁, hout₁]
-    rfl
   · intro t' ht' j
     rcases show t' = 0 ∨ t' = 1 ∨ t' = 2 by omega with h0 | h1 | h2
     · rw [h0, configs_zero]
@@ -520,6 +517,9 @@ theorem caseLoop_exit {k : ℕ} {SF ST : Type} {input : List Bool} (R : Fin k)
       exact update_workTapePos_bounds R hpos _ (by omega) (by omega) j
     · rw [h2, hc₂]
       exact hpos j
+  · rw [show (2 : ℕ) = 1 + 1 by omega, outputString_succ, outputString_succ, configs_zero,
+      hout₀, hc₁, hout₁]
+    rfl
 
 end
 

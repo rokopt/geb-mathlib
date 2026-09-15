@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Register
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Program
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Seq
 public import Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase
