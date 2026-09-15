@@ -14,6 +14,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Loop
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Compile
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Bound
 
 set_option doc.verso true
 
