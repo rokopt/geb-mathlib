@@ -11,6 +11,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Walk
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Sbs
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Write
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Output
 
 set_option doc.verso true
 
