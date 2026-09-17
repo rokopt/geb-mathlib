@@ -9,6 +9,7 @@ import GebTests.Prototypes.Computability.SizeBounded.Combinators
 import GebTests.Prototypes.Computability.SizeBounded.BitTree
 import GebTests.Prototypes.Computability.SizeBounded.Cost
 import GebTests.Prototypes.Computability.SizeBounded.Machine
+import GebTests.Prototypes.Computability.SizeBounded.Logspace
 
 /-!
 # The non-size-increasing function algebra — tests index
