@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.EndSegment
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Rep
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -16,8 +17,10 @@ set_option doc.verso true in
 
 Index for the modules on {cite}`Kristiansen2005`'s algebra
 {lit}`[I, C_W; comp, simn]` as the successor-free subalgebra of
-{name}`Geb.SizeBounded.S`: its expressions, the end-segment lemma, and the
-interpretation on the logarithmic-space representation of values.
+{name}`Geb.SizeBounded.S`: its expressions, the end-segment lemma, the
+interpretation on the logarithmic-space representation of values, and the
+machine calculus that interpretation compiles into, with the polynomial time
+and logarithmic space bounds of every unary expression's machine.
 -/
 
 set_option doc.verso true

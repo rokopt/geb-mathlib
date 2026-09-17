@@ -36,8 +36,9 @@ composite, agreeing with the composite's steps and output; consequently an
   emits what the mirrored component emits.
 * {lit}`Arrives.liftL`, {lit}`Arrives.liftR` — an arrival of a component
   lifts to one of the composite.
-* {lit}`RunsTo.seqEmits` — a run of {lit}`P` followed by an emission of
-  {lit}`Q` is an emission of the composite.
+* {lit}`RunsTo.seqEmits`, {lit}`Emits.seqEmits` — a run or an emission of
+  {lit}`P` followed by an emission of {lit}`Q` is an emission of the
+  composite.
 * {lit}`RunsTo.seq` — runs of the components compose into a run of the
   composite.
 * {lit}`Transforms.seq` — the composite satisfies the contract of the
@@ -271,6 +272,22 @@ theorem RunsTo.seqEmits {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
     rw [outputString_add_eq_append, seq_outputString_left P Q cfg t₁ h₁.live, h₁.output,
       List.nil_append, seq_runFrom_left P Q cfg t₁ h₁.live, h₁.runFrom_eq,
       liftL_halt _ _ h₁.halted, seq_outputString_right, h₂.output]
+  halted := by rw [liftR_state, h₂.halted, Option.map_none]
+
+/-- Emissions compose: an emission of {lit}`P` followed by an emission of
+{lit}`Q` from {lit}`P`'s final tapes emits the concatenation. -/
+theorem Emits.seqEmits {k : ℕ} {S₁ S₂ : Type} {input : List Bool}
+    {P : MultiTapeTM k Bool S₁} {Q : MultiTapeTM k Bool S₂}
+    {cfg cfg₁ : Cfg k Bool S₁ input} {cfg₂ : Cfg k Bool S₂ input} {out₁ out₂ : List Bool}
+    {t₁ t₂ B : ℕ} (h₁ : Emits P cfg cfg₁ out₁ t₁ B)
+    (h₂ : Emits Q { cfg₁ with state := some Q.q₀ } cfg₂ out₂ t₂ B) :
+    Emits (seq P Q) (liftL Q cfg) (liftR cfg₂) (out₁ ++ out₂) (t₁ + t₂) B where
+  toArrives := (h₁.toArrives.liftL Q).trans
+    (by rw [liftL_halt Q cfg₁ h₁.halted]; exact h₂.toArrives.liftR P)
+  output := by
+    rw [outputString_add_eq_append, seq_outputString_left P Q cfg t₁ h₁.live, h₁.output,
+      seq_runFrom_left P Q cfg t₁ h₁.live, h₁.runFrom_eq, liftL_halt _ _ h₁.halted,
+      seq_outputString_right, h₂.output]
   halted := by rw [liftR_state, h₂.halted, Option.map_none]
 
 /-- Runs compose: a run of {lit}`P` to {lit}`cfg₁` followed by a run of

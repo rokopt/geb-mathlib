@@ -221,15 +221,14 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Correct,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Family,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.LoopEval,
-   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.SrnInit,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Comp,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Body,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Srn,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Theorem,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Wrapper,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main,
-   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Exec,
-   `GebTests.Prototypes.Computability.SizeBounded.Machine].foldl (·.insert ·)
+   `GebTests.Prototypes.Computability.SizeBounded.Machine,
+   `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the

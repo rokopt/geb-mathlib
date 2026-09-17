@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Prototypes.Computability.SizeBounded.Logspace -- shake: keep; #guard needs it
+public import Geb.Prototypes.Computability.SizeBounded.Logspace -- shake: keep; #guard needs it
 public meta import Geb.Prototypes.Computability.SizeBounded.Logspace -- shake: keep; #guard needs it
 
 /-!
@@ -33,8 +33,11 @@ set_option linter.privateModule false
 open Geb.SizeBounded Geb.SizeBounded.Logspace
 
 /-- The tail as a successor-free expression, named so that this module references a
-constant of the module under test. -/
-def tailL : LOf 1 := srnL (fun _ ↦ constL 0 []) (fun _ _ ↦ projL 2 0) 0
+constant of the module under test. It is `opaque` so that the compiler's type of
+its machine, in the machine test module, is the one other modules would infer: a
+`def` would be unfolded into the machine's state type locally and erased
+elsewhere, which the compiler rejects. -/
+public opaque tailL : LOf 1 := srnL (fun _ ↦ constL 0 []) (fun _ _ ↦ projL 2 0) 0
 
 /-- The four-way conditional as a successor-free expression. -/
 def condL : LOf 4 :=

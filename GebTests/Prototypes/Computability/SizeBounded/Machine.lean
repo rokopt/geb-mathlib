@@ -34,15 +34,6 @@ open Geb.SizeBounded Geb.SizeBounded.Machine Turing MultiTapeTM
 the module under test. -/
 def bitTreeMachine := machine isBitTree
 
-/-- Step a machine until it halts, collecting its output in reverse; `none`
-when the fuel runs out first. -/
-def stepUntilHalt {k : ℕ} {State : Type} {input : List Bool} (tm : MultiTapeTM k Bool State) :
-    ℕ → ExecCfg k State input → List Bool → Option (List Bool) :=
-  Nat.rec (fun _ _ ↦ none) fun _ ih c acc ↦
-    match c.state with
-    | none => some acc.reverse
-    | some _ => ih (execStep tm c) ((execOutputSymbol tm c).toList.reverse ++ acc)
-
 /-- The machine's output on a word, run to its halt within its step bound. -/
 def run (w : List Bool) : Option (List Bool) :=
   stepUntilHalt bitTreeMachine (time isBitTree w.length + 1) (ExecCfg.init bitTreeMachine w) []

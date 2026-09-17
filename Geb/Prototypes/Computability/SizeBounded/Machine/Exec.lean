@@ -39,6 +39,7 @@ through {name}`Turing.Cfg.inputSymbol`.
 * {lit}`ExecCfg.init` — the initial executable configuration.
 * {lit}`writeCell` — a tape after one action at a cell.
 * {lit}`execStep`, {lit}`execOutputSymbol` — one step and the symbol it emits.
+* {lit}`stepUntilHalt` — the run to a halt within a fuel, with its output.
 
 # Main statements
 
@@ -115,6 +116,16 @@ structure ExecCfg (k : ℕ) (State : Type) (input : List Bool) where
   match c.state with
   | none => none
   | some q => (tm.tr q c.toCfg.inputSymbol c.toCfg.workTapeSymbols).output
+
+/-- Step a machine until it halts, collecting its output in reverse; {lit}`none`
+when the fuel runs out first. -/
+@[expose] def stepUntilHalt {k : ℕ} {State : Type} {input : List Bool}
+    (tm : MultiTapeTM k Bool State) :
+    ℕ → ExecCfg k State input → List Bool → Option (List Bool) :=
+  Nat.rec (fun _ _ ↦ none) fun _ ih c acc ↦
+    match c.state with
+    | none => some acc.reverse
+    | some _ => ih (execStep tm c) ((execOutputSymbol tm c).toList.reverse ++ acc)
 
 /-- A cell of a tape after a writing action: the tape's cell map, updated. -/
 theorem getElem?_writeCell (tape : Std.HashMap ℤ Bool) (y z : ℤ) (s : Option Bool) :

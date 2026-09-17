@@ -6,7 +6,6 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
-public import Geb.Prototypes.Computability.SizeBounded.Machine.Phase.Input
 
 set_option doc.verso true in
 /-!
