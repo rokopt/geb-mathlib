@@ -204,7 +204,31 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Body,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Srn,
    `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Theorem,
-   `GebTests.Prototypes.Computability.SizeBounded.Machine].foldl (·.insert ·)
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Contract,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.While,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Branch,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Inc,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.InputMove,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.ReadBit,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.EmitRight,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Pop,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Seek,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.ReadInput,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Count,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.EmitSuffix,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Basic,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Correct,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Family,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.LoopEval,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Comp,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Body,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Srn,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Theorem,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Wrapper,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main,
+   `GebTests.Prototypes.Computability.SizeBounded.Machine,
+   `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Permitted axioms for a declaration in module `mod`, given the

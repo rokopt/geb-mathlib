@@ -15,6 +15,7 @@
     - [5. Composition and identity of polynomial functors](#5-composition-and-identity-of-polynomial-functors)
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [The non-size-increasing algebra as the resource discipline](#the-non-size-increasing-algebra-as-the-resource-discipline)
+  - [Kristiansen's logspace algebra](#kristiansens-logspace-algebra)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [`FinSetSkel` under `namespace CategoryTheory`](#finsetskel-under-namespace-categorytheory)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
@@ -338,6 +339,32 @@ formalized. Follow-ups:
   the concatenation of the recursion variable with a constant, through
   [Mazzanti2016] Theorem 5.3's encoding of simultaneous recursion into a
   single one.
+
+### Kristiansen's logspace algebra
+
+`Geb/Prototypes/Computability/SizeBounded/Logspace/` transcribes
+[Kristiansen2005]'s algebra `[I, C_W; comp, simn]` as the successor-free
+subalgebra `Geb.SizeBounded.Logspace.LOf` of the size-bounded algebra, and
+`Geb.SizeBounded.Logspace.Machine.computableInTimeAndSpace_sem` proves the
+soundness half of the paper's Theorem 4.1: every unary expression's meaning
+is computable in polynomial time and space linear in the input's binary
+size, by a machine compiled from the expression on the representation of a
+value as a bounded word before an end segment of the input. Follow-ups:
+
+- Completeness, the paper's Lemmas 4.2 and 4.4: every logarithmic-space
+  function is defined by an expression of the subalgebra, through the
+  language CLIP of the paper's Section 3 and its simulation of a machine's
+  configurations by end segment lengths.
+- The tape bound `Geb.SizeBounded.Logspace.Machine.bound` admits the
+  expression's constant on every tape. A bound that admits it only on word
+  tapes, the counters at the input's binary size and the flags at one
+  cell, would state the space bound as the number of registers times the
+  binary size plus a constant, the form in which a logarithmic space bound
+  reads off the register count.
+- The subalgebra's expressions of more than one argument are compiled but
+  the machine reading is stated for one argument, as Cslib's
+  `ComputableInTimeAndSpaceOfLength` is; the paper's decision problems are
+  unary.
 
 ### Upstream placement of categorical wrappers
 

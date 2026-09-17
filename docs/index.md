@@ -2776,3 +2776,67 @@ checklist and in CI.
   `Geb.Prototypes.Computability.SizeBounded.Machine.Program`, Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic` and
   `Std.Data.HashMap.Lemmas`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace.lean` — the algebra
+  `[I, C_W; comp, simn]` of [Kristiansen2005], whose functions are the
+  logarithmic-space ones, as the successor-free subalgebra
+  `Geb.SizeBounded.Logspace.LOf` of `Geb.SizeBounded.S`, membership being the
+  fold `Geb.SizeBounded.Logspace.sbsFree` (`Logspace/Basic.lean`); the
+  paper's Lemma 4.5, `Geb.SizeBounded.Logspace.length_le_or_suffix`, that a
+  value longer than the expression's constant is an end segment of an
+  argument (`Logspace/EndSegment.lean`); and the representation
+  `Geb.SizeBounded.Logspace.Rep` of a value as a word before an end segment
+  of the input named by its length, with the interpretation
+  `Geb.SizeBounded.Logspace.evalRep` of every expression on
+  representations, which `Geb.SizeBounded.Logspace.den_repSem` identifies
+  with the meaning on words, `validAt_repSem` keeps within the input and
+  `wordBounded_repSem` keeps within the constant (`Logspace/Rep.lean`). The
+  three modules are `Classical.choice`-free. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Basic` and
+  `Geb.Prototypes.Computability.SizeBounded.Cost`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace/Machine.lean` — the
+  calculus the subalgebra compiles into, over the register machines of
+  `Geb.Prototypes.Computability.SizeBounded.Machine`: a logical register is
+  a word tape and a counter tape, the counter holding an end segment length
+  in binary, `Geb.SizeBounded.Logspace.Machine.counterWord`
+  (`Machine/Counter.lean`); `Geb.SizeBounded.Logspace.Machine.TransformsIn`
+  is the contract of a program whose transformer reads the input, with the
+  input head parked at the blank before the input, and its sequencing
+  combinators (`Machine/Contract.lean`);
+  `Geb.SizeBounded.Logspace.Machine.whileNonblank` loops a body while a
+  probed cell reads a symbol, and `TransformsIn.whileReg` is its contract by
+  the iterate of the body's transformer (`Machine/While.lean`);
+  `Geb.SizeBounded.Logspace.Machine.caseProbe` branches on a probed cell
+  (`Machine/Branch.lean`); the phases increment and decrement a counter in
+  place, move the input head, read one input bit and emit the input from
+  the head (`Machine/Phase.lean`); the primitives pop and push a bit, seek
+  the input head to a counter's cell, read the bit there, count the input's
+  length and emit the end segment a counter names
+  (`Machine/Primitives.lean`); the compilation
+  `Geb.SizeBounded.Logspace.Machine.compile` folds the signature into a
+  program in the shape of `Geb.SizeBounded.Logspace.evalRep`, a recursion
+  node running its bases and then two loops, the first over the end segment
+  lengths reading the input bit at each and the second over the word's
+  bits, and `Geb.SizeBounded.Logspace.Machine.LOf.correct` proves every
+  expression's compilation meets the contract
+  `Geb.SizeBounded.Logspace.Machine.Correct`, with the tape need and the
+  step bound read off the syntax and the step bound polynomial in the
+  input's length at a fixed word bound (`Machine/Compile.lean`);
+  `Geb.SizeBounded.Logspace.Machine.machine` sequences the count of the
+  input's length, the compiled program of a unary expression, the writer of
+  the output register's word and the emitter of its end segment, and
+  `machine_emits` composes their runs (`Machine/Wrapper.lean`); and
+  `Geb.SizeBounded.Logspace.Machine.computableInTimeAndSpace_sem` proves the
+  meaning of every unary expression of the subalgebra
+  `Turing.MultiTapeTM.ComputableInTimeAndSpaceOfLength` with a polynomial
+  time bound and a space bound linear in the input's binary size: the
+  soundness half of [Kristiansen2005] Theorem 4.1 (`Machine/Main.lean`).
+  `Counter.lean` and `Compile/Bound.lean` are `Classical.choice`-free; every
+  other module of the directory is listed in
+  `GebMeta.classicalAllowedModules`, since its statements mention
+  `Turing.MultiTapeTM.runFrom` and `Turing.MultiTapeTM.outputString`, each
+  depending on `Classical.choice` through Cslib's
+  `Turing.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Rep`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic`,
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper` and
+  `Geb.Prototypes.Computability.SizeBounded.Machine.Exec`.
