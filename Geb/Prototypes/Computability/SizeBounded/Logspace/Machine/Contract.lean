@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 
 set_option doc.verso true in
 /-!
@@ -34,15 +35,21 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main definitions
 
+* {lit}`StateOf` — the state type of a machine.
 * {lit}`TransformsIn` — the contract.
 * {lit}`preFin` — the precondition of a sequenced family.
 
 # Main statements
 
-* {lit}`Transforms.toIn` — a contract of the input-independent calculus lifts.
+* {lit}`Transforms.toIn`, {lit}`Transforms.toIn_of` — a contract of the
+  input-independent calculus lifts.
 * {lit}`TransformsIn.mono_pre`, {lit}`TransformsIn.mono_time`,
   {lit}`TransformsIn.congr` — the contract at a stronger precondition, a
   larger step bound, and a transformer equal where the precondition holds.
+* {lit}`RunsTo.congr_target`, {lit}`Emits.congr_target` — a run or an emission
+  to an equal configuration.
+* {lit}`RunsTo.seqStart`, {lit}`RunsTo.seqStartEmits` — runs, and a run then
+  an emission, chain from a configuration in the composite's initial state.
 * {lit}`TransformsIn.seq`, {lit}`TransformsIn.idle`, {lit}`TransformsIn.seqFin`
   — sequencing two programs, the idle program, and a family.
 
@@ -59,6 +66,10 @@ open Turing MultiTapeTM
 open Geb.SizeBounded.Machine
 
 public section
+
+/-- The state type of a machine, for naming the configurations of a machine
+built by the combinators without spelling its state type out. -/
+abbrev StateOf {k : ℕ} {S : Type} (_ : MultiTapeTM k Bool S) : Type := S
 
 /-- The contract: from a parked configuration in the initial state, the input
 head at cell {lit}`0`, holding a valuation {lit}`σ` within {lit}`B` at the
@@ -82,6 +93,17 @@ theorem _root_.Geb.SizeBounded.Machine.Transforms.toIn {k : ℕ} {State : Type}
     TransformsIn tm (fun input σ ↦ Bounded (F σ) (B input.length)) (fun _ ↦ F) T B := by
   intro input cfg σ hq hpark _ hσ hpre hB
   exact ⟨hpre, h input.length cfg σ hq hpark hσ hB hpre⟩
+
+/-- A contract of the input-independent calculus lifts to a contract at any
+precondition under which the transformed valuation stays within the bound. -/
+theorem _root_.Geb.SizeBounded.Machine.Transforms.toIn_of {k : ℕ} {State : Type}
+    {tm : MultiTapeTM k Bool State} {F : (Fin k → List Bool) → Fin k → List Bool} {T B : ℕ → ℕ}
+    (h : ∀ n, Transforms tm F (T n) (B n)) (Pre : List Bool → (Fin k → List Bool) → Prop)
+    (hpre : ∀ input σ, Bounded σ (B input.length) → Pre input σ →
+      Bounded (F σ) (B input.length)) :
+    TransformsIn tm Pre (fun _ ↦ F) T B :=
+  fun input cfg σ hq hpark _ hσ hpre' hB ↦
+    ⟨hpre input σ hB hpre', h input.length cfg σ hq hpark hσ hB (hpre input σ hB hpre')⟩
 
 /-- The contract at a stronger precondition. -/
 theorem TransformsIn.mono_pre {k : ℕ} {State : Type} {tm : MultiTapeTM k Bool State}
@@ -136,6 +158,63 @@ theorem TransformsIn.seq {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S�
       liftR (after { after cfg₀ (F input σ) with state := some Q.q₀ } (G input (F input σ)))
     from by apply Cfg.ext <;> rfl]
   exact r₁.seq r₂
+
+/-- A run to a configuration is a run to any equal configuration. -/
+theorem _root_.Geb.SizeBounded.Machine.RunsTo.congr_target {k : ℕ} {State : Type}
+    {input : List Bool} {tm : MultiTapeTM k Bool State} {cfg cfg₁ cfg₂ : Cfg k Bool State input}
+    {t B : ℕ} (h : RunsTo tm cfg cfg₁ t B) (e : cfg₁ = cfg₂) : RunsTo tm cfg cfg₂ t B := e ▸ h
+
+/-- An emission to a configuration is an emission to any equal configuration. -/
+theorem _root_.Geb.SizeBounded.Machine.Emits.congr_target {k : ℕ} {State : Type}
+    {input : List Bool} {tm : MultiTapeTM k Bool State} {cfg cfg₁ cfg₂ : Cfg k Bool State input}
+    {out : List Bool} {t B : ℕ} (h : Emits tm cfg cfg₁ out t B) (e : cfg₁ = cfg₂) :
+    Emits tm cfg cfg₂ out t B := e ▸ h
+
+/-- Runs chain from a configuration in the composite's initial state: the first
+component's run from that configuration restarted in its own initial state,
+then the second's from the first's target restarted in its own. The target is
+the second's target, halted. -/
+theorem _root_.Geb.SizeBounded.Machine.RunsTo.seqStart {k : ℕ} {S₁ S₂ : Type}
+    {input : List Bool} {P : MultiTapeTM k Bool S₁} {Q : MultiTapeTM k Bool S₂}
+    {cfg : Cfg k Bool (S₁ ⊕ S₂) input} (hq : cfg.state = some (seq P Q).q₀)
+    {cfg₁ : Cfg k Bool S₁ input} {cfg₂ : Cfg k Bool S₂ input} {t₁ t₂ B : ℕ}
+    (h₁ : RunsTo P { cfg with state := some P.q₀ } cfg₁ t₁ B)
+    (h₂ : RunsTo Q { cfg₁ with state := some Q.q₀ } cfg₂ t₂ B) :
+    RunsTo (seq P Q) cfg { cfg₂ with state := none } (t₁ + t₂) B := by
+  rw [liftL_start P Q cfg hq]
+  have h := h₁.seq h₂
+  rw [show liftR (S₁ := S₁) cfg₂ = { cfg₂ with state := none } from by
+    apply Cfg.ext
+    · change cfg₂.state.map _ = none
+      rw [h₂.halted]
+      rfl
+    · rfl
+    · rfl
+    · rfl
+    · rfl] at h
+  exact h
+
+/-- A run followed by an emission chain from a configuration in the composite's
+initial state, as {name}`Geb.SizeBounded.Machine.RunsTo.seqStart` does. -/
+theorem _root_.Geb.SizeBounded.Machine.RunsTo.seqStartEmits {k : ℕ} {S₁ S₂ : Type}
+    {input : List Bool} {P : MultiTapeTM k Bool S₁} {Q : MultiTapeTM k Bool S₂}
+    {cfg : Cfg k Bool (S₁ ⊕ S₂) input} (hq : cfg.state = some (seq P Q).q₀)
+    {cfg₁ : Cfg k Bool S₁ input} {cfg₂ : Cfg k Bool S₂ input} {out : List Bool} {t₁ t₂ B : ℕ}
+    (h₁ : RunsTo P { cfg with state := some P.q₀ } cfg₁ t₁ B)
+    (h₂ : Emits Q { cfg₁ with state := some Q.q₀ } cfg₂ out t₂ B) :
+    Emits (seq P Q) cfg { cfg₂ with state := none } out (t₁ + t₂) B := by
+  rw [liftL_start P Q cfg hq]
+  have h := h₁.seqEmits h₂
+  rw [show liftR (S₁ := S₁) cfg₂ = { cfg₂ with state := none } from by
+    apply Cfg.ext
+    · change cfg₂.state.map _ = none
+      rw [h₂.halted]
+      rfl
+    · rfl
+    · rfl
+    · rfl
+    · rfl] at h
+  exact h
 
 /-- The idle program transforms by the identity in one step. -/
 theorem TransformsIn.idle {k : ℕ} (B : ℕ → ℕ) :

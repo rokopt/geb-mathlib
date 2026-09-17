@@ -46,8 +46,8 @@ many cells.
 * {lit}`value_ofNat`, {lit}`canon_ofNat`, {lit}`decL_ofNat_succ`,
   {lit}`ofNat_eq_nil_iff` — the canonical list of a number denotes it, is
   canonical, decrements to the predecessor's, and is empty exactly at zero.
-* {lit}`length_ofNat_le_size` — the canonical list of a number is no longer
-  than the number's binary size.
+* {lit}`length_ofNat_eq_size`, {lit}`length_counterWord` — the canonical list
+  of a number, and its counter word, are as long as the number's binary size.
 * {lit}`tapeOf_counterWord` — the cell of a counter register holds the
   corresponding digit.
 
@@ -251,11 +251,32 @@ theorem length_le_size_value (d : List Bool) (h : canon d = true) :
     rw [List.length_cons]
     exact this
 
+/-- A digit list denotes less than the power of two of its length. -/
+theorem value_lt_two_pow : ∀ d : List Bool, value d < 2 ^ d.length :=
+  List.rec (Nat.lt_succ_self 0) fun b d ih ↦ by
+    rw [value_cons, List.length_cons, Nat.pow_succ]
+    cases b
+    · change 0 + 2 * value d < 2 ^ d.length * 2
+      omega
+    · change 1 + 2 * value d < 2 ^ d.length * 2
+      omega
+
+/-- The binary size of the number a list denotes is at most the list's
+length. -/
+theorem size_value_le_length (d : List Bool) : Nat.size (value d) ≤ d.length :=
+  Nat.size_le.mpr (value_lt_two_pow d)
+
+/-- The canonical list of a number is as long as the number's binary size. -/
+theorem length_ofNat_eq_size (l : ℕ) : (ofNat l).length = Nat.size l := by
+  have h1 := length_le_size_value (ofNat l) (canon_ofNat l)
+  have h2 := size_value_le_length (ofNat l)
+  rw [value_ofNat] at h1 h2
+  omega
+
 /-- The canonical list of a number is no longer than the number's binary
 size. -/
-theorem length_ofNat_le_size (l : ℕ) : (ofNat l).length ≤ Nat.size l := by
-  have := length_le_size_value (ofNat l) (canon_ofNat l)
-  rwa [value_ofNat] at this
+theorem length_ofNat_le_size (l : ℕ) : (ofNat l).length ≤ Nat.size l :=
+  (length_ofNat_eq_size l).le
 
 /-- The register word of a counter holding {lit}`l`: the reverse of its digit
 list, so that cell {lit}`z` of the register holds digit {lit}`z`. -/
@@ -269,11 +290,33 @@ theorem counterValue_counterWord (l : ℕ) : counterValue (counterWord l) = l :=
   unfold counterValue counterWord
   rw [List.reverse_reverse, value_ofNat]
 
-/-- The counter word of a number is no longer than the number's binary size. -/
-theorem length_counterWord_le_size (l : ℕ) : (counterWord l).length ≤ Nat.size l := by
+/-- The counter word of a number is as long as the number's binary size. -/
+theorem length_counterWord (l : ℕ) : (counterWord l).length = Nat.size l := by
   unfold counterWord
   rw [List.length_reverse]
-  exact length_ofNat_le_size l
+  exact length_ofNat_eq_size l
+
+/-- The counter word of a number is no longer than the number's binary size. -/
+theorem length_counterWord_le_size (l : ℕ) : (counterWord l).length ≤ Nat.size l :=
+  (length_counterWord l).le
+
+/-- The counter word of a smaller number is no longer. -/
+theorem length_counterWord_le_of_le {l l' : ℕ} (h : l ≤ l') :
+    (counterWord l).length ≤ (counterWord l').length := by
+  rw [length_counterWord, length_counterWord]
+  exact Nat.size_le_size h
+
+/-- The decrement of a successor's counter word is the predecessor's. -/
+theorem decL_counterWord_succ (l : ℕ) :
+    (decL (counterWord (l + 1)).reverse).reverse = counterWord l := by
+  unfold counterWord
+  rw [List.reverse_reverse, decL_ofNat_succ]
+
+/-- The increment of a counter word is the successor's. -/
+theorem incL_counterWord (l : ℕ) :
+    (incL (counterWord l).reverse).reverse = counterWord (l + 1) := by
+  unfold counterWord
+  rw [List.reverse_reverse, ofNat_succ]
 
 /-- The counter word is empty exactly at zero. -/
 theorem counterWord_eq_nil_iff (l : ℕ) : counterWord l = [] ↔ l = 0 := by

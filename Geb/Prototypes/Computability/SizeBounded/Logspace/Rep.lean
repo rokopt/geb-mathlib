@@ -53,8 +53,9 @@ word part requires successor-freeness.
 
 # Main statements
 
-* {lit}`rtake_succ_eq_cons` — the end segment one longer is the bit at its head
-  consed on.
+* {lit}`bitAt_eq_getElem`, {lit}`rtake_succ_eq_cons` — the bit at an end
+  segment's head as an element of the input, and the end segment one longer
+  as that bit consed on.
 * {lit}`den_evalSRNRep` — recursion on representations denotes
   {name}`Geb.SizeBounded.evalSRN`.
 * {lit}`validAt_evalRep`, {lit}`den_evalRep`, {lit}`wordBounded_evalRep` —
@@ -113,6 +114,13 @@ theorem Rep.length_den (w : List Bool) (r : Rep) (hr : r.suffix ≤ w.length) :
 
 /-- The bit of the input at the head of its end segment of length {lit}`l + 1`. -/
 @[expose] def bitAt (w : List Bool) (l : ℕ) : Bool := w.getD (w.length - 1 - l) false
+
+/-- Within the input, the bit at an end segment's head is the element at the
+corresponding index. -/
+theorem bitAt_eq_getElem (w : List Bool) {l : ℕ} (hl : l < w.length) :
+    bitAt w l = w[w.length - 1 - l]'(by omega) := by
+  unfold bitAt
+  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega), Option.getD_some]
 
 /-- The end segment one longer is the bit at its head consed on. -/
 theorem rtake_succ_eq_cons (w : List Bool) {l : ℕ} (hl : l < w.length) :
