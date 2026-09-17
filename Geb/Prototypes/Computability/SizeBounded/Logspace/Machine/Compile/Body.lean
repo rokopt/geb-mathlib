@@ -41,8 +41,10 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
 
 # Main statements
 
-* {lit}`srnEnv_lt`, {lit}`srnEnv_injective` — the step environment lies below
-  the scratch registers and is injective.
+* {lit}`srnEnv_lt`, {lit}`srnEnv_cases`, {lit}`srnEnv_zero`,
+  {lit}`srnEnv_castAdd`, {lit}`srnEnv_natAdd`, {lit}`srnEnv_injective` — the
+  step environment lies below the scratch registers, its slots, and its
+  injectivity.
 * {lit}`srnSteps_contract` — the sequenced steps of a bit write the scratch
   registers.
 * {lit}`srnMiddle_contract` — the dispatch and the copies write the value
@@ -110,6 +112,24 @@ theorem srnEnv_cases {k a b : ℕ} (free : ℕ) (hk : free + 6 + 2 * b ≤ k) (p
     rfl
   · refine Or.inr (Or.inr ⟨p, rfl, ?_⟩)
     rw [Fin.append_right]
+
+/-- The step environment at slot zero is the cursor. -/
+theorem srnEnv_zero {k a b : ℕ} (free : ℕ) (hk : free + 6 + 2 * b ≤ k) (params : Fin a → Reg k) :
+    srnEnv free hk params 0 = srnV free (by omega) := rfl
+
+/-- The step environment at the slot of a value register is that register. -/
+theorem srnEnv_castAdd {k a b : ℕ} (free : ℕ) (hk : free + 6 + 2 * b ≤ k)
+    (params : Fin a → Reg k) (l : Fin b) :
+    srnEnv free hk params (Fin.castAdd a l).succ = srnVals b free hk l := by
+  unfold srnEnv
+  rw [Fin.cons_succ, Fin.append_left]
+
+/-- The step environment at the slot of a parameter is that parameter. -/
+theorem srnEnv_natAdd {k a b : ℕ} (free : ℕ) (hk : free + 6 + 2 * b ≤ k)
+    (params : Fin a → Reg k) (p : Fin a) :
+    srnEnv free hk params (Fin.natAdd b p).succ = params p := by
+  unfold srnEnv
+  rw [Fin.cons_succ, Fin.append_right]
 
 /-- The step environment is injective when the parameters are and lie below the
 first free tape. -/

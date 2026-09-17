@@ -64,6 +64,10 @@ that the resource bounds are the compiler's own arithmetic.
 
 * {lit}`readRep_writeRep`, {lit}`writeRep_of_ne` — reading back a written
   representation, and the tapes a write leaves alone.
+* {lit}`Prog.tm_seq`, {lit}`Prog.tm_ofTM`, {lit}`Prog.tm_seqFin`,
+  {lit}`Prog.tm_whileReg`, {lit}`copyReg_tm` — the machine of a program under
+  each combinator, stated so that a contract can be rewritten to the
+  machine's form without the unifier unfolding the machines.
 * {lit}`fst_compile` — the index component of a tree's compilation is its
   arity.
 
@@ -168,9 +172,26 @@ theorem transportP_transportP {k i j l : ℕ} (h : i = j) (g : j = l) (v : Compi
     seqFinEnum m _ _ fun i ↦ (P i).enum,
     (Geb.SizeBounded.Machine.seqFin m (fun i ↦ (P i).State) (fun i ↦ (P i).tm)).2⟩
 
+/-- The machine of a sequence. -/
+theorem Prog.tm_seq {k : ℕ} (P Q : Prog k) :
+    (Prog.seq P Q).tm = Geb.SizeBounded.Machine.seq P.tm Q.tm := rfl
+
+/-- The machine of a lifted machine. -/
+theorem Prog.tm_ofTM {k : ℕ} {S : Type} (e : FinEnum S) (tm : MultiTapeTM k Bool S) :
+    (Prog.ofTM e tm).tm = tm := rfl
+
+/-- The machine of a sequenced family. -/
+theorem Prog.tm_seqFin {k m : ℕ} (P : Fin m → Prog k) :
+    (Prog.seqFin m P).tm =
+      (Geb.SizeBounded.Machine.seqFin m (fun l ↦ (P l).State) (fun l ↦ (P l).tm)).2 := rfl
+
 /-- The loop of a program while a register is nonempty. -/
 @[expose] def Prog.whileReg {k : ℕ} (R : Fin k) (P : Prog k) : Prog k :=
   ⟨Unit ⊕ P.State, @FinEnum.finSum _ _ FinEnum.unit P.enum, whileNonblank (some R) P.tm⟩
+
+/-- The machine of a loop. -/
+theorem Prog.tm_whileReg {k : ℕ} (R : Fin k) (P : Prog k) :
+    (Prog.whileReg R P).tm = whileNonblank (some R) P.tm := rfl
 
 /-- The branch on a register's last bit. -/
 @[expose] def Prog.caseReg {k : ℕ} (R : Fin k) (P Q : Prog k) : Prog k :=
@@ -255,6 +276,10 @@ registers and the parameters. -/
 @[expose] def copyReg {k : ℕ} (src dst : Reg k) : Prog k :=
   Prog.seq (Prog.ofTM inferInstance (copy (src 0) (dst 0)))
     (Prog.ofTM inferInstance (copy (src 1) (dst 1)))
+
+/-- The machine of a register copy. -/
+theorem copyReg_tm {k : ℕ} (src dst : Reg k) :
+    (copyReg src dst).tm = seq (copy (src 0) (dst 0)) (copy (src 1) (dst 1)) := rfl
 
 /-- The copies of the scratch registers into the value registers. -/
 @[expose] def copyRegs {k b : ℕ} (scr vals : Fin b → Reg k) : Prog k :=
