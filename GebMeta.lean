@@ -17,7 +17,10 @@ public meta import Lean.DocString.Syntax
 `lake lint` when a declaration depends on any axiom outside the
 permitted set for its module. For most modules the permitted set
 is `{propext, Quot.sound}`; modules in `classicalAllowedModules`
-additionally permit `Classical.choice`.
+additionally permit `Classical.choice`. Axiom collection does not
+descend into the constants of `upstreamChoiceRoots`, upstream
+constants whose data is choice-free and whose `Classical.choice`
+dependency is confined to proof terms.
 
 `cite` is a docstring role for literate modules
 (`docs/rules/lean-coding.md` § Literate modules): ``{cite}`Key` ``
@@ -31,15 +34,21 @@ parsed bibliography it and the manual's generated entries share.
 * `GebMeta.detectNonstandardAxiom` — the linter.
 * `GebMeta.classicalAllowedModules` — the exact module names
   additionally permitted to depend on `Classical.choice`.
+* `GebMeta.upstreamChoiceRoots` — the upstream constants at which
+  axiom collection stops.
 * `cite` — the docstring role, at the root namespace.
 * `GebMeta.loadBibliography` — the parsed `docs/references.bib` of
   the repository containing a given source file.
 
 ## Implementation notes
 
-The linter is built on `Lean.collectAxioms` (core Lean, in
-`Lean/Util/CollectAxioms.lean`), the same primitive `#print
-axioms` uses, and on the `Linter` interface and `@[env_linter]`
+The linter collects axioms as `Lean.collectAxioms` (core Lean, in
+`Lean/Util/CollectAxioms.lean`), the primitive `#print axioms` uses,
+does, except that it stops at `upstreamChoiceRoots`. `Lean.collectAxioms`
+reads, for an imported constant, the axiom set its module recorded at
+export, which cannot exclude a root, so `collectAxiomsStopping` walks the
+constants' bodies itself, caching each constant's result for the process.
+The linter is built on the `Linter` interface and `@[env_linter]`
 attribute of `Batteries/Tactic/Lint/Basic.lean`. The module lives
 outside the `Geb`, `GebTests` and `GebLang` namespaces so the linter
 does not audit its own metaprogramming code.
@@ -232,6 +241,66 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine].foldl (·.insert ·)
     ({} : NameSet)
 
+/-- Upstream constants at which axiom collection stops: each has
+choice-free data and a `Classical.choice` dependency confined to its
+proof terms, in a library this repository does not change, so that
+holding a declaration to the strict set does not exclude the constant.
+Lean core's `Fin.instMin` and `Fin.instMax` (`Init.Data.Fin.MinMax`),
+whose values are `⟨min a b, _⟩` and `⟨max a b, _⟩`, `Fin.val_min` and
+`Fin.val_max`, which are `rfl` and state them, and
+`Fin.instLinearOrderPackage` (`Init.Data.Fin.Package`), whose data is
+`Nat`'s comparison, prove their bounds and laws by the `Std` order
+lemmas of `Init.Data.Order.Lemmas`, which are proved with `classical`
+for an arbitrary total order. mathlib's `Fin.instLinearOrder` is built
+on the first four, so the order of `Fin n`, with every declaration
+over the walking arrow `Fin 2`, would otherwise depend on
+`Classical.choice`. An entry is removed once the upstream proof is
+constructive. -/
+def upstreamChoiceRoots : NameSet :=
+  NameSet.ofList [``Fin.instMin, ``Fin.instMax, ``Fin.val_min, ``Fin.val_max,
+    ``Fin.instLinearOrderPackage]
+
+/-- The constants the type and value of `c` use. -/
+def usedConstants (env : Environment) (c : Name) : Array Name :=
+  match env.find? c with
+  | some (.defnInfo v) => v.type.getUsedConstants ++ v.value.getUsedConstants
+  | some (.thmInfo v) => v.type.getUsedConstants ++ v.value.getUsedConstants
+  | some (.opaqueInfo v) => v.type.getUsedConstants ++ v.value.getUsedConstants
+  | some (.axiomInfo v) => v.type.getUsedConstants
+  | some (.ctorInfo v) => v.type.getUsedConstants
+  | some (.recInfo v) => v.type.getUsedConstants
+  | some (.inductInfo v) => v.type.getUsedConstants ++ v.ctors.toArray
+  | some (.quotInfo _) | none => #[]
+
+/-- The axiom sets `collectAxiomsStopping` has computed in this process,
+by constant, so that the closure of the imported libraries is walked
+once per lint run. A cache holds results for one stop set. -/
+initialize axiomsCache : IO.Ref (NameMap (Array Name)) ← IO.mkRef {}
+
+/-- The axioms `c` depends on, as `Lean.collectAxioms` computes them,
+except that collection does not descend into a constant of `stops`,
+whose contribution is empty. Results are memoised in `cache`, which
+must be used with one `stops` only. A constant the environment holds
+as an axiom contributes what `Lean.collectAxioms` records for it: itself
+when it is one, and its recorded axioms when it is an imported theorem
+whose body an elaboration environment under the module system does not
+load; a stop beneath such a body is not seen. -/
+partial def collectAxiomsStopping (stops : NameSet) (cache : IO.Ref (NameMap (Array Name)))
+    (c : Name) : CoreM (Array Name) := do
+  if stops.contains c then return #[]
+  if let some axs := (← cache.get).find? c then return axs
+  -- A sentinel before the recursion, against the inductive/constructor cycle.
+  cache.modify (·.insert c #[])
+  let env ← getEnv
+  let mut axs : NameSet := {}
+  if let some (.axiomInfo _) := env.find? c then
+    for a in ← collectAxioms c do axs := axs.insert a
+  for d in usedConstants env c do
+    for a in ← collectAxiomsStopping stops cache d do axs := axs.insert a
+  let result := axs.toArray
+  cache.modify (·.insert c result)
+  return result
+
 /-- Permitted axioms for a declaration in module `mod`, given the
 allowlist `allowed`: the standard set, plus `Classical.choice` exactly
 when `mod` is allowlisted. -/
@@ -256,12 +325,14 @@ def moduleOf? (env : Environment) (declName : Name) : Option Name :=
 set. A declaration in a module listed in `classicalAllowedModules`
 additionally permits `Classical.choice` (and only that); every other
 axiom (`sorryAx`, `Lean.ofReduceBool`, …) is forbidden everywhere. A
-declaration whose module is unresolvable is held to the strict set. -/
+declaration whose module is unresolvable is held to the strict set.
+Collection stops at `upstreamChoiceRoots`. -/
 @[env_linter] def detectNonstandardAxiom : Batteries.Tactic.Lint.Linter where
   test declName := do
     let mod := (moduleOf? (← getEnv) declName).getD .anonymous
     let permitted := permittedAxioms classicalAllowedModules mod
-    let bad := offendingAxioms permitted (← collectAxioms declName)
+    let used ← collectAxiomsStopping upstreamChoiceRoots axiomsCache declName
+    let bad := offendingAxioms permitted used
     if bad.isEmpty then return none
     else return some m!"depends on non-standard axiom(s): {bad.toList}"
   noErrorsFound := "All declarations depend only on permitted axioms."

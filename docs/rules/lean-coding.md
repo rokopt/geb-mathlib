@@ -443,7 +443,12 @@ rationale.
   relating our concepts to a `Classical.choice`-dependent concept
   of an external Lean library — mathlib's category theory (e.g.
   `Over`), CSLib's Turing machines — can do so while the
-  constructive core stays strict.
+  constructive core stays strict. Axiom collection does not descend
+  into the constants listed in `GebMeta.upstreamChoiceRoots`: upstream
+  constants whose data is choice-free and whose `Classical.choice`
+  dependency is confined to proof terms, each listed with the
+  verification that admits it and removed once the upstream proof is
+  constructive.
   It runs in CI and the pre-push checklist;
   `scripts/tests/test-axiom-linter.sh` smoke-tests it.
 

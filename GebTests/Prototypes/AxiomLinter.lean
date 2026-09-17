@@ -53,6 +53,28 @@ open Lean GebMeta
 #guard offendingAxioms (standardAxioms.insert ``Classical.choice)
   #[``Classical.choice, ``sorryAx] == #[``sorryAx]
 
+/-- A local dependency on `propext`, for the stop test below: the bodies
+of this module's own declarations are loaded whatever the context. -/
+theorem stopFixture : (True ∧ True) = True :=
+  propext ⟨fun h ↦ h.1, fun h ↦ ⟨h, h⟩⟩
+
+/-- A declaration reaching `propext` only through `stopFixture`. -/
+theorem viaStopFixture : (True ∧ True) = True := stopFixture
+
+-- Collection stops at a listed constant and nowhere else: `propext` is
+-- reported beneath `viaStopFixture` unless collection stops at
+-- `stopFixture`, and a stop elsewhere leaves it reported.
+open Lean Elab Command in
+run_cmd do
+  let check (stops : List Name) (expected : Bool) : CommandElabM Unit := do
+    let cache ← IO.mkRef {}
+    let axs ← liftCoreM <| collectAxiomsStopping (NameSet.ofList stops) cache ``viaStopFixture
+    unless axs.contains ``propext == expected do
+      throwError "stops {stops}: expected propext reported = {expected}, got {axs}"
+  check [] true
+  check [``stopFixture] false
+  check [``Classical.em] true
+
 -- Module resolution returns a module for an imported declaration.
 open Lean Elab Command in
 run_cmd do
