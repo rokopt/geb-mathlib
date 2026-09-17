@@ -230,7 +230,7 @@ abbrev ArityB (a : Fin 2) : Type := ULift (Fin a.val)
 /-- Each fibre of `ArityB` is a subsingleton: `Fin 0` is empty and `Fin 1` is a
 point, so the two elements of any fibre are equal. -/
 instance subsingleton_arityB (a : Fin 2) : Subsingleton (ArityB a) :=
-  ⟨fun x y ↦ ULift.ext _ _ (Fin.ext (by
+  ⟨fun x y ↦ ULift.ext (Fin.ext (by
     have hx := x.down.isLt
     have hy := y.down.isLt
     have ha := a.isLt
