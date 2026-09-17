@@ -1729,6 +1729,19 @@ checklist and in CI.
   [resource-target discussion](bitstring-metalogic.md#non-size-increasing-function-algebra)
   for the distinction between checking syntax, checking certificates,
   and executing encoded programs.
+- [Kristiansen's word algebra](../Geb/Prototypes/Computability/Kristiansen.lean)
+  is the constants-and-projections fragment of `SizeBounded`, closed under
+  composition and simultaneous recursion on notation, as in
+  [Kristiansen2005], § 4. `Geb.Kristiansen.short_or_suffix` proves Lemma 4.5:
+  each result is bounded by an expression-dependent constant or is a suffix
+  of an input. `exists_reference_bounded` gives a representation of length
+  at most that constant plus the arity, the binary size of the input-length
+  bound, and two tag bits. `computableInTimeAndSpace_sem` inherits
+  polynomial time and linear space from the containing algebra's CSLib
+  machine. The logarithmic-size representation does not establish a
+  logarithmic-space evaluation machine; that requires a verified compiler
+  operating on suffix references. Decision-problem completeness is not
+  formalized.
 - `Geb/Prototypes/Computability/MultiTape/OutputString.lean` — the output a
   multi-tape machine emits along a segment of a run.
   `Turing.MultiTapeTM.outputString tm cfg t` is the concatenation of the
