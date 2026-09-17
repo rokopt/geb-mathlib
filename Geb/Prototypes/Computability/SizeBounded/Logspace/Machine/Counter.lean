@@ -48,6 +48,9 @@ many cells.
   canonical, decrements to the predecessor's, and is empty exactly at zero.
 * {lit}`length_ofNat_eq_size`, {lit}`length_counterWord` — the canonical list
   of a number, and its counter word, are as long as the number's binary size.
+* {lit}`size_le_self`, {lit}`size_le_size` — the binary size is at most the
+  number and is monotone, read off the canonical lists so that neither
+  depends on {lit}`Classical.choice` as mathlib's forms do.
 * {lit}`tapeOf_counterWord` — the cell of a counter register holds the
   corresponding digit.
 
@@ -220,63 +223,87 @@ theorem ofNat_inj {l l' : ℕ} (h : ofNat l = ofNat l') : l = l' := by
   have := congrArg value h
   rwa [value_ofNat, value_ofNat] at this
 
-/-- A canonical nonempty list denotes at least the power of two of its length
-less one. -/
-theorem two_pow_pred_le_value : ∀ d : List Bool, canon d = true → d ≠ [] →
-    2 ^ (d.length - 1) ≤ value d :=
-  List.rec (fun _ h ↦ absurd rfl h) fun b d ih h _ ↦ by
-    cases d with
-    | nil =>
-      cases b
-      · exact absurd h Bool.false_ne_true
-      · exact Nat.le_refl _
-    | cons c d' =>
-      rw [canon_cons_cons] at h
-      have := ih h (List.cons_ne_nil _ _)
-      rw [value_cons, List.length_cons, Nat.add_sub_cancel]
-      rw [List.length_cons, Nat.add_sub_cancel] at this
-      calc 2 ^ (d'.length + 1) = 2 * 2 ^ d'.length := by rw [Nat.pow_succ, Nat.mul_comm]
-        _ ≤ b.toNat + 2 * value (c :: d') := by omega
+/-- The canonical list of an odd number is a one before the canonical list of
+its half. -/
+theorem ofNat_two_mul_add_one : ∀ m : ℕ, ofNat (2 * m + 1) = true :: ofNat m :=
+  Nat.rec rfl fun m ih ↦ by
+    rw [show 2 * (m + 1) + 1 = 2 * m + 1 + 1 + 1 from by omega, ofNat_succ, ofNat_succ, ih,
+      incL_cons_true, incL_cons_false, ofNat_succ]
 
-/-- A canonical list is no longer than the binary size of the number it
-denotes. -/
-theorem length_le_size_value (d : List Bool) (h : canon d = true) :
-    d.length ≤ Nat.size (value d) := by
-  cases d with
-  | nil => exact Nat.zero_le _
-  | cons b d' =>
-    have h2 := two_pow_pred_le_value (b :: d') h (List.cons_ne_nil _ _)
-    have := Nat.lt_size.mpr h2
-    rw [List.length_cons, Nat.add_sub_cancel] at this
-    rw [List.length_cons]
-    exact this
-
-/-- A digit list denotes less than the power of two of its length. -/
-theorem value_lt_two_pow : ∀ d : List Bool, value d < 2 ^ d.length :=
-  List.rec (Nat.lt_succ_self 0) fun b d ih ↦ by
-    rw [value_cons, List.length_cons, Nat.pow_succ]
-    cases b
-    · change 0 + 2 * value d < 2 ^ d.length * 2
-      omega
-    · change 1 + 2 * value d < 2 ^ d.length * 2
-      omega
-
-/-- The binary size of the number a list denotes is at most the list's
-length. -/
-theorem size_value_le_length (d : List Bool) : Nat.size (value d) ≤ d.length :=
-  Nat.size_le.mpr (value_lt_two_pow d)
+/-- The canonical list of a positive even number is a zero before the canonical
+list of its half. -/
+theorem ofNat_two_mul : ∀ m : ℕ, 0 < m → ofNat (2 * m) = false :: ofNat m :=
+  Nat.rec (fun h ↦ absurd h (Nat.lt_irrefl 0)) fun m _ _ ↦ by
+    rw [show 2 * (m + 1) = 2 * m + 1 + 1 from by omega, ofNat_succ, ofNat_two_mul_add_one,
+      incL_cons_true, ofNat_succ]
 
 /-- The canonical list of a number is as long as the number's binary size. -/
-theorem length_ofNat_eq_size (l : ℕ) : (ofNat l).length = Nat.size l := by
-  have h1 := length_le_size_value (ofNat l) (canon_ofNat l)
-  have h2 := size_value_le_length (ofNat l)
-  rw [value_ofNat] at h1 h2
-  omega
+theorem length_ofNat_eq_size : ∀ l : ℕ, (ofNat l).length = Nat.size l :=
+  Nat.binaryRec (by rw [ofNat_zero, Nat.size_zero]; rfl) fun b n ih ↦ by
+    by_cases hn : n = 0
+    · subst hn
+      cases b
+      · exact ih
+      · rw [Nat.size_bit (by rw [Nat.bit_val]; change 2 * 0 + 1 ≠ 0; omega), Nat.bit_val]
+        change (ofNat (2 * 0 + 1)).length = _
+        rw [ofNat_two_mul_add_one, List.length_cons, ih]
+    · cases b
+      · rw [Nat.size_bit (by rw [Nat.bit_val]; change 2 * n + 0 ≠ 0; omega), Nat.bit_val, ← ih]
+        change (ofNat (2 * n + 0)).length = _
+        rw [Nat.add_zero, ofNat_two_mul n (Nat.pos_of_ne_zero hn), List.length_cons]
+      · rw [Nat.size_bit (by rw [Nat.bit_val]; change 2 * n + 1 ≠ 0; omega), Nat.bit_val, ← ih]
+        change (ofNat (2 * n + 1)).length = _
+        rw [ofNat_two_mul_add_one, List.length_cons]
 
 /-- The canonical list of a number is no longer than the number's binary
 size. -/
 theorem length_ofNat_le_size (l : ℕ) : (ofNat l).length ≤ Nat.size l :=
   (length_ofNat_eq_size l).le
+
+/-- The increment lengthens a digit list by at most one. -/
+theorem length_incL_le : ∀ d : List Bool, (incL d).length ≤ d.length + 1 :=
+  List.rec (Nat.le_refl _) fun b d ih ↦ by
+    cases b
+    · rw [incL_cons_false, List.length_cons, List.length_cons]
+      exact Nat.le_succ _
+    · rw [incL_cons_true, List.length_cons, List.length_cons]
+      exact Nat.succ_le_succ ih
+
+/-- The increment does not shorten a digit list. -/
+theorem length_le_length_incL : ∀ d : List Bool, d.length ≤ (incL d).length :=
+  List.rec (Nat.zero_le _) fun b d ih ↦ by
+    cases b
+    · rw [incL_cons_false, List.length_cons, List.length_cons]
+    · rw [incL_cons_true, List.length_cons, List.length_cons]
+      exact Nat.succ_le_succ ih
+
+/-- The canonical list of a number is no longer than the number. -/
+theorem length_ofNat_le_self : ∀ l : ℕ, (ofNat l).length ≤ l :=
+  Nat.rec (Nat.le_refl _) fun l ih ↦ by
+    rw [ofNat_succ]
+    exact Nat.le_trans (length_incL_le _) (Nat.succ_le_succ ih)
+
+/-- The canonical list of a smaller number is no longer. -/
+theorem length_ofNat_le_of_le {l l' : ℕ} (h : l ≤ l') : (ofNat l).length ≤ (ofNat l').length := by
+  have hk : ∀ k, (ofNat l).length ≤ (ofNat (l + k)).length :=
+    Nat.rec (Nat.le_refl _) fun k ih ↦ by
+      change (ofNat l).length ≤ (ofNat (l + k + 1)).length
+      rw [ofNat_succ]
+      exact Nat.le_trans ih (length_le_length_incL _)
+  rw [show l' = l + (l' - l) from by omega]
+  exact hk _
+
+/-- The binary size of a number is at most the number, without the choice
+mathlib's {name}`Nat.size_le` depends on. -/
+theorem size_le_self (l : ℕ) : Nat.size l ≤ l := by
+  rw [← length_ofNat_eq_size]
+  exact length_ofNat_le_self l
+
+/-- The binary size is monotone, without the choice mathlib's
+{name}`Nat.size_le_size` depends on. -/
+theorem size_le_size {l l' : ℕ} (h : l ≤ l') : Nat.size l ≤ Nat.size l' := by
+  rw [← length_ofNat_eq_size, ← length_ofNat_eq_size]
+  exact length_ofNat_le_of_le h
 
 /-- The register word of a counter holding {lit}`l`: the reverse of its digit
 list, so that cell {lit}`z` of the register holds digit {lit}`z`. -/
@@ -304,7 +331,7 @@ theorem length_counterWord_le_size (l : ℕ) : (counterWord l).length ≤ Nat.si
 theorem length_counterWord_le_of_le {l l' : ℕ} (h : l ≤ l') :
     (counterWord l).length ≤ (counterWord l').length := by
   rw [length_counterWord, length_counterWord]
-  exact Nat.size_le_size h
+  exact size_le_size h
 
 /-- The decrement of a successor's counter word is the predecessor's. -/
 theorem decL_counterWord_succ (l : ℕ) :

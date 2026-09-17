@@ -133,7 +133,7 @@ theorem length_counterWord_le_bound {M n l : ℕ} (h : l ≤ n) :
     (counterWord l).length ≤ bound M n := by
   rw [length_counterWord]
   unfold bound
-  have := Nat.size_le_size h
+  have := size_le_size h
   omega
 
 /-- The empty word is a counter, of zero. -/
