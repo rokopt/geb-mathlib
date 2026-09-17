@@ -51,8 +51,11 @@ that the resource bounds are the compiler's own arithmetic.
   — programs with their enumerations under the combinators.
 * {lit}`regsValue`, {lit}`timeValue` — the tapes and the step bound one node
   needs from its children's.
-* {lit}`srnBody1`, {lit}`srnBody2`, {lit}`srnProg` — the two loop bodies and
-  the whole program of a recursion node.
+* {lit}`srnV`, {lit}`srnVals`, {lit}`srnScr`, {lit}`srnEnv` — the register
+  layout of a recursion node and the environment its steps read.
+* {lit}`srnMiddle`, {lit}`srnBody1`, {lit}`srnBody2`, {lit}`srnProg` — the
+  middle the two loop bodies share, the bodies, and the whole program of a
+  recursion node.
 * {lit}`compileValue`, {lit}`compileStep`, {lit}`compile`, {lit}`compileAt`,
   {lit}`LOf.compile` — the program of one node, the algebra, the fold, and
   the compiled program of an expression of the subalgebra.
@@ -229,6 +232,25 @@ and copies the selected value out. -/
         + (n * (b * steps + 1 + body1Time b B n + 1) + 1) + (5 * B + 12)
         + (M * (b * steps + 1 + body2Time b B + 1) + 1) + copyRegTime B
 
+/-- The cursor register of a recursion node: the two tapes at the first free
+one. -/
+@[expose] def srnV {k : ℕ} (free : ℕ) (hk : free + 2 ≤ k) : Reg k :=
+  fun t ↦ ⟨free + t, by have := t.isLt; omega⟩
+
+/-- The value registers of a recursion node, above its six single tapes. -/
+@[expose] def srnVals {k : ℕ} (b free : ℕ) (hk : free + 6 + 2 * b ≤ k) : Fin b → Reg k :=
+  fun l t ↦ ⟨free + 6 + 2 * l + t, by have := l.isLt; have := t.isLt; omega⟩
+
+/-- The scratch registers of a recursion node, above its value registers. -/
+@[expose] def srnScr {k : ℕ} (b free : ℕ) (hk : free + 6 + 4 * b ≤ k) : Fin b → Reg k :=
+  fun l t ↦ ⟨free + 6 + 2 * b + 2 * l + t, by have := l.isLt; have := t.isLt; omega⟩
+
+/-- The environment a step of a recursion node reads: the cursor, the value
+registers and the parameters. -/
+@[expose] def srnEnv {k a b : ℕ} (free : ℕ) (hk : free + 6 + 2 * b ≤ k) (params : Fin a → Reg k) :
+    Fin (b + a + 1) → Reg k :=
+  Fin.cons (srnV free (by omega)) (Fin.append (srnVals b free hk) params)
+
 /-- The copy of a logical register: its word tape, then its counter tape. -/
 @[expose] def copyReg {k : ℕ} (src dst : Reg k) : Prog k :=
   Prog.seq (Prog.ofTM inferInstance (copy (src 0) (dst 0)))
@@ -238,28 +260,30 @@ and copies the selected value out. -/
 @[expose] def copyRegs {k b : ℕ} (scr vals : Fin b → Reg k) : Prog k :=
   Prog.seqFin b fun l ↦ copyReg (scr l) (vals l)
 
+/-- The middle of both loop bodies: the dispatch on the flag to the steps for
+that bit, into the scratch registers, then the copies into the value
+registers. -/
+@[expose] def srnMiddle {k b : ℕ} (F : Fin k) (vals scr : Fin b → Reg k)
+    (steps0 steps1 : Prog k) : Prog k :=
+  Prog.seq (Prog.caseReg F steps0 steps1) (copyRegs scr vals)
+
 /-- The body of the first loop: read the input bit at the cursor's length into
-the flag, run the steps for that bit into the scratch registers, copy them into
-the value registers, count the cursor's length up, and count the loop's counter
+the flag, the middle, then count the cursor's length up and the loop's counter
 down. -/
 @[expose] def srnBody1 {k b : ℕ} (V : Reg k) (CR S F : Fin k) (vals scr : Fin b → Reg k)
     (steps0 steps1 : Prog k) : Prog k :=
   Prog.seq (Prog.ofTM inferInstance (readInput (V 1) S F))
-    (Prog.seq (Prog.caseReg F steps0 steps1)
-      (Prog.seq (copyRegs scr vals)
-        (Prog.seq (Prog.ofTM inferInstance (inc (V 1)))
-          (Prog.ofTM inferInstance (dec CR)))))
+    (Prog.seq (srnMiddle F vals scr steps0 steps1)
+      (Prog.seq (Prog.ofTM inferInstance (inc (V 1))) (Prog.ofTM inferInstance (dec CR))))
 
 /-- The body of the second loop: pop the next bit of the reversed word into the
-flag, run the steps for that bit into the scratch registers, copy them into the
-value registers, and push the bit onto the cursor's word. -/
+flag, the middle, then push the bit onto the cursor's word. -/
 @[expose] def srnBody2 {k b : ℕ} (V : Reg k) (R F : Fin k) (vals scr : Fin b → Reg k)
     (steps0 steps1 : Prog k) : Prog k :=
   Prog.seq (Prog.ofTM inferInstance (pop R F))
-    (Prog.seq (Prog.caseReg F steps0 steps1)
-      (Prog.seq (copyRegs scr vals)
-        (Prog.caseReg F (Prog.ofTM inferInstance (push false (V 0)))
-          (Prog.ofTM inferInstance (push true (V 0))))))
+    (Prog.seq (srnMiddle F vals scr steps0 steps1)
+      (Prog.caseReg F (Prog.ofTM inferInstance (push false (V 0)))
+        (Prog.ofTM inferInstance (push true (V 0)))))
 
 /-- The program of a recursion node: the bases into the value registers, the
 empty cursor, the argument's counter copied into the loop counter, the first
@@ -313,19 +337,13 @@ loop, and the selected value register copied into the output. -/
         have hk : free + (4 * b + 6) ≤ k := by
           rw [regsValue_srn] at hfree
           omega
-        let V : Reg k := fun t ↦ ⟨free + t, by have := t.isLt; omega⟩
+        let V : Reg k := srnV free (by omega)
         let CR : Fin k := ⟨free + 2, by omega⟩
         let S : Fin k := ⟨free + 3, by omega⟩
         let F : Fin k := ⟨free + 4, by omega⟩
         let R : Fin k := ⟨free + 5, by omega⟩
-        let vals : Fin b → Reg k := fun l t ↦ ⟨free + 6 + 2 * l + t, by
-          have := l.isLt
-          have := t.isLt
-          omega⟩
-        let scr : Fin b → Reg k := fun l t ↦ ⟨free + 6 + 2 * b + 2 * l + t, by
-          have := l.isLt
-          have := t.isLt
-          omega⟩
+        let vals : Fin b → Reg k := srnVals b free (by omega)
+        let scr : Fin b → Reg k := srnScr b free (by omega)
         let free' := free + (4 * b + 6)
         let params := Fin.tail env
         let Y := env 0
@@ -337,7 +355,7 @@ loop, and the selected value register copied into the output. -/
             omega)
         let steps := fun (i : Bool) (l : Fin b) ↦
           (transportP (h (stepDir i l)) (c (stepDir i l)).2).prog
-            (Fin.cons V (Fin.append vals params)) (scr l) free' (by
+            (srnEnv free (by omega) params) (scr l) free' (by
               rw [regs_transportP]
               rw [regsValue_srn] at hfree
               cases i

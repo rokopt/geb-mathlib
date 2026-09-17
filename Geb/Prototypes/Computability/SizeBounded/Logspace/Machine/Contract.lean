@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.SizeBounded.Machine.SeqFin
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Family
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Emit
 
 set_option doc.verso true in
@@ -52,6 +53,7 @@ statements mention {name}`Turing.MultiTapeTM.runFrom` and
   an emission, chain from a configuration in the composite's initial state.
 * {lit}`TransformsIn.seq`, {lit}`TransformsIn.idle`, {lit}`TransformsIn.seqFin`
   — sequencing two programs, the idle program, and a family.
+* {lit}`preFin_of_invariant` — an invariant precondition is a family's.
 
 # Tags
 
@@ -242,6 +244,18 @@ theorem preFin_succ {k m : ℕ} (Pre : Fin (m + 1) → List Bool → (Fin k → 
     preFin (m + 1) Pre F input σ =
       (preFin m (fun l ↦ Pre l.castSucc) (fun l ↦ F l.castSucc) input σ ∧
         Pre (Fin.last m) input (composeFin m (fun l ↦ F l.castSucc input) σ)) := rfl
+
+/-- A precondition every member of a family preserves, and every member has,
+is the family's precondition wherever it holds. -/
+theorem preFin_of_invariant {k : ℕ} (P : List Bool → (Fin k → List Bool) → Prop) : ∀ (m : ℕ)
+    (F : Fin m → List Bool → (Fin k → List Bool) → Fin k → List Bool),
+    (∀ l input σ, P input σ → P input (F l input σ)) →
+    ∀ input σ, P input σ → preFin m (fun _ ↦ P) F input σ :=
+  Nat.rec (fun _ _ _ _ _ ↦ trivial)
+    (fun m ih F hF input σ hσ ↦
+      ⟨ih (fun l ↦ F l.castSucc) (fun l ↦ hF l.castSucc) input σ hσ,
+        composeFin_pres (P input) m (fun l ↦ F l.castSucc input) (fun l ↦ hF l.castSucc input) σ
+          hσ⟩)
 
 /-- Sequencing a family of programs transforms by the composite of their
 transformers, in {lit}`m * T + 1` steps for a family of {lit}`m` programs each
