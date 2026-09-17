@@ -89,6 +89,7 @@ def classicalAllowedModules : NameSet :=
   [`GebTests.Prototypes.AxiomLinterClassicalFixture,
    `Geb.Prototypes.Computability.SizeBounded.Polynomial,
    `Geb.Prototypes.Computability.SizeBounded.MachineBound,
+   `Geb.Prototypes.Computability.Kristiansen.MachineBound,
    `Geb.Prototypes.Computability.MultiTape.OutputString,
    `Geb.Prototypes.Computability.MultiTape.Rename,
    `GebManual.BibTeX,
