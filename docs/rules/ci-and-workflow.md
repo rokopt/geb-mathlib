@@ -44,24 +44,23 @@ include `Moves:` or `Deletions:`, so nor does ours.
 ## Pre-push checklist
 
 The checklist is split by what a change touches. `scripts/pre-push.sh`
-checks repository content: the Lean sources and the Markdown that
-the build system acts on. `scripts/test-tooling.sh` runs the build
-system's own self-tests. `scripts/pre-push-full.sh` runs
-`scripts/pre-push.sh`, then the two Verso builds (`scripts/manual.sh
-build` and `scripts/literate.sh build`, § Verso manual build and
-§ Literate site build), then `scripts/test-tooling.sh`, and is the
-one to run for a change touching the build system itself;
-content-only changes need `scripts/pre-push.sh` alone, leaving the
-Verso builds to CI, which runs them for every pull request. Each
-exits non-zero on any failure. This summary groups what they run;
-consult the scripts for the exact order.
+checks repository content: the Lean sources, the Verso manual and
+literate site rendered from them (§ Verso manual build and
+§ Literate site build), and the Markdown that the build system acts
+on. `scripts/test-tooling.sh` runs the build system's own self-tests.
+`scripts/pre-push-full.sh` runs `scripts/pre-push.sh` then
+`scripts/test-tooling.sh`, and is the one to run for a change
+touching the build system itself; content-only changes need
+`scripts/pre-push.sh` alone. Each exits non-zero on any failure.
+This summary groups what they run; consult the scripts for the
+exact order.
 
 `scripts/test-tooling.sh` discovers its tests by glob over
 `scripts/tests/test-*.sh` and `scripts/hooks/tests/test-*.sh`, so a
-new test script runs by virtue of existing. Several of those tests,
-and the two Verso builds, drive `lake` against the live project,
-which is why `pre-push-full.sh` runs `pre-push.sh` first: they need
-the built tree and populated olean cache its `lake exe cache get` and
+new test script runs by virtue of existing. Several of those tests
+drive `lake` against the live project, which is why
+`pre-push-full.sh` runs `pre-push.sh` first: they need the built
+tree and populated olean cache its `lake exe cache get` and
 `lake build` steps leave behind. Running `test-tooling.sh` on its
 own requires a prior `lake build`.
 
@@ -85,9 +84,12 @@ own requires a prior `lake build`.
   fixed temporary name.
 - `lake build`, `lake test`, `lake lint`.
 - `lake build GebTests` then `lake lint -- GebTests`, then
-  `lake lint -- GebLang`. The axiom env_linter
-  (`GebMeta.detectNonstandardAxiom`) runs under all three `lake lint`
-  invocations (`Geb`, `GebTests` and `GebLang`), failing when a
+  `scripts/literate.sh build` (§ Literate site build), whose
+  `lake lint -- GebLang` lints `Geb` and `GebLang`, then
+  `scripts/manual.sh build` (§ Verso manual build). The axiom
+  env_linter (`GebMeta.detectNonstandardAxiom`) runs under every
+  `lake lint` invocation (`Geb`, `GebTests`, `GebLang` and
+  `GebManual`), failing when a
   declaration depends on an axiom outside `{propext, Quot.sound}`,
   except that modules in `GebMeta.classicalAllowedModules`
   additionally permit `Classical.choice` (and only that).
@@ -169,12 +171,12 @@ this repository is an error under `warningAsError`; the steps that
 compile this repository's Lean run at the default level. CI runs the
 script in `doc-build.yml`, for every
 pull request and on a monthly schedule, and uploads the HTML as the
-`geb-manual` artifact; `scripts/pre-push-full.sh` runs it locally.
+`geb-manual` artifact; `scripts/pre-push.sh` runs it locally.
 `pages.yml` runs it on every push to `main` and deploys the HTML
 to GitHub Pages at the site root, beside the literate site
 (§ Literate site build).
-The manual is outside `defaultTargets`, the test driver, and
-`scripts/pre-push.sh`, so a content-only change builds no Verso;
+The manual is outside `defaultTargets` and the test driver, so
+`lake build` and `lake test` build no Verso;
 `scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
 
 ## Literate site build
@@ -193,14 +195,14 @@ it is the check that each module is renderable, which
 one. CI runs the script in `doc-build.yml`, for every pull request,
 and uploads the HTML as the `geb-literate` artifact, beside
 `lake build Geb:docs` and `lake build GebLang:docs` for the doc-gen4
-reference; `scripts/pre-push-full.sh` runs it locally, and `pages.yml`
+reference; `scripts/pre-push.sh` runs it locally, and `pages.yml`
 deploys it to GitHub Pages under `literate/` beside the manual
 (§ Verso manual build); that workflow is derived from the one
 `lake exe verso setup-literate` generates, and its header says why
-it is not that file. The rendering
-stays out of `scripts/pre-push.sh`, as the manual's does, because
-the first run compiles Verso from source; the libraries themselves
-are the `defaultTargets`, so an ordinary `lake build` compiles them.
+it is not that file. The rendering is outside `defaultTargets`, as
+the manual is; the libraries themselves are the `defaultTargets`,
+so an ordinary `lake build` compiles them without Verso, which the
+first Verso build compiles from source.
 `scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
 
 A doc-gen4 build needs `DOCGEN_SRC=file` when it is run outside CI.

@@ -52,7 +52,7 @@ See `lakefile.toml` for the full dependency declaration.
   (`docs/rules/lean-coding.md` § Literate modules). There is no
   watch mode: after editing under `manual/` or an included module,
   re-run `build` and refresh the browser. Built in CI by
-  `doc-build.yml` and by `scripts/pre-push-full.sh`, not by
+  `doc-build.yml` and by `scripts/pre-push.sh`, not by
   `lake build`; deployed by `pages.yml`.
 - [The literate site](https://rokopt.github.io/geb-mathlib/literate/)
   (Verso), every module of `Geb/` and `GebLang/` rendered as a page
@@ -62,7 +62,7 @@ See `lakefile.toml` for the full dependency declaration.
   manual, as GitHub Pages does, and prints the URL. It has no
   watch mode: after editing a docstring, re-run `build` and refresh
   the browser. Built in CI by `doc-build.yml` and by
-  `scripts/pre-push-full.sh`, and deployed by `pages.yml`; the
+  `scripts/pre-push.sh`, and deployed by `pages.yml`; the
   libraries themselves are the default `lake build`.
 
 ## Process

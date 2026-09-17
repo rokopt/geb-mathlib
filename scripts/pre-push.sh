@@ -3,8 +3,9 @@
 # scripts/pre-push.sh
 #
 # Check repository content before a push to a remote: the Lean
-# sources and the Markdown that the build system acts on. The
-# build system's own self-tests are a separate concern and live in
+# sources, the Verso manual and literate site rendered from them,
+# and the Markdown that the build system acts on. The build
+# system's own self-tests are a separate concern and live in
 # scripts/test-tooling.sh; scripts/pre-push-full.sh runs both, and
 # is the one to run for a change touching the build system itself.
 #
@@ -73,8 +74,13 @@ lake build GebTests
 step "lake lint GebTests (axiom + style linters on tests)"
 lake lint -- GebTests
 
-step "lake lint GebLang (axiom + style linters on the language library)"
-lake lint -- GebLang
+# literate.sh runs `lake lint -- GebLang`, which lints Geb and GebLang
+# both, before rendering, so there is no separate GebLang lint step.
+step "scripts/literate.sh build (lint GebLang, render the literate site)"
+bash scripts/literate.sh build
+
+step "scripts/manual.sh build (build, lint and generate the manual)"
+bash scripts/manual.sh build
 
 step "lake shake (minimised imports)"
 lake shake --add-public --keep-implied --keep-prefix Geb GebTests GebLang

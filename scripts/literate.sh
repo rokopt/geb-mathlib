@@ -11,7 +11,7 @@
 # site's output path are resolved against the package root by the
 # literateHtml facet, so they are unaffected either way.
 #
-# CI (doc-build.yml) and scripts/pre-push-full.sh run the build verb.
+# CI (doc-build.yml) and scripts/pre-push.sh run the build verb.
 # The libraries themselves are the defaultTargets, so an ordinary lake
 # build compiles them; only the rendering is confined to this script.
 
