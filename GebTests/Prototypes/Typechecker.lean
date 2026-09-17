@@ -13,6 +13,8 @@ set_option doc.verso true in
 
 The examples check composition order, identification outside the source fiber,
 empty source fibers, and separation of different actions on accepted elements.
+Reflecting morphisms additionally preserve failing inputs while retaining their
+actions there; their images in the quotient can coincide.
 
 ## Tags
 
@@ -86,5 +88,44 @@ example : let star : OneObject admissible := SingleObj.star admissible
 
 example {B : Type 1} {P : (B → B) → Prop} (h : CompositionallyClosed P) (b : B) :
     Typechecker h.toSubmonoid b ⥤ Type 1 := interpretation h.toSubmonoid b
+
+/-- Negation as a reflecting morphism of the full fiber. -/
+def reflectingNegate : (⟨all⟩ : ReflectingTypechecker admissible false) ⟶ ⟨all⟩ :=
+  ⟨negate, fun _ _ ↦ rfl⟩
+
+/-- Constant false as a reflecting morphism of the full fiber. -/
+def reflectingReset : (⟨all⟩ : ReflectingTypechecker admissible false) ⟶ ⟨all⟩ :=
+  ⟨reset, fun _ _ ↦ rfl⟩
+
+example : (ReflectingTypechecker.toQuotient admissible false).obj ⟨all⟩ = all := rfl
+
+example : (ReflectingTypechecker.toQuotient admissible false).map reflectingNegate =
+    negate.toHom := rfl
+
+example : (reflectingNegate ≫ reflectingReset).val.val.val false = false := rfl
+
+example : (reflectingReset ≫ reflectingNegate).val.val.val false = true := rfl
+
+example : (ReflectingTypechecker.toQuotient admissible false).map
+    (reflectingNegate ≫ reflectingReset) = negate.toHom ≫ reset.toHom := rfl
+
+/-- Negation preserves and reflects passing for the empty fiber. -/
+def emptyNegate : (⟨none⟩ : ReflectingTypechecker admissible false) ⟶ ⟨none⟩ :=
+  ⟨⟨⟨Bool.not, True.intro⟩, fun _ hx ↦ hx⟩, fun _ hx ↦ hx⟩
+
+example : emptyNegate ≠ 𝟙 (⟨none⟩ : ReflectingTypechecker admissible false) := by
+  intro h
+  exact Bool.noConfusion (congrArg (fun f ↦ f.val.val.val false) h)
+
+example : (ReflectingTypechecker.toQuotient admissible false).map emptyNegate = 𝟙 none :=
+  (Representative.toHom_eq_iff _ _).2 fun _ hx ↦ Bool.noConfusion hx
+
+example (f : (⟨onlyFalse⟩ : ReflectingTypechecker admissible false) ⟶ ⟨onlyFalse⟩) :
+    f.val.val.val true ≠ false :=
+  (ReflectingTypechecker.map_fail_iff f true).2 Bool.noConfusion
+
+example {B : Type 1} {P : (B → B) → Prop} (h : CompositionallyClosed P) (b : B) :
+    ReflectingTypechecker h.toSubmonoid b ⥤ Typechecker h.toSubmonoid b :=
+  ReflectingTypechecker.toQuotient h.toSubmonoid b
 
 end GebTests.Typechecker

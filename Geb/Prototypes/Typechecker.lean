@@ -23,6 +23,11 @@ The typechecker category has these endomorphisms as objects. Its morphisms are
 admissible endomorphisms preserving the specified fibers, quotiented by agreement
 on the source fiber. Restriction to fibers gives a faithful functor to types.
 
+The reflecting typechecker category retains the same objects, with unquotiented
+morphisms that preserve and reflect membership in the fibers. Such morphisms
+preserve both passing and failing. Sending each to its class defines a functor
+to the quotient category.
+
 ## Main definitions
 
 * {lit}`ContainsIdentity`, {lit}`ClosedUnderComposition`, and
@@ -32,6 +37,8 @@ on the source fiber. Restriction to fibers gives a faithful functor to types.
 * {lit}`Typechecker` is the category of fiber specifications.
 * {lit}`Typechecker.homSetoid` identifies representatives on the source fiber.
 * {lit}`Typechecker.interpretation` restricts morphisms to fibers.
+* {lit}`ReflectingTypechecker` retains functions that preserve and reflect passing.
+* {lit}`ReflectingTypechecker.toQuotient` sends these functions to their quotient classes.
 
 ## Main statements
 
@@ -200,5 +207,59 @@ instance interpretation_faithful : (interpretation S b).Faithful where
     (congrArg (fun k : Fiber X ⟶ Fiber Y ↦ (k : Fiber X → Fiber Y)) h)
 
 end Typechecker
+
+/-- Typecheckers with unquotiented morphisms that preserve and reflect passing. -/
+@[ext]
+structure ReflectingTypechecker (S : Submonoid (Function.End B)) (b : B) : Type u where
+  /-- The same fiber specification as in the quotient category. -/
+  toTypechecker : Typechecker S b
+  deriving Inhabited
+
+namespace ReflectingTypechecker
+
+variable {S : Submonoid (Function.End B)} {b : B}
+
+/-- A fiber-preserving representative that also reflects membership in the fiber.
+Equality is equality of functions on the whole base type. -/
+def Hom (X Y : ReflectingTypechecker S b) : Type u :=
+  { f : Typechecker.Representative X.toTypechecker Y.toTypechecker //
+    ∀ x : B, Y.toTypechecker.checker.val (f.val.val x) = b → X.toTypechecker.checker.val x = b }
+
+/-- Identity preserves and reflects passing. -/
+def Hom.id (X : ReflectingTypechecker S b) : Hom X X :=
+  ⟨Typechecker.Representative.id _, fun _ hx ↦ hx⟩
+
+/-- Composition preserves and reflects passing. -/
+def Hom.comp {X Y Z : ReflectingTypechecker S b} (f : Hom X Y) (g : Hom Y Z) : Hom X Z :=
+  ⟨f.val.comp g.val, fun x hx ↦ f.property x (g.property (f.val.val.val x) hx)⟩
+
+/-- The category of typecheckers with functions that preserve and reflect passing. -/
+instance category : Category (ReflectingTypechecker S b) where
+  Hom := Hom
+  id := Hom.id
+  comp := Hom.comp
+  id_comp _ := rfl
+  comp_id _ := rfl
+  assoc _ _ _ := rfl
+
+/-- An input passes exactly when its image passes. -/
+theorem map_pass_iff {X Y : ReflectingTypechecker S b} (f : X ⟶ Y) (x : B) :
+    Y.toTypechecker.checker.val (f.val.val.val x) = b ↔ X.toTypechecker.checker.val x = b :=
+  ⟨f.property x, f.val.property x⟩
+
+/-- An input fails exactly when its image fails. -/
+theorem map_fail_iff {X Y : ReflectingTypechecker S b} (f : X ⟶ Y) (x : B) :
+    Y.toTypechecker.checker.val (f.val.val.val x) ≠ b ↔ X.toTypechecker.checker.val x ≠ b :=
+  not_congr (map_pass_iff f x)
+
+/-- Keep each typechecker and send each function to its class modulo source-fiber agreement. -/
+def toQuotient (S : Submonoid (Function.End B)) (b : B) :
+    ReflectingTypechecker S b ⥤ Typechecker S b where
+  obj := toTypechecker
+  map f := f.val.toHom
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+end ReflectingTypechecker
 
 end GebProto.EndomorphismCategory
