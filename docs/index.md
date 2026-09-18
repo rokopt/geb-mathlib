@@ -2853,3 +2853,50 @@ checklist and in CI.
   `Geb.Prototypes.Computability.SizeBounded.Machine.Compile.Basic`,
   `Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper` and
   `Geb.Prototypes.Computability.SizeBounded.Machine.Exec`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace/Combinators.lean` — the
+  tail, the four-way conditional and the diagonal of
+  `Geb.Prototypes.Computability.SizeBounded.Combinators` as expressions of
+  the subalgebra, `Geb.SizeBounded.Logspace.tailL`, `condL`, `cond4L`,
+  `tailAppL` and `diagL`, each the expression of `Geb.SizeBounded.S` paired
+  with its successor-freeness, and the meanings of the subalgebra's
+  constructors. `Classical.choice`-free. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Basic`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace/SuffixCounter.lean` — a
+  number no greater than the input's length as the input dropped by it, the
+  subalgebra's monotone counter, which the compiled machine holds as a
+  binary counter bounded by the input's length: raising the number by one
+  is the tail, and `Geb.SizeBounded.Logspace.dropBy`, a word dropped by the
+  length of another, compares two counters by the emptiness of the result,
+  `drop_drop_length_eq_nil_iff`; `Geb.SizeBounded.Logspace.dbl` doubles a
+  counter by a recursion over the word, `sem_dbl_drop`, and
+  `Geb.SizeBounded.Logspace.bitApp` doubles and raises it by a bit,
+  `bitSem_drop`, which reads a binary field into a counter.
+  `Classical.choice`-free. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Combinators`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace/EliasTree.lean` — the
+  recognizer `Geb.BitTree.Elias.validBool` of the Elias-length tree encoding
+  as an expression `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` of the
+  subalgebra: one instance of the completeness half of [Kristiansen2005]
+  Corollary 4.8, whose existence the binary-counter machine
+  `Geb.BitTree.EliasBinary.machine` establishes. The streaming scanner
+  `Geb.BitTree.Elias.Scanner.step` is restated on monotone counters,
+  `Geb.SizeBounded.Logspace.EliasTree.advance`, the forks and the completed
+  leaves in place of the pending count and a width, a count rising to it
+  and a value in place of each header field's remaining count and value;
+  its projection `toState` commutes with the scanner under the invariant
+  `Valid`, which bounds every counter by the bits read
+  (`EliasTree/Scanner.lean`). The expression is a simultaneous recursion
+  with seven registers over the word as counter and parameter, the unread
+  input, the phase as a three-bit code, and the five counters each as the
+  word dropped by its number (`EliasTree/Expr.lean`). `regs_eq` is the
+  invariant, that after a prefix the registers hold the remaining word and
+  the encoded counters on it, and `isEliasTreeSem_eq_singleton_iff` that
+  the expression returns `[true]` exactly on the encodings of trees
+  (`EliasTree/Correct.lean`). `computableInTimeAndSpace_isEliasTree` reads
+  off the subalgebra's soundness theorem that the recognizer is computable
+  in polynomial time and logarithmic space (`EliasTree/Machine.lean`,
+  listed in `GebMeta.classicalAllowedModules` as `Machine/Main.lean` is).
+  The other modules of the directory are `Classical.choice`-free. Depends
+  on `Geb.Prototypes.Computability.SizeBounded.Logspace.SuffixCounter`,
+  `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect` and
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main`.
