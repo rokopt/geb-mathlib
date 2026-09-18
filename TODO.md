@@ -325,9 +325,11 @@ membership, for every unary expression, by a multi-tape machine compiled
 from the expression's syntax; the converse, completeness, is not
 formalized. Follow-ups:
 
-- The other bit-tree encodings (`BitTree/Elias`, `BitTree/EliasBinary`,
-  `BitTreeScanner`) as expressions, each needing a comparison between a
-  binary length field and a unary count.
+- The bit-tree encoding of `BitTreeScanner` as an expression. The
+  Elias-length encoding is written in the logspace subalgebra,
+  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree`, where a binary length
+  field is read into a counter held as an end segment of the input and
+  compared with a count held the same way.
 - The operations of `docs/bitstring-metalogic.md` that grow their output by a
   constant, the single machine transition among them, are not
   non-size-increasing as stated. In the algebra they take a budget argument
@@ -349,12 +351,31 @@ subalgebra `Geb.SizeBounded.Logspace.LOf` of the size-bounded algebra, and
 soundness half of the paper's Theorem 4.1: every unary expression's meaning
 is computable in polynomial time and space linear in the input's binary
 size, by a machine compiled from the expression on the representation of a
-value as a bounded word before an end segment of the input. Follow-ups:
+value as a bounded word before an end segment of the input.
+`Geb/Prototypes/Computability/SizeBounded/Logspace/EliasTree/` writes the
+recognizer of the Elias-length tree encoding, `Geb.BitTree.Elias.validBool`,
+in the subalgebra, one instance of the completeness the paper's Corollary
+4.8 asserts, with every counter monotone and held as an end segment of the
+input, as the binary-counter machine `Geb.BitTree.EliasBinary.machine`
+holds it. Follow-ups:
 
 - Completeness, the paper's Lemmas 4.2 and 4.4: every logarithmic-space
   function is defined by an expression of the subalgebra, through the
   language CLIP of the paper's Section 3 and its simulation of a machine's
   configurations by end segment lengths.
+- The plain bit-tree recognizer `Geb.BitTree.validBool` in the subalgebra.
+  `Geb.SizeBounded.isBitTree` writes it in the containing algebra with the
+  pending count in unary under the size-bounded successor; in the
+  subalgebra the count is the pair of monotone counters
+  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` keeps, the forks and the
+  completed leaves.
+- The constants of `Geb.SizeBounded.Logspace.EliasTree.isEliasTree`'s
+  compiled machine, `Geb.SizeBounded.Logspace.Machine.wordBound` and
+  `tapes` at the expression, against the nine tapes of
+  `Geb.BitTree.EliasBinary.machine`: the expression reads each bit through
+  a recursion over the whole word for the doubling and one for each
+  comparison, so its time bound is a polynomial of higher degree than the
+  machine's linear one.
 - The tape bound `Geb.SizeBounded.Logspace.Machine.bound` admits the
   expression's constant on every tape. A bound that admits it only on word
   tapes, the counters at the input's binary size and the flags at one

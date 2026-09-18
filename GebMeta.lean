@@ -237,6 +237,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Compile.Theorem,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Wrapper,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Machine,
    `GebTests.Prototypes.Computability.SizeBounded.Machine,
    `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine].foldl (·.insert ·)
     ({} : NameSet)

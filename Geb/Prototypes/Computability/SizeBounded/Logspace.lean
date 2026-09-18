@@ -9,6 +9,9 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.Basic
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.EndSegment
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Rep
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.Combinators
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.SuffixCounter
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -20,7 +23,9 @@ Index for the modules on {cite}`Kristiansen2005`'s algebra
 {name}`Geb.SizeBounded.S`: its expressions, the end-segment lemma, the
 interpretation on the logarithmic-space representation of values, and the
 machine calculus that interpretation compiles into, with the polynomial time
-and logarithmic space bounds of every unary expression's machine.
+and logarithmic space bounds of every unary expression's machine; and the
+derived expressions, the counters as end segments of the input, and the
+recognizer of the Elias-length tree encoding written with them.
 -/
 
 set_option doc.verso true
