@@ -11,16 +11,25 @@ public meta import Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree -
 /-!
 # The Elias-length tree recognizer on worked bitstrings
 
-The counters after the encoding of a leaf, and the recognizer on the empty
-leaf, a leaf with a payload, a fork of two leaves, the empty word, a lone
-fork bit, an incomplete fork, a leaf followed by a trailing leaf, and a
-header cut short.
+The counters after the encodings of leaves and forks and after words that
+are not encodings, agreeing with `Geb.BitTree.Elias.validBool` on every
+worked word; and the recognizer on the empty leaf, the empty word, a lone
+fork bit, a lone leaf tag and two fork bits.
 
 ## Main statements
 
-The recognizer returns `[true]` on each encoding and the empty word on each
-non-encoding, agreeing with `Geb.BitTree.Elias.validBool` at every worked
-word.
+The counters end in the completed phase exactly on the encodings, and the
+recognizer returns `[true]` on the empty leaf and the empty word on each
+non-encoding.
+
+## Implementation notes
+
+The words the recognizer is evaluated on have at most two bits. The
+algebra's recursion `Geb.SizeBounded.evalSRN` recomputes a register of the
+previous stage at every reference a step makes to it, so the evaluation of an
+expression whose steps read several registers is exponential in the word's
+length; the counters `Geb.SizeBounded.Logspace.EliasTree.run` are linear and
+are evaluated on longer words.
 
 ## Tags
 
@@ -30,48 +39,48 @@ logspace, Elias delta code, binary tree, recognizer
 set_option linter.privateModule false
 
 open Geb.BitTree (leaf fork)
-open Geb.BitTree.Elias (encode)
+open Geb.BitTree.Elias (encode validBool)
 open Geb.SizeBounded.Logspace.EliasTree
 
 /-- The recognizer, named so that this module references a constant of the
 module under test. -/
 def isEliasTreeArity : Geb.SizeBounded.Logspace.LOf 1 := isEliasTree
 
-/-- A leaf with a two-bit payload. -/
-def leafTwo : Geb.BitTree.Tree := leaf [true, false]
+/-- A leaf with a one-bit payload: the tag, the delta code of one, and the
+bit. -/
+def leafOne : Geb.BitTree.Tree := leaf [true]
 
-#guard encode leafTwo = [false, false, true, true, false, true, false]
+#guard encode leafOne = [false, false, true, false, false, true]
 
-/-- After the encoding of the empty leaf, one leaf is complete and the phase
-is the completed one. -/
+-- After the encoding of the empty leaf, one leaf is complete and the phase is
+-- the completed one.
 #guard run (encode (leaf [])) = ⟨.done, 0, 1, 0, 0, 0⟩
 
-/-- After a leaf with a two-bit payload, the count has reached the bound
-three, one plus the payload's length. -/
-#guard run (encode leafTwo) = ⟨.done, 0, 1, 3, 3, 3⟩
+-- After a leaf with a one-bit payload, the count has reached the bound two,
+-- one plus the payload's length.
+#guard run (encode leafOne) = ⟨.done, 0, 1, 2, 2, 2⟩
+
+-- After a fork of two leaves, the leaves exceed the forks by one.
+#guard run (encode (fork (leaf []) leafOne)) = ⟨.done, 1, 2, 2, 2, 2⟩
+
+/-- The worked words: the encodings of the empty leaf, of a leaf with a payload,
+of a fork of two leaves and of a fork of forks, and the empty word, a lone fork
+bit, an incomplete fork, a leaf followed by a trailing leaf, a header cut short
+and a payload cut short. -/
+def workedWords : List (List Bool) :=
+  [encode (leaf []), encode leafOne, encode (fork (leaf []) leafOne),
+    encode (fork (fork leafOne (leaf [true, false])) (leaf [])), [], [true],
+    [true, false, true], [false, true, false, true], [false, false, true],
+    [false, false, true, false, false]]
+
+#guard workedWords.all fun w ↦ decide ((run w).phase = .done) == validBool w
 
 #guard isEliasTree.sem ![encode (leaf [])] = [true]
-
-#guard isEliasTree.sem ![encode leafTwo] = [true]
-
-#guard isEliasTree.sem ![encode (fork (leaf []) leafTwo)] = [true]
-
-#guard isEliasTree.sem ![encode (fork (fork leafTwo (leaf [true])) (leaf []))] = [true]
 
 #guard isEliasTree.sem ![[]] = []
 
 #guard isEliasTree.sem ![[true]] = []
 
-#guard isEliasTree.sem ![[true, false, true]] = []
+#guard isEliasTree.sem ![[false]] = []
 
-#guard isEliasTree.sem ![[false, true, false, true]] = []
-
-#guard isEliasTree.sem ![[false, false, true]] = []
-
-/-- The worked words. -/
-def workedWords : List (List Bool) :=
-  [encode (leaf []), encode leafTwo, encode (fork (leaf []) leafTwo), [], [true],
-    [true, false, true], [false, true, false, true], [false, false, true]]
-
-#guard workedWords.all fun w ↦
-  isEliasTree.sem ![w] == if Geb.BitTree.Elias.validBool w then [true] else []
+#guard isEliasTree.sem ![[true, true]] = []

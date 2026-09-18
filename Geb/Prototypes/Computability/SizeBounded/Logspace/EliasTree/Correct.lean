@@ -113,7 +113,7 @@ local macro "eval_step" : tactic =>
         stepAt_two, stepAt_three, stepAt_four, stepAt_five, stepAt_six, stepAt_seven, stepAt_eight,
         cond4Sem_same, List.tail_drop, List.drop_one, List.drop_zero, bitSem_drop, advance, finishC,
         phaseCode, modeStep, forksStep, leavesStep, widthStep, countStep, valueStep,
-        drop_drop_length_eq_nil_iff, ↓reduceIte, eq_self_iff_true, le_refl, Bool.false_eq_true,
+        drop_drop_length_eq_nil_iff, ↓reduceIte, eq_self_iff_true, Nat.le_refl, Bool.false_eq_true,
         Bool.toNat_false, Bool.toNat_true, Nat.add_zero, *])
 
 /-- The unread-input step drops the current bit. -/

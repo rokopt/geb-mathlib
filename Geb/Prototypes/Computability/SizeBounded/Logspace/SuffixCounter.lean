@@ -97,7 +97,11 @@ most {lit}`b`, provided {lit}`b` is below the word's length. -/
 theorem drop_drop_length_eq_nil_iff (w : List Bool) {a b : ℕ} (hb : b < w.length) :
     (w.drop b).drop (w.drop a).length = [] ↔ a ≤ b := by
   rw [List.drop_eq_nil_iff, List.length_drop, List.length_drop]
-  omega
+  constructor
+  · intro h
+    omega
+  · intro h
+    omega
 
 /-- The registers of the doubling recursion after each bit of the counter: the
 end segments of the word and of the argument at the current level, and the
