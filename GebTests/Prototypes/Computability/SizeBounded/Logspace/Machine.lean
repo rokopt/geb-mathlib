@@ -31,6 +31,7 @@ logspace, Turing machine, compilation
 set_option linter.privateModule false
 
 open Geb.SizeBounded.Machine Geb.SizeBounded.Logspace.Machine
+open Geb.SizeBounded.Logspace (tailL)
 
 /-- The tail's machine, named so that this module references a constant of the
 module under test. -/
