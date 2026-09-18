@@ -18,3 +18,5 @@ node_modules/
 /manual/_out
 package-lock.json
 package.json
+skills-lock.json
+.agents/
