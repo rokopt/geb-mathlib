@@ -13,6 +13,7 @@ public import Geb.Prototypes.Computability.SizeBounded
 public import Geb.Prototypes.Computability.Mazzanti
 public import Geb.Prototypes.Computability.Kristiansen
 public import Geb.Prototypes.Computability.MultiTape
+public import Geb.Prototypes.Computability.Oitavem
 public import Geb.Prototypes.Computability.Triage
 
 /-!

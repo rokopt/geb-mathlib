@@ -70,6 +70,11 @@ checklist and in CI.
   `Geb/Prototypes/ConcreteSyntax.lean`,
   `Geb/Prototypes/CanonicalSExpr.lean` and
   `Geb/Prototypes/ReadableSExpr.lean` implement its first stage.
+- [oitavem-logspace-soundness.md](oitavem-logspace-soundness.md) — a
+  direct machine soundness proof strategy for Logs, using generated-word
+  readers, logarithmic safe-recursion prefixes, and the existing
+  logarithmic-space compiler infrastructure; includes proof obligations
+  and implementation checkpoints.
 
 ## Implemented content
 
@@ -1729,6 +1734,32 @@ checklist and in CI.
   [resource-target discussion](bitstring-metalogic.md#non-size-increasing-function-algebra)
   for the distinction between checking syntax, checking certificates,
   and executing encoded programs.
+- [Oitavem's Logs algebra](../Geb/Prototypes/Computability/Oitavem.lean)
+  implements [Oitavem2010], Definition 3.1, as a slice polynomial W-type
+  indexed by normal and safe arities. Its constructors require only
+  syntactic arity checks. The word representation preserves leading zeroes
+  and implements the paper's length-lexicographic enumeration.
+  `Expr.truncationBound` computes a normal-only bound expression;
+  `Expr.truncates_truncationBound` verifies it and `Expr.exists_truncation`
+  states Lemma 3.3. `Expr.length_le_poly` proves polynomial output
+  length, independently of the safe input's length.
+  `Expr.exists_logarithmic_state` proves that capped safe recursion retains
+  the correct numerical state in logarithmically many bits;
+  `Expr.exists_logarithmic_prefix` shows that a logarithmic prefix of each
+  safe input suffices. `Expr.exists_logarithmic_loop` verifies an indexed
+  loop retaining those prefixes directly. `Expr.boundedRec` and its
+  evaluation equations give the bounded-recursion construction of
+  Lemma 3.2. The recursive length
+  example and quadratic-output example are executable.
+  These representation results do not establish a
+  `ComputableInTimeAndSpaceOfLength` theorem. A transducer that recomputes
+  intermediate output bits, with verified correctness and space bounds,
+  remains necessary for machine soundness. `Machine.computes_polytime_logspace`
+  derives a simultaneous polynomial time bound for any such halting
+  logarithmic-space transducer, using CSLib's configuration count. Machine
+  completeness is also unformalized. The
+  [direct soundness design](oitavem-logspace-soundness.md) describes the
+  proposed transducer construction and its remaining proof obligations.
 - [Kristiansen's word algebra](../Geb/Prototypes/Computability/Kristiansen.lean)
   is the constants-and-projections fragment of `SizeBounded`, closed under
   composition and simultaneous recursion on notation, as in

@@ -101,6 +101,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.Kristiansen.MachineBound,
    `Geb.Prototypes.Computability.MultiTape.OutputString,
    `Geb.Prototypes.Computability.MultiTape.Rename,
+   `Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
    `GebManual.DecisionProblems,

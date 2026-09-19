@@ -11,6 +11,7 @@ import GebTests.Prototypes.Computability.TreeScanner
 import GebTests.Prototypes.Computability.SizeBounded
 import GebTests.Prototypes.Computability.Mazzanti
 import GebTests.Prototypes.Computability.Kristiansen
+import GebTests.Prototypes.Computability.Oitavem
 import GebTests.Prototypes.Computability.Triage
 
 /-!
