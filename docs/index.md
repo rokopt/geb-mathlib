@@ -3023,7 +3023,33 @@ checklist and in CI.
   `NumArith.natValue`, each proved against the numbers on a word holding
   their codes; and `WTree/NumSum.lean` instantiates it as a ripple-carry
   check of a numeral against the sum of two others and a carry in,
-  `NumSum.natSum`. The other modules of the directory are
+  `NumSum.natSum`. `WTree/Sig.lean` codes the algebra's own signature,
+  `Sig.sigCoded`: a shape's code is a three-bit tag, its numeric fields as
+  coded numbers, and for a constant its word, with a decoder and an
+  explicit enumeration of each shape's directions whose count and order
+  compute by unfolding. `WTree/SigLabel.lean` is the label check of that
+  signature as an expression of arity four, `SigLabel.labelOk`, which reads
+  the tag, scans the fields from successive positions, compares the last
+  field's end with the label's end, decides the constraints of a
+  projection and a recursion, and compares the arity with a field read
+  into a counter; `SigLabel.computesLabel` is its correctness at sound
+  locations. The location soundness the comparisons with a label's end
+  need, `Loc.Sound`, is what every node label of an encoding satisfies,
+  `nodes_sound` (`WTree/Positions.lean`), which is why
+  `CodedSig.ComputesLabel` and `CodedSig.ComputesEdge` quantify over sound
+  locations, the edge condition only where both labels decode.
+  `WTree/SigEdge.lean` is the edge check as an expression of arity six,
+  `SigEdge.edgeOk`, comparing a child's arity with the field or the sum of
+  fields the parent requires at the child's position, with
+  `SigEdge.computesEdge` its correctness; and `WTree/SigCheck.lean` composes
+  them into `SigCheck.sigRecognizer`, an expression of the subalgebra that
+  accepts a word exactly when it spells an expression of the algebra,
+  `SigCheck.sigRecognizer_iff`, hence the spelling of every expression of
+  the subalgebra, its own included, `SigCheck.sigRecognizer_self`; and
+  `SigCheck.computableInTimeAndSpace_sigRecognize` reads off the machine
+  bound for it, polynomial time and logarithmic space
+  (`WTree/SigMachine.lean`, listed in `GebMeta.classicalAllowedModules` as
+  `WTree/Machine.lean` is). The other modules of the directory are
   `Classical.choice`-free.
   Depends on `Geb.Mathlib.Data.PFunctor.Slice.W`,
   `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`,

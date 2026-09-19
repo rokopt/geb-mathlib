@@ -241,6 +241,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Machine,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Machine,
+   `Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.SigMachine,
    `GebTests.Prototypes.Computability.SizeBounded.Machine,
    `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine,
    `Geb.Prototypes.Typechecker.Instances,

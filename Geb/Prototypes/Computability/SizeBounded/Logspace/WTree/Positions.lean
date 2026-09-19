@@ -203,6 +203,163 @@ theorem nodes_pos_bounds (t : Tree) (p : ℕ) (n : Node) (hn : n ∈ nodes t p) 
   · exact (h₃ n hn).1
   · exact h₁
 
+/-- A location sound in a word: past the first bit, and ending at the word's
+end or at least two bits before it, as every node label of an encoding does. -/
+@[expose] def Loc.Sound (y : List Bool) (l : Loc) : Prop :=
+  1 ≤ l.pos ∧ (l.pos + l.len + 2 ≤ y.length ∨ l.pos + l.len = y.length)
+
+/-- An encoding has at least two bits. -/
+theorem two_le_length_encode : ∀ t : Tree, 2 ≤ (encode t).length :=
+  tree_ind (fun s ↦ by
+      rw [Geb.BitTree.Elias.encode_leaf, List.length_cons, List.length_append]
+      have := Geb.BitTree.Elias.length_encodeNat_pos s.length
+      omega)
+    fun l r hl hr ↦ by
+      rw [Geb.BitTree.Elias.encode_fork, List.length_cons, List.length_append]
+      omega
+
+/-- Every location the fold produces ends at the encoding's end or at least
+two bits before it, and every node has fewer children than the encoding
+has bits. -/
+theorem end_roseAt : ∀ (t : Tree) (p : ℕ),
+    ((roseAt t p).label.pos + (roseAt t p).label.len + 2 ≤ p + (encode t).length ∨
+      (roseAt t p).label.pos + (roseAt t p).label.len = p + (encode t).length) ∧
+    (roseAt t p).children.length + 1 ≤ (encode t).length ∧
+    (∀ l ∈ (roseAt t p).children, l.pos + l.len + 2 ≤ p + (encode t).length ∨
+      l.pos + l.len = p + (encode t).length) ∧
+    ∀ n ∈ (roseAt t p).inner,
+      (n.label.pos + n.label.len + 2 ≤ p + (encode t).length ∨
+        n.label.pos + n.label.len = p + (encode t).length) ∧
+      n.children.length + 1 ≤ (encode t).length ∧
+      ∀ l ∈ n.children, l.pos + l.len + 2 ≤ p + (encode t).length ∨
+        l.pos + l.len = p + (encode t).length :=
+  tree_ind (fun s p ↦ by
+      rw [roseAt_leaf, Geb.BitTree.Elias.encode_leaf, List.length_cons, List.length_append]
+      dsimp only
+      exact ⟨Or.inr (by omega),
+        by rw [List.length_nil]; have := Geb.BitTree.Elias.length_encodeNat_pos s.length; omega,
+        fun _ h ↦ absurd h List.not_mem_nil,
+        fun _ h ↦ absurd h List.not_mem_nil⟩)
+    fun l r ihl ihr p ↦ by
+      obtain ⟨⟨hl₁, hl₂⟩, hlc, hli⟩ := pos_roseAt_lt l (p + 1)
+      obtain ⟨_, hlk, _, hli'⟩ := ihl (p + 1)
+      obtain ⟨hr₁, hrk, hrc, hri⟩ := ihr (p + 1 + (encode l).length)
+      have h2 := two_le_length_encode r
+      rw [roseAt_fork, Geb.BitTree.Elias.encode_fork, List.length_cons, List.length_append]
+      dsimp only
+      refine ⟨Or.inl (by omega), ?_, fun x hx ↦ ?_, fun n hn ↦ ?_⟩
+      · rw [List.length_append, List.length_singleton]
+        omega
+      · rw [List.mem_append, List.mem_singleton] at hx
+        rcases hx with hx | rfl
+        · exact Or.inl (by have := (hlc x hx).2; omega)
+        · rcases hr₁ with h | h
+          · exact Or.inl (by omega)
+          · exact Or.inr (by omega)
+      · rw [List.mem_append, List.mem_append, List.mem_singleton] at hn
+        rcases hn with (hn | hn) | rfl
+        · obtain ⟨⟨_, h₂⟩, h₃⟩ := hli n hn
+          refine ⟨Or.inl (by omega), by have := (hli' n hn).2.1; omega, fun x hx ↦ ?_⟩
+          exact Or.inl (by have := (h₃ x hx).2; omega)
+        · obtain ⟨h₁, h₂, h₃⟩ := hri n hn
+          refine ⟨?_, by omega, fun x hx ↦ ?_⟩
+          · rcases h₁ with h | h
+            · exact Or.inl (by omega)
+            · exact Or.inr (by omega)
+          · rcases h₃ x hx with h | h
+            · exact Or.inl (by omega)
+            · exact Or.inr (by omega)
+        · dsimp only
+          refine ⟨?_, by omega, fun x hx ↦ ?_⟩
+          · rcases hr₁ with h | h
+            · exact Or.inl (by omega)
+            · exact Or.inr (by omega)
+          · rcases hrc x hx with h | h
+            · exact Or.inl (by omega)
+            · exact Or.inr (by omega)
+
+/-- Every child location the fold produces is the label of a node of the tree,
+the open node's children and the children of the nodes below alike. -/
+theorem children_roseAt : ∀ (t : Tree) (p : ℕ),
+    (∀ l ∈ (roseAt t p).children, ∃ n ∈ nodes t p, n.label = l) ∧
+    ∀ m ∈ (roseAt t p).inner, ∀ l ∈ m.children, ∃ n ∈ nodes t p, n.label = l :=
+  tree_ind (fun s p ↦ by
+      rw [roseAt_leaf]
+      exact ⟨fun _ h ↦ absurd h List.not_mem_nil, fun _ h ↦ absurd h List.not_mem_nil⟩)
+    fun l r ihl ihr p ↦ by
+      obtain ⟨hlc, hli⟩ := ihl (p + 1)
+      obtain ⟨hrc, hri⟩ := ihr (p + 1 + (encode l).length)
+      have hmem : ∀ n ∈ nodes l (p + 1), ∃ n' ∈ nodes (fork l r) p, n'.label = n.label := by
+        intro n hn
+        unfold nodes at hn ⊢
+        rw [roseAt_fork]
+        rw [List.mem_append, List.mem_singleton] at hn
+        rcases hn with hn | rfl
+        · exact ⟨n, List.mem_append_left _ (List.mem_append_left _ (List.mem_append_left _ hn)),
+            rfl⟩
+        · exact ⟨_, List.mem_append_right _ (List.mem_singleton_self _), rfl⟩
+      have hmemr : ∀ n ∈ nodes r (p + 1 + (encode l).length),
+          ∃ n' ∈ nodes (fork l r) p, n'.label = n.label := by
+        intro n hn
+        unfold nodes at hn ⊢
+        rw [roseAt_fork]
+        rw [List.mem_append, List.mem_singleton] at hn
+        rcases hn with hn | rfl
+        · exact ⟨n, List.mem_append_left _ (List.mem_append_left _ (List.mem_append_right _ hn)),
+            rfl⟩
+        · exact ⟨_, List.mem_append_left _ (List.mem_append_right _ (List.mem_singleton_self _)),
+            rfl⟩
+      constructor
+      · intro x hx
+        rw [roseAt_fork] at hx
+        dsimp only at hx
+        rw [List.mem_append, List.mem_singleton] at hx
+        rcases hx with hx | rfl
+        · obtain ⟨n, hn, hnl⟩ := hlc x hx
+          obtain ⟨n', hn', hn'l⟩ := hmem n hn
+          exact ⟨n', hn', hn'l.trans hnl⟩
+        · exact hmemr _ (List.mem_append_right _ (List.mem_singleton_self _))
+      · intro m hm x hx
+        rw [roseAt_fork] at hm
+        dsimp only at hm
+        rw [List.mem_append, List.mem_append, List.mem_singleton] at hm
+        rcases hm with (hm | hm) | rfl
+        · obtain ⟨n, hn, hnl⟩ := hli m hm x hx
+          obtain ⟨n', hn', hn'l⟩ := hmem n hn
+          exact ⟨n', hn', hn'l.trans hnl⟩
+        · obtain ⟨n, hn, hnl⟩ := hri m hm x hx
+          obtain ⟨n', hn', hn'l⟩ := hmemr n hn
+          exact ⟨n', hn', hn'l.trans hnl⟩
+        · obtain ⟨n, hn, hnl⟩ := hrc x hx
+          obtain ⟨n', hn', hn'l⟩ := hmemr n hn
+          exact ⟨n', hn', hn'l.trans hnl⟩
+
+/-- Every child of a node of an encoding is the label of a node. -/
+theorem children_mem_nodes (t : Tree) (n : Node) (hn : n ∈ nodes t 0) (l : Loc)
+    (hl : l ∈ n.children) : ∃ n' ∈ nodes t 0, n'.label = l := by
+  obtain ⟨hc, hi⟩ := children_roseAt t 0
+  unfold nodes at hn
+  rw [List.mem_append, List.mem_singleton] at hn
+  rcases hn with hn | rfl
+  · exact hi n hn l hl
+  · exact hc l hl
+
+/-- Every node of an encoding has a sound label, fewer children than the
+encoding has bits, and sound children. -/
+theorem nodes_sound (t : Tree) (n : Node) (hn : n ∈ nodes t 0) :
+    Loc.Sound (encode t) n.label ∧ n.k + 1 ≤ (encode t).length ∧
+      ∀ l ∈ n.children, Loc.Sound (encode t) l := by
+  obtain ⟨⟨h₁, _⟩, hc, hi⟩ := pos_roseAt_lt t 0
+  obtain ⟨e₁, ek, ec, ei⟩ := end_roseAt t 0
+  rw [Nat.zero_add] at e₁ ec ei
+  unfold nodes at hn
+  rw [List.mem_append, List.mem_singleton] at hn
+  rcases hn with hn | rfl
+  · obtain ⟨⟨h₃, _⟩, h₄⟩ := hi n hn
+    obtain ⟨e₃, e₄, e₅⟩ := ei n hn
+    exact ⟨⟨h₃, e₃⟩, e₄, fun l hl ↦ ⟨(h₄ l hl).1, e₅ l hl⟩⟩
+  · exact ⟨⟨h₁, e₁⟩, ek, fun l hl ↦ ⟨(hc l hl).1, ec l hl⟩⟩
+
 namespace CodedSig
 
 variable {I : Type} [DecidableEq I] (C : CodedSig I)

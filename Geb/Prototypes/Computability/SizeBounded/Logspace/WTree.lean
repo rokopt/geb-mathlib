@@ -23,6 +23,11 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.BitFold
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumBits
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumArith
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumSum
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Sig
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.SigLabel
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.SigEdge
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.SigCheck
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.SigMachine
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -41,7 +46,9 @@ subalgebra, parameterized by the label and edge checks; the machine the
 recognizer compiles to; the binary numerals of a shape's numeric fields,
 their scanner, and the scanner as expressions; and the comparisons of
 numerals, the check of a sum and the reading of a numeral into a counter,
-each a lockstep fold over the bits of numerals.
+each a lockstep fold over the bits of numerals; and the algebra's own
+signature coded, its label and edge checks as expressions, and the
+recognizer of the algebra's expressions they yield.
 -/
 
 set_option doc.verso true

@@ -411,16 +411,12 @@ expressions for the label and edge checks, and
 `CodedSig.computableInTimeAndSpace_recognize` reads the machine bound off
 the subalgebra's soundness theorem. The work that remains, in order:
 
-- The label and edge checks for `Geb.SizeBounded.sig`, the algebra's own
-  signature, as expressions: a shape code is a tag and numeric fields, each
-  field a binary numeral, `Geb.SizeBounded.Logspace.WTree.Numeral.natCode`,
-  whose scanner is written as expressions (`WTree/NumScanExpr.lean`), and
-  fields are compared, checked against a sum, and read into counters by
-  lockstep folds over their bits (`WTree/NumArith.lean`,
-  `WTree/NumSum.lean`). What remains: the signature's code and decoder,
-  and the label and edge checks composed from the numeral operations. The
-  recognizer of the algebra's own expressions then accepts its own
-  spelling, as a corollary of the specification.
+- The evaluator with sharing (`Geb/Prototypes/Computability/SizeBounded/Sharing.lean`)
+  takes tens of seconds on the recognizer of the algebra's own expressions
+  (`WTree/SigCheck.lean`) at a ten-bit word, since a fold whose step
+  evaluates a scan re-evaluates the scan at every level; § The degree of
+  evaluation. The tests evaluate it on the smallest spelling only and check
+  larger spellings against the recognizer's specification.
 - The presheaf W-types: hereditary naturality as a further scan, comparing
   a restricted subtree with a subtree in lockstep.
 
