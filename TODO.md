@@ -336,16 +336,14 @@ formalized. Follow-ups:
   whose length bounds the output, as `sbs` bounds by its second argument,
   which is the form in which a linear space bound is a parameter rather
   than an accident of the input.
-- Sharing in the evaluator. `Geb.SizeBounded.evalSRN` recomputes a register
-  of the previous stage at every reference a step makes to it, so evaluating
-  an expression whose steps read several registers, as
-  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` does, takes time
-  exponential in the word's length, while `Geb.SizeBounded.evalSRNC` charges
-  each stage once and the compiled machines hold each register on a tape. A
-  recursion returning each stage as a materialized vector, indexed by the
-  steps, evaluates in the charged time; the equations `sem_srnOf_nil` and
-  `sem_srnOf_cons` and their consumers would then hold by a lemma on the
-  vector rather than definitionally.
+- The degree of evaluation. `Geb.SizeBounded.evalVec` evaluates each value
+  at most once, but the tail `Geb.SizeBounded.tailOf` is a recursion over
+  its whole argument, so under it the drop of a counter is quadratic in the
+  word's length, the doubling `Geb.SizeBounded.Logspace.dbl` cubic and
+  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` quartic, which confines
+  evaluation to words of a few dozen bits. The cost is the expressions' own,
+  the compiled machines running the same recursions; a derived tail that
+  reads one bit would lower every degree by one.
 - The relation to `Cobham.SmashFree`: every expression of the algebra is
   computable by one of the subalgebra, the bound of each recursion being
   the concatenation of the recursion variable with a constant, through

@@ -2646,6 +2646,18 @@ checklist and in CI.
   this evaluator into a multi-tape machine whose step and cell counts are
   those accounted for. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Sharing.lean` — the evaluator
+  with sharing: `Geb.SizeBounded.evalVec` evaluates each value once, holding
+  the arguments of a substitution in a vector before entering the head and
+  each stage of a recursion in the vector of `Geb.SizeBounded.runSRN`, where
+  `Geb.SizeBounded.eval` passes both as functions and so re-evaluates a value
+  at every reference, exponentially in the word's length for a recursion
+  whose steps read several registers. `Geb.SizeBounded.evalVec_eq` and
+  `Geb.SizeBounded.SOf.semVec_eq` identify its value with `Geb.SizeBounded.eval`,
+  so it serves evaluation on longer words while the reference
+  interpretation's equations apply unchanged. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Cost` and
+  `Geb.Prototypes.Computability.SizeBounded.Iteration`. `Classical.choice`-free.
 - `Geb/Prototypes/Computability/SizeBounded/Machine.lean` — the machine
   calculus: a register holds a bitstring on a work tape in the reversed
   layout `Geb.SizeBounded.Machine.tapeOf`, cell `z` the word's `z`th bit
