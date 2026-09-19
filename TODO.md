@@ -403,17 +403,14 @@ recognizer of the spellings of admissible W-trees of a finitary slice
 polynomial endofunctor whose shapes are coded by bitstrings,
 `Geb.SizeBounded.Logspace.WTree.CodedSig.recognize`, as a composition of
 streaming scans of the Elias-length tree encoding, each the streaming
-scanner with a fixed number of further counters, and proves its
-specification, `CodedSig.recognize_iff`. The scans are the form a
-logarithmic-space algorithm takes; the work that remains, in order:
+scanner with a fixed number of further counters updated at its events, and
+proves its specification, `CodedSig.recognize_iff`. The scans are written
+as expressions of the subalgebra,
+`Geb.SizeBounded.Logspace.WTree.recognizeExpr`, parameterized by
+expressions for the label and edge checks, and
+`CodedSig.computableInTimeAndSpace_recognize` reads the machine bound off
+the subalgebra's soundness theorem. The work that remains, in order:
 
-- The scans as expressions of the subalgebra `Geb.SizeBounded.Logspace.LOf`,
-  each proved to compute its scan as
-  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` is: the node scan
-  parameterized by an expression for its check, the child scan
-  parameterized by an expression for the edge check, and the composition,
-  with the machine reading through
-  `Geb.SizeBounded.Logspace.Machine.computableInTimeAndSpace_sem`.
 - The label and edge checks for `Geb.SizeBounded.sig`, the algebra's own
   signature, as expressions: a shape code is a tag and numeric fields, each
   field an Elias delta code with its payload least significant bit first,

@@ -2976,8 +2976,31 @@ checklist and in CI.
   child scan, and `CodedSig.recognize_iff` is its specification. Every scan
   reads the word from its beginning with a fixed number of counters
   bounded by its length, the child scan once per node, which is the form a
-  logarithmic-space algorithm takes; the expressions of the subalgebra
-  computing the scans are not yet written. `Classical.choice`-free. Depends
-  on `Geb.Mathlib.Data.PFunctor.Slice.Decidable`,
-  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary` and
-  `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect`.
+  logarithmic-space algorithm takes. The scans are then written as
+  expressions of the subalgebra. `WTree/ExprBase.lean` reads the events off
+  the monotone counters, `Geb.SizeBounded.Logspace.WTree.eventC`, agreeing
+  with those read off the scanner's state; lifts the seven Elias steps to a
+  larger step arity, `liftBy`, so that their step lemmas apply unchanged;
+  and supplies `eventStep`, a register step given by its value at each
+  event, with the dispatches, comparisons of counters held as end segments,
+  `eqSeg` and `isZeroSeg`, and flags as words. `WTree/NodeExpr.lean` is the
+  node scan as a simultaneous recursion with nine registers, the check at a
+  node a parameter of arity four, and `NodeExpr.nodeScanExprSem_eq` its
+  value; `WTree/ChildExpr.lean` is the child scan with twelve registers and
+  four parameters, the edge check a parameter of arity six, and
+  `ChildExpr.childScanExprSem_eq` its value, each register's step proved
+  against the abstract update mode by mode and event by event.
+  `WTree/RecognizeExpr.lean` composes them, `recognizeExpr`, and
+  `CodedSig.recognizeExprSem_eq_singleton_iff_isW` shows the expression
+  accepts exactly the spellings of admissible W-trees when its two
+  parameters compute the signature's label and edge conditions,
+  `CodedSig.ComputesLabel` and `CodedSig.ComputesEdge`; the machine reading,
+  polynomial time and logarithmic space, is
+  `CodedSig.computableInTimeAndSpace_recognize` (`WTree/Machine.lean`,
+  listed in `GebMeta.classicalAllowedModules` as `EliasTree/Machine.lean`
+  is). The other modules of the directory are `Classical.choice`-free.
+  Depends on `Geb.Mathlib.Data.PFunctor.Slice.W`,
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`,
+  `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect`,
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Correct` and
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main`.

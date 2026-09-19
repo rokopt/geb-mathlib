@@ -8,6 +8,8 @@ module
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree -- shake: keep; #guard needs it
 public meta import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree -- shake: keep; #guard needs it
 public import Geb.Mathlib.Data.FinEnum
+public import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; #guard needs it
+public meta import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; #guard needs it
 
 /-!
 # The W-tree recognizer at the signature of binary trees of bitstrings
@@ -17,16 +19,20 @@ shape with two directions, over one index: its W-trees are the binary trees
 of bitstrings. The recognizer accepts the spellings of a leaf, a fork of
 leaves and a fork of forks, and rejects the empty word, a fork spelled with
 one child, a leaf spelled with a child, a label that is no code, and a fork
-whose label carries a payload.
+whose label carries a payload. The recognizer as an expression of the
+subalgebra, with the signature's label and edge checks as expressions,
+accepts and rejects the same words under the evaluator with sharing.
 
 ## Main definitions
 
 * `binSig` — the signature.
+* `binLabel`, `binEdge`, `binRecognizer` — the label and edge checks as
+  expressions, and the recognizer as an expression evaluated with sharing.
 
 ## Main statements
 
 The recognizer accepts each spelling and rejects each corruption, by
-`#guard`.
+`#guard`, and so does the expression.
 
 ## Tags
 
@@ -111,3 +117,43 @@ def forkW (l r : WType binArity) : WType binArity := WType.mk none ![l, r]
 #guard binSig.recognize (Geb.BitTree.Elias.encode
   (Geb.BitTree.fork (Geb.BitTree.fork (Geb.BitTree.leaf [true, true]) (Geb.BitTree.leaf [false]))
     (Geb.BitTree.leaf [false]))) = false
+
+/-- The label check as an expression: at a fork code, the label has one bit
+and the node two children; at a leaf code, the node has no children. The
+variables are the word, the remaining word from the label, the word dropped
+by one more than the label's length, and the word dropped by the arity. -/
+def binLabel : Geb.SizeBounded.Logspace.LOf 4 :=
+  Geb.SizeBounded.Logspace.cond4L (Geb.SizeBounded.Logspace.projL 4 1)
+    (Geb.SizeBounded.Logspace.constL 4 [])
+    (Geb.SizeBounded.Logspace.cond4L
+      (eqSeg (Geb.SizeBounded.Logspace.projL 4 2)
+        (Geb.SizeBounded.Logspace.tailAppL (Geb.SizeBounded.Logspace.tailAppL
+          (Geb.SizeBounded.Logspace.projL 4 0))))
+      (Geb.SizeBounded.Logspace.constL 4 [])
+      (eqSeg (Geb.SizeBounded.Logspace.projL 4 3)
+        (Geb.SizeBounded.Logspace.tailAppL (Geb.SizeBounded.Logspace.tailAppL
+          (Geb.SizeBounded.Logspace.projL 4 0))))
+      (eqSeg (Geb.SizeBounded.Logspace.projL 4 3)
+        (Geb.SizeBounded.Logspace.tailAppL (Geb.SizeBounded.Logspace.tailAppL
+          (Geb.SizeBounded.Logspace.projL 4 0)))))
+    (eqSeg (Geb.SizeBounded.Logspace.projL 4 3) (Geb.SizeBounded.Logspace.projL 4 0))
+
+/-- The edge check as an expression: over one index, every edge is in order. -/
+def binEdge : Geb.SizeBounded.Logspace.LOf 6 := Geb.SizeBounded.Logspace.constL 6 [true]
+
+/-- The recognizer as an expression, evaluated with sharing. -/
+def binRecognizer : List Bool → List Bool :=
+  fun w ↦ (recognizeExpr binLabel binEdge).1.semVec ![w]
+
+#guard binRecognizer (binSig.spell (leafW [])) = [true]
+
+#guard binRecognizer (binSig.spell (leafW [true, false])) = [true]
+
+#guard binRecognizer (binSig.spell (forkW (leafW []) (leafW [true]))) = [true]
+
+#guard binRecognizer [] = []
+
+#guard binRecognizer (Geb.BitTree.Elias.encode (Geb.BitTree.leaf [])) = []
+
+#guard binRecognizer (Geb.BitTree.Elias.encode
+  (Geb.BitTree.fork (Geb.BitTree.leaf [true]) (Geb.BitTree.leaf [false]))) = []

@@ -11,6 +11,11 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Positions
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Nodes
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Children
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Recognize
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.ExprBase
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NodeExpr
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.ChildExpr
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.RecognizeExpr
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Machine
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -23,8 +28,10 @@ bitstrings: the spelling of a W-tree as an Elias-length tree of labels and the
 tree-level characterization of admissibility; the events of the streaming
 scanner and the positions of labels in an encoding; the scan over the nodes
 and the scan over one node's children, each the streaming scanner with a
-fixed number of further counters; and the recognizer composed of them, with
-its specification.
+fixed number of further counters; the recognizer composed of them, with its
+specification; the two scans and the recognizer as expressions of the
+subalgebra, parameterized by the label and edge checks; and the machine the
+recognizer compiles to.
 -/
 
 set_option doc.verso true
