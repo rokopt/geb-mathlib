@@ -2943,3 +2943,41 @@ checklist and in CI.
   on `Geb.Prototypes.Computability.SizeBounded.Logspace.SuffixCounter`,
   `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect` and
   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace/WTree.lean` — the
+  recognizer of the W-trees of a coded signature, specified as a
+  composition of streaming scans. `Geb.SizeBounded.Logspace.WTree.CodedSig`
+  is a finitary slice polynomial endofunctor with an injective bitstring
+  code of its shapes and a decoder; `CodedSig.spell` spells a raw W-tree as
+  the Elias-length encoding of a binary tree of labels, a node being the
+  left spine of one fork per child over the leaf carrying its shape's code,
+  so that the node reads as its arity in unary, the delta-coded length of
+  the label, the label and the children (`WTree/Spell.lean`).
+  `CodedSig.isW_iff` characterizes the spellings of admissible W-trees as
+  the encodings of binary trees whose labels decode to shapes of the arity
+  their spines have, `CodedSig.labelsOk`, and whose children's labels lie
+  over the input indices their parents' labels prescribe,
+  `CodedSig.edgesOk`, both computed by the fold `CodedSig.info`.
+  `WTree/Events.lean` reads the four events a bit raises at the streaming
+  scanner, the tags, the completion of a header and the completion of a
+  leaf, and extends the scanner by a register updated at events,
+  `Geb.SizeBounded.Logspace.WTree.extStep`, with the segment lemmas placing
+  the events at the last bit of a header and of a payload.
+  `WTree/Positions.lean` locates every node's label and children in an
+  encoding, `Geb.SizeBounded.Logspace.WTree.roseAt`, and
+  `CodedSig.labelsOk_iff_nodes` and `CodedSig.edgesOk_iff_nodes` restate
+  the two conditions on the words at the locations. `WTree/Nodes.lean` is
+  the scan over the nodes, a fork count and a flag conjoined with a check
+  at each node's label with its arity, `nodeScan_ok_iff`;
+  `WTree/Children.lean` is the scan over one node's children, which finds
+  them after the node's payload by a fork count and a leaf count kept from
+  each child's beginning, the child ending when the leaves exceed the forks
+  by one, `childScan_ok_iff`. `CodedSig.recognize` composes the streaming
+  scanner with the node scan whose check is the label condition and the
+  child scan, and `CodedSig.recognize_iff` is its specification. Every scan
+  reads the word from its beginning with a fixed number of counters
+  bounded by its length, the child scan once per node, which is the form a
+  logarithmic-space algorithm takes; the expressions of the subalgebra
+  computing the scans are not yet written. `Classical.choice`-free. Depends
+  on `Geb.Mathlib.Data.PFunctor.Slice.Decidable`,
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary` and
+  `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect`.

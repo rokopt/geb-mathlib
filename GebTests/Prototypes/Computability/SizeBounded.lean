@@ -13,6 +13,7 @@ import GebTests.Prototypes.Computability.SizeBounded.Machine
 import GebTests.Prototypes.Computability.SizeBounded.Logspace
 import GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine
 import GebTests.Prototypes.Computability.SizeBounded.Logspace.EliasTree
+import GebTests.Prototypes.Computability.SizeBounded.Logspace.WTree
 
 /-!
 # The non-size-increasing function algebra — tests index

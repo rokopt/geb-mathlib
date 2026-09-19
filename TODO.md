@@ -16,6 +16,7 @@
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [The non-size-increasing algebra as the resource discipline](#the-non-size-increasing-algebra-as-the-resource-discipline)
   - [Kristiansen's logspace algebra](#kristiansens-logspace-algebra)
+  - [Recognizing W-trees in the logspace algebra](#recognizing-w-trees-in-the-logspace-algebra)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [`FinSetSkel` under `namespace CategoryTheory`](#finsetskel-under-namespace-categorytheory)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
@@ -394,6 +395,34 @@ holds it. Follow-ups:
   the machine reading is stated for one argument, as Cslib's
   `ComputableInTimeAndSpaceOfLength` is; the paper's decision problems are
   unary.
+
+### Recognizing W-trees in the logspace algebra
+
+`Geb/Prototypes/Computability/SizeBounded/Logspace/WTree/` specifies a
+recognizer of the spellings of admissible W-trees of a finitary slice
+polynomial endofunctor whose shapes are coded by bitstrings,
+`Geb.SizeBounded.Logspace.WTree.CodedSig.recognize`, as a composition of
+streaming scans of the Elias-length tree encoding, each the streaming
+scanner with a fixed number of further counters, and proves its
+specification, `CodedSig.recognize_iff`. The scans are the form a
+logarithmic-space algorithm takes; the work that remains, in order:
+
+- The scans as expressions of the subalgebra `Geb.SizeBounded.Logspace.LOf`,
+  each proved to compute its scan as
+  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` is: the node scan
+  parameterized by an expression for its check, the child scan
+  parameterized by an expression for the edge check, and the composition,
+  with the machine reading through
+  `Geb.SizeBounded.Logspace.Machine.computableInTimeAndSpace_sem`.
+- The label and edge checks for `Geb.SizeBounded.sig`, the algebra's own
+  signature, as expressions: a shape code is a tag and numeric fields, each
+  field an Elias delta code with its payload least significant bit first,
+  so that a field is compared with another, or with the sum of two others
+  and a constant, by a lockstep scan with a carry, and read into a counter
+  for the arity check. The recognizer of the algebra's own expressions then
+  accepts its own spelling, as a corollary of the specification.
+- The presheaf W-types: hereditary naturality as a further scan, comparing
+  a restricted subtree with a subtree in lockstep.
 
 ### Upstream placement of categorical wrappers
 
