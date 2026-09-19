@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-import Geb.Prototypes.Typechecker
+import Geb.Prototypes.Typechecker.Terminal -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -13,8 +13,9 @@ set_option doc.verso true in
 
 The examples check composition order, identification outside the source fiber,
 empty source fibers, and separation of different actions on accepted elements.
-Reflecting morphisms additionally preserve failing inputs while retaining their
-actions there; their images in the quotient can coincide.
+Checkers have two outputs while reductions may return other base elements.
+Singleton checkers on the natural numbers demonstrate terminal objects beyond
+two-element bases, and a restricted submonoid shows why accessibility matters.
 
 ## Tags
 
@@ -25,7 +26,7 @@ set_option doc.verso true
 set_option linter.privateModule false
 
 open CategoryTheory GebProto.EndomorphismCategory
-open GebProto.EndomorphismCategory.Typechecker
+open GebProto.EndomorphismCategory.DecisionProblem
 
 namespace GebTests.Typechecker
 
@@ -36,14 +37,21 @@ theorem closed : CompositionallyClosed (fun _ : Bool → Bool ↦ True) :=
 /-- The submonoid containing all Boolean endomorphisms. -/
 abbrev admissible := closed.toSubmonoid
 
+/-- Every Boolean endomorphism has the required two-value range. -/
+theorem bool_twoValued (p : Bool → Bool) : TwoValued false true p :=
+  ⟨Bool.noConfusion, fun x ↦ Bool.casesOn (p x) (Or.inl rfl) (Or.inr rfl)⟩
+
 /-- The typechecker accepting only false. -/
-def onlyFalse : Typechecker admissible false := ⟨⟨id, True.intro⟩⟩
+def onlyFalse : DecisionProblem admissible false true :=
+  ⟨⟨id, True.intro⟩, bool_twoValued id⟩
 
 /-- The typechecker accepting every Boolean. -/
-def all : Typechecker admissible false := ⟨⟨fun _ ↦ false, True.intro⟩⟩
+def all : DecisionProblem admissible false true :=
+  ⟨⟨fun _ ↦ false, True.intro⟩, bool_twoValued _⟩
 
 /-- The typechecker accepting no Boolean. -/
-def none : Typechecker admissible false := ⟨⟨fun _ ↦ true, True.intro⟩⟩
+def none : DecisionProblem admissible false true :=
+  ⟨⟨fun _ ↦ true, True.intro⟩, bool_twoValued _⟩
 
 /-- Identity as a map from the singleton fiber to the full fiber. -/
 def includeFalse : Representative onlyFalse all := ⟨⟨id, True.intro⟩, fun _ _ ↦ rfl⟩
@@ -73,59 +81,82 @@ example : negate.toHom ≠ reset.toHom := by
   intro h
   exact Bool.noConfusion ((Representative.toHom_eq_iff _ _).1 h false rfl)
 
-example : ((interpretation admissible false).map
+example : ((interpretation admissible false true).map
     (negate.toHom ≫ reset.toHom) ⟨false, rfl⟩).val = false := rfl
 
-example : ((interpretation admissible false).map
+example : ((interpretation admissible false true).map
     (reset.toHom ≫ negate.toHom) ⟨false, rfl⟩).val = true := rfl
 
-example : ((interpretation admissible false).map (𝟙 all) ⟨true, rfl⟩).val = true := rfl
+example : ((interpretation admissible false true).map (𝟙 all) ⟨true, rfl⟩).val = true := rfl
 
 example : let star : OneObject admissible := SingleObj.star admissible
     let f : star ⟶ star := ⟨Bool.not, True.intro⟩
     let g : star ⟶ star := ⟨fun _ ↦ false, True.intro⟩
     (f ≫ g).val false = false := rfl
 
-example {B : Type 1} {P : (B → B) → Prop} (h : CompositionallyClosed P) (b : B) :
-    Typechecker h.toSubmonoid b ⥤ Type 1 := interpretation h.toSubmonoid b
+example {B : Type 1} {P : (B → B) → Prop} (h : CompositionallyClosed P) (t f : B) :
+    DecisionProblem h.toSubmonoid t f ⥤ Type 1 := interpretation h.toSubmonoid t f
 
-/-- Negation as a reflecting morphism of the full fiber. -/
-def reflectingNegate : (⟨all⟩ : ReflectingTypechecker admissible false) ⟶ ⟨all⟩ :=
-  ⟨negate, fun _ _ ↦ rfl⟩
+/-- A natural-number checker accepting exactly one designated input. -/
+def pointChecker (a n : ℕ) : ℕ := if n = a then 1 else 0
 
-/-- Constant false as a reflecting morphism of the full fiber. -/
-def reflectingReset : (⟨all⟩ : ReflectingTypechecker admissible false) ⟶ ⟨all⟩ :=
-  ⟨reset, fun _ _ ↦ rfl⟩
+/-- A singleton checker uses only one and zero as outputs. -/
+theorem pointChecker_twoValued (a : ℕ) : TwoValued 1 0 (pointChecker a) :=
+  ⟨by decide, fun n ↦ by
+    by_cases hn : n = a
+    · exact Or.inl (ite_eq_left hn)
+    · exact Or.inr (ite_eq_right hn)⟩
 
-example : (ReflectingTypechecker.toQuotient admissible false).obj ⟨all⟩ = all := rfl
+/-- The checker accepts exactly its designated input. -/
+theorem pointChecker_pass_iff (a n : ℕ) : pointChecker a n = 1 ↔ n = a := by
+  by_cases hn : n = a <;> simp only [pointChecker, hn, reduceIte, Nat.zero_ne_one]
 
-example : (ReflectingTypechecker.toQuotient admissible false).map reflectingNegate =
-    negate.toHom := rfl
+/-- The natural-number decision problem accepting exactly zero. -/
+def zeroDecision : DecisionProblem (⊤ : Submonoid (Function.End ℕ)) 1 0 :=
+  ⟨⟨pointChecker 0, True.intro⟩, pointChecker_twoValued 0⟩
 
-example : (reflectingNegate ≫ reflectingReset).val.val.val false = false := rfl
+/-- Doubling preserves being zero, without having only two output values. -/
+def doubleReduction : Representative zeroDecision zeroDecision :=
+  ⟨⟨fun n ↦ n + n, True.intro⟩, fun n hn ↦ by
+    change pointChecker 0 (n + n) = 1
+    exact (pointChecker_pass_iff 0 _).mpr
+      (Nat.add_eq_zero_iff.mpr ⟨(pointChecker_pass_iff 0 n).mp hn,
+        (pointChecker_pass_iff 0 n).mp hn⟩)⟩
 
-example : (reflectingReset ≫ reflectingNegate).val.val.val false = true := rfl
+example : (doubleReduction.comp doubleReduction).val.val 2 = 8 := rfl
 
-example : (ReflectingTypechecker.toQuotient admissible false).map
-    (reflectingNegate ≫ reflectingReset) = negate.toHom ≫ reset.toHom := rfl
-
-/-- Negation preserves and reflects passing for the empty fiber. -/
-def emptyNegate : (⟨none⟩ : ReflectingTypechecker admissible false) ⟶ ⟨none⟩ :=
-  ⟨⟨⟨Bool.not, True.intro⟩, fun _ hx ↦ hx⟩, fun _ hx ↦ hx⟩
-
-example : emptyNegate ≠ 𝟙 (⟨none⟩ : ReflectingTypechecker admissible false) := by
+example : ¬TwoValued (1 : ℕ) 0 doubleReduction.val.val := by
   intro h
-  exact Bool.noConfusion (congrArg (fun f ↦ f.val.val.val false) h)
+  exact (by decide : ¬((4 : ℕ) = 1 ∨ 4 = 0)) (h.2 2)
 
-example : (ReflectingTypechecker.toQuotient admissible false).map emptyNegate = 𝟙 none :=
-  (Representative.toHom_eq_iff _ _).2 fun _ hx ↦ Bool.noConfusion hx
+/-- A checker whose accepted fiber is the singleton true value. -/
+def oneDecision : DecisionProblem (⊤ : Submonoid (Function.End ℕ)) 1 0 :=
+  ⟨⟨pointChecker 1, True.intro⟩, pointChecker_twoValued 1⟩
 
-example (f : (⟨onlyFalse⟩ : ReflectingTypechecker admissible false) ⟶ ⟨onlyFalse⟩) :
-    f.val.val.val true ≠ false :=
-  (ReflectingTypechecker.map_fail_iff f true).2 Bool.noConfusion
+example (X : DecisionProblem (⊤ : Submonoid (Function.End ℕ)) 1 0) :
+    Unique (X ⟶ oneDecision) :=
+  uniqueToTrueSingleton oneDecision (pointChecker_pass_iff 1) X
 
-example {B : Type 1} {P : (B → B) → Prop} (h : CompositionallyClosed P) (b : B) :
-    ReflectingTypechecker h.toSubmonoid b ⥤ Typechecker h.toSubmonoid b :=
-  ReflectingTypechecker.toQuotient h.toSubmonoid b
+/-- Endomorphisms that are either the identity or use only the two truth values. -/
+def identityOrTwoValued : Submonoid (Function.End ℕ) where
+  carrier := {p | p = id ∨ TwoValued 1 0 p}
+  one_mem' := Or.inl rfl
+  mul_mem' {p q} hp hq := by
+    rcases hp with rfl | hp
+    · exact hq
+    · exact Or.inr (hp.comp_right q)
+
+/-- A singleton checker whose accepted element lies outside the truth values. -/
+def inaccessibleSingleton : DecisionProblem identityOrTwoValued 1 0 :=
+  ⟨⟨pointChecker 2, Or.inr (pointChecker_twoValued 2)⟩, pointChecker_twoValued 2⟩
+
+example : ¬Nonempty (∀ X : DecisionProblem identityOrTwoValued 1 0,
+    Unique (X ⟶ inaccessibleSingleton)) := by
+  intro h
+  have ha := (unique_to_singleton_iff_constant_mem inaccessibleSingleton 2
+    (pointChecker_pass_iff 2) (Or.inr ⟨by decide, fun _ ↦ Or.inl rfl⟩)).mp h
+  rcases ha with ha | ha
+  · exact (by decide : (2 : ℕ) ≠ 0) (congrFun ha 0)
+  · exact (by decide : ¬((2 : ℕ) = 1 ∨ 2 = 0)) (ha.2 0)
 
 end GebTests.Typechecker
