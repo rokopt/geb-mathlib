@@ -3010,10 +3010,24 @@ checklist and in CI.
   recursion with eight registers over the word, with the bit at the index,
   the acceptance and the end position as expressions of arity three,
   `NumExpr.numHit`, `NumExpr.numOk` and `NumExpr.numEnd`, and
-  `NumExpr.num_natCode` and `NumExpr.num_of_ok` their meanings. The other
-  modules of the directory are `Classical.choice`-free.
+  `NumExpr.num_natCode` and `NumExpr.num_of_ok` their meanings.
+  `WTree/BitFold.lean` is a lockstep fold over the indices of the bits of
+  three coded numbers, `BitFold.bitFold`, a simultaneous recursion over
+  the word that reads the three bits at each index and updates registers
+  by an expression given as a parameter, with `BitFold.sem_bitFold` its
+  value as an iteration; `WTree/NumBits.lean` relates the scanner's bits
+  to `Nat.testBit`, the remainders modulo powers of two and the binary
+  size; `WTree/NumArith.lean` instantiates the fold as the equality test,
+  the order test and the reading of a numeral into a counter, an end
+  segment of the word, `NumArith.natEq`, `NumArith.natLt` and
+  `NumArith.natValue`, each proved against the numbers on a word holding
+  their codes; and `WTree/NumSum.lean` instantiates it as a ripple-carry
+  check of a numeral against the sum of two others and a carry in,
+  `NumSum.natSum`. The other modules of the directory are
+  `Classical.choice`-free.
   Depends on `Geb.Mathlib.Data.PFunctor.Slice.W`,
   `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`,
   `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect`,
-  `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Correct` and
-  `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main`.
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Correct`,
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main` and
+  `Mathlib.Data.Nat.Bitwise`.

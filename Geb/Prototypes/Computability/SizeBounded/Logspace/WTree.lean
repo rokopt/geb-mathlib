@@ -19,6 +19,10 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Machine
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Numeral
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumScan
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumScanExpr
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.BitFold
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumBits
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumArith
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumSum
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -34,8 +38,10 @@ and the scan over one node's children, each the streaming scanner with a
 fixed number of further counters; the recognizer composed of them, with its
 specification; the two scans and the recognizer as expressions of the
 subalgebra, parameterized by the label and edge checks; the machine the
-recognizer compiles to; and the binary numerals of a shape's numeric fields,
-their scanner, and the scanner as expressions.
+recognizer compiles to; the binary numerals of a shape's numeric fields,
+their scanner, and the scanner as expressions; and the comparisons of
+numerals, the check of a sum and the reading of a numeral into a counter,
+each a lockstep fold over the bits of numerals.
 -/
 
 set_option doc.verso true
