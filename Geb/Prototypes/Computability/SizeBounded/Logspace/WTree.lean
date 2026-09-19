@@ -16,6 +16,9 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NodeExpr
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.ChildExpr
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.RecognizeExpr
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Machine
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Numeral
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumScan
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.NumScanExpr
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -30,8 +33,9 @@ scanner and the positions of labels in an encoding; the scan over the nodes
 and the scan over one node's children, each the streaming scanner with a
 fixed number of further counters; the recognizer composed of them, with its
 specification; the two scans and the recognizer as expressions of the
-subalgebra, parameterized by the label and edge checks; and the machine the
-recognizer compiles to.
+subalgebra, parameterized by the label and edge checks; the machine the
+recognizer compiles to; and the binary numerals of a shape's numeric fields,
+their scanner, and the scanner as expressions.
 -/
 
 set_option doc.verso true

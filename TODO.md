@@ -413,10 +413,12 @@ the subalgebra's soundness theorem. The work that remains, in order:
 
 - The label and edge checks for `Geb.SizeBounded.sig`, the algebra's own
   signature, as expressions: a shape code is a tag and numeric fields, each
-  field an Elias delta code with its payload least significant bit first,
-  so that a field is compared with another, or with the sum of two others
-  and a constant, by a lockstep scan with a carry, and read into a counter
-  for the arity check. The recognizer of the algebra's own expressions then
+  field a binary numeral, `Geb.SizeBounded.Logspace.WTree.Numeral.natCode`,
+  whose scanner is written as expressions (`WTree/NumScanExpr.lean`). What
+  remains: a field compared with another, or with the sum of two others and
+  a constant, by a lockstep scan over the indices of their bits with a
+  carry, and a field read into a counter for the arity check; then the
+  checks themselves. The recognizer of the algebra's own expressions then
   accepts its own spelling, as a corollary of the specification.
 - The presheaf W-types: hereditary naturality as a further scan, comparing
   a restricted subtree with a subtree in lockstep.

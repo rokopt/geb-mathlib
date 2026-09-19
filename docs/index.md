@@ -2998,7 +2998,20 @@ checklist and in CI.
   polynomial time and logarithmic space, is
   `CodedSig.computableInTimeAndSpace_recognize` (`WTree/Machine.lean`,
   listed in `GebMeta.classicalAllowedModules` as `EliasTree/Machine.lean`
-  is). The other modules of the directory are `Classical.choice`-free.
+  is). `WTree/Numeral.lean` codes a number for a shape's numeric fields,
+  `Geb.SizeBounded.Logspace.WTree.Numeral.natCode`, the gamma code of one
+  more than its binary size followed by its bits least significant first,
+  with the reader `readNatCode` and the injectivity of the code;
+  `WTree/NumScan.lean` scans a word for a coded number at a position with
+  counters bounded by the word's length, `Numeral.nrun`, recording the
+  number's bit at an index, its canonicality and the position after it,
+  and `Numeral.nrun_natCode` and `Numeral.nrun_done` are its soundness and
+  completeness; `WTree/NumScanExpr.lean` is that scanner as a simultaneous
+  recursion with eight registers over the word, with the bit at the index,
+  the acceptance and the end position as expressions of arity three,
+  `NumExpr.numHit`, `NumExpr.numOk` and `NumExpr.numEnd`, and
+  `NumExpr.num_natCode` and `NumExpr.num_of_ok` their meanings. The other
+  modules of the directory are `Classical.choice`-free.
   Depends on `Geb.Mathlib.Data.PFunctor.Slice.W`,
   `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`,
   `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect`,
