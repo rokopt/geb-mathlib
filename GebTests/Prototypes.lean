@@ -7,6 +7,7 @@ module -- shake: keep-all
 
 import GebTests.Prototypes.AxiomLinter
 import GebTests.Prototypes.AxiomLinterClassicalFixture
+import GebTests.Prototypes.BitStream.WConstruction
 import GebTests.Prototypes.CanonicalSExpr
 import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
