@@ -5,8 +5,8 @@ This document proposes a direct machine proof for the
 output-length bound, and logarithmic retained recursion state are
 formalized. The compiler and its machine soundness theorem remain to be
 constructed. Physical-input and stored-word readers, an emitting loop
-rule, a generated-output length reader, and a concrete transducer for
-`squareWord` are proved
+rule, generated-output length and digit readers, and a concrete transducer
+for `squareWord` are proved
 using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -98,6 +98,17 @@ Completeness is outside this construction's scope.
   `emitNumber_emits` converts a counter to Oitavem's shortlex encoding;
   `lengthMachine_computable` packages post-composition with numerical
   length as CSLib machine computability with explicit resource bounds.
+- [Generated digit reading][output-reading] proves `readOutput_runsTo`:
+  a fixed emitter gains two tapes, a runtime query countdown and a
+  one-bit result. It returns `(w[query]?).toList`, distinguishing a
+  false bit from a missing bit, and emits nothing. It preserves the
+  emitter's exact final tapes and heads, including when the halting
+  transition emits a bit. The result tape must initially be blank;
+  the query is consumed to `query - w.length`. The wrapper takes at
+  most `t * (2 * B + 8)` steps, with every work head in `[-1, B]`,
+  when the emitter has that head bound and `query.size ≤ B`.
+  Finite control remains finite. This proof was developed with
+  Aristotle and checked under the repository's toolchain.
 - [Repeated-input emission][repeat] implements `squareMachine` on one
   work tape. `computableInTimeAndSpace_squareWord` proves CSLib's
   simultaneous bounds `32 * (n + 1)^2` for time and
@@ -109,8 +120,12 @@ Completeness is outside this construction's scope.
   `computableInTimeAndSpace_length_squareWord` computes the interpretation
   of `Expr.comp lengthByRec ![squareWord]`, emitting its shortlex result
   in time `256 * (n + 1)^3` and space `6 * (n.size + 1)`.
-  Generated digit queries and substitution into
-  another expression's normal-input readers remain to be implemented.
+  `squareDigit_runsTo` answers queries through position `n^2`, including
+  that first out-of-range position, in time `320 * (n + 1)^3` with
+  three tapes and head bound `2 * n.size + 1`.
+  `squareInput_emits` also permits dirty generator scratch and proves
+  its cleanup and caller preservation. Substitution into another
+  expression's normal-input readers remains to be implemented.
 - [Machine checks][machine-checks] execute the readers and transducer,
   including leading zeroes, empty words, out-of-range queries, dirty
   scratch tapes, protected registers, and existing output prefixes.
@@ -313,13 +328,14 @@ from halting and the global space bound on the completed machine.
 | Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
 
 The first checkpoint has verified physical-input and stored-word length
-and digit routines. `countOutput` also supplies length readers for generated
-words, and `squareLength_runsTo` verifies that construction on quadratic
-output. Numerical length composed with `squareWord` has a full machine
+and digit routines. `countOutput` and `readOutput` supply length and digit
+readers for generated words, and `squareLength_runsTo` and
+`squareDigit_runsTo` verify those constructions on quadratic output.
+Numerical length composed with `squareWord` has a full machine
 bound theorem. That proof uses `eval_lengthByRec` to compute the length
 directly; it does not implement the retained-prefix recursion loop.
-Generated digit readers and the general allocation and substitution
-contracts remain.
+The general allocation and substitution contracts remain, including the
+setup and scratch-reset conventions for repeated generated-word queries.
 
 The first composition checkpoint should determine whether the proposed
 reader contract supports the required register allocation and nested
@@ -365,6 +381,7 @@ that additional characterization or a direct machine encoding.
 [readers]: ../Geb/Prototypes/Computability/Oitavem/Machine/Read.lean
 [emitting-loops]: ../Geb/Prototypes/Computability/Oitavem/Machine/While.lean
 [output-counting]: ../Geb/Prototypes/Computability/Oitavem/Machine/CountOutput.lean
+[output-reading]: ../Geb/Prototypes/Computability/Oitavem/Machine/ReadOutput.lean
 [repeat]: ../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean

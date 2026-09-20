@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.Oitavem.Machine.While
 public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Count
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec
 public import Geb.Prototypes.Computability.Oitavem.Derived
@@ -27,6 +28,7 @@ space.
 
 * {lit}`repeatBody` emits the input once and decrements a counter.
 * {lit}`repeatInput` repeats that scan, consuming the counter.
+* {lit}`squareInput` squares the input while preserving caller registers.
 * {lit}`squareMachine` first counts the input and then repeats it that many times.
 
 ## Main statements
@@ -36,6 +38,7 @@ space.
 * {lit}`computableInTimeAndSpace_squareWord` proves the machine-computability
   statement for the quadratic-output expression.
 * {lit}`squareLength_runsTo` counts that generated output on two logarithmic tapes.
+* {lit}`squareDigit_runsTo` reads a generated digit on three logarithmic tapes.
 * {lit}`computableInTimeAndSpace_length_squareWord` computes numerical length after
   the square expression, with the result emitted in the algebra's encoding.
 
@@ -210,9 +213,39 @@ theorem repeatInput_emits {k : ℕ} {input : List Bool} (C : Fin k)
     apply List.append_cancel_left (as := cfg.output)
     rw [← runFrom_output, h.runFrom_eq]
 
+/-- Square the physical input using one designated scratch counter. -/
+@[expose] def squareInput {k : ℕ} (C : Fin k) := seq (countInput C) (repeatInput C)
+
+/-- Squaring clears its scratch counter, parks the input head, and preserves all
+caller registers and the previous output. The scratch counter may initially be dirty. -/
+theorem squareInput_emits {k : ℕ} {input : List Bool} (C : Fin k)
+    (cfg : Cfg k Bool (StateOf (squareInput C)) input)
+    (hq : cfg.state = some (squareInput C).q₀)
+    (σ : Fin k → List Bool) (hσ : Holds cfg σ) (hpark : Parked cfg)
+    (hp : cfg.inputPos.val = 1) (B : ℕ) (hB : Bounded σ B) (hn : input.length.size ≤ B) :
+    ∃ t ≤ countInputTime B input.length +
+        (input.length * (2 * input.length + 2 * B + 11) + 1),
+      Emits (squareInput C) cfg
+        { cfg with state := none
+                   inputPos := ⟨0, by omega⟩
+                   workTapes := fun i ↦ tapeOf (Function.update σ C [] i)
+                   output := cfg.output ++ (List.replicate input.length input).flatten }
+        (List.replicate input.length input).flatten t B := by
+  obtain ⟨t₁, ht₁, h₁⟩ := countInput_runsTo C
+    { cfg with state := some (countInput C).q₀ } rfl σ hσ hpark hp B hB hn
+  obtain ⟨t₂, ht₂, h₂⟩ := repeatInput_emits C
+    { cfg with state := some (repeatInput C).q₀
+               inputPos := ⟨0, by omega⟩
+               workTapes := fun i ↦ tapeOf (Function.update σ C (counterWord input.length) i) }
+    rfl (Function.update σ C (counterWord input.length)) (fun _ ↦ rfl)
+    hpark rfl input.length B (Function.update_self ..)
+    (hB.update (by rwa [length_counterWord]))
+  have h := RunsTo.seqStartEmits hq h₁ h₂
+  simp only [Function.update_idem] at h
+  exact ⟨t₁ + t₂, Nat.add_le_add ht₁ ht₂, h⟩
+
 /-- A one-work-tape machine for {name}`squareWord`. -/
-@[expose] def squareMachine :=
-  seq (countInput (0 : Fin 1)) (repeatInput 0)
+@[expose] def squareMachine := squareInput (0 : Fin 1)
 
 /-- The square machine halts with the quadratic output and visits at most a
 logarithmic interval of its single work tape. -/
@@ -222,24 +255,10 @@ theorem squareMachine_emits (w : List Bool) :
         (w.length * (2 * w.length + 2 * w.length.size + 11) + 1) ∧
       Emits squareMachine (squareMachine.initCfg w) cfg'
         (squareWord.eval ![w] Fin.elim0) t w.length.size := by
-  let cfg := squareMachine.initCfg w
-  obtain ⟨t₁, ht₁, h₁⟩ := countInput_runsTo (0 : Fin 1)
-    { cfg with state := some (countInput (0 : Fin 1)).q₀ }
+  obtain ⟨t, ht, h⟩ := squareInput_emits (0 : Fin 1) (squareMachine.initCfg w)
     rfl (fun _ ↦ []) (fun _ ↦ tapeOf_nil.symm) (by intro i; rfl) rfl w.length.size
-    (by intro i; exact Nat.zero_le _) (le_refl _)
-  obtain ⟨t₂, ht₂, h₂⟩ := repeatInput_emits (0 : Fin 1) (input := w)
-    { cfg with state := some (repeatInput (0 : Fin 1)).q₀
-               inputPos := ⟨0, by omega⟩
-               workTapes := fun i ↦ tapeOf
-                 (Function.update (fun _ ↦ []) 0 (counterWord w.length) i) }
-    rfl (Function.update (fun _ ↦ []) 0 (counterWord w.length)) (fun _ ↦ rfl)
-    (by intro i; rfl) rfl w.length w.length.size (Function.update_self ..)
-    (by
-      intro i
-      have hi : i = 0 := Fin.eq_zero i
-      subst i
-      rw [Function.update_self, length_counterWord])
-  exact ⟨_, t₁ + t₂, Nat.add_le_add ht₁ ht₂, RunsTo.seqStartEmits rfl h₁ h₂⟩
+    (by intro i; exact Nat.zero_le _) le_rfl
+  exact ⟨_, t, ht, h⟩
 
 /-- The quadratic-output Logs expression has simultaneous quadratic time and
 logarithmic work space on a concrete one-work-tape transducer. -/
@@ -271,6 +290,35 @@ private theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.si
   have hp := Nat.two_pow_pos n.size
   have hn := Nat.mul_self_lt_mul_self (Geb.BitTree.Counter.lt_pow_size n)
   nlinarith
+
+/-- A runtime query into the quadratic word, including the first out-of-range
+index, takes cubic time and logarithmic space. The query is on a work tape,
+the result is at most one bit, and the caller's output is preserved. -/
+theorem squareDigit_runsTo (w : List Bool) (query : ℕ) (out : List Bool)
+    (hq : query ≤ w.length * w.length) :
+    ∃ cfg' t, t ≤ 320 * (w.length + 1) ^ 3 ∧
+      RunsTo (readOutput squareMachine)
+        (wrapCfg (squareMachine.initCfg w) false query [] out)
+        (wrapCfg cfg' (((squareWord.eval ![w] Fin.elim0)[query]?).isSome) 0
+          (((squareWord.eval ![w] Fin.elim0)[query]?).toList) out)
+        t (2 * w.length.size + 1) := by
+  obtain ⟨cfg', t, ht, h⟩ := squareMachine_emits w
+  have hsize : query.size ≤ 2 * w.length.size + 1 :=
+    (size_le_size (hq.trans (Nat.le_succ _))).trans (size_square_add_one_le w.length)
+  obtain ⟨u, hu, r⟩ := readOutput_runsTo squareMachine h query out
+    (2 * w.length.size + 1) (by omega) hsize
+  rw [length_squareWord, Nat.sub_eq_zero_of_le hq] at r
+  refine ⟨cfg', u, ?_, r⟩
+  have hn := size_le_self w.length
+  have ht' : t ≤ 32 * (w.length + 1) ^ 2 := by
+    apply ht.trans
+    unfold countInputTime
+    nlinarith [Nat.mul_le_mul_left w.length hn]
+  calc
+    u ≤ t * (2 * (2 * w.length.size + 1) + 8) := hu
+    _ ≤ (32 * (w.length + 1) ^ 2) * (10 * (w.length + 1)) :=
+      Nat.mul_le_mul ht' (by omega)
+    _ = 320 * (w.length + 1) ^ 3 := by nlinarith
 
 /-- The generated quadratic word has an exact length reader on two work tapes.
 The counter is logarithmic and no part of the generated word is stored or emitted. -/

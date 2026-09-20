@@ -18,6 +18,7 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
 public import Geb.Prototypes.Computability.Oitavem.Machine.Read
 public import Geb.Prototypes.Computability.Oitavem.Machine.While
 public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 meta import GebMeta -- shake: keep
 
@@ -51,6 +52,11 @@ reader with one additional binary counter. Applied to the square machine, it
 counts the generated quadratic word using two logarithmic work tapes.
 {name}`Geb.Oitavem.Machine.computableInTimeAndSpace_length_squareWord` gives a
 complete machine bound for numerical length composed with the square expression.
+{name}`Geb.Oitavem.Machine.readOutput_runsTo` converts an emitter into a digit reader
+with two extra tapes, a runtime query countdown and a one-bit result.
+{name}`Geb.Oitavem.Machine.squareDigit_runsTo` verifies queries into the quadratic
+word, including the first out-of-range position, in cubic time and logarithmic space.
+General reader substitution and the retained-prefix recursion machine remain open.
 
 ## References
 

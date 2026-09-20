@@ -1789,9 +1789,12 @@ checklist and in CI.
   the emitted shortlex result of numerical length after `squareWord`,
   in cubic time and logarithmic space. The theorem for arbitrary
   expressions remains open.
-  A transducer that recomputes
-  intermediate output bits, with verified correctness and space bounds,
-  remains necessary for machine soundness. `Machine.computes_polytime_logspace`
+  `Machine.readOutput_runsTo` adds a query countdown and one-bit result
+  tape to an emitter, with exact digit, time, and space contracts;
+  `Machine.squareDigit_runsTo` applies it to the generated quadratic word.
+  A compiler that substitutes these readers and implements the saved-prefix
+  recursion loop remains necessary for machine soundness.
+  `Machine.computes_polytime_logspace`
   derives a simultaneous polynomial time bound for any such halting
   logarithmic-space transducer, using CSLib's configuration count. Machine
   completeness is also unformalized. The
