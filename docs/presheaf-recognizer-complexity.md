@@ -8,6 +8,7 @@ on categorical and internal interpretation claims.
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Checking, recursion, and evaluation](#checking-recursion-and-evaluation)
 - [The proposed recognition theorem](#the-proposed-recognition-theorem)
 - [Reduction to bounded local tests](#reduction-to-bounded-local-tests)
 - [Complexity classes and closure requirements](#complexity-classes-and-closure-requirements)
@@ -17,6 +18,42 @@ on categorical and internal interpretation claims.
 - [Related results](#related-results)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Checking, recursion, and evaluation
+
+The following capabilities concern different tasks. An NNO is a
+natural-numbers object; a PNNO is a parameterized natural-numbers object.
+The table records mathematical context and sufficient conditions, rather than
+additional formalized complexity bounds for Geb's checkers.
+
+| Functions or categorical structure | Capability | Qualification |
+| --- | --- | --- |
+| Logspace | Check explicit finite proof trees or typing derivations | The representation, navigation, and local inference checks must admit logspace implementations. |
+| Primitive-recursive functions; a PNNO in a Cartesian category | Use functions obtained by first-order primitive recursion as steps of further primitive recursions | Each definition uses finitely many fixed stages; exact characterization by primitive recursion concerns the free Cartesian category with a PNNO. |
+| Cartesian closure with an NNO | Recurse into function objects, defining functions such as Ackermann | This extends first-order primitive recursion without implying general recursion or nontermination. |
+| Partial computable functions | Uniformly evaluate arbitrary encoded programs, including the evaluator's own code | Evaluation may fail to terminate; there is no total computable universal evaluator for all total computable functions. |
+
+For the logspace row, let `n` be the entire certificate's encoded length.
+For a fixed calculus, if structural validity, premise references, and each
+local inference are checkable in logspace, a scanner can check every position
+using `O(log n)` workspace. Explicit intermediate expressions and witnesses
+for individual reduction steps can replace computation of normal forms by
+local verification. Avoiding self-evaluation alone does not establish this
+bound: the local rules and their encoding must satisfy these conditions.
+The certificate may be much larger than the statement it proves.
+
+This permits a separation between the checker and the theory it checks.
+A finite proof can concern noncomputable functions or uncountable sets of
+functions in ZFC. Its verification concerns the formal derivation, without
+evaluating those functions or deciding arbitrary statements of the theory.
+Finite bitstrings encode formulas and proofs; they do not individually name
+every member of an uncountable semantic collection.
+
+[Metamath's specification, section 4.1.4][metamath], describes proof checking
+by substitutions and expression comparisons, with hypothesis, scope, and
+disjoint-variable conditions. A logspace bound for its standard proof formats
+has not been established here. A checker for a more explicit certificate
+format would need its own representation and local-rule analysis.
 
 ## The proposed recognition theorem
 
@@ -184,6 +221,24 @@ exponentiation operation instead produces towers whose height depends on the
 input; it has the same conceptual problem at that larger class. This latter
 claim is not formalized here.
 
+Primitive recursion admits further first-order primitive recursion using
+previously defined functions as its fixed base and step. The Grzegorczyk
+classes exhaust the primitive-recursive functions: a new definition remains
+at some finite level, although it need not remain at the level of its step
+function or strictly increase that level. For example, `T(0) = 1` and
+`T(n+1) = 2^(T(n))` define a primitive-recursive, non-elementary function.
+See [Bournez and Hainry, section 3][hierarchy].
+
+The numerical functions represented in the free Cartesian category with a
+PNNO are exactly the primitive-recursive functions. In a general Cartesian
+category, a PNNO supplies the recursion principle without imposing this
+upper bound on all other arrows. Cartesian closure additionally supplies
+function objects as elimination targets; recursion into `N → N` permits
+Ackermann's function. This differs from choosing an already defined numerical
+function as the fixed step of another first-order recursion. See [Buchholtz
+and Schipp von Branitz, section 2 and Theorem 2.1][primitive-recursion],
+arXiv `2404.01011`.
+
 ## Internal syntax and interpretation
 
 The implemented Oitavem expressions are already a slice W-type indexed by
@@ -209,6 +264,28 @@ for full outputs is `DecisionProblem.exists_fixed_point_of_evaluation` in
 encodes an object is different from uniformly running every encoded object's
 membership procedure. Fixed checkers, syntax checkers, and evaluators with
 explicit resource budgets remain distinct constructions.
+
+The obstruction applies beyond logspace. If a total class admits
+`d(x) = U(x,x) + 1` whenever it admits `U`, a universal evaluator `U` for
+that same class would give `d` a code `e` and imply
+`d(e) = U(e,e) + 1 = d(e) + 1`. In particular, no total computable evaluator
+covers all total computable unary functions. A stronger total class can
+evaluate a weaker one: primitive-recursive programs have a total computable
+evaluator, which is not primitive recursive.
+
+The partial computable functions do admit a universal partial computable
+evaluator. At its diagonal program's own code, execution diverges, so the
+argument produces no contradictory numerical equality. This remains within
+ordinary Turing computability; it relaxes guaranteed termination.
+[Avigad's notes, section 2.7, Theorems 2.7.5 and 2.7.6][universal-evaluation],
+give the universal partial evaluator and the total diagonal obstruction.
+
+These statements concern uniform evaluation from ordinary numerical or
+bitstring codes with the operations needed for diagonalization. Typed
+self-interpretation can use representations that exclude that construction.
+[Brown and Palsberg's self-interpreter for the strongly normalizing
+System F-omega][typed-self-interpreter], DOI `10.1145/2837614.2837623`, has
+this property; it does not supply the unrestricted evaluator considered here.
 
 ## Related results
 
@@ -244,6 +321,11 @@ of its word operations and navigation in Oitavem's algebra.
 [timed-sets]: https://users.math.cas.cz/~hrubes/PDFs/TimedSet.pdf
 [polarized]: https://doi.org/10.1016/j.entcs.2010.08.017
 [realizability]: https://doi.org/10.1016/j.tcs.2010.12.025
+[metamath]: https://us.metamath.org/downloads/metamath.pdf#page=132
+[hierarchy]: https://members.loria.fr/EHainry/papers/tcs05.pdf#page=5
+[primitive-recursion]: https://arxiv.org/html/2404.01011v1#S2
+[universal-evaluation]: https://www.andrew.cmu.edu/user/avigad/Teaching/candi_notes.pdf#page=46
+[typed-self-interpreter]: https://popl16.sigplan.org/details/POPL-2016-papers/52/Breaking-Through-the-Normalization-Barrier-A-Self-Interpreter-for-F-omega
 [presheaf-scan]: ../Geb/Prototypes/Computability/PresheafScan.lean
 [counterexample]: ../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean
 [quantification]: ../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean
