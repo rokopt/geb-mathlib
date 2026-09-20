@@ -75,6 +75,10 @@ checklist and in CI.
   readers, logarithmic safe-recursion prefixes, and the existing
   logarithmic-space compiler infrastructure; includes proof obligations
   and implementation checkpoints.
+- [ramified-recurrence-corecurrence.md](ramified-recurrence-corecurrence.md)
+  — shared polynomial syntax for finite-word and stream function algebras,
+  their finiteness and productivity guarantees, and the compilation and
+  resource proofs needed to connect them.
 
 ## Implemented content
 
