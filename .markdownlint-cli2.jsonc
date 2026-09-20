@@ -16,6 +16,7 @@
     ".lake/**",
     ".jj/**",
     // Directories created by some tools that users or agents might choose to use.
+    ".agents/**",
     ".remember/**",
     ".superpowers/**",
     "node_modules/**",
