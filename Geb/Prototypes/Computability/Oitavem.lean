@@ -15,6 +15,11 @@ public import Geb.Prototypes.Computability.Oitavem.Derived
 public import Geb.Prototypes.Computability.Oitavem.BoundedQuantification
 public import Geb.Prototypes.Computability.Oitavem.PresheafCounterexample
 public import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
+public import Geb.Prototypes.Computability.Oitavem.Machine.Read
+public import Geb.Prototypes.Computability.Oitavem.Machine.While
+public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -37,6 +42,21 @@ recomputes intermediate words instead of storing them on work tapes.
 part of that construction: a halting transducer with a logarithmic work-space
 bound has a simultaneous polynomial time bound, on the same machine. It does not
 construct a machine for an expression.
+
+The machine layer also supplies reusable physical-input and stored-word readers,
+loops that emit output, and a one-work-tape transducer for {name}`Geb.Oitavem.squareWord`.
+{name}`Geb.Oitavem.Machine.computableInTimeAndSpace_squareWord` proves simultaneous
+quadratic time and logarithmic space for that example.
+{name}`Geb.Oitavem.Machine.countOutput_runsTo` converts an emitter into a length
+reader with one additional binary counter. Applied to the square machine, it
+counts the generated quadratic word using two logarithmic work tapes.
+{name}`Geb.Oitavem.Machine.computableInTimeAndSpace_length_squareWord` gives a
+complete machine bound for numerical length composed with the square expression.
+{name}`Geb.Oitavem.Machine.readOutput_runsTo` converts an emitter into a digit reader
+with two extra tapes, a runtime query countdown and a one-bit result.
+{name}`Geb.Oitavem.Machine.squareDigit_runsTo` verifies queries into the quadratic
+word, including the first out-of-range position, in cubic time and logarithmic space.
+General reader substitution and the retained-prefix recursion machine remain open.
 
 ## References
 

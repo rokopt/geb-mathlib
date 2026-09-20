@@ -1768,14 +1768,33 @@ checklist and in CI.
   the correct numerical state in logarithmically many bits;
   `Expr.exists_logarithmic_prefix` shows that a logarithmic prefix of each
   safe input suffices. `Expr.exists_logarithmic_loop` verifies an indexed
-  loop retaining those prefixes directly. `Expr.boundedRec` and its
+  loop retaining those prefixes directly. `Expr.prefixCutoff` and
+  `Expr.recursionCutoff` compute suitable prefix lengths from syntax,
+  with logarithmic bounds under polynomial growth of intermediate inputs.
+  `Expr.boundedRec` and its
   evaluation equations give the bounded-recursion construction of
   Lemma 3.2. The recursive length
   example and quadratic-output example are executable.
-  These representation results do not establish a
-  `ComputableInTimeAndSpaceOfLength` theorem. A transducer that recomputes
-  intermediate output bits, with verified correctness and space bounds,
-  remains necessary for machine soundness. `Machine.computes_polytime_logspace`
+  The machine layer proves reusable physical-input and stored-word
+  length and digit readers with workspace and caller-preservation
+  contracts, and a loop rule permitting growing output.
+  `Machine.computableInTimeAndSpace_squareWord` establishes CSLib's
+  `ComputableInTimeAndSpaceOfLength` predicate for the square example
+  with a concrete one-work-tape machine, quadratic time, and logarithmic
+  space. `Machine.countOutput_runsTo` converts an emitter into a generated-word
+  length reader with one additional binary counter;
+  `Machine.squareLength_runsTo` applies it to the square example with
+  logarithmic space on two work tapes.
+  `Machine.computableInTimeAndSpace_length_squareWord` also verifies
+  the emitted shortlex result of numerical length after `squareWord`,
+  in cubic time and logarithmic space. The theorem for arbitrary
+  expressions remains open.
+  `Machine.readOutput_runsTo` adds a query countdown and one-bit result
+  tape to an emitter, with exact digit, time, and space contracts;
+  `Machine.squareDigit_runsTo` applies it to the generated quadratic word.
+  A compiler that substitutes these readers and implements the saved-prefix
+  recursion loop remains necessary for machine soundness.
+  `Machine.computes_polytime_logspace`
   derives a simultaneous polynomial time bound for any such halting
   logarithmic-space transducer, using CSLib's configuration count. Machine
   completeness is also unformalized. The
