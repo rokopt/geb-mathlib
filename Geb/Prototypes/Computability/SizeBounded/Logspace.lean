@@ -12,6 +12,7 @@ public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Combinators
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.SuffixCounter
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -24,8 +25,10 @@ Index for the modules on {cite}`Kristiansen2005`'s algebra
 interpretation on the logarithmic-space representation of values, and the
 machine calculus that interpretation compiles into, with the polynomial time
 and logarithmic space bounds of every unary expression's machine; and the
-derived expressions, the counters as end segments of the input, and the
-recognizer of the Elias-length tree encoding written with them.
+derived expressions, the counters as end segments of the input, the
+recognizer of the Elias-length tree encoding written with them, and the
+recognizer of the W-trees of a coded signature, specified as a composition of
+streaming scans.
 -/
 
 set_option doc.verso true

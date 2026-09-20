@@ -2646,6 +2646,18 @@ checklist and in CI.
   this evaluator into a multi-tape machine whose step and cell counts are
   those accounted for. Depends on
   `Geb.Prototypes.Computability.SizeBounded.Basic`. `Classical.choice`-free.
+- `Geb/Prototypes/Computability/SizeBounded/Sharing.lean` — the evaluator
+  with sharing: `Geb.SizeBounded.evalVec` evaluates each value once, holding
+  the arguments of a substitution in a vector before entering the head and
+  each stage of a recursion in the vector of `Geb.SizeBounded.runSRN`, where
+  `Geb.SizeBounded.eval` passes both as functions and so re-evaluates a value
+  at every reference, exponentially in the word's length for a recursion
+  whose steps read several registers. `Geb.SizeBounded.evalVec_eq` and
+  `Geb.SizeBounded.SOf.semVec_eq` identify its value with `Geb.SizeBounded.eval`,
+  so it serves evaluation on longer words while the reference
+  interpretation's equations apply unchanged. Depends on
+  `Geb.Prototypes.Computability.SizeBounded.Cost` and
+  `Geb.Prototypes.Computability.SizeBounded.Iteration`. `Classical.choice`-free.
 - `Geb/Prototypes/Computability/SizeBounded/Machine.lean` — the machine
   calculus: a register holds a bitstring on a work tape in the reversed
   layout `Geb.SizeBounded.Machine.tapeOf`, cell `z` the word's `z`th bit
@@ -2931,3 +2943,117 @@ checklist and in CI.
   on `Geb.Prototypes.Computability.SizeBounded.Logspace.SuffixCounter`,
   `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect` and
   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main`.
+- `Geb/Prototypes/Computability/SizeBounded/Logspace/WTree.lean` — the
+  recognizer of the W-trees of a coded signature, specified as a
+  composition of streaming scans. `Geb.SizeBounded.Logspace.WTree.CodedSig`
+  is a finitary slice polynomial endofunctor with an injective bitstring
+  code of its shapes and a decoder; `CodedSig.spell` spells a raw W-tree as
+  the Elias-length encoding of a binary tree of labels, a node being the
+  left spine of one fork per child over the leaf carrying its shape's code,
+  so that the node reads as its arity in unary, the delta-coded length of
+  the label, the label and the children (`WTree/Spell.lean`).
+  `CodedSig.isW_iff` characterizes the spellings of admissible W-trees as
+  the encodings of binary trees whose labels decode to shapes of the arity
+  their spines have, `CodedSig.labelsOk`, and whose children's labels lie
+  over the input indices their parents' labels prescribe,
+  `CodedSig.edgesOk`, both computed by the fold `CodedSig.info`.
+  `WTree/Events.lean` reads the four events a bit raises at the streaming
+  scanner, the tags, the completion of a header and the completion of a
+  leaf, and extends the scanner by a register updated at events,
+  `Geb.SizeBounded.Logspace.WTree.extStep`, with the segment lemmas placing
+  the events at the last bit of a header and of a payload.
+  `WTree/Positions.lean` locates every node's label and children in an
+  encoding, `Geb.SizeBounded.Logspace.WTree.roseAt`, and
+  `CodedSig.labelsOk_iff_nodes` and `CodedSig.edgesOk_iff_nodes` restate
+  the two conditions on the words at the locations. `WTree/Nodes.lean` is
+  the scan over the nodes, a fork count and a flag conjoined with a check
+  at each node's label with its arity, `nodeScan_ok_iff`;
+  `WTree/Children.lean` is the scan over one node's children, which finds
+  them after the node's payload by a fork count and a leaf count kept from
+  each child's beginning, the child ending when the leaves exceed the forks
+  by one, `childScan_ok_iff`. `CodedSig.recognize` composes the streaming
+  scanner with the node scan whose check is the label condition and the
+  child scan, and `CodedSig.recognize_iff` is its specification. Every scan
+  reads the word from its beginning with a fixed number of counters
+  bounded by its length, the child scan once per node, which is the form a
+  logarithmic-space algorithm takes. The scans are then written as
+  expressions of the subalgebra. `WTree/ExprBase.lean` reads the events off
+  the monotone counters, `Geb.SizeBounded.Logspace.WTree.eventC`, agreeing
+  with those read off the scanner's state; lifts the seven Elias steps to a
+  larger step arity, `liftBy`, so that their step lemmas apply unchanged;
+  and supplies `eventStep`, a register step given by its value at each
+  event, with the dispatches, comparisons of counters held as end segments,
+  `eqSeg` and `isZeroSeg`, and flags as words. `WTree/NodeExpr.lean` is the
+  node scan as a simultaneous recursion with nine registers, the check at a
+  node a parameter of arity four, and `NodeExpr.nodeScanExprSem_eq` its
+  value; `WTree/ChildExpr.lean` is the child scan with twelve registers and
+  four parameters, the edge check a parameter of arity six, and
+  `ChildExpr.childScanExprSem_eq` its value, each register's step proved
+  against the abstract update mode by mode and event by event.
+  `WTree/RecognizeExpr.lean` composes them, `recognizeExpr`, and
+  `CodedSig.recognizeExprSem_eq_singleton_iff_isW` shows the expression
+  accepts exactly the spellings of admissible W-trees when its two
+  parameters compute the signature's label and edge conditions,
+  `CodedSig.ComputesLabel` and `CodedSig.ComputesEdge`; the machine reading,
+  polynomial time and logarithmic space, is
+  `CodedSig.computableInTimeAndSpace_recognize` (`WTree/Machine.lean`,
+  listed in `GebMeta.classicalAllowedModules` as `EliasTree/Machine.lean`
+  is). `WTree/Numeral.lean` codes a number for a shape's numeric fields,
+  `Geb.SizeBounded.Logspace.WTree.Numeral.natCode`, the gamma code of one
+  more than its binary size followed by its bits least significant first,
+  with the reader `readNatCode` and the injectivity of the code;
+  `WTree/NumScan.lean` scans a word for a coded number at a position with
+  counters bounded by the word's length, `Numeral.nrun`, recording the
+  number's bit at an index, its canonicality and the position after it,
+  and `Numeral.nrun_natCode` and `Numeral.nrun_done` are its soundness and
+  completeness; `WTree/NumScanExpr.lean` is that scanner as a simultaneous
+  recursion with eight registers over the word, with the bit at the index,
+  the acceptance and the end position as expressions of arity three,
+  `NumExpr.numHit`, `NumExpr.numOk` and `NumExpr.numEnd`, and
+  `NumExpr.num_natCode` and `NumExpr.num_of_ok` their meanings.
+  `WTree/BitFold.lean` is a lockstep fold over the indices of the bits of
+  three coded numbers, `BitFold.bitFold`, a simultaneous recursion over
+  the word that reads the three bits at each index and updates registers
+  by an expression given as a parameter, with `BitFold.sem_bitFold` its
+  value as an iteration; `WTree/NumBits.lean` relates the scanner's bits
+  to `Nat.testBit`, the remainders modulo powers of two and the binary
+  size; `WTree/NumArith.lean` instantiates the fold as the equality test,
+  the order test and the reading of a numeral into a counter, an end
+  segment of the word, `NumArith.natEq`, `NumArith.natLt` and
+  `NumArith.natValue`, each proved against the numbers on a word holding
+  their codes; and `WTree/NumSum.lean` instantiates it as a ripple-carry
+  check of a numeral against the sum of two others and a carry in,
+  `NumSum.natSum`. `WTree/Sig.lean` codes the algebra's own signature,
+  `Sig.sigCoded`: a shape's code is a three-bit tag, its numeric fields as
+  coded numbers, and for a constant its word, with a decoder and an
+  explicit enumeration of each shape's directions whose count and order
+  compute by unfolding. `WTree/SigLabel.lean` is the label check of that
+  signature as an expression of arity four, `SigLabel.labelOk`, which reads
+  the tag, scans the fields from successive positions, compares the last
+  field's end with the label's end, decides the constraints of a
+  projection and a recursion, and compares the arity with a field read
+  into a counter; `SigLabel.computesLabel` is its correctness at sound
+  locations. The location soundness the comparisons with a label's end
+  need, `Loc.Sound`, is what every node label of an encoding satisfies,
+  `nodes_sound` (`WTree/Positions.lean`), which is why
+  `CodedSig.ComputesLabel` and `CodedSig.ComputesEdge` quantify over sound
+  locations, the edge condition only where both labels decode.
+  `WTree/SigEdge.lean` is the edge check as an expression of arity six,
+  `SigEdge.edgeOk`, comparing a child's arity with the field or the sum of
+  fields the parent requires at the child's position, with
+  `SigEdge.computesEdge` its correctness; and `WTree/SigCheck.lean` composes
+  them into `SigCheck.sigRecognizer`, an expression of the subalgebra that
+  accepts a word exactly when it spells an expression of the algebra,
+  `SigCheck.sigRecognizer_iff`, hence the spelling of every expression of
+  the subalgebra, its own included, `SigCheck.sigRecognizer_self`; and
+  `SigCheck.computableInTimeAndSpace_sigRecognize` reads off the machine
+  bound for it, polynomial time and logarithmic space
+  (`WTree/SigMachine.lean`, listed in `GebMeta.classicalAllowedModules` as
+  `WTree/Machine.lean` is). The other modules of the directory are
+  `Classical.choice`-free.
+  Depends on `Geb.Mathlib.Data.PFunctor.Slice.W`,
+  `Geb.Mathlib.Data.PFunctor.Univariate.Finitary`,
+  `Geb.Prototypes.Computability.BitTree.Elias.ScannerCorrect`,
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Correct`,
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main` and
+  `Mathlib.Data.Nat.Bitwise`.

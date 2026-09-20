@@ -7,29 +7,33 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree -- shake: keep; #guard needs it
 public meta import Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree -- shake: keep; #guard needs it
+public import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; #guard needs it
+public meta import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; #guard needs it
 
 /-!
 # The Elias-length tree recognizer on worked bitstrings
 
 The counters after the encodings of leaves and forks and after words that
 are not encodings, agreeing with `Geb.BitTree.Elias.validBool` on every
-worked word; and the recognizer on the empty leaf, the empty word, a lone
-fork bit, a lone leaf tag and two fork bits.
+worked word; the recognizer on the empty leaf, the empty word, a lone fork
+bit, a lone leaf tag and two fork bits; and its shared meaning on every
+worked word.
 
 ## Main statements
 
-The counters end in the completed phase exactly on the encodings, and the
+The counters end in the completed phase exactly on the encodings, the
 recognizer returns `[true]` on the empty leaf and the empty word on each
-non-encoding.
+non-encoding, and its shared meaning agrees with the decoder on every worked
+word.
 
 ## Implementation notes
 
-The words the recognizer is evaluated on have at most two bits. The
-algebra's recursion `Geb.SizeBounded.evalSRN` recomputes a register of the
-previous stage at every reference a step makes to it, so the evaluation of an
-expression whose steps read several registers is exponential in the word's
-length; the counters `Geb.SizeBounded.Logspace.EliasTree.run` are linear and
-are evaluated on longer words.
+The words the reference interpretation is evaluated on have at most two
+bits: the algebra's recursion `Geb.SizeBounded.evalSRN` recomputes a register
+of the previous stage at every reference a step makes to it, so the evaluation
+of an expression whose steps read several registers is exponential in the
+word's length. The shared interpretation `Geb.SizeBounded.SOf.semVec`
+evaluates each stage once and is run on the longer worked words.
 
 ## Tags
 
@@ -84,3 +88,5 @@ def workedWords : List (List Bool) :=
 #guard isEliasTree.sem ![[false]] = []
 
 #guard isEliasTree.sem ![[true, true]] = []
+
+#guard workedWords.all fun w ↦ decide (isEliasTree.1.semVec ![w] = [true]) == validBool w

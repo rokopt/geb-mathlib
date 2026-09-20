@@ -16,6 +16,7 @@
   - [Complexity of the decidable validity checkers](#complexity-of-the-decidable-validity-checkers)
   - [The non-size-increasing algebra as the resource discipline](#the-non-size-increasing-algebra-as-the-resource-discipline)
   - [Kristiansen's logspace algebra](#kristiansens-logspace-algebra)
+  - [Recognizing W-trees in the logspace algebra](#recognizing-w-trees-in-the-logspace-algebra)
   - [Upstream placement of categorical wrappers](#upstream-placement-of-categorical-wrappers)
   - [`FinSetSkel` under `namespace CategoryTheory`](#finsetskel-under-namespace-categorytheory)
   - [Upstream destination of core- and Batteries-targeted content](#upstream-destination-of-core--and-batteries-targeted-content)
@@ -336,16 +337,14 @@ formalized. Follow-ups:
   whose length bounds the output, as `sbs` bounds by its second argument,
   which is the form in which a linear space bound is a parameter rather
   than an accident of the input.
-- Sharing in the evaluator. `Geb.SizeBounded.evalSRN` recomputes a register
-  of the previous stage at every reference a step makes to it, so evaluating
-  an expression whose steps read several registers, as
-  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` does, takes time
-  exponential in the word's length, while `Geb.SizeBounded.evalSRNC` charges
-  each stage once and the compiled machines hold each register on a tape. A
-  recursion returning each stage as a materialized vector, indexed by the
-  steps, evaluates in the charged time; the equations `sem_srnOf_nil` and
-  `sem_srnOf_cons` and their consumers would then hold by a lemma on the
-  vector rather than definitionally.
+- The degree of evaluation. `Geb.SizeBounded.evalVec` evaluates each value
+  at most once, but the tail `Geb.SizeBounded.tailOf` is a recursion over
+  its whole argument, so under it the drop of a counter is quadratic in the
+  word's length, the doubling `Geb.SizeBounded.Logspace.dbl` cubic and
+  `Geb.SizeBounded.Logspace.EliasTree.isEliasTree` quartic, which confines
+  evaluation to words of a few dozen bits. The cost is the expressions' own,
+  the compiled machines running the same recursions; a derived tail that
+  reads one bit would lower every degree by one.
 - The relation to `Cobham.SmashFree`: every expression of the algebra is
   computable by one of the subalgebra, the bound of each recursion being
   the concatenation of the recursion variable with a constant, through
@@ -396,6 +395,37 @@ holds it. Follow-ups:
   the machine reading is stated for one argument, as Cslib's
   `ComputableInTimeAndSpaceOfLength` is; the paper's decision problems are
   unary.
+
+### Recognizing W-trees in the logspace algebra
+
+`Geb/Prototypes/Computability/SizeBounded/Logspace/WTree/` specifies a
+recognizer of the spellings of admissible W-trees of a finitary slice
+polynomial endofunctor whose shapes are coded by bitstrings,
+`Geb.SizeBounded.Logspace.WTree.CodedSig.recognize`, as a composition of
+streaming scans of the Elias-length tree encoding, each the streaming
+scanner with a fixed number of further counters updated at its events, and
+proves its specification, `CodedSig.recognize_iff`. The scans are written
+as expressions of the subalgebra,
+`Geb.SizeBounded.Logspace.WTree.recognizeExpr`, parameterized by
+expressions for the label and edge checks, and
+`CodedSig.computableInTimeAndSpace_recognize` reads the machine bound off
+the subalgebra's soundness theorem. The work that remains, in order:
+
+- The evaluator with sharing (`Geb/Prototypes/Computability/SizeBounded/Sharing.lean`)
+  takes tens of seconds on the recognizer of the algebra's own expressions
+  (`WTree/SigCheck.lean`) at a ten-bit word, since a fold whose step
+  evaluates a scan re-evaluates the scan at every level; § The degree of
+  evaluation. The tests evaluate it on the smallest spelling only and check
+  larger spellings against the recognizer's specification.
+- A cheaper expression for the numeral arithmetic. The comparisons fold
+  over bit indices and read each bit by a numeral scan, one nesting level
+  deeper than a lockstep scan over suffix pointers needs, and the reading
+  of a numeral into a counter doubles at every level rather than only
+  inside the payload. Measurements, the floor the problem admits, and the
+  rewrite are in
+  [docs/superpowers/plans/2026-09-19-logspace-recognizer-cost.md](docs/superpowers/plans/2026-09-19-logspace-recognizer-cost.md).
+- The presheaf W-types: hereditary naturality as a further scan, comparing
+  a restricted subtree with a subtree in lockstep.
 
 ### Upstream placement of categorical wrappers
 
