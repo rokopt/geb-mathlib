@@ -453,6 +453,23 @@ checklist and in CI.
   hereditary naturality on the walking arrow to its one non-identity
   morphism. `Classical.choice`-free.
   `Classical.choice`-free.
+- `Geb/Prototypes/BitStream.lean` — specialization of mathlib's M-type
+  construction to the bitstring polynomial `1 + Bool × X`.
+  Its W-type is `List Bool`; bounded approximations are lists of
+  bounded length, agreement is equality after truncation, and the
+  M-type is equivalent to `Stream'.Seq Bool`. The equivalences
+  preserve constructors, finite observations, corecursion, and the
+  embedding of finite bitstrings.
+- `Geb/Prototypes/BitStream/WConstruction.lean` — a W-type
+  presentation of the same construction. `Depth` is the W-type of
+  natural numbers; `Approx` is the walking-arrow presheaf W-family
+  over it. Dependent W-elimination defines truncation and finite
+  unfolding. `Bundle` stores all observations in a slice W-tree
+  whose root has one child for each depth; `Stream` requires
+  compatibility. `mEquiv` identifies this carrier with mathlib's
+  M-type and preserves the directly defined constructor and
+  corecursor. Constructor/destructor inverse laws and executable
+  finite/infinite examples accompany the construction.
 - `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
   coproduct completion of a type `D` treated as a discrete category:
   the category of families of elements of `D` (the discrete case of
