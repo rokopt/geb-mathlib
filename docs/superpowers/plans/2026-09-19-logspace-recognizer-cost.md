@@ -5,14 +5,13 @@
 
 - [Scope](#scope)
 - [Three cost models, kept apart](#three-cost-models-kept-apart)
-- [Measurements](#measurements)
+- [Measurements before](#measurements-before)
   - [Reproducing them](#reproducing-them)
 - [The floor](#the-floor)
-- [Where the present expression spends its time](#where-the-present-expression-spends-its-time)
-- [The expression to write](#the-expression-to-write)
-- [What to measure, and what to expect](#what-to-measure-and-what-to-expect)
-- [Risks](#risks)
-- [Order of work](#order-of-work)
+- [Where the cost was, and the evaluator](#where-the-cost-was-and-the-evaluator)
+- [The expression written](#the-expression-written)
+- [Measurements after](#measurements-after)
+- [What remains](#what-remains)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -21,11 +20,12 @@
 The recognizer of the spellings of the size-bounded algebra's expressions,
 `Geb.SizeBounded.Logspace.WTree.SigCheck.sigRecognizer`, is correct and
 carries its machine bound, but evaluating it is slow enough that the tests
-exercise it on one ten-bit word. This document records what the cost is,
-where it comes from, what the floor is, and how to rewrite the numeral
-arithmetic to approach that floor. It covers
+exercise it on one ten-bit word. This document recorded what the cost was,
+where it came from, what the floor is, and how to rewrite the numeral
+arithmetic to approach that floor; it now records what the rewrite
+measured. It covers
 `Geb/Prototypes/Computability/SizeBounded/Logspace/WTree/`, chiefly
-`BitFold.lean`, `NumArith.lean`, `NumSum.lean` and `NumScanExpr.lean`.
+`BitFold.lean`, `NumArith.lean` and `NumSum.lean`.
 
 This document is a transient process artifact in the sense of
 `CONTRIBUTING.md` § Concern shape: remove it in the final commits of the
@@ -53,7 +53,7 @@ the tail expression did not finish in ten minutes. Measuring the real
 machine needs a simulator over array or map tapes with a proof that it
 agrees with the step function.
 
-## Measurements
+## Measurements before
 
 All timings are from the Lean interpreter under `lake env lean` on one
 machine, so only the ratios carry information. The slope is the log-log
@@ -156,133 +156,107 @@ ends, since storing `S` bits of one side and re-scanning gives time of order
 So the quadratic re-scanning the specification performs is near-optimal, and
 the target for the expression is a degree near the specification's, not
 linear time. Under the evaluator the target is one power higher again: a
-bare recursion over the word already measures a slope near 1.9 there, so an
-expression whose algorithm is quadratic cannot measure better than about 3
-until the evaluator question below is settled.
+bare recursion over the word already measures a slope near 1.9 there, since
+the tail is a recursion over its argument, so an expression whose algorithm
+is quadratic cannot measure better than about 3.
 
-## Where the present expression spends its time
+## Where the cost was, and the evaluator
 
-Two causes, independent of each other.
+Two causes were proposed, independent of each other.
 
-The first is the numeral arithmetic. `BitFold.bitFold` folds over bit
-indices, and its step reads one bit of each numeral by `NumExpr.numHit`,
-which runs a whole numeral scan from the numeral's position. So a comparison
-of two numerals is a scan inside a fold, one nesting level deeper than it
-needs to be. `NumArith.natEq`, `natLt`, `natValue` and `NumSum.natSum` all
-have this shape.
+The first was the numeral arithmetic. `BitFold.bitFold` folded over bit
+indices and its step read one bit of each numeral by `NumExpr.numHit`, a
+whole numeral scan from the numeral's position, so a comparison of two
+numerals was a scan inside a fold.
 
-`NumArith.updValue` compounds it: it doubles the power register at every
-level of the fold, by `dblApp`, rather than only at the levels inside the
-numeral's payload. The doubling is itself a recursion, so the count of
-doublings should be the field's length and is instead the word's.
+The second was the evaluator, and it is measured and dismissed. A recursion
+over the word whose step reads a register, with no tail, measures a log-log
+slope of 1.00 over a sixteenfold range of lengths, 500 to 8000 bits and 21 to
+335 ms; the same recursion with a tail as its step measures 1.7 to 1.8 over an
+eightfold range. `Sharing.lean` costs a constant per level. The extra power
+`dropBy` shows is `Geb.SizeBounded.tailOf` being itself a recursion over its
+argument, which `Sharing.lean`'s docstring and `TODO.md` § The degree of
+evaluation already record. No power is available there.
 
-The second is the evaluator. A bare recursion over the word, `dropBy`, whose
-step is a tail, measures a slope of 1.9 where the algebra prescribes one
-step per level. Whether `Sharing.lean` costs more than a constant per level,
-and if so why, was not determined. If it does, every expression loses a
-power to the evaluator alone, and fixing it would improve every measurement
-above without touching any expression.
+## The expression written
 
-## The expression to write
+`BitFold.bitFold` gives each numeral two registers, a pointer at the bit it
+has reached and a mask, an end segment as long as the run of bits to read.
+Reading a bit is a dispatch on the pointer's head and the test of the run's
+end a dispatch on the mask's emptiness; both registers advance by a tail at
+every level. The bases are a parameter of the fold, so it serves two readings:
+`codeScan` reads a numeral's code from its position, which the code's
+injectivity makes sufficient for equality and which the scanner's end position
+alone delimits, and `payScan` reads the payload, which the order, the sum and
+the reading into a counter need aligned by index, from the gamma code's zero
+run and the size field's value.
 
-Replace index-based bit access with lockstep suffix pointers. A recursion
-over the word can hold one register per numeral, each the word dropped by
-that numeral's position plus the level, advanced by a tail at every step.
-Reading the current bit of each numeral is then a dispatch on a register's
-head, not a scan. The node and child scans in `NodeExpr.lean` and
-`ChildExpr.lean` already work this way and are the model to follow.
+`natEq_natCode` and its siblings keep their statements, so `SigLabel.lean` and
+`SigEdge.lean` are untouched.
 
-- Equality. The code is canonical and injective, `Numeral.natCode_injective`,
-  so two numbers are equal exactly when their codes agree as strings. Run
-  both numeral scanners in lockstep, require both to accept, require the
-  same end offset, and require every bit to agree. One pass.
-- Order. The payload bits arrive least significant first, so the running
-  verdict rule the present `NumArith.ltBits` uses carries over unchanged:
-  at each index, when the bits differ, the verdict becomes the second
-  number's bit. Sizes differing decides the comparison outright, and both
-  scanners already hold the size in a register, so that case is a comparison
-  of two counters rather than of bits.
-- Bits past the end. The index-based reading pads with `false` beyond a
-  numeral's payload, by `List.getD`. A lockstep scan must do the same
-  explicitly: once one scanner reaches its end position its bit stream
-  contributes zeros while the other continues. The order and the sum both
-  depend on that padding, so state it once and reuse it.
-- The sum. Ripple carry runs from the least significant bit upward, which is
-  the order the lockstep scan delivers. The invariant in `NumSum.sum_inv`,
-  which relates the registers to the remainders modulo powers of two, should
-  carry over with the index replaced by the lockstep step count.
-- Reading a numeral into a counter. Keep the doubling, but make it
-  conditional on being inside the payload, so the number of doublings is the
-  field's length rather than the word's. The conditional must be one the
-  evaluator can short-circuit, which `cond4L` is.
+Making the doubling in `natValue` conditional, which the plan below put first,
+measured nothing, on its own (51, 139, 341 and 978 ms against a baseline of
+55, 156, 328 and 1033) or on top of the rewrite (68, 142, 220 and 502 with the
+conditional against 71, 128, 223 and 520 without). The evaluator forces the
+power register only through the value register's chain, so the count of
+doublings performed is already the numeral's rather than the word's. The
+conditional is not in the branch.
 
-The correctness statement should follow `NumScanExpr.regsNS_eq`: an
-invariant giving each register's value after a prefix of the word in terms
-of the two or three numerals' remaining codes, proved by the recursor over
-the prefix, with the end-to-end statements derived from it as
-`NumExpr.num_natCode` and `num_of_ok` are.
+## Measurements after
 
-Keep `Numeral.lean`, `NumScan.lean` and `NumScanExpr.lean`: the scanner and
-its soundness and completeness are what the lockstep version builds on.
-Keep the generic recognizer and the shape of `Sig.lean`, `SigLabel.lean` and
-`SigEdge.lean`; only the four numeral operations change, and their
-statements, `natEq_natCode` and its siblings, should keep their present
-signatures so the callers do not move.
+The numeral operations, at the lengths of the table above:
 
-## What to measure, and what to expect
+| expression | 6 bits | 9 bits | 12 bits | 18 bits | slope |
+| --- | --- | --- | --- | --- | --- |
+| `natEq` before | 102 | 295 | 680 | 2109 ms | 2.8 |
+| `natEq` after | 31 | 51 | 92 | 181 ms | 1.7 |
+| `natValue` before | 55 | 156 | 328 | 1033 ms | 3.0 |
+| `natValue` after | 87 | 151 | 257 | 550 ms | 2.0 |
 
-Measure before and after, at the same lengths, with the harness above.
+The recognizer on accepted spellings, the two expressions measured one after
+the other on the same machine under the same load:
 
-- `natEq` at 6, 9, 12 and 18 bits. It is 112 to 2090 ms now with a slope
-  near 2.9. One pass should put the slope near the bare recursion's, which
-  is 1.9 today, and the absolute times below the `numOk` line, since the
-  work per level becomes a dispatch rather than a scan.
-- `natValue` at the same lengths. It is 55 to 1033 ms now with a slope near
-  2.8. Making the doubling conditional should show there on its own, before
-  the lockstep rewrite lands, so run that change first and measure it
-  separately.
-- `sigRecognizer` on accepted spellings at 10, 11, 12 and 16 bits. It is
-  37 to 234 s now. Removing one nesting level from the numeral operations
-  should remove about one power. Whether the second power follows depends on
-  the evaluator question above.
-- The machine's bound for `dropBy`, `dbl` and `isEliasTree`, unchanged by
-  this work, as a control that the compiler's cost model has not shifted.
+| bit length | before | after | ratio |
+| --- | --- | --- | --- |
+| 10 | 29.6 s | 55.0 s | 1.86 |
+| 11 | 49.2 s | 87.1 s | 1.77 |
 
-Treat a slope estimate over a length range narrower than a factor of four as
-indicative only. The recognizer's accepted spellings are sparse at small
-lengths, so consider generating longer accepted words, for instance nests of
-substitutions, and accept that each measurement will take minutes.
+So the rewrite removes about a power from each numeral operation taken alone
+and costs the recognizer a factor near two, with no crossover in the range
+that can be measured. The recognizer's degree is unchanged by it, which
+falsifies the expectation above that removing a nesting level from the numeral
+operations would remove about one power from the recognizer: the recognizer's
+degree is not set by that nesting.
 
-## Risks
+The direction of the discrepancy is where the two cost models part. The old
+expression paid one numeral scan per bit index actually reached, and the
+evaluator reaches few: a comparison whose numerals differ at the first bit
+short-circuits through `andOkAt` after one index. The new expression pays for
+its bases — one scan per position for a code, three for a payload, since
+`payPtr` names the zero run twice — as soon as any bit is read, and advances
+six registers by a tail per level rather than one. The recognizer evaluates
+its label and edge checks at every level of its own recursion over the word,
+most of them on words that are not labels, so most of its numeral operations
+reject at the first index, which is the case the old expression is fastest at
+and the new one slowest.
 
-- The lockstep scan needs both numerals' scanners running in one recursion,
-  so the register count grows. `ChildExpr.lean` already carries twelve
-  registers and four parameters and its step lemmas are proved one mode at a
-  time; the same method applies, but the case analysis grows with the
-  product of the two scanners' modes. Consider proving the two scanners'
-  steps separately and combining them, rather than casing on pairs.
-- The saturating counter in `NumScan.lean` saturates at the word's length.
-  Two numerals compared in lockstep may both saturate, in which case
-  equality of the saturated values is not equality of the numbers. The
-  present proofs avoid this by bounding the numbers through
-  `NumBits.lt_two_pow_of_size_le`; check that the lockstep version keeps a
-  comparable bound.
-- Short-circuiting through `cond4L` makes timings depend on whether the
-  input is accepted. Measure accepted inputs when comparing.
+`natValue` shows the same crossover directly: slower than before at 6 bits and
+faster at 18. The recognizer's spellings are 10 to 16 bits, below it.
 
-## Order of work
+## What remains
 
-1. Settle the evaluator question first, since it is cheap and it changes how
-   to read every other measurement. Instrument or reason about
-   `Sharing.lean` to find whether a recursion costs more than a constant per
-   level, and record the answer here.
-2. Make the doubling in `natValue` conditional, which touches one register
-   step, and measure it on its own before anything else moves.
-3. Write the lockstep numeral scanner and prove it against `NumScan.lean`.
-4. Rebuild `natEq`, `natLt` and `natSum` on it, keeping their statements, so
-   that `SigLabel.lean` and `SigEdge.lean` need no change.
-5. Rebuild `natValue` on it as well, now that its doubling count is already
-   bounded by the field.
-6. Measure, and record the before and after in this document.
-7. Remove this document in the branch's final commits, moving whatever
-   proves permanent into the module docstrings and `docs/index.md`.
+- Whether to keep the rewrite is a judgement the measurements above do not
+  settle by themselves: it is the faster expression for long words and the
+  slower one for the words the tests use.
+- The bases can be cheaper. `payPtr` evaluates `zSeg` twice, so a payload
+  position costs three runs of the scanner where two would do; doubling the
+  zero run by `Geb.SizeBounded.Logspace.dblApp` instead would name it once.
+- `NumExpr.numHit`, the scanner's bit-at-an-index register and the index
+  parameter it reads are now unused. Removing them, and the index parameter of
+  `Numeral.nrun`, would take a comparison of counters out of every level of
+  the scanner's step and shrink the compiled expression.
+- The scanner is what every numeral operation now rests on, and its tests of
+  the position, of the size field's end and of the bits' end are three
+  `eqSeg`, each a `dropByApp` and so a recursion whose step is a tail. A
+  counter register that the step exhausts, as this fold's mask is, would
+  replace each by a dispatch and take a power off every run of the scanner.
