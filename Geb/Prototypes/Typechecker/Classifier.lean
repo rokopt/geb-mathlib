@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Typechecker.Terminal
+public import Geb.Prototypes.Typechecker
 public import Mathlib.CategoryTheory.EpiMono
 
 set_option doc.verso true in
