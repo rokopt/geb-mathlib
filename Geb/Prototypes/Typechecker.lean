@@ -249,6 +249,12 @@ instance category : Category (DecisionProblem S t f) where
   assoc f g h := Quotient.inductionOn f fun _ ↦ Quotient.inductionOn g fun _ ↦
     Quotient.inductionOn h fun _ ↦ Quotient.sound rfl
 
+/-- Restriction of quotient morphisms commutes with composition. -/
+@[simp]
+theorem Hom.restrict_comp {X Y Z : DecisionProblem S t f} (r : X ⟶ Y) (s : Y ⟶ Z) :
+    (r ≫ s).restrict = s.restrict ∘ r.restrict :=
+  Quotient.inductionOn₂ r s fun _ _ ↦ rfl
+
 /-- The morphism represented by an admissible fiber-preserving endomorphism. -/
 def Representative.toHom {X Y : DecisionProblem S t f} (f : Representative X Y) : X ⟶ Y :=
   Quotient.mk _ f

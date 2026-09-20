@@ -103,6 +103,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.MultiTape.Rename,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
+   `GebManual.DecisionProblems,
    `GebManual.Introduction,
    `GebManual.Root,
    `GebManual.WTypes,
@@ -239,7 +240,9 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main,
    `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Machine,
    `GebTests.Prototypes.Computability.SizeBounded.Machine,
-   `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine].foldl (·.insert ·)
+   `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine,
+   `Geb.Prototypes.Typechecker.Instances,
+   `GebTests.Prototypes.Typechecker.Instances].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Upstream constants at which axiom collection stops: each has

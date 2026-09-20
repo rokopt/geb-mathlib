@@ -27,6 +27,8 @@ the truth values are distinct.
 
 ## Main definitions
 
+* {lit}`DecisionProblem.HasTrueSingletonChecker` names the sufficient condition
+  that a checker accepting exactly true is admissible.
 * {lit}`DecisionProblem.uniqueToSingleton` constructs terminal data from a
   singleton accepted fiber and an admissible map to its element.
 * {lit}`DecisionProblem.uniqueToTrueSingleton` specializes to the true value,
@@ -59,6 +61,10 @@ namespace GebProto.EndomorphismCategory.DecisionProblem
 open CategoryTheory
 
 variable {B : Type u} {S : Submonoid (Function.End B)} {t f : B}
+
+/-- The admissible decision checkers include one accepting exactly the true value. -/
+def HasTrueSingletonChecker (S : Submonoid (Function.End B)) (t f : B) : Prop :=
+  ∃ T : DecisionProblem S t f, ∀ x : B, T.checker.val x = t ↔ x = t
 
 /-- A singleton accepted fiber is terminal if an admissible function sends true to its element.
 The map from a source is its checker followed by that admissible function. -/
