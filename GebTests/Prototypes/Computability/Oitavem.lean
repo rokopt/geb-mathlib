@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.Oitavem -- shake: keep; executable checks
 public meta import Geb.Prototypes.Computability.Oitavem -- shake: keep; executable checks
+public import GebTests.Prototypes.Computability.Oitavem.PresheafCounterexample
 
 set_option doc.verso true in
 /-!
