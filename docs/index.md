@@ -3015,7 +3015,17 @@ checklist and in CI.
   three coded numbers, `BitFold.bitFold`, a simultaneous recursion over
   the word that reads the three bits at each index and updates registers
   by an expression given as a parameter, with `BitFold.sem_bitFold` its
-  value as an iteration; `WTree/NumBits.lean` relates the scanner's bits
+  value as an iteration. Each number carries two registers, a pointer at
+  the bit it has reached and a mask as long as the run of bits to read,
+  both advanced by a tail at every level, so that a bit is a dispatch on a
+  register rather than a scan of the numeral, `BitFold.segBit`. The bases
+  are a parameter: `BitFold.codeScan` reads a numeral's code from its
+  position, which the code's injectivity makes sufficient for equality and
+  which the scanner's end position alone delimits, and `BitFold.payScan`
+  reads its payload, which the order, the sum and the reading into a
+  counter need aligned by index, `BitFold.codeBit_natCode` and
+  `BitFold.payBit_natCode` identifying each on a word holding a code;
+  `WTree/NumBits.lean` relates the scanner's bits
   to `Nat.testBit`, the remainders modulo powers of two and the binary
   size; `WTree/NumArith.lean` instantiates the fold as the equality test,
   the order test and the reading of a numeral into a counter, an end

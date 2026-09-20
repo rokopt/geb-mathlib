@@ -34,7 +34,8 @@ needs in both directions.
 
 * {lit}`nrunFrom_before`, {lit}`nrunFrom_zeros`, {lit}`nrunFrom_size`,
   {lit}`nrunFrom_bits`, {lit}`nrunFrom_done` — the runs over the segments.
-* {lit}`nrun_natCode` — on a word holding a coded number at the position, the
+* {lit}`nrun_eq_natCode`, {lit}`nrun_natCode` — on a word holding a coded
+  number at the position, the scanner's final state, and from it that the
   scanner ends done and canonical, after the numeral, with its bit at the
   index.
 * {lit}`nrun_done` — a scanner that ends done and canonical has read a coded
@@ -340,12 +341,12 @@ theorem nrunFrom_natCode (n tp i m : ℕ) (hnl : (natCode m).length ≤ n) :
       show tp + 1 + k + 1 + (k + 1) + (m' + 1).size = tp + (2 * (k + 1) + 1 + (m' + 1).size) by
         omega]
 
-/-- On a word holding a coded number at the position, the scanner ends done and
-canonical, after the numeral, with the numeral's bit at the index. -/
-theorem nrun_natCode (tp i : ℕ) (u rest w : List Bool) (m : ℕ) (hu : u.length = tp)
+/-- On a word holding a coded number at the position, the scanner ends in the
+state the run over the numeral alone ends in. -/
+theorem nrun_eq_natCode (tp i : ℕ) (u rest w : List Bool) (m : ℕ) (hu : u.length = tp)
     (hw : w = u ++ natCode m ++ rest) :
-    (nrun tp i w).mode = .done ∧ (nrun tp i w).ok = true ∧
-      (nrun tp i w).endPos = tp + (natCode m).length ∧ (nrun tp i w).hit = m.bits.getD i false := by
+    nrun tp i w = ⟨.done, (m.size + 1).size - 1, m.size, m.size + 1, m.bits.getD i false, true,
+      tp + (natCode m).length⟩ := by
   obtain ⟨n, hn⟩ : ∃ n, w.length = n := ⟨_, rfl⟩
   have hnl : (natCode m).length ≤ n := by
     rw [← hn, hw, List.length_append, List.length_append]
@@ -353,11 +354,17 @@ theorem nrun_natCode (tp i : ℕ) (u rest w : List Bool) (m : ℕ) (hu : u.lengt
   have hst : nrunFrom n tp i nstart 0 u = (nstart, tp) := by
     rw [nrunFrom_before n tp i u 0 nstart rfl (by rw [hu]; omega), Nat.zero_add, hu]
   rw [nrun, hn, hw, List.append_assoc, nrunFrom_append, hst]
-  change (nrunFrom n tp i nstart tp (natCode m ++ rest)).1.mode = .done ∧
-    (nrunFrom n tp i nstart tp (natCode m ++ rest)).1.ok = true ∧
-    (nrunFrom n tp i nstart tp (natCode m ++ rest)).1.endPos = _ ∧
-    (nrunFrom n tp i nstart tp (natCode m ++ rest)).1.hit = _
+  change (nrunFrom n tp i nstart tp (natCode m ++ rest)).1 = _
   rw [nrunFrom_append, nrunFrom_natCode n tp i m hnl, nrunFrom_done _ _ _ rest _ _ rfl]
+
+/-- On a word holding a coded number at the position, the scanner ends done and
+canonical, after the numeral, with the numeral's bit at the index. -/
+theorem nrun_natCode (tp i : ℕ) (u rest w : List Bool) (m : ℕ) (hu : u.length = tp)
+    (hw : w = u ++ natCode m ++ rest) :
+    (nrun tp i w).mode = .done ∧ (nrun tp i w).ok = true ∧
+      (nrun tp i w).endPos = tp + (natCode m).length ∧
+      (nrun tp i w).hit = m.bits.getD i false := by
+  rw [nrun_eq_natCode tp i u rest w m hu hw]
   exact ⟨rfl, rfl, rfl, rfl⟩
 
 /-- The bit at an index among no bits is the bit held. -/

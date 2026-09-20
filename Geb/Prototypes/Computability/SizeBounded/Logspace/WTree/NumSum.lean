@@ -97,39 +97,37 @@ third bit with the sum bit, and the carry out. -/
 
 /-- The check: the flag after the fold, when the carry out is clear. -/
 @[expose] def natSum (cin : Bool) : LOf 4 :=
-  cond4L (bitFold (baseSum cin) updSum 1) (bitFold (baseSum cin) updSum 0) (constL 4 [])
+  cond4L (bitFold payScan (baseSum cin) updSum 1) (bitFold payScan (baseSum cin) updSum 0)
+    (constL 4 [])
     (constL 4 [])
 
 /-- The flag and the carry after the indices below a bound. -/
-@[expose] def sumRegs (y : List Bool) (pA pB pC : ℕ) (cin : Bool) : ℕ → Bool × Bool :=
+@[expose] def sumRegs (bA bB bC : ℕ → Bool) (cin : Bool) : ℕ → Bool × Bool :=
   Nat.rec (true, cin) fun i r ↦
-    (r.1 && ((nrun pC i y).hit == xor3 (nrun pA i y).hit (nrun pB i y).hit r.2),
-      maj (nrun pA i y).hit (nrun pB i y).hit r.2)
+    (r.1 && (bC i == xor3 (bA i) (bB i) r.2), maj (bA i) (bB i) r.2)
 
 /-- The registers of the adder after the indices below a bound. -/
-theorem iter_sum (y : List Bool) (pA pB pC : ℕ) (cin : Bool) : ∀ n,
-    iter updSum y pA pB pC (regs0 (baseSum cin) y pA pB pC) n =
-      ![boolWord (sumRegs y pA pB pC cin n).1, boolWord (sumRegs y pA pB pC cin n).2] :=
+theorem iter_sum (y : List Bool) (bA bB bC : ℕ → Bool) (pA pB pC : ℕ) (cin : Bool) : ∀ n,
+    iter updSum y bA bB bC (regs0 (baseSum cin) y pA pB pC) n =
+      ![boolWord (sumRegs bA bB bC cin n).1, boolWord (sumRegs bA bB bC cin n).2] :=
   Nat.rec (funext fun j ↦ match j with | 0 => rfl | 1 => rfl) fun n ih ↦ by
     funext j
     match j with
     | 0 =>
-      change updF updSum y (iter updSum y pA pB pC (regs0 (baseSum cin) y pA pB pC) n) _ _ _ 0 = _
+      change updF updSum y (iter updSum y bA bB bC (regs0 (baseSum cin) y pA pB pC) n) _ _ _ 0 = _
       rw [ih]
       unfold updF
       change (andOkAt okV (tt2 bitCS (tt3 bitAS bitBS carryV xor3) (· == ·))).sem _ = _
-      rw [andOkAt, sem_cond4L, sem_tt2 _ _ _ _ (nrun pC n y).hit _ rfl
-        (sem_tt3 _ _ _ _ _ (nrun pA n y).hit (nrun pB n y).hit (sumRegs y pA pB pC cin n).2 rfl rfl
-          rfl), sem_constL]
-      change cond4Sem (boolWord (sumRegs y pA pB pC cin n).1) [] _ _ = _
+      rw [andOkAt, sem_cond4L, sem_tt2 _ _ _ _ (bC n) _ rfl
+        (sem_tt3 _ _ _ _ _ (bA n) (bB n) (sumRegs bA bB bC cin n).2 rfl rfl rfl), sem_constL]
+      change cond4Sem (boolWord (sumRegs bA bB bC cin n).1) [] _ _ = _
       rw [cond4Sem_boolWord]
       rfl
     | 1 =>
-      change updF updSum y (iter updSum y pA pB pC (regs0 (baseSum cin) y pA pB pC) n) _ _ _ 1 = _
+      change updF updSum y (iter updSum y bA bB bC (regs0 (baseSum cin) y pA pB pC) n) _ _ _ 1 = _
       rw [ih]
       unfold updF
-      exact sem_tt3 _ _ _ _ _ (nrun pA n y).hit (nrun pB n y).hit (sumRegs y pA pB pC cin n).2 rfl
-        rfl rfl
+      exact sem_tt3 _ _ _ _ _ (bA n) (bB n) (sumRegs bA bB bC cin n).2 rfl rfl rfl
 
 /-- The remainder of a sum modulo a number is the remainder of the sum of the
 remainders. -/
@@ -162,12 +160,12 @@ theorem adder_step (P AP BP CP SP cin : ℕ) (hAl : AP < P) (hBl : BP < P) (hCl 
 remainders of the two numbers and the carry in against the remainder of the
 sum, and the flag holds exactly when the third number's remainder is the
 sum's. -/
-theorem sum_inv (y : List Bool) (pA pB pC A B C : ℕ) (cin : Bool)
-    (hhA : ∀ i, (nrun pA i y).hit = A.testBit i) (hhB : ∀ i, (nrun pB i y).hit = B.testBit i)
-    (hhC : ∀ i, (nrun pC i y).hit = C.testBit i) : ∀ n,
+theorem sum_inv (bA bB bC : ℕ → Bool) (A B C : ℕ) (cin : Bool)
+    (hhA : ∀ i, bA i = A.testBit i) (hhB : ∀ i, bB i = B.testBit i)
+    (hhC : ∀ i, bC i = C.testBit i) : ∀ n,
       A % 2 ^ n + B % 2 ^ n + cin.toNat =
-          (A + B + cin.toNat) % 2 ^ n + 2 ^ n * (sumRegs y pA pB pC cin n).2.toNat ∧
-        ((sumRegs y pA pB pC cin n).1 = true ↔ C % 2 ^ n = (A + B + cin.toNat) % 2 ^ n) :=
+          (A + B + cin.toNat) % 2 ^ n + 2 ^ n * (sumRegs bA bB bC cin n).2.toNat ∧
+        ((sumRegs bA bB bC cin n).1 = true ↔ C % 2 ^ n = (A + B + cin.toNat) % 2 ^ n) :=
   Nat.rec (by
       rw [Nat.pow_zero, Nat.mod_one, Nat.mod_one, Nat.mod_one, Nat.mod_one, Nat.one_mul]
       exact ⟨rfl, ⟨fun _ ↦ rfl, fun _ ↦ rfl⟩⟩)
@@ -175,9 +173,9 @@ theorem sum_inv (y : List Bool) (pA pB pC A B C : ℕ) (cin : Bool)
       obtain ⟨ih1, ih2⟩ := ih
       change A % 2 ^ (n + 1) + B % 2 ^ (n + 1) + cin.toNat =
           (A + B + cin.toNat) % 2 ^ (n + 1) + 2 ^ (n + 1) *
-            (maj (nrun pA n y).hit (nrun pB n y).hit (sumRegs y pA pB pC cin n).2).toNat ∧
-        (((sumRegs y pA pB pC cin n).1 && ((nrun pC n y).hit == xor3 (nrun pA n y).hit
-            (nrun pB n y).hit (sumRegs y pA pB pC cin n).2)) = true ↔
+            (maj (bA n) (bB n) (sumRegs bA bB bC cin n).2).toNat ∧
+        (((sumRegs bA bB bC cin n).1 &&
+            (bC n == xor3 (bA n) (bB n) (sumRegs bA bB bC cin n).2)) = true ↔
           C % 2 ^ (n + 1) = (A + B + cin.toNat) % 2 ^ (n + 1))
       have hT : (A + B + cin.toNat) % 2 ^ (n + 1) =
           (A % 2 ^ (n + 1) + B % 2 ^ (n + 1) + cin.toNat) % 2 ^ (n + 1) := add_add_mod _ _ _ _
@@ -203,8 +201,8 @@ theorem sum_inv (y : List Bool) (pA pB pC A B C : ℕ) (cin : Bool)
         mod_two_pow_succ (A + B + cin.toNat) n, hP1]
       exact adder_step (2 ^ n) (A % 2 ^ n) (B % 2 ^ n) (C % 2 ^ n) ((A + B + cin.toNat) % 2 ^ n)
         cin.toNat hAl hBl hCl hSl (Bool.toNat_le cin) (A.testBit n) (B.testBit n) (C.testBit n)
-        (sumRegs y pA pB pC cin n).2 ((A + B + cin.toNat).testBit n) t ht ih1 hdm
-        (sumRegs y pA pB pC cin n).1 ih2
+        (sumRegs bA bB bC cin n).2 ((A + B + cin.toNat).testBit n) t ht ih1 hdm
+        (sumRegs bA bB bC cin n).1 ih2
 
 /-- On a word holding coded numbers at the three positions, the check decides
 whether the third is the sum of the first two and the carry in. -/
@@ -216,13 +214,13 @@ theorem natSum_natCode (y uA rA uB rB uC rC : List Bool) (A B C pA pB pC : ℕ) 
   have hA := pos_le_length y uA rA A pA huA hyA
   have hB := pos_le_length y uB rB B pB huB hyB
   have hC := pos_le_length y uC rC C pC huC hyC
-  rw [natSum, sem_cond4L, sem_bitFold _ _ y pA pB pC hA hB hC, sem_bitFold _ _ y pA pB pC hA hB hC,
-    iter_sum, sem_constL]
-  change cond4Sem (boolWord (sumRegs y pA pB pC cin y.length).2)
-    (boolWord (sumRegs y pA pB pC cin y.length).1) [] [] = _
+  rw [natSum, sem_cond4L, sem_bitFold_pay _ _ y pA pB pC hA hB hC,
+    sem_bitFold_pay _ _ y pA pB pC hA hB hC, iter_sum, sem_constL]
+  change cond4Sem (boolWord (sumRegs (payBit y pA) (payBit y pB) (payBit y pC) cin y.length).2)
+    (boolWord (sumRegs (payBit y pA) (payBit y pB) (payBit y pC) cin y.length).1) [] [] = _
   rw [cond4Sem_boolWord_same]
-  obtain ⟨inv1, inv2⟩ := sum_inv y pA pB pC A B C cin (hit_eq_testBit y uA rA A pA huA hyA)
-    (hit_eq_testBit y uB rB B pB huB hyB) (hit_eq_testBit y uC rC C pC huC hyC) y.length
+  obtain ⟨inv1, inv2⟩ := sum_inv _ _ _ A B C cin (payBit_eq_testBit y uA rA A pA huA hyA)
+    (payBit_eq_testBit y uB rB B pB huB hyB) (payBit_eq_testBit y uC rC C pC huC hyC) y.length
   rw [Nat.mod_eq_of_lt (lt_two_pow_length y uA rA A hyA),
     Nat.mod_eq_of_lt (lt_two_pow_length y uB rB B hyB)] at inv1
   rw [Nat.mod_eq_of_lt (lt_two_pow_length y uC rC C hyC)] at inv2
@@ -233,8 +231,8 @@ theorem natSum_natCode (y uA rA uB rB uC rC : List Bool) (A B C pA pB pC : ℕ) 
     have hS : (A + B + cin.toNat) % 2 ^ y.length = A + B + cin.toNat :=
       Nat.mod_eq_of_lt (by rw [← h]; exact hCl)
     rw [hS] at inv1 inv2
-    have hcy : (sumRegs y pA pB pC cin y.length).2 = false := by
-      cases hc : (sumRegs y pA pB pC cin y.length).2
+    have hcy : (sumRegs (payBit y pA) (payBit y pB) (payBit y pC) cin y.length).2 = false := by
+      cases hc : (sumRegs (payBit y pA) (payBit y pB) (payBit y pC) cin y.length).2
       · rfl
       · rw [hc, Bool.toNat_true] at inv1
         have := Nat.two_pow_pos y.length
@@ -242,9 +240,9 @@ theorem natSum_natCode (y uA rA uB rB uC rC : List Bool) (A B C pA pB pC : ℕ) 
     rw [hcy, inv2.mpr h]
     rfl
   · rw [decide_eq_false h]
-    cases hc : (sumRegs y pA pB pC cin y.length).2
+    cases hc : (sumRegs (payBit y pA) (payBit y pB) (payBit y pC) cin y.length).2
     · rw [hc, Bool.toNat_false, Nat.mul_zero, Nat.add_zero] at inv1
-      cases hok : (sumRegs y pA pB pC cin y.length).1
+      cases hok : (sumRegs (payBit y pA) (payBit y pB) (payBit y pC) cin y.length).1
       · rfl
       · exfalso
         exact h (by rw [inv2.mp hok]; exact inv1.symm)

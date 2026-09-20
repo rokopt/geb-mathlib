@@ -41,6 +41,7 @@ event of the current bit.
 * {lit}`boolWord`, {lit}`isTrueWord`, {lit}`flagOf`, {lit}`andOkAt` — a flag
   as a word, a word read as a flag, the reading as an expression, and the
   conjunction with a flag register.
+* {lit}`addSeg` — the sum of two counters held as end segments of the word.
 * {lit}`eqSeg`, {lit}`isZeroSeg` — the equality test of two counters held as
   end segments, and the test of one at zero.
 * {lit}`lenAfterHeaderAt` — the length counter a completed length field
@@ -64,7 +65,8 @@ event of the current bit.
 * {lit}`sem_eventStep` — the meaning of an event-driven step on encoded
   counters.
 * {lit}`sem_flagOf`, {lit}`cond4Sem_boolWord`, {lit}`cond4Sem_boolWord_same`,
-  {lit}`sem_eqSeg`, {lit}`sem_isZeroSeg`, {lit}`cond4Sem_drop_length_sub`,
+  {lit}`sem_addSeg`, {lit}`sem_eqSeg`, {lit}`sem_isZeroSeg`,
+  {lit}`cond4Sem_drop_length_sub`,
   {lit}`sem_lenAfterHeaderAt` — the meanings of the flag, comparison and
   counter expressions.
 
@@ -328,6 +330,24 @@ theorem sem_eqSeg {n : ℕ} (a b : LOf n) (x : Fin n → List Bool) (y : List Bo
       rfl
     · rw [ite_eq_right h₁]
       rfl
+
+/-- The word dropped by a number and by another cut off at the word's length
+is the word dropped by their sum. -/
+theorem drop_add_min (y : List Bool) (V P : ℕ) : y.drop (V + min P y.length) = y.drop (V + P) := by
+  rcases Nat.le_total P y.length with h | h
+  · rw [Nat.min_eq_left h]
+  · rw [Nat.min_eq_right h, List.drop_of_length_le (by omega), List.drop_of_length_le (by omega)]
+
+/-- The sum of two counters held as end segments of the word: the second
+dropped by the first's number, the latter cut off at the word's length. -/
+@[expose] def addSeg {n : ℕ} (p v w : LOf n) : LOf n := dropByApp (dropByApp p w) v
+
+/-- The sum's meaning. -/
+theorem sem_addSeg {n : ℕ} (p v w : LOf n) (x : Fin n → List Bool) (y : List Bool) (P V : ℕ)
+    (hp : p.sem x = y.drop P) (hv : v.sem x = y.drop V) (hw : w.sem x = y) :
+    (addSeg p v w).sem x = y.drop (V + P) := by
+  rw [addSeg, sem_dropByApp, sem_dropByApp, hp, hv, hw, List.length_drop, List.length_drop,
+    List.drop_drop, show y.length - (y.length - P) = min P y.length by omega, drop_add_min]
 
 /-- The test of a counter held as an end segment of the word at zero: the word
 dropped by the segment's length, empty exactly then. -/
