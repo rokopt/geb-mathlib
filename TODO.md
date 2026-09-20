@@ -413,17 +413,29 @@ the subalgebra's soundness theorem. The work that remains, in order:
 
 - The evaluator with sharing (`Geb/Prototypes/Computability/SizeBounded/Sharing.lean`)
   takes tens of seconds on the recognizer of the algebra's own expressions
-  (`WTree/SigCheck.lean`) at a ten-bit word, since a fold whose step
-  evaluates a scan re-evaluates the scan at every level; § The degree of
-  evaluation. The tests evaluate it on the smallest spelling only and check
-  larger spellings against the recognizer's specification.
-- A cheaper expression for the numeral arithmetic. The comparisons fold
-  over bit indices and read each bit by a numeral scan, one nesting level
-  deeper than a lockstep scan over suffix pointers needs, and the reading
-  of a numeral into a counter doubles at every level rather than only
-  inside the payload. Measurements, the floor the problem admits, and the
-  rewrite are in
-  [docs/superpowers/plans/2026-09-19-logspace-recognizer-cost.md](docs/superpowers/plans/2026-09-19-logspace-recognizer-cost.md).
+  (`WTree/SigCheck.lean`) at a ten-bit word, the degree the expressions
+  themselves carry; § The degree of evaluation. The tests evaluate it on the
+  smallest spelling only and check larger spellings against the recognizer's
+  specification.
+- Whether to keep the numeral arithmetic's reading of bits by pointer.
+  `WTree/BitFold.lean` reads each bit from a pointer register advanced by a
+  tail rather than from a scan of the numeral, which takes about a power off
+  each numeral operation taken alone — the equality test measures a log-log
+  slope of 1.7 where it measured 2.8 — and costs the recognizer a factor near
+  two at the lengths the tests use. Its label and edge checks run at every
+  level of its recursion over the word and most of them reject at the first
+  bit, where the old expression's scan was short-circuited and the new
+  expression's bases are not; `NumArith.natValue` crosses over between 12 and
+  18 bits and the recognizer's spellings are 10 to 16.
+- Cheaper bases for that reading, and a cheaper scanner under it.
+  `BitFold.payPtr` names `BitFold.zSeg` twice, so a payload position runs the
+  scanner three times where two would do. `NumExpr.numHit`, the scanner's
+  bit-at-an-index register and the index parameter of `Numeral.nrun` are
+  unused now that the fold reads bits by pointer. The scanner's tests of the
+  position, of the size field's end and of the bits' end are three `eqSeg`
+  per level, each a `dropByApp` and so a recursion whose step is a tail; a
+  counter register that the step exhausts, as the fold's mask is, would
+  replace each by a dispatch.
 - The presheaf W-types: hereditary naturality as a further scan, comparing
   a restricted subtree with a subtree in lockstep.
 

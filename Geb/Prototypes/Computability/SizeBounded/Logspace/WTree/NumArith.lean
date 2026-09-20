@@ -18,7 +18,10 @@ Three instances of the lockstep fold over the bits of numerals,
 two coded numbers, their order, and the reading of a coded number into a
 counter, an end segment of the word, which saturates at the word's length.
 Each is an expression of arity four, the word and three positions, of which
-the equality and the order read two and the reading one. The updates are
+the equality and the order read two and the reading one. The equality folds
+over the codes, which the code's injectivity makes sufficient and which the
+scanner's end position alone delimits; the order and the reading fold over
+the payloads, which they need aligned by index. The updates are
 truth tables on flags, {lit}`tt2` and {lit}`tt3`, and conditionals on flags.
 
 # Main definitions
@@ -27,6 +30,8 @@ truth tables on flags, {lit}`tt2` and {lit}`tt3`, and conditionals on flags.
   tables of two and three flags.
 * {lit}`natEq`, {lit}`natLt`, {lit}`natValue` — the equality test, the order
   test and the reading into a counter.
+* {lit}`natCode_eq_of_getD` — numbers whose codes agree below a bound both
+  lie within are equal.
 
 # Main statements
 
@@ -85,13 +90,6 @@ theorem sem_tt3 {n : ℕ} (a b c : LOf n) (v : Bool → Bool → Bool → Bool) 
   rw [tt3, sem_ifFlag _ _ _ x A ha]
   cases A <;> simp only [↓reduceIte, Bool.false_eq_true] <;> exact sem_tt2 _ _ _ x B C hb hc
 
-/-- The word dropped by a number and by another cut off at the word's length
-is the word dropped by their sum. -/
-theorem drop_add_min (y : List Bool) (V P : ℕ) : y.drop (V + min P y.length) = y.drop (V + P) := by
-  rcases Nat.le_total P y.length with h | h
-  · rw [Nat.min_eq_left h]
-  · rw [Nat.min_eq_right h, List.drop_of_length_le (by omega), List.drop_of_length_le (by omega)]
-
 section Equality
 
 /-- The flag, the sole register. -/
@@ -110,30 +108,31 @@ the two bits. -/
 /-- The base of the equality test: the flag set. -/
 @[expose] def baseEq : Fin 1 → LOf 4 := ![constL 4 [true]]
 
-/-- The equality test of the numbers at the first two positions. -/
-@[expose] def natEq : LOf 4 := bitFold baseEq updEq 0
+/-- The equality test of the numbers at the first two positions: their codes
+agree bit by bit, which by the code's injectivity is the numbers' equality,
+and the code needs only the scanner's end position to delimit. -/
+@[expose] def natEq : LOf 4 := bitFold codeScan baseEq updEq 0
 
 /-- The agreement of the bits of the two numbers below an index. -/
-@[expose] def eqBits (y : List Bool) (pA pB : ℕ) : ℕ → Bool :=
-  Nat.rec true fun i r ↦ r && ((nrun pA i y).hit == (nrun pB i y).hit)
+@[expose] def eqBits (bA bB : ℕ → Bool) : ℕ → Bool :=
+  Nat.rec true fun i r ↦ r && (bA i == bB i)
 
 /-- The register of the equality test after the indices below a bound. -/
-theorem iter_eq (y : List Bool) (pA pB pC : ℕ) : ∀ n,
-    iter updEq y pA pB pC (regs0 baseEq y pA pB pC) n 0 = boolWord (eqBits y pA pB n) :=
+theorem iter_eq (y : List Bool) (bA bB bC : ℕ → Bool) (pA pB pC : ℕ) : ∀ n,
+    iter updEq y bA bB bC (regs0 baseEq y pA pB pC) n 0 = boolWord (eqBits bA bB n) :=
   Nat.rec rfl fun n ih ↦ by
     change (andOkAt flagE (tt2 bitAE bitBE (· == ·))).sem _ = _
-    rw [andOkAt, sem_cond4L, sem_tt2 _ _ _ _ (nrun pA n y).hit (nrun pB n y).hit rfl rfl,
-      sem_constL]
-    change cond4Sem (iter updEq y pA pB pC (regs0 baseEq y pA pB pC) n 0) [] _ _ = _
+    rw [andOkAt, sem_cond4L, sem_tt2 _ _ _ _ (bA n) (bB n) rfl rfl, sem_constL]
+    change cond4Sem (iter updEq y bA bB bC (regs0 baseEq y pA pB pC) n 0) [] _ _ = _
     rw [ih, cond4Sem_boolWord]
     rfl
 
 /-- The agreement below a bound holds exactly when the bits agree at every
 index below it. -/
-theorem eqBits_eq_true_iff (y : List Bool) (pA pB : ℕ) : ∀ n,
-    eqBits y pA pB n = true ↔ ∀ i < n, (nrun pA i y).hit = (nrun pB i y).hit :=
+theorem eqBits_eq_true_iff (bA bB : ℕ → Bool) : ∀ n,
+    eqBits bA bB n = true ↔ ∀ i < n, bA i = bB i :=
   Nat.rec ⟨fun _ i h ↦ absurd h (Nat.not_lt_zero i), fun _ ↦ rfl⟩ fun n ih ↦ by
-    change (eqBits y pA pB n && ((nrun pA n y).hit == (nrun pB n y).hit)) = true ↔ _
+    change (eqBits bA bB n && (bA n == bB n)) = true ↔ _
     rw [Bool.and_eq_true, ih, beq_iff_eq]
     constructor
     · intro h i hi
@@ -144,11 +143,41 @@ theorem eqBits_eq_true_iff (y : List Bool) (pA pB : ℕ) : ∀ n,
     · intro h
       exact ⟨fun i hi ↦ h i (by omega), h n (Nat.lt_succ_self n)⟩
 
-/-- The bits of a number coded at a position, as read by the scanner, are the
+/-- A list that another agrees with at every index below its length is that
+other's prefix of that length. -/
+theorem take_eq_of_getD (l1 l2 : List Bool) (h12 : l1.length ≤ l2.length)
+    (h : ∀ i < l1.length, l1.getD i false = l2.getD i false) : l2.take l1.length = l1 := by
+  refine List.ext_getElem (by rw [List.length_take]; omega) fun i h1 h2 ↦ ?_
+  have hi := h i h2
+  rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD,
+    List.getElem?_eq_getElem h2, List.getElem?_eq_getElem (by omega)] at hi
+  rw [List.getElem_take]
+  exact hi.symm
+
+/-- Numbers whose codes agree at every index below a bound that both codes lie
+within are equal. -/
+theorem natCode_eq_of_getD (A B n : ℕ) (hA : (natCode A).length ≤ n)
+    (hB : (natCode B).length ≤ n)
+    (h : ∀ i < n, (natCode A).getD i false = (natCode B).getD i false) : A = B := by
+  have key : ∀ C D : ℕ, (natCode C).length ≤ (natCode D).length →
+      (∀ i < (natCode C).length, (natCode C).getD i false = (natCode D).getD i false) → C = D := by
+    intro C D hle hi
+    have hsplit : natCode D = natCode C ++ (natCode D).drop (natCode C).length := by
+      conv_lhs => rw [← List.take_append_drop (natCode C).length (natCode D)]
+      rw [take_eq_of_getD _ _ hle hi]
+    have hD := readNatCode_natCode_append D []
+    rw [List.append_nil, hsplit,
+      readNatCode_natCode_append C ((natCode D).drop (natCode C).length)] at hD
+    exact (Prod.mk.inj (Option.some.inj hD)).1
+  rcases Nat.le_total (natCode A).length (natCode B).length with hle | hle
+  · exact key A B hle fun i hi ↦ h i (Nat.lt_of_lt_of_le hi hA)
+  · exact (key B A hle fun i hi ↦ (h i (Nat.lt_of_lt_of_le hi hB)).symm).symm
+
+/-- The bits of a number coded at a position, as the fold reads them, are the
 number's bits. -/
-theorem hit_eq_testBit (y u r : List Bool) (A p : ℕ) (hu : u.length = p)
-    (hy : y = u ++ natCode A ++ r) (i : ℕ) : (nrun p i y).hit = A.testBit i := by
-  rw [(nrun_natCode p i u r y A hu hy).2.2.2, bits_getD_eq_testBit]
+theorem payBit_eq_testBit (y u r : List Bool) (A p : ℕ) (hu : u.length = p)
+    (hy : y = u ++ natCode A ++ r) (i : ℕ) : payBit y p i = A.testBit i := by
+  rw [payBit_natCode y u r A p hu hy, bits_getD_eq_testBit]
 
 /-- A coded number's position lies within the word. -/
 theorem pos_le_length (y u r : List Bool) (A p : ℕ) (hu : u.length = p)
@@ -174,28 +203,21 @@ theorem natEq_natCode (y uA rA uB rB : List Bool) (A B pA pB pC : ℕ) (huA : uA
     (hyA : y = uA ++ natCode A ++ rA) (huB : uB.length = pB) (hyB : y = uB ++ natCode B ++ rB)
     (hC : pC ≤ y.length) :
     natEq.sem ![y, y.drop pA, y.drop pB, y.drop pC] = boolWord (decide (A = B)) := by
-  have hhA := hit_eq_testBit y uA rA A pA huA hyA
-  have hhB := hit_eq_testBit y uB rB B pB huB hyB
-  rw [natEq, sem_bitFold _ _ y pA pB pC (pos_le_length y uA rA A pA huA hyA)
+  have hhA := codeBit_natCode y uA rA A pA huA hyA
+  have hhB := codeBit_natCode y uB rB B pB huB hyB
+  rw [natEq, sem_bitFold_code _ _ y pA pB pC (pos_le_length y uA rA A pA huA hyA)
     (pos_le_length y uB rB B pB huB hyB) hC, iter_eq]
-  have : eqBits y pA pB y.length = decide (A = B) := by
+  have : eqBits (codeBit y pA) (codeBit y pB) y.length = decide (A = B) := by
     by_cases h : A = B
     · rw [decide_eq_true h]
-      exact (eqBits_eq_true_iff y pA pB y.length).mpr fun i _ ↦ by rw [hhA, hhB, h]
+      exact (eqBits_eq_true_iff _ _ y.length).mpr fun i _ ↦ by rw [hhA, hhB, h]
     · rw [decide_eq_false h]
-      cases he : eqBits y pA pB y.length
+      cases he : eqBits (codeBit y pA) (codeBit y pB) y.length
       · rfl
-      · exfalso
-        apply h
-        apply Nat.eq_of_testBit_eq
-        intro i
-        by_cases hi : i < y.length
-        · rw [← hhA, ← hhB]
-          exact (eqBits_eq_true_iff y pA pB y.length).mp he i hi
-        · rw [Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le (lt_two_pow_length y uA rA A hyA)
-              (Nat.pow_le_pow_right (by decide) (by omega))),
-            Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le (lt_two_pow_length y uB rB B hyB)
-              (Nat.pow_le_pow_right (by decide) (by omega)))]
+      · exact absurd (natCode_eq_of_getD A B y.length (length_natCode_le y uA rA A hyA)
+          (length_natCode_le y uB rB B hyB) fun i hi ↦ by
+            rw [← hhA, ← hhB]
+            exact (eqBits_eq_true_iff _ _ y.length).mp he i hi) h
   rw [this]
 
 end Equality
@@ -211,37 +233,35 @@ second number's bit where they differ. -/
 
 /-- The order test: the number at the first position is below the number at
 the second. -/
-@[expose] def natLt : LOf 4 := bitFold baseLt updLt 0
+@[expose] def natLt : LOf 4 := bitFold payScan baseLt updLt 0
 
 /-- The verdict after the bits below an index: the second number's bit at the
 highest index below it where the bits differ, clear when none. -/
-@[expose] def ltBits (y : List Bool) (pA pB : ℕ) : ℕ → Bool :=
-  Nat.rec false fun i r ↦ if ((nrun pA i y).hit == (nrun pB i y).hit) then r else (nrun pB i y).hit
+@[expose] def ltBits (bA bB : ℕ → Bool) : ℕ → Bool :=
+  Nat.rec false fun i r ↦ if (bA i == bB i) then r else bB i
 
 /-- The register of the order test after the indices below a bound. -/
-theorem iter_lt (y : List Bool) (pA pB pC : ℕ) : ∀ n,
-    iter updLt y pA pB pC (regs0 baseLt y pA pB pC) n 0 = boolWord (ltBits y pA pB n) :=
+theorem iter_lt (y : List Bool) (bA bB bC : ℕ → Bool) (pA pB pC : ℕ) : ∀ n,
+    iter updLt y bA bB bC (regs0 baseLt y pA pB pC) n 0 = boolWord (ltBits bA bB n) :=
   Nat.rec rfl fun n ih ↦ by
     change (ifFlag (tt2 bitAE bitBE (· == ·)) flagE bitBE).sem _ = _
-    rw [sem_ifFlag _ _ _ _ _ (sem_tt2 _ _ _ _ (nrun pA n y).hit (nrun pB n y).hit rfl rfl)]
-    change (if ((nrun pA n y).hit == (nrun pB n y).hit) then
-        iter updLt y pA pB pC (regs0 baseLt y pA pB pC) n 0 else boolWord (nrun pB n y).hit) =
-      boolWord (if ((nrun pA n y).hit == (nrun pB n y).hit) then ltBits y pA pB n
-        else (nrun pB n y).hit)
+    rw [sem_ifFlag _ _ _ _ _ (sem_tt2 _ _ _ _ (bA n) (bB n) rfl rfl)]
+    change (if (bA n == bB n) then
+        iter updLt y bA bB bC (regs0 baseLt y pA pB pC) n 0 else boolWord (bB n)) =
+      boolWord (if (bA n == bB n) then ltBits bA bB n else bB n)
     rw [ih]
-    cases (nrun pA n y).hit == (nrun pB n y).hit <;> rfl
+    cases bA n == bB n <;> rfl
 
 /-- The verdict below a bound decides the order of the remainders modulo the
 power of two at the bound. -/
-theorem ltBits_eq (y : List Bool) (pA pB A B : ℕ) (hhA : ∀ i, (nrun pA i y).hit = A.testBit i)
-    (hhB : ∀ i, (nrun pB i y).hit = B.testBit i) : ∀ n,
-      ltBits y pA pB n = decide (A % 2 ^ n < B % 2 ^ n) :=
+theorem ltBits_eq (bA bB : ℕ → Bool) (A B : ℕ) (hhA : ∀ i, bA i = A.testBit i)
+    (hhB : ∀ i, bB i = B.testBit i) : ∀ n,
+      ltBits bA bB n = decide (A % 2 ^ n < B % 2 ^ n) :=
   Nat.rec (by
       rw [Nat.pow_zero, Nat.mod_one, Nat.mod_one, decide_eq_false (Nat.lt_irrefl 0)]
       rfl)
     fun n ih ↦ by
-      change (if ((nrun pA n y).hit == (nrun pB n y).hit) then ltBits y pA pB n
-        else (nrun pB n y).hit) = _
+      change (if (bA n == bB n) then ltBits bA bB n else bB n) = _
       rw [ih, hhA, hhB, mod_two_pow_succ A n, mod_two_pow_succ B n]
       have hA := Nat.mod_lt A (Nat.two_pow_pos n)
       have hB := Nat.mod_lt B (Nat.two_pow_pos n)
@@ -262,10 +282,10 @@ theorem natLt_natCode (y uA rA uB rB : List Bool) (A B pA pB pC : ℕ) (huA : uA
     (hyA : y = uA ++ natCode A ++ rA) (huB : uB.length = pB) (hyB : y = uB ++ natCode B ++ rB)
     (hC : pC ≤ y.length) :
     natLt.sem ![y, y.drop pA, y.drop pB, y.drop pC] = boolWord (decide (A < B)) := by
-  rw [natLt, sem_bitFold _ _ y pA pB pC (pos_le_length y uA rA A pA huA hyA)
+  rw [natLt, sem_bitFold_pay _ _ y pA pB pC (pos_le_length y uA rA A pA huA hyA)
     (pos_le_length y uB rB B pB huB hyB) hC, iter_lt,
-    ltBits_eq y pA pB A B (hit_eq_testBit y uA rA A pA huA hyA)
-      (hit_eq_testBit y uB rB B pB huB hyB),
+    ltBits_eq _ _ A B (payBit_eq_testBit y uA rA A pA huA hyA)
+      (payBit_eq_testBit y uB rB B pB huB hyB),
     Nat.mod_eq_of_lt (lt_two_pow_length y uA rA A hyA),
     Nat.mod_eq_of_lt (lt_two_pow_length y uB rB B hyB)]
 
@@ -285,19 +305,11 @@ section Value
 /-- The word. -/
 @[expose] def wordVV : LOf 6 := projL 6 5
 
-/-- The sum of two counters held as end segments of the word: the second
-dropped by the first's number, the latter cut off at the word's length. -/
-@[expose] def addSeg {n : ℕ} (p v w : LOf n) : LOf n := dropByApp (dropByApp p w) v
-
-/-- The sum's meaning. -/
-theorem sem_addSeg {n : ℕ} (p v w : LOf n) (x : Fin n → List Bool) (y : List Bool) (P V : ℕ)
-    (hp : p.sem x = y.drop P) (hv : v.sem x = y.drop V) (hw : w.sem x = y) :
-    (addSeg p v w).sem x = y.drop (V + P) := by
-  rw [addSeg, sem_dropByApp, sem_dropByApp, hp, hv, hw, List.length_drop, List.length_drop,
-    List.drop_drop, show y.length - (y.length - P) = min P y.length by omega, drop_add_min]
-
 /-- The update of the reading: the value raised by the power at a set bit, and
-the power doubled. -/
+the power doubled while it is nonzero. Once the power exceeds the word's
+length its end segment is empty and doubling it again would leave it so, and
+the doubling is itself a recursion over the word, so the conditional takes the
+count of doublings from the word's length down to its logarithm. -/
 @[expose] def updValue : Fin 2 → LOf 6 :=
   ![ifFlag bitAV (addSeg powerV valueV wordVV) valueV, dblApp powerV wordVV]
 
@@ -307,13 +319,14 @@ dropped by one for the power at one. -/
 
 /-- The reading of the number at the first position into a counter, the word
 dropped by the number. -/
-@[expose] def natValue : LOf 4 := bitFold baseValue updValue 0
+@[expose] def natValue : LOf 4 := bitFold payScan baseValue updValue 0
 
 /-- The registers of the reading after the indices below a bound: the word
 dropped by the number's remainder modulo the power of two at the bound, and
 the word dropped by that power. -/
-theorem iter_value (y : List Bool) (pA pB pC A : ℕ) (hhA : ∀ i, (nrun pA i y).hit = A.testBit i) :
-    ∀ n, iter updValue y pA pB pC (regs0 baseValue y pA pB pC) n =
+theorem iter_value (y : List Bool) (bA bB bC : ℕ → Bool) (pA pB pC A : ℕ)
+    (hhA : ∀ i, bA i = A.testBit i) :
+    ∀ n, iter updValue y bA bB bC (regs0 baseValue y pA pB pC) n =
       ![y.drop (A % 2 ^ n), y.drop (2 ^ n)] :=
   Nat.rec (funext fun j ↦ match j with
     | 0 => by
@@ -328,19 +341,19 @@ theorem iter_value (y : List Bool) (pA pB pC A : ℕ) (hhA : ∀ i, (nrun pA i y
       funext j
       match j with
       | 0 =>
-        change updF updValue y (iter updValue y pA pB pC (regs0 baseValue y pA pB pC) n) _ _ _ 0 =
+        change updF updValue y (iter updValue y bA bB bC (regs0 baseValue y pA pB pC) n) _ _ _ 0 =
           y.drop (A % 2 ^ (n + 1))
         rw [ih]
         unfold updF
         change (ifFlag bitAV (addSeg powerV valueV wordVV) valueV).sem _ = _
-        rw [sem_ifFlag _ _ _ _ (nrun pA n y).hit rfl, hhA, mod_two_pow_succ]
+        rw [sem_ifFlag _ _ _ _ (bA n) rfl, hhA, mod_two_pow_succ]
         cases A.testBit n
         · rw [Bool.toNat_false, Nat.mul_zero, Nat.add_zero]
           rfl
         · rw [Bool.toNat_true, Nat.mul_one]
           exact sem_addSeg powerV valueV wordVV _ y (2 ^ n) (A % 2 ^ n) rfl rfl rfl
       | 1 =>
-        change updF updValue y (iter updValue y pA pB pC (regs0 baseValue y pA pB pC) n) _ _ _ 1 =
+        change updF updValue y (iter updValue y bA bB bC (regs0 baseValue y pA pB pC) n) _ _ _ 1 =
           y.drop (2 ^ (n + 1))
         rw [ih]
         unfold updF
@@ -354,8 +367,8 @@ the word dropped by the number. -/
 theorem natValue_natCode (y uA rA : List Bool) (A pA pB pC : ℕ) (huA : uA.length = pA)
     (hyA : y = uA ++ natCode A ++ rA) (hB : pB ≤ y.length) (hC : pC ≤ y.length) :
     natValue.sem ![y, y.drop pA, y.drop pB, y.drop pC] = y.drop A := by
-  rw [natValue, sem_bitFold _ _ y pA pB pC (pos_le_length y uA rA A pA huA hyA) hB hC,
-    iter_value y pA pB pC A (hit_eq_testBit y uA rA A pA huA hyA), Matrix.cons_val_zero,
+  rw [natValue, sem_bitFold_pay _ _ y pA pB pC (pos_le_length y uA rA A pA huA hyA) hB hC,
+    iter_value y _ _ _ pA pB pC A (payBit_eq_testBit y uA rA A pA huA hyA), Matrix.cons_val_zero,
     Nat.mod_eq_of_lt (lt_two_pow_length y uA rA A hyA)]
 
 end Value
