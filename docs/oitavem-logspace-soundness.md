@@ -4,8 +4,9 @@ This document proposes a direct machine proof for the
 [Oitavem prototype][oitavem]. The syntax, truncation results, polynomial
 output-length bound, and logarithmic retained recursion state are
 formalized. The compiler and its machine soundness theorem remain to be
-constructed. The proposed route uses the existing `SizeBounded` and
-`SizeBounded/Logspace` machine libraries.
+constructed. Physical-input and stored-word digit readers, an emitting
+loop rule, and a concrete transducer for `squareWord` are now proved
+using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -69,7 +70,9 @@ Completeness is outside this construction's scope.
   expression only needs a logarithmic prefix of its safe input. It also
   defines `prefixLoop` and proves `Expr.exists_logarithmic_loop` and
   `evalRec_cons_prefixLoop`, relating a loop retaining such prefixes to
-  full safe recursion.
+  full safe recursion. `Expr.prefixCutoff` and `Expr.recursionCutoff`
+  compute suitable cutoffs from syntax. Their logarithmic bounds allow
+  normal arguments of polynomial length in the original physical input.
 - [Space and time][space-time] proves `computes_polytime_logspace` for
   any halting deterministic transducer with a global logarithmic-space
   bound. The proof counts configurations with the write-only output
@@ -77,6 +80,22 @@ Completeness is outside this construction's scope.
 - [Derived operations][derived] supplies `Expr.boundedRec`, the
   recursive length example `lengthByRec`, and `squareWord`, whose
   output length is exactly the square of its input length.
+- [Readers][readers] proves `inputLength_transformsIn`, `storedLength_transformsIn`,
+  `inputAt_transformsIn`, and `readStored_transformsIn`. Digit queries
+  count from the list head and return the empty word outside the word.
+  These contracts include scratch initialization, caller preservation,
+  parked heads, and bounds throughout execution.
+- [Emitting loops][emitting-loops] proves `arrives_whileNonblank` with
+  an invariant over the whole configuration, including growing output.
+- [Repeated-input emission][repeat] implements `squareMachine` on one
+  work tape. `computableInTimeAndSpace_squareWord` proves CSLib's
+  simultaneous bounds `32 * (n + 1)^2` for time and
+  `32 * (n.size + 1)` for work space, with identity encodings. This
+  computes `squareWord` itself; it does not yet supply a reader for
+  using its output as another expression's normal input.
+- [Machine checks][machine-checks] execute the readers and transducer,
+  including leading zeroes, empty words, out-of-range queries, dirty
+  scratch tapes, protected registers, and existing output prefixes.
 
 The recursion results bound retained words and indices. They do not
 bound the work space used to compute those words or indices. Closing
@@ -211,10 +230,13 @@ or digit query for that result can rerun the loop and then query that
 final step. The logarithmic cutoff limits the saved recursive value;
 the result itself may be polynomially long.
 
-The compiler must obtain its cutoff constructively from syntax-derived
-bounds, using `truncationBound` and `lengthPoly`. The existential prefix
-theorems justify a suitable cutoff but do not alone define executable
-compiler data. No boundedness proof is added to the expression syntax.
+`Expr.recursionCutoff h N` is the maximum of the two branch cutoffs,
+each computed as the binary size of `lengthPoly` for the branch's
+`truncationBound`. `Expr.eval_safeRec_cons_prefixCutoff` verifies the
+final step using this cutoff. The cutoff remains logarithmic when
+`N` is polynomial in physical input length. Implementing its computation
+and the retained-prefix loop on work tapes remains part of compilation.
+No boundedness proof is added to the expression syntax.
 
 ### Concatenation recursion
 
@@ -272,6 +294,12 @@ from halting and the global space bound on the completed machine.
 | Remaining constructor closure | Machine length and digit routines for every initial function, concatenation recursion, and log-transition. |
 | Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
 
+The first checkpoint has verified physical-input and stored-word length
+and digit routines. Generated-word readers and their allocation contract
+remain. The separate `squareMachine`
+theorem verifies streaming quadratic output and the emitting loop rule;
+the generated-word composition checkpoint is still open.
+
 The first composition checkpoint should determine whether the proposed
 reader contract supports the required register allocation and nested
 calls. The safe-recursion checkpoint then tests whether the contract
@@ -301,6 +329,11 @@ that additional characterization or a direct machine encoding.
 - [John E. Savage, *Complexity Classes III*][savage], CS256 lecture
   slides 5–9: logspace composition by recomputing intermediate output
   and the configuration-counting time argument.
+- [Peter Clote, *Computation Models and Function Algebras*][clote],
+  Definition 3.21 and Theorem 3.22, manuscript p. 28: the sharply
+  bounded recursion scheme and arithmetic FLOGSPACE characterization.
+  The theorem cites the Clote–Takeuti work; this passage states the
+  characterization without its proof.
 
 [oitavem]: ../Geb/Prototypes/Computability/Oitavem.lean
 [syntax]: ../Geb/Prototypes/Computability/Oitavem/Syntax.lean
@@ -308,6 +341,10 @@ that additional characterization or a direct machine encoding.
 [length]: ../Geb/Prototypes/Computability/Oitavem/Length.lean
 [recursion]: ../Geb/Prototypes/Computability/Oitavem/Recursion.lean
 [space-time]: ../Geb/Prototypes/Computability/Oitavem/Machine/SpaceTime.lean
+[readers]: ../Geb/Prototypes/Computability/Oitavem/Machine/Read.lean
+[emitting-loops]: ../Geb/Prototypes/Computability/Oitavem/Machine/While.lean
+[repeat]: ../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean
+[machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean
 [word]: ../Geb/Prototypes/Computability/Oitavem/Word.lean
 [basic]: ../Geb/Prototypes/Computability/Oitavem/Basic.lean
@@ -320,3 +357,4 @@ that additional characterization or a direct machine encoding.
 [rep]: ../Geb/Prototypes/Computability/SizeBounded/Logspace/Rep.lean
 [Oitavem2010]: https://doi.org/10.1515/9783110324907.355
 [savage]: https://cs.brown.edu/courses/csci2560/lectures/lect.03.pdf#page=5
+[clote]: https://kleidi.bc.edu/clotelab/pub/cloteHandbookRecTheory.pdf#page=28

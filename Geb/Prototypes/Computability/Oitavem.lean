@@ -15,6 +15,9 @@ public import Geb.Prototypes.Computability.Oitavem.Derived
 public import Geb.Prototypes.Computability.Oitavem.BoundedQuantification
 public import Geb.Prototypes.Computability.Oitavem.PresheafCounterexample
 public import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
+public import Geb.Prototypes.Computability.Oitavem.Machine.Read
+public import Geb.Prototypes.Computability.Oitavem.Machine.While
+public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -37,6 +40,11 @@ recomputes intermediate words instead of storing them on work tapes.
 part of that construction: a halting transducer with a logarithmic work-space
 bound has a simultaneous polynomial time bound, on the same machine. It does not
 construct a machine for an expression.
+
+The machine layer also supplies reusable physical-input and stored-word readers,
+loops that emit output, and a one-work-tape transducer for {name}`Geb.Oitavem.squareWord`.
+{name}`Geb.Oitavem.Machine.computableInTimeAndSpace_squareWord` proves simultaneous
+quadratic time and logarithmic space for that example.
 
 ## References
 

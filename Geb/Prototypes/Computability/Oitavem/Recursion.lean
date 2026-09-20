@@ -24,6 +24,8 @@ Both representations are proved correct.
 * {lit}`cappedRank` computes a truncated enumeration index with saturated arithmetic.
 * {lit}`cappedRec` keeps only that index between safe-recursion steps.
 * {lit}`prefixLoop` traverses the input by an index, retaining only an output prefix.
+* {lit}`Expr.prefixCutoff` computes the required prefix length from the syntax.
+* {lit}`Expr.recursionCutoff` takes a common cutoff for both recursion branches.
 
 ## Main statements
 
@@ -35,6 +37,8 @@ Both representations are proved correct.
 * {lit}`cappedRec_length_le` bounds the state's binary representation.
 * {lit}`prefixLoop_eq` verifies the indexed loop under the prefix observation property.
 * {lit}`Expr.exists_logarithmic_loop` supplies that property for every safe recursion.
+* {lit}`Expr.eval_take_prefixCutoff` verifies the executable prefix cutoff.
+* {lit}`Expr.eval_safeRec_cons_prefixCutoff` uses that cutoff in the indexed loop.
 
 ## Implementation notes
 
@@ -223,19 +227,38 @@ theorem isPolyBounded_pow_size (a : ℕ) :
     _ ≤ (4 * (n + 1)) ^ a := Nat.pow_le_pow_left h a
     _ = 4 ^ a * (n + 1) ^ a := Nat.mul_pow _ _ _
 
+/-- An executable safe-input prefix length, computed from the inferred polynomial
+bound on the truncation expression. -/
+def Expr.prefixCutoff {n s : ℕ} (e : Expr n s) (N : ℕ) : ℕ :=
+  (lengthPoly e.truncationBound.1.1 N).size
+
+/-- Every prefix at least as long as the inferred cutoff preserves the result. -/
+theorem Expr.eval_take_prefixCutoff {n s : ℕ} (e : Expr n s)
+    (x : Fin n → List Bool) (N : ℕ) (hx : ∀ j, (x j).length ≤ N)
+    (y : Fin s → List Bool) {k : ℕ} (hk : e.prefixCutoff N ≤ k) :
+    e.eval x y = e.eval x (fun j ↦ (y j).take k) := by
+  have he := e.truncates_truncationBound.mono x (lengthPoly e.truncationBound.1.1 N)
+    (e.truncationBound.length_le x Fin.elim0 N hx)
+  rw [he y, he (fun j ↦ (y j).take k)]
+  simp only [cappedRank_take hk]
+
+/-- The computed cutoff is logarithmic even when the normal arguments themselves
+have lengths bounded by a polynomial in the physical input length. -/
+theorem Expr.prefixCutoff_le_log_of_polyBounded {n s : ℕ} (e : Expr n s)
+    {p : ℕ → ℕ} (hp : IsPolyBounded p) :
+    ∃ C : ℕ, ∀ m, e.prefixCutoff (p m) ≤ C * (m.size + 1) := by
+  obtain ⟨C, hC⟩ := logarithmic_size_of_polyBounded
+    (isPolyBounded_comp (lengthPoly_isPolyBounded e.truncationBound.1.1) hp)
+  exact ⟨C, fun m ↦ (Geb.BitTree.Counter.size_mono (Nat.le_succ _)).trans (hC m)⟩
+
 /-- A safe argument can be replaced by its first logarithmically many digits.
 Thus a streamed recursive output need retain only that prefix, including when the
 full output is polynomially long. -/
 theorem Expr.exists_logarithmic_prefix {n s : ℕ} (e : Expr n s) :
     ∃ C : ℕ, ∀ x N, (∀ j, (x j).length ≤ N) → ∀ y,
       e.eval x y = e.eval x (fun j ↦ (y j).take (C * (N.size + 1))) := by
-  obtain ⟨p, hp, he⟩ := e.exists_uniform_truncation
-  obtain ⟨C, hC⟩ := logarithmic_size_of_polyBounded hp
-  refine ⟨C, fun x N hx y ↦ ?_⟩
-  have hk : (p N).size ≤ C * (N.size + 1) :=
-    (Geb.BitTree.Counter.size_mono (Nat.le_succ _)).trans (hC N)
-  rw [he x N hx y, he x N hx (fun j ↦ (y j).take (C * (N.size + 1)))]
-  simp only [cappedRank_take hk]
+  obtain ⟨C, hC⟩ := e.prefixCutoff_le_log_of_polyBounded Geb.SizeBounded.isPolyBounded_id
+  exact ⟨C, fun x N hx y ↦ e.eval_take_prefixCutoff x N hx y (hC N)⟩
 
 /-- An indexed recursion loop retaining only the first k emitted digits of each
 subcall. A transducer can collect these digits directly, without numerical decoding. -/
@@ -289,6 +312,38 @@ theorem evalRec_cons_prefixLoop {n : ℕ} (k N : ℕ) (g : Sem (n, 0))
       h b (Fin.cons v x) ![prefixLoop k g h v x v.length] := by
   rw [prefixLoop_eq k N g h x hh v hv _ (Nat.le_refl _), Nat.sub_self, List.drop_zero]
   cases b <;> exact hh _ v hv _
+
+/-- A common executable prefix length for both branches of a safe recursion. -/
+def Expr.recursionCutoff {n : ℕ} (h : Bool → Expr (n + 1) 1) (N : ℕ) : ℕ :=
+  max ((h false).prefixCutoff N) ((h true).prefixCutoff N)
+
+/-- The full recursive output can be obtained by a final step after an indexed
+loop retaining only the syntax-derived prefix. -/
+theorem Expr.eval_safeRec_cons_prefixCutoff {n : ℕ} (g : Expr n 0)
+    (h : Bool → Expr (n + 1) 1) (x : Fin n → List Bool) (N : ℕ)
+    (hx : ∀ j, (x j).length ≤ N) (b : Bool) (v : List Bool) (hv : v.length ≤ N) :
+    (safeRec g h).eval (Fin.cons (b :: v) x) Fin.elim0 =
+      (h b).eval (Fin.cons v x)
+        ![prefixLoop (recursionCutoff h N) g.eval (fun bit ↦ (h bit).eval) v x v.length] := by
+  apply evalRec_cons_prefixLoop _ N g.eval (fun bit ↦ (h bit).eval) x _ b v hv
+  intro bit w hw r
+  have henv : ∀ j, ((Fin.cons w x : Fin (n + 1) → List Bool) j).length ≤ N :=
+    Fin.cases hw hx
+  have hk : (h bit).prefixCutoff N ≤ recursionCutoff h N := by
+    cases bit
+    · exact Nat.le_max_left _ _
+    · exact Nat.le_max_right _ _
+  simpa only [Matrix.cons_fin_one] using (h bit).eval_take_prefixCutoff _ N henv ![r] hk
+
+/-- The common cutoff remains logarithmic under polynomial growth of virtual inputs. -/
+theorem Expr.recursionCutoff_le_log_of_polyBounded {n : ℕ}
+    (h : Bool → Expr (n + 1) 1) {p : ℕ → ℕ} (hp : IsPolyBounded p) :
+    ∃ C : ℕ, ∀ m, recursionCutoff h (p m) ≤ C * (m.size + 1) := by
+  obtain ⟨C₀, h₀⟩ := (h false).prefixCutoff_le_log_of_polyBounded hp
+  obtain ⟨C₁, h₁⟩ := (h true).prefixCutoff_le_log_of_polyBounded hp
+  refine ⟨max C₀ C₁, fun m ↦ max_le ?_ ?_⟩
+  · exact (h₀ m).trans (Nat.mul_le_mul_right _ (Nat.le_max_left _ _))
+  · exact (h₁ m).trans (Nat.mul_le_mul_right _ (Nat.le_max_right _ _))
 
 /-- Every safe recursion has an indexed loop retaining a logarithmic output prefix.
 The size bound counts the index and retained word, not the subcalls' workspace. -/

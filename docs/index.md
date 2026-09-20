@@ -1768,12 +1768,21 @@ checklist and in CI.
   the correct numerical state in logarithmically many bits;
   `Expr.exists_logarithmic_prefix` shows that a logarithmic prefix of each
   safe input suffices. `Expr.exists_logarithmic_loop` verifies an indexed
-  loop retaining those prefixes directly. `Expr.boundedRec` and its
+  loop retaining those prefixes directly. `Expr.prefixCutoff` and
+  `Expr.recursionCutoff` compute suitable prefix lengths from syntax,
+  with logarithmic bounds under polynomial growth of intermediate inputs.
+  `Expr.boundedRec` and its
   evaluation equations give the bounded-recursion construction of
   Lemma 3.2. The recursive length
   example and quadratic-output example are executable.
-  These representation results do not establish a
-  `ComputableInTimeAndSpaceOfLength` theorem. A transducer that recomputes
+  The machine layer proves reusable physical-input and stored-word
+  length and digit readers with workspace and caller-preservation
+  contracts, and a loop rule permitting growing output.
+  `Machine.computableInTimeAndSpace_squareWord` establishes CSLib's
+  `ComputableInTimeAndSpaceOfLength` predicate for the square example
+  with a concrete one-work-tape machine, quadratic time, and logarithmic
+  space. The theorem for arbitrary expressions remains open.
+  A transducer that recomputes
   intermediate output bits, with verified correctness and space bounds,
   remains necessary for machine soundness. `Machine.computes_polytime_logspace`
   derives a simultaneous polynomial time bound for any such halting
