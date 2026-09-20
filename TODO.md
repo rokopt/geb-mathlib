@@ -437,7 +437,14 @@ the subalgebra's soundness theorem. The work that remains, in order:
   counter register that the step exhausts, as the fold's mask is, would
   replace each by a dispatch.
 - The presheaf W-types: hereditary naturality as a further scan, comparing
-  a restricted subtree with a subtree in lockstep.
+  a restricted subtree with a subtree in lockstep. Finiteness alone is
+  insufficient: the
+  [presheaf counterexample](Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean)
+  puts any Boolean predicate into direction restriction over the walking
+  arrow, with at most three directions per shape. Formulate a conditional
+  bound accounting for direction restriction, shape restriction, arity
+  reindexing, and the existing label and edge checks; the Oitavem expression
+  and its correctness proof remain to be constructed under those bounds.
 
 ### Upstream placement of categorical wrappers
 

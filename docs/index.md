@@ -1760,6 +1760,17 @@ checklist and in CI.
   completeness is also unformalized. The
   [direct soundness design](oitavem-logspace-soundness.md) describes the
   proposed transducer construction and its remaining proof obligations.
+  The [presheaf counterexample](../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean)
+  shows that finite direction types and a finite index category do not
+  suffice for an Oitavem recognizer of hereditary naturality. Over the
+  walking arrow, with at most three directions at each shape,
+  `nativeCheck_testTree` recovers any Boolean predicate placed in direction
+  restriction. The test trees are admissible slice trees, and their
+  bitstrings do not depend on the predicate. Diagonalization supplies a
+  total Lean predicate for which `no_oitavem_nativeCheck` rules out every
+  unary Oitavem expression, directly against the native checker.
+  This result leaves recognition under complexity bounds on the signature
+  operations open; it uses neither machine soundness nor completeness.
 - [Kristiansen's word algebra](../Geb/Prototypes/Computability/Kristiansen.lean)
   is the constants-and-projections fragment of `SizeBounded`, closed under
   composition and simultaneous recursion on notation, as in

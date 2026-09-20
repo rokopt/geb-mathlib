@@ -12,6 +12,7 @@ public import Geb.Prototypes.Computability.Oitavem.Truncation
 public import Geb.Prototypes.Computability.Oitavem.Length
 public import Geb.Prototypes.Computability.Oitavem.Recursion
 public import Geb.Prototypes.Computability.Oitavem.Derived
+public import Geb.Prototypes.Computability.Oitavem.PresheafCounterexample
 public import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
 meta import GebMeta -- shake: keep
 
