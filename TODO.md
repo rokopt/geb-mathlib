@@ -417,6 +417,13 @@ the subalgebra's soundness theorem. The work that remains, in order:
   evaluates a scan re-evaluates the scan at every level; § The degree of
   evaluation. The tests evaluate it on the smallest spelling only and check
   larger spellings against the recognizer's specification.
+- A cheaper expression for the numeral arithmetic. The comparisons fold
+  over bit indices and read each bit by a numeral scan, one nesting level
+  deeper than a lockstep scan over suffix pointers needs, and the reading
+  of a numeral into a counter doubles at every level rather than only
+  inside the payload. Measurements, the floor the problem admits, and the
+  rewrite are in
+  [docs/superpowers/plans/2026-09-19-logspace-recognizer-cost.md](docs/superpowers/plans/2026-09-19-logspace-recognizer-cost.md).
 - The presheaf W-types: hereditary naturality as a further scan, comparing
   a restricted subtree with a subtree in lockstep.
 
