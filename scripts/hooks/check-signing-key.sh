@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # check-signing-key.sh — SessionStart hook.  If commit signing is configured
 # on either git's or jj's side and the signing key is not ready (gpg-agent
-# cache miss, or ssh-agent without identities), emits a hook-JSON note.
+# cache miss, or ssh-agent without identities), or the GPG check fails,
+# emits a hook-JSON note.
 # Never blocks; exit 0 in all paths.
 
-set -u
+set -uo pipefail
 
 # Emit a Claude Code hook JSON document carrying $1 as both a user-visible
 # note (systemMessage) and session context (additionalContext).  $1 must
@@ -63,9 +64,12 @@ case "$backend" in
     # secret keys when no key is configured): a grp record carries the grip
     # of the immediately preceding sec/ssb record, whose field 12 holds the
     # per-key capability letters (lowercase s = sign).
-    grips=$(gpg --with-colons --list-secret-keys ${key:+"$key"} 2>/dev/null \
+    if ! grips=$(gpg --batch --no-autostart --with-colons --list-secret-keys ${key:+"$key"} 2>/dev/null \
       | awk -F: '$1 == "sec" || $1 == "ssb" { cap = $12 }
-                 $1 == "grp" && cap ~ /s/ { print $10 }')
+                 $1 == "grp" && cap ~ /s/ { print $10 }'); then
+      note "Note: gpg commit signing is configured but secret keys could not be listed in this environment; signing readiness is unknown. Check GnuPG permissions and agent access, including sandbox restrictions."
+      exit 0
+    fi
     if [[ -z "$grips" ]]; then
       note "Note: gpg commit signing is configured but no sign-capable secret key matches the configured signing key, so any commit attempt will fail to sign."
       exit 0
@@ -73,14 +77,22 @@ case "$backend" in
 
     # Keygrips whose passphrase gpg-agent currently caches: KEYINFO cached
     # flag, field 7 of gpg-connect-agent's 'S KEYINFO <grip> ...' lines.
-    cached=$(gpg-connect-agent 'keyinfo --list' /bye 2>/dev/null \
-      | awk '$2 == "KEYINFO" && $7 == "1" { print $3 }')
+    # Require an OK response too: gpg-connect-agent can exit 0 without an
+    # agent connection or after an ERR response. See start_agent and main:
+    # https://github.com/gpg/gnupg/blob/gnupg-2.4.8/tools/gpg-connect-agent.c
+    if ! keyinfo=$(gpg-connect-agent --no-autostart 'keyinfo --list' /bye 2>/dev/null) \
+      || ! grep -qE '^OK($| )' <<<"$keyinfo" \
+      || grep -qE '^ERR($| )' <<<"$keyinfo"; then
+      note "Note: gpg commit signing is configured but the agent cache could not be queried in this environment; signing readiness is unknown. Check gpg-agent access, including sandbox restrictions."
+      exit 0
+    fi
+    cached=$(awk '$2 == "KEYINFO" && $7 == "1" { print $3 }' <<<"$keyinfo")
     for grip in $grips; do
       if grep -qxF "$grip" <<<"$cached"; then
         exit 0
       fi
     done
-    note "Note: gpg commit signing is configured but the signing key is not cached, so any automated commit attempt will block."
+    note "Note: gpg commit signing is configured but the signing key is not cached, so automated signing may require a passphrase."
     ;;
   ssh)
     # If SSH_AUTH_SOCK is set, check that the agent has identities; if unset,
