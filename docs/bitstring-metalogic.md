@@ -217,6 +217,12 @@ Constants and polynomial degrees may depend on the fixed functions.
 Closure under fixed composition does not imply closure under an
 input-dependent number of iterations.
 
+The [presheaf-recognizer investigation](presheaf-recognizer-complexity.md)
+applies this distinction to W-types. It records the local recognition
+reduction, the Oitavem instance of the decision-problem category, and a
+formal counterexample to unrestricted folding of explicit unary trees
+within the algebra.
+
 For a chosen collection `G` of required operations, its closure under
 identity and finite composition is the smallest admissible submonoid
 containing `G`. It need not contain every function satisfying the

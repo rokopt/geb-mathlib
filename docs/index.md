@@ -1771,6 +1771,26 @@ checklist and in CI.
   unary Oitavem expression, directly against the native checker.
   This result leaves recognition under complexity bounds on the signature
   operations open; it uses neither machine soundness nor completeness.
+  [Bounded universal quantification](../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean)
+  supplies `Expr.allSuffixes` and its correctness equation, directly as an
+  Oitavem expression with a constant Boolean recursion bound.
+  [The Oitavem decision-problem category](../Geb/Prototypes/Typechecker/Oitavem.lean)
+  instantiates `Typechecker` using `definableSubmonoid` of unary denotations.
+  `Expr.scanProblem` constructs universal position tests, and
+  `Expr.presheafScan_pass_iff` transfers a correct local position expression
+  to native hereditary naturality. `no_squareFold` separates admissible
+  constructor operations from unrestricted W-elimination on explicit trees;
+  `no_universal_decider` rules out uniformly running all encoded checkers
+  inside the same algebra, even just for their acceptance verdicts.
+- [Presheaf local scanning](../Geb/Prototypes/Computability/PresheafScan.lean)
+  gives `native_eq_scan` and `positions_eq_native`, reducing the native
+  checker to tests at input-node positions. `restrictedEq_eq_true_iff`
+  reduces equality with a root-restricted tree to shape equality and
+  equality of original subtrees. It imposes no complexity bound on the
+  supplied equality operation. See the
+  [complexity investigation](presheaf-recognizer-complexity.md) for the
+  conditional logspace argument, other resource bounds, related categorical
+  results, and the remaining construction of the local word expression.
 - [Kristiansen's word algebra](../Geb/Prototypes/Computability/Kristiansen.lean)
   is the constants-and-projections fragment of `SizeBounded`, closed under
   composition and simultaneous recursion on notation, as in

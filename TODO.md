@@ -437,14 +437,22 @@ the subalgebra's soundness theorem. The work that remains, in order:
   counter register that the step exhausts, as the fold's mask is, would
   replace each by a dispatch.
 - The presheaf W-types: hereditary naturality as a further scan, comparing
-  a restricted subtree with a subtree in lockstep. Finiteness alone is
+  restricted root shapes and original subtree spans. Finiteness alone is
   insufficient: the
   [presheaf counterexample](Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean)
   puts any Boolean predicate into direction restriction over the walking
   arrow, with at most three directions per shape. Formulate a conditional
   bound accounting for direction restriction, shape restriction, arity
-  reindexing, and the existing label and edge checks; the Oitavem expression
-  and its correctness proof remain to be constructed under those bounds.
+  reindexing, and the existing label and edge checks.
+  [PresheafScan](Geb/Prototypes/Computability/PresheafScan.lean) verifies the
+  local reduction and positional specification;
+  [Typechecker/Oitavem](Geb/Prototypes/Typechecker/Oitavem.lean) assembles a
+  correct local expression into a decision-problem object. The local word
+  expression and Oitavem navigation remain to be constructed from the
+  signature operations. The
+  [complexity investigation](docs/presheaf-recognizer-complexity.md)
+  distinguishes this task from unrestricted internal W-elimination, which
+  the explicit-word squaring fold refutes for Oitavem-definable maps.
 
 ### Upstream placement of categorical wrappers
 
