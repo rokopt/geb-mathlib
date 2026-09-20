@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.BitStream
 public import Geb.Prototypes.CanonicalSExpr.IO
 public import Geb.Prototypes.Computability
 public import Geb.Prototypes.ConcreteSyntax.Command
