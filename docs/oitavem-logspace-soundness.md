@@ -4,8 +4,9 @@ This document proposes a direct machine proof for the
 [Oitavem prototype][oitavem]. The syntax, truncation results, polynomial
 output-length bound, and logarithmic retained recursion state are
 formalized. The compiler and its machine soundness theorem remain to be
-constructed. Physical-input and stored-word digit readers, an emitting
-loop rule, and a concrete transducer for `squareWord` are now proved
+constructed. Physical-input and stored-word readers, an emitting loop
+rule, a generated-output length reader, and a concrete transducer for
+`squareWord` are proved
 using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -87,12 +88,29 @@ Completeness is outside this construction's scope.
   parked heads, and bounds throughout execution.
 - [Emitting loops][emitting-loops] proves `arrives_whileNonblank` with
   an invariant over the whole configuration, including growing output.
+- [Output counting][output-counting] proves `countOutput_runsTo`:
+  an emitter becomes a length reader by adding one binary counter tape.
+  The simulated machine's final tapes and heads are preserved exactly;
+  the wrapper emits nothing. Counter space depends on output length,
+  and finite control remains finite. A bit emitted by the halting
+  transition is counted before the wrapper halts. Scratch cleanup and
+  parked return heads must still follow from the generator's contract.
+  `emitNumber_emits` converts a counter to Oitavem's shortlex encoding;
+  `lengthMachine_computable` packages post-composition with numerical
+  length as CSLib machine computability with explicit resource bounds.
 - [Repeated-input emission][repeat] implements `squareMachine` on one
   work tape. `computableInTimeAndSpace_squareWord` proves CSLib's
   simultaneous bounds `32 * (n + 1)^2` for time and
   `32 * (n.size + 1)` for work space, with identity encodings. This
-  computes `squareWord` itself; it does not yet supply a reader for
-  using its output as another expression's normal input.
+  computes `squareWord` itself. `squareLength_runsTo` applies the generic
+  output counter: two work tapes count the quadratic word in at most
+  `224 * (n + 1)^3` steps, with all heads in
+  `[-1, 2 * n.size + 1]`.
+  `computableInTimeAndSpace_length_squareWord` computes the interpretation
+  of `Expr.comp lengthByRec ![squareWord]`, emitting its shortlex result
+  in time `256 * (n + 1)^3` and space `6 * (n.size + 1)`.
+  Generated digit queries and substitution into
+  another expression's normal-input readers remain to be implemented.
 - [Machine checks][machine-checks] execute the readers and transducer,
   including leading zeroes, empty words, out-of-range queries, dirty
   scratch tapes, protected registers, and existing output prefixes.
@@ -289,16 +307,19 @@ from halting and the global space bound on the completed machine.
 | Checkpoint | Required evidence |
 | --- | --- |
 | Reader contract and base readers | Verified physical-input and stored-prefix readers, including repeated calls and caller preservation. |
-| Generated words and composition | An actual CSLib soundness theorem for composition over `squareWord`, exercising polynomially long virtual inputs. |
+| General reader composition | A verified substitution rule for generated length and digit readers, exercised on polynomially long virtual inputs. |
 | Safe recursion over a generated word | A machine for `lengthByRec` composed with `squareWord`, using the saved-prefix loop and querying the generated recursion input. |
 | Remaining constructor closure | Machine length and digit routines for every initial function, concatenation recursion, and log-transition. |
 | Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
 
 The first checkpoint has verified physical-input and stored-word length
-and digit routines. Generated-word readers and their allocation contract
-remain. The separate `squareMachine`
-theorem verifies streaming quadratic output and the emitting loop rule;
-the generated-word composition checkpoint is still open.
+and digit routines. `countOutput` also supplies length readers for generated
+words, and `squareLength_runsTo` verifies that construction on quadratic
+output. Numerical length composed with `squareWord` has a full machine
+bound theorem. That proof uses `eval_lengthByRec` to compute the length
+directly; it does not implement the retained-prefix recursion loop.
+Generated digit readers and the general allocation and substitution
+contracts remain.
 
 The first composition checkpoint should determine whether the proposed
 reader contract supports the required register allocation and nested
@@ -343,6 +364,7 @@ that additional characterization or a direct machine encoding.
 [space-time]: ../Geb/Prototypes/Computability/Oitavem/Machine/SpaceTime.lean
 [readers]: ../Geb/Prototypes/Computability/Oitavem/Machine/Read.lean
 [emitting-loops]: ../Geb/Prototypes/Computability/Oitavem/Machine/While.lean
+[output-counting]: ../Geb/Prototypes/Computability/Oitavem/Machine/CountOutput.lean
 [repeat]: ../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean

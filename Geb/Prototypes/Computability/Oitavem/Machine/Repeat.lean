@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.Oitavem.Machine.While
+public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Count
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec
 public import Geb.Prototypes.Computability.Oitavem.Derived
@@ -34,6 +35,9 @@ space.
 * {lit}`repeatInput_emits` gives the full output and the time and space bounds.
 * {lit}`computableInTimeAndSpace_squareWord` proves the machine-computability
   statement for the quadratic-output expression.
+* {lit}`squareLength_runsTo` counts that generated output on two logarithmic tapes.
+* {lit}`computableInTimeAndSpace_length_squareWord` computes numerical length after
+  the square expression, with the result emitted in the algebra's encoding.
 
 ## Implementation notes
 
@@ -260,6 +264,81 @@ theorem computableInTimeAndSpace_squareWord :
     exact h.halted
   · rw [initCfg_runFrom_output]
     exact h.output
+
+private theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
+  apply Geb.BitTree.Counter.size_le_of_lt_pow
+  rw [show 2 * n.size + 1 = n.size + n.size + 1 by omega, Nat.pow_succ, Nat.pow_add]
+  have hp := Nat.two_pow_pos n.size
+  have hn := Nat.mul_self_lt_mul_self (Geb.BitTree.Counter.lt_pow_size n)
+  nlinarith
+
+/-- The generated quadratic word has an exact length reader on two work tapes.
+The counter is logarithmic and no part of the generated word is stored or emitted. -/
+theorem squareLength_runsTo (w : List Bool) :
+    ∃ cfg' t, t ≤ 224 * (w.length + 1) ^ 3 ∧
+      RunsTo (countOutput squareMachine) ((countOutput squareMachine).initCfg w)
+        (countOutputCfg cfg' (w.length * w.length) []) t (2 * w.length.size + 1) := by
+  obtain ⟨cfg', t, ht, h⟩ := squareMachine_emits w
+  have hs := size_square_add_one_le w.length
+  have hm : Emits squareMachine (squareMachine.initCfg w) cfg'
+      (squareWord.eval ![w] Fin.elim0) t (2 * w.length.size + 1) := {
+    live := h.live
+    runFrom_eq := h.runFrom_eq
+    pos := fun j hj i ↦ ⟨(h.pos j hj i).1, (h.pos j hj i).2.trans (by omega)⟩
+    output := h.output
+    halted := h.halted }
+  obtain ⟨u, hu, r⟩ := countOutput_runsTo squareMachine hm 0 []
+    (by simpa only [Nat.zero_add, length_squareWord] using hs)
+  rw [countOutput_initCfg, Nat.zero_add, length_squareWord] at r
+  refine ⟨cfg', u, ?_, r⟩
+  have hn := size_le_self w.length
+  have ht' : t ≤ 32 * (w.length + 1) ^ 2 := by
+    apply ht.trans
+    unfold countInputTime
+    nlinarith [Nat.mul_le_mul_left w.length hn]
+  calc
+    u ≤ t * (2 * (2 * w.length.size + 1) + 5) := hu
+    _ ≤ (32 * (w.length + 1) ^ 2) * (7 * (w.length + 1)) :=
+      Nat.mul_le_mul ht' (by omega)
+    _ = 224 * (w.length + 1) ^ 3 := by nlinarith
+
+/-- A concrete composition over a generated quadratic word: numerical length
+after {name}`squareWord`, with cubic time and logarithmic space on two tapes. -/
+theorem computableInTimeAndSpace_length_squareWord :
+    ComputableInTimeAndSpaceOfLength
+      (fun w ↦ (Expr.comp (safe := false) lengthByRec ![squareWord]).eval ![w] Fin.elim0)
+      (.refl _) (.refl _) (fun n ↦ 256 * (n + 1) ^ 3)
+      (fun n ↦ 6 * (n.size + 1)) := by
+  have h := lengthMachine_computable squareMachine
+    (fun w ↦ squareWord.eval ![w] Fin.elim0) (fun n ↦ 32 * (n + 1) ^ 2)
+    (fun n ↦ 2 * n.size + 1)
+    (by
+      intro w
+      obtain ⟨cfg', t, ht, e⟩ := squareMachine_emits w
+      refine ⟨cfg', t, ?_, { e with
+        pos := fun j hj i ↦ ⟨(e.pos j hj i).1, (e.pos j hj i).2.trans (by omega)⟩ }⟩
+      apply ht.trans
+      unfold countInputTime
+      have hs := size_le_self w.length
+      nlinarith [Nat.mul_le_mul_left w.length hs])
+    (fun w ↦ by rw [length_squareWord]; exact size_square_add_one_le w.length)
+  have heq : (fun w ↦
+      (Expr.comp (safe := false) lengthByRec ![squareWord]).eval ![w] Fin.elim0) =
+      fun w ↦ unrank (squareWord.eval ![w] Fin.elim0).length := by
+    funext w
+    rw [Expr.eval_comp]
+    simpa only [Matrix.cons_fin_one] using eval_lengthByRec (squareWord.eval ![w] Fin.elim0)
+  rw [heq]
+  apply h.mono
+  · intro w
+    change (32 * (w.length + 1) ^ 2) * (2 * (2 * w.length.size + 1) + 5) +
+      (3 * (2 * w.length.size + 1) + 5) ≤ 256 * (w.length + 1) ^ 3
+    have hs := size_le_self w.length
+    have hf : 2 * (2 * w.length.size + 1) + 5 ≤ 7 * (w.length + 1) := by omega
+    nlinarith [Nat.mul_le_mul_left (32 * (w.length + 1) ^ 2) hf]
+  · intro w
+    change (1 + 1) * (2 * w.length.size + 1 + 2) ≤ 6 * (w.length.size + 1)
+    omega
 
 end
 

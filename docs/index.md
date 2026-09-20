@@ -1781,7 +1781,14 @@ checklist and in CI.
   `Machine.computableInTimeAndSpace_squareWord` establishes CSLib's
   `ComputableInTimeAndSpaceOfLength` predicate for the square example
   with a concrete one-work-tape machine, quadratic time, and logarithmic
-  space. The theorem for arbitrary expressions remains open.
+  space. `Machine.countOutput_runsTo` converts an emitter into a generated-word
+  length reader with one additional binary counter;
+  `Machine.squareLength_runsTo` applies it to the square example with
+  logarithmic space on two work tapes.
+  `Machine.computableInTimeAndSpace_length_squareWord` also verifies
+  the emitted shortlex result of numerical length after `squareWord`,
+  in cubic time and logarithmic space. The theorem for arbitrary
+  expressions remains open.
   A transducer that recomputes
   intermediate output bits, with verified correctness and space bounds,
   remains necessary for machine soundness. `Machine.computes_polytime_logspace`

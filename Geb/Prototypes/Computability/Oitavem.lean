@@ -17,6 +17,7 @@ public import Geb.Prototypes.Computability.Oitavem.PresheafCounterexample
 public import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
 public import Geb.Prototypes.Computability.Oitavem.Machine.Read
 public import Geb.Prototypes.Computability.Oitavem.Machine.While
+public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 meta import GebMeta -- shake: keep
 
@@ -45,6 +46,11 @@ The machine layer also supplies reusable physical-input and stored-word readers,
 loops that emit output, and a one-work-tape transducer for {name}`Geb.Oitavem.squareWord`.
 {name}`Geb.Oitavem.Machine.computableInTimeAndSpace_squareWord` proves simultaneous
 quadratic time and logarithmic space for that example.
+{name}`Geb.Oitavem.Machine.countOutput_runsTo` converts an emitter into a length
+reader with one additional binary counter. Applied to the square machine, it
+counts the generated quadratic word using two logarithmic work tapes.
+{name}`Geb.Oitavem.Machine.computableInTimeAndSpace_length_squareWord` gives a
+complete machine bound for numerical length composed with the square expression.
 
 ## References
 
