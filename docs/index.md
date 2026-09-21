@@ -1792,6 +1792,15 @@ checklist and in CI.
   `Machine.readOutput_runsTo` adds a query countdown and one-bit result
   tape to an emitter, with exact digit, time, and space contracts;
   `Machine.squareDigit_runsTo` applies it to the generated quadratic word.
+  [Generated subroutine contracts](../Geb/Prototypes/Computability/Oitavem/Machine/Generated.lean)
+  turn emitters with bounded final valuations and parked heads into reusable
+  length and digit readers. They initialize their extra scratch tapes and
+  inherit the generator's caller-preservation guarantees.
+  `Machine.repeatGenerator_emitsIn` repeats a generator with a binary counter
+  and fixed tape allocation.
+  `Machine.computableInTimeAndSpace_squareWord_squareWord` combines a generated
+  length query with that loop to compute the square expression composed with
+  itself: quartic output, polynomial time, and logarithmic space on two tapes.
   A compiler that substitutes these readers and implements the saved-prefix
   recursion loop remains necessary for machine soundness.
   `Machine.computes_polytime_logspace`

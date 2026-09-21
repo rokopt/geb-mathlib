@@ -107,6 +107,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.Oitavem.Machine.Repeat,
    `Geb.Prototypes.Computability.Oitavem.Machine.CountOutput,
    `Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput,
+   `Geb.Prototypes.Computability.Oitavem.Machine.Generated,
    `GebTests.Prototypes.Computability.Oitavem.Machine,
    `GebManual.BibTeX,
    `GebManual.Bibliography,

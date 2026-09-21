@@ -194,6 +194,54 @@ caller register. The result tape is blank as the reader's contract requires. -/
       finish.tapes[0][(j : ℤ) - 1]? == (register (counterWord (n + 1)))[(j : ℤ) - 1]? &&
       finish.tapes[1][(j : ℤ) - 1]? == start.tapes[1][(j : ℤ) - 1]?
 
+/-- Repeat a generated length call with dirty scratch and an unrelated caller tape. -/
+@[expose] def checkGeneratedLength (w : List Bool) : Bool := Id.run do
+  let p := generatedLength (squareFromHome (0 : Fin 2))
+  let tm := seq p p
+  let words : Vector (List Bool) 3 :=
+    #v[[true, false, true], [false, true], [true, false]]
+  let start : ExecCfg 3 (StateOf tm) w :=
+    { ExecCfg.init tm w with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let B := max 3 (2 * w.length.size + 1)
+  let T := (4 * B + 9) + squareFromHomeTime B w.length * (2 * B + 5)
+  let finish := (execStep tm)^[2 * T] start
+  let expected := words.set 0 (counterWord (w.length * w.length)) |>.set 1 []
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
+    (List.finRange 3).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+/-- Repeat a generated digit call, preserving the saved query and a caller tape.
+The second call must clear the result left by the first. -/
+@[expose] def checkGeneratedAt (w : List Bool) (q : ℕ) : Bool := Id.run do
+  let p := generatedAt (squareFromHome (1 : Fin 3)) 0
+  let tm := seq p p
+  let words : Vector (List Bool) 5 :=
+    #v[[true, false], [true, true, true], counterWord q, [false, true], [true, false]]
+  let start : ExecCfg 5 (StateOf tm) w :=
+    { ExecCfg.init tm w with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [false, true] }
+  let B := max 3 (max w.length.size q.size)
+  let T := squareFromHomeTime B w.length * (2 * B + 8) + 13 * B + 30
+  let finish := (execStep tm)^[2 * T] start
+  let expected := words.set 0 [] |>.set 1 ((squareWord.eval ![w] Fin.elim0)[q]?).toList
+    |>.set 3 []
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
+    (List.finRange 5).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+/-- Check the quartic-output composition against the Logs interpreter. -/
+@[expose] def checkSquareSquare (w : List Bool) : Bool :=
+  stepUntilHalt squareSquareMachine (squareSquareTime w.length + 2)
+    (ExecCfg.init squareSquareMachine w) [] ==
+      some ((Expr.comp (safe := false) squareWord ![squareWord]).eval ![w] Fin.elim0)
+
 #guard (List.range 65).all checkEmitNumber
 
 #guard ([[], [false], [false, true, false]] : List (List Bool)).all fun w ↦
@@ -215,12 +263,13 @@ caller register. The result tape is blank as the reader's contract requires. -/
 #guard (List.range 5).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
   let w := (List.range n).map (Nat.testBit x)
   checkLength w && checkStoredLength w && checkSquare w &&
+    checkGeneratedLength w && checkSquareSquare w &&
     ([0, 1, 3] : List ℕ).all (checkSquareLength w) &&
     (let tm := lengthMachine squareMachine
      stepUntilHalt tm (256 * (w.length + 1) ^ 3 + 1) (ExecCfg.init tm w) [] ==
        some ((Expr.comp (safe := false) lengthByRec ![squareWord]).eval ![w] Fin.elim0)) &&
     (List.range 8).all (fun q ↦ checkStored w q && checkInputAt w q) &&
-    (List.range (n * n + 2)).all (checkSquareDigit w)
+    (List.range (n * n + 2)).all (fun q ↦ checkSquareDigit w q && checkGeneratedAt w q)
 
 #guard (List.range 9).all fun q ↦
   let P : MultiTapeTM 1 Bool (Fin 3) :=
