@@ -98,11 +98,13 @@ theorem rank_add_one_eq (w : List Bool) : rank w + 1 = ofBits w + 2 ^ w.length :
 /-- The bits of a numeral are the list's bits, false beyond its end. -/
 theorem testBit_ofBits (d : List Bool) (i : ℕ) : (ofBits d).testBit i = d.getD i false := by
   refine List.rec (motive := fun d ↦ ∀ i, (ofBits d).testBit i = d.getD i false) ?_ ?_ d i
-  · simp
+  · intro i
+    rw [ofBits_nil, Nat.zero_testBit]
+    rfl
   · intro b d ih i
     cases i with
-    | zero => simp [ofBits_cons]
-    | succ i => simp [ofBits_cons, Nat.testBit_bit_succ, ih]
+    | zero => rw [ofBits_cons, Nat.testBit_bit_zero]; rfl
+    | succ i => rw [ofBits_cons, Nat.testBit_bit_succ, ih]; rfl
 
 /-- The bit at a position of a string's index is the string's bit there. -/
 theorem getBit_rank (i : ℕ) (w : List Bool) : getBit i (rank w) = w.getD i false := by

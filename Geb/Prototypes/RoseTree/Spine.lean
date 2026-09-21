@@ -6,9 +6,11 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.RoseTree.Basic
-public import Geb.Prototypes.RoseTree.Bits
+public import Geb.Prototypes.RoseTree.Bits  -- shake: keep; the docstrings' name roles need it
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Spell
-public import Geb.Prototypes.Computability.BitTree.EliasBinary.Bound
+public import Geb.Prototypes.Computability.BitTree.EliasBinary.Bound  -- shake: keep; name roles
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Algebra.Group.End
 
 set_option doc.verso true in
 /-!

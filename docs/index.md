@@ -3147,3 +3147,37 @@ checklist and in CI.
   `Geb.Prototypes.Computability.SizeBounded.Logspace.EliasTree.Correct`,
   `Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main` and
   `Mathlib.Data.Nat.Bitwise`.
+- `Geb/Prototypes/RoseTree/` — the representation of the language's values,
+  rose trees of bitstrings, whose design record is the manual chapter
+  `manual/GebManual/ValueRepresentation.lean`. `Basic.lean` defines
+  `Geb.RoseTree α` as the W-type of the signature `α × ℕ` with a position
+  below the arity as direction, its list-of-children constructor
+  `Geb.RoseTree.node` and projections, the induction `Geb.RoseTree.ind` and
+  the fold `Geb.RoseTree.elim`; it generalizes `Geb.Rose k` of
+  `Geb/Prototypes/ConcreteSyntax.lean`, whose labels are `Fin k`.
+  `Bits.lean` represents a bitstring label by its enumeration index
+  `Geb.Oitavem.rank`, a natural number that is an unboxed scalar in Lean's
+  runtime up to sixty-two bits, and states length, bit access,
+  concatenation, prefix and suffix as arithmetic on it, each proved to agree
+  with the list operation (`Geb.Bits.length_rank`, `Geb.Bits.getBit_rank`,
+  `Geb.Bits.append_rank`, `Geb.Bits.take_rank`, `Geb.Bits.drop_rank`).
+  `Spine.lean` rotates a rose tree to the binary tree of
+  `Geb.BitTree.Tree` whose left spines carry the children
+  (`Geb.RoseTree.equivBin`), so that the Elias-length encoding serializes
+  rose trees (`Geb.RoseTree.wire`), injectively
+  (`Geb.RoseTree.wire_injective`), with `Geb.BitTree.Elias.validBool` as
+  the recognizer of exactly the serialized trees
+  (`Geb.RoseTree.validBool_iff_wire`). `Packed.lean` writes the same bits
+  into a byte buffer at word level, `Geb.Packed.encode`, and reads them
+  back by a streaming fold over the buffer's words with a mode,
+  `Geb.Packed.run`, giving the recognizer `Geb.Packed.recognize` and the
+  decoder `Geb.Packed.decode`; their agreement with the list forms is
+  tested in `GebTests/Prototypes/RoseTree.lean`, not proved. The
+  executable `rosebench` (`RoseBenchMain.lean`) times the operations, and
+  `prototypes/rust/rosetree/` is the same serialization and a pointer tree
+  in Rust, tested against byte vectors of the Lean encoder, with its own
+  benchmark. No declaration depends on `Classical.choice`.
+  Depends on `Geb.Prototypes.Computability.Oitavem.Word`,
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Spell`,
+  `Geb.Prototypes.Computability.BitTree.EliasBinary.Bound` and
+  `Mathlib.Data.W.Basic`.

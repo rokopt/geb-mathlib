@@ -12,6 +12,7 @@ import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Machine
 import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
 import Geb.Mathlib.Data.PFunctor.Presheaf.Decidable
 import Geb.Prototypes.Computability.Oitavem.Word
+import Geb.Prototypes.RoseTree
 
 /-! # Value representation chapter
 
@@ -74,9 +75,9 @@ order of their weight.
   constants, and in parallel where a parallel evaluator hosts the
   representation.
 * Portability. The same semantics and serialized form are
-  implemented in Lean, in systems languages such as Rust, and on the
-  Higher-Order Virtual Machine 2, each with the internal form that
-  suits it.
+  implemented in Lean, in systems languages such as Rust, and on
+  interaction-net runtimes such as HVM4, each with the internal form
+  that suits it.
 
 Construction dominates the workload: values are built and rebuilt by
 an evaluator far more often than they are recognized from a
@@ -91,6 +92,23 @@ design therefore has two faces, a serialized form whose recognizer
 is the object of the complexity requirement and an in-memory form
 whose construction cost is the object of the operation-cost
 requirement, related by a conversion in each direction.
+
+The storage model of the language's source shapes the syntax-tree
+workload further. As in Unison, a definition is identified by the
+cryptographic hash of its abstract syntax tree alone, and everything
+else about it, comments, the Merkle hashes of its nodes, and
+whatever further annotations are kept, is stored beside the tree
+rather than in it, each annotation with a hash of its own. The
+syntax tree itself then has small labels, constructor identifiers on
+the order of the number of constructors of the types the program
+mentions, while the structures beside it hold data that may dwarf
+the tree, a comment being often larger than the code it comments
+and a digest per node being larger than the node. Data accessed
+together are stored together, so the tree is one structure and each
+kind of annotation is another, keyed by the position of the node it
+annotates. The representation therefore serves two shapes at once: a
+tree of many nodes with labels of a few bits, and parallel sequences
+of larger payloads indexed by node.
 
 # The repository's present representations
 
@@ -585,8 +603,508 @@ node its parent and position, and each stage is then a map.
 
 # Prototypes and measurements
 
-This section is filled in as the prototypes are written.
+The prototypes are literate modules under `Geb/Prototypes/RoseTree/`,
+included below, a test module, a benchmark executable, and a Rust
+crate. They establish the semantic layer with proofs, the serialized
+form with proofs where the repository already had them and tests
+where it did not, and the costs by measurement. Every measurement in
+this section is from a run on one machine, an AMD Ryzen AI 9 HX 370
+laptop processor with fifteen logical cores available, of a single
+thread, and reports the best of a few repetitions; it is a
+comparison between representations on the same machine, not a
+characterization of any of them.
+
+## What is proved
+
+{name}`Geb.RoseTree` is the W-type of the signature whose shapes are
+a label with an arity, with the list-of-children constructor
+{name}`Geb.RoseTree.node` and its projections, the induction
+principle {name}`Geb.RoseTree.ind` and the fold
+{name}`Geb.RoseTree.elim`; it generalizes the concrete-syntax
+prototype's rose tree over `Fin k` to any label type, and unifying the
+two is a follow-up. A label is its enumeration index, a natural
+number, and {name}`Geb.Bits.append_rank`, {name}`Geb.Bits.take_rank`,
+{name}`Geb.Bits.drop_rank`, {name}`Geb.Bits.getBit_rank` and
+{name}`Geb.Bits.length_rank` prove the word-level operations equal to
+the list operations. {name}`Geb.RoseTree.equivBin` rotates a rose
+tree to the binary tree whose left spines carry the children, so that
+the repository's Elias-length encoding serializes rose trees,
+{name}`Geb.RoseTree.wire`, injectively
+({name}`Geb.RoseTree.wire_injective`), and its recognizer accepts
+exactly the serialized rose trees
+({name}`Geb.RoseTree.validBool_iff_wire`); the recognizer's
+linear-time, logarithmic-space machine and its expression in
+Kristiansen's algebra are the repository's, unchanged. The
+serialization is therefore proved injective and its first
+recognition stage proved in `FLOGSPACE` by composition, with no new
+complexity proof.
+
+## What is tested
+
+{name}`Geb.Packed.encode` writes the same bits into a byte buffer at
+word level, and {name}`Geb.Packed.run` reads a buffer by a fold over
+its words with a mode, the repository's streaming scanner at word
+level, passing over a payload's whole words in one step; it yields the
+recognizer {name}`Geb.Packed.recognize` and the decoder
+{name}`Geb.Packed.decode`. The tests check the encoder's bits against
+{name}`Geb.RoseTree.wire` on trees of each shape the format
+distinguishes, the recognizer against
+{name}`Geb.BitTree.Elias.validBool` on every word of length at most
+ten, and the decoder on round trips. The Rust crate under
+`prototypes/rust/rosetree/` implements the same serialization and
+checks its bytes against three vectors printed by the Lean encoder,
+so the two implementations agree byte for byte on the wire.
+
+The first version of the word-level reader iterated by the natural
+number recursor over the remaining bit count, once per node. A strict
+recursor evaluates its whole tower before the first step, so each
+call cost the buffer's length and the recognizer was quadratic; it
+did not finish on a tree of a hundred thousand nodes. The rule that
+every recursion goes through a recursor is compatible with
+linear-time streaming, but only in the form the repository's scanner
+already has: one fold over the input carrying a mode, never a
+recursor call per element whose fuel is the input's length.
+
+## The Rust measurements
+
+The Rust crate's pointer tree stores a node as a 32-byte label, two
+words inline and a length, and a boxed slice of children, 48 bytes
+per node before the children's array; the numbers are nanoseconds
+per node on a full binary tree of 131,071 nodes with 8-bit labels,
+the syntax-like regime.
+
+:::table +header
+*
+  * Operation
+  * ns per node
+*
+  * build (allocation)
+  * 26
+*
+  * fold (node count)
+  * 1
+*
+  * serialize (wire)
+  * 8
+*
+  * recognize (one counter, streaming)
+  * 22
+*
+  * decode (stack)
+  * 60
+*
+  * equality (structural)
+  * 2
+*
+  * hash (shape-following fold)
+  * 20
+*
+  * tape build (preorder words with skip pointers)
+  * 20
+*
+  * tape walk by skip pointers
+  * 1
+*
+  * balanced-parentheses build (`vers-vecs`)
+  * 3
+*
+  * balanced-parentheses walk, parent and first child
+  * 11
+*
+  * pointer walk, same traversal
+  * 1
+:::
+
+The serialized form of that tree takes 18 bits per node: 8 for the
+label, 8 for its delta-coded length, and 2 for the arity. On the
+blob-like regime, four nodes with labels of `2^24` bits, the
+serializer runs at 4.4 gigabytes per second, the recognizer at 6,
+the shape-following hash at 6.8 and equality at 37, all a single
+thread.
+
+## The Lean measurements
+
+The Lean benchmark, `lake exe rosebench`, times the same operations
+on the same trees in Lean's compiled code, with the list forms beside
+the word-level forms.
+
+The first table is the syntax-like regime, a full binary tree of
+131,071 nodes whose labels are indices below 200, so of about seven
+bits, in nanoseconds per node; the list forms are on the smaller tree
+of 9,841 nodes, since the list recognizer is quadratic and takes
+seventeen seconds there.
+
+:::table +header
+*
+  * Operation
+  * ns per node
+*
+  * build (allocation)
+  * 54
+*
+  * fold (node count)
+  * 42
+*
+  * serialize, word level
+  * 250
+*
+  * serialize, list form (9,841 nodes)
+  * 687
+*
+  * recognize, word-level streaming fold
+  * 622
+*
+  * recognize, list form (9,841 nodes)
+  * 1,758,170
+*
+  * decode, word-level streaming fold with a stack
+  * 465
+*
+  * equality (fold)
+  * 149
+*
+  * hash (fold)
+  * 49
+:::
+
+The second is the blob-like regime, four nodes whose labels are
+natural numbers of `2^20` bits, in microseconds for the whole tree.
+
+:::table +header
+*
+  * Operation
+  * microseconds
+*
+  * build
+  * 397
+*
+  * serialize, word level
+  * 258,865
+*
+  * recognize, word level
+  * 2,018
+*
+  * decode, word level
+  * 1,846
+*
+  * equality
+  * 27
+*
+  * hash (truncating)
+  * 2
+:::
+
+The serialized tree of 131,071 nodes takes 13.8 bits per node, the
+label and its length code each about seven and the arity two.
+
+## The interaction-net measurements
+
+The programs under `prototypes/hvm/` build a full binary tree of
+`2^20` leaves with distinct labels and sum, hash and compare it, as an
+encoded algebraic data type and as native pairs, on HVM2 through
+Bend 1 and on HVM4 built from its source at commit `6defdfc`, one
+process at a time on the same machine; a chunked label of `2^K`
+24-bit chunks in a balanced pair tree is folded and concatenated on
+HVM2. The unit is the interaction, which is the runtimes' cost model
+and which the HVM2 interpreters and compiled code agree on exactly.
+
+:::table +header
+*
+  * Program and operation, `2^20` leaves
+  * HVM2 interactions
+  * HVM2 ms, 16 threads
+  * HVM4 interactions
+  * HVM4 ms, 1 thread
+*
+  * encoded constructors, sum
+  * 69.2 M
+  * 1060
+  * 19.9 M
+  * 835
+*
+  * encoded constructors, hash
+  * 70.3 M
+  * 1150
+  * 21.0 M
+  * 861
+*
+  * encoded constructors, equality of two trees
+  * 149.9 M
+  * 2890
+  * 39.8 M
+  * 1420
+*
+  * encoded constructors, equality of a duplicated tree
+  * 124.8 M
+  * 1770
+  * 30.4 M
+  * 1033
+*
+  * native pairs, sum
+  * 56.6 M
+  * 890
+  * 24.1 M
+  * 979
+*
+  * native pairs, equality of two trees
+  * 98.6 M
+  * 1880
+  * 41.9 M
+  * 1474
+:::
+
+On HVM2 a constructor encoded as a lambda costs 22 percent more
+interactions than a native pair for a fold and 52 percent more for
+an equality, 66 against 54 interactions per leaf for generation and
+fold together; on HVM4, whose constructors are native, the order
+reverses, 19 against 23, the pair version paying a numeric switch on
+the depth at every node. HVM4 performs 3.5 times fewer interactions
+than HVM2 for the same work on the encoded form, and one HVM4 thread
+finishes ahead of sixteen HVM2 threads; HVM2's compiled code gains
+nothing beyond four threads at this size and is no faster per
+interaction than its interpreter. Duplicating a tree for a comparison
+costs the same order as generating it. A chunked label folds at 54
+interactions per chunk at every size, and concatenating two labels
+of equal length is one pair node. HVM4's native structural equality
+performs 47 percent more interactions than the hand-written fold and
+leaves priority wrappers in its result, so it is not a shortcut.
+
+## Observations
+
+* The list recognizer of the repository is quadratic: its fuel-bounded
+  parser is a recursor tower whose fuel is the word's length, so it
+  takes 1.8 milliseconds per node on ten thousand nodes and the
+  word-level streaming fold, at 0.6 microseconds per node, is faster
+  by a factor above three thousand. This is the cost the type checker
+  pays today, and the streaming form removes it without leaving the
+  recursor discipline.
+* Lean's compiled word-level forms are slower than Rust's by a factor
+  of ten to forty per node, the fold most, since the W-type's children
+  are a function tabulated into a list at every node; the same
+  operations in the same order, so the factor is the runtime's, not
+  the design's.
+* A long label as a natural number serializes at twelve megabytes per
+  second in Lean, since each sixty-four-bit chunk is a shift of the
+  whole number, quadratic in its length; the same label as limbs
+  serializes at 4.4 gigabytes per second in Rust. In Lean a long label
+  belongs in a byte array, as the recommendations say. The list form
+  of a long label is worse still, since mathlib's bit enumeration
+  divides the number by two once per bit.
+* On the syntax-like regime the delta-coded length costs as much as
+  the label: 8 bits per node for an 8-bit label. A syntax tree over a
+  fixed signature does not need a per-node length code, since its
+  labels are constructor identifiers of a known width; the
+  serialization of a typed tree is best specialized to its signature,
+  the length code kept for the untyped carrier alone.
+* The succinct tree costs an order of magnitude more per navigation
+  than a pointer tree and a third of a bit per node more than the
+  parenthesis word itself; it is a storage and query structure, not
+  an evaluator's.
+* The tape, one word per node with a skip pointer, is built at the
+  cost of a hash and walked at the cost of a fold; it is the cheapest
+  form for a checker that needs random access, and its pointer chase
+  is the reason it is not the recognized form.
+* On the interaction-net hosts the representation of a node is the
+  cost: native constructors where the runtime has them, pairs where it
+  has not, never encoded constructors; and balanced chunk trees give
+  labels the same cost per chunk as trees per node.
+* Equality and hashing are memory-bound: on long labels the structural
+  equality runs at memory bandwidth and the hash at the hasher's
+  throughput, so a cached digest per node is what makes equality
+  constant.
+
+{includeLiterate "." Geb.Prototypes.RoseTree.Basic "Geb.Prototypes.RoseTree.Basic" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.RoseTree.Bits "Geb.Prototypes.RoseTree.Bits" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.RoseTree.Spine "Geb.Prototypes.RoseTree.Spine" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.RoseTree.Packed "Geb.Prototypes.RoseTree.Packed" (level := 1)}
 
 # Recommendations
 
-This section is written last.
+The recommendations are ordered by what serves self-hosting first:
+the syntax trees of the parser, type checker, interpreter, compiler
+and editor tooling, then the stored and transmitted form, then the
+hashes that identify code, then long payloads, then the
+interaction-net hosts. Each states its tradeoffs and what it
+excludes. All of them share one semantics, {name}`Geb.RoseTree` over
+bitstring labels, and one serialization, and differ in the internal
+form each host builds.
+
+## First: the in-memory syntax tree
+
+A node is one allocation holding a label, a cached digest, the
+subtree's serialized size, and its children in an array, immutable
+once built and shared by reference count; the label is an unboxed
+word when it fits one, which every constructor identifier does. This
+is the green tree of Roslyn and rust-analyzer with Lean's cached
+`Expr` header, and it is what every measured evaluator builds
+fastest: one allocation per node, a load per child access, a fold at
+a nanosecond per node, and structural equality that fails on a
+digest mismatch before it descends. The serialized size in the
+header is what the editor tooling needs: a cursor over such a tree,
+a red node, carries the absolute position of a node in the
+serialized text, so the Language Server Protocol's positions are
+computed by descent, as they are in the editors surveyed, without
+storing them. Nodes of at most three children are interned in a
+direct-mapped table, as Roslyn and rust-analyzer do, which makes
+equality of interned subtrees a pointer comparison and the
+hereditary naturality check linear; interning is a phase's choice,
+since a global table serializes parallel construction, and a
+transient owner, as in Clojure's collections, batches a rebuild
+before freezing it. In Lean the tree is the W-type
+{name}`Geb.RoseTree` itself, the array of children being the
+tabulation of its direction function, and the runtime updates a
+uniquely referenced node in place.
+
+Tradeoffs: the in-memory form is not succinct, a node costing tens
+of bytes against two bits of shape and a few bits of label in the
+serialized form, which is the price of construction at allocation
+speed; it is the form for values being computed on, and values at
+rest take the second form.
+
+Excluded: the succinct dynamic trees, which are ephemeral and an
+order of magnitude slower per navigation; a self-referential
+inductive type, which the repository's discipline forbids and the
+W-type replaces at no cost.
+
+## Second: the serialized and stored form
+
+The recognized carrier is the interleaved word the repository
+already has: each node its arity in unary, a zero, the delta-coded
+length of its label, the label, then its children, which
+{name}`Geb.RoseTree.wire` produces from a rose tree and
+{name}`Geb.BitTree.Elias.validBool` recognizes in linear time and
+logarithmic space with a proof already in place, whose size is
+optimal to within the length codes by the repository's counting
+argument, and which {name}`Geb.Packed.encode` writes and
+{name}`Geb.Packed.run` reads at word level, byte for byte as the Rust
+crate does. Its bits are the same at every word width, so the word
+width parameterizes the implementation and not the format.
+
+Two profiles of it serve the two shapes the storage model has. A
+typed tree over a known signature drops the length code and the
+unary arity: its labels are constructor identifiers of the width the
+signature fixes and its arities follow from them, so a node costs
+that width alone, the recognizer is a finite tree automaton, and a
+logarithmic-space transcoder recovers the carrier form, which is
+what the algebraic witness is stated over. The stored form of a
+value at rest is sectioned: the shape word, the length codes and the
+payloads as three sections behind a header, with every annotation,
+comments and digests among them, as a further section keyed by
+preorder position, so that the tree of small labels and the
+sequences of large payloads are each contiguous. The interleaved
+form is the streaming form, emitted node by node without knowing
+the total; the sectioned form is the storage form; logarithmic-space
+transcoders relate them, and a sectioned tree is checked in
+parallel by prefix sums.
+
+Accelerators are side structures and never part of what is
+recognized: the range min-max index at a third of a bit per node for
+logarithmic navigation over a stored tree, or the preorder tape at a
+word per node for constant-time skipping in a checker.
+
+Tradeoffs: the delta-coded length costs as much as an 8-bit label,
+which is why the typed profile exists; the sectioned form is not
+streamable without its header, which is why the interleaved form is
+kept.
+
+Excluded as the recognized form: length-prefixed subtrees, whose
+validation is a pointer chase complete for logarithmic space and
+whose linear-time checkers cap the depth at sixty-four.
+
+## Third: the digests that identify code
+
+Two hashes, for two purposes, both computed over canonical
+serialization bytes so that every host, whatever its word width,
+computes the same value. A subtree's digest, the identity of a
+definition in the content-addressed store, is the digest of its
+label's serialization together with its children's digests, computed
+bottom-up at construction and cached in the node's header, so that a
+rebuilt tree costs only the path rebuilt; it is stored beside the
+tree, one per node, in the storage form. The integrity digest of a
+stream or blob is the tree-mode digest of its serialization, which is
+computed in one pass with a logarithmic stack of chaining values and
+in logarithmic span in parallel, and which is the one provably in
+`FLOGSPACE`. BLAKE3 serves both, its tree mode giving the second and
+its compression the first; the repository has no implementation of
+it in Lean, and a reference implementation or a binding is a
+prerequisite. For in-memory equality that must compose under
+concatenation, a polynomial hash modulo a word-sized prime is the
+composable choice and is in `FLOGSPACE`.
+
+Tradeoffs: the subtree digest follows the tree's shape, so its
+streaming computation needs space proportional to the depth, and it
+is in `FLOGSPACE` only on trees of logarithmic depth; the integrity
+digest is shape-independent and does not identify subtrees. Both are
+needed.
+
+## Fourth: long labels and blobs
+
+In a systems language a label is a length and two inline words,
+the heap form marked by a length above two words, as `dashu` and
+`smallbitvec` do; bits are packed least significant first in
+little-endian words with the dead bits zero, so equality and hashing
+run at memory bandwidth, and concatenation and extraction are shifts.
+In Lean a label of at most sixty-two bits is a natural number, which
+the runtime keeps unboxed, and a longer one is a byte array with its
+bit length, since a large natural number exposes no linear-time
+access to its limbs and its built-in hash truncates. On an
+interaction-net host a long label is a balanced tree of word chunks,
+one chunk per unboxed scalar, folded in logarithmic span. The three
+are isomorphic to the bitstring, and none is the canonical form for
+hashing, which the serialization bytes are.
+
+Tradeoffs: the chunk tree costs a node per word and the byte array a
+header per label; the inline form fits the syntax-tree labels and
+costs nothing.
+
+## Fifth: the interaction-net hosts
+
+On HVM4, the live interaction-calculus runtime, a node is a native
+constructor of at most sixteen fields, with wider nodes nested as
+balanced blocks, labels as balanced trees of 32-bit chunks, equality
+by the runtime's structural-equality interaction, and the same
+serialization. On HVM2 through Bend 1, both frozen, a node is a
+balanced tree of native pairs with the arity carried in the label,
+and a label a balanced tree of 24-bit chunks; the encoded algebraic
+data types cost four nodes per binary constructor and are avoided.
+Every host of this kind needs structure balanced to a known depth
+for a GPU to schedule it, which the balanced chunk trees and the
+sectioned form both give.
+
+Tradeoffs: nothing compiles to HVM4 yet, its GPU port is not current
+code, and Bend 2 runs on a runtime that is not an interaction net;
+the recommendation is a layout for the calculus, not for a shipped
+toolchain.
+
+## Sixth: the type checker
+
+Two implementations of each recognition stage, extensionally equal:
+the practical one, a linear-time streaming reader with a stack of
+pending arities and index prescriptions, whose space is the depth,
+and the witnessed one, an expression of a sound logarithmic-space
+algebra with quadratic time, which is the proof. The first stage has
+both today. The child-index stage cannot have a one-pass
+logarithmic-space checker, so its practical form keeps the stack and
+its witness re-scans. The naturality stage compares subtrees under a
+fixed relabelling, which adds no complexity class, and its practical
+form compares digests. A parallel checker uses the sectioned form,
+prefix sums giving each node its parent and position, and each
+stage is then a map.
+
+## Order of preference
+
+The first four together are the design: a green tree of word labels
+with a cached digest in memory, the interleaved carrier with a typed
+profile and a sectioned storage form on disk and on the wire,
+BLAKE3 digests over serialization bytes for identity and integrity,
+and labels inline, in byte arrays or in chunk trees by host. The
+fifth adapts the same design to interaction nets and waits on a
+runtime that ships; the sixth is the discipline the repository has
+followed and continues. Where a choice within them remains open, the
+measurements decide it: the typed profile over the length code for
+syntax trees, the pointer tree over the succinct tree for evaluation,
+the streaming fold over the recursor per node for readers, and the
+byte array over the natural number for long labels in Lean.

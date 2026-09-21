@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.RoseTree.Basic
 public import Geb.Prototypes.RoseTree.Bits
 public import Geb.Prototypes.RoseTree.Spine
+public import Geb.Prototypes.RoseTree.Packed
 
 set_option doc.verso true in
 /-!
