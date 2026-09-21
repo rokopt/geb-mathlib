@@ -1919,9 +1919,12 @@ checklist and in CI.
   `Expr.computable_polytime_logspace` proves that every fixed unary expression
   has a finite transducer with simultaneous polynomial time and logarithmic
   work space, using identity input and output encodings.
-  `Machine.computes_polytime_logspace`
-  derives a simultaneous polynomial time bound for any such halting
-  logarithmic-space transducer, using CSLib's configuration count. Machine
+  `Machine.computes_of_space` derives a time bound exponential in the work
+  space for any halting transducer, using CSLib's configuration count;
+  `Machine.computes_polytime_logspace` is its instance at logarithmic
+  space, a simultaneous polynomial time bound, and
+  `Machine.computes_expspace` its instance at exponential space, a
+  simultaneous doubly exponential time bound. Machine
   completeness is also unformalized. The
   [direct soundness proof](oitavem-logspace-soundness.md) records the
   verified transducer construction and its scope.
