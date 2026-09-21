@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Computability.Oitavem.Machine.While
 public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.Generated
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Count
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec
 public import Geb.Prototypes.Computability.Oitavem.Derived
@@ -387,6 +388,265 @@ theorem computableInTimeAndSpace_length_squareWord :
   · intro w
     change (1 + 1) * (2 * w.length.size + 1 + 2) ≤ 6 * (w.length.size + 1)
     omega
+
+/-- Square the physical input from the parked input-head convention of subroutines. -/
+@[expose] def squareFromHome {k : ℕ} (C : Fin k) := seq inStepRight (squareInput C)
+
+/-- Time for squaring from the home position, including scratch initialization. -/
+@[expose] def squareFromHomeTime (B n : ℕ) : ℕ :=
+  1 + countInputTime B n + (n * (2 * n + 2 * B + 11) + 1)
+
+/-- Squaring has an emitter contract with arbitrary caller data and dirty scratch. -/
+theorem squareFromHome_emitsIn {k : ℕ} (C : Fin k) (B : ℕ → ℕ)
+    (hn : ∀ n, n.size ≤ B n) :
+    EmitsIn (squareFromHome C) (fun _ _ ↦ True)
+      (fun _ σ ↦ Function.update σ C [])
+      (fun input _ ↦ squareWord.eval ![input] Fin.elim0)
+      (fun n ↦ squareFromHomeTime (B n) n) B := by
+  intro input cfg σ hq hpark hpos hσ _ hB
+  have r₁ := inStepRight_runsTo { cfg with state := some () } rfl
+    (by change cfg.inputPos.val < input.length + 1; omega) (B input.length)
+    (fun i ↦ by rw [hpark i]; constructor <;> omega)
+  obtain ⟨t, ht, r₂⟩ := squareInput_emits C
+    { cfg with state := some (squareInput C).q₀
+               inputPos := ⟨cfg.inputPos.val + 1, by omega⟩ }
+    rfl σ hσ hpark (by change cfg.inputPos.val + 1 = 1; omega) (B input.length) hB (hn _)
+  refine ⟨hB.update (Nat.zero_le _), 1 + t, by dsimp only [squareFromHomeTime]; omega,
+    (RunsTo.seqStartEmits hq r₁ r₂).congr_target ?_⟩
+  apply Cfg.ext
+  · rfl
+  · exact Fin.ext hpos.symm
+  · rfl
+  · rfl
+  · rfl
+
+/-- The generated square's length reader accepts dirty tapes and returns with
+its generator scratch cleared and every caller tape preserved. -/
+theorem squareLength_transformsIn {k : ℕ} (C : Fin k) (B : ℕ → ℕ)
+    (hn : ∀ n, n.size ≤ B n) (hs : ∀ n, (n * n + 1).size ≤ B n) :
+    TransformsIn (generatedLength (squareFromHome C)) (fun _ _ ↦ True)
+      (fun input σ ↦ Fin.cons (counterWord (input.length * input.length))
+        (Function.update (fun i ↦ σ i.succ) C []))
+      (fun n ↦ (4 * B n + 9) + squareFromHomeTime (B n) n * (2 * B n + 5)) B := by
+  have h := generatedLength_transformsIn (squareFromHome_emitsIn C B hn)
+    (fun input _ _ _ ↦ by rw [length_squareWord]; exact hs _)
+  exact h.congr fun input σ _ ↦ by simp only [length_squareWord]
+
+/-- A digit reader for quadratic output, with initialized scratch and protected
+caller registers. The query survives when its source differs from the generator scratch. -/
+theorem squareAt_transformsIn {k : ℕ} (C Q : Fin k) (B : ℕ → ℕ)
+    (hn : ∀ n, n.size ≤ B n) (hB1 : ∀ n, 1 ≤ B n) :
+    TransformsIn (generatedAt (squareFromHome C) Q)
+      (fun _ σ ↦ ∃ q, σ (oldTape Q) = counterWord q)
+      (fun input σ ↦ tapeCase []
+        ((squareWord.eval ![input] Fin.elim0)[counterValue (σ (oldTape Q))]?).toList
+        (Function.update (fun i ↦ σ (oldTape i)) C []))
+      (fun n ↦ squareFromHomeTime (B n) n * (2 * B n + 8) + 13 * B n + 30) B :=
+  (generatedAt_transformsIn (squareFromHome_emitsIn C B hn) Q hB1).mono_pre
+    (fun _ _ _ hpre ↦ ⟨hpre, trivial⟩)
+
+/-- Repeat a generator, consuming a binary repetition counter. -/
+@[expose] def repeatGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (C : Fin k) :=
+  whileNonblank (some C) (seq P (dec C))
+
+/-- A generator preserving its valuation can be repeated without retaining a call
+context per iteration. Its precondition and word must be independent of the counter. -/
+theorem repeatGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : EmitsIn P Pre (fun _ σ ↦ σ) W T B) (C : Fin k) (Q : ℕ → ℕ)
+    (hpre : ∀ input σ n, Pre input σ → Pre input (Function.update σ C (counterWord n)))
+    (hword : ∀ input σ n, W input (Function.update σ C (counterWord n)) = W input σ) :
+    EmitsIn (repeatGenerator P C)
+      (fun input σ ↦ Pre input σ ∧ ∃ l, σ C = counterWord l ∧ l ≤ Q input.length)
+      (fun _ σ ↦ Function.update σ C [])
+      (fun input σ ↦ (List.replicate (counterValue (σ C)) (W input σ)).flatten)
+      (fun n ↦ Q n * (T n + 2 * B n + 7) + 1) B := by
+  intro input cfg σ hq hpark hpos hσ hinit hB
+  obtain ⟨hp, l, hC, hQ⟩ := hinit
+  let c : ℕ → Cfg k Bool (StateOf (seq P (dec C))) input := fun j ↦
+    { cfg with state := none
+               workTapes := fun i ↦ tapeOf (Function.update σ C (counterWord (l - j)) i)
+               output := cfg.output ++ (List.replicate j (W input σ)).flatten }
+  have hb (j : ℕ) : Bounded (Function.update σ C (counterWord (l - j))) (B input.length) :=
+    hB.update ((length_counterWord_le_of_le (Nat.sub_le _ _)).trans (hC ▸ hB C))
+  have hprobe (j : ℕ) : probeOf (some C) (c j) = tapeOf (counterWord (l - j)) 0 := by
+    change tapeOf (Function.update σ C (counterWord (l - j)) C) (cfg.workTapePos C) = _
+    rw [Function.update_self, hpark C]
+  obtain ⟨t, ht, h⟩ := arrives_whileNonblank (some C) (seq P (dec C)) (B input.length)
+    (T input.length + 2 * B input.length + 6) l c
+    (by
+      intro j hj hz
+      rw [hprobe] at hz
+      have := (counterWord_eq_nil_iff _).mp ((tapeOf_zero_eq_none_iff _).mp hz)
+      omega)
+    (by rw [hprobe, Nat.sub_self]; rfl)
+    (by
+      intro j hj
+      let σj := Function.update σ C (counterWord (l - j))
+      obtain ⟨_, s, hs, r₁⟩ := hP input { c j with state := some P.q₀ } σj
+        rfl hpark hpos (fun _ ↦ rfl) (hpre input σ (l - j) hp) (hb j)
+      have hl : l - j = (l - (j + 1)) + 1 := by omega
+      obtain ⟨u, hu, r₂⟩ := dec_transforms C (B input.length)
+        { c j with state := some (dec C).q₀, output := (c j).output ++ W input σj }
+        σj rfl hpark (fun _ ↦ rfl) (hb j) (by
+          dsimp only [σj]
+          rw [Function.update_self, hl, decL_counterWord_succ, Function.update_idem]
+          exact hb (j + 1))
+      have r := r₁.seqEmits r₂.toEmits
+      rw [List.append_nil, ← liftL_start P (dec C)
+        { c j with state := some (seq P (dec C)).q₀ } rfl] at r
+      refine ⟨s + u, by omega, (r.congr_target ?_).toArrives⟩
+      apply Cfg.ext
+      · rfl
+      · rfl
+      · funext i
+        change tapeOf (Function.update σj C (decL (σj C).reverse).reverse i) = _
+        dsimp only [σj]
+        rw [Function.update_self, hl, decL_counterWord_succ, Function.update_idem]
+      · rfl
+      · change (c j).output ++ W input σj = (c (j + 1)).output
+        dsimp only [c, σj]
+        rw [hword, List.replicate_succ', List.flatten_append, List.flatten_singleton,
+          List.append_assoc])
+    (by intro i; change -1 ≤ cfg.workTapePos i ∧ cfg.workTapePos i ≤ B input.length
+        rw [hpark i]; constructor <;> omega)
+  have hstart : { c 0 with state := some (.inl ()) } = cfg := by
+    apply Cfg.ext
+    · exact hq.symm
+    · rfl
+    · funext i
+      change tapeOf (Function.update σ C (counterWord (l - 0)) i) = cfg.workTapes i
+      rw [Nat.sub_zero, ← hC, Function.update_eq_self, hσ i]
+    · rfl
+    · simp [c]
+  rw [hstart] at h
+  dsimp only
+  rw [hC, counterValue_counterWord]
+  refine ⟨hB.update (Nat.zero_le _), t, ?_, ⟨?_, ?_, rfl⟩⟩
+  · exact ht.trans (by simpa only [Nat.add_assoc] using
+      Nat.add_le_add_right (Nat.mul_le_mul_right (T input.length + 2 * B input.length + 7) hQ) 1)
+  · simpa only [repeatGenerator, c, after, Nat.sub_self,
+      show counterWord 0 = [] from rfl] using h
+  · change (whileNonblank (some C) (seq P (dec C))).outputString cfg t = _
+    apply List.append_cancel_left (as := cfg.output)
+    rw [← runFrom_output, h.runFrom_eq]
+
+/-- Square a generated square: count its output, then regenerate it once per
+counted digit. Only the repetition counter and the generator counter are stored. -/
+@[expose] def squareSquareFromHome :=
+  seq (generatedLength (squareFromHome (0 : Fin 1)))
+    (repeatGenerator (squareFromHome (1 : Fin 2)) 0)
+
+/-- Time bound for the generated-square composition. -/
+@[expose] def squareSquareTime (n : ℕ) : ℕ :=
+  let B := 2 * n.size + 1
+  let T := squareFromHomeTime B n
+  (4 * B + 9) + T * (2 * B + 5) + (n * n * (T + 2 * B + 7) + 1)
+
+/-- The composition uses two logarithmic tapes, reuses the generator's scratch
+counter, and returns both tapes blank even when they were initially dirty. -/
+theorem squareSquareFromHome_emitsIn :
+    EmitsIn squareSquareFromHome (fun _ _ ↦ True) (fun _ _ _ ↦ [])
+      (fun input _ ↦ (Expr.comp (safe := false) squareWord ![squareWord]).eval ![input] Fin.elim0)
+      squareSquareTime (fun n ↦ 2 * n.size + 1) := by
+  let B := fun n : ℕ ↦ 2 * n.size + 1
+  have hP : EmitsIn (squareFromHome (1 : Fin 2)) (fun _ σ ↦ σ 1 = [])
+      (fun _ σ ↦ σ) (fun input _ ↦ squareWord.eval ![input] Fin.elim0)
+      (fun n ↦ squareFromHomeTime (B n) n) B := by
+    intro input cfg σ hq hpark hpos hσ hpre hB
+    obtain ⟨hFB, t, ht, h⟩ := squareFromHome_emitsIn 1 B (fun n ↦ by dsimp [B]; omega)
+      input cfg σ hq hpark hpos hσ trivial hB
+    have he : Function.update σ 1 [] = σ := by rw [← hpre, Function.update_eq_self]
+    dsimp only at hFB h
+    rw [he] at hFB h
+    exact ⟨hFB, t, ht, h⟩
+  have hr := repeatGenerator_emitsIn hP 0 (fun n ↦ n * n)
+    (fun input σ n h ↦ by simpa using h) (fun _ _ _ ↦ rfl)
+  have hl := squareLength_transformsIn (0 : Fin 1) B
+    (fun n ↦ by dsimp [B]; omega) size_square_add_one_le
+  intro input cfg σ hq hpark hpos hσ _ hB
+  obtain ⟨_, t, ht, h⟩ := hl.seqEmitsIn hr input cfg σ hq hpark hpos hσ
+    ⟨trivial, by simp, input.length * input.length, rfl, le_rfl⟩ hB
+  refine ⟨fun _ ↦ Nat.zero_le _, t, ht, ?_⟩
+  have hw : (Expr.comp (safe := false) squareWord ![squareWord]).eval ![input] Fin.elim0 =
+      (List.replicate (input.length * input.length)
+        (squareWord.eval ![input] Fin.elim0)).flatten := by
+    rw [Expr.eval_comp]
+    change (List.replicate (squareWord.eval ![input] Fin.elim0).length
+      (squareWord.eval ![input] Fin.elim0)).flatten = _
+    rw [length_squareWord]
+  dsimp only
+  rw [hw]
+  simp only [Fin.cons_zero, counterValue_counterWord] at h
+  refine h.congr_target ?_
+  apply Cfg.ext
+  · rfl
+  · rfl
+  · funext i
+    have he : (Function.update
+        (Fin.cons (counterWord (input.length * input.length))
+          (Function.update (fun j ↦ σ j.succ) 0 [])) 0 [] : Fin 2 → List Bool) i = [] := by
+      match i with
+      | 0 => simp
+      | 1 => simp
+    exact congrArg tapeOf he
+  · rfl
+  · rfl
+
+/-- The generated-square composition, entered from CSLib's initial input position. -/
+@[expose] def squareSquareMachine := seq inBack squareSquareFromHome
+
+/-- The composed transducer emits the interpretation on two logarithmic tapes. -/
+theorem squareSquareMachine_emits (w : List Bool) :
+    ∃ cfg' t, t ≤ 1 + squareSquareTime w.length ∧
+      Emits squareSquareMachine (squareSquareMachine.initCfg w) cfg'
+        ((Expr.comp (safe := false) squareWord ![squareWord]).eval ![w] Fin.elim0)
+        t (2 * w.length.size + 1) := by
+  let cfg := squareSquareMachine.initCfg w
+  have r₁ := inBack_runsTo_of_pos { cfg with state := some () } rfl
+    (by change 1 ≠ 0; omega) (2 * w.length.size + 1)
+    (fun _ ↦ by
+      change -1 ≤ (0 : ℤ) ∧ (0 : ℤ) ≤ (2 * w.length.size + 1 : ℕ)
+      constructor <;> omega)
+  obtain ⟨_, t, ht, r₂⟩ := squareSquareFromHome_emitsIn w
+    { cfg with state := some squareSquareFromHome.q₀, inputPos := ⟨0, by omega⟩ }
+    (fun _ ↦ []) rfl (fun _ ↦ rfl) rfl (fun _ ↦ tapeOf_nil.symm) trivial
+    (fun _ ↦ Nat.zero_le _)
+  exact ⟨_, 1 + t, Nat.add_le_add_left ht 1, RunsTo.seqStartEmits rfl r₁ r₂⟩
+
+private theorem squareSquareTime_le (n : ℕ) :
+    1 + squareSquareTime n ≤ 512 * (n + 1) ^ 4 := by
+  have hs := size_le_self n
+  have hT : squareFromHomeTime (2 * n.size + 1) n ≤ 32 * (n + 1) ^ 2 := by
+    unfold squareFromHomeTime countInputTime
+    nlinarith [Nat.mul_le_mul_left n hs]
+  have hc := Nat.mul_le_mul hT (show 2 * (2 * n.size + 1) + 5 ≤ 7 * (n + 1) by omega)
+  have hr := Nat.mul_le_mul_left (n * n)
+    (show squareFromHomeTime (2 * n.size + 1) n + 2 * (2 * n.size + 1) + 7 ≤
+      32 * (n + 1) ^ 2 + 4 * n + 9 by omega)
+  dsimp only [squareSquareTime]
+  nlinarith
+
+/-- Reader composition and generator repetition compute a quartic-output Logs
+expression in polynomial time and logarithmic space, with identity encodings. -/
+theorem computableInTimeAndSpace_squareWord_squareWord :
+    ComputableInTimeAndSpaceOfLength
+      (fun w ↦ (Expr.comp (safe := false) squareWord ![squareWord]).eval ![w] Fin.elim0)
+      (.refl _) (.refl _) (fun n ↦ 512 * (n + 1) ^ 4) (fun n ↦ 6 * (n.size + 1)) := by
+  refine ⟨2, StateOf squareSquareMachine, ?_, squareSquareMachine, fun w ↦ ?_⟩
+  · let : Fintype (StateOf (squareFromHome (0 : Fin 1))) := inferInstance
+    infer_instance
+  obtain ⟨cfg', t, ht, h⟩ := squareSquareMachine_emits w
+  refine ⟨t, ht.trans (squareSquareTime_le _), squareSquareMachine.spaceUsed
+    (squareSquareMachine.initCfg w) t, h.spaceUsed_le.trans ?_, ?_, ?_, rfl⟩
+  · change 2 * (2 * w.length.size + 1 + 2) ≤ 6 * (w.length.size + 1)
+    omega
+  · change (squareSquareMachine.runFrom (squareSquareMachine.initCfg w) t).state = none
+    rw [h.runFrom_eq]
+    exact h.halted
+  · rw [initCfg_runFrom_output]
+    exact h.output
 
 end
 

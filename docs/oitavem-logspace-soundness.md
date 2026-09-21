@@ -5,8 +5,8 @@ This document proposes a direct machine proof for the
 output-length bound, and logarithmic retained recursion state are
 formalized. The compiler and its machine soundness theorem remain to be
 constructed. Physical-input and stored-word readers, an emitting loop
-rule, generated-output length and digit readers, and a concrete transducer
-for `squareWord` are proved
+rule, reusable generated-output length and digit readers, and concrete
+transducers for `squareWord` and its self-composition are proved
 using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -109,6 +109,21 @@ Completeness is outside this construction's scope.
   when the emitter has that head bound and `query.size ≤ B`.
   Finite control remains finite. This proof was developed with
   Aristotle and checked under the repository's toolchain.
+- [Generated subroutine contracts][generated] defines `EmitsIn`, the
+  emitting counterpart of `TransformsIn`, with a bounded final valuation
+  and parked return heads. `generatedLength_transformsIn` and
+  `generatedAt_transformsIn` turn such an emitter into reusable readers.
+  Length queries clear their counter before running. Digit queries copy
+  a saved query, clear the result before running, and clear the consumed
+  countdown on return, including for out-of-range queries. The extra
+  tapes may be dirty on entry. The generator's exact valuation
+  transformer determines cleanup and preservation on its old tapes;
+  preserving the saved query therefore requires that the generator
+  preserve its source tape. The wrapper bounds are
+  `4 * B + 9 + T * (2 * B + 5)` and
+  `T * (2 * B + 8) + 13 * B + 30` steps, respectively, at the same
+  work-head bound `B`. `TransformsIn.seqEmitsIn` composes an internal
+  query with a subsequent emitter.
 - [Repeated-input emission][repeat] implements `squareMachine` on one
   work tape. `computableInTimeAndSpace_squareWord` proves CSLib's
   simultaneous bounds `32 * (n + 1)^2` for time and
@@ -124,11 +139,28 @@ Completeness is outside this construction's scope.
   that first out-of-range position, in time `320 * (n + 1)^3` with
   three tapes and head bound `2 * n.size + 1`.
   `squareInput_emits` also permits dirty generator scratch and proves
-  its cleanup and caller preservation. Substitution into another
+  its cleanup and caller preservation. `squareFromHome_emitsIn` adapts
+  that generator to the subroutine convention. `squareLength_transformsIn`
+  and `squareAt_transformsIn` establish its reusable reader contracts
+  with protected caller registers and arbitrary initial scratch contents.
+- [Repeated generated emission][repeat] proves `repeatGenerator_emitsIn`:
+  a generator that preserves its valuation can be called repeatedly
+  using a binary countdown and a fixed set of work tapes. Its word and
+  precondition must be independent of the countdown. Applied after
+  the generated square's length reader, this constructs
+  `squareSquareMachine`. The theorem
+  `computableInTimeAndSpace_squareWord_squareWord` proves that it
+  computes `Expr.comp squareWord ![squareWord]`, with quartic output,
+  in time `512 * (n + 1)^4` and space `6 * (n.size + 1)` on two tapes.
+  It counts the intermediate output and regenerates it for each repetition.
+  `squareSquareFromHome_emitsIn` also proves initialization and cleanup
+  from dirty work tapes. This is a composition through a generated
+  length reader and an emitter; arbitrary substitution into a compiled
   expression's normal-input readers remains to be implemented.
 - [Machine checks][machine-checks] execute the readers and transducer,
   including leading zeroes, empty words, out-of-range queries, dirty
-  scratch tapes, protected registers, and existing output prefixes.
+  scratch tapes, protected registers, existing output prefixes, repeated
+  generated-reader calls, and the quartic-output composition.
 
 The recursion results bound retained words and indices. They do not
 bound the work space used to compute those words or indices. Closing
@@ -220,6 +252,13 @@ materialized in a work register. Output-length calculation must also
 handle carries, saturation at zero, and changes of shortlex length.
 The length primitive only encodes a polynomially bounded word length,
 so its numerical result can be held in logarithmic space.
+
+`repeatGenerator_emitsIn` supplies the streaming repetition part of
+string product when the repeated-word generator preserves its valuation
+and a length reader initializes a separate repetition counter.
+`squareSquareFromHome_emitsIn` verifies this combination on a generated
+normal word of quadratic length. General length and digit routines for
+the product constructor still require the argument-reader interface.
 
 ### Normal composition
 
@@ -334,8 +373,20 @@ readers for generated words, and `squareLength_runsTo` and
 Numerical length composed with `squareWord` has a full machine
 bound theorem. That proof uses `eval_lengthByRec` to compute the length
 directly; it does not implement the retained-prefix recursion loop.
-The general allocation and substitution contracts remain, including the
-setup and scratch-reset conventions for repeated generated-word queries.
+`EmitsIn` now supplies the emitter contract from which reusable generated
+readers inherit their setup, scratch-reset, and old-register preservation
+guarantees. The wrappers allocate their extra tapes before the generator's
+tapes. Repeated digit queries retain their source index when the generator
+preserves that tape. A generated length query followed by a repetition
+loop computes `squareWord` composed with itself, with a full machine
+bound theorem and fixed tape allocation.
+
+The next allocation and substitution work is to provide expression
+constructors with an environment of length and digit programs, prove
+preservation of that environment through nested calls, and instantiate
+those programs with child-expression readers. The generated-reader
+contracts and sequencing rules are available for those calls, but do
+not yet constitute a compiler or a general substitution theorem.
 
 The first composition checkpoint should determine whether the proposed
 reader contract supports the required register allocation and nested
@@ -382,6 +433,7 @@ that additional characterization or a direct machine encoding.
 [emitting-loops]: ../Geb/Prototypes/Computability/Oitavem/Machine/While.lean
 [output-counting]: ../Geb/Prototypes/Computability/Oitavem/Machine/CountOutput.lean
 [output-reading]: ../Geb/Prototypes/Computability/Oitavem/Machine/ReadOutput.lean
+[generated]: ../Geb/Prototypes/Computability/Oitavem/Machine/Generated.lean
 [repeat]: ../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean
