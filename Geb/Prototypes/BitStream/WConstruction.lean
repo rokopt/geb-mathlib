@@ -374,12 +374,29 @@ def coherentFamilyEquiv : {x : ∀ n, Approx n // Consistent x} ≃ sig.M where
 The root has one direction for each W-type depth. Its child at depth
 {lit}`n` is a nullary node labelled by an {lit}`Approx n`. The slice index
 enforces that label's depth. The outer tree has just two levels, even when
-the bitstream it describes is infinite. Only this outer polynomial has
-infinitely many directions; the observation polynomial remains finitary.
+the bitstream it describes is infinite. Well-foundedness rules out infinite
+branches; it permits infinitely many children at one node. Here the root's
+direction type is {name}`Depth`, equivalent to {name}`Nat` by
+{name}`depthEquiv`, so this outer polynomial is not finitary. The depth and
+observation polynomials still have only finite arities.
+
+This infinite branching packages a dependent product into a single W-tree.
+The choice belongs to this encoding: {name}`coherentFamilyEquiv` already
+describes the M-type using a compatible family of observations without an
+outer tree. In contrast, the cofree comonad discussed in
+{name}`Geb.BitStream.Observations` intrinsically fails to preserve filtered
+colimits, regardless of its presentation.
 -/
 
 /-- A root at index {lit}`none` has one child at each {lit}`some n`.
-A leaf at {lit}`some n` stores a finite observation at depth {lit}`n`. -/
+A leaf at {lit}`some n` stores a finite observation at depth {lit}`n`.
+
+As an endofunctor {lit}`H` on families indexed by {lit}`Option Depth`, this is
+{lit}`H Y none ≃ (∀ n : Depth, Y (some n))` and
+{lit}`H Y (some n) ≃ Approx n`. The slice W-type, with its index map and
+constructor, is the initial algebra of this infinitary polynomial. Its
+{lit}`some n` fibre stores one observation; its {lit}`none` fibre stores
+their dependent product. Compatibility is imposed separately below. -/
 def bundleSig : SlicePFunctor (Option Depth) (Option Depth) where
   A := Option (Σ n, Approx n)
   B a := match a with
@@ -468,7 +485,11 @@ def bundleEquiv : Bundle ≃ (∀ n, Approx n) where
   right_inv := readBundle_bundle
 
 /-- A bitstream is a slice W-tree of finite presheaf W-observations whose
-neighbouring depths agree. Compatibility is a proposition, not extra data. -/
+neighbouring depths agree. Compatibility is a proposition, not extra data.
+This is a compatible subtype of the root fibre of the initial algebra for
+{name}`bundleSig`. The equivalence {lit}`mEquiv` below identifies it with
+the carrier of the final coalgebra for the finitary polynomial
+{name}`Geb.BitStream.sig`. -/
 abbrev Stream := {w : Bundle // Consistent (readBundle w)}
 
 /-- Forgetting the outer W packaging identifies bitstreams with coherent families. -/
