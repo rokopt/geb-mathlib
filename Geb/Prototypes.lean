@@ -20,6 +20,7 @@ public import Geb.Prototypes.PresheafUniverse
 public import Geb.Prototypes.ReadableSExpr.IO
 public import Geb.Prototypes.RelSeparation
 public import Geb.Prototypes.RoseTree
+public import Geb.Prototypes.SuccinctTree
 public import Geb.Prototypes.Typechecker.Instances
 public import Geb.Prototypes.Typechecker.Oitavem
 public import Geb.Prototypes.UniverseVariance
