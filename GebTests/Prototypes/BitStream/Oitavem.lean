@@ -21,7 +21,11 @@ root. The streams the three expressions code are observed at small depths:
 the empty stream, the constant stream of set bits, and the constant stream
 of clear bits; and decoding a coding word yields the stream. The tail on
 words yields a coding word, the code of the composite, whose stream is the
-tail of the stream. The recognizer of expressions at every arity accepts
+tail of the stream; the head of a coding word is the stream's first entry,
+and the coalgebra on codes steps from a coding word to the tail word. The
+value at depth zero of the iterated unary squaring of a two-bit constant has
+length the iterated square of two, within the bound by the code's size.
+The recognizer of expressions at every arity accepts
 the spellings of the expression of two normal arguments and of an
 expression under no root, and rejects a coding word and the empty word.
 
@@ -84,6 +88,35 @@ private def binE : Expr 2 0 := Expr.initial (.proj 2 0)
 
 #guard (prefixEquiv (ofNat 2) (observe (tail (toStream lastE)) (ofNat 2))).val =
   (prefixEquiv (ofNat 2) (observe (toStream (tailExpr lastE)) (ofNat 2))).val
+
+#guard headCode (spellExpr projE) = some none
+
+#guard headCode (spellExpr onesE) = some (some true)
+
+#guard headCode (spellExpr lastE) = some (some false)
+
+#guard headCode [] = none
+
+#guard stepCode (spellExpr projE) = none
+
+#guard stepCode (spellExpr onesE) = some (true, spellExpr (tailExpr onesE))
+
+/-- The product of an argument with itself. -/
+private def squareE : Expr 1 0 :=
+  Expr.comp (safe := false) (Expr.initial .product)
+    ![Expr.initial (.proj 1 0), Expr.initial (.proj 1 0)]
+
+/-- The iterated square of a two-bit constant. -/
+private def squaresE : ℕ → Expr 1 0
+  | 0 => Expr.comp (safe := false) (Expr.initial (.succ true))
+      ![Expr.comp (safe := false) (Expr.initial (.succ true)) ![Expr.initial (.zero 1)]]
+  | k + 1 => Expr.comp (safe := false) squareE ![squaresE k]
+
+#guard (List.range 5).map (fun k ↦ (valueAt (squaresE k) 0).length) = [2, 4, 16, 256, 65536]
+
+#guard (List.range 5).map (fun k ↦ size (squaresE k).1.1) = [5, 10, 15, 20, 25]
+
+#guard (valueAt (squaresE 3) 0).length ≤ (0 + 2) ^ 2 ^ size (squaresE 3).1.1
 
 #guard codedPlain.recognize (codedPlain.spell binE.1.1) = true
 
