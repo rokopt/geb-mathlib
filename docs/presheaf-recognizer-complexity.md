@@ -421,24 +421,25 @@ the entry at depth zero from the code. Under the paper's Theorem 3.4 the
 observation therefore lies outside `FLOGSPACE`.
 
 The class of the observation depends on what it returns. The decision
-problem, the bit at a depth or termination there, is in `PSPACE`:
+problem, the bit at a depth or termination there, is in `EXPSPACE`:
 Oitavem's logspace simulation recomputes each intermediate word bit by
-bit and keeps one counter of logarithmic size per recursion, so its
-workspace is linear in the code's size times the logarithm of the
-largest intermediate word, which is at most exponential in the code's
-size. Whether it is `PSPACE`-hard is open here: an expression of size
-polynomial in the input has polynomial workspace at its disposal, so
-hardness would follow from a completeness construction whose expression
-size is polynomial in the space constant, which has not been checked.
-`PSPACE` is closed under composition of its decision procedures, so
-observing streams one entry at a time forces no larger class.
+bit and keeps one counter per recursion of size the logarithm of the
+largest intermediate word, so its workspace is linear in the code's size
+times that logarithm; and the largest intermediate word of a code of `s`
+nodes at depth `n` has length at most `(n + 2) ^ 2 ^ s`
+([`Expr.length_le_pow`][size]), a bound whose exponent's exponent is
+attained up to a constant factor by iterated squaring, so the logarithm
+is exponential in the code's size and the simulation is not a
+polynomial-space one. `EXPSPACE` is closed under composition of its
+decision procedures, so observing streams one entry at a time forces no
+larger class. Whether the observation is `EXPSPACE`-hard is open here.
 
 The word-valued evaluator, returning the whole value at a depth, is
-different. Composing `k` copies of a doubling function applied to a
-one-bit constant is a code of size linear in `k` whose value has length
-`2^k`, and composing such evaluations iterates the exponential, the
+different. Iterating a unary squaring `k` times over a two-bit constant
+is a code of size linear in `k` whose value has length `2 ^ 2 ^ k`, and
+composing such evaluations iterates the exponential further, the
 phenomenon of § Elementary recursion. `ELEMENTARY` is therefore the
-closure of word-valued evaluation under composition, and `PSPACE` the
+closure of word-valued evaluation under composition, and `EXPSPACE` the
 class of entry-wise observation.
 
 ## Related results
@@ -491,6 +492,7 @@ of its word operations and navigation in Oitavem's algebra.
 [presheaf-scan]: ../Geb/Prototypes/Computability/PresheafScan.lean
 [counterexample]: ../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean
 [coded-bitstreams]: ../Geb/Prototypes/BitStream/Oitavem.lean
+[size]: ../Geb/Prototypes/Computability/Oitavem/Size.lean
 [quantification]: ../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean
 [oitavem-category]: ../Geb/Prototypes/Typechecker/Oitavem.lean
 [resource-target]: bitstring-metalogic.md#selected-resource-target

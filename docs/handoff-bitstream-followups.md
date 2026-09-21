@@ -3,15 +3,16 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Session A: branch `refactor/bitstream`, three commits](#session-a-branch-refactorbitstream-three-commits)
-- [Session B: the evaluator (`head` on codes)](#session-b-the-evaluator-head-on-codes)
+- [Session A: merged as PR #235, three commits](#session-a-merged-as-pr-235-three-commits)
+- [Session B: `head` on codes, landed](#session-b-head-on-codes-landed)
 - [Session C: bitstreams as elements of arbitrary finitary M-types](#session-c-bitstreams-as-elements-of-arbitrary-finitary-m-types)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 State of the repository. PR #232
 (`feat(bitstream): recognize Oitavem-coded bitstreams in logspace`) is merged on
-`main`. It adds `Geb/Prototypes/BitStream/Oitavem/` (index
+`main`; sessions A and B below extend it. PR #232 adds
+`Geb/Prototypes/BitStream/Oitavem/` (index
 `Geb/Prototypes/BitStream/Oitavem.lean`):
 
 - `Sig.lean`: the bundle signature
@@ -95,7 +96,7 @@ Conventions and pitfalls that cost time last session:
   smallest code (58 bits) did not finish in 15 minutes; do not add such a
   `#guard`.
 
-## Session A: branch `refactor/bitstream`, three commits
+## Session A: merged as PR #235, three commits
 
 1. `tail` on codes (`feat` or `refactor` scope `bitstream`). Define
 
@@ -157,45 +158,64 @@ Conventions and pitfalls that cost time last session:
 Each commit: `lake build`, the relevant `GebTests` module, `docs/index.md`; run
 `scripts/pre-push.sh` once at the end.
 
-## Session B: the evaluator (`head` on codes)
+## Session B: `head` on codes, landed
 
-Target: a Lean function `headCode : List Bool → Option (Option Bool)` (none when
-the word is not a code; `some none` for termination; `some (some b)` for the
-first bit), agreeing with `decodeStream`
-(`(decodeStream w).map fun s ↦ (seqEquiv s).get? 0`), and the machine statement
+Branch `feat/bitstream-head`. The evaluator is a Lean function; the machine
+bound is the follow-up below, with a corrected target.
+
+- `Geb/Prototypes/Computability/Oitavem/Size.lean`: `size`, the node count
+  of a syntax tree; `lengthPoly_le_pow`; `Expr.length_le_pow`, the output
+  length at normal arguments of length at most `m` is at most
+  `(m + 2) ^ 2 ^ size`.
+- `Recognize.lean`: `decodeExpr : List Bool → Option (Expr 1 0)`, and
+  `decodeStream w = (decodeExpr w).map toStream`.
+- `Head.lean`: `headCode w = (decodeExpr w).map fun e ↦ (valueAt e 0).head?`
+  with `headCode_eq_decodeStream`; the coalgebra
+  `stepCode w = (headCode w).bind fun h ↦ h.map (·, tailWord w)` with
+  `toStream_eq_corec : toStream e = corec stepCode (spellExpr e)` and
+  `decodeStream_eq_corec` for recognized words; `length_valueAt_le`,
+  `(valueAt e n).length ≤ (n + 2) ^ 2 ^ size e.1.1`; `size_tailExpr`.
+- Tests: heads and steps of the three expressions, and `squaresE`, the
+  iterated unary square of a two-bit constant, with value lengths
+  `[2, 4, 16, 256, 65536]` at sizes `[5, 10, 15, 20, 25]`.
+
+Correction. The target stated for this session, and
+`docs/presheaf-recognizer-complexity.md` § Observing coded bitstreams before
+this session, put the observation in `PSPACE` on the ground that the largest
+intermediate word is at most exponential in the code's size. It is doubly
+exponential: `squaresE k` has `5 * k + 5` nodes and value length `2 ^ 2 ^ k`
+at the empty word, and `Expr.length_le_pow` is the matching upper bound;
+every intermediate word is the value of a subexpression at intermediate
+words, so the bound covers it with the size doubled. The recomputing
+evaluator holds one counter per node of a position in an intermediate word,
+so its workspace is the code's size times the logarithm of the largest
+intermediate word, exponential in the code's size. The machine statement the
+argument supports is
 
 ```lean
-∃ c d, ComputableInTimeAndSpaceOfLength (fun w ↦ …) … (fun n ↦ c * 2 ^ ((n + 1) ^ d)) (fun n ↦ c * (n + 1) ^ d)
+∃ c d, ComputableInTimeAndSpaceOfLength (fun w ↦ …) … (fun n ↦ c * 2 ^ 2 ^ ((n + 1) ^ d)) (fun n ↦ c * 2 ^ ((n + 1) ^ d))
 ```
 
-(polynomial space, exponential time, simultaneously on one machine). The class
-facts: the bit query is in PSPACE (workspace linear in the code size times the
-logarithm of the largest intermediate word), hence in EXPTIME by the
-configuration count, hence elementary; a machine halting in polynomial space
-runs in exponential time on the same machine, which is the form
-`Geb.Oitavem.Machine.computes_polytime_logspace` already proves for the logspace
-case (time from space), so the space bound is the real work. `PSPACE` is closed
-under composition of decisions; `ELEMENTARY` only enters for the word-valued
-universal function. The generator view is right: with `tailExpr` from session A,
-codes carry a coalgebra `List Bool → Option (Bool × List Bool)`,
-`w ↦ (headCode w).bind fun h ↦ h.map (·, tailWord w)`, and `toStream` is its
-corecursion; the k-th head costs polynomial space in `|e| + k` because
-`tailExpr` grows the code by a constant.
+exponential space and doubly exponential time on one machine, the
+observation in `EXPSPACE`; `EXPSPACE` is closed under composition of
+decisions, and `ELEMENTARY` still bounds the word-valued evaluator. No
+step-counting cost model was written: the evaluator's space is set by the
+lengths of intermediate words, which `Expr.length_le_pow` bounds without an
+instrumented evaluator, and a machine's time follows from its space by
+counting configurations, so an evaluator-level time account would not enter
+the machine proof.
 
-Proof routes, in order of preference:
-
-- Reuse the Oitavem machine work
-  (`Geb/Prototypes/Computability/Oitavem/Machine/*`,
-  `docs/oitavem-logspace-soundness.md`): it builds Cslib multi-tape transducers
-  for fixed expressions by recomputation; the uniform evaluator is the same
-  construction with the code on an input tape and the recursion stack of
-  counters bounded by the code's size. Read that document's status before
-  choosing; the fixed-expression soundness is still in progress and the
-  evaluator would subsume it.
-- If a machine proof is out of reach in one session, first land the Lean-level
-  evaluator with a step-counting cost model (compare `SizeBounded/Cost.lean`'s
-  `SemC` accounts) and the coalgebra laws, and state the machine bound as the
-  follow-up.
+Follow-up, the evaluator machine. Route: the fixed-expression machine
+construction (`Geb/Prototypes/Computability/Oitavem/Machine/*`,
+`docs/oitavem-logspace-soundness.md`, `Expr.computable_polytime_logspace`)
+with the code on an input tape and the recursion stack of counters bounded
+by the code's size, each counter of size the logarithm of
+`(n + 2) ^ 2 ^ size`. Time from space needs the generalization of
+`Machine.computes_polytime_logspace` (`Machine/SpaceTime.lean`) from a
+logarithmic space bound to an arbitrary one, by the same configuration
+count. The k-th entry costs the head of `tailExpr^k e`, whose code has
+`size e + 2 * k` nodes (`size_tailExpr`), so space exponential in the code's
+size plus the depth.
 
 ## Session C: bitstreams as elements of arbitrary finitary M-types
 
