@@ -60,6 +60,11 @@ checklist and in CI.
 
 ## Design documents
 
+- [Persistent storage investigation](../manual/GebManual/Storage.lean)
+  — a Verso manual chapter comparing packed persistent trees, succinct
+  indexes, compiler data structures, and interaction-calculus runtimes;
+  includes the compiled summary proofs, experiment results, and ranked
+  recommendations for self-hosting workloads.
 - [bitstring-metalogic.md](bitstring-metalogic.md) — recognized and
   quotient types over bitstrings, syntactic proof checking, simultaneous
   polynomial-time and linear-space bounds, and single-step reduction.
@@ -82,6 +87,11 @@ checklist and in CI.
 
 ## Implemented content
 
+- `Geb/Prototypes/SuccinctTree.lean` — balanced-parenthesis block
+  summaries, associative composition, prefix-sum recognition, and an
+  equivalent accumulator scan. Its adjacent experiment directory
+  contains the tested persistent Rust sequence prototype and the
+  CPU, CUDA, and HVM4 microbenchmarks discussed in the manual.
 - `Geb/Mathlib/Logic/Equiv/Basic.lean` — extensions of mathlib's
   `Mathlib/Logic/Equiv/Basic.lean`. `sigmaFstSectionElim` eliminates a
   function into a sigma type along a proof that it is a section of the
