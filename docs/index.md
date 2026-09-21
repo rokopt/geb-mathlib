@@ -502,7 +502,11 @@ checklist and in CI.
   recognizer with the test of the root's fixed prefix,
   `recognize_iff_spellExpr` its specification, `recognizerSem_eq` the
   expression's agreement with it and `decodeStream_spellExpr` the stream
-  a code denotes; `Oitavem/Machine.lean` reads the machine bound off the
+  a code denotes; `Oitavem/Tail.lean` codes the tail of a stream by the
+  composite of the expression with the successor, `dest_toStream` the
+  generator law the coded stream satisfies and `tailWord_spellExpr` the
+  tail on words as a constant rewrite of the code;
+  `Oitavem/Machine.lean` reads the machine bound off the
   subalgebra's soundness theorem (listed in
   `GebMeta.classicalAllowedModules`). The other modules are
   `Classical.choice`-free. Depends on
