@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.Oitavem.Machine.Allocate
+public import Geb.Prototypes.Computability.SizeBounded.Machine.Wrapper
 public import Geb.Prototypes.Computability.Oitavem.Machine.Read
 public import Geb.Prototypes.Computability.Oitavem.Machine.While
 
@@ -52,6 +53,13 @@ open Geb.SizeBounded.Logspace.Machine
 
 public section
 
+/-- A silent length reader returning a binary counter and preserving every other register. -/
+@[expose] def ReadsLength {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (R : Fin k)
+    (Pre : List Bool → (Fin k → List Bool) → Prop)
+    (W : List Bool → (Fin k → List Bool) → List Bool) (T B : ℕ → ℕ) : Prop :=
+  TransformsIn P Pre
+    (fun input σ ↦ Function.update σ R (counterWord (W input σ).length)) T B
+
 /-- A silent digit reader with a saved binary query and a single result register.
 Queries through the first out-of-range position must halt and obey the bound. -/
 @[expose] def ReadsAt {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (Q R : Fin k)
@@ -86,19 +94,21 @@ theorem readStored_readsAt {k : ℕ} (r : Fin 5 → Fin k) (hr : Function.Inject
     have h3 : Function.update σ (r 3) [] = σ := by rw [← h.1.2, Function.update_eq_self]
     simp only [h2, h3]
 
-/-- A generator restoring its valuation supplies a digit reader with reusable scratch.
-The countdown is initialized in the precondition and restored by every query. -/
-theorem generatedAt_readsAt {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+/-- A restoring generator answers every canonical query, including positions beyond its end.
+The copied countdown is cleared again even when it exceeds the generated length. -/
+theorem generatedAt_all_queries {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     {Pre : List Bool → (Fin k → List Bool) → Prop}
     {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
     (hP : EmitsIn P Pre (fun _ σ ↦ σ) W T B) (Q : Fin k) (hB1 : ∀ n, 1 ≤ B n) :
-    ReadsAt (generatedAt P Q) (oldTape Q) resultTape
-      (fun input σ ↦ σ countTape = [] ∧ Pre input (fun i ↦ σ (oldTape i)))
-      (fun input σ ↦ W input (fun i ↦ σ (oldTape i)))
+    TransformsIn (generatedAt P Q)
+      (fun input σ ↦ (σ countTape = [] ∧ Pre input (fun i ↦ σ (oldTape i))) ∧
+        ∃ q, σ (oldTape Q) = counterWord q)
+      (fun input σ ↦ Function.update σ resultTape
+        ((W input (fun i ↦ σ (oldTape i)))[counterValue (σ (oldTape Q))]?).toList)
       (fun n ↦ T n * (2 * B n + 8) + 13 * B n + 30) B := by
   refine ((generatedAt_transformsIn hP Q hB1).mono_pre ?_).congr ?_
   · intro input σ _ hpre
-    obtain ⟨q, hq, _⟩ := hpre.2
+    obtain ⟨q, hq⟩ := hpre.2
     exact ⟨⟨q, hq⟩, hpre.1.2⟩
   · intro input σ hpre
     funext i
@@ -109,6 +119,34 @@ theorem generatedAt_readsAt {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
       rw [Function.update_self]
       rfl
     · exact (Function.update_of_ne (oldTape_ne_resultTape j) _ _).symm
+
+/-- A generator restoring its valuation supplies a digit reader with reusable scratch.
+The countdown is initialized in the precondition and restored by every query. -/
+theorem generatedAt_readsAt {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : EmitsIn P Pre (fun _ σ ↦ σ) W T B) (Q : Fin k) (hB1 : ∀ n, 1 ≤ B n) :
+    ReadsAt (generatedAt P Q) (oldTape Q) resultTape
+      (fun input σ ↦ σ countTape = [] ∧ Pre input (fun i ↦ σ (oldTape i)))
+      (fun input σ ↦ W input (fun i ↦ σ (oldTape i)))
+      (fun n ↦ T n * (2 * B n + 8) + 13 * B n + 30) B :=
+  (generatedAt_all_queries hP Q hB1).mono_pre (fun _ _ _ h ↦ ⟨h.1, h.2.imp fun _ hq ↦ hq.1⟩)
+
+/-- A generator restoring its valuation supplies an exact length reader on an extra tape. -/
+theorem generatedLength_readsLength {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : EmitsIn P Pre (fun _ σ ↦ σ) W T B)
+    (hsize : ∀ input σ, Pre input σ → Bounded σ (B input.length) →
+      ((W input σ).length + 1).size ≤ B input.length) :
+    ReadsLength (generatedLength P) 0
+      (fun input σ ↦ Pre input (fun i ↦ σ i.succ))
+      (fun input σ ↦ W input (fun i ↦ σ i.succ))
+      (fun n ↦ 4 * B n + 9 + T n * (2 * B n + 5)) B := by
+  refine (generatedLength_transformsIn hP hsize).congr ?_
+  intro input σ _
+  funext i
+  exact Fin.cases (by simp) (fun j ↦ by simp) i
 
 /-- A digit reader can be placed in a larger caller layout. The new protected tapes
 are absent from its precondition and represented word and remain unchanged. -/
@@ -170,6 +208,54 @@ theorem emitBit_emits {k : ℕ} {input : List Bool} (R : Fin k)
     · simpa only [runFrom_succ_eq_step', runFrom_zero, hs] using hpos i
   · simp [outputString_succ, outputSymbol, hq, emitBit]
     rfl
+
+/-- A parked symbol has a one-step emitter contract preserving the entire valuation. -/
+theorem emitBit_emitsIn {k : ℕ} (R : Fin k) (B : ℕ → ℕ) :
+    EmitsIn (emitBit R) (fun _ _ ↦ True) (fun _ σ ↦ σ)
+      (fun _ σ ↦ (tapeOf (σ R) 0).toList) (fun _ ↦ 1) B := by
+  intro input cfg σ hq hpark _ hσ _ hB
+  have he := emitBit_emits R cfg hq (B input.length) (by
+    intro i
+    rw [hpark i]
+    constructor <;> omega)
+  have hw : cfg.workTapeSymbols R = tapeOf (σ R) 0 := by
+    change cfg.workTapes R (cfg.workTapePos R) = _
+    rw [hpark R, hσ R]
+  rw [hw] at he
+  refine ⟨hB, 1, le_rfl, he.congr_target ?_⟩
+  apply Cfg.ext
+  · rfl
+  · rfl
+  · exact funext hσ
+  · rfl
+  · rfl
+
+/-- Query and emit one digit, then clear the result port for the next call. -/
+@[expose] def readDigitGenerator {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (R : Fin k) :=
+  seq P (seq (emitBit R) (const [] R))
+
+/-- An optional digit query becomes a reusable emitter when its result starts blank. -/
+theorem readDigitGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    (Q R : Fin k) {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : ReadsAt P Q R Pre W T B) :
+    EmitsIn (readDigitGenerator P R)
+      (fun input σ ↦ (Pre input σ ∧ ∃ q, σ Q = counterWord q ∧ q ≤ (W input σ).length) ∧
+        σ R = [])
+      (fun _ σ ↦ σ) (fun input σ ↦ ((W input σ)[counterValue (σ Q)]?).toList)
+      (fun n ↦ T n + (1 + (4 * B n + 9))) B := by
+  have hc := Transforms.toIn_of (fun n ↦ const_transforms [] R (B n))
+    (fun _ _ ↦ True) (fun _ _ hB _ ↦ hB.update (Nat.zero_le _))
+  have hs := (hP.seqEmitsIn ((emitBit_emitsIn R B).seqTransformsIn hc)).mono_pre
+    (Pre' := fun input σ ↦ (Pre input σ ∧
+      ∃ q, σ Q = counterWord q ∧ q ≤ (W input σ).length) ∧ σ R = [])
+    (fun _ _ _ hp ↦ ⟨hp.1, trivial, trivial⟩)
+  refine (hs.congr ?_).congr_output ?_
+  · intro input σ hp
+    rw [Function.update_idem, ← hp.2, Function.update_eq_self]
+  · intro input σ _
+    rw [Function.update_self]
+    cases (W input σ)[counterValue (σ Q)]? <;> rfl
 
 /-- Emit the current digit, advance the query, and read the next digit until it is missing. -/
 @[expose] def emitReaderLoop {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (Q R : Fin k) :=
@@ -343,6 +429,67 @@ theorem emitReader_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   rw [hword, Function.update_comm hQR.symm, Function.update_idem,
     Function.update_idem] at hFB he
   exact ⟨hFB, t, ht, he⟩
+
+/-- Stream a word and clear the query on return. The digit port is cleared by the final query. -/
+@[expose] def emitReaderClean {k : ℕ} {S : Type}
+    (P : MultiTapeTM k Bool S) (Q R : Fin k) :=
+  seq (emitReader P Q R) (const [] Q)
+
+/-- Streaming with cleanup restores initialized query and result ports, permitting nested calls. -/
+theorem emitReaderClean_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    (Q R : Fin k) (hQR : Q ≠ R)
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B N : ℕ → ℕ}
+    (hP : ReadsAt P Q R Pre W T B)
+    (hpre : ∀ input σ q r, Pre input σ →
+      Pre input (Function.update (Function.update σ Q q) R r))
+    (hword : ∀ input σ q r,
+      W input (Function.update (Function.update σ Q q) R r) = W input σ)
+    (hlen : ∀ input σ, Pre input σ → (W input σ).length ≤ N input.length)
+    (hsize : ∀ n, (N n).size ≤ B n) (hB1 : ∀ n, 1 ≤ B n) :
+    EmitsIn (emitReaderClean P Q R) Pre
+      (fun _ σ ↦ Function.update (Function.update σ Q []) R []) W
+      (fun n ↦ (4 * B n + 9 + T n + (N n * (T n + 2 * B n + 6) + 1)) +
+        (4 * B n + 9)) B := by
+  have hc := Transforms.toIn_of (fun n ↦ const_transforms [] Q (B n))
+    (fun _ _ ↦ True) (fun _ _ hB _ ↦ hB.update (Nat.zero_le _))
+  have hs := (emitReader_emitsIn Q R hQR hP hpre hword hlen hsize hB1).seqTransformsIn hc
+  refine (hs.mono_pre (fun _ _ _ h ↦ ⟨h, trivial⟩)).congr ?_
+  intro input σ _
+  rw [Function.update_comm hQR.symm, Function.update_idem, Function.update_comm hQR]
+
+/-- Emit a stored word and park its head again, without changing any register. -/
+@[expose] def emitStored {k : ℕ} (R : Fin k) := seq (writer R) (retLeft R)
+
+/-- Stored words supply reusable generators, preserving their exact contents. -/
+theorem emitStored_emitsIn {k : ℕ} (R : Fin k) (B : ℕ → ℕ) :
+    EmitsIn (emitStored R) (fun _ _ ↦ True) (fun _ σ ↦ σ) (fun _ σ ↦ σ R)
+      (fun n ↦ 2 * B n + 4) B := by
+  intro input cfg σ hq hpark _ hσ _ hB
+  have he := writer_emits R { cfg with state := some (writer R).q₀ }
+    rfl (σ R) (hσ R) hpark (B input.length) (hB R)
+  have hheads (i : Fin k) :
+      -1 ≤ cfg.workTapePos i ∧ cfg.workTapePos i ≤ B input.length := by
+    rw [hpark i]
+    constructor <;> omega
+  have hr := retLeft_runsTo R
+    { cfg with
+      state := some (retLeft R).q₀
+      workTapePos := Function.update cfg.workTapePos R (-1)
+      output := cfg.output ++ σ R }
+    rfl (σ R) (hσ R) (-1) (Function.update_self ..) le_rfl (by omega)
+    (B input.length) (update_workTapePos_bounds R hheads (-1) le_rfl (by omega))
+  have hs := he.seqEmits hr.toEmits
+  rw [← liftL_start (writer R) (retLeft R) cfg hq, List.append_nil] at hs
+  refine ⟨hB, 2 * (σ R).length + 3 + 1, by dsimp only; have := hB R; omega,
+    hs.congr_target ?_⟩
+  apply Cfg.ext
+  · rfl
+  · rfl
+  · exact funext hσ
+  · change Function.update (Function.update cfg.workTapePos R (-1)) R 0 = cfg.workTapePos
+    rw [Function.update_idem, ← hpark R, Function.update_eq_self]
+  · rfl
 
 end
 

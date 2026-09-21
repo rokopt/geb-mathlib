@@ -97,6 +97,18 @@ theorem EmitsIn.congr {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   rw [hF input σ hp] at hFB he
   exact ⟨hFB, t, ht, he⟩
 
+/-- An emitter contract admits an equal output word wherever its precondition holds. -/
+theorem EmitsIn.congr_output {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W V : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B) (hW : ∀ input σ, Pre input σ → W input σ = V input σ) :
+    EmitsIn P Pre F V T B := by
+  intro input cfg σ hq hpark hpos hσ hp hB
+  obtain ⟨hFB, t, ht, he⟩ := h input cfg σ hq hpark hpos hσ hp hB
+  rw [hW input σ hp] at he
+  exact ⟨hFB, t, ht, he⟩
+
 /-- Counting a contracted emitter preserves its final valuation on the old tapes
 and returns a binary length on the additional tape. -/
 theorem countOutput_transformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}

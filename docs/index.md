@@ -1851,8 +1851,37 @@ checklist and in CI.
   halting contract with logarithmic head bounds into simultaneous
   polynomial time and logarithmic space, including input-head setup
   and the space bound after halting.
-  A compiler that substitutes these readers and implements the saved-prefix
-  recursion loop remains necessary for machine soundness.
+  [Generated constructors](../Geb/Prototypes/Computability/Oitavem/Machine/Compose.lean)
+  implement numerical length, string product, and conditional branches;
+  finite-state output maps
+  implement numerical successor and predecessor, string predecessor,
+  and last-digit extraction.
+  [Segment generators](../Geb/Prototypes/Computability/Oitavem/Machine/Segment.lean)
+  implement iterated predecessor, clamping offsets beyond the source length.
+  [Digitwise subtraction](../Geb/Prototypes/Computability/Oitavem/Subtraction.lean)
+  proves the signed-carry algorithm correct for the existing shortlex encoding;
+  its machine implementation remains open.
+  [The arithmetic transition](../Geb/Prototypes/Computability/Oitavem/Machine/Subtraction.lean)
+  implements one subtraction digit with a three-valued carry and preserved
+  caller tapes.
+  [Bounded-carry addition](../Geb/Prototypes/Computability/Oitavem/Addition.lean)
+  proves the digit algorithm for adding a natural number to an arbitrary
+  shortlex word, with every intermediate carry at most the initial carry or one.
+  [Prefix capture](../Geb/Prototypes/Computability/Oitavem/Machine/Capture.lean)
+  preserves the old saved value throughout a generator call, then replaces
+  it with a bounded prefix and clears the capture scratch.
+  [Retained-prefix recursion](../Geb/Prototypes/Computability/Oitavem/Machine/Recursion.lean)
+  proves an indexed loop with a binary countdown and reusable buffers.
+  It also supplies `concatRecGenerator_emitsIn`, which streams indexed
+  step digits before the base result without storing the accumulated output.
+  `emitPrefix_emitsIn` streams a prefix selected by a binary counter,
+  permitting polynomially long output without retaining that prefix.
+  [Recursive length over generated input](../Geb/Prototypes/Computability/Oitavem/Machine/RecursiveLength.lean)
+  instantiates that loop with `prefixLoop` for `lengthByRec` after `squareWord`.
+  The concrete eight-tape machine queries the generated word's digits and
+  has simultaneous polynomial time and logarithmic space.
+  A compiler substituting readers through every constructor remains
+  necessary for general machine soundness.
   `Machine.computes_polytime_logspace`
   derives a simultaneous polynomial time bound for any such halting
   logarithmic-space transducer, using CSLib's configuration count. Machine

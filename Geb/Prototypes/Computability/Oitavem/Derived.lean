@@ -77,12 +77,22 @@ theorem eval_boundedRec_cons {n : ℕ} (g : Expr n 0) (h : Bool → Expr (n + 2)
 
 end Expr
 
+/-- The recursive length step increments the safe value, capped by the prefix length. -/
+def lengthByRecStep : Expr 1 1 :=
+  Expr.comp (safe := true) (Expr.logTransition (Expr.initial .numericSucc))
+    ![Expr.initial (.proj 1 0), Expr.initial (.zero 1)]
+
+/-- The length step uses the smaller of the prefix length and the previous value. -/
+theorem eval_lengthByRecStep (w v : List Bool) :
+    lengthByRecStep.eval ![w] ![v] = unrank (min w.length (rank v) + 1) := by
+  rw [lengthByRecStep, Expr.eval_comp, Expr.eval_logTransition]
+  change numericSucc (unrank (0 + min w.length (rank v))) = _
+  simp [numericSucc]
+
 /-- Word length, using only zero, projection, numerical successor, composition,
 safe recursion, and log-transition. -/
 def lengthByRec : Expr 1 0 :=
-  Expr.safeRec (Expr.initial (.zero 0)) fun _ ↦
-    Expr.comp (safe := true) (Expr.logTransition (Expr.initial .numericSucc))
-      ![Expr.initial (.proj 1 0), Expr.initial (.zero 1)]
+  Expr.safeRec (Expr.initial (.zero 0)) fun _ ↦ lengthByRecStep
 
 /-- The recursive length example agrees with the length primitive on all words. -/
 theorem eval_lengthByRec (w : List Bool) :
@@ -91,7 +101,8 @@ theorem eval_lengthByRec (w : List Bool) :
   · rfl
   · intro b v ih
     change lengthByRec.eval (Fin.cons (b :: v) Fin.elim0) Fin.elim0 = _ at ⊢
-    rw [lengthByRec, Expr.eval_safeRec_cons, Expr.eval_comp, Expr.eval_logTransition]
+    rw [lengthByRec, Expr.eval_safeRec_cons, lengthByRecStep,
+      Expr.eval_comp, Expr.eval_logTransition]
     change numericSucc (unrank (0 + min v.length
       (rank (lengthByRec.eval (Fin.cons v Fin.elim0) Fin.elim0)))) = unrank (v.length + 1)
     have ih' : lengthByRec.eval (Fin.cons v Fin.elim0) Fin.elim0 = unrank v.length := ih

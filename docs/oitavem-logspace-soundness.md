@@ -10,6 +10,12 @@ transducers for `squareWord` and its self-composition are proved
 using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
 Tape allocation preserves these contracts, and a generic digit-reader
 loop streams virtual words with a bound throughout every reader call.
+Constructor rules now cover streaming successors and predecessors,
+last-digit extraction, numerical length, string product, iterated
+predecessor, and the conditional. A bounded
+capture subroutine and an indexed machine loop realize retained
+recursion prefixes. The safe-recursion checkpoint for `lengthByRec`
+over `squareWord` has a machine proof on eight logarithmic work tapes.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -140,7 +146,9 @@ Completeness is outside this construction's scope.
   `ReadsAt.onTapes` places the reader in a larger caller layout.
   `emitReader_emitsIn` streams the word through successive queries,
   retaining its index and digit, and returns its length in the query
-  register. Its precondition and represented word must be independent
+  register. `generatedAt_all_queries` also verifies arbitrary canonical
+  queries beyond a generated word's end, returning a missing digit.
+  Its precondition and represented word must be independent
   of the query and result registers. For reader time `T`, word-length
   bound `N`, and head bound `B`, it uses at most
   `4 * B + 9 + T + N * (T + 2 * B + 6) + 1` steps at head bound `B`.
@@ -198,6 +206,57 @@ Completeness is outside this construction's scope.
   generated-reader calls, the quartic-output composition, and streaming
   through generated digit queries. Allocated-reader checks move scratch
   past a protected caller tape whose head starts away from zero.
+- [Streaming constructor rules][constructors] prove numerical length,
+  string successor, string product, and the conditional for generated arguments.
+  `productGenerator_emitsIn` counts the second argument and regenerates
+  the first argument once per counted digit, using one additional tape.
+  [Finite-state output transformations][output-maps] preserve the
+  original work-head bound and add one final flushing step.
+  [Initial-function transducers][initial-machines] apply this rule to
+  numerical successor and saturated predecessor, string predecessor,
+  and last-digit extraction, including the empty-word cases.
+- [Index arithmetic][index-arithmetic] provides counter addition and
+  saturating subtraction. [Segment readers][segments] translate a
+  query into an index of a source word, preserving the saved offset
+  and clearing the addition scratch. The offset is at most the source
+  length; queries include the first position after the segment.
+  `minCounter_transformsIn` clamps a binary counter to a saved bound.
+  `iterPredGenerator_emitsIn` uses this clamp to handle arbitrary
+  iteration counts, including counts longer than the source word,
+  and streams the suffix with cleared query ports.
+- [Digitwise subtraction][subtraction] proves
+  `shortlexSub_eq_numericSub` for the existing shortlex encoding.
+  The scan carries a signed value between minus one and one through
+  the paired sentinel digits, then removes trailing zeroes and the
+  sentinel. This constructive arithmetic proof was developed with
+  Aristotle and adapted and verified locally. Its machine realization
+  remains open: the lists in this specification are not work tapes.
+  [The single-digit machine][subtraction-machine] has a checked one-step
+  contract for the carry and result cells, with all other tapes preserved.
+- [Output-prefix capture][capture] retains a mask-bounded prefix while
+  continuing the generator to its own halt. The low-level simulation
+  `captureOutput_runsTo` was developed with Aristotle and verified
+  under the repository's toolchain. `generatedPrefix_transformsIn`
+  initializes and clears capture scratch, parks every head, and copies
+  the captured prefix into a saved register only after the generator
+  returns. The generator can read the previous saved value throughout
+  its run.
+- [Retained-prefix machine loops][machine-recursion] proves
+  `retainedLoop_transformsIn`: a binary countdown iterates a generator,
+  replacing the saved word by each captured prefix. Its indexed
+  invariant records all registers, including mask and scratch.
+  `lengthRecLoop_transformsIn` instantiates it with `prefixLoop` for
+  `lengthByRec`, using backwards digit queries into the recursion input.
+- [Recursive length over generated input][recursive-length] implements
+  `squareRecLengthMachine`. The machine counts the generated square to
+  initialize its countdown and mask, then computes the recursive value
+  from the empty base using digit queries and saved-prefix replacement.
+  `squareRecLengthMachine_computes` proves simultaneous polynomial time
+  and logarithmic space on this eight-tape machine. All work heads stay
+  in `[-1, 2 * n.size + 1]` and the work tapes are cleared on return.
+  Execution checks cover the recursive implementation, streaming carry
+  and borrow, segment boundaries, zero-length masks, and dirty capture
+  scratch.
 
 The recursion results bound retained words and indices. They do not
 bound the work space used to compute those words or indices. Closing
@@ -290,12 +349,18 @@ handle carries, saturation at zero, and changes of shortlex length.
 The length primitive only encodes a polynomially bounded word length,
 so its numerical result can be held in logarithmic space.
 
-`repeatGenerator_emitsIn` supplies the streaming repetition part of
-string product when the repeated-word generator preserves its valuation
-and a length reader initializes a separate repetition counter.
-`squareSquareFromHome_emitsIn` verifies this combination on a generated
-normal word of quadratic length. General length and digit routines for
-the product constructor still require the argument-reader interface.
+`productGenerator_emitsIn` supplies string product for arbitrary
+restoring argument generators. `lengthGenerator_emitsIn` supplies
+numerical length. Generated length and digit wrappers apply to both
+outputs. `numericSuccGenerator_emitsIn`, `numericPredGenerator_emitsIn`,
+`predGenerator_emitsIn`, and `lastGenerator_emitsIn` implement their
+unary constructors through finite-state output transformations.
+`iterPredGenerator_emitsIn` combines argument-length readers with a
+saturating segment generator. `condGenerator_emitsIn` counts the selector
+and invokes the appropriate branch. Numerical subtraction on long words
+still requires a machine proof. `shortlexSub_eq_numericSub` supplies its
+digitwise arithmetic specification; index-counter subtraction alone
+does not implement it.
 
 ### Normal composition
 
@@ -339,12 +404,20 @@ or digit query for that result can rerun the loop and then query that
 final step. The logarithmic cutoff limits the saved recursive value;
 the result itself may be polynomially long.
 
+`generatedPrefix_transformsIn` supplies bounded capture and replacement,
+and `retainedLoop_transformsIn` supplies the indexed loop with reusable
+tapes. `lengthRecLoop_transformsIn` uses `prefixLoop` as its invariant.
+The eight-tape `squareRecLengthMachine` verifies this recursion over
+generated input with a live saved value and digit queries.
+
 `Expr.recursionCutoff h N` is the maximum of the two branch cutoffs,
 each computed as the binary size of `lengthPoly` for the branch's
 `truncationBound`. `Expr.eval_safeRec_cons_prefixCutoff` verifies the
 final step using this cutoff. The cutoff remains logarithmic when
-`N` is polynomial in physical input length. Implementing its computation
-and the retained-prefix loop on work tapes remains part of compilation.
+`N` is polynomial in physical input length. Computing this cutoff and
+instantiating the machine loop with arbitrary compiled step expressions
+remain part of compilation. The recursive-length example uses the
+binary digits of the generated length plus one as its sufficient mask.
 No boundedness proof is added to the expression syntax.
 
 ### Concatenation recursion
@@ -356,6 +429,16 @@ expressions receive no previous recursive result. The machine can
 therefore answer digit queries independently using length counters and
 prefix readers, and emit the complete answer by iterating over output
 positions in the representation's order.
+
+`concatRec_eq_concatDigits` gives the output order explicitly: indexed
+step digits first, followed by the base word.
+`concatRecGenerator_emitsIn` implements this order with a countdown and
+a forward index, given contracts for the indexed step and base.
+`EmitsIn.whileReg` verifies the growing output invariant.
+`emitPrefix_emitsIn` uses the same indexed loop to emit a specified
+number of digits through a reader, storing only binary counters even
+when the requested prefix is polynomially long. The compiler
+still has to instantiate each step with its digit and suffix readers.
 
 ### Log-transition
 
@@ -370,6 +453,13 @@ The offset `z` can still be a long normal word. Construct a reader for
 its shortlex sum with the capped contribution using digitwise
 arithmetic, then invoke the child through that reader. Materializing
 `rank z` would violate the proposed space bound.
+
+[Bounded-carry addition][addition] now supplies the digit algorithm and
+`shortlexAdd_eq_unrank_add`. `carryAfter_take_le_max` bounds every carry
+by the initial carry or one, and `carryBits_drop` verifies resumption
+from that carry alone. This arithmetic proof was developed with
+Aristotle and adapted to the existing word model. The counter operations
+and reader substitution for its machine implementation remain open.
 
 ## Halting, space, and time
 
@@ -412,7 +502,10 @@ readers for generated words, and `squareLength_runsTo` and
 `squareDigit_runsTo` verify those constructions on quadratic output.
 Numerical length composed with `squareWord` has a full machine
 bound theorem. That proof uses `eval_lengthByRec` to compute the length
-directly; it does not implement the retained-prefix recursion loop.
+directly. The separate `squareRecLengthMachine_computes` theorem now
+verifies the retained-prefix recursion implementation: initialization
+counts the generated word for its loop bound, and the recursive value
+is built from the empty base by queries and captured successor calls.
 `EmitsIn` now supplies the emitter contract from which reusable generated
 readers inherit their setup, scratch-reset, and old-register preservation
 guarantees. The wrappers allocate their extra tapes before the generator's
@@ -432,14 +525,18 @@ The next substitution work is to provide expression constructors with
 an environment of length and digit programs, preserving the represented
 words through nested calls. The allocation and streaming rules supply
 the tape separation and output loop, but do not yet implement normal
-composition for arbitrary expressions. Segment readers, constructor
-closure, and the saved-prefix recursion loop also remain to be built.
+composition for arbitrary expressions. Segment readers, several
+constructor rules, and the saved-prefix loop are now proved. Remaining
+constructor work includes the subtraction machine, reader substitution
+into the recursion steps, and general log-transition.
+General safe recursion still needs compiled base and step readers,
+cutoff computation, and full final-step emission.
 
 The first composition checkpoint must extend these allocation and
 streaming proofs to constructor-specific substitutions. The
-safe-recursion checkpoint then tests whether the contract
-remains adequate with a live saved prefix. These checkpoints require
-machine proofs; executable semantic examples alone do not meet them.
+safe-recursion checkpoint has a machine proof with a live saved prefix.
+  Its step expression is fixed to the recursive length example; the
+syntax-wide substitution and resource induction remain open.
 
 The effort estimate is several extended formalization sessions,
 potentially several days, rather than a few-hour completion commitment.
@@ -484,6 +581,17 @@ that additional characterization or a direct machine encoding.
 [allocation]: ../Geb/Prototypes/Computability/Oitavem/Machine/Allocate.lean
 [streaming-readers]: ../Geb/Prototypes/Computability/Oitavem/Machine/Reader.lean
 [repeat]: ../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean
+[constructors]: ../Geb/Prototypes/Computability/Oitavem/Machine/Compose.lean
+[output-maps]: ../Geb/Prototypes/Computability/Oitavem/Machine/MapOutput.lean
+[initial-machines]: ../Geb/Prototypes/Computability/Oitavem/Machine/Initial.lean
+[index-arithmetic]: ../Geb/Prototypes/Computability/Oitavem/Machine/Counter.lean
+[segments]: ../Geb/Prototypes/Computability/Oitavem/Machine/Segment.lean
+[subtraction]: ../Geb/Prototypes/Computability/Oitavem/Subtraction.lean
+[subtraction-machine]: ../Geb/Prototypes/Computability/Oitavem/Machine/Subtraction.lean
+[addition]: ../Geb/Prototypes/Computability/Oitavem/Addition.lean
+[capture]: ../Geb/Prototypes/Computability/Oitavem/Machine/Capture.lean
+[machine-recursion]: ../Geb/Prototypes/Computability/Oitavem/Machine/Recursion.lean
+[recursive-length]: ../Geb/Prototypes/Computability/Oitavem/Machine/RecursiveLength.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean
 [word]: ../Geb/Prototypes/Computability/Oitavem/Word.lean

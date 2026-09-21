@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.Oitavem.Truncation
 public import Geb.Prototypes.Computability.Oitavem.Length
+public import Geb.Prototypes.Computability.Oitavem.Derived
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -64,6 +65,41 @@ namespace Geb.Oitavem
 
 open BellantoniCook (Sem)
 open Geb.SizeBounded (IsPolyBounded)
+
+/-- The step digits of concatenation recursion, in their final output order. -/
+def concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0)) :
+    List Bool → (Fin n → List Bool) → List Bool
+  | [], _ => []
+  | b :: w, x => (h b (Fin.cons w x) Fin.elim0).headD false :: concatDigits h w x
+
+/-- Concatenation recursion contributes exactly one step digit per input digit. -/
+theorem length_concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0))
+    (w : List Bool) (x : Fin n → List Bool) : (concatDigits h w x).length = w.length := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => exact congrArg Nat.succ ih
+
+/-- Each step digit uses the suffix following its corresponding input digit. -/
+theorem getElem?_concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0))
+    (w : List Bool) (x : Fin n → List Bool) (j : ℕ) :
+    (concatDigits h w x)[j]? =
+      (w[j]?).map (fun b ↦ (h b (Fin.cons (w.drop (j + 1)) x) Fin.elim0).headD false) := by
+  induction w generalizing j with
+  | nil => rfl
+  | cons b w ih =>
+    cases j with
+    | zero => rfl
+    | succ j => exact ih j
+
+/-- Concatenation recursion streams its indexed step digits before its base output. -/
+theorem concatRec_eq_concatDigits {n : ℕ} (g : Sem (n, 0)) (h : Bool → Sem (n + 1, 0))
+    (w : List Bool) (x : Fin n → List Bool) :
+    concatRec g h w x Fin.elim0 = concatDigits h w x ++ g x Fin.elim0 := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    simpa only [concatRec, concatDigits, List.cons_append] using congrArg
+        ((h b (Fin.cons w x) Fin.elim0).headD false :: ·) ih
 
 /-- Decode an index with saturation after each digit, never retaining a value above the cap. -/
 def cappedRank (B : ℕ) : List Bool → ℕ :=
@@ -273,6 +309,24 @@ theorem prefixLoop_length_le {n : ℕ} (k : ℕ) (g : Sem (n, 0))
     (h : Bool → Sem (n + 1, 1)) (w : List Bool) (x : Fin n → List Bool) (t : ℕ) :
     (prefixLoop k g h w x t).length ≤ k := by
   cases t <;> exact List.length_take_le _ _
+
+/-- The length example's retained value after processing {lit}`t` digits is {lit}`unrank t`.
+A cutoff large enough for the final numerical length also suffices at every earlier step. -/
+theorem prefixLoop_lengthByRec (K : ℕ) (w : List Bool)
+    (hK : (unrank w.length).length ≤ K) (t : ℕ) (ht : t ≤ w.length) :
+    prefixLoop K (Expr.initial (.zero 0)).eval (fun _ ↦ lengthByRecStep.eval)
+      w Fin.elim0 t = unrank t := by
+  induction t with
+  | zero => simp [prefixLoop, Expr.eval_initial, Initial.eval, unrank_zero]
+  | succ j ih =>
+    change (lengthByRecStep.eval (Fin.cons (w.drop (w.length - j)) Fin.elim0)
+      ![prefixLoop K (Expr.initial (.zero 0)).eval (fun _ ↦ lengthByRecStep.eval)
+        w Fin.elim0 j]).take K = unrank (j + 1)
+    rw [ih (by omega)]
+    change (lengthByRecStep.eval ![w.drop (w.length - j)] ![unrank j]).take K = _
+    rw [eval_lengthByRecStep, rank_unrank, List.length_drop,
+      Nat.sub_sub_self (by omega : j ≤ w.length), Nat.min_self]
+    exact List.take_of_length_le ((length_unrank_mono ht).trans hK)
 
 /-- If steps cannot distinguish a value from its k-digit prefix, the loop retains
 exactly the prefix of the recursive value for the digits processed so far. -/

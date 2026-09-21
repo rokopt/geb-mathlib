@@ -158,6 +158,29 @@ theorem _root_.Geb.SizeBounded.Machine.Emits.onTapes
     (σ : Fin m → List Bool) (τ : Fin k → List Bool) (i : Fin l) :
     onTapesVal e σ τ (e.symm (.inr i)) = σ (e.symm (.inr i)) := by simp [onTapesVal]
 
+/-- Reinstalling the unchanged callee registers preserves the whole caller valuation. -/
+@[simp] theorem onTapesVal_self {k m l : ℕ} (e : Fin m ≃ Fin k ⊕ Fin l)
+    (σ : Fin m → List Bool) :
+    onTapesVal e σ (fun i ↦ σ (e.symm (.inl i))) = σ := by
+  funext i
+  dsimp only [onTapesVal]
+  cases hi : e i <;> dsimp only [Sum.elim] <;> rw [← hi, e.symm_apply_apply]
+
+/-- Reserve the first tape for a caller, placing the callee on successor-indexed tapes. -/
+@[expose] def reserveTape (k : ℕ) : Fin (k + 1) ≃ Fin k ⊕ Fin 1 where
+  toFun := Fin.cases (.inr 0) .inl
+  invFun := Sum.elim Fin.succ (fun _ ↦ 0)
+  left_inv := Fin.cases rfl (fun _ ↦ rfl)
+  right_inv := Sum.rec (fun _ ↦ rfl) (Fin.cases rfl (fun i ↦ i.elim0))
+
+/-- The callee's tape follows the reserved tape. -/
+@[simp] theorem reserveTape_symm_inl (k : ℕ) (i : Fin k) :
+    (reserveTape k).symm (.inl i) = i.succ := rfl
+
+/-- The protected tape is the first tape. -/
+@[simp] theorem reserveTape_symm_inr (k : ℕ) (i : Fin 1) :
+    (reserveTape k).symm (.inr i) = 0 := rfl
+
 /-- Emitter contracts survive tape allocation with the same time and head bounds. -/
 theorem EmitsIn.onTapes {k m l : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     {Pre : List Bool → (Fin k → List Bool) → Prop}
@@ -221,6 +244,37 @@ theorem EmitsIn.toTransformsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   intro input cfg σ hq hpark hpos hσ hpre hB
   obtain ⟨hFB, t, ht, hr⟩ := h input cfg σ hq hpark hpos hσ hpre hB
   exact ⟨hFB, t, ht, by simpa only [List.append_nil, after] using hr.toRunsTo⟩
+
+/-- Sequential emitters concatenate their words and compose their valuation effects.
+The second word is evaluated in the valuation returned by the first emitter. -/
+theorem EmitsIn.seqEmitsIn {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
+    {Q : MultiTapeTM k Bool S₂} {Pre₁ Pre₂ : List Bool → (Fin k → List Bool) → Prop}
+    {F G : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W V : List Bool → (Fin k → List Bool) → List Bool} {T₁ T₂ B : ℕ → ℕ}
+    (hP : EmitsIn P Pre₁ F W T₁ B) (hQ : EmitsIn Q Pre₂ G V T₂ B) :
+    EmitsIn (seq P Q) (fun input σ ↦ Pre₁ input σ ∧ Pre₂ input (F input σ))
+      (fun input σ ↦ G input (F input σ))
+      (fun input σ ↦ W input σ ++ V input (F input σ)) (fun n ↦ T₁ n + T₂ n) B := by
+  intro input cfg σ hq hpark hpos hσ hpre hB
+  rw [liftL_start P Q cfg hq]
+  obtain ⟨hFB, t₁, ht₁, r₁⟩ := hP input { cfg with state := some P.q₀ }
+    σ rfl hpark hpos hσ hpre.1 hB
+  obtain ⟨hGB, t₂, ht₂, r₂⟩ := hQ input
+    { after cfg (F input σ) with state := some Q.q₀, output := cfg.output ++ W input σ }
+    (F input σ) rfl hpark hpos (fun _ ↦ rfl) hpre.2 hFB
+  refine ⟨hGB, t₁ + t₂, Nat.add_le_add ht₁ ht₂, (r₁.seqEmits r₂).congr_target ?_⟩
+  apply Cfg.ext <;> try rfl
+  exact List.append_assoc ..
+
+/-- A silent cleanup after emission preserves the emitted word. -/
+theorem EmitsIn.seqTransformsIn {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
+    {Q : MultiTapeTM k Bool S₂} {Pre₁ Pre₂ : List Bool → (Fin k → List Bool) → Prop}
+    {F G : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T₁ T₂ B : ℕ → ℕ}
+    (hP : EmitsIn P Pre₁ F W T₁ B) (hQ : TransformsIn Q Pre₂ G T₂ B) :
+    EmitsIn (seq P Q) (fun input σ ↦ Pre₁ input σ ∧ Pre₂ input (F input σ))
+      (fun input σ ↦ G input (F input σ)) W (fun n ↦ T₁ n + T₂ n) B := by
+  simpa only [List.append_nil] using hP.seqEmitsIn hQ.toEmitsIn
 
 /-- Silent reader contracts survive allocation without changing time or head bounds. -/
 theorem _root_.Geb.SizeBounded.Logspace.Machine.TransformsIn.onTapes

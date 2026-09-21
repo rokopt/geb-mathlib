@@ -9,6 +9,14 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat -- shake: keep
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Repeat -- shake: keep
 public import Geb.Prototypes.Computability.Oitavem.Machine.Read -- shake: keep
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Read -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.RecursiveLength -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.RecursiveLength -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Compose -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Compose -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Segment -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Segment -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction -- shake: keep
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 public meta import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 
@@ -286,6 +294,193 @@ The second call must clear the result left by the first. -/
       some ((Expr.comp (safe := false) squareWord ![squareWord]).eval ![w] Fin.elim0)
 
 #guard (List.range 65).all checkEmitNumber
+
+/-- Check a stored-word generator, including protected data and the existing output prefix. -/
+@[expose] def checkStoredGenerator {S : Type} (tm : MultiTapeTM 2 Bool S)
+    (w expected : List Bool) : Bool := Id.run do
+  let start : ExecCfg 2 S [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := #v[register w, register [false, true, false]]
+      outputRev := [true, false] }
+  let finish := (execStep tm)^[2 * max 3 w.length + 6] start
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ expected &&
+    (List.finRange 2).all fun i ↦ (List.range (w.length + 5)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == start.tapes[i][(j : ℤ) - 1]?
+
+/-- Replace a saved word by a captured successor prefix, starting with dirty capture scratch. -/
+@[expose] def checkCapturedSuccessor (w : List Bool) (K : ℕ) : Bool := Id.run do
+  let tm := generatedPrefix (numericSuccGenerator (emitStored (0 : Fin 2))) 0
+  let mask := (List.range K).map (fun n ↦ n % 2 == 0)
+  let words := #v[mask, [true, false, true], w, [false, true]]
+  let start : ExecCfg 4 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let B := max 3 (max K w.length)
+  let finish := (execStep tm)^[17 * B + 39] start
+  let expected := words.set 1 [] |>.set 2 ((numericSucc w).take K)
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
+    (List.finRange 4).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+/-- Execute the saved-prefix recursion, checking its result and complete scratch cleanup. -/
+@[expose] def checkRecursiveLength (w : List Bool) : Bool := Id.run do
+  let start := { ExecCfg.init squareRecLengthMachine w with outputRev := [true, false] }
+  let finish := (execStep squareRecLengthMachine)^[squareRecLengthTime w.length + 1] start
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse ==
+      [false, true] ++ (Expr.comp (safe := false) lengthByRec ![squareWord]).eval ![w] Fin.elim0 &&
+    finish.tapes.toList.all (fun tape ↦ tape.isEmpty)
+
+/-- Query a suffix through a translated index, retaining the offset and caller registers. -/
+@[expose] def checkSegment (w : List Bool) (d q : ℕ) : Bool := Id.run do
+  let source : Fin 5 → Fin 9 := ![5, 2, 6, 7, 4]
+  let ports : Fin 5 → Fin 9 := ![0, 1, 2, 3, 4]
+  let tm := dropReader (readStored source) ports
+  let words := #v[counterWord d, counterWord q, [], [], [true, true], w, [], [], [false, true]]
+  let start : ExecCfg 9 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let B := max 3 w.length
+  let T := (5 * B + 12) + (5 * B + 12) + (w.length * (4 * B + 11) + 1) +
+    (readStoredTime B B + (4 * B + 9))
+  let finish := (execStep tm)^[T] start
+  let expected := words.set 4 ((w.drop d)[q]?).toList
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
+    (List.finRange 9).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+/-- Stream a suffix with an arbitrary offset, including offsets beyond the source. -/
+@[expose] def checkDrop (w : List Bool) (d : ℕ) : Bool := Id.run do
+  let source : Fin 5 → Fin 10 := ![5, 2, 6, 7, 4]
+  let ports : Fin 5 → Fin 10 := ![0, 1, 2, 3, 4]
+  let tm := dropGenerator (readStored source) ports 8
+  let words := #v[counterWord d, [true], [], [false, true], [true, true], w, [], [],
+    counterWord w.length, [false, true]]
+  let start : ExecCfg 10 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let B := max 3 (max w.length d.size)
+  let T := dropGeneratorTime (fun _ ↦ readStoredTime B B) (fun _ ↦ B)
+    (fun _ ↦ max d w.length) 0
+  let finish := (execStep tm)^[T] start
+  let expected := words.set 0 [] |>.set 1 [] |>.set 3 [] |>.set 4 []
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ w.drop d &&
+    (List.finRange 10).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+/-- Check a constructor with a dirty extra counter and three preserved argument registers. -/
+@[expose] def checkConstructor {S : Type} (tm : MultiTapeTM 4 Bool S)
+    (w expected : List Bool) : Bool := Id.run do
+  let words := #v[[true, false], w, [false, true], [true]]
+  let start : ExecCfg 4 S [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let finish := (execStep tm)^[100 * (w.length + 3)] start
+  let finalWords := words.set 0 []
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ expected &&
+    (List.finRange 4).all fun i ↦ (List.range (w.length + 5)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register finalWords[i])[(j : ℤ) - 1]?
+
+/-- Emit a counted prefix through repeated queries, preserving the source and caller tapes. -/
+@[expose] def checkEmitPrefix (w : List Bool) (K : ℕ) : Bool := Id.run do
+  let source : Fin 5 → Fin 7 := ![3, 1, 4, 5, 2]
+  let tm := emitPrefix (readStored source) 0 1 2
+  let words := #v[counterWord K, [], [], w, [], [], [true, false]]
+  let start : ExecCfg 7 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let B := max 3 w.length
+  let finish := (execStep tm)^[K * (readStoredTime B B + 8 * B + 21) + 1 + (4 * B + 9)] start
+  let expected := words.set 0 []
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ w.take K &&
+    (List.finRange 7).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+#guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
+  let w := (List.range n).map (Nat.testBit x)
+  (List.range (n + 3)).all (checkDrop w) && (List.range (n + 1)).all (checkEmitPrefix w) &&
+    checkConstructor (lengthGenerator (emitStored 0)) w (unrank w.length) &&
+    checkConstructor (productGenerator (emitStored 1) (emitStored 0)) w
+      (List.replicate w.length [false, true]).flatten &&
+    checkConstructor (condGenerator (emitStored 0)
+      (fun b ↦ if b then emitStored 1 else emitStored 2)) w
+      (if w.isEmpty then [false, true] else [true])
+
+#guard (List.range 6).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
+  let w := (List.range n).map (Nat.testBit x)
+  checkStoredGenerator (numericSuccGenerator (emitStored 0)) w (numericSucc w) &&
+    checkStoredGenerator (numericPredGenerator (emitStored 0)) w (numericPred w) &&
+    checkStoredGenerator (predGenerator (emitStored 0)) w w.tail &&
+    checkStoredGenerator (lastGenerator (emitStored 0)) w [w.headD false] &&
+    (List.range 7).all (checkCapturedSuccessor w)
+
+#guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
+  let w := (List.range n).map (Nat.testBit x)
+  checkRecursiveLength w && (List.range (n + 1)).all fun d ↦
+    (List.range (n - d + 1)).all (checkSegment w d)
+
+#guard (List.range 3).all fun K ↦
+  let tm := captureOutput (emitSymbol (k := 0) (some false))
+  let start : ExecCfg 2 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      tapes := #v[register (List.replicate K true), ∅]
+      outputRev := [true, false] }
+  let finish := execStep tm start
+  finish.state.isNone && finish.outputRev == start.outputRev &&
+    finish.heads == #v[(min 1 K : ℤ), (min 1 K : ℤ)] &&
+    finish.tapes[1][(0 : ℤ)]? == (if K = 0 then none else some false)
+
+#guard ([false, true] : List Bool).all fun a ↦ ([false, true] : List Bool).all fun b ↦
+  ([none, some false, some true] : List (Option Bool)).all fun c ↦
+  ([[], [true]] : List (List Bool)).all fun old ↦
+    let tm := subBitStep (Fin.castAdd 1 : Fin 4 → Fin 5)
+    let words := #v[[a], [b], c.toList, old, [true, false]]
+    let start : ExecCfg 5 Unit [] :=
+      { ExecCfg.init tm [] with
+        inputPos := 0
+        tapes := words.map register
+        outputRev := [true, false] }
+    let finish := execStep tm start
+    let d := (a.toNat : ℤ) - b.toNat + carryValue c
+    let carry : Option Bool := if d / 2 < 0 then none else some (d / 2 == 1)
+    let expected := words.set 2 carry.toList |>.set 3 [d % 2 == 1]
+    finish.state.isNone && finish.inputPos.val == 0 &&
+      finish.heads == start.heads && finish.outputRev == start.outputRev &&
+      (List.finRange 5).all fun i ↦ (List.range 5).all fun j ↦
+        finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+#guard (List.range 6).all fun n ↦ ([false, true] : List Bool).all fun b ↦
+  let tm := concatRecGenerator (emitSymbol (some b)) (emitStored (2 : Fin 4)) 0 1
+  let words := #v[counterWord n, [], [false, true, false], [true, false]]
+  let start : ExecCfg 4 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let finish := (execStep tm)^[n * 24 + 45] start
+  let expected := words.set 0 []
+  finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse ==
+      [false, true] ++ List.replicate n b ++ [false, true, false] &&
+    (List.finRange 4).all fun i ↦ (List.range 6).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
 
 #guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
   let w := (List.range n).map (Nat.testBit x)

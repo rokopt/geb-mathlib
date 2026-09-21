@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.Oitavem.Word
+public import Geb.Prototypes.Computability.Oitavem.Subtraction
+public import Geb.Prototypes.Computability.Oitavem.Addition
 public import Geb.Prototypes.Computability.Oitavem.Basic
 public import Geb.Prototypes.Computability.Oitavem.Syntax
 public import Geb.Prototypes.Computability.Oitavem.Truncation
@@ -23,6 +25,15 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Generated
 public import Geb.Prototypes.Computability.Oitavem.Machine.Allocate
 public import Geb.Prototypes.Computability.Oitavem.Machine.Reader
 public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
+public import Geb.Prototypes.Computability.Oitavem.Machine.Compose
+public import Geb.Prototypes.Computability.Oitavem.Machine.Counter
+public import Geb.Prototypes.Computability.Oitavem.Machine.Segment
+public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction
+public import Geb.Prototypes.Computability.Oitavem.Machine.MapOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.Initial
+public import Geb.Prototypes.Computability.Oitavem.Machine.Capture
+public import Geb.Prototypes.Computability.Oitavem.Machine.Recursion
+public import Geb.Prototypes.Computability.Oitavem.Machine.RecursiveLength
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -59,7 +70,24 @@ complete machine bound for numerical length composed with the square expression.
 with two extra tapes, a runtime query countdown and a one-bit result.
 {name}`Geb.Oitavem.Machine.squareDigit_runsTo` verifies queries into the quadratic
 word, including the first out-of-range position, in cubic time and logarithmic space.
-General reader substitution and the retained-prefix recursion machine remain open.
+Finite-state output transformations implement string predecessor, last-digit extraction,
+and numerical successor and predecessor without additional work tapes. Generated length
+and product constructors use binary counters; segment readers implement iterated predecessor.
+Conditional generators select and run one branch after testing a generated word's length.
+{name}`Geb.Oitavem.shortlexSub_eq_numericSub` verifies a digitwise subtraction algorithm
+against the existing word encoding; its machine implementation remains open.
+{name}`Geb.Oitavem.shortlexAdd_eq_unrank_add` verifies bounded-carry addition for
+log-transition, without decoding the long normal word's rank.
+{name}`Geb.Oitavem.Machine.generatedPrefix_transformsIn` retains a bounded output
+prefix while preserving the old saved value throughout the generator call.
+{name}`Geb.Oitavem.Machine.retainedLoop_transformsIn` realizes an indexed saved-word
+invariant with two reusable extra tapes.
+{name}`Geb.Oitavem.Machine.squareRecLengthMachine_computes` verifies the saved-prefix
+implementation of {name}`Geb.Oitavem.lengthByRec` over the generated square, with
+simultaneous polynomial time and logarithmic space on eight work tapes.
+{name}`Geb.Oitavem.Machine.concatRecGenerator_emitsIn` streams concatenation-recursion
+step digits before its base result, from indexed child contracts.
+General reader substitution and constructor closure for every expression remain open.
 
 ## References
 

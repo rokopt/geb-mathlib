@@ -286,7 +286,8 @@ theorem computableInTimeAndSpace_squareWord :
   · rw [initCfg_runFrom_output]
     exact h.output
 
-private theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
+/-- Counting a quadratic output requires at most twice the input's binary size plus one. -/
+theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
   apply Geb.BitTree.Counter.size_le_of_lt_pow
   rw [show 2 * n.size + 1 = n.size + n.size + 1 by omega, Nat.pow_succ, Nat.pow_add]
   have hp := Nat.two_pow_pos n.size
