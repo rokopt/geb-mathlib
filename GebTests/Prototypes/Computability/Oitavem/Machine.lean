@@ -23,6 +23,8 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Reader -- sh
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Reader -- shake: keep
 public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Initial -- shake: keep
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Initial -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Recursion -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Recursion -- shake: keep
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 public meta import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 
@@ -172,6 +174,36 @@ public section
   checkGenerator S [] ![unrank a, unrank b] 100000 &&
     checkGenerator D [] ![unrank a, unrank b] 100000 &&
     checkGenerator C [] ![unrank a, unrank b] 100000
+
+#guard ([[], [false], [true, false, true]] : List (List Bool)).all fun w ↦
+  ([0, 1, 3] : List ℕ).all fun k ↦
+    let Pre := fun (_ : List Bool) (σ : Fin 2 → List Bool) ↦ (σ 0).length ≤ 4
+    let N := fun (_ : ℕ) ↦ 4
+    let hsize := fun n ↦ (show (N n + 1).size ≤ 3 * (n.size + 1) by
+      dsimp only [N]
+      exact (show (5 : ℕ).size ≤ 3 by decide).trans (by omega))
+    let G := Generator.stored 2 Pre 0
+    let QPre := QueryPre Pre N
+    let Q := (Generator.stored 3 QPre 0).dropCounter 2 N 3
+      (fun _ _ hp ↦ hp.2) (fun _ _ hp ↦ hp.1) hsize
+    let P : Generator 3 QPre (fun _ σ ↦ [(σ 0)[counterValue (σ 2)]?.getD false]) :=
+      Q.last.congr (by intro input σ _; simp only [List.headD_eq_head?_getD, List.head?_drop])
+    let I := G.indexed (F := fun _ σ j ↦ (σ 0)[j]?.getD false) P (fun _ σ ↦ σ 0) 3
+      (fun _ _ hp ↦ hp) hsize (fun _ _ _ ↦ rfl) (fun _ _ _ _ _ ↦ rfl)
+    let LP := (Generator.stored 3 (LengthPre Pre (fun _ σ ↦ σ 0)) 2).congr
+      (V := fun _ σ ↦ counterWord (σ 0).length) (fun _ _ hp ↦ hp.2)
+    let L := G.withLength (V := fun _ σ ↦ counterWord (σ 0).length) LP 3
+      (fun input σ hp ↦ (size_le_size (Nat.add_le_add_right hp 1)).trans (hsize input.length))
+    let RP := (Generator.stored 4 (RetainedPre Pre 1 N) 2).succ false
+    let Value := fun (_ : List Bool) (σ : Fin 2 → List Bool) ↦
+      Nat.rec ((σ 0).take (σ 1).length) (fun _ r ↦ (false :: r).take (σ 1).length)
+    let R := G.retained (H := fun _ _ v _ ↦ false :: v) G 1 RP Value
+      (fun input σ ↦ false :: Value input σ (σ 0).length) 3 (fun _ _ hp ↦ hp) hsize
+      (fun _ _ _ ↦ rfl) (by intro input σ _ j _; cases j <;> exact List.length_take_le ..)
+      (fun _ _ _ _ _ ↦ rfl) (fun _ _ _ ↦ rfl)
+    checkGenerator I [] ![w, List.replicate k true] 100000 &&
+      checkGenerator L [] ![w, List.replicate k true] 100000 &&
+      checkGenerator R [] ![w, List.replicate k true] 100000
 
 #guard (List.range 31).all fun n ↦
   let w := unrank n

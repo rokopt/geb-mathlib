@@ -1895,14 +1895,20 @@ checklist and in CI.
   instantiates that loop with `prefixLoop` for `lengthByRec` after `squareWord`.
   The concrete eight-tape machine queries the generated word's digits and
   has simultaneous polynomial time and logarithmic space.
-  A compiler substituting readers through every constructor remains
-  necessary for general machine soundness.
+  [Syntax-wide realization](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Recursion.lean)
+  now proves closure under every constructor. `Expr.realized` substitutes
+  polynomially bounded generated arguments over any protected environment.
+  Safe recursion retains only logarithmic prefixes and emits its full final
+  step; concatenation recursion streams indexed step digits before its base.
+  `Expr.computable_polytime_logspace` proves that every fixed unary expression
+  has a finite transducer with simultaneous polynomial time and logarithmic
+  work space, using identity input and output encodings.
   `Machine.computes_polytime_logspace`
   derives a simultaneous polynomial time bound for any such halting
   logarithmic-space transducer, using CSLib's configuration count. Machine
   completeness is also unformalized. The
-  [direct soundness design](oitavem-logspace-soundness.md) describes the
-  proposed transducer construction and its remaining proof obligations.
+  [direct soundness proof](oitavem-logspace-soundness.md) records the
+  verified transducer construction and its scope.
   The [presheaf counterexample](../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean)
   shows that finite direction types and a finite index category do not
   suffice for an Oitavem recognizer of hereditary naturality. Over the

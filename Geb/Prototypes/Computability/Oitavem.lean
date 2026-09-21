@@ -29,6 +29,10 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Compose
 public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer
 public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Reader
 public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Initial
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Compile
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Loop
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Retained
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Recursion
 public import Geb.Prototypes.Computability.Oitavem.Machine.Counter
 public import Geb.Prototypes.Computability.Oitavem.Machine.Segment
 public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction
@@ -100,7 +104,12 @@ private restoring calls, and uniform logarithmic workspace bounds.
 {name}`Geb.Oitavem.Initial.realize` combines independently compiled argument
 generators through every initial function. Generated length and digit readers
 return answers to caller registers and restore their shared private workspace.
-General reader substitution and constructor closure for every expression remain open.
+{name}`Geb.Oitavem.Expr.realized` closes this interface under every Logs constructor,
+including both recursion schemes and log-transition. Safe recursion captures a
+logarithmic prefix at each intermediate step and emits the full final output.
+{name}`Geb.Oitavem.Expr.computable_polytime_logspace` proves direct machine soundness:
+every fixed expression with one normal input and no safe inputs has a finite
+transducer with simultaneous polynomial time and logarithmic work space.
 
 ## References
 

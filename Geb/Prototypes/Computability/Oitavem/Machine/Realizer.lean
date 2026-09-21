@@ -596,6 +596,30 @@ The machine copies those values into its fixed private layout on every call. -/
           exact Fin.cases hp.2.zero.symm (fun _ ↦ rfl) i
     }⟩
 
+/-- Concatenate two generated outputs over the same protected environment. -/
+@[expose] def append (G : Generator m Pre W)
+    {V : List Bool → (Fin m → List Bool) → List Bool} (H : Generator m Pre V) :
+    Generator m Pre (fun input σ ↦ W input σ ++ V input σ) :=
+  ⟨m + (G.tapes + H.tapes),
+    StateOf (seq (G.left H.tapes).program (H.right G.tapes).program),
+    { finite := by
+        let := Fintype.ofFinite (G.left H.tapes).State
+        let := Fintype.ofFinite (H.right G.tapes).State
+        infer_instance
+      env := Fin.castAdd (G.tapes + H.tapes)
+      env_injective := Fin.castAdd_injective _ _
+      program := seq (G.left H.tapes).program (H.right G.tapes).program
+      space := G.space + H.space
+      correct B hB := by
+        obtain ⟨TG, hG⟩ := (G.left H.tapes).correct B (fun n ↦
+          (Nat.mul_le_mul_right _ (Nat.le_add_right _ _)).trans (hB n))
+        obtain ⟨TH, hH⟩ := (H.right G.tapes).correct B (fun n ↦
+          (Nat.mul_le_mul_right _ (Nat.le_add_left _ _)).trans (hB n))
+        simp only [left_env] at hG
+        simp only [right_env] at hH
+        exact ⟨_, (hG.seqEmitsIn hH).mono_pre (fun _ _ _ hp ↦ ⟨hp, hp⟩)⟩
+    }⟩
+
 /-- String product combines independently compiled arguments over one environment.
 Only the repetition count is retained between regenerated copies. -/
 @[expose] def product (G : Generator m Pre W)

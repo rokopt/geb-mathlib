@@ -1,21 +1,19 @@
 # Direct logspace soundness for Oitavem's Logs
 
-This document proposes a direct machine proof for the
-[Oitavem prototype][oitavem]. The syntax, truncation results, polynomial
-output-length bound, and logarithmic retained recursion state are
-formalized. The compiler and its machine soundness theorem remain to be
-constructed. Physical-input and stored-word readers, an emitting loop
-rule, reusable generated-output length and digit readers, and concrete
-transducers for `squareWord` and its self-composition are proved
-using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
-Tape allocation preserves these contracts, and a generic digit-reader
-loop streams virtual words with a bound throughout every reader call.
-Constructor rules now cover streaming successors and predecessors,
-last-digit extraction, numerical length, string product, iterated
-predecessor, numerical subtraction, and the conditional. A bounded
-capture subroutine and an indexed machine loop realize retained
-recursion prefixes. The safe-recursion checkpoint for `lengthByRec`
-over `squareWord` has a machine proof on eight logarithmic work tapes.
+Direct machine soundness for the [Oitavem prototype][oitavem] is proved
+by [`Expr.computable_polytime_logspace`][realizer-recursion]. For every
+fixed `e : Expr 1 0`, a finite deterministic CSLib transducer computes
+`fun w ↦ e.eval ![w] Fin.elim0` in simultaneous polynomial time and
+logarithmic work space, with identity input and output encodings.
+
+`Expr.realized` proves the stronger substitution property for every
+constructor over polynomially bounded generated arguments and a
+protected environment. Safe recursion retains logarithmic prefixes of
+intermediate results and emits the complete final step. Concatenation
+recursion streams indexed step digits before its base output.
+Log-transition uses its verified expression in initial functions and
+normal composition. The machine theorem has exactly the existing CSLib
+axiom dependencies `propext`, `Classical.choice`, and `Quot.sound`.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -31,7 +29,7 @@ over `squareWord` has a machine proof on eight logarithmic work tapes.
   - [Concatenation recursion](#concatenation-recursion)
   - [Log-transition](#log-transition)
 - [Halting, space, and time](#halting-space-and-time)
-- [Implementation checkpoints and effort](#implementation-checkpoints-and-effort)
+- [Verified checkpoints and scope](#verified-checkpoints-and-scope)
 - [References](#references)
 
 <!-- END doctoc -->
@@ -60,7 +58,7 @@ require only the syntactic arity conditions.
 
 [Oitavem2010], Definition 3.1, supplies the algebra. The chapter proves
 soundness through the Clote–Takeuti characterization in § 2 and
-Theorem 3.4. The proposed machine construction uses the truncation
+Theorem 3.4. This machine construction uses the truncation
 argument directly, without formalizing that intermediate algebra.
 Completeness is outside this construction's scope.
 
@@ -68,7 +66,7 @@ Completeness is outside this construction's scope.
 
 - [Syntax][syntax] defines the algebra as a slice polynomial W-type,
   its interpreter, and the recursor-based theorem `Expr.induction`.
-  The current syntax suffices for the proposed compiler.
+  Machine realization uses this syntax without additional certificates.
 - [Truncation][truncation] constructs `Expr.truncationBound` and proves
   `Expr.truncates_truncationBound`, formalizing the safe-input truncation
   argument of Lemma 3.3.
@@ -192,8 +190,8 @@ Completeness is outside this construction's scope.
   It counts the intermediate output and regenerates it for each repetition.
   `squareSquareFromHome_emitsIn` also proves initialization and cleanup
   from dirty work tapes. This is a composition through a generated
-  length reader and an emitter; arbitrary substitution into a compiled
-  expression's normal-input readers remains to be implemented.
+  length reader and an emitter. The general substitution theorem below
+  extends this construction to arbitrary expressions.
 - [Streaming generated digits][repeat] implements
   `squareViaReaderMachine`, which reconstructs `squareWord` entirely
   through generated digit queries on four work tapes.
@@ -280,10 +278,27 @@ Completeness is outside this construction's scope.
   generators. Execution checks cover nested arithmetic and product with
   a source register supplied to both argument slots, generated reader
   calls, and the assembled arithmetic, segment, and conditional machines.
+- [Compositional realization][realizer-compile] defines `Expr.Realized`:
+  any polynomially bounded family of virtual arguments over a protected
+  environment can be replaced by generators. `Expr.Realized.comp`
+  assembles finite families of child witnesses constructively and uses
+  their syntax-derived output bounds. `Expr.Realized.logTransition`
+  realizes the derived normal expression with the safe value supplied
+  as an extra normal argument.
+- [Indexed generator assembly][realizer-loop] proves `Generator.indexed`
+  and `Generator.withLength`. They initialize generated binary lengths,
+  run restoring continuations or indexed steps, and clear the counters.
+  [Retained generator assembly][realizer-retained] constructs logarithmic
+  capture masks and proves `Generator.retained`, including the base
+  capture, every intermediate step, full final output, and cleanup.
+- [Syntax-wide realization][realizer-recursion] proves closure under
+  both recursion schemes and `Expr.realized` by the syntax recursor.
+  `Expr.computable_polytime_logspace` combines this result with
+  `Expr.Realized.computes` and the finite-configuration time theorem.
+  Its machine and both complexity bounds refer to the same transducer.
 
-The recursion results bound retained words and indices. They do not
-bound the work space used to compute those words or indices. Closing
-that distinction requires the machine construction below.
+The machine construction below bounds both the retained data and the
+workspace used by every subcall that computes it.
 
 ## Reusing the machine libraries
 
@@ -401,12 +416,12 @@ count caller storage and the active callee together, rather than only
 the maximum size of their return values. The fixed compiled call
 structure must justify the constant bound on nested contexts.
 
-The `Generator` interface now provides fixed private layouts, uniform
+The `Generator` interface provides fixed private layouts, uniform
 workspace bounds, restoring calls, and environment substitution.
-`Generator.product` already combines independently compiled argument
-generators. Conditional, segment, and subtraction machines still need
-adapters into this common interface before the syntax-wide composition
-case can use all initial constructors.
+`Initial.realize` supplies every initial constructor in this interface.
+`Expr.Realized.comp` instantiates the head with its child generators,
+using `lengthPoly` to obtain a common polynomial bound for their outputs.
+Finite families of witnesses are assembled with `Nat.rec`.
 
 ### Safe recursion
 
@@ -445,11 +460,20 @@ generated input with a live saved value and digit queries.
 each computed as the binary size of `lengthPoly` for the branch's
 `truncationBound`. `Expr.eval_safeRec_cons_prefixCutoff` verifies the
 final step using this cutoff. The cutoff remains logarithmic when
-`N` is polynomial in physical input length. Computing this cutoff and
-instantiating the machine loop with arbitrary compiled step expressions
-remain part of compilation. The recursive-length example uses the
-binary digits of the generated length plus one as its sufficient mask.
-No boundedness proof is added to the expression syntax.
+`N` is polynomial in physical input length.
+
+`Generator.exists_prefixMask` supplies a sufficient executable mask.
+For a cutoff bounded by `A * (n.size + 1)`, fixed string products stream
+a word of length `(4 * (n + 1)) ^ A`. Its binary length is logarithmic
+and at least the required cutoff. `Generator.withLength` stores that
+binary length in a protected register for `Generator.retained`.
+
+`Expr.Realized.safeRec` realizes the base and step expressions, supplies
+generated suffixes and the saved safe value, and instantiates the
+retained machine with `prefixLoop`. It handles the empty input by
+emitting the base directly; otherwise the final step emits its full
+answer. All bounds belong to realization, so the expression syntax
+still requires only arity conditions.
 
 ### Concatenation recursion
 
@@ -468,8 +492,9 @@ a forward index, given contracts for the indexed step and base.
 `EmitsIn.whileReg` verifies the growing output invariant.
 `emitPrefix_emitsIn` uses the same indexed loop to emit a specified
 number of digits through a reader, storing only binary counters even
-when the requested prefix is polynomially long. The compiler
-still has to instantiate each step with its digit and suffix readers.
+when the requested prefix is polynomially long.
+`Expr.Realized.concatRec` instantiates these steps with generated
+suffixes and compiled child expressions, then appends the base output.
 
 ### Log-transition
 
@@ -493,9 +518,10 @@ proves the exact offset.
 `Expr.logTransitionNormal` supplies the safe input as an additional
 normal input and invokes the child with this derived offset.
 `Expr.eval_logTransitionNormal` proves equivalence to log-transition.
-Thus its machine implementation can reuse normal composition and the
-verified initial-function adapters. The retained safe prefix already has
-logarithmic length.
+`Expr.Realized.logTransition` realizes this expression through normal
+composition and the verified initial-function adapters. Its virtual
+safe argument has the polynomial bound required by `Expr.Realized`;
+the safe-recursion caller supplies a logarithmically bounded prefix.
 
 [Bounded-carry addition][addition] also supplies a direct digit algorithm
 and `shortlexAdd_eq_unrank_add`. It remains an alternative arithmetic
@@ -524,67 +550,35 @@ calculation for every recomputation. Existing subroutine time bounds
 remain usable to prove termination; the final polynomial bound follows
 from halting and the global space bound on the completed machine.
 `EmitsIn.computes_polytime_logspace` packages this final step for an
-emitter contract whose precondition holds on blank registers. The
-remaining task is to construct that contract for every expression.
+emitter contract whose precondition holds on blank registers.
+`Expr.realized` constructs that contract for every expression.
+`Expr.Realized.computes` supplies the physical input and empty safe
+environment, and `Expr.computable_polytime_logspace` states the resulting
+unary soundness theorem with identity encodings.
 
-## Implementation checkpoints and effort
+## Verified checkpoints and scope
 
-| Checkpoint | Required evidence |
+| Checkpoint | Verified evidence |
 | --- | --- |
-| Reader contract and base readers | Verified physical-input and stored-prefix readers, including repeated calls and caller preservation. |
-| General reader composition | A verified substitution rule for generated length and digit readers, exercised on polynomially long virtual inputs. |
-| Safe recursion over a generated word | A machine for `lengthByRec` composed with `squareWord`, using the saved-prefix loop and querying the generated recursion input. |
-| Remaining constructor closure | Compile recursion over the common generator environment; use normal composition for log-transition. |
-| Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
+| Reader contracts | Physical, stored, and generated length and digit readers preserve caller registers and restore scratch. |
+| General substitution | `Expr.Realized.comp` substitutes independently realized normal arguments with a common polynomial length bound. |
+| Initial functions and log-transition | `Initial.realize` covers every initial function; `Expr.Realized.logTransition` uses the derived normal expression. |
+| Concatenation recursion | `Expr.Realized.concatRec` streams indexed child digits, then the base result. |
+| Safe recursion | `Expr.Realized.safeRec` initializes a sufficient logarithmic mask, retains the semantic prefix invariant, and emits the full final result. |
+| Full soundness | `Expr.realized` covers all syntax; `Expr.computable_polytime_logspace` supplies exact output and simultaneous bounds for a finite unary transducer. |
 
-The first checkpoint has verified physical-input and stored-word length
-and digit routines. `countOutput` and `readOutput` supply length and digit
-readers for generated words, and `squareLength_runsTo` and
-`squareDigit_runsTo` verify those constructions on quadratic output.
-Numerical length composed with `squareWord` has a full machine
-bound theorem. That proof uses `eval_lengthByRec` to compute the length
-directly. The separate `squareRecLengthMachine_computes` theorem now
-verifies the retained-prefix recursion implementation: initialization
-counts the generated word for its loop bound, and the recursive value
-is built from the empty base by queries and captured successor calls.
-`EmitsIn` now supplies the emitter contract from which reusable generated
-readers inherit their setup, scratch-reset, and old-register preservation
-guarantees. The wrappers allocate their extra tapes before the generator's
-tapes. Repeated digit queries retain their source index when the generator
-preserves that tape. A generated length query followed by a repetition
-loop computes `squareWord` composed with itself, with a full machine
-bound theorem and fixed tape allocation.
+The constructor theorem permits arbitrary normal arities and the
+permitted safe arity, with polynomially bounded virtual arguments over
+any protected caller environment. The closed machine theorem uses one
+physical input word and no safe inputs. Extending that interface to an
+encoded tuple requires readers for the chosen encoding.
 
-Tape allocation and streaming from digit readers have machine proofs.
-`ReadsAt.onTapes` preserves a reader's contract in a larger caller
-layout. `emitReader_emitsIn` uses such a reader in an indexed loop;
-`squareViaReaderMachine_computes` verifies this construction on a
-quadratically long generated word. Scratch initialization precedes the
-loop, whose reader restores its scratch after each query.
-
-The common generator environment supports restoring private calls and
-all initial-function substitutions. Length and digit readers return
-their results to a common caller layout. Independent readers can reuse
-the same private tapes, because each call restores them blank.
-`Initial.realize` needs only the argument generators and a common
-polynomial output-length bound.
-
-The safe-recursion checkpoint has a machine proof with a live saved
-prefix. Its step expression is fixed to the recursive length example.
-General safe recursion still needs compiled base and step readers,
-cutoff computation, and full final-step emission. Concatenation recursion
-needs reader substitution into its indexed steps. Log-transition has
-been reduced to initial functions and normal composition. The
-syntax-wide substitution and resource induction remain open.
-
-The effort estimate is several extended formalization sessions,
-potentially several days, rather than a few-hour completion commitment.
-Reader composition and register preservation carry the most design
-uncertainty. Shortlex arithmetic and the recursion machine proofs are
-substantial additional work. Once their contracts compose, the final
-syntax recursor and application of the time theorem should be smaller
-parts of the development. These estimates describe the proposed proof
-route, not a measured implementation schedule.
+Generator constructors are executable. Machine witnesses for arbitrary
+expressions are assembled constructively inside the realization theorem.
+The expression is fixed before execution, and both complexity constants
+and the number of tapes may depend on it. The final axiom audit reports
+exactly `propext`, `Classical.choice`, and `Quot.sound`, inherited from
+the machine framework, with no proof holes or additional axioms.
 
 Completeness can be considered separately after soundness. The existing
 `boundedRec` construction formalizes the constructor used in the
@@ -648,3 +642,7 @@ that additional characterization or a direct machine encoding.
 [Oitavem2010]: https://doi.org/10.1515/9783110324907.355
 [savage]: https://cs.brown.edu/courses/csci2560/lectures/lect.03.pdf#page=5
 [clote]: https://kleidi.bc.edu/clotelab/pub/cloteHandbookRecTheory.pdf#page=28
+[realizer-compile]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Compile.lean
+[realizer-loop]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Loop.lean
+[realizer-retained]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Retained.lean
+[realizer-recursion]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Recursion.lean

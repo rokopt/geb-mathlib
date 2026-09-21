@@ -281,6 +281,38 @@ theorem atReader_readsAtAll {l : ℕ} (G : Generator m Pre W)
   refine ⟨⟨hp.1.1, Initialized.onTapes (atLayout l G.tapes) ?_⟩, hp.2⟩
   simpa only [atLayout_env] using hp.1.2
 
+/-- Stream one zero per unit of a protected binary counter, using a private copy.
+This represents an index as a virtual word for the iterated-predecessor constructor. -/
+@[expose] def unaryCounter (m : ℕ) (Pre : List Bool → (Fin m → List Bool) → Prop)
+    (R : Fin m) (N : ℕ → ℕ)
+    (hq : ∀ input σ, Pre input σ → ∃ q, σ R = counterWord q ∧ q ≤ N input.length) :
+    Generator m Pre (fun _ σ ↦ List.replicate (counterValue (σ R)) false) :=
+  ⟨m + 1, StateOf (seq (copy R.castSucc (Fin.last m))
+      (repeatGenerator (emitSymbol (some false)) (Fin.last m))),
+    { finite := inferInstance
+      env := Fin.castSucc
+      env_injective := Fin.castSucc_injective _
+      program := seq (copy R.castSucc (Fin.last m))
+        (repeatGenerator (emitSymbol (some false)) (Fin.last m))
+      space := 0
+      correct B _ := by
+        have hc := Transforms.toIn_of
+          (fun n ↦ copy_transforms R.castSucc (Fin.last m) (Fin.castSucc_ne_last R) (B n))
+          (fun _ _ ↦ True) (fun _ _ hb _ ↦ hb.update (hb R.castSucc))
+        have hr := repeatGenerator_emitsIn (emitSymbol_emitsIn (some false) B) (Fin.last m) N
+          (fun _ _ _ _ ↦ trivial) (fun _ _ _ ↦ rfl)
+        refine ⟨_, (((hc.seqEmitsIn hr).mono_pre ?_).congr ?_).congr_output ?_⟩
+        · intro input σ _ hp
+          obtain ⟨q, heq, hn⟩ := hq input (fun i ↦ σ i.castSucc) hp.1
+          exact ⟨trivial, trivial, q, (Function.update_self ..).trans heq, hn⟩
+        · intro input σ hp
+          rw [Function.update_idem, ← hp.2 (Fin.last m) (fun i ↦ (Fin.castSucc_ne_last i).symm)]
+          exact Function.update_eq_self ..
+        · intro input σ _
+          simp only [Function.update_self]
+          exact List.flatten_replicate_singleton
+    }⟩
+
 end Generator
 
 end
