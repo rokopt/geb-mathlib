@@ -42,6 +42,10 @@ open scoped FinEnum
 #guard Initial.eval .iterPred ![[true, true], [false, true, false]] == [false]
 #guard Initial.eval .numericSub ![unrank 3, unrank 9] == unrank 6
 #guard Initial.eval .numericSub ![unrank 9, unrank 3] == []
+#guard (List.range 64).all fun a ↦ (List.range 64).all fun b ↦
+  shortlexSub (unrank a) (unrank b) == unrank (b - a)
+#guard (List.range 64).all fun a ↦ (List.range 64).all fun b ↦
+  shortlexAdd (unrank a) b == unrank (a + b)
 #guard Initial.eval .last ![[]] == [false]
 #guard Initial.eval .cond ![[], [true], [false]] == [true]
 #guard Initial.eval .cond ![[false], [true], [false]] == [false]

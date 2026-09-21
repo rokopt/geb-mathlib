@@ -1840,14 +1840,75 @@ checklist and in CI.
   `Machine.computableInTimeAndSpace_squareWord_squareWord` combines a generated
   length query with that loop to compute the square expression composed with
   itself: quartic output, polynomial time, and logarithmic space on two tapes.
-  A compiler that substitutes these readers and implements the saved-prefix
-  recursion loop remains necessary for machine soundness.
+  [Tape allocation](../Geb/Prototypes/Computability/Oitavem/Machine/Allocate.lean)
+  places subroutines in larger caller layouts, preserving their time and
+  head bounds and leaving protected tapes unchanged at every step.
+  [Digit-reader streaming](../Geb/Prototypes/Computability/Oitavem/Machine/Reader.lean)
+  emits a virtual word by successive queries, preserving the environment
+  through every call. `Machine.squareViaReaderMachine_computes` applies
+  this construction to the generated square word on four work tapes.
+  `Machine.EmitsIn.computes_polytime_logspace` converts an emitter's
+  halting contract with logarithmic head bounds into simultaneous
+  polynomial time and logarithmic space, including input-head setup
+  and the space bound after halting.
+  [Generated constructors](../Geb/Prototypes/Computability/Oitavem/Machine/Compose.lean)
+  implement numerical length, string product, and conditional branches;
+  finite-state output maps
+  implement numerical successor and predecessor, string predecessor,
+  and last-digit extraction.
+  [Segment generators](../Geb/Prototypes/Computability/Oitavem/Machine/Segment.lean)
+  implement iterated predecessor, clamping offsets beyond the source length.
+  [Digitwise subtraction](../Geb/Prototypes/Computability/Oitavem/Subtraction.lean)
+  proves the signed-carry algorithm correct for the existing shortlex encoding.
+  [The subtraction machine](../Geb/Prototypes/Computability/Oitavem/Machine/Subtraction.lean)
+  combines virtual length and sentinel-digit readers in two scans, determines
+  the sign and significant length, emits the normalized result, and clears its
+  seven working ports. Its constructor contract preserves the readers' space
+  bound and every caller register outside those ports.
+  [Bounded-carry addition](../Geb/Prototypes/Computability/Oitavem/Addition.lean)
+  proves the digit algorithm for adding a natural number to an arbitrary
+  shortlex word, with every intermediate carry at most the initial carry or one.
+  `Expr.transitionOffset` instead derives the required offset from subtraction,
+  string product, and other initial functions; `Expr.eval_logTransitionNormal`
+  verifies log-transition with the safe value supplied as a normal argument.
+  [The generator environment](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer.lean)
+  provides fixed private layouts, restoring environment imports, and common
+  logarithmic workspace bounds. Its constructors combine independently compiled
+  arguments, including repeated references to a caller register.
+  [Generated reader adapters](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Reader.lean)
+  return length and digit answers to caller registers and clear their private
+  workspace. [Initial-function assembly](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Initial.lean)
+  covers subtraction, iterated predecessor, and conditional selection;
+  `Initial.realize` proves closure under every initial function for polynomially
+  bounded generated arguments. `Generator.computes` derives simultaneous
+  polynomial time and logarithmic space for closed generators.
+  [Prefix capture](../Geb/Prototypes/Computability/Oitavem/Machine/Capture.lean)
+  preserves the old saved value throughout a generator call, then replaces
+  it with a bounded prefix and clears the capture scratch.
+  [Retained-prefix recursion](../Geb/Prototypes/Computability/Oitavem/Machine/Recursion.lean)
+  proves an indexed loop with a binary countdown and reusable buffers.
+  It also supplies `concatRecGenerator_emitsIn`, which streams indexed
+  step digits before the base result without storing the accumulated output.
+  `emitPrefix_emitsIn` streams a prefix selected by a binary counter,
+  permitting polynomially long output without retaining that prefix.
+  [Recursive length over generated input](../Geb/Prototypes/Computability/Oitavem/Machine/RecursiveLength.lean)
+  instantiates that loop with `prefixLoop` for `lengthByRec` after `squareWord`.
+  The concrete eight-tape machine queries the generated word's digits and
+  has simultaneous polynomial time and logarithmic space.
+  [Syntax-wide realization](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Recursion.lean)
+  now proves closure under every constructor. `Expr.realized` substitutes
+  polynomially bounded generated arguments over any protected environment.
+  Safe recursion retains only logarithmic prefixes and emits its full final
+  step; concatenation recursion streams indexed step digits before its base.
+  `Expr.computable_polytime_logspace` proves that every fixed unary expression
+  has a finite transducer with simultaneous polynomial time and logarithmic
+  work space, using identity input and output encodings.
   `Machine.computes_polytime_logspace`
   derives a simultaneous polynomial time bound for any such halting
   logarithmic-space transducer, using CSLib's configuration count. Machine
   completeness is also unformalized. The
-  [direct soundness design](oitavem-logspace-soundness.md) describes the
-  proposed transducer construction and its remaining proof obligations.
+  [direct soundness proof](oitavem-logspace-soundness.md) records the
+  verified transducer construction and its scope.
   The [presheaf counterexample](../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean)
   shows that finite direction types and a finite index category do not
   suffice for an Oitavem recognizer of hereditary naturality. Over the

@@ -9,6 +9,7 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.While
 public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.Generated
+public import Geb.Prototypes.Computability.Oitavem.Machine.Reader
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Primitives.Count
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.Dec
 public import Geb.Prototypes.Computability.Oitavem.Derived
@@ -285,7 +286,8 @@ theorem computableInTimeAndSpace_squareWord :
   · rw [initCfg_runFrom_output]
     exact h.output
 
-private theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
+/-- Counting a quadratic output requires at most twice the input's binary size plus one. -/
+theorem size_square_add_one_le (n : ℕ) : (n * n + 1).size ≤ 2 * n.size + 1 := by
   apply Geb.BitTree.Counter.size_le_of_lt_pow
   rw [show 2 * n.size + 1 = n.size + n.size + 1 by omega, Nat.pow_succ, Nat.pow_add]
   have hp := Nat.two_pow_pos n.size
@@ -647,6 +649,84 @@ theorem computableInTimeAndSpace_squareWord_squareWord :
     exact h.halted
   · rw [initCfg_runFrom_output]
     exact h.output
+
+/-- The square generator supplies a digit reader on initialized scratch registers. -/
+theorem squareAt_readsAt {k : ℕ} (C Q : Fin k) (B : ℕ → ℕ)
+    (hn : ∀ n, n.size ≤ B n) (hB1 : ∀ n, 1 ≤ B n) :
+    ReadsAt (generatedAt (squareFromHome C) Q) (oldTape Q) resultTape
+      (fun _ σ ↦ σ countTape = [] ∧ σ (oldTape C) = [])
+      (fun input _ ↦ squareWord.eval ![input] Fin.elim0)
+      (fun n ↦ squareFromHomeTime (B n) n * (2 * B n + 8) + 13 * B n + 30) B := by
+  have hp : EmitsIn (squareFromHome C) (fun _ σ ↦ σ C = []) (fun _ σ ↦ σ)
+      (fun input _ ↦ squareWord.eval ![input] Fin.elim0)
+      (fun n ↦ squareFromHomeTime (B n) n) B := by
+    refine ((squareFromHome_emitsIn C B hn).mono_pre (fun _ _ _ _ ↦ trivial)).congr ?_
+    intro input σ h
+    rw [← h, Function.update_eq_self]
+  exact generatedAt_readsAt hp Q hB1
+
+/-- Reconstruct the square word entirely through generated digit queries.
+Countdown and generator scratch are cleared before entering the reader loop. -/
+@[expose] def squareViaReaderFromHome {k : ℕ} (C Q : Fin k) :=
+  seq (seq (const [] countTape) (const [] (oldTape C)))
+    (emitReader (generatedAt (squareFromHome C) Q) (oldTape Q) resultTape)
+
+/-- Time bound for streaming a square word through its digit reader. -/
+@[expose] def squareViaReaderTime (B n : ℕ) : ℕ :=
+  let T := squareFromHomeTime B n * (2 * B + 8) + 13 * B + 30
+  ((4 * B + 9) + (4 * B + 9)) + (4 * B + 9 + T + (n * n * (T + 2 * B + 6) + 1))
+
+/-- Streaming the generated quadratic word restores scratch and preserves every caller
+register. Query and result ports may contain arbitrary bounded data on entry. -/
+theorem squareViaReaderFromHome_emitsIn {k : ℕ} (C Q : Fin k) (hCQ : C ≠ Q) :
+    EmitsIn (squareViaReaderFromHome C Q) (fun _ _ ↦ True)
+      (fun input σ ↦ Function.update (Function.update (Function.update
+        (Function.update σ countTape []) (oldTape C) [])
+        (oldTape Q) (counterWord (input.length * input.length))) resultTape [])
+      (fun input _ ↦ squareWord.eval ![input] Fin.elim0)
+      (fun n ↦ squareViaReaderTime (2 * n.size + 1) n) (fun n ↦ 2 * n.size + 1) := by
+  let B := fun n : ℕ ↦ 2 * n.size + 1
+  have hQR := oldTape_ne_resultTape Q
+  have hCQR : oldTape C ≠ oldTape Q := by
+    intro h
+    exact hCQ (by simpa only [oldTape, Fin.succ_inj] using h)
+  have he := emitReader_emitsIn (oldTape Q) resultTape hQR
+    (squareAt_readsAt C Q B (fun n ↦ by dsimp [B]; omega)
+      (fun n ↦ by dsimp [B]; omega))
+    (fun input σ q r hp ↦ by
+      simpa only [Function.update_of_ne countTape_ne_resultTape,
+        Function.update_of_ne (oldTape_ne_countTape Q).symm,
+        Function.update_of_ne (oldTape_ne_resultTape C), Function.update_of_ne hCQR] using hp)
+    (fun _ _ _ _ ↦ rfl) (N := fun n ↦ n * n)
+    (fun input _ _ ↦ (length_squareWord input).le)
+    (fun n ↦ (size_le_size (Nat.le_succ _)).trans (size_square_add_one_le n))
+    (fun n ↦ by dsimp [B]; omega)
+  have hc (i : Fin (k + 2)) :=
+    Transforms.toIn_of (fun n ↦ const_transforms [] i (B n))
+      (fun _ _ ↦ True) (fun _ _ hB _ ↦ hB.update (Nat.zero_le _))
+  intro input cfg σ hq hpark hpos hσ _ hB
+  obtain ⟨hFB, t, ht, hr⟩ := ((hc countTape).seq (hc (oldTape C))).seqEmitsIn he input
+    cfg σ hq hpark hpos hσ
+    ⟨⟨trivial, trivial⟩, by simp [Function.update_of_ne (oldTape_ne_countTape C).symm]⟩ hB
+  dsimp only at hFB hr
+  rw [length_squareWord] at hFB hr
+  exact ⟨hFB, t, ht, hr⟩
+
+/-- A four-work-tape machine reading every output digit of the generated square. -/
+@[expose] def squareViaReaderMachine := seq inBack (squareViaReaderFromHome (0 : Fin 2) 1)
+
+/-- The reader-based square machine has simultaneous polynomial time and logarithmic
+space, by its halting reader contract and the configuration-counting theorem. -/
+theorem squareViaReaderMachine_computes :
+    ∃ C d : ℕ, ComputesFunInTimeAndSpace squareViaReaderMachine (.refl _) (.refl _)
+      (fun input ↦ squareWord.eval ![input] Fin.elim0)
+      (fun input ↦ C * (input.length + 1) ^ d)
+      (fun input ↦ C * (input.length.size + 1)) := by
+  let : Fintype (StateOf (squareFromHome (0 : Fin 2))) := inferInstance
+  let : Fintype (StateOf (generatedAt (squareFromHome (0 : Fin 2)) 1)) := inferInstance
+  let : Fintype (StateOf (squareViaReaderFromHome (0 : Fin 2) 1)) := inferInstance
+  exact (squareViaReaderFromHome_emitsIn (0 : Fin 2) 1 (by decide)).computes_polytime_logspace
+    (fun _ ↦ trivial) 2 (fun n ↦ by omega)
 
 end
 

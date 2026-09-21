@@ -7,7 +7,9 @@ module
 
 public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
+public import Geb.Prototypes.Computability.Oitavem.Machine.SpaceTime
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Contract
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Phase.InputMove
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Copy
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Primitives.Const
 
@@ -70,6 +72,52 @@ final valuation, and the input head returned home. -/
       ∃ t ≤ T input.length,
         Emits P cfg { after cfg (F input σ) with output := cfg.output ++ W input σ }
           (W input σ) t (B input.length)
+
+/-- An emitter contract holds under a stronger precondition. -/
+theorem EmitsIn.mono_pre {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre Pre' : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B)
+    (hpre : ∀ input σ, Bounded σ (B input.length) → Pre' input σ → Pre input σ) :
+    EmitsIn P Pre' F W T B :=
+  fun input cfg σ hq hpark hpos hσ hp hB ↦
+    h input cfg σ hq hpark hpos hσ (hpre input σ hB hp) hB
+
+/-- An emitter contract holds with a larger bound on the number of transitions. -/
+theorem EmitsIn.mono_time {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T T' B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B) (hT : ∀ n, T n ≤ T' n) : EmitsIn P Pre F W T' B := by
+  intro input cfg σ hq hpark hpos hσ hp hB
+  obtain ⟨hFB, t, ht, he⟩ := h input cfg σ hq hpark hpos hσ hp hB
+  exact ⟨hFB, t, ht.trans (hT _), he⟩
+
+/-- An emitter contract admits an equal valuation transformer on its precondition. -/
+theorem EmitsIn.congr {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F F' : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B)
+    (hF : ∀ input σ, Pre input σ → F input σ = F' input σ) :
+    EmitsIn P Pre F' W T B := by
+  intro input cfg σ hq hpark hpos hσ hp hB
+  obtain ⟨hFB, t, ht, he⟩ := h input cfg σ hq hpark hpos hσ hp hB
+  rw [hF input σ hp] at hFB he
+  exact ⟨hFB, t, ht, he⟩
+
+/-- An emitter contract admits an equal output word wherever its precondition holds. -/
+theorem EmitsIn.congr_output {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W V : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B) (hW : ∀ input σ, Pre input σ → W input σ = V input σ) :
+    EmitsIn P Pre F V T B := by
+  intro input cfg σ hq hpark hpos hσ hp hB
+  obtain ⟨hFB, t, ht, he⟩ := h input cfg σ hq hpark hpos hσ hp hB
+  rw [hW input σ hp] at he
+  exact ⟨hFB, t, ht, he⟩
 
 /-- Counting a contracted emitter preserves its final valuation on the old tapes
 and returns a binary length on the additional tape. -/
@@ -274,6 +322,68 @@ theorem _root_.Geb.SizeBounded.Logspace.Machine.TransformsIn.seqEmitsIn
     { after cfg (F input σ) with state := some Q.q₀ }
     (F input σ) rfl hpark hpos (fun _ ↦ rfl) hpre.2 hFB
   exact ⟨hGB, t₁ + t₂, Nat.add_le_add ht₁ ht₂, RunsTo.seqStartEmits hq r₁ r₂⟩
+
+/-- A halted emission's head bound controls space at every time, including after halting. -/
+theorem _root_.Geb.SizeBounded.Machine.Emits.spaceUsed_le_all
+    {k : ℕ} {S : Type} {input : List Bool} {P : MultiTapeTM k Bool S}
+    {cfg cfg' : Cfg k Bool S input} {w : List Bool} {t B : ℕ}
+    (h : Emits P cfg cfg' w t B) (s : ℕ) : P.spaceUsed cfg s ≤ k * (B + 2) := by
+  have hpos (u : ℕ) (i : Fin k) :
+      -1 ≤ (P.runFrom cfg u).workTapePos i ∧ (P.runFrom cfg u).workTapePos i ≤ B := by
+    by_cases hu : u ≤ t
+    · exact h.pos u hu i
+    · have he : P.runFrom cfg u = cfg' := by
+        rw [← Nat.add_sub_of_le (by omega : t ≤ u), runFrom_add, h.runFrom_eq,
+          runFrom_of_halt _ h.halted]
+      rw [he]
+      simpa only [h.runFrom_eq] using h.pos t le_rfl i
+  unfold spaceUsed
+  calc
+    _ ≤ ∑ _ : Fin k, (B + 2) := Finset.sum_le_sum fun i _ ↦
+      spaceUsedByTape_le_of_pos P cfg s B i (fun u _ ↦ hpos u i)
+    _ = k * (B + 2) := by simp
+
+/-- A finite emitter whose parked contract has logarithmic head bounds has simultaneous
+polynomial time and logarithmic space. Moving the initial input head home is included. -/
+theorem EmitsIn.computes_polytime_logspace {k : ℕ} {S : Type} [Finite S]
+    {P : MultiTapeTM k Bool S} {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B) (hpre : ∀ input, Pre input (fun _ ↦ []))
+    (c : ℕ) (hB : ∀ n, B n ≤ c * (n.size + 1)) :
+    ∃ C d : ℕ, ComputesFunInTimeAndSpace (seq inBack P) (.refl _) (.refl _)
+      (fun input ↦ W input (fun _ ↦ []))
+      (fun input ↦ C * (input.length + 1) ^ d)
+      (fun input ↦ C * (input.length.size + 1)) := by
+  let : Fintype S := Fintype.ofFinite S
+  have hem (input : List Bool) :
+      ∃ cfg' t, Emits (seq inBack P) ((seq inBack P).initCfg input) cfg'
+        (W input (fun _ ↦ [])) t (B input.length) := by
+    let cfg := (seq inBack P).initCfg input
+    have r₁ := inBack_runsTo_of_pos { cfg with state := some () } rfl
+      (by change 1 ≠ 0; omega) (B input.length) (fun _ ↦ by
+        change -1 ≤ (0 : ℤ) ∧ (0 : ℤ) ≤ B input.length
+        constructor <;> omega)
+    obtain ⟨_, t, _, r₂⟩ := h input
+      { cfg with state := some P.q₀, inputPos := ⟨0, by omega⟩ }
+      (fun _ ↦ []) rfl (fun _ ↦ rfl) rfl (fun _ ↦ tapeOf_nil.symm)
+      (hpre input) (fun _ ↦ Nat.zero_le _)
+    exact ⟨_, 1 + t, RunsTo.seqStartEmits rfl r₁ r₂⟩
+  apply Machine.computes_polytime_logspace _ _ (k * (c + 2))
+  · intro input
+    obtain ⟨cfg', t, he⟩ := hem input
+    refine ⟨t, ?_, ?_⟩
+    · rw [he.runFrom_eq]
+      exact he.halted
+    · rw [initCfg_runFrom_output]
+      exact he.output
+  · intro input s
+    obtain ⟨cfg', t, he⟩ := hem input
+    refine (he.spaceUsed_le_all s).trans ?_
+    calc
+      k * (B input.length + 2) ≤ k * ((c + 2) * (input.length.size + 1)) :=
+        Nat.mul_le_mul_left k (by rw [Nat.add_mul]; have := hB input.length; omega)
+      _ = k * (c + 2) * (input.length.size + 1) := (Nat.mul_assoc ..).symm
 
 end
 

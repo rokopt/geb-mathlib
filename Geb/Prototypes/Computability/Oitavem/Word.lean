@@ -97,6 +97,13 @@ theorem rank_cons (b : Bool) (w : List Bool) :
   simp only [List.cons_append, Geb.BitTreeScanner.ofBits_cons, Nat.bit_val] at h'
   omega
 
+/-- Prepending digits increases the numerical rank by at least their number. -/
+theorem length_add_rank_le_rank_append (u v : List Bool) :
+    u.length + rank v ≤ rank (u ++ v) := by
+  refine List.rec (by simp) (fun b u ih ↦ ?_) u
+  simp only [List.length_cons, List.cons_append, rank_cons]
+  omega
+
 /-- Every word of length k has enumeration index at least two to the k minus one. -/
 theorem pow_length_le_rank_add_one (w : List Bool) : 2 ^ w.length ≤ rank w + 1 := by
   apply List.rec (motive := fun w ↦ 2 ^ w.length ≤ rank w + 1) ?_ ?_ w
@@ -135,6 +142,42 @@ def numericSub (v w : List Bool) : List Bool := unrank (rank w - rank v)
 @[simp] theorem numericPred_numericSucc (w : List Bool) :
     numericPred (numericSucc w) = w := by
   simp [numericPred]
+
+/-- The numerical successor of zero is the one-digit zero word. -/
+@[simp] theorem numericSucc_nil : numericSucc [] = [false] := rfl
+
+/-- A zero low digit absorbs the numerical carry. -/
+theorem numericSucc_cons_false (w : List Bool) :
+    numericSucc (false :: w) = true :: w := by
+  apply rank_injective
+  simp only [rank_numericSucc, rank_cons, Bool.toNat_false, Bool.toNat_true]
+
+/-- A one low digit propagates the numerical carry to the rest of the word. -/
+theorem numericSucc_cons_true (w : List Bool) :
+    numericSucc (true :: w) = false :: numericSucc w := by
+  apply rank_injective
+  simp only [rank_numericSucc, rank_cons, Bool.toNat_false, Bool.toNat_true]
+  omega
+
+/-- The numerical predecessor fixes the empty word. -/
+@[simp] theorem numericPred_nil : numericPred [] = [] := rfl
+
+/-- The one-digit zero word is the first nonempty word in the enumeration. -/
+@[simp] theorem numericPred_singleton_false : numericPred [false] = [] := rfl
+
+/-- A one low digit absorbs the numerical borrow. -/
+theorem numericPred_cons_true (w : List Bool) :
+    numericPred (true :: w) = false :: w := by
+  apply rank_injective
+  simp only [numericPred, rank_unrank, rank_cons, Bool.toNat_false, Bool.toNat_true]
+  omega
+
+/-- A zero low digit propagates the numerical borrow when a higher digit exists. -/
+theorem numericPred_cons_false_cons (b : Bool) (w : List Bool) :
+    numericPred (false :: b :: w) = true :: numericPred (b :: w) := by
+  apply rank_injective
+  simp only [numericPred, rank_unrank, rank_cons, Bool.toNat_false, Bool.toNat_true]
+  omega
 
 /-- A numerical index bounded by a word-length bound has logarithmic representation length. -/
 theorem length_unrank_le {n B : ℕ} (h : n ≤ B) :
