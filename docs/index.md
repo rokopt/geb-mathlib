@@ -480,6 +480,35 @@ checklist and in CI.
   M-type and preserves the directly defined constructor and
   corecursor. Constructor/destructor inverse laws and executable
   finite/infinite examples accompany the construction.
+- `Geb/Prototypes/BitStream/Oitavem.lean` — bitstreams coded by
+  expressions of Oitavem's Logs, with a logspace recognizer of the codes.
+  `Oitavem/Sig.lean` is the finitary bundle signature: the root, with one
+  child in place of the one child per depth of `WConstruction.bundleSig`,
+  and the shapes of Logs, over the arities with a root index; each shape
+  is coded uniformly as a set bit, five tag bits and eight numerals, the
+  arities a node produces and requires of its children, its number of
+  children and one parameter, and a table of atomic constraints per
+  constructor determines the numerals and drives the decoder.
+  `Oitavem/Bundle.lean` embeds trees of Logs and proves `bundleEquiv`: the
+  admissible trees at the root index are the expressions of one normal
+  and no safe argument. `Oitavem/Stream.lean` defines `toStream`, the
+  stream an expression codes by corecursion on its values at the depths,
+  with `get?_seq_toStream`. `Oitavem/Fields.lean`, `Oitavem/Label.lean`
+  and `Oitavem/Edge.lean` write the numeral pointers, the constraints and
+  the signature's label and edge checks as expressions of the logspace
+  subalgebra, `LabelExpr.computesLabel` and `EdgeExpr.computesEdge` their
+  correctness; the redundant numerals make the edge check independent of
+  either shape's constructor. `Oitavem/Recognize.lean` composes the
+  recognizer with the test of the root's fixed prefix,
+  `recognize_iff_spellExpr` its specification, `recognizerSem_eq` the
+  expression's agreement with it and `decodeStream_spellExpr` the stream
+  a code denotes; `Oitavem/Machine.lean` reads the machine bound off the
+  subalgebra's soundness theorem (listed in
+  `GebMeta.classicalAllowedModules`). The other modules are
+  `Classical.choice`-free. Depends on
+  `Geb.Prototypes.Computability.Oitavem.Syntax`,
+  `Geb.Prototypes.BitStream.WConstruction` and
+  `Geb.Prototypes.Computability.SizeBounded.Logspace.WTree`.
 - `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
   coproduct completion of a type `D` treated as a discrete category:
   the category of families of elements of `D` (the discrete case of
