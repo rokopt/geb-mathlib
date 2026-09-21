@@ -16,6 +16,7 @@ on categorical and internal interpretation claims.
 - [Oitavem expressions as admissible maps](#oitavem-expressions-as-admissible-maps)
 - [Recognized carriers and W-elimination](#recognized-carriers-and-w-elimination)
 - [Internal syntax and interpretation](#internal-syntax-and-interpretation)
+- [Observing coded bitstreams](#observing-coded-bitstreams)
 - [Related results](#related-results)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -405,6 +406,41 @@ self-interpretation can use representations that exclude that construction.
 System F-omega][typed-self-interpreter], DOI `10.1145/2837614.2837623`, has
 this property; it does not supply the unrestricted evaluator considered here.
 
+## Observing coded bitstreams
+
+[Oitavem-coded bitstreams][coded-bitstreams] represent a stream by an
+expression of one normal and no safe argument, its value at the all-zero
+word of length `n` read as the stream's entry at depth `n`. Recognizing
+the codes is in `FLOGSPACE`, by that directory's recognizer, and the
+syntactic tail, composition with a successor, is a fixed rewrite of the
+spelling. Observing a coded stream is another matter: reading the entry
+at a depth is the universal function of Oitavem's algebra restricted to
+unary inputs, and [`not_recognizes_diagonal`][counterexample] at the
+constant test function shows that no expression of the algebra computes
+the entry at depth zero from the code. Under the paper's Theorem 3.4 the
+observation therefore lies outside `FLOGSPACE`.
+
+The class of the observation depends on what it returns. The decision
+problem, the bit at a depth or termination there, is in `PSPACE`:
+Oitavem's logspace simulation recomputes each intermediate word bit by
+bit and keeps one counter of logarithmic size per recursion, so its
+workspace is linear in the code's size times the logarithm of the
+largest intermediate word, which is at most exponential in the code's
+size. Whether it is `PSPACE`-hard is open here: an expression of size
+polynomial in the input has polynomial workspace at its disposal, so
+hardness would follow from a completeness construction whose expression
+size is polynomial in the space constant, which has not been checked.
+`PSPACE` is closed under composition of its decision procedures, so
+observing streams one entry at a time forces no larger class.
+
+The word-valued evaluator, returning the whole value at a depth, is
+different. Composing `k` copies of a doubling function applied to a
+one-bit constant is a code of size linear in `k` whose value has length
+`2^k`, and composing such evaluations iterates the exponential, the
+phenomenon of § Elementary recursion. `ELEMENTARY` is therefore the
+closure of word-valued evaluation under composition, and `PSPACE` the
+class of entry-wise observation.
+
 ## Related results
 
 [Cockett, Díaz-Boïls, Gallagher and Hrubeš, *Timed Sets, Functional Complexity,
@@ -454,6 +490,7 @@ of its word operations and navigation in Oitavem's algebra.
 [typed-self-interpreter]: https://popl16.sigplan.org/details/POPL-2016-papers/52/Breaking-Through-the-Normalization-Barrier-A-Self-Interpreter-for-F-omega
 [presheaf-scan]: ../Geb/Prototypes/Computability/PresheafScan.lean
 [counterexample]: ../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean
+[coded-bitstreams]: ../Geb/Prototypes/BitStream/Oitavem.lean
 [quantification]: ../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean
 [oitavem-category]: ../Geb/Prototypes/Typechecker/Oitavem.lean
 [resource-target]: bitstring-metalogic.md#selected-resource-target
