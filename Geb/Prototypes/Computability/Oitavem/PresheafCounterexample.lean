@@ -5,8 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Computability.Oitavem.Syntax
-public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Spell
+public import Geb.Prototypes.BitStream.Oitavem.Sig
 public import Geb.Mathlib.Data.PFunctor.Presheaf.Arrow
 public import Geb.Mathlib.Data.PFunctor.Presheaf.Decidable
 
@@ -20,7 +19,8 @@ occurs only in direction restriction; the underlying slice signature is fixed.
 Each test input is the spelling of an admissible slice tree with one root
 and three leaves, and spelling is independent of the predicate.
 
-Diagonalizing against the implemented unary Oitavem expressions gives a total
+Diagonalizing against the implemented unary Oitavem expressions, spelled by
+the coded signature {name}`Geb.BitStream.Oitavem.codedPlain`, gives a total
 Lean predicate for which no such expression agrees with the native presheaf
 checker, even on these admissible inputs. This refutes recognition from
 finiteness alone, without using a machine characterization of the algebra.
@@ -29,7 +29,7 @@ signature operations.
 
 ## Main definitions
 
-* {lit}`syntaxCode` and {lit}`readExpr` encode and decode unary Oitavem expressions.
+* {lit}`readExpr` decodes a unary Oitavem expression from its spelling.
 * {lit}`diagonal` disagrees with each expression on its own encoded test input.
 * {lit}`presheaf` puts a Boolean predicate into direction restriction on the walking arrow.
 * {lit}`testTree` and {lit}`testWord` give admissible trees and their bitstrings.
@@ -55,115 +55,15 @@ namespace Geb.Oitavem.PresheafCounterexample
 
 open CategoryTheory
 open Geb.SizeBounded.Logspace.WTree (CodedSig)
+open Geb.BitStream.Oitavem (codedPlain)
 open scoped FinEnum
 
 public section
 
-/-- Numerical fields of an initial symbol. -/
-@[expose] def initialFields : Initial → List ℕ
-  | .zero n => [0, n]
-  | .proj n i => [1, n, i]
-  | .succ b => [2, b.toNat]
-  | .pred => [3]
-  | .iterPred => [4]
-  | .numericSucc => [5]
-  | .numericPred => [6]
-  | .numericSub => [7]
-  | .length => [8]
-  | .last => [9]
-  | .cond => [10]
-  | .product => [11]
-
-/-- Decode the numerical fields of an initial symbol. -/
-@[expose] def readInitial : List ℕ → Option Initial
-  | [0, n] => some (.zero n)
-  | [1, n, i] => if h : i < n then some (.proj n ⟨i, h⟩) else none
-  | [2, 0] => some (.succ false)
-  | [2, 1] => some (.succ true)
-  | [3] => some .pred
-  | [4] => some .iterPred
-  | [5] => some .numericSucc
-  | [6] => some .numericPred
-  | [7] => some .numericSub
-  | [8] => some .length
-  | [9] => some .last
-  | [10] => some .cond
-  | [11] => some .product
-  | _ => none
-
-/-- Reading the fields recovers an initial symbol. -/
-theorem readInitial_initialFields (p : Initial) : readInitial (initialFields p) = some p := by
-  cases p with
-  | proj n i => simp [initialFields, readInitial, i.isLt]
-  | succ b => cases b <;> rfl
-  | _ => rfl
-
-/-- Numerical fields of a constructor label. -/
-@[expose] def shapeFields : Shape → List ℕ
-  | .initial p => 0 :: initialFields p
-  | .comp n m b => [1, n, m, b.toNat]
-  | .safeRec n => [2, n]
-  | .concatRec n => [3, n]
-  | .logTransition n => [4, n]
-
-/-- Decode the numerical fields of a constructor label. -/
-@[expose] def readShape : List ℕ → Option Shape
-  | 0 :: ns => (readInitial ns).map .initial
-  | [1, n, m, 0] => some (.comp n m false)
-  | [1, n, m, 1] => some (.comp n m true)
-  | [2, n] => some (.safeRec n)
-  | [3, n] => some (.concatRec n)
-  | [4, n] => some (.logTransition n)
-  | _ => none
-
-/-- Reading the fields recovers a constructor label. -/
-theorem readShape_shapeFields (a : Shape) : readShape (shapeFields a) = some a := by
-  cases a with
-  | initial p => simp [shapeFields, readShape, readInitial_initialFields]
-  | comp n m b => cases b <;> rfl
-  | _ => rfl
-
-/-- Store numerical fields as leaf lengths, terminated by an empty leaf.
-This unary encoding is used only to enumerate syntax for diagonalization. -/
-@[expose] def fieldsTree : List ℕ → Geb.BitTree.Tree :=
-  List.foldr (fun n t ↦ Geb.BitTree.fork (Geb.BitTree.leaf (List.replicate n false)) t)
-    (Geb.BitTree.leaf [])
-
-/-- Reading the leaf lengths recovers the fields and the terminator. -/
-theorem lengths_fieldsTree : ∀ ns, Geb.BitTree.Elias.lengths (fieldsTree ns) = ns ++ [0] :=
-  List.rec rfl fun n ns ih ↦ by
-    simpa [fieldsTree, Geb.BitTree.Elias.lengths_fork,
-      Geb.BitTree.Elias.lengths_leaf] using congrArg (n :: ·) ih
-
-/-- Encode a constructor label using its numerical fields. -/
-@[expose] def syntaxShapeCode (a : Shape) : List Bool :=
-  Geb.BitTree.Elias.encode (fieldsTree (shapeFields a))
-
-/-- Read a constructor label from its field lengths. -/
-@[expose] def readSyntaxShape (w : List Bool) : Option Shape := do
-  let t ← Geb.BitTree.Elias.decode w
-  readShape (Geb.BitTree.Elias.lengths t).dropLast
-
-/-- The shape decoder inverts the code. -/
-theorem readSyntaxShape_code (a : Shape) : readSyntaxShape (syntaxShapeCode a) = some a := by
-  simp [readSyntaxShape, syntaxShapeCode, lengths_fieldsTree, readShape_shapeFields]
-
-/-- The Oitavem signature with an invertible bitstring code for its shapes. -/
-@[expose] def syntaxCode : CodedSig (ℕ × ℕ) where
-  P := sig
-  finitary := sigFinitary
-  code := syntaxShapeCode
-  decode w := (readSyntaxShape w).filter fun a ↦ syntaxShapeCode a == w
-  decode_code a := by
-    change Shape at a
-    exact Option.filter_eq_some_iff.mpr ⟨readSyntaxShape_code a, beq_iff_eq.mpr rfl⟩
-  code_of_decode {w a} h := by
-    exact beq_iff_eq.mp (Option.filter_eq_some_iff.mp h).2
-
 /-- Decode a bitstring as an Oitavem expression with one normal input and no safe input. -/
 @[expose] def readExpr (w : List Bool) : Option (Expr 1 0) := do
   let t ← Geb.BitTree.Elias.decode w
-  let raw ← syntaxCode.readW t
+  let raw ← codedPlain.readW t
   if hv : wellFormed raw = true then
     let e : sig.W := ⟨raw, (wellFormed_eq_true raw).mp hv⟩
     if hi : sig.wIndex e = (1, 0) then some ⟨e, hi⟩ else none
@@ -171,9 +71,9 @@ theorem readSyntaxShape_code (a : Shape) : readSyntaxShape (syntaxShapeCode a) =
 
 /-- The expression decoder inverts the spelling of every unary expression. -/
 theorem readExpr_spell (e : Expr 1 0) :
-    readExpr (syntaxCode.spell e.1.1) = some e := by
+    readExpr (codedPlain.spell e.1.1) = some e := by
   simp only [readExpr, CodedSig.spell, Geb.BitTree.Elias.decode_encode, bind, Option.bind,
-    syntaxCode.readW_toTree e.1.1, dite_eq_left ((wellFormed_eq_true _).mpr e.1.2)]
+    codedPlain.readW_toTree e.1.1, dite_eq_left ((wellFormed_eq_true _).mpr e.1.2)]
   split
   · rfl
   · exact (‹¬ _› e.2).elim
@@ -188,7 +88,7 @@ theorem readExpr_spell (e : Expr 1 0) :
 theorem not_recognizes_diagonal (test : List Bool → List Bool) (e : Expr 1 0) :
     ¬ (∀ w, e.eval ![test w] Fin.elim0 = [true] ↔ diagonal test w = true) := by
   intro h
-  have h := h (syntaxCode.spell e.1.1)
+  have h := h (codedPlain.spell e.1.1)
   rw [diagonal, readExpr_spell] at h
   simp only [Bool.not_eq_true', decide_eq_false_iff_not] at h
   have hn := fun hp ↦ h.mp hp hp

@@ -1923,9 +1923,10 @@ checklist and in CI.
   walking arrow, with at most three directions at each shape,
   `nativeCheck_testTree` recovers any Boolean predicate placed in direction
   restriction. The test trees are admissible slice trees, and their
-  bitstrings do not depend on the predicate. Diagonalization supplies a
-  total Lean predicate for which `no_oitavem_nativeCheck` rules out every
-  unary Oitavem expression, directly against the native checker.
+  bitstrings do not depend on the predicate. Diagonalization against the
+  spellings of `Geb.BitStream.Oitavem.codedPlain` supplies a total Lean
+  predicate for which `no_oitavem_nativeCheck` rules out every unary
+  Oitavem expression, directly against the native checker.
   This result leaves recognition under complexity bounds on the signature
   operations open; it uses neither machine soundness nor completeness.
   [Bounded universal quantification](../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean)
