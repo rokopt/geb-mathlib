@@ -5,6 +5,7 @@
 
 - [Next up](#next-up)
   - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
+  - [Rose-tree value representation](#rose-tree-value-representation)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
@@ -76,6 +77,34 @@ p.r.a. functor as it stands, so every such functor has a code definitionally.
 The prototype states this as `praCodeOf`, naming the leaf as a section of the
 interpretation, with `leftInverse_interp_praCodeOf` and `surjective_interp`
 stating that `interp` retracts onto it.
+
+### Rose-tree value representation
+
+The manual chapter `manual/GebManual/ValueRepresentation.lean` records the
+design of the representation of rose trees of bitstrings, and
+`Geb/Prototypes/RoseTree/` holds its prototypes. Follow-ups, in order:
+
+- Unify `Geb.Rose k` (`Geb/Prototypes/ConcreteSyntax.lean`, labels `Fin k`)
+  with `Geb.RoseTree α`, of which it is the instance at `Fin k`; the
+  concrete-syntax parsers then produce the representation the chapter
+  recommends.
+- Prove `Geb.Packed.encode` equal to `Geb.RoseTree.wire` through
+  `Geb.Packed.Buf.toList`, and `Geb.Packed.recognize` equal to
+  `Geb.BitTree.Elias.validBool`, in place of the tests of
+  `GebTests/Prototypes/RoseTree.lean`; the proofs need lemmas about
+  `ByteArray` bit access that the core library does not yet supply.
+- The sectioned serialization (arities, lengths and payloads as three
+  sections behind a header) and its transcoder to the interleaved form as
+  an expression of Kristiansen's algebra, which carries the logarithmic-space
+  witness over by composition.
+- Labels as canonical balanced trees of word chunks, the form the
+  interaction-net runtimes and the hash need, with the isomorphism to
+  `List Bool` and the chunk-wise hash.
+- The hereditary-naturality checker over hash-consed trees, where each
+  subtree comparison is a pointer comparison and the check is linear.
+- A Merkle side table keyed by preorder position, the storage form the
+  content-addressed source model needs, with the streaming root over the
+  serialization as the logarithmic-space hash.
 
 ### Named examples for axiom auditing
 

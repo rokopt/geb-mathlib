@@ -20,3 +20,6 @@ package-lock.json
 package.json
 skills-lock.json
 .agents/
+
+# Cargo build artifacts of the Rust prototypes.
+prototypes/rust/**/target/

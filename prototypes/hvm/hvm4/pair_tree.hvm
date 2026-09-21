@@ -1,0 +1,29 @@
+// Full binary tree of depth d as nested pairs #P{l r}; leaves are native
+// (32-bit) numbers; the shape is carried by the depth argument.
+// Select the operation by editing @main; run with `hvm pair_tree.hvm -s`.
+
+@gen = λ{
+  0: λi. i;
+  λ&d. λ&i. #P{@gen(d - 1, i * 2), @gen(d - 1, i * 2 + 1)}
+}
+
+@sum = λ{
+  0: λt. t;
+  λ&d. λ{#P: λa. λb. @sum(d - 1, a) + @sum(d - 1, b)}
+}
+
+@hash = λ{
+  0: λt. t;
+  λ&d. λ{#P: λa. λb. @hash(d - 1, a) * 31 + @hash(d - 1, b)}
+}
+
+@eq = λ{
+  0: λx. λy. x == y;
+  λ&d. λ{#P: λa. λb. λ{#P: λc. λe. @eq(d - 1, a, c) && @eq(d - 1, b, e)}}
+}
+
+@main_sum   = @sum(16, @gen(16, 0))
+@main_hash  = @hash(16, @gen(16, 0))
+@main_eq2   = @eq(16, @gen(16, 0), @gen(16, 0))
+@main_eqdup = ! &{a, b} = @gen(16, 0); @eq(16, a, b)
+@main = @main_sum

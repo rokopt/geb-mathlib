@@ -1,0 +1,36 @@
+// Full binary tree of depth d with native constructors #Node{l r} and
+// #Leaf{v}; leaves carry their index as a native (32-bit) number.
+// Select the operation by editing @main; run with `hvm adt_tree.hvm -s`.
+
+@gen = λ{
+  0: λi. #Leaf{i};
+  λ&d. λ&i. #Node{@gen(d - 1, i * 2), @gen(d - 1, i * 2 + 1)}
+}
+
+@sum = λ{
+  #Node: λl. λr. @sum(l) + @sum(r);
+  #Leaf: λv. v
+}
+
+@hash = λ{
+  #Node: λl. λr. @hash(l) * 31 + @hash(r);
+  #Leaf: λv. v
+}
+
+@eq = λ{
+  #Node: λl. λr. λ{
+    #Node: λl2. λr2. @eq(l, l2) && @eq(r, r2);
+    #Leaf: λv. 0
+  };
+  #Leaf: λv. λ{
+    #Node: λl. λr. 0;
+    #Leaf: λw. v == w
+  }
+}
+
+@main_sum   = @sum(@gen(16, 0))
+@main_hash  = @hash(@gen(16, 0))
+@main_eq2   = @eq(@gen(16, 0), @gen(16, 0))
+@main_eqdup = ! &{a, b} = @gen(16, 0); @eq(a, b)
+@main_eqnat = @gen(16, 0) === @gen(16, 0)
+@main = @main_sum
