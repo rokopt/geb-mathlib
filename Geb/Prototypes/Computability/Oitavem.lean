@@ -26,6 +26,7 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Allocate
 public import Geb.Prototypes.Computability.Oitavem.Machine.Reader
 public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 public import Geb.Prototypes.Computability.Oitavem.Machine.Compose
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer
 public import Geb.Prototypes.Computability.Oitavem.Machine.Counter
 public import Geb.Prototypes.Computability.Oitavem.Machine.Segment
 public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction
@@ -80,6 +81,9 @@ implements it through virtual length and sentinel-digit readers: two scans deter
 the sign and significant length, then emit the result with all working ports cleared.
 {name}`Geb.Oitavem.shortlexAdd_eq_unrank_add` verifies bounded-carry addition for
 log-transition, without decoding the long normal word's rank.
+{name}`Geb.Oitavem.Expr.eval_transitionOffset` supplies an alternative using only
+initial functions and normal composition, and {name}`Geb.Oitavem.Expr.eval_logTransitionNormal`
+verifies the complete safe-to-normal substitution.
 {name}`Geb.Oitavem.Machine.generatedPrefix_transformsIn` retains a bounded output
 prefix while preserving the old saved value throughout the generator call.
 {name}`Geb.Oitavem.Machine.retainedLoop_transformsIn` realizes an indexed saved-word
@@ -89,6 +93,9 @@ implementation of {name}`Geb.Oitavem.lengthByRec` over the generated square, wit
 simultaneous polynomial time and logarithmic space on eight work tapes.
 {name}`Geb.Oitavem.Machine.concatRecGenerator_emitsIn` streams concatenation-recursion
 step digits before its base result, from indexed child contracts.
+{name}`Geb.Oitavem.Machine.Generator` supplies a common protected environment,
+private restoring calls, and uniform logarithmic workspace bounds. Its unary and
+product constructors combine independently compiled argument generators.
 General reader substitution and constructor closure for every expression remain open.
 
 ## References

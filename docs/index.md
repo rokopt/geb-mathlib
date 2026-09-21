@@ -1868,6 +1868,15 @@ checklist and in CI.
   [Bounded-carry addition](../Geb/Prototypes/Computability/Oitavem/Addition.lean)
   proves the digit algorithm for adding a natural number to an arbitrary
   shortlex word, with every intermediate carry at most the initial carry or one.
+  `Expr.transitionOffset` instead derives the required offset from subtraction,
+  string product, and other initial functions; `Expr.eval_logTransitionNormal`
+  verifies log-transition with the safe value supplied as a normal argument.
+  [The generator environment](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer.lean)
+  provides fixed private layouts, restoring environment imports, and common
+  logarithmic workspace bounds. Its unary and product constructors combine
+  independently compiled arguments, including repeated references to a caller
+  register. `Generator.computes` derives simultaneous polynomial time and
+  logarithmic space for closed generators.
   [Prefix capture](../Geb/Prototypes/Computability/Oitavem/Machine/Capture.lean)
   preserves the old saved value throughout a generator call, then replaces
   it with a bounded prefix and clears the capture scratch.

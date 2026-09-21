@@ -69,14 +69,12 @@ theorem bits_eq_cons_of_ne_zero (n : ℕ) (hn : n ≠ 0) :
 /-- The digits the scan emits from the input digits {lit}`bs`, read least significant
 first, and an incoming carry {lit}`c`: one digit per input digit, then the binary digits
 of the carry that is left. -/
-@[expose] def carryBits : List Bool → ℕ → List Bool
-  | [], c => c.bits
-  | b :: bs, c => decide ((b.toNat + c) % 2 = 1) :: carryBits bs ((b.toNat + c) / 2)
+@[expose] def carryBits : List Bool → ℕ → List Bool :=
+  List.rec Nat.bits fun b _ ih c ↦ decide ((b.toNat + c) % 2 = 1) :: ih ((b.toNat + c) / 2)
 
 /-- The carry the scan is left with after consuming the input digits {lit}`bs`. -/
-@[expose] def carryAfter : List Bool → ℕ → ℕ
-  | [], c => c
-  | b :: bs, c => carryAfter bs ((b.toNat + c) / 2)
+@[expose] def carryAfter : List Bool → ℕ → ℕ :=
+  List.rec id fun b _ ih c ↦ ih ((b.toNat + c) / 2)
 
 /-- With the input exhausted the scan emits the binary digits of the carry. -/
 theorem carryBits_nil (c : ℕ) : carryBits [] c = c.bits := rfl
@@ -96,15 +94,14 @@ theorem carryAfter_cons (b : Bool) (bs : List Bool) (c : ℕ) :
 binary digits of the value of the input plus the incoming carry. -/
 theorem carryBits_append_true (l : List Bool) : (c : ℕ) →
     carryBits (l ++ [true]) c = (ofBits (l ++ [true]) + c).bits := by
-  induction l with
-  | nil =>
-    intro c
+  revert l
+  refine List.rec ?_ ?_
+  · intro c
     have h1 : ofBits ([] ++ [true]) = 1 := rfl
     rw [h1, List.nil_append, carryBits_cons, carryBits_nil,
       bits_eq_cons_of_ne_zero (1 + c) (by omega)]
     simp
-  | cons b bs ih =>
-    intro c
+  · intro b bs ih c
     have htail : ofBits (bs ++ [true]) = rank bs + 1 := (rank_add_one bs).symm
     have hpos : 1 ≤ ofBits (bs ++ [true]) := by omega
     have hval : ofBits (b :: (bs ++ [true])) = b.toNat + 2 * ofBits (bs ++ [true]) := by
@@ -133,10 +130,11 @@ theorem carryBits_eq_bits_of_getLast (bs : List Bool) (h : bs.getLast? = some tr
 
 /-- The carry never exceeds the larger of the incoming carry and one. -/
 theorem carryAfter_le_max (bs : List Bool) : (c : ℕ) → carryAfter bs c ≤ max c 1 := by
-  induction bs with
-  | nil => intro c; rw [carryAfter]; omega
-  | cons b bs ih =>
-    intro c
+  revert bs
+  refine List.rec ?_ ?_
+  · intro c
+    exact Nat.le_max_left c 1
+  · intro b bs ih c
     have hb : b.toNat ≤ 1 := by cases b <;> simp
     have h := ih ((b.toNat + c) / 2)
     rw [carryAfter_cons]
@@ -151,14 +149,15 @@ theorem carryAfter_take_le_max (w : List Bool) (n k : ℕ) :
 digits still to be emitted are those the scan produces from the remaining input and that
 carry. -/
 theorem carryBits_drop : (k : ℕ) → (bs : List Bool) → (c : ℕ) → k ≤ bs.length →
-    (carryBits bs c).drop k = carryBits (bs.drop k) (carryAfter (bs.take k) c)
-  | 0, bs, c, _ => by simp [carryAfter]
-  | k + 1, [], _, h => absurd h (by simp)
-  | k + 1, b :: bs, c, h => by
+    (carryBits bs c).drop k = carryBits (bs.drop k) (carryAfter (bs.take k) c) := by
+  refine Nat.rec (fun bs c _ ↦ by simp [carryAfter]) ?_
+  intro k ih bs c h
+  cases bs with
+  | nil => simp at h
+  | cons b bs =>
     have h' : k ≤ bs.length := by simpa using h
-    have ih := carryBits_drop k bs ((b.toNat + c) / 2) h'
-    rw [carryBits_cons, List.drop_succ_cons, ih, List.take_succ_cons, List.drop_succ_cons,
-      carryAfter_cons]
+    rw [carryBits_cons, List.drop_succ_cons, ih bs ((b.toNat + c) / 2) h',
+      List.take_succ_cons, List.drop_succ_cons, carryAfter_cons]
 
 /-! ## The algorithm -/
 

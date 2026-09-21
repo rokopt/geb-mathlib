@@ -119,6 +119,7 @@ def classicalAllowedModules : NameSet :=
    `Geb.Prototypes.Computability.Oitavem.Machine.Capture,
    `Geb.Prototypes.Computability.Oitavem.Machine.Recursion,
    `Geb.Prototypes.Computability.Oitavem.Machine.RecursiveLength,
+   `Geb.Prototypes.Computability.Oitavem.Machine.Realizer,
    `GebTests.Prototypes.Computability.Oitavem.Machine,
    `Geb.Prototypes.BitStream.Oitavem.Machine,
    `GebManual.BibTeX,

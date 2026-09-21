@@ -17,6 +17,8 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Segment -- shake: kee
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Segment -- shake: keep
 public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction -- shake: keep
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer -- shake: keep
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 public meta import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 
@@ -65,6 +67,45 @@ public section
 /-- Materialize a logical register in the tape convention used by the machine library. -/
 @[expose] def register (w : List Bool) : Std.HashMap ℤ Bool :=
   w.reverse.zipIdx.foldl (fun tape (b, i) ↦ tape.insert (i : ℤ) b) ∅
+
+/-- A composed generator that imports one stored word into two argument slots. -/
+@[expose] def duplicateProduct :=
+  let Pre := fun (_ : List Bool) (σ : Fin 2 → List Bool) ↦ (σ 1).length ≤ 4
+  let G := (Generator.stored 2 Pre 0).numericSucc
+  let H := Generator.stored 2 Pre 1
+  let P := G.product H (fun _ ↦ 4) 3 (fun _ _ h ↦ h)
+    (fun n ↦ by change 3 ≤ 3 * (n.size + 1); omega)
+  (P.rename (fun _ : Fin 2 ↦ (0 : Fin 1))
+    (Pre' := fun _ σ ↦ (σ 0).length ≤ 4) (fun _ _ h ↦ h)).numericPred
+
+/-- Nested generators restore their private workspaces and the aliased source word. -/
+@[expose] def checkEnvironment (w : List Bool) : Bool := Id.run do
+  let G := duplicateProduct
+  let start : ExecCfg G.tapes G.State [] :=
+    { ExecCfg.init G.program [] with
+      inputPos := 0
+      tapes := Vector.ofFn fun i ↦ if i.val = 0 then register w else ∅
+      outputRev := [true, false] }
+  let finish := (execStep G.program)^[10000] start
+  let expected := numericPred (List.replicate w.length (numericSucc w)).flatten
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) &&
+    finish.outputRev.reverse == [false, true] ++ expected &&
+    (List.finRange G.tapes).all (fun i ↦ (List.range 12).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == start.tapes[i][(j : ℤ) - 1]?)
+
+#guard (List.range 31).all fun n ↦ checkEnvironment (unrank n)
+
+#guard (List.range 31).all fun n ↦
+  let w := unrank n
+  let G := Generator.input
+  let start : ExecCfg G.tapes G.State w :=
+    { ExecCfg.init G.program w with inputPos := 0, outputRev := [true, false] }
+  let finish := (execStep G.program)^[10000] start
+  finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ w &&
+    (List.finRange G.tapes).all (fun i ↦
+      (List.range 8).all fun j ↦ finish.tapes[i][(j : ℤ) - 1]?.isNone)
 
 /-- Check a stored-word query with dirty scratch registers and a protected sixth tape. -/
 @[expose] def checkStored (w : List Bool) (q : ℕ) : Bool := Id.run do

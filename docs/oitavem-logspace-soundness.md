@@ -12,7 +12,7 @@ Tape allocation preserves these contracts, and a generic digit-reader
 loop streams virtual words with a bound throughout every reader call.
 Constructor rules now cover streaming successors and predecessors,
 last-digit extraction, numerical length, string product, iterated
-predecessor, and the conditional. A bounded
+predecessor, numerical subtraction, and the conditional. A bounded
 capture subroutine and an indexed machine loop realize retained
 recursion prefixes. The safe-recursion checkpoint for `lengthByRec`
 over `squareWord` has a machine proof on eight logarithmic work tapes.
@@ -262,6 +262,18 @@ Completeness is outside this construction's scope.
   Execution checks cover the recursive implementation, streaming carry
   and borrow, segment boundaries, zero-length masks, and dirty capture
   scratch.
+- [Generators over a protected environment][realizer] package a fixed
+  finite emitter whose scratch tapes start and finish blank. The
+  contract holds for every sufficiently large workspace bound.
+  `Generator.rename` copies selected caller registers into a private
+  environment and clears it after the call; repeated selections are
+  permitted. Allocation combines independently compiled generators.
+  The interface covers physical input, stored words, zero, string and
+  numerical successors and predecessors, last-digit extraction,
+  numerical length, and string product. `Generator.computes` supplies
+  simultaneous polynomial time and logarithmic space for closed
+  generators. Execution checks cover nested arithmetic and product with
+  a source register supplied to both argument slots.
 
 The recursion results bound retained words and indices. They do not
 bound the work space used to compute those words or indices. Closing
@@ -383,6 +395,13 @@ count caller storage and the active callee together, rather than only
 the maximum size of their return values. The fixed compiled call
 structure must justify the constant bound on nested contexts.
 
+The `Generator` interface now provides fixed private layouts, uniform
+workspace bounds, restoring calls, and environment substitution.
+`Generator.product` already combines independently compiled argument
+generators. Conditional, segment, and subtraction machines still need
+adapters into this common interface before the syntax-wide composition
+case can use all initial constructors.
+
 ### Safe recursion
 
 Use `prefixLoop` as the semantic invariant of an indexed machine loop.
@@ -455,17 +474,27 @@ By `cappedRank_take_size`, the capped safe contribution can be computed
 from a logarithmic prefix. That contribution is a small integer because
 the iteration word has polynomially bounded length.
 
-The offset `z` can still be a long normal word. Construct a reader for
-its shortlex sum with the capped contribution using digitwise
-arithmetic, then invoke the child through that reader. Materializing
-`rank z` would violate the proposed space bound.
+The offset `z` can still be a long normal word. The derived expression
+`Expr.transitionOffset` computes its new value using only length,
+string successor, string product, numerical subtraction, projection,
+and normal composition. Two subtractions cap the safe value; three
+more add the capped contribution by subtracting from a sufficiently
+large virtual word. That upper word consists of
+`iterationWord.length + 1` copies of `false :: z`, so its length is
+polynomial in the normal word lengths. `Expr.eval_transitionOffset`
+proves the exact offset.
 
-[Bounded-carry addition][addition] now supplies the digit algorithm and
-`shortlexAdd_eq_unrank_add`. `carryAfter_take_le_max` bounds every carry
-by the initial carry or one, and `carryBits_drop` verifies resumption
-from that carry alone. This arithmetic proof was developed with
-Aristotle and adapted to the existing word model. The counter operations
-and reader substitution for its machine implementation remain open.
+`Expr.logTransitionNormal` supplies the safe input as an additional
+normal input and invokes the child with this derived offset.
+`Expr.eval_logTransitionNormal` proves equivalence to log-transition.
+Thus its machine implementation can reuse normal composition once the
+remaining initial machines are adapted to the common generator
+environment. The retained safe prefix already has logarithmic length.
+
+[Bounded-carry addition][addition] also supplies a direct digit algorithm
+and `shortlexAdd_eq_unrank_add`. It remains an alternative arithmetic
+implementation; the derived subtraction expression needs no additional
+addition machine.
 
 ## Halting, space, and time
 
@@ -499,7 +528,7 @@ remaining task is to construct that contract for every expression.
 | Reader contract and base readers | Verified physical-input and stored-prefix readers, including repeated calls and caller preservation. |
 | General reader composition | A verified substitution rule for generated length and digit readers, exercised on polynomially long virtual inputs. |
 | Safe recursion over a generated word | A machine for `lengthByRec` composed with `squareWord`, using the saved-prefix loop and querying the generated recursion input. |
-| Remaining constructor closure | Reader substitution into recursion steps, the log-transition machine, and a common compiler environment. |
+| Remaining constructor closure | Adapt the remaining initial machines and recursion steps to the common generator environment; use normal composition for log-transition. |
 | Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
 
 The first checkpoint has verified physical-input and stored-word length
@@ -527,21 +556,18 @@ layout. `emitReader_emitsIn` uses such a reader in an indexed loop;
 quadratically long generated word. Scratch initialization precedes the
 loop, whose reader restores its scratch after each query.
 
-The next substitution work is to provide expression constructors with
-an environment of length and digit programs, preserving the represented
-words through nested calls. The allocation and streaming rules supply
-the tape separation and output loop, but do not yet implement normal
-composition for arbitrary expressions. Segment readers, several
-constructor rules, numerical subtraction on virtual arguments, and the
-saved-prefix loop are now proved. Remaining constructor work includes
-reader substitution into the recursion steps and general log-transition.
-General safe recursion still needs compiled base and step readers,
-cutoff computation, and full final-step emission.
+The common generator environment now supports restoring private calls
+and several constructor-specific substitutions. The next substitution
+work is to adapt the remaining initial machines, including their length
+and digit ports, to this interface. Numerical subtraction on virtual
+arguments already has its full conditional contract.
 
-The first composition checkpoint must extend these allocation and
-streaming proofs to constructor-specific substitutions. The
-safe-recursion checkpoint has a machine proof with a live saved prefix.
-  Its step expression is fixed to the recursive length example; the
+The safe-recursion checkpoint has a machine proof with a live saved
+prefix. Its step expression is fixed to the recursive length example.
+General safe recursion still needs compiled base and step readers,
+cutoff computation, and full final-step emission. Concatenation recursion
+needs reader substitution into its indexed steps. Log-transition has
+been reduced to initial functions and normal composition. The
 syntax-wide substitution and resource induction remain open.
 
 The effort estimate is several extended formalization sessions,
@@ -598,6 +624,7 @@ that additional characterization or a direct machine encoding.
 [capture]: ../Geb/Prototypes/Computability/Oitavem/Machine/Capture.lean
 [machine-recursion]: ../Geb/Prototypes/Computability/Oitavem/Machine/Recursion.lean
 [recursive-length]: ../Geb/Prototypes/Computability/Oitavem/Machine/RecursiveLength.lean
+[realizer]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean
 [word]: ../Geb/Prototypes/Computability/Oitavem/Word.lean

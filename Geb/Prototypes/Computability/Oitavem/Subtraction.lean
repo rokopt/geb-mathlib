@@ -70,32 +70,37 @@ theorem carryValue_subBit (a b : Bool) (c : Option Bool) :
 /-- The value of a concatenation. -/
 theorem ofBits_append (l m : List Bool) :
     ofBits (l ++ m) = ofBits l + 2 ^ l.length * ofBits m := by
-  induction l with
-  | nil => simp
-  | cons b bs ih =>
+  revert l
+  refine List.rec ?_ ?_
+  · simp
+  · intro b bs ih
     simp only [List.cons_append, ofBits_cons, Nat.bit_val, ih, List.length_cons, pow_succ]
     ring
 
 /-- A bit list of length {lit}`n` has value less than {lit}`2 ^ n`. -/
 theorem ofBits_lt_two_pow (l : List Bool) : ofBits l < 2 ^ l.length := by
-  induction l with
-  | nil => simp
-  | cons b bs ih =>
+  revert l
+  refine List.rec ?_ ?_
+  · simp
+  · intro b bs ih
     have : b.toNat ≤ 1 := by cases b <;> simp
     simp only [ofBits_cons, Nat.bit_val, List.length_cons, pow_succ]
     omega
 
 /-- A list of {lit}`false`s has value zero. -/
 theorem ofBits_replicate_false (n : ℕ) : ofBits (List.replicate n false) = 0 := by
-  induction n with
-  | zero => rfl
-  | succ n ih => simp [List.replicate_succ, ofBits_cons, Nat.bit_val, ih]
+  revert n
+  refine Nat.rec ?_ ?_
+  · rfl
+  · intro n ih
+    simp [List.replicate_succ, ofBits_cons, Nat.bit_val, ih]
 
 /-- Value zero means every digit is {lit}`false`. -/
 theorem ofBits_eq_zero_iff (l : List Bool) : ofBits l = 0 ↔ ∀ b ∈ l, b = false := by
-  induction l with
-  | nil => simp only [ofBits_nil, List.not_mem_nil, false_implies, implies_true]
-  | cons b bs ih =>
+  revert l
+  refine List.rec ?_ ?_
+  · simp only [ofBits_nil, List.not_mem_nil, false_implies, implies_true]
+  · intro b bs ih
     simp only [ofBits_cons, Nat.bit_val, List.mem_cons, forall_eq_or_imp]
     refine ⟨fun h => ?_, fun h => ?_⟩
     · refine ⟨?_, ih.mp ?_⟩
@@ -110,38 +115,50 @@ theorem ofBits_eq_zero_iff (l : List Bool) : ofBits l = 0 ↔ ∀ b ∈ l, b = f
 /-! ## Trailing zeros and the sentinel -/
 
 /-- Remove the trailing {lit}`false`s of a bit list. -/
-@[expose] def trim : List Bool → List Bool
-  | [] => []
-  | b :: bs => if (trim bs).isEmpty && !b then [] else b :: trim bs
+@[expose] def trim : List Bool → List Bool :=
+  List.rec [] fun b _ t ↦ if t.isEmpty && !b then [] else b :: t
+
+/-- An empty list has no significant digits. -/
+@[simp] theorem trim_nil : trim [] = [] := rfl
+
+/-- Trimming keeps a head precisely when it or its tail has a significant digit. -/
+@[simp] theorem trim_cons (b : Bool) (bs : List Bool) :
+    trim (b :: bs) = if (trim bs).isEmpty && !b then [] else b :: trim bs := rfl
 
 /-- Appending a zero does not change the significant prefix. -/
 theorem trim_append_false (w : List Bool) : trim (w ++ [false]) = trim w := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => simp only [List.cons_append, trim, ih]
+  revert w
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b w ih
+    simp only [List.cons_append, trim_cons, ih]
 
 /-- An appended one is the new last significant digit. -/
 theorem trim_append_true (w : List Bool) : trim (w ++ [true]) = w ++ [true] := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => simp [trim, ih]
+  revert w
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b w ih
+    simp [ih]
 
 /-- Trimming only shortens a word. -/
 theorem length_trim_le (w : List Bool) : (trim w).length ≤ w.length := by
-  induction w with
-  | nil => rfl
-  | cons b w ih =>
-    rw [trim]
+  revert w
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b w ih
+    rw [trim_cons]
     split
     · exact Nat.zero_le _
     · exact Nat.succ_le_succ ih
 
 /-- The significant digits are an initial segment of the original word. -/
 theorem take_length_trim (w : List Bool) : w.take (trim w).length = trim w := by
-  induction w with
-  | nil => rfl
-  | cons b w ih =>
-    rw [trim]
+  revert w
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b w ih
+    rw [trim_cons]
     split
     · rfl
     · simpa only [List.length_cons, List.take_succ_cons] using congrArg (b :: ·) ih
@@ -154,10 +171,11 @@ theorem dropLast_trim_eq_take (w : List Bool) :
 
 /-- Removing trailing {lit}`false`s preserves the value. -/
 theorem ofBits_trim (l : List Bool) : ofBits (trim l) = ofBits l := by
-  induction l with
-  | nil => rfl
-  | cons b bs ih =>
-    rw [trim]
+  revert l
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b bs ih
+    rw [trim_cons]
     split
     · rename_i h
       simp only [Bool.and_eq_true, List.isEmpty_iff, Bool.not_eq_eq_eq_not, Bool.not_true] at h
@@ -168,19 +186,21 @@ theorem ofBits_trim (l : List Bool) : ofBits (trim l) = ofBits l := by
 
 /-- A trimmed nonempty bit list ends in {lit}`true`. -/
 theorem getLast?_trim (l : List Bool) (h : trim l ≠ []) : (trim l).getLast? = some true := by
-  induction l with
-  | nil => simp [trim] at h
-  | cons b bs ih =>
+  revert l
+  refine List.rec ?_ ?_
+  · intro h
+    simp at h
+  · intro b bs ih h
     by_cases hbs : trim bs = []
     · have hb : b = true := by
         by_contra hb
         simp only [Bool.not_eq_true] at hb
-        rw [trim, hbs] at h
+        rw [trim_cons, hbs] at h
         simp [hb] at h
-      rw [trim, hbs, hb]
+      rw [trim_cons, hbs, hb]
       simp
     · have hc : ((trim bs).isEmpty && !b) = false := by simp [List.isEmpty_iff, hbs]
-      rw [trim, hc]
+      rw [trim_cons, hc]
       simp only [Bool.false_eq_true, ite_false]
       rw [List.getLast?_cons_of_ne_nil hbs]
       exact ih hbs
@@ -241,19 +261,21 @@ theorem getD_padTo (l : List Bool) (n j : ℕ) (h : j < n) :
 
 /-- One scan of paired digits: thread the signed carry through the positions, emitting one
 digit at each, and return the final carry together with the emitted digits. -/
-@[expose] def subDigits : List (Bool × Bool) → ℤ → ℤ × List Bool
-  | [], c => (c, [])
-  | (a, b) :: ps, c =>
-      let d : ℤ := (a.toNat : ℤ) - (b.toNat : ℤ) + c
-      let r := subDigits ps (d / 2)
-      (r.1, decide (d % 2 = 1) :: r.2)
+@[expose] def subDigits : List (Bool × Bool) → ℤ → ℤ × List Bool :=
+  List.rec (fun c ↦ (c, [])) fun p _ ih c ↦
+    let d : ℤ := (p.1.toNat : ℤ) - (p.2.toNat : ℤ) + c
+    let r := ih (d / 2)
+    (r.1, decide (d % 2 = 1) :: r.2)
 
 /-- One digit is emitted per position. -/
 theorem subDigits_length (ps : List (Bool × Bool)) (c : ℤ) :
     (subDigits ps c).2.length = ps.length := by
-  induction ps generalizing c with
-  | nil => rfl
-  | cons p ps ih => obtain ⟨a, b⟩ := p; simp [subDigits, ih]
+  revert ps c
+  refine List.rec ?_ ?_
+  · intro c
+    rfl
+  · intro p ps ih c
+    exact congrArg Nat.succ (ih (((p.1.toNat : ℤ) - p.2.toNat + c) / 2))
 
 /-- A digit is zero or one. -/
 theorem toNat_le_one (a : Bool) : (a.toNat : ℤ) ≤ 1 := by cases a <;> decide
@@ -272,9 +294,11 @@ theorem subDigits_cons (a b : Bool) (ps : List (Bool × Bool)) (c : ℤ) :
 /-- The finite representation follows the arithmetic carry exactly. -/
 theorem carryValue_subCarry (ps : List (Bool × Bool)) (c : Option Bool) :
     carryValue (subCarry ps c) = (subDigits ps (carryValue c)).1 := by
-  induction ps generalizing c with
-  | nil => rfl
-  | cons p ps ih =>
+  revert ps c
+  refine List.rec ?_ ?_
+  · intro c
+    rfl
+  · intro p ps ih c
     change carryValue (subCarry ps (subBit p.1 p.2 c).1) = _
     rw [ih, carryValue_subBit]
     rfl
@@ -284,9 +308,11 @@ theorem subDigits_append (ps qs : List (Bool × Bool)) (c : ℤ) :
     subDigits (ps ++ qs) c =
       ((subDigits qs (subDigits ps c).1).1,
         (subDigits ps c).2 ++ (subDigits qs (subDigits ps c).1).2) := by
-  induction ps generalizing c with
-  | nil => rfl
-  | cons p ps ih =>
+  revert ps c
+  refine List.rec ?_ ?_
+  · intro c
+    rfl
+  · intro p ps ih c
     obtain ⟨a, b⟩ := p
     simp only [List.cons_append, subDigits_cons, ih]
 
@@ -339,9 +365,11 @@ theorem subDigits_take_subOutputLength (ps : List (Bool × Bool)) :
 /-- The carry stays in {lit}`{-1, 0, 1}`. -/
 theorem subDigits_carry_mem (ps : List (Bool × Bool)) (c : ℤ) (h0 : -1 ≤ c) (h1 : c ≤ 1) :
     -1 ≤ (subDigits ps c).1 ∧ (subDigits ps c).1 ≤ 1 := by
-  induction ps generalizing c with
-  | nil => exact ⟨h0, h1⟩
-  | cons p ps ih =>
+  revert ps c
+  refine List.rec ?_ ?_
+  · intro c h0 h1
+    exact ⟨h0, h1⟩
+  · intro p ps ih c h0 h1
     obtain ⟨a, b⟩ := p
     have ha := toNat_le_one a
     have hb := toNat_le_one b
@@ -356,12 +384,13 @@ for the difference of the two scanned words and the initial carry. -/
 theorem subDigits_spec (ps : List (Bool × Bool)) (c : ℤ) :
     (ofBits (subDigits ps c).2 : ℤ) + 2 ^ ps.length * (subDigits ps c).1
       = (ofBits (ps.map Prod.fst) : ℤ) - (ofBits (ps.map Prod.snd) : ℤ) + c := by
-  induction ps generalizing c with
-  | nil =>
+  revert ps c
+  refine List.rec ?_ ?_
+  · intro c
     simp only [subDigits, ofBits_nil, List.map_nil, List.length_nil, pow_zero,
       Nat.cast_zero, one_mul]
     omega
-  | cons p ps ih =>
+  · intro p ps ih c
     obtain ⟨a, b⟩ := p
     rw [subDigits_cons]
     obtain ⟨d, hd⟩ : ∃ d : ℤ, d = (a.toNat : ℤ) - (b.toNat : ℤ) + c := ⟨_, rfl⟩

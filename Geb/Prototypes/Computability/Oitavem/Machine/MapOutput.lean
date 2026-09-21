@@ -226,9 +226,11 @@ theorem mute_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     (hP : EmitsIn P Pre F W T B) :
     EmitsIn (mute P) Pre F (fun _ _ ↦ []) (fun n ↦ T n + 1) B := by
   have hnil (w : List Bool) : outputFold (fun (_ : Unit) _ ↦ ((), none)) () w = ((), []) := by
-    induction w with
-    | nil => rfl
-    | cons b w ih => rw [outputFold_cons, ih]; rfl
+    revert w
+    refine List.rec ?_ ?_
+    · rfl
+    · intro b w ih
+      rw [outputFold_cons, ih]; rfl
   exact (mapOutput_emitsIn hP () (fun _ _ ↦ ((), none)) (fun _ ↦ none)).congr_output
     (fun _ _ _ ↦ by rw [hnil]; rfl)
 

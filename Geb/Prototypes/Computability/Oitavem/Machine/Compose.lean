@@ -267,9 +267,11 @@ theorem chooseSymbol_runFrom {k : ℕ} {S : Bool → Type} {input : List Bool}
     (P : (b : Bool) → MultiTapeTM k Bool (S b)) (b : Bool) (cfg : Cfg k Bool (S b) input)
     (t : ℕ) :
     (chooseSymbol R test P).runFrom (chooseCfg b cfg) t = chooseCfg b ((P b).runFrom cfg t) := by
-  induction t with
-  | zero => rfl
-  | succ t ih => rw [runFrom_succ_eq_step', ih, chooseSymbol_step, runFrom_succ_eq_step']
+  revert t
+  refine Nat.rec ?_ ?_
+  · rfl
+  · intro t ih
+    rw [runFrom_succ_eq_step', ih, chooseSymbol_step, runFrom_succ_eq_step']
 
 /-- A conditional emits exactly the chosen branch's output. -/
 theorem chooseSymbol_outputString {k : ℕ} {S : Bool → Type} {input : List Bool}
@@ -281,9 +283,11 @@ theorem chooseSymbol_outputString {k : ℕ} {S : Bool → Type} {input : List Bo
       (chooseSymbol R test P).outputSymbol (chooseCfg b c) = (P b).outputSymbol c := by
     unfold outputSymbol chooseCfg
     cases c.state <;> rfl
-  induction t with
-  | zero => rfl
-  | succ t ih => rw [outputString_succ, outputString_succ, ih, chooseSymbol_runFrom, ho]
+  revert t
+  refine Nat.rec ?_ ?_
+  · rfl
+  · intro t ih
+    rw [outputString_succ, outputString_succ, ih, chooseSymbol_runFrom, ho]
 
 /-- A work-symbol test costs one step and preserves the chosen branch's resource contract. -/
 theorem chooseSymbol_emitsIn {k : ℕ} {S : Bool → Type} (R : Fin k) (test : Option Bool → Bool)

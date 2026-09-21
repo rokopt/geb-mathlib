@@ -97,6 +97,13 @@ theorem rank_cons (b : Bool) (w : List Bool) :
   simp only [List.cons_append, Geb.BitTreeScanner.ofBits_cons, Nat.bit_val] at h'
   omega
 
+/-- Prepending digits increases the numerical rank by at least their number. -/
+theorem length_add_rank_le_rank_append (u v : List Bool) :
+    u.length + rank v ≤ rank (u ++ v) := by
+  refine List.rec (by simp) (fun b u ih ↦ ?_) u
+  simp only [List.length_cons, List.cons_append, rank_cons]
+  omega
+
 /-- Every word of length k has enumeration index at least two to the k minus one. -/
 theorem pow_length_le_rank_add_one (w : List Bool) : 2 ^ w.length ≤ rank w + 1 := by
   apply List.rec (motive := fun w ↦ 2 ^ w.length ≤ rank w + 1) ?_ ?_ w

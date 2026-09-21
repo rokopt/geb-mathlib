@@ -68,25 +68,28 @@ open Geb.SizeBounded (IsPolyBounded)
 
 /-- The step digits of concatenation recursion, in their final output order. -/
 def concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0)) :
-    List Bool → (Fin n → List Bool) → List Bool
-  | [], _ => []
-  | b :: w, x => (h b (Fin.cons w x) Fin.elim0).headD false :: concatDigits h w x
+    List Bool → (Fin n → List Bool) → List Bool :=
+  List.rec (fun _ ↦ []) fun b w ih x ↦ (h b (Fin.cons w x) Fin.elim0).headD false :: ih x
 
 /-- Concatenation recursion contributes exactly one step digit per input digit. -/
 theorem length_concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0))
     (w : List Bool) (x : Fin n → List Bool) : (concatDigits h w x).length = w.length := by
-  induction w with
-  | nil => rfl
-  | cons b w ih => exact congrArg Nat.succ ih
+  revert w
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b w ih
+    exact congrArg Nat.succ ih
 
 /-- Each step digit uses the suffix following its corresponding input digit. -/
 theorem getElem?_concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0))
     (w : List Bool) (x : Fin n → List Bool) (j : ℕ) :
     (concatDigits h w x)[j]? =
       (w[j]?).map (fun b ↦ (h b (Fin.cons (w.drop (j + 1)) x) Fin.elim0).headD false) := by
-  induction w generalizing j with
-  | nil => rfl
-  | cons b w ih =>
+  revert w j
+  refine List.rec ?_ ?_
+  · intro j
+    rfl
+  · intro b w ih j
     cases j with
     | zero => rfl
     | succ j => exact ih j
@@ -95,9 +98,10 @@ theorem getElem?_concatDigits {n : ℕ} (h : Bool → Sem (n + 1, 0))
 theorem concatRec_eq_concatDigits {n : ℕ} (g : Sem (n, 0)) (h : Bool → Sem (n + 1, 0))
     (w : List Bool) (x : Fin n → List Bool) :
     concatRec g h w x Fin.elim0 = concatDigits h w x ++ g x Fin.elim0 := by
-  induction w with
-  | nil => rfl
-  | cons b w ih =>
+  revert w
+  refine List.rec ?_ ?_
+  · rfl
+  · intro b w ih
     simpa only [concatRec, concatDigits, List.cons_append] using congrArg
         ((h b (Fin.cons w x) Fin.elim0).headD false :: ·) ih
 
@@ -316,9 +320,11 @@ theorem prefixLoop_lengthByRec (K : ℕ) (w : List Bool)
     (hK : (unrank w.length).length ≤ K) (t : ℕ) (ht : t ≤ w.length) :
     prefixLoop K (Expr.initial (.zero 0)).eval (fun _ ↦ lengthByRecStep.eval)
       w Fin.elim0 t = unrank t := by
-  induction t with
-  | zero => simp [prefixLoop, Expr.eval_initial, Initial.eval, unrank_zero]
-  | succ j ih =>
+  revert t
+  refine Nat.rec ?_ ?_
+  · intro ht
+    simp [prefixLoop, Expr.eval_initial, Initial.eval, unrank_zero]
+  · intro j ih ht
     change (lengthByRecStep.eval (Fin.cons (w.drop (w.length - j)) Fin.elim0)
       ![prefixLoop K (Expr.initial (.zero 0)).eval (fun _ ↦ lengthByRecStep.eval)
         w Fin.elim0 j]).take K = unrank (j + 1)
