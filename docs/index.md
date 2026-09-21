@@ -505,7 +505,12 @@ checklist and in CI.
   a code denotes; `Oitavem/Tail.lean` codes the tail of a stream by the
   composite of the expression with the successor, `dest_toStream` the
   generator law the coded stream satisfies and `tailWord_spellExpr` the
-  tail on words as a constant rewrite of the code; `Sig.lean`'s
+  tail on words as a constant rewrite of the code; `Oitavem/Head.lean`
+  evaluates the head of a coded stream, `headCode_eq_decodeStream` its
+  agreement with the decoded stream, `toStream_eq_corec` the coded stream
+  as the corecursion of the coalgebra the head and tail form on codes, and
+  `length_valueAt_le` the length of a value at a depth as a double
+  exponential in the code's size; `Sig.lean`'s
   `codedPlain` is the signature of Logs as a coded signature, the same
   codes without the root, and `Oitavem/Plain.lean` its recognizer as an
   expression, `recognizerPlainSem_eq_singleton_iff` its acceptance of
@@ -515,6 +520,7 @@ checklist and in CI.
   `GebMeta.classicalAllowedModules`). The other modules are
   `Classical.choice`-free. Depends on
   `Geb.Prototypes.Computability.Oitavem.Syntax`,
+  `Geb.Prototypes.Computability.Oitavem.Size`,
   `Geb.Prototypes.BitStream.WConstruction` and
   `Geb.Prototypes.Computability.SizeBounded.Logspace.WTree`.
 - `Geb/Mathlib/CategoryTheory/FreeCoprodCompDisc.lean` — the free
@@ -1810,7 +1816,9 @@ checklist and in CI.
   `Expr.truncationBound` computes a normal-only bound expression;
   `Expr.truncates_truncationBound` verifies it and `Expr.exists_truncation`
   states Lemma 3.3. `Expr.length_le_poly` proves polynomial output
-  length, independently of the safe input's length.
+  length, independently of the safe input's length; `Expr.length_le_pow`
+  bounds it by `(m + 2) ^ 2 ^ size` uniformly in the expression, `size`
+  its number of nodes, a double exponential attained by iterated squaring.
   `Expr.exists_logarithmic_state` proves that capped safe recursion retains
   the correct numerical state in logarithmically many bits;
   `Expr.exists_logarithmic_prefix` shows that a logarithmic prefix of each

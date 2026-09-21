@@ -31,8 +31,9 @@ stream its expression codes.
 * {lit}`startsWithExpr` — the test of a fixed prefix at a pointer.
 * {lit}`recognize`, {lit}`recognizer` — the recognizer, and the recognizer
   as an expression.
-* {lit}`spellExpr`, {lit}`decodeStream` — the word coding an expression's
-  stream, and the stream a word codes.
+* {lit}`spellExpr`, {lit}`decodeExpr`, {lit}`decodeStream` — the word coding
+  an expression's stream, the expression a word spells, and the stream a
+  word codes.
 
 # Main statements
 
@@ -45,8 +46,9 @@ stream its expression codes.
 * {lit}`recognizerSem_eq`, {lit}`recognizerSem_eq_singleton_iff` — the
   expression's value is the recognizer's verdict as a word, and it accepts
   exactly the words the recognizer accepts.
-* {lit}`decodeStream_spellExpr` — the stream a word codes is the stream of
-  the expression the word spells.
+* {lit}`decodeExpr_spellExpr`, {lit}`decodeStream_spellExpr` — a coding
+  word decodes to the expression it spells, and to that expression's
+  stream.
 
 # References
 
@@ -213,31 +215,41 @@ theorem recognizerSem_eq_singleton_iff (w : List Bool) :
   rw [recognizerSem_eq]
   cases recognize w <;> decide
 
-/-- The stream a word codes: the stream of the expression the word spells,
-when it spells one. -/
-@[expose] def decodeStream (w : List Bool) : Option WConstruction.Stream :=
+/-- The expression a word spells: the tree read from the word, when it is an
+admissible tree at the root index, as an expression. -/
+@[expose] def decodeExpr (w : List Bool) : Option (Expr 1 0) :=
   (Geb.BitTree.Elias.decode w).bind fun t ↦ (coded.readW t).bind fun raw ↦
     if hv : sig.wValidBool raw = true then
       if hi : sig.wIndex ⟨raw, (sig.wValidBool_eq_true_iff raw).mp hv⟩ = none then
-        some (toStream (bundleEquiv ⟨⟨raw, (sig.wValidBool_eq_true_iff raw).mp hv⟩, hi⟩))
+        some (bundleEquiv ⟨⟨raw, (sig.wValidBool_eq_true_iff raw).mp hv⟩, hi⟩)
       else none
     else none
 
-/-- The stream a coding word decodes to is the stream of the expression. -/
-theorem decodeStream_spellExpr (e : Expr 1 0) : decodeStream (spellExpr e) = some (toStream e) := by
-  rw [decodeStream, spellExpr]
+/-- The stream a word codes: the stream of the expression the word spells,
+when it spells one. -/
+@[expose] def decodeStream (w : List Bool) : Option WConstruction.Stream :=
+  (decodeExpr w).map toStream
+
+/-- A coding word decodes to the expression it spells. -/
+theorem decodeExpr_spellExpr (e : Expr 1 0) : decodeExpr (spellExpr e) = some e := by
+  rw [decodeExpr, spellExpr]
   change (Geb.BitTree.Elias.decode (encode (coded.toTree (wrap e).1.1))).bind _ = _
   have h := coded.readW_toTree (wrap e).1.1
   rw [Geb.BitTree.Elias.decode_encode, Option.bind_some, h]
   change (if hv : sig.wValidBool (wrap e).1.1 = true then
       if hi : sig.wIndex ⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp hv⟩ = none then
-        some (toStream (bundleEquiv ⟨⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp hv⟩, hi⟩))
+        some (bundleEquiv ⟨⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp hv⟩, hi⟩)
       else none
-    else none) = some (toStream e)
+    else none) = some e
   rw [dite_eq_left ((sig.wValidBool_eq_true_iff _).mpr (wrap e).1.2),
     dite_eq_left (show sig.wIndex ⟨(wrap e).1.1, (sig.wValidBool_eq_true_iff _).mp
       ((sig.wValidBool_eq_true_iff _).mpr (wrap e).1.2)⟩ = none from (wrap e).2)]
-  exact congrArg (fun z ↦ some (toStream z)) (bundleEquiv.right_inv e)
+  exact congrArg some (bundleEquiv.right_inv e)
+
+/-- The stream a coding word decodes to is the stream of the expression. -/
+theorem decodeStream_spellExpr (e : Expr 1 0) : decodeStream (spellExpr e) = some (toStream e) := by
+  rw [decodeStream, decodeExpr_spellExpr]
+  rfl
 
 end
 
