@@ -27,6 +27,8 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Reader
 public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 public import Geb.Prototypes.Computability.Oitavem.Machine.Compose
 public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Reader
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Initial
 public import Geb.Prototypes.Computability.Oitavem.Machine.Counter
 public import Geb.Prototypes.Computability.Oitavem.Machine.Segment
 public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction
@@ -94,8 +96,10 @@ simultaneous polynomial time and logarithmic space on eight work tapes.
 {name}`Geb.Oitavem.Machine.concatRecGenerator_emitsIn` streams concatenation-recursion
 step digits before its base result, from indexed child contracts.
 {name}`Geb.Oitavem.Machine.Generator` supplies a common protected environment,
-private restoring calls, and uniform logarithmic workspace bounds. Its unary and
-product constructors combine independently compiled argument generators.
+private restoring calls, and uniform logarithmic workspace bounds.
+{name}`Geb.Oitavem.Initial.realize` combines independently compiled argument
+generators through every initial function. Generated length and digit readers
+return answers to caller registers and restore their shared private workspace.
 General reader substitution and constructor closure for every expression remain open.
 
 ## References

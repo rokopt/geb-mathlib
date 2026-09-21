@@ -1873,10 +1873,15 @@ checklist and in CI.
   verifies log-transition with the safe value supplied as a normal argument.
   [The generator environment](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer.lean)
   provides fixed private layouts, restoring environment imports, and common
-  logarithmic workspace bounds. Its unary and product constructors combine
-  independently compiled arguments, including repeated references to a caller
-  register. `Generator.computes` derives simultaneous polynomial time and
-  logarithmic space for closed generators.
+  logarithmic workspace bounds. Its constructors combine independently compiled
+  arguments, including repeated references to a caller register.
+  [Generated reader adapters](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Reader.lean)
+  return length and digit answers to caller registers and clear their private
+  workspace. [Initial-function assembly](../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Initial.lean)
+  covers subtraction, iterated predecessor, and conditional selection;
+  `Initial.realize` proves closure under every initial function for polynomially
+  bounded generated arguments. `Generator.computes` derives simultaneous
+  polynomial time and logarithmic space for closed generators.
   [Prefix capture](../Geb/Prototypes/Computability/Oitavem/Machine/Capture.lean)
   preserves the old saved value throughout a generator call, then replaces
   it with a bounded prefix and clears the capture scratch.

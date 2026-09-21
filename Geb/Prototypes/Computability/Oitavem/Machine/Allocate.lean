@@ -166,6 +166,26 @@ theorem _root_.Geb.SizeBounded.Machine.Emits.onTapes
   dsimp only [onTapesVal]
   cases hi : e i <;> dsimp only [Sum.elim] <;> rw [← hi, e.symm_apply_apply]
 
+/-- Updating one callee register updates exactly its allocated caller register. -/
+@[simp] theorem onTapesVal_update {k m l : ℕ} (e : Fin m ≃ Fin k ⊕ Fin l)
+    (σ : Fin m → List Bool) (R : Fin k) (w : List Bool) :
+    onTapesVal e σ (Function.update (fun i ↦ σ (e.symm (.inl i))) R w) =
+      Function.update σ (e.symm (.inl R)) w := by
+  funext i
+  rcases hi : e i with j | j
+  · have he : i = e.symm (.inl j) := (e.symm_apply_apply i).symm.trans (congrArg e.symm hi)
+    rw [he, onTapesVal_left]
+    by_cases hj : j = R
+    · subst j
+      simp
+    · rw [Function.update_of_ne hj, Function.update_of_ne]
+      exact fun h ↦ hj (Sum.inl.inj (e.symm.injective h))
+  · have he : i = e.symm (.inr j) := (e.symm_apply_apply i).symm.trans (congrArg e.symm hi)
+    rw [he, onTapesVal_right, Function.update_of_ne]
+    intro h
+    have := e.symm.injective h
+    cases this
+
 /-- Reserve the first tape for a caller, placing the callee on successor-indexed tapes. -/
 @[expose] def reserveTape (k : ℕ) : Fin (k + 1) ≃ Fin k ⊕ Fin 1 where
   toFun := Fin.cases (.inr 0) .inl

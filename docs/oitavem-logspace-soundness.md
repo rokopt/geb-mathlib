@@ -268,12 +268,18 @@ Completeness is outside this construction's scope.
   `Generator.rename` copies selected caller registers into a private
   environment and clears it after the call; repeated selections are
   permitted. Allocation combines independently compiled generators.
-  The interface covers physical input, stored words, zero, string and
-  numerical successors and predecessors, last-digit extraction,
-  numerical length, and string product. `Generator.computes` supplies
+  The interface covers physical input, stored words, and all initial
+  functions. [Generated reader adapters][realizer-readers] return length
+  and digit answers to designated caller registers, clear their private
+  workspace, and preserve a common caller layout. Digit queries may
+  exceed the generated word's length. [Initial-function assembly][realizer-initials]
+  supplies subtraction, iterated predecessor, and conditional selection.
+  `Initial.realize` proves closure under every initial function for
+  polynomially bounded generated arguments. `Generator.computes` supplies
   simultaneous polynomial time and logarithmic space for closed
   generators. Execution checks cover nested arithmetic and product with
-  a source register supplied to both argument slots.
+  a source register supplied to both argument slots, generated reader
+  calls, and the assembled arithmetic, segment, and conditional machines.
 
 The recursion results bound retained words and indices. They do not
 bound the work space used to compute those words or indices. Closing
@@ -487,9 +493,9 @@ proves the exact offset.
 `Expr.logTransitionNormal` supplies the safe input as an additional
 normal input and invokes the child with this derived offset.
 `Expr.eval_logTransitionNormal` proves equivalence to log-transition.
-Thus its machine implementation can reuse normal composition once the
-remaining initial machines are adapted to the common generator
-environment. The retained safe prefix already has logarithmic length.
+Thus its machine implementation can reuse normal composition and the
+verified initial-function adapters. The retained safe prefix already has
+logarithmic length.
 
 [Bounded-carry addition][addition] also supplies a direct digit algorithm
 and `shortlexAdd_eq_unrank_add`. It remains an alternative arithmetic
@@ -528,7 +534,7 @@ remaining task is to construct that contract for every expression.
 | Reader contract and base readers | Verified physical-input and stored-prefix readers, including repeated calls and caller preservation. |
 | General reader composition | A verified substitution rule for generated length and digit readers, exercised on polynomially long virtual inputs. |
 | Safe recursion over a generated word | A machine for `lengthByRec` composed with `squareWord`, using the saved-prefix loop and querying the generated recursion input. |
-| Remaining constructor closure | Adapt the remaining initial machines and recursion steps to the common generator environment; use normal composition for log-transition. |
+| Remaining constructor closure | Compile recursion over the common generator environment; use normal composition for log-transition. |
 | Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
 
 The first checkpoint has verified physical-input and stored-word length
@@ -556,11 +562,12 @@ layout. `emitReader_emitsIn` uses such a reader in an indexed loop;
 quadratically long generated word. Scratch initialization precedes the
 loop, whose reader restores its scratch after each query.
 
-The common generator environment now supports restoring private calls
-and several constructor-specific substitutions. The next substitution
-work is to adapt the remaining initial machines, including their length
-and digit ports, to this interface. Numerical subtraction on virtual
-arguments already has its full conditional contract.
+The common generator environment supports restoring private calls and
+all initial-function substitutions. Length and digit readers return
+their results to a common caller layout. Independent readers can reuse
+the same private tapes, because each call restores them blank.
+`Initial.realize` needs only the argument generators and a common
+polynomial output-length bound.
 
 The safe-recursion checkpoint has a machine proof with a live saved
 prefix. Its step expression is fixed to the recursive length example.
@@ -625,6 +632,8 @@ that additional characterization or a direct machine encoding.
 [machine-recursion]: ../Geb/Prototypes/Computability/Oitavem/Machine/Recursion.lean
 [recursive-length]: ../Geb/Prototypes/Computability/Oitavem/Machine/RecursiveLength.lean
 [realizer]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer.lean
+[realizer-readers]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Reader.lean
+[realizer-initials]: ../Geb/Prototypes/Computability/Oitavem/Machine/Realizer/Initial.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean
 [word]: ../Geb/Prototypes/Computability/Oitavem/Word.lean

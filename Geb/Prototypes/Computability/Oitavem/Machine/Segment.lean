@@ -221,6 +221,27 @@ theorem dropGenerator_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     (P : MultiTapeTM k Bool S) (r : Fin 5 → Fin k) (L : Fin k) :=
   seq P₁ (seq P₂ (seq (dropGenerator P r L) (const [] L)))
 
+/-- Iterated predecessor has finite control whenever its readers do. -/
+theorem iterPredGenerator_finite {k : ℕ} {S₁ S₂ S : Type}
+    [Finite S₁] [Finite S₂] [Finite S]
+    (P₁ : MultiTapeTM k Bool S₁) (P₂ : MultiTapeTM k Bool S₂)
+    (P : MultiTapeTM k Bool S) (r : Fin 5 → Fin k) (L : Fin k) :
+    Finite (StateOf (iterPredGenerator P₁ P₂ P r L)) := by
+  let := Fintype.ofFinite S₁
+  let := Fintype.ofFinite S₂
+  let := Fintype.ofFinite S
+  let : Fintype (StateOf (dropReader P r)) := by
+    unfold dropReader
+    infer_instance
+  let : Fintype (StateOf (emitReaderClean (dropReader P r) (r 1) (r 4))) := by
+    unfold emitReaderClean emitReader emitReaderLoop
+    infer_instance
+  let : Fintype (StateOf (dropGenerator P r L)) := by
+    unfold dropGenerator minCounter
+    infer_instance
+  unfold iterPredGenerator
+  infer_instance
+
 /-- Iterated predecessor composes two length readers with a digit reader.
 The represented arguments remain virtual throughout execution. -/
 theorem iterPredGenerator_emitsIn {k : ℕ} {S₁ S₂ S : Type}

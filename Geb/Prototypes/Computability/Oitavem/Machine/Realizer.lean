@@ -74,6 +74,22 @@ theorem Initialized.zero {m k : ℕ} {env : Fin m → Fin k} {σ : Fin (k + 1) �
     (h : Initialized (fun i ↦ (env i).succ) σ) : σ 0 = [] :=
   h 0 (fun j ↦ (Fin.succ_ne_zero (env j)).symm)
 
+/-- Updating a protected register preserves blank scratch registers. -/
+theorem Initialized.update {m k : ℕ} {env : Fin m → Fin k} {σ : Fin k → List Bool}
+    (h : Initialized env σ) (j : Fin m) (w : List Bool) :
+    Initialized env (Function.update σ (env j) w) := by
+  intro i hi
+  rw [Function.update_of_ne (hi j)]
+  exact h i hi
+
+/-- Restricting an initialized caller to the callee's tapes preserves initialization. -/
+theorem Initialized.onTapes {m k l a : ℕ} {env : Fin m → Fin k}
+    (e : Fin l ≃ Fin k ⊕ Fin a) {σ : Fin l → List Bool}
+    (h : Initialized (fun j ↦ e.symm (.inl (env j))) σ) :
+    Initialized env (fun i ↦ σ (e.symm (.inl i))) := by
+  intro i hi
+  exact h _ (fun j he ↦ hi j (Sum.inl.inj (e.symm.injective he)))
+
 /-- Executable generator data at fixed tape and state types. -/
 @[ext] structure GeneratorData (m k : ℕ) (S : Type) : Type where
   /-- Protected environment registers. -/
@@ -507,6 +523,23 @@ The machine copies those values into its fixed private layout on every call. -/
       correct B hB := by
         obtain ⟨T, hT⟩ := G.correct B hB
         exact ⟨_, succGenerator_emitsIn hT b⟩
+    }⟩
+
+/-- A fixed final output digit uses no additional work tape. -/
+@[expose] def appendBit (G : Generator m Pre W) (b : Bool) :
+    Generator m Pre (fun input σ ↦ W input σ ++ [b]) :=
+  ⟨G.tapes, StateOf (seq G.program (emitSymbol (some b))),
+    { finite := by
+        let := Fintype.ofFinite G.State
+        infer_instance
+      env := G.env
+      env_injective := G.env_injective
+      program := seq G.program (emitSymbol (some b))
+      space := G.space
+      correct B hB := by
+        obtain ⟨T, hT⟩ := G.correct B hB
+        exact ⟨_, (hT.seqEmitsIn (emitSymbol_emitsIn (some b) B)).mono_pre
+          (fun _ _ _ hp ↦ ⟨hp, trivial⟩)⟩
     }⟩
 
 /-- Numerical successor changes only finite output control. -/

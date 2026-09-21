@@ -386,6 +386,16 @@ theorem chooseEmpty_emitsIn {k : ℕ} {S : Bool → Type} (R : Fin k)
   seq (generatedLength Q)
     (seq (chooseEmpty 0 (fun b ↦ onTapes (P b) (reserveTape k))) (const [] 0))
 
+/-- A conditional has finite control when its selector and both branches do. -/
+theorem condGenerator_finite {k : ℕ} {S : Bool → Type} {A : Type}
+    [Finite A] [∀ b, Finite (S b)] (Q : MultiTapeTM k Bool A)
+    (P : (b : Bool) → MultiTapeTM k Bool (S b)) :
+    Finite (StateOf (condGenerator Q P)) := by
+  let := Fintype.ofFinite A
+  let (b : Bool) : Fintype (S b) := Fintype.ofFinite (S b)
+  unfold condGenerator generatedLength chooseEmpty chooseSymbol
+  infer_instance
+
 /-- Conditional composition preserves the old registers and clears its one extra tape.
 Only the precondition of the branch selected by the generated test word is required. -/
 theorem condGenerator_emitsIn {k : ℕ} {S : Bool → Type} {A : Type}

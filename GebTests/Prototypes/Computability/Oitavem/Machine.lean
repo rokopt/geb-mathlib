@@ -19,6 +19,10 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction -- shake:
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Subtraction -- shake: keep
 public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer -- shake: keep
 public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Reader -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Reader -- shake: keep
+public import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Initial -- shake: keep
+public meta import Geb.Prototypes.Computability.Oitavem.Machine.Realizer.Initial -- shake: keep
 public import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 public meta import Geb.Prototypes.Computability.SizeBounded.Machine.Exec -- shake: keep
 
@@ -95,6 +99,79 @@ public section
       finish.tapes[i][(j : ℤ) - 1]? == start.tapes[i][(j : ℤ) - 1]?)
 
 #guard (List.range 31).all fun n ↦ checkEnvironment (unrank n)
+
+/-- Generated readers keep the source and query while replacing a dirty result. -/
+@[expose] def checkEnvironmentReader (w : List Bool) (q : ℕ) : Bool := Id.run do
+  let G := duplicateProduct
+  let L := G.lengthReader (fun _ ↦ (0 : Fin 4)) 2
+  let P := G.atReader (fun _ ↦ (0 : Fin 4)) 1 2
+  let words := #v[w, counterWord q, [true, false, true], [false, false]]
+  let source := numericPred (List.replicate w.length (numericSucc w)).flatten
+  let start : ExecCfg _ (StateOf P) [] :=
+    { ExecCfg.init P [] with
+      inputPos := 0
+      tapes := Vector.ofFn fun i ↦ if h : i.val < 4 then register words[i.val] else ∅
+      outputRev := [true, false] }
+  let finish := (execStep P)^[50000] start
+  let lengthStart : ExecCfg _ (StateOf L) [] :=
+    { ExecCfg.init L [] with
+      inputPos := 0
+      tapes := Vector.ofFn fun i ↦ if h : i.val < 4 then register words[i.val] else ∅
+      outputRev := [true, false] }
+  let lengthFinish := (execStep L)^[50000] lengthStart
+  let expected := words.set 2 (source[q]?).toList
+  let expectedLength := words.set 2 (counterWord source.length)
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev == start.outputRev &&
+    lengthFinish.state.isNone && lengthFinish.inputPos.val == 0 &&
+    lengthFinish.heads.toList.all (· == 0) && lengthFinish.outputRev == lengthStart.outputRev &&
+    (List.finRange finish.tapes.size).all (fun i ↦ (List.range 12).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? ==
+        (if h : i.val < 4 then (register expected[i.val])[(j : ℤ) - 1]? else none)) &&
+    (List.finRange lengthFinish.tapes.size).all (fun i ↦ (List.range 12).all fun j ↦
+      lengthFinish.tapes[i][(j : ℤ) - 1]? ==
+        (if h : i.val < 4 then (register expectedLength[i.val])[(j : ℤ) - 1]? else none))
+
+#guard ([[], [false], [true, false]] : List (List Bool)).all fun w ↦
+  ([0, 1, 4, 9] : List ℕ).all (checkEnvironmentReader w)
+
+/-- Execute a packaged generator and check its output, restoration, and parked heads. -/
+@[expose] def checkGenerator {m : ℕ} {Pre : List Bool → (Fin m → List Bool) → Prop}
+    {W : List Bool → (Fin m → List Bool) → List Bool}
+    (G : Generator m Pre W) (input : List Bool) (σ : Fin m → List Bool) (fuel : ℕ) : Bool :=
+  Id.run do
+    let start : ExecCfg G.tapes G.State input :=
+      { ExecCfg.init G.program input with
+        inputPos := 0
+        tapes := Vector.ofFn fun i ↦ register
+          (((List.finRange m).find? (fun j ↦ G.env j == i)).map σ |>.getD [])
+        outputRev := [true, false] }
+    let mut finish := start
+    for _ in [:fuel] do
+      if finish.state.isNone then break
+      finish := execStep G.program finish
+    return finish.state.isNone && finish.inputPos.val == 0 &&
+      finish.heads.toList.all (· == 0) &&
+      finish.outputRev.reverse == [false, true] ++ W input σ &&
+      (List.finRange G.tapes).all (fun i ↦ (List.range 12).all fun j ↦
+        finish.tapes[i][(j : ℤ) - 1]? == start.tapes[i][(j : ℤ) - 1]?)
+
+#guard (List.range 7).all fun a ↦ (List.range 7).all fun b ↦
+  let Pre := fun (_ : List Bool) (σ : Fin 2 → List Bool) ↦ ∀ i, (σ i).length ≤ 4
+  let G := Generator.stored 2 Pre 0
+  let H := Generator.stored 2 Pre 1
+  let S := G.numericSub H (fun _ ↦ 5) 3
+    (fun _ σ hp ↦ by have := hp 0; have := hp 1; omega)
+    (fun n ↦ by change 3 ≤ 3 * (n.size + 1); omega)
+  let D := G.iterPred H (fun _ ↦ 4) 3
+    (fun _ _ hp ↦ max_le (hp 0) (hp 1))
+    (fun n ↦ by change 3 ≤ 3 * (n.size + 1); omega)
+  let C := G.cond (fun b ↦ Generator.stored 2 Pre (if b then 1 else 0)) 3
+    (fun input σ hp ↦ (size_le_size (Nat.add_le_add_right (hp 0) 1)).trans
+      (by change 3 ≤ 3 * (input.length.size + 1); omega))
+  checkGenerator S [] ![unrank a, unrank b] 100000 &&
+    checkGenerator D [] ![unrank a, unrank b] 100000 &&
+    checkGenerator C [] ![unrank a, unrank b] 100000
 
 #guard (List.range 31).all fun n ↦
   let w := unrank n

@@ -188,6 +188,26 @@ theorem ReadsAt.onTapes {k m l : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     have := e.symm.injective h
     cases this
 
+/-- An all-index digit reader preserves its contract under tape allocation. -/
+theorem ReadsAtAll.onTapes {k m l : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Q R : Fin k} {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : ReadsAtAll P Q R Pre W T B) (e : Fin m ≃ Fin k ⊕ Fin l) :
+    ReadsAtAll (Machine.onTapes P e) (e.symm (.inl Q)) (e.symm (.inl R))
+      (fun input σ ↦ Pre input (fun i ↦ σ (e.symm (.inl i))))
+      (fun input σ ↦ W input (fun i ↦ σ (e.symm (.inl i)))) T B :=
+  (TransformsIn.onTapes hP e).congr (fun _ σ _ ↦ onTapesVal_update e σ R _)
+
+/-- A length reader preserves its contract under tape allocation. -/
+theorem ReadsLength.onTapes {k m l : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {R : Fin k} {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : ReadsLength P R Pre W T B) (e : Fin m ≃ Fin k ⊕ Fin l) :
+    ReadsLength (Machine.onTapes P e) (e.symm (.inl R))
+      (fun input σ ↦ Pre input (fun i ↦ σ (e.symm (.inl i))))
+      (fun input σ ↦ W input (fun i ↦ σ (e.symm (.inl i)))) T B :=
+  (TransformsIn.onTapes hP e).congr (fun _ σ _ ↦ onTapesVal_update e σ R _)
+
 /-- Emit the symbol under a work head in one step, leaving every tape and head unchanged. -/
 @[expose] def emitBit {k : ℕ} (R : Fin k) : MultiTapeTM k Bool Unit where
   q₀ := ()
