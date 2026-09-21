@@ -69,6 +69,20 @@ Queries through the first out-of-range position must halt and obey the bound. -/
     (fun input σ ↦ Pre input σ ∧ ∃ q, σ Q = counterWord q ∧ q ≤ (W input σ).length)
     (fun input σ ↦ Function.update σ R ((W input σ)[counterValue (σ Q)]?).toList) T B
 
+/-- A digit reader that also accepts every canonical index beyond the represented word. -/
+@[expose] def ReadsAtAll {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) (Q R : Fin k)
+    (Pre : List Bool → (Fin k → List Bool) → Prop)
+    (W : List Bool → (Fin k → List Bool) → List Bool) (T B : ℕ → ℕ) : Prop :=
+  TransformsIn P (fun input σ ↦ Pre input σ ∧ ∃ q, σ Q = counterWord q)
+    (fun input σ ↦ Function.update σ R ((W input σ)[counterValue (σ Q)]?).toList) T B
+
+/-- A reader accepting every index satisfies the bounded-index reader contract. -/
+theorem ReadsAtAll.readsAt {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S} {Q R : Fin k}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : ReadsAtAll P Q R Pre W T B) : ReadsAt P Q R Pre W T B :=
+  hP.mono_pre (fun _ _ _ hp ↦ ⟨hp.1, hp.2.imp fun _ hq ↦ hq.1⟩)
+
 /-- The physical input supplies a digit reader when its scratch register is initialized. -/
 theorem inputAt_readsAt {k : ℕ} (Q C R : Fin k)
     (hQC : Q ≠ C) (hQR : Q ≠ R) (hCR : C ≠ R) (B : ℕ → ℕ)

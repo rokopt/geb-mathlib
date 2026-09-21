@@ -25,6 +25,7 @@ decrement, and loop programs. All intermediate sums are bounded by the final sum
 * {lit}`addCounter` adds and consumes a binary counter.
 * {lit}`subCounter` subtracts and consumes a binary counter, saturating at zero.
 * {lit}`minCounter` clamps a counter to a saved bound using two saturated subtractions.
+* {lit}`maxCounter` retains the larger counter and clears its temporary registers.
 
 ## Main statements
 
@@ -254,6 +255,55 @@ theorem minCounter_transformsIn {k : ℕ} (A L D : Fin k)
     · subst i
       simp
     · simp [Function.update_of_ne hiA, Function.update_of_ne hiD]
+
+/-- Keep the larger counter, consuming the other and clearing one temporary register. -/
+@[expose] def maxCounter {k : ℕ} (A C D : Fin k) :=
+  seq (copy A D) (seq (subCounter C D) (addCounter A C))
+
+/-- Computing a maximum never grows beyond the larger input counter. -/
+theorem maxCounter_transformsIn {k : ℕ} (A C D : Fin k)
+    (hAC : A ≠ C) (hAD : A ≠ D) (hCD : C ≠ D) (N B : ℕ → ℕ)
+    (hsize : ∀ n, (N n).size ≤ B n) :
+    TransformsIn (maxCounter A C D)
+      (fun input σ ↦ ∃ a c, σ A = counterWord a ∧ σ C = counterWord c ∧
+        a ≤ N input.length ∧ c ≤ N input.length)
+      (fun _ σ ↦ Function.update (Function.update (Function.update σ A
+        (counterWord (max (counterValue (σ A)) (counterValue (σ C))))) C []) D [])
+      (fun n ↦ N n * (8 * B n + 24) + 5 * B n + 14) B := by
+  have hc := Transforms.toIn_of (fun n ↦ copy_transforms A D hAD (B n))
+    (fun _ _ ↦ True) (fun _ _ hB _ ↦ hB.update (hB A))
+  have hs := hc.seq ((subCounter_transformsIn C D hCD N B).seq
+    (addCounter_transformsIn A C hAC N B))
+  have hm := hs.mono_pre (Pre' := fun input σ ↦
+      ∃ a c, σ A = counterWord a ∧ σ C = counterWord c ∧
+        a ≤ N input.length ∧ c ≤ N input.length) (by
+    rintro input σ _ ⟨a, c, ha, hc, han, hcn⟩
+    refine ⟨trivial, ⟨c, a, ?_, ?_, han⟩, a, c - a, ?_, ?_, by omega, ?_⟩
+    · simp [hCD, hc]
+    · simp [ha]
+    · simp [hAD, hAC, ha]
+    · simp [hCD, hc, ha, counterValue_counterWord]
+    · exact (size_le_size (by omega : a + (c - a) ≤ N input.length)).trans (hsize _))
+  refine (hm.congr ?_).mono_time (fun n ↦ ?_)
+  swap
+  · have he : N n * (4 * B n + 13) + N n * (4 * B n + 11) = N n * (8 * B n + 24) := by
+      rw [← Nat.mul_add]
+      congr 1
+      omega
+    omega
+  rintro input σ ⟨a, c, ha, hc, _⟩
+  have he : a + (c - a) = max a c := by omega
+  funext i
+  by_cases hiA : i = A
+  · subst i
+    simp [hAD, hAC, hCD, ha, hc, counterValue_counterWord, he]
+  · by_cases hiC : i = C
+    · subst i
+      simp [hCD]
+    · by_cases hiD : i = D
+      · subst i
+        simp [hAD.symm, hCD.symm]
+      · simp [Function.update_of_ne hiA, Function.update_of_ne hiC, Function.update_of_ne hiD]
 
 end
 

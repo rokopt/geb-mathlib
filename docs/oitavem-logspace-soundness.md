@@ -148,6 +148,7 @@ Completeness is outside this construction's scope.
   retaining its index and digit, and returns its length in the query
   register. `generatedAt_all_queries` also verifies arbitrary canonical
   queries beyond a generated word's end, returning a missing digit.
+  `ReadsAtAll` records this stronger reader contract for padded arithmetic.
   Its precondition and represented word must be independent
   of the query and result registers. For reader time `T`, word-length
   bound `N`, and head bound `B`, it uses at most
@@ -229,10 +230,14 @@ Completeness is outside this construction's scope.
   The scan carries a signed value between minus one and one through
   the paired sentinel digits, then removes trailing zeroes and the
   sentinel. This constructive arithmetic proof was developed with
-  Aristotle and adapted and verified locally. Its machine realization
-  remains open: the lists in this specification are not work tapes.
-  [The single-digit machine][subtraction-machine] has a checked one-step
-  contract for the carry and result cells, with all other tapes preserved.
+  Aristotle and adapted and verified locally.
+  [The subtraction machine][subtraction-machine] now proves
+  `numericSubGenerator_emitsIn`: virtual length and sentinel-digit
+  readers determine the loop bound, then two scans compute the sign,
+  significant index, and canonical output. Seven working ports contain
+  only digits and binary counters. All are cleared on return, and the
+  argument readers retain their common space bound. Executable checks
+  cover 256 word pairs with reused counters and protected caller tapes.
 - [Output-prefix capture][capture] retains a mask-bounded prefix while
   continuing the generator to its own halt. The low-level simulation
   `captureOutput_runsTo` was developed with Aristotle and verified
@@ -357,10 +362,11 @@ outputs. `numericSuccGenerator_emitsIn`, `numericPredGenerator_emitsIn`,
 unary constructors through finite-state output transformations.
 `iterPredGenerator_emitsIn` combines argument-length readers with a
 saturating segment generator. `condGenerator_emitsIn` counts the selector
-and invokes the appropriate branch. Numerical subtraction on long words
-still requires a machine proof. `shortlexSub_eq_numericSub` supplies its
-digitwise arithmetic specification; index-counter subtraction alone
-does not implement it.
+and invokes the appropriate branch. `numericSubGenerator_emitsIn`
+implements numerical subtraction on virtual words using length and
+sentinel-digit readers. It includes counter initialization, sign handling,
+shortlex normalization, and cleanup; its output is linked to the word
+model by `shortlexSub_eq_numericSub`.
 
 ### Normal composition
 
@@ -493,7 +499,7 @@ remaining task is to construct that contract for every expression.
 | Reader contract and base readers | Verified physical-input and stored-prefix readers, including repeated calls and caller preservation. |
 | General reader composition | A verified substitution rule for generated length and digit readers, exercised on polynomially long virtual inputs. |
 | Safe recursion over a generated word | A machine for `lengthByRec` composed with `squareWord`, using the saved-prefix loop and querying the generated recursion input. |
-| Remaining constructor closure | Machine length and digit routines for every initial function, concatenation recursion, and log-transition. |
+| Remaining constructor closure | Reader substitution into recursion steps, the log-transition machine, and a common compiler environment. |
 | Full soundness | Syntax-wide compiler correctness, exact final output, global logarithmic space, and simultaneous polynomial time for the resulting machine. |
 
 The first checkpoint has verified physical-input and stored-word length
@@ -526,9 +532,9 @@ an environment of length and digit programs, preserving the represented
 words through nested calls. The allocation and streaming rules supply
 the tape separation and output loop, but do not yet implement normal
 composition for arbitrary expressions. Segment readers, several
-constructor rules, and the saved-prefix loop are now proved. Remaining
-constructor work includes the subtraction machine, reader substitution
-into the recursion steps, and general log-transition.
+constructor rules, numerical subtraction on virtual arguments, and the
+saved-prefix loop are now proved. Remaining constructor work includes
+reader substitution into the recursion steps and general log-transition.
 General safe recursion still needs compiled base and step readers,
 cutoff computation, and full final-step emission.
 

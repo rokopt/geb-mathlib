@@ -75,7 +75,9 @@ and numerical successor and predecessor without additional work tapes. Generated
 and product constructors use binary counters; segment readers implement iterated predecessor.
 Conditional generators select and run one branch after testing a generated word's length.
 {name}`Geb.Oitavem.shortlexSub_eq_numericSub` verifies a digitwise subtraction algorithm
-against the existing word encoding; its machine implementation remains open.
+against the existing word encoding. {name}`Geb.Oitavem.Machine.numericSubGenerator_emitsIn`
+implements it through virtual length and sentinel-digit readers: two scans determine
+the sign and significant length, then emit the result with all working ports cleared.
 {name}`Geb.Oitavem.shortlexAdd_eq_unrank_add` verifies bounded-carry addition for
 log-transition, without decoding the long normal word's rank.
 {name}`Geb.Oitavem.Machine.generatedPrefix_transformsIn` retains a bounded output

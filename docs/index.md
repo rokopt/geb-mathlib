@@ -1859,11 +1859,12 @@ checklist and in CI.
   [Segment generators](../Geb/Prototypes/Computability/Oitavem/Machine/Segment.lean)
   implement iterated predecessor, clamping offsets beyond the source length.
   [Digitwise subtraction](../Geb/Prototypes/Computability/Oitavem/Subtraction.lean)
-  proves the signed-carry algorithm correct for the existing shortlex encoding;
-  its machine implementation remains open.
-  [The arithmetic transition](../Geb/Prototypes/Computability/Oitavem/Machine/Subtraction.lean)
-  implements one subtraction digit with a three-valued carry and preserved
-  caller tapes.
+  proves the signed-carry algorithm correct for the existing shortlex encoding.
+  [The subtraction machine](../Geb/Prototypes/Computability/Oitavem/Machine/Subtraction.lean)
+  combines virtual length and sentinel-digit readers in two scans, determines
+  the sign and significant length, emits the normalized result, and clears its
+  seven working ports. Its constructor contract preserves the readers' space
+  bound and every caller register outside those ports.
   [Bounded-carry addition](../Geb/Prototypes/Computability/Oitavem/Addition.lean)
   proves the digit algorithm for adding a natural number to an arbitrary
   shortlex word, with every intermediate carry at most the initial carry or one.

@@ -84,6 +84,16 @@ theorem EmitsIn.mono_pre {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
   fun input cfg σ hq hpark hpos hσ hp hB ↦
     h input cfg σ hq hpark hpos hσ (hpre input σ hB hp) hB
 
+/-- An emitter contract holds with a larger bound on the number of transitions. -/
+theorem EmitsIn.mono_time {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T T' B : ℕ → ℕ}
+    (h : EmitsIn P Pre F W T B) (hT : ∀ n, T n ≤ T' n) : EmitsIn P Pre F W T' B := by
+  intro input cfg σ hq hpark hpos hσ hp hB
+  obtain ⟨hFB, t, ht, he⟩ := h input cfg σ hq hpark hpos hσ hp hB
+  exact ⟨hFB, t, ht.trans (hT _), he⟩
+
 /-- An emitter contract admits an equal valuation transformer on its precondition. -/
 theorem EmitsIn.congr {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
     {Pre : List Bool → (Fin k → List Bool) → Prop}

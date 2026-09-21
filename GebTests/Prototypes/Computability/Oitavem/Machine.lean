@@ -413,6 +413,35 @@ The second call must clear the result left by the first. -/
     (List.finRange 7).all fun i ↦ (List.range (B + 3)).all fun j ↦
       finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
 
+/-- Initialize and run subtraction with reused counters, checking normalization and cleanup. -/
+@[expose] def checkSubtraction (v w : List Bool) : Bool := Id.run do
+  let a : Fin 5 → Fin 12 := ![7, 5, 9, 10, 0]
+  let b : Fin 5 → Fin 12 := ![8, 5, 9, 10, 1]
+  let lengthV := seq (storedLength (![8, 9, 4, 10] : Fin 4 → Fin 12)) (dec 4)
+  let lengthW := seq (storedLength (![7, 9, 5, 10] : Fin 4 → Fin 12)) (dec 5)
+  let tm := numericSubGenerator lengthV lengthW (readStored a) (readStored b) (Fin.castAdd 5)
+  let N := max v.length w.length + 1
+  let B := max 3 N
+  let words := #v[[], [], [false, true], [], [true, false, false], [true], [false, true],
+    w ++ [true], v ++ [true], [], [], [true, false]]
+  let start : ExecCfg 12 (StateOf tm) [] :=
+    { ExecCfg.init tm [] with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let L := storedLengthTime B + 2 * B + 6
+  let T := numericSubTime L L (readStoredTime B N) (readStoredTime B N) B N
+  let finish := (execStep tm)^[T] start
+  let expected := words.set 2 [] |>.set 4 [] |>.set 5 [] |>.set 6 []
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) &&
+    finish.outputRev.reverse == [false, true] ++ numericSub v w &&
+    (List.finRange 12).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+#guard (List.range 16).all fun a ↦ (List.range 16).all fun b ↦
+  checkSubtraction (unrank a) (unrank b)
+
 #guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
   let w := (List.range n).map (Nat.testBit x)
   (List.range (n + 3)).all (checkDrop w) && (List.range (n + 1)).all (checkEmitPrefix w) &&

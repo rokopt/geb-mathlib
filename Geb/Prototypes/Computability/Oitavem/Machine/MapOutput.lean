@@ -214,6 +214,24 @@ theorem mapOutput_emitsIn {k : ℕ} {S A : Type} {P : MultiTapeTM k Bool S}
   rw [hstart] at h
   exact ⟨hFB, t + 1, Nat.add_le_add_right ht 1, h⟩
 
+/-- Run an emitting program while discarding every output digit. -/
+@[expose] def mute {k : ℕ} {S : Type} (P : MultiTapeTM k Bool S) :=
+  mapOutput P () (fun _ _ ↦ ((), none)) (fun _ ↦ none)
+
+/-- Suppressing output preserves the complete valuation and space contract. -/
+theorem mute_emitsIn {k : ℕ} {S : Type} {P : MultiTapeTM k Bool S}
+    {Pre : List Bool → (Fin k → List Bool) → Prop}
+    {F : List Bool → (Fin k → List Bool) → Fin k → List Bool}
+    {W : List Bool → (Fin k → List Bool) → List Bool} {T B : ℕ → ℕ}
+    (hP : EmitsIn P Pre F W T B) :
+    EmitsIn (mute P) Pre F (fun _ _ ↦ []) (fun n ↦ T n + 1) B := by
+  have hnil (w : List Bool) : outputFold (fun (_ : Unit) _ ↦ ((), none)) () w = ((), []) := by
+    induction w with
+    | nil => rfl
+    | cons b w ih => rw [outputFold_cons, ih]; rfl
+  exact (mapOutput_emitsIn hP () (fun _ _ ↦ ((), none)) (fun _ ↦ none)).congr_output
+    (fun _ _ _ ↦ by rw [hnil]; rfl)
+
 end
 
 end Geb.Oitavem.Machine

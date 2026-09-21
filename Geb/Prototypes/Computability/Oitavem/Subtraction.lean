@@ -114,6 +114,44 @@ theorem ofBits_eq_zero_iff (l : List Bool) : ofBits l = 0 ↔ ∀ b ∈ l, b = f
   | [] => []
   | b :: bs => if (trim bs).isEmpty && !b then [] else b :: trim bs
 
+/-- Appending a zero does not change the significant prefix. -/
+theorem trim_append_false (w : List Bool) : trim (w ++ [false]) = trim w := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => simp only [List.cons_append, trim, ih]
+
+/-- An appended one is the new last significant digit. -/
+theorem trim_append_true (w : List Bool) : trim (w ++ [true]) = w ++ [true] := by
+  induction w with
+  | nil => rfl
+  | cons b w ih => simp [trim, ih]
+
+/-- Trimming only shortens a word. -/
+theorem length_trim_le (w : List Bool) : (trim w).length ≤ w.length := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    rw [trim]
+    split
+    · exact Nat.zero_le _
+    · exact Nat.succ_le_succ ih
+
+/-- The significant digits are an initial segment of the original word. -/
+theorem take_length_trim (w : List Bool) : w.take (trim w).length = trim w := by
+  induction w with
+  | nil => rfl
+  | cons b w ih =>
+    rw [trim]
+    split
+    · rfl
+    · simpa only [List.length_cons, List.take_succ_cons] using congrArg (b :: ·) ih
+
+/-- Normalization needs only the index of the last significant digit. -/
+theorem dropLast_trim_eq_take (w : List Bool) :
+    (trim w).dropLast = w.take ((trim w).length - 1) := by
+  rw [List.dropLast_eq_take, ← take_length_trim w, List.take_take]
+  simp only [List.length_take, Nat.min_eq_left (length_trim_le w), Nat.min_eq_left (Nat.sub_le ..)]
+
 /-- Removing trailing {lit}`false`s preserves the value. -/
 theorem ofBits_trim (l : List Bool) : ofBits (trim l) = ofBits l := by
   induction l with
@@ -226,6 +264,77 @@ theorem subDigits_cons (a b : Bool) (ps : List (Bool × Bool)) (c : ℤ) :
       ((subDigits ps (((a.toNat : ℤ) - (b.toNat : ℤ) + c) / 2)).1,
         decide (((a.toNat : ℤ) - (b.toNat : ℤ) + c) % 2 = 1) ::
           (subDigits ps (((a.toNat : ℤ) - (b.toNat : ℤ) + c) / 2)).2) := rfl
+
+/-- The finite carry obtained by scanning a prefix of digit pairs. -/
+@[expose] def subCarry (ps : List (Bool × Bool)) (c : Option Bool) : Option Bool :=
+  ps.foldl (fun c p ↦ (subBit p.1 p.2 c).1) c
+
+/-- The finite representation follows the arithmetic carry exactly. -/
+theorem carryValue_subCarry (ps : List (Bool × Bool)) (c : Option Bool) :
+    carryValue (subCarry ps c) = (subDigits ps (carryValue c)).1 := by
+  induction ps generalizing c with
+  | nil => rfl
+  | cons p ps ih =>
+    change carryValue (subCarry ps (subBit p.1 p.2 c).1) = _
+    rw [ih, carryValue_subBit]
+    rfl
+
+/-- A scan can be resumed from the carry saved after any prefix. -/
+theorem subDigits_append (ps qs : List (Bool × Bool)) (c : ℤ) :
+    subDigits (ps ++ qs) c =
+      ((subDigits qs (subDigits ps c).1).1,
+        (subDigits ps c).2 ++ (subDigits qs (subDigits ps c).1).2) := by
+  induction ps generalizing c with
+  | nil => rfl
+  | cons p ps ih =>
+    obtain ⟨a, b⟩ := p
+    simp only [List.cons_append, subDigits_cons, ih]
+
+/-- One more digit updates the saved finite carry and appends its output bit. -/
+theorem subDigits_append_one (ps : List (Bool × Bool)) (a b : Bool) (c : Option Bool) :
+    subDigits (ps ++ [(a, b)]) (carryValue c) =
+      (carryValue (subBit a b (subCarry ps c)).1,
+        (subDigits ps (carryValue c)).2 ++ [(subBit a b (subCarry ps c)).2]) := by
+  rw [subDigits_append, ← carryValue_subCarry, carryValue_subBit]
+  rfl
+
+/-- A finite carry also resumes after a prefix. -/
+theorem subCarry_append_one (ps : List (Bool × Bool)) (a b : Bool) (c : Option Bool) :
+    subCarry (ps ++ [(a, b)]) c = (subBit a b (subCarry ps c)).1 := by
+  simp only [subCarry, List.foldl_append, List.foldl_cons, List.foldl_nil]
+
+/-- Recomputing a prefix produces exactly the corresponding prefix of the output. -/
+theorem subDigits_take (ps : List (Bool × Bool)) (c : ℤ) (j : ℕ) (hj : j ≤ ps.length) :
+    (subDigits (ps.take j) c).2 = (subDigits ps c).2.take j := by
+  have he := congrArg Prod.snd (subDigits_append (ps.take j) (ps.drop j) c)
+  rw [List.take_append_drop] at he
+  rw [he, List.take_append_of_le_length (by simpa [subDigits_length] using hj)]
+  exact (List.take_of_length_le (by simp [subDigits_length, Nat.min_eq_left hj])).symm
+
+/-- The number of digits to emit after the sign and last significant index are known. -/
+@[expose] def subOutputLength (ps : List (Bool × Bool)) : ℕ :=
+  if (subCarry ps (some true)).isNone then 0 else (trim (subDigits ps 1).2).length - 1
+
+/-- Normalization never needs more digits than were scanned. -/
+theorem subOutputLength_le (ps : List (Bool × Bool)) : subOutputLength ps ≤ ps.length := by
+  unfold subOutputLength
+  split
+  · omega
+  · have h := length_trim_le (subDigits ps 1).2
+    rw [subDigits_length] at h
+    omega
+
+/-- The second scan emits the normalized result, or nothing for a negative difference. -/
+theorem subDigits_take_subOutputLength (ps : List (Bool × Bool)) :
+    (subDigits (ps.take (subOutputLength ps)) 1).2 =
+      if 0 ≤ (subDigits ps 1).1 then (trim (subDigits ps 1).2).dropLast else [] := by
+  have hc := carryValue_subCarry ps (some true)
+  change carryValue (subCarry ps (some true)) = (subDigits ps 1).1 at hc
+  rw [subDigits_take ps 1 _ (subOutputLength_le ps), subOutputLength, ← hc]
+  cases he : subCarry ps (some true) with
+  | none => simp [carryValue]
+  | some b =>
+    cases b <;> simp [carryValue, dropLast_trim_eq_take]
 
 /-- The carry stays in {lit}`{-1, 0, 1}`. -/
 theorem subDigits_carry_mem (ps : List (Bool × Bool)) (c : ℤ) (h0 : -1 ≤ c) (h1 : c ≤ 1) :
