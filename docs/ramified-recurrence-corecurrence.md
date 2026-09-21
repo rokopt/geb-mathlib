@@ -17,6 +17,8 @@ distinct from the published characterizations and the existing Lean results.
   - [Danner–Royer](#dannerroyer)
 - [Data polynomials and program signatures](#data-polynomials-and-program-signatures)
 - [Existing implementation and shared syntax](#existing-implementation-and-shared-syntax)
+  - [Bitstream carriers](#bitstream-carriers)
+  - [Indexed program syntax](#indexed-program-syntax)
 - [Finite restrictions, productivity, and silent steps](#finite-restrictions-productivity-and-silent-steps)
   - [An obstruction to productive extension](#an-obstruction-to-productive-extension)
   - [A carrier for delayed computation](#a-carrier-for-delayed-computation)
@@ -117,6 +119,10 @@ The initial algebra represents finite words. The final coalgebra
 represents finite-or-infinite sequences, with an observable empty
 constructor. Infinite streams alone use `ν X. A × X`.
 
+For `A = Bool`, the carriers, finite observations, and W-to-M inclusion
+are implemented by the [bitstream constructions](#bitstream-carriers)
+below. Use those representations for the binary instance.
+
 The polynomial for program syntax has a different role. Its shapes are
 program constructors; its directions are their subprogram positions.
 Both recurrence programs and corecurrence programs have finite
@@ -136,6 +142,49 @@ Changing the data polynomial does not automatically transfer the
 published complexity theorem.
 
 ## Existing implementation and shared syntax
+
+### Bitstream carriers
+
+[BitStream.lean](../Geb/Prototypes/BitStream.lean) defines
+`Geb.BitStream.sig` and the layer equivalence
+`sig X ≃ Option (Bool × X)`. Its `wEquiv` identifies `sig.W` with
+`List Bool`; `seqEquiv` identifies `sig.M` with `Stream'.Seq Bool`.
+The intermediate `Observations` representation packages compatible
+finite prefixes. These are equivalences of observable structure:
+
+| Declaration in `Geb.BitStream` | Reusable result |
+| --- | --- |
+| `take_seqEquiv` | A sequence prefix agrees with the corresponding finite M-type approximation. |
+| `seqEquiv_mk`, `seqEquiv_corec` | The equivalence preserves constructors and corecursion. |
+| `ofW`, `ofW_injective`, `seqEquiv_ofW` | The W-to-M inclusion is injective and agrees with `Stream'.Seq.ofList`. |
+| `corecPrefix_always_some_length` | A transition that always emits a bit fills every observation depth; no finite observation reaches termination. |
+
+[WConstruction.lean](../Geb/Prototypes/BitStream/WConstruction.lean)
+constructs an equivalent carrier `Geb.BitStream.WConstruction.Stream`
+using ordinary, presheaf, and slice W-types. Its W-type `Depth` indexes
+the dependent observation family `Approx`. `Bundle` packages the
+observations in a slice W-tree, and `Stream` requires adjacent
+observations to agree. The bundle root has one child per depth; this
+is a well-founded tree with infinitely many children, rather than an
+infinite branch or a finite program description.
+
+In that namespace, `mEquiv` and `seqEquiv` identify `Stream` with
+`Geb.BitStream.sig.M` and `Stream'.Seq Bool`. The operations `mk`,
+`dest`, `tail`, and `corec` work directly on the W-representation.
+Use `streamLayerEquiv` for the constructor/destructor correspondence,
+`observe_corec` and `corec_eq` for the corecursor equations, and
+`stream_ext` to prove equality through finite observations.
+`mEquiv_corec`, `seqEquiv_corec`, and `seqEquiv_ofW` transfer these
+operations and the finite inclusion to the other representations.
+
+The `corec` constructor supplies the compatibility proof internally.
+These results provide a data representation and its observation laws;
+they do not restrict transitions to a ramified function algebra or
+bound their resource use. They also do not decide whether a bitstream
+eventually terminates. Generalizing this construction from W-types
+to other polynomials remains separate work.
+
+### Indexed program syntax
 
 [Oitavem's syntax](../Geb/Prototypes/Computability/Oitavem/Syntax.lean)
 provides `sig`, `Expr`, `wellFormed`, and `Expr.eval`. Its index is the
@@ -184,8 +233,12 @@ Here `S` is the permitted state type, and `h` and `g` are interpreted
 subprograms satisfying the source system's typing restrictions. They
 are not arbitrary Lean functions admitted as primitive operations.
 For simultaneous corecurrence, the finite control index can be included
-in the state interpretation. Mathlib's
-`Mathlib.Data.PFunctor.Univariate.M` supplies `PFunctor.M.corec`.
+in the state interpretation. For bits, use
+`Geb.BitStream.WConstruction.corec` with the transition
+`fun s ↦ some (h s, g s)`. Its defining and comparison equations are
+already proved, and `Geb.BitStream.corecPrefix_always_some_length`
+supplies the finite-observation criterion for an infinite result.
+Mathlib's `PFunctor.M.corec` remains the underlying general corecursor.
 
 A coproduct of signatures permits combinations according to its
 indices. Each additional composition or conversion between fragments
@@ -229,6 +282,12 @@ a symbol. Infinite silent computation is a value of this M-type.
 Every step observation can be defined while the computation produces
 no further data symbols.
 
+The existing bitstream layer `Option (Bool × X)` supplies termination
+and emission, but has no silent-step alternative. Its `none` means
+termination. Supporting `D_A` therefore requires a distinct polynomial
+or a verified encoding; the bitstream corecursor alone does not add
+silent computation.
+
 This is a proposed representation of computation, not an identification
 with the paper's stream algebra. In particular, an explicit stop and
 an infinite silent suffix have different observable behavior. Their
@@ -250,11 +309,15 @@ input repeatedly and produce output incrementally. The intended
 logspace model must permit the required read-only access; a single
 irrevocable pass over the input is an additional restriction.
 
-Mathlib's `Mathlib.Data.Seq.Defs` supplies `Stream'.Seq.corec`,
-`Stream'.Seq.ofList`, and `Stream'.Seq.ofList_injective`.
-`Mathlib.Data.Seq.Basic` supplies `Stream'.Seq.terminates_ofList`.
-These provide existing sequence operations and a finite-data embedding.
-They do not establish the space usage of an Oitavem evaluator.
+For bits, use `Geb.BitStream.WConstruction.Stream` with its sequence
+equivalence. A finite word `w` is represented by
+`Geb.BitStream.WConstruction.ofW (Geb.BitStream.wEquiv.symm w)`.
+`seqEquiv_ofW` identifies its sequence view with `Stream'.Seq.ofList w`,
+whose finiteness is established by mathlib's
+`Stream'.Seq.terminates_ofList`. The bitstream observations and the
+Oitavem machine readers both count positions from the Lean list head.
+These representation laws do not establish the space usage of an
+Oitavem evaluator.
 
 Use a finite input representation, such as words with a stream access
 interface, or a representation whose constructors establish finiteness.
@@ -267,8 +330,10 @@ finite fragment on those inputs.
 ### Data and syntax inclusions
 
 For words, the map `Word A → CoWord A` preserves empty and cons and is
-injective. The sequence embedding above already implements this map
-for concrete lists. Independently, inclusion of a program-signature
+injective. For bits, `Geb.BitStream.ofW` and `ofW_injective` implement
+and verify this inclusion. `Geb.BitStream.WConstruction.ofW` supplies
+the W-representation of the same inclusion, related by `mEquiv_ofW`
+and `seqEquiv_ofW`. Independently, inclusion of a program-signature
 component gives an inclusion of its finite syntax trees into the
 combined syntax, with an interpretation-preservation theorem.
 
@@ -340,17 +405,51 @@ fragments should inherit a logspace claim without a proof.
 The [Oitavem development](../Geb/Prototypes/Computability/Oitavem.lean)
 already provides the syntax, word interpretation, truncation results,
 polynomial output-length bounds, and logarithmic representations of
-retained recursion state. Its general expression-to-logspace-machine
-construction remains to be implemented. The
-[direct soundness guide](oitavem-logspace-soundness.md) describes that
-construction and the existing machine infrastructure it can reuse.
+retained recursion state. In
+[Recursion.lean](../Geb/Prototypes/Computability/Oitavem/Recursion.lean),
+`Expr.prefixCutoff` and `Expr.recursionCutoff` compute cutoffs from
+syntax. `Expr.eval_safeRec_cons_prefixCutoff` connects the cutoff to
+`prefixLoop`, and the `prefixCutoff_le_log_of_polyBounded` and
+`recursionCutoff_le_log_of_polyBounded` theorems keep it logarithmic
+even for normal inputs whose lengths are polynomial in the physical
+input length.
+
+The machine construction has reusable components and concrete
+soundness theorems:
+
+| Module under `Oitavem/Machine/` | Implemented result and intended reuse |
+| --- | --- |
+| [Read.lean](../Geb/Prototypes/Computability/Oitavem/Machine/Read.lean) | `inputLength_transformsIn`, `storedLength_transformsIn`, `inputAt_transformsIn`, and `readStored_transformsIn` provide length and digit readers with caller preservation, scratch handling, parked heads, and execution bounds. |
+| [While.lean](../Geb/Prototypes/Computability/Oitavem/Machine/While.lean) | `arrives_whileNonblank` supports loop invariants over the whole configuration, including emitted output. |
+| [CountOutput.lean](../Geb/Prototypes/Computability/Oitavem/Machine/CountOutput.lean) | `countOutput_runsTo` counts an emitter's output without storing it, using one extra counter tape; `lengthMachine_computable` gives composition with numerical length in Oitavem's encoding. |
+| [ReadOutput.lean](../Geb/Prototypes/Computability/Oitavem/Machine/ReadOutput.lean) | `readOutput_runsTo` reads a runtime-selected output digit using a countdown and result tape. It returns `(w[query]?).toList`, distinguishing a false bit from an absent bit, and preserves the caller's output and the emitter's final tapes and heads. |
+| [Repeat.lean](../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean) | `computableInTimeAndSpace_squareWord` proves quadratic time and logarithmic space for the quadratic-output example. `squareLength_runsTo` and `squareDigit_runsTo` verify its generated-word readers; `computableInTimeAndSpace_length_squareWord` proves cubic time and logarithmic space for numerical length after `squareWord`. |
+
+The output-counting and digit-reading contracts assume a halting
+emitter and run it to completion. They provide access to finite
+generated words; their present contracts do not give an observation
+reader for an emitter that runs forever. Both preserve the simulated
+machine's final state of tapes and heads, so scratch cleanup and
+return-position obligations must come from the generator's contract.
+
+General reader allocation and substitution, repeated-query setup and
+scratch reset, the retained-prefix recursion machine, and the remaining
+constructor cases still require machine proofs. The
+numerical-length-after-`squareWord` theorem uses the
+semantic identity `eval_lengthByRec`; it does not compile the general
+safe-recursion scheme. A syntax-wide soundness theorem for all Oitavem
+expressions is therefore still required. The
+[direct soundness guide](oitavem-logspace-soundness.md) describes these
+remaining steps. Build on its machine components for the finite part
+of a stream compiler; the bitstream equivalences supply the separate
+connection between data representations.
 
 The proposed extension requires the following results:
 
 | Construction | Required result |
 | --- | --- |
 | Shared indexed syntax | Decidable syntactic admissibility; preservation of each included fragment's typing and interpretation |
-| Oitavem incremental implementation | Finite-input termination, agreement with `Expr.eval`, and logarithmic working space |
+| Oitavem incremental implementation | Extend the implemented readers and concrete machines with general substitution and retained-prefix recursion; prove termination, agreement with `Expr.eval`, and logarithmic space for all expressions |
 | Strict corecurrence interpretation | Defining observation equations, productivity, and the applicable tier-dependent locality and space bounds |
 | Delayed interpretation | Step semantics and an explicit relation to meaningful output, stopping, and source collapse |
 | Oitavem-to-stream compiler | Total finite restriction and equality with the source interpretation |
@@ -367,19 +466,23 @@ intermediate words.
 
 1. Preserve the existing Oitavem syntax and interpretation as the
    finite reference fragment. State its intended finite-stream
-   observation relation using existing sequence operations.
+   observation relation using the bitstream W-to-M inclusion and
+   `seqEquiv_ofW`.
 2. Implement the stream fragment with explicit symbol/stream sorts
-   and tier rules, first for a finite alphabet. Interpret its strict
-   corecurrence using the existing M-type corecursor. Include the
-   simultaneous form required by the source system.
+   and tier rules, first for bits. Interpret strict corecurrence with
+   `Geb.BitStream.WConstruction.corec` and use its observation and
+   comparison equations. Include the simultaneous form required by
+   the source system.
 3. Extract shared signature and interpretation constructions from
    those concrete instances. Form the indexed coproduct and prove
    inclusion and interpretation preservation. Initially permit only
    compositions already justified within each source fragment.
-4. Develop the Oitavem machine compiler and strict stream resource
-   proofs against explicit access models. These developments can
-   proceed independently; neither is a prerequisite for defining the
-   other's syntax.
+4. Complete the Oitavem machine compiler by composing its existing
+   readers and implementing the retained-prefix recursion machine
+   and remaining constructor cases.
+   Develop strict stream resource proofs against an explicit access
+   model. These developments can proceed independently; neither is a
+   prerequisite for defining the other's syntax.
 5. Add delayed computation and its observation relation when connecting
    the finite fragment to the general stream model. Prove finite-input
    termination for the compiled finite fragment, including completion
@@ -391,10 +494,13 @@ intermediate words.
 
 Checks should include identity on infinite streams, an infinite
 constant stream, finite length parity, empty finite output, and an
-infinite silent computation. The first examples distinguish productive
-programs and finite functions; the last distinguishes step productivity
-from data productivity. These checks supplement the general Lean
-theorems and do not replace them.
+infinite silent computation. Extend the existing
+[W-construction checks](../GebTests/Prototypes/BitStream/WConstruction.lean),
+which exercise finite and infinite observations and the constructor/tail
+operations. The first examples distinguish productive programs and
+finite functions; the last distinguishes step productivity from data
+productivity and requires the delayed representation. These checks
+supplement the general Lean theorems and do not replace them.
 
 ## References
 
