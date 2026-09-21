@@ -19,7 +19,11 @@ the spelling of an expression without the root, a coding word with a bit
 appended or removed, and an expression of two normal arguments under the
 root. The streams the three expressions code are observed at small depths:
 the empty stream, the constant stream of set bits, and the constant stream
-of clear bits; and decoding a coding word yields the stream.
+of clear bits; and decoding a coding word yields the stream. The tail on
+words yields a coding word, the code of the composite, whose stream is the
+tail of the stream. The recognizer of expressions at every arity accepts
+the spellings of the expression of two normal arguments and of an
+expression under no root, and rejects a coding word and the empty word.
 
 ## Tags
 
@@ -71,3 +75,20 @@ private def binE : Expr 2 0 := Expr.initial (.proj 2 0)
   (fun s ↦ (prefixEquiv (ofNat 2) (observe s (ofNat 2))).val) = some [true, true]
 
 #guard decodeStream [] = none
+
+#guard tailWord (spellExpr onesE) = spellExpr (tailExpr onesE)
+
+#guard recognize (tailWord (spellExpr lastE)) = true
+
+#guard (prefixEquiv (ofNat 2) (observe (toStream (tailExpr onesE)) (ofNat 2))).val = [true, true]
+
+#guard (prefixEquiv (ofNat 2) (observe (tail (toStream lastE)) (ofNat 2))).val =
+  (prefixEquiv (ofNat 2) (observe (toStream (tailExpr lastE)) (ofNat 2))).val
+
+#guard codedPlain.recognize (codedPlain.spell binE.1.1) = true
+
+#guard codedPlain.recognize (codedPlain.spell onesE.1.1) = true
+
+#guard codedPlain.recognize (spellExpr onesE) = false
+
+#guard codedPlain.recognize [] = false

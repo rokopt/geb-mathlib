@@ -15,7 +15,7 @@ set_option doc.verso true in
 # Executable checks for the presheaf counterexample
 
 Check that the native checker follows a predicate's verdict on valid slice
-trees, and that unary expressions can be decoded from their syntax codes.
+trees, and that unary expressions can be decoded from their spellings.
 
 ## Main definitions
 
@@ -39,8 +39,8 @@ open scoped FinEnum
 #guard ([[], [true], [false], [true, false]] : List (List Bool)).all fun w ↦
   nativeCheck (List.headD · false) (testTree (List.headD · false) w).1 == w.headD false
 
-#guard (readExpr (syntaxCode.spell (Expr.initial (.proj 1 0)).1.1)).isSome
-#guard diagonal testWord (syntaxCode.spell (Expr.initial (.zero 1)).1.1)
+#guard (readExpr (Geb.BitStream.Oitavem.codedPlain.spell (Expr.initial (.proj 1 0)).1.1)).isSome
+#guard diagonal testWord (Geb.BitStream.Oitavem.codedPlain.spell (Expr.initial (.zero 1)).1.1)
 
 /-- The local scan on the counterexample family. -/
 @[expose] public def scanned (p : List Bool → Bool) (w : List Bool) : Bool :=

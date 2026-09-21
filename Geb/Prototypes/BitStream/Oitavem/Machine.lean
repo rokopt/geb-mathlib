@@ -6,7 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.BitStream.Oitavem.Recognize
-public import Geb.Prototypes.Computability.SizeBounded.Logspace.Machine.Main
+public import Geb.Prototypes.BitStream.Oitavem.Plain
+public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Machine
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -17,7 +18,9 @@ The recognizer of the words coding the streams of expressions,
 {name}`Geb.BitStream.Oitavem.recognizer`, is an expression of the
 successor-free subalgebra, so the subalgebra's soundness theorem compiles it
 to a multi-tape machine running in polynomial time and space logarithmic in
-the input's length.
+the input's length. The recognizer of the spellings of expressions of Logs
+at every arity, {name}`Geb.BitStream.Oitavem.recognizerPlain`, compiles the
+same way.
 
 The module is admitted to {lit}`GebMeta.classicalAllowedModules` for the
 reason {lit}`Geb.SizeBounded.Logspace.WTree.CodedSig.computableInTimeAndSpace_recognize`
@@ -30,6 +33,8 @@ is: its statement mentions
   computed by a machine in polynomial time and logarithmic space.
 * {lit}`computableInTimeAndSpace_recognize` — that machine decides whether
   a word codes the stream of an expression.
+* {lit}`computableInTimeAndSpace_recognizePlain` — a machine in the same
+  bounds decides whether a word spells an expression of Logs at any arity.
 
 # References
 
@@ -67,6 +72,15 @@ theorem computableInTimeAndSpace_recognize :
   have h := computableInTimeAndSpace_recognizer
   rwa [show (fun w ↦ recognizer.sem ![w]) = fun w ↦ boolWord (recognize w) from
     funext recognizerSem_eq] at h
+
+/-- A machine in polynomial time and space linear in the input's binary size
+decides whether a word spells an expression of Logs at any arity. -/
+theorem computableInTimeAndSpace_recognizePlain :
+    ∃ c d : ℕ, ComputableInTimeAndSpaceOfLength
+      (fun w ↦ boolWord (codedPlain.recognize w)) (.refl _) (.refl _)
+      (fun n ↦ c * (n + 1) ^ d) (fun n ↦ c * (Nat.size n + 1)) :=
+  codedPlain.computableInTimeAndSpace_recognize labelOkPlain EdgeExpr.edgeOk computesLabelPlain
+    computesEdgePlain
 
 end
 

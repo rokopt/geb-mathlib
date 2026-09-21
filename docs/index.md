@@ -502,8 +502,16 @@ checklist and in CI.
   recognizer with the test of the root's fixed prefix,
   `recognize_iff_spellExpr` its specification, `recognizerSem_eq` the
   expression's agreement with it and `decodeStream_spellExpr` the stream
-  a code denotes; `Oitavem/Machine.lean` reads the machine bound off the
-  subalgebra's soundness theorem (listed in
+  a code denotes; `Oitavem/Tail.lean` codes the tail of a stream by the
+  composite of the expression with the successor, `dest_toStream` the
+  generator law the coded stream satisfies and `tailWord_spellExpr` the
+  tail on words as a constant rewrite of the code; `Sig.lean`'s
+  `codedPlain` is the signature of Logs as a coded signature, the same
+  codes without the root, and `Oitavem/Plain.lean` its recognizer as an
+  expression, `recognizerPlainSem_eq_singleton_iff` its acceptance of
+  exactly the spellings of expressions of Logs at every arity;
+  `Oitavem/Machine.lean` reads the machine bounds of both recognizers off
+  the subalgebra's soundness theorem (listed in
   `GebMeta.classicalAllowedModules`). The other modules are
   `Classical.choice`-free. Depends on
   `Geb.Prototypes.Computability.Oitavem.Syntax`,
@@ -1915,9 +1923,10 @@ checklist and in CI.
   walking arrow, with at most three directions at each shape,
   `nativeCheck_testTree` recovers any Boolean predicate placed in direction
   restriction. The test trees are admissible slice trees, and their
-  bitstrings do not depend on the predicate. Diagonalization supplies a
-  total Lean predicate for which `no_oitavem_nativeCheck` rules out every
-  unary Oitavem expression, directly against the native checker.
+  bitstrings do not depend on the predicate. Diagonalization against the
+  spellings of `Geb.BitStream.Oitavem.codedPlain` supplies a total Lean
+  predicate for which `no_oitavem_nativeCheck` rules out every unary
+  Oitavem expression, directly against the native checker.
   This result leaves recognition under complexity bounds on the signature
   operations open; it uses neither machine soundness nor completeness.
   [Bounded universal quantification](../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean)
