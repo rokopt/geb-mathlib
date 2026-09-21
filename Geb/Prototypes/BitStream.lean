@@ -9,6 +9,7 @@ public import Mathlib.Data.PFunctor.Univariate.M
 public import Mathlib.Data.Seq.Defs
 public import Mathlib.Logic.Equiv.List
 public import Mathlib.Logic.Equiv.Option
+meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -68,6 +69,17 @@ This representation is already provided by {name}`Stream'.Seq`.
 Bits are observed in Lean list order, starting at the head. No decision whether
 a stream eventually terminates is part of the representation.
 
+The comments also compare free monads and cofree comonads of this polynomial.
+Those constructions provide mathematical context; the definitions below
+formalize the W-type, M-type, and finite-observation comparisons.
+
+## References
+
+* {cite}`GambinoKock2013`, Section 1.19 and Theorem 4.5, for finite arities
+  and polynomial free monads.
+* {cite}`AhmanChapmanUustalu2014`, Section 4.3 and Proposition 4.5, for
+  the polynomial presentation of cofree comonads.
+
 ## Tags
 
 M-type, W-type, polynomial functor, bitstream, finite approximation, corecursion
@@ -84,7 +96,12 @@ open PFunctor
 ## The polynomial and its W-type
 -/
 
-/-- The empty shape has no direction; each bit shape has one tail direction. -/
+/-- The empty shape has no direction; each bit shape has one tail direction.
+
+A polynomial {lit}`P X = Σ a, (B a → X)` is finitary when every direction
+type {lit}`B a` is finite. The set of shapes may be infinite. Over sets,
+this is equivalent to preserving filtered colimits
+({cite}`GambinoKock2013`, Section 1.19). Here every arity is zero or one. -/
 def sig : PFunctor.{0, 0} where
   A := Option Bool
   B := fun a ↦ match a with
@@ -127,7 +144,19 @@ def wToList : sig.W → List Bool :=
 def listToW : List Bool → sig.W :=
   List.rec (WType.mk none Empty.elim) fun b _ t ↦ WType.mk (some b) fun _ ↦ t
 
-/-- The W-type of the bitstring polynomial is exactly {lit}`List Bool`. -/
+/-- The W-type of the bitstring polynomial is exactly {lit}`List Bool`.
+
+The related free-monad construction uses {lit}`Free P X = μ Y. (X + P Y)`:
+the extra summand supplies variable leaves. Its polynomial shapes are
+well-founded operation trees with designated variable leaves, and its
+directions are those leaves ({cite}`GambinoKock2013`, Theorem 4.5).
+Finite branching and well-foundedness make each such tree finite, so the
+free monad of a finitary polynomial is again finitary.
+
+For {name}`sig`, the result simplifies to
+{lit}`Free sig X ≃ List Bool × (Unit ⊕ X)`: a finite prefix ends either in
+termination or in a variable. Each shape therefore has zero or one variable
+position, although there are infinitely many shapes. -/
 def wEquiv : sig.W ≃ List Bool where
   toFun := wToList
   invFun := listToW
@@ -317,7 +346,30 @@ def pathEquiv : Path sig ≃ List Bool := Equiv.listEquivOfEquiv idxEquiv
 -/
 
 /-- A potentially infinite bitstream presented as compatible finite observations.
-This has exactly the fields of {name}`MIntl`, with dependent trees replaced by lists. -/
+This has exactly the fields of {name}`MIntl`, with dependent trees replaced by lists.
+
+An M-type admits infinite branches even when each node has finite arity.
+It is a type; finitarity is a property of the functor whose fixed point it is.
+The cofree comonad introduces a different functor by allowing a label from
+{lit}`X` at every node: {lit}`C X = ν Y. (X × sig Y)`.
+
+Its polynomial presentation is {lit}`C X ≃ Σ t : sig.M, (Nodes t → X)`.
+Here {lit}`Nodes t` consists of the valid finite paths in {lit}`t`, including
+the empty path to its root. These are tree positions, not just the immediate
+directions at the root. A finite bitstring of length {lit}`n` has
+{lit}`n + 1` nodes, including its terminal node; an infinite bitstream has
+one node at each natural-number depth. See {cite}`AhmanChapmanUustalu2014`,
+Section 4.3 and Proposition 4.5, for the general construction.
+
+Thus this cofree comonad is polynomial but has countably infinite arities.
+Its failure to be finitary is independent of that presentation: the finite
+sets {lit}`{0, …, n}` have filtered colimit {name}`Nat`, but the infinite
+all-zero bitstream whose node at depth {lit}`k` is labelled {lit}`k` uses
+unbounded labels. It belongs to {lit}`C Nat` and comes from no finite stage,
+so {lit}`C` does not preserve this filtered colimit. The immediate bitstream
+polynomial {name}`sig` still has only zero and unary arities. Taking
+{lit}`X = Unit` makes all node labels trivial and recovers {lit}`sig.M`.
+-/
 @[ext] structure Observations : Type where
   /-- The list observed at each depth, bounded by that depth. -/
   atDepth : ∀ n, Prefix n
