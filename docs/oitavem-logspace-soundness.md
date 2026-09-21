@@ -8,6 +8,8 @@ constructed. Physical-input and stored-word readers, an emitting loop
 rule, reusable generated-output length and digit readers, and concrete
 transducers for `squareWord` and its self-composition are proved
 using the existing `SizeBounded` and `SizeBounded/Logspace` libraries.
+Tape allocation preserves these contracts, and a generic digit-reader
+loop streams virtual words with a bound throughout every reader call.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -124,6 +126,32 @@ Completeness is outside this construction's scope.
   `T * (2 * B + 8) + 13 * B + 30` steps, respectively, at the same
   work-head bound `B`. `TransformsIn.seqEmitsIn` composes an internal
   query with a subsequent emitter.
+- [Tape allocation][allocation] defines `onTapes` from an explicit
+  partition of the caller's tapes into callee and protected tapes.
+  `onTapes_runFrom` proves exact simulation at every step, with the
+  protected tapes and heads unchanged. `EmitsIn.onTapes` and
+  `TransformsIn.onTapes` preserve the original time and head bounds.
+  The state type is unchanged, so allocation preserves finite control.
+- [Streaming readers][streaming-readers] defines `ReadsAt`, a digit
+  contract for queries through the first out-of-range position. Each
+  call preserves every register except its result. Physical-input,
+  stored-word, and generated-output readers satisfy this contract when
+  their scratch registers have the initialized contents they restore.
+  `ReadsAt.onTapes` places the reader in a larger caller layout.
+  `emitReader_emitsIn` streams the word through successive queries,
+  retaining its index and digit, and returns its length in the query
+  register. Its precondition and represented word must be independent
+  of the query and result registers. For reader time `T`, word-length
+  bound `N`, and head bound `B`, it uses at most
+  `4 * B + 9 + T + N * (T + 2 * B + 6) + 1` steps at head bound `B`.
+- [Contract realization][generated] proves
+  `EmitsIn.computes_polytime_logspace`: a finite emitter whose
+  precondition holds on blank registers and whose head bound is
+  logarithmic yields simultaneous polynomial time and logarithmic
+  space on that emitter preceded by one input-head homing step.
+  `Emits.spaceUsed_le_all` supplies the space bound at every time,
+  including after halting. No polynomial assumption on the emitter's
+  termination bound is required.
 - [Repeated-input emission][repeat] implements `squareMachine` on one
   work tape. `computableInTimeAndSpace_squareWord` proves CSLib's
   simultaneous bounds `32 * (n + 1)^2` for time and
@@ -157,10 +185,19 @@ Completeness is outside this construction's scope.
   from dirty work tapes. This is a composition through a generated
   length reader and an emitter; arbitrary substitution into a compiled
   expression's normal-input readers remains to be implemented.
+- [Streaming generated digits][repeat] implements
+  `squareViaReaderMachine`, which reconstructs `squareWord` entirely
+  through generated digit queries on four work tapes.
+  `squareViaReaderFromHome_emitsIn` verifies scratch initialization,
+  repeated calls, and preservation of other caller registers.
+  `squareViaReaderMachine_computes` proves simultaneous polynomial time
+  and logarithmic space for that machine using contract realization.
 - [Machine checks][machine-checks] execute the readers and transducer,
   including leading zeroes, empty words, out-of-range queries, dirty
   scratch tapes, protected registers, existing output prefixes, repeated
-  generated-reader calls, and the quartic-output composition.
+  generated-reader calls, the quartic-output composition, and streaming
+  through generated digit queries. Allocated-reader checks move scratch
+  past a protected caller tape whose head starts away from zero.
 
 The recursion results bound retained words and indices. They do not
 bound the work space used to compute those words or indices. Closing
@@ -355,6 +392,9 @@ and apply that theorem. This avoids a separate polynomial-time
 calculation for every recomputation. Existing subroutine time bounds
 remain usable to prove termination; the final polynomial bound follows
 from halting and the global space bound on the completed machine.
+`EmitsIn.computes_polytime_logspace` packages this final step for an
+emitter contract whose precondition holds on blank registers. The
+remaining task is to construct that contract for every expression.
 
 ## Implementation checkpoints and effort
 
@@ -381,16 +421,23 @@ preserves that tape. A generated length query followed by a repetition
 loop computes `squareWord` composed with itself, with a full machine
 bound theorem and fixed tape allocation.
 
-The next allocation and substitution work is to provide expression
-constructors with an environment of length and digit programs, prove
-preservation of that environment through nested calls, and instantiate
-those programs with child-expression readers. The generated-reader
-contracts and sequencing rules are available for those calls, but do
-not yet constitute a compiler or a general substitution theorem.
+Tape allocation and streaming from digit readers have machine proofs.
+`ReadsAt.onTapes` preserves a reader's contract in a larger caller
+layout. `emitReader_emitsIn` uses such a reader in an indexed loop;
+`squareViaReaderMachine_computes` verifies this construction on a
+quadratically long generated word. Scratch initialization precedes the
+loop, whose reader restores its scratch after each query.
 
-The first composition checkpoint should determine whether the proposed
-reader contract supports the required register allocation and nested
-calls. The safe-recursion checkpoint then tests whether the contract
+The next substitution work is to provide expression constructors with
+an environment of length and digit programs, preserving the represented
+words through nested calls. The allocation and streaming rules supply
+the tape separation and output loop, but do not yet implement normal
+composition for arbitrary expressions. Segment readers, constructor
+closure, and the saved-prefix recursion loop also remain to be built.
+
+The first composition checkpoint must extend these allocation and
+streaming proofs to constructor-specific substitutions. The
+safe-recursion checkpoint then tests whether the contract
 remains adequate with a live saved prefix. These checkpoints require
 machine proofs; executable semantic examples alone do not meet them.
 
@@ -434,6 +481,8 @@ that additional characterization or a direct machine encoding.
 [output-counting]: ../Geb/Prototypes/Computability/Oitavem/Machine/CountOutput.lean
 [output-reading]: ../Geb/Prototypes/Computability/Oitavem/Machine/ReadOutput.lean
 [generated]: ../Geb/Prototypes/Computability/Oitavem/Machine/Generated.lean
+[allocation]: ../Geb/Prototypes/Computability/Oitavem/Machine/Allocate.lean
+[streaming-readers]: ../Geb/Prototypes/Computability/Oitavem/Machine/Reader.lean
 [repeat]: ../Geb/Prototypes/Computability/Oitavem/Machine/Repeat.lean
 [machine-checks]: ../GebTests/Prototypes/Computability/Oitavem/Machine.lean
 [derived]: ../Geb/Prototypes/Computability/Oitavem/Derived.lean

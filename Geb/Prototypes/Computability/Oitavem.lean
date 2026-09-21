@@ -20,6 +20,8 @@ public import Geb.Prototypes.Computability.Oitavem.Machine.While
 public import Geb.Prototypes.Computability.Oitavem.Machine.CountOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.ReadOutput
 public import Geb.Prototypes.Computability.Oitavem.Machine.Generated
+public import Geb.Prototypes.Computability.Oitavem.Machine.Allocate
+public import Geb.Prototypes.Computability.Oitavem.Machine.Reader
 public import Geb.Prototypes.Computability.Oitavem.Machine.Repeat
 meta import GebMeta -- shake: keep
 

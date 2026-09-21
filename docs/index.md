@@ -1840,6 +1840,17 @@ checklist and in CI.
   `Machine.computableInTimeAndSpace_squareWord_squareWord` combines a generated
   length query with that loop to compute the square expression composed with
   itself: quartic output, polynomial time, and logarithmic space on two tapes.
+  [Tape allocation](../Geb/Prototypes/Computability/Oitavem/Machine/Allocate.lean)
+  places subroutines in larger caller layouts, preserving their time and
+  head bounds and leaving protected tapes unchanged at every step.
+  [Digit-reader streaming](../Geb/Prototypes/Computability/Oitavem/Machine/Reader.lean)
+  emits a virtual word by successive queries, preserving the environment
+  through every call. `Machine.squareViaReaderMachine_computes` applies
+  this construction to the generated square word on four work tapes.
+  `Machine.EmitsIn.computes_polytime_logspace` converts an emitter's
+  halting contract with logarithmic head bounds into simultaneous
+  polynomial time and logarithmic space, including input-head setup
+  and the space bound after halting.
   A compiler that substitutes these readers and implements the saved-prefix
   recursion loop remains necessary for machine soundness.
   `Machine.computes_polytime_logspace`

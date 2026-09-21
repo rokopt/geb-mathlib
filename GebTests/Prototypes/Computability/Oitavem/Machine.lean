@@ -177,6 +177,49 @@ caller register. The result tape is blank as the reader's contract requires. -/
     (List.finRange 4).all fun i ↦ (List.range (B + 3)).all fun j ↦
       finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
 
+/-- Repeatedly reconstruct a generated square through digit queries from dirty ports,
+checking scratch cleanup, the returned length, and a protected caller register. -/
+@[expose] def checkSquareViaReader (w : List Bool) : Bool := Id.run do
+  let p := squareViaReaderFromHome (0 : Fin 3) 1
+  let tm := seq p p
+  let B := 2 * w.length.size + 1
+  let dirty := [false, true, false].take B
+  let words : Vector (List Bool) 5 := #v[dirty, dirty, dirty, dirty, [false]]
+  let start : ExecCfg 5 (StateOf tm) w :=
+    { ExecCfg.init tm w with
+      inputPos := 0
+      tapes := words.map register
+      outputRev := [true, false] }
+  let finish := (execStep tm)^[2 * squareViaReaderTime B w.length] start
+  let expected := #v[[], [], [], counterWord (w.length * w.length), [false]]
+  let out := squareWord.eval ![w] Fin.elim0
+  return finish.state.isNone && finish.inputPos.val == 0 &&
+    finish.heads.toList.all (· == 0) && finish.outputRev.reverse == [false, true] ++ out ++ out &&
+    (List.finRange 5).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
+/-- Move a generated reader's scratch past the caller's tape. The protected head
+starts away from zero and remains there during the allocated streaming program. -/
+@[expose] def checkAllocatedReader (w : List Bool) : Bool := Id.run do
+  let e : Fin 5 ≃ Fin 4 ⊕ Fin 1 :=
+    (Equiv.swap 0 4).trans (finSumFinEquiv (m := 4) (n := 1)).symm
+  let tm := onTapes (squareViaReaderFromHome (0 : Fin 2) 1) e
+  let B := 2 * w.length.size + 1
+  let dirty := [true, false, true].take B
+  let words : Vector (List Bool) 5 := #v[[false], dirty, dirty, dirty, dirty]
+  let start : ExecCfg 5 (StateOf tm) w :=
+    { ExecCfg.init tm w with
+      inputPos := 0
+      tapes := words.map register
+      heads := #v[1, 0, 0, 0, 0]
+      outputRev := [false] }
+  let finish := (execStep tm)^[squareViaReaderTime B w.length] start
+  let expected := #v[[false], [], [], counterWord (w.length * w.length), []]
+  return finish.state.isNone && finish.inputPos.val == 0 && finish.heads == start.heads &&
+    finish.outputRev.reverse == [false] ++ squareWord.eval ![w] Fin.elim0 &&
+    (List.finRange 5).all fun i ↦ (List.range (B + 3)).all fun j ↦
+      finish.tapes[i][(j : ℤ) - 1]? == (register expected[i])[(j : ℤ) - 1]?
+
 /-- Check numerical emission while an unrelated tape has a nonzero head position. -/
 @[expose] def checkEmitNumber (n : ℕ) : Bool := Id.run do
   let tm := emitNumber (0 : Fin 2)
@@ -243,6 +286,12 @@ The second call must clear the result left by the first. -/
       some ((Expr.comp (safe := false) squareWord ![squareWord]).eval ![w] Fin.elim0)
 
 #guard (List.range 65).all checkEmitNumber
+
+#guard (List.range 4).all fun n ↦ (List.range (2 ^ n)).all fun x ↦
+  let w := (List.range n).map (Nat.testBit x)
+  checkSquareViaReader w && checkAllocatedReader w &&
+    stepUntilHalt squareViaReaderMachine (squareViaReaderTime (2 * n.size + 1) n + 2)
+      (ExecCfg.init squareViaReaderMachine w) [] == some (squareWord.eval ![w] Fin.elim0)
 
 #guard ([[], [false], [false, true, false]] : List (List Bool)).all fun w ↦
   let tm := squareInput (1 : Fin 2)
