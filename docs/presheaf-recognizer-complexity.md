@@ -9,6 +9,7 @@ on categorical and internal interpretation claims.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Checking, recursion, and evaluation](#checking-recursion-and-evaluation)
+  - [Elementary recursion](#elementary-recursion)
 - [The proposed recognition theorem](#the-proposed-recognition-theorem)
 - [Reduction to bounded local tests](#reduction-to-bounded-local-tests)
 - [Complexity classes and closure requirements](#complexity-classes-and-closure-requirements)
@@ -29,6 +30,7 @@ additional formalized complexity bounds for Geb's checkers.
 | Functions or categorical structure | Capability | Qualification |
 | --- | --- | --- |
 | Logspace | Check explicit finite proof trees or typing derivations | The representation, navigation, and local inference checks must admit logspace implementations. |
+| Elementary-recursive functions; decision class `ELEMENTARY` | Construct and search finite sets and function spaces at any fixed finite order | Each program or formula has a fixed exponential-tower bound; unrestricted iteration of exponentiation can leave the class. |
 | Primitive-recursive functions; a PNNO in a Cartesian category | Use functions obtained by first-order primitive recursion as steps of further primitive recursions | Each definition uses finitely many fixed stages; exact characterization by primitive recursion concerns the free Cartesian category with a PNNO. |
 | Cartesian closure with an NNO | Recurse into function objects, defining functions such as Ackermann | This extends first-order primitive recursion without implying general recursion or nontermination. |
 | Partial computable functions | Uniformly evaluate arbitrary encoded programs, including the evaluator's own code | Evaluation may fail to terminate; there is no total computable universal evaluator for all total computable functions. |
@@ -54,6 +56,122 @@ by substitutions and expression comparisons, with hypothesis, scope, and
 disjoint-variable conditions. A logspace bound for its standard proof formats
 has not been established here. A checker for a more explicit certificate
 format would need its own representation and local-rule analysis.
+
+### Elementary recursion
+
+Write `E_0(n) = n` and `E_{k+1}(n) = 2^(E_k(n))`. The decision class
+`ELEMENTARY` is the union of `DTIME(E_k(n^c))` over fixed natural numbers
+`k` and `c`, where `n` is input length. Its function counterpart,
+`FELEMENTARY`, consists of the elementary-recursive functions. Each function
+has its own fixed tower-height bound; there is no common height for the
+whole class. See [Nguyên, section 1.1][typed-conversion].
+
+Ramification and function-type order are distinct parameters.
+[Leivant's first-order characterization][leivant-first-order] gives polynomial
+time over binary words and linear space for the corresponding numeric
+functions over the unary algebra. It already permits arbitrarily many tiers:
+two tiers suffice to define the same functions. Consequently, adding tiers
+alone does not yield elementary recursion in that system.
+[His higher-type characterization][leivant-elementary] extends ramified
+recurrence to finite function types and obtains exactly elementary-time
+functions over each free algebra. Oitavem's normal/safe distinction is a
+tiering of word arguments, not a hierarchy of function types. Removing
+ramification from first-order primitive recursion gives primitive-recursive
+functions; removing it from higher-type recursion permits still more,
+as the Cartesian-closure row indicates.
+
+The descriptive characterization concerns fixed formulas interpreted on
+finite structures: the union of higher-order logics of all finite orders
+captures `ELEMENTARY`, for example on the usual ordered structures encoding
+input words. See [Hella and Turull-Torres][higher-order-logic]. The size
+calculation explains the exponential growth: an `r`-ary relation on an
+`N`-element domain has `2^(N^r)` possible values, and relations on relations
+repeat this construction. Each fixed formula fixes its order, arities, and
+quantifiers, so exhaustive evaluation has an elementary bound. This is a
+statement about truth in a supplied finite structure, not about deciding
+validity over arbitrary or infinite structures.
+
+There is also an exact arithmetic formulation of the proposed extension of
+logspace. [Prunescu, Sauras-Altuzarra and Shunia, Corollary 1][elementary-basis],
+arXiv `2505.23787v2`, prove that addition, remainder, and `x ↦ 2^x`, together
+with constants and projections, generate all elementary-recursive numeric
+functions by composition alone. Their total remainder convention is
+`x mod 0 = x`. Addition and remainder on binary integers are in `FLOGSPACE`;
+for remainder, use `x mod y = x - y * floor(x/y)` when `y > 0` and
+[Hesse, Allender and Barrington's uniform `TC^0` arithmetic][division],
+which lies within logspace. Thus, for numeric functions with binary
+input and output,
+
+```text
+closure_under_composition(FLOGSPACE ∪ {x ↦ 2^x}) = FELEMENTARY.
+```
+
+The basis theorem gives one inclusion; the other follows because logspace
+functions and exponentiation are elementary, and elementary functions are
+closed under composition. This uses ordinary composition of denoted
+functions; an extension of Oitavem's tiered syntax needs its own rules and
+soundness argument.
+
+To express numerical exponentiation on words, fix the encoding first. If
+`w` represents `x` in ordinary positional binary notation, `binary(2^x)`
+is a `1` followed by `x` zeroes when written most significant bit first. For the
+repository's [Oitavem word bijection][word-coding], the compatible definition
+is instead
+
+```text
+exp₂(w) = unrank (2 ^ rank w).
+```
+
+Here lists are least significant bit first. `rank w` reads `w ++ [true]`
+as a binary number and subtracts one; conversely,
+`unrank n = (n + 1).bits.dropLast`. Thus `rank [] = 0` and
+`exp₂ [] = [false]`; for
+`x = rank w > 0`, the output is `[true]` followed by `x - 1` false bits.
+These conventions are interconvertible with ordinary binary numerals in
+logspace. Using the word length as the exponent instead computes a different
+function: the ordinary binary output for `2^length(w)` has only
+`length(w) + 1` bits and is logspace-computable.
+
+The hardware analogy therefore requires arbitrary precision and an
+unbounded shift count. Although numerically `2^x = 1 << x`, its ordinary
+binary output has `x + 1` bits, exponentially many in the binary input
+length in the worst case. A fixed-width shift cannot produce those outputs;
+an arbitrary-precision implementation must account for their storage and
+emission. A compact symbolic representation of the shift has a different
+output contract from the explicit words considered here.
+
+These results suggest a connection through a fixed finite number of
+exponential expansions, with the bound determined by the program or formula.
+Under dense bitset coding, `code(S) = sum(2^a for a in S)`, numerical
+exponentiation even constructs the code of a singleton: `code({x}) = 2^x`.
+Function spaces and power sets introduce exponential cardinalities as well.
+The representation matters: a sparse list can represent a singleton cheaply.
+Neither higher-order syntax nor set formation alone determines a complexity
+class; the permitted constructions, encodings, and iteration rules do.
+
+For compilers, the finite basis supplies a recursion-free arithmetic target
+language for every elementary numeric function. This is an expressibility
+result; it does not itself guarantee an efficient translation or small
+intermediate integers. The higher-order characterizations also support
+evaluation of fixed finite-order queries and normalization with an explicit
+bound on type complexity. In the simply typed
+lambda calculus, a fixed bound on the degrees of redex types gives an
+elementary normalization bound; allowing arbitrary input terms removes that
+fixed bound, and deciding beta-convertibility is `TOWER`-complete and hence
+nonelementary. See [Nguyên, Theorems 1.1 and 2.4][typed-conversion]. Thus a
+compiler may use a syntactically restricted fragment or an explicit resource
+bound to justify elementary evaluation. The cost of that evaluation remains
+separate from checking explicit derivations, as in the logspace row.
+
+For foundations, elementary function arithmetic supplies bounded induction,
+exponentiation, and elementary bounded recursion. It supports coded finite
+sets, finite functions, and finite power sets, while its bounds on provable
+totality exclude input-height exponential towers. [Avigad, section 2 and
+Theorem 2.2][elementary-arithmetic], develops these constructions. This
+provides a setting for finitary constructions with elementary bounds.
+Unrestricted iteration of exponentiation, and therefore the unrestricted
+elimination principle discussed [below](#recognized-carriers-and-w-elimination),
+still exceeds those bounds.
 
 ## The proposed recognition theorem
 
@@ -322,6 +440,14 @@ of its word operations and navigation in Oitavem's algebra.
 [polarized]: https://doi.org/10.1016/j.entcs.2010.08.017
 [realizability]: https://doi.org/10.1016/j.tcs.2010.12.025
 [metamath]: https://us.metamath.org/downloads/metamath.pdf#page=132
+[leivant-first-order]: https://doi.org/10.1007/978-1-4612-2566-9_11
+[leivant-elementary]: https://doi.org/10.1016/S0168-0072(98)00040-2
+[higher-order-logic]: https://doi.org/10.1016/j.tcs.2006.01.009
+[elementary-basis]: https://arxiv.org/html/2505.23787v2#S2
+[division]: https://people.cs.rutgers.edu/~allender/papers/division.pdf
+[typed-conversion]: https://lmcs.episciences.org/14215/pdf
+[elementary-arithmetic]: https://www.andrew.cmu.edu/user/avigad/Papers/elementary.pdf#page=3
+[word-coding]: ../Geb/Prototypes/Computability/Oitavem/Word.lean
 [hierarchy]: https://members.loria.fr/EHainry/papers/tcs05.pdf#page=5
 [primitive-recursion]: https://arxiv.org/html/2404.01011v1#S2
 [universal-evaluation]: https://www.andrew.cmu.edu/user/avigad/Teaching/candi_notes.pdf#page=46
