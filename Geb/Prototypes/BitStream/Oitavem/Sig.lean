@@ -42,6 +42,8 @@ a dispatch on the child's constructor.
 * {lit}`code`, {lit}`decode` — the code of a shape and the decoder.
 * {lit}`sig`, {lit}`finitary`, {lit}`coded` — the signature, the explicit
   enumeration of its directions, and the coded signature.
+* {lit}`codePlain`, {lit}`decodePlain`, {lit}`codedPlain` — the codes
+  without the root, and the signature of Logs as a coded signature.
 
 # Main statements
 
@@ -50,6 +52,8 @@ a dispatch on the child's constructor.
 * {lit}`build_kind_fields`, {lit}`kind_fields_of_build` — the table holds at
   every shape's numerals, and a shape built from numerals has them.
 * {lit}`decode_code`, {lit}`code_of_decode` — the decoder inverts the code.
+* {lit}`decodePlain_codePlain`, {lit}`codePlain_of_decodePlain` — the same
+  without the root.
 * {lit}`card_eq`, {lit}`q_eq`, {lit}`rCurried_dir_eq` — the count of a
   shape's directions, the arity it produces and the arities it requires are
   its numerals.
@@ -485,6 +489,48 @@ instance instFinitary : sig.toPFunctor.Finitary := finitary
   decode := decode
   decode_code := decode_code
   code_of_decode := code_of_decode
+
+/-- The code of a shape of Logs: the code of the shape wrapped. -/
+@[expose] def codePlain (c : Shape) : List Bool := code (some c)
+
+/-- The decoder of shapes of Logs: the decoder, rejecting the root. -/
+@[expose] def decodePlain (w : List Bool) : Option Shape :=
+  match decode w with
+  | some (some c) => some c
+  | _ => none
+
+/-- The decoder of shapes of Logs inverts the code. -/
+theorem decodePlain_codePlain (c : Shape) : decodePlain (codePlain c) = some c := by
+  rw [decodePlain, codePlain, decode_code]
+
+/-- A word that decodes to a shape of Logs decodes to the shape wrapped. -/
+theorem decode_of_decodePlain {w : List Bool} {c : Shape} (h : decodePlain w = some c) :
+    decode w = some (some c) := by
+  unfold decodePlain at h
+  split at h
+  · rename_i c' hc'
+    rw [hc', Option.some.inj h]
+  · cases h
+
+/-- A word that decodes to a shape of Logs is its code. -/
+theorem codePlain_of_decodePlain {w : List Bool} {c : Shape} (h : decodePlain w = some c) :
+    codePlain c = w :=
+  code_of_decode (decode_of_decodePlain h)
+
+/-- The directions of the shapes of Logs, enumerated as in the bundle
+signature. -/
+@[expose, instance_reducible] def finitaryPlain : Geb.Oitavem.sig.toPFunctor.Finitary :=
+  fun c ↦ finitary (some c)
+
+/-- The signature of Logs as a coded signature: the bundle signature's codes
+without the root, at every arity. -/
+@[expose] def codedPlain : CodedSig (ℕ × ℕ) where
+  P := Geb.Oitavem.sig
+  finitary := finitaryPlain
+  code := codePlain
+  decode := decodePlain
+  decode_code := decodePlain_codePlain
+  code_of_decode := codePlain_of_decodePlain
 
 /-- The number of a shape's directions is its seventh numeral. -/
 theorem card_eq : ∀ a, coded.card a = fields a 6

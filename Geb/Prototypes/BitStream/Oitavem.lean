@@ -13,6 +13,7 @@ public import Geb.Prototypes.BitStream.Oitavem.Label
 public import Geb.Prototypes.BitStream.Oitavem.Edge
 public import Geb.Prototypes.BitStream.Oitavem.Recognize
 public import Geb.Prototypes.BitStream.Oitavem.Tail
+public import Geb.Prototypes.BitStream.Oitavem.Plain
 public import Geb.Prototypes.BitStream.Oitavem.Machine
 meta import GebMeta -- shake: keep
 
@@ -29,8 +30,9 @@ expression codes, by corecursion on its values at the depths; the numerals
 of a label as expressions of the logspace subalgebra; the label and edge
 checks of the signature as expressions; the recognizer, as a function and
 as an expression, with its specification; the tail of a coded stream, as a
-composite on expressions and a constant rewrite on words; and the machine
-the recognizer compiles to.
+composite on expressions and a constant rewrite on words; the recognizer of
+the spellings of expressions of Logs at every arity, from the same codes
+without the root; and the machines both recognizers compile to.
 
 The infinitely many observations of a stream are the values of one
 expression at the depths, so the infinite branching of the M-type's

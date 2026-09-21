@@ -505,9 +505,13 @@ checklist and in CI.
   a code denotes; `Oitavem/Tail.lean` codes the tail of a stream by the
   composite of the expression with the successor, `dest_toStream` the
   generator law the coded stream satisfies and `tailWord_spellExpr` the
-  tail on words as a constant rewrite of the code;
-  `Oitavem/Machine.lean` reads the machine bound off the
-  subalgebra's soundness theorem (listed in
+  tail on words as a constant rewrite of the code; `Sig.lean`'s
+  `codedPlain` is the signature of Logs as a coded signature, the same
+  codes without the root, and `Oitavem/Plain.lean` its recognizer as an
+  expression, `recognizerPlainSem_eq_singleton_iff` its acceptance of
+  exactly the spellings of expressions of Logs at every arity;
+  `Oitavem/Machine.lean` reads the machine bounds of both recognizers off
+  the subalgebra's soundness theorem (listed in
   `GebMeta.classicalAllowedModules`). The other modules are
   `Classical.choice`-free. Depends on
   `Geb.Prototypes.Computability.Oitavem.Syntax`,
