@@ -9,6 +9,7 @@ public import VersoManual
 public import GebManual.Introduction
 public import GebManual.WTypes
 public import GebManual.DecisionProblems
+public import GebManual.ValueRepresentation
 
 /-! # Manual root
 
@@ -24,3 +25,5 @@ open Verso.Genre Manual
 {include 0 GebManual.WTypes}
 
 {include 0 GebManual.DecisionProblems}
+
+{include 0 GebManual.ValueRepresentation}
