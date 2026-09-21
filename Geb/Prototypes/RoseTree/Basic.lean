@@ -32,6 +32,7 @@ is a type with a computable isomorphism to {lit}`RoseTree`.
 * {lit}`RoseTree.node_eq_mk`, {lit}`RoseTree.node_label_children` — a node over
   a tabulation is the tabulated tree; a tree is the node of its label over its
   children.
+* {lit}`RoseTree.ind` — induction over nodes and their lists of children.
 * {lit}`RoseTree.elim_node` — the computation rule of the fold.
 
 # Tags
@@ -88,6 +89,17 @@ theorem node_eq_mk (a : α) (cs : List (RoseTree α)) {n : ℕ} (hlen : cs.lengt
 @[simp] theorem node_label_children (t : RoseTree α) : node t.label t.children = t := by
   obtain ⟨⟨a, n⟩, f⟩ := t
   exact node_eq_mk a (List.ofFn f) List.length_ofFn f fun i ↦ by simp
+
+/-- Induction: a property of every node over children that have it holds of
+every tree. -/
+theorem ind {P : RoseTree α → Prop} (h : ∀ a cs, (∀ c ∈ cs, P c) → P (node a cs)) :
+    ∀ t, P t :=
+  WType.rec fun x f ih ↦ by
+    obtain ⟨a, n⟩ := x
+    rw [← node_eq_mk a (List.ofFn f) List.length_ofFn f fun i ↦ by simp]
+    exact h a _ fun c hc ↦ by
+      obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hc
+      exact ih i
 
 /-- The fold: the step sees the label and the list of the children's
 results. -/
