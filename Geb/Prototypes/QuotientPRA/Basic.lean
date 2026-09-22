@@ -40,7 +40,8 @@ that is, to morphisms of the terms that equate the two endpoints of every witnes
 * {lit}`termObj`, {lit}`eqObj` — the objects of terms and of witnesses over an
   object of {lit}`I`.
 * {lit}`srcHom`, {lit}`tgtHom`, {lit}`termHom`, {lit}`eqHom` — the generating
-  morphisms of {lit}`I × WalkingParallelPair`.
+  morphisms of {lit}`I × WalkingParallelPair`; {lit}`endHom` — the endpoint morphism
+  of the walking parallel pair at an orientation.
 * {lit}`src`, {lit}`tgt`, {lit}`restr`, {lit}`restrEq` — their actions on a graph.
 * {lit}`coeq` — the quotient presheaf of a graph, and {lit}`coeqMk` its quotient map.
 * {lit}`discrete` — the discrete graph on a presheaf on {lit}`I`.
@@ -103,6 +104,12 @@ def srcHom (i : I) : termObj i ⟶ eqObj i := (𝟙 i, WalkingParallelPairHom.le
 
 /-- The morphism along which a witness restricts to its target. -/
 def tgtHom (i : I) : termObj i ⟶ eqObj i := (𝟙 i, WalkingParallelPairHom.right)
+
+/-- The endpoint morphism of the walking parallel pair at an orientation: the source
+for {lit}`false`, the target for {lit}`true`. -/
+def endHom : Bool → (WalkingParallelPair.zero ⟶ WalkingParallelPair.one)
+  | false => WalkingParallelPairHom.left
+  | true => WalkingParallelPairHom.right
 
 /-- A morphism of {lit}`I` acting on terms. -/
 def termHom {i' i : I} (f : i' ⟶ i) : termObj i' ⟶ termObj i := (f, 𝟙 _)

@@ -124,12 +124,6 @@ abbrev objOf (x : WalkingParallelPair) : Obj := (⟨⟨⟩⟩, x)
 morphism. -/
 abbrev homOf {x' x : WalkingParallelPair} (h : x' ⟶ x) : objOf x' ⟶ objOf x := (𝟙 _, h)
 
-/-- The endpoint morphism at an orientation: the source for {lit}`false`, the target
-for {lit}`true`. -/
-def endHom : Bool → (WalkingParallelPair.zero ⟶ WalkingParallelPair.one)
-  | false => WalkingParallelPairHom.left
-  | true => WalkingParallelPairHom.right
-
 variable (P) (eqns : Equations P)
 
 /-- The shapes: an operation, over terms; the congruence of an operation, and an
