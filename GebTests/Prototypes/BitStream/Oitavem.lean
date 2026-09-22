@@ -25,6 +25,11 @@ tail of the stream; the head of a coding word is the stream's first entry,
 and the coalgebra on codes steps from a coding word to the tail word. The
 value at depth zero of the iterated unary squaring of a two-bit constant has
 length the iterated square of two, within the bound by the code's size.
+An expression whose value is the code of a composition at the empty word
+and the code of an initial function elsewhere codes, in the M-type of the
+bundle signature itself, a tree whose root is the composition and whose
+children are that initial function; the projection's empty values read as
+the default shape, the root, at every node.
 The recognizer of expressions at every arity accepts
 the spellings of the expression of two normal arguments and of an
 expression under no root, and rejects a coding word and the empty word.
@@ -125,3 +130,48 @@ private def squaresE : ℕ → Expr 1 0
 #guard codedPlain.recognize (spellExpr onesE) = false
 
 #guard codedPlain.recognize [] = false
+
+/-- A constant word: a chain of successors over zero. -/
+private def constE : List Bool → Expr 1 0
+  | [] => Expr.initial (.zero 1)
+  | b :: w => Expr.comp (safe := false) (Expr.initial (.succ b)) ![constE w]
+
+/-- The shape of a composition with one argument, under the root. -/
+private def compShape : Option Shape := some (.comp 1 1 false)
+
+/-- The shape of the last-bit function, under the root. -/
+private def lastShape : Option Shape := some (.initial .last)
+
+/-- The root as the default shape of the bundle signature: the fallback of a
+value that decodes to no shape. -/
+instance : Inhabited coded.P.A := ⟨(none : Option Shape)⟩
+
+/-- Decidable equality of the bundle signature's shapes, at the coded
+signature's shape type. -/
+instance : DecidableEq coded.P.A := inferInstanceAs (DecidableEq (Option Shape))
+
+/-- The shape at the root of a tree of the bundle signature. -/
+private def rootShape (t : coded.P.toPFunctor.M) : Option Shape := PFunctor.M.head t
+
+/-- The shape at a path of a tree of the bundle signature. -/
+private def shapeAtPath (ps : List coded.P.toPFunctor.Idx) (t : coded.P.toPFunctor.M) :
+    Option Shape :=
+  PFunctor.M.iselect ps t
+
+/-- The code of the composition at the empty word, and of the last-bit
+function elsewhere. -/
+private def branchE : Expr 1 0 :=
+  Expr.comp (safe := false) (Expr.initial .cond)
+    ![Expr.initial (.proj 1 0), constE (code compShape), constE (code lastShape)]
+
+#guard rootShape (toM coded branchE) = compShape
+
+#guard shapeAtPath [⟨compShape, Sum.inl ()⟩] (toM coded branchE) = lastShape
+
+#guard shapeAtPath [⟨compShape, Sum.inr 0⟩] (toM coded branchE) = lastShape
+
+#guard rootShape (toM coded projE) = none
+
+#guard shapeAtPath [⟨none, ()⟩, ⟨none, ()⟩] (toM coded projE) = none
+
+#guard pathWord coded [⟨compShape, Sum.inl ()⟩, ⟨compShape, Sum.inr 0⟩] = [false, true, false]

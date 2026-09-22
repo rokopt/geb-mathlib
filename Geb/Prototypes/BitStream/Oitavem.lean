@@ -14,6 +14,7 @@ public import Geb.Prototypes.BitStream.Oitavem.Edge
 public import Geb.Prototypes.BitStream.Oitavem.Recognize
 public import Geb.Prototypes.BitStream.Oitavem.Tail
 public import Geb.Prototypes.BitStream.Oitavem.Head
+public import Geb.Prototypes.BitStream.Oitavem.Tree
 public import Geb.Prototypes.BitStream.Oitavem.Plain
 public import Geb.Prototypes.BitStream.Oitavem.Machine
 meta import GebMeta -- shake: keep
@@ -33,9 +34,11 @@ checks of the signature as expressions; the recognizer, as a function and
 as an expression, with its specification; the tail of a coded stream, as a
 composite on expressions and a constant rewrite on words; the head of a
 coded stream, the coalgebra on codes it forms with the tail, and the length
-of the values as a function of the code's size; the recognizer of
-the spellings of expressions of Logs at every arity, from the same codes
-without the root; and the machines both recognizers compile to.
+of the values as a function of the code's size; the tree an expression
+codes in the M-type of any coded signature, by corecursion on its values
+at path words; the recognizer of the spellings of expressions of Logs at
+every arity, from the same codes without the root; and the machines both
+recognizers compile to.
 
 The infinitely many observations of a stream are the values of one
 expression at the depths, so the infinite branching of the M-type's
