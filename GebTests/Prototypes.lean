@@ -16,6 +16,7 @@ import GebTests.Prototypes.Definition
 import GebTests.Prototypes.FamBoundary
 import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.LargeIR
+import GebTests.Prototypes.MType
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafIRUniv
 import GebTests.Prototypes.PresheafUniverse
