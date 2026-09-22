@@ -82,13 +82,14 @@ own requires a prior `lake build`.
   overwrites a locally built tree that Lake rebuilds, and the cache
   directory is shared across jj workspaces while downloads use a
   fixed temporary name.
-- `lake build`, `lake test`, `lake lint`.
-- `lake build GebTests` then `lake lint -- GebTests`, then
+- `lake build`, `lake test`.
+- `lake build GebTests` then `lake exe batteries/runLinter GebTests`, then
   `scripts/literate.sh build` (§ Literate site build), whose
-  `lake lint -- GebLang` lints `Geb` and `GebLang`, then
+  `lake lint` lints `Geb` and whose direct `batteries/runLinter` invocation
+  lints `GebLang`, then
   `scripts/manual.sh build` (§ Verso manual build). The axiom
   env_linter (`GebMeta.detectNonstandardAxiom`) runs under every
-  `lake lint` invocation (`Geb`, `GebTests`, `GebLang` and
+  `batteries/runLinter` invocation (`Geb`, `GebTests`, `GebLang` and
   `GebManual`), failing when a
   declaration depends on an axiom outside `{propext, Quot.sound}`,
   except that modules in `GebMeta.classicalAllowedModules`
@@ -154,7 +155,8 @@ branch diff rather than a decision about the tree.
 
 The manual (`lean_lib GebManual`, `lean_exe geb-manual`, sources
 under `manual/`) builds only through `scripts/manual.sh build`:
-`lake build verso/verso-literate`, `lake build GebManual`, `lake lint -- GebManual`,
+`lake build verso/verso-literate`, `lake build GebManual`,
+`lake exe batteries/runLinter GebManual`,
 `lake exe geb-manual --output manual/_out`, in that order: build
 precedes lint so a clean checkout lints built oleans, and the lint
 runs the axiom linter over the manual
@@ -185,9 +187,9 @@ The manual is outside `defaultTargets` and the test driver, so
 
 The literate site (the `Geb` and `GebLang` libraries rendered by
 Verso's literate pipeline) builds only through
-`scripts/literate.sh build`: `lake build`, `lake lint -- GebLang`
-(which lints `Geb` too, `lake lint`'s driver argument being
-prepended), `lake build :literateHtml`, in that order, so a clean
+`scripts/literate.sh build`: `lake build`, `lake lint`,
+`lake exe batteries/runLinter GebLang`, `lake build :literateHtml`,
+in that order, so a clean
 checkout lints built oleans. `literate.toml` scopes the site to the
 two libraries; without that scoping the package facet renders and
 builds every library and executable of the package. Rendering the
@@ -206,6 +208,14 @@ the manual is; the libraries themselves are the `defaultTargets`,
 so an ordinary `lake build` compiles them without Verso, which the
 first Verso build compiles from source.
 `scripts/tests/test-lint-driver.sh` § 3 guards the workflow step.
+
+The pre-push and document build scripts default `LEAN_NUM_THREADS` to four,
+preserving an explicit setting. Roots other than `Geb` invoke
+`batteries/runLinter` directly, because `lake lint` prepends its configured
+`Geb` argument. The full checklist records that single `lake lint` run in a
+temporary file and passes its path as `GEB_LINT_LOG` to the lint-driver
+regression test. The test validates the recorded invocation and coverage;
+when run standalone it executes `lake lint` itself.
 
 A doc-gen4 build needs `DOCGEN_SRC=file` when it is run outside CI.
 doc-gen4 resolves source links by running `git remote get-url origin` in the

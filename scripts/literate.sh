@@ -16,15 +16,16 @@
 # build compiles them; only the rendering is confined to this script.
 
 set -euo pipefail
+export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 case "${1:-}" in
   build)
     lake build
-    # The driver argument (lakefile.toml lintDriverArgs) is prepended,
-    # so this lints Geb and GebLang both.
-    lake lint -- GebLang
+    # Keep the default-driver check's output for pre-push-full's tooling test.
+    lake lint 2>&1 | tee "${GEB_LINT_LOG:-/dev/null}"
+    lake exe batteries/runLinter GebLang
     lake build :literateHtml
     ;;
   serve)

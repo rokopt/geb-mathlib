@@ -651,8 +651,8 @@ their Markdown docstrings; they render too, and are not converted.
   the literate site, so inclusion is a matter of the manual's
   narrative, not of the module's readiness.
 - The `GebManual` umbrella imports `GebMeta`, so
-  `lake lint -- GebManual` runs the axiom linter over the manual. The
-  document object a `#doc` elaborates, and a bibliography entry, depend
+  `lake exe batteries/runLinter GebManual` runs the axiom linter over the
+  manual. The document object a `#doc` elaborates, and a bibliography entry, depend
   on `Classical.choice` through Verso's own definitions, so every module
   holding one is listed in `GebMeta.classicalAllowedModules`, chapter by
   chapter, as is `GebManual.BibTeX`, elaboration code whose monads
