@@ -61,7 +61,8 @@ checklist and in CI.
 ## Design documents
 
 - [definitions.md](definitions.md) — definitions as derived operations,
-  recursive equation blocks, polynomial directions, and immutable content
+  recursive equation blocks, free-monad directions and cofree-comonoid
+  vertices, the blocks that are definitions, and immutable content
   identities, with a Lean prototype and comparisons to Unison and Nock.
 - [Value representation](../manual/GebManual/ValueRepresentation.lean)
   — a Verso manual chapter recording the design of the representation
@@ -1991,6 +1992,29 @@ checklist and in CI.
   rules, rather than enforcing strict RFC validation.
   [SExprIO tests](../GebTests/Prototypes/SExprIO.lean) exercise file
   round trips, conversions, and error handling under `lake test`.
+- `Geb/Prototypes/Definition/` — definitions as terms of the free monad
+  of a polynomial signature, designed in [definitions.md](definitions.md).
+  `Basic.lean` carries `Direction`, the directions of the free polynomial
+  at a shape; derived operations with their expansion `expandOps`;
+  linking, evaluation in an algebra with `eval_bind` and `eval_map`;
+  recursive equation blocks, their finite unfolding and solutions, and the
+  unique M-type solution of a flat guarded block; and an injective encoding
+  of terms into rose trees. `Vertex.lean` carries the vertices of a term,
+  its subterm at a vertex and the translation of vertices of a subterm, with
+  the five directed-container laws of [AhmanChapmanUustalu2014]
+  (`subterm_root`, `subterm_append`, `Vertex.append_root`,
+  `Vertex.root_append`, `Vertex.append_assoc`), the vertex of each
+  direction (`subterm_ofDirection`), and the transport of a body along a
+  vertex of its environment (`link_map_append`); its recursion uses the
+  executable recursor that `Geb/Cslib/Foundations/Data/PFunctor/Free.lean`
+  supplies.
+  `Solution.lean` carries the interpretation of derived operations in an
+  algebra with the soundness of their expansion (`eval_expandOps`), and
+  well-founded blocks, whose bodies refer only to the exports below their
+  own, with exactly one solution in every algebra
+  (`WFBlock.existsUnique_isSolution`). No theorem here depends on an axiom
+  beyond `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
   represents values with leaf, stem, and fork constructors, and expressions
   as application trees over values. Its tagged binary-tree encoding prevents

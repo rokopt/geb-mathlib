@@ -22,7 +22,8 @@ available in its bodies. Its equations do not assert the existence of a solution
 
 An export interface can be the directions of a free-polynomial shape. These directions
 are dependent paths to variable leaves, retaining the direction taken at each operation.
-They do not address internal operation nodes or the nullary operations of the signature.
+They do not address internal operation nodes or the nullary operations of the signature;
+the vertices of a term, which do, are the subject of the sibling module on vertices.
 
 ## Main definitions
 
@@ -40,6 +41,7 @@ They do not address internal operation nodes or the nullary operations of the si
 
 * {lit}`link_assoc` is associativity of linking.
 * {lit}`eval_bind` states that interpretation commutes with substitution.
+* {lit}`eval_map` states that interpretation commutes with renaming.
 * {lit}`eval_unfold` states that every solution satisfies every finite unfolding.
 * {lit}`coalgebra_solution_unique` identifies a flat block's M-type solution.
 * {lit}`encode_injective` makes the term encoding faithful.
@@ -125,6 +127,14 @@ theorem eval_bind (alg : P.Obj V → V) (env : Δ → V)
     eval alg env (t.bind σ) = eval alg (fun x ↦ eval alg env (σ x)) t := by
   refine FreeM.rec (motive := fun t ↦ eval alg env (t.bind σ) =
     eval alg (fun x ↦ eval alg env (σ x)) t) (fun _ ↦ rfl) ?_ t
+  intro a ts ih
+  exact congrArg (fun k ↦ alg (.mk a k)) (funext ih)
+
+/-- Interpretation commutes with renaming variables. -/
+theorem eval_map (alg : P.Obj V → V) (env : Δ → V) (f : Γ → Δ) (t : P.FreeM Γ) :
+    eval alg env (t.map f) = eval alg (env ∘ f) t := by
+  refine FreeM.rec (motive := fun t ↦ eval alg env (t.map f) = eval alg (env ∘ f) t)
+    (fun _ ↦ rfl) ?_ t
   intro a ts ih
   exact congrArg (fun k ↦ alg (.mk a k)) (funext ih)
 

@@ -7,6 +7,8 @@
 - [Definitions with imports and exports](#definitions-with-imports-and-exports)
 - [Structural addresses](#structural-addresses)
 - [Recursive definitions](#recursive-definitions)
+- [Which equations are definitions](#which-equations-are-definitions)
+- [Equations in slice, presheaf and depth-indexed settings](#equations-in-slice-presheaf-and-depth-indexed-settings)
 - [Content identity](#content-identity)
 - [Unison and Nock](#unison-and-nock)
 - [Relation to the existing representations](#relation-to-the-existing-representations)
@@ -16,17 +18,24 @@
 
 A candidate definition is a finitely presented derived operation of a
 polynomial signature. Its body belongs to the signature's free monad;
-its parameters are structural directions. Recursive definitions form a
-finite recursive program scheme. A definition's content identity is the
-identity of this presentation, including its dependencies and semantic
-profile. Its denotation is a separate construction in a specified model.
-Raw syntax remains the rose tree of bitstrings. Each profile interprets
-the trees that decode to its terms, interfaces, and definition blocks.
+its parameters are structural directions, the directions of the free
+monad. The environments against which bodies are resolved are addressed
+by vertices, the directions of the cofree comonoid. Recursive
+definitions form a finite recursive program scheme. A block of equations
+is a definition, relative to a class of models, when it has exactly one
+solution in every model of the class: well-founded blocks in every
+algebra, guarded blocks in every completely iterative algebra. A
+definition's content identity is the identity of its presentation,
+including its dependencies and semantic profile. Its denotation is a
+separate construction in a specified model. Raw syntax remains the rose
+tree of bitstrings. Each profile interprets the trees that decode to its
+terms, interfaces, and definition blocks.
 
 This proposal instantiates established constructions, rather than
 postulating a categorical object universally called a definition. The
-Lean prototype is [Definition.lean](../Geb/Prototypes/Definition.lean),
-with [executable examples](../GebTests/Prototypes/Definition.lean).
+Lean prototype is [Definition.lean](../Geb/Prototypes/Definition.lean)
+and the modules it indexes, with
+[executable examples](../GebTests/Prototypes/Definition.lean).
 
 ## Mathematical construction
 
@@ -135,15 +144,73 @@ the retrieved block before accepting the direction.
 Free-monad directions select variable leaves, not all syntactic nodes.
 A closed term has no such directions, and a nullary operation is not a
 variable leaf. The export layout therefore marks exports as variable
-leaves deliberately. Addressing arbitrary internal syntax occurrences
-requires a separate marked-node or context construction; it cannot be
-obtained by treating the free monad's directions as all nodes.
+leaves deliberately.
+
+Every node of a term is addressed by a vertex: at a variable, the root;
+at an operation, the root or a direction of the operation followed by a
+vertex of that child.
+
+```text
+Vtx(variable) = 1
+Vtx(operation(a, children)) = 1 + Σ b : B a, Vtx(children(b)).
+```
+
+A vertex `v` of `t` selects the subterm `t ↓ v`, and a vertex `w` of that
+subterm translates into the vertex `v ⊕ w` of `t`. With the root `o`,
+these operations satisfy the five laws of a directed container:
+`t ↓ o = t`, `t ↓ (v ⊕ w) = (t ↓ v) ↓ w`, `v ⊕ o = v`, `o ⊕ w = w` and
+`(u ⊕ v) ⊕ w = u ⊕ (v ⊕ w)`
+([Ahman–Chapman–Uustalu](https://arxiv.org/abs/1408.5809), Section 3.1).
+Terms and their vertices are the cofree recursive directed container on
+the signature with the variables adjoined as nullary operations (Section
+4.4 there). Read as a tree of that signature, a term is a shape of the
+cofree comonoid on it, and its vertices are the directions there
+([Niu–Spivak](https://arxiv.org/abs/2312.00990), Proposition 8.18).
+`Vertex`, `subterm`, `Vertex.root` and `Vertex.append` implement the
+operations; `subterm_root`, `subterm_append`, `Vertex.append_root`,
+`Vertex.root_append` and `Vertex.append_assoc` are the laws. Each
+free-monad direction is a vertex whose subterm is its variable
+(`Vertex.ofDirection`, `subterm_ofDirection`).
+
+The two kinds of address serve the two structures. A direction of the
+free monad is where a body receives an argument, and substitution fills
+it; a vertex is where a structure is observed, and selection reads it.
+Neither subsumes the other. [Libkind and
+Spivak](https://arxiv.org/abs/2404.16321) show that the free monad is a
+module over the cofree comonad: the free monad supplies terminating
+patterns and the cofree comonad the behaviours they run on.
+
+A term used as an environment, as a Nock subject is, is addressed by its
+vertices. A body written against an environment `t` with variables `Γ`
+is a term `b : T_P(Vtx(t))`. Its resolution substitutes the subterm at
+each vertex:
+
+```text
+resolve(b) = μ_Γ(T_P(t ↓ −)(b)) : T_P(Γ).
+```
+
+This is `link` against the subterm map, a Kleisli composite, so the
+monad laws apply to it; by `eval_bind`, the value of the resolved body is
+the value of `b` with each vertex interpreted by the value of its
+subterm. A body written against the subterm `t ↓ v` is transported to
+`t` by renaming along `v ⊕ −`, and the transported body resolves against
+`t` as the original resolves against `t ↓ v` (`link_map_append`, a
+consequence of the second directed-container law). This is the structure
+of Hoon's layering, in which code compiled against a core's context is
+used from any subject containing that core, with addresses whose type
+excludes the routes at which Nock's slot operation fails.
 
 The layout is part of the interface, not a single mandatory global
 library tree. A block can import selected exports from other blocks.
 Putting every library into one enclosing identity would make unrelated
 layout changes affect references unnecessarily. Paths may have a compact
 wire encoding, but their definition and lookup laws remain structural.
+An environment is likewise local to the bodies resolved against it.
+Resolution replaces every vertex by the subterm there, so a resolved body
+mentions no vertex of its environment; when the environment's subterms
+carry content identities, a vertex whose subterm has no variables can be
+replaced by that identity instead, which converts an environment-relative
+reference into an immutable one.
 
 ## Recursive definitions
 
@@ -215,6 +282,85 @@ and that this solution is unique. The executable example presents an
 infinite alternating bitstream by a two-state coalgebra. No unrestricted
 fixed-point operator is introduced.
 
+## Which equations are definitions
+
+A family of equations defines its unknowns, relative to a class of
+models, when it has exactly one solution in every model of the class.
+This is the model-theoretic notion of a definitional extension, stated
+for the equations of a block:
+
+| Block | Solutions | Status |
+| --- | --- | --- |
+| Well-founded: each body refers only to exports below its own | exactly one in every algebra | a definition |
+| Guarded: each body is an operation or an import | exactly one in every completely iterative algebra, the M-type among them | a corecursive definition |
+| Unguarded | possibly none (`x = successor(x)`) or many (`x = x`) | a constraint on models |
+
+Derived operations belong to the first row. Each defining equation
+states the value of its operation, so every algebra of `P` expands in
+exactly one way to an algebra of `Q` satisfying them (`derivedAlg`), and
+evaluating a term of defined operations agrees with evaluating its
+expansion (`eval_expandOps`).
+
+A well-founded block is a typing of the bodies rather than a condition
+checked after the fact: for a relation `r` on `E`, the body at `i` ranges
+over `T_P(Γ + {j // r j i})`. When `r` is well founded, the block has
+exactly one solution in every algebra and environment
+(`WFBlock.existsUnique_isSolution`), constructed and characterized by
+well-founded recursion on the exports. Layered libraries, in which each
+block imports only the exports of earlier blocks, are the special case in
+which the relation is the order of the layers.
+
+For guarded blocks, [Milius–Moss](https://arxiv.org/pdf/0904.2385)
+prove unique solutions in completely iterative algebras.
+`coalgebra_solution_unique` is the flat case in the M-type: a flat
+guarded block is a finite coalgebra, and its unique solution is the
+corecursive map that finality supplies. A guarded block is therefore the
+finite syntax of a corecursive definition. Its references into its own
+exports are directions, not digests of the definition being written, so
+the acyclicity of content identity between blocks is unaffected.
+Unguarded blocks are equations that constrain their models; they are
+axioms rather than definitions.
+
+## Equations in slice, presheaf and depth-indexed settings
+
+Slice and presheaf W-types also add equations to W-types, but of a
+different kind. Their equations, that a child's index matches the index
+its direction requires and that restrictions are natural, are
+well-formedness conditions on trees: they select syntax. The equations
+of a block constrain interpretations: they select denotations.
+Generalizing the free monad to slice and presheaf free monads extends
+what a body can be, to sorted bodies and to context-indexed bodies with
+renaming, and equation morphisms are defined in those settings as well;
+their equations remain semantic, and the slice or presheaf free monad
+does not absorb them.
+
+What a slice typing does absorb is the discipline that places a block in
+a row of the table. Well-foundedness is the index constraint of
+`WFBlock`. Guardedness is the typing of each body as an element of
+`P(T_P(Γ + E)) + Γ` rather than of `T_P(Γ + E)`, which is the
+guardedness condition of Milius–Moss for systems of equations: no
+right-hand side is a bare variable of the system. A slice layer can therefore
+make the question whether a block is a definition, and for which models,
+a question of type checking.
+
+The equations themselves integrate with the M-type side through depth.
+In presheaves on `ω`, the topos of trees
+([Birkedal–Møgelberg–Schwinghammer–Støvring](https://arxiv.org/abs/1208.3596)),
+a guarded recursive definition has a unique solution because its value
+at depth `n + 1` is determined by its value at depth `n`: guarded
+recursion becomes well-founded recursion on depth. The proof of
+`coalgebra_solution_unique` has this form, by recursion on the depth of
+the M-type's approximations, and the
+[bitstream construction](../Geb/Prototypes/BitStream/WConstruction.lean)
+builds an M-type from a presheaf W-family of finite observations over the
+walking arrow together with equations of agreement between adjacent
+depths. A guarded block's equations, restricted to depth `n`, are those
+agreement equations. Slice and presheaf M-types built in that way would
+carry the solutions of guarded blocks as depth-indexed families of
+well-founded definitions. The finite observations are the vertices: the
+solution of a guarded block is a shape of the cofree comonoid, observed
+at its finite rooted paths.
+
 ## Content identity
 
 The proposed hash input is a canonical rose tree representing
@@ -284,7 +430,9 @@ Nock evaluates a formula against a subject, both represented as nouns.
 Its slot operation uses positive integer axes: root, left child, and
 right child are encoded by 1, 2, and 3. Thus the integers encode binary
 paths, rather than supplying an intrinsically different addressing
-concept. A Hoon core pairs a battery of code with a payload, and an arm
+concept: an axis that selects a node of the subject is a vertex of it,
+and the vertex type of a given subject omits the axes at which the slot
+operation fails. A Hoon core pairs a battery of code with a payload, and an arm
 executes against the core as its subject. Nested library cores and the
 numbered standard-library layers are Hoon organization conventions, not
 a requirement of the Nock reduction rules. The direction of availability
@@ -360,18 +508,34 @@ structural direction types, derived-operation expansion, linking,
 recursive value blocks with selected exports, finite unfolding,
 algebraic interpretation,
 flat guarded M-type solutions, and an injective term encoding into
-rose trees and then bitstrings. Its examples exercise structural
-references, repeated use of an imported definition, and infinite
-stream production. All recursion uses existing recursors or the
-existing free-monad interpreter.
+rose trees and then bitstrings
+([Definition/Basic.lean](../Geb/Prototypes/Definition/Basic.lean)); the
+vertices of terms with their directed-container laws, resolution against
+an environment and transport along a vertex
+([Definition/Vertex.lean](../Geb/Prototypes/Definition/Vertex.lean));
+and the soundness of derived-operation expansion and the unique solution
+of well-founded blocks
+([Definition/Solution.lean](../Geb/Prototypes/Definition/Solution.lean)).
+Its examples exercise structural references, repeated use of an imported
+definition, infinite stream production, vertices of a subject with a
+parameter and two layers, transport of a body between layers, and the
+unique solution of a three-export well-founded block. All recursion uses
+existing recursors, the existing free-monad interpreter, or well-founded
+recursion in proofs; `Definition/Vertex.lean` uses the executable code
+for the free monad's recursor that
+[Free.lean](../Geb/Cslib/Foundations/Data/PFunctor/Free.lean) supplies,
+since a subterm selected by a vertex depends on the term.
 
 It does not implement cryptographic hashing, a content store, a block
 decoder, permutation canonicalization, a binder language, the slice or
-presheaf free-monad interface, a general recursive-program-scheme solver,
-or a compiler to interaction nets. These require selected profiles and
-their proof obligations; adding them to the definition format itself
-would prematurely select language semantics.
+presheaf free-monad interface, guarded blocks as a typing, a general
+recursive-program-scheme solver, the replacement of vertices by content
+identities, or a compiler to interaction nets. These require selected
+profiles and their proof obligations; adding them to the definition
+format itself would prematurely select language semantics.
 
 Run the examples with `lake build GebTests.Prototypes.Definition`.
 Bibliographic keys used here are `GambinoKock2013`, `MiliusMoss2009`,
-`Fiore2008`, and `Garner2012` in [references.bib](references.bib).
+`Fiore2008`, `Garner2012`, `AhmanChapmanUustalu2014`, `NiuSpivak2023`,
+`LibkindSpivak2025` and `BirkedalMogelbergSchwinghammerStovring2012` in
+[references.bib](references.bib).

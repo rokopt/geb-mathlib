@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 import GebTests.Prototypes.Definition.Basic
+import GebTests.Prototypes.Definition.Vertex
+import GebTests.Prototypes.Definition.Solution
 
 /-!
 # Definition tests — index
