@@ -522,6 +522,19 @@ checklist and in CI.
   `SliceM.dest` are mutually inverse, and `SliceM.corec` from a slice
   coalgebra lies over `I` (`comp_corec`), is a morphism of slice
   coalgebras (`dest_corec`) and is unique (`corec_unique`).
+  `MType/Presheaf.lean` defines the carrier presheaf `PresheafM F` of a
+  presheaf endofunctor `F : PresheafPFunctor I I`, built on
+  `SliceM F.toSlicePFunctor`: its fibre over `j` is the hereditarily natural
+  trees indexed at `j` (`PresheafM.IsHereditarilyNatural`, the hereditary
+  form of `PresheafM.NodeNatural`), with restriction the root restriction
+  `PresheafM.mRestrTree`. `PresheafM.mk` and `PresheafM.dest` are mutually
+  inverse and commute with restriction (`mk_map`, `dest_map`), so
+  `PresheafM.destNat` and `PresheafM.mkNat` are natural transformations
+  exhibiting the carrier as a fixed point of `objPresheaf`, and `destNat`
+  makes it a coalgebra;
+  `PresheafM.corec` into it from a presheaf coalgebra valued in
+  `Type (max uI uA uB)` is natural by the one-level `sliceCorec_map`, is a
+  morphism of coalgebras (`dest_corec`) and is unique (`corec_unique`).
   `Classical.choice`-free. Depends on
   `Geb/Mathlib/Data/PFunctor/Presheaf/Arrow.lean` and mathlib's
   `Data/PFunctor/Univariate/M.lean`.

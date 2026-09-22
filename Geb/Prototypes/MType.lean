@@ -11,6 +11,7 @@ public import Geb.Prototypes.MType.Basic
 public import Geb.Prototypes.MType.Equiv
 public import Geb.Prototypes.MType.Hereditary
 public import Geb.Prototypes.MType.Slice
+public import Geb.Prototypes.MType.Presheaf
 
 set_option doc.verso true in
 /-!
@@ -22,7 +23,8 @@ the fibres of a presheaf W-type over the depths; the M-type, the agreeing
 root trees of a slice W-type storing one observation at each depth, with its
 constructor, destructor and corecursor; its equivalence with mathlib's
 M-type; hereditary predicates, the coinductive counterpart of the conjunctive
-inductive predicates on W-types; and the M-type of a slice polynomial
-endofunctor, built on the M-type as its W-type is built on the W-type, the
-terminal coalgebra of its functor.
+inductive predicates on W-types; and the M-types of slice and presheaf
+polynomial endofunctors, the slice M-type built on the M-type and the presheaf
+M-type on the slice M-type, as the W-types are layered, each the terminal
+coalgebra of its functor.
 -/

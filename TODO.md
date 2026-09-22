@@ -228,12 +228,15 @@ proof, and the slice proof on the `WType` initiality established there.
 
 #### 2. M-types and their categorical wrappers as terminal coalgebras
 
-Define the M-types (greatest fixed points) of the slice and presheaf functors
-on mathlib's `PFunctor.M`, following mathlib's standard construction of M-types
-on W-types, and characterise them as the terminal coalgebras of their functors.
-Following the base-layer-first pattern of the `PFunctor` wrappers and item 1,
-build a categorical wrapper for the terminality of mathlib's `PFunctor.M`
-first, reusable in the slice and presheaf terminality proofs.
+The M-type of a polynomial functor constructed from W-types, `Geb.MType.M`,
+the slice M-type built on it and the presheaf M-type built on the slice
+M-type, layered as the W-types are, are prototyped in `Geb/Prototypes/MType/`
+with their terminality stated concretely: the corecursor, its computation rule
+and its uniqueness (`docs/index.md`). Characterise them as the terminal objects
+of the categories of coalgebras of their functors. Following the
+base-layer-first pattern of the `PFunctor` wrappers and item 1, build a
+categorical wrapper for the terminality of `Geb.MType.M` first, reusable in the
+slice and presheaf terminality proofs.
 
 #### 3. Universal morphisms
 
