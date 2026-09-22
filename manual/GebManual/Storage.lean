@@ -403,6 +403,8 @@ byte summaries, the existing Elias scanner/algebra interpreter, and the reposito
 concrete-syntax parser. The composition law is proved for all word pairs; the worked
 examples execute through Lean's interpreter during the build.
 The timing functions reject an unexpected result; timings themselves are not assertions.
+Routine elaboration runs the leaf benchmark at payload lengths zero and one.
+Passing {lit}`[0, 1, 8, 32]` to {lit}`benchmarkRecognition` runs the larger comparison.
 
 In the recorded leaf experiment, a 32-bit payload produced a 43-bit Elias input. The
 shared algebra interpretation took approximately 11.2 seconds; the native scanner

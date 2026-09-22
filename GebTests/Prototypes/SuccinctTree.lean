@@ -21,6 +21,8 @@ set_option doc.verso true in
 These checks cover malformed parentheses, word boundaries, independently scanned
 blocks, and the repository's worked Elias encodings. The benchmark evaluates the
 existing native scanner and shared algebra interpretation in Lean's interpreter.
+Routine elaboration uses small payloads; {lit}`benchmarkRecognition` accepts a
+list of payload lengths for explicit larger measurements.
 Its timings are diagnostic, not compiled-C or end-to-end typechecking measurements.
 The syntax experiment uses the repository's rose-tree parser and printer, including
 the one-child orientation exercised by its concrete-syntax examples.
@@ -54,16 +56,17 @@ def timeRecognition (label : String) (recognize : List Bool → Bool) (w : List 
   let stop ← IO.monoNanosNow
   IO.println s!"{label},{w.length},{stop - start}"
 
-/-- Compare the existing streaming scanner with the shared expression interpreter on a leaf. -/
-def benchmarkRecognition : IO Unit := do
+/-- Compare the native scanner with the shared expression interpreter at the
+given payload lengths. -/
+def benchmarkRecognition (payloads : List ℕ) : IO Unit := do
   IO.println "implementation,input_bits,nanoseconds"
-  for payload in [0, 1, 8, 32] do
+  for payload in payloads do
     let w := Geb.BitTree.Elias.encode (Geb.BitTree.leaf (List.replicate payload true))
     timeRecognition "native-scanner" Geb.BitTree.Elias.Scanner.validBool w
     timeRecognition "shared-algebra" (fun w ↦
       !(Geb.SizeBounded.Logspace.EliasTree.isEliasTree.1.semVec ![w]).isEmpty) w
 
-#eval benchmarkRecognition
+#eval benchmarkRecognition [0, 1]
 
 /-- Time parsing and exact comparison of the existing rose syntax, with printing excluded. -/
 def timeSyntax (label : String) (tree : Geb.Rose 3) : IO Unit := do
