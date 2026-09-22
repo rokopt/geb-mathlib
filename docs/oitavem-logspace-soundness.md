@@ -80,10 +80,12 @@ Completeness is outside this construction's scope.
   full safe recursion. `Expr.prefixCutoff` and `Expr.recursionCutoff`
   compute suitable cutoffs from syntax. Their logarithmic bounds allow
   normal arguments of polynomial length in the original physical input.
-- [Space and time][space-time] proves `computes_polytime_logspace` for
-  any halting deterministic transducer with a global logarithmic-space
-  bound. The proof counts configurations with the write-only output
-  omitted.
+- [Space and time][space-time] proves `computes_of_space` for any
+  halting deterministic transducer with a global work-space bound: its
+  time is exponential in that bound. The proof counts configurations
+  with the write-only output omitted. `computes_polytime_logspace` is
+  the instance at a logarithmic bound and `computes_expspace` the
+  instance at an exponential one.
 - [Derived operations][derived] supplies `Expr.boundedRec`, the
   recursive length example `lengthByRec`, and `squareWord`, whose
   output length is exactly the square of its input length.

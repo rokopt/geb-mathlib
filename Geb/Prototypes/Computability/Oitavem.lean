@@ -61,10 +61,13 @@ the existence of a polynomial-time, logarithmic-space Turing machine for every
 expression. Such a theorem additionally requires a transducer implementation that
 recomputes intermediate words instead of storing them on work tapes.
 
-{name}`Geb.Oitavem.Machine.computes_polytime_logspace` supplies the time-bound
-part of that construction: a halting transducer with a logarithmic work-space
-bound has a simultaneous polynomial time bound, on the same machine. It does not
-construct a machine for an expression.
+{name}`Geb.Oitavem.Machine.computes_of_space` supplies the time-bound part of
+that construction: a halting transducer has a time bound exponential in its
+work-space bound, on the same machine; at a logarithmic bound this is the
+polynomial time of {name}`Geb.Oitavem.Machine.computes_polytime_logspace`, and
+at an exponential bound the doubly exponential time of
+{name}`Geb.Oitavem.Machine.computes_expspace`. Neither constructs a machine for
+an expression.
 
 The machine layer also supplies reusable physical-input and stored-word readers,
 loops that emit output, and a one-work-tape transducer for {name}`Geb.Oitavem.squareWord`.

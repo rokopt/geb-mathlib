@@ -11,19 +11,23 @@ meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
 /-!
-# Polynomial time from logarithmic work space
+# Time from work space
 
 A halting deterministic transducer cannot repeat a configuration after forgetting
 its write-only output. CSLib's bound on the number of configuration cores therefore
-bounds its halting time. At logarithmic space this bound is polynomial in the input
-length, for the same machine that satisfies the space bound.
+bounds its halting time by an exponential in the work space, for the same machine
+that satisfies the space bound. At logarithmic space this bound is polynomial in
+the input length; at space exponential in the input length it is doubly
+exponential.
 
 ## Main statements
 
 * {lit}`core_runFrom_eq_of_core_eq` lifts equality of cores through a run.
 * {lit}`exists_halt_le_of_space` bounds the first halt by the configuration count.
-* {lit}`computes_polytime_logspace` gives simultaneous bounds for a halting
-  transducer whose work space is logarithmic.
+* {lit}`computes_of_space` gives simultaneous bounds for a halting transducer
+  under any work space bound, the time exponential in the space.
+* {lit}`computes_polytime_logspace` is its instance at logarithmic space, and
+  {lit}`computes_expspace` its instance at exponential space.
 
 ## Implementation notes
 
@@ -118,6 +122,27 @@ theorem exists_halt_le_of_space {k : ℕ} {Symbol State : Type*}
     exact_mod_cast hc.trans (hab input s hs)
   exact ⟨T, by omega, hT, hlive⟩
 
+/-- A halting transducer computes its function in time exponential in its work space,
+using the very same machine: the first halt is bounded by the number of configuration cores
+the space budget allows. -/
+theorem computes_of_space {k : ℕ} {State : Type*} [Finite State]
+    (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (s : ℕ → ℕ)
+    (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
+      (tm.runFrom (tm.initCfg w) t).output = f w)
+    (hspace : ∀ w t, tm.spaceUsed (tm.initCfg w) t ≤ s w.length) :
+    ∃ a b : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
+      (fun w ↦ (w.length + 2) * a * 2 ^ (b * s w.length)) (fun w ↦ s w.length) := by
+  obtain ⟨a, b, hab⟩ := exists_halt_le_of_space tm
+  refine ⟨a, b, fun w ↦ ?_⟩
+  obtain ⟨u, hu, hout⟩ := hcorrect w
+  obtain ⟨T, hTb, hT, hlive⟩ := hab w (s w.length) (hspace w) ⟨u, hu⟩
+  have hTu : T ≤ u := by
+    by_cases h : T ≤ u
+    · exact h
+    · exact False.elim (hlive u (by omega) hu)
+  refine ⟨T, hTb, tm.spaceUsed (tm.initCfg w) T, hspace w T, hT, ?_, rfl⟩
+  exact (tm.runFrom_output_eq_of_halt (tm.initCfg w) hTu hT).symm.trans hout
+
 /-- A halting logarithmic-space transducer computes its function in simultaneous
 polynomial time and logarithmic space, using the very same machine. -/
 theorem computes_polytime_logspace {k : ℕ} {State : Type*} [Finite State]
@@ -127,24 +152,73 @@ theorem computes_polytime_logspace {k : ℕ} {State : Type*} [Finite State]
     (hspace : ∀ w t, tm.spaceUsed (tm.initCfg w) t ≤ c * (w.length.size + 1)) :
     ∃ C d : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
       (fun w ↦ C * (w.length + 1) ^ d) (fun w ↦ C * (w.length.size + 1)) := by
-  obtain ⟨a, b, hab⟩ := exists_halt_le_of_space tm
+  obtain ⟨a, b, h⟩ := computes_of_space tm f (fun n ↦ c * (n.size + 1)) hcorrect hspace
   have hp : IsPolyBounded (fun n ↦ (n + 2) * a * 2 ^ (b * (c * (n.size + 1)))) := by
     simpa only [Nat.mul_assoc] using isPolyBounded_mul
       (isPolyBounded_mul (isPolyBounded_add isPolyBounded_id (isPolyBounded_const 2))
         (isPolyBounded_const a)) (isPolyBounded_pow_size (b * c))
   obtain ⟨C, d, hpoly⟩ := hp
-  refine ⟨max C c, d, fun w ↦ ?_⟩
-  obtain ⟨u, hu, hout⟩ := hcorrect w
-  obtain ⟨T, hTb, hT, hlive⟩ := hab w (c * (w.length.size + 1)) (hspace w) ⟨u, hu⟩
-  have hTu : T ≤ u := by
-    by_cases h : T ≤ u
-    · exact h
-    · exact False.elim (hlive u (by omega) hu)
-  refine ⟨T, hTb.trans ((hpoly w.length).trans
-    (Nat.mul_le_mul_right _ (Nat.le_max_left _ _))),
-    tm.spaceUsed (tm.initCfg w) T,
-    (hspace w T).trans (Nat.mul_le_mul_right _ (Nat.le_max_right _ _)), hT, ?_, rfl⟩
-  exact (tm.runFrom_output_eq_of_halt (tm.initCfg w) hTu hT).symm.trans hout
+  exact ⟨max C c, d, h.mono
+    (fun w ↦ (hpoly w.length).trans (Nat.mul_le_mul_right _ (Nat.le_max_left _ _)))
+    (fun w ↦ Nat.mul_le_mul_right _ (Nat.le_max_right _ _))⟩
+
+/-- The exponent of the configuration count of an exponential-space machine, a linear term
+plus a constant multiple of the space bound, is within a constant of the exponent of the
+next exponential level. -/
+theorem exists_add_le_two_pow (a K d : ℕ) :
+    ∃ M, ∀ n, n + 1 + a + K * 2 ^ ((n + 1) ^ d) ≤ M + 2 ^ ((n + 1) ^ (d + 1)) := by
+  refine ⟨K + a + 1 + 1 + a + K * 2 ^ ((K + a + 1) ^ d), fun n ↦ ?_⟩
+  rcases Nat.lt_or_ge n (K + a + 1) with hn | hn
+  · have h : K * 2 ^ ((n + 1) ^ d) ≤ K * 2 ^ ((K + a + 1) ^ d) :=
+      Nat.mul_le_mul_left K (Nat.pow_le_pow_right Nat.two_pos
+        (Nat.pow_le_pow_left (show n + 1 ≤ K + a + 1 by omega) d))
+    exact (show n + 1 + a + K * 2 ^ ((n + 1) ^ d) ≤
+      K + a + 1 + 1 + a + K * 2 ^ ((K + a + 1) ^ d) by omega).trans (Nat.le_add_right _ _)
+  · have hP : 1 ≤ (n + 1) ^ d := Nat.one_le_pow _ _ (by omega)
+    have h2n : K + a + n + 1 ≤ 2 ^ n := by
+      obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+      have := Nat.lt_two_pow_self (n := m)
+      rw [Nat.pow_succ]
+      omega
+    have hmul : (K + a + n + 1) * 2 ^ ((n + 1) ^ d) ≤ 2 ^ ((n + 1) ^ (d + 1)) := by
+      rw [Nat.pow_succ, Nat.mul_succ, Nat.pow_add]
+      exact Nat.mul_le_mul_right _ (h2n.trans (Nat.pow_le_pow_right (by omega)
+        (Nat.le_mul_of_pos_left n hP)))
+    have hle : n + 1 + a + K * 2 ^ ((n + 1) ^ d) ≤ (K + a + n + 1) * 2 ^ ((n + 1) ^ d) := by
+      have h1 : a + n + 1 ≤ (a + n + 1) * 2 ^ ((n + 1) ^ d) :=
+        Nat.le_mul_of_pos_right _ (Nat.pow_pos Nat.two_pos)
+      have h2 : (K + a + n + 1) * 2 ^ ((n + 1) ^ d) =
+          K * 2 ^ ((n + 1) ^ d) + (a + n + 1) * 2 ^ ((n + 1) ^ d) := by ring
+      omega
+    omega
+
+/-- A halting transducer whose work space is exponential in the input's length computes
+its function in simultaneous doubly exponential time and exponential space, using the
+very same machine. -/
+theorem computes_expspace {k : ℕ} {State : Type*} [Finite State]
+    (tm : MultiTapeTM k Bool State) (f : List Bool → List Bool) (c d : ℕ)
+    (hcorrect : ∀ w, ∃ t, (tm.runFrom (tm.initCfg w) t).state = none ∧
+      (tm.runFrom (tm.initCfg w) t).output = f w)
+    (hspace : ∀ w t, tm.spaceUsed (tm.initCfg w) t ≤ c * 2 ^ ((w.length + 1) ^ d)) :
+    ∃ C D : ℕ, ComputesFunInTimeAndSpace tm (.refl _) (.refl _) f
+      (fun w ↦ C * 2 ^ 2 ^ ((w.length + 1) ^ D)) (fun w ↦ C * 2 ^ ((w.length + 1) ^ D)) := by
+  obtain ⟨a, b, h⟩ := computes_of_space tm f (fun n ↦ c * 2 ^ ((n + 1) ^ d)) hcorrect hspace
+  obtain ⟨M, hM⟩ := exists_add_le_two_pow a (b * c) d
+  refine ⟨c + 2 ^ M, d + 1, h.mono (fun w ↦ ?_) (fun w ↦ ?_)⟩
+  · calc (w.length + 2) * a * 2 ^ (b * (c * 2 ^ ((w.length + 1) ^ d)))
+        ≤ 2 ^ (w.length + 1) * 2 ^ a * 2 ^ (b * c * 2 ^ ((w.length + 1) ^ d)) := by
+          rw [Nat.mul_assoc b]
+          exact Nat.mul_le_mul_right _ (Nat.mul_le_mul
+            (Nat.lt_two_pow_self (n := w.length + 1)) (Nat.lt_two_pow_self (n := a)).le)
+      _ = 2 ^ (w.length + 1 + a + b * c * 2 ^ ((w.length + 1) ^ d)) := by
+          rw [← Nat.pow_add, ← Nat.pow_add]
+      _ ≤ 2 ^ (M + 2 ^ ((w.length + 1) ^ (d + 1))) :=
+          Nat.pow_le_pow_right Nat.two_pos (hM w.length)
+      _ = 2 ^ M * 2 ^ 2 ^ ((w.length + 1) ^ (d + 1)) := Nat.pow_add _ _ _
+      _ ≤ (c + 2 ^ M) * 2 ^ 2 ^ ((w.length + 1) ^ (d + 1)) :=
+          Nat.mul_le_mul_right _ (Nat.le_add_left _ _)
+  · exact Nat.mul_le_mul (Nat.le_add_right _ _) (Nat.pow_le_pow_right Nat.two_pos
+      (Nat.pow_le_pow_right (by omega) (by omega)))
 
 end
 

@@ -430,9 +430,14 @@ nodes at depth `n` has length at most `(n + 2) ^ 2 ^ s`
 ([`Expr.length_le_pow`][size]), a bound whose exponent's exponent is
 attained up to a constant factor by iterated squaring, so the logarithm
 is exponential in the code's size and the simulation is not a
-polynomial-space one. `EXPSPACE` is closed under composition of its
-decision procedures, so observing streams one entry at a time forces no
-larger class. Whether the observation is `EXPSPACE`-hard is open here.
+polynomial-space one. The time of such a machine follows from its space
+by counting configurations,
+[`Machine.computes_expspace`][space-time]: a halting transducer in space
+`c * 2 ^ ((n + 1) ^ d)` runs in time `C * 2 ^ 2 ^ ((n + 1) ^ D)`. The
+machine itself is not constructed here. `EXPSPACE` is closed under
+composition of its decision procedures, so observing streams one entry
+at a time forces no larger class. Whether the observation is
+`EXPSPACE`-hard is open here.
 
 The word-valued evaluator, returning the whole value at a depth, is
 different. Iterating a unary squaring `k` times over a two-bit constant
@@ -493,6 +498,7 @@ of its word operations and navigation in Oitavem's algebra.
 [counterexample]: ../Geb/Prototypes/Computability/Oitavem/PresheafCounterexample.lean
 [coded-bitstreams]: ../Geb/Prototypes/BitStream/Oitavem.lean
 [size]: ../Geb/Prototypes/Computability/Oitavem/Size.lean
+[space-time]: ../Geb/Prototypes/Computability/Oitavem/Machine/SpaceTime.lean
 [quantification]: ../Geb/Prototypes/Computability/Oitavem/BoundedQuantification.lean
 [oitavem-category]: ../Geb/Prototypes/Typechecker/Oitavem.lean
 [resource-target]: bitstring-metalogic.md#selected-resource-target

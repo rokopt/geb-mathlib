@@ -205,17 +205,76 @@ instrumented evaluator, and a machine's time follows from its space by
 counting configurations, so an evaluator-level time account would not enter
 the machine proof.
 
-Follow-up, the evaluator machine. Route: the fixed-expression machine
-construction (`Geb/Prototypes/Computability/Oitavem/Machine/*`,
-`docs/oitavem-logspace-soundness.md`, `Expr.computable_polytime_logspace`)
-with the code on an input tape and the recursion stack of counters bounded
-by the code's size, each counter of size the logarithm of
-`(n + 2) ^ 2 ^ size`. Time from space needs the generalization of
-`Machine.computes_polytime_logspace` (`Machine/SpaceTime.lean`) from a
-logarithmic space bound to an arbitrary one, by the same configuration
-count. The k-th entry costs the head of `tailExpr^k e`, whose code has
-`size e + 2 * k` nodes (`size_tailExpr`), so space exponential in the code's
-size plus the depth.
+Follow-up, the evaluator machine. Time from space is proved:
+`Machine.computes_of_space` (`Machine/SpaceTime.lean`) bounds a halting
+transducer's time by `(n + 2) * a * 2 ^ (b * s n)` under any work space
+bound `s`, by the configuration count, and `Machine.computes_expspace`
+instantiates it at `c * 2 ^ ((n + 1) ^ d)`, which is the statement above
+with `D = d + 1`; `computes_polytime_logspace` is its instance at
+logarithmic space. What remains is the machine, one machine for every code,
+whose space bound the theorem converts.
+
+The fixed-expression construction does not transfer directly. It mirrors the
+syntax in the machine, one machine and one tape layout per expression, and
+its contract `Expr.Realized` quantifies over generators for the arguments,
+which are machines. A uniform evaluator holds the code on the input tape and
+its call structure on work tapes. Design, from the semantics the generators
+implement:
+
+- Frames. A frame holds a node of the code (a position, of size `log n`),
+  the depth of the frame binding its variables, a query (a position in the
+  node's value, or its length) and the register receiving the answer, and,
+  at a safe-recursion node, the recursion counter and the saved prefix of
+  the safe value, of length at most `Expr.recursionCutoff`. Every counter
+  is at most the logarithm of `(n + 2) ^ 2 ^ n`, and every saved prefix at
+  most a constant times `2 ^ n`.
+- Binding. The variables of a subtree are bound by the nearest ancestor of
+  which it is in function position: the function of a normal composition
+  by that composition, the base and steps of a recursion by that recursion,
+  and the arguments of a composition and the argument of a log-transition
+  by the binder of their parent. The frame evaluating a subtree refers to
+  the frame evaluating its binder, below it on the stack; resolving a
+  variable walks that chain, accumulating the offsets by which recursions
+  drop their recursion argument, and ends at a composition's argument
+  subtree, a saved prefix, or the physical argument, empty at depth zero.
+- Depth. The claim to prove: the nodes of the frames on the stack are
+  pairwise distinct, since a frame waits on one query at a time and the
+  closures a frame resolves lie in argument subtrees disjoint from the
+  function subtree containing it. Then the stack has at most `size` frames
+  and the space is `size` times the counter size, within
+  `c * 2 ^ ((n + 1) ^ d)`.
+- Machine. The stack is a word in one register and the current frame is in
+  dedicated registers; a call saves the current frame onto the stack word
+  and a return restores it; a driver loop dispatches on the node's kind and
+  the frame's phase. Code navigation, the kind at a position and the
+  positions of a node's children, is a logspace function of the input, so
+  it is written as expressions of the successor-free subalgebra, as
+  `Fields.lean` and the W-tree child scan `WTree/Children.lean` are, and
+  compiled by `LOf.correct` into subroutines under `TransformsIn`
+  contracts, whose bounds are parameters; the counter and loop routines of
+  `Machine/Counter.lean` and `Machine/While.lean` likewise serve at the
+  exponential bound.
+- Proof. The driver loop's contract needs an invariant over the whole
+  stack, which the compositional contracts of the fixed construction do not
+  supply: either an abstract stack machine in Lean, with `headCode w` its
+  result and the frame bounds its measure, which the machine's body refines
+  one step at a time; or a contract per frame, from a push to the matching
+  pop, proved by induction on the subtree with the stack below it as the
+  environment, which states the same invariant frame by frame. The
+  semantic lemmas of the fixed construction (`prefixLoop`,
+  `evalRec_cons_prefixLoop`, `Expr.eval_safeRec_cons_prefixCutoff`) apply
+  unchanged.
+
+Scale. The fixed construction is the modules under `Oitavem/Machine/` and
+`docs/oitavem-logspace-soundness.md`; the uniform evaluator replaces its
+tape-per-level layout by the stack register, adds code navigation and the
+global invariant, and reuses its semantic lemmas, so it is a development of
+the same order, over several sessions. A strict evaluator storing complete
+words in frames would need no closures, no binding chain and no cutoffs, and
+would relate to `Expr.eval` directly, but its words have length up to
+`2 ^ 2 ^ n`, so its space is doubly exponential and its class is not the one
+stated. The choice between the two, and whether Aristotle is to be used on
+the machine proofs, is the user's before the next session.
 
 ## Session C: bitstreams as elements of arbitrary finitary M-types
 
