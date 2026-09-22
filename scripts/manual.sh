@@ -20,6 +20,9 @@ cd "$repo_root"
 
 case "${1:-}" in
   build)
+    # Parallel chapters run independent Lake processes for their literate
+    # inclusions. Build the shared executable before any of them can relink it.
+    lake build verso/verso-literate
     lake build GebManual
     lake lint -- GebManual
     # The generator links a dependency's C sources (leansqlite's

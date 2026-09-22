@@ -154,14 +154,16 @@ branch diff rather than a decision about the tree.
 
 The manual (`lean_lib GebManual`, `lean_exe geb-manual`, sources
 under `manual/`) builds only through `scripts/manual.sh build`:
-`lake build GebManual`, `lake lint -- GebManual`,
+`lake build verso/verso-literate`, `lake build GebManual`, `lake lint -- GebManual`,
 `lake exe geb-manual --output manual/_out`, in that order: build
 precedes lint so a clean checkout lints built oleans, and the lint
 runs the axiom linter over the manual
 (`docs/rules/lean-coding.md` § Verso manual modules). A chapter that
 includes a literate module runs `lake query +Mod:literate` in a
 subprocess while it elaborates, which builds that module's literate
-facet on demand. The generator step, like `doc-build.yml`'s doc-gen4
+facet on demand. Preparing the shared `verso-literate` executable before
+chapter elaboration prevents those independent Lake processes from linking
+the same output concurrently. The generator step, like `doc-build.yml`'s doc-gen4
 steps, runs with `--log-level=warning`: each links a dependency's C
 sources (`leansqlite`'s bundled SQLite), whose compiler warnings Lake
 logs, and replays on every later run, at its informational level, so
