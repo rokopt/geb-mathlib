@@ -61,7 +61,7 @@ checklist and in CI.
 ## Design documents
 
 - [definitions.md](definitions.md) — definitions as derived operations,
-  recursive equation blocks, polynomial positions, and immutable content
+  recursive equation blocks, polynomial directions, and immutable content
   identities, with a Lean prototype and comparisons to Unison and Nock.
 - [Value representation](../manual/GebManual/ValueRepresentation.lean)
   — a Verso manual chapter recording the design of the representation

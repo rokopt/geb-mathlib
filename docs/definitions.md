@@ -16,7 +16,7 @@
 
 A candidate definition is a finitely presented derived operation of a
 polynomial signature. Its body belongs to the signature's free monad;
-its parameters are structural positions. Recursive definitions form a
+its parameters are structural directions. Recursive definitions form a
 finite recursive program scheme. A definition's content identity is the
 identity of this presentation, including its dependencies and semantic
 profile. Its denotation is a separate construction in a specified model.
@@ -57,7 +57,7 @@ In `Set`, the Yoneda correspondence gives the equivalent data
 δ_X(a, arguments) = T_P(arguments)(δ_a).
 ```
 
-Thus an operation is defined by a term with its argument positions as
+Thus an operation is defined by a term with its argument directions as
 variables. No textual name is required. The universal property of the
 free monad extends `δ` to a monad morphism `T_Q ⇒ T_P`, which expands
 uses of the defined operations. `Derived`, `expandOps`, and
@@ -66,14 +66,14 @@ uses of the defined operations. `Derived`, `expandOps`, and
 The polynomial representation of the free monad is
 
 ```text
-T_P(X) ≅ Σ s : Shape(T_P), X^(Pos(s))
+T_P(X) ≅ Σ s : Shape(T_P), X^(Dir(s))
 Shape(T_P) = T_P(1)
-Pos(variable) = 1
-Pos(operation(a, children)) = Σ b : B a, Pos(children(b)).
+Dir(variable) = 1
+Dir(operation(a, children)) = Σ b : B a, Dir(children(b)).
 ```
 
 An operation body is consequently a tree shape together with a map
-from its variable occurrences to its argument positions. This map may
+from its variable occurrences to its argument directions. This map may
 duplicate or discard arguments. It need not be a bijection, so demanding
 a cartesian natural transformation for every definition would exclude
 ordinary duplication and weakening. The monad's unit and multiplication
@@ -81,7 +81,7 @@ are cartesian; arbitrary derived operations need not be.
 
 [Gambino–Kock, Theorem 4.5](https://arxiv.org/pdf/0906.4931)
 establishes the free-polynomial construction, including its slice
-version. `Position` implements the displayed dependent path equations;
+version. `Direction` implements the displayed dependent path equations;
 `freePolynomial` packages their shapes and directions. The prototype
 does not yet formalize the natural isomorphism with Cslib's `FreeM`.
 
@@ -121,23 +121,23 @@ Choose a separate polynomial `L` describing export grouping. An export
 layout is `s : T_L(1)`, and its interface is
 
 ```text
-E = Pos(s).
+E = Dir(s).
 ```
 
-A position records a direction at a node and a position in that child.
-For a binary layout with two levels, an example is
-`(right, (left, leaf))`. This type makes an invalid route unavailable.
-Local references use this dependent position directly. An external
-reference consists of a block identifier and a position in that block's
+A direction of `T_L` at `s` records a direction of `L` at a node and a
+direction in that child. For a binary layout with two levels, an example
+is `(right, (left, leaf))`. This type makes an invalid route unavailable.
+Local references use this dependent direction directly. An external
+reference consists of a block identifier and a direction in that block's
 validated layout. A resolver must check that the supplied layout matches
-the retrieved block before accepting the position.
+the retrieved block before accepting the direction.
 
-Free-monad positions select variable leaves, not all syntactic nodes.
-A closed term has no such positions, and a nullary operation is not a
+Free-monad directions select variable leaves, not all syntactic nodes.
+A closed term has no such directions, and a nullary operation is not a
 variable leaf. The export layout therefore marks exports as variable
 leaves deliberately. Addressing arbitrary internal syntax occurrences
 requires a separate marked-node or context construction; it cannot be
-obtained by treating the free monad's positions as all nodes.
+obtained by treating the free monad's directions as all nodes.
 
 The layout is part of the interface, not a single mandatory global
 library tree. A block can import selected exports from other blocks.
@@ -158,7 +158,7 @@ definition is a block with a selected export:
 
 ```text
 Def_(P,L)(Γ) = Σ s : T_L(1),
-                (Pos(s) → T_P(Γ + Pos(s))) × Pos(s).
+                (Dir(s) → T_P(Γ + Dir(s))) × Dir(s).
 ```
 
 For finitary, effectively coded signatures and coded imports, this is
@@ -168,13 +168,13 @@ type of the local references and the selection, so both remain tied to
 the block they address.
 
 Equivalently, `e` is a coalgebra for `X ↦ T_P(Γ + X)`, supplied with
-a point `1 → E` and a polynomial position presentation of `E`. Under the
+a point `1 → E` and a polynomial direction presentation of `E`. Under the
 finiteness assumptions this is a finite pointed coalgebra. A stored
 import interface lists the finitely many declared imports; the generic
 Lean construction also permits an ambient type of import references.
 
 Its local references do not contain its own eventual hash. The finite
-bodies contain references to positions in `E`. In an algebra `a`, a
+bodies contain references to directions in `E`. In an algebra `a`, a
 solution relative to imports `ρ` is a function `v : E → V` satisfying
 
 ```text
@@ -233,8 +233,8 @@ display names remain annotations, as in the existing
 [concrete-syntax proposal](concrete-syntaxes.md).
 
 Imports contain immutable dependency references. A mutually recursive
-component is stored as one block, with positional internal references.
-An exported definition is identified by `(block identifier, position)`.
+component is stored as one block, with internal references by direction.
+An exported definition is identified by `(block identifier, direction)`.
 This avoids attempting to solve cryptographic fixed-point equations.
 The component dependency graph is acyclic after strongly connected
 components have been grouped. Component discovery and serialization are
@@ -268,7 +268,7 @@ dependency names by hash references, and excludes local names from the
 hash. Its documented recursive references identify a cycle and a member
 within it. This supplies a precedent for immutable block identity plus
 local structural references. Geb can retain its proposed versioned
-multihash envelope and use polynomial positions for those members.
+multihash envelope and use polynomial directions for those members.
 Sources: [Unison's hashing overview](https://www.unison-lang.org/docs/tour/_big-technical-idea/)
 and [hash reference documentation](https://www.unison-lang.org/docs/language-reference/hashes/).
 
@@ -308,7 +308,7 @@ categorical construction or its correctness proofs for Geb.
 | Finitary W-types and their recognizer | Typed finite bodies over effectively coded signatures |
 | Inductively defined morphisms | Signature operations and derived operations, interpreted as morphisms |
 | M-types and bitstreams | Possible denotations of finite productive specifications |
-| Slice W-types | Sort-correct bodies, imports, and export positions in a slice |
+| Slice W-types | Sort-correct bodies, imports, and export directions in a slice |
 | Presheaf W-types | A base for context-indexed syntax when the required substitution structure is supplied |
 | Small inductive-recursive compilation | Reuse the compiled slice signature; no separate definition mechanism |
 | Interaction combinators and polynomial evolution | Candidate interpretations or execution profiles for the same finite codes |
@@ -356,7 +356,7 @@ state spaces and produce nonperiodic streams.
 ## Prototype boundary
 
 The prototype implements ordinary polynomial signatures in `Type`,
-structural position types, derived-operation expansion, linking,
+structural direction types, derived-operation expansion, linking,
 recursive value blocks with selected exports, finite unfolding,
 algebraic interpretation,
 flat guarded M-type solutions, and an injective term encoding into
