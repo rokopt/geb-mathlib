@@ -15,13 +15,17 @@
 # which builds that module's literate facet on demand.
 
 set -euo pipefail
+export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 case "${1:-}" in
   build)
+    # Parallel chapters run independent Lake processes for their literate
+    # inclusions. Build the shared executable before any of them can relink it.
+    lake build verso/verso-literate
     lake build GebManual
-    lake lint -- GebManual
+    lake exe batteries/runLinter GebManual
     # The generator links a dependency's C sources (leansqlite's
     # bundled SQLite), whose compiler warnings Lake logs, and replays
     # on every later run, at its informational level. Warnings and

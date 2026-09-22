@@ -26,11 +26,14 @@ and as the expressions evaluated with sharing.
 
 ## Main statements
 
+`numAt_eq` identifies the shared expressions with the native scanner.
+
 The codes of zero to four are as worked by hand; the reader inverts the code
 on every number below twenty; the scanner accepts each coded number at its
 position, ending after it with its bits, and rejects a word whose numeral is
 cut short, one whose bits end in `false`, and one with no numeral at the
-position; and the expressions agree, by `#guard`.
+position. The expression sweeps use the scanner's correctness equalities;
+small malformed inputs also exercise the interpreter directly.
 
 ## Tags
 
@@ -81,13 +84,40 @@ def numAt (w : List Bool) (tp i : ℕ) : List Bool × List Bool × List Bool :=
   (numOk.1.semVec ![w, w.drop tp, w.drop i], numEnd.1.semVec ![w, w.drop tp, w.drop i],
     numHit.1.semVec ![w, w.drop tp, w.drop i])
 
-#guard (List.range 12).all fun n ↦
-  let w := numeralWord [true, true] n [false]
-  numAt w 2 0 == ([true], [false], if n.bits.getD 0 false then [true] else [])
+#guard numAt [true] 0 0 = ([true], [], [])
 
-#guard (List.range 12).all fun n ↦
+/-- The shared expressions agree with the native scanner, with counters
+clipped to the input length as their end-segment representation requires. -/
+theorem numAt_eq (w : List Bool) (tp i : ℕ) :
+    numAt w tp i =
+      let s := nrun (min tp w.length) (min i w.length) w
+      (Geb.SizeBounded.Logspace.WTree.boolWord (decide (s.mode = .done) && s.ok),
+        w.drop s.endPos, Geb.SizeBounded.Logspace.WTree.boolWord s.hit) := by
+  have drop_min (n : ℕ) : w.drop n = w.drop (min n w.length) := by
+    by_cases h : n ≤ w.length
+    · rw [Nat.min_eq_left h]
+    · have hl : w.length ≤ n := by omega
+      rw [Nat.min_eq_right hl, List.drop_length, List.drop_eq_nil_of_le hl]
+  simp only [numAt, Geb.SizeBounded.SOf.semVec_eq, drop_min tp, drop_min i]
+  change (numOk.sem ![w, w.drop (min tp w.length), w.drop (min i w.length)],
+    numEnd.sem ![w, w.drop (min tp w.length), w.drop (min i w.length)],
+    numHit.sem ![w, w.drop (min tp w.length), w.drop (min i w.length)]) = _
+  rw [sem_numOk _ _ _ (Nat.min_le_right _ _) (Nat.min_le_right _ _),
+    sem_numEnd _ _ _ (Nat.min_le_right _ _) (Nat.min_le_right _ _),
+    sem_numHit _ _ _ (Nat.min_le_right _ _) (Nat.min_le_right _ _)]
+
+example : ((List.range 12).all fun n ↦
+  let w := numeralWord [true, true] n [false]
+  numAt w 2 0 == ([true], [false], if n.bits.getD 0 false then [true] else [])) = true := by
+  simp only [numAt_eq]
+  decide
+
+example : ((List.range 12).all fun n ↦
   (List.range 5).all fun i ↦
-    (numAt (numeralWord [] n []) 0 i).2.2 == if n.bits.getD i false then [true] else []
+    (numAt (numeralWord [] n []) 0 i).2.2 ==
+      if n.bits.getD i false then [true] else []) = true := by
+  simp only [numAt_eq]
+  decide
 
 #guard (numAt [false, false, true, false, false, false] 0 0).1 == []
 

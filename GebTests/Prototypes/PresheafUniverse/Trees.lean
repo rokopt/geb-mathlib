@@ -6,7 +6,9 @@ Authors: Terence Rokop
 module
 
 import Geb.Mathlib.Data.PFunctor.Presheaf.Finite.W
+meta import Geb.Mathlib.Data.PFunctor.Presheaf.Finite.W -- shake: keep; #guard needs it
 import Geb.Prototypes.PresheafUniverse.Trees
+meta import Geb.Prototypes.PresheafUniverse.Trees -- shake: keep; #guard needs it
 
 /-!
 # Tests for the codes and terms of the prototype universe
@@ -101,11 +103,9 @@ example : memBaseSqCode = true := by decide
 example : memBaseFunCode = true := by decide
 example : memTrueTerm = true := by decide
 example : memPairTT = true := by decide
-set_option maxHeartbeats 2000000 in
--- The naturality fold compares a root-restriction with a sibling subtree at
--- every node, direction, and hom of the base category, so its cost compounds
--- with the depth of the tree; the nested pair exceeds the default limit.
-example : memPairNested = true := by decide
+-- Execute the Boolean validator on the nested case; the smaller cases above
+-- also check its kernel reduction. Its correctness is `memWBool_eq_true_iff`.
+#guard memPairNested = true
 example : memPairTTAtCode = false := by decide
 example : memPairIllTyped = false := by decide
 

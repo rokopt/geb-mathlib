@@ -37,9 +37,15 @@ cd "$repo_root"
 failed=0
 
 # --- 1. Invocation form -------------------------------------------------
-out="$(lake lint 2>&1)"
+# The full checklist supplies the successful content run's log. Standalone
+# runs exercise the driver themselves.
+if [[ -n "${GEB_LINT_LOG:-}" ]]; then
+  out="$(cat "$GEB_LINT_LOG" 2>&1)"
+else
+  out="$(lake lint 2>&1)"
+fi
 rc=$?
-if [[ "$rc" -ne 0 ]]; then
+if [[ "$rc" -ne 0 ]] || ! grep -qFx -- '-- Linting passed for Geb.' <<<"$out"; then
   echo "FAIL: 'lake lint' did not pass" >&2
   echo "  output: $out" >&2
   failed=1

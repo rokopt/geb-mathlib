@@ -32,7 +32,8 @@ accepts and rejects the same words under the evaluator with sharing.
 ## Main statements
 
 The recognizer accepts each spelling and rejects each corruption, by
-`#guard`, and so does the expression.
+`#guard`, and so does the expression. The fork's expression assertion uses
+the node and child scans' correctness equalities before kernel reduction.
 
 ## Tags
 
@@ -42,6 +43,7 @@ W-type, binary tree, bitstring, recognizer
 set_option linter.privateModule false
 
 open Geb.SizeBounded.Logspace.WTree
+open Geb.SizeBounded.Logspace
 open scoped FinEnum
 
 /-- The directions: none at a leaf, two at a fork. -/
@@ -149,7 +151,24 @@ def binRecognizer : List Bool → List Bool :=
 
 #guard binRecognizer (binSig.spell (leafW [true, false])) = [true]
 
-#guard binRecognizer (binSig.spell (forkW (leafW []) (leafW [true]))) = [true]
+example : binRecognizer (binSig.spell (forkW (leafW []) (leafW [true]))) = [true] := by
+  rw [binRecognizer, Geb.SizeBounded.SOf.semVec_eq]
+  change (recognizeExpr binLabel binEdge).sem _ = _
+  rw [recognizeExpr, NodeExpr.nodeScanExprSem_eq]
+  have hscan (y : List Bool) :
+      nodeScan (NodeExpr.checkB (checkExpr binLabel binEdge) y) y =
+        nodeScan (fun l k ↦
+          isTrueWord (binLabel.sem ![y, y.drop l.pos, y.drop (l.len + 1), y.drop k]) &&
+            (childScan l k (fun _ _ ↦ true) y).extra.ok) y := by
+    apply nodeScan_congr
+    intro l k hl hk
+    rw [NodeExpr.checkB, checkExpr, andOkAt, sem_cond4L, sem_flagOf, sem_constL,
+      ChildExpr.childScanExprSem_eq binEdge y l k hl hk, cond4Sem_boolWord,
+      isTrueWord_boolWord]
+    rfl
+  rw [hscan]
+  simp only [binLabel, eqSeg, sem_cond4L, sem_projL, sem_tailAppL, sem_dropByApp, sem_constL]
+  decide
 
 #guard binRecognizer [] = []
 

@@ -21,5 +21,10 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
+lint_log="$(mktemp)"
+trap 'rm -f "$lint_log"' EXIT
+export GEB_LINT_LOG="$lint_log"
+
 bash scripts/pre-push.sh
 bash scripts/test-tooling.sh

@@ -12,6 +12,7 @@
 # Exits non-zero on any failure.
 
 set -euo pipefail
+export LEAN_NUM_THREADS="${LEAN_NUM_THREADS:-4}"
 
 step() {
   echo "==> $*"
@@ -62,21 +63,17 @@ lake build
 step "lake test"
 lake test
 
-step "lake lint"
-lake lint
-
 # `lake shake` requires built oleans for every library it scans.
 # `lake build` alone honours `defaultTargets` (Geb and GebLang), so
 # build `GebTests` explicitly here.
 step "lake build GebTests (prerequisite for lake shake)"
 lake build GebTests
 
-step "lake lint GebTests (axiom + style linters on tests)"
-lake lint -- GebTests
+step "lake exe batteries/runLinter GebTests (axiom + style linters on tests)"
+lake exe batteries/runLinter GebTests
 
-# literate.sh runs `lake lint -- GebLang`, which lints Geb and GebLang
-# both, before rendering, so there is no separate GebLang lint step.
-step "scripts/literate.sh build (lint GebLang, render the literate site)"
+# literate.sh lints Geb and GebLang before rendering.
+step "scripts/literate.sh build (lint Geb and GebLang, render the literate site)"
 bash scripts/literate.sh build
 
 step "scripts/manual.sh build (build, lint and generate the manual)"

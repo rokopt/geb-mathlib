@@ -42,6 +42,14 @@ def run (w : List Bool) : Option (List Bool) :=
 def expected (w : List Bool) : Option (List Bool) :=
   some (if Geb.BitTree.validBool w then [true] else [])
 
+-- Zero fuel cannot observe a halt; positive fuel returns the reversed
+-- accumulator immediately, including when most of the budget is unused.
+#guard [0, 1, 1000000].all fun fuel ↦
+  stepUntilHalt bitTreeMachine fuel { ExecCfg.init bitTreeMachine [] with state := none }
+    [true, false] == if fuel == 0 then none else some [false, true]
+
+#guard stepUntilHalt bitTreeMachine 1 (ExecCfg.init bitTreeMachine []) [] = none
+
 #guard run [false, false] = expected [false, false]
 #guard run [false, true, true, false] = expected [false, true, true, false]
 #guard run [true, false, false, false, false] = expected [true, false, false, false, false]

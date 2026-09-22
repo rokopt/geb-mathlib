@@ -76,10 +76,10 @@ jobs:
       # GebLang), so build `GebTests` explicitly here.
       - name: lake build GebTests (prerequisite for lake shake)
         run: lake build GebTests
-      - name: lake lint GebTests (axiom + style linters on tests)
-        run: lake lint -- GebTests
-      - name: lake lint GebLang (axiom + style linters on the language library)
-        run: lake lint -- GebLang
+      - name: lint GebTests (axiom + style linters on tests)
+        run: lake exe batteries/runLinter GebTests
+      - name: lint GebLang (axiom + style linters on the language library)
+        run: lake exe batteries/runLinter GebLang
       - name: scripts/tests/test-axiom-linter.sh
         run: bash scripts/tests/test-axiom-linter.sh
       - name: scripts/tests/test-lint-driver.sh

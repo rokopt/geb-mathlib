@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+import all Init.Data.Nat.Control
 import Std.Data.HashMap.Lemmas
 import Geb.Prototypes.Computability.SizeBounded.Machine.Program
 
@@ -40,6 +41,7 @@ through {name}`Turing.Cfg.inputSymbol`.
 * {lit}`writeCell` — a tape after one action at a cell.
 * {lit}`execStep`, {lit}`execOutputSymbol` — one step and the symbol it emits.
 * {lit}`stepUntilHalt` — the run to a halt within a fuel, with its output.
+* {lit}`stepUntilHaltTR` — a bounded fold that stops when the machine halts.
 
 # Main statements
 
@@ -48,6 +50,8 @@ through {name}`Turing.Cfg.inputSymbol`.
 * {lit}`toCfg_execStep`, {lit}`toCfg_execStep_iterate` — the executable step and
   its iterates denote the step and the configurations.
 * {lit}`execOutputSymbol_eq` — the emitted symbol is the denoted one.
+* {lit}`stepUntilHalt_eq_stepUntilHaltTR` — the compiler's replacement of the
+  fuel recursor by the bounded fold preserves its value.
 
 # Tags
 
@@ -126,6 +130,42 @@ when the fuel runs out first. -/
     match c.state with
     | none => some acc.reverse
     | some _ => ih (execStep tm c) ((execOutputSymbol tm c).toList.reverse ++ acc)
+
+/-- A bounded fold that stops at the first halted configuration without
+allocating a continuation for unused fuel. -/
+@[expose] def stepUntilHaltTR {k : ℕ} {State : Type} {input : List Bool}
+    (tm : MultiTapeTM k Bool State) (fuel : ℕ) (c : ExecCfg k State input)
+    (acc : List Bool) : Option (List Bool) :=
+  match Nat.foldM (m := Except (List Bool)) fuel (fun _ _ (c, acc) ↦
+      match c.state with
+      | none => .error acc.reverse
+      | some _ => .ok (execStep tm c, (execOutputSymbol tm c).toList.reverse ++ acc))
+      (c, acc) with
+  | .error output => some output
+  | .ok _ => none
+
+/-- The bounded fold implements the fuel recursor. -/
+@[csimp] theorem stepUntilHalt_eq_stepUntilHaltTR : @stepUntilHalt = @stepUntilHaltTR := by
+  funext k State input tm fuel c acc
+  unfold stepUntilHaltTR Nat.foldM
+  have loop : ∀ n (h : n ≤ fuel) (c : ExecCfg k State input) (acc : List Bool),
+      stepUntilHalt tm n c acc =
+        match Nat.foldM.loop fuel (fun _ _ (c, acc) ↦
+            match c.state with
+            | none => Except.error acc.reverse
+            | some _ => Except.ok
+                (execStep tm c, (execOutputSymbol tm c).toList.reverse ++ acc)) n h (c, acc) with
+        | .error output => some output
+        | .ok _ => none := by
+    refine Nat.rec (fun _ _ _ ↦ rfl) ?_
+    intro n ih h c acc
+    cases hs : c.state with
+    | none => simp [stepUntilHalt, Nat.foldM.loop, hs, bind, Except.bind]
+    | some q =>
+      simpa [stepUntilHalt, Nat.foldM.loop, hs, bind, Except.bind] using
+        ih (Nat.le_of_succ_le h) (execStep tm c)
+          ((execOutputSymbol tm c).toList.reverse ++ acc)
+  exact loop fuel (Nat.le_refl _) c acc
 
 /-- A cell of a tape after a writing action: the tape's cell map, updated. -/
 theorem getElem?_writeCell (tape : Std.HashMap ℤ Bool) (y z : ℤ) (s : Option Bool) :
