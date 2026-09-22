@@ -164,6 +164,25 @@ restricted direction with the restriction of the value at the
 original direction; each such comparison is an equality of subtrees
 up to a fixed relabelling.
 
+The linear space is the implementation's, not the problem's. The fold
+keeps a frame per level of recursion, so on a chain it keeps one per
+node; the specification it decides is in logarithmic space, and in
+`TC^0` on the serialized form, because every ingredient of a
+comparison is a counting computation: the subtree at a direction is
+located from a node's position by a matching-parenthesis scan with an
+excess counter, the relabelling is a fixed local map given by the
+functor's finite data, and two subtrees are compared in lockstep by
+walking both with their current positions and the counters that step
+to a child. The logarithmic-space form iterates over node positions
+and, for each morphism and direction, locates the two subtrees by
+scanning and compares them by scanning, in place of the stack; its
+time is quadratic to cubic, one scan per location and one per
+comparison. It is the form the algebras express, as the recognizer of
+slice W-trees is already written, and it remains to be written for
+this stage (§ Recommendations). The three forms decide one
+specification: the fold at depth space, the check over hash-consed
+trees at linear time, and the counter scan at logarithmic space.
+
 The evaluators of the algebras themselves interpret bit by bit. The
 recognizer of the algebra's own expressions, evaluated with sharing,
 takes tens of seconds at a ten-bit word. The Lean-native decision
