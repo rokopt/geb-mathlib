@@ -42,9 +42,9 @@ open Geb.SuccinctTree
 #guard !balanced (bitSteps [true, true, false])
 #guard wordBits 8 0 = List.replicate 8 false
 #guard wordBits 8 256 = wordBits 8 0 -- Bits beyond the declared width are excluded.
-#guard (List.range 256).all fun a ↦ (List.range 256).all fun b ↦
-  decide (summarize (bitSteps (wordBits 8 a ++ wordBits 8 b)) =
-    (wordSummary 8 a).append (wordSummary 8 b))
+example (a b : ℕ) : summarize (bitSteps (wordBits 8 a ++ wordBits 8 b)) =
+    (wordSummary 8 a).append (wordSummary 8 b) := by
+  simp [bitSteps, wordSummary, summarize_append]
 
 /-- Evaluate and time one recognizer; the input is prepared before the timer starts. -/
 def timeRecognition (label : String) (recognize : List Bool → Bool) (w : List Bool) : IO Unit := do

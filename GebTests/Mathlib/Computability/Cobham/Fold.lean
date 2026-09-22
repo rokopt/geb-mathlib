@@ -41,21 +41,18 @@ what the fixture is chosen to exhibit.
   `counterShift`, exhibiting the fold's consumption order.
 * `counterFoldBad_values` — the fold at a constant decoding, showing its
   value differs from `counterFold`'s while its width does not.
-* `counterFold_sweep` — the same agreement computed in the kernel over every
-  word of length at most seven.
+* `counterFold_sweep` — the same agreement over every word of length at most
+  seven, by the general correctness theorem.
 
 ## Implementation notes
 
-The assertions reduce in the kernel, by `decide`; `#eval` would require a
+The small assertions reduce in the kernel, by `decide`; `#eval` would require a
 `public meta import` of the module under test, since the fold's value calls
 `Cobham.constAt`, a non-`meta` declaration of another module of this package,
 whose IR is not otherwise available to meta code across the boundary.
 
-The sweep length is measured rather than conventional. At length seven the
-sweep closes under `set_option maxRecDepth 100000 in decide`; at length eight
-it reaches the heartbeat limit. Each step of the fold is a dispatch over two
-bits followed by a constant word, and the case tree is a `Nat.rec`, so one
-reduction follows a single root-to-leaf path.
+The exhaustive agreement follows from `counterFold_eq`, without evaluating
+the interpreted fold separately for each word.
 
 ## Tags
 
@@ -141,9 +138,12 @@ theorem counterFoldBad_values :
       (foldSem counterEnc counterDecBad 0 counterStep ![[true, false, true]]).length = 2 := by
   decide
 
-/-- The same agreement read off the reduced values, over every word of length
-at most seven. -/
+/-- The same agreement over every word of length at most seven. -/
 theorem counterFold_sweep :
     (wordsUpTo 7).all (fun w ↦
       counterFold w == List.ofFn (counterEnc (w.foldr counterStep 0))) = true := by
-  set_option maxRecDepth 100000 in decide
+  apply List.all_eq_true.mpr
+  intro w _
+  rw [counterFold_eq]
+  match w.foldr counterStep 0 with
+  | 0 | 1 | 2 => rfl

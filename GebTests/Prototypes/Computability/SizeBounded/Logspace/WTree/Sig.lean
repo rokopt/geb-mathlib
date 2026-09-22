@@ -7,8 +7,7 @@ module
 
 public import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree -- shake: keep; #guard needs it
 public meta import Geb.Prototypes.Computability.SizeBounded.Logspace.WTree -- shake: keep; #guard needs it
-public import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; #guard needs it
-public meta import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; #guard needs it
+public import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: keep; anonymous example
 
 /-!
 # The algebra's own signature, its code and its recognizer, on worked words
@@ -16,7 +15,7 @@ public meta import Geb.Prototypes.Computability.SizeBounded.Sharing -- shake: ke
 The code and the decoder of the algebra's shapes on each kind of shape, and
 the recognizer of the algebra's expressions: its specification on the
 spellings of expressions of the subalgebra and on corrupted words, and the
-expression itself evaluated with sharing on the smallest spelling.
+expression itself on the smallest spelling, using its correctness theorem.
 
 ## Main definitions
 
@@ -29,7 +28,7 @@ The decoder inverts the code on each kind of shape and rejects a projection
 out of range; the recognizer's specification accepts the spellings of
 expressions of the subalgebra and rejects a spelling with a corrupted arity
 and one with a projection out of range; and the recognizer as an expression,
-evaluated with sharing, accepts the smallest spelling, by `#guard`.
+evaluated with sharing, accepts the smallest spelling by its proved semantics.
 
 ## Tags
 
@@ -87,6 +86,6 @@ def constZero : Geb.SizeBounded.sig.toPFunctor.W := WType.mk (.const 0 []) Fin.e
   (false :: false :: true :: (Geb.SizeBounded.Logspace.WTree.Numeral.natCode 2 ++
     Geb.SizeBounded.Logspace.WTree.Numeral.natCode 1)))) = true
 
--- The recognizer as an expression, evaluated with sharing, on the smallest
--- spelling; the evaluation takes tens of seconds.
-#guard sigRecognizer.1.semVec ![sigCoded.spell constZero] = [true]
+example : sigRecognizer.1.semVec ![sigCoded.spell constZero] = [true] := by
+  rw [Geb.SizeBounded.SOf.semVec_eq]
+  exact sigRecognizer_self (Geb.SizeBounded.Logspace.constL 0 [])

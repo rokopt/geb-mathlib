@@ -41,13 +41,8 @@ records.
 `RankedAlphabet.Scan` derives no `DecidableEq`, so the decoder's inversion is
 asserted field by field rather than as one equation.
 
-The sweep lengths are measured rather than conventional. `sampleAlphabet`'s
-largest arity is one above `narrowAlphabet`'s, so its dispatch is one bit
-wider and each reduction descends one dispatch level further; its sweep is
-taken to length five, six exceeding the default heartbeat limit. The case
-tree is a `Nat.rec`, so the elaborated term is of constant size and one
-reduction follows a single root-to-leaf path; the cost is linear in the
-number of bits dispatched on, not exponential in them.
+The exhaustive agreements use `Cobham.isRankedSem_eq_singleton_iff_valid`; only the short
+worked cases reduce the interpreted recognizer directly.
 `binRanked` has width one, so its block slot is the bare sentinel, and that
 alphabet is the subject of the bridge to `Cobham.isTree`.
 
@@ -158,7 +153,10 @@ theorem isRankedSem_eq_validBool_narrow :
     (wordsUpTo 6).all (fun w ↦
       (isRankedSem narrowAlphabet ![w] == [true]) ==
         narrowAlphabet.validBool w) = true := by
-  set_option maxRecDepth 100000 in decide
+  simp only [List.all_eq_true]
+  intro w _
+  rw [beq_iff_eq, Bool.eq_iff_iff, beq_iff_eq, isRankedSem_eq_singleton_iff_valid]
+  rfl
 
 /-- And at an alphabet every one of whose blocks spells a symbol, over every
 word of length at most five. -/
@@ -166,11 +164,17 @@ theorem isRankedSem_eq_validBool_sample :
     (wordsUpTo 5).all (fun w ↦
       (isRankedSem sampleAlphabet ![w] == [true]) ==
         sampleAlphabet.validBool w) = true := by
-  set_option maxRecDepth 100000 in decide
+  simp only [List.all_eq_true]
+  intro w _
+  rw [beq_iff_eq, Bool.eq_iff_iff, beq_iff_eq, isRankedSem_eq_singleton_iff_valid]
+  rfl
 
 /-- And at the two-symbol alphabet, over every word of length at most six. -/
 theorem isRankedSem_eq_validBool_binRanked :
     (wordsUpTo 6).all (fun w ↦
       (isRankedSem RankedAlphabet.Binary.binRanked ![w] == [true]) ==
         RankedAlphabet.Binary.binRanked.validBool w) = true := by
-  set_option maxRecDepth 100000 in decide
+  simp only [List.all_eq_true]
+  intro w _
+  rw [beq_iff_eq, Bool.eq_iff_iff, beq_iff_eq, isRankedSem_eq_singleton_iff_valid]
+  rfl
