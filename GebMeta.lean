@@ -136,7 +136,6 @@ def classicalAllowedModules : NameSet :=
    `GebManual.Introduction,
    `GebManual.Root,
    `GebManual.ValueRepresentation,
-   `GebManual.Storage,
    `GebManual.WTypes,
    `Geb.Prototypes.PresheafIRProto.Functor,
    `Geb.Prototypes.LargeIR.Grothendieck,
