@@ -18,7 +18,8 @@ The checks read the labels along paths of an infinite binary tree built by the
 corecursor, of a tree built by the constructor over it, and of a bitstream,
 through the destructor, and through the equivalence with mathlib's M-type.
 They exercise the compiled dependent eliminator on depths and the slice and
-presheaf W-tree encodings of the observations.
+presheaf W-tree encodings of the observations. For the slice M-type they read
+the indices of an infinite stream whose index alternates.
 
 ## Tags
 
@@ -71,5 +72,30 @@ def alternating : M Geb.BitStream.sig :=
   M.corec (fun b : Bool ↦ ⟨some b, fun _ ↦ !b⟩) false
 
 #guard (Geb.BitStream.seqEquiv (mEquiv _ alternating)).take 4 = [false, true, false, true]
+
+/-! ## The slice M-type -/
+
+/-- Streams over {name}`Bool` whose index alternates: the shape is its own
+index, and its one child lies over the other index. -/
+def alternatingSig : SlicePFunctor.{0, 0, 0, 0} Bool Bool where
+  A := Bool
+  B _ := Unit
+  r x := !x.1
+  q a := a
+
+/-- The slice coalgebra on {name}`Bool`: each index has a node over the
+other. -/
+def alternatingStep (b : Bool) : alternatingSig.toSliceDomPFunctor.Obj (id : Bool → Bool) :=
+  ⟨⟨b, fun _ ↦ !b⟩, rfl⟩
+
+/-- The alternating stream from index {name}`true`. -/
+def alternatingStream : SliceM alternatingSig :=
+  SliceM.corec alternatingSig id alternatingStep rfl true
+
+#guard SliceM.index alternatingSig alternatingStream = true
+
+#guard SliceM.index alternatingSig (alternatingStream.dest.1.2 ()) = false
+
+#guard SliceM.index alternatingSig ((alternatingStream.dest.1.2 ()).dest.1.2 ()) = true
 
 end GebTests.MType

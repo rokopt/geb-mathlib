@@ -9,6 +9,8 @@ public import Geb.Prototypes.MType.Depth
 public import Geb.Prototypes.MType.Approx
 public import Geb.Prototypes.MType.Basic
 public import Geb.Prototypes.MType.Equiv
+public import Geb.Prototypes.MType.Hereditary
+public import Geb.Prototypes.MType.Slice
 
 set_option doc.verso true in
 /-!
@@ -18,6 +20,9 @@ Index for the modules constructing the M-type of an arbitrary polynomial
 functor from W-types: the depths, a W-type; the observations of each depth,
 the fibres of a presheaf W-type over the depths; the M-type, the agreeing
 root trees of a slice W-type storing one observation at each depth, with its
-constructor, destructor and corecursor; and its equivalence with mathlib's
-M-type.
+constructor, destructor and corecursor; its equivalence with mathlib's
+M-type; hereditary predicates, the coinductive counterpart of the conjunctive
+inductive predicates on W-types; and the M-type of a slice polynomial
+endofunctor, built on the M-type as its W-type is built on the W-type, the
+terminal coalgebra of its functor.
 -/
