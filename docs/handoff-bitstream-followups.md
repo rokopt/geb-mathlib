@@ -5,7 +5,7 @@
 
 - [Session A: merged as PR #235, three commits](#session-a-merged-as-pr-235-three-commits)
 - [Session B: `head` on codes, landed](#session-b-head-on-codes-landed)
-- [Session C: bitstreams as elements of arbitrary finitary M-types](#session-c-bitstreams-as-elements-of-arbitrary-finitary-m-types)
+- [Session C: bitstreams as elements of arbitrary finitary M-types, landed](#session-c-bitstreams-as-elements-of-arbitrary-finitary-m-types-landed)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -276,24 +276,44 @@ would relate to `Expr.eval` directly, but its words have length up to
 stated. The choice between the two, and whether Aristotle is to be used on
 the machine proofs, is the user's before the next session.
 
-## Session C: bitstreams as elements of arbitrary finitary M-types
+## Session C: bitstreams as elements of arbitrary finitary M-types, landed
 
-Observation to start from: the recognized language does not depend on the target
-M-type. Any `Expr 1 0` codes an element of the M-type of any finitary polynomial
-functor `P` with a coded signature `C : CodedSig`: take `PFunctor.M.corec`
-(mathlib `Mathlib/Data/PFunctor/Univariate/M.lean`, `corec_def`, `dest`) with
-state a path word, at each node evaluating `e` at the path and decoding the
-value as a shape; the child at direction `i` extends the path by a code of `i`
-(unary or `Numeral.natCode`, a design choice). Consistency is automatic as for
-bitstreams. What is not automatic is totality: when the value fails to decode
-the corecursion needs a fallback shape (for bitstreams, `[]` reads as the
-nullary shape). Options: require a designated nullary shape of `P`; or add one,
-as the bundle signature added the root, and target the M-type of `P + 1`. The
-theorem analogous to `get?_seq_toStream`: the shape of `toM e` at path `p` is
-the decoding of `valueAt e p` when every prefix of `p` decoded. The recognizer
-is reused unchanged; only the interpretation and the `decodeStream` analogue are
-new. Compare the finite case: `CodedSig.recognize` recognizes W-trees of every
-finitary signature.
+Branch `feat/bitstream-tree`, one commit.
+`Geb/Prototypes/BitStream/Oitavem/Tree.lean`, over a coded signature
+`C : CodedSig I` with `[Inhabited C.P.A]`:
+
+- `dirWord i = List.replicate i true ++ [false]`, the unary code of a
+  direction's position, and `pathWord C ps`, the concatenation over a path
+  `ps : List C.P.toPFunctor.Idx` (mathlib's `PFunctor.Approx.Path`); the path
+  of positions zero to a depth is `depthWord`.
+- `shapeAt C e p = (C.decode (e.eval ![p] Fin.elim0)).getD default`,
+  `stepM C e p = ⟨shapeAt C e p, fun b ↦ p ++ dirWord (C.idx _ b)⟩`, and
+  `toM C e = PFunctor.M.corec (stepM C e) []`, the coded element of
+  `C.P.toPFunctor.M`.
+- `corec_stepM`, `toM_eq_mk` (the generator law, `PFunctor.M.corec_def`),
+  `isubtree_corec_stepM` and `iselect_toM`: for `IsPath ps (toM C e)`,
+  `iselect ps (toM C e) = shapeAt C e (pathWord C ps)`. The hypothesis in the
+  handoff's statement, that every prefix decoded, is not needed: mathlib's
+  `IsPath` types each direction by the shape at its node, and the fallback
+  reads as a node like any other.
+- Tests in `GebTests/Prototypes/BitStream/Oitavem.lean` instantiate `C` at
+  the bundle signature `coded` itself, with the root as the default shape,
+  and read a conditional expression's tree at the root and at both children.
+
+Design decisions taken: the fallback is the signature's `Inhabited` shape,
+so the option "designated nullary shape" is the instance with a nullary
+`default`, and the option "add a shape" is the same construction at the
+signature with the shape added; positions are coded in unary rather than by
+`Numeral.natCode`, so the bitstream depth word is a path word. Mathlib's
+`PFunctor.M.dest`, `isubtree` and `iselect` depend on `Classical.choice`
+(through the cast in `PFunctor.M.children`), `PFunctor.M.corec` and
+`corec_def` do not; the definitions are choice-free, the path theorems are
+not, and the module is listed in `GebMeta.classicalAllowedModules`, as is
+the test module, whose `iselect` helper inherits the same dependence.
+Instance search does not see through `coded.P.A` to `Option Shape`: the
+tests declare `Inhabited coded.P.A` and `DecidableEq coded.P.A` locally
+and read shapes through helpers typed at `Option Shape`, since a `#guard`
+on an equation at `coded.P.toPFunctor.A` finds no `Decidable` instance.
 
 Then slice and presheaf M-types (sessions D and E): the slice and presheaf
 M-types are not yet defined in the repository; `TODO.md` § Polynomial functors

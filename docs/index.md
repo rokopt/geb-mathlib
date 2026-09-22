@@ -510,14 +510,20 @@ checklist and in CI.
   agreement with the decoded stream, `toStream_eq_corec` the coded stream
   as the corecursion of the coalgebra the head and tail form on codes, and
   `length_valueAt_le` the length of a value at a depth as a double
-  exponential in the code's size; `Sig.lean`'s
+  exponential in the code's size; `Oitavem/Tree.lean` reads an expression
+  as an element of the M-type of any coded signature, `toM` the
+  corecursion whose state is a path word, the shape at a node the decoding
+  of the value at its word or the signature's default shape, and
+  `iselect_toM` the shape at a path as the shape read at the path's word;
+  `Sig.lean`'s
   `codedPlain` is the signature of Logs as a coded signature, the same
   codes without the root, and `Oitavem/Plain.lean` its recognizer as an
   expression, `recognizerPlainSem_eq_singleton_iff` its acceptance of
   exactly the spellings of expressions of Logs at every arity;
   `Oitavem/Machine.lean` reads the machine bounds of both recognizers off
-  the subalgebra's soundness theorem (listed in
-  `GebMeta.classicalAllowedModules`). The other modules are
+  the subalgebra's soundness theorem, and `Oitavem/Tree.lean`'s path
+  theorems inherit the dependence of mathlib's `PFunctor.M.dest` (both
+  listed in `GebMeta.classicalAllowedModules`). The other modules are
   `Classical.choice`-free. Depends on
   `Geb.Prototypes.Computability.Oitavem.Syntax`,
   `Geb.Prototypes.Computability.Oitavem.Size`,
