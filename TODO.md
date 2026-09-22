@@ -105,6 +105,16 @@ design of the representation of rose trees of bitstrings, and
 - A Merkle side table keyed by preorder position, the storage form the
   content-addressed source model needs, with the streaming root over the
   serialization as the logarithmic-space hash.
+- The persistent page sequence of `Geb/Prototypes/SuccinctTree/bench.rs`
+  extended to exact bit spans, label lengths and splices coordinated across
+  the topology, length and payload sections, with a leaf-coalescing and
+  occupancy invariant, before any succinctness factor is claimed for an
+  edit history.
+- The chapter's certification obligations for a new serialization: its
+  decode and encode laws over invalid encodings too, a size-controlled
+  logarithmic-space translation to the witnessed form or a direct
+  algebraic recognizer, and the extensional equality of the optimized
+  recognizer with the composition of the existing witnesses.
 
 ### Named examples for axiom auditing
 
