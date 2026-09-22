@@ -73,12 +73,13 @@ def swap (x y : Term) : Wit :=
     (freeNode (P := sig) (eqns := comm) F.W (.inr (.inr (⟨⟩, false))) fun b ↦ cond b y x)
 
 /-- The source of a commutativity witness is the node on the trees in order. -/
-theorem src_swap (x y : Term) : src F.W ⟨⟨⟩⟩ (swap x y) = node x y := rfl
+theorem src_swap (x y : Term) : src F.W ⟨⟨⟩⟩ (swap x y) = node x y :=
+  src_mk_freeNode_eqn (P := sig) (eqns := comm) ⟨⟩ false _
 
 /-- The target of a commutativity witness is the node on the trees exchanged: the
 equation's right side reads its first argument from the second variable. -/
 theorem tgt_swap (x y : Term) : tgt F.W ⟨⟨⟩⟩ (swap x y) = node y x :=
-  (tgt_freeNode_eqn (P := sig) (eqns := comm) ⟨⟩ false _).trans
+  (tgt_mk_freeNode_eqn (P := sig) (eqns := comm) ⟨⟩ false _).trans
     (congrArg (fun ts ↦
         PresheafPFunctor.W.mk (freeNode (P := sig) (eqns := comm) F.W (.inl Op.node) ts))
       (funext fun b ↦ by cases b <;> rfl : (fun b : Bool ↦ cond (!b) y x) = fun b ↦ cond b x y))
@@ -101,7 +102,7 @@ def congLeaf : Wit :=
 /-- The source of a node's congruence witness is the node on the arguments' sources. -/
 theorem src_congNode (e₁ e₂ : Wit) :
     src F.W ⟨⟨⟩⟩ (congNode e₁ e₂) = node (src F.W ⟨⟨⟩⟩ e₁) (src F.W ⟨⟨⟩⟩ e₂) :=
-  (endpoint_freeNode_cong (P := sig) (eqns := comm) false Op.node _).trans
+  (endpoint_mk_freeNode_cong (P := sig) (eqns := comm) false Op.node _).trans
     (congrArg (fun ts ↦
         PresheafPFunctor.W.mk (freeNode (P := sig) (eqns := comm) F.W (.inl Op.node) ts))
       (funext fun b ↦ by cases b <;> rfl))
@@ -109,21 +110,21 @@ theorem src_congNode (e₁ e₂ : Wit) :
 /-- The target of a node's congruence witness is the node on the arguments' targets. -/
 theorem tgt_congNode (e₁ e₂ : Wit) :
     tgt F.W ⟨⟨⟩⟩ (congNode e₁ e₂) = node (tgt F.W ⟨⟨⟩⟩ e₁) (tgt F.W ⟨⟨⟩⟩ e₂) :=
-  (endpoint_freeNode_cong (P := sig) (eqns := comm) true Op.node _).trans
+  (endpoint_mk_freeNode_cong (P := sig) (eqns := comm) true Op.node _).trans
     (congrArg (fun ts ↦
         PresheafPFunctor.W.mk (freeNode (P := sig) (eqns := comm) F.W (.inl Op.node) ts))
       (funext fun b ↦ by cases b <;> rfl))
 
 /-- Both endpoints of the leaf's congruence witness are the leaf. -/
 theorem src_congLeaf : src F.W ⟨⟨⟩⟩ congLeaf = leaf :=
-  (endpoint_freeNode_cong (P := sig) (eqns := comm) false Op.leaf _).trans
+  (endpoint_mk_freeNode_cong (P := sig) (eqns := comm) false Op.leaf _).trans
     (congrArg (fun ts ↦
         PresheafPFunctor.W.mk (freeNode (P := sig) (eqns := comm) F.W (.inl Op.leaf) ts))
       (funext fun g ↦ nomatch g))
 
 /-- Both endpoints of the leaf's congruence witness are the leaf. -/
 theorem tgt_congLeaf : tgt F.W ⟨⟨⟩⟩ congLeaf = leaf :=
-  (endpoint_freeNode_cong (P := sig) (eqns := comm) true Op.leaf _).trans
+  (endpoint_mk_freeNode_cong (P := sig) (eqns := comm) true Op.leaf _).trans
     (congrArg (fun ts ↦
         PresheafPFunctor.W.mk (freeNode (P := sig) (eqns := comm) F.W (.inl Op.leaf) ts))
       (funext fun g ↦ nomatch g))

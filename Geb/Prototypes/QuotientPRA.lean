@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.QuotientPRA.Basic
+public import Geb.Prototypes.QuotientPRA.FreeArity
 public import Geb.Prototypes.QuotientPRA.W
 public import Geb.Prototypes.QuotientPRA.Obstruction
 public import Geb.Prototypes.QuotientPRA.Signature
