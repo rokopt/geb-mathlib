@@ -84,6 +84,10 @@ checklist and in CI.
   — shared polynomial syntax for finite-word and stream function algebras,
   their finiteness and productivity guarantees, and the compilation and
   resource proofs needed to connect them.
+- [reflective-polynomial-evolution.md](reflective-polynomial-evolution.md)
+  — structural elimination for interaction nets, syntax observations in
+  GSOS, effective reflection, and fairness; includes representation choices,
+  existing formalizations, and implementation proof obligations.
 
 ## Implemented content
 
