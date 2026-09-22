@@ -12,6 +12,7 @@ import GebTests.Prototypes.BitStream.WConstruction
 import GebTests.Prototypes.CanonicalSExpr
 import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
+import GebTests.Prototypes.Definition
 import GebTests.Prototypes.FamBoundary
 import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.LargeIR

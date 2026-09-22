@@ -11,6 +11,7 @@ public import Geb.Prototypes.BitStream.Oitavem
 public import Geb.Prototypes.CanonicalSExpr.IO
 public import Geb.Prototypes.Computability
 public import Geb.Prototypes.ConcreteSyntax.Command
+public import Geb.Prototypes.Definition
 public import Geb.Prototypes.FamBoundary
 public import Geb.Prototypes.FinCardUniverse
 public import Geb.Prototypes.LargeIR
