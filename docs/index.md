@@ -1490,6 +1490,20 @@ checklist and in CI.
   positions lies over the commutativity witness between their trees, and
   eliminates into a model that gives a position its depth. No declaration
   here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Congruence.lean` — reflexivity and
+  congruence for quotient presheaf polynomial functors with free arities over
+  any category of sorts. `GebProto.QuotientPRA.HasCongruences` states that
+  every term constructor, applied to the endpoints of witnesses between its
+  arguments, gives the endpoints of one witness, for term constructors whose
+  arguments are terms (`GebProto.QuotientPRA.TermArguments`). For finitely
+  many arguments, enumerated by `FinEnum`, `GebProto.QuotientPRA.exists_refl`
+  builds a reflexivity witness of every term, and
+  `GebProto.QuotientPRA.unit_mk_congr` states that the term constructors
+  respect classes, the arguments being replaced one at a time.
+  `GebProto.QuotientPRA.exists_forall_of_finEnum` makes finitely many choices,
+  and `GebProto.QuotientPRA.finEnumBool` and
+  `GebProto.QuotientPRA.finEnumPEmpty` enumerate the booleans and the empty
+  type. No declaration here depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Initial.lean` — for a signature whose
   operations have finitely many arguments, enumerated by `FinEnum`, and
   one-step equations with finitely many variables, the quotient of

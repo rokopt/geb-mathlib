@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.QuotientPRA.Congruence
 public import Geb.Prototypes.QuotientPRA.Signature
 public import Mathlib.Data.FinEnum
 public import Mathlib.Data.Fintype.Quotient
@@ -45,7 +46,6 @@ witnesses the congruences build ({lit}`exists_refl`).
 ## Main statements
 
 * {lit}`term_induction` — induction on terms.
-* {lit}`exists_forall_of_finEnum` — finitely many choices of witnesses.
 * {lit}`exists_refl` — every term has a reflexivity witness.
 * {lit}`op_rel_update`, {lit}`op_eqvGen_update`, {lit}`op_eqvGen` — the operations
   respect the equivalence relation the witnesses generate, in one argument and in all.
@@ -57,11 +57,9 @@ witnesses the congruences build ({lit}`exists_refl`).
 ## Implementation notes
 
 The finiteness of the arguments is an enumeration, {name}`FinEnum`, whose list the
-choices recurse on. mathlib's {name}`Quotient.finChoice` for a {name}`Fintype` depends
-on {lit}`Classical.choice`, as do {name}`Function.update_idem` and
-{name}`Function.update_eq_self`; {name}`Quotient.listChoice` does not, and the two
-lemmas on {name}`Function.update` are reproved here as {lit}`update_update` and
-{lit}`update_apply_self`.
+choices recurse on, as in {lit}`GebProto.QuotientPRA.Congruence`. mathlib's
+{name}`Quotient.finChoice` for a {name}`Fintype` depends on {lit}`Classical.choice`;
+{name}`Quotient.listChoice` does not.
 
 ## References
 
@@ -126,50 +124,6 @@ theorem term_induction {motive : Term P eqns → Prop}
       · trivial
       · trivial)
     t
-
-section Choice
-
-universe u v
-
-/-- Finitely many existence statements have a common witness function: the choice of
-finitely many elements, constructive by recursion on an enumeration. -/
-theorem exists_forall_of_finEnum {ι : Type u} [FinEnum ι] {α : Type v} {p : ι → α → Prop}
-    (h : ∀ i, ∃ x, p i x) : ∃ f : ι → α, ∀ i, p i (f i) := by
-  have key : ∀ l : List ι, ∃ f : (i : ι) → i ∈ l → α, ∀ i (hi : i ∈ l), p i (f i hi) :=
-    List.rec ⟨(fun _ hi ↦ nomatch hi), (fun _ hi ↦ nomatch hi)⟩ fun i₀ l ih ↦ by
-      obtain ⟨x₀, hx₀⟩ := h i₀
-      obtain ⟨f, hf⟩ := ih
-      refine ⟨fun i hi ↦ if hii : i = i₀ then x₀ else f i (List.mem_of_ne_of_mem hii hi),
-        fun i hi ↦ ?_⟩
-      dsimp only
-      split
-      · rename_i hii
-        subst hii
-        exact hx₀
-      · exact hf i _
-  obtain ⟨f, hf⟩ := key (FinEnum.toList ι)
-  exact ⟨fun i ↦ f i (FinEnum.mem_toList i), fun i ↦ hf i _⟩
-
-/-- Updating a function twice at one point is updating it once with the second
-value. -/
-theorem update_update {ι : Type u} [DecidableEq ι] {α : Type v} (f : ι → α) (i : ι) (x y : α) :
-    Function.update (Function.update f i x) i y = Function.update f i y := by
-  funext j
-  by_cases hj : j = i
-  · subst hj
-    rw [Function.update_self, Function.update_self]
-  · rw [Function.update_of_ne hj, Function.update_of_ne hj, Function.update_of_ne hj]
-
-/-- Updating a function at a point with its own value there leaves it. -/
-theorem update_apply_self {ι : Type u} [DecidableEq ι] {α : Type v} (f : ι → α) (i : ι) :
-    Function.update f i (f i) = f := by
-  funext j
-  by_cases hj : j = i
-  · subst hj
-    exact Function.update_self _ _ _
-  · exact Function.update_of_ne hj _ _
-
-end Choice
 
 section Finitary
 

@@ -173,30 +173,14 @@ example : ¬ ∃ (ρ : F.Shape (eqObj ⟨⟨⟩⟩)) (refl : Term → Wit),
     (∀ t, head F.wHereditaryNaturality (refl t) = ρ.1) ∧ ∀ t, src F.W ⟨⟨⟩⟩ (refl t) = t :=
   no_uniform_refl F.wHereditaryNaturality leaf (node leaf leaf) head_leaf_ne_head_node
 
-/-- The enumeration of the booleans. Built here because mathlib's enumerations of `Fin`
-depend on `Classical.choice`. -/
-def boolEquivFin : Bool ≃ Fin 2 where
-  toFun b := cond b 1 0
-  invFun i := Fin.cases false (fun _ ↦ true) i
-  left_inv b := by cases b <;> rfl
-  right_inv i := Fin.cases rfl (fun j ↦ Fin.cases rfl (fun k ↦ k.elim0) j) i
-
 /-- The arguments of each operation are finite. -/
 instance (a : sig.A) : FinEnum (sig.B a) :=
   match a with
-  | .leaf =>
-    { card := 0
-      equiv :=
-        { toFun := fun x ↦ (nomatch x)
-          invFun := fun i ↦ i.elim0
-          left_inv := fun x ↦ (nomatch x)
-          right_inv := fun i ↦ i.elim0 }
-      decEq := fun x ↦ (nomatch x) }
-  | .node => { card := 2, equiv := boolEquivFin, decEq := inferInstanceAs (DecidableEq Bool) }
+  | .leaf => finEnumPEmpty
+  | .node => finEnumBool
 
 /-- The variables of commutativity are finite. -/
-instance (e : comm.E) : FinEnum (comm.V e) :=
-  { card := 2, equiv := boolEquivFin, decEq := inferInstanceAs (DecidableEq Bool) }
+instance (e : comm.E) : FinEnum (comm.V e) := finEnumBool
 
 -- The classes of trees are an algebra satisfying commutativity.
 example : Satisfies (eqns := comm) fun x : sig.Obj (Cls sig comm) ↦ opQ x.1 x.2 :=
