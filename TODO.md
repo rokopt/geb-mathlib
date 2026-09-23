@@ -136,15 +136,13 @@ chapter's status lines are updated as they are made.
 definitions and `Geb/Prototypes/Definition/` its prototype. Follow-ups, none
 scheduled:
 
-- Guarded blocks as a typing, each body an element of `P(T_P(Γ + E)) + Γ`,
-  with the unique M-type solution of a non-flat guarded block
-  [MiliusMoss2009], proved by recursion on the depth of the M-type's
-  approximations as `coalgebra_solution_unique` is, and the depth-indexed
-  solution related to the agreement equations of
-  `Geb/Prototypes/BitStream/WConstruction.lean`
-  ([docs/definitions.md](docs/definitions.md) § Equations in slice, presheaf
-  and depth-indexed settings).
-- `Direction`, `Vertex` and `WFBlock` over slice and presheaf free monads:
+- Solutions of guarded blocks in the completely iterative algebras other
+  than the M-type [MiliusMoss2009]; `Geb/Prototypes/Definition/Guarded.lean`
+  treats the M-type alone. Deriving `coalgebra_solution_unique`, the flat
+  case over mathlib's M-type, from `GuardedBlock.existsUnique_isSolution`
+  along `Geb.MType.mEquiv`.
+- `Direction`, `Vertex`, `WFBlock` and `GuardedBlock` over slice and presheaf
+  free monads:
   sorted bodies, and context-indexed bodies with renaming, built on item 4 of
   § Polynomial functors.
 - Whether resolution against an environment, `link` against `subterm`, is an

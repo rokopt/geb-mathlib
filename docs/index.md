@@ -2012,9 +2012,14 @@ checklist and in CI.
   algebra with the soundness of their expansion (`eval_expandOps`), and
   well-founded blocks, whose bodies refer only to the exports below their
   own, with exactly one solution in every algebra
-  (`WFBlock.existsUnique_isSolution`). No theorem here depends on an axiom
-  beyond `propext` and `Quot.sound`, and no declaration depends on
-  `Classical.choice`.
+  (`WFBlock.existsUnique_isSolution`). `Guarded.lean` carries guarded
+  blocks, whose bodies are typed as operations over terms of any depth or
+  imports, with exactly one solution in the M-type of
+  `Geb/Prototypes/MType/` (`GuardedBlock.existsUnique_isSolution`): the
+  corecursive solution satisfies the equations (`isSolution_solution`) and
+  any two solutions are bisimilar (`eq_of_isSolution`). No theorem here
+  depends on an axiom beyond `propext` and `Quot.sound`, and no declaration
+  depends on `Classical.choice`.
 - [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
   represents values with leaf, stem, and fork constructors, and expressions
   as application trees over values. Its tagged binary-tree encoding prevents

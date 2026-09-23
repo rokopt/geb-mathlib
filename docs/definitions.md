@@ -311,13 +311,21 @@ block imports only the exports of earlier blocks, are the special case in
 which the relation is the order of the layers.
 
 For guarded blocks, [Milius–Moss](https://arxiv.org/pdf/0904.2385)
-prove unique solutions in completely iterative algebras.
-`coalgebra_solution_unique` is the flat case in the M-type: a flat
-guarded block is a finite coalgebra, and its unique solution is the
-corecursive map that finality supplies. A guarded block is therefore the
-finite syntax of a corecursive definition. Its references into its own
-exports are directions, not digests of the definition being written, so
-the acyclicity of content identity between blocks is unaffected.
+prove unique solutions in completely iterative algebras. In the prototype
+a guarded block is a typing of its bodies: the body at an export is an
+element of `P(T_P(Γ + E)) + Γ`, an operation applied to terms of any
+depth or an import (`GuardedBlock`). With imports interpreted in the
+M-type constructed from W-types (`Geb/Prototypes/MType/`), such a block
+has exactly one solution there (`GuardedBlock.existsUnique_isSolution`):
+existence by corecursion on states that are finished values or pending
+terms, uniqueness by a bisimulation relating the values of each term
+under two solutions. `coalgebra_solution_unique` is the flat case, in
+mathlib's M-type: a flat guarded block is a finite coalgebra, and its
+unique solution is the corecursive map that finality supplies. A guarded
+block is therefore the finite syntax of a corecursive definition. Its
+references into its own exports are directions, not digests of the
+definition being written, so the acyclicity of content identity between
+blocks is unaffected.
 Unguarded blocks are equations that constrain their models; they are
 axioms rather than definitions.
 
@@ -339,9 +347,9 @@ a row of the table. Well-foundedness is the index constraint of
 `WFBlock`. Guardedness is the typing of each body as an element of
 `P(T_P(Γ + E)) + Γ` rather than of `T_P(Γ + E)`, which is the
 guardedness condition of Milius–Moss for systems of equations: no
-right-hand side is a bare variable of the system. A slice layer can therefore
-make the question whether a block is a definition, and for which models,
-a question of type checking.
+right-hand side is a bare variable of the system; `GuardedBlock` is that
+typing. A slice layer can therefore make the question whether a block is
+a definition, and for which models, a question of type checking.
 
 The equations themselves integrate with the M-type side through depth.
 In presheaves on `ω`, the topos of trees
@@ -513,13 +521,17 @@ rose trees and then bitstrings
 vertices of terms with their directed-container laws, resolution against
 an environment and transport along a vertex
 ([Definition/Vertex.lean](../Geb/Prototypes/Definition/Vertex.lean));
-and the soundness of derived-operation expansion and the unique solution
+the soundness of derived-operation expansion and the unique solution
 of well-founded blocks
-([Definition/Solution.lean](../Geb/Prototypes/Definition/Solution.lean)).
+([Definition/Solution.lean](../Geb/Prototypes/Definition/Solution.lean));
+and guarded blocks with their unique solution in the M-type
+([Definition/Guarded.lean](../Geb/Prototypes/Definition/Guarded.lean)).
 Its examples exercise structural references, repeated use of an imported
 definition, infinite stream production, vertices of a subject with a
 parameter and two layers, transport of a body between layers, and the
-unique solution of a three-export well-founded block. All recursion uses
+unique solution of a three-export well-founded block, and bitstreams
+defined by guarded blocks, one of depth two referring to its own export
+and one with an imported stream. All recursion uses
 existing recursors, the existing free-monad interpreter, or well-founded
 recursion in proofs; `Definition/Vertex.lean` uses the executable code
 for the free monad's recursor that
@@ -528,7 +540,8 @@ since a subterm selected by a vertex depends on the term.
 
 It does not implement cryptographic hashing, a content store, a block
 decoder, permutation canonicalization, a binder language, the slice or
-presheaf free-monad interface, guarded blocks as a typing, a general
+presheaf free-monad interface, solutions of guarded blocks in
+completely iterative algebras other than the M-type, a general
 recursive-program-scheme solver, the replacement of vertices by content
 identities, or a compiler to interaction nets. These require selected
 profiles and their proof obligations; adding them to the definition
