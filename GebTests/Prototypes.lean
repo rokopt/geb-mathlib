@@ -9,6 +9,7 @@ import GebTests.Prototypes.AxiomLinter
 import GebTests.Prototypes.AxiomLinterClassicalFixture
 import GebTests.Prototypes.BitStream.Oitavem
 import GebTests.Prototypes.BitStream.WConstruction
+import GebTests.Prototypes.Bootstrap
 import GebTests.Prototypes.CanonicalSExpr
 import GebTests.Prototypes.Computability
 import GebTests.Prototypes.ConcreteSyntax
