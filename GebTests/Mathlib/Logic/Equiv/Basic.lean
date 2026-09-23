@@ -13,8 +13,8 @@ public import Geb.Mathlib.Logic.Equiv.Basic
 Round-trip tests exercise `sigmaCongrRight'`,
 `arrowSumEquivSigma`, and `sigmaCompEquivSigmaFiber` on sample
 inputs. The sigma–subtype commutation, the empty-valued
-function-type equivalence, and the arrow-type domain transport
-round-trip at sample instances.
+function-type equivalence, and the arrow-type and dependent
+function-type domain transports round-trip at sample instances.
 
 ## Tags
 
@@ -84,3 +84,20 @@ theorem sampleArrowCongrLeftC_roundtrip (b : Bool) :
   congrFun
     ((Equiv.arrowCongrLeftC (γ := Nat) boolNotEquiv).symm_apply_apply
       sampleArrowCongrLeft) b
+
+/-- A sample dependent function, over the transported domain, whose value
+type depends on its argument. -/
+def samplePiCongrLeft : ∀ b : Bool, (if boolNotEquiv b then Nat else Bool) :=
+  fun b ↦ match b with
+    | false => (7 : Nat)
+    | true => true
+
+/-- The dependent domain transport round-trips a sample dependent
+function. -/
+theorem samplePiCongrLeftC_roundtrip :
+    (Equiv.piCongrLeftC (fun c : Bool ↦ if c then Nat else Bool) boolNotEquiv).symm
+        (Equiv.piCongrLeftC (fun c : Bool ↦ if c then Nat else Bool) boolNotEquiv
+          samplePiCongrLeft) =
+      samplePiCongrLeft :=
+  (Equiv.piCongrLeftC (fun c : Bool ↦ if c then Nat else Bool) boolNotEquiv).symm_apply_apply
+    samplePiCongrLeft

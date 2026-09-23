@@ -109,8 +109,9 @@ checklist and in CI.
   direction of mathlib's `Equiv.piEquivSubtypeSigma`).
   `sigmaSubtypeEquiv` commutes a sigma with a fiberwise subtype;
   `arrowPEmptyEquiv` equates empty-valued function types across
-  universes. `Equiv.arrowCongrLeftC` transports a function type along
-  an equivalence of its domain. `Classical.choice`-free.
+  universes. `Equiv.arrowCongrLeftC` transports a function type, and
+  `Equiv.piCongrLeftC` a dependent function type, along an equivalence
+  of its domain. `Classical.choice`-free.
 - `Geb/Mathlib/CategoryTheory/Grothendieck/` — the Grothendieck
   constructions for 1-functors and the functors between them.
   `Basic.lean` carries the covariant and
@@ -379,6 +380,12 @@ checklist and in CI.
   instance resolution and serves as the finitary binder for the slice
   and presheaf layers as well, through their `toPFunctor` projections.
   `Classical.choice`-free.
+- `Geb/Mathlib/Data/PFunctor/Univariate/Obj.lean` — lemmas on the nodes
+  `PFunctor.Obj` of a polynomial functor: `PFunctor.map_injective`,
+  mapping along an injective function is injective; and
+  `PFunctor.Obj.sndOfEq`, the child of a node at a direction of a shape
+  proved equal to the node's shape, with `sndOfEq_congr` and
+  `mk_sndOfEq`. `Classical.choice`-free.
 - `Geb/Mathlib/Data/PFunctor/Slice/Decidable.lean` — decidability of
   the slice functor's term-level predicates, given `F.Finitary` and
   decidable equality of the base or output index type:

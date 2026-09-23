@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.MType.Approx
+public import Geb.Mathlib.Data.PFunctor.Univariate.Obj
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -176,24 +177,6 @@ def bundleEquiv : Bundle Q ≃ ∀ n : Depth.{uA, uB}, Approx Q n where
   left_inv := bundle_readBundle
   right_inv := readBundle_bundle
 
-variable (Q) in
-/-- The child of a node at a direction of a shape equal to the node's shape. -/
-def objGet {α : Type u} (x : Q.Obj α) {a : Q.A} (h : x.1 = a) (b : Q.B a) : α :=
-  x.2 (cast (congrArg Q.B h.symm) b)
-
-/-- {name}`objGet` respects equality of nodes. -/
-theorem objGet_congr {α : Type u} {x y : Q.Obj α} (hxy : x = y) {a : Q.A} (hx : x.1 = a)
-    (hy : y.1 = a) (b : Q.B a) : objGet Q x hx b = objGet Q y hy b := by
-  subst hxy
-  rfl
-
-/-- A node is its shape over its {name}`objGet` children. -/
-theorem mk_objGet {α : Type u} (x : Q.Obj α) {a : Q.A} (h : x.1 = a) :
-    (⟨a, objGet Q x h⟩ : Q.Obj α) = x := by
-  obtain ⟨a', f⟩ := x
-  subst h
-  rfl
-
 /-!
 ## The carrier
 -/
@@ -271,12 +254,13 @@ theorem observe_head (w : M Q) :
 /-- The observations of the child at a direction of the root shape: the
 children of the positive-depth observations at that direction. -/
 def childrenApprox (w : M Q) (b : Q.B w.head) (n : Depth.{uA, uB}) : Approx Q n :=
-  objGet Q (succEquiv Q n (w.observe (succ n))) (w.observe_head n) b
+  (succEquiv Q n (w.observe (succ n))).sndOfEq (w.observe_head n) b
 
 /-- The observations of a child agree. -/
 theorem childrenApprox_consistent (w : M Q) (b : Q.B w.head) :
     Consistent (w.childrenApprox b) :=
-  fun n ↦ (objGet_congr (w.observe_succ n) (w.observe_head n) (w.observe_head (succ n)) b).symm
+  fun n ↦ (PFunctor.Obj.sndOfEq_congr (w.observe_succ n) (w.observe_head n)
+    (w.observe_head (succ n)) b).symm
 
 /-- The child at a direction of the root shape. -/
 def children (w : M Q) (b : Q.B w.head) : M Q :=
@@ -288,7 +272,7 @@ def dest (w : M Q) : Q.Obj (M Q) := ⟨w.head, w.children⟩
 /-- The destructor describes every positive-depth observation. -/
 theorem observe_dest (w : M Q) (n : Depth.{uA, uB}) :
     Q.map (fun t ↦ t.observe n) w.dest = succEquiv Q n (w.observe (succ n)) :=
-  mk_objGet _ (w.observe_head n)
+  PFunctor.Obj.mk_sndOfEq _ (w.observe_head n)
 
 /-- Root layers whose children have equal observations are equal. -/
 theorem obj_ext {x y : Q.Obj (M Q)}
