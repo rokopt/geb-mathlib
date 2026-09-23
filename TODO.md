@@ -7,6 +7,7 @@
   - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
   - [Rose-tree value representation](#rose-tree-value-representation)
   - [Quotient polynomial functors and the density formula](#quotient-polynomial-functors-and-the-density-formula)
+  - [Bootstrap](#bootstrap)
   - [Definitions](#definitions)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
@@ -130,6 +131,16 @@ functors between presheaf categories, the comparison with mathlib's `QPF`,
 and term constructors that take witnesses. Each is recorded there, and the
 chapter's status lines are updated as they are made.
 
+### Bootstrap
+
+The manual chapter `manual/GebManual/Bootstrap.lean` records the plan for
+bootstrapping Geb in phases, each ending with an executable acceptance
+condition: the kernel running in Lean, the choice of machine, closed
+bundles and images, Geb growing in itself to the first fixed point, a
+second host with accelerations and compilers, content identity, and the
+metalogic. The chapter is the list of follow-ups; it is revised as each
+phase is carried out.
+
 ### Definitions
 
 [docs/definitions.md](docs/definitions.md) records the design of
@@ -244,6 +255,21 @@ Concern shape.
       `Geb/Mathlib/Data/PFunctor/IndRec/Slice.lean` and once in its test
       mirror, uncovered by the existing note. Theorem 3, which W-d cites, the
       existing note already covers.
+- **`docs/references.bib`'s `Taelin2024` URL reaches the HVM2 paper only
+  through a redirect.** On 2026-09-16 the `HigherOrderCO/HVM` repository was
+  renamed `HVM1`; the stable location of the paper is
+  `https://github.com/HigherOrderCO/HVM2/blob/main/paper/HVM2.pdf`.
+- **`docs/concrete-syntaxes.md` misstates Unison's hashing and the Lean hash
+  implementations.** Every Unison hash input begins with a hashing-version
+  token (`hashingVersion = Tag 2` in
+  `unison-hashing-v2/src/Unison/Hashing/V2/Tokenizable.hs`), and the codebase
+  records a `hash_version` for each hash, so the statement that Unison has no
+  hash-version concept is incorrect. Unison's ordering of a cycle's members
+  collapses references to members into one shared environment entry rather
+  than removing them, and the order is incomplete (unisonweb/unison issue
+  2787). Pure-Lean SHA-256 (`etheorem/leansha256`,
+  `pure-algebra/lean4-hash`) and BLAKE3 (`argumentcomputer/Blake3.lean`) now
+  exist, contradicting the statement that there is no pure-Lean SHA-2.
 
 ### Polynomial functors
 

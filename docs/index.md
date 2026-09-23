@@ -80,6 +80,13 @@ checklist and in CI.
   transport, and identification across shapes compared with analytic
   functors and mathlib's `QPF`. Each claim is marked constructed, argued or
   conjectured, and the last section lists the constructions that remain.
+- [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) — a Verso
+  manual chapter recording the bootstrap: the decisions that fix the seed
+  (values, the typed kernel, closed bundles and references, input and
+  output), a survey of seed images, self-extending kernels, operational
+  semantics, proof checkers for the free topos and content addressing,
+  and the plan in phases with executable acceptance conditions and the
+  statement of what self-compilation establishes.
 - [bitstring-metalogic.md](bitstring-metalogic.md) — recognized and
   quotient types over bitstrings, syntactic proof checking, simultaneous
   polynomial-time and linear-space bounds, and single-step reduction.
@@ -3645,8 +3652,8 @@ checklist and in CI.
   symmetry, and transitivity; `Geb.Bootstrap.check_sound` proves that
   accepted endpoints represent expressions related by contextual
   computation equality. This is a fragment, not a free-topos kernel.
-  [The bootstrap design](bootstrap.md) describes the seed boundary,
-  external representations, comparative research, and acceptance stages.
+  [The bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
+  seed boundary, external representations, the survey, and the plan.
   Depends on `Geb.Prototypes.Computability.Triage.Bitstrings`,
   `Geb.Prototypes.Computability.Oitavem.Word`,
   `Geb.Prototypes.RoseTree.Basic`, and `Mathlib.Logic.Relation`.
