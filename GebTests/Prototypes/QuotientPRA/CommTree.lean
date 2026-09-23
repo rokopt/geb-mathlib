@@ -163,14 +163,15 @@ example : leavesOf (node (node leaf leaf) leaf) = 3 := by
   rw [leavesOf_node, leavesOf_node, leavesOf_leaf]
 
 /-- The leaf and a node differ in root shape. -/
-theorem head_leaf_ne_head_node : head F leaf ≠ head F (node leaf leaf) := by
+theorem head_leaf_ne_head_node :
+    head F.wHereditaryNaturality leaf ≠ head F.wHereditaryNaturality (node leaf leaf) := by
   change (Sum.inl Op.leaf : Shape sig comm) ≠ Sum.inl Op.node
   exact fun h ↦ nomatch h
 
 -- Reflexivity is not a witness constructor of fixed shape here.
 example : ¬ ∃ (ρ : F.Shape (eqObj ⟨⟨⟩⟩)) (refl : Term → Wit),
-    (∀ t, head F (refl t) = ρ.1) ∧ ∀ t, src F.W ⟨⟨⟩⟩ (refl t) = t :=
-  no_uniform_refl F leaf (node leaf leaf) head_leaf_ne_head_node
+    (∀ t, head F.wHereditaryNaturality (refl t) = ρ.1) ∧ ∀ t, src F.W ⟨⟨⟩⟩ (refl t) = t :=
+  no_uniform_refl F.wHereditaryNaturality leaf (node leaf leaf) head_leaf_ne_head_node
 
 /-- The enumeration of the booleans. Built here because mathlib's enumerations of `Fin`
 depend on `Classical.choice`. -/

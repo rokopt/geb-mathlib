@@ -1446,16 +1446,17 @@ checklist and in CI.
 - `Geb/Prototypes/QuotientPRA/Obstruction.lean` — why reflexivity,
   symmetry, transitivity and transport are not witness or term constructors
   of fixed shape. `GebProto.QuotientPRA.head_map` states that the root shape
-  of a restricted tree of a presheaf W-type is `shapeRestr` of the root shape,
-  so a family of trees of one root shape restricts to a family of one root
-  shape (`GebProto.QuotientPRA.head_map_of_head_eq`). The constructors named
+  of a restricted tree of a carrier presheaf, the W-type or the M-type of a
+  presheaf polynomial endofunctor, is `shapeRestr` of the root shape, so a
+  family of trees of one root shape restricts to a family of one root shape
+  (`GebProto.QuotientPRA.head_map_of_head_eq`). The constructors named
   require endpoints or indices that are their own arguments, so
   `GebProto.QuotientPRA.no_uniform_refl`,
   `GebProto.QuotientPRA.no_uniform_symm`,
   `GebProto.QuotientPRA.no_uniform_trans` and
   `GebProto.QuotientPRA.no_uniform_transport` exclude each once two
-  arguments differ in root shape. No declaration here depends on
-  `Classical.choice`.
+  arguments differ in root shape, in the inductive and the coinductive
+  variant alike. No declaration here depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/FreeArity.lean` — presheaf polynomial
   endofunctors whose arities are coproducts of representable presheaves.
   `GebProto.QuotientPRA.FreeArity` gives each shape arguments over objects,
