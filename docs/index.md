@@ -1440,9 +1440,10 @@ checklist and in CI.
   itself a model needs representatives chosen for the arguments of a
   constructor, which for infinitary arities requires a choice principle
   ([FiorePittsSteenkamp2020], [Dijkstra2017]); it is established for
-  finitary signatures in
-  `Geb/Prototypes/QuotientPRA/Initial.lean`. No declaration here depends on
-  `Classical.choice`.
+  finitary functors with free arities and congruences in
+  `Geb/Prototypes/QuotientPRA/InitialModel.lean`.
+  `GebProto.QuotientPRA.IsModelHom` is a morphism of models. No declaration
+  here depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Obstruction.lean` — why reflexivity,
   symmetry, transitivity and transport are not witness or term constructors
   of fixed shape. `GebProto.QuotientPRA.head_map` states that the root shape
@@ -1504,6 +1505,17 @@ checklist and in CI.
   and `GebProto.QuotientPRA.finEnumBool` and
   `GebProto.QuotientPRA.finEnumPEmpty` enumerate the booleans and the empty
   type. No declaration here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/InitialModel.lean` — the quotient W-type of a
+  quotient presheaf polynomial functor with free finitary arities, term
+  arguments and congruences is the initial model, over any category of sorts.
+  `GebProto.QuotientPRA.quotientModel` is its algebra: a term constructor
+  applied to classes through `Quotient.listChoice`, and a node over the
+  witnesses sent to the value of its source endpoint. The unit is a morphism
+  of algebras (`GebProto.QuotientPRA.quotientModel_unit`), and the eliminator
+  is a morphism of models (`GebProto.QuotientPRA.isModelHom_elim`) and the
+  only one (`GebProto.QuotientPRA.eq_elim`), which
+  `GebProto.QuotientPRA.existsUnique_isModelHom` states together. No
+  declaration here depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Initial.lean` — for a signature whose
   operations have finitely many arguments, enumerated by `FinEnum`, and
   one-step equations with finitely many variables, the quotient of

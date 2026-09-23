@@ -12,6 +12,7 @@ public import Geb.Prototypes.QuotientPRA.Obstruction
 public import Geb.Prototypes.QuotientPRA.Signature
 public import Geb.Prototypes.QuotientPRA.Initial
 public import Geb.Prototypes.QuotientPRA.Congruence
+public import Geb.Prototypes.QuotientPRA.InitialModel
 
 set_option doc.verso true in
 /-!

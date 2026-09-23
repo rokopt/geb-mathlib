@@ -46,6 +46,7 @@ quotient.
 * {lit}`quotientMk` — the class of a term.
 * {lit}`intro` — the term constructors, landing in the quotient.
 * {lit}`elim` — the eliminator into a model.
+* {lit}`IsModelHom` — a morphism of models.
 
 ## Main statements
 
@@ -68,8 +69,9 @@ constructed terms, and a choice of representatives for the arguments: finitely m
 choices are constructive, while infinitary arities need a choice principle, as
 {cite}`FiorePittsSteenkamp2020` records for W-types with equations and
 {cite}`Dijkstra2017` records for quotient inductive-inductive definitions. For a
-finitary signature with one-step equations the quotient is a model, the initial one
-({lit}`GebProto.QuotientPRA.Initial`).
+finitary functor with free arities and congruences the quotient is a model, the
+initial one ({lit}`GebProto.QuotientPRA.InitialModel`), and in particular for a
+finitary signature with one-step equations ({lit}`GebProto.QuotientPRA.Initial`).
 
 The endpoints of a witness constructor are single term constructors applied to the
 witness constructor's arguments, since restriction in a presheaf W-type rebuilds the
@@ -108,7 +110,7 @@ variable {I : Type uI} [Category.{vI} I]
     (I × WalkingParallelPair))
 
 /-- The quotient W-type: the quotient of the W-type's terms by its witnesses. -/
-def quotient : Iᵒᵖ ⥤ Type (max uI uA uB) := coeq F.W
+abbrev quotient : Iᵒᵖ ⥤ Type (max uI uA uB) := coeq F.W
 
 /-- The class of a term of the W-type. -/
 abbrev quotientMk {i : I} (t : F.W.obj ⟨termObj i⟩) : (quotient F).obj ⟨i⟩ := coeqMk F.W t
@@ -148,6 +150,13 @@ theorem model_sound {P : Iᵒᵖ ⥤ Type (max uI uA uB)}
     α.app ⟨termObj i⟩ (src (F.objPresheaf (discrete P)) i x) =
       α.app ⟨termObj i⟩ (tgt (F.objPresheaf (discrete P)) i x) :=
   app_src_eq_app_tgt α x
+
+/-- A morphism of models {lit}`(P, α) → (P', α')`: a morphism of presheaves on {lit}`I`
+whose discrete graph commutes with the algebras. -/
+def IsModelHom {P P' : Iᵒᵖ ⥤ Type (max uI uA uB)}
+    (α : NatTrans (F.objPresheaf (discrete P)) (discrete P))
+    (α' : NatTrans (F.objPresheaf (discrete P')) (discrete P')) (h : NatTrans P P') : Prop :=
+  ∀ c x, (discreteMap h).app c (α.app c x) = α'.app c ((F.mapPresheaf (discreteMap h)).app c x)
 
 variable (F)
 
