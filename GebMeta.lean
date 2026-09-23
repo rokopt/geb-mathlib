@@ -134,6 +134,7 @@ def classicalAllowedModules : NameSet :=
    `GebManual.Bibliography,
    `GebManual.DecisionProblems,
    `GebManual.Introduction,
+   `GebManual.QuotientPRA,
    `GebManual.Root,
    `GebManual.ValueRepresentation,
    `GebManual.WTypes,
