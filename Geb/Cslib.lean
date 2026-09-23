@@ -5,6 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Cslib.Foundations
+
 /-!
 # Geb.Cslib — upstream-eligible content for CSLib
 

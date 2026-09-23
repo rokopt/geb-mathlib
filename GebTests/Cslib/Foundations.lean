@@ -5,8 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Cslib.Foundations
+import Cslib.Init -- shake: keep; lint-imports requires it
+import GebTests.Cslib.Foundations.Data
 
 /-!
-# GebTests.Cslib — tests for CSLib-targeted content
+# Foundations tests — index
 -/

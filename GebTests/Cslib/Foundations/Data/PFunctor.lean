@@ -5,8 +5,9 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Cslib.Foundations
+import Cslib.Init
+import GebTests.Cslib.Foundations.Data.PFunctor.Free
 
 /-!
-# GebTests.Cslib — tests for CSLib-targeted content
+# PFunctor tests — index
 -/

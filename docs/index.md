@@ -504,6 +504,15 @@ checklist and in CI.
   hereditary naturality on the walking arrow to its one non-identity
   morphism. `Classical.choice`-free.
   `Classical.choice`-free.
+- `Geb/Cslib/Foundations/Data/PFunctor/Free.lean` — executable code for
+  `PFunctor.FreeM.rec`, the recursor of Cslib's free monad of a polynomial
+  functor, supplied by `compile_inductive%`, so that a definition recursing
+  through it is computable; a fold through `PFunctor.FreeM.liftM` is
+  computable without it but cannot return a value whose type depends on
+  the term. Issuing the command again where it is in scope fails, so a
+  module needing the compiled recursor imports this one. The mirror
+  `GebTests/Cslib/Foundations/Data/PFunctor/Free.lean` evaluates the
+  variable at a leaf of a term, a function of that dependent kind.
 - `Geb/Prototypes/BitStream.lean` — specialization of mathlib's M-type
   construction to the bitstring polynomial `1 + Bool × X`.
   Its W-type is `List Bool`; bounded approximations are lists of

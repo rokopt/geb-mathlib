@@ -5,8 +5,12 @@ Authors: Terence Rokop
 -/
 module
 
-import GebTests.Cslib.Foundations
+public import Cslib.Init
+public import Geb.Cslib.Foundations.Data.PFunctor.Free
 
+set_option doc.verso true in
 /-!
-# GebTests.Cslib — tests for CSLib-targeted content
+# PFunctor — index
 -/
+
+set_option doc.verso true
