@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Definition.Basic
 public import Geb.Prototypes.Definition.Vertex
 public import Geb.Prototypes.Definition.Solution
+public import Geb.Prototypes.Definition.Guarded
 
 set_option doc.verso true in
 /-!
@@ -15,7 +16,8 @@ set_option doc.verso true in
 
 Definitions as terms of the free monad of a polynomial signature: the terms, their linking
 and their equation blocks; the vertices of a term, by which an environment is addressed; and
-the equation blocks that are definitions, having exactly one solution in every algebra.
+the equation blocks that are definitions: the well-founded blocks, having exactly one solution
+in every algebra, and the guarded blocks, having exactly one solution in the M-type.
 -/
 
 set_option doc.verso true
