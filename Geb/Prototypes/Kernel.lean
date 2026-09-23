@@ -6,6 +6,8 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Kernel.Basic
+public import Geb.Prototypes.Kernel.Command
+public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.Reader
 
 set_option doc.verso true in
@@ -13,7 +15,8 @@ set_option doc.verso true in
 # The bootstrap kernel
 
 The kernel language of the bootstrap, System T over rose trees with natural-number labels:
-its types, its checker-evaluator, which is its denotation, and its readable syntax.
+its types, its checker-evaluator, which is its denotation, its readable syntax, its bundles and
+images, and the host driver that builds and runs them.
 -/
 
 set_option doc.verso true
