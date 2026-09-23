@@ -315,13 +315,15 @@ tests declare `Inhabited coded.P.A` and `DecidableEq coded.P.A` locally
 and read shapes through helpers typed at `Option Shape`, since a `#guard`
 on an equation at `coded.P.toPFunctor.A` finds no `Decidable` instance.
 
-Then slice and presheaf M-types (sessions D and E): the slice and presheaf
-M-types are not yet defined in the repository; `TODO.md` § Polynomial functors
-item 2 ("M-types and their categorical wrappers as terminal coalgebras") is the
-prerequisite, and admissibility on infinite trees is a coinductive predicate.
-The fallback shape must lie over the required index, so it is a fallback per
-index, again by adding shapes (one root-like shape per index). For presheaf PRA
-functors the hereditary-naturality condition becomes coinductive; the
-counterexample (`PresheafCounterexample.lean`) shows finiteness alone does not
-bound restriction cost even for finite trees, so expect an additional complexity
-assumption on the signature's operations.
+Then coded elements of slice and presheaf M-types (sessions D and E): the
+analogue of session C's `toM` for the slice and presheaf M-types, which are
+defined in `Geb/Prototypes/MType/` (`SliceM`, `PresheafM`), built on the M-type
+constructed from W-types, `Geb.MType.M`, which `mEquiv` identifies with
+mathlib's `PFunctor.M`; the coded tree is read into `Geb.MType.M` directly, or
+through `mEquiv`, and admissibility and hereditary naturality are the
+coinductive predicates `MValid` and `PresheafM.IsHereditarilyNatural`. The
+fallback shape must lie over the required index, so it is a fallback per
+index, again by adding shapes (one root-like shape per index). For presheaf
+PRA functors the counterexample (`PresheafCounterexample.lean`) shows
+finiteness alone does not bound restriction cost even for finite trees, so
+expect an additional complexity assumption on the signature's operations.
