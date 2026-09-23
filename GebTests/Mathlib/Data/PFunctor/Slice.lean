@@ -7,6 +7,7 @@ module
 
 import GebTests.Mathlib.Data.PFunctor.Slice.Basic
 import GebTests.Mathlib.Data.PFunctor.Slice.Decidable
+import GebTests.Mathlib.Data.PFunctor.Slice.FixedPoint
 import GebTests.Mathlib.Data.PFunctor.Slice.Functor
 import GebTests.Mathlib.Data.PFunctor.Slice.W
 

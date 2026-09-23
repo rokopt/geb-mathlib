@@ -320,6 +320,10 @@ checklist and in CI.
   into any slice algebra over `I`. Only the existence half of
   initiality is established (the carrier, its fixed-point structure,
   and the catamorphism `W.elim` with its laws), not uniqueness.
+  `Classical.choice`-free. `Slice/FixedPoint.lean` names the structure the
+  W-type and the M-type share: `SlicePFunctor.FixedPoint` is a type over
+  `I` with mutually inverse constructor and destructor lying over `I`,
+  and `SlicePFunctor.wFixedPoint` is the W-type as one.
   `Classical.choice`-free.
 - `Geb/Mathlib/Data/PFunctor/Presheaf/` — presheaf polynomial functors
   (parametric-right-adjoint functors `(Iᵒᵖ ⥤ Type) ⥤ (Jᵒᵖ ⥤ Type)`),
@@ -332,8 +336,19 @@ checklist and in CI.
   presheaf), `Classical.choice`-free. `Presheaf/Functor.lean` packages
   the result as a categorical functor (`domFunctor`, `functor`); that
   module is listed in `GebMeta.classicalAllowedModules`.
+  `Presheaf/Carrier.lean` builds, over a fixed point `S` of the underlying
+  slice endofunctor and a `HereditaryNaturality` on it (a predicate
+  satisfying the unfolding equation: it holds at a tree exactly when the
+  root node is natural, `NodeNatural`, and it holds at every child), the
+  root-only restriction `restrTree`, the carrier presheaf `carrier` of the
+  hereditarily natural trees, and its mutually inverse constructor and
+  destructor `carrier.mk`/`carrier.dest`, which commute with restriction
+  and form the natural transformations `carrier.destNat`/`carrier.mkNat`;
+  the presheaf W-type and the presheaf M-type are its instances.
+  `Classical.choice`-free.
   `Presheaf/W.lean` builds the W-type (initial algebra) of a presheaf
-  endofunctor (`I = J`) on top of the slice W-type. Its carrier is the
+  endofunctor (`I = J`) on top of the slice W-type, as the carrier
+  presheaf of `SlicePFunctor.wFixedPoint`. Its carrier is the
   presheaf `W : Iᵒᵖ ⥤ Type (max uI uA uB)` whose fiber over `j` is the
   `ULift` of the hereditarily-natural slice W-trees indexed at `j`
   (`IsHereditarilyNatural`, the tree-level analogue of `IsNatural`, defined
@@ -530,15 +545,12 @@ checklist and in CI.
   coalgebra lies over `I` (`comp_corec`), is a morphism of slice
   coalgebras (`dest_corec`) and is unique (`corec_unique`).
   `MType/Presheaf.lean` defines the carrier presheaf `PresheafM F` of a
-  presheaf endofunctor `F : PresheafPFunctor I I`, built on
-  `SliceM F.toSlicePFunctor`: its fibre over `j` is the hereditarily natural
-  trees indexed at `j` (`PresheafM.IsHereditarilyNatural`, the hereditary
-  form of `PresheafM.NodeNatural`), with restriction the root restriction
-  `PresheafM.mRestrTree`. `PresheafM.mk` and `PresheafM.dest` are mutually
-  inverse and commute with restriction (`mk_map`, `dest_map`), so
-  `PresheafM.destNat` and `PresheafM.mkNat` are natural transformations
-  exhibiting the carrier as a fixed point of `objPresheaf`, and `destNat`
-  makes it a coalgebra;
+  presheaf endofunctor `F : PresheafPFunctor I I` as the carrier presheaf
+  of `Presheaf/Carrier.lean` at `SliceM.fixedPoint`, the slice M-type as a
+  fixed point, with its fibre over `j` the trees indexed at `j` that are
+  hereditarily natural (`PresheafM.IsHereditarilyNatural`, the coinductive
+  form of `NodeNatural`); the generic `carrier.destNat` makes it a
+  coalgebra of `objPresheaf`;
   `PresheafM.corec` into it from a presheaf coalgebra valued in
   `Type (max uI uA uB)` is natural by the one-level `sliceCorec_map`, is a
   morphism of coalgebras (`dest_corec`) and is unique (`corec_unique`).
