@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.MType.Basic
 public import Mathlib.Data.PFunctor.Univariate.M
 public import Mathlib.Logic.Equiv.Functor
+public import Geb.Mathlib.Logic.Equiv.Basic
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -138,20 +139,10 @@ theorem agree_iff {n : Depth.{uA, uB}} (x : Approx Q n) (y : Approx Q (succ n)) 
     apply (approxEquiv Q n).injective
     exact (approxEquiv_truncate n y).trans (PFunctor.Approx.truncate_eq_of_agree _ _ h)
 
-/-- Reindex dependent functions along the equivalence of depths with
-{name}`Nat`, by transport along its inverse laws. -/
-def depthPiEquiv (P : ℕ → Type u) : (∀ n : Depth.{uA, uB}, P (toNat n)) ≃ ∀ k, P k where
-  toFun f k := cast (congrArg P (equivNat.apply_symm_apply k)) (f (ofNat k))
-  invFun g n := g (toNat n)
-  left_inv f := funext fun n ↦ eq_of_heq ((cast_heq _ _).trans
-    (congr_arg_heq f (equivNat.symm_apply_apply n)))
-  right_inv g := funext fun k ↦ eq_of_heq ((cast_heq _ _).trans
-    (congr_arg_heq g (equivNat.apply_symm_apply k)))
-
 variable (Q) in
 /-- Families of observations are families of mathlib's approximations. -/
 def familyEquiv : (∀ n : Depth.{uA, uB}, Approx Q n) ≃ ∀ k, CofixA Q k :=
-  (Equiv.piCongrRight (approxEquiv Q)).trans (depthPiEquiv (CofixA Q))
+  (Equiv.piCongrRight (approxEquiv Q)).trans (Equiv.piCongrLeftC (CofixA Q) equivNat)
 
 /-- Agreement of families corresponds to mathlib's {name}`PFunctor.Approx.AllAgree`. -/
 theorem consistent_familyEquiv_symm (y : ∀ k, CofixA Q k) :

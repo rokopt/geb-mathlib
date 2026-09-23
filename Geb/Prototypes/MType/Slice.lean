@@ -67,16 +67,9 @@ set_option doc.verso true
 
 @[expose] public section
 
-universe u v uA uB uI uY
+universe uA uB uI uY
 
 namespace Geb.MType
-
-/-- {name}`PFunctor.map` along an injective function is injective. -/
-theorem map_injective {Q : PFunctor.{uA, uB}} {α : Type u} {β : Type v} {f : α → β}
-    (hf : Function.Injective f) : Function.Injective (Q.map f) := by
-  rintro ⟨a, g⟩ ⟨a', g'⟩ h
-  obtain ⟨rfl, h⟩ := Sigma.mk.inj h
-  exact congrArg (Sigma.mk a) (funext fun b ↦ hf (congrFun (eq_of_heq h) b))
 
 variable {I : Type uI} (F : SlicePFunctor.{uA, uB, uI, uI} I I)
 
@@ -130,7 +123,8 @@ def dest (z : SliceM F) : F.toSliceDomPFunctor.Obj (index F) :=
 
 /-- The destructor inverts the constructor. -/
 @[simp] theorem dest_mk (x : F.toSliceDomPFunctor.Obj (index F)) : (mk x).dest = x :=
-  Subtype.ext (map_injective Subtype.val_injective (M.dest_mk (F.toPFunctor.map Subtype.val x.1)))
+  Subtype.ext (PFunctor.map_injective Subtype.val_injective
+    (M.dest_mk (F.toPFunctor.map Subtype.val x.1)))
 
 /-- The constructor inverts the destructor. -/
 @[simp] theorem mk_dest (z : SliceM F) : mk z.dest = z :=
@@ -188,7 +182,7 @@ coalgebras. -/
 @[simp] theorem dest_corec (y : Y) :
     (corec F p g hg y).dest =
       F.toSliceDomPFunctor.map (corec F p g hg) (comp_corec F p g hg) (g y) :=
-  Subtype.ext (map_injective Subtype.val_injective (M.dest_corec (fun y ↦ (g y).1) y))
+  Subtype.ext (PFunctor.map_injective Subtype.val_injective (M.dest_corec (fun y ↦ (g y).1) y))
 
 /-- The corecursor is the only morphism of slice coalgebras into
 {lit}`SliceM F`. -/

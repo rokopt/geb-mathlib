@@ -9,6 +9,7 @@ import GebTests.Mathlib.Data.PFunctor.Univariate.Finitary
 import GebTests.Mathlib.Data.PFunctor.Univariate.Fixtures
 import GebTests.Mathlib.Data.PFunctor.Univariate.Functor
 import GebTests.Mathlib.Data.PFunctor.Univariate.Initial
+import GebTests.Mathlib.Data.PFunctor.Univariate.Obj
 import GebTests.Mathlib.Data.PFunctor.Univariate.W
 
 /-!
