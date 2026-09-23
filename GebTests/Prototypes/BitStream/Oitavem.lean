@@ -43,6 +43,8 @@ set_option doc.verso true
 set_option linter.privateModule false
 
 open Geb.BitStream.Oitavem Geb.Oitavem Geb.BitStream.WConstruction
+open Geb.MType.Depth (ofNat)
+open Geb.MType.M (observe)
 
 /-- The projection of the depth: its value at every depth is the depth's
 word, empty at depth zero, so the stream is empty. -/

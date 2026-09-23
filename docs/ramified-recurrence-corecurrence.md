@@ -160,10 +160,12 @@ finite prefixes. These are equivalences of observable structure:
 | `corecPrefix_always_some_length` | A transition that always emits a bit fills every observation depth; no finite observation reaches termination. |
 
 [WConstruction.lean](../Geb/Prototypes/BitStream/WConstruction.lean)
-constructs an equivalent carrier `Geb.BitStream.WConstruction.Stream`
-using ordinary, presheaf, and slice W-types. Its W-type `Depth` indexes
-the dependent observation family `Approx`. `Bundle` packages the
-observations in a slice W-tree, and `Stream` requires adjacent
+states an equivalent carrier `Geb.BitStream.WConstruction.Stream`, the
+M-type `Geb.MType.M` of
+[MType.lean](../Geb/Prototypes/MType.lean) at the bitstring polynomial,
+constructed using ordinary, presheaf, and slice W-types. Its W-type
+`Depth` indexes the dependent observation family `Approx`. `Bundle`
+packages the observations in a slice W-tree, and `M` requires adjacent
 observations to agree. The bundle root has one child per depth; this
 is a well-founded tree with infinitely many children, rather than an
 infinite branch or a finite program description.

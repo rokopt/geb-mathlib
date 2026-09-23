@@ -15,7 +15,7 @@ set_option doc.verso true in
 
 A finitary slice polynomial signature whose W-trees at the root index are
 Oitavem expressions of one normal and no safe argument under a single root
-node: the finitary analogue of {lit}`Geb.BitStream.WConstruction.bundleSig`,
+node: the finitary analogue of {lit}`Geb.MType.bundleSig`,
 whose root has one child for each depth. Here the root has one child, the
 expression, and the infinitely many observations of a stream are the values
 of that expression at the depths.

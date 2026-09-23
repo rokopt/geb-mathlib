@@ -26,7 +26,7 @@ set_option doc.verso true in
 Index for the modules that recognize a word as the code of a bitstream: the
 finitary bundle signature, whose root has one child, an expression of Logs
 with one normal and no safe argument, in place of the one child per depth
-of {name}`Geb.BitStream.WConstruction.bundleSig`; the equivalence of its
+of {name}`Geb.MType.bundleSig`; the equivalence of its
 admissible trees at the root index with those expressions; the stream an
 expression codes, by corecursion on its values at the depths; the numerals
 of a label as expressions of the logspace subalgebra; the label and edge
