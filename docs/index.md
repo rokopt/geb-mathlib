@@ -1514,8 +1514,10 @@ checklist and in CI.
   of algebras (`GebProto.QuotientPRA.quotientModel_unit`), and the eliminator
   is a morphism of models (`GebProto.QuotientPRA.isModelHom_elim`) and the
   only one (`GebProto.QuotientPRA.eq_elim`), which
-  `GebProto.QuotientPRA.existsUnique_isModelHom` states together. No
-  declaration here depends on `Classical.choice`.
+  `GebProto.QuotientPRA.existsUnique_isModelHom` states together. The mirror
+  `GebTests/Prototypes/QuotientPRA/Positions.lean` applies it to the leaf
+  positions in commutative trees over the walking arrow. No declaration here
+  depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Initial.lean` — for a signature whose
   operations have finitely many arguments, enumerated by `FinEnum`, and
   one-step equations with finitely many variables, the quotient of

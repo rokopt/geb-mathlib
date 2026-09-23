@@ -32,6 +32,11 @@ tree, whose restriction forgets the depth. Both equations hold in it, commutativ
 the commutativity of addition and its lift by the invariance of depth, so the
 eliminator gives the two identified positions of `node leaf leaf` one depth.
 
+Every term constructor has its congruence among the witness constructors and takes
+terms as arguments, and every constructor has finitely many arguments, so the quotient
+is the initial model: the eliminator into the depth model is the only morphism of
+models into it.
+
 ## Tags
 
 prototype, quotient inductive-inductive type, W-type, presheaf, walking arrow
@@ -622,5 +627,55 @@ example : posDepth (inR leaf here) = (1, 2) := by
   change Val.pair (depth.app ⟨true⟩ (quotientMk F (inR leaf here))) = (1, 2)
   rw [← inL_here_eq_inR_here]
   exact (posDepth_inL here leaf).trans (by rw [posDepth_here, leaves_leaf])
+
+/-! ## Initiality -/
+
+/-- The arguments of each constructor are finite. -/
+instance (s : freeArity.A) : FinEnum (freeArity.Gen s) :=
+  match s with
+  | .leaf | .here | .cLeaf | .cHere => finEnumPEmpty
+  | .node | .inL | .inR | .cNode | .cInL | .cInR | .swap _ | .dswap _ => finEnumBool
+
+/-- The arguments of the tree and position constructors are trees and positions. -/
+theorem termArguments : TermArguments freeArity := by
+  intro s b hs
+  cases s <;> first | rfl | exact nomatch hs
+
+/-- The congruence constructor of each term constructor: an endpoint of its witness is
+the constructor applied to the same endpoints of the witnesses between its arguments. -/
+theorem hasCongruences :
+    HasCongruences Positions.restr_id Positions.restr_comp Positions.reindex_id
+      Positions.reindex_comp termArguments := by
+  intro s c hq hc es
+  subst hq
+  cases s <;> (try exact WalkingParallelPair.noConfusion hc)
+  · refine ⟨nd .cLeaf (fun b ↦ nomatch b), fun o ↦ ?_⟩
+    cases o <;> exact (PresheafPFunctor.carrier.mk_map _ _).symm.trans
+      ((congrArg PresheafPFunctor.W.mk (FreeArity.map_freeNode (S := freeArity) F.W .cLeaf rfl
+        _ _)).trans (congrArg (nd .leaf) (funext fun b ↦ nomatch b)))
+  · refine ⟨nd .cNode es, fun o ↦ ?_⟩
+    cases o <;> exact (PresheafPFunctor.carrier.mk_map _ _).symm.trans
+      ((congrArg PresheafPFunctor.W.mk (FreeArity.map_freeNode (S := freeArity) F.W .cNode rfl
+        _ es)).trans (congrArg (nd .node) (funext fun b ↦
+          congrArg (fun g ↦ F.W.map (Quiver.Hom.op g) (es b)) (Category.comp_id _))))
+  · refine ⟨nd .cHere (fun b ↦ nomatch b), fun o ↦ ?_⟩
+    cases o <;> exact (PresheafPFunctor.carrier.mk_map _ _).symm.trans
+      ((congrArg PresheafPFunctor.W.mk (FreeArity.map_freeNode (S := freeArity) F.W .cHere rfl
+        _ _)).trans (congrArg (nd .here) (funext fun b ↦ nomatch b)))
+  · refine ⟨nd .cInL es, fun o ↦ ?_⟩
+    cases o <;> exact (PresheafPFunctor.carrier.mk_map _ _).symm.trans
+      ((congrArg PresheafPFunctor.W.mk (FreeArity.map_freeNode (S := freeArity) F.W .cInL rfl
+        _ es)).trans (congrArg (nd .inL) (funext fun b ↦
+          congrArg (fun g ↦ F.W.map (Quiver.Hom.op g) (es b)) (Category.comp_id _))))
+  · refine ⟨nd .cInR es, fun o ↦ ?_⟩
+    cases o <;> exact (PresheafPFunctor.carrier.mk_map _ _).symm.trans
+      ((congrArg PresheafPFunctor.W.mk (FreeArity.map_freeNode (S := freeArity) F.W .cInR rfl
+        _ es)).trans (congrArg (nd .inR) (funext fun b ↦
+          congrArg (fun g ↦ F.W.map (Quiver.Hom.op g) (es b)) (Category.comp_id _))))
+
+-- The quotient with its algebra is the initial model: `depth` is the only morphism of
+-- models from it to the depth model.
+example : ∃! h : NatTrans (quotient F) P, IsModelHom (quotientModel hasCongruences) model h :=
+  existsUnique_isModelHom hasCongruences P model
 
 end GebProto.QuotientPRA.Positions
