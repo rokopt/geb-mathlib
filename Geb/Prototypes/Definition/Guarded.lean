@@ -64,11 +64,14 @@ namespace Geb.Definition
 
 open PFunctor
 
-variable {P : PFunctor.{0, 0}} {Γ E : Type}
+universe uA u
+
+variable {P : PFunctor.{uA, u}} {Γ E : Type u}
 
 /-- A guarded block: the body at each export is an operation applied to terms over the imports
 and exports, or an import. -/
-abbrev GuardedBlock (P : PFunctor.{0, 0}) (Γ E : Type) := E → P.Obj (P.FreeM (Γ ⊕ E)) ⊕ Γ
+abbrev GuardedBlock (P : PFunctor.{uA, u}) (Γ E : Type u) : Type (max uA u) :=
+  E → P.Obj (P.FreeM (Γ ⊕ E)) ⊕ Γ
 
 namespace GuardedBlock
 

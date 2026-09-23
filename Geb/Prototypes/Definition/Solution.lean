@@ -66,7 +66,9 @@ namespace Geb.Definition
 
 open PFunctor
 
-variable {P Q : PFunctor.{0, 0}} {Γ E V : Type}
+universe uA uA' u v
+
+variable {P : PFunctor.{uA, u}} {Q : PFunctor.{uA', u}} {Γ E : Type u} {V : Type v}
 
 /-- The operations of {lit}`Q` interpreted in an algebra of {lit}`P` by evaluating their
 defining bodies at their arguments. -/
@@ -85,7 +87,8 @@ theorem eval_expandOps (alg : P.Obj V → V) (d : Derived P Q) (env : Γ → V) 
 
 /-- A well-founded block: the body at each export refers to imports and to the exports below
 it in {lit}`r`. -/
-abbrev WFBlock (P : PFunctor.{0, 0}) (Γ : Type) {E : Type} (r : E → E → Prop) :=
+abbrev WFBlock (P : PFunctor.{uA, u}) (Γ : Type u) {E : Type u} (r : E → E → Prop) :
+    Type (max uA u) :=
   (i : E) → P.FreeM (Γ ⊕ {j // r j i})
 
 namespace WFBlock
