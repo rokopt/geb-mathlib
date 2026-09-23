@@ -1486,10 +1486,10 @@ checklist and in CI.
   `GebProto.QuotientPRA.Signature.lift_intro`. The mirror
   `GebTests/Prototypes/QuotientPRA/CommTree.lean` builds binary trees modulo
   commutativity and counts leaves through the eliminator, and
-  `GebTests/Prototypes/QuotientPRA/Positions.lean` builds, over the walking
-  arrow, the leaf positions of those trees, whose witness between two
-  positions lies over the commutativity witness between their trees, and
-  eliminates into a model that gives a position its depth. No declaration
+  `GebTests/Prototypes/QuotientPRA/Directions.lean` builds, over the walking
+  arrow, the leaf directions of those trees, whose witness between two
+  directions lies over the commutativity witness between their trees, and
+  eliminates into a model that gives a direction its depth. No declaration
   here depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Congruence.lean` — reflexivity and
   congruence for quotient presheaf polynomial functors with free arities over
@@ -1515,8 +1515,8 @@ checklist and in CI.
   is a morphism of models (`GebProto.QuotientPRA.isModelHom_elim`) and the
   only one (`GebProto.QuotientPRA.eq_elim`), which
   `GebProto.QuotientPRA.existsUnique_isModelHom` states together. The mirror
-  `GebTests/Prototypes/QuotientPRA/Positions.lean` applies it to the leaf
-  positions in commutative trees over the walking arrow. No declaration here
+  `GebTests/Prototypes/QuotientPRA/Directions.lean` applies it to the leaf
+  directions in commutative trees over the walking arrow. No declaration here
   depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Initial.lean` — for a signature whose
   operations have finitely many arguments, enumerated by `FinEnum`, and

@@ -6,12 +6,12 @@ Authors: Terence Rokop
 module
 
 public import GebTests.Prototypes.QuotientPRA.CommTree
-public import GebTests.Prototypes.QuotientPRA.Positions
+public import GebTests.Prototypes.QuotientPRA.Directions
 
 /-!
 # Tests for quotient presheaf polynomial functors
 
 Index of the tests of `Geb.Prototypes.QuotientPRA`: a quotient inductive type of
 binary trees modulo commutativity, and a quotient inductive-inductive type of
-positions in those trees.
+directions in those trees.
 -/
