@@ -25,7 +25,12 @@ restricts, along the arrow, to a witness between their trees. Each equation come
 both orientations.
 
 The tests compute the tree of a position and the endpoints of the witnesses, and
-identify, in the quotient, the two leaf positions of `node leaf leaf`.
+identify, in the quotient, the two leaf positions of `node leaf leaf`. They then
+eliminate into a model on the walking arrow, a presheaf whose value over the trees is
+the number of leaves and over the positions the depth with the number of leaves of the
+tree, whose restriction forgets the depth. Both equations hold in it, commutativity by
+the commutativity of addition and its lift by the invariance of depth, so the
+eliminator gives the two identified positions of `node leaf leaf` one depth.
 
 ## Tags
 
@@ -281,7 +286,7 @@ theorem reindex_id : freeArity.toData.ReindexId restr_id := by
   cases i₀ <;>
     exact Subtype.ext (Sigma.ext rfl (heq_of_eq (Sigma.ext rfl (heq_of_eq (Category.comp_id k)))))
 
-set_option maxHeartbeats 4000000 in
+set_option maxHeartbeats 1000000 in
 -- The exhaustive case split closes each case by `rfl`; together they exceed the default limit.
 /-- Reindexing along a composite is the composite of reindexings: after the case split
 the arguments agree and the morphisms differ by associativity. -/
@@ -439,5 +444,183 @@ quotient's restriction along the arrow sends the class of `inL p y` to the class
 theorem quotient_map_inL (p : Pos) (y : Tree) :
     (quotient F).map arrow.op (quotientMk F (inL p y)) = quotientMk F (node (tree p) y) :=
   congrArg (quotientMk F) (tree_inL p y)
+
+/-! ## A model: the depth of a position -/
+
+/-- The values of the model: over the trees the number of leaves, over the positions
+the depth of a position together with the number of leaves of its tree. -/
+def Val : Bool → Type
+  | false => ℕ
+  | true => ℕ × ℕ
+
+/-- A value over the trees as a number. -/
+abbrev Val.nat (v : Val false) : ℕ := v
+
+/-- A value over the positions as a pair of numbers. -/
+abbrev Val.pair (v : Val true) : ℕ × ℕ := v
+
+/-- The restriction of values along the walking arrow: a position goes to the number
+of leaves of its tree. -/
+def valMap : (i i' : Bool) → Val i → Val i'
+  | true, false => Prod.snd
+  | false, false => id
+  | true, true => id
+  | false, true => fun _ ↦ ((0 : ℕ), (0 : ℕ))
+
+/-- The presheaf of values on the walking arrow. -/
+def P : Boolᵒᵖ ⥤ Type where
+  obj i := Val i.unop
+  map {i i'} _ := ↾ valMap i.unop i'.unop
+  map_id i := by
+    obtain ⟨i⟩ := i
+    cases i <;> rfl
+  map_comp {i i' i''} g h := by
+    obtain ⟨i⟩ := i
+    obtain ⟨i'⟩ := i'
+    obtain ⟨i''⟩ := i''
+    cases i <;> cases i' <;> cases i'' <;>
+      first
+        | rfl
+        | exact absurd (leOfHom g.unop : true ≤ false) (by decide)
+        | exact absurd (leOfHom h.unop : true ≤ false) (by decide)
+
+/-- The value of a constructor of sort `i` from the values of its arguments: the value
+of its source endpoint. A node has the leaves of its subtrees; a position in a subtree
+is one deeper than its position there, and its tree has the leaves of both subtrees. -/
+def alg : (i : Bool) → (s : Sh) → ((b : Sh.Gen s) → Val (Sh.gsort s b)) → Val i
+  | false, .leaf, _ => (1 : ℕ)
+  | false, .node, t => (t false).nat + (t true).nat
+  | false, .cLeaf, _ => (1 : ℕ)
+  | false, .cNode, t => (t false).nat + (t true).nat
+  | false, .swap false, t => (t false).nat + (t true).nat
+  | false, .swap true, t => (t true).nat + (t false).nat
+  | true, .here, _ => ((0 : ℕ), (1 : ℕ))
+  | true, .inL, t => ((t false).pair.1 + 1, (t false).pair.2 + (t true).nat)
+  | true, .inR, t => ((t true).pair.1 + 1, (t false).nat + (t true).pair.2)
+  | true, .cHere, _ => ((0 : ℕ), (1 : ℕ))
+  | true, .cInL, t => ((t false).pair.1 + 1, (t false).pair.2 + (t true).nat)
+  | true, .cInR, t => ((t true).pair.1 + 1, (t false).nat + (t true).pair.2)
+  | true, .dswap false, t => ((t false).pair.1 + 1, (t false).pair.2 + (t true).nat)
+  | true, .dswap true, t => ((t false).pair.1 + 1, (t true).nat + (t false).pair.2)
+  | false, _, _ => (0 : ℕ)
+  | true, _, _ => ((0 : ℕ), (0 : ℕ))
+
+/-- Restriction commutes with the model's value on constructors, for argument values
+that restrict along the walking arrow by `valMap`: the equations hold in the model, and
+the tree of a position has the leaves the position's value records. -/
+theorem alg_restr {c c' : Obj} (g : c' ⟶ c) (s : Sh) (hs : (s.sort, s.wobj) = c)
+    (t : (b : Sh.Gen s) → Val (Sh.gsort s b)) :
+    alg c'.1 (freeArity.restr g s) (fun b' ↦
+        valMap (Sh.gsort s (freeArity.reindex g s b').1) (Sh.gsort (freeArity.restr g s) b')
+          (t (freeArity.reindex g s b').1)) =
+      valMap c.1 c'.1 (alg c.1 s t) := by
+  obtain ⟨i, x⟩ := c
+  obtain ⟨i', x'⟩ := c'
+  obtain ⟨g₁, g₂⟩ := g
+  cases i <;> cases i' <;> (try exact absurd (leOfHom g₁ : true ≤ false) (by decide)) <;>
+    cases g₂ <;> rcases s with _ | _ | _ | _ | _ | _ | _ | o | _ | _ | _ | o <;>
+    (try cases o) <;>
+    first
+      | rfl
+      | exact Nat.add_comm _ _
+      | exact Prod.ext rfl (Nat.add_comm _ _)
+      | nomatch hs
+
+/-- The value a node over the model's presheaf gives an argument, at the argument's own
+object. -/
+def top {c : Objᵒᵖ} (n : (F.objPresheaf (discrete P)).obj c) (b : Sh.Gen n.1.1.1.1) :
+    Val (Sh.gsort n.1.1.1.1 b) :=
+  F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, Sh.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩
+
+/-- The value a node gives an argument at any direction is the argument's value
+restricted along the walking arrow: the naturality of the node, the discrete graph's
+restriction along the walking parallel pair being the identity. -/
+theorem value_eq {c : Objᵒᵖ} (n : (F.objPresheaf (discrete P)).obj c) (b : Sh.Gen n.1.1.1.1)
+    {c' : Obj} (k : c' ⟶ Sh.gobj n.1.1.1.1 b) :
+    F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, c', k⟩, rfl⟩ =
+      valMap (Sh.gsort n.1.1.1.1 b) c'.1 (top n b) := by
+  have h := n.1.2 k ⟨⟨b, Sh.gobj n.1.1.1.1 b, 𝟙 _⟩, rfl⟩
+  change F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, c', k ≫ 𝟙 _⟩, rfl⟩ =
+    valMap (Sh.gsort n.1.1.1.1 b) c'.1 (top n b) at h
+  exact (congrArg (fun m : c' ⟶ Sh.gobj n.1.1.1.1 b ↦
+    F.toPresheafDomPFunctorData.value n.1.1 ⟨⟨b, c', m⟩, rfl⟩) (Category.comp_id k)).symm.trans h
+
+/-- The argument values of a restricted node are the original argument values
+restricted along the walking arrow. -/
+theorem top_map {c c' : Objᵒᵖ} (g : c ⟶ c') (n : (F.objPresheaf (discrete P)).obj c)
+    (b : Sh.Gen (freeArity.restr g.unop n.1.1.1.1)) :
+    top ((F.objPresheaf (discrete P)).map g n) b =
+      valMap (Sh.gsort n.1.1.1.1 (freeArity.reindex g.unop n.1.1.1.1 b).1)
+        (Sh.gsort (freeArity.restr g.unop n.1.1.1.1) b)
+        (top n (freeArity.reindex g.unop n.1.1.1.1 b).1) :=
+  value_eq n _ _
+
+/-- The model's algebra: a node goes to the value of its constructor on its arguments'
+values. -/
+def model : NatTrans (F.objPresheaf (discrete P)) (discrete P) where
+  app c := ↾ fun n ↦ alg c.unop.1 n.1.1.1.1 (top n)
+  naturality c c' g := by
+    ext n
+    change alg c'.unop.1 (freeArity.restr g.unop n.1.1.1.1)
+        (top ((F.objPresheaf (discrete P)).map g n)) =
+      valMap c.unop.1 c'.unop.1 (alg c.unop.1 n.1.1.1.1 (top n))
+    rw [show top ((F.objPresheaf (discrete P)).map g n) = _ from funext (top_map g n)]
+    exact alg_restr g.unop n.1.1.1.1 n.2 (top n)
+
+/-- The eliminator of the W-type into the model on the tree a constructor builds is the
+model's value on the eliminator's values on the arguments. -/
+theorem wElim_nd (s : Sh) (ts : (b : Sh.Gen s) → F.W.obj ⟨Sh.gobj s b⟩) :
+    (PresheafPFunctor.W.elim F (discrete P) model).app ⟨(s.sort, s.wobj)⟩ (nd s ts) =
+      alg s.sort s fun b ↦ (PresheafPFunctor.W.elim F (discrete P) model).app _ (ts b) := by
+  refine (PresheafPFunctor.W.elim_mk F (discrete P) model _).trans ?_
+  change alg s.sort s (top ((F.mapPresheaf (PresheafPFunctor.W.elim F (discrete P) model)).app _
+    (FreeArity.freeNode (S := freeArity) F.W s rfl ts))) = _
+  congr 1
+  funext b
+  change (PresheafPFunctor.W.elim F (discrete P) model).app _ (F.W.map (𝟙 _).op (ts b)) = _
+  rw [op_id, Functor.map_id_apply]
+
+/-- The eliminator of the quotient into the model. -/
+def depth : NatTrans (quotient F) P := elim F P model
+
+/-- The number of leaves of the class of a tree. -/
+abbrev leaves (x : Tree) : ℕ := Val.nat (depth.app ⟨false⟩ (quotientMk F x))
+
+/-- The depth of the class of a position, with the number of leaves of its tree. -/
+abbrev posDepth (p : Pos) : ℕ × ℕ := Val.pair (depth.app ⟨true⟩ (quotientMk F p))
+
+/-- The leaf has one leaf. -/
+theorem leaves_leaf : leaves leaf = 1 := wElim_nd .leaf fun b ↦ nomatch b
+
+/-- A node has the leaves of its subtrees. -/
+theorem leaves_node (x y : Tree) : leaves (node x y) = leaves x + leaves y := wElim_nd .node _
+
+/-- The position of the leaf has depth zero, in a tree of one leaf. -/
+theorem posDepth_here : posDepth here = (0, 1) := wElim_nd .here fun b ↦ nomatch b
+
+/-- A position in the left subtree is one deeper than its position there. -/
+theorem posDepth_inL (p : Pos) (y : Tree) :
+    posDepth (inL p y) = ((posDepth p).1 + 1, (posDepth p).2 + leaves y) :=
+  wElim_nd .inL _
+
+/-- A position in the right subtree is one deeper than its position there. -/
+theorem posDepth_inR (x : Tree) (p : Pos) :
+    posDepth (inR x p) = ((posDepth p).1 + 1, leaves x + (posDepth p).2) :=
+  wElim_nd .inR _
+
+/-- The tree of a position has the leaves its depth records: the eliminator is a
+morphism of presheaves on the walking arrow. -/
+theorem leaves_tree (p : Pos) : leaves (tree p) = (posDepth p).2 :=
+  naturality_apply depth arrow.op (quotientMk F p)
+
+-- The two leaf positions of `node leaf leaf` have depth one, in a tree of two leaves.
+example : posDepth (inL here leaf) = (1, 2) := by
+  rw [posDepth_inL, posDepth_here, leaves_leaf]
+
+-- The identification of the two positions in the quotient agrees with the model.
+example : posDepth (inR leaf here) = (1, 2) := by
+  change Val.pair (depth.app ⟨true⟩ (quotientMk F (inR leaf here))) = (1, 2)
+  rw [← inL_here_eq_inR_here]
+  exact (posDepth_inL here leaf).trans (by rw [posDepth_here, leaves_leaf])
 
 end GebProto.QuotientPRA.Positions
