@@ -9,28 +9,28 @@ public import Geb.Prototypes.QuotientPRA -- shake: keep
 public import Mathlib.CategoryTheory.Category.Preorder
 
 /-!
-# Tests for quotient presheaf polynomial functors: positions in commutative trees
+# Tests for quotient presheaf polynomial functors: directions in commutative trees
 
 A quotient inductive-inductive type over the walking arrow `false ⟶ true`: binary
-trees modulo commutativity over `false`, and the leaf positions of a tree over `true`,
-each position lying over its tree. The positions are `here`, the position of the leaf,
-and `inL p y` and `inR x p`, a position `p` in the left or the right subtree of a
-node. The type of a position is a single tree constructor applied to arguments of the
-position constructor: `inL p y` lies over `node t y` where `t` is the tree of `p`.
+trees modulo commutativity over `false`, and the leaf directions of a tree over `true`,
+each direction lying over its tree. The directions are `here`, the direction of the leaf,
+and `inL p y` and `inR x p`, a direction `p` in the left or the right subtree of a
+node. The type of a direction is a single tree constructor applied to arguments of the
+direction constructor: `inL p y` lies over `node t y` where `t` is the tree of `p`.
 
 The witnesses are the congruences of every constructor, commutativity `swap x y`
-between `node x y` and `node y x`, and its lift to positions, `dswap p y` between
-`inL p y` and `inR y p`, which lies over `swap t y`: a witness between positions
+between `node x y` and `node y x`, and its lift to directions, `dswap p y` between
+`inL p y` and `inR y p`, which lies over `swap t y`: a witness between directions
 restricts, along the arrow, to a witness between their trees. Each equation comes in
 both orientations.
 
-The tests compute the tree of a position and the endpoints of the witnesses, and
-identify, in the quotient, the two leaf positions of `node leaf leaf`. They then
+The tests compute the tree of a direction and the endpoints of the witnesses, and
+identify, in the quotient, the two leaf directions of `node leaf leaf`. They then
 eliminate into a model on the walking arrow, a presheaf whose value over the trees is
-the number of leaves and over the positions the depth with the number of leaves of the
+the number of leaves and over the directions the depth with the number of leaves of the
 tree, whose restriction forgets the depth. Both equations hold in it, commutativity by
 the commutativity of addition and its lift by the invariance of depth, so the
-eliminator gives the two identified positions of `node leaf leaf` one depth.
+eliminator gives the two identified directions of `node leaf leaf` one depth.
 
 Every term constructor has its congruence among the witness constructors and takes
 terms as arguments, and every constructor has finitely many arguments, so the quotient
@@ -46,13 +46,13 @@ prototype, quotient inductive-inductive type, W-type, presheaf, walking arrow
 
 open CategoryTheory Limits
 
-namespace GebProto.QuotientPRA.Positions
+namespace GebProto.QuotientPRA.Directions
 
 /-- The base: the walking arrow `false ⟶ true` of sorts, trees over `false` and
-positions over `true`, times the walking parallel pair. -/
+directions over `true`, times the walking parallel pair. -/
 abbrev Obj : Type := Bool × WalkingParallelPair
 
-/-- The morphism from the trees to the positions of the walking arrow. -/
+/-- The morphism from the trees to the directions of the walking arrow. -/
 def arrow : (false : Bool) ⟶ true := homOfLE (by decide)
 
 /-- The constructors. -/
@@ -72,7 +72,7 @@ inductive Sh
 
 namespace Sh
 
-/-- The sort of a constructor: trees, `false`, or positions, `true`. -/
+/-- The sort of a constructor: trees, `false`, or directions, `true`. -/
 def sort : Sh → Bool
   | leaf | node | cLeaf | cNode | swap _ => false
   | here | inL | inR | cHere | cInL | cInR | dswap _ => true
@@ -83,8 +83,8 @@ def wobj : Sh → WalkingParallelPair
   | cLeaf | cNode | swap _ | cHere | cInL | cInR | dswap _ => .one
 
 /-- The arguments of a constructor. For `node`, `swap` and `cNode` the left and the
-right subtree; for `inL`, `cInL` and `dswap` the position `false` and the other tree
-`true`; for `inR` and `cInR` the other tree `false` and the position `true`. -/
+right subtree; for `inL`, `cInL` and `dswap` the direction `false` and the other tree
+`true`; for `inR` and `cInR` the other tree `false` and the direction `true`. -/
 def Gen : Sh → Type
   | leaf | here | cLeaf | cHere => PEmpty
   | node | inL | inR | cNode | cInL | cInR | swap _ | dswap _ => Bool
@@ -113,8 +113,8 @@ def gwobj : Sh → WalkingParallelPair
 /-- The object over which an argument lies. -/
 abbrev gobj (s : Sh) (b : Gen s) : Obj := (gsort s b, gwobj s)
 
-/-- The tree constructor of the tree of a position constructor, and of the witness
-between trees under a witness between positions. -/
+/-- The tree constructor of the tree of a direction constructor, and of the witness
+between trees under a witness between directions. -/
 def typeOf : Sh → Sh
   | here => leaf
   | inL => node
@@ -311,7 +311,7 @@ theorem reindex_comp : freeArity.toData.ReindexComp restr_comp := by
     rcases s with _ | _ | _ | _ | _ | _ | _ | o | _ | _ | _ | o <;> (try cases o) <;>
     cases b <;> cases k₂ <;> rfl
 
-/-- The quotient presheaf polynomial functor of positions in commutative trees. -/
+/-- The quotient presheaf polynomial functor of directions in commutative trees. -/
 def F : PresheafPFunctor.{0, 0, 0, 0, 0, 0} Obj Obj :=
   freeArity.toPresheaf restr_id restr_comp reindex_id reindex_comp
 
@@ -322,13 +322,13 @@ def nd (s : Sh) (ts : (b : Sh.Gen s) → F.W.obj ⟨Sh.gobj s b⟩) : F.W.obj �
 /-- The trees. -/
 abbrev Tree := F.W.obj ⟨termObj false⟩
 
-/-- The positions. -/
+/-- The directions. -/
 abbrev Pos := F.W.obj ⟨termObj true⟩
 
 /-- The witnesses between trees. -/
 abbrev TreeWit := F.W.obj ⟨eqObj false⟩
 
-/-- The witnesses between positions. -/
+/-- The witnesses between directions. -/
 abbrev PosWit := F.W.obj ⟨eqObj true⟩
 
 /-- The leaf. -/
@@ -337,33 +337,33 @@ def leaf : Tree := nd .leaf fun b ↦ nomatch b
 /-- The node on two trees. -/
 def node (x y : Tree) : Tree := nd .node fun b ↦ cond b y x
 
-/-- The position of the leaf. -/
+/-- The direction of the leaf. -/
 def here : Pos := nd .here fun b ↦ nomatch b
 
-/-- A position in the left subtree. -/
+/-- A direction in the left subtree. -/
 def inL (p : Pos) (y : Tree) : Pos := nd .inL fun | false => p | true => y
 
-/-- A position in the right subtree. -/
+/-- A direction in the right subtree. -/
 def inR (x : Tree) (p : Pos) : Pos := nd .inR fun | false => x | true => p
 
 /-- The witness of commutativity at two trees. -/
 def swap (x y : Tree) : TreeWit := nd (.swap false) fun b ↦ cond b y x
 
-/-- The witness between a position in the left subtree and the corresponding position
+/-- The witness between a direction in the left subtree and the corresponding direction
 in the right subtree of the commuted tree. -/
 def dswap (p : Pos) (y : Tree) : PosWit := nd (.dswap false) fun | false => p | true => y
 
-/-- The tree of a position. -/
+/-- The tree of a direction. -/
 abbrev tree (p : Pos) : Tree := restr F.W arrow p
 
-/-- The tree of the leaf's position is the leaf. -/
+/-- The tree of the leaf's direction is the leaf. -/
 theorem tree_here : tree here = leaf :=
   (PresheafPFunctor.carrier.mk_map (termHom arrow) _).symm.trans
     ((congrArg PresheafPFunctor.W.mk
     (FreeArity.map_freeNode (S := freeArity) F.W .here rfl (termHom arrow) _)).trans
     (congrArg (nd .leaf) (funext fun b ↦ nomatch b)))
 
-/-- The tree of a position in the left subtree is the node on the position's tree and
+/-- The tree of a direction in the left subtree is the node on the direction's tree and
 the other tree. -/
 theorem tree_inL (p : Pos) (y : Tree) : tree (inL p y) = node (tree p) y := by
   refine (PresheafPFunctor.carrier.mk_map (termHom arrow) _).symm.trans
@@ -374,8 +374,8 @@ theorem tree_inL (p : Pos) (y : Tree) : tree (inL p y) = node (tree p) y := by
   · rfl
   · exact QuotientPRA.restr_id F.W false y
 
-/-- The tree of a position in the right subtree is the node on the other tree and the
-position's tree. -/
+/-- The tree of a direction in the right subtree is the node on the other tree and the
+direction's tree. -/
 theorem tree_inR (x : Tree) (p : Pos) : tree (inR x p) = node x (tree p) := by
   refine (PresheafPFunctor.carrier.mk_map (termHom arrow) _).symm.trans
     ((congrArg PresheafPFunctor.W.mk
@@ -405,7 +405,7 @@ theorem tgt_swap (x y : Tree) : tgt F.W false (swap x y) = node y x := by
   · exact QuotientPRA.restr_id F.W false y
   · exact QuotientPRA.restr_id F.W false x
 
-/-- The source of a position witness is the position in the left subtree. -/
+/-- The source of a direction witness is the direction in the left subtree. -/
 theorem src_dswap (p : Pos) (y : Tree) : src F.W true (dswap p y) = inL p y := by
   refine (PresheafPFunctor.carrier.mk_map (srcHom true) _).symm.trans
     ((congrArg PresheafPFunctor.W.mk
@@ -415,7 +415,7 @@ theorem src_dswap (p : Pos) (y : Tree) : src F.W true (dswap p y) = inL p y := b
   · exact QuotientPRA.restr_id F.W true p
   · exact QuotientPRA.restr_id F.W false y
 
-/-- The target of a position witness is the corresponding position in the right
+/-- The target of a direction witness is the corresponding direction in the right
 subtree of the commuted tree. -/
 theorem tgt_dswap (p : Pos) (y : Tree) : tgt F.W true (dswap p y) = inR y p := by
   refine (PresheafPFunctor.carrier.mk_map (tgtHom true) _).symm.trans
@@ -426,7 +426,7 @@ theorem tgt_dswap (p : Pos) (y : Tree) : tgt F.W true (dswap p y) = inR y p := b
   · exact QuotientPRA.restr_id F.W false y
   · exact QuotientPRA.restr_id F.W true p
 
-/-- A position witness lies over a commutativity witness: its restriction along the
+/-- A direction witness lies over a commutativity witness: its restriction along the
 arrow is the witness between the trees of its endpoints. -/
 theorem restrEq_dswap (p : Pos) (y : Tree) : restrEq F.W arrow (dswap p y) = swap (tree p) y := by
   refine (PresheafPFunctor.carrier.mk_map (eqHom arrow) _).symm.trans
@@ -437,23 +437,23 @@ theorem restrEq_dswap (p : Pos) (y : Tree) : restrEq F.W arrow (dswap p y) = swa
   · rfl
   · exact QuotientPRA.restr_id F.W false y
 
-/-- The two positions of the leaves of `node leaf leaf` have the same class. -/
+/-- The two directions of the leaves of `node leaf leaf` have the same class. -/
 theorem inL_here_eq_inR_here :
     quotientMk F (inL here leaf) = quotientMk F (inR leaf here) := by
   rw [← src_dswap, ← tgt_dswap]
   exact quotientMk_src F (dswap here leaf)
 
-/-- The class of the tree of a position is the tree of the position's class: the
+/-- The class of the tree of a direction is the tree of the direction's class: the
 quotient's restriction along the arrow sends the class of `inL p y` to the class of
 `node (tree p) y`. -/
 theorem quotient_map_inL (p : Pos) (y : Tree) :
     (quotient F).map arrow.op (quotientMk F (inL p y)) = quotientMk F (node (tree p) y) :=
   congrArg (quotientMk F) (tree_inL p y)
 
-/-! ## A model: the depth of a position -/
+/-! ## A model: the depth of a direction -/
 
-/-- The values of the model: over the trees the number of leaves, over the positions
-the depth of a position together with the number of leaves of its tree. -/
+/-- The values of the model: over the trees the number of leaves, over the directions
+the depth of a direction together with the number of leaves of its tree. -/
 def Val : Bool → Type
   | false => ℕ
   | true => ℕ × ℕ
@@ -461,10 +461,10 @@ def Val : Bool → Type
 /-- A value over the trees as a number. -/
 abbrev Val.nat (v : Val false) : ℕ := v
 
-/-- A value over the positions as a pair of numbers. -/
+/-- A value over the directions as a pair of numbers. -/
 abbrev Val.pair (v : Val true) : ℕ × ℕ := v
 
-/-- The restriction of values along the walking arrow: a position goes to the number
+/-- The restriction of values along the walking arrow: a direction goes to the number
 of leaves of its tree. -/
 def valMap : (i i' : Bool) → Val i → Val i'
   | true, false => Prod.snd
@@ -490,8 +490,8 @@ def P : Boolᵒᵖ ⥤ Type where
         | exact absurd (leOfHom h.unop : true ≤ false) (by decide)
 
 /-- The value of a constructor of sort `i` from the values of its arguments: the value
-of its source endpoint. A node has the leaves of its subtrees; a position in a subtree
-is one deeper than its position there, and its tree has the leaves of both subtrees. -/
+of its source endpoint. A node has the leaves of its subtrees; a direction in a subtree
+is one deeper than its direction there, and its tree has the leaves of both subtrees. -/
 def alg : (i : Bool) → (s : Sh) → ((b : Sh.Gen s) → Val (Sh.gsort s b)) → Val i
   | false, .leaf, _ => (1 : ℕ)
   | false, .node, t => (t false).nat + (t true).nat
@@ -512,7 +512,7 @@ def alg : (i : Bool) → (s : Sh) → ((b : Sh.Gen s) → Val (Sh.gsort s b)) �
 
 /-- Restriction commutes with the model's value on constructors, for argument values
 that restrict along the walking arrow by `valMap`: the equations hold in the model, and
-the tree of a position has the leaves the position's value records. -/
+the tree of a direction has the leaves the direction's value records. -/
 theorem alg_restr {c c' : Obj} (g : c' ⟶ c) (s : Sh) (hs : (s.sort, s.wobj) = c)
     (t : (b : Sh.Gen s) → Val (Sh.gsort s b)) :
     alg c'.1 (freeArity.restr g s) (fun b' ↦
@@ -591,7 +591,7 @@ def depth : NatTrans (quotient F) P := elim F P model
 /-- The number of leaves of the class of a tree. -/
 abbrev leaves (x : Tree) : ℕ := Val.nat (depth.app ⟨false⟩ (quotientMk F x))
 
-/-- The depth of the class of a position, with the number of leaves of its tree. -/
+/-- The depth of the class of a direction, with the number of leaves of its tree. -/
 abbrev posDepth (p : Pos) : ℕ × ℕ := Val.pair (depth.app ⟨true⟩ (quotientMk F p))
 
 /-- The leaf has one leaf. -/
@@ -600,29 +600,29 @@ theorem leaves_leaf : leaves leaf = 1 := wElim_nd .leaf fun b ↦ nomatch b
 /-- A node has the leaves of its subtrees. -/
 theorem leaves_node (x y : Tree) : leaves (node x y) = leaves x + leaves y := wElim_nd .node _
 
-/-- The position of the leaf has depth zero, in a tree of one leaf. -/
+/-- The direction of the leaf has depth zero, in a tree of one leaf. -/
 theorem posDepth_here : posDepth here = (0, 1) := wElim_nd .here fun b ↦ nomatch b
 
-/-- A position in the left subtree is one deeper than its position there. -/
+/-- A direction in the left subtree is one deeper than its direction there. -/
 theorem posDepth_inL (p : Pos) (y : Tree) :
     posDepth (inL p y) = ((posDepth p).1 + 1, (posDepth p).2 + leaves y) :=
   wElim_nd .inL _
 
-/-- A position in the right subtree is one deeper than its position there. -/
+/-- A direction in the right subtree is one deeper than its direction there. -/
 theorem posDepth_inR (x : Tree) (p : Pos) :
     posDepth (inR x p) = ((posDepth p).1 + 1, leaves x + (posDepth p).2) :=
   wElim_nd .inR _
 
-/-- The tree of a position has the leaves its depth records: the eliminator is a
+/-- The tree of a direction has the leaves its depth records: the eliminator is a
 morphism of presheaves on the walking arrow. -/
 theorem leaves_tree (p : Pos) : leaves (tree p) = (posDepth p).2 :=
   naturality_apply depth arrow.op (quotientMk F p)
 
--- The two leaf positions of `node leaf leaf` have depth one, in a tree of two leaves.
+-- The two leaf directions of `node leaf leaf` have depth one, in a tree of two leaves.
 example : posDepth (inL here leaf) = (1, 2) := by
   rw [posDepth_inL, posDepth_here, leaves_leaf]
 
--- The identification of the two positions in the quotient agrees with the model.
+-- The identification of the two directions in the quotient agrees with the model.
 example : posDepth (inR leaf here) = (1, 2) := by
   change Val.pair (depth.app ⟨true⟩ (quotientMk F (inR leaf here))) = (1, 2)
   rw [← inL_here_eq_inR_here]
@@ -636,7 +636,7 @@ instance (s : freeArity.A) : FinEnum (freeArity.Gen s) :=
   | .leaf | .here | .cLeaf | .cHere => finEnumPEmpty
   | .node | .inL | .inR | .cNode | .cInL | .cInR | .swap _ | .dswap _ => finEnumBool
 
-/-- The arguments of the tree and position constructors are trees and positions. -/
+/-- The arguments of the tree and direction constructors are trees and directions. -/
 theorem termArguments : TermArguments freeArity := by
   intro s b hs
   cases s <;> first | rfl | exact nomatch hs
@@ -644,8 +644,8 @@ theorem termArguments : TermArguments freeArity := by
 /-- The congruence constructor of each term constructor: an endpoint of its witness is
 the constructor applied to the same endpoints of the witnesses between its arguments. -/
 theorem hasCongruences :
-    HasCongruences Positions.restr_id Positions.restr_comp Positions.reindex_id
-      Positions.reindex_comp termArguments := by
+    HasCongruences Directions.restr_id Directions.restr_comp Directions.reindex_id
+      Directions.reindex_comp termArguments := by
   intro s c hq hc es
   subst hq
   cases s <;> (try exact WalkingParallelPair.noConfusion hc)
@@ -678,4 +678,4 @@ theorem hasCongruences :
 example : ∃! h : NatTrans (quotient F) P, IsModelHom (quotientModel hasCongruences) model h :=
   existsUnique_isModelHom hasCongruences P model
 
-end GebProto.QuotientPRA.Positions
+end GebProto.QuotientPRA.Directions
