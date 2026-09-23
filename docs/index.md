@@ -3555,3 +3555,14 @@ checklist and in CI.
   `Geb.Prototypes.Computability.SizeBounded.Logspace.WTree.Spell`,
   `Geb.Prototypes.Computability.BitTree.EliasBinary.Bound` and
   `Mathlib.Data.W.Basic`.
+- `Geb/Prototypes/Bootstrap.lean` — computation-equality certificates as
+  rose trees with byte-sized rule tags and natural-number payloads.
+  `Geb.Bootstrap.infer` checks reflexivity, one triage reduction,
+  symmetry, and transitivity; `Geb.Bootstrap.check_sound` proves that
+  accepted endpoints represent expressions related by contextual
+  computation equality. This is a fragment, not a free-topos kernel.
+  [The bootstrap design](bootstrap.md) describes the seed boundary,
+  external representations, comparative research, and acceptance stages.
+  Depends on `Geb.Prototypes.Computability.Triage.Bitstrings`,
+  `Geb.Prototypes.Computability.Oitavem.Word`,
+  `Geb.Prototypes.RoseTree.Basic`, and `Mathlib.Logic.Relation`.
