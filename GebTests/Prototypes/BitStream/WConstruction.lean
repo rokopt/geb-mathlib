@@ -24,6 +24,8 @@ set_option doc.verso true
 set_option linter.privateModule false
 
 open Geb.BitStream.WConstruction
+open Geb.MType.Depth (ofNat zero)
+open Geb.MType.M (observe)
 
 /-- An infinite stream whose consecutive bits alternate. -/
 private def alternating : Stream := corec (fun b : Bool ↦ some (b, !b)) false

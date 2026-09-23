@@ -113,10 +113,9 @@ theorem stepCode_spellExpr (e : Expr 1 0) :
 
 /-- The finite unfoldings of the transition from depth zero are those of the
 coalgebra on codes from the code. -/
-theorem corecApprox_step_eq_stepCode : ∀ (n : WConstruction.Depth) (e : Expr 1 0),
+theorem corecApprox_step_eq_stepCode : ∀ (n : Geb.MType.Depth) (e : Expr 1 0),
     WConstruction.corecApprox (step e) n 0 = WConstruction.corecApprox stepCode n (spellExpr e) :=
-  WConstruction.depthInduction
-    (fun _ ↦ (WConstruction.eq_cutoff _).trans (WConstruction.eq_cutoff _).symm)
+  Geb.MType.Depth.induction (fun _ ↦ Subsingleton.elim _ _)
     fun n ih e ↦ by
       apply (WConstruction.succEquiv n).injective
       rw [WConstruction.corecApprox_succ, WConstruction.corecApprox_succ, stepCode_spellExpr]
@@ -131,7 +130,7 @@ theorem corecApprox_step_eq_stepCode : ∀ (n : WConstruction.Depth) (e : Expr 1
 codes from its code. -/
 theorem toStream_eq_corec (e : Expr 1 0) :
     toStream e = WConstruction.corec stepCode (spellExpr e) :=
-  WConstruction.stream_ext _ _ fun n ↦ corecApprox_step_eq_stepCode n e
+  Geb.MType.M.ext fun n ↦ corecApprox_step_eq_stepCode n e
 
 /-- The stream a recognized word codes is the corecursion of the coalgebra on
 codes from the word. -/

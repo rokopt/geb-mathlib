@@ -502,19 +502,9 @@ checklist and in CI.
   M-type is equivalent to `Stream'.Seq Bool`. The equivalences
   preserve constructors, finite observations, corecursion, and the
   embedding of finite bitstrings.
-- `Geb/Prototypes/BitStream/WConstruction.lean` — a W-type
-  presentation of the same construction. `Depth` is the W-type of
-  natural numbers; `Approx` is the walking-arrow presheaf W-family
-  over it. Dependent W-elimination defines truncation and finite
-  unfolding. `Bundle` stores all observations in a slice W-tree
-  whose root has one child for each depth; `Stream` requires
-  compatibility. `mEquiv` identifies this carrier with mathlib's
-  M-type and preserves the directly defined constructor and
-  corecursor. Constructor/destructor inverse laws and executable
-  finite/infinite examples accompany the construction.
 - `Geb/Prototypes/MType.lean` — the M-type of an arbitrary polynomial
-  functor `Q`, constructed from W-types as `BitStream/WConstruction.lean`
-  constructs the bitstreams. `MType/Depth.lean` is the W-type of depths,
+  functor `Q`, constructed from W-types. `MType/Depth.lean` is the W-type
+  of depths,
   stated at every pair of universes, with dependent elimination
   `Depth.rec` computed by the fold. `MType/Approx.lean` defines the
   observations `Approx Q n` as the fibres of the walking-arrow presheaf
@@ -557,10 +547,17 @@ checklist and in CI.
   `Classical.choice`-free. Depends on
   `Geb/Mathlib/Data/PFunctor/Presheaf/Arrow.lean` and mathlib's
   `Data/PFunctor/Univariate/M.lean`.
+- `Geb/Prototypes/BitStream/WConstruction.lean` — the M-type of
+  `Geb/Prototypes/MType.lean` at the bitstring polynomial, `Stream`, with
+  its successor computation rule, finite unfoldings, corecursor,
+  constructor, destructor and tail in the layer form
+  `Option (Bool × X)`, and comparisons with the bounded prefixes, the
+  observations and `Stream'.Seq Bool` preserving the corecursor and the
+  embedding of finite bitstrings.
 - `Geb/Prototypes/BitStream/Oitavem.lean` — bitstreams coded by
   expressions of Oitavem's Logs, with a logspace recognizer of the codes.
   `Oitavem/Sig.lean` is the finitary bundle signature: the root, with one
-  child in place of the one child per depth of `WConstruction.bundleSig`,
+  child in place of the one child per depth of `Geb.MType.bundleSig`,
   and the shapes of Logs, over the arities with a root index; each shape
   is coded uniformly as a set bit, five tag bits and eight numerals, the
   arities a node produces and requires of its children, its number of

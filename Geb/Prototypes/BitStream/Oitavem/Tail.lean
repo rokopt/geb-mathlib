@@ -78,11 +78,10 @@ theorem valueAt_tailExpr (e : Expr 1 0) (n : ℕ) :
 
 /-- The finite unfoldings of the transition from a successor depth are those
 of the composite's transition from the depth. -/
-theorem corecApprox_step_succ (e : Expr 1 0) : ∀ (n : WConstruction.Depth) (k : ℕ),
+theorem corecApprox_step_succ (e : Expr 1 0) : ∀ (n : Geb.MType.Depth) (k : ℕ),
     WConstruction.corecApprox (step e) n (k + 1) =
       WConstruction.corecApprox (step (tailExpr e)) n k :=
-  WConstruction.depthInduction
-    (fun _ ↦ (WConstruction.eq_cutoff _).trans (WConstruction.eq_cutoff _).symm)
+  Geb.MType.Depth.induction (fun _ ↦ Subsingleton.elim _ _)
     fun n ih k ↦ by
       apply (WConstruction.succEquiv n).injective
       rw [WConstruction.corecApprox_succ, WConstruction.corecApprox_succ]
@@ -95,7 +94,7 @@ theorem corecApprox_step_succ (e : Expr 1 0) : ∀ (n : WConstruction.Depth) (k 
 composite's transition from the depth. -/
 theorem corec_step_succ (e : Expr 1 0) (k : ℕ) :
     WConstruction.corec (step e) (k + 1) = WConstruction.corec (step (tailExpr e)) k :=
-  WConstruction.stream_ext _ _ fun n ↦ corecApprox_step_succ e n k
+  Geb.MType.M.ext fun n ↦ corecApprox_step_succ e n k
 
 /-- The generator law: the first layer of the coded stream is termination
 when the value at depth zero is empty, and otherwise the head of that value
@@ -106,7 +105,7 @@ theorem dest_toStream (e : Expr 1 0) :
       | [] => none
       | b :: _ => some (b, toStream (tailExpr e)) := by
   change WConstruction.dest (WConstruction.corec (step e) 0) = _
-  rw [WConstruction.corec_eq, WConstruction.dest_mk]
+  rw [WConstruction.dest_corec]
   simp only [step]
   cases valueAt e 0 with
   | nil => rfl
@@ -119,14 +118,8 @@ theorem tail_toStream (e : Expr 1 0) (h : valueAt e 0 ≠ []) :
   cases hv : valueAt e 0 with
   | nil => exact absurd hv h
   | cons b v =>
-    have hd : WConstruction.dest (toStream e) = some (b, toStream (tailExpr e)) := by
-      rw [dest_toStream, hv]
-    unfold WConstruction.dest at hd
-    cases hs : WConstruction.succEquiv _ (WConstruction.observe (toStream e) _) with
-    | none => rw [hs, Option.map_none] at hd; cases hd
-    | some p =>
-      rw [hs, Option.map_some] at hd
-      exact (Prod.mk.inj (Option.some.inj hd)).2.symm
+    rw [WConstruction.tail, dest_toStream, hv]
+    rfl
 
 /-- The word between the root's prefix and the code of the expression in the
 code of its composite: the two forks of the composition node's spine, and
