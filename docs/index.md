@@ -490,6 +490,28 @@ checklist and in CI.
   M-type and preserves the directly defined constructor and
   corecursor. Constructor/destructor inverse laws and executable
   finite/infinite examples accompany the construction.
+- `Geb/Prototypes/MType.lean` — the M-type of an arbitrary polynomial
+  functor `Q`, constructed from W-types as `BitStream/WConstruction.lean`
+  constructs the bitstreams. `MType/Depth.lean` is the W-type of depths,
+  stated at every pair of universes, with dependent elimination
+  `Depth.rec` computed by the fold. `MType/Approx.lean` defines the
+  observations `Approx Q n` as the fibres of the walking-arrow presheaf
+  W-type of `PFunctor.dependent` over the depths, with computation rules
+  `zeroEquiv` and `succEquiv` (`Approx Q (succ n) ≃ Q.Obj (Approx Q n)`),
+  truncation, agreement and the finite unfoldings of a coalgebra.
+  `MType/Basic.lean` defines the carrier `M Q`, the agreeing root trees of
+  the slice W-type `bundleSig`, whose root has one child per depth; the
+  constructor `M.mk`, the destructor `M.dest`, which reads the root shape
+  from the observation of depth one and each child from the children of
+  the positive-depth observations, and the corecursor `M.corec`;
+  `M.dest_mk` and `M.mk_dest`; terminality among coalgebras,
+  `M.dest_corec` with `M.corec_unique`; and the bisimulation principle
+  `M.bisim`. `MType/Equiv.lean` identifies the observations with
+  mathlib's approximations and `mEquiv : M Q ≃ Q.M`, preserving
+  observations, the constructor (`mEquiv_mk`) and the corecursor
+  (`mEquiv_corec`). `Classical.choice`-free. Depends on
+  `Geb/Mathlib/Data/PFunctor/Presheaf/Arrow.lean` and mathlib's
+  `Data/PFunctor/Univariate/M.lean`.
 - `Geb/Prototypes/BitStream/Oitavem.lean` — bitstreams coded by
   expressions of Oitavem's Logs, with a logspace recognizer of the codes.
   `Oitavem/Sig.lean` is the finitary bundle signature: the root, with one
