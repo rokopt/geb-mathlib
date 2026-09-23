@@ -149,7 +149,7 @@ section Sum
 
 /-- The sum of two slice polynomial endofunctors: the sum of their underlying polynomial
 functors, each shape keeping its sorts. -/
-def sum (F : SlicePFunctor.{uA, u, uI, uI} I I) (E : SlicePFunctor.{uE, u, uI, uI} I I) :
+abbrev sum (F : SlicePFunctor.{uA, u, uI, uI} I I) (E : SlicePFunctor.{uE, u, uI, uI} I I) :
     SlicePFunctor.{max uA uE, u, uI, uI} I I where
   toPFunctor := Geb.Definition.sum F.toPFunctor E.toPFunctor
   r x := match x with

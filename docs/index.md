@@ -1435,7 +1435,8 @@ checklist and in CI.
   arguments that relates its values before and after replacing one argument
   by a related one respects the equivalence relations generated, the
   arguments being replaced one at a time. `GebProto.finEnumBool` and
-  `GebProto.finEnumPEmpty` enumerate the booleans and the empty type, and
+  `GebProto.finEnumPEmpty` and `GebProto.finEnumPUnit` enumerate the
+  booleans, the empty type and the one-element type, and
   `GebProto.update_update` and `GebProto.update_apply_self` reprove two laws
   of `Function.update` whose mathlib proofs depend on `Classical.choice`;
   `GebProto.update_apply_of` states a property of every value of an update
@@ -2076,9 +2077,19 @@ checklist and in CI.
   satisfying the equations (`Slice.Presentation.liftAll_g`,
   `Slice.Presentation.eq_liftAll`). Its mirror presents lists with
   concatenation over the sorts of elements and lists, by the recursion
-  equations of concatenation. No theorem here depends on an axiom beyond
-  `propext` and `Quot.sound`, and no declaration depends on
-  `Classical.choice`.
+  equations of concatenation. `Presentation/Presheaf/` carries the
+  presentations over a presheaf polynomial endofunctor with free arities
+  (`Presheaf.Sig`, `Presheaf.Presentation`) as presentations over the slice
+  of objects, whose operations include a restriction along each morphism
+  (`Presheaf.ops`) and whose equations include the naturality of each
+  operation and the identity and composition laws of restriction
+  (`Presheaf.REqn`). Their classes form a presheaf
+  (`Presheaf.Presentation.clsPsh`), whose functor laws are those equations,
+  so the laws of the signature's restriction are not used, and the
+  operations commute with restriction (`Presheaf.Presentation.restrCls_op`).
+  Its mirror restricts the class of a point over a natural number. No
+  theorem here depends on an axiom beyond `propext` and `Quot.sound`, and
+  no declaration depends on `Classical.choice`.
 - [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
   represents values with leaf, stem, and fork constructors, and expressions
   as application trees over values. Its tagged binary-tree encoding prevents

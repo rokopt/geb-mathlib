@@ -437,6 +437,20 @@ operation only to arguments of its input sorts, so well-sorted terms are
 evaluated by the free monad's dependent recursor, whose motive carries their
 well-sortedness.
 
+A presheaf on a category is a set sorted by its objects with a unary
+restriction along each morphism, satisfying the equations of identity and
+composition, and a presheaf polynomial endofunctor with free arities adds
+operations with the equations of their naturality. A presentation over such
+a functor is therefore a presentation over the slice of objects whose
+operations include the restrictions and whose equations include those of
+naturality, identity and composition
+([Definition/Presentation/Presheaf/](../Geb/Prototypes/Definition/Presentation/Presheaf.lean)).
+Its classes form a presheaf by those equations. The endpoints of a witness
+of a presheaf presentation restrict the arguments of the witness, so the
+variables of an equation are restricted, and a substitution must be natural:
+presenting the restrictions as operations makes every substitution natural,
+and no restriction function on terms is needed.
+
 Commutativity presents a new theory of the old symbols. The equation
 `c = succ(c)` presents a theory with a new element: the class of `c` is the
 class of no term of zero and successor, and it has no solution in the natural
@@ -604,8 +618,8 @@ guarded blocks with their unique solution in the M-type
 ([Definition/Guarded.lean](../Geb/Prototypes/Definition/Guarded.lean));
 and equational presentations with free-monad sides, their classes of
 terms and free models, the agreement with one-step equations, the
-presentations of derived operations and the many-sorted presentations
-over a slice
+presentations of derived operations, the many-sorted presentations over
+a slice, and the presentations over a presheaf polynomial endofunctor
 ([Definition/Presentation.lean](../Geb/Prototypes/Definition/Presentation.lean)).
 Its examples exercise structural references, repeated use of an imported
 definition, infinite stream production, vertices of a subject with a
@@ -622,11 +636,10 @@ for the free monad's recursor that
 since a subterm selected by a vertex depends on the term.
 
 It does not implement cryptographic hashing, a content store, a block
-decoder, permutation canonicalization, a binder language, the presheaf
-free-monad interface, solutions of guarded blocks in
-completely iterative algebras other than the M-type, a general
-recursive-program-scheme solver, the replacement of vertices by content
-identities, or a compiler to interaction nets. These require selected
+decoder, permutation canonicalization, a binder language, solutions of
+guarded blocks in completely iterative algebras other than the M-type, a
+general recursive-program-scheme solver, the replacement of vertices by
+content identities, or a compiler to interaction nets. These require selected
 profiles and their proof obligations; adding them to the definition
 format itself would prematurely select language semantics.
 
