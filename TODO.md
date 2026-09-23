@@ -7,6 +7,7 @@
   - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
   - [Rose-tree value representation](#rose-tree-value-representation)
   - [Quotient polynomial functors and the density formula](#quotient-polynomial-functors-and-the-density-formula)
+  - [Definitions](#definitions)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
@@ -128,6 +129,38 @@ formula, initiality as a transfer along the left Kan extension, quotient
 functors between presheaf categories, the comparison with mathlib's `QPF`,
 and term constructors that take witnesses. Each is recorded there, and the
 chapter's status lines are updated as they are made.
+
+### Definitions
+
+[docs/definitions.md](docs/definitions.md) records the design of
+definitions and `Geb/Prototypes/Definition/` its prototype. Follow-ups, none
+scheduled:
+
+- Guarded blocks as a typing, each body an element of `P(T_P(Γ + E)) + Γ`,
+  with the unique M-type solution of a non-flat guarded block
+  [MiliusMoss2009], proved by recursion on the depth of the M-type's
+  approximations as `coalgebra_solution_unique` is, and the depth-indexed
+  solution related to the agreement equations of
+  `Geb/Prototypes/BitStream/WConstruction.lean`
+  ([docs/definitions.md](docs/definitions.md) § Equations in slice, presheaf
+  and depth-indexed settings).
+- `Direction`, `Vertex` and `WFBlock` over slice and presheaf free monads:
+  sorted bodies, and context-indexed bodies with renaming, built on item 4 of
+  § Polynomial functors.
+- Whether resolution against an environment, `link` against `subterm`, is an
+  instance of the module action of the free monad over the cofree comonad
+  [LibkindSpivak2025], and if so whether `link_map_append` follows from its
+  module laws.
+- Replacing a vertex whose subterm has no variables by that subterm's content
+  identity, once a hash is available in Lean
+  ([docs/concrete-syntaxes.md](docs/concrete-syntaxes.md) § Roadmap).
+- The natural isomorphism between Cslib's `FreeM` and the interpretation of
+  `freePolynomial`.
+- `Geb/Prototypes/Computability/BitTreeScanner/Encoding.lean` folds through
+  `Cont` because `PFunctor.FreeM.rec` had no executable code; with
+  `Geb/Cslib/Foundations/Data/PFunctor/Free.lean` imported, the fold can be
+  the recursor, at the cost of the computation lemmas that now hold by `rfl`.
+  That module is removed when Cslib compiles the recursor itself.
 
 ### Named examples for axiom auditing
 
