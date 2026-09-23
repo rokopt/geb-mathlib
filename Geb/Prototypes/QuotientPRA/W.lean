@@ -67,7 +67,9 @@ requires every witness between arguments to lift to a witness between the
 constructed terms, and a choice of representatives for the arguments: finitely many
 choices are constructive, while infinitary arities need a choice principle, as
 {cite}`FiorePittsSteenkamp2020` records for W-types with equations and
-{cite}`Dijkstra2017` records for quotient inductive-inductive definitions.
+{cite}`Dijkstra2017` records for quotient inductive-inductive definitions. For a
+finitary signature with one-step equations the quotient is a model, the initial one
+({lit}`GebProto.QuotientPRA.Initial`).
 
 The endpoints of a witness constructor are single term constructors applied to the
 witness constructor's arguments, since restriction in a presheaf W-type rebuilds the

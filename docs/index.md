@@ -1437,10 +1437,12 @@ checklist and in CI.
   `GebProto.QuotientPRA.elim` into a model is the transpose across
   `coeqHomEquiv` of the W-type's eliminator into the discrete graph, with
   computation rule `GebProto.QuotientPRA.elim_intro`. That the quotient is
-  itself a model is not established: it needs representatives chosen for the
-  arguments of a constructor, which for infinitary arities requires a choice
-  principle ([FiorePittsSteenkamp2020], [Dijkstra2017]). No declaration here
-  depends on `Classical.choice`.
+  itself a model needs representatives chosen for the arguments of a
+  constructor, which for infinitary arities requires a choice principle
+  ([FiorePittsSteenkamp2020], [Dijkstra2017]); it is established for
+  finitary signatures in
+  `Geb/Prototypes/QuotientPRA/Initial.lean`. No declaration here depends on
+  `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Obstruction.lean` — why reflexivity,
   symmetry, transitivity and transport are not witness or term constructors
   of fixed shape. `GebProto.QuotientPRA.head_map` states that the root shape
@@ -1463,9 +1465,12 @@ checklist and in CI.
   builds the functor from the laws of the shape restriction and the argument
   reindexing, the direction laws and the naturality of reindexing holding for
   every instance. `GebProto.QuotientPRA.FreeArity.freeNode` is the node with
-  given argument values, and `GebProto.QuotientPRA.FreeArity.map_freeNode`
-  restricts it by restricting the values along the reindexing morphisms. No
-  declaration here depends on `Classical.choice`.
+  given argument values, `GebProto.QuotientPRA.FreeArity.eq_freeNode` states
+  that every node is of that form, and
+  `GebProto.QuotientPRA.FreeArity.map_freeNode` restricts it by restricting the
+  values along the reindexing morphisms.
+  `GebProto.QuotientPRA.FreeArity.W_induction` is induction on the W-type over
+  the nodes of the shapes. No declaration here depends on `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/Signature.lean` — the quotient presheaf
   polynomial functor of a signature with one-step equations, over the
   one-object base: `GebProto.QuotientPRA.Signature.Equations` are equations
@@ -1484,6 +1489,22 @@ checklist and in CI.
   positions lies over the commutativity witness between their trees, and
   eliminates into a model that gives a position its depth. No declaration
   here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Initial.lean` — for a signature whose
+  operations have finitely many arguments, enumerated by `FinEnum`, and
+  one-step equations with finitely many variables, the quotient of
+  `GebProto.QuotientPRA.Signature.qpra` is the initial algebra satisfying the
+  equations. `GebProto.QuotientPRA.Signature.exists_refl` builds a reflexivity
+  witness of every term from the congruences,
+  `GebProto.QuotientPRA.Signature.op_eqvGen` states that the operations respect
+  the equivalence relation the witnesses generate, and
+  `GebProto.QuotientPRA.Signature.opQ` applies an operation to classes through
+  `Quotient.listChoice` over the enumeration. The classes satisfy the equations
+  (`GebProto.QuotientPRA.Signature.satisfies_opQ`), and the eliminator is a
+  morphism of algebras out of them
+  (`GebProto.QuotientPRA.Signature.lift_opQ`) and the only one
+  (`GebProto.QuotientPRA.Signature.eq_lift`). The mirror
+  `GebTests/Prototypes/QuotientPRA/CommTree.lean` applies this to binary trees
+  modulo commutativity. No declaration here depends on `Classical.choice`.
 - `Geb/Prototypes/LargeIR/Basic.lean` — a slice polynomial functor
   `Type/X → Type/Y` transcribed into a presheaf polynomial endofunctor on the
   walking arrow, whose presheaves are `Fam(Type)`, and what the transcription

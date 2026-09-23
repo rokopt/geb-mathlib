@@ -172,4 +172,45 @@ example : ¬ ∃ (ρ : F.Shape (eqObj ⟨⟨⟩⟩)) (refl : Term → Wit),
     (∀ t, head F (refl t) = ρ.1) ∧ ∀ t, src F.W ⟨⟨⟩⟩ (refl t) = t :=
   no_uniform_refl F leaf (node leaf leaf) head_leaf_ne_head_node
 
+/-- The enumeration of the booleans. Built here because mathlib's enumerations of `Fin`
+depend on `Classical.choice`. -/
+def boolEquivFin : Bool ≃ Fin 2 where
+  toFun b := cond b 1 0
+  invFun i := Fin.cases false (fun _ ↦ true) i
+  left_inv b := by cases b <;> rfl
+  right_inv i := Fin.cases rfl (fun j ↦ Fin.cases rfl (fun k ↦ k.elim0) j) i
+
+/-- The arguments of each operation are finite. -/
+instance (a : sig.A) : FinEnum (sig.B a) :=
+  match a with
+  | .leaf =>
+    { card := 0
+      equiv :=
+        { toFun := fun x ↦ (nomatch x)
+          invFun := fun i ↦ i.elim0
+          left_inv := fun x ↦ (nomatch x)
+          right_inv := fun i ↦ i.elim0 }
+      decEq := fun x ↦ (nomatch x) }
+  | .node => { card := 2, equiv := boolEquivFin, decEq := inferInstanceAs (DecidableEq Bool) }
+
+/-- The variables of commutativity are finite. -/
+instance (e : comm.E) : FinEnum (comm.V e) :=
+  { card := 2, equiv := boolEquivFin, decEq := inferInstanceAs (DecidableEq Bool) }
+
+-- The classes of trees are an algebra satisfying commutativity.
+example : Satisfies (eqns := comm) fun x : sig.Obj (Cls sig comm) ↦ opQ x.1 x.2 :=
+  satisfies_opQ
+
+-- The node on classes is the class of the node on representatives.
+example (x y : Term) :
+    opQ (P := sig) (eqns := comm) Op.node (fun b : Bool ↦ quotientMk F (cond b y x)) =
+      quotientMk F (node x y) :=
+  opQ_mk (P := sig) (eqns := comm) Op.node fun b : Bool ↦ cond b y x
+
+-- Counting leaves is the only morphism of algebras from the classes to the algebra of
+-- leaf counts: the classes are the initial algebra satisfying commutativity.
+example (h : Cls sig comm → ℕ) (hh : ∀ a f, h (opQ a f) = count ⟨a, fun b ↦ h (f b)⟩)
+    (q : Cls sig comm) : h q = leaves.app ⟨⟨⟨⟩⟩⟩ q :=
+  eq_lift count_satisfies h hh q
+
 end GebProto.QuotientPRA.Signature.CommTree
