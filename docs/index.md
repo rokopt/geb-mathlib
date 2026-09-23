@@ -1408,6 +1408,133 @@ checklist and in CI.
   morphisms, over the same class `Geb/Prototypes/UniverseVariance/` shows both
   type formers act along. No theorem here depends on an axiom beyond `propext`
   and `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Basic.lean` — proof-relevant relations internal
+  to the presheaves on a category `I`, as presheaves on
+  `I × WalkingParallelPair`: terms over `(i, zero)`, witnesses over
+  `(i, one)`, and the two restrictions along `zero ⟶ one` as a witness's
+  source and target. `GebProto.QuotientPRA.coeq` is the quotient of such a
+  graph, at each object the `Function.Coequalizer` of the endpoint maps, whose
+  restriction maps descend because restriction acts on witnesses.
+  `GebProto.QuotientPRA.discrete` is the discrete graph on a presheaf on `I`,
+  whose endpoint maps are identities, and
+  `GebProto.QuotientPRA.coeqHomEquiv` the adjunction between the two:
+  morphisms from the quotient of a graph to `P` correspond to morphisms from
+  the graph to the discrete graph on `P`. `GebProto.QuotientPRA.coeqMk_eq_iff`
+  states that two terms have the same class exactly when the equivalence
+  relation the witnesses generate relates them. No declaration here depends
+  on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/W.lean` — quotient presheaf polynomial
+  functors: presheaf polynomial endofunctors over `I × WalkingParallelPair`,
+  whose W-types build terms and witnesses of equality between them together,
+  a witness constructor's endpoints being term constructors applied to its
+  arguments, and a witness between dependent terms restricting to a witness
+  between their indices. `GebProto.QuotientPRA.quotient` is the quotient of
+  the W-type by its witnesses, a presheaf on `I` whose values are `Quot`
+  types, and `GebProto.QuotientPRA.intro` its term constructors. A model is a
+  presheaf with an algebra structure on its discrete graph, which interprets
+  the endpoints of every witness constructor equally
+  (`GebProto.QuotientPRA.model_sound`); the eliminator
+  `GebProto.QuotientPRA.elim` into a model is the transpose across
+  `coeqHomEquiv` of the W-type's eliminator into the discrete graph, with
+  computation rule `GebProto.QuotientPRA.elim_intro`. That the quotient is
+  itself a model needs representatives chosen for the arguments of a
+  constructor, which for infinitary arities requires a choice principle
+  ([FiorePittsSteenkamp2020], [Dijkstra2017]); it is established for
+  finitary functors with free arities and congruences in
+  `Geb/Prototypes/QuotientPRA/InitialModel.lean`.
+  `GebProto.QuotientPRA.IsModelHom` is a morphism of models. No declaration
+  here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Obstruction.lean` — why reflexivity,
+  symmetry, transitivity and transport are not witness or term constructors
+  of fixed shape. `GebProto.QuotientPRA.head_map` states that the root shape
+  of a restricted tree of a carrier presheaf, the W-type or the M-type of a
+  presheaf polynomial endofunctor, is `shapeRestr` of the root shape, so a
+  family of trees of one root shape restricts to a family of one root shape
+  (`GebProto.QuotientPRA.head_map_of_head_eq`). The constructors named
+  require endpoints or indices that are their own arguments, so
+  `GebProto.QuotientPRA.no_uniform_refl`,
+  `GebProto.QuotientPRA.no_uniform_symm`,
+  `GebProto.QuotientPRA.no_uniform_trans` and
+  `GebProto.QuotientPRA.no_uniform_transport` exclude each once two
+  arguments differ in root shape, in the inductive and the coinductive
+  variant alike. No declaration here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/FreeArity.lean` — presheaf polynomial
+  endofunctors whose arities are coproducts of representable presheaves.
+  `GebProto.QuotientPRA.FreeArity` gives each shape arguments over objects,
+  the restriction of shapes along morphisms, and the reindexing of a
+  restricted shape's arguments into the shape's arguments, each with a
+  morphism between their objects. `GebProto.QuotientPRA.FreeArity.toPresheaf`
+  builds the functor from the laws of the shape restriction and the argument
+  reindexing, the direction laws and the naturality of reindexing holding for
+  every instance. `GebProto.QuotientPRA.FreeArity.freeNode` is the node with
+  given argument values, `GebProto.QuotientPRA.FreeArity.eq_freeNode` states
+  that every node is of that form, and
+  `GebProto.QuotientPRA.FreeArity.map_freeNode` restricts it by restricting the
+  values along the reindexing morphisms.
+  `GebProto.QuotientPRA.FreeArity.W_induction` is induction on the W-type over
+  the nodes of the shapes. No declaration here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Signature.lean` — the quotient presheaf
+  polynomial functor of a signature with one-step equations, over the
+  one-object base: `GebProto.QuotientPRA.Signature.Equations` are equations
+  each of whose sides is an operation applied to variables, and
+  `GebProto.QuotientPRA.Signature.qpra` adds to them their reversed
+  orientations and a congruence for every operation, the part of the
+  congruence closure that witness constructors can express. An algebra of
+  the signature satisfying the equations is a model
+  (`GebProto.QuotientPRA.Signature.model`), with eliminator
+  `GebProto.QuotientPRA.Signature.lift` and computation rule
+  `GebProto.QuotientPRA.Signature.lift_intro`. The mirror
+  `GebTests/Prototypes/QuotientPRA/CommTree.lean` builds binary trees modulo
+  commutativity and counts leaves through the eliminator, and
+  `GebTests/Prototypes/QuotientPRA/Positions.lean` builds, over the walking
+  arrow, the leaf positions of those trees, whose witness between two
+  positions lies over the commutativity witness between their trees, and
+  eliminates into a model that gives a position its depth. No declaration
+  here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Congruence.lean` — reflexivity and
+  congruence for quotient presheaf polynomial functors with free arities over
+  any category of sorts. `GebProto.QuotientPRA.HasCongruences` states that
+  every term constructor, applied to the endpoints of witnesses between its
+  arguments, gives the endpoints of one witness, for term constructors whose
+  arguments are terms (`GebProto.QuotientPRA.TermArguments`). For finitely
+  many arguments, enumerated by `FinEnum`, `GebProto.QuotientPRA.exists_refl`
+  builds a reflexivity witness of every term, and
+  `GebProto.QuotientPRA.unit_mk_congr` states that the term constructors
+  respect classes, the arguments being replaced one at a time.
+  `GebProto.QuotientPRA.exists_forall_of_finEnum` makes finitely many choices,
+  and `GebProto.QuotientPRA.finEnumBool` and
+  `GebProto.QuotientPRA.finEnumPEmpty` enumerate the booleans and the empty
+  type. No declaration here depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/InitialModel.lean` — the quotient W-type of a
+  quotient presheaf polynomial functor with free finitary arities, term
+  arguments and congruences is the initial model, over any category of sorts.
+  `GebProto.QuotientPRA.quotientModel` is its algebra: a term constructor
+  applied to classes through `Quotient.listChoice`, and a node over the
+  witnesses sent to the value of its source endpoint. The unit is a morphism
+  of algebras (`GebProto.QuotientPRA.quotientModel_unit`), and the eliminator
+  is a morphism of models (`GebProto.QuotientPRA.isModelHom_elim`) and the
+  only one (`GebProto.QuotientPRA.eq_elim`), which
+  `GebProto.QuotientPRA.existsUnique_isModelHom` states together. The mirror
+  `GebTests/Prototypes/QuotientPRA/Positions.lean` applies it to the leaf
+  positions in commutative trees over the walking arrow. No declaration here
+  depends on `Classical.choice`.
+- `Geb/Prototypes/QuotientPRA/Initial.lean` — for a signature whose
+  operations have finitely many arguments, enumerated by `FinEnum`, and
+  one-step equations with finitely many variables, the quotient of
+  `GebProto.QuotientPRA.Signature.qpra` is the initial algebra satisfying the
+  equations, as the one-sorted instance of
+  `Geb/Prototypes/QuotientPRA/InitialModel.lean`: the operations take terms
+  (`GebProto.QuotientPRA.Signature.termArguments`) and have the congruences
+  `GebProto.QuotientPRA.Signature.qpra` adds
+  (`GebProto.QuotientPRA.Signature.hasCongruences`), and
+  `GebProto.QuotientPRA.Signature.opQ` is the quotient's algebra at an
+  operation. The classes satisfy the equations
+  (`GebProto.QuotientPRA.Signature.satisfies_opQ`), and the eliminator is a
+  morphism of algebras out of them
+  (`GebProto.QuotientPRA.Signature.lift_opQ`) and the only one
+  (`GebProto.QuotientPRA.Signature.eq_lift`). The mirror
+  `GebTests/Prototypes/QuotientPRA/CommTree.lean` applies this to binary trees
+  modulo commutativity. No declaration here depends on `Classical.choice`.
 - `Geb/Prototypes/LargeIR/Basic.lean` — a slice polynomial functor
   `Type/X → Type/Y` transcribed into a presheaf polynomial endofunctor on the
   walking arrow, whose presheaves are `Fam(Type)`, and what the transcription

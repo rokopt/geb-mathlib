@@ -20,6 +20,7 @@ import GebTests.Prototypes.MType
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafIRUniv
 import GebTests.Prototypes.PresheafUniverse
+import GebTests.Prototypes.QuotientPRA
 import GebTests.Prototypes.ReadableSExpr
 import GebTests.Prototypes.RelSeparation
 import GebTests.Prototypes.RoseTree
