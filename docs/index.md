@@ -509,7 +509,20 @@ checklist and in CI.
   `M.bisim`. `MType/Equiv.lean` identifies the observations with
   mathlib's approximations and `mEquiv : M Q ≃ Q.M`, preserving
   observations, the constructor (`mEquiv_mk`) and the corecursor
-  (`mEquiv_corec`). `Classical.choice`-free. Depends on
+  (`mEquiv_corec`). `MType/Hereditary.lean` defines the predicates holding
+  hereditarily along a coalgebra, the coinductive counterpart of the
+  inductive predicates with step `P x ∧ ∀ b, ih b`: `Hereditary c P` is
+  the conjunction over the depths of the iterates `HereditaryAt c P n`,
+  defined by `Depth.rec`; `hereditary_iff` makes it a fixed point and
+  `hereditary_coinduct` the greatest one. `MType/Slice.lean` defines the
+  M-type `SliceM F` of a slice endofunctor `F : SlicePFunctor I I` as the
+  trees of `M F.toPFunctor` hereditarily satisfying `NodeAdmissible` (the
+  children's root indices lie over the direction-input map), indexed by
+  `SliceM.index`, the output index of the root shape; `SliceM.mk` and
+  `SliceM.dest` are mutually inverse, and `SliceM.corec` from a slice
+  coalgebra lies over `I` (`comp_corec`), is a morphism of slice
+  coalgebras (`dest_corec`) and is unique (`corec_unique`).
+  `Classical.choice`-free. Depends on
   `Geb/Mathlib/Data/PFunctor/Presheaf/Arrow.lean` and mathlib's
   `Data/PFunctor/Univariate/M.lean`.
 - `Geb/Prototypes/BitStream/Oitavem.lean` — bitstreams coded by
