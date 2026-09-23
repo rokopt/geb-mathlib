@@ -1522,12 +1522,13 @@ checklist and in CI.
   operations have finitely many arguments, enumerated by `FinEnum`, and
   one-step equations with finitely many variables, the quotient of
   `GebProto.QuotientPRA.Signature.qpra` is the initial algebra satisfying the
-  equations. `GebProto.QuotientPRA.Signature.exists_refl` builds a reflexivity
-  witness of every term from the congruences,
-  `GebProto.QuotientPRA.Signature.op_eqvGen` states that the operations respect
-  the equivalence relation the witnesses generate, and
-  `GebProto.QuotientPRA.Signature.opQ` applies an operation to classes through
-  `Quotient.listChoice` over the enumeration. The classes satisfy the equations
+  equations, as the one-sorted instance of
+  `Geb/Prototypes/QuotientPRA/InitialModel.lean`: the operations take terms
+  (`GebProto.QuotientPRA.Signature.termArguments`) and have the congruences
+  `GebProto.QuotientPRA.Signature.qpra` adds
+  (`GebProto.QuotientPRA.Signature.hasCongruences`), and
+  `GebProto.QuotientPRA.Signature.opQ` is the quotient's algebra at an
+  operation. The classes satisfy the equations
   (`GebProto.QuotientPRA.Signature.satisfies_opQ`), and the eliminator is a
   morphism of algebras out of them
   (`GebProto.QuotientPRA.Signature.lift_opQ`) and the only one

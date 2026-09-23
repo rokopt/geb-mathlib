@@ -10,9 +10,9 @@ public import Geb.Prototypes.QuotientPRA.FreeArity
 public import Geb.Prototypes.QuotientPRA.W
 public import Geb.Prototypes.QuotientPRA.Obstruction
 public import Geb.Prototypes.QuotientPRA.Signature
-public import Geb.Prototypes.QuotientPRA.Initial
 public import Geb.Prototypes.QuotientPRA.Congruence
 public import Geb.Prototypes.QuotientPRA.InitialModel
+public import Geb.Prototypes.QuotientPRA.Initial
 
 set_option doc.verso true in
 /-!
