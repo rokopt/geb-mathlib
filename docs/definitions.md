@@ -9,6 +9,7 @@
 - [Recursive definitions](#recursive-definitions)
 - [Which equations are definitions](#which-equations-are-definitions)
 - [Equations in slice, presheaf and depth-indexed settings](#equations-in-slice-presheaf-and-depth-indexed-settings)
+- [Definitions as presentations](#definitions-as-presentations)
 - [Content identity](#content-identity)
 - [Unison and Nock](#unison-and-nock)
 - [Relation to the existing representations](#relation-to-the-existing-representations)
@@ -369,6 +370,67 @@ well-founded definitions. The finite observations are the vertices: the
 solution of a guarded block is a shape of the cofree comonoid, observed
 at its finite rooted paths.
 
+## Definitions as presentations
+
+An equational presentation over a signature `P` is a polynomial `E` of
+equations, whose directions at an equation are its variables, with two
+derived operations `lhs, rhs : E ⇒ T_P`: the two sides of every equation,
+terms of any depth. The sides induce a parallel pair of monad morphisms
+`T_E ⇉ T_P`, and finitary monads are presented as coequalizers of such
+pairs of free monads ([KellyPower1993], the signatures there being
+families of objects indexed by the finitely presentable ones). The
+prototype computes the presented object pointwise
+([Definition/Presentation/](../Geb/Prototypes/Definition/Presentation.lean)).
+A witness over variables `Γ` is a term of `T_{P+E}(Γ)`: its operations of
+`P` are congruences, its operations of `E` instances of equations whose
+arguments are witnesses, and its variables reflexivities. Its two
+endpoints are its images under the monad morphisms `T_{P+E} ⇒ T_P` of the
+handlers that fix `P` and send each equation to one of its sides, so the
+endpoint maps commute with substitution, and the classes of terms are the
+coequalizer of the two endpoint maps, whose quotient takes the equivalence
+closure. An algebra satisfies the equations exactly when it gives the two
+endpoints of every witness equal values, and for a finitary presentation
+the classes over `Γ` are the free algebra satisfying the equations on `Γ`.
+
+The quotient presheaf polynomial functors of
+[QuotientPRA/](../Geb/Prototypes/QuotientPRA.lean) build terms and
+witnesses as one presheaf W-type, whose restriction rebuilds only the root
+of a tree, so each side of their equations is one operation applied to
+variables. Such a system is the presentation of its sides as terms of depth
+one, and the two constructions give isomorphic initial algebras. The sides
+of associativity have depth two, and one side of a unit law is a bare
+variable: binary trees modulo those equations present the free monoid, whose
+classes are the lists.
+
+A family of derived operations `δ : Q ⇒ T_P` is the presentation over
+`P + Q` of the equations `q(x⃗) = δ_q(x⃗)`. The monad morphism of the handler
+that fixes `P` and sends each `q` to `δ_q`, the unfolding, coequalizes the
+two endpoint maps, and the inclusion of `T_P` is a section of it. A
+presentation over signatures `Σ ⊆ Σ'` is definitional when the composite
+`T_Σ → T_Σ' → classes` is a bijection. Surjectivity is eliminability, every
+new term equal to an old one; injectivity is non-creativity, no new
+identification of old terms. These are the two criteria for a definition
+that Suppes attributes to Leśniewski ([Suppes1957], pp. 153–154), and the
+presentation of derived operations meets both: every term has the class of
+its unfolding, a single witness replacing each new operation by the instance
+of its equation, and the value of classes in `T_P`, each new operation read
+as its body, sends the class of a term to its unfolding. Its models are the
+algebras of `P`, each expanded by `derivedAlg`.
+
+| Presentation | New symbols eliminable | Old terms kept distinct |
+| --- | --- | --- |
+| Derived operations, as `quad(x) = double(double(x))` | yes | yes |
+| Commutativity of a binary operation | no new symbol | no |
+| `c = succ(c)` over zero and successor | no | yes |
+
+Commutativity presents a new theory of the old symbols. The equation
+`c = succ(c)` presents a theory with a new element: the class of `c` is the
+class of no term of zero and successor, and it has no solution in the natural
+numbers. As a guarded block it has exactly one solution in the M-type
+(§ Which equations are definitions), so it is a definition relative to that
+class of models and not relative to all algebras; the classes of terms, a
+quotient of a free algebra, do not contain that solution.
+
 ## Content identity
 
 The proposed hash input is a canonical rose tree representing
@@ -524,14 +586,20 @@ an environment and transport along a vertex
 the soundness of derived-operation expansion and the unique solution
 of well-founded blocks
 ([Definition/Solution.lean](../Geb/Prototypes/Definition/Solution.lean));
-and guarded blocks with their unique solution in the M-type
-([Definition/Guarded.lean](../Geb/Prototypes/Definition/Guarded.lean)).
+guarded blocks with their unique solution in the M-type
+([Definition/Guarded.lean](../Geb/Prototypes/Definition/Guarded.lean));
+and equational presentations with free-monad sides, their classes of
+terms and free models, the agreement with one-step equations and the
+presentations of derived operations
+([Definition/Presentation.lean](../Geb/Prototypes/Definition/Presentation.lean)).
 Its examples exercise structural references, repeated use of an imported
 definition, infinite stream production, vertices of a subject with a
 parameter and two layers, transport of a body between layers, and the
 unique solution of a three-export well-founded block, and bitstreams
 defined by guarded blocks, one of depth two referring to its own export
-and one with an imported stream. All recursion uses
+and one with an imported stream, and the presentations of the free monoid,
+of commutative binary trees, of a definition of depth two and of a constant
+equal to its own successor. All recursion uses
 existing recursors, the existing free-monad interpreter, or well-founded
 recursion in proofs; `Definition/Vertex.lean` uses the executable code
 for the free monad's recursor that
@@ -550,5 +618,5 @@ format itself would prematurely select language semantics.
 Run the examples with `lake build GebTests.Prototypes.Definition`.
 Bibliographic keys used here are `GambinoKock2013`, `MiliusMoss2009`,
 `Fiore2008`, `Garner2012`, `AhmanChapmanUustalu2014`, `NiuSpivak2023`,
-`LibkindSpivak2025` and `BirkedalMogelbergSchwinghammerStovring2012` in
-[references.bib](references.bib).
+`LibkindSpivak2025`, `BirkedalMogelbergSchwinghammerStovring2012`,
+`KellyPower1993` and `Suppes1957` in [references.bib](references.bib).

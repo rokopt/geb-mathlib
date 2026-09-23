@@ -2028,9 +2028,42 @@ checklist and in CI.
   imports, with exactly one solution in the M-type of
   `Geb/Prototypes/MType/` (`GuardedBlock.existsUnique_isSolution`): the
   corecursive solution satisfies the equations (`isSolution_solution`) and
-  any two solutions are bisimilar (`eq_of_isSolution`). No theorem here
-  depends on an axiom beyond `propext` and `Quot.sound`, and no declaration
-  depends on `Classical.choice`.
+  any two solutions are bisimilar (`eq_of_isSolution`).
+  `Presentation/` carries equational presentations whose sides are terms
+  of the free monad of any depth, after [KellyPower1993]: a presentation
+  (`Presentation`) is a polynomial of equations, whose directions are the
+  variables, with two derived operations for the sides. A witness is a term
+  of the free monad of the signature summed with the equations (`sum`), and
+  its two endpoints (`Presentation.src`, `Presentation.tgt`) are its
+  expansions by the handlers sending each equation to one side; the classes
+  of terms (`Presentation.Cls`) are the coequalizer of the endpoints. An
+  algebra satisfies a presentation exactly when it gives the endpoints of
+  every witness equal values (`Presentation.satisfies_iff`), and evaluation
+  in it descends to classes (`Presentation.lift`). For finitary
+  presentations the classes over `Γ` are the free algebra satisfying the
+  equations on `Γ` (`Presentation.existsUnique_lift`), the operations on
+  classes respecting classes by `GebProto.eqvGen_of_update`. A system of
+  one-step equations of `Geb/Prototypes/QuotientPRA/Signature.lean` is the
+  presentation of its sides as terms of depth one
+  (`Presentation.ofEquations`), and its classes of closed terms are
+  isomorphic, as algebras, to its quotient W-type
+  (`Presentation.clsEquiv`). Derived operations present, over the signature
+  they extend, the equations stating each new operation to be its body
+  (`Presentation.ofDerived`), whose classes are the terms of the base
+  signature (`Presentation.clsEquivBase`): every term has the class of its
+  unfolding (eliminability) and distinct terms of the base signature keep
+  distinct classes (non-creativity), the criteria of [Suppes1957], and the
+  models are the algebras of the base signature
+  (`Presentation.modelEquiv`). The mirrors under
+  `GebTests/Prototypes/Definition/Presentation/` present the free monoid
+  on `Γ` by binary trees modulo associativity and the unit laws, whose
+  classes are the lists; commutative binary trees, whose classes
+  correspond to those of `GebTests/Prototypes/QuotientPRA/CommTree.lean`;
+  a definition of depth two, `quad(x) = double(double(x))`; and the
+  equation `c = succ(c)`, which neither eliminates `c` nor identifies
+  closed terms of zero and successor, and has no solution in the natural
+  numbers. No theorem here depends on an axiom beyond `propext` and
+  `Quot.sound`, and no declaration depends on `Classical.choice`.
 - [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
   represents values with leaf, stem, and fork constructors, and expressions
   as application trees over values. Its tagged binary-tree encoding prevents

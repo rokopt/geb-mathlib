@@ -141,6 +141,13 @@ scheduled:
   treats the M-type alone. Deriving `coalgebra_solution_unique`, the flat
   case over mathlib's M-type, from `GuardedBlock.existsUnique_isSolution`
   along `Geb.MType.mEquiv`.
+- Presentations over slice and presheaf free monads, their quotient by
+  `coeq` of `Geb/Prototypes/QuotientPRA/Basic.lean`, and agreement with the
+  multi-sorted quotient presheaf polynomial functors, as
+  [docs/handoff-quotient-definitions.md](docs/handoff-quotient-definitions.md)
+  describes; `Geb/Prototypes/Definition/Presentation/` is the univariate
+  layer. Well-founded blocks as presentations with constants, through
+  `WFBlock.existsUnique_isSolution`.
 - `Direction`, `Vertex`, `WFBlock` and `GuardedBlock` over slice and presheaf
   free monads:
   sorted bodies, and context-indexed bodies with renaming, built on item 4 of

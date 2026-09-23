@@ -9,6 +9,7 @@ import GebTests.Prototypes.Definition.Basic
 import GebTests.Prototypes.Definition.Vertex
 import GebTests.Prototypes.Definition.Solution
 import GebTests.Prototypes.Definition.Guarded
+import GebTests.Prototypes.Definition.Presentation
 
 /-!
 # Definition tests — index
