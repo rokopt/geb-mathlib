@@ -70,6 +70,15 @@ checklist and in CI.
   and word-level trees, compiler data structures and
   interaction-calculus runtimes, the prototypes with their
   measurements, and ranked recommendations for self-hosting workloads.
+- [Quotient polynomial functors and the density
+  formula](../manual/GebManual/QuotientPRA.lean) — a Verso manual chapter
+  relating the quotient presheaf polynomial functors of
+  `Geb/Prototypes/QuotientPRA/` to the density formula: the quotient as the
+  left Kan extension along the projection, the density formula as a quotient
+  functor, initiality as a transfer of initial algebras, arities and
+  transport, and identification across shapes compared with analytic
+  functors and mathlib's `QPF`. Each claim is marked constructed, argued or
+  conjectured, and the last section lists the constructions that remain.
 - [bitstring-metalogic.md](bitstring-metalogic.md) — recognized and
   quotient types over bitstrings, syntactic proof checking, simultaneous
   polynomial-time and linear-space bounds, and single-step reduction.

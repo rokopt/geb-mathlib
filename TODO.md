@@ -6,6 +6,7 @@
 - [Next up](#next-up)
   - [Presheaf parametric-right-adjoint IR codes](#presheaf-parametric-right-adjoint-ir-codes)
   - [Rose-tree value representation](#rose-tree-value-representation)
+  - [Quotient polynomial functors and the density formula](#quotient-polynomial-functors-and-the-density-formula)
   - [Named examples for axiom auditing](#named-examples-for-axiom-auditing)
   - [Citation corrections deferred to their own branch](#citation-corrections-deferred-to-their-own-branch)
   - [Polynomial functors](#polynomial-functors)
@@ -115,6 +116,18 @@ design of the representation of rose trees of bitstrings, and
   logarithmic-space translation to the witnessed form or a direct
   algebraic recognizer, and the extensional equality of the optimized
   recognizer with the composition of the existing witnesses.
+
+### Quotient polynomial functors and the density formula
+
+The manual chapter `manual/GebManual/QuotientPRA.lean` relates the quotient
+presheaf polynomial functors of `Geb/Prototypes/QuotientPRA/` to the density
+formula for presheaves, marking each claim constructed, argued or
+conjectured. Its last section, Constructions to build, is the list of
+follow-ups: the density functor and its comparison with mathlib's density
+formula, initiality as a transfer along the left Kan extension, quotient
+functors between presheaf categories, the comparison with mathlib's `QPF`,
+and term constructors that take witnesses. Each is recorded there, and the
+chapter's status lines are updated as they are made.
 
 ### Named examples for axiom auditing
 
