@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.MType.Hereditary
+public import Geb.Mathlib.Data.PFunctor.Slice.FixedPoint
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -41,6 +42,8 @@ every universe.
 * {lit}`SliceM.index` — its structure map into {lit}`I`.
 * {lit}`SliceM.mk`, {lit}`SliceM.dest`, {lit}`SliceM.destEquiv` — the
   constructor and destructor, and the two as an equivalence.
+* {lit}`SliceM.fixedPoint` — {lit}`SliceM F` as a fixed point of the slice
+  endofunctor.
 * {lit}`SliceM.corec` — the corecursor from a slice coalgebra.
 
 ## Main statements
@@ -148,6 +151,19 @@ def destEquiv : SliceM F ≃ F.toSliceDomPFunctor.Obj (index F) where
   invFun := mk
   left_inv := mk_dest
   right_inv := dest_mk
+
+variable (F) in
+/-- {lit}`SliceM F` as a fixed point of the slice endofunctor
+({name}`SlicePFunctor.FixedPoint`). Reducible, so that instance resolution sees
+{lit}`SliceM F` and its index through the fixed point's fields. -/
+@[reducible] def fixedPoint : F.FixedPoint.{max uA uB} where
+  T := SliceM F
+  index := index F
+  mk := mk
+  dest := dest
+  dest_mk := dest_mk
+  mk_dest := mk_dest
+  obj_dest := obj_dest
 
 section Corec
 
