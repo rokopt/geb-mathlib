@@ -73,6 +73,29 @@ The following are fixed; the plan builds on them.
   Which machine runs it, an environment machine, a compilation to tree
   calculus, or a compilation to interaction combinators, is decided by
   the comparison of Phase 2, run on the same kernel programs.
+* Layers. Above the kernel, the language grows in three layers. Surface
+  1 is computational: named datatypes whose constructors and structural
+  recursion are derived from their declarations, case analysis,
+  functions with result types, type parameters instantiated at
+  elaboration, and quotients only by computable normal forms. Its types
+  denote objects of the category of recognized types over the functions
+  the kernel defines, which has finite limits and finite coproducts;
+  that category has no subobject classifier for propositions about
+  programs (the necessity theorem of `Geb/Prototypes/Typechecker/`'s
+  classifier module), so logic is not a Surface 1 construct. The
+  metalogic of Phase 7 holds propositions and their proofs about kernel
+  programs. Surface 2, built on both, adds subset types by arbitrary
+  propositions, quotients whose respect for their relation is proved,
+  and definitions by equations whose unique solution is proved; it is
+  the setoid completion of Surface 1 with its obligations discharged in
+  the metalogic. Type parameters are instantiated at elaboration
+  because the polymorphic λ-calculus has no set-theoretic model, which
+  the kernel's denotation in Lean types requires.
+* Concrete syntax. Geb specifies its abstract syntax, rose trees, and
+  not a concrete syntax. Until Geb can express arbitrary concrete
+  syntaxes itself, the default is readable S-expressions, the readable
+  form of the canonical S-expressions of {citet RFC9804}[], whose data
+  model the reader's S-expressions share.
 
 ## The seed boundary
 
@@ -663,7 +686,20 @@ chapter addresses later.
    and malformed fixtures.
 4. Geb: a minimal elaborator in kernel S-expressions: named variables,
    definitions, and signature declarations whose constructors,
-   recognizers and folds are derived generically.
+   recognizers and folds are derived generically. `bootstrap/surface.geb`
+   expands the Surface 1 forms into kernel S-expressions before the
+   reader resolves them: a datatype declaration, whose values are erased
+   to trees, the node labelled by a constructor's position over its
+   fields, a last field taking the remaining children; case analysis,
+   exhaustive unless it has an else clause; structural recursion at a
+   result type, the kernel's fold at pairs of a subtree and a suspended
+   result, so that no clause is evaluated at the subtrees of fields
+   that are not recursive; and functions with result types. A program of
+   kernel forms alone expands to itself, so the fixed point holds with
+   the expansion in the compiler. Recognizers, type parameters and a
+   static check of datatypes are still to be added; the expansion
+   refers to some primitives by name, so a program does not rebind them
+   around case analysis and structural recursion.
 5. Geb: the elaborator rewritten in the surface language it accepts,
    and its staged self-compilation.
 

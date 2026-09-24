@@ -22,7 +22,11 @@ type checker against the seed's checker on the bundles of the kernel's examples 
 compiler, and on malformed terms; and the stage-0 compiler, from a program's source to its
 image, against the seed's reader, checker and image writer on the programs of the kernel's
 examples, rejected and ill-typed ones included, and on its own source, where the two agree
-byte for byte: the fixed point of self-compilation on images.
+byte for byte: the fixed point of self-compilation on images. Programs in the Surface 1
+forms, datatypes, case analysis, structural recursion and functions with result types, are
+compiled by the stage-0 compiler and run from their images; case analyses that are not
+exhaustive or mix datatypes, unknown constructors, patterns of the wrong length and
+recursion over what is not a datatype are rejected.
 
 The sources are read at elaboration by {lit}`include_str` and converted to lists of
 characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
@@ -30,8 +34,10 @@ characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
 
 ## Main definitions
 
-* {lit}`prelude`, {lit}`serialize`, {lit}`reader`, {lit}`check` and {lit}`compile` are the
-  sources.
+* {lit}`prelude`, {lit}`serialize`, {lit}`reader`, {lit}`check`, {lit}`surface` and
+  {lit}`compile` are the sources.
+* {lit}`runSurface` compiles a program with the stage-0 compiler and runs its last
+  definition; {lit}`naturals` and {lit}`roses` are Surface 1 programs.
 * {lit}`checker` returns the types of a bundle's definitions, and {lit}`seedTypes` is the
   seed's answer; {lit}`malformed` are terms the checker rejects.
 * {lit}`serializer` applies {lit}`image` to its input, and {lit}`compiler` is the stage-0
@@ -63,6 +69,9 @@ def reader : String := include_str "../../bootstrap/reader.geb"
 /-- The type checker's source. -/
 def check : String := include_str "../../bootstrap/check.geb"
 
+/-- The Surface 1 expansion's source. -/
+def surface : String := include_str "../../bootstrap/surface.geb"
+
 /-- The compiler's entry point. -/
 def compile : String := include_str "../../bootstrap/compile.geb"
 
@@ -72,7 +81,39 @@ def serializer : String := prelude ++ serialize ++ "(def main (lam ((t T)) (imag
 /-- The stage-0 compiler, its sources joined, each followed by a newline, as the host driver
 joins them. -/
 def compiler : String :=
-  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ compile ++ "\n"
+  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ surface ++ "\n" ++
+    compile ++ "\n"
+
+/-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
+its definition named {lit}`main` to an input tree. -/
+def runSurface (compilerText text : List Char) (input : Tree) : Option Tree := do
+  let img ← toBytes (← runMain compilerText (nameTree text))
+  runEntry (← readImage img) ['m', 'a', 'i', 'n'] input
+
+/-- Naturals in unary: addition by structural recursion, conversions from and to labels, and
+the predecessor by case analysis. -/
+def naturals : String := "
+(data Nat (zero) (succ Nat))
+(defn plus ((m Nat) (n Nat)) Nat (cata Nat Nat m ((zero) n) ((succ r) (succ r))))
+(defn toNat ((t T)) Nat (iter Nat (lam ((x Nat)) (succ x)) zero t))
+(defn ofNat ((n Nat)) T (cata Nat T n ((zero) 0) ((succ r) (add r 1))))
+(defn pred ((n Nat)) Nat (case n ((succ p) p) ((zero) zero)))
+(def main (lam ((t T))
+  (node 0 (cons (ofNat (plus (toNat t) (toNat t))) (cons (ofNat (pred (toNat t))) (nil T))))))"
+
+/-- Rose trees by a field taking the remaining children, counted by structural recursion, and
+a case analysis with an else clause. -/
+def roses : String := "
+(data Rose (rnode T & Rose))
+(defn count ((t Rose)) T
+  (cata Rose T t ((rnode l rs) (add 1 (foldr T T (lam ((a T) (b T)) (add a b)) 0 rs)))))
+(data Color (red) (green) (blue))
+(defn isRed ((c Color)) T (case c ((red) 1) (else 0)))
+(def leafRose (lam ((l T)) (rnode l (nil T))))
+(def main (lam ((t T))
+  (node 0
+    (cons (count (rnode 7 (cons (leafRose 1) (cons (rnode 2 (cons (leafRose 3) (nil T))) (nil T)))))
+    (cons (isRed red) (cons (isRed blue) (nil T)))))))"
 
 /-- The type checker, returning the types of the definitions of the bundle it is given. -/
 def checker : String :=
@@ -126,6 +167,15 @@ def samples : List Tree :=
     "(def f (lam (x Nat) x))", "(def f (lam (x T) y))", "(def f (lam (x T) (add x unit)))",
     "(def f (lam (x T) (x x)))"].all fun p ↦
   runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
+-- Surface 1 programs, compiled by the stage-0 compiler and run from their images
+#guard runSurface compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
+#guard runSurface compiler.toList roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])
+#guard ["(data Nat (zero) (succ Nat)) (defn f ((n Nat)) T (case n ((zero) 1))) (def main f)",
+    "(data A (a)) (data B (b)) (defn f ((n A)) T (case n ((a) 1) ((b) 0))) (def main f)",
+    "(data A (a)) (defn f ((n A)) T (case n ((c) 1) (else 0))) (def main f)",
+    "(data A (a T)) (defn f ((n A)) T (case n ((a x y) x))) (def main f)",
+    "(defn f ((n T)) T (cata T T n ((a) 1))) (def main f)"].all fun p ↦
+  runMain compiler.toList (nameTree p.toList) == some (mk 0 [])
 -- the fixed point: compiled by itself, the compiler is the image the seed builds of it
 #guard runMain compiler.toList (nameTree compiler.toList) == some (seedCompile compiler.toList)
 

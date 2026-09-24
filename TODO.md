@@ -141,6 +141,13 @@ second host with accelerations and compilers, content identity, and the
 metalogic. The chapter is the list of follow-ups; it is revised as each
 phase is carried out.
 
+The readable S-expressions of the kernel's reader and of
+`Geb/Prototypes/ReadableSExpr.lean` are to be unified as one reader and
+printer over the canonical S-expressions of
+`Geb/Prototypes/CanonicalSExpr.lean`, with the retraction law, and given a
+quoted spelling for atoms that are not tokens, so that every canonical
+S-expression has a readable spelling.
+
 ### Definitions
 
 [docs/definitions.md](docs/definitions.md) records the design of
