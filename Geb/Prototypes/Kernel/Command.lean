@@ -50,10 +50,10 @@ def run (args : List String) : IO UInt32 := do
     let srcs := files.dropLast
     let img := files.getLast!
     let texts ← srcs.mapM fun src ↦ return chars (← IO.FS.readBinFile src)
-    let some ds := readProgram (texts.flatMap (· ++ ['\n']))
+    let text := texts.flatMap (· ++ ['\n'])
+    if let some msg := diagnose text then throw <| IO.userError s!"{srcs}: {msg}"
+    let some ds := readProgram text
       | throw <| IO.userError s!"{srcs}: the program does not read"
-    let some _ := load (ds.map Prod.snd)
-      | throw <| IO.userError s!"{srcs}: the program does not type-check"
     IO.FS.writeBinFile img (writeImage (bundle ds))
     return 0
   | ["run", img, name, input, output] =>

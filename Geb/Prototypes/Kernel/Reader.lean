@@ -49,6 +49,7 @@ extends to the end of its line.
 * {lit}`readProgram`, {lit}`load` — a program's definitions as named terms, and their
   meanings.
 * {lit}`runMain` — the application of a program's last definition to an input tree.
+* {lit}`diagnose` — the first failure of a program that does not read or load.
 
 ## Implementation notes
 
@@ -239,6 +240,34 @@ def load (ds : List Tree) : Option (List Glob) :=
     let G ← acc
     let m ← infer G [] t
     some (G ++ [⟨m.1, m.2 ()⟩])) (some [])
+
+/-- The first failure of a program, as a message: text whose parentheses do not balance, a
+form that is neither a definition nor a type abbreviation, or the first definition that does
+not resolve or is ill-typed; nothing when the program reads and loads. -/
+def diagnose (text : List Char) : Option String :=
+  match readSExps text with
+  | none => some "the parentheses do not balance"
+  | some es =>
+    let step (acc : TypeNames × List (List Char) × List Glob × Option String) (e : SExp) :=
+      let (tys, names, G, err) := acc
+      if err.isSome then acc else
+      match e.children with
+      | [kw, n, body] =>
+        match n.label, kw.label.map String.ofList with
+        | some name, some "def" =>
+          match resolve tys names body [] with
+          | none => (tys, names, G, some s!"{String.ofList name} does not resolve")
+          | some t =>
+            match infer G [] t with
+            | none => (tys, names, G, some s!"{String.ofList name} is ill-typed")
+            | some m => (tys, names ++ [name], G ++ [⟨m.1, m.2 ()⟩], none)
+        | some name, some "deftype" =>
+          match readType tys body with
+          | none => (tys, names, G, some s!"{String.ofList name} is not a type")
+          | some A => ((name, A) :: tys, names, G, none)
+        | _, _ => (tys, names, G, some "a form is neither a def nor a deftype")
+      | _ => (tys, names, G, some "a form is neither a def nor a deftype")
+    (es.foldl step ([], [], [], none)).2.2.2
 
 /-- Apply the last definition of a program, of type {lit}`T → T`, to an input tree. -/
 def runMain (text : List Char) (input : Tree) : Option Tree := do

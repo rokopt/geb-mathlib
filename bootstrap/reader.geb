@@ -1,0 +1,320 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The reader, written in the kernel's syntax: text to tokens, tokens to S-expressions, and
+; S-expressions to a program's bundle, reading exactly as the seed's reader reads.
+; Requires the prelude.
+;
+; Representations. Text is a list of the leaves of its bytes. A token is the leaf 1 for an
+; opening parenthesis, the leaf 2 for a closing one, or a node of label 3 over the leaves of
+; an atom's characters. An S-expression is a node of label 1 over an atom's characters or a
+; node of label 2 over a list's elements. An optional tree is the node of label 1 over the
+; tree, or the leaf 0. A name is a node of label 0 over its characters.
+
+; optional trees
+(def some (lam ((x T)) (node 1 (single x))))
+(def none 0)
+(def isSome (lam ((m T)) (eq (label m) 1)))
+(def get (lam ((m T)) (child m 0)))
+(def both (lam ((a T) (b T)) (if (isSome a) (isSome b) 0)))
+
+; lists of trees by position, through a node's constant-time children
+(def at (lam ((xs Ts) (i T)) (child (node 0 xs) i)))
+(def nonEmpty (lam ((xs Ts)) (lcase T T xs 0 (lam ((x T) (r Ts)) 1))))
+(def tail (lam ((xs Ts)) (lcase T Ts xs (nil T) (lam ((x T) (r Ts)) r))))
+(def drop (lam ((n T) (xs Ts)) (iter Ts tail xs n)))
+
+; the list of the values of a list of optional trees, when every one is present
+(deftype Opts (Prod T Ts))
+(def allSome (lam ((ms Ts))
+  (let r Opts (foldr T Opts (lam ((m T) (acc Opts)) (pair (both m (fst acc)) (cons (get m) (snd acc))))
+                (pair 1 (nil T)) ms)
+    (if (fst r) (some (node 0 (snd r))) none))))
+
+; tokens
+(deftype Tok (Prod Ts (Prod Ts T)))
+(deftype TokK (Arrow Tok Tok))
+(def flush (lam ((s Tok))
+  (if (nonEmpty (fst (snd s)))
+    (pair (cons (node 3 (reverse (fst (snd s)))) (fst s)) (pair (nil T) (snd (snd s))))
+    s)))
+(def isSpace (lam ((c T)) (if (eq c 32) 1 (if (eq c 9) 1 (if (eq c 13) 1 (eq c 10))))))
+(def tokStep (lam ((s Tok) (c T))
+  (if (snd (snd s)) (pair (fst s) (pair (fst (snd s)) (if (eq c 10) 0 1)))
+  (if (eq c 59) (let f Tok (flush s) (pair (fst f) (pair (fst (snd f)) 1)))
+  (if (eq c 40) (let f Tok (flush s) (pair (cons 1 (fst f)) (snd f)))
+  (if (eq c 41) (let f Tok (flush s) (pair (cons 2 (fst f)) (snd f)))
+  (if (isSpace c) (flush s)
+    (pair (fst s) (pair (cons c (fst (snd s))) 0)))))))))
+(def tokenize (lam ((cs Ts))
+  (reverse (fst (flush
+    ((foldr T TokK (lam ((c T) (k TokK) (s Tok)) (k (tokStep s c))) (lam ((s Tok)) s) cs)
+     (pair (nil T) (pair (nil T) 0))))))))
+
+; S-expressions, by a stack of lists under construction, innermost first, each in reverse
+(deftype Stack (List Ts))
+(deftype Par (Prod T Stack))
+(deftype ParK (Arrow Par Par))
+(def fail (pair 0 (nil Ts)))
+(def parseStep (lam ((s Par) (tok T))
+  (if (fst s)
+    (lcase Ts Par (snd s) fail
+      (lam ((f Ts) (fs Stack))
+        (if (eq (label tok) 1) (pair 1 (cons (nil T) (cons f fs)))
+        (if (eq (label tok) 3) (pair 1 (cons (cons (node 1 (children tok)) f) fs))
+          (lcase Ts Par fs fail
+            (lam ((g Ts) (gs Stack)) (pair 1 (cons (cons (node 2 (reverse f)) g) gs))))))))
+    s)))
+(def readSExps (lam ((cs Ts))
+  (let s Par ((foldr T ParK (lam ((t T) (k ParK) (s Par)) (k (parseStep s t))) (lam ((s Par)) s)
+                (tokenize cs))
+              (pair 1 (cons (nil T) (nil Ts))))
+    (if (fst s)
+      (lcase Ts T (snd s) none
+        (lam ((f Ts) (fs Stack))
+          (lcase Ts T fs (some (node 0 (reverse f))) (lam ((g Ts) (gs Stack)) none))))
+      none))))
+
+; atoms and names
+(def isAtom (lam ((e T)) (eq (label e) 1)))
+(def isList (lam ((e T)) (eq (label e) 2)))
+(def nameOf (lam ((e T)) (node 0 (children e))))
+(def named (lam ((e T) (n T)) (if (isAtom e) (equal (nameOf e) n) 0)))
+(def kwT (quote (0 84)))
+(def kwUnit (quote (0 85 110 105 116)))
+(def kwProd (quote (0 80 114 111 100)))
+(def kwArrow (quote (0 65 114 114 111 119)))
+(def kwList (quote (0 76 105 115 116)))
+(def kwLam (quote (0 108 97 109)))
+(def kwLet (quote (0 108 101 116)))
+(def kwPair (quote (0 112 97 105 114)))
+(def kwFst (quote (0 102 115 116)))
+(def kwSnd (quote (0 115 110 100)))
+(def kwIf (quote (0 105 102)))
+(def kwQuote (quote (0 113 117 111 116 101)))
+(def kwCons (quote (0 99 111 110 115)))
+(def kwNil (quote (0 110 105 108)))
+(def kwFold (quote (0 102 111 108 100)))
+(def kwIter (quote (0 105 116 101 114)))
+(def kwFoldr (quote (0 102 111 108 100 114)))
+(def kwLcase (quote (0 108 99 97 115 101)))
+(def kwUnitValue (quote (0 117 110 105 116)))
+(def kwDef (quote (0 100 101 102)))
+(def kwDeftype (quote (0 100 101 102 116 121 112 101)))
+(def primNames (children (quote (0
+  (0 108 97 98 101 108) (0 97 114 105 116 121) (0 99 104 105 108 100) (0 110 111 100 101)
+  (0 99 104 105 108 100 114 101 110) (0 97 100 100) (0 115 117 98) (0 109 117 108)
+  (0 100 105 118) (0 109 111 100) (0 101 113) (0 108 116) (0 101 113 117 97 108)
+  (0 108 111 103 50)))))
+
+; the first position of a name in a list of names
+(def indexOf (lam ((x T) (xs Ts))
+  (foldr T T (lam ((y T) (r T)) (if (equal x y) (some 0) (if (isSome r) (some (add (get r) 1)) none)))
+    none xs)))
+; the type a type abbreviation names; an abbreviation is a node over its name and its type
+(def lookupType (lam ((n T) (tys Ts))
+  (foldr T T (lam ((p T) (r T)) (if (equal n (child p 0)) (some (child p 1)) r)) none tys)))
+; the value of a numeral: a non-empty list of decimal digits
+(deftype Num (Prod T (Prod T T)))
+(def numeral (lam ((cs Ts))
+  (let r Num (foldr T Num
+               (lam ((c T) (s Num))
+                 (if (lt c 48) (pair 0 (snd s))
+                 (if (lt 57 c) (pair 0 (snd s))
+                   (pair (fst s) (pair (add (fst (snd s)) (mul (sub c 48) (snd (snd s))))
+                                       (mul 10 (snd (snd s))))))))
+               (pair 1 (pair 0 1)) cs)
+    (if (nonEmpty cs) (if (fst r) (some (fst (snd r))) none) none))))
+
+; a fold whose results carry the subtree they come from, the subtrees' list and the results'
+(deftype RT (Prod T T))
+(deftype RTs (List RT))
+(def rtTrees (lam ((rs RTs)) (foldr RT Ts (lam ((r RT) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
+(def rtValues (lam ((rs RTs)) (foldr RT Ts (lam ((r RT) (acc Ts)) (cons (snd r) acc)) (nil T) rs)))
+(def node2 (lam ((l T) (a T) (b T)) (node l (cons a (single b)))))
+(def some2 (lam ((l T) (a T) (b T)) (if (both a b) (some (node2 l (get a) (get b))) none)))
+
+; an S-expression read as a type, given the type abbreviations in force
+(def readType (lam ((tys Ts) (e T))
+  (snd (fold RT
+    (lam ((l T) (rs RTs))
+      (let raw T (node l (rtTrees rs))
+        (let vs Ts (rtValues rs)
+          (pair raw
+            (if (isAtom raw)
+              (let n T (nameOf raw)
+                (if (equal n kwT) (some 0) (if (equal n kwUnit) (some 1) (lookupType n tys))))
+            (if (isList raw)
+              (let h T (at (children raw) 0)
+                (let k T (arity raw)
+                  (if (named h kwProd) (if (eq k 3) (some2 2 (at vs 1) (at vs 2)) none)
+                  (if (named h kwArrow) (if (eq k 3) (some2 3 (at vs 1) (at vs 2)) none)
+                  (if (named h kwList)
+                    (if (eq k 2) (if (isSome (at vs 1)) (some (node 4 (single (get (at vs 1))))) none) none)
+                    none)))))
+              none))))))
+    e))))
+
+; an S-expression read as a quoted datum: a numeral is a leaf, and a list of a numeral and data
+; is a node
+(def readDatum (lam ((e T))
+  (snd (fold RT
+    (lam ((l T) (rs RTs))
+      (let raw T (node l (rtTrees rs))
+        (pair raw
+          (if (isAtom raw)
+            (let v T (numeral (children raw)) (if (isSome v) (some (node (get v) (nil T))) none))
+          (if (isList raw)
+            (lcase T T (children raw) none
+              (lam ((h T) (r Ts))
+                (let v T (if (isAtom h) (numeral (children h)) none)
+                  (let ds T (allSome (tail (rtValues rs)))
+                    (if (both v ds) (some (node (get v) (children (get ds)))) none)))))
+            none)))))
+    e))))
+
+; resolution: each S-expression's result is its subtree with its resolution as a function of
+; the names bound around it
+(deftype Scope Ts)
+(deftype Res (Arrow Scope T))
+(deftype RR (Prod T Res))
+(deftype RRs (List RR))
+(def rrTrees (lam ((rs RRs)) (foldr RR Ts (lam ((r RR) (acc Ts)) (cons (fst r) acc)) (nil T) rs)))
+(def rrApply (lam ((rs RRs) (scope Scope))
+  (foldr RR Ts (lam ((r RR) (acc Ts)) (cons ((snd r) scope) acc)) (nil T) rs)))
+(def rrTail (lam ((rs RRs)) (lcase RR RRs rs (nil RR) (lam ((r RR) (rest RRs)) rest))))
+(def rrAt (lam ((rs RRs) (i T) (scope Scope))
+  ((lcase RR Res (iter RRs rrTail rs i) (lam ((s Scope)) none) (lam ((r RR) (rest RRs)) (snd r)))
+   scope)))
+(def app (lam ((f T) (x T)) (node2 10 f x)))
+(def apps (lam ((f T) (xs Ts)) (foldr T T (lam ((x T) (acc T)) (app acc x)) f (reverse xs))))
+(def some1 (lam ((l T) (a T)) (if (isSome a) (some (node l (single (get a)))) none)))
+(def argsOf (lam ((rs RRs) (n T) (scope Scope)) (allSome (rrApply (iter RRs rrTail rs n) scope))))
+(def mkArgs (lam ((l T) (a T)) (if (isSome a) (some (node l (children (get a)))) none)))
+(def appsOpt (lam ((f T) (a T)) (if (both f a) (some (apps (get f) (children (get a)))) none)))
+
+; the binders of an abstraction: one binder (x A), or a list of them
+(def binders (lam ((b T))
+  (if (isList b)
+    (if (eq (arity b) 2) (if (isAtom (child b 0)) (single b) (children b)) (children b))
+    (nil T))))
+; the names and types of binders, as the node of label 0 over nodes of label 0 over a name and
+; a type, when every binder is a name with a type
+(def readBinders (lam ((tys Ts) (bs Ts))
+  (allSome (foldr T Ts
+    (lam ((c T) (acc Ts))
+      (cons (if (isList c)
+              (if (eq (arity c) 2)
+                (if (isAtom (child c 0))
+                  (let A T (readType tys (child c 1))
+                    (if (isSome A) (some (node2 0 (nameOf (child c 0)) (get A))) none))
+                  none)
+                none)
+              none)
+            acc))
+    (nil T) bs))))
+
+; one atom's resolution
+(def resolveAtom (lam ((defs Ts) (raw T) (scope Scope))
+  (let v T (numeral (children raw))
+    (if (isSome v) (some (node 15 (single (get v))))
+      (let n T (nameOf raw)
+        (let i T (indexOf n scope)
+          (if (isSome i) (some (node 8 (single (get i))))
+            (let j T (indexOf n defs)
+              (if (isSome j) (some (node 23 (single (get j))))
+                (let k T (indexOf n primNames)
+                  (if (isSome k) (some (node 22 (single (get k))))
+                    (if (equal n kwUnitValue) (some (node 11 (nil T))) none))))))))))))
+
+; one list's resolution, from its elements with their resolutions
+(def resolveList (lam ((tys Ts) (raw T) (rs RRs) (scope Scope))
+  (let es Ts (children raw)
+    (let k T (arity raw)
+      (let h T (at es 0)
+          (if (eq k 0) none
+          (if (if (named h kwLam) (eq k 3) 0)
+            (let bs T (readBinders tys (binders (at es 1)))
+              (if (isSome bs)
+                (let ps Ts (children (get bs))
+                  (if (nonEmpty ps)
+                    (let body T (rrAt rs 2
+                                  (append (reverse (foldr T Ts (lam ((p T) (acc Ts)) (cons (child p 0) acc)) (nil T) ps))
+                                          scope))
+                      (if (isSome body)
+                        (some (foldr T T (lam ((p T) (u T)) (node2 9 (child p 1) u)) (get body) ps))
+                        none))
+                    none))
+                none))
+          (if (if (named h kwLet) (eq k 5) 0)
+            (let x T (at es 1)
+              (if (isAtom x)
+                (let A T (readType tys (at es 2))
+                  (let body T (rrAt rs 4 (cons (nameOf x) scope))
+                    (let e T (rrAt rs 3 scope)
+                      (if (both A (both body e))
+                        (some (app (node2 9 (get A) (get body)) (get e)))
+                        none))))
+                none))
+          (if (named h kwPair) (mkArgs 12 (argsOf rs 1 scope))
+          (if (named h kwFst) (mkArgs 13 (argsOf rs 1 scope))
+          (if (named h kwSnd) (mkArgs 14 (argsOf rs 1 scope))
+          (if (named h kwIf) (mkArgs 16 (argsOf rs 1 scope))
+          (if (named h kwCons) (mkArgs 20 (argsOf rs 1 scope))
+          (if (if (named h kwQuote) (eq k 2) 0) (some1 15 (readDatum (at es 1)))
+          (if (if (named h kwNil) (eq k 2) 0) (some1 19 (readType tys (at es 1)))
+          (if (if (named h kwFold) (lt 1 k) 0)
+            (let A T (readType tys (at es 1))
+              (if (isSome A) (appsOpt (some (node 17 (single (get A)))) (argsOf rs 2 scope)) none))
+          (if (if (named h kwIter) (lt 1 k) 0)
+            (let A T (readType tys (at es 1))
+              (if (isSome A) (appsOpt (some (node 18 (single (get A)))) (argsOf rs 2 scope)) none))
+          (if (if (named h kwFoldr) (lt 2 k) 0)
+            (let A T (some2 21 (readType tys (at es 1)) (readType tys (at es 2)))
+              (if (isSome A) (appsOpt A (argsOf rs 3 scope)) none))
+          (if (if (named h kwLcase) (lt 2 k) 0)
+            (let A T (some2 24 (readType tys (at es 1)) (readType tys (at es 2)))
+              (if (isSome A) (appsOpt A (argsOf rs 3 scope)) none))
+            (appsOpt (rrAt rs 0 scope) (argsOf rs 1 scope)))))))))))))))))))))
+
+; an S-expression resolved into a kernel term, given the type abbreviations in force, the names
+; of the definitions before it and the names bound around it
+(def resolve (lam ((tys Ts) (defs Ts) (e T) (scope Scope))
+  ((snd (fold RR
+     (lam ((l T) (rs RRs))
+       (let raw T (node l (rrTrees rs))
+         (pair raw
+           (lam ((s Scope))
+             (if (isAtom raw) (resolveAtom defs raw s)
+               (if (isList raw) (resolveList tys raw rs s) none))))))
+     e))
+   scope)))
+
+; a program's forms read into its bundle: the state is whether every form has read, the type
+; abbreviations, the names of the definitions, and their terms
+(deftype Prog (Prod T (Prod Ts (Prod Ts Ts))))
+(deftype ProgK (Arrow Prog Prog))
+(def progStep (lam ((s Prog) (e T))
+  (let tys Ts (fst (snd s))
+    (let names Ts (fst (snd (snd s)))
+      (let terms Ts (snd (snd (snd s)))
+        (if (if (fst s) (if (isList e) (if (eq (arity e) 3) (isAtom (child e 1)) 0) 0) 0)
+          (let n T (nameOf (child e 1))
+            (if (named (child e 0) kwDef)
+              (let t T (resolve tys names (child e 2) (nil T))
+                (if (isSome t)
+                  (pair 1 (pair tys (pair (append names (single n)) (append terms (single (get t))))))
+                  (pair 0 (snd s))))
+            (if (named (child e 0) kwDeftype)
+              (let A T (readType tys (child e 2))
+                (if (isSome A) (pair 1 (pair (cons (node2 0 n (get A)) tys) (snd (snd s))))
+                  (pair 0 (snd s))))
+              (pair 0 (snd s)))))
+          (pair 0 (snd s))))))))
+(def readProgram (lam ((es Ts))
+  (let s Prog ((foldr T ProgK (lam ((e T) (k ProgK) (s Prog)) (k (progStep s e))) (lam ((s Prog)) s) es)
+               (pair 1 (pair (nil T) (pair (nil T) (nil T)))))
+    (if (fst s)
+      (some (node2 100 (node 101 (snd (snd (snd s)))) (node 102 (fst (snd (snd s))))))
+      none))))
