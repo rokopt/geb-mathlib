@@ -1427,6 +1427,19 @@ checklist and in CI.
   morphisms, over the same class `Geb/Prototypes/UniverseVariance/` shows both
   type formers act along. No theorem here depends on an axiom beyond `propext`
   and `Quot.sound`, and no declaration depends on `Classical.choice`.
+- `Geb/Prototypes/FiniteChoice.lean` — finite choice and congruence in
+  finitely many arguments, without `Classical.choice`.
+  `GebProto.exists_forall_of_finEnum` gives finitely many existence statements
+  a common witness function, by recursion on a `FinEnum` enumeration, and
+  `GebProto.eqvGen_of_update` states that a function of finitely many
+  arguments that relates its values before and after replacing one argument
+  by a related one respects the equivalence relations generated, the
+  arguments being replaced one at a time. `GebProto.finEnumBool` and
+  `GebProto.finEnumPEmpty` enumerate the booleans and the empty type, and
+  `GebProto.update_update` and `GebProto.update_apply_self` reprove two laws
+  of `Function.update` whose mathlib proofs depend on `Classical.choice`. The
+  mirror `GebTests/Prototypes/FiniteChoice.lean` applies the congruence to the
+  sum of a pair of naturals.
 - `Geb/Prototypes/QuotientPRA/Basic.lean` — proof-relevant relations internal
   to the presheaves on a category `I`, as presheaves on
   `I × WalkingParallelPair`: terms over `(i, zero)`, witnesses over
@@ -1519,11 +1532,9 @@ checklist and in CI.
   many arguments, enumerated by `FinEnum`, `GebProto.QuotientPRA.exists_refl`
   builds a reflexivity witness of every term, and
   `GebProto.QuotientPRA.unit_mk_congr` states that the term constructors
-  respect classes, the arguments being replaced one at a time.
-  `GebProto.QuotientPRA.exists_forall_of_finEnum` makes finitely many choices,
-  and `GebProto.QuotientPRA.finEnumBool` and
-  `GebProto.QuotientPRA.finEnumPEmpty` enumerate the booleans and the empty
-  type. No declaration here depends on `Classical.choice`.
+  respect classes, the arguments being replaced one at a time
+  (`GebProto.eqvGen_of_update`). No declaration here depends on
+  `Classical.choice`.
 - `Geb/Prototypes/QuotientPRA/InitialModel.lean` — the quotient W-type of a
   quotient presheaf polynomial functor with free finitary arities, term
   arguments and congruences is the initial model, over any category of sorts.

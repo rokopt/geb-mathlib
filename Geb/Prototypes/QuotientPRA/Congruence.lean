@@ -7,7 +7,7 @@ module
 
 public import Geb.Prototypes.QuotientPRA.FreeArity
 public import Geb.Prototypes.QuotientPRA.Basic
-public import Mathlib.Data.FinEnum
+public import Geb.Prototypes.FiniteChoice
 
 meta import GebMeta -- shake: keep
 
@@ -30,15 +30,13 @@ induction on the term ({lit}`exists_refl`), although reflexivity is not a constr
 ({lit}`GebProto.QuotientPRA.Obstruction`). With reflexivity witnesses for the other
 arguments, a witness between one argument of a term constructor and another term
 relates the applications before and after replacing the argument
-({lit}`mk_linked_update`). Replacing the arguments one at a time along an enumeration,
-the term constructors respect the equivalence relation the witnesses generate
-({lit}`mk_eqvGen`): arguments with equal classes give terms with equal classes
-({lit}`unit_mk_congr`).
+({lit}`mk_linked_update`). Replacing the arguments one at a time along an enumeration
+({name}`GebProto.eqvGen_of_update`), the term constructors respect the equivalence relation
+the witnesses generate ({lit}`mk_eqvGen`): arguments with equal classes give terms with equal
+classes ({lit}`unit_mk_congr`).
 
 ## Main definitions
 
-* {lit}`finEnumBool`, {lit}`finEnumPEmpty` — enumerations of the booleans and the empty
-  type.
 * {lit}`endMor` — the endpoint morphisms at an object over the terms.
 * {lit}`TermArguments` — every argument of a term constructor is a term.
 * {lit}`HasCongruences` — every term constructor has a congruence.
@@ -46,21 +44,12 @@ the term constructors respect the equivalence relation the witnesses generate
 
 ## Main statements
 
-* {lit}`exists_forall_of_finEnum` — finitely many choices, constructively.
 * {lit}`exists_refl` — every term has a reflexivity witness.
-* {lit}`mk_linked_update`, {lit}`mk_eqvGen_update`, {lit}`mk_eqvGen` — the term
-  constructors respect the witnesses, in one argument and in all.
+* {lit}`mk_linked_update`, {lit}`mk_eqvGen` — the term constructors respect the witnesses,
+  in one argument and in all.
 * {lit}`unit_eq_iff` — two terms have the same class exactly when the witnesses relate
   them by a finite zig-zag.
 * {lit}`unit_mk_congr` — the term constructors respect classes.
-
-## Implementation notes
-
-The finiteness of the arguments is an enumeration, {name}`FinEnum`, whose list the
-choices recurse on. mathlib's {lit}`Quotient.finChoice` for a {name}`Fintype` depends
-on {lit}`Classical.choice`, as do {name}`Function.update_idem` and
-{name}`Function.update_eq_self`; the two lemmas on {name}`Function.update` are
-reproved here as {lit}`update_update` and {lit}`update_apply_self`.
 
 ## References
 
@@ -79,67 +68,6 @@ set_option doc.verso true
 open CategoryTheory Limits
 
 namespace GebProto.QuotientPRA
-
-section Choice
-
-universe u v
-
-/-- Finitely many existence statements have a common witness function: the choice of
-finitely many elements, constructive by recursion on an enumeration. -/
-theorem exists_forall_of_finEnum {ι : Type u} [FinEnum ι] {α : ι → Sort v}
-    {p : (i : ι) → α i → Prop} (h : ∀ i, ∃ x, p i x) : ∃ f : (i : ι) → α i, ∀ i, p i (f i) := by
-  have key : ∀ l : List ι, ∃ f : (i : ι) → i ∈ l → α i, ∀ i (hi : i ∈ l), p i (f i hi) :=
-    List.rec ⟨(fun _ hi ↦ nomatch hi), (fun _ hi ↦ nomatch hi)⟩ fun i₀ l ih ↦ by
-      obtain ⟨x₀, hx₀⟩ := h i₀
-      obtain ⟨f, hf⟩ := ih
-      refine ⟨fun i hi ↦ if hii : i = i₀ then hii ▸ x₀ else f i (List.mem_of_ne_of_mem hii hi),
-        fun i hi ↦ ?_⟩
-      dsimp only
-      split
-      · rename_i hii
-        subst hii
-        exact hx₀
-      · exact hf i _
-  obtain ⟨f, hf⟩ := key (FinEnum.toList ι)
-  exact ⟨fun i ↦ f i (FinEnum.mem_toList i), fun i ↦ hf i _⟩
-
-/-- Updating a function twice at one point is updating it once with the second
-value. -/
-theorem update_update {ι : Type u} [DecidableEq ι] {α : ι → Sort v} (f : (i : ι) → α i)
-    (i : ι) (x y : α i) : Function.update (Function.update f i x) i y = Function.update f i y := by
-  funext j
-  by_cases hj : j = i
-  · subst hj
-    rw [Function.update_self, Function.update_self]
-  · rw [Function.update_of_ne hj, Function.update_of_ne hj, Function.update_of_ne hj]
-
-/-- Updating a function at a point with its own value there leaves it. -/
-theorem update_apply_self {ι : Type u} [DecidableEq ι] {α : ι → Sort v} (f : (i : ι) → α i)
-    (i : ι) : Function.update f i (f i) = f := by
-  funext j
-  by_cases hj : j = i
-  · subst hj
-    exact Function.update_self _ _ _
-  · exact Function.update_of_ne hj _ _
-
-/-- The booleans, enumerated without {lit}`Classical.choice`, on which mathlib's
-enumerations of {name}`Fin` depend. -/
-@[instance_reducible] def finEnumBool : FinEnum Bool where
-  card := 2
-  equiv :=
-    { toFun b := cond b 1 0
-      invFun i := Fin.cases false (fun _ ↦ true) i
-      left_inv b := by cases b <;> rfl
-      right_inv i := Fin.cases rfl (fun j ↦ Fin.cases rfl (fun k ↦ k.elim0) j) i }
-  decEq := inferInstance
-
-/-- The empty type, enumerated without {lit}`Classical.choice`. -/
-@[instance_reducible] def finEnumPEmpty : FinEnum PEmpty.{u + 1} where
-  card := 0
-  equiv := ⟨(fun x ↦ nomatch x), Fin.elim0, (fun x ↦ nomatch x), (fun i ↦ i.elim0)⟩
-  decEq x := nomatch x
-
-end Choice
 
 universe uI vI uA uB
 
@@ -244,64 +172,15 @@ theorem mk_linked_update (a : S.A) {c : I × WalkingParallelPair} (hq : S.q a = 
     · rw [Function.update_of_ne hb, Function.update_of_ne hb]
       exact hrs b true
 
-/-- The term constructors respect the generated equivalence relation in each
-argument. -/
-theorem mk_eqvGen_update (a : S.A) {c : I × WalkingParallelPair} (hq : S.q a = c)
-    (hc : c.2 = .zero) (ts : (b : S.Gen a) → 𝐅.W.obj ⟨S.gobj a b⟩) (b₀ : S.Gen a)
-    {x y : 𝐅.W.obj ⟨S.gobj a b₀⟩} (hxy : Relation.EqvGen (Linked _ (ht.gobj hq hc b₀)) x y) :
-    Relation.EqvGen (Linked c hc)
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq (Function.update ts b₀ x)))
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq (Function.update ts b₀ y))) := by
-  refine Relation.EqvGen.rec (motive := fun x y _ ↦ Relation.EqvGen (Linked c hc)
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq (Function.update ts b₀ x)))
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq (Function.update ts b₀ y))))
-    (fun x y hr ↦ ?_) (fun _ ↦ .refl _) (fun _ _ _ ih ↦ .symm _ _ ih)
-    (fun _ _ _ _ _ ih₁ ih₂ ↦ .trans _ _ _ ih₁ ih₂) hxy
-  have h := mk_linked_update hcong a hq hc (Function.update ts b₀ x) b₀
-    ((Function.update_self b₀ x ts).symm ▸ hr)
-  rw [update_update] at h
-  exact .rel _ _ h
-
 /-- The term constructors respect the generated equivalence relation: arguments related
-in every place give related applications, the arguments being replaced one at a time
-along an enumeration. -/
+in every place give related applications. -/
 theorem mk_eqvGen (a : S.A) {c : I × WalkingParallelPair} (hq : S.q a = c)
     (hc : c.2 = .zero) {ts ts' : (b : S.Gen a) → 𝐅.W.obj ⟨S.gobj a b⟩}
     (h : ∀ b, Relation.EqvGen (Linked _ (ht.gobj hq hc b)) (ts b) (ts' b)) :
     Relation.EqvGen (Linked c hc) (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq ts))
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq ts')) := by
-  let g : List (S.Gen a) → (b : S.Gen a) → 𝐅.W.obj ⟨S.gobj a b⟩ :=
-    List.foldr (fun b₀ g ↦ Function.update g b₀ (ts' b₀)) ts
-  have hg : ∀ l b, g l b = ts b ∨ g l b = ts' b :=
-    List.rec (fun _ ↦ .inl rfl) fun b₀ l ih b ↦ by
-      change Function.update (g l) b₀ (ts' b₀) b = ts b ∨
-        Function.update (g l) b₀ (ts' b₀) b = ts' b
-      by_cases hb : b = b₀
-      · subst hb
-        rw [Function.update_self]
-        exact .inr rfl
-      · rw [Function.update_of_ne hb]
-        exact ih b
-  have hmem : ∀ l b, b ∈ l → g l b = ts' b :=
-    List.rec (fun _ hb ↦ nomatch hb) fun b₀ l ih b hb ↦ by
-      change Function.update (g l) b₀ (ts' b₀) b = ts' b
-      by_cases hbb : b = b₀
-      · subst hbb
-        exact Function.update_self _ _ _
-      · rw [Function.update_of_ne hbb]
-        exact ih b (List.mem_of_ne_of_mem hbb hb)
-  have hstep : ∀ l, Relation.EqvGen (Linked c hc)
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq ts))
-      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq (g l))) :=
-    List.rec (.refl _) fun b₀ l ih ↦ by
-      refine .trans _ _ _ ih ?_
-      have hb₀ : Relation.EqvGen (Linked _ (ht.gobj hq hc b₀)) (g l b₀) (ts' b₀) :=
-        (hg l b₀).elim (fun he ↦ he ▸ h b₀) (fun he ↦ he ▸ .refl _)
-      have := mk_eqvGen_update hcong a hq hc (g l) b₀ hb₀
-      rwa [update_apply_self] at this
-  have hfin : g (FinEnum.toList (S.Gen a)) = ts' :=
-    funext fun b ↦ hmem _ b (FinEnum.mem_toList b)
-  exact hfin ▸ hstep _
+      (PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq ts')) :=
+  eqvGen_of_update (fun ts ↦ PresheafPFunctor.W.mk (FreeArity.freeNode 𝐅.W a hq ts))
+    (fun ts b _ hy ↦ mk_linked_update hcong a hq hc ts b hy) h
 
 /-- The term constructors respect classes: arguments with equal classes give terms with
 equal classes. -/
