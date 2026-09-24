@@ -27,7 +27,8 @@ operations of a finitary signature, one class chosen per argument.
 ## Main statements
 
 * {lit}`exists_forall_of_finEnum` — finitely many choices, constructively.
-* {lit}`update_update`, {lit}`update_apply_self` — two laws of {name}`Function.update`.
+* {lit}`update_update`, {lit}`update_apply_self`, {lit}`update_apply_of` — laws of
+  {name}`Function.update`.
 * {lit}`eqvGen_update`, {lit}`eqvGen_of_update` — congruence in one argument and in all.
 
 ## Implementation notes
@@ -105,6 +106,18 @@ theorem update_apply_self {ι : Type u} [DecidableEq ι] {α : ι → Sort v} (f
   · subst hj
     exact Function.update_self _ _ _
   · exact Function.update_of_ne hj _ _
+
+/-- A property holding of the new value at the updated point and of the old values elsewhere
+holds of every value of the update. -/
+theorem update_apply_of {ι : Type u} [DecidableEq ι] {α : ι → Sort v} (P : (i : ι) → α i → Prop)
+    (f : (i : ι) → α i) (i : ι) (x : α i) (hx : P i x) (hf : ∀ j, j ≠ i → P j (f j)) (j : ι) :
+    P j (Function.update f i x j) := by
+  by_cases hj : j = i
+  · subst hj
+    rw [Function.update_self]
+    exact hx
+  · rw [Function.update_of_ne hj]
+    exact hf j hj
 
 section Congruence
 

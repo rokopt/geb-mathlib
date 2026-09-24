@@ -32,6 +32,7 @@ to reflexivities and one witness is a witness, and replacing the arguments one a
 
 ## Main definitions
 
+* {lit}`Presentation.congWit` — the congruence of an operation at a witness.
 * {lit}`Presentation.op` — an operation applied to classes.
 * {lit}`Presentation.clsAlg` — the algebra of classes.
 
@@ -74,30 +75,49 @@ universe uA uE u v
 
 variable {P : PFunctor.{uA, u}} (p : Presentation.{uA, uE, u} P) {Γ Δ : Type u} {V : Type v}
 
+/-- An operation applied to reflexivities in every place but one and a witness in that place:
+the congruence of the operation at that witness. -/
+def congWit (a : P.A) [DecidableEq (P.B a)] (ts : P.B a → P.FreeM Γ) (b : P.B a)
+    (w : (sum P p.E).FreeM Γ) : (sum P p.E).FreeM Γ :=
+  FreeM.liftBind (P := sum P p.E) (.inl a)
+    (Function.update (fun b ↦ p.refl (ts b)) b w : P.B a → (sum P p.E).FreeM Γ)
+
+/-- An endpoint map applied to the congruence at a witness is the operation applied to the
+arguments with that endpoint of the witness in its place. -/
+theorem endpoint_congWit (a : P.A) [DecidableEq (P.B a)] (ts : P.B a → P.FreeM Γ) (b : P.B a)
+    (w : (sum P p.E).FreeM Γ) (f : (sum P p.E).FreeM Γ → P.FreeM Γ)
+    (hf : ∀ t, f (p.refl t) = t)
+    (hlift : ∀ ws : P.B a → (sum P p.E).FreeM Γ,
+      f (FreeM.liftBind (P := sum P p.E) (.inl a) ws) = .liftBind a fun b ↦ f (ws b)) :
+    f (p.congWit a ts b w) = .liftBind a (Function.update ts b (f w)) := by
+  refine (hlift _).trans (congrArg (FreeM.liftBind a) (funext fun b' ↦ ?_))
+  by_cases hb : b' = b
+  · subst hb
+    rw [Function.update_self, Function.update_self]
+  · rw [Function.update_of_ne hb, Function.update_of_ne hb]
+    exact hf (ts b')
+
+/-- The source of the congruence at a witness. -/
+theorem src_congWit (a : P.A) [DecidableEq (P.B a)] (ts : P.B a → P.FreeM Γ) (b : P.B a)
+    (w : (sum P p.E).FreeM Γ) :
+    p.src (p.congWit a ts b w) = .liftBind a (Function.update ts b (p.src w)) :=
+  p.endpoint_congWit a ts b w p.src p.src_refl fun _ ↦ rfl
+
+/-- The target of the congruence at a witness. -/
+theorem tgt_congWit (a : P.A) [DecidableEq (P.B a)] (ts : P.B a → P.FreeM Γ) (b : P.B a)
+    (w : (sum P p.E).FreeM Γ) :
+    p.tgt (p.congWit a ts b w) = .liftBind a (Function.update ts b (p.tgt w)) :=
+  p.endpoint_congWit a ts b w p.tgt p.tgt_refl fun _ ↦ rfl
+
 /-- An operation applied to reflexivities and one witness is a witness: replacing one argument
 of an operation by a linked term links the applications. -/
 theorem linked_liftBind_update (a : P.A) [DecidableEq (P.B a)] (ts : P.B a → P.FreeM Γ)
     (b : P.B a) {y : P.FreeM Γ} (h : p.Linked (ts b) y) :
     p.Linked (.liftBind a ts) (.liftBind a (Function.update ts b y)) := by
   obtain ⟨w, hs, ht⟩ := h
-  refine ⟨FreeM.liftBind (P := sum P p.E) (.inl a)
-      (Function.update (fun b ↦ p.refl (ts b)) b w : P.B a → (sum P p.E).FreeM Γ),
-    congrArg (FreeM.liftBind a) (funext fun b' ↦ ?_),
-    congrArg (FreeM.liftBind a) (funext fun b' ↦ ?_)⟩
-  · change p.src (Function.update (fun b ↦ p.refl (ts b)) b w b') = ts b'
-    by_cases hb : b' = b
-    · subst hb
-      rw [Function.update_self]
-      exact hs
-    · rw [Function.update_of_ne hb]
-      exact p.src_refl (ts b')
-  · change p.tgt (Function.update (fun b ↦ p.refl (ts b)) b w b') = Function.update ts b y b'
-    by_cases hb : b' = b
-    · subst hb
-      rw [Function.update_self, Function.update_self]
-      exact ht
-    · rw [Function.update_of_ne hb, Function.update_of_ne hb]
-      exact p.tgt_refl (ts b')
+  refine ⟨p.congWit a ts b w, ?_, ?_⟩
+  · rw [src_congWit, hs, update_apply_self]
+  · rw [tgt_congWit, ht]
 
 /-- The operations respect classes: arguments with equal classes give applications with equal
 classes. -/

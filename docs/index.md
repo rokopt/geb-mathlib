@@ -1437,7 +1437,9 @@ checklist and in CI.
   arguments being replaced one at a time. `GebProto.finEnumBool` and
   `GebProto.finEnumPEmpty` enumerate the booleans and the empty type, and
   `GebProto.update_update` and `GebProto.update_apply_self` reprove two laws
-  of `Function.update` whose mathlib proofs depend on `Classical.choice`. The
+  of `Function.update` whose mathlib proofs depend on `Classical.choice`;
+  `GebProto.update_apply_of` states a property of every value of an update
+  from the property of the new value and of the old ones. The
   mirror `GebTests/Prototypes/FiniteChoice.lean` applies the congruence to the
   sum of a pair of naturals.
 - `Geb/Prototypes/QuotientPRA/Basic.lean` — proof-relevant relations internal
@@ -2062,8 +2064,21 @@ checklist and in CI.
   a definition of depth two, `quad(x) = double(double(x))`; and the
   equation `c = succ(c)`, which neither eliminates `c` nor identifies
   closed terms of zero and successor, and has no solution in the natural
-  numbers. No theorem here depends on an axiom beyond `propext` and
-  `Quot.sound`, and no declaration depends on `Classical.choice`.
+  numbers. `Presentation/Slice/` carries the many-sorted presentations over
+  a slice polynomial endofunctor (`Slice.Presentation`): the well-sorted
+  terms of the free monad of the underlying polynomial functor
+  (`Slice.WellSorted`), preserved by substitution and by the expansion of
+  well-sorted derived operations; their evaluation in algebras over the
+  sorts (`Slice.evalS`), through the free monad's dependent recursor; the
+  classes of each sort, the coequalizer of the endpoints of the well-sorted
+  witnesses of that sort (`Slice.Presentation.Cls`); and, for finitary
+  presentations, the classes of all sorts as the free algebra over the sorts
+  satisfying the equations (`Slice.Presentation.liftAll_g`,
+  `Slice.Presentation.eq_liftAll`). Its mirror presents lists with
+  concatenation over the sorts of elements and lists, by the recursion
+  equations of concatenation. No theorem here depends on an axiom beyond
+  `propext` and `Quot.sound`, and no declaration depends on
+  `Classical.choice`.
 - [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
   represents values with leaf, stem, and fork constructors, and expressions
   as application trees over values. Its tagged binary-tree encoding prevents
