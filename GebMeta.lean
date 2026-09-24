@@ -132,6 +132,7 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.BitStream.Oitavem,
    `GebManual.BibTeX,
    `GebManual.Bibliography,
+   `GebManual.Bootstrap,
    `GebManual.DecisionProblems,
    `GebManual.Introduction,
    `GebManual.QuotientPRA,

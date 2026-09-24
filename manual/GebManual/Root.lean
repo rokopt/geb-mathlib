@@ -11,6 +11,7 @@ public import GebManual.WTypes
 public import GebManual.DecisionProblems
 public import GebManual.ValueRepresentation
 public import GebManual.QuotientPRA
+public import GebManual.Bootstrap
 
 /-! # Manual root
 
@@ -30,3 +31,5 @@ open Verso.Genre Manual
 {include 0 GebManual.ValueRepresentation}
 
 {include 0 GebManual.QuotientPRA}
+
+{include 0 GebManual.Bootstrap}
