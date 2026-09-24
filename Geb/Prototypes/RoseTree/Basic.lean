@@ -60,9 +60,11 @@ namespace RoseTree
 
 variable {α β : Type}
 
-/-- The node with a label over a list of children. -/
+/-- The node with a label over a list of children. The children are tabulated in an array
+built once, so that each is reached in constant time. -/
 def node (a : α) (cs : List (RoseTree α)) : RoseTree α :=
-  WType.mk (a, cs.length) fun i ↦ cs[i]
+  let arr := cs.toArray
+  WType.mk (a, cs.length) fun i ↦ arr[i.1]'(by simp [arr])
 
 /-- The label of a tree. -/
 def label : RoseTree α → α
@@ -75,7 +77,8 @@ def children : RoseTree α → List (RoseTree α)
 @[simp] theorem label_node (a : α) (cs : List (RoseTree α)) : (node a cs).label = a := rfl
 
 @[simp] theorem children_node (a : α) (cs : List (RoseTree α)) :
-    (node a cs).children = cs := List.ofFn_getElem
+    (node a cs).children = cs := by
+  simp only [children, node, List.getElem_toArray, List.ofFn_getElem]
 
 /-- A node over a list tabulating a direction function is the tree of that
 function. -/
@@ -84,8 +87,10 @@ theorem node_eq_mk (a : α) (cs : List (RoseTree α)) {n : ℕ} (hlen : cs.lengt
     node a cs = WType.mk (a, n) f := by
   subst hlen
   unfold node
+  dsimp only
   congr 1
   funext i
+  rw [List.getElem_toArray]
   exact Option.some.inj ((List.getElem?_eq_getElem i.2).symm.trans (key i))
 
 /-- A tree is the node of its label over its children. -/
@@ -112,7 +117,7 @@ def elim (f : α → List β → β) : RoseTree α → β :=
 /-- The computation rule of the fold. -/
 @[simp] theorem elim_node (f : α → List β → β) (a : α) (cs : List (RoseTree α)) :
     elim f (node a cs) = f a (cs.map (elim f)) := by
-  simp [elim, node, WType.elim, List.ofFn_getElem_eq_map]
+  simp [elim, node, WType.elim, List.getElem_toArray, List.ofFn_getElem_eq_map]
 
 /-- The algebra of the paramorphism: rebuild the node from the children's rebuilt subtrees,
 and apply the step to the children paired with their results. -/
