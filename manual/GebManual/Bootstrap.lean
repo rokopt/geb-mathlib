@@ -8,6 +8,7 @@ module
 public import VersoManual
 public import GebManual.Bibliography
 import Geb.Prototypes.Bootstrap
+import Geb.Prototypes.Kernel
 import Geb.Prototypes.Definition
 import Geb.Prototypes.Computability.Triage.Simulation
 
@@ -53,9 +54,9 @@ The following are fixed; the plan builds on them.
   and its soundness proof stays in Lean.
 * Kernel. The kernel language is Gödel's System T
   {citep Goedel1958}[] over rose trees: simple types built from the
-  single base type of rose trees by products and function types, the
-  constructors and destructors of rose trees, and a fold whose result
-  may be of any type. Every program terminates, and its denotation is
+  single base type of rose trees by products, function types and lists,
+  the constructors and destructors of rose trees, and a fold whose
+  result may be of any type. Every program terminates, and its denotation is
   a Lean function. The functions it defines are those of System T over
   the natural numbers, the recursive functions provably total in Peano
   arithmetic (Section 7.4.2 of {citet GirardLafontTaylor1989}[]),
@@ -526,29 +527,54 @@ contract.
 
 ## Phase 1: the kernel runs in Lean
 
-1. Lean: the kernel's syntax, a signature of de Bruijn variables,
-   abstraction, application, pairs, tree construction and
-   destruction, fold, builtins and the reference node, whose free-monad
-   terms encode into rose trees through {name}`Geb.Definition.encode`;
-   the types `T`, `1`, products and functions. The fold's shape is the
-   first thing the prototype decides: the W-type's recursor with
-   indexed children, or a first-child, next-sibling encoding under
-   which the tree iteration of `LawvereGodelT` ports unchanged.
-2. Lean: the type checker, a recognizer of well-typed terms, and the
-   evaluator, which is the denotation itself: `T` denotes
+1. Lean: the kernel's syntax. Terms and types are rose trees read
+   directly, the label of a node naming its constructor, so a program
+   is a value of the language and needs no separate syntax type: de
+   Bruijn variables, abstraction over a domain type, application, the
+   unit value, pairs and projections, quoted trees, a conditional on
+   whether a label is non-zero, lists with their right fold
+   ({name}`Geb.Kernel.foldrDen`), the fold of trees and iteration at
+   given result types, primitives and references by index; the types
+   `T`, `1`, products, functions and lists. A tree is a label with a
+   list of trees, and the fold's step receives the leaf of a node's
+   label and the list of its children's results
+   ({name}`Geb.Kernel.foldDen`), so the fold is the recursion of the
+   carrier itself. Lists are in the kernel because a node is built from
+   the list of its children: building a node one child at a time copies
+   the children at each step, which on a node of many children, a file
+   of bytes among them, takes quadratic time, while a list of children
+   is built in linear time and tabulated once.
+2. Lean: the type checker and the evaluator are one paramorphism,
+   {name}`Geb.Kernel.infer`, returning a term's type together with its
+   denotation, or nothing when the term is ill-typed: `T` denotes
    {name}`Geb.RoseTree`, the fold denotes {name}`Geb.RoseTree.elim`,
-   and a well-typed term denotes a Lean function. The evaluator agrees
-   with the denotation by construction.
-3. Lean: builtins on labels, arithmetic and comparison of natural
-   numbers, in a table of identifiers that is only extended. The set is
-   chosen by what the reader, substitution and the checker need, not by
-   importing the host's library.
-4. Lean: the reader and printer, readable S-expressions over natural
-   labels with symbols and a name table, with the retraction law.
+   and a well-typed term denotes a Lean function
+   ({name}`Geb.Kernel.Ty.den`). The evaluator agrees with the
+   denotation by construction. The term is traversed once and its
+   meaning is a Lean closure, so running a program is compiled Lean
+   code rather than an interpretive loop.
+3. Lean: the primitives {name}`Geb.Kernel.prims`, on labels and
+   children: a node's label, arity and child by index; a node from a
+   label and a list of children, and the list of a node's children;
+   arithmetic and comparison of labels; and equality of trees. The
+   table is only extended, and its members are chosen by what the
+   reader, substitution and the checker need.
+4. Lean: the reader. A program is a sequence of named definitions in
+   S-expressions over lists of characters; names resolve to de Bruijn
+   indices, references and primitives ({name}`Geb.Kernel.readProgram`),
+   the definitions are checked and evaluated in order
+   ({name}`Geb.Kernel.load`), and the last is applied to an input tree
+   ({name}`Geb.Kernel.runMain`). A printer and the retraction law
+   between it and the reader remain to be written.
 
 Acceptance: a program written by hand in S-expressions is read, type
 checked and run, with arithmetic beyond a machine word; ill-typed and
-malformed programs are rejected.
+malformed programs are rejected. The examples of
+`GebTests/Prototypes/Kernel.lean` meet it: factorial of thirty by
+iteration, the size and mirror image of a tree by the fold, the reversal
+of a list in linear time by the right fold, definitions
+referring to earlier ones, and rejections of ill-typed, unbalanced,
+unresolved and mistyped programs.
 
 ## Phase 2: the choice of machine
 
@@ -577,7 +603,10 @@ Acceptance: the measurements and the decision are recorded.
 
 1. Lean: the closed bundle, a well-founded block of kernel definitions
    stored as a rose tree and linked through the reference node,
-   evaluated by one fold over its order.
+   evaluated by one fold over its order. The reader's sequence of
+   definitions, loaded in order by {name}`Geb.Kernel.load`, is its first
+   form; the bundle adds the stored tree and the validation of its
+   references.
 2. Lean: the annotation table of names and comments, keyed by vertex.
 3. Lean: the image, a version header followed by the interleaved wire
    form without sharing; its loader, which rejects truncation, trailing
@@ -684,5 +713,9 @@ sound, or remove the host's runtime from the trusted base; the Lean
 proofs and the independent route remain. Self-hosted here means that
 Geb's implementation is written in Geb and compiled by Geb; a native
 backend without Lean is a separate milestone.
+
+{includeLiterate "." Geb.Prototypes.Kernel.Basic "The kernel" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.Kernel.Reader "The kernel's readable syntax" (level := 1)}
 
 {includeLiterate "." Geb.Prototypes.Bootstrap "A computation-certificate prototype" (level := 1)}

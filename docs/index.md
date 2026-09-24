@@ -3618,7 +3618,8 @@ checklist and in CI.
   `Geb.RoseTree α` as the W-type of the signature `α × ℕ` with a position
   below the arity as direction, its list-of-children constructor
   `Geb.RoseTree.node` and projections, the induction `Geb.RoseTree.ind` and
-  the fold `Geb.RoseTree.elim`; it generalizes `Geb.Rose k` of
+  the fold `Geb.RoseTree.elim` with the paramorphism `Geb.RoseTree.para`,
+  whose step also sees each child as a tree; it generalizes `Geb.Rose k` of
   `Geb/Prototypes/ConcreteSyntax.lean`, whose labels are `Fin k`.
   `Bits.lean` represents a bitstring label by its enumeration index
   `Geb.Oitavem.rank`, a natural number that is an unboxed scalar in Lean's
@@ -3657,3 +3658,21 @@ checklist and in CI.
   Depends on `Geb.Prototypes.Computability.Triage.Bitstrings`,
   `Geb.Prototypes.Computability.Oitavem.Word`,
   `Geb.Prototypes.RoseTree.Basic`, and `Mathlib.Logic.Relation`.
+- `Geb/Prototypes/Kernel/` — the bootstrap kernel, System T over rose trees
+  with natural-number labels, whose terms and types are themselves rose
+  trees. `Basic.lean` gives the denotation of types (`Geb.Kernel.Ty.den`)
+  and the checker-evaluator `Geb.Kernel.infer`, one paramorphism over a
+  term returning its type with its denotation, so that evaluation agrees
+  with the denotation by construction; the primitives `Geb.Kernel.prims`
+  operate on labels and children, lists carry their right fold, the fold of
+  trees denotes `Geb.RoseTree.elim` over the list of children's results, and
+  iteration repeats a step as often as a label's value. `Reader.lean` reads
+  programs, sequences of named definitions in S-expressions over lists of
+  characters, resolving names to de Bruijn indices, references and
+  primitives (`Geb.Kernel.readProgram`), loads them in order
+  (`Geb.Kernel.load`), and applies the last to an input tree
+  (`Geb.Kernel.runMain`). Tested in `GebTests/Prototypes/Kernel.lean`. The
+  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
+  kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
+  `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum` and
+  `Mathlib.Data.Fin.VecNotation`.

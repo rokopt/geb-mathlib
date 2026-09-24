@@ -1,0 +1,110 @@
+/-
+Copyright (c) 2026 Terence Rokop. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Terence Rokop
+-/
+module
+
+public import Geb.Prototypes.Kernel -- shake: keep
+public meta import Geb.Prototypes.Kernel -- shake: keep
+
+set_option doc.verso true in
+/-!
+# Kernel examples
+
+Programs written in the kernel's readable syntax, read, checked and run: factorial beyond a
+machine word by iteration, the size and the mirror image of a tree by the fold and the
+reversal of a list by the right fold, definitions
+referring to earlier ones, and a conditional. Ill-typed, malformed and unresolved programs,
+and programs whose last definition is not a function on trees, are rejected.
+
+The programs are string constants, converted to lists of characters inside each
+{lit}`#guard`: core's {lit}`String.toList` depends on {lit}`Classical.choice`, and a
+{lit}`#guard` is not a declaration, so no declaration here acquires that dependency.
+
+## Main definitions
+
+* {lit}`datum` reads a quoted tree from text.
+* {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`reverseChildren`,
+  {lit}`quadruple` and {lit}`isZero` are programs.
+
+## Tags
+
+bootstrap, kernel, test
+-/
+
+set_option doc.verso true
+
+@[expose] public section
+
+namespace Geb.Kernel.Tests
+
+/-- The tree a datum's text denotes, or the leaf of label zero. -/
+def datum (s : List Char) : Tree :=
+  ((readSExps s).bind (·.head?) |>.bind readDatum).getD (leaf 0)
+
+/-- Factorial, iterating over pairs of a counter and a product. -/
+def factorial : String := "
+; n! as the second component after n steps from (0, 1)
+(def fact (lam (n T)
+  (snd (iter (Prod T T)
+         (lam (p (Prod T T)) (pair (add (fst p) 1) (mul (snd p) (add (fst p) 1))))
+         (pair 0 1)
+         n))))"
+
+/-- The number of nodes of a tree. -/
+def size : String := "
+(def sum (lam (xs (List T)) (foldr T T (lam (a T) (lam (b T) (add a b))) 0 xs)))
+(def size (lam (t T) (fold T (lam (l T) (lam (rs (List T)) (add 1 (sum rs)))) t)))"
+
+/-- The reversal of a list, in linear time by a right fold into functions. -/
+def reverse : String := "
+(def rev (lam (xs (List T))
+  ((foldr T (Arrow (List T) (List T))
+     (lam (x T) (lam (k (Arrow (List T) (List T))) (lam (acc (List T)) (k (cons x acc)))))
+     (lam (acc (List T)) acc)
+     xs)
+   (nil T))))"
+
+/-- The mirror image of a tree: the children of every node in reverse order. -/
+def mirror : String := reverse ++ "
+(def mirror (lam (t T) (fold T (lam (l T) (lam (rs (List T)) (node l (rev rs)))) t)))"
+
+/-- The root's children in reverse order, the subtrees unchanged. -/
+def reverseChildren : String := reverse ++ "
+(def main (lam (t T) (node t (rev (children t)))))"
+
+/-- A definition referring to an earlier one. -/
+def quadruple : String := "
+(def double (lam (x T) (add x x)))
+(def quadruple (lam (x T) (double (double x))))"
+
+/-- The conditional on a label. -/
+def isZero : String := "(def isZero (lam (x T) (if x 0 1)))"
+
+#guard runMain factorial.toList (leaf 30) = some (leaf 265252859812191058636308480000000)
+#guard runMain factorial.toList (leaf 0) = some (leaf 1)
+#guard runMain size.toList (datum "(1 (2) (3 (4) (5)))".toList) = some (leaf 5)
+#guard runMain mirror.toList (datum "(1 (2) (3 (4) (5)))".toList) =
+  some (datum "(1 (3 (5) (4)) (2))".toList)
+#guard runMain reverseChildren.toList (datum "(1 (2 (5) (6)) (3) (4))".toList) =
+  some (datum "(1 (4) (3) (2 (5) (6)))".toList)
+#guard runMain quadruple.toList (leaf 5) = some (leaf 20)
+#guard runMain isZero.toList (leaf 0) = some (leaf 1)
+#guard runMain isZero.toList (leaf 7) = some (leaf 0)
+#guard runMain "(def f (lam (x T) (add x 18446744073709551615)))".toList (leaf 1) =
+  some (leaf 18446744073709551616)
+-- ill-typed
+#guard runMain "(def f (lam (x T) (add x unit)))".toList (leaf 1) = none
+#guard runMain "(def f (lam (x T) (x x)))".toList (leaf 1) = none
+#guard runMain "(def f (lam (x T) (if x unit 1)))".toList (leaf 1) = none
+-- malformed or unresolved
+#guard runMain "(def f (lam (x T) x)".toList (leaf 1) = none
+#guard runMain "(def f (lam (x T) y))".toList (leaf 1) = none
+#guard runMain "(def f (lam (x Nat) x))".toList (leaf 1) = none
+-- the last definition is not a function on trees
+#guard runMain "(def f unit)".toList (leaf 1) = none
+
+end Geb.Kernel.Tests
+
+end

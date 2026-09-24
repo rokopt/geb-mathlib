@@ -26,6 +26,8 @@ is a type with a computable isomorphism to {lit}`RoseTree`.
   constructor from a list of children and its two projections.
 * {lit}`RoseTree.elim` — the fold, whose step sees the label and the list of
   the children's results.
+* {lit}`RoseTree.para` — the paramorphism, whose step also sees each child as a
+  tree.
 
 # Main statements
 
@@ -34,6 +36,7 @@ is a type with a computable isomorphism to {lit}`RoseTree`.
   children.
 * {lit}`RoseTree.ind` — induction over nodes and their lists of children.
 * {lit}`RoseTree.elim_node` — the computation rule of the fold.
+* {lit}`RoseTree.para_node` — the computation rule of the paramorphism.
 
 # Tags
 
@@ -110,6 +113,31 @@ def elim (f : α → List β → β) : RoseTree α → β :=
 @[simp] theorem elim_node (f : α → List β → β) (a : α) (cs : List (RoseTree α)) :
     elim f (node a cs) = f a (cs.map (elim f)) := by
   simp [elim, node, WType.elim, List.ofFn_getElem_eq_map]
+
+/-- The algebra of the paramorphism: rebuild the node from the children's rebuilt subtrees,
+and apply the step to the children paired with their results. -/
+def paraStep (f : α → List (RoseTree α × β) → β) (a : α) (rs : List (RoseTree α × β)) :
+    RoseTree α × β :=
+  (node a (rs.map Prod.fst), f a rs)
+
+/-- The paramorphism: the fold whose step sees each child as a tree together with its
+result. It is the fold at the carrier of pairs, so each child's result is computed once. -/
+def para (f : α → List (RoseTree α × β) → β) (t : RoseTree α) : β :=
+  (elim (paraStep f) t).2
+
+/-- The first component of the paramorphism's carrier rebuilds its input. -/
+theorem elim_paraStep_fst (f : α → List (RoseTree α × β) → β) (t : RoseTree α) :
+    (elim (paraStep f) t).1 = t :=
+  ind (P := fun t ↦ (elim (paraStep f) t).1 = t) (fun a cs ih ↦ by
+    simp only [elim_node, paraStep, List.map_map]
+    exact congrArg (node a) ((List.map_congr_left fun c hc ↦ ih c hc).trans cs.map_id)) t
+
+/-- The computation rule of the paramorphism. -/
+@[simp] theorem para_node (f : α → List (RoseTree α × β) → β) (a : α)
+    (cs : List (RoseTree α)) : para f (node a cs) = f a (cs.map fun c ↦ (c, para f c)) := by
+  simp only [para, elim_node, paraStep]
+  exact congrArg (f a) (List.map_congr_left fun c _ ↦
+    Prod.ext (elim_paraStep_fst f c) rfl)
 
 end RoseTree
 
