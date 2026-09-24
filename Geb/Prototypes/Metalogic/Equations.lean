@@ -24,11 +24,12 @@ premises' certificates and the terms and types the rule names. The checker is a 
 certificate that computes each conclusion from its premises' conclusions, trusting no stated
 conclusion; its result is a function of a program's definitions, the global environment they
 load, the context and the hypotheses. Its rules are those of equality; congruence of every term
-former; the β and η rules of functions, pairs and the unit type; evaluation of a closed term of
-the type of trees; weakening, cut and instantiation of the innermost variable; the computation
-rules of the right fold and case analysis of lists, of iteration and of the fold of trees;
-induction on lists, on trees and on labels; and references to definitions. Its soundness is
-proved against the denotation {name}`Geb.Kernel.infer`.
+former; the β and η rules of functions, pairs and the unit type; the δ rules, each a primitive
+at literals equal to the literal of its value; weakening, cut and instantiation of the innermost
+variable; the computation rules of the conditional at a quoted tree, of the right fold and case
+analysis of lists, of iteration and of the fold of trees; induction on lists, on trees and on
+labels; and references to definitions. Its soundness is proved against the denotation
+{name}`Geb.Kernel.infer`.
 
 ## Main definitions
 
@@ -36,6 +37,7 @@ proved against the denotation {name}`Geb.Kernel.infer`.
   context, and valid sequents.
 * {lit}`Loaded` — the agreement of a program's definitions with a global environment.
 * {lit}`mapBy` — the kernel term of a map over a list, by the right fold.
+* {lit}`listLit`, {lit}`IsLit` — the literal of a list of trees, and the test for a literal.
 * {lit}`checkCore`, {lit}`checkMore`, {lit}`check` — the rules, and the checker.
 
 ## Main statements
@@ -50,6 +52,11 @@ An induction rule moves the hypotheses below the induction variable: the checker
 and checks that they are typed there, a decidable check in place of the converse of weakening.
 The rules are dispatched in two matches of labels, so that each match's case analysis in the
 soundness proof stays small.
+
+The checker evaluates no term but a primitive at literals: a checker written in the kernel's
+own language could not evaluate every closed term, since a total language has no total
+interpreter of its own terms, and each δ rule is a primitive's own value. Evaluation of a closed
+term is derived from the δ rules, the computation rules and congruence.
 
 ## Tags
 
@@ -485,6 +492,28 @@ def listParts (L : Tree) : Option Tree :=
 /-- The weakening of a term by {lit}`n` variables below {lit}`k` bound ones. -/
 def wkAt (k n : ℕ) (t : Tree) : Tree := trav (wkVar n) t k
 
+/-- The literal of a list of trees: each tree quoted, in front of the empty list of trees. -/
+def listLit (xs : List Tree) : Tree := xs.foldr (fun x r ↦ mk 20 [mk 15 [x], r]) (mk 19 [tT])
+
+/-- Whether a term is a list literal: the empty list, or a quoted tree in front of a list
+literal. -/
+def IsListLit : Tree → Bool :=
+  RoseTree.para fun l rs ↦
+    match l, rs with
+    | 19, [_] => true
+    | 20, [(x, _), (_, r)] => x.label == 15 && x.children.length == 1 && r
+    | _, _ => false
+
+/-- Whether a term is a literal: a quoted tree, or a list literal. -/
+def IsLit (t : Tree) : Bool := t.label == 15 && t.children.length == 1 || IsListLit t
+
+/-- The literal of a closed term's value, when its type is that of trees or of lists of
+trees. -/
+def lit? (m : Meaning []) : Option Tree :=
+  if h : m.1 = tT then some (mk 15 [cast (congrArg Ty.den h) (m.2 ())])
+  else if h : m.1 = tList tT then some (listLit (cast (congrArg Ty.den h) (m.2 ())))
+  else none
+
 /-- The checker's result at a certificate: the conclusion, as a function of a program's
 definitions, its global environment, the context and the hypotheses, or nothing when the
 certificate does not check. -/
@@ -538,11 +567,14 @@ def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
   | 15, [(p, _)] => (typeOf G Γ p).bind fun P ↦ (prodParts P).map fun _ ↦
     ⟨P, mk 12 [mk 13 [p], mk 14 [p]], p⟩
   | 16, [(t, _)] => if typeOf G Γ t = some tUnit then some ⟨tUnit, t, mk 11 []⟩ else none
-  -- evaluation of a closed term of the type of trees
-  | 17, [(t, _)] =>
+  -- a primitive at literals is the literal of its value
+  | 17, (k, _) :: as =>
     match Γ with
-    | [] => (infer G [] t).bind fun m ↦
-      if h : m.1 = tT then some ⟨tT, t, mk 15 [cast (congrArg Ty.den h) (m.2 ())]⟩ else none
+    | [] =>
+      if (as.map Prod.fst).all IsLit then
+        let t := apps (mk 22 [k]) (as.map Prod.fst)
+        (infer G [] t).bind fun m ↦ (lit? m).map fun v ↦ ⟨m.1, t, v⟩
+      else none
     | _ :: _ => none
   -- weakening, cut and instantiation of the innermost variable
   | 18, [(_, p)] =>
@@ -647,6 +679,10 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
   -- a reference to a definition is the definition, weakened into the context
   | 31, [(j, _)] => D[j.label]?.bind fun t ↦ (typeOf G Γ (mk 23 [j])).map fun A ↦
     ⟨A, mk 23 [j], Kernel.wk Γ.length t⟩
+  -- the conditional at a quoted tree
+  | 32, [(c, _), (a, _), (b, _)] => (typeOf G Γ a).bind fun A ↦
+    if typeOf G Γ b = some A then some ⟨A, mk 16 [mk 15 [c], a, b], if c.label ≠ 0 then a else b⟩
+    else none
   | _, _ => none
 
 /-- One rule of the checker, by the label of a certificate's node. -/
@@ -890,12 +926,27 @@ theorem valid_unitEta {t : Tree} (ht : typeOf G Γ t = some tUnit) :
   obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
   exact ⟨ft, _, hft, infer_unit G Γ, fun _ _ ↦ rfl⟩
 
-/-- Evaluation of a closed term of the type of trees. -/
-theorem valid_eval {H : List Eqn} {t A : Tree} {f : Ctx.den [] → Ty.den A}
-    (ht : infer G [] t = some ⟨A, f⟩) (hA : A = tT) :
-    Valid G [] H ⟨tT, t, mk 15 [cast (congrArg Ty.den hA) (f ())]⟩ := by
-  subst hA
-  exact ⟨f, _, ht, infer_quote G [] (f ()), fun _ _ ↦ rfl⟩
+/-- A list literal denotes its list of trees. -/
+theorem infer_listLit (G : List Glob) (Γ : Ctx) :
+    ∀ xs : List Tree, infer G Γ (listLit xs) = some ⟨tList tT, fun _ ↦ xs⟩ :=
+  List.rec (infer_nil rfl) fun x _ ih ↦ infer_cons (infer_quote G Γ x) ih
+
+/-- A closed term of the type of trees or of lists of trees is the literal of its value. -/
+theorem valid_lit {H : List Eqn} {t v : Tree} {m : Meaning []} (ht : infer G [] t = some m)
+    (hv : lit? m = some v) : Valid G [] H ⟨m.1, t, v⟩ := by
+  obtain ⟨A, f⟩ := m
+  simp only [lit?] at hv
+  split at hv
+  · rename_i hA
+    cases hv
+    subst hA
+    exact ⟨f, _, ht, infer_quote G [] (f ()), fun _ _ ↦ rfl⟩
+  · split at hv
+    · rename_i hA
+      cases hv
+      subst hA
+      exact ⟨f, _, ht, infer_listLit G [] (f ()), fun _ _ ↦ rfl⟩
+    · cases hv
 
 /-- Weakening by one variable. -/
 theorem valid_weaken {A : Tree} {q : Eqn} (h : Valid G Γ [] q) : Valid G (A :: Γ) H (q.wk 1) := by
@@ -1123,13 +1174,12 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
       cases h
       exact valid_unitEta ht
     · cases h
-  case h_18 t st heq =>
+  case h_18 k sk as heq =>
     split at h
-    · obtain ⟨⟨A, f⟩, hm, h⟩ := Option.bind_eq_some_iff.mp h
-      split at h
-      · rename_i hA
-        cases h
-        exact valid_eval hm hA
+    · split at h
+      · obtain ⟨m, hm, h⟩ := Option.bind_eq_some_iff.mp h
+        obtain ⟨v, hv, rfl⟩ := Option.map_eq_some_iff.mp h
+        exact valid_lit hm hv
       · cases h
     · cases h
   case h_19 cp p heq =>
@@ -1349,6 +1399,19 @@ theorem valid_unfold {D : List Tree} {j t A : Tree} (hD : Loaded D G) (ht : D[j.
   obtain ⟨f, hf, hfe⟩ := infer_closed (hD.2 _ _ _ ht hg) Γ
   exact ⟨_, f, href.trans (by rw [hg]; rfl), hf, fun e _ ↦ (hfe e).symm⟩
 
+/-- The conditional at a quoted tree is its first branch when the tree's label is not zero,
+and its second when it is. -/
+theorem valid_ifQuote {c a b A : Tree} (ha : typeOf G Γ a = some A) (hb : typeOf G Γ b = some A) :
+    Valid G Γ H ⟨A, mk 16 [mk 15 [c], a, b], if c.label ≠ 0 then a else b⟩ := by
+  obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
+  obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb
+  have hif := infer_if (infer_quote G Γ c) hfa hfb
+  by_cases hc : c.label = 0
+  · simp only [hc, ne_eq, not_true_eq_false, ↓reduceIte] at hif ⊢
+    exact ⟨_, fb, hif, hfb, fun _ _ ↦ rfl⟩
+  · simp only [hc, ne_eq, not_false_eq_true, ↓reduceIte] at hif ⊢
+    exact ⟨_, fa, hif, hfa, fun _ _ ↦ rfl⟩
+
 /-- The conclusion of each rule of {lit}`checkMore` is valid when its premises' conclusions are. -/
 theorem checkMore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glob} {Γ : Ctx}
     {H : List Eqn} {q : Eqn}
@@ -1422,7 +1485,14 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
     obtain ⟨t, ht, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨A, hA, rfl⟩ := Option.map_eq_some_iff.mp h
     exact valid_unfold hD ht hA
-  case h_9 => cases h
+  case h_9 c sc a sa b sb heq =>
+    obtain ⟨A, hA, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hB
+      cases h
+      exact valid_ifQuote hA hB
+    · cases h
+  case h_10 => cases h
 
 /-- Every conclusion the checker computes, in a program's definitions and the environment they
 load, is valid. -/

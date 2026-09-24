@@ -17,9 +17,10 @@ congruence; a substitution, instantiating a variable of a derived equation; an i
 list, proving that appending the empty list to a list, written with the kernel's right fold,
 gives the list; an induction on a label, proving that iterating the identity leaves its start
 unchanged; an induction on a tree, proving that a fold whose step ignores its arguments is
-constant; the computation rules of case analysis of lists; and a reference to a definition of
-a loaded program. Certificates with an altered binder, an invalid dependency or a false
-conclusion do not check to that conclusion.
+constant; δ rules at literal trees and lists; the computation rules of the conditional and of
+case analysis of lists; and a reference to a definition of a loaded program. Certificates with
+an altered binder, an invalid dependency or a false conclusion do not check to that
+conclusion.
 
 ## Main definitions
 
@@ -87,9 +88,20 @@ def induction : Tree := mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], ste
   some ⟨tT, mk 13 [mk 12 [mk 15 [leaf 5], mk 15 [leaf 5]]], mk 15 [leaf 5]⟩
 -- an induction: appending the empty list to a list gives the list
 #guard check induction [] [] [lt] [] = some ⟨lt, appendNil, Tm.var 0⟩
--- evaluation of a closed term
-#guard check (mk 17 [apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]]]) [] [] [] [] =
+-- δ rules: a sum of labels, a node from a label and a list literal, and the list of a tree's
+-- children
+#guard check (mk 17 [leaf 5, mk 15 [leaf 2], mk 15 [leaf 2]]) [] [] [] [] =
   some ⟨tT, apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]], mk 15 [leaf 4]⟩
+#guard check (mk 17 [leaf 3, mk 15 [leaf 7], listLit [leaf 1, leaf 2]]) [] [] [] [] =
+  some ⟨tT, apps (mk 22 [leaf 3]) [mk 15 [leaf 7], listLit [leaf 1, leaf 2]],
+    mk 15 [mk 7 [leaf 1, leaf 2]]⟩
+#guard check (mk 17 [leaf 4, mk 15 [mk 7 [leaf 1, leaf 2]]]) [] [] [] [] =
+  some ⟨lt, apps (mk 22 [leaf 4]) [mk 15 [mk 7 [leaf 1, leaf 2]]], listLit [leaf 1, leaf 2]⟩
+-- the conditional at a quoted tree whose label is not zero, and at one whose label is
+#guard check (mk 32 [leaf 1, mk 15 [leaf 5], mk 15 [leaf 6]]) [] [] [] [] =
+  some ⟨tT, mk 16 [mk 15 [leaf 1], mk 15 [leaf 5], mk 15 [leaf 6]], mk 15 [leaf 5]⟩
+#guard (check (mk 32 [leaf 0, Tm.var 0, mk 15 [leaf 6]]) [] [] [tT] []).map (·.rhs) =
+  some (mk 15 [leaf 6])
 -- an altered binder: an abstraction whose annotation is not a type, and a β step whose
 -- argument does not have the annotated type
 #guard check (mk 5 [leaf 7, mk 1 [Tm.var 0]]) [] [] [] [] = none
@@ -98,9 +110,15 @@ def induction : Tree := mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], ste
 -- differ
 #guard check (mk 0 [leaf 1]) [] [] [tT] [⟨tT, Tm.var 0, Tm.var 0⟩] = none
 #guard check (mk 3 [mk 1 [Tm.var 0], mk 1 [mk 15 [leaf 0]]]) [] [] [tT] [] = none
--- false conclusions: evaluation does not conclude a wrong value, induction with a step that
+-- a δ rule at an argument that is not a literal, in a context that is not empty, and at a
+-- partial application
+#guard check (mk 17 [leaf 5, apps (mk 22 [leaf 5]) [mk 15 [leaf 1], mk 15 [leaf 1]],
+    mk 15 [leaf 2]]) [] [] [] [] = none
+#guard check (mk 17 [leaf 5, mk 15 [leaf 2], mk 15 [leaf 2]]) [] [] [tT] [] = none
+#guard check (mk 17 [leaf 5, mk 15 [leaf 2]]) [] [] [] [] = none
+-- false conclusions: a δ rule does not conclude a wrong value, induction with a step that
 -- does not prove its case fails, and the theorem does not conclude that the append is empty
-#guard check (mk 17 [apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]]]) [] [] [] [] ≠
+#guard check (mk 17 [leaf 5, mk 15 [leaf 2], mk 15 [leaf 2]]) [] [] [] [] ≠
   some ⟨tT, apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]], mk 15 [leaf 5]⟩
 #guard check (mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], mk 1 [Tm.var 0]]) [] [] [lt] [] =
   none
