@@ -84,7 +84,8 @@ The following are fixed; the plan builds on them.
   programs (the necessity theorem of `Geb/Prototypes/Typechecker/`'s
   classifier module), so logic is not a Surface 1 construct. The
   metalogic of Phase 7 holds propositions and their proofs about kernel
-  programs. Surface 2, built on both, adds subset types by arbitrary
+  programs, on the rungs of the section on the metalogic and its
+  checker. Surface 2, built on both, adds subset types by arbitrary
   propositions, quotients whose respect for their relation is proved,
   and definitions by equations whose unique solution is proved; it is
   the setoid completion of Surface 1 with its obligations discharged in
@@ -96,6 +97,18 @@ The following are fixed; the plan builds on them.
   syntaxes itself, the default is readable S-expressions, the readable
   form of the canonical S-expressions of {citet RFC9804}[], whose data
   model the reader's S-expressions share.
+* Metalogic. The metalogic is the free topos with the inductive types
+  the bootstrap uses, natural numbers and rose trees, and its
+  equivalence with the free topos with a natural numbers object is
+  proved in Geb. It is reached through rungs of categorical structure,
+  each with its internal language, the subobject classifier last; no
+  classical logic is an intermediate step.
+* Artifacts. The compiler's image and, once the compiler emits Lean,
+  the emitted Lean are committed as build artifacts. Continuous
+  integration regenerates them and compares their bytes with the
+  committed ones, so a change that leaves the compiler's source
+  unchanged, of the seed, the host or the toolchain, leaves them
+  unchanged.
 
 ## The seed boundary
 
@@ -411,44 +424,117 @@ type is therefore a complete kernel for the metalogic: the topos
 structure is derived from provability rather than presented by
 combinators, and no mutual definition of objects, morphisms and their
 equalities is needed. That this topos is equivalent to the free topos
-with a natural numbers object is a claim about structure and its
-preservation, to be proved; a bijection between trees and natural
-numbers in sets does not prove it.
+with a natural numbers object is to be proved in Geb; a bijection
+between trees and natural numbers in sets does not prove it. The
+equivalence is a statement about the syntax of two type theories:
+translations of their types and terms in each direction, and derivable
+isomorphisms between each type and its translation back. Its proof is
+an induction on types, terms and derivations, which needs first-order
+logic over syntax and not the subobject classifier.
 
-The seed's rule set states typing, substitution, comprehension,
-extensionality and induction explicitly; the equalities of the
-computation fragment supply none of them. Proof terms are explicit and
-finite, and the checker is not required to decide equality of
-morphisms, to normalize programs, or to search for proofs that a
-relation is functional. Propositions are not executable Booleans in
-general.
+The metalogic is reached through rungs, each the one below it with
+structure added. Each rung has an internal language, an extensional
+dependent type theory in which a proposition is a type with at most one
+element {citep Maietti2005}[], so a checker for one rung is extended to
+the next by a block of rules. The locos and the arithmetic universe are
+as {citet Maietti2010}[] defines them, the arithmetic universe, Joyal's,
+being a pretopos with parameterized list objects; a Heyting pretopos is
+a pretopos whose internal type theory is first-order
+{citep Maietti1998}[]. Every rung carries the rose-tree object as a
+primitive, the initial algebra of the functor taking an object to the
+product of the natural numbers object with the object's list object.
 
-The ten primitive rules of HOL Light are "rather similar to those for
-the internal logic of a topos", and "it is only from" the choice axiom
-that the HOL logic is classical {citep Harrison2009}[], excluded
-middle following from choice {citep Diaconescu1975}[]. The metalogic's
-checker is accordingly designed as intuitionistic higher-order logic
-in the style of HOL Light, with proof objects, and with three
-differences:
+:::table +header
+*
+  * Rung
+  * Structure added
+  * Logic of subobjects
+  * Geb
+*
+  * Locos
+  * finite limits, stable disjoint finite coproducts, parameterized
+    list objects
+  * equality and conjunction
+  * Surface 1: recognized types and the functions the kernel defines
+*
+  * Arithmetic universe
+  * stable effective quotients of equivalence relations
+  * coherent: falsity, disjunction, existential quantification
+  * quotients by relations, their respect proved
+*
+  * Heyting pretopos
+  * right adjoints to pulling back subobjects
+  * first-order: implication, universal quantification
+  * propositions and proofs about programs, subset types
+*
+  * Π-pretopos: locally cartesian closed pretopos
+  * dependent products of all objects
+  * first-order, over function types
+  * the kernel's function types as objects
+*
+  * Topos
+  * a subobject classifier
+  * higher-order: power objects
+  * the foundational metalogic
+:::
+
+A locally cartesian closed pretopos is a Heyting pretopos, since the
+right adjoint to pulling back along a map preserves monomorphisms and
+so restricts to subobjects. Every topos with a natural numbers object
+is a locally cartesian closed pretopos, a Π-pretopos, and has W-types
+(Theorem 2.12 of {citet VanDenBerg2012}[]), but not conversely: the
+ex/lex-completion of the category of topological spaces is a Π-pretopos
+and not a topos (Remark 6.9 of the same). A Π-pretopos is a topos
+exactly when it has a subobject classifier, a topos being a category
+with finite limits, exponentials and a subobject classifier. What the
+subobject classifier adds is propositions as values, power objects and
+comprehension by arbitrary predicates;
+propositions about the elements of an object, as its subobjects, exist
+on every rung, and first-order logic from the Heyting pretopos up. The
+kernel's function types are objects from the locally cartesian closed
+pretopos up; below it, a program is a map between recognized types,
+whatever the types of its internal terms. That the category of
+recognized types is a locos is to be proved; the necessity theorem
+proves that it has no subobject classifier.
+
+A free category of each rung maps to the free topos by the functor that
+preserves its structure, so a proof checked on a lower rung remains
+valid on every higher one. The functor need not be full or faithful:
+the free topos has arrows between natural numbers that no System T
+term defines (below), and it may prove equations between programs that
+a weaker rung does not, in which case the free category of that rung
+is not a subcategory of the free topos. A proof therefore moves up the
+ladder unchanged, and down it only by being checked again.
+
+Each rung's rule set states typing, substitution, extensionality and
+induction explicitly, and the topos's adds comprehension; the
+equalities of the computation fragment supply none of them. Proof terms
+are explicit and finite, and the checker is not required to decide
+equality of morphisms, to normalize programs, or to search for proofs
+that a relation is functional. Propositions are not executable Booleans
+in general. Three properties of the type theory fix the checker's
+rules:
 
 * Sequents are indexed by their free variables, as Lambek and Scott's
-  are, since HOL's rules assume every type inhabited.
-* There is no choice operator. A topos has unique choice, so a
+  are, so that empty types are sound.
+* There is no choice operator, since in a topos choice implies excluded
+  middle {citep Diaconescu1975}[]. A topos has unique choice, so a
   functional relation is a morphism; descriptions are admitted only
   with a proof of unique existence.
-* A defined type is a subobject: its representation map is a
-  monomorphism with no total map back from the base type. A total map
-  back is suspected of deriving the weak excluded middle; that is to
-  be checked in Lean before the rule set is fixed, and the design
-  avoids it in any case.
+* A subtype is a subobject: its inclusion is a monomorphism with no
+  total map back from the base type. A retraction onto every inhabited
+  subtype would decide every proposition $`p`: the subtype
+  $`\{x : 2 \mid x = 1 \lor p\}` of $`2` is inhabited by $`1`, the
+  retraction's value at $`0` is $`0` exactly when $`p` holds, and
+  equality on $`2` is decidable.
 
-The checker is a fold over proof objects that computes each
+Each rung's checker is a fold over proof objects that computes each
 conclusion from the premises' conclusions, trusting no stated
 conclusion; {name}`Geb.Bootstrap.infer` is that pattern for a fragment
 of computation equalities. Its soundness is proved in Lean by
-interpreting types as Lean types, without `Classical.choice`, and it
-is tested in a model that is not Boolean, where a classical rule would
-fail.
+interpreting types as Lean types, without `Classical.choice`, and from
+the arithmetic universe up, where disjunction appears, it is tested in
+a model that is not Boolean, where a classical rule would fail.
 
 Programs are weaker than the metalogic. The free topos has arrows
 between natural numbers that no System T term defines, System T's own
@@ -477,9 +563,10 @@ a proof-producing tactic can be written in Geb and produce evidence
 the existing checker accepts. A new foundational principle needs a
 conservative interpretation into the checker's theory or an explicit
 change of the theory: defining a data type of purported proofs does
-not make them sound. The foundational rule set is therefore fixed
-before mathematical proofs are migrated, and a migration from Lean
-checks the logical strength and the universes it relies on, since a
+not make them sound. Each rung's rule set is therefore fixed before
+mathematical proofs are migrated to it, and a migration from Lean
+checks the rung, the logical strength and the universes it relies on,
+since a
 fixed elementary-topos presentation does not internalize all of
 Lean's universe-polymorphic mathematics.
 
@@ -575,7 +662,7 @@ to that image, and continuous integration checks both on every build.
   * `Geb/Prototypes/Kernel/Image.lean`, `Command.lean`, the executable `geb-kernel`
 *
   * 4: Geb grows in itself
-  * constructed, every step
+  * constructed, except the committed image
   * `bootstrap/*.geb`, `bootstrap/stage1/surface.geb`
 *
   * 5: speed and a second host
@@ -587,7 +674,7 @@ to that image, and continuous integration checks both on every build.
   * none
 *
   * 7: the metalogic
-  * not begun; depends only on Phase 1
+  * not begun; its lowest rung depends only on Phase 1
   * none
 :::
 
@@ -805,10 +892,15 @@ from the seed.
    identifier, each proved in Lean against the denotation of the term
    it replaces, with the shadow mode that runs both.
 3. Geb: compilers to the targets Phase 2 selects, emitting Lean first;
-   the optimized compiler compiles itself.
+   the optimized compiler compiles itself. The emitted Lean is
+   committed beside the image, each definition under a name derived
+   from its Geb name and in the order of the source, so that a change
+   of the compiler's source changes the emitted definitions it touches
+   and no others.
 
 Acceptance: both hosts reach the same image fixed point, and the
-compiler emitting Lean reaches the fixed point on emitted Lean.
+compiler emitting Lean reaches the fixed point on emitted Lean, which
+regenerates the committed Lean byte for byte.
 
 What the first four phases fix for this one: a second host implements
 the kernel as {name}`Geb.Kernel.infer` defines it, the labels of its
@@ -844,21 +936,28 @@ the hash written in Geb.
 
 ## Phase 7: the metalogic
 
-1. Lean: the rule set of the section on the metalogic and its
-   soundness, without `Classical.choice`, checked in a Boolean and a
-   non-Boolean model. This step depends only on Phase 1 and may proceed
-   in parallel with Phases 2 to 6.
-2. Geb: the proof checker, a fold over proof objects, compared with
-   the Lean checker on valid and malformed certificates.
-3. Geb: proofs about Geb programs, the elaborator's components first;
-   stronger checkers admitted by relative soundness proofs; then the
-   richer definitions, equation blocks, guarded blocks and presheaf
-   signatures, and the constructive fragment of the Lean and Idris
-   developments that the libraries consume.
+The steps are taken rung by rung, from the locos to the topos, on the
+ladder of the section on the metalogic and its checker.
 
-Acceptance: a theorem with hypotheses, a substitution and an induction
-checks, and certificates with altered binders, invalid dependencies or
-false conclusions fail.
+1. Lean: the rung's rule set and its soundness, without
+   `Classical.choice`, in the model of Lean types, and from the
+   arithmetic universe up also in a model that is not Boolean. On the
+   locos this step depends only on Phase 1 and may proceed in parallel
+   with Phases 2 to 6.
+2. Geb: the rung's proof checker, a fold over proof objects, compared
+   with the Lean checker on valid and malformed certificates.
+3. Geb: proofs about Geb programs, each on the lowest rung that states
+   it, the elaborator's components first; stronger checkers admitted by
+   relative soundness proofs; then the richer definitions, equation
+   blocks, guarded blocks and presheaf signatures, the constructive
+   fragment of the Lean and Idris developments that the libraries
+   consume, and the equivalence of the free topos with the rose-tree
+   object and the free topos with a natural numbers object.
+
+Acceptance, on each rung: a theorem with hypotheses, a substitution and
+an induction checks, and certificates with altered binders, invalid
+dependencies or false conclusions fail; on the topos, a comprehension
+checks as well.
 
 ## Improvements
 
@@ -911,9 +1010,10 @@ following, in the order of dependence.
    compiler compiles itself to a program that the host builds, and the
    executable fixed point holds with the host's build. This is the
    optimized self-compilation the aim names, idempotent from then on.
-2. The metalogic (Phase 7): the rule set and its soundness in Lean,
-   then the proof checker written in Geb, then proofs about the
-   compiler's components. It depends only on Phase 1.
+2. The metalogic (Phase 7), rung by rung: each rung's rule set and its
+   soundness in Lean, then its proof checker written in Geb, then
+   proofs about the compiler's components. Its lowest rung depends only
+   on Phase 1.
 3. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
    points reproduced on it, which is diverse double-compiling across
    hosts, and accelerations proved against the denotation.
@@ -929,13 +1029,14 @@ computation and one for logic; the others extend it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The metalogic's rule set is recommended next: it fixes the
-foundation before any mathematics migrates, it is the layer Surface 2
-waits on, it holds the one claim the design still has to check, that
-a total map back from a defined type's base derives the weak excluded
-middle, and it needs nothing beyond Phase 1. The compiler emitting Lean
-is the alternative that completes the computational side first. The
-second host, content identity and the syntax unification follow either.
+priority. The compiler emitting Lean (Phase 5, step 3) is next. It
+completes the computational side of the aim, which the decisions place
+before the proof checker written in Geb, and it builds the translation
+to a host language that the later reduction of the seed needs, the
+evaluator written in a subset of Geb and translated to the host as
+Squeak's and Scheme 48's are. The metalogic follows from its lowest
+rung, and the second host, content identity and the syntax unification
+follow either.
 
 ## What self-compilation establishes
 
@@ -951,19 +1052,51 @@ C2 = H(C1(S))
 C3 = H(C2(S))
 ```
 
-The target artifacts must agree, `C1(S) = C2(S)`, and so must the
-executable ones, `C2 = C3`; the second comparison needs a reproducible
-host build as well as deterministic output. Maps are ordered
-explicitly, and timestamps, random identifiers and absolute paths are
-excluded from every artifact that carries identity. Bytes are compared,
-not digests. A change of `S`, of the options or of a dependency starts
-a new test.
+The target artifacts must agree, `B(S) = C1(S)`, and that one comparison
+suffices while the target is the image or Lean source. The host build
+is then applied to identical bytes, `C2 = H(C1(S)) = H(B(S)) = C1`, so a
+comparison of executables tests only whether the host build is
+reproducible, a property of Lean and Lake rather than of Geb, and is
+checked separately if at all. GCC compares the object files of its
+second and third stages because its target is machine code; a compiler
+whose target is the source of another compiler compares that source.
+Lean compiles a program to C, which the toolchain's C compiler
+compiles and links; neither the C nor the executable is one of Geb's
+artifacts. Maps are ordered explicitly, and timestamps, random
+identifiers and absolute paths are excluded from every artifact that
+carries identity. Bytes are compared, not digests. A change of `S`, of
+the options or of a dependency starts a new test.
 
 A fixed point does not prove the compiler correct, prove the checker
 sound, or remove the host's runtime from the trusted base; the Lean
 proofs and the independent route remain. Self-hosted here means that
 Geb's implementation is written in Geb and compiled by Geb; a native
 backend without Lean is a separate milestone.
+
+## Comparing builds
+
+Another builder compares its artifacts with the committed ones by
+digest. The image and the emitted Lean are functions of the source and
+the pinned toolchain, so every builder's must agree; executables are
+not compared, by the previous section. Git names each committed file by
+the digest of its contents, SHA-1 in the default object format, and a
+signed commit or tag signs the tree of those digests; a builder who
+regenerates the artifacts in a checkout compares them by the status of
+the working copy, or compares a file's `git hash-object` with the blob
+the tree names. An artifact published outside the repository is
+accompanied by a manifest of SHA-256 digests signed with the key that
+signs commits, by `ssh-keygen -Y sign` when that key is an SSH key.
+GNU Guix compares builds the same way:
+[`guix challenge`](https://guix.gnu.org/manual/en/html_node/Invoking-guix-challenge.html)
+compares the digest of a locally built item with the digests that
+substitute servers publish and reports each mismatch.
+
+The digests of Phase 6 give definitions an identity across edits; they
+are not needed for this comparison, since the image is a canonical
+serialization without sharing and the digest of its bytes identifies
+the bundle. A table of them, one per definition, would locate a
+mismatch at a definition, where the digest of a file reports only that
+the files differ.
 
 {includeLiterate "." Geb.Prototypes.Kernel.Basic "The kernel" (level := 1)}
 
