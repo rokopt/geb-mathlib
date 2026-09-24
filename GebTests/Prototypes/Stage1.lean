@@ -14,9 +14,10 @@ set_option doc.verso true in
 
 The stage-1 compiler is the stage-0 compiler with the Surface 1 expansion rewritten in
 Surface 1, {lit}`bootstrap/stage1/surface.geb`. The seed cannot read Surface 1, so the stage-0
-compiler builds its image; run from that image, the stage-1 compiler compiles its own source to
-the same image, the fixed point of the staged self-compilation, and agrees with the stage-0
-compiler on the Surface 1 programs and the kernel's examples.
+compiler builds its image; run from that image, the stage-1 compiler agrees with the stage-0
+compiler on the Surface 1 programs and the kernel's examples. The fixed point of the staged
+self-compilation, where the stage-1 compiler compiles its own source to its own image, is
+checked natively by {lit}`scripts/bootstrap.sh`, with the Lean backend.
 
 ## Main definitions
 
@@ -50,12 +51,11 @@ def stage1 : String :=
 def runImage (img input : Tree) : Option Tree := do
   runEntry (← readImage (← toBytes img)) ['m', 'a', 'i', 'n'] input
 
--- built by the stage-0 compiler, the stage-1 compiler compiles itself to the same image, and
--- agrees with the stage-0 compiler on the Surface 1 programs and the kernel's examples
+-- built by the stage-0 compiler, the stage-1 compiler agrees with the stage-0 compiler on the
+-- Surface 1 programs and the kernel's examples
 #guard
   let c1 := (runMain compiler.toList (nameTree stage1.toList)).getD (leaf 0)
   c1.children.length > 0 &&
-  runImage c1 (nameTree stage1.toList) == some c1 &&
   [naturals, roses, Tests.factorial, Tests.sugar, Tests.listCase, "(def f (lam (x T) y))"].all
     fun p ↦ runImage c1 (nameTree p.toList) == runMain compiler.toList (nameTree p.toList)
 
