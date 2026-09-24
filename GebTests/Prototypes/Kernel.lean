@@ -156,6 +156,15 @@ def imageOf (text : List Char) : ByteArray :=
 -- files as trees
 #guard (toBytes (ofBytes ⟨#[1, 2, 255]⟩)).map (·.data) = some #[1, 2, 255]
 #guard toBytes (mk 0 [leaf 256]) = none
+-- weakening shifts the free variables of a term and not its bound ones, and substitution
+-- replaces the innermost free variable, weakened under a binder, and lowers the others
+#guard wk 2 (mk 9 [tT, mk 10 [Tm.var 0, Tm.var 1]]) = mk 9 [tT, mk 10 [Tm.var 0, Tm.var 3]]
+#guard subst (Tm.var 4) (mk 12 [Tm.var 0, Tm.var 1]) = mk 12 [Tm.var 4, Tm.var 0]
+#guard subst (Tm.var 4) (mk 9 [tT, Tm.var 1]) = mk 9 [tT, Tm.var 5]
+#guard subst (Tm.var 4) (mk 15 [Tm.var 0]) = mk 15 [Tm.var 0]
+-- a substituted term keeps its type
+#guard ((infer [] [tT] (subst (mk 15 [leaf 7]) (mk 12 [Tm.var 0, Tm.var 1]))).map (·.1)) =
+  some (tProd tT tT)
 
 end Geb.Kernel.Tests
 
