@@ -1,0 +1,133 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The kernel's type checker, written in the kernel's syntax: the type of a term, given the
+; types of the definitions before it and a context, innermost first, or nothing when the term
+; is ill-typed, deciding as the seed's checker decides. Types are trees: the leaf 0 is the
+; type of trees, the leaf 1 the unit type, and nodes of label 2, 3 and 4 are products,
+; function types and lists. Requires the prelude and the reader.
+
+(def and (lam ((a T) (b T)) (if a b 0)))
+
+; types
+(def tyArrow (lam ((a T) (b T)) (node2 3 a b)))
+(def tyList (lam ((a T)) (node 4 (single a))))
+(def isTy (lam ((t T))
+  (fold T
+    (lam ((l T) (rs Ts))
+      (let k T (length rs)
+        (if (eq k 0) (if (eq l 0) 1 (eq l 1))
+        (if (eq k 1) (and (eq l 4) (at rs 0))
+        (if (eq k 2) (and (if (eq l 2) 1 (eq l 3)) (and (at rs 0) (at rs 1)))
+          0)))))
+    t)))
+(def isProd (lam ((t T)) (and (eq (label t) 2) (eq (arity t) 2))))
+(def isArrow (lam ((t T)) (and (eq (label t) 3) (eq (arity t) 2))))
+(def isListTy (lam ((t T)) (and (eq (label t) 4) (eq (arity t) 1))))
+
+; the types of the kernel's constants at their result types
+(def foldTy (lam ((a T)) (tyArrow (tyArrow 0 (tyArrow (tyList a) a)) (tyArrow 0 a))))
+(def iterTy (lam ((a T)) (tyArrow (tyArrow a a) (tyArrow a (tyArrow 0 a)))))
+(def foldrTy (lam ((a T) (b T))
+  (tyArrow (tyArrow a (tyArrow b b)) (tyArrow b (tyArrow (tyList a) b)))))
+(def lcaseTy (lam ((a T) (b T))
+  (tyArrow (tyList a) (tyArrow b (tyArrow (tyArrow a (tyArrow (tyList a) b)) b)))))
+; the primitives' types, in the order of the seed's table
+(def primTypes
+  (let tt T (tyArrow 0 0)
+    (let ttt T (tyArrow 0 tt)
+      (append (cons tt (cons tt (cons ttt (cons (tyArrow 0 (tyArrow (tyList 0) 0))
+                (cons (tyArrow 0 (tyList 0)) (nil T))))))
+              (append (replicate 8 ttt) (single tt))))))
+
+; the element of a list at a position, when the position is in range
+(def nth (lam ((xs Ts) (i T)) (if (lt i (length xs)) (some (at xs i)) none)))
+
+; one node's type, from its children with their types as functions of the context
+(def checkNode (lam ((G Ts) (raw T) (rs RRs) (ctx Ts))
+  (let l T (label raw)
+    (let es Ts (children raw)
+      (let k T (arity raw)
+        (if (eq l 8) (if (eq k 1) (nth ctx (label (at es 0))) none)
+        (if (eq l 9)
+          (if (eq k 2)
+            (let A T (at es 0)
+              (if (isTy A) (let b T (rrAt rs 1 (cons A ctx)) (if (isSome b) (some (tyArrow A (get b))) none))
+                none))
+            none)
+        (if (eq l 10)
+          (if (eq k 2)
+            (let f T (rrAt rs 0 ctx)
+              (let x T (rrAt rs 1 ctx)
+                (if (both f x)
+                  (if (isArrow (get f)) (if (equal (get x) (child (get f) 0)) (some (child (get f) 1)) none) none)
+                  none)))
+            none)
+        (if (eq l 11) (if (eq k 0) (some 1) none)
+        (if (eq l 12) (if (eq k 2) (some2 2 (rrAt rs 0 ctx) (rrAt rs 1 ctx)) none)
+        (if (eq l 13)
+          (if (eq k 1)
+            (let p T (rrAt rs 0 ctx) (if (isSome p) (if (isProd (get p)) (some (child (get p) 0)) none) none))
+            none)
+        (if (eq l 14)
+          (if (eq k 1)
+            (let p T (rrAt rs 0 ctx) (if (isSome p) (if (isProd (get p)) (some (child (get p) 1)) none) none))
+            none)
+        (if (eq l 15) (if (eq k 1) (some 0) none)
+        (if (eq l 16)
+          (if (eq k 3)
+            (let c T (rrAt rs 0 ctx)
+              (let a T (rrAt rs 1 ctx)
+                (let b T (rrAt rs 2 ctx)
+                  (if (both c (both a b))
+                    (if (equal (get c) 0) (if (equal (get b) (get a)) a none) none)
+                    none))))
+            none)
+        (if (eq l 17) (if (eq k 1) (if (isTy (at es 0)) (some (foldTy (at es 0))) none) none)
+        (if (eq l 18) (if (eq k 1) (if (isTy (at es 0)) (some (iterTy (at es 0))) none) none)
+        (if (eq l 19) (if (eq k 1) (if (isTy (at es 0)) (some (tyList (at es 0))) none) none)
+        (if (eq l 20)
+          (if (eq k 2)
+            (let x T (rrAt rs 0 ctx)
+              (let xs T (rrAt rs 1 ctx)
+                (if (both x xs)
+                  (if (isListTy (get xs))
+                    (if (equal (get x) (child (get xs) 0)) (some (tyList (get x))) none)
+                    none)
+                  none)))
+            none)
+        (if (eq l 21)
+          (if (eq k 2)
+            (if (and (isTy (at es 0)) (isTy (at es 1))) (some (foldrTy (at es 0) (at es 1))) none)
+            none)
+        (if (eq l 22) (if (eq k 1) (nth primTypes (label (at es 0))) none)
+        (if (eq l 23) (if (eq k 1) (nth G (label (at es 0))) none)
+        (if (eq l 24)
+          (if (eq k 2)
+            (if (and (isTy (at es 0)) (isTy (at es 1))) (some (lcaseTy (at es 0) (at es 1))) none)
+            none)
+          none))))))))))))))))))))))
+
+; the type of a closed term, given the types of the definitions before it
+(def typeOf (lam ((G Ts) (t T))
+  ((snd (fold RR
+     (lam ((l T) (rs RRs))
+       (let raw T (node l (rrTrees rs)) (pair raw (lam ((ctx Ts)) (checkNode G raw rs ctx)))))
+     t))
+   (nil T))))
+
+; the types of a program's definitions, each checked given the types of those before it, when
+; every one is well typed
+(deftype Chk (Prod T Ts))
+(deftype ChkK (Arrow Chk Chk))
+(def checkProgram (lam ((terms Ts))
+  (let s Chk ((foldr T ChkK
+                (lam ((t T) (k ChkK) (s Chk))
+                  (k (if (fst s)
+                       (let ty T (typeOf (snd s) t)
+                         (if (isSome ty) (pair 1 (append (snd s) (single (get ty)))) (pair 0 (snd s))))
+                       s)))
+                (lam ((s Chk)) s) terms)
+              (pair 1 (nil T)))
+    (if (fst s) (some (node 0 (snd s))) none))))

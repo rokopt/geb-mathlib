@@ -673,17 +673,20 @@ the committed image is a build artifact.
 
 The fixed point holds for the stage-0 compiler written in the kernel's
 syntax. `bootstrap/reader.geb` reads text into a program's bundle as the
-seed's reader does, and `bootstrap/compile.geb` composes it with the
-serializer, from a program's source to its image; it checks no types,
-which the seed's loader does. Built by the seed and run by the Lean
-evaluator on its own source of about twenty kilobytes, it produces the
-seed's image of itself byte for byte in 0.16 seconds on one machine,
-and the image it produces reproduces itself. The examples of
-`GebTests/Prototypes/Stage0.lean` check the agreement on every program
-of the kernel's examples, rejected ones included, and on the compiler's
-own source, on every build. The type checker in Geb (step 3) and the
-elaborator of a surface language (steps 4 and 5), each followed by the
-fixed point again, remain.
+seed's reader does; `bootstrap/check.geb` is the kernel's type checker,
+deciding as the typing half of {name}`Geb.Kernel.infer` decides; and
+`bootstrap/compile.geb` composes them with the serializer, from a
+program's source to its image, or to the empty file when the program
+does not read or is ill-typed. Built by the seed and run by the Lean
+evaluator on its own source of about twenty-five kilobytes, it checks
+its own definitions' types and produces the seed's image of itself byte
+for byte in 0.22 seconds on one machine, and the image it produces
+reproduces itself. The examples of `GebTests/Prototypes/Stage0.lean`
+compare the checker with the seed's on the kernel's examples, the
+compiler and malformed terms, and the compiler with the seed on the
+kernel's examples, rejected and ill-typed ones included, and on its own
+source, on every build. The elaborator of a surface language (steps 4
+and 5), followed by the fixed point again, remains.
 
 ## Phase 5: speed and a second host
 
