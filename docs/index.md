@@ -3682,12 +3682,13 @@ checklist and in CI.
   on files. Tested in `GebTests/Prototypes/Kernel.lean`. The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   holds list and digit utilities, `serialize.geb` writes a tree's image,
-  `reader.geb` reads a program's text into its bundle as the seed does, and
-  `compile.geb` composes them into the stage-0 compiler from source to
-  image. `GebTests/Prototypes/Stage0.lean` compares the serializer with
-  `Geb.Kernel.writeImage` and the compiler with the seed on the kernel's
-  examples, and checks the fixed point: the compiler compiled by itself is
-  the image the seed builds of it. The
+  `reader.geb` reads a program's text into its bundle as the seed does,
+  `check.geb` is the kernel's type checker, and `compile.geb` composes them
+  into the stage-0 compiler from source to image, rejecting ill-typed
+  programs. `GebTests/Prototypes/Stage0.lean` compares the serializer with
+  `Geb.Kernel.writeImage`, the checker with the seed's, and the compiler
+  with the seed on the kernel's examples, and checks the fixed point: the
+  compiler compiled by itself is the image the seed builds of it. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
