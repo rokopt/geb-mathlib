@@ -54,6 +54,8 @@ The labels of the constructors:
 * {lit}`Ty.den` — the denotation of a type.
 * {lit}`Ty.IsTy` — the recognizer of types.
 * {lit}`Ctx.den`, {lit}`Ctx.var` — contexts, their denotations and variable lookup.
+* {lit}`Const` — the kernel's constants as plain Lean functions: the primitives, the fold of
+  trees, iteration, the right fold of lists and case analysis of lists.
 * {lit}`prims` — the primitives, with their types and denotations.
 * {lit}`infer` — the type checker and evaluator.
 * {lit}`Glob.apply`, {lit}`run` — the application of a global or a closed program from
@@ -66,6 +68,10 @@ and indices, as well as their results, so {lit}`infer` is the paramorphism
 {name}`Geb.RoseTree.para`, which computes each child's result once. A result is a
 function of the global environment and the context, so a node's meaning is computed once
 per application of its parent's meaning. The conditional evaluates one branch.
+
+The denotation of each constant is a function of {lit}`Const` at the denotations of its
+types, so Lean code written for a kernel program, which applies those functions at Lean
+types, denotes what {lit}`infer` computes.
 
 ## References
 
@@ -172,62 +178,112 @@ abbrev Meaning (Γ : Ctx) : Type := Σ A : Tree, Γ.den → Ty.den A
 /-- The truth values of the conditional and the comparisons: label zero is false. -/
 def ofBool (b : Bool) : Tree := leaf (if b then 1 else 0)
 
+namespace Const
+
+/-- The leaf of a tree's label. -/
+def label (t : Tree) : Tree := leaf t.label
+
+/-- The leaf of the number of a tree's children. -/
+def arity : Tree → Tree
+  | WType.mk (_, k) _ => leaf k
+
+/-- A tree's child by index, the leaf of label zero when out of range. -/
+def child : Tree → Tree → Tree
+  | WType.mk (_, k) g, i => if h : i.label < k then g ⟨i.label, h⟩ else leaf 0
+
+/-- The node of a tree's label over a list of children. -/
+def node (l : Tree) (cs : List Tree) : Tree := RoseTree.node l.label cs
+
+/-- The list of a tree's children. -/
+def children (t : Tree) : List Tree := t.children
+
+/-- The sum of two labels. -/
+def add (a b : Tree) : Tree := leaf (a.label + b.label)
+
+/-- The difference of two labels, truncated at zero. -/
+def sub (a b : Tree) : Tree := leaf (a.label - b.label)
+
+/-- The product of two labels. -/
+def mul (a b : Tree) : Tree := leaf (a.label * b.label)
+
+/-- The quotient of two labels, zero when dividing by zero. -/
+def div (a b : Tree) : Tree := leaf (a.label / b.label)
+
+/-- The remainder of two labels, the dividend when dividing by zero. -/
+def mod (a b : Tree) : Tree := leaf (a.label % b.label)
+
+/-- Whether two labels are equal. -/
+def eq (a b : Tree) : Tree := ofBool (a.label == b.label)
+
+/-- Whether one label is less than another. -/
+def lt (a b : Tree) : Tree := ofBool (decide (a.label < b.label))
+
+/-- Whether two trees are equal. -/
+def equal (a b : Tree) : Tree := ofBool (decide (a = b))
+
+/-- The base-two logarithm of a label, rounded down and zero at zero. -/
+def log2 (t : Tree) : Tree := leaf t.label.log2
+
+/-- The fold of trees: a node's result is the step applied to the leaf of its label and to
+the list of its children's results. -/
+def fold {α : Type} (f : Tree → List α → α) : Tree → α :=
+  RoseTree.elim fun l rs ↦ f (leaf l) rs
+
+/-- Iteration: the step applied as many times as the label of the tree. -/
+def iter {α : Type} (s : α → α) (z : α) (n : Tree) : α := Nat.repeat s n.label z
+
+/-- The right fold of lists. -/
+def foldr {α β : Type} (g : α → β → β) (z : β) (xs : List α) : β := xs.foldr g z
+
+/-- Case analysis of lists: the value for the empty list, or the function applied to the head
+and the tail. -/
+def lcase {α β : Type} (xs : List α) (n : β) (c : α → List α → β) : β :=
+  match xs with
+  | [] => n
+  | x :: r => c x r
+
+end Const
+
 /-- The primitives, by index: the label of a tree, the number of its children, a child by
-index (the leaf of label zero when out of range), a node from the label of a tree and a list
-of children, the list of a tree's children, arithmetic on labels (subtraction truncated,
-division and remainder by zero as in {lit}`Nat`), comparison of labels, equality of trees,
-and the base-two logarithm of a label, rounded down and zero at zero. The table is only
-extended, so that an index names one primitive in every version. -/
+index, a node from the label of a tree and a list of children, the list of a tree's children,
+arithmetic on labels, comparison of labels, equality of trees, and the base-two logarithm of a
+label, each the function of that name in {lit}`Const`. The table is only extended, so that an
+index names one primitive in every version. -/
 def prims : List Glob :=
-  let binL (f : ℕ → ℕ → ℕ) : Glob :=
-    ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ leaf (f a.label b.label)⟩
-  [⟨tArrow tT tT, fun t : Tree ↦ leaf t.label⟩,
-   ⟨tArrow tT tT, fun | WType.mk (_, k) _ => leaf k⟩,
-   ⟨tArrow tT (tArrow tT tT), fun
-      | WType.mk (_, k) g, i => if h : i.label < k then g ⟨i.label, h⟩ else leaf 0⟩,
-   ⟨tArrow tT (tArrow (tList tT) tT), fun (l : Tree) (cs : List Tree) ↦ RoseTree.node l.label cs⟩,
-   ⟨tArrow tT (tList tT), fun t : Tree ↦ t.children⟩,
-   binL (· + ·), binL (· - ·), binL (· * ·), binL (· / ·), binL (· % ·),
-   ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (a.label == b.label)⟩,
-   ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (decide (a.label < b.label))⟩,
-   ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (decide (a = b))⟩,
-   ⟨tArrow tT tT, fun t : Tree ↦ leaf t.label.log2⟩]
+  let bin : Tree := tArrow tT (tArrow tT tT)
+  [⟨tArrow tT tT, Const.label⟩, ⟨tArrow tT tT, Const.arity⟩,
+   ⟨tArrow tT (tArrow tT tT), Const.child⟩, ⟨tArrow tT (tArrow (tList tT) tT), Const.node⟩,
+   ⟨tArrow tT (tList tT), Const.children⟩, ⟨bin, Const.add⟩, ⟨bin, Const.sub⟩,
+   ⟨bin, Const.mul⟩, ⟨bin, Const.div⟩, ⟨bin, Const.mod⟩, ⟨bin, Const.eq⟩, ⟨bin, Const.lt⟩,
+   ⟨bin, Const.equal⟩, ⟨tArrow tT tT, Const.log2⟩]
 
 /-- The type of the fold of trees at result type {lit}`A`. -/
 def foldTy (A : Tree) : Tree := tArrow (tArrow tT (tArrow (tList A) A)) (tArrow tT A)
 
-/-- The fold of trees: a node's result is the step applied to the leaf of its label and to
-the list of its children's results. -/
-def foldDen (A : Tree) : Ty.den (foldTy A) := fun (f : Tree → List (Ty.den A) → Ty.den A) ↦
-  RoseTree.elim fun l rs ↦ f (leaf l) rs
+/-- The fold of trees at result type {lit}`A`. -/
+def foldDen (A : Tree) : Ty.den (foldTy A) := Const.fold (α := Ty.den A)
 
 /-- The type of the right fold of lists with elements of type {lit}`A` at result type
 {lit}`B`. -/
 def foldrTy (A B : Tree) : Tree :=
   tArrow (tArrow A (tArrow B B)) (tArrow B (tArrow (tList A) B))
 
-/-- The right fold of lists. -/
-def foldrDen (A B : Tree) : Ty.den (foldrTy A B) :=
-  fun (g : Ty.den A → Ty.den B → Ty.den B) (z : Ty.den B) (xs : List (Ty.den A)) ↦ xs.foldr g z
+/-- The right fold of lists with elements of type {lit}`A` at result type {lit}`B`. -/
+def foldrDen (A B : Tree) : Ty.den (foldrTy A B) := Const.foldr (α := Ty.den A) (β := Ty.den B)
 
 /-- The type of case analysis of lists with elements of type {lit}`A` at result type
 {lit}`B`. -/
 def lcaseTy (A B : Tree) : Tree :=
   tArrow (tList A) (tArrow B (tArrow (tArrow A (tArrow (tList A) B)) B))
 
-/-- Case analysis of lists: the value for the empty list, or the function applied to the head
-and the tail. -/
-def lcaseDen (A B : Tree) : Ty.den (lcaseTy A B) :=
-  fun (xs : List (Ty.den A)) (n : Ty.den B) (c : Ty.den A → List (Ty.den A) → Ty.den B) ↦
-    match xs with
-    | [] => n
-    | x :: r => c x r
+/-- Case analysis of lists with elements of type {lit}`A` at result type {lit}`B`. -/
+def lcaseDen (A B : Tree) : Ty.den (lcaseTy A B) := Const.lcase (α := Ty.den A) (β := Ty.den B)
 
 /-- The type of iteration at result type {lit}`A`. -/
 def iterTy (A : Tree) : Tree := tArrow (tArrow A A) (tArrow A (tArrow tT A))
 
-/-- Iteration: the step applied as many times as the label of the tree. -/
-def iterDen (A : Tree) : Ty.den (iterTy A) := fun s z n ↦ Nat.repeat s n.label z
+/-- Iteration at result type {lit}`A`. -/
+def iterDen (A : Tree) : Ty.den (iterTy A) := Const.iter (α := Ty.den A)
 
 /-- The meaning of a term, as a function of the global environment and the context. -/
 abbrev Sem : Type := List Glob → (Γ : Ctx) → Option (Meaning Γ)
