@@ -44,8 +44,9 @@ The labels of the constructors:
   trees over its result type, {lit}`18` iteration over its result type, {lit}`19` the empty
   list over its elements' type, {lit}`20` the list of a head and a tail, {lit}`21` the right
   fold of lists over the elements' type and the result type, {lit}`22` a primitive over a
-  leaf whose label is its index in {lit}`prims`, and {lit}`23` a reference over a leaf whose
-  label is its index in the global environment.
+  leaf whose label is its index in {lit}`prims`, {lit}`23` a reference over a leaf whose
+  label is its index in the global environment, and {lit}`24` case analysis of lists over
+  the elements' type and the result type.
 
 ## Main definitions
 
@@ -209,6 +210,19 @@ def foldrTy (A B : Tree) : Tree :=
 def foldrDen (A B : Tree) : Ty.den (foldrTy A B) :=
   fun (g : Ty.den A → Ty.den B → Ty.den B) (z : Ty.den B) (xs : List (Ty.den A)) ↦ xs.foldr g z
 
+/-- The type of case analysis of lists with elements of type {lit}`A` at result type
+{lit}`B`. -/
+def lcaseTy (A B : Tree) : Tree :=
+  tArrow (tList A) (tArrow B (tArrow (tArrow A (tArrow (tList A) B)) B))
+
+/-- Case analysis of lists: the value for the empty list, or the function applied to the head
+and the tail. -/
+def lcaseDen (A B : Tree) : Ty.den (lcaseTy A B) :=
+  fun (xs : List (Ty.den A)) (n : Ty.den B) (c : Ty.den A → List (Ty.den A) → Ty.den B) ↦
+    match xs with
+    | [] => n
+    | x :: r => c x r
+
 /-- The type of iteration at result type {lit}`A`. -/
 def iterTy (A : Tree) : Tree := tArrow (tArrow A A) (tArrow A (tArrow tT A))
 
@@ -275,6 +289,8 @@ def inferStep (l : ℕ) (cs : List (Tree × Sem)) : Sem := fun G Γ ↦
     if Ty.IsTy A && Ty.IsTy B then some (constant ⟨foldrTy A B, foldrDen A B⟩) else none
   | 22, [(k, _)] => prims[k.label]?.map constant
   | 23, [(n, _)] => G[n.label]?.map constant
+  | 24, [(A, _), (B, _)] =>
+    if Ty.IsTy A && Ty.IsTy B then some (constant ⟨lcaseTy A B, lcaseDen A B⟩) else none
   | _, _ => none
 
 /-- The type checker and evaluator: the type and denotation of a term in a global

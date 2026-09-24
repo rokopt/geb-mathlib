@@ -3664,7 +3664,8 @@ checklist and in CI.
   and the checker-evaluator `Geb.Kernel.infer`, one paramorphism over a
   term returning its type with its denotation, so that evaluation agrees
   with the denotation by construction; the primitives `Geb.Kernel.prims`
-  operate on labels and children, lists carry their right fold, the fold of
+  operate on labels and children, lists carry their right fold and their
+  case analysis, the fold of
   trees denotes `Geb.RoseTree.elim` over the list of children's results, and
   iteration repeats a step as often as a label's value. `Reader.lean` reads
   programs, sequences of named definitions and type abbreviations in

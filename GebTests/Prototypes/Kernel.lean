@@ -14,12 +14,12 @@ set_option doc.verso true in
 
 Programs written in the kernel's readable syntax, read, checked and run: factorial beyond a
 machine word by iteration, the size and the mirror image of a tree by the fold, the reversal
-of a list by the right fold, definitions referring to earlier ones, a conditional, and the
-reader's type abbreviations, lists of binders and local bindings. Ill-typed, malformed and
-unresolved programs, and programs whose last definition is not a function on trees, are
-rejected. A program's bundle round-trips through its image and runs a named definition;
-truncated, extended, altered and mislabelled images, and bundles referring forward, are
-rejected.
+of a list by the right fold, case analysis of lists, definitions referring to earlier ones,
+a conditional, and the reader's type abbreviations, lists of binders and local bindings.
+Ill-typed, malformed and unresolved programs, and programs whose last definition is not a
+function on trees, are rejected. A program's bundle round-trips through its image and runs a
+named definition; truncated, extended, altered and mislabelled images, and bundles referring
+forward, are rejected.
 
 The programs are string constants, converted to lists of characters inside each
 {lit}`#guard`: core's {lit}`String.toList` depends on {lit}`Classical.choice`, and a
@@ -30,7 +30,7 @@ The programs are string constants, converted to lists of characters inside each
 * {lit}`datum` reads a quoted tree from text.
 * {lit}`imageOf` writes the image of a program's bundle.
 * {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`reverseChildren`,
-  {lit}`quadruple`, {lit}`isZero` and {lit}`sugar` are programs.
+  {lit}`quadruple`, {lit}`isZero`, {lit}`listCase` and {lit}`sugar` are programs.
 
 ## Tags
 
@@ -86,6 +86,12 @@ def quadruple : String := "
 /-- The conditional on a label. -/
 def isZero : String := "(def isZero (lam (x T) (if x 0 1)))"
 
+/-- Case analysis of lists: the tree labelled by the root's first child, over the remaining
+children, or the leaf of label zero for a leaf. -/
+def listCase : String := "
+(def main (lam ((t T))
+  (lcase T T (children t) 0 (lam ((x T) (r (List T))) (node x r)))))"
+
 /-- A type abbreviation, abstractions over lists of binders, and a local binding. -/
 def sugar : String := "
 (deftype Pair (Prod T T))
@@ -104,6 +110,9 @@ def sugar : String := "
 #guard runMain isZero.toList (leaf 0) = some (leaf 1)
 #guard runMain isZero.toList (leaf 7) = some (leaf 0)
 #guard runMain sugar.toList (leaf 5) = some (leaf 15)
+#guard runMain listCase.toList (datum "(9 (4) (5) (6))".toList) =
+  some (datum "(4 (5) (6))".toList)
+#guard runMain listCase.toList (leaf 9) = some (leaf 0)
 #guard runMain "(def f (lam () 1))".toList (leaf 1) = none
 #guard runMain "(deftype P (Prod T T)) (def f (lam (x T) P))".toList (leaf 1) = none
 #guard runMain "(def f (lam (x Q) x))".toList (leaf 1) = none

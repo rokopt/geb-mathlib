@@ -533,7 +533,9 @@ contract.
    Bruijn variables, abstraction over a domain type, application, the
    unit value, pairs and projections, quoted trees, a conditional on
    whether a label is non-zero, lists with their right fold
-   ({name}`Geb.Kernel.foldrDen`), the fold of trees and iteration at
+   ({name}`Geb.Kernel.foldrDen`) and their case analysis
+   ({name}`Geb.Kernel.lcaseDen`), which the fold alone gives only in
+   time linear in the list, the fold of trees and iteration at
    given result types, primitives and references by index; the types
    `T`, `1`, products, functions and lists. A tree is a label with a
    list of trees, and the fold's step receives the leaf of a node's
