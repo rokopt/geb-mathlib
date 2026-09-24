@@ -9,6 +9,7 @@ public import VersoManual
 public import GebManual.Bibliography
 import Geb.Prototypes.Bootstrap
 import Geb.Prototypes.Kernel
+import Geb.Prototypes.Metalogic
 import Geb.Prototypes.Definition
 import Geb.Prototypes.Computability.Triage.Simulation
 
@@ -102,7 +103,9 @@ The following are fixed; the plan builds on them.
   equivalence with the free topos with a natural numbers object is
   proved in Geb. It is reached through rungs of categorical structure,
   each with its internal language, the subobject classifier last; no
-  classical logic is an intermediate step.
+  classical logic is an intermediate step. Every rung is cartesian
+  closed, since the kernel's programs have function types, and the
+  first rung's terms are the kernel's terms of every type.
 * Artifacts. The compiler's image and, once the compiler emits Lean,
   the emitted Lean are committed as build artifacts. Continuous
   integration regenerates them and compares their bytes with the
@@ -443,6 +446,11 @@ a pretopos whose internal type theory is first-order
 {citep Maietti1998}[]. Every rung carries the rose-tree object as a
 primitive, the initial algebra of the functor taking an object to the
 product of the natural numbers object with the object's list object.
+Every rung is also cartesian closed: the kernel's programs are terms of
+System T, whose types include function types, and a rung's logic speaks
+of a program together with its internal terms of every type, so each
+rung below the Π-pretopos is the structure it names with exponentials
+added.
 
 :::table +header
 *
@@ -451,11 +459,11 @@ product of the natural numbers object with the object's list object.
   * Logic of subobjects
   * Geb
 *
-  * Locos
+  * Cartesian closed locos
   * finite limits, stable disjoint finite coproducts, parameterized
-    list objects
+    list objects, exponentials
   * equality and conjunction
-  * Surface 1: recognized types and the functions the kernel defines
+  * equations between the kernel's terms; Surface 1
 *
   * Arithmetic universe
   * stable effective quotients of equivalence relations
@@ -469,8 +477,8 @@ product of the natural numbers object with the object's list object.
 *
   * Π-pretopos: locally cartesian closed pretopos
   * dependent products of all objects
-  * first-order, over function types
-  * the kernel's function types as objects
+  * first-order, over families of types
+  * dependent products of families of types
 *
   * Topos
   * a subobject classifier
@@ -491,11 +499,9 @@ subobject classifier adds is propositions as values, power objects and
 comprehension by arbitrary predicates;
 propositions about the elements of an object, as its subobjects, exist
 on every rung, and first-order logic from the Heyting pretopos up. The
-kernel's function types are objects from the locally cartesian closed
-pretopos up; below it, a program is a map between recognized types,
-whatever the types of its internal terms. That the category of
-recognized types is a locos is to be proved; the necessity theorem
-proves that it has no subobject classifier.
+kernel's types, function types included, are objects on every rung, and
+Surface 1's recognized types are subobjects of the type of trees there,
+cut out by their recognizers.
 
 A free category of each rung maps to the free topos by the functor that
 preserves its structure, so a proof checked on a lower rung remains
@@ -678,8 +684,8 @@ every fixed point on every build.
   * none
 *
   * 7: the metalogic
-  * not begun; its lowest rung depends only on Phase 1
-  * none
+  * first rung: step 1 constructed except some rules; step 2 not begun
+  * `Geb/Prototypes/Metalogic/Equations.lean`, `Geb/Prototypes/Kernel/Subst.lean`
 :::
 
 The implementation changed the plan in these respects. The kernel's
@@ -963,14 +969,14 @@ the hash written in Geb.
 
 ## Phase 7: the metalogic
 
-The steps are taken rung by rung, from the locos to the topos, on the
-ladder of the section on the metalogic and its checker.
+The steps are taken rung by rung, from the cartesian closed locos to the
+topos, on the ladder of the section on the metalogic and its checker.
 
 1. Lean: the rung's rule set and its soundness, without
    `Classical.choice`, in the model of Lean types, and from the
    arithmetic universe up also in a model that is not Boolean. On the
-   locos this step depends only on Phase 1 and may proceed in parallel
-   with Phases 2 to 6.
+   first rung this step depends only on Phase 1 and may proceed in
+   parallel with Phases 2 to 6.
 2. Geb: the rung's proof checker, a fold over proof objects, compared
    with the Lean checker on valid and malformed certificates.
 3. Geb: proofs about Geb programs, each on the lowest rung that states
@@ -985,6 +991,43 @@ Acceptance, on each rung: a theorem with hypotheses, a substitution and
 an induction checks, and certificates with altered binders, invalid
 dependencies or false conclusions fail; on the topos, a comprehension
 checks as well.
+
+On the first rung, step 1 is constructed, except for the rules named
+below. `Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
+substitutes for their innermost variable through one traversal
+({name}`Geb.Kernel.trav`), and proves that both agree with the
+denotation ({name}`Geb.Kernel.infer_wk`, {name}`Geb.Kernel.infer_subst`).
+`Geb/Prototypes/Metalogic/Equations.lean` defines a sequent as a
+context, a list of hypotheses and a conclusion, each an equation
+between two kernel terms of a type, valid when both sides of the
+conclusion have its type and their denotations agree at every value of
+the context at which the hypotheses hold ({name}`Geb.Metalogic.Valid`).
+A certificate is a rose tree whose label names a rule, and the checker
+{name}`Geb.Metalogic.check` is a paramorphism over it whose result, as
+the denotation's, is a function of the global environment, the context
+and the hypotheses. Its rules are equality's, congruence of every term
+former, the β and η rules of functions, pairs and the unit type,
+evaluation of a closed term of the type of trees, weakening, cut,
+instantiation of the innermost variable by a term, the right fold of
+lists at the empty list and at a list of a head and a tail, and
+induction on a list, whose hypotheses must not mention the list: the
+checker lowers them and checks that they are typed below it, which
+replaces a converse of weakening by a decidable check.
+{name}`Geb.Metalogic.check_sound` proves every computed conclusion
+valid, without `Classical.choice`. The examples of
+`GebTests/Prototypes/Metalogic.lean` meet the acceptance on the first
+rung: a theorem from a hypothesis by congruence, an instantiation, the
+proof by induction that appending the empty list to a list gives the
+list, and the rejection of certificates with an annotation that is not
+a type, a β step whose argument has another type, a missing hypothesis,
+a transitivity whose middle terms differ, and an induction whose step
+does not prove its case.
+
+The first rung still lacks the computation rules of the fold of trees,
+iteration and case analysis of lists, induction on trees and on labels,
+and references to earlier definitions, whose rule needs the agreement
+of a definition's denotation in its bundle's environment with its
+denotation in any longer environment.
 
 ## Improvements
 
@@ -1039,10 +1082,10 @@ on emitted Lean reach that aim for computation: the compiler compiles
 itself to a program that the host builds, idempotently. What remains is
 the following, in the order of dependence.
 
-1. The metalogic (Phase 7), rung by rung: each rung's rule set and its
-   soundness in Lean, then its proof checker written in Geb, then
-   proofs about the compiler's components. Its lowest rung depends only
-   on Phase 1.
+1. The metalogic (Phase 7), rung by rung: the first rung's remaining
+   rules, then its proof checker written in Geb, then proofs about the
+   compiler's components, then the rules and checkers of the rungs
+   above it.
 2. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
    points reproduced on it, which is diverse double-compiling across
    hosts, and accelerations proved against the denotation.
@@ -1059,10 +1102,11 @@ it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The metalogic is next, from its lowest rung: it completes the
-aim for logic, its lowest rung depends only on Phase 1, and it fixes
-the foundation before any mathematics migrates. The second host,
-content identity and the syntax unification follow it.
+priority. The metalogic continues on its first rung: its remaining
+rules, the fold of trees and iteration with their inductions and
+references to earlier definitions, which proofs about the compiler's
+own definitions need, and then the proof checker written in Geb. The
+second host, content identity and the syntax unification follow it.
 
 ## What self-compilation establishes
 
@@ -1131,5 +1175,9 @@ the files differ.
 {includeLiterate "." Geb.Prototypes.Kernel.Image "Bundles and images" (level := 1)}
 
 {includeLiterate "." Geb.Prototypes.Kernel.Command "The kernel's host driver" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.Kernel.Subst "Substitution in kernel terms" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.Metalogic.Equations "The metalogic's first rung" (level := 1)}
 
 {includeLiterate "." Geb.Prototypes.Bootstrap "A computation-certificate prototype" (level := 1)}
