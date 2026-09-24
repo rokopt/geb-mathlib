@@ -33,10 +33,10 @@ The forms of a term:
   {lit}`(n d₁ … dₖ)` of a label and children;
 * {lit}`(nil A)` is the empty list of elements of type {lit}`A` and {lit}`(cons x xs)` the
   list of a head and a tail;
-* {lit}`(fold A x₁ … xₖ)`, {lit}`(iter A x₁ … xₖ)` and {lit}`(foldr A B x₁ … xₖ)` apply
-  the fold of trees, the iteration and the right fold of lists at the given types to their
-  arguments, and any other list {lit}`(f x₁ … xₖ)` applies {lit}`f` to its arguments in
-  turn.
+* {lit}`(fold A x₁ … xₖ)`, {lit}`(iter A x₁ … xₖ)`, {lit}`(foldr A B x₁ … xₖ)` and
+  {lit}`(lcase A B x₁ … xₖ)` apply the fold of trees, the iteration, the right fold of lists
+  and the case analysis of lists at the given types to their arguments, and any other list
+  {lit}`(f x₁ … xₖ)` applies {lit}`f` to its arguments in turn.
 
 Types are {lit}`T`, {lit}`Unit`, {lit}`(Prod A B)`, {lit}`(Arrow A B)`,
 {lit}`(List A)` and the names of type abbreviations. A semicolon begins a comment that
@@ -204,6 +204,8 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
     | some "iter", (A, _) :: xs => do apps (mk 18 [← readType tys A]) (← args xs)
     | some "foldr", (A, _) :: (B, _) :: xs => do
       apps (mk 21 [← readType tys A, ← readType tys B]) (← args xs)
+    | some "lcase", (A, _) :: (B, _) :: xs => do
+      apps (mk 24 [← readType tys A, ← readType tys B]) (← args xs)
     | _, _ => do apps (← rh scope) (← args rest)
   | none, [] => none
 
