@@ -1,0 +1,387 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The Surface 1 expansion written in Surface 1: the same function of a program's forms as
+; bootstrap/surface.geb, which is written in the kernel's syntax, with datatypes for optional
+; trees, S-expressions and declarations, case analysis and structural recursion in place of
+; tests of labels and folds, and functions with result types. The stage-1 compiler is the
+; stage-0 compiler with this expansion in place of that one; built by the stage-0 compiler, it
+; produces the image the stage-0 compiler produces of it.
+; Requires the prelude, the reader and the checker.
+
+; optional trees and S-expressions, as the reader represents them: nothing is the leaf 0 and
+; just the node of label 1 over the tree; an atom is the node of label 1 over its characters
+; and a list the node of label 2 over its elements
+(data Opt (nothing) (just T))
+(data Sx (sx0) (atom & T) (lst & Sx))
+
+; S-expressions under construction
+(defn sx1 ((a T)) T (lst (single a)))
+(defn sx2 ((a T) (b T)) T (lst (cons a (single b))))
+(defn sx3 ((a T) (b T) (c T)) T (lst (cons a (cons b (single c)))))
+(defn sx4 ((a T) (b T) (c T) (d T)) T (lst (cons a (cons b (cons c (single d))))))
+(defn sx5 ((a T) (b T) (c T) (d T) (e T)) T (lst (cons a (cons b (cons c (cons d (single e)))))))
+(defn sx6 ((a T) (b T) (c T) (d T) (e T) (f T)) T
+  (lst (cons a (cons b (cons c (cons d (cons e (single f))))))))
+
+; the atoms of the expansion
+(def aLet (quote (1 108 101 116)))
+(def aIf (quote (1 105 102)))
+(def aLam (quote (1 108 97 109)))
+(def aPair (quote (1 112 97 105 114)))
+(def aFst (quote (1 102 115 116)))
+(def aSnd (quote (1 115 110 100)))
+(def aCons (quote (1 99 111 110 115)))
+(def aNil (quote (1 110 105 108)))
+(def aIter (quote (1 105 116 101 114)))
+(def aLcase (quote (1 108 99 97 115 101)))
+(def aFoldr (quote (1 102 111 108 100 114)))
+(def aFold (quote (1 102 111 108 100)))
+(def aDef (quote (1 100 101 102)))
+(def aDeftype (quote (1 100 101 102 116 121 112 101)))
+(def aUnitV (quote (1 117 110 105 116)))
+(def aLabel (quote (1 108 97 98 101 108)))
+(def aChild (quote (1 99 104 105 108 100)))
+(def aChildren (quote (1 99 104 105 108 100 114 101 110)))
+(def aNode (quote (1 110 111 100 101)))
+(def aEq (quote (1 101 113)))
+(def aT (quote (1 84)))
+(def aUnit (quote (1 85 110 105 116)))
+(def aProd (quote (1 80 114 111 100)))
+(def aArrow (quote (1 65 114 114 111 119)))
+(def aList (quote (1 76 105 115 116)))
+(def aZero (quote (1 48)))
+(def aS (quote (1 37 115)))
+(def aL (quote (1 37 108)))
+(def aRs (quote (1 37 114 115)))
+(def aO (quote (1 37 111)))
+(def aP (quote (1 37 112)))
+(def aA (quote (1 37 97)))
+(def aH (quote (1 37 104)))
+(def aTl (quote (1 37 116)))
+(def aX (quote (1 37 120)))
+(def aU (quote (1 37 117)))
+(def aR (quote (1 37 114)))
+(def aD (quote (1 37 100)))
+(def aRest (quote (1 37 114 101 115 116)))
+(def kwData (quote (0 100 97 116 97)))
+(def kwCase (quote (0 99 97 115 101)))
+(def kwCata (quote (0 99 97 116 97)))
+(def kwDefn (quote (0 100 101 102 110)))
+(def kwElse (quote (0 101 108 115 101)))
+(def kwAmp (quote (0 38)))
+
+; a numeral's characters and atom
+(defn decimalChars ((n T)) Ts
+  (if (eq n 0) (single 48)
+    (let k T (fst (iter (Prod T T)
+                    (lam ((s (Prod T T))) (if (eq (snd s) 0) s (pair (add (fst s) 1) (div (snd s) 10))))
+                    (pair 0 n) (add (log2 n) 1)))
+      (foldr T Ts (lam ((d T) (acc Ts)) (cons (add d 48) acc)) (nil T) (digitsMsb 10 n k)))))
+(defn numAtom ((n T)) T (atom (decimalChars n)))
+(defn fieldAtom ((k T)) T (atom (cons 37 (cons 102 (decimalChars k)))))
+
+; types and expressions under construction
+(defn sList ((a T)) T (sx2 aList a))
+(defn sProd ((a T) (b T)) T (sx3 aProd a b))
+(defn sArrow ((a T) (b T)) T (sx3 aArrow a b))
+(defn sLet ((x T) (a T) (e T) (b T)) T (sx5 aLet x a e b))
+(defn sIf ((c T) (a T) (b T)) T (sx4 aIf c a b))
+(defn sLam1 ((x T) (a T) (b T)) T (sx3 aLam (sx1 (sx2 x a)) b))
+(defn sLam2 ((x T) (a T) (y T) (b T) (e T)) T (sx3 aLam (sx2 (sx2 x a) (sx2 y b)) e))
+; the function dropping a list's head, at the elements' type, and a list without its first n
+; elements
+(defn sTail ((a T)) T
+  (sLam1 aX (sList a) (sx6 aLcase a (sList a) aX (sx2 aNil a) (sLam2 aH a aTl (sList a) aTl))))
+(defn sDrop ((a T) (xs T) (n T)) T (sx5 aIter (sList a) (sTail a) xs (numAtom n)))
+
+; lists by position and conjunctions
+(defn dropLast ((xs Ts)) Ts (reverse (tail (reverse xs))))
+(defn allTrue ((xs Ts)) T (foldr T T (lam ((x T) (r T)) (and x r)) 1 xs))
+(defn or ((a T) (b T)) T (if a 1 b))
+
+; declarations: a constructor with its name, position, datatype, field types, whether a last
+; field takes the remaining children, and that field's type; a datatype with its name; a type
+; abbreviation with its name and its type, abbreviations expanded
+(data Decl (ctorD T T T T T T) (dataD T) (aliasD T T))
+(defn findCtor ((n T) (env Ts)) T
+  (foldr T T (lam ((e T) (r T)) (case e ((ctorD m j d fs v w) (if (equal m n) (just e) r)) (else r)))
+    nothing env))
+(defn isData ((n T) (env Ts)) T
+  (foldr T T (lam ((e T) (r T)) (case e ((dataD m) (if (equal m n) 1 r)) (else r))) 0 env))
+(defn findAlias ((n T) (env Ts)) T
+  (foldr T T (lam ((e T) (r T)) (case e ((aliasD m ty) (if (equal m n) (just ty) r)) (else r)))
+    nothing env))
+(defn ctorsOf ((d T) (env Ts)) Ts
+  (foldr T Ts (lam ((e T) (r Ts)) (case e ((ctorD m j dd fs v w) (if (equal dd d) (cons e r) r)) (else r)))
+    (nil T) env))
+
+; a type with its abbreviations expanded, and a value of each type
+(defn expandAliases ((env Ts) (ty T)) T
+  (cata Sx T ty
+    ((atom cs) (case (findAlias (node 0 cs) env) ((just a) a) ((nothing) (atom cs))))
+    ((lst rs) (lst rs))
+    ((sx0) sx0)))
+(defn defaultOf ((ty T)) T
+  (snd (cata Sx RT ty
+         ((atom cs) (pair (atom cs) (if (equal (node 0 cs) kwUnit) aUnitV aZero)))
+         ((lst rs)
+           (let raw T (lst (rtTrees rs))
+             (let vs Ts (rtValues rs)
+               (let h T (at (children raw) 0)
+                 (pair raw
+                   (if (named h kwProd) (sx3 aPair (at vs 1) (at vs 2))
+                   (if (named h kwArrow) (sLam1 aD (at (children raw) 1) (at vs 2))
+                   (if (named h kwList) (sx2 aNil (at (children raw) 1))
+                     aZero))))))))
+         ((sx0) (pair sx0 aZero)))))
+
+; the bindings of a clause's variables, from the innermost out: fb binds a field at a position
+; with its type, and vb binds the remaining children after the fixed fields
+(deftype Binder (Arrow T (Arrow T (Arrow T (Arrow T T)))))
+(defn bindWith ((fb Binder) (vb Binder) (ctor T) (vars Ts) (body T)) T
+  (case ctor
+    ((ctorD m j d fs isVar w)
+      (let fields Ts (children fs)
+        (let nf T (length fields)
+          (let nv T (length vars)
+            (if (and (eq nv (add nf isVar)) (allTrue (foldr T Ts (lam ((v T) (r Ts)) (cons (isAtom v) r)) (nil T) vars)))
+              (just (snd (foldr T (Prod T T)
+                (lam ((v T) (acc (Prod T T)))
+                  (let k T (sub (sub nv 1) (fst acc))
+                    (pair (add (fst acc) 1)
+                      (if (lt k nf) (fb k (at fields k) v (snd acc)) (vb nf w v (snd acc))))))
+                (pair 0 body) vars)))
+              nothing)))))
+    (else nothing)))
+
+; the constructor a clause names, when it is declared
+(defn clauseCtor ((env Ts) (c T)) T
+  (case c
+    ((lst es) (case (at es 0) ((lst ps) (findCtor (nameOf (at ps 0)) env)) (else nothing)))
+    (else nothing)))
+
+; the chain of tests of a clause list: each clause, a node over its raw form, its constructor
+; and its expansion, binds its variables and tests the scrutinee's label, the last without an
+; else untested
+(deftype Chain (Prod T (Prod T T)))
+(deftype Bind (Arrow T (Arrow Ts (Arrow T T))))
+(defn testChain ((sv T) (clauses Ts) (base T) (bind Bind)) T
+  (let r Chain
+    (foldr T Chain
+      (lam ((p T) (acc Chain))
+        (let ctor T (child p 1)
+          (case (bind ctor (tail (children (child (child p 0) 0))) (child (child p 2) 1))
+            ((just b)
+              (if (fst acc)
+                (pair 1 (pair 1 (if (fst (snd acc))
+                                  (sIf (sx3 aEq (sx2 aLabel sv) (numAtom (child ctor 1))) b (snd (snd acc)))
+                                  b)))
+                (pair 0 (pair 0 0))))
+            ((nothing) (pair 0 (pair 0 0))))))
+      (case base ((just b) (pair 1 (pair 1 b))) ((nothing) (pair 1 (pair 0 0))))
+      clauses)
+    (if (and (fst r) (fst (snd r))) (just (snd (snd r))) nothing)))
+
+; a clause list's chain, given the datatype, or nothing to take it from the first clause: every
+; clause names a constructor of that datatype, and without a last else clause every
+; constructor is named
+(defn clauseChain ((env Ts) (d0 T) (cls Ts) (xo T) (sv T) (bind Bind)) T
+  (case xo
+    ((just xos)
+      (if (nonEmpty cls)
+        (let xs Ts (children xos)
+          (let n T (length cls)
+            (let lastC T (at cls (sub n 1))
+              (let hasElse T (and (isList lastC) (and (eq (arity lastC) 2) (named (child lastC 0) kwElse)))
+                (let ncls Ts (if hasElse (dropLast cls) cls)
+                  (let nxs Ts (if hasElse (dropLast xs) xs)
+                    (let base T (if hasElse (just (child (at xs (sub n 1)) 1)) nothing)
+                      (let ctors Ts (foldr T Ts (lam ((c T) (acc Ts)) (cons (clauseCtor env c) acc)) (nil T) ncls)
+                        (let d T (case d0
+                                   ((just dd) dd)
+                                   ((nothing) (if (nonEmpty ctors)
+                                                (case (at ctors 0) ((just c0) (child c0 2)) ((nothing) 0))
+                                                0)))
+                          (let valid T (allTrue (foldr T Ts
+                                                  (lam ((c T) (acc Ts))
+                                                    (cons (and (eq (arity c) 2)
+                                                            (case (clauseCtor env c)
+                                                              ((just e) (equal (child e 2) d))
+                                                              ((nothing) 0)))
+                                                          acc))
+                                                  (nil T) ncls))
+                            (let names Ts (foldr T Ts (lam ((c T) (acc Ts)) (cons (child (get c) 0) acc)) (nil T) ctors)
+                              (let covered T (or hasElse
+                                               (allTrue (foldr T Ts (lam ((e T) (acc Ts)) (cons (isSome (indexOf (child e 0) names)) acc))
+                                                          (nil T) (ctorsOf d env))))
+                                (if (and valid covered)
+                                  (let m T (length ncls)
+                                    (testChain sv
+                                      (snd (foldr T (Prod T Ts)
+                                        (lam ((c T) (acc (Prod T Ts)))
+                                          (let i T (sub (sub m 1) (fst acc))
+                                            (pair (add (fst acc) 1)
+                                              (cons (node 0 (cons c (cons (get (at ctors i)) (single (at nxs i))))) (snd acc)))))
+                                        (pair 0 (nil T)) ncls))
+                                      base bind))
+                                  nothing)))))))))))))
+        nothing))
+    ((nothing) nothing)))
+
+; case analysis: the scrutinee bound once, its label tested, its children bound to the clause's
+; variables
+(defn caseField ((k T) (ty T) (v T) (b T)) T (sLet v aT (sx3 aChild aS (numAtom k)) b))
+(defn caseRest ((nf T) (ty T) (v T) (b T)) T (sLet v (sList aT) (sDrop aT (sx2 aChildren aS) nf) b))
+(defn expandCase ((env Ts) (raw T) (rs RRs)) T
+  (let scr T (rrAt rs 1 env)
+    (let chain T (clauseChain env nothing (drop 2 (children raw)) (argsOf rs 2 env) aS
+                   (bindWith caseField caseRest))
+      (case scr
+        ((just s) (case chain ((just c) (just (sLet aS aT s c))) ((nothing) nothing)))
+        ((nothing) nothing)))))
+
+; structural recursion: the kernel's fold at pairs of a subtree and its suspended result; a
+; recursive field is bound to its forced result, any other to the subtree's child
+(defn pTy ((r T)) T (sProd aT (sArrow aUnit r)))
+(defn forced ((p T)) T (sx2 (sx2 aSnd p) aUnitV))
+(defn nthP ((r T) (dr T) (k T)) T
+  (sx6 aLcase (pTy r) (pTy r) (sDrop (pTy r) aRs k) (sx3 aPair aZero (sLam1 aU aUnit dr))
+       (sLam2 aH (pTy r) aTl (sList (pTy r)) aH)))
+(defn cataField ((d T) (r T) (dr T) (k T) (ty T) (v T) (b T)) T
+  (if (named ty d)
+    (sLet v r (forced (nthP r dr k)) b)
+    (sLet v aT (sx3 aChild aO (numAtom k)) b)))
+(defn cataRest ((d T) (r T) (nf T) (ty T) (v T) (b T)) T
+  (if (named ty d)
+    (sLet v (sList r)
+      (sx6 aFoldr (pTy r) (sList r) (sLam2 aP (pTy r) aA (sList r) (sx3 aCons (forced aP) aA))
+           (sx2 aNil r) (sDrop (pTy r) aRs nf))
+      b)
+    (sLet v (sList aT) (sDrop aT (sx2 aChildren aO) nf) b)))
+(defn cataStep ((r T) (chain T)) T
+  (sLam2 aL aT aRs (sList (pTy r))
+    (sLet aO aT
+      (sx3 aNode aL (sx6 aFoldr (pTy r) (sList aT)
+                         (sLam2 aP (pTy r) aA (sList aT) (sx3 aCons (sx2 aFst aP) aA))
+                         (sx2 aNil aT) aRs))
+      (sx3 aPair aO (sLam1 aU aUnit chain)))))
+(defn expandCata ((env Ts) (raw T) (rs RRs)) T
+  (let es Ts (children raw)
+    (let d T (nameOf (at es 1))
+      (let r T (at es 2)
+        (let chain T (if (and (isAtom (at es 1)) (isData d env))
+                       (clauseChain env (just d) (drop 4 es) (argsOf rs 4 env) aO
+                         (bindWith (cataField d r (defaultOf (expandAliases env r))) (cataRest d r)))
+                       nothing)
+          (case (rrAt rs 3 env)
+            ((just s)
+              (case chain
+                ((just c) (just (forced (sx4 aFold (pTy r) (cataStep r c) s))))
+                ((nothing) nothing)))
+            ((nothing) nothing)))))))
+
+; an expression expanded, given the declarations before it: each S-expression's result is the
+; S-expression with its expansion as a function of the declarations
+(defn expandExpr ((env Ts) (e T)) T
+  ((snd (cata Sx RR e
+     ((atom cs) (pair (atom cs) (lam ((env Ts)) (just (atom cs)))))
+     ((lst rs)
+       (let raw T (lst (rrTrees rs))
+         (pair raw
+           (lam ((env Ts))
+             (let h T (at (children raw) 0)
+               (let k T (arity raw)
+                 (if (and (named h kwCase) (lt 2 k)) (expandCase env raw rs)
+                 (if (and (named h kwCata) (lt 4 k)) (expandCata env raw rs)
+                   (case (allSome (rrApply rs env))
+                     ((just xs) (just (lst (children xs))))
+                     ((nothing) nothing))))))))))
+     ((sx0) (pair sx0 (lam ((env Ts)) (just sx0))))))
+   env))
+
+; a datatype declaration: its declarations and kernel forms, the datatype's abbreviation for
+; trees and one definition for each constructor
+(defn ctorDecl ((d T) (j T) (c T)) T
+  (case c
+    ((lst es)
+      (let rest Ts (tail es)
+        (let nr T (length rest)
+          (let isVar T (and (lt 1 nr) (named (at rest (sub nr 2)) kwAmp))
+            (let fields Ts (if isVar (dropLast (dropLast rest)) rest)
+              (let nf T (length fields)
+                (let ps Ts (snd (foldr T (Prod T Ts)
+                                  (lam ((f T) (acc (Prod T Ts)))
+                                    (pair (add (fst acc) 1) (cons (sx2 (fieldAtom (sub (sub nf 1) (fst acc))) aT) (snd acc))))
+                                  (pair 0 (nil T)) fields))
+                  (let listE T (snd (foldr T (Prod T T)
+                                      (lam ((f T) (acc (Prod T T)))
+                                        (pair (add (fst acc) 1)
+                                              (sx3 aCons (fieldAtom (sub (sub nf 1) (fst acc))) (snd acc))))
+                                      (pair 0 (if isVar aRest (sx2 aNil aT))) fields))
+                    (let allPs Ts (if isVar (append ps (single (sx2 aRest (sList aT)))) ps)
+                      (let body T (sx3 aNode (numAtom j) listE)
+                        (if (isAtom (at es 0))
+                          (just (node2 0
+                                  (ctorD (nameOf (at es 0)) j d (node 0 fields) isVar (if isVar (at rest (sub nr 1)) 0))
+                                  (sx3 aDef (at es 0) (if (nonEmpty allPs) (sx3 aLam (lst allPs) body) body))))
+                          nothing)))))))))))
+    (else nothing)))
+(defn dataDecl ((e T)) T
+  (let es Ts (children e)
+    (let d T (nameOf (at es 1))
+      (let cs Ts (drop 2 es)
+        (let nc T (length cs)
+          (case (allSome (snd (foldr T (Prod T Ts)
+                                (lam ((c T) (acc (Prod T Ts)))
+                                  (pair (add (fst acc) 1) (cons (ctorDecl d (sub (sub nc 1) (fst acc)) c) (snd acc))))
+                                (pair 0 (nil T)) cs)))
+            ((just decls)
+              (if (isAtom (at es 1))
+                (let ds Ts (children decls)
+                  (just (node2 0
+                          (node 0 (cons (dataD d) (foldr T Ts (lam ((x T) (acc Ts)) (cons (child x 0) acc)) (nil T) ds)))
+                          (node 0 (cons (sx3 aDeftype (at es 1) aT) (foldr T Ts (lam ((x T) (acc Ts)) (cons (child x 1) acc)) (nil T) ds))))))
+                nothing))
+            ((nothing) nothing)))))))
+
+; a program's forms expanded: the state is whether every form has expanded, the declarations,
+; and the kernel forms, the most recent first
+(deftype XP (Prod T (Prod Ts Ts)))
+(deftype XPK (Arrow XP XP))
+(def xpFail (pair 0 (pair (nil T) (nil T))))
+(defn xpStep ((s XP) (e T)) XP
+  (if (and (fst s) (isList e))
+    (let env Ts (fst (snd s))
+      (let out Ts (snd (snd s))
+        (let es Ts (children e)
+          (let h T (at es 0)
+            (let k T (arity e)
+              (if (named h kwData)
+                (case (dataDecl e)
+                  ((just dd)
+                    (pair 1 (pair (append env (children (child dd 0)))
+                                  (append (reverse (children (child dd 1))) out))))
+                  ((nothing) xpFail))
+              (if (and (named h kwDefn) (eq k 5))
+                (case (expandExpr env (at es 4))
+                  ((just b)
+                    (let body T (sLet aR (at es 3) b aR)
+                      (pair 1 (pair env (cons (sx3 aDef (at es 1)
+                                                (if (eq (arity (at es 2)) 0) body (sx3 aLam (at es 2) body)))
+                                              out)))))
+                  ((nothing) xpFail))
+              (if (and (named h kwDef) (eq k 3))
+                (case (expandExpr env (at es 2))
+                  ((just b) (pair 1 (pair env (cons (sx3 aDef (at es 1) b) out))))
+                  ((nothing) xpFail))
+              (if (and (named h kwDeftype) (eq k 3))
+                (pair 1 (pair (append env (single (aliasD (nameOf (at es 1)) (expandAliases env (at es 2)))))
+                              (cons e out)))
+                xpFail)))))))))
+    xpFail))
+(defn expandProgram ((es Ts)) T
+  (let s XP ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es)
+             (pair 1 (pair (nil T) (nil T))))
+    (if (fst s) (just (node 0 (reverse (snd (snd s))))) nothing)))

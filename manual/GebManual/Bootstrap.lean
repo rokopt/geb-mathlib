@@ -721,8 +721,23 @@ reproduces itself. The examples of `GebTests/Prototypes/Stage0.lean`
 compare the checker with the seed's on the kernel's examples, the
 compiler and malformed terms, and the compiler with the seed on the
 kernel's examples, rejected and ill-typed ones included, and on its own
-source, on every build. The elaborator of a surface language (steps 4
-and 5), followed by the fixed point again, remains.
+source, on every build.
+
+The stage-1 compiler is the stage-0 compiler with the Surface 1
+expansion rewritten in Surface 1, `bootstrap/stage1/surface.geb`:
+datatypes for optional trees, S-expressions and declarations, case
+analysis and structural recursion in place of tests of labels and folds,
+and functions with result types, computing the same function of a
+program's forms. The seed cannot read Surface 1, so the stage-0 compiler
+builds its image; run from that image, the stage-1 compiler compiles its
+own source to the same image, of about sixteen kilobytes, in 0.61
+seconds on one machine, and the image it produces reproduces itself.
+`GebTests/Prototypes/Stage1.lean` checks this fixed point and the
+agreement of the two compilers on the Surface 1 programs and the
+kernel's examples on every build. The rewrite needed neither generated
+recognizers nor type parameters, which are therefore added when a
+program needs them. The stage-0 sources remain the independent route
+from the seed.
 
 ## Phase 5: speed and a second host
 

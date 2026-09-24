@@ -17,6 +17,9 @@
 ;                                        results, any other field to its value
 ;   (defn f ((x A) ...) R body)          a function with its result type
 ;
+; A pattern (c x ...) names one variable for each field of c, the last standing for the
+; remaining children when c has a & field; the & is not repeated in the pattern.
+;
 ; Names beginning with % are reserved for the expansion. The expansion refers to the
 ; primitives label, child, children, node and eq by name, so a surface program does not rebind
 ; them around case and cata. Requires the prelude and the reader.

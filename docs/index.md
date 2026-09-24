@@ -3691,7 +3691,11 @@ checklist and in CI.
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
   the compiler with the seed on the kernel's examples, runs Surface 1
   programs compiled by the compiler, and checks the fixed point: the
-  compiler compiled by itself is the image the seed builds of it. The
+  compiler compiled by itself is the image the seed builds of it.
+  `bootstrap/stage1/surface.geb` rewrites the expansion in Surface 1; the
+  stage-1 compiler it makes, built by the stage-0 compiler, compiles itself
+  to the same image, which `GebTests/Prototypes/Stage1.lean` checks together
+  with its agreement with the stage-0 compiler. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
