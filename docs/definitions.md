@@ -451,6 +451,20 @@ variables of an equation are restricted, and a substitution must be natural:
 presenting the restrictions as operations makes every substitution natural,
 and no restriction function on terms is needed.
 
+A quotient presheaf polynomial functor with free arities over
+`I × WalkingParallelPair`
+([QuotientPRA](../Geb/Prototypes/QuotientPRA.lean)) is such a presentation
+over `I`. Its term shapes are the operations, and each witness shape is an
+equation between its two endpoints, whose variables are its arguments, each
+restricted along the morphism by which the endpoint reindexes it. Where the
+arities are finite, the arguments of term shapes are terms and every term
+shape has its congruence, the classes of closed terms at each object are the
+quotient W-type's
+([Presheaf/Agreement.lean](../Geb/Prototypes/Definition/Presentation/Presheaf/Agreement.lean)):
+the quotient satisfies the equations and the classes form a model of the
+functor, so each universal property gives a map, and the two maps are
+mutually inverse.
+
 Commutativity presents a new theory of the old symbols. The equation
 `c = succ(c)` presents a theory with a new element: the class of `c` is the
 class of no term of zero and successor, and it has no solution in the natural
@@ -619,7 +633,8 @@ guarded blocks with their unique solution in the M-type
 and equational presentations with free-monad sides, their classes of
 terms and free models, the agreement with one-step equations, the
 presentations of derived operations, the many-sorted presentations over
-a slice, and the presentations over a presheaf polynomial endofunctor
+a slice, and the presentations over a presheaf polynomial endofunctor with
+their agreement with the quotient presheaf polynomial functors
 ([Definition/Presentation.lean](../Geb/Prototypes/Definition/Presentation.lean)).
 Its examples exercise structural references, repeated use of an imported
 definition, infinite stream production, vertices of a subject with a
@@ -627,8 +642,9 @@ parameter and two layers, transport of a body between layers, and the
 unique solution of a three-export well-founded block, and bitstreams
 defined by guarded blocks, one of depth two referring to its own export
 and one with an imported stream, and the presentations of the free monoid,
-of commutative binary trees, of a definition of depth two and of a constant
-equal to its own successor. All recursion uses
+of commutative binary trees, of a definition of depth two, of a constant
+equal to its own successor and of the directions in commutative trees. All
+recursion uses
 existing recursors, the existing free-monad interpreter, or well-founded
 recursion in proofs; `Definition/Vertex.lean` uses the executable code
 for the free monad's recursor that

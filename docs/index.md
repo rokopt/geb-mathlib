@@ -2087,7 +2087,21 @@ checklist and in CI.
   (`Presheaf.Presentation.clsPsh`), whose functor laws are those equations,
   so the laws of the signature's restriction are not used, and the
   operations commute with restriction (`Presheaf.Presentation.restrCls_op`).
-  Its mirror restricts the class of a point over a natural number. No
+  A quotient presheaf polynomial functor of `Geb/Prototypes/QuotientPRA/`
+  with free arities over `I × WalkingParallelPair` is such a presentation
+  over `I` (`Presheaf.QPRA.onestep`): its term shapes are the operations
+  (`Presheaf.QPRA.termSig`), and each witness shape is an equation between
+  its two endpoints, applied to the restrictions of its arguments along the
+  reindexing morphisms (`Presheaf.QPRA.endpoint`). For finitary arities,
+  term arguments and congruences, the quotient W-type satisfies these
+  equations (`Presheaf.QPRA.satisfies_qAlg`), the classes form a model of
+  the functor (`Presheaf.QPRA.clsModel`), and the value of classes in the
+  quotient and the eliminator of the quotient into the classes are mutually
+  inverse at every object (`Presheaf.QPRA.clsEquiv`). Its mirrors restrict
+  the class of a point over a natural number, and identify, in the
+  presentation of the directions in commutative trees of
+  `GebTests/Prototypes/QuotientPRA/Directions.lean`, the two leaf
+  directions of the tree of two leaves. No
   theorem here depends on an axiom beyond `propext` and `Quot.sound`, and
   no declaration depends on `Classical.choice`.
 - [Triage calculus](../Geb/Prototypes/Computability/Triage.lean)
