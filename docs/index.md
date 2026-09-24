@@ -3719,11 +3719,16 @@ checklist and in CI.
   computing each conclusion from its premises' conclusions, with rules of
   equality, congruence, the β and η rules of functions, pairs and the unit
   type, evaluation of closed terms, weakening, cut, instantiation, the
-  right fold of lists and induction on lists. `Geb.Metalogic.check_sound`
-  proves every computed conclusion valid in the kernel's denotation,
-  without `Classical.choice`. Tested in
-  `GebTests/Prototypes/Metalogic.lean`, including an inductive proof that
-  appending the empty list to a list gives the list. The
+  computation rules of the right fold and case analysis of lists, of
+  iteration and of the fold of trees, induction on lists, trees and
+  labels, and references to the definitions of a loaded program
+  (`Geb.Metalogic.Loaded`, `Geb.Metalogic.load_loaded`).
+  `Geb.Metalogic.check_sound` proves every computed conclusion valid in
+  the kernel's denotation, without `Classical.choice`. Tested in
+  `GebTests/Prototypes/Metalogic.lean`, including inductive proofs that
+  appending the empty list to a list gives the list, that iterating the
+  identity leaves its start unchanged, and that a fold whose step ignores
+  its arguments is constant. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and
   `Geb.Prototypes.Kernel.Reader`.
