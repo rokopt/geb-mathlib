@@ -603,15 +603,25 @@ Acceptance: the measurements and the decision are recorded.
 
 1. Lean: the closed bundle, a well-founded block of kernel definitions
    stored as a rose tree and linked through the reference node,
-   evaluated by one fold over its order. The reader's sequence of
-   definitions, loaded in order by {name}`Geb.Kernel.load`, is its first
-   form; the bundle adds the stored tree and the validation of its
-   references.
+   evaluated by one fold over its order. {name}`Geb.Kernel.bundle`
+   stores a program's definitions beside the table of their names, and
+   {name}`Geb.Kernel.runEntry` loads a bundle by
+   {name}`Geb.Kernel.load` and applies its named definition; a
+   reference to a definition that is not earlier fails to load, so a
+   loaded bundle is well founded.
 2. Lean: the annotation table of names and comments, keyed by vertex.
-3. Lean: the image, a version header followed by the interleaved wire
-   form without sharing; its loader, which rejects truncation, trailing
-   data, a wrong version and unresolved or cyclic references; and the
-   host driver of the section on input and output.
+   Names of definitions are kept in the bundle; names of bound
+   variables and comments are not yet kept.
+3. Lean: the image, a header of a magic number, a version and a bit
+   count, followed by the word-level form of the interleaved wire
+   format without sharing ({name}`Geb.Kernel.writeImage`). Its reader
+   {name}`Geb.Kernel.readImage` rejects a wrong magic number or
+   version, truncation, trailing data and non-zero bits beyond the
+   count. The host driver, the executable `geb-kernel` over
+   {name}`Geb.Kernel.Command.run`, builds an image from a program's
+   source and runs an image's named definition on a file, presented as
+   the tree whose children are the leaves of its bytes. The word-level
+   codec agrees with the list form by test, not by proof.
 4. Lean: the host binding of the selected hash, if the
    content-addressed workflow is wanted before the library grows, with
    the node-digest rule restated for rose trees; digests are then a
@@ -619,7 +629,13 @@ Acceptance: the measurements and the decision are recorded.
 
 Acceptance: an image holding a definition and a client of it
 round-trips through the codec and runs a named entry point, and each
-malformed variant is rejected.
+malformed variant is rejected. The image examples of
+`GebTests/Prototypes/Kernel.lean` meet it. Through the host driver, on
+one machine, reversing the bytes of a file of one mebibyte takes
+0.58 seconds and summing them 0.19 seconds, at a peak of about 480
+megabytes of memory: the plain representation costs hundreds of bytes
+per node, which the optimized representation of the value-representation
+chapter addresses later.
 
 ## Phase 4: Geb grows in itself
 
@@ -717,5 +733,9 @@ backend without Lean is a separate milestone.
 {includeLiterate "." Geb.Prototypes.Kernel.Basic "The kernel" (level := 1)}
 
 {includeLiterate "." Geb.Prototypes.Kernel.Reader "The kernel's readable syntax" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.Kernel.Image "Bundles and images" (level := 1)}
+
+{includeLiterate "." Geb.Prototypes.Kernel.Command "The kernel's host driver" (level := 1)}
 
 {includeLiterate "." Geb.Prototypes.Bootstrap "A computation-certificate prototype" (level := 1)}

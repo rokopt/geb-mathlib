@@ -3671,8 +3671,14 @@ checklist and in CI.
   characters, resolving names to de Bruijn indices, references and
   primitives (`Geb.Kernel.readProgram`), loads them in order
   (`Geb.Kernel.load`), and applies the last to an input tree
-  (`Geb.Kernel.runMain`). Tested in `GebTests/Prototypes/Kernel.lean`. The
+  (`Geb.Kernel.runMain`). `Image.lean` stores a program as one tree
+  (`Geb.Kernel.bundle`), writes and reads its image, a versioned header
+  over the word-level serialization (`Geb.Kernel.writeImage`,
+  `Geb.Kernel.readImage`), and runs a bundle's named definition
+  (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
+  executable `geb-kernel`, which builds images from source and runs them
+  on files. Tested in `GebTests/Prototypes/Kernel.lean`. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
-  `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum` and
-  `Mathlib.Data.Fin.VecNotation`.
+  `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
+  `Geb.Prototypes.RoseTree.Packed` and `Mathlib.Data.Fin.VecNotation`.

@@ -145,6 +145,10 @@ name = "rosebench"
 root = "RoseBenchMain"
 
 [[lean_exe]]
+name = "geb-kernel"
+root = "GebKernelMain"
+
+[[lean_exe]]
 name = "geb-manual"
 srcDir = "manual"
 root = "Main"

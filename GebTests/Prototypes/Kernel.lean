@@ -16,7 +16,9 @@ Programs written in the kernel's readable syntax, read, checked and run: factori
 machine word by iteration, the size and the mirror image of a tree by the fold and the
 reversal of a list by the right fold, definitions
 referring to earlier ones, and a conditional. Ill-typed, malformed and unresolved programs,
-and programs whose last definition is not a function on trees, are rejected.
+and programs whose last definition is not a function on trees, are rejected. A program's
+bundle round-trips through its image and runs a named definition; truncated, extended,
+altered and mislabelled images, and bundles referring forward, are rejected.
 
 The programs are string constants, converted to lists of characters inside each
 {lit}`#guard`: core's {lit}`String.toList` depends on {lit}`Classical.choice`, and a
@@ -25,6 +27,7 @@ The programs are string constants, converted to lists of characters inside each
 ## Main definitions
 
 * {lit}`datum` reads a quoted tree from text.
+* {lit}`imageOf` writes the image of a program's bundle.
 * {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`reverseChildren`,
   {lit}`quadruple` and {lit}`isZero` are programs.
 
@@ -104,6 +107,34 @@ def isZero : String := "(def isZero (lam (x T) (if x 0 1)))"
 #guard runMain "(def f (lam (x Nat) x))".toList (leaf 1) = none
 -- the last definition is not a function on trees
 #guard runMain "(def f unit)".toList (leaf 1) = none
+
+/-- The image of a program's bundle, or the empty image when the program does not read. -/
+def imageOf (text : List Char) : ByteArray :=
+  ((readProgram text).map (writeImage ∘ bundle)).getD .empty
+
+-- an image round-trips and runs its named definitions
+#guard readImage (imageOf quadruple.toList) == (readProgram quadruple.toList).map bundle
+#guard (readImage (imageOf quadruple.toList)).bind (runEntry · "double".toList (leaf 5)) =
+  some (leaf 10)
+#guard (readImage (imageOf quadruple.toList)).bind (runEntry · "quadruple".toList (leaf 5)) =
+  some (leaf 20)
+#guard (readImage (imageOf quadruple.toList)).bind (runEntry · "triple".toList (leaf 5)) = none
+-- malformed images
+#guard readImage ((imageOf quadruple.toList).extract 0 ((imageOf quadruple.toList).size - 1)) =
+  none
+#guard readImage ((imageOf quadruple.toList).push 0) = none
+#guard readImage ((imageOf quadruple.toList).set! 0 0) = none
+#guard readImage ((imageOf quadruple.toList).set! 4 2) = none
+#guard readImage ((imageOf quadruple.toList).set! 20 0xFF) !=
+  readImage (imageOf quadruple.toList)
+#guard readImage .empty = none
+-- a bundle whose definition refers to itself, and a tree that is not a bundle
+#guard runEntry (mk 100 [mk 101 [mk 23 [leaf 0]], mk 102 [nameTree "f".toList]]) "f".toList
+  (leaf 0) = none
+#guard unbundle (leaf 0) = none
+-- files as trees
+#guard (toBytes (ofBytes ⟨#[1, 2, 255]⟩)).map (·.data) = some #[1, 2, 255]
+#guard toBytes (mk 0 [leaf 256]) = none
 
 end Geb.Kernel.Tests
 
