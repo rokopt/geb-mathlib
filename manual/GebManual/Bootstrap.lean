@@ -548,6 +548,59 @@ executable acceptance condition, and every step retains a runnable
 fixture, the source that regenerates it, and its input and output
 contract.
 
+## Status
+
+The first fixed point holds: the seed builds the stage-0 compiler,
+written in the kernel's syntax, and the stage-0 compiler builds the
+stage-1 compiler, whose Surface 1 expansion is written in Surface 1;
+each, run by the Lean evaluator from its image, compiles its own source
+to that image, and continuous integration checks both on every build.
+
+:::table +header
+*
+  * Phase
+  * State
+  * Where
+*
+  * 1: the kernel runs in Lean
+  * constructed, except the reader's printer and its retraction law
+  * `Geb/Prototypes/Kernel/Basic.lean`, `Reader.lean`
+*
+  * 2: the choice of machine
+  * deferred until before the second host
+  * none
+*
+  * 3: definitions and images
+  * constructed, except names of bound variables, comments and the host hash
+  * `Geb/Prototypes/Kernel/Image.lean`, `Command.lean`, the executable `geb-kernel`
+*
+  * 4: Geb grows in itself
+  * constructed, every step
+  * `bootstrap/*.geb`, `bootstrap/stage1/surface.geb`
+*
+  * 5: speed and a second host
+  * not begun
+  * none
+*
+  * 6: content identity
+  * not begun
+  * none
+*
+  * 7: the metalogic
+  * not begun; depends only on Phase 1
+  * none
+:::
+
+The implementation changed the plan in these respects. The kernel's
+terms and types are rose trees read directly, and its checker and
+evaluator are one fold whose results are Lean closures, so no machine
+is needed before the first fixed point and Phase 2 left the critical
+path. The kernel gained lists, case analysis of lists and the
+logarithm of a label, each for a cost measured on the bootstrap's own
+programs. And the representation of rose trees tabulates a node's
+children in an array, without which a fold over a wide node, such as a
+file, takes quadratic time.
+
 ## Phase 1: the kernel runs in Lean
 
 1. Lean: the kernel's syntax. Terms and types are rose trees read
@@ -627,6 +680,11 @@ unresolved and mistyped programs.
    compilation targets is recorded in this chapter.
 
 Acceptance: the measurements and the decision are recorded.
+
+Deferred: images are kernel terms and the Lean evaluator runs compiled
+closures, so the choice of machine matters for the second host and the
+backends, not for the first fixed point; the comparison runs before
+Phase 5's second host.
 
 ## Phase 3: definitions and images
 
@@ -752,6 +810,19 @@ from the seed.
 Acceptance: both hosts reach the same image fixed point, and the
 compiler emitting Lean reaches the fixed point on emitted Lean.
 
+What the first four phases fix for this one: a second host implements
+the kernel as {name}`Geb.Kernel.infer` defines it, the labels of its
+types and terms and the table {name}`Geb.Kernel.prims`, whose indices
+are only extended, together with the image format of
+{name}`Geb.Kernel.readImage`; its acceptance is the stage-0 and stage-1
+fixed points reproduced on it. A compiler emitting Lean follows the
+denotation's structure: a kernel type becomes the Lean type
+{name}`Geb.Kernel.Ty.den` gives it, the fold becomes
+{name}`Geb.RoseTree.elim`, and each primitive its Lean definition, so
+that the emitted program is the denotation written out, and the
+executable fixed point of the section on what self-compilation
+establishes takes Lake's build as the host build.
+
 ## Phase 6: content identity
 
 1. The node-digest rule, the hash function and its version tag, if
@@ -763,6 +834,13 @@ compiler emitting Lean reaches the fixed point on emitted Lean.
 Acceptance: a rename leaves every digest unchanged, a changed
 dependency changes the digests of its dependents, and running the
 migration twice changes nothing.
+
+What the first four phases fix for this one: the reference node is
+the kernel's constructor of label 23 over a definition's position in
+its bundle, which the migration rewrites to a digest; the node-digest
+rule is restated for rose trees with natural-number labels; and the
+serializer written in Geb, `bootstrap/serialize.geb`, is the model for
+the hash written in Geb.
 
 ## Phase 7: the metalogic
 
@@ -781,6 +859,83 @@ migration twice changes nothing.
 Acceptance: a theorem with hypotheses, a substitution and an induction
 checks, and certificates with altered binders, invalid dependencies or
 false conclusions fail.
+
+## Improvements
+
+The following are known limitations of what is constructed, each with
+the change that removes it.
+
+* Primitives named in expansions. The Surface 1 expansion refers to the
+  primitives `label`, `child`, `children`, `node` and `eq` by name, so a
+  program that binds one of these names around a case analysis or a
+  structural recursion changes the expansion's meaning. A reference to
+  a primitive that no binding shadows, a reader form naming a
+  primitive by its index, added to the seed's reader and to the Geb
+  reader alike, removes the dependence; the reservation of names
+  beginning with `%` for the expansion is likewise documented and not
+  enforced.
+* Diagnostics of the Geb compiler. The stage-0 and stage-1 compilers
+  report a program that does not read, expand or type-check by an empty
+  image and name no definition, where {name}`Geb.Kernel.diagnose` in the
+  seed names the first failing one. Until the Geb compiler reports a
+  message, a failing program is diagnosed by expanding it with the
+  stage-0 expansion, printing the kernel forms, and applying
+  {name}`Geb.Kernel.diagnose` to them.
+* The reader's printer and the retraction law of Phase 1, and the
+  unification of the readable S-expressions with the canonical ones,
+  with a quoted spelling for atoms that are not tokens.
+* The equivalence of the word-level codec with
+  {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
+  of the decision gates of the value-representation chapter.
+* Memory. The plain representation takes about 480 bytes of memory per
+  byte of input to the host driver; the optimized representation of the
+  value-representation chapter removes most of it.
+* Test time. The stage tests run the compilers in Lean's interpreter,
+  tens of seconds each; checking the image fixed points with the
+  compiled host driver shortens them.
+* Surface 1 lacks generated recognizers, type parameters and a static
+  check of datatypes; a pattern omits the `&` that a declaration
+  writes; and every pattern variable is bound whether or not the clause
+  uses it.
+* Only the names of definitions are kept beside a bundle; the names of
+  bound variables and comments are not.
+
+## What remains for a full bootstrap
+
+The aim is an implementation of Geb written in Geb and compiled by Geb,
+with the host code reduced to the seed. The image fixed points reach
+that aim for the compiler as far as images: what remains is the
+following, in the order of dependence.
+
+1. A compiler emitting host code, Lean first (Phase 5, step 3): the
+   compiler compiles itself to a program that the host builds, and the
+   executable fixed point holds with the host's build. This is the
+   optimized self-compilation the aim names, idempotent from then on.
+2. The metalogic (Phase 7): the rule set and its soundness in Lean,
+   then the proof checker written in Geb, then proofs about the
+   compiler's components. It depends only on Phase 1.
+3. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
+   points reproduced on it, which is diverse double-compiling across
+   hosts, and accelerations proved against the denotation.
+4. Content identity (Phase 6): digests of definitions and the migration
+   from positions to digests.
+5. Surface 2 and the richer definitions: subset types by propositions,
+   quotients with proved obligations, equation blocks, and the
+   constructive fragment of the Lean and Idris developments.
+
+The first two complete the bootstrap in the sense of the aim, one for
+computation and one for logic; the others extend it.
+
+## The next phase
+
+The phases open are independent of one another, so the choice is of
+priority. The metalogic's rule set is recommended next: it fixes the
+foundation before any mathematics migrates, it is the layer Surface 2
+waits on, it holds the one claim the design still has to check, that
+a total map back from a defined type's base derives the weak excluded
+middle, and it needs nothing beyond Phase 1. The compiler emitting Lean
+is the alternative that completes the computational side first. The
+second host, content identity and the syntax unification follow either.
 
 ## What self-compilation establishes
 
