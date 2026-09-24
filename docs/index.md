@@ -3667,9 +3667,10 @@ checklist and in CI.
   operate on labels and children, lists carry their right fold, the fold of
   trees denotes `Geb.RoseTree.elim` over the list of children's results, and
   iteration repeats a step as often as a label's value. `Reader.lean` reads
-  programs, sequences of named definitions in S-expressions over lists of
-  characters, resolving names to de Bruijn indices, references and
-  primitives (`Geb.Kernel.readProgram`), loads them in order
+  programs, sequences of named definitions and type abbreviations in
+  S-expressions over lists of characters, resolving names to de Bruijn
+  indices, references and primitives and expanding lists of binders and
+  local bindings (`Geb.Kernel.readProgram`), loads them in order
   (`Geb.Kernel.load`), and applies the last to an input tree
   (`Geb.Kernel.runMain`). `Image.lean` stores a program as one tree
   (`Geb.Kernel.bundle`), writes and reads its image, a versioned header

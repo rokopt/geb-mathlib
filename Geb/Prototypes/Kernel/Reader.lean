@@ -12,7 +12,8 @@ set_option doc.verso true in
 # The kernel's readable syntax
 
 A program is a sequence of definitions written as S-expressions, {lit}`(def name term)`, each
-term referring to the definitions before it by name. Reading has two stages: a text is read
+term referring to the definitions before it by name, and of type abbreviations
+{lit}`(deftype name type)`, each in force after it. Reading has two stages: a text is read
 as S-expressions, a rose tree whose leaves carry atoms and whose other nodes are lists; each
 S-expression is then resolved into a kernel term, variable names becoming de Bruijn indices,
 definition names references, and keywords the kernel's constructors. Loading type-checks
@@ -23,7 +24,10 @@ The forms of a term:
 * a numeral {lit}`n` is the quoted leaf of label {lit}`n`; {lit}`unit` is the unit value;
   a bound name is a variable, a defined name a reference, and a primitive's name the
   primitive;
-* {lit}`(lam (x A) body)` is an abstraction binding {lit}`x` of type {lit}`A`;
+* {lit}`(lam (x A) body)` is an abstraction binding {lit}`x` of type {lit}`A`, and
+  {lit}`(lam ((x₁ A₁) … (xₙ Aₙ)) body)` the nested abstractions binding each in turn;
+  {lit}`(let x A e body)` is the abstraction binding {lit}`x` in {lit}`body` applied to
+  {lit}`e`;
   {lit}`(pair a b)`, {lit}`(fst p)`, {lit}`(snd p)`, {lit}`(if c a b)` and
   {lit}`(quote d)` are the corresponding constructors, a datum being a numeral or a list
   {lit}`(n d₁ … dₖ)` of a label and children;
@@ -34,8 +38,9 @@ The forms of a term:
   arguments, and any other list {lit}`(f x₁ … xₖ)` applies {lit}`f` to its arguments in
   turn.
 
-Types are {lit}`T`, {lit}`Unit`, {lit}`(Prod A B)`, {lit}`(Arrow A B)` and
-{lit}`(List A)`. A semicolon begins a comment that extends to the end of its line.
+Types are {lit}`T`, {lit}`Unit`, {lit}`(Prod A B)`, {lit}`(Arrow A B)`,
+{lit}`(List A)` and the names of type abbreviations. A semicolon begins a comment that
+extends to the end of its line.
 
 ## Main definitions
 
@@ -123,16 +128,21 @@ def primNames : List String :=
   ["label", "arity", "child", "node", "children", "add", "sub", "mul", "div", "mod", "eq",
    "lt", "equal"]
 
-/-- An S-expression read as a type, with its atom if it is one. -/
-def readType : SExp → Option Tree :=
+/-- Type abbreviations: names with the types they abbreviate, the latest first. -/
+abbrev TypeNames : Type := List (List Char × Tree)
+
+/-- An S-expression read as a type, given the type abbreviations in force, with its atom if it
+is one. -/
+def readType (tys : TypeNames) : SExp → Option Tree :=
   fun e ↦ (RoseTree.elim (β := Option String × Option Tree) (fun a rs ↦
     match a.map String.ofList, rs with
     | some "T", _ => (some "T", some tT)
     | some "Unit", _ => (some "Unit", some tUnit)
+    | some s, _ => (some s, a.bind fun n ↦ List.lookup n tys)
     | none, [(some "Prod", _), (_, some A), (_, some B)] => (none, some (tProd A B))
     | none, [(some "Arrow", _), (_, some A), (_, some B)] => (none, some (tArrow A B))
     | none, [(some "List", _), (_, some A)] => (none, some (tList A))
-    | b, _ => (b, none)) e).2
+    | none, _ => (none, none)) e).2
 
 /-- An S-expression read as a quoted datum: a numeral is a leaf, and a list of a numeral and
 data is a node. -/
@@ -149,9 +159,15 @@ abbrev mk (l : ℕ) (cs : List Tree) : Tree := RoseTree.node l cs
 /-- A term applied to arguments in turn. -/
 def apps (f : Tree) (xs : List Tree) : Tree := xs.foldl (fun g x ↦ mk 10 [g, x]) f
 
+/-- The binders of an abstraction: one binder {lit}`(x A)`, or a list of them. -/
+def binders (b : SExp) : List SExp :=
+  match b.children with
+  | [x, _] => if x.label.isSome then [b] else b.children
+  | bs => bs
+
 /-- Resolve one S-expression node: its atom or its elements, each with its resolution as a
 function of the names bound around it. -/
-def resolveStep (defs : List (List Char)) (a : Option (List Char))
+def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Char))
     (cs : List (SExp × (List (List Char) → Option Tree))) (scope : List (List Char)) :
     Option Tree :=
   let args (xs : List (SExp × (List (List Char) → Option Tree))) := xs.mapM (·.2 scope)
@@ -165,45 +181,54 @@ def resolveStep (defs : List (List Char)) (a : Option (List Char))
     | _, _, _, _ => if String.ofList s == "unit" then some (mk 11 []) else none
   | none, (h, rh) :: rest =>
     match h.label.map String.ofList, rest with
-    | some "lam", [(b, _), (_, body)] =>
-      match b.children with
-      | [x, A] => do
-        let name ← x.label
-        some (mk 9 [← readType A, ← body (name :: scope)])
-      | _ => none
+    | some "lam", [(b, _), (_, body)] => do
+      let bs ← (binders b).mapM fun c ↦
+        match c.children with
+        | [x, A] => do some (← x.label, ← readType tys A)
+        | _ => none
+      if bs.isEmpty then none
+      else
+        let t ← body ((bs.map Prod.fst).reverse ++ scope)
+        some (bs.foldr (fun p u ↦ mk 9 [p.2, u]) t)
+    | some "let", [(x, _), (A, _), (_, e), (_, body)] => do
+      let name ← x.label
+      some (mk 10 [mk 9 [← readType tys A, ← body (name :: scope)], ← e scope])
     | some "pair", _ => (args rest).map (mk 12)
     | some "fst", _ => (args rest).map (mk 13)
     | some "snd", _ => (args rest).map (mk 14)
     | some "if", _ => (args rest).map (mk 16)
     | some "quote", [(d, _)] => (readDatum d).map fun t ↦ mk 15 [t]
     | some "cons", _ => (args rest).map (mk 20)
-    | some "nil", [(A, _)] => (readType A).map fun A ↦ mk 19 [A]
-    | some "fold", (A, _) :: xs => do apps (mk 17 [← readType A]) (← args xs)
-    | some "iter", (A, _) :: xs => do apps (mk 18 [← readType A]) (← args xs)
+    | some "nil", [(A, _)] => (readType tys A).map fun A ↦ mk 19 [A]
+    | some "fold", (A, _) :: xs => do apps (mk 17 [← readType tys A]) (← args xs)
+    | some "iter", (A, _) :: xs => do apps (mk 18 [← readType tys A]) (← args xs)
     | some "foldr", (A, _) :: (B, _) :: xs => do
-      apps (mk 21 [← readType A, ← readType B]) (← args xs)
+      apps (mk 21 [← readType tys A, ← readType tys B]) (← args xs)
     | _, _ => do apps (← rh scope) (← args rest)
   | none, [] => none
 
-/-- Resolve an S-expression into a kernel term, given the names of the definitions before it
-and the names bound around it. -/
-def resolve (defs : List (List Char)) (e : SExp) (scope : List (List Char)) : Option Tree :=
-  RoseTree.para (resolveStep defs) e scope
+/-- Resolve an S-expression into a kernel term, given the type abbreviations in force, the
+names of the definitions before it and the names bound around it. -/
+def resolve (tys : TypeNames) (defs : List (List Char)) (e : SExp) (scope : List (List Char)) :
+    Option Tree :=
+  RoseTree.para (resolveStep tys defs) e scope
 
-/-- The definitions of a program, as names with kernel terms. -/
+/-- The definitions of a program, as names with kernel terms; type abbreviations are expanded
+where they are used. -/
 def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
   let es ← readSExps text
-  let step (acc : Option (List (List Char × Tree))) (e : SExp) :
-      Option (List (List Char × Tree)) := do
-    let ds ← acc
+  let step (acc : Option (TypeNames × List (List Char × Tree))) (e : SExp) :
+      Option (TypeNames × List (List Char × Tree)) := do
+    let (tys, ds) ← acc
     match e.children with
-    | [kw, n, body] =>
-      if kw.label.map String.ofList == some "def" then
-        let name ← n.label
-        some (ds ++ [(name, ← resolve (ds.map Prod.fst) body [])])
-      else none
+    | [kw, n, body] => do
+      let name ← n.label
+      match kw.label.map String.ofList with
+      | some "def" => some (tys, ds ++ [(name, ← resolve tys (ds.map Prod.fst) body [])])
+      | some "deftype" => some ((name, ← readType tys body) :: tys, ds)
+      | _ => none
     | _ => none
-  es.foldl step (some [])
+  (es.foldl step (some ([], []))).map Prod.snd
 
 /-- The meanings of a program's definitions, each checked and evaluated in the global
 environment of those before it. -/

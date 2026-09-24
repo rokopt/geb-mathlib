@@ -13,12 +13,13 @@ set_option doc.verso true in
 # Kernel examples
 
 Programs written in the kernel's readable syntax, read, checked and run: factorial beyond a
-machine word by iteration, the size and the mirror image of a tree by the fold and the
-reversal of a list by the right fold, definitions
-referring to earlier ones, and a conditional. Ill-typed, malformed and unresolved programs,
-and programs whose last definition is not a function on trees, are rejected. A program's
-bundle round-trips through its image and runs a named definition; truncated, extended,
-altered and mislabelled images, and bundles referring forward, are rejected.
+machine word by iteration, the size and the mirror image of a tree by the fold, the reversal
+of a list by the right fold, definitions referring to earlier ones, a conditional, and the
+reader's type abbreviations, lists of binders and local bindings. Ill-typed, malformed and
+unresolved programs, and programs whose last definition is not a function on trees, are
+rejected. A program's bundle round-trips through its image and runs a named definition;
+truncated, extended, altered and mislabelled images, and bundles referring forward, are
+rejected.
 
 The programs are string constants, converted to lists of characters inside each
 {lit}`#guard`: core's {lit}`String.toList` depends on {lit}`Classical.choice`, and a
@@ -29,7 +30,7 @@ The programs are string constants, converted to lists of characters inside each
 * {lit}`datum` reads a quoted tree from text.
 * {lit}`imageOf` writes the image of a program's bundle.
 * {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`reverseChildren`,
-  {lit}`quadruple` and {lit}`isZero` are programs.
+  {lit}`quadruple`, {lit}`isZero` and {lit}`sugar` are programs.
 
 ## Tags
 
@@ -85,6 +86,13 @@ def quadruple : String := "
 /-- The conditional on a label. -/
 def isZero : String := "(def isZero (lam (x T) (if x 0 1)))"
 
+/-- A type abbreviation, abstractions over lists of binders, and a local binding. -/
+def sugar : String := "
+(deftype Pair (Prod T T))
+(def swap (lam ((p Pair)) (pair (snd p) (fst p))))
+(def add3 (lam ((x T) (y T) (z T)) (add x (add y z))))
+(def main (lam (t T) (let s T (add3 t t t) (fst (swap (pair t s))))))"
+
 #guard runMain factorial.toList (leaf 30) = some (leaf 265252859812191058636308480000000)
 #guard runMain factorial.toList (leaf 0) = some (leaf 1)
 #guard runMain size.toList (datum "(1 (2) (3 (4) (5)))".toList) = some (leaf 5)
@@ -95,6 +103,10 @@ def isZero : String := "(def isZero (lam (x T) (if x 0 1)))"
 #guard runMain quadruple.toList (leaf 5) = some (leaf 20)
 #guard runMain isZero.toList (leaf 0) = some (leaf 1)
 #guard runMain isZero.toList (leaf 7) = some (leaf 0)
+#guard runMain sugar.toList (leaf 5) = some (leaf 15)
+#guard runMain "(def f (lam () 1))".toList (leaf 1) = none
+#guard runMain "(deftype P (Prod T T)) (def f (lam (x T) P))".toList (leaf 1) = none
+#guard runMain "(def f (lam (x Q) x))".toList (leaf 1) = none
 #guard runMain "(def f (lam (x T) (add x 18446744073709551615)))".toList (leaf 1) =
   some (leaf 18446744073709551616)
 -- ill-typed

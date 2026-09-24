@@ -562,7 +562,9 @@ contract.
 4. Lean: the reader. A program is a sequence of named definitions in
    S-expressions over lists of characters; names resolve to de Bruijn
    indices, references and primitives ({name}`Geb.Kernel.readProgram`),
-   the definitions are checked and evaluated in order
+   and the reader expands type abbreviations, abstractions over lists
+   of binders and local bindings, which the kernel does not have; the
+   definitions are checked and evaluated in order
    ({name}`Geb.Kernel.load`), and the last is applied to an input tree
    ({name}`Geb.Kernel.runMain`). A printer and the retraction law
    between it and the reader remain to be written.
@@ -645,8 +647,9 @@ chapter addresses later.
    resolver. These are measured on the growing bundle of the compiler's
    own source before interning, cached hashes, succinct pages or
    parallel evaluation are added.
-2. Geb: the reader, from bytes to trees with name resolution. The Lean
-   reader remains as the independent route.
+2. Geb: the reader, from bytes to trees with name resolution, accepting
+   exactly the syntax the seed reader accepts, abbreviations included.
+   The Lean reader remains as the independent route.
 3. Geb: the kernel type checker, compared with the Lean one on valid
    and malformed fixtures.
 4. Geb: a minimal elaborator in kernel S-expressions: named variables,
