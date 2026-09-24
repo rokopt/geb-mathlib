@@ -3729,7 +3729,10 @@ checklist and in CI.
   `GebTests/Prototypes/Metalogic.lean`, including inductive proofs that
   appending the empty list to a list gives the list, that iterating the
   identity leaves its start unchanged, and that a fold whose step ignores
-  its arguments is constant. The
+  its arguments is constant. `bootstrap/metalogic/equations.geb` is the
+  same checker written in Surface 1; the tests compile it with the stage-0
+  compiler and compare it with `Geb.Metalogic.check` on their
+  certificates and on malformed variants of each. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and
   `Geb.Prototypes.Kernel.Reader`.
