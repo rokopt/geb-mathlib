@@ -11,8 +11,9 @@ set_option doc.verso true in
 /-!
 # The kernel's host driver
 
-The command line of the bootstrap's host: {lit}`build SOURCE IMAGE` reads a program's
-source, checks and evaluates its definitions, and writes its bundle's image;
+The command line of the bootstrap's host: {lit}`build SOURCE … IMAGE` reads a program's
+source files in order as one program, checks and evaluates its definitions, and writes its
+bundle's image;
 {lit}`run IMAGE NAME INPUT OUTPUT` reads an image, applies its definition of that name to
 the input file's tree, and writes the output tree's bytes. Kernel programs are pure: the
 driver alone reads and writes files.
@@ -45,11 +46,14 @@ def chars (b : ByteArray) : List Char := b.data.toList.map fun x ↦ Char.ofNat 
 -/
 def run (args : List String) : IO UInt32 := do
   match args with
-  | ["build", src, img] =>
-    let some ds := readProgram (chars (← IO.FS.readBinFile src))
-      | throw <| IO.userError s!"{src}: the program does not read"
+  | "build" :: files@(_ :: _ :: _) =>
+    let srcs := files.dropLast
+    let img := files.getLast!
+    let texts ← srcs.mapM fun src ↦ return chars (← IO.FS.readBinFile src)
+    let some ds := readProgram (texts.flatMap (· ++ ['\n']))
+      | throw <| IO.userError s!"{srcs}: the program does not read"
     let some _ := load (ds.map Prod.snd)
-      | throw <| IO.userError s!"{src}: the program does not type-check"
+      | throw <| IO.userError s!"{srcs}: the program does not type-check"
     IO.FS.writeBinFile img (writeImage (bundle ds))
     return 0
   | ["run", img, name, input, output] =>
@@ -63,6 +67,6 @@ def run (args : List String) : IO UInt32 := do
     return 0
   | _ =>
     throw <| IO.userError
-      "usage: geb-kernel build SOURCE IMAGE | geb-kernel run IMAGE NAME INPUT OUTPUT"
+      "usage: geb-kernel build SOURCE... IMAGE | geb-kernel run IMAGE NAME INPUT OUTPUT"
 
 end Geb.Kernel.Command

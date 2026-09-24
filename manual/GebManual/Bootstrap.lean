@@ -556,7 +556,9 @@ contract.
 3. Lean: the primitives {name}`Geb.Kernel.prims`, on labels and
    children: a node's label, arity and child by index; a node from a
    label and a list of children, and the list of a node's children;
-   arithmetic and comparison of labels; and equality of trees. The
+   arithmetic and comparison of labels; equality of trees; and the
+   base-two logarithm of a label, without which a label's bit length
+   would need as many steps of iteration as the label's value. The
    table is only extended, and its members are chosen by what the
    reader, substitution and the checker need.
 4. Lean: the reader. A program is a sequence of named definitions in
@@ -644,7 +646,12 @@ chapter addresses later.
 1. Geb: libraries of lists, bytes and text, label operations and tree
    utilities, written in kernel S-expressions; the serializer first,
    which must match the seed codec byte for byte, then the reference
-   resolver. These are measured on the growing bundle of the compiler's
+   resolver. The sources are under `bootstrap/`: `prelude.geb` holds
+   list and digit utilities, and `serialize.geb` writes a tree's image,
+   which `GebTests/Prototypes/Stage0.lean` compares with
+   {name}`Geb.Kernel.writeImage` byte for byte, on labels of zero and
+   beyond a machine word, a node of many children, and the bundle of
+   the serializer's own program. These are measured on the growing bundle of the compiler's
    own source before interning, cached hashes, succinct pages or
    parallel evaluation are added.
 2. Geb: the reader, from bytes to trees with name resolution, accepting

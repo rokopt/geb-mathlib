@@ -174,8 +174,9 @@ def ofBool (b : Bool) : Tree := leaf (if b then 1 else 0)
 /-- The primitives, by index: the label of a tree, the number of its children, a child by
 index (the leaf of label zero when out of range), a node from the label of a tree and a list
 of children, the list of a tree's children, arithmetic on labels (subtraction truncated,
-division and remainder by zero as in {lit}`Nat`), comparison of labels, and equality of
-trees. -/
+division and remainder by zero as in {lit}`Nat`), comparison of labels, equality of trees,
+and the base-two logarithm of a label, rounded down and zero at zero. The table is only
+extended, so that an index names one primitive in every version. -/
 def prims : List Glob :=
   let binL (f : ℕ → ℕ → ℕ) : Glob :=
     ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ leaf (f a.label b.label)⟩
@@ -188,7 +189,8 @@ def prims : List Glob :=
    binL (· + ·), binL (· - ·), binL (· * ·), binL (· / ·), binL (· % ·),
    ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (a.label == b.label)⟩,
    ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (decide (a.label < b.label))⟩,
-   ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (decide (a = b))⟩]
+   ⟨tArrow tT (tArrow tT tT), fun a b : Tree ↦ ofBool (decide (a = b))⟩,
+   ⟨tArrow tT tT, fun t : Tree ↦ leaf t.label.log2⟩]
 
 /-- The type of the fold of trees at result type {lit}`A`. -/
 def foldTy (A : Tree) : Tree := tArrow (tArrow tT (tArrow (tList A) A)) (tArrow tT A)

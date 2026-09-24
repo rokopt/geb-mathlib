@@ -1,0 +1,58 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The image of a tree, byte for byte the image the seed writes: a header of the magic number
+; GEBK, the version 1 and the bit count in eight bytes, least significant first, followed by
+; the tree's serialization packed eight bits to a byte, least significant first. Each node in
+; preorder is its arity in unary ones and a zero, the Elias delta code of its label's length,
+; its label's bits below the sentinel, least significant first, and then its children.
+; Requires the prelude.
+
+; the Elias delta code of n: the size of the size in unary zeros and a one, then the size and
+; n + 1 below their leading ones, most significant first
+(def deltaBits (lam ((n T))
+  (let m T (add n 1)
+    (let s T (add (log2 m) 1)
+      (let z T (log2 s)
+        (append (replicate z 0)
+          (cons 1 (append (digitsMsb 2 s z) (digitsMsb 2 m (sub s 1))))))))))
+
+; one node's header
+(def nodeBits (lam ((arity T) (l T))
+  (let m T (add l 1)
+    (append (replicate arity 1)
+      (cons 0 (append (deltaBits (log2 m)) (digitsLsb 2 m (log2 m))))))))
+
+; the serialization, as a list of bits, by a fold whose result prepends a subtree's bits to
+; what follows it
+(def treeBits (lam ((t T))
+  ((fold Endo
+     (lam ((l T) (rs (List Endo)) (tail Ts))
+       (append (nodeBits (foldr Endo T (lam ((r Endo) (n T)) (add n 1)) 0 rs) l)
+               (foldr Endo Ts (lam ((r Endo) (acc Ts)) (r acc)) tail rs)))
+     t)
+   (nil T))))
+
+; bits packed into bytes, least significant first; the state is the byte being filled, the
+; weight of the next bit, and the bytes filled, most recent first
+(deftype Pack (Prod T (Prod T Ts)))
+(deftype PackK (Arrow Pack Pack))
+(def packBits (lam ((bits Ts))
+  (let s Pack
+    ((foldr T PackK
+       (lam ((b T) (k PackK) (s Pack))
+         (let byte T (add (fst s) (mul b (fst (snd s))))
+           (k (if (eq (fst (snd s)) 128)
+                (pair 0 (pair 1 (cons byte (snd (snd s)))))
+                (pair byte (pair (mul 2 (fst (snd s))) (snd (snd s))))))))
+       (lam ((s Pack)) s)
+       bits)
+     (pair 0 (pair 1 (nil T))))
+    (reverse (if (eq (fst (snd s)) 1) (snd (snd s)) (cons (fst s) (snd (snd s))))))))
+
+; the image, as a file: a node whose children are the leaves of the bytes
+(def image (lam ((t T))
+  (let bits Ts (treeBits t)
+    (node 0 (append (cons 71 (cons 69 (cons 66 (cons 75 (cons 1 (nil T))))))
+              (append (digitsLsb 256 (length bits) 8) (packBits bits)))))))
