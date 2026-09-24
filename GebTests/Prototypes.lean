@@ -32,6 +32,7 @@ import GebTests.Prototypes.Typechecker
 import GebTests.Prototypes.Typechecker.Oitavem
 import GebTests.Prototypes.UniverseVariance
 import GebTests.Prototypes.SExprIO
+import GebTests.Prototypes.Stage0
 
 /-!
 # GebTests.Prototypes — tests for prototype content

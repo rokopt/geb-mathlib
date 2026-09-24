@@ -3678,7 +3678,11 @@ checklist and in CI.
   `Geb.Kernel.readImage`), and runs a bundle's named definition
   (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
   executable `geb-kernel`, which builds images from source and runs them
-  on files. Tested in `GebTests/Prototypes/Kernel.lean`. The
+  on files. Tested in `GebTests/Prototypes/Kernel.lean`. The Geb-written
+  stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
+  holds list and digit utilities and `serialize.geb` writes a tree's image,
+  compared with `Geb.Kernel.writeImage` byte for byte in
+  `GebTests/Prototypes/Stage0.lean`. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,

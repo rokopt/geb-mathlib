@@ -126,7 +126,7 @@ def numeral? (s : List Char) : Option ℕ :=
 /-- The names of the primitives, in the order of {name}`prims`. -/
 def primNames : List String :=
   ["label", "arity", "child", "node", "children", "add", "sub", "mul", "div", "mod", "eq",
-   "lt", "equal"]
+   "lt", "equal", "log2"]
 
 /-- Type abbreviations: names with the types they abbreviate, the latest first. -/
 abbrev TypeNames : Type := List (List Char × Tree)
