@@ -10,6 +10,7 @@ import GebTests.Prototypes.Definition.Presentation.OneStep
 import GebTests.Prototypes.Definition.Presentation.Definitional
 import GebTests.Prototypes.Definition.Presentation.Constant
 import GebTests.Prototypes.Definition.Presentation.Slice
+import GebTests.Prototypes.Definition.Presentation.Presheaf
 
 /-!
 # Presentation tests — index

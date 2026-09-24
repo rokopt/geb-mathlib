@@ -21,8 +21,8 @@ operations of a finitary signature, one class chosen per argument.
 
 ## Main definitions
 
-* {lit}`finEnumBool`, {lit}`finEnumPEmpty` — enumerations of the booleans and the empty
-  type.
+* {lit}`finEnumBool`, {lit}`finEnumPEmpty`, {lit}`finEnumPUnit` — enumerations of the
+  booleans, the empty type and the one-element type.
 
 ## Main statements
 
@@ -37,7 +37,8 @@ The finiteness of the arguments is an enumeration, {name}`FinEnum`, whose list t
 recurse on. mathlib's {lit}`Quotient.finChoice` for a {name}`Fintype` depends on
 {lit}`Classical.choice`, as do {name}`Function.update_idem` and {name}`Function.update_eq_self`
 and mathlib's enumerations of {name}`Fin`; the two lemmas on {name}`Function.update` are
-reproved here, and the enumerations of the booleans and of the empty type are given directly.
+reproved here, and the enumerations of the booleans, the empty type and the one-element type are
+given directly.
 
 ## Tags
 
@@ -68,6 +69,12 @@ enumerations of {name}`Fin` depend. -/
   card := 0
   equiv := ⟨(fun x ↦ nomatch x), Fin.elim0, (fun x ↦ nomatch x), (fun i ↦ i.elim0)⟩
   decEq x := nomatch x
+
+/-- The one-element type, enumerated without {lit}`Classical.choice`. -/
+@[instance_reducible] def finEnumPUnit : FinEnum PUnit.{u + 1} where
+  card := 1
+  equiv := ⟨fun _ ↦ 0, fun _ ↦ ⟨⟩, fun _ ↦ rfl, fun i ↦ Fin.cases rfl (fun k ↦ k.elim0) i⟩
+  decEq _ _ := .isTrue rfl
 
 /-- Finitely many existence statements have a common witness function: the choice of
 finitely many elements, constructive by recursion on an enumeration. -/

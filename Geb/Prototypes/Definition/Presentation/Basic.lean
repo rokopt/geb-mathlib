@@ -83,7 +83,7 @@ open PFunctor
 universe uA uE u v
 
 /-- The sum of two polynomial functors: the shapes of either, each with its own directions. -/
-def sum (P : PFunctor.{uA, u}) (E : PFunctor.{uE, u}) : PFunctor.{max uA uE, u} :=
+abbrev sum (P : PFunctor.{uA, u}) (E : PFunctor.{uE, u}) : PFunctor.{max uA uE, u} :=
   ⟨P.A ⊕ E.A, Sum.elim P.B E.B⟩
 
 variable {P : PFunctor.{uA, u}} {E : PFunctor.{uE, u}}
