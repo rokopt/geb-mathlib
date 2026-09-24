@@ -1,0 +1,14 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The stage-0 compiler: a program's source file to the image of its bundle, byte for byte the
+; image the seed builds, or the empty file when the program does not read. It does not check
+; types; the seed and the kernel's loader do. Requires the prelude, the serializer and the
+; reader.
+
+(def compile (lam ((file T))
+  (let sx T (readSExps (children file))
+    (let b T (if (isSome sx) (readProgram (children (get sx))) none)
+      (if (isSome b) (image (get b)) (node 0 (nil T)))))))
+(def main (lam ((file T)) (compile file)))

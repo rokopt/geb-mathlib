@@ -671,6 +671,20 @@ Acceptance: the fixed point of the section on what self-compilation
 establishes, on images, becomes a continuous-integration target, and
 the committed image is a build artifact.
 
+The fixed point holds for the stage-0 compiler written in the kernel's
+syntax. `bootstrap/reader.geb` reads text into a program's bundle as the
+seed's reader does, and `bootstrap/compile.geb` composes it with the
+serializer, from a program's source to its image; it checks no types,
+which the seed's loader does. Built by the seed and run by the Lean
+evaluator on its own source of about twenty kilobytes, it produces the
+seed's image of itself byte for byte in 0.16 seconds on one machine,
+and the image it produces reproduces itself. The examples of
+`GebTests/Prototypes/Stage0.lean` check the agreement on every program
+of the kernel's examples, rejected ones included, and on the compiler's
+own source, on every build. The type checker in Geb (step 3) and the
+elaborator of a surface language (steps 4 and 5), each followed by the
+fixed point again, remain.
+
 ## Phase 5: speed and a second host
 
 1. A systems-language host: the evaluator and loader ported from the
