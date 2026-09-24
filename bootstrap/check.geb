@@ -109,13 +109,17 @@
             none)
           none))))))))))))))))))))))
 
-; the type of a closed term, given the types of the definitions before it
-(def typeOf (lam ((G Ts) (t T))
+; the type of a term in a context, innermost first, given the types of the definitions before
+; it
+(def typeIn (lam ((G Ts) (ctx Ts) (t T))
   ((snd (fold RR
      (lam ((l T) (rs RRs))
        (let raw T (node l (rrTrees rs)) (pair raw (lam ((ctx Ts)) (checkNode G raw rs ctx)))))
      t))
-   (nil T))))
+   ctx)))
+
+; the type of a closed term, given the types of the definitions before it
+(def typeOf (lam ((G Ts) (t T)) (typeIn G (nil T) t)))
 
 ; the types of a program's definitions, each checked given the types of those before it, when
 ; every one is well typed

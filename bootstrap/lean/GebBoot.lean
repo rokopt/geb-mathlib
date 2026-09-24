@@ -1203,15 +1203,18 @@ def «checkNode» :=
                                     else
                                       «none»
 
-def «typeOf» :=
-  fun (x0 : List T) (x1 : T) =>
+def «typeIn» :=
+  fun (x0 : List T) (x1 : List T) (x2 : T) =>
     (Const.fold
       (α := T × (List T → T))
-      (fun (x2 : T) (x3 : List (T × (List T → T))) =>
-        let x4 : T := Const.node x2 («rrTrees» x3);
-        (x4, fun (x5 : List T) => «checkNode» x0 x4 x3 x5))
-      x1).2
-      ([] : List T)
+      (fun (x3 : T) (x4 : List (T × (List T → T))) =>
+        let x5 : T := Const.node x3 («rrTrees» x4);
+        (x5, fun (x6 : List T) => «checkNode» x0 x5 x4 x6))
+      x2).2
+      x1
+
+def «typeOf» :=
+  fun (x0 : List T) (x1 : T) => «typeIn» x0 ([] : List T) x1
 
 def «checkProgram» :=
   fun (x0 : List T) =>
