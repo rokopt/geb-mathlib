@@ -3663,7 +3663,9 @@ checklist and in CI.
   trees. `Basic.lean` gives the denotation of types (`Geb.Kernel.Ty.den`)
   and the checker-evaluator `Geb.Kernel.infer`, one paramorphism over a
   term returning its type with its denotation, so that evaluation agrees
-  with the denotation by construction; the primitives `Geb.Kernel.prims`
+  with the denotation by construction; the kernel's constants are plain
+  Lean functions in `Geb.Kernel.Const`, which the denotations apply at
+  the denotations of their types; the primitives `Geb.Kernel.prims`
   operate on labels and children, lists carry their right fold and their
   case analysis, the fold of
   trees denotes `Geb.RoseTree.elim` over the list of children's results, and
@@ -3679,7 +3681,8 @@ checklist and in CI.
   `Geb.Kernel.readImage`), and runs a bundle's named definition
   (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
   executable `geb-kernel`, which builds images from source and runs them
-  on files. Tested in `GebTests/Prototypes/Kernel.lean`. The Geb-written
+  on files, and its `Geb.Kernel.Command.runFile` applies a function of
+  trees to a file. Tested in `GebTests/Prototypes/Kernel.lean`. The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   holds list and digit utilities, `serialize.geb` writes a tree's image,
   `reader.geb` reads a program's text into its bundle as the seed does,
@@ -3690,12 +3693,17 @@ checklist and in CI.
   ill-typed programs. `GebTests/Prototypes/Stage0.lean` compares the
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
   the compiler with the seed on the kernel's examples, runs Surface 1
-  programs compiled by the compiler, and checks the fixed point: the
-  compiler compiled by itself is the image the seed builds of it.
-  `bootstrap/stage1/surface.geb` rewrites the expansion in Surface 1; the
-  stage-1 compiler it makes, built by the stage-0 compiler, compiles itself
-  to the same image, which `GebTests/Prototypes/Stage1.lean` checks together
-  with its agreement with the stage-0 compiler. The
+  programs compiled by the compiler. `bootstrap/stage1/surface.geb`
+  rewrites the expansion in Surface 1, and `bootstrap/stage1/lean.geb` is a
+  backend emitting a Lean module in place of an image; the stage-1 compiler
+  they make, built by the stage-0 compiler, is committed as
+  `bootstrap/compiler.img`, and the Lean it emits from its own source as
+  `bootstrap/lean/GebBoot.lean`, the library `GebBoot` under the executable
+  `geb-compile` (`GebCompileMain.lean`). `scripts/bootstrap.sh` regenerates
+  both and checks the fixed points: each compiler reproduces its own image,
+  and the compiler built from the emitted Lean reproduces the Lean and the
+  image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
+  agreement with the stage-0 compiler. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,

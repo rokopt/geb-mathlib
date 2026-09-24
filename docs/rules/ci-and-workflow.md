@@ -83,6 +83,10 @@ own requires a prior `lake build`.
   directory is shared across jj workspaces while downloads use a
   fixed temporary name.
 - `lake build`, `lake test`.
+- `scripts/bootstrap.sh check`: the bootstrap's committed image and
+  emitted Lean regenerate byte for byte, and the compiler built from
+  the emitted Lean reproduces both (the manual's Bootstrap chapter,
+  Phase 5).
 - `lake build GebTests` then `lake exe batteries/runLinter GebTests`, then
   `scripts/literate.sh build` (§ Literate site build), whose
   `lake lint` lints `Geb` and whose direct `batteries/runLinter` invocation

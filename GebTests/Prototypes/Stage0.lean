@@ -21,8 +21,9 @@ zero and beyond a machine word, and the bundle of the serializer's own program; 
 type checker against the seed's checker on the bundles of the kernel's examples and of the
 compiler, and on malformed terms; and the stage-0 compiler, from a program's source to its
 image, against the seed's reader, checker and image writer on the programs of the kernel's
-examples, rejected and ill-typed ones included, and on its own source, where the two agree
-byte for byte: the fixed point of self-compilation on images. Programs in the Surface 1
+examples, rejected and ill-typed ones included. The fixed point of self-compilation on images,
+where the two agree byte for byte on the compiler's own source, is checked natively by
+{lit}`scripts/bootstrap.sh`. Programs in the Surface 1
 forms, datatypes, case analysis, structural recursion and functions with result types, are
 compiled by the stage-0 compiler and run from their images; case analyses that are not
 exhaustive or mix datatypes, unknown constructors, patterns of the wrong length and
@@ -176,8 +177,6 @@ def samples : List Tree :=
     "(data A (a T)) (defn f ((n A)) T (case n ((a x y) x))) (def main f)",
     "(defn f ((n T)) T (cata T T n ((a) 1))) (def main f)"].all fun p ↦
   runMain compiler.toList (nameTree p.toList) == some (mk 0 [])
--- the fixed point: compiled by itself, the compiler is the image the seed builds of it
-#guard runMain compiler.toList (nameTree compiler.toList) == some (seedCompile compiler.toList)
 
 end Geb.Kernel.Stage0Tests
 

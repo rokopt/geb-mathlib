@@ -21,6 +21,8 @@ driver alone reads and writes files.
 ## Main definitions
 
 * {lit}`Geb.Kernel.Command.run` — the command-line interface.
+* {lit}`Geb.Kernel.Command.runFile` — a function of trees applied to a file, which the
+  executable of the compiled bootstrap compiler shares.
 
 ## Implementation notes
 
@@ -42,6 +44,15 @@ namespace Geb.Kernel.Command
 /-- The characters of a sequence of bytes, one per byte. -/
 def chars (b : ByteArray) : List Char := b.data.toList.map fun x ↦ Char.ofNat x.toNat
 
+/-- Apply a function of trees to an input file's tree and write the output tree's bytes; the
+name of the function identifies it in errors. -/
+def runFile (name : String) (f : Tree → Option Tree) (input output : String) : IO Unit := do
+  let some out := f (ofBytes (← IO.FS.readBinFile input))
+    | throw <| IO.userError s!"{name} is not a well-typed definition from trees to trees"
+  let some bytes := toBytes out
+    | throw <| IO.userError s!"{name}: the output has a label beyond a byte"
+  IO.FS.writeBinFile output bytes
+
 /-- Build an image from a program's source, or run an image's named definition on a file.
 -/
 def run (args : List String) : IO UInt32 := do
@@ -59,11 +70,7 @@ def run (args : List String) : IO UInt32 := do
   | ["run", img, name, input, output] =>
     let some t := readImage (← IO.FS.readBinFile img)
       | throw <| IO.userError s!"{img}: not an image"
-    let some out := runEntry t (chars name.toUTF8) (ofBytes (← IO.FS.readBinFile input))
-      | throw <| IO.userError s!"{img}: {name} is not a well-typed definition from trees to trees"
-    let some bytes := toBytes out
-      | throw <| IO.userError s!"{name}: the output has a label beyond a byte"
-    IO.FS.writeBinFile output bytes
+    runFile s!"{img}: {name}" (runEntry t (chars name.toUTF8)) input output
     return 0
   | _ =>
     throw <| IO.userError

@@ -637,11 +637,15 @@ contract.
 
 ## Status
 
-The first fixed point holds: the seed builds the stage-0 compiler,
-written in the kernel's syntax, and the stage-0 compiler builds the
-stage-1 compiler, whose Surface 1 expansion is written in Surface 1;
-each, run by the Lean evaluator from its image, compiles its own source
-to that image, and continuous integration checks both on every build.
+The fixed points hold on images and on Lean. The seed builds the
+stage-0 compiler, written in the kernel's syntax, and the stage-0
+compiler builds the stage-1 compiler, whose Surface 1 expansion is
+written in Surface 1 and which also emits Lean; each, run by the Lean
+evaluator from its image, compiles its own source to that image. Built
+by Lake from the Lean it emits from its own source, the stage-1
+compiler emits the same Lean and the same image. The stage-1 compiler's
+image and its Lean are committed, and continuous integration checks
+every fixed point on every build.
 
 :::table +header
 *
@@ -662,12 +666,12 @@ to that image, and continuous integration checks both on every build.
   * `Geb/Prototypes/Kernel/Image.lean`, `Command.lean`, the executable `geb-kernel`
 *
   * 4: Geb grows in itself
-  * constructed, except the committed image
+  * constructed, every step
   * `bootstrap/*.geb`, `bootstrap/stage1/surface.geb`
 *
   * 5: speed and a second host
-  * not begun
-  * none
+  * step 3 constructed for Lean; the second host not begun
+  * `bootstrap/stage1/lean.geb`, `bootstrap/lean/GebBoot.lean`, the executable `geb-compile`
 *
   * 6: content identity
   * not begun
@@ -915,6 +919,29 @@ that the emitted program is the denotation written out, and the
 executable fixed point of the section on what self-compilation
 establishes takes Lake's build as the host build.
 
+The Lean backend of step 3 is constructed. `bootstrap/stage1/lean.geb`
+writes a checked program's bundle as a Lean module in which each
+definition, in order and under its name, is its denotation written with
+the functions of the namespace `Geb.Kernel.Const`, those the seed's
+denotations apply at the denotations of their types; the constants are
+referred to by qualified names, which no definition's name can capture.
+A variable is named by its binding depth, a binder whose variable is
+unused is written `_`, an abstraction applied to a value is written as
+a `let`, and the text is laid out in groups, each printed on one line
+when it and the text following it up to the next line break fit within
+100 columns and within 70 columns beyond the indentation. The stage-1
+compiler with this backend, built by the stage-0 compiler, is committed
+as `bootstrap/compiler.img`, and the Lean it emits from its own source
+as `bootstrap/lean/GebBoot.lean`, which Lake builds into the executable
+`geb-compile`. That executable compiles the compiler's source to the
+committed Lean and the committed image byte for byte, which is
+`B(S) = C1(S)` of the section on what self-compilation establishes.
+`scripts/bootstrap.sh regen` regenerates both artifacts, and
+`scripts/bootstrap.sh check`, run by continuous integration and the
+pre-push checklist, checks every fixed point with the compiled
+executables. On one machine the compiled compiler emits its Lean in 0.5
+seconds, where its image run by the Lean evaluator takes 1.2 seconds.
+
 ## Phase 6: content identity
 
 1. The node-digest rule, the hash function and its version tag, if
@@ -989,9 +1016,14 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
-* Test time. The stage tests run the compilers in Lean's interpreter,
-  tens of seconds each; checking the image fixed points with the
-  compiled host driver shortens them.
+* Test time. The stage tests compare the Geb compilers with the seed in
+  Lean's interpreter, tens of seconds each; running those comparisons
+  with the compiled executables, as `scripts/bootstrap.sh` runs the
+  fixed points, shortens them.
+* Emitted names. A program's definition named `T`, `leaf` or `mk` makes
+  the emitted module ill-typed, since the module refers to the tree type,
+  the leaf and the node by those names; qualifying them as the constants
+  are qualified removes the restriction.
 * Surface 1 lacks generated recognizers, type parameters and a static
   check of datatypes; a pattern omits the `&` that a declaration
   writes; and every pattern variable is bound whether or not the clause
@@ -1002,41 +1034,35 @@ the change that removes it.
 ## What remains for a full bootstrap
 
 The aim is an implementation of Geb written in Geb and compiled by Geb,
-with the host code reduced to the seed. The image fixed points reach
-that aim for the compiler as far as images: what remains is the
-following, in the order of dependence.
+with the host code reduced to the seed. The fixed points on images and
+on emitted Lean reach that aim for computation: the compiler compiles
+itself to a program that the host builds, idempotently. What remains is
+the following, in the order of dependence.
 
-1. A compiler emitting host code, Lean first (Phase 5, step 3): the
-   compiler compiles itself to a program that the host builds, and the
-   executable fixed point holds with the host's build. This is the
-   optimized self-compilation the aim names, idempotent from then on.
-2. The metalogic (Phase 7), rung by rung: each rung's rule set and its
+1. The metalogic (Phase 7), rung by rung: each rung's rule set and its
    soundness in Lean, then its proof checker written in Geb, then
    proofs about the compiler's components. Its lowest rung depends only
    on Phase 1.
-3. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
+2. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
    points reproduced on it, which is diverse double-compiling across
    hosts, and accelerations proved against the denotation.
-4. Content identity (Phase 6): digests of definitions and the migration
+3. Content identity (Phase 6): digests of definitions and the migration
    from positions to digests.
-5. Surface 2 and the richer definitions: subset types by propositions,
+4. Surface 2 and the richer definitions: subset types by propositions,
    quotients with proved obligations, equation blocks, and the
    constructive fragment of the Lean and Idris developments.
 
-The first two complete the bootstrap in the sense of the aim, one for
-computation and one for logic; the others extend it.
+The metalogic completes the bootstrap in the sense of the aim for logic,
+as the compiler emitting Lean does for computation; the others extend
+it.
 
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The compiler emitting Lean (Phase 5, step 3) is next. It
-completes the computational side of the aim, which the decisions place
-before the proof checker written in Geb, and it builds the translation
-to a host language that the later reduction of the seed needs, the
-evaluator written in a subset of Geb and translated to the host as
-Squeak's and Scheme 48's are. The metalogic follows from its lowest
-rung, and the second host, content identity and the syntax unification
-follow either.
+priority. The metalogic is next, from its lowest rung: it completes the
+aim for logic, its lowest rung depends only on Phase 1, and it fixes
+the foundation before any mathematics migrates. The second host,
+content identity and the syntax unification follow it.
 
 ## What self-compilation establishes
 

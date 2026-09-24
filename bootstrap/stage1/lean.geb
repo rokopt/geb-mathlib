@@ -1,0 +1,257 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The Lean backend: a checked program's bundle to a Lean module defining each of its
+; definitions, in order and under its name, as its denotation written with the functions of
+; Geb.Kernel.Const, referred to by qualified names, which no definition's name can capture. A
+; variable is named by its binding depth, and a binder whose variable its body does not use is
+; written _. The text is laid out in groups, each printed on one line when it and the text
+; following it fit within 100 columns and within 70 columns beyond the indentation, and over
+; indented lines when they do not. mainLean is the compiler with this backend in place of the
+; image. Requires the stage-1 compiler's other sources.
+
+; documents: text with its width in columns and its bytes, a concatenation, the line breaks of
+; a document indented by two more columns, a line break or, in a flat group, a space, a group,
+; and the line breaks of a document indented to the column where it starts
+(data Doc (txt T T) (cat & Doc) (nest Doc) (line) (grp Doc) (align Doc))
+(defn cols ((bs Ts)) T
+  (foldr T T (lam ((b T) (n T)) (if (and (lt 127 b) (lt b 192)) n (add n 1))) 0 bs))
+(defn text ((bs Ts)) T (txt (cols bs) (node 0 bs)))
+(defn cat2 ((a T) (b T)) T (cat (cons a (single b))))
+(defn cat3 ((a T) (b T) (c T)) T (cat (cons a (cons b (single c)))))
+(defn cat5 ((a T) (b T) (c T) (d T) (e T)) T (cat (cons a (cons b (cons c (cons d (single e)))))))
+(defn indented ((d T)) T (nest (cat2 line d)))
+(defn joinWith ((sep T) (ds Ts)) T
+  (cat (lcase T Ts ds (nil T)
+         (lam ((d T) (r Ts)) (cons d (foldr T Ts (lam ((x T) (acc Ts)) (cons sep (cons x acc))) (nil T) r))))))
+
+; the text the backend writes
+(def tLp (text (children (quote (0 40)))))
+(def tRp (text (children (quote (0 41)))))
+(def tComma (text (children (quote (0 44)))))
+(def tColon (text (children (quote (0 32 58 32)))))
+(def tUnder (text (children (quote (0 95)))))
+(def tFun (text (children (quote (0 102 117 110 32)))))
+(def tDoubleArrow (text (children (quote (0 32 61 62)))))
+(def tT (text (children (quote (0 84)))))
+(def tUnitTy (text (children (quote (0 85 110 105 116)))))
+(def tTimes (text (children (quote (0 32 195 151)))))
+(def tTo (text (children (quote (0 32 226 134 146)))))
+(def tList (text (children (quote (0 76 105 115 116)))))
+(def tLet (text (children (quote (0 108 101 116 32)))))
+(def tSemi (text (children (quote (0 59)))))
+(def tUnitV (text (children (quote (0 40 41)))))
+(def tDot1 (text (children (quote (0 41 46 49)))))
+(def tDot2 (text (children (quote (0 41 46 50)))))
+(def tIf (text (children (quote (0 105 102 32 40)))))
+(def tThen (text (children (quote (0
+ 41 46 108 97 98 101 108 32 226 137 160 32 48 32 116 104 101 110)))))
+(def tElse (text (children (quote (0 101 108 115 101)))))
+(def tFold (text (children (quote (0 67 111 110 115 116 46 102 111 108 100)))))
+(def tIter (text (children (quote (0 67 111 110 115 116 46 105 116 101 114)))))
+(def tFoldr (text (children (quote (0 67 111 110 115 116 46 102 111 108 100 114)))))
+(def tLcase (text (children (quote (0 67 111 110 115 116 46 108 99 97 115 101)))))
+(def tConstDot (text (children (quote (0 67 111 110 115 116 46)))))
+(def tAlpha (text (children (quote (0 206 177)))))
+(def tBeta (text (children (quote (0 206 178)))))
+(def tColonEq (text (children (quote (0 32 58 61 32)))))
+(def tNilLp (text (children (quote (0 40 91 93 32 58 32 76 105 115 116 32)))))
+(def tConsOp (text (children (quote (0 32 58 58)))))
+(def tLeaf (text (children (quote (0 108 101 97 102 32)))))
+(def tMk (text (children (quote (0 109 107 32)))))
+(def tSpLb (text (children (quote (0 32 91)))))
+(def tRb (text (children (quote (0 93)))))
+(def tLg (text (children (quote (0 194 171)))))
+(def tRg (text (children (quote (0 194 187)))))
+(def tDef (text (children (quote (0 100 101 102 32 194 171)))))
+(def tAssign (text (children (quote (0 194 187 32 58 61)))))
+(def tHeader (text (children (quote (0
+ 109 111 100 117 108 101 10 10 112 117 98 108 105 99 32 105 109 112 111 114 116 32 71 101 98 46
+  80 114 111 116 111 116 121 112 101 115 46 75 101 114 110 101 108 46 82 101 97 100 101 114 10 10
+  47 45 33 32 71 101 110 101 114 97 116 101 100 32 102 114 111 109 32 97 32 71 101 98 32 112 114
+  111 103 114 97 109 32 98 121 32 96 98 111 111 116 115 116 114 97 112 47 115 116 97 103 101 49
+  47 108 101 97 110 46 103 101 98 96 46 32 45 47 10 10 64 91 101 120 112 111 115 101 93 32 112
+  117 98 108 105 99 32 115 101 99 116 105 111 110 10 10 111 112 101 110 32 71 101 98 46 75 101
+  114 110 101 108 10 111 112 101 110 32 71 101 98 46 75 101 114 110 101 108 32 114 101 110 97 109
+  105 110 103 32 84 114 101 101 32 226 134 146 32 84 10 10 110 97 109 101 115 112 97 99 101 32 71
+  101 98 66 111 111 116)))))
+(def tFooter (text (children (quote (0
+ 10 10 101 110 100 32 71 101 98 66 111 111 116 10 10 101 110 100 10)))))
+
+; layout: a document's measure, its flat width, whether it holds a line break outside any
+; group, and the width of its text up to the first such break, or its flat width when it holds
+; none; and its printing as a function of the indentation, whether it is printed flat, the
+; width of the text following it up to the next break, and the state of the column and the
+; bytes printed, in reverse. A group counts as unbroken in the measures of what contains it.
+(deftype St (Prod T Ts))
+(deftype Pr (Arrow T (Arrow T (Arrow T (Arrow St St)))))
+(deftype Ms (Prod T (Prod T T)))
+(deftype WP (Prod Ms Pr))
+(defn wOf ((x WP)) T (fst (fst x)))
+(defn hbOf ((x WP)) T (fst (snd (fst x))))
+(defn ldOf ((x WP)) T (snd (snd (fst x))))
+(defn ms ((w T) (hb T) (ld T)) Ms (pair w (pair hb ld)))
+(defn revOnto ((bs Ts) (acc Ts)) Ts
+  ((foldr T Endo (lam ((b T) (k Endo) (a Ts)) (k (cons b a))) (lam ((a Ts)) a) bs) acc))
+; a document followed by another: the first is followed by the second's text up to its first
+; break, and by the text following both when the second holds no break
+(defn catWP ((x WP) (y WP)) WP
+  (pair (ms (add (wOf x) (wOf y)) (or (hbOf x) (hbOf y)) (if (hbOf x) (ldOf x) (add (wOf x) (ldOf y))))
+    (lam ((i T) (f T) (t T) (s St))
+      ((snd y) i f t ((snd x) i f (add (ldOf y) (if (hbOf y) 0 t)) s)))))
+(defn layout ((d T)) T
+  (let r WP
+    (cata Doc WP d
+      ((txt w bs)
+        (pair (ms w 0 w)
+          (lam ((i T) (f T) (t T) (s St)) (pair (add (fst s) w) (revOnto (children bs) (snd s))))))
+      ((cat xs) (foldr WP WP catWP (pair (ms 0 0 0) (lam ((i T) (f T) (t T) (s St)) s)) xs))
+      ((nest x) (pair (fst x) (lam ((i T) (f T) (t T) (s St)) ((snd x) (add i 2) f t s))))
+      ((line)
+        (pair (ms 1 1 0)
+          (lam ((i T) (f T) (t T) (s St))
+            (if f (pair (add (fst s) 1) (cons 32 (snd s)))
+              (pair i (revOnto (replicate i 32) (cons 10 (snd s))))))))
+      ; a group is printed flat inside a flat group, or when it and the text following it fit
+      ; within 100 columns and within 70 columns beyond the indentation
+      ((grp x)
+        (pair (ms (wOf x) 0 (wOf x))
+          (lam ((i T) (f T) (t T) (s St))
+            ((snd x)
+              i
+              (or
+                f
+                (and
+                  (lt (add (fst s) (add (wOf x) t)) 101)
+                  (lt (add (sub (fst s) i) (add (wOf x) t)) 71)))
+              t
+              s))))
+      ((align x) (pair (fst x) (lam ((i T) (f T) (t T) (s St)) ((snd x) (fst s) f t s)))))
+    (node 0 (reverse (snd ((snd r) 0 0 0 (pair 0 (nil T))))))))
+
+; a term's shape: text that needs no parentheses as an argument, text that does, a run of
+; abstractions with its binders and body, or a run of applications with its head and arguments
+(data Sh (atomic T) (compound T) (fn T T) (ap T & T))
+(defn binderDocs ((bs T)) T
+  (joinWith line (foldr T Ts (lam ((x T) (acc Ts)) (cons (cat5 tLp (child x 0) tColon (child x 1) tRp) acc))
+                   (nil T) (children bs))))
+(defn shDoc ((s T)) T
+  (case s
+    ((atomic d) d)
+    ((compound d) d)
+    ((fn bs b)
+      (grp (cat2 (align (grp (cat3 tFun (nest (binderDocs bs)) tDoubleArrow))) (indented b))))
+    ((ap h as) (grp (cat2 h (nest (cat (foldr T Ts (lam ((a T) (acc Ts)) (cons line (cons a acc))) (nil T) as))))))))
+(defn argDoc ((s T)) T (case s ((atomic d) d) (else (cat3 tLp (shDoc s) tRp))))
+(defn valDoc ((s T)) T (case s ((atomic d) d) ((ap h as) (shDoc s)) (else (cat3 tLp (shDoc s) tRp))))
+(defn opDoc ((s T)) T (case s ((compound d) (cat3 tLp d tRp)) (else (shDoc s))))
+
+; kernel types and terms, by label
+(data Kt (ktT) (ktUnit) (ktProd Kt Kt) (ktArrow Kt Kt) (ktList Kt) (kt5) (kt6) (kt7)
+  (kVar T) (kLam Kt Kt) (kApp Kt Kt) (kUnit) (kPair Kt Kt) (kFst Kt) (kSnd Kt) (kQuote T)
+  (kIf Kt Kt Kt) (kFold Kt) (kIter Kt) (kNil Kt) (kCons Kt Kt) (kFoldr Kt Kt) (kPrim T) (kRef T)
+  (kLcase Kt Kt))
+
+; a type or term emitted: the free variables it uses, as a list whose entry at a de Bruijn
+; index is 1 when that variable occurs, and its shape as a function of the binding depth
+(deftype Em (Prod Ts (Arrow T T)))
+(defn orList ((xs Ts) (ys Ts)) Ts
+  ((foldr T Endo
+     (lam ((x T) (k Endo) (zs Ts))
+       (lcase T Ts zs (cons x (k (nil T))) (lam ((z T) (r Ts)) (cons (or x z) (k r)))))
+     (lam ((zs Ts)) zs) xs)
+   ys))
+(defn closedSh ((s T)) Em (pair (nil T) (lam ((k T)) s)))
+(defn closed ((d T)) Em (closedSh (atomic d)))
+(defn tyDoc ((e Em)) T (shDoc ((snd e) 0)))
+(defn varDoc ((v T)) T (text (cons 120 (decimalChars v))))
+(defn namedArg ((n T) (e Em)) T (cat5 tLp n tColonEq (tyDoc e) tRp))
+(defn quoteDoc ((q T)) T
+  (fold T
+    (lam ((l T) (rs Ts))
+      (if (nonEmpty rs)
+        (grp (cat (cons tMk (cons (text (decimalChars l)) (cons tSpLb (cons (nest (joinWith (cat2 tComma line) rs)) (single tRb)))))))
+        (cat2 tLeaf (text (decimalChars l)))))
+    q))
+; an abstraction applied to a value, as a let binding its first binder; Lean requires the
+; lines continuing a let to start to the right of it, so they are indented from its column
+(defn letDoc ((bs Ts) (body T) (v T)) T
+  (let b0 T (at bs 0)
+    (let rest Ts (tail bs)
+      (align (grp (cat (cons tLet (cons (child b0 0) (cons tColon (cons (child b0 1) (cons tColonEq (cons (valDoc v)
+        (cons tSemi (cons line (single (if (nonEmpty rest) (shDoc (fn (node 0 rest) body)) body))))))))))))))))
+(defn emTerm ((nm T) (t T)) Em
+  (cata Kt Em t
+    ((ktT) (closed tT))
+    ((ktUnit) (closed tUnitTy))
+    ((ktProd a b) (closedSh (compound (grp (cat3 (opDoc ((snd a) 0)) tTimes (indented (opDoc ((snd b) 0))))))))
+    ((ktArrow a b) (closedSh (compound (grp (cat3 (opDoc ((snd a) 0)) tTo (indented (tyDoc b)))))))
+    ((ktList a) (closedSh (ap tList (single (argDoc ((snd a) 0))))))
+    ((kVar i) (pair (append (replicate (label i) 0) (single 1))
+                (lam ((d T)) (atomic (varDoc (sub (sub d 1) (label i)))))))
+    ((kLam a b)
+      (pair (tail (fst b))
+        (lam ((d T))
+          (let used T (lcase T T (fst b) 0 (lam ((x T) (r Ts)) x))
+            (let bd T (node2 0 (if used (varDoc d) tUnder) (tyDoc a))
+              (let sb T ((snd b) (add d 1))
+                (case sb
+                  ((fn bs body) (fn (node 0 (cons bd (children bs))) body))
+                  (else (fn (node 0 (single bd)) (shDoc sb))))))))))
+    ((kApp f x)
+      (pair (orList (fst f) (fst x))
+        (lam ((d T))
+          (let sf T ((snd f) d)
+            (let sx T ((snd x) d)
+              (case sf
+                ((ap h as) (ap h (append as (single (argDoc sx)))))
+                ((fn bs body) (compound (letDoc (children bs) body sx)))
+                (else (ap (argDoc sf) (single (argDoc sx))))))))))
+    ((kUnit) (closed tUnitV))
+    ((kPair a b)
+      (pair (orList (fst a) (fst b))
+        (lam ((d T))
+          (atomic (grp (cat5 tLp (shDoc ((snd a) d)) tComma (indented (shDoc ((snd b) d))) tRp))))))
+    ((kFst p) (pair (fst p) (lam ((d T)) (atomic (cat3 tLp (shDoc ((snd p) d)) tDot1)))))
+    ((kSnd p) (pair (fst p) (lam ((d T)) (atomic (cat3 tLp (shDoc ((snd p) d)) tDot2)))))
+    ((kQuote q) (pair (nil T) (lam ((d T)) (compound (quoteDoc q)))))
+    ((kIf c a b)
+      (pair (orList (fst c) (orList (fst a) (fst b)))
+        (lam ((d T))
+          (compound
+            (grp (cat (cons tIf (cons (shDoc ((snd c) d)) (cons tThen (cons (indented (shDoc ((snd a) d)))
+              (cons line (cons tElse (single (indented (shDoc ((snd b) d))))))))))))))))
+    ((kFold a) (pair (nil T) (lam ((d T)) (ap tFold (single (namedArg tAlpha a))))))
+    ((kIter a) (pair (nil T) (lam ((d T)) (ap tIter (single (namedArg tAlpha a))))))
+    ((kNil a) (closed (cat3 tNilLp (argDoc ((snd a) 0)) tRp)))
+    ((kCons x xs)
+      (pair (orList (fst x) (fst xs))
+        (lam ((d T))
+          (atomic (grp (cat5 tLp (argDoc ((snd x) d)) tConsOp (indented (argDoc ((snd xs) d))) tRp))))))
+    ((kFoldr a b)
+      (pair (nil T) (lam ((d T)) (ap tFoldr (cons (namedArg tAlpha a) (single (namedArg tBeta b)))))))
+    ((kPrim k) (closed (cat2 tConstDot (text (children (at primNames (label k)))))))
+    ((kRef j) (closed (cat3 tLg (text (children (child nm (label j)))) tRg)))
+    ((kLcase a b)
+      (pair (nil T) (lam ((d T)) (ap tLcase (cons (namedArg tAlpha a) (single (namedArg tBeta b)))))))
+    (else (closed tUnder))))
+
+; a bundle's module: the header, each definition under its name, and the footer
+(defn defDoc ((name T) (body T)) T
+  (cat3 line line (grp (cat (cons tDef (cons (text (children name)) (cons tAssign (single (indented body)))))))))
+(defn emitLean ((b T)) T
+  (let nm T (child b 1)
+    (let ds Ts (children (child b 0))
+      (let n T (length ds)
+        (layout
+          (cat (cons tHeader
+                 (append
+                   (snd (foldr T (Prod T Ts)
+                          (lam ((t T) (acc (Prod T Ts)))
+                            (pair (add (fst acc) 1)
+                              (cons (defDoc (child nm (sub (sub n 1) (fst acc))) (shDoc ((snd (emTerm nm t)) 0)))
+                                    (snd acc))))
+                          (pair 0 (nil T)) ds))
+                   (single tFooter)))))))))
+(defn mainLean ((file T)) T (compileWith emitLean file))
