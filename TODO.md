@@ -142,7 +142,7 @@ metalogic. The chapter is the list of follow-ups; it is revised as each
 phase is carried out. Its sections Status, Improvements, What remains for a
 full bootstrap and The next phase record what is constructed, the known
 limitations with their fixes, the remaining work in order of dependence,
-and the recommended next phase.
+and the next phase.
 
 The readable S-expressions of the kernel's reader and of
 `Geb/Prototypes/ReadableSExpr.lean` are to be unified as one reader and
