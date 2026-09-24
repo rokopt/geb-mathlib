@@ -80,16 +80,18 @@ namespace Geb.Definition
 
 open PFunctor
 
-variable {P : PFunctor.{0, 0}} {Γ E : Type}
+universe uA u
+
+variable {P : PFunctor.{uA, u}} {Γ E : Type u}
 
 /-- The vertices of a term: at a variable, the root; at an operation, the root or a direction
 of the operation followed by a vertex of that child. -/
-def Vertex (t : P.FreeM Γ) : Type :=
-  FreeM.rec (fun _ ↦ Unit) (fun a _ vs ↦ Option ((b : P.B a) × vs b)) t
+def Vertex (t : P.FreeM Γ) : Type u :=
+  FreeM.rec (fun _ ↦ PUnit) (fun a _ vs ↦ Option ((b : P.B a) × vs b)) t
 
 /-- The root vertex. -/
 def Vertex.root : (t : P.FreeM Γ) → Vertex t
-  | .pure _ => ()
+  | .pure _ => ⟨⟩
   | .liftBind _ _ => none
 
 /-- The subterm at a vertex. -/
@@ -100,7 +102,7 @@ def subterm (t : P.FreeM Γ) : Vertex t → P.FreeM Γ :=
 /-- Translate a vertex of the subterm at a vertex into a vertex of the whole term. -/
 def Vertex.append {t : P.FreeM Γ} : (v : Vertex t) → Vertex (subterm t v) → Vertex t :=
   FreeM.rec (motive := fun t ↦ (v : Vertex t) → Vertex (subterm t v) → Vertex t)
-    (fun _ _ _ ↦ ())
+    (fun _ _ _ ↦ ⟨⟩)
     (fun a ts app v ↦ match (motive := (v : Option ((b : P.B a) × Vertex (ts b))) →
         Vertex (subterm (.liftBind a ts) v) → Vertex (.liftBind a ts)) v with
       | none => fun w ↦ w
@@ -154,17 +156,17 @@ theorem append_assoc {t : P.FreeM Γ} (u : Vertex t) (v : Vertex (subterm t u))
     exact congrArg (fun x ↦ some (⟨p.1, x⟩ : (b : P.B a) × Vertex (ts b))) (ih p.1 p.2 v w)
 
 /-- The vertex at a direction of the free polynomial: the same path, ending at the variable. -/
-def ofDirection {s : P.FreeM Unit} : Direction s → Vertex s :=
-  FreeM.rec (motive := fun s ↦ Direction s → Vertex s) (fun _ _ ↦ ())
+def ofDirection {s : P.FreeM PUnit.{u + 1}} : Direction s → Vertex s :=
+  FreeM.rec (motive := fun s ↦ Direction s → Vertex s) (fun _ _ ↦ ⟨⟩)
     (fun a ts ofDir p ↦ some (⟨p.1, ofDir p.1 p.2⟩ : (b : P.B a) × Vertex (ts b))) s
 
 end Vertex
 
 /-- The subterm at a direction of the free polynomial is its variable. -/
-@[simp] theorem subterm_ofDirection {s : P.FreeM Unit} (p : Direction s) :
-    subterm s (Vertex.ofDirection p) = .pure () := by
+@[simp] theorem subterm_ofDirection {s : P.FreeM PUnit.{u + 1}} (p : Direction s) :
+    subterm s (Vertex.ofDirection p) = .pure ⟨⟩ := by
   refine FreeM.rec (motive := fun s ↦ ∀ p : Direction s,
-    subterm s (Vertex.ofDirection p) = .pure ()) (fun _ _ ↦ rfl) ?_ s p
+    subterm s (Vertex.ofDirection p) = .pure ⟨⟩) (fun _ _ ↦ rfl) ?_ s p
   intro a ts ih p
   exact ih p.1 p.2
 

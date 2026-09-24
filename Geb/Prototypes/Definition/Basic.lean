@@ -52,6 +52,8 @@ The constructions use Cslib's {name}`PFunctor.FreeM`. The executable fold is
 {name}`PFunctor.FreeM.liftM` into {name}`Cont`, as in the bit-tree encoder.
 The dependent recursor is used only to define direction types and to prove propositions.
 Finiteness and effective coding are additional conditions on a signature and its interfaces.
+Directions and variables share a universe, since {name}`PFunctor.FreeM.liftM` interprets
+into a monad applied to both.
 
 ## References
 
@@ -71,21 +73,24 @@ namespace Geb.Definition
 
 open PFunctor
 
-variable {P Q : PFunctor.{0, 0}} {Γ Δ Θ E V : Type}
+universe uA uA' u v
+
+variable {P : PFunctor.{uA, u}} {Q : PFunctor.{uA', u}} {Γ Δ Θ E : Type u} {V : Type v}
 
 /-- A direction of the free polynomial at a shape: the unique direction at a variable leaf,
 or a direction of an operation followed by a direction in that child. -/
-def Direction (s : P.FreeM Unit) : Type :=
-  FreeM.rec (fun _ ↦ Unit) (fun a _ ps ↦ (b : P.B a) × ps b) s
+def Direction (s : P.FreeM PUnit.{u + 1}) : Type u :=
+  FreeM.rec (fun _ ↦ PUnit) (fun a _ ps ↦ (b : P.B a) × ps b) s
 
 /-- The polynomial presentation of the free monad: terms with a single variable label,
 and their variable directions. -/
-def freePolynomial (P : PFunctor.{0, 0}) : PFunctor.{0, 0} :=
-  ⟨P.FreeM Unit, Direction⟩
+def freePolynomial (P : PFunctor.{uA, u}) : PFunctor.{max uA u, u} :=
+  ⟨P.FreeM PUnit.{u + 1}, Direction⟩
 
 /-- A derived operation assigns each operation of {lit}`Q` a {lit}`P`-term whose variables
 are that operation's directions. Variables may be repeated or unused. -/
-abbrev Derived (P Q : PFunctor.{0, 0}) := (a : Q.A) → P.FreeM (Q.B a)
+abbrev Derived (P : PFunctor.{uA, u}) (Q : PFunctor.{uA', u}) : Type (max uA uA' u) :=
+  (a : Q.A) → P.FreeM (Q.B a)
 
 /-- Extend derived operations to all terms using the free monad's interpreter. -/
 def expandOps (d : Derived P Q) : Q.FreeM Γ → P.FreeM Γ := FreeM.liftM d
@@ -140,13 +145,14 @@ theorem eval_map (alg : P.Obj V → V) (env : Δ → V) (f : Γ → Δ) (t : P.F
 
 /-- A recursive equation morphism. Its export type may be {name}`Direction` of a
 chosen layout; each body refers to imports or to exports of this same block. -/
-abbrev Block (P : PFunctor.{0, 0}) (Γ E : Type) := E → P.FreeM (Γ ⊕ E)
+abbrev Block (P : PFunctor.{uA, u}) (Γ E : Type u) : Type (max uA u) := E → P.FreeM (Γ ⊕ E)
 
 /-- A presented definition is an export layout, its equations, and a selected export.
 The operation and layout signatures are parameters of the presentation. Finitary signatures
 and effective label codes supply finite representations. -/
-abbrev Presented (P L : PFunctor.{0, 0}) (Γ : Type) :=
-  (s : L.FreeM Unit) × Block P Γ (Direction s) × Direction s
+abbrev Presented (P : PFunctor.{uA, u}) (L : PFunctor.{uA', u}) (Γ : Type u) :
+    Type (max uA uA' u) :=
+  (s : L.FreeM PUnit.{u + 1}) × Block P Γ (Direction s) × Direction s
 
 /-- One simultaneous unfolding preserves imports and replaces local references by bodies. -/
 def expand (d : Block P Γ E) (t : P.FreeM (Γ ⊕ E)) : P.FreeM (Γ ⊕ E) :=
@@ -157,7 +163,7 @@ def unfold (d : Block P Γ E) : ℕ → Block P Γ E :=
   Nat.rec d fun _ ds i ↦ expand d (ds i)
 
 /-- Unfold the selected export of a presented definition. -/
-def unfoldEntry {L : PFunctor.{0, 0}} (d : Presented P L Γ) (n : ℕ) :
+def unfoldEntry {L : PFunctor.{uA', u}} (d : Presented P L Γ) (n : ℕ) :
     P.FreeM (Γ ⊕ Direction d.1) := unfold d.2.1 n d.2.2
 
 /-- A solution is an export interpretation satisfying the equations in the selected algebra. -/
@@ -183,18 +189,18 @@ theorem eval_unfold (alg : P.Obj V → V) (env : Γ → V) (d : Block P Γ E)
   exact (eval_expand alg env d v h (unfold d n i)).trans ih
 
 /-- A polynomial coalgebra supplies one constructor and its local references per equation. -/
-def ofCoalgebra (c : E → P.Obj E) : Block P Empty E :=
+def ofCoalgebra (c : E → P.Obj E) : Block P PEmpty E :=
   fun i ↦ .liftBind (c i).fst fun b ↦ .pure (.inr ((c i).snd b))
 
 /-- Corecursion solves the flat, guarded equations in the M-type. -/
 theorem coalgebra_isSolution (c : E → P.Obj E) :
-    IsSolution M.mk Empty.elim (ofCoalgebra c) (M.corec c) := by
+    IsSolution M.mk PEmpty.elim (ofCoalgebra c) (M.corec c) := by
   intro i
   exact (M.corec_def c i).symm
 
 /-- Finality makes the M-type solution of a flat, guarded block unique. -/
 theorem coalgebra_solution_unique (c : E → P.Obj E) (v : E → P.M)
-    (h : IsSolution M.mk Empty.elim (ofCoalgebra c) v) : v = M.corec c := by
+    (h : IsSolution M.mk PEmpty.elim (ofCoalgebra c) v) : v = M.corec c := by
   have hn : ∀ n i, (v i).approx n = (M.corec c i).approx n := by
     refine Nat.rec ?_ ?_
     · intro i
