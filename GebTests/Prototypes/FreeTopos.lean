@@ -7,6 +7,8 @@ module
 
 public import Geb.Prototypes.FreeTopos -- shake: keep
 public meta import Geb.Prototypes.FreeTopos -- shake: keep
+public import Geb.Prototypes.PartialHorn.Development
+public meta import Geb.Prototypes.PartialHorn.Development -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -23,8 +25,6 @@ prove a hypothesis other than the instance the axiom requires.
 ## Main definitions
 
 * {lit}`idx` — the index of an axiom by its block and its position there.
-* {lit}`cHyp`, {lit}`cRefl`, {lit}`cSymm`, {lit}`cTrans`, {lit}`cCong`, {lit}`cStrict`,
-  {lit}`cAx` — certificates by rule.
 * {lit}`natIdRec` — the certificate that recursion with zero and the successor is the identity.
 
 ## Tags
@@ -43,29 +43,6 @@ open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 /-- The index of the axiom at position {lit}`k` of the block after {lit}`before`. -/
 def idx (before : List (List Seq)) (k : ℕ) : ℕ := (before.map List.length).sum + k
 
-/-- The certificate of a hypothesis, by index. -/
-def cHyp (i : ℕ) : Tree := RoseTree.node Rule.hyp [RoseTree.node i []]
-
-/-- The certificate that a variable is defined. -/
-def cRefl (i : ℕ) : Tree := RoseTree.node Rule.refl [RoseTree.node i []]
-
-/-- The certificate of symmetry. -/
-def cSymm (p : Tree) : Tree := RoseTree.node Rule.symm [p]
-
-/-- The certificate of transitivity. -/
-def cTrans (p q : Tree) : Tree := RoseTree.node Rule.trans [p, q]
-
-/-- The certificate of congruence at a defined application. -/
-def cCong (d : Tree) (ps : List Tree) : Tree := RoseTree.node Rule.cong (d :: ps)
-
-/-- The certificate of strictness at an argument's position. -/
-def cStrict (j : ℕ) (p : Tree) : Tree := RoseTree.node Rule.strict [RoseTree.node j [], p]
-
-/-- The certificate of an axiom's instance: its index, the terms, their definedness, and the
-instances of its hypotheses. -/
-def cAx (j : ℕ) (ts ds hs : List Tree) : Tree :=
-  RoseTree.node Rule.ax (RoseTree.node j [] :: ts ++ ds ++ hs)
-
 /-- The checker in the theory, citing no theorems. -/
 def chk (c : Tree) (Γ : List ℕ) (H : List Eqn) : Option Eqn := check theory [] c Γ H
 
@@ -79,20 +56,20 @@ def wellSorted (Γ : List ℕ) (q : Eqn) : Bool :=
 #guard axioms.all fun a ↦ a.Scoped && (a.concl :: a.hyps).all (wellSorted a.ctx)
 
 -- the domain of an arrow is defined
-#guard chk (cAx 0 [x 0] [cRefl 0] []) [arr] [] = some (dfd (dom (x 0)))
+#guard chk (Cert.ax 0 [x 0] [Cert.refl 0] []) [arr] [] = some (dfd (dom (x 0)))
 
 /-- The certificate that a composite is defined, from the hypothesis that its arrows compose. -/
-def compDfd : Tree := cAx 4 [x 0, x 1] [cRefl 0, cRefl 1] [cHyp 0]
+def compDfd : Tree := Cert.ax 4 [x 0, x 1] [Cert.refl 0, Cert.refl 1] [Cert.hyp 0]
 
 /-- The hypothesis that {lit}`x 1` and {lit}`x 0` compose. -/
 def composable : Eqn := ⟨cod (x 1), dom (x 0)⟩
 
 -- a theorem with a hypothesis: the domain of a composite
-#guard chk (cAx 5 [x 0, x 1] [cRefl 0, cRefl 1] [compDfd]) [arr, arr] [composable] =
+#guard chk (Cert.ax 5 [x 0, x 1] [Cert.refl 0, Cert.refl 1] [compDfd]) [arr, arr] [composable] =
   some ⟨dom (comp (x 0) (x 1)), dom (x 1)⟩
 
 -- a substitution: the right identity law at a composite
-#guard chk (cAx 10 [comp (x 0) (x 1)] [compDfd] []) [arr, arr] [composable] =
+#guard chk (Cert.ax 10 [comp (x 0) (x 1)] [compDfd] []) [arr, arr] [composable] =
   some ⟨comp (comp (x 0) (x 1)) (idt (dom (comp (x 0) (x 1)))), comp (x 0) (x 1)⟩
 
 /-- The blocks before the natural numbers object's. -/
@@ -101,52 +78,52 @@ def beforeNat : List (List Seq) := [categoryAxioms, terminalAxioms, productAxiom
   classifierAxioms]
 
 /-- The equation {lit}`dom zeroN = one`. -/
-def zDom : Tree := cAx (idx beforeNat 0) [] [] []
+def zDom : Tree := Cert.ax (idx beforeNat 0) [] [] []
 
 /-- The equation {lit}`cod zeroN = nat`. -/
-def zCod : Tree := cAx (idx beforeNat 1) [] [] []
+def zCod : Tree := Cert.ax (idx beforeNat 1) [] [] []
 
 /-- The equation {lit}`dom succ = nat`. -/
-def sDom : Tree := cAx (idx beforeNat 2) [] [] []
+def sDom : Tree := Cert.ax (idx beforeNat 2) [] [] []
 
 /-- The equation {lit}`cod succ = nat`. -/
-def sCod : Tree := cAx (idx beforeNat 3) [] [] []
+def sCod : Tree := Cert.ax (idx beforeNat 3) [] [] []
 
 /-- Zero is defined. -/
-def zDfd : Tree := cStrict 0 zDom
+def zDfd : Tree := Cert.strict 0 zDom
 
 /-- The successor is defined. -/
-def sDfd : Tree := cStrict 0 sDom
+def sDfd : Tree := Cert.strict 0 sDom
 
 /-- The natural numbers object is defined. -/
-def natDfd : Tree := cTrans (cSymm zCod) zCod
+def natDfd : Tree := Cert.trans (Cert.symm zCod) zCod
 
 /-- The identity of the natural numbers object is defined. -/
-def idNatDfd : Tree := cAx 2 [nat] [natDfd] []
+def idNatDfd : Tree := Cert.ax 2 [nat] [natDfd] []
 
 /-- Recursion with zero and the successor is defined. -/
 def recDfd : Tree :=
-  cAx (idx beforeNat 7) [zeroN, succ] [zDfd, sDfd]
-    [zDom, cTrans zCod (cSymm sDom), cTrans sDom (cSymm sCod)]
+  Cert.ax (idx beforeNat 7) [zeroN, succ] [zDfd, sDfd]
+    [zDom, Cert.trans zCod (Cert.symm sDom), Cert.trans sDom (Cert.symm sCod)]
 
 /-- The left identity law at an arrow {lit}`f` whose codomain is proved equal to {lit}`b` by
 {lit}`hcod`, with {lit}`hf` its definedness: {lit}`comp (idt b) f = f`. -/
 def leftId (f hf hcod : Tree) : Tree :=
-  let law := cAx 11 [f] [hf] []
-  cTrans (cSymm (cCong law [cCong (cStrict 0 law) [hcod], hf])) law
+  let law := Cert.ax 11 [f] [hf] []
+  Cert.trans (Cert.symm (Cert.cong law [Cert.cong (Cert.strict 0 law) [hcod], hf])) law
 
 /-- The right identity law at an arrow {lit}`f` whose domain is proved equal to {lit}`a` by
 {lit}`hdom`, with {lit}`hf` its definedness: {lit}`comp f (idt a) = f`. -/
 def rightId (f hf hdom : Tree) : Tree :=
-  let law := cAx 10 [f] [hf] []
-  cTrans (cSymm (cCong law [hf, cCong (cStrict 1 law) [hdom]])) law
+  let law := Cert.ax 10 [f] [hf] []
+  Cert.trans (Cert.symm (Cert.cong law [hf, Cert.cong (Cert.strict 1 law) [hdom]])) law
 
 /-- Induction: recursion with zero and the successor is the identity of the natural numbers
 object, by the uniqueness of recursion. -/
 def natIdRec : Tree :=
-  cAx (idx beforeNat 12) [zeroN, succ, idt nat] [zDfd, sDfd, idNatDfd]
-    [recDfd, cAx 8 [nat] [natDfd] [], leftId zeroN zDfd zCod,
-      cTrans (leftId succ sDfd sCod) (cSymm (rightId succ sDfd sDom))]
+  Cert.ax (idx beforeNat 12) [zeroN, succ, idt nat] [zDfd, sDfd, idNatDfd]
+    [recDfd, Cert.ax 8 [nat] [natDfd] [], leftId zeroN zDfd zCod,
+      Cert.trans (leftId succ sDfd sCod) (Cert.symm (rightId succ sDfd sDom))]
 
 #guard chk (leftId zeroN zDfd zCod) [] [] = some ⟨comp (idt nat) zeroN, zeroN⟩
 
@@ -157,20 +134,21 @@ def beforeClassifier : List (List Seq) := [categoryAxioms, terminalAxioms, produ
   equalizerAxioms, initialAxioms, coproductAxioms, coequalizerAxioms, exponentialAxioms]
 
 -- a characteristic map: the square of a monomorphism commutes
-#guard chk (cAx (idx beforeClassifier 7) [x 0] [cRefl 0] [cHyp 0]) [arr] [dfd (chi (x 0))] =
+#guard chk (Cert.ax (idx beforeClassifier 7) [x 0] [Cert.refl 0] [Cert.hyp 0]) [arr]
+    [dfd (chi (x 0))] =
   some ⟨comp (chi (x 0)) (x 0), comp tru (bang (dom (x 0)))⟩
 
 -- an axiom instantiated at a term of the wrong sort
-#guard chk (cAx 2 [x 0] [cRefl 0] []) [arr] [] = none
+#guard chk (Cert.ax 2 [x 0] [Cert.refl 0] []) [arr] [] = none
 
 -- a missing hypothesis
-#guard chk (cHyp 3) [arr] [] = none
+#guard chk (Cert.hyp 3) [arr] [] = none
 
 -- a transitivity whose middle terms differ
-#guard chk (cTrans (cRefl 0) (cRefl 1)) [arr, arr] [] = none
+#guard chk (Cert.trans (Cert.refl 0) (Cert.refl 1)) [arr, arr] [] = none
 
 -- strictness at a variable
-#guard chk (cStrict 0 (cRefl 0)) [arr] [] = none
+#guard chk (Cert.strict 0 (Cert.refl 0)) [arr] [] = none
 
 -- a hypothesis other than the instance the axiom requires
 #guard chk compDfd [arr, arr] [⟨dom (x 0), cod (x 1)⟩] = none
