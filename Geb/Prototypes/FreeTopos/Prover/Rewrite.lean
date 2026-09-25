@@ -57,9 +57,7 @@ inductive Src where
 
 /-- The sequent of a rule's source. -/
 def Src.seq : Src → PM Seq
-  | .ax j => match axioms[j]? with
-    | some a => pure a
-    | none => failure
+  | .ax j => axiomAt j
   | .thm j => do
     match (← get).dev[j]? with
     | some e => pure e.1
@@ -92,7 +90,7 @@ structure MatchSt where
 syntactically, a variable is assigned the term at its first occurrence and matches it at the
 others, and an object whose variables are assigned is deferred to be matched by canonical
 form. -/
-def matchPat (ctx : List ℕ) : Tree → Tree → MatchSt → Option MatchSt :=
+def matchPat (S : Sig) (ctx : List ℕ) : Tree → Tree → MatchSt → Option MatchSt :=
   RoseTree.para fun l cs t ms ↦
     let p := RoseTree.node l (cs.map Prod.fst)
     match l, cs with
@@ -105,7 +103,7 @@ def matchPat (ctx : List ℕ) : Tree → Tree → MatchSt → Option MatchSt :=
         else none
       | none => none
     | _ + 1, cs =>
-      if sortOf sig ctx p == some obj then some { ms with objs := (p, t) :: ms.objs }
+      if sortOf S ctx p == some obj then some { ms with objs := (p, t) :: ms.objs }
       else if t.label == l && t.children.length == cs.length then
         (cs.zip t.children).foldlM (fun ms (c, u) ↦ c.2 u ms) ms
       else none
@@ -128,7 +126,7 @@ def applyRule (r : RwRule) (t : Tree) : PM (Tree × Tree) := do
   guard (!r.avoid.contains t.label)
   let a ← r.src.seq
   let (p, q) := if r.flip then (a.concl.rhs, a.concl.lhs) else (a.concl.lhs, a.concl.rhs)
-  let some ms := matchPat a.ctx p t ⟨a.ctx.map fun _ ↦ none, []⟩ | failure
+  let some ms := matchPat (← get).sig a.ctx p t ⟨a.ctx.map fun _ ↦ none, []⟩ | failure
   let some σ := ms.σ.mapM id | failure
   let tys ← σ.mapM typeTerm
   for (o, u) in ms.objs do

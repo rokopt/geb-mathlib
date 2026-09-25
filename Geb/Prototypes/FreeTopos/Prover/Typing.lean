@@ -6,7 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.FreeTopos.Theory
-public import Geb.Prototypes.PartialHorn.Development
+public import Geb.Prototypes.PartialHorn.Definitional
 
 set_option doc.verso true in
 /-!
@@ -26,7 +26,9 @@ operation is defined by the axiom concluding its definedness from hypotheses, wh
 in turn; or by strictness at an axiom without hypotheses whose left side applies an operation to
 the application; or, for a constant, by an axiom without hypotheses whose right side the
 constant is. Its domain and codomain are those of the axioms whose left side is the domain or
-codomain of the application.
+codomain of the application. An application of a definition in force, an operation of the
+theory's extension by definitions ({name}`Geb.PartialHorn.Theory.extendAll`), is typed by the
+definition's first axiom, which equates it with the instance of its body.
 
 The facts proved about each term are lemmas of the development in the scope, cited wherever
 they are used, so that a term's certificates are proved once and each certificate that uses
@@ -38,8 +40,10 @@ of the terms typed so far.
 * {lit}`DfdRule`, {lit}`dfdRules`, {lit}`domRules`, {lit}`codRules` — how the axioms type each
   operation.
 * {lit}`Ty` — a term's typing.
-* {lit}`PM` — the prover's monad: a scope, and the state of the development and the table of
-  typings.
+* {lit}`PM` — the prover's monad: a scope, and the state of the development, the definitions in
+  force and the table of typings.
+* {lit}`axiomAt`, {lit}`typeDefined` — the axioms of the extension by the definitions in force,
+  and the typing of a definition's application.
 * {lit}`typeTerm` — the typing of a term of the scope.
 
 ## Tags
@@ -157,9 +161,27 @@ structure St where
   /-- The normal forms of the terms normalized in the current scope, with the certificates of
   their equations. -/
   nfs : Table (Tree × Tree) := {}
+  /-- The definitions in force, each an operation after the signature's and those before it. -/
+  defs : List Defn := []
+  /-- The signature extended by the definitions in force. -/
+  sig : Sig := FreeTopos.sig
 
 /-- The prover's monad: a scope, and the state of the development and the typings. -/
 abbrev PM : Type → Type := ReaderT Scope (StateT St Option)
+
+/-- The index of the first axiom of the definition at position {lit}`i`: it rewrites the
+definition's application to its body. -/
+def defAxIdx (i : ℕ) : ℕ := axioms.length + 2 * i
+
+/-- The axiom of index {lit}`j` of the theory extended by the definitions in force. -/
+def axiomAt (j : ℕ) : PM Seq := do
+  if h : j < axioms.length then pure axioms[j] else
+  let r := j - axioms.length
+  match (← get).defs[r / 2]? with
+  | some d => match (d.axioms (sig.length + r / 2))[r % 2]? with
+    | some a => pure a
+    | none => failure
+  | none => failure
 
 /-- A lemma: the conclusion, proved in the scope by the certificate, added to the development;
 the result is its citation. -/
@@ -194,23 +216,46 @@ computing it, whose hypotheses are definedness, the application's being {lit}`d`
 form of the axiom's right side, with the certificate that the bound equals it. -/
 def bound (patTy : List Ty → Tree → PM Ty) (tys : List Ty) (k j : ℕ) (d : Tree) :
     PM (Tree × Tree) := do
-  let some a := axioms[j]? | failure
+  let a ← axiomAt j
   let hs ← a.hyps.mapM fun h ↦
     if h == dfd (opOnVars k tys.length) then pure d else proveHyp patTy tys h
   let q := Cert.ax j (tys.map Ty.term) (tys.map Ty.dfd) hs
   let r ← patTy tys a.concl.rhs
   pure (r.lo, Cert.trans q r.loCert)
 
+/-- The typing of an application of the definition at position {lit}`i`, of sort {lit}`s`, to
+terms of the given typings: its first axiom equates it with the body's instance, whose typing
+gives the application's definedness and bounds. -/
+def typeDefined (patTy : List Ty → Tree → PM Ty) (i s : ℕ) (tys : List Ty) : PM Ty := do
+  let some dfn := (← get).defs[i]? | failure
+  let ts := tys.map Ty.term
+  let t := op (sig.length + i) ts
+  let b ← patTy tys dfn.body
+  let e ← addLemma ⟨t, b.term⟩ (Cert.ax (defAxIdx i) ts (tys.map Ty.dfd) [b.dfd])
+  let d ← addLemma (dfd t) (Cert.trans e (Cert.symm e))
+  let ty ← if s == obj then do
+      let c ← addLemma ⟨t, b.lo⟩ (Cert.trans e b.loCert)
+      pure ⟨t, obj, d, b.lo, c, b.lo, c⟩
+    else do
+      let dc ← addLemma ⟨dom t, b.lo⟩
+        (Cert.trans (Cert.cong (Cert.ax 0 [t] [d] []) [e]) b.loCert)
+      let cc ← addLemma ⟨cod t, b.hi⟩
+        (Cert.trans (Cert.cong (Cert.ax 1 [t] [d] []) [e]) b.hiCert)
+      pure ⟨t, arr, d, b.lo, dc, b.hi, cc⟩
+  memoize ty
+  pure ty
+
 /-- The typing of an application of operation {lit}`k` to terms of the given typings, typing
 the instances of axioms' sides with {lit}`patTy`. -/
 def typeOp (patTy : List Ty → Tree → PM Ty) (k : ℕ) (tys : List Ty) : PM Ty := do
   let ts := tys.map Ty.term
   let t := op k ts
-  guard (tys.map Ty.sort == argSorts k)
-  let some (_, s) := sig[k]? | failure
+  let some (as, s) := (← get).sig[k]? | failure
+  guard (tys.map Ty.sort == as)
+  if sig.length ≤ k then return ← typeDefined patTy (k - sig.length) s tys
   let dc ← match dfdRules[k]? with
     | some (some (.direct j)) => do
-      let some a := axioms[j]? | failure
+      let a ← axiomAt j
       pure (Cert.ax j ts (tys.map Ty.dfd) (← a.hyps.mapM (proveHyp patTy tys)))
     | some (some (.strict j)) => pure (Cert.strict 0 (Cert.ax j ts (tys.map Ty.dfd) []))
     | some (some (.rhs j)) =>
@@ -285,9 +330,12 @@ def typeTerm (t : Tree) : PM Ty := (typers typingFuel).2 t
 /-- The typing of an axiom's side instantiated at typed arguments. -/
 def typePattern (env : List Ty) (p : Tree) : PM Ty := (typers typingFuel).1 env p
 
-/-- Run the prover in a scope from a development, with no term typed. -/
-def run {α : Type} (sc : Scope) (dev : Development) (m : PM α) : Option (α × Development) :=
-  (m.run sc |>.run { dev := dev.toArray }).map fun (a, st) ↦ (a, st.dev.toList)
+/-- Run the prover in a scope from a development, with no term typed, with definitions in
+force. -/
+def run {α : Type} (sc : Scope) (dev : Development) (m : PM α) (defs : List Defn := []) :
+    Option (α × Development) :=
+  (m.run sc |>.run { dev := dev.toArray, defs, sig := sig ++ defs.map fun d ↦ (d.ctx, d.sort) }).map
+    fun (a, st) ↦ (a, st.dev.toList)
 
 end Geb.FreeTopos.Prover
 

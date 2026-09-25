@@ -275,7 +275,7 @@ def inst (S : Sig) (a : Seq) (cs : List (Tree × Chk)) : Chk := fun Γ H ↦
 
 /-- One rule of the checker, by the label of a certificate's node: its children are the
 premises' certificates, with their results, and the terms the rule names. -/
-def checkStep (T : Theory) (E : List Seq) (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun Γ H ↦
+def checkStep (T : Theory) (E : Array Seq) (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun Γ H ↦
   match l, cs with
   | Rule.hyp, [(i, _)] => H[i.label]?
   | Rule.refl, [(i, _)] => if i.label < Γ.length then some ⟨var i.label, var i.label⟩ else none
@@ -296,7 +296,7 @@ def checkStep (T : Theory) (E : List Seq) (l : ℕ) (cs : List (Tree × Chk)) : 
 
 /-- The checker: the conclusion of a certificate in a theory and an environment of theorems, as
 a function of the context and the hypotheses, or nothing when the certificate does not check. -/
-def check (T : Theory) (E : List Seq) (c : Tree) : Chk := RoseTree.para (checkStep T E) c
+def check (T : Theory) (E : Array Seq) (c : Tree) : Chk := RoseTree.para (checkStep T E) c
 
 section Soundness
 
@@ -518,7 +518,7 @@ theorem inst_sound {a : Seq} {cs : List (Tree × Chk)} {Γ : List ℕ} {H : List
 
 /-- Every conclusion the checker computes is valid in every model of the theory in which the
 environment's theorems are valid. -/
-theorem check_sound {T : Theory} {E : List Seq} {M : Model.{v} T.sig} (hM : IsModel T M)
+theorem check_sound {T : Theory} {E : Array Seq} {M : Model.{v} T.sig} (hM : IsModel T M)
     (hE : ∀ a ∈ E, a.Valid M) :
     ∀ c : Tree, ∀ Γ H q, check T E c Γ H = some q → Valid M Γ H q :=
   RoseTree.ind fun l cs ih Γ H q h ↦ by
@@ -634,7 +634,7 @@ theorem check_sound {T : Theory} {E : List Seq} {M : Model.{v} T.sig} (hM : IsMo
     · -- an instance of a theorem
       rename_i _ _ cs'
       obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-      exact inst_sound (hE a (List.mem_of_getElem? ha))
+      exact inst_sound (hE a (Array.mem_of_getElem? ha))
         (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
     · exact absurd h (by simp)
 

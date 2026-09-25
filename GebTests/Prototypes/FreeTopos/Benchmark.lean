@@ -24,7 +24,10 @@ the theorems checks.
 
 ## Main definitions
 
-* {lit}`append`, {lit}`add` — appending lists and addition.
+* {lit}`defs`, {lit}`append`, {lit}`add` — the definitions, among them appending lists and
+  addition.
+* {lit}`appendCNil`, {lit}`appendCCons`, {lit}`addCZero`, {lit}`addCSucc` — the recursions'
+  computation lemmas.
 * {lit}`appendNilLeft`, {lit}`appendNil`, {lit}`appendAssoc`, {lit}`appendNilTwice` — the
   prelude's theorems.
 * {lit}`addZero`, {lit}`addSucc`, {lit}`addZeroLeft` — the theorems about addition.
@@ -49,24 +52,68 @@ def L : Tree := list (x 0)
 /-- The product of two list objects, the parameter of appending's recursion. -/
 def P : Tree := prod L L
 
+/-- The application of the definition at position {lit}`i` to arguments. -/
+def defOp (i : ℕ) (args : List Tree) : Tree := op (sig.length + i) args
+
 /-- Appending to the empty list, curried: the identity of lists. -/
-def appendNilC : Tree := curry one L (snd one L)
+def appendNilC : Tree := defOp 0 [x 0]
+
+/-- Appending to a constructed list, curried: the element constructed onto the tail's
+appending. -/
+def appendConsC : Tree := defOp 1 [x 0]
+
+/-- Appending, curried: recursion on the first list. -/
+def appendC : Tree := defOp 2 [x 0]
+
+/-- Appending two lists. -/
+def append : Tree := defOp 3 [x 0]
+
+/-- Adding zero, curried: the identity of the natural numbers object. -/
+def addZeroC : Tree := defOp 4 []
+
+/-- Adding a successor, curried: the successor after the addition. -/
+def addSuccC : Tree := defOp 5 []
+
+/-- Addition, curried: recursion on the second argument. -/
+def addC : Tree := defOp 6 []
+
+/-- Addition. -/
+def add : Tree := defOp 7 []
 
 /-- The product of an element and a curried appending. -/
 def appendStepDom : Tree := prod (x 0) (exp L L)
 
-/-- Appending to a constructed list, curried: the element constructed onto the tail's
-appending. -/
-def appendConsC : Tree := curry appendStepDom L
-  (comp (cons (x 0)) (pair (comp (fst (x 0) (exp L L)) (fst appendStepDom L))
-    (comp (ev L L) (pair (comp (snd (x 0) (exp L L)) (fst appendStepDom L))
-      (snd appendStepDom L)))))
+/-- The definitions, each over the signature the earlier ones extend. -/
+def defs : List Defn := [
+  ⟨[obj], arr, curry one L (snd one L)⟩,
+  ⟨[obj], arr, curry appendStepDom L
+    (comp (cons (x 0)) (pair (comp (fst (x 0) (exp L L)) (fst appendStepDom L))
+      (comp (ev L L) (pair (comp (snd (x 0) (exp L L)) (fst appendStepDom L))
+        (snd appendStepDom L)))))⟩,
+  ⟨[obj], arr, listRec (x 0) appendNilC appendConsC⟩,
+  ⟨[obj], arr, comp (ev L L) (pair (comp appendC (fst L L)) (snd L L))⟩,
+  ⟨[], arr, curry one nat (snd one nat)⟩,
+  ⟨[], arr, curry (exp nat nat) nat (comp succ (ev nat nat))⟩,
+  ⟨[], arr, natRec addZeroC addSuccC⟩,
+  ⟨[], arr, comp (ev nat nat) (pair (comp addC (snd nat nat)) (fst nat nat))⟩]
 
-/-- Appending, curried: recursion on the first list. -/
-def appendC : Tree := listRec (x 0) appendNilC appendConsC
+-- each definition is well formed over the signature the earlier ones extend
+#guard defs.zipIdx.all fun (d, i) ↦
+  sortOf (sig ++ (defs.take i).map fun d ↦ (d.ctx, d.sort)) d.ctx d.body == some d.sort &&
+    (List.range d.ctx.length).all fun j ↦ Occurs j d.body
 
-/-- Appending two lists. -/
-def append : Tree := comp (ev L L) (pair (comp appendC (fst L L)) (snd L L))
+/-- Curried appending at the empty list. -/
+def appendCNil : Seq := ⟨[obj], [], ⟨comp appendC (nil (x 0)), appendNilC⟩⟩
+
+/-- Curried appending at a constructed list. -/
+def appendCCons : Seq :=
+  ⟨[obj], [], ⟨comp appendC (cons (x 0)), comp appendConsC (prodMapRight (x 0) appendC)⟩⟩
+
+/-- Curried addition at zero. -/
+def addCZero : Seq := ⟨[], [], ⟨comp addC zeroN, addZeroC⟩⟩
+
+/-- Curried addition at a successor. -/
+def addCSucc : Seq := ⟨[], [], ⟨comp addC succ, comp addSuccC addC⟩⟩
 
 /-- The empty list, as an arrow from lists. -/
 def nilL : Tree := comp (nil (x 0)) (bang L)
@@ -87,13 +134,6 @@ def appendAssoc : Seq := ⟨[obj], [], ⟨
 def appendNilTwice : Seq :=
   ⟨[obj], [], ⟨comp append (pair (comp append (pair (idt L) nilL)) nilL), idt L⟩⟩
 
-/-- Addition, curried: recursion on the second argument. -/
-def addC : Tree :=
-  natRec (curry one nat (snd one nat)) (curry (exp nat nat) nat (comp succ (ev nat nat)))
-
-/-- Addition. -/
-def add : Tree := comp (ev nat nat) (pair (comp addC (snd nat nat)) (fst nat nat))
-
 /-- Zero, as an arrow from the natural numbers object. -/
 def zeroNat : Tree := comp zeroN (bang nat)
 
@@ -107,23 +147,34 @@ def addSucc : Seq :=
 /-- Zero is a left unit of addition. -/
 def addZeroLeft : Seq := ⟨[], [], ⟨comp add (pair zeroNat (idt nat)), idt nat⟩⟩
 
-/-- The development of the library and the theorems, each proved by its tactic. -/
+/-- The development of the library and the theorems, each proved by its tactic, with the
+definitions in force: the recursions' computation lemmas by unfolding them, and the theorems
+with the recursions folded. -/
 def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
+  let prove (a : Seq) (m : PM Tree) := proveSeq a m defs
   let rs := rules i
-  let _ ← proveSeq appendNilLeft (byNorm rs appendNilLeft.concl)
-  let an ← proveSeq appendNil
-    (byListInduction rs (x 0) (nil (x 0)) (cons (x 0)) appendNil.concl)
-  let _ ← proveSeq appendAssoc (byListParamInduction rs (x 0) append
+  let cn ← prove appendCNil (byNorm (rs ++ [deltaRule 2]) appendCNil.concl)
+  let cc ← prove appendCCons (byNorm (rs ++ [deltaRule 2]) appendCCons.concl)
+  let lrs := rs ++ [{ src := .thm cn }, { src := .thm cc }, deltaRule 0, deltaRule 1,
+    deltaRule 3]
+  let _ ← prove appendNilLeft (byNorm lrs appendNilLeft.concl)
+  let an ← prove appendNil
+    (byListInduction lrs (x 0) (nil (x 0)) (cons (x 0)) appendNil.concl)
+  let _ ← prove appendAssoc (byListParamInduction lrs (x 0) append
     (comp (cons (x 0)) (fst (prod (x 0) L) P)) appendAssoc.concl)
-  let k ← normalizeThm rs an
-  let _ ← proveSeq appendNilTwice (byNorm (rs ++ [{ src := .thm k }]) appendNilTwice.concl)
-  let _ ← proveSeq addZero (byNorm rs addZero.concl)
-  let _ ← proveSeq addSucc (byNorm rs addSucc.concl)
-  let _ ← proveSeq addZeroLeft (byNatInduction rs zeroN succ addZeroLeft.concl)
+  let k ← normalizeThm lrs an defs
+  let _ ← prove appendNilTwice (byNorm (lrs ++ [{ src := .thm k }]) appendNilTwice.concl)
+  let az ← prove addCZero (byNorm (rs ++ [deltaRule 6]) addCZero.concl)
+  let as ← prove addCSucc (byNorm (rs ++ [deltaRule 6]) addCSucc.concl)
+  let nrs := rs ++ [{ src := .thm az }, { src := .thm as }, deltaRule 4, deltaRule 5,
+    deltaRule 7]
+  let _ ← prove addZero (byNorm nrs addZero.concl)
+  let _ ← prove addSucc (byNorm nrs addSucc.concl)
+  let _ ← prove addZeroLeft (byNatInduction nrs zeroN succ addZeroLeft.concl)
   pure () : StateT Development Option Unit).run d).map Prod.snd
 
--- the theorems are proved, and the development checks
-#guard benchmark.any (checkDevelopment theory)
+-- the theorems are proved, and the development checks in the extension by the definitions
+#guard benchmark.any (checkDevelopment (theory.extendAll defs))
 
 end GebTests.Prototypes.FreeTopos.Benchmark
 
