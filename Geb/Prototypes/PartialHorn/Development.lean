@@ -105,29 +105,29 @@ abbrev Development : Type := List (Seq × Tree)
 
 /-- Whether each certificate of a development proves its sequent, with the sequents of an
 environment and those before it in the development as theorems. -/
-def checkFrom (T : Theory) : Development → List Seq → Bool :=
+def checkFrom (T : Theory) : Development → Array Seq → Bool :=
   List.rec (fun _ ↦ true) fun e _ ih E ↦
-    check T E e.2 e.1.ctx e.1.hyps == some e.1.concl && ih (E ++ [e.1])
+    check T E e.2 e.1.ctx e.1.hyps == some e.1.concl && ih (E.push e.1)
 
 /-- Whether each certificate of a development proves its sequent, with the sequents before it
 as theorems. -/
-def checkDevelopment (T : Theory) (D : Development) : Bool := checkFrom T D []
+def checkDevelopment (T : Theory) (D : Development) : Bool := checkFrom T D #[]
 
 variable {T : Theory} {M : Model T.sig}
 
 /-- Every sequent of a development that checks is valid in every model of the theory in which
 the environment's sequents are valid. -/
 theorem checkFrom_sound (hM : IsModel T M) (D : Development) :
-    ∀ E : List Seq, (∀ a ∈ E, a.Valid M) → checkFrom T D E = true → ∀ a ∈ D.map Prod.fst,
+    ∀ E : Array Seq, (∀ a ∈ E, a.Valid M) → checkFrom T D E = true → ∀ a ∈ D.map Prod.fst,
       a.Valid M :=
-  D.rec (motive := fun D ↦ ∀ E : List Seq, (∀ a ∈ E, a.Valid M) → checkFrom T D E = true →
+  D.rec (motive := fun D ↦ ∀ E : Array Seq, (∀ a ∈ E, a.Valid M) → checkFrom T D E = true →
       ∀ a ∈ D.map Prod.fst, a.Valid M)
     (fun _ _ _ a ha ↦ absurd ha (by simp))
     (fun e D ih E hE h ↦ by
       simp only [checkFrom, Bool.and_eq_true, beq_iff_eq] at h
       have he : e.1.Valid M := check_sound hM hE e.2 _ _ _ h.1
-      have hE' : ∀ a ∈ E ++ [e.1], a.Valid M := by
-        simp only [List.mem_append, List.mem_singleton]
+      have hE' : ∀ a ∈ E.push e.1, a.Valid M := by
+        simp only [Array.mem_push]
         rintro a (ha | rfl)
         · exact hE a ha
         · exact he
@@ -139,7 +139,7 @@ theorem checkFrom_sound (hM : IsModel T M) (D : Development) :
 /-- Every sequent of a development that checks is valid in every model of the theory. -/
 theorem checkDevelopment_sound (hM : IsModel T M) {D : Development}
     (h : checkDevelopment T D = true) : ∀ a ∈ D.map Prod.fst, a.Valid M :=
-  checkFrom_sound hM D [] (by simp) h
+  checkFrom_sound hM D #[] (by simp) h
 
 end Geb.PartialHorn
 

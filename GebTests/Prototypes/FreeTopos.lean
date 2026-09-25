@@ -45,7 +45,7 @@ open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 def idx (before : List (List Seq)) (k : ℕ) : ℕ := (before.map List.length).sum + k
 
 /-- The checker in the theory, citing no theorems. -/
-def chk (c : Tree) (Γ : List ℕ) (H : List Eqn) : Option Eqn := check theory [] c Γ H
+def chk (c : Tree) (Γ : List ℕ) (H : List Eqn) : Option Eqn := check theory #[] c Γ H
 
 /-- Whether both sides of an equation have one sort in a context. -/
 def wellSorted (Γ : List ℕ) (q : Eqn) : Bool :=
@@ -147,7 +147,7 @@ def swapDefn : Defn := ⟨[obj, obj], arr, pair (snd (x 0) (x 1)) (fst (x 0) (x 
   (List.range 2).all fun i ↦ Occurs i swapDefn.body
 
 -- in the extension, the new operation equals its body where the body is defined
-#guard check (theory.extend swapDefn) [] (Cert.ax axioms.length [x 0, x 1]
+#guard check (theory.extend swapDefn) #[] (Cert.ax axioms.length [x 0, x 1]
     [Cert.refl 0, Cert.refl 1] [Cert.hyp 0]) [obj, obj] [dfd swapDefn.body] =
   some ⟨op sig.length [x 0, x 1], swapDefn.body⟩
 
