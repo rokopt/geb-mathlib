@@ -1203,9 +1203,37 @@ it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The metalogic continues on its first rung with step 3: the
-prover reads programs in the Surface 1 forms, rewrites with hypotheses
-under binders, and proves the type checker's preservation of types by
+priority. Two questions are settled first, since each bears on how the
+rest of step 3 is written.
+
+* Named numeric constants. The labels of the kernel's term formers, of
+  the checker's rules and of the primitives, and the indices of the
+  axioms, appear as bare numerals throughout the Geb sources, the
+  certificates and the Lean checker, `22` for a primitive and `17` for
+  a fold or a δ rule. A declaration of named numeric constants, in the
+  manner of an assembler's symbolic constants, would name them once:
+  in the object language, as a form the Surface 1 expansion or the
+  reader replaces by its numeral, or in the metalanguage, as Lean
+  abbreviations the Lean checker and the tests share, whichever is
+  cleaner, with the two kept in agreement by a test.
+* Proofs across rungs. A certificate checked on a rung is valid on
+  every higher one, since the free category of each rung maps to the
+  next by a structure-preserving functor (the section on the metalogic
+  and its checker), so the first rung's proofs move up the ladder
+  unchanged. What remains to establish is whether that transfer is
+  automatic in the checkers, a lower rung's certificate accepted by a
+  higher rung's checker as it stands; whether a richer rung's rules
+  shorten the proofs, and how a proof is shortened without being
+  rechecked on the lower rung; and whether theorems about a weaker
+  rung, the soundness of its checker relative to a stronger one or its
+  conservativity, are proved in a richer rung, as step 3's admission of
+  stronger checkers by relative soundness proofs requires, and how far
+  defining a richer rung depends on the weaker one's proofs already
+  holding.
+
+The metalogic then continues on its first rung with step 3: the prover
+reads programs in the Surface 1 forms, rewrites with hypotheses under
+binders, and proves the type checker's preservation of types by
 weakening and substitution. The second host, content identity and the
 syntax unification follow it.
 
