@@ -20,6 +20,7 @@ import GebTests.Prototypes.FiniteChoice
 import GebTests.Prototypes.FreeTopos
 import GebTests.Prototypes.FreeTopos.Benchmark
 import GebTests.Prototypes.FreeTopos.Internal
+import GebTests.Prototypes.FreeTopos.InternalBenchmark
 import GebTests.Prototypes.FreeTopos.Prover
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.LargeIR

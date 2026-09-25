@@ -147,8 +147,9 @@ sections below detail:
   criteria failing; certificates over a store of shared terms, checked
   with the typing of their terms inferred, constructed; the
   Mitchell–Bénabou language's terms, compilation and definitions, with
-  the proof that compiling agrees with unfolding in every model,
-  constructed, and its derivations, not begun; the checker
+  the proof that compiling agrees with unfolding in every model, and
+  the benchmark's theorems stated in it, constructed, and its
+  derivations, not begun; the checker
   and prover written in Geb, not begun.
 
 Extension:
@@ -1715,9 +1716,26 @@ is the naturality of currying, derived from the axioms of exponentials
 the theorem carries to the definition-free arrows: in every model of the
 theory, the unfoldings of the combinators' definitions in the two arrows
 have one value ({name}`Geb.FreeTopos.Internal.valid_unfoldAll_compile`).
-The language's derivations, their translation to certificates of the
-combinators, and the benchmark's theorems restated in the language are
-not constructed.
+
+The benchmark's theorems are stated in the language, appending and
+addition defined in it by folds into exponentials, and each equation
+compiled over the product of its variables' types. The prover proves the
+compiled sequents unchanged: by unfolding the definitions and
+normalizing, by induction through the uniqueness of recursion, and by
+rewriting with an earlier theorem, the start of the induction for
+associativity itself compiled from the language
+(`GebTests/Prototypes/FreeTopos/InternalBenchmark.lean`). The
+development, the library included, has 781 sequents whose certificates
+have 21596 nodes over a store of 1681, and checks in 1.5 seconds against
+0.9 for the statements written in the combinators; the theorems and the
+lemmas proved for them have 20190 nodes, against 18754 in the
+combinators and 2071 in the computational core. Each statement equates
+applications of the language's definitions to its variables, as the
+core's do, where the combinators equate arrangements of projections and
+pairings; the variables are de Bruijn indices, and the proofs are the
+combinators' tactics.
+The language's derivations, and their translation to certificates of
+the combinators, are not constructed.
 
 The fifth choice is deferred until the three constructions are made.
 
