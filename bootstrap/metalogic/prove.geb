@@ -96,6 +96,10 @@
       (some (node 0 (cons j (cons (child th 0) (cons (if back (eqRhs q) (eqLhs q))
                                                  (cons (if back (eqLhs q) (eqRhs q))
                                                      (single back)))))))))))
+; the certificate citing the lemma of an index among the axioms and the theorems, at terms
+(defn citation ((j T) (us Ts)) T
+  (let na T (length axioms)
+    (if (lt j na) (node Rule.ax (cons j us)) (node Rule.thm (cons (sub j na) us)))))
 (defn applyRule ((G Ts) (ctx Ts) (t T) (r T)) T
   (let cs Ts (children r)
     (if (eq (label r) 2) none
@@ -108,7 +112,7 @@
             (if (typesMatch G ctx (children us) tctx)
               (let q T (instAll (children us)
                          (eqWkAt (length tctx) (length ctx) (eqn Label.tyTree (at cs 2) (at cs 3))))
-                (let c T (node Rule.ax (cons (at cs 0) (children us)))
+                (let c T (citation (at cs 0) (children us))
                   (if (equal (eqLhs q) t)
                     (res (eqRhs q) (if (at cs 4) (cSym c) c))
                     none)))
