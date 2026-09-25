@@ -3739,9 +3739,11 @@ checklist and in CI.
   theorems, whose statements the reader reads as the program's own
   definitions, and checks each theorem's certificate.
   `bootstrap/proofs/prelude.geb` proves theorems about the prelude's
-  lists and `bootstrap/proofs/check.geb` about the kernel's type checker
-  written in Geb, which `GebTests/Prototypes/Proofs.lean` checks in Geb
-  and again in Lean. The
+  lists, `bootstrap/proofs/nat.geb` about the labels, addition's
+  recursion equations from its definition by iteration and a theorem by
+  induction on labels, and `bootstrap/proofs/check.geb` about the
+  kernel's type checker written in Geb, which
+  `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and
   `Geb.Prototypes.Kernel.Reader`.

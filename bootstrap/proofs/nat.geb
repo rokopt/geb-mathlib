@@ -1,0 +1,18 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems about the labels, the natural numbers object inside the trees, checked by
+; bootstrap/metalogic/prove.geb. Addition is defined by iterating the successor (the axiom
+; addIter); its recursion equations follow, and induction on labels proves what they do not.
+
+; addition's recursion equations: iteration from the label of the first argument, zero times
+; and one more time
+(theorem addZero ((m T)) (add m 0) (label m) (rewrite addIter lhs 0 (simp)))
+(theorem addSucc ((m T) (n T)) (add m (add n 1)) (add (add m n) 1)
+  (rewrite addIter lhs 0 (rewrite addIter rhs 1 (simp))))
+
+; zero is a left unit of addition: iteration reads the label of its argument, and induction on
+; the label concludes
+(theorem addZeroLeft ((n T)) (add 0 n) (label n)
+  (rewrite addIter lhs 0 (normalize (induction-label (simp) (simp hyps)) iterlabel)))

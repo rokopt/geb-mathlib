@@ -12,17 +12,20 @@ set_option doc.verso true in
 /-!
 # Proofs about Geb programs
 
-Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, and about the kernel's
+Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, about the labels, the
+natural numbers object inside the trees, {lit}`bootstrap/proofs/nat.geb`, and about the kernel's
 type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, proved by the derived rules of
-{lit}`bootstrap/metalogic/prove.geb` and checked by the metalogic's checker written in Geb: the
-prover, compiled by the stage-0 compiler, checks each theorem's certificate, and each
-certificate is checked again by {name}`Geb.Metalogic.check`, citing the theorems before it, in
-the global environment the program's definitions load. A false equation, and a true one whose
-tactic does not prove it, are rejected.
+{lit}`bootstrap/metalogic/prove.geb` and checked by the metalogic's checker written in Geb. The
+prover's program is read and expanded by the stage-0 compiler and loaded by the seed, without an
+image, whose serializer's recursion is as deep as the image is long; it checks each theorem's
+certificate, and each certificate is checked again by {name}`Geb.Metalogic.check`, citing the
+theorems before it, in the global environment the program's definitions load. A false
+equation, and a true one whose tactic does not prove it, are rejected.
 
 ## Main definitions
 
-* {lit}`prover` — the program of the prover.
+* {lit}`prover`, {lit}`bundler`, {lit}`proverFn?` — the program of the prover, the stage-0
+  compiler's front end, and the prover bundled by it and loaded by the seed.
 * {lit}`results`, {lit}`accepted` — a file's results, and whether the Geb checker accepts one.
 * {lit}`recheck`, {lit}`allCheck` — whether the Lean checker accepts every certificate of a
   file's results, and whether every theorem of a file checks in both.
@@ -46,6 +49,9 @@ def proveGeb : String := include_str "../../bootstrap/metalogic/prove.geb"
 /-- The theorems about the prelude. -/
 def preludeProofs : String := include_str "../../bootstrap/proofs/prelude.geb"
 
+/-- The theorems about the labels, the natural numbers object inside the trees. -/
+def natProofs : String := include_str "../../bootstrap/proofs/nat.geb"
+
 /-- The theorems about the kernel's type checker. -/
 def checkProofs : String := include_str "../../bootstrap/proofs/check.geb"
 
@@ -56,6 +62,22 @@ def prover : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ Tests.equationsGeb ++
     "\n" ++ proveGeb ++ "\n(def main (lam ((file T)) (proveFile 256 file)))"
+
+/-- The stage-0 compiler with an entry point giving a program's bundle: its text read and its
+Surface 1 forms expanded, without the image written. -/
+def bundler : String :=
+  Kernel.Stage0Tests.compiler ++ "(def bundleMain (lam ((file T)) (let sx T (readSExps " ++
+    "(children file)) (if (isSome sx) (let kx T (expandProgram (children (get sx))) " ++
+    "(if (isSome kx) (readProgram (children (get kx))) none)) none))))"
+
+/-- The prover, its program bundled by the stage-0 compiler's reader and expansion and loaded by
+the seed, which checks each definition's type, as a function on trees. -/
+def proverFn? (bundlerText proverText : List Char) : Option (Tree → Option Tree) := do
+  let r ← runMain bundlerText (nameTree proverText)
+  let b ← if r.label == 1 then r.children.head? else none
+  let G ← load ((← unbundle b).map Prod.snd)
+  let main ← G.getLast?
+  some main.apply
 
 /-- An equation from its representation in Geb. -/
 def eqnOf (t : Tree) : Eqn :=
@@ -96,10 +118,11 @@ def rejected : String :=
 def allCheck (f : Tree → Option Tree) (fileText : List Char) : Bool :=
   (results f fileText).any fun (D, rs) ↦ !rs.isEmpty && rs.all accepted && recheck D rs
 
--- every theorem about the prelude and about the kernel's type checker checks, in Geb and again
--- in Lean, and the prover rejects the false equation and the unproved one
-#guard (Tests.gebCheck? Kernel.Stage0Tests.compiler.toList prover.toList).any fun f ↦
+-- every theorem about the prelude, the labels and the kernel's type checker checks, in Geb and
+-- again in Lean, and the prover rejects the false equation and the unproved one
+#guard (proverFn? bundler.toList prover.toList).any fun f ↦
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ preludeProofs).toList &&
+  allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ natProofs).toList &&
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ checkProofs).toList &&
   (results f (Kernel.Stage0Tests.prelude ++ "\n" ++ rejected).toList).any fun (_, rs) ↦

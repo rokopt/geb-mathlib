@@ -97,6 +97,7 @@
                                                      (single back)))))))))))
 (defn applyRule ((G Ts) (ctx Ts) (t T) (r T)) T
   (let cs Ts (children r)
+    (if (eq (label r) 2) none
     (if (eq (label r) 1)
       (if (equal (at cs 0) t) (res (at cs 1) (at cs 2)) none)
     (if (not (eq (label (at cs 2)) (label t))) none
@@ -110,7 +111,7 @@
                   (if (equal (eqLhs q) t)
                     (res (eqRhs q) (if (at cs 4) (cSym c) c))
                     none)))
-              none))))))))))
+              none)))))))))))
 (defn applyRules ((G Ts) (ctx Ts) (t T) (rules Ts)) T
   (foldr T T (lam ((r T) (acc T)) (let x T (applyRule G ctx t r) (if (isSome x) x acc)))
       none rules))
@@ -127,7 +128,9 @@
       (res (if (eq k 4) (listLit (children v)) (mk1 15 v))
            (weakenN (node 17 (cons k as)) (length ctx))))
     none))
-(defn iterRedex ((hd T) (as Ts) (ctx Ts)) T
+(defn iterLabelOn ((R Ts)) T (foldr T T (lam ((r T) (acc T)) (if (eq (label r) 2) 1 acc)) 0 R))
+(defn isLabelOf ((t T)) T (and (eq (label t) 10) (equal (child t 0) (mk1 22 0))))
+(defn iterRedex ((R Ts) (hd T) (as Ts) (ctx Ts)) T
   (let a T (child hd 0)
     (let s T (at as 0)
       (let z T (at as 1)
@@ -148,7 +151,10 @@
                   (equal (child (child n 0) 0) (mk1 22 5))))
               (let m T (child (child n 0) 1)
                 (res (app s (app3 hd s z m)) (node 27 (cons a (cons s (cons z (single m)))))))
-              none)))))))
+              (if (and (iterLabelOn R) (not (isLabelOf n)))
+                (res (app3 hd s z (app (mk1 22 0) n))
+                    (node 34 (cons a (cons s (cons z (single n))))))
+                none))))))))
 (defn foldrRedex ((hd T) (as Ts)) T
   (let a T (child hd 0)
     (let b T (child hd 1)
@@ -196,14 +202,14 @@
                                (cSym (weakenN (mk3 17 3 x xs) (length ctx))))
                             (node 28 (cons a (cons f (cons x (single xs))))))))))
             none))))))
-(defn appRedex ((raw T) (hd T) (as Ts) (ctx Ts)) T
+(defn appRedex ((R Ts) (raw T) (hd T) (as Ts) (ctx Ts)) T
   (let f T (child raw 0)
     (if (and (eq (label f) 9) (eq (arity f) 2))
       (let a T (child raw 1)
         (res (subst a (child f 1)) (mk3 11 (child f 0) (child f 1) a)))
       (let n T (length as)
         (let hl T (label hd)
-          (if (and (eq hl 18) (eq n 3)) (iterRedex hd as ctx)
+          (if (and (eq hl 18) (eq n 3)) (iterRedex R hd as ctx)
           (if (and (eq hl 21) (eq n 3)) (foldrRedex hd as)
           (if (and (eq hl 24) (eq n 3)) (lcaseRedex hd as)
           (if (and (eq hl 17) (eq n 2)) (foldRedex hd as ctx)
@@ -219,7 +225,7 @@
             (if (isSome (indexOf j U))
               (bindO (nth D j) (lam ((d T)) (res (wk (length ctx) d) (mk1 31 (child raw 0)))))
               none))
-        (if (and (eq l 10) (eq k 2)) (appRedex raw hd as ctx)
+        (if (and (eq l 10) (eq k 2)) (appRedex R raw hd as ctx)
         (if (and (or (eq l 13) (eq l 14)) (eq k 1))
           (let p T (child raw 0)
             (if (and (eq (label p) 12) (eq (arity p) 2))
@@ -304,6 +310,51 @@
 (defn norm ((D Ts) (G Ts) (U Ts) (R Ts) (ctx Ts) (hs Ts) (depth T) (t T)) T
   ((normalizer D G U depth) t ctx hs R))
 
+; the rewriting by a lemma rule of a term's subterm of index k among those it rewrites, in
+; preorder: the fold whose result at a node is a function of the index and the context, giving
+; the rewritten term, or nothing, with the index remaining
+(deftype RF (Arrow T (Arrow Ts T)))
+(deftype RN (Prod T RF))
+(deftype RNs (List RN))
+(defn rnRaws ((rs RNs)) Ts (foldr RN Ts (lam ((r RN) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+(defn rnTail ((rs RNs)) RNs (lcase RN RNs rs (nil RN) (lam ((r RN) (rest RNs)) rest)))
+(defn rnFn ((rs RNs) (i T)) RF
+  (lcase RN RF (iter RNs rnTail rs i) (lam ((k T) (ctx Ts)) (node2 0 none k))
+    (lam ((r RN) (rest RNs)) (snd r))))
+(defn rewriteAt ((G Ts) (rule T) (t T) (k0 T) (ctx0 Ts)) T
+  (child ((snd (fold RN
+    (lam ((l T) (rs RNs))
+      (let cs Ts (rnRaws rs)
+        (let raw T (node l cs)
+          (let n T (length cs)
+            (pair raw
+              (lam ((k T) (ctx Ts))
+                (let here T (applyRule G ctx raw rule)
+                  (if (and (isSome here) (eq k 0)) (node2 0 here 0)
+                    (let k1 T (if (isSome here) (sub k 1) k)
+                      (if (and (eq l 9) (eq n 2))
+                        (let rb T ((rnFn rs 1) k1 (cons (at cs 0) ctx))
+                          (if (isSome (child rb 0))
+                            (let x T (get (child rb 0))
+                              (node2 0 (res (node2 9 (at cs 0) (resTerm x))
+                                  (node2 5 (at cs 0) (resCert x))) 0))
+                            rb))
+                      (if (termNode l)
+                        ((foldr T (Arrow T (Arrow T T))
+                           (lam ((c T) (kf (Arrow T (Arrow T T))) (i T) (kk T))
+                             (let rc T ((rnFn rs i) kk ctx)
+                               (if (isSome (child rc 0))
+                                 (let x T (get (child rc 0))
+                                   (node2 0 (res (node l (setAt cs i (resTerm x)))
+                                                 (node (congRule l)
+                                                     (setAt (mapT cRefl cs) i (resCert x))))
+                                            0))
+                                 (kf (add i 1) (child rc 1)))))
+                           (lam ((i T) (kk T)) (node2 0 none kk)) cs)
+                         0 k1)
+                        (node2 0 none k1))))))))))))
+    t)) k0 ctx0) 0))
+
 ; tactics, each computing a certificate of a goal: a context, hypotheses and an equation
 (deftype Tac (Arrow Ts (Arrow Ts (Arrow T T))))
 
@@ -365,6 +416,68 @@
                     (lam ((p1 T)) (some (mk3 29 s t p1)))))))))
         none)))))
 
+; rewriting one side of a goal at an occurrence of a lemma's side, and normalization of both
+; sides, each followed by a tactic on the goal they leave
+(defn rewriteTac ((G Ts) (rule T) (side T) (k T) (f Tac)) Tac
+  (lam ((ctx Ts) (hs Ts) (q T))
+    (bindO (rewriteAt G rule (if side (eqRhs q) (eqLhs q)) k ctx) (lam ((r T))
+      (if side
+        (bindO (f ctx hs (eqn (eqTy q) (eqLhs q) (resTerm r))) (lam ((p T))
+          (some (cTrans p (cSym (resCert r))))))
+        (bindO (f ctx hs (eqn (eqTy q) (resTerm r) (eqRhs q))) (lam ((p T))
+          (some (cTrans (resCert r) p)))))))))
+(defn normalizeTac ((D Ts) (G Ts) (U Ts) (R Ts) (fuel T) (f Tac)) Tac
+  (lam ((ctx Ts) (hs Ts) (q T))
+    (let nl T (norm D G U R ctx hs fuel (eqLhs q))
+      (let nr T (norm D G U R ctx hs fuel (eqRhs q))
+        (bindO (f ctx hs (eqn (eqTy q) (resTerm nl) (resTerm nr))) (lam ((p T))
+          (some (seq (resCert nl) (seq p (cSym (resCert nr)))))))))))
+
+; induction on the label of the innermost variable, a tree: the goal's sides are those with the
+; label of the variable abstracted, instantiated at the variable's label
+(deftype Endo1 (Arrow T T))
+(deftype AN (Prod T Endo1))
+(deftype ANs (List AN))
+(defn anRaws ((rs ANs)) Ts (foldr AN Ts (lam ((r AN) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+(defn anTail ((rs ANs)) ANs (lcase AN ANs rs (nil AN) (lam ((r AN) (rest ANs)) rest)))
+(defn anFn ((rs ANs) (i T)) Endo1
+  (lcase AN Endo1 (iter ANs anTail rs i) (lam ((d T)) 0) (lam ((r AN) (rest ANs)) (snd r))))
+(defn absLabel ((t T)) T
+  ((snd (fold AN
+     (lam ((l T) (rs ANs))
+       (let cs Ts (anRaws rs)
+         (let raw T (node l cs)
+           (let n T (length cs)
+             (pair raw
+               (lam ((d T))
+                 (if (and (isLabelOf raw) (equal (child raw 1) (var d))) (var d)
+                 (if (and (eq l 9) (eq n 2)) (node2 9 (at cs 0) ((anFn rs 1) (add d 1)))
+                 (if (termNode l)
+                   (node l ((foldr T (Arrow T Ts)
+                              (lam ((c T) (kf (Arrow T Ts)) (i T))
+                                  (cons ((anFn rs i) d) (kf (add i 1))))
+                              (lam ((i T)) (nil T)) cs)
+                            0))
+                   raw)))))))))
+     t))
+   0))
+(defn indLabelTac ((f0 Tac) (f1 Tac)) Tac
+  (lam ((ctx Ts) (hs Ts) (q T))
+    (lcase T T ctx none (lam ((lt0 T) (ctx2 Ts))
+      (let s T (absLabel (eqLhs q))
+        (let t T (absLabel (eqRhs q))
+          (let b T (eqTy q)
+            (let lab T (app (mk1 22 0) (var 0))
+              (let suc T (app2 (mk1 22 5) (var 0) (num 1))
+                (if (and (equal lt0 0) (and (equal (subst lab (wkAt 1 1 s)) (eqLhs q))
+                      (equal (subst lab (wkAt 1 1 t)) (eqRhs q))))
+                  (let h0 Ts (mapT eqLower hs)
+                    (bindO (f0 ctx2 h0 (eqn b (subst (num 0) s) (subst (num 0) t))) (lam ((p0 T))
+                      (bindO (f1 ctx (cons (eqn b s t) hs)
+                                 (eqn b (subst suc (wkAt 1 1 s)) (subst suc (wkAt 1 1 t))))
+                        (lam ((p1 T)) (some (node 30 (cons s (cons t (cons p0 (single p1)))))))))))
+                  none))))))))))
+
 ; the names of the axioms, in the order of the table
 (def axiomNames (children (quote (0
   (0 108 97 98 101 108 78 111 100 101) (0 99 104 105 108 100 114 101 110 78 111 100 101)
@@ -383,6 +496,12 @@
 (def kwRw (quote (0 114 119)))
 (def kwRwl (quote (0 114 119 108)))
 (def kwIndList (quote (0 105 110 100 117 99 116 105 111 110 45 108 105 115 116)))
+(def kwRewrite (quote (0 114 101 119 114 105 116 101)))
+(def kwRewritel (quote (0 114 101 119 114 105 116 101 108)))
+(def kwNormalize (quote (0 110 111 114 109 97 108 105 122 101)))
+(def kwIndLabel (quote (0 105 110 100 117 99 116 105 111 110 45 108 97 98 101 108)))
+(def kwIterLabel (quote (0 105 116 101 114 108 97 98 101 108)))
+(def kwRhs (quote (0 114 104 115)))
 (def kwIndTree (quote (0 105 110 100 117 99 116 105 111 110 45 116 114 101 101)))
 
 ; the options of simplification: the indices of the definitions it unfolds, the rules of the
@@ -392,6 +511,7 @@
     (lam ((a T) (acc Ts))
       (if (isList a) (if (named (at (children a) 0) kw) (append (tail (children a)) acc) acc) acc))
     (nil T) args))
+(defn hasAtom ((kw T) (args Ts)) T (foldr T T (lam ((a T) (acc T)) (if (named a kw) 1 acc)) 0 args))
 (defn resolveAll ((names Ts) (xs Ts)) Ts
   (foldr T Ts (lam ((x T) (acc Ts)) (let i T (indexOf (nameOf x) names)
       (if (isSome i) (cons (get i) acc) acc)))
@@ -419,15 +539,23 @@
             (if (and (eq l 2) (lt 0 (length es)))
               (let h T (at es 0)
                 (let args Ts (tail es)
-                  (if (named h kwSimp)
-                    (simpTac D G (resolveAll dn (listArgs kwUnfold args))
-                      (append (lemmaRules Th tn (listArgs kwRw args) 0)
-                              (lemmaRules Th tn (listArgs kwRwl args) 1))
-                      (foldr T T (lam ((a T) (acc T)) (if (named a kwHyps) 1 acc)) 0 args)
-                      fuel)
-                  (if (named h kwIndList) (indListTac (tnAt rs 1) (tnAt rs 2))
-                  (if (named h kwIndTree) (indTreeTac (tnAt rs 1))
-                    (lam ((c Ts) (hs Ts) (q T)) none))))))
+                  (let U Ts (resolveAll dn (listArgs kwUnfold args))
+                    (let R Ts (append (if (hasAtom kwIterLabel args)
+                        (single (node 2 (nil T))) (nil T))
+                                (append (lemmaRules Th tn (listArgs kwRw args) 0)
+                                        (lemmaRules Th tn (listArgs kwRwl args) 1)))
+                      (if (named h kwSimp) (simpTac D G U R (hasAtom kwHyps args) fuel)
+                      (if (named h kwNormalize) (normalizeTac D G U R fuel (tnAt rs 1))
+                      (if (or (named h kwRewrite) (named h kwRewritel))
+                        (let rr Ts (lemmaRules Th tn (single (at args 0)) (named h kwRewritel))
+                          (if (nonEmpty rr)
+                            (rewriteTac G (at rr 0) (named (at args 1) kwRhs)
+                              (get (numeral (children (at args 2)))) (tnAt rs 4))
+                            (lam ((c Ts) (hs Ts) (q T)) none)))
+                      (if (named h kwIndList) (indListTac (tnAt rs 1) (tnAt rs 2))
+                      (if (named h kwIndTree) (indTreeTac (tnAt rs 1))
+                      (if (named h kwIndLabel) (indLabelTac (tnAt rs 1) (tnAt rs 2))
+                        (lam ((c Ts) (hs Ts) (q T)) none)))))))))))
               (lam ((c Ts) (hs Ts) (q T)) none))))))
     e)))
 
