@@ -19,7 +19,9 @@ composition with the laws of a category; the terminal and initial objects; binar
 coproducts; equalizers and coequalizers; exponentials; and the subobject classifier, each with
 the equations and the uniqueness of its universal property. A monomorphism is an arrow whose
 kernel pair's projections are equal, the kernel pair being the equalizer of the arrow's
-composites with the projections of the square of its domain.
+composites with the projections of the square of its domain. The natural numbers, list and
+rose-tree objects are read with their structure maps and folds, each with its fold's equations
+and its uniqueness.
 
 The value of an operation defined at its arguments is the value the model's partial function
 returns, read at the operation's result sort ({name}`Geb.PartialHorn.Model.get`), so no value is
@@ -37,6 +39,9 @@ chosen.
 * {lit}`ToposModel.IsMono`, {lit}`ToposModel.omegaOf`, {lit}`ToposModel.truOf`,
   {lit}`ToposModel.chiOf`, {lit}`ToposModel.chiInvOf` — monomorphisms and the subobject
   classifier.
+* {lit}`ToposModel.natOf`, {lit}`ToposModel.natRecOf`, {lit}`ToposModel.listOf`,
+  {lit}`ToposModel.listRecOf`, {lit}`ToposModel.roseOf`, {lit}`ToposModel.roseRecOf` — the data
+  objects and their folds.
 
 ## Main statements
 
@@ -44,8 +49,9 @@ chosen.
   — the laws of a category.
 * {lit}`ToposModel.eq_bangOf`, {lit}`ToposModel.pairOf_eta`, {lit}`ToposModel.eqLiftOf_eta`,
   {lit}`ToposModel.eq_absurdOf`, {lit}`ToposModel.copairOf_eta`,
-  {lit}`ToposModel.coeqDescOf_eta`, {lit}`ToposModel.curryOf_eta`, {lit}`ToposModel.eq_chiOf` —
-  the uniqueness of each universal morphism.
+  {lit}`ToposModel.coeqDescOf_eta`, {lit}`ToposModel.curryOf_eta`, {lit}`ToposModel.eq_chiOf`,
+  {lit}`ToposModel.eq_natRecOf`, {lit}`ToposModel.eq_listRecOf`, {lit}`ToposModel.eq_roseRecOf`
+  — the uniqueness of each universal morphism.
 
 ## Tags
 
@@ -1499,6 +1505,583 @@ theorem eq_chiOf {m φ i j : T.Ar} (hm : T.IsMono m) (hd : T.domOf φ = T.codOf 
     · simp_eval [T.op_compOf hji, hjd]
     · simp_eval [op_domOf, op_idOf])
   exact T.val_inj <| T.holds_eq hq (by simp_eval []) (by simp_eval [T.op_chiOf hm])
+
+/-- An axiom of the natural numbers block, by index, is valid in the model. -/
+theorem axNat (k : ℕ) (hk : k < natAxioms.length := by decide) :
+    (natAxioms[k]).Valid T.model :=
+  T.isModel _ (by simp [theory, axioms, List.getElem_mem hk])
+
+/-- Zero is defined. -/
+theorem zeroNOf_exists : ∃ z, T.model.op 30 [] = some ⟨arr, z⟩ := by
+  have h : Valid T.model [] [] ⟨dom zeroN, one⟩ := T.axNat 0
+  obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- Zero, from the terminal object to the natural numbers object. -/
+def zeroNOf : T.Ar := T.model.get T.zeroNOf_exists
+
+/-- The model's zero. -/
+@[simp] theorem op_zeroNOf : T.model.op 30 [] = some ⟨arr, T.zeroNOf⟩ := T.model.op_eq_get _
+
+/-- The natural numbers object is defined. -/
+theorem natOf_exists : ∃ n, T.model.op 29 [] = some ⟨obj, n⟩ := by
+  have h : Valid T.model [] [] ⟨cod zeroN, nat⟩ := T.axNat 1
+  obtain ⟨w, -, hw⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The natural numbers object. -/
+def natOf : T.Obj := T.model.get T.natOf_exists
+
+/-- The model's natural numbers object. -/
+@[simp] theorem op_natOf : T.model.op 29 [] = some ⟨obj, T.natOf⟩ := T.model.op_eq_get _
+
+/-- The successor is defined. -/
+theorem succOf_exists : ∃ z, T.model.op 31 [] = some ⟨arr, z⟩ := by
+  have h : Valid T.model [] [] ⟨dom succ, nat⟩ := T.axNat 2
+  obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- The successor. -/
+def succOf : T.Ar := T.model.get T.succOf_exists
+
+/-- The model's successor. -/
+@[simp] theorem op_succOf : T.model.op 31 [] = some ⟨arr, T.succOf⟩ := T.model.op_eq_get _
+
+/-- The domain of zero is the terminal object. -/
+theorem domOf_zeroNOf : T.domOf T.zeroNOf = T.oneOf := by
+  have h : Valid T.model [] [] ⟨dom zeroN, one⟩ := T.axNat 0
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_zeroNOf, op_domOf])
+    (by simp_eval [op_oneOf])
+
+/-- The codomain of zero is the natural numbers object. -/
+theorem codOf_zeroNOf : T.codOf T.zeroNOf = T.natOf := by
+  have h : Valid T.model [] [] ⟨cod zeroN, nat⟩ := T.axNat 1
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_zeroNOf, op_codOf])
+    (by simp_eval [op_natOf])
+
+/-- The domain of the successor is the natural numbers object. -/
+theorem domOf_succOf : T.domOf T.succOf = T.natOf := by
+  have h : Valid T.model [] [] ⟨dom succ, nat⟩ := T.axNat 2
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_succOf, op_domOf])
+    (by simp_eval [op_natOf])
+
+/-- The codomain of the successor is the natural numbers object. -/
+theorem codOf_succOf : T.codOf T.succOf = T.natOf := by
+  have h : Valid T.model [] [] ⟨cod succ, nat⟩ := T.axNat 3
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_succOf, op_codOf])
+    (by simp_eval [op_natOf])
+
+/-- A start and a step of one object define a recursion from the natural numbers object. -/
+theorem natRecOf_exists {z s : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) :
+    ∃ r, T.model.op 32 [⟨arr, z⟩, ⟨arr, s⟩] = some ⟨arr, r⟩ := by
+  have hv : Valid T.model [arr, arr] [⟨dom (x 0), one⟩, ⟨cod (x 0), dom (x 1)⟩,
+      ⟨dom (x 1), cod (x 1)⟩] (dfd (natRec (x 0) (x 1))) := T.axNat 7
+  obtain ⟨w, hw, -⟩ := hv [⟨arr, z⟩, ⟨arr, s⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    exact ⟨⟨⟨obj, T.oneOf⟩, by simp_eval [op_domOf, hz], by simp_eval [op_oneOf]⟩,
+      ⟨⟨obj, T.domOf s⟩, by simp_eval [op_codOf, hzs], by simp_eval [op_domOf]⟩,
+      ⟨⟨obj, T.codOf s⟩, by simp_eval [op_domOf, hs], by simp_eval [op_codOf]⟩⟩)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The morphism from the natural numbers object that recursion with a start and a step
+defines. -/
+def natRecOf (z s : T.Ar) (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) : T.Ar :=
+  T.model.get (T.natRecOf_exists hz hzs hs)
+
+/-- The model's recursion. -/
+@[simp] theorem op_natRecOf {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.domOf s) (hs : T.domOf s = T.codOf s) :
+    T.model.op 32 [⟨arr, z⟩, ⟨arr, s⟩] = some ⟨arr, T.natRecOf z s hz hzs hs⟩ :=
+  T.model.op_eq_get _
+
+/-- A recursion is defined at its start and step. -/
+theorem holds_natRecOf {z s : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) :
+    (dfd (natRec (x 0) (x 1))).Holds T.model [⟨arr, z⟩, ⟨arr, s⟩] :=
+  ⟨⟨arr, T.natRecOf z s hz hzs hs⟩, by simp_eval [T.op_natRecOf hz hzs hs],
+    by simp_eval [T.op_natRecOf hz hzs hs]⟩
+
+/-- The domain of a recursion is the natural numbers object. -/
+theorem domOf_natRecOf {z s : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) : T.domOf (T.natRecOf z s hz hzs hs) = T.natOf := by
+  have hv : Valid T.model [arr, arr] [dfd (natRec (x 0) (x 1))]
+      ⟨dom (natRec (x 0) (x 1)), nat⟩ := T.axNat 8
+  have hq := hv [⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_natRecOf hz hzs hs)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_natRecOf hz hzs hs, op_domOf])
+    (by simp_eval [op_natOf])
+
+/-- The codomain of a recursion is its start's. -/
+theorem codOf_natRecOf {z s : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) : T.codOf (T.natRecOf z s hz hzs hs) = T.codOf z := by
+  have hv : Valid T.model [arr, arr] [dfd (natRec (x 0) (x 1))]
+      ⟨cod (natRec (x 0) (x 1)), cod (x 0)⟩ := T.axNat 9
+  have hq := hv [⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_natRecOf hz hzs hs)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_natRecOf hz hzs hs, op_codOf])
+    (by simp_eval [op_codOf])
+
+/-- A recursion after zero is its start. -/
+theorem natRecOf_zeroNOf {z s : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) :
+    T.compOf (T.natRecOf z s hz hzs hs) T.zeroNOf
+      (T.codOf_zeroNOf.trans (T.domOf_natRecOf hz hzs hs).symm) = z := by
+  have hv : Valid T.model [arr, arr] [dfd (natRec (x 0) (x 1))]
+      ⟨comp (natRec (x 0) (x 1)) zeroN, x 0⟩ := T.axNat 10
+  have hq := hv [⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_natRecOf hz hzs hs)
+  have hc := T.op_compOf (T.codOf_zeroNOf.trans (T.domOf_natRecOf hz hzs hs).symm)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_natRecOf hz hzs hs, op_zeroNOf, hc])
+    (by simp_eval [])
+
+/-- A recursion after the successor is the step after the recursion. -/
+theorem natRecOf_succOf {z s : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) :
+    T.compOf (T.natRecOf z s hz hzs hs) T.succOf
+        (T.codOf_succOf.trans (T.domOf_natRecOf hz hzs hs).symm) =
+      T.compOf s (T.natRecOf z s hz hzs hs) ((T.codOf_natRecOf hz hzs hs).trans hzs) := by
+  have hv : Valid T.model [arr, arr] [dfd (natRec (x 0) (x 1))]
+      ⟨comp (natRec (x 0) (x 1)) succ, comp (x 1) (natRec (x 0) (x 1))⟩ := T.axNat 11
+  have hq := hv [⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_natRecOf hz hzs hs)
+  have h1 := T.op_compOf (T.codOf_succOf.trans (T.domOf_natRecOf hz hzs hs).symm)
+  have h2 := T.op_compOf ((T.codOf_natRecOf hz hzs hs).trans hzs)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_natRecOf hz hzs hs, op_succOf, h1])
+    (by simp_eval [T.op_natRecOf hz hzs hs, h2])
+
+/-- A morphism from the natural numbers object satisfying the recursion equations is the
+recursion. -/
+theorem eq_natRecOf {z s u : T.Ar} (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.domOf s)
+    (hs : T.domOf s = T.codOf s) (hu : T.domOf u = T.natOf)
+    (hu0 : T.compOf u T.zeroNOf (T.codOf_zeroNOf.trans hu.symm) = z)
+    (hus : T.codOf u = T.domOf s)
+    (hu1 : T.compOf u T.succOf (T.codOf_succOf.trans hu.symm) = T.compOf s u hus) :
+    u = T.natRecOf z s hz hzs hs := by
+  have hv : Valid T.model [arr, arr, arr]
+      [dfd (natRec (x 0) (x 1)), ⟨dom (x 2), nat⟩, ⟨comp (x 2) zeroN, x 0⟩,
+        ⟨comp (x 2) succ, comp (x 1) (x 2)⟩] ⟨x 2, natRec (x 0) (x 1)⟩ := T.axNat 12
+  have hq := hv [⟨arr, z⟩, ⟨arr, s⟩, ⟨arr, u⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    exact ⟨⟨⟨arr, T.natRecOf z s hz hzs hs⟩, by simp_eval [T.op_natRecOf hz hzs hs],
+        by simp_eval [T.op_natRecOf hz hzs hs]⟩,
+      ⟨⟨obj, T.natOf⟩, by simp_eval [op_domOf, hu], by simp_eval [op_natOf]⟩,
+      ⟨⟨arr, z⟩, by simp_eval [op_zeroNOf, T.op_compOf (T.codOf_zeroNOf.trans hu.symm), hu0],
+        by simp_eval []⟩,
+      ⟨⟨arr, T.compOf s u hus⟩,
+        by simp_eval [op_succOf, T.op_compOf (T.codOf_succOf.trans hu.symm), hu1],
+        by simp_eval [T.op_compOf hus]⟩⟩)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval []) (by simp_eval [T.op_natRecOf hz hzs hs])
+
+/-- The morphism {lit}`id × f`, from the product of {lit}`a` and the domain of {lit}`f` to the
+product of {lit}`a` and its codomain. -/
+abbrev prodMapRightOf (a : T.Obj) (f : T.Ar) : T.Ar :=
+  T.pairOf (T.fstOf a (T.domOf f)) (T.compOf f (T.sndOf a (T.domOf f)) (T.codOf_sndOf _ _))
+    ((T.domOf_fstOf _ _).trans ((T.domOf_sndOf _ _).symm.trans (T.domOf_compOf _).symm))
+
+/-- The domain of {lit}`id × f`. -/
+theorem domOf_prodMapRightOf (a : T.Obj) (f : T.Ar) :
+    T.domOf (T.prodMapRightOf a f) = T.prodOf a (T.domOf f) :=
+  (T.domOf_pairOf _).trans (T.domOf_fstOf _ _)
+
+/-- The codomain of {lit}`id × f`. -/
+theorem codOf_prodMapRightOf (a : T.Obj) (f : T.Ar) :
+    T.codOf (T.prodMapRightOf a f) = T.prodOf a (T.codOf f) := by
+  rw [prodMapRightOf, codOf_pairOf, codOf_fstOf, codOf_compOf]
+
+/-- The rewriting lemmas of {lit}`id × f`'s value: its projections, its composite and its
+pairing. -/
+theorem op_prodMapRight_parts (a : T.Obj) (f : T.Ar) :
+    T.model.op 3 [⟨arr, f⟩, ⟨arr, T.sndOf a (T.domOf f)⟩] =
+        some ⟨arr, T.compOf f (T.sndOf a (T.domOf f)) (T.codOf_sndOf _ _)⟩ ∧
+      T.model.op 9 [⟨arr, T.fstOf a (T.domOf f)⟩,
+        ⟨arr, T.compOf f (T.sndOf a (T.domOf f)) (T.codOf_sndOf _ _)⟩] =
+        some ⟨arr, T.prodMapRightOf a f⟩ :=
+  ⟨T.op_compOf _, T.op_pairOf _⟩
+
+/-- An axiom of the list block, by index, is valid in the model. -/
+theorem axList (k : ℕ) (hk : k < listAxioms.length := by decide) :
+    (listAxioms[k]).Valid T.model :=
+  T.isModel _ (by simp [theory, axioms, List.getElem_mem hk])
+
+/-- Every object has a list object. -/
+theorem listOf_exists (a : T.Obj) : ∃ l, T.model.op 33 [⟨obj, a⟩] = some ⟨obj, l⟩ := by
+  have h : Valid T.model [obj] [] (dfd (list (x 0))) := T.axList 0
+  obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩] rfl (by simp)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The list object of an object. -/
+def listOf (a : T.Obj) : T.Obj := T.model.get (T.listOf_exists a)
+
+/-- The model's list object. -/
+@[simp] theorem op_listOf (a : T.Obj) : T.model.op 33 [⟨obj, a⟩] = some ⟨obj, T.listOf a⟩ :=
+  T.model.op_eq_get _
+
+/-- Every list object has the empty list. -/
+theorem nilOf_exists (a : T.Obj) : ∃ n, T.model.op 34 [⟨obj, a⟩] = some ⟨arr, n⟩ := by
+  have h : Valid T.model [obj] [] ⟨dom (nil (x 0)), one⟩ := T.axList 1
+  obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- The empty list, from the terminal object. -/
+def nilOf (a : T.Obj) : T.Ar := T.model.get (T.nilOf_exists a)
+
+/-- The model's empty list. -/
+@[simp] theorem op_nilOf (a : T.Obj) : T.model.op 34 [⟨obj, a⟩] = some ⟨arr, T.nilOf a⟩ :=
+  T.model.op_eq_get _
+
+/-- Every list object has the construction of a list. -/
+theorem consOf_exists (a : T.Obj) : ∃ c, T.model.op 35 [⟨obj, a⟩] = some ⟨arr, c⟩ := by
+  have h : Valid T.model [obj] [] ⟨dom (cons (x 0)), prod (x 0) (list (x 0))⟩ := T.axList 3
+  obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- The construction of a list from an element and a list. -/
+def consOf (a : T.Obj) : T.Ar := T.model.get (T.consOf_exists a)
+
+/-- The model's construction of a list. -/
+@[simp] theorem op_consOf (a : T.Obj) : T.model.op 35 [⟨obj, a⟩] = some ⟨arr, T.consOf a⟩ :=
+  T.model.op_eq_get _
+
+/-- The domain of the empty list. -/
+theorem domOf_nilOf (a : T.Obj) : T.domOf (T.nilOf a) = T.oneOf := by
+  have h : Valid T.model [obj] [] ⟨dom (nil (x 0)), one⟩ := T.axList 1
+  exact T.val_inj <| T.holds_eq (h [⟨obj, a⟩] rfl (by simp))
+    (by simp_eval [op_nilOf, op_domOf]) (by simp_eval [op_oneOf])
+
+/-- The codomain of the empty list. -/
+theorem codOf_nilOf (a : T.Obj) : T.codOf (T.nilOf a) = T.listOf a := by
+  have h : Valid T.model [obj] [] ⟨cod (nil (x 0)), list (x 0)⟩ := T.axList 2
+  exact T.val_inj <| T.holds_eq (h [⟨obj, a⟩] rfl (by simp))
+    (by simp_eval [op_nilOf, op_codOf]) (by simp_eval [op_listOf])
+
+/-- The domain of the construction of a list. -/
+theorem domOf_consOf (a : T.Obj) : T.domOf (T.consOf a) = T.prodOf a (T.listOf a) := by
+  have h : Valid T.model [obj] [] ⟨dom (cons (x 0)), prod (x 0) (list (x 0))⟩ := T.axList 3
+  exact T.val_inj <| T.holds_eq (h [⟨obj, a⟩] rfl (by simp))
+    (by simp_eval [op_consOf, op_domOf]) (by simp_eval [op_listOf, op_prodOf])
+
+/-- The codomain of the construction of a list. -/
+theorem codOf_consOf (a : T.Obj) : T.codOf (T.consOf a) = T.listOf a := by
+  have h : Valid T.model [obj] [] ⟨cod (cons (x 0)), list (x 0)⟩ := T.axList 4
+  exact T.val_inj <| T.holds_eq (h [⟨obj, a⟩] rfl (by simp))
+    (by simp_eval [op_consOf, op_codOf]) (by simp_eval [op_listOf])
+
+/-- A start and a step over an element object define a recursion from its list object. -/
+theorem listRecOf_exists {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    ∃ r, T.model.op 36 [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] = some ⟨arr, r⟩ := by
+  have hv : Valid T.model [obj, arr, arr] [⟨dom (x 1), one⟩, ⟨cod (x 1), cod (x 2)⟩,
+      ⟨dom (x 2), prod (x 0) (cod (x 2))⟩] (dfd (listRec (x 0) (x 1) (x 2))) := T.axList 8
+  obtain ⟨w, hw, -⟩ := hv [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    exact ⟨⟨⟨obj, T.oneOf⟩, by simp_eval [op_domOf, hz], by simp_eval [op_oneOf]⟩,
+      ⟨⟨obj, T.codOf s⟩, by simp_eval [op_codOf, hzs], by simp_eval [op_codOf]⟩,
+      ⟨⟨obj, T.prodOf a (T.codOf s)⟩, by simp_eval [op_domOf, hs],
+        by simp_eval [op_codOf, op_prodOf]⟩⟩)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The morphism from the list object of {lit}`a` that recursion with a start and a step
+defines. -/
+def listRecOf (a : T.Obj) (z s : T.Ar) (hz : T.domOf z = T.oneOf) (hzs : T.codOf z = T.codOf s)
+    (hs : T.domOf s = T.prodOf a (T.codOf s)) : T.Ar :=
+  T.model.get (T.listRecOf_exists hz hzs hs)
+
+/-- The model's recursion on lists. -/
+@[simp] theorem op_listRecOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    T.model.op 36 [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] = some ⟨arr, T.listRecOf a z s hz hzs hs⟩ :=
+  T.model.op_eq_get _
+
+/-- A recursion on lists is defined at its arguments. -/
+theorem holds_listRecOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    (dfd (listRec (x 0) (x 1) (x 2))).Holds T.model [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] :=
+  ⟨⟨arr, T.listRecOf a z s hz hzs hs⟩, by simp_eval [T.op_listRecOf hz hzs hs],
+    by simp_eval [T.op_listRecOf hz hzs hs]⟩
+
+/-- The domain of a recursion on lists is the list object. -/
+theorem domOf_listRecOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    T.domOf (T.listRecOf a z s hz hzs hs) = T.listOf a := by
+  have hv : Valid T.model [obj, arr, arr] [dfd (listRec (x 0) (x 1) (x 2))]
+      ⟨dom (listRec (x 0) (x 1) (x 2)), list (x 0)⟩ := T.axList 9
+  have hq := hv [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_listRecOf hz hzs hs)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_listRecOf hz hzs hs, op_domOf])
+    (by simp_eval [op_listOf])
+
+/-- The codomain of a recursion on lists is its start's. -/
+theorem codOf_listRecOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    T.codOf (T.listRecOf a z s hz hzs hs) = T.codOf z := by
+  have hv : Valid T.model [obj, arr, arr] [dfd (listRec (x 0) (x 1) (x 2))]
+      ⟨cod (listRec (x 0) (x 1) (x 2)), cod (x 1)⟩ := T.axList 10
+  have hq := hv [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_listRecOf hz hzs hs)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_listRecOf hz hzs hs, op_codOf])
+    (by simp_eval [op_codOf])
+
+/-- A recursion on lists after the empty list is its start. -/
+theorem listRecOf_nilOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    T.compOf (T.listRecOf a z s hz hzs hs) (T.nilOf a)
+      ((T.codOf_nilOf a).trans (T.domOf_listRecOf hz hzs hs).symm) = z := by
+  have hv : Valid T.model [obj, arr, arr] [dfd (listRec (x 0) (x 1) (x 2))]
+      ⟨comp (listRec (x 0) (x 1) (x 2)) (nil (x 0)), x 1⟩ := T.axList 11
+  have hq := hv [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_listRecOf hz hzs hs)
+  have hc := T.op_compOf ((T.codOf_nilOf a).trans (T.domOf_listRecOf hz hzs hs).symm)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_listRecOf hz hzs hs, op_nilOf, hc])
+    (by simp_eval [])
+
+/-- The step composes with the product of the element object and a recursion's codomain. -/
+theorem codOf_prodMapRightOf_listRecOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    T.codOf (T.prodMapRightOf a (T.listRecOf a z s hz hzs hs)) = T.domOf s := by
+  rw [codOf_prodMapRightOf, codOf_listRecOf, hzs, hs]
+
+/-- A recursion on lists after the construction of a list is the step after the product of the
+identity with the recursion. -/
+theorem listRecOf_consOf {a : T.Obj} {z s : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s)) :
+    T.compOf (T.listRecOf a z s hz hzs hs) (T.consOf a)
+        ((T.codOf_consOf a).trans (T.domOf_listRecOf hz hzs hs).symm) =
+      T.compOf s (T.prodMapRightOf a (T.listRecOf a z s hz hzs hs))
+        (T.codOf_prodMapRightOf_listRecOf hz hzs hs) := by
+  have hv : Valid T.model [obj, arr, arr] [dfd (listRec (x 0) (x 1) (x 2))]
+      ⟨comp (listRec (x 0) (x 1) (x 2)) (cons (x 0)),
+        comp (x 2) (prodMapRight (x 0) (listRec (x 0) (x 1) (x 2)))⟩ := T.axList 12
+  have hq := hv [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩] rfl (by simpa using T.holds_listRecOf hz hzs hs)
+  have h1 := T.op_compOf ((T.codOf_consOf a).trans (T.domOf_listRecOf hz hzs hs).symm)
+  have h2 := T.op_compOf (T.codOf_prodMapRightOf_listRecOf hz hzs hs)
+  obtain ⟨p1, p2⟩ := T.op_prodMapRight_parts a (T.listRecOf a z s hz hzs hs)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_listRecOf hz hzs hs, op_consOf, h1])
+    (by simp_eval [T.op_listRecOf hz hzs hs, op_domOf, op_fstOf, op_sndOf, p1, p2, h2])
+
+/-- A morphism from a list object satisfying the recursion equations is the recursion. -/
+theorem eq_listRecOf {a : T.Obj} {z s u : T.Ar} (hz : T.domOf z = T.oneOf)
+    (hzs : T.codOf z = T.codOf s) (hs : T.domOf s = T.prodOf a (T.codOf s))
+    (hu : T.domOf u = T.listOf a)
+    (hu0 : T.compOf u (T.nilOf a) ((T.codOf_nilOf a).trans hu.symm) = z)
+    (hus : T.codOf (T.prodMapRightOf a u) = T.domOf s)
+    (hu1 : T.compOf u (T.consOf a) ((T.codOf_consOf a).trans hu.symm) =
+      T.compOf s (T.prodMapRightOf a u) hus) :
+    u = T.listRecOf a z s hz hzs hs := by
+  have hv : Valid T.model [obj, arr, arr, arr]
+      [dfd (listRec (x 0) (x 1) (x 2)), ⟨dom (x 3), list (x 0)⟩, ⟨comp (x 3) (nil (x 0)), x 1⟩,
+        ⟨comp (x 3) (cons (x 0)), comp (x 2) (prodMapRight (x 0) (x 3))⟩]
+      ⟨x 3, listRec (x 0) (x 1) (x 2)⟩ := T.axList 13
+  obtain ⟨p1, p2⟩ := T.op_prodMapRight_parts a u
+  have hq := hv [⟨obj, a⟩, ⟨arr, z⟩, ⟨arr, s⟩, ⟨arr, u⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    exact ⟨⟨⟨arr, T.listRecOf a z s hz hzs hs⟩, by simp_eval [T.op_listRecOf hz hzs hs],
+        by simp_eval [T.op_listRecOf hz hzs hs]⟩,
+      ⟨⟨obj, T.listOf a⟩, by simp_eval [op_domOf, hu], by simp_eval [op_listOf]⟩,
+      ⟨⟨arr, z⟩, by simp_eval [op_nilOf, T.op_compOf ((T.codOf_nilOf a).trans hu.symm), hu0],
+        by simp_eval []⟩,
+      ⟨⟨arr, T.compOf s (T.prodMapRightOf a u) hus⟩,
+        by simp_eval [op_consOf, T.op_compOf ((T.codOf_consOf a).trans hu.symm), hu1],
+        by simp_eval [op_domOf, op_fstOf, op_sndOf, p1, p2, T.op_compOf hus]⟩⟩)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [])
+    (by simp_eval [T.op_listRecOf hz hzs hs])
+
+/-- The rewriting lemmas of {lit}`f × id`'s value: its composite and its pairing. -/
+theorem op_prodMapLeft_parts (f : T.Ar) (a : T.Obj) :
+    T.model.op 3 [⟨arr, f⟩, ⟨arr, T.fstOf (T.domOf f) a⟩] =
+        some ⟨arr, T.compOf f (T.fstOf (T.domOf f) a) (T.codOf_fstOf _ _)⟩ ∧
+      T.model.op 9 [⟨arr, T.compOf f (T.fstOf (T.domOf f) a) (T.codOf_fstOf _ _)⟩,
+        ⟨arr, T.sndOf (T.domOf f) a⟩] = some ⟨arr, T.prodMapLeftOf f a⟩ :=
+  ⟨T.op_compOf _, T.op_pairOf _⟩
+
+/-- The step of the list functor's action composes. -/
+theorem codOf_prodMapLeftOf_listOf (f : T.Ar) :
+    T.codOf (T.prodMapLeftOf f (T.listOf (T.codOf f))) = T.domOf (T.consOf (T.codOf f)) := by
+  rw [codOf_prodMapLeftOf, domOf_consOf]
+
+/-- The step of the list functor's action. -/
+abbrev listMapStepOf (f : T.Ar) : T.Ar :=
+  T.compOf (T.consOf (T.codOf f)) (T.prodMapLeftOf f (T.listOf (T.codOf f)))
+    (T.codOf_prodMapLeftOf_listOf f)
+
+/-- The codomain of the step of the list functor's action. -/
+theorem codOf_listMapStepOf (f : T.Ar) :
+    T.codOf (T.listMapStepOf f) = T.listOf (T.codOf f) :=
+  (T.codOf_compOf _).trans (T.codOf_consOf _)
+
+/-- The action of the list object on a morphism, by recursion. -/
+abbrev listMapOf (f : T.Ar) : T.Ar :=
+  T.listRecOf (T.domOf f) (T.nilOf (T.codOf f)) (T.listMapStepOf f) (T.domOf_nilOf _)
+    ((T.codOf_nilOf _).trans (T.codOf_listMapStepOf f).symm)
+    ((T.domOf_compOf _).trans ((T.domOf_prodMapLeftOf _ _).trans
+      (congrArg (T.prodOf (T.domOf f)) (T.codOf_listMapStepOf f).symm)))
+
+/-- The codomain of the list functor's action. -/
+theorem codOf_listMapOf (f : T.Ar) : T.codOf (T.listMapOf f) = T.listOf (T.codOf f) :=
+  (T.codOf_listRecOf _ _ _).trans (T.codOf_nilOf _)
+
+/-- The domain of the list functor's action. -/
+theorem domOf_listMapOf (f : T.Ar) : T.domOf (T.listMapOf f) = T.listOf (T.domOf f) :=
+  T.domOf_listRecOf _ _ _
+
+/-- The value of the list functor's action at a morphism. -/
+theorem op_listMap_parts (f : T.Ar) :
+    T.model.op 3 [⟨arr, T.consOf (T.codOf f)⟩, ⟨arr, T.prodMapLeftOf f (T.listOf (T.codOf f))⟩] =
+        some ⟨arr, T.listMapStepOf f⟩ ∧
+      T.model.op 36 [⟨obj, T.domOf f⟩, ⟨arr, T.nilOf (T.codOf f)⟩, ⟨arr, T.listMapStepOf f⟩] =
+        some ⟨arr, T.listMapOf f⟩ :=
+  ⟨T.op_compOf _, T.op_listRecOf _ _ _⟩
+
+/-- An axiom of the rose-tree block, by index, is valid in the model. -/
+theorem axRose (k : ℕ) (hk : k < roseAxioms.length := by decide) :
+    (roseAxioms[k]).Valid T.model :=
+  T.isModel _ (by simp [theory, axioms, List.getElem_mem hk])
+
+/-- The rose-tree object's structure map is defined. -/
+theorem nodeOf_exists : ∃ n, T.model.op 38 [] = some ⟨arr, n⟩ := by
+  have h : Valid T.model [] [] ⟨dom node, prod nat (list rose)⟩ := T.axRose 0
+  obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- The rose-tree object's structure map. -/
+def nodeOf : T.Ar := T.model.get T.nodeOf_exists
+
+/-- The model's structure map of the rose-tree object. -/
+@[simp] theorem op_nodeOf : T.model.op 38 [] = some ⟨arr, T.nodeOf⟩ := T.model.op_eq_get _
+
+/-- The rose-tree object is defined. -/
+theorem roseOf_exists : ∃ r, T.model.op 37 [] = some ⟨obj, r⟩ := by
+  have h : Valid T.model [] [] ⟨cod node, rose⟩ := T.axRose 1
+  obtain ⟨w, -, hw⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The rose-tree object. -/
+def roseOf : T.Obj := T.model.get T.roseOf_exists
+
+/-- The model's rose-tree object. -/
+@[simp] theorem op_roseOf : T.model.op 37 [] = some ⟨obj, T.roseOf⟩ := T.model.op_eq_get _
+
+/-- The domain of the rose-tree object's structure map. -/
+theorem domOf_nodeOf : T.domOf T.nodeOf = T.prodOf T.natOf (T.listOf T.roseOf) := by
+  have h : Valid T.model [] [] ⟨dom node, prod nat (list rose)⟩ := T.axRose 0
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_nodeOf, op_domOf])
+    (by simp_eval [op_natOf, op_roseOf, op_listOf, op_prodOf])
+
+/-- The codomain of the rose-tree object's structure map. -/
+theorem codOf_nodeOf : T.codOf T.nodeOf = T.roseOf := by
+  have h : Valid T.model [] [] ⟨cod node, rose⟩ := T.axRose 1
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_nodeOf, op_codOf])
+    (by simp_eval [op_roseOf])
+
+/-- An algebra of the rose-tree functor has a fold. -/
+theorem roseRecOf_exists {f : T.Ar} (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) :
+    ∃ r, T.model.op 39 [⟨arr, f⟩] = some ⟨arr, r⟩ := by
+  have hv : Valid T.model [arr] [⟨dom (x 0), prod nat (list (cod (x 0)))⟩]
+      (dfd (roseRec (x 0))) := T.axRose 3
+  obtain ⟨w, hw, -⟩ := hv [⟨arr, f⟩] rfl (by
+    simp only [List.mem_singleton, forall_eq]
+    exact ⟨⟨obj, T.prodOf T.natOf (T.listOf (T.codOf f))⟩, by simp_eval [op_domOf, h],
+      by simp_eval [op_natOf, op_codOf, op_listOf, op_prodOf]⟩)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The fold of the rose-tree object into an algebra. -/
+def roseRecOf (f : T.Ar) (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) : T.Ar :=
+  T.model.get (T.roseRecOf_exists h)
+
+/-- The model's fold of the rose-tree object. -/
+@[simp] theorem op_roseRecOf {f : T.Ar}
+    (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) :
+    T.model.op 39 [⟨arr, f⟩] = some ⟨arr, T.roseRecOf f h⟩ :=
+  T.model.op_eq_get _
+
+/-- A fold of the rose-tree object is defined at its algebra. -/
+theorem holds_roseRecOf {f : T.Ar} (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) :
+    (dfd (roseRec (x 0))).Holds T.model [⟨arr, f⟩] :=
+  ⟨⟨arr, T.roseRecOf f h⟩, by simp_eval [T.op_roseRecOf h], by simp_eval [T.op_roseRecOf h]⟩
+
+/-- The domain of a fold is the rose-tree object. -/
+theorem domOf_roseRecOf {f : T.Ar} (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) :
+    T.domOf (T.roseRecOf f h) = T.roseOf := by
+  have hv : Valid T.model [arr] [dfd (roseRec (x 0))] ⟨dom (roseRec (x 0)), rose⟩ :=
+    T.axRose 4
+  have hq := hv [⟨arr, f⟩] rfl (by simpa using T.holds_roseRecOf h)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_roseRecOf h, op_domOf])
+    (by simp_eval [op_roseOf])
+
+/-- The codomain of a fold is its algebra's carrier. -/
+theorem codOf_roseRecOf {f : T.Ar} (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) :
+    T.codOf (T.roseRecOf f h) = T.codOf f := by
+  have hv : Valid T.model [arr] [dfd (roseRec (x 0))] ⟨cod (roseRec (x 0)), cod (x 0)⟩ :=
+    T.axRose 5
+  have hq := hv [⟨arr, f⟩] rfl (by simpa using T.holds_roseRecOf h)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_roseRecOf h, op_codOf])
+    (by simp_eval [op_codOf])
+
+/-- The algebra composes with the product of the natural numbers object and the list
+functor's action at a morphism into its carrier. -/
+theorem codOf_prodMapRightOf_listMapOf {f u : T.Ar}
+    (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) (hu : T.codOf u = T.codOf f) :
+    T.codOf (T.prodMapRightOf T.natOf (T.listMapOf u)) = T.domOf f := by
+  rw [codOf_prodMapRightOf, codOf_listMapOf, hu, h]
+
+/-- A fold after the structure map is the algebra after the fold of the children. -/
+theorem roseRecOf_nodeOf {f : T.Ar} (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f))) :
+    T.compOf (T.roseRecOf f h) T.nodeOf (T.codOf_nodeOf.trans (T.domOf_roseRecOf h).symm) =
+      T.compOf f (T.prodMapRightOf T.natOf (T.listMapOf (T.roseRecOf f h)))
+        (T.codOf_prodMapRightOf_listMapOf h (T.codOf_roseRecOf h)) := by
+  have hv : Valid T.model [arr] [dfd (roseRec (x 0))]
+      ⟨comp (roseRec (x 0)) node, comp (x 0) (prodMapRight nat (listMap (roseRec (x 0))))⟩ :=
+    T.axRose 6
+  have hq := hv [⟨arr, f⟩] rfl (by simpa using T.holds_roseRecOf h)
+  have h1 := T.op_compOf (T.codOf_nodeOf.trans (T.domOf_roseRecOf h).symm)
+  have h2 := T.op_compOf (T.codOf_prodMapRightOf_listMapOf h (T.codOf_roseRecOf h))
+  obtain ⟨p1, p2⟩ := T.op_prodMapLeft_parts (T.roseRecOf f h) (T.listOf (T.codOf (T.roseRecOf f h)))
+  obtain ⟨p3, p4⟩ := T.op_listMap_parts (T.roseRecOf f h)
+  obtain ⟨p5, p6⟩ := T.op_prodMapRight_parts T.natOf (T.listMapOf (T.roseRecOf f h))
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_roseRecOf h, op_nodeOf, h1])
+    (by simp_eval [T.op_roseRecOf h, op_natOf, op_domOf, op_codOf, op_nilOf, op_consOf,
+      op_listOf, op_fstOf, op_sndOf, p1, p2, p3, p4, p5, p6, h2])
+
+/-- A morphism from the rose-tree object satisfying the fold's equation is the fold. -/
+theorem eq_roseRecOf {f u : T.Ar} (h : T.domOf f = T.prodOf T.natOf (T.listOf (T.codOf f)))
+    (hu : T.domOf u = T.roseOf) (huc : T.codOf u = T.codOf f)
+    (hu1 : T.compOf u T.nodeOf (T.codOf_nodeOf.trans hu.symm) =
+      T.compOf f (T.prodMapRightOf T.natOf (T.listMapOf u))
+        (T.codOf_prodMapRightOf_listMapOf h huc)) :
+    u = T.roseRecOf f h := by
+  have hv : Valid T.model [arr, arr]
+      [dfd (roseRec (x 0)), ⟨dom (x 1), rose⟩,
+        ⟨comp (x 1) node, comp (x 0) (prodMapRight nat (listMap (x 1)))⟩]
+      ⟨x 1, roseRec (x 0)⟩ := T.axRose 7
+  obtain ⟨p1, p2⟩ := T.op_prodMapLeft_parts u (T.listOf (T.codOf u))
+  obtain ⟨p3, p4⟩ := T.op_listMap_parts u
+  obtain ⟨p5, p6⟩ := T.op_prodMapRight_parts T.natOf (T.listMapOf u)
+  have hq := hv [⟨arr, f⟩, ⟨arr, u⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    exact ⟨⟨⟨arr, T.roseRecOf f h⟩, by simp_eval [T.op_roseRecOf h],
+        by simp_eval [T.op_roseRecOf h]⟩,
+      ⟨⟨obj, T.roseOf⟩, by simp_eval [op_domOf, hu], by simp_eval [op_roseOf]⟩,
+      ⟨⟨arr, T.compOf f (T.prodMapRightOf T.natOf (T.listMapOf u))
+          (T.codOf_prodMapRightOf_listMapOf h huc)⟩,
+        by simp_eval [op_nodeOf, T.op_compOf (T.codOf_nodeOf.trans hu.symm), hu1],
+        by simp_eval [op_natOf, op_domOf, op_codOf, op_nilOf, op_consOf, op_listOf, op_fstOf,
+          op_sndOf, p1, p2, p3, p4, p5, p6, T.op_compOf (T.codOf_prodMapRightOf_listMapOf h huc)]⟩⟩)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval []) (by simp_eval [T.op_roseRecOf h])
 
 end ToposModel
 
