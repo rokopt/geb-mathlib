@@ -12,6 +12,7 @@ import Geb.Prototypes.Kernel
 import Geb.Prototypes.Metalogic
 import Geb.Prototypes.Definition
 import Geb.Prototypes.FreeTopos
+import Geb.Prototypes.PartialHorn
 import Geb.Prototypes.Computability.Triage.Simulation
 
 /-! # Bootstrap chapter
@@ -138,11 +139,12 @@ sections below detail:
 * The metalogic, the free topos in one presentation: the rule set with
   its checker in Lean, sound, and the proof that every model is an
   elementary topos with the data objects, constructed; the converse, not
-  begun; the model in Lean with functional relations, the definitional
-  extension with its unfolding theorem, not begun; a prover prototyped
-  in Lean, constructed, and with it the measurement that decides when
-  the Mitchell–Bénabou language is written, made, both criteria
-  failing; the checker and prover written in Geb, not begun.
+  begun; the model in Lean with functional relations, not begun; the
+  definitional extension with its unfolding theorem, constructed for
+  the models, and the unfolding of certificates, not begun; a prover
+  prototyped in Lean, constructed, and with it the measurement that
+  decides when the Mitchell–Bénabou language is written, made, both
+  criteria failing; the checker and prover written in Geb, not begun.
 
 Extension:
 
@@ -1612,6 +1614,41 @@ a definition rather than repeating its expansion, bears on the size;
 and a checker that infers definedness and canonical objects, as the
 core's checker infers the types of kernel terms, proved sound in Lean,
 bears on the facts the certificates prove besides.
+
+The third construction is made for the models, where the checker needs
+it. A definition names a term of the signature in the variables of a
+context, each of which occurs in it; the extension by it adds an
+operation, defined where the body is and equal to it there, and defined
+only there. A model of the theory expands to a model of the extension,
+the operation read as the body's value, and the value of a well-sorted
+term in the expansion is the value of its unfolding
+({name}`Geb.PartialHorn.eval_expand_unfold`), which is eliminability; a
+sequent of the signature valid in every model of the extension is valid
+in every model of the theory ({name}`Geb.PartialHorn.valid_of_valid_extendAll`),
+which is non-creativity. Definitions iterate, each over the signature
+the earlier ones extend ({name}`Geb.PartialHorn.valid_unfoldAll`). A
+certificate is checked in the extension, citing a definition by its
+axioms, and the unfolding of every sequent a checked development proves
+holds in every model of the theory
+({name}`Geb.PartialHorn.checkDevelopment_extendAll_sound`), so no
+certificate is unfolded. The unfolding of certificates into the theory
+without definitions, which a checker of that theory alone would need, is
+not constructed. The requirement that every argument occur in the body
+keeps the strictness of an application: its unfolding, the body with
+the arguments substituted, is defined only where each argument is.
+
+The Mitchell–Bénabou language is written after the third construction,
+and has definitions of its own. A definition of the language compiles
+to a definition of the combinators, and a theorem in Lean states that
+compiling a term and then unfolding the combinators' definitions agrees
+with unfolding the language's definitions and then compiling: the two
+terms have one value in every model, and the translation of the
+language's derivations computes a certificate of their equation. They
+are not the same term in general. Unfolding in the language substitutes
+the arguments for the variables, where the compiled definition is an
+arrow composed with the pairing of the arguments, and the two meet
+through the equations of the projections after a pairing and of
+evaluation after a currying.
 
 The fifth choice is deferred until the three constructions are made.
 

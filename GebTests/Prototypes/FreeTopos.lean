@@ -7,8 +7,8 @@ module
 
 public import Geb.Prototypes.FreeTopos -- shake: keep
 public meta import Geb.Prototypes.FreeTopos -- shake: keep
-public import Geb.Prototypes.PartialHorn.Development
-public meta import Geb.Prototypes.PartialHorn.Development -- shake: keep
+public import Geb.Prototypes.PartialHorn
+public meta import Geb.Prototypes.PartialHorn -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -20,12 +20,15 @@ hypothesis, of the instance of an axiom at a compound term, of the uniqueness of
 the natural numbers object, which is induction, and of an equation of a characteristic map; and
 rejects certificates that instantiate an axiom at a term of the wrong sort, cite a missing
 hypothesis, compose equations whose middle terms differ, apply strictness to a variable, or
-prove a hypothesis other than the instance the axiom requires.
+prove a hypothesis other than the instance the axiom requires. A definition is well formed over
+the signature, and in the theory's extension by it the new operation equals its body where the
+body is defined.
 
 ## Main definitions
 
 * {lit}`idx` — the index of an axiom by its block and its position there.
 * {lit}`natIdRec` — the certificate that recursion with zero and the successor is the identity.
+* {lit}`swapDefn` — a definition, checked in the theory's extension by it.
 
 ## Tags
 
@@ -137,6 +140,18 @@ def beforeClassifier : List (List Seq) := [categoryAxioms, terminalAxioms, produ
 #guard chk (Cert.ax (idx beforeClassifier 7) [x 0] [Cert.refl 0] [Cert.hyp 0]) [arr]
     [dfd (chi (x 0))] =
   some ⟨comp (chi (x 0)) (x 0), comp tru (bang (dom (x 0)))⟩
+
+/-- The symmetry of a product, as a definition in the context of two objects. -/
+def swapDefn : Defn := ⟨[obj, obj], arr, pair (snd (x 0) (x 1)) (fst (x 0) (x 1))⟩
+
+-- the definition's body is an arrow in its context, and both its arguments occur in it
+#guard sortOf sig swapDefn.ctx swapDefn.body = some arr &&
+  (List.range 2).all fun i ↦ Occurs i swapDefn.body
+
+-- in the extension, the new operation equals its body where the body is defined
+#guard check (theory.extend swapDefn) [] (Cert.ax axioms.length [x 0, x 1]
+    [Cert.refl 0, Cert.refl 1] [Cert.hyp 0]) [obj, obj] [dfd swapDefn.body] =
+  some ⟨op sig.length [x 0, x 1], swapDefn.body⟩
 
 -- an axiom instantiated at a term of the wrong sort
 #guard chk (Cert.ax 2 [x 0] [Cert.refl 0] []) [arr] [] = none
