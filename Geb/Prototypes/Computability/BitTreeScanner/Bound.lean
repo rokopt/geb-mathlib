@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.Computability.BitTreeScanner.Steps
+public import Cslib.Computability.Machines.Turing.MultiTape.TapeLemmas
 public import Geb.Prototypes.Computability.MultiTape.Rename
 public import Mathlib.Data.Int.Interval
 
@@ -83,9 +84,7 @@ theorem spaceUsedByTape_le (cfg : Cfg 3 (Fin 4) (Fin stateCount) (w.map boolEmb)
   rw [spaceUsedByTape]
   refine le_trans (Finset.card_le_card (t := Finset.Icc 0 (headBound w)) ?_) ?_
   · intro z hz
-    rw [visitedByTapeHead, Finset.mem_image] at hz
-    obtain ⟨t', ht', rfl⟩ := hz
-    rw [Finset.mem_range] at ht'
+    obtain ⟨t', ht', rfl⟩ := mem_visitedByTapeHead.mp hz
     rw [Finset.mem_Icc]
     exact h t' (by omega) i
   · rw [Int.card_Icc, headBound]

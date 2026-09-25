@@ -7,11 +7,12 @@ module
 
 public import Geb.Prototypes.Computability.MultiTape.OutputString
 public import Geb.Prototypes.Computability.MultiTape.Rename
+public import Geb.Prototypes.Computability.MultiTape.RunFrom
 
 /-!
 # Multi-tape Turing machines
 
 Index for the modules shared by every prototype built on CSLib's multi-tape Turing machines:
-the output emitted along a segment of a run, and the renaming of a machine's alphabet and
-states.
+the iteration equations of a run, the output emitted along a segment of a run, and the
+renaming of a machine's alphabet and states.
 -/

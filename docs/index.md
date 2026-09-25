@@ -2325,6 +2325,18 @@ checklist and in CI.
   logarithmic-space evaluation machine; that requires a verified compiler
   operating on suffix references. Decision-problem completeness is not
   formalized.
+- `Geb/Prototypes/Computability/MultiTape/RunFrom.lean` — the iteration
+  equations of a multi-tape machine's run. Cslib defines
+  `Turing.MultiTapeTM.runFrom tm cfg t` as the `t`-fold iterate of
+  `Turing.MultiTapeTM.step`; `runFrom_zero`, `runFrom_succ_eq_step`,
+  `runFrom_succ_eq_step'` and `runFrom_add` state mathlib's `Nat.iterate`
+  laws at `runFrom`, `runFrom_comm_of_step` transports a run along a map of
+  configurations commuting with two machines' steps, and `runFrom_of_halt`
+  fixes a run at a halted configuration. Stated at `runFrom`, they rewrite
+  a goal against hypotheses about `runFrom` without unfolding it. The
+  module is listed in `GebMeta.classicalAllowedModules` for the reason
+  `OutputString.lean` is. Depends on Cslib's
+  `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Prototypes/Computability/MultiTape/OutputString.lean` — the output a
   multi-tape machine emits along a segment of a run.
   `Turing.MultiTapeTM.outputString tm cfg t` is the concatenation of the
@@ -2339,7 +2351,8 @@ checklist and in CI.
   their step lemmas are stated over the segment form. The module is listed
   in `GebMeta.classicalAllowedModules`: its statements mention
   `Turing.MultiTapeTM.runFrom`, which depends on `Classical.choice` through
-  Cslib's `Turing.Cfg.inputSymbol`. Depends on Cslib's
+  Cslib's `Turing.Cfg.inputSymbol`. Depends on
+  `Geb.Prototypes.Computability.MultiTape.RunFrom` and Cslib's
   `Computability.Machines.Turing.MultiTape.Deterministic`.
 - `Geb/Prototypes/Computability/MultiTape/Rename.lean` — renaming a
   multi-tape machine's alphabet and states along equivalences:

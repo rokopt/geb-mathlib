@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
+public import Geb.Prototypes.Computability.MultiTape.RunFrom
 
 set_option doc.verso true in
 /-!
