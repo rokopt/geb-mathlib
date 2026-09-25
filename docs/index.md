@@ -3712,3 +3712,18 @@ checklist and in CI.
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
   `Geb.Prototypes.RoseTree.Packed` and `Mathlib.Data.Fin.VecNotation`.
+- `Geb/Prototypes/Metalogic/` — the metalogic of the bootstrap, rung by
+  rung. `Equations.lean` is the first rung: sequents of equations between
+  kernel terms of every type under equational hypotheses, certificates as
+  rose trees, and the checker `Geb.Metalogic.check`, a paramorphism
+  computing each conclusion from its premises' conclusions, with rules of
+  equality, congruence, the β and η rules of functions, pairs and the unit
+  type, evaluation of closed terms, weakening, cut, instantiation, the
+  right fold of lists and induction on lists. `Geb.Metalogic.check_sound`
+  proves every computed conclusion valid in the kernel's denotation,
+  without `Classical.choice`. Tested in
+  `GebTests/Prototypes/Metalogic.lean`, including an inductive proof that
+  appending the empty list to a list gives the list. The
+  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
+  ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and
+  `Geb.Prototypes.Kernel.Reader`.
