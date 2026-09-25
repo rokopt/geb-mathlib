@@ -3,11 +3,12 @@
 ; Authors: Terence Rokop
 ;
 ; The first rung of the metalogic's proof checker, written in Surface 1: the conclusion of a
-; certificate, given a program's definitions, the types of the global environment they load, a
-; context, innermost first, and a list of hypotheses, or nothing when the certificate does not
-; check, deciding as Geb.Metalogic.check decides. An equation is the node of label 0 over its
-; type and its two sides; an optional equation is represented as the reader represents optional
-; trees. Requires the prelude, the reader and the checker.
+; certificate, given a program's definitions, theorems about it, the types of the global
+; environment the definitions load, a context, innermost first, and a list of hypotheses, or
+; nothing when the certificate does not check, deciding as Geb.Metalogic.check decides. An
+; equation is the node of label 0 over its type and its two sides, and a theorem the node of
+; label 0 over the node of its context and its equation; an optional equation is represented as
+; the reader represents optional trees. Requires the prelude, the reader and the checker.
 
 (data Eqn (eqn T T T))
 (defn eqTy ((q T)) T (case q ((eqn a s t) a)))
@@ -104,6 +105,89 @@
   (if (eq k 3) (node a (children b)) (if (eq k 4) (node 0 (children a)) (if (eq k 5) (add a b)
   (if (eq k 6) (sub a b) (if (eq k 7) (mul a b) (if (eq k 8) (div a b) (if (eq k 9) (mod a b)
   (if (eq k 10) (eq a b) (if (eq k 11) (lt a b) (if (eq k 12) (equal a b) (log2 a)))))))))))))))
+
+; theorems, and an equation at terms for its variables: each term, weakened past the variables
+; after it, replaces the innermost variable in turn
+(defn thm ((ctx Ts) (q T)) T (node2 0 (node 0 ctx) q))
+(defn eqSubst ((u T) (q T)) T (eqn (eqTy q) (subst u (eqLhs q)) (subst u (eqRhs q))))
+(defn eqWkAt ((k T) (n T) (q T)) T (eqn (eqTy q) (wkAt k n (eqLhs q)) (wkAt k n (eqRhs q))))
+(deftype IK (Prod T (Arrow T T)))
+(defn instAll ((us Ts) (q T)) T
+  ((snd (foldr T IK
+     (lam ((u T) (r IK)) (pair (add (fst r) 1) (lam ((q T)) ((snd r) (eqSubst (wk (fst r) u) q)))))
+     (pair 0 (lam ((q T)) q)) us))
+   q))
+; whether terms have the types of a context, one for each
+(defn typesMatch ((G Ts) (ctx Ts) (us Ts) (as Ts)) T
+  (and (eq (length us) (length as))
+    ((foldr T (Arrow Ts T)
+       (lam ((u T) (k (Arrow Ts T)) (as Ts))
+         (lcase T T as 0 (lam ((a T) (rest Ts)) (and (hasType G ctx u a) (k rest)))))
+       (lam ((as Ts)) 1) us)
+     as)))
+
+; the defining equations of the primitives, as Geb.Metalogic.axioms states them
+(def tyT2 (node2 2 0 0))
+(def tyLT (tyList 0))
+(defn num ((n T)) T (mk1 15 n))
+(defn prim ((k T) (xs Ts)) T (apps (mk1 22 k) xs))
+(defn prim1 ((k T) (a T)) T (prim k (single a)))
+(defn prim2 ((k T) (a T) (b T)) T (prim k (cons a (single b))))
+(defn succT ((t T)) T (prim2 5 t (num 1)))
+(def v0 (var 0))
+(def v1 (var 1))
+(def v2 (var 2))
+(def ctxT (single 0))
+(def ctxTT (cons 0 (single 0)))
+(def ctxTL (cons 0 (single tyLT)))
+(def axLabelNode (thm ctxTL (eqn 0 (prim1 0 (prim2 3 v0 v1)) (prim1 0 v0))))
+(def axChildrenNode (thm ctxTL (eqn tyLT (prim1 4 (prim2 3 v0 v1)) v1)))
+(def axNodeEta (thm ctxT (eqn 0 (prim2 3 (prim1 0 v0) (prim1 4 v0)) v0)))
+(def axChildrenLabel (thm ctxT (eqn tyLT (prim1 4 (prim1 0 v0)) (mk1 19 0))))
+(def axLabelSucc (thm ctxT (eqn 0 (prim1 0 (succT v0)) (succT v0))))
+(def axAddIter
+  (thm ctxTT (eqn 0 (prim2 5 v0 v1) (app3 (mk1 18 0) (node2 9 0 (succT v0)) (prim1 0 v0) v1))))
+(def axPredIter
+  (thm ctxT (eqn 0 (prim2 6 v0 (num 1))
+    (mk1 13 (app3 (mk1 18 tyT2) (node2 9 tyT2 (node2 12 (mk1 14 v0) (succT (mk1 14 v0))))
+              (node2 12 (num 0) (num 0)) v0)))))
+(def axSubIter
+  (thm ctxTT (eqn 0 (prim2 6 v0 v1)
+    (app3 (mk1 18 0) (node2 9 0 (prim2 6 v0 (num 1))) (prim1 0 v0) v1))))
+(def axMulIter
+  (thm ctxTT (eqn 0 (prim2 7 v0 v1) (app3 (mk1 18 0) (node2 9 0 (prim2 5 v0 v1)) (num 0) v1))))
+(def divMod
+  (app3 (mk1 18 tyT2)
+    (node2 9 tyT2 (mk3 16 (prim2 10 (succT (mk1 14 v0)) v2) (node2 12 (succT (mk1 13 v0)) (num 0))
+                    (node2 12 (mk1 13 v0) (succT (mk1 14 v0)))))
+    (node2 12 (num 0) (num 0)) v0))
+(def axDivIter (thm ctxTT (eqn 0 (prim2 8 v0 v1) (mk1 13 divMod))))
+(def axModIter (thm ctxTT (eqn 0 (prim2 9 v0 v1) (mk1 14 divMod))))
+(def axEqDef
+  (thm ctxTT (eqn 0 (prim2 10 v0 v1)
+    (app3 (mk1 18 0) (node2 9 0 (num 0)) (num 1) (prim2 5 (prim2 6 v0 v1) (prim2 6 v1 v0))))))
+(def axLtDef
+  (thm ctxTT (eqn 0 (prim2 11 v0 v1)
+    (app3 (mk1 18 0) (node2 9 0 (num 1)) (num 0) (prim2 6 v1 v0)))))
+(def axLog2Def
+  (thm ctxT (eqn 0 (prim1 13 v0)
+    (mk3 16 (prim2 11 v0 (num 2)) (num 0) (succT (prim1 13 (prim2 8 v0 (num 2))))))))
+(def axArityDef
+  (thm ctxT (eqn 0 (prim1 1 v0)
+    (app3 (node2 21 0 0) (node2 9 0 (node2 9 0 (succT v0))) (num 0) (prim1 4 v0)))))
+(def tailT (node2 9 tyLT (app3 (node2 24 0 tyLT) v0 (mk1 19 0) (node2 9 0 (node2 9 tyLT v0)))))
+(def axChildDef
+  (thm ctxTT (eqn 0 (prim2 2 v0 v1)
+    (app3 (node2 24 0 0) (app3 (mk1 18 tyLT) tailT (prim1 4 v0) v1) (num 0)
+          (node2 9 0 (node2 9 tyLT v1))))))
+(def axEqualRefl (thm ctxT (eqn 0 (prim2 12 v0 v0) (num 1))))
+(def axEqualSubst (thm ctxTT (eqn 0 (mk3 16 (prim2 12 v0 v1) v1 v0) v0)))
+(def axEqualBool (thm ctxTT (eqn 0 (mk3 16 (prim2 12 v0 v1) (num 1) (num 0)) (prim2 12 v0 v1))))
+(def axioms
+  (cons axLabelNode (cons axChildrenNode (cons axNodeEta (cons axChildrenLabel (cons axLabelSucc
+  (cons axAddIter (cons axPredIter (cons axSubIter (cons axMulIter (cons axDivIter (cons axModIter
+  (cons axEqDef (cons axLtDef (cons axLog2Def (cons axArityDef (cons axChildDef (cons axEqualRefl
+  (cons axEqualSubst (single axEqualBool))))))))))))))))))))
 
 ; a certificate with its conclusion as a function of the context and the hypotheses
 (deftype Concl (Arrow Ts (Arrow Ts T)))
@@ -258,7 +342,7 @@
 ; the rules of case analysis of lists, iteration, the fold of trees, induction on trees and on
 ; labels, references to definitions and the conditional at a quoted tree, by the label of a
 ; certificate's node
-(defn checkMore ((D Ts) (G Ts) (l T) (cs Ts) (rs CRs) (ctx Ts) (hs Ts)) T
+(defn checkMore ((D Ts) (Th Ts) (G Ts) (l T) (cs Ts) (rs CRs) (ctx Ts) (hs Ts)) T
   (let k T (length cs)
   (let c0 T (at cs 0)
   (let c1 T (at cs 1)
@@ -338,16 +422,35 @@
   (if (shape l k 32 3)
     (bindO (typeIn G ctx c1) (lam ((a T))
       (if (hasType G ctx c2 a) (some (eqn a (mk3 16 (mk1 15 c0) c1 c2) (if c0 c1 c2))) none)))
-    none)))))))))))))))
+  ; an instance of an axiom or of a theorem, each variable replaced by a term of its type
+  (if (and (eq l 33) (lt 0 k))
+    (bindO (nth (append axioms Th) (label c0)) (lam ((th T))
+      (let tctx Ts (children (child th 0))
+        (let us Ts (tail cs)
+          (if (typesMatch G ctx us tctx)
+            (some (instAll us (eqWkAt (length tctx) (length ctx) (child th 1))))
+            none)))))
+  ; iteration reads the label of the tree it iterates over
+  (if (shape l k 34 4)
+    (if (and (isTy c0) (and (hasType G ctx c1 (tyArrow c0 c0))
+          (and (hasType G ctx c2 c0) (hasType G ctx c3 0))))
+      (some (eqn c0 (app3 (mk1 18 c0) c1 c2 c3) (app3 (mk1 18 c0) c1 c2 (app (mk1 22 0) c3))))
+      none)
+  ; the conditional is the iteration of a constant function from its second branch
+  (if (shape l k 35 4)
+    (if (and (isTy c0) (and (hasType G ctx c1 0) (and (hasType G ctx c2 c0) (hasType G ctx c3 c0))))
+      (some (eqn c0 (mk3 16 c1 c2 c3) (app3 (mk1 18 c0) (node2 9 c0 (wk 1 c2)) c3 c1)))
+      none)
+    none))))))))))))))))))
 
-; the checker: the conclusion of a certificate, given a program's definitions, the types of its
-; global environment, a context and a list of hypotheses
-(defn checkCert ((D Ts) (G Ts) (c T) (ctx Ts) (hs Ts)) T
+; the checker: the conclusion of a certificate, given a program's definitions, theorems about
+; it, the types of its global environment, a context and a list of hypotheses
+(defn checkCert ((D Ts) (Th Ts) (G Ts) (c T) (ctx Ts) (hs Ts)) T
   ((snd (fold CR
      (lam ((l T) (rs CRs))
        (let cs Ts (crTrees rs)
          (pair (node l cs)
            (lam ((ctx Ts) (hs Ts))
-             (if (lt l 24) (checkCore D G l cs rs ctx hs) (checkMore D G l cs rs ctx hs))))))
+             (if (lt l 24) (checkCore D G l cs rs ctx hs) (checkMore D Th G l cs rs ctx hs))))))
      c))
    ctx hs))

@@ -684,9 +684,10 @@ every fixed point on every build.
   * none
 *
   * 7: the metalogic
-  * first rung: steps 1 and 2 constructed; step 3 not begun
+  * first rung: steps 1 and 2 constructed; step 3 begun
   * `Geb/Prototypes/Metalogic/Equations.lean`, `Geb/Prototypes/Kernel/Subst.lean`,
-    `bootstrap/metalogic/equations.geb`
+    `bootstrap/metalogic/equations.geb`, `bootstrap/metalogic/prove.geb`,
+    `bootstrap/proofs/`
 :::
 
 The implementation changed the plan in these respects. The kernel's
@@ -1005,8 +1006,9 @@ conclusion have its type and their denotations agree at every value of
 the context at which the hypotheses hold ({name}`Geb.Metalogic.Valid`).
 A certificate is a rose tree whose label names a rule, and the checker
 {name}`Geb.Metalogic.check` is a paramorphism over it whose result, as
-the denotation's, is a function of a program's definitions, the global
-environment they load, the context and the hypotheses. Its rules are
+the denotation's, is a function of an environment of a program's
+definitions and theorems about it, the global environment the
+definitions load, the context and the hypotheses. Its rules are
 equality's; congruence of every term former; the β and η rules of
 functions, pairs and the unit type; the δ rules, each a primitive
 applied to literals, which are quoted trees and lists of them, equal to
@@ -1016,8 +1018,11 @@ at a quoted tree, of the right fold and case analysis of lists, of
 iteration at the label zero and at a successor, and of the fold of
 trees at a node; induction on a list, on a tree,
 under the hypothesis that its children satisfy the equation, and on a
-label; and references to definitions, each the definition weakened into
-the context. An induction's hypotheses must not mention its variable:
+label; references to definitions, each the definition weakened into
+the context; iteration's reading of its argument's label, and the
+conditional as the iteration of a constant function; and instances of
+the axioms and of proved theorems, each variable replaced by a term of
+its type. An induction's hypotheses must not mention its variable:
 the checker lowers them and checks that they are typed below it, which
 replaces a converse of weakening by a decidable check. A reference's
 rule rests on {name}`Geb.Metalogic.load_loaded`, by which each of a
@@ -1036,6 +1041,25 @@ type, a β step whose argument has another type, a missing hypothesis or
 definition, a transitivity whose middle terms differ, an induction
 whose step does not prove its case, and an induction on a label whose
 variable is not a tree.
+
+The axioms are the defining equations of the kernel's primitives, each
+from the universal property of the object the primitive acts on
+({name}`Geb.Metalogic.axioms`). The rose-tree object's structure map
+is inverse to the label and the children, by Lambek's lemma, and the
+labels are leaves. The labels are the natural numbers object, zero
+and the successor, the sum with one, and its arithmetic is defined by
+iteration, its universal property: addition iterates the successor,
+the predecessor is the first component of an iteration on pairs,
+truncated subtraction iterates the predecessor, multiplication
+iterates addition, and the quotient and the remainder are the two
+components of one iteration; equality and order of labels are tests
+for zero of truncated differences, and the logarithm has its recursion
+equation. The arity and the children by index are defined by the right
+fold and case analysis of lists, and equality of trees is the
+characteristic map of the diagonal: reflexive, licensing replacement,
+and Boolean. Each is proved valid in every global environment
+({name}`Geb.Metalogic.axioms_valid`), and one rule cites an axiom or a
+theorem at terms for its variables ({name}`Geb.Metalogic.valid_thm_inst`).
 
 The checker evaluates no term but a primitive at literals. A Geb
 program that evaluates kernel terms takes a step bound (the section on
@@ -1058,7 +1082,34 @@ compile it with the stage-0 compiler and compare its conclusion with
 the Lean checker's at the certificates of step 1, one certificate of
 each rule besides, and malformed variants of each, the certificate's
 root relabelled with every rule's label and one beyond or deprived of
-its last child; the two agree on every one.
+its last child; the two agree on every one, the tables of axioms
+included.
+
+Step 3 is begun on the first rung. `bootstrap/metalogic/prove.geb`
+constructs certificates by derived rules, so that nothing in it is
+trusted. Normalization, innermost first, contracts the redexes of the
+computation rules, with literals put in constructor form by δ rules
+used backward, unfolds chosen definitions and rewrites with chosen
+axioms and theorems, found by first-order matching, and with the
+hypotheses; each node's children are normalized under one congruence,
+so that a certificate restates a term once per contraction at its
+node rather than once per step. Tactics simplify both sides of a goal,
+rewrite a side at a chosen occurrence, and split a goal by induction on
+a list, a tree or a label into the goals the checker's induction rules
+expect. A file of a program's forms and theorems is read with each
+theorem's statement read as a definition of the program, so that it is
+resolved and typed as the program is, and each theorem's certificate
+is checked against its statement, citing the theorems before it.
+`bootstrap/proofs/prelude.geb` proves the empty list a unit of
+appending and appending associative; `bootstrap/proofs/nat.geb` derives
+addition's recursion equations from its definition by iteration and
+proves zero a left unit of addition by induction on labels; and
+`bootstrap/proofs/check.geb` proves, about the kernel's type checker
+written in Geb, that a quoted tree has the type of trees in every
+context and environment. The examples of
+`GebTests/Prototypes/Proofs.lean` check every certificate in Geb and
+again with {name}`Geb.Metalogic.check`, and reject a false equation and
+an unproved one.
 
 ## Improvements
 
@@ -1090,6 +1141,20 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
+* Proof construction. The prover reads programs of kernel forms alone,
+  since it carries no expansion of the Surface 1 forms; rewrites with
+  hypotheses outside binders only, since a hypothesis's certificate is
+  not transported under a binder; and normalizes innermost first, so
+  that the branches a conditional discards are normalized as well.
+  Carrying the expansion, weakening certificates under binders, and
+  normalizing a conditional's test before its branches remove each.
+* Depth of the Geb reader and serializer. The reader's tokenizer and
+  the serializer's packing of bits are right folds whose continuations
+  nest one call per character and per bit, so running either in Lean's
+  interpreter needs stack in proportion to a program's length; the
+  tests bundle and load the prover without writing its image for that
+  reason. Folds that thread their state from the left in constant depth
+  remove the limit.
 * Test time. The stage tests compare the Geb compilers with the seed in
   Lean's interpreter, tens of seconds each; running those comparisons
   with the compiled executables, as `scripts/bootstrap.sh` runs the
@@ -1118,8 +1183,10 @@ itself to a program that the host builds, idempotently. What remains is
 the following, in the order of dependence.
 
 1. The metalogic (Phase 7), rung by rung: proofs about the compiler's
-   components on the first rung, then the rules and checkers of the
-   rungs above it.
+   components on the first rung, the type checker's preservation of
+   types by weakening and substitution, the expansion's identity on
+   programs of kernel forms and the reader's inverse to a printer among
+   them, then the rules and checkers of the rungs above it.
 2. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
    points reproduced on it, which is diverse double-compiling across
    hosts, and accelerations proved against the denotation.
@@ -1136,9 +1203,11 @@ it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The metalogic continues on its first rung with step 3,
-proofs about the compiler's components, the elaborator's first. The
-second host, content identity and the syntax unification follow it.
+priority. The metalogic continues on its first rung with step 3: the
+prover reads programs in the Surface 1 forms, rewrites with hypotheses
+under binders, and proves the type checker's preservation of types by
+weakening and substitution. The second host, content identity and the
+syntax unification follow it.
 
 ## What self-compilation establishes
 

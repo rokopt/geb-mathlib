@@ -21,6 +21,7 @@ import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType
 import GebTests.Prototypes.Metalogic
+import GebTests.Prototypes.Proofs
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafIRUniv
 import GebTests.Prototypes.PresheafUniverse
