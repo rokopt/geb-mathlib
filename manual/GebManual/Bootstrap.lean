@@ -684,8 +684,9 @@ every fixed point on every build.
   * none
 *
   * 7: the metalogic
-  * first rung: step 1 constructed; step 2 not begun
-  * `Geb/Prototypes/Metalogic/Equations.lean`, `Geb/Prototypes/Kernel/Subst.lean`
+  * first rung: steps 1 and 2 constructed; step 3 not begun
+  * `Geb/Prototypes/Metalogic/Equations.lean`, `Geb/Prototypes/Kernel/Subst.lean`,
+    `bootstrap/metalogic/equations.geb`
 :::
 
 The implementation changed the plan in these respects. The kernel's
@@ -1007,11 +1008,13 @@ A certificate is a rose tree whose label names a rule, and the checker
 the denotation's, is a function of a program's definitions, the global
 environment they load, the context and the hypotheses. Its rules are
 equality's; congruence of every term former; the β and η rules of
-functions, pairs and the unit type; evaluation of a closed term of the
-type of trees; weakening, cut and instantiation of the innermost
-variable by a term; the computation rules of the right fold and case
-analysis of lists, of iteration at the label zero and at a successor,
-and of the fold of trees at a node; induction on a list, on a tree,
+functions, pairs and the unit type; the δ rules, each a primitive
+applied to literals, which are quoted trees and lists of them, equal to
+the literal of its value; weakening, cut and instantiation of the
+innermost variable by a term; the computation rules of the conditional
+at a quoted tree, of the right fold and case analysis of lists, of
+iteration at the label zero and at a successor, and of the fold of
+trees at a node; induction on a list, on a tree,
 under the hypothesis that its children satisfy the equation, and on a
 label; and references to definitions, each the definition weakened into
 the context. An induction's hypotheses must not mention its variable:
@@ -1033,6 +1036,29 @@ type, a β step whose argument has another type, a missing hypothesis or
 definition, a transitivity whose middle terms differ, an induction
 whose step does not prove its case, and an induction on a label whose
 variable is not a tree.
+
+The checker evaluates no term but a primitive at literals. A Geb
+program that evaluates kernel terms takes a step bound (the section on
+the metalogic and its checker), so a checker written in Geb could not
+apply a rule evaluating every closed term, and a Lean checker with that
+rule would not be the Geb checker's specification. The evaluation of a
+closed term is derived instead, from the δ rules, the computation rules
+and congruence, by a certificate whose size grows with the length of
+the evaluation.
+
+On the first rung, step 2 is constructed as well.
+`bootstrap/metalogic/equations.geb` is the checker written in Surface 1,
+deciding as {name}`Geb.Metalogic.check` decides: a fold over the
+certificate whose result at each node is the node paired with its
+conclusion as a function of the context and the hypotheses, over the
+traversal, weakening and substitution of kernel terms and the values of
+the primitives written in Geb, with `bootstrap/check.geb` typing terms
+in a context. The examples of `GebTests/Prototypes/Metalogic.lean`
+compile it with the stage-0 compiler and compare its conclusion with
+the Lean checker's at the certificates of step 1, one certificate of
+each rule besides, and malformed variants of each, the certificate's
+root relabelled with every rule's label and one beyond or deprived of
+its last child; the two agree on every one.
 
 ## Improvements
 
@@ -1064,6 +1090,14 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
+* Test dependencies on Geb sources. The test modules that compare Geb
+  programs with Lean ones read the programs' sources at elaboration by
+  `include_str`, which registers no dependency, so Lake rebuilds them
+  when their Lean source or imports change and not when a `.geb`
+  source alone does, and a cached build keeps a comparison's earlier
+  result. Declaring the sources as inputs of those modules, so that a
+  change to one rebuilds the modules that read it, removes the
+  staleness.
 * Test time. The stage tests compare the Geb compilers with the seed in
   Lean's interpreter, tens of seconds each; running those comparisons
   with the compiled executables, as `scripts/bootstrap.sh` runs the
@@ -1087,9 +1121,9 @@ on emitted Lean reach that aim for computation: the compiler compiles
 itself to a program that the host builds, idempotently. What remains is
 the following, in the order of dependence.
 
-1. The metalogic (Phase 7), rung by rung: the first rung's proof
-   checker written in Geb, then proofs about the compiler's components,
-   then the rules and checkers of the rungs above it.
+1. The metalogic (Phase 7), rung by rung: proofs about the compiler's
+   components on the first rung, then the rules and checkers of the
+   rungs above it.
 2. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
    points reproduced on it, which is diverse double-compiling across
    hosts, and accelerations proved against the denotation.
@@ -1106,11 +1140,9 @@ it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The metalogic continues on its first rung with step 2, the
-proof checker written in Geb and compared with the Lean checker on the
-same certificates, and then step 3, proofs about the compiler's
-components. The second host, content identity and the syntax
-unification follow it.
+priority. The metalogic continues on its first rung with step 3,
+proofs about the compiler's components, the elaborator's first. The
+second host, content identity and the syntax unification follow it.
 
 ## What self-compilation establishes
 
