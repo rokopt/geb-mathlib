@@ -174,7 +174,7 @@ def readDatum : SExp → Option Tree :=
 abbrev mk (l : ℕ) (cs : List Tree) : Tree := RoseTree.node l cs
 
 /-- A term applied to arguments in turn. -/
-def apps (f : Tree) (xs : List Tree) : Tree := xs.foldl (fun g x ↦ mk 10 [g, x]) f
+def apps (f : Tree) (xs : List Tree) : Tree := xs.foldl (fun g x ↦ mk Label.app [g, x]) f
 
 /-- The binders of an abstraction: one binder {lit}`(x A)`, or a list of them. -/
 def binders (b : SExp) : List SExp :=
@@ -191,11 +191,11 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
   match a, cs with
   | some s, _ =>
     match numeral? s, scope.idxOf? s, defs.idxOf? s, primNames.idxOf? (String.ofList s) with
-    | some n, _, _, _ => some (mk 15 [leaf n])
-    | _, some i, _, _ => some (mk 8 [leaf i])
-    | _, _, some j, _ => some (mk 23 [leaf j])
-    | _, _, _, some k => some (mk 22 [leaf k])
-    | _, _, _, _ => if String.ofList s == "unit" then some (mk 11 []) else none
+    | some n, _, _, _ => some (mk Label.quote [leaf n])
+    | _, some i, _, _ => some (mk Label.var [leaf i])
+    | _, _, some j, _ => some (mk Label.ref [leaf j])
+    | _, _, _, some k => some (mk Label.prim [leaf k])
+    | _, _, _, _ => if String.ofList s == "unit" then some (mk Label.unit []) else none
   | none, (h, rh) :: rest =>
     match h.label.map String.ofList, rest with
     | some "lam", [(b, _), (_, body)] => do
@@ -206,23 +206,23 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
       if bs.isEmpty then none
       else
         let t ← body ((bs.map Prod.fst).reverse ++ scope)
-        some (bs.foldr (fun p u ↦ mk 9 [p.2, u]) t)
+        some (bs.foldr (fun p u ↦ mk Label.lam [p.2, u]) t)
     | some "let", [(x, _), (A, _), (_, e), (_, body)] => do
       let name ← x.label
-      some (mk 10 [mk 9 [← readType tys A, ← body (name :: scope)], ← e scope])
-    | some "pair", _ => (args rest).map (mk 12)
-    | some "fst", _ => (args rest).map (mk 13)
-    | some "snd", _ => (args rest).map (mk 14)
-    | some "if", _ => (args rest).map (mk 16)
-    | some "quote", [(d, _)] => (readDatum d).map fun t ↦ mk 15 [t]
-    | some "cons", _ => (args rest).map (mk 20)
-    | some "nil", [(A, _)] => (readType tys A).map fun A ↦ mk 19 [A]
-    | some "fold", (A, _) :: xs => do apps (mk 17 [← readType tys A]) (← args xs)
-    | some "iter", (A, _) :: xs => do apps (mk 18 [← readType tys A]) (← args xs)
+      some (mk Label.app [mk Label.lam [← readType tys A, ← body (name :: scope)], ← e scope])
+    | some "pair", _ => (args rest).map (mk Label.pair)
+    | some "fst", _ => (args rest).map (mk Label.fst)
+    | some "snd", _ => (args rest).map (mk Label.snd)
+    | some "if", _ => (args rest).map (mk Label.cond)
+    | some "quote", [(d, _)] => (readDatum d).map fun t ↦ mk Label.quote [t]
+    | some "cons", _ => (args rest).map (mk Label.cons)
+    | some "nil", [(A, _)] => (readType tys A).map fun A ↦ mk Label.nil [A]
+    | some "fold", (A, _) :: xs => do apps (mk Label.fold [← readType tys A]) (← args xs)
+    | some "iter", (A, _) :: xs => do apps (mk Label.iter [← readType tys A]) (← args xs)
     | some "foldr", (A, _) :: (B, _) :: xs => do
-      apps (mk 21 [← readType tys A, ← readType tys B]) (← args xs)
+      apps (mk Label.foldr [← readType tys A, ← readType tys B]) (← args xs)
     | some "lcase", (A, _) :: (B, _) :: xs => do
-      apps (mk 24 [← readType tys A, ← readType tys B]) (← args xs)
+      apps (mk Label.lcase [← readType tys A, ← readType tys B]) (← args xs)
     | _, _ => do apps (← rh scope) (← args rest)
   | none, [] => none
 

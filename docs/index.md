@@ -3665,7 +3665,9 @@ checklist and in CI.
   term returning its type with its denotation, so that evaluation agrees
   with the denotation by construction; the kernel's constants are plain
   Lean functions in `Geb.Kernel.Const`, which the denotations apply at
-  the denotations of their types; the primitives `Geb.Kernel.prims`
+  the denotations of their types; the labels of the constructors and the
+  indices of the primitives are named in `Geb.Kernel.Label` and
+  `Geb.Kernel.Prim`; the primitives `Geb.Kernel.prims`
   operate on labels and children, lists carry their right fold and their
   case analysis, the fold of
   trees denotes `Geb.RoseTree.elim` over the list of children's results, and
@@ -3734,7 +3736,10 @@ checklist and in CI.
   its arguments is constant. `bootstrap/metalogic/equations.geb` is the
   same checker written in Surface 1; the tests compile it with the stage-0
   compiler and compare it with `Geb.Metalogic.check` on their
-  certificates and on malformed variants of each.
+  certificates and on malformed variants of each, and check that its
+  numeral abbreviations and the prelude's name the rules
+  (`Geb.Metalogic.Rule`), the labels and the primitives as the Lean
+  abbreviations do.
   `bootstrap/metalogic/prove.geb` constructs certificates by derived
   rules: normalization, innermost first, simplification of both sides of
   a goal, and induction; it reads a file of a program's forms and

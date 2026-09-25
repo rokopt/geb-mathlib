@@ -160,7 +160,7 @@ def imageOf (text : List Char) : ByteArray :=
   readImage (imageOf quadruple.toList)
 #guard readImage .empty = none
 -- a bundle whose definition refers to itself, and a tree that is not a bundle
-#guard runEntry (mk 100 [mk 101 [mk 23 [leaf 0]], mk 102 [nameTree "f".toList]]) "f".toList
+#guard runEntry (mk 100 [mk 101 [mk Label.ref [leaf 0]], mk 102 [nameTree "f".toList]]) "f".toList
   (leaf 0) = none
 #guard unbundle (leaf 0) = none
 -- files as trees
@@ -168,12 +168,14 @@ def imageOf (text : List Char) : ByteArray :=
 #guard toBytes (mk 0 [leaf 256]) = none
 -- weakening shifts the free variables of a term and not its bound ones, and substitution
 -- replaces the innermost free variable, weakened under a binder, and lowers the others
-#guard wk 2 (mk 9 [tT, mk 10 [Tm.var 0, Tm.var 1]]) = mk 9 [tT, mk 10 [Tm.var 0, Tm.var 3]]
-#guard subst (Tm.var 4) (mk 12 [Tm.var 0, Tm.var 1]) = mk 12 [Tm.var 4, Tm.var 0]
-#guard subst (Tm.var 4) (mk 9 [tT, Tm.var 1]) = mk 9 [tT, Tm.var 5]
-#guard subst (Tm.var 4) (mk 15 [Tm.var 0]) = mk 15 [Tm.var 0]
+#guard wk 2 (mk Label.lam [tT, mk Label.app [Tm.var 0, Tm.var 1]]) = mk Label.lam [tT,
+    mk Label.app [Tm.var 0, Tm.var 3]]
+#guard subst (Tm.var 4) (mk Label.pair [Tm.var 0, Tm.var 1]) = mk Label.pair [Tm.var 4, Tm.var 0]
+#guard subst (Tm.var 4) (mk Label.lam [tT, Tm.var 1]) = mk Label.lam [tT, Tm.var 5]
+#guard subst (Tm.var 4) (mk Label.quote [Tm.var 0]) = mk Label.quote [Tm.var 0]
 -- a substituted term keeps its type
-#guard ((infer [] [tT] (subst (mk 15 [leaf 7]) (mk 12 [Tm.var 0, Tm.var 1]))).map (·.1)) =
+#guard ((infer [] [tT] (subst (mk Label.quote [leaf 7]) (mk Label.pair [Tm.var 0,
+    Tm.var 1]))).map (·.1)) =
   some (tProd tT tT)
 
 end Geb.Kernel.Tests

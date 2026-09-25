@@ -9,6 +9,7 @@ public import Geb.Prototypes.Metalogic -- shake: keep
 public meta import Geb.Prototypes.Metalogic -- shake: keep
 public import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
+public meta import Lean.Elab.Command -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -32,6 +33,11 @@ variables makes the two checkers' tables of axioms agree. The malformed variants
 certificate are its root relabelled with every rule's label and one beyond, and its root with
 its last child removed. The source is read at elaboration by {lit}`include_str` and converted
 to a list of characters inside the {lit}`#guard`, as in the stage-0 tests.
+
+The numeral abbreviations of the prelude and of the Geb checker are compared with the Lean
+abbreviations of the kernel's labels, the primitives' indices and the checker's rules, which
+they must equal name for name and value for value; the comparison runs at elaboration and reads
+the sources from the files.
 
 ## Main definitions
 
@@ -74,13 +80,13 @@ def arr : Tree := tArrow tT tT
 def lt : Tree := tList tT
 
 /-- The step of appending: a tree and a list to the list with the tree in front. -/
-def g : Tree := mk 9 [tT, mk 9 [lt, mk 20 [Tm.var 1, Tm.var 0]]]
+def g : Tree := mk Label.lam [tT, mk Label.lam [lt, mk Label.cons [Tm.var 1, Tm.var 0]]]
 
 /-- The right fold of lists of trees at lists of trees. -/
-def foldrL : Tree := mk 21 [tT, lt]
+def foldrL : Tree := mk Label.foldr [tT, lt]
 
 /-- The empty list of trees. -/
-def nilT : Tree := mk 19 [tT]
+def nilT : Tree := mk Label.nil [tT]
 
 /-- The list of the innermost variable with the empty list appended. -/
 def appendNil : Tree := apps foldrL [g, nilT, Tm.var 0]
@@ -90,140 +96,150 @@ the tail is the head in front of the append of the tail, by the fold's computati
 steps, and that is the head in front of the tail by the hypothesis. -/
 def step : Tree :=
   let r := appendNil
-  let body1 := mk 9 [lt, mk 20 [Tm.var 1, Tm.var 0]]
-  mk 3 [mk 22 [tT, lt, g, nilT, Tm.var 1, Tm.var 0],
-    mk 3 [mk 4 [mk 11 [tT, body1, Tm.var 1], mk 1 [r]],
-      mk 3 [mk 11 [lt, mk 20 [Tm.var 2, Tm.var 0], r],
-        mk 9 [mk 1 [Tm.var 1], mk 0 [leaf 0]]]]]
+  let body1 := mk Label.lam [lt, mk Label.cons [Tm.var 1, Tm.var 0]]
+  mk Rule.trans [mk Rule.foldrCons [tT, lt, g, nilT, Tm.var 1, Tm.var 0],
+    mk Rule.trans [mk Rule.congApp [mk Rule.beta [tT, body1, Tm.var 1], mk Rule.refl [r]],
+      mk Rule.trans [mk Rule.beta [lt, mk Label.cons [Tm.var 2, Tm.var 0], r],
+        mk Rule.congCons [mk Rule.refl [Tm.var 1], mk Rule.hyp [leaf 0]]]]]
 
 /-- The theorem: appending the empty list to a list gives the list, by induction on the list. -/
-def induction : Tree := mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], step]
+def induction : Tree := mk Rule.indList [appendNil, Tm.var 0, mk Rule.foldrNil [tT, lt, g, nilT],
+    step]
 
 -- a theorem with a hypothesis: from `f = g`, `f x = g x`
-#guard chk (mk 4 [mk 0 [leaf 0], mk 1 [Tm.var 2]]) [] [] [arr, arr, tT]
+#guard chk (mk Rule.congApp [mk Rule.hyp [leaf 0], mk Rule.refl [Tm.var 2]]) [] [] [arr, arr, tT]
     [⟨arr, Tm.var 0, Tm.var 1⟩] =
-  some ⟨tT, mk 10 [Tm.var 0, Tm.var 2], mk 10 [Tm.var 1, Tm.var 2]⟩
+  some ⟨tT, mk Label.app [Tm.var 0, Tm.var 2], mk Label.app [Tm.var 1, Tm.var 2]⟩
 -- a substitution: the first projection of a pair of a variable with itself is the variable, at
 -- a quoted tree
-#guard chk (mk 20 [mk 15 [leaf 5], mk 13 [Tm.var 0, Tm.var 0]]) [] [] [] [] =
-  some ⟨tT, mk 13 [mk 12 [mk 15 [leaf 5], mk 15 [leaf 5]]], mk 15 [leaf 5]⟩
+#guard chk (mk Rule.instVar [num 5, mk Rule.betaFst [Tm.var 0, Tm.var 0]]) [] [] [] [] =
+  some ⟨tT, mk Label.fst [mk Label.pair [num 5, num 5]], num 5⟩
 -- an induction: appending the empty list to a list gives the list
 #guard chk induction [] [] [lt] [] = some ⟨lt, appendNil, Tm.var 0⟩
 -- δ rules: a sum of labels, a node from a label and a list literal, and the list of a tree's
 -- children
-#guard chk (mk 17 [leaf 5, mk 15 [leaf 2], mk 15 [leaf 2]]) [] [] [] [] =
-  some ⟨tT, apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]], mk 15 [leaf 4]⟩
-#guard chk (mk 17 [leaf 3, mk 15 [leaf 7], listLit [leaf 1, leaf 2]]) [] [] [] [] =
-  some ⟨tT, apps (mk 22 [leaf 3]) [mk 15 [leaf 7], listLit [leaf 1, leaf 2]],
-    mk 15 [mk 7 [leaf 1, leaf 2]]⟩
-#guard chk (mk 17 [leaf 4, mk 15 [mk 7 [leaf 1, leaf 2]]]) [] [] [] [] =
-  some ⟨lt, apps (mk 22 [leaf 4]) [mk 15 [mk 7 [leaf 1, leaf 2]]], listLit [leaf 1, leaf 2]⟩
+#guard chk (mk Rule.delta [leaf Prim.add, num 2, num 2]) [] [] [] [] =
+  some ⟨tT, prim Prim.add [num 2, num 2], num 4⟩
+#guard chk (mk Rule.delta [leaf Prim.node, num 7, listLit [leaf 1, leaf 2]]) [] [] [] [] =
+  some ⟨tT, prim Prim.node [num 7, listLit [leaf 1, leaf 2]],
+    mk Label.quote [mk 7 [leaf 1, leaf 2]]⟩
+#guard chk (mk Rule.delta [leaf Prim.children,
+    mk Label.quote [mk 7 [leaf 1, leaf 2]]]) [] [] [] [] =
+  some ⟨lt, prim Prim.children [mk Label.quote [mk 7 [leaf 1, leaf 2]]], listLit [leaf 1, leaf 2]⟩
 -- the conditional at a quoted tree whose label is not zero, and at one whose label is
-#guard chk (mk 32 [leaf 1, mk 15 [leaf 5], mk 15 [leaf 6]]) [] [] [] [] =
-  some ⟨tT, mk 16 [mk 15 [leaf 1], mk 15 [leaf 5], mk 15 [leaf 6]], mk 15 [leaf 5]⟩
-#guard (chk (mk 32 [leaf 0, Tm.var 0, mk 15 [leaf 6]]) [] [] [tT] []).map (·.rhs) =
-  some (mk 15 [leaf 6])
+#guard chk (mk Rule.condQuote [leaf 1, num 5, num 6]) [] [] [] [] =
+  some ⟨tT, mk Label.cond [num 1, num 5, num 6], num 5⟩
+#guard (chk (mk Rule.condQuote [leaf 0, Tm.var 0, num 6]) [] [] [tT] []).map (·.rhs) =
+  some (num 6)
 -- an altered binder: an abstraction whose annotation is not a type, and a β step whose
 -- argument does not have the annotated type
-#guard chk (mk 5 [leaf 7, mk 1 [Tm.var 0]]) [] [] [] [] = none
-#guard chk (mk 11 [lt, Tm.var 0, mk 15 [leaf 1]]) [] [] [] [] = none
+#guard chk (mk Rule.congLam [leaf 7, mk Rule.refl [Tm.var 0]]) [] [] [] [] = none
+#guard chk (mk Rule.beta [lt, Tm.var 0, num 1]) [] [] [] [] = none
 -- invalid dependencies: a hypothesis that is not there, and a transitivity whose middle terms
 -- differ
-#guard chk (mk 0 [leaf 1]) [] [] [tT] [⟨tT, Tm.var 0, Tm.var 0⟩] = none
-#guard chk (mk 3 [mk 1 [Tm.var 0], mk 1 [mk 15 [leaf 0]]]) [] [] [tT] [] = none
+#guard chk (mk Rule.hyp [leaf 1]) [] [] [tT] [⟨tT, Tm.var 0, Tm.var 0⟩] = none
+#guard chk (mk Rule.trans [mk Rule.refl [Tm.var 0], mk Rule.refl [num 0]]) [] [] [tT] [] = none
 -- a δ rule at an argument that is not a literal, in a context that is not empty, and at a
 -- partial application
-#guard chk (mk 17 [leaf 5, apps (mk 22 [leaf 5]) [mk 15 [leaf 1], mk 15 [leaf 1]],
-    mk 15 [leaf 2]]) [] [] [] [] = none
-#guard chk (mk 17 [leaf 5, mk 15 [leaf 2], mk 15 [leaf 2]]) [] [] [tT] [] = none
-#guard chk (mk 17 [leaf 5, mk 15 [leaf 2]]) [] [] [] [] = none
+#guard chk (mk Rule.delta [leaf Prim.add, prim Prim.add [num 1, num 1],
+    num 2]) [] [] [] [] = none
+#guard chk (mk Rule.delta [leaf Prim.add, num 2, num 2]) [] [] [tT] [] = none
+#guard chk (mk Rule.delta [leaf Prim.add, num 2]) [] [] [] [] = none
 -- false conclusions: a δ rule does not conclude a wrong value, induction with a step that
 -- does not prove its case fails, and the theorem does not conclude that the append is empty
-#guard chk (mk 17 [leaf 5, mk 15 [leaf 2], mk 15 [leaf 2]]) [] [] [] [] ≠
-  some ⟨tT, apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]], mk 15 [leaf 5]⟩
-#guard chk (mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], mk 1 [Tm.var 0]]) [] [] [lt] [] =
+#guard chk (mk Rule.delta [leaf Prim.add, num 2, num 2]) [] [] [] [] ≠
+  some ⟨tT, prim Prim.add [num 2, num 2], num 5⟩
+#guard chk (mk Rule.indList [appendNil, Tm.var 0, mk Rule.foldrNil [tT, lt, g, nilT],
+    mk Rule.refl [Tm.var 0]]) [] [] [lt] [] =
   none
 #guard chk induction [] [] [lt] [] ≠ some ⟨lt, appendNil, nilT⟩
 
 /-- The identity on trees. -/
-def idT : Tree := mk 9 [tT, Tm.var 0]
+def idT : Tree := mk Label.lam [tT, Tm.var 0]
 
 /-- Iteration of the identity from the variable {lit}`1`, as many times as the label of the
 variable {lit}`0`. -/
-def iterId : Tree := apps (mk 18 [tT]) [idT, Tm.var 1, Tm.var 0]
+def iterId : Tree := apps (mk Label.iter [tT]) [idT, Tm.var 1, Tm.var 0]
 
 /-- Iterating the identity leaves its start unchanged: at the label zero by iteration's
 computation, and at a successor by iteration's computation, a β step and the hypothesis. -/
 def labelInduction : Tree :=
-  mk 30 [iterId, Tm.var 1, mk 26 [tT, idT, Tm.var 0],
-    mk 3 [mk 27 [tT, idT, Tm.var 1, Tm.var 0],
-      mk 3 [mk 11 [tT, Tm.var 0, iterId], mk 0 [leaf 0]]]]
+  mk Rule.indLabel [iterId, Tm.var 1, mk Rule.iterZero [tT, idT, Tm.var 0],
+    mk Rule.trans [mk Rule.iterSucc [tT, idT, Tm.var 1, Tm.var 0],
+      mk Rule.trans [mk Rule.beta [tT, Tm.var 0, iterId], mk Rule.hyp [leaf 0]]]]
 
 /-- The step of a fold that ignores its arguments. -/
-def zeroStep : Tree := mk 9 [tT, mk 9 [lt, mk 15 [leaf 0]]]
+def zeroStep : Tree := mk Label.lam [tT, mk Label.lam [lt, num 0]]
 
 /-- The fold of the variable {lit}`0` by that step. -/
-def foldZero : Tree := apps (mk 17 [tT]) [zeroStep, Tm.var 0]
+def foldZero : Tree := apps (mk Label.fold [tT]) [zeroStep, Tm.var 0]
 
 /-- The fold by that step is constant: at a node by the fold's computation and two β steps. -/
 def treeInduction : Tree :=
-  let b := mapBy tT tT (apps (mk 17 [tT]) [zeroStep, Tm.var 1]) (Tm.var 0)
-  mk 29 [foldZero, mk 15 [leaf 0],
-    mk 3 [mk 28 [tT, zeroStep, Tm.var 1, Tm.var 0],
-      mk 3 [mk 4 [mk 11 [tT, mk 9 [lt, mk 15 [leaf 0]], mk 10 [mk 22 [leaf 0], Tm.var 1]],
-          mk 1 [b]],
-        mk 11 [lt, mk 15 [leaf 0], b]]]]
+  let b := mapBy tT tT (apps (mk Label.fold [tT]) [zeroStep, Tm.var 1]) (Tm.var 0)
+  mk Rule.indTree [foldZero, num 0,
+    mk Rule.trans [mk Rule.foldNode [tT, zeroStep, Tm.var 1, Tm.var 0],
+      mk Rule.trans [mk Rule.congApp [mk Rule.beta [tT, mk Label.lam [lt, num 0],
+          mk Label.app [mk Label.prim [leaf Prim.label], Tm.var 1]],
+          mk Rule.refl [b]],
+        mk Rule.beta [lt, num 0, b]]]]
 
 /-- A program of one definition, the tree of label five. -/
-def program : List Tree := [mk 15 [leaf 5]]
+def program : List Tree := [num 5]
 
 /-- The environment the program loads. -/
 def globals : List Glob := (load program).getD []
 
 -- an induction on a label: iterating the identity leaves its start unchanged
 #guard chk labelInduction [] [] [tT, tT] [] =
-  some ⟨tT, apps (mk 18 [tT]) [idT, Tm.var 1, mk 10 [mk 22 [leaf 0], Tm.var 0]], Tm.var 1⟩
+  some ⟨tT,
+      apps (mk Label.iter [tT]) [idT, Tm.var 1,
+          mk Label.app [mk Label.prim [leaf Prim.label], Tm.var 0]], Tm.var 1⟩
 -- an induction on a tree: a fold whose step ignores its arguments is constant
-#guard chk treeInduction [] [] [tT] [] = some ⟨tT, foldZero, mk 15 [leaf 0]⟩
+#guard chk treeInduction [] [] [tT] [] = some ⟨tT, foldZero, num 0⟩
 -- case analysis of lists at the empty list and at a list of a head and a tail
-#guard chk (mk 24 [tT, tT, mk 15 [leaf 1], mk 9 [tT, mk 9 [lt, Tm.var 1]]]) [] [] [] [] =
-  some ⟨tT, apps (mk 24 [tT, tT]) [nilT, mk 15 [leaf 1], mk 9 [tT, mk 9 [lt, Tm.var 1]]],
-    mk 15 [leaf 1]⟩
-#guard (chk (mk 25 [tT, tT, mk 15 [leaf 2], nilT, mk 15 [leaf 1],
-    mk 9 [tT, mk 9 [lt, Tm.var 1]]]) [] [] [] []).map (·.rhs) =
-  some (apps (mk 9 [tT, mk 9 [lt, Tm.var 1]]) [mk 15 [leaf 2], nilT])
+#guard chk (mk Rule.lcaseNil [tT, tT, num 1,
+    mk Label.lam [tT, mk Label.lam [lt, Tm.var 1]]]) [] [] [] [] =
+  some ⟨tT,
+      apps (mk Label.lcase [tT, tT]) [nilT, num 1, mk Label.lam [tT, mk Label.lam [lt, Tm.var 1]]],
+    num 1⟩
+#guard (chk (mk Rule.lcaseCons [tT, tT, num 2, nilT, num 1,
+    mk Label.lam [tT, mk Label.lam [lt, Tm.var 1]]]) [] [] [] []).map (·.rhs) =
+  some (apps (mk Label.lam [tT, mk Label.lam [lt, Tm.var 1]]) [num 2, nilT])
 -- a reference to a definition, in the empty context and below a variable
 #guard globals.length = 1
-#guard chk (mk 31 [leaf 0]) program globals [] [] = some ⟨tT, mk 23 [leaf 0], mk 15 [leaf 5]⟩
-#guard chk (mk 31 [leaf 0]) program globals [tT] [] =
-  some ⟨tT, mk 23 [leaf 0], mk 15 [leaf 5]⟩
+#guard chk (mk Rule.unfold [leaf 0]) program globals [] [] = some ⟨tT, mk Label.ref [leaf 0], num 5⟩
+#guard chk (mk Rule.unfold [leaf 0]) program globals [tT] [] =
+  some ⟨tT, mk Label.ref [leaf 0], num 5⟩
 -- instances of axioms: the label of a node over the empty list in a context of one tree, and
 -- the definition of addition at two numerals
-#guard chk (mk 33 [leaf 0, Tm.var 0, nilT]) [] [] [tT] [] =
-  some ⟨tT, prim 0 [prim 3 [Tm.var 0, nilT]], prim 0 [Tm.var 0]⟩
-#guard chk (mk 33 [leaf 5, num 2, num 3]) [] [] [] [] =
-  some ⟨tT, prim 5 [num 2, num 3],
-    apps (mk 18 [tT]) [mk 9 [tT, succT (Tm.var 0)], prim 0 [num 2], num 3]⟩
+#guard chk (mk Rule.ax [leaf 0, Tm.var 0, nilT]) [] [] [tT] [] =
+  some ⟨tT, prim Prim.label [prim Prim.node [Tm.var 0, nilT]], prim Prim.label [Tm.var 0]⟩
+#guard chk (mk Rule.ax [leaf 5, num 2, num 3]) [] [] [] [] =
+  some ⟨tT, prim Prim.add [num 2, num 3],
+    apps (mk Label.iter [tT]) [mk Label.lam [tT, succT (Tm.var 0)], prim Prim.label [num 2], num 3]⟩
 -- an instance of a theorem, cited after the axioms
-#guard check (mk 33 [leaf axioms.length, num 5])
-    ⟨[], [⟨[tT], ⟨tT, prim 0 [Tm.var 0], Tm.var 0⟩⟩]⟩ [] [] [] =
-  some ⟨tT, prim 0 [num 5], num 5⟩
+#guard check (mk Rule.ax [leaf axioms.length, num 5])
+    ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩ [] [] [] =
+  some ⟨tT, prim Prim.label [num 5], num 5⟩
 -- instances at a term of another type, at too few terms, and of an entry there is not
-#guard chk (mk 33 [leaf 0, num 1, num 2]) [] [] [] [] = none
-#guard chk (mk 33 [leaf 0, num 1]) [] [] [] [] = none
-#guard chk (mk 33 [leaf axioms.length, num 1]) [] [] [] [] = none
+#guard chk (mk Rule.ax [leaf 0, num 1, num 2]) [] [] [] [] = none
+#guard chk (mk Rule.ax [leaf 0, num 1]) [] [] [] [] = none
+#guard chk (mk Rule.ax [leaf axioms.length, num 1]) [] [] [] [] = none
 -- iteration reads the label, and the conditional is an iteration
-#guard chk (mk 34 [tT, idT, num 1, Tm.var 0]) [] [] [tT] [] =
-  some ⟨tT, apps (mk 18 [tT]) [idT, num 1, Tm.var 0],
-    apps (mk 18 [tT]) [idT, num 1, mk 10 [mk 22 [leaf 0], Tm.var 0]]⟩
-#guard chk (mk 35 [tT, Tm.var 0, num 5, num 6]) [] [] [tT] [] =
-  some ⟨tT, mk 16 [Tm.var 0, num 5, num 6], apps (mk 18 [tT]) [mk 9 [tT, num 5], num 6, Tm.var 0]⟩
-#guard chk (mk 35 [tT, Tm.var 0, num 5, nilT]) [] [] [tT] [] = none
+#guard chk (mk Rule.iterLabel [tT, idT, num 1, Tm.var 0]) [] [] [tT] [] =
+  some ⟨tT, apps (mk Label.iter [tT]) [idT, num 1, Tm.var 0],
+    apps (mk Label.iter [tT]) [idT, num 1,
+        mk Label.app [mk Label.prim [leaf Prim.label], Tm.var 0]]⟩
+#guard chk (mk Rule.condIter [tT, Tm.var 0, num 5, num 6]) [] [] [tT] [] =
+  some ⟨tT, mk Label.cond [Tm.var 0, num 5, num 6],
+      apps (mk Label.iter [tT]) [mk Label.lam [tT, num 5], num 6, Tm.var 0]⟩
+#guard chk (mk Rule.condIter [tT, Tm.var 0, num 5, nilT]) [] [] [tT] [] = none
 -- a reference to a definition the program does not have, an induction on a label in a context
 -- whose innermost variable is not a tree, and a fold at a result type that is not a type
-#guard chk (mk 31 [leaf 1]) program globals [] [] = none
+#guard chk (mk Rule.unfold [leaf 1]) program globals [] [] = none
 #guard chk labelInduction [] [] [lt, tT] [] = none
-#guard chk (mk 28 [leaf 9, zeroStep, Tm.var 1, Tm.var 0]) [] [] [lt, tT] [] = none
+#guard chk (mk Rule.foldNode [leaf 9, zeroStep, Tm.var 1, Tm.var 0]) [] [] [lt, tT] [] = none
 
 /-- The metalogic's checker written in Geb. -/
 def equationsGeb : String := include_str "../../bootstrap/metalogic/equations.geb"
@@ -268,7 +284,8 @@ def agrees (f : Tree → Option Tree) (x : Input) : Bool :=
     some ((check c E G Γ H).elim (leaf 0) fun q ↦ mk 1 [eqnTree q])
 
 /-- The certificate instantiating the axiom of an index at the variables of its context. -/
-def axiomId (j : ℕ) (th : Thm) : Tree := mk 33 (leaf j :: (List.range th.ctx.length).map Tm.var)
+def axiomId (j : ℕ) (th : Thm) : Tree :=
+  mk Rule.ax (leaf j :: (List.range th.ctx.length).map Tm.var)
 
 -- each axiom's instance at the variables of its context is the axiom
 #guard ((List.range axioms.length).zip axioms).all fun (j, th) ↦
@@ -277,81 +294,87 @@ def axiomId (j : ℕ) (th : Thm) : Tree := mk 33 (leaf j :: (List.range th.ctx.l
 /-- The certificates of the rules the Lean checker is tested on above, and one of each rule not
 tested there, with the definitions, environment, context and hypotheses they check in. -/
 def programInputs : List (Tree × List Tree × List Glob × Ctx × List Eqn) :=
-  let q := fun n ↦ mk 15 [leaf n]
-  [(mk 4 [mk 0 [leaf 0], mk 1 [Tm.var 2]], [], [], [arr, arr, tT], [⟨arr, Tm.var 0, Tm.var 1⟩]),
-   (mk 20 [q 5, mk 13 [Tm.var 0, Tm.var 0]], [], [], [], []),
+  [(mk Rule.congApp [mk Rule.hyp [leaf 0], mk Rule.refl [Tm.var 2]], [], [], [arr, arr, tT],
+      [⟨arr, Tm.var 0, Tm.var 1⟩]),
+   (mk Rule.instVar [num 5, mk Rule.betaFst [Tm.var 0, Tm.var 0]], [], [], [], []),
    (induction, [], [], [lt], []),
-   (mk 17 [leaf 5, q 2, q 2], [], [], [], []),
-   (mk 17 [leaf 3, q 7, listLit [leaf 1, leaf 2]], [], [], [], []),
-   (mk 17 [leaf 4, mk 15 [mk 7 [leaf 1, leaf 2]]], [], [], [], []),
-   (mk 32 [leaf 1, q 5, q 6], [], [], [], []),
-   (mk 32 [leaf 0, Tm.var 0, q 6], [], [], [tT], []),
-   (mk 5 [leaf 7, mk 1 [Tm.var 0]], [], [], [], []),
-   (mk 11 [lt, Tm.var 0, q 1], [], [], [], []),
-   (mk 0 [leaf 1], [], [], [tT], [⟨tT, Tm.var 0, Tm.var 0⟩]),
-   (mk 3 [mk 1 [Tm.var 0], mk 1 [q 0]], [], [], [tT], []),
-   (mk 17 [leaf 5, apps (mk 22 [leaf 5]) [q 1, q 1], q 2], [], [], [], []),
-   (mk 17 [leaf 5, q 2, q 2], [], [], [tT], []),
-   (mk 17 [leaf 5, q 2], [], [], [], []),
-   (mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], mk 1 [Tm.var 0]], [], [], [lt], []),
+   (mk Rule.delta [leaf Prim.add, num 2, num 2], [], [], [], []),
+   (mk Rule.delta [leaf Prim.node, num 7, listLit [leaf 1, leaf 2]], [], [], [], []),
+   (mk Rule.delta [leaf Prim.children, mk Label.quote [mk 7 [leaf 1, leaf 2]]], [], [], [], []),
+   (mk Rule.condQuote [leaf 1, num 5, num 6], [], [], [], []),
+   (mk Rule.condQuote [leaf 0, Tm.var 0, num 6], [], [], [tT], []),
+   (mk Rule.congLam [leaf 7, mk Rule.refl [Tm.var 0]], [], [], [], []),
+   (mk Rule.beta [lt, Tm.var 0, num 1], [], [], [], []),
+   (mk Rule.hyp [leaf 1], [], [], [tT], [⟨tT, Tm.var 0, Tm.var 0⟩]),
+   (mk Rule.trans [mk Rule.refl [Tm.var 0], mk Rule.refl [num 0]], [], [], [tT], []),
+   (mk Rule.delta [leaf Prim.add, prim Prim.add [num 1, num 1], num 2], [], [], [], []),
+   (mk Rule.delta [leaf Prim.add, num 2, num 2], [], [], [tT], []),
+   (mk Rule.delta [leaf Prim.add, num 2], [], [], [], []),
+   (mk Rule.indList [appendNil, Tm.var 0, mk Rule.foldrNil [tT, lt, g, nilT],
+       mk Rule.refl [Tm.var 0]], [], [], [lt], []),
    (labelInduction, [], [], [tT, tT], []),
    (treeInduction, [], [], [tT], []),
-   (mk 24 [tT, tT, q 1, mk 9 [tT, mk 9 [lt, Tm.var 1]]], [], [], [], []),
-   (mk 25 [tT, tT, q 2, nilT, q 1, mk 9 [tT, mk 9 [lt, Tm.var 1]]], [], [], [], []),
-   (mk 31 [leaf 0], program, globals, [], []),
-   (mk 31 [leaf 0], program, globals, [tT], []),
-   (mk 31 [leaf 1], program, globals, [], []),
+   (mk Rule.lcaseNil [tT, tT, num 1, mk Label.lam [tT, mk Label.lam [lt, Tm.var 1]]], [], [], [],
+       []),
+   (mk Rule.lcaseCons [tT, tT, num 2, nilT, num 1, mk Label.lam [tT, mk Label.lam [lt, Tm.var 1]]],
+       [], [], [], []),
+   (mk Rule.unfold [leaf 0], program, globals, [], []),
+   (mk Rule.unfold [leaf 0], program, globals, [tT], []),
+   (mk Rule.unfold [leaf 1], program, globals, [], []),
    (labelInduction, [], [], [lt, tT], []),
-   (mk 28 [leaf 9, zeroStep, Tm.var 1, Tm.var 0], [], [], [lt, tT], []),
+   (mk Rule.foldNode [leaf 9, zeroStep, Tm.var 1, Tm.var 0], [], [], [lt, tT], []),
    -- symmetry, congruence of abstraction, pairs, projections, lists and the conditional
-   (mk 2 [mk 1 [q 5]], [], [], [], []),
-   (mk 5 [tT, mk 1 [Tm.var 0]], [], [], [], []),
-   (mk 6 [mk 1 [q 1], mk 1 [q 2]], [], [], [], []),
-   (mk 7 [mk 1 [mk 12 [q 1, q 2]]], [], [], [], []),
-   (mk 8 [mk 1 [mk 12 [q 1, q 2]]], [], [], [], []),
-   (mk 9 [mk 1 [q 1], mk 1 [nilT]], [], [], [], []),
-   (mk 10 [mk 1 [q 1], mk 1 [q 2], mk 1 [q 3]], [], [], [], []),
+   (mk Rule.symm [mk Rule.refl [num 5]], [], [], [], []),
+   (mk Rule.congLam [tT, mk Rule.refl [Tm.var 0]], [], [], [], []),
+   (mk Rule.congPair [mk Rule.refl [num 1], mk Rule.refl [num 2]], [], [], [], []),
+   (mk Rule.congFst [mk Rule.refl [mk Label.pair [num 1, num 2]]], [], [], [], []),
+   (mk Rule.congSnd [mk Rule.refl [mk Label.pair [num 1, num 2]]], [], [], [], []),
+   (mk Rule.congCons [mk Rule.refl [num 1], mk Rule.refl [nilT]], [], [], [], []),
+   (mk Rule.congCond [mk Rule.refl [num 1], mk Rule.refl [num 2], mk Rule.refl [num 3]], [], [],
+       [], []),
    -- the η rules, the β rules of pairs, weakening, cut, the right fold and iteration
-   (mk 12 [Tm.var 0], [], [], [arr], []),
-   (mk 13 [q 1, mk 11 []], [], [], [], []),
-   (mk 14 [q 1, q 2], [], [], [], []),
-   (mk 15 [Tm.var 0], [], [], [tProd tT tT], []),
-   (mk 16 [Tm.var 0], [], [], [tUnit], []),
-   (mk 18 [mk 1 [q 1]], [], [], [tT], [⟨tT, Tm.var 0, q 1⟩]),
-   (mk 19 [mk 1 [q 1], mk 0 [leaf 0]], [], [], [], []),
-   (mk 21 [tT, lt, g, nilT], [], [], [], []),
-   (mk 22 [tT, lt, g, nilT, q 1, nilT], [], [], [], []),
-   (mk 26 [tT, idT, q 1], [], [], [], []),
-   (mk 27 [tT, idT, q 1, q 3], [], [], [], []),
-   (mk 28 [tT, zeroStep, q 1, nilT], [], [], [], []),
+   (mk Rule.eta [Tm.var 0], [], [], [arr], []),
+   (mk Rule.betaFst [num 1, mk Label.unit []], [], [], [], []),
+   (mk Rule.betaSnd [num 1, num 2], [], [], [], []),
+   (mk Rule.etaPair [Tm.var 0], [], [], [tProd tT tT], []),
+   (mk Rule.etaUnit [Tm.var 0], [], [], [tUnit], []),
+   (mk Rule.weaken [mk Rule.refl [num 1]], [], [], [tT], [⟨tT, Tm.var 0, num 1⟩]),
+   (mk Rule.cut [mk Rule.refl [num 1], mk Rule.hyp [leaf 0]], [], [], [], []),
+   (mk Rule.foldrNil [tT, lt, g, nilT], [], [], [], []),
+   (mk Rule.foldrCons [tT, lt, g, nilT, num 1, nilT], [], [], [], []),
+   (mk Rule.iterZero [tT, idT, num 1], [], [], [], []),
+   (mk Rule.iterSucc [tT, idT, num 1, num 3], [], [], [], []),
+   (mk Rule.foldNode [tT, zeroStep, num 1, nilT], [], [], [], []),
    -- the δ rules of every primitive
-   (mk 17 [leaf 0, mk 15 [mk 3 [leaf 1]]], [], [], [], []),
-   (mk 17 [leaf 1, mk 15 [mk 3 [leaf 1]]], [], [], [], []),
-   (mk 17 [leaf 2, mk 15 [mk 3 [leaf 1, leaf 9]], q 1], [], [], [], []),
-   (mk 17 [leaf 6, q 7, q 9], [], [], [], []),
-   (mk 17 [leaf 7, q 7, q 9], [], [], [], []),
-   (mk 17 [leaf 8, q 9, q 2], [], [], [], []),
-   (mk 17 [leaf 9, q 9, q 2], [], [], [], []),
-   (mk 17 [leaf 10, q 9, q 9], [], [], [], []),
-   (mk 17 [leaf 11, q 2, q 9], [], [], [], []),
-   (mk 17 [leaf 12, mk 15 [mk 3 [leaf 1]], mk 15 [mk 3 [leaf 1]]], [], [], [], []),
-   (mk 17 [leaf 13, q 9], [], [], [], []),
-   (mk 17 [leaf 14, q 9], [], [], [], [])]
+   (mk Rule.delta [leaf Prim.label, mk Label.quote [mk 3 [leaf 1]]], [], [], [], []),
+   (mk Rule.delta [leaf Prim.arity, mk Label.quote [mk 3 [leaf 1]]], [], [], [], []),
+   (mk Rule.delta [leaf Prim.child, mk Label.quote [mk 3 [leaf 1, leaf 9]], num 1], [], [], [], []),
+   (mk Rule.delta [leaf Prim.sub, num 7, num 9], [], [], [], []),
+   (mk Rule.delta [leaf Prim.mul, num 7, num 9], [], [], [], []),
+   (mk Rule.delta [leaf Prim.div, num 9, num 2], [], [], [], []),
+   (mk Rule.delta [leaf Prim.mod, num 9, num 2], [], [], [], []),
+   (mk Rule.delta [leaf Prim.eq, num 9, num 9], [], [], [], []),
+   (mk Rule.delta [leaf Prim.lt, num 2, num 9], [], [], [], []),
+   (mk Rule.delta [leaf Prim.equal, mk Label.quote [mk 3 [leaf 1]],
+       mk Label.quote [mk 3 [leaf 1]]], [], [], [], []),
+   (mk Rule.delta [leaf Prim.log2, num 9], [], [], [], []),
+   (mk Rule.delta [leaf 14, num 9], [], [], [], [])]
 
 /-- The inputs compared: each axiom's instance at the variables of its context, the instances
 and rules tested above, and the certificates of {lit}`programInputs`, citing no theorems. -/
 def inputs : List Input :=
   ((List.range axioms.length).zip axioms).map
       (fun (j, th) ↦ (axiomId j th, ⟨[], []⟩, [], th.ctx, [])) ++
-  [(mk 33 [leaf axioms.length, num 5], ⟨[], [⟨[tT], ⟨tT, prim 0 [Tm.var 0], Tm.var 0⟩⟩]⟩, [], [],
+  [(mk Rule.ax [leaf axioms.length, num 5],
+      ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩, [], [],
       []),
-   (mk 33 [leaf 0, Tm.var 0, nilT], ⟨[], []⟩, [], [tT], []),
-   (mk 33 [leaf 5, num 2, num 3], ⟨[], []⟩, [], [], []),
-   (mk 33 [leaf 0, num 1, num 2], ⟨[], []⟩, [], [], []),
-   (mk 33 [leaf axioms.length, num 1], ⟨[], []⟩, [], [], []),
-   (mk 34 [tT, idT, num 1, Tm.var 0], ⟨[], []⟩, [], [tT], []),
-   (mk 35 [tT, Tm.var 0, num 5, num 6], ⟨[], []⟩, [], [tT], []),
-   (mk 35 [tT, Tm.var 0, num 5, nilT], ⟨[], []⟩, [], [tT], [])] ++
+   (mk Rule.ax [leaf 0, Tm.var 0, nilT], ⟨[], []⟩, [], [tT], []),
+   (mk Rule.ax [leaf 5, num 2, num 3], ⟨[], []⟩, [], [], []),
+   (mk Rule.ax [leaf 0, num 1, num 2], ⟨[], []⟩, [], [], []),
+   (mk Rule.ax [leaf axioms.length, num 1], ⟨[], []⟩, [], [], []),
+   (mk Rule.iterLabel [tT, idT, num 1, Tm.var 0], ⟨[], []⟩, [], [tT], []),
+   (mk Rule.condIter [tT, Tm.var 0, num 5, num 6], ⟨[], []⟩, [], [tT], []),
+   (mk Rule.condIter [tT, Tm.var 0, num 5, nilT], ⟨[], []⟩, [], [tT], [])] ++
   programInputs.map fun (c, D, G, Γ, H) ↦ (c, ⟨D, []⟩, G, Γ, H)
 
 /-- Malformed variants of an input: its certificate's root relabelled with every rule's label
@@ -364,6 +387,31 @@ def mutants (x : Input) : List Input :=
 -- which include the input
 #guard (gebCheck? Kernel.Stage0Tests.compiler.toList gebChecker.toList).any fun f ↦
   (inputs.flatMap mutants).all (agrees f)
+
+-- the numeral abbreviations of the prelude and the Geb checker are the Lean abbreviations of
+-- the kernel's labels, the primitives' indices and the checker's rules, name for name and value
+-- for value
+open Lean Elab Command Meta in
+run_cmd do
+  let defnums (text : String) : List (String × ℕ) :=
+    ((readSExps text.toList).getD []).filterMap fun e ↦
+      match e.children with
+      | [kw, n, v] =>
+        if kw.label.map String.ofList == some "defnum" then
+          do some (String.ofList (← n.label), ← numeral? (← v.label))
+        else none
+      | _ => none
+  let mut geb := []
+  for f in ["bootstrap/prelude.geb", "bootstrap/metalogic/equations.geb"] do
+    geb := geb ++ defnums (← IO.FS.readFile f)
+  let spaces := [`Geb.Kernel.Label, `Geb.Kernel.Prim, `Geb.Metalogic.Rule]
+  let consts := (← getEnv).constants.fold (init := #[]) fun acc c info ↦
+    if spaces.contains c.getPrefix then acc.push (c, info) else acc
+  let lean ← liftTermElabM <| consts.toList.filterMapM fun (c, info) ↦ do
+    let some v := info.value? | return none
+    return (← (evalNat v).run).map ((c.replacePrefix c.getPrefix.getPrefix .anonymous).toString, ·)
+  unless geb.length == lean.length && geb.all lean.contains do
+    throwError "the Geb abbreviations {geb} are not the Lean abbreviations {lean}"
 
 end Geb.Metalogic.Tests
 

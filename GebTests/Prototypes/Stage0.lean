@@ -132,10 +132,12 @@ not a function, a conditional on a value that is not a tree, a label naming no c
 primitive and a reference out of range, a list whose head has the wrong type, a projection of
 a value that is not a pair, and a quotation of two trees. -/
 def malformed : List Tree :=
-  [mk 11 [leaf 0], mk 9 [leaf 0, mk 8 [leaf 1]], mk 9 [mk 5 [], mk 8 [leaf 0]],
-   mk 10 [mk 11 [], mk 11 []], mk 16 [mk 11 [], mk 15 [leaf 1], mk 15 [leaf 2]], leaf 99,
-   mk 22 [leaf 99], mk 23 [leaf 0], mk 20 [mk 11 [], mk 19 [leaf 0]], mk 17 [leaf 7],
-   mk 13 [mk 15 [leaf 0]], mk 15 [leaf 1, leaf 2]]
+  [mk Label.unit [leaf 0], mk Label.lam [leaf 0, mk Label.var [leaf 1]],
+   mk Label.lam [mk 5 [], mk Label.var [leaf 0]], mk Label.app [mk Label.unit [], mk Label.unit []],
+   mk Label.cond [mk Label.unit [], mk Label.quote [leaf 1], mk Label.quote [leaf 2]], leaf 99,
+   mk Label.prim [leaf 99], mk Label.ref [leaf 0],
+   mk Label.cons [mk Label.unit [], mk Label.nil [leaf 0]], mk Label.fold [leaf 7],
+   mk Label.fst [mk Label.quote [leaf 0]], mk Label.quote [leaf 1, leaf 2]]
 
 /-- The seed's compilation of a program's source: the image of its bundle, or the empty file
 when it does not read or is ill-typed. -/
@@ -159,7 +161,7 @@ def samples : List Tree :=
     Tests.isZero, Tests.listCase, Tests.sugar, Tests.numerals, compiler].filterMap
     (readProgram ·.toList)
     |>.map bundle).all fun b ↦ runMain checker.toList b == some (seedTypes b)
-#guard (malformed ++ [mk 9 [leaf 0, mk 8 [leaf 0]]]).all fun t ↦
+#guard (malformed ++ [mk Label.lam [leaf 0, mk Label.var [leaf 0]]]).all fun t ↦
   runMain checker.toList (bundle [("f".toList, t)]) == some (seedTypes (bundle [("f".toList, t)]))
 #guard (malformed.map fun t ↦ seedTypes (bundle [("f".toList, t)])).all (· == leaf 0)
 -- the stage-0 compiler agrees with the seed on the kernel's examples, rejected and ill-typed
