@@ -32,7 +32,7 @@ A term's meaning is its denotation in Lean: the base type denotes {name}`Geb.Ros
 term is ill-typed. The evaluator therefore agrees with the denotation by construction; a
 machine that runs the kernel is proved correct against {lit}`infer`.
 
-The labels of the constructors:
+The labels of the constructors, each named in {lit}`Label`:
 
 * types: {lit}`0` the base type, {lit}`1` the unit type, {lit}`2` products over two
   children, {lit}`3` function types over a domain and a codomain, {lit}`4` lists over their
@@ -50,6 +50,8 @@ The labels of the constructors:
 
 ## Main definitions
 
+* {lit}`Label`, {lit}`Prim` — the names of the labels of the constructors and of the indices of
+  the primitives.
 * {lit}`tT`, {lit}`tUnit`, {lit}`tProd`, {lit}`tArrow`, {lit}`tList` — the types.
 * {lit}`Ty.den` — the denotation of a type.
 * {lit}`Ty.IsTy` — the recognizer of types.
@@ -100,20 +102,136 @@ def leaf (n : ℕ) : Tree := RoseTree.node n []
 /-- A node of two children, over a vector so that its denotation unfolds definitionally. -/
 def node2 (l : ℕ) (a b : Tree) : Tree := WType.mk (l, 2) ![a, b]
 
+namespace Label
+
+/-- The label of the base type of trees. -/
+@[match_pattern] abbrev tyTree : ℕ := 0
+
+/-- The label of the unit type. -/
+@[match_pattern] abbrev tyUnit : ℕ := 1
+
+/-- The label of product types. -/
+@[match_pattern] abbrev tyProd : ℕ := 2
+
+/-- The label of function types. -/
+@[match_pattern] abbrev tyArrow : ℕ := 3
+
+/-- The label of list types. -/
+@[match_pattern] abbrev tyList : ℕ := 4
+
+/-- The label of a variable. -/
+@[match_pattern] abbrev var : ℕ := 8
+
+/-- The label of an abstraction. -/
+@[match_pattern] abbrev lam : ℕ := 9
+
+/-- The label of an application. -/
+@[match_pattern] abbrev app : ℕ := 10
+
+/-- The label of the unit value. -/
+@[match_pattern] abbrev unit : ℕ := 11
+
+/-- The label of a pair. -/
+@[match_pattern] abbrev pair : ℕ := 12
+
+/-- The label of the first projection. -/
+@[match_pattern] abbrev fst : ℕ := 13
+
+/-- The label of the second projection. -/
+@[match_pattern] abbrev snd : ℕ := 14
+
+/-- The label of a quoted tree. -/
+@[match_pattern] abbrev quote : ℕ := 15
+
+/-- The label of the conditional. -/
+@[match_pattern] abbrev cond : ℕ := 16
+
+/-- The label of the fold of trees. -/
+@[match_pattern] abbrev fold : ℕ := 17
+
+/-- The label of iteration. -/
+@[match_pattern] abbrev iter : ℕ := 18
+
+/-- The label of the empty list. -/
+@[match_pattern] abbrev nil : ℕ := 19
+
+/-- The label of the list of a head and a tail. -/
+@[match_pattern] abbrev cons : ℕ := 20
+
+/-- The label of the right fold of lists. -/
+@[match_pattern] abbrev foldr : ℕ := 21
+
+/-- The label of a primitive. -/
+@[match_pattern] abbrev prim : ℕ := 22
+
+/-- The label of a reference. -/
+@[match_pattern] abbrev ref : ℕ := 23
+
+/-- The label of case analysis of lists. -/
+@[match_pattern] abbrev lcase : ℕ := 24
+
+end Label
+
+namespace Prim
+
+/-- The index of the primitive giving the label of a tree. -/
+@[match_pattern] abbrev label : ℕ := 0
+
+/-- The index of the primitive giving the number of a tree's children. -/
+@[match_pattern] abbrev arity : ℕ := 1
+
+/-- The index of the primitive giving a tree's child by index. -/
+@[match_pattern] abbrev child : ℕ := 2
+
+/-- The index of the primitive giving a node from a label and a list of children. -/
+@[match_pattern] abbrev node : ℕ := 3
+
+/-- The index of the primitive giving the list of a tree's children. -/
+@[match_pattern] abbrev children : ℕ := 4
+
+/-- The index of the primitive giving addition. -/
+@[match_pattern] abbrev add : ℕ := 5
+
+/-- The index of the primitive giving truncated subtraction. -/
+@[match_pattern] abbrev sub : ℕ := 6
+
+/-- The index of the primitive giving multiplication. -/
+@[match_pattern] abbrev mul : ℕ := 7
+
+/-- The index of the primitive giving division. -/
+@[match_pattern] abbrev div : ℕ := 8
+
+/-- The index of the primitive giving the remainder. -/
+@[match_pattern] abbrev mod : ℕ := 9
+
+/-- The index of the primitive giving equality of labels. -/
+@[match_pattern] abbrev eq : ℕ := 10
+
+/-- The index of the primitive giving the order of labels. -/
+@[match_pattern] abbrev lt : ℕ := 11
+
+/-- The index of the primitive giving equality of trees. -/
+@[match_pattern] abbrev equal : ℕ := 12
+
+/-- The index of the primitive giving the base-two logarithm. -/
+@[match_pattern] abbrev log2 : ℕ := 13
+
+end Prim
+
 /-- The base type of trees. -/
-def tT : Tree := leaf 0
+def tT : Tree := leaf Label.tyTree
 
 /-- The unit type. -/
-def tUnit : Tree := leaf 1
+def tUnit : Tree := leaf Label.tyUnit
 
 /-- The product type. -/
-def tProd (A B : Tree) : Tree := node2 2 A B
+def tProd (A B : Tree) : Tree := node2 Label.tyProd A B
 
 /-- The function type. -/
-def tArrow (A B : Tree) : Tree := node2 3 A B
+def tArrow (A B : Tree) : Tree := node2 Label.tyArrow A B
 
 /-- The list type. -/
-def tList (A : Tree) : Tree := WType.mk (4, 1) ![A]
+def tList (A : Tree) : Tree := WType.mk (Label.tyList, 1) ![A]
 
 namespace Ty
 
@@ -122,34 +240,34 @@ rejects them as annotations. -/
 def den : Tree → Type :=
   WType.elim Type fun ⟨(l, k), g⟩ ↦
     match l, k, g with
-    | 0, 0, _ => Tree
-    | 2, 2, g => g 0 × g 1
-    | 3, 2, g => g 0 → g 1
-    | 4, 1, g => List (g 0)
+    | Label.tyTree, 0, _ => Tree
+    | Label.tyProd, 2, g => g 0 × g 1
+    | Label.tyArrow, 2, g => g 0 → g 1
+    | Label.tyList, 1, g => List (g 0)
     | _, _, _ => Unit
 
 /-- The recognizer of types. -/
 def IsTy : Tree → Bool :=
   RoseTree.elim fun l rs ↦
     match l, rs with
-    | 0, [] | 1, [] => true
-    | 2, [a, b] | 3, [a, b] => a && b
-    | 4, [a] => a
+    | Label.tyTree, [] | Label.tyUnit, [] => true
+    | Label.tyProd, [a, b] | Label.tyArrow, [a, b] => a && b
+    | Label.tyList, [a] => a
     | _, _ => false
 
 /-- A type read as a function type, with the equation of denotations. -/
 def arrow? : (F : Tree) → Option (Σ' A B : Tree, den F = (den A → den B))
-  | WType.mk (3, 2) g => some ⟨g 0, g 1, rfl⟩
+  | WType.mk (Label.tyArrow, 2) g => some ⟨g 0, g 1, rfl⟩
   | _ => none
 
 /-- A type read as a product type, with the equation of denotations. -/
 def prod? : (P : Tree) → Option (Σ' A B : Tree, den P = (den A × den B))
-  | WType.mk (2, 2) g => some ⟨g 0, g 1, rfl⟩
+  | WType.mk (Label.tyProd, 2) g => some ⟨g 0, g 1, rfl⟩
   | _ => none
 
 /-- A type read as a list type, with the equation of denotations. -/
 def list? : (L : Tree) → Option (Σ' A : Tree, den L = List (den A))
-  | WType.mk (4, 1) g => some ⟨g 0, rfl⟩
+  | WType.mk (Label.tyList, 1) g => some ⟨g 0, rfl⟩
   | _ => none
 
 end Ty
@@ -295,32 +413,32 @@ def constant {Γ : Ctx} (g : Glob) : Meaning Γ := ⟨g.1, fun _ ↦ g.2⟩
 meaning. -/
 def inferStep (l : ℕ) (cs : List (Tree × Sem)) : Sem := fun G Γ ↦
   match l, cs with
-  | 8, [(n, _)] => Γ.var n.label
-  | 9, [(A, _), (_, b)] =>
+  | Label.var, [(n, _)] => Γ.var n.label
+  | Label.lam, [(A, _), (_, b)] =>
     if Ty.IsTy A then (b G (A :: Γ)).map fun m ↦ ⟨tArrow A m.1, fun e a ↦ m.2 (a, e)⟩
     else none
-  | 10, [(_, f), (_, x)] => do
+  | Label.app, [(_, f), (_, x)] => do
     let mf ← f G Γ
     let mx ← x G Γ
     let ⟨A, B, h⟩ ← Ty.arrow? mf.1
     if hx : mx.1 = A then
       some ⟨B, fun e ↦ cast h (mf.2 e) (cast (congrArg Ty.den hx) (mx.2 e))⟩
     else none
-  | 11, [] => some ⟨tUnit, fun _ ↦ ()⟩
-  | 12, [(_, a), (_, b)] => do
+  | Label.unit, [] => some ⟨tUnit, fun _ ↦ ()⟩
+  | Label.pair, [(_, a), (_, b)] => do
     let ma ← a G Γ
     let mb ← b G Γ
     some ⟨tProd ma.1 mb.1, fun e ↦ (ma.2 e, mb.2 e)⟩
-  | 13, [(_, p)] => do
+  | Label.fst, [(_, p)] => do
     let mp ← p G Γ
     let ⟨A, _, h⟩ ← Ty.prod? mp.1
     some ⟨A, fun e ↦ (cast h (mp.2 e)).1⟩
-  | 14, [(_, p)] => do
+  | Label.snd, [(_, p)] => do
     let mp ← p G Γ
     let ⟨_, B, h⟩ ← Ty.prod? mp.1
     some ⟨B, fun e ↦ (cast h (mp.2 e)).2⟩
-  | 15, [(t, _)] => some ⟨tT, fun _ ↦ t⟩
-  | 16, [(_, c), (_, a), (_, b)] => do
+  | Label.quote, [(t, _)] => some ⟨tT, fun _ ↦ t⟩
+  | Label.cond, [(_, c), (_, a), (_, b)] => do
     let mc ← c G Γ
     let ma ← a G Γ
     let mb ← b G Γ
@@ -331,21 +449,22 @@ def inferStep (l : ℕ) (cs : List (Tree × Sem)) : Sem := fun G Γ ↦
           else cast (congrArg Ty.den hb) (mb.2 e)⟩
       else none
     else none
-  | 17, [(A, _)] => if Ty.IsTy A then some (constant ⟨foldTy A, foldDen A⟩) else none
-  | 18, [(A, _)] => if Ty.IsTy A then some (constant ⟨iterTy A, iterDen A⟩) else none
-  | 19, [(A, _)] => if Ty.IsTy A then some ⟨tList A, fun _ ↦ ([] : List (Ty.den A))⟩ else none
-  | 20, [(_, x), (_, xs)] => do
+  | Label.fold, [(A, _)] => if Ty.IsTy A then some (constant ⟨foldTy A, foldDen A⟩) else none
+  | Label.iter, [(A, _)] => if Ty.IsTy A then some (constant ⟨iterTy A, iterDen A⟩) else none
+  | Label.nil, [(A, _)] =>
+    if Ty.IsTy A then some ⟨tList A, fun _ ↦ ([] : List (Ty.den A))⟩ else none
+  | Label.cons, [(_, x), (_, xs)] => do
     let mx ← x G Γ
     let mxs ← xs G Γ
     let ⟨A, h⟩ ← Ty.list? mxs.1
     if hx : mx.1 = A then
       some ⟨tList A, fun e ↦ cast (congrArg Ty.den hx) (mx.2 e) :: cast h (mxs.2 e)⟩
     else none
-  | 21, [(A, _), (B, _)] =>
+  | Label.foldr, [(A, _), (B, _)] =>
     if Ty.IsTy A && Ty.IsTy B then some (constant ⟨foldrTy A B, foldrDen A B⟩) else none
-  | 22, [(k, _)] => prims[k.label]?.map constant
-  | 23, [(n, _)] => G[n.label]?.map constant
-  | 24, [(A, _), (B, _)] =>
+  | Label.prim, [(k, _)] => prims[k.label]?.map constant
+  | Label.ref, [(n, _)] => G[n.label]?.map constant
+  | Label.lcase, [(A, _), (B, _)] =>
     if Ty.IsTy A && Ty.IsTy B then some (constant ⟨lcaseTy A B, lcaseDen A B⟩) else none
   | _, _ => none
 

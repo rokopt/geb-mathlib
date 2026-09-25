@@ -30,7 +30,8 @@ The programs are string constants, converted to lists of characters inside each
 * {lit}`datum` reads a quoted tree from text.
 * {lit}`imageOf` writes the image of a program's bundle.
 * {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`reverseChildren`,
-  {lit}`quadruple`, {lit}`isZero`, {lit}`listCase` and {lit}`sugar` are programs.
+  {lit}`quadruple`, {lit}`isZero`, {lit}`listCase`, {lit}`sugar` and {lit}`numerals` are
+  programs.
 
 ## Tags
 
@@ -99,6 +100,12 @@ def sugar : String := "
 (def add3 (lam ((x T) (y T) (z T)) (add x (add y z))))
 (def main (lam (t T) (let s T (add3 t t t) (fst (swap (pair t s))))))"
 
+/-- Numeral abbreviations, one naming another, read in a term and in a quoted datum. -/
+def numerals : String := "
+(defnum two 2)
+(defnum pairLabel two)
+(def main (lam ((t T)) (node 0 (cons (add t two) (cons (quote (pairLabel 5 two)) (nil T))))))"
+
 #guard runMain factorial.toList (leaf 30) = some (leaf 265252859812191058636308480000000)
 #guard runMain factorial.toList (leaf 0) = some (leaf 1)
 #guard runMain size.toList (datum "(1 (2) (3 (4) (5)))".toList) = some (leaf 5)
@@ -110,6 +117,7 @@ def sugar : String := "
 #guard runMain isZero.toList (leaf 0) = some (leaf 1)
 #guard runMain isZero.toList (leaf 7) = some (leaf 0)
 #guard runMain sugar.toList (leaf 5) = some (leaf 15)
+#guard runMain numerals.toList (leaf 3) = some (mk 0 [leaf 5, mk 2 [leaf 5, leaf 2]])
 #guard runMain listCase.toList (datum "(9 (4) (5) (6))".toList) =
   some (datum "(4 (5) (6))".toList)
 #guard runMain listCase.toList (leaf 9) = some (leaf 0)
@@ -126,6 +134,8 @@ def sugar : String := "
 #guard runMain "(def f (lam (x T) x)".toList (leaf 1) = none
 #guard runMain "(def f (lam (x T) y))".toList (leaf 1) = none
 #guard runMain "(def f (lam (x Nat) x))".toList (leaf 1) = none
+#guard runMain "(defnum n m) (def f (lam (x T) x))".toList (leaf 1) = none
+#guard runMain "(defnum n (1 2)) (def f (lam (x T) x))".toList (leaf 1) = none
 -- the last definition is not a function on trees
 #guard runMain "(def f unit)".toList (leaf 1) = none
 
@@ -150,7 +160,7 @@ def imageOf (text : List Char) : ByteArray :=
   readImage (imageOf quadruple.toList)
 #guard readImage .empty = none
 -- a bundle whose definition refers to itself, and a tree that is not a bundle
-#guard runEntry (mk 100 [mk 101 [mk 23 [leaf 0]], mk 102 [nameTree "f".toList]]) "f".toList
+#guard runEntry (mk 100 [mk 101 [mk Label.ref [leaf 0]], mk 102 [nameTree "f".toList]]) "f".toList
   (leaf 0) = none
 #guard unbundle (leaf 0) = none
 -- files as trees
@@ -158,12 +168,14 @@ def imageOf (text : List Char) : ByteArray :=
 #guard toBytes (mk 0 [leaf 256]) = none
 -- weakening shifts the free variables of a term and not its bound ones, and substitution
 -- replaces the innermost free variable, weakened under a binder, and lowers the others
-#guard wk 2 (mk 9 [tT, mk 10 [Tm.var 0, Tm.var 1]]) = mk 9 [tT, mk 10 [Tm.var 0, Tm.var 3]]
-#guard subst (Tm.var 4) (mk 12 [Tm.var 0, Tm.var 1]) = mk 12 [Tm.var 4, Tm.var 0]
-#guard subst (Tm.var 4) (mk 9 [tT, Tm.var 1]) = mk 9 [tT, Tm.var 5]
-#guard subst (Tm.var 4) (mk 15 [Tm.var 0]) = mk 15 [Tm.var 0]
+#guard wk 2 (mk Label.lam [tT, mk Label.app [Tm.var 0, Tm.var 1]]) = mk Label.lam [tT,
+    mk Label.app [Tm.var 0, Tm.var 3]]
+#guard subst (Tm.var 4) (mk Label.pair [Tm.var 0, Tm.var 1]) = mk Label.pair [Tm.var 4, Tm.var 0]
+#guard subst (Tm.var 4) (mk Label.lam [tT, Tm.var 1]) = mk Label.lam [tT, Tm.var 5]
+#guard subst (Tm.var 4) (mk Label.quote [Tm.var 0]) = mk Label.quote [Tm.var 0]
 -- a substituted term keeps its type
-#guard ((infer [] [tT] (subst (mk 15 [leaf 7]) (mk 12 [Tm.var 0, Tm.var 1]))).map (·.1)) =
+#guard ((infer [] [tT] (subst (mk Label.quote [leaf 7]) (mk Label.pair [Tm.var 0,
+    Tm.var 1]))).map (·.1)) =
   some (tProd tT tT)
 
 end Geb.Kernel.Tests

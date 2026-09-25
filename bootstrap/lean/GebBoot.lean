@@ -381,6 +381,9 @@ def «kwDeftype» :=
     leaf 112,
     leaf 101]
 
+def «kwDefnum» :=
+  mk 0 [leaf 100, leaf 101, leaf 102, leaf 110, leaf 117, leaf 109]
+
 def «primNames» :=
   Const.children
     (mk 0 [mk 0 [leaf 108, leaf 97, leaf 98, leaf 101, leaf 108],
@@ -421,7 +424,7 @@ def «indexOf» :=
       «none»
       x1
 
-def «lookupType» :=
+def «lookupAbbrev» :=
   fun (x0 : T) (x1 : List T) =>
     Const.foldr
       (α := T)
@@ -455,6 +458,30 @@ def «numeral» :=
       x0;
     if («nonEmpty» x0).label ≠ 0 then
       if ((x1).1).label ≠ 0 then «some» ((x1).2).1 else «none»
+    else
+      «none»
+
+def «expandNums» :=
+  fun (x0 : List T) (x1 : T) =>
+    Const.fold
+      (α := T)
+      (fun (x2 : T) (x3 : List T) =>
+        let x4 : T := Const.node x2 x3;
+        if («isAtom» x4).label ≠ 0 then
+          let x5 : T := «lookupAbbrev» («nameOf» x4) x0;
+          if («isSome» x5).label ≠ 0 then «get» x5 else x4
+        else
+          x4)
+      x1
+
+def «numOf» :=
+  fun (x0 : List T) (x1 : T) =>
+    let x2 : T := «expandNums» x0 x1;
+    if («isAtom» x2).label ≠ 0 then
+      if («isSome» («numeral» (Const.children x2))).label ≠ 0 then
+        «some» x2
+      else
+        «none»
     else
       «none»
 
@@ -502,7 +529,7 @@ def «readType» :=
               if (Const.equal x6 «kwUnit»).label ≠ 0 then
                 «some» (leaf 1)
               else
-                «lookupType» x6 x0
+                «lookupAbbrev» x6 x0
           else
             if («isList» x4).label ≠ 0 then
               let x6 : T := «at» (Const.children x4) (leaf 0);
@@ -867,10 +894,11 @@ def «resolve» :=
       x3
 
 def «progStep» :=
-  fun (x0 : T × (List T × (List T × List T))) (x1 : T) =>
+  fun (x0 : T × (List T × (List T × (List T × List T)))) (x1 : T) =>
     let x2 : List T := ((x0).2).1;
     let x3 : List T := (((x0).2).2).1;
-    let x4 : List T := (((x0).2).2).2;
+    let x4 : List T := ((((x0).2).2).2).1;
+    let x5 : List T := ((((x0).2).2).2).2;
     if (if ((x0).1).label ≠ 0 then
       if («isList» x1).label ≠ 0 then
         if (Const.eq (Const.arity x1) (leaf 3)).label ≠ 0 then
@@ -881,23 +909,36 @@ def «progStep» :=
         leaf 0
     else
       leaf 0).label ≠ 0 then
-      let x5 : T := «nameOf» (Const.child x1 (leaf 1));
+      let x6 : T := «nameOf» (Const.child x1 (leaf 1));
       if («named» (Const.child x1 (leaf 0)) «kwDef»).label ≠ 0 then
-        let x6 : T := «resolve» x2 x3 (Const.child x1 (leaf 2)) ([] : List T);
-        if («isSome» x6).label ≠ 0 then
+        let x7 : T := «resolve»
+          x2
+          x4
+          («expandNums» x3 (Const.child x1 (leaf 2)))
+          ([] : List T);
+        if («isSome» x7).label ≠ 0 then
           (leaf 1,
-            (x2, («append» x3 («single» x5), «append» x4 («single» («get» x6)))))
+            (x2,
+              (x3, («append» x4 («single» x6), «append» x5 («single» («get» x7))))))
         else
           (leaf 0, (x0).2)
       else
         if («named» (Const.child x1 (leaf 0)) «kwDeftype»).label ≠ 0 then
-          let x6 : T := «readType» x2 (Const.child x1 (leaf 2));
-          if («isSome» x6).label ≠ 0 then
-            (leaf 1, (((«node2» (leaf 0) x5 («get» x6)) :: x2), ((x0).2).2))
+          let x7 : T := «readType» x2 (Const.child x1 (leaf 2));
+          if («isSome» x7).label ≠ 0 then
+            (leaf 1, (((«node2» (leaf 0) x6 («get» x7)) :: x2), ((x0).2).2))
           else
             (leaf 0, (x0).2)
         else
-          (leaf 0, (x0).2)
+          if («named» (Const.child x1 (leaf 0)) «kwDefnum»).label ≠ 0 then
+            let x7 : T := «numOf» x3 (Const.child x1 (leaf 2));
+            if («isSome» x7).label ≠ 0 then
+              (leaf 1,
+                (x2, (((«node2» (leaf 0) x6 («get» x7)) :: x3), (((x0).2).2).2)))
+            else
+              (leaf 0, (x0).2)
+          else
+            (leaf 0, (x0).2)
     else
       (leaf 0, (x0).2)
 
@@ -906,25 +947,27 @@ def «readProgram» :=
     let x1 : T ×
       (List T ×
         (List T ×
-          List
-            T)) := Const.foldr
+          (List T ×
+            List
+              T))) := Const.foldr
       (α := T)
-      (β := (T × (List T × (List T × List T))) →
-        T × (List T × (List T × List T)))
+      (β := (T × (List T × (List T × (List T × List T)))) →
+        T × (List T × (List T × (List T × List T))))
       (fun (x1 : T)
-         (x2 : (T × (List T × (List T × List T))) →
-           T × (List T × (List T × List T)))
-         (x3 : T × (List T × (List T × List T))) =>
+         (x2 : (T × (List T × (List T × (List T × List T)))) →
+           T × (List T × (List T × (List T × List T))))
+         (x3 : T × (List T × (List T × (List T × List T)))) =>
         x2 («progStep» x3 x1))
-      (fun (x1 : T × (List T × (List T × List T))) => x1)
+      (fun (x1 : T × (List T × (List T × (List T × List T)))) => x1)
       x0
-      (leaf 1, (([] : List T), (([] : List T), ([] : List T))));
+      (leaf 1,
+        (([] : List T), (([] : List T), (([] : List T), ([] : List T)))));
     if ((x1).1).label ≠ 0 then
       «some»
         («node2»
           (leaf 100)
-          (Const.node (leaf 101) (((x1).2).2).2)
-          (Const.node (leaf 102) (((x1).2).2).1))
+          (Const.node (leaf 101) ((((x1).2).2).2).2)
+          (Const.node (leaf 102) ((((x1).2).2).2).1))
     else
       «none»
 
@@ -2352,7 +2395,12 @@ def «xpStep» :=
                       («expandAliases» x2 («at» x4 (leaf 2))))),
                   (x1 :: x3)))
             else
-              «xpFail»
+              if («and»
+                («named» x5 «kwDefnum»)
+                (Const.eq x6 (leaf 3))).label ≠ 0 then
+                (leaf 1, (x2, (x1 :: x3)))
+              else
+                «xpFail»
     else
       «xpFail»);
     x2

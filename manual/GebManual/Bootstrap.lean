@@ -742,7 +742,9 @@ file, takes quadratic time.
    S-expressions over lists of characters; names resolve to de Bruijn
    indices, references and primitives ({name}`Geb.Kernel.readProgram`),
    and the reader expands type abbreviations, abstractions over lists
-   of binders and local bindings, which the kernel does not have; the
+   of binders and local bindings, which the kernel does not have, and
+   numeral abbreviations, which name labels as an assembler's symbolic
+   constants do and leave no trace in the terms read; the
    definitions are checked and evaluated in order
    ({name}`Geb.Kernel.load`), and the last is applied to an input tree
    ({name}`Geb.Kernel.runMain`). A printer and the retraction law
@@ -828,7 +830,8 @@ chapter addresses later.
 1. Geb: libraries of lists, bytes and text, label operations and tree
    utilities, written in kernel S-expressions; the serializer first,
    which must match the seed codec byte for byte, then the reference
-   resolver. The sources are under `bootstrap/`: `prelude.geb` holds
+   resolver. The sources are under `bootstrap/`: `prelude.geb` names
+   the kernel's labels and primitives by numeral abbreviations and holds
    list and digit utilities, and `serialize.geb` writes a tree's image,
    which `GebTests/Prototypes/Stage0.lean` compares with
    {name}`Geb.Kernel.writeImage` byte for byte, on labels of zero and

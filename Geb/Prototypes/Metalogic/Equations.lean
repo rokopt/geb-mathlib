@@ -98,7 +98,7 @@ open scoped FinEnum
 theorem infer_app {G : List Glob} {Γ : Ctx} {f x A B : Tree}
     {ff : Γ.den → Ty.den (tArrow A B)} {fx : Γ.den → Ty.den A}
     (hf : infer G Γ f = some ⟨tArrow A B, ff⟩) (hx : infer G Γ x = some ⟨A, fx⟩) :
-    infer G Γ (mk 10 [f, x]) = some ⟨B, fun e ↦ ff e (fx e)⟩ := by
+    infer G Γ (mk Label.app [f, x]) = some ⟨B, fun e ↦ ff e (fx e)⟩ := by
   simp only [infer] at hf hx
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind, hf, hx,
     Option.bind_some, Ty.arrow?_tArrow]
@@ -109,19 +109,20 @@ theorem infer_app {G : List Glob} {Γ : Ctx} {f x A B : Tree}
 /-- The denotation of an abstraction. -/
 theorem infer_lam {G : List Glob} {Γ : Ctx} {A b B : Tree} {fb : Ctx.den (A :: Γ) → Ty.den B}
     (hA : Ty.IsTy A = true) (hb : infer G (A :: Γ) b = some ⟨B, fb⟩) :
-    infer G Γ (mk 9 [A, b]) = some ⟨tArrow A B, fun e a ↦ fb (a, e)⟩ := by
+    infer G Γ (mk Label.lam [A, b]) = some ⟨tArrow A B, fun e a ↦ fb (a, e)⟩ := by
   simp only [infer] at hb
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte, hb,
     Option.map_some]
 
 /-- The denotation of the unit value. -/
-theorem infer_unit (G : List Glob) (Γ : Ctx) : infer G Γ (mk 11 []) = some ⟨tUnit, fun _ ↦ ()⟩ := by
+theorem infer_unit (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk Label.unit []) = some ⟨tUnit, fun _ ↦ ()⟩ := by
   simp only [mk, infer_node, List.map_nil, inferStep]
 
 /-- The denotation of a pair. -/
 theorem infer_pair {G : List Glob} {Γ : Ctx} {a b A B : Tree} {fa : Γ.den → Ty.den A}
     {fb : Γ.den → Ty.den B} (ha : infer G Γ a = some ⟨A, fa⟩) (hb : infer G Γ b = some ⟨B, fb⟩) :
-    infer G Γ (mk 12 [a, b]) = some ⟨tProd A B, fun e ↦ (fa e, fb e)⟩ := by
+    infer G Γ (mk Label.pair [a, b]) = some ⟨tProd A B, fun e ↦ (fa e, fb e)⟩ := by
   simp only [infer] at ha hb
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind, ha, hb,
     Option.bind_some]
@@ -129,7 +130,7 @@ theorem infer_pair {G : List Glob} {Γ : Ctx} {a b A B : Tree} {fa : Γ.den → 
 /-- The denotation of the first projection. -/
 theorem infer_fst {G : List Glob} {Γ : Ctx} {p A B : Tree} {fp : Γ.den → Ty.den (tProd A B)}
     (hp : infer G Γ p = some ⟨tProd A B, fp⟩) :
-    infer G Γ (mk 13 [p]) = some ⟨A, fun e ↦ (fp e).1⟩ := by
+    infer G Γ (mk Label.fst [p]) = some ⟨A, fun e ↦ (fp e).1⟩ := by
   simp only [infer] at hp
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind, hp,
     Option.bind_some, Ty.prod?_tProd]
@@ -138,7 +139,7 @@ theorem infer_fst {G : List Glob} {Γ : Ctx} {p A B : Tree} {fp : Γ.den → Ty.
 /-- The denotation of the second projection. -/
 theorem infer_snd {G : List Glob} {Γ : Ctx} {p A B : Tree} {fp : Γ.den → Ty.den (tProd A B)}
     (hp : infer G Γ p = some ⟨tProd A B, fp⟩) :
-    infer G Γ (mk 14 [p]) = some ⟨B, fun e ↦ (fp e).2⟩ := by
+    infer G Γ (mk Label.snd [p]) = some ⟨B, fun e ↦ (fp e).2⟩ := by
   simp only [infer] at hp
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind, hp,
     Option.bind_some, Ty.prod?_tProd]
@@ -146,14 +147,14 @@ theorem infer_snd {G : List Glob} {Γ : Ctx} {p A B : Tree} {fp : Γ.den → Ty.
 
 /-- The denotation of a quoted tree. -/
 theorem infer_quote (G : List Glob) (Γ : Ctx) (t : Tree) :
-    infer G Γ (mk 15 [t]) = some ⟨tT, fun _ ↦ t⟩ := by
+    infer G Γ (mk Label.quote [t]) = some ⟨tT, fun _ ↦ t⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep]
 
 /-- The denotation of a conditional. -/
 theorem infer_if {G : List Glob} {Γ : Ctx} {c a b A : Tree} {fc : Γ.den → Ty.den tT}
     {fa fb : Γ.den → Ty.den A} (hc : infer G Γ c = some ⟨tT, fc⟩)
     (ha : infer G Γ a = some ⟨A, fa⟩) (hb : infer G Γ b = some ⟨A, fb⟩) :
-    infer G Γ (mk 16 [c, a, b]) =
+    infer G Γ (mk Label.cond [c, a, b]) =
       some ⟨A, fun e ↦ if (fc e : Tree).label ≠ 0 then fa e else fb e⟩ := by
   simp only [infer] at hc ha hb
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind, hc, ha,
@@ -164,7 +165,7 @@ theorem infer_if {G : List Glob} {Γ : Ctx} {c a b A : Tree} {fc : Γ.den → Ty
 
 /-- The denotation of the empty list. -/
 theorem infer_nil {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) :
-    infer G Γ (mk 19 [A]) = some ⟨tList A, fun _ ↦ []⟩ := by
+    infer G Γ (mk Label.nil [A]) = some ⟨tList A, fun _ ↦ []⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte]
   rfl
 
@@ -172,7 +173,7 @@ theorem infer_nil {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) 
 theorem infer_cons {G : List Glob} {Γ : Ctx} {x xs A : Tree} {fx : Γ.den → Ty.den A}
     {fxs : Γ.den → Ty.den (tList A)} (hx : infer G Γ x = some ⟨A, fx⟩)
     (hxs : infer G Γ xs = some ⟨tList A, fxs⟩) :
-    infer G Γ (mk 20 [x, xs]) = some ⟨tList A, fun e ↦ fx e :: fxs e⟩ := by
+    infer G Γ (mk Label.cons [x, xs]) = some ⟨tList A, fun e ↦ fx e :: fxs e⟩ := by
   simp only [infer] at hx hxs
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, Option.bind_eq_bind, hx, hxs,
     Option.bind_some, Ty.list?_tList]
@@ -183,7 +184,7 @@ theorem infer_cons {G : List Glob} {Γ : Ctx} {x xs A : Tree} {fx : Γ.den → T
 /-- The denotation of the right fold of lists. -/
 theorem infer_foldr {G : List Glob} {Γ : Ctx} {A B : Tree} (hA : Ty.IsTy A = true)
     (hB : Ty.IsTy B = true) :
-    infer G Γ (mk 21 [A, B]) = some ⟨foldrTy A B, fun _ ↦ foldrDen A B⟩ := by
+    infer G Γ (mk Label.foldr [A, B]) = some ⟨foldrTy A B, fun _ ↦ foldrDen A B⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, hB, Bool.and_self,
     ↓reduceIte]
   rfl
@@ -325,57 +326,66 @@ theorem infer_append {G : List Glob} (G' : List Glob) :
 
 /-- The denotation of the primitive giving a tree's label. -/
 theorem infer_label (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 0]) = some ⟨tArrow tT tT, fun _ ↦ Const.label⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.label]) =
+      some ⟨tArrow tT tT, fun _ ↦ Const.label⟩ := rfl
 
 /-- The denotation of the primitive building a node. -/
 theorem infer_nodePrim (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 3]) = some ⟨tArrow tT (tArrow (tList tT) tT), fun _ ↦ Const.node⟩ :=
+    infer G Γ (mk Label.prim [leaf Prim.node]) =
+      some ⟨tArrow tT (tArrow (tList tT) tT), fun _ ↦ Const.node⟩ :=
   rfl
 
 /-- The denotation of the primitive adding labels. -/
 theorem infer_add (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 5]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.add⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.add]) =
+      some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.add⟩ := rfl
 
 /-- The denotation of the primitive giving a tree's child by index. -/
 theorem infer_childPrim (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 2]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.child⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.child]) =
+      some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.child⟩ := rfl
 
 /-- The denotation of the primitive giving a tree's children. -/
 theorem infer_childrenPrim (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 4]) = some ⟨tArrow tT (tList tT), fun _ ↦ Const.children⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.children]) =
+      some ⟨tArrow tT (tList tT), fun _ ↦ Const.children⟩ := rfl
 
 /-- The denotation of the primitive subtracting labels. -/
 theorem infer_sub (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 6]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.sub⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.sub]) =
+      some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.sub⟩ := rfl
 
 /-- The denotation of the primitive dividing labels. -/
 theorem infer_div (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 8]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.div⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.div]) =
+      some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.div⟩ := rfl
 
 /-- The denotation of the primitive giving the remainder of labels. -/
 theorem infer_mod (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 9]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.mod⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.mod]) =
+      some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.mod⟩ := rfl
 
 /-- The denotation of the primitive comparing labels for equality. -/
 theorem infer_eqPrim (G : List Glob) (Γ : Ctx) :
-    infer G Γ (mk 22 [leaf 10]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.eq⟩ := rfl
+    infer G Γ (mk Label.prim [leaf Prim.eq]) =
+      some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.eq⟩ := rfl
 
 /-- The denotation of the fold of trees. -/
 theorem infer_fold {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) :
-    infer G Γ (mk 17 [A]) = some ⟨foldTy A, fun _ ↦ foldDen A⟩ := by
+    infer G Γ (mk Label.fold [A]) = some ⟨foldTy A, fun _ ↦ foldDen A⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte]
   rfl
 
 /-- The denotation of iteration. -/
 theorem infer_iter {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) :
-    infer G Γ (mk 18 [A]) = some ⟨iterTy A, fun _ ↦ iterDen A⟩ := by
+    infer G Γ (mk Label.iter [A]) = some ⟨iterTy A, fun _ ↦ iterDen A⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte]
   rfl
 
 /-- The denotation of case analysis of lists. -/
 theorem infer_lcase {G : List Glob} {Γ : Ctx} {A B : Tree} (hA : Ty.IsTy A = true)
     (hB : Ty.IsTy B = true) :
-    infer G Γ (mk 24 [A, B]) = some ⟨lcaseTy A B, fun _ ↦ lcaseDen A B⟩ := by
+    infer G Γ (mk Label.lcase [A, B]) = some ⟨lcaseTy A B, fun _ ↦ lcaseDen A B⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, hB, Bool.and_self,
     ↓reduceIte]
   rfl
@@ -425,7 +435,7 @@ def wk (n : ℕ) (q : Eqn) : Eqn := ⟨q.ty, Kernel.wk n q.lhs, Kernel.wk n q.rh
 /-- An equation with its innermost variable removed, the equation it weakens when that variable
 does not occur in it. -/
 def lower (q : Eqn) : Eqn :=
-  ⟨q.ty, subst (Kernel.mk 15 [leaf 0]) q.lhs, subst (Kernel.mk 15 [leaf 0]) q.rhs⟩
+  ⟨q.ty, subst (Kernel.mk Label.quote [leaf 0]) q.lhs, subst (Kernel.mk Label.quote [leaf 0]) q.rhs⟩
 
 /-- Whether both sides of an equation have its type in a context. -/
 def Typed (G : List Glob) (Γ : Ctx) (q : Eqn) : Prop :=
@@ -529,7 +539,8 @@ theorem load_loaded {D : List Tree} {G : List Glob} (h : load D = some G) : Load
 putting the value of {lit}`body`, in which the variable {lit}`1` is the element, in front of the
 result. -/
 def mapBy (A B body xs : Tree) : Tree :=
-  apps (mk 21 [A, tList B]) [mk 9 [A, mk 9 [tList B, mk 20 [body, Tm.var 0]]], mk 19 [B], xs]
+  apps (mk Label.foldr [A, tList B]) [mk Label.lam [A, mk Label.lam [tList B, mk Label.cons [body,
+      Tm.var 0]]], mk Label.nil [B], xs]
 
 /-- The argument and result types of a function type. -/
 def arrowParts (F : Tree) : Option (Tree × Tree) :=
@@ -570,14 +581,14 @@ def Thm.inst (th : Thm) (Γ : Ctx) (us : List Tree) : Eqn :=
   instAll us (th.eqn.wkAt th.ctx.length Γ.length)
 
 /-- The quoted leaf of a label, the numeral of the label. -/
-def num (n : ℕ) : Tree := mk 15 [leaf n]
+def num (n : ℕ) : Tree := mk Label.quote [leaf n]
 
 /-- A primitive, by index, applied to arguments. -/
-def prim (k : ℕ) (xs : List Tree) : Tree := apps (mk 22 [leaf k]) xs
+def prim (k : ℕ) (xs : List Tree) : Tree := apps (mk Label.prim [leaf k]) xs
 
 /-- The successor of a label, its sum with one: the structure map of the natural numbers object
 that the labels form. -/
-def succT (t : Tree) : Tree := prim 5 [t, num 1]
+def succT (t : Tree) : Tree := prim Prim.add [t, num 1]
 
 /-- The type of pairs of trees. -/
 def tT2 : Tree := tProd tT tT
@@ -585,103 +596,120 @@ def tT2 : Tree := tProd tT tT
 /-- The label of a node is the label of its first argument: with the next two, the primitive
 building a node is inverse to its label and its list of children. -/
 def axLabelNode : Thm :=
-  ⟨[tT, tList tT], ⟨tT, prim 0 [prim 3 [Tm.var 0, Tm.var 1]], prim 0 [Tm.var 0]⟩⟩
+  ⟨[tT, tList tT], ⟨tT, prim Prim.label [prim Prim.node [Tm.var 0, Tm.var 1]],
+      prim Prim.label [Tm.var 0]⟩⟩
 
 /-- The children of a node are its list of children. -/
 def axChildrenNode : Thm :=
-  ⟨[tT, tList tT], ⟨tList tT, prim 4 [prim 3 [Tm.var 0, Tm.var 1]], Tm.var 1⟩⟩
+  ⟨[tT, tList tT], ⟨tList tT, prim Prim.children [prim Prim.node [Tm.var 0, Tm.var 1]], Tm.var 1⟩⟩
 
 /-- A tree is the node of its label over its children. -/
-def axNodeEta : Thm := ⟨[tT], ⟨tT, prim 3 [prim 0 [Tm.var 0], prim 4 [Tm.var 0]], Tm.var 0⟩⟩
+def axNodeEta : Thm := ⟨[tT], ⟨tT, prim Prim.node [prim Prim.label [Tm.var 0],
+    prim Prim.children [Tm.var 0]], Tm.var 0⟩⟩
 
 /-- A label is a leaf: labels form the natural numbers object inside the trees. -/
-def axChildrenLabel : Thm := ⟨[tT], ⟨tList tT, prim 4 [prim 0 [Tm.var 0]], mk 19 [tT]⟩⟩
+def axChildrenLabel : Thm := ⟨[tT], ⟨tList tT, prim Prim.children [prim Prim.label [Tm.var 0]],
+    mk Label.nil [tT]⟩⟩
 
 /-- The successor of a label is a label. -/
-def axLabelSucc : Thm := ⟨[tT], ⟨tT, prim 0 [succT (Tm.var 0)], succT (Tm.var 0)⟩⟩
+def axLabelSucc : Thm := ⟨[tT], ⟨tT, prim Prim.label [succT (Tm.var 0)], succT (Tm.var 0)⟩⟩
 
 /-- Addition iterates the successor, from the label of its first argument. -/
 def axAddIter : Thm :=
-  ⟨[tT, tT], ⟨tT, prim 5 [Tm.var 0, Tm.var 1],
-    apps (mk 18 [tT]) [mk 9 [tT, succT (Tm.var 0)], prim 0 [Tm.var 0], Tm.var 1]⟩⟩
+  ⟨[tT, tT], ⟨tT, prim Prim.add [Tm.var 0, Tm.var 1],
+    apps (mk Label.iter [tT]) [mk Label.lam [tT, succT (Tm.var 0)], prim Prim.label [Tm.var 0],
+        Tm.var 1]⟩⟩
 
 /-- The predecessor, the difference with one, is the first component of the iteration from a
 pair of zeros that moves the second component to the first and replaces it by its successor. -/
 def axPredIter : Thm :=
-  ⟨[tT], ⟨tT, prim 6 [Tm.var 0, num 1],
-    mk 13 [apps (mk 18 [tT2]) [mk 9 [tT2, mk 12 [mk 14 [Tm.var 0], succT (mk 14 [Tm.var 0])]],
-      mk 12 [num 0, num 0], Tm.var 0]]⟩⟩
+  ⟨[tT], ⟨tT, prim Prim.sub [Tm.var 0, num 1],
+    mk Label.fst [apps (mk Label.iter [tT2]) [mk Label.lam [tT2,
+        mk Label.pair [mk Label.snd [Tm.var 0], succT (mk Label.snd [Tm.var 0])]],
+      mk Label.pair [num 0, num 0], Tm.var 0]]⟩⟩
 
 /-- Truncated subtraction iterates the predecessor, from the label of its first argument. -/
 def axSubIter : Thm :=
-  ⟨[tT, tT], ⟨tT, prim 6 [Tm.var 0, Tm.var 1],
-    apps (mk 18 [tT]) [mk 9 [tT, prim 6 [Tm.var 0, num 1]], prim 0 [Tm.var 0], Tm.var 1]⟩⟩
+  ⟨[tT, tT], ⟨tT, prim Prim.sub [Tm.var 0, Tm.var 1],
+    apps (mk Label.iter [tT]) [mk Label.lam [tT, prim Prim.sub [Tm.var 0, num 1]],
+        prim Prim.label [Tm.var 0], Tm.var 1]⟩⟩
 
 /-- Multiplication iterates the addition of its first argument, from zero. -/
 def axMulIter : Thm :=
-  ⟨[tT, tT], ⟨tT, prim 7 [Tm.var 0, Tm.var 1],
-    apps (mk 18 [tT]) [mk 9 [tT, prim 5 [Tm.var 0, Tm.var 1]], num 0, Tm.var 1]⟩⟩
+  ⟨[tT, tT], ⟨tT, prim Prim.mul [Tm.var 0, Tm.var 1],
+    apps (mk Label.iter [tT]) [mk Label.lam [tT, prim Prim.add [Tm.var 0, Tm.var 1]], num 0,
+        Tm.var 1]⟩⟩
 
 /-- The iteration, as many times as the label of the variable {lit}`0`, of the step of division
 by the label of the variable {lit}`1` on a pair of a quotient and a remainder: the remainder's
 successor, and the quotient's successor with the remainder zero when that successor is the
 divisor. -/
 def divMod : Tree :=
-  apps (mk 18 [tT2]) [mk 9 [tT2, mk 16 [prim 10 [succT (mk 14 [Tm.var 0]), Tm.var 2],
-      mk 12 [succT (mk 13 [Tm.var 0]), num 0], mk 12 [mk 13 [Tm.var 0], succT (mk 14 [Tm.var 0])]]],
-    mk 12 [num 0, num 0], Tm.var 0]
+  apps (mk Label.iter [tT2]) [mk Label.lam [tT2,
+      mk Label.cond [prim Prim.eq [succT (mk Label.snd [Tm.var 0]), Tm.var 2],
+      mk Label.pair [succT (mk Label.fst [Tm.var 0]),
+          num 0], mk Label.pair [mk Label.fst [Tm.var 0], succT (mk Label.snd [Tm.var 0])]]],
+    mk Label.pair [num 0, num 0], Tm.var 0]
 
 /-- Division is the quotient of the iterated step of division. -/
-def axDivIter : Thm := ⟨[tT, tT], ⟨tT, prim 8 [Tm.var 0, Tm.var 1], mk 13 [divMod]⟩⟩
+def axDivIter : Thm := ⟨[tT, tT], ⟨tT, prim Prim.div [Tm.var 0, Tm.var 1], mk Label.fst [divMod]⟩⟩
 
 /-- The remainder is the remainder of the iterated step of division. -/
-def axModIter : Thm := ⟨[tT, tT], ⟨tT, prim 9 [Tm.var 0, Tm.var 1], mk 14 [divMod]⟩⟩
+def axModIter : Thm := ⟨[tT, tT], ⟨tT, prim Prim.mod [Tm.var 0, Tm.var 1], mk Label.snd [divMod]⟩⟩
 
 /-- Equality of labels is the test for zero of the sum of the two truncated differences. -/
 def axEqDef : Thm :=
-  ⟨[tT, tT], ⟨tT, prim 10 [Tm.var 0, Tm.var 1], apps (mk 18 [tT]) [mk 9 [tT, num 0], num 1,
-    prim 5 [prim 6 [Tm.var 0, Tm.var 1], prim 6 [Tm.var 1, Tm.var 0]]]⟩⟩
+  ⟨[tT, tT], ⟨tT, prim Prim.eq [Tm.var 0, Tm.var 1], apps (mk Label.iter [tT]) [mk Label.lam [tT,
+      num 0], num 1,
+    prim Prim.add [prim Prim.sub [Tm.var 0, Tm.var 1], prim Prim.sub [Tm.var 1, Tm.var 0]]]⟩⟩
 
 /-- A label is less than another when their truncated difference is not zero. -/
 def axLtDef : Thm :=
-  ⟨[tT, tT], ⟨tT, prim 11 [Tm.var 0, Tm.var 1],
-    apps (mk 18 [tT]) [mk 9 [tT, num 1], num 0, prim 6 [Tm.var 1, Tm.var 0]]⟩⟩
+  ⟨[tT, tT], ⟨tT, prim Prim.lt [Tm.var 0, Tm.var 1],
+    apps (mk Label.iter [tT]) [mk Label.lam [tT, num 1], num 0, prim Prim.sub [Tm.var 1,
+        Tm.var 0]]⟩⟩
 
 /-- The logarithm of a label is zero below two, and otherwise the successor of the logarithm of
 its half. -/
 def axLog2Def : Thm :=
-  ⟨[tT], ⟨tT, prim 13 [Tm.var 0],
-    mk 16 [prim 11 [Tm.var 0, num 2], num 0, succT (prim 13 [prim 8 [Tm.var 0, num 2]])]⟩⟩
+  ⟨[tT], ⟨tT, prim Prim.log2 [Tm.var 0],
+    mk Label.cond [prim Prim.lt [Tm.var 0, num 2], num 0,
+        succT (prim Prim.log2 [prim Prim.div [Tm.var 0, num 2]])]⟩⟩
 
 /-- The arity of a tree is the length of its children, the right fold counting them. -/
 def axArityDef : Thm :=
-  ⟨[tT], ⟨tT, prim 1 [Tm.var 0],
-    apps (mk 21 [tT, tT]) [mk 9 [tT, mk 9 [tT, succT (Tm.var 0)]], num 0, prim 4 [Tm.var 0]]⟩⟩
+  ⟨[tT], ⟨tT, prim Prim.arity [Tm.var 0],
+    apps (mk Label.foldr [tT, tT]) [mk Label.lam [tT, mk Label.lam [tT, succT (Tm.var 0)]], num 0,
+        prim Prim.children [Tm.var 0]]⟩⟩
 
 /-- The tail of a list of trees, by case analysis. -/
 def tailT : Tree :=
-  mk 9 [tList tT,
-    apps (mk 24 [tT, tList tT]) [Tm.var 0, mk 19 [tT], mk 9 [tT, mk 9 [tList tT, Tm.var 0]]]]
+  mk Label.lam [tList tT,
+    apps (mk Label.lcase [tT, tList tT]) [Tm.var 0, mk Label.nil [tT], mk Label.lam [tT,
+        mk Label.lam [tList tT, Tm.var 0]]]]
 
 /-- A tree's child by index is the head of its children with the tail taken that many times,
 and zero when that list is empty. -/
 def axChildDef : Thm :=
-  ⟨[tT, tT], ⟨tT, prim 2 [Tm.var 0, Tm.var 1],
-    apps (mk 24 [tT, tT]) [apps (mk 18 [tList tT]) [tailT, prim 4 [Tm.var 0], Tm.var 1], num 0,
-      mk 9 [tT, mk 9 [tList tT, Tm.var 1]]]⟩⟩
+  ⟨[tT, tT], ⟨tT, prim Prim.child [Tm.var 0, Tm.var 1],
+    apps (mk Label.lcase [tT, tT]) [apps (mk Label.iter [tList tT]) [tailT,
+        prim Prim.children [Tm.var 0], Tm.var 1], num 0,
+      mk Label.lam [tT, mk Label.lam [tList tT, Tm.var 1]]]⟩⟩
 
 /-- Equality of trees holds of a tree and itself. -/
-def axEqualRefl : Thm := ⟨[tT], ⟨tT, prim 12 [Tm.var 0, Tm.var 0], num 1⟩⟩
+def axEqualRefl : Thm := ⟨[tT], ⟨tT, prim Prim.equal [Tm.var 0, Tm.var 0], num 1⟩⟩
 
 /-- Trees that are equal replace each other: the conditional on their equality choosing the
 second when it holds is the first. -/
 def axEqualSubst : Thm :=
-  ⟨[tT, tT], ⟨tT, mk 16 [prim 12 [Tm.var 0, Tm.var 1], Tm.var 1, Tm.var 0], Tm.var 0⟩⟩
+  ⟨[tT, tT], ⟨tT, mk Label.cond [prim Prim.equal [Tm.var 0, Tm.var 1], Tm.var 1, Tm.var 0],
+      Tm.var 0⟩⟩
 
 /-- Equality of trees takes the values one and zero only. -/
 def axEqualBool : Thm :=
   ⟨[tT, tT],
-    ⟨tT, mk 16 [prim 12 [Tm.var 0, Tm.var 1], num 1, num 0], prim 12 [Tm.var 0, Tm.var 1]⟩⟩
+    ⟨tT, mk Label.cond [prim Prim.equal [Tm.var 0, Tm.var 1], num 1, num 0],
+        prim Prim.equal [Tm.var 0, Tm.var 1]⟩⟩
 
 /-- The defining equations of the kernel's primitives, each a theorem in the context of its
 variables: the rose-tree object's structure map is inverse to its label and its children, the
@@ -694,26 +722,140 @@ def axioms : List Thm :=
    axChildDef, axEqualRefl, axEqualSubst, axEqualBool]
 
 /-- The literal of a list of trees: each tree quoted, in front of the empty list of trees. -/
-def listLit (xs : List Tree) : Tree := xs.foldr (fun x r ↦ mk 20 [mk 15 [x], r]) (mk 19 [tT])
+def listLit (xs : List Tree) : Tree := xs.foldr (fun x r ↦ mk Label.cons [mk Label.quote [x],
+    r]) (mk Label.nil [tT])
 
 /-- Whether a term is a list literal: the empty list, or a quoted tree in front of a list
 literal. -/
 def IsListLit : Tree → Bool :=
   RoseTree.para fun l rs ↦
     match l, rs with
-    | 19, [_] => true
-    | 20, [(x, _), (_, r)] => x.label == 15 && x.children.length == 1 && r
+    | Label.nil, [_] => true
+    | Label.cons, [(x, _), (_, r)] => x.label == Label.quote && x.children.length == 1 && r
     | _, _ => false
 
 /-- Whether a term is a literal: a quoted tree, or a list literal. -/
-def IsLit (t : Tree) : Bool := t.label == 15 && t.children.length == 1 || IsListLit t
+def IsLit (t : Tree) : Bool := t.label == Label.quote && t.children.length == 1 || IsListLit t
 
 /-- The literal of a closed term's value, when its type is that of trees or of lists of
 trees. -/
 def lit? (m : Meaning []) : Option Tree :=
-  if h : m.1 = tT then some (mk 15 [cast (congrArg Ty.den h) (m.2 ())])
+  if h : m.1 = tT then some (mk Label.quote [cast (congrArg Ty.den h) (m.2 ())])
   else if h : m.1 = tList tT then some (listLit (cast (congrArg Ty.den h) (m.2 ())))
   else none
+
+namespace Rule
+
+/-- The label of the rule of a hypothesis, by index. -/
+@[match_pattern] abbrev hyp : ℕ := 0
+
+/-- The label of the rule of reflexivity. -/
+@[match_pattern] abbrev refl : ℕ := 1
+
+/-- The label of the rule of symmetry. -/
+@[match_pattern] abbrev symm : ℕ := 2
+
+/-- The label of the rule of transitivity. -/
+@[match_pattern] abbrev trans : ℕ := 3
+
+/-- The label of the rule of congruence of application. -/
+@[match_pattern] abbrev congApp : ℕ := 4
+
+/-- The label of the rule of congruence of abstraction. -/
+@[match_pattern] abbrev congLam : ℕ := 5
+
+/-- The label of the rule of congruence of pairs. -/
+@[match_pattern] abbrev congPair : ℕ := 6
+
+/-- The label of the rule of congruence of the first projection. -/
+@[match_pattern] abbrev congFst : ℕ := 7
+
+/-- The label of the rule of congruence of the second projection. -/
+@[match_pattern] abbrev congSnd : ℕ := 8
+
+/-- The label of the rule of congruence of the list of a head and a tail. -/
+@[match_pattern] abbrev congCons : ℕ := 9
+
+/-- The label of the rule of congruence of the conditional. -/
+@[match_pattern] abbrev congCond : ℕ := 10
+
+/-- The label of the rule of the β rule of functions. -/
+@[match_pattern] abbrev beta : ℕ := 11
+
+/-- The label of the rule of the η rule of functions. -/
+@[match_pattern] abbrev eta : ℕ := 12
+
+/-- The label of the rule of the β rule of the first projection. -/
+@[match_pattern] abbrev betaFst : ℕ := 13
+
+/-- The label of the rule of the β rule of the second projection. -/
+@[match_pattern] abbrev betaSnd : ℕ := 14
+
+/-- The label of the rule of the η rule of pairs. -/
+@[match_pattern] abbrev etaPair : ℕ := 15
+
+/-- The label of the rule of the η rule of the unit type. -/
+@[match_pattern] abbrev etaUnit : ℕ := 16
+
+/-- The label of the δ rule: a primitive at literals is the literal of its value. -/
+@[match_pattern] abbrev delta : ℕ := 17
+
+/-- The label of the rule of weakening. -/
+@[match_pattern] abbrev weaken : ℕ := 18
+
+/-- The label of the rule of cut. -/
+@[match_pattern] abbrev cut : ℕ := 19
+
+/-- The label of the rule of instantiation of the innermost variable by a term. -/
+@[match_pattern] abbrev instVar : ℕ := 20
+
+/-- The label of the rule of the right fold of lists at the empty list. -/
+@[match_pattern] abbrev foldrNil : ℕ := 21
+
+/-- The label of the rule of the right fold of lists at a list of a head and a tail. -/
+@[match_pattern] abbrev foldrCons : ℕ := 22
+
+/-- The label of the rule of induction on a list. -/
+@[match_pattern] abbrev indList : ℕ := 23
+
+/-- The label of the rule of case analysis of lists at the empty list. -/
+@[match_pattern] abbrev lcaseNil : ℕ := 24
+
+/-- The label of the rule of case analysis of lists at a list of a head and a tail. -/
+@[match_pattern] abbrev lcaseCons : ℕ := 25
+
+/-- The label of the rule of iteration at the label zero. -/
+@[match_pattern] abbrev iterZero : ℕ := 26
+
+/-- The label of the rule of iteration at the successor of a label. -/
+@[match_pattern] abbrev iterSucc : ℕ := 27
+
+/-- The label of the rule of the fold of trees at a node. -/
+@[match_pattern] abbrev foldNode : ℕ := 28
+
+/-- The label of the rule of induction on a tree. -/
+@[match_pattern] abbrev indTree : ℕ := 29
+
+/-- The label of the rule of induction on the label of a tree. -/
+@[match_pattern] abbrev indLabel : ℕ := 30
+
+/-- The label of the rule of a reference to a definition, the definition weakened into the
+context. -/
+@[match_pattern] abbrev unfold : ℕ := 31
+
+/-- The label of the rule of the conditional at a quoted tree. -/
+@[match_pattern] abbrev condQuote : ℕ := 32
+
+/-- The label of the rule of an instance of an axiom or of a theorem. -/
+@[match_pattern] abbrev ax : ℕ := 33
+
+/-- The label of the rule of iteration's reading of the label of the tree it iterates over. -/
+@[match_pattern] abbrev iterLabel : ℕ := 34
+
+/-- The label of the rule of the conditional as the iteration of a constant function. -/
+@[match_pattern] abbrev condIter : ℕ := 35
+
+end Rule
 
 /-- The checker's result at a certificate: the conclusion, as a function of a program's
 definitions, its global environment, the context and the hypotheses, or nothing when the
@@ -726,86 +868,90 @@ certificates, with their results, and the terms and types the rule names. -/
 def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
   match l, cs with
   -- a hypothesis, by index
-  | 0, [(i, _)] => H[i.label]?.bind fun q ↦ if q.Typed G Γ then some q else none
+  | Rule.hyp, [(i, _)] => H[i.label]?.bind fun q ↦ if q.Typed G Γ then some q else none
   -- reflexivity, symmetry and transitivity
-  | 1, [(t, _)] => (typeOf G Γ t).map fun A ↦ ⟨A, t, t⟩
-  | 2, [(_, p)] => (p E G Γ H).map fun q ↦ ⟨q.ty, q.rhs, q.lhs⟩
-  | 3, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
+  | Rule.refl, [(t, _)] => (typeOf G Γ t).map fun A ↦ ⟨A, t, t⟩
+  | Rule.symm, [(_, p)] => (p E G Γ H).map fun q ↦ ⟨q.ty, q.rhs, q.lhs⟩
+  | Rule.trans, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
     if q.ty = q'.ty ∧ q.rhs = q'.lhs then some ⟨q.ty, q.lhs, q'.rhs⟩ else none
   -- congruence: application, abstraction, pairs, projections, lists and the conditional
-  | 4, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
+  | Rule.congApp, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
     (arrowParts q.ty).bind fun AB ↦
-      if q'.ty = AB.1 then some ⟨AB.2, mk 10 [q.lhs, q'.lhs], mk 10 [q.rhs, q'.rhs]⟩ else none
-  | 5, [(A, _), (_, p)] =>
+      if q'.ty = AB.1 then some ⟨AB.2, mk Label.app [q.lhs, q'.lhs], mk Label.app [q.rhs,
+          q'.rhs]⟩ else none
+  | Rule.congLam, [(A, _), (_, p)] =>
     if Ty.IsTy A then
       (p E G (A :: Γ) (H.map (Eqn.wk 1))).map fun q ↦
-        ⟨tArrow A q.ty, mk 9 [A, q.lhs], mk 9 [A, q.rhs]⟩
+        ⟨tArrow A q.ty, mk Label.lam [A, q.lhs], mk Label.lam [A, q.rhs]⟩
     else none
-  | 6, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).map fun q' ↦
-    ⟨tProd q.ty q'.ty, mk 12 [q.lhs, q'.lhs], mk 12 [q.rhs, q'.rhs]⟩
-  | 7, [(_, p)] => (p E G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
-    ⟨AB.1, mk 13 [q.lhs], mk 13 [q.rhs]⟩
-  | 8, [(_, p)] => (p E G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
-    ⟨AB.2, mk 14 [q.lhs], mk 14 [q.rhs]⟩
-  | 9, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
-    if q'.ty = tList q.ty then some ⟨q'.ty, mk 20 [q.lhs, q'.lhs], mk 20 [q.rhs, q'.rhs]⟩ else none
-  | 10, [(_, p), (_, p'), (_, p'')] =>
+  | Rule.congPair, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).map fun q' ↦
+    ⟨tProd q.ty q'.ty, mk Label.pair [q.lhs, q'.lhs], mk Label.pair [q.rhs, q'.rhs]⟩
+  | Rule.congFst, [(_, p)] => (p E G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
+    ⟨AB.1, mk Label.fst [q.lhs], mk Label.fst [q.rhs]⟩
+  | Rule.congSnd, [(_, p)] => (p E G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
+    ⟨AB.2, mk Label.snd [q.lhs], mk Label.snd [q.rhs]⟩
+  | Rule.congCons, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
+    if q'.ty = tList q.ty then some ⟨q'.ty, mk Label.cons [q.lhs, q'.lhs], mk Label.cons [q.rhs,
+        q'.rhs]⟩ else none
+  | Rule.congCond, [(_, p), (_, p'), (_, p'')] =>
     (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦ (p'' E G Γ H).bind fun q'' ↦
       if q.ty = tT ∧ q''.ty = q'.ty then
-        some ⟨q'.ty, mk 16 [q.lhs, q'.lhs, q''.lhs], mk 16 [q.rhs, q'.rhs, q''.rhs]⟩
+        some ⟨q'.ty, mk Label.cond [q.lhs, q'.lhs, q''.lhs], mk Label.cond [q.rhs, q'.rhs, q''.rhs]⟩
       else none
   -- computation: the β and η rules of functions, pairs and the unit type
-  | 11, [(A, _), (b, _), (a, _)] =>
+  | Rule.beta, [(A, _), (b, _), (a, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ a = some A then
-      (typeOf G (A :: Γ) b).map fun B ↦ ⟨B, mk 10 [mk 9 [A, b], a], subst a b⟩
+      (typeOf G (A :: Γ) b).map fun B ↦ ⟨B, mk Label.app [mk Label.lam [A, b], a], subst a b⟩
     else none
-  | 12, [(f, _)] => (typeOf G Γ f).bind fun F ↦ (arrowParts F).bind fun AB ↦
-    if Ty.IsTy AB.1 then some ⟨F, f, mk 9 [AB.1, mk 10 [Kernel.wk 1 f, Tm.var 0]]⟩ else none
-  | 13, [(a, _), (b, _)] => (typeOf G Γ a).bind fun A ↦ (typeOf G Γ b).map fun _ ↦
-    ⟨A, mk 13 [mk 12 [a, b]], a⟩
-  | 14, [(a, _), (b, _)] => (typeOf G Γ a).bind fun _ ↦ (typeOf G Γ b).map fun B ↦
-    ⟨B, mk 14 [mk 12 [a, b]], b⟩
-  | 15, [(p, _)] => (typeOf G Γ p).bind fun P ↦ (prodParts P).map fun _ ↦
-    ⟨P, mk 12 [mk 13 [p], mk 14 [p]], p⟩
-  | 16, [(t, _)] => if typeOf G Γ t = some tUnit then some ⟨tUnit, t, mk 11 []⟩ else none
+  | Rule.eta, [(f, _)] => (typeOf G Γ f).bind fun F ↦ (arrowParts F).bind fun AB ↦
+    if Ty.IsTy AB.1 then some ⟨F, f, mk Label.lam [AB.1, mk Label.app [Kernel.wk 1 f,
+        Tm.var 0]]⟩ else none
+  | Rule.betaFst, [(a, _), (b, _)] => (typeOf G Γ a).bind fun A ↦ (typeOf G Γ b).map fun _ ↦
+    ⟨A, mk Label.fst [mk Label.pair [a, b]], a⟩
+  | Rule.betaSnd, [(a, _), (b, _)] => (typeOf G Γ a).bind fun _ ↦ (typeOf G Γ b).map fun B ↦
+    ⟨B, mk Label.snd [mk Label.pair [a, b]], b⟩
+  | Rule.etaPair, [(p, _)] => (typeOf G Γ p).bind fun P ↦ (prodParts P).map fun _ ↦
+    ⟨P, mk Label.pair [mk Label.fst [p], mk Label.snd [p]], p⟩
+  | Rule.etaUnit, [(t, _)] => if typeOf G Γ t = some tUnit then some ⟨tUnit, t,
+      mk Label.unit []⟩ else none
   -- a primitive at literals is the literal of its value
-  | 17, (k, _) :: as =>
+  | Rule.delta, (k, _) :: as =>
     match Γ with
     | [] =>
       if (as.map Prod.fst).all IsLit then
-        let t := apps (mk 22 [k]) (as.map Prod.fst)
+        let t := apps (mk Label.prim [k]) (as.map Prod.fst)
         (infer G [] t).bind fun m ↦ (lit? m).map fun v ↦ ⟨m.1, t, v⟩
       else none
     | _ :: _ => none
   -- weakening, cut and instantiation of the innermost variable
-  | 18, [(_, p)] =>
+  | Rule.weaken, [(_, p)] =>
     match Γ with
     | _ :: Γ' => (p E G Γ' []).map (Eqn.wk 1)
     | [] => none
-  | 19, [(_, p), (_, p')] => (p E G Γ H).bind fun h ↦ p' E G Γ (h :: H)
-  | 20, [(u, _), (_, p)] => (typeOf G Γ u).bind fun A ↦
+  | Rule.cut, [(_, p), (_, p')] => (p E G Γ H).bind fun h ↦ p' E G Γ (h :: H)
+  | Rule.instVar, [(u, _), (_, p)] => (typeOf G Γ u).bind fun A ↦
     (p E G (A :: Γ) (H.map (Eqn.wk 1))).map fun q ↦ ⟨q.ty, subst u q.lhs, subst u q.rhs⟩
   -- the right fold of lists at the empty list and at a list of a head and a tail
-  | 21, [(A, _), (B, _), (g, _), (z, _)] =>
+  | Rule.foldrNil, [(A, _), (B, _), (g, _), (z, _)] =>
     if Ty.IsTy A ∧ Ty.IsTy B ∧ typeOf G Γ g = some (tArrow A (tArrow B B)) ∧
         typeOf G Γ z = some B then
-      some ⟨B, apps (mk 21 [A, B]) [g, z, mk 19 [A]], z⟩
+      some ⟨B, apps (mk Label.foldr [A, B]) [g, z, mk Label.nil [A]], z⟩
     else none
-  | 22, [(A, _), (B, _), (g, _), (z, _), (x, _), (xs, _)] =>
+  | Rule.foldrCons, [(A, _), (B, _), (g, _), (z, _), (x, _), (xs, _)] =>
     if Ty.IsTy A ∧ Ty.IsTy B ∧ typeOf G Γ g = some (tArrow A (tArrow B B)) ∧
         typeOf G Γ z = some B ∧ typeOf G Γ x = some A ∧ typeOf G Γ xs = some (tList A) then
-      some ⟨B, apps (mk 21 [A, B]) [g, z, mk 20 [x, xs]],
-        apps g [x, apps (mk 21 [A, B]) [g, z, xs]]⟩
+      some ⟨B, apps (mk Label.foldr [A, B]) [g, z, mk Label.cons [x, xs]],
+        apps g [x, apps (mk Label.foldr [A, B]) [g, z, xs]]⟩
     else none
   -- induction on the innermost variable, a list: the case of the empty list, and the case of a
   -- head and a tail under the hypothesis for the tail
-  | 23, [(s, _), (t, _), (_, p0), (_, p1)] =>
+  | Rule.indList, [(s, _), (t, _), (_, p0), (_, p1)] =>
     match Γ with
     | L :: Γ' => (listParts L).bind fun A ↦ (typeOf G Γ s).bind fun B ↦
       let H0 := H.map Eqn.lower
-      let c := mk 20 [Tm.var 1, Tm.var 0]
+      let c := mk Label.cons [Tm.var 1, Tm.var 0]
       if Ty.IsTy A ∧ typeOf G Γ t = some B ∧ H0.map (Eqn.wk 1) = H ∧ (∀ h ∈ H0, h.Typed G Γ') ∧
-          p0 E G Γ' H0 = some ⟨B, subst (mk 19 [A]) s, subst (mk 19 [A]) t⟩ ∧
+          p0 E G Γ' H0 = some ⟨B, subst (mk Label.nil [A]) s, subst (mk Label.nil [A]) t⟩ ∧
           p1 E G (L :: A :: Γ') (⟨B, wkAt 1 1 s, wkAt 1 1 t⟩ :: H0.map (Eqn.wk 2)) =
             some ⟨B, subst c (wkAt 1 2 s), subst c (wkAt 1 2 t)⟩ then
         some ⟨B, s, t⟩
@@ -818,42 +964,43 @@ labels, and references to definitions, by the label of a certificate's node. -/
 def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
   match l, cs with
   -- case analysis of lists at the empty list and at a list of a head and a tail
-  | 24, [(A, _), (B, _), (n, _), (c, _)] =>
+  | Rule.lcaseNil, [(A, _), (B, _), (n, _), (c, _)] =>
     if Ty.IsTy A ∧ Ty.IsTy B ∧ typeOf G Γ n = some B ∧
         typeOf G Γ c = some (tArrow A (tArrow (tList A) B)) then
-      some ⟨B, apps (mk 24 [A, B]) [mk 19 [A], n, c], n⟩
+      some ⟨B, apps (mk Label.lcase [A, B]) [mk Label.nil [A], n, c], n⟩
     else none
-  | 25, [(A, _), (B, _), (x, _), (xs, _), (n, _), (c, _)] =>
+  | Rule.lcaseCons, [(A, _), (B, _), (x, _), (xs, _), (n, _), (c, _)] =>
     if Ty.IsTy A ∧ Ty.IsTy B ∧ typeOf G Γ n = some B ∧
         typeOf G Γ c = some (tArrow A (tArrow (tList A) B)) ∧ typeOf G Γ x = some A ∧
         typeOf G Γ xs = some (tList A) then
-      some ⟨B, apps (mk 24 [A, B]) [mk 20 [x, xs], n, c], apps c [x, xs]⟩
+      some ⟨B, apps (mk Label.lcase [A, B]) [mk Label.cons [x, xs], n, c], apps c [x, xs]⟩
     else none
   -- iteration at the label zero and at the successor of a label
-  | 26, [(A, _), (s, _), (z, _)] =>
+  | Rule.iterZero, [(A, _), (s, _), (z, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ s = some (tArrow A A) ∧ typeOf G Γ z = some A then
-      some ⟨A, apps (mk 18 [A]) [s, z, mk 15 [leaf 0]], z⟩
+      some ⟨A, apps (mk Label.iter [A]) [s, z, mk Label.quote [leaf 0]], z⟩
     else none
-  | 27, [(A, _), (s, _), (z, _), (n, _)] =>
+  | Rule.iterSucc, [(A, _), (s, _), (z, _), (n, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ s = some (tArrow A A) ∧ typeOf G Γ z = some A ∧
         typeOf G Γ n = some tT then
-      some ⟨A, apps (mk 18 [A]) [s, z, apps (mk 22 [leaf 5]) [n, mk 15 [leaf 1]]],
-        mk 10 [s, apps (mk 18 [A]) [s, z, n]]⟩
+      some ⟨A, apps (mk Label.iter [A]) [s, z, apps (mk Label.prim [leaf Prim.add]) [n,
+          mk Label.quote [leaf 1]]],
+        mk Label.app [s, apps (mk Label.iter [A]) [s, z, n]]⟩
     else none
   -- the fold of trees at a node
-  | 28, [(A, _), (f, _), (x, _), (xs, _)] =>
+  | Rule.foldNode, [(A, _), (f, _), (x, _), (xs, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ f = some (tArrow tT (tArrow (tList A) A)) ∧
         typeOf G Γ x = some tT ∧ typeOf G Γ xs = some (tList tT) then
-      some ⟨A, apps (mk 17 [A]) [f, apps (mk 22 [leaf 3]) [x, xs]],
-        apps f [mk 10 [mk 22 [leaf 0], x],
-          mapBy tT A (apps (mk 17 [A]) [Kernel.wk 2 f, Tm.var 1]) xs]⟩
+      some ⟨A, apps (mk Label.fold [A]) [f, apps (mk Label.prim [leaf Prim.node]) [x, xs]],
+        apps f [mk Label.app [mk Label.prim [leaf Prim.label], x],
+          mapBy tT A (apps (mk Label.fold [A]) [Kernel.wk 2 f, Tm.var 1]) xs]⟩
     else none
   -- induction on the innermost variable, a tree, under the hypothesis for its children
-  | 29, [(s, _), (t, _), (_, p1)] =>
+  | Rule.indTree, [(s, _), (t, _), (_, p1)] =>
     match Γ with
     | L :: Γ' => (typeOf G Γ s).bind fun B ↦
       let H0 := H.map Eqn.lower
-      let nd := apps (mk 22 [leaf 3]) [Tm.var 1, Tm.var 0]
+      let nd := apps (mk Label.prim [leaf Prim.node]) [Tm.var 1, Tm.var 0]
       if L = tT ∧ Ty.IsTy B ∧ typeOf G Γ t = some B ∧ H0.map (Eqn.wk 1) = H ∧
           (∀ h ∈ H0, h.Typed G Γ') ∧
           p1 E G (tList tT :: tT :: Γ')
@@ -864,47 +1011,52 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
       else none
     | [] => none
   -- induction on the label of the innermost variable, a tree
-  | 30, [(s, _), (t, _), (_, p0), (_, p1)] =>
+  | Rule.indLabel, [(s, _), (t, _), (_, p0), (_, p1)] =>
     match Γ with
     | L :: Γ' => (typeOf G Γ s).bind fun B ↦
       let H0 := H.map Eqn.lower
-      let suc := apps (mk 22 [leaf 5]) [Tm.var 0, mk 15 [leaf 1]]
-      let lab := mk 10 [mk 22 [leaf 0], Tm.var 0]
+      let suc := apps (mk Label.prim [leaf Prim.add]) [Tm.var 0, mk Label.quote [leaf 1]]
+      let lab := mk Label.app [mk Label.prim [leaf Prim.label], Tm.var 0]
       if L = tT ∧ typeOf G Γ t = some B ∧ H0.map (Eqn.wk 1) = H ∧ (∀ h ∈ H0, h.Typed G Γ') ∧
-          p0 E G Γ' H0 = some ⟨B, subst (mk 15 [leaf 0]) s, subst (mk 15 [leaf 0]) t⟩ ∧
+          p0 E G Γ' H0 = some ⟨B, subst (mk Label.quote [leaf 0]) s,
+              subst (mk Label.quote [leaf 0]) t⟩ ∧
           p1 E G Γ (⟨B, s, t⟩ :: H) =
             some ⟨B, subst suc (wkAt 1 1 s), subst suc (wkAt 1 1 t)⟩ then
         some ⟨B, subst lab (wkAt 1 1 s), subst lab (wkAt 1 1 t)⟩
       else none
     | [] => none
   -- a reference to a definition is the definition, weakened into the context
-  | 31, [(j, _)] => E.defs[j.label]?.bind fun t ↦ (typeOf G Γ (mk 23 [j])).map fun A ↦
-    ⟨A, mk 23 [j], Kernel.wk Γ.length t⟩
+  | Rule.unfold, [(j, _)] =>
+    E.defs[j.label]?.bind fun t ↦ (typeOf G Γ (mk Label.ref [j])).map fun A ↦
+      ⟨A, mk Label.ref [j], Kernel.wk Γ.length t⟩
   -- the conditional at a quoted tree
-  | 32, [(c, _), (a, _), (b, _)] => (typeOf G Γ a).bind fun A ↦
-    if typeOf G Γ b = some A then some ⟨A, mk 16 [mk 15 [c], a, b], if c.label ≠ 0 then a else b⟩
+  | Rule.condQuote, [(c, _), (a, _), (b, _)] => (typeOf G Γ a).bind fun A ↦
+    if typeOf G Γ b = some A then some ⟨A, mk Label.cond [mk Label.quote [c], a, b],
+        if c.label ≠ 0 then a else b⟩
     else none
   -- an instance of an axiom or of a theorem, each variable replaced by a term of its type
-  | 33, (j, _) :: us => (axioms ++ E.thms)[j.label]?.bind fun th ↦
+  | Rule.ax, (j, _) :: us => (axioms ++ E.thms)[j.label]?.bind fun th ↦
     if List.Forall₂ (fun u A ↦ typeOf G Γ u = some A) (us.map Prod.fst) th.ctx then
       some (th.inst Γ (us.map Prod.fst))
     else none
   -- iteration reads the label of the tree it iterates over
-  | 34, [(A, _), (s, _), (z, _), (t, _)] =>
+  | Rule.iterLabel, [(A, _), (s, _), (z, _), (t, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ s = some (tArrow A A) ∧ typeOf G Γ z = some A ∧
         typeOf G Γ t = some tT then
-      some ⟨A, apps (mk 18 [A]) [s, z, t], apps (mk 18 [A]) [s, z, mk 10 [mk 22 [leaf 0], t]]⟩
+      some ⟨A, apps (mk Label.iter [A]) [s, z, t], apps (mk Label.iter [A]) [s, z,
+          mk Label.app [mk Label.prim [leaf Prim.label], t]]⟩
     else none
   -- the conditional is the iteration of a constant function from its second branch
-  | 35, [(A, _), (c, _), (a, _), (b, _)] =>
+  | Rule.condIter, [(A, _), (c, _), (a, _), (b, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ c = some tT ∧ typeOf G Γ a = some A ∧ typeOf G Γ b = some A then
-      some ⟨A, mk 16 [c, a, b], apps (mk 18 [A]) [mk 9 [A, Kernel.wk 1 a], b, c]⟩
+      some ⟨A, mk Label.cond [c, a, b],
+        apps (mk Label.iter [A]) [mk Label.lam [A, Kernel.wk 1 a], b, c]⟩
     else none
   | _, _ => none
 
 /-- One rule of the checker, by the label of a certificate's node. -/
 def checkStep (l : ℕ) (cs : List (Tree × Chk)) : Chk :=
-  if l < 24 then checkCore l cs else checkMore l cs
+  if l < Rule.lcaseNil then checkCore l cs else checkMore l cs
 
 /-- The checker: the conclusion of a certificate, in a program's definitions and global
 environment, a context and a list of hypotheses, or nothing when the certificate does not
@@ -1031,7 +1183,7 @@ theorem valid_trans {q q' : Eqn} (h : Valid G Γ H q) (h' : Valid G Γ H q') (ht
 /-- Congruence of application. -/
 theorem valid_app {q q' : Eqn} {A B : Tree} (h : Valid G Γ H q) (h' : Valid G Γ H q')
     (hF : arrowParts q.ty = some (A, B)) (hx : q'.ty = A) :
-    Valid G Γ H ⟨B, mk 10 [q.lhs, q'.lhs], mk 10 [q.rhs, q'.rhs]⟩ := by
+    Valid G Γ H ⟨B, mk Label.app [q.lhs, q'.lhs], mk Label.app [q.rhs, q'.rhs]⟩ := by
   obtain ⟨F, s, s'⟩ := q
   obtain ⟨A', t, t'⟩ := q'
   obtain rfl := arrowParts_eq hF
@@ -1043,7 +1195,7 @@ theorem valid_app {q q' : Eqn} {A B : Tree} (h : Valid G Γ H q) (h' : Valid G �
 /-- Congruence of abstraction. -/
 theorem valid_lam {A : Tree} {q : Eqn} (hA : Ty.IsTy A = true)
     (h : Valid G (A :: Γ) (H.map (Eqn.wk 1)) q) :
-    Valid G Γ H ⟨tArrow A q.ty, mk 9 [A, q.lhs], mk 9 [A, q.rhs]⟩ := by
+    Valid G Γ H ⟨tArrow A q.ty, mk Label.lam [A, q.lhs], mk Label.lam [A, q.rhs]⟩ := by
   obtain ⟨f, g, hf, hg, he⟩ := h
   refine ⟨_, _, infer_lam hA hf, infer_lam hA hg, fun e hH ↦ funext fun a ↦ he (a, e) ?_⟩
   intro h hmem
@@ -1052,14 +1204,15 @@ theorem valid_lam {A : Tree} {q : Eqn} (hA : Ty.IsTy A = true)
 
 /-- Congruence of pairing. -/
 theorem valid_pair {q q' : Eqn} (h : Valid G Γ H q) (h' : Valid G Γ H q') :
-    Valid G Γ H ⟨tProd q.ty q'.ty, mk 12 [q.lhs, q'.lhs], mk 12 [q.rhs, q'.rhs]⟩ := by
+    Valid G Γ H
+      ⟨tProd q.ty q'.ty, mk Label.pair [q.lhs, q'.lhs], mk Label.pair [q.rhs, q'.rhs]⟩ := by
   obtain ⟨f, g, hf, hg, he⟩ := h
   obtain ⟨f', g', hf', hg', he'⟩ := h'
   exact ⟨_, _, infer_pair hf hf', infer_pair hg hg', fun e hH ↦ by rw [he e hH, he' e hH]⟩
 
 /-- Congruence of the first projection. -/
 theorem valid_fst {q : Eqn} {A B : Tree} (h : Valid G Γ H q) (hP : prodParts q.ty = some (A, B)) :
-    Valid G Γ H ⟨A, mk 13 [q.lhs], mk 13 [q.rhs]⟩ := by
+    Valid G Γ H ⟨A, mk Label.fst [q.lhs], mk Label.fst [q.rhs]⟩ := by
   obtain ⟨P, s, s'⟩ := q
   obtain rfl := prodParts_eq hP
   obtain ⟨f, g, hf, hg, he⟩ := h
@@ -1067,7 +1220,7 @@ theorem valid_fst {q : Eqn} {A B : Tree} (h : Valid G Γ H q) (hP : prodParts q.
 
 /-- Congruence of the second projection. -/
 theorem valid_snd {q : Eqn} {A B : Tree} (h : Valid G Γ H q) (hP : prodParts q.ty = some (A, B)) :
-    Valid G Γ H ⟨B, mk 14 [q.lhs], mk 14 [q.rhs]⟩ := by
+    Valid G Γ H ⟨B, mk Label.snd [q.lhs], mk Label.snd [q.rhs]⟩ := by
   obtain ⟨P, s, s'⟩ := q
   obtain rfl := prodParts_eq hP
   obtain ⟨f, g, hf, hg, he⟩ := h
@@ -1076,7 +1229,7 @@ theorem valid_snd {q : Eqn} {A B : Tree} (h : Valid G Γ H q) (hP : prodParts q.
 /-- Congruence of the list of a head and a tail. -/
 theorem valid_cons {q q' : Eqn} (h : Valid G Γ H q) (h' : Valid G Γ H q')
     (hl : q'.ty = tList q.ty) :
-    Valid G Γ H ⟨q'.ty, mk 20 [q.lhs, q'.lhs], mk 20 [q.rhs, q'.rhs]⟩ := by
+    Valid G Γ H ⟨q'.ty, mk Label.cons [q.lhs, q'.lhs], mk Label.cons [q.rhs, q'.rhs]⟩ := by
   obtain ⟨A, s, s'⟩ := q
   obtain ⟨L, t, t'⟩ := q'
   obtain rfl : L = tList A := hl
@@ -1087,7 +1240,8 @@ theorem valid_cons {q q' : Eqn} (h : Valid G Γ H q) (h' : Valid G Γ H q')
 /-- Congruence of the conditional. -/
 theorem valid_if {q q' q'' : Eqn} (h : Valid G Γ H q) (h' : Valid G Γ H q')
     (h'' : Valid G Γ H q'') (hc : q.ty = tT) (hty : q''.ty = q'.ty) :
-    Valid G Γ H ⟨q'.ty, mk 16 [q.lhs, q'.lhs, q''.lhs], mk 16 [q.rhs, q'.rhs, q''.rhs]⟩ := by
+    Valid G Γ H
+      ⟨q'.ty, mk Label.cond [q.lhs, q'.lhs, q''.lhs], mk Label.cond [q.rhs, q'.rhs, q''.rhs]⟩ := by
   obtain ⟨C, c, c'⟩ := q
   obtain ⟨A, a, a'⟩ := q'
   obtain ⟨A', b, b'⟩ := q''
@@ -1102,14 +1256,15 @@ theorem valid_if {q q' q'' : Eqn} (h : Valid G Γ H q) (h' : Valid G Γ H q')
 /-- The β rule of functions. -/
 theorem valid_beta {A a b B : Tree} (hA : Ty.IsTy A = true) (ha : typeOf G Γ a = some A)
     (hb : typeOf G (A :: Γ) b = some B) :
-    Valid G Γ H ⟨B, mk 10 [mk 9 [A, b], a], subst a b⟩ := by
+    Valid G Γ H ⟨B, mk Label.app [mk Label.lam [A, b], a], subst a b⟩ := by
   obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
   obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb
   exact ⟨_, _, infer_app (infer_lam hA hfb) hfa, infer_subst hfa hfb, fun _ _ ↦ rfl⟩
 
 /-- The η rule of functions. -/
 theorem valid_eta {f F A B : Tree} (hf : typeOf G Γ f = some F) (hF : arrowParts F = some (A, B))
-    (hA : Ty.IsTy A = true) : Valid G Γ H ⟨F, f, mk 9 [A, mk 10 [Kernel.wk 1 f, Tm.var 0]]⟩ := by
+    (hA : Ty.IsTy A = true) :
+    Valid G Γ H ⟨F, f, mk Label.lam [A, mk Label.app [Kernel.wk 1 f, Tm.var 0]]⟩ := by
   obtain rfl := arrowParts_eq hF
   obtain ⟨ff, hff⟩ := typeOf_eq_some.mp hf
   have hw : infer G (A :: Γ) (Kernel.wk 1 f) = some ⟨tArrow A B, ff ∘ Prod.snd⟩ := infer_wk [A] hff
@@ -1118,28 +1273,29 @@ theorem valid_eta {f F A B : Tree} (hf : typeOf G Γ f = some F) (hF : arrowPart
 
 /-- The β rule of the first projection. -/
 theorem valid_fstBeta {a b A B : Tree} (ha : typeOf G Γ a = some A) (hb : typeOf G Γ b = some B) :
-    Valid G Γ H ⟨A, mk 13 [mk 12 [a, b]], a⟩ := by
+    Valid G Γ H ⟨A, mk Label.fst [mk Label.pair [a, b]], a⟩ := by
   obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
   obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb
   exact ⟨_, fa, infer_fst (infer_pair hfa hfb), hfa, fun _ _ ↦ rfl⟩
 
 /-- The β rule of the second projection. -/
 theorem valid_sndBeta {a b A B : Tree} (ha : typeOf G Γ a = some A) (hb : typeOf G Γ b = some B) :
-    Valid G Γ H ⟨B, mk 14 [mk 12 [a, b]], b⟩ := by
+    Valid G Γ H ⟨B, mk Label.snd [mk Label.pair [a, b]], b⟩ := by
   obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
   obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb
   exact ⟨_, fb, infer_snd (infer_pair hfa hfb), hfb, fun _ _ ↦ rfl⟩
 
 /-- The η rule of pairs. -/
 theorem valid_pairEta {p P A B : Tree} (hp : typeOf G Γ p = some P)
-    (hP : prodParts P = some (A, B)) : Valid G Γ H ⟨P, mk 12 [mk 13 [p], mk 14 [p]], p⟩ := by
+    (hP : prodParts P = some (A, B)) :
+    Valid G Γ H ⟨P, mk Label.pair [mk Label.fst [p], mk Label.snd [p]], p⟩ := by
   obtain rfl := prodParts_eq hP
   obtain ⟨fp, hfp⟩ := typeOf_eq_some.mp hp
   exact ⟨_, fp, infer_pair (infer_fst hfp) (infer_snd hfp), hfp, fun _ _ ↦ rfl⟩
 
 /-- The η rule of the unit type. -/
 theorem valid_unitEta {t : Tree} (ht : typeOf G Γ t = some tUnit) :
-    Valid G Γ H ⟨tUnit, t, mk 11 []⟩ := by
+    Valid G Γ H ⟨tUnit, t, mk Label.unit []⟩ := by
   obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
   exact ⟨ft, _, hft, infer_unit G Γ, fun _ _ ↦ rfl⟩
 
@@ -1195,7 +1351,7 @@ theorem valid_inst {u A : Tree} {q : Eqn} (hu : typeOf G Γ u = some A)
 /-- The right fold of lists at the empty list. -/
 theorem valid_foldrNil {A B g z : Tree} (hA : Ty.IsTy A = true) (hB : Ty.IsTy B = true)
     (hg : typeOf G Γ g = some (tArrow A (tArrow B B))) (hz : typeOf G Γ z = some B) :
-    Valid G Γ H ⟨B, apps (mk 21 [A, B]) [g, z, mk 19 [A]], z⟩ := by
+    Valid G Γ H ⟨B, apps (mk Label.foldr [A, B]) [g, z, mk Label.nil [A]], z⟩ := by
   obtain ⟨fg, hfg⟩ := typeOf_eq_some.mp hg
   obtain ⟨fz, hfz⟩ := typeOf_eq_some.mp hz
   exact ⟨_, fz, infer_app (infer_app (infer_app (infer_foldr hA hB) hfg) hfz) (infer_nil hA), hfz,
@@ -1205,8 +1361,8 @@ theorem valid_foldrNil {A B g z : Tree} (hA : Ty.IsTy A = true) (hB : Ty.IsTy B 
 theorem valid_foldrCons {A B g z x xs : Tree} (hA : Ty.IsTy A = true) (hB : Ty.IsTy B = true)
     (hg : typeOf G Γ g = some (tArrow A (tArrow B B))) (hz : typeOf G Γ z = some B)
     (hx : typeOf G Γ x = some A) (hxs : typeOf G Γ xs = some (tList A)) :
-    Valid G Γ H ⟨B, apps (mk 21 [A, B]) [g, z, mk 20 [x, xs]],
-      apps g [x, apps (mk 21 [A, B]) [g, z, xs]]⟩ := by
+    Valid G Γ H ⟨B, apps (mk Label.foldr [A, B]) [g, z, mk Label.cons [x, xs]],
+      apps g [x, apps (mk Label.foldr [A, B]) [g, z, xs]]⟩ := by
   obtain ⟨fg, hfg⟩ := typeOf_eq_some.mp hg
   obtain ⟨fz, hfz⟩ := typeOf_eq_some.mp hz
   obtain ⟨fx, hfx⟩ := typeOf_eq_some.mp hx
@@ -1228,11 +1384,11 @@ theorem infer_wkAt (Θ W : Ctx) {t : Tree} {m : Meaning (Θ ++ Γ)}
 theorem valid_indList {Γ' : Ctx} {A B s t : Tree} (hA : Ty.IsTy A = true)
     (hs : typeOf G (tList A :: Γ') s = some B) (ht : typeOf G (tList A :: Γ') t = some B)
     (hH : (H.map Eqn.lower).map (Eqn.wk 1) = H) (hT : ∀ h ∈ H.map Eqn.lower, h.Typed G Γ')
-    (h0 : Valid G Γ' (H.map Eqn.lower) ⟨B, subst (mk 19 [A]) s, subst (mk 19 [A]) t⟩)
+    (h0 : Valid G Γ' (H.map Eqn.lower) ⟨B, subst (mk Label.nil [A]) s, subst (mk Label.nil [A]) t⟩)
     (h1 : Valid G (tList A :: A :: Γ')
       (⟨B, wkAt 1 1 s, wkAt 1 1 t⟩ :: (H.map Eqn.lower).map (Eqn.wk 2))
-      ⟨B, subst (mk 20 [Tm.var 1, Tm.var 0]) (wkAt 1 2 s),
-        subst (mk 20 [Tm.var 1, Tm.var 0]) (wkAt 1 2 t)⟩) :
+      ⟨B, subst (mk Label.cons [Tm.var 1, Tm.var 0]) (wkAt 1 2 s),
+        subst (mk Label.cons [Tm.var 1, Tm.var 0]) (wkAt 1 2 t)⟩) :
     Valid G (tList A :: Γ') H ⟨B, s, t⟩ := by
   obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
   obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
@@ -1247,7 +1403,7 @@ theorem valid_indList {Γ' : Ctx} {A B s t : Tree} (hA : Ty.IsTy A = true)
   obtain ⟨f0, g0, hf0, hg0, he0⟩ := h0
   obtain rfl := infer_unique hf0 (infer_subst (infer_nil hA) hfs)
   obtain rfl := infer_unique hg0 (infer_subst (infer_nil hA) hft)
-  have hc : infer G (tList A :: A :: Γ') (mk 20 [Tm.var 1, Tm.var 0]) =
+  have hc : infer G (tList A :: A :: Γ') (mk Label.cons [Tm.var 1, Tm.var 0]) =
       some ⟨tList A, fun d ↦ d.2.1 :: d.1⟩ :=
     infer_cons (by rw [infer_var]; rfl) (by rw [infer_var]; rfl)
   obtain ⟨f1, g1, hf1, hg1, he1⟩ := h1
@@ -1450,7 +1606,7 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {E : Env} {G : List Glob} {Γ
 /-- Case analysis of lists at the empty list. -/
 theorem valid_lcaseNil {A B n c : Tree} (hA : Ty.IsTy A = true) (hB : Ty.IsTy B = true)
     (hn : typeOf G Γ n = some B) (hc : typeOf G Γ c = some (tArrow A (tArrow (tList A) B))) :
-    Valid G Γ H ⟨B, apps (mk 24 [A, B]) [mk 19 [A], n, c], n⟩ := by
+    Valid G Γ H ⟨B, apps (mk Label.lcase [A, B]) [mk Label.nil [A], n, c], n⟩ := by
   obtain ⟨fn, hfn⟩ := typeOf_eq_some.mp hn
   obtain ⟨fc, hfc⟩ := typeOf_eq_some.mp hc
   exact ⟨_, fn, infer_app (infer_app (infer_app (infer_lcase hA hB) (infer_nil hA)) hfn) hfc, hfn,
@@ -1460,7 +1616,8 @@ theorem valid_lcaseNil {A B n c : Tree} (hA : Ty.IsTy A = true) (hB : Ty.IsTy B 
 theorem valid_lcaseCons {A B x xs n c : Tree} (hA : Ty.IsTy A = true) (hB : Ty.IsTy B = true)
     (hn : typeOf G Γ n = some B) (hc : typeOf G Γ c = some (tArrow A (tArrow (tList A) B)))
     (hx : typeOf G Γ x = some A) (hxs : typeOf G Γ xs = some (tList A)) :
-    Valid G Γ H ⟨B, apps (mk 24 [A, B]) [mk 20 [x, xs], n, c], apps c [x, xs]⟩ := by
+    Valid G Γ H
+      ⟨B, apps (mk Label.lcase [A, B]) [mk Label.cons [x, xs], n, c], apps c [x, xs]⟩ := by
   obtain ⟨fn, hfn⟩ := typeOf_eq_some.mp hn
   obtain ⟨fc, hfc⟩ := typeOf_eq_some.mp hc
   obtain ⟨fx, hfx⟩ := typeOf_eq_some.mp hx
@@ -1472,7 +1629,7 @@ theorem valid_lcaseCons {A B x xs n c : Tree} (hA : Ty.IsTy A = true) (hB : Ty.I
 /-- Iteration at the label zero. -/
 theorem valid_iterZero {A s z : Tree} (hA : Ty.IsTy A = true)
     (hs : typeOf G Γ s = some (tArrow A A)) (hz : typeOf G Γ z = some A) :
-    Valid G Γ H ⟨A, apps (mk 18 [A]) [s, z, mk 15 [leaf 0]], z⟩ := by
+    Valid G Γ H ⟨A, apps (mk Label.iter [A]) [s, z, mk Label.quote [leaf 0]], z⟩ := by
   obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
   obtain ⟨fz, hfz⟩ := typeOf_eq_some.mp hz
   exact ⟨_, fz, infer_app (infer_app (infer_app (infer_iter hA) hfs) hfz) (infer_quote G Γ _), hfz,
@@ -1482,8 +1639,10 @@ theorem valid_iterZero {A s z : Tree} (hA : Ty.IsTy A = true)
 theorem valid_iterSucc {A s z n : Tree} (hA : Ty.IsTy A = true)
     (hs : typeOf G Γ s = some (tArrow A A)) (hz : typeOf G Γ z = some A)
     (hn : typeOf G Γ n = some tT) :
-    Valid G Γ H ⟨A, apps (mk 18 [A]) [s, z, apps (mk 22 [leaf 5]) [n, mk 15 [leaf 1]]],
-      mk 10 [s, apps (mk 18 [A]) [s, z, n]]⟩ := by
+    Valid G Γ H
+      ⟨A, apps (mk Label.iter [A]) [s, z,
+          apps (mk Label.prim [leaf Prim.add]) [n, mk Label.quote [leaf 1]]],
+        mk Label.app [s, apps (mk Label.iter [A]) [s, z, n]]⟩ := by
   obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
   obtain ⟨fz, hfz⟩ := typeOf_eq_some.mp hz
   obtain ⟨fn, hfn⟩ := typeOf_eq_some.mp hn
@@ -1495,9 +1654,9 @@ theorem valid_iterSucc {A s z n : Tree} (hA : Ty.IsTy A = true)
 theorem valid_foldNode {A f x xs : Tree} (hA : Ty.IsTy A = true)
     (hf : typeOf G Γ f = some (tArrow tT (tArrow (tList A) A))) (hx : typeOf G Γ x = some tT)
     (hxs : typeOf G Γ xs = some (tList tT)) :
-    Valid G Γ H ⟨A, apps (mk 17 [A]) [f, apps (mk 22 [leaf 3]) [x, xs]],
-      apps f [mk 10 [mk 22 [leaf 0], x],
-        mapBy tT A (apps (mk 17 [A]) [Kernel.wk 2 f, Tm.var 1]) xs]⟩ := by
+    Valid G Γ H ⟨A, apps (mk Label.fold [A]) [f, apps (mk Label.prim [leaf Prim.node]) [x, xs]],
+      apps f [mk Label.app [mk Label.prim [leaf Prim.label], x],
+        mapBy tT A (apps (mk Label.fold [A]) [Kernel.wk 2 f, Tm.var 1]) xs]⟩ := by
   obtain ⟨ff, hff⟩ := typeOf_eq_some.mp hf
   obtain ⟨fx, hfx⟩ := typeOf_eq_some.mp hx
   obtain ⟨fxs, hfxs⟩ := typeOf_eq_some.mp hxs
@@ -1523,8 +1682,8 @@ theorem valid_indTree {Γ' : Ctx} {B s t : Tree} (hB : Ty.IsTy B = true)
       (⟨tList B, mapBy tT B (subst (Tm.var 1) (wkAt 1 4 s)) (Tm.var 0),
         mapBy tT B (subst (Tm.var 1) (wkAt 1 4 t)) (Tm.var 0)⟩ ::
           (H.map Eqn.lower).map (Eqn.wk 2))
-      ⟨B, subst (apps (mk 22 [leaf 3]) [Tm.var 1, Tm.var 0]) (wkAt 1 2 s),
-        subst (apps (mk 22 [leaf 3]) [Tm.var 1, Tm.var 0]) (wkAt 1 2 t)⟩) :
+      ⟨B, subst (apps (mk Label.prim [leaf Prim.node]) [Tm.var 1, Tm.var 0]) (wkAt 1 2 s),
+        subst (apps (mk Label.prim [leaf Prim.node]) [Tm.var 1, Tm.var 0]) (wkAt 1 2 t)⟩) :
     Valid G (tT :: Γ') H ⟨B, s, t⟩ := by
   obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
   obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
@@ -1534,7 +1693,8 @@ theorem valid_indTree {Γ' : Ctx} {B s t : Tree} (hB : Ty.IsTy B = true)
     obtain ⟨f0, g0, hf0, hg0⟩ := (hT h hmem).exists
     have hw : h.wk 1 ∈ H := hH ▸ List.mem_map_of_mem hmem
     exact ⟨f0, g0, hf0, hg0, (hHe _ hw).eq (infer_wk [tT] hf0) (infer_wk [tT] hg0)⟩
-  have hnd : infer G (tList tT :: tT :: Γ') (apps (mk 22 [leaf 3]) [Tm.var 1, Tm.var 0]) =
+  have hnd : infer G (tList tT :: tT :: Γ')
+      (apps (mk Label.prim [leaf Prim.node]) [Tm.var 1, Tm.var 0]) =
       some ⟨tT, fun d ↦ Const.node d.2.1 d.1⟩ :=
     infer_app (infer_app (infer_nodePrim _ _) (by rw [infer_var]; rfl)) (by rw [infer_var]; rfl)
   obtain ⟨f1, g1, hf1, hg1, he1⟩ := h1
@@ -1565,13 +1725,15 @@ theorem valid_indLabel {Γ' : Ctx} {B s t : Tree}
     (hs : typeOf G (tT :: Γ') s = some B) (ht : typeOf G (tT :: Γ') t = some B)
     (hH : (H.map Eqn.lower).map (Eqn.wk 1) = H) (hT : ∀ h ∈ H.map Eqn.lower, h.Typed G Γ')
     (h0 : Valid G Γ' (H.map Eqn.lower)
-      ⟨B, subst (mk 15 [leaf 0]) s, subst (mk 15 [leaf 0]) t⟩)
+      ⟨B, subst (mk Label.quote [leaf 0]) s, subst (mk Label.quote [leaf 0]) t⟩)
     (h1 : Valid G (tT :: Γ') (⟨B, s, t⟩ :: H)
-      ⟨B, subst (apps (mk 22 [leaf 5]) [Tm.var 0, mk 15 [leaf 1]]) (wkAt 1 1 s),
-        subst (apps (mk 22 [leaf 5]) [Tm.var 0, mk 15 [leaf 1]]) (wkAt 1 1 t)⟩) :
+      ⟨B, subst (apps (mk Label.prim [leaf Prim.add]) [Tm.var 0,
+          mk Label.quote [leaf 1]]) (wkAt 1 1 s),
+        subst (apps (mk Label.prim [leaf Prim.add]) [Tm.var 0,
+            mk Label.quote [leaf 1]]) (wkAt 1 1 t)⟩) :
     Valid G (tT :: Γ') H
-      ⟨B, subst (mk 10 [mk 22 [leaf 0], Tm.var 0]) (wkAt 1 1 s),
-        subst (mk 10 [mk 22 [leaf 0], Tm.var 0]) (wkAt 1 1 t)⟩ := by
+      ⟨B, subst (mk Label.app [mk Label.prim [leaf Prim.label], Tm.var 0]) (wkAt 1 1 s),
+        subst (mk Label.app [mk Label.prim [leaf Prim.label], Tm.var 0]) (wkAt 1 1 t)⟩ := by
   obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
   obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
   have hv0 : infer G (tT :: Γ') (Tm.var 0) = some ⟨tT, Prod.fst⟩ := by
@@ -1604,9 +1766,9 @@ theorem valid_indLabel {Γ' : Ctx} {B s t : Tree}
 
 /-- A reference to a definition is the definition, weakened into the context. -/
 theorem valid_unfold {E : Env} {j t A : Tree} (hE : E.Sound G) (ht : E.defs[j.label]? = some t)
-    (hA : typeOf G Γ (mk 23 [j]) = some A) :
-    Valid G Γ H ⟨A, mk 23 [j], Kernel.wk Γ.length t⟩ := by
-  have href : infer G Γ (mk 23 [j]) = G[j.label]?.map constant := by
+    (hA : typeOf G Γ (mk Label.ref [j]) = some A) :
+    Valid G Γ H ⟨A, mk Label.ref [j], Kernel.wk Γ.length t⟩ := by
+  have href : infer G Γ (mk Label.ref [j]) = G[j.label]?.map constant := by
     simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep]
   obtain ⟨fr, hfr⟩ := typeOf_eq_some.mp hA
   rw [href] at hfr
@@ -1619,7 +1781,7 @@ theorem valid_unfold {E : Env} {j t A : Tree} (hE : E.Sound G) (ht : E.defs[j.la
 /-- The conditional at a quoted tree is its first branch when the tree's label is not zero,
 and its second when it is. -/
 theorem valid_ifQuote {c a b A : Tree} (ha : typeOf G Γ a = some A) (hb : typeOf G Γ b = some A) :
-    Valid G Γ H ⟨A, mk 16 [mk 15 [c], a, b], if c.label ≠ 0 then a else b⟩ := by
+    Valid G Γ H ⟨A, mk Label.cond [mk Label.quote [c], a, b], if c.label ≠ 0 then a else b⟩ := by
   obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
   obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb
   have hif := infer_if (infer_quote G Γ c) hfa hfb
@@ -1929,7 +2091,8 @@ theorem valid_iterLabel {A s z t : Tree} (hA : Ty.IsTy A = true)
     (hs : typeOf G Γ s = some (tArrow A A)) (hz : typeOf G Γ z = some A)
     (ht : typeOf G Γ t = some tT) :
     Valid G Γ H
-      ⟨A, apps (mk 18 [A]) [s, z, t], apps (mk 18 [A]) [s, z, mk 10 [mk 22 [leaf 0], t]]⟩ := by
+      ⟨A, apps (mk Label.iter [A]) [s, z, t], apps (mk Label.iter [A]) [s, z,
+          mk Label.app [mk Label.prim [leaf Prim.label], t]]⟩ := by
   obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
   obtain ⟨fz, hfz⟩ := typeOf_eq_some.mp hz
   obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
@@ -1939,7 +2102,8 @@ theorem valid_iterLabel {A s z t : Tree} (hA : Ty.IsTy A = true)
 /-- The conditional is the iteration of a constant function from its second branch. -/
 theorem valid_ifIter {A c a b : Tree} (hA : Ty.IsTy A = true) (hc : typeOf G Γ c = some tT)
     (ha : typeOf G Γ a = some A) (hb : typeOf G Γ b = some A) :
-    Valid G Γ H ⟨A, mk 16 [c, a, b], apps (mk 18 [A]) [mk 9 [A, Kernel.wk 1 a], b, c]⟩ := by
+    Valid G Γ H ⟨A, mk Label.cond [c, a, b],
+      apps (mk Label.iter [A]) [mk Label.lam [A, Kernel.wk 1 a], b, c]⟩ := by
   obtain ⟨fc, hfc⟩ := typeOf_eq_some.mp hc
   obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
   obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb

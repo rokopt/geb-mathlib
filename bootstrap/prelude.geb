@@ -2,8 +2,48 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Utilities over trees and lists of trees, written in the kernel's syntax. Data are trees and
-; lists of trees throughout, since the kernel's types are not polymorphic.
+; The names of the kernel's labels, and utilities over trees and lists of trees, written in the
+; kernel's syntax. Data are trees and lists of trees throughout, since the kernel's types are
+; not polymorphic.
+
+; the labels of the kernel's types and terms and the indices of its primitives, as
+; Geb.Kernel.Label and Geb.Kernel.Prim name them
+(defnum Label.tyTree 0)
+(defnum Label.tyUnit 1)
+(defnum Label.tyProd 2)
+(defnum Label.tyArrow 3)
+(defnum Label.tyList 4)
+(defnum Label.var 8)
+(defnum Label.lam 9)
+(defnum Label.app 10)
+(defnum Label.unit 11)
+(defnum Label.pair 12)
+(defnum Label.fst 13)
+(defnum Label.snd 14)
+(defnum Label.quote 15)
+(defnum Label.cond 16)
+(defnum Label.fold 17)
+(defnum Label.iter 18)
+(defnum Label.nil 19)
+(defnum Label.cons 20)
+(defnum Label.foldr 21)
+(defnum Label.prim 22)
+(defnum Label.ref 23)
+(defnum Label.lcase 24)
+(defnum Prim.label 0)
+(defnum Prim.arity 1)
+(defnum Prim.child 2)
+(defnum Prim.node 3)
+(defnum Prim.children 4)
+(defnum Prim.add 5)
+(defnum Prim.sub 6)
+(defnum Prim.mul 7)
+(defnum Prim.div 8)
+(defnum Prim.mod 9)
+(defnum Prim.eq 10)
+(defnum Prim.lt 11)
+(defnum Prim.equal 12)
+(defnum Prim.log2 13)
 
 (deftype Ts (List T))
 (deftype Endo (Arrow Ts Ts))

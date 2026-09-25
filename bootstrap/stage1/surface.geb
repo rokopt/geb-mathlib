@@ -379,7 +379,9 @@
               (if (and (named h kwDeftype) (eq k 3))
                 (pair 1 (pair (append env (single (aliasD (nameOf (at es 1)) (expandAliases env (at es 2)))))
                               (cons e out)))
-                xpFail)))))))))
+              (if (and (named h kwDefnum) (eq k 3))
+                (pair 1 (pair env (cons e out)))
+                xpFail))))))))))
     xpFail))
 (defn expandProgram ((es Ts)) T
   (let s XP ((foldr T XPK (lam ((e T) (k XPK) (s XP)) (k (xpStep s e))) (lam ((s XP)) s) es)

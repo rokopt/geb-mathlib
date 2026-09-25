@@ -3665,15 +3665,18 @@ checklist and in CI.
   term returning its type with its denotation, so that evaluation agrees
   with the denotation by construction; the kernel's constants are plain
   Lean functions in `Geb.Kernel.Const`, which the denotations apply at
-  the denotations of their types; the primitives `Geb.Kernel.prims`
+  the denotations of their types; the labels of the constructors and the
+  indices of the primitives are named in `Geb.Kernel.Label` and
+  `Geb.Kernel.Prim`; the primitives `Geb.Kernel.prims`
   operate on labels and children, lists carry their right fold and their
   case analysis, the fold of
   trees denotes `Geb.RoseTree.elim` over the list of children's results, and
   iteration repeats a step as often as a label's value. `Reader.lean` reads
-  programs, sequences of named definitions and type abbreviations in
-  S-expressions over lists of characters, resolving names to de Bruijn
-  indices, references and primitives and expanding lists of binders and
-  local bindings (`Geb.Kernel.readProgram`), loads them in order
+  programs, sequences of named definitions and of type and numeral
+  abbreviations in S-expressions over lists of characters, resolving names
+  to de Bruijn indices, references and primitives and expanding lists of
+  binders, local bindings and numeral abbreviations
+  (`Geb.Kernel.readProgram`), loads them in order
   (`Geb.Kernel.load`), and applies the last to an input tree
   (`Geb.Kernel.runMain`). `Image.lean` stores a program as one tree
   (`Geb.Kernel.bundle`), writes and reads its image, a versioned header
@@ -3688,6 +3691,7 @@ checklist and in CI.
   (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). Tested in
   `GebTests/Prototypes/Kernel.lean`. The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
+  names the kernel's labels and primitives by numeral abbreviations and
   holds list and digit utilities, `serialize.geb` writes a tree's image,
   `reader.geb` reads a program's text into its bundle as the seed does,
   `check.geb` is the kernel's type checker, `surface.geb` expands the
@@ -3732,7 +3736,10 @@ checklist and in CI.
   its arguments is constant. `bootstrap/metalogic/equations.geb` is the
   same checker written in Surface 1; the tests compile it with the stage-0
   compiler and compare it with `Geb.Metalogic.check` on their
-  certificates and on malformed variants of each.
+  certificates and on malformed variants of each, and check that its
+  numeral abbreviations and the prelude's name the rules
+  (`Geb.Metalogic.Rule`), the labels and the primitives as the Lean
+  abbreviations do.
   `bootstrap/metalogic/prove.geb` constructs certificates by derived
   rules: normalization, innermost first, simplification of both sides of
   a goal, and induction; it reads a file of a program's forms and

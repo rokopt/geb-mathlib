@@ -55,7 +55,7 @@ namespace Geb.Kernel
 open scoped FinEnum
 
 /-- The variable of a de Bruijn index. -/
-def Tm.var (i : ℕ) : Tree := RoseTree.node 8 [leaf i]
+def Tm.var (i : ℕ) : Tree := RoseTree.node Label.var [leaf i]
 
 namespace Ctx
 
@@ -74,9 +74,10 @@ end Ctx
 def trav (v : ℕ → ℕ → Tree) : Tree → ℕ → Tree :=
   RoseTree.para fun l rs k ↦
     match l, rs with
-    | 8, [(n, _)] => v k n.label
-    | 9, [(A, _), (_, b)] => RoseTree.node 9 [A, b (k + 1)]
-    | 10, _ | 11, _ | 12, _ | 13, _ | 14, _ | 16, _ | 20, _ =>
+    | Label.var, [(n, _)] => v k n.label
+    | Label.lam, [(A, _), (_, b)] => RoseTree.node Label.lam [A, b (k + 1)]
+    | Label.app, _ | Label.unit, _ | Label.pair, _ | Label.fst, _ | Label.snd, _ | Label.cond, _
+    | Label.cons, _ =>
       RoseTree.node l (rs.map fun r ↦ r.2 k)
     | _, _ => RoseTree.node l (rs.map Prod.fst)
 
