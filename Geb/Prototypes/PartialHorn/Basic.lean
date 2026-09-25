@@ -45,6 +45,7 @@ computes holds in every model of the theory in which the environment's theorems 
 * {lit}`sortOf`, {lit}`subst`, {lit}`Scoped` — the sort of a term, substitution, and the scope
   of a term's variables.
 * {lit}`Model`, {lit}`eval` — models and the value of a term.
+* {lit}`Model.get` — the value of an operation defined at its arguments, at its result sort.
 * {lit}`Eqn`, {lit}`Seq`, {lit}`Valid`, {lit}`IsModel` — equations, sequents, validity, and
   models of a theory.
 * {lit}`checkStep`, {lit}`check` — the rules, and the checker.
@@ -185,6 +186,38 @@ def Seq.Valid (M : Model.{v} S) (a : Seq) : Prop := PartialHorn.Valid M a.ctx a.
 /-- A model of a theory: every axiom is valid in it. -/
 def IsModel (T : Theory) (M : Model.{v} T.sig) : Prop := ∀ a ∈ T.axioms, a.Valid M
 
+namespace Model
+
+variable (M : Model.{v} S)
+
+/-- The value of an operation defined at its arguments, at its result sort. -/
+def get {k : ℕ} {args : List M.Val} {s : ℕ} (h : ∃ a, M.op k args = some ⟨s, a⟩) : M.Car s :=
+  have hs : (M.op k args).isSome := by obtain ⟨a, ha⟩ := h; simp [ha]
+  have he : ((M.op k args).get hs).1 = s := by obtain ⟨a, ha⟩ := h; simp [ha]
+  he ▸ ((M.op k args).get hs).2
+
+/-- An operation defined at its arguments returns the value {lit}`get` reads. -/
+theorem op_eq_get {k : ℕ} {args : List M.Val} {s : ℕ} (h : ∃ a, M.op k args = some ⟨s, a⟩) :
+    M.op k args = some ⟨s, M.get h⟩ := by
+  obtain ⟨a, ha⟩ := h
+  simp only [get]
+  generalize_proofs hs he
+  revert hs he
+  rw [ha]
+  intro hs he
+  rfl
+
+/-- A value an operation returns has the operation's result sort. -/
+theorem exists_op_eq {k : ℕ} {args : List M.Val} {w : M.Val} {s : ℕ} (hw : M.op k args = some w)
+    (hs : (S[k]?).map Prod.snd = some s) : ∃ a, M.op k args = some ⟨s, a⟩ := by
+  have h := M.op_sort hw
+  rw [hs, Option.some.injEq] at h
+  obtain ⟨t, a⟩ := w
+  subst h
+  exact ⟨a, hw⟩
+
+end Model
+
 namespace Rule
 
 /-- A hypothesis, by index. -/
@@ -291,6 +324,11 @@ theorem eval_node_succ (k : ℕ) (ts : List Tree) :
     eval M ρ (RoseTree.node (k + 1) ts) = (ts.mapM (eval M ρ)).bind (M.op k) := by
   simp only [eval, RoseTree.para_node, List.mapM_map]
   rfl
+
+/-- The value of an operation's application, written with {name}`op`. -/
+theorem eval_op (k : ℕ) (ts : List Tree) :
+    eval M ρ (op k ts) = (ts.mapM (eval M ρ)).bind (M.op k) :=
+  eval_node_succ k ts
 
 /-- Substitution at a variable's node. -/
 theorem subst_node_zero (ts : List Tree) (i : Tree) :

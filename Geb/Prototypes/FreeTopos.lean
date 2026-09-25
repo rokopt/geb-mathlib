@@ -5,6 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Category
+public import Geb.Prototypes.FreeTopos.Model
 public import Geb.Prototypes.FreeTopos.Theory
 
 set_option doc.verso true in
