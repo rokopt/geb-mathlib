@@ -5,9 +5,11 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Arrows
 public import Geb.Prototypes.FreeTopos.Category
 public import Geb.Prototypes.FreeTopos.Check
 public import Geb.Prototypes.FreeTopos.Infer
+public import Geb.Prototypes.FreeTopos.Internal
 public import Geb.Prototypes.FreeTopos.Model
 public import Geb.Prototypes.FreeTopos.Prover
 public import Geb.Prototypes.FreeTopos.Theory
@@ -20,7 +22,8 @@ set_option doc.verso true in
 The metalogic's presentation of the free elementary topos with the natural numbers, list and
 rose-tree objects, as a partial Horn theory whose sorts are objects and arrows, with the proof
 that the category of each of its models is an elementary topos, a checker that infers the
-typing of the terms of its certificates, and a prover that computes certificates in it.
+typing of the terms of its certificates, a prover that computes certificates in it, and its
+internal language, compiled to its combinators.
 -/
 
 set_option doc.verso true

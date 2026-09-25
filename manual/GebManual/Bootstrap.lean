@@ -145,8 +145,11 @@ sections below detail:
   prototyped in Lean, constructed, and with it the measurement that
   decides when the Mitchell–Bénabou language is written, made, both
   criteria failing; certificates over a store of shared terms, checked
-  with the typing of their terms inferred, constructed; the checker and
-  prover written in Geb, not begun.
+  with the typing of their terms inferred, constructed; the
+  Mitchell–Bénabou language's terms, compilation and definitions, with
+  the proof that compiling agrees with unfolding in every model,
+  constructed, and its derivations, not begun; the checker
+  and prover written in Geb, not begun.
 
 Extension:
 
@@ -1676,17 +1679,45 @@ from 7 to 30 times the core's nodes, 18754 against 2071, and the
 development checks in 0.9 seconds against the core's 29 milliseconds.
 
 The Mitchell–Bénabou language is written after the third construction,
-and has definitions of its own. A definition of the language compiles
-to a definition of the combinators, and a theorem in Lean states that
-compiling a term and then unfolding the combinators' definitions agrees
-with unfolding the language's definitions and then compiling: the two
-terms have one value in every model, and the translation of the
-language's derivations computes a certificate of their equation. They
-are not the same term in general. Unfolding in the language substitutes
-the arguments for the variables, where the compiled definition is an
-arrow composed with the pairing of the arguments, and the two meet
-through the equations of the projections after a pairing and of
-evaluation after a currying.
+with definitions of its own. Its terms are those of the typed λ-calculus
+with products whose types are object terms of the combinators, built
+from object variables by the terminal object, products, exponentials,
+the subobject classifier and the data objects; its other constants are
+the folds of the data objects, primitive arrows of the combinators,
+each named by an index with the domain and codomain the checker's
+inference confirms, and the definitions
+({name}`Geb.FreeTopos.Internal.Term`). A term is typed and compiled to
+an arrow of the combinators in one pass, a variable to a projection, an
+abstraction to a currying and an application to evaluation after a
+pairing, as the categorical abstract machine compiles them
+({name}`Geb.FreeTopos.Internal.compile`). A definition names a term in
+term and object parameters and compiles to a definition of the
+combinators, the arrow of its body from the product of its parameters'
+types; its application compiles to that definition's operation after
+the tuple of its arguments.
+
+A theorem in Lean states that compiling a term and then unfolding the
+combinators' definitions agrees with unfolding the language's
+definitions and then compiling: in every model of the theory extended
+by the combinators' definitions, the unfolded term has the term's type
+and an arrow of the same value
+({name}`Geb.FreeTopos.Internal.compile_unfold_of_ok`). They are not the
+same term. Unfolding in the language substitutes the arguments for the
+parameters, where the compiled application composes the definition's
+arrow with the tuple of the arguments; the proof meets the two by the
+lemma that substitution is composition
+({name}`Geb.FreeTopos.Internal.compile_subst`), which rests on the
+naturality of the compilation
+({name}`Geb.FreeTopos.Internal.compile_comp`), whose case of abstraction
+is the naturality of currying, derived from the axioms of exponentials
+({name}`Geb.FreeTopos.curry_comp`). The compiled arrows are well sorted
+({name}`Geb.FreeTopos.Internal.compile_sortOf`), so that by eliminability
+the theorem carries to the definition-free arrows: in every model of the
+theory, the unfoldings of the combinators' definitions in the two arrows
+have one value ({name}`Geb.FreeTopos.Internal.valid_unfoldAll_compile`).
+The language's derivations, their translation to certificates of the
+combinators, and the benchmark's theorems restated in the language are
+not constructed.
 
 The fifth choice is deferred until the three constructions are made.
 
