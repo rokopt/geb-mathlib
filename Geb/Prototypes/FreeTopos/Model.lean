@@ -16,8 +16,10 @@ function on sorted values. This module reads the model's objects and arrows as t
 operations as functions on the arguments at which the axioms make them defined, and states the
 axioms as equations between those functions: the domain, the codomain, identities and
 composition with the laws of a category; the terminal and initial objects; binary products and
-coproducts; and equalizers and coequalizers, each with the equations and the uniqueness of its
-universal property.
+coproducts; equalizers and coequalizers; exponentials; and the subobject classifier, each with
+the equations and the uniqueness of its universal property. A monomorphism is an arrow whose
+kernel pair's projections are equal, the kernel pair being the equalizer of the arrow's
+composites with the projections of the square of its domain.
 
 The value of an operation defined at its arguments is the value the model's partial function
 returns, read at the operation's result sort ({name}`Geb.PartialHorn.Model.get`), so no value is
@@ -31,6 +33,10 @@ chosen.
 * {lit}`ToposModel.oneOf`, {lit}`ToposModel.prodOf`, {lit}`ToposModel.eqzOf`,
   {lit}`ToposModel.zeroOf`, {lit}`ToposModel.coprodOf`, {lit}`ToposModel.coeqzOf` — the finite
   limits and colimits, with their universal morphisms.
+* {lit}`ToposModel.expOf`, {lit}`ToposModel.evOf`, {lit}`ToposModel.curryOf` — exponentials.
+* {lit}`ToposModel.IsMono`, {lit}`ToposModel.omegaOf`, {lit}`ToposModel.truOf`,
+  {lit}`ToposModel.chiOf`, {lit}`ToposModel.chiInvOf` — monomorphisms and the subobject
+  classifier.
 
 ## Main statements
 
@@ -38,7 +44,8 @@ chosen.
   — the laws of a category.
 * {lit}`ToposModel.eq_bangOf`, {lit}`ToposModel.pairOf_eta`, {lit}`ToposModel.eqLiftOf_eta`,
   {lit}`ToposModel.eq_absurdOf`, {lit}`ToposModel.copairOf_eta`,
-  {lit}`ToposModel.coeqDescOf_eta` — the uniqueness of each universal morphism.
+  {lit}`ToposModel.coeqDescOf_eta`, {lit}`ToposModel.curryOf_eta`, {lit}`ToposModel.eq_chiOf` —
+  the uniqueness of each universal morphism.
 
 ## Tags
 
@@ -77,23 +84,24 @@ theorem axCategory (k : ℕ) (hk : k < categoryAxioms.length := by decide) :
     (categoryAxioms[k]).Valid T.model :=
   T.isModel _ (by simp [theory, axioms, List.getElem_mem hk])
 
-/-- The simplification of a term's value at explicit values, with the given lemmas: the
-terms' builders unfold, and the value of each operation's application is the operation at its
-arguments' values. -/
-local macro "simp_eval" " [" ls:Lean.Parser.Tactic.simpLemma,* "]" : tactic =>
+/-- The simplification of a term's value at explicit values, with the given lemmas, at a
+location or the goal: the terms' builders unfold, and the value of each operation's application
+is the operation at its arguments' values. -/
+local macro "simp_eval" " [" ls:Lean.Parser.Tactic.simpLemma,* "]"
+    loc:(Lean.Parser.Tactic.location)? : tactic =>
   `(tactic| simp only [x, dfd, dom, cod, idt, comp, one, bang, prod, fst, snd, pair, eqz, eqIncl,
     eqLift, zero, absurd, coprod, inl, inr, copair, coeqz, coeqProj, coeqDesc, exp, ev, curry,
     omega, tru, chi, chiInv, nat, zeroN, succ, natRec, list, nil, cons, listRec, rose, node,
     roseRec, prodMapLeft, prodMapRight, listMap, monoCond, truthEq, truthIncl, truthLift,
     eval_op, eval_var, List.mapM_cons,
     List.mapM_nil, List.getElem?_cons_zero, List.getElem?_cons_succ, Option.pure_def,
-    Option.bind_eq_bind, Option.bind_some, $ls,*] at *)
+    Option.bind_eq_bind, Option.bind_some, $ls,*] $[$loc]?)
 
 /-- Every arrow has a domain. -/
 theorem domOf_exists (f : T.Ar) : ∃ o, T.model.op 0 [⟨arr, f⟩] = some ⟨obj, o⟩ := by
   have h : Valid T.model [arr] [] (dfd (dom (x 0))) := T.axCategory 0
   obtain ⟨w, hw, -⟩ := h [⟨arr, f⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The domain of an arrow. -/
@@ -107,7 +115,7 @@ def domOf (f : T.Ar) : T.Obj := T.model.get (T.domOf_exists f)
 theorem codOf_exists (f : T.Ar) : ∃ o, T.model.op 1 [⟨arr, f⟩] = some ⟨obj, o⟩ := by
   have h : Valid T.model [arr] [] (dfd (cod (x 0))) := T.axCategory 1
   obtain ⟨w, hw, -⟩ := h [⟨arr, f⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The codomain of an arrow. -/
@@ -121,7 +129,7 @@ def codOf (f : T.Ar) : T.Obj := T.model.get (T.codOf_exists f)
 theorem idOf_exists (a : T.Obj) : ∃ i, T.model.op 2 [⟨obj, a⟩] = some ⟨arr, i⟩ := by
   have h : Valid T.model [obj] [] (dfd (idt (x 0))) := T.axCategory 2
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The identity of an object. -/
@@ -140,7 +148,7 @@ theorem compOf_exists {g f : T.Ar} (h : T.codOf f = T.domOf g) :
     simp only [List.mem_singleton, forall_eq, Eqn.Holds]
     simp_eval [op_codOf, op_domOf, h]
     exact ⟨_, rfl, rfl⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The composite of {lit}`g` after {lit}`f`. -/
@@ -242,7 +250,7 @@ theorem axTerminal (k : ℕ) (hk : k < terminalAxioms.length := by decide) :
 theorem oneOf_exists : ∃ o, T.model.op 4 [] = some ⟨obj, o⟩ := by
   have h : Valid T.model [] [] (dfd one) := T.axTerminal 0
   obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The terminal object. -/
@@ -255,7 +263,7 @@ def oneOf : T.Obj := T.model.get T.oneOf_exists
 theorem bangOf_exists (a : T.Obj) : ∃ f, T.model.op 5 [⟨obj, a⟩] = some ⟨arr, f⟩ := by
   have h : Valid T.model [obj] [] ⟨dom (bang (x 0)), x 0⟩ := T.axTerminal 1
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
   obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
   exact T.model.exists_op_eq hy rfl
@@ -298,7 +306,7 @@ theorem prodOf_exists (a b : T.Obj) :
     ∃ p, T.model.op 6 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨obj, p⟩ := by
   have h : Valid T.model [obj, obj] [] (dfd (prod (x 0) (x 1))) := T.axProduct 0
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The product of two objects. -/
@@ -315,7 +323,7 @@ theorem fstOf_exists (a b : T.Obj) :
   have h : Valid T.model [obj, obj] [] ⟨dom (fst (x 0) (x 1)), prod (x 0) (x 1)⟩ :=
     T.axProduct 1
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
   obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
   exact T.model.exists_op_eq hy rfl
@@ -334,7 +342,7 @@ theorem sndOf_exists (a b : T.Obj) :
   have h : Valid T.model [obj, obj] [] ⟨dom (snd (x 0) (x 1)), prod (x 0) (x 1)⟩ :=
     T.axProduct 3
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
   obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
   exact T.model.exists_op_eq hy rfl
@@ -381,7 +389,7 @@ theorem pairOf_exists {f g : T.Ar} (h : T.domOf f = T.domOf g) :
   obtain ⟨w, hw, -⟩ := hv [⟨arr, f⟩, ⟨arr, g⟩] rfl (by
     simp only [List.mem_singleton, forall_eq]
     exact ⟨⟨obj, T.domOf g⟩, by simp_eval [op_domOf, h], by simp_eval [op_domOf]⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The pairing of two morphisms of one domain. -/
@@ -474,7 +482,7 @@ theorem eqzOf_exists {f g : T.Ar} (hp : T.Par f g) :
     simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
     exact ⟨⟨⟨obj, T.domOf g⟩, by simp_eval [op_domOf, hp.1], by simp_eval [op_domOf]⟩,
       ⟨⟨obj, T.codOf g⟩, by simp_eval [op_codOf, hp.2], by simp_eval [op_codOf]⟩⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The equalizer of two parallel arrows. -/
@@ -496,7 +504,7 @@ theorem eqInclOf_exists {f g : T.Ar} (hp : T.Par f g) :
   have hv : Valid T.model [arr, arr] [dfd (eqz (x 0) (x 1))] (dfd (eqIncl (x 0) (x 1))) :=
     T.axEqualizer 4
   obtain ⟨w, hw, -⟩ := hv [⟨arr, f⟩, ⟨arr, g⟩] rfl (by simpa using T.holds_eqzOf hp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The inclusion of the equalizer of two parallel arrows. -/
@@ -548,7 +556,7 @@ theorem eqLiftOf_exists {f g k : T.Ar} (hp : T.Par f g) (hk : T.codOf k = T.domO
     exact ⟨⟨⟨obj, T.eqzOf f g hp⟩, by simp_eval [T.op_eqzOf hp], by simp_eval [T.op_eqzOf hp]⟩,
       ⟨⟨arr, T.compOf g k (hk.trans hp.1)⟩, by simp_eval [T.op_compOf hk, he],
         by simp_eval [T.op_compOf (hk.trans hp.1)]⟩⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The factorization through the equalizer of two parallel arrows of a morphism that
@@ -642,7 +650,7 @@ theorem axInitial (k : ℕ) (hk : k < initialAxioms.length := by decide) :
 theorem zeroOf_exists : ∃ o, T.model.op 13 [] = some ⟨obj, o⟩ := by
   have h : Valid T.model [] [] (dfd zero) := T.axInitial 0
   obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The initial object. -/
@@ -655,7 +663,7 @@ def zeroOf : T.Obj := T.model.get T.zeroOf_exists
 theorem absurdOf_exists (a : T.Obj) : ∃ f, T.model.op 14 [⟨obj, a⟩] = some ⟨arr, f⟩ := by
   have h : Valid T.model [obj] [] ⟨dom (absurd (x 0)), zero⟩ := T.axInitial 1
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
   obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
   exact T.model.exists_op_eq hy rfl
@@ -698,7 +706,7 @@ theorem coprodOf_exists (a b : T.Obj) :
     ∃ p, T.model.op 15 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨obj, p⟩ := by
   have h : Valid T.model [obj, obj] [] (dfd (coprod (x 0) (x 1))) := T.axCoproduct 0
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The coproduct of two objects. -/
@@ -714,7 +722,7 @@ theorem inlOf_exists (a b : T.Obj) :
     ∃ f, T.model.op 16 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨arr, f⟩ := by
   have h : Valid T.model [obj, obj] [] ⟨dom (inl (x 0) (x 1)), x 0⟩ := T.axCoproduct 1
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
   obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
   exact T.model.exists_op_eq hy rfl
@@ -732,7 +740,7 @@ theorem inrOf_exists (a b : T.Obj) :
     ∃ f, T.model.op 17 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨arr, f⟩ := by
   have h : Valid T.model [obj, obj] [] ⟨dom (inr (x 0) (x 1)), x 1⟩ := T.axCoproduct 3
   obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
-  simp_eval []
+  simp_eval [] at hw
   obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
   obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
   exact T.model.exists_op_eq hy rfl
@@ -779,7 +787,7 @@ theorem copairOf_exists {f g : T.Ar} (h : T.codOf f = T.codOf g) :
   obtain ⟨w, hw, -⟩ := hv [⟨arr, f⟩, ⟨arr, g⟩] rfl (by
     simp only [List.mem_singleton, forall_eq]
     exact ⟨⟨obj, T.codOf g⟩, by simp_eval [op_codOf, h], by simp_eval [op_codOf]⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The copairing of two morphisms of one codomain. -/
@@ -868,7 +876,7 @@ theorem coeqzOf_exists {f g : T.Ar} (hp : T.Par f g) :
     simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
     exact ⟨⟨⟨obj, T.domOf g⟩, by simp_eval [op_domOf, hp.1], by simp_eval [op_domOf]⟩,
       ⟨⟨obj, T.codOf g⟩, by simp_eval [op_codOf, hp.2], by simp_eval [op_codOf]⟩⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The coequalizer of two parallel arrows. -/
@@ -890,7 +898,7 @@ theorem coeqProjOf_exists {f g : T.Ar} (hp : T.Par f g) :
   have hv : Valid T.model [arr, arr] [dfd (coeqz (x 0) (x 1))] (dfd (coeqProj (x 0) (x 1))) :=
     T.axCoequalizer 4
   obtain ⟨w, hw, -⟩ := hv [⟨arr, f⟩, ⟨arr, g⟩] rfl (by simpa using T.holds_coeqzOf hp)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The projection onto the coequalizer of two parallel arrows. -/
@@ -945,7 +953,7 @@ theorem coeqDescOf_exists {f g k : T.Ar} (hp : T.Par f g) (hk : T.codOf f = T.do
         by simp_eval [T.op_coeqzOf hp]⟩,
       ⟨⟨arr, T.compOf k g (hp.2.symm.trans hk)⟩, by simp_eval [T.op_compOf hk, he],
         by simp_eval [T.op_compOf (hp.2.symm.trans hk)]⟩⟩)
-  simp_eval []
+  simp_eval [] at hw
   exact T.model.exists_op_eq hw rfl
 
 /-- The descent through the coequalizer of two parallel arrows of a morphism that
@@ -1032,6 +1040,465 @@ theorem coeqDescOf_eta {f g m : T.Ar} (hp : T.Par f g) (hm : T.domOf m = T.coeqz
     (T.compOf_coeqProjOf_comp hp ((T.codOf_coeqProjOf hp).trans hm.symm))
   exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_coeqProjOf hp, hc, hd])
     (by simp_eval [])
+
+/-- The morphism {lit}`f × id`, from the product of the domain of {lit}`f` and {lit}`a` to the
+product of its codomain and {lit}`a`. -/
+abbrev prodMapLeftOf (f : T.Ar) (a : T.Obj) : T.Ar :=
+  T.pairOf (T.compOf f (T.fstOf (T.domOf f) a) (T.codOf_fstOf _ _)) (T.sndOf (T.domOf f) a)
+    ((T.domOf_compOf _).trans ((T.domOf_fstOf _ _).trans (T.domOf_sndOf _ _).symm))
+
+/-- The domain of {lit}`f × id` is the product of the domain of {lit}`f` and {lit}`a`. -/
+theorem domOf_prodMapLeftOf (f : T.Ar) (a : T.Obj) :
+    T.domOf (T.prodMapLeftOf f a) = T.prodOf (T.domOf f) a :=
+  (T.domOf_pairOf _).trans ((T.domOf_compOf _).trans (T.domOf_fstOf _ _))
+
+/-- The codomain of {lit}`f × id` is the product of the codomain of {lit}`f` and {lit}`a`. -/
+theorem codOf_prodMapLeftOf (f : T.Ar) (a : T.Obj) :
+    T.codOf (T.prodMapLeftOf f a) = T.prodOf (T.codOf f) a := by
+  rw [prodMapLeftOf, codOf_pairOf, codOf_compOf, codOf_sndOf]
+
+/-- An axiom of the exponential block, by index, is valid in the model. -/
+theorem axExponential (k : ℕ) (hk : k < exponentialAxioms.length := by decide) :
+    (exponentialAxioms[k]).Valid T.model :=
+  T.isModel _ (by simp [theory, axioms, List.getElem_mem hk])
+
+/-- Every two objects have an exponential. -/
+theorem expOf_exists (a b : T.Obj) :
+    ∃ e, T.model.op 22 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨obj, e⟩ := by
+  have h : Valid T.model [obj, obj] [] (dfd (exp (x 0) (x 1))) := T.axExponential 0
+  obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The exponential {lit}`expOf a b`, the object of morphisms from {lit}`a` to {lit}`b`. -/
+def expOf (a b : T.Obj) : T.Obj := T.model.get (T.expOf_exists a b)
+
+/-- The model's exponential. -/
+@[simp] theorem op_expOf (a b : T.Obj) :
+    T.model.op 22 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨obj, T.expOf a b⟩ :=
+  T.model.op_eq_get _
+
+/-- Every exponential has an evaluation morphism. -/
+theorem evOf_exists (a b : T.Obj) :
+    ∃ e, T.model.op 23 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨arr, e⟩ := by
+  have h : Valid T.model [obj, obj] [] ⟨dom (ev (x 0) (x 1)), prod (exp (x 0) (x 1)) (x 0)⟩ :=
+    T.axExponential 1
+  obtain ⟨w, hw, -⟩ := h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- The evaluation morphism, from the product of {lit}`expOf a b` and {lit}`a` to {lit}`b`. -/
+def evOf (a b : T.Obj) : T.Ar := T.model.get (T.evOf_exists a b)
+
+/-- The model's evaluation morphism. -/
+@[simp] theorem op_evOf (a b : T.Obj) :
+    T.model.op 23 [⟨obj, a⟩, ⟨obj, b⟩] = some ⟨arr, T.evOf a b⟩ :=
+  T.model.op_eq_get _
+
+/-- The domain of evaluation. -/
+theorem domOf_evOf (a b : T.Obj) : T.domOf (T.evOf a b) = T.prodOf (T.expOf a b) a := by
+  have h : Valid T.model [obj, obj] [] ⟨dom (ev (x 0) (x 1)), prod (exp (x 0) (x 1)) (x 0)⟩ :=
+    T.axExponential 1
+  exact T.val_inj <| T.holds_eq (h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp))
+    (by simp_eval [op_evOf, op_domOf]) (by simp_eval [op_expOf, op_prodOf])
+
+/-- The codomain of evaluation. -/
+theorem codOf_evOf (a b : T.Obj) : T.codOf (T.evOf a b) = b := by
+  have h : Valid T.model [obj, obj] [] ⟨cod (ev (x 0) (x 1)), x 1⟩ := T.axExponential 2
+  exact T.val_inj <| T.holds_eq (h [⟨obj, a⟩, ⟨obj, b⟩] rfl (by simp))
+    (by simp_eval [op_evOf, op_codOf]) (by simp_eval [])
+
+/-- A morphism from a product has a currying. -/
+theorem curryOf_exists {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    ∃ g, T.model.op 24 [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] = some ⟨arr, g⟩ := by
+  have hv : Valid T.model [obj, obj, arr] [⟨dom (x 2), prod (x 0) (x 1)⟩]
+      (dfd (curry (x 0) (x 1) (x 2))) := T.axExponential 4
+  obtain ⟨w, hw, -⟩ := hv [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] rfl (by
+    simp only [List.mem_singleton, forall_eq]
+    exact ⟨⟨obj, T.prodOf c a⟩, by simp_eval [op_domOf, h], by simp_eval [op_prodOf]⟩)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The currying of a morphism from the product of {lit}`c` and {lit}`a`. -/
+def curryOf (c a : T.Obj) (f : T.Ar) (h : T.domOf f = T.prodOf c a) : T.Ar :=
+  T.model.get (T.curryOf_exists h)
+
+/-- The model's currying. -/
+@[simp] theorem op_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    T.model.op 24 [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] = some ⟨arr, T.curryOf c a f h⟩ :=
+  T.model.op_eq_get _
+
+/-- A currying is defined at its arguments. -/
+theorem holds_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    (dfd (curry (x 0) (x 1) (x 2))).Holds T.model [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] :=
+  ⟨⟨arr, T.curryOf c a f h⟩, by simp_eval [T.op_curryOf h], by simp_eval [T.op_curryOf h]⟩
+
+/-- The domain of a currying. -/
+theorem domOf_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    T.domOf (T.curryOf c a f h) = c := by
+  have hv : Valid T.model [obj, obj, arr] [dfd (curry (x 0) (x 1) (x 2))]
+      ⟨dom (curry (x 0) (x 1) (x 2)), x 0⟩ := T.axExponential 5
+  have hq := hv [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] rfl (by simpa using T.holds_curryOf h)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_curryOf h, op_domOf]) (by simp_eval [])
+
+/-- The codomain of a currying. -/
+theorem codOf_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    T.codOf (T.curryOf c a f h) = T.expOf a (T.codOf f) := by
+  have hv : Valid T.model [obj, obj, arr] [dfd (curry (x 0) (x 1) (x 2))]
+      ⟨cod (curry (x 0) (x 1) (x 2)), exp (x 1) (cod (x 2))⟩ := T.axExponential 6
+  have hq := hv [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] rfl (by simpa using T.holds_curryOf h)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_curryOf h, op_codOf])
+    (by simp_eval [op_codOf, op_expOf])
+
+/-- The morphism {lit}`curry f × id` composes with evaluation. -/
+theorem codOf_prodMapLeftOf_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    T.codOf (T.prodMapLeftOf (T.curryOf c a f h) a) = T.domOf (T.evOf a (T.codOf f)) := by
+  rw [codOf_prodMapLeftOf, codOf_curryOf, domOf_evOf]
+
+/-- Evaluation after {lit}`curry f × id` is {lit}`f`. -/
+theorem evOf_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
+    T.compOf (T.evOf a (T.codOf f)) (T.prodMapLeftOf (T.curryOf c a f h) a)
+      (T.codOf_prodMapLeftOf_curryOf h) = f := by
+  have hv : Valid T.model [obj, obj, arr] [dfd (curry (x 0) (x 1) (x 2))]
+      ⟨comp (ev (x 1) (cod (x 2))) (prodMapLeft (curry (x 0) (x 1) (x 2)) (x 1)), x 2⟩ :=
+    T.axExponential 7
+  have hq := hv [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] rfl (by simpa using T.holds_curryOf h)
+  have h1 := T.op_compOf (T.codOf_fstOf (T.domOf (T.curryOf c a f h)) a)
+  have h2 := T.op_pairOf ((T.domOf_compOf (T.codOf_fstOf (T.domOf (T.curryOf c a f h)) a)).trans
+    ((T.domOf_fstOf _ _).trans (T.domOf_sndOf (T.domOf (T.curryOf c a f h)) a).symm))
+  have hc := T.op_compOf (T.codOf_prodMapLeftOf_curryOf h)
+  exact T.val_inj <| T.holds_eq hq
+    (by simp_eval [T.op_curryOf h, op_codOf, op_evOf, op_domOf, op_fstOf, op_sndOf, h1, h2, hc])
+    (by simp_eval [])
+
+/-- The domain of the evaluation after {lit}`k × id`, for {lit}`k` from {lit}`c`, is the
+product of {lit}`c` and {lit}`a`. -/
+theorem domOf_evOf_prodMapLeftOf {c a b : T.Obj} {k : T.Ar} (hd : T.domOf k = c)
+    (hc : T.codOf (T.prodMapLeftOf k a) = T.domOf (T.evOf a b)) :
+    T.domOf (T.compOf (T.evOf a b) (T.prodMapLeftOf k a) hc) = T.prodOf c a := by
+  rw [domOf_compOf, domOf_prodMapLeftOf, hd]
+
+/-- A morphism into an exponential is the currying of evaluation after it times the
+identity. -/
+theorem curryOf_eta {c a b : T.Obj} {k : T.Ar} (hd : T.domOf k = c)
+    (hk : T.codOf k = T.expOf a b) :
+    T.curryOf c a (T.compOf (T.evOf a b) (T.prodMapLeftOf k a)
+      (by rw [codOf_prodMapLeftOf, domOf_evOf, hk])) (T.domOf_evOf_prodMapLeftOf hd _) = k := by
+  have hv : Valid T.model [obj, obj, obj, arr] [⟨dom (x 3), x 0⟩, ⟨cod (x 3), exp (x 1) (x 2)⟩]
+      ⟨curry (x 0) (x 1) (comp (ev (x 1) (x 2)) (prodMapLeft (x 3) (x 1))), x 3⟩ :=
+    T.axExponential 8
+  have hq := hv [⟨obj, c⟩, ⟨obj, a⟩, ⟨obj, b⟩, ⟨arr, k⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    exact ⟨⟨⟨obj, c⟩, by simp_eval [op_domOf, hd], by simp_eval []⟩,
+      ⟨⟨obj, T.expOf a b⟩, by simp_eval [op_codOf, hk], by simp_eval [op_expOf]⟩⟩)
+  have hc : T.codOf (T.prodMapLeftOf k a) = T.domOf (T.evOf a b) := by
+    rw [codOf_prodMapLeftOf, domOf_evOf, hk]
+  have h1 := T.op_compOf (T.codOf_fstOf (T.domOf k) a)
+  have h2 := T.op_pairOf ((T.domOf_compOf (T.codOf_fstOf (T.domOf k) a)).trans
+    ((T.domOf_fstOf _ _).trans (T.domOf_sndOf (T.domOf k) a).symm))
+  have he := T.op_compOf hc
+  have hcu := T.op_curryOf (T.domOf_evOf_prodMapLeftOf hd hc)
+  exact T.val_inj <| T.holds_eq hq
+    (by simp_eval [op_evOf, op_domOf, op_fstOf, op_sndOf, h1, h2, he, hcu]) (by simp_eval [])
+
+/-- The morphism to the terminal object after an arrow is the morphism from the arrow's
+domain. -/
+theorem compOf_bangOf (f : T.Ar) :
+    T.compOf (T.bangOf (T.codOf f)) f (T.domOf_bangOf _).symm = T.bangOf (T.domOf f) := by
+  rw [T.eq_bangOf ((T.codOf_compOf _).trans (T.codOf_bangOf _)), domOf_compOf]
+
+/-- An axiom of the classifier block, by index, is valid in the model. -/
+theorem axClassifier (k : ℕ) (hk : k < classifierAxioms.length := by decide) :
+    (classifierAxioms[k]).Valid T.model :=
+  T.isModel _ (by simp [theory, axioms, List.getElem_mem hk])
+
+/-- The subobject classifier is defined. -/
+theorem omegaOf_exists : ∃ o, T.model.op 25 [] = some ⟨obj, o⟩ := by
+  have h : Valid T.model [] [] (dfd omega) := T.axClassifier 0
+  obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The subobject classifier. -/
+def omegaOf : T.Obj := T.model.get T.omegaOf_exists
+
+/-- The model's subobject classifier. -/
+@[simp] theorem op_omegaOf : T.model.op 25 [] = some ⟨obj, T.omegaOf⟩ := T.model.op_eq_get _
+
+/-- Truth is defined. -/
+theorem truOf_exists : ∃ t, T.model.op 26 [] = some ⟨arr, t⟩ := by
+  have h : Valid T.model [] [] ⟨dom tru, one⟩ := T.axClassifier 1
+  obtain ⟨w, hw, -⟩ := h [] rfl (by simp)
+  simp_eval [] at hw
+  obtain ⟨l, hl, -⟩ := Option.bind_eq_some_iff.mp hw
+  obtain ⟨y, hy, -⟩ := Option.bind_eq_some_iff.mp hl
+  exact T.model.exists_op_eq hy rfl
+
+/-- Truth, from the terminal object to the subobject classifier. -/
+def truOf : T.Ar := T.model.get T.truOf_exists
+
+/-- The model's truth. -/
+@[simp] theorem op_truOf : T.model.op 26 [] = some ⟨arr, T.truOf⟩ := T.model.op_eq_get _
+
+/-- The domain of truth is the terminal object. -/
+theorem domOf_truOf : T.domOf T.truOf = T.oneOf := by
+  have h : Valid T.model [] [] ⟨dom tru, one⟩ := T.axClassifier 1
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_truOf, op_domOf])
+    (by simp_eval [op_oneOf])
+
+/-- The codomain of truth is the subobject classifier. -/
+theorem codOf_truOf : T.codOf T.truOf = T.omegaOf := by
+  have h : Valid T.model [] [] ⟨cod tru, omega⟩ := T.axClassifier 2
+  exact T.val_inj <| T.holds_eq (h [] rfl (by simp)) (by simp_eval [op_truOf, op_codOf])
+    (by simp_eval [op_omegaOf])
+
+/-- The two composites of an arrow with the projections of the square of its domain are
+parallel. -/
+theorem par_kernel (m : T.Ar) :
+    T.Par (T.compOf m (T.fstOf (T.domOf m) (T.domOf m)) (T.codOf_fstOf _ _))
+      (T.compOf m (T.sndOf (T.domOf m) (T.domOf m)) (T.codOf_sndOf _ _)) :=
+  ⟨(T.domOf_compOf _).trans ((T.domOf_fstOf _ _).trans ((T.domOf_sndOf _ _).symm.trans
+    (T.domOf_compOf _).symm)), (T.codOf_compOf _).trans (T.codOf_compOf _).symm⟩
+
+/-- The inclusion of an arrow's kernel pair into the square of its domain. -/
+abbrev kernelInclOf (m : T.Ar) : T.Ar :=
+  T.eqInclOf (T.compOf m (T.fstOf (T.domOf m) (T.domOf m)) (T.codOf_fstOf _ _))
+    (T.compOf m (T.sndOf (T.domOf m) (T.domOf m)) (T.codOf_sndOf _ _)) (T.par_kernel m)
+
+/-- The kernel pair's inclusion composes with the projections. -/
+theorem codOf_kernelInclOf (m : T.Ar) :
+    T.codOf (T.kernelInclOf m) = T.prodOf (T.domOf m) (T.domOf m) :=
+  (T.codOf_eqInclOf _).trans ((T.domOf_compOf _).trans (T.domOf_fstOf _ _))
+
+/-- An arrow is a monomorphism: the projections of its kernel pair are equal. -/
+def IsMono (m : T.Ar) : Prop :=
+  T.compOf (T.fstOf (T.domOf m) (T.domOf m)) (T.kernelInclOf m)
+      ((T.codOf_kernelInclOf m).trans (T.domOf_fstOf _ _).symm) =
+    T.compOf (T.sndOf (T.domOf m) (T.domOf m)) (T.kernelInclOf m)
+      ((T.codOf_kernelInclOf m).trans (T.domOf_sndOf _ _).symm)
+
+/-- The condition of monicity holds at a monomorphism. -/
+theorem holds_monoCond {m : T.Ar} (hm : T.IsMono m) :
+    (monoCond (x 0)).Holds T.model [⟨arr, m⟩] := by
+  have h1 := T.op_compOf (T.codOf_fstOf (T.domOf m) (T.domOf m))
+  have h2 := T.op_compOf (T.codOf_sndOf (T.domOf m) (T.domOf m))
+  have hk := T.op_eqInclOf (T.par_kernel m)
+  have hp1 := T.op_compOf ((T.codOf_kernelInclOf m).trans (T.domOf_fstOf _ _).symm)
+  have hp2 := T.op_compOf ((T.codOf_kernelInclOf m).trans (T.domOf_sndOf _ _).symm)
+  unfold IsMono at hm
+  refine ⟨⟨arr, T.compOf (T.sndOf (T.domOf m) (T.domOf m)) (T.kernelInclOf m)
+    ((T.codOf_kernelInclOf m).trans (T.domOf_sndOf _ _).symm)⟩, ?_, ?_⟩
+  · simp_eval [op_domOf, op_fstOf, op_sndOf, h1, h2, hk, hp1, hm]
+  · simp_eval [op_domOf, op_fstOf, op_sndOf, h1, h2, hk, hp2]
+
+/-- A monomorphism has a characteristic map. -/
+theorem chiOf_exists {m : T.Ar} (hm : T.IsMono m) :
+    ∃ c, T.model.op 27 [⟨arr, m⟩] = some ⟨arr, c⟩ := by
+  have hv : Valid T.model [arr] [monoCond (x 0)] (dfd (chi (x 0))) := T.axClassifier 4
+  obtain ⟨w, hw, -⟩ := hv [⟨arr, m⟩] rfl (by simpa using T.holds_monoCond hm)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The characteristic map of a monomorphism. -/
+def chiOf (m : T.Ar) (hm : T.IsMono m) : T.Ar := T.model.get (T.chiOf_exists hm)
+
+/-- The model's characteristic map. -/
+@[simp] theorem op_chiOf {m : T.Ar} (hm : T.IsMono m) :
+    T.model.op 27 [⟨arr, m⟩] = some ⟨arr, T.chiOf m hm⟩ :=
+  T.model.op_eq_get _
+
+/-- A characteristic map is defined at its monomorphism. -/
+theorem holds_chiOf {m : T.Ar} (hm : T.IsMono m) :
+    (dfd (chi (x 0))).Holds T.model [⟨arr, m⟩] :=
+  ⟨⟨arr, T.chiOf m hm⟩, by simp_eval [T.op_chiOf hm], by simp_eval [T.op_chiOf hm]⟩
+
+/-- The domain of a characteristic map is its monomorphism's codomain. -/
+theorem domOf_chiOf {m : T.Ar} (hm : T.IsMono m) : T.domOf (T.chiOf m hm) = T.codOf m := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))] ⟨dom (chi (x 0)), cod (x 0)⟩ :=
+    T.axClassifier 5
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_chiOf hm, op_domOf])
+    (by simp_eval [op_codOf])
+
+/-- The codomain of a characteristic map is the subobject classifier. -/
+theorem codOf_chiOf {m : T.Ar} (hm : T.IsMono m) : T.codOf (T.chiOf m hm) = T.omegaOf := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))] ⟨cod (chi (x 0)), omega⟩ := T.axClassifier 6
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_chiOf hm, op_codOf])
+    (by simp_eval [op_omegaOf])
+
+/-- Truth after the morphism to the terminal object composes. -/
+theorem codOf_bangOf_eq_domOf_truOf (a : T.Obj) :
+    T.codOf (T.bangOf a) = T.domOf T.truOf :=
+  (T.codOf_bangOf a).trans T.domOf_truOf.symm
+
+/-- A characteristic map's square commutes. -/
+theorem chiOf_square {m : T.Ar} (hm : T.IsMono m) :
+    T.compOf (T.chiOf m hm) m (T.domOf_chiOf hm).symm =
+      T.compOf T.truOf (T.bangOf (T.domOf m)) (T.codOf_bangOf_eq_domOf_truOf _) := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))]
+      ⟨comp (chi (x 0)) (x 0), comp tru (bang (dom (x 0)))⟩ := T.axClassifier 7
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  have h1 := T.op_compOf (T.domOf_chiOf hm).symm
+  have h2 := T.op_compOf (T.codOf_bangOf_eq_domOf_truOf (T.domOf m))
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_chiOf hm, h1])
+    (by simp_eval [op_truOf, op_domOf, op_bangOf, h2])
+
+/-- A morphism into the subobject classifier and truth after the morphism to the terminal
+object are parallel. -/
+theorem par_truth {φ : T.Ar} (hφ : T.codOf φ = T.omegaOf) :
+    T.Par φ (T.compOf T.truOf (T.bangOf (T.domOf φ)) (T.codOf_bangOf_eq_domOf_truOf _)) :=
+  ⟨((T.domOf_bangOf _).symm.trans (T.domOf_compOf _).symm),
+    hφ.trans (T.codOf_truOf.symm.trans (T.codOf_compOf _).symm)⟩
+
+/-- The equalizer of a morphism into the classifier and truth: the pullback of truth along
+it. -/
+abbrev truthEqOf (φ : T.Ar) (hφ : T.codOf φ = T.omegaOf) : T.Obj :=
+  T.eqzOf φ _ (T.par_truth hφ)
+
+/-- The inclusion of {lit}`truthEqOf`. -/
+abbrev truthInclOf (φ : T.Ar) (hφ : T.codOf φ = T.omegaOf) : T.Ar :=
+  T.eqInclOf φ _ (T.par_truth hφ)
+
+/-- A monomorphism equalizes its characteristic map and truth after the morphism to the
+terminal object. -/
+theorem chiOf_equalizes {m : T.Ar} (hm : T.IsMono m) :
+    T.compOf (T.chiOf m hm) m (T.domOf_chiOf hm).symm =
+      T.compOf (T.compOf T.truOf (T.bangOf (T.domOf (T.chiOf m hm)))
+        (T.codOf_bangOf_eq_domOf_truOf _)) m
+        ((T.domOf_chiOf hm).symm.trans (T.par_truth (T.codOf_chiOf hm)).1) := by
+  have hb : T.codOf m = T.domOf (T.bangOf (T.domOf (T.chiOf m hm))) :=
+    (T.domOf_chiOf hm).symm.trans (T.domOf_bangOf _).symm
+  rw [T.chiOf_square hm, ← T.compOf_assoc hb (T.codOf_bangOf_eq_domOf_truOf _)]
+  refine T.compOf_congr rfl ?_ _ _
+  rw [T.compOf_congr (congrArg T.bangOf (T.domOf_chiOf hm)) rfl hb (T.domOf_bangOf _).symm,
+    T.compOf_bangOf]
+
+/-- The factorization of a monomorphism through the pullback of truth along its
+characteristic map. -/
+abbrev truthLiftOf (m : T.Ar) (hm : T.IsMono m) : T.Ar :=
+  T.eqLiftOf (T.chiOf m hm) _ m (T.par_truth (T.codOf_chiOf hm)) (T.domOf_chiOf hm).symm
+    (T.chiOf_equalizes hm)
+
+/-- The value of the pullback of truth along a characteristic map. -/
+theorem op_truthEq {m : T.Ar} (hm : T.IsMono m) :
+    T.model.op 10 [⟨arr, T.chiOf m hm⟩, ⟨arr, T.compOf T.truOf (T.bangOf (T.domOf (T.chiOf m hm)))
+      (T.codOf_bangOf_eq_domOf_truOf _)⟩] =
+      some ⟨obj, T.truthEqOf (T.chiOf m hm) (T.codOf_chiOf hm)⟩ :=
+  T.op_eqzOf _
+
+/-- The value of a monomorphism's factorization through the pullback of truth. -/
+theorem op_truthLift {m : T.Ar} (hm : T.IsMono m) :
+    T.model.op 12 [⟨arr, T.chiOf m hm⟩, ⟨arr, T.compOf T.truOf
+      (T.bangOf (T.domOf (T.chiOf m hm))) (T.codOf_bangOf_eq_domOf_truOf _)⟩, ⟨arr, m⟩] =
+      some ⟨arr, T.truthLiftOf m hm⟩ :=
+  T.op_eqLiftOf _ _ _
+
+/-- A monomorphism's pullback comparison has an inverse. -/
+theorem chiInvOf_exists {m : T.Ar} (hm : T.IsMono m) :
+    ∃ c, T.model.op 28 [⟨arr, m⟩] = some ⟨arr, c⟩ := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))] (dfd (chiInv (x 0))) := T.axClassifier 9
+  obtain ⟨w, hw, -⟩ := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  simp_eval [] at hw
+  exact T.model.exists_op_eq hw rfl
+
+/-- The inverse of a monomorphism's factorization through the pullback of truth along its
+characteristic map. -/
+def chiInvOf (m : T.Ar) (hm : T.IsMono m) : T.Ar := T.model.get (T.chiInvOf_exists hm)
+
+/-- The model's inverse of a pullback comparison. -/
+@[simp] theorem op_chiInvOf {m : T.Ar} (hm : T.IsMono m) :
+    T.model.op 28 [⟨arr, m⟩] = some ⟨arr, T.chiInvOf m hm⟩ :=
+  T.model.op_eq_get _
+
+/-- The domain of the inverse is the pullback of truth. -/
+theorem domOf_chiInvOf {m : T.Ar} (hm : T.IsMono m) :
+    T.domOf (T.chiInvOf m hm) = T.truthEqOf (T.chiOf m hm) (T.codOf_chiOf hm) := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))] ⟨dom (chiInv (x 0)), truthEq (chi (x 0))⟩ :=
+    T.axClassifier 10
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  have hc := T.op_compOf (T.codOf_bangOf_eq_domOf_truOf (T.domOf (T.chiOf m hm)))
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_chiInvOf hm, op_domOf])
+    (by simp_eval [T.op_chiOf hm, op_domOf, op_bangOf, op_truOf, hc, T.op_truthEq hm])
+
+/-- The codomain of the inverse is the monomorphism's domain. -/
+theorem codOf_chiInvOf {m : T.Ar} (hm : T.IsMono m) :
+    T.codOf (T.chiInvOf m hm) = T.domOf m := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))] ⟨cod (chiInv (x 0)), dom (x 0)⟩ :=
+    T.axClassifier 11
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_chiInvOf hm, op_codOf])
+    (by simp_eval [op_domOf])
+
+/-- The codomain of a monomorphism's pullback comparison. -/
+theorem codOf_truthLiftOf {m : T.Ar} (hm : T.IsMono m) :
+    T.codOf (T.truthLiftOf m hm) = T.truthEqOf (T.chiOf m hm) (T.codOf_chiOf hm) :=
+  T.codOf_eqLiftOf _ _ _
+
+/-- The domain of a monomorphism's pullback comparison. -/
+theorem domOf_truthLiftOf {m : T.Ar} (hm : T.IsMono m) :
+    T.domOf (T.truthLiftOf m hm) = T.domOf m :=
+  T.domOf_eqLiftOf _ _ _
+
+/-- The comparison after its inverse is the identity of the pullback. -/
+theorem truthLiftOf_chiInvOf {m : T.Ar} (hm : T.IsMono m) :
+    T.compOf (T.truthLiftOf m hm) (T.chiInvOf m hm)
+      ((T.codOf_chiInvOf hm).trans (T.domOf_truthLiftOf hm).symm) =
+      T.idOf (T.truthEqOf (T.chiOf m hm) (T.codOf_chiOf hm)) := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))]
+      ⟨comp (truthLift (chi (x 0)) (x 0)) (chiInv (x 0)), idt (truthEq (chi (x 0)))⟩ :=
+    T.axClassifier 12
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  have hc := T.op_compOf (T.codOf_bangOf_eq_domOf_truOf (T.domOf (T.chiOf m hm)))
+  have hl := T.op_compOf ((T.codOf_chiInvOf hm).trans (T.domOf_truthLiftOf hm).symm)
+  exact T.val_inj <| T.holds_eq hq
+    (by simp_eval [T.op_chiOf hm, op_domOf, op_bangOf, op_truOf, hc, T.op_truthLift hm,
+      T.op_chiInvOf hm, hl])
+    (by simp_eval [T.op_chiOf hm, op_domOf, op_bangOf, op_truOf, hc, T.op_truthEq hm, op_idOf])
+
+/-- The inverse after the comparison is the identity of the monomorphism's domain. -/
+theorem chiInvOf_truthLiftOf {m : T.Ar} (hm : T.IsMono m) :
+    T.compOf (T.chiInvOf m hm) (T.truthLiftOf m hm)
+      ((T.codOf_truthLiftOf hm).trans (T.domOf_chiInvOf hm).symm) = T.idOf (T.domOf m) := by
+  have hv : Valid T.model [arr] [dfd (chi (x 0))]
+      ⟨comp (chiInv (x 0)) (truthLift (chi (x 0)) (x 0)), idt (dom (x 0))⟩ := T.axClassifier 13
+  have hq := hv [⟨arr, m⟩] rfl (by simpa using T.holds_chiOf hm)
+  have hc := T.op_compOf (T.codOf_bangOf_eq_domOf_truOf (T.domOf (T.chiOf m hm)))
+  have hl := T.op_compOf ((T.codOf_truthLiftOf hm).trans (T.domOf_chiInvOf hm).symm)
+  exact T.val_inj <| T.holds_eq hq
+    (by simp_eval [T.op_chiOf hm, op_domOf, op_bangOf, op_truOf, hc, T.op_truthLift hm,
+      T.op_chiInvOf hm, hl])
+    (by simp_eval [op_domOf, op_idOf])
+
+/-- A morphism into the classifier along which a monomorphism is a pullback of truth, by an
+isomorphism onto the equalizer, is the monomorphism's characteristic map. -/
+theorem eq_chiOf {m φ i j : T.Ar} (hm : T.IsMono m) (hd : T.domOf φ = T.codOf m)
+    (hc : T.codOf φ = T.omegaOf) (hi : T.codOf i = T.domOf (T.truthInclOf φ hc))
+    (hmi : T.compOf (T.truthInclOf φ hc) i hi = m) (hij : T.codOf j = T.domOf i)
+    (hid : T.compOf i j hij = T.idOf (T.truthEqOf φ hc)) (hji : T.codOf i = T.domOf j)
+    (hjd : T.compOf j i hji = T.idOf (T.domOf m)) : φ = T.chiOf m hm := by
+  have hv : Valid T.model [arr, arr, arr, arr]
+      [dfd (chi (x 0)), ⟨dom (x 1), cod (x 0)⟩, ⟨cod (x 1), omega⟩,
+        ⟨comp (truthIncl (x 1)) (x 2), x 0⟩, ⟨comp (x 2) (x 3), idt (truthEq (x 1))⟩,
+        ⟨comp (x 3) (x 2), idt (dom (x 0))⟩]
+      ⟨x 1, chi (x 0)⟩ := T.axClassifier 14
+  have hb := T.op_compOf (T.codOf_bangOf_eq_domOf_truOf (T.domOf φ))
+  have hinc := T.op_eqInclOf (T.par_truth hc)
+  have hq := hv [⟨arr, m⟩, ⟨arr, φ⟩, ⟨arr, i⟩, ⟨arr, j⟩] rfl (by
+    simp only [List.mem_cons, forall_eq_or_imp, forall_eq, List.not_mem_nil, or_false]
+    refine ⟨⟨⟨arr, T.chiOf m hm⟩, by simp_eval [T.op_chiOf hm], by simp_eval [T.op_chiOf hm]⟩,
+      ⟨⟨obj, T.codOf m⟩, by simp_eval [op_domOf, hd],
+      by simp_eval [op_codOf]⟩, ⟨⟨obj, T.omegaOf⟩, by simp_eval [op_codOf, hc],
+      by simp_eval [op_omegaOf]⟩, ⟨⟨arr, m⟩, ?_, by simp_eval []⟩,
+      ⟨⟨arr, T.idOf (T.truthEqOf φ hc)⟩, ?_, ?_⟩, ⟨⟨arr, T.idOf (T.domOf m)⟩, ?_, ?_⟩⟩
+    · simp_eval [op_domOf, op_bangOf, op_truOf, hb, hinc, T.op_compOf hi, hmi]
+    · simp_eval [T.op_compOf hij, hid]
+    · simp_eval [op_domOf, op_bangOf, op_truOf, hb, T.op_eqzOf (T.par_truth hc), op_idOf]
+    · simp_eval [T.op_compOf hji, hjd]
+    · simp_eval [op_domOf, op_idOf])
+  exact T.val_inj <| T.holds_eq hq (by simp_eval []) (by simp_eval [T.op_chiOf hm])
 
 end ToposModel
 
