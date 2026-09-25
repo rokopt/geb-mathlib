@@ -3744,12 +3744,16 @@ checklist and in CI.
   rules: normalization, innermost first, simplification of both sides of
   a goal, and induction; it reads a file of a program's forms and
   theorems, whose statements the reader reads as the program's own
-  definitions, and checks each theorem's certificate.
+  definitions, its Surface 1 forms expanded, and checks each theorem's
+  certificate.
   `bootstrap/proofs/prelude.geb` proves theorems about the prelude's
   lists, `bootstrap/proofs/nat.geb` about the labels, addition's
   recursion equations from its definition by iteration and a theorem by
-  induction on labels, and `bootstrap/proofs/check.geb` about the
-  kernel's type checker written in Geb, which
+  induction on labels, `bootstrap/proofs/check.geb` about the
+  kernel's type checker written in Geb, `bootstrap/proofs/equations.geb`
+  about the metalogic's checker written in Surface 1, and
+  `bootstrap/proofs/surface.geb` about a function by structural
+  recursion over a declared datatype, which
   `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and

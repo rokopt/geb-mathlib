@@ -13,9 +13,12 @@ set_option doc.verso true in
 # Proofs about Geb programs
 
 Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, about the labels, the
-natural numbers object inside the trees, {lit}`bootstrap/proofs/nat.geb`, and about the kernel's
-type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, proved by the derived rules of
-{lit}`bootstrap/metalogic/prove.geb` and checked by the metalogic's checker written in Geb. The
+natural numbers object inside the trees, {lit}`bootstrap/proofs/nat.geb`, about the kernel's
+type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, about the metalogic's checker, a
+program in the Surface 1 forms, {lit}`bootstrap/proofs/equations.geb`, and about a function by
+structural recursion over a declared datatype, {lit}`bootstrap/proofs/surface.geb`, proved by
+the derived rules of {lit}`bootstrap/metalogic/prove.geb`, which expands the Surface 1 forms as
+the compiler does, and checked by the metalogic's checker written in Geb. The
 prover's program is read and expanded by the stage-0 compiler and loaded by the seed, without an
 image, whose serializer's recursion is as deep as the image is long; it checks each theorem's
 certificate, and each certificate is checked again by {name}`Geb.Metalogic.check`, citing the
@@ -55,12 +58,18 @@ def natProofs : String := include_str "../../bootstrap/proofs/nat.geb"
 /-- The theorems about the kernel's type checker. -/
 def checkProofs : String := include_str "../../bootstrap/proofs/check.geb"
 
-/-- The program of the prover: the prelude, the reader, the kernel's checker, the metalogic's
-checker and the proof construction, applying the proof construction to a file of program forms
-and theorems. -/
+/-- The theorems about the metalogic's checker, a Surface 1 program. -/
+def equationsProofs : String := include_str "../../bootstrap/proofs/equations.geb"
+
+/-- The theorems about a program by structural recursion over a declared datatype. -/
+def surfaceProofs : String := include_str "../../bootstrap/proofs/surface.geb"
+
+/-- The program of the prover: the prelude, the reader, the kernel's checker, the Surface 1
+expansion, the metalogic's checker and the proof construction, applying the proof construction
+to a file of program forms and theorems. -/
 def prover : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Tests.equationsGeb ++
+    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.surface ++ "\n" ++ Tests.equationsGeb ++
     "\n" ++ proveGeb ++ "\n(def main (lam ((file T)) (proveFile 256 file)))"
 
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read and its
@@ -118,13 +127,18 @@ def rejected : String :=
 def allCheck (f : Tree → Option Tree) (fileText : List Char) : Bool :=
   (results f fileText).any fun (D, rs) ↦ !rs.isEmpty && rs.all accepted && recheck D rs
 
--- every theorem about the prelude, the labels and the kernel's type checker checks, in Geb and
--- again in Lean, and the prover rejects the false equation and the unproved one
+-- every theorem about the prelude, the labels, the kernel's type checker, the metalogic's
+-- checker and a program by structural recursion checks, in Geb and again in Lean, and the prover
+-- rejects the false equation and the unproved one
 #guard (proverFn? bundler.toList prover.toList).any fun f ↦
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ preludeProofs).toList &&
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ natProofs).toList &&
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ checkProofs).toList &&
+  allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
+    Kernel.Stage0Tests.check ++ "\n" ++ Tests.equationsGeb ++ "\n" ++ equationsProofs).toList &&
+  allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
+    Kernel.Stage0Tests.check ++ "\n" ++ surfaceProofs).toList &&
   (results f (Kernel.Stage0Tests.prelude ++ "\n" ++ rejected).toList).any fun (_, rs) ↦
     rs.length == 2 && !rs.any accepted
 
