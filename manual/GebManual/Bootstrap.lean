@@ -1637,6 +1637,22 @@ not constructed. The requirement that every argument occur in the body
 keeps the strictness of an application: its unfolding, the body with
 the arguments substituted, is defined only where each argument is.
 
+The measurement is repeated with definitions. Appending, addition and
+the curried cases of their recursions are definitions; the recursions'
+computation equations are proved by unfolding them, and the theorems
+with the recursions folded (`GebTests/Prototypes/FreeTopos/Benchmark.lean`).
+The certificates have from 4245 to 395728 nodes, from 47 to 799 times
+the core's, and 536226 in all against 1007453 without definitions. The
+checker's environment of theorems is indexed by arrays, since the
+certificates cite earlier theorems 35786 times; the development checks
+in 16 seconds, 19 by lists. Of the certificates' nodes, 78 in 100 are
+still terms that instances repeat, now the normal forms of the arrows
+the rewriting steps pass through, arrangements of projections and
+pairings rather than expansions of definitions. Neither the definitions
+nor the Mitchell–Bénabou language reduce these: a certificate that
+cites each term once from a table of shared terms, and a checker that
+infers definedness and canonical objects, do.
+
 The Mitchell–Bénabou language is written after the third construction,
 and has definitions of its own. A definition of the language compiles
 to a definition of the combinators, and a theorem in Lean states that
