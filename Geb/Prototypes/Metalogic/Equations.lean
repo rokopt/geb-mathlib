@@ -22,20 +22,32 @@ type and denote the same value.
 A certificate is a rose tree whose node's label names a rule and whose children are its
 premises' certificates and the terms and types the rule names. The checker is a fold over the
 certificate that computes each conclusion from its premises' conclusions, trusting no stated
-conclusion; its result is a function of a program's definitions, the global environment they
-load, the context and the hypotheses. Its rules are those of equality; congruence of every term
-former; the β and η rules of functions, pairs and the unit type; the δ rules, each a primitive
-at literals equal to the literal of its value; weakening, cut and instantiation of the innermost
-variable; the computation rules of the conditional at a quoted tree, of the right fold and case
-analysis of lists, of iteration and of the fold of trees; induction on lists, on trees and on
-labels; and references to definitions. Its soundness is proved against the denotation
-{name}`Geb.Kernel.infer`.
+conclusion; its result is a function of an environment of a program's definitions and theorems
+about it, the global environment the definitions load, the context and the hypotheses. Its rules
+are those of equality; congruence of every term former; the β and η rules of functions, pairs
+and the unit type; the δ rules, each a primitive at literals equal to the literal of its value;
+weakening, cut and instantiation of the innermost variable; the computation rules of the
+conditional at a quoted tree, of the right fold and case analysis of lists, of iteration and of
+the fold of trees; induction on lists, on trees and on labels; references to definitions;
+iteration's reading of the label, and the conditional as an iteration; and instances of the
+axioms and of the theorems, each variable replaced by a term of its type. Its soundness is
+proved against the denotation {name}`Geb.Kernel.infer`.
+
+The axioms are the defining equations of the primitives, each from the universal property of
+the object it acts on: the rose-tree object's structure map is inverse to the label and the
+children, by Lambek's lemma; the labels are its natural numbers object, whose arithmetic is
+defined by iteration; the arity and the children by index are defined by the right fold and case
+analysis of lists; and equality of trees is the characteristic map of the diagonal.
 
 ## Main definitions
 
 * {lit}`Eqn`, {lit}`Eqn.Holds`, {lit}`Valid` — equations, their truth at a value of the
   context, and valid sequents.
 * {lit}`Loaded` — the agreement of a program's definitions with a global environment.
+* {lit}`Thm`, {lit}`Env`, {lit}`Env.Sound` — theorems, environments of definitions and
+  theorems, and their soundness for a global environment.
+* {lit}`axioms` — the defining equations of the primitives.
+* {lit}`instAll`, {lit}`Thm.inst` — an equation at terms for its variables.
 * {lit}`mapBy` — the kernel term of a map over a list, by the right fold.
 * {lit}`listLit`, {lit}`IsLit` — the literal of a list of trees, and the test for a literal.
 * {lit}`checkCore`, {lit}`checkMore`, {lit}`check` — the rules, and the checker.
@@ -44,6 +56,8 @@ labels; and references to definitions. Its soundness is proved against the denot
 
 * {lit}`Geb.Kernel.infer_append` — extending the global environment keeps denotations.
 * {lit}`load_loaded` — a loaded program's definitions agree with its environment.
+* {lit}`axioms_valid` — the defining equations of the primitives hold.
+* {lit}`valid_thm_inst` — a theorem holds at terms of its variables' types.
 * {lit}`check_sound` — every conclusion the checker computes is valid.
 
 ## Implementation notes
@@ -322,6 +336,30 @@ theorem infer_nodePrim (G : List Glob) (Γ : Ctx) :
 theorem infer_add (G : List Glob) (Γ : Ctx) :
     infer G Γ (mk 22 [leaf 5]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.add⟩ := rfl
 
+/-- The denotation of the primitive giving a tree's child by index. -/
+theorem infer_childPrim (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk 22 [leaf 2]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.child⟩ := rfl
+
+/-- The denotation of the primitive giving a tree's children. -/
+theorem infer_childrenPrim (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk 22 [leaf 4]) = some ⟨tArrow tT (tList tT), fun _ ↦ Const.children⟩ := rfl
+
+/-- The denotation of the primitive subtracting labels. -/
+theorem infer_sub (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk 22 [leaf 6]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.sub⟩ := rfl
+
+/-- The denotation of the primitive dividing labels. -/
+theorem infer_div (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk 22 [leaf 8]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.div⟩ := rfl
+
+/-- The denotation of the primitive giving the remainder of labels. -/
+theorem infer_mod (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk 22 [leaf 9]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.mod⟩ := rfl
+
+/-- The denotation of the primitive comparing labels for equality. -/
+theorem infer_eqPrim (G : List Glob) (Γ : Ctx) :
+    infer G Γ (mk 22 [leaf 10]) = some ⟨tArrow tT (tArrow tT tT), fun _ ↦ Const.eq⟩ := rfl
+
 /-- The denotation of the fold of trees. -/
 theorem infer_fold {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) :
     infer G Γ (mk 17 [A]) = some ⟨foldTy A, fun _ ↦ foldDen A⟩ := by
@@ -459,6 +497,28 @@ theorem loaded_foldl : ∀ (D D0 : List Tree) (G0 G : List Glob), Loaded D0 G0 �
         have := ih (D0 ++ [t]) _ G (h.snoc ht) hf
         rwa [List.append_assoc, List.singleton_append] at this)
 
+/-- A theorem: an equation valid in a context under no hypotheses. -/
+@[ext] structure Thm where
+  /-- The context. -/
+  ctx : Ctx
+  /-- The equation. -/
+  eqn : Eqn
+deriving DecidableEq
+
+/-- A theorem holds in a global environment: its equation is valid in its context. -/
+def Thm.Valid (G : List Glob) (th : Thm) : Prop := Metalogic.Valid G th.ctx [] th.eqn
+
+/-- The global facts a certificate may cite: a program's definitions, and theorems about it. -/
+structure Env where
+  /-- The program's definitions. -/
+  defs : List Tree
+  /-- The theorems. -/
+  thms : List Thm
+
+/-- An environment is sound for a global environment: its definitions are loaded into it and
+its theorems hold in it. -/
+def Env.Sound (E : Env) (G : List Glob) : Prop := Loaded E.defs G ∧ ∀ th ∈ E.thms, th.Valid G
+
 /-- A loaded program's definitions agree with its environment. -/
 theorem load_loaded {D : List Tree} {G : List Glob} (h : load D = some G) : Loaded D G :=
   loaded_foldl D [] [] G
@@ -492,6 +552,147 @@ def listParts (L : Tree) : Option Tree :=
 /-- The weakening of a term by {lit}`n` variables below {lit}`k` bound ones. -/
 def wkAt (k n : ℕ) (t : Tree) : Tree := trav (wkVar n) t k
 
+/-- An equation with its innermost variable replaced by a term. -/
+def Eqn.subst (u : Tree) (q : Eqn) : Eqn := ⟨q.ty, Kernel.subst u q.lhs, Kernel.subst u q.rhs⟩
+
+/-- An equation with both sides weakened by {lit}`n` variables below {lit}`k` bound ones. -/
+def Eqn.wkAt (k n : ℕ) (q : Eqn) : Eqn :=
+  ⟨q.ty, Metalogic.wkAt k n q.lhs, Metalogic.wkAt k n q.rhs⟩
+
+/-- An equation with its variables replaced by terms, innermost first: each term, weakened past
+the variables after it, replaces the innermost variable in turn. -/
+def instAll : List Tree → Eqn → Eqn :=
+  List.rec id fun u us ih q ↦ ih (q.subst (Kernel.wk us.length u))
+
+/-- A theorem's equation in a context, at terms for its variables: its sides weakened past the
+context, and its variables replaced by the terms. -/
+def Thm.inst (th : Thm) (Γ : Ctx) (us : List Tree) : Eqn :=
+  instAll us (th.eqn.wkAt th.ctx.length Γ.length)
+
+/-- The quoted leaf of a label, the numeral of the label. -/
+def num (n : ℕ) : Tree := mk 15 [leaf n]
+
+/-- A primitive, by index, applied to arguments. -/
+def prim (k : ℕ) (xs : List Tree) : Tree := apps (mk 22 [leaf k]) xs
+
+/-- The successor of a label, its sum with one: the structure map of the natural numbers object
+that the labels form. -/
+def succT (t : Tree) : Tree := prim 5 [t, num 1]
+
+/-- The type of pairs of trees. -/
+def tT2 : Tree := tProd tT tT
+
+/-- The label of a node is the label of its first argument: with the next two, the primitive
+building a node is inverse to its label and its list of children. -/
+def axLabelNode : Thm :=
+  ⟨[tT, tList tT], ⟨tT, prim 0 [prim 3 [Tm.var 0, Tm.var 1]], prim 0 [Tm.var 0]⟩⟩
+
+/-- The children of a node are its list of children. -/
+def axChildrenNode : Thm :=
+  ⟨[tT, tList tT], ⟨tList tT, prim 4 [prim 3 [Tm.var 0, Tm.var 1]], Tm.var 1⟩⟩
+
+/-- A tree is the node of its label over its children. -/
+def axNodeEta : Thm := ⟨[tT], ⟨tT, prim 3 [prim 0 [Tm.var 0], prim 4 [Tm.var 0]], Tm.var 0⟩⟩
+
+/-- A label is a leaf: labels form the natural numbers object inside the trees. -/
+def axChildrenLabel : Thm := ⟨[tT], ⟨tList tT, prim 4 [prim 0 [Tm.var 0]], mk 19 [tT]⟩⟩
+
+/-- The successor of a label is a label. -/
+def axLabelSucc : Thm := ⟨[tT], ⟨tT, prim 0 [succT (Tm.var 0)], succT (Tm.var 0)⟩⟩
+
+/-- Addition iterates the successor, from the label of its first argument. -/
+def axAddIter : Thm :=
+  ⟨[tT, tT], ⟨tT, prim 5 [Tm.var 0, Tm.var 1],
+    apps (mk 18 [tT]) [mk 9 [tT, succT (Tm.var 0)], prim 0 [Tm.var 0], Tm.var 1]⟩⟩
+
+/-- The predecessor, the difference with one, is the first component of the iteration from a
+pair of zeros that moves the second component to the first and replaces it by its successor. -/
+def axPredIter : Thm :=
+  ⟨[tT], ⟨tT, prim 6 [Tm.var 0, num 1],
+    mk 13 [apps (mk 18 [tT2]) [mk 9 [tT2, mk 12 [mk 14 [Tm.var 0], succT (mk 14 [Tm.var 0])]],
+      mk 12 [num 0, num 0], Tm.var 0]]⟩⟩
+
+/-- Truncated subtraction iterates the predecessor, from the label of its first argument. -/
+def axSubIter : Thm :=
+  ⟨[tT, tT], ⟨tT, prim 6 [Tm.var 0, Tm.var 1],
+    apps (mk 18 [tT]) [mk 9 [tT, prim 6 [Tm.var 0, num 1]], prim 0 [Tm.var 0], Tm.var 1]⟩⟩
+
+/-- Multiplication iterates the addition of its first argument, from zero. -/
+def axMulIter : Thm :=
+  ⟨[tT, tT], ⟨tT, prim 7 [Tm.var 0, Tm.var 1],
+    apps (mk 18 [tT]) [mk 9 [tT, prim 5 [Tm.var 0, Tm.var 1]], num 0, Tm.var 1]⟩⟩
+
+/-- The iteration, as many times as the label of the variable {lit}`0`, of the step of division
+by the label of the variable {lit}`1` on a pair of a quotient and a remainder: the remainder's
+successor, and the quotient's successor with the remainder zero when that successor is the
+divisor. -/
+def divMod : Tree :=
+  apps (mk 18 [tT2]) [mk 9 [tT2, mk 16 [prim 10 [succT (mk 14 [Tm.var 0]), Tm.var 2],
+      mk 12 [succT (mk 13 [Tm.var 0]), num 0], mk 12 [mk 13 [Tm.var 0], succT (mk 14 [Tm.var 0])]]],
+    mk 12 [num 0, num 0], Tm.var 0]
+
+/-- Division is the quotient of the iterated step of division. -/
+def axDivIter : Thm := ⟨[tT, tT], ⟨tT, prim 8 [Tm.var 0, Tm.var 1], mk 13 [divMod]⟩⟩
+
+/-- The remainder is the remainder of the iterated step of division. -/
+def axModIter : Thm := ⟨[tT, tT], ⟨tT, prim 9 [Tm.var 0, Tm.var 1], mk 14 [divMod]⟩⟩
+
+/-- Equality of labels is the test for zero of the sum of the two truncated differences. -/
+def axEqDef : Thm :=
+  ⟨[tT, tT], ⟨tT, prim 10 [Tm.var 0, Tm.var 1], apps (mk 18 [tT]) [mk 9 [tT, num 0], num 1,
+    prim 5 [prim 6 [Tm.var 0, Tm.var 1], prim 6 [Tm.var 1, Tm.var 0]]]⟩⟩
+
+/-- A label is less than another when their truncated difference is not zero. -/
+def axLtDef : Thm :=
+  ⟨[tT, tT], ⟨tT, prim 11 [Tm.var 0, Tm.var 1],
+    apps (mk 18 [tT]) [mk 9 [tT, num 1], num 0, prim 6 [Tm.var 1, Tm.var 0]]⟩⟩
+
+/-- The logarithm of a label is zero below two, and otherwise the successor of the logarithm of
+its half. -/
+def axLog2Def : Thm :=
+  ⟨[tT], ⟨tT, prim 13 [Tm.var 0],
+    mk 16 [prim 11 [Tm.var 0, num 2], num 0, succT (prim 13 [prim 8 [Tm.var 0, num 2]])]⟩⟩
+
+/-- The arity of a tree is the length of its children, the right fold counting them. -/
+def axArityDef : Thm :=
+  ⟨[tT], ⟨tT, prim 1 [Tm.var 0],
+    apps (mk 21 [tT, tT]) [mk 9 [tT, mk 9 [tT, succT (Tm.var 0)]], num 0, prim 4 [Tm.var 0]]⟩⟩
+
+/-- The tail of a list of trees, by case analysis. -/
+def tailT : Tree :=
+  mk 9 [tList tT,
+    apps (mk 24 [tT, tList tT]) [Tm.var 0, mk 19 [tT], mk 9 [tT, mk 9 [tList tT, Tm.var 0]]]]
+
+/-- A tree's child by index is the head of its children with the tail taken that many times,
+and zero when that list is empty. -/
+def axChildDef : Thm :=
+  ⟨[tT, tT], ⟨tT, prim 2 [Tm.var 0, Tm.var 1],
+    apps (mk 24 [tT, tT]) [apps (mk 18 [tList tT]) [tailT, prim 4 [Tm.var 0], Tm.var 1], num 0,
+      mk 9 [tT, mk 9 [tList tT, Tm.var 1]]]⟩⟩
+
+/-- Equality of trees holds of a tree and itself. -/
+def axEqualRefl : Thm := ⟨[tT], ⟨tT, prim 12 [Tm.var 0, Tm.var 0], num 1⟩⟩
+
+/-- Trees that are equal replace each other: the conditional on their equality choosing the
+second when it holds is the first. -/
+def axEqualSubst : Thm :=
+  ⟨[tT, tT], ⟨tT, mk 16 [prim 12 [Tm.var 0, Tm.var 1], Tm.var 1, Tm.var 0], Tm.var 0⟩⟩
+
+/-- Equality of trees takes the values one and zero only. -/
+def axEqualBool : Thm :=
+  ⟨[tT, tT],
+    ⟨tT, mk 16 [prim 12 [Tm.var 0, Tm.var 1], num 1, num 0], prim 12 [Tm.var 0, Tm.var 1]⟩⟩
+
+/-- The defining equations of the kernel's primitives, each a theorem in the context of its
+variables: the rose-tree object's structure map is inverse to its label and its children, the
+labels are its natural numbers object, the arithmetic of labels is defined through iteration,
+the arity and the children by index through the right fold and case analysis of lists, and
+equality of trees is the characteristic map of the diagonal. -/
+def axioms : List Thm :=
+  [axLabelNode, axChildrenNode, axNodeEta, axChildrenLabel, axLabelSucc, axAddIter, axPredIter,
+   axSubIter, axMulIter, axDivIter, axModIter, axEqDef, axLtDef, axLog2Def, axArityDef,
+   axChildDef, axEqualRefl, axEqualSubst, axEqualBool]
+
 /-- The literal of a list of trees: each tree quoted, in front of the empty list of trees. -/
 def listLit (xs : List Tree) : Tree := xs.foldr (fun x r ↦ mk 20 [mk 15 [x], r]) (mk 19 [tT])
 
@@ -517,39 +718,39 @@ def lit? (m : Meaning []) : Option Tree :=
 /-- The checker's result at a certificate: the conclusion, as a function of a program's
 definitions, its global environment, the context and the hypotheses, or nothing when the
 certificate does not check. -/
-abbrev Chk : Type := List Tree → List Glob → Ctx → List Eqn → Option Eqn
+abbrev Chk : Type := Env → List Glob → Ctx → List Eqn → Option Eqn
 
 /-- The rules of equality, congruence, computation, substitution, the right fold of lists and
 induction on lists, by the label of a certificate's node: its children are the premises'
 certificates, with their results, and the terms and types the rule names. -/
-def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
+def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
   match l, cs with
   -- a hypothesis, by index
   | 0, [(i, _)] => H[i.label]?.bind fun q ↦ if q.Typed G Γ then some q else none
   -- reflexivity, symmetry and transitivity
   | 1, [(t, _)] => (typeOf G Γ t).map fun A ↦ ⟨A, t, t⟩
-  | 2, [(_, p)] => (p D G Γ H).map fun q ↦ ⟨q.ty, q.rhs, q.lhs⟩
-  | 3, [(_, p), (_, p')] => (p D G Γ H).bind fun q ↦ (p' D G Γ H).bind fun q' ↦
+  | 2, [(_, p)] => (p E G Γ H).map fun q ↦ ⟨q.ty, q.rhs, q.lhs⟩
+  | 3, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
     if q.ty = q'.ty ∧ q.rhs = q'.lhs then some ⟨q.ty, q.lhs, q'.rhs⟩ else none
   -- congruence: application, abstraction, pairs, projections, lists and the conditional
-  | 4, [(_, p), (_, p')] => (p D G Γ H).bind fun q ↦ (p' D G Γ H).bind fun q' ↦
+  | 4, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
     (arrowParts q.ty).bind fun AB ↦
       if q'.ty = AB.1 then some ⟨AB.2, mk 10 [q.lhs, q'.lhs], mk 10 [q.rhs, q'.rhs]⟩ else none
   | 5, [(A, _), (_, p)] =>
     if Ty.IsTy A then
-      (p D G (A :: Γ) (H.map (Eqn.wk 1))).map fun q ↦
+      (p E G (A :: Γ) (H.map (Eqn.wk 1))).map fun q ↦
         ⟨tArrow A q.ty, mk 9 [A, q.lhs], mk 9 [A, q.rhs]⟩
     else none
-  | 6, [(_, p), (_, p')] => (p D G Γ H).bind fun q ↦ (p' D G Γ H).map fun q' ↦
+  | 6, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).map fun q' ↦
     ⟨tProd q.ty q'.ty, mk 12 [q.lhs, q'.lhs], mk 12 [q.rhs, q'.rhs]⟩
-  | 7, [(_, p)] => (p D G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
+  | 7, [(_, p)] => (p E G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
     ⟨AB.1, mk 13 [q.lhs], mk 13 [q.rhs]⟩
-  | 8, [(_, p)] => (p D G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
+  | 8, [(_, p)] => (p E G Γ H).bind fun q ↦ (prodParts q.ty).map fun AB ↦
     ⟨AB.2, mk 14 [q.lhs], mk 14 [q.rhs]⟩
-  | 9, [(_, p), (_, p')] => (p D G Γ H).bind fun q ↦ (p' D G Γ H).bind fun q' ↦
+  | 9, [(_, p), (_, p')] => (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦
     if q'.ty = tList q.ty then some ⟨q'.ty, mk 20 [q.lhs, q'.lhs], mk 20 [q.rhs, q'.rhs]⟩ else none
   | 10, [(_, p), (_, p'), (_, p'')] =>
-    (p D G Γ H).bind fun q ↦ (p' D G Γ H).bind fun q' ↦ (p'' D G Γ H).bind fun q'' ↦
+    (p E G Γ H).bind fun q ↦ (p' E G Γ H).bind fun q' ↦ (p'' E G Γ H).bind fun q'' ↦
       if q.ty = tT ∧ q''.ty = q'.ty then
         some ⟨q'.ty, mk 16 [q.lhs, q'.lhs, q''.lhs], mk 16 [q.rhs, q'.rhs, q''.rhs]⟩
       else none
@@ -579,11 +780,11 @@ def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
   -- weakening, cut and instantiation of the innermost variable
   | 18, [(_, p)] =>
     match Γ with
-    | _ :: Γ' => (p D G Γ' []).map (Eqn.wk 1)
+    | _ :: Γ' => (p E G Γ' []).map (Eqn.wk 1)
     | [] => none
-  | 19, [(_, p), (_, p')] => (p D G Γ H).bind fun h ↦ p' D G Γ (h :: H)
+  | 19, [(_, p), (_, p')] => (p E G Γ H).bind fun h ↦ p' E G Γ (h :: H)
   | 20, [(u, _), (_, p)] => (typeOf G Γ u).bind fun A ↦
-    (p D G (A :: Γ) (H.map (Eqn.wk 1))).map fun q ↦ ⟨q.ty, subst u q.lhs, subst u q.rhs⟩
+    (p E G (A :: Γ) (H.map (Eqn.wk 1))).map fun q ↦ ⟨q.ty, subst u q.lhs, subst u q.rhs⟩
   -- the right fold of lists at the empty list and at a list of a head and a tail
   | 21, [(A, _), (B, _), (g, _), (z, _)] =>
     if Ty.IsTy A ∧ Ty.IsTy B ∧ typeOf G Γ g = some (tArrow A (tArrow B B)) ∧
@@ -604,8 +805,8 @@ def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
       let H0 := H.map Eqn.lower
       let c := mk 20 [Tm.var 1, Tm.var 0]
       if Ty.IsTy A ∧ typeOf G Γ t = some B ∧ H0.map (Eqn.wk 1) = H ∧ (∀ h ∈ H0, h.Typed G Γ') ∧
-          p0 D G Γ' H0 = some ⟨B, subst (mk 19 [A]) s, subst (mk 19 [A]) t⟩ ∧
-          p1 D G (L :: A :: Γ') (⟨B, wkAt 1 1 s, wkAt 1 1 t⟩ :: H0.map (Eqn.wk 2)) =
+          p0 E G Γ' H0 = some ⟨B, subst (mk 19 [A]) s, subst (mk 19 [A]) t⟩ ∧
+          p1 E G (L :: A :: Γ') (⟨B, wkAt 1 1 s, wkAt 1 1 t⟩ :: H0.map (Eqn.wk 2)) =
             some ⟨B, subst c (wkAt 1 2 s), subst c (wkAt 1 2 t)⟩ then
         some ⟨B, s, t⟩
       else none
@@ -614,7 +815,7 @@ def checkCore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
 
 /-- The rules of case analysis of lists, iteration, the fold of trees, induction on trees and on
 labels, and references to definitions, by the label of a certificate's node. -/
-def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
+def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
   match l, cs with
   -- case analysis of lists at the empty list and at a list of a head and a tail
   | 24, [(A, _), (B, _), (n, _), (c, _)] =>
@@ -655,7 +856,7 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
       let nd := apps (mk 22 [leaf 3]) [Tm.var 1, Tm.var 0]
       if L = tT ∧ Ty.IsTy B ∧ typeOf G Γ t = some B ∧ H0.map (Eqn.wk 1) = H ∧
           (∀ h ∈ H0, h.Typed G Γ') ∧
-          p1 D G (tList tT :: tT :: Γ')
+          p1 E G (tList tT :: tT :: Γ')
               (⟨tList B, mapBy tT B (subst (Tm.var 1) (wkAt 1 4 s)) (Tm.var 0),
                 mapBy tT B (subst (Tm.var 1) (wkAt 1 4 t)) (Tm.var 0)⟩ :: H0.map (Eqn.wk 2)) =
             some ⟨B, subst nd (wkAt 1 2 s), subst nd (wkAt 1 2 t)⟩ then
@@ -670,18 +871,34 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun D G Γ H ↦
       let suc := apps (mk 22 [leaf 5]) [Tm.var 0, mk 15 [leaf 1]]
       let lab := mk 10 [mk 22 [leaf 0], Tm.var 0]
       if L = tT ∧ typeOf G Γ t = some B ∧ H0.map (Eqn.wk 1) = H ∧ (∀ h ∈ H0, h.Typed G Γ') ∧
-          p0 D G Γ' H0 = some ⟨B, subst (mk 15 [leaf 0]) s, subst (mk 15 [leaf 0]) t⟩ ∧
-          p1 D G Γ (⟨B, s, t⟩ :: H) =
+          p0 E G Γ' H0 = some ⟨B, subst (mk 15 [leaf 0]) s, subst (mk 15 [leaf 0]) t⟩ ∧
+          p1 E G Γ (⟨B, s, t⟩ :: H) =
             some ⟨B, subst suc (wkAt 1 1 s), subst suc (wkAt 1 1 t)⟩ then
         some ⟨B, subst lab (wkAt 1 1 s), subst lab (wkAt 1 1 t)⟩
       else none
     | [] => none
   -- a reference to a definition is the definition, weakened into the context
-  | 31, [(j, _)] => D[j.label]?.bind fun t ↦ (typeOf G Γ (mk 23 [j])).map fun A ↦
+  | 31, [(j, _)] => E.defs[j.label]?.bind fun t ↦ (typeOf G Γ (mk 23 [j])).map fun A ↦
     ⟨A, mk 23 [j], Kernel.wk Γ.length t⟩
   -- the conditional at a quoted tree
   | 32, [(c, _), (a, _), (b, _)] => (typeOf G Γ a).bind fun A ↦
     if typeOf G Γ b = some A then some ⟨A, mk 16 [mk 15 [c], a, b], if c.label ≠ 0 then a else b⟩
+    else none
+  -- an instance of an axiom or of a theorem, each variable replaced by a term of its type
+  | 33, (j, _) :: us => (axioms ++ E.thms)[j.label]?.bind fun th ↦
+    if List.Forall₂ (fun u A ↦ typeOf G Γ u = some A) (us.map Prod.fst) th.ctx then
+      some (th.inst Γ (us.map Prod.fst))
+    else none
+  -- iteration reads the label of the tree it iterates over
+  | 34, [(A, _), (s, _), (z, _), (t, _)] =>
+    if Ty.IsTy A ∧ typeOf G Γ s = some (tArrow A A) ∧ typeOf G Γ z = some A ∧
+        typeOf G Γ t = some tT then
+      some ⟨A, apps (mk 18 [A]) [s, z, t], apps (mk 18 [A]) [s, z, mk 10 [mk 22 [leaf 0], t]]⟩
+    else none
+  -- the conditional is the iteration of a constant function from its second branch
+  | 35, [(A, _), (c, _), (a, _), (b, _)] =>
+    if Ty.IsTy A ∧ typeOf G Γ c = some tT ∧ typeOf G Γ a = some A ∧ typeOf G Γ b = some A then
+      some ⟨A, mk 16 [c, a, b], apps (mk 18 [A]) [mk 9 [A, Kernel.wk 1 a], b, c]⟩
     else none
   | _, _ => none
 
@@ -1054,11 +1271,11 @@ theorem mem_of_map_para {β : Type} {f : ℕ → List (Tree × β) → β} {cs :
   exact ⟨hc', rfl⟩
 
 /-- The conclusion of each rule of {lit}`checkCore` is valid when its premises' conclusions are. -/
-theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glob} {Γ : Ctx}
+theorem checkCore_sound {l : ℕ} {cs : List Tree} {E : Env} {G : List Glob} {Γ : Ctx}
     {H : List Eqn} {q : Eqn}
-    (ih : ∀ c ∈ cs, ∀ (D : List Tree) (G : List Glob) (Γ : Ctx) (H : List Eqn) (q : Eqn),
-      Loaded D G → check c D G Γ H = some q → Valid G Γ H q) (hD : Loaded D G)
-    (h : checkCore l (cs.map fun c ↦ (c, RoseTree.para checkStep c)) D G Γ H = some q) :
+    (ih : ∀ c ∈ cs, ∀ (E : Env) (G : List Glob) (Γ : Ctx) (H : List Eqn) (q : Eqn),
+      E.Sound G → check c E G Γ H = some q → Valid G Γ H q) (hE : E.Sound G)
+    (h : checkCore l (cs.map fun c ↦ (c, RoseTree.para checkStep c)) E G Γ H = some q) :
     Valid G Γ H q := by
   simp only [checkCore] at h
   split at h
@@ -1074,7 +1291,7 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
   case h_3 cp p heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
-    exact valid_symm (ih cp hc D G Γ H q' hD hq')
+    exact valid_symm (ih cp hc E G Γ H q' hE hq')
   case h_4 cp p cp' p' heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨hc', rfl⟩ := mem_of_map_para (c := cp') (s := p') heq (by simp)
@@ -1083,7 +1300,7 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
     split at h
     · rename_i hcond
       cases h
-      exact valid_trans (ih cp hc D G Γ H q1 hD h1) (ih cp' hc' D G Γ H q2 hD h2) hcond.1 hcond.2
+      exact valid_trans (ih cp hc E G Γ H q1 hE h1) (ih cp' hc' E G Γ H q2 hE h2) hcond.1 hcond.2
     · cases h
   case h_5 cp p cp' p' heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
@@ -1094,31 +1311,31 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
     split at h
     · rename_i hx
       cases h
-      exact valid_app (ih cp hc D G Γ H q1 hD h1) (ih cp' hc' D G Γ H q2 hD h2) hAB hx
+      exact valid_app (ih cp hc E G Γ H q1 hE h1) (ih cp' hc' E G Γ H q2 hE h2) hAB hx
     · cases h
   case h_6 A sA cp p heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     split at h
     · rename_i hA
       obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
-      exact valid_lam hA (ih cp hc D G (A :: Γ) (H.map (Eqn.wk 1)) q' hD hq')
+      exact valid_lam hA (ih cp hc E G (A :: Γ) (H.map (Eqn.wk 1)) q' hE hq')
     · cases h
   case h_7 cp p cp' p' heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨hc', rfl⟩ := mem_of_map_para (c := cp') (s := p') heq (by simp)
     obtain ⟨q1, h1, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨q2, h2, rfl⟩ := Option.map_eq_some_iff.mp h
-    exact valid_pair (ih cp hc D G Γ H q1 hD h1) (ih cp' hc' D G Γ H q2 hD h2)
+    exact valid_pair (ih cp hc E G Γ H q1 hE h1) (ih cp' hc' E G Γ H q2 hE h2)
   case h_8 cp p heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨q1, h1, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨⟨A, B⟩, hAB, rfl⟩ := Option.map_eq_some_iff.mp h
-    exact valid_fst (ih cp hc D G Γ H q1 hD h1) hAB
+    exact valid_fst (ih cp hc E G Γ H q1 hE h1) hAB
   case h_9 cp p heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨q1, h1, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨⟨A, B⟩, hAB, rfl⟩ := Option.map_eq_some_iff.mp h
-    exact valid_snd (ih cp hc D G Γ H q1 hD h1) hAB
+    exact valid_snd (ih cp hc E G Γ H q1 hE h1) hAB
   case h_10 cp p cp' p' heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨hc', rfl⟩ := mem_of_map_para (c := cp') (s := p') heq (by simp)
@@ -1127,7 +1344,7 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
     split at h
     · rename_i hl
       cases h
-      exact valid_cons (ih cp hc D G Γ H q1 hD h1) (ih cp' hc' D G Γ H q2 hD h2) hl
+      exact valid_cons (ih cp hc E G Γ H q1 hE h1) (ih cp' hc' E G Γ H q2 hE h2) hl
     · cases h
   case h_11 cp p cp' p' cp'' p'' heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
@@ -1139,8 +1356,8 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
     split at h
     · rename_i hcond
       cases h
-      exact valid_if (ih cp hc D G Γ H q1 hD h1) (ih cp' hc' D G Γ H q2 hD h2)
-        (ih cp'' hc'' D G Γ H q3 hD h3) hcond.1 hcond.2
+      exact valid_if (ih cp hc E G Γ H q1 hE h1) (ih cp' hc' E G Γ H q2 hE h2)
+        (ih cp'' hc'' E G Γ H q3 hE h3) hcond.1 hcond.2
     · cases h
   case h_12 A sA b sb a sa heq =>
     split at h
@@ -1187,18 +1404,18 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
     split at h
     · rename_i A Γ'
       obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
-      exact valid_weaken (ih cp hc D G Γ' [] q' hD hq')
+      exact valid_weaken (ih cp hc E G Γ' [] q' hE hq')
     · cases h
   case h_20 cp p cp' p' heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨hc', rfl⟩ := mem_of_map_para (c := cp') (s := p') heq (by simp)
     obtain ⟨hq, hq1, h⟩ := Option.bind_eq_some_iff.mp h
-    exact valid_cut (ih cp hc D G Γ H hq hD hq1) (ih cp' hc' D G Γ (hq :: H) q hD h)
+    exact valid_cut (ih cp hc E G Γ H hq hE hq1) (ih cp' hc' E G Γ (hq :: H) q hE h)
   case h_21 u su cp p heq =>
     obtain ⟨hc, rfl⟩ := mem_of_map_para (c := cp) (s := p) heq (by simp)
     obtain ⟨A, hA, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
-    exact valid_inst hA (ih cp hc D G (A :: Γ) (H.map (Eqn.wk 1)) q' hD hq')
+    exact valid_inst hA (ih cp hc E G (A :: Γ) (H.map (Eqn.wk 1)) q' hE hq')
   case h_22 A sA B sB g sg z sz heq =>
     split at h
     · rename_i hcond
@@ -1224,8 +1441,8 @@ theorem checkCore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
       · rename_i hcond
         cases h
         obtain ⟨hA, ht, hH, hT, hp0, hp1⟩ := hcond
-        exact valid_indList hA hB ht hH hT (ih cp0 hc0 _ _ _ _ _ hD hp0)
-          (ih cp1 hc1 _ _ _ _ _ hD hp1)
+        exact valid_indList hA hB ht hH hT (ih cp0 hc0 _ _ _ _ _ hE hp0)
+          (ih cp1 hc1 _ _ _ _ _ hE hp1)
       · cases h
     · cases h
   case h_25 => cases h
@@ -1386,7 +1603,7 @@ theorem valid_indLabel {Γ' : Ctx} {B s t : Tree}
     exact Eqn.holds_wk [tT] (hH0 h' h'mem)
 
 /-- A reference to a definition is the definition, weakened into the context. -/
-theorem valid_unfold {D : List Tree} {j t A : Tree} (hD : Loaded D G) (ht : D[j.label]? = some t)
+theorem valid_unfold {E : Env} {j t A : Tree} (hE : E.Sound G) (ht : E.defs[j.label]? = some t)
     (hA : typeOf G Γ (mk 23 [j]) = some A) :
     Valid G Γ H ⟨A, mk 23 [j], Kernel.wk Γ.length t⟩ := by
   have href : infer G Γ (mk 23 [j]) = G[j.label]?.map constant := by
@@ -1396,7 +1613,7 @@ theorem valid_unfold {D : List Tree} {j t A : Tree} (hD : Loaded D G) (ht : D[j.
   obtain ⟨⟨A', v⟩, hg, hgc⟩ := Option.map_eq_some_iff.mp hfr
   obtain ⟨rfl, hv⟩ := Sigma.mk.inj_iff.mp hgc
   obtain rfl := eq_of_heq hv
-  obtain ⟨f, hf, hfe⟩ := infer_closed (hD.2 _ _ _ ht hg) Γ
+  obtain ⟨f, hf, hfe⟩ := infer_closed (hE.1.2 _ _ _ ht hg) Γ
   exact ⟨_, f, href.trans (by rw [hg]; rfl), hf, fun e _ ↦ (hfe e).symm⟩
 
 /-- The conditional at a quoted tree is its first branch when the tree's label is not zero,
@@ -1412,12 +1629,335 @@ theorem valid_ifQuote {c a b A : Tree} (ha : typeOf G Γ a = some A) (hb : typeO
   · simp only [hc, ne_eq, not_false_eq_true, ↓reduceIte] at hif ⊢
     exact ⟨_, fa, hif, hfa, fun _ _ ↦ rfl⟩
 
+/-- A sequent valid in a context is valid in the context extended below. -/
+theorem valid_wkAt_ctx {Δ : Ctx} {q : Eqn} (h : Valid G Δ [] q) (Γ : Ctx) :
+    Valid G (Δ ++ Γ) [] (q.wkAt Δ.length Γ.length) := by
+  have h' : Valid G (Δ ++ []) [] q := (List.append_nil Δ).symm ▸ h
+  obtain ⟨f, g, hf, hg, he⟩ := h'
+  have hv : Valid G (Δ ++ (Γ ++ [])) [] (q.wkAt Δ.length Γ.length) :=
+    ⟨_, _, infer_wkAt Δ Γ hf, infer_wkAt Δ Γ hg,
+      fun e _ ↦ he _ fun _ hx ↦ absurd hx List.not_mem_nil⟩
+  rwa [List.append_nil] at hv
+
+/-- An equation valid in a context is valid with its variables replaced by terms of their types,
+innermost first. -/
+theorem valid_instAll {us : List Tree} {Δ : Ctx}
+    (hus : List.Forall₂ (fun u A ↦ typeOf G Γ u = some A) us Δ) :
+    ∀ {q : Eqn}, Valid G (Δ ++ Γ) [] q → Valid G Γ [] (instAll us q) := by
+  refine List.Forall₂.rec
+    (motive := fun us Δ _ ↦ ∀ {q : Eqn}, Valid G (Δ ++ Γ) [] q → Valid G Γ [] (instAll us q))
+    (fun hq ↦ hq) (fun {u A us Δ} hu hrest ih {q} hq ↦ ?_) hus
+  obtain ⟨fu, hfu⟩ := typeOf_eq_some.mp hu
+  have hwk := infer_wk Δ hfu
+  rw [← hrest.length_eq] at hwk
+  exact ih (valid_inst (typeOf_eq_some.mpr ⟨_, hwk⟩) hq)
+
+/-- A valid sequent without hypotheses is valid under any hypotheses. -/
+theorem Valid.weakenHyps {q : Eqn} (h : Valid G Γ [] q) : Valid G Γ H q := by
+  obtain ⟨f, g, hf, hg, he⟩ := h
+  exact ⟨f, g, hf, hg, fun e _ ↦ he e fun _ hx ↦ absurd hx List.not_mem_nil⟩
+
+/-- Iterating the successor from a label adds the number of iterations to it. -/
+theorem repeat_succ_leaf (a : ℕ) :
+    ∀ k : ℕ, Nat.repeat (fun x ↦ Const.add x (leaf 1)) k (leaf a) = leaf (a + k) :=
+  Nat.rec rfl fun _ ih ↦ congrArg (fun x ↦ Const.add x (leaf 1)) ih
+
+/-- Iterating the step of the predecessor from a pair of zeros gives the predecessor and the
+number of iterations. -/
+theorem repeat_pred_pair :
+    ∀ k : ℕ, Nat.repeat (fun p : Tree × Tree ↦ (p.2, Const.add p.2 (leaf 1))) k (leaf 0, leaf 0) =
+      (leaf (k - 1), leaf k) :=
+  Nat.rec rfl fun _ ih ↦ congrArg (fun p : Tree × Tree ↦ (p.2, Const.add p.2 (leaf 1))) ih
+
+/-- Iterating the predecessor from a label subtracts the number of iterations from it. -/
+theorem repeat_pred_leaf (a : ℕ) :
+    ∀ k : ℕ, Nat.repeat (fun x ↦ Const.sub x (leaf 1)) k (leaf a) = leaf (a - k) :=
+  Nat.rec rfl fun _ ih ↦ congrArg (fun x ↦ Const.sub x (leaf 1)) ih
+
+/-- Iterating the addition of a tree's label from zero multiplies it by the number of
+iterations. -/
+theorem repeat_add_leaf (m : Tree) :
+    ∀ k : ℕ, Nat.repeat (fun x ↦ Const.add x m) k (leaf 0) = leaf (m.label * k) :=
+  Nat.rec rfl fun _ ih ↦ congrArg (fun x ↦ Const.add x m) ih
+
+/-- Iterating a constant function is the start at zero iterations and the constant after. -/
+theorem repeat_const {α : Type} (c z : α) (k : ℕ) :
+    Nat.repeat (fun _ ↦ c) k z = if k = 0 then z else c := by
+  cases k with
+  | zero => rfl
+  | succ k => rfl
+
+/-- The step of division by a label, on a pair of a quotient and a remainder. -/
+def divModStep (n : Tree) (p : Tree × Tree) : Tree × Tree :=
+  if (Const.eq (Const.add p.2 (leaf 1)) n).label ≠ 0 then (Const.add p.1 (leaf 1), leaf 0)
+  else (p.1, Const.add p.2 (leaf 1))
+
+/-- Iterating the step of division from a pair of zeros gives the quotient and the remainder of
+the number of iterations. -/
+theorem repeat_divModStep (n : Tree) :
+    ∀ k : ℕ, Nat.repeat (divModStep n) k (leaf 0, leaf 0) =
+      (leaf (k / n.label), leaf (k % n.label)) := by
+  refine Nat.rec (by simp only [Nat.zero_div, Nat.zero_mod]; rfl) fun k ih ↦ ?_
+  change divModStep n (Nat.repeat (divModStep n) k (leaf 0, leaf 0)) = _
+  rw [ih]
+  change (if (ofBool (k % n.label + 1 == n.label)).label ≠ 0 then
+      (leaf (k / n.label + 1), leaf 0) else (leaf (k / n.label), leaf (k % n.label + 1))) =
+    (leaf ((k + 1) / n.label), leaf ((k + 1) % n.label))
+  have hk := Nat.mod_add_div k n.label
+  by_cases h : k % n.label + 1 = n.label
+  · have hb : 0 < n.label := by omega
+    have hq : (k + 1) / n.label = k / n.label + 1 ∧ (k + 1) % n.label = 0 :=
+      (Nat.div_mod_unique hb).mpr ⟨by rw [Nat.mul_succ]; omega, hb⟩
+    simp only [ofBool, h, beq_self_eq_true, ↓reduceIte, hq.1, hq.2, leaf, RoseTree.label_node,
+      ne_eq, one_ne_zero, not_false_eq_true]
+  · have hq : (k + 1) / n.label = k / n.label ∧ (k + 1) % n.label = k % n.label + 1 := by
+      rcases Nat.eq_zero_or_pos n.label with hb | hb
+      · simp only [hb, Nat.div_zero, Nat.mod_zero, and_self]
+      · exact (Nat.div_mod_unique hb).mpr ⟨by omega, by have := Nat.mod_lt k hb; omega⟩
+    simp only [ofBool, beq_iff_eq, h, ↓reduceIte, hq.1, hq.2, leaf, RoseTree.label_node,
+      ne_eq, not_true_eq_false]
+
+/-- The list tail taken as many times as a number is the list without that many elements. -/
+theorem repeat_tail : ∀ (k : ℕ) (xs : List Tree),
+    Nat.repeat (fun xs ↦ Const.lcase xs [] fun _ r ↦ r) k xs = xs.drop k := by
+  refine Nat.rec (fun _ ↦ rfl) fun k ih xs ↦ ?_
+  change Const.lcase (Nat.repeat _ k xs) [] (fun _ r ↦ r) = _
+  rw [ih, ← List.tail_drop]
+  cases xs.drop k <;> rfl
+
+/-- Counting a list by the right fold gives its length. -/
+theorem foldr_count :
+    ∀ xs : List Tree, xs.foldr (fun _ n ↦ Const.add n (leaf 1)) (leaf 0) = leaf xs.length :=
+  List.rec rfl fun _ _ ih ↦ congrArg (fun n ↦ Const.add n (leaf 1)) ih
+
+/-- The denotation of the successor of a tree. -/
+theorem infer_succT {t : Tree} {f : Γ.den → Ty.den tT} (h : infer G Γ t = some ⟨tT, f⟩) :
+    infer G Γ (succT t) = some ⟨tT, fun e ↦ Const.add (f e) (leaf 1)⟩ :=
+  infer_app (infer_app (infer_add G Γ) h) (infer_quote G Γ (leaf 1))
+
+theorem valid_axLabelNode (G : List Glob) : axLabelNode.Valid G := ⟨_, _, rfl, rfl, fun _ _ ↦ rfl⟩
+
+theorem valid_axChildrenNode (G : List Glob) : axChildrenNode.Valid G :=
+  ⟨fun e : Tree × List Tree × Unit ↦ Const.children (Const.node e.1 e.2.1), fun e ↦ e.2.1, rfl,
+    rfl, fun e _ ↦ RoseTree.children_node _ e.2.1⟩
+
+theorem valid_axNodeEta (G : List Glob) : axNodeEta.Valid G :=
+  ⟨fun e : Tree × Unit ↦ Const.node (Const.label e.1) (Const.children e.1), fun e ↦ e.1, rfl, rfl,
+    fun e _ ↦ RoseTree.node_label_children e.1⟩
+
+theorem valid_axChildrenLabel (G : List Glob) : axChildrenLabel.Valid G :=
+  ⟨fun e : Tree × Unit ↦ Const.children (Const.label e.1), fun _ ↦ [], rfl, rfl,
+    fun _ _ ↦ RoseTree.children_node _ _⟩
+
+theorem valid_axLabelSucc (G : List Glob) : axLabelSucc.Valid G := ⟨_, _, rfl, rfl, fun _ _ ↦ rfl⟩
+
+theorem valid_axAddIter (G : List Glob) : axAddIter.Valid G :=
+  ⟨fun e : Tree × Tree × Unit ↦ Const.add e.1 e.2.1,
+    fun e ↦ Const.iter (fun x ↦ Const.add x (leaf 1)) (Const.label e.1) e.2.1, rfl, rfl,
+    fun _ _ ↦ (repeat_succ_leaf _ _).symm⟩
+
+theorem valid_axPredIter (G : List Glob) : axPredIter.Valid G := by
+  have hp : infer G [tT2, tT] (Tm.var 0) = some ⟨tT2, fun e ↦ e.1⟩ := rfl
+  have hx : infer G [tT] (Tm.var 0) = some ⟨tT, fun e ↦ e.1⟩ := rfl
+  have hlam := infer_lam (A := tT2) rfl (infer_pair (infer_snd hp) (infer_succT (infer_snd hp)))
+  have hz := infer_pair (infer_quote G [tT] (leaf 0)) (infer_quote G [tT] (leaf 0))
+  have hit := infer_app (infer_app (infer_app (infer_iter (A := tT2) rfl) hlam) hz) hx
+  refine ⟨_, _, infer_app (infer_app (infer_sub G _) hx) (infer_quote G _ (leaf 1)),
+    infer_fst hit, fun (e : Tree × Unit) _ ↦ ?_⟩
+  change Const.sub e.1 (leaf 1) =
+    (Nat.repeat (fun p : Tree × Tree ↦ (p.2, Const.add p.2 (leaf 1))) e.1.label
+      (leaf 0, leaf 0)).1
+  rw [repeat_pred_pair]
+  rfl
+
+theorem valid_axSubIter (G : List Glob) : axSubIter.Valid G :=
+  ⟨fun e : Tree × Tree × Unit ↦ Const.sub e.1 e.2.1,
+    fun e ↦ Const.iter (fun x ↦ Const.sub x (leaf 1)) (Const.label e.1) e.2.1, rfl, rfl,
+    fun _ _ ↦ (repeat_pred_leaf _ _).symm⟩
+
+theorem valid_axMulIter (G : List Glob) : axMulIter.Valid G :=
+  ⟨fun e : Tree × Tree × Unit ↦ Const.mul e.1 e.2.1,
+    fun e ↦ Const.iter (fun x ↦ Const.add x e.1) (leaf 0) e.2.1, rfl, rfl,
+    fun _ _ ↦ (repeat_add_leaf _ _).symm⟩
+
+/-- The denotation of the iterated step of division. -/
+theorem infer_divMod (G : List Glob) :
+    infer G [tT, tT] divMod =
+      some ⟨tT2, fun e ↦ Const.iter (divModStep e.2.1) (leaf 0, leaf 0) e.1⟩ := by
+  have hp : infer G [tT2, tT, tT] (Tm.var 0) = some ⟨tT2, fun e ↦ e.1⟩ := rfl
+  have hn : infer G [tT2, tT, tT] (Tm.var 2) = some ⟨tT, fun e ↦ e.2.2.1⟩ := rfl
+  have hm : infer G [tT, tT] (Tm.var 0) = some ⟨tT, fun e ↦ e.1⟩ := rfl
+  have hcond := infer_app (infer_app (infer_eqPrim G _) (infer_succT (infer_snd hp))) hn
+  have ha := infer_pair (infer_succT (infer_fst hp)) (infer_quote G _ (leaf 0))
+  have hb := infer_pair (infer_fst hp) (infer_succT (infer_snd hp))
+  have hlam := infer_lam (A := tT2) rfl (infer_if hcond ha hb)
+  have hz := infer_pair (infer_quote G [tT, tT] (leaf 0)) (infer_quote G [tT, tT] (leaf 0))
+  exact infer_app (infer_app (infer_app (infer_iter (A := tT2) rfl) hlam) hz) hm
+
+theorem valid_axDivIter (G : List Glob) : axDivIter.Valid G := by
+  have hm : infer G [tT, tT] (Tm.var 0) = some ⟨tT, fun e ↦ e.1⟩ := rfl
+  have hn : infer G [tT, tT] (Tm.var 1) = some ⟨tT, fun e ↦ e.2.1⟩ := rfl
+  exact ⟨_, _, infer_app (infer_app (infer_div G _) hm) hn, infer_fst (infer_divMod G),
+    fun e _ ↦ (congrArg Prod.fst (repeat_divModStep _ _)).symm⟩
+
+theorem valid_axModIter (G : List Glob) : axModIter.Valid G := by
+  have hm : infer G [tT, tT] (Tm.var 0) = some ⟨tT, fun e ↦ e.1⟩ := rfl
+  have hn : infer G [tT, tT] (Tm.var 1) = some ⟨tT, fun e ↦ e.2.1⟩ := rfl
+  exact ⟨_, _, infer_app (infer_app (infer_mod G _) hm) hn, infer_snd (infer_divMod G),
+    fun e _ ↦ (congrArg Prod.snd (repeat_divModStep _ _)).symm⟩
+
+theorem valid_axEqDef (G : List Glob) : axEqDef.Valid G := by
+  refine ⟨fun e : Tree × Tree × Unit ↦ Const.eq e.1 e.2.1,
+    fun e ↦ Const.iter (fun _ ↦ leaf 0) (leaf 1) (Const.add (Const.sub e.1 e.2.1)
+      (Const.sub e.2.1 e.1)), rfl, rfl, fun (e : Tree × Tree × Unit) _ ↦ ?_⟩
+  change ofBool (e.1.label == e.2.1.label) =
+    Nat.repeat (fun _ ↦ leaf 0) (e.1.label - e.2.1.label + (e.2.1.label - e.1.label)) (leaf 1)
+  rw [repeat_const]
+  by_cases h : e.1.label = e.2.1.label
+  · simp only [ofBool, h, beq_self_eq_true, ↓reduceIte, Nat.sub_self, Nat.add_zero]
+  · have hk : e.1.label - e.2.1.label + (e.2.1.label - e.1.label) ≠ 0 := by omega
+    simp only [ofBool, beq_iff_eq, h, hk, ↓reduceIte]
+
+theorem valid_axLtDef (G : List Glob) : axLtDef.Valid G := by
+  refine ⟨fun e : Tree × Tree × Unit ↦ Const.lt e.1 e.2.1,
+    fun e ↦ Const.iter (fun _ ↦ leaf 1) (leaf 0) (Const.sub e.2.1 e.1), rfl, rfl,
+    fun (e : Tree × Tree × Unit) _ ↦ ?_⟩
+  change ofBool (decide (e.1.label < e.2.1.label)) =
+    Nat.repeat (fun _ ↦ leaf 1) (e.2.1.label - e.1.label) (leaf 0)
+  rw [repeat_const]
+  by_cases h : e.1.label < e.2.1.label
+  · have hk : e.2.1.label - e.1.label ≠ 0 := by omega
+    simp only [ofBool, h, hk, decide_true, ↓reduceIte]
+  · have hk : e.2.1.label - e.1.label = 0 := by omega
+    simp only [ofBool, h, hk, decide_false, ↓reduceIte, Bool.false_eq_true]
+
+theorem valid_axLog2Def (G : List Glob) : axLog2Def.Valid G := by
+  refine ⟨fun e : Tree × Unit ↦ Const.log2 e.1,
+    fun e ↦ if (Const.lt e.1 (leaf 2)).label ≠ 0 then leaf 0
+      else Const.add (Const.log2 (Const.div e.1 (leaf 2))) (leaf 1), rfl, rfl,
+    fun (e : Tree × Unit) _ ↦ ?_⟩
+  change leaf (Nat.log2 e.1.label) =
+    if (ofBool (decide (e.1.label < 2))).label ≠ 0 then leaf 0
+      else leaf (Nat.log2 (e.1.label / 2) + 1)
+  rw [Nat.log2_def]
+  by_cases h : e.1.label < 2
+  · have h2 : ¬ 2 ≤ e.1.label := by omega
+    simp only [ofBool, h, h2, decide_true, ↓reduceIte]
+    rfl
+  · have h2 : 2 ≤ e.1.label := by omega
+    simp only [ofBool, h, h2, decide_false, ↓reduceIte, Bool.false_eq_true]
+    rfl
+
+theorem valid_axArityDef (G : List Glob) : axArityDef.Valid G := by
+  refine ⟨fun e : Tree × Unit ↦ Const.arity e.1,
+    fun e ↦ Const.foldr (fun _ n ↦ Const.add n (leaf 1)) (leaf 0) (Const.children e.1), rfl, rfl,
+    fun (e : Tree × Unit) _ ↦ ?_⟩
+  change Const.arity e.1 = List.foldr (fun _ n ↦ Const.add n (leaf 1)) (leaf 0) e.1.children
+  rw [foldr_count]
+  obtain ⟨⟨_, k⟩, g⟩ := e.1
+  exact congrArg leaf List.length_ofFn.symm
+
+theorem valid_axChildDef (G : List Glob) : axChildDef.Valid G := by
+  have hxs : infer G [tList tT, tT, tT] (Tm.var 0) = some ⟨tList tT, fun e ↦ e.1⟩ := rfl
+  have hr : infer G [tList tT, tT, tList tT, tT, tT] (Tm.var 0) =
+      some ⟨tList tT, fun e ↦ e.1⟩ := rfl
+  have hlc := infer_app (infer_app (infer_app (infer_lcase (A := tT) (B := tList tT) rfl rfl) hxs)
+    (infer_nil rfl)) (infer_lam rfl (infer_lam rfl hr))
+  have ht : infer G [tT, tT] (Tm.var 0) = some ⟨tT, fun e ↦ e.1⟩ := rfl
+  have hi : infer G [tT, tT] (Tm.var 1) = some ⟨tT, fun e ↦ e.2.1⟩ := rfl
+  have hit := infer_app (infer_app (infer_app (infer_iter (A := tList tT) rfl)
+    (infer_lam (A := tList tT) rfl hlc)) (infer_app (infer_childrenPrim G _) ht)) hi
+  have hh : infer G [tList tT, tT, tT, tT] (Tm.var 1) = some ⟨tT, fun e ↦ e.2.1⟩ := rfl
+  refine ⟨_, _, infer_app (infer_app (infer_childPrim G _) ht) hi,
+    infer_app (infer_app (infer_app (infer_lcase (A := tT) (B := tT) rfl rfl) hit)
+      (infer_quote G _ (leaf 0))) (infer_lam rfl (infer_lam rfl hh)),
+    fun (e : Tree × Tree × Unit) _ ↦ ?_⟩
+  change Const.child e.1 e.2.1 =
+    Const.lcase (Nat.repeat (fun xs ↦ Const.lcase xs [] fun _ r ↦ r) e.2.1.label e.1.children)
+      (leaf 0) (fun x _ ↦ x)
+  rw [repeat_tail]
+  obtain ⟨⟨⟨_, k⟩, g⟩, i, _⟩ := e
+  change (if h : i.label < k then g ⟨i.label, h⟩ else leaf 0) =
+    Const.lcase ((List.ofFn g).drop i.label) (leaf 0) (fun x _ ↦ x)
+  have hl : ∀ xs : List Tree, Const.lcase xs (leaf 0) (fun x _ ↦ x) = xs.head?.getD (leaf 0) :=
+    fun xs ↦ by cases xs <;> rfl
+  rw [hl, List.head?_drop, List.getElem?_ofFn]
+  split <;> rfl
+
+theorem valid_axEqualRefl (G : List Glob) : axEqualRefl.Valid G := by
+  refine ⟨fun e : Tree × Unit ↦ Const.equal e.1 e.1, fun _ ↦ leaf 1, rfl, rfl,
+    fun (e : Tree × Unit) _ ↦ ?_⟩
+  change ofBool (decide (e.1 = e.1)) = leaf 1
+  rw [decide_eq_true rfl]
+  rfl
+
+theorem valid_axEqualSubst (G : List Glob) : axEqualSubst.Valid G := by
+  refine ⟨fun e : Tree × Tree × Unit ↦ if (Const.equal e.1 e.2.1).label ≠ 0 then e.2.1 else e.1,
+    fun e ↦ e.1, rfl, rfl, fun (e : Tree × Tree × Unit) _ ↦ ?_⟩
+  change (if (ofBool (decide (e.1 = e.2.1))).label ≠ 0 then e.2.1 else e.1) = e.1
+  by_cases h : e.1 = e.2.1
+  · rw [← h]
+    split <;> rfl
+  · simp only [ofBool, h, decide_false, Bool.false_eq_true, ↓reduceIte]
+    rfl
+
+theorem valid_axEqualBool (G : List Glob) : axEqualBool.Valid G := by
+  refine ⟨fun e : Tree × Tree × Unit ↦
+      if (Const.equal e.1 e.2.1).label ≠ 0 then leaf 1 else leaf 0,
+    fun e ↦ Const.equal e.1 e.2.1, rfl, rfl, fun (e : Tree × Tree × Unit) _ ↦ ?_⟩
+  change (if (ofBool (decide (e.1 = e.2.1))).label ≠ 0 then leaf 1 else leaf 0) =
+    ofBool (decide (e.1 = e.2.1))
+  cases decide (e.1 = e.2.1) <;> rfl
+
+/-- The defining equations of the primitives hold in every global environment. -/
+theorem axioms_valid (G : List Glob) : ∀ th ∈ axioms, th.Valid G := by
+  simp only [axioms, List.forall_mem_cons]
+  exact ⟨valid_axLabelNode G, valid_axChildrenNode G, valid_axNodeEta G, valid_axChildrenLabel G,
+    valid_axLabelSucc G, valid_axAddIter G, valid_axPredIter G, valid_axSubIter G,
+    valid_axMulIter G, valid_axDivIter G, valid_axModIter G, valid_axEqDef G, valid_axLtDef G,
+    valid_axLog2Def G, valid_axArityDef G, valid_axChildDef G, valid_axEqualRefl G,
+    valid_axEqualSubst G, valid_axEqualBool G, fun _ h ↦ absurd h List.not_mem_nil⟩
+
+/-- A theorem holding in the global environment holds at terms of its variables' types. -/
+theorem valid_thm_inst {th : Thm} {us : List Tree} (hth : th.Valid G)
+    (hus : List.Forall₂ (fun u A ↦ typeOf G Γ u = some A) us th.ctx) :
+    Valid G Γ H (th.inst Γ us) :=
+  (valid_instAll hus (valid_wkAt_ctx hth Γ)).weakenHyps
+
+/-- Iteration reads the label of the tree it iterates over. -/
+theorem valid_iterLabel {A s z t : Tree} (hA : Ty.IsTy A = true)
+    (hs : typeOf G Γ s = some (tArrow A A)) (hz : typeOf G Γ z = some A)
+    (ht : typeOf G Γ t = some tT) :
+    Valid G Γ H
+      ⟨A, apps (mk 18 [A]) [s, z, t], apps (mk 18 [A]) [s, z, mk 10 [mk 22 [leaf 0], t]]⟩ := by
+  obtain ⟨fs, hfs⟩ := typeOf_eq_some.mp hs
+  obtain ⟨fz, hfz⟩ := typeOf_eq_some.mp hz
+  obtain ⟨ft, hft⟩ := typeOf_eq_some.mp ht
+  have hi := infer_app (infer_app (infer_iter (G := G) (Γ := Γ) hA) hfs) hfz
+  exact ⟨_, _, infer_app hi hft, infer_app hi (infer_app (infer_label G Γ) hft), fun _ _ ↦ rfl⟩
+
+/-- The conditional is the iteration of a constant function from its second branch. -/
+theorem valid_ifIter {A c a b : Tree} (hA : Ty.IsTy A = true) (hc : typeOf G Γ c = some tT)
+    (ha : typeOf G Γ a = some A) (hb : typeOf G Γ b = some A) :
+    Valid G Γ H ⟨A, mk 16 [c, a, b], apps (mk 18 [A]) [mk 9 [A, Kernel.wk 1 a], b, c]⟩ := by
+  obtain ⟨fc, hfc⟩ := typeOf_eq_some.mp hc
+  obtain ⟨fa, hfa⟩ := typeOf_eq_some.mp ha
+  obtain ⟨fb, hfb⟩ := typeOf_eq_some.mp hb
+  refine ⟨_, _, infer_if hfc hfa hfb,
+    infer_app (infer_app (infer_app (infer_iter hA) (infer_lam hA (infer_wk [A] hfa))) hfb) hfc,
+    fun e _ ↦ ?_⟩
+  simp only [iterDen, Const.iter]
+  generalize RoseTree.label (fc e) = n
+  cases n with
+  | zero => rfl
+  | succ k => rfl
+
 /-- The conclusion of each rule of {lit}`checkMore` is valid when its premises' conclusions are. -/
-theorem checkMore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glob} {Γ : Ctx}
+theorem checkMore_sound {l : ℕ} {cs : List Tree} {E : Env} {G : List Glob} {Γ : Ctx}
     {H : List Eqn} {q : Eqn}
-    (ih : ∀ c ∈ cs, ∀ (D : List Tree) (G : List Glob) (Γ : Ctx) (H : List Eqn) (q : Eqn),
-      Loaded D G → check c D G Γ H = some q → Valid G Γ H q) (hD : Loaded D G)
-    (h : checkMore l (cs.map fun c ↦ (c, RoseTree.para checkStep c)) D G Γ H = some q) :
+    (ih : ∀ c ∈ cs, ∀ (E : Env) (G : List Glob) (Γ : Ctx) (H : List Eqn) (q : Eqn),
+      E.Sound G → check c E G Γ H = some q → Valid G Γ H q) (hE : E.Sound G)
+    (h : checkMore l (cs.map fun c ↦ (c, RoseTree.para checkStep c)) E G Γ H = some q) :
     Valid G Γ H q := by
   simp only [checkMore] at h
   split at h
@@ -1464,7 +2004,7 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
       · rename_i hcond
         cases h
         obtain ⟨rfl, hBt, ht, hH, hT, hp1⟩ := hcond
-        exact valid_indTree hBt hB ht hH hT (ih cp1 hc1 _ _ _ _ _ hD hp1)
+        exact valid_indTree hBt hB ht hH hT (ih cp1 hc1 _ _ _ _ _ hE hp1)
       · cases h
     · cases h
   case h_7 s ss t st cp0 p0 cp1 p1 heq =>
@@ -1477,14 +2017,14 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
       · rename_i hcond
         cases h
         obtain ⟨rfl, ht, hH, hT, hp0, hp1⟩ := hcond
-        exact valid_indLabel hB ht hH hT (ih cp0 hc0 _ _ _ _ _ hD hp0)
-          (ih cp1 hc1 _ _ _ _ _ hD hp1)
+        exact valid_indLabel hB ht hH hT (ih cp0 hc0 _ _ _ _ _ hE hp0)
+          (ih cp1 hc1 _ _ _ _ _ hE hp1)
       · cases h
     · cases h
   case h_8 j sj heq =>
     obtain ⟨t, ht, h⟩ := Option.bind_eq_some_iff.mp h
     obtain ⟨A, hA, rfl⟩ := Option.map_eq_some_iff.mp h
-    exact valid_unfold hD ht hA
+    exact valid_unfold hE ht hA
   case h_9 c sc a sa b sb heq =>
     obtain ⟨A, hA, h⟩ := Option.bind_eq_some_iff.mp h
     split at h
@@ -1492,17 +2032,41 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {D : List Tree} {G : List Glo
       cases h
       exact valid_ifQuote hA hB
     · cases h
-  case h_10 => cases h
+  case h_10 j sj us heq =>
+    obtain ⟨th, hth, h⟩ := Option.bind_eq_some_iff.mp h
+    split at h
+    · rename_i hus
+      cases h
+      refine valid_thm_inst ?_ hus
+      rcases List.mem_append.mp (List.mem_of_getElem? hth) with hax | hthm
+      · exact axioms_valid G th hax
+      · exact hE.2 th hthm
+    · cases h
+  case h_11 A sA s ss z sz t st heq =>
+    split at h
+    · rename_i hcond
+      cases h
+      obtain ⟨hA, hs, hz, ht⟩ := hcond
+      exact valid_iterLabel hA hs hz ht
+    · cases h
+  case h_12 A sA c sc a sa b sb heq =>
+    split at h
+    · rename_i hcond
+      cases h
+      obtain ⟨hA, hc, ha, hb⟩ := hcond
+      exact valid_ifIter hA hc ha hb
+    · cases h
+  case h_13 => cases h
 
 /-- Every conclusion the checker computes, in a program's definitions and the environment they
 load, is valid. -/
-theorem check_sound : ∀ (c : Tree) (D : List Tree) (G : List Glob) (Γ : Ctx) (H : List Eqn)
-    (q : Eqn), Loaded D G → check c D G Γ H = some q → Valid G Γ H q := by
-  refine RoseTree.ind fun l cs ih D G Γ H q hD h ↦ ?_
+theorem check_sound : ∀ (c : Tree) (E : Env) (G : List Glob) (Γ : Ctx) (H : List Eqn)
+    (q : Eqn), E.Sound G → check c E G Γ H = some q → Valid G Γ H q := by
+  refine RoseTree.ind fun l cs ih E G Γ H q hE h ↦ ?_
   simp only [check, RoseTree.para_node, checkStep] at h
   split at h
-  · exact checkCore_sound ih hD h
-  · exact checkMore_sound ih hD h
+  · exact checkCore_sound ih hE h
+  · exact checkMore_sound ih hE h
 
 end Soundness
 
