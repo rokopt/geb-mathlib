@@ -1408,8 +1408,9 @@ checker is defined, proved sound in Lean and written again in Geb, and
 the same method may apply to the free topos with the natural numbers,
 list and rose-tree objects presented at once, by one checker in place of
 five. This section states that alternative, what it would change, and
-the questions that decide between the two routes; which route Phase 7
-takes is not decided.
+the questions that decide between the two routes. The presentation's
+form is fixed below; the questions at the end remain before Phase 7
+takes this route.
 
 A category is a presheaf on the walking parallel pair whose two objects
 are the objects and the morphisms and whose two restrictions are the
@@ -1436,6 +1437,26 @@ initial model. The theory has these operations:
   property, those of the data objects stating that each is an initial
   algebra of its polynomial functor, through the notions of an algebra
   and of a morphism of algebras.
+
+The axiomatization is the definition of an elementary topos, not a
+Grothendieck topos, as a finitely complete and finitely cocomplete
+category with exponentiation and a subobject classifier (Section 4.3 of
+{citet Goldblatt1984}[]), the finite limits
+given by the terminal object, binary products and equalizers, and the
+finite colimits by the initial object, binary coproducts and
+coequalizers. The finite colimits follow from the rest
+{citep Pare1974}[] and are operations nonetheless, so that the bootstrap
+does not construct them; their redundancy, an equivalence between the
+two presentations, is proved in Geb after the bootstrap.
+Each operation is then one universal property with its own name, and
+the constructions composed from them, pullbacks and kernel pairs among
+them, are definitions. The pullback of truth along a morphism into the
+subobject classifier is the equalizer of that morphism and of truth
+after the unique morphism to the terminal object, so the classifier's
+axioms state that a monomorphism's factorization through that equalizer
+is an isomorphism, and, as an equation with premises, that a morphism
+along which a monomorphism is so a pullback is that monomorphism's
+characteristic map.
 
 That construction is established. Toposes with chosen structure, with
 the functors that preserve it on the nose, are the models of an
@@ -1474,7 +1495,20 @@ condition is a premise of a rule, as the first rung's induction rules
 have premises, and not an argument of the term. The terms' identity
 therefore does not depend on proofs, and no equation making proofs
 irrelevant is needed. This presentation is fibered: the morphisms form
-one sort, with their domains and codomains as operations.
+one sort, with their domains and codomains as operations. It is the form
+chosen, since each of its definitions is one of that literature's.
+
+Equality is a judgment at both sorts, so the quotient identifies objects
+as well as morphisms. The equalizer of two morphisms equals the
+equalizer of two morphisms provably equal to them, by congruence, and
+must, since a term is replaced by an equal one inside every other; and
+the premise of a composite's definedness is an equation between
+objects. The objects of the strict initial model therefore have an
+equality, which the notions of category theory invariant under
+equivalence do not use: the strict categories are a technical device and
+the 2-categories the objects of study (Caveat 1.5 of
+{citet ForssellLumsdaineSwan2026}[]), and the bi-initiality of the free
+strict topos is its invariant universal property.
 
 The presentation may instead be indexed, the morphisms a family over
 pairs of objects, as in quotient inductive-inductive types; Section 4.7
@@ -1526,6 +1560,21 @@ cartesian closed category with the data objects, related to the
 presentation by the translation between λ-terms and the morphisms of a
 free cartesian closed category that the Categorical Abstract Machine
 compiles by {citep CousineauCurienMauny1987}[].
+
+The theory, its axioms and the certificates of its derivations are
+finite syntax, rose trees, and so data of the metalogic: the checker is
+a kernel program on them, and that a certificate derives a judgment is
+an equation about that program, as on the first rung. The categorical
+form of that internalization is the initial internal model: every
+finitely presented essentially algebraic theory has an initial internal
+model in every arithmetic universe (Theorem 3.22 of
+{citet ForssellLumsdaineSwan2026}[], who attribute its only full proof
+to an unpublished manuscript of Maietti), and a topos with a natural
+numbers object is an arithmetic universe, so the free topos contains an
+internal free topos, the object of its own syntax. That the checker is
+sound, every certificate it accepts valid, is not provable in the
+metalogic of that internal syntax (the section on the metalogic and its
+checker).
 
 The soundness proof interprets objects as Lean types, and the subobject
 classifier of Lean's types is `Prop`: `Utilities/TypesClassifier.lean` in
@@ -1591,7 +1640,11 @@ are theorems ({name}`Geb.Definition.Presentation.cls_inlTerm_unfoldOps`,
 {name}`Geb.Definition.Presentation.eq_of_cls_inlTerm_eq`), the models of
 the extension being the algebras of the signature it extends
 ({name}`Geb.Definition.Presentation.modelEquiv`). The Boolean chooses
-between the sum and the signature. The proposal needs that structure
+between the sum and the signature. The form chosen is this monadic one:
+definitions, from new operations to terms of a signature, extend to a
+morphism of free monads from the extended signature to the signature,
+which is the unfolding, and the defining equations make it inverse to
+the inclusion of the signature's terms. The proposal needs that structure
 for a partial Horn theory of two sorts, a defined operation being defined
 where its body is and equal to it there; iterated, so that a definition
 refers to earlier ones; and with defined equalities, theorems whose
@@ -1602,19 +1655,16 @@ reference of a kernel term.
 
 The questions, in the order in which their answers are needed:
 
-1. the partial Horn theory itself: the axiomatization of the topos,
-   with a subobject classifier and exponentials or with power objects,
-   and the data objects as operations, written as a rule set;
-2. the fibered form, whose certificates are separate from the terms, or
-   the indexed form with transport;
-3. the model in Lean, with morphisms as functional relations, its
+1. the rule set: the axioms of each operation above as partial Horn
+   sequents, with the rules of partial Horn logic;
+2. the model in Lean, with morphisms as functional relations, its
    soundness without `Classical.choice`, and its relation to the
    kernel's denotations, which are functions;
-4. combinators or the Mitchell–Bénabou language as the checker's
+3. combinators or the Mitchell–Bénabou language as the checker's
    language;
-5. the definitional extension of a partial Horn theory, iterated, and
-   its unfolding theorem;
-6. whether the first rung's checker and prover remain as those of the
+4. the definitional extension of a partial Horn theory in the monadic
+   form, iterated, and its unfolding theorem;
+5. whether the first rung's checker and prover remain as those of the
    computational fragment.
 
 ## Improvements
