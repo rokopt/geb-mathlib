@@ -47,6 +47,7 @@
 (defnum Rule.ax 33)
 (defnum Rule.iterLabel 34)
 (defnum Rule.condIter 35)
+(defnum Rule.thm 36)
 
 (data Eqn (eqn T T T))
 (defn eqTy ((q T)) T (case q ((eqn a s t) a)))
@@ -171,6 +172,13 @@
          (lcase T T as 0 (lam ((a T) (rest Ts)) (and (hasType G ctx u a) (k rest)))))
        (lam ((as Ts)) 1) us)
      as)))
+; a theorem cited in a context at terms for its variables: its instance there, when the terms
+; have the types of its context, as Geb.Metalogic.Thm.cite computes it
+(defn cite ((G Ts) (ctx Ts) (us Ts) (th T)) T
+  (let tctx Ts (children (child th 0))
+    (if (typesMatch G ctx us tctx)
+      (some (instAll us (eqWkAt (length tctx) (length ctx) (child th 1))))
+      none)))
 
 ; the defining equations of the primitives, as Geb.Metalogic.axioms states them
 (def tyT2 (node2 Label.tyProd Label.tyTree Label.tyTree))
@@ -504,14 +512,8 @@
     (bindO (typeIn G ctx c1) (lam ((a T))
       (if (hasType G ctx c2 a)
           (some (eqn a (mk3 Label.cond (mk1 Label.quote c0) c1 c2) (if c0 c1 c2))) none)))
-  ; an instance of an axiom or of a theorem, each variable replaced by a term of its type
-  (if (and (eq l Rule.ax) (lt 0 k))
-    (bindO (nth (append axioms Th) (label c0)) (lam ((th T))
-      (let tctx Ts (children (child th 0))
-        (let us Ts (tail cs)
-          (if (typesMatch G ctx us tctx)
-            (some (instAll us (eqWkAt (length tctx) (length ctx) (child th 1))))
-            none)))))
+  ; an instance of an axiom, each variable replaced by a term of its type
+  (if (and (eq l Rule.ax) (lt 0 k)) (bindO (nth axioms (label c0)) (cite G ctx (tail cs)))
   ; iteration reads the label of the tree it iterates over
   (if (shape l k Rule.iterLabel 4)
     (if (and (isTy c0) (and (hasType G ctx c1 (tyArrow c0 c0))
@@ -527,7 +529,9 @@
       (some (eqn c0 (mk3 Label.cond c1 c2 c3)
                  (app3 (mk1 Label.iter c0) (node2 Label.lam c0 (wk 1 c2)) c3 c1)))
       none)
-    none))))))))))))))))))
+  ; an instance of a theorem, each variable replaced by a term of its type
+  (if (and (eq l Rule.thm) (lt 0 k)) (bindO (nth Th (label c0)) (cite G ctx (tail cs)))
+    none)))))))))))))))))))
 
 ; the checker: the conclusion of a certificate, given a program's definitions, theorems about
 ; it, the types of its global environment, a context and a list of hypotheses

@@ -47,7 +47,7 @@ analysis of lists; and equality of trees is the characteristic map of the diagon
 * {lit}`Thm`, {lit}`Env`, {lit}`Env.Sound` — theorems, environments of definitions and
   theorems, and their soundness for a global environment.
 * {lit}`axioms` — the defining equations of the primitives.
-* {lit}`instAll`, {lit}`Thm.inst` — an equation at terms for its variables.
+* {lit}`instAll`, {lit}`Thm.inst`, {lit}`Thm.cite` — an equation at terms for its variables.
 * {lit}`mapBy` — the kernel term of a map over a list, by the right fold.
 * {lit}`listLit`, {lit}`IsLit` — the literal of a list of trees, and the test for a literal.
 * {lit}`checkCore`, {lit}`checkMore`, {lit}`check` — the rules, and the checker.
@@ -71,6 +71,11 @@ The checker evaluates no term but a primitive at literals: a checker written in 
 own language could not evaluate every closed term, since a total language has no total
 interpreter of its own terms, and each δ rule is a primitive's own value. Evaluation of a closed
 term is derived from the δ rules, the computation rules and congruence.
+
+An axiom is cited by its index in {lit}`axioms` and a theorem by its index among an
+environment's theorems, each by its own rule, and the labels of the rules, as the table of
+axioms, are only extended: a certificate therefore checks alike when axioms or rules are added,
+as they are for a new primitive and on a richer rung.
 
 ## Tags
 
@@ -580,6 +585,11 @@ context, and its variables replaced by the terms. -/
 def Thm.inst (th : Thm) (Γ : Ctx) (us : List Tree) : Eqn :=
   instAll us (th.eqn.wkAt th.ctx.length Γ.length)
 
+/-- A theorem cited in a context at terms for its variables: its instance there, when the terms
+have the types of its context. -/
+def Thm.cite (th : Thm) (G : List Glob) (Γ : Ctx) (us : List Tree) : Option Eqn :=
+  if List.Forall₂ (fun u A ↦ typeOf G Γ u = some A) us th.ctx then some (th.inst Γ us) else none
+
 /-- The quoted leaf of a label, the numeral of the label. -/
 def num (n : ℕ) : Tree := mk Label.quote [leaf n]
 
@@ -846,7 +856,7 @@ context. -/
 /-- The label of the rule of the conditional at a quoted tree. -/
 @[match_pattern] abbrev condQuote : ℕ := 32
 
-/-- The label of the rule of an instance of an axiom or of a theorem. -/
+/-- The label of the rule of an instance of an axiom, cited by its index in {lit}`axioms`. -/
 @[match_pattern] abbrev ax : ℕ := 33
 
 /-- The label of the rule of iteration's reading of the label of the tree it iterates over. -/
@@ -854,6 +864,10 @@ context. -/
 
 /-- The label of the rule of the conditional as the iteration of a constant function. -/
 @[match_pattern] abbrev condIter : ℕ := 35
+
+/-- The label of the rule of an instance of a theorem, cited by its index among an environment's
+theorems. -/
+@[match_pattern] abbrev thm : ℕ := 36
 
 end Rule
 
@@ -1034,11 +1048,8 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
     if typeOf G Γ b = some A then some ⟨A, mk Label.cond [mk Label.quote [c], a, b],
         if c.label ≠ 0 then a else b⟩
     else none
-  -- an instance of an axiom or of a theorem, each variable replaced by a term of its type
-  | Rule.ax, (j, _) :: us => (axioms ++ E.thms)[j.label]?.bind fun th ↦
-    if List.Forall₂ (fun u A ↦ typeOf G Γ u = some A) (us.map Prod.fst) th.ctx then
-      some (th.inst Γ (us.map Prod.fst))
-    else none
+  -- an instance of an axiom, each variable replaced by a term of its type
+  | Rule.ax, (j, _) :: us => axioms[j.label]?.bind (·.cite G Γ (us.map Prod.fst))
   -- iteration reads the label of the tree it iterates over
   | Rule.iterLabel, [(A, _), (s, _), (z, _), (t, _)] =>
     if Ty.IsTy A ∧ typeOf G Γ s = some (tArrow A A) ∧ typeOf G Γ z = some A ∧
@@ -1052,6 +1063,8 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
       some ⟨A, mk Label.cond [c, a, b],
         apps (mk Label.iter [A]) [mk Label.lam [A, Kernel.wk 1 a], b, c]⟩
     else none
+  -- an instance of a theorem, each variable replaced by a term of its type
+  | Rule.thm, (j, _) :: us => E.thms[j.label]?.bind (·.cite G Γ (us.map Prod.fst))
   | _, _ => none
 
 /-- One rule of the checker, by the label of a certificate's node. -/
@@ -2086,6 +2099,15 @@ theorem valid_thm_inst {th : Thm} {us : List Tree} (hth : th.Valid G)
     Valid G Γ H (th.inst Γ us) :=
   (valid_instAll hus (valid_wkAt_ctx hth Γ)).weakenHyps
 
+/-- A cited theorem holding in the global environment has a valid instance. -/
+theorem valid_cite {th : Thm} {us : List Tree} {q : Eqn} (hth : th.Valid G)
+    (h : th.cite G Γ us = some q) : Valid G Γ H q := by
+  unfold Thm.cite at h
+  split at h
+  · cases h
+    exact valid_thm_inst hth ‹_›
+  · cases h
+
 /-- Iteration reads the label of the tree it iterates over. -/
 theorem valid_iterLabel {A s z t : Tree} (hA : Ty.IsTy A = true)
     (hs : typeOf G Γ s = some (tArrow A A)) (hz : typeOf G Γ z = some A)
@@ -2198,14 +2220,7 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {E : Env} {G : List Glob} {Γ
     · cases h
   case h_10 j sj us heq =>
     obtain ⟨th, hth, h⟩ := Option.bind_eq_some_iff.mp h
-    split at h
-    · rename_i hus
-      cases h
-      refine valid_thm_inst ?_ hus
-      rcases List.mem_append.mp (List.mem_of_getElem? hth) with hax | hthm
-      · exact axioms_valid G th hax
-      · exact hE.2 th hthm
-    · cases h
+    exact valid_cite (axioms_valid G th (List.mem_of_getElem? hth)) h
   case h_11 A sA s ss z sz t st heq =>
     split at h
     · rename_i hcond
@@ -2220,7 +2235,10 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {E : Env} {G : List Glob} {Γ
       obtain ⟨hA, hc, ha, hb⟩ := hcond
       exact valid_ifIter hA hc ha hb
     · cases h
-  case h_13 => cases h
+  case h_13 j sj us heq =>
+    obtain ⟨th, hth, h⟩ := Option.bind_eq_some_iff.mp h
+    exact valid_cite (hE.2 th (List.mem_of_getElem? hth)) h
+  case h_14 => cases h
 
 /-- Every conclusion the checker computes, in a program's definitions and the environment they
 load, is valid. -/

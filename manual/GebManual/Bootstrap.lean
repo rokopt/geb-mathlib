@@ -1024,9 +1024,10 @@ under the hypothesis that its children satisfy the equation, and on a
 label; references to definitions, each the definition weakened into
 the context; iteration's reading of its argument's label, and the
 conditional as the iteration of a constant function; and instances of
-the axioms and of proved theorems, each variable replaced by a term of
-its type. An induction's hypotheses must not mention its variable:
-the checker lowers them and checks that they are typed below it, which
+the axioms and of proved theorems, each cited by its index in its own
+table, each variable replaced by a term of its type. An induction's
+hypotheses must not mention its variable: the checker lowers them and
+checks that they are typed below it, which
 replaces a converse of weakening by a decidable check. A reference's
 rule rests on {name}`Geb.Metalogic.load_loaded`, by which each of a
 loaded program's definitions denotes its global in the whole

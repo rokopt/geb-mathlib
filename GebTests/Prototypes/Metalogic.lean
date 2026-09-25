@@ -218,14 +218,17 @@ def globals : List Glob := (load program).getD []
 #guard chk (mk Rule.ax [leaf 5, num 2, num 3]) [] [] [] [] =
   some ⟨tT, prim Prim.add [num 2, num 3],
     apps (mk Label.iter [tT]) [mk Label.lam [tT, succT (Tm.var 0)], prim Prim.label [num 2], num 3]⟩
--- an instance of a theorem, cited after the axioms
-#guard check (mk Rule.ax [leaf axioms.length, num 5])
+-- an instance of a theorem, cited by its index among the theorems and not among the axioms
+#guard check (mk Rule.thm [leaf 0, num 5])
     ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩ [] [] [] =
   some ⟨tT, prim Prim.label [num 5], num 5⟩
+#guard check (mk Rule.ax [leaf axioms.length, num 5])
+    ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩ [] [] [] = none
 -- instances at a term of another type, at too few terms, and of an entry there is not
 #guard chk (mk Rule.ax [leaf 0, num 1, num 2]) [] [] [] [] = none
 #guard chk (mk Rule.ax [leaf 0, num 1]) [] [] [] [] = none
 #guard chk (mk Rule.ax [leaf axioms.length, num 1]) [] [] [] [] = none
+#guard chk (mk Rule.thm [leaf 0, num 1]) [] [] [] [] = none
 -- iteration reads the label, and the conditional is an iteration
 #guard chk (mk Rule.iterLabel [tT, idT, num 1, Tm.var 0]) [] [] [tT] [] =
   some ⟨tT, apps (mk Label.iter [tT]) [idT, num 1, Tm.var 0],
@@ -365,13 +368,15 @@ and rules tested above, and the certificates of {lit}`programInputs`, citing no 
 def inputs : List Input :=
   ((List.range axioms.length).zip axioms).map
       (fun (j, th) ↦ (axiomId j th, ⟨[], []⟩, [], th.ctx, [])) ++
-  [(mk Rule.ax [leaf axioms.length, num 5],
-      ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩, [], [],
+  [(mk Rule.thm [leaf 0, num 5], ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩, [], [],
       []),
+   (mk Rule.ax [leaf axioms.length, num 5],
+      ⟨[], [⟨[tT], ⟨tT, prim Prim.label [Tm.var 0], Tm.var 0⟩⟩]⟩, [], [], []),
    (mk Rule.ax [leaf 0, Tm.var 0, nilT], ⟨[], []⟩, [], [tT], []),
    (mk Rule.ax [leaf 5, num 2, num 3], ⟨[], []⟩, [], [], []),
    (mk Rule.ax [leaf 0, num 1, num 2], ⟨[], []⟩, [], [], []),
    (mk Rule.ax [leaf axioms.length, num 1], ⟨[], []⟩, [], [], []),
+   (mk Rule.thm [leaf 0, num 1], ⟨[], []⟩, [], [], []),
    (mk Rule.iterLabel [tT, idT, num 1, Tm.var 0], ⟨[], []⟩, [], [tT], []),
    (mk Rule.condIter [tT, Tm.var 0, num 5, num 6], ⟨[], []⟩, [], [tT], []),
    (mk Rule.condIter [tT, Tm.var 0, num 5, nilT], ⟨[], []⟩, [], [tT], [])] ++
@@ -381,7 +386,7 @@ def inputs : List Input :=
 and one beyond, and with its last child removed. -/
 def mutants (x : Input) : List Input :=
   let (c, rest) := x
-  ((List.range 37).map fun l ↦ (mk l c.children, rest)) ++ [(mk c.label c.children.dropLast, rest)]
+  ((List.range 38).map fun l ↦ (mk l c.children, rest)) ++ [(mk c.label c.children.dropLast, rest)]
 
 -- the Geb checker agrees with the Lean checker on every input and on its malformed variants,
 -- which include the input
