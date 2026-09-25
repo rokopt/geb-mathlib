@@ -1542,13 +1542,14 @@ domain of a composite being that of its first morphism. The checker
 computes domains and codomains instead, as a fold cutting a subtype out
 of rose trees, the form of the slice W-types' {name}`SlicePFunctor.W`.
 
-The checker's language may be the combinators themselves, a program
-being extended by definitions of objects, of morphisms and of equalities
-in place of the definitions of kernel terms; or the internal language of
-the topos, the Mitchell–Bénabou language, which is the intuitionistic
-higher-order type theory of the section on the metalogic and its
-checker. The first is the presentation itself; the second derives the
-topos structure from provability, and its proofs bind variables where
+The checker's language is the combinators, the terms of the fibered
+presentation, a program being extended by definitions of objects, of
+morphisms and of equalities in place of the definitions of kernel terms.
+The internal language of the topos, the Mitchell–Bénabou language,
+which is the intuitionistic higher-order type theory of the section on
+the metalogic and its checker, may be a surface language over them,
+elaborated into the combinators by its interpretation in a topos, as
+Surface 1 is elaborated into the kernel; its proofs bind variables where
 the combinators compose projections.
 
 Rungs 2 to 5 would be replaced by one rule set, and the lemmas
@@ -1653,19 +1654,35 @@ one step at a time ({name}`Geb.Metalogic.valid_unfold`), resting on
 {name}`Geb.Metalogic.load_loaded`; no theorem yet unfolds every
 reference of a kernel term.
 
-The questions, in the order in which their answers are needed:
+The questions are of two kinds. The first are constructions, each of
+which is established by carrying it out:
 
-1. the rule set: the axioms of each operation above as partial Horn
-   sequents, with the rules of partial Horn logic;
-2. the model in Lean, with morphisms as functional relations, its
-   soundness without `Classical.choice`, and its relation to the
-   kernel's denotations, which are functions;
-3. combinators or the Mitchell–Bénabou language as the checker's
-   language;
-4. the definitional extension of a partial Horn theory in the monadic
-   form, iterated, and its unfolding theorem;
+1. the rule set, the axioms of each operation above as partial Horn
+   sequents with the rules of partial Horn logic, checked against its
+   specification: its models are the elementary toposes with chosen
+   structure and the data objects, which the literature establishes for
+   some such rule set and not for this one;
+2. the model in Lean, with morphisms as functional relations: whether
+   the universal property of every operation, the exponential's among
+   them, holds there without `Classical.choice`, and so whether the rule
+   set is sound in it;
+3. the definitional extension of a partial Horn theory in the monadic
+   form, iterated: whether unfolding preserves the judgments of
+   definedness and equality, so that certificates unfold as well as
+   terms, and its unfolding theorem.
+
+The second are choices between options each of which is known to be
+constructible:
+
+4. whether the Mitchell–Bénabou language is written as a surface
+   language during the bootstrap or after it;
 5. whether the first rung's checker and prover remain as those of the
-   computational fragment.
+   computational fragment, which depends on how the kernel's
+   denotations, which are functions, relate to the model's morphisms,
+   which are functional relations (the second construction).
+
+The first construction precedes the other two, which are independent of
+each other; the choices follow them.
 
 ## Improvements
 
