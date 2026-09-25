@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Theory
 public import Geb.Prototypes.PartialHorn.Definitional
+public import Geb.Prototypes.PartialHorn.Share
 
 set_option doc.verso true in
 /-!
@@ -131,25 +132,6 @@ structure Ty where
   hi : Tree
   /-- The certificate that the object, or the arrow's codomain, equals {lit}`hi`. -/
   hiCert : Tree
-
-/-- A structural hash of a tree. -/
-def treeHash : Tree → UInt64 := RoseTree.elim fun l hs ↦ hs.foldl mixHash (hash l)
-
-/-- A table of values keyed by trees: buckets of pairs, indexed by the keys' hashes. -/
-structure Table (β : Type) where
-  /-- The buckets. -/
-  buckets : Array (List (Tree × β)) := Array.replicate 4096 []
-
-/-- The bucket of a key. -/
-def Table.index {β : Type} (tb : Table β) (t : Tree) : ℕ := (treeHash t).toNat % tb.buckets.size
-
-/-- The value of a key, if the table has one. -/
-def Table.find? {β : Type} (tb : Table β) (t : Tree) : Option β :=
-  (tb.buckets[tb.index t]?.bind fun l ↦ l.find? (·.1 == t)).map Prod.snd
-
-/-- The table with a key's value added. -/
-def Table.insert {β : Type} (tb : Table β) (t : Tree) (b : β) : Table β :=
-  ⟨tb.buckets.modify (tb.index t) ((t, b) :: ·)⟩
 
 /-- The prover's state: the development, and the typings and normal forms of the terms typed
 and normalized in the current scope. -/

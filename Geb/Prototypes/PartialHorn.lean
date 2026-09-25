@@ -8,6 +8,8 @@ module
 public import Geb.Prototypes.PartialHorn.Basic
 public import Geb.Prototypes.PartialHorn.Definitional
 public import Geb.Prototypes.PartialHorn.Development
+public import Geb.Prototypes.PartialHorn.Share
+public import Geb.Prototypes.PartialHorn.Shared
 
 set_option doc.verso true in
 /-!
@@ -15,8 +17,9 @@ set_option doc.verso true in
 
 The logic of partial Horn theories over rose trees: signatures of partial operations, terms,
 models, a checker of certificates proved sound in every model of a theory, developments of
-certificates that cite the theorems before them, and definitional extensions of theories. The
-metalogic's presentation of the free elementary topos is a partial Horn theory.
+certificates that cite the theorems before them, definitional extensions of theories, and
+certificates over a store of shared terms. The metalogic's presentation of the free elementary
+topos is a partial Horn theory.
 -/
 
 set_option doc.verso true

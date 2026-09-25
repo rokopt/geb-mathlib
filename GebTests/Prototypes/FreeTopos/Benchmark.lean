@@ -17,10 +17,13 @@ again in the theory of an elementary topos by the prover: appending lists, and a
 natural numbers object. A function of several arguments is an arrow from their product;
 appending is recursion on the first list into the exponential of lists, evaluated at the
 second, and addition is recursion on its second argument into the exponential of the natural
-numbers object, evaluated at the first. A theorem quantified over lists or numbers is an
-equation between arrows. Each is proved by normalization, by induction through the uniqueness
-of recursion, or by rewriting with an earlier theorem, and the development of the library and
-the theorems checks.
+numbers object, evaluated at the first. Each is a definition of the theory's extension, as are
+the curried cases of its recursion. A theorem quantified over lists or numbers is an equation
+between arrows. The recursions' computation lemmas are proved by unfolding them; each theorem
+is proved, with the recursions folded, by normalization, by induction through the uniqueness of
+recursion, or by rewriting with an earlier theorem. The development of the library and the
+theorems checks in the extension, and again as a shared development, its terms stored once
+({name}`Geb.PartialHorn.checkShared`).
 
 ## Main definitions
 
@@ -173,8 +176,10 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
   let _ ← prove addZeroLeft (byNatInduction nrs zeroN succ addZeroLeft.concl)
   pure () : StateT Development Option Unit).run d).map Prod.snd
 
--- the theorems are proved, and the development checks in the extension by the definitions
-#guard benchmark.any (checkDevelopment (theory.extendAll defs))
+-- the theorems are proved, and the development checks in the extension by the definitions,
+-- and again with its terms shared
+#guard benchmark.any fun d ↦ checkDevelopment (theory.extendAll defs) d &&
+  (share (theory.extendAll defs) d).any (checkShared (theory.extendAll defs))
 
 end GebTests.Prototypes.FreeTopos.Benchmark
 
