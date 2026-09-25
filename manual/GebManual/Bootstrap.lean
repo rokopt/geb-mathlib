@@ -684,7 +684,7 @@ every fixed point on every build.
   * none
 *
   * 7: the metalogic
-  * first rung: step 1 constructed except some rules; step 2 not begun
+  * first rung: step 1 constructed; step 2 not begun
   * `Geb/Prototypes/Metalogic/Equations.lean`, `Geb/Prototypes/Kernel/Subst.lean`
 :::
 
@@ -992,8 +992,8 @@ an induction checks, and certificates with altered binders, invalid
 dependencies or false conclusions fail; on the topos, a comprehension
 checks as well.
 
-On the first rung, step 1 is constructed, except for the rules named
-below. `Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
+On the first rung, step 1 is constructed.
+`Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
 substitutes for their innermost variable through one traversal
 ({name}`Geb.Kernel.trav`), and proves that both agree with the
 denotation ({name}`Geb.Kernel.infer_wk`, {name}`Geb.Kernel.infer_subst`).
@@ -1004,30 +1004,35 @@ conclusion have its type and their denotations agree at every value of
 the context at which the hypotheses hold ({name}`Geb.Metalogic.Valid`).
 A certificate is a rose tree whose label names a rule, and the checker
 {name}`Geb.Metalogic.check` is a paramorphism over it whose result, as
-the denotation's, is a function of the global environment, the context
-and the hypotheses. Its rules are equality's, congruence of every term
-former, the β and η rules of functions, pairs and the unit type,
-evaluation of a closed term of the type of trees, weakening, cut,
-instantiation of the innermost variable by a term, the right fold of
-lists at the empty list and at a list of a head and a tail, and
-induction on a list, whose hypotheses must not mention the list: the
-checker lowers them and checks that they are typed below it, which
-replaces a converse of weakening by a decidable check.
-{name}`Geb.Metalogic.check_sound` proves every computed conclusion
-valid, without `Classical.choice`. The examples of
-`GebTests/Prototypes/Metalogic.lean` meet the acceptance on the first
-rung: a theorem from a hypothesis by congruence, an instantiation, the
-proof by induction that appending the empty list to a list gives the
-list, and the rejection of certificates with an annotation that is not
-a type, a β step whose argument has another type, a missing hypothesis,
-a transitivity whose middle terms differ, and an induction whose step
-does not prove its case.
-
-The first rung still lacks the computation rules of the fold of trees,
-iteration and case analysis of lists, induction on trees and on labels,
-and references to earlier definitions, whose rule needs the agreement
-of a definition's denotation in its bundle's environment with its
-denotation in any longer environment.
+the denotation's, is a function of a program's definitions, the global
+environment they load, the context and the hypotheses. Its rules are
+equality's; congruence of every term former; the β and η rules of
+functions, pairs and the unit type; evaluation of a closed term of the
+type of trees; weakening, cut and instantiation of the innermost
+variable by a term; the computation rules of the right fold and case
+analysis of lists, of iteration at the label zero and at a successor,
+and of the fold of trees at a node; induction on a list, on a tree,
+under the hypothesis that its children satisfy the equation, and on a
+label; and references to definitions, each the definition weakened into
+the context. An induction's hypotheses must not mention its variable:
+the checker lowers them and checks that they are typed below it, which
+replaces a converse of weakening by a decidable check. A reference's
+rule rests on {name}`Geb.Metalogic.load_loaded`, by which each of a
+loaded program's definitions denotes its global in the whole
+environment, since extending an environment keeps every denotation
+({name}`Geb.Kernel.infer_append`). {name}`Geb.Metalogic.check_sound`
+proves every computed conclusion valid, without `Classical.choice`. The
+examples of `GebTests/Prototypes/Metalogic.lean` meet the acceptance on
+the first rung: a theorem from a hypothesis by congruence, an
+instantiation, the proofs by induction that appending the empty list to
+a list gives the list, that iterating the identity from a tree as many
+times as a label gives the tree, and that a fold whose step ignores its
+arguments is constant, a reference to a definition of a loaded program,
+and the rejection of certificates with an annotation that is not a
+type, a β step whose argument has another type, a missing hypothesis or
+definition, a transitivity whose middle terms differ, an induction
+whose step does not prove its case, and an induction on a label whose
+variable is not a tree.
 
 ## Improvements
 
@@ -1082,10 +1087,9 @@ on emitted Lean reach that aim for computation: the compiler compiles
 itself to a program that the host builds, idempotently. What remains is
 the following, in the order of dependence.
 
-1. The metalogic (Phase 7), rung by rung: the first rung's remaining
-   rules, then its proof checker written in Geb, then proofs about the
-   compiler's components, then the rules and checkers of the rungs
-   above it.
+1. The metalogic (Phase 7), rung by rung: the first rung's proof
+   checker written in Geb, then proofs about the compiler's components,
+   then the rules and checkers of the rungs above it.
 2. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
    points reproduced on it, which is diverse double-compiling across
    hosts, and accelerations proved against the denotation.
@@ -1102,11 +1106,11 @@ it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. The metalogic continues on its first rung: its remaining
-rules, the fold of trees and iteration with their inductions and
-references to earlier definitions, which proofs about the compiler's
-own definitions need, and then the proof checker written in Geb. The
-second host, content identity and the syntax unification follow it.
+priority. The metalogic continues on its first rung with step 2, the
+proof checker written in Geb and compared with the Lean checker on the
+same certificates, and then step 3, proofs about the compiler's
+components. The second host, content identity and the syntax
+unification follow it.
 
 ## What self-compilation establishes
 
