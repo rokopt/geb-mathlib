@@ -3682,7 +3682,11 @@ checklist and in CI.
   (`Geb.Kernel.runEntry`); `Command.lean` is the host driver of the
   executable `geb-kernel`, which builds images from source and runs them
   on files, and its `Geb.Kernel.Command.runFile` applies a function of
-  trees to a file. Tested in `GebTests/Prototypes/Kernel.lean`. The Geb-written
+  trees to a file. `Subst.lean` weakens terms and substitutes for their
+  innermost variable, through one traversal replacing variables
+  (`Geb.Kernel.trav`), and proves both agree with the denotation
+  (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). Tested in
+  `GebTests/Prototypes/Kernel.lean`. The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   holds list and digit utilities, `serialize.geb` writes a tree's image,
   `reader.geb` reads a program's text into its bundle as the seed does,
