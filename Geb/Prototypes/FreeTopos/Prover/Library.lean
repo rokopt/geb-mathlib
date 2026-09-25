@@ -17,14 +17,17 @@ read to compose to the right; the identity laws; the projections after a pairing
 contraction of a pairing of projections after one arrow; the uniqueness of the morphism to the
 terminal object; and the computation rules of recursion from the natural numbers object and
 from a list object. The development supplies composition after a pairing, which distributes over
-it; the pairing of the two projections, which is the identity; and evaluation after the pairing
-of a currying after an arrow with another arrow, which is the curried morphism after the pairing
-of the two arrows.
+it; the pairing of the two projections, which is the identity; evaluation after the pairing of a
+currying, after an arrow or alone, with another arrow, which is the curried morphism after a
+pairing; the naturality of currying in its domain; and the morphism from the terminal object to
+itself, which is the identity. The uniqueness of the morphism to the terminal object does not
+apply at an identity, so that the identity of the terminal object stays one.
 
 ## Main definitions
 
 * {lit}`baseRules` — the rules from the axioms.
-* {lit}`compPairSeq`, {lit}`pairFstSndSeq`, {lit}`evCurrySeq` — the derived equations.
+* {lit}`compPairSeq`, {lit}`pairFstSndSeq`, {lit}`evCurrySeq`, {lit}`evCurry0Seq`,
+  {lit}`curryNatSeq`, {lit}`bangOneSeq` — the derived equations.
 * {lit}`library` — the library's development, with the indices of the derived equations.
 * {lit}`rules` — the rules of the axioms and of the library.
 
@@ -52,7 +55,7 @@ def baseRules : List RwRule := [
   { src := .ax (axIdx beforeProduct 9) },
   { src := .ax (axIdx beforeProduct 10) },
   { src := .ax (axIdx beforeProduct 11) },
-  { src := .ax (axIdx beforeTerminal 3), avoid := some 6 },
+  { src := .ax (axIdx beforeTerminal 3), avoid := [3, 6] },
   { src := .ax (axIdx beforeNat 10) },
   { src := .ax (axIdx beforeNat 11) },
   { src := .ax (axIdx beforeList 11) },
@@ -75,6 +78,23 @@ def evCurrySeq : Seq :=
     [⟨dom (x 2), prod (x 0) (x 1)⟩, ⟨cod (x 3), x 0⟩, ⟨cod (x 4), x 1⟩, ⟨dom (x 4), dom (x 3)⟩],
     ⟨comp (ev (x 1) (cod (x 2))) (pair (comp (curry (x 0) (x 1) (x 2)) (x 3)) (x 4)),
       comp (x 2) (pair (x 3) (x 4))⟩⟩
+
+/-- Evaluation after the pairing of a currying with an arrow is the curried morphism after the
+pairing of the identity with the arrow. -/
+def evCurry0Seq : Seq :=
+  ⟨[obj, obj, arr, arr], [⟨dom (x 2), prod (x 0) (x 1)⟩, ⟨cod (x 3), x 1⟩, ⟨dom (x 3), x 0⟩],
+    ⟨comp (ev (x 1) (cod (x 2))) (pair (curry (x 0) (x 1) (x 2)) (x 3)),
+      comp (x 2) (pair (idt (x 0)) (x 3))⟩⟩
+
+/-- Currying is natural in its domain: a currying after an arrow is the currying of the curried
+morphism after the product of the arrow with the identity. -/
+def curryNatSeq : Seq :=
+  ⟨[obj, obj, arr, arr], [⟨dom (x 2), prod (x 0) (x 1)⟩, ⟨cod (x 3), x 0⟩],
+    ⟨comp (curry (x 0) (x 1) (x 2)) (x 3),
+      curry (dom (x 3)) (x 1) (comp (x 2) (prodMapLeft (x 3) (x 1)))⟩⟩
+
+/-- The morphism from the terminal object to itself is its identity. -/
+def bangOneSeq : Seq := ⟨[], [], ⟨bang one, idt one⟩⟩
 
 /-- The proof of {lit}`compPairSeq`: expand the composite into the product, and normalize. -/
 def compPairProof : PM Tree := do
@@ -105,6 +125,33 @@ def evCurryProof (cp : ℕ) : PM Tree := do
   let du ← typeTerm u
   pure (Cert.trans (Cert.trans cg (Cert.symm cu)) (Cert.cong du.dfd [c, (← typeTerm gh).dfd]))
 
+/-- The proof of {lit}`evCurry0Seq`: {lit}`evCurrySeq` after the identity, whose left side
+normalizes to the equation's. -/
+def evCurry0Proof (ec : ℕ) : PM Tree := do
+  let (q, c) ← inst (.thm ec) [x 0, x 1, x 2, idt (x 0), x 3]
+  let (n, cn) ← normalize baseRules q.lhs
+  guard (n == evCurry0Seq.concl.lhs && q.rhs == evCurry0Seq.concl.rhs)
+  pure (Cert.trans (Cert.symm cn) c)
+
+/-- The proof of {lit}`curryNatSeq`: the uniqueness of currying at the composite, whose
+curried morphism normalizes, by {lit}`evCurrySeq`, to the equation's. -/
+def curryNatProof (cp ec : ℕ) : PM Tree := do
+  let rs := baseRules ++ [{ src := .thm cp }, { src := .thm ec }]
+  let k := curryNatSeq.concl.lhs
+  let (q, c) ← inst (.ax (axIdx beforeExponential 8)) [dom (x 3), x 1, cod (x 2), k]
+  let (n, cn) ← normalize rs q.lhs
+  let (r, cr) ← normalize rs curryNatSeq.concl.rhs
+  guard (n == r)
+  pure (Cert.trans (Cert.symm c) (Cert.trans cn (Cert.symm cr)))
+
+/-- The proof of {lit}`bangOneSeq`: the uniqueness of the morphism to the terminal object at
+its identity. -/
+def bangOneProof : PM Tree := do
+  let (q, c) ← inst (.ax (axIdx beforeTerminal 3)) [idt one]
+  let (n, cn) ← normalize baseRules q.rhs
+  guard (n == bang one)
+  pure (Cert.symm (Cert.trans c cn))
+
 /-- The indices of the library's derived equations in its development. -/
 structure LibIdx where
   /-- {lit}`compPairSeq`. -/
@@ -113,18 +160,28 @@ structure LibIdx where
   pairFstSnd : ℕ
   /-- {lit}`evCurrySeq`. -/
   evCurry : ℕ
+  /-- {lit}`evCurry0Seq`. -/
+  evCurry0 : ℕ
+  /-- {lit}`curryNatSeq`. -/
+  curryNat : ℕ
+  /-- {lit}`bangOneSeq`. -/
+  bangOne : ℕ
 
 /-- The library's development, and the indices of its derived equations. -/
 def library : Option (LibIdx × Development) := (do
   let cp ← proveSeq compPairSeq compPairProof
   let pf ← proveSeq pairFstSndSeq pairFstSndProof
   let ec ← proveSeq evCurrySeq (evCurryProof cp)
-  pure ⟨cp, pf, ec⟩ : StateT Development Option LibIdx).run []
+  let e0 ← proveSeq evCurry0Seq (evCurry0Proof ec)
+  let cn ← proveSeq curryNatSeq (curryNatProof cp ec)
+  let bo ← proveSeq bangOneSeq bangOneProof
+  pure ⟨cp, pf, ec, e0, cn, bo⟩ : StateT Development Option LibIdx).run []
 
-/-- The rules of the axioms and of the library's derived equations. -/
+/-- The rules of the axioms and of the library's derived equations. A currying after an arrow
+is absorbed into the currying, so that evaluation meets curryings alone. -/
 def rules (i : LibIdx) : List RwRule :=
   baseRules ++ [{ src := .thm i.compPair }, { src := .thm i.pairFstSnd },
-    { src := .thm i.evCurry }]
+    { src := .thm i.curryNat }, { src := .thm i.evCurry0 }, { src := .thm i.bangOne }]
 
 end Geb.FreeTopos.Prover
 

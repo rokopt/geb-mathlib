@@ -71,14 +71,14 @@ def Src.cert : Src → List Tree → List Tree → List Tree → Tree
   | .thm j => Cert.thm j
 
 /-- A rewriting rule: the equation of a source, read from left to right, or from right to left
-when {lit}`flip` holds, not applied at a term whose root has the label {lit}`avoid`. -/
+when {lit}`flip` holds, not applied at a term whose root has a label of {lit}`avoid`. -/
 structure RwRule where
   /-- The source. -/
   src : Src
   /-- Whether the equation is read from right to left. -/
   flip : Bool := false
-  /-- A root label at which the rule does not apply. -/
-  avoid : Option ℕ := none
+  /-- The root labels at which the rule does not apply. -/
+  avoid : List ℕ := []
 
 /-- The state of a match: the terms assigned to the variables, and the objects of the side to be
 matched to the term's objects by canonical form. -/
@@ -125,7 +125,7 @@ def bridge (tys : List Ty) : Tree → Tree → PM Tree :=
 /-- One rewriting step at a term's root: the instance of the rule's other side, with the
 certificate of the term's equation with it. -/
 def applyRule (r : RwRule) (t : Tree) : PM (Tree × Tree) := do
-  guard (r.avoid != some t.label)
+  guard (!r.avoid.contains t.label)
   let a ← r.src.seq
   let (p, q) := if r.flip then (a.concl.rhs, a.concl.lhs) else (a.concl.lhs, a.concl.rhs)
   let some ms := matchPat a.ctx p t ⟨a.ctx.map fun _ ↦ none, []⟩ | failure
@@ -166,13 +166,13 @@ def rewriteRoot (rules : List RwRule) (t : Tree) : PM (Tree × Tree) :=
 
 /-- The normal form of a term, if recorded in the scope. -/
 def lookupNf (t : Tree) : PM (Option (Tree × Tree)) := do
-  pure (((← get).nfs.find? (·.1 == t)).map Prod.snd)
+  pure ((← get).nfs.find? t)
 
 /-- Record a term's normal form, the certificate of its equation proved as a lemma when the
 term is not normal. -/
 def memoizeNf (t n c : Tree) : PM (Tree × Tree) := do
   let c ← if t == n then pure c else addLemma ⟨t, n⟩ c
-  modify fun st ↦ { st with nfs := (t, (n, c)) :: st.nfs }
+  modify fun st ↦ { st with nfs := st.nfs.insert t (n, c) }
   pure (n, c)
 
 /-- One step of normalization: an object's canonical form; a variable itself; an application

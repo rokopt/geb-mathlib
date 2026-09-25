@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Prover.Induction
 public import Geb.Prototypes.FreeTopos.Prover.Library
 public import Geb.Prototypes.FreeTopos.Prover.Rewrite
 public import Geb.Prototypes.FreeTopos.Prover.Tactic

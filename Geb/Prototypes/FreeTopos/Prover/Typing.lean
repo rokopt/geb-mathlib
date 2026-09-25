@@ -128,16 +128,35 @@ structure Ty where
   /-- The certificate that the object, or the arrow's codomain, equals {lit}`hi`. -/
   hiCert : Tree
 
+/-- A structural hash of a tree. -/
+def treeHash : Tree → UInt64 := RoseTree.elim fun l hs ↦ hs.foldl mixHash (hash l)
+
+/-- A table of values keyed by trees: buckets of pairs, indexed by the keys' hashes. -/
+structure Table (β : Type) where
+  /-- The buckets. -/
+  buckets : Array (List (Tree × β)) := Array.replicate 4096 []
+
+/-- The bucket of a key. -/
+def Table.index {β : Type} (tb : Table β) (t : Tree) : ℕ := (treeHash t).toNat % tb.buckets.size
+
+/-- The value of a key, if the table has one. -/
+def Table.find? {β : Type} (tb : Table β) (t : Tree) : Option β :=
+  (tb.buckets[tb.index t]?.bind fun l ↦ l.find? (·.1 == t)).map Prod.snd
+
+/-- The table with a key's value added. -/
+def Table.insert {β : Type} (tb : Table β) (t : Tree) (b : β) : Table β :=
+  ⟨tb.buckets.modify (tb.index t) ((t, b) :: ·)⟩
+
 /-- The prover's state: the development, and the typings and normal forms of the terms typed
 and normalized in the current scope. -/
 structure St where
   /-- The development: the theorems proved so far and their certificates. -/
-  dev : Development
+  dev : Array (Seq × Tree)
   /-- The typings of the terms typed in the current scope. -/
-  memo : List (Tree × Ty) := []
+  memo : Table Ty := {}
   /-- The normal forms of the terms normalized in the current scope, with the certificates of
   their equations. -/
-  nfs : List (Tree × (Tree × Tree)) := []
+  nfs : Table (Tree × Tree) := {}
 
 /-- The prover's monad: a scope, and the state of the development and the typings. -/
 abbrev PM : Type → Type := ReaderT Scope (StateT St Option)
@@ -147,16 +166,16 @@ the result is its citation. -/
 def addLemma (q : Eqn) (c : Tree) : PM Tree := do
   let sc ← read
   let st ← get
-  set { st with dev := st.dev ++ [(sc.seq q, c)] }
-  pure (sc.cite st.dev.length)
+  set { st with dev := st.dev.push (sc.seq q, c) }
+  pure (sc.cite st.dev.size)
 
 /-- The typing of a term, if it has been typed in the scope. -/
 def lookup (t : Tree) : PM (Option Ty) := do
-  pure (((← get).memo.find? (·.1 == t)).map Prod.snd)
+  pure ((← get).memo.find? t)
 
 /-- Record a term's typing. -/
 def memoize (ty : Ty) : PM Unit :=
-  modify fun st ↦ { st with memo := (ty.term, ty) :: st.memo }
+  modify fun st ↦ { st with memo := st.memo.insert ty.term ty }
 
 /-- The certificate of an equation between two objects, from their typings, when their
 canonical forms agree. -/
@@ -187,7 +206,6 @@ the instances of axioms' sides with {lit}`patTy`. -/
 def typeOp (patTy : List Ty → Tree → PM Ty) (k : ℕ) (tys : List Ty) : PM Ty := do
   let ts := tys.map Ty.term
   let t := op k ts
-  if let some ty ← lookup t then return ty
   guard (tys.map Ty.sort == argSorts k)
   let some (_, s) := sig[k]? | failure
   let dc ← match dfdRules[k]? with
@@ -220,11 +238,14 @@ def typeOp (patTy : List Ty → Tree → PM Ty) (k : ℕ) (tys : List Ty) : PM T
   memoize ty
   pure ty
 
-/-- One step of typing: a variable's node by {lit}`leaf`, an application by {lit}`typeOp`. -/
-def typeStep (patTy : List Ty → Tree → PM Ty) (leaf : ℕ → PM Ty) :
+/-- One step of typing: a variable's node by {lit}`leaf`, an application by {lit}`typeOp` unless
+its term, which {lit}`term` computes from the node, has been typed. -/
+def typeStep (patTy : List Ty → Tree → PM Ty) (leaf : ℕ → PM Ty) (term : Tree → Tree) :
     ℕ → List (Tree × PM Ty) → PM Ty
   | 0, [(i, _)] => leaf i.label
-  | k + 1, cs => do typeOp patTy k (← cs.mapM Prod.snd)
+  | k + 1, cs => do
+    if let some ty ← lookup (term (RoseTree.node (k + 1) (cs.map Prod.fst))) then return ty
+    typeOp patTy k (← cs.mapM Prod.snd)
   | _, _ => failure
 
 /-- The typing of a variable of the scope. A domain or codomain that a hypothesis equates with
@@ -250,10 +271,10 @@ def typeVar (termTy : Tree → PM Ty) (i : ℕ) : PM Ty := do
 the scope. Each types the instances of axioms' sides it meets at the fuel below. -/
 def typers : ℕ → (List Ty → Tree → PM Ty) × (Tree → PM Ty) :=
   Nat.rec (fun _ _ ↦ failure, fun _ ↦ failure) fun _ rec ↦
-    (fun env ↦ RoseTree.para (typeStep rec.1 fun i ↦ match env[i]? with
+    (fun env ↦ RoseTree.para (typeStep rec.1 (fun i ↦ match env[i]? with
         | some ty => pure ty
-        | none => failure),
-      RoseTree.para (typeStep rec.1 (typeVar rec.2)))
+        | none => failure) (subst (env.map Ty.term))),
+      RoseTree.para (typeStep rec.1 (typeVar rec.2) id))
 
 /-- The fuel of typing: the depth of the axioms' sides instantiated while typing. -/
 def typingFuel : ℕ := 8
@@ -266,7 +287,7 @@ def typePattern (env : List Ty) (p : Tree) : PM Ty := (typers typingFuel).1 env 
 
 /-- Run the prover in a scope from a development, with no term typed. -/
 def run {α : Type} (sc : Scope) (dev : Development) (m : PM α) : Option (α × Development) :=
-  (m.run sc |>.run { dev }).map fun (a, st) ↦ (a, st.dev)
+  (m.run sc |>.run { dev := dev.toArray }).map fun (a, st) ↦ (a, st.dev.toList)
 
 end Geb.FreeTopos.Prover
 

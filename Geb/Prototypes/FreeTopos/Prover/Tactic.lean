@@ -24,6 +24,8 @@ sequent is proved in its own scope and added to the development, so that later p
 * {lit}`etaExpand` — the expansion of an arrow into a product.
 * {lit}`byNorm` — an equation by the normal forms of its sides.
 * {lit}`proveSeq` — a sequent proved and added to the development.
+* {lit}`normalizeThm` — a theorem of the development with its left side normalized, to rewrite
+  with.
 
 ## Tags
 
@@ -90,6 +92,15 @@ development; the result is its index there. -/
 def proveSeq (a : Seq) (m : PM Tree) : StateT Development Option ℕ := fun dev ↦ do
   let (c, dev) ← run ⟨a.ctx, a.hyps⟩ dev m
   pure (dev.length, dev ++ [(a, c)])
+
+/-- The theorem of the development at index {lit}`j` with its left side normalized under rules,
+proved in its scope and added to the development; the result is its index there. A rule from
+it rewrites where the normal form of the theorem's left side occurs. -/
+def normalizeThm (rules : List RwRule) (j : ℕ) : StateT Development Option ℕ := fun dev ↦ do
+  let (a, _) ← dev[j]?
+  let sc : Scope := ⟨a.ctx, a.hyps⟩
+  let ((n, cn), dev) ← run sc dev (normalize rules a.concl.lhs)
+  pure (dev.length, dev ++ [(sc.seq ⟨n, a.concl.rhs⟩, Cert.trans (Cert.symm cn) (sc.cite j))])
 
 end Geb.FreeTopos.Prover
 

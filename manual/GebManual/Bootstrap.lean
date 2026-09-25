@@ -139,9 +139,10 @@ sections below detail:
   its checker in Lean, sound, and the proof that every model is an
   elementary topos with the data objects, constructed; the converse, not
   begun; the model in Lean with functional relations, the definitional
-  extension with its unfolding theorem, the measurement that decides
-  when the Mitchell–Bénabou language is written, and the checker and
-  prover written in Geb, not begun.
+  extension with its unfolding theorem, not begun; a prover prototyped
+  in Lean, constructed, and with it the measurement that decides when
+  the Mitchell–Bénabou language is written, made, both criteria
+  failing; the checker and prover written in Geb, not begun.
 
 Extension:
 
@@ -1570,6 +1571,47 @@ constructions in the language they are written in, and the defining
 equations state what each construction means in the object language.
 Its terms refer to the definitions made in the combinators before it, so
 that the development continues in it without rewriting them.
+
+The measurement is made. A prover prototyped in Lean computes
+certificates of the combinators: it types a term by the axioms that
+compute domains and codomains, proving each fact about a subterm once as
+a lemma of the development that later certificates cite; it rewrites by
+the axioms and a library of derived equations, which it proves itself,
+matching objects by canonical form; and it proves an equation between
+arrows from a natural numbers or list object by the uniqueness of
+recursion, and one from a list object with a parameter by that of the
+curryings ({name}`Geb.FreeTopos.Prover.normalize`,
+{name}`Geb.FreeTopos.Prover.byListParamInduction`). A development
+checks when each certificate proves its sequent with those before it as
+theorems, and its sequents then hold in every model
+({name}`Geb.PartialHorn.checkDevelopment_sound`). The seven theorems,
+appending and addition defined by recursion into exponentials, are
+proved so in `GebTests/Prototypes/FreeTopos/Benchmark.lean`. Checked by
+the Lean checkers, the computational core's certificates have from 22
+to 1315 nodes and check in 29 milliseconds; the combinators' have from
+4938 to 798736, from 70 to 1376 times as many, and check in 17 seconds.
+Neither criterion holds. Checking takes several hundred times the
+core's time, and the statements, the definitions and the steps an
+induction names are arrangements of projections, pairings and
+curryings. The associativity of appending, `(append (append xs ys) zs)`
+equal to `(append xs (append ys zs))` in the core, equates the arrows
+
+```
+comp append (pair (comp append (pair (fst L P) (comp (fst L L) (snd L P))))
+  (comp (snd L L) (snd L P)))
+comp append (pair (fst L P) (comp append (snd L P)))
+```
+
+The two failures have different causes. Of the combinators'
+certificates' nodes, 89 in 100 are the terms that instances of axioms
+and theorems repeat in full, the expansions of appending and addition
+among them. The Mitchell–Bénabou language compiles to the same
+certificates, so it answers how the development reads and not how long
+it takes to check. The third construction, by which a certificate names
+a definition rather than repeating its expansion, bears on the size;
+and a checker that infers definedness and canonical objects, as the
+core's checker infers the types of kernel terms, proved sound in Lean,
+bears on the facts the certificates prove besides.
 
 The fifth choice is deferred until the three constructions are made.
 

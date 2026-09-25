@@ -86,7 +86,9 @@ checklist and in CI.
   computational core, the equational logic of kernel terms, and the
   metalogic, the free topos presented as the initial model of one
   partial Horn theory, each with what it defines and proves and the
-  metalogic with its remaining questions; the decisions that fix the seed
+  metalogic with its remaining questions, its prover prototyped in Lean
+  and the measurement of its certificates against the core's; the
+  decisions that fix the seed
   (values, the typed kernel, closed bundles and references, input and
   output), a survey of seed images, self-extending kernels, operational
   semantics, proof checkers for the free topos and content addressing,
