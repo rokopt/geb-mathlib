@@ -139,10 +139,11 @@ condition: the kernel running in Lean, the choice of machine, closed
 bundles and images, Geb growing in itself to the first fixed point, a
 second host with accelerations and compilers, content identity, and the
 metalogic. The chapter is the list of follow-ups; it is revised as each
-phase is carried out. Its sections Status, Improvements, What remains for a
-full bootstrap and The next phase record what is constructed, the known
-limitations with their fixes, the remaining work in order of dependence,
-and the next phase.
+phase is carried out. Its Road map lists every item of the bootstrap and
+of the work written in Geb after it, each marked with its state; the
+subsections of Phase 7 state what each rung of the metalogic defines and
+proves; and its sections Improvements and The next phase record the
+known limitations with their fixes and where work resumes.
 
 The readable S-expressions of the kernel's reader and of
 `Geb/Prototypes/ReadableSExpr.lean` are to be unified as one reader and
