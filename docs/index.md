@@ -3718,10 +3718,11 @@ checklist and in CI.
   rose trees, and the checker `Geb.Metalogic.check`, a paramorphism
   computing each conclusion from its premises' conclusions, with rules of
   equality, congruence, the β and η rules of functions, pairs and the unit
-  type, evaluation of closed terms, weakening, cut, instantiation, the
-  computation rules of the right fold and case analysis of lists, of
-  iteration and of the fold of trees, induction on lists, trees and
-  labels, and references to the definitions of a loaded program
+  type, the δ rules of the primitives at literals, weakening, cut,
+  instantiation, the computation rules of the conditional at a quoted
+  tree, of the right fold and case analysis of lists, of iteration and of
+  the fold of trees, induction on lists, trees and labels, and references
+  to the definitions of a loaded program
   (`Geb.Metalogic.Loaded`, `Geb.Metalogic.load_loaded`).
   `Geb.Metalogic.check_sound` proves every computed conclusion valid in
   the kernel's denotation, without `Classical.choice`. Tested in
