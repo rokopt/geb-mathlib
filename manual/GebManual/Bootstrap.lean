@@ -11,6 +11,7 @@ import Geb.Prototypes.Bootstrap
 import Geb.Prototypes.Kernel
 import Geb.Prototypes.Metalogic
 import Geb.Prototypes.Definition
+import Geb.Prototypes.FreeTopos
 import Geb.Prototypes.Computability.Triage.Simulation
 
 /-! # Bootstrap chapter
@@ -134,11 +135,13 @@ sections below detail:
   proof construction, begun; proofs about the compiler's components,
   which exercise the prover, begun, and paused until the fifth choice;
   stronger checkers admitted by translations of certificates, not begun.
-* The metalogic, the free topos in one presentation: the rule set
-  checked against its specification, the model in Lean with functional
-  relations, the definitional extension with its unfolding theorem, the
-  measurement that decides when the Mitchell–Bénabou language is
-  written, and the checker and prover written in Geb. Not begun.
+* The metalogic, the free topos in one presentation: the rule set with
+  its checker in Lean, sound, and the proof that every model is an
+  elementary topos with the data objects, constructed; the converse, not
+  begun; the model in Lean with functional relations, the definitional
+  extension with its unfolding theorem, the measurement that decides
+  when the Mitchell–Bénabou language is written, and the checker and
+  prover written in Geb, not begun.
 
 Extension:
 
@@ -1516,6 +1519,26 @@ constructible:
 The first construction precedes the other two, which are independent of
 each other; the choices follow them.
 
+The first construction is made in one direction. The rule set is
+{name}`Geb.FreeTopos.theory`, a partial Horn theory whose sorts are the
+objects and the arrows, and its certificates are rose trees that
+{name}`Geb.PartialHorn.check` checks, sound in every model of the theory
+({name}`Geb.PartialHorn.check_sound`). The category of a model
+({name}`Geb.FreeTopos.ToposModel.Cat`) is an elementary topos as the
+repository's class states it
+({name}`Geb.FreeTopos.ToposModel.elementaryTopos`), and its data objects
+have the universal properties of the natural numbers object, of list
+objects and of the initial algebra of rose trees
+({name}`Geb.FreeTopos.ToposModel.natRec_uniq`,
+{name}`Geb.FreeTopos.ToposModel.listRec_uniq`,
+{name}`Geb.FreeTopos.ToposModel.roseRec_uniq`). The construction of the
+category and of its universal morphisms uses no axiom beyond
+`propext` and `Quot.sound`; only the packaging as mathlib's structures,
+whose limit cones and pullbacks do, uses `Classical.choice`. The
+converse, a model of the theory from an elementary topos with chosen
+structure and data objects, is not constructed; the section on
+improvements states what it needs.
+
 The fourth choice is made by measurement. Soon after the first
 construction, the theorems proved in the computational core in
 `bootstrap/proofs/prelude.geb` and `bootstrap/proofs/nat.geb` are
@@ -1615,6 +1638,15 @@ the change that removes it.
   uses it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
+* A model decides where its operations are defined. A model's
+  operation ({name}`Geb.PartialHorn.Model`) is a function to an option,
+  so that composition, defined where the codomain of one arrow is the
+  domain of the other, decides that equality of objects. The converse of
+  the first construction can then be constructed only for a topos whose
+  objects have decidable equality, and the model of the second
+  construction needs objects of that kind, codes rather than types.
+  Operations whose domains of definition are propositions, as mathlib's
+  `Part` states them, remove the restriction.
 * Names. The computational core's checker and prover are in the
   namespace `Geb.Metalogic` and under `bootstrap/metalogic/`, although
   the metalogic is the free topos above the core; renaming them for the
@@ -1624,9 +1656,9 @@ the change that removes it.
 ## The next phase
 
 The metalogic is built next, in the order of the section on the
-metalogic: its first construction, the rule set checked against its
-specification; the measurement that makes the fourth choice; the second
-and third constructions; and then the fifth choice. The computational
+metalogic: after its first construction, made in one direction, the
+measurement that makes the fourth choice; the second and third
+constructions; and then the fifth choice. The computational
 core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the proof that follows. The next
 proof is the type checker's preservation of types by weakening, of `typeIn`

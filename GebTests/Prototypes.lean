@@ -17,6 +17,7 @@ import GebTests.Prototypes.Definition
 import GebTests.Prototypes.FamBoundary
 import GebTests.Prototypes.FinCardUniverse
 import GebTests.Prototypes.FiniteChoice
+import GebTests.Prototypes.FreeTopos
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType

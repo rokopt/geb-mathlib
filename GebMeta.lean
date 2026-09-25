@@ -276,7 +276,8 @@ def classicalAllowedModules : NameSet :=
    `GebTests.Prototypes.Computability.SizeBounded.Machine,
    `GebTests.Prototypes.Computability.SizeBounded.Logspace.Machine,
    `Geb.Prototypes.Typechecker.Instances,
-   `GebTests.Prototypes.Typechecker.Instances].foldl (·.insert ·)
+   `GebTests.Prototypes.Typechecker.Instances,
+   `Geb.Prototypes.FreeTopos.Topos].foldl (·.insert ·)
     ({} : NameSet)
 
 /-- Upstream constants at which axiom collection stops: each has

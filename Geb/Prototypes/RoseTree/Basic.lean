@@ -58,7 +58,9 @@ abbrev RoseTree (α : Type) : Type := WType (RoseTree.Sig α)
 
 namespace RoseTree
 
-variable {α β : Type}
+universe u
+
+variable {α : Type} {β : Type u}
 
 /-- The node with a label over a list of children. The children are tabulated in an array
 built once, so that each is reached in constant time. -/
