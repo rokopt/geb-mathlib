@@ -2,7 +2,7 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Proof construction for the first rung of the metalogic, written in Surface 1: derived rules
+; Proof construction for the computational core, written in Surface 1: derived rules
 ; that compute certificates the checker of bootstrap/metalogic/equations.geb accepts, so that
 ; nothing here is trusted. Normalization, innermost first, returns a term's normal form with the
 ; certificate of the equation between them, contracting the redexes of the computation rules and

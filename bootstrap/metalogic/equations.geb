@@ -2,7 +2,7 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The first rung of the metalogic's proof checker, written in Surface 1: the conclusion of a
+; The computational core's proof checker, written in Surface 1: the conclusion of a
 ; certificate, given a program's definitions, theorems about it, the types of the global
 ; environment the definitions load, a context, innermost first, and a list of hypotheses, or
 ; nothing when the certificate does not check, deciding as Geb.Metalogic.check decides. An

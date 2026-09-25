@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # Equations between kernel terms
 
-The first rung of the metalogic: equations between the kernel's terms, of every type, derived
+The computational core's logic: equations between the kernel's terms, of every type, derived
 from equational hypotheses by the rules of a cartesian closed category with finite limits, list
 objects and the rose-tree object. A sequent is a context, a list of hypotheses and a
 conclusion, each an equation between two terms of a type in that context; it is valid when, at
@@ -75,7 +75,7 @@ term is derived from the δ rules, the computation rules and congruence.
 An axiom is cited by its index in {lit}`axioms` and a theorem by its index among an
 environment's theorems, each by its own rule, and the labels of the rules, as the table of
 axioms, are only extended: a certificate therefore checks alike when axioms or rules are added,
-as they are for a new primitive and on a richer rung.
+as they are for a new primitive.
 
 ## Tags
 

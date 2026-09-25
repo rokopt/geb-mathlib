@@ -82,10 +82,11 @@ checklist and in CI.
   conjectured, and the last section lists the constructions that remain.
 - [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) — a Verso
   manual chapter recording the bootstrap: a road map of the bootstrap
-  and of the work written in Geb after it, each item with its state and
-  each rung of the metalogic with what it defines and proves, and the
-  alternative of one partial Horn presentation of the free topos in
-  place of the rungs, with its questions; the decisions that fix the seed
+  and of the work written in Geb after it, each item with its state; the
+  computational core, the equational logic of kernel terms, and the
+  metalogic, the free topos presented as the initial model of one
+  partial Horn theory, each with what it defines and proves and the
+  metalogic with its remaining questions; the decisions that fix the seed
   (values, the typed kernel, closed bundles and references, input and
   output), a survey of seed images, self-extending kernels, operational
   semantics, proof checkers for the free topos and content addressing,
@@ -3720,8 +3721,8 @@ checklist and in CI.
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
   `Geb.Prototypes.RoseTree.Packed` and `Mathlib.Data.Fin.VecNotation`.
-- `Geb/Prototypes/Metalogic/` — the metalogic of the bootstrap, rung by
-  rung. `Equations.lean` is the first rung: sequents of equations between
+- `Geb/Prototypes/Metalogic/` — the computational core's logic.
+  `Equations.lean`: sequents of equations between
   kernel terms of every type under equational hypotheses, certificates as
   rose trees, and the checker `Geb.Metalogic.check`, a paramorphism
   computing each conclusion from its premises' conclusions, with rules of
@@ -3760,5 +3761,5 @@ checklist and in CI.
   recursion over a declared datatype, which
   `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
-  ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and
-  `Geb.Prototypes.Kernel.Reader`.
+  computational core and the metalogic above it. Depends on
+  `Geb.Prototypes.Kernel.Subst` and `Geb.Prototypes.Kernel.Reader`.
