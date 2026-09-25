@@ -75,9 +75,23 @@ rev = "v4.35.0-rc2"
 name = "Geb"
 globs = ["Geb.*"]
 
+# The test modules that compare Geb programs with Lean ones read the
+# programs' sources at elaboration by `include_str`, which registers no
+# dependency on the file read. The library's `needs` mixes the sources'
+# trace into the trace of every GebTests module, so a change to a source
+# rebuilds the tests that read it, and the rest of GebTests with them; a
+# library of the reading modules alone would confine the rebuild to them
+# and their importers.
+[[input_dir]]
+name = "gebSources"
+path = "bootstrap"
+text = true
+filter = {extension = ["geb"]}
+
 [[lean_lib]]
 name = "GebTests"
 globs = ["GebTests.*"]
+needs = ["@/gebSources"]
 
 # `linter.hashCommand`, a member of `mathlibStandardSet`, rejects every
 # `#`-command outside `#adaptation_note`. Its purpose is to keep them

@@ -263,6 +263,12 @@ its own `MathlibTest`.
   instance for an anonymous `example`, leaves no such reference and
   is reported as removable. `-- shake: keep` on the import line is
   the sanctioned suppression for that case.
+- A module that reads a file at elaboration by `include_str`
+  registers no dependency on it, so Lake does not rebuild the module
+  when the file alone changes. Such a file is covered by an input
+  target (`input_file`, `input_dir`) that the module's library
+  `needs` in `lakefile.toml`, as the Geb sources under `bootstrap/`
+  are for `GebTests`.
 
 ## Coding technique
 

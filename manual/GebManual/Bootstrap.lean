@@ -1090,18 +1090,14 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
-* Test dependencies on Geb sources. The test modules that compare Geb
-  programs with Lean ones read the programs' sources at elaboration by
-  `include_str`, which registers no dependency, so Lake rebuilds them
-  when their Lean source or imports change and not when a `.geb`
-  source alone does, and a cached build keeps a comparison's earlier
-  result. Declaring the sources as inputs of those modules, so that a
-  change to one rebuilds the modules that read it, removes the
-  staleness.
 * Test time. The stage tests compare the Geb compilers with the seed in
   Lean's interpreter, tens of seconds each; running those comparisons
   with the compiled executables, as `scripts/bootstrap.sh` runs the
-  fixed points, shortens them.
+  fixed points, shortens them. A change to a Geb source rebuilds every
+  test module, since the test library as a whole depends on the
+  sources that some of its modules read by `include_str`; a library of
+  those modules alone would confine the rebuild to them and their
+  importers.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
