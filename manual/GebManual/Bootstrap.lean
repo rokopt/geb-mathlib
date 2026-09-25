@@ -1536,8 +1536,12 @@ category and of its universal morphisms uses no axiom beyond
 `propext` and `Quot.sound`; only the packaging as mathlib's structures,
 whose limit cones and pullbacks do, uses `Classical.choice`. The
 converse, a model of the theory from an elementary topos with chosen
-structure and data objects, is not constructed; the section on
-improvements states what it needs.
+structure and data objects, is not constructed. A model's operations
+({name}`Geb.PartialHorn.Model`) are partial functions whose domains of
+definition are propositions, as mathlib's `Part` states them, so that a
+model need not decide where an operation is defined: neither the
+converse nor the second construction is confined to a topos whose
+objects have decidable equality.
 
 The fourth choice is made by measurement. Soon after the first
 construction, the theorems proved in the computational core in
@@ -1638,15 +1642,6 @@ the change that removes it.
   uses it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
-* A model decides where its operations are defined. A model's
-  operation ({name}`Geb.PartialHorn.Model`) is a function to an option,
-  so that composition, defined where the codomain of one arrow is the
-  domain of the other, decides that equality of objects. The converse of
-  the first construction can then be constructed only for a topos whose
-  objects have decidable equality, and the model of the second
-  construction needs objects of that kind, codes rather than types.
-  Operations whose domains of definition are propositions, as mathlib's
-  `Part` states them, remove the restriction.
 * Names. The computational core's checker and prover are in the
   namespace `Geb.Metalogic` and under `bootstrap/metalogic/`, although
   the metalogic is the free topos above the core; renaming them for the
