@@ -8,6 +8,7 @@ module
 public import Geb.Mathlib.Data.FinEnum
 public import Geb.Mathlib.Data.W.Basic
 public import Geb.Prototypes.RoseTree.Basic
+public import Mathlib.Data.Part
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -25,8 +26,9 @@ the term is defined. A sequent is a context of sorts, a list of equations as hyp
 equation as its conclusion; a theory is a signature with sequents as its axioms.
 
 A model interprets each sort as a type and each operation as a partial function on sorted
-values. It is a model of a theory when each axiom holds in it at every assignment of the
-axiom's context that satisfies the axiom's hypotheses.
+values, whose domain of definition is a proposition, so that a model need not decide where an
+operation is defined. It is a model of a theory when each axiom holds in it at every assignment
+of the axiom's context that satisfies the axiom's hypotheses.
 
 A certificate is a rose tree whose node's label names a rule and whose children are its
 premises' certificates and the terms the rule names. The checker is a fold over the certificate
@@ -153,9 +155,9 @@ structure Model (S : Sig) where
   /-- The values of each sort. -/
   Car : ℕ → Type v
   /-- The partial operations. -/
-  op : ℕ → List (Σ s, Car s) → Option (Σ s, Car s)
+  op : ℕ → List (Σ s, Car s) → Part (Σ s, Car s)
   /-- A value of an operation has the operation's result sort. -/
-  op_sort : ∀ {k : ℕ} {args : List (Σ s, Car s)} {w : Σ s, Car s}, op k args = some w →
+  op_sort : ∀ {k : ℕ} {args : List (Σ s, Car s)} {w : Σ s, Car s}, w ∈ op k args →
     (S[k]?).map Prod.snd = some w.1
 
 variable {S : Sig}
@@ -163,17 +165,17 @@ variable {S : Sig}
 /-- The sorted values of a model. -/
 abbrev Model.Val (M : Model.{v} S) : Type v := Σ s, M.Car s
 
-/-- The value of a term in a model at an assignment of values to the variables by index, or
-nothing when the term is undefined there. -/
-def eval (M : Model.{v} S) (ρ : List M.Val) : Tree → Option M.Val :=
+/-- The value of a term in a model at an assignment of values to the variables by index,
+defined where the term is. -/
+def eval (M : Model.{v} S) (ρ : List M.Val) : Tree → Part M.Val :=
   RoseTree.para fun l cs ↦ match l, cs with
     | 0, [(i, _)] => ρ[i.label]?
     | k + 1, cs => (cs.mapM Prod.snd).bind (M.op k)
-    | _, _ => none
+    | _, _ => Part.none
 
 /-- An equation holds at an assignment when both sides are defined there with one value. -/
 def Eqn.Holds (M : Model.{v} S) (ρ : List M.Val) (q : Eqn) : Prop :=
-  ∃ w, eval M ρ q.lhs = some w ∧ eval M ρ q.rhs = some w
+  ∃ w, eval M ρ q.lhs = Part.some w ∧ eval M ρ q.rhs = Part.some w
 
 /-- A conclusion is valid under hypotheses in a context when it holds at every assignment of
 the context's sorts at which the hypotheses hold. -/
@@ -191,14 +193,17 @@ namespace Model
 variable (M : Model.{v} S)
 
 /-- The value of an operation defined at its arguments, at its result sort. -/
-def get {k : ℕ} {args : List M.Val} {s : ℕ} (h : ∃ a, M.op k args = some ⟨s, a⟩) : M.Car s :=
-  have hs : (M.op k args).isSome := by obtain ⟨a, ha⟩ := h; simp [ha]
-  have he : ((M.op k args).get hs).1 = s := by obtain ⟨a, ha⟩ := h; simp [ha]
-  he ▸ ((M.op k args).get hs).2
+def get {k : ℕ} {args : List M.Val} {s : ℕ} (h : ∃ a, M.op k args = Part.some ⟨s, a⟩) :
+    M.Car s :=
+  have hd : (M.op k args).Dom := by obtain ⟨a, ha⟩ := h; rw [ha]; trivial
+  have he : ((M.op k args).get hd).1 = s := by
+    obtain ⟨a, ha⟩ := h
+    rw [Part.get_eq_of_mem (Part.eq_some_iff.mp ha)]
+  he ▸ ((M.op k args).get hd).2
 
 /-- An operation defined at its arguments returns the value {lit}`get` reads. -/
-theorem op_eq_get {k : ℕ} {args : List M.Val} {s : ℕ} (h : ∃ a, M.op k args = some ⟨s, a⟩) :
-    M.op k args = some ⟨s, M.get h⟩ := by
+theorem op_eq_get {k : ℕ} {args : List M.Val} {s : ℕ}
+    (h : ∃ a, M.op k args = Part.some ⟨s, a⟩) : M.op k args = Part.some ⟨s, M.get h⟩ := by
   obtain ⟨a, ha⟩ := h
   simp only [get]
   generalize_proofs hs he
@@ -208,9 +213,10 @@ theorem op_eq_get {k : ℕ} {args : List M.Val} {s : ℕ} (h : ∃ a, M.op k arg
   rfl
 
 /-- A value an operation returns has the operation's result sort. -/
-theorem exists_op_eq {k : ℕ} {args : List M.Val} {w : M.Val} {s : ℕ} (hw : M.op k args = some w)
-    (hs : (S[k]?).map Prod.snd = some s) : ∃ a, M.op k args = some ⟨s, a⟩ := by
-  have h := M.op_sort hw
+theorem exists_op_eq {k : ℕ} {args : List M.Val} {w : M.Val} {s : ℕ}
+    (hw : M.op k args = Part.some w) (hs : (S[k]?).map Prod.snd = some s) :
+    ∃ a, M.op k args = Part.some ⟨s, a⟩ := by
+  have h := M.op_sort (Part.eq_some_iff.mp hw)
   rw [hs, Option.some.injEq] at h
   obtain ⟨t, a⟩ := w
   subst h
@@ -307,15 +313,40 @@ theorem mapM_eq_some_iff {α β : Type*} {f : α → Option β} (l : List α) :
         simp only [List.mapM_cons, List.map_cons, List.cons.injEq, ← ih vs]
         cases f a <;> cases l.mapM f <;> simp)
 
+/-- A bind of partial values has a value exactly when the first has one at which the function
+has that value. -/
+theorem part_bind_eq_some_iff {α β : Type*} {o : Part α} {f : α → Part β} {b : β} :
+    o.bind f = Part.some b ↔ ∃ a, o = Part.some a ∧ f a = Part.some b := by
+  simp only [Part.eq_some_iff, Part.mem_bind_iff]
+
+/-- A list's elements all have values under a partial function exactly when the function
+mapped over the list, in {name}`Part`, is the list of those values. -/
+theorem mapM_part_eq_some_iff {α β : Type*} {f : α → Part β} (l : List α) :
+    ∀ vs : List β, l.mapM f = Part.some vs ↔ l.map f = vs.map Part.some :=
+  l.rec (motive := fun l ↦ ∀ vs, l.mapM f = Part.some vs ↔ l.map f = vs.map Part.some)
+    (fun vs ↦ by cases vs <;> simp [Part.pure_eq_some, Part.some_inj])
+    (fun a l ih vs ↦ by
+      cases vs with
+      | nil => simp [List.mapM_cons, part_bind_eq_some_iff, Part.some_inj]
+      | cons v vs =>
+        simp only [List.mapM_cons, List.map_cons, List.cons.injEq, ← ih vs, Part.bind_eq_bind,
+          Part.pure_eq_some, part_bind_eq_some_iff, Part.some_inj]
+        constructor
+        · rintro ⟨b, hb, bs, hbs, rfl, rfl⟩
+          exact ⟨hb, hbs⟩
+        · rintro ⟨hb, hbs⟩
+          exact ⟨v, hb, vs, hbs, rfl, rfl⟩)
+
 variable {M : Model.{v} S} {ρ : List M.Val}
 
 /-- The value of a variable is the assignment's value at its index. -/
-@[simp] theorem eval_var (i : ℕ) : eval M ρ (var i) = ρ[i]? := by
+@[simp] theorem eval_var (i : ℕ) : eval M ρ (var i) = (ρ[i]? : Part M.Val) := by
   simp [eval, var]
 
 /-- The value of a node of label zero over one child is the assignment's value at the child's
 label. -/
-theorem eval_node_zero (i : Tree) : eval M ρ (RoseTree.node 0 [i]) = ρ[i.label]? := by
+theorem eval_node_zero (i : Tree) :
+    eval M ρ (RoseTree.node 0 [i]) = (ρ[i.label]? : Part M.Val) := by
   simp [eval]
 
 /-- The value of an operation's application: the operation at its arguments' values, when
@@ -352,15 +383,16 @@ theorem scoped_node_succ (n k : ℕ) (cs : List Tree) :
   simp [Scoped, List.all_map]
   rfl
 
-/-- Mapping partial functions that agree on a list's elements gives one result. -/
-theorem mapM_congr {α β : Type*} {f g : α → Option β} {l : List α} (h : ∀ a ∈ l, f a = g a) :
-    l.mapM f = l.mapM g := by
+/-- Mapping monadic functions that agree on a list's elements gives one result. -/
+theorem mapM_congr {m : Type _ → Type _} [Monad m] [LawfulMonad m] {α β : Type _}
+    {f g : α → m β} {l : List α} (h : ∀ a ∈ l, f a = g a) : l.mapM f = l.mapM g := by
   rw [← Function.id_comp f, ← Function.id_comp g, ← List.mapM_map, ← List.mapM_map,
     List.map_congr_left h]
 
 /-- The value of a substitution instance of a term in scope is the term's value at the
 substituted terms' values. -/
-theorem eval_subst {ts : List Tree} {ws : List M.Val} (hts : ts.map (eval M ρ) = ws.map some) :
+theorem eval_subst {ts : List Tree} {ws : List M.Val}
+    (hts : ts.map (eval M ρ) = ws.map Part.some) :
     ∀ t, Scoped ts.length t = true → eval M ρ (subst ts t) = eval M ws t :=
   RoseTree.ind fun l cs ih hs ↦ by
     rcases l with _ | k
@@ -373,12 +405,12 @@ theorem eval_subst {ts : List Tree} {ws : List M.Val} (hts : ts.map (eval M ρ) 
         simp only [List.getElem?_map, List.getElem?_eq_getElem hi,
           List.getElem?_eq_getElem hi', Option.map_some, Option.some.injEq] at hw
         rw [subst_node_zero, eval_node_zero, List.getElem?_eq_getElem hi,
-          List.getElem?_eq_getElem hi']
+          List.getElem?_eq_getElem hi', Option.getD_some, Part.coe_some]
         exact hw
       · simp [Scoped] at hs
     · rw [scoped_node_succ, List.all_eq_true] at hs
       rw [subst_node_succ, eval_node_succ, eval_node_succ, List.mapM_map]
-      exact congrArg (fun o ↦ Option.bind o (M.op k)) (mapM_congr fun c hc ↦ ih c hc (hs c hc))
+      exact congrArg (fun o ↦ Part.bind o (M.op k)) (mapM_congr fun c hc ↦ ih c hc (hs c hc))
 
 /-- The sort of a variable's node is the context's sort at its index. -/
 theorem sortOf_node_zero (Γ : List ℕ) (i : Tree) :
@@ -395,7 +427,8 @@ theorem sortOf_node_succ (Γ : List ℕ) (k : ℕ) (cs : List Tree) :
 
 /-- A defined term's value has the term's sort, at an assignment of the context's sorts. -/
 theorem sort_eval {Γ : List ℕ} (hρ : ρ.map Sigma.fst = Γ) :
-    ∀ t : Tree, ∀ {s : ℕ} {w : M.Val}, sortOf S Γ t = some s → eval M ρ t = some w → w.1 = s :=
+    ∀ t : Tree, ∀ {s : ℕ} {w : M.Val}, sortOf S Γ t = some s → eval M ρ t = Part.some w →
+      w.1 = s :=
   RoseTree.ind fun l cs _ s w hs he ↦ by
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
@@ -403,12 +436,17 @@ theorem sort_eval {Γ : List ℕ} (hρ : ρ.map Sigma.fst = Γ) :
       · rw [sortOf_node_zero] at hs
         rw [eval_node_zero] at he
         have h := congrArg (fun l ↦ l[i.label]?) hρ
-        simp only [List.getElem?_map, he, hs, Option.map_some, Option.some.injEq] at h
-        exact h
+        simp only [List.getElem?_map, hs] at h
+        rcases hρi : ρ[i.label]? with _ | a
+        · rw [hρi, Part.coe_none] at he
+          exact absurd he.symm (Part.some_ne_none w)
+        · rw [hρi, Part.coe_some, Part.some_inj] at he
+          rw [hρi, Option.map_some, Option.some.injEq] at h
+          exact he ▸ h
       · simp [sortOf] at hs
-    · rw [eval_node_succ, Option.bind_eq_some_iff] at he
+    · rw [eval_node_succ, part_bind_eq_some_iff] at he
       obtain ⟨_, -, hop⟩ := he
-      have hw := M.op_sort hop
+      have hw := M.op_sort (Part.eq_some_iff.mp hop)
       rw [sortOf_node_succ, Option.bind_eq_some_iff] at hs
       obtain ⟨o, hk, ho⟩ := hs
       rw [hk, Option.map_some, Option.some.injEq] at hw
@@ -418,9 +456,10 @@ theorem sort_eval {Γ : List ℕ} (hρ : ρ.map Sigma.fst = Γ) :
 
 /-- When a partial function has a value at every element of a list, it maps the list to the
 list of those values. -/
-theorem exists_map_eq_map_some {α β : Type*} {f : α → Option β} (l : List α) :
-    (∀ a ∈ l, ∃ b, f a = some b) → ∃ bs : List β, l.map f = bs.map some :=
-  l.rec (motive := fun l ↦ (∀ a ∈ l, ∃ b, f a = some b) → ∃ bs : List β, l.map f = bs.map some)
+theorem exists_map_eq_map_some {α β : Type*} {f : α → Part β} (l : List α) :
+    (∀ a ∈ l, ∃ b, f a = Part.some b) → ∃ bs : List β, l.map f = bs.map Part.some :=
+  l.rec (motive := fun l ↦ (∀ a ∈ l, ∃ b, f a = Part.some b) →
+      ∃ bs : List β, l.map f = bs.map Part.some)
     (fun _ ↦ ⟨[], rfl⟩)
     (fun a l ih h ↦ by
       obtain ⟨b, hb⟩ := h a List.mem_cons_self
@@ -439,7 +478,7 @@ theorem inst_sound {a : Seq} {cs : List (Tree × Chk)} {Γ : List ℕ} {H : List
     intro ρ hρ hH
     set ts := (cs.take a.ctx.length).map Prod.fst with hts
     have hlen : ts.length = a.ctx.length := by simpa using congrArg List.length hsort
-    have hdef : ∀ t ∈ ts, ∃ w, eval M ρ t = some w := by
+    have hdef : ∀ t ∈ ts, ∃ w, eval M ρ t = Part.some w := by
       intro t ht
       have hm : some t ∈ ts.map some := List.mem_map_of_mem ht
       rw [← hds] at hm
@@ -502,7 +541,7 @@ theorem check_sound {T : Theory} {E : List Seq} {M : Model.{v} T.sig} (hM : IsMo
         cases h
         intro ρ hρ _
         have hi' : i.label < ρ.length := by simpa [← hρ] using hi
-        exact ⟨ρ[i.label], by simp [hi'], by simp [hi']⟩
+        exact ⟨ρ[i.label], by simp [hi', Part.coe_some], by simp [hi', Part.coe_some]⟩
       · exact absurd h (by simp)
     · -- symmetry
       obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
@@ -520,7 +559,7 @@ theorem check_sound {T : Theory} {E : List Seq} {M : Model.{v} T.sig} (hM : IsMo
         obtain ⟨w, h1, h2⟩ := hcs _ List.mem_cons_self Γ H q₁ hq₁ ρ hρ hH
         obtain ⟨w', h1', h2'⟩ :=
           hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) Γ H q₂ hq₂ ρ hρ hH
-        rw [← hmid, h2, Option.some.injEq] at h1'
+        rw [← hmid, h2, Part.some_inj] at h1'
         exact ⟨w, h1, h1' ▸ h2'⟩
       · exact absurd h (by simp)
     · -- congruence of an operation at a defined application
@@ -556,7 +595,7 @@ theorem check_sound {T : Theory} {E : List Seq} {M : Model.{v} T.sig} (hM : IsMo
           rw [← hel, hv₁, ← e₂, hv₂]
         refine ⟨w, h1, ?_⟩
         rw [hlhs, eval_node_succ] at h1
-        change eval M ρ (RoseTree.node q₀.lhs.label ts) = some w
+        change eval M ρ (RoseTree.node q₀.lhs.label ts) = Part.some w
         rw [hk, eval_node_succ, ← h1, ← Function.id_comp (eval M ρ), ← List.mapM_map,
           ← List.mapM_map, hmap]
       · exact absurd h (by simp)
@@ -571,9 +610,9 @@ theorem check_sound {T : Theory} {E : List Seq} {M : Model.{v} T.sig} (hM : IsMo
         obtain ⟨w, h1, -⟩ := hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) Γ H q₀ hq₀ ρ hρ hH
         obtain ⟨k, hk⟩ : ∃ k, q₀.lhs.label = k + 1 := ⟨q₀.lhs.label - 1, by omega⟩
         rw [← RoseTree.node_label_children q₀.lhs, hk, eval_node_succ,
-          Option.bind_eq_some_iff] at h1
+          part_bind_eq_some_iff] at h1
         obtain ⟨args, hargs, -⟩ := h1
-        rw [mapM_eq_some_iff] at hargs
+        rw [mapM_part_eq_some_iff] at hargs
         have hj : j.label < q₀.lhs.children.length := (List.getElem?_eq_some_iff.mp ht).1
         have e := congrArg (fun l ↦ l[j.label]?) hargs
         simp only [List.getElem?_map, ht, Option.map_some] at e
