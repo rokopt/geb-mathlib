@@ -333,6 +333,27 @@ end Store
 of the hypotheses, pairs of nodes, or nothing when the certificate does not check. -/
 abbrev SChk : Type := List (ℕ × ℕ) → Option (ℕ × ℕ)
 
+namespace Rule
+
+/-- The definedness of a node, by the checker's oracle. -/
+@[match_pattern] abbrev typed : ℕ := 9
+
+/-- The equation of two nodes, by the checker's oracle. -/
+@[match_pattern] abbrev objEq : ℕ := 10
+
+end Rule
+
+/-- An oracle for a store: the nodes it holds defined, and the pairs of nodes it holds
+equal. -/
+structure Oracle where
+  /-- Whether a node is defined. -/
+  typed : ℕ → Bool
+  /-- Whether two nodes are equal. -/
+  equal : ℕ → ℕ → Bool
+
+/-- The oracle that holds nothing. -/
+def Oracle.none : Oracle := ⟨fun _ ↦ false, fun _ _ ↦ false⟩
+
 /-- The instance of a sequent at the nodes of a shared certificate's node: the nodes for the
 context's variables, a premise for each whose conclusion's left side is that node, a premise
 for each hypothesis whose conclusion's sides match the hypothesis's sides, and the nodes of the
@@ -357,9 +378,9 @@ def sinst (st : Store) (srt : Array (Option ℕ)) (a : Seq) (cs : List (Tree × 
   | _ => none
 
 /-- One rule of the shared checker, by the label of a certificate's node, in a context of
-{lit}`m` variables whose sorts give the store's sorts {lit}`srt`. -/
+{lit}`m` variables whose sorts give the store's sorts {lit}`srt`, with an oracle. -/
 def scheckStep (T : Theory) (E : Array Seq) (st : Store) (m : ℕ) (srt : Array (Option ℕ))
-    (l : ℕ) (cs : List (Tree × SChk)) : SChk := fun H ↦
+    (orc : Oracle) (l : ℕ) (cs : List (Tree × SChk)) : SChk := fun H ↦
   match l, cs with
   | Rule.hyp, [(i, _)] => H[i.label]?
   | Rule.refl, [(i, _), (v, _)] =>
@@ -385,14 +406,17 @@ def scheckStep (T : Theory) (E : Array Seq) (st : Store) (m : ℕ) (srt : Array 
   | Rule.ax, (j, _) :: cs => T.axioms[j.label]?.bind fun a ↦ sinst st srt a cs H
   | Rule.cut, [(_, p), (_, p')] => (p H).bind fun h ↦ p' (h :: H)
   | Rule.thm, (j, _) :: cs => E[j.label]?.bind fun a ↦ sinst st srt a cs H
+  | Rule.typed, [(i, _)] => if orc.typed i.label then some (i.label, i.label) else none
+  | Rule.objEq, [(a, _), (b, _)] =>
+    if orc.equal a.label b.label then some (a.label, b.label) else none
   | _, _ => none
 
 /-- The shared checker: the conclusion of a shared certificate in a theory, an environment of
 theorems and a store, in a context of {lit}`m` variables whose sorts give the store's sorts
-{lit}`srt`, as a function of the hypotheses. -/
+{lit}`srt`, with an oracle, as a function of the hypotheses. -/
 def scheck (T : Theory) (E : Array Seq) (st : Store) (m : ℕ) (srt : Array (Option ℕ))
-    (c : Tree) : SChk :=
-  RoseTree.para (scheckStep T E st m srt) c
+    (orc : Oracle) (c : Tree) : SChk :=
+  RoseTree.para (scheckStep T E st m srt orc) c
 
 section Soundness
 
@@ -412,7 +436,7 @@ theorem mapM_congr_map {m : Type _ → Type _} [Monad m] [LawfulMonad m] {α β 
 /-- An instance of a valid sequent is valid, when the shared checker's premises are. -/
 theorem sinst_sound (hst : st.WF) {Γ : List ℕ} {a : Seq} {cs : List (Tree × SChk)}
     {H : List (ℕ × ℕ)} {q : ℕ × ℕ} (ha : a.Valid M)
-    (hcs : ∀ c ∈ cs, ∀ H' q', c.2 H' = some q' → Valid M Γ (H'.map st.eqn) (st.eqn q'))
+    (hcs : ∀ c ∈ cs, ∀ q', c.2 H = some q' → Valid M Γ (H.map st.eqn) (st.eqn q'))
     (h : sinst st (st.sorts T.sig Γ) a cs H = some q) : Valid M Γ (H.map st.eqn) (st.eqn q) := by
   simp only [sinst] at h
   split at h
@@ -433,7 +457,7 @@ theorem sinst_sound (hst : st.WF) {Γ : List ℕ} {a : Seq} {cs : List (Tree × 
         rw [← hds] at hm
         obtain ⟨c, hc, hct⟩ := List.mem_map.mp hm
         obtain ⟨e, he, rfl⟩ := Option.map_eq_some_iff.mp hct
-        obtain ⟨w, hw, -⟩ := hcs c (mem_of_mem_take_drop hc) H e he ρ hρ hH
+        obtain ⟨w, hw, -⟩ := hcs c (mem_of_mem_take_drop hc) e he ρ hρ hH
         exact ⟨w, hw⟩
       obtain ⟨ws, hws⟩ := exists_map_eq_map_some _ hdef
       have hwl : ws.length = a.ctx.length := by
@@ -468,7 +492,7 @@ theorem sinst_sound (hst : st.WF) {Γ : List ℕ} {a : Seq} {cs : List (Tree × 
         · rename_i x y hxy
           simp only [Bool.and_eq_true] at hm
           obtain ⟨w, h₁, h₂⟩ := hcs hs[k] (mem_of_mem_take_drop (List.getElem_mem hk'))
-            H _ hxy ρ hρ hH
+            _ hxy ρ hρ hH
           obtain ⟨hl', hr'⟩ := hsh _ hh
           refine ⟨w, ?_, ?_⟩
           · rw [← eval_subst hws _ hl', ← Store.denote_of_matchPat hst ts _ hm.1]
@@ -487,22 +511,40 @@ theorem sinst_sound (hst : st.WF) {Γ : List ℕ} {a : Seq} {cs : List (Tree × 
     · exact absurd h (by simp)
   · exact absurd h (by simp)
 
+/-- An oracle is sound for a store in a context under hypotheses, in a model: at every
+assignment of the context at which the hypotheses hold, every node it holds defined is defined,
+and every pair of nodes it holds equal have one value. -/
+def Oracle.Sound (orc : Oracle) (st : Store) (M : Model.{v} T.sig) (Γ : List ℕ)
+    (H₀ : List Eqn) : Prop :=
+  ∀ ρ : List M.Val, ρ.map Sigma.fst = Γ → (∀ h ∈ H₀, h.Holds M ρ) →
+    (∀ i, orc.typed i = true → ∃ w, eval M ρ (st.denote i) = Part.some w) ∧
+      ∀ a b, orc.equal a b = true → (st.eqn (a, b)).Holds M ρ
+
+/-- The oracle that holds nothing is sound. -/
+theorem Oracle.none_sound (st : Store) (M : Model.{v} T.sig) (Γ : List ℕ) (H₀ : List Eqn) :
+    Oracle.none.Sound st M Γ H₀ :=
+  fun _ _ _ ↦ ⟨fun _ h ↦ absurd h (by simp [Oracle.none]),
+    fun _ _ h ↦ absurd h (by simp [Oracle.none])⟩
+
 /-- Every conclusion the shared checker computes is valid in every model of the theory in which
 the environment's theorems are valid, in the context whose sorts give the store's sorts. -/
 theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Valid M)
-    (hst : st.WF) (Γ : List ℕ) :
-    ∀ c : Tree, ∀ H q, scheck T E st Γ.length (st.sorts T.sig Γ) c H = some q →
+    (hst : st.WF) (Γ : List ℕ) (orc : Oracle) {H₀ : List Eqn} (horc : orc.Sound st M Γ H₀) :
+    ∀ c : Tree, ∀ H q, (∀ h ∈ H₀, h ∈ H.map st.eqn) →
+      scheck T E st Γ.length (st.sorts T.sig Γ) orc c H = some q →
       Valid M Γ (H.map st.eqn) (st.eqn q) :=
-  RoseTree.ind fun l cs ih H q h ↦ by
-    have hcs : ∀ c ∈ cs.map (fun c ↦ (c, scheck T E st Γ.length (st.sorts T.sig Γ) c)),
-        ∀ H' q', c.2 H' = some q' → Valid M Γ (H'.map st.eqn) (st.eqn q') := by
+  RoseTree.ind fun l cs ih H q hsub h ↦ by
+    have hcs : ∀ c ∈ cs.map (fun c ↦ (c, scheck T E st Γ.length (st.sorts T.sig Γ) orc c)),
+        ∀ H' q', (∀ h ∈ H₀, h ∈ H'.map st.eqn) → c.2 H' = some q' →
+          Valid M Γ (H'.map st.eqn) (st.eqn q') := by
       intro c hc
       obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
       exact ih c' hc'
     rw [scheck, RoseTree.para_node] at h
-    change scheckStep T E st Γ.length (st.sorts T.sig Γ) l
-      (cs.map fun c ↦ (c, scheck T E st Γ.length (st.sorts T.sig Γ) c)) H = some q at h
-    generalize cs.map (fun c ↦ (c, scheck T E st Γ.length (st.sorts T.sig Γ) c)) = rs at h hcs
+    change scheckStep T E st Γ.length (st.sorts T.sig Γ) orc l
+      (cs.map fun c ↦ (c, scheck T E st Γ.length (st.sorts T.sig Γ) orc c)) H = some q at h
+    generalize cs.map (fun c ↦ (c, scheck T E st Γ.length (st.sorts T.sig Γ) orc c)) = rs
+      at h hcs
     unfold scheckStep at h
     split at h
     · -- a hypothesis
@@ -524,7 +566,7 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
     · -- symmetry
       obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
       intro ρ hρ hH
-      obtain ⟨w, h₁, h₂⟩ := hcs _ List.mem_cons_self H q' hq' ρ hρ hH
+      obtain ⟨w, h₁, h₂⟩ := hcs _ List.mem_cons_self H q' hsub hq' ρ hρ hH
       exact ⟨w, h₂, h₁⟩
     · -- transitivity
       simp only [Option.bind_eq_some_iff] at h
@@ -534,9 +576,9 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
         cases h
         rw [beq_iff_eq] at hmid
         intro ρ hρ hH
-        obtain ⟨w, h₁, h₂⟩ := hcs _ List.mem_cons_self H q₁ hq₁ ρ hρ hH
+        obtain ⟨w, h₁, h₂⟩ := hcs _ List.mem_cons_self H q₁ hsub hq₁ ρ hρ hH
         obtain ⟨w', h₁', h₂'⟩ :=
-          hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) H q₂ hq₂ ρ hρ hH
+          hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) H q₂ hsub hq₂ ρ hρ hH
         change eval M ρ (st.denote q₂.1) = _ at h₁'
         change eval M ρ (st.denote q₁.2) = _ at h₂
         rw [← hmid, h₂, Part.some_inj] at h₁'
@@ -557,7 +599,7 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
             obtain ⟨⟨⟨hlx, rfl⟩, hlen⟩, hps⟩ := hc
             obtain ⟨k, rfl⟩ : ∃ k, lr = k + 1 := ⟨lr - 1, by omega⟩
             intro ρ hρ hH
-            obtain ⟨w, h₁, -⟩ := hcs _ List.mem_cons_self H q₀ hq₀ ρ hρ hH
+            obtain ⟨w, h₁, -⟩ := hcs _ List.mem_cons_self H q₀ hsub hq₀ ρ hρ hH
             change eval M ρ (st.denote q₀.1) = _ at h₁
             have hpl : ps.dropLast.length = ks.length := by
               have := congrArg List.length hps
@@ -570,7 +612,8 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
               have e := List.getElem_of_eq hps (by simpa using hn')
               simp only [List.getElem_map, List.getElem_zip] at e
               obtain ⟨v, hv₁, hv₂⟩ := hcs ps.dropLast[n]
-                (List.mem_cons_of_mem _ (List.dropLast_subset _ (List.getElem_mem hn'))) H _ e
+                (List.mem_cons_of_mem _ (List.dropLast_subset _ (List.getElem_mem hn'))) H _ hsub
+                e
                 ρ hρ hH
               simp only [List.getElem_map]
               exact (show eval M ρ (st.denote ks[n]) = _ from hv₁).trans hv₂.symm
@@ -594,7 +637,7 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
           obtain ⟨k, rfl⟩ : ∃ k, lx = k + 1 := ⟨lx - 1, by omega⟩
           intro ρ hρ hH
           obtain ⟨w, h₁, -⟩ :=
-            hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) H q₀ hq₀ ρ hρ hH
+            hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) H q₀ hsub hq₀ ρ hρ hH
           change eval M ρ (st.denote q₀.1) = _ at h₁
           rw [Store.denote_eq hst hx, eval_node_succ, part_bind_eq_some_iff] at h₁
           obtain ⟨args, hargs, -⟩ := h₁
@@ -609,19 +652,35 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
       rename_i _ _ cs'
       obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
       exact sinst_sound hst (hM a (List.mem_of_getElem? ha))
-        (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
+        (fun c hc q' h' ↦ hcs c (List.mem_cons_of_mem _ hc) H q' hsub h') h
     · -- cut
       simp only [Option.bind_eq_some_iff] at h
       obtain ⟨q₁, hq₁, hq⟩ := h
       intro ρ hρ hH
-      have h₁ := hcs _ List.mem_cons_self H q₁ hq₁ ρ hρ hH
-      exact hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) (q₁ :: H) q hq ρ hρ
+      have h₁ := hcs _ List.mem_cons_self H q₁ hsub hq₁ ρ hρ hH
+      exact hcs _ (List.mem_cons_of_mem _ List.mem_cons_self) (q₁ :: H) q
+        (fun h hh ↦ List.mem_cons_of_mem _ (hsub h hh)) hq ρ hρ
         (List.forall_mem_cons.mpr ⟨h₁, hH⟩)
     · -- an instance of a theorem
       rename_i _ _ cs'
       obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
       exact sinst_sound hst (hE a (Array.mem_of_getElem? ha))
-        (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
+        (fun c hc q' h' ↦ hcs c (List.mem_cons_of_mem _ hc) H q' hsub h') h
+    · -- the definedness of a node, by the oracle
+      split at h
+      · rename_i ht
+        cases h
+        intro ρ hρ hH
+        obtain ⟨w, hw⟩ := (horc ρ hρ fun h hh ↦ hH h (hsub h hh)).1 _ ht
+        exact ⟨w, hw, hw⟩
+      · exact absurd h (by simp)
+    · -- the equation of two nodes, by the oracle
+      split at h
+      · rename_i he
+        cases h
+        intro ρ hρ hH
+        exact (horc ρ hρ fun h hh ↦ hH h (hsub h hh)).2 _ _ he
+      · exact absurd h (by simp)
     · exact absurd h (by simp)
 
 end Soundness
@@ -654,12 +713,13 @@ def SEntry.spells (st : Store) (e : SEntry) : Bool :=
 
 /-- Whether each shared certificate of a list of entries proves its sequent, with the sequents
 of an environment and those before it as theorems, the sorts of the store in each context given
-by {lit}`sortsOf`. -/
-def checkSharedFrom (T : Theory) (st : Store) (sortsOf : List ℕ → Array (Option ℕ)) :
-    List SEntry → Array Seq → Bool :=
+by {lit}`sortsOf` and the oracle for each sequent by {lit}`oracleOf`. -/
+def checkSharedFrom (T : Theory) (st : Store) (sortsOf : List ℕ → Array (Option ℕ))
+    (oracleOf : Seq → Oracle) : List SEntry → Array Seq → Bool :=
   List.rec (fun _ ↦ true) fun e _ ih E ↦
     e.spells st &&
-      scheck T E st e.seq.ctx.length (sortsOf e.seq.ctx) e.cert e.hyps == some e.concl &&
+      scheck T E st e.seq.ctx.length (sortsOf e.seq.ctx) (oracleOf e.seq) e.cert e.hyps ==
+        some e.concl &&
       ih (E.push e.seq)
 
 /-- The sorts of a store in a context, from a table of the sorts in contexts, computing them
@@ -668,12 +728,15 @@ def sortsFrom (T : Theory) (st : Store) (table : List (List ℕ × Array (Option
     (Γ : List ℕ) : Array (Option ℕ) :=
   ((table.find? (·.1 == Γ)).map Prod.snd).getD (st.sorts T.sig Γ)
 
-/-- Whether a shared development checks: its store is well formed, and each certificate proves
-its sequent with those before it as theorems. The store's sorts are computed once for each
-context of its sequents. -/
-def checkShared (T : Theory) (d : SDevelopment) : Bool :=
+/-- Whether a shared development checks with an oracle for each sequent: its store is well
+formed, and each certificate proves its sequent with those before it as theorems. The store's
+sorts are computed once for each context of its sequents. -/
+def checkSharedWith (T : Theory) (d : SDevelopment) (oracleOf : Seq → Oracle) : Bool :=
   let table := (d.entries.map (·.seq.ctx)).eraseDups.map fun Γ ↦ (Γ, d.store.sorts T.sig Γ)
-  d.store.wf && checkSharedFrom T d.store (sortsFrom T d.store table) d.entries #[]
+  d.store.wf && checkSharedFrom T d.store (sortsFrom T d.store table) oracleOf d.entries #[]
+
+/-- Whether a shared development checks, with no oracle. -/
+def checkShared (T : Theory) (d : SDevelopment) : Bool := checkSharedWith T d fun _ ↦ Oracle.none
 
 section Soundness
 
@@ -698,19 +761,21 @@ theorem SEntry.eqns_of_spells (hst : st.WF) {e : SEntry} (h : e.spells st = true
 which the environment's sequents are valid, when {lit}`sortsOf` gives the store's sorts. -/
 theorem checkSharedFrom_sound (hM : IsModel T M) (hst : st.WF)
     {sortsOf : List ℕ → Array (Option ℕ)} (hso : ∀ Γ, sortsOf Γ = st.sorts T.sig Γ)
+    {oracleOf : Seq → Oracle} (horc : ∀ a, (oracleOf a).Sound st M a.ctx a.hyps)
     (es : List SEntry) :
-    ∀ E : Array Seq, (∀ a ∈ E, a.Valid M) → checkSharedFrom T st sortsOf es E = true →
+    ∀ E : Array Seq, (∀ a ∈ E, a.Valid M) → checkSharedFrom T st sortsOf oracleOf es E = true →
       ∀ e ∈ es, e.seq.Valid M :=
   es.rec (motive := fun es ↦ ∀ E : Array Seq, (∀ a ∈ E, a.Valid M) →
-      checkSharedFrom T st sortsOf es E = true → ∀ e ∈ es, e.seq.Valid M)
+      checkSharedFrom T st sortsOf oracleOf es E = true → ∀ e ∈ es, e.seq.Valid M)
     (fun _ _ _ _ he ↦ absurd he (List.not_mem_nil))
     (fun e es ih E hE h ↦ by
       simp only [checkSharedFrom, Bool.and_eq_true, beq_iff_eq] at h
       obtain ⟨⟨hsp, hc⟩, hrest⟩ := h
       rw [hso] at hc
       have he : e.seq.Valid M := by
-        have hv := scheck_sound hM hE hst e.seq.ctx e.cert e.hyps e.concl hc
         obtain ⟨hh, hq⟩ := SEntry.eqns_of_spells hst hsp
+        have hv := scheck_sound hM hE hst e.seq.ctx (oracleOf e.seq) (horc e.seq) e.cert e.hyps
+          e.concl (fun h hm ↦ hh ▸ hm) hc
         rw [hh, hq] at hv
         exact hv
       have hE' : ∀ a ∈ E.push e.seq, a.Valid M := by
@@ -735,16 +800,23 @@ theorem sortsFrom_eq (st : Store) {table : List (List ℕ × Array (Option ℕ))
     rw [beq_iff_eq] at hp
     rw [hf, Option.map_some, Option.getD_some, ht p (List.mem_of_find?_eq_some hf), hp]
 
-/-- Every sequent of a shared development that checks is valid in every model of the theory. -/
-theorem checkShared_sound (hM : IsModel T M) {d : SDevelopment} (h : checkShared T d = true) :
-    ∀ e ∈ d.entries, e.seq.Valid M := by
-  simp only [checkShared, Bool.and_eq_true] at h
+/-- Every sequent of a shared development that checks with sound oracles is valid in every
+model of the theory. -/
+theorem checkSharedWith_sound (hM : IsModel T M) {d : SDevelopment} {oracleOf : Seq → Oracle}
+    (horc : ∀ a, (oracleOf a).Sound d.store M a.ctx a.hyps)
+    (h : checkSharedWith T d oracleOf = true) : ∀ e ∈ d.entries, e.seq.Valid M := by
+  simp only [checkSharedWith, Bool.and_eq_true] at h
   obtain ⟨hwf, hc⟩ := h
   have hst := Store.wf_of_wf d.store hwf
-  refine checkSharedFrom_sound hM hst (sortsFrom_eq d.store fun p hp ↦ ?_) d.entries #[]
+  refine checkSharedFrom_sound hM hst (sortsFrom_eq d.store fun p hp ↦ ?_) horc d.entries #[]
     (fun _ ha ↦ absurd ha (by simp)) hc
   obtain ⟨Γ, -, rfl⟩ := List.mem_map.mp hp
   rfl
+
+/-- Every sequent of a shared development that checks is valid in every model of the theory. -/
+theorem checkShared_sound (hM : IsModel T M) {d : SDevelopment} (h : checkShared T d = true) :
+    ∀ e ∈ d.entries, e.seq.Valid M :=
+  checkSharedWith_sound hM (fun a ↦ Oracle.none_sound d.store M a.ctx a.hyps) h
 
 end Soundness
 

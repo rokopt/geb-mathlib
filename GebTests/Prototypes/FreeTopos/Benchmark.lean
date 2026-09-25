@@ -5,6 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Check -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Check -- shake: keep
 public import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 
@@ -22,8 +24,8 @@ the curried cases of its recursion. A theorem quantified over lists or numbers i
 between arrows. The recursions' computation lemmas are proved by unfolding them; each theorem
 is proved, with the recursions folded, by normalization, by induction through the uniqueness of
 recursion, or by rewriting with an earlier theorem. The development of the library and the
-theorems checks in the extension, and again as a shared development, its terms stored once
-({name}`Geb.PartialHorn.checkShared`).
+theorems, its terms stored once and its typing left to the checker's inference, checks in the
+extension ({name}`Geb.FreeTopos.checkTopos`).
 
 ## Main definitions
 
@@ -154,7 +156,7 @@ def addZeroLeft : Seq := ⟨[], [], ⟨comp add (pair zeroNat (idt nat)), idt na
 definitions in force: the recursions' computation lemmas by unfolding them, and the theorems
 with the recursions folded. -/
 def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
-  let prove (a : Seq) (m : PM Tree) := proveSeq a m defs
+  let prove (a : Seq) (m : PM Tree) := proveSeq a m defs (infer := true)
   let rs := rules i
   let cn ← prove appendCNil (byNorm (rs ++ [deltaRule 2]) appendCNil.concl)
   let cc ← prove appendCCons (byNorm (rs ++ [deltaRule 2]) appendCCons.concl)
@@ -165,7 +167,7 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
     (byListInduction lrs (x 0) (nil (x 0)) (cons (x 0)) appendNil.concl)
   let _ ← prove appendAssoc (byListParamInduction lrs (x 0) append
     (comp (cons (x 0)) (fst (prod (x 0) L) P)) appendAssoc.concl)
-  let k ← normalizeThm lrs an defs
+  let k ← normalizeThm lrs an defs (infer := true)
   let _ ← prove appendNilTwice (byNorm (lrs ++ [{ src := .thm k }]) appendNilTwice.concl)
   let az ← prove addCZero (byNorm (rs ++ [deltaRule 6]) addCZero.concl)
   let as ← prove addCSucc (byNorm (rs ++ [deltaRule 6]) addCSucc.concl)
@@ -176,10 +178,9 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
   let _ ← prove addZeroLeft (byNatInduction nrs zeroN succ addZeroLeft.concl)
   pure () : StateT Development Option Unit).run d).map Prod.snd
 
--- the theorems are proved, and the development checks in the extension by the definitions,
--- and again with its terms shared
-#guard benchmark.any fun d ↦ checkDevelopment (theory.extendAll defs) d &&
-  (share (theory.extendAll defs) d).any (checkShared (theory.extendAll defs))
+-- the theorems are proved, and the development, its terms shared, checks in the extension by
+-- the definitions, with the typing inferred
+#guard benchmark.any fun d ↦ (share (theory.extendAll defs) d).any (checkTopos defs)
 
 end GebTests.Prototypes.FreeTopos.Benchmark
 

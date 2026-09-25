@@ -16,7 +16,9 @@ The conversion of a development's certificates into shared certificates over one
 are interned: a node is added to the store only when no node of its label and children is there
 already, so that a term is stored once and two equal terms have one index. Each certificate is
 converted rule by rule: its conclusion is computed as the checker computes it, the terms are
-interned, and the shared certificate names the terms its rule's conclusion introduces. The
+interned, and the shared certificate names the terms its rule's conclusion introduces. A
+certificate may use the rules of the shared checker's oracle, a term's definedness and the
+equation of two terms, which the checker of the tree certificates does not have. The
 conversion is not trusted: the shared development it produces is checked by
 {name}`Geb.PartialHorn.checkShared`.
 
@@ -143,6 +145,13 @@ def convStep (T : Theory) (E : Array Seq) (l : ℕ)
     let some a := E[j.label]? | failure
     let (q, rest) ← convInst a cs H
     pure (q, RoseTree.node Rule.thm (ref j.label :: rest))
+  | Rule.typed, [(t, _)] => do
+    let i ← intern t
+    pure (⟨t, t⟩, RoseTree.node Rule.typed [ref i])
+  | Rule.objEq, [(a, _), (b, _)] => do
+    let i ← intern a
+    let j ← intern b
+    pure (⟨a, b⟩, RoseTree.node Rule.objEq [ref i, ref j])
   | _, _ => failure
 
 /-- The conversion of a certificate under hypotheses: its conclusion and its shared

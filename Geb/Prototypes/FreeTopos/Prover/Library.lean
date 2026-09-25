@@ -28,7 +28,8 @@ apply at an identity, so that the identity of the terminal object stays one.
 * {lit}`baseRules` — the rules from the axioms.
 * {lit}`compPairSeq`, {lit}`pairFstSndSeq`, {lit}`evCurrySeq`, {lit}`evCurry0Seq`,
   {lit}`curryNatSeq`, {lit}`bangOneSeq` — the derived equations.
-* {lit}`library` — the library's development, with the indices of the derived equations.
+* {lit}`libraryWith`, {lit}`library` — the library's development, with the indices of the
+  derived equations.
 * {lit}`rules` — the rules of the axioms and of the library.
 
 ## Tags
@@ -167,15 +168,20 @@ structure LibIdx where
   /-- {lit}`bangOneSeq`. -/
   bangOne : ℕ
 
-/-- The library's development, and the indices of its derived equations. -/
-def library : Option (LibIdx × Development) := (do
-  let cp ← proveSeq compPairSeq compPairProof
-  let pf ← proveSeq pairFstSndSeq pairFstSndProof
-  let ec ← proveSeq evCurrySeq (evCurryProof cp)
-  let e0 ← proveSeq evCurry0Seq (evCurry0Proof ec)
-  let cn ← proveSeq curryNatSeq (curryNatProof cp ec)
-  let bo ← proveSeq bangOneSeq bangOneProof
+/-- The library's development, and the indices of its derived equations, its typing certified
+by lemmas or, when {lit}`infer` holds, by the checker's oracle rules. -/
+def libraryWith (infer : Bool) : Option (LibIdx × Development) := (do
+  let prove (a : Seq) (m : PM Tree) := proveSeq a m (infer := infer)
+  let cp ← prove compPairSeq compPairProof
+  let pf ← prove pairFstSndSeq pairFstSndProof
+  let ec ← prove evCurrySeq (evCurryProof cp)
+  let e0 ← prove evCurry0Seq (evCurry0Proof ec)
+  let cn ← prove curryNatSeq (curryNatProof cp ec)
+  let bo ← prove bangOneSeq bangOneProof
   pure ⟨cp, pf, ec, e0, cn, bo⟩ : StateT Development Option LibIdx).run []
+
+/-- The library's development, its typing certified by the checker's oracle rules. -/
+def library : Option (LibIdx × Development) := libraryWith true
 
 /-- The rules of the axioms and of the library's derived equations. A currying after an arrow
 is absorbed into the currying, so that evaluation meets curryings alone. -/

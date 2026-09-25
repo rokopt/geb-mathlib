@@ -94,19 +94,20 @@ def byNorm (rules : List RwRule) (q : Eqn) : PM Tree := do
 
 /-- A sequent proved in its scope by a certificate the prover computes, with definitions in
 force, added to the development; the result is its index there. -/
-def proveSeq (a : Seq) (m : PM Tree) (defs : List Defn := []) : StateT Development Option ℕ :=
+def proveSeq (a : Seq) (m : PM Tree) (defs : List Defn := []) (infer : Bool := false) :
+    StateT Development Option ℕ :=
   fun dev ↦ do
-    let (c, dev) ← run ⟨a.ctx, a.hyps⟩ dev m defs
+    let (c, dev) ← run ⟨a.ctx, a.hyps⟩ dev m defs infer
     pure (dev.length, dev ++ [(a, c)])
 
 /-- The theorem of the development at index {lit}`j` with its left side normalized under rules,
 proved in its scope and added to the development; the result is its index there. A rule from
 it rewrites where the normal form of the theorem's left side occurs. -/
-def normalizeThm (rules : List RwRule) (j : ℕ) (defs : List Defn := []) :
+def normalizeThm (rules : List RwRule) (j : ℕ) (defs : List Defn := []) (infer : Bool := false) :
     StateT Development Option ℕ := fun dev ↦ do
   let (a, _) ← dev[j]?
   let sc : Scope := ⟨a.ctx, a.hyps⟩
-  let ((n, cn), dev) ← run sc dev (normalize rules a.concl.lhs) defs
+  let ((n, cn), dev) ← run sc dev (normalize rules a.concl.lhs) defs infer
   pure (dev.length, dev ++ [(sc.seq ⟨n, a.concl.rhs⟩, Cert.trans (Cert.symm cn) (sc.cite j))])
 
 end Geb.FreeTopos.Prover
