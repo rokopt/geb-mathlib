@@ -78,7 +78,9 @@ the order of dependence.
   the metalogic and its checker; each rung's checker is proved sound in
   Lean and written again in Geb, where the prover has tactics that
   construct the rung's certificates. Begun: the first rung's checker is constructed and its
-  proof construction is begun.
+  proof construction is begun. Whether one presentation of the free
+  topos replaces the rungs is open (Phase 7, the section on the free
+  topos in one presentation).
 * Extension. A program is extended by definitions whose identity
   survives edits, and Surface 1 is complete enough to write the rest of
   Geb in, with diagnostics that name what fails. Begun: closed bundles
@@ -1399,6 +1401,222 @@ checker, and tactics for its connectives in the prover.
   and the mathematics migrated to the foundational metalogic.
 * State: not begun.
 
+### The free topos in one presentation
+
+The rungs are one route to the metalogic. The first rung shows how a
+checker is defined, proved sound in Lean and written again in Geb, and
+the same method may apply to the free topos with the natural numbers,
+list and rose-tree objects presented at once, by one checker in place of
+five. This section states that alternative, what it would change, and
+the questions that decide between the two routes; which route Phase 7
+takes is not decided.
+
+A category is a presheaf on the walking parallel pair whose two objects
+are the objects and the morphisms and whose two restrictions are the
+domain and the codomain, a directed multigraph, with composition and
+identities. A category with chosen finite limits and finite colimits,
+exponentials, a subobject classifier and the data objects is then a
+model of an essentially algebraic theory over that graph, one whose
+operations are partial, the domain of each given by equations
+{citep Freyd1972}[], and the free topos with the data objects is its
+initial model. The theory has these operations:
+
+* on objects: the terminal and initial objects, binary products and
+  coproducts, the equalizer and the coequalizer of a parallel pair, the
+  exponential, the subobject classifier, and the natural numbers, list
+  and rose-tree objects, with any other data object that is built in for
+  the cost of computing with it;
+* on morphisms: identities, composition, and the universal morphisms of
+  each object, its constructors and destructors: the projections and
+  pairing, the injections and case analysis, the equalizer's inclusion
+  and factorization, the coequalizer's projection and descent,
+  evaluation and currying, truth and the characteristic map, and each
+  data object's structure map and fold;
+* axioms: the laws of a category and the equations of each universal
+  property, those of the data objects stating that each is an initial
+  algebra of its polynomial functor, through the notions of an algebra
+  and of a morphism of algebras.
+
+That construction is established. Toposes with chosen structure, with
+the functors that preserve it on the nose, are the models of an
+essentially algebraic theory, whose monomorphisms are the morphisms
+whose kernel pair's projections are isomorphisms; the theory's initial
+model is the free strict topos, and it is bi-initial among toposes,
+logical functors and natural isomorphisms, so it is the free topos
+(Proposition 1.16, Definition 1.21 and Proposition 1.22 of
+{citet ForssellLumsdaineSwan2026}[], whose toposes are regular
+categories with power objects and a natural numbers object). The strict
+initial model depends on the axiomatization: a topos defined as a
+cartesian closed category with a subobject classifier gives another
+strict initial model, equivalent to the first and not isomorphic to it
+(their Caveat 1.5). Data objects added as operations change the strict
+initial model in the same way, each new object isomorphic, not equal, to
+the one the topos structure constructs.
+
+Partial Horn logic presents such a theory syntactically. Its example
+theories of directed graphs and of categories have exactly the sorts of
+objects and arrows, with the domain, the codomain and the identity as
+total operations and composition defined when the codomain of one arrow
+equals the domain of the other (Examples 4, 5 and 13 of
+{citet PalmgrenVickers2007}[]). A derivation proves that a term is
+defined or that two terms are equal, and the closed terms that are
+provably defined, taken modulo provable equality, are the initial model
+(their Theorem 22), by a proof that uses no choice and is formalizable
+in a constructive, predicative theory (their Section 1). That is the
+first rung's architecture: every term is a rose tree, the checker is a
+fold over certificates whose conclusions are definedness and equality,
+and the quotient is the equality the checker proves. Composition is
+defined when the codomain of one morphism equals the domain of the
+other, the equalizer's factorization when a
+morphism equalizes the pair, and the characteristic map at a
+monomorphism, a morphism whose kernel pair's projections are equal; each
+condition is a premise of a rule, as the first rung's induction rules
+have premises, and not an argument of the term. The terms' identity
+therefore does not depend on proofs, and no equation making proofs
+irrelevant is needed. This presentation is fibered: the morphisms form
+one sort, with their domains and codomains as operations.
+
+The presentation may instead be indexed, the morphisms a family over
+pairs of objects, as in quotient inductive-inductive types; Section 4.7
+of {citet Kovacs2022}[] compares the two forms. The indexed form carries
+a formation's conditions by transport, the conversion rule of
+dependent type theory: a morphism with an equality between its domain
+or its codomain and another object is a morphism with that object in
+its place, the checker checking the equality first, and two terms that
+differ only in their transports' certificates are equal. The conditions
+that are not agreements of domains and codomains become such agreements
+through diagonal instances. The equalizer of a morphism with itself is
+that morphism's domain, so its inclusion has an inverse at every
+morphism; the equalizer is functorial, a morphism `h` into the domain of
+a pair `f`, `g` sending the equalizer of `f ∘ h` and `g ∘ h` into that of
+`f` and `g`; and a morphism `h` with `f ∘ h = g ∘ h` factors through the
+equalizer of `f` and `g` as the inverse at `f ∘ h`, transported along
+the equality between the equalizer of `f ∘ h` with itself and that of
+`f ∘ h` and `g ∘ h`, followed by the functorial map. The coequalizer is
+dual, and the characteristic map is formed at every morphism as that of
+its image. Transport is then the one former whose checking depends on an
+equality. In the fibered form transport is the rule by which an equation
+establishes a term's definedness, and no former. The quotient presheaf
+polynomial functors of `Geb/Prototypes/QuotientPRA/` express neither
+form: their free arities admit no condition between the arguments of a
+term constructor, their initiality theorem requires term constructors
+whose arguments are terms, and `no_uniform_transport` in
+`Geb/Prototypes/QuotientPRA/Obstruction.lean` proves that transport is
+not a constructor of fixed shape, since the restriction of a tree
+rebuilds its root; composition is excluded by the same argument, the
+domain of a composite being that of its first morphism. The checker
+computes domains and codomains instead, as a fold cutting a subtype out
+of rose trees, the form of the slice W-types' {name}`SlicePFunctor.W`.
+
+The checker's language may be the combinators themselves, a program
+being extended by definitions of objects, of morphisms and of equalities
+in place of the definitions of kernel terms; or the internal language of
+the topos, the Mitchell–Bénabou language, which is the intuitionistic
+higher-order type theory of the section on the metalogic and its
+checker. The first is the presentation itself; the second derives the
+topos structure from provability, and its proofs bind variables where
+the combinators compose projections.
+
+Rungs 2 to 5 would be replaced by one rule set, and the lemmas
+transferring certificates between rungs would not be needed. The kernel
+would remain the language of computation, since the free topos has
+arrows that no System T term defines. The first rung's rules would be
+the equations of the fragment that the kernel's terms denote, the
+cartesian closed category with the data objects, related to the
+presentation by the translation between λ-terms and the morphisms of a
+free cartesian closed category that the Categorical Abstract Machine
+compiles by {citep CousineauCurienMauny1987}[].
+
+The soundness proof interprets objects as Lean types, and the subobject
+classifier of Lean's types is `Prop`: `Utilities/TypesClassifier.lean` in
+the `geb-lean/` subdirectory of the experimental repository constructs
+`ULift Prop` as a classifier of `Type u`, the characteristic map of a
+monomorphism holding at the points of its image, and compares it with
+the classifier of presheaves on the terminal category, whose sieves on
+the one object are propositions. Its pullback property is proved through
+mathlib's `Limits.Types.isPullback_iff`, which depends on
+`Classical.choice`: the pullback's factorization is a function from the
+image of a monomorphism back to its domain, which is unique choice, and
+Lean's propositions do not eliminate into its types. With morphisms
+interpreted as Lean functions, the presentation's isomorphism between a
+monomorphism and the pullback of truth along its characteristic map
+needs that function. With morphisms interpreted as functional relations,
+total and single-valued relations valued in `Prop`, it is a relation
+and needs no choice; those are the arrows of the free topos that
+{citet LambekScott1980}[] construct from a type theory without a
+description operator (their Definition 4.3). The Mitchell–Bénabou
+language needs neither when it has no description operator, since its
+terms are λ-terms, interpreted as Lean functions.
+
+Two presentations in the experimental repository bear on the rule set.
+`FreeToposBT.lean` presents a free topos by combinators whose equations
+the terminal object satisfies as a subobject classifier (the section on
+prior art in the repositories). The axioms above exclude that model:
+with the terminal object as the subobject classifier, the pullback of
+truth along the characteristic map of the monomorphism from the initial
+object to the terminal object is the terminal object, so the isomorphism
+would identify the two. `src/LanguageDef/ProgFinSet.idr` in `geb-idris/`
+defines the objects, morphisms and equalities of finite sets
+inductive-inductively, with equalizers and coequalizers of arbitrary
+morphisms, factorizations that take proofs of their conditions,
+equations making those proofs irrelevant, and a classifier of equalizer
+inclusions, which avoids the condition of monicity since every
+monomorphism of a topos is an equalizer; it is the nearest prior
+presentation, in the Boolean case.
+
+Definitions would be one index of the checker's syntax: a Boolean
+states whether a term may refer to definitions, the node of a
+reference being admitted at one value only. A term with references is
+checked and interpreted in an environment of definitions, each an
+object, a morphism or an equality over the definitions before it; the
+unfolding replaces each reference by its definition, from the syntax
+with references to the syntax without; and a theorem proved in Lean
+states that the interpretation of every term is that of its unfolding.
+The unfolding is not run but on small tests; checking and evaluation
+use the definitions. The definition of a definition is the structure
+the unfolding theorem is stated over. For one sort it is constructed in
+`Geb/Prototypes/Definition/`. A new operation's body is a term of the
+free monad of the signature it extends, and the interpretation of a
+term with new operations, each read as its body, is the interpretation
+of its unfolding ({name}`Geb.Definition.eval_expandOps`), which is the
+theorem above for one sort. Derived operations present, over the sum of
+a signature with the new operations, the equations stating that each new
+operation equals its body
+({name}`Geb.Definition.Presentation.ofDerived`); the unfolding
+({name}`Geb.Definition.Presentation.unfoldOps`), a morphism of free
+monads, coequalizes the two endpoints of those equations' witnesses,
+the inclusion of the terms without new operations being its section;
+and the criteria of eliminability and non-creativity {citep Suppes1957}[]
+are theorems ({name}`Geb.Definition.Presentation.cls_inlTerm_unfoldOps`,
+{name}`Geb.Definition.Presentation.eq_of_cls_inlTerm_eq`), the models of
+the extension being the algebras of the signature it extends
+({name}`Geb.Definition.Presentation.modelEquiv`). The Boolean chooses
+between the sum and the signature. The proposal needs that structure
+for a partial Horn theory of two sorts, a defined operation being defined
+where its body is and equal to it there; iterated, so that a definition
+refers to earlier ones; and with defined equalities, theorems whose
+unfolding is their certificates. On the first rung a reference unfolds
+one step at a time ({name}`Geb.Metalogic.valid_unfold`), resting on
+{name}`Geb.Metalogic.load_loaded`; no theorem yet unfolds every
+reference of a kernel term.
+
+The questions, in the order in which their answers are needed:
+
+1. the partial Horn theory itself: the axiomatization of the topos,
+   with a subobject classifier and exponentials or with power objects,
+   and the data objects as operations, written as a rule set;
+2. the fibered form, whose certificates are separate from the terms, or
+   the indexed form with transport;
+3. the model in Lean, with morphisms as functional relations, its
+   soundness without `Classical.choice`, and its relation to the
+   kernel's denotations, which are functions;
+4. combinators or the Mitchell–Bénabou language as the checker's
+   language;
+5. the definitional extension of a partial Horn theory, iterated, and
+   its unfolding theorem;
+6. whether the first rung's checker and prover remain as those of the
+   computational fragment.
+
 ## Improvements
 
 The following are known limitations of what is constructed, each with
@@ -1471,7 +1689,10 @@ the change that removes it.
 
 ## The next phase
 
-The metalogic continues on its first rung with step 3. The next proof
+The questions of the section on the free topos in one presentation are
+settled first, since their answers decide whether the rungs above the
+first are built. The metalogic then continues on its first rung with
+step 3, whose proofs are about kernel programs on either route. The next proof
 is the type checker's preservation of types by weakening, of `typeIn`
 in `bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
 for every environment `G`, contexts `c1` and `c2`, type `a` and term

@@ -83,8 +83,9 @@ checklist and in CI.
 - [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) — a Verso
   manual chapter recording the bootstrap: a road map of the bootstrap
   and of the work written in Geb after it, each item with its state and
-  each rung of the metalogic with what it defines and proves; the
-  decisions that fix the seed
+  each rung of the metalogic with what it defines and proves, and the
+  alternative of one partial Horn presentation of the free topos in
+  place of the rungs, with its questions; the decisions that fix the seed
   (values, the typed kernel, closed bundles and references, input and
   output), a survey of seed images, self-extending kernels, operational
   semantics, proof checkers for the free topos and content addressing,
