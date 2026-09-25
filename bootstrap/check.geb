@@ -8,7 +8,9 @@
 ; type of trees, the leaf 1 the unit type, and nodes of label 2, 3 and 4 are products,
 ; function types and lists. Requires the prelude and the reader.
 
+; the conjunction and the disjunction of two tests
 (def and (lam ((a T) (b T)) (if a b 0)))
+(def or (lam ((a T) (b T)) (if a 1 b)))
 
 ; types
 (def tyArrow (lam ((a T) (b T)) (node2 Label.tyArrow a b)))

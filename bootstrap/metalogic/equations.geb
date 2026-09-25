@@ -57,8 +57,6 @@
 ; optional trees: the result of a function at the tree an optional tree holds
 (defn bindO ((m T) (f (Arrow T T))) T (if (isSome m) (f (get m)) none))
 
-; the disjunction of two tests
-(def or (lam ((a T) (b T)) (if a 1 b)))
 
 ; lists of trees: a function at every element, and whether a test holds at every element
 (defn mapT ((f (Arrow T T)) (xs Ts)) Ts (foldr T Ts (lam ((x T) (r Ts)) (cons (f x) r)) (nil T) xs))
