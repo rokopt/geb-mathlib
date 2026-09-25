@@ -21,6 +21,7 @@ public import Geb.Prototypes.LargeIR
 public import Geb.Prototypes.MType
 public import Geb.Prototypes.Metalogic
 public import Geb.Prototypes.ParanaturalRank
+public import Geb.Prototypes.PartialHorn
 public import Geb.Prototypes.PresheafIRProto
 public import Geb.Prototypes.PresheafIRUniv
 public import Geb.Prototypes.PresheafUniverse
