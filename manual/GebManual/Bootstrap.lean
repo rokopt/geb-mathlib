@@ -35,14 +35,153 @@ Everything else, the reader, the elaborator, the compiler, the
 libraries and eventually the proof checker, is Geb code, which the
 seed runs until the compiler written in Geb reproduces itself.
 
-This chapter records the decisions that fix the seed, a survey of how
-other languages and proof checkers bootstrap, and the plan, a sequence
-of phases each ending with an executable acceptance condition. The
+This chapter records a road map of the bootstrap and of the work
+written in Geb after it, the decisions that fix the seed, a survey of
+how other languages and proof checkers bootstrap, and the plan, a
+sequence of phases each ending with an executable acceptance condition.
+The
 optimized representation that the chapter on value representation
 designs is not a prerequisite: the seed uses the plain representation,
 and the optimized one is written later in Geb. Nothing in this chapter
 asserts that a component exists unless it names the Lean declaration or
 file that implements it.
+
+# Road map
+
+The bootstrap ends when a developer can write the rest of Geb in Geb:
+when the logic, the computation and the first compilers and hosts
+exist, and the language suffices to write the rest of Geb's programs
+and proofs in it. Most of what the repository formalizes in Lean is then
+written in Geb and is not part of the bootstrap. The road map therefore
+has two parts: the bootstrap, whose end point is stated first, and the
+work written in Geb after it.
+
+Each item is marked constructed, begun, not begun or deferred, and
+names the section or file that details it. The items of a list are in
+the order of dependence.
+
+## The bootstrap's end point
+
+* Computation. Geb's implementation, the reader, the expansion, the
+  type checker and the compilers, is written in Geb and compiled by Geb,
+  with the host code reduced to the seed, and every compiler reproduces
+  itself (the section on what self-compilation establishes). Reached on
+  the Lean host.
+* Hosts and targets. The kernel runs on three hosts or targets: Lean,
+  where the seed and the backend emitting Lean are; a systems language,
+  Rust, where a second seed reproduces the fixed points; and an
+  interaction-net runtime, HVM, Bend or a similar one, which a compiler
+  written in Geb targets for parallel workloads. Lean reached; the
+  others not begun.
+* Logic. The metalogic is the free topos with the natural numbers and
+  rose-tree objects, reached through the five rungs of the section on
+  the metalogic and its checker; each rung's checker is proved sound in
+  Lean and written again in Geb, where the prover has tactics that
+  construct the rung's certificates. Begun: the first rung's checker is constructed and its
+  proof construction is begun.
+* Extension. A program is extended by definitions whose identity
+  survives edits, and Surface 1 is complete enough to write the rest of
+  Geb in, with diagnostics that name what fails. Begun: closed bundles
+  and Surface 1 are constructed.
+
+## The bootstrap
+
+Computation:
+
+* The seed, Phase 1: the kernel's syntax, its type checker and
+  evaluator, the primitives and the reader, with numeral abbreviations
+  for labels. Constructed, except the reader's printer and the
+  retraction law between them, not begun.
+* Definitions and images, Phase 3: closed bundles, the image format and
+  the host driver `geb-kernel`. Constructed; the names of bound
+  variables and comments beside a bundle, not begun.
+* Geb grows in itself, Phase 4: the stage-0 compiler in the kernel's
+  syntax, the Surface 1 expansion, the stage-1 compiler written in
+  Surface 1, and their fixed points. Constructed.
+* The Lean backend, Phase 5 step 3: `bootstrap/stage1/lean.geb`, the
+  committed `bootstrap/compiler.img` and `bootstrap/lean/GebBoot.lean`,
+  and the executable `geb-compile`. Constructed.
+* Surface 1's completion, the section on improvements: generated
+  recognizers, type parameters, a static check of datatypes, patterns
+  with `&`, unused pattern variables, primitives that no binding
+  shadows, emitted names that no definition captures, and diagnostics
+  naming the definition that fails. Not begun.
+* The choice of machine, Phase 2: the benchmark programs, the
+  environment machine, the compilation to the triage calculus, the
+  compilation to interaction combinators, and the decision. Deferred
+  until before the second host.
+* The second host, Phase 5 step 1: the evaluator and loader in Rust,
+  reproducing the stage-0 and stage-1 fixed points, which is diverse
+  double-compiling across hosts. Not begun.
+* Accelerations, Phase 5 step 2: native code bound by position or
+  builtin identifier, proved in Lean against the denotation and run in
+  shadow mode. Not begun.
+* The interaction-net target, Phase 5 step 3: a compiler written in
+  Geb to HVM, Bend or a similar runtime, each pinned to a revision and
+  tested, within the limits on duplicating λ-values of the section on
+  operational semantics. Not begun.
+* The Geb reader and serializer in constant depth, and the stage tests
+  run by the compiled executables, the section on improvements. Not
+  begun.
+
+Logic, Phase 7, one rung after another as the rung sections below
+detail:
+
+* Rung 1, the cartesian closed locos: the rules and their soundness in
+  Lean, and the checker written in Geb, constructed; the proof
+  construction, begun; proofs about the compiler's components, which
+  exercise the prover, begun; stronger checkers admitted by translations
+  of certificates, not begun.
+* Rung 2, the arithmetic universe: coherent logic and quotients. Not
+  begun.
+* Rung 3, the Heyting pretopos: first-order logic and subset types. Not
+  begun.
+* Rung 4, the Π-pretopos: families of types and their dependent
+  products. Not begun.
+* Rung 5, the topos: power types and comprehension. Not begun.
+
+Extension:
+
+* Closed bundles referring to definitions by position, Phase 3.
+  Constructed.
+* Content identity, Phase 6: the hash and its version tag, BLAKE3 and
+  SHA3-256 reconciled; its input, recorded in `docs/definitions.md`
+  § Content identity; the hash written in Geb and compared with a host
+  binding; the migration from positions to digests, the namespace tree
+  and the re-keying of annotations. Not begun.
+* A printer for the kernel's readable syntax and the retraction law,
+  and the unification of the readable S-expressions with the canonical
+  ones, with a quoted spelling for atoms that are not tokens (`TODO.md`
+  § Bootstrap). Not begun.
+
+## After the bootstrap
+
+Written in Geb, each proof on the lowest rung that states it:
+
+* Surface 2: quotients whose respect is proved, on the arithmetic
+  universe; subset types by propositions and definitions by equations
+  whose unique solution is proved, on the Heyting pretopos; dependent
+  products of families, on the Π-pretopos.
+* The richer forms of definition of `docs/definitions.md`: well-founded
+  and guarded blocks, presentations, presheaf signatures, a binding
+  language with its substitution laws, and modules. Their Lean
+  prototypes under `Geb/Prototypes/Definition/` are constructed.
+* The mathematics the repository formalizes in Lean: polynomial
+  functors and their W-types and M-types, the presheaf parametric right
+  adjoints and their inductive-recursive codes, the quotient polynomial
+  functors of the chapter on them, the decision problems, and the
+  constructive fragment of the Lean and Idris developments that the
+  libraries consume.
+* The optimized representation of the chapter on value representation,
+  after its decision gates, and the further concrete syntaxes of
+  `docs/concrete-syntaxes.md` § Roadmap.
+* Theorems about the metalogic proved in it: the soundness of the first
+  rung's checker, on the topos, and the equivalence of the free topos
+  with the rose-tree object and the free topos with a natural numbers
+  object; and the extraction of programs from proofs of totality,
+  through a realizability topos.
+* A backend without Lean, a milestone separate from the bootstrap (the
+  section on what self-compilation establishes).
 
 # Decisions
 
@@ -685,44 +824,8 @@ evaluator from its image, compiles its own source to that image. Built
 by Lake from the Lean it emits from its own source, the stage-1
 compiler emits the same Lean and the same image. The stage-1 compiler's
 image and its Lean are committed, and continuous integration checks
-every fixed point on every build.
-
-:::table +header
-*
-  * Phase
-  * State
-  * Where
-*
-  * 1: the kernel runs in Lean
-  * constructed, except the reader's printer and its retraction law
-  * `Geb/Prototypes/Kernel/Basic.lean`, `Reader.lean`
-*
-  * 2: the choice of machine
-  * deferred until before the second host
-  * none
-*
-  * 3: definitions and images
-  * constructed, except names of bound variables, comments and the host hash
-  * `Geb/Prototypes/Kernel/Image.lean`, `Command.lean`, the executable `geb-kernel`
-*
-  * 4: Geb grows in itself
-  * constructed, every step
-  * `bootstrap/*.geb`, `bootstrap/stage1/surface.geb`
-*
-  * 5: speed and a second host
-  * step 3 constructed for Lean; the second host not begun
-  * `bootstrap/stage1/lean.geb`, `bootstrap/lean/GebBoot.lean`, the executable `geb-compile`
-*
-  * 6: content identity
-  * not begun
-  * none
-*
-  * 7: the metalogic
-  * first rung: steps 1 and 2 constructed; step 3 begun
-  * `Geb/Prototypes/Metalogic/Equations.lean`, `Geb/Prototypes/Kernel/Subst.lean`,
-    `bootstrap/metalogic/equations.geb`, `bootstrap/metalogic/prove.geb`,
-    `bootstrap/proofs/`
-:::
+every fixed point on every build. The road map at the head of the
+chapter marks the state of every item.
 
 The implementation changed the plan in these respects. The kernel's
 terms and types are rose trees read directly, and its checker and
@@ -940,8 +1043,9 @@ from the seed.
 2. Lean and Geb: accelerations bound by position or builtin
    identifier, each proved in Lean against the denotation of the term
    it replaces, with the shadow mode that runs both.
-3. Geb: compilers to the targets Phase 2 selects, emitting Lean first;
-   the optimized compiler compiles itself. The emitted Lean is
+3. Geb: compilers to the targets Phase 2 selects, emitting Lean first
+   and then an interaction-net runtime, HVM, Bend or a similar one; the
+   optimized compiler compiles itself. The emitted Lean is
    committed beside the image, each definition under a name derived
    from its Geb name and in the order of the source, so that a change
    of the compiler's source changes the emitted definitions it touches
@@ -1018,14 +1122,15 @@ topos, on the ladder of the section on the metalogic and its checker.
    parallel with Phases 2 to 6.
 2. Geb: the rung's proof checker, a fold over proof objects, compared
    with the Lean checker on valid and malformed certificates.
-3. Geb: proofs about Geb programs, each on the lowest rung that states
-   it, the elaborator's components first; stronger checkers admitted by
+3. Geb: proof construction for the rung, and proofs about Geb
+   programs that exercise it, each on the lowest rung that states it,
+   the compiler's components first; and stronger checkers admitted by
    relative soundness proofs, each a translation of certificates proved
-   on the first rung; then the richer definitions, equation
-   blocks, guarded blocks and presheaf signatures, the constructive
-   fragment of the Lean and Idris developments that the libraries
-   consume, and the equivalence of the free topos with the rose-tree
-   object and the free topos with a natural numbers object.
+   on the first rung. The rest of what the rungs state, the richer
+   definitions, Surface 2, the mathematics the libraries consume and
+   the equivalence of the free topos with the rose-tree object and the
+   free topos with a natural numbers object, is written in Geb after
+   the bootstrap (the road map).
 
 Acceptance, on each rung: a theorem with hypotheses, a substitution and
 an induction checks, and certificates with altered binders, invalid
@@ -1161,6 +1266,139 @@ expansion. The examples of
 again with {name}`Geb.Metalogic.check`, and reject a false equation and
 an unproved one.
 
+### The rungs
+
+Each rung is built by the three steps above, and each is fixed before
+proofs are migrated to it (the section on the metalogic and its
+checker). For each rung the following lists what the bootstrap defines
+and proves, and what the rung is used for after the bootstrap. Every
+rung after the first also needs, in Lean, the lemma that transfers the
+certificates of the rung below with their conclusions, and a model that
+is not Boolean in which its soundness is proved as well; and, in Geb,
+the rung's block of rules added to the checker, compared with the Lean
+checker, and tactics for its connectives in the prover.
+
+### Rung 1: the cartesian closed locos
+
+* Judgment: a context of kernel types, a list of equations as
+  hypotheses, and an equation between kernel terms of a type; valid
+  when both sides denote one value at every value of the context that
+  satisfies the hypotheses ({name}`Geb.Metalogic.Valid`). Constructed.
+* Types and terms: the kernel's, of every type. Constructed.
+* Rules: equality, congruence of every term former, the β and η rules,
+  the δ rules at literals, weakening, cut, instantiation, the
+  computation rules of the kernel's eliminators, induction on lists,
+  trees and labels, the unfolding of definitions, iteration's reading
+  of the label, the conditional as an iteration, and citations of
+  axioms and of theorems, each named in `Geb.Metalogic.Rule`.
+  Constructed.
+* Axioms: the defining equations of the primitives
+  ({name}`Geb.Metalogic.axioms`). Constructed.
+* In Lean: soundness in the model of Lean types
+  ({name}`Geb.Metalogic.check_sound`). Constructed.
+* In Geb: the checker `bootstrap/metalogic/equations.geb`, constructed;
+  the prover `bootstrap/metalogic/prove.geb`, with normalization,
+  rewriting, induction and the Surface 1 forms, begun.
+* Proofs of the bootstrap, which exercise the prover on the compiler's
+  components, in order:
+  1. lists and labels: the prelude's appending, addition's recursion
+     equations and zero as a unit of addition, constructed;
+  2. the accessors of the checker's equations, and the recursion
+     equations of a structural recursion, through the Surface 1
+     expansion, constructed;
+  3. the type checker's preservation of types by weakening and by
+     substitution, not begun (the next phase);
+  4. the Surface 1 expansion's identity on programs of kernel forms,
+     not begun;
+  5. the reader's inverse to the printer, after the printer, not begun;
+  6. the admission of a stronger checker by the proof that a Geb
+     program translates its certificates into the first rung's with the
+     same conclusions, not begun.
+* After the bootstrap: equational theorems about programs, and the
+  lemmas that higher rungs' proofs cite.
+
+### Rung 2: the arithmetic universe
+
+* Judgment: sequents of coherent logic, whose hypotheses and conclusion
+  are formulas built from the first rung's equations by truth,
+  falsity, conjunction, disjunction and existential quantification over
+  a type. An equation is an atomic formula, so a certificate of the
+  first rung is one of this rung.
+* Types and terms: the quotient of a type by an equivalence relation
+  that a formula expresses, with the class of an element, effectiveness,
+  by which two classes are equal exactly when the relation relates
+  their representatives, and the lifting of a function that respects the
+  relation. Whether quotients are types of the checker's language or
+  setoids, types paired with a relation, is decided with the rung's
+  rules.
+* Rules: the first rung's, reading formulas where a rule moves
+  hypotheses; the introduction and elimination of each connective; the
+  induction rules with coherent formulas as conclusions; and the rules
+  of quotients.
+* Axioms: the first rung's, at their indices, and the disjointness that
+  the first rung cannot state: zero is not a successor, from which
+  distinct labels are distinct leaves.
+* Proofs of the bootstrap: the rung's acceptance, and disequalities
+  between the compiler's data and case distinctions on the results of
+  its passes, as the prover's tests on the rung.
+* After the bootstrap: the quotients of Surface 2.
+* State: not begun.
+
+### Rung 3: the Heyting pretopos
+
+* Judgment: first-order formulas, with implication and universal
+  quantification over a type added.
+* Types and terms: subset types, the subobject of a type that a formula
+  cuts out, with its inclusion and no map back.
+* Rules: the introduction and elimination of implication and universal
+  quantification, and the induction rules with first-order formulas as
+  conclusions.
+* Proofs of the bootstrap: the rung's acceptance, and a relative
+  soundness stated with implication, as the prover's tests on the rung.
+* After the bootstrap: the subset types of Surface 2; unique existence,
+  and with it definitions by equations whose unique solution is proved
+  and the equation blocks of the richer definitions; statements about
+  the syntax of type theories, among them the equivalence of the free
+  topos with the rose-tree object and the free topos with a natural
+  numbers object, whose proof is an induction on syntax.
+* State: not begun.
+
+### Rung 4: the Π-pretopos
+
+* Judgment: types may depend on terms, so contexts and types are those
+  of an extensional dependent type theory, in which a proposition is a
+  type with at most one element {citep Maietti2005}[].
+* Types and terms: dependent products and dependent sums of families of
+  types, and identity types.
+* Rules: the formation, introduction, elimination and computation of
+  each type former, the lower rungs' logic being the logic of
+  propositions.
+* In Lean: families interpreted as Lean's dependent types.
+* Proofs of the bootstrap: the rung's acceptance.
+* After the bootstrap: the dependent products of Surface 2, families
+  indexed by syntax such as the terms of each type, and presheaf
+  signatures.
+* State: not begun.
+
+### Rung 5: the topos
+
+* Judgment: that of the Π-pretopos, with propositions as values.
+* Types and terms: power types, the comprehension of a formula, and
+  membership, an element belonging to a comprehension exactly when it
+  satisfies the formula; the subobject classifier is the power type of
+  the terminal type.
+* Rules: those of power types and comprehension, with no choice
+  operator and no rule that decides a proposition (the section on the
+  metalogic and its checker).
+* In Lean: power types interpreted as Lean's predicates.
+* Proofs of the bootstrap: the rung's acceptance, in which a
+  comprehension checks.
+* After the bootstrap: definitions by impredicative comprehension, such
+  as the least relation closed under rules; the soundness of the first
+  rung's checker, since System T's evaluator is an arrow of the topos;
+  and the mathematics migrated to the foundational metalogic.
+* State: not begun.
+
 ## Improvements
 
 The following are known limitations of what is constructed, each with
@@ -1191,12 +1429,20 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
-* Proof construction. The prover rewrites with hypotheses outside
-  binders only, since a hypothesis's certificate is not transported
-  under a binder; and normalizes innermost first, so that the branches a
-  conditional discards are normalized as well. Weakening certificates
-  under binders, and normalizing a conditional's test before its
-  branches, remove each.
+* Proof construction. The prover rewrites with a hypothesis only where
+  its side occurs outside the goal's binders and unapplied: a side that
+  reaches a binder by β-reduction is rewritten first, since
+  normalization contracts arguments before the redex, but a hypothesis
+  between functions is not used at their applications. And it
+  normalizes innermost first, so that the branches a conditional
+  discards are normalized as well. Rewriting at applications under
+  binders (the next phase), and normalizing a conditional's test before
+  its branches, remove each.
+* Atoms as character codes. The Geb sources spell the atoms they
+  compare with, the keywords of the reader, the expansion and the
+  prover, as quoted lists of character codes, since a datum has no
+  spelling for an atom; the quoted spelling of the syntax unification
+  removes it.
 * Depth of the Geb reader and serializer. The reader's tokenizer and
   the serializer's packing of bits are right folds whose continuations
   nest one call per character and per bit, so running either in Lean's
@@ -1223,39 +1469,37 @@ the change that removes it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
 
-## What remains for a full bootstrap
-
-The aim is an implementation of Geb written in Geb and compiled by Geb,
-with the host code reduced to the seed. The fixed points on images and
-on emitted Lean reach that aim for computation: the compiler compiles
-itself to a program that the host builds, idempotently. What remains is
-the following, in the order of dependence.
-
-1. The metalogic (Phase 7), rung by rung: proofs about the compiler's
-   components on the first rung, the type checker's preservation of
-   types by weakening and substitution, the expansion's identity on
-   programs of kernel forms and the reader's inverse to a printer among
-   them, then the rules and checkers of the rungs above it.
-2. A second host (Phase 5, steps 1 and 2, after Phase 2): the fixed
-   points reproduced on it, which is diverse double-compiling across
-   hosts, and accelerations proved against the denotation.
-3. Content identity (Phase 6): digests of definitions and the migration
-   from positions to digests.
-4. Surface 2 and the richer definitions: subset types by propositions,
-   quotients with proved obligations, equation blocks, and the
-   constructive fragment of the Lean and Idris developments.
-
-The metalogic completes the bootstrap in the sense of the aim for logic,
-as the compiler emitting Lean does for computation; the others extend
-it.
-
 ## The next phase
 
-The phases open are independent of one another, so the choice is of
-priority. The metalogic continues on its first rung with step 3: the
-prover rewrites with hypotheses under binders and proves the type
-checker's preservation of types by weakening and substitution. The
-second host, content identity and the syntax unification follow it.
+The metalogic continues on its first rung with step 3. The next proof
+is the type checker's preservation of types by weakening, of `typeIn`
+in `bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
+for every environment `G`, contexts `c1` and `c2`, type `a` and term
+`t`, `typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
+`typeIn G (append c1 c2) t`. The checker checks an abstraction's body
+one binder deeper, where the inserted type is one position further in,
+so the statement is proved as an equation between functions of `c1`,
+by induction on `t`; the induction's hypothesis is an equation between
+the lists of the children's functions. The checker tests a node's label
+by a chain of conditionals, which do not reduce at a variable label.
+The proof needs, in order:
+
+1. lemmas moving a fold, a projection and an application through a
+   conditional, stated with variables of function type and proved by
+   induction on the label of the test;
+2. lemmas on lists: the fusion of two maps, the element of a mapped
+   list at a position, and the positions of an appended list;
+3. a tactic that proves an intermediate equation and adds it as a
+   hypothesis by cut, so that the list equation of the induction yields
+   an equation for each child;
+4. rewriting with a hypothesis between functions at its applications,
+   `f u` to `g u`, by congruence of application and β, under binders,
+   the hypothesis's free variables weakened past them.
+
+Substitution follows by the same method, then the expansion's identity
+on programs of kernel forms. The rest of the road map's bootstrap, the
+choice of machine and the second host, content identity and the syntax
+unification, is independent of the metalogic and may proceed beside it.
 
 ## What self-compilation establishes
 
