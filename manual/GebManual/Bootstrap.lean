@@ -742,7 +742,9 @@ file, takes quadratic time.
    S-expressions over lists of characters; names resolve to de Bruijn
    indices, references and primitives ({name}`Geb.Kernel.readProgram`),
    and the reader expands type abbreviations, abstractions over lists
-   of binders and local bindings, which the kernel does not have; the
+   of binders and local bindings, which the kernel does not have, and
+   numeral abbreviations, which name labels as an assembler's symbolic
+   constants do and leave no trace in the terms read; the
    definitions are checked and evaluated in order
    ({name}`Geb.Kernel.load`), and the last is applied to an input tree
    ({name}`Geb.Kernel.runMain`). A printer and the retraction law

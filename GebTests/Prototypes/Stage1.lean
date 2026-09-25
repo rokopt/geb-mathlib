@@ -56,7 +56,8 @@ def runImage (img input : Tree) : Option Tree := do
 #guard
   let c1 := (runMain compiler.toList (nameTree stage1.toList)).getD (leaf 0)
   c1.children.length > 0 &&
-  [naturals, roses, Tests.factorial, Tests.sugar, Tests.listCase, "(def f (lam (x T) y))"].all
+  [naturals, roses, Tests.factorial, Tests.sugar, Tests.numerals, Tests.listCase,
+    "(def f (lam (x T) y))", "(defnum n m)"].all
     fun p ↦ runImage c1 (nameTree p.toList) == runMain compiler.toList (nameTree p.toList)
 
 end Geb.Kernel.Stage1Tests

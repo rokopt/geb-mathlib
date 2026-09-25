@@ -12,8 +12,11 @@ set_option doc.verso true in
 # The kernel's readable syntax
 
 A program is a sequence of definitions written as S-expressions, {lit}`(def name term)`, each
-term referring to the definitions before it by name, and of type abbreviations
-{lit}`(deftype name type)`, each in force after it. Reading has two stages: a text is read
+term referring to the definitions before it by name, of type abbreviations
+{lit}`(deftype name type)`, and of numeral abbreviations {lit}`(defnum name n)`, the
+abbreviations each in force after it. A numeral abbreviation names a label, as an
+assembler's symbolic constant does: the atoms of a definition's term that name one are read
+as its numeral, wherever they occur. Reading has two stages: a text is read
 as S-expressions, a rose tree whose leaves carry atoms and whose other nodes are lists; each
 S-expression is then resolved into a kernel term, variable names becoming de Bruijn indices,
 definition names references, and keywords the kernel's constructors. Loading type-checks
@@ -45,6 +48,7 @@ extends to the end of its line.
 ## Main definitions
 
 * {lit}`SExp`, {lit}`readSExps` — S-expressions and the reader of a text.
+* {lit}`expandNums` — the expansion of numeral abbreviations.
 * {lit}`resolve` — the resolution of an S-expression into a kernel term.
 * {lit}`readProgram`, {lit}`load` — a program's definitions as named terms, and their
   meanings.
@@ -132,6 +136,18 @@ def primNames : List String :=
 /-- Type abbreviations: names with the types they abbreviate, the latest first. -/
 abbrev TypeNames : Type := List (List Char × Tree)
 
+/-- Numeral abbreviations: names with the numerals they abbreviate, the latest first. -/
+abbrev NumNames : Type := List (List Char × List Char)
+
+/-- An S-expression with each atom that names a numeral abbreviation replaced by its numeral. -/
+def expandNums (nums : NumNames) : SExp → SExp :=
+  RoseTree.elim fun a rs ↦ RoseTree.node (a.map fun s ↦ (nums.lookup s).getD s) rs
+
+/-- A numeral abbreviation's numeral: the S-expression, its abbreviations expanded, when it is
+a numeral. -/
+def numOf (nums : NumNames) (e : SExp) : Option (List Char) :=
+  (expandNums nums e).label.bind fun s ↦ (numeral? s).map fun _ ↦ s
+
 /-- An S-expression read as a type, given the type abbreviations in force, with its atom if it
 is one. -/
 def readType (tys : TypeNames) : SExp → Option Tree :=
@@ -216,22 +232,24 @@ def resolve (tys : TypeNames) (defs : List (List Char)) (e : SExp) (scope : List
     Option Tree :=
   RoseTree.para (resolveStep tys defs) e scope
 
-/-- The definitions of a program, as names with kernel terms; type abbreviations are expanded
-where they are used. -/
+/-- The definitions of a program, as names with kernel terms; abbreviations are expanded where
+they are used. -/
 def readProgram (text : List Char) : Option (List (List Char × Tree)) := do
   let es ← readSExps text
-  let step (acc : Option (TypeNames × List (List Char × Tree))) (e : SExp) :
-      Option (TypeNames × List (List Char × Tree)) := do
-    let (tys, ds) ← acc
+  let step (acc : Option (TypeNames × NumNames × List (List Char × Tree))) (e : SExp) :
+      Option (TypeNames × NumNames × List (List Char × Tree)) := do
+    let (tys, nums, ds) ← acc
     match e.children with
     | [kw, n, body] => do
       let name ← n.label
       match kw.label.map String.ofList with
-      | some "def" => some (tys, ds ++ [(name, ← resolve tys (ds.map Prod.fst) body [])])
-      | some "deftype" => some ((name, ← readType tys body) :: tys, ds)
+      | some "def" =>
+        some (tys, nums, ds ++ [(name, ← resolve tys (ds.map Prod.fst) (expandNums nums body) [])])
+      | some "deftype" => some ((name, ← readType tys body) :: tys, nums, ds)
+      | some "defnum" => some (tys, (name, ← numOf nums body) :: nums, ds)
       | _ => none
     | _ => none
-  (es.foldl step (some ([], []))).map Prod.snd
+  (es.foldl step (some ([], [], []))).map (·.2.2)
 
 /-- The meanings of a program's definitions, each checked and evaluated in the global
 environment of those before it. -/
@@ -242,32 +260,38 @@ def load (ds : List Tree) : Option (List Glob) :=
     some (G ++ [⟨m.1, m.2 ()⟩])) (some [])
 
 /-- The first failure of a program, as a message: text whose parentheses do not balance, a
-form that is neither a definition nor a type abbreviation, or the first definition that does
-not resolve or is ill-typed; nothing when the program reads and loads. -/
+form that is neither a definition nor an abbreviation, or the first definition that does not
+resolve or is ill-typed; nothing when the program reads and loads. -/
 def diagnose (text : List Char) : Option String :=
   match readSExps text with
   | none => some "the parentheses do not balance"
   | some es =>
-    let step (acc : TypeNames × List (List Char) × List Glob × Option String) (e : SExp) :=
-      let (tys, names, G, err) := acc
+    let other := "a form is neither a def, a deftype nor a defnum"
+    let step (acc : TypeNames × NumNames × List (List Char) × List Glob × Option String)
+        (e : SExp) :=
+      let (tys, nums, names, G, err) := acc
       if err.isSome then acc else
       match e.children with
       | [kw, n, body] =>
         match n.label, kw.label.map String.ofList with
         | some name, some "def" =>
-          match resolve tys names body [] with
-          | none => (tys, names, G, some s!"{String.ofList name} does not resolve")
+          match resolve tys names (expandNums nums body) [] with
+          | none => (tys, nums, names, G, some s!"{String.ofList name} does not resolve")
           | some t =>
             match infer G [] t with
-            | none => (tys, names, G, some s!"{String.ofList name} is ill-typed")
-            | some m => (tys, names ++ [name], G ++ [⟨m.1, m.2 ()⟩], none)
+            | none => (tys, nums, names, G, some s!"{String.ofList name} is ill-typed")
+            | some m => (tys, nums, names ++ [name], G ++ [⟨m.1, m.2 ()⟩], none)
         | some name, some "deftype" =>
           match readType tys body with
-          | none => (tys, names, G, some s!"{String.ofList name} is not a type")
-          | some A => ((name, A) :: tys, names, G, none)
-        | _, _ => (tys, names, G, some "a form is neither a def nor a deftype")
-      | _ => (tys, names, G, some "a form is neither a def nor a deftype")
-    (es.foldl step ([], [], [], none)).2.2.2
+          | none => (tys, nums, names, G, some s!"{String.ofList name} is not a type")
+          | some A => ((name, A) :: tys, nums, names, G, none)
+        | some name, some "defnum" =>
+          match numOf nums body with
+          | none => (tys, nums, names, G, some s!"{String.ofList name} is not a numeral")
+          | some v => (tys, (name, v) :: nums, names, G, none)
+        | _, _ => (tys, nums, names, G, some other)
+      | _ => (tys, nums, names, G, some other)
+    (es.foldl step ([], [], [], [], none)).2.2.2.2
 
 /-- Apply the last definition of a program, of type {lit}`T → T`, to an input tree. -/
 def runMain (text : List Char) (input : Tree) : Option Tree := do

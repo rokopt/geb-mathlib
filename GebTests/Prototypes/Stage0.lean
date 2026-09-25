@@ -156,7 +156,8 @@ def samples : List Tree :=
 
 -- the checker agrees with the seed on the kernel's examples, the compiler and malformed terms
 #guard ([Tests.factorial, Tests.size, Tests.mirror, Tests.reverseChildren, Tests.quadruple,
-    Tests.isZero, Tests.listCase, Tests.sugar, compiler].filterMap (readProgram ·.toList)
+    Tests.isZero, Tests.listCase, Tests.sugar, Tests.numerals, compiler].filterMap
+    (readProgram ·.toList)
     |>.map bundle).all fun b ↦ runMain checker.toList b == some (seedTypes b)
 #guard (malformed ++ [mk 9 [leaf 0, mk 8 [leaf 0]]]).all fun t ↦
   runMain checker.toList (bundle [("f".toList, t)]) == some (seedTypes (bundle [("f".toList, t)]))
@@ -164,9 +165,10 @@ def samples : List Tree :=
 -- the stage-0 compiler agrees with the seed on the kernel's examples, rejected and ill-typed
 -- ones included
 #guard [Tests.factorial, Tests.size, Tests.mirror, Tests.reverseChildren, Tests.quadruple,
-    Tests.isZero, Tests.listCase, Tests.sugar, "(def f (lam (x T) x)", "(def f (lam () 1))",
-    "(def f (lam (x Nat) x))", "(def f (lam (x T) y))", "(def f (lam (x T) (add x unit)))",
-    "(def f (lam (x T) (x x)))"].all fun p ↦
+    Tests.isZero, Tests.listCase, Tests.sugar, Tests.numerals, "(def f (lam (x T) x)",
+    "(def f (lam () 1))", "(def f (lam (x Nat) x))", "(def f (lam (x T) y))",
+    "(def f (lam (x T) (add x unit)))", "(def f (lam (x T) (x x)))", "(defnum n m)",
+    "(defnum n (1 2))"].all fun p ↦
   runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
 -- Surface 1 programs, compiled by the stage-0 compiler and run from their images
 #guard runSurface compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])

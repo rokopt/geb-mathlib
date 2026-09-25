@@ -102,6 +102,7 @@
 (def kwUnitValue (quote (0 117 110 105 116)))
 (def kwDef (quote (0 100 101 102)))
 (def kwDeftype (quote (0 100 101 102 116 121 112 101)))
+(def kwDefnum (quote (0 100 101 102 110 117 109)))
 (def primNames (children (quote (0
   (0 108 97 98 101 108) (0 97 114 105 116 121) (0 99 104 105 108 100) (0 110 111 100 101)
   (0 99 104 105 108 100 114 101 110) (0 97 100 100) (0 115 117 98) (0 109 117 108)
@@ -112,9 +113,9 @@
 (def indexOf (lam ((x T) (xs Ts))
   (foldr T T (lam ((y T) (r T)) (if (equal x y) (some 0) (if (isSome r) (some (add (get r) 1)) none)))
     none xs)))
-; the type a type abbreviation names; an abbreviation is a node over its name and its type
-(def lookupType (lam ((n T) (tys Ts))
-  (foldr T T (lam ((p T) (r T)) (if (equal n (child p 0)) (some (child p 1)) r)) none tys)))
+; the value an abbreviation names; an abbreviation is a node over its name and its value
+(def lookupAbbrev (lam ((n T) (abbrevs Ts))
+  (foldr T T (lam ((p T) (r T)) (if (equal n (child p 0)) (some (child p 1)) r)) none abbrevs)))
 ; the value of a numeral: a non-empty list of decimal digits
 (deftype Num (Prod T (Prod T T)))
 (def numeral (lam ((cs Ts))
@@ -126,6 +127,19 @@
                                        (mul 10 (snd (snd s))))))))
                (pair 1 (pair 0 1)) cs)
     (if (nonEmpty cs) (if (fst r) (some (fst (snd r))) none) none))))
+; an S-expression with each atom that names a numeral abbreviation replaced by its numeral's
+; atom; a numeral abbreviation's value is that atom
+(def expandNums (lam ((nums Ts) (e T))
+  (fold T
+    (lam ((l T) (rs Ts))
+      (let raw T (node l rs)
+        (if (isAtom raw) (let v T (lookupAbbrev (nameOf raw) nums) (if (isSome v) (get v) raw)) raw)))
+    e)))
+; a numeral abbreviation's value: the S-expression, its abbreviations expanded, when it is a
+; numeral
+(def numOf (lam ((nums Ts) (e T))
+  (let x T (expandNums nums e)
+    (if (isAtom x) (if (isSome (numeral (children x))) (some x) none) none))))
 
 ; a fold whose results carry the subtree they come from, the subtrees' list and the results'
 (deftype RT (Prod T T))
@@ -144,7 +158,7 @@
           (pair raw
             (if (isAtom raw)
               (let n T (nameOf raw)
-                (if (equal n kwT) (some 0) (if (equal n kwUnit) (some 1) (lookupType n tys))))
+                (if (equal n kwT) (some 0) (if (equal n kwUnit) (some 1) (lookupAbbrev n tys))))
             (if (isList raw)
               (let h T (at (children raw) 0)
                 (let k T (arity raw)
@@ -292,29 +306,36 @@
    scope)))
 
 ; a program's forms read into its bundle: the state is whether every form has read, the type
-; abbreviations, the names of the definitions, and their terms
-(deftype Prog (Prod T (Prod Ts (Prod Ts Ts))))
+; abbreviations, the numeral abbreviations, the names of the definitions, and their terms
+(deftype Prog (Prod T (Prod Ts (Prod Ts (Prod Ts Ts)))))
 (deftype ProgK (Arrow Prog Prog))
 (def progStep (lam ((s Prog) (e T))
   (let tys Ts (fst (snd s))
-    (let names Ts (fst (snd (snd s)))
-      (let terms Ts (snd (snd (snd s)))
-        (if (if (fst s) (if (isList e) (if (eq (arity e) 3) (isAtom (child e 1)) 0) 0) 0)
-          (let n T (nameOf (child e 1))
-            (if (named (child e 0) kwDef)
-              (let t T (resolve tys names (child e 2) (nil T))
-                (if (isSome t)
-                  (pair 1 (pair tys (pair (append names (single n)) (append terms (single (get t))))))
-                  (pair 0 (snd s))))
-            (if (named (child e 0) kwDeftype)
-              (let A T (readType tys (child e 2))
-                (if (isSome A) (pair 1 (pair (cons (node2 0 n (get A)) tys) (snd (snd s))))
-                  (pair 0 (snd s))))
-              (pair 0 (snd s)))))
-          (pair 0 (snd s))))))))
+    (let nums Ts (fst (snd (snd s)))
+      (let names Ts (fst (snd (snd (snd s))))
+        (let terms Ts (snd (snd (snd (snd s))))
+          (if (if (fst s) (if (isList e) (if (eq (arity e) 3) (isAtom (child e 1)) 0) 0) 0)
+            (let n T (nameOf (child e 1))
+              (if (named (child e 0) kwDef)
+                (let t T (resolve tys names (expandNums nums (child e 2)) (nil T))
+                  (if (isSome t)
+                    (pair 1 (pair tys (pair nums (pair (append names (single n))
+                                                       (append terms (single (get t)))))))
+                    (pair 0 (snd s))))
+              (if (named (child e 0) kwDeftype)
+                (let A T (readType tys (child e 2))
+                  (if (isSome A) (pair 1 (pair (cons (node2 0 n (get A)) tys) (snd (snd s))))
+                    (pair 0 (snd s))))
+              (if (named (child e 0) kwDefnum)
+                (let v T (numOf nums (child e 2))
+                  (if (isSome v)
+                    (pair 1 (pair tys (pair (cons (node2 0 n (get v)) nums) (snd (snd (snd s))))))
+                    (pair 0 (snd s))))
+                (pair 0 (snd s))))))
+            (pair 0 (snd s)))))))))
 (def readProgram (lam ((es Ts))
   (let s Prog ((foldr T ProgK (lam ((e T) (k ProgK) (s Prog)) (k (progStep s e))) (lam ((s Prog)) s) es)
-               (pair 1 (pair (nil T) (pair (nil T) (nil T)))))
+               (pair 1 (pair (nil T) (pair (nil T) (pair (nil T) (nil T))))))
     (if (fst s)
-      (some (node2 100 (node 101 (snd (snd (snd s)))) (node 102 (fst (snd (snd s))))))
+      (some (node2 100 (node 101 (snd (snd (snd (snd s))))) (node 102 (fst (snd (snd (snd s)))))))
       none))))
