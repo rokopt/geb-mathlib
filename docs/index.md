@@ -3689,6 +3689,7 @@ checklist and in CI.
   (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). Tested in
   `GebTests/Prototypes/Kernel.lean`. The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
+  names the kernel's labels and primitives by numeral abbreviations and
   holds list and digit utilities, `serialize.geb` writes a tree's image,
   `reader.geb` reads a program's text into its bundle as the seed does,
   `check.geb` is the kernel's type checker, `surface.geb` expands the

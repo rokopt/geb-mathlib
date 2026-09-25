@@ -7,5 +7,6 @@
 ; definitions.
 
 ; a quoted tree has the type of trees, in every context and every environment
-(theorem typeQuote ((G Ts) (ctx Ts) (x T)) (typeIn G ctx (node 15 (single x))) (some 0)
+(theorem typeQuote ((G Ts) (ctx Ts) (x T)) (typeIn G ctx (node Label.quote (single x)))
+         (some Label.tyTree)
   (simp (unfold typeIn checkNode rrTrees single some none) (rw labelNode childrenNode arityDef)))
