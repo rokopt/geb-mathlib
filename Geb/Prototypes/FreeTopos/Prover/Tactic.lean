@@ -22,6 +22,7 @@ sequent is proved in its own scope and added to the development, so that later p
 * {lit}`axIdx` — the index of an axiom by its block and its position there.
 * {lit}`inst` — the instance of an axiom or theorem, with its certificate.
 * {lit}`etaExpand` — the expansion of an arrow into a product.
+* {lit}`deltaRule` — the unfolding of a definition, as a rule.
 * {lit}`byNorm` — an equation by the normal forms of its sides.
 * {lit}`proveSeq` — a sequent proved and added to the development.
 * {lit}`normalizeThm` — a theorem of the development with its left side normalized, to rewrite
@@ -80,6 +81,10 @@ def etaExpand (f : Tree) : PM (Tree × Tree) := do
     pure (q.lhs, Cert.symm c)
   | _, _ => failure
 
+/-- The rule unfolding the definition at position {lit}`i`: its application rewrites to its
+body. -/
+def deltaRule (i : ℕ) : RwRule := { src := .ax (defAxIdx i) }
+
 /-- The certificate of an equation whose sides have one normal form under rules. -/
 def byNorm (rules : List RwRule) (q : Eqn) : PM Tree := do
   let (l, cl) ← normalize rules q.lhs
@@ -87,19 +92,21 @@ def byNorm (rules : List RwRule) (q : Eqn) : PM Tree := do
   guard (l == r)
   pure (Cert.trans cl (Cert.symm cr))
 
-/-- A sequent proved in its scope by a certificate the prover computes, added to the
-development; the result is its index there. -/
-def proveSeq (a : Seq) (m : PM Tree) : StateT Development Option ℕ := fun dev ↦ do
-  let (c, dev) ← run ⟨a.ctx, a.hyps⟩ dev m
-  pure (dev.length, dev ++ [(a, c)])
+/-- A sequent proved in its scope by a certificate the prover computes, with definitions in
+force, added to the development; the result is its index there. -/
+def proveSeq (a : Seq) (m : PM Tree) (defs : List Defn := []) : StateT Development Option ℕ :=
+  fun dev ↦ do
+    let (c, dev) ← run ⟨a.ctx, a.hyps⟩ dev m defs
+    pure (dev.length, dev ++ [(a, c)])
 
 /-- The theorem of the development at index {lit}`j` with its left side normalized under rules,
 proved in its scope and added to the development; the result is its index there. A rule from
 it rewrites where the normal form of the theorem's left side occurs. -/
-def normalizeThm (rules : List RwRule) (j : ℕ) : StateT Development Option ℕ := fun dev ↦ do
+def normalizeThm (rules : List RwRule) (j : ℕ) (defs : List Defn := []) :
+    StateT Development Option ℕ := fun dev ↦ do
   let (a, _) ← dev[j]?
   let sc : Scope := ⟨a.ctx, a.hyps⟩
-  let ((n, cn), dev) ← run sc dev (normalize rules a.concl.lhs)
+  let ((n, cn), dev) ← run sc dev (normalize rules a.concl.lhs) defs
   pure (dev.length, dev ++ [(sc.seq ⟨n, a.concl.rhs⟩, Cert.trans (Cert.symm cn) (sc.cite j))])
 
 end Geb.FreeTopos.Prover

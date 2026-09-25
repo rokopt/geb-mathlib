@@ -7,8 +7,6 @@ module
 
 public import Geb.Prototypes.FreeTopos -- shake: keep
 public meta import Geb.Prototypes.FreeTopos -- shake: keep
-public import Geb.Prototypes.PartialHorn
-public meta import Geb.Prototypes.PartialHorn -- shake: keep
 
 set_option doc.verso true in
 /-!
