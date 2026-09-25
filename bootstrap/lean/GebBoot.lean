@@ -974,6 +974,9 @@ def «readProgram» :=
 def «and» :=
   fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then x1 else leaf 0
 
+def «or» :=
+  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then leaf 1 else x1
+
 def «tyArrow» := fun (x0 : T) (x1 : T) => «node2» (leaf 3) x0 x1
 
 def «tyList» := fun (x0 : T) => Const.node (leaf 4) («single» x0)
@@ -1517,10 +1520,6 @@ def «allTrue» :=
       (leaf 1)
       x0;
     x1
-
-def «or» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := (if (x0).label ≠ 0 then leaf 1 else x1); x2
 
 def «ctorD» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) =>

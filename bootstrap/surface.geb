@@ -22,7 +22,7 @@
 ;
 ; Names beginning with % are reserved for the expansion. The expansion refers to the
 ; primitives label, child, children, node and eq by name, so a surface program does not rebind
-; them around case and cata. Requires the prelude and the reader.
+; them around case and cata. Requires the prelude, the reader and the checker.
 
 ; S-expressions under construction
 (def sx1 (lam ((a T)) (node 2 (single a))))
@@ -115,7 +115,6 @@
         (pair (add (fst acc) 1) (cons (node2 0 x (at ys (sub (sub ny 1) (fst acc)))) (snd acc))))
       (pair 0 (nil T)) xs)))))
 (def allTrue (lam ((xs Ts)) (foldr T T (lam ((x T) (r T)) (and x r)) 1 xs)))
-(def or (lam ((a T) (b T)) (if a 1 b)))
 
 ; the environment of declarations: constructors, the node of label 5 over the name, position,
 ; datatype, field types, whether a last field takes the remaining children, and its type;

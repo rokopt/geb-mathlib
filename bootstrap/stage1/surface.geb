@@ -99,7 +99,6 @@
 ; lists by position and conjunctions
 (defn dropLast ((xs Ts)) Ts (reverse (tail (reverse xs))))
 (defn allTrue ((xs Ts)) T (foldr T T (lam ((x T) (r T)) (and x r)) 1 xs))
-(defn or ((a T) (b T)) T (if a 1 b))
 
 ; declarations: a constructor with its name, position, datatype, field types, whether a last
 ; field takes the remaining children, and that field's type; a datatype with its name; a type

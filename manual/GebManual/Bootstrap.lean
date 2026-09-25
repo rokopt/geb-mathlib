@@ -1142,15 +1142,21 @@ rewrite a side at a chosen occurrence, and split a goal by induction on
 a list, a tree or a label into the goals the checker's induction rules
 expect. A file of a program's forms and theorems is read with each
 theorem's statement read as a definition of the program, so that it is
-resolved and typed as the program is, and each theorem's certificate
-is checked against its statement, citing the theorems before it.
-`bootstrap/proofs/prelude.geb` proves the empty list a unit of
-appending and appending associative; `bootstrap/proofs/nat.geb` derives
-addition's recursion equations from its definition by iteration and
-proves zero a left unit of addition by induction on labels; and
-`bootstrap/proofs/check.geb` proves, about the kernel's type checker
-written in Geb, that a quoted tree has the type of trees in every
-context and environment. The examples of
+expanded, resolved and typed as the program is, its Surface 1 forms
+expanded by the stage-0 expansion that the prover carries, and each
+theorem's certificate is checked against its statement, citing the
+theorems before it. `bootstrap/proofs/prelude.geb` proves the empty
+list a unit of appending and appending associative;
+`bootstrap/proofs/nat.geb` derives addition's recursion equations from
+its definition by iteration and proves zero a left unit of addition by
+induction on labels; `bootstrap/proofs/check.geb` proves, about the
+kernel's type checker written in Geb, that a quoted tree has the type of
+trees in every context and environment; `bootstrap/proofs/equations.geb`
+proves, about the metalogic's checker written in Surface 1, that the
+accessors of an equation return the fields it is built from; and
+`bootstrap/proofs/surface.geb` derives the recursion equations of a
+function by structural recursion over a declared datatype from its
+expansion. The examples of
 `GebTests/Prototypes/Proofs.lean` check every certificate in Geb and
 again with {name}`Geb.Metalogic.check`, and reject a false equation and
 an unproved one.
@@ -1185,13 +1191,12 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
-* Proof construction. The prover reads programs of kernel forms alone,
-  since it carries no expansion of the Surface 1 forms; rewrites with
-  hypotheses outside binders only, since a hypothesis's certificate is
-  not transported under a binder; and normalizes innermost first, so
-  that the branches a conditional discards are normalized as well.
-  Carrying the expansion, weakening certificates under binders, and
-  normalizing a conditional's test before its branches remove each.
+* Proof construction. The prover rewrites with hypotheses outside
+  binders only, since a hypothesis's certificate is not transported
+  under a binder; and normalizes innermost first, so that the branches a
+  conditional discards are normalized as well. Weakening certificates
+  under binders, and normalizing a conditional's test before its
+  branches, remove each.
 * Depth of the Geb reader and serializer. The reader's tokenizer and
   the serializer's packing of bits are right folds whose continuations
   nest one call per character and per bit, so running either in Lean's
@@ -1248,10 +1253,9 @@ it.
 
 The phases open are independent of one another, so the choice is of
 priority. The metalogic continues on its first rung with step 3: the
-prover reads programs in the Surface 1 forms, rewrites with hypotheses
-under binders, and proves the type checker's preservation of types by
-weakening and substitution. The second host, content identity and the
-syntax unification follow it.
+prover rewrites with hypotheses under binders and proves the type
+checker's preservation of types by weakening and substitution. The
+second host, content identity and the syntax unification follow it.
 
 ## What self-compilation establishes
 

@@ -9,7 +9,7 @@
 ; rewriting with the rules a tactic names; a goal is proved when both of its sides normalize to
 ; one term, and induction splits it into the goals the checker's induction rules expect. A
 ; rewritten term is represented with its certificate as the node of label 0 over both. Requires
-; the prelude, the reader, the checker and the metalogic's checker.
+; the prelude, the reader, the checker, the Surface 1 expansion and the metalogic's checker.
 
 ; certificates, by rule
 (defn cRefl ((t T)) T (mk1 Rule.refl t))
@@ -584,9 +584,9 @@
 
 ; a file of program forms and theorems, each (theorem name binders lhs rhs tactic): every
 ; theorem's statement is read as the definition, named by the theorem's name after a percent
-; sign, of the abstraction over its binders of the pair of its sides, so that it is read and
-; typed as the program is; each tactic's certificate is checked against the statement, and the
-; theorems checked are cited by later ones
+; sign, of the abstraction over its binders of the pair of its sides, so that it is expanded,
+; read and typed as the program is, its Surface 1 forms included; each tactic's certificate is
+; checked against the statement, and the theorems checked are cited by later ones
 (def atomDef (quote (1 100 101 102)))
 (def atomLam (quote (1 108 97 109)))
 (def atomPair (quote (1 112 97 105 114)))
@@ -621,6 +621,8 @@
                           (append (snd (snd s))
                             (single (node 0 (cons name (cons th
                               (cons (if (isSome c) (get c) 0) (single ok))))))))))))))))))))
+; a program's forms, their Surface 1 forms expanded, read into its bundle
+(defn readSurface ((es Ts)) T (bindO (expandProgram es) (lam ((kx T)) (readProgram (children kx)))))
 (defn proveFile ((fuel T) (file T)) T
   (bindO (readSExps (children file)) (lam ((sx T))
     (let forms Ts (children sx)
@@ -629,7 +631,7 @@
         (let prog Ts (append (foldr T Ts (lam ((e T) (acc Ts)) (if (isTheorem e) acc (cons e acc)))
                                (nil T) forms)
                              (mapT statementDef thms))
-          (bindO (readProgram prog) (lam ((b T))
+          (bindO (readSurface prog) (lam ((b T))
               (let D Ts (children (child b 0))
                 (let dn Ts (children (child b 1))
                   (bindO (checkProgram D) (lam ((gt T))

@@ -1,0 +1,15 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems about the metalogic's checker written in Surface 1, bootstrap/metalogic/equations.geb,
+; checked by bootstrap/metalogic/prove.geb against its definitions, the datatypes and case
+; analyses expanded as the compiler expands them.
+
+; the sides and the type of an equation are the fields it is built from
+(theorem eqTyEqn ((a T) (s T) (t T)) (eqTy (eqn a s t)) a
+  (simp (unfold eqTy eqn single) (rw childDef childrenNode)))
+(theorem eqLhsEqn ((a T) (s T) (t T)) (eqLhs (eqn a s t)) s
+  (simp (unfold eqLhs eqn single) (rw childDef childrenNode)))
+(theorem eqRhsEqn ((a T) (s T) (t T)) (eqRhs (eqn a s t)) t
+  (simp (unfold eqRhs eqn single) (rw childDef childrenNode)))
