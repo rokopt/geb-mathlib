@@ -512,6 +512,40 @@ a weaker rung does not, in which case the free category of that rung
 is not a subcategory of the free topos. A proof therefore moves up the
 ladder unchanged, and down it only by being checked again.
 
+The checkers carry the transfer. Each rung's certificates are those of
+the rung below with rules added, whose labels, as the table of axioms,
+are only extended; an equation is a formula of every higher rung, and a
+higher rung's checker applies the rules of the lower labels as the lower
+checker does, to formulas that are equations. A certificate checked on a
+rung is then a certificate of every higher rung with the same
+conclusion, which one lemma per rung proves by induction on
+certificates, and each rung's soundness proof extends that of the rung
+below it. A certificate cites an axiom by its index in the table of
+axioms and a theorem by its index among the theorems, by two rules, so
+that the axioms a richer rung adds leave every citation unchanged. A
+cited theorem need only be valid, not checked on the citing rung, so a
+proof on one rung may cite an equation proved on a higher one and then
+belongs to the highest rung it uses: a richer rung shortens the proofs
+of a weaker one through the lemmas it proves, and no proof is checked
+again on a lower rung.
+
+Relative soundness takes two forms. One checker is admitted beside
+another of the same judgments when a Geb program translates each
+certificate the first accepts into one the second accepts with the same
+conclusion. That is an equation between kernel programs under the
+hypothesis that the first checker accepts, and it is proved on the first
+rung by induction on certificates; the checkers' results are functions
+of the context and the hypotheses, so the equation is stated at function
+types and its induction hypothesis covers the contexts and hypotheses of
+the premises. That a rung's checker is sound, every certificate it
+accepts valid, is a statement about the denotation of kernel terms,
+which no kernel term computes (below); it is stated on the topos, which
+has System T's evaluator. A rung that proves no equation between kernel
+terms beyond those the first rung proves cannot prove the first rung's
+checker sound, since the first rung's consistency is such an equation
+and the first rung does not prove it; which rungs below the topos prove
+equations beyond the first rung's is not settled here.
+
 Each rung's rule set states typing, substitution, extensionality and
 induction explicitly, and the topos's adds comprehension; the
 equalities of the computation fragment supply none of them. Proof terms
@@ -986,7 +1020,8 @@ topos, on the ladder of the section on the metalogic and its checker.
    with the Lean checker on valid and malformed certificates.
 3. Geb: proofs about Geb programs, each on the lowest rung that states
    it, the elaborator's components first; stronger checkers admitted by
-   relative soundness proofs; then the richer definitions, equation
+   relative soundness proofs, each a translation of certificates proved
+   on the first rung; then the richer definitions, equation
    blocks, guarded blocks and presheaf signatures, the constructive
    fragment of the Lean and Idris developments that the libraries
    consume, and the equivalence of the free topos with the rose-tree
@@ -1087,7 +1122,12 @@ the Lean checker's at the certificates of step 1, one certificate of
 each rule besides, and malformed variants of each, the certificate's
 root relabelled with every rule's label and one beyond or deprived of
 its last child; the two agree on every one, the tables of axioms
-included.
+included. The labels of the kernel's constructors, the primitives'
+indices and the checker's rules are named by numeral abbreviations in
+`bootstrap/prelude.geb` and `bootstrap/metalogic/equations.geb` and by
+abbreviations in Lean, `Geb.Kernel.Label`,
+`Geb.Kernel.Prim` and `Geb.Metalogic.Rule`, which the
+tests hold equal name for name.
 
 Step 3 is begun on the first rung. `bootstrap/metalogic/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
@@ -1207,37 +1247,9 @@ it.
 ## The next phase
 
 The phases open are independent of one another, so the choice is of
-priority. Two questions are settled first, since each bears on how the
-rest of step 3 is written.
-
-* Named numeric constants. The labels of the kernel's term formers, of
-  the checker's rules and of the primitives, and the indices of the
-  axioms, appear as bare numerals throughout the Geb sources, the
-  certificates and the Lean checker, `22` for a primitive and `17` for
-  a fold or a δ rule. A declaration of named numeric constants, in the
-  manner of an assembler's symbolic constants, would name them once:
-  in the object language, as a form the Surface 1 expansion or the
-  reader replaces by its numeral, or in the metalanguage, as Lean
-  abbreviations the Lean checker and the tests share, whichever is
-  cleaner, with the two kept in agreement by a test.
-* Proofs across rungs. A certificate checked on a rung is valid on
-  every higher one, since the free category of each rung maps to the
-  next by a structure-preserving functor (the section on the metalogic
-  and its checker), so the first rung's proofs move up the ladder
-  unchanged. What remains to establish is whether that transfer is
-  automatic in the checkers, a lower rung's certificate accepted by a
-  higher rung's checker as it stands; whether a richer rung's rules
-  shorten the proofs, and how a proof is shortened without being
-  rechecked on the lower rung; and whether theorems about a weaker
-  rung, the soundness of its checker relative to a stronger one or its
-  conservativity, are proved in a richer rung, as step 3's admission of
-  stronger checkers by relative soundness proofs requires, and how far
-  defining a richer rung depends on the weaker one's proofs already
-  holding.
-
-The metalogic then continues on its first rung with step 3: the prover
-reads programs in the Surface 1 forms, rewrites with hypotheses under
-binders, and proves the type checker's preservation of types by
+priority. The metalogic continues on its first rung with step 3: the
+prover reads programs in the Surface 1 forms, rewrites with hypotheses
+under binders, and proves the type checker's preservation of types by
 weakening and substitution. The second host, content identity and the
 syntax unification follow it.
 
