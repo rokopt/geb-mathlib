@@ -4,17 +4,21 @@
 ;
 ; Proof construction for the first rung of the metalogic, written in Surface 1: derived rules
 ; that compute certificates the checker of bootstrap/metalogic/equations.geb accepts, so that
-; nothing here is trusted. A rewriting step finds the leftmost outermost redex of a term and
-; returns the rewritten term with the certificate of the equation between them; normalization
-; iterates the step; a goal is proved when both of its sides normalize to one term. A rewritten
-; term is represented with its certificate as the node of label 0 over both. Requires the
-; prelude, the reader, the checker and the metalogic's checker.
+; nothing here is trusted. Normalization, innermost first, returns a term's normal form with the
+; certificate of the equation between them, contracting the redexes of the computation rules and
+; rewriting with the rules a tactic names; a goal is proved when both of its sides normalize to
+; one term, and induction splits it into the goals the checker's induction rules expect. A
+; rewritten term is represented with its certificate as the node of label 0 over both. Requires
+; the prelude, the reader, the checker and the metalogic's checker.
 
 ; certificates, by rule
 (defn cRefl ((t T)) T (mk1 1 t))
 (defn cSym ((p T)) T (mk1 2 p))
 (defn cTrans ((p T) (q T)) T (node2 3 p q))
 (defn weakenN ((c T) (n T)) T (iter T (lam ((c T)) (mk1 18 c)) c n))
+
+; the negation of a test
+(def not (lam ((a T)) (if a 0 1)))
 
 ; rewritten terms with their certificates
 (defn res ((t T) (c T)) T (some (node2 0 t c)))
@@ -95,6 +99,7 @@
   (let cs Ts (children r)
     (if (eq (label r) 1)
       (if (equal (at cs 0) t) (res (at cs 1) (at cs 2)) none)
+    (if (not (eq (label (at cs 2)) (label t))) none
       (let tctx Ts (children (at cs 1))
         (bindO (matchT (at cs 2) (length tctx) t) (lam ((sg T))
           (bindO (allSome (children sg)) (lam ((us T))
@@ -105,7 +110,7 @@
                   (if (equal (eqLhs q) t)
                     (res (eqRhs q) (if (at cs 4) (cSym c) c))
                     none)))
-              none)))))))))
+              none))))))))))
 (defn applyRules ((G Ts) (ctx Ts) (t T) (rules Ts)) T
   (foldr T T (lam ((r T) (acc T)) (let x T (applyRule G ctx t r) (if (isSome x) x acc)))
       none rules))
@@ -228,70 +233,76 @@
               none))
           none)))))))))
 
-; one rewriting step: the fold whose result at a node is the node, the head and the arguments,
-; the last first, of its application, and its step as a function of the context, the
-; hypotheses and the rules; a rule is applied only outside the term's binders when it is a
-; concrete equation, and inside them when it is a lemma
-(deftype SF (Arrow Ts (Arrow Ts (Arrow Ts T))))
-(deftype SN (Prod T (Prod T (Prod Ts SF))))
-(deftype SNs (List SN))
-(defn snRaws ((rs SNs)) Ts (foldr SN Ts (lam ((r SN) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
-(defn snTail ((rs SNs)) SNs (lcase SN SNs rs (nil SN) (lam ((r SN) (rest SNs)) rest)))
-(defn snAt ((rs SNs) (i T)) SN
-  (lcase SN SN (iter SNs snTail rs i)
-      (pair 0 (pair 0 (pair (nil T) (lam ((c Ts) (h Ts) (r Ts)) none))))
-    (lam ((r SN) (rest SNs)) r)))
-(defn snStepAt ((rs SNs) (i T)) SF (snd (snd (snd (snAt rs i)))))
+; the rules that apply inside binders, the lemmas
 (defn lemmaOnly ((R Ts)) Ts
   (foldr T Ts (lam ((r T) (acc Ts)) (if (eq (label r) 0) (cons r acc) acc)) (nil T) R))
 ; the rule of congruence of a term former
 (defn congRule ((l T)) T
   (if (eq l 10) 4 (if (eq l 12) 6 (if (eq l 13) 7 (if (eq l 14) 8 (if (eq l 20) 9 10))))))
-(defn congr ((rs SNs) (l T) (cs Ts) (ctx Ts) (hs Ts) (R Ts)) T
-  (let k T (length cs)
-    (if (and (eq l 9) (eq k 2))
-      (let a T (at cs 0)
-        (bindO ((snStepAt rs 1) (cons a ctx) (mapT (eqWk 1) hs) (lemmaOnly R)) (lam ((r T))
-          (res (node2 9 a (resTerm r)) (node2 5 a (resCert r))))))
-    (if (and (termNode l) (lt 0 k))
-      ; the first child that steps, the others unchanged
-      (let found T ((foldr T (Arrow T T)
-                      (lam ((c T) (kf (Arrow T T)) (i T))
-                        (let r T ((snStepAt rs i) ctx hs R)
-                          (if (isSome r) (some (node2 0 i (get r))) (kf (add i 1)))))
-                      (lam ((i T)) none) cs)
-                    0)
-        (bindO found (lam ((fr T))
-          (let i T (child fr 0)
-            (let r T (child fr 1)
-              (res (node l (setAt cs i (resTerm r)))
-                (node (congRule l)
-                  (setAt (mapT cRefl cs) i (resCert r)))))))))
-      none))))
-(defn stepFold ((D Ts) (G Ts) (U Ts) (t T)) SN
-  (fold SN
-    (lam ((l T) (rs SNs))
-      (let cs Ts (snRaws rs)
-        (let raw T (node l cs)
-          (let isApp T (and (eq l 10) (eq (length cs) 2))
-            (let hd T (if isApp (fst (snd (snAt rs 0))) raw)
-              (let as Ts (if isApp (cons (at cs 1) (fst (snd (snd (snAt rs 0))))) (nil T))
-                (pair raw (pair hd (pair as
-                  (lam ((ctx Ts) (hs Ts) (R Ts))
-                    (let h T (redex D G U R ctx raw hd (reverse as))
-                      (if (isSome h) h (congr rs l cs ctx hs R)))))))))))))
-    t))
-(defn step ((D Ts) (G Ts) (U Ts) (R Ts) (ctx Ts) (hs Ts) (t T)) T
-  ((snd (snd (snd (stepFold D G U t)))) ctx hs R))
+; certificates composed without reflexivities, and a term with the certificate of its
+; reflexivity
+(defn isRefl ((c T)) T (eq (label c) 1))
+(defn seq ((c1 T) (c2 T)) T (if (isRefl c1) c2 (if (isRefl c2) c1 (cTrans c1 c2))))
+(defn same ((t T)) T (node2 0 t (cRefl t)))
 
-; normalization: the steps iterated at most a number of times, from the reflexivity of the term
-(defn norm ((D Ts) (G Ts) (U Ts) (R Ts) (ctx Ts) (hs Ts) (fuel T) (t T)) T
+; the head of an application and its arguments in order, up to four of them
+(defn spine4 ((t T)) T
   (iter T
-    (lam ((acc T))
-      (let r T (step D G U R ctx hs (resTerm acc))
-        (if (isSome r) (node2 0 (resTerm (get r)) (cTrans (resCert acc) (resCert (get r)))) acc)))
-    (node2 0 t (cRefl t))
-    fuel))
+    (lam ((s T))
+      (let cur T (child s 0)
+        (if (and (eq (label cur) 10) (eq (arity cur) 2))
+          (node2 0 (child cur 0) (node 0 (cons (child cur 1) (children (child s 1)))))
+          s)))
+    (node2 0 t (node 0 (nil T)))
+    4))
+(defn headStep ((D Ts) (G Ts) (U Ts) (R Ts) (ctx Ts) (t T)) T
+  (let sp T (spine4 t) (redex D G U R ctx t (child sp 0) (children (child sp 1)))))
+
+; normalization, innermost first, as the iteration of one level of a recursive normalizer, the
+; number of iterations bounding the depth of its recursion: a pass of a level normalizes the
+; children under one congruence, by the level below, then contracts the head when it is a redex;
+; the passes repeat at the level until the head is not a redex
+(deftype NF (Arrow T (Arrow Ts (Arrow Ts (Arrow Ts T)))))
+(defn normPass ((D Ts) (G Ts) (U Ts) (rec NF) (t T) (ctx Ts) (hs Ts) (R Ts)) T
+  (let l T (label t)
+    (let cs Ts (children t)
+      (let k T (length cs)
+        (let r1 T
+          (if (and (eq l 9) (eq k 2))
+            (let a T (at cs 0)
+              (let rb T (rec (at cs 1) (cons a ctx) (mapT (eqWk 1) hs) (lemmaOnly R))
+                (if (isRefl (resCert rb)) (same t)
+                  (node2 0 (node2 9 a (resTerm rb)) (node2 5 a (resCert rb))))))
+            (if (and (termNode l) (lt 0 k))
+              (let rs Ts (foldr T Ts (lam ((c T) (acc Ts)) (cons (rec c ctx hs R) acc)) (nil T) cs)
+                (if (allT (lam ((r T)) (isRefl (resCert r))) rs) (same t)
+                  (node2 0 (node l (mapT resTerm rs)) (node (congRule l) (mapT resCert rs)))))
+              (same t)))
+          (let h T (headStep D G U R ctx (resTerm r1))
+            (if (isSome h)
+              (mk3 0 (resTerm (get h)) (seq (resCert r1) (resCert (get h))) 0)
+              (mk3 0 (resTerm r1) (resCert r1) 1))))))))
+; passes iterated until one reports that it is done, the state the term, its certificate and
+; whether it is done: a first pass, then up to sixty-four rounds of sixty-four passes, a round
+; skipped once the state is done, so that a term a pass leaves unchanged costs one pass
+(defn continue ((pass (Arrow T T)) (s T)) T
+  (if (child s 2) s
+    (let r T (pass (child s 0)) (mk3 0 (child r 0) (seq (child s 1) (child r 1)) (child r 2)))))
+(defn untilDone ((pass (Arrow T T)) (t T)) T
+  (let s T (iter T
+             (lam ((s T)) (if (child s 2) s (iter T (continue pass) s 64)))
+             (continue pass (mk3 0 t (cRefl t) 0))
+             64)
+    (node2 0 (child s 0) (child s 1))))
+(defn normalizer ((D Ts) (G Ts) (U Ts) (depth T)) NF
+  (iter NF
+    (lam ((rec NF))
+      (lam ((t T) (ctx Ts) (hs Ts) (R Ts))
+        (untilDone (lam ((t T)) (normPass D G U rec t ctx hs R)) t)))
+    (lam ((t T) (ctx Ts) (hs Ts) (R Ts)) (same t))
+    depth))
+(defn norm ((D Ts) (G Ts) (U Ts) (R Ts) (ctx Ts) (hs Ts) (depth T) (t T)) T
+  ((normalizer D G U depth) t ctx hs R))
 
 ; tactics, each computing a certificate of a goal: a context, hypotheses and an equation
 (deftype Tac (Arrow Ts (Arrow Ts (Arrow T T))))

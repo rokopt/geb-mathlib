@@ -3734,12 +3734,13 @@ checklist and in CI.
   compiler and compare it with `Geb.Metalogic.check` on their
   certificates and on malformed variants of each.
   `bootstrap/metalogic/prove.geb` constructs certificates by derived
-  rules: a rewriting step at the leftmost outermost redex, normalization,
-  simplification of both sides of a goal, and induction; it reads a file
-  of a program's forms and theorems, whose statements the reader reads
-  as the program's own definitions, and checks each theorem's
-  certificate. `bootstrap/proofs/prelude.geb` proves theorems about the
-  prelude's lists, which `GebTests/Prototypes/Proofs.lean` checks in Geb
+  rules: normalization, innermost first, simplification of both sides of
+  a goal, and induction; it reads a file of a program's forms and
+  theorems, whose statements the reader reads as the program's own
+  definitions, and checks each theorem's certificate.
+  `bootstrap/proofs/prelude.geb` proves theorems about the prelude's
+  lists and `bootstrap/proofs/check.geb` about the kernel's type checker
+  written in Geb, which `GebTests/Prototypes/Proofs.lean` checks in Geb
   and again in Lean. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   ladder of rungs. Depends on `Geb.Prototypes.Kernel.Subst` and

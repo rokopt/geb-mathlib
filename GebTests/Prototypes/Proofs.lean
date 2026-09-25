@@ -12,9 +12,10 @@ set_option doc.verso true in
 /-!
 # Proofs about Geb programs
 
-Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, proved by the derived
-rules of {lit}`bootstrap/metalogic/prove.geb` and checked by the metalogic's checker written in
-Geb: the prover, compiled by the stage-0 compiler, checks each theorem's certificate, and each
+Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, and about the kernel's
+type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, proved by the derived rules of
+{lit}`bootstrap/metalogic/prove.geb` and checked by the metalogic's checker written in Geb: the
+prover, compiled by the stage-0 compiler, checks each theorem's certificate, and each
 certificate is checked again by {name}`Geb.Metalogic.check`, citing the theorems before it, in
 the global environment the program's definitions load. A false equation, and a true one whose
 tactic does not prove it, are rejected.
@@ -23,7 +24,8 @@ tactic does not prove it, are rejected.
 
 * {lit}`prover` — the program of the prover.
 * {lit}`results`, {lit}`accepted` — a file's results, and whether the Geb checker accepts one.
-* {lit}`recheck` — whether the Lean checker accepts every certificate of a file's results.
+* {lit}`recheck`, {lit}`allCheck` — whether the Lean checker accepts every certificate of a
+  file's results, and whether every theorem of a file checks in both.
 
 ## Tags
 
@@ -43,6 +45,9 @@ def proveGeb : String := include_str "../../bootstrap/metalogic/prove.geb"
 
 /-- The theorems about the prelude. -/
 def preludeProofs : String := include_str "../../bootstrap/proofs/prelude.geb"
+
+/-- The theorems about the kernel's type checker. -/
+def checkProofs : String := include_str "../../bootstrap/proofs/check.geb"
 
 /-- The program of the prover: the prelude, the reader, the kernel's checker, the metalogic's
 checker and the proof construction, applying the proof construction to a file of program forms
@@ -87,11 +92,16 @@ def rejected : String :=
   "(theorem wrong ((xs Ts)) (append xs xs) xs (simp (unfold append)))\n" ++
   "(theorem unproved ((xs Ts)) (append xs (nil T)) xs (simp (unfold append)))"
 
--- every theorem about the prelude checks, in Geb and again in Lean, and the prover rejects the
--- false equation and the unproved one
+/-- Whether every theorem of a file checks, in Geb and again in Lean. -/
+def allCheck (f : Tree → Option Tree) (fileText : List Char) : Bool :=
+  (results f fileText).any fun (D, rs) ↦ !rs.isEmpty && rs.all accepted && recheck D rs
+
+-- every theorem about the prelude and about the kernel's type checker checks, in Geb and again
+-- in Lean, and the prover rejects the false equation and the unproved one
 #guard (Tests.gebCheck? Kernel.Stage0Tests.compiler.toList prover.toList).any fun f ↦
-  ((results f (Kernel.Stage0Tests.prelude ++ "\n" ++ preludeProofs).toList).any fun (D, rs) ↦
-    !rs.isEmpty && rs.all accepted && recheck D rs) &&
+  allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ preludeProofs).toList &&
+  allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
+    Kernel.Stage0Tests.check ++ "\n" ++ checkProofs).toList &&
   (results f (Kernel.Stage0Tests.prelude ++ "\n" ++ rejected).toList).any fun (_, rs) ↦
     rs.length == 2 && !rs.any accepted
 

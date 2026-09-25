@@ -1,0 +1,11 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems about the kernel's type checker, bootstrap/check.geb, checked by
+; bootstrap/metalogic/prove.geb against the prelude's, the reader's and the checker's
+; definitions.
+
+; a quoted tree has the type of trees, in every context and every environment
+(theorem typeQuote ((G Ts) (ctx Ts) (x T)) (typeIn G ctx (node 15 (single x))) (some 0)
+  (simp (unfold typeIn checkNode rrTrees single some none) (rw labelNode childrenNode arityDef)))
