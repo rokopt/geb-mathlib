@@ -78,9 +78,9 @@ the order of dependence.
   the metalogic and its checker; each rung's checker is proved sound in
   Lean and written again in Geb, where the prover has tactics that
   construct the rung's certificates. Begun: the first rung's checker is constructed and its
-  proof construction is begun. Whether one presentation of the free
-  topos replaces the rungs is open (Phase 7, the section on the free
-  topos in one presentation).
+  proof construction is begun. One presentation of the free topos
+  replaces the rungs above the first (Phase 7, the section on the free
+  topos in one presentation); its constructions are not begun.
 * Extension. A program is extended by definitions whose identity
   survives edits, and Surface 1 is complete enough to write the rest of
   Geb in, with diagnostics that name what fails. Begun: closed bundles
@@ -126,21 +126,19 @@ Computation:
   run by the compiled executables, the section on improvements. Not
   begun.
 
-Logic, Phase 7, one rung after another as the rung sections below
-detail:
+Logic, Phase 7, the first rung and then the free topos in one
+presentation, as the sections below detail:
 
 * Rung 1, the cartesian closed locos: the rules and their soundness in
   Lean, and the checker written in Geb, constructed; the proof
   construction, begun; proofs about the compiler's components, which
-  exercise the prover, begun; stronger checkers admitted by translations
-  of certificates, not begun.
-* Rung 2, the arithmetic universe: coherent logic and quotients. Not
-  begun.
-* Rung 3, the Heyting pretopos: first-order logic and subset types. Not
-  begun.
-* Rung 4, the Π-pretopos: families of types and their dependent
-  products. Not begun.
-* Rung 5, the topos: power types and comprehension. Not begun.
+  exercise the prover, begun, and paused until the fifth choice;
+  stronger checkers admitted by translations of certificates, not begun.
+* The free topos in one presentation: the rule set checked against its
+  specification, the model in Lean with functional relations, the
+  definitional extension with its unfolding theorem, the measurement
+  that decides when the Mitchell–Bénabou language is written, and the
+  checker and prover written in Geb. Not begun.
 
 Extension:
 
@@ -242,11 +240,11 @@ The following are fixed; the plan builds on them.
 * Metalogic. The metalogic is the free topos with the inductive types
   the bootstrap uses, natural numbers and rose trees, and its
   equivalence with the free topos with a natural numbers object is
-  proved in Geb. It is reached through rungs of categorical structure,
-  each with its internal language, the subobject classifier last; no
-  classical logic is an intermediate step. Every rung is cartesian
-  closed, since the kernel's programs have function types, and the
-  first rung's terms are the kernel's terms of every type.
+  proved in Geb. Above the first rung, whose terms are the kernel's
+  terms of every type, it is presented at once, as the initial model of
+  one partial Horn theory of an elementary topos with the data objects
+  (Phase 7, the section on the free topos in one presentation); no
+  classical logic is an intermediate step.
 * Artifacts. The compiler's image and, once the compiler emits Lean,
   the emitted Lean are committed as build artifacts. Continuous
   integration regenerates them and compares their bytes with the
@@ -1270,7 +1268,10 @@ an unproved one.
 
 ### The rungs
 
-Each rung is built by the three steps above, and each is fixed before
+The presentation of the section on the free topos in one presentation
+replaces the rungs above the first; the following records the rungs as
+they were designed, the first of them constructed. Each rung is built
+by the three steps above, and each is fixed before
 proofs are migrated to it (the section on the metalogic and its
 checker). For each rung the following lists what the bootstrap defines
 and proves, and what the rung is used for after the bootstrap. Every
@@ -1408,9 +1409,9 @@ checker is defined, proved sound in Lean and written again in Geb, and
 the same method may apply to the free topos with the natural numbers,
 list and rose-tree objects presented at once, by one checker in place of
 five. This section states that alternative, what it would change, and
-the questions that decide between the two routes. The presentation's
-form is fixed below; the questions at the end remain before Phase 7
-takes this route.
+the questions that remain. Phase 7 takes this route, whose form is
+fixed below; the questions at the end are settled by constructing and
+measuring.
 
 A category is a presheaf on the walking parallel pair whose two objects
 are the objects and the morphisms and whose two restrictions are the
@@ -1684,6 +1685,31 @@ constructible:
 The first construction precedes the other two, which are independent of
 each other; the choices follow them.
 
+The fourth choice is made by measurement. Soon after the first
+construction, the theorems proved on the first rung in
+`bootstrap/proofs/prelude.geb` and `bootstrap/proofs/nat.geb` are
+proved again in the combinators, and the two are compared on the size
+of their certificates and the time to check them, and on how they read.
+Programs remain kernel terms, so the choice does not change the speed
+of the compiler, only that of checking the development written in the
+combinators, whose certificates bind no variables and are the larger
+for it. The Mitchell–Bénabou language is deferred while checking stays
+within a small multiple of the first rung's time and the proofs read as
+their mathematics rather than as the arrangement of projections,
+pairings and curryings. When either fails, it is written at the
+earliest point at which it can be, after the first construction, since
+its interpretation needs every operation of the topos and nothing of the
+other two constructions. It is written as an elaborator into the
+combinators, whose certificates the one checker checks, so that the
+elaborator is trusted with nothing; a theorem that every derivation of
+the Mitchell–Bénabou language translates is its completeness, which may
+follow as the relative soundness of the section on the metalogic and its
+checker does. Its terms refer to the definitions made in the
+combinators before it, so that the development continues in it without
+rewriting them.
+
+The fifth choice is deferred until the three constructions are made.
+
 ## Improvements
 
 The following are known limitations of what is constructed, each with
@@ -1756,10 +1782,12 @@ the change that removes it.
 
 ## The next phase
 
-The questions of the section on the free topos in one presentation are
-settled first, since their answers decide whether the rungs above the
-first are built. The metalogic then continues on its first rung with
-step 3, whose proofs are about kernel programs on either route. The next proof
+The metalogic takes the route of the section on the free topos in one
+presentation: its first construction, the rule set checked against its
+specification; the measurement that makes the fourth choice; the second
+and third constructions; and then the fifth choice. The first rung's
+step 3, whose proofs are about kernel programs on either route, resumes
+after the fifth choice, at the proof that follows. The next proof
 is the type checker's preservation of types by weakening, of `typeIn`
 in `bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
 for every environment `G`, contexts `c1` and `c2`, type `a` and term
