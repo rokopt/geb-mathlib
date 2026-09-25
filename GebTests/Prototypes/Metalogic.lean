@@ -13,16 +13,24 @@ set_option doc.verso true in
 # The first rung of the metalogic
 
 Certificates checked by {name}`Geb.Metalogic.check`: a theorem with a hypothesis, derived by
-congruence; a substitution, instantiating a variable of a derived equation; and an induction,
-proving that appending the empty list to a list, written with the kernel's right fold, gives
-the list. Certificates with an altered binder, an invalid dependency or a false conclusion do
-not check to that conclusion.
+congruence; a substitution, instantiating a variable of a derived equation; an induction on a
+list, proving that appending the empty list to a list, written with the kernel's right fold,
+gives the list; an induction on a label, proving that iterating the identity leaves its start
+unchanged; an induction on a tree, proving that a fold whose step ignores its arguments is
+constant; the computation rules of case analysis of lists; and a reference to a definition of
+a loaded program. Certificates with an altered binder, an invalid dependency or a false
+conclusion do not check to that conclusion.
 
 ## Main definitions
 
 * {lit}`arr`, {lit}`lt` — the types of functions on trees and of lists of trees.
 * {lit}`g`, {lit}`appendNil` — the step of appending and the append of the empty list.
 * {lit}`step`, {lit}`induction` — the certificate of the inductive step and of the theorem.
+* {lit}`idT`, {lit}`iterId`, {lit}`labelInduction` — iteration of the identity, and the
+  certificate that it leaves its start unchanged, by induction on the label.
+* {lit}`zeroStep`, {lit}`foldZero`, {lit}`treeInduction` — a fold whose step ignores its
+  arguments, and the certificate that it is constant, by induction on the tree.
+* {lit}`program`, {lit}`globals` — a program of one definition and the environment it loads.
 
 ## Tags
 
@@ -70,34 +78,93 @@ def step : Tree :=
 def induction : Tree := mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], step]
 
 -- a theorem with a hypothesis: from `f = g`, `f x = g x`
-#guard check (mk 4 [mk 0 [leaf 0], mk 1 [Tm.var 2]]) [] [arr, arr, tT]
+#guard check (mk 4 [mk 0 [leaf 0], mk 1 [Tm.var 2]]) [] [] [arr, arr, tT]
     [⟨arr, Tm.var 0, Tm.var 1⟩] =
   some ⟨tT, mk 10 [Tm.var 0, Tm.var 2], mk 10 [Tm.var 1, Tm.var 2]⟩
 -- a substitution: the first projection of a pair of a variable with itself is the variable, at
 -- a quoted tree
-#guard check (mk 20 [mk 15 [leaf 5], mk 13 [Tm.var 0, Tm.var 0]]) [] [] [] =
+#guard check (mk 20 [mk 15 [leaf 5], mk 13 [Tm.var 0, Tm.var 0]]) [] [] [] [] =
   some ⟨tT, mk 13 [mk 12 [mk 15 [leaf 5], mk 15 [leaf 5]]], mk 15 [leaf 5]⟩
 -- an induction: appending the empty list to a list gives the list
-#guard check induction [] [lt] [] = some ⟨lt, appendNil, Tm.var 0⟩
+#guard check induction [] [] [lt] [] = some ⟨lt, appendNil, Tm.var 0⟩
 -- evaluation of a closed term
-#guard check (mk 17 [apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]]]) [] [] [] =
+#guard check (mk 17 [apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]]]) [] [] [] [] =
   some ⟨tT, apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]], mk 15 [leaf 4]⟩
 -- an altered binder: an abstraction whose annotation is not a type, and a β step whose
 -- argument does not have the annotated type
-#guard check (mk 5 [leaf 7, mk 1 [Tm.var 0]]) [] [] [] = none
-#guard check (mk 11 [lt, Tm.var 0, mk 15 [leaf 1]]) [] [] [] = none
+#guard check (mk 5 [leaf 7, mk 1 [Tm.var 0]]) [] [] [] [] = none
+#guard check (mk 11 [lt, Tm.var 0, mk 15 [leaf 1]]) [] [] [] [] = none
 -- invalid dependencies: a hypothesis that is not there, and a transitivity whose middle terms
 -- differ
-#guard check (mk 0 [leaf 1]) [] [tT] [⟨tT, Tm.var 0, Tm.var 0⟩] = none
-#guard check (mk 3 [mk 1 [Tm.var 0], mk 1 [mk 15 [leaf 0]]]) [] [tT] [] = none
+#guard check (mk 0 [leaf 1]) [] [] [tT] [⟨tT, Tm.var 0, Tm.var 0⟩] = none
+#guard check (mk 3 [mk 1 [Tm.var 0], mk 1 [mk 15 [leaf 0]]]) [] [] [tT] [] = none
 -- false conclusions: evaluation does not conclude a wrong value, induction with a step that
 -- does not prove its case fails, and the theorem does not conclude that the append is empty
-#guard check (mk 17 [apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]]]) [] [] [] ≠
+#guard check (mk 17 [apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]]]) [] [] [] [] ≠
   some ⟨tT, apps (mk 22 [leaf 5]) [mk 15 [leaf 2], mk 15 [leaf 2]], mk 15 [leaf 5]⟩
-#guard check (mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], mk 1 [Tm.var 0]]) [] [lt] [] =
+#guard check (mk 23 [appendNil, Tm.var 0, mk 21 [tT, lt, g, nilT], mk 1 [Tm.var 0]]) [] [] [lt] [] =
   none
-#guard check induction [] [lt] [] ≠ some ⟨lt, appendNil, nilT⟩
+#guard check induction [] [] [lt] [] ≠ some ⟨lt, appendNil, nilT⟩
+
+/-- The identity on trees. -/
+def idT : Tree := mk 9 [tT, Tm.var 0]
+
+/-- Iteration of the identity from the variable {lit}`1`, as many times as the label of the
+variable {lit}`0`. -/
+def iterId : Tree := apps (mk 18 [tT]) [idT, Tm.var 1, Tm.var 0]
+
+/-- Iterating the identity leaves its start unchanged: at the label zero by iteration's
+computation, and at a successor by iteration's computation, a β step and the hypothesis. -/
+def labelInduction : Tree :=
+  mk 30 [iterId, Tm.var 1, mk 26 [tT, idT, Tm.var 0],
+    mk 3 [mk 27 [tT, idT, Tm.var 1, Tm.var 0],
+      mk 3 [mk 11 [tT, Tm.var 0, iterId], mk 0 [leaf 0]]]]
+
+/-- The step of a fold that ignores its arguments. -/
+def zeroStep : Tree := mk 9 [tT, mk 9 [lt, mk 15 [leaf 0]]]
+
+/-- The fold of the variable {lit}`0` by that step. -/
+def foldZero : Tree := apps (mk 17 [tT]) [zeroStep, Tm.var 0]
+
+/-- The fold by that step is constant: at a node by the fold's computation and two β steps. -/
+def treeInduction : Tree :=
+  let b := mapBy tT tT (apps (mk 17 [tT]) [zeroStep, Tm.var 1]) (Tm.var 0)
+  mk 29 [foldZero, mk 15 [leaf 0],
+    mk 3 [mk 28 [tT, zeroStep, Tm.var 1, Tm.var 0],
+      mk 3 [mk 4 [mk 11 [tT, mk 9 [lt, mk 15 [leaf 0]], mk 10 [mk 22 [leaf 0], Tm.var 1]],
+          mk 1 [b]],
+        mk 11 [lt, mk 15 [leaf 0], b]]]]
+
+/-- A program of one definition, the tree of label five. -/
+def program : List Tree := [mk 15 [leaf 5]]
+
+/-- The environment the program loads. -/
+def globals : List Glob := (load program).getD []
+
+-- an induction on a label: iterating the identity leaves its start unchanged
+#guard check labelInduction [] [] [tT, tT] [] =
+  some ⟨tT, apps (mk 18 [tT]) [idT, Tm.var 1, mk 10 [mk 22 [leaf 0], Tm.var 0]], Tm.var 1⟩
+-- an induction on a tree: a fold whose step ignores its arguments is constant
+#guard check treeInduction [] [] [tT] [] = some ⟨tT, foldZero, mk 15 [leaf 0]⟩
+-- case analysis of lists at the empty list and at a list of a head and a tail
+#guard check (mk 24 [tT, tT, mk 15 [leaf 1], mk 9 [tT, mk 9 [lt, Tm.var 1]]]) [] [] [] [] =
+  some ⟨tT, apps (mk 24 [tT, tT]) [nilT, mk 15 [leaf 1], mk 9 [tT, mk 9 [lt, Tm.var 1]]],
+    mk 15 [leaf 1]⟩
+#guard (check (mk 25 [tT, tT, mk 15 [leaf 2], nilT, mk 15 [leaf 1],
+    mk 9 [tT, mk 9 [lt, Tm.var 1]]]) [] [] [] []).map (·.rhs) =
+  some (apps (mk 9 [tT, mk 9 [lt, Tm.var 1]]) [mk 15 [leaf 2], nilT])
+-- a reference to a definition, in the empty context and below a variable
+#guard globals.length = 1
+#guard check (mk 31 [leaf 0]) program globals [] [] = some ⟨tT, mk 23 [leaf 0], mk 15 [leaf 5]⟩
+#guard check (mk 31 [leaf 0]) program globals [tT] [] =
+  some ⟨tT, mk 23 [leaf 0], mk 15 [leaf 5]⟩
+-- a reference to a definition the program does not have, an induction on a label in a context
+-- whose innermost variable is not a tree, and a fold at a result type that is not a type
+#guard check (mk 31 [leaf 1]) program globals [] [] = none
+#guard check labelInduction [] [] [lt, tT] [] = none
+#guard check (mk 28 [leaf 9, zeroStep, Tm.var 1, Tm.var 0]) [] [] [lt, tT] [] = none
 
 end Geb.Metalogic.Tests
+
 
 end
