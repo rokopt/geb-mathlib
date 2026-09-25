@@ -1,0 +1,19 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Theorems about the prelude's lists, checked by bootstrap/metalogic/prove.geb against the
+; prelude's definitions. A theorem is (theorem name binders lhs rhs tactic), its induction
+; variable, when it has one, bound last.
+
+; the empty list is a unit of appending
+(theorem appendNilLeft ((ys Ts)) (append (nil T) ys) ys (simp (unfold append)))
+(theorem appendNil ((xs Ts)) (append xs (nil T)) xs
+  (induction-list (simp (unfold append)) (simp (unfold append) hyps)))
+
+; appending is associative
+(theorem appendAssoc ((ys Ts) (zs Ts) (xs Ts)) (append (append xs ys) zs) (append xs (append ys zs))
+  (induction-list (simp (unfold append)) (simp (unfold append) hyps)))
+
+; a theorem used as a rewriting rule
+(theorem appendNilTwice ((xs Ts)) (append (append xs (nil T)) (nil T)) xs (simp (rw appendNil)))
