@@ -647,6 +647,20 @@ theorem eqLiftOf_eta {f g m : T.Ar} (hp : T.Par f g) (hm : T.codOf m = T.eqzOf f
     (by simp_eval [T.op_eqInclOf hp, T.op_compOf (hm.trans (T.domOf_eqInclOf hp).symm), hlift])
     (by simp_eval [])
 
+/-- Equalizers of pairs with equal second arrows are equal. -/
+theorem eqzOf_congr {f g g' : T.Ar} (e : g = g') (hp : T.Par f g) (hp' : T.Par f g') :
+    T.eqzOf f g hp = T.eqzOf f g' hp' := by
+  subst e
+  rfl
+
+/-- Factorizations through equalizers of pairs with equal second arrows are equal. -/
+theorem eqLiftOf_congr {f g g' k : T.Ar} (e : g = g') (hp : T.Par f g) (hp' : T.Par f g')
+    (hk : T.codOf k = T.domOf f) (he : T.compOf f k hk = T.compOf g k (hk.trans hp.1))
+    (he' : T.compOf f k hk = T.compOf g' k (hk.trans hp'.1)) :
+    T.eqLiftOf f g k hp hk he = T.eqLiftOf f g' k hp' hk he' := by
+  subst e
+  rfl
+
 /-- An axiom of the initial block, by index, is valid in the model. -/
 theorem axInitial (k : ℕ) (hk : k < initialAxioms.length := by decide) :
     (initialAxioms[k]).Valid T.model :=
@@ -1157,6 +1171,12 @@ theorem codOf_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
   have hq := hv [⟨obj, c⟩, ⟨obj, a⟩, ⟨arr, f⟩] rfl (by simpa using T.holds_curryOf h)
   exact T.val_inj <| T.holds_eq hq (by simp_eval [T.op_curryOf h, op_codOf])
     (by simp_eval [op_codOf, op_expOf])
+
+/-- Curryings of equal morphisms are equal, whatever the proofs of their domains. -/
+theorem curryOf_congr {c a : T.Obj} {f f' : T.Ar} (e : f = f') {h : T.domOf f = T.prodOf c a}
+    {h' : T.domOf f' = T.prodOf c a} : T.curryOf c a f h = T.curryOf c a f' h' := by
+  subst e
+  rfl
 
 /-- The morphism {lit}`curry f × id` composes with evaluation. -/
 theorem codOf_prodMapLeftOf_curryOf {c a : T.Obj} {f : T.Ar} (h : T.domOf f = T.prodOf c a) :
