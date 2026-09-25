@@ -9,11 +9,11 @@ public import Geb.Prototypes.Metalogic.Equations
 
 set_option doc.verso true in
 /-!
-# The metalogic
+# The computational core's logic
 
-The metalogic of the bootstrap, rung by rung: the checkers of certificates of propositions
-about kernel programs, each proved sound against the kernel's denotation. The first rung
-derives equations between kernel terms from equational hypotheses.
+The checker of certificates of equations between kernel programs, derived from equational
+hypotheses and proved sound against the kernel's denotation: the computational core's logic,
+beneath the metalogic, the free topos presented as the initial model of a partial Horn theory.
 -/
 
 set_option doc.verso true

@@ -73,14 +73,14 @@ the order of dependence.
   interaction-net runtime, HVM, Bend or a similar one, which a compiler
   written in Geb targets for parallel workloads. Lean reached; the
   others not begun.
-* Logic. The metalogic is the free topos with the natural numbers and
-  rose-tree objects, reached through the five rungs of the section on
-  the metalogic and its checker; each rung's checker is proved sound in
-  Lean and written again in Geb, where the prover has tactics that
-  construct the rung's certificates. Begun: the first rung's checker is constructed and its
-  proof construction is begun. One presentation of the free topos
-  replaces the rungs above the first (Phase 7, the section on the free
-  topos in one presentation); its constructions are not begun.
+* Logic. Two checkers, each proved sound in Lean and written again in
+  Geb, where a prover has tactics that construct its certificates: the
+  computational core's, of equations between kernel terms, and the
+  metalogic's, the free topos with the natural numbers, list and
+  rose-tree objects, presented as the initial model of one partial Horn
+  theory (Phase 7). Begun: the computational core's checker is
+  constructed and its proof construction is begun; the metalogic's
+  constructions are not begun.
 * Extension. A program is extended by definitions whose identity
   survives edits, and Surface 1 is complete enough to write the rest of
   Geb in, with diagnostics that name what fails. Begun: closed bundles
@@ -126,19 +126,19 @@ Computation:
   run by the compiled executables, the section on improvements. Not
   begun.
 
-Logic, Phase 7, the first rung and then the free topos in one
-presentation, as the sections below detail:
+Logic, Phase 7, the computational core and then the metalogic, as the
+sections below detail:
 
-* Rung 1, the cartesian closed locos: the rules and their soundness in
-  Lean, and the checker written in Geb, constructed; the proof
-  construction, begun; proofs about the compiler's components, which
-  exercise the prover, begun, and paused until the fifth choice;
+* The computational core, a cartesian closed locos: the rules and their
+  soundness in Lean, and the checker written in Geb, constructed; the
+  proof construction, begun; proofs about the compiler's components,
+  which exercise the prover, begun, and paused until the fifth choice;
   stronger checkers admitted by translations of certificates, not begun.
-* The free topos in one presentation: the rule set checked against its
-  specification, the model in Lean with functional relations, the
-  definitional extension with its unfolding theorem, the measurement
-  that decides when the Mitchell–Bénabou language is written, and the
-  checker and prover written in Geb. Not begun.
+* The metalogic, the free topos in one presentation: the rule set
+  checked against its specification, the model in Lean with functional
+  relations, the definitional extension with its unfolding theorem, the
+  measurement that decides when the Mitchell–Bénabou language is
+  written, and the checker and prover written in Geb. Not begun.
 
 Extension:
 
@@ -156,12 +156,13 @@ Extension:
 
 ## After the bootstrap
 
-Written in Geb, each proof on the lowest rung that states it:
+Written in Geb, each proof in the computational core when it is an
+equation between kernel terms, and in the metalogic otherwise:
 
-* Surface 2: quotients whose respect is proved, on the arithmetic
-  universe; subset types by propositions and definitions by equations
-  whose unique solution is proved, on the Heyting pretopos; dependent
-  products of families, on the Π-pretopos.
+* Surface 2: quotients whose respect is proved, subset types by
+  propositions, definitions by equations whose unique solution is
+  proved, and dependent products of families, each a construction of
+  the metalogic's topos.
 * The richer forms of definition of `docs/definitions.md`: well-founded
   and guarded blocks, presentations, presheaf signatures, a binding
   language with its substitution laws, and modules. Their Lean
@@ -175,8 +176,8 @@ Written in Geb, each proof on the lowest rung that states it:
 * The optimized representation of the chapter on value representation,
   after its decision gates, and the further concrete syntaxes of
   `docs/concrete-syntaxes.md` § Roadmap.
-* Theorems about the metalogic proved in it: the soundness of the first
-  rung's checker, on the topos, and the equivalence of the free topos
+* Theorems about the metalogic proved in it: the soundness of the
+  computational core's checker, and the equivalence of the free topos
   with the rose-tree object and the free topos with a natural numbers
   object; and the extraction of programs from proofs of totality,
   through a realizability topos.
@@ -224,8 +225,8 @@ The following are fixed; the plan builds on them.
   programs (the necessity theorem of `Geb/Prototypes/Typechecker/`'s
   classifier module), so logic is not a Surface 1 construct. The
   metalogic of Phase 7 holds propositions and their proofs about kernel
-  programs, on the rungs of the section on the metalogic and its
-  checker. Surface 2, built on both, adds subset types by arbitrary
+  programs, and the computational core the equations between them.
+  Surface 2, built on both, adds subset types by arbitrary
   propositions, quotients whose respect for their relation is proved,
   and definitions by equations whose unique solution is proved; it is
   the setoid completion of Surface 1 with its obligations discharged in
@@ -240,11 +241,13 @@ The following are fixed; the plan builds on them.
 * Metalogic. The metalogic is the free topos with the inductive types
   the bootstrap uses, natural numbers and rose trees, and its
   equivalence with the free topos with a natural numbers object is
-  proved in Geb. Above the first rung, whose terms are the kernel's
-  terms of every type, it is presented at once, as the initial model of
-  one partial Horn theory of an elementary topos with the data objects
-  (Phase 7, the section on the free topos in one presentation); no
-  classical logic is an intermediate step.
+  proved in Geb. It is presented at once, as the initial model of one
+  partial Horn theory of an elementary topos with the data objects
+  (Phase 7, the section on the metalogic), and no classical logic is an
+  intermediate step. Beneath it, the computational core is the
+  equational logic of the kernel's terms of every type, a cartesian
+  closed category with the data objects, since the kernel's programs
+  have function types.
 * Artifacts. The compiler's image and, once the compiler emits Lean,
   the emitted Lean are committed as build artifacts. Continuous
   integration regenerates them and compares their bytes with the
@@ -559,140 +562,64 @@ and whose only primitive predicate is equality; its entailment
 relation is indexed by a set of variables, which makes empty types
 sound (Sections 1 and 4 of {citet LambekScott1980}[]). Every topos with
 a natural numbers object has W-types {citep MoerdijkPalmgren2000}[], so
-adding the rose-tree type with its constructor, no-confusion and
-induction axioms to that type theory generates the free topos on the
-rose-tree object. A checker for the type theory with the rose-tree
-type is therefore a complete kernel for the metalogic: the topos
-structure is derived from provability rather than presented by
-combinators, and no mutual definition of objects, morphisms and their
-equalities is needed. That this topos is equivalent to the free topos
-with a natural numbers object is to be proved in Geb; a bijection
-between trees and natural numbers in sets does not prove it. The
-equivalence is a statement about the syntax of two type theories:
-translations of their types and terms in each direction, and derivable
-isomorphisms between each type and its translation back. Its proof is
-an induction on types, terms and derivations, which needs first-order
-logic over syntax and not the subobject classifier.
+the free topos with the rose-tree object differs from the free topos
+with a natural numbers object in what is primitive. That the two are
+equivalent is to be proved in Geb; a bijection between trees and natural
+numbers in sets does not prove it. The equivalence is a statement about
+the syntax of two presentations: translations of their objects and
+morphisms in each direction, and derivable isomorphisms between each
+object and its translation back. Its proof is an induction on terms and
+derivations.
 
-The metalogic is reached through rungs, each the one below it with
-structure added. Each rung has an internal language, an extensional
-dependent type theory in which a proposition is a type with at most one
-element {citep Maietti2005}[], so a checker for one rung is extended to
-the next by a block of rules. The locos and the arithmetic universe are
-as {citet Maietti2010}[] defines them, the arithmetic universe, Joyal's,
-being a pretopos with parameterized list objects; a Heyting pretopos is
-a pretopos whose internal type theory is first-order
-{citep Maietti1998}[]. Every rung carries the rose-tree object as a
-primitive, the initial algebra of the functor taking an object to the
-product of the natural numbers object with the object's list object.
-Every rung is also cartesian closed: the kernel's programs are terms of
-System T, whose types include function types, and a rung's logic speaks
-of a program together with its internal terms of every type, so each
-rung below the Π-pretopos is the structure it names with exponentials
-added.
+The metalogic presents the free topos with the data objects directly, as
+the initial model of a partial Horn theory (Phase 7, the section on the
+metalogic). Beneath it, the computational core is the equational logic
+of the kernel's terms: its judgments are equations between kernel terms
+of a type under hypotheses, the logic of a locos as
+{citet Maietti2010}[] defines it with exponentials added, since the
+kernel's programs are terms of System T, whose types include function
+types. The kernel's types, function types included, are objects of the
+metalogic, and Surface 1's recognized types are subobjects of the type
+of trees there, cut out by their recognizers.
 
-:::table +header
-*
-  * Rung
-  * Structure added
-  * Logic of subobjects
-  * Geb
-*
-  * Cartesian closed locos
-  * finite limits, stable disjoint finite coproducts, parameterized
-    list objects, exponentials
-  * equality and conjunction
-  * equations between the kernel's terms; Surface 1
-*
-  * Arithmetic universe
-  * stable effective quotients of equivalence relations
-  * coherent: falsity, disjunction, existential quantification
-  * quotients by relations, their respect proved
-*
-  * Heyting pretopos
-  * right adjoints to pulling back subobjects
-  * first-order: implication, universal quantification
-  * propositions and proofs about programs, subset types
-*
-  * Π-pretopos: locally cartesian closed pretopos
-  * dependent products of all objects
-  * first-order, over families of types
-  * dependent products of families of types
-*
-  * Topos
-  * a subobject classifier
-  * higher-order: power objects
-  * the foundational metalogic
-:::
-
-A locally cartesian closed pretopos is a Heyting pretopos, since the
-right adjoint to pulling back along a map preserves monomorphisms and
-so restricts to subobjects. Every topos with a natural numbers object
-is a locally cartesian closed pretopos, a Π-pretopos, and has W-types
-(Theorem 2.12 of {citet VanDenBerg2012}[]), but not conversely: the
-ex/lex-completion of the category of topological spaces is a Π-pretopos
-and not a topos (Remark 6.9 of the same). A Π-pretopos is a topos
-exactly when it has a subobject classifier, a topos being a category
-with finite limits, exponentials and a subobject classifier. What the
-subobject classifier adds is propositions as values, power objects and
-comprehension by arbitrary predicates;
-propositions about the elements of an object, as its subobjects, exist
-on every rung, and first-order logic from the Heyting pretopos up. The
-kernel's types, function types included, are objects on every rung, and
-Surface 1's recognized types are subobjects of the type of trees there,
-cut out by their recognizers.
-
-A free category of each rung maps to the free topos by the functor that
-preserves its structure, so a proof checked on a lower rung remains
-valid on every higher one. The functor need not be full or faithful:
-the free topos has arrows between natural numbers that no System T
-term defines (below), and it may prove equations between programs that
-a weaker rung does not, in which case the free category of that rung
-is not a subcategory of the free topos. A proof therefore moves up the
-ladder unchanged, and down it only by being checked again.
-
-The checkers carry the transfer. Each rung's certificates are those of
-the rung below with rules added, whose labels, as the table of axioms,
-are only extended; an equation is a formula of every higher rung, and a
-higher rung's checker applies the rules of the lower labels as the lower
-checker does, to formulas that are equations. A certificate checked on a
-rung is then a certificate of every higher rung with the same
-conclusion, which one lemma per rung proves by induction on
-certificates, and each rung's soundness proof extends that of the rung
-below it. A certificate cites an axiom by its index in the table of
-axioms and a theorem by its index among the theorems, by two rules, so
-that the axioms a richer rung adds leave every citation unchanged. A
-cited theorem need only be valid, not checked on the citing rung, so a
-proof on one rung may cite an equation proved on a higher one and then
-belongs to the highest rung it uses: a richer rung shortens the proofs
-of a weaker one through the lemmas it proves, and no proof is checked
-again on a lower rung.
+The functor from the free cartesian closed category of the kernel's
+terms to the free topos that preserves its structure sends each
+equation the computational core proves to one the metalogic proves, so
+a proof checked in the core remains valid in the metalogic. The functor
+need not be full or faithful: the free topos has arrows between natural
+numbers that no System T term defines (below), and it may prove
+equations between programs that the core does not. A proof therefore
+moves from the core to the metalogic by a translation of its
+certificate, through the translation of λ-terms into the combinators,
+and back only by being checked again. Within the core, a certificate
+cites an axiom by its index in the table of axioms and a theorem by its
+index among the theorems, by two rules, so that the axioms added later
+leave every citation unchanged. A cited theorem need only be valid, so a
+proof in the core may cite an equation between kernel terms that the
+metalogic proves.
 
 Relative soundness takes two forms. One checker is admitted beside
 another of the same judgments when a Geb program translates each
 certificate the first accepts into one the second accepts with the same
 conclusion. That is an equation between kernel programs under the
-hypothesis that the first checker accepts, and it is proved on the first
-rung by induction on certificates; the checkers' results are functions
-of the context and the hypotheses, so the equation is stated at function
-types and its induction hypothesis covers the contexts and hypotheses of
-the premises. That a rung's checker is sound, every certificate it
-accepts valid, is a statement about the denotation of kernel terms,
-which no kernel term computes (below); it is stated on the topos, which
-has System T's evaluator. A rung that proves no equation between kernel
-terms beyond those the first rung proves cannot prove the first rung's
-checker sound, since the first rung's consistency is such an equation
-and the first rung does not prove it; which rungs below the topos prove
-equations beyond the first rung's is not settled here.
+hypothesis that the first checker accepts, and it is proved in the
+computational core by induction on certificates; the checkers' results
+are functions of the context and the hypotheses, so the equation is
+stated at function types and its induction hypothesis covers the
+contexts and hypotheses of the premises. That a checker is sound, every
+certificate it accepts valid, is a statement about the denotation of
+kernel terms, which no kernel term computes (below); it is stated in
+the metalogic, whose topos has System T's evaluator. The computational
+core cannot prove its own checker sound, since the core's consistency is
+an equation between kernel terms that the core does not prove.
 
-Each rung's rule set states typing, substitution, extensionality and
-induction explicitly, and the topos's adds comprehension; the
-equalities of the computation fragment supply none of them. Proof terms
-are explicit and finite, and the checker is not required to decide
-equality of morphisms, to normalize programs, or to search for proofs
-that a relation is functional. Propositions are not executable Booleans
-in general. Three properties of the type theory fix the checker's
-rules:
+Each checker's rule set states typing, substitution, extensionality and
+induction explicitly; the equalities of computation supply none of
+them. Proof terms are explicit and finite, and a checker is not
+required to decide equality of morphisms, to normalize programs, or to
+search for proofs that a relation is functional. Propositions are not
+executable Booleans in general. Three properties of the metalogic fix
+its checker's rules:
 
 * Sequents are indexed by their free variables, as Lambek and Scott's
   are, so that empty types are sound.
@@ -707,13 +634,13 @@ rules:
   retraction's value at $`0` is $`0` exactly when $`p` holds, and
   equality on $`2` is decidable.
 
-Each rung's checker is a fold over proof objects that computes each
-conclusion from the premises' conclusions, trusting no stated
-conclusion; {name}`Geb.Bootstrap.infer` is that pattern for a fragment
-of computation equalities. Its soundness is proved in Lean by
-interpreting types as Lean types, without `Classical.choice`, and from
-the arithmetic universe up, where disjunction appears, it is tested in
-a model that is not Boolean, where a classical rule would fail.
+Each checker is a fold over proof objects that computes each conclusion
+from the premises' conclusions, trusting no stated conclusion;
+{name}`Geb.Bootstrap.infer` is that pattern for a fragment of
+computation equalities. Its soundness is proved in Lean by interpreting
+types as Lean types, without `Classical.choice`, and the metalogic's,
+where disjunction appears, is tested as well in a model that is not
+Boolean, where a classical rule would fail.
 
 Programs are weaker than the metalogic. The free topos has arrows
 between natural numbers that no System T term defines, System T's own
@@ -733,21 +660,20 @@ verifies it, and is proved sound down to the machine code that runs it
 specification file, and takes proofs as untrusted input
 {citep Carneiro2019}[]. CakeML bootstraps a verified compiler inside
 the logic of HOL {citep KumarMyreenNorrishOwens2014}[]. After
-self-hosting, Geb admits stronger checkers as Milawa does; it cannot
-prove its first checker sound, which would prove its own consistency,
-so that proof stays in Lean.
+self-hosting, Geb admits stronger checkers as Milawa does; no checker
+proves itself sound, which would prove its own consistency, so the
+metalogic's soundness proof stays in Lean.
 
 Two kinds of extension differ. A derived definition, a derived rule or
 a proof-producing tactic can be written in Geb and produce evidence
 the existing checker accepts. A new foundational principle needs a
 conservative interpretation into the checker's theory or an explicit
 change of the theory: defining a data type of purported proofs does
-not make them sound. Each rung's rule set is therefore fixed before
-mathematical proofs are migrated to it, and a migration from Lean
-checks the rung, the logical strength and the universes it relies on,
-since a
-fixed elementary-topos presentation does not internalize all of
-Lean's universe-polymorphic mathematics.
+not make them sound. The metalogic's rule set is therefore fixed before
+mathematical proofs are migrated to it, and a migration from Lean checks
+the logical strength and the universes it relies on, since a fixed
+elementary-topos presentation does not internalize all of Lean's
+universe-polymorphic mathematics.
 
 ## Prior art in the repositories
 
@@ -784,7 +710,7 @@ candidates for porting, not seed components.
   by combinators. Its equations do not force its subobject classifier
   to classify, since interpreting that object as the terminal object
   satisfies them, and its equalizers are restricted to base arrows; it
-  is superseded by the type-theoretic presentation above.
+  is superseded by the partial Horn presentation of Phase 7.
 * `InteractionNets.lean` evaluates Lafont's combinators with maximal
   parallel steps and no proofs; it is the starting point of the
   interaction arm of Phase 2, after a well-formedness invariant for its
@@ -1112,32 +1038,33 @@ the hash written in Geb.
 
 ## Phase 7: the metalogic
 
-The steps are taken rung by rung, from the cartesian closed locos to the
-topos, on the ladder of the section on the metalogic and its checker.
+Phase 7 builds two checkers, the computational core's and the
+metalogic's (the section on the metalogic and its checker), each by the
+same steps.
 
-1. Lean: the rung's rule set and its soundness, without
-   `Classical.choice`, in the model of Lean types, and from the
-   arithmetic universe up also in a model that is not Boolean. On the
-   first rung this step depends only on Phase 1 and may proceed in
-   parallel with Phases 2 to 6.
-2. Geb: the rung's proof checker, a fold over proof objects, compared
-   with the Lean checker on valid and malformed certificates.
-3. Geb: proof construction for the rung, and proofs about Geb
-   programs that exercise it, each on the lowest rung that states it,
-   the compiler's components first; and stronger checkers admitted by
-   relative soundness proofs, each a translation of certificates proved
-   on the first rung. The rest of what the rungs state, the richer
-   definitions, Surface 2, the mathematics the libraries consume and
-   the equivalence of the free topos with the rose-tree object and the
-   free topos with a natural numbers object, is written in Geb after
-   the bootstrap (the road map).
+1. Lean: the rule set and its soundness, without `Classical.choice`, in
+   the model of Lean types, and for the metalogic also in a model that
+   is not Boolean. For the computational core this step depends only on
+   Phase 1 and may proceed in parallel with Phases 2 to 6.
+2. Geb: the proof checker, a fold over proof objects, compared with the
+   Lean checker on valid and malformed certificates.
+3. Geb: proof construction, and proofs about Geb programs that exercise
+   it, each in the computational core when it is an equation between
+   kernel terms and in the metalogic otherwise, the compiler's
+   components first; and stronger checkers admitted by relative
+   soundness proofs, each a translation of certificates proved in the
+   computational core. The rest of what the metalogic states, the
+   richer definitions, Surface 2, the mathematics the libraries consume
+   and the equivalence of the free topos with the rose-tree object and
+   the free topos with a natural numbers object, is written in Geb
+   after the bootstrap (the road map).
 
-Acceptance, on each rung: a theorem with hypotheses, a substitution and
-an induction checks, and certificates with altered binders, invalid
-dependencies or false conclusions fail; on the topos, a comprehension
-checks as well.
+Acceptance, for each checker: a theorem with hypotheses, a substitution
+and an induction checks, and certificates with altered binders, invalid
+dependencies or false conclusions fail; for the metalogic, a
+characteristic map checks as well.
 
-On the first rung, step 1 is constructed.
+For the computational core, step 1 is constructed.
 `Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
 substitutes for their innermost variable through one traversal
 ({name}`Geb.Kernel.trav`), and proves that both agree with the
@@ -1174,8 +1101,8 @@ loaded program's definitions denotes its global in the whole
 environment, since extending an environment keeps every denotation
 ({name}`Geb.Kernel.infer_append`). {name}`Geb.Metalogic.check_sound`
 proves every computed conclusion valid, without `Classical.choice`. The
-examples of `GebTests/Prototypes/Metalogic.lean` meet the acceptance on
-the first rung: a theorem from a hypothesis by congruence, an
+examples of `GebTests/Prototypes/Metalogic.lean` meet the acceptance for
+the computational core: a theorem from a hypothesis by congruence, an
 instantiation, the proofs by induction that appending the empty list to
 a list gives the list, that iterating the identity from a tree as many
 times as a label gives the tree, and that a fold whose step ignores its
@@ -1214,7 +1141,7 @@ closed term is derived instead, from the δ rules, the computation rules
 and congruence, by a certificate whose size grows with the length of
 the evaluation.
 
-On the first rung, step 2 is constructed as well.
+For the computational core, step 2 is constructed as well.
 `bootstrap/metalogic/equations.geb` is the checker written in Surface 1,
 deciding as {name}`Geb.Metalogic.check` decides: a fold over the
 certificate whose result at each node is the node paired with its
@@ -1234,7 +1161,7 @@ abbreviations in Lean, `Geb.Kernel.Label`,
 `Geb.Kernel.Prim` and `Geb.Metalogic.Rule`, which the
 tests hold equal name for name.
 
-Step 3 is begun on the first rung. `bootstrap/metalogic/prove.geb`
+Step 3 is begun for the computational core. `bootstrap/metalogic/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
 trusted. Normalization, innermost first, contracts the redexes of the
 computation rules, with literals put in constructor form by δ rules
@@ -1266,22 +1193,10 @@ expansion. The examples of
 again with {name}`Geb.Metalogic.check`, and reject a false equation and
 an unproved one.
 
-### The rungs
+### The computational core
 
-The presentation of the section on the free topos in one presentation
-replaces the rungs above the first; the following records the rungs as
-they were designed, the first of them constructed. Each rung is built
-by the three steps above, and each is fixed before
-proofs are migrated to it (the section on the metalogic and its
-checker). For each rung the following lists what the bootstrap defines
-and proves, and what the rung is used for after the bootstrap. Every
-rung after the first also needs, in Lean, the lemma that transfers the
-certificates of the rung below with their conclusions, and a model that
-is not Boolean in which its soundness is proved as well; and, in Geb,
-the rung's block of rules added to the checker, compared with the Lean
-checker, and tactics for its connectives in the prover.
-
-### Rung 1: the cartesian closed locos
+The computational core is built by the three steps above. It states
+and proves the following.
 
 * Judgment: a context of kernel types, a list of equations as
   hypotheses, and an equation between kernel terms of a type; valid
@@ -1315,102 +1230,19 @@ checker, and tactics for its connectives in the prover.
      not begun;
   5. the reader's inverse to the printer, after the printer, not begun;
   6. the admission of a stronger checker by the proof that a Geb
-     program translates its certificates into the first rung's with the
-     same conclusions, not begun.
+     program translates its certificates into the computational core's
+     with the same conclusions, not begun.
 * After the bootstrap: equational theorems about programs, and the
-  lemmas that higher rungs' proofs cite.
+  lemmas that the metalogic's proofs cite.
 
-### Rung 2: the arithmetic universe
+### The metalogic
 
-* Judgment: sequents of coherent logic, whose hypotheses and conclusion
-  are formulas built from the first rung's equations by truth,
-  falsity, conjunction, disjunction and existential quantification over
-  a type. An equation is an atomic formula, so a certificate of the
-  first rung is one of this rung.
-* Types and terms: the quotient of a type by an equivalence relation
-  that a formula expresses, with the class of an element, effectiveness,
-  by which two classes are equal exactly when the relation relates
-  their representatives, and the lifting of a function that respects the
-  relation. Whether quotients are types of the checker's language or
-  setoids, types paired with a relation, is decided with the rung's
-  rules.
-* Rules: the first rung's, reading formulas where a rule moves
-  hypotheses; the introduction and elimination of each connective; the
-  induction rules with coherent formulas as conclusions; and the rules
-  of quotients.
-* Axioms: the first rung's, at their indices, and the disjointness that
-  the first rung cannot state: zero is not a successor, from which
-  distinct labels are distinct leaves.
-* Proofs of the bootstrap: the rung's acceptance, and disequalities
-  between the compiler's data and case distinctions on the results of
-  its passes, as the prover's tests on the rung.
-* After the bootstrap: the quotients of Surface 2.
-* State: not begun.
-
-### Rung 3: the Heyting pretopos
-
-* Judgment: first-order formulas, with implication and universal
-  quantification over a type added.
-* Types and terms: subset types, the subobject of a type that a formula
-  cuts out, with its inclusion and no map back.
-* Rules: the introduction and elimination of implication and universal
-  quantification, and the induction rules with first-order formulas as
-  conclusions.
-* Proofs of the bootstrap: the rung's acceptance, and a relative
-  soundness stated with implication, as the prover's tests on the rung.
-* After the bootstrap: the subset types of Surface 2; unique existence,
-  and with it definitions by equations whose unique solution is proved
-  and the equation blocks of the richer definitions; statements about
-  the syntax of type theories, among them the equivalence of the free
-  topos with the rose-tree object and the free topos with a natural
-  numbers object, whose proof is an induction on syntax.
-* State: not begun.
-
-### Rung 4: the Π-pretopos
-
-* Judgment: types may depend on terms, so contexts and types are those
-  of an extensional dependent type theory, in which a proposition is a
-  type with at most one element {citep Maietti2005}[].
-* Types and terms: dependent products and dependent sums of families of
-  types, and identity types.
-* Rules: the formation, introduction, elimination and computation of
-  each type former, the lower rungs' logic being the logic of
-  propositions.
-* In Lean: families interpreted as Lean's dependent types.
-* Proofs of the bootstrap: the rung's acceptance.
-* After the bootstrap: the dependent products of Surface 2, families
-  indexed by syntax such as the terms of each type, and presheaf
-  signatures.
-* State: not begun.
-
-### Rung 5: the topos
-
-* Judgment: that of the Π-pretopos, with propositions as values.
-* Types and terms: power types, the comprehension of a formula, and
-  membership, an element belonging to a comprehension exactly when it
-  satisfies the formula; the subobject classifier is the power type of
-  the terminal type.
-* Rules: those of power types and comprehension, with no choice
-  operator and no rule that decides a proposition (the section on the
-  metalogic and its checker).
-* In Lean: power types interpreted as Lean's predicates.
-* Proofs of the bootstrap: the rung's acceptance, in which a
-  comprehension checks.
-* After the bootstrap: definitions by impredicative comprehension, such
-  as the least relation closed under rules; the soundness of the first
-  rung's checker, since System T's evaluator is an arrow of the topos;
-  and the mathematics migrated to the foundational metalogic.
-* State: not begun.
-
-### The free topos in one presentation
-
-The rungs are one route to the metalogic. The first rung shows how a
-checker is defined, proved sound in Lean and written again in Geb, and
-the same method may apply to the free topos with the natural numbers,
-list and rose-tree objects presented at once, by one checker in place of
-five. This section states that alternative, what it would change, and
-the questions that remain. Phase 7 takes this route, whose form is
-fixed below; the questions at the end are settled by constructing and
+The metalogic is the free topos with the natural numbers, list and
+rose-tree objects, presented at once and checked by one checker, which
+is built by the method the computational core establishes: a checker
+defined, proved sound in Lean and written again in Geb. This section
+states the presentation, its relation to the computational core, and
+the questions that remain, which are settled by constructing and
 measuring.
 
 A category is a presheaf on the walking parallel pair whose two objects
@@ -1485,14 +1317,14 @@ defined or that two terms are equal, and the closed terms that are
 provably defined, taken modulo provable equality, are the initial model
 (their Theorem 22), by a proof that uses no choice and is formalizable
 in a constructive, predicative theory (their Section 1). That is the
-first rung's architecture: every term is a rose tree, the checker is a
+computational core's architecture: every term is a rose tree, the checker is a
 fold over certificates whose conclusions are definedness and equality,
 and the quotient is the equality the checker proves. Composition is
 defined when the codomain of one morphism equals the domain of the
 other, the equalizer's factorization when a
 morphism equalizes the pair, and the characteristic map at a
 monomorphism, a morphism whose kernel pair's projections are equal; each
-condition is a premise of a rule, as the first rung's induction rules
+condition is a premise of a rule, as the computational core's induction rules
 have premises, and not an argument of the term. The terms' identity
 therefore does not depend on proofs, and no equation making proofs
 irrelevant is needed. This presentation is fibered: the morphisms form
@@ -1553,12 +1385,10 @@ elaborated into the combinators by its interpretation in a topos, as
 Surface 1 is elaborated into the kernel; its proofs bind variables where
 the combinators compose projections.
 
-Rungs 2 to 5 would be replaced by one rule set, and the lemmas
-transferring certificates between rungs would not be needed. The kernel
-would remain the language of computation, since the free topos has
-arrows that no System T term defines. The first rung's rules would be
-the equations of the fragment that the kernel's terms denote, the
-cartesian closed category with the data objects, related to the
+The kernel remains the language of computation, since the free topos
+has arrows that no System T term defines. The computational core's
+rules are the equations of the fragment that the kernel's terms denote,
+the cartesian closed category with the data objects, related to the
 presentation by the translation between λ-terms and the morphisms of a
 free cartesian closed category that the Categorical Abstract Machine
 compiles by {citep CousineauCurienMauny1987}[].
@@ -1566,7 +1396,7 @@ compiles by {citep CousineauCurienMauny1987}[].
 The theory, its axioms and the certificates of its derivations are
 finite syntax, rose trees, and so data of the metalogic: the checker is
 a kernel program on them, and that a certificate derives a judgment is
-an equation about that program, as on the first rung. The categorical
+an equation about that program, as in the computational core. The categorical
 form of that internalization is the initial internal model: every
 finitely presented essentially algebraic theory has an initial internal
 model in every arithmetic universe (Theorem 3.22 of
@@ -1650,7 +1480,7 @@ the inclusion of the signature's terms. The proposal needs that structure
 for a partial Horn theory of two sorts, a defined operation being defined
 where its body is and equal to it there; iterated, so that a definition
 refers to earlier ones; and with defined equalities, theorems whose
-unfolding is their certificates. On the first rung a reference unfolds
+unfolding is their certificates. In the computational core a reference unfolds
 one step at a time ({name}`Geb.Metalogic.valid_unfold`), resting on
 {name}`Geb.Metalogic.load_loaded`; no theorem yet unfolds every
 reference of a kernel term.
@@ -1677,8 +1507,9 @@ constructible:
 
 4. whether the Mitchell–Bénabou language is written as a surface
    language during the bootstrap or after it;
-5. whether the first rung's checker and prover remain as those of the
-   computational fragment, which depends on how the kernel's
+5. whether the computational core keeps a checker and prover of its
+   own, or its equations are proved in the metalogic through the
+   translation of kernel terms, which depends on how the kernel's
    denotations, which are functions, relate to the model's morphisms,
    which are functional relations (the second construction).
 
@@ -1686,7 +1517,7 @@ The first construction precedes the other two, which are independent of
 each other; the choices follow them.
 
 The fourth choice is made by measurement. Soon after the first
-construction, the theorems proved on the first rung in
+construction, the theorems proved in the computational core in
 `bootstrap/proofs/prelude.geb` and `bootstrap/proofs/nat.geb` are
 proved again in the combinators, and the two are compared on the size
 of their certificates and the time to check them, and on how they read.
@@ -1694,7 +1525,7 @@ Programs remain kernel terms, so the choice does not change the speed
 of the compiler, only that of checking the development written in the
 combinators, whose certificates bind no variables and are the larger
 for it. The Mitchell–Bénabou language is deferred while checking stays
-within a small multiple of the first rung's time and the proofs read as
+within a small multiple of the computational core's time and the proofs read as
 their mathematics rather than as the arrangement of projections,
 pairings and curryings. When either fails, it is written at the
 earliest point at which it can be, after the first construction, since
@@ -1779,16 +1610,21 @@ the change that removes it.
   uses it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
+* Names. The computational core's checker and prover are in the
+  namespace `Geb.Metalogic` and under `bootstrap/metalogic/`, although
+  the metalogic is the free topos above the core; renaming them for the
+  core, the Geb rule names with the Lean ones that a test holds equal,
+  removes the ambiguity.
 
 ## The next phase
 
-The metalogic takes the route of the section on the free topos in one
-presentation: its first construction, the rule set checked against its
+The metalogic is built next, in the order of the section on the
+metalogic: its first construction, the rule set checked against its
 specification; the measurement that makes the fourth choice; the second
-and third constructions; and then the fifth choice. The first rung's
-step 3, whose proofs are about kernel programs on either route, resumes
-after the fifth choice, at the proof that follows. The next proof
-is the type checker's preservation of types by weakening, of `typeIn`
+and third constructions; and then the fifth choice. The computational
+core's step 3, whose proofs are about kernel programs whichever the
+fifth choice, resumes after it, at the proof that follows. The next
+proof is the type checker's preservation of types by weakening, of `typeIn`
 in `bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
 for every environment `G`, contexts `c1` and `c2`, type `a` and term
 `t`, `typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
@@ -1887,6 +1723,6 @@ the files differ.
 
 {includeLiterate "." Geb.Prototypes.Kernel.Subst "Substitution in kernel terms" (level := 1)}
 
-{includeLiterate "." Geb.Prototypes.Metalogic.Equations "The metalogic's first rung" (level := 1)}
+{includeLiterate "." Geb.Prototypes.Metalogic.Equations "The computational core" (level := 1)}
 
 {includeLiterate "." Geb.Prototypes.Bootstrap "A computation-certificate prototype" (level := 1)}

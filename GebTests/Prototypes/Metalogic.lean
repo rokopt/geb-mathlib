@@ -13,7 +13,7 @@ public meta import Lean.Elab.Command -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The first rung of the metalogic
+# The computational core's logic
 
 Certificates checked by {name}`Geb.Metalogic.check`: a theorem with a hypothesis, derived by
 congruence; a substitution, instantiating a variable of a derived equation; an induction on a
