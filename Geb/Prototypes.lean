@@ -16,6 +16,7 @@ public import Geb.Prototypes.Definition
 public import Geb.Prototypes.FamBoundary
 public import Geb.Prototypes.FinCardUniverse
 public import Geb.Prototypes.FiniteChoice
+public import Geb.Prototypes.FreeTopos
 public import Geb.Prototypes.Kernel
 public import Geb.Prototypes.LargeIR
 public import Geb.Prototypes.MType
