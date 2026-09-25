@@ -1530,14 +1530,19 @@ their mathematics rather than as the arrangement of projections,
 pairings and curryings. When either fails, it is written at the
 earliest point at which it can be, after the first construction, since
 its interpretation needs every operation of the topos and nothing of the
-other two constructions. It is written as an elaborator into the
-combinators, whose certificates the one checker checks, so that the
-elaborator is trusted with nothing; a theorem that every derivation of
-the Mitchell–Bénabou language translates is its completeness, which may
-follow as the relative soundness of the section on the metalogic and its
-checker does. Its terms refer to the definitions made in the
-combinators before it, so that the development continues in it without
-rewriting them.
+other two constructions. It is written as a logic of its own. Each of
+its constructions has defining equations stating its meaning in the
+combinators, and each of its rules is proved sound in Lean against the
+language's interpretation in the free topos. A translation compiles
+each of its derivations to a certificate of the combinators, which the
+one checker checks, so that the checker stays small; the translation is
+proved in Lean to send every derivation to a certificate of its
+conclusion's interpretation, so that every theorem of the language has
+one. A user of the language then proves theorems about its
+constructions in the language they are written in, and the defining
+equations state what each construction means in the object language.
+Its terms refer to the definitions made in the combinators before it, so
+that the development continues in it without rewriting them.
 
 The fifth choice is deferred until the three constructions are made.
 
