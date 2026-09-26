@@ -24,7 +24,7 @@ such composites are those of one arrow, the copairing in the context {lit}`X`
 ({lit}`copairIn`): the category is distributive ({cite}`CarboniLackWalters1993`). For the same
 reason an object with an arrow to the initial object is initial ({lit}`eq_of_hom_zero`): the
 initial object is strict, as it is in every distributive category
-({cite}`CarboniLackWalters1993`, Proposition 3.2). The case analysis of a coproduct
+({cite}`CarboniLackWalters1993`, Proposition 3.4). The case analysis of a coproduct
 is an arrow ({lit}`caseArr`), the transpose of the copairing, in the context of a pair of
 functions, of their evaluations: an application of the case analysis of a pair of functions to
 an injection of an argument is the application of the corresponding function to it.
