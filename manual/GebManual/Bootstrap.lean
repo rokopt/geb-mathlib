@@ -167,7 +167,8 @@ sections below detail:
   * In progress. Its term models and its completeness, with the
     partial Horn logic's own: the fourth stage (the next phase). The
     arrow a functional relation determines, a definition of the
-    combinators, is complete.
+    combinators, is complete, as are binary coproducts and the initial
+    object in the language.
   * Waiting on the second construction. The fifth choice.
   * Waiting on the fourth stage, whose completeness proof settles the
     language's rules. The checker and prover written in Geb.
@@ -1925,8 +1926,9 @@ State: complete.
 The Mitchell–Bénabou language is written after the third construction,
 with definitions of its own. Its terms are those of the typed λ-calculus
 with products whose types are object terms of the combinators, built
-from object variables by the terminal object, products, exponentials,
-the subobject classifier and the data objects; its other constants are
+from object variables by the terminal object, products, the initial
+object, coproducts, exponentials, the subobject classifier and the data
+objects; its other constants are
 the folds of the data objects, primitive arrows of the combinators,
 each named by an index with the domain and codomain the checker's
 inference confirms, and the definitions
@@ -2162,7 +2164,8 @@ characterize the relations that are the graphs of arrows.
 ##### Stage 4: term models and completeness
 
 State: in progress (the next phase). The arrow a functional relation
-determines, as a definition of the combinators, is complete.
+determines, as a definition of the combinators, is complete, as are
+binary coproducts and the initial object in the language.
 
 The arrow a relation determines is the second projection after the
 inverse of the first projection of the relation's pullback of truth
@@ -2182,6 +2185,38 @@ definedness carries the condition that a description operator of the
 language would need proved; the compilation of a term model's arrow into
 the combinators is this operation, and the language keeps no description
 operator.
+
+Binary coproducts and the initial object are types of the language. The
+injections are primitive arrows
+({name}`Geb.FreeTopos.Internal.inlPrim`,
+{name}`Geb.FreeTopos.Internal.inrPrim`), and so is case analysis
+({name}`Geb.FreeTopos.Internal.casePrim`): the arrow from the product of
+the exponentials of two summands into a type to the exponential of
+their coproduct into it ({name}`Geb.FreeTopos.caseArr`), so that the
+analysis of a term by two functions is the application of the case
+analysis of their pair to it, and the language gains no binder. The
+arrow is the transpose of the copairing, in the context of the pair, of
+the two evaluations ({name}`Geb.FreeTopos.copairIn`). In a cartesian
+closed category the product with an object preserves coproducts, being
+a left adjoint, so that an arrow from the product of an object and a
+coproduct is determined by its composites with the products of the
+object and the injections ({name}`Geb.FreeTopos.prod_coprod_ext`): the
+category is distributive, and its initial object is strict
+({citet CarboniLackWalters1993}[], Proposition 3.2), an object with an
+arrow to it being initial ({name}`Geb.FreeTopos.eq_of_hom_zero`). The
+rules are the computation of case analysis at each injection, a
+rewriting; case analysis on the innermost variable of a coproduct type,
+a formula proved at the left injection of a variable of the first
+summand and at the right injection of a variable of the second, under
+hypotheses that do not mention the variable; and every formula in a
+context with a variable of the initial type. The checker with these
+rules is proved sound as before
+({name}`Geb.FreeTopos.Internal.coprodInd_sound`,
+{name}`Geb.FreeTopos.Internal.zeroInd_sound`). The η of case analysis is
+a theorem, proved by case analysis on its variable, and the arrow from
+the initial object is a primitive arrow that a development may add,
+about which the last rule proves every formula
+(`GebTests/Prototypes/FreeTopos/InternalCoproducts.lean`).
 
 The language's term model is the topos whose objects are its types with
 predicates and whose arrows are its provably functional relations,
@@ -2279,15 +2314,15 @@ the change that removes it.
 
 The fourth stage of the Mitchell–Bénabou language continues, in this
 order, after the arrow a functional relation determines, a definition of
-the combinators, which is complete (the section on the fourth stage).
+the combinators, and binary coproducts and the initial object in the
+language, which are complete (the section on the fourth stage).
 
-1. Types built in for computation. Binary coproducts and the initial
-   object, operations of the combinators already, are exposed in the
-   language with injections, case analysis and their rules; the Boolean
-   type, optional values and the finite types follow, the Boolean type
-   giving the language a conditional that computes, which a formula does
-   not. Rose trees become rose trees over a type of labels, as lists are
-   over a type of elements, with induction on rose trees. Each such type
+1. Types built in for computation. The Boolean type, optional values
+   and the finite types are defined from the coproducts and the initial
+   object, the Boolean type giving the language a conditional that
+   computes, which a formula does not. Rose trees become rose trees over
+   a type of labels, as lists are over a type of elements, with induction
+   on rose trees. Each such type
    is determined up to isomorphism by the universal property its axioms
    state, and is constructed by the rest of the topos
    {citep Pare1974}[] {citep MoerdijkPalmgren2000}[], so each extension

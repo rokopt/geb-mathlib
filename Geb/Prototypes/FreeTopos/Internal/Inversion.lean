@@ -52,6 +52,19 @@ theorem prodParts_eq_some {p a b : Tree} : prodParts p = some (a, b) ↔ p = pro
   · rintro rfl
     simp [prodParts, prod, op]
 
+/-- The summands of a coproduct are its arguments. -/
+theorem coprodParts_eq_some {p a b : Tree} : coprodParts p = some (a, b) ↔ p = coprod a b := by
+  constructor
+  · intro h
+    unfold coprodParts at h
+    split at h
+    · split_ifs at h with hp
+      obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp h)
+      exact hp
+    · simp at h
+  · rintro rfl
+    simp [coprodParts, coprod, op]
+
 /-- The domain and codomain of an exponential are its arguments. -/
 theorem expParts_eq_some {p a b : Tree} : expParts p = some (a, b) ↔ p = exp a b := by
   constructor

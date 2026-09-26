@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Internal.Compile
 meta import GebMeta -- shake: keep
 
@@ -19,21 +20,23 @@ given term: the identity, a sequence of two rewritings, congruence into each chi
 each in its own context and under its own hypotheses, and the equations of the language applied
 at the term: β for functions, the components of a pair and the η of pairs and of the terminal
 type, the unfolding of a definition at its arguments, the computation of the folds of the
-natural numbers and of lists, an instance of an earlier equational theorem, and an equation among
-the hypotheses. A proof derivation proves a formula: an equation by rewriting both sides to one
-term, or by induction in the form of the uniqueness of recursion; a hypothesis; a formula by
-proving it after rewriting it or a formula that rewrites to it, or by a cut through a formula
-proved first; the equality of two formulas that entail each other, and of two functions whose
-applications to a new variable are equal; an instance of an earlier theorem, its hypotheses'
-instances proved; and a formula by induction on the innermost variable of the natural numbers or
-of a list type, with the formula's instance at the start and, under the induction hypothesis, at
-a successor or a construction. These rules are the basic axioms and rules of a local set theory
-({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of
-the formula and membership application, with the extensionality of every exponential in place of
-that of power types, and with induction. The rewriting takes its terms from the term it
-rewrites, so that a derivation names no term but the steps of its inductions, the formulas of
-its cuts and the instances of the theorems it cites, and the checker computes every
-substitution.
+natural numbers and of lists and of the case analysis of a coproduct, an instance of an earlier
+equational theorem, and an equation among the hypotheses. A proof derivation proves a formula:
+an equation by rewriting both sides to one term, or by induction in the form of the uniqueness of
+recursion; a hypothesis; a formula by proving it after rewriting it or a formula that rewrites to
+it, or by a cut through a formula proved first; the equality of two formulas that entail each
+other, and of two functions whose applications to a new variable are equal; an instance of an
+earlier theorem, its hypotheses' instances proved; a formula by induction on the innermost
+variable of the natural numbers or of a list type, with the formula's instance at the start and,
+under the induction hypothesis, at a successor or a construction; a formula by case analysis on
+the innermost variable of a coproduct type, with its instances at the two injections; and every
+formula in a context with a variable of the initial type. These rules are the basic axioms and
+rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's
+comprehension the abstraction of the formula and membership application, with the
+extensionality of every exponential in place of that of power types, and with induction. The
+rewriting takes its terms from the term it rewrites, so that a derivation names no term but the
+steps of its inductions, the formulas of its cuts and the instances of the theorems it cites, and
+the checker computes every substitution.
 
 ## Main definitions
 
@@ -90,6 +93,12 @@ inductive Rule where
   /-- The fold of a construction, the primitive of index {lit}`k`, is the step at the element
   and the fold of the tail. -/
   | listCons (k : ℕ)
+  /-- The case analysis of a pair of functions, the primitive of index {lit}`kc`, at a left
+  injection, the primitive of index {lit}`kl`, is the first function at the injected term. -/
+  | caseInl (kc kl : ℕ)
+  /-- The case analysis of a pair of functions, the primitive of index {lit}`kc`, at a right
+  injection, the primitive of index {lit}`kr`, is the second function at the injected term. -/
+  | caseInr (kc kr : ℕ)
   /-- The equational theorem of index {lit}`j` at objects and terms, from its left side to its
   right, or from its right to its left when {lit}`flip`. -/
   | thm (j : ℕ) (θ : List Tree) (σ : List Term) (flip : Bool)
@@ -126,6 +135,13 @@ inductive Rule where
   construction the primitives of indices {lit}`kn` and {lit}`kc`, under the induction hypothesis
   at the construction. -/
   | listIndHyp (kn kc : ℕ)
+  /-- A formula by case analysis on the innermost variable, of a coproduct type, with the
+  injections the primitives of indices {lit}`kl` and {lit}`kr`: proved at the left injection of a
+  variable of the first summand and at the right injection of a variable of the second, under
+  hypotheses that do not mention the variable. -/
+  | coprodInd (kl kr : ℕ)
+  /-- A formula in a context whose variable of index {lit}`i` is of the initial type. -/
+  | zeroInd (i : ℕ)
 
 /-- A derivation of the internal language. -/
 abbrev Deriv : Type := RoseTree Rule
@@ -152,6 +168,17 @@ def nilPrim : Prim := ⟨1, nil (x 0), one, list (x 0)⟩
 
 /-- The primitive arrow of the construction of a list of the object parameter. -/
 def consPrim : Prim := ⟨1, cons (x 0), prod (x 0) (list (x 0)), list (x 0)⟩
+
+/-- The primitive arrow of the left injection into the coproduct of the object parameters. -/
+def inlPrim : Prim := ⟨2, inl (x 0) (x 1), x 0, coprod (x 0) (x 1)⟩
+
+/-- The primitive arrow of the right injection into the coproduct of the object parameters. -/
+def inrPrim : Prim := ⟨2, inr (x 0) (x 1), x 1, coprod (x 0) (x 1)⟩
+
+/-- The primitive arrow of the case analysis of the coproduct of the first two object parameters
+into the third, from the pair of the functions from the two summands. -/
+def casePrim : Prim := ⟨3, caseArr (x 0) (x 1) (x 2), prod (exp (x 0) (x 2)) (exp (x 1) (x 2)),
+  exp (coprod (x 0) (x 1)) (x 2)⟩
 
 /-- The substitution of one term for the innermost variable, the others lowered by one. -/
 def instVar (u : Term) : ℕ → Term := fun i ↦ match i with
@@ -266,6 +293,18 @@ def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (Φ : List
           some (Term.subst s (Term.substList [Term.listRec z s tl, h])) else none
       | _, _ => none
     | _, _ => none
+  | .caseInl kc kl, .app, [f, u] => match f.label, f.children, u.label, u.children with
+    | .arr k _, [p], .arr k' _, [v] => match p.label, p.children with
+      | .pair, [g, _] => if k = kc ∧ k' = kl ∧ G.prims[kc]? = some casePrim ∧
+          G.prims[kl]? = some inlPrim then some (Term.app g v) else none
+      | _, _ => none
+    | _, _, _, _ => none
+  | .caseInr kc kr, .app, [f, u] => match f.label, f.children, u.label, u.children with
+    | .arr k _, [p], .arr k' _, [v] => match p.label, p.children with
+      | .pair, [_, h] => if k = kc ∧ k' = kr ∧ G.prims[kc]? = some casePrim ∧
+          G.prims[kr]? = some inrPrim then some (Term.app h v) else none
+      | _, _ => none
+    | _, _, _, _ => none
   | .thm j θ σ flip, _, _ => do
     let a ← E[j]?
     let lr ← if a.hyps = [] then eqParts a.concl else none
@@ -367,6 +406,15 @@ def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Der
             p₁.2 (c :: a :: Γ') (Φ'.map weaken2 ++ [weakenElem φ]) (listConsAt kc a φ)
         | _, _ => false
       | [] => false
+    | .coprodInd kl kr, [(_, p₀), (_, p₁)] => match Γ with
+      | c :: Γ' => match coprodParts c, lowerHyps G n Γ' Φ with
+        | some (a, b), some _ => decide (G.prims[kl]? = some inlPrim ∧
+              G.prims[kr]? = some inrPrim ∧ typeIn G n Γ φ = some omega) &&
+            p₀.2 (a :: Γ') Φ (Term.subst φ (atVar0 (Term.arr kl [a, b] (Term.var 0)))) &&
+            p₁.2 (b :: Γ') Φ (Term.subst φ (atVar0 (Term.arr kr [a, b] (Term.var 0))))
+        | _, _ => false
+      | [] => false
+    | .zeroInd i, [] => decide (Γ[i]? = some zero ∧ typeIn G n Γ φ = some omega)
     | _, _ => false)
 
 /-- The checker: the rewriting a derivation performs on a term in a context under hypotheses,

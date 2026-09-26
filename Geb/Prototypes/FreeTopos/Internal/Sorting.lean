@@ -155,7 +155,11 @@ theorem sortOf_of_isTy {n : ℕ} :
       change sortOf _ _ (op k cs) = _
       simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hA
       rcases hA.1 with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
-          ⟨rfl, hl⟩
+          ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
+      · obtain rfl := List.length_eq_zero_iff.mp hl
+        exact sortOf_op rfl rfl
+      · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
+        exact sortOf_op rfl (by simp [hc a (by simp), hc b (by simp)])
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact sortOf_op rfl rfl
       · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
