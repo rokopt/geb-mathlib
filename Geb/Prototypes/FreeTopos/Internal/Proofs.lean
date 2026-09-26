@@ -50,6 +50,7 @@ type holds because an object with an arrow to the initial object is initial
   induction is sound.
 * {lit}`coprodInd_sound`, {lit}`zeroInd_sound` — case analysis on a coproduct, and a context
   with a variable of the initial type, are sound.
+* {lit}`roseInd_sound` — induction on rose trees is sound.
 * {lit}`check_sound` — the checker is sound.
 * {lit}`valid_of_checkThms_ok`, {lit}`valid_unfoldAll_of_checkThms`,
   {lit}`valid_unfoldAll_holds_of_checkThms` — the theorems of a development that checks are
@@ -475,6 +476,212 @@ theorem natIndHyp_sound {kz ks : ℕ} (hkz : G.prims[kz]? = some zeroPrim)
   obtain rfl := Option.some_inj.mp (hq.symm.trans hr)
   exact ⟨hrq.1, hrq.2.trans ((eval_op₂_congr 3 hFtrue rfl).trans
     (truth_comp hM (pair_hom hM (idt_hom hM hX) hx₀)))⟩
+
+/-- A term in a context of a rose tree, at a construction from the next variable's label and the
+innermost variable's children, compiles in their context's environment to its arrow after the
+structure map, which, with the fold, is an initial algebra. -/
+theorem roseNodeAt_compile {kn : ℕ} {r a : Tree} {F : Tree → Tree}
+    (hr : roseParts r = some (a, F))
+    (hkn : (G.prims[kn]? = some nodePrim ∧ r = rose) ∨
+      (G.prims[kn]? = some lnodePrim ∧ r = lrose a))
+    (hrt : IsTy n r = true) {t : Term} {T C : Tree}
+    (ht : compile G n t r [(idt r, r)] = some (T, C)) :
+    ∃ nd q, Hom M ρ nd (prod a (list r)) r ∧
+      (∀ {S c h}, Hom M ρ S (prod a (list c)) c → Hom M ρ h r c →
+        eval M ρ (comp h nd) = eval M ρ (comp S (prodMapRight a (listMap h))) →
+        eval M ρ h = eval M ρ (F S)) ∧
+      compile G n (roseNodeAt kn r a t) (prod a (list r)) (stdEnv [list r, a]) = some q ∧
+      ResEq M ρ (comp T nd, C) q := by
+  have hat := isTy_of_roseParts hr hrt
+  have hA := isObj_of_isTy hM hρ a hat
+  have hR := isObj_of_isTy hM hρ r hrt
+  have hLr := isObj_list hM hR
+  have hpv : compile G n (Term.pair (Term.var 1) (Term.var 0)) (prod a (list r))
+      (stdEnv [list r, a]) = some (pair (comp (idt a) (fst a (list r))) (snd a (list r)),
+        prod a (list r)) :=
+    compile_pair_iff.mpr ⟨_, _, _, _, _, _, rfl, compile_var_iff.mpr ⟨rfl, rfl⟩,
+      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩
+  -- the structure map, by the construction's primitive
+  obtain ⟨nd, hnd, huniq, hnode⟩ : ∃ nd, Hom M ρ nd (prod a (list r)) r ∧
+      (∀ {S c h}, Hom M ρ S (prod a (list c)) c → Hom M ρ h r c →
+        eval M ρ (comp h nd) = eval M ρ (comp S (prodMapRight a (listMap h))) →
+        eval M ρ h = eval M ρ (F S)) ∧
+      compile G n (Term.arr kn (if r = rose then [] else [a])
+        (Term.pair (Term.var 1) (Term.var 0))) (prod a (list r)) (stdEnv [list r, a]) =
+        some (comp nd (pair (comp (idt a) (fst a (list r))) (snd a (list r))), r) := by
+    rcases hkn with ⟨hkn, rfl⟩ | ⟨hkn, rfl⟩
+    · obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp
+        ((show roseParts rose = some (nat, roseRec) by simp [roseParts]).symm.trans hr))
+      refine ⟨node, node_hom hM, fun hS hh h₁ ↦ roseRec_unique hM hS hh h₁, ?_⟩
+      simp only [↓reduceIte]
+      exact compile_arr_iff.mpr ⟨_, rfl, nodePrim, hkn, _, hpv, rfl, rfl, rfl⟩
+    · obtain ⟨-, rfl⟩ := Prod.mk.inj (Option.some_inj.mp ((roseParts_lrose a).symm.trans hr))
+      refine ⟨lnode a, lnode_hom hM hA, fun hS hh h₁ ↦ lroseRec_unique hM hA hS hh h₁, ?_⟩
+      simp only [lrose_ne_rose, ↓reduceIte]
+      exact compile_arr_iff.mpr ⟨_, rfl, lnodePrim, hkn, _, hpv, rfl, by simp [hat], rfl⟩
+  -- the term at the construction
+  have hE : EnvHom M ρ n (prod a (list r)) (stdEnv [list r, a]) :=
+    (show EnvHom M ρ n a [(idt a, a)] from ⟨hA, by simpa using ⟨idt_hom hM hA, hat⟩⟩).ext hM
+      hLr (by simpa [isTy_list] using hrt)
+  have hfA := fst_hom hM hA hLr
+  have hpvh := pair_hom hM (comp_hom hM hfA (idt_hom hM hA)) (snd_hom hM hA hLr)
+  have hk := comp_hom hM hpvh hnd
+  have hEr : EnvHom M ρ n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
+  obtain ⟨q₀, hq₀, hr₀⟩ := compile_precomp hM hG hρ hps hds ht hEr hk
+    (e' := [(comp nd (pair (comp (idt a) (fst a (list r))) (snd a (list r))), r)])
+    fun i p hp ↦ by
+      rcases i with _ | j
+      · obtain rfl : (comp (idt r) (comp nd (pair (comp (idt a) (fst a (list r)))
+          (snd a (list r)))), r) = p := by simpa [precomp] using hp
+        exact ⟨_, rfl, rfl, (idt_comp hM hk).symm⟩
+      · simp [precomp] at hp
+  obtain ⟨q₁, hq₁, hr₁⟩ := compile_subst hM hG hρ hps hds t _ _ q₀ hq₀ (stdEnv [list r, a])
+    (instVar (Term.arr kn (if r = rose then [] else [a]) (Term.pair (Term.var 1) (Term.var 0))))
+    hE fun i p hp ↦ by
+      rcases i with _ | j
+      · obtain rfl : (comp nd (pair (comp (idt a) (fst a (list r))) (snd a (list r))), r) = p := by
+          simpa using hp
+        exact ⟨_, hnode, ResEq.refl _⟩
+      · simp at hp
+  refine ⟨nd, q₁, hnd, huniq, hq₁, ResEq.trans (r₂ := (comp T (comp nd (pair (comp (idt a)
+    (fst a (list r))) (snd a (list r)))), C)) ⟨rfl, ?_⟩ (hr₀.trans hr₁)⟩
+  -- the pairing of the projections is the identity
+  exact eval_op₂_congr 3 rfl ((eval_op₂_congr 3 rfl ((eval_op₂_congr 9 (idt_comp hM hfA) rfl).trans
+    (pair_fst_snd hM hA hLr))).trans (comp_idt hM hnd))
+
+/-- The list of the values at the children of a term in a context of a rose tree compiles, in
+the context of a label and the children, to the term's arrow's action on the list after the
+children's projection. -/
+theorem roseMapAt_compile {kl kc : ℕ} (hkl : G.prims[kl]? = some nilPrim)
+    (hkc : G.prims[kc]? = some consPrim) {r a : Tree} (hrt : IsTy n r = true)
+    {t : Term} {T C : Tree} (ht : compile G n t r [(idt r, r)] = some (T, C)) :
+    ∃ q, compile G n (roseMapAt kl kc C t) (prod a (list r)) (stdEnv [list r, a]) = some q ∧
+      ResEq M ρ (comp (listMap T) (snd a (list r)), list C) q := by
+  have hR := isObj_of_isTy hM hρ r hrt
+  have hEr : EnvHom M ρ n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
+  obtain ⟨hT, hCt⟩ := compile_hom hM hG hρ hps hds _ _ _ _ ht hEr
+  have hLC := isObj_list hM (isObj_of_isTy hM hρ C hCt)
+  have hf := fst_hom hM hR hLC
+  -- the term, weakened past the accumulated list, at the element
+  obtain ⟨⟨Q, C'⟩, hq₀, hC', hQ⟩ := compile_precomp hM hG hρ hps hds ht hEr hf
+    (e' := [(fst r (list C), r)]) fun i p hp ↦ by
+      rcases i with _ | j
+      · obtain rfl : (comp (idt r) (fst r (list C)), r) = p := by simpa [precomp] using hp
+        exact ⟨_, rfl, rfl, (idt_comp hM hf).symm⟩
+      · simp [precomp] at hp
+  have hCC : C = C' := hC'.symm
+  subst hCC
+  have hw : compile G n (weaken1 t) (prod r (list C))
+      [(snd r (list C), list C), (fst r (list C), r)] = some (Q, C) :=
+    compile_rename t _ _ _ (· + 1) _ hq₀ fun i hi ↦ by
+      rcases i with _ | j
+      · rfl
+      · simp at hi
+  refine ⟨_, compile_listRec_iff.mpr ⟨_, _, _, rfl, snd a (list r), r,
+    compile_var_iff.mpr ⟨rfl, rfl⟩, _, _, compile_nilT hkl hCt one [], _,
+    compile_consT hkc hCt (compile_pair_iff.mpr ⟨_, _, _, _, _, _, rfl, hw,
+      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl⟩), rfl⟩, rfl, ?_⟩
+  exact eval_op₂_congr 3 ((eval_op₃_congr 36 rfl rfl (eval_op₂_congr 3 rfl
+    (eval_op₂_congr 9 hQ rfl))).trans (eval_listMap hM hT).symm) rfl
+
+/-- Induction on rose trees, in the form of the uniqueness of the fold, is sound: two terms in a
+context of a rose tree alone, each of which at a construction is the step at the label and the
+list of its values at the children, are equal. -/
+theorem roseInd_sound {kn kl kc : ℕ} {r a : Tree} {F : Tree → Tree}
+    (hr : roseParts r = some (a, F))
+    (hkn : (G.prims[kn]? = some nodePrim ∧ r = rose) ∨
+      (G.prims[kn]? = some lnodePrim ∧ r = lrose a))
+    (hkl : G.prims[kl]? = some nilPrim) (hkc : G.prims[kc]? = some consPrim)
+    {Φ : List Term} {t u s : Term} {C : Tree} (htC : typeIn G n [r] t = some C)
+    (huC : typeIn G n [r] u = some C) (hsC : typeIn G n [list C, a] s = some C)
+    (p₁ : FmSound M ρ G n [list r, a] [] (Term.eq (roseNodeAt kn r a t)
+      (Term.subst s (atVar0 (roseMapAt kl kc C t)))))
+    (p₂ : FmSound M ρ G n [list r, a] [] (Term.eq (roseNodeAt kn r a u)
+      (Term.subst s (atVar0 (roseMapAt kl kc C u))))) :
+    FmSound M ρ G n [r] Φ (Term.eq t u) := by
+  intro X e he hΓ _ q hq
+  obtain ⟨t', u', htu, f, A, ht, g, hu, rfl⟩ := compile_eq_iff.mp hq
+  simp only [List.cons.injEq, and_true] at htu
+  obtain ⟨rfl, rfl⟩ := htu
+  have hty := compile_hom hM hG hρ hps hds
+  rcases e with _ | ⟨⟨x₀, R⟩, _ | ⟨p, e⟩⟩
+  · simp at hΓ
+  swap
+  · simp at hΓ
+  simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hΓ
+  subst hΓ
+  obtain ⟨hx₀, hrt⟩ := he.2 _ List.mem_cons_self
+  have hat := isTy_of_roseParts hr hrt
+  have hA := isObj_of_isTy hM hρ a hat
+  have hR := isObj_of_isTy hM hρ R hrt
+  have hLr := isObj_list hM hR
+  have hEr : EnvHom M ρ n R [(idt R, R)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
+  -- the sides' arrows in the environment of the tree
+  obtain ⟨T, hT⟩ := compile_of_typeIn htC (X := R) (e := [(idt R, R)]) rfl
+  obtain ⟨U, hU⟩ := compile_of_typeIn huC (X := R) (e := [(idt R, R)]) rfl
+  obtain ⟨hTh, hCt⟩ := hty _ _ _ _ hT hEr
+  have hUh := (hty _ _ _ _ hU hEr).1
+  have hLC := isObj_list hM (isObj_of_isTy hM hρ C hCt)
+  have hEa : EnvHom M ρ n a [(idt a, a)] := ⟨hA, by simpa using ⟨idt_hom hM hA, hat⟩⟩
+  have hEs : EnvHom M ρ n (prod a (list C)) (stdEnv [list C, a]) :=
+    hEa.ext hM hLC (by simpa [isTy_list] using hCt)
+  have hE : EnvHom M ρ n (prod a (list R)) (stdEnv [list R, a]) :=
+    hEa.ext hM hLr (by simpa [isTy_list] using hrt)
+  obtain ⟨S, hS⟩ := compile_of_typeIn hsC (X := prod a (list C)) (map_snd_stdEnv _)
+  have hSh : Hom M ρ S (prod a (list C)) C := (hty _ _ _ _ hS hEs).1
+  have hfA := comp_hom hM (fst_hom hM hA hLr) (idt_hom hM hA)
+  -- each side is the fold of the step
+  have side : ∀ {w : Term} {W : Tree}, compile G n w R [(idt R, R)] = some (W, C) →
+      FmSound M ρ G n [list R, a] [] (Term.eq (roseNodeAt kn R a w)
+        (Term.subst s (atVar0 (roseMapAt kl kc C w)))) → eval M ρ W = eval M ρ (F S) := by
+    intro w W hw pw
+    have hWh := (hty _ _ _ _ hw hEr).1
+    have hmap := listMap_hom hM hWh
+    obtain ⟨nd, q₁, -, huniq, hq₁, hrq₁⟩ := roseNodeAt_compile hM hG hρ hps hds hr hkn hrt hw
+    obtain ⟨q₂, hq₂, hrq₂⟩ := roseMapAt_compile hM hG hρ hps hds hkl hkc (a := a) hrt hw
+    have hm := comp_hom hM (snd_hom hM hA hLr) hmap
+    have hk := pair_hom hM hfA hm
+    obtain ⟨q₃, hq₃, hrq₃⟩ := compile_precomp hM hG hρ hps hds hS hEs hk
+      (e' := [(comp (listMap W) (snd a (list R)), list C), (comp (idt a) (fst a (list R)), a)])
+      (envEq_precomp_extEnv hM hA hLC (fun p hp ↦ by
+        obtain rfl : p = (idt a, a) := by simpa using hp
+        exact idt_hom hM hA) hk (fst_pair hM hfA hm) (snd_pair hM hfA hm) fun i p hp ↦ by
+          rcases i with _ | j
+          · obtain rfl : (comp (idt a) (comp (idt a) (fst a (list R))), a) = p := by
+              simpa [precomp] using hp
+            exact ⟨_, rfl, rfl, (idt_comp hM hfA).symm⟩
+          · simp [precomp] at hp)
+    obtain ⟨q₄, hq₄, hrq₄⟩ := compile_subst hM hG hρ hps hds s _ _ q₃ hq₃ (stdEnv [list R, a])
+      (atVar0 (roseMapAt kl kc C w)) hE fun i p hp ↦ by
+        rcases i with _ | _ | j
+        · obtain rfl : (comp (listMap W) (snd a (list R)), list C) = p := by simpa using hp
+          exact ⟨q₂, hq₂, hrq₂⟩
+        · obtain rfl : (comp (idt a) (fst a (list R)), a) = p := by simpa using hp
+          exact ⟨_, compile_var_iff.mpr ⟨rfl, rfl⟩, ResEq.refl _⟩
+        · simp at hp
+    have hq₁' := compile_resEq hq₁ hrq₁
+    have hr₄ := hrq₃.trans hrq₄
+    have hq₄' := compile_resEq hq₄ hr₄
+    have hH := (holds_eq_iff hM hG hρ hps hds hE hq₁' hq₄').mp (pw _ _ hE (map_snd_stdEnv _)
+      (fun _ h ↦ by simp at h) _ (compile_eq_iff.mpr ⟨_, _, rfl, _, _, hq₁', _, hq₄', rfl⟩))
+    refine huniq hSh hWh (hrq₁.2.symm.trans (hH.trans (hr₄.2.trans (eval_op₂_congr 3 rfl ?_))))
+    exact (eval_op₂_congr 9 (idt_comp hM (fst_hom hM hA hLr)) rfl).trans
+      (eval_prodMapRight a hmap).symm
+  have hTU := (side hT p₁).trans (side hU p₂).symm
+  -- the sides at the tree
+  have hEx : ∀ {W : Tree} {w : Term}, compile G n w R [(idt R, R)] = some (W, C) →
+      ∃ q, compile G n w X [(x₀, R)] = some q ∧ ResEq M ρ (comp W x₀, C) q := fun hw ↦
+    compile_precomp hM hG hρ hps hds hw hEr hx₀ fun i p hp ↦ by
+      rcases i with _ | j
+      · obtain rfl : (comp (idt R) x₀, R) = p := by simpa [precomp] using hp
+        exact ⟨_, rfl, rfl, (idt_comp hM hx₀).symm⟩
+      · simp [precomp] at hp
+  obtain ⟨q₅, hq₅, hr₅⟩ := hEx hT
+  obtain rfl := Option.some_inj.mp (hq₅.symm.trans ht)
+  obtain ⟨q₆, hq₆, hr₆⟩ := hEx hU
+  obtain rfl := Option.some_inj.mp (hq₆.symm.trans hu)
+  exact (holds_eq_iff hM hG hρ hps hds he ht hu).mpr
+    (hr₅.2.trans ((eval_op₂_congr 3 hTU rfl).trans hr₆.2.symm))
 
 /-- Case analysis on a coproduct is sound: a formula, in a context of a variable of a coproduct
 type, that holds at the left injection of a variable of the first summand and at the right
@@ -1093,6 +1300,22 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Thm}
             obtain ⟨⟨⟨hkl, hkr, hφ⟩, hp₀⟩, hp₁⟩ := h
             exact coprodInd_sound hM hG hρ hps hds hkl hkr hlow hφ
               ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
+          · simp at h
+        · simp at h
+      · simp [checkStep] at h
+    case roseInd kn kl kc s =>
+      rcases cs with _ | ⟨c₁, _ | ⟨c₂, _ | ⟨c₃, cs⟩⟩⟩
+      · simp [checkStep] at h
+      · simp [checkStep] at h
+      · simp only [checkStep, List.map_cons, List.map_nil] at h
+        split at h
+        · split at h
+          · rename_i t u r htu _ _ C a F hC hr
+            simp only [Bool.and_eq_true, decide_eq_true_eq] at h
+            obtain ⟨⟨⟨hkn, hkl, hkc, huC, hsC⟩, hp₁⟩, hp₂⟩ := h
+            rw [eqParts_eq_some htu]
+            exact roseInd_sound hM hG hρ hps hds hr hkn hkl hkc hC huC hsC
+              ((ih c₁ (by simp)).2 _ _ _ hp₁) ((ih c₂ (by simp)).2 _ _ _ hp₂)
           · simp at h
         · simp at h
       · simp [checkStep] at h

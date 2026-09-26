@@ -15,12 +15,14 @@ set_option doc.verso true in
 The constructions of the rose-tree object and of the rose-tree object over a type of labels,
 placed after the primitive arrows of the natural numbers and lists and confirmed by the checker's
 inference, and the computation of the fold of each at a construction checked: the fold that
-takes a tree to its root's label computes the label.
+takes a tree to its root's label computes the label. The fold that rebuilds a tree is the
+identity, by induction on rose trees, with the fold that rebuilds a list, the identity by
+induction on lists, cited at the children.
 
 ## Main definitions
 
 * {lit}`GR` — the constants, the constructions of rose trees among them.
-* {lit}`theorems` — the computations, each with its proof.
+* {lit}`theorems` — the computations and the inductions, each with its proof.
 
 ## Tags
 
@@ -46,9 +48,29 @@ def GR : Internal.Globals :=
 -- the constants are well formed, the primitive arrows of the types they name
 #guard (compileDefs GR).any fun cs ↦ GR.ok (ExtEnv.ofDefs cs)
 
+/-- The fold of a list of the object parameter that rebuilds it. -/
+def rebuildList : Term :=
+  Term.listRec (Term.arr 0 [x 0] Term.star)
+    (Term.arr 1 [x 0] (Term.pair (Term.var 1) (Term.var 0))) (Term.var 0)
+
+/-- The fold of a rose tree over the object parameter that rebuilds it. -/
+def rebuildRose : Term :=
+  Term.roseRec (lrose (x 0)) (Term.arr 5 [x 0] (Term.var 0)) (Term.var 0)
+
 /-- The theorems, each with its proof: the fold taking a rose tree over a type of labels, and a
-rose tree, to its root's label computes the label at a construction. -/
+rose tree, to its root's label computes the label at a construction; the folds that rebuild a
+list and a rose tree are the identities. -/
 def theorems : List (Thm × Deriv) := [
+  (⟨1, [list (x 0)], [], Term.eq rebuildList (Term.var 0)⟩,
+    nd (.listInd 0 1 (Term.arr 1 [x 0] (Term.pair (Term.var 1) (Term.var 0)))) [
+      nd .join [nd (.listNil 0), nd .refl],
+      nd .join [nd (.listCons 1), nd .refl],
+      nd .join [nd .refl, nd .refl]]),
+  (⟨1, [lrose (x 0)], [], Term.eq rebuildRose (Term.var 0)⟩,
+    nd (.roseInd 5 0 1 (Term.arr 5 [x 0] (Term.pair (Term.var 1) (Term.var 0)))) [
+      nd .join [nd (.roseNode 5 0 1), nd .refl],
+      nd .join [nd .refl, nd .cong [nd .cong [nd .refl,
+        nd (.thm 0 [lrose (x 0)] [Term.var 0] false)]]]]),
   (⟨1, [list (lrose (x 0)), x 0], [],
     Term.eq (Term.roseRec (x 0) (Term.fst (Term.var 0))
       (Term.arr 5 [x 0] (Term.pair (Term.var 1) (Term.var 0)))) (Term.var 1)⟩,
