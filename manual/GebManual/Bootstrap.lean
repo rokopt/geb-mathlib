@@ -168,7 +168,8 @@ sections below detail:
     partial Horn logic's own: the fourth stage (the next phase). The
     arrow a functional relation determines, a definition of the
     combinators, is complete, as are binary coproducts, the initial
-    object and rose trees over a type of labels in the language.
+    object, and rose trees over a type of labels with induction on rose
+    trees, in the language.
   * Waiting on the second construction. The fifth choice.
   * Waiting on the fourth stage, whose completeness proof settles the
     language's rules. The checker and prover written in Geb.
@@ -2165,8 +2166,9 @@ characterize the relations that are the graphs of arrows.
 
 State: in progress (the next phase). The arrow a functional relation
 determines, as a definition of the combinators, is complete, as are
-binary coproducts, the initial object and rose trees over a type of
-labels in the language; induction on rose trees is next.
+binary coproducts, the initial object, and rose trees over a type of
+labels with induction on rose trees, in the language; the term models
+are next.
 
 The arrow a relation determines is the second projection after the
 inverse of the first projection of the relation's pullback of truth
@@ -2246,6 +2248,20 @@ state, and is constructed by the rest of the topos {citep Pare1974}[]
 free topos with a natural numbers object alone. The kernel gains the
 same types when the Geb programs move to them, since a change of the
 kernel moves every fixed point.
+
+Induction on rose trees is a rule in the form of the uniqueness of the
+fold: two terms in a context of a rose tree, each of which at a
+construction is a step at the label and the list of its values at the
+children, are equal ({name}`Geb.FreeTopos.Internal.roseInd_sound`). The
+rule takes a context of the tree alone and no hypotheses, since the list
+of a term's values at the children is a fold of the children, and a
+fold's step is a term of a context of its own; its soundness is then the
+uniqueness of the fold itself, with no parameter. A term with other
+variables is brought under the rule by abstracting them, the fold's type
+an exponential, as the definitions of appending and addition fold into
+exponentials. The fold that rebuilds a tree is the identity by the rule,
+with the fold that rebuilds a list, the identity by induction on lists,
+cited at the children (`GebTests/Prototypes/FreeTopos/InternalRoseTrees.lean`).
 
 The language's term model is the topos whose objects are its types with
 predicates and whose arrows are its provably functional relations,
@@ -2341,21 +2357,16 @@ the change that removes it.
 
 ## The next phase
 
-The fourth stage of the Mitchell–Bénabou language continues, in this
-order, after the arrow a functional relation determines, a definition of
-the combinators, and binary coproducts, the initial object and rose trees
-over a type of labels in the language, which are complete (the section
-on the fourth stage).
-
-1. Induction on rose trees: the uniqueness of the fold of each rose-tree
-   object as a rule of the language, in the form of the uniqueness of
-   recursion that the natural numbers and lists have, proved sound by
-   the uniqueness of the fold with a parameter.
-2. The term models and the completeness theorems of the section on the
-   Mitchell–Bénabou language: the language's term model of provably
-   functional relations, the partial Horn logic's term model, and the
-   translations whose round trips with the compilation are provably the
-   identity.
+The fourth stage of the Mitchell–Bénabou language continues after the
+arrow a functional relation determines, a definition of the
+combinators, and binary coproducts, the initial object, and rose trees
+over a type of labels with induction on rose trees, in the language,
+which are complete (the section on the fourth stage), with the term
+models and the completeness theorems of the section on the
+Mitchell–Bénabou language: the language's term model of provably
+functional relations, the partial Horn logic's term model, and the
+translations whose round trips with the compilation are provably the
+identity.
 
 The second construction and the fifth choice follow. The computational
 core's step 3, whose proofs are about kernel programs whichever the

@@ -138,6 +138,11 @@ inductive Rule where
   construction the primitives of indices {lit}`kn` and {lit}`kc`, under the induction hypothesis
   at the construction. -/
   | listIndHyp (kn kc : ℕ)
+  /-- An equation between two terms in a context of a rose tree alone, under no hypotheses, by
+  induction in the form of the uniqueness of the fold: each side at a construction, the primitive
+  of index {lit}`kn`, is the step {lit}`s` at the label and the list of the side's values at the
+  children, the list built by the primitives of indices {lit}`kl` and {lit}`kc`. -/
+  | roseInd (kn kl kc : ℕ) (s : Term)
   /-- A formula by case analysis on the innermost variable, of a coproduct type, with the
   injections the primitives of indices {lit}`kl` and {lit}`kr`: proved at the left injection of a
   variable of the first summand and at the right injection of a variable of the second, under
@@ -213,6 +218,13 @@ def listConsAt (kc : ℕ) (a : Tree) (t : Term) : Term :=
     | 0 => Term.arr kc [a] (Term.pair (Term.var 1) (Term.var 0))
     | j + 1 => Term.var (j + 2)
 
+/-- A term in a context of a rose tree of the type {lit}`r` over the type of labels {lit}`a`, at
+the construction, the primitive of index {lit}`kn`, of a tree from the next variable's label and
+the innermost variable's children. -/
+def roseNodeAt (kn : ℕ) (r a : Tree) (t : Term) : Term :=
+  Term.subst t (instVar (Term.arr kn (if r = rose then [] else [a])
+    (Term.pair (Term.var 1) (Term.var 0))))
+
 /-- A term in a context of a list variable, weakened past a new element after the variable. -/
 def weakenElem (t : Term) : Term := Term.rename t fun i ↦ match i with
   | 0 => 0
@@ -223,6 +235,13 @@ def weaken1 (t : Term) : Term := Term.rename t (· + 1)
 
 /-- A term weakened past two new innermost variables. -/
 def weaken2 (t : Term) : Term := Term.rename t (· + 2)
+
+/-- The list of the values at the children, the innermost variable, of a term in a context of a
+rose tree, the list of the type {lit}`c` built by a fold of the children by the primitives of
+indices {lit}`kl` and {lit}`kc`. -/
+def roseMapAt (kl kc : ℕ) (c : Tree) (t : Term) : Term :=
+  Term.listRec (Term.arr kl [c] Term.star) (Term.arr kc [c] (Term.pair (weaken1 t) (Term.var 0)))
+    (Term.var 0)
 
 /-- The sides of an equation. -/
 def eqParts (φ : Term) : Option (Term × Term) := match φ.label, φ.children with
@@ -438,6 +457,18 @@ def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Der
         | _, _ => false
       | [] => false
     | .zeroInd i, [] => decide (Γ[i]? = some zero ∧ typeIn G n Γ φ = some omega)
+    | .roseInd kn kl kc s, [(_, p₁), (_, p₂)] => match eqParts φ, Γ with
+      | some (t, u), [r] => match typeIn G n Γ t, roseParts r with
+        | some C, some (a, _) => decide (((G.prims[kn]? = some nodePrim ∧ r = rose) ∨
+              (G.prims[kn]? = some lnodePrim ∧ r = lrose a)) ∧ G.prims[kl]? = some nilPrim ∧
+              G.prims[kc]? = some consPrim ∧ typeIn G n Γ u = some C ∧
+              typeIn G n [list C, a] s = some C) &&
+            p₁.2 [list r, a] [] (Term.eq (roseNodeAt kn r a t)
+              (Term.subst s (atVar0 (roseMapAt kl kc C t)))) &&
+            p₂.2 [list r, a] [] (Term.eq (roseNodeAt kn r a u)
+              (Term.subst s (atVar0 (roseMapAt kl kc C u))))
+        | _, _ => false
+      | _, _ => false
     | _, _ => false)
 
 /-- The checker: the rewriting a derivation performs on a term in a context under hypotheses,

@@ -78,6 +78,10 @@ theorem expParts_eq_some {p a b : Tree} : expParts p = some (a, b) ↔ p = exp a
   · rintro rfl
     simp [expParts, exp, op]
 
+/-- A rose-tree object over a type of labels is not the rose-tree object. -/
+theorem lrose_ne_rose (a : Tree) : lrose a ≠ rose := fun h ↦ by
+  simpa [lrose, rose, op] using congrArg RoseTree.label h
+
 /-- A rose-tree object's type of labels and fold: the natural numbers object and the fold of the
 rose-tree object, or a rose-tree object's type of labels and the fold over it. -/
 theorem roseParts_eq_some {p a : Tree} {F : Tree → Tree} : roseParts p = some (a, F) ↔
@@ -95,9 +99,7 @@ theorem roseParts_eq_some {p a : Tree} {F : Tree → Tree} : roseParts p = some 
       · simp at h
   · rintro (⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl⟩)
     · simp [roseParts]
-    · have h : lrose a ≠ rose := fun h ↦ by
-        simpa [lrose, rose, op] using congrArg RoseTree.label h
-      rw [roseParts, ite_eq_right h]
+    · rw [roseParts, ite_eq_right (lrose_ne_rose a)]
       simp [lrose, op]
 
 /-- The type of labels of a rose-tree object over it is its argument. -/

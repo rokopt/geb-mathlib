@@ -239,6 +239,24 @@ theorem roseRec_node {s C : Tree} (hs : Hom M ρ s (prod nat (list C)) C) :
     (by simp [hws]) (by simp [hss]) (hs' := [⟨roseRec s, roseRec s⟩]) rfl ⟨w, hw, hw⟩
     (q := ⟨comp (roseRec s) node, comp s (prodMapRight nat (listMap (roseRec s)))⟩) rfl)
 
+/-- An arrow from the rose-tree object whose composite with the structure map is the step after
+the product of the natural numbers object with its action on the children is the fold. -/
+theorem roseRec_unique {h s C : Tree} (hs : Hom M ρ s (prod nat (list C)) C)
+    (hh : Hom M ρ h rose C)
+    (h₁ : eval M ρ (comp h node) = eval M ρ (comp s (prodMapRight nat (listMap h)))) :
+    eval M ρ h = eval M ρ (roseRec s) := by
+  obtain ⟨w, hw, -⟩ := (roseRec_hom hM hs).exists_eval
+  obtain ⟨c, hcv, -⟩ := (comp_hom hM (node_hom hM) hh).exists_eval
+  obtain ⟨r, hr, -⟩ := isObj_rose (ρ := ρ) hM
+  obtain ⟨ws, hws, hss⟩ := hs.exists_eval
+  obtain ⟨wh, hwh, hhs⟩ := hh.exists_eval
+  exact eval_eq_of_holds (ax_holds hM 132 rfl (by decide) (ts := [s, h]) (ws := [ws, wh])
+    (by simp [hws, hwh]) (by simp [hss, hhs])
+    (hs' := [⟨roseRec s, roseRec s⟩, ⟨dom h, rose⟩,
+      ⟨comp h node, comp s (prodMapRight nat (listMap h))⟩]) rfl
+    ⟨⟨w, hw, hw⟩, holds_of_eval_eq hh.eval_dom hr, holds_of_eval_eq h₁ (h₁.symm.trans hcv)⟩
+    (q := ⟨h, roseRec s⟩) rfl)
+
 /-- The action of the list object on an arrow is an arrow between the list objects. -/
 theorem listMap_hom {f A B : Tree} (hf : Hom M ρ f A B) :
     Hom M ρ (listMap f) (list A) (list B) := by
