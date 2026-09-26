@@ -31,18 +31,24 @@ the empty list, and, where it is true, at the successor, or at a construction
 recursion's generators, so a fold into it is a section of its inclusion, by the uniqueness of
 the fold with a parameter.
 
-Unique choice holds ({lit}`unique_choice`): an arrow into the classifier from the product of two
-objects, true after the pairing of each arrow into the first with some arrow into the second and
-with at most one, is true after the pairing of the identity with exactly one arrow. The first
-projection of its pullback of truth is a monomorphism whose characteristic map is truth, and the
-arrow is the second projection after the section of the first that the inverse of the
-monomorphism's factorization provides ({lit}`chi_hom`, {lit}`chiInv_hom`), as a relation is the
-graph of an arrow when the first projection of its subobject is an isomorphism
-({cite}`DubucSzyld2015`, Proposition 1.21).
+Unique choice holds ({lit}`unique_choice`): a relation, an arrow into the classifier from the
+product of two objects, that is total and univalent ({lit}`RelTotal`, {lit}`RelUnivalent`) is true
+after the pairing of the identity with exactly one arrow, the arrow it determines
+({lit}`desc`). The first projection of its pullback of truth is a monomorphism whose
+characteristic map is truth, and the arrow is the second projection after the section of the
+first that the inverse of the monomorphism's factorization provides ({lit}`chi_hom`,
+{lit}`chiInv_hom`), as a relation is the graph of an arrow when the first projection of its
+subobject is an isomorphism ({cite}`DubucSzyld2015`, Proposition 1.21). Conversely, a relation
+whose arrow is defined is total and univalent ({lit}`functional_of_desc`), so the arrow is defined
+exactly where the relation is functional. As a definition of the combinators ({lit}`descDefn`), a
+partial operation defined where its body is, the arrow is an operation of the theory's extension
+({lit}`eval_op_desc`).
 
 ## Main definitions
 
 * {lit}`subObj` — the subobject on which arrows into the classifier are true.
+* {lit}`desc`, {lit}`descDefn` — the arrow a relation determines, and its definition.
+* {lit}`RelTotal`, {lit}`RelUnivalent` — a relation is total, and univalent.
 
 ## Main statements
 
@@ -54,9 +60,10 @@ graph of an arrow when the first projection of its subobject is an isomorphism
 * {lit}`subObj_hom`, {lit}`subObj_lift` — the universal property of the iterated pullback.
 * {lit}`truth_of_natInd`, {lit}`truth_of_listInd` — induction on the natural numbers object
   and on a list object, with parameters.
-* {lit}`chi_hom`, {lit}`chiInv_hom` — the characteristic map of a monomorphism and the inverse
-  of its factorization.
-* {lit}`unique_choice` — unique choice.
+* {lit}`chi_hom`, {lit}`chiInv_hom`, {lit}`mono_cancel` — the characteristic map of a
+  monomorphism, the inverse of its factorization, and its cancellation.
+* {lit}`unique_choice`, {lit}`functional_of_desc` — unique choice and its converse.
+* {lit}`descDefn_wf`, {lit}`eval_op_desc` — the definition of the arrow a relation determines.
 
 ## References
 
@@ -633,78 +640,75 @@ theorem chiInv_hom {m W X : Tree} (hm : Hom M ρ m W X) (hmc : (monoCond m).Hold
     eval_eq_of_holds (ax_holds hM 95 rfl (by decide) hts hs (hs' := [⟨chi m, chi m⟩]) rfl hc
       (q := ⟨comp (truthLift (chi m) m) (chiInv m), idt (truthEq (chi m))⟩) rfl)⟩
 
-/-- Unique choice: an arrow into the subobject classifier from the product of two objects that
-is true, after the pairing of each arrow into the first with some arrow into the second, and after
-the pairing of each arrow into the first with at most one arrow into the second, is true after the
-pairing of the identity with an arrow, and with exactly one. The arrow is the second projection
-after a section of the first projection of its pullback of truth: the first projection is a
-monomorphism, whose characteristic map is truth ({cite}`DubucSzyld2015`, Proposition 1.21). -/
-theorem unique_choice {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
+/-- The arrow a relation from {lit}`X` to {lit}`B`, an arrow into the subobject classifier from
+their product, determines where it is functional: the second projection after the section of the
+first projection of its pullback of truth that the inverse of that projection's factorization
+provides ({cite}`DubucSzyld2015`, Proposition 1.21). -/
+def desc (X B F : Tree) : Tree :=
+  comp (snd X B) (comp (truthIncl F) (comp (chiInv (comp (fst X B) (truthIncl F)))
+    (truthLift (chi (comp (fst X B) (truthIncl F))) (idt X))))
+
+variable (M ρ) in
+/-- A relation relates each arrow into its first object to some arrow into its second: every
+arrow into the subobject classifier true after each arrow at whose pairing with some arrow the
+relation is true is true. -/
+def RelTotal (F X B : Tree) : Prop :=
+  ∀ R : Tree, Hom M ρ R X omega → (∀ Y k y : Tree, Hom M ρ k Y X → Hom M ρ y Y B →
+    eval M ρ (comp F (pair k y)) = eval M ρ (comp tru (bang Y)) →
+      eval M ρ (comp R k) = eval M ρ (comp tru (bang Y))) →
+    eval M ρ R = eval M ρ (comp tru (bang X))
+
+variable (M ρ) in
+/-- A relation relates each arrow into its first object to at most one arrow into its second. -/
+def RelUnivalent (F X B : Tree) : Prop :=
+  ∀ Y k y y' : Tree, Hom M ρ k Y X → Hom M ρ y Y B → Hom M ρ y' Y B →
+    eval M ρ (comp F (pair k y)) = eval M ρ (comp tru (bang Y)) →
+    eval M ρ (comp F (pair k y')) = eval M ρ (comp tru (bang Y)) → eval M ρ y = eval M ρ y'
+
+/-- A monomorphism cancels on the left. -/
+theorem mono_cancel {m W X a b Y : Tree} (hm : Hom M ρ m W X) (hmc : (monoCond m).Holds M ρ)
+    (ha : Hom M ρ a Y W) (hb : Hom M ρ b Y W) (h : eval M ρ (comp m a) = eval M ρ (comp m b)) :
+    eval M ρ a = eval M ρ b := by
+  have hd := hm.eval_dom
+  set d := dom m with hd_def
+  have hm' : Hom M ρ m d X := hm.congr rfl hd rfl
+  have hA := hm.isObj_dom.congr hd
+  have hfa := fst_hom hM hA hA
+  have hsa := snd_hom hM hA hA
+  have ha' : Hom M ρ a Y d := ha.congr rfl rfl hd
+  have hb' : Hom M ρ b Y d := hb.congr rfl rfl hd
+  have hp := pair_hom hM ha' hb'
+  have he : eval M ρ (comp (comp m (fst d d)) (pair a b)) =
+      eval M ρ (comp (comp m (snd d d)) (pair a b)) :=
+    (comp_assoc hM hp hfa hm').symm.trans ((eval_op₂_congr 3 rfl (fst_pair hM ha' hb')).trans
+      (h.trans ((eval_op₂_congr 3 rfl (snd_pair hM ha' hb')).symm.trans
+        (comp_assoc hM hp hsa hm'))))
+  obtain ⟨hl, hl₁⟩ := eqLift_hom hM (comp_hom hM hfa hm') (comp_hom hM hsa hm') hp he
+  obtain ⟨hk, -⟩ := eqIncl_hom hM (comp_hom hM hfa hm') (comp_hom hM hsa hm')
+  have hkk : eval M ρ (comp (fst d d) (eqIncl (comp m (fst d d)) (comp m (snd d d)))) =
+      eval M ρ (comp (snd d d) (eqIncl (comp m (fst d d)) (comp m (snd d d)))) :=
+    eval_eq_of_holds hmc
+  refine (fst_pair hM ha' hb').symm.trans ?_
+  refine Eq.trans ?_ (snd_pair hM ha' hb')
+  refine (eval_op₂_congr 3 rfl hl₁.symm).trans ?_
+  refine Eq.trans ?_ (eval_op₂_congr 3 rfl hl₁)
+  exact (comp_assoc hM hl hk hfa).trans ((eval_op₂_congr 3 hkk rfl).trans
+    (comp_assoc hM hl hk hsa).symm)
+
+/-- Where the first projection of a relation's pullback of truth is a monomorphism whose
+characteristic map is truth, the relation's arrow is an arrow at whose pairing with the identity
+the relation is true. -/
+theorem desc_hom {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
     (hF : Hom M ρ F (prod X B) omega)
-    (hex : ∀ R : Tree, Hom M ρ R X omega → (∀ Y k y : Tree, Hom M ρ k Y X → Hom M ρ y Y B →
-      eval M ρ (comp F (pair k y)) = eval M ρ (comp tru (bang Y)) →
-        eval M ρ (comp R k) = eval M ρ (comp tru (bang Y))) →
-      eval M ρ R = eval M ρ (comp tru (bang X)))
-    (huniq : ∀ Y k y y' : Tree, Hom M ρ k Y X → Hom M ρ y Y B → Hom M ρ y' Y B →
-      eval M ρ (comp F (pair k y)) = eval M ρ (comp tru (bang Y)) →
-      eval M ρ (comp F (pair k y')) = eval M ρ (comp tru (bang Y)) → eval M ρ y = eval M ρ y') :
-    ∃ h, Hom M ρ h X B ∧ eval M ρ (comp F (pair (idt X) h)) = eval M ρ (comp tru (bang X)) ∧
-      ∀ h', Hom M ρ h' X B →
-        eval M ρ (comp F (pair (idt X) h')) = eval M ρ (comp tru (bang X)) →
-          eval M ρ h' = eval M ρ h := by
+    (hmc : (monoCond (comp (fst X B) (truthIncl F))).Holds M ρ)
+    (hχt : eval M ρ (chi (comp (fst X B) (truthIncl F))) = eval M ρ (comp tru (bang X))) :
+    Hom M ρ (desc X B F) X B ∧
+      eval M ρ (comp F (pair (idt X) (desc X B F))) = eval M ρ (comp tru (bang X)) := by
   obtain ⟨hi, hFi⟩ := truthIncl_hom hM hF
   have hfst := fst_hom hM hX hB
   have hsnd := snd_hom hM hX hB
   have hm : Hom M ρ (comp (fst X B) (truthIncl F)) (truthEq F) X := comp_hom hM hi hfst
-  -- an arrow into the pullback of truth pairs its first projection with an element
-  have hpt : ∀ {u Y : Tree}, Hom M ρ u Y (truthEq F) →
-      eval M ρ (comp F (pair (comp (comp (fst X B) (truthIncl F)) u)
-        (comp (snd X B) (comp (truthIncl F) u)))) = eval M ρ (comp tru (bang Y)) := fun hu ↦
-    (eval_op₂_congr 3 rfl ((eval_op₂_congr 9 (comp_assoc hM hu hi hfst).symm rfl).trans
-      (pair_eta hM hX hB (comp_hom hM hu hi)))).trans ((comp_assoc hM hu hi hF).trans
-      ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hu)))
-  -- the first projection of the pullback of truth is a monomorphism
-  have hmc : (monoCond (comp (fst X B) (truthIncl F))).Holds M ρ := by
-    have hd := hm.eval_dom
-    set a := dom (comp (fst X B) (truthIncl F)) with ha_def
-    have hm' : Hom M ρ (comp (fst X B) (truthIncl F)) a X := hm.congr rfl hd rfl
-    have hA := hm.isObj_dom.congr hd
-    have hfa := fst_hom hM hA hA
-    have hsa := snd_hom hM hA hA
-    obtain ⟨hk, hkk⟩ := eqIncl_hom hM (comp_hom hM hfa hm') (comp_hom hM hsa hm')
-    set k := eqIncl (comp (comp (fst X B) (truthIncl F)) (fst a a))
-      (comp (comp (fst X B) (truthIncl F)) (snd a a)) with hk_def
-    have hfk : Hom M ρ (comp (fst a a) k) _ (truthEq F) :=
-      (comp_hom hM hk hfa).congr rfl rfl hd.symm
-    have hsk : Hom M ρ (comp (snd a a) k) _ (truthEq F) :=
-      (comp_hom hM hk hsa).congr rfl rfl hd.symm
-    have e₁ : eval M ρ (comp (comp (fst X B) (truthIncl F)) (comp (fst a a) k)) =
-        eval M ρ (comp (comp (fst X B) (truthIncl F)) (comp (snd a a) k)) :=
-      (comp_assoc hM hk hfa hm').trans (hkk.trans (comp_assoc hM hk hsa hm').symm)
-    have e₂ := huniq _ _ _ _ (comp_hom hM hfk hm) (comp_hom hM (comp_hom hM hfk hi) hsnd)
-      (comp_hom hM (comp_hom hM hsk hi) hsnd) (hpt hfk)
-      ((eval_op₂_congr 3 rfl (eval_op₂_congr 9 e₁ rfl)).trans (hpt hsk))
-    have e₃ : eval M ρ (comp (truthIncl F) (comp (fst a a) k)) =
-        eval M ρ (comp (truthIncl F) (comp (snd a a) k)) :=
-      (pair_eta hM hX hB (comp_hom hM hfk hi)).symm.trans ((eval_op₂_congr 9
-        ((comp_assoc hM hfk hi hfst).trans (e₁.trans (comp_assoc hM hsk hi hfst).symm)) e₂).trans
-        (pair_eta hM hX hB (comp_hom hM hsk hi)))
-    have he : eval M ρ (comp (fst a a) k) = eval M ρ (comp (snd a a) k) :=
-      truthIncl_cancel hM hF hfk hsk e₃
-    obtain ⟨w, hw, -⟩ := hsk.exists_eval
-    exact holds_of_eval_eq he hw
   obtain ⟨hχ, hχm⟩ := chi_hom hM hm hmc
-  -- its characteristic map is truth: every arrow into the first object factors through it
-  have hχt : eval M ρ (chi (comp (fst X B) (truthIncl F))) = eval M ρ (comp tru (bang X)) :=
-    hex _ hχ fun Y k y hk hy hFky ↦ by
-      obtain ⟨hl, hl₁⟩ := truthLift_hom hM hF (pair_hom hM hk hy) hFky
-      have hml : eval M ρ (comp (comp (fst X B) (truthIncl F)) (truthLift F (pair k y))) =
-          eval M ρ k :=
-        (comp_assoc hM hl hi hfst).symm.trans ((eval_op₂_congr 3 rfl hl₁).trans
-          (fst_pair hM hk hy))
-      exact (eval_op₂_congr 3 rfl hml.symm).trans ((comp_assoc hM hl hm hχ).trans
-        ((eval_op₂_congr 3 hχm rfl).trans (truth_comp hM hl)))
-  -- a section of the first projection
   obtain ⟨hinv, hinv₁⟩ := chiInv_hom hM hm hmc
   have hTI := (truthIncl_hom hM hχ).1
   obtain ⟨hlid, hlid₁⟩ := truthLift_hom hM hχ (idt_hom hM hX) ((comp_idt hM hχ).trans hχt)
@@ -717,14 +721,186 @@ theorem unique_choice {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
       ((eval_op₂_congr 3 rfl ((comp_assoc hM hlid hinv hlm).trans
         ((eval_op₂_congr 3 hinv₁ rfl).trans (idt_comp hM hlid)))).trans hlid₁))
   have his := comp_hom hM hs hi
-  refine ⟨_, comp_hom hM his hsnd, ?_, fun h' hh' hF' ↦ ?_⟩
-  · refine (eval_op₂_congr 3 rfl ((eval_op₂_congr 9 (hms.symm.trans
-      (comp_assoc hM hs hi hfst).symm) rfl).trans (pair_eta hM hX hB his))).trans ?_
-    exact (comp_assoc hM hs hi hF).trans ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hs))
-  · refine huniq _ _ _ _ (idt_hom hM hX) hh' (comp_hom hM his hsnd) hF' ?_
-    refine (eval_op₂_congr 3 rfl ((eval_op₂_congr 9 (hms.symm.trans
-      (comp_assoc hM hs hi hfst).symm) rfl).trans (pair_eta hM hX hB his))).trans ?_
-    exact (comp_assoc hM hs hi hF).trans ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hs))
+  refine ⟨comp_hom hM his hsnd, ?_⟩
+  refine (eval_op₂_congr 3 rfl ((eval_op₂_congr 9 (hms.symm.trans
+    (comp_assoc hM hs hi hfst).symm) rfl).trans (pair_eta hM hX hB his))).trans ?_
+  exact (comp_assoc hM hs hi hF).trans ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hs))
+
+/-- The first projection of the pullback of truth along a univalent relation is a
+monomorphism. -/
+theorem monoCond_of_relUnivalent {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
+    (hF : Hom M ρ F (prod X B) omega) (huniq : RelUnivalent M ρ F X B) :
+    (monoCond (comp (fst X B) (truthIncl F))).Holds M ρ := by
+  obtain ⟨hi, hFi⟩ := truthIncl_hom hM hF
+  have hfst := fst_hom hM hX hB
+  have hsnd := snd_hom hM hX hB
+  have hm : Hom M ρ (comp (fst X B) (truthIncl F)) (truthEq F) X := comp_hom hM hi hfst
+  -- an arrow into the pullback of truth pairs its first projection with an element
+  have hpt : ∀ {u Y : Tree}, Hom M ρ u Y (truthEq F) →
+      eval M ρ (comp F (pair (comp (comp (fst X B) (truthIncl F)) u)
+        (comp (snd X B) (comp (truthIncl F) u)))) = eval M ρ (comp tru (bang Y)) := fun hu ↦
+    (eval_op₂_congr 3 rfl ((eval_op₂_congr 9 (comp_assoc hM hu hi hfst).symm rfl).trans
+      (pair_eta hM hX hB (comp_hom hM hu hi)))).trans ((comp_assoc hM hu hi hF).trans
+      ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hu)))
+  have hd := hm.eval_dom
+  set a := dom (comp (fst X B) (truthIncl F)) with ha_def
+  have hm' : Hom M ρ (comp (fst X B) (truthIncl F)) a X := hm.congr rfl hd rfl
+  have hA := hm.isObj_dom.congr hd
+  have hfa := fst_hom hM hA hA
+  have hsa := snd_hom hM hA hA
+  obtain ⟨hk, hkk⟩ := eqIncl_hom hM (comp_hom hM hfa hm') (comp_hom hM hsa hm')
+  set k := eqIncl (comp (comp (fst X B) (truthIncl F)) (fst a a))
+    (comp (comp (fst X B) (truthIncl F)) (snd a a)) with hk_def
+  have hfk : Hom M ρ (comp (fst a a) k) _ (truthEq F) :=
+    (comp_hom hM hk hfa).congr rfl rfl hd.symm
+  have hsk : Hom M ρ (comp (snd a a) k) _ (truthEq F) :=
+    (comp_hom hM hk hsa).congr rfl rfl hd.symm
+  have e₁ : eval M ρ (comp (comp (fst X B) (truthIncl F)) (comp (fst a a) k)) =
+      eval M ρ (comp (comp (fst X B) (truthIncl F)) (comp (snd a a) k)) :=
+    (comp_assoc hM hk hfa hm').trans (hkk.trans (comp_assoc hM hk hsa hm').symm)
+  have e₂ := huniq _ _ _ _ (comp_hom hM hfk hm) (comp_hom hM (comp_hom hM hfk hi) hsnd)
+    (comp_hom hM (comp_hom hM hsk hi) hsnd) (hpt hfk)
+    ((eval_op₂_congr 3 rfl (eval_op₂_congr 9 e₁ rfl)).trans (hpt hsk))
+  have e₃ : eval M ρ (comp (truthIncl F) (comp (fst a a) k)) =
+      eval M ρ (comp (truthIncl F) (comp (snd a a) k)) :=
+    (pair_eta hM hX hB (comp_hom hM hfk hi)).symm.trans ((eval_op₂_congr 9
+      ((comp_assoc hM hfk hi hfst).trans (e₁.trans (comp_assoc hM hsk hi hfst).symm)) e₂).trans
+      (pair_eta hM hX hB (comp_hom hM hsk hi)))
+  have he : eval M ρ (comp (fst a a) k) = eval M ρ (comp (snd a a) k) :=
+    truthIncl_cancel hM hF hfk hsk e₃
+  obtain ⟨w, hw, -⟩ := hsk.exists_eval
+  exact holds_of_eval_eq he hw
+
+/-- The characteristic map of the first projection of the pullback of truth along a total
+relation, a monomorphism, is truth: every arrow into the first object factors through it. -/
+theorem chi_true_of_relTotal {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
+    (hF : Hom M ρ F (prod X B) omega)
+    (hmc : (monoCond (comp (fst X B) (truthIncl F))).Holds M ρ) (hex : RelTotal M ρ F X B) :
+    eval M ρ (chi (comp (fst X B) (truthIncl F))) = eval M ρ (comp tru (bang X)) := by
+  obtain ⟨hi, -⟩ := truthIncl_hom hM hF
+  have hfst := fst_hom hM hX hB
+  have hm : Hom M ρ (comp (fst X B) (truthIncl F)) (truthEq F) X := comp_hom hM hi hfst
+  obtain ⟨hχ, hχm⟩ := chi_hom hM hm hmc
+  refine hex _ hχ fun Y k y hk hy hFky ↦ ?_
+  obtain ⟨hl, hl₁⟩ := truthLift_hom hM hF (pair_hom hM hk hy) hFky
+  have hml : eval M ρ (comp (comp (fst X B) (truthIncl F)) (truthLift F (pair k y))) =
+      eval M ρ k :=
+    (comp_assoc hM hl hi hfst).symm.trans ((eval_op₂_congr 3 rfl hl₁).trans (fst_pair hM hk hy))
+  exact (eval_op₂_congr 3 rfl hml.symm).trans ((comp_assoc hM hl hm hχ).trans
+    ((eval_op₂_congr 3 hχm rfl).trans (truth_comp hM hl)))
+
+/-- Unique choice: a total and univalent relation is true after the pairing of the identity with
+its arrow, and with no other ({cite}`DubucSzyld2015`, Proposition 1.21). -/
+theorem unique_choice {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
+    (hF : Hom M ρ F (prod X B) omega) (hex : RelTotal M ρ F X B)
+    (huniq : RelUnivalent M ρ F X B) :
+    Hom M ρ (desc X B F) X B ∧
+      eval M ρ (comp F (pair (idt X) (desc X B F))) = eval M ρ (comp tru (bang X)) ∧
+      ∀ h', Hom M ρ h' X B →
+        eval M ρ (comp F (pair (idt X) h')) = eval M ρ (comp tru (bang X)) →
+          eval M ρ h' = eval M ρ (desc X B F) := by
+  have hmc := monoCond_of_relUnivalent hM hX hB hF huniq
+  obtain ⟨hd, hFd⟩ := desc_hom hM hX hB hF hmc (chi_true_of_relTotal hM hX hB hF hmc hex)
+  exact ⟨hd, hFd, fun h' hh' hF' ↦ huniq _ _ _ _ (idt_hom hM hX) hh' hd hF' hFd⟩
+
+/-- A relation whose arrow is defined is total and univalent: the arrow is defined exactly where
+the relation is functional. -/
+theorem functional_of_desc {F X B : Tree} (hX : IsObj M ρ X) (hB : IsObj M ρ B)
+    (hF : Hom M ρ F (prod X B) omega) {w : M.Val} (hw : eval M ρ (desc X B F) = Part.some w) :
+    RelTotal M ρ F X B ∧ RelUnivalent M ρ F X B := by
+  obtain ⟨hi, hFi⟩ := truthIncl_hom hM hF
+  have hfst := fst_hom hM hX hB
+  have hsnd := snd_hom hM hX hB
+  have hm : Hom M ρ (comp (fst X B) (truthIncl F)) (truthEq F) X := comp_hom hM hi hfst
+  -- the arrow's parts are defined
+  have hw' : eval M ρ (op 3 [snd X B, comp (truthIncl F) (comp (chiInv (comp (fst X B)
+      (truthIncl F))) (truthLift (chi (comp (fst X B) (truthIncl F))) (idt X)))]) =
+      Part.some w := hw
+  obtain ⟨v₁, hv₁⟩ := exists_eval_of_eval_op hw' _ (List.mem_cons_of_mem _ List.mem_cons_self)
+  have hv₁' : eval M ρ (op 3 [truthIncl F, comp (chiInv (comp (fst X B) (truthIncl F)))
+      (truthLift (chi (comp (fst X B) (truthIncl F))) (idt X))]) = Part.some v₁ := hv₁
+  obtain ⟨v₂, hv₂⟩ := exists_eval_of_eval_op hv₁' _ (List.mem_cons_of_mem _ List.mem_cons_self)
+  have hv₂' : eval M ρ (op 3 [chiInv (comp (fst X B) (truthIncl F)),
+      truthLift (chi (comp (fst X B) (truthIncl F))) (idt X)]) = Part.some v₂ := hv₂
+  obtain ⟨vi, hvi⟩ := exists_eval_of_eval_op hv₂' _ List.mem_cons_self
+  obtain ⟨vl, hvl⟩ := exists_eval_of_eval_op hv₂' _ (List.mem_cons_of_mem _ List.mem_cons_self)
+  -- the inverse is defined, so the characteristic map is, and the projection is a monomorphism
+  obtain ⟨wm, hwm, hms⟩ := hm.exists_eval
+  have hts : [comp (fst X B) (truthIncl F)].map (eval M ρ) = [wm].map Part.some := by simp [hwm]
+  have hs : [wm].map Sigma.fst = [arr] := by simp [hms]
+  have hc := ax_holds hM 91 rfl (by decide) hts hs
+    (hs' := [⟨chiInv (comp (fst X B) (truthIncl F)), chiInv (comp (fst X B) (truthIncl F))⟩]) rfl
+    (by simpa using ⟨vi, hvi, hvi⟩)
+    (q := ⟨chi (comp (fst X B) (truthIncl F)), chi (comp (fst X B) (truthIncl F))⟩) rfl
+  have hmc : (monoCond (comp (fst X B) (truthIncl F))).Holds M ρ :=
+    ax_holds hM 86 rfl (by decide) hts hs
+      (hs' := [⟨chi (comp (fst X B) (truthIncl F)), chi (comp (fst X B) (truthIncl F))⟩]) rfl
+      (by simpa using hc) rfl
+  obtain ⟨hχ, -⟩ := chi_hom hM hm hmc
+  -- the lift of the identity is defined, so the characteristic map is truth
+  have htd := truth_dom_hom hM hχ
+  have hid := idt_hom hM hX
+  obtain ⟨wχ, hwχ, hχs⟩ := hχ.exists_eval
+  obtain ⟨wt, hwt, hts'⟩ := htd.exists_eval
+  obtain ⟨wi, hwi, his⟩ := hid.exists_eval
+  have h37 := eval_eq_of_holds (ax_holds (ρ := ρ) hM 37 rfl (by decide)
+    (ts := [chi (comp (fst X B) (truthIncl F)),
+      comp tru (bang (dom (chi (comp (fst X B) (truthIncl F))))), idt X]) (ws := [wχ, wt, wi])
+    (by simp [hwχ, hwt, hwi]) (by simp [hχs, hts', his])
+    (hs' := [⟨truthLift (chi (comp (fst X B) (truthIncl F))) (idt X),
+      truthLift (chi (comp (fst X B) (truthIncl F))) (idt X)⟩]) rfl (by simpa using ⟨vl, hvl, hvl⟩)
+    (q := ⟨comp (chi (comp (fst X B) (truthIncl F))) (idt X),
+      comp (comp tru (bang (dom (chi (comp (fst X B) (truthIncl F)))))) (idt X)⟩) rfl)
+  have hχt : eval M ρ (chi (comp (fst X B) (truthIncl F))) = eval M ρ (comp tru (bang X)) :=
+    (comp_idt hM hχ).symm.trans (h37.trans ((comp_idt hM htd).trans
+      (eval_op₂_congr 3 rfl (eval_op₁_congr 5 hχ.eval_dom))))
+  obtain ⟨hd, hFd⟩ := desc_hom hM hX hB hF hmc hχt
+  refine ⟨fun R hR hRF ↦ (comp_idt hM hR).symm.trans
+    ((hRF X (idt X) _ hid hd hFd).trans rfl), fun Y k y y' hk hy hy' h₁ h₂ ↦ ?_⟩
+  -- two lifts through the pullback of truth over one arrow are equal
+  obtain ⟨hl, hl₁⟩ := truthLift_hom hM hF (pair_hom hM hk hy) h₁
+  obtain ⟨hl', hl₁'⟩ := truthLift_hom hM hF (pair_hom hM hk hy') h₂
+  have hml : ∀ {z : Tree}, Hom M ρ z Y B →
+      eval M ρ (comp (truthIncl F) (truthLift F (pair k z))) = eval M ρ (pair k z) →
+      Hom M ρ (truthLift F (pair k z)) Y (truthEq F) →
+      eval M ρ (comp (comp (fst X B) (truthIncl F)) (truthLift F (pair k z))) = eval M ρ k :=
+    fun hz hlz hlh ↦ (comp_assoc hM hlh hi hfst).symm.trans ((eval_op₂_congr 3 rfl hlz).trans
+      (fst_pair hM hk hz))
+  have hll := mono_cancel hM hm hmc hl hl' ((hml hy hl₁ hl).trans (hml hy' hl₁' hl').symm)
+  refine (snd_pair hM hk hy).symm.trans ?_
+  refine Eq.trans ?_ (snd_pair hM hk hy')
+  refine (eval_op₂_congr 3 rfl hl₁.symm).trans ?_
+  refine Eq.trans ?_ (eval_op₂_congr 3 rfl hl₁')
+  exact (comp_assoc hM hl hi hsnd).trans ((eval_op₂_congr 3 rfl hll).trans
+    (comp_assoc hM hl' hi hsnd).symm)
+
+/-- The arrow a relation determines, as a definition of the combinators in two objects and an
+arrow: a partial operation, defined where its body is, which is where the relation is
+functional. -/
+def descDefn : Defn := ⟨[obj, obj, arr], arr, desc (x 0) (x 1) (x 2)⟩
+
+omit hM in
+/-- The arrow a relation determines is a well-formed definition over the theory's signature. -/
+theorem descDefn_wf : descDefn.WF sig := ⟨by decide, by decide⟩
+
+/-- The operation defined by {lit}`descDefn`, at a total and univalent relation, is the arrow the
+relation determines. -/
+theorem eval_op_desc {i : ℕ} (hd : defs[i]? = some descDefn) {F X B : Tree}
+    (hX : IsObj M ρ X) (hB : IsObj M ρ B) (hF : Hom M ρ F (prod X B) omega)
+    (hex : RelTotal M ρ F X B) (huniq : RelUnivalent M ρ F X B) :
+    eval M ρ (op (sig.length + i) [X, B, F]) = eval M ρ (desc X B F) := by
+  obtain ⟨hdh, -, -⟩ := unique_choice hM hX hB hF hex huniq
+  obtain ⟨v, hv, -⟩ := hdh.exists_eval
+  obtain ⟨wX, hwX, hXs⟩ := hX
+  obtain ⟨wB, hwB, hBs⟩ := hB
+  obtain ⟨wF, hwF, hFs⟩ := hF.exists_eval
+  have hθ : [X, B, F].map (eval M ρ) = [wX, wB, wF].map Part.some := by simp [hwX, hwB, hwF]
+  have hsub : PartialHorn.subst [X, B, F] (desc (x 0) (x 1) (x 2)) = desc X B F := rfl
+  have hbody : eval M [wX, wB, wF] (desc (x 0) (x 1) (x 2)) = Part.some v := by
+    rw [← PartialHorn.eval_subst hθ _
+      (show PartialHorn.Scoped 3 (desc (x 0) (x 1) (x 2)) = true by decide), hsub]
+    exact hv
+  exact (eval_op_defn hM hd hθ (by simp [hXs, hBs, hFs, descDefn]) hbody).trans hv.symm
 
 end UniqueChoice
 

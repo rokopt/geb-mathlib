@@ -650,13 +650,13 @@ theorem description {B : Tree} {φ : Term} {X : Tree} {e : List (Tree × Tree)}
   have hev : ∀ {Y k y : Tree}, Hom M ρ k Y X → Hom M ρ y Y B →
       eval M ρ (comp (ev B omega) (pair (comp (curry X B Φ) k) y)) =
         eval M ρ (comp Φ (pair k y)) := fun hk hy ↦ ev_curry_pair hM he.1 hBo hΦh hk hy
-  obtain ⟨x, hx, hΦx, hxu⟩ := unique_choice hM he.1 hBo hΦh
+  obtain ⟨hx, hΦx, hxu⟩ := unique_choice hM he.1 hBo hΦh
     (fun R hR hRΦ ↦ hex R hR fun Y k y hk hy h₁ ↦ hRΦ Y k y hk hy ((hev hk hy).symm.trans h₁))
     (fun Y k y y' hk hy hy' h₁ h₂ ↦
       huniq Y k y y' hk hy hy' ((hev hk hy).trans h₁) ((hev hk hy').trans h₂))
   obtain ⟨q, hq, hqr⟩ := compile_at hM hG hρ hps hds he hB hΦ hx
-  refine ⟨x, hx, ⟨q, hq, (holds_congr hqr).mp ⟨rfl, hΦx⟩⟩, fun x' hx' ⟨q', hq', hq'h⟩ ↦
-    hxu x' hx' ?_⟩
+  refine ⟨desc X B Φ, hx, ⟨q, hq, (holds_congr hqr).mp ⟨rfl, hΦx⟩⟩,
+    fun x' hx' ⟨q', hq', hq'h⟩ ↦ hxu x' hx' ?_⟩
   obtain ⟨q'', hq'', hq''r⟩ := compile_at hM hG hρ hps hds he hB hΦ hx'
   rw [hq'] at hq''
   rw [Option.some_inj.mp hq''] at hq'h

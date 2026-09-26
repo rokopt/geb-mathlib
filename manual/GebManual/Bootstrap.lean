@@ -164,8 +164,10 @@ sections below detail:
   * Complete. Its derivations of equations, its logical rules, and its
     connectives, comprehension and description, the first three stages,
     each with its checker proved sound.
-  * Ready, and next. Its term models and its completeness, with the
-    partial Horn logic's own: the fourth stage (the next phase).
+  * In progress. Its term models and its completeness, with the
+    partial Horn logic's own: the fourth stage (the next phase). The
+    arrow a functional relation determines, a definition of the
+    combinators, is complete.
   * Waiting on the second construction. The fifth choice.
   * Waiting on the fourth stage, whose completeness proof settles the
     language's rules. The checker and prover written in Geb.
@@ -826,8 +828,8 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the metalogic
   * In progress
-  * The Mitchell–Bénabou language's term models and completeness: ready,
-    and next; the second construction and the converse of the first:
+  * The Mitchell–Bénabou language's term models and completeness: in
+    progress; the second construction and the converse of the first:
     ready; the fifth choice: waiting on the second construction; the
     checker and prover written in Geb: waiting on the completeness proof
 :::
@@ -1914,7 +1916,7 @@ development checks in 0.9 seconds against the core's 29 milliseconds.
 #### The Mitchell–Bénabou language
 
 State: in progress; the first three stages are complete, and the fourth
-is ready and next.
+is in progress.
 
 ##### Terms, compilation and definitions
 
@@ -2038,7 +2040,7 @@ uniqueness of recursion, measured against the core's certificates; the
 logical rules, whose soundness needs the internal Heyting algebra of the
 subobject classifier; comprehension and description; and the term models
 with the completeness theorems. The first three are complete, and the
-fourth is next.
+fourth is in progress.
 
 ##### Stage 1: equations
 
@@ -2159,7 +2161,27 @@ characterize the relations that are the graphs of arrows.
 
 ##### Stage 4: term models and completeness
 
-State: ready, and next (the next phase).
+State: in progress (the next phase). The arrow a functional relation
+determines, as a definition of the combinators, is complete.
+
+The arrow a relation determines is the second projection after the
+inverse of the first projection of the relation's pullback of truth
+({name}`Geb.FreeTopos.desc`), the construction of unique choice, which
+is stated of it ({name}`Geb.FreeTopos.unique_choice`). It is defined
+exactly where the relation is functional: a relation whose arrow is
+defined is total and univalent ({name}`Geb.FreeTopos.functional_of_desc`),
+since the inverse's definedness makes the first projection a
+monomorphism and the lift of the identity's makes its characteristic map
+truth. As a definition of the combinators in two objects and an arrow
+({name}`Geb.FreeTopos.descDefn`, well formed by
+{name}`Geb.FreeTopos.descDefn_wf`), it is a partial operation of the
+theory's extension, whose axioms make it defined where its body is, and
+at a functional relation its value is the arrow's
+({name}`Geb.FreeTopos.eval_op_desc`). The partial Horn logic's
+definedness carries the condition that a description operator of the
+language would need proved; the compilation of a term model's arrow into
+the combinators is this operation, and the language keeps no description
+operator.
 
 The language's term model is the topos whose objects are its types with
 predicates and whose arrows are its provably functional relations,
@@ -2255,19 +2277,11 @@ the change that removes it.
 
 ## The next phase
 
-The fourth stage of the Mitchell–Bénabou language is next, in this
-order.
+The fourth stage of the Mitchell–Bénabou language continues, in this
+order, after the arrow a functional relation determines, a definition of
+the combinators, which is complete (the section on the fourth stage).
 
-1. The arrow a functional relation determines, a definition of the
-   combinators: the second projection after the inverse of the first
-   projection of the relation's pullback of truth, the construction of
-   unique choice ({name}`Geb.FreeTopos.unique_choice`). It is a partial
-   operation, defined exactly where the relation is functional, so the
-   partial Horn logic's definedness carries the condition that a
-   description operator of the language would need proved. The
-   compilation of a term model's arrow into the combinators is this
-   definition, and the language keeps no description operator.
-2. Types built in for computation. Binary coproducts and the initial
+1. Types built in for computation. Binary coproducts and the initial
    object, operations of the combinators already, are exposed in the
    language with injections, case analysis and their rules; the Boolean
    type, optional values and the finite types follow, the Boolean type
@@ -2283,7 +2297,7 @@ order.
    fixed-width numbers among them. The kernel gains the same types when
    the Geb programs move to them, since a change of the kernel moves
    every fixed point.
-3. The term models and the completeness theorems of the section on the
+2. The term models and the completeness theorems of the section on the
    Mitchell–Bénabou language: the language's term model of provably
    functional relations, the partial Horn logic's term model, and the
    translations whose round trips with the compilation are provably the
