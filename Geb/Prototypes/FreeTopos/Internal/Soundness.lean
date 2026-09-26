@@ -532,6 +532,18 @@ theorem compile_of_stdEnv {Γ : List Tree} {s : Term} {r : Tree × Tree}
   exact compile_precomp hM hG hρ hps hds h (stdEnv_hom hM hρ _ hΓ)
     (tuple_hom hM he.1 e fun p hp ↦ (he.2 p hp).1) (proj_tuple hM hρ he.1 e he.2)
 
+/-- A term in the environment extended by a variable of a type, at an element of the type, is its
+arrow there after the pairing of the identity with the element. -/
+theorem compile_at {X x W B C : Tree} {e : List (Tree × Tree)} {w : Term}
+    (he : EnvHom M ρ n X e) (hB : IsTy n B = true)
+    (hw : compile G n w (prod X B) (extEnv X B e) = some (W, C)) (hx : Hom M ρ x X B) :
+    ∃ q, compile G n w X ((x, B) :: e) = some q ∧ ResEq M ρ (comp W (pair (idt X) x), C) q := by
+  have hBo := isObj_of_isTy hM hρ B hB
+  have hi := idt_hom hM he.1
+  exact compile_precomp hM hG hρ hps hds hw (he.ext hM hBo hB) (pair_hom hM hi hx)
+    (envEq_precomp_extEnv hM he.1 hBo (fun p hp ↦ (he.2 p hp).1) (pair_hom hM hi hx)
+      (fst_pair hM hi hx) (snd_pair hM hi hx) (envEq_precomp_idt hM fun p hp ↦ (he.2 p hp).1))
+
 /-- A term that compiles in the empty environment compiles in every environment of arrows, to its
 arrow after the arrow to the terminal object. -/
 theorem compile_closed {s : Term} {r : Tree × Tree} (h : compile G n s one [] = some r)

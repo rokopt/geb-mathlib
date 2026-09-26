@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.FreeTopos.Internal.Compile
+public import Geb.Prototypes.FreeTopos.Internal.Connectives
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
 public import Geb.Prototypes.FreeTopos.Internal.Logic
@@ -27,7 +28,8 @@ typing and compilation to the combinators, its definitions, compiled to definiti
 combinators, and the proof that compiling a term and unfolding the combinators' definitions
 agrees, in every model, with unfolding the language's definitions and compiling; its derivations
 of formulas under hypotheses, their checker and a prover, and the proof that the checker is
-sound; and its connectives, defined from equality, with their rules derived.
+sound; and its connectives, defined from equality, with their rules derived, their meaning in
+every model, and description.
 -/
 
 set_option doc.verso true

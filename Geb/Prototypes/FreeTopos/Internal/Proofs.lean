@@ -253,12 +253,8 @@ element. -/
 theorem natAt {X x W B : Tree} {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e')
     (hw : compile G n w (prod X nat) (extEnv X nat e') = some (W, B)) (hx : Hom M ρ x X nat) :
     ∃ q, compile G n w X ((x, nat) :: e') = some q ∧
-      ResEq M ρ (comp W (pair (idt X) x), B) q := by
-  have hN := isObj_nat (ρ := ρ) hM
-  have hi := idt_hom hM he'.1
-  exact compile_precomp hM hG hρ hps hds hw (he'.ext hM hN isTy_nat) (pair_hom hM hi hx)
-    (envEq_precomp_extEnv hM he'.1 hN (fun p hp ↦ (he'.2 p hp).1) (pair_hom hM hi hx)
-      (fst_pair hM hi hx) (snd_pair hM hi hx) (envEq_precomp_idt hM fun p hp ↦ (he'.2 p hp).1))
+      ResEq M ρ (comp W (pair (idt X) x), B) q :=
+  compile_at hM hG hρ hps hds he' isTy_nat hw hx
 
 /-- A term in the environment extended by a natural number variable, at zero, is its arrow there
 after the pairing of the identity with zero. -/
@@ -467,13 +463,8 @@ theorem listAt {X x W B a : Tree} {e' : List (Tree × Tree)} {w : Term}
     (hw : compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, B))
     (hx : Hom M ρ x X (list a)) :
     ∃ q, compile G n w X ((x, list a) :: e') = some q ∧
-      ResEq M ρ (comp W (pair (idt X) x), B) q := by
-  have hL := isObj_list hM (isObj_of_isTy hM hρ a hat)
-  have hi := idt_hom hM he'.1
-  exact compile_precomp hM hG hρ hps hds hw (he'.ext hM hL (by simpa [isTy_list] using hat))
-    (pair_hom hM hi hx) (envEq_precomp_extEnv hM he'.1 hL (fun p hp ↦ (he'.2 p hp).1)
-      (pair_hom hM hi hx) (fst_pair hM hi hx) (snd_pair hM hi hx)
-      (envEq_precomp_idt hM fun p hp ↦ (he'.2 p hp).1))
+      ResEq M ρ (comp W (pair (idt X) x), B) q :=
+  compile_at hM hG hρ hps hds he' (by simpa [isTy_list] using hat) hw hx
 
 /-- A term in the environment extended by a list variable, at the empty list, is its arrow there
 after the pairing of the identity with the empty list. -/
