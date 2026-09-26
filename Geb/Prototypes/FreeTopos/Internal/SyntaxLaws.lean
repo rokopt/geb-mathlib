@@ -351,7 +351,7 @@ theorem varLeaves_of_compile {G : Globals} {n : ℕ} (s : Term) :
     exact leaves (fun _ h ↦ by cases h)
       (by simpa using ⟨⟨_, _, _, _, hz⟩, ⟨_, _, _, _, hs⟩, ⟨_, _, _, _, hm⟩⟩)
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, -, hs, hm, -⟩ := compile_roseRec_iff.mp h
+    obtain ⟨s, m, m', t, a, F, s', rfl, -, hm, -, hs, -⟩ := compile_roseRec_iff.mp h
     exact leaves (fun _ h ↦ by cases h) (by simpa using ⟨⟨_, _, _, _, hs⟩, ⟨_, _, _, _, hm⟩⟩)
   | defn k θ =>
     obtain ⟨d, rs, -, hrs, -⟩ := compile_defn_iff.mp h

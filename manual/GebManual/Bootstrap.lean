@@ -167,8 +167,8 @@ sections below detail:
   * In progress. Its term models and its completeness, with the
     partial Horn logic's own: the fourth stage (the next phase). The
     arrow a functional relation determines, a definition of the
-    combinators, is complete, as are binary coproducts and the initial
-    object in the language.
+    combinators, is complete, as are binary coproducts, the initial
+    object and rose trees over a type of labels in the language.
   * Waiting on the second construction. The fifth choice.
   * Waiting on the fourth stage, whose completeness proof settles the
     language's rules. The checker and prover written in Geb.
@@ -2165,7 +2165,8 @@ characterize the relations that are the graphs of arrows.
 
 State: in progress (the next phase). The arrow a functional relation
 determines, as a definition of the combinators, is complete, as are
-binary coproducts and the initial object in the language.
+binary coproducts, the initial object and rose trees over a type of
+labels in the language; induction on rose trees is next.
 
 The arrow a relation determines is the second projection after the
 inverse of the first projection of the relation's pullback of truth
@@ -2217,6 +2218,34 @@ a theorem, proved by case analysis on its variable, and the arrow from
 the initial object is a primitive arrow that a development may add,
 about which the last rule proves every formula
 (`GebTests/Prototypes/FreeTopos/InternalCoproducts.lean`).
+
+The Boolean type is the coproduct of the terminal object with itself,
+optional values of a type its coproduct with the terminal object, and
+the finite types the iterated coproducts of the terminal object from the
+initial object; the case analysis of the Boolean type is a conditional
+that computes, which a formula does not. Products of more than two
+factors and the finite types are not built in: the compilers choose
+their representations, arrays and fixed-width numbers among them.
+
+Rose trees over a type of labels are a data object of the theory, as
+lists over a type of elements are: the initial algebra of the functor
+taking an object to the product of the type of labels and the object's
+list object ({name}`Geb.FreeTopos.lrose`,
+{name}`Geb.FreeTopos.lroseRec`). Their operations and axioms follow the
+others, so that no certificate's citation of an axiom by its index
+moves. The language's fold of a rose tree folds either rose-tree object,
+the one with natural numbers for labels that models the kernel's values
+or one over a type of labels, and its computation at a construction is a
+rule: the step at the pair of the label and the list of the folds of the
+children, that list itself a fold of the children
+({name}`Geb.FreeTopos.Internal.roseNode_sound`,
+`GebTests/Prototypes/FreeTopos/InternalRoseTrees.lean`). Each type built
+in is determined up to isomorphism by the universal property its axioms
+state, and is constructed by the rest of the topos {citep Pare1974}[]
+{citep MoerdijkPalmgren2000}[], so each extension is equivalent to the
+free topos with a natural numbers object alone. The kernel gains the
+same types when the Geb programs move to them, since a change of the
+kernel moves every fixed point.
 
 The language's term model is the topos whose objects are its types with
 predicates and whose arrows are its provably functional relations,
@@ -2314,24 +2343,14 @@ the change that removes it.
 
 The fourth stage of the Mitchell–Bénabou language continues, in this
 order, after the arrow a functional relation determines, a definition of
-the combinators, and binary coproducts and the initial object in the
-language, which are complete (the section on the fourth stage).
+the combinators, and binary coproducts, the initial object and rose trees
+over a type of labels in the language, which are complete (the section
+on the fourth stage).
 
-1. Types built in for computation. The Boolean type, optional values
-   and the finite types are defined from the coproducts and the initial
-   object, the Boolean type giving the language a conditional that
-   computes, which a formula does not. Rose trees become rose trees over
-   a type of labels, as lists are over a type of elements, with induction
-   on rose trees. Each such type
-   is determined up to isomorphism by the universal property its axioms
-   state, and is constructed by the rest of the topos
-   {citep Pare1974}[] {citep MoerdijkPalmgren2000}[], so each extension
-   is equivalent to the free topos with a natural numbers object alone.
-   Products of more than two factors and the finite types are not built
-   in: the compilers choose their representations, arrays and
-   fixed-width numbers among them. The kernel gains the same types when
-   the Geb programs move to them, since a change of the kernel moves
-   every fixed point.
+1. Induction on rose trees: the uniqueness of the fold of each rose-tree
+   object as a rule of the language, in the form of the uniqueness of
+   recursion that the natural numbers and lists have, proved sound by
+   the uniqueness of the fold with a parameter.
 2. The term models and the completeness theorems of the section on the
    Mitchell–Bénabou language: the language's term model of provably
    functional relations, the partial Horn logic's term model, and the

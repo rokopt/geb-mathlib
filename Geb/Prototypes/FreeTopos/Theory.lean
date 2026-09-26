@@ -18,8 +18,9 @@ are the domain, the codomain, identities and composition, as in the theory of ca
 Example 4 of {cite}`PalmgrenVickers2007`; the terminal and initial objects, binary products and
 coproducts, equalizers and coequalizers, exponentials and a subobject classifier, the structure
 of an elementary topos as Section 4.3 of {cite}`Goldblatt1984` defines it, each with its
-universal morphisms; and the natural numbers object, the list object of an object and the
-rose-tree object, each an initial algebra with its structure maps and its fold.
+universal morphisms; and the natural numbers object, the list object of an object, the
+rose-tree object and the rose-tree object over an object of labels, each an initial algebra with
+its structure maps and its fold.
 
 Each partial operation is defined exactly where its domain's equations hold, by a pair of
 sequents; each universal property is stated by its computation equations and its uniqueness,
@@ -96,7 +97,9 @@ def sig : Sig := [
   -- list objects, the empty list, cons and recursion
   ([obj], obj), ([obj], arr), ([obj], arr), ([obj, arr, arr], arr),
   -- the rose-tree object, its structure map and recursion
-  ([], obj), ([], arr), ([arr], arr)]
+  ([], obj), ([], arr), ([arr], arr),
+  -- rose-tree objects over objects of labels, their structure maps and recursion
+  ([obj], obj), ([obj], arr), ([obj, arr], arr)]
 
 /-- The variable of an index. -/
 abbrev x (i : ℕ) : Tree := var i
@@ -226,6 +229,16 @@ def node : Tree := op 38 []
 
 /-- The fold of the rose-tree object into an algebra. -/
 def roseRec (f : Tree) : Tree := op 39 [f]
+
+/-- The rose-tree object over an object of labels. -/
+def lrose (a : Tree) : Tree := op 40 [a]
+
+/-- The structure map of the rose-tree object over the object of labels {lit}`a`, from the
+product of {lit}`a` and the list object of the rose-tree object. -/
+def lnode (a : Tree) : Tree := op 41 [a]
+
+/-- The fold of the rose-tree object over the object of labels {lit}`a` into an algebra. -/
+def lroseRec (a f : Tree) : Tree := op 42 [a, f]
 
 /-- The equation stating that a term is defined. -/
 def dfd (t : Tree) : Eqn := ⟨t, t⟩
@@ -492,12 +505,30 @@ def roseAxioms : List Seq := [
       ⟨comp (x 1) node, comp (x 0) (prodMapRight nat (listMap (x 1)))⟩],
     ⟨x 1, roseRec (x 0)⟩⟩]
 
+/-- The axioms of the rose-tree object over an object of labels, the initial algebra of the
+functor taking an object to the product of the object of labels and the object's list object. -/
+def lroseAxioms : List Seq := [
+  ⟨[obj], [], dfd (lrose (x 0))⟩,
+  ⟨[obj], [], ⟨dom (lnode (x 0)), prod (x 0) (list (lrose (x 0)))⟩⟩,
+  ⟨[obj], [], ⟨cod (lnode (x 0)), lrose (x 0)⟩⟩,
+  ⟨[obj, arr], [dfd (lroseRec (x 0) (x 1))], ⟨dom (x 1), prod (x 0) (list (cod (x 1)))⟩⟩,
+  ⟨[obj, arr], [⟨dom (x 1), prod (x 0) (list (cod (x 1)))⟩], dfd (lroseRec (x 0) (x 1))⟩,
+  ⟨[obj, arr], [dfd (lroseRec (x 0) (x 1))], ⟨dom (lroseRec (x 0) (x 1)), lrose (x 0)⟩⟩,
+  ⟨[obj, arr], [dfd (lroseRec (x 0) (x 1))], ⟨cod (lroseRec (x 0) (x 1)), cod (x 1)⟩⟩,
+  ⟨[obj, arr], [dfd (lroseRec (x 0) (x 1))],
+    ⟨comp (lroseRec (x 0) (x 1)) (lnode (x 0)),
+      comp (x 1) (prodMapRight (x 0) (listMap (lroseRec (x 0) (x 1))))⟩⟩,
+  ⟨[obj, arr, arr],
+    [dfd (lroseRec (x 0) (x 1)), ⟨dom (x 2), lrose (x 0)⟩,
+      ⟨comp (x 2) (lnode (x 0)), comp (x 1) (prodMapRight (x 0) (listMap (x 2)))⟩],
+    ⟨x 2, lroseRec (x 0) (x 1)⟩⟩]
+
 /-- The axioms, block by block; a certificate cites an axiom by its index here, so the list is
 only extended. -/
 def axioms : List Seq :=
   categoryAxioms ++ terminalAxioms ++ productAxioms ++ equalizerAxioms ++ initialAxioms ++
     coproductAxioms ++ coequalizerAxioms ++ exponentialAxioms ++ classifierAxioms ++
-    natAxioms ++ listAxioms ++ roseAxioms
+    natAxioms ++ listAxioms ++ roseAxioms ++ lroseAxioms
 
 /-- The partial Horn theory of an elementary topos with the natural numbers, list and
 rose-tree objects. -/

@@ -101,9 +101,9 @@ theorem compile_rename (s : Term) :
     exact compile_listRec_iff.mpr ⟨z, s, _, rfl, m', a, ih m (by simp) X e e' f _ hm hf, z', c,
       hz, s', hs, rfl⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
-    exact compile_roseRec_iff.mpr ⟨s, _, s', m', rfl, hc, hs, ih m (by simp) X e e' f _ hm hf,
-      rfl⟩
+    obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    exact compile_roseRec_iff.mpr ⟨s, _, m', t, a, F, s', rfl, hc,
+      ih m (by simp) X e e' f _ hm hf, ht, hs, rfl⟩
   | eq =>
     obtain ⟨t, u, rfl, f₁, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     exact compile_eq_iff.mpr ⟨_, _, rfl, f₁, a, ih t (by simp) X e e' f _ ht hf, g,
@@ -176,9 +176,9 @@ theorem compile_retype (s : Term) :
     obtain ⟨m'', hm''⟩ := ih m (by simp) X e _ hm X' e' he
     exact ⟨_, compile_listRec_iff.mpr ⟨z, s, m, rfl, m'', a, hm'', z', c, hz, s', hs, rfl⟩⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
     obtain ⟨m'', hm''⟩ := ih m (by simp) X e _ hm X' e' he
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, s', m'', rfl, hc, hs, hm'', rfl⟩⟩
+    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', t, a, F, s', rfl, hc, hm'', ht, hs, rfl⟩⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨f', hf'⟩ := ih t (by simp) X e _ ht X' e' he
@@ -294,9 +294,9 @@ theorem compile_subst (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj
     exact ⟨_, compile_listRec_iff.mpr ⟨z, s, _, rfl, m'', a, hm', z', c, hz, s', hs, rfl⟩, rfl,
       eval_op₂_congr 3 rfl hmv⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
-    obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X E _ hm e σ he hσ
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, _, s', m'', rfl, hc, hs, hm', rfl⟩, rfl,
+    obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X E _ hm e σ he hσ
+    exact ⟨_, compile_roseRec_iff.mpr ⟨s, _, m'', _, a, F, s', rfl, hc, hm', ht, hs, rfl⟩, rfl,
       eval_op₂_congr 3 rfl hmv⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
@@ -383,6 +383,18 @@ theorem subst_tuple (θ : List Tree) (X : Tree) :
           (PartialHorn.subst θ f)
       rw [subst_pair, ih]
 
+/-- The type of labels and the fold of a rose-tree object with objects substituted for its object
+variables are its type of labels and its fold with them substituted. -/
+theorem roseParts_subst (θ : List Tree) {t a : Tree} {F : Tree → Tree}
+    (h : roseParts t = some (a, F)) : ∃ F', roseParts (PartialHorn.subst θ t) =
+      some (PartialHorn.subst θ a, F') ∧
+        ∀ s, PartialHorn.subst θ (F s) = F' (PartialHorn.subst θ s) := by
+  rcases roseParts_eq_some.mp h with ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact ⟨roseRec, roseParts_eq_some.mpr (.inl ⟨subst_rose θ, subst_nat θ, rfl⟩),
+      subst_roseRec θ⟩
+  · exact ⟨lroseRec (PartialHorn.subst θ a), by rw [subst_lrose]; exact roseParts_lrose _,
+      subst_lroseRec θ a⟩
+
 /-- A term with objects substituted for its object variables compiles, in the substituted
 environment, to its arrow and type with them substituted. -/
 theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = n)
@@ -465,14 +477,14 @@ theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = 
     exact compile_listRec_iff.mpr ⟨_, _, _, rfl, _, _, hm₁, _, _, hz₁, _, hs₁,
       by simp [substPair, subst_comp, subst_listRec]⟩
   | roseRec c =>
-    obtain ⟨s, mm, s', m', rfl, hct, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨s, mm, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
     have hs₁ := ih s (by simp) _ _ _ hs
     have hm₁ := ih mm (by simp) X e _ hm
-    simp only [substPair, List.map_cons, List.map_nil, subst_idt, subst_prod, subst_nat,
-      subst_list] at hs₁
-    simp only [substPair, subst_rose] at hm₁
-    exact compile_roseRec_iff.mpr ⟨_, _, _, _, rfl, hty c hct, hs₁, hm₁,
-      by simp [substPair, subst_comp, subst_roseRec]⟩
+    obtain ⟨F', ht', hF'⟩ := roseParts_subst θ ht
+    simp only [substPair, List.map_cons, List.map_nil, subst_idt, subst_prod, subst_list] at hs₁
+    simp only [substPair] at hm₁
+    exact compile_roseRec_iff.mpr ⟨_, _, _, _, _, _, _, rfl, hty c hct, hm₁, ht', hs₁,
+      by simp [substPair, subst_comp, hF']⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     exact compile_eq_iff.mpr ⟨_, _, rfl, _, _, ih t (by simp) X e (f, a) ht, _,

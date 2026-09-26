@@ -13,30 +13,29 @@ set_option doc.verso true in
 /-!
 # The derivations of the internal language
 
-The checker of the internal language's derivations. A judgment is a formula, a term of the
-subobject classifier's type, in a context of variables and under hypotheses, formulas in the same
-context. A derivation is a rose tree of rules of two kinds. A rewriting derivation transforms a
-given term: the identity, a sequence of two rewritings, congruence into each child of a node,
-each in its own context and under its own hypotheses, and the equations of the language applied
-at the term: β for functions, the components of a pair and the η of pairs and of the terminal
-type, the unfolding of a definition at its arguments, the computation of the folds of the
-natural numbers and of lists and of the case analysis of a coproduct, an instance of an earlier
-equational theorem, and an equation among the hypotheses. A proof derivation proves a formula:
-an equation by rewriting both sides to one term, or by induction in the form of the uniqueness of
-recursion; a hypothesis; a formula by proving it after rewriting it or a formula that rewrites to
-it, or by a cut through a formula proved first; the equality of two formulas that entail each
-other, and of two functions whose applications to a new variable are equal; an instance of an
-earlier theorem, its hypotheses' instances proved; a formula by induction on the innermost
-variable of the natural numbers or of a list type, with the formula's instance at the start and,
-under the induction hypothesis, at a successor or a construction; a formula by case analysis on
-the innermost variable of a coproduct type, with its instances at the two injections; and every
-formula in a context with a variable of the initial type. These rules are the basic axioms and
-rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's
-comprehension the abstraction of the formula and membership application, with the
-extensionality of every exponential in place of that of power types, and with induction. The
-rewriting takes its terms from the term it rewrites, so that a derivation names no term but the
-steps of its inductions, the formulas of its cuts and the instances of the theorems it cites, and
-the checker computes every substitution.
+The checker of the internal language's derivations. A judgment is a formula, a term of the subobject
+classifier's type, in a context of variables and under hypotheses, formulas in the same context. A
+derivation is a rose tree of rules of two kinds. A rewriting derivation transforms a given term: the
+identity, a sequence of two rewritings, congruence into each child of a node, each in its own
+context and under its own hypotheses, and the equations of the language applied at the term: β for
+functions, the components of a pair and the η of pairs and of the terminal type, the unfolding of a
+definition at its arguments, the computation of the folds of the natural numbers, lists and rose
+trees and of the case analysis of a coproduct, an instance of an earlier equational theorem, and an
+equation among the hypotheses. A proof derivation proves a formula: an equation by rewriting both
+sides to one term, or by induction in the form of the uniqueness of recursion; a hypothesis; a
+formula by proving it after rewriting it or a formula that rewrites to it, or by a cut through a
+formula proved first; the equality of two formulas that entail each other, and of two functions
+whose applications to a new variable are equal; an instance of an earlier theorem, its hypotheses'
+instances proved; a formula by induction on the innermost variable of the natural numbers or of a
+list type, with the formula's instance at the start and, under the induction hypothesis, at a
+successor or a construction; a formula by case analysis on the innermost variable of a coproduct
+type, with its instances at the two injections; and every formula in a context with a variable of
+the initial type. These rules are the basic axioms and rules of a local set theory
+({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of the
+formula and membership application, with the extensionality of every exponential in place of that of
+power types, and with induction. The rewriting takes its terms from the term it rewrites, so that a
+derivation names no term but the steps of its inductions, the formulas of its cuts and the instances
+of the theorems it cites, and the checker computes every substitution.
 
 ## Main definitions
 
@@ -93,6 +92,10 @@ inductive Rule where
   /-- The fold of a construction, the primitive of index {lit}`k`, is the step at the element
   and the fold of the tail. -/
   | listCons (k : ℕ)
+  /-- The fold of a rose tree's construction, the primitive of index {lit}`kn`, is the step at
+  the pair of the label and the list of the folds of the children, the list built by the
+  primitives of indices {lit}`kl` and {lit}`kc`. -/
+  | roseNode (kn kl kc : ℕ)
   /-- The case analysis of a pair of functions, the primitive of index {lit}`kc`, at a left
   injection, the primitive of index {lit}`kl`, is the first function at the injected term. -/
   | caseInl (kc kl : ℕ)
@@ -168,6 +171,14 @@ def nilPrim : Prim := ⟨1, nil (x 0), one, list (x 0)⟩
 
 /-- The primitive arrow of the construction of a list of the object parameter. -/
 def consPrim : Prim := ⟨1, cons (x 0), prod (x 0) (list (x 0)), list (x 0)⟩
+
+/-- The primitive arrow of the construction of a rose tree, from a natural number label and the
+list of its children. -/
+def nodePrim : Prim := ⟨0, node, prod nat (list rose), rose⟩
+
+/-- The primitive arrow of the construction of a rose tree over the object parameter of labels,
+from a label and the list of its children. -/
+def lnodePrim : Prim := ⟨1, lnode (x 0), prod (x 0) (list (lrose (x 0))), lrose (x 0)⟩
 
 /-- The primitive arrow of the left injection into the coproduct of the object parameters. -/
 def inlPrim : Prim := ⟨2, inl (x 0) (x 1), x 0, coprod (x 0) (x 1)⟩
@@ -253,7 +264,9 @@ def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tr
     let c ← typeIn G n [] z
     let a ← (typeIn G n Γ m).bind listPart
     pure [([], []), ([c, a], []), (Γ, Φ)]
-  | .roseRec c, [_, _] => some [([prod nat (list c)], []), (Γ, Φ)]
+  | .roseRec c, [_, m] => do
+    let p ← (typeIn G n Γ m).bind roseParts
+    pure [([prod p.1 (list c)], []), (Γ, Φ)]
   | _, ts => some (ts.map fun _ ↦ (Γ, Φ))
 
 /-- The rewriting of a term at its root by a rule of the language's equations, with the
@@ -291,6 +304,16 @@ def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (Φ : List
     | .arr k [_], [p] => match p.label, p.children with
       | .pair, [h, tl] => if k = kc ∧ G.prims[kc]? = some consPrim then
           some (Term.subst s (Term.substList [Term.listRec z s tl, h])) else none
+      | _, _ => none
+    | _, _ => none
+  | .roseNode kn kl kc, .roseRec c, [s, m] => match m.label, m.children with
+    | .arr k _, [p] => match p.label, p.children with
+      | .pair, [l, cs] => if k = kn ∧
+          (G.prims[kn]? = some nodePrim ∨ G.prims[kn]? = some lnodePrim) ∧
+          G.prims[kl]? = some nilPrim ∧ G.prims[kc]? = some consPrim then
+          some (Term.subst s (instVar (Term.pair l (Term.listRec (Term.arr kl [c] Term.star)
+            (Term.arr kc [c] (Term.pair (Term.roseRec c s (Term.var 1)) (Term.var 0))) cs))))
+        else none
       | _, _ => none
     | _, _ => none
   | .caseInl kc kl, .app, [f, u] => match f.label, f.children, u.label, u.children with
