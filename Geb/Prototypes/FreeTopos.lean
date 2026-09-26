@@ -9,6 +9,7 @@ public import Geb.Prototypes.FreeTopos.Arrows
 public import Geb.Prototypes.FreeTopos.Category
 public import Geb.Prototypes.FreeTopos.Check
 public import Geb.Prototypes.FreeTopos.Classifier
+public import Geb.Prototypes.FreeTopos.Coequalizers
 public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Infer
 public import Geb.Prototypes.FreeTopos.Internal
