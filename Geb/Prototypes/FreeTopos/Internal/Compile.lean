@@ -344,12 +344,15 @@ def Prim.wf (G : Globals) (S : PartialHorn.Sig) (p : Prim) : Bool :=
 /-- Whether a primitive arrow is a term in its object parameters that has, by the inference of
 the checker, the domain and the codomain it names, which are types in them with the constants of
 {lit}`G`, with the definitions of the combinators of {lit}`E`, and is an arrow of their
-signature. -/
+signature: the canonical forms of its inferred domain and codomain are those the inference
+computes for the types. -/
 def Prim.ok (G : Globals) (E : ExtEnv) (p : Prim) : Bool :=
   p.wf G E.sg.toList &&
-    match (infers E (List.replicate p.arity obj) [] inferFuel).2 p.arrow with
-    | some a => a.sort == arr && a.lo == p.dom && a.hi == p.cod
-    | none => false
+    let inf := (infers E (List.replicate p.arity obj) [] inferFuel).2
+    match inf p.arrow, inf p.dom, inf p.cod with
+    | some a, some d, some c =>
+      a.sort == arr && d.sort == obj && c.sort == obj && a.lo == d.lo && a.hi == c.lo
+    | _, _, _ => false
 
 /-- Whether an object in object parameters is an object of a signature, defined at every
 assignment of objects by the inference of the checker with the definitions of the combinators of

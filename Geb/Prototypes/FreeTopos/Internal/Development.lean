@@ -128,21 +128,6 @@ theorem Entry.Valid.mono {G G' : Globals} (hG : G.WF) (hle : G.Le G')
   | combinators s => exact he
 
 omit hM in
-/-- An arrow between objects at the values of terms, carried to them: a term of the arrow's value
-at the terms' values is an arrow between the substitution instances. -/
-theorem Hom.subst_of_vals {ρ ws : List M.Val} {θ : List Tree}
-    (hθ : θ.map (eval M ρ) = ws.map Part.some) {f f' X Y : Tree}
-    (hX : PartialHorn.Scoped θ.length X = true) (hY : PartialHorn.Scoped θ.length Y = true)
-    (hf : eval M ρ f' = eval M ws f) (h : Hom M ws f X Y) :
-    Hom M ρ f' (PartialHorn.subst θ X) (PartialHorn.subst θ Y) := by
-  obtain ⟨w, hw, hs, ⟨x, hx, hxs⟩, ⟨y, hy, hys⟩, hd, hc⟩ := h
-  have hX' := (PartialHorn.eval_subst hθ X hX).trans hx
-  have hY' := (PartialHorn.eval_subst hθ Y hY).trans hy
-  exact ⟨w, hf.trans hw, hs, ⟨x, hX', hxs⟩, ⟨y, hY', hys⟩,
-    (eval_op₁_of_eq hf).trans (hd.trans (hx.trans hX'.symm)),
-    (eval_op₁_of_eq hf).trans (hc.trans (hy.trans hY'.symm))⟩
-
-omit hM in
 /-- The variables of an assignment's length have its values. -/
 theorem map_eval_vars (ws : List M.Val) :
     ((List.range ws.length).map PartialHorn.var).map (eval M ws) = ws.map Part.some :=
@@ -155,12 +140,6 @@ theorem all_isTy_vars (G : Globals) (m : ℕ) :
   rw [List.all_map, List.all_eq_true]
   intro i hi
   simp [PartialHorn.var, isTy_var_node, List.mem_range.mp hi]
-
-variable (M) in
-/-- A primitive arrow is an arrow between its types at every assignment of objects to its object
-parameters. -/
-def Prim.Val (p : Prim) : Prop :=
-  ∀ ws : List M.Val, ws.map Sigma.fst = List.replicate p.arity obj → Hom M ws p.arrow p.dom p.cod
 
 variable (M) in
 /-- Each definition of the language's operation is, at every assignment of objects to its object
@@ -181,19 +160,6 @@ def DefnsVal (G : Globals) : Prop :=
     ∃ F, compile G d.arity d.body (ctxObj d.params) (stdEnv d.params) = some (F, d.type) ∧
       ∀ ws : List M.Val, ws.map Sigma.fst = List.replicate d.arity obj →
         eval M ws (PartialHorn.opVars (G.base + k) d.arity) = eval M ws F
-
-/-- A primitive arrow that is an arrow at every assignment of objects is an arrow at types. -/
-theorem Prim.hom_of_val {G : Globals} (hO : ObjsHom M G) {p : Prim} (hv : p.Val M)
-    (har : PartialHorn.Scoped p.arity p.arrow = true) (hdt : IsTy G p.arity p.dom = true)
-    (hct : IsTy G p.arity p.cod = true) {m : ℕ} {ρ : List M.Val}
-    (hρ : ρ.map Sigma.fst = List.replicate m obj) {θ : List Tree} (hl : θ.length = p.arity)
-    (hθ : θ.all (IsTy G m) = true) :
-    Hom M ρ (PartialHorn.subst θ p.arrow) (PartialHorn.subst θ p.dom)
-      (PartialHorn.subst θ p.cod) := by
-  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hO hρ θ hθ
-  rw [hl] at hws
-  exact Hom.subst_of_vals hθw (hl ▸ scoped_of_isTy _ hdt) (hl ▸ scoped_of_isTy _ hct)
-    (PartialHorn.eval_subst hθw _ (hl ▸ har)) (hv ws hws)
 
 /-- The primitive arrows of well-formed constants, each an arrow at every assignment of objects,
 are arrows at types. -/
@@ -295,29 +261,6 @@ theorem Prim.val_of_seq (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom 
   exact ⟨w, h₂, hw, ⟨d, hd, hds⟩, ⟨c, hc, hcs⟩, hdf.symm.trans (hci.trans rfl),
     hcf.symm.trans (hcg.trans hdi)⟩
 
-omit hM in
-/-- A primitive arrow the check accepts, with definitions of the combinators that begin those of
-the model's theory, is an arrow between its types at every assignment of objects. -/
-theorem Prim.val_of_ok (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M G)
-    {cds' : List PartialHorn.Defn} (hpre : cds' <+: defs) {p : Prim}
-    (hpo : p.ok G (ExtEnv.ofDefs cds') = true) : p.Val M := by
-  intro ws hws
-  unfold Prim.ok at hpo
-  simp only [Prim.wf, Bool.and_eq_true] at hpo
-  obtain ⟨⟨⟨⟨-, hdt⟩, hct⟩, -⟩, hinf⟩ := hpo
-  split at hinf
-  · rename_i a ha
-    simp only [Bool.and_eq_true, beq_iff_eq] at hinf
-    obtain ⟨⟨hs, hlo⟩, hhi⟩ := hinf
-    obtain ⟨w, hw, hwsrt, -, harr⟩ := (infers_sound ((ExtEnv.wf_ofDefs cds').sound hpre hM) hws
-      (H := []) (by simp) inferFuel).2 _ a ha
-    obtain ⟨⟨d, hd, hdl⟩, ⟨c, hc, hch⟩⟩ := harr hs
-    refine ⟨w, hw, hwsrt.trans hs, isObj_of_isTy hM hO hws _ hdt,
-      isObj_of_isTy hM hO hws _ hct, ?_, ?_⟩
-    · rw [hd, ← hlo, hdl]
-    · rw [hc, ← hhi, hch]
-  · simp at hinf
-
 end Lift
 
 section Theorems
@@ -392,6 +335,7 @@ theorem Decl.le_of_step {d : Decl} {G G' : Globals} {E E' : Array Entry}
   · exact Globals.Le.refl G
   · exact ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
   · exact ⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩
+  · exact ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
 
 /-- The check of a development of one more declaration first checks it. -/
 theorem checkDev_cons (G : Globals) (E : Array Entry) (d : Decl) (ds : List Decl) :
@@ -605,7 +549,7 @@ theorem DevInv.step {G G' : Globals} {E E' : Array Entry} (h : DevInv M Gf G E) 
         simp only [Prim.ok, Prim.wf, Bool.and_eq_true, beq_iff_eq] at hwf
         obtain ⟨⟨⟨⟨har, hdt⟩, hct⟩, hsrt⟩, -⟩ := hwf
         exact ⟨har, hdt, hct, PartialHorn.sortOf_of_prefix (ext_prefix hpre).1
-          (by simpa [ExtEnv.ofDefs] using hsrt), Prim.val_of_ok hM h.defs.2 hpre hok⟩
+          (by simpa [ExtEnv.ofDefs] using hsrt), Prim.val_of_ok hM hpre hok⟩
       | some c =>
         simp only [Prim.confirms, hc, Option.any_some, Bool.and_eq_true] at hck
         obtain ⟨hwf, hcf⟩ := hck
@@ -653,6 +597,98 @@ theorem DevInv.step {G G' : Globals} {E E' : Array Entry} (h : DevInv M Gf G E) 
       split_ifs at hp'
       obtain rfl := Option.some_inj.mp hp'
       exact hsort
+  | object m b c =>
+    simp only [Decl.step] at hs
+    split_ifs at hs with hck
+    simp only [Option.some.injEq, Prod.mk.injEq] at hs
+    obtain ⟨rfl, rfl⟩ := hs
+    -- the object is defined, an object, at every assignment of objects
+    have hobj : ∀ ws : List M.Val, ws.map Sigma.fst = List.replicate m obj →
+        ∃ w, eval M ws b = Part.some w ∧ w.1 = obj := by
+      cases c with
+      | none =>
+        simp only [objConfirms, hc, Option.any_some, Bool.and_eq_true,
+          decide_eq_true_eq] at hck
+        obtain ⟨hb, hok⟩ := hck
+        have hpre := hcert cds hc hb
+        simp only [objOk, Bool.and_eq_true, beq_iff_eq, Option.isSome_iff_exists] at hok
+        obtain ⟨hsrt, a, ha⟩ := hok
+        intro ws hws
+        obtain ⟨w, hw, -⟩ := (infers_sound ((ExtEnv.wf_ofDefs cds).sound hpre hM) hws (H := [])
+          (by simp) inferFuel).2 _ a ha
+        exact ⟨w, hw, PartialHorn.sort_eval hws _ (PartialHorn.sortOf_of_prefix
+          (ext_prefix hpre).1 (by simpa [ExtEnv.ofDefs] using hsrt)) hw⟩
+      | some c =>
+        simp only [objConfirms, hc, Option.any_some, Bool.and_eq_true, beq_iff_eq] at hck
+        obtain ⟨hsrt, hcf⟩ := hck
+        have hb : G.base = sig.length := by
+          simp only [certifies, hc, Option.any_some, Bool.and_eq_true,
+            decide_eq_true_eq] at hcf
+          exact hcf.1
+        have hpre := hcert cds hc hb
+        have hsv := certifies_valid hM h.wf h.entries hcert hcf
+        intro ws hws
+        obtain ⟨w, hw, -⟩ := hsv ws hws fun _ h ↦ by simp at h
+        exact ⟨w, hw, PartialHorn.sort_eval hws _ (PartialHorn.sortOf_of_prefix
+          (ext_prefix hpre).1 hsrt) hw⟩
+    have hc' := compileDefs_snoc hc (d := .object m b) rfl
+    have hle' : G.Le { G with defs := G.defs ++ [.object m b] } :=
+      ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
+    have hpre' := prefix_of_le (pre := pre) hF hle hc'
+    have hlen := length_compileDefs hc
+    -- the object definition's operation takes objects to an object
+    have hop : ∀ ws : List M.Val, ws.map Sigma.fst = List.replicate m obj →
+        ∃ w, M.op (G.base + G.defs.length) ws = Part.some w ∧ w.1 = obj := fun ws hws ↦ by
+      obtain ⟨w, hw, hwo⟩ := hobj ws hws
+      have hwl : ws.length = m := by simpa using congrArg List.length hws
+      have hvars := map_eval_vars ws
+      rw [hwl] at hvars
+      have he := eval_op_defn hM (i := pre.length + G.defs.length)
+        (d := ⟨List.replicate m obj, obj, b⟩) (getElem?_of_prefix hpre' (by simp [hlen]))
+        hvars hws hw
+      refine ⟨w, ?_, hwo⟩
+      rw [← eval_opVars, hwl, show G.base = sig.length + pre.length from h.le.2.1.trans hbase,
+        Nat.add_assoc]
+      exact he
+    have hG' : ({ G with defs := G.defs ++ [.object m b] } : Globals).WF := by
+      refine ⟨fun k p hp ↦ ?_, fun k d' hd' ↦ ?_⟩
+      · obtain ⟨ha, hd, hc⟩ := h.wf.prims k p hp
+        exact ⟨ha, isTy_mono hle' _ hd, isTy_mono hle' _ hc⟩
+      · rw [List.getElem?_append] at hd'
+        split_ifs at hd' with hlt
+        · obtain ⟨hp, ht⟩ := h.wf.defs k d' hd'
+          exact ⟨all_isTy_mono hle' hp, isTy_mono hle' _ ht⟩
+        · rw [List.getElem?_singleton] at hd'
+          split_ifs at hd'
+          simp at hd'
+    have hdv' : DefsVal M { G with defs := G.defs ++ [.object m b] } := by
+      refine ⟨fun j d' hd' ws hws ↦ ?_, fun j m' b' hj ↦ ?_⟩
+      · rw [List.getElem?_append] at hd'
+        split_ifs at hd' with hlt
+        · exact h.defs.1 j d' hd' ws hws
+        · rw [List.getElem?_singleton] at hd'
+          split_ifs at hd'
+          simp at hd'
+      · rw [List.getElem?_append] at hj
+        split_ifs at hj with hlt
+        · exact h.defs.2 j m' b' hj
+        · rw [List.getElem?_singleton] at hj
+          split_ifs at hj with hj0
+          obtain ⟨rfl, rfl⟩ : m = m' ∧ b = b' := by simpa using hj
+          obtain rfl : j = G.defs.length := by omega
+          exact hop
+    have hdn' : DefnsVal M { G with defs := G.defs ++ [.object m b] } := by
+      intro j d' hd'
+      rw [List.getElem?_append] at hd'
+      split_ifs at hd' with hlt
+      · obtain ⟨F', hF', hFv⟩ := h.defns j d' hd'
+        exact ⟨F', compile_mono hle' _ _ _ _ hF', hFv⟩
+      · rw [List.getElem?_singleton] at hd'
+        split_ifs at hd'
+        simp at hd'
+    exact ⟨hle, hG', ⟨_, hc'⟩, h.sorts, h.prims, hdv', hdn', fun j e he ↦
+      Entry.Valid.mono hM h.wf hle' (fun _ _ hρ ↦ primsHom_of_val hM hG' hdv'.2 h.prims hρ)
+        (fun _ _ hρ ↦ defsHom_of_val hM hG' hdv' hρ) (h.entries j e he)⟩
 
 /-- The invariant holds at the end of a development's check that begins with it. -/
 theorem devInv_checkDev {Ef : Array Entry} (ds : List Decl) :
@@ -694,8 +730,7 @@ theorem devInv_of_checkDev {pre F : List PartialHorn.Defn} {M : Model.{v} (ext (
   exact devInv_checkDev hM hF (hle.2.1.symm.trans hbase) ds h
     ⟨hle, hG, ⟨cds, hc⟩,
       fun k p hp ↦ PartialHorn.sortOf_of_prefix (ext_prefix hpre).1 (sortOf_prims_of_ok hok hp),
-      fun k p hp ↦ Prim.val_of_ok hM (objsHom_of_noObj hno) hpre
-        (hok'.1 p (List.mem_of_getElem? hp)),
+      fun k p hp ↦ Prim.val_of_ok hM hpre (hok'.1 p (List.mem_of_getElem? hp)),
       defsVal_of_defsHom hG hds, defnsVal_of_ok hM hbase hG hno hc hpre hps,
       fun _ _ hj ↦ by simp at hj⟩
 

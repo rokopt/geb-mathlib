@@ -676,6 +676,65 @@ theorem primsHom_take {G : Globals}
   rw [isTy_take_of_noObj hno] at hθ
   exact hps k p hp θ hl hθ
 
+/-- An arrow between objects at the values of terms, carried to them: a term of the arrow's value
+at the terms' values is an arrow between the substitution instances. -/
+theorem Hom.subst_of_vals {ρ ws : List M.Val} {θ : List Tree}
+    (hθ : θ.map (eval M ρ) = ws.map Part.some) {f f' X Y : Tree}
+    (hX : PartialHorn.Scoped θ.length X = true) (hY : PartialHorn.Scoped θ.length Y = true)
+    (hf : eval M ρ f' = eval M ws f) (h : Hom M ws f X Y) :
+    Hom M ρ f' (PartialHorn.subst θ X) (PartialHorn.subst θ Y) := by
+  obtain ⟨w, hw, hs, ⟨x, hx, hxs⟩, ⟨y, hy, hys⟩, hd, hc⟩ := h
+  have hX' := (PartialHorn.eval_subst hθ X hX).trans hx
+  have hY' := (PartialHorn.eval_subst hθ Y hY).trans hy
+  exact ⟨w, hf.trans hw, hs, ⟨x, hX', hxs⟩, ⟨y, hY', hys⟩,
+    (eval_op₁_of_eq hf).trans (hd.trans (hx.trans hX'.symm)),
+    (eval_op₁_of_eq hf).trans (hc.trans (hy.trans hY'.symm))⟩
+
+variable (M) in
+/-- A primitive arrow is an arrow between its types at every assignment of objects to its object
+parameters. -/
+def Prim.Val (p : Prim) : Prop :=
+  ∀ ws : List M.Val, ws.map Sigma.fst = List.replicate p.arity obj → Hom M ws p.arrow p.dom p.cod
+
+/-- A primitive arrow that is an arrow at every assignment of objects is an arrow at types. -/
+theorem Prim.hom_of_val (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M G) {p : Prim}
+    (hv : p.Val M) (har : PartialHorn.Scoped p.arity p.arrow = true)
+    (hdt : IsTy G p.arity p.dom = true) (hct : IsTy G p.arity p.cod = true) {m : ℕ}
+    {ρ : List M.Val} (hρ : ρ.map Sigma.fst = List.replicate m obj) {θ : List Tree}
+    (hl : θ.length = p.arity) (hθ : θ.all (IsTy G m) = true) :
+    Hom M ρ (PartialHorn.subst θ p.arrow) (PartialHorn.subst θ p.dom)
+      (PartialHorn.subst θ p.cod) := by
+  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hO hρ θ hθ
+  rw [hl] at hws
+  exact Hom.subst_of_vals hθw (hl ▸ scoped_of_isTy _ hdt) (hl ▸ scoped_of_isTy _ hct)
+    (PartialHorn.eval_subst hθw _ (hl ▸ har)) (hv ws hws)
+
+/-- A primitive arrow the check accepts, with definitions of the combinators that begin those of
+the model's theory, is an arrow between its types at every assignment of objects. -/
+theorem Prim.val_of_ok (hM : IsModel (ext defs) M) {G : Globals}
+    {cds' : List PartialHorn.Defn} (hpre : cds' <+: defs) {p : Prim}
+    (hpo : p.ok G (ExtEnv.ofDefs cds') = true) : p.Val M := by
+  intro ws hws
+  unfold Prim.ok at hpo
+  simp only [Bool.and_eq_true] at hpo
+  obtain ⟨-, hinf⟩ := hpo
+  have hsound := (infers_sound ((ExtEnv.wf_ofDefs cds').sound hpre hM) hws (H := []) (by simp)
+    inferFuel).2
+  split at hinf
+  · rename_i a d c ha hd hc
+    simp only [Bool.and_eq_true, beq_iff_eq] at hinf
+    obtain ⟨⟨⟨⟨hs, hds⟩, hcs⟩, hlo⟩, hhi⟩ := hinf
+    obtain ⟨w, hw, hwsrt, -, harr⟩ := hsound _ a ha
+    obtain ⟨⟨u, hu, hul⟩, ⟨v, hv, hvh⟩⟩ := harr hs
+    obtain ⟨x, hx, hxs, hxl, -⟩ := hsound _ d hd
+    obtain ⟨y, hy, hys, hyl, -⟩ := hsound _ c hc
+    refine ⟨w, hw, hwsrt.trans hs, ⟨x, hx, hxs.trans hds⟩, ⟨y, hy, hys.trans hcs⟩, ?_, ?_⟩
+    · rw [hlo] at hul
+      exact (hu.trans (hul.symm.trans (hxl hds))).trans hx.symm
+    · rw [hhi] at hvh
+      exact (hv.trans (hvh.symm.trans (hyl hcs))).trans hy.symm
+  · simp at hinf
+
 /-- A primitive arrow the check accepts, with definitions of the combinators that begin those of
 the model's theory, is an arrow at types, at every assignment of objects. -/
 theorem Prim.hom_of_ok (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M G)
@@ -685,29 +744,10 @@ theorem Prim.hom_of_ok (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M
     (hθ : θ.all (IsTy G m) = true) :
     Hom M ρ (PartialHorn.subst θ p.arrow) (PartialHorn.subst θ p.dom)
       (PartialHorn.subst θ p.cod) := by
-  unfold Prim.ok at hpo
-  simp only [Prim.wf, Bool.and_eq_true] at hpo
-  obtain ⟨⟨⟨⟨har, hdt⟩, hct⟩, -⟩, hinf⟩ := hpo
-  split at hinf
-  · rename_i a ha
-    simp only [Bool.and_eq_true, beq_iff_eq] at hinf
-    obtain ⟨⟨hs, hlo⟩, hhi⟩ := hinf
-    obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hO hρ θ hθ
-    rw [hl] at hws
-    obtain ⟨w, hw, hwsrt, -, harr⟩ := (infers_sound ((ExtEnv.wf_ofDefs cds').sound hpre hM) hws
-      (H := []) (by simp) inferFuel).2 _ a ha
-    obtain ⟨⟨d, hd, hdl⟩, ⟨c, hc, hch⟩⟩ := harr hs
-    have hsc : ∀ x : Tree, PartialHorn.Scoped p.arity x = true →
-        eval M ρ (PartialHorn.subst θ x) = eval M ws x :=
-      fun x hx ↦ PartialHorn.eval_subst hθw x (hl ▸ hx)
-    have hw' := (hsc _ har).trans hw
-    refine ⟨w, hw', hwsrt.trans hs, isObj_of_isTy hM hO hρ _ (isTy_subst hl hθ _ hdt),
-      isObj_of_isTy hM hO hρ _ (isTy_subst hl hθ _ hct), ?_, ?_⟩
-    · rw [hsc _ (scoped_of_isTy _ hdt), ← hlo]
-      exact (eval_op₁_of_eq (hsc _ har)).trans (hd.trans hdl.symm)
-    · rw [hsc _ (scoped_of_isTy _ hct), ← hhi]
-      exact (eval_op₁_of_eq (hsc _ har)).trans (hc.trans hch.symm)
-  · simp at hinf
+  have hwf := hpo
+  simp only [Prim.ok, Prim.wf, Bool.and_eq_true] at hwf
+  obtain ⟨⟨⟨⟨har, hdt⟩, hct⟩, -⟩, -⟩ := hwf
+  exact Prim.hom_of_val hM hO (Prim.val_of_ok hM hpre hpo) har hdt hct hρ hl hθ
 
 /-- The primitive arrows of constants the check accepts are arrows, at every assignment of
 objects. -/
