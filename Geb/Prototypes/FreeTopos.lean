@@ -9,6 +9,7 @@ public import Geb.Prototypes.FreeTopos.Arrows
 public import Geb.Prototypes.FreeTopos.Category
 public import Geb.Prototypes.FreeTopos.Check
 public import Geb.Prototypes.FreeTopos.Classifier
+public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Infer
 public import Geb.Prototypes.FreeTopos.Internal
 public import Geb.Prototypes.FreeTopos.Model
@@ -25,8 +26,8 @@ The metalogic's presentation of the free elementary topos with the natural numbe
 rose-tree objects, as a partial Horn theory whose sorts are objects and arrows, with the proof
 that the category of each of its models is an elementary topos, a checker that infers the
 typing of the terms of its certificates, a prover that computes certificates in it, the
-uniqueness of its folds with a parameter, and its internal language, compiled to its
-combinators.
+uniqueness of its folds with a parameter, the distributivity of its products over its coproducts,
+and its internal language, compiled to its combinators.
 -/
 
 set_option doc.verso true

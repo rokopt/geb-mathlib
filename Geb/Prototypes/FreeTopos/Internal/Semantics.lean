@@ -5,7 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.FreeTopos.Arrows
+public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
 meta import GebMeta -- shake: keep
 
@@ -222,6 +222,10 @@ theorem isTy_var_node (n : ℕ) (i : Tree) :
 theorem isTy_prod {n : ℕ} {a b : Tree} : IsTy n (prod a b) = (IsTy n a && IsTy n b) := by
   simp [prod, isTy_op, tyOps]
 
+/-- A coproduct of types is a type. -/
+theorem isTy_coprod {n : ℕ} {a b : Tree} : IsTy n (coprod a b) = (IsTy n a && IsTy n b) := by
+  simp [coprod, isTy_op, tyOps]
+
 /-- An exponential of types is a type. -/
 theorem isTy_exp {n : ℕ} {a b : Tree} : IsTy n (exp a b) = (IsTy n a && IsTy n b) := by
   simp [exp, isTy_op, tyOps]
@@ -232,6 +236,9 @@ theorem isTy_list {n : ℕ} {a : Tree} : IsTy n (list a) = IsTy n a := by
 
 /-- The terminal object is a type. -/
 theorem isTy_one {n : ℕ} : IsTy n one = true := by simp [one, isTy_op, tyOps]
+
+/-- The initial object is a type. -/
+theorem isTy_zero {n : ℕ} : IsTy n zero = true := by simp [zero, isTy_op, tyOps]
 
 /-- The subobject classifier is a type. -/
 theorem isTy_omega {n : ℕ} : IsTy n omega = true := by simp [omega, isTy_op, tyOps]
@@ -295,11 +302,15 @@ theorem isObj_of_isTy (hM : IsModel (ext defs) M) {n : ℕ}
       change IsObj M ρ (op k cs)
       simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hA
       rcases hA.1 with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
-          ⟨rfl, hl⟩
+          ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact isObj_one hM
       · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
         exact isObj_prod hM (hc a (by simp)) (hc b (by simp))
+      · obtain rfl := List.length_eq_zero_iff.mp hl
+        exact isObj_zero hM
+      · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
+        exact isObj_coprod hM (hc a (by simp)) (hc b (by simp))
       · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
         exact isObj_exp hM (hc a (by simp)) (hc b (by simp))
       · obtain rfl := List.length_eq_zero_iff.mp hl

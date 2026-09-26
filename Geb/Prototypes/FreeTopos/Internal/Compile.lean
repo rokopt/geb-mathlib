@@ -17,18 +17,18 @@ The typing of the internal language's terms and their compilation to arrows of t
 the interpretation of the typed λ-calculus in a cartesian closed category of Part I of
 {cite}`LambekScott1986` and the compilation of the categorical abstract machine of
 {cite}`CousineauCurienMauny1987`, in one pass. A type is an object term built by the terminal
-object, products, exponentials, the subobject classifier and the data objects from object
-variables ({lit}`IsTy`), so that two types are equal when they are one term. A term is compiled
-in an environment: an object {lit}`X` and, for each variable, an arrow from {lit}`X` and the
-variable's type. A variable compiles to its arrow, a pair to the pairing, a component to the
-projection after the pair, an abstraction to the currying of its body, compiled over the product
-of {lit}`X` and the bound variable's type, an application to evaluation after the pairing, a
-primitive arrow's application to the arrow after its argument, a fold to the composite of the
-combinators' fold with the datum, and the equality of two terms to the characteristic map of the
-diagonal after their pairing. A context's terms are compiled in the environment of its
-projections from the product of its types ({lit}`stdEnv`). A primitive arrow is an arrow of the
-combinators with the domain and codomain it names, in object parameters, which the checker's
-inference confirms once ({lit}`Prim.ok`), for every application at objects.
+object, products, the initial object, coproducts, exponentials, the subobject classifier and the
+data objects from object variables ({lit}`IsTy`), so that two types are equal when they are one
+term. A term is compiled in an environment: an object {lit}`X` and, for each variable, an arrow from
+{lit}`X` and the variable's type. A variable compiles to its arrow, a pair to the pairing, a
+component to the projection after the pair, an abstraction to the currying of its body, compiled
+over the product of {lit}`X` and the bound variable's type, an application to evaluation after the
+pairing, a primitive arrow's application to the arrow after its argument, a fold to the composite of
+the combinators' fold with the datum, and the equality of two terms to the characteristic map of the
+diagonal after their pairing. A context's terms are compiled in the environment of its projections
+from the product of its types ({lit}`stdEnv`). A primitive arrow is an arrow of the combinators with
+the domain and codomain it names, in object parameters, which the checker's inference confirms once
+({lit}`Prim.ok`), for every application at objects.
 
 A definition of the internal language names a term in term parameters and object parameters. It
 compiles to a definition of the combinators, the arrow its body compiles to from the product of
@@ -71,9 +71,10 @@ open Sorts
 open scoped FinEnum
 
 /-- The operations that build types, by index, with their arities: the terminal object,
-products, exponentials, the subobject classifier, and the natural numbers, list and rose-tree
-objects. -/
-def tyOps : List (ℕ × ℕ) := [(4, 0), (6, 2), (22, 2), (25, 0), (29, 0), (33, 1), (37, 0)]
+products, the initial object, coproducts, exponentials, the subobject classifier, and the natural
+numbers, list and rose-tree objects. -/
+def tyOps : List (ℕ × ℕ) :=
+  [(4, 0), (6, 2), (13, 0), (15, 2), (22, 2), (25, 0), (29, 0), (33, 1), (37, 0)]
 
 /-- Whether an object term is a type in {lit}`n` object variables: built by the operations of
 {lit}`tyOps` from the variables. -/
@@ -86,6 +87,11 @@ def IsTy (n : ℕ) : Tree → Bool :=
 /-- The factors of a product. -/
 def prodParts (p : Tree) : Option (Tree × Tree) := match p.children with
   | [a, b] => if p = prod a b then some (a, b) else none
+  | _ => none
+
+/-- The summands of a coproduct. -/
+def coprodParts (p : Tree) : Option (Tree × Tree) := match p.children with
+  | [a, b] => if p = coprod a b then some (a, b) else none
   | _ => none
 
 /-- The domain and codomain of an exponential. -/

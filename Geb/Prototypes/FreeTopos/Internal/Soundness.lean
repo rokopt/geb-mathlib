@@ -119,6 +119,12 @@ theorem list_inj {a a' : Tree} (h : list a = list a') : a = a' := by
   rw [listPart_eq_some.mpr rfl] at h₁
   simpa using h₁
 
+/-- Coproducts of equal types have equal summands. -/
+theorem coprod_inj {a b a' b' : Tree} (h : coprod a b = coprod a' b') : a = a' ∧ b = b' := by
+  have h₁ := coprodParts_eq_some.mpr h
+  rw [coprodParts_eq_some.mpr rfl] at h₁
+  simpa using h₁
+
 /-- The element at an index of a list's results under a partial function is the result at the
 list's element at the index. -/
 theorem getElem?_of_mapM_eq {α β : Type} {f : α → Option β} {l : List α} {rs : List β}
@@ -854,6 +860,102 @@ theorem listCons_sound {Φ : List Term} {kc : ℕ} (hk : G.prims[kc]? = some con
     (eval_op₂_congr 9 (fst_pair hM hgh hgt) ((comp_assoc hM hpg (snd_hom hM hA hL') hlr).symm.trans
       (eval_op₂_congr 3 rfl (snd_pair hM hgh hgt))))
 
+/-- The case analysis of a pair of functions at a left injection is the first function at the
+injected term. -/
+theorem caseInl_sound {Φ : List Term} {kc kl : ℕ} (hkc : G.prims[kc]? = some casePrim)
+    (hkl : G.prims[kl]? = some inlPrim) (Γ θ θ' : List Tree) (f g v : Term) :
+    RwSound M ρ G n Γ Φ (Term.app (Term.arr kc θ (Term.pair f g)) (Term.arr kl θ' v))
+      (Term.app f v) := by
+  intro X e he _ _ r h
+  have hty := compile_hom hM hG hρ hps hds
+  obtain ⟨t, u, hcs, F, D, C, ht, U, hu, rfl⟩ := compile_app_iff.mp h
+  simp only [List.cons.injEq, and_true] at hcs
+  obtain ⟨rfl, rfl⟩ := hcs
+  obtain ⟨t₀, ht₀, p, hp, P, hP, hl, hθ, hF⟩ := compile_arr_iff.mp ht
+  simp only [List.cons.injEq, and_true] at ht₀
+  subst ht₀
+  obtain rfl : p = casePrim := Option.some_inj.mp (hp.symm.trans hkc)
+  obtain ⟨u₀, hu₀, q, hq, V, hV, hl', -, hU⟩ := compile_arr_iff.mp hu
+  simp only [List.cons.injEq, and_true] at hu₀
+  subst hu₀
+  obtain rfl : q = inlPrim := Option.some_inj.mp (hq.symm.trans hkl)
+  obtain ⟨a, b, c, rfl⟩ := List.length_eq_three.mp hl
+  obtain ⟨a', b', rfl⟩ := List.length_eq_two.mp hl'
+  simp only [Prod.mk.injEq] at hF hU
+  obtain ⟨rfl, hFt⟩ := hF
+  obtain ⟨rfl, hUt⟩ := hU
+  obtain ⟨hD, hC⟩ := exp_inj (show exp (coprod a b) c = exp D C from hFt)
+  subst hD hC
+  obtain ⟨ha, hb⟩ := coprod_inj (show coprod a' b' = coprod a b from hUt)
+  subst ha hb
+  obtain ⟨f₁, g₁, Pf, A₁, Pg, B₁, hfg, hf, hg, hPe⟩ :=
+    compile_pair_iff.mp (show compile G n (Term.pair f g) X e =
+      some (P, prod (exp a' c) (exp b' c)) from hP)
+  simp only [List.cons.injEq, and_true] at hfg
+  obtain ⟨rfl, rfl⟩ := hfg
+  simp only [Prod.mk.injEq] at hPe
+  obtain ⟨rfl, hAB⟩ := hPe
+  obtain ⟨rfl, rfl⟩ := prod_inj hAB
+  have hV₁ : compile G n v X e = some (V, a') := hV
+  simp only [List.all_cons, List.all_nil, Bool.and_true, Bool.and_eq_true] at hθ
+  have hf' := (hty _ _ _ _ hf he).1
+  have hV' := (hty _ _ _ _ hV₁ he).1
+  have hPh := pair_hom hM hf' (hty _ _ _ _ hg he).1
+  refine ⟨_, compile_app_iff.mpr ⟨f, v, rfl, Pf, a', c, hf, V, hV₁, rfl⟩, rfl, ?_⟩
+  change eval M ρ (comp (ev a' c) (pair Pf V)) = eval M ρ (comp (ev (coprod a' b') c)
+    (pair (comp (caseArr a' b' c) (pair Pf Pg)) (comp (inl a' b') V)))
+  exact ((caseArr_inl hM (isObj_of_isTy hM hρ b' hθ.2.1) (isObj_of_isTy hM hρ c hθ.2.2) hPh
+    hV').trans (eval_op₂_congr 3 rfl (eval_op₂_congr 9
+      (fst_pair hM hf' (hty _ _ _ _ hg he).1) rfl))).symm
+
+/-- The case analysis of a pair of functions at a right injection is the second function at the
+injected term. -/
+theorem caseInr_sound {Φ : List Term} {kc kr : ℕ} (hkc : G.prims[kc]? = some casePrim)
+    (hkr : G.prims[kr]? = some inrPrim) (Γ θ θ' : List Tree) (f g v : Term) :
+    RwSound M ρ G n Γ Φ (Term.app (Term.arr kc θ (Term.pair f g)) (Term.arr kr θ' v))
+      (Term.app g v) := by
+  intro X e he _ _ r h
+  have hty := compile_hom hM hG hρ hps hds
+  obtain ⟨t, u, hcs, F, D, C, ht, U, hu, rfl⟩ := compile_app_iff.mp h
+  simp only [List.cons.injEq, and_true] at hcs
+  obtain ⟨rfl, rfl⟩ := hcs
+  obtain ⟨t₀, ht₀, p, hp, P, hP, hl, hθ, hF⟩ := compile_arr_iff.mp ht
+  simp only [List.cons.injEq, and_true] at ht₀
+  subst ht₀
+  obtain rfl : p = casePrim := Option.some_inj.mp (hp.symm.trans hkc)
+  obtain ⟨u₀, hu₀, q, hq, V, hV, hl', -, hU⟩ := compile_arr_iff.mp hu
+  simp only [List.cons.injEq, and_true] at hu₀
+  subst hu₀
+  obtain rfl : q = inrPrim := Option.some_inj.mp (hq.symm.trans hkr)
+  obtain ⟨a, b, c, rfl⟩ := List.length_eq_three.mp hl
+  obtain ⟨a', b', rfl⟩ := List.length_eq_two.mp hl'
+  simp only [Prod.mk.injEq] at hF hU
+  obtain ⟨rfl, hFt⟩ := hF
+  obtain ⟨rfl, hUt⟩ := hU
+  obtain ⟨hD, hC⟩ := exp_inj (show exp (coprod a b) c = exp D C from hFt)
+  subst hD hC
+  obtain ⟨ha, hb⟩ := coprod_inj (show coprod a' b' = coprod a b from hUt)
+  subst ha hb
+  obtain ⟨f₁, g₁, Pf, A₁, Pg, B₁, hfg, hf, hg, hPe⟩ :=
+    compile_pair_iff.mp (show compile G n (Term.pair f g) X e =
+      some (P, prod (exp a' c) (exp b' c)) from hP)
+  simp only [List.cons.injEq, and_true] at hfg
+  obtain ⟨rfl, rfl⟩ := hfg
+  simp only [Prod.mk.injEq] at hPe
+  obtain ⟨rfl, hAB⟩ := hPe
+  obtain ⟨rfl, rfl⟩ := prod_inj hAB
+  have hV₁ : compile G n v X e = some (V, b') := hV
+  simp only [List.all_cons, List.all_nil, Bool.and_true, Bool.and_eq_true] at hθ
+  have hg' := (hty _ _ _ _ hg he).1
+  have hV' := (hty _ _ _ _ hV₁ he).1
+  have hPh := pair_hom hM (hty _ _ _ _ hf he).1 hg'
+  refine ⟨_, compile_app_iff.mpr ⟨g, v, rfl, Pg, b', c, hg, V, hV₁, rfl⟩, rfl, ?_⟩
+  change eval M ρ (comp (ev b' c) (pair Pg V)) = eval M ρ (comp (ev (coprod a' b') c)
+    (pair (comp (caseArr a' b' c) (pair Pf Pg)) (comp (inr a' b') V)))
+  exact ((caseArr_inr hM (isObj_of_isTy hM hρ a' hθ.1) (isObj_of_isTy hM hρ c hθ.2.2) hPh
+    hV').trans (eval_op₂_congr 3 rfl (eval_op₂_congr 9
+      (snd_pair hM (hty _ _ _ _ hf he).1 hg') rfl))).symm
+
 /-- A side of a theorem, at objects and at terms of the instances of its context's types,
 compiles to its arrow's instance after the terms' tuple. -/
 theorem compile_thm_side {m : ℕ} {Δ : List Tree} {s : Term} {F A : Tree}
@@ -1221,8 +1323,46 @@ theorem rootStep_sound (hδ : DefnsOk M G) {E : Array Thm}
     cases flip
     · exact h₁
     · exact h₂
+  | caseInl kc kl =>
+    cases l₀ <;>
+      simp only [rootStep, RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
+    rcases cs with _ | ⟨f, _ | ⟨u, _ | ⟨w, cs⟩⟩⟩ <;> simp only [reduceCtorEq] at h
+    obtain ⟨l₁, cs₁, rfl⟩ : ∃ l cs, f = RoseTree.node l cs :=
+      ⟨_, _, (RoseTree.node_label_children f).symm⟩
+    obtain ⟨l₂, cs₂, rfl⟩ : ∃ l cs, u = RoseTree.node l cs :=
+      ⟨_, _, (RoseTree.node_label_children u).symm⟩
+    cases l₁ <;> cases l₂ <;>
+      simp only [RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
+    rcases cs₁ with _ | ⟨p, _ | ⟨w, cs₁⟩⟩ <;> rcases cs₂ with _ | ⟨v, _ | ⟨w', cs₂⟩⟩ <;>
+      simp only [reduceCtorEq] at h
+    obtain ⟨l₃, cs₃, rfl⟩ : ∃ l cs, p = RoseTree.node l cs :=
+      ⟨_, _, (RoseTree.node_label_children p).symm⟩
+    cases l₃ <;> simp only [RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
+    rcases cs₃ with _ | ⟨g, _ | ⟨g', _ | ⟨w, cs₃⟩⟩⟩ <;>
+      simp only [reduceCtorEq, Option.ite_none_right_eq_some, Option.some.injEq] at h
+    obtain ⟨⟨rfl, rfl, hkc, hkl⟩, rfl⟩ := h
+    exact caseInl_sound hM hG hρ hps hds hkc hkl Γ _ _ g g' v
+  | caseInr kc kr =>
+    cases l₀ <;>
+      simp only [rootStep, RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
+    rcases cs with _ | ⟨f, _ | ⟨u, _ | ⟨w, cs⟩⟩⟩ <;> simp only [reduceCtorEq] at h
+    obtain ⟨l₁, cs₁, rfl⟩ : ∃ l cs, f = RoseTree.node l cs :=
+      ⟨_, _, (RoseTree.node_label_children f).symm⟩
+    obtain ⟨l₂, cs₂, rfl⟩ : ∃ l cs, u = RoseTree.node l cs :=
+      ⟨_, _, (RoseTree.node_label_children u).symm⟩
+    cases l₁ <;> cases l₂ <;>
+      simp only [RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
+    rcases cs₁ with _ | ⟨p, _ | ⟨w, cs₁⟩⟩ <;> rcases cs₂ with _ | ⟨v, _ | ⟨w', cs₂⟩⟩ <;>
+      simp only [reduceCtorEq] at h
+    obtain ⟨l₃, cs₃, rfl⟩ : ∃ l cs, p = RoseTree.node l cs :=
+      ⟨_, _, (RoseTree.node_label_children p).symm⟩
+    cases l₃ <;> simp only [RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
+    rcases cs₃ with _ | ⟨g, _ | ⟨g', _ | ⟨w, cs₃⟩⟩⟩ <;>
+      simp only [reduceCtorEq, Option.ite_none_right_eq_some, Option.some.injEq] at h
+    obtain ⟨⟨rfl, rfl, hkc, hkr⟩, rfl⟩ := h
+    exact caseInr_sound hM hG hρ hps hds hkc hkr Γ _ _ g g' v
   | refl | trans | cong | join | natInd | listInd | hyp | cut | conv | convFrom | propExt
-    | funExt | apply | natIndHyp | listIndHyp =>
+    | funExt | apply | natIndHyp | listIndHyp | coprodInd | zeroInd =>
 simp only [rootStep, reduceCtorEq] at h
 
 

@@ -35,7 +35,12 @@ induction on subobjects ({name}`Geb.FreeTopos.truth_of_natInd`,
 {name}`Geb.FreeTopos.truth_of_listInd`), the step proved on the formula's pullback of truth. Each
 induction is applied in the environment that extends the other variables' environment by the
 induction variable, in which the hypotheses, which do not mention it, still hold, and is carried
-to the given environment by the arrow of the variable.
+to the given environment by the arrow of the variable. Case analysis on a coproduct is applied in
+the same way, and is sound because an arrow from the product of an object and a coproduct is
+determined by its composites with the products of the object and the injections
+({name}`Geb.FreeTopos.prod_coprod_ext`); a formula in a context with a variable of the initial
+type holds because an object with an arrow to the initial object is initial
+({name}`Geb.FreeTopos.eq_of_hom_zero`).
 
 ## Main statements
 
@@ -43,6 +48,8 @@ to the given environment by the arrow of the variable.
   {lit}`propExt_sound`, {lit}`funExt_sound`, {lit}`apply_sound` — the logical rules are sound.
 * {lit}`natInd_sound`, {lit}`listInd_sound`, {lit}`natIndHyp_sound`, {lit}`listIndHyp_sound` —
   induction is sound.
+* {lit}`coprodInd_sound`, {lit}`zeroInd_sound` — case analysis on a coproduct, and a context
+  with a variable of the initial type, are sound.
 * {lit}`check_sound` — the checker is sound.
 * {lit}`valid_of_checkThms_ok`, {lit}`valid_unfoldAll_of_checkThms`,
   {lit}`valid_unfoldAll_holds_of_checkThms` — the theorems of a development that checks are
@@ -273,31 +280,44 @@ theorem natZeroAt {kz : ℕ} (hkz : G.prims[kz]? = some zeroPrim) {X W B : Tree}
       · exact ⟨p, compile_var_iff.mpr ⟨rfl, by simpa using hp⟩, ResEq.refl p⟩
   exact ⟨q₁, hq₁, hr₀.trans hr₁⟩
 
+/-- A term in the environment extended by a variable of type {lit}`D`, at a term that compiles in
+the environment extended instead by a variable of type {lit}`A` to an arrow {lit}`i` from
+{lit}`A` to {lit}`D` after the variable, is its arrow after the product of the environment's
+object with {lit}`i`. -/
+theorem atVar0_compile {X W B A D i : Tree} {e' : List (Tree × Tree)} {w u : Term}
+    (he' : EnvHom M ρ n X e') (hAt : IsTy n A = true) (hDt : IsTy n D = true)
+    (hi : Hom M ρ i A D) (hw : compile G n w (prod X D) (extEnv X D e') = some (W, B))
+    (hu : compile G n u (prod X A) (extEnv X A e') = some (comp i (snd X A), D)) :
+    ∃ q, compile G n (Term.subst w (atVar0 u)) (prod X A) (extEnv X A e') = some q ∧
+      ResEq M ρ (comp W (pair (fst X A) (comp i (snd X A))), B) q := by
+  have hA := hi.isObj_dom
+  have hD := hi.isObj_cod
+  have hX := he'.1
+  have hfst := fst_hom hM hX hA
+  have hsc := comp_hom hM (snd_hom hM hX hA) hi
+  have hk₁ := pair_hom hM hfst hsc
+  obtain ⟨q₀, hq₀, hr₀⟩ := compile_precomp hM hG hρ hps hds hw (he'.ext hM hD hDt) hk₁
+    (e' := (comp i (snd X A), D) :: precomp (fst X A) e')
+    (envEq_precomp_extEnv hM hX hD (fun p hp ↦ (he'.2 p hp).1) hk₁ (fst_pair hM hfst hsc)
+      (snd_pair hM hfst hsc) (envEq_refl _))
+  obtain ⟨q₁, hq₁, hr₁⟩ := compile_subst hM hG hρ hps hds w _ _ q₀ hq₀ (extEnv X A e')
+    (atVar0 u) (he'.ext hM hA hAt) fun j p hp ↦ by
+      rcases j with _ | j
+      · obtain rfl : (comp i (snd X A), D) = p := by simpa using hp
+        exact ⟨_, hu, ResEq.refl _⟩
+      · exact ⟨p, compile_var_iff.mpr ⟨rfl, by simpa [extEnv, precomp] using hp⟩,
+          ResEq.refl p⟩
+  exact ⟨q₁, hq₁, hr₀.trans hr₁⟩
+
 /-- A term in the environment extended by a natural number variable, at the variable's
 successor, is its arrow after the successor on the variable. -/
 theorem natSuccAt_compile {ks : ℕ} (hks : G.prims[ks]? = some succPrim) {X W B : Tree}
     {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e')
     (hw : compile G n w (prod X nat) (extEnv X nat e') = some (W, B)) :
     ∃ q, compile G n (natSuccAt ks w) (prod X nat) (extEnv X nat e') = some q ∧
-      ResEq M ρ (comp W (pair (fst X nat) (comp succ (snd X nat))), B) q := by
-  have hN := isObj_nat (ρ := ρ) hM
-  have hX := he'.1
-  have hê := he'.ext hM hN isTy_nat
-  have hfst := fst_hom hM hX hN
-  have hsc := comp_hom hM (snd_hom hM hX hN) (succ_hom hM)
-  have hk₁ := pair_hom hM hfst hsc
-  obtain ⟨q₀, hq₀, hr₀⟩ := compile_precomp hM hG hρ hps hds hw hê hk₁
-    (e' := (comp succ (snd X nat), nat) :: precomp (fst X nat) e')
-    (envEq_precomp_extEnv hM hX hN (fun p hp ↦ (he'.2 p hp).1) hk₁ (fst_pair hM hfst hsc)
-      (snd_pair hM hfst hsc) (envEq_refl _))
-  obtain ⟨q₁, hq₁, hr₁⟩ := compile_subst hM hG hρ hps hds w _ _ q₀ hq₀ (extEnv X nat e')
-    (atVar0 (Term.arr ks [] (Term.var 0))) hê fun i p hp ↦ by
-      rcases i with _ | j
-      · obtain rfl : (comp succ (snd X nat), nat) = p := by simpa using hp
-        exact ⟨_, compile_succT hks (compile_var_iff.mpr ⟨rfl, rfl⟩), ResEq.refl _⟩
-      · exact ⟨p, compile_var_iff.mpr ⟨rfl, by simpa [extEnv, precomp] using hp⟩,
-          ResEq.refl p⟩
-  exact ⟨q₁, hq₁, hr₀.trans hr₁⟩
+      ResEq M ρ (comp W (pair (fst X nat) (comp succ (snd X nat))), B) q :=
+  atVar0_compile hM hG hρ hps hds he' isTy_nat isTy_nat (succ_hom hM) hw
+    (compile_succT hks (compile_var_iff.mpr ⟨rfl, rfl⟩))
 
 /-- An induction's step at a term's value, in the environment extended by a natural number
 variable, is the step's arrow after the parameters paired with the term's arrow. -/
@@ -455,6 +475,79 @@ theorem natIndHyp_sound {kz ks : ℕ} (hkz : G.prims[kz]? = some zeroPrim)
   obtain rfl := Option.some_inj.mp (hq.symm.trans hr)
   exact ⟨hrq.1, hrq.2.trans ((eval_op₂_congr 3 hFtrue rfl).trans
     (truth_comp hM (pair_hom hM (idt_hom hM hX) hx₀)))⟩
+
+/-- Case analysis on a coproduct is sound: a formula, in a context of a variable of a coproduct
+type, that holds at the left injection of a variable of the first summand and at the right
+injection of a variable of the second holds, under hypotheses that do not mention the
+variable. -/
+theorem coprodInd_sound {kl kr : ℕ} (hkl : G.prims[kl]? = some inlPrim)
+    (hkr : G.prims[kr]? = some inrPrim) {a b : Tree} {Γ' : List Tree} {Φ Φ' : List Term}
+    (hlow : lowerHyps G n Γ' Φ = some Φ') {φ : Term}
+    (hφ : typeIn G n (coprod a b :: Γ') φ = some omega)
+    (p₀ : FmSound M ρ G n (a :: Γ') Φ (Term.subst φ (atVar0 (Term.arr kl [a, b] (Term.var 0)))))
+    (p₁ : FmSound M ρ G n (b :: Γ') Φ (Term.subst φ (atVar0 (Term.arr kr [a, b] (Term.var 0))))) :
+    FmSound M ρ G n (coprod a b :: Γ') Φ φ := by
+  intro X e he hΓ hΦ r hr
+  rcases e with _ | ⟨⟨x₀, D⟩, e'⟩
+  · simp at hΓ
+  simp only [List.map_cons, List.cons.injEq] at hΓ
+  obtain ⟨rfl, hΓ'⟩ := hΓ
+  have he' : EnvHom M ρ n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  obtain ⟨hx₀, hDt⟩ := he.2 _ List.mem_cons_self
+  have hab := hDt
+  rw [isTy_coprod, Bool.and_eq_true] at hab
+  obtain ⟨hat, hbt⟩ := hab
+  have hA := isObj_of_isTy hM hρ a hat
+  have hB := isObj_of_isTy hM hρ b hbt
+  have hX := he.1
+  have hP := isObj_prod hM hX (isObj_coprod hM hA hB)
+  have hΦ' := hypsHold_lower hlow hΓ' hΦ
+  obtain ⟨F, hF⟩ := compile_of_typeIn hφ (X := prod X (coprod a b))
+    (by simp [extEnv, hΓ', Function.comp_def] : (extEnv X (coprod a b) e').map Prod.snd = _)
+  have hFh : Hom M ρ F (prod X (coprod a b)) omega :=
+    (compile_hom hM hG hρ hps hds _ _ _ _ hF (he'.ext hM (isObj_coprod hM hA hB) hDt)).1
+  -- the formula holds at each injection, where it is its arrow after the product of the
+  -- environment's object with the injection
+  have side : ∀ {k c i}, IsTy n c = true → Hom M ρ i c (coprod a b) →
+      compile G n (Term.arr k [a, b] (Term.var 0)) (prod X c) (extEnv X c e') =
+        some (comp i (snd X c), coprod a b) →
+      FmSound M ρ G n (c :: Γ') Φ (Term.subst φ (atVar0 (Term.arr k [a, b] (Term.var 0)))) →
+      eval M ρ (comp F (pair (fst X c) (comp i (snd X c)))) =
+        eval M ρ (comp (comp tru (bang (prod X (coprod a b))))
+          (pair (fst X c) (comp i (snd X c)))) := by
+    intro k c i hct hi hu p
+    have hC := hi.isObj_dom
+    obtain ⟨q, hq, hrq⟩ := atVar0_compile hM hG hρ hps hds he' hct hDt hi hF hu
+    have hΦc : HypsHold M ρ G n Φ (prod X c) (extEnv X c e') := by
+      rw [(lowerHyps_spec hlow).1]
+      exact hypsHold_weaken1 hM hG hρ hps hds hΦ' he' hC
+    have hH := p _ _ (he'.ext hM hC hct) (by simp [extEnv, hΓ', Function.comp_def]) hΦc q hq
+    exact hrq.2.symm.trans (hH.2.trans (truth_comp hM (pair_hom hM (fst_hom hM hX hC)
+      (comp_hom hM (snd_hom hM hX hC) hi))).symm)
+  have hθ : [a, b].all (IsTy n) = true := by simp [hat, hbt]
+  have hFtrue := prod_coprod_ext hM hX hA hB hFh
+    (comp_hom hM (bang_hom hM hP) (tru_hom hM))
+    (side hat (inl_hom hM hA hB) (compile_arr_iff.mpr ⟨_, rfl, inlPrim, hkl, snd X a,
+      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl, hθ, rfl⟩) p₀)
+    (side hbt (inr_hom hM hA hB) (compile_arr_iff.mpr ⟨_, rfl, inrPrim, hkr, snd X b,
+      compile_var_iff.mpr ⟨rfl, rfl⟩, rfl, hθ, rfl⟩) p₁)
+  -- the formula at the variable
+  obtain ⟨q, hq, hrq⟩ := compile_at hM hG hρ hps hds he' hDt hF hx₀
+  obtain rfl := Option.some_inj.mp (hq.symm.trans hr)
+  exact ⟨hrq.1, hrq.2.trans ((eval_op₂_congr 3 hFtrue rfl).trans
+    (truth_comp hM (pair_hom hM (idt_hom hM hX) hx₀)))⟩
+
+/-- A formula in a context with a variable of the initial type holds: the environment's object
+has an arrow to the initial object, and is initial. -/
+theorem zeroInd_sound {i : ℕ} {Γ : List Tree} {Φ : List Term} {φ : Term}
+    (hi : Γ[i]? = some zero) (hφ : typeIn G n Γ φ = some omega) : FmSound M ρ G n Γ Φ φ := by
+  intro X e he hΓ _ r hr
+  obtain ⟨F, hF⟩ := compile_of_typeIn hφ (X := X) hΓ
+  obtain rfl := Option.some_inj.mp (hF.symm.trans hr)
+  rw [← hΓ, List.getElem?_map, Option.map_eq_some_iff] at hi
+  obtain ⟨p, hp, hpz⟩ := hi
+  exact ⟨rfl, eq_of_hom_zero hM (hpz ▸ (he.2 p (List.mem_of_getElem? hp)).1)
+    (compile_hom hM hG hρ hps hds _ _ _ _ hF he).1 (comp_hom hM (bang_hom hM he.1) (tru_hom hM))⟩
 
 /-- A term in the environment extended by a list variable, at an element of the list object, is
 its arrow there after the pairing of the identity with the element. -/
@@ -828,8 +921,9 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Thm}
       exact (ih c hc).1
     all_goals
       rcases cs with _ | ⟨c, cs⟩
-      · exact rootStep_sound hM hG hρ hps hds hδ hE (by simpa [checkStep] using h)
-      · simp [checkStep] at h
+      · exact rootStep_sound hM hG hρ hps hds hδ hE
+          (by simpa only [checkStep, List.map_nil] using h)
+      · nomatch h
   · rw [check_node] at h
     cases l
     case join =>
@@ -985,6 +1079,27 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Thm}
               ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
           · simp at h
         · simp at h
+      · simp [checkStep] at h
+    case coprodInd kl kr =>
+      rcases cs with _ | ⟨c₀, _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩⟩
+      · simp [checkStep] at h
+      · simp [checkStep] at h
+      · simp only [checkStep, List.map_cons, List.map_nil] at h
+        split at h
+        · split at h
+          · rename_i c Γ' _ _ a b Φ' hab hlow
+            obtain rfl := coprodParts_eq_some.mp hab
+            simp only [Bool.and_eq_true, decide_eq_true_eq] at h
+            obtain ⟨⟨⟨hkl, hkr, hφ⟩, hp₀⟩, hp₁⟩ := h
+            exact coprodInd_sound hM hG hρ hps hds hkl hkr hlow hφ
+              ((ih c₀ (by simp)).2 _ _ _ hp₀) ((ih c₁ (by simp)).2 _ _ _ hp₁)
+          · simp at h
+        · simp at h
+      · simp [checkStep] at h
+    case zeroInd i =>
+      rcases cs with _ | ⟨c₀, cs⟩
+      · simp only [checkStep, List.map_nil, decide_eq_true_eq] at h
+        exact zeroInd_sound hM hG hρ hps hds h.1 h.2
       · simp [checkStep] at h
     all_goals simp [checkStep] at h
 
