@@ -39,7 +39,8 @@ the vertices of a term, which do, are the subject of the sibling module on verti
 
 ## Main statements
 
-* {lit}`link_assoc` is associativity of linking.
+* {lit}`link_assoc`, {lit}`link_pure`, {lit}`pure_link` are the associativity and the unit laws
+  of linking: families of definitions and linking form a Kleisli category.
 * {lit}`eval_bind` states that interpretation commutes with substitution.
 * {lit}`eval_map` states that interpretation commutes with renaming.
 * {lit}`eval_unfold` states that every solution satisfies every finite unfolding.
@@ -48,7 +49,9 @@ the vertices of a term, which do, are the subject of the sibling module on verti
 
 ## Implementation notes
 
-The constructions use Cslib's {name}`PFunctor.FreeM`. The executable fold is
+The constructions use Cslib's {name}`PFunctor.FreeM`, whose functor and monad laws Cslib proves
+(its {name}`LawfulMonad` instance), as it proves that {name}`PFunctor.FreeM.liftM` is a monad
+morphism ({name}`PFunctor.FreeM.isMonadHom_liftM`). The executable fold is
 {name}`PFunctor.FreeM.liftM` into {name}`Cont`, as in the bit-tree encoder.
 The dependent recursor is used only to define direction types and to prove propositions.
 Finiteness and effective coding are additional conditions on a signature and its interfaces.
@@ -107,6 +110,10 @@ def link (d : E → P.FreeM Γ) (σ : Γ → P.FreeM Δ) : E → P.FreeM Δ :=
 /-- Identity linking changes no body. -/
 @[simp] theorem link_pure (d : E → P.FreeM Γ) : link d pure = d :=
   funext fun i ↦ FreeM.bind_pure (d i)
+
+/-- Linking the identity family supplies the bodies unchanged. -/
+@[simp] theorem pure_link (σ : Γ → P.FreeM Δ) : link pure σ = σ :=
+  funext fun i ↦ FreeM.pure_bind i σ
 
 /-- Linking in stages agrees with composing the import substitutions first. -/
 theorem link_assoc (d : E → P.FreeM Γ) (σ : Γ → P.FreeM Δ) (τ : Δ → P.FreeM Θ) :
