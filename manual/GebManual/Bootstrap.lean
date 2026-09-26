@@ -144,7 +144,9 @@ sections below detail:
   the models, and the unfolding of certificates, not begun; a prover
   prototyped in Lean, constructed, and with it the measurement that
   decides when the Mitchell–Bénabou language is written, made, both
-  criteria failing; the checker and prover written in Geb, not begun.
+  criteria failing; certificates over a store of shared terms, checked
+  with the typing of their terms inferred, constructed; the checker and
+  prover written in Geb, not begun.
 
 Extension:
 
@@ -1652,6 +1654,26 @@ pairings rather than expansions of definitions. Neither the definitions
 nor the Mitchell–Bénabou language reduce these: a certificate that
 cites each term once from a table of shared terms, and a checker that
 infers definedness and canonical objects, do.
+
+Both are made. A store holds the terms of a development, each node a
+label and its children's indices, and a shared certificate cites a term
+by its index, so that two terms are equal when their indices are and an
+instance of an axiom is verified by matching the axiom's sides against
+the store ({name}`Geb.PartialHorn.checkShared_sound`). The checker of
+the topos theory infers the typing of the store's terms in each scope,
+whether a term is defined and the canonical forms of an object or of an
+arrow's domain and codomain, by the rules the prover's typing follows,
+read off the axioms and checked where used; a certificate cites the
+definedness of a term so typed, and the equation of two objects of one
+canonical form, by two rules of the checker's oracle
+({name}`Geb.FreeTopos.infers_sound`,
+{name}`Geb.FreeTopos.checkTopos_sound`). The prover emits those rules in
+place of its typing lemmas. The benchmark's development, the library
+included, then has 739 sequents whose certificates have 20160 nodes over
+a store of 1551, against 1007453 nodes at the first measurement; the
+theorems' certificates, with the recursions' computation lemmas, have
+from 7 to 30 times the core's nodes, 18754 against 2071, and the
+development checks in 0.9 seconds against the core's 29 milliseconds.
 
 The Mitchell–Bénabou language is written after the third construction,
 and has definitions of its own. A definition of the language compiles

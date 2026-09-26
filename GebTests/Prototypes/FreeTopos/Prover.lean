@@ -5,6 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Check -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Check -- shake: keep
 public import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 
@@ -14,7 +16,8 @@ set_option doc.verso true in
 
 The axioms give every operation a rule of definedness, and every operation whose result is an
 arrow rules for its domain and codomain. The library's development, whose derived equations the
-prover proves, checks. A projection after a pairing normalizes to its component, with a
+prover proves, checks, with its typing certified by lemmas and with it left to the checker's
+inference. A projection after a pairing normalizes to its component, with a
 certificate the checker accepts.
 
 ## Main definitions
@@ -41,8 +44,10 @@ open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Prover Geb.FreeTopos.Sorts
 #guard (List.range sig.length).all fun k ↦
   sig[k]?.map Prod.snd != some arr || ((domRules[k]?).join.isSome && (codRules[k]?).join.isSome)
 
--- the library's development checks
-#guard library.any fun (_, d) ↦ checkDevelopment theory d
+-- the library's development checks, its typing certified by lemmas, and again, its typing
+-- left to the checker's inference
+#guard (libraryWith false).any fun (_, d) ↦ checkDevelopment theory d
+#guard library.any fun (_, d) ↦ (share theory d).any (checkTopos [])
 
 /-- The first projection after the pairing of two arrows of one domain, the second arrow the
 first projection of a product. -/
@@ -52,8 +57,8 @@ def fstPair : Seq :=
 
 -- a projection after a pairing normalizes to its component, and the development checks
 #guard library.any fun (i, d) ↦
-  ((proveSeq fstPair (byNorm (rules i) fstPair.concl)).run d).any fun (_, d) ↦
-    checkDevelopment theory d
+  ((proveSeq fstPair (byNorm (rules i) fstPair.concl) (infer := true)).run d).any fun (_, d) ↦
+    (share theory d).any (checkTopos [])
 
 end GebTests.Prototypes.FreeTopos.Prover
 

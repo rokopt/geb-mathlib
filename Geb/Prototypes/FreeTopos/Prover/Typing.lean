@@ -7,6 +7,8 @@ module
 
 public import Geb.Prototypes.FreeTopos.Theory
 public import Geb.Prototypes.PartialHorn.Definitional
+public import Geb.Prototypes.PartialHorn.Share
+public import Geb.Prototypes.FreeTopos.Infer
 
 set_option doc.verso true in
 /-!
@@ -60,59 +62,6 @@ namespace Geb.FreeTopos.Prover
 open PartialHorn Sorts
 open scoped FinEnum
 
-/-- The application of operation {lit}`k` to the first {lit}`n` variables. -/
-def opOnVars (k n : ℕ) : Tree := op k ((List.range n).map var)
-
-/-- How an axiom proves that an application of an operation is defined. -/
-inductive DfdRule where
-  /-- The axiom concludes the application's definedness. -/
-  | direct (j : ℕ)
-  /-- The axiom, without hypotheses, concludes an equation whose left side applies an
-  operation to the application alone. -/
-  | strict (j : ℕ)
-  /-- The axiom, closed and without hypotheses, concludes an equation whose right side is the
-  constant. -/
-  | rhs (j : ℕ)
-
-/-- The argument sorts of an operation. -/
-def argSorts (k : ℕ) : List ℕ := (sig[k]?.map Prod.fst).getD []
-
-/-- The axioms with their indices. -/
-def indexedAxioms : List (Seq × ℕ) := axioms.zipIdx
-
-/-- The rule by which the axioms prove an application of operation {lit}`k` defined. -/
-def dfdRule (k : ℕ) : Option DfdRule :=
-  let t := opOnVars k (argSorts k).length
-  let direct := indexedAxioms.find? fun (a, _) ↦
-    a.ctx == argSorts k && a.concl.lhs == t && a.concl.rhs == t
-  let strict := indexedAxioms.find? fun (a, _) ↦
-    a.ctx == argSorts k && a.hyps.isEmpty && a.concl.lhs.label != 0 &&
-      a.concl.lhs.children == [t]
-  let rhs := indexedAxioms.find? fun (a, _) ↦
-    a.ctx.isEmpty && a.hyps.isEmpty && a.concl.rhs == t
-  match direct, strict, rhs with
-  | some (_, j), _, _ => some (.direct j)
-  | none, some (_, j), _ => some (.strict j)
-  | none, none, some (_, j) => some (.rhs j)
-  | none, none, none => none
-
-/-- The axiom whose left side is the application of operation {lit}`o` (the domain or the
-codomain) to an application of operation {lit}`k`, under hypotheses of definedness alone. -/
-def boundRule (o k : ℕ) : Option ℕ :=
-  let t := opOnVars k (argSorts k).length
-  (indexedAxioms.find? fun (a, _) ↦
-    a.ctx == argSorts k && a.concl.lhs == op o [t] && a.hyps.all fun h ↦ h.lhs == h.rhs).map
-    Prod.snd
-
-/-- The definedness rules, by operation. -/
-def dfdRules : List (Option DfdRule) := (List.range sig.length).map dfdRule
-
-/-- The domain rules, by operation. -/
-def domRules : List (Option ℕ) := (List.range sig.length).map (boundRule 0)
-
-/-- The codomain rules, by operation. -/
-def codRules : List (Option ℕ) := (List.range sig.length).map (boundRule 1)
-
 /-- A term's typing: the term, its sort, the certificate that it is defined, and for an object
 its canonical form, for an arrow its canonical domain and codomain, each with the certificate of
 its equation. For an object both bounds are its canonical form. -/
@@ -132,25 +81,6 @@ structure Ty where
   /-- The certificate that the object, or the arrow's codomain, equals {lit}`hi`. -/
   hiCert : Tree
 
-/-- A structural hash of a tree. -/
-def treeHash : Tree → UInt64 := RoseTree.elim fun l hs ↦ hs.foldl mixHash (hash l)
-
-/-- A table of values keyed by trees: buckets of pairs, indexed by the keys' hashes. -/
-structure Table (β : Type) where
-  /-- The buckets. -/
-  buckets : Array (List (Tree × β)) := Array.replicate 4096 []
-
-/-- The bucket of a key. -/
-def Table.index {β : Type} (tb : Table β) (t : Tree) : ℕ := (treeHash t).toNat % tb.buckets.size
-
-/-- The value of a key, if the table has one. -/
-def Table.find? {β : Type} (tb : Table β) (t : Tree) : Option β :=
-  (tb.buckets[tb.index t]?.bind fun l ↦ l.find? (·.1 == t)).map Prod.snd
-
-/-- The table with a key's value added. -/
-def Table.insert {β : Type} (tb : Table β) (t : Tree) (b : β) : Table β :=
-  ⟨tb.buckets.modify (tb.index t) ((t, b) :: ·)⟩
-
 /-- The prover's state: the development, and the typings and normal forms of the terms typed
 and normalized in the current scope. -/
 structure St where
@@ -165,13 +95,12 @@ structure St where
   defs : List Defn := []
   /-- The signature extended by the definitions in force. -/
   sig : Sig := FreeTopos.sig
+  /-- Whether the typing's certificates are the checker's oracle rules
+  ({lit}`checkTopos`) rather than lemmas. -/
+  infer : Bool := false
 
 /-- The prover's monad: a scope, and the state of the development and the typings. -/
 abbrev PM : Type → Type := ReaderT Scope (StateT St Option)
-
-/-- The index of the first axiom of the definition at position {lit}`i`: it rewrites the
-definition's application to its body. -/
-def defAxIdx (i : ℕ) : ℕ := axioms.length + 2 * i
 
 /-- The axiom of index {lit}`j` of the theory extended by the definitions in force. -/
 def axiomAt (j : ℕ) : PM Seq := do
@@ -199,11 +128,22 @@ def lookup (t : Tree) : PM (Option Ty) := do
 def memoize (ty : Ty) : PM Unit :=
   modify fun st ↦ { st with memo := st.memo.insert ty.term ty }
 
+/-- The certificate that a term is defined: the oracle's rule when inferring, else a lemma
+proved by {lit}`c`. -/
+def dfdCert (t : Tree) (c : Tree) : PM Tree := do
+  if (← get).infer then pure (RoseTree.node Rule.typed [t]) else addLemma (dfd t) c
+
+/-- The certificate of an equation between objects of one canonical form: the oracle's rule
+when inferring, else a lemma proved by {lit}`c`. -/
+def eqCert (q : Eqn) (c : Tree) : PM Tree := do
+  if (← get).infer then pure (RoseTree.node Rule.objEq [q.lhs, q.rhs]) else addLemma q c
+
 /-- The certificate of an equation between two objects, from their typings, when their
 canonical forms agree. -/
 def objEq (l r : Ty) : PM Tree := do
   guard (l.sort == obj && r.sort == obj && l.lo == r.lo)
-  pure (Cert.trans l.loCert (Cert.symm r.loCert))
+  if (← get).infer then pure (RoseTree.node Rule.objEq [l.term, r.term])
+  else pure (Cert.trans l.loCert (Cert.symm r.loCert))
 
 /-- The certificate of a hypothesis of an axiom at arguments, typing its instance's sides with
 {lit}`patTy`: a definedness by the typing, an equation between objects by canonical forms. -/
@@ -218,7 +158,7 @@ def bound (patTy : List Ty → Tree → PM Ty) (tys : List Ty) (k j : ℕ) (d : 
     PM (Tree × Tree) := do
   let a ← axiomAt j
   let hs ← a.hyps.mapM fun h ↦
-    if h == dfd (opOnVars k tys.length) then pure d else proveHyp patTy tys h
+    if h == dfd (opVars k tys.length) then pure d else proveHyp patTy tys h
   let q := Cert.ax j (tys.map Ty.term) (tys.map Ty.dfd) hs
   let r ← patTy tys a.concl.rhs
   pure (r.lo, Cert.trans q r.loCert)
@@ -231,6 +171,14 @@ def typeDefined (patTy : List Ty → Tree → PM Ty) (i s : ℕ) (tys : List Ty)
   let ts := tys.map Ty.term
   let t := op (sig.length + i) ts
   let b ← patTy tys dfn.body
+  if (← get).infer then
+    let d := RoseTree.node Rule.typed [t]
+    let ty : Ty := if s == obj then ⟨t, obj, d, b.lo, RoseTree.node Rule.objEq [t, b.lo], b.lo,
+        RoseTree.node Rule.objEq [t, b.lo]⟩
+      else ⟨t, arr, d, b.lo, RoseTree.node Rule.objEq [dom t, b.lo], b.hi,
+        RoseTree.node Rule.objEq [cod t, b.hi]⟩
+    memoize ty
+    return ty
   let e ← addLemma ⟨t, b.term⟩ (Cert.ax (defAxIdx i) ts (tys.map Ty.dfd) [b.dfd])
   let d ← addLemma (dfd t) (Cert.trans e (Cert.symm e))
   let ty ← if s == obj then do
@@ -262,7 +210,7 @@ def typeOp (patTy : List Ty → Tree → PM Ty) (k : ℕ) (tys : List Ty) : PM T
       let q := Cert.ax j [] [] []
       pure (Cert.trans (Cert.symm q) q)
     | _ => failure
-  let d ← addLemma (dfd t) dc
+  let d ← dfdCert t dc
   let ty ← if s == obj then
       match k, tys with
       | 0, [f] => pure ⟨t, obj, d, f.lo, f.loCert, f.lo, f.loCert⟩
@@ -271,7 +219,7 @@ def typeOp (patTy : List Ty → Tree → PM Ty) (k : ℕ) (tys : List Ty) : PM T
         let c := op k (tys.map fun ty ↦ if ty.sort == obj then ty.lo else ty.term)
         if c == t then pure ⟨t, obj, d, t, d, t, d⟩
         else do
-          let e ← addLemma ⟨t, c⟩
+          let e ← eqCert ⟨t, c⟩
             (Cert.cong d (tys.map fun ty ↦ if ty.sort == obj then ty.loCert else ty.dfd))
           pure ⟨t, obj, d, c, e, c, e⟩
     else do
@@ -279,7 +227,7 @@ def typeOp (patTy : List Ty → Tree → PM Ty) (k : ℕ) (tys : List Ty) : PM T
       let some (some jc) := codRules[k]? | failure
       let (dl, dc) ← bound patTy tys k jd d
       let (cl, cc) ← bound patTy tys k jc d
-      pure ⟨t, arr, d, dl, ← addLemma ⟨dom t, dl⟩ dc, cl, ← addLemma ⟨cod t, cl⟩ cc⟩
+      pure ⟨t, arr, d, dl, ← eqCert ⟨dom t, dl⟩ dc, cl, ← eqCert ⟨cod t, cl⟩ cc⟩
   memoize ty
   pure ty
 
@@ -300,12 +248,14 @@ def typeVar (termTy : Tree → PM Ty) (i : ℕ) : PM Ty := do
   match sc.ctx[i]? with
   | some obj => pure ⟨var i, obj, Cert.refl i, var i, Cert.refl i, var i, Cert.refl i⟩
   | some arr =>
+    let infer := (← get).infer
     let side (o j : ℕ) : PM (Tree × Tree) :=
       match sc.hyps.findIdx? (·.lhs == op o [var i]) with
       | some h => do
         let some q := sc.hyps[h]? | failure
         let r ← termTy q.rhs
-        pure (r.lo, Cert.trans (Cert.hyp h) r.loCert)
+        pure (r.lo, if infer then RoseTree.node Rule.objEq [op o [var i], r.lo]
+          else Cert.trans (Cert.hyp h) r.loCert)
       | none => pure (op o [var i], Cert.ax j [var i] [Cert.refl i] [])
     let (dl, dc) ← side 0 0
     let (cl, cc) ← side 1 1
@@ -331,11 +281,16 @@ def typeTerm (t : Tree) : PM Ty := (typers typingFuel).2 t
 def typePattern (env : List Ty) (p : Tree) : PM Ty := (typers typingFuel).1 env p
 
 /-- Run the prover in a scope from a development, with no term typed, with definitions in
-force. -/
-def run {α : Type} (sc : Scope) (dev : Development) (m : PM α) (defs : List Defn := []) :
-    Option (α × Development) :=
-  (m.run sc |>.run { dev := dev.toArray, defs, sig := sig ++ defs.map fun d ↦ (d.ctx, d.sort) }).map
-    fun (a, st) ↦ (a, st.dev.toList)
+force, its typing certified by lemmas or, when {lit}`infer` holds, by the checker's oracle
+rules. -/
+def run {α : Type} (sc : Scope) (dev : Development) (m : PM α) (defs : List Defn := [])
+    (infer : Bool := false) : Option (α × Development) :=
+  let st : St := {
+    dev := dev.toArray
+    defs := defs
+    sig := sig ++ defs.map (fun d ↦ (d.ctx, d.sort))
+    infer := infer }
+  (m.run sc |>.run st).map fun (a, st) ↦ (a, st.dev.toList)
 
 end Geb.FreeTopos.Prover
 

@@ -5,6 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Check -- shake: keep
+public meta import Geb.Prototypes.FreeTopos.Check -- shake: keep
 public import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 public meta import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 
@@ -17,10 +19,13 @@ again in the theory of an elementary topos by the prover: appending lists, and a
 natural numbers object. A function of several arguments is an arrow from their product;
 appending is recursion on the first list into the exponential of lists, evaluated at the
 second, and addition is recursion on its second argument into the exponential of the natural
-numbers object, evaluated at the first. A theorem quantified over lists or numbers is an
-equation between arrows. Each is proved by normalization, by induction through the uniqueness
-of recursion, or by rewriting with an earlier theorem, and the development of the library and
-the theorems checks.
+numbers object, evaluated at the first. Each is a definition of the theory's extension, as are
+the curried cases of its recursion. A theorem quantified over lists or numbers is an equation
+between arrows. The recursions' computation lemmas are proved by unfolding them; each theorem
+is proved, with the recursions folded, by normalization, by induction through the uniqueness of
+recursion, or by rewriting with an earlier theorem. The development of the library and the
+theorems, its terms stored once and its typing left to the checker's inference, checks in the
+extension ({name}`Geb.FreeTopos.checkTopos`).
 
 ## Main definitions
 
@@ -151,7 +156,7 @@ def addZeroLeft : Seq := ⟨[], [], ⟨comp add (pair zeroNat (idt nat)), idt na
 definitions in force: the recursions' computation lemmas by unfolding them, and the theorems
 with the recursions folded. -/
 def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
-  let prove (a : Seq) (m : PM Tree) := proveSeq a m defs
+  let prove (a : Seq) (m : PM Tree) := proveSeq a m defs (infer := true)
   let rs := rules i
   let cn ← prove appendCNil (byNorm (rs ++ [deltaRule 2]) appendCNil.concl)
   let cc ← prove appendCCons (byNorm (rs ++ [deltaRule 2]) appendCCons.concl)
@@ -162,7 +167,7 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
     (byListInduction lrs (x 0) (nil (x 0)) (cons (x 0)) appendNil.concl)
   let _ ← prove appendAssoc (byListParamInduction lrs (x 0) append
     (comp (cons (x 0)) (fst (prod (x 0) L) P)) appendAssoc.concl)
-  let k ← normalizeThm lrs an defs
+  let k ← normalizeThm lrs an defs (infer := true)
   let _ ← prove appendNilTwice (byNorm (lrs ++ [{ src := .thm k }]) appendNilTwice.concl)
   let az ← prove addCZero (byNorm (rs ++ [deltaRule 6]) addCZero.concl)
   let as ← prove addCSucc (byNorm (rs ++ [deltaRule 6]) addCSucc.concl)
@@ -173,8 +178,9 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
   let _ ← prove addZeroLeft (byNatInduction nrs zeroN succ addZeroLeft.concl)
   pure () : StateT Development Option Unit).run d).map Prod.snd
 
--- the theorems are proved, and the development checks in the extension by the definitions
-#guard benchmark.any (checkDevelopment (theory.extendAll defs))
+-- the theorems are proved, and the development, its terms shared, checks in the extension by
+-- the definitions, with the typing inferred
+#guard benchmark.any fun d ↦ (share (theory.extendAll defs) d).any (checkTopos defs)
 
 end GebTests.Prototypes.FreeTopos.Benchmark
 
