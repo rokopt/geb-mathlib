@@ -58,124 +58,137 @@ written in Geb and is not part of the bootstrap. The road map therefore
 has two parts: the bootstrap, whose end point is stated first, and the
 work written in Geb after it.
 
-Each item is marked constructed, begun, not begun or deferred, and
-names the section or file that details it. The items of a list are in
-the order of dependence.
+Each item opens with its state, one of the five the section on status
+defines: complete, in progress, ready, waiting or deferred. Each names
+the section or file that details it, and the items of a list are in the
+order of dependence.
 
 ## The bootstrap's end point
 
 * Computation. Geb's implementation, the reader, the expansion, the
   type checker and the compilers, is written in Geb and compiled by Geb,
   with the host code reduced to the seed, and every compiler reproduces
-  itself (the section on what self-compilation establishes). Reached on
+  itself (the section on what self-compilation establishes). Complete on
   the Lean host.
 * Hosts and targets. The kernel runs on three hosts or targets: Lean,
   where the seed and the backend emitting Lean are; a systems language,
   Rust, where a second seed reproduces the fixed points; and an
   interaction-net runtime, HVM, Bend or a similar one, which a compiler
-  written in Geb targets for parallel workloads. Lean reached; the
-  others not begun.
+  written in Geb targets for parallel workloads. Complete for Lean; the
+  systems language and the interaction-net runtime wait on Phase 2.
 * Logic. Two checkers, each proved sound in Lean and written again in
   Geb, where a prover has tactics that construct its certificates: the
   computational core's, of equations between kernel terms, and the
   metalogic's, the free topos with the natural numbers, list and
   rose-tree objects, presented as the initial model of one partial Horn
-  theory (Phase 7). Begun: the computational core's checker is
-  constructed and its proof construction is begun; the metalogic's
-  constructions are not begun.
+  theory (Phase 7). In progress: both checkers are constructed in Lean
+  and proved sound; the computational core's is written in Geb and its
+  proof construction is in progress; the metalogic's is not yet written
+  in Geb.
 * Extension. A program is extended by definitions whose identity
   survives edits, and Surface 1 is complete enough to write the rest of
-  Geb in, with diagnostics that name what fails. Begun: closed bundles
-  and Surface 1 are constructed.
+  Geb in, with diagnostics that name what fails. In progress: closed
+  bundles and Surface 1 are complete, and content identity is ready.
 
 ## The bootstrap
 
 Computation:
 
-* The seed, Phase 1: the kernel's syntax, its type checker and
-  evaluator, the primitives and the reader, with numeral abbreviations
-  for labels. Constructed, except the reader's printer and the
-  retraction law between them, not begun.
-* Definitions and images, Phase 3: closed bundles, the image format and
-  the host driver `geb-kernel`. Constructed; the names of bound
-  variables and comments beside a bundle, not begun.
-* Geb grows in itself, Phase 4: the stage-0 compiler in the kernel's
-  syntax, the Surface 1 expansion, the stage-1 compiler written in
-  Surface 1, and their fixed points. Constructed.
-* The Lean backend, Phase 5 step 3: `bootstrap/stage1/lean.geb`, the
-  committed `bootstrap/compiler.img` and `bootstrap/lean/GebBoot.lean`,
-  and the executable `geb-compile`. Constructed.
-* Surface 1's completion, the section on improvements: generated
+* Complete. The seed, Phase 1: the kernel's syntax, its type checker
+  and evaluator, the primitives and the reader, with numeral
+  abbreviations for labels. The reader's printer and the retraction law
+  between them are ready.
+* Complete. Definitions and images, Phase 3: closed bundles, the image
+  format and the host driver `geb-kernel`. The names of bound variables
+  and comments beside a bundle are ready.
+* Complete. Geb grows in itself, Phase 4: the stage-0 compiler in the
+  kernel's syntax, the Surface 1 expansion, the stage-1 compiler written
+  in Surface 1, and their fixed points.
+* Complete. The Lean backend, Phase 5 step 3:
+  `bootstrap/stage1/lean.geb`, the committed `bootstrap/compiler.img`
+  and `bootstrap/lean/GebBoot.lean`, and the executable `geb-compile`.
+* Ready. Surface 1's completion, the section on improvements: generated
   recognizers, type parameters, a static check of datatypes, patterns
   with `&`, unused pattern variables, primitives that no binding
   shadows, emitted names that no definition captures, and diagnostics
-  naming the definition that fails. Not begun.
-* The choice of machine, Phase 2: the benchmark programs, the
-  environment machine, the compilation to the triage calculus, the
-  compilation to interaction combinators, and the decision. Deferred
-  until before the second host.
-* The second host, Phase 5 step 1: the evaluator and loader in Rust,
-  reproducing the stage-0 and stage-1 fixed points, which is diverse
-  double-compiling across hosts. Not begun.
-* Accelerations, Phase 5 step 2: native code bound by position or
-  builtin identifier, proved in Lean against the denotation and run in
-  shadow mode. Not begun.
-* The interaction-net target, Phase 5 step 3: a compiler written in
-  Geb to HVM, Bend or a similar runtime, each pinned to a revision and
-  tested, within the limits on duplicating λ-values of the section on
-  operational semantics. Not begun.
-* The Geb reader and serializer in constant depth, and the stage tests
-  run by the compiled executables, the section on improvements. Not
-  begun.
+  naming the definition that fails.
+* Deferred until before the second host. The choice of machine, Phase
+  2: the benchmark programs, the environment machine, the compilation to
+  the triage calculus, the compilation to interaction combinators, and
+  the decision.
+* Waiting on Phase 2. The second host, Phase 5 step 1: the evaluator
+  and loader in Rust, reproducing the stage-0 and stage-1 fixed points,
+  which is diverse double-compiling across hosts.
+* Ready. Accelerations, Phase 5 step 2: native code bound by position
+  or builtin identifier, proved in Lean against the denotation and run
+  in shadow mode.
+* Waiting on Phase 2. The interaction-net target, Phase 5 step 3: a
+  compiler written in Geb to HVM, Bend or a similar runtime, each pinned
+  to a revision and tested, within the limits on duplicating λ-values
+  of the section on operational semantics.
+* Ready. The Geb reader and serializer in constant depth, and the stage
+  tests run by the compiled executables, the section on improvements.
 
 Logic, Phase 7, the computational core and then the metalogic, as the
 sections below detail:
 
-* The computational core, a cartesian closed locos: the rules and their
-  soundness in Lean, and the checker written in Geb, constructed; the
-  proof construction, begun; proofs about the compiler's components,
-  which exercise the prover, begun, and paused until the fifth choice;
-  stronger checkers admitted by translations of certificates, not begun.
-* The metalogic, the free topos in one presentation: the rule set with
-  its checker in Lean, sound, and the proof that every model is an
-  elementary topos with the data objects, constructed; the converse, not
-  begun; the model in Lean with functional relations, not begun; the
-  definitional extension with its unfolding theorem, constructed for
-  the models, and the unfolding of certificates, not begun; a prover
-  prototyped in Lean, constructed, and with it the measurement that
-  decides when the Mitchell–Bénabou language is written, made, both
-  criteria failing; certificates over a store of shared terms, checked
-  with the typing of their terms inferred, constructed; the
-  Mitchell–Bénabou language's terms, compilation and definitions, with
-  the proof that compiling agrees with unfolding in every model, and
-  the benchmark's theorems stated in it, constructed; its derivations
-  of equations, with their checker proved sound and the benchmark's
-  theorems derived in them, constructed; its logical rules, with
-  hypotheses and induction under the induction hypothesis, proved sound,
-  and the connectives defined from equality with their rules derived,
-  constructed; its connectives as definitions, their meaning in every
-  model, comprehension, and description by unique choice, constructed;
-  its completeness through its term model, with the partial Horn logic's
-  own, not begun; the checker and prover written in Geb, not begun.
+* The computational core, a cartesian closed locos:
+  * Complete. The rules and their soundness in Lean, and the checker
+    written in Geb.
+  * In progress. The proof construction, and the proofs about the
+    compiler's components that exercise the prover: the first two
+    proofs are complete, and the rest wait on the metalogic's fifth
+    choice.
+  * Waiting on the fifth choice. Stronger checkers admitted by
+    translations of certificates.
+* The metalogic, the free topos in one presentation:
+  * Complete. The rule set with its checker in Lean, sound, and the
+    proof that every model is an elementary topos with the data
+    objects: the first construction, in one direction.
+  * Ready. The converse, a model of the theory from an elementary topos
+    with chosen structure and the data objects.
+  * Ready. The model in Lean with functional relations: the second
+    construction.
+  * Complete. The definitional extension with its unfolding theorem,
+    for the models: the third construction. The unfolding of
+    certificates is ready.
+  * Complete. A prover prototyped in Lean, and with it the measurement
+    that decides when the Mitchell–Bénabou language is written, both
+    criteria failing: the fourth choice.
+  * Complete. Certificates over a store of shared terms, checked with
+    the typing of their terms inferred.
+  * Complete. The Mitchell–Bénabou language's terms, compilation and
+    definitions, with the proof that compiling agrees with unfolding in
+    every model, the laws of its renaming and substitution, and the
+    benchmark's theorems stated in it.
+  * Complete. Its derivations of equations, its logical rules, and its
+    connectives, comprehension and description, the first three stages,
+    each with its checker proved sound.
+  * Ready, and next. Its term models and its completeness, with the
+    partial Horn logic's own: the fourth stage (the next phase).
+  * Waiting on the second construction. The fifth choice.
+  * Waiting on the fourth stage, whose completeness proof settles the
+    language's rules. The checker and prover written in Geb.
 
 Extension:
 
-* Closed bundles referring to definitions by position, Phase 3.
-  Constructed.
-* Content identity, Phase 6: the hash and its version tag, BLAKE3 and
-  SHA3-256 reconciled; its input, recorded in `docs/definitions.md`
-  § Content identity; the hash written in Geb and compared with a host
-  binding; the migration from positions to digests, the namespace tree
-  and the re-keying of annotations. Not begun.
-* A printer for the kernel's readable syntax and the retraction law,
-  and the unification of the readable S-expressions with the canonical
-  ones, with a quoted spelling for atoms that are not tokens (`TODO.md`
-  § Bootstrap). Not begun.
+* Complete. Closed bundles referring to definitions by position, Phase
+  3.
+* Ready. Content identity, Phase 6: the hash and its version tag,
+  BLAKE3 and SHA3-256 reconciled; its input, recorded in
+  `docs/definitions.md` § Content identity; the hash written in Geb and
+  compared with a host binding; the migration from positions to
+  digests, the namespace tree and the re-keying of annotations.
+* Ready. A printer for the kernel's readable syntax and the retraction
+  law, and the unification of the readable S-expressions with the
+  canonical ones, with a quoted spelling for atoms that are not tokens
+  (`TODO.md` § Bootstrap).
 
 ## After the bootstrap
 
-Written in Geb, each proof in the computational core when it is an
-equation between kernel terms, and in the metalogic otherwise:
+Every item waits on the bootstrap. Each is written in Geb, each proof in
+the computational core when it is an equation between kernel terms, and
+in the metalogic otherwise:
 
 * Surface 2: quotients whose respect is proved, subset types by
   propositions, definitions by equations whose unique solution is
@@ -760,6 +773,65 @@ contract.
 
 ## Status
 
+The state of every part of the plan is one of five:
+
+* complete: constructed, and its acceptance met;
+* in progress: begun and not complete;
+* ready: not begun, and depending on no part that is not complete;
+* waiting: not begun, and depending on a named part that is not
+  complete;
+* deferred: not begun, by a decision that names when it is taken up.
+
+A phase is complete when its acceptance is met; the parts it leaves are
+listed beside it, each with its own state. The road map at the head of
+the chapter marks its items by these states,
+and each phase below opens with a table of the states of its steps.
+
+:::table +header
+*
+  * Phase
+  * State
+  * What remains, and its state
+*
+  * 1, the kernel runs in Lean
+  * Complete
+  * The reader's printer and the retraction law: ready
+*
+  * 2, the choice of machine
+  * Deferred until before the second host
+  * Every step
+*
+  * 3, definitions and images
+  * Complete
+  * The names of bound variables and comments: ready; the hash binding:
+    deferred to Phase 6
+*
+  * 4, Geb grows in itself
+  * Complete
+  * Surface 1's completion, the section on improvements: ready
+*
+  * 5, speed and a second host
+  * In progress
+  * The second host and the interaction-net target: waiting on Phase 2;
+    accelerations: ready
+*
+  * 6, content identity
+  * Ready
+  * Every step
+*
+  * 7, the computational core
+  * In progress
+  * The proofs from the type checker's preservation of types on, and
+    stronger checkers: waiting on the metalogic's fifth choice
+*
+  * 7, the metalogic
+  * In progress
+  * The Mitchell–Bénabou language's term models and completeness: ready,
+    and next; the second construction and the converse of the first:
+    ready; the fifth choice: waiting on the second construction; the
+    checker and prover written in Geb: waiting on the completeness proof
+:::
+
 The fixed points hold on images and on Lean. The seed builds the
 stage-0 compiler, written in the kernel's syntax, and the stage-0
 compiler builds the stage-1 compiler, whose Surface 1 expansion is
@@ -768,8 +840,7 @@ evaluator from its image, compiles its own source to that image. Built
 by Lake from the Lean it emits from its own source, the stage-1
 compiler emits the same Lean and the same image. The stage-1 compiler's
 image and its Lean are committed, and continuous integration checks
-every fixed point on every build. The road map at the head of the
-chapter marks the state of every item.
+every fixed point on every build.
 
 The implementation changed the plan in these respects. The kernel's
 terms and types are rose trees read directly, and its checker and
@@ -782,6 +853,21 @@ children in an array, without which a fold over a wide node, such as a
 file, takes quadratic time.
 
 ## Phase 1: the kernel runs in Lean
+
+:::table +header
+*
+  * Step
+  * State
+*
+  * 1 to 3: the syntax, the type checker and evaluator, the primitives
+  * Complete
+*
+  * 4: the reader
+  * Complete; its printer and the retraction law are ready
+*
+  * Acceptance
+  * Met
+:::
 
 1. Lean: the kernel's syntax. Terms and types are rose trees read
    directly, the label of a node naming its constructor, so a program
@@ -842,6 +928,18 @@ unresolved and mistyped programs.
 
 ## Phase 2: the choice of machine
 
+:::table +header
+*
+  * Step
+  * State
+*
+  * 1 to 3: the benchmark programs, the arms, the measurements
+  * Deferred until before the second host
+*
+  * Acceptance
+  * Not met
+:::
+
 1. The benchmark programs, written once in kernel S-expressions: a fold
    over a balanced tree of $`2^{20}` leaves, as the value-representation
    chapter measures; a comb and a node of many children; labels beyond
@@ -869,6 +967,28 @@ backends, not for the first fixed point; the comparison runs before
 Phase 5's second host.
 
 ## Phase 3: definitions and images
+
+:::table +header
+*
+  * Step
+  * State
+*
+  * 1: the closed bundle
+  * Complete
+*
+  * 2: the annotation table
+  * In progress: the names of definitions are kept; those of bound
+    variables and comments are ready
+*
+  * 3: the image and the host driver
+  * Complete
+*
+  * 4: the hash binding
+  * Deferred to Phase 6
+*
+  * Acceptance
+  * Met
+:::
 
 1. Lean: the closed bundle, a well-founded block of kernel definitions
    stored as a rose tree and linked through the reference node,
@@ -907,6 +1027,20 @@ per node, which the optimized representation of the value-representation
 chapter addresses later.
 
 ## Phase 4: Geb grows in itself
+
+:::table +header
+*
+  * Step
+  * State
+*
+  * 1 to 5: the libraries and serializer, the reader, the type checker,
+    the elaborator, and its self-compilation
+  * Complete; the elaborator's completion, the section on improvements,
+    is ready
+*
+  * Acceptance
+  * Met
+:::
 
 1. Geb: libraries of lists, bytes and text, label operations and tree
    utilities, written in kernel S-expressions; the serializer first,
@@ -982,6 +1116,25 @@ from the seed.
 
 ## Phase 5: speed and a second host
 
+:::table +header
+*
+  * Step
+  * State
+*
+  * 1: the second host
+  * Waiting on Phase 2
+*
+  * 2: accelerations
+  * Ready
+*
+  * 3: the compilers
+  * In progress: the Lean backend is complete; the interaction-net
+    target waits on Phase 2
+*
+  * Acceptance
+  * Met on emitted Lean; the second host's fixed point waits on step 1
+:::
+
 1. A systems-language host: the evaluator and loader ported from the
    Rust crate of the value-representation prototypes.
 2. Lean and Geb: accelerations bound by position or builtin
@@ -1037,6 +1190,18 @@ seconds, where its image run by the Lean evaluator takes 1.2 seconds.
 
 ## Phase 6: content identity
 
+:::table +header
+*
+  * Step
+  * State
+*
+  * 1 to 3: the node-digest rule, the hash, the migration
+  * Ready
+*
+  * Acceptance
+  * Not met
+:::
+
 1. The node-digest rule, the hash function and its version tag, if
    Phase 3 did not fix them.
 2. Geb: the hash, compared with known answers from the host binding.
@@ -1055,6 +1220,35 @@ serializer written in Geb, `bootstrap/serialize.geb`, is the model for
 the hash written in Geb.
 
 ## Phase 7: the metalogic
+
+:::table +header
+*
+  * Step
+  * State
+*
+  * Computational core, 1: the rule set and its soundness
+  * Complete
+*
+  * Computational core, 2: the checker in Geb
+  * Complete
+*
+  * Computational core, 3: proof construction and proofs
+  * In progress: the prover is begun and the first two proofs are
+    complete; the rest wait on the metalogic's fifth choice
+*
+  * Metalogic, 1: the rule set and its soundness
+  * In progress: the rule set, its checker and their soundness in every
+    model are complete; the model of Lean types, the second
+    construction, is ready
+*
+  * Metalogic, 2 and 3: the checker and prover in Geb
+  * Waiting on the completeness proof of the Mitchell–Bénabou language,
+    which settles its rules
+*
+  * Acceptance
+  * Met for the computational core; waiting, for the metalogic, on its
+    checker in Geb
+:::
 
 Phase 7 builds two checkers, the computational core's and the
 metalogic's (the section on the metalogic and its checker), each by the
@@ -1219,37 +1413,38 @@ and proves the following.
 * Judgment: a context of kernel types, a list of equations as
   hypotheses, and an equation between kernel terms of a type; valid
   when both sides denote one value at every value of the context that
-  satisfies the hypotheses ({name}`Geb.Metalogic.Valid`). Constructed.
-* Types and terms: the kernel's, of every type. Constructed.
+  satisfies the hypotheses ({name}`Geb.Metalogic.Valid`). Complete.
+* Types and terms: the kernel's, of every type. Complete.
 * Rules: equality, congruence of every term former, the β and η rules,
   the δ rules at literals, weakening, cut, instantiation, the
   computation rules of the kernel's eliminators, induction on lists,
   trees and labels, the unfolding of definitions, iteration's reading
   of the label, the conditional as an iteration, and citations of
   axioms and of theorems, each named in `Geb.Metalogic.Rule`.
-  Constructed.
+  Complete.
 * Axioms: the defining equations of the primitives
-  ({name}`Geb.Metalogic.axioms`). Constructed.
+  ({name}`Geb.Metalogic.axioms`). Complete.
 * In Lean: soundness in the model of Lean types
-  ({name}`Geb.Metalogic.check_sound`). Constructed.
-* In Geb: the checker `bootstrap/metalogic/equations.geb`, constructed;
+  ({name}`Geb.Metalogic.check_sound`). Complete.
+* In Geb: the checker `bootstrap/metalogic/equations.geb`, complete;
   the prover `bootstrap/metalogic/prove.geb`, with normalization,
-  rewriting, induction and the Surface 1 forms, begun.
+  rewriting, induction and the Surface 1 forms, in progress.
 * Proofs of the bootstrap, which exercise the prover on the compiler's
   components, in order:
   1. lists and labels: the prelude's appending, addition's recursion
-     equations and zero as a unit of addition, constructed;
+     equations and zero as a unit of addition, complete;
   2. the accessors of the checker's equations, and the recursion
      equations of a structural recursion, through the Surface 1
-     expansion, constructed;
+     expansion, complete;
   3. the type checker's preservation of types by weakening and by
-     substitution, not begun (the next phase);
+     substitution, waiting on the metalogic's fifth choice (the next
+     phase);
   4. the Surface 1 expansion's identity on programs of kernel forms,
-     not begun;
-  5. the reader's inverse to the printer, after the printer, not begun;
+     waiting on the third;
+  5. the reader's inverse to the printer, waiting on the printer;
   6. the admission of a stronger checker by the proof that a Geb
      program translates its certificates into the computational core's
-     with the same conclusions, not begun.
+     with the same conclusions, waiting on the fifth choice.
 * After the bootstrap: equational theorems about programs, and the
   lemmas that the metalogic's proofs cite.
 
@@ -1262,6 +1457,10 @@ defined, proved sound in Lean and written again in Geb. This section
 states the presentation, its relation to the computational core, and
 the questions that remain, which are settled by constructing and
 measuring.
+
+#### The presentation
+
+State: complete, as the rule set of the first construction.
 
 A category is a presheaf on the walking parallel pair whose two objects
 are the objects and the morphisms and whose two restrictions are the
@@ -1463,6 +1662,11 @@ inclusions, which avoids the condition of monicity since every
 monomorphism of a topos is an equalizer; it is the nearest prior
 presentation, in the Boolean case.
 
+#### Definitions
+
+State: complete for one sort in `Geb/Prototypes/Definition/`, and for
+the partial Horn theory, in its models, by the third construction.
+
 Definitions would be one index of the checker's syntax: a Boolean
 states whether a term may refer to definitions, the node of a
 reference being admitted at one value only. A term with references is
@@ -1501,7 +1705,14 @@ refers to earlier ones; and with defined equalities, theorems whose
 unfolding is their certificates. In the computational core a reference unfolds
 one step at a time ({name}`Geb.Metalogic.valid_unfold`), resting on
 {name}`Geb.Metalogic.load_loaded`; no theorem yet unfolds every
-reference of a kernel term.
+reference of a kernel term. The families of definitions of
+`Geb/Prototypes/Definition/` and their linking form the Kleisli category
+of the free monad of the signature, linking associative and the
+variables its units ({name}`Geb.Definition.link_assoc`,
+{name}`Geb.Definition.link_pure`, {name}`Geb.Definition.pure_link`),
+the free monad's own laws being Cslib's.
+
+#### The constructions and the choices
 
 The questions are of two kinds. The first are constructions, each of
 which is established by carrying it out:
@@ -1532,7 +1743,13 @@ constructible:
    which are functional relations (the second construction).
 
 The first construction precedes the other two, which are independent of
-each other; the choices follow them.
+each other; the choices follow them. The first, third and fourth are
+complete, the first in one direction; the second is ready; and the
+fifth waits on the second.
+
+#### The first construction
+
+State: complete in one direction; the converse is ready.
 
 The first construction is made in one direction. The rule set is
 {name}`Geb.FreeTopos.theory`, a partial Horn theory whose sorts are the
@@ -1557,6 +1774,11 @@ definition are propositions, as mathlib's `Part` states them, so that a
 model need not decide where an operation is defined: neither the
 converse nor the second construction is confined to a topos whose
 objects have decidable equality.
+
+#### The fourth choice
+
+State: complete; the Mitchell–Bénabou language is written during the
+bootstrap.
 
 The fourth choice is made by measurement. Soon after the first
 construction, the theorems proved in the computational core in
@@ -1627,6 +1849,10 @@ and a checker that infers definedness and canonical objects, as the
 core's checker infers the types of kernel terms, proved sound in Lean,
 bears on the facts the certificates prove besides.
 
+#### The third construction and shared certificates
+
+State: complete for the models; the unfolding of certificates is ready.
+
 The third construction is made for the models, where the checker needs
 it. A definition names a term of the signature in the variables of a
 context, each of which occurs in it; the extension by it adds an
@@ -1684,6 +1910,15 @@ a store of 1551, against 1007453 nodes at the first measurement; the
 theorems' certificates, with the recursions' computation lemmas, have
 from 7 to 30 times the core's nodes, 18754 against 2071, and the
 development checks in 0.9 seconds against the core's 29 milliseconds.
+
+#### The Mitchell–Bénabou language
+
+State: in progress; the first three stages are complete, and the fourth
+is ready and next.
+
+##### Terms, compilation and definitions
+
+State: complete.
 
 The Mitchell–Bénabou language is written after the third construction,
 with definitions of its own. Its terms are those of the typed λ-calculus
@@ -1752,6 +1987,30 @@ core's do, where the combinators equate arrangements of projections and
 pairings; the variables are de Bruijn indices, and the proofs are the
 combinators' tactics.
 
+Renaming and substitution of the language's terms obey the laws of a
+monad of terms over variables, as well-scoped λ-terms form a relative
+monad on the finite sets ({citet AltenkirchChapmanUustalu2015}[],
+Example 2.1): renaming preserves composites and identities, and
+substitution has the variable as its unit on either side and is
+associative ({name}`Geb.FreeTopos.Internal.Term.rename_rename`,
+{name}`Geb.FreeTopos.Internal.Term.subst_id`,
+{name}`Geb.FreeTopos.Internal.Term.subst_subst`). The laws of identity
+hold of every term that compiles
+({name}`Geb.FreeTopos.Internal.Term.rename_id_of_compile`,
+{name}`Geb.FreeTopos.Internal.Term.subst_id_of_compile`): renaming and
+substitution rebuild a variable as a leaf, and the variables of a term
+that compiles are leaves
+({name}`Geb.FreeTopos.Internal.Term.varLeaves_of_compile`). The
+language's definitions unfold by this substitution. The combinators'
+substitution for their object variables obeys the same unit laws and
+associativity ({name}`Geb.FreeTopos.subst_x`,
+{name}`Geb.FreeTopos.subst_vars`, {name}`Geb.FreeTopos.subst_subst`),
+its law of identity stated of terms whose variables' indices are leaves,
+which the inference of a term's sort does not check, since it reads only
+an index's label.
+
+##### Soundness and completeness
+
 The language's derivations are checked by a checker of their own rather
 than translated to certificates of the combinators, whose sizes a
 translation would inherit. The language is then established twice
@@ -1778,7 +2037,12 @@ are the checker with equations as its formulas and induction as the
 uniqueness of recursion, measured against the core's certificates; the
 logical rules, whose soundness needs the internal Heyting algebra of the
 subobject classifier; comprehension and description; and the term models
-with the completeness theorems. The first three are constructed.
+with the completeness theorems. The first three are complete, and the
+fourth is next.
+
+##### Stage 1: equations
+
+State: complete.
 
 A derivation is a rose tree of rules ({name}`Geb.FreeTopos.Internal.Rule`).
 A rewriting derivation transforms a given term: congruence into each
@@ -1811,6 +2075,10 @@ in the computational core's certificates and 18754 in the combinators',
 and check in 2.4 milliseconds, where the combinators' development of the
 same theorems, the lemmas it proves for them included, checks in about
 0.9 seconds.
+
+##### Stage 2: logical rules
+
+State: complete.
 
 The logical rules make a judgment a formula in a context under
 hypotheses, formulas in the same context, and its meaning external: it
@@ -1854,6 +2122,10 @@ milliseconds; the two inductions under the hypothesis have 48 and 52
 nodes, where the same equations by the uniqueness of recursion have 25
 and 29.
 
+##### Stage 3: connectives, comprehension and description
+
+State: complete.
+
 The connectives are definitions of the language in a library, placed at
 an index among a development's definitions and their rules at an index
 among its theorems, with unique existence among them
@@ -1885,7 +2157,26 @@ operation of the theory, gives the section after which the second
 projection is the arrow, as {citet DubucSzyld2015}[], Proposition 1.21,
 characterize the relations that are the graphs of arrows.
 
-The fifth choice is deferred until the three constructions are made.
+##### Stage 4: term models and completeness
+
+State: ready, and next (the next phase).
+
+The language's term model is the topos whose objects are its types with
+predicates and whose arrows are its provably functional relations,
+after {citet LambekScott1980}[], Definition 4.3. That it is a model of
+the partial Horn theory, with the partial Horn logic's completeness
+through the term model of its theory and the translations of the
+combinators into the language, gives the completeness theorems and the
+round trips of the section on soundness and completeness.
+
+#### The second construction and the fifth choice
+
+State: the second construction is ready, and the fifth choice waits on
+it.
+
+The fifth choice is deferred until the three constructions are made,
+and the second construction, the model in Lean with morphisms as
+functional relations, is the one not made.
 
 ## Improvements
 
@@ -1964,15 +2255,46 @@ the change that removes it.
 
 ## The next phase
 
-The metalogic is built next, in the order of the section on the
-metalogic: after its first construction, made in one direction, the
-measurement that makes the fourth choice; the second and third
-constructions; and then the fifth choice. The computational
+The fourth stage of the Mitchell–Bénabou language is next, in this
+order.
+
+1. The arrow a functional relation determines, a definition of the
+   combinators: the second projection after the inverse of the first
+   projection of the relation's pullback of truth, the construction of
+   unique choice ({name}`Geb.FreeTopos.unique_choice`). It is a partial
+   operation, defined exactly where the relation is functional, so the
+   partial Horn logic's definedness carries the condition that a
+   description operator of the language would need proved. The
+   compilation of a term model's arrow into the combinators is this
+   definition, and the language keeps no description operator.
+2. Types built in for computation. Binary coproducts and the initial
+   object, operations of the combinators already, are exposed in the
+   language with injections, case analysis and their rules; the Boolean
+   type, optional values and the finite types follow, the Boolean type
+   giving the language a conditional that computes, which a formula does
+   not. Rose trees become rose trees over a type of labels, as lists are
+   over a type of elements, with induction on rose trees. Each such type
+   is determined up to isomorphism by the universal property its axioms
+   state, and is constructed by the rest of the topos
+   {citep Pare1974}[] {citep MoerdijkPalmgren2000}[], so each extension
+   is equivalent to the free topos with a natural numbers object alone.
+   Products of more than two factors and the finite types are not built
+   in: the compilers choose their representations, arrays and
+   fixed-width numbers among them. The kernel gains the same types when
+   the Geb programs move to them, since a change of the kernel moves
+   every fixed point.
+3. The term models and the completeness theorems of the section on the
+   Mitchell–Bénabou language: the language's term model of provably
+   functional relations, the partial Horn logic's term model, and the
+   translations whose round trips with the compilation are provably the
+   identity.
+
+The second construction and the fifth choice follow. The computational
 core's step 3, whose proofs are about kernel programs whichever the
-fifth choice, resumes after it, at the proof that follows. The next
-proof is the type checker's preservation of types by weakening, of `typeIn`
-in `bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
-for every environment `G`, contexts `c1` and `c2`, type `a` and term
+fifth choice, resumes after it, at the type checker's preservation of
+types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
+`bootstrap/metalogic/equations.geb`: for every environment `G`, contexts
+`c1` and `c2`, type `a` and term
 `t`, `typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
 `typeIn G (append c1 c2) t`. The checker checks an abstraction's body
 one binder deeper, where the inserted type is one position further in,
