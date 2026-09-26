@@ -149,10 +149,11 @@ sections below detail:
   Mitchell–Bénabou language's terms, compilation and definitions, with
   the proof that compiling agrees with unfolding in every model, and
   the benchmark's theorems stated in it, constructed; its derivations
-  with their checker proved sound, its logical rules, comprehension and
-  description, and its completeness through its term model, with the
-  partial Horn logic's own, not begun; the checker and prover written
-  in Geb, not begun.
+  of equations, with their checker proved sound and the benchmark's
+  theorems derived in them, constructed; its logical rules,
+  comprehension and description, and its completeness through its term
+  model, with the partial Horn logic's own, not begun; the checker and
+  prover written in Geb, not begun.
 
 Extension:
 
@@ -1774,7 +1775,39 @@ are the checker with equations as its formulas and induction as the
 uniqueness of recursion, measured against the core's certificates; the
 logical rules, whose soundness needs the internal Heyting algebra of the
 subobject classifier; comprehension and description; and the term models
-with the completeness theorems. None is constructed.
+with the completeness theorems. The first is constructed.
+
+A derivation is a rose tree of rules ({name}`Geb.FreeTopos.Internal.Rule`).
+A rewriting derivation transforms a given term: congruence into each
+child of a node, each in its own context, β, the components of a pair,
+the η of pairs and of the terminal type, the unfolding of a definition,
+the computation of the folds at zero, a successor, the empty list and a
+construction, and an instance of an earlier theorem in either direction.
+An equation is proved by rewriting both sides to one term, or by
+induction on the innermost variable of the natural numbers or of a list
+type: both sides agree at the start, and each is, at a successor or a
+construction, a given step of their type applied to its own value. The
+rewriting takes its terms from the term it rewrites, so that a
+derivation names no term but the steps of its inductions and the
+instances of the theorems it cites, and the checker computes every
+substitution ({name}`Geb.FreeTopos.Internal.check`). The checker is
+proved sound: every theorem of a development that checks is valid in
+every model of the theory extended by the combinators' definitions, and,
+with every definition unfolded, in every model of the theory
+({name}`Geb.FreeTopos.Internal.valid_unfoldAll_of_checkThms`). The
+induction rules are sound by the uniqueness of the folds with a
+parameter, which every natural numbers object of a cartesian closed
+category has ({citet EscardoSimpson2025}[], Proposition 2.3), derived in
+Lean from the theory's uniqueness of the folds without one by currying
+the parameter ({name}`Geb.FreeTopos.natRec_param_unique`,
+{name}`Geb.FreeTopos.listRec_param_unique`). A prover prototyped in Lean
+derives the benchmark's seven theorems, which the checker checks
+(`GebTests/Prototypes/FreeTopos/InternalDerivation.lean`). The
+derivations have 169 nodes, the terms they name counted, against 2071
+in the computational core's certificates and 18754 in the combinators',
+and check in 2.4 milliseconds, where the combinators' development of the
+same theorems, the lemmas it proves for them included, checks in about
+0.9 seconds.
 
 The fifth choice is deferred until the three constructions are made.
 

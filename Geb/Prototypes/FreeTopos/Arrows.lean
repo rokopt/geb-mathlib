@@ -601,6 +601,13 @@ theorem idt_comp {f X Y : Tree} (hf : Hom M ρ f X Y) : eval M ρ (comp (idt Y) 
   exact eval_eq_of_holds (ax_holds hM 11 rfl (by decide) (ts := [f]) (ws := [wf])
     (by simp [hwf]) (by simp [hfs]) rfl trivial (q := ⟨comp (idt (cod f)) f, f⟩) rfl)
 
+/-- An arrow after the identity is the arrow. -/
+theorem comp_idt {f X Y : Tree} (hf : Hom M ρ f X Y) : eval M ρ (comp f (idt X)) = eval M ρ f := by
+  obtain ⟨wf, hwf, hfs⟩ := hf.exists_eval
+  refine (eval_op₂_congr 3 rfl (eval_op₁_congr 2 hf.eval_dom.symm)).trans ?_
+  exact eval_eq_of_holds (ax_holds hM 10 rfl (by decide) (ts := [f]) (ws := [wf])
+    (by simp [hwf]) (by simp [hfs]) rfl trivial (q := ⟨comp f (idt (dom f)), f⟩) rfl)
+
 /-- The first projection after a pairing is the first arrow. -/
 theorem fst_pair {f g X A B : Tree} (hf : Hom M ρ f X A) (hg : Hom M ρ g X B) :
     eval M ρ (comp (fst A B) (pair f g)) = eval M ρ f := by

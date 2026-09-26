@@ -119,6 +119,82 @@ theorem compile_rename (s : Term) :
     rw [List.map_map, List.mapM_map]
     exact h₁
 
+/-- A term's type depends on its environment's types alone: in an environment of the same types,
+over any object, it compiles to the same type. -/
+theorem compile_retype (s : Term) :
+    ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
+      ∀ (X' : Tree) (e' : List (Tree × Tree)), e'.map Prod.snd = e.map Prod.snd →
+      ∃ f, compile G n s X' e' = some (f, r.2) := by
+  refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree),
+    compile G n s X e = some r → ∀ (X' : Tree) (e' : List (Tree × Tree)),
+      e'.map Prod.snd = e.map Prod.snd → ∃ f, compile G n s X' e' = some (f, r.2))
+    (fun l cs ih ↦ ?_) s
+  intro X e r h X' e' he
+  cases l with
+  | var i =>
+    obtain ⟨rfl, hi⟩ := compile_var_iff.mp h
+    have hm := congrArg (·[i]?) he
+    simp only [List.getElem?_map, hi, Option.map_some, Option.map_eq_some_iff] at hm
+    obtain ⟨q, hq, hq₂⟩ := hm
+    exact ⟨q.1, compile_var_iff.mpr ⟨rfl, by rw [hq, ← hq₂]⟩⟩
+  | star =>
+    obtain ⟨rfl, rfl⟩ := compile_star_iff.mp h
+    exact ⟨_, compile_star_iff.mpr ⟨rfl, rfl⟩⟩
+  | pair =>
+    obtain ⟨t, u, f, a, g, b, rfl, ht, hu, rfl⟩ := compile_pair_iff.mp h
+    obtain ⟨f', hf'⟩ := ih t (by simp) X e _ ht X' e' he
+    obtain ⟨g', hg'⟩ := ih u (by simp) X e _ hu X' e' he
+    exact ⟨_, compile_pair_iff.mpr ⟨t, u, f', a, g', b, rfl, hf', hg', rfl⟩⟩
+  | fst =>
+    obtain ⟨t, f, a, b, rfl, ht, rfl⟩ := compile_fst_iff.mp h
+    obtain ⟨f', hf'⟩ := ih t (by simp) X e _ ht X' e' he
+    exact ⟨_, compile_fst_iff.mpr ⟨t, f', a, b, rfl, hf', rfl⟩⟩
+  | snd =>
+    obtain ⟨t, f, a, b, rfl, ht, rfl⟩ := compile_snd_iff.mp h
+    obtain ⟨f', hf'⟩ := ih t (by simp) X e _ ht X' e' he
+    exact ⟨_, compile_snd_iff.mpr ⟨t, f', a, b, rfl, hf', rfl⟩⟩
+  | lam a =>
+    obtain ⟨t, f, b, rfl, hat, ht, rfl⟩ := compile_lam_iff.mp h
+    obtain ⟨f', hf'⟩ := ih t (by simp) _ _ _ ht (prod X' a) (extEnv X' a e')
+      (by simp [extEnv, he, Function.comp_def])
+    exact ⟨_, compile_lam_iff.mpr ⟨t, f', b, rfl, hat, hf', rfl⟩⟩
+  | app =>
+    obtain ⟨t, u, rfl, f, a, b, ht, g, hu, rfl⟩ := compile_app_iff.mp h
+    obtain ⟨f', hf'⟩ := ih t (by simp) X e _ ht X' e' he
+    obtain ⟨g', hg'⟩ := ih u (by simp) X e _ hu X' e' he
+    exact ⟨_, compile_app_iff.mpr ⟨t, u, rfl, f', a, b, hf', g', hg', rfl⟩⟩
+  | arr k θ =>
+    obtain ⟨t, rfl, p, hp, g, ht, hl, hθ, rfl⟩ := compile_arr_iff.mp h
+    obtain ⟨g', hg'⟩ := ih t (by simp) X e _ ht X' e' he
+    exact ⟨_, compile_arr_iff.mpr ⟨t, rfl, p, hp, g', hg', hl, hθ, rfl⟩⟩
+  | natRec =>
+    obtain ⟨z, s, m, rfl, z', c, hz, s', hs, m', hm, rfl⟩ := compile_natRec_iff.mp h
+    obtain ⟨m'', hm''⟩ := ih m (by simp) X e _ hm X' e' he
+    exact ⟨_, compile_natRec_iff.mpr ⟨z, s, m, rfl, z', c, hz, s', hs, m'', hm'', rfl⟩⟩
+  | listRec =>
+    obtain ⟨z, s, m, rfl, m', a, hm, z', c, hz, s', hs, rfl⟩ := compile_listRec_iff.mp h
+    obtain ⟨m'', hm''⟩ := ih m (by simp) X e _ hm X' e' he
+    exact ⟨_, compile_listRec_iff.mpr ⟨z, s, m, rfl, m'', a, hm'', z', c, hz, s', hs, rfl⟩⟩
+  | roseRec c =>
+    obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨m'', hm''⟩ := ih m (by simp) X e _ hm X' e' he
+    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, s', m'', rfl, hc, hs, hm'', rfl⟩⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    obtain ⟨f', hf'⟩ := ih t (by simp) X e _ ht X' e' he
+    obtain ⟨g', hg'⟩ := ih u (by simp) X e _ hu X' e' he
+    exact ⟨_, compile_eq_iff.mpr ⟨t, u, rfl, f', a, hf', g', hg', rfl⟩⟩
+  | defn k θ =>
+    obtain ⟨d, rs, hd, hrs, hl, hθ, hty, rfl⟩ := compile_defn_iff.mp h
+    obtain ⟨rs', hrs', hR⟩ := mapM_lift (R := fun r r' ↦ r'.2 = r.2)
+      (g := fun c ↦ compile G n c X' e') cs hrs fun c hc r hr ↦ by
+        obtain ⟨f, hf⟩ := ih c hc X e r hr X' e' he
+        exact ⟨(f, r.2), hf, rfl⟩
+    have hsnd : rs'.map Prod.snd = rs.map Prod.snd :=
+      hR.rec (motive := fun rs rs' _ ↦ rs'.map Prod.snd = rs.map Prod.snd) rfl
+        fun hr _ ih ↦ by simp [hr, ih]
+    exact ⟨_, compile_defn_iff.mpr ⟨d, rs', hd, hrs', hl, hθ, hsnd.trans hty, rfl⟩⟩
+
 section Substitution
 
 universe v
