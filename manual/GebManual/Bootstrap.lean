@@ -1719,17 +1719,25 @@ have one value ({name}`Geb.FreeTopos.Internal.valid_unfoldAll_compile`).
 
 The benchmark's theorems are stated in the language, appending and
 addition defined in it by folds into exponentials, and each equation
-compiled over the product of its variables' types. The prover proves the
-compiled sequents unchanged: by unfolding the definitions and
-normalizing, by induction through the uniqueness of recursion, and by
-rewriting with an earlier theorem, the start of the induction for
-associativity itself compiled from the language
-(`GebTests/Prototypes/FreeTopos/InternalBenchmark.lean`). The
-development, the library included, has 781 sequents whose certificates
-have 21596 nodes over a store of 1681, and checks in 1.5 seconds against
-0.9 for the statements written in the combinators; the theorems and the
-lemmas proved for them have 20190 nodes, against 18754 in the
-combinators and 2071 in the computational core. Each statement equates
+compiled over the product of its variables' types, a single variable's
+type standing for itself. The prover proves the compiled sequents
+unchanged: by unfolding the definitions and normalizing, by induction
+through the uniqueness of recursion, and by rewriting with an earlier
+theorem, the start of the induction for associativity itself compiled
+from the language (`GebTests/Prototypes/FreeTopos/InternalBenchmark.lean`).
+The development, the library included, has 767 sequents whose
+certificates have 20785 nodes over a store of 1578; the theorems and the
+lemmas proved for them have 19379 nodes, against 18754 in the
+combinators and 2071 in the computational core, and the development
+takes 1.65 times as long to check as the combinators'. The difference is
+in the definitions' granularity: appending and addition are each one
+definition, whose unfolding exposes the whole of its recursion's start
+and step, where the combinators' benchmark defines the start, the step,
+the recursion and the operation separately. Defined in the language as
+the combinators' benchmark defines them, they compile to definitions of
+the combinators with which that benchmark's proofs apply unchanged, and
+the development takes 1.07 times as long to check as the combinators',
+with 20290 nodes against 18754. Each statement equates
 applications of the language's definitions to its variables, as the
 core's do, where the combinators equate arrangements of projections and
 pairings; the variables are de Bruijn indices, and the proofs are the

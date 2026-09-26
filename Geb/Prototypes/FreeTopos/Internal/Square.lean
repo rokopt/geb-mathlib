@@ -169,7 +169,10 @@ theorem stdEnv_hom {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.re
     ∀ Γ : List Tree, Γ.all (IsTy n) = true → EnvHom M ρ n (ctxObj Γ) (stdEnv Γ) :=
   List.rec (fun _ ↦ ⟨isObj_one hM, by simp [stdEnv]⟩) fun a Γ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    exact (ih h.2).ext hM (isObj_of_isTy hM hρ a h.1) h.1
+    have hA := isObj_of_isTy hM hρ a h.1
+    rcases Γ with _ | ⟨b, Γ⟩
+    · exact ⟨hA, by simpa [stdEnv] using ⟨idt_hom hM hA, h.1⟩⟩
+    · exact (ih h.2).ext hM hA h.1
 
 /-- The projections of a context after a tuple of arrows of its types are the arrows. -/
 theorem proj_tuple {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.replicate n obj)
@@ -177,27 +180,34 @@ theorem proj_tuple {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.re
     ∀ qs : List (Tree × Tree), (∀ q ∈ qs, Hom M ρ q.1 X q.2 ∧ IsTy n q.2 = true) →
       EnvEq M ρ (precomp (tuple X (qs.map Prod.fst)) (stdEnv (qs.map Prod.snd))) qs :=
   List.rec (fun _ i p hp ↦ by simp [precomp, stdEnv] at hp) fun q qs ih hqs i p hp ↦ by
-    have hqs' : ∀ q' ∈ qs, Hom M ρ q'.1 X q'.2 ∧ IsTy n q'.2 = true :=
-      fun q' hq' ↦ hqs q' (List.mem_cons_of_mem _ hq')
     have hq := (hqs q List.mem_cons_self).1
-    have hT := tuple_hom hM hX qs fun q' hq' ↦ (hqs' q' hq').1
-    have hΓ : (qs.map Prod.snd).all (IsTy n) = true := by
+    rcases qs with _ | ⟨q', qs⟩
+    · -- a single arrow: the identity after it
+      rcases i with _ | j
+      · obtain rfl : (comp (idt q.2) q.1, q.2) = p := by simpa [precomp, stdEnv, tuple] using hp
+        exact ⟨q, rfl, rfl, (idt_comp hM hq).symm⟩
+      · simp [precomp, stdEnv] at hp
+    have hqs' : ∀ r ∈ q' :: qs, Hom M ρ r.1 X r.2 ∧ IsTy n r.2 = true :=
+      fun r hr ↦ hqs r (List.mem_cons_of_mem _ hr)
+    have hT := tuple_hom hM hX (q' :: qs) fun r hr ↦ (hqs' r hr).1
+    have hΓ : ((q' :: qs).map Prod.snd).all (IsTy n) = true := by
       rw [List.all_map, List.all_eq_true]
-      exact fun q' hq' ↦ (hqs' q' hq').2
+      exact fun r hr ↦ (hqs' r hr).2
     have hstd := stdEnv_hom hM hρ _ hΓ
     rcases i with _ | j
-    · obtain rfl : (comp (snd (ctxObj (qs.map Prod.snd)) q.2)
-          (pair (tuple X (qs.map Prod.fst)) q.1), q.2) = p := by
+    · obtain rfl : (comp (snd (ctxObj ((q' :: qs).map Prod.snd)) q.2)
+          (pair (tuple X ((q' :: qs).map Prod.fst)) q.1), q.2) = p := by
         simpa [precomp, stdEnv, extEnv, tuple] using hp
       exact ⟨q, rfl, rfl, (snd_pair hM hT hq).symm⟩
-    · change (precomp (pair (tuple X (qs.map Prod.fst)) q.1)
-          (extEnv (ctxObj (qs.map Prod.snd)) q.2 (stdEnv (qs.map Prod.snd))))[j + 1]? = some p
-        at hp
+    · change (precomp (pair (tuple X ((q' :: qs).map Prod.fst)) q.1)
+          (extEnv (ctxObj ((q' :: qs).map Prod.snd)) q.2
+            (stdEnv ((q' :: qs).map Prod.snd))))[j + 1]? = some p at hp
       simp only [precomp, extEnv, List.map_cons, List.getElem?_cons_succ, List.map_map,
         List.getElem?_map, Option.map_eq_some_iff, Function.comp_apply] at hp
       obtain ⟨p₀, hp₀, rfl⟩ := hp
-      obtain ⟨q₀, hq₀, h₂, h₁⟩ := ih hqs' j (comp p₀.1 (tuple X (qs.map Prod.fst)), p₀.2)
-        (by simp [precomp, hp₀])
+      obtain ⟨q₀, hq₀, h₂, h₁⟩ :=
+        ih hqs' j (comp p₀.1 (tuple X ((q' :: qs).map Prod.fst)), p₀.2)
+          (by simp only [precomp, List.map_cons] at hp₀ ⊢; simp [hp₀])
       have hp₀h := (hstd.2 p₀ (List.mem_of_getElem? hp₀)).1
       refine ⟨q₀, by simpa using hq₀, h₂, h₁.trans ?_⟩
       exact (eval_op₂_congr 3 rfl (fst_pair hM hT hq).symm).trans
@@ -391,8 +401,10 @@ theorem Globals.WF.take {G : Globals} (hG : G.WF) (k : ℕ) :
 theorem isTy_ctxObj {n : ℕ} : ∀ Γ : List Tree, Γ.all (IsTy n) = true → IsTy n (ctxObj Γ) = true :=
   List.rec (fun _ ↦ isTy_one) fun a Γ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    change IsTy n (prod (ctxObj Γ) a) = true
-    simp [isTy_prod, ih h.2, h.1]
+    rcases Γ with _ | ⟨b, Γ⟩
+    · exact h.1
+    · change IsTy n (prod (ctxObj (b :: Γ)) a) = true
+      simp [isTy_prod, ih h.2, h.1]
 
 section Definitions
 

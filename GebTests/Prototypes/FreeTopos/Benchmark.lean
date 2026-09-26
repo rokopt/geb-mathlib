@@ -36,7 +36,8 @@ extension ({name}`Geb.FreeTopos.checkTopos`).
 * {lit}`appendNilLeft`, {lit}`appendNil`, {lit}`appendAssoc`, {lit}`appendNilTwice` — the
   prelude's theorems.
 * {lit}`addZero`, {lit}`addSucc`, {lit}`addZeroLeft` — the theorems about addition.
-* {lit}`benchmark` — the development proving them.
+* {lit}`benchmarkWith`, {lit}`benchmark` — the development proving them, with any definitions
+  of the operations, and with these.
 
 ## Tags
 
@@ -152,11 +153,11 @@ def addSucc : Seq :=
 /-- Zero is a left unit of addition. -/
 def addZeroLeft : Seq := ⟨[], [], ⟨comp add (pair zeroNat (idt nat)), idt nat⟩⟩
 
-/-- The development of the library and the theorems, each proved by its tactic, with the
-definitions in force: the recursions' computation lemmas by unfolding them, and the theorems
-with the recursions folded. -/
-def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
-  let prove (a : Seq) (m : PM Tree) := proveSeq a m defs (infer := true)
+/-- The development of the library and the theorems, each proved by its tactic, with
+definitions of the operations of {lit}`defs`, in their order, in force: the recursions'
+computation lemmas by unfolding them, and the theorems with the recursions folded. -/
+def benchmarkWith (ds : List Defn) : Option Development := library.bind fun (i, d) ↦ ((do
+  let prove (a : Seq) (m : PM Tree) := proveSeq a m ds (infer := true)
   let rs := rules i
   let cn ← prove appendCNil (byNorm (rs ++ [deltaRule 2]) appendCNil.concl)
   let cc ← prove appendCCons (byNorm (rs ++ [deltaRule 2]) appendCCons.concl)
@@ -167,7 +168,7 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
     (byListInduction lrs (x 0) (nil (x 0)) (cons (x 0)) appendNil.concl)
   let _ ← prove appendAssoc (byListParamInduction lrs (x 0) append
     (comp (cons (x 0)) (fst (prod (x 0) L) P)) appendAssoc.concl)
-  let k ← normalizeThm lrs an defs (infer := true)
+  let k ← normalizeThm lrs an ds (infer := true)
   let _ ← prove appendNilTwice (byNorm (lrs ++ [{ src := .thm k }]) appendNilTwice.concl)
   let az ← prove addCZero (byNorm (rs ++ [deltaRule 6]) addCZero.concl)
   let as ← prove addCSucc (byNorm (rs ++ [deltaRule 6]) addCSucc.concl)
@@ -177,6 +178,9 @@ def benchmark : Option Development := library.bind fun (i, d) ↦ ((do
   let _ ← prove addSucc (byNorm nrs addSucc.concl)
   let _ ← prove addZeroLeft (byNatInduction nrs zeroN succ addZeroLeft.concl)
   pure () : StateT Development Option Unit).run d).map Prod.snd
+
+/-- The development of the library and the theorems, with the definitions in force. -/
+def benchmark : Option Development := benchmarkWith defs
 
 -- the theorems are proved, and the development, its terms shared, checks in the extension by
 -- the definitions, with the typing inferred

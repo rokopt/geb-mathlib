@@ -580,6 +580,13 @@ theorem comp_assoc {f g h X Y Z W : Tree} (hf : Hom M ρ f X Y) (hg : Hom M ρ g
     (hs' := [⟨comp h (comp g f), comp h (comp g f)⟩]) rfl ⟨w, hw, hw⟩
     (q := ⟨comp h (comp g f), comp (comp h g) f⟩) rfl)
 
+/-- The identity after an arrow is the arrow. -/
+theorem idt_comp {f X Y : Tree} (hf : Hom M ρ f X Y) : eval M ρ (comp (idt Y) f) = eval M ρ f := by
+  obtain ⟨wf, hwf, hfs⟩ := hf.exists_eval
+  refine (eval_op₂_congr 3 (eval_op₁_congr 2 hf.eval_cod.symm) rfl).trans ?_
+  exact eval_eq_of_holds (ax_holds hM 11 rfl (by decide) (ts := [f]) (ws := [wf])
+    (by simp [hwf]) (by simp [hfs]) rfl trivial (q := ⟨comp (idt (cod f)) f, f⟩) rfl)
+
 /-- The first projection after a pairing is the first arrow. -/
 theorem fst_pair {f g X A B : Tree} (hf : Hom M ρ f X A) (hg : Hom M ρ g X B) :
     eval M ρ (comp (fst A B) (pair f g)) = eval M ρ f := by

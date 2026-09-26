@@ -179,8 +179,10 @@ theorem map_sortOf_of_isTy {n : ℕ} {θ : List Tree} (hθ : θ.all (IsTy n) = t
 theorem sortOf_tuple {Γ : List ℕ} {X : Tree} (hX : sortOf (ext defs).sig Γ X = some obj) :
     ∀ fs : List Tree, (∀ f ∈ fs, sortOf (ext defs).sig Γ f = some arr) →
       sortOf (ext defs).sig Γ (tuple X fs) = some arr :=
-  List.rec (fun _ ↦ sortOf_bang hX) fun f _ ih h ↦
-    sortOf_pair (ih fun f' hf' ↦ h f' (List.mem_cons_of_mem _ hf')) (h f List.mem_cons_self)
+  List.rec (fun _ ↦ sortOf_bang hX) fun f fs ih h ↦ by
+    rcases fs with _ | ⟨g, fs⟩
+    · exact h f List.mem_cons_self
+    · exact sortOf_pair (ih fun f' hf' ↦ h f' (List.mem_cons_of_mem _ hf')) (h f List.mem_cons_self)
 
 /-- The compiled terms are well sorted: a term's arrow is an arrow, and its type a type, when the
 environment's object is an object and its arrows arrows, each primitive arrow is an arrow in its
@@ -304,7 +306,9 @@ theorem sortOf_ctxObj {n : ℕ} :
       sortOf (ext defs).sig (List.replicate n obj) (ctxObj Γ) = some obj :=
   List.rec (fun _ ↦ sortOf_one) fun a Γ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    exact sortOf_prod (ih h.2) (sortOf_of_isTy a h.1)
+    rcases Γ with _ | ⟨b, Γ⟩
+    · exact sortOf_of_isTy a h.1
+    · exact sortOf_prod (ih h.2) (sortOf_of_isTy a h.1)
 
 /-- A context's projections are arrows, to types. -/
 theorem sortOf_stdEnv {n : ℕ} :
@@ -312,10 +316,13 @@ theorem sortOf_stdEnv {n : ℕ} :
       sortOf (ext defs).sig (List.replicate n obj) p.1 = some arr ∧ IsTy n p.2 = true :=
   List.rec (fun _ p hp ↦ by simp [stdEnv] at hp) fun a Γ ih h p hp ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    change p ∈ extEnv (ctxObj Γ) a (stdEnv Γ) at hp
-    simp only [extEnv, List.mem_cons, List.mem_map] at hp
-    have hX := sortOf_ctxObj (defs := defs) Γ h.2
     have hA := sortOf_of_isTy (defs := defs) a h.1
+    rcases Γ with _ | ⟨b, Γ⟩
+    · obtain rfl : p = (idt a, a) := by simpa [stdEnv] using hp
+      exact ⟨sortOf_idt hA, h.1⟩
+    change p ∈ extEnv (ctxObj (b :: Γ)) a (stdEnv (b :: Γ)) at hp
+    simp only [extEnv, List.mem_cons, List.mem_map] at hp
+    have hX := sortOf_ctxObj (defs := defs) (b :: Γ) h.2
     rcases hp with rfl | ⟨q, hq, rfl⟩
     · exact ⟨sortOf_snd hX hA, h.1⟩
     · exact ⟨sortOf_comp (ih h.2 q hq).1 (sortOf_fst hX hA), (ih h.2 q hq).2⟩

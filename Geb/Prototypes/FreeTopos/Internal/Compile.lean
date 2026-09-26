@@ -98,8 +98,10 @@ def listPart (p : Tree) : Option Tree := match p.children with
   | _ => none
 
 /-- The product of a context's types, the innermost outermost: the terminal object for the empty
-context. -/
-def ctxObj : List Tree → Tree := List.rec one fun a _ x ↦ prod x a
+context, and the type itself for a context of one. -/
+def ctxObj : List Tree → Tree := List.rec one fun a Γ x ↦ match Γ with
+  | [] => a
+  | _ :: _ => prod x a
 
 /-- The environment over the product of {lit}`X` and {lit}`a` that extends an environment over
 {lit}`X` by a variable of type {lit}`a`: the new variable is the second projection, and each
@@ -107,12 +109,17 @@ other the first projection followed by its arrow. -/
 def extEnv (X a : Tree) (e : List (Tree × Tree)) : List (Tree × Tree) :=
   (snd X a, a) :: e.map fun p ↦ (comp p.1 (fst X a), p.2)
 
-/-- The environment of a context's projections from the product of its types. -/
-def stdEnv : List Tree → List (Tree × Tree) := List.rec [] fun a Γ e ↦ extEnv (ctxObj Γ) a e
+/-- The environment of a context's projections from the product of its types: the identity for a
+context of one. -/
+def stdEnv : List Tree → List (Tree × Tree) := List.rec [] fun a Γ e ↦ match Γ with
+  | [] => [(idt a, a)]
+  | _ :: _ => extEnv (ctxObj Γ) a e
 
 /-- The tuple of arrows from {lit}`X`, the last outermost: the arrow to the terminal object for
-none. -/
-def tuple (X : Tree) : List Tree → Tree := List.rec (bang X) fun f _ p ↦ pair p f
+none, and the arrow itself for one. -/
+def tuple (X : Tree) : List Tree → Tree := List.rec (bang X) fun f fs p ↦ match fs with
+  | [] => f
+  | _ :: _ => pair p f
 
 /-- A definition of the internal language: the number of its object parameters, the types of
 its term parameters, the last first, the type of its value, and its body. -/
