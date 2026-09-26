@@ -394,6 +394,24 @@ def Thm.Valid (G : Globals) (a : Thm) : Prop :=
       PrimsHom M ρ G a.arity ∧ DefsHom M ρ G a.arity ∧
         FmSound M ρ G a.arity a.ctx a.hyps a.concl
 
+variable (M) in
+/-- An entry of a development's environment is valid: a theorem of the language valid, or a
+sequent of the combinators valid in the model. -/
+def Entry.Valid (G : Globals) : Entry → Prop
+  | .language a => a.Valid M G
+  | .combinators s => s.Valid M
+
+/-- The theorem of the language an entry of valid entries is, is valid. -/
+theorem Entry.valid_language {G : Globals} {E : Array Entry}
+    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {j : ℕ} {a : Thm}
+    (h : (E[j]?).bind Entry.language? = some a) : a.Valid M G := by
+  obtain ⟨e, he, hea⟩ := Option.bind_eq_some_iff.mp h
+  cases e with
+  | language a' =>
+    obtain rfl := Option.some_inj.mp hea
+    exact hE j _ he
+  | combinators s => cases hea
+
 /-- The identity rewriting is sound. -/
 theorem RwSound.refl {G : Globals} {n : ℕ} (Γ : List Tree) (Φ : List Term) (t : Term) :
     RwSound M ρ G n Γ Φ t t :=
@@ -472,10 +490,10 @@ theorem hypsHold_append {G : Globals} {n : ℕ} {Φ : List Term} {ψ : Term} {X 
 
 
 /-- The rewriting by an equational theorem at a term's root, inverted. -/
-theorem rootStep_thm {G : Globals} {E : Array Thm} {n : ℕ} {Γ : List Tree} {Φ : List Term}
+theorem rootStep_thm {G : Globals} {E : Array Entry} {n : ℕ} {Γ : List Tree} {Φ : List Term}
     {j : ℕ} {θ : List Tree} {σ : List Term} {flip : Bool} {t t' : Term}
     (h : rootStep G E n Γ Φ (.thm j θ σ flip) t = some t') :
-    ∃ a lr, E[j]? = some a ∧ a.hyps = [] ∧ eqParts a.concl = some lr ∧
+    ∃ a lr, (E[j]?).bind Entry.language? = some a ∧ a.hyps = [] ∧ eqParts a.concl = some lr ∧
       instOk G n Γ a θ σ = true ∧ t = instTerm θ σ (if flip then lr.2 else lr.1) ∧
       t' = instTerm θ σ (if flip then lr.1 else lr.2) := by
   simp only [rootStep] at h
@@ -492,7 +510,7 @@ theorem rootStep_thm {G : Globals} {E : Array Thm} {n : ℕ} {Γ : List Tree} {�
     simp at h
 
 /-- The rewriting by an equation among the hypotheses at a term's root, inverted. -/
-theorem rootStep_rwHyp {G : Globals} {E : Array Thm} {n : ℕ} {Γ : List Tree} {Φ : List Term}
+theorem rootStep_rwHyp {G : Globals} {E : Array Entry} {n : ℕ} {Γ : List Tree} {Φ : List Term}
     {i : ℕ} {flip : Bool} {t t' : Term} (h : rootStep G E n Γ Φ (.rwHyp i flip) t = some t') :
     ∃ ψ lr, Φ[i]? = some ψ ∧ eqParts ψ = some lr ∧ t = (if flip then lr.2 else lr.1) ∧
       t' = (if flip then lr.1 else lr.2) := by
@@ -506,7 +524,7 @@ theorem rootStep_rwHyp {G : Globals} {E : Array Thm} {n : ℕ} {Γ : List Tree} 
     cases h
 
 /-- The checker at a node is its step at the node's children and their results. -/
-theorem check_node (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List Deriv) :
+theorem check_node (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List Deriv) :
     check G E n (RoseTree.node l cs) = checkStep G E n l (cs.map fun c ↦ (c, check G E n c)) :=
   RoseTree.para_node _ l cs
 
@@ -1312,8 +1330,9 @@ theorem thm_inst_sound {a : Thm} (ha : a.Valid M G) (hnil : a.hyps = []) {lr : T
 
 /-- Each equation of the language applied at a term's root is sound, with sound unfoldings and
 valid earlier theorems. -/
-theorem rootStep_sound (hδ : DefnsOk M G) {E : Array Thm}
-    (hE : ∀ (j : ℕ) (a : Thm), E[j]? = some a → a.Valid M G) {Γ : List Tree} {Φ : List Term}
+theorem rootStep_sound (hδ : DefnsOk M G) {E : Array Entry}
+    (hE : ∀ (j : ℕ) (a : Thm), (E[j]?).bind Entry.language? = some a → a.Valid M G)
+    {Γ : List Tree} {Φ : List Term}
     {l : Rule} {t t' : Term} (h : rootStep G E n Γ Φ l t = some t') :
     RwSound M ρ G n Γ Φ t t' := by
   obtain ⟨l₀, cs, rfl⟩ : ∃ l cs, t = RoseTree.node l cs :=
@@ -1497,7 +1516,7 @@ theorem rootStep_sound (hδ : DefnsOk M G) {E : Array Thm}
     obtain ⟨⟨rfl, rfl, hkc, hkr⟩, rfl⟩ := h
     exact caseInr_sound hM hG hρ hps hds hkc hkr Γ _ _ g g' v
   | refl | trans | cong | join | natInd | listInd | hyp | cut | conv | convFrom | propExt
-    | funExt | apply | natIndHyp | listIndHyp | coprodInd | zeroInd | roseInd =>
+    | funExt | apply | natIndHyp | listIndHyp | coprodInd | zeroInd | roseInd | cert =>
 simp only [rootStep, reduceCtorEq] at h
 
 

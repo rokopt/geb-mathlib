@@ -79,7 +79,7 @@ def dTrans (d₁ d₂ : Deriv × Bool) : Deriv × Bool :=
 /-- The identity derivation, marked as no rewriting. -/
 def dRefl : Deriv × Bool := (RoseTree.node .refl [], false)
 
-variable (G : Globals) (E : Array Thm) (n : ℕ)
+variable (G : Globals) (E : Array Entry) (n : ℕ)
 
 /-- The first rule of a list that rewrites a term at its root: the result, and its derivation. -/
 def rootRewrite (rs : List NormRule) (Γ : List Tree) (Φ : List Term) (t : Term) :
@@ -92,7 +92,7 @@ def rootRewrite (rs : List NormRule) (Γ : List Tree) (Φ : List Term) (t : Term
         else none
       | _ => none
     | .thm j θ => do
-      let a ← E[j]?
+      let a ← (E[j]?).bind Entry.language?
       let (l, _) ← eqParts a.concl
       let σ ← matchTerm (Term.osubst θ l) t (List.replicate a.ctx.length none)
       let σ ← σ.mapM id

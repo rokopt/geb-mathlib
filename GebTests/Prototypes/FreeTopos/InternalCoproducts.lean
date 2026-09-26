@@ -81,7 +81,7 @@ def theorems : List (Thm × Deriv) := [
     nd (.zeroInd 0))]
 
 -- the development checks
-#guard checkThms GC theorems #[]
+#guard checkThms GC (theorems.map fun (a, d) ↦ .language a d) #[]
 
 end GebTests.Prototypes.FreeTopos.InternalCoproducts
 
