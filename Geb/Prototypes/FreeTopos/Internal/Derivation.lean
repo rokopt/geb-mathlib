@@ -290,7 +290,7 @@ def lowerHyps (G : Globals) (n : ℕ) (Γ : List Tree) (Φ : List Term) : Option
 variables, and terms of its context's types at them. -/
 def instOk (G : Globals) (n : ℕ) (Γ : List Tree) (a : Thm) (θ : List Tree) (σ : List Term) :
     Bool :=
-  decide (θ.length = a.arity) && θ.all (IsTy n) && decide (σ.length = a.ctx.length) &&
+  decide (θ.length = a.arity) && θ.all (IsTy G n) && decide (σ.length = a.ctx.length) &&
     (σ.zip (a.ctx.map (PartialHorn.subst θ))).all (fun (u, A) ↦ typeIn G n Γ u = some A)
 
 /-- One step of the subobject on which arrows into the subobject classifier are truth: from a
@@ -382,7 +382,7 @@ def rootStep (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (Φ : Li
     | .fst, [p], .snd, [q] => if p = q then some p else none
     | _, _, _, _ => none
   | .unitEta, _, _ => if typeIn G n Γ t = some one then some Term.star else none
-  | .delta, .defn k θ, args => (G.defs[k]?).map fun d ↦
+  | .delta, .defn k θ, args => ((G.defs[k]?).bind Definition.language?).map fun d ↦
     Term.subst (Term.osubst θ d.body) (Term.substList args)
   | .natZero kz, .natRec, [z, _, m] => match m.label, m.children with
     | .arr k [], [c] => if k = kz ∧ G.prims[kz]? = some zeroPrim ∧ c = Term.star then some z
@@ -562,7 +562,7 @@ def check (G : Globals) (E : Array Entry) (n : ℕ) : Deriv → Checks :=
 {lit}`E`: its context is of types, its hypotheses and conclusion are formulas there, and the
 derivation proves its conclusion under its hypotheses. -/
 def Thm.checks (G : Globals) (E : Array Entry) (a : Thm) (d : Deriv) : Bool :=
-  a.ctx.all (IsTy a.arity) && a.hyps.all (fun h ↦ typeIn G a.arity a.ctx h = some omega) &&
+  a.ctx.all (IsTy G a.arity) && a.hyps.all (fun h ↦ typeIn G a.arity a.ctx h = some omega) &&
     decide (typeIn G a.arity a.ctx a.concl = some omega) &&
     (check G E a.arity d).2 a.ctx a.hyps a.concl
 
@@ -576,11 +576,11 @@ def Prim.seq (p : Prim) : Seq :=
 {lit}`E`: by the checker's inference, or by a certificate of its sequent, in the theory extended
 by the compilations of the definitions of {lit}`G`. -/
 def Prim.confirms (G : Globals) (E : Array Entry) (p : Prim) : Option Tree → Bool
-  | none => (compileDefs G).any fun cds ↦ decide (G.base = sig.length) && p.ok (ExtEnv.ofDefs cds)
-  | some c => (compileDefs G).any (fun cds ↦ p.wf (ext cds).sig) && certifies G E c p.seq
+  | none => (compileDefs G).any fun cds ↦ decide (G.base = sig.length) && p.ok G (ExtEnv.ofDefs cds)
+  | some c => (compileDefs G).any (fun cds ↦ p.wf G (ext cds).sig) && certifies G E c p.seq
 
 /-- Whether a definition compiles with the constants of {lit}`G`, the type of its value a type. -/
-def Defn.checks (G : Globals) (d : Defn) : Bool := (d.compile G).isSome && IsTy d.arity d.type
+def Defn.checks (G : Globals) (d : Defn) : Bool := (d.compile G).isSome && IsTy G d.arity d.type
 
 /-- A declaration of a development, with its proof: a theorem of the language with its
 derivation, a sequent of the combinators with its certificate, a definition of the language, or a
@@ -603,7 +603,8 @@ definition or a primitive arrow to the constants. -/
 def Decl.step (G : Globals) (E : Array Entry) : Decl → Option (Globals × Array Entry)
   | .language a d => if a.checks G E d then some (G, E.push (.language a)) else none
   | .combinators s c => if certifies G E c s then some (G, E.push (.combinators s)) else none
-  | .definition d => if d.checks G then some ({ G with defs := G.defs ++ [d] }, E) else none
+  | .definition d =>
+    if d.checks G then some ({ G with defs := G.defs ++ [.language d] }, E) else none
   | .constant p c =>
     if p.confirms G E c then some ({ G with prims := G.prims ++ [p] }, E) else none
 

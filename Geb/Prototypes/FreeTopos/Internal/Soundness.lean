@@ -238,7 +238,7 @@ theorem compile_succT {G : Globals} {n ks : ℕ} (hk : G.prims[ks]? = some succP
 
 /-- The empty list compiles to its arrow after the arrow to the terminal object. -/
 theorem compile_nilT {G : Globals} {n kn : ℕ} (hk : G.prims[kn]? = some nilPrim) {a : Tree}
-    (ha : IsTy n a = true) (X : Tree) (e : List (Tree × Tree)) :
+    (ha : IsTy G n a = true) (X : Tree) (e : List (Tree × Tree)) :
     compile G n (Term.arr kn [a] Term.star) X e = some (comp (nil a) (bang X), list a) :=
   compile_arr_iff.mpr ⟨Term.star, rfl, nilPrim, hk, bang X,
     compile_star_iff.mpr ⟨rfl, by simp [nilPrim, subst_one]⟩, rfl, by simp [ha],
@@ -247,7 +247,7 @@ theorem compile_nilT {G : Globals} {n kn : ℕ} (hk : G.prims[kn]? = some nilPri
 
 /-- A construction compiles to construction after its argument's arrow. -/
 theorem compile_consT {G : Globals} {n kc : ℕ} (hk : G.prims[kc]? = some consPrim) {a : Tree}
-    (ha : IsTy n a = true) {c : Term} {X g : Tree} {e : List (Tree × Tree)}
+    (ha : IsTy G n a = true) {c : Term} {X g : Tree} {e : List (Tree × Tree)}
     (hc : compile G n c X e = some (g, prod a (list a))) :
     compile G n (Term.arr kc [a] c) X e = some (comp (cons a) g, list a) :=
   compile_arr_iff.mpr ⟨c, rfl, consPrim, hk, g,
@@ -361,7 +361,7 @@ variable (M ρ) in
 context's types in which the hypotheses hold, a term that compiles rewrites to a term of its
 type whose arrow has its arrow's value. -/
 def RwSound (G : Globals) (n : ℕ) (Γ : List Tree) (Φ : List Term) (t t' : Term) : Prop :=
-  ∀ (X : Tree) (e : List (Tree × Tree)), EnvHom M ρ n X e → e.map Prod.snd = Γ →
+  ∀ (X : Tree) (e : List (Tree × Tree)), EnvHom M ρ G n X e → e.map Prod.snd = Γ →
     HypsHold M ρ G n Φ X e →
     ∀ r, compile G n t X e = some r → ∃ r', compile G n t' X e = some r' ∧ ResEq M ρ r r'
 
@@ -369,17 +369,17 @@ variable (M ρ) in
 /-- A formula in a context under hypotheses is sound: in every environment of arrows of the
 context's types in which the hypotheses hold, the formula, where it compiles, holds. -/
 def FmSound (G : Globals) (n : ℕ) (Γ : List Tree) (Φ : List Term) (φ : Term) : Prop :=
-  ∀ (X : Tree) (e : List (Tree × Tree)), EnvHom M ρ n X e → e.map Prod.snd = Γ →
+  ∀ (X : Tree) (e : List (Tree × Tree)), EnvHom M ρ G n X e → e.map Prod.snd = Γ →
     HypsHold M ρ G n Φ X e → ∀ r, compile G n φ X e = some r → Holds M ρ X r
 
 variable (M) in
 /-- Each definition's body compiles in its parameters' environment to its value's type and an
 arrow whose instance at types has the value of the definition's operation at them. -/
 def DefnsOk (G : Globals) : Prop :=
-  ∀ (k : ℕ) (d : Defn), G.defs[k]? = some d →
+  ∀ (k : ℕ) (d : Defn), G.defs[k]? = some (.language d) →
     ∃ F, compile G d.arity d.body (ctxObj d.params) (stdEnv d.params) = some (F, d.type) ∧
       ∀ (m : ℕ) (ρ : List M.Val) (θ : List Tree), ρ.map Sigma.fst = List.replicate m obj →
-        θ.length = d.arity → θ.all (IsTy m) = true →
+        θ.length = d.arity → θ.all (IsTy G m) = true →
         eval M ρ (op (G.base + k) θ) = eval M ρ (PartialHorn.subst θ F)
 
 variable (M) in
@@ -388,7 +388,7 @@ there, and at every assignment of objects to its object variables the constants'
 arrows and the conclusion holds in every environment of arrows of the context's types in which
 the hypotheses hold. -/
 def Thm.Valid (G : Globals) (a : Thm) : Prop :=
-  a.ctx.all (IsTy a.arity) = true ∧ (∀ h ∈ a.hyps, typeIn G a.arity a.ctx h = some omega) ∧
+  a.ctx.all (IsTy G a.arity) = true ∧ (∀ h ∈ a.hyps, typeIn G a.arity a.ctx h = some omega) ∧
     typeIn G a.arity a.ctx a.concl = some omega ∧
     ∀ ρ : List M.Val, ρ.map Sigma.fst = List.replicate a.arity obj →
       PrimsHom M ρ G a.arity ∧ DefsHom M ρ G a.arity ∧
@@ -535,7 +535,7 @@ include hM hG hρ hps hds
 /-- A term that compiles in an environment of arrows compiles in every environment of the values
 of the first's after an arrow, to its arrow after the arrow. -/
 theorem compile_precomp {s : Term} {Y X h : Tree} {e e' : List (Tree × Tree)} {r : Tree × Tree}
-    (hs : compile G n s Y e = some r) (he : EnvHom M ρ n Y e) (hh : Hom M ρ h X Y)
+    (hs : compile G n s Y e = some r) (he : EnvHom M ρ G n Y e) (hh : Hom M ρ h X Y)
     (he' : EnvEq M ρ (precomp h e) e') :
     ∃ r', compile G n s X e' = some r' ∧ ResEq M ρ (comp r.1 h, r.2) r' := by
   obtain ⟨r₁, h₁, hr₁⟩ := compile_comp hM hG hρ hps hds s Y e r hs he X h hh
@@ -546,23 +546,23 @@ theorem compile_precomp {s : Term} {Y X h : Tree} {e e' : List (Tree × Tree)} {
 of arrows of the context's types, to its arrow after their tuple. -/
 theorem compile_of_stdEnv {Γ : List Tree} {s : Term} {r : Tree × Tree}
     (h : compile G n s (ctxObj Γ) (stdEnv Γ) = some r) {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) (hΓ : e.map Prod.snd = Γ) :
+    (he : EnvHom M ρ G n X e) (hΓ : e.map Prod.snd = Γ) :
     ∃ r', compile G n s X e = some r' ∧
       ResEq M ρ (comp r.1 (tuple X (e.map Prod.fst)), r.2) r' := by
   subst hΓ
-  have hΓ : (e.map Prod.snd).all (IsTy n) = true := by
+  have hΓ : (e.map Prod.snd).all (IsTy G n) = true := by
     rw [List.all_map, List.all_eq_true]
     exact fun p hp ↦ (he.2 p hp).2
-  exact compile_precomp hM hG hρ hps hds h (stdEnv_hom hM hρ _ hΓ)
-    (tuple_hom hM he.1 e fun p hp ↦ (he.2 p hp).1) (proj_tuple hM hρ he.1 e he.2)
+  exact compile_precomp hM hG hρ hps hds h (stdEnv_hom hM hds.2 hρ _ hΓ)
+    (tuple_hom hM he.1 e fun p hp ↦ (he.2 p hp).1) (proj_tuple hM hds.2 hρ he.1 e he.2)
 
 /-- A term in the environment extended by a variable of a type, at an element of the type, is its
 arrow there after the pairing of the identity with the element. -/
 theorem compile_at {X x W B C : Tree} {e : List (Tree × Tree)} {w : Term}
-    (he : EnvHom M ρ n X e) (hB : IsTy n B = true)
+    (he : EnvHom M ρ G n X e) (hB : IsTy G n B = true)
     (hw : compile G n w (prod X B) (extEnv X B e) = some (W, C)) (hx : Hom M ρ x X B) :
     ∃ q, compile G n w X ((x, B) :: e) = some q ∧ ResEq M ρ (comp W (pair (idt X) x), C) q := by
-  have hBo := isObj_of_isTy hM hρ B hB
+  have hBo := isObj_of_isTy hM hds.2 hρ B hB
   have hi := idt_hom hM he.1
   exact compile_precomp hM hG hρ hps hds hw (he.ext hM hBo hB) (pair_hom hM hi hx)
     (envEq_precomp_extEnv hM he.1 hBo (fun p hp ↦ (he.2 p hp).1) (pair_hom hM hi hx)
@@ -571,7 +571,7 @@ theorem compile_at {X x W B C : Tree} {e : List (Tree × Tree)} {w : Term}
 /-- A term that compiles in the empty environment compiles in every environment of arrows, to its
 arrow after the arrow to the terminal object. -/
 theorem compile_closed {s : Term} {r : Tree × Tree} (h : compile G n s one [] = some r)
-    {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e) :
+    {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e) :
     ∃ r', compile G n s X e = some r' ∧ ResEq M ρ (comp r.1 (bang X), r.2) r' :=
   compile_precomp hM hG hρ hps hds h ⟨isObj_one hM, by simp⟩ (bang_hom hM he.1)
     fun i p hp ↦ by simp [precomp] at hp
@@ -590,7 +590,7 @@ theorem beta_sound {Φ : List Term} (Γ : List Tree) (a : Tree) (b u : Term) :
   simp only [Prod.mk.injEq] at hFT
   obtain ⟨rfl, hAB⟩ := hFT
   obtain ⟨rfl, rfl⟩ := exp_inj hAB
-  have hA := isObj_of_isTy hM hρ a hat
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hT := (hty b _ _ _ hb (he.ext hM hA hat)).1
   have hg := (hty u X e _ hu he).1
   have hi := idt_hom hM he.1
@@ -660,8 +660,8 @@ theorem pairEta_sound {Φ : List Term} (Γ : List Tree) (p : Term) :
   obtain ⟨rfl, rfl⟩ := hr₂
   obtain ⟨hfh, hPt⟩ := hty _ _ _ _ hf he
   simp only [isTy_prod, Bool.and_eq_true] at hPt
-  exact ⟨_, hf, rfl, (pair_eta hM (isObj_of_isTy hM hρ _ hPt.1) (isObj_of_isTy hM hρ _ hPt.2)
-    hfh).symm⟩
+  exact ⟨_, hf, rfl, (pair_eta hM (isObj_of_isTy hM hds.2 hρ _ hPt.1)
+    (isObj_of_isTy hM hds.2 hρ _ hPt.2) hfh).symm⟩
 
 /-- A term of the terminal type is its element. -/
 theorem unitEta_sound {Φ : List Term} {Γ : List Tree} {t : Term} (h₁ : typeIn G n Γ t = some one) :
@@ -675,18 +675,19 @@ theorem unitEta_sound {Φ : List Term} {Γ : List Tree} {t : Term} (h₁ : typeI
 
 /-- The unfolding of a definition is sound: its application is its body at the objects and the
 arguments. -/
-theorem delta_sound {Φ : List Term} (hδ : DefnsOk M G) {k : ℕ} {d : Defn} (hd : G.defs[k]? = some d)
+theorem delta_sound {Φ : List Term} (hδ : DefnsOk M G) {k : ℕ} {d : Defn}
+    (hd : G.defs[k]? = some (.language d))
     (Γ θ : List Tree) (args : List Term) :
     RwSound M ρ G n Γ Φ (Term.defn k θ args)
       (Term.subst (Term.osubst θ d.body) (Term.substList args)) := by
   intro X e he _ _ r h
   have hty := compile_hom hM hG hρ hps hds
   obtain ⟨d', rs, hd', hrs, hl, hθ, hsnd, rfl⟩ := compile_defn_iff.mp h
-  obtain rfl : d' = d := Option.some_inj.mp (hd'.symm.trans hd)
+  obtain rfl : d' = d := Definition.language.inj (Option.some_inj.mp (hd'.symm.trans hd))
   obtain ⟨F, hF, hop⟩ := hδ k d' hd
   have hF' := compile_osubst hG hl hθ d'.body _ _ _ hF
   rw [subst_ctxObj, map_substPair_stdEnv] at hF'
-  have hrs' : EnvHom M ρ n X rs := ⟨he.1, fun q hq ↦ by
+  have hrs' : EnvHom M ρ G n X rs := ⟨he.1, fun q hq ↦ by
     obtain ⟨c, -, hcq⟩ := exists_of_mapM hrs hq
     exact hty c X e q hcq he⟩
   obtain ⟨r₁, h₁, hr₁⟩ := compile_of_stdEnv hM hG hρ hps hds hF' hrs' hsnd
@@ -716,7 +717,7 @@ theorem natZero_sound {Φ : List Term} {kz : ℕ} (hk : G.prims[kz]? = some zero
   obtain ⟨rfl, -⟩ := hgb
   obtain ⟨rfl, -⟩ := hm'
   obtain ⟨hz', hCt⟩ := hty _ _ _ _ hzc ⟨isObj_one hM, by simp⟩
-  have hC := isObj_of_isTy hM hρ C hCt
+  have hC := isObj_of_isTy hM hds.2 hρ C hCt
   have hs' := (hty _ _ _ _ hsc ⟨hC, by simpa using ⟨idt_hom hM hC, hCt⟩⟩).1
   obtain ⟨r', h', hr'⟩ := compile_closed hM hG hρ hps hds hzc he
   refine ⟨r', h', (show ResEq M ρ
@@ -744,8 +745,8 @@ theorem natSucc_sound {Φ : List Term} {ks : ℕ} (hk : G.prims[ks]? = some succ
   obtain ⟨rfl, -⟩ := hm'
   rw [show PartialHorn.subst [] succPrim.dom = nat from subst_nat []] at hg
   obtain ⟨hz', hCt⟩ := hty _ _ _ _ hzc ⟨isObj_one hM, by simp⟩
-  have hC := isObj_of_isTy hM hρ C hCt
-  have hCe : EnvHom M ρ n C [(idt C, C)] := ⟨hC, by simpa using ⟨idt_hom hM hC, hCt⟩⟩
+  have hC := isObj_of_isTy hM hds.2 hρ C hCt
+  have hCe : EnvHom M ρ G n C [(idt C, C)] := ⟨hC, by simpa using ⟨idt_hom hM hC, hCt⟩⟩
   have hs' := (hty _ _ _ _ hsc hCe).1
   have hg' := (hty _ _ _ _ hg he).1
   have hrec := natRec_hom hM hz' hs'
@@ -792,9 +793,9 @@ theorem listNil_sound {Φ : List Term} {kn : ℕ} (hk : G.prims[kn]? = some nilP
   obtain ⟨rfl, -⟩ := hgb
   obtain ⟨rfl, hA⟩ := hm'
   obtain rfl : a₀ = A := list_inj ((subst_list_x a₀).symm.trans hA)
-  have hA := isObj_of_isTy hM hρ a₀ hLt
+  have hA := isObj_of_isTy hM hds.2 hρ a₀ hLt
   obtain ⟨hz', hCt⟩ := hty _ _ _ _ hzc ⟨isObj_one hM, by simp⟩
-  have hC := isObj_of_isTy hM hρ C hCt
+  have hC := isObj_of_isTy hM hds.2 hρ C hCt
   have hs' := (hty _ _ _ _ hsc ⟨isObj_prod hM hA hC, by
     simpa using ⟨⟨snd_hom hM hA hC, hCt⟩, fst_hom hM hA hC, hLt⟩⟩).1
   obtain ⟨r', h', hr'⟩ := compile_closed hM hG hρ hps hds hzc he
@@ -832,10 +833,10 @@ theorem listCons_sound {Φ : List Term} {kc : ℕ} (hk : G.prims[kc]? = some con
   simp only [Prod.mk.injEq] at hgp
   obtain ⟨rfl, hAB⟩ := hgp
   obtain ⟨rfl, rfl⟩ := prod_inj hAB
-  have hA := isObj_of_isTy hM hρ A₁ hLt
+  have hA := isObj_of_isTy hM hds.2 hρ A₁ hLt
   obtain ⟨hz', hCt⟩ := hty _ _ _ _ hzc ⟨isObj_one hM, by simp⟩
-  have hC := isObj_of_isTy hM hρ C hCt
-  have hse : EnvHom M ρ n (prod A₁ C) [(snd A₁ C, C), (fst A₁ C, A₁)] :=
+  have hC := isObj_of_isTy hM hds.2 hρ C hCt
+  have hse : EnvHom M ρ G n (prod A₁ C) [(snd A₁ C, C), (fst A₁ C, A₁)] :=
     ⟨isObj_prod hM hA hC, by simpa using ⟨⟨snd_hom hM hA hC, hCt⟩, fst_hom hM hA hC, hLt⟩⟩
   have hs' := (hty _ _ _ _ hsc hse).1
   have hgh := (hty _ _ _ _ hh he).1
@@ -922,8 +923,8 @@ theorem caseInl_sound {Φ : List Term} {kc kl : ℕ} (hkc : G.prims[kc]? = some 
   refine ⟨_, compile_app_iff.mpr ⟨f, v, rfl, Pf, a', c, hf, V, hV₁, rfl⟩, rfl, ?_⟩
   change eval M ρ (comp (ev a' c) (pair Pf V)) = eval M ρ (comp (ev (coprod a' b') c)
     (pair (comp (caseArr a' b' c) (pair Pf Pg)) (comp (inl a' b') V)))
-  exact ((caseArr_inl hM (isObj_of_isTy hM hρ b' hθ.2.1) (isObj_of_isTy hM hρ c hθ.2.2) hPh
-    hV').trans (eval_op₂_congr 3 rfl (eval_op₂_congr 9
+  exact ((caseArr_inl hM (isObj_of_isTy hM hds.2 hρ b' hθ.2.1)
+    (isObj_of_isTy hM hds.2 hρ c hθ.2.2) hPh hV').trans (eval_op₂_congr 3 rfl (eval_op₂_congr 9
       (fst_pair hM hf' (hty _ _ _ _ hg he).1) rfl))).symm
 
 /-- The case analysis of a pair of functions at a right injection is the second function at the
@@ -970,18 +971,18 @@ theorem caseInr_sound {Φ : List Term} {kc kr : ℕ} (hkc : G.prims[kc]? = some 
   refine ⟨_, compile_app_iff.mpr ⟨g, v, rfl, Pg, b', c, hg, V, hV₁, rfl⟩, rfl, ?_⟩
   change eval M ρ (comp (ev b' c) (pair Pg V)) = eval M ρ (comp (ev (coprod a' b') c)
     (pair (comp (caseArr a' b' c) (pair Pf Pg)) (comp (inr a' b') V)))
-  exact ((caseArr_inr hM (isObj_of_isTy hM hρ a' hθ.1) (isObj_of_isTy hM hρ c hθ.2.2) hPh
-    hV').trans (eval_op₂_congr 3 rfl (eval_op₂_congr 9
+  exact ((caseArr_inr hM (isObj_of_isTy hM hds.2 hρ a' hθ.1)
+    (isObj_of_isTy hM hds.2 hρ c hθ.2.2) hPh hV').trans (eval_op₂_congr 3 rfl (eval_op₂_congr 9
       (snd_pair hM (hty _ _ _ _ hf he).1 hg') rfl))).symm
 
-omit hG hps hds in
+omit hG hps in
 /-- The primitive arrow of a rose tree's construction, at its objects, is an arrow from the
 product of the object's type of labels and the list object of the rose-tree object it constructs,
 after which the fold of that object is the step after the product of the labels with the fold's
 action on the children. -/
 theorem roseNode_prim {kn : ℕ} {p : Prim} (hp : G.prims[kn]? = some p)
     (hkn : G.prims[kn]? = some nodePrim ∨ G.prims[kn]? = some lnodePrim) {θ : List Tree}
-    (hl : θ.length = p.arity) (hθ : θ.all (IsTy n) = true) {a c : Tree} {F : Tree → Tree}
+    (hl : θ.length = p.arity) (hθ : θ.all (IsTy G n) = true) {a c : Tree} {F : Tree → Tree}
     (ht : roseParts (PartialHorn.subst θ p.cod) = some (a, F)) :
     PartialHorn.subst θ p.dom = prod a (list (PartialHorn.subst θ p.cod)) ∧
       Hom M ρ (PartialHorn.subst θ p.arrow) (prod a (list (PartialHorn.subst θ p.cod)))
@@ -995,7 +996,7 @@ theorem roseNode_prim {kn : ℕ} {p : Prim} (hp : G.prims[kn]? = some p)
     exact ⟨rfl, node_hom hM, fun hS ↦ roseRec_node hM hS⟩
   · obtain ⟨a', rfl⟩ := List.length_eq_one_iff.mp hl
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp ((roseParts_lrose a').symm.trans ht))
-    have hA : IsObj M ρ a' := isObj_of_isTy hM hρ a' (by simpa using hθ)
+    have hA : IsObj M ρ a' := isObj_of_isTy hM hds.2 hρ a' (by simpa using hθ)
     exact ⟨rfl, lnode_hom hM hA, fun hS ↦ lroseRec_node hM hA hS⟩
 
 omit hM hG hρ hps hds in
@@ -1004,7 +1005,7 @@ the construction of the fold at the element onto the list folded, compiles to th
 on the children after the children's arrow. -/
 theorem compile_roseMap {kl kc : ℕ} (hkl : G.prims[kl]? = some nilPrim)
     (hkc : G.prims[kc]? = some consPrim) {c t a S CS : Tree} {F : Tree → Tree}
-    {X : Tree} {e : List (Tree × Tree)} {s cs : Term} (hct : IsTy n c = true)
+    {X : Tree} {e : List (Tree × Tree)} {s cs : Term} (hct : IsTy G n c = true)
     (ht : roseParts t = some (a, F))
     (hs : compile G n s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] =
       some (S, c))
@@ -1030,7 +1031,7 @@ theorem roseNode_sound {Φ : List Term} {kn kl kc : ℕ}
         (Term.arr kc [c] (Term.pair (Term.roseRec c s (Term.var 1)) (Term.var 0))) cs)))) := by
   intro X e he _ _ r h
   have hty := compile_hom hM hG hρ hps hds
-  have hobj := isObj_of_isTy hM hρ
+  have hobj := isObj_of_isTy hM hds.2 hρ
   obtain ⟨s₁, m, m', t, a, F, S, hcs, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
   simp only [List.cons.injEq, and_true] at hcs
   obtain ⟨rfl, rfl⟩ := hcs
@@ -1039,7 +1040,7 @@ theorem roseNode_sound {Φ : List Term} {kn kl kc : ℕ}
   subst hu₀
   simp only [Prod.mk.injEq] at hm'
   obtain ⟨rfl, rfl⟩ := hm'
-  obtain ⟨hdom, hndh, hcomp⟩ := roseNode_prim hM hρ (c := c) hp hkn hl hθ ht
+  obtain ⟨hdom, hndh, hcomp⟩ := roseNode_prim hM hρ hds (c := c) hp hkn hl hθ ht
   rw [hdom] at hP
   obtain ⟨l₁, cs₁, L, A₁, CS, T₁, hlcs, hl₁, hcs₁, hPe⟩ := compile_pair_iff.mp hP
   simp only [List.cons.injEq, and_true] at hlcs
@@ -1052,12 +1053,12 @@ theorem roseNode_sound {Φ : List Term} {kn kl kc : ℕ}
   generalize PartialHorn.subst θ p.arrow = nd at *
   -- the typings
   have hLh : Hom M ρ L X a := (hty _ _ _ _ hl₁ he).1
-  have hat : IsTy n a = true := (hty _ _ _ _ hl₁ he).2
+  have hat : IsTy G n a = true := (hty _ _ _ _ hl₁ he).2
   have hCSh : Hom M ρ CS X (list T) := (hty _ _ _ _ hcs₁ he).1
   have hA := hobj a hat
-  have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+  have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
   have hPo := hobj _ hPt
-  have hSe : EnvHom M ρ n (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] :=
+  have hSe : EnvHom M ρ G n (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] :=
     ⟨hPo, by simpa using ⟨idt_hom hM hPo, hPt⟩⟩
   have hS : Hom M ρ S (prod a (list c)) c := (hty _ _ _ _ hs hSe).1
   have hFS := roseParts_hom hM ht hA hS
@@ -1098,8 +1099,8 @@ theorem roseNode_sound {Φ : List Term} {kn kl kc : ℕ}
 compiles to its arrow's instance after the terms' tuple. -/
 theorem compile_thm_side {m : ℕ} {Δ : List Tree} {s : Term} {F A : Tree}
     (hs : compile G m s (ctxObj Δ) (stdEnv Δ) = some (F, A)) {θ : List Tree}
-    (hl : θ.length = m) (hθ : θ.all (IsTy n) = true) {σ : List Term} {X : Tree}
-    {e rs : List (Tree × Tree)} (he : EnvHom M ρ n X e)
+    (hl : θ.length = m) (hθ : θ.all (IsTy G n) = true) {σ : List Term} {X : Tree}
+    {e rs : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
     (hrs : σ.mapM (fun u ↦ compile G n u X e) = some rs)
     (hsnd : rs.map Prod.snd = Δ.map (PartialHorn.subst θ)) :
     ∃ r', compile G n (Term.subst (Term.osubst θ s) (Term.substList σ)) X e = some r' ∧
@@ -1108,7 +1109,7 @@ theorem compile_thm_side {m : ℕ} {Δ : List Tree} {s : Term} {F A : Tree}
   have hty := compile_hom hM hG hρ hps hds
   have hs' := compile_osubst hG hl hθ s _ _ _ hs
   rw [subst_ctxObj, map_substPair_stdEnv] at hs'
-  have hrs' : EnvHom M ρ n X rs := ⟨he.1, fun q hq ↦ by
+  have hrs' : EnvHom M ρ G n X rs := ⟨he.1, fun q hq ↦ by
     obtain ⟨c, -, hcq⟩ := exists_of_mapM hrs hq
     exact hty c X e q hcq he⟩
   obtain ⟨r₁, h₁, hr₁⟩ := compile_of_stdEnv hM hG hρ hps hds hs' hrs' hsnd
@@ -1120,8 +1121,8 @@ theorem compile_thm_side {m : ℕ} {Δ : List Tree} {s : Term} {F A : Tree}
 
 omit hG hρ hps hds in
 /-- An environment of arrows after an arrow is an environment of arrows. -/
-theorem envHom_precomp {X Y h : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n Y e)
-    (hh : Hom M ρ h X Y) : EnvHom M ρ n X (precomp h e) := by
+theorem envHom_precomp {X Y h : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n Y e)
+    (hh : Hom M ρ h X Y) : EnvHom M ρ G n X (precomp h e) := by
   refine ⟨hh.isObj_dom, fun p hp ↦ ?_⟩
   simp only [precomp, List.mem_map] at hp
   obtain ⟨q, hq, rfl⟩ := hp
@@ -1129,7 +1130,7 @@ theorem envHom_precomp {X Y h : Tree} {e : List (Tree × Tree)} (he : EnvHom M �
 
 /-- Hypotheses that hold in an environment hold in one of its values after an arrow. -/
 theorem hypsHold_precomp {Φ : List Term} {X Y h : Tree} {e e' : List (Tree × Tree)}
-    (hΦ : HypsHold M ρ G n Φ Y e) (he : EnvHom M ρ n Y e) (hh : Hom M ρ h X Y)
+    (hΦ : HypsHold M ρ G n Φ Y e) (he : EnvHom M ρ G n Y e) (hh : Hom M ρ h X Y)
     (he' : EnvEq M ρ (precomp h e) e') : HypsHold M ρ G n Φ X e' := fun ψ hψ ↦ by
   obtain ⟨r, hr, hr₂, hr₁⟩ := hΦ ψ hψ
   obtain ⟨r', hr', hr'₂, hr'₁⟩ := compile_precomp hM hG hρ hps hds hr he hh he'
@@ -1138,7 +1139,7 @@ theorem hypsHold_precomp {Φ : List Term} {X Y h : Tree} {e e' : List (Tree × T
 /-- Hypotheses that hold in an environment hold, renamed, in an environment whose variables at
 the renamed indices are the first's values after an arrow. -/
 theorem hypsHold_rename {Φ : List Term} {X Y h : Tree} {e e' E : List (Tree × Tree)}
-    {f : ℕ → ℕ} (hΦ : HypsHold M ρ G n Φ Y e) (he : EnvHom M ρ n Y e) (hh : Hom M ρ h X Y)
+    {f : ℕ → ℕ} (hΦ : HypsHold M ρ G n Φ Y e) (he : EnvHom M ρ G n Y e) (hh : Hom M ρ h X Y)
     (he' : EnvEq M ρ (precomp h e) e') (hf : ∀ i < e'.length, E[f i]? = e'[i]?) :
     HypsHold M ρ G n (Φ.map fun ψ ↦ Term.rename ψ f) X E := fun ψ hψ ↦ by
   obtain ⟨ψ₀, hψ₀, rfl⟩ := List.mem_map.mp hψ
@@ -1147,14 +1148,14 @@ theorem hypsHold_rename {Φ : List Term} {X Y h : Tree} {e e' E : List (Tree × 
 
 /-- Hypotheses that hold in an environment hold, weakened, in its extension by a variable. -/
 theorem hypsHold_weaken1 {Φ : List Term} {X a : Tree} {e : List (Tree × Tree)}
-    (hΦ : HypsHold M ρ G n Φ X e) (he : EnvHom M ρ n X e) (ha : IsObj M ρ a) :
+    (hΦ : HypsHold M ρ G n Φ X e) (he : EnvHom M ρ G n X e) (ha : IsObj M ρ a) :
     HypsHold M ρ G n (Φ.map weaken1) (prod X a) (extEnv X a e) :=
   hypsHold_rename hM hG hρ hps hds hΦ he (fst_hom hM he.1 ha) (envEq_refl _) fun i hi ↦ by
     simp [extEnv, precomp]
 
 /-- An equation holds exactly when its sides have one value. -/
 theorem holds_eq_iff {t u : Term} {X f g A : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) (ht : compile G n t X e = some (f, A))
+    (he : EnvHom M ρ G n X e) (ht : compile G n t X e = some (f, A))
     (hu : compile G n u X e = some (g, A)) :
     Holds M ρ X (comp (chi (diag A)) (pair f g), omega) ↔ eval M ρ f = eval M ρ g := by
   have hf : Hom M ρ f X A := (compile_hom hM hG hρ hps hds t X e _ ht he).1
@@ -1167,7 +1168,7 @@ theorem rwHyp_sound {Γ : List Tree} {Φ : List Term} {i : ℕ} {ψ l r : Term}
     (hψ : Φ[i]? = some ψ) (hlr : eqParts ψ = some (l, r)) :
     RwSound M ρ G n Γ Φ l r ∧ RwSound M ρ G n Γ Φ r l := by
   obtain rfl := eqParts_eq_some hlr
-  have key : ∀ X e, EnvHom M ρ n X e → HypsHold M ρ G n Φ X e → ∃ f g A,
+  have key : ∀ X e, EnvHom M ρ G n X e → HypsHold M ρ G n Φ X e → ∃ f g A,
       compile G n l X e = some (f, A) ∧ compile G n r X e = some (g, A) ∧
         eval M ρ f = eval M ρ g := fun X e he hΦ ↦ by
     obtain ⟨q, hq, hH⟩ := hΦ _ (List.mem_of_getElem? hψ)
@@ -1204,18 +1205,18 @@ theorem Hom.subst {θ : List Tree} {ws : List M.Val} (hθw : θ.map (eval M ρ) 
 types, in an environment of arrows in which the instances of its hypotheses hold, the instance of
 its conclusion holds. -/
 theorem Thm.Valid.inst {a : Thm} (ha : a.Valid M G) {θ : List Tree} {σ : List Term}
-    (hl : θ.length = a.arity) (hθ : θ.all (IsTy n) = true) {X : Tree}
-    {e rs : List (Tree × Tree)} (he : EnvHom M ρ n X e)
+    (hl : θ.length = a.arity) (hθ : θ.all (IsTy G n) = true) {X : Tree}
+    {e rs : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
     (hrs : σ.mapM (fun u ↦ compile G n u X e) = some rs)
     (hsnd : rs.map Prod.snd = a.ctx.map (PartialHorn.subst θ))
     (hH : HypsHold M ρ G n (a.hyps.map (instTerm θ σ)) X e) :
     ∀ r, compile G n (instTerm θ σ a.concl) X e = some r → Holds M ρ X r := by
   obtain ⟨hctx, hhyps, hcon, hv⟩ := ha
-  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hρ θ hθ
+  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hds.2 hρ θ hθ
   rw [hl] at hws
   have hlen : ws.length = θ.length := by simpa [hl] using congrArg List.length hws
   obtain ⟨hpsw, hdsw, hfw⟩ := hv ws hws
-  have hstdw := stdEnv_hom hM hws a.ctx hctx
+  have hstdw := stdEnv_hom hM hdsw.2 hws a.ctx hctx
   -- the conclusion and the hypotheses in the context's environment of projections
   obtain ⟨⟨C, C'⟩, hC, hC'⟩ := Option.map_eq_some_iff.mp hcon
   obtain rfl : C' = omega := hC'
@@ -1294,7 +1295,7 @@ theorem Thm.Valid.inst {a : Thm} (ha : a.Valid M G) {θ : List Tree} {σ : List 
 sides at objects and at terms of the instances of its context's types. -/
 theorem thm_inst_sound {a : Thm} (ha : a.Valid M G) (hnil : a.hyps = []) {lr : Term × Term}
     (hlr : eqParts a.concl = some lr) {Γ θ : List Tree} {Φ : List Term} {σ : List Term}
-    (hl : θ.length = a.arity) (hθ : θ.all (IsTy n) = true) (hσl : σ.length = a.ctx.length)
+    (hl : θ.length = a.arity) (hθ : θ.all (IsTy G n) = true) (hσl : σ.length = a.ctx.length)
     (hall : (σ.zip (a.ctx.map (PartialHorn.subst θ))).all
       (fun x ↦ decide (typeIn G n Γ x.1 = some x.2)) = true)
     {s s' : Term} (hs : s = lr.1 ∧ s' = lr.2 ∨ s = lr.2 ∧ s' = lr.1) :
@@ -1393,7 +1394,7 @@ theorem rootStep_sound (hδ : DefnsOk M G) {E : Array Entry}
     cases l₀ <;> simp only [rootStep, RoseTree.label_node, RoseTree.children_node, reduceCtorEq,
       Option.map_eq_some_iff] at h
     obtain ⟨d, hd, rfl⟩ := h
-    exact delta_sound hM hG hρ hps hds hδ hd Γ _ cs
+    exact delta_sound hM hG hρ hps hds hδ (bind_language?_eq_some.mp hd) Γ _ cs
   | natZero kz =>
     cases l₀ <;>
       simp only [rootStep, RoseTree.label_node, RoseTree.children_node, reduceCtorEq] at h
@@ -1529,8 +1530,8 @@ theorem cong_sound {l : Label} {ts ts' : List Term} {Γ : List Tree} {Φ : List 
     RwSound M ρ G n Γ Φ (RoseTree.node l ts) (RoseTree.node l ts') := by
   intro X e he hΓ hΦ r h
   have hty := compile_hom hM hG hρ hps hds
-  have hobj := isObj_of_isTy hM hρ
-  have he₁ : EnvHom M ρ n one [] := ⟨isObj_one hM, by simp⟩
+  have hobj := isObj_of_isTy hM hds.2 hρ
+  have he₁ : EnvHom M ρ G n one [] := ⟨isObj_one hM, by simp⟩
   have hnil : ∀ {Y : Tree} {e' : List (Tree × Tree)}, HypsHold M ρ G n [] Y e' :=
     fun _ h ↦ by simp at h
   cases l with
@@ -1656,7 +1657,7 @@ theorem cong_sound {l : Label} {ts ts' : List Term} {Γ : List Tree} {Φ : List 
       exact (Option.some_inj.mp hΓs).symm
     rcases hR with _ | ⟨h₁, _ | ⟨h₂, _ | _⟩⟩
     have hat := isTy_of_roseParts ht (hty _ _ _ _ hm he).2
-    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+    have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨⟨s'', c'⟩, hs', rfl, hsv⟩ := h₁ _ [(idt (prod a (list c)), prod a (list c))]
       ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩ rfl hnil _ hs

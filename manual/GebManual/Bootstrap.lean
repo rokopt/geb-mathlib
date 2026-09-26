@@ -2357,7 +2357,7 @@ the checker's inference of its domain and codomain, or by a certificate
 of the sequent that its composite with the identities of its domain and
 of its codomain is itself ({name}`Geb.FreeTopos.Internal.Prim.seq`),
 since that composite is defined only where they are its domain and
-codomain ({name}`Geb.FreeTopos.Internal.Prim.hom_of_seq`); the
+codomain ({name}`Geb.FreeTopos.Internal.Prim.val_of_seq`); the
 certificate may cite the theorems before it, whose validity uses only
 the constants before them. A theorem valid with fewer constants is valid
 with more, its formulas compiling to the same arrows

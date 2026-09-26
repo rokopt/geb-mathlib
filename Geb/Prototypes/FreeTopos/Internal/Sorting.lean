@@ -139,9 +139,17 @@ theorem sortOf_roseParts {t a s : Tree} {F : Tree → Tree} (h : roseParts t = s
 
 end Constructors
 
-/-- A type is an object, in the context of its object variables. -/
+section Types
+
+variable {G : Globals}
+  (hdefs : ∀ (k : ℕ) (d : Definition), G.defs[k]? = some d →
+    (ext defs).sig[G.base + k]? = some d.sig)
+include hdefs
+
+/-- A type is an object, in the context of its object variables, when each definition's
+operation has the arities and sort of its definition. -/
 theorem sortOf_of_isTy {n : ℕ} :
-    ∀ A : Tree, IsTy n A = true → sortOf (ext defs).sig (List.replicate n obj) A = some obj :=
+    ∀ A : Tree, IsTy G n A = true → sortOf (ext defs).sig (List.replicate n obj) A = some obj :=
   RoseTree.ind fun l cs ih hA ↦ by
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
@@ -151,13 +159,32 @@ theorem sortOf_of_isTy {n : ℕ} :
       rw [isTy_var_node, decide_eq_true_eq] at hA
       rw [PartialHorn.sortOf_node_zero]
       simp [hA]
-    · change IsTy n (op k cs) = true at hA
-      rw [isTy_op, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at hA
+    · change IsTy G n (op k cs) = true at hA
+      rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA
       have hc : ∀ c ∈ cs, sortOf (ext defs).sig (List.replicate n obj) c = some obj :=
         fun c hc ↦ ih c hc (hA.2 c hc)
       change sortOf _ _ (op k cs) = _
-      simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hA
-      rcases hA.1 with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
+      have h₁ := hA.1
+      simp only [Globals.isTyOp, Bool.or_eq_true, decide_eq_true_eq, Bool.and_eq_true] at h₁
+      rcases h₁ with h₁ | ⟨hk, hm⟩
+      rotate_left
+      · -- an object definition
+        split at hm
+        · rename_i m' b hdef
+          obtain rfl : m' = cs.length := by simpa using hm
+          have hs := hdefs _ _ hdef
+          rw [Nat.add_sub_cancel' hk] at hs
+          rw [op, PartialHorn.sortOf_node_succ, hs, Option.bind_some]
+          have hcs : cs.map (sortOf (ext defs).sig (List.replicate n obj)) =
+              (List.replicate cs.length obj).map some := by
+            rw [List.map_replicate]
+            refine List.ext_getElem (by simp) fun i h₁ _ ↦ ?_
+            simp only [List.getElem_map, List.getElem_replicate]
+            exact hc _ (List.getElem_mem (by simpa using h₁))
+          simp [Definition.sig, hcs]
+        · simp at hm
+      simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at h₁
+      rcases h₁ with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
           ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact sortOf_op rfl rfl
@@ -181,13 +208,15 @@ theorem sortOf_of_isTy {n : ℕ} :
         exact sortOf_op rfl (by simp [hc a (by simp)])
 
 /-- Types are objects, in the context of their object variables. -/
-theorem map_sortOf_of_isTy {n : ℕ} {θ : List Tree} (hθ : θ.all (IsTy n) = true) :
+theorem map_sortOf_of_isTy {n : ℕ} {θ : List Tree} (hθ : θ.all (IsTy G n) = true) :
     θ.map (sortOf (ext defs).sig (List.replicate n obj)) =
       (List.replicate θ.length obj).map some := by
   rw [List.map_replicate]
   refine List.ext_getElem (by simp) fun i h₁ _ ↦ ?_
   simp only [List.getElem_map, List.getElem_replicate]
-  exact sortOf_of_isTy _ (List.all_eq_true.mp hθ _ (List.getElem_mem (by simpa using h₁)))
+  exact sortOf_of_isTy hdefs _ (List.all_eq_true.mp hθ _ (List.getElem_mem (by simpa using h₁)))
+
+end Types
 
 /-- A tuple of arrows is an arrow. -/
 theorem sortOf_tuple {Γ : List ℕ} {X : Tree} (hX : sortOf (ext defs).sig Γ X = some obj) :
@@ -204,23 +233,23 @@ object parameters, and each definition's operation takes objects to an arrow. -/
 theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
     (hprims : ∀ (k : ℕ) (p : Prim), G.prims[k]? = some p →
       sortOf (ext defs).sig (List.replicate p.arity obj) p.arrow = some arr)
-    (hdefs : ∀ (k : ℕ) (d : Defn), G.defs[k]? = some d →
-      (ext defs).sig[G.base + k]? = some (List.replicate d.arity obj, arr))
+    (hdefs : ∀ (k : ℕ) (d : Definition), G.defs[k]? = some d →
+      (ext defs).sig[G.base + k]? = some d.sig)
     (s : Term) :
     ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
       sortOf (ext defs).sig (List.replicate n obj) X = some obj →
       (∀ p ∈ e, sortOf (ext defs).sig (List.replicate n obj) p.1 = some arr ∧
-        IsTy n p.2 = true) →
-      sortOf (ext defs).sig (List.replicate n obj) r.1 = some arr ∧ IsTy n r.2 = true := by
+        IsTy G n p.2 = true) →
+      sortOf (ext defs).sig (List.replicate n obj) r.1 = some arr ∧ IsTy G n r.2 = true := by
   refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree),
     compile G n s X e = some r →
       sortOf (ext defs).sig (List.replicate n obj) X = some obj →
       (∀ p ∈ e, sortOf (ext defs).sig (List.replicate n obj) p.1 = some arr ∧
-        IsTy n p.2 = true) →
-      sortOf (ext defs).sig (List.replicate n obj) r.1 = some arr ∧ IsTy n r.2 = true)
+        IsTy G n p.2 = true) →
+      sortOf (ext defs).sig (List.replicate n obj) r.1 = some arr ∧ IsTy G n r.2 = true)
     (fun l cs ih ↦ ?_) s
   intro X e r h hX he
-  have hty := sortOf_of_isTy (defs := defs) (n := n)
+  have hty := sortOf_of_isTy (defs := defs) hdefs (n := n)
   cases l with
   | var i =>
     obtain ⟨rfl, hi⟩ := compile_var_iff.mp h
@@ -263,7 +292,7 @@ theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
   | arr k θ =>
     obtain ⟨t, rfl, p, hp, g, ht, hl, hθ, rfl⟩ := compile_arr_iff.mp h
     obtain ⟨hg, -⟩ := ih t (by simp) X e _ ht hX he
-    have hθs := map_sortOf_of_isTy (defs := defs) hθ
+    have hθs := map_sortOf_of_isTy (defs := defs) hdefs hθ
     rw [hl] at hθs
     exact ⟨sortOf_comp (PartialHorn.sortOf_subst hθs _ (hprims k p hp)) hg,
       isTy_subst hl hθ _ (hG.prims k p hp).2.2⟩
@@ -288,7 +317,7 @@ theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
     obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
     obtain ⟨hm', htt⟩ := ih m (by simp) X e _ hm hX he
     have hat := isTy_of_roseParts ht htt
-    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+    have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hty _ hPt
     obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs hP (by simpa using ⟨sortOf_idt hP, hPt⟩)
     exact ⟨sortOf_comp (sortOf_roseParts ht (hty a hat) hs') hm', hct⟩
@@ -306,11 +335,11 @@ theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
         obtain ⟨r, hr, rfl⟩ := List.mem_map.mp hf
         obtain ⟨c, hc, hcr⟩ := exists_of_mapM hrs hr
         exact (ih c hc X e r hcr hX he).1
-    have hθs := map_sortOf_of_isTy (defs := defs) hθ
+    have hθs := map_sortOf_of_isTy (defs := defs) hdefs hθ
     rw [hl] at hθs
     have hop : sortOf (ext defs).sig (List.replicate n obj) (op (G.base + k) θ) = some arr := by
-      rw [op, PartialHorn.sortOf_node_succ, hdefs k d hd, Option.bind_some]
-      simp [hθs]
+      rw [op, PartialHorn.sortOf_node_succ, hdefs k _ hd, Option.bind_some]
+      simp [hθs, Definition.sig]
     exact ⟨sortOf_comp hop (sortOf_tuple hX _ hr), isTy_subst hl hθ _ (hG.defs k d hd).2⟩
 
 /-- The theory's axioms are of its signature. -/
@@ -322,32 +351,41 @@ theorem theory_ofSig : theory.OfSig := by
   have hq' := List.all_eq_true.mp (List.all_eq_true.mp h a ha) q hq
   rwa [Bool.and_eq_true] at hq'
 
+section Contexts
+
+variable {G : Globals}
+  (hdefs : ∀ (k : ℕ) (d : Definition), G.defs[k]? = some d →
+    (ext defs).sig[G.base + k]? = some d.sig)
+include hdefs
+
 /-- The product of a context of types is an object. -/
 theorem sortOf_ctxObj {n : ℕ} :
-    ∀ Γ : List Tree, Γ.all (IsTy n) = true →
+    ∀ Γ : List Tree, Γ.all (IsTy G n) = true →
       sortOf (ext defs).sig (List.replicate n obj) (ctxObj Γ) = some obj :=
   List.rec (fun _ ↦ sortOf_one) fun a Γ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
     rcases Γ with _ | ⟨b, Γ⟩
-    · exact sortOf_of_isTy a h.1
-    · exact sortOf_prod (ih h.2) (sortOf_of_isTy a h.1)
+    · exact sortOf_of_isTy hdefs a h.1
+    · exact sortOf_prod (ih h.2) (sortOf_of_isTy hdefs a h.1)
 
 /-- A context's projections are arrows, to types. -/
 theorem sortOf_stdEnv {n : ℕ} :
-    ∀ Γ : List Tree, Γ.all (IsTy n) = true → ∀ p ∈ stdEnv Γ,
-      sortOf (ext defs).sig (List.replicate n obj) p.1 = some arr ∧ IsTy n p.2 = true :=
+    ∀ Γ : List Tree, Γ.all (IsTy G n) = true → ∀ p ∈ stdEnv Γ,
+      sortOf (ext defs).sig (List.replicate n obj) p.1 = some arr ∧ IsTy G n p.2 = true :=
   List.rec (fun _ p hp ↦ by simp [stdEnv] at hp) fun a Γ ih h p hp ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    have hA := sortOf_of_isTy (defs := defs) a h.1
+    have hA := sortOf_of_isTy (defs := defs) hdefs a h.1
     rcases Γ with _ | ⟨b, Γ⟩
     · obtain rfl : p = (idt a, a) := by simpa [stdEnv] using hp
       exact ⟨sortOf_idt hA, h.1⟩
     change p ∈ extEnv (ctxObj (b :: Γ)) a (stdEnv (b :: Γ)) at hp
     simp only [extEnv, List.mem_cons, List.mem_map] at hp
-    have hX := sortOf_ctxObj (defs := defs) (b :: Γ) h.2
+    have hX := sortOf_ctxObj (defs := defs) hdefs (b :: Γ) h.2
     rcases hp with rfl | ⟨q, hq, rfl⟩
     · exact ⟨sortOf_snd hX hA, h.1⟩
     · exact ⟨sortOf_comp (ih h.2 q hq).1 (sortOf_fst hX hA), (ih h.2 q hq).2⟩
+
+end Contexts
 
 end Geb.FreeTopos.Internal
 

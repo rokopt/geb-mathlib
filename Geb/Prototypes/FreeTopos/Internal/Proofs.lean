@@ -193,8 +193,8 @@ theorem funExt_sound {Γ : List Tree} {Φ : List Term} {f g : Term} {a b : Tree}
   obtain ⟨hFh, hABt⟩ := compile_hom hM hG hρ hps hds _ X e _ hF he
   have hGh : Hom M ρ G' X (exp a b) := (compile_hom hM hG hρ hps hds _ X e _ hG' he).1
   simp only [isTy_exp, Bool.and_eq_true] at hABt
-  have hA := isObj_of_isTy hM hρ a hABt.1
-  have hB := isObj_of_isTy hM hρ b hABt.2
+  have hA := isObj_of_isTy hM hds.2 hρ a hABt.1
+  have hB := isObj_of_isTy hM hds.2 hρ b hABt.2
   have hX := he.1
   -- the applications to the new variable, in the extended environment
   have app : ∀ {w : Term} {W : Tree}, compile G n w X e = some (W, exp a b) →
@@ -259,7 +259,7 @@ theorem hypsHold_lower {Γ' : List Tree} {Φ Φ' : List Term} (hlow : lowerHyps 
 /-- A term in the environment extended by a natural number variable, at an element of the
 natural numbers object, is its arrow there after the pairing of the identity with the
 element. -/
-theorem natAt {X x W B : Tree} {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e')
+theorem natAt {X x W B : Tree} {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ G n X e')
     (hw : compile G n w (prod X nat) (extEnv X nat e') = some (W, B)) (hx : Hom M ρ x X nat) :
     ∃ q, compile G n w X ((x, nat) :: e') = some q ∧
       ResEq M ρ (comp W (pair (idt X) x), B) q :=
@@ -268,7 +268,7 @@ theorem natAt {X x W B : Tree} {e' : List (Tree × Tree)} {w : Term} (he' : EnvH
 /-- A term in the environment extended by a natural number variable, at zero, is its arrow there
 after the pairing of the identity with zero. -/
 theorem natZeroAt {kz : ℕ} (hkz : G.prims[kz]? = some zeroPrim) {X W B : Tree}
-    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e')
+    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ G n X e')
     (hw : compile G n w (prod X nat) (extEnv X nat e') = some (W, B)) :
     ∃ q, compile G n (Term.subst w (instVar (Term.arr kz [] Term.star))) X e' = some q ∧
       ResEq M ρ (comp W (pair (idt X) (comp zeroN (bang X))), B) q := by
@@ -287,7 +287,7 @@ the environment extended instead by a variable of type {lit}`A` to an arrow {lit
 {lit}`A` to {lit}`D` after the variable, is its arrow after the product of the environment's
 object with {lit}`i`. -/
 theorem atVar0_compile {X W B A D i : Tree} {e' : List (Tree × Tree)} {w u : Term}
-    (he' : EnvHom M ρ n X e') (hAt : IsTy n A = true) (hDt : IsTy n D = true)
+    (he' : EnvHom M ρ G n X e') (hAt : IsTy G n A = true) (hDt : IsTy G n D = true)
     (hi : Hom M ρ i A D) (hw : compile G n w (prod X D) (extEnv X D e') = some (W, B))
     (hu : compile G n u (prod X A) (extEnv X A e') = some (comp i (snd X A), D)) :
     ∃ q, compile G n (Term.subst w (atVar0 u)) (prod X A) (extEnv X A e') = some q ∧
@@ -314,7 +314,7 @@ theorem atVar0_compile {X W B A D i : Tree} {e' : List (Tree × Tree)} {w u : Te
 /-- A term in the environment extended by a natural number variable, at the variable's
 successor, is its arrow after the successor on the variable. -/
 theorem natSuccAt_compile {ks : ℕ} (hks : G.prims[ks]? = some succPrim) {X W B : Tree}
-    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e')
+    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ G n X e')
     (hw : compile G n w (prod X nat) (extEnv X nat e') = some (W, B)) :
     ∃ q, compile G n (natSuccAt ks w) (prod X nat) (extEnv X nat e') = some q ∧
       ResEq M ρ (comp W (pair (fst X nat) (comp succ (snd X nat))), B) q :=
@@ -324,14 +324,14 @@ theorem natSuccAt_compile {ks : ℕ} (hks : G.prims[ks]? = some succPrim) {X W B
 /-- An induction's step at a term's value, in the environment extended by a natural number
 variable, is the step's arrow after the parameters paired with the term's arrow. -/
 theorem natStepAt {X W S C : Tree} {e' : List (Tree × Tree)} {w s : Term}
-    (he' : EnvHom M ρ n X e') (hCt : IsTy n C = true)
+    (he' : EnvHom M ρ G n X e') (hCt : IsTy G n C = true)
     (hS : compile G n s (prod X C) (extEnv X C e') = some (S, C))
     (hw : compile G n w (prod X nat) (extEnv X nat e') = some (W, C)) :
     ∃ q, compile G n (Term.subst s (atVar0 w)) (prod X nat) (extEnv X nat e') = some q ∧
       ResEq M ρ (comp S (pair (fst X nat) W), C) q := by
   have hN := isObj_nat (ρ := ρ) hM
   have hX := he'.1
-  have hC := isObj_of_isTy hM hρ C hCt
+  have hC := isObj_of_isTy hM hds.2 hρ C hCt
   have hê := he'.ext hM hN isTy_nat
   have hfst := fst_hom hM hX hN
   have hWh : Hom M ρ W (prod X nat) C := (compile_hom hM hG hρ hps hds _ _ _ _ hw hê).1
@@ -371,11 +371,11 @@ theorem natInd_sound {kz ks : ℕ} (hkz : G.prims[kz]? = some zeroPrim)
   · simp at hΓ
   simp only [List.map_cons, List.cons.injEq] at hΓ
   obtain ⟨rfl, hΓ'⟩ := hΓ
-  have he' : EnvHom M ρ n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  have he' : EnvHom M ρ G n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
   have hx₀ : Hom M ρ x₀ X nat := (he.2 _ List.mem_cons_self).1
   have hN := isObj_nat (ρ := ρ) hM
   have hX := he.1
-  have hê : EnvHom M ρ n (prod X nat) (extEnv X nat e') := he'.ext hM hN isTy_nat
+  have hê : EnvHom M ρ G n (prod X nat) (extEnv X nat e') := he'.ext hM hN isTy_nat
   have hêΓ : (extEnv X nat e').map Prod.snd = nat :: Γ' := by
     simp [extEnv, hΓ', Function.comp_def]
   have hΦ' := hypsHold_lower hlow hΓ' hΦ
@@ -407,7 +407,7 @@ theorem natInd_sound {kz ks : ℕ} (hkz : G.prims[kz]? = some zeroPrim)
   obtain ⟨S, hS⟩ := compile_of_typeIn hsC (X := prod X A) (e := extEnv X A e')
     (by simp [extEnv, hΓ', Function.comp_def])
   have hSh : Hom M ρ S (prod X A) A :=
-    (hty _ _ _ _ hS (he'.ext hM (isObj_of_isTy hM hρ A hCt) hCt)).1
+    (hty _ _ _ _ hS (he'.ext hM (isObj_of_isTy hM hds.2 hρ A hCt) hCt)).1
   have step : ∀ {w : Term} {W : Tree},
       compile G n w (prod X nat) (extEnv X nat e') = some (W, A) →
       FmSound M ρ G n (nat :: Γ') Φ (Term.eq (natSuccAt ks w) (Term.subst s (atVar0 w))) →
@@ -440,11 +440,11 @@ theorem natIndHyp_sound {kz ks : ℕ} (hkz : G.prims[kz]? = some zeroPrim)
   · simp at hΓ
   simp only [List.map_cons, List.cons.injEq] at hΓ
   obtain ⟨rfl, hΓ'⟩ := hΓ
-  have he' : EnvHom M ρ n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  have he' : EnvHom M ρ G n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
   have hx₀ : Hom M ρ x₀ X nat := (he.2 _ List.mem_cons_self).1
   have hN := isObj_nat (ρ := ρ) hM
   have hX := he.1
-  have hê : EnvHom M ρ n (prod X nat) (extEnv X nat e') := he'.ext hM hN isTy_nat
+  have hê : EnvHom M ρ G n (prod X nat) (extEnv X nat e') := he'.ext hM hN isTy_nat
   have hêΓ : (extEnv X nat e').map Prod.snd = nat :: Γ' := by
     simp [extEnv, hΓ', Function.comp_def]
   have hΦ' := hypsHold_lower hlow hΓ' hΦ
@@ -485,7 +485,7 @@ theorem roseNodeAt_compile {kn : ℕ} {r a : Tree} {F : Tree → Tree}
     (hr : roseParts r = some (a, F))
     (hkn : (G.prims[kn]? = some nodePrim ∧ r = rose) ∨
       (G.prims[kn]? = some lnodePrim ∧ r = lrose a))
-    (hrt : IsTy n r = true) {t : Term} {T C : Tree}
+    (hrt : IsTy G n r = true) {t : Term} {T C : Tree}
     (ht : compile G n t r [(idt r, r)] = some (T, C)) :
     ∃ nd q, Hom M ρ nd (prod a (list r)) r ∧
       (∀ {S c h}, Hom M ρ S (prod a (list c)) c → Hom M ρ h r c →
@@ -494,8 +494,8 @@ theorem roseNodeAt_compile {kn : ℕ} {r a : Tree} {F : Tree → Tree}
       compile G n (roseNodeAt kn r a t) (prod a (list r)) (stdEnv [list r, a]) = some q ∧
       ResEq M ρ (comp T nd, C) q := by
   have hat := isTy_of_roseParts hr hrt
-  have hA := isObj_of_isTy hM hρ a hat
-  have hR := isObj_of_isTy hM hρ r hrt
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
+  have hR := isObj_of_isTy hM hds.2 hρ r hrt
   have hLr := isObj_list hM hR
   have hpv : compile G n (Term.pair (Term.var 1) (Term.var 0)) (prod a (list r))
       (stdEnv [list r, a]) = some (pair (comp (idt a) (fst a (list r))) (snd a (list r)),
@@ -521,13 +521,13 @@ theorem roseNodeAt_compile {kn : ℕ} {r a : Tree} {F : Tree → Tree}
       simp only [lrose_ne_rose, ↓reduceIte]
       exact compile_arr_iff.mpr ⟨_, rfl, lnodePrim, hkn, _, hpv, rfl, by simp [hat], rfl⟩
   -- the term at the construction
-  have hE : EnvHom M ρ n (prod a (list r)) (stdEnv [list r, a]) :=
-    (show EnvHom M ρ n a [(idt a, a)] from ⟨hA, by simpa using ⟨idt_hom hM hA, hat⟩⟩).ext hM
+  have hE : EnvHom M ρ G n (prod a (list r)) (stdEnv [list r, a]) :=
+    (show EnvHom M ρ G n a [(idt a, a)] from ⟨hA, by simpa using ⟨idt_hom hM hA, hat⟩⟩).ext hM
       hLr (by simpa [isTy_list] using hrt)
   have hfA := fst_hom hM hA hLr
   have hpvh := pair_hom hM (comp_hom hM hfA (idt_hom hM hA)) (snd_hom hM hA hLr)
   have hk := comp_hom hM hpvh hnd
-  have hEr : EnvHom M ρ n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
+  have hEr : EnvHom M ρ G n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
   obtain ⟨q₀, hq₀, hr₀⟩ := compile_precomp hM hG hρ hps hds ht hEr hk
     (e' := [(comp nd (pair (comp (idt a) (fst a (list r))) (snd a (list r))), r)])
     fun i p hp ↦ by
@@ -554,14 +554,14 @@ theorem roseNodeAt_compile {kn : ℕ} {r a : Tree} {F : Tree → Tree}
 the context of a label and the children, to the term's arrow's action on the list after the
 children's projection. -/
 theorem roseMapAt_compile {kl kc : ℕ} (hkl : G.prims[kl]? = some nilPrim)
-    (hkc : G.prims[kc]? = some consPrim) {r a : Tree} (hrt : IsTy n r = true)
+    (hkc : G.prims[kc]? = some consPrim) {r a : Tree} (hrt : IsTy G n r = true)
     {t : Term} {T C : Tree} (ht : compile G n t r [(idt r, r)] = some (T, C)) :
     ∃ q, compile G n (roseMapAt kl kc C t) (prod a (list r)) (stdEnv [list r, a]) = some q ∧
       ResEq M ρ (comp (listMap T) (snd a (list r)), list C) q := by
-  have hR := isObj_of_isTy hM hρ r hrt
-  have hEr : EnvHom M ρ n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
+  have hR := isObj_of_isTy hM hds.2 hρ r hrt
+  have hEr : EnvHom M ρ G n r [(idt r, r)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
   obtain ⟨hT, hCt⟩ := compile_hom hM hG hρ hps hds _ _ _ _ ht hEr
-  have hLC := isObj_list hM (isObj_of_isTy hM hρ C hCt)
+  have hLC := isObj_list hM (isObj_of_isTy hM hds.2 hρ C hCt)
   have hf := fst_hom hM hR hLC
   -- the term, weakened past the accumulated list, at the element
   obtain ⟨⟨Q, C'⟩, hq₀, hC', hQ⟩ := compile_precomp hM hG hρ hps hds ht hEr hf
@@ -613,20 +613,20 @@ theorem roseInd_sound {kn kl kc : ℕ} {r a : Tree} {F : Tree → Tree}
   subst hΓ
   obtain ⟨hx₀, hrt⟩ := he.2 _ List.mem_cons_self
   have hat := isTy_of_roseParts hr hrt
-  have hA := isObj_of_isTy hM hρ a hat
-  have hR := isObj_of_isTy hM hρ R hrt
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
+  have hR := isObj_of_isTy hM hds.2 hρ R hrt
   have hLr := isObj_list hM hR
-  have hEr : EnvHom M ρ n R [(idt R, R)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
+  have hEr : EnvHom M ρ G n R [(idt R, R)] := ⟨hR, by simpa using ⟨idt_hom hM hR, hrt⟩⟩
   -- the sides' arrows in the environment of the tree
   obtain ⟨T, hT⟩ := compile_of_typeIn htC (X := R) (e := [(idt R, R)]) rfl
   obtain ⟨U, hU⟩ := compile_of_typeIn huC (X := R) (e := [(idt R, R)]) rfl
   obtain ⟨hTh, hCt⟩ := hty _ _ _ _ hT hEr
   have hUh := (hty _ _ _ _ hU hEr).1
-  have hLC := isObj_list hM (isObj_of_isTy hM hρ C hCt)
-  have hEa : EnvHom M ρ n a [(idt a, a)] := ⟨hA, by simpa using ⟨idt_hom hM hA, hat⟩⟩
-  have hEs : EnvHom M ρ n (prod a (list C)) (stdEnv [list C, a]) :=
+  have hLC := isObj_list hM (isObj_of_isTy hM hds.2 hρ C hCt)
+  have hEa : EnvHom M ρ G n a [(idt a, a)] := ⟨hA, by simpa using ⟨idt_hom hM hA, hat⟩⟩
+  have hEs : EnvHom M ρ G n (prod a (list C)) (stdEnv [list C, a]) :=
     hEa.ext hM hLC (by simpa [isTy_list] using hCt)
-  have hE : EnvHom M ρ n (prod a (list R)) (stdEnv [list R, a]) :=
+  have hE : EnvHom M ρ G n (prod a (list R)) (stdEnv [list R, a]) :=
     hEa.ext hM hLr (by simpa [isTy_list] using hrt)
   obtain ⟨S, hS⟩ := compile_of_typeIn hsC (X := prod a (list C)) (map_snd_stdEnv _)
   have hSh : Hom M ρ S (prod a (list C)) C := (hty _ _ _ _ hS hEs).1
@@ -700,13 +700,13 @@ theorem coprodInd_sound {kl kr : ℕ} (hkl : G.prims[kl]? = some inlPrim)
   · simp at hΓ
   simp only [List.map_cons, List.cons.injEq] at hΓ
   obtain ⟨rfl, hΓ'⟩ := hΓ
-  have he' : EnvHom M ρ n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  have he' : EnvHom M ρ G n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
   obtain ⟨hx₀, hDt⟩ := he.2 _ List.mem_cons_self
   have hab := hDt
   rw [isTy_coprod, Bool.and_eq_true] at hab
   obtain ⟨hat, hbt⟩ := hab
-  have hA := isObj_of_isTy hM hρ a hat
-  have hB := isObj_of_isTy hM hρ b hbt
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
+  have hB := isObj_of_isTy hM hds.2 hρ b hbt
   have hX := he.1
   have hP := isObj_prod hM hX (isObj_coprod hM hA hB)
   have hΦ' := hypsHold_lower hlow hΓ' hΦ
@@ -716,7 +716,7 @@ theorem coprodInd_sound {kl kr : ℕ} (hkl : G.prims[kl]? = some inlPrim)
     (compile_hom hM hG hρ hps hds _ _ _ _ hF (he'.ext hM (isObj_coprod hM hA hB) hDt)).1
   -- the formula holds at each injection, where it is its arrow after the product of the
   -- environment's object with the injection
-  have side : ∀ {k c i}, IsTy n c = true → Hom M ρ i c (coprod a b) →
+  have side : ∀ {k c i}, IsTy G n c = true → Hom M ρ i c (coprod a b) →
       compile G n (Term.arr k [a, b] (Term.var 0)) (prod X c) (extEnv X c e') =
         some (comp i (snd X c), coprod a b) →
       FmSound M ρ G n (c :: Γ') Φ (Term.subst φ (atVar0 (Term.arr k [a, b] (Term.var 0)))) →
@@ -732,7 +732,7 @@ theorem coprodInd_sound {kl kr : ℕ} (hkl : G.prims[kl]? = some inlPrim)
     have hH := p _ _ (he'.ext hM hC hct) (by simp [extEnv, hΓ', Function.comp_def]) hΦc q hq
     exact hrq.2.symm.trans (hH.2.trans (truth_comp hM (pair_hom hM (fst_hom hM hX hC)
       (comp_hom hM (snd_hom hM hX hC) hi))).symm)
-  have hθ : [a, b].all (IsTy n) = true := by simp [hat, hbt]
+  have hθ : [a, b].all (IsTy G n) = true := by simp [hat, hbt]
   have hFtrue := prod_coprod_ext hM hX hA hB hFh
     (comp_hom hM (bang_hom hM hP) (tru_hom hM))
     (side hat (inl_hom hM hA hB) (compile_arr_iff.mpr ⟨_, rfl, inlPrim, hkl, snd X a,
@@ -760,7 +760,7 @@ theorem zeroInd_sound {i : ℕ} {Γ : List Tree} {Φ : List Term} {φ : Term}
 /-- A term in the environment extended by a list variable, at an element of the list object, is
 its arrow there after the pairing of the identity with the element. -/
 theorem listAt {X x W B a : Tree} {e' : List (Tree × Tree)} {w : Term}
-    (he' : EnvHom M ρ n X e') (hat : IsTy n a = true)
+    (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true)
     (hw : compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, B))
     (hx : Hom M ρ x X (list a)) :
     ∃ q, compile G n w X ((x, list a) :: e') = some q ∧
@@ -770,12 +770,12 @@ theorem listAt {X x W B a : Tree} {e' : List (Tree × Tree)} {w : Term}
 /-- A term in the environment extended by a list variable, at the empty list, is its arrow there
 after the pairing of the identity with the empty list. -/
 theorem listNilAt {kn : ℕ} (hkn : G.prims[kn]? = some nilPrim) {X W B a : Tree}
-    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e') (hat : IsTy n a = true)
+    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true)
     (hw : compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, B)) :
     ∃ q, compile G n (Term.subst w (instVar (Term.arr kn [a] Term.star))) X e' = some q ∧
       ResEq M ρ (comp W (pair (idt X) (comp (nil a) (bang X))), B) q := by
   obtain ⟨q₀, hq₀, hr₀⟩ := listAt hM hG hρ hps hds he' hat hw
-    (comp_hom hM (bang_hom hM he'.1) (nil_hom hM (isObj_of_isTy hM hρ a hat)))
+    (comp_hom hM (bang_hom hM he'.1) (nil_hom hM (isObj_of_isTy hM hds.2 hρ a hat)))
   obtain ⟨q₁, hq₁, hr₁⟩ := compile_subst hM hG hρ hps hds w X _ q₀ hq₀ e'
     (instVar (Term.arr kn [a] Term.star)) he' fun i p hp ↦ by
       rcases i with _ | j
@@ -787,7 +787,7 @@ theorem listNilAt {kn : ℕ} (hkn : G.prims[kn]? = some nilPrim) {X W B a : Tree
 /-- A term in the environment extended by a list variable, at a construction of a new element
 onto the variable, is its arrow after construction. -/
 theorem listConsAt_compile {kc : ℕ} (hkc : G.prims[kc]? = some consPrim) {X W B a : Tree}
-    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ n X e') (hat : IsTy n a = true)
+    {e' : List (Tree × Tree)} {w : Term} (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true)
     (hw : compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, B)) :
     ∃ q, compile G n (listConsAt kc a w) (prod (prod X a) (list a))
         (extEnv (prod X a) (list a) (extEnv X a e')) = some q ∧
@@ -795,9 +795,9 @@ theorem listConsAt_compile {kc : ℕ} (hkc : G.prims[kc]? = some consPrim) {X W 
         (comp (cons a) (pair (comp (snd X a) (fst (prod X a) (list a)))
           (snd (prod X a) (list a))))), B) q := by
   have hX := he'.1
-  have hA := isObj_of_isTy hM hρ a hat
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hL := isObj_list hM hA
-  have hLt : IsTy n (list a) = true := by simpa [isTy_list] using hat
+  have hLt : IsTy G n (list a) = true := by simpa [isTy_list] using hat
   have hea := he'.ext hM hA hat
   have hXa := hea.1
   have hê₁ := hea.ext hM hL hLt
@@ -837,16 +837,16 @@ theorem listConsAt_compile {kc : ℕ} (hkc : G.prims[kc]? = some consPrim) {X W 
 /-- A term in the environment extended by a list variable, weakened past a new element, is its
 arrow after the pairing of the parameters with the tail. -/
 theorem weakenElemAt {X W B a : Tree} {e' : List (Tree × Tree)} {w : Term}
-    (he' : EnvHom M ρ n X e') (hat : IsTy n a = true)
+    (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true)
     (hw : compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, B)) :
     ∃ q, compile G n (weakenElem w) (prod (prod X a) (list a))
         (extEnv (prod X a) (list a) (extEnv X a e')) = some q ∧
       ResEq M ρ (comp W (pair (comp (fst X a) (fst (prod X a) (list a)))
         (snd (prod X a) (list a))), B) q := by
   have hX := he'.1
-  have hA := isObj_of_isTy hM hρ a hat
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hL := isObj_list hM hA
-  have hLt : IsTy n (list a) = true := by simpa [isTy_list] using hat
+  have hLt : IsTy G n (list a) = true := by simpa [isTy_list] using hat
   have hXa := (he'.ext hM hA hat).1
   have hfQ := fst_hom hM hXa hL
   have hsQ := snd_hom hM hXa hL
@@ -871,7 +871,7 @@ theorem weakenElemAt {X W B a : Tree} {e' : List (Tree × Tree)} {w : Term}
 extended by a list variable and a new element, is the step's arrow after the parameters and
 the element paired with the term's arrow at the tail. -/
 theorem listStepAt {X W S C a : Tree} {e' : List (Tree × Tree)} {w s : Term}
-    (he' : EnvHom M ρ n X e') (hat : IsTy n a = true) (hCt : IsTy n C = true)
+    (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true) (hCt : IsTy G n C = true)
     (hS : compile G n s (prod (prod X a) C) (extEnv (prod X a) C (extEnv X a e')) = some (S, C))
     (hw : compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, C)) :
     ∃ q, compile G n (Term.subst s (atVar0 (weakenElem w))) (prod (prod X a) (list a))
@@ -879,10 +879,10 @@ theorem listStepAt {X W S C a : Tree} {e' : List (Tree × Tree)} {w s : Term}
       ResEq M ρ (comp S (pair (fst (prod X a) (list a)) (comp W
         (pair (comp (fst X a) (fst (prod X a) (list a))) (snd (prod X a) (list a))))), C) q := by
   have hX := he'.1
-  have hA := isObj_of_isTy hM hρ a hat
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hL := isObj_list hM hA
-  have hC := isObj_of_isTy hM hρ C hCt
-  have hLt : IsTy n (list a) = true := by simpa [isTy_list] using hat
+  have hC := isObj_of_isTy hM hds.2 hρ C hCt
+  have hLt : IsTy G n (list a) = true := by simpa [isTy_list] using hat
   have hea := he'.ext hM hA hat
   have hXa := hea.1
   have hê₁ := hea.ext hM hL hLt
@@ -912,10 +912,10 @@ theorem listStepAt {X W S C a : Tree} {e' : List (Tree × Tree)} {w s : Term}
 /-- Hypotheses that hold in an environment hold, weakened past two variables, in its extension
 by an element and a list. -/
 theorem hypsHold_weaken2 {Φ : List Term} {X a : Tree} {e' : List (Tree × Tree)}
-    (hΦ : HypsHold M ρ G n Φ X e') (he' : EnvHom M ρ n X e') (hat : IsTy n a = true) :
+    (hΦ : HypsHold M ρ G n Φ X e') (he' : EnvHom M ρ G n X e') (hat : IsTy G n a = true) :
     HypsHold M ρ G n (Φ.map weaken2) (prod (prod X a) (list a))
       (extEnv (prod X a) (list a) (extEnv X a e')) := by
-  have hA := isObj_of_isTy hM hρ a hat
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hL := isObj_list hM hA
   have hXa := (he'.ext hM hA hat).1
   have hfQ := fst_hom hM hXa hL
@@ -948,13 +948,13 @@ theorem listInd_sound {kn kc : ℕ} (hkn : G.prims[kn]? = some nilPrim)
   · simp at hΓ
   simp only [List.map_cons, List.cons.injEq] at hΓ
   obtain ⟨rfl, hΓ'⟩ := hΓ
-  have he' : EnvHom M ρ n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  have he' : EnvHom M ρ G n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
   obtain ⟨hx₀, hLt⟩ := he.2 _ List.mem_cons_self
-  have hat : IsTy n a = true := by simpa [isTy_list] using hLt
-  have hA := isObj_of_isTy hM hρ a hat
+  have hat : IsTy G n a = true := by simpa [isTy_list] using hLt
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hL := isObj_list hM hA
   have hX := he.1
-  have hê : EnvHom M ρ n (prod X (list a)) (extEnv X (list a) e') := he'.ext hM hL hLt
+  have hê : EnvHom M ρ G n (prod X (list a)) (extEnv X (list a) e') := he'.ext hM hL hLt
   have hêΓ : (extEnv X (list a) e').map Prod.snd = list a :: Γ' := by
     simp [extEnv, hΓ', Function.comp_def]
   have hΦ' := hypsHold_lower hlow hΓ' hΦ
@@ -987,7 +987,7 @@ theorem listInd_sound {kn kc : ℕ} (hkn : G.prims[kn]? = some nilPrim)
   obtain ⟨S, hS⟩ := compile_of_typeIn hsC (X := prod (prod X a) A)
     (e := extEnv (prod X a) A (extEnv X a e')) (by simp [extEnv, hΓ', Function.comp_def])
   have hSh : Hom M ρ S (prod (prod X a) A) A :=
-    (hty _ _ _ _ hS ((he'.ext hM hA hat).ext hM (isObj_of_isTy hM hρ A hCt) hCt)).1
+    (hty _ _ _ _ hS ((he'.ext hM hA hat).ext hM (isObj_of_isTy hM hds.2 hρ A hCt) hCt)).1
   have step : ∀ {w : Term} {W : Tree},
       compile G n w (prod X (list a)) (extEnv X (list a) e') = some (W, A) →
       FmSound M ρ G n (list a :: a :: Γ') (Φ'.map weaken2)
@@ -1026,13 +1026,13 @@ theorem listIndHyp_sound {kn kc : ℕ} (hkn : G.prims[kn]? = some nilPrim)
   · simp at hΓ
   simp only [List.map_cons, List.cons.injEq] at hΓ
   obtain ⟨rfl, hΓ'⟩ := hΓ
-  have he' : EnvHom M ρ n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  have he' : EnvHom M ρ G n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
   obtain ⟨hx₀, hLt⟩ := he.2 _ List.mem_cons_self
-  have hat : IsTy n a = true := by simpa [isTy_list] using hLt
-  have hA := isObj_of_isTy hM hρ a hat
+  have hat : IsTy G n a = true := by simpa [isTy_list] using hLt
+  have hA := isObj_of_isTy hM hds.2 hρ a hat
   have hL := isObj_list hM hA
   have hX := he.1
-  have hê : EnvHom M ρ n (prod X (list a)) (extEnv X (list a) e') := he'.ext hM hL hLt
+  have hê : EnvHom M ρ G n (prod X (list a)) (extEnv X (list a) e') := he'.ext hM hL hLt
   have hêΓ : (extEnv X (list a) e').map Prod.snd = list a :: Γ' := by
     simp [extEnv, hΓ', Function.comp_def]
   have hΦ' := hypsHold_lower hlow hΓ' hΦ
@@ -1121,7 +1121,7 @@ theorem Thm.seq_valid {a : Thm} (ha : a.Valid M G) : (a.seq G).Valid M := by
   intro ρ' hρ' _
   obtain ⟨hps', hds', hfm⟩ := hall ρ' hρ'
   have hty := compile_hom hM hG hρ' hps' hds'
-  have hstd := stdEnv_hom hM hρ' _ hctx
+  have hstd := stdEnv_hom hM hds'.2 hρ' _ hctx
   have harrow : ∀ {φ : Term} {F A : Tree},
       compile G a.arity φ (ctxObj a.ctx) (stdEnv a.ctx) = some (F, A) → a.arrow G φ = F :=
     fun h ↦ by simp [Thm.arrow, h]

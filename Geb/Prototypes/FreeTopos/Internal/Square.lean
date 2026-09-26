@@ -29,7 +29,9 @@ tuple of the arguments' arrows; the proof meets them by the substitution lemma
 after a tuple ({lit}`proj_tuple`). It proceeds over the definitions in order
 ({lit}`defsInv`): the operation of each is an arrow, by the soundness of its compiled body's
 typing, and its unfolded body compiles to the operation's value, by the square for the
-definitions before it.
+definitions before it. The constants it concerns have definitions of the language alone, so that
+each initial segment of them has their types ({lit}`isTy_take_of_noObj`); object definitions
+are declared in a development.
 
 ## Main definitions
 
@@ -38,7 +40,10 @@ definitions before it.
 
 ## Main statements
 
-* {lit}`compile_mono` — the compilation is monotone in the definitions.
+* {lit}`compile_mono`, {lit}`isTy_mono` — the compilation and the types are monotone in the
+  constants.
+* {lit}`compileDefs_prefix` — the definitions of fewer constants compile to an initial segment
+  of those of more.
 * {lit}`compile_unfold_of` — the square, given the definitions' invariant.
 * {lit}`compile_unfold`, {lit}`compile_unfold_of_ok` — the square.
 * {lit}`compile_unfold_some` — the unfolding of a term that compiles compiles.
@@ -82,11 +87,44 @@ theorem Globals.Le.refl (G : Globals) : G.Le G :=
 theorem Globals.Le.trans {G G' G'' : Globals} (h : G.Le G') (h' : G'.Le G'') : G.Le G'' :=
   ⟨h.1.trans h'.1, h.2.1.trans h'.2.1, h.2.2.trans h'.2.2⟩
 
+/-- An operation that builds types with fewer constants builds them with more. -/
+theorem Globals.Le.isTyOp {G G' : Globals} (hle : G.Le G') {k m : ℕ}
+    (h : G.isTyOp k m = true) : G'.isTyOp k m = true := by
+  simp only [Globals.isTyOp, Bool.or_eq_true, decide_eq_true_eq, Bool.and_eq_true] at h ⊢
+  rcases h with h | ⟨hk, hm⟩
+  · exact .inl h
+  · refine .inr ⟨hle.2.1 ▸ hk, ?_⟩
+    rw [← hle.2.1]
+    split at hm
+    · rename_i m' b hdef
+      rw [getElem?_of_prefix hle.2.2 hdef]
+      exact hm
+    · simp at hm
+
+/-- A type with fewer constants is a type with more. -/
+theorem isTy_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} :
+    ∀ A : Tree, IsTy G n A = true → IsTy G' n A = true :=
+  RoseTree.ind fun l cs ih hA ↦ by
+    rcases l with _ | k
+    · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
+      · simp [IsTy] at hA
+      · rw [isTy_var_node] at hA ⊢
+        exact hA
+      · simp [IsTy] at hA
+    · change IsTy G n (op k cs) = true at hA
+      change IsTy G' n (op k cs) = true
+      rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA ⊢
+      exact ⟨hle.isTyOp hA.1, fun c hc ↦ ih c hc (hA.2 c hc)⟩
+
+/-- Types with fewer constants are types with more. -/
+theorem all_isTy_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} {θ : List Tree}
+    (h : θ.all (IsTy G n) = true) : θ.all (IsTy G' n) = true :=
+  List.all_eq_true.mpr fun A hA ↦ isTy_mono hle A (List.all_eq_true.mp h A hA)
+
 /-- A term compiles to the same arrow and type with more constants. -/
 theorem compile_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} (s : Term) :
     ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
       compile G' n s X e = some r := by
-  obtain ⟨hp, hb, hds⟩ := hle
   refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree),
     compile G n s X e = some r → compile G' n s X e = some r) (fun l cs ih ↦ ?_) s
   intro X e r h
@@ -109,15 +147,15 @@ theorem compile_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} (s : Term) :
     exact compile_snd_iff.mpr ⟨t, f, a, b, rfl, ih t (by simp) X e _ ht, rfl⟩
   | lam a =>
     obtain ⟨t, f, b, rfl, hat, ht, rfl⟩ := compile_lam_iff.mp h
-    exact compile_lam_iff.mpr ⟨t, f, b, rfl, hat, ih t (by simp) _ _ _ ht, rfl⟩
+    exact compile_lam_iff.mpr ⟨t, f, b, rfl, isTy_mono hle a hat, ih t (by simp) _ _ _ ht, rfl⟩
   | app =>
     obtain ⟨t, u, rfl, f, a, b, ht, g, hu, rfl⟩ := compile_app_iff.mp h
     exact compile_app_iff.mpr ⟨t, u, rfl, f, a, b, ih t (by simp) X e _ ht, g,
       ih u (by simp) X e _ hu, rfl⟩
   | arr k θ =>
     obtain ⟨t, rfl, p, hpk, g, ht, hl, hθ, rfl⟩ := compile_arr_iff.mp h
-    exact compile_arr_iff.mpr ⟨t, rfl, p, getElem?_of_prefix hp hpk, g, ih t (by simp) X e _ ht,
-      hl, hθ, rfl⟩
+    exact compile_arr_iff.mpr ⟨t, rfl, p, getElem?_of_prefix hle.1 hpk, g, ih t (by simp) X e _ ht,
+      hl, all_isTy_mono hle hθ, rfl⟩
   | natRec =>
     obtain ⟨z, s, m, rfl, z', c, hz, s', hs, m', hm, rfl⟩ := compile_natRec_iff.mp h
     exact compile_natRec_iff.mpr ⟨z, s, m, rfl, z', c, ih z (by simp) _ _ _ hz, s',
@@ -128,8 +166,8 @@ theorem compile_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} (s : Term) :
       ih z (by simp) _ _ _ hz, s', ih s (by simp) _ _ _ hs, rfl⟩
   | roseRec c =>
     obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
-    exact compile_roseRec_iff.mpr ⟨s, m, m', t, a, F, s', rfl, hc, ih m (by simp) X e _ hm, ht,
-      ih s (by simp) _ _ _ hs, rfl⟩
+    exact compile_roseRec_iff.mpr ⟨s, m, m', t, a, F, s', rfl, isTy_mono hle c hc,
+      ih m (by simp) X e _ hm, ht, ih s (by simp) _ _ _ hs, rfl⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     exact compile_eq_iff.mpr ⟨t, u, rfl, f, a, ih t (by simp) X e _ ht, g,
@@ -140,16 +178,17 @@ theorem compile_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} (s : Term) :
       fun c hc r hr ↦ ⟨r, ih c hc X e r hr, rfl⟩
     rw [List.forall₂_eq_eq_eq] at hR
     subst hR
-    exact hb ▸ compile_defn_iff.mpr ⟨d, rs, getElem?_of_prefix hds hd, hrs', hl, hθ, hty, rfl⟩
+    exact hle.2.1 ▸ compile_defn_iff.mpr ⟨d, rs, getElem?_of_prefix hle.2.2 hd, hrs', hl,
+      all_isTy_mono hle hθ, hty, rfl⟩
 
 /-- The unfolding of an application of a definition that has an unfolded body. -/
-theorem unfold_defn {ubs : List Term} {k : ℕ} {θ : List Tree} {cs : List Term} {ub : Term}
-    (hub : ubs[k]? = some ub) : unfold ubs (RoseTree.node (.defn k θ) cs) =
+theorem unfold_defn {ubs : List (Option Term)} {k : ℕ} {θ : List Tree} {cs : List Term}
+    {ub : Term} (hub : ubs[k]? = some (some ub)) : unfold ubs (RoseTree.node (.defn k θ) cs) =
       Term.subst (Term.osubst θ ub) (Term.substList (cs.map (unfold ubs))) := by
   simp [unfold, RoseTree.elim_node, hub]
 
 /-- The unfolding of a node of any other label unfolds its children. -/
-theorem unfold_node {ubs : List Term} {l : Label} (hl : ∀ k θ, l ≠ .defn k θ)
+theorem unfold_node {ubs : List (Option Term)} {l : Label} (hl : ∀ k θ, l ≠ .defn k θ)
     (cs : List Term) : unfold ubs (RoseTree.node l cs) = RoseTree.node l (cs.map (unfold ubs)) := by
   rw [unfold, RoseTree.elim_node]
   cases l <;> first | rfl | exact (hl _ _ rfl).elim
@@ -173,10 +212,10 @@ variable (M) in
 /-- Each definition of {lit}`G` has an unfolded body in {lit}`ubs`, which compiles in its
 parameters' environment to its value's type and an arrow that has, at types substituted for its
 object parameters, the value of the definition's operation at them. -/
-def UbsOk (G : Globals) (ubs : List Term) : Prop :=
-  ∀ (k : ℕ) (d : Defn), G.defs[k]? = some d → ∃ ub, ubs[k]? = some ub ∧
+def UbsOk (G : Globals) (ubs : List (Option Term)) : Prop :=
+  ∀ (k : ℕ) (d : Defn), G.defs[k]? = some (.language d) → ∃ ub, ubs[k]? = some (some ub) ∧
     ∀ (m : ℕ) (ρ : List M.Val) (θ : List Tree), ρ.map Sigma.fst = List.replicate m obj →
-      θ.length = d.arity → θ.all (IsTy m) = true →
+      θ.length = d.arity → θ.all (IsTy G m) = true →
       ∃ F, compile G d.arity ub (ctxObj d.params) (stdEnv d.params) = some (F, d.type) ∧
         eval M ρ (PartialHorn.subst θ F) = eval M ρ (op (G.base + k) θ)
 
@@ -184,19 +223,20 @@ variable (hM : IsModel (ext defs) M)
 include hM
 
 /-- A context's environment of projections is an environment of arrows. -/
-theorem stdEnv_hom {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.replicate n obj) :
-    ∀ Γ : List Tree, Γ.all (IsTy n) = true → EnvHom M ρ n (ctxObj Γ) (stdEnv Γ) :=
+theorem stdEnv_hom {G : Globals} (hO : ObjsHom M G) {ρ : List M.Val} {n : ℕ}
+    (hρ : ρ.map Sigma.fst = List.replicate n obj) :
+    ∀ Γ : List Tree, Γ.all (IsTy G n) = true → EnvHom M ρ G n (ctxObj Γ) (stdEnv Γ) :=
   List.rec (fun _ ↦ ⟨isObj_one hM, by simp [stdEnv]⟩) fun a Γ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    have hA := isObj_of_isTy hM hρ a h.1
+    have hA := isObj_of_isTy hM hO hρ a h.1
     rcases Γ with _ | ⟨b, Γ⟩
     · exact ⟨hA, by simpa [stdEnv] using ⟨idt_hom hM hA, h.1⟩⟩
     · exact (ih h.2).ext hM hA h.1
 
 /-- The projections of a context after a tuple of arrows of its types are the arrows. -/
-theorem proj_tuple {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.replicate n obj)
-    {X : Tree} (hX : IsObj M ρ X) :
-    ∀ qs : List (Tree × Tree), (∀ q ∈ qs, Hom M ρ q.1 X q.2 ∧ IsTy n q.2 = true) →
+theorem proj_tuple {G : Globals} (hO : ObjsHom M G) {ρ : List M.Val} {n : ℕ}
+    (hρ : ρ.map Sigma.fst = List.replicate n obj) {X : Tree} (hX : IsObj M ρ X) :
+    ∀ qs : List (Tree × Tree), (∀ q ∈ qs, Hom M ρ q.1 X q.2 ∧ IsTy G n q.2 = true) →
       EnvEq M ρ (precomp (tuple X (qs.map Prod.fst)) (stdEnv (qs.map Prod.snd))) qs :=
   List.rec (fun _ i p hp ↦ by simp [precomp, stdEnv] at hp) fun q qs ih hqs i p hp ↦ by
     have hq := (hqs q List.mem_cons_self).1
@@ -206,13 +246,13 @@ theorem proj_tuple {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.re
       · obtain rfl : (comp (idt q.2) q.1, q.2) = p := by simpa [precomp, stdEnv, tuple] using hp
         exact ⟨q, rfl, rfl, (idt_comp hM hq).symm⟩
       · simp [precomp, stdEnv] at hp
-    have hqs' : ∀ r ∈ q' :: qs, Hom M ρ r.1 X r.2 ∧ IsTy n r.2 = true :=
+    have hqs' : ∀ r ∈ q' :: qs, Hom M ρ r.1 X r.2 ∧ IsTy G n r.2 = true :=
       fun r hr ↦ hqs r (List.mem_cons_of_mem _ hr)
     have hT := tuple_hom hM hX (q' :: qs) fun r hr ↦ (hqs' r hr).1
-    have hΓ : ((q' :: qs).map Prod.snd).all (IsTy n) = true := by
+    have hΓ : ((q' :: qs).map Prod.snd).all (IsTy G n) = true := by
       rw [List.all_map, List.all_eq_true]
       exact fun r hr ↦ (hqs' r hr).2
-    have hstd := stdEnv_hom hM hρ _ hΓ
+    have hstd := stdEnv_hom hM hO hρ _ hΓ
     rcases i with _ | j
     · obtain rfl : (comp (snd (ctxObj ((q' :: qs).map Prod.snd)) q.2)
           (pair (tuple X ((q' :: qs).map Prod.fst)) q.1), q.2) = p := by
@@ -234,18 +274,19 @@ theorem proj_tuple {ρ : List M.Val} {n : ℕ} (hρ : ρ.map Sigma.fst = List.re
 
 /-- The unfolding of a well-typed term's definitions, by unfolded bodies whose arrows have the
 values of the definitions' operations, has the term's type and an arrow of the same value. -/
-theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : UbsOk M G ubs)
+theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List (Option Term)}
+    (hubs : UbsOk M G ubs)
     {n : ℕ} {ρ : List M.Val} (hρ : ρ.map Sigma.fst = List.replicate n obj)
     (hps : PrimsHom M ρ G n) (hds : DefsHom M ρ G n) (s : Term) :
     ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
-      EnvHom M ρ n X e →
+      EnvHom M ρ G n X e →
       ∃ r', compile G n (unfold ubs s) X e = some r' ∧ ResEq M ρ r r' := by
   refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree),
-    compile G n s X e = some r → EnvHom M ρ n X e →
+    compile G n s X e = some r → EnvHom M ρ G n X e →
       ∃ r', compile G n (unfold ubs s) X e = some r' ∧ ResEq M ρ r r')
     (fun l cs ih ↦ ?_) s
   intro X e r h he
-  have hobj := isObj_of_isTy hM hρ
+  have hobj := isObj_of_isTy hM hds.2 hρ
   have hty := compile_hom hM hG hρ hps hds
   cases l with
   | var i =>
@@ -295,7 +336,7 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : Ub
   | natRec =>
     obtain ⟨z, s, m, rfl, z', c, hz, s', hs, m', hm, rfl⟩ := compile_natRec_iff.mp h
     rw [unfold_node (by simp)]
-    have hz₀ : EnvHom M ρ n one [] := ⟨isObj_one hM, by simp⟩
+    have hz₀ : EnvHom M ρ G n one [] := ⟨isObj_one hM, by simp⟩
     obtain ⟨-, hct⟩ := hty z _ _ _ hz hz₀
     have hC := hobj c hct
     obtain ⟨⟨z'', c'⟩, hz', rfl, hzv⟩ := ih z (by simp) _ _ _ hz hz₀
@@ -307,7 +348,7 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : Ub
   | listRec =>
     obtain ⟨z, s, m, rfl, m', a, hm, z', c, hz, s', hs, rfl⟩ := compile_listRec_iff.mp h
     rw [unfold_node (by simp)]
-    have hz₀ : EnvHom M ρ n one [] := ⟨isObj_one hM, by simp⟩
+    have hz₀ : EnvHom M ρ G n one [] := ⟨isObj_one hM, by simp⟩
     obtain ⟨-, hlt⟩ := hty m X e _ hm he
     rw [isTy_list] at hlt
     obtain ⟨-, hct⟩ := hty z _ _ _ hz hz₀
@@ -323,7 +364,7 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : Ub
     obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
     rw [unfold_node (by simp)]
     have hat := isTy_of_roseParts ht (hty m X e _ hm he).2
-    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+    have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨⟨s'', c'⟩, hs', rfl, hsv⟩ :=
       ih s (by simp) _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
@@ -345,27 +386,27 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : Ub
     -- the unfolded arguments compile to the arguments' types and values
     obtain ⟨rs', hrs', hR⟩ := mapM_lift (g := fun c ↦ compile G n (unfold ubs c) X e) cs hrs
       fun c hc r hr ↦ ih c hc X e r hr he
-    have hq : ∀ q ∈ rs', Hom M ρ q.1 X q.2 ∧ IsTy n q.2 = true := fun q hq ↦ by
+    have hq : ∀ q ∈ rs', Hom M ρ q.1 X q.2 ∧ IsTy G n q.2 = true := fun q hq ↦ by
       obtain ⟨c, -, hcq⟩ := exists_of_mapM hrs' hq
       exact hty _ X e q hcq he
     have hsn : rs'.map Prod.snd = d.params.map (PartialHorn.subst θ) :=
       (map_snd_of_forall₂ hR).trans htys
     have hT := tuple_hom hM he.1 rs' fun q hq' ↦ (hq q hq').1
-    have hPt : (rs'.map Prod.snd).all (IsTy n) = true := by
+    have hPt : (rs'.map Prod.snd).all (IsTy G n) = true := by
       rw [List.all_map, List.all_eq_true]
       exact fun q hq' ↦ (hq q hq').2
     -- the body at the objects, in its parameters' environment, precomposed with the arguments
     have hO := compile_osubst hG hl hθ ub _ _ _ hF
     rw [subst_ctxObj, map_substPair_stdEnv, ← hsn] at hO
     obtain ⟨r₁, hr₁, hr₁v⟩ :=
-      compile_comp hM hG hρ hps hds _ _ _ _ hO (stdEnv_hom hM hρ _ hPt) X _ hT
+      compile_comp hM hG hρ hps hds _ _ _ _ hO (stdEnv_hom hM hds.2 hρ _ hPt) X _ hT
     -- the substitution of the unfolded arguments
     have hlen : rs'.length = cs.length := by
       simpa using (congrArg List.length ((PartialHorn.mapM_eq_some_iff cs rs').mp hrs')).symm
     have hσ : SubstEq M ρ G n X e (Term.substList (cs.map (unfold ubs)))
         (precomp (tuple X (rs'.map Prod.fst)) (stdEnv (rs'.map Prod.snd))) := by
       intro i p hp
-      obtain ⟨q, hq', hpq⟩ := proj_tuple hM hρ he.1 rs' hq i p hp
+      obtain ⟨q, hq', hpq⟩ := proj_tuple hM hds.2 hρ he.1 rs' hq i p hp
       have hi : i < cs.length := hlen ▸ (List.getElem?_eq_some_iff.mp hq').1
       obtain ⟨q', hq'', hcq⟩ := getElem?_of_mapM hrs' (List.getElem?_eq_getElem hi)
       obtain rfl : q = q' := Option.some_inj.mp (hq'.symm.trans hq'')
@@ -380,7 +421,7 @@ end Square
 /-- The definitions of the combinators that definitions compile to are their compilations over
 the definitions before them. -/
 theorem compileDefs_getElem? {G : Globals} {cds : List PartialHorn.Defn}
-    (hc : compileDefs G = some cds) {k : ℕ} {d : Defn} (hd : G.defs[k]? = some d) :
+    (hc : compileDefs G = some cds) {k : ℕ} {d : Definition} (hd : G.defs[k]? = some d) :
     ∃ cd, cds[k]? = some cd ∧ d.compile { G with defs := G.defs.take k } = some cd := by
   obtain ⟨cd, hcd, h⟩ := getElem?_of_mapM hc (i := k) (a := (d, k))
     (by simp [List.getElem?_zipIdx, hd])
@@ -396,12 +437,28 @@ theorem Defn.compile_eq_some {G : Globals} {d : Defn} {cd : PartialHorn.Defn}
   split_ifs at h with hok
   exact ⟨cb, hok.2 ▸ hcb, (Option.some_inj.mp h).symm⟩
 
-/-- A definition compiles to the same definition of the combinators with more constants. -/
+/-- A definition that compiles has parameters of types. -/
+theorem Defn.params_of_compile {G : Globals} {d : Defn} {cd : PartialHorn.Defn}
+    (h : d.compile G = some cd) : d.params.all (IsTy G d.arity) = true := by
+  simp only [Defn.compile, Option.bind_eq_bind, Option.bind_eq_some_iff] at h
+  obtain ⟨⟨cb, c⟩, -, h⟩ := h
+  split_ifs at h with hok
+  exact hok.1
+
+/-- A definition of the language compiles to the same definition of the combinators with more
+constants. -/
 theorem Defn.compile_mono {G G' : Globals} (hle : G.Le G') {d : Defn} {cd : PartialHorn.Defn}
     (h : d.compile G = some cd) : d.compile G' = some cd := by
-  simp only [Defn.compile, Option.bind_eq_bind, Option.bind_eq_some_iff] at h ⊢
-  obtain ⟨r, hr, h⟩ := h
-  exact ⟨r, Internal.compile_mono hle _ _ _ _ hr, h⟩
+  obtain ⟨cb, hcb, rfl⟩ := Defn.compile_eq_some h
+  simp [Defn.compile, Internal.compile_mono hle _ _ _ _ hcb,
+    all_isTy_mono hle (Defn.params_of_compile h)]
+
+/-- A definition compiles to the same definition of the combinators with more constants. -/
+theorem Definition.compile_mono {G G' : Globals} (hle : G.Le G') {d : Definition}
+    {cd : PartialHorn.Defn} (h : d.compile G = some cd) : d.compile G' = some cd := by
+  cases d with
+  | language d => exact Defn.compile_mono hle h
+  | object m b => exact h
 
 /-- The initial segments of constants of one length keep their order. -/
 theorem Globals.Le.take {G G' : Globals} (hle : G.Le G') (k : ℕ) :
@@ -421,9 +478,9 @@ theorem compileDefs_prefix {G G' : Globals} (hle : G.Le G') {cds cds' : List Par
   obtain ⟨t, ht⟩ := hle.2.2
   unfold compileDefs at hc hc'
   rw [← ht, List.zipIdx_append, List.mapM_append] at hc'
-  obtain ⟨rs, hrs, hR⟩ := mapM_lift (R := Eq) (g := fun ((d, i) : Defn × ℕ) ↦
+  obtain ⟨rs, hrs, hR⟩ := mapM_lift (R := Eq) (g := fun ((d, i) : Definition × ℕ) ↦
       d.compile { G' with defs := (G.defs ++ t).take i }) _ hc
-    fun ⟨_, i⟩ _ r hr ↦ ⟨r, Defn.compile_mono (G := { G with defs := G.defs.take i })
+    fun ⟨_, i⟩ _ r hr ↦ ⟨r, Definition.compile_mono (G := { G with defs := G.defs.take i })
       (G' := { G' with defs := (G.defs ++ t).take i })
       ⟨hle.1, hle.2.1, (List.prefix_append _ _).take i⟩ hr, rfl⟩
   rw [List.forall₂_eq_eq_eq] at hR
@@ -440,17 +497,18 @@ theorem compileDefs_of_prims {G G' : Globals} (hle : G.Le G') (hd : G'.defs = G.
     {cds : List PartialHorn.Defn} (hc : compileDefs G = some cds) : compileDefs G' = some cds := by
   unfold compileDefs at hc ⊢
   rw [hd]
-  obtain ⟨rs, hrs, hR⟩ := mapM_lift (R := Eq) (g := fun ((d, i) : Defn × ℕ) ↦
+  obtain ⟨rs, hrs, hR⟩ := mapM_lift (R := Eq) (g := fun ((d, i) : Definition × ℕ) ↦
       d.compile { G' with defs := G.defs.take i }) _ hc
-    fun ⟨_, i⟩ _ r hr ↦ ⟨r, Defn.compile_mono (G := { G with defs := G.defs.take i })
-      (G' := { G' with defs := G.defs.take i }) ⟨hle.1, hle.2.1, List.prefix_refl _⟩ hr, rfl⟩
+    fun ⟨_, i⟩ _ r hr ↦ ⟨r, Definition.compile_mono (G := { G with defs := G.defs.take i })
+      (G' := { G' with defs := G.defs.take i })
+      ⟨hle.1, hle.2.1, List.prefix_refl _⟩ hr, rfl⟩
   rw [List.forall₂_eq_eq_eq] at hR
   exact hR ▸ hrs
 
 /-- The definitions compile, with one more, to the definitions of the combinators they compile
 to and the one it compiles to. -/
 theorem compileDefs_snoc {G : Globals} {cds : List PartialHorn.Defn}
-    (hc : compileDefs G = some cds) {d : Defn} {cd : PartialHorn.Defn}
+    (hc : compileDefs G = some cds) {d : Definition} {cd : PartialHorn.Defn}
     (hd : d.compile G = some cd) :
     compileDefs { G with defs := G.defs ++ [d] } = some (cds ++ [cd]) := by
   unfold compileDefs at hc ⊢
@@ -465,15 +523,16 @@ theorem compileDefs_snoc {G : Globals} {cds : List PartialHorn.Defn}
   simp [hpre, List.take_append_of_le_length le_rfl, hd]
 
 /-- The unfolded bodies of one more definition. -/
-theorem unfoldBodies_take_succ {ds : List Defn} {k : ℕ} {d : Defn} (hd : ds[k]? = some d) :
-    unfoldBodies (ds.take (k + 1)) =
-      unfoldBodies (ds.take k) ++ [unfold (unfoldBodies (ds.take k)) d.body] := by
+theorem unfoldBodies_take_succ {ds : List Definition} {k : ℕ} {d : Definition}
+    (hd : ds[k]? = some d) : unfoldBodies (ds.take (k + 1)) = unfoldBodies (ds.take k) ++
+      [d.language?.map fun d ↦ unfold (unfoldBodies (ds.take k)) d.body] := by
   rw [List.take_add_one, hd, Option.toList_some, unfoldBodies, List.foldl_append]
   rfl
 
 /-- There is one unfolded body for each definition. -/
-theorem length_unfoldBodies (ds : List Defn) : (unfoldBodies ds).length = ds.length := by
-  suffices h : ∀ acc : List Term, (ds.foldl (fun ubs d ↦ ubs ++ [unfold ubs d.body]) acc).length =
+theorem length_unfoldBodies (ds : List Definition) : (unfoldBodies ds).length = ds.length := by
+  suffices h : ∀ acc : List (Option Term), (ds.foldl (fun ubs d ↦
+      ubs ++ [d.language?.map fun d ↦ unfold ubs d.body]) acc).length =
       acc.length + ds.length by simpa [unfoldBodies] using h []
   exact ds.rec (fun _ ↦ rfl) fun d ds ih acc ↦ by
     rw [List.foldl_cons, ih, List.length_append, List.length_singleton, List.length_cons]
@@ -487,18 +546,55 @@ theorem getElem?_of_take {α : Type} {l : List α} {i j : ℕ} {a : α}
   split_ifs at h with hj
   exact ⟨hj, h⟩
 
-/-- The constants of an initial segment of well-formed constants are well formed. -/
-theorem Globals.WF.take {G : Globals} (hG : G.WF) (k : ℕ) :
-    ({ G with defs := G.defs.take k } : Globals).WF :=
-  ⟨hG.prims, fun j d hd ↦ hG.defs j d (getElem?_of_take hd).2⟩
+/-- Constants of no object definition build types by the operations of {lit}`tyOps` alone. -/
+theorem Globals.isTyOp_of_noObj {G : Globals}
+    (h : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) (k m : ℕ) :
+    G.isTyOp k m = decide ((k, m) ∈ tyOps) := by
+  simp only [Globals.isTyOp]
+  split
+  · rename_i m' b hdef
+    exact (h _ _ _ hdef).elim
+  · simp
+
+/-- Constants of the same operations that build types have the same types. -/
+theorem isTy_eq_of_isTyOp {G G' : Globals} (h : ∀ k m, G.isTyOp k m = G'.isTyOp k m) (n : ℕ) :
+    IsTy G n = IsTy G' n := by
+  have he : G.isTyOp = G'.isTyOp := funext fun k ↦ funext fun m ↦ h k m
+  simp only [IsTy, he]
+
+/-- An initial segment of constants of no object definition has none. -/
+theorem noObj_take {G : Globals}
+    (hno : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) (j : ℕ) :
+    ∀ (k m : ℕ) (b : Tree), ({ G with defs := G.defs.take j } : Globals).defs[k]? ≠
+      some (.object m b) :=
+  fun k m b hk ↦ hno k m b (getElem?_of_take hk).2
+
+/-- The initial segments of constants of no object definition have their types. -/
+theorem isTy_take_of_noObj {G : Globals}
+    (hno : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) (j n : ℕ) :
+    IsTy { G with defs := G.defs.take j } n = IsTy G n :=
+  isTy_eq_of_isTyOp (fun k m ↦ by
+    rw [Globals.isTyOp_of_noObj (noObj_take hno j), Globals.isTyOp_of_noObj hno]) n
+
+/-- The constants of an initial segment of well-formed constants of no object definition are
+well formed. -/
+theorem Globals.WF.take {G : Globals} (hG : G.WF)
+    (hno : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) (k : ℕ) :
+    ({ G with defs := G.defs.take k } : Globals).WF := by
+  refine ⟨fun j p hp ↦ ?_, fun j d hd ↦ ?_⟩
+  · simp only [isTy_take_of_noObj hno]
+    exact hG.prims j p hp
+  · simp only [isTy_take_of_noObj hno]
+    exact hG.defs j d (getElem?_of_take hd).2
 
 /-- A type is a type of the product of a context of types. -/
-theorem isTy_ctxObj {n : ℕ} : ∀ Γ : List Tree, Γ.all (IsTy n) = true → IsTy n (ctxObj Γ) = true :=
+theorem isTy_ctxObj {G : Globals} {n : ℕ} :
+    ∀ Γ : List Tree, Γ.all (IsTy G n) = true → IsTy G n (ctxObj Γ) = true :=
   List.rec (fun _ ↦ isTy_one) fun a Γ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
     rcases Γ with _ | ⟨b, Γ⟩
     · exact h.1
-    · change IsTy n (prod (ctxObj (b :: Γ)) a) = true
+    · change IsTy G n (prod (ctxObj (b :: Γ)) a) = true
       simp [isTy_prod, ih h.2, h.1]
 
 section Values
@@ -525,13 +621,13 @@ theorem scoped_of_eval {ρ : List M.Val} :
       exact ih c hc hv
 
 /-- Types at an assignment of objects have values, objects. -/
-theorem exists_vals_of_isTy (hM : IsModel (ext defs) M) {m : ℕ} {ρ : List M.Val}
-    (hρ : ρ.map Sigma.fst = List.replicate m obj) :
-    ∀ θ : List Tree, θ.all (IsTy m) = true → ∃ ws : List M.Val,
+theorem exists_vals_of_isTy (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M G) {m : ℕ}
+    {ρ : List M.Val} (hρ : ρ.map Sigma.fst = List.replicate m obj) :
+    ∀ θ : List Tree, θ.all (IsTy G m) = true → ∃ ws : List M.Val,
       θ.map (eval M ρ) = ws.map Part.some ∧ ws.map Sigma.fst = List.replicate θ.length obj :=
   List.rec (fun _ ↦ ⟨[], rfl, rfl⟩) fun a θ ih h ↦ by
     simp only [List.all_cons, Bool.and_eq_true] at h
-    obtain ⟨w, hw, hws⟩ := isObj_of_isTy hM hρ a h.1
+    obtain ⟨w, hw, hws⟩ := isObj_of_isTy hM hO hρ a h.1
     obtain ⟨ws, h₁, h₂⟩ := ih h.2
     exact ⟨w :: ws, by simp [hw, h₁], by simp [hws, h₂, List.replicate_succ]⟩
 
@@ -555,16 +651,38 @@ theorem Globals.wf_of_ok {E : ExtEnv} {G : Globals} (h : G.ok E = true) : G.WF :
   · have hp' := List.all_eq_true.mp h.1 p (List.mem_of_getElem? hp)
     simp only [Prim.ok, Prim.wf, Bool.and_eq_true] at hp'
     exact ⟨hp'.1.1.1.1, hp'.1.1.1.2, hp'.1.1.2⟩
-  · have hd' := List.all_eq_true.mp h.2 d (List.mem_of_getElem? hd)
-    simp only [Bool.and_eq_true] at hd'
+  · have hd' := List.all_eq_true.mp h.2 _ (List.mem_of_getElem? hd)
+    simp only [Definition.ok, Bool.and_eq_true] at hd'
     exact hd'
+
+/-- Constants the check accepts have no object definition. -/
+theorem Globals.noObj_of_ok {E : ExtEnv} {G : Globals} (h : G.ok E = true) :
+    ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b) := fun k m b hk ↦ by
+  simp only [Globals.ok, Bool.and_eq_true] at h
+  have := List.all_eq_true.mp h.2 _ (List.mem_of_getElem? hk)
+  simp [Definition.ok] at this
+
+/-- The object definitions of constants of none take objects to objects. -/
+theorem objsHom_of_noObj {G : Globals}
+    (hno : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) : ObjsHom M G :=
+  fun k m b hk ↦ (hno k m b hk).elim
+
+/-- The primitive arrows of an initial segment of constants of no object definition are arrows
+where theirs are. -/
+theorem primsHom_take {G : Globals}
+    (hno : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) {ρ : List M.Val} {n : ℕ}
+    (hps : PrimsHom M ρ G n) (j : ℕ) : PrimsHom M ρ { G with defs := G.defs.take j } n := by
+  intro k p hp θ hl hθ
+  rw [isTy_take_of_noObj hno] at hθ
+  exact hps k p hp θ hl hθ
 
 /-- A primitive arrow the check accepts, with definitions of the combinators that begin those of
 the model's theory, is an arrow at types, at every assignment of objects. -/
-theorem Prim.hom_of_ok (hM : IsModel (ext defs) M) {cds' : List PartialHorn.Defn}
-    (hpre : cds' <+: defs) {p : Prim} (hpo : p.ok (ExtEnv.ofDefs cds') = true) {m : ℕ}
-    {ρ : List M.Val} (hρ : ρ.map Sigma.fst = List.replicate m obj) {θ : List Tree}
-    (hl : θ.length = p.arity) (hθ : θ.all (IsTy m) = true) :
+theorem Prim.hom_of_ok (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M G)
+    {cds' : List PartialHorn.Defn} (hpre : cds' <+: defs) {p : Prim}
+    (hpo : p.ok G (ExtEnv.ofDefs cds') = true) {m : ℕ} {ρ : List M.Val}
+    (hρ : ρ.map Sigma.fst = List.replicate m obj) {θ : List Tree} (hl : θ.length = p.arity)
+    (hθ : θ.all (IsTy G m) = true) :
     Hom M ρ (PartialHorn.subst θ p.arrow) (PartialHorn.subst θ p.dom)
       (PartialHorn.subst θ p.cod) := by
   unfold Prim.ok at hpo
@@ -574,7 +692,7 @@ theorem Prim.hom_of_ok (hM : IsModel (ext defs) M) {cds' : List PartialHorn.Defn
   · rename_i a ha
     simp only [Bool.and_eq_true, beq_iff_eq] at hinf
     obtain ⟨⟨hs, hlo⟩, hhi⟩ := hinf
-    obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hρ θ hθ
+    obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hO hρ θ hθ
     rw [hl] at hws
     obtain ⟨w, hw, hwsrt, -, harr⟩ := (infers_sound ((ExtEnv.wf_ofDefs cds').sound hpre hM) hws
       (H := []) (by simp) inferFuel).2 _ a ha
@@ -583,8 +701,8 @@ theorem Prim.hom_of_ok (hM : IsModel (ext defs) M) {cds' : List PartialHorn.Defn
         eval M ρ (PartialHorn.subst θ x) = eval M ws x :=
       fun x hx ↦ PartialHorn.eval_subst hθw x (hl ▸ hx)
     have hw' := (hsc _ har).trans hw
-    refine ⟨w, hw', hwsrt.trans hs, isObj_of_isTy hM hρ _ (isTy_subst hl hθ _ hdt),
-      isObj_of_isTy hM hρ _ (isTy_subst hl hθ _ hct), ?_, ?_⟩
+    refine ⟨w, hw', hwsrt.trans hs, isObj_of_isTy hM hO hρ _ (isTy_subst hl hθ _ hdt),
+      isObj_of_isTy hM hO hρ _ (isTy_subst hl hθ _ hct), ?_, ?_⟩
     · rw [hsc _ (scoped_of_isTy _ hdt), ← hlo]
       exact (eval_op₁_of_eq (hsc _ har)).trans (hd.trans hdl.symm)
     · rw [hsc _ (scoped_of_isTy _ hct), ← hhi]
@@ -597,8 +715,9 @@ theorem primsHom_of_ok (hM : IsModel (ext defs) M) (hpre : pre ++ cds <+: defs) 
     (h : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true) {m : ℕ} {ρ : List M.Val}
     (hρ : ρ.map Sigma.fst = List.replicate m obj) : PrimsHom M ρ G m := by
   intro k p hp θ hl hθ
+  have hno := Globals.noObj_of_ok h
   simp only [Globals.ok, Bool.and_eq_true, List.all_eq_true] at h
-  exact Prim.hom_of_ok hM hpre (h.1 p (List.mem_of_getElem? hp)) hρ hl hθ
+  exact Prim.hom_of_ok hM (objsHom_of_noObj hno) hpre (h.1 p (List.mem_of_getElem? hp)) hρ hl hθ
 
 variable (M) in
 /-- The invariant of the definitions' compilation, over an initial segment of them: their
@@ -609,26 +728,35 @@ def DefsInv (G : Globals) (k : ℕ) : Prop :=
   UbsOk M { G with defs := G.defs.take k } (unfoldBodies (G.defs.take k))
 
 variable (hM : IsModel (ext defs) M) {G : Globals}
-  (hbase : G.base = sig.length + pre.length) (hG : G.WF) (hc : compileDefs G = some cds)
+  (hbase : G.base = sig.length + pre.length) (hG : G.WF)
+  (hno : ∀ (k m : ℕ) (b : Tree), G.defs[k]? ≠ some (.object m b)) (hc : compileDefs G = some cds)
   (hpre : pre ++ cds <+: defs)
   (hps : ∀ (m : ℕ) (ρ : List M.Val), ρ.map Sigma.fst = List.replicate m obj → PrimsHom M ρ G m)
-include hM hbase hG hc hpre hps
+include hM hbase hG hno hc hpre hps
 
 /-- The invariant extends to one more definition. -/
 theorem defsInv_succ {k : ℕ} (hk : k < G.defs.length) (h : DefsInv M G k) :
     DefsInv M G (k + 1) := by
-  obtain ⟨d, hd⟩ : ∃ d, G.defs[k]? = some d := ⟨_, List.getElem?_eq_getElem hk⟩
+  obtain ⟨d₀, hd⟩ : ∃ d, G.defs[k]? = some d := ⟨_, List.getElem?_eq_getElem hk⟩
+  obtain ⟨d, rfl⟩ : ∃ d, d₀ = .language d := by
+    cases d₀ with
+    | language d => exact ⟨d, rfl⟩
+    | object m b => exact (hno k m b hd).elim
   obtain ⟨cd, hcd, hdc⟩ := compileDefs_getElem? hc hd
   obtain ⟨cb, hcb, rfl⟩ := Defn.compile_eq_some hdc
   obtain ⟨hpt, htt⟩ := hG.defs k d hd
-  have hGk := hG.take k
+  have hGk := hG.take hno k
+  have hty := isTy_take_of_noObj hno
+  have hptk : d.params.all (IsTy { G with defs := G.defs.take k } d.arity) = true := by
+    rw [hty]; exact hpt
   have hle : Globals.Le { G with defs := G.defs.take k } { G with defs := G.defs.take (k + 1) } :=
-    ⟨List.prefix_refl _, rfl, [d], by rw [List.take_add_one, hd]; rfl⟩
+    ⟨List.prefix_refl _, rfl, [.language d], by rw [List.take_add_one, hd]; rfl⟩
+  have hO := objsHom_of_noObj (M := M) hno
   -- the compiled body at an assignment of objects to the object parameters
   have hbody : ∀ (ws : List M.Val), ws.map Sigma.fst = List.replicate d.arity obj →
       Hom M ws cb (ctxObj d.params) d.type := fun ws hws ↦
-    (compile_hom hM hGk hws (hps _ ws hws) (h.1 _ ws hws) _ _ _ _ hcb
-      (stdEnv_hom hM hws _ hpt)).1
+    (compile_hom hM hGk hws (primsHom_take hno (hps _ ws hws) k) (h.1 _ ws hws) _ _ _ _ hcb
+      (stdEnv_hom hM (h.1 _ ws hws).2 hws _ hptk)).1
   -- the operation at types has the compiled body's value at their values
   have hop : ∀ (m : ℕ) (ρ : List M.Val) (θ : List Tree) (ws : List M.Val),
       θ.map (eval M ρ) = ws.map Part.some → ws.map Sigma.fst = List.replicate d.arity obj →
@@ -638,32 +766,35 @@ theorem defsInv_succ {k : ℕ} (hk : k < G.defs.length) (h : DefsInv M G k) :
     exact eval_op_defn hM (i := pre.length + k) (d := ⟨List.replicate d.arity obj, arr, cb⟩)
       (getElem?_of_prefix hpre (by simp [List.getElem?_append_right, hcd])) hθ hws hv
   have hvals : ∀ (m : ℕ) (ρ : List M.Val) (θ : List Tree),
-      ρ.map Sigma.fst = List.replicate m obj → θ.length = d.arity → θ.all (IsTy m) = true →
+      ρ.map Sigma.fst = List.replicate m obj → θ.length = d.arity → θ.all (IsTy G m) = true →
       ∃ ws : List M.Val, θ.map (eval M ρ) = ws.map Part.some ∧
         ws.map Sigma.fst = List.replicate d.arity obj := fun m ρ θ hρ hl hθ ↦ by
-    obtain ⟨ws, h₁, h₂⟩ := exists_vals_of_isTy hM hρ θ hθ
+    obtain ⟨ws, h₁, h₂⟩ := exists_vals_of_isTy hM hO hρ θ hθ
     exact ⟨ws, h₁, hl ▸ h₂⟩
-  refine ⟨fun m ρ hρ j d' hd' θ hl hθ ↦ ?_, fun j d' hd' ↦ ?_⟩
+  refine ⟨fun m ρ hρ ↦ ⟨fun j d' hd' θ hl hθ ↦ ?_, objsHom_of_noObj (noObj_take hno _)⟩,
+    fun j d' hd' ↦ ?_⟩
   · -- the operations are arrows
+    rw [hty] at hθ
     rcases Nat.lt_or_ge j k with hj | hj
-    · have hd'k : (G.defs.take k)[j]? = some d' := by
+    · have hd'k : (G.defs.take k)[j]? = some (.language d') := by
         rw [List.getElem?_take_of_lt hj]
         exact (getElem?_of_take hd').2
-      exact h.1 m ρ hρ j d' hd'k θ hl hθ
+      exact (h.1 m ρ hρ).1 j d' hd'k θ hl (by rw [hty]; exact hθ)
     · have hjk : j = k := Nat.le_antisymm (Nat.le_of_lt_succ (getElem?_of_take hd').1) hj
       subst hjk
-      obtain rfl : d' = d := Option.some_inj.mp ((getElem?_of_take hd').2.symm.trans hd)
+      obtain rfl : d' = d := Definition.language.inj
+        (Option.some_inj.mp ((getElem?_of_take hd').2.symm.trans hd))
       obtain ⟨ws, hθw, hws⟩ := hvals m ρ θ hρ hl hθ
       obtain ⟨v, hv, hvs, -, -, hdom, hcod⟩ := hbody ws hws
-      have hsc : ∀ x : Tree, IsTy d'.arity x = true →
+      have hsc : ∀ x : Tree, IsTy G d'.arity x = true →
           eval M ρ (PartialHorn.subst θ x) = eval M ws x := fun x hx ↦
         PartialHorn.eval_subst hθw x (hl ▸ scoped_of_isTy x hx)
       have ho := hop m ρ θ ws hθw hws
       refine ⟨v, ho.trans hv, hvs,
-        isObj_of_isTy hM hρ _ (isTy_ctxObj _ (by
+        isObj_of_isTy hM hO hρ _ (isTy_ctxObj _ (by
           rw [List.all_map, List.all_eq_true]
           exact fun x hx ↦ isTy_subst hl hθ x (List.all_eq_true.mp hpt x hx))),
-        isObj_of_isTy hM hρ _ (isTy_subst hl hθ _ htt), ?_, ?_⟩
+        isObj_of_isTy hM hO hρ _ (isTy_subst hl hθ _ htt), ?_, ?_⟩
       · rw [← subst_ctxObj, hsc _ (isTy_ctxObj _ hpt)]
         exact (eval_op₁_of_eq ho).trans hdom
       · rw [hsc _ htt]
@@ -673,23 +804,25 @@ theorem defsInv_succ {k : ℕ} (hk : k < G.defs.length) (h : DefsInv M G k) :
       rw [length_unfoldBodies, List.length_take, Nat.min_eq_left hk.le]
     rw [unfoldBodies_take_succ hd]
     rcases Nat.lt_or_ge j k with hj | hj
-    · have hd'k : (G.defs.take k)[j]? = some d' := by
+    · have hd'k : (G.defs.take k)[j]? = some (.language d') := by
         rw [List.getElem?_take_of_lt hj]
         exact (getElem?_of_take hd').2
       obtain ⟨ub, hub, hF⟩ := h.2 j d' hd'k
       refine ⟨ub, by rw [List.getElem?_append_left (by rw [hlen]; exact hj)]; exact hub,
         fun m ρ θ hρ hl hθ ↦ ?_⟩
-      obtain ⟨F, hFc, hFv⟩ := hF m ρ θ hρ hl hθ
+      obtain ⟨F, hFc, hFv⟩ := hF m ρ θ hρ hl (by rw [hty] at hθ ⊢; exact hθ)
       exact ⟨F, compile_mono hle _ _ _ _ hFc, hFv⟩
     · have hjk : j = k := Nat.le_antisymm (Nat.le_of_lt_succ (getElem?_of_take hd').1) hj
       subst hjk
-      obtain rfl : d' = d := Option.some_inj.mp ((getElem?_of_take hd').2.symm.trans hd)
+      obtain rfl : d' = d := Definition.language.inj
+        (Option.some_inj.mp ((getElem?_of_take hd').2.symm.trans hd))
       refine ⟨_, by rw [List.getElem?_append_right hlen.le, hlen, Nat.sub_self]; rfl,
         fun m ρ θ hρ hl hθ ↦ ?_⟩
+      rw [hty] at hθ
       obtain ⟨ws, hθw, hws⟩ := hvals m ρ θ hρ hl hθ
-      obtain ⟨⟨F, ty⟩, hF, rfl, hFv⟩ := compile_unfold_of hM hGk h.2 hws (hps _ ws hws)
-        (h.1 _ ws hws) _ _ _ _ hcb (stdEnv_hom hM hws _ hpt)
-      obtain ⟨-, -, -, ⟨w, hw, -⟩, -⟩ := hbody ws hws
+      obtain ⟨⟨F, ty⟩, hF, rfl, hFv⟩ := compile_unfold_of hM hGk h.2 hws
+        (primsHom_take hno (hps _ ws hws) _) (h.1 _ ws hws) _ _ _ _ hcb
+        (stdEnv_hom hM (h.1 _ ws hws).2 hws _ hptk)
       obtain ⟨v, hv, -⟩ := hbody ws hws
       have hFw : eval M ws F = Part.some v := hFv.trans hv
       have hsF : PartialHorn.Scoped θ.length F = true := by
@@ -701,29 +834,32 @@ theorem defsInv_succ {k : ℕ} (hk : k < G.defs.length) (h : DefsInv M G k) :
 
 /-- The invariant holds of every initial segment of the definitions. -/
 theorem defsInv : ∀ k ≤ G.defs.length, DefsInv M G k :=
-  Nat.rec (fun _ ↦ ⟨fun _ _ _ j d hd ↦ by simp at hd, fun j d hd ↦ by simp at hd⟩)
-    fun k ih hk ↦ defsInv_succ hM hbase hG hc hpre hps hk (ih (Nat.le_of_succ_le hk))
+  Nat.rec (fun _ ↦ ⟨fun _ _ _ ↦ ⟨fun j d hd ↦ by simp at hd, fun j m b hd ↦ by simp at hd⟩,
+      fun j d hd ↦ by simp at hd⟩)
+    fun k ih hk ↦ defsInv_succ hM hbase hG hno hc hpre hps hk (ih (Nat.le_of_succ_le hk))
 
 /-- A definition's body compiles in its parameters' environment to its value's type and an
 arrow whose instance at types has the value of the definition's operation at them: the
 definition's axiom. -/
-theorem defn_body {k : ℕ} {d : Defn} (hd : G.defs[k]? = some d) :
+theorem defn_body {k : ℕ} {d : Defn} (hd : G.defs[k]? = some (.language d)) :
     ∃ F, compile G d.arity d.body (ctxObj d.params) (stdEnv d.params) = some (F, d.type) ∧
       ∀ (m : ℕ) (ρ : List M.Val) (θ : List Tree), ρ.map Sigma.fst = List.replicate m obj →
-        θ.length = d.arity → θ.all (IsTy m) = true →
+        θ.length = d.arity → θ.all (IsTy G m) = true →
         eval M ρ (op (G.base + k) θ) = eval M ρ (PartialHorn.subst θ F) := by
   obtain ⟨cd, hcd, hdc⟩ := compileDefs_getElem? hc hd
   obtain ⟨cb, hcb, rfl⟩ := Defn.compile_eq_some hdc
   have hk : k < G.defs.length := (List.getElem?_eq_some_iff.mp hd).1
-  obtain ⟨hds, -⟩ := defsInv hM hbase hG hc hpre hps k hk.le
+  obtain ⟨hds, -⟩ := defsInv hM hbase hG hno hc hpre hps k hk.le
   have hle : Globals.Le { G with defs := G.defs.take k } G :=
     ⟨List.prefix_refl _, rfl, List.take_prefix k G.defs⟩
   obtain ⟨hpt, -⟩ := hG.defs k d hd
+  have hptk : d.params.all (IsTy { G with defs := G.defs.take k } d.arity) = true := by
+    rw [isTy_take_of_noObj hno]; exact hpt
   refine ⟨cb, compile_mono hle _ _ _ _ hcb, fun m ρ θ hρ hl hθ ↦ ?_⟩
-  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hρ θ hθ
+  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM (objsHom_of_noObj hno) hρ θ hθ
   rw [hl] at hws
-  obtain ⟨v, hv, -⟩ := (compile_hom hM (hG.take k) hws (hps _ ws hws) (hds _ ws hws) _ _ _ _ hcb
-    (stdEnv_hom hM hws _ hpt)).1
+  obtain ⟨v, hv, -⟩ := (compile_hom hM (hG.take hno k) hws (primsHom_take hno (hps _ ws hws) k)
+    (hds _ ws hws) _ _ _ _ hcb (stdEnv_hom hM (hds _ ws hws).2 hws _ hptk)).1
   have hsc : PartialHorn.Scoped θ.length cb = true := by
     have := scoped_of_eval cb hv
     rwa [show ws.length = θ.length by simpa [hl] using congrArg List.length hws] at this
@@ -737,10 +873,10 @@ environment of arrows has an arrow to its type, and, unfolded, its type and an a
 value. -/
 theorem compile_unfold {n : ℕ} {ρ : List M.Val} (hρ : ρ.map Sigma.fst = List.replicate n obj)
     {s : Term} {X : Tree} {e : List (Tree × Tree)} {r : Tree × Tree}
-    (h : compile G n s X e = some r) (he : EnvHom M ρ n X e) :
+    (h : compile G n s X e = some r) (he : EnvHom M ρ G n X e) :
     Hom M ρ r.1 X r.2 ∧
       ∃ r', compile G n (unfold (unfoldBodies G.defs) s) X e = some r' ∧ ResEq M ρ r r' := by
-  obtain ⟨hds, hubs⟩ := defsInv hM hbase hG hc hpre hps G.defs.length le_rfl
+  obtain ⟨hds, hubs⟩ := defsInv hM hbase hG hno hc hpre hps G.defs.length le_rfl
   simp only [List.take_length] at hds hubs
   exact ⟨(compile_hom hM hG hρ (hps n ρ hρ) (hds n ρ hρ) s X e r h he).1,
     compile_unfold_of hM hG hubs hρ (hps n ρ hρ) (hds n ρ hρ) s X e r h he⟩
@@ -757,22 +893,29 @@ theorem compile_unfold_of_ok {pre cds : List PartialHorn.Defn}
     (hc : compileDefs G = some cds) {n : ℕ} {ρ : List M.Val}
     (hρ : ρ.map Sigma.fst = List.replicate n obj) {s : Term} {X : Tree}
     {e : List (Tree × Tree)} {r : Tree × Tree} (h : compile G n s X e = some r)
-    (he : EnvHom M ρ n X e) :
+    (he : EnvHom M ρ G n X e) :
     Hom M ρ r.1 X r.2 ∧
       ∃ r', compile G n (unfold (unfoldBodies G.defs) s) X e = some r' ∧ ResEq M ρ r r' :=
-  compile_unfold hM hbase (Globals.wf_of_ok hok) hc (List.prefix_refl _)
+  compile_unfold hM hbase (Globals.wf_of_ok hok) (Globals.noObj_of_ok hok) hc (List.prefix_refl _)
     (fun _ _ hρ' ↦ primsHom_of_ok hM (List.prefix_refl _) hok hρ') hρ h he
 
 /-- The definitions of the combinators that definitions compile to take objects to arrows. -/
 theorem getElem?_sig_compileDefs {pre cds : List PartialHorn.Defn} {G : Globals}
-    (hbase : G.base = sig.length + pre.length) (hc : compileDefs G = some cds) {k : ℕ} {d : Defn}
-    (hd : G.defs[k]? = some d) :
-    (ext (pre ++ cds)).sig[G.base + k]? = some (List.replicate d.arity obj, arr) := by
+    (hbase : G.base = sig.length + pre.length) (hc : compileDefs G = some cds) {k : ℕ}
+    {d : Definition} (hd : G.defs[k]? = some d) :
+    (ext (pre ++ cds)).sig[G.base + k]? = some d.sig := by
   obtain ⟨cd, hcd, hdc⟩ := compileDefs_getElem? hc hd
-  obtain ⟨cb, -, rfl⟩ := Defn.compile_eq_some hdc
-  rw [PartialHorn.Theory.extendAll_sig, show theory.sig = sig from rfl, sig_extendAll_eq, hbase,
-    Nat.add_assoc, List.getElem?_append_right (by omega), Nat.add_sub_cancel_left,
-    List.map_append, List.getElem?_append_right (by simp), List.length_map,
+  have hsig : (cd.ctx, cd.sort) = d.sig := by
+    cases d with
+    | language d =>
+      obtain ⟨cb, -, rfl⟩ := Defn.compile_eq_some hdc
+      rfl
+    | object m b =>
+      obtain rfl := Option.some_inj.mp hdc
+      rfl
+  rw [← hsig, PartialHorn.Theory.extendAll_sig, show theory.sig = sig from rfl,
+    sig_extendAll_eq, hbase, Nat.add_assoc, List.getElem?_append_right (by omega),
+    Nat.add_sub_cancel_left, List.map_append, List.getElem?_append_right (by simp), List.length_map,
     Nat.add_sub_cancel_left, List.getElem?_map, hcd]
   rfl
 
@@ -792,22 +935,23 @@ combinators' definitions are well formed. -/
 theorem valid_unfoldAll_compile_of {pre cds : List PartialHorn.Defn} {G : Globals}
     (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
     (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) {n : ℕ}
-    {Γ : List Tree} (hΓ : Γ.all (IsTy n) = true) {s : Term} {f A f' A' : Tree}
+    {Γ : List Tree} (hΓ : Γ.all (IsTy G n) = true) {s : Term} {f A f' A' : Tree}
     (h : compile G n s (ctxObj Γ) (stdEnv Γ) = some (f, A))
     (h' : compile G n (unfold (unfoldBodies G.defs) s) (ctxObj Γ) (stdEnv Γ) = some (f', A'))
     {M : Model.{v} theory.sig} (hM : IsModel theory M) :
     (PartialHorn.unfoldAll sig (pre ++ cds) ⟨List.replicate n obj, [], ⟨f, f'⟩⟩).Valid M := by
   have hG := Globals.wf_of_ok hok
+  have hdefs := fun k d (hd : G.defs[k]? = some d) ↦ getElem?_sig_compileDefs hbase hc hd
   have hsrt := fun {s : Term} {r : Tree × Tree} (hs : compile G n s (ctxObj Γ) (stdEnv Γ) =
       some r) ↦ compile_sortOf (defs := pre ++ cds) hG (fun k p hp ↦ sortOf_prims_of_ok hok hp)
-    (fun k d hd ↦ getElem?_sig_compileDefs hbase hc hd) s _ _ r hs (sortOf_ctxObj Γ hΓ)
-    (sortOf_stdEnv Γ hΓ)
+    hdefs s _ _ r hs (sortOf_ctxObj hdefs Γ hΓ) (sortOf_stdEnv hdefs Γ hΓ)
   refine PartialHorn.valid_unfoldAll (pre ++ cds) theory M hM theory_ofSig hwf _ ?_ ?_
   · intro q hq
     obtain rfl : q = ⟨f, f'⟩ := by simpa using hq
     exact ⟨⟨arr, (hsrt h).1⟩, ⟨arr, (hsrt h').1⟩⟩
   · intro N hN ρ hρ _
-    obtain ⟨hf, r', hr', hR⟩ := compile_unfold_of_ok hN hbase hok hc hρ h (stdEnv_hom hN hρ Γ hΓ)
+    obtain ⟨hf, r', hr', hR⟩ := compile_unfold_of_ok hN hbase hok hc hρ h
+      (stdEnv_hom hN (objsHom_of_noObj (Globals.noObj_of_ok hok)) hρ Γ hΓ)
     rw [h'] at hr'
     obtain rfl := (Option.some_inj.mp hr').symm
     obtain ⟨w, hw, -⟩ := hf
@@ -831,7 +975,7 @@ square in the one-point model, a model of every well-formed extension of the the
 theorem compile_unfold_some {pre cds : List PartialHorn.Defn} {G : Globals}
     (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
     (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) {n : ℕ}
-    {Γ : List Tree} (hΓ : Γ.all (IsTy n) = true) {s : Term} {r : Tree × Tree}
+    {Γ : List Tree} (hΓ : Γ.all (IsTy G n) = true) {s : Term} {r : Tree × Tree}
     (h : compile G n s (ctxObj Γ) (stdEnv Γ) = some r) :
     ∃ r', compile G n (unfold (unfoldBodies G.defs) s) (ctxObj Γ) (stdEnv Γ) = some r' ∧
       r'.2 = r.2 := by
@@ -842,7 +986,8 @@ theorem compile_unfold_some {pre cds : List PartialHorn.Defn} {G : Globals}
       (PartialHorn.pointModel (ext (pre ++ cds)).sig).Val)).map Sigma.fst =
         List.replicate n obj := by
     simp
-  obtain ⟨-, r', hr', hR⟩ := compile_unfold_of_ok hM hbase hok hc hρ h (stdEnv_hom hM hρ Γ hΓ)
+  obtain ⟨-, r', hr', hR⟩ := compile_unfold_of_ok hM hbase hok hc hρ h
+    (stdEnv_hom hM (objsHom_of_noObj (Globals.noObj_of_ok hok)) hρ Γ hΓ)
   exact ⟨r', hr', hR.1⟩
 
 /-- The square for the definition-free arrows: the unfolding of a term that compiles in a context
@@ -852,7 +997,7 @@ formed. -/
 theorem valid_unfoldAll_compile {pre cds : List PartialHorn.Defn} {G : Globals}
     (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
     (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) {n : ℕ}
-    {Γ : List Tree} (hΓ : Γ.all (IsTy n) = true) {s : Term} {f A : Tree}
+    {Γ : List Tree} (hΓ : Γ.all (IsTy G n) = true) {s : Term} {f A : Tree}
     (h : compile G n s (ctxObj Γ) (stdEnv Γ) = some (f, A)) :
     ∃ f', compile G n (unfold (unfoldBodies G.defs) s) (ctxObj Γ) (stdEnv Γ) = some (f', A) ∧
       ∀ (M : Model.{v} theory.sig), IsModel theory M →

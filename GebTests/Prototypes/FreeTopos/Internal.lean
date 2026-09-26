@@ -80,7 +80,7 @@ def defs : List Internal.Defn := [appendD, addD]
 
 /-- The constants: the primitive arrows and the definitions, whose operations follow the
 signature's. -/
-def G : Internal.Globals := ⟨prims, defs, sig.length⟩
+def G : Internal.Globals := ⟨prims, defs.map .language, sig.length⟩
 
 /-- The application of appending to two lists. -/
 def appendT (xs ys : Term) : Term := Term.defn 0 [A] [ys, xs]
@@ -115,7 +115,7 @@ def statements : List (ℕ × List Tree × Term × Term) := [
   let S := sig ++ cs.map fun d ↦ (d.ctx, d.sort)
   let ok (t u : Term) := (compileEq G n Γ t u).any fun a ↦
     sortOf S a.ctx a.concl.lhs == some arr && sortOf S a.ctx a.concl.rhs == some arr
-  let ubs := unfoldBodies defs
+  let ubs := unfoldBodies G.defs
   ok t u && ok (unfold ubs t) (unfold ubs u)
 
 -- each equation's formula, the equality of its sides, is a formula in its context

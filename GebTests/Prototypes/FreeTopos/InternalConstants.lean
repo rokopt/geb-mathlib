@@ -56,7 +56,8 @@ def twoPrim : Internal.Prim := ⟨0, comp succ succ, nat, nat⟩
 def addTwoD : Internal.Defn := ⟨0, [nat], nat, Term.arr 5 [] (Term.var 0)⟩
 
 /-- The constants with the declared ones. -/
-def G₃ : Globals := ⟨prims ++ [onePrim, twoPrim], defs ++ [addTwoD], sig.length⟩
+def G₃ : Globals :=
+  ⟨prims ++ [onePrim, twoPrim], (defs ++ [addTwoD]).map .language, sig.length⟩
 
 /-- Adding two to one by the definition is adding two to one by the primitive arrow. -/
 def addTwoOne : Thm :=
