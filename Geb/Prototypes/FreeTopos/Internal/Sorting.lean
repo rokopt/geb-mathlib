@@ -129,10 +129,13 @@ theorem sortOf_listRec {a z s : Tree} (ha : sortOf (ext defs).sig Γ a = some ob
     sortOf (ext defs).sig Γ (listRec a z s) = some arr :=
   sortOf_op rfl (by simp [ha, hz, hs])
 
-/-- A fold of the rose-tree object is an arrow. -/
-theorem sortOf_roseRec {s : Tree} (hs : sortOf (ext defs).sig Γ s = some arr) :
-    sortOf (ext defs).sig Γ (roseRec s) = some arr :=
-  sortOf_op rfl (by simp [hs])
+/-- A fold of a rose-tree object is an arrow. -/
+theorem sortOf_roseParts {t a s : Tree} {F : Tree → Tree} (h : roseParts t = some (a, F))
+    (ha : sortOf (ext defs).sig Γ a = some obj) (hs : sortOf (ext defs).sig Γ s = some arr) :
+    sortOf (ext defs).sig Γ (F s) = some arr := by
+  rcases roseParts_eq_some.mp h with ⟨-, -, rfl⟩ | ⟨-, rfl⟩
+  · exact sortOf_op rfl (by simp [hs])
+  · exact sortOf_op rfl (by simp [ha, hs])
 
 end Constructors
 
@@ -155,7 +158,7 @@ theorem sortOf_of_isTy {n : ℕ} :
       change sortOf _ _ (op k cs) = _
       simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hA
       rcases hA.1 with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
-          ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
+          ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact sortOf_op rfl rfl
       · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
@@ -174,6 +177,8 @@ theorem sortOf_of_isTy {n : ℕ} :
         exact sortOf_op rfl (by simp [hc a (by simp)])
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact sortOf_op rfl rfl
+      · obtain ⟨a, rfl⟩ := List.length_eq_one_iff.mp hl
+        exact sortOf_op rfl (by simp [hc a (by simp)])
 
 /-- Types are objects, in the context of their object variables. -/
 theorem map_sortOf_of_isTy {n : ℕ} {θ : List Tree} (hθ : θ.all (IsTy n) = true) :
@@ -280,12 +285,13 @@ theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
       simpa using ⟨⟨sortOf_snd hA hC, hct⟩, sortOf_fst hA hC, hlt⟩)
     exact ⟨sortOf_comp (sortOf_listRec hA hz' hs') hm', hct⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hct, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
-    have hPt : IsTy n (prod nat (list c)) = true := by simp [isTy_prod, isTy_list, isTy_nat, hct]
+    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨hm', htt⟩ := ih m (by simp) X e _ hm hX he
+    have hat := isTy_of_roseParts ht htt
+    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hty _ hPt
     obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs hP (by simpa using ⟨sortOf_idt hP, hPt⟩)
-    obtain ⟨hm', -⟩ := ih m (by simp) X e _ hm hX he
-    exact ⟨sortOf_comp (sortOf_roseRec hs') hm', hct⟩
+    exact ⟨sortOf_comp (sortOf_roseParts ht (hty a hat) hs') hm', hct⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨hf, hat⟩ := ih t (by simp) X e _ ht hX he

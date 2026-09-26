@@ -108,6 +108,13 @@ theorem eval_tuple_of_forall₂ (X : Tree) {rs rs' : List (Tree × Tree)}
       · exact hr.2
       · exact eval_op₂_congr 9 ih hr.2
 
+/-- A rose-tree object's fold respects the value of its step. -/
+theorem eval_roseParts_congr {t a s s' : Tree} {F : Tree → Tree} (h : roseParts t = some (a, F))
+    (hs : eval M ρ s = eval M ρ s') : eval M ρ (F s) = eval M ρ (F s') := by
+  rcases roseParts_eq_some.mp h with ⟨-, -, rfl⟩ | ⟨-, rfl⟩
+  · exact eval_op₁_congr 39 hs
+  · exact eval_op₂_congr 42 rfl hs
+
 /-- Extending environments of equal values by a variable keeps their values equal. -/
 theorem EnvEq.ext {e e' : List (Tree × Tree)} (h : EnvEq M ρ e e') (X a : Tree) :
     EnvEq M ρ (extEnv X a e) (extEnv X a e') := by
@@ -178,9 +185,9 @@ theorem compile_envEq {G : Globals} {n : ℕ} (s : Term) :
     exact ⟨_, compile_listRec_iff.mpr ⟨z, s, m, rfl, m'', a, hm', z', c, hz, s', hs, rfl⟩, rfl,
       eval_op₂_congr 3 rfl hmv⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
-    obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm e' he
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, s', m'', rfl, hc, hs, hm', rfl⟩, rfl,
+    obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm e' he
+    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', _, a, F, s', rfl, hc, hm', ht, hs, rfl⟩, rfl,
       eval_op₂_congr 3 rfl hmv⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
@@ -233,6 +240,17 @@ theorem isTy_exp {n : ℕ} {a b : Tree} : IsTy n (exp a b) = (IsTy n a && IsTy n
 /-- A list object of a type is a type. -/
 theorem isTy_list {n : ℕ} {a : Tree} : IsTy n (list a) = IsTy n a := by
   simp [list, isTy_op, tyOps]
+
+/-- A rose-tree object over a type of labels is a type. -/
+theorem isTy_lrose {n : ℕ} {a : Tree} : IsTy n (lrose a) = IsTy n a := by
+  simp [lrose, isTy_op, tyOps]
+
+/-- A rose-tree object's type of labels is a type where the object is. -/
+theorem isTy_of_roseParts {n : ℕ} {t a : Tree} {F : Tree → Tree} (h : roseParts t = some (a, F))
+    (ht : IsTy n t = true) : IsTy n a = true := by
+  rcases roseParts_eq_some.mp h with ⟨-, rfl, -⟩ | ⟨rfl, -⟩
+  · simp [nat, isTy_op, tyOps]
+  · simpa [isTy_lrose] using ht
 
 /-- The terminal object is a type. -/
 theorem isTy_one {n : ℕ} : IsTy n one = true := by simp [one, isTy_op, tyOps]
@@ -302,7 +320,7 @@ theorem isObj_of_isTy (hM : IsModel (ext defs) M) {n : ℕ}
       change IsObj M ρ (op k cs)
       simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hA
       rcases hA.1 with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
-          ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
+          ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact isObj_one hM
       · obtain ⟨a, b, rfl⟩ := List.length_eq_two.mp hl
@@ -321,6 +339,8 @@ theorem isObj_of_isTy (hM : IsModel (ext defs) M) {n : ℕ}
         exact isObj_list hM (hc a (by simp))
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact isObj_rose hM
+      · obtain ⟨a, rfl⟩ := List.length_eq_one_iff.mp hl
+        exact isObj_lrose hM (hc a (by simp))
 
 
 variable (M ρ) in
@@ -368,6 +388,14 @@ theorem tuple_hom {X : Tree} (hX : IsObj M ρ X) :
     rcases rs with _ | ⟨r', rs⟩
     · exact h r List.mem_cons_self
     · exact pair_hom hM (ih fun q hq ↦ h q (List.mem_cons_of_mem _ hq)) (h r List.mem_cons_self)
+
+/-- A rose-tree object's fold by a step is an arrow from the object. -/
+theorem roseParts_hom {t a s C : Tree} {F : Tree → Tree}
+    (h : roseParts t = some (a, F)) (ha : IsObj M ρ a) (hs : Hom M ρ s (prod a (list C)) C) :
+    Hom M ρ (F s) t C := by
+  rcases roseParts_eq_some.mp h with ⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact roseRec_hom hM hs
+  · exact lroseRec_hom hM ha hs
 
 /-- The compilation is sound: a term's arrow is an arrow from the environment's object to the
 term's type, which is a type, when the environment's arrows, the primitive arrows and the
@@ -438,13 +466,13 @@ theorem compile_hom {G : Globals} {n : ℕ} (hG : G.WF)
         simpa using ⟨⟨snd_hom hM hA hc, hct⟩, fst_hom hM hA hc, hlt⟩⟩
     exact ⟨comp_hom hM hm' (listRec_hom hM hA hz' hs'), hct⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hct, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
-    have hPt : IsTy n (prod nat (list c)) = true := by simp [isTy_prod, isTy_list, isTy_nat, hct]
+    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨hm', htt⟩ := ih m (by simp) X e _ hm he
+    have hat := isTy_of_roseParts ht htt
+    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
-     
-    obtain ⟨hm', -⟩ := ih m (by simp) X e _ hm he
-    exact ⟨comp_hom hM hm' (roseRec_hom hM hs'), hct⟩
+    exact ⟨comp_hom hM hm' (roseParts_hom hM ht (hobj a hat) hs'), hct⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     obtain ⟨hf, hat⟩ := ih t (by simp) X e _ ht he
@@ -609,15 +637,16 @@ theorem compile_comp {G : Globals} {n : ℕ} (hG : G.WF)
     exact ⟨_, compile_listRec_iff.mpr ⟨z, s, m, rfl, m'', a, hm', z', c, hz, s', hs, rfl⟩, rfl,
       (eval_op₂_congr 3 rfl hmv).trans (comp_assoc hM hh hmt (listRec_hom hM hA hz' hs'))⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hct, hs, hm, rfl⟩ := compile_roseRec_iff.mp hc
-    obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he Y h hh
-    obtain ⟨hmt, -⟩ := hty m X e _ hm he
-    have hPt : IsTy n (prod nat (list c)) = true := by simp [isTy_prod, isTy_list, isTy_nat, hct]
+    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp hc
+    obtain ⟨hmt, htt⟩ := hty m X e _ hm he
+    have hat := isTy_of_roseParts ht htt
+    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨hs', -⟩ := hty s _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
-     
-    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, s', m'', rfl, hct, hs, hm', rfl⟩, rfl,
-      (eval_op₂_congr 3 rfl hmv).trans (comp_assoc hM hh hmt (roseRec_hom hM hs'))⟩
+    have hF := roseParts_hom hM ht (hobj a hat) hs'
+    obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he Y h hh
+    exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, m'', _, a, F, s', rfl, hct, hm', ht, hs, rfl⟩, rfl,
+      (eval_op₂_congr 3 rfl hmv).trans (comp_assoc hM hh hmt hF)⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp hc
     obtain ⟨hft, hat⟩ := hty t X e _ ht he

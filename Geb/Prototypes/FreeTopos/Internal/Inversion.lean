@@ -78,6 +78,32 @@ theorem expParts_eq_some {p a b : Tree} : expParts p = some (a, b) ↔ p = exp a
   · rintro rfl
     simp [expParts, exp, op]
 
+/-- A rose-tree object's type of labels and fold: the natural numbers object and the fold of the
+rose-tree object, or a rose-tree object's type of labels and the fold over it. -/
+theorem roseParts_eq_some {p a : Tree} {F : Tree → Tree} : roseParts p = some (a, F) ↔
+    (p = rose ∧ a = nat ∧ F = roseRec) ∨ (p = lrose a ∧ F = lroseRec a) := by
+  constructor
+  · intro h
+    unfold roseParts at h
+    split_ifs at h with h₀
+    · obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp h)
+      exact .inl ⟨h₀, rfl, rfl⟩
+    · split at h
+      · split_ifs at h with hp
+        obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp h)
+        exact .inr ⟨hp, rfl⟩
+      · simp at h
+  · rintro (⟨rfl, rfl, rfl⟩ | ⟨rfl, rfl⟩)
+    · simp [roseParts]
+    · have h : lrose a ≠ rose := fun h ↦ by
+        simpa [lrose, rose, op] using congrArg RoseTree.label h
+      rw [roseParts, ite_eq_right h]
+      simp [lrose, op]
+
+/-- The type of labels of a rose-tree object over it is its argument. -/
+theorem roseParts_lrose (a : Tree) : roseParts (lrose a) = some (a, lroseRec a) :=
+  roseParts_eq_some.mpr (.inr ⟨rfl, rfl⟩)
+
 /-- The element type of a list object is its argument. -/
 theorem listPart_eq_some {p a : Tree} : listPart p = some a ↔ p = list a := by
   constructor
@@ -192,10 +218,10 @@ theorem compile_listRec_iff {cs : List Term} {X : Tree} {e : List (Tree × Tree)
 /-- The compilation of a fold of a rose tree. -/
 theorem compile_roseRec_iff {c : Tree} {cs : List Term} {X : Tree} {e : List (Tree × Tree)}
     {r : Tree × Tree} : compile G n (RoseTree.node (.roseRec c) cs) X e = some r ↔
-      ∃ s m s' m', cs = [s, m] ∧ IsTy n c = true ∧
-        compile G n s (prod nat (list c)) [(idt (prod nat (list c)), prod nat (list c))] =
-          some (s', c) ∧
-        compile G n m X e = some (m', rose) ∧ (comp (roseRec s') m', c) = r := by
+      ∃ s m m' t a F s', cs = [s, m] ∧ IsTy n c = true ∧ compile G n m X e = some (m', t) ∧
+        roseParts t = some (a, F) ∧
+        compile G n s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] =
+          some (s', c) ∧ (comp (F s') m', c) = r := by
   rw [compile_node]
   rcases cs with _ | ⟨s, _ | ⟨m, _ | ⟨v, cs⟩⟩⟩ <;>
     simp [compileStep, Option.bind_eq_some_iff, Prod.exists]

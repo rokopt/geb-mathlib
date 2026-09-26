@@ -111,9 +111,9 @@ theorem compile_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} (s : Term) :
     exact compile_listRec_iff.mpr ⟨z, s, m, rfl, m', a, ih m (by simp) X e _ hm, z', c,
       ih z (by simp) _ _ _ hz, s', ih s (by simp) _ _ _ hs, rfl⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
-    exact compile_roseRec_iff.mpr ⟨s, m, s', m', rfl, hc, ih s (by simp) _ _ _ hs,
-      ih m (by simp) X e _ hm, rfl⟩
+    obtain ⟨s, m, m', t, a, F, s', rfl, hc, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    exact compile_roseRec_iff.mpr ⟨s, m, m', t, a, F, s', rfl, hc, ih m (by simp) X e _ hm, ht,
+      ih s (by simp) _ _ _ hs, rfl⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     exact compile_eq_iff.mpr ⟨t, u, rfl, f, a, ih t (by simp) X e _ ht, g,
@@ -307,15 +307,16 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : Ub
     exact ⟨_, compile_listRec_iff.mpr ⟨_, _, _, rfl, _, _, hm', _, _, hz', _, hs', rfl⟩, rfl,
       eval_op₂_congr 3 (eval_op₃_congr 36 rfl hzv hsv) hmv⟩
   | roseRec c =>
-    obtain ⟨s, m, s', m', rfl, hct, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
     rw [unfold_node (by simp)]
-    have hPt : IsTy n (prod nat (list c)) = true := by simp [isTy_prod, isTy_list, isTy_nat, hct]
+    have hat := isTy_of_roseParts ht (hty m X e _ hm he).2
+    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨⟨s'', c'⟩, hs', rfl, hsv⟩ :=
       ih s (by simp) _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
-    obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he
-    exact ⟨_, compile_roseRec_iff.mpr ⟨_, _, _, _, rfl, hct, hs', hm', rfl⟩, rfl,
-      eval_op₂_congr 3 (eval_op₁_congr 39 hsv) hmv⟩
+    obtain ⟨⟨m'', t'⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he
+    exact ⟨_, compile_roseRec_iff.mpr ⟨_, _, _, _, _, _, _, rfl, hct, hm', ht, hs', rfl⟩, rfl,
+      eval_op₂_congr 3 (eval_roseParts_congr ht hsv) hmv⟩
   | eq =>
     obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
     rw [unfold_node (by simp)]

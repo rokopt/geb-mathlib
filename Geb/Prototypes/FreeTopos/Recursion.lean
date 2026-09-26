@@ -12,11 +12,12 @@ set_option doc.verso true in
 /-!
 # The folds of a model of the theory
 
-The natural numbers object and the list objects of a model of the theory of an elementary topos,
-stated of the values of terms at an assignment: the typings of zero, the successor, the empty
-list and construction, and the computation and the uniqueness of the folds, each an instance of
-an axiom. A fold is determined, in a cartesian closed category, by its equations with a
-parameter ({cite}`EscardoSimpson2025`, Proposition 2.3): two arrows from the product of an
+The natural numbers object, the list objects and the rose-tree objects of a model of the theory
+of an elementary topos, stated of the values of terms at an assignment: the typings of zero, the
+successor, the empty list, construction and the structure maps of rose trees, and the computation
+and the uniqueness of the folds, each an instance of an axiom. A fold is determined, in a
+cartesian closed category, by its equations with a parameter ({cite}`EscardoSimpson2025`,
+Proposition 2.3): two arrows from the product of an
 object of parameters with the natural numbers object that agree at zero and satisfy the
 recursion equation of one step are equal ({lit}`natRec_param_unique`), and likewise from its
 product with a list object ({lit}`listRec_param_unique`). The proof curries the two arrows
@@ -30,6 +31,9 @@ parameters, evaluated at the parameter.
 * {lit}`natRec_zero`, {lit}`natRec_succ`, {lit}`natRec_unique` — the fold of the natural numbers
   object.
 * {lit}`listRec_nil`, {lit}`listRec_cons`, {lit}`listRec_unique` — the fold of a list object.
+* {lit}`roseRec_node`, {lit}`lroseRec_node`, {lit}`lroseRec_unique` — the folds of the rose-tree
+  objects.
+* {lit}`eval_listMap` — the action of a list object on an arrow is a fold.
 * {lit}`natRec_param_unique`, {lit}`listRec_param_unique` — the uniqueness of the folds with a
   parameter.
 * {lit}`natRec_param_exists`, {lit}`listRec_param_exists` — the existence of the folds with a
@@ -211,6 +215,141 @@ theorem listRec_unique {h A z s C : Tree} (hA : IsObj M ρ A) (hz : Hom M ρ z o
       holds_of_eval_eq (h₁.trans (eval_op₂_congr 3 rfl (eval_prodMapRight A hh)).symm)
         ((eval_op₂_congr 3 rfl (eval_prodMapRight A hh)).trans hcv)⟩
     (q := ⟨h, listRec A z s⟩) rfl)
+
+/-- The structure map of the rose-tree object is an arrow from the product of the natural
+numbers object and the list object of the rose-tree object. -/
+theorem node_hom : Hom M ρ node (prod nat (list rose)) rose := by
+  have hP := isObj_prod hM (isObj_nat hM) (isObj_list hM (isObj_rose (ρ := ρ) hM))
+  obtain ⟨p, hp, -⟩ := id hP
+  have hd := eval_eq_of_holds (ax_holds (ρ := ρ) hM 125 rfl (by decide) (ts := []) (ws := []) rfl
+    rfl rfl trivial (q := ⟨dom node, prod nat (list rose)⟩) rfl)
+  obtain ⟨w, hw⟩ := exists_eval_of_dom (hd.trans hp)
+  exact ⟨w, hw, sort_of_eval_op rfl hw, hP, isObj_rose hM, hd,
+    eval_eq_of_holds (ax_holds (ρ := ρ) hM 126 rfl (by decide) (ts := []) (ws := []) rfl rfl rfl
+      trivial (q := ⟨cod node, rose⟩) rfl)⟩
+
+/-- The fold of the rose-tree object after the structure map is the step after the product of
+the natural numbers object with the fold's action on the children. -/
+theorem roseRec_node {s C : Tree} (hs : Hom M ρ s (prod nat (list C)) C) :
+    eval M ρ (comp (roseRec s) node) =
+      eval M ρ (comp s (prodMapRight nat (listMap (roseRec s)))) := by
+  obtain ⟨w, hw, -⟩ := (roseRec_hom hM hs).exists_eval
+  obtain ⟨ws, hws, hss⟩ := hs.exists_eval
+  exact eval_eq_of_holds (ax_holds hM 131 rfl (by decide) (ts := [s]) (ws := [ws])
+    (by simp [hws]) (by simp [hss]) (hs' := [⟨roseRec s, roseRec s⟩]) rfl ⟨w, hw, hw⟩
+    (q := ⟨comp (roseRec s) node, comp s (prodMapRight nat (listMap (roseRec s)))⟩) rfl)
+
+/-- The action of the list object on an arrow is an arrow between the list objects. -/
+theorem listMap_hom {f A B : Tree} (hf : Hom M ρ f A B) :
+    Hom M ρ (listMap f) (list A) (list B) := by
+  have hf' : Hom M ρ f (dom f) (cod f) := hf.congr rfl hf.eval_dom hf.eval_cod
+  have hA := hf'.isObj_dom
+  have hB := hf'.isObj_cod
+  have hLB := isObj_list hM hB
+  exact (listRec_hom hM hA (nil_hom hM hB) (comp_hom hM
+    (pair_hom hM (comp_hom hM (fst_hom hM hA hLB) hf') (snd_hom hM hA hLB))
+    (cons_hom hM hB))).congr rfl (eval_op₁_congr 33 hf.eval_dom.symm)
+    (eval_op₁_congr 33 hf.eval_cod.symm)
+
+/-- The action of the list object on an arrow is the fold from the empty list by construction
+after the product of the arrow with the identity. -/
+theorem eval_listMap {h T C : Tree} (hh : Hom M ρ h T C) :
+    eval M ρ (listMap h) = eval M ρ (listRec T (comp (nil C) (bang one))
+      (comp (cons C) (pair (comp h (fst T (list C))) (snd T (list C))))) := by
+  have hdom := hh.eval_dom
+  have hcod := hh.eval_cod
+  refine Eq.symm (eval_op₃_congr 36 hdom.symm ?_ ?_)
+  · exact ((eval_op₂_congr 3 rfl (bang_unique hM (idt_hom hM (isObj_one hM))).symm).trans
+      (comp_idt hM (nil_hom hM hh.isObj_cod))).trans (eval_op₁_congr 34 hcod.symm)
+  · exact eval_op₂_congr 3 (eval_op₁_congr 35 hcod.symm) (eval_op₂_congr 9
+      (eval_op₂_congr 3 rfl (eval_op₂_congr 7 hdom.symm (eval_op₁_congr 33 hcod.symm)))
+      (eval_op₂_congr 8 hdom.symm (eval_op₁_congr 33 hcod.symm)))
+
+/-- The product of an object with an arrow after a pairing is the pairing of the first arrow with
+the arrow after the second. -/
+theorem prodMapRight_pair {f g h X A L N : Tree} (hf : Hom M ρ f X A) (hg : Hom M ρ g X L)
+    (hh : Hom M ρ h L N) :
+    eval M ρ (comp (prodMapRight A h) (pair f g)) = eval M ρ (pair f (comp h g)) := by
+  have hA := hf.isObj_cod
+  have hL := hg.isObj_cod
+  have hfA := fst_hom hM hA hL
+  have hsA := snd_hom hM hA hL
+  have hfg := pair_hom hM hf hg
+  exact (eval_op₂_congr 3 (eval_prodMapRight A hh) rfl).trans
+    ((pair_comp hM hfA (comp_hom hM hsA hh) hfg).trans (eval_op₂_congr 9 (fst_pair hM hf hg)
+      ((comp_assoc hM hfg hsA hh).symm.trans (eval_op₂_congr 3 rfl (snd_pair hM hf hg)))))
+
+/-- The structure map of the rose-tree object over an object of labels is an arrow from the
+product of the object of labels and the list object of the rose-tree object. -/
+theorem lnode_hom {A : Tree} (hA : IsObj M ρ A) :
+    Hom M ρ (lnode A) (prod A (list (lrose A))) (lrose A) := by
+  have hR := isObj_lrose hM hA
+  have hP := isObj_prod hM hA (isObj_list hM hR)
+  obtain ⟨p, hp, -⟩ := id hP
+  obtain ⟨a, ha, has⟩ := hA
+  have hts : [A].map (eval M ρ) = [a].map Part.some := by simp [ha]
+  have hs : [a].map Sigma.fst = [obj] := by simp [has]
+  have hd := eval_eq_of_holds (ax_holds hM 134 rfl (by decide) hts hs rfl trivial
+    (q := ⟨dom (lnode A), prod A (list (lrose A))⟩) rfl)
+  obtain ⟨w, hw⟩ := exists_eval_of_dom (hd.trans hp)
+  exact ⟨w, hw, sort_of_eval_op rfl hw, hP, hR, hd,
+    eval_eq_of_holds (ax_holds hM 135 rfl (by decide) hts hs rfl trivial
+      (q := ⟨cod (lnode A), lrose A⟩) rfl)⟩
+
+/-- The fold of the rose-tree object over an object of labels by a step. -/
+theorem lroseRec_hom {A s C : Tree} (hA : IsObj M ρ A) (hs : Hom M ρ s (prod A (list C)) C) :
+    Hom M ρ (lroseRec A s) (lrose A) C := by
+  have hR := isObj_lrose hM hA
+  obtain ⟨a, ha, has⟩ := hA
+  obtain ⟨ws, hws, hss, ⟨p, hp, -⟩, hC, hds, hcs⟩ := hs
+  have hts : [A, s].map (eval M ρ) = [a, ws].map Part.some := by simp [ha, hws]
+  have hsr : [a, ws].map Sigma.fst = [obj, arr] := by simp [has, hss]
+  have hpc : eval M ρ (prod A (list (cod s))) = eval M ρ (prod A (list C)) :=
+    eval_op₂_congr 6 rfl (eval_op₁_congr 33 hcs)
+  obtain ⟨w, hw, -⟩ := ax_holds hM 137 rfl (by decide) hts hsr
+    (hs' := [⟨dom s, prod A (list (cod s))⟩]) rfl
+    (holds_of_eval_eq (hds.trans hpc.symm) (hpc.trans hp))
+    (q := ⟨lroseRec A s, lroseRec A s⟩) rfl
+  have hr : Eqn.Holds M ρ ⟨lroseRec A s, lroseRec A s⟩ := ⟨w, hw, hw⟩
+  exact ⟨w, hw, sort_of_eval_op rfl hw, hR, hC,
+    eval_eq_of_holds (ax_holds hM 138 rfl (by decide) hts hsr
+      (hs' := [⟨lroseRec A s, lroseRec A s⟩]) rfl hr (q := ⟨dom (lroseRec A s), lrose A⟩) rfl),
+    (eval_eq_of_holds (ax_holds hM 139 rfl (by decide) hts hsr
+      (hs' := [⟨lroseRec A s, lroseRec A s⟩]) rfl hr
+      (q := ⟨cod (lroseRec A s), cod s⟩) rfl)).trans hcs⟩
+
+/-- The fold of the rose-tree object over an object of labels after the structure map is the
+step after the product of the object of labels with the fold's action on the children. -/
+theorem lroseRec_node {A s C : Tree} (hA : IsObj M ρ A) (hs : Hom M ρ s (prod A (list C)) C) :
+    eval M ρ (comp (lroseRec A s) (lnode A)) =
+      eval M ρ (comp s (prodMapRight A (listMap (lroseRec A s)))) := by
+  obtain ⟨w, hw, -⟩ := (lroseRec_hom hM hA hs).exists_eval
+  obtain ⟨a, ha, has⟩ := hA
+  obtain ⟨ws, hws, hss⟩ := hs.exists_eval
+  exact eval_eq_of_holds (ax_holds hM 140 rfl (by decide) (ts := [A, s]) (ws := [a, ws])
+    (by simp [ha, hws]) (by simp [has, hss]) (hs' := [⟨lroseRec A s, lroseRec A s⟩]) rfl
+    ⟨w, hw, hw⟩ (q := ⟨comp (lroseRec A s) (lnode A),
+      comp s (prodMapRight A (listMap (lroseRec A s)))⟩) rfl)
+
+/-- An arrow from the rose-tree object over an object of labels whose composite with the
+structure map is the step after the product of the object of labels with its action on the
+children is the fold. -/
+theorem lroseRec_unique {h A s C : Tree} (hA : IsObj M ρ A) (hs : Hom M ρ s (prod A (list C)) C)
+    (hh : Hom M ρ h (lrose A) C)
+    (h₁ : eval M ρ (comp h (lnode A)) = eval M ρ (comp s (prodMapRight A (listMap h)))) :
+    eval M ρ h = eval M ρ (lroseRec A s) := by
+  obtain ⟨w, hw, -⟩ := (lroseRec_hom hM hA hs).exists_eval
+  obtain ⟨c, hcv, -⟩ := (comp_hom hM (lnode_hom hM hA) hh).exists_eval
+  obtain ⟨r, hr, -⟩ := isObj_lrose hM hA
+  obtain ⟨a, ha, has⟩ := hA
+  obtain ⟨ws, hws, hss⟩ := hs.exists_eval
+  obtain ⟨wh, hwh, hhs⟩ := hh.exists_eval
+  exact eval_eq_of_holds (ax_holds hM 141 rfl (by decide) (ts := [A, s, h]) (ws := [a, ws, wh])
+    (by simp [ha, hws, hwh]) (by simp [has, hss, hhs])
+    (hs' := [⟨lroseRec A s, lroseRec A s⟩, ⟨dom h, lrose A⟩,
+      ⟨comp h (lnode A), comp s (prodMapRight A (listMap h))⟩]) rfl
+    ⟨⟨w, hw, hw⟩, holds_of_eval_eq hh.eval_dom hr, holds_of_eval_eq h₁ (h₁.symm.trans hcv)⟩
+    (q := ⟨h, lroseRec A s⟩) rfl)
 
 end Folds
 

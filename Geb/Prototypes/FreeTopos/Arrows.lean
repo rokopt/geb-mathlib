@@ -177,6 +177,15 @@ theorem subst_listRec (θ : List Tree) (a z s : Tree) :
 theorem subst_roseRec (θ : List Tree) (s : Tree) : subst θ (roseRec s) = roseRec (subst θ s) :=
   subst_op θ 39 [s]
 
+/-- Substitution in a rose-tree object over an object of labels. -/
+theorem subst_lrose (θ : List Tree) (a : Tree) : subst θ (lrose a) = lrose (subst θ a) :=
+  subst_op θ 40 [a]
+
+/-- Substitution in a fold of a rose-tree object over an object of labels. -/
+theorem subst_lroseRec (θ : List Tree) (a s : Tree) :
+    subst θ (lroseRec a s) = lroseRec (subst θ a) (subst θ s) :=
+  subst_op θ 42 [a, s]
+
 /-- Substitution leaves the constants. -/
 theorem subst_const (θ : List Tree) (k : ℕ) : subst θ (op k []) = op k [] := subst_op θ k []
 
@@ -397,6 +406,13 @@ theorem isObj_list {A : Tree} (hA : IsObj M ρ A) : IsObj M ρ (list A) := by
 theorem isObj_rose : IsObj M ρ rose := by
   obtain ⟨w, -, hw⟩ := ax_holds (ρ := ρ) hM 126 rfl (by decide) (ts := []) (ws := []) rfl rfl rfl
     trivial (q := ⟨cod node, rose⟩) rfl
+  exact ⟨w, hw, sort_of_eval_op rfl hw⟩
+
+/-- The rose-tree object over an object of labels. -/
+theorem isObj_lrose {A : Tree} (hA : IsObj M ρ A) : IsObj M ρ (lrose A) := by
+  obtain ⟨a, ha, has⟩ := hA
+  obtain ⟨w, hw, -⟩ := ax_holds (ρ := ρ) hM 133 rfl (by decide) (ts := [A]) (ws := [a])
+    (by simp [ha]) (by simp [has]) rfl trivial (q := ⟨lrose A, lrose A⟩) rfl
   exact ⟨w, hw, sort_of_eval_op rfl hw⟩
 
 end Objects

@@ -72,9 +72,10 @@ open scoped FinEnum
 
 /-- The operations that build types, by index, with their arities: the terminal object,
 products, the initial object, coproducts, exponentials, the subobject classifier, and the natural
-numbers, list and rose-tree objects. -/
+numbers object, list objects, the rose-tree object and rose-tree objects over types of
+labels. -/
 def tyOps : List (ℕ × ℕ) :=
-  [(4, 0), (6, 2), (13, 0), (15, 2), (22, 2), (25, 0), (29, 0), (33, 1), (37, 0)]
+  [(4, 0), (6, 2), (13, 0), (15, 2), (22, 2), (25, 0), (29, 0), (33, 1), (37, 0), (40, 1)]
 
 /-- Whether an object term is a type in {lit}`n` object variables: built by the operations of
 {lit}`tyOps` from the variables. -/
@@ -98,6 +99,14 @@ def coprodParts (p : Tree) : Option (Tree × Tree) := match p.children with
 def expParts (p : Tree) : Option (Tree × Tree) := match p.children with
   | [a, b] => if p = exp a b then some (a, b) else none
   | _ => none
+
+/-- The type of labels of a rose-tree object, with the fold of the object by a step: the natural
+numbers object for the rose-tree object, and the type of labels of a rose-tree object over
+one. -/
+def roseParts (p : Tree) : Option (Tree × (Tree → Tree)) :=
+  if p = rose then some (nat, roseRec) else match p.children with
+    | [a] => if p = lrose a then some (a, lroseRec a) else none
+    | _ => none
 
 /-- The element type of a list object. -/
 def listPart (p : Tree) : Option Tree := match p.children with
@@ -224,9 +233,10 @@ def compileStep (G : Globals) (n : ℕ) (l : Label)
       if c' = c then pure (comp (listRec a z' s') m', c) else none
     | .roseRec c, [(_, s), (_, m)] =>
       if IsTy n c then do
-        let (s', c') ← s (prod nat (list c)) [(idt (prod nat (list c)), prod nat (list c))]
         let (m', t) ← m X e
-        if c' = c ∧ t = rose then pure (comp (roseRec s') m', c) else none
+        let (a, fold) ← roseParts t
+        let (s', c') ← s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))]
+        if c' = c then pure (comp (fold s') m', c) else none
       else none
     | .eq, [(_, t), (_, u)] => do
       let (f, a) ← t X e
