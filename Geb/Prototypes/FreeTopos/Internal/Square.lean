@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import Geb.Prototypes.FreeTopos.Internal.Sorting
+public import Geb.Prototypes.PartialHorn.Point
 public import Geb.Prototypes.FreeTopos.Internal.Substitution
 meta import GebMeta -- shake: keep
 
@@ -40,6 +41,7 @@ definitions before it.
 * {lit}`compile_mono` — the compilation is monotone in the definitions.
 * {lit}`compile_unfold_of` — the square, given the definitions' invariant.
 * {lit}`compile_unfold`, {lit}`compile_unfold_of_ok` — the square.
+* {lit}`compile_unfold_some` — the unfolding of a term that compiles compiles.
 * {lit}`valid_unfoldAll_compile` — the square for the definition-free arrows, in every model of
   the theory.
 
@@ -648,10 +650,11 @@ theorem sortOf_prims_of_ok {defs : List PartialHorn.Defn} {G : Globals}
   simp only [Prim.ok, Bool.and_eq_true, beq_iff_eq] at hpo
   simpa [ExtEnv.ofDefs] using hpo.1.2
 
-/-- The square for the definition-free arrows: in every model of the theory, the unfoldings of the
-combinators' definitions in the arrow a term compiles to in a context and in the arrow its
-unfolding compiles to have one value, when the combinators' definitions are well formed. -/
-theorem valid_unfoldAll_compile {pre cds : List PartialHorn.Defn} {G : Globals}
+/-- The square for the definition-free arrows, given the arrow the unfolding compiles to: in
+every model of the theory, the unfoldings of the combinators' definitions in the arrow a term
+compiles to in a context and in the arrow its unfolding compiles to have one value, when the
+combinators' definitions are well formed. -/
+theorem valid_unfoldAll_compile_of {pre cds : List PartialHorn.Defn} {G : Globals}
     (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
     (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) {n : ℕ}
     {Γ : List Tree} (hΓ : Γ.all (IsTy n) = true) {s : Term} {f A f' A' : Tree}
@@ -674,6 +677,54 @@ theorem valid_unfoldAll_compile {pre cds : List PartialHorn.Defn} {G : Globals}
     obtain rfl := (Option.some_inj.mp hr').symm
     obtain ⟨w, hw, -⟩ := hf
     exact ⟨w, hw, hR.2.trans hw⟩
+
+/-- The theory's axioms equate terms of one sort. -/
+theorem theory_sidesSorted : ∀ a ∈ theory.axioms, PartialHorn.SidesSorted theory.sig a := by
+  have h : axioms.all (fun a ↦ match PartialHorn.sortOf sig a.ctx a.concl.lhs with
+      | some s => PartialHorn.sortOf sig a.ctx a.concl.rhs == some s
+      | none => false) = true := by
+    decide
+  intro a ha
+  have ha' := List.all_eq_true.mp h a ha
+  split at ha'
+  · rename_i s hs
+    exact ⟨s, hs, beq_iff_eq.mp ha'⟩
+  · simp at ha'
+
+/-- The unfolding of a term that compiles in a context compiles there, to the term's type: the
+square in the one-point model, a model of every well-formed extension of the theory. -/
+theorem compile_unfold_some {pre cds : List PartialHorn.Defn} {G : Globals}
+    (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
+    (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) {n : ℕ}
+    {Γ : List Tree} (hΓ : Γ.all (IsTy n) = true) {s : Term} {r : Tree × Tree}
+    (h : compile G n s (ctxObj Γ) (stdEnv Γ) = some r) :
+    ∃ r', compile G n (unfold (unfoldBodies G.defs) s) (ctxObj Γ) (stdEnv Γ) = some r' ∧
+      r'.2 = r.2 := by
+  have hM : IsModel (ext (pre ++ cds)) (PartialHorn.pointModel (ext (pre ++ cds)).sig) :=
+    PartialHorn.isModel_point
+      (PartialHorn.sidesSorted_extendAll (pre ++ cds) theory theory_sidesSorted hwf)
+  have hρ : (List.replicate n (⟨obj, ()⟩ :
+      (PartialHorn.pointModel (ext (pre ++ cds)).sig).Val)).map Sigma.fst =
+        List.replicate n obj := by
+    simp
+  obtain ⟨-, r', hr', hR⟩ := compile_unfold_of_ok hM hbase hok hc hρ h (stdEnv_hom hM hρ Γ hΓ)
+  exact ⟨r', hr', hR.1⟩
+
+/-- The square for the definition-free arrows: the unfolding of a term that compiles in a context
+compiles there to its type, and in every model of the theory the unfoldings of the combinators'
+definitions in the two arrows have one value, when the combinators' definitions are well
+formed. -/
+theorem valid_unfoldAll_compile {pre cds : List PartialHorn.Defn} {G : Globals}
+    (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
+    (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) {n : ℕ}
+    {Γ : List Tree} (hΓ : Γ.all (IsTy n) = true) {s : Term} {f A : Tree}
+    (h : compile G n s (ctxObj Γ) (stdEnv Γ) = some (f, A)) :
+    ∃ f', compile G n (unfold (unfoldBodies G.defs) s) (ctxObj Γ) (stdEnv Γ) = some (f', A) ∧
+      ∀ (M : Model.{v} theory.sig), IsModel theory M →
+        (PartialHorn.unfoldAll sig (pre ++ cds) ⟨List.replicate n obj, [], ⟨f, f'⟩⟩).Valid M := by
+  obtain ⟨⟨f', A'⟩, h', hA⟩ := compile_unfold_some hbase hok hc hwf hΓ h
+  obtain rfl : A' = A := hA
+  exact ⟨f', h', fun M hM ↦ valid_unfoldAll_compile_of hbase hok hc hwf hΓ h h' hM⟩
 
 end Geb.FreeTopos.Internal
 

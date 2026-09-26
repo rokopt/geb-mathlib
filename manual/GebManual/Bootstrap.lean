@@ -1716,6 +1716,9 @@ is the naturality of currying, derived from the axioms of exponentials
 the theorem carries to the definition-free arrows: in every model of the
 theory, the unfoldings of the combinators' definitions in the two arrows
 have one value ({name}`Geb.FreeTopos.Internal.valid_unfoldAll_compile`).
+That the unfolded term compiles is itself the theorem in the one-point
+model, the terminal model, in which every operation is defined and every
+axiom holds ({name}`Geb.PartialHorn.isModel_point`).
 
 The benchmark's theorems are stated in the language, appending and
 addition defined in it by folds into exponentials, and each equation
