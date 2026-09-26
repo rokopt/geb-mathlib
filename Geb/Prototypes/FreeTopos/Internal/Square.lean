@@ -419,9 +419,9 @@ theorem isTy_ctxObj {n : ℕ} : ∀ Γ : List Tree, Γ.all (IsTy n) = true → I
     · change IsTy n (prod (ctxObj (b :: Γ)) a) = true
       simp [isTy_prod, ih h.2, h.1]
 
-section Definitions
+section Values
 
-variable {pre cds : List PartialHorn.Defn} {M : Model.{v} (ext (pre ++ cds)).sig}
+variable {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig}
 
 /-- A term with a value at an assignment is in the assignment's scope. -/
 theorem scoped_of_eval {ρ : List M.Val} :
@@ -443,7 +443,7 @@ theorem scoped_of_eval {ρ : List M.Val} :
       exact ih c hc hv
 
 /-- Types at an assignment of objects have values, objects. -/
-theorem exists_vals_of_isTy (hM : IsModel (ext (pre ++ cds)) M) {m : ℕ} {ρ : List M.Val}
+theorem exists_vals_of_isTy (hM : IsModel (ext defs) M) {m : ℕ} {ρ : List M.Val}
     (hρ : ρ.map Sigma.fst = List.replicate m obj) :
     ∀ θ : List Tree, θ.all (IsTy m) = true → ∃ ws : List M.Val,
       θ.map (eval M ρ) = ws.map Part.some ∧ ws.map Sigma.fst = List.replicate θ.length obj :=
@@ -459,6 +459,12 @@ theorem eval_op₁_of_eq {ρ ρ' : List M.Val} {k : ℕ} {t t' : Tree}
     (h : eval M ρ t = eval M ρ' t') : eval M ρ (op k [t]) = eval M ρ' (op k [t']) := by
   rw [PartialHorn.eval_op, PartialHorn.eval_op]
   simp only [List.mapM_cons, List.mapM_nil, h]
+
+end Values
+
+section Definitions
+
+variable {pre cds : List PartialHorn.Defn} {M : Model.{v} (ext (pre ++ cds)).sig}
 
 /-- Constants the check accepts are well formed. -/
 theorem Globals.wf_of_ok {E : ExtEnv} {G : Globals} (h : G.ok E = true) : G.WF := by
@@ -606,6 +612,33 @@ theorem defsInv_succ {k : ℕ} (hk : k < G.defs.length) (h : DefsInv M G k) :
 theorem defsInv : ∀ k ≤ G.defs.length, DefsInv M G k :=
   Nat.rec (fun _ ↦ ⟨fun _ _ _ j d hd ↦ by simp at hd, fun j d hd ↦ by simp at hd⟩)
     fun k ih hk ↦ defsInv_succ hM hbase hG hc hps hk (ih (Nat.le_of_succ_le hk))
+
+/-- A definition's body compiles in its parameters' environment to its value's type and an
+arrow whose instance at types has the value of the definition's operation at them: the
+definition's axiom. -/
+theorem defn_body {k : ℕ} {d : Defn} (hd : G.defs[k]? = some d) :
+    ∃ F, compile G d.arity d.body (ctxObj d.params) (stdEnv d.params) = some (F, d.type) ∧
+      ∀ (m : ℕ) (ρ : List M.Val) (θ : List Tree), ρ.map Sigma.fst = List.replicate m obj →
+        θ.length = d.arity → θ.all (IsTy m) = true →
+        eval M ρ (op (G.base + k) θ) = eval M ρ (PartialHorn.subst θ F) := by
+  obtain ⟨cd, hcd, hdc⟩ := compileDefs_getElem? hc hd
+  obtain ⟨cb, hcb, rfl⟩ := Defn.compile_eq_some hdc
+  have hk : k < G.defs.length := (List.getElem?_eq_some_iff.mp hd).1
+  obtain ⟨hds, -⟩ := defsInv hM hbase hG hc hps k hk.le
+  have hle : Globals.Le { G with defs := G.defs.take k } G :=
+    ⟨rfl, rfl, G.defs.drop k, (List.take_append_drop k G.defs).symm⟩
+  obtain ⟨hpt, -⟩ := hG.defs k d hd
+  refine ⟨cb, compile_mono hle _ _ _ _ hcb, fun m ρ θ hρ hl hθ ↦ ?_⟩
+  obtain ⟨ws, hθw, hws⟩ := exists_vals_of_isTy hM hρ θ hθ
+  rw [hl] at hws
+  obtain ⟨v, hv, -⟩ := (compile_hom hM (hG.take k) hws (hps _ ws hws) (hds _ ws hws) _ _ _ _ hcb
+    (stdEnv_hom hM hws _ hpt)).1
+  have hsc : PartialHorn.Scoped θ.length cb = true := by
+    have := scoped_of_eval cb hv
+    rwa [show ws.length = θ.length by simpa [hl] using congrArg List.length hws] at this
+  rw [PartialHorn.eval_subst hθw cb hsc, hv, hbase, Nat.add_assoc]
+  exact eval_op_defn hM (i := pre.length + k) (d := ⟨List.replicate d.arity obj, arr, cb⟩)
+    (by simp [List.getElem?_append_right, hcd]) hθw hws hv
 
 /-- The square of the compilation and the unfolding: in every model of the theory extended by
 the combinators' definitions and those the definitions compile to, a term that compiles in an

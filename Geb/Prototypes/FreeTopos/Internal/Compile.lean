@@ -145,6 +145,7 @@ structure Prim where
   dom : Tree
   /-- Its codomain. -/
   cod : Tree
+deriving DecidableEq
 
 /-- The constants a term may apply: the primitive arrows, and the definitions, the one of index
 {lit}`k` the operation of index {lit}`base + k` of the combinators. -/
