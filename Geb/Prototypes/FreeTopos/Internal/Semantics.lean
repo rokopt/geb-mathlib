@@ -103,7 +103,10 @@ theorem eval_tuple_of_forall₂ (X : Tree) {rs rs' : List (Tree × Tree)}
     eval M ρ (tuple X (rs'.map Prod.fst)) = eval M ρ (tuple X (rs.map Prod.fst)) :=
   h.rec (motive := fun rs rs' _ ↦
       eval M ρ (tuple X (rs'.map Prod.fst)) = eval M ρ (tuple X (rs.map Prod.fst))) rfl
-    fun hr _ ih ↦ eval_op₂_congr 9 ih hr.2
+    fun hr hrs ih ↦ by
+      rcases hrs with _ | ⟨_, _⟩
+      · exact hr.2
+      · exact eval_op₂_congr 9 ih hr.2
 
 /-- Extending environments of equal values by a variable keeps their values equal. -/
 theorem EnvEq.ext {e e' : List (Tree × Tree)} (h : EnvEq M ρ e e') (X a : Tree) :
@@ -341,8 +344,10 @@ theorem EnvHom.ext {n : ℕ} {X a : Tree} {e : List (Tree × Tree)} (h : EnvHom 
 theorem tuple_hom {X : Tree} (hX : IsObj M ρ X) :
     ∀ rs : List (Tree × Tree), (∀ r ∈ rs, Hom M ρ r.1 X r.2) →
       Hom M ρ (tuple X (rs.map Prod.fst)) X (ctxObj (rs.map Prod.snd)) :=
-  List.rec (fun _ ↦ bang_hom hM hX) fun r _ ih h ↦
-    pair_hom hM (ih fun r' hr' ↦ h r' (List.mem_cons_of_mem _ hr')) (h r List.mem_cons_self)
+  List.rec (fun _ ↦ bang_hom hM hX) fun r rs ih h ↦ by
+    rcases rs with _ | ⟨r', rs⟩
+    · exact h r List.mem_cons_self
+    · exact pair_hom hM (ih fun q hq ↦ h q (List.mem_cons_of_mem _ hq)) (h r List.mem_cons_self)
 
 /-- The compilation is sound: a term's arrow is an arrow from the environment's object to the
 term's type, which is a type, when the environment's arrows, the primitive arrows and the
@@ -451,12 +456,14 @@ theorem eval_tuple_comp {X Y h : Tree} (hh : Hom M ρ h Y X) {rs rs' : List (Tre
       eval M ρ (tuple Y (rs'.map Prod.fst)) = eval M ρ (comp (tuple X (rs.map Prod.fst)) h) ∧
         rs'.map Prod.snd = rs.map Prod.snd)
     (fun _ ↦ ⟨(comp_bang hM hh).symm, rfl⟩)
-    (fun {r r' rs rs'} hrr _ ih hr ↦ by
+    (fun {r r' rs rs'} hrr hrest ih hr ↦ by
       have hrs : ∀ q ∈ rs, Hom M ρ q.1 X q.2 := fun q hq ↦ hr q (List.mem_cons_of_mem _ hq)
       obtain ⟨ih₁, ih₂⟩ := ih hrs
-      refine ⟨(eval_op₂_congr 9 ih₁ hrr.2).trans (pair_comp hM (tuple_hom hM hh.isObj_cod rs hrs)
-        (hr r List.mem_cons_self) hh).symm, ?_⟩
-      simp [ih₂, hrr.1]) hr
+      refine ⟨?_, by simp [ih₂, hrr.1]⟩
+      rcases hrest with _ | ⟨_, _⟩
+      · exact hrr.2
+      · exact (eval_op₂_congr 9 ih₁ hrr.2).trans (pair_comp hM
+          (tuple_hom hM hh.isObj_cod _ hrs) (hr r List.mem_cons_self) hh).symm) hr
 
 /-- The compilation is natural: in an environment whose arrows are precomposed with an arrow, a
 term has the same type and its arrow precomposed with it. -/

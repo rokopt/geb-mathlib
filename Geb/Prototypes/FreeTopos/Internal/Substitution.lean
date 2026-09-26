@@ -263,9 +263,11 @@ theorem eq_map_of_forall₂ {α : Type} {f : α → α} {rs rs' : List α}
 theorem subst_ctxObj (θ : List Tree) :
     ∀ Γ : List Tree, PartialHorn.subst θ (ctxObj Γ) = ctxObj (Γ.map (PartialHorn.subst θ)) :=
   List.rec (subst_one θ) fun a Γ ih ↦ by
-    change PartialHorn.subst θ (prod (ctxObj Γ) a) =
-      prod (ctxObj (Γ.map (PartialHorn.subst θ))) (PartialHorn.subst θ a)
-    rw [subst_prod, ih]
+    rcases Γ with _ | ⟨b, Γ⟩
+    · rfl
+    · change PartialHorn.subst θ (prod (ctxObj (b :: Γ)) a) =
+        prod (ctxObj ((b :: Γ).map (PartialHorn.subst θ))) (PartialHorn.subst θ a)
+      rw [subst_prod, ih]
 
 /-- Substitution in an extended environment. -/
 theorem map_substPair_extEnv (θ : List Tree) (X a : Tree) (e : List (Tree × Tree)) :
@@ -277,18 +279,23 @@ theorem map_substPair_extEnv (θ : List Tree) (X a : Tree) (e : List (Tree × Tr
 theorem map_substPair_stdEnv (θ : List Tree) :
     ∀ Γ : List Tree, (stdEnv Γ).map (substPair θ) = stdEnv (Γ.map (PartialHorn.subst θ)) :=
   List.rec rfl fun a Γ ih ↦ by
-    change (extEnv (ctxObj Γ) a (stdEnv Γ)).map _ =
-      extEnv (ctxObj (Γ.map _)) _ (stdEnv (Γ.map _))
-    rw [map_substPair_extEnv, ih, subst_ctxObj]
+    rcases Γ with _ | ⟨b, Γ⟩
+    · simp [stdEnv, substPair, subst_idt]
+    · change (extEnv (ctxObj (b :: Γ)) a (stdEnv (b :: Γ))).map _ =
+        extEnv (ctxObj ((b :: Γ).map _)) _ (stdEnv ((b :: Γ).map _))
+      rw [map_substPair_extEnv, ih, subst_ctxObj]
 
 /-- Substitution in a tuple. -/
 theorem subst_tuple (θ : List Tree) (X : Tree) :
     ∀ fs : List Tree, PartialHorn.subst θ (tuple X fs) =
       tuple (PartialHorn.subst θ X) (fs.map (PartialHorn.subst θ)) :=
   List.rec (subst_bang θ X) fun f fs ih ↦ by
-    change PartialHorn.subst θ (pair (tuple X fs) f) =
-      pair (tuple (PartialHorn.subst θ X) (fs.map (PartialHorn.subst θ))) (PartialHorn.subst θ f)
-    rw [subst_pair, ih]
+    rcases fs with _ | ⟨g, fs⟩
+    · rfl
+    · change PartialHorn.subst θ (pair (tuple X (g :: fs)) f) =
+        pair (tuple (PartialHorn.subst θ X) ((g :: fs).map (PartialHorn.subst θ)))
+          (PartialHorn.subst θ f)
+      rw [subst_pair, ih]
 
 /-- A term with objects substituted for its object variables compiles, in the substituted
 environment, to its arrow and type with them substituted. -/
