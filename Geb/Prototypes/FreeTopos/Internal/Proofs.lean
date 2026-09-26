@@ -5,6 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
+public import Geb.Prototypes.FreeTopos.Coequalizers
 public import Geb.Prototypes.FreeTopos.Internal.Soundness
 meta import GebMeta -- shake: keep
 
@@ -35,7 +36,9 @@ the same way, and is sound because an arrow from the product of an object and a 
 determined by its composites with the products of the object and the injections
 ({name}`Geb.FreeTopos.prod_coprod_ext`); a formula in a context with a variable of the initial
 type holds because an object with an arrow to the initial object is initial
-({name}`Geb.FreeTopos.eq_of_hom_zero`). The sequent a valid theorem compiles to is valid
+({name}`Geb.FreeTopos.eq_of_hom_zero`). Induction on a quotient is applied in the same way, and is
+sound because the product of an object with a coequalizer's projection is an epimorphism
+({name}`Geb.FreeTopos.prod_coeq_ext`). The sequent a valid theorem compiles to is valid
 ({lit}`Thm.seq_valid`): its hypotheses are true in the environment of the context's projections
 after the inclusion of the subobject on which they are true, where the theorem's conclusion is
 then true. An equation cited from a certificate is sound by the certificates' checker's
@@ -50,6 +53,7 @@ compilations of the language's ({lit}`cert_sound`).
   induction is sound.
 * {lit}`Thm.seq_valid`, {lit}`cert_sound` — the citations between the two checkers are
   sound.
+* {lit}`quotInd_sound` — induction on a quotient is sound.
 * {lit}`coprodInd_sound`, {lit}`zeroInd_sound` — case analysis on a coproduct, and a context
   with a variable of the initial type, are sound.
 * {lit}`roseInd_sound` — induction on rose trees is sound.
@@ -743,6 +747,92 @@ theorem coprodInd_sound {kl kr : ℕ} (hkl : G.prims[kl]? = some inlPrim)
   obtain ⟨q, hq, hrq⟩ := compile_at hM hG hρ hps hds he' hDt hF hx₀
   obtain rfl := Option.some_inj.mp (hq.symm.trans hr)
   exact ⟨hrq.1, hrq.2.trans ((eval_op₂_congr 3 hFtrue rfl).trans
+    (truth_comp hM (pair_hom hM (idt_hom hM hX) hx₀)))⟩
+
+/-- Induction on a quotient is sound: a formula in a context whose innermost variable is of the
+codomain of a primitive arrow that is a coequalizer's projection holds when it holds at the
+projection's image of a variable of its domain, under hypotheses that do not mention the
+variable, since the product of the environment's object with the projection is an
+epimorphism. -/
+theorem quotInd_sound {kq : ℕ} {p : Prim} (hp : G.prims[kq]? = some p) {f g : Tree}
+    (hfg : p.coeqParts = some (f, g)) {θ : List Tree} (hl : θ.length = p.arity)
+    (hθ : θ.all (IsTy G n) = true) {Γ' : List Tree} {Φ Φ' : List Term}
+    (hlow : lowerHyps G n Γ' Φ = some Φ') {φ : Term}
+    (hφ : typeIn G n (PartialHorn.subst θ p.cod :: Γ') φ = some omega)
+    (p₀ : FmSound M ρ G n (PartialHorn.subst θ p.dom :: Γ') Φ
+      (Term.subst φ (atVar0 (Term.arr kq θ (Term.var 0))))) :
+    FmSound M ρ G n (PartialHorn.subst θ p.cod :: Γ') Φ φ := by
+  intro X e he hΓ hΦ r hr
+  rcases e with _ | ⟨⟨x₀, D⟩, e'⟩
+  · simp at hΓ
+  simp only [List.map_cons, List.cons.injEq] at hΓ
+  obtain ⟨rfl, hΓ'⟩ := hΓ
+  have he' : EnvHom M ρ G n X e' := ⟨he.1, fun p hp ↦ he.2 p (List.mem_cons_of_mem _ hp)⟩
+  obtain ⟨hx₀, hDt⟩ := he.2 _ List.mem_cons_self
+  obtain ⟨har, hdt, -⟩ := hG.prims kq p hp
+  have hBt := isTy_subst hl hθ _ hdt
+  have hi := hps kq p hp θ hl hθ
+  -- the projection coequalizes two parallel arrows, and the type is their coequalizer
+  have hparts := hfg
+  unfold Prim.coeqParts at hparts
+  split at hparts
+  rotate_left
+  · simp at hparts
+  rename_i f₀ g₀ hch
+  split at hparts
+  rotate_left
+  · simp at hparts
+  rename_i a b c d hf₀ hg₀
+  split_ifs at hparts with hpa
+  obtain ⟨rfl, rfl⟩ : f₀ = f ∧ g₀ = g := by simpa using hparts
+  obtain ⟨hpa, rfl, rfl⟩ := hpa
+  have hia : PartialHorn.subst θ p.arrow =
+      coeqProj (comp (PartialHorn.subst θ a) (PartialHorn.subst θ b))
+        (comp (PartialHorn.subst θ c) (PartialHorn.subst θ d)) := by
+    rw [hpa]; rfl
+  rw [hia] at hi
+  obtain ⟨A, hfA, hgA, hDv⟩ := coeqProj_parallel hM ⟨_, _, rfl⟩ ⟨_, _, rfl⟩ hi
+  have hX := he.1
+  have hB := hi.isObj_dom
+  have hQ := isObj_coeqz hM hfA hgA
+  have hΦ' := hypsHold_lower hlow hΓ' hΦ
+  obtain ⟨F, hF⟩ := compile_of_typeIn hφ (X := prod X (PartialHorn.subst θ p.cod))
+    (by simp [extEnv, hΓ', Function.comp_def] :
+      (extEnv X (PartialHorn.subst θ p.cod) e').map Prod.snd = _)
+  have hDo := hi.isObj_cod
+  have hFh : Hom M ρ F (prod X (PartialHorn.subst θ p.cod)) omega :=
+    (compile_hom hM hG hρ hps hds _ _ _ _ hF (he'.ext hM hDo hDt)).1
+  have hPv : eval M ρ (prod X (PartialHorn.subst θ p.cod)) =
+      eval M ρ (prod X (coeqz (comp (PartialHorn.subst θ a) (PartialHorn.subst θ b))
+        (comp (PartialHorn.subst θ c) (PartialHorn.subst θ d)))) :=
+    eval_op₂_congr 6 rfl hDv
+  have hFh' := hFh.congr rfl hPv.symm rfl
+  have hP := isObj_prod hM hX hQ
+  -- the formula holds at the projection's image, where it is its arrow after the product of the
+  -- environment's object with the projection
+  have hu : compile G n (Term.arr kq θ (Term.var 0)) (prod X (PartialHorn.subst θ p.dom))
+      (extEnv X (PartialHorn.subst θ p.dom) e') =
+        some (comp (coeqProj (comp (PartialHorn.subst θ a) (PartialHorn.subst θ b))
+          (comp (PartialHorn.subst θ c) (PartialHorn.subst θ d)))
+          (snd X (PartialHorn.subst θ p.dom)), PartialHorn.subst θ p.cod) := by
+    rw [← hia]
+    exact compile_arr_iff.mpr ⟨Term.var 0, rfl, p, hp, snd X (PartialHorn.subst θ p.dom),
+      compile_var_iff.mpr ⟨rfl, rfl⟩, hl, hθ, rfl⟩
+  obtain ⟨q, hq, hrq⟩ := atVar0_compile hM hG hρ hps hds he' hBt hDt hi hF hu
+  have hΦc : HypsHold M ρ G n Φ (prod X (PartialHorn.subst θ p.dom))
+      (extEnv X (PartialHorn.subst θ p.dom) e') := by
+    rw [(lowerHyps_spec hlow).1]
+    exact hypsHold_weaken1 hM hG hρ hps hds hΦ' he' hB
+  have hH := p₀ _ _ (he'.ext hM hB hBt) (by simp [extEnv, hΓ', Function.comp_def]) hΦc q hq
+  have hside := hrq.2.symm.trans (hH.2.trans (truth_comp hM (pair_hom hM (fst_hom hM hX hB)
+    (comp_hom hM (snd_hom hM hX hB) hi))).symm)
+  have hFtrue := prod_coeq_ext hM hfA hgA hX hFh' (comp_hom hM (bang_hom hM hP) (tru_hom hM))
+    (hside.trans (eval_op₂_congr 3 (eval_op₂_congr 3 rfl (eval_op₁_congr 5 hPv)) rfl))
+  -- the formula at the variable
+  obtain ⟨q, hq, hrq⟩ := compile_at hM hG hρ hps hds he' hDt hF hx₀
+  obtain rfl := Option.some_inj.mp (hq.symm.trans hr)
+  exact ⟨hrq.1, hrq.2.trans ((eval_op₂_congr 3 (hFtrue.trans
+    (eval_op₂_congr 3 rfl (eval_op₁_congr 5 hPv.symm))) rfl).trans
     (truth_comp hM (pair_hom hM (idt_hom hM hX) hx₀)))⟩
 
 /-- A formula in a context with a variable of the initial type holds: the environment's object
@@ -1494,6 +1584,22 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
           · rename_i q hq
             rw [eqParts_eq_some htu]
             exact cert_sound hM hG hρ hps hds hE hcert hq h
+          · simp at h
+        · simp at h
+      · simp [checkStep] at h
+    case quotInd kq θ =>
+      rcases cs with _ | ⟨c₀, _ | ⟨c₁, cs⟩⟩
+      · simp [checkStep] at h
+      · simp only [checkStep, List.map_cons, List.map_nil] at h
+        split at h
+        · rename_i c Γ' p hp
+          split at h
+          · rename_i fg Φ' hfg hlow
+            obtain ⟨f, g⟩ := fg
+            simp only [Bool.and_eq_true, decide_eq_true_eq] at h
+            obtain ⟨⟨hl, hθ, rfl, hφ⟩, hp₀⟩ := h
+            exact quotInd_sound hM hG hρ hps hds hp hfg hl hθ hlow hφ
+              ((ih c₀ (by simp)).2 _ _ _ hp₀)
           · simp at h
         · simp at h
       · simp [checkStep] at h

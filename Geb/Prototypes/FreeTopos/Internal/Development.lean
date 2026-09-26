@@ -34,7 +34,12 @@ model of the final extension ({name}`Geb.PartialHorn.check_sound`,
 {name}`Geb.FreeTopos.infers_sound`). A primitive arrow whose sequent a certificate proves is an
 arrow between its types ({lit}`Prim.val_of_seq`), since the composite of an arrow with identities
 is defined only where their objects are its domain and codomain; its certificate may cite the
-theorems before it, whose validity uses only the primitive arrows before them.
+theorems before it, whose validity uses only the primitive arrows before them. A quotient's
+projection is an arrow to the object definition of the coequalizer, which the relation's arrow
+determines, and related elements have equal images because a pair of them factors through the
+relation's pullback of truth ({lit}`relPair_coeq`); a function's descent is defined because the
+cited theorem, in the environment of the pullback of truth, where the relation holds, equates
+the function after the two projections.
 
 In every model of the theory extended by the combinators' definitions and those the language's
 definitions compile to, every entry of a development that checks is valid
@@ -329,13 +334,34 @@ theorem valid_push {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig}
 /-- A declaration's check extends the constants. -/
 theorem Decl.le_of_step {d : Decl} {G G' : Globals} {E E' : Array Entry}
     (h : d.step G E = some (G', E')) : G.Le G' := by
-  cases d <;> simp only [Decl.step] at h <;> split_ifs at h <;>
-    simp only [Option.some.injEq, Prod.mk.injEq] at h <;> obtain ⟨rfl, -⟩ := h
-  · exact Globals.Le.refl G
-  · exact Globals.Le.refl G
-  · exact ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
-  · exact ⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩
-  · exact ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
+  cases d with
+  | quotient n A R =>
+    simp only [Decl.step] at h
+    split at h
+    · split_ifs at h
+      simp only [Option.some.injEq, Prod.mk.injEq] at h
+      obtain ⟨rfl, -⟩ := h
+      exact ⟨List.prefix_append _ _, rfl, List.prefix_append _ _⟩
+    · simp at h
+  | descent kq C h' jr =>
+    simp only [Decl.step] at h
+    split at h
+    · split at h
+      · split_ifs at h
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨rfl, -⟩ := h
+        exact ⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩
+      · simp at h
+    · simp at h
+  | _ =>
+    simp only [Decl.step] at h
+    split_ifs at h
+    simp only [Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨rfl, -⟩ := h
+    first
+      | exact Globals.Le.refl G
+      | exact ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
+      | exact ⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩
 
 /-- The check of a development of one more declaration first checks it. -/
 theorem checkDev_cons (G : Globals) (E : Array Entry) (d : Decl) (ds : List Decl) :
@@ -363,6 +389,61 @@ theorem prefix_of_le {pre F : List PartialHorn.Defn} {G Gf : Globals}
     (hF : compileDefs Gf = some F) (hle : G.Le Gf) {cds : List PartialHorn.Defn}
     (hc : compileDefs G = some cds) : pre ++ cds <+: pre ++ F :=
   (List.prefix_append_right_inj pre).mpr (compileDefs_prefix hle hc hF)
+
+/-- The object variables of an assignment's length have its values. -/
+theorem map_eval_objVars {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig}
+    {ws : List M.Val} {n : ℕ} (hl : ws.length = n) :
+    (objVars n).map (eval M ws) = ws.map Part.some := by
+  subst hl
+  exact map_eval_vars ws
+
+/-- A term in object parameters has, substituted by their variables, its value. -/
+theorem eval_subst_objVars {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig}
+    {ρ : List M.Val} {n : ℕ} (hl : ρ.length = n) {t : Tree}
+    (ht : PartialHorn.Scoped n t = true) : eval M ρ (PartialHorn.subst (objVars n) t) =
+      eval M ρ t :=
+  PartialHorn.eval_subst (map_eval_objVars hl) t (by simpa [objVars] using ht)
+
+/-- Two arrows, after whose pair the arrow of a relation is true, have one image in the quotient
+by the relation. -/
+theorem relPair_coeq {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig}
+    (hM : IsModel (ext defs) M) {ρ : List M.Val} {A r X x₀ x₁ : Tree} (hA : IsObj M ρ A)
+    (hr : Hom M ρ r (prod A A) omega) (hx₀ : Hom M ρ x₀ X A) (hx₁ : Hom M ρ x₁ X A)
+    (ht : eval M ρ (comp r (pair x₁ x₀)) = eval M ρ (comp tru (bang X))) :
+    eval M ρ (comp (coeqProj (relPair A r).1 (relPair A r).2) x₁) =
+      eval M ρ (comp (coeqProj (relPair A r).1 (relPair A r).2) x₀) := by
+  obtain ⟨hm, -⟩ := truthIncl_hom hM hr
+  have hpr := pair_hom hM hx₁ hx₀
+  obtain ⟨hu, hmu⟩ := truthLift_hom hM hr hpr ht
+  have hfA := fst_hom hM hA hA
+  have hsA := snd_hom hM hA hA
+  have hf := comp_hom hM hm hfA
+  have hg := comp_hom hM hm hsA
+  have hp := coeqProj_hom hM hf hg
+  -- each variable is a projection after the inclusion after the lift
+  have h₁ : eval M ρ x₁ = eval M ρ (comp (relPair A r).1 (truthLift r (pair x₁ x₀))) :=
+    (fst_pair hM hx₁ hx₀).symm.trans ((eval_op₂_congr 3 rfl hmu.symm).trans
+      (comp_assoc hM hu hm hfA))
+  have h₀ : eval M ρ x₀ = eval M ρ (comp (relPair A r).2 (truthLift r (pair x₁ x₀))) :=
+    (snd_pair hM hx₁ hx₀).symm.trans ((eval_op₂_congr 3 rfl hmu.symm).trans
+      (comp_assoc hM hu hm hsA))
+  exact (eval_op₂_congr 3 rfl h₁).trans ((comp_assoc hM hu hf hp).trans
+    ((eval_op₂_congr 3 (coeqProj_comp hM hf hg) rfl).trans
+      ((comp_assoc hM hu hg hp).symm.trans (eval_op₂_congr 3 rfl h₀.symm))))
+
+/-- A primitive arrow of a relation is the projection of the quotient by it. -/
+theorem Prim.rel?_eq_some {p : Prim} {r : Tree} (h : p.rel? = some r) :
+    p.arrow = coeqProj (relPair p.dom r).1 (relPair p.dom r).2 := by
+  unfold Prim.rel? at h
+  split at h
+  · split at h
+    · split at h
+      · split_ifs at h with hp
+        obtain rfl := Option.some_inj.mp h
+        exact hp
+      · simp at h
+    · simp at h
+  · simp at h
 
 variable (M) in
 /-- The invariant of a development's check, relative to the constants {lit}`Gf` it ends with: the
@@ -689,6 +770,396 @@ theorem DevInv.step {G G' : Globals} {E E' : Array Entry} (h : DevInv M Gf G E) 
     exact ⟨hle, hG', ⟨_, hc'⟩, h.sorts, h.prims, hdv', hdn', fun j e he ↦
       Entry.Valid.mono hM h.wf hle' (fun _ _ hρ ↦ primsHom_of_val hM hG' hdv'.2 h.prims hρ)
         (fun _ _ hρ ↦ defsHom_of_val hM hG' hdv' hρ) (h.entries j e he)⟩
+  | quotient n A R =>
+    simp only [Decl.step] at hs
+    cases hR : compile G n R (ctxObj [A, A]) (stdEnv [A, A]) with
+    | none => simp [hR] at hs
+    | some rt =>
+      obtain ⟨r, t⟩ := rt
+      simp only [hR] at hs
+      split_ifs at hs with hck
+      simp only [Option.some.injEq, Prod.mk.injEq] at hs
+      obtain ⟨rfl, rfl⟩ := hs
+      obtain ⟨hb, hA, rfl, hsc, hcty, hsrt, htype⟩ := hck
+      have hpre := hcert cds hc hb
+      have hbase' : G.base = sig.length + pre.length := h.le.2.1.trans hbase
+      -- the relation's arrow, and the pair it gives, at every assignment of objects
+      have hrel : ∀ {σ : List M.Val}, σ.map Sigma.fst = List.replicate n obj →
+          Hom M σ r (prod A A) omega ∧ IsObj M σ A := fun {σ} hσ ↦ by
+        have hΓ : [A, A].all (IsTy G n) = true := by simp [hA]
+        exact ⟨(compile_hom hM h.wf hσ (h.primsHom hM n σ hσ) (h.defsHom hM n σ hσ) R _ _ _ hR
+          (stdEnv_hom hM h.defs.2 hσ _ hΓ)).1, isObj_of_isTy hM h.defs.2 hσ A hA⟩
+      have hfg : ∀ {σ : List M.Val}, σ.map Sigma.fst = List.replicate n obj →
+          Hom M σ (relPair A r).1 (truthEq r) A ∧ Hom M σ (relPair A r).2 (truthEq r) A :=
+        fun hσ ↦ by
+          obtain ⟨hr, hAo⟩ := hrel hσ
+          have hm := (truthIncl_hom hM hr).1
+          exact ⟨comp_hom hM hm (fst_hom hM hAo hAo), comp_hom hM hm (snd_hom hM hAo hAo)⟩
+      -- the constants with the quotient
+      have hle₁ : G.Le { G with defs := G.defs ++ [.object n (coeqz (relPair A r).1
+          (relPair A r).2)] } := ⟨List.prefix_refl _, rfl, List.prefix_append _ _⟩
+      have hle' := hle₁.trans (⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩ :
+        Globals.Le { G with defs := G.defs ++ [.object n (coeqz (relPair A r).1 (relPair A r).2)] }
+          ⟨G.prims ++ [⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+            op (G.base + G.defs.length) (objVars n)⟩], G.defs ++ [.object n (coeqz (relPair A r).1
+            (relPair A r).2)], G.base⟩)
+      have hc₁ := compileDefs_snoc hc (d := .object n (coeqz (relPair A r).1 (relPair A r).2)) rfl
+      have hc' := compileDefs_of_prims
+        (G := { G with defs := G.defs ++ [.object n (coeqz (relPair A r).1 (relPair A r).2)] })
+        (G' := ⟨G.prims ++ [⟨n, coeqProj (relPair A r).1
+        (relPair A r).2, A, op (G.base + G.defs.length) (objVars n)⟩], G.defs ++ [.object n
+        (coeqz (relPair A r).1 (relPair A r).2)], G.base⟩)
+        ⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩ rfl hc₁
+      have hpre' := prefix_of_le (pre := pre) hF hle hc'
+      have hlen := length_compileDefs hc
+      -- the quotient's operation at an assignment of objects is the coequalizer
+      have hQv : ∀ {σ : List M.Val}, σ.map Sigma.fst = List.replicate n obj →
+          ∃ v, M.op (G.base + G.defs.length) σ = Part.some v ∧
+            eval M σ (coeqz (relPair A r).1 (relPair A r).2) = Part.some v ∧ v.1 = obj :=
+        fun {σ} hσ ↦ by
+          obtain ⟨hf, hg⟩ := hfg hσ
+          obtain ⟨v, hv, hvs⟩ := isObj_coeqz hM hf hg
+          have hσl : σ.length = n := by simpa using congrArg List.length hσ
+          have hvars := map_eval_vars σ
+          rw [hσl] at hvars
+          have he := eval_op_defn hM (i := pre.length + G.defs.length)
+            (d := ⟨List.replicate n obj, obj, coeqz (relPair A r).1 (relPair A r).2⟩)
+            (getElem?_of_prefix hpre' (by simp [hlen])) hvars hσ hv
+          refine ⟨v, ?_, hv, hvs⟩
+          rw [← eval_opVars, hσl, hbase', Nat.add_assoc]
+          exact he
+      -- the projection is an arrow from the type to the quotient at every assignment of objects
+      have hqv : Prim.Val M ⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+          op (G.base + G.defs.length) (objVars n)⟩ := fun ws hws ↦ by
+        obtain ⟨hf, hg⟩ := hfg hws
+        obtain ⟨v, hop, hv, -⟩ := hQv hws
+        have hwl : ws.length = n := by simpa using congrArg List.length hws
+        refine (coeqProj_hom hM hf hg).congr rfl rfl ?_
+        change eval M ws (op (G.base + G.defs.length) (objVars n)) = _
+        rw [eval_op_of_values (map_eval_objVars hwl), hop, hv]
+      have hG' : Globals.WF ⟨G.prims ++ [⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+          op (G.base + G.defs.length) (objVars n)⟩], G.defs ++ [.object n (coeqz (relPair A r).1
+          (relPair A r).2)], G.base⟩ := by
+        refine ⟨fun k p hp ↦ ?_, fun k d' hd' ↦ ?_⟩
+        · rw [List.getElem?_append] at hp
+          split_ifs at hp with hlt
+          · obtain ⟨ha, hd, hc⟩ := h.wf.prims k p hp
+            exact ⟨ha, isTy_mono hle' _ hd, isTy_mono hle' _ hc⟩
+          · rw [List.getElem?_singleton] at hp
+            split_ifs at hp
+            obtain rfl := Option.some_inj.mp hp
+            exact ⟨hsc, isTy_mono hle' _ hA, hcty⟩
+        · rw [List.getElem?_append] at hd'
+          split_ifs at hd' with hlt
+          · obtain ⟨hp, ht⟩ := h.wf.defs k d' hd'
+            exact ⟨all_isTy_mono hle' hp, isTy_mono hle' _ ht⟩
+          · rw [List.getElem?_singleton] at hd'
+            split_ifs at hd'
+            simp at hd'
+      have hpv' : ∀ (k : ℕ) (p : Prim), (G.prims ++ [⟨n, coeqProj (relPair A r).1 (relPair A r).2,
+          A, op (G.base + G.defs.length) (objVars n)⟩])[k]? = some p → p.Val M :=
+        fun k p hp ↦ by
+          rw [List.getElem?_append] at hp
+          split_ifs at hp with hlt
+          · exact h.prims k p hp
+          · rw [List.getElem?_singleton] at hp
+            split_ifs at hp
+            obtain rfl := Option.some_inj.mp hp
+            exact hqv
+      have hdv' : DefsVal M ⟨G.prims ++ [⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+          op (G.base + G.defs.length) (objVars n)⟩], G.defs ++ [.object n (coeqz (relPair A r).1
+          (relPair A r).2)], G.base⟩ := by
+        refine ⟨fun j d' hd' ws hws ↦ ?_, fun j m' b' hj ↦ ?_⟩
+        · rw [List.getElem?_append] at hd'
+          split_ifs at hd' with hlt
+          · exact h.defs.1 j d' hd' ws hws
+          · rw [List.getElem?_singleton] at hd'
+            split_ifs at hd'
+            simp at hd'
+        · rw [List.getElem?_append] at hj
+          split_ifs at hj with hlt
+          · exact h.defs.2 j m' b' hj
+          · rw [List.getElem?_singleton] at hj
+            split_ifs at hj with hj0
+            obtain ⟨rfl, rfl⟩ : n = m' ∧ coeqz (relPair A r).1 (relPair A r).2 = b' := by
+              simpa using hj
+            obtain rfl : j = G.defs.length := by omega
+            intro ws hws
+            obtain ⟨v, hop, -, hvs⟩ := hQv hws
+            exact ⟨v, hop, hvs⟩
+      have hdn' : DefnsVal M ⟨G.prims ++ [⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+          op (G.base + G.defs.length) (objVars n)⟩], G.defs ++ [.object n (coeqz (relPair A r).1
+          (relPair A r).2)], G.base⟩ := by
+        intro j d' hd'
+        rw [List.getElem?_append] at hd'
+        split_ifs at hd' with hlt
+        · obtain ⟨F', hF', hFv⟩ := h.defns j d' hd'
+          exact ⟨F', compile_mono hle' _ _ _ _ hF', hFv⟩
+        · rw [List.getElem?_singleton] at hd'
+          split_ifs at hd'
+          simp at hd'
+      have hps' := fun (m : ℕ) (ρ : List M.Val) (hρ : ρ.map Sigma.fst = List.replicate m obj) ↦
+        primsHom_of_val hM hG' hdv'.2 hpv' hρ
+      have hds' := fun (m : ℕ) (ρ : List M.Val) (hρ : ρ.map Sigma.fst = List.replicate m obj) ↦
+        defsHom_of_val hM hG' hdv' hρ
+      have hRG' := compile_mono hle' _ _ _ _ hR
+      -- related elements have equal images
+      have hrelv : Thm.Valid M ⟨G.prims ++ [⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+          op (G.base + G.defs.length) (objVars n)⟩], G.defs ++ [.object n (coeqz (relPair A r).1
+          (relPair A r).2)], G.base⟩ ⟨n, [A, A], [R], Term.eq
+            (Term.arr G.prims.length (objVars n) (Term.var 1))
+            (Term.arr G.prims.length (objVars n) (Term.var 0))⟩ := by
+        refine ⟨by simp [isTy_mono hle' _ hA], fun ψ hψ ↦ ?_, htype,
+          fun ρ hρ ↦ ⟨hps' _ ρ hρ, hds' _ ρ hρ, ?_⟩⟩
+        · obtain rfl := List.mem_singleton.mp hψ
+          simp [typeIn, hRG']
+        intro X e he hΓ hH res hres
+        rcases e with _ | ⟨⟨x₀, A₀⟩, _ | ⟨⟨x₁, A₁⟩, _ | ⟨p₂, e⟩⟩⟩
+        · simp at hΓ
+        · simp at hΓ
+        rotate_left
+        · simp at hΓ
+        simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hΓ
+        obtain ⟨rfl, rfl⟩ := hΓ
+        obtain ⟨hx₀, -⟩ := he.2 _ List.mem_cons_self
+        obtain ⟨hx₁, -⟩ := he.2 _ (List.mem_cons_of_mem _ List.mem_cons_self)
+        have hρl : ρ.length = n := by simpa using congrArg List.length hρ
+        obtain ⟨hr, hAo⟩ := hrel hρ
+        -- the relation holds of the variables
+        obtain ⟨rr, hrr, hHold⟩ := hH R (List.mem_singleton_self R)
+        obtain ⟨r', hr', hres'⟩ := compile_of_stdEnv hM hG' hρ (hps' n ρ hρ) (hds' n ρ hρ) hRG'
+          he rfl
+        obtain rfl := Option.some_inj.mp (hrr.symm.trans hr')
+        have htruth : eval M ρ (comp r (pair x₁ x₀)) = eval M ρ (comp tru (bang X)) :=
+          hres'.2.symm.trans hHold.2
+        have hcq := relPair_coeq hM hAo hr hx₀ hx₁ htruth
+        -- the conclusion: the projection after each variable
+        obtain ⟨t₁, t₀, htu, F₁, B, h₁, F₀, h₀, rfl⟩ := compile_eq_iff.mp hres
+        simp only [List.cons.injEq, and_true] at htu
+        obtain ⟨rfl, rfl⟩ := htu
+        refine (holds_eq_iff hM hG' hρ (hps' n ρ hρ) (hds' n ρ hρ) he h₁ h₀).mpr ?_
+        obtain ⟨_, htc₁, p₁, hp₁, g₁, hg₁, -, -, hr₁⟩ := compile_arr_iff.mp h₁
+        obtain ⟨_, htc₀, p₀, hp₀, g₀, hg₀, -, -, hr₀⟩ := compile_arr_iff.mp h₀
+        simp only [List.cons.injEq, and_true] at htc₁ htc₀
+        subst htc₁ htc₀
+        simp only [List.getElem?_append_right le_rfl, Nat.sub_self, List.getElem?_cons_zero,
+          Option.some.injEq] at hp₁ hp₀
+        subst hp₁ hp₀
+        obtain ⟨-, hg₁'⟩ := compile_var_iff.mp hg₁
+        obtain ⟨-, hg₀'⟩ := compile_var_iff.mp hg₀
+        simp only [List.getElem?_cons_succ, List.getElem?_cons_zero, Option.some.injEq,
+          Prod.mk.injEq] at hg₁' hg₀'
+        obtain ⟨rfl, -⟩ := hg₁'
+        obtain ⟨rfl, -⟩ := hg₀'
+        simp only [Prod.mk.injEq] at hr₁ hr₀
+        rw [← hr₁.1, ← hr₀.1]
+        exact (eval_op₂_congr 3 (eval_subst_objVars hρl hsc) rfl).trans (hcq.trans
+          (eval_op₂_congr 3 (eval_subst_objVars hρl hsc) rfl).symm)
+      have hsrt' := hsrt
+      simp only [hc, Option.any_some, beq_iff_eq] at hsrt'
+      refine ⟨hle, hG', ⟨_, hc'⟩, fun k p hp ↦ ?_, hpv', hdv', hdn',
+        valid_push (fun j e he ↦ Entry.Valid.mono hM h.wf hle' (hps') (hds') (h.entries j e he))
+          hrelv⟩
+      rw [List.getElem?_append] at hp
+      split_ifs at hp with hlt
+      · exact h.sorts k p hp
+      · rw [List.getElem?_singleton] at hp
+        split_ifs at hp
+        obtain rfl := Option.some_inj.mp hp
+        exact PartialHorn.sortOf_of_prefix (ext_prefix hpre).1 hsrt'
+  | descent kq C h' jr =>
+    simp only [Decl.step] at hs
+    cases hq : G.prims[kq]? with
+    | none => simp [hq] at hs
+    | some p =>
+    cases hT : (E[jr]?).bind Entry.language? with
+    | none => simp [hq, hT] at hs
+    | some T =>
+    cases hr : p.rel? with
+    | none => simp [hq, hT, hr] at hs
+    | some r =>
+    cases hH : compile G p.arity h' (ctxObj [p.dom]) (stdEnv [p.dom]) with
+    | none => simp [hq, hT, hr, hH] at hs
+    | some HC =>
+    obtain ⟨H, C'⟩ := HC
+    obtain ⟨Tn, TΓ, TΦ, Tφ⟩ := T
+    rcases TΦ with _ | ⟨R', _ | ⟨R'', TΦ⟩⟩
+    · simp [hq, hT, hr, hH] at hs
+    rotate_left
+    · simp [hq, hT, hr, hH] at hs
+    simp only [hq, hT, hr, hH] at hs
+    split_ifs at hs with hck
+    simp only [Option.some.injEq, Prod.mk.injEq] at hs
+    obtain ⟨rfl, rfl⟩ := hs
+    obtain ⟨hb, hCC, hCt, rfl, rfl, rfl, hR', hsc, hsrt, htype⟩ := hck
+    subst C'
+    have hpre := hcert cds hc hb
+    obtain ⟨hpsc, hBt, hQt⟩ := h.wf.prims kq p hq
+    have hpa := Prim.rel?_eq_some hr
+    have hTv := Entry.valid_language h.entries hT
+    -- at an assignment of objects: the relation's pair, the function, which respects the
+    -- relation, and the quotient
+    have hfacts : ∀ {σ : List M.Val}, σ.map Sigma.fst = List.replicate p.arity obj →
+        Hom M σ (relPair p.dom r).1 (truthEq r) p.dom ∧
+          Hom M σ (relPair p.dom r).2 (truthEq r) p.dom ∧ Hom M σ H p.dom C ∧
+          eval M σ (comp H (relPair p.dom r).1) = eval M σ (comp H (relPair p.dom r).2) ∧
+          eval M σ p.cod = eval M σ (coeqz (relPair p.dom r).1 (relPair p.dom r).2) :=
+      fun {σ} hσ ↦ by
+        have hps := h.primsHom hM _ σ hσ
+        have hds := h.defsHom hM _ σ hσ
+        have hBo := isObj_of_isTy hM h.defs.2 hσ _ hBt
+        have hΓ : [p.dom, p.dom].all (IsTy G p.arity) = true := by simp [hBt]
+        have hrh := (compile_hom hM h.wf hσ hps hds R' _ _ _ hR'
+          (stdEnv_hom hM h.defs.2 hσ _ hΓ)).1
+        obtain ⟨hm, hmt⟩ := truthIncl_hom hM hrh
+        have hf := comp_hom hM hm (fst_hom hM hBo hBo)
+        have hg := comp_hom hM hm (snd_hom hM hBo hBo)
+        have hstd1 := stdEnv_hom hM h.defs.2 hσ [p.dom] (by simp [hBt])
+        have hHh := (compile_hom hM h.wf hσ hps hds h' _ _ _ hH hstd1).1
+        -- the projection's codomain is the coequalizer
+        have hpv := h.prims kq p hq σ hσ
+        rw [hpa] at hpv
+        have hQ := hpv.eval_cod.symm.trans (coeqProj_hom hM hf hg).eval_cod
+        -- the relation holds in the environment of its pullback of truth
+        have hX := hm.isObj_dom
+        have heM : EnvHom M σ G p.arity (truthEq r)
+            [((relPair p.dom r).2, p.dom), ((relPair p.dom r).1, p.dom)] :=
+          ⟨hX, fun q hq ↦ by
+            simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
+            rcases hq with rfl | rfl
+            · exact ⟨hg, hBt⟩
+            · exact ⟨hf, hBt⟩⟩
+        obtain ⟨r', hr', hres'⟩ := compile_of_stdEnv hM h.wf hσ hps hds hR' heM rfl
+        have hHold : HypsHold M σ G p.arity [R'] (truthEq r)
+            [((relPair p.dom r).2, p.dom), ((relPair p.dom r).1, p.dom)] := by
+          intro ψ hψ
+          obtain rfl := List.mem_singleton.mp hψ
+          exact ⟨r', hr', hres'.1, hres'.2.trans ((eval_op₂_congr 3 rfl
+            (pair_eta hM hBo hBo hm)).trans hmt)⟩
+        -- the function at each variable
+        have hEq : ∀ {x : Tree}, Hom M σ x (truthEq r) p.dom → ∀ e' : List (Tree × Tree),
+            e'[0]? = some (x, p.dom) → EnvEq M σ (precomp x (stdEnv [p.dom])) e' :=
+          fun {x} hx e' he' i q hq ↦ by
+            rcases i with _ | i
+            · simp only [precomp, stdEnv, List.map_cons, List.map_nil,
+                List.getElem?_cons_zero, Option.some.injEq] at hq
+              subst hq
+              exact ⟨(x, p.dom), he', rfl, (idt_comp hM hx).symm⟩
+            · simp [precomp, stdEnv] at hq
+        obtain ⟨⟨F₁, C₁⟩, hr₁, hres₁⟩ := compile_precomp hM h.wf hσ hps hds hH hstd1 hf
+          (hEq hf [((relPair p.dom r).1, p.dom)] rfl)
+        have hr₁' : compile G p.arity (weaken1 h') (truthEq r)
+            [((relPair p.dom r).2, p.dom), ((relPair p.dom r).1, p.dom)] = some (F₁, C₁) :=
+          compile_rename h' _ _ _ _ _ hr₁ fun i hi ↦ by
+            obtain rfl : i = 0 := by simpa using hi
+            rfl
+        obtain ⟨⟨F₀, C₀⟩, hr₀, hres₀⟩ := compile_precomp hM h.wf hσ hps hds hH hstd1 hg
+          (hEq hg [((relPair p.dom r).2, p.dom), ((relPair p.dom r).1, p.dom)] rfl)
+        obtain rfl : C₁ = C := hres₁.1
+        obtain rfl : C₀ = C₁ := hres₀.1
+        have hcomp := compile_eq_iff.mpr ⟨weaken1 h', h', rfl, F₁, C₀, hr₁', F₀, hr₀, rfl⟩
+        obtain ⟨-, -, hfm⟩ := hTv.2.2.2 σ hσ
+        have hH' := hfm _ _ heM rfl hHold _ hcomp
+        have heq := (holds_eq_iff hM h.wf hσ hps hds heM hr₁' hr₀).mp hH'
+        exact ⟨hf, hg, hHh, hres₁.2.symm.trans (heq.trans hres₀.2), hQ⟩
+    -- the descent is an arrow from the quotient at every assignment of objects
+    have hdv : Prim.Val M ⟨p.arity, coeqDesc (relPair p.dom r).1 (relPair p.dom r).2 H, p.cod,
+        C⟩ := fun ws hws ↦ by
+      obtain ⟨hf, hg, hHh, heq, hQ⟩ := hfacts hws
+      exact (coeqDesc_hom hM hf hg hHh heq).congr rfl hQ rfl
+    have hle' : G.Le { G with prims := G.prims ++ [⟨p.arity, coeqDesc (relPair p.dom r).1
+        (relPair p.dom r).2 H, p.cod, C⟩] } := ⟨List.prefix_append _ _, rfl, List.prefix_refl _⟩
+    have hG' : ({ G with prims := G.prims ++ [⟨p.arity, coeqDesc (relPair p.dom r).1
+        (relPair p.dom r).2 H, p.cod, C⟩] } : Globals).WF := by
+      refine ⟨fun k p' hp' ↦ ?_, h.wf.defs⟩
+      rw [List.getElem?_append] at hp'
+      split_ifs at hp' with hlt
+      · exact h.wf.prims k p' hp'
+      · rw [List.getElem?_singleton] at hp'
+        split_ifs at hp'
+        obtain rfl := Option.some_inj.mp hp'
+        exact ⟨hsc, hQt, hCt⟩
+    have hpv' : ∀ (k : ℕ) (p' : Prim), (G.prims ++ [⟨p.arity, coeqDesc (relPair p.dom r).1
+        (relPair p.dom r).2 H, p.cod, C⟩])[k]? = some p' → p'.Val M := fun k p' hp' ↦ by
+      rw [List.getElem?_append] at hp'
+      split_ifs at hp' with hlt
+      · exact h.prims k p' hp'
+      · rw [List.getElem?_singleton] at hp'
+        split_ifs at hp'
+        obtain rfl := Option.some_inj.mp hp'
+        exact hdv
+    have hdn' : DefnsVal M { G with prims := G.prims ++ [⟨p.arity, coeqDesc (relPair p.dom r).1
+        (relPair p.dom r).2 H, p.cod, C⟩] } := fun j d' hd' ↦ by
+      obtain ⟨F', hF', hFv⟩ := h.defns j d' hd'
+      exact ⟨F', compile_mono hle' _ _ _ _ hF', hFv⟩
+    have hps' := fun (m : ℕ) (ρ : List M.Val) (hρ : ρ.map Sigma.fst = List.replicate m obj) ↦
+      primsHom_of_val hM hG' h.defs.2 hpv' hρ
+    have hds' := fun (m : ℕ) (ρ : List M.Val) (hρ : ρ.map Sigma.fst = List.replicate m obj) ↦
+      defsHom_of_val hM hG' h.defs hρ
+    have hHG' := compile_mono hle' _ _ _ _ hH
+    -- the descent after the projection is the function
+    have hcmp : Thm.Valid M { G with prims := G.prims ++ [⟨p.arity, coeqDesc (relPair p.dom r).1
+        (relPair p.dom r).2 H, p.cod, C⟩] } ⟨p.arity, [p.dom], [], Term.eq
+          (Term.arr G.prims.length (objVars p.arity) (Term.arr kq (objVars p.arity)
+            (Term.var 0))) h'⟩ := by
+      refine ⟨by simp only [List.all_cons, List.all_nil, Bool.and_true]; exact hBt,
+        fun ψ hψ ↦ by simp at hψ, htype,
+        fun ρ hρ ↦ ⟨hps' _ ρ hρ, hds' _ ρ hρ, ?_⟩⟩
+      intro X e he hΓ _ res hres
+      rcases e with _ | ⟨⟨x₀, B₀⟩, _ | ⟨p₁, e⟩⟩
+      · simp at hΓ
+      rotate_left
+      · simp at hΓ
+      simp only [List.map_cons, List.map_nil, List.cons.injEq, and_true] at hΓ
+      subst hΓ
+      obtain ⟨hx₀, -⟩ := he.2 _ List.mem_cons_self
+      have hρl : ρ.length = p.arity := by simpa using congrArg List.length hρ
+      obtain ⟨hf, hg, hHh, heq, -⟩ := hfacts hρ
+      obtain ⟨t₁, t₀, htu, F₁, B', h₁, F₀, h₀, rfl⟩ := compile_eq_iff.mp hres
+      simp only [List.cons.injEq, and_true] at htu
+      obtain ⟨rfl, rfl⟩ := htu
+      refine (holds_eq_iff hM hG' hρ (hps' _ ρ hρ) (hds' _ ρ hρ) he h₁ h₀).mpr ?_
+      -- the left side: the descent after the projection after the variable
+      obtain ⟨_, htc, pd, hpd, gd, hgd, -, -, hrd⟩ := compile_arr_iff.mp h₁
+      simp only [List.cons.injEq, and_true] at htc
+      subst htc
+      simp only [List.getElem?_append_right le_rfl, Nat.sub_self, List.getElem?_cons_zero,
+        Option.some.injEq] at hpd
+      subst hpd
+      obtain ⟨_, htc', pq, hpq, gq, hgq, -, -, hrq⟩ := compile_arr_iff.mp hgd
+      simp only [List.cons.injEq, and_true] at htc'
+      subst htc'
+      rw [List.getElem?_append_left (List.getElem?_eq_some_iff.mp hq).1, hq,
+        Option.some.injEq] at hpq
+      subst hpq
+      obtain ⟨-, hgv⟩ := compile_var_iff.mp hgq
+      simp only [List.getElem?_cons_zero, Option.some.injEq, Prod.mk.injEq] at hgv
+      obtain ⟨rfl, -⟩ := hgv
+      simp only [Prod.mk.injEq] at hrq hrd
+      obtain ⟨rfl, -⟩ := hrq
+      obtain ⟨rfl, -⟩ := hrd
+      -- the right side: the function at the variable
+      obtain ⟨r₀, hr₀, hres₀⟩ := compile_of_stdEnv hM hG' hρ (hps' _ ρ hρ) (hds' _ ρ hρ) hHG' he
+        rfl
+      obtain rfl := Option.some_inj.mp (h₀.symm.trans hr₀)
+      have hp := coeqProj_hom hM hf hg
+      have hd := coeqDesc_hom hM hf hg hHh heq
+      refine (eval_op₂_congr 3 (eval_subst_objVars hρl hsc) (eval_op₂_congr 3
+        (eval_subst_objVars hρl hpsc) rfl)).trans ?_
+      rw [hpa]
+      exact (comp_assoc hM hx₀ hp hd).trans ((eval_op₂_congr 3 (coeqDesc_proj hM hf hg hHh heq)
+        rfl).trans hres₀.2.symm)
+    have hsrt' := hsrt
+    simp only [hc, Option.any_some, beq_iff_eq] at hsrt'
+    refine ⟨hle, hG', ⟨_, compileDefs_of_prims hle' rfl hc⟩, fun k p' hp' ↦ ?_, hpv', h.defs, hdn',
+      valid_push (fun j e he ↦ Entry.Valid.mono hM h.wf hle' hps' hds' (h.entries j e he)) hcmp⟩
+    rw [List.getElem?_append] at hp'
+    split_ifs at hp' with hlt
+    · exact h.sorts k p' hp'
+    · rw [List.getElem?_singleton] at hp'
+      split_ifs at hp'
+      obtain rfl := Option.some_inj.mp hp'
+      exact PartialHorn.sortOf_of_prefix (ext_prefix hpre).1 hsrt'
 
 /-- The invariant holds at the end of a development's check that begins with it. -/
 theorem devInv_checkDev {Ef : Array Entry} (ds : List Decl) :

@@ -26,6 +26,7 @@ import GebTests.Prototypes.FreeTopos.InternalConstants
 import GebTests.Prototypes.FreeTopos.InternalCoproducts
 import GebTests.Prototypes.FreeTopos.InternalDerivation
 import GebTests.Prototypes.FreeTopos.InternalLogic
+import GebTests.Prototypes.FreeTopos.InternalQuotients
 import GebTests.Prototypes.FreeTopos.InternalRoseTrees
 import GebTests.Prototypes.FreeTopos.Prover
 import GebTests.Prototypes.Kernel

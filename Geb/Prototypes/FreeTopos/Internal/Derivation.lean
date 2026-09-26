@@ -29,9 +29,11 @@ whose applications to a new variable are equal; an instance of an earlier theore
 instances proved; a formula by induction on the innermost variable of the natural numbers or of a
 list type, with the formula's instance at the start and, under the induction hypothesis, at a
 successor or a construction; a formula by case analysis on the innermost variable of a coproduct
-type, with its instances at the two injections; and every formula in a context with a variable of
-the initial type; and an equation by a certificate of the combinators that proves the sequent it
-compiles to. These rules are the basic axioms and rules of a local set theory
+type, with its instances at the two injections; every formula in a context with a variable of
+the initial type; a formula by induction on the innermost variable of the codomain of a
+coequalizer's projection, with its instance at the projection's image of a variable of the
+domain; and an equation by a certificate of the combinators that proves the sequent it compiles
+to. These rules are the basic axioms and rules of a local set theory
 ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of the
 formula and membership application, with the extensionality of every exponential in place of that of
 power types, and with induction. The rewriting takes its terms from the term it rewrites, so that a
@@ -40,18 +42,23 @@ of the theorems it cites, and the checker computes every substitution.
 
 A development mixes the two checkers: a declaration is a theorem of the language with its
 derivation, a sequent of the combinators with its certificate, a definition of the language, a
-primitive arrow, or an object definition, each checked with the constants and the entries before
-it, so that the constants, and with the object definitions the types, grow with the
-development. A theorem of the language states to a certificate the sequent it
-compiles to ({lit}`Thm.seq`): the equation of its conclusion's sides' arrows, or of its
-conclusion's arrow with truth, after the inclusion of the subobject on which its hypotheses are
-true where it has hypotheses. A certificate is checked in the theory extended by the
-compilations of the language's definitions so far, with every entry's sequent as its theorems. A
-definition is checked by its compilation; a primitive arrow, a term of the combinators in object
-parameters, by the checker's inference of its domain and codomain, or by a certificate of the
-sequent that it is an arrow between them ({lit}`Prim.seq`), which may cite the theorems before
-it; an object definition, an object of the combinators in object parameters, by the inference
-of its definedness, or by a certificate of it ({lit}`objConfirms`).
+primitive arrow, an object definition, the quotient of a type by a relation, or the descent of a
+function to a quotient, each checked with the constants and the entries before it, so that the
+constants, and with the object definitions the types, grow with the development. A theorem of the
+language states to a certificate the sequent it compiles to ({lit}`Thm.seq`): the equation of its
+conclusion's sides' arrows, or of its conclusion's arrow with truth, after the inclusion of the
+subobject on which its hypotheses are true where it has hypotheses. A certificate is checked in the
+theory extended by the compilations of the language's definitions so far, with every entry's sequent
+as its theorems. A definition is checked by its compilation; a primitive arrow, a term of the
+combinators in object parameters, by the checker's inference of its domain and codomain, or by a
+certificate of the sequent that it is an arrow between them ({lit}`Prim.seq`), which may cite the
+theorems before it; an object definition, an object of the combinators in object parameters, by the
+inference of its definedness, or by a certificate of it ({lit}`objConfirms`). The quotient of a type
+by a relation, a formula in two variables of the type, is the coequalizer of the projections of the
+relation's pullback of truth ({lit}`relPair`), an object definition, with the projection to it, a
+primitive arrow, and the theorem that related elements have equal images; the descent of a function,
+cited with the theorem that it respects the relation, is a primitive arrow from the quotient, with
+the theorem of its computation at an image.
 
 ## Main definitions
 
@@ -63,6 +70,8 @@ of its definedness, or by a certificate of it ({lit}`objConfirms`).
 * {lit}`check` — the rewriting a derivation performs, and the judgments it proves.
 * {lit}`Prim.seq`, {lit}`Prim.confirms` — the sequent that a primitive arrow is an arrow between
   its types, and the confirmation of a primitive arrow a development declares.
+* {lit}`relPair`, {lit}`Prim.coeqParts`, {lit}`Prim.rel?` — the pair a quotient coequalizes, and
+  the recognition of a quotient's projection.
 * {lit}`Decl.step`, {lit}`checkDev`, {lit}`checkThms` — the check of a development, each
   declaration proved with the constants and the entries before it.
 
@@ -175,6 +184,10 @@ inductive Rule where
   | coprodInd (kl kr : ℕ)
   /-- A formula in a context whose variable of index {lit}`i` is of the initial type. -/
   | zeroInd (i : ℕ)
+  /-- A formula by induction on the innermost variable, of the codomain of the primitive arrow of
+  index {lit}`kq` at the objects {lit}`θ`, a coequalizer's projection: proved at its image of a
+  variable of its domain, under hypotheses that do not mention the variable. -/
+  | quotInd (kq : ℕ) (θ : List Tree)
 
 /-- A derivation of the internal language. -/
 abbrev Deriv : Type := RoseTree Rule
@@ -220,6 +233,35 @@ def inrPrim : Prim := ⟨2, inr (x 0) (x 1), x 1, coprod (x 0) (x 1)⟩
 into the third, from the pair of the functions from the two summands. -/
 def casePrim : Prim := ⟨3, caseArr (x 0) (x 1) (x 2), prod (exp (x 0) (x 2)) (exp (x 1) (x 2)),
   exp (coprod (x 0) (x 1)) (x 2)⟩
+
+/-- The object variables of a number of object parameters. -/
+def objVars (n : ℕ) : List Tree := (List.range n).map x
+
+/-- The two composites a primitive arrow is the projection of the coequalizer of, where it is
+one. -/
+def Prim.coeqParts (p : Prim) : Option (Tree × Tree) := match p.arrow.children with
+  | [f, g] => match f.children, g.children with
+    | [a, b], [c, d] =>
+      if p.arrow = coeqProj f g ∧ f = comp a b ∧ g = comp c d then some (f, g) else none
+    | _, _ => none
+  | _ => none
+
+/-- The projections of the pullback of truth along an arrow from the product of a type with
+itself into the subobject classifier, whose coequalizer is the quotient by the relation the arrow
+is. -/
+def relPair (A r : Tree) : Tree × Tree :=
+  (comp (fst A A) (truthIncl r), comp (snd A A) (truthIncl r))
+
+/-- The arrow of the relation a primitive arrow is the projection of the quotient by, where it is
+one. -/
+def Prim.rel? (p : Prim) : Option Tree := match p.arrow.children with
+  | [f, _] => match f.children with
+    | [_, m] => match m.children with
+      | [r, _] =>
+        if p.arrow = coeqProj (relPair p.dom r).1 (relPair p.dom r).2 then some r else none
+      | _ => none
+    | _ => none
+  | _ => none
 
 /-- The substitution of one term for the innermost variable, the others lowered by one. -/
 def instVar (u : Term) : ℕ → Term := fun i ↦ match i with
@@ -536,6 +578,14 @@ def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (D
         | _, _ => false
       | [] => false
     | .zeroInd i, [] => decide (Γ[i]? = some zero ∧ typeIn G n Γ φ = some omega)
+    | .quotInd kq θ, [(_, p₀)] => match Γ, G.prims[kq]? with
+      | c :: Γ', some p => match p.coeqParts, lowerHyps G n Γ' Φ with
+        | some _, some _ => decide (θ.length = p.arity ∧ θ.all (IsTy G n) ∧
+              c = PartialHorn.subst θ p.cod ∧ typeIn G n Γ φ = some omega) &&
+            p₀.2 (PartialHorn.subst θ p.dom :: Γ') Φ
+              (Term.subst φ (atVar0 (Term.arr kq θ (Term.var 0))))
+        | _, _ => false
+      | _, _ => false
     | .cert c, [] => match eqParts φ with
       | some (t, u) => match compileEq G n Γ t u with
         | some q => certifies G E c q
@@ -612,6 +662,16 @@ inductive Decl where
   /-- An object definition, an object of the combinators in a number of object parameters, with
   the certificate of its definedness where inference does not confirm it. -/
   | object (arity : ℕ) (body : Tree) (c : Option Tree)
+  /-- The quotient of a type by a relation, a formula in two variables of the type, in a number
+  of object parameters: the coequalizer of the projections of the relation's pullback of truth,
+  an object definition, and the projection to it, a primitive arrow, with the theorem that related
+  elements have equal images. -/
+  | quotient (arity : ℕ) (A : Tree) (R : Term)
+  /-- The descent of a function, a term in a variable of the domain of the primitive arrow of
+  index {lit}`kq`, a quotient's projection, into the type {lit}`C`, through the quotient: a
+  primitive arrow, with the theorem of its computation at an image, the theorem that the
+  function respects the relation the entry of index {lit}`jr`. -/
+  | descent (kq : ℕ) (C : Tree) (h : Term) (jr : ℕ)
 
 /-- The constants and the environment after a declaration, where its proof proves it with the
 constants of {lit}`G` and the environment {lit}`E`: a theorem's entry added to the environment, a
@@ -625,6 +685,44 @@ def Decl.step (G : Globals) (E : Array Entry) : Decl → Option (Globals × Arra
     if p.confirms G E c then some ({ G with prims := G.prims ++ [p] }, E) else none
   | .object m b c =>
     if objConfirms G E m b c then some ({ G with defs := G.defs ++ [.object m b] }, E) else none
+  | .quotient n A R => match compile G n R (ctxObj [A, A]) (stdEnv [A, A]) with
+    | some (r, t) =>
+      let q : Prim := ⟨n, coeqProj (relPair A r).1 (relPair A r).2, A,
+        op (G.base + G.defs.length) (objVars n)⟩
+      let G' : Globals := ⟨G.prims ++ [q], G.defs ++ [.object n (coeqz (relPair A r).1
+        (relPair A r).2)], G.base⟩
+      let qT := fun i ↦ Term.arr G.prims.length (objVars n) (Term.var i)
+      let rel : Thm := ⟨n, [A, A], [R], Term.eq (qT 1) (qT 0)⟩
+      if G.base = sig.length ∧ IsTy G n A ∧ t = omega ∧ PartialHorn.Scoped n q.arrow = true ∧
+          IsTy G' n q.cod ∧
+          (compileDefs G).any (fun cds ↦
+            PartialHorn.sortOf (ext cds).sig (List.replicate n obj) q.arrow == some arr) ∧
+          typeIn G' n [A, A] rel.concl = some omega then
+        some (G', E.push (.language rel))
+      else none
+    | none => none
+  | .descent kq C h jr => match G.prims[kq]?, (E[jr]?).bind Entry.language? with
+    | some p, some T =>
+      match p.rel?, compile G p.arity h (ctxObj [p.dom]) (stdEnv [p.dom]), T.hyps with
+      | some r, some (H, C'), [R'] =>
+        let d : Prim := ⟨p.arity, coeqDesc (relPair p.dom r).1 (relPair p.dom r).2 H, p.cod, C⟩
+        let G' : Globals := { G with prims := G.prims ++ [d] }
+        let dq : Term := Term.arr G.prims.length (objVars p.arity)
+          (Term.arr kq (objVars p.arity) (Term.var 0))
+        let cmp : Thm := ⟨p.arity, [p.dom], [], Term.eq dq h⟩
+        if G.base = sig.length ∧ C' = C ∧ IsTy G p.arity C ∧ T.arity = p.arity ∧
+            T.ctx = [p.dom, p.dom] ∧
+            T.concl = Term.eq (weaken1 h) h ∧
+            compile G p.arity R' (ctxObj [p.dom, p.dom]) (stdEnv [p.dom, p.dom]) =
+              some (r, omega) ∧ PartialHorn.Scoped p.arity d.arrow = true ∧
+            (compileDefs G).any (fun cds ↦
+              PartialHorn.sortOf (ext cds).sig (List.replicate p.arity obj) d.arrow ==
+                some arr) ∧
+            typeIn G' p.arity [p.dom] cmp.concl = some omega then
+          some (G', E.push (.language cmp))
+        else none
+      | _, _, _ => none
+    | _, _ => none
 
 /-- The constants and the environment after a development, where each declaration's proof
 proves it with the constants and the entries before it. -/
