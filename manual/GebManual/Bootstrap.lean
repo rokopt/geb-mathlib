@@ -148,9 +148,11 @@ sections below detail:
   with the typing of their terms inferred, constructed; the
   Mitchell–Bénabou language's terms, compilation and definitions, with
   the proof that compiling agrees with unfolding in every model, and
-  the benchmark's theorems stated in it, constructed, and its
-  derivations, not begun; the checker
-  and prover written in Geb, not begun.
+  the benchmark's theorems stated in it, constructed; its derivations
+  with their checker proved sound, its logical rules, comprehension and
+  description, and its completeness through its term model, with the
+  partial Horn logic's own, not begun; the checker and prover written
+  in Geb, not begun.
 
 Extension:
 
@@ -1566,19 +1568,19 @@ their mathematics rather than as the arrangement of projections,
 pairings and curryings. When either fails, it is written at the
 earliest point at which it can be, after the first construction, since
 its interpretation needs every operation of the topos and nothing of the
-other two constructions. It is written as a logic of its own. Each of
-its constructions has defining equations stating its meaning in the
-combinators, and each of its rules is proved sound in Lean against the
-language's interpretation in the free topos. A translation compiles
-each of its derivations to a certificate of the combinators, which the
-one checker checks, so that the checker stays small; the translation is
-proved in Lean to send every derivation to a certificate of its
-conclusion's interpretation, so that every theorem of the language has
-one. A user of the language then proves theorems about its
-constructions in the language they are written in, and the defining
-equations state what each construction means in the object language.
-Its terms refer to the definitions made in the combinators before it, so
-that the development continues in it without rewriting them.
+other two constructions. It is written as a logic of its own, with a
+checker of its own. Its judgments state that hypotheses entail a
+formula, a term of the subobject classifier's type, an equation being
+the formula of equality; its certificates name its rules, as the
+computational core's do, and the checker computes each substitution, so
+that a certificate has the size of the core's rather than of the
+combinators'. The checker is proved sound in Lean against the language's
+interpretation in the free topos, and the language is proved complete
+for it. A user of the language then proves theorems about its
+constructions in the language they are written in, and the compilation
+states what each construction means in the object language. Its terms
+refer to the definitions made in the combinators before it, so that the
+development continues in it without rewriting them.
 
 The measurement is made. A prover prototyped in Lean computes
 certificates of the combinators: it types a term by the axioms that
@@ -1745,8 +1747,34 @@ applications of the language's definitions to its variables, as the
 core's do, where the combinators equate arrangements of projections and
 pairings; the variables are de Bruijn indices, and the proofs are the
 combinators' tactics.
-The language's derivations, and their translation to certificates of
-the combinators, are not constructed.
+
+The language's derivations are checked by a checker of their own rather
+than translated to certificates of the combinators, whose sizes a
+translation would inherit. The language is then established twice
+over: sound, every theorem it proves holding in every model of the
+theory, and complete, whatever holds in every model being provable in it
+and every object and arrow of the free topos named by it. Two
+formulations as different as the language's typing and logical rules
+over λ-terms and the axioms of an elementary topos, agreeing on what is
+definable and provable, are evidence for each other, and the partial
+Horn presentation is itself related to mathlib's elementary toposes by
+the first construction. Completeness needs formulas and comprehension,
+since some of the free topos's objects are subobjects, named by
+comprehension over formulas, and it needs description, since some of its
+arrows are given by functional relations. It is proved through the language's term model,
+the topos whose arrows are the language's provably functional
+relations, as {citet LambekScott1980}[] construct the free topos from a
+type theory, with a translation of each combinator into the language
+whose round trips with the compilation are provably the identity; the
+second construction is the same construction over Lean's propositions in
+place of the language's provability. The partial Horn logic's own
+completeness, through the term model of its theory, relates the
+combinators' checker to the same models from the other side. The stages
+are the checker with equations as its formulas and induction as the
+uniqueness of recursion, measured against the core's certificates; the
+logical rules, whose soundness needs the internal Heyting algebra of the
+subobject classifier; comprehension and description; and the term models
+with the completeness theorems. None is constructed.
 
 The fifth choice is deferred until the three constructions are made.
 
