@@ -182,6 +182,12 @@ theorem compile_envEq {G : Globals} {n : ℕ} (s : Term) :
     obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm e' he
     exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, s', m'', rfl, hc, hs, hm', rfl⟩, rfl,
       eval_op₂_congr 3 rfl hmv⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    obtain ⟨⟨f', a'⟩, ht', rfl, hf⟩ := ih t (by simp) X e _ ht e' he
+    obtain ⟨⟨g', b'⟩, hu', rfl, hg⟩ := ih u (by simp) X e _ hu e' he
+    exact ⟨_, compile_eq_iff.mpr ⟨_, _, rfl, f', _, ht', g', hu', rfl⟩, rfl,
+      eval_op₂_congr 3 rfl (eval_op₂_congr 9 hf hg)⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, hty, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨rs', hrs', hR⟩ := mapM_lift (g := fun c ↦ compile G n c X e') cs hrs
@@ -226,6 +232,9 @@ theorem isTy_list {n : ℕ} {a : Tree} : IsTy n (list a) = IsTy n a := by
 
 /-- The terminal object is a type. -/
 theorem isTy_one {n : ℕ} : IsTy n one = true := by simp [one, isTy_op, tyOps]
+
+/-- The subobject classifier is a type. -/
+theorem isTy_omega {n : ℕ} : IsTy n omega = true := by simp [omega, isTy_op, tyOps]
 
 /-- The natural numbers object is a type. -/
 theorem isTy_nat {n : ℕ} : IsTy n nat = true := by simp [nat, isTy_op, tyOps]
@@ -425,6 +434,11 @@ theorem compile_hom {G : Globals} {n : ℕ} (hG : G.WF)
      
     obtain ⟨hm', -⟩ := ih m (by simp) X e _ hm he
     exact ⟨comp_hom hM hm' (roseRec_hom hM hs'), hct⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    obtain ⟨hf, hat⟩ := ih t (by simp) X e _ ht he
+    obtain ⟨hg, -⟩ := ih u (by simp) X e _ hu he
+    exact ⟨comp_hom hM (pair_hom hM hf hg) (chi_diag_hom hM (hobj a hat)), isTy_omega⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, hty, rfl⟩ := compile_defn_iff.mp h
     have hr : ∀ r ∈ rs, Hom M ρ r.1 X r.2 := fun r hr ↦ by
@@ -593,6 +607,16 @@ theorem compile_comp {G : Globals} {n : ℕ} (hG : G.WF)
      
     exact ⟨_, compile_roseRec_iff.mpr ⟨s, m, s', m'', rfl, hct, hs, hm', rfl⟩, rfl,
       (eval_op₂_congr 3 rfl hmv).trans (comp_assoc hM hh hmt (roseRec_hom hM hs'))⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp hc
+    obtain ⟨hft, hat⟩ := hty t X e _ ht he
+    obtain ⟨hgt, -⟩ := hty u X e _ hu he
+    obtain ⟨⟨f', a'⟩, ht', rfl, hf⟩ := ih t (by simp) X e _ ht he Y h hh
+    obtain ⟨⟨g', b'⟩, hu', rfl, hg⟩ := ih u (by simp) X e _ hu he Y h hh
+    have hp := pair_hom hM hft hgt
+    exact ⟨_, compile_eq_iff.mpr ⟨_, _, rfl, f', _, ht', g', hu', rfl⟩, rfl,
+      (eval_op₂_congr 3 rfl ((eval_op₂_congr 9 hf hg).trans (pair_comp hM hft hgt hh).symm)).trans
+        (comp_assoc hM hh hp (chi_diag_hom hM (hobj _ hat)))⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, htys, rfl⟩ := compile_defn_iff.mp hc
     have hr : ∀ r ∈ rs, Hom M ρ r.1 X r.2 := fun r hr ↦ by

@@ -104,6 +104,10 @@ theorem compile_rename (s : Term) :
     obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
     exact compile_roseRec_iff.mpr ⟨s, _, s', m', rfl, hc, hs, ih m (by simp) X e e' f _ hm hf,
       rfl⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f₁, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    exact compile_eq_iff.mpr ⟨_, _, rfl, f₁, a, ih t (by simp) X e e' f _ ht hf, g,
+      ih u (by simp) X e e' f _ hu hf, rfl⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, hty, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨rs', h₁, h₂⟩ := mapM_lift (R := Eq)
@@ -218,6 +222,12 @@ theorem compile_subst (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj
     obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X E _ hm e σ he hσ
     exact ⟨_, compile_roseRec_iff.mpr ⟨s, _, s', m'', rfl, hc, hs, hm', rfl⟩, rfl,
       eval_op₂_congr 3 rfl hmv⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    obtain ⟨⟨f', a'⟩, ht', rfl, hf⟩ := ih t (by simp) X E _ ht e σ he hσ
+    obtain ⟨⟨g', b'⟩, hu', rfl, hg⟩ := ih u (by simp) X E _ hu e σ he hσ
+    exact ⟨_, compile_eq_iff.mpr ⟨_, _, rfl, f', _, ht', g', hu', rfl⟩, rfl,
+      eval_op₂_congr 3 rfl (eval_op₂_congr 9 hf hg)⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, hty, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨rs', hrs', hR⟩ := mapM_lift (g := fun c ↦ compile G n (Term.subst c σ) X e) cs hrs
@@ -387,6 +397,11 @@ theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = 
     simp only [substPair, subst_rose] at hm₁
     exact compile_roseRec_iff.mpr ⟨_, _, _, _, rfl, hty c hct, hs₁, hm₁,
       by simp [substPair, subst_comp, subst_roseRec]⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    exact compile_eq_iff.mpr ⟨_, _, rfl, _, _, ih t (by simp) X e (f, a) ht, _,
+      ih u (by simp) X e (g, a) hu,
+      by simp [substPair, subst_comp, subst_chi, subst_diag, subst_pair, subst_omega]⟩
   | defn k θ' =>
     obtain ⟨d, rs, hd, hrs, hl', hθ', htys, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨hpt, htt⟩ := hG.defs k d hd

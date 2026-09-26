@@ -15,7 +15,8 @@ set_option doc.verso true in
 Appending lists and addition, defined in the internal language by folds into exponentials, and
 the equations of the computational core's theorems about them, stated in the internal language.
 The definitions compile to well-formed definitions of the combinators whose arrows have the types
-they name, and the equations, and their unfoldings, compile to sequents of the combinators.
+they name, the equations, and their unfoldings, compile to sequents of the combinators, and each
+equation's formula is a term of the subobject classifier's type.
 
 ## Main definitions
 
@@ -34,7 +35,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.Internal
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
-open Geb.FreeTopos.Internal (Term compileDefs compileEq unfold unfoldBodies)
+open Geb.FreeTopos.Internal (Term compile compileDefs compileEq ctxObj stdEnv unfold unfoldBodies)
 
 /-- The element type of the lists, the object variable. -/
 def A : Tree := x 0
@@ -116,6 +117,10 @@ def statements : List (ℕ × List Tree × Term × Term) := [
     sortOf S a.ctx a.concl.lhs == some arr && sortOf S a.ctx a.concl.rhs == some arr
   let ubs := unfoldBodies defs
   ok t u && ok (unfold ubs t) (unfold ubs u)
+
+-- each equation's formula, the equality of its sides, is a formula in its context
+#guard statements.all fun (n, Γ, t, u) ↦
+  (compile G n (Term.eq t u) (ctxObj Γ) (stdEnv Γ)).any (·.2 == omega)
 
 end GebTests.Prototypes.FreeTopos.Internal
 

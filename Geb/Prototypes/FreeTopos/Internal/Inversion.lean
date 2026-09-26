@@ -198,6 +198,15 @@ theorem compile_defn_iff {k : ℕ} {θ : List Tree} {cs : List Term} {X : Tree}
   rw [compile_node]
   simp [compileStep, Option.bind_eq_some_iff, List.mapM_map, Function.comp_def, and_assoc]
 
+/-- The compilation of an equality. -/
+theorem compile_eq_iff {cs : List Term} {X : Tree} {e : List (Tree × Tree)} {r : Tree × Tree} :
+    compile G n (RoseTree.node .eq cs) X e = some r ↔
+      ∃ t u, cs = [t, u] ∧ ∃ f a, compile G n t X e = some (f, a) ∧
+        ∃ g, compile G n u X e = some (g, a) ∧ (comp (chi (diag a)) (pair f g), omega) = r := by
+  rw [compile_node]
+  rcases cs with _ | ⟨t, _ | ⟨u, _ | ⟨v, cs⟩⟩⟩ <;>
+    simp [compileStep, Option.bind_eq_some_iff, Prod.exists]
+
 end Geb.FreeTopos.Internal
 
 end

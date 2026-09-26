@@ -114,6 +114,10 @@ theorem compile_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} (s : Term) :
     obtain ⟨s, m, s', m', rfl, hc, hs, hm, rfl⟩ := compile_roseRec_iff.mp h
     exact compile_roseRec_iff.mpr ⟨s, m, s', m', rfl, hc, ih s (by simp) _ _ _ hs,
       ih m (by simp) X e _ hm, rfl⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    exact compile_eq_iff.mpr ⟨t, u, rfl, f, a, ih t (by simp) X e _ ht, g,
+      ih u (by simp) X e _ hu, rfl⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, hty, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨rs', hrs', hR⟩ := mapM_lift (R := Eq) (g := fun c ↦ compile G' n c X e) cs hrs
@@ -312,6 +316,13 @@ theorem compile_unfold_of {G : Globals} (hG : G.WF) {ubs : List Term} (hubs : Ub
     obtain ⟨⟨m'', t⟩, hm', rfl, hmv⟩ := ih m (by simp) X e _ hm he
     exact ⟨_, compile_roseRec_iff.mpr ⟨_, _, _, _, rfl, hct, hs', hm', rfl⟩, rfl,
       eval_op₂_congr 3 (eval_op₁_congr 39 hsv) hmv⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    rw [unfold_node (by simp)]
+    obtain ⟨⟨f', a'⟩, ht', rfl, hf⟩ := ih t (by simp) X e _ ht he
+    obtain ⟨⟨g', b'⟩, hu', rfl, hg⟩ := ih u (by simp) X e _ hu he
+    exact ⟨_, compile_eq_iff.mpr ⟨_, _, rfl, f', _, ht', g', hu', rfl⟩, rfl,
+      eval_op₂_congr 3 rfl (eval_op₂_congr 9 hf hg)⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, htys, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨ub, hub, hubF⟩ := hubs k d hd

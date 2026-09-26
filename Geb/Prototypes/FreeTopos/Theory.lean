@@ -244,6 +244,9 @@ def prodMapRight (a f : Tree) : Tree :=
 def listMap (f : Tree) : Tree :=
   listRec (dom f) (nil (cod f)) (comp (cons (cod f)) (prodMapLeft f (list (cod f))))
 
+/-- The diagonal of an object, the pairing of its identity with itself. -/
+def diag (a : Tree) : Tree := pair (idt a) (idt a)
+
 /-- The condition that an arrow is a monomorphism: the projections of its kernel pair, the
 equalizer of its composites with the product projections, are equal. -/
 def monoCond (m : Tree) : Eqn :=
