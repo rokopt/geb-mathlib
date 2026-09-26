@@ -30,6 +30,8 @@ subterms' values.
 * {lit}`holds_inst` — an instance of an axiom holds when the instances of its hypotheses do.
 * {lit}`comp_hom`, {lit}`pair_hom`, {lit}`curry_hom` — the typings of the operations.
 * {lit}`comp_assoc`, {lit}`fst_pair`, {lit}`pair_comp`, {lit}`curry_comp` — the equations.
+* {lit}`holds_monoCond_diag`, {lit}`chi_diag_hom`, {lit}`chi_diag_pair_self` — the diagonal is a
+  monomorphism, whose characteristic map after the pairing of an arrow with itself is truth.
 
 ## Tags
 
@@ -144,6 +146,18 @@ theorem subst_roseRec (θ : List Tree) (s : Tree) : subst θ (roseRec s) = roseR
 
 /-- Substitution leaves the constants. -/
 theorem subst_const (θ : List Tree) (k : ℕ) : subst θ (op k []) = op k [] := subst_op θ k []
+
+/-- Substitution in a characteristic map. -/
+theorem subst_chi (θ : List Tree) (m : Tree) : subst θ (chi m) = chi (subst θ m) :=
+  subst_op θ 27 [m]
+
+/-- Substitution in a diagonal. -/
+theorem subst_diag (θ : List Tree) (a : Tree) : subst θ (diag a) = diag (subst θ a) := by
+  rw [diag, subst_pair, subst_idt]
+  rfl
+
+/-- Substitution leaves the subobject classifier. -/
+theorem subst_omega (θ : List Tree) : subst θ omega = omega := subst_const θ 25
 
 /-- Substitution leaves the terminal object. -/
 theorem subst_one (θ : List Tree) : subst θ one = one := subst_const θ 4
@@ -729,6 +743,124 @@ theorem eval_op_defn {i : ℕ} {d : Defn} (hd : defs[i]? = some d) {θ : List Tr
   change eval M ws (opVars (sig.length + i) d.ctx.length) = Part.some w at h₁
   rw [opVars, eval_op, hl, mapM_vars, Part.bind_some] at h₁
   rw [eval_op, (mapM_part_eq_some_iff θ ws).mpr hθ, Part.bind_some, h₁, hw]
+
+/-- Truth is an arrow from the terminal object to the subobject classifier. -/
+theorem tru_hom : Hom M ρ tru one omega := by
+  have hd := eval_eq_of_holds (ax_holds (ρ := ρ) hM 84 rfl (by decide) (ts := []) (ws := []) rfl
+    rfl rfl trivial (q := ⟨dom tru, one⟩) rfl)
+  obtain ⟨o, ho, -⟩ := isObj_one (ρ := ρ) hM
+  obtain ⟨w, hw⟩ := exists_eval_of_dom (hd.trans ho)
+  exact ⟨w, hw, sort_of_eval_op rfl hw, isObj_one hM, isObj_omega hM, hd,
+    eval_eq_of_holds (ax_holds (ρ := ρ) hM 85 rfl (by decide) (ts := []) (ws := []) rfl rfl rfl
+      trivial (q := ⟨cod tru, omega⟩) rfl)⟩
+
+/-- The inclusion of the equalizer of two parallel arrows is an arrow into their domain, after
+which they agree. -/
+theorem eqIncl_hom {f g X Y : Tree} (hf : Hom M ρ f X Y) (hg : Hom M ρ g X Y) :
+    Hom M ρ (eqIncl f g) (eqz f g) X ∧
+      eval M ρ (comp f (eqIncl f g)) = eval M ρ (comp g (eqIncl f g)) := by
+  obtain ⟨wf, hwf, hfs⟩ := hf.exists_eval
+  obtain ⟨wg, hwg, hgs⟩ := hg.exists_eval
+  obtain ⟨x, hx, -⟩ := hf.isObj_dom
+  obtain ⟨y, hy, -⟩ := hf.isObj_cod
+  have hts : [f, g].map (eval M ρ) = [wf, wg].map Part.some := by simp [hwf, hwg]
+  have hs : [wf, wg].map Sigma.fst = [arr, arr] := by simp [hfs, hgs]
+  obtain ⟨e, he, -⟩ := ax_holds hM 30 rfl (by decide) hts hs
+    (hs' := [⟨dom f, dom g⟩, ⟨cod f, cod g⟩]) rfl
+    ⟨holds_of_eval_eq (hf.eval_dom.trans hg.eval_dom.symm) (hg.eval_dom.trans hx),
+      holds_of_eval_eq (hf.eval_cod.trans hg.eval_cod.symm) (hg.eval_cod.trans hy)⟩
+    (q := ⟨eqz f g, eqz f g⟩) rfl
+  have hz : Eqn.Holds M ρ ⟨eqz f g, eqz f g⟩ := ⟨e, he, he⟩
+  obtain ⟨w, hw, -⟩ := ax_holds hM 32 rfl (by decide) hts hs (hs' := [⟨eqz f g, eqz f g⟩]) rfl hz
+    (q := ⟨eqIncl f g, eqIncl f g⟩) rfl
+  refine ⟨⟨w, hw, sort_of_eval_op rfl hw, ⟨e, he, sort_of_eval_op rfl he⟩, hf.isObj_dom, ?_, ?_⟩,
+    eval_eq_of_holds (ax_holds hM 35 rfl (by decide) hts hs (hs' := [⟨eqz f g, eqz f g⟩]) rfl hz
+      (q := ⟨comp f (eqIncl f g), comp g (eqIncl f g)⟩) rfl)⟩
+  · exact eval_eq_of_holds (ax_holds hM 33 rfl (by decide) hts hs
+      (hs' := [⟨eqz f g, eqz f g⟩]) rfl hz (q := ⟨dom (eqIncl f g), eqz f g⟩) rfl)
+  · exact (eval_eq_of_holds (ax_holds hM 34 rfl (by decide) hts hs
+      (hs' := [⟨eqz f g, eqz f g⟩]) rfl hz (q := ⟨cod (eqIncl f g), dom f⟩) rfl)).trans
+      hf.eval_dom
+
+/-- The diagonal is an arrow into the product of the object with itself. -/
+theorem diag_hom {A : Tree} (hA : IsObj M ρ A) : Hom M ρ (diag A) A (prod A A) :=
+  pair_hom hM (idt_hom hM hA) (idt_hom hM hA)
+
+/-- The diagonal after an arrow is the pairing of the arrow with itself. -/
+theorem diag_comp {f X A : Tree} (hf : Hom M ρ f X A) :
+    eval M ρ (comp (diag A) f) = eval M ρ (pair f f) := by
+  have hi := idt_hom hM hf.isObj_cod
+  exact (pair_comp hM hi hi hf).trans (eval_op₂_congr 9 (idt_comp hM hf) (idt_comp hM hf))
+
+/-- The diagonal is a monomorphism: the projections of its kernel pair are equal. -/
+theorem holds_monoCond_diag {A : Tree} (hA : IsObj M ρ A) : (monoCond (diag A)).Holds M ρ := by
+  change Eqn.Holds M ρ ⟨comp (fst (dom (diag A)) (dom (diag A))) (eqIncl
+      (comp (diag A) (fst (dom (diag A)) (dom (diag A))))
+      (comp (diag A) (snd (dom (diag A)) (dom (diag A))))),
+    comp (snd (dom (diag A)) (dom (diag A))) (eqIncl
+      (comp (diag A) (fst (dom (diag A)) (dom (diag A))))
+      (comp (diag A) (snd (dom (diag A)) (dom (diag A)))))⟩
+  have hm := diag_hom hM hA
+  have hd := hm.eval_dom
+  set a := dom (diag A) with ha_def
+  set k := eqIncl (comp (diag A) (fst a a)) (comp (diag A) (snd a a)) with hk_def
+  have hm' : Hom M ρ (diag A) a (prod A A) := hm.congr rfl hd rfl
+  have hfst := fst_hom hM (hA.congr hd) (hA.congr hd)
+  have hsnd := snd_hom hM (hA.congr hd) (hA.congr hd)
+  obtain ⟨hk, hkk⟩ := eqIncl_hom hM (comp_hom hM hfst hm') (comp_hom hM hsnd hm')
+  have hfk := comp_hom hM hk hfst
+  have hsk := comp_hom hM hk hsnd
+  -- the diagonal after a projection after the inclusion is that composite paired with itself
+  have hpair : ∀ {p : Tree}, Hom M ρ p (prod a a) a →
+      eval M ρ (comp (comp (diag A) p) k) = eval M ρ (pair (comp p k) (comp p k)) := fun hp ↦
+    (comp_assoc hM hk hp hm').symm.trans
+      (diag_comp hM ((comp_hom hM hk hp).congr rfl rfl hd.symm))
+  have hpf := (hpair hfst).symm.trans (hkk.trans (hpair hsnd))
+  have he : eval M ρ (comp (fst a a) k) = eval M ρ (comp (snd a a) k) :=
+    (fst_pair hM hfk hfk).symm.trans ((eval_op₂_congr 3 rfl hpf).trans (fst_pair hM hsk hsk))
+  obtain ⟨w, hw, -⟩ := hsk.exists_eval
+  exact holds_of_eval_eq he hw
+
+/-- The characteristic map of the diagonal is an arrow from the product of the object with itself
+to the subobject classifier. -/
+theorem chi_diag_hom {A : Tree} (hA : IsObj M ρ A) :
+    Hom M ρ (chi (diag A)) (prod A A) omega := by
+  have hm := diag_hom hM hA
+  obtain ⟨wm, hwm, hms⟩ := hm.exists_eval
+  have hts : [diag A].map (eval M ρ) = [wm].map Part.some := by simp [hwm]
+  have hs : [wm].map Sigma.fst = [arr] := by simp [hms]
+  obtain ⟨w, hw, -⟩ := ax_holds hM 87 rfl (by decide) hts hs (hs' := [monoCond (diag A)]) rfl
+    (holds_monoCond_diag hM hA) (q := ⟨chi (diag A), chi (diag A)⟩) rfl
+  have hc : Eqn.Holds M ρ ⟨chi (diag A), chi (diag A)⟩ := ⟨w, hw, hw⟩
+  exact ⟨w, hw, sort_of_eval_op rfl hw, hm.isObj_cod, isObj_omega hM,
+    (eval_eq_of_holds (ax_holds hM 88 rfl (by decide) hts hs
+      (hs' := [⟨chi (diag A), chi (diag A)⟩]) rfl hc
+      (q := ⟨dom (chi (diag A)), cod (diag A)⟩) rfl)).trans hm.eval_cod,
+    eval_eq_of_holds (ax_holds hM 89 rfl (by decide) hts hs
+      (hs' := [⟨chi (diag A), chi (diag A)⟩]) rfl hc
+      (q := ⟨cod (chi (diag A)), omega⟩) rfl)⟩
+
+/-- The characteristic map of the diagonal after the pairing of an arrow with itself is truth:
+an equation between an arrow and itself is true. -/
+theorem chi_diag_pair_self {f X A : Tree} (hf : Hom M ρ f X A) :
+    eval M ρ (comp (chi (diag A)) (pair f f)) = eval M ρ (comp tru (bang X)) := by
+  have hA := hf.isObj_cod
+  have hm := diag_hom hM hA
+  obtain ⟨wm, hwm, hms⟩ := hm.exists_eval
+  have hc := chi_diag_hom hM hA
+  obtain ⟨w, hw, -⟩ := hc.exists_eval
+  have hts : [diag A].map (eval M ρ) = [wm].map Part.some := by simp [hwm]
+  have hs : [wm].map Sigma.fst = [arr] := by simp [hms]
+  -- the characteristic map after the diagonal is truth after the arrow to the terminal object
+  have h90 := eval_eq_of_holds (ax_holds hM 90 rfl (by decide) hts hs
+    (hs' := [⟨chi (diag A), chi (diag A)⟩]) rfl ⟨w, hw, hw⟩
+    (q := ⟨comp (chi (diag A)) (diag A), comp tru (bang (dom (diag A)))⟩) rfl)
+  have hb := bang_hom hM hA
+  refine (eval_op₂_congr 3 rfl (diag_comp hM hf).symm).trans ?_
+  refine (comp_assoc hM hf hm hc).trans ?_
+  refine (eval_op₂_congr 3 (h90.trans (eval_op₂_congr 3 rfl (eval_op₁_congr 5 hm.eval_dom)))
+    rfl).trans ?_
+  exact (comp_assoc hM hf hb (tru_hom hM)).symm.trans (eval_op₂_congr 3 rfl (comp_bang hM hf))
 
 end Arrows
 

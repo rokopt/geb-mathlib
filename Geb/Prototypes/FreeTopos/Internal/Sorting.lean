@@ -109,6 +109,11 @@ theorem sortOf_idt {a : Tree} (ha : sortOf (ext defs).sig Γ a = some obj) :
     sortOf (ext defs).sig Γ (idt a) = some arr :=
   sortOf_op rfl (by simp [ha])
 
+/-- The characteristic map of an arrow is an arrow. -/
+theorem sortOf_chi {m : Tree} (hm : sortOf (ext defs).sig Γ m = some arr) :
+    sortOf (ext defs).sig Γ (chi m) = some arr :=
+  sortOf_op rfl (by simp [hm])
+
 /-- The terminal object is an object. -/
 theorem sortOf_one : sortOf (ext defs).sig Γ one = some obj := sortOf_op rfl rfl
 
@@ -277,6 +282,13 @@ theorem compile_sortOf {G : Globals} (hG : G.WF) {n : ℕ}
     obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs hP (by simpa using ⟨sortOf_idt hP, hPt⟩)
     obtain ⟨hm', -⟩ := ih m (by simp) X e _ hm hX he
     exact ⟨sortOf_comp (sortOf_roseRec hs') hm', hct⟩
+  | eq =>
+    obtain ⟨t, u, rfl, f, a, ht, g, hu, rfl⟩ := compile_eq_iff.mp h
+    obtain ⟨hf, hat⟩ := ih t (by simp) X e _ ht hX he
+    obtain ⟨hg, -⟩ := ih u (by simp) X e _ hu hX he
+    have hA := hty a hat
+    exact ⟨sortOf_comp (sortOf_chi (sortOf_pair (sortOf_idt hA) (sortOf_idt hA)))
+      (sortOf_pair hf hg), isTy_omega⟩
   | defn k θ =>
     obtain ⟨d, rs, hd, hrs, hl, hθ, htys, rfl⟩ := compile_defn_iff.mp h
     have hr : ∀ f ∈ rs.map Prod.fst, sortOf (ext defs).sig (List.replicate n obj) f = some arr :=

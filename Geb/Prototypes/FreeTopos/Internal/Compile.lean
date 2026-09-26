@@ -23,8 +23,9 @@ in an environment: an object {lit}`X` and, for each variable, an arrow from {lit
 variable's type. A variable compiles to its arrow, a pair to the pairing, a component to the
 projection after the pair, an abstraction to the currying of its body, compiled over the product
 of {lit}`X` and the bound variable's type, an application to evaluation after the pairing, a
-primitive arrow's application to the arrow after its argument, and a fold to the composite of the
-combinators' fold with the datum. A context's terms are compiled in the environment of its
+primitive arrow's application to the arrow after its argument, a fold to the composite of the
+combinators' fold with the datum, and the equality of two terms to the characteristic map of the
+diagonal after their pairing. A context's terms are compiled in the environment of its
 projections from the product of its types ({lit}`stdEnv`). A primitive arrow is an arrow of the
 combinators with the domain and codomain it names, in object parameters, which the checker's
 inference confirms once ({lit}`Prim.ok`), for every application at objects.
@@ -220,6 +221,10 @@ def compileStep (G : Globals) (n : ℕ) (l : Label)
         let (m', t) ← m X e
         if c' = c ∧ t = rose then pure (comp (roseRec s') m', c) else none
       else none
+    | .eq, [(_, t), (_, u)] => do
+      let (f, a) ← t X e
+      let (g, b) ← u X e
+      if a = b then pure (comp (chi (diag a)) (pair f g), omega) else none
     | .defn k θ, cs => do
       let d ← G.defs[k]?
       let rs ← cs.mapM fun c ↦ c.2 X e

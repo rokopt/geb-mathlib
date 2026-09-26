@@ -16,8 +16,9 @@ The terms of the internal language of an elementary topos with data objects, the
 Mitchell–Bénabou language of Section VI.5 of {cite}`MacLaneMoerdijk1992`: the typed λ-calculus
 whose types are objects of the topos, with the element of the terminal object, pairs and their
 components, abstraction and application, the application of a primitive arrow of the
-combinators, the folds of the natural numbers, list and rose-tree objects, and the application of
-a definition. A type is an object term of the combinators ({name}`Geb.FreeTopos.sig`), and a term
+combinators, the folds of the natural numbers, list and rose-tree objects, the application of a
+definition, and the equality of two terms, a formula, a term of the subobject classifier's
+type. A type is an object term of the combinators ({name}`Geb.FreeTopos.sig`), and a term
 is a rose tree whose labels carry the types it names; a primitive arrow and a definition are named
 by their indices, at objects. Variables are de Bruijn indices, the innermost binder's
 variable the index zero; the start and the step of a fold are terms of contexts of their own, the
@@ -77,6 +78,8 @@ inductive Label where
   | roseRec (c : Tree)
   /-- The application of the definition of an index, at objects, to terms, the last first. -/
   | defn (k : ℕ) (θ : List Tree)
+  /-- The equality of two terms of one type, a formula. -/
+  | eq
 deriving DecidableEq
 
 /-- A term of the internal language. -/
@@ -119,6 +122,9 @@ def roseRec (c : Tree) (s t : Term) : Term := RoseTree.node (.roseRec c) [s, t]
 
 /-- The application of the definition of index {lit}`k`, at objects, to terms, the last first. -/
 def defn (k : ℕ) (θ : List Tree) (ts : List Term) : Term := RoseTree.node (.defn k θ) ts
+
+/-- The equality of two terms of one type, a formula. -/
+def eq (t u : Term) : Term := RoseTree.node .eq [t, u]
 
 /-- The lifting of a renaming under a binder. -/
 def liftR (f : ℕ → ℕ) : ℕ → ℕ := fun i ↦ match i with
