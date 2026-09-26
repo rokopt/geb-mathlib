@@ -2205,7 +2205,7 @@ a left adjoint, so that an arrow from the product of an object and a
 coproduct is determined by its composites with the products of the
 object and the injections ({name}`Geb.FreeTopos.prod_coprod_ext`): the
 category is distributive, and its initial object is strict
-({citet CarboniLackWalters1993}[], Proposition 3.2), an object with an
+({citet CarboniLackWalters1993}[], Proposition 3.4), an object with an
 arrow to it being initial ({name}`Geb.FreeTopos.eq_of_hom_zero`). The
 rules are the computation of case analysis at each injection, a
 rewriting; case analysis on the innermost variable of a coproduct type,
