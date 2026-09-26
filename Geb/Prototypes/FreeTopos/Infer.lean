@@ -29,13 +29,16 @@ checks each axiom's shape where it uses it.
 Every typing the inference computes holds in every model of the theory at every assignment of
 the context at which the hypotheses hold ({lit}`infers_sound`), so a checker may accept the
 definedness of an inferred term, and the equation of two objects of one canonical form,
-without a certificate.
+without a certificate. The models are those of any signature extending the theory's in which
+its axioms hold ({lit}`ExtEnv.Sound`), so that a typing inferred in a theory holds in every
+model of its extensions.
 
 ## Main definitions
 
 * {lit}`DfdRule`, {lit}`dfdRules`, {lit}`domRules`, {lit}`codRules` — how the axioms type each
   operation.
 * {lit}`Ann`, {lit}`Ann.Holds` — a typing, and its truth in a model.
+* {lit}`ExtEnv.Sound` — a model in which an environment's axioms hold.
 * {lit}`inferOp`, {lit}`inferVar`, {lit}`infers` — the inference of an application's, a
   variable's, and a term's or pattern instance's typing.
 
@@ -130,8 +133,7 @@ abbrev ext (defs : List Defn) : Theory := theory.extendAll defs
 /-- A typing holds of a term at an assignment: the term is defined with a value of the sort;
 an object's canonical form has its value; an arrow's domain and codomain have the values of
 their canonical forms. -/
-def Ann.Holds {defs : List Defn} (M : Model (ext defs).sig) (ρ : List M.Val) (t : Tree)
-    (a : Ann) : Prop :=
+def Ann.Holds {S : Sig} (M : Model S) (ρ : List M.Val) (t : Tree) (a : Ann) : Prop :=
   ∃ w, eval M ρ t = Part.some w ∧ w.1 = a.sort ∧
     (a.sort = obj → eval M ρ a.lo = Part.some w) ∧
     (a.sort = arr → (∃ d, eval M ρ (dom t) = Part.some d ∧ eval M ρ a.lo = Part.some d) ∧
@@ -169,6 +171,20 @@ structure ExtEnv.WF (E : ExtEnv) : Prop where
 theorem ExtEnv.wf_ofDefs (defs : List Defn) : (ExtEnv.ofDefs defs).WF :=
   ⟨fun j a h ↦ List.mem_of_getElem? (by simpa [ExtEnv.ofDefs] using h),
     fun k ↦ by simp [ExtEnv.ofDefs]⟩
+
+/-- A model in which an environment's axioms are valid, over a signature extending the
+environment's: each operation of the environment's signature is the model's, with its arities
+and sort. -/
+structure ExtEnv.Sound (E : ExtEnv) {S : Sig} (M : Model.{v} S) : Prop where
+  /-- Every axiom of the array is valid. -/
+  axs : ∀ (j : ℕ) (a : Seq), E.axs[j]? = some a → a.Valid M
+  /-- Every operation of the array's signature is one of the model's signature. -/
+  sg : ∀ (k : ℕ) (o : List ℕ × ℕ), E.sg[k]? = some o → S[k]? = some o
+
+/-- A model of a well-formed environment's theory is a model in which its axioms are valid. -/
+theorem ExtEnv.WF.sound_self {E : ExtEnv} (hE : E.WF) {M : Model.{v} (ext E.defs).sig}
+    (hM : IsModel (ext E.defs) M) : E.Sound M :=
+  ⟨fun j a ha ↦ hM a (hE.axs j a ha), fun k _ ho ↦ (hE.sg k).symm.trans ho⟩
 
 section Inference
 
@@ -323,12 +339,12 @@ end Inference
 
 section Soundness
 
-variable {E : ExtEnv} {M : Model.{v} (ext E.defs).sig} {ρ : List M.Val}
+variable {E : ExtEnv} {S : Sig} {M : Model.{v} S} {ρ : List M.Val}
 
 /-- Pattern inference is sound at an assignment: an instance it types is the pattern's
 substitution instance at the arguments, and its typing holds, when the arguments' typings
 hold. -/
-def PatSound (M : Model.{v} (ext E.defs).sig) (ρ : List M.Val)
+def PatSound (M : Model.{v} S) (ρ : List M.Val)
     (patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)) : Prop :=
   ∀ env p r, patInf env p = some r → (∀ e ∈ env, e.2.Holds M ρ e.1) →
     r.1 = subst (env.map Prod.fst) p ∧ r.2.Holds M ρ r.1
@@ -410,7 +426,7 @@ theorem scoped_concl {a : Seq} (h : a.Scoped = true) :
 
 /-- An application the definedness rule proves defined has a value at the arguments'
 values. -/
-theorem exists_op_of_dfdOk (hE : E.WF) (hM : IsModel (ext E.defs) M)
+theorem exists_op_of_dfdOk (hM : E.Sound M)
     {patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)} (hpat : PatSound M ρ patInf)
     {args : List (Tree × Ann)} (hargs : ∀ e ∈ args, e.2.Holds M ρ e.1) {ws : List M.Val}
     (hws : (args.map Prod.fst).map (eval M ρ) = ws.map Part.some)
@@ -427,7 +443,7 @@ theorem exists_op_of_dfdOk (hE : E.WF) (hM : IsModel (ext E.defs) M)
       have hH : ∀ h ∈ a.hyps, h.Holds M ws := fun h hh ↦
         holds_of_hypOk hpat hargs hws (hn ▸ (scoped_hyps hsc h hh).1)
           (hn ▸ (scoped_hyps hsc h hh).2) (hhyps h hh)
-      obtain ⟨w, h₁, -⟩ := hM a (hE.axs _ _ ha) ws (hsorts.trans hctx.symm) hH
+      obtain ⟨w, h₁, -⟩ := hM.axs _ _ ha ws (hsorts.trans hctx.symm) hH
       rw [hl, ← hlen, eval_opVars] at h₁
       exact ⟨w, h₁⟩
     · simp at hok
@@ -435,7 +451,7 @@ theorem exists_op_of_dfdOk (hE : E.WF) (hM : IsModel (ext E.defs) M)
     · rename_i a ha
       simp only [Bool.and_eq_true, beq_iff_eq, bne_iff_ne, ne_eq, List.isEmpty_iff] at hok
       obtain ⟨⟨⟨hctx, hhyps⟩, hlab⟩, hch⟩ := hok
-      obtain ⟨w, h₁, -⟩ := hM a (hE.axs _ _ ha) ws (hsorts.trans hctx.symm)
+      obtain ⟨w, h₁, -⟩ := hM.axs _ _ ha ws (hsorts.trans hctx.symm)
         (by simp [hhyps])
       obtain ⟨l', hl'⟩ : ∃ l', a.concl.lhs.label = l' + 1 := ⟨a.concl.lhs.label - 1, by omega⟩
       rw [← RoseTree.node_label_children a.concl.lhs, hl', hch, eval_node_succ,
@@ -458,7 +474,7 @@ theorem exists_op_of_dfdOk (hE : E.WF) (hM : IsModel (ext E.defs) M)
       subst hargs0
       have hws0 : ws = [] := List.eq_nil_of_length_eq_zero (by simpa using hlen)
       subst hws0
-      obtain ⟨w, -, h₂⟩ := hM a (hE.axs _ _ ha) [] (by simp [hctx]) (by simp [hhyps])
+      obtain ⟨w, -, h₂⟩ := hM.axs _ _ ha [] (by simp [hctx]) (by simp [hhyps])
       rw [hr] at h₂
       exact ⟨w, (eval_opVars k ([] : List M.Val)).symm.trans h₂⟩
     · simp at hok
@@ -466,7 +482,7 @@ theorem exists_op_of_dfdOk (hE : E.WF) (hM : IsModel (ext E.defs) M)
 
 /-- The canonical bound the domain or codomain rule computes has the value of the operation
 {lit}`o` at the application's value. -/
-theorem bound_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
+theorem bound_sound (hM : E.Sound M)
     {patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)} (hpat : PatSound M ρ patInf)
     {args : List (Tree × Ann)} (hargs : ∀ e ∈ args, e.2.Holds M ρ e.1) {ws : List M.Val}
     (hws : (args.map Prod.fst).map (eval M ρ) = ws.map Part.some)
@@ -495,7 +511,7 @@ theorem bound_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
           obtain ⟨hrt, v, hv, -⟩ := hpat args h.lhs r hr hargs
           rw [hrt, eval_subst hws _ (hn ▸ (scoped_hyps hsc h hh).1)] at hv
           exact ⟨v, hv, hv⟩
-      obtain ⟨d, h₁, h₂⟩ := hM a (hE.axs _ _ ha) ws (hsorts.trans hctx.symm) hH
+      obtain ⟨d, h₁, h₂⟩ := hM.axs _ _ ha ws (hsorts.trans hctx.symm) hH
       rw [hl, eval_op, show [opVars k args.length].mapM (eval M ws) = Part.some [w] by
         simp [ht, Part.bind_some, Part.pure_eq_some], Part.bind_some] at h₁
       split at h
@@ -565,7 +581,7 @@ theorem inferObj_sound {k : ℕ} {args : List (Tree × Ann)} {a : Ann}
 
 /-- The typing the inference computes for an arrow-valued application of an operation of the
 signature holds, when the application has an arrow as its value. -/
-theorem inferArr_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
+theorem inferArr_sound (hM : E.Sound M)
     {patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)} (hpat : PatSound M ρ patInf)
     {k : ℕ} {args : List (Tree × Ann)} {a : Ann} (hargs : ∀ e ∈ args, e.2.Holds M ρ e.1)
     {ws : List M.Val} (hws : (args.map Prod.fst).map (eval M ρ) = ws.map Part.some)
@@ -580,15 +596,15 @@ theorem inferArr_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
   next lo hi hlo hhi =>
     cases h
     obtain ⟨j, -, hj⟩ := Option.bind_eq_some_iff.mp hlo
-    obtain ⟨d, hd, hd'⟩ := bound_sound hE hM hpat hargs hws hsorts hw hj
+    obtain ⟨d, hd, hd'⟩ := bound_sound hM hpat hargs hws hsorts hw hj
     obtain ⟨j', -, hj'⟩ := Option.bind_eq_some_iff.mp hhi
-    obtain ⟨c, hc, hc'⟩ := bound_sound hE hM hpat hargs hws hsorts hw hj'
+    obtain ⟨c, hc, hc'⟩ := bound_sound hM hpat hargs hws hsorts hw hj'
     exact ⟨w, hnode.trans hw, hw₁, fun h ↦ ((by decide : arr ≠ obj) h).elim,
       fun _ ↦ ⟨⟨d, (hbnd 0).trans hd, hd'⟩, ⟨c, (hbnd 1).trans hc, hc'⟩⟩⟩
   next => simp at h
 
 /-- The typing the inference computes for an application of a definition holds. -/
-theorem inferDef_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
+theorem inferDef_sound (hM : E.Sound M)
     {patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)} (hpat : PatSound M ρ patInf)
     {k : ℕ} {args : List (Tree × Ann)} {a : Ann} (hargs : ∀ e ∈ args, e.2.Holds M ρ e.1)
     {ws : List M.Val} (hws : (args.map Prod.fst).map (eval M ρ) = ws.map Part.some)
@@ -613,7 +629,7 @@ theorem inferDef_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
       have hbv : eval M ws d.body = Part.some v := by
         rw [← eval_subst hws _ hbsc, ← hrt]
         exact hv
-      obtain ⟨u, h₁, h₂⟩ := hM ax (hE.axs _ _ hax) ws (hsorts.trans hctx.symm)
+      obtain ⟨u, h₁, h₂⟩ := hM.axs _ _ hax ws (hsorts.trans hctx.symm)
         (by rw [hhyps]; simpa using ⟨v, hbv, hbv⟩)
       rw [hconcl] at h₁ h₂
       simp only at h₁ h₂
@@ -627,7 +643,7 @@ theorem inferDef_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
 
 /-- The typing the inference computes for an application holds of it, when its arguments'
 typings hold and the pattern inference is sound. -/
-theorem inferOp_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
+theorem inferOp_sound (hM : E.Sound M)
     {patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)} (hpat : PatSound M ρ patInf)
     {k : ℕ} {args : List (Tree × Ann)} {a : Ann} (hargs : ∀ e ∈ args, e.2.Holds M ρ e.1)
     (h : inferOp E patInf k args = some a) : a.Holds M ρ (op k (args.map Prod.fst)) := by
@@ -641,10 +657,10 @@ theorem inferOp_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
       next =>
         split at h
         next hdfd =>
-          obtain ⟨w, hw⟩ := exists_op_of_dfdOk hE hM hpat hargs hws hsorts hdfd
+          obtain ⟨w, hw⟩ := exists_op_of_dfdOk hM hpat hargs hws hsorts hdfd
           have hw₁ : w.1 = s := by
             have := M.op_sort (Part.eq_some_iff.mp hw)
-            rw [← hE.sg, hsig, Option.map_some, Option.some.injEq] at this
+            rw [hM.sg _ _ hsig, Option.map_some, Option.some.injEq] at this
             exact this.symm
           split at h
           next hs =>
@@ -653,17 +669,17 @@ theorem inferOp_sound (hE : E.WF) (hM : IsModel (ext E.defs) M)
           next =>
             split at h
             next hs =>
-              exact inferArr_sound hE hM hpat hargs hws hsorts hw
+              exact inferArr_sound hM hpat hargs hws hsorts hw
                 (hw₁.trans (beq_iff_eq.mp hs)) h
             next => simp at h
         next => simp at h
-      next => exact inferDef_sound hE hM hpat hargs hws hsorts h
+      next => exact inferDef_sound hM hpat hargs hws hsorts h
     next => simp at h
   next => simp at h
 
 /-- The typing the inference computes for a variable holds, at an assignment of the context at
 which the hypotheses hold, when the typings the term inference computes hold. -/
-theorem inferVar_sound (hE : E.WF) (hM : IsModel (ext E.defs) M) {Γ : List ℕ} {H : List Eqn}
+theorem inferVar_sound (hM : E.Sound M) {Γ : List ℕ} {H : List Eqn}
     (hρ : ρ.map Sigma.fst = Γ) (hH : ∀ h ∈ H, h.Holds M ρ) {treeInf : Tree → Option Ann}
     (htree : ∀ t a, treeInf t = some a → a.Holds M ρ t) {v : ℕ} {a : Ann}
     (h : inferVar E Γ H treeInf v = some a) : a.Holds M ρ (var v) := by
@@ -697,7 +713,7 @@ theorem inferVar_sound (hE : E.WF) (hM : IsModel (ext E.defs) M) {Γ : List ℕ}
         next hax =>
           simp only [Bool.and_eq_true, beq_iff_eq, List.isEmpty_iff] at hax
           obtain ⟨⟨hctx, hhyps⟩, hconcl⟩ := hax
-          obtain ⟨d, hd, -⟩ := hM A (hE.axs _ _ hA) [w] (by simp [hctx, hw₁])
+          obtain ⟨d, hd, -⟩ := hM.axs _ _ hA [w] (by simp [hctx, hw₁])
             (by simp [hhyps])
           have hop : eval M ρ (op o [var v]) = Part.some d := by
             rw [hconcl] at hd
@@ -750,7 +766,7 @@ theorem forall_of_mapM {α : Type _} {cs : List Tree} {f : Tree → Option α} {
 
 /-- Every typing the inferences at a fuel compute holds, at an assignment of the context at
 which the hypotheses hold. -/
-theorem infers_sound (hE : E.WF) (hM : IsModel (ext E.defs) M) {Γ : List ℕ} {H : List Eqn}
+theorem infers_sound (hM : E.Sound M) {Γ : List ℕ} {H : List Eqn}
     (hρ : ρ.map Sigma.fst = Γ) (hH : ∀ h ∈ H, h.Holds M ρ) (n : ℕ) :
     PatSound M ρ (infers E Γ H n).1 ∧
       ∀ t a, (infers E Γ H n).2 t = some a → a.Holds M ρ t :=
@@ -784,7 +800,7 @@ theorem infers_sound (hE : E.WF) (hM : IsModel (ext E.defs) M) {Γ : List ℕ} {
           have hall : ∀ e ∈ args, e.2.Holds M ρ e.1 := fun e he ↦ by
             obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem he
             exact (hch i (hl ▸ hi) hi).2
-          refine ⟨?_, inferOp_sound hE hM ih.1 hall ha⟩
+          refine ⟨?_, inferOp_sound hM ih.1 hall ha⟩
           change op k (args.map Prod.fst) = _
           rw [hfst, subst_node_succ]
           rfl
@@ -795,7 +811,7 @@ theorem infers_sound (hE : E.WF) (hM : IsModel (ext E.defs) M) {Γ : List ℕ} {
         · rcases cs with _ | ⟨v, _ | ⟨v', cs⟩⟩
           · simp [treeStep] at h
           · simp only [treeStep, List.map_cons, List.map_nil] at h
-            refine Ann.holds_of_eval_eq ?_ (inferVar_sound hE hM hρ hH ih.2 h)
+            refine Ann.holds_of_eval_eq ?_ (inferVar_sound hM hρ hH ih.2 h)
             rw [eval_node_zero, eval_var]
           · simp [treeStep] at h
         · simp only [treeStep, Option.bind_eq_bind, Option.bind_eq_some_iff, List.map_map] at h
@@ -809,7 +825,7 @@ theorem infers_sound (hE : E.WF) (hM : IsModel (ext E.defs) M) {Γ : List ℕ} {
             have hi₂ : i < as.length := by simp at hi; omega
             simp only [List.getElem_zip]
             exact iht cs[i] (List.getElem_mem hi₁) _ (hc i hi₁ hi₂)
-          have := inferOp_sound hE hM ih.1 hall (by simpa [Function.comp_def] using ha)
+          have := inferOp_sound hM ih.1 hall (by simpa [Function.comp_def] using ha)
           rw [hfz] at this
           exact this)
 

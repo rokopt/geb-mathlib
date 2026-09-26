@@ -105,31 +105,6 @@ theorem isModel_point {T : Theory} (h : ∀ a ∈ T.axioms, SidesSorted T.sig a)
   obtain ⟨s, h₁, h₂⟩ := h a ha
   exact ⟨⟨s, ()⟩, eval_point hρ _ h₁, eval_point hρ _ h₂⟩
 
-/-- A term's sort is its sort in every signature that extends its own. -/
-theorem sortOf_append {S : Sig} (S' : Sig) {Γ : List ℕ} :
-    ∀ t : Tree, ∀ {s : ℕ}, sortOf S Γ t = some s → sortOf (S ++ S') Γ t = some s :=
-  RoseTree.ind fun l cs ih s hs ↦ by
-    rcases l with _ | k
-    · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
-      · simp [sortOf] at hs
-      rotate_left
-      · simp [sortOf] at hs
-      rw [sortOf_node_zero] at hs ⊢
-      exact hs
-    · rw [sortOf_node_succ] at hs ⊢
-      obtain ⟨o, ho, hs⟩ := Option.bind_eq_some_iff.mp hs
-      rw [List.getElem?_append_left (List.getElem?_eq_some_iff.mp ho).1, ho, Option.bind_some]
-      split_ifs at hs with hcs
-      have hcs' : cs.map (sortOf (S ++ S') Γ) = o.1.map some := by
-        rw [← hcs]
-        refine List.map_congr_left fun c hc ↦ ?_
-        obtain ⟨s', hs'⟩ : ∃ s', sortOf S Γ c = some s' := by
-          have hm : sortOf S Γ c ∈ o.1.map some := hcs ▸ List.mem_map_of_mem hc
-          obtain ⟨s', -, h⟩ := List.mem_map.mp hm
-          exact ⟨s', h.symm⟩
-        rw [hs', ih c hc hs']
-      simpa [hcs'] using hs
-
 /-- The extensions of a theory by well-formed definitions keep its axioms' conclusions
 equations between terms of one sort, and the definitions' own are such equations. -/
 theorem sidesSorted_extendAll (ds : List Defn) :
