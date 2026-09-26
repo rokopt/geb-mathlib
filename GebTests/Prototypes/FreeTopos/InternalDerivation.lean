@@ -49,27 +49,29 @@ def consStep : Term := consT (Term.var 1) (Term.var 0)
 
 /-- The theorems, each with the proof of its equation from the theorems before it. -/
 def theorems : List (Thm × (Array Thm → Option Deriv)) := [
-  (⟨1, [L], appendT nilT (Term.var 0), Term.var 0⟩,
-    fun E ↦ byNorm G E 1 (eqns ++ [.delta 0]) 64 [L] (appendT nilT (Term.var 0)) (Term.var 0)),
-  (⟨1, [L], appendT (Term.var 0) nilT, Term.var 0⟩,
-    fun E ↦ byListInd G E 1 0 1 consStep (eqns ++ [.delta 0]) 64 [L]
+  (⟨1, [L], [], Term.eq (appendT nilT (Term.var 0)) (Term.var 0)⟩,
+    fun E ↦ byNorm G E 1 (eqns ++ [.delta 0]) 64 [L] [] (appendT nilT (Term.var 0))
+      (Term.var 0)),
+  (⟨1, [L], [], Term.eq (appendT (Term.var 0) nilT) (Term.var 0)⟩,
+    fun E ↦ byListInd G E 1 0 1 consStep (eqns ++ [.delta 0]) 64 [L] []
       (appendT (Term.var 0) nilT) (Term.var 0)),
-  (⟨1, [L, L, L], appendT (appendT (Term.var 0) (Term.var 1)) (Term.var 2),
-      appendT (Term.var 0) (appendT (Term.var 1) (Term.var 2))⟩,
-    fun E ↦ byListInd G E 1 0 1 consStep (eqns ++ [.delta 0]) 64 [L, L, L]
+  (⟨1, [L, L, L], [], Term.eq (appendT (appendT (Term.var 0) (Term.var 1)) (Term.var 2))
+      (appendT (Term.var 0) (appendT (Term.var 1) (Term.var 2)))⟩,
+    fun E ↦ byListInd G E 1 0 1 consStep (eqns ++ [.delta 0]) 64 [L, L, L] []
       (appendT (appendT (Term.var 0) (Term.var 1)) (Term.var 2))
       (appendT (Term.var 0) (appendT (Term.var 1) (Term.var 2)))),
-  (⟨1, [L], appendT (appendT (Term.var 0) nilT) nilT, Term.var 0⟩,
-    fun E ↦ byNorm G E 1 (eqns ++ [.thm 1 [A]]) 64 [L]
+  (⟨1, [L], [], Term.eq (appendT (appendT (Term.var 0) nilT) nilT) (Term.var 0)⟩,
+    fun E ↦ byNorm G E 1 (eqns ++ [.thm 1 [A]]) 64 [L] []
       (appendT (appendT (Term.var 0) nilT) nilT) (Term.var 0)),
-  (⟨0, [nat], addT (Term.var 0) zeroT, Term.var 0⟩,
-    fun E ↦ byNorm G E 0 (eqns ++ [.delta 1]) 64 [nat] (addT (Term.var 0) zeroT) (Term.var 0)),
-  (⟨0, [nat, nat], addT (Term.var 1) (succT (Term.var 0)),
-      succT (addT (Term.var 1) (Term.var 0))⟩,
-    fun E ↦ byNorm G E 0 (eqns ++ [.delta 1]) 64 [nat, nat]
+  (⟨0, [nat], [], Term.eq (addT (Term.var 0) zeroT) (Term.var 0)⟩,
+    fun E ↦ byNorm G E 0 (eqns ++ [.delta 1]) 64 [nat] [] (addT (Term.var 0) zeroT)
+      (Term.var 0)),
+  (⟨0, [nat, nat], [], Term.eq (addT (Term.var 1) (succT (Term.var 0)))
+      (succT (addT (Term.var 1) (Term.var 0)))⟩,
+    fun E ↦ byNorm G E 0 (eqns ++ [.delta 1]) 64 [nat, nat] []
       (addT (Term.var 1) (succT (Term.var 0))) (succT (addT (Term.var 1) (Term.var 0)))),
-  (⟨0, [nat], addT zeroT (Term.var 0), Term.var 0⟩,
-    fun E ↦ byNatInd G E 0 2 3 (succT (Term.var 0)) (eqns ++ [.delta 1]) 64 [nat]
+  (⟨0, [nat], [], Term.eq (addT zeroT (Term.var 0)) (Term.var 0)⟩,
+    fun E ↦ byNatInd G E 0 2 3 (succT (Term.var 0)) (eqns ++ [.delta 1]) 64 [nat] []
       (addT zeroT (Term.var 0)) (Term.var 0))]
 
 /-- The development: each theorem with the derivation the prover computes from those before

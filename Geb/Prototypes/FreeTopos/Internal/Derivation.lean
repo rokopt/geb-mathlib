@@ -12,31 +12,43 @@ set_option doc.verso true in
 /-!
 # The derivations of the internal language
 
-The checker of the internal language's derivations of equations. A derivation is a rose tree of
-rules of two kinds. A rewriting derivation transforms a given term: the identity, a sequence of
-two rewritings, congruence into each child of a node, each in its own context, and the
-equations of the language applied at the term: β for functions, the components of a pair and the
-η of pairs and of the terminal type, the unfolding of a definition at its arguments, the
-computation of the folds of the natural numbers and of lists, and an instance of an earlier
-theorem. A proof derivation proves an equation between two terms: by rewriting both to one term,
-or by induction on the innermost variable of the context, of the natural numbers or of a list
-type, in the form of the uniqueness of recursion: both sides agree at the start, and each is,
-at a successor or a construction, the step, a term of the sides' type, applied to its own
-value. The rewriting takes its
-terms from the term it rewrites, so that a derivation names no term but the steps of its
-inductions and the instances of the theorems it cites, and the checker computes every
+The checker of the internal language's derivations. A judgment is a formula, a term of the
+subobject classifier's type, in a context of variables and under hypotheses, formulas in the same
+context. A derivation is a rose tree of rules of two kinds. A rewriting derivation transforms a
+given term: the identity, a sequence of two rewritings, congruence into each child of a node,
+each in its own context and under its own hypotheses, and the equations of the language applied
+at the term: β for functions, the components of a pair and the η of pairs and of the terminal
+type, the unfolding of a definition at its arguments, the computation of the folds of the
+natural numbers and of lists, an instance of an earlier equational theorem, and an equation among
+the hypotheses. A proof derivation proves a formula: an equation by rewriting both sides to one
+term, or by induction in the form of the uniqueness of recursion; a hypothesis; a formula by
+proving it after rewriting it or a formula that rewrites to it, or by a cut through a formula
+proved first; the equality of two formulas that entail each other, and of two functions whose
+applications to a new variable are equal; an instance of an earlier theorem, its hypotheses'
+instances proved; and a formula by induction on the innermost variable of the natural numbers or
+of a list type, with the formula's instance at the start and, under the induction hypothesis, at
+a successor or a construction. These rules are the basic axioms and rules of a local set theory
+({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of
+the formula and membership application, with the extensionality of every exponential in place of
+that of power types, and with induction. The rewriting takes its terms from the term it
+rewrites, so that a derivation names no term but the steps of its inductions, the formulas of
+its cuts and the instances of the theorems it cites, and the checker computes every
 substitution.
 
 ## Main definitions
 
 * {lit}`Rule`, {lit}`Deriv` — the rules and the derivations.
-* {lit}`Thm` — a theorem: an equation between two terms in a context.
-* {lit}`check` — the rewriting a derivation performs, and the equations it proves.
+* {lit}`Thm` — a theorem: a formula in a context under hypotheses.
+* {lit}`check` — the rewriting a derivation performs, and the judgments it proves.
 * {lit}`checkThms` — the check of a development of theorems, each proved with those before it.
+
+## References
+
+* {cite}`RuizHernandezSolorzano2021`
 
 ## Tags
 
-internal language, derivation, proof checker, rewriting, induction
+internal language, derivation, proof checker, rewriting, induction, local set theory
 -/
 
 set_option doc.verso true
@@ -78,31 +90,56 @@ inductive Rule where
   /-- The fold of a construction, the primitive of index {lit}`k`, is the step at the element
   and the fold of the tail. -/
   | listCons (k : ℕ)
-  /-- The theorem of index {lit}`j` at objects and terms, from its left side to its right, or
-  from its right to its left when {lit}`flip`. -/
+  /-- The equational theorem of index {lit}`j` at objects and terms, from its left side to its
+  right, or from its right to its left when {lit}`flip`. -/
   | thm (j : ℕ) (θ : List Tree) (σ : List Term) (flip : Bool)
+  /-- The equation among the hypotheses of index {lit}`i`, from its left side to its right, or
+  from its right to its left when {lit}`flip`. -/
+  | rwHyp (i : ℕ) (flip : Bool)
   /-- An equation whose sides two rewritings take to one term. -/
   | join
-  /-- Induction on the innermost variable, of the natural numbers, with zero and the successor
-  the primitives of indices {lit}`kz` and {lit}`ks`, by the step {lit}`s`. -/
+  /-- An equation by induction on the innermost variable, of the natural numbers, with zero and
+  the successor the primitives of indices {lit}`kz` and {lit}`ks`, by the step {lit}`s`. -/
   | natInd (kz ks : ℕ) (s : Term)
-  /-- Induction on the innermost variable, of a list type, with the empty list and construction
-  the primitives of indices {lit}`kn` and {lit}`kc`, by the step {lit}`s`. -/
+  /-- An equation by induction on the innermost variable, of a list type, with the empty list and
+  construction the primitives of indices {lit}`kn` and {lit}`kc`, by the step {lit}`s`. -/
   | listInd (kn kc : ℕ) (s : Term)
+  /-- The hypothesis of index {lit}`i`. -/
+  | hyp (i : ℕ)
+  /-- A cut through the formula {lit}`φ`, proved first and then a hypothesis. -/
+  | cut (φ : Term)
+  /-- A formula proved after a rewriting. -/
+  | conv
+  /-- A formula, the formula {lit}`φ` proved and rewritten to it. -/
+  | convFrom (φ : Term)
+  /-- The equality of two formulas, each proved under the other. -/
+  | propExt
+  /-- The equality of two functions, whose applications to a new variable are proved equal. -/
+  | funExt
+  /-- The theorem of index {lit}`j` at objects and terms, its hypotheses' instances proved. -/
+  | apply (j : ℕ) (θ : List Tree) (σ : List Term)
+  /-- A formula by induction on the innermost variable, of the natural numbers, with zero and the
+  successor the primitives of indices {lit}`kz` and {lit}`ks`, under the induction hypothesis
+  at the successor. -/
+  | natIndHyp (kz ks : ℕ)
+  /-- A formula by induction on the innermost variable, of a list type, with the empty list and
+  construction the primitives of indices {lit}`kn` and {lit}`kc`, under the induction hypothesis
+  at the construction. -/
+  | listIndHyp (kn kc : ℕ)
 
 /-- A derivation of the internal language. -/
 abbrev Deriv : Type := RoseTree Rule
 
-/-- A theorem: an equation between two terms in a context, in object variables. -/
+/-- A theorem: a formula in a context under hypotheses, in object variables. -/
 structure Thm where
   /-- The number of object variables. -/
   arity : ℕ
   /-- The types of the variables, the innermost first. -/
   ctx : List Tree
-  /-- The left side. -/
-  lhs : Term
-  /-- The right side. -/
-  rhs : Term
+  /-- The hypotheses. -/
+  hyps : List Term
+  /-- The conclusion. -/
+  concl : Term
 
 /-- The primitive arrow zero. -/
 def zeroPrim : Prim := ⟨0, zeroN, one, nat⟩
@@ -143,29 +180,59 @@ def weakenElem (t : Term) : Term := Term.rename t fun i ↦ match i with
   | 0 => 0
   | j + 1 => j + 2
 
+/-- A term weakened past a new innermost variable. -/
+def weaken1 (t : Term) : Term := Term.rename t (· + 1)
+
+/-- A term weakened past two new innermost variables. -/
+def weaken2 (t : Term) : Term := Term.rename t (· + 2)
+
+/-- The sides of an equation. -/
+def eqParts (φ : Term) : Option (Term × Term) := match φ.label, φ.children with
+  | .eq, [t, u] => some (t, u)
+  | _, _ => none
+
+/-- The instance of a term of a theorem at objects and terms. -/
+def instTerm (θ : List Tree) (σ : List Term) (s : Term) : Term :=
+  Term.subst (Term.osubst θ s) (Term.substList σ)
+
 /-- The type of a term in a context. -/
 def typeIn (G : Globals) (n : ℕ) (Γ : List Tree) (t : Term) : Option Tree :=
   (compile G n t (ctxObj Γ) (stdEnv Γ)).map Prod.snd
 
-/-- The contexts of a node's children, in the node's context: an abstraction's body extends it,
-and the start and the step of a fold are in their own. -/
-def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree) :
-    Option (List (List Tree)) := match l, ts with
-  | .lam a, [_] => some [a :: Γ]
+/-- Hypotheses in a context of an innermost variable that none of them mentions, in the context
+{lit}`Γ` without it, where they are formulas. -/
+def lowerHyps (G : Globals) (n : ℕ) (Γ : List Tree) (Φ : List Term) : Option (List Term) :=
+  Φ.mapM fun ψ ↦
+    if weaken1 (Term.rename ψ (· - 1)) = ψ ∧ typeIn G n Γ (Term.rename ψ (· - 1)) = some omega
+    then some (Term.rename ψ (· - 1)) else none
+
+/-- Whether objects and terms instantiate a theorem in a context: types for its object
+variables, and terms of its context's types at them. -/
+def instOk (G : Globals) (n : ℕ) (Γ : List Tree) (a : Thm) (θ : List Tree) (σ : List Term) :
+    Bool :=
+  decide (θ.length = a.arity) && θ.all (IsTy n) && decide (σ.length = a.ctx.length) &&
+    (σ.zip (a.ctx.map (PartialHorn.subst θ))).all (fun (u, A) ↦ typeIn G n Γ u = some A)
+
+/-- The contexts and hypotheses of a node's children, in the node's context and under its
+hypotheses: an abstraction's body extends the context, the hypotheses weakened, and the start
+and the step of a fold are in contexts of their own, under no hypotheses. -/
+def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree)
+    (Φ : List Term) : Option (List (List Tree × List Term)) := match l, ts with
+  | .lam a, [_] => some [(a :: Γ, Φ.map weaken1)]
   | .natRec, [z, _, _] => do
     let c ← typeIn G n [] z
-    pure [[], [c], Γ]
+    pure [([], []), ([c], []), (Γ, Φ)]
   | .listRec, [z, _, m] => do
     let c ← typeIn G n [] z
     let a ← (typeIn G n Γ m).bind listPart
-    pure [[], [c, a], Γ]
-  | .roseRec c, [_, _] => some [[prod nat (list c)], Γ]
-  | _, ts => some (ts.map fun _ ↦ Γ)
+    pure [([], []), ([c, a], []), (Γ, Φ)]
+  | .roseRec c, [_, _] => some [([prod nat (list c)], []), (Γ, Φ)]
+  | _, ts => some (ts.map fun _ ↦ (Γ, Φ))
 
 /-- The rewriting of a term at its root by a rule of the language's equations, with the
-constants of {lit}`G` and the theorems of {lit}`E`. -/
-def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (l : Rule) (t : Term) :
-    Option Term := match l, t.label, t.children with
+constants of {lit}`G`, the theorems of {lit}`E` and the hypotheses {lit}`Φ`. -/
+def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (Φ : List Term) (l : Rule)
+    (t : Term) : Option Term := match l, t.label, t.children with
   | .beta, .app, [f, u] => match f.label, f.children with
     | .lam _, [b] => some (Term.subst b (instVar u))
     | _, _ => none
@@ -201,70 +268,119 @@ def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (l : Rule)
     | _, _ => none
   | .thm j θ σ flip, _, _ => do
     let a ← E[j]?
-    let l := Term.subst (Term.osubst θ a.lhs) (Term.substList σ)
-    let r := Term.subst (Term.osubst θ a.rhs) (Term.substList σ)
-    let (l, r) := if flip then (r, l) else (l, r)
-    if θ.length = a.arity ∧ θ.all (IsTy n) ∧ σ.length = a.ctx.length ∧
-        (σ.zip (a.ctx.map (PartialHorn.subst θ))).all (fun (u, A) ↦ typeIn G n Γ u = some A) ∧
-        t = l then some r else none
+    let lr ← if a.hyps = [] then eqParts a.concl else none
+    if instOk G n Γ a θ σ ∧ t = instTerm θ σ (if flip then lr.2 else lr.1) then
+      some (instTerm θ σ (if flip then lr.1 else lr.2)) else none
+  | .rwHyp i flip, _, _ => do
+    let lr ← (Φ[i]?).bind eqParts
+    if t = (if flip then lr.2 else lr.1) then some (if flip then lr.1 else lr.2) else none
   | _, _, _ => none
 
 /-- The results of a node's rewriting and of its proving, from its children's: the rewriting of
-a term in a context, and whether it proves an equation in a context. -/
-abbrev Checks : Type := (List Tree → Term → Option Term) × (List Tree → Term → Term → Bool)
+a term in a context under hypotheses, and whether it proves a formula in a context under
+hypotheses. -/
+abbrev Checks : Type :=
+  (List Tree → List Term → Term → Option Term) × (List Tree → List Term → Term → Bool)
 
 /-- One step of the checker, at a node of a rule, from its children's results. -/
 def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Deriv × Checks)) :
     Checks :=
-  (fun Γ t ↦ match l, cs with
+  (fun Γ Φ t ↦ match l, cs with
     | .refl, [] => some t
-    | .trans, [(_, c₁), (_, c₂)] => (c₁.1 Γ t).bind (c₂.1 Γ)
+    | .trans, [(_, c₁), (_, c₂)] => (c₁.1 Γ Φ t).bind (c₂.1 Γ Φ)
     | .cong, cs => do
-      let Γs ← childCtxs G n t.label t.children Γ
+      let Γs ← childCtxs G n t.label t.children Γ Φ
       if cs.length = t.children.length ∧ Γs.length = t.children.length then do
-        let ts ← ((cs.zip (Γs.zip t.children)).mapM fun (c, Δ, u) ↦ c.2.1 Δ u)
+        let ts ← ((cs.zip (Γs.zip t.children)).mapM fun (c, (Δ, Ψ), u) ↦ c.2.1 Δ Ψ u)
         pure (RoseTree.node t.label ts)
       else none
-    | l, [] => rootStep G E n Γ l t
+    | l, [] => rootStep G E n Γ Φ l t
     | _, _ => none,
-   fun Γ t u ↦ match l, cs with
-    | .join, [(_, c₁), (_, c₂)] => match c₁.1 Γ t, c₂.1 Γ u with
-      | some v, some v' => decide (v = v')
+   fun Γ Φ φ ↦ match l, cs with
+    | .join, [(_, c₁), (_, c₂)] => match eqParts φ with
+      | some (t, u) => match c₁.1 Γ Φ t, c₂.1 Γ Φ u with
+        | some v, some v' => decide (v = v')
+        | _, _ => false
+      | none => false
+    | .natInd kz ks s, [(_, p₀), (_, p₁), (_, p₂)] =>
+      match eqParts φ, Γ with
+      | some (t, u), c :: Γ' => match typeIn G n Γ t, lowerHyps G n Γ' Φ with
+        | some C, some Φ' => decide (c = nat ∧ G.prims[kz]? = some zeroPrim ∧
+              G.prims[ks]? = some succPrim ∧ typeIn G n Γ u = some C ∧
+              typeIn G n (C :: Γ') s = some C) &&
+            p₀.2 Γ' Φ' (Term.eq (Term.subst t (instVar (Term.arr kz [] Term.star)))
+              (Term.subst u (instVar (Term.arr kz [] Term.star)))) &&
+            p₁.2 Γ Φ (Term.eq (natSuccAt ks t) (Term.subst s (atVar0 t))) &&
+            p₂.2 Γ Φ (Term.eq (natSuccAt ks u) (Term.subst s (atVar0 u)))
+        | _, _ => false
       | _, _ => false
-    | .natInd kz ks s, [(_, p₀), (_, p₁), (_, p₂)] => match Γ, typeIn G n Γ t with
-      | c :: Γ', some C => decide (c = nat ∧ G.prims[kz]? = some zeroPrim ∧
-            G.prims[ks]? = some succPrim ∧ typeIn G n (C :: Γ') s = some C) &&
-          p₀.2 Γ' (Term.subst t (instVar (Term.arr kz [] Term.star)))
-            (Term.subst u (instVar (Term.arr kz [] Term.star))) &&
-          p₁.2 Γ (natSuccAt ks t) (Term.subst s (atVar0 t)) &&
-          p₂.2 Γ (natSuccAt ks u) (Term.subst s (atVar0 u))
-      | _, _ => false
-    | .listInd kn kc s, [(_, p₀), (_, p₁), (_, p₂)] => match Γ, typeIn G n Γ t with
-      | c :: Γ', some C => match listPart c with
-        | some a => decide (G.prims[kn]? = some nilPrim ∧ G.prims[kc]? = some consPrim ∧
+    | .listInd kn kc s, [(_, p₀), (_, p₁), (_, p₂)] =>
+      match eqParts φ, Γ with
+      | some (t, u), c :: Γ' => match typeIn G n Γ t, listPart c, lowerHyps G n Γ' Φ with
+        | some C, some a, some Φ' => decide (G.prims[kn]? = some nilPrim ∧
+              G.prims[kc]? = some consPrim ∧ typeIn G n Γ u = some C ∧
               typeIn G n (C :: a :: Γ') s = some C) &&
-            p₀.2 Γ' (Term.subst t (instVar (Term.arr kn [a] Term.star)))
-              (Term.subst u (instVar (Term.arr kn [a] Term.star))) &&
-            p₁.2 (c :: a :: Γ') (listConsAt kc a t) (Term.subst s (atVar0 (weakenElem t))) &&
-            p₂.2 (c :: a :: Γ') (listConsAt kc a u) (Term.subst s (atVar0 (weakenElem u)))
-        | none => false
+            p₀.2 Γ' Φ' (Term.eq (Term.subst t (instVar (Term.arr kn [a] Term.star)))
+              (Term.subst u (instVar (Term.arr kn [a] Term.star)))) &&
+            p₁.2 (c :: a :: Γ') (Φ'.map weaken2)
+              (Term.eq (listConsAt kc a t) (Term.subst s (atVar0 (weakenElem t)))) &&
+            p₂.2 (c :: a :: Γ') (Φ'.map weaken2)
+              (Term.eq (listConsAt kc a u) (Term.subst s (atVar0 (weakenElem u))))
+        | _, _, _ => false
       | _, _ => false
+    | .hyp i, [] => decide (Φ[i]? = some φ)
+    | .cut ψ, [(_, p), (_, q)] =>
+      decide (typeIn G n Γ ψ = some omega) && p.2 Γ Φ ψ && q.2 Γ (Φ ++ [ψ]) φ
+    | .conv, [(_, d), (_, p)] => match d.1 Γ Φ φ with
+      | some φ' => p.2 Γ Φ φ'
+      | none => false
+    | .convFrom ψ, [(_, d), (_, p)] =>
+      decide (typeIn G n Γ ψ = some omega ∧ d.1 Γ Φ ψ = some φ) && p.2 Γ Φ ψ
+    | .propExt, [(_, p), (_, q)] => match eqParts φ with
+      | some (α, β) => decide (typeIn G n Γ α = some omega ∧ typeIn G n Γ β = some omega) &&
+          p.2 Γ (Φ ++ [α]) β && q.2 Γ (Φ ++ [β]) α
+      | none => false
+    | .funExt, [(_, p)] => match eqParts φ with
+      | some (f, g) => match (typeIn G n Γ f).bind expParts with
+        | some (a, _) => p.2 (a :: Γ) (Φ.map weaken1)
+            (Term.eq (Term.app (weaken1 f) (Term.var 0)) (Term.app (weaken1 g) (Term.var 0)))
+        | none => false
+      | none => false
+    | .apply j θ σ, ps => match E[j]? with
+      | some a => instOk G n Γ a θ σ && decide (φ = instTerm θ σ a.concl) &&
+          decide (ps.length = a.hyps.length) &&
+          (ps.zip a.hyps).all fun (p, h) ↦ p.2.2 Γ Φ (instTerm θ σ h)
+      | none => false
+    | .natIndHyp kz ks, [(_, p₀), (_, p₁)] => match Γ with
+      | c :: Γ' => match lowerHyps G n Γ' Φ with
+        | some Φ' => decide (c = nat ∧ G.prims[kz]? = some zeroPrim ∧
+              G.prims[ks]? = some succPrim ∧ typeIn G n Γ φ = some omega) &&
+            p₀.2 Γ' Φ' (Term.subst φ (instVar (Term.arr kz [] Term.star))) &&
+            p₁.2 Γ (Φ ++ [φ]) (natSuccAt ks φ)
+        | none => false
+      | [] => false
+    | .listIndHyp kn kc, [(_, p₀), (_, p₁)] => match Γ with
+      | c :: Γ' => match listPart c, lowerHyps G n Γ' Φ with
+        | some a, some Φ' => decide (G.prims[kn]? = some nilPrim ∧ G.prims[kc]? = some consPrim ∧
+              typeIn G n Γ φ = some omega) &&
+            p₀.2 Γ' Φ' (Term.subst φ (instVar (Term.arr kn [a] Term.star))) &&
+            p₁.2 (c :: a :: Γ') (Φ'.map weaken2 ++ [weakenElem φ]) (listConsAt kc a φ)
+        | _, _ => false
+      | [] => false
     | _, _ => false)
 
-/-- The checker: the rewriting a derivation performs on a term in a context, and whether it
-proves an equation in a context. -/
+/-- The checker: the rewriting a derivation performs on a term in a context under hypotheses,
+and whether it proves a formula in a context under hypotheses. -/
 def check (G : Globals) (E : Array Thm) (n : ℕ) : Deriv → Checks :=
   RoseTree.para (checkStep G E n)
 
 /-- Whether a derivation proves a theorem with the constants of {lit}`G` and the theorems of
-{lit}`E`: its context is of types, its sides have one type there, and the derivation proves
-their equation. -/
+{lit}`E`: its context is of types, its hypotheses and conclusion are formulas there, and the
+derivation proves its conclusion under its hypotheses. -/
 def Thm.checks (G : Globals) (E : Array Thm) (a : Thm) (d : Deriv) : Bool :=
-  a.ctx.all (IsTy a.arity) &&
-    (match typeIn G a.arity a.ctx a.lhs, typeIn G a.arity a.ctx a.rhs with
-      | some A, some B => decide (A = B)
-      | _, _ => false) &&
-    (check G E a.arity d).2 a.ctx a.lhs a.rhs
+  a.ctx.all (IsTy a.arity) && a.hyps.all (fun h ↦ typeIn G a.arity a.ctx h = some omega) &&
+    decide (typeIn G a.arity a.ctx a.concl = some omega) &&
+    (check G E a.arity d).2 a.ctx a.hyps a.concl
 
 /-- Whether a development checks: each theorem proved by its derivation with the theorems before
 it. -/

@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.FreeTopos.Internal.Compile
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
+public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.Prove
 public import Geb.Prototypes.FreeTopos.Internal.Semantics
 public import Geb.Prototypes.FreeTopos.Internal.Soundness

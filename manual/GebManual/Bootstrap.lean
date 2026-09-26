@@ -150,10 +150,12 @@ sections below detail:
   the proof that compiling agrees with unfolding in every model, and
   the benchmark's theorems stated in it, constructed; its derivations
   of equations, with their checker proved sound and the benchmark's
-  theorems derived in them, constructed; its logical rules,
-  comprehension and description, and its completeness through its term
-  model, with the partial Horn logic's own, not begun; the checker and
-  prover written in Geb, not begun.
+  theorems derived in them, constructed; its logical rules, with
+  hypotheses and induction under the induction hypothesis, proved sound,
+  and the connectives defined from equality with their rules derived,
+  constructed; comprehension and description, and its completeness
+  through its term model, with the partial Horn logic's own, not begun;
+  the checker and prover written in Geb, not begun.
 
 Extension:
 
@@ -1775,7 +1777,7 @@ are the checker with equations as its formulas and induction as the
 uniqueness of recursion, measured against the core's certificates; the
 logical rules, whose soundness needs the internal Heyting algebra of the
 subobject classifier; comprehension and description; and the term models
-with the completeness theorems. The first is constructed.
+with the completeness theorems. The first two are constructed.
 
 A derivation is a rose tree of rules ({name}`Geb.FreeTopos.Internal.Rule`).
 A rewriting derivation transforms a given term: congruence into each
@@ -1808,6 +1810,48 @@ in the computational core's certificates and 18754 in the combinators',
 and check in 2.4 milliseconds, where the combinators' development of the
 same theorems, the lemmas it proves for them included, checks in about
 0.9 seconds.
+
+The logical rules make a judgment a formula in a context under
+hypotheses, formulas in the same context, and its meaning external: it
+holds when, in every environment of arrows of the context's types in
+which the hypotheses are true, the formula is true
+({name}`Geb.FreeTopos.Internal.FmSound`). Rewriting gains the equations
+among the hypotheses, and proof gains a hypothesis, the cut, the proof
+of a formula before or after a rewriting, the equality of two formulas
+that entail each other, the equality of two functions whose
+applications to a new variable are equal, the application of an earlier
+theorem with its hypotheses' instances proved, and induction on the
+innermost variable under the induction hypothesis. These are the basic
+axioms and rules of a local set theory ({citet RuizHernandezSolorzano2021}[],
+Section 3.2), with the extensionality of every exponential in place of
+that of power types, and with induction; the connectives are defined
+from equality as that theory defines them, truth as an equation of the
+terminal type's element with itself, a conjunction as the equality of
+the pair of its formulas with the pair of truths, an implication as the
+equality of the conjunction with the antecedent, a universal
+quantification as the equality of the abstraction of its formula with
+the abstraction of truth, and falsity as the universal quantification of
+every formula. The soundness of propositional extensionality is the
+uniqueness of the characteristic map of a subobject
+({name}`Geb.FreeTopos.omega_ext`), and that of induction under the
+hypothesis is induction on subobjects: a formula over the product of the
+other variables' object with the natural numbers or a list object that
+is true at the start and, on its pullback of truth, at a successor or a
+construction is true ({name}`Geb.FreeTopos.truth_of_natInd`,
+{name}`Geb.FreeTopos.truth_of_listInd`), by the existence and uniqueness
+of the folds with a parameter
+({name}`Geb.FreeTopos.natRec_param_exists`). The checker with these rules
+is proved sound as before ({name}`Geb.FreeTopos.Internal.check_sound`),
+with no axiom but propositional extensionality and the soundness of
+quotients. The introduction and elimination rules of the connectives
+are derived as theorems with hypotheses, and the left unit of addition
+and the right unit of appending are proved again by induction under the
+hypothesis, which the prover normalizes, cuts in and rewrites by
+(`GebTests/Prototypes/FreeTopos/InternalLogic.lean`). The derivations
+have 234 nodes, the terms they name counted, and check in 2.3
+milliseconds; the two inductions under the hypothesis have 48 and 52
+nodes, where the same equations by the uniqueness of recursion have 25
+and 29.
 
 The fifth choice is deferred until the three constructions are made.
 
