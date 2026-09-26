@@ -332,9 +332,7 @@ theorem scoped_of_isTy {n : ℕ} : ∀ A : Tree, IsTy G n A = true → Scoped n 
       · simp [IsTy] at hA
       rotate_left
       · simp [IsTy] at hA
-      rw [isTy_var_node] at hA
-      rw [PartialHorn.scoped_node_zero]
-      exact hA
+      exact PartialHorn.scoped_node_zero_iff.mpr (isTy_var_node_iff.mp hA)
     · change IsTy G n (op k cs) = true at hA
       rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA
       rw [PartialHorn.scoped_node_succ, List.all_eq_true]

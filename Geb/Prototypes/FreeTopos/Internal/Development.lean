@@ -144,7 +144,7 @@ theorem all_isTy_vars (G : Globals) (m : ℕ) :
     ((List.range m).map PartialHorn.var).all (IsTy G m) = true := by
   rw [List.all_map, List.all_eq_true]
   intro i hi
-  simp [PartialHorn.var, isTy_var_node, List.mem_range.mp hi]
+  exact isTy_var.mpr (List.mem_range.mp hi)
 
 variable (M) in
 /-- Each definition of the language's operation is, at every assignment of objects to its object

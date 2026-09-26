@@ -19,7 +19,8 @@ The logic of partial Horn theories {cite}`PalmgrenVickers2007`, over rose trees.
 names, for each partial operation by its index, the sorts of its arguments and the sort of its
 result. A term is a rose tree: a variable is the node of label zero over the leaf of its index,
 and the operation of index {lit}`k` applied to terms is the node of label {lit}`k + 1` over
-them. An
+them. Any other node of label zero is not a term: it has no sort, no value and no variable in
+scope, so that no children of an index are admitted to be ignored. An
 equation between two terms holds in a model at an assignment of the variables when both sides
 are defined there and denote one value, so that the equation of a term with itself states that
 the term is defined. A sequent is a context of sorts, a list of equations as hypotheses and an
@@ -31,7 +32,9 @@ operation is defined. It is a model of a theory when each axiom holds in it at e
 of the axiom's context that satisfies the axiom's hypotheses.
 
 A certificate is a rose tree whose node's label names a rule and whose children are its
-premises' certificates and the terms the rule names. The checker is a fold over the certificate
+premises' certificates and the terms the rule names. An index a rule names, of a hypothesis, a
+variable, an argument, an axiom or a theorem, is the label of a leaf ({lit}`leafIndex`); a node
+with children names no index. The checker is a fold over the certificate
 that computes each conclusion from its premises' conclusions, trusting no stated conclusion. Its
 rules are those of Definition 1 of the source, stated for a single equation as conclusion: a
 hypothesis; the reflexivity of a variable; symmetry and transitivity; congruence of an
@@ -51,6 +54,7 @@ every model of an extension of its signature in which its axioms hold.
 * {lit}`Model.get` — the value of an operation defined at its arguments, at its result sort.
 * {lit}`Eqn`, {lit}`Seq`, {lit}`Valid`, {lit}`IsModel` — equations, sequents, validity, and
   models of a theory.
+* {lit}`leafIndex` — the index a certificate's leaf names.
 * {lit}`checkStep`, {lit}`check` — the rules, and the checker.
 
 ## Main statements
@@ -96,22 +100,24 @@ abbrev Sig : Type := List (List ℕ × ℕ)
 /-- The sort of a term in a context of sorts, or nothing when the term is not well sorted. -/
 def sortOf (S : Sig) (Γ : List ℕ) : Tree → Option ℕ :=
   RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(i, _)] => Γ[i.label]?
+    | 0, [(i, _)] => if i.children.isEmpty then Γ[i.label]? else none
     | k + 1, cs => S[k]?.bind fun o ↦ if cs.map Prod.snd = o.1.map some then some o.2 else none
     | _, _ => none
 
 /-- Whether every variable of a term has an index below {lit}`n`. -/
 def Scoped (n : ℕ) : Tree → Bool :=
   RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(i, _)] => decide (i.label < n)
+    | 0, [(i, _)] => i.children.isEmpty && decide (i.label < n)
     | 0, _ => false
     | _ + 1, cs => cs.all Prod.snd
 
 /-- The substitution of terms for the variables of a term, the variable of index {lit}`i`
-replaced by the term at position {lit}`i`; a variable beyond the terms is left in place. -/
+replaced by the term at position {lit}`i`; a variable beyond the terms is left in place, and so
+is a node of label zero that is not a variable. -/
 def subst (ts : List Tree) : Tree → Tree :=
   RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(i, _)] => ts[i.label]?.getD (var i.label)
+    | 0, [(i, _)] => if i.children.isEmpty then ts[i.label]?.getD (var i.label)
+      else RoseTree.node 0 [i]
     | l, cs => RoseTree.node l (cs.map Prod.snd)
 
 /-- An equation between two terms. -/
@@ -170,7 +176,7 @@ abbrev Model.Val (M : Model.{v} S) : Type v := Σ s, M.Car s
 defined where the term is. -/
 def eval (M : Model.{v} S) (ρ : List M.Val) : Tree → Part M.Val :=
   RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(i, _)] => ρ[i.label]?
+    | 0, [(i, _)] => if i.children.isEmpty then ρ[i.label]? else Part.none
     | k + 1, cs => (cs.mapM Prod.snd).bind (M.op k)
     | _, _ => Part.none
 
@@ -260,6 +266,27 @@ end Rule
 the hypotheses, or nothing when the certificate does not check. -/
 abbrev Chk : Type := List ℕ → List Eqn → Option Eqn
 
+/-- The index a certificate's leaf names; a node with children names none, so that no children
+of an index are admitted only to be ignored. -/
+def leafIndex (t : Tree) : Option ℕ := if t.children.isEmpty then some t.label else none
+
+/-- A leaf names its label. -/
+@[simp] theorem leafIndex_leaf (i : ℕ) : leafIndex (RoseTree.node i []) = some i := rfl
+
+/-- A tree names an index exactly when it is the leaf of that index. -/
+theorem leafIndex_eq_some {t : Tree} {i : ℕ} : leafIndex t = some i ↔ t = RoseTree.node i [] := by
+  constructor
+  · intro h
+    rw [leafIndex] at h
+    split at h
+    · rename_i hc
+      obtain rfl := Option.some_inj.mp h
+      conv_lhs => rw [← RoseTree.node_label_children t]
+      rw [List.isEmpty_iff.mp hc]
+    · exact absurd h (by simp)
+  · rintro rfl
+    rfl
+
 /-- The instance of a sequent at the terms of a certificate's node: the terms for the context's
 variables, then a premise for each term whose conclusion's left side is that term, then a
 premise for each hypothesis whose conclusion is its instance. The terms must have the context's
@@ -278,8 +305,9 @@ def inst (S : Sig) (a : Seq) (cs : List (Tree × Chk)) : Chk := fun Γ H ↦
 premises' certificates, with their results, and the terms the rule names. -/
 def checkStep (T : Theory) (E : Array Seq) (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun Γ H ↦
   match l, cs with
-  | Rule.hyp, [(i, _)] => H[i.label]?
-  | Rule.refl, [(i, _)] => if i.label < Γ.length then some ⟨var i.label, var i.label⟩ else none
+  | Rule.hyp, [(i, _)] => (leafIndex i).bind fun i ↦ H[i]?
+  | Rule.refl, [(i, _)] => (leafIndex i).bind fun i ↦
+    if i < Γ.length then some ⟨var i, var i⟩ else none
   | Rule.symm, [(_, p)] => (p Γ H).map fun q ↦ ⟨q.rhs, q.lhs⟩
   | Rule.trans, [(_, p), (_, p')] => (p Γ H).bind fun q ↦ (p' Γ H).bind fun q' ↦
     if q.rhs = q'.lhs then some ⟨q.lhs, q'.rhs⟩ else none
@@ -288,11 +316,13 @@ def checkStep (T : Theory) (E : Array Seq) (l : ℕ) (cs : List (Tree × Chk)) :
       (ps.mapM fun (p : Tree × Chk) ↦ (p.2 Γ H).map Eqn.rhs).map fun ts ↦
         ⟨q.lhs, RoseTree.node q.lhs.label ts⟩
     else none
-  | Rule.strict, [(j, _), (_, p)] => (p Γ H).bind fun q ↦
-    if q.lhs.label ≠ 0 then (q.lhs.children[j.label]?).map fun t ↦ ⟨t, t⟩ else none
-  | Rule.ax, (j, _) :: cs => T.axioms[j.label]?.bind fun a ↦ inst T.sig a cs Γ H
+  | Rule.strict, [(j, _), (_, p)] => (leafIndex j).bind fun j ↦ (p Γ H).bind fun q ↦
+    if q.lhs.label ≠ 0 then (q.lhs.children[j]?).map fun t ↦ ⟨t, t⟩ else none
+  | Rule.ax, (j, _) :: cs => (leafIndex j).bind fun j ↦
+    T.axioms[j]?.bind fun a ↦ inst T.sig a cs Γ H
   | Rule.cut, [(_, p), (_, p')] => (p Γ H).bind fun h ↦ p' Γ (h :: H)
-  | Rule.thm, (j, _) :: cs => E[j.label]?.bind fun a ↦ inst T.sig a cs Γ H
+  | Rule.thm, (j, _) :: cs => (leafIndex j).bind fun j ↦
+    E[j]?.bind fun a ↦ inst T.sig a cs Γ H
   | _, _ => none
 
 /-- The checker: the conclusion of a certificate in a theory and an environment of theorems, as
@@ -344,11 +374,26 @@ variable {M : Model.{v} S} {ρ : List M.Val}
 @[simp] theorem eval_var (i : ℕ) : eval M ρ (var i) = (ρ[i]? : Part M.Val) := by
   simp [eval, var]
 
-/-- The value of a node of label zero over one child is the assignment's value at the child's
+/-- The value of a node of label zero over a leaf is the assignment's value at the leaf's
 label. -/
-theorem eval_node_zero (i : Tree) :
+theorem eval_node_zero {i : Tree} (hi : i.children = []) :
     eval M ρ (RoseTree.node 0 [i]) = (ρ[i.label]? : Part M.Val) := by
-  simp [eval]
+  simp [eval, hi]
+
+/-- A node of label zero over a child that is not a leaf has no value. -/
+theorem eval_node_zero_of_not {i : Tree} (hi : i.children ≠ []) :
+    eval M ρ (RoseTree.node 0 [i]) = Part.none := by
+  simp [eval, hi]
+
+/-- A node of label zero over one child has a value exactly when the child is a leaf whose label
+has it in the assignment. -/
+theorem eval_node_zero_eq_some {i : Tree} {w : M.Val} :
+    eval M ρ (RoseTree.node 0 [i]) = Part.some w ↔
+      i.children = [] ∧ (ρ[i.label]? : Part M.Val) = Part.some w := by
+  rcases hc : i.children with _ | ⟨d, ds⟩
+  · simp [eval_node_zero hc]
+  · rw [eval_node_zero_of_not (i := i) (by simp [hc])]
+    exact ⟨fun h ↦ absurd h.symm (Part.some_ne_none w), fun h ↦ absurd h.1 (by simp)⟩
 
 /-- The value of an operation's application: the operation at its arguments' values, when
 they are all defined. -/
@@ -363,9 +408,14 @@ theorem eval_op (k : ℕ) (ts : List Tree) :
   eval_node_succ k ts
 
 /-- Substitution at a variable's node. -/
-theorem subst_node_zero (ts : List Tree) (i : Tree) :
+theorem subst_node_zero (ts : List Tree) {i : Tree} (hi : i.children = []) :
     subst ts (RoseTree.node 0 [i]) = ts[i.label]?.getD (var i.label) := by
-  simp [subst]
+  simp [subst, hi]
+
+/-- Substitution leaves a node of label zero over a child that is not a leaf in place. -/
+theorem subst_node_zero_of_not (ts : List Tree) {i : Tree} (hi : i.children ≠ []) :
+    subst ts (RoseTree.node 0 [i]) = RoseTree.node 0 [i] := by
+  simp [subst, hi]
 
 /-- Substitution at an operation's node substitutes in the arguments. -/
 theorem subst_node_succ (ts : List Tree) (k : ℕ) (cs : List Tree) :
@@ -374,9 +424,22 @@ theorem subst_node_succ (ts : List Tree) (k : ℕ) (cs : List Tree) :
   rfl
 
 /-- A variable's node is in scope when its index is. -/
-theorem scoped_node_zero (n : ℕ) (i : Tree) :
+theorem scoped_node_zero (n : ℕ) {i : Tree} (hi : i.children = []) :
     Scoped n (RoseTree.node 0 [i]) = decide (i.label < n) := by
-  simp [Scoped]
+  simp [Scoped, hi]
+
+/-- A node of label zero over a child that is not a leaf is in no scope. -/
+theorem scoped_node_zero_of_not (n : ℕ) {i : Tree} (hi : i.children ≠ []) :
+    Scoped n (RoseTree.node 0 [i]) = false := by
+  simp [Scoped, hi]
+
+/-- A node of label zero over one child is in scope exactly when the child is a leaf whose label
+is. -/
+theorem scoped_node_zero_iff {n : ℕ} {i : Tree} :
+    Scoped n (RoseTree.node 0 [i]) = true ↔ i.children = [] ∧ i.label < n := by
+  rcases hc : i.children with _ | ⟨d, ds⟩
+  · simp [scoped_node_zero n hc]
+  · simp [scoped_node_zero_of_not n (i := i) (by simp [hc])]
 
 /-- An operation's node is in scope when its arguments are. -/
 theorem scoped_node_succ (n k : ℕ) (cs : List Tree) :
@@ -399,13 +462,13 @@ theorem eval_subst {ts : List Tree} {ws : List M.Val}
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
       · simp [Scoped] at hs
-      · have hi : i.label < ts.length := by simpa [scoped_node_zero] using hs
+      · obtain ⟨hc, hi⟩ := scoped_node_zero_iff.mp hs
         have hlen : ts.length = ws.length := by simpa using congrArg List.length hts
         have hi' : i.label < ws.length := hlen ▸ hi
         have hw := congrArg (fun l ↦ l[i.label]?) hts
         simp only [List.getElem?_map, List.getElem?_eq_getElem hi,
           List.getElem?_eq_getElem hi', Option.map_some, Option.some.injEq] at hw
-        rw [subst_node_zero, eval_node_zero, List.getElem?_eq_getElem hi,
+        rw [subst_node_zero _ hc, eval_node_zero hc, List.getElem?_eq_getElem hi,
           List.getElem?_eq_getElem hi', Option.getD_some, Part.coe_some]
         exact hw
       · simp [Scoped] at hs
@@ -414,9 +477,22 @@ theorem eval_subst {ts : List Tree} {ws : List M.Val}
       exact congrArg (fun o ↦ Part.bind o (M.op k)) (mapM_congr fun c hc ↦ ih c hc (hs c hc))
 
 /-- The sort of a variable's node is the context's sort at its index. -/
-theorem sortOf_node_zero (Γ : List ℕ) (i : Tree) :
+theorem sortOf_node_zero (Γ : List ℕ) {i : Tree} (hi : i.children = []) :
     sortOf S Γ (RoseTree.node 0 [i]) = Γ[i.label]? := by
-  simp [sortOf]
+  simp [sortOf, hi]
+
+/-- A node of label zero over a child that is not a leaf has no sort. -/
+theorem sortOf_node_zero_of_not (Γ : List ℕ) {i : Tree} (hi : i.children ≠ []) :
+    sortOf S Γ (RoseTree.node 0 [i]) = none := by
+  simp [sortOf, hi]
+
+/-- A node of label zero over one child has a sort exactly when the child is a leaf whose label
+has it in the context. -/
+theorem sortOf_node_zero_eq_some {Γ : List ℕ} {i : Tree} {s : ℕ} :
+    sortOf S Γ (RoseTree.node 0 [i]) = some s ↔ i.children = [] ∧ Γ[i.label]? = some s := by
+  rcases hc : i.children with _ | ⟨d, ds⟩
+  · simp [sortOf_node_zero Γ hc]
+  · simp [sortOf_node_zero_of_not Γ (i := i) (by simp [hc])]
 
 /-- The sort of an operation's node is the operation's result sort, when its arguments have
 the operation's argument sorts. -/
@@ -435,8 +511,7 @@ theorem sortOf_append (S' : Sig) {Γ : List ℕ} :
       · simp [sortOf] at hs
       rotate_left
       · simp [sortOf] at hs
-      rw [sortOf_node_zero] at hs ⊢
-      exact hs
+      exact sortOf_node_zero_eq_some.mpr (sortOf_node_zero_eq_some.mp hs)
     · rw [sortOf_node_succ] at hs ⊢
       obtain ⟨o, ho, hs⟩ := Option.bind_eq_some_iff.mp hs
       rw [List.getElem?_append_left (List.getElem?_eq_some_iff.mp ho).1, ho, Option.bind_some]
@@ -465,8 +540,8 @@ theorem sort_eval {Γ : List ℕ} (hρ : ρ.map Sigma.fst = Γ) :
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
       · simp [sortOf] at hs
-      · rw [sortOf_node_zero] at hs
-        rw [eval_node_zero] at he
+      · obtain ⟨hc, hs⟩ := sortOf_node_zero_eq_some.mp hs
+        rw [eval_node_zero hc] at he
         have h := congrArg (fun l ↦ l[i.label]?) hρ
         simp only [List.getElem?_map, hs] at h
         rcases hρi : ρ[i.label]? with _ | a
@@ -567,15 +642,16 @@ theorem check_sound {T : Theory} {E : Array Seq} (hS : T.sig <+: S)
     unfold checkStep at h
     split at h
     · -- a hypothesis
-      exact fun ρ _ hH ↦ hH q (List.mem_of_getElem? h)
+      obtain ⟨i, -, hi⟩ := Option.bind_eq_some_iff.mp h
+      exact fun ρ _ hH ↦ hH q (List.mem_of_getElem? hi)
     · -- the reflexivity of a variable
-      rename_i i _
+      obtain ⟨i, -, h⟩ := Option.bind_eq_some_iff.mp h
       split at h
       · rename_i hi
         cases h
         intro ρ hρ _
-        have hi' : i.label < ρ.length := by simpa [← hρ] using hi
-        exact ⟨ρ[i.label], by simp [hi', Part.coe_some], by simp [hi', Part.coe_some]⟩
+        have hi' : i < ρ.length := by simpa [← hρ] using hi
+        exact ⟨ρ[i], by simp [hi', Part.coe_some], by simp [hi', Part.coe_some]⟩
       · exact absurd h (by simp)
     · -- symmetry
       obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
@@ -634,9 +710,9 @@ theorem check_sound {T : Theory} {E : Array Seq} (hS : T.sig <+: S)
           ← List.mapM_map, hmap]
       · exact absurd h (by simp)
     · -- strictness: an argument of a defined application is defined
-      rename_i j _ _ p
+      rename_i _ _ _ p
       simp only [Option.bind_eq_some_iff] at h
-      obtain ⟨q₀, hq₀, h⟩ := h
+      obtain ⟨j, -, q₀, hq₀, h⟩ := h
       split at h
       · rename_i hl
         obtain ⟨t, ht, rfl⟩ := Option.map_eq_some_iff.mp h
@@ -647,15 +723,16 @@ theorem check_sound {T : Theory} {E : Array Seq} (hS : T.sig <+: S)
           part_bind_eq_some_iff] at h1
         obtain ⟨args, hargs, -⟩ := h1
         rw [mapM_part_eq_some_iff] at hargs
-        have hj : j.label < q₀.lhs.children.length := (List.getElem?_eq_some_iff.mp ht).1
-        have e := congrArg (fun l ↦ l[j.label]?) hargs
+        have hj : j < q₀.lhs.children.length := (List.getElem?_eq_some_iff.mp ht).1
+        have e := congrArg (fun l ↦ l[j]?) hargs
         simp only [List.getElem?_map, ht, Option.map_some] at e
         obtain ⟨a, -, ha⟩ := Option.map_eq_some_iff.mp e.symm
         exact ⟨a, ha.symm, ha.symm⟩
       · exact absurd h (by simp)
     · -- an instance of an axiom
       rename_i _ _ cs'
-      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨j, -, hj⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp hj
       exact inst_sound hS (hM a (List.mem_of_getElem? ha))
         (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
     · -- cut
@@ -667,7 +744,8 @@ theorem check_sound {T : Theory} {E : Array Seq} (hS : T.sig <+: S)
         (List.forall_mem_cons.mpr ⟨h₁, hH⟩)
     · -- an instance of a theorem
       rename_i _ _ cs'
-      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨j, -, hj⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp hj
       exact inst_sound hS (hE a (Array.mem_of_getElem? ha))
         (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
     · exact absurd h (by simp)

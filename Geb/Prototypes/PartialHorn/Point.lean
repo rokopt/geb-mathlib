@@ -67,8 +67,8 @@ theorem eval_point {S : Sig} {Γ : List ℕ} {ρ : List (pointModel S).Val}
       · simp [sortOf] at hs
       rotate_left
       · simp [sortOf] at hs
-      rw [sortOf_node_zero] at hs
-      rw [eval_node_zero]
+      obtain ⟨hc, hs⟩ := sortOf_node_zero_eq_some.mp hs
+      rw [eval_node_zero hc]
       have h := congrArg (·[i.label]?) hρ
       simp only [List.getElem?_map, hs, Option.map_eq_some_iff] at h
       obtain ⟨⟨s', _⟩, hw, rfl⟩ := h

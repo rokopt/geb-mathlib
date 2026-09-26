@@ -224,10 +224,15 @@ theorem isTy_op (n k : ℕ) (cs : List Tree) :
   rw [List.all_map]
   rfl
 
-/-- A variable is a type when its index is below the number of object variables. -/
-theorem isTy_var_node (n : ℕ) (i : Tree) :
-    IsTy G n (RoseTree.node 0 [i]) = decide (i.label < n) := by
+/-- A node of label zero over one child is a type exactly when the child is a leaf whose label
+is below the number of object variables. -/
+theorem isTy_var_node_iff {n : ℕ} {i : Tree} :
+    IsTy G n (RoseTree.node 0 [i]) = true ↔ i.children = [] ∧ i.label < n := by
   simp [IsTy]
+
+/-- A variable is a type when its index is below the number of object variables. -/
+theorem isTy_var {n i : ℕ} : IsTy G n (PartialHorn.var i) = true ↔ i < n :=
+  isTy_var_node_iff.trans (by simp)
 
 /-- A product of types is a type. -/
 theorem isTy_prod {n : ℕ} {a b : Tree} : IsTy G n (prod a b) = (IsTy G n a && IsTy G n b) := by
@@ -282,8 +287,8 @@ theorem isTy_subst {m n : ℕ} {θ : List Tree} (hl : θ.length = m) (hθ : θ.a
       · simp [IsTy] at hA
       rotate_left
       · simp [IsTy] at hA
-      rw [isTy_var_node, decide_eq_true_eq] at hA
-      rw [PartialHorn.subst_node_zero]
+      obtain ⟨hc, hA⟩ := isTy_var_node_iff.mp hA
+      rw [PartialHorn.subst_node_zero _ hc]
       have hi : i.label < θ.length := hl ▸ hA
       rw [List.getElem?_eq_getElem hi, Option.getD_some]
       exact List.all_eq_true.mp hθ _ (List.getElem_mem hi)
@@ -327,11 +332,11 @@ theorem isObj_of_isTy (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M 
       · simp [IsTy] at hA
       rotate_left
       · simp [IsTy] at hA
-      rw [isTy_var_node, decide_eq_true_eq] at hA
+      obtain ⟨hc, hA⟩ := isTy_var_node_iff.mp hA
       have hlen : ρ.length = n := by simpa using congrArg List.length hρ
       have hi : i.label < ρ.length := hlen ▸ hA
       refine ⟨ρ[i.label], ?_, ?_⟩
-      · rw [PartialHorn.eval_node_zero, List.getElem?_eq_getElem hi]
+      · rw [PartialHorn.eval_node_zero hc, List.getElem?_eq_getElem hi]
         rfl
       · have := congrArg (·[i.label]?) hρ
         simp only [List.getElem?_map, List.getElem?_eq_getElem hi,
