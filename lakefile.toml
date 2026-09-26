@@ -128,6 +128,17 @@ globs = ["GebLang.*"]
 [lean_lib.leanOptions]
 doc.verso = true
 
+# `GebManual.Bibliography` declares one entry per entry of
+# docs/references.bib, which it reads at elaboration, registering no
+# dependency on the file. The manual library's `needs` mixes the
+# file's trace into the trace of every GebManual module, so an edit to
+# the bibliography regenerates the entries and rebuilds the chapters
+# that cite them.
+[[input_file]]
+name = "referencesBib"
+path = "docs/references.bib"
+text = true
+
 # The Verso manual: document library and generator executable,
 # with sources under manual/. Excluded from defaultTargets and the
 # test driver, so lake build, lake test, and the default lake lint
@@ -141,6 +152,7 @@ doc.verso = true
 [[lean_lib]]
 name = "GebManual"
 srcDir = "manual"
+needs = ["@/referencesBib"]
 moreLeanArgs = [
   "-Dweak.verso.code.warnLineLength=100",
   "-Dweak.linter.hashCommand=false",
