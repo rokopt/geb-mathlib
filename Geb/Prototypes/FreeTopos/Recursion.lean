@@ -21,7 +21,9 @@ object of parameters with the natural numbers object that agree at zero and sati
 recursion equation of one step are equal ({lit}`natRec_param_unique`), and likewise from its
 product with a list object ({lit}`listRec_param_unique`). The proof curries the two arrows
 into arrows from the natural numbers object, or from the list object, into the exponential of
-the parameters, which satisfy the equations of one fold without parameters.
+the parameters, which satisfy the equations of one fold without parameters. Such an arrow exists
+({lit}`natRec_param_exists`, {lit}`listRec_param_exists`): the fold into the exponential of the
+parameters, evaluated at the parameter.
 
 ## Main statements
 
@@ -29,6 +31,8 @@ the parameters, which satisfy the equations of one fold without parameters.
   object.
 * {lit}`listRec_nil`, {lit}`listRec_cons`, {lit}`listRec_unique` — the fold of a list object.
 * {lit}`natRec_param_unique`, {lit}`listRec_param_unique` — the uniqueness of the folds with a
+  parameter.
+* {lit}`natRec_param_exists`, {lit}`listRec_param_exists` — the existence of the folds with a
   parameter.
 
 ## References
@@ -501,6 +505,253 @@ theorem listRec_param_unique {F G S P A C : Tree} (hP : IsObj M ρ P) (hA : IsOb
         ((pair_comp hM (pair_hom hM hsE (comp_hom hM hfE hfAE)) (comp_hom hM hpe hev) hn).trans
           (eval_op₂_congr 9 an evn))))
   exact eq_of_curry_swap hM hP hL hF hG ((key hF rfl hF₁).trans (key hG h₀.symm hG₁).symm)
+
+/-- Evaluation after the pairing of a currying after an arrow with another arrow is the curried
+arrow after their pairing. -/
+theorem ev_curry_pair {T h k X A B Y : Tree} (hX : IsObj M ρ X) (hA : IsObj M ρ A)
+    (hT : Hom M ρ T (prod X A) B) (hh : Hom M ρ h Y X) (hk : Hom M ρ k Y A) :
+    eval M ρ (comp (ev A B) (pair (comp (curry X A T) h) k)) =
+      eval M ρ (comp T (pair h k)) := by
+  have hc := curry_hom hM hX hA hT
+  have hfX := fst_hom hM hX hA
+  have hsX := snd_hom hM hX hA
+  have hP := pair_hom hM (comp_hom hM hfX hc) hsX
+  have hhk := pair_hom hM hh hk
+  have e₁ : eval M ρ (pair (comp (curry X A T) h) k) =
+      eval M ρ (comp (pair (comp (curry X A T) (fst X A)) (snd X A)) (pair h k)) :=
+    ((pair_comp hM (comp_hom hM hfX hc) hsX hhk).trans (eval_op₂_congr 9
+      ((comp_assoc hM hhk hfX hc).symm.trans (eval_op₂_congr 3 rfl (fst_pair hM hh hk)))
+      (snd_pair hM hh hk))).symm
+  exact (eval_op₂_congr 3 rfl e₁).trans ((comp_assoc hM hhk hP (ev_hom hM hA hT.isObj_cod)).trans
+    (eval_op₂_congr 3 (ev_curry hM hX hA hT) rfl))
+
+/-- The existence of the fold of the natural numbers object with a parameter: an arrow from the
+product of an object of parameters with the natural numbers object that is a given arrow at zero
+and, at a successor, a given step after the parameter paired with its value. -/
+theorem natRec_param_exists {z S P C : Tree} (hP : IsObj M ρ P) (hz : Hom M ρ z P C)
+    (hS : Hom M ρ S (prod P C) C) :
+    ∃ f, Hom M ρ f (prod P nat) C ∧
+      eval M ρ (comp f (pair (idt P) (comp zeroN (bang P)))) = eval M ρ z ∧
+      eval M ρ (comp f (pair (fst P nat) (comp succ (snd P nat)))) =
+        eval M ρ (comp S (pair (fst P nat) f)) := by
+  have hN := isObj_nat (ρ := ρ) hM
+  have h1 := isObj_one (ρ := ρ) hM
+  have hC := hz.isObj_cod
+  have hE := isObj_exp hM hP hC
+  have hs1 := snd_hom hM h1 hP
+  have hsE := snd_hom hM hE hP
+  have hev := ev_hom hM hP hC
+  have hZ := curry_hom hM h1 hP (comp_hom hM hs1 hz)
+  have hT := comp_hom hM (pair_hom hM hsE hev) hS
+  have hStepC := curry_hom hM hE hP hT
+  have hR := natRec_hom hM hZ hStepC
+  have hfN := fst_hom hM hP hN
+  have hsN := snd_hom hM hP hN
+  have hRs := comp_hom hM hsN hR
+  have hq := pair_hom hM hRs hfN
+  refine ⟨_, comp_hom hM hq hev, ?_, ?_⟩
+  · -- at zero, the curried start's evaluation at the parameter
+    have hb := bang_hom hM hP
+    have hzb := comp_hom hM hb (zeroN_hom hM)
+    have hid := idt_hom hM hP
+    have hz0 := pair_hom hM hid hzb
+    have e₁ : eval M ρ (comp (pair (comp (natRec (curry one P (comp z (snd one P)))
+        (curry (exp P C) P (comp S (pair (snd (exp P C) P) (ev P C))))) (snd P nat))
+        (fst P nat)) (pair (idt P) (comp zeroN (bang P)))) = eval M ρ
+        (pair (comp (curry one P (comp z (snd one P))) (bang P)) (idt P)) :=
+      (pair_comp hM hRs hfN hz0).trans (eval_op₂_congr 9
+        ((comp_assoc hM hz0 hsN hR).symm.trans ((eval_op₂_congr 3 rfl (snd_pair hM hid hzb)).trans
+          ((comp_assoc hM hb (zeroN_hom hM) hR).trans
+            (eval_op₂_congr 3 (natRec_zero hM hZ hStepC) rfl))))
+        (fst_pair hM hid hzb))
+    exact (comp_assoc hM hz0 hq hev).symm.trans ((eval_op₂_congr 3 rfl e₁).trans
+      ((ev_curry_pair hM h1 hP (comp_hom hM hs1 hz) hb hid).trans
+        ((comp_assoc hM (pair_hom hM hb hid) hs1 hz).symm.trans
+          ((eval_op₂_congr 3 rfl (snd_pair hM hb hid)).trans (comp_idt hM hz)))))
+  · -- at a successor, the curried step's evaluation at the parameter and the value
+    have hsc := comp_hom hM hsN (succ_hom hM)
+    have hk₁ := pair_hom hM hfN hsc
+    have e₁ : eval M ρ (comp (pair (comp (natRec (curry one P (comp z (snd one P)))
+        (curry (exp P C) P (comp S (pair (snd (exp P C) P) (ev P C))))) (snd P nat))
+        (fst P nat)) (pair (fst P nat) (comp succ (snd P nat)))) = eval M ρ
+        (pair (comp (curry (exp P C) P (comp S (pair (snd (exp P C) P) (ev P C))))
+          (comp (natRec (curry one P (comp z (snd one P)))
+            (curry (exp P C) P (comp S (pair (snd (exp P C) P) (ev P C))))) (snd P nat)))
+          (fst P nat)) :=
+      (pair_comp hM hRs hfN hk₁).trans (eval_op₂_congr 9
+        ((comp_assoc hM hk₁ hsN hR).symm.trans ((eval_op₂_congr 3 rfl (snd_pair hM hfN hsc)).trans
+          ((comp_assoc hM hsN (succ_hom hM) hR).trans ((eval_op₂_congr 3
+            (natRec_succ hM hZ hStepC) rfl).trans (comp_assoc hM hsN hR hStepC).symm))))
+        (fst_pair hM hfN hsc))
+    exact (comp_assoc hM hk₁ hq hev).symm.trans ((eval_op₂_congr 3 rfl e₁).trans
+      ((ev_curry_pair hM hE hP hT hRs hfN).trans
+        ((comp_assoc hM hq (pair_hom hM hsE hev) hS).symm.trans (eval_op₂_congr 3 rfl
+          ((pair_comp hM hsE hev hq).trans (eval_op₂_congr 9 (snd_pair hM hRs hfN) rfl))))))
+
+/-- The existence of the fold of a list object with a parameter: an arrow from the product of an
+object of parameters with the list object that is a given arrow at the empty list and, at a
+construction, a given step after the parameter and the element paired with its value at the
+tail. -/
+theorem listRec_param_exists {z S P A C : Tree} (hP : IsObj M ρ P) (hA : IsObj M ρ A)
+    (hz : Hom M ρ z P C) (hS : Hom M ρ S (prod (prod P A) C) C) :
+    ∃ f, Hom M ρ f (prod P (list A)) C ∧
+      eval M ρ (comp f (pair (idt P) (comp (nil A) (bang P)))) = eval M ρ z ∧
+      eval M ρ (comp f (pair (comp (fst P A) (fst (prod P A) (list A)))
+          (comp (cons A) (pair (comp (snd P A) (fst (prod P A) (list A)))
+            (snd (prod P A) (list A)))))) =
+        eval M ρ (comp S (pair (fst (prod P A) (list A))
+          (comp f (pair (comp (fst P A) (fst (prod P A) (list A)))
+            (snd (prod P A) (list A)))))) := by
+  have h1 := isObj_one (ρ := ρ) hM
+  have hL := isObj_list hM hA
+  have hC := hz.isObj_cod
+  have hE := isObj_exp hM hP hC
+  have hPA := isObj_prod hM hP hA
+  have hAE := isObj_prod hM hA hE
+  have hAL := isObj_prod hM hA hL
+  have hs1 := snd_hom hM h1 hP
+  have hev := ev_hom hM hP hC
+  have hfE := fst_hom hM hAE hP
+  have hsE := snd_hom hM hAE hP
+  have hfAE := fst_hom hM hA hE
+  have hsAE := snd_hom hM hA hE
+  have hpe := pair_hom hM (comp_hom hM hfE hsAE) hsE
+  have hbody := pair_hom hM (pair_hom hM hsE (comp_hom hM hfE hfAE)) (comp_hom hM hpe hev)
+  have hT := comp_hom hM hbody hS
+  have hZ := curry_hom hM h1 hP (comp_hom hM hs1 hz)
+  have hStepC := curry_hom hM hAE hP hT
+  have hR := listRec_hom hM hA hZ hStepC
+  have hfL := fst_hom hM hP hL
+  have hsL := snd_hom hM hP hL
+  have hRs := comp_hom hM hsL hR
+  have hq := pair_hom hM hRs hfL
+  refine ⟨_, comp_hom hM hq hev, ?_, ?_⟩
+  · -- at the empty list, the curried start's evaluation at the parameter
+    have hb := bang_hom hM hP
+    have hnb := comp_hom hM hb (nil_hom hM hA)
+    have hid := idt_hom hM hP
+    have hn0 := pair_hom hM hid hnb
+    have e₁ : eval M ρ (comp (pair (comp (listRec A (curry one P (comp z (snd one P)))
+        (curry (prod A (exp P C)) P (comp S
+          (pair (pair (snd (prod A (exp P C)) P)
+              (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+            (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+              (snd (prod A (exp P C)) P))))))) (snd P (list A)))
+        (fst P (list A))) (pair (idt P) (comp (nil A) (bang P)))) = eval M ρ
+        (pair (comp (curry one P (comp z (snd one P))) (bang P)) (idt P)) :=
+      (pair_comp hM hRs hfL hn0).trans (eval_op₂_congr 9
+        ((comp_assoc hM hn0 hsL hR).symm.trans ((eval_op₂_congr 3 rfl (snd_pair hM hid hnb)).trans
+          ((comp_assoc hM hb (nil_hom hM hA) hR).trans
+            (eval_op₂_congr 3 (listRec_nil hM hA hZ hStepC) rfl))))
+        (fst_pair hM hid hnb))
+    exact (comp_assoc hM hn0 hq hev).symm.trans ((eval_op₂_congr 3 rfl e₁).trans
+      ((ev_curry_pair hM h1 hP (comp_hom hM hs1 hz) hb hid).trans
+        ((comp_assoc hM (pair_hom hM hb hid) hs1 hz).symm.trans
+          ((eval_op₂_congr 3 rfl (snd_pair hM hb hid)).trans (comp_idt hM hz)))))
+  · -- at a construction, the curried step's evaluation at the parameter
+    have hfQ := fst_hom hM hPA hL
+    have hsQ := snd_hom hM hPA hL
+    have hfPA := fst_hom hM hP hA
+    have hsPA := snd_hom hM hP hA
+    have hfAL := fst_hom hM hA hL
+    have hsAL := snd_hom hM hA hL
+    have hff := comp_hom hM hfQ hfPA
+    have hsf := comp_hom hM hfQ hsPA
+    have hel := pair_hom hM hsf hsQ
+    have hcel := comp_hom hM hel (cons_hom hM hA)
+    have hk₁ := pair_hom hM hff hcel
+    have hk₂ := pair_hom hM hff hsQ
+    have hRsQ := comp_hom hM hsQ hR
+    have hn := pair_hom hM hsf hRsQ
+    have hpm := pair_hom hM hfAL (comp_hom hM hsAL hR)
+    -- the fold at a construction is the curried step at the element and the tail's fold
+    have eR : eval M ρ (comp (listRec A (curry one P (comp z (snd one P)))
+          (curry (prod A (exp P C)) P (comp S
+            (pair (pair (snd (prod A (exp P C)) P)
+                (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+              (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                (snd (prod A (exp P C)) P)))))))
+        (comp (cons A) (pair (comp (snd P A) (fst (prod P A) (list A)))
+          (snd (prod P A) (list A))))) = eval M ρ
+        (comp (curry (prod A (exp P C)) P (comp S
+            (pair (pair (snd (prod A (exp P C)) P)
+                (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+              (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                (snd (prod A (exp P C)) P))))))
+          (pair (comp (snd P A) (fst (prod P A) (list A)))
+            (comp (listRec A (curry one P (comp z (snd one P)))
+              (curry (prod A (exp P C)) P (comp S
+                (pair (pair (snd (prod A (exp P C)) P)
+                    (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+                  (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                    (snd (prod A (exp P C)) P)))))))
+              (snd (prod P A) (list A))))) :=
+      (comp_assoc hM hel (cons_hom hM hA) hR).trans ((eval_op₂_congr 3
+        (listRec_cons hM hA hZ hStepC) rfl).trans ((comp_assoc hM hel hpm hStepC).symm.trans
+          (eval_op₂_congr 3 rfl ((pair_comp hM hfAL (comp_hom hM hsAL hR) hel).trans
+            (eval_op₂_congr 9 (fst_pair hM hsf hsQ) ((comp_assoc hM hel hsAL hR).symm.trans
+              (eval_op₂_congr 3 rfl (snd_pair hM hsf hsQ))))))))
+    -- the arrow at the tail
+    have eT : eval M ρ (comp (comp (ev P C) (pair (comp (listRec A
+          (curry one P (comp z (snd one P)))
+          (curry (prod A (exp P C)) P (comp S
+            (pair (pair (snd (prod A (exp P C)) P)
+                (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+              (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                (snd (prod A (exp P C)) P))))))) (snd P (list A))) (fst P (list A))))
+        (pair (comp (fst P A) (fst (prod P A) (list A))) (snd (prod P A) (list A)))) =
+        eval M ρ (comp (ev P C) (pair (comp (listRec A (curry one P (comp z (snd one P)))
+          (curry (prod A (exp P C)) P (comp S
+            (pair (pair (snd (prod A (exp P C)) P)
+                (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+              (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                (snd (prod A (exp P C)) P))))))) (snd (prod P A) (list A)))
+          (comp (fst P A) (fst (prod P A) (list A))))) :=
+      (comp_assoc hM hk₂ hq hev).symm.trans (eval_op₂_congr 3 rfl
+        ((pair_comp hM hRs hfL hk₂).trans (eval_op₂_congr 9
+          ((comp_assoc hM hk₂ hsL hR).symm.trans (eval_op₂_congr 3 rfl (snd_pair hM hff hsQ)))
+          (fst_pair hM hff hsQ))))
+    -- the step's body after the element, the tail's fold and the parameter
+    have hm := pair_hom hM hn hff
+    have eB : eval M ρ (comp (pair (pair (snd (prod A (exp P C)) P)
+          (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+        (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+          (snd (prod A (exp P C)) P))))
+        (pair (pair (comp (snd P A) (fst (prod P A) (list A)))
+          (comp (listRec A (curry one P (comp z (snd one P)))
+            (curry (prod A (exp P C)) P (comp S
+              (pair (pair (snd (prod A (exp P C)) P)
+                  (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+                (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                  (snd (prod A (exp P C)) P)))))))
+            (snd (prod P A) (list A))))
+          (comp (fst P A) (fst (prod P A) (list A))))) =
+        eval M ρ (pair (fst (prod P A) (list A))
+          (comp (ev P C) (pair (comp (listRec A (curry one P (comp z (snd one P)))
+            (curry (prod A (exp P C)) P (comp S
+              (pair (pair (snd (prod A (exp P C)) P)
+                  (comp (fst A (exp P C)) (fst (prod A (exp P C)) P)))
+                (comp (ev P C) (pair (comp (snd A (exp P C)) (fst (prod A (exp P C)) P))
+                  (snd (prod A (exp P C)) P))))))) (snd (prod P A) (list A)))
+            (comp (fst P A) (fst (prod P A) (list A)))))) := by
+      have f1m := fst_pair hM hn hff
+      have s1m := snd_pair hM hn hff
+      refine (pair_comp hM (pair_hom hM hsE (comp_hom hM hfE hfAE)) (comp_hom hM hpe hev) hm).trans
+        (eval_op₂_congr 9 ?_ ?_)
+      · refine ((pair_comp hM hsE (comp_hom hM hfE hfAE) hm).trans (eval_op₂_congr 9 s1m
+          ((comp_assoc hM hm hfE hfAE).symm.trans ((eval_op₂_congr 3 rfl f1m).trans
+            (fst_pair hM hsf hRsQ))))).trans (pair_eta hM hP hA hfQ)
+      · refine (comp_assoc hM hm hpe hev).symm.trans (eval_op₂_congr 3 rfl ?_)
+        exact (pair_comp hM (comp_hom hM hfE hsAE) hsE hm).trans (eval_op₂_congr 9
+          ((comp_assoc hM hm hfE hsAE).symm.trans ((eval_op₂_congr 3 rfl f1m).trans
+            (snd_pair hM hsf hRsQ))) s1m)
+    refine (comp_assoc hM hk₁ hq hev).symm.trans (Eq.trans ?_ (eval_op₂_congr 3 rfl
+      (eval_op₂_congr 9 rfl eT)).symm)
+    refine (eval_op₂_congr 3 rfl ((pair_comp hM hRs hfL hk₁).trans (eval_op₂_congr 9
+      ((comp_assoc hM hk₁ hsL hR).symm.trans ((eval_op₂_congr 3 rfl (snd_pair hM hff hcel)).trans
+        eR)) (fst_pair hM hff hcel)))).trans ?_
+    exact (ev_curry_pair hM hAE hP hT hn hff).trans ((comp_assoc hM hm hbody hS).symm.trans
+      (eval_op₂_congr 3 rfl eB))
 
 end Parameters
 
