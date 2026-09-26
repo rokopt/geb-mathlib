@@ -1518,7 +1518,7 @@ theorem rootStep_sound (hδ : DefnsOk M G) {E : Array Entry}
     exact caseInr_sound hM hG hρ hps hds hkc hkr Γ _ _ g g' v
   | refl | trans | cong | join | natInd | listInd | hyp | cut | conv | convFrom | propExt
     | funExt | apply | natIndHyp | listIndHyp | coprodInd | zeroInd | roseInd | cert
-    | quotInd =>
+    | certSeq | quotInd =>
 simp only [rootStep, reduceCtorEq] at h
 
 

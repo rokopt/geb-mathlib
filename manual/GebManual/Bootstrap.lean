@@ -181,9 +181,10 @@ sections below detail:
       language.
     * Complete. Quotient types: the coequalizer of a relation's
       projections, with its rules.
-    * Ready. The partial Horn logic's term model and completeness
-      theorem, the completeness of the language with its citations, and
-      the round trips of the compilation.
+    * Complete. The partial Horn logic's term model and completeness
+      theorem, and the completeness of the language citing
+      certificates.
+    * Ready. The round trips of the compilation.
   * Waiting on the second construction. The fifth choice.
   * Waiting on the fourth stage, whose completeness settles the
     language's rules. The checker and prover written in Geb.
@@ -853,8 +854,9 @@ and each phase below opens with a table of the states of its steps.
   * In progress
   * The Mitchell–Bénabou language's fourth stage: in progress, its
     citations of certificates, its declared definitions and primitive
-    arrows, its object definitions and its quotient types complete, and
-    its completeness theorems ready; the
+    arrows, its object definitions, its quotient types and its
+    completeness theorems complete, and the round trips of its
+    compilation ready; the
     second construction and the converse of the first: ready; the fifth
     choice: waiting on the second construction; the checker and prover
     written in Geb: waiting on the fourth stage
@@ -2072,14 +2074,16 @@ language's terms inside the combinators' terms, follows the bootstrap
 proofs are written.
 
 Completeness then follows from the partial Horn logic's. The values of
-the theory's term model in a context under hypotheses are the terms
-provably defined there, modulo provable equality; it is a model of the
-theory, and in it, at the context's variables, a sequent holds exactly
-when it is proved ({citet Kawase2024}[], Section 6.3, whose finitary
-case is {citet PalmgrenVickers2007}[]'s). A sequent of the language
-that holds in every model compiles to a sequent of the combinators that
-holds in every model, which a certificate therefore proves, and the
-language cites the certificate. A combinator translates into the
+the theory's term model in a context under hypotheses
+({name}`Geb.PartialHorn.TermModel.termModel`) are the terms of a sort
+provably defined there, modulo provable equality; it is a model of
+every theory whose axioms are in scope and equate terms of one sort,
+and in it, at the context's variables, an equation holds exactly when
+it is proved ({citet Kawase2024}[], Section 6.3, whose finitary case is
+{citet PalmgrenVickers2007}[]'s). A sequent of the language that holds
+in every model compiles to a sequent of the combinators that holds in
+every model, which a certificate therefore proves, and the language
+cites the certificate. A combinator translates into the
 language as its declared constant, and the round trips of the
 compilation are provably the identity by certificates. The language's
 own term model, the topos of its types with predicates and its provably
@@ -2223,8 +2227,8 @@ State: in progress (the next phase). Its parts, in order:
 * Complete. Declared definitions of the language and primitive arrows.
 * Complete. Object definitions.
 * Complete. Quotient types.
-* Ready. The completeness theorems and the round
-  trips.
+* Complete. The completeness theorems.
+* Ready. The round trips of the compilation.
 
 The arrow a relation determines is the second projection after the
 inverse of the first projection of the relation's pullback of truth
@@ -2442,12 +2446,22 @@ follows the bootstrap (the road map). An equivalence relation and its
 coequalizer state a quotient as programs state it, where the object of
 equivalence classes states it as a set of subsets.
 
-Completeness, ready. The partial
-Horn logic's term model and its completeness theorem, of the section on
-soundness and completeness, give the completeness of the language
-citing certificates, and the round trips of the compilation, a
-combinator to its declared constant and a term of the language to the
-constant of its compiled arrow, are provably the identity.
+Completeness, complete. The partial Horn logic's term model and its
+completeness theorem ({name}`Geb.PartialHorn.derivable_iff_valid`), of
+the section on soundness and completeness, give the completeness of the
+language citing certificates
+({name}`Geb.FreeTopos.Internal.exists_certSeq_of_valid`), by a rule
+that cites a certificate of the sequent a theorem compiles to under its
+hypotheses ({name}`Geb.FreeTopos.Internal.Thm.seq`, sound by
+{name}`Geb.FreeTopos.Internal.certSeq_sound`). The rule is the converse
+of the citation of a theorem by a certificate: the arrow of an
+environment in which the hypotheses hold factors through the subobject
+on which their arrows are truth
+({name}`Geb.FreeTopos.Internal.truthSub_lift`).
+
+Round trips, ready. A combinator to its declared constant and a term of
+the language to the constant of its compiled arrow are provably the
+identity, each an equation valid in every model and therefore proved.
 
 #### The second construction and the fifth choice
 
@@ -2552,9 +2566,10 @@ fourth stage):
 3. Quotient types, complete: the coequalizer of a relation's
    projections, with the arrow to it, the equality of related elements'
    images, induction on the quotient, and descent with its computation.
-4. Completeness: the partial Horn logic's term model and completeness
-   theorem, from which follow the completeness of the language citing
-   certificates and the round trips of the compilation.
+4. Completeness, in progress: the partial Horn logic's term model and
+   completeness theorem, from which follow the completeness of the
+   language citing certificates, complete, and the round trips of the
+   compilation, ready.
 
 The fourth completes the fourth stage. The second construction and the
 fifth choice follow. The computational
