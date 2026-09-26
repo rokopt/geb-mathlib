@@ -19,9 +19,10 @@ pair of truths; an implication the equality of the conjunction with the antecede
 universal quantifier over a type, applied to a predicate, the equality of the predicate with the
 predicate constantly true; falsity the universal quantification of every formula; a negation
 the implication of falsity; a disjunction, and an existential quantification, the formula every
-consequence of each disjunct, and of each instance, implies. Each connective is applied to its
-arguments as the definition of an index, the definitions placed at the index {lit}`o` onward
-among a development's definitions.
+consequence of each disjunct, and of each instance, implies; a unique existential quantification
+the existential quantification and the equality of every two instances. Each connective is
+applied to its arguments as the definition of an index, the definitions placed at the index
+{lit}`o` onward among a development's definitions.
 
 Their introduction and elimination rules are theorems with hypotheses, each with its derivation,
 placed at the index {lit}`j` onward among a development's theorems. Implication and universal
@@ -33,7 +34,8 @@ extensionality.
 ## Main definitions
 
 * {lit}`Logic.tt`, {lit}`Logic.conj`, {lit}`Logic.imp`, {lit}`Logic.all`, {lit}`Logic.ff`,
-  {lit}`Logic.neg`, {lit}`Logic.disj`, {lit}`Logic.ex` — the connectives' applications.
+  {lit}`Logic.neg`, {lit}`Logic.disj`, {lit}`Logic.ex`, {lit}`Logic.exu` — the connectives'
+  applications.
 * {lit}`Logic.defs` — the connectives' definitions.
 * {lit}`Logic.impI`, {lit}`Logic.allI` — the introduction of implication and of universal
   quantification.
@@ -81,8 +83,12 @@ def disj (o : ℕ) (p q : Term) : Term := Term.defn (o + 6) [] [q, p]
 /-- The existential quantification over the type {lit}`a` of a predicate. -/
 def ex (o : ℕ) (a : Tree) (P : Term) : Term := Term.defn (o + 7) [a] [P]
 
+/-- The unique existential quantification over the type {lit}`a` of a predicate. -/
+def exu (o : ℕ) (a : Tree) (P : Term) : Term := Term.defn (o + 8) [a] [P]
+
 /-- The connectives' definitions, the first of index {lit}`o`: truth, conjunction, implication,
-universal quantification, falsity, negation, disjunction and existential quantification. -/
+universal quantification, falsity, negation, disjunction, existential quantification and unique
+existential quantification. -/
 def defs (o : ℕ) : List Defn := [
   ⟨0, [], omega, Term.eq Term.star Term.star⟩,
   ⟨0, [omega, omega], omega,
@@ -96,7 +102,10 @@ def defs (o : ℕ) : List Defn := [
       (Term.var 0)))⟩,
   ⟨1, [exp (x 0) omega], omega, all o omega (Term.lam omega
     (imp o (all o (x 0) (Term.lam (x 0) (imp o (Term.app (Term.var 2) (Term.var 0))
-      (Term.var 1)))) (Term.var 0)))⟩]
+      (Term.var 1)))) (Term.var 0)))⟩,
+  ⟨1, [exp (x 0) omega], omega, conj o (ex o (x 0) (Term.var 0)) (all o (x 0) (Term.lam (x 0)
+    (all o (x 0) (Term.lam (x 0) (imp o (conj o (Term.app (Term.var 2) (Term.var 1))
+      (Term.app (Term.var 2) (Term.var 0))) (Term.eq (Term.var 1) (Term.var 0)))))))⟩]
 
 /-- A derivation's node of a rule. -/
 def nd (l : Rule) (cs : List Deriv := []) : Deriv := RoseTree.node l cs

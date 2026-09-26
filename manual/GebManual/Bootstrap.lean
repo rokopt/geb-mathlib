@@ -153,9 +153,10 @@ sections below detail:
   theorems derived in them, constructed; its logical rules, with
   hypotheses and induction under the induction hypothesis, proved sound,
   and the connectives defined from equality with their rules derived,
-  constructed; comprehension and description, and its completeness
-  through its term model, with the partial Horn logic's own, not begun;
-  the checker and prover written in Geb, not begun.
+  constructed; its connectives as definitions, their meaning in every
+  model, comprehension, and description by unique choice, constructed;
+  its completeness through its term model, with the partial Horn logic's
+  own, not begun; the checker and prover written in Geb, not begun.
 
 Extension:
 
@@ -1777,7 +1778,7 @@ are the checker with equations as its formulas and induction as the
 uniqueness of recursion, measured against the core's certificates; the
 logical rules, whose soundness needs the internal Heyting algebra of the
 subobject classifier; comprehension and description; and the term models
-with the completeness theorems. The first two are constructed.
+with the completeness theorems. The first three are constructed.
 
 A derivation is a rose tree of rules ({name}`Geb.FreeTopos.Internal.Rule`).
 A rewriting derivation transforms a given term: congruence into each
@@ -1848,10 +1849,41 @@ are derived as theorems with hypotheses, and the left unit of addition
 and the right unit of appending are proved again by induction under the
 hypothesis, which the prover normalizes, cuts in and rewrites by
 (`GebTests/Prototypes/FreeTopos/InternalLogic.lean`). The derivations
-have 234 nodes, the terms they name counted, and check in 2.3
+have 568 nodes, the terms they name counted, and check in 5.6
 milliseconds; the two inductions under the hypothesis have 48 and 52
 nodes, where the same equations by the uniqueness of recursion have 25
 and 29.
+
+The connectives are definitions of the language in a library, placed at
+an index among a development's definitions and their rules at an index
+among its theorems, with unique existence among them
+(`Geb/Prototypes/FreeTopos/Internal/Logic.lean`). Their meaning in every
+model is derived from the equalities that define them: the conditions
+of the Kripke–Joyal semantics ({citet MacLaneMoerdijk1992}[], Section
+VI.6), stated of the arrows the formulas compile to, a conjunction
+holding when both its formulas do, an implication when its consequent
+is true after every arrow after which its antecedent is, a universal
+quantification when its predicate is true at the generic element, and an
+existential quantification that holds making true every formula true
+after each arrow at whose pairing with an element the predicate is true
+({name}`Geb.FreeTopos.Internal.holds_ex_elim`). Comprehension needs no
+syntax of its own: the comprehension of a formula over a type is its
+abstraction, membership is application, the comprehension axiom is β,
+and the subobject a formula names is its pullback of truth. Description
+is not an operator of the language either, which keeps its terms the
+λ-terms that the second construction interprets as Lean functions
+without unique choice: an arrow a functional relation determines is
+named by the relation, and description is the theorem that a formula of
+which a unique existential quantification holds holds, in every model,
+at exactly one element of its variable's type
+({name}`Geb.FreeTopos.Internal.description`). It follows from unique
+choice, which holds in every model of the theory
+({name}`Geb.FreeTopos.unique_choice`): the first projection of the
+formula's pullback of truth is a monomorphism, whose characteristic map
+is truth, and the inverse of the monomorphism's factorization, an
+operation of the theory, gives the section after which the second
+projection is the arrow, as {citet DubucSzyld2015}[], Proposition 1.21,
+characterize the relations that are the graphs of arrows.
 
 The fifth choice is deferred until the three constructions are made.
 
