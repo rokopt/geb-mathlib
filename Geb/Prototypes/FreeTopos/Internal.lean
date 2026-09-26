@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.FreeTopos.Internal.Compile
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.FreeTopos.Internal.Inversion
+public import Geb.Prototypes.FreeTopos.Internal.Logic
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.Prove
 public import Geb.Prototypes.FreeTopos.Internal.Semantics
@@ -25,7 +26,8 @@ The Mitchell–Bénabou language of the free elementary topos with data objects:
 typing and compilation to the combinators, its definitions, compiled to definitions of the
 combinators, and the proof that compiling a term and unfolding the combinators' definitions
 agrees, in every model, with unfolding the language's definitions and compiling; its derivations
-of equations, their checker and a prover, and the proof that the checker is sound.
+of formulas under hypotheses, their checker and a prover, and the proof that the checker is
+sound; and its connectives, defined from equality, with their rules derived.
 -/
 
 set_option doc.verso true
