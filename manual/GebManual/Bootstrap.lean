@@ -164,7 +164,7 @@ sections below detail:
   * Complete. Its derivations of equations, its logical rules, and its
     connectives, comprehension and description, the first three stages,
     each with its checker proved sound.
-  * In progress. The fourth stage (the next phase), in order:
+  * Complete. The fourth stage, in order:
     * Complete. The arrow a functional relation determines, a definition
       of the combinators; binary coproducts and the initial object; and
       rose trees over a type of labels, with induction on rose trees.
@@ -182,12 +182,11 @@ sections below detail:
     * Complete. Quotient types: the coequalizer of a relation's
       projections, with its rules.
     * Complete. The partial Horn logic's term model and completeness
-      theorem, and the completeness of the language citing
-      certificates.
-    * Ready. The round trips of the compilation.
+      theorem, the completeness of the language citing certificates,
+      and the round trips of the compilation.
   * Waiting on the second construction. The fifth choice.
-  * Waiting on the fourth stage, whose completeness settles the
-    language's rules. The checker and prover written in Geb.
+  * Ready. The checker and prover written in Geb, the fourth stage's
+    completeness having settled the language's rules.
 
 Extension:
 
@@ -852,14 +851,10 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the metalogic
   * In progress
-  * The Mitchell–Bénabou language's fourth stage: in progress, its
-    citations of certificates, its declared definitions and primitive
-    arrows, its object definitions, its quotient types and its
-    completeness theorems complete, and the round trips of its
-    compilation ready; the
-    second construction and the converse of the first: ready; the fifth
-    choice: waiting on the second construction; the checker and prover
-    written in Geb: waiting on the fourth stage
+  * The Mitchell–Bénabou language's fourth stage: complete; the second
+    construction, the next phase, and the converse of the first: ready;
+    the fifth choice: waiting on the second construction; the checker
+    and prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1272,8 +1267,8 @@ the hash written in Geb.
     construction, is ready
 *
   * Metalogic, 2 and 3: the checker and prover in Geb
-  * Waiting on the fourth stage of the Mitchell–Bénabou language, whose
-    completeness settles its rules
+  * Ready: the fourth stage of the Mitchell–Bénabou language, whose
+    completeness settles its rules, is complete
 *
   * Acceptance
   * Met for the computational core; waiting, for the metalogic, on its
@@ -1944,8 +1939,8 @@ development checks in 0.9 seconds against the core's 29 milliseconds.
 
 #### The Mitchell–Bénabou language
 
-State: in progress; the first three stages are complete, and the fourth
-is in progress.
+State: complete; its four stages are complete, and its own term model
+follows the bootstrap.
 
 ##### Terms, compilation and definitions
 
@@ -2096,8 +2091,8 @@ its formulas and induction as the uniqueness of recursion, measured
 against the core's certificates; the logical rules, whose soundness
 needs the internal Heyting algebra of the subobject classifier;
 comprehension and description; and the types built in, the mixing of the
-two presentations and the completeness theorems. The first three are
-complete, and the fourth is in progress.
+two presentations and the completeness theorems. The four are
+complete.
 
 ##### Stage 1: equations
 
@@ -2218,7 +2213,7 @@ characterize the relations that are the graphs of arrows.
 
 ##### Stage 4: types built in, mixing and completeness
 
-State: in progress (the next phase). Its parts, in order:
+State: complete. Its parts, in order:
 
 * Complete. The arrow a functional relation determines, a definition of
   the combinators; binary coproducts and the initial object; and rose
@@ -2228,7 +2223,7 @@ State: in progress (the next phase). Its parts, in order:
 * Complete. Object definitions.
 * Complete. Quotient types.
 * Complete. The completeness theorems.
-* Ready. The round trips of the compilation.
+* Complete. The round trips of the compilation.
 
 The arrow a relation determines is the second projection after the
 inverse of the first projection of the relation's pullback of truth
@@ -2459,9 +2454,17 @@ environment in which the hypotheses hold factors through the subobject
 on which their arrows are truth
 ({name}`Geb.FreeTopos.Internal.truthSub_lift`).
 
-Round trips, ready. A combinator to its declared constant and a term of
-the language to the constant of its compiled arrow are provably the
-identity, each an equation valid in every model and therefore proved.
+Round trips, complete. A combinator to its declared constant and a
+term of the language to the constant of its compiled arrow are provably
+the identity, each an equation valid in every model and therefore
+proved. A primitive arrow applied in its object variables to the
+variable of its domain compiles to its arrow after the identity, whose
+equation with the arrow the partial Horn logic derives
+({name}`Geb.FreeTopos.Internal.roundTrip_prim`). A term's compiled
+arrow, declared as a primitive arrow and applied to the tuple of the
+context's variables ({name}`Geb.FreeTopos.Internal.varsTerm`), equals
+the term by the citation of a certificate
+({name}`Geb.FreeTopos.Internal.roundTrip_term`).
 
 #### The second construction and the fifth choice
 
@@ -2549,9 +2552,9 @@ the change that removes it.
 
 ## The next phase
 
-The fourth stage of the Mitchell–Bénabou language continues after its
-types built in, which are complete, in this order (the section on the
-fourth stage):
+The fourth stage of the Mitchell–Bénabou language is complete, its
+types built in followed by, in this order (the section on the fourth
+stage):
 
 1. Citations between the two checkers, complete: a rule of the
    language's derivations proving an equation by a certificate of the
@@ -2566,13 +2569,13 @@ fourth stage):
 3. Quotient types, complete: the coequalizer of a relation's
    projections, with the arrow to it, the equality of related elements'
    images, induction on the quotient, and descent with its computation.
-4. Completeness, in progress: the partial Horn logic's term model and
+4. Completeness, complete: the partial Horn logic's term model and
    completeness theorem, from which follow the completeness of the
-   language citing certificates, complete, and the round trips of the
-   compilation, ready.
+   language citing certificates and the round trips of the compilation.
 
-The fourth completes the fourth stage. The second construction and the
-fifth choice follow. The computational
+The next phase is the second construction, the model in Lean with
+morphisms as functional relations (the section on the constructions and
+the choices), and the fifth choice follows it. The computational
 core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the type checker's preservation of
 types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
