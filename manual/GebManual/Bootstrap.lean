@@ -2497,18 +2497,26 @@ construction over the language's provability.
 
 It is made in five parts, in order:
 
-* Ready. A topos with chosen structure and the data objects in
-  dependent form: a record of the theory's operations, their arguments
-  typed by their domains and codomains, and of its equational axioms.
-  It presents the models the partial Horn theory presents, as a
-  generalized algebraic theory presents what an essentially algebraic
-  one does, and the typing axioms hold in it by the operations' types.
+* Complete. A topos with chosen structure and the data objects in
+  dependent form ({name}`Geb.FreeTopos.ChosenTopos`): a record of the
+  theory's operations, their arguments typed by their domains and
+  codomains, and of its equational axioms. It presents the models the
+  partial Horn theory presents, as a generalized algebraic theory
+  presents what an essentially algebraic one does, and the typing
+  axioms hold in it by the operations' types.
+* Complete. The record of Lean's types and functional relations
+  ({name}`Geb.FreeTopos.relTopos`), its laws, the exponential's and the
+  classifier's among them, proved without `Classical.choice`
+  ({name}`Geb.FreeTopos.relData_laws`), which the axiom linter checks.
+  The exponential is the type of functional relations, the classifier
+  `Prop`, and the inverse comparison of a monomorphism relates an
+  element of the pullback of truth to the element whose image it is
+  ({name}`Geb.FreeTopos.FunRel.chiInv`) rather than choosing it.
 * Ready. The converse of the first construction, for the record: every
   record gives a model of the theory, the partial Horn logic's partial
-  operations and evaluation handled once, axiom by axiom.
-* Ready. The record of Lean's types and functional relations, whose
-  model, by the converse, is the second construction, without
-  `Classical.choice`, which the axiom linter checks.
+  operations and evaluation handled once, axiom by axiom. At the record
+  of types and functional relations it gives the second
+  construction.
 * Ready. Lean's functions as functional relations: the graph of a
   function, faithful and preserving the structure the kernel's
   denotations use, so that a sequent a certificate proves of graphs is
@@ -2623,9 +2631,10 @@ stage):
 The next phase is the second construction, the model in Lean with
 morphisms as functional relations, with the converse of the first (the
 section on the second construction and the fifth choice): the record of
-a topos with chosen structure and the data objects, the converse for
-it, the record of Lean's types and functional relations, Lean's
-functions as graphs, and the bridge from mathlib's elementary toposes.
+a topos with chosen structure and the data objects and the record of
+Lean's types and functional relations, complete; the converse for it,
+Lean's functions as graphs, and the bridge from mathlib's elementary
+toposes.
 The fifth choice follows it. The computational
 core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the type checker's preservation of
