@@ -81,7 +81,7 @@ def theorems : List (Thm × Deriv) := [
     nd .join [nd .trans [nd (.roseNode 4 0 1), nd .fstPair], nd .refl])]
 
 -- the development checks
-#guard checkThms GR theorems #[]
+#guard checkThms GR (theorems.map fun (a, d) ↦ .language a d) #[]
 
 end GebTests.Prototypes.FreeTopos.InternalRoseTrees
 

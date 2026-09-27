@@ -30,19 +30,31 @@ instances proved; a formula by induction on the innermost variable of the natura
 list type, with the formula's instance at the start and, under the induction hypothesis, at a
 successor or a construction; a formula by case analysis on the innermost variable of a coproduct
 type, with its instances at the two injections; and every formula in a context with a variable of
-the initial type. These rules are the basic axioms and rules of a local set theory
+the initial type; and an equation by a certificate of the combinators that proves the sequent it
+compiles to. These rules are the basic axioms and rules of a local set theory
 ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of the
 formula and membership application, with the extensionality of every exponential in place of that of
 power types, and with induction. The rewriting takes its terms from the term it rewrites, so that a
 derivation names no term but the steps of its inductions, the formulas of its cuts and the instances
 of the theorems it cites, and the checker computes every substitution.
 
+A development mixes the two checkers: a declaration is a theorem of the language with its
+derivation, or a sequent of the combinators with its certificate, each checked with the entries
+before it. A theorem of the language states to a certificate the sequent it compiles to
+({lit}`Thm.seq`): the equation of its conclusion's sides' arrows, or of its conclusion's arrow
+with truth, after the inclusion of the subobject on which its hypotheses are true where it has
+hypotheses. A certificate is checked in the theory extended by the compilations of the
+language's definitions, with every entry's sequent as its theorems.
+
 ## Main definitions
 
 * {lit}`Rule`, {lit}`Deriv` — the rules and the derivations.
 * {lit}`Thm` — a theorem: a formula in a context under hypotheses.
+* {lit}`Thm.seq` — the sequent of the combinators a theorem compiles to.
+* {lit}`Entry`, {lit}`Decl` — the entries of a development's environment, and its declarations
+  with their proofs.
 * {lit}`check` — the rewriting a derivation performs, and the judgments it proves.
-* {lit}`checkThms` — the check of a development of theorems, each proved with those before it.
+* {lit}`checkThms` — the check of a development, each declaration proved with those before it.
 
 ## References
 
@@ -59,7 +71,7 @@ set_option doc.verso true
 
 namespace Geb.FreeTopos.Internal
 
-open PartialHorn (Tree op)
+open PartialHorn (Tree op Seq)
 open Sorts
 open scoped FinEnum
 
@@ -138,6 +150,9 @@ inductive Rule where
   construction the primitives of indices {lit}`kn` and {lit}`kc`, under the induction hypothesis
   at the construction. -/
   | listIndHyp (kn kc : ℕ)
+  /-- An equation by the certificate {lit}`c` of the combinators, which proves the sequent the
+  equation compiles to with the development's sequents as its theorems. -/
+  | cert (c : Tree)
   /-- An equation between two terms in a context of a rose tree alone, under no hypotheses, by
   induction in the form of the uniqueness of the fold: each side at a construction, the primitive
   of index {lit}`kn`, is the step {lit}`s` at the label and the list of the side's values at the
@@ -270,6 +285,59 @@ def instOk (G : Globals) (n : ℕ) (Γ : List Tree) (a : Thm) (θ : List Tree) (
   decide (θ.length = a.arity) && θ.all (IsTy n) && decide (σ.length = a.ctx.length) &&
     (σ.zip (a.ctx.map (PartialHorn.subst θ))).all (fun (u, A) ↦ typeIn G n Γ u = some A)
 
+/-- One step of the subobject on which arrows into the subobject classifier are truth: from a
+subobject with its inclusion, the pullback of truth along an arrow after the inclusion, with the
+inclusion after the pullback's. -/
+def truthStep (p : Tree × Tree) (H : Tree) : Tree × Tree :=
+  (truthEq (comp H p.2), comp p.2 (truthIncl (comp H p.2)))
+
+/-- The subobject of {lit}`X` on which arrows from it into the subobject classifier are truth,
+with its inclusion: each arrow's pullback of truth taken in turn. -/
+def truthSub (X : Tree) (Hs : List Tree) : Tree × Tree := Hs.foldl truthStep (X, idt X)
+
+/-- The arrow a formula compiles to in a theorem's context, from the product of its types. -/
+def Thm.arrow (G : Globals) (a : Thm) (φ : Term) : Tree :=
+  ((compile G a.arity φ (ctxObj a.ctx) (stdEnv a.ctx)).map Prod.fst).getD (idt (ctxObj a.ctx))
+
+/-- An arrow from the product of a theorem's context's types, after the inclusion of the
+subobject on which its hypotheses' arrows are truth where it has hypotheses. -/
+def Thm.side (G : Globals) (a : Thm) (f : Tree) : Tree :=
+  if a.hyps = [] then f else comp f (truthSub (ctxObj a.ctx) (a.hyps.map (a.arrow G))).2
+
+/-- The sequent of the combinators a theorem compiles to, in its object variables: the equation
+of the arrows of its conclusion's sides, or of its conclusion's arrow with truth where the
+conclusion is not an equation, each after the inclusion of the subobject on which its
+hypotheses' arrows are truth where it has hypotheses. -/
+def Thm.seq (G : Globals) (a : Thm) : Seq :=
+  ⟨List.replicate a.arity obj, [], match eqParts a.concl with
+    | some (t, u) => ⟨a.side G (a.arrow G t), a.side G (a.arrow G u)⟩
+    | none => ⟨a.side G (a.arrow G a.concl), a.side G (comp tru (bang (ctxObj a.ctx)))⟩⟩
+
+/-- A theorem of a development's environment: a theorem of the language, or a sequent of the
+combinators. -/
+inductive Entry where
+  /-- A theorem of the language. -/
+  | language (a : Thm)
+  /-- A sequent of the combinators. -/
+  | combinators (s : Seq)
+
+/-- The theorem of the language an entry is, where it is one. -/
+def Entry.language? : Entry → Option Thm
+  | .language a => some a
+  | .combinators _ => none
+
+/-- The sequent of the combinators an entry states. -/
+def Entry.seq (G : Globals) : Entry → Seq
+  | .language a => a.seq G
+  | .combinators s => s
+
+/-- Whether a certificate of the combinators proves a sequent, in the theory extended by the
+compilations of the definitions of {lit}`G`, with the sequents of the entries of {lit}`E` as its
+theorems, the definitions' operations following the signature's. -/
+def certifies (G : Globals) (E : Array Entry) (c : Tree) (s : Seq) : Bool :=
+  (compileDefs G).any fun cds ↦ decide (G.base = sig.length) &&
+    decide (PartialHorn.check (ext cds) (E.map (Entry.seq G)) c s.ctx s.hyps = some s.concl)
+
 /-- The contexts and hypotheses of a node's children, in the node's context and under its
 hypotheses: an abstraction's body extends the context, the hypotheses weakened, and the start
 and the step of a fold are in contexts of their own, under no hypotheses. -/
@@ -289,8 +357,9 @@ def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tr
   | _, ts => some (ts.map fun _ ↦ (Γ, Φ))
 
 /-- The rewriting of a term at its root by a rule of the language's equations, with the
-constants of {lit}`G`, the theorems of {lit}`E` and the hypotheses {lit}`Φ`. -/
-def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (Φ : List Term) (l : Rule)
+constants of {lit}`G`, the theorems of the language among the entries of {lit}`E` and the
+hypotheses {lit}`Φ`. -/
+def rootStep (G : Globals) (E : Array Entry) (n : ℕ) (Γ : List Tree) (Φ : List Term) (l : Rule)
     (t : Term) : Option Term := match l, t.label, t.children with
   | .beta, .app, [f, u] => match f.label, f.children with
     | .lam _, [b] => some (Term.subst b (instVar u))
@@ -348,7 +417,7 @@ def rootStep (G : Globals) (E : Array Thm) (n : ℕ) (Γ : List Tree) (Φ : List
       | _, _ => none
     | _, _, _, _ => none
   | .thm j θ σ flip, _, _ => do
-    let a ← E[j]?
+    let a ← (E[j]?).bind Entry.language?
     let lr ← if a.hyps = [] then eqParts a.concl else none
     if instOk G n Γ a θ σ ∧ t = instTerm θ σ (if flip then lr.2 else lr.1) then
       some (instTerm θ σ (if flip then lr.1 else lr.2)) else none
@@ -364,7 +433,7 @@ abbrev Checks : Type :=
   (List Tree → List Term → Term → Option Term) × (List Tree → List Term → Term → Bool)
 
 /-- One step of the checker, at a node of a rule, from its children's results. -/
-def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Deriv × Checks)) :
+def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (Deriv × Checks)) :
     Checks :=
   (fun Γ Φ t ↦ match l, cs with
     | .refl, [] => some t
@@ -427,7 +496,7 @@ def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Der
             (Term.eq (Term.app (weaken1 f) (Term.var 0)) (Term.app (weaken1 g) (Term.var 0)))
         | none => false
       | none => false
-    | .apply j θ σ, ps => match E[j]? with
+    | .apply j θ σ, ps => match (E[j]?).bind Entry.language? with
       | some a => instOk G n Γ a θ σ && decide (φ = instTerm θ σ a.concl) &&
           decide (ps.length = a.hyps.length) &&
           (ps.zip a.hyps).all fun (p, h) ↦ p.2.2 Γ Φ (instTerm θ σ h)
@@ -457,6 +526,11 @@ def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Der
         | _, _ => false
       | [] => false
     | .zeroInd i, [] => decide (Γ[i]? = some zero ∧ typeIn G n Γ φ = some omega)
+    | .cert c, [] => match eqParts φ with
+      | some (t, u) => match compileEq G n Γ t u with
+        | some q => certifies G E c q
+        | none => false
+      | none => false
     | .roseInd kn kl kc s, [(_, p₁), (_, p₂)] => match eqParts φ, Γ with
       | some (t, u), [r] => match typeIn G n Γ t, roseParts r with
         | some C, some (a, _) => decide (((G.prims[kn]? = some nodePrim ∧ r = rose) ∨
@@ -473,21 +547,39 @@ def checkStep (G : Globals) (E : Array Thm) (n : ℕ) (l : Rule) (cs : List (Der
 
 /-- The checker: the rewriting a derivation performs on a term in a context under hypotheses,
 and whether it proves a formula in a context under hypotheses. -/
-def check (G : Globals) (E : Array Thm) (n : ℕ) : Deriv → Checks :=
+def check (G : Globals) (E : Array Entry) (n : ℕ) : Deriv → Checks :=
   RoseTree.para (checkStep G E n)
 
-/-- Whether a derivation proves a theorem with the constants of {lit}`G` and the theorems of
+/-- Whether a derivation proves a theorem with the constants of {lit}`G` and the entries of
 {lit}`E`: its context is of types, its hypotheses and conclusion are formulas there, and the
 derivation proves its conclusion under its hypotheses. -/
-def Thm.checks (G : Globals) (E : Array Thm) (a : Thm) (d : Deriv) : Bool :=
+def Thm.checks (G : Globals) (E : Array Entry) (a : Thm) (d : Deriv) : Bool :=
   a.ctx.all (IsTy a.arity) && a.hyps.all (fun h ↦ typeIn G a.arity a.ctx h = some omega) &&
     decide (typeIn G a.arity a.ctx a.concl = some omega) &&
     (check G E a.arity d).2 a.ctx a.hyps a.concl
 
-/-- Whether a development checks: each theorem proved by its derivation with the theorems before
-it. -/
-def checkThms (G : Globals) : List (Thm × Deriv) → Array Thm → Bool :=
-  List.rec (fun _ ↦ true) fun e _ ih E ↦ e.1.checks G E e.2 && ih (E.push e.1)
+/-- A declaration of a development, with its proof: a theorem of the language with its
+derivation, or a sequent of the combinators with its certificate. -/
+inductive Decl where
+  /-- A theorem of the language, with its derivation. -/
+  | language (a : Thm) (d : Deriv)
+  /-- A sequent of the combinators, with its certificate. -/
+  | combinators (s : Seq) (c : Tree)
+
+/-- The entry a declaration adds to the environment. -/
+def Decl.entry : Decl → Entry
+  | .language a _ => .language a
+  | .combinators s _ => .combinators s
+
+/-- Whether a declaration's proof proves it with the constants of {lit}`G` and the environment
+{lit}`E`. -/
+def Decl.checks (G : Globals) (E : Array Entry) : Decl → Bool
+  | .language a d => a.checks G E d
+  | .combinators s c => certifies G E c s
+
+/-- Whether a development checks: each declaration proved with the entries before it. -/
+def checkThms (G : Globals) : List Decl → Array Entry → Bool :=
+  List.rec (fun _ ↦ true) fun e _ ih E ↦ e.checks G E && ih (E.push e.entry)
 
 end Geb.FreeTopos.Internal
 

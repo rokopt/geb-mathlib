@@ -38,7 +38,8 @@ namespace GebTests.Prototypes.FreeTopos.InternalLogic
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
-open Geb.FreeTopos.Internal (Term Thm Deriv Rule byNatIndHyp byListIndHyp checkThms compileDefs)
+open Geb.FreeTopos.Internal (Term Thm Deriv Entry Decl Rule byNatIndHyp byListIndHyp checkThms
+  compileDefs)
 open Geb.FreeTopos.Internal.Logic (nd tt imp all impI allI)
 
 /-- The constants: the primitive arrows, and appending, addition and the connectives. -/
@@ -55,7 +56,7 @@ def GL : Internal.Globals := ⟨prims, defs ++ Internal.Logic.defs 2, sig.length
 /-- The theorems, each with its proof from the theorems before it: the connectives' rules, a
 formula's implication of itself, the reflexivity of equality under a universal quantifier, and
 the two inductions. -/
-def theorems : List (Thm × (Array Thm → Option Deriv)) :=
+def theorems : List (Thm × (Array Entry → Option Deriv)) :=
   (Internal.Logic.theorems 2 0).map (fun (a, d) ↦ (a, fun _ ↦ some d)) ++ [
   (⟨0, [omega], [], imp 2 (Term.var 0) (Term.var 0)⟩,
     fun _ ↦ some (impI 0 0 (Term.var 0) (Term.var 0) (nd (.hyp 0)))),
@@ -69,9 +70,10 @@ def theorems : List (Thm × (Array Thm → Option Deriv)) :=
       (appendT (Term.var 0) nilT) (Term.var 0))]
 
 /-- The development: each theorem with its derivation, from those before it. -/
-def development : Option (List (Thm × Deriv)) :=
+def development : Option (List Decl) :=
   (theorems.foldl (fun acc (a, p) ↦ acc.bind fun (E, ds) ↦
-    (p E).map fun d ↦ (E.push a, ds ++ [(a, d)])) (some (#[], []))).map Prod.snd
+    (p E).map fun d ↦ (E.push (.language a), ds ++ [.language a d])) (some (#[], []))).map
+    Prod.snd
 
 -- every theorem is proved, and the development checks
 #guard development.any fun ds ↦ ds.length == theorems.length && checkThms GL ds #[]

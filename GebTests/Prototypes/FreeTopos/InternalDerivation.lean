@@ -35,7 +35,8 @@ namespace GebTests.Prototypes.FreeTopos.InternalDerivation
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts
 open GebTests.Prototypes.FreeTopos.Internal
-open Geb.FreeTopos.Internal (Term Thm Deriv NormRule Rule byNorm byNatInd byListInd checkThms)
+open Geb.FreeTopos.Internal (Term Thm Deriv Entry Decl NormRule Rule byNorm byNatInd byListInd
+  checkThms)
 
 /-- The language's equations the normalizer applies: β, the components of pairs, and the
 computation of the folds of the natural numbers and of lists, at the primitives zero, the
@@ -48,7 +49,7 @@ inductions. -/
 def consStep : Term := consT (Term.var 1) (Term.var 0)
 
 /-- The theorems, each with the proof of its equation from the theorems before it. -/
-def theorems : List (Thm × (Array Thm → Option Deriv)) := [
+def theorems : List (Thm × (Array Entry → Option Deriv)) := [
   (⟨1, [L], [], Term.eq (appendT nilT (Term.var 0)) (Term.var 0)⟩,
     fun E ↦ byNorm G E 1 (eqns ++ [.delta 0]) 64 [L] [] (appendT nilT (Term.var 0))
       (Term.var 0)),
@@ -76,9 +77,10 @@ def theorems : List (Thm × (Array Thm → Option Deriv)) := [
 
 /-- The development: each theorem with the derivation the prover computes from those before
 it. -/
-def development : Option (List (Thm × Deriv)) :=
+def development : Option (List Decl) :=
   (theorems.foldl (fun acc (a, p) ↦ acc.bind fun (E, ds) ↦
-    (p E).map fun d ↦ (E.push a, ds ++ [(a, d)])) (some (#[], []))).map Prod.snd
+    (p E).map fun d ↦ (E.push (.language a), ds ++ [.language a d])) (some (#[], []))).map
+    Prod.snd
 
 -- every theorem is proved, and the development checks
 #guard development.any fun ds ↦ ds.length == 7 && checkThms G ds #[]
