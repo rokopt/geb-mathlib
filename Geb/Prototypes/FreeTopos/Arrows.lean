@@ -258,6 +258,31 @@ theorem sig_extendAll_getElem? (ds : List Defn) :
       (ih (S.extend d) (by simp only [Sig.extend, List.length_append]; omega)).trans
         (getElem?_extend_of_lt hk)
 
+/-- A signature is an initial segment of each of its iterated extensions. -/
+theorem prefix_sig_extendAll (ds : List Defn) : ∀ S : Sig, S <+: S.extendAll ds :=
+  ds.rec (fun S ↦ List.prefix_refl S) fun d _ ih S ↦
+    (List.prefix_append S [(d.ctx, d.sort)]).trans (ih (S.extend d))
+
+/-- The theory extended by an initial segment of a list of definitions has a signature that
+begins the signature of the theory extended by the list, and axioms among its axioms. -/
+theorem ext_prefix {cds defs : List Defn} (h : cds <+: defs) :
+    (ext cds).sig <+: (ext defs).sig ∧ ∀ a ∈ (ext cds).axioms, a ∈ (ext defs).axioms := by
+  obtain ⟨rest, rfl⟩ := h
+  have hext : ext (cds ++ rest) = (ext cds).extendAll rest := List.foldl_append ..
+  rw [hext]
+  exact ⟨by rw [Theory.extendAll_sig rest (ext cds)]; exact prefix_sig_extendAll rest _,
+    fun a ha ↦ mem_extendAll_axioms rest _ ha⟩
+
+/-- A model of the theory extended by a list of definitions is a model in which the axioms of a
+well-formed environment of an initial segment of the list are valid. -/
+theorem ExtEnv.WF.sound {E : ExtEnv} (hE : E.WF) {defs : List Defn} (hdefs : E.defs <+: defs)
+    {M : Model.{v} (ext defs).sig} (hM : IsModel (ext defs) M) : E.Sound M := by
+  obtain ⟨hsig, hax⟩ := ext_prefix hdefs
+  refine ⟨fun j a ha ↦ hM a (hax a (hE.axs j a ha)), fun k o ho ↦ ?_⟩
+  rw [hE.sg] at ho
+  obtain ⟨t, ht⟩ := hsig
+  rw [← ht, List.getElem?_append_left (List.getElem?_eq_some_iff.mp ho).1, ho]
+
 /-- The axioms of a definition of a list are axioms of the iterated extension, its operation's
 index the theory's signature's length and its position. -/
 theorem mem_extendAll_defn (ds : List Defn) :

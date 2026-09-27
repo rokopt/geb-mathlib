@@ -14,12 +14,7 @@ set_option doc.verso true in
 
 The checker {name}`Geb.FreeTopos.Internal.check` is sound ({lit}`check_sound`): every rewriting a
 derivation performs is sound, and every formula it proves is sound, in the sense of
-{name}`Geb.FreeTopos.Internal.FmSound`. In every model of the theory extended by the combinators'
-definitions and those the language's definitions compile to, every theorem of a development that
-checks is valid ({lit}`valid_of_checkThms_ok`). With every definition unfolded, the equation of a
-theorem without hypotheses holds in every model of the theory itself
-({lit}`valid_unfoldAll_of_checkThms`), as does the truth of its formula
-({lit}`valid_unfoldAll_holds_of_checkThms`).
+{name}`Geb.FreeTopos.Internal.FmSound`.
 
 The rules of proof are sound by the universal properties of the subobject classifier and of the
 exponential. An equation whose sides rewrite to one term holds; a cut, and a formula rewritten
@@ -44,7 +39,7 @@ type holds because an object with an arrow to the initial object is initial
 ({lit}`Thm.seq_valid`): its hypotheses are true in the environment of the context's projections
 after the inclusion of the subobject on which they are true, where the theorem's conclusion is
 then true. An equation cited from a certificate is sound by the certificates' checker's
-soundness ({name}`Geb.PartialHorn.check_sound`), in a model whose definitions are the
+soundness ({name}`Geb.PartialHorn.check_sound`), in a model whose definitions begin with the
 compilations of the language's ({lit}`cert_sound`).
 
 ## Main statements
@@ -59,9 +54,6 @@ compilations of the language's ({lit}`cert_sound`).
   with a variable of the initial type, are sound.
 * {lit}`roseInd_sound` — induction on rose trees is sound.
 * {lit}`check_sound` — the checker is sound.
-* {lit}`valid_of_checkThms_ok`, {lit}`valid_unfoldAll_of_checkThms`,
-  {lit}`valid_unfoldAll_holds_of_checkThms` — the theorems of a development that checks are
-  valid, in the extension and in the theory.
 
 ## Tags
 
@@ -1197,18 +1189,18 @@ theorem Thm.seq_valid {a : Thm} (ha : a.Valid M G) : (a.seq G).Valid M := by
 
 omit hρ hps hds in
 /-- A sequent a certificate proves, with the valid entries' sequents as its theorems, is valid,
-when the model's definitions are the compilations of the definitions of {lit}`G`. -/
+when the definitions the definitions of {lit}`G` compile to begin the model's. -/
 theorem certifies_valid {E : Array Entry}
     (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
-    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → defs = cds) {c : Tree}
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs) {c : Tree}
     {q : PartialHorn.Seq} (h : certifies G E c q = true) : q.Valid M := by
   cases hcd : compileDefs G with
   | none => simp [certifies, hcd] at h
   | some cds =>
     simp only [certifies, hcd, Option.any_some, Bool.and_eq_true, decide_eq_true_eq] at h
     obtain ⟨hb, hc⟩ := h
-    obtain rfl := hcert cds hcd hb
-    refine PartialHorn.check_sound hM (fun s hs ↦ ?_) c _ _ _ hc
+    obtain ⟨hsig, hax⟩ := ext_prefix (hcert cds hcd hb)
+    refine PartialHorn.check_sound hsig (fun a ha ↦ hM a (hax a ha)) (fun s hs ↦ ?_) c _ _ _ hc
     obtain ⟨e, he, rfl⟩ := Array.mem_map.mp hs
     obtain ⟨j, hj⟩ := Array.getElem?_of_mem he
     cases e with
@@ -1240,7 +1232,7 @@ theorem compileEq_eq_some {Γ : List Tree} {t u : Term} {q : PartialHorn.Seq}
 the valid entries' sequents as its theorems, holds, when the model's definitions are the
 compilations of the definitions of {lit}`G`. -/
 theorem cert_sound {E : Array Entry} (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
-    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → defs = cds)
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs)
     {Γ : List Tree} {Φ : List Term} {t u : Term} {q : PartialHorn.Seq}
     (hq : compileEq G n Γ t u = some q)
     {c : Tree} (hc : certifies G E c q = true) : FmSound M ρ G n Γ Φ (Term.eq t u) := by
@@ -1262,7 +1254,7 @@ proves holds, with sound unfoldings and valid earlier entries, when the model's 
 the compilations of the definitions of {lit}`G` wherever a certificate is checked. -/
 theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
     (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
-    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → defs = cds) :
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs) :
     ∀ d : Deriv, (∀ Γ Φ t t', (check G E n d).1 Γ Φ t = some t' → RwSound M ρ G n Γ Φ t t') ∧
       (∀ Γ Φ φ, (check G E n d).2 Γ Φ φ = true → FmSound M ρ G n Γ Φ φ) := by
   have hEl : ∀ (j : ℕ) (a : Thm), (E[j]?).bind Entry.language? = some a → a.Valid M G :=
@@ -1513,164 +1505,6 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
     all_goals simp [checkStep] at h
 
 end Proofs
-
-section Theorems
-
-variable {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig}
-  (hM : IsModel (ext defs) M) {G : Globals} (hG : G.WF)
-  (hps : ∀ (m : ℕ) (ρ : List M.Val), ρ.map Sigma.fst = List.replicate m obj → PrimsHom M ρ G m)
-  (hds : ∀ (m : ℕ) (ρ : List M.Val), ρ.map Sigma.fst = List.replicate m obj → DefsHom M ρ G m)
-  (hδ : DefnsOk M G)
-  (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → defs = cds)
-include hM hG hps hds hδ hcert
-
-/-- A theorem a derivation proves with valid earlier entries is valid. -/
-theorem Thm.valid_of_checks {E : Array Entry}
-    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {a : Thm} {d : Deriv}
-    (h : a.checks G E d = true) : a.Valid M G := by
-  simp only [Thm.checks, Bool.and_eq_true, decide_eq_true_eq] at h
-  obtain ⟨⟨⟨hctx, hhyps⟩, hconcl⟩, hd⟩ := h
-  exact ⟨hctx, fun h hh ↦ of_decide_eq_true (List.all_eq_true.mp hhyps h hh), hconcl,
-    fun ρ hρ ↦ ⟨hps _ ρ hρ, hds _ ρ hρ,
-      (check_sound hM hG hρ (hps _ ρ hρ) (hds _ ρ hρ) hδ hE hcert d).2 _ _ _ hd⟩⟩
-
-/-- A declaration its proof proves with valid earlier entries is valid. -/
-theorem Decl.valid_of_checks {E : Array Entry}
-    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) {p : Decl}
-    (h : p.checks G E = true) : p.entry.Valid M G := by
-  cases p with
-  | language a d => exact Thm.valid_of_checks hM hG hps hds hδ hcert hE h
-  | combinators s c => exact certifies_valid hM hG hE hcert h
-
-/-- Every declaration of a development that checks, with valid earlier entries, is valid. -/
-theorem valid_of_checkThms :
-    ∀ (ds : List Decl) (E : Array Entry),
-      (∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G) → checkThms G ds E = true →
-      ∀ p ∈ ds, p.entry.Valid M G :=
-  List.rec (fun _ _ _ _ hp ↦ by simp at hp) fun e ds ih E hE h p hp ↦ by
-    change (e.checks G E && checkThms G ds (E.push e.entry)) = true at h
-    rw [Bool.and_eq_true] at h
-    have he := Decl.valid_of_checks hM hG hps hds hδ hcert hE h.1
-    rcases List.mem_cons.mp hp with rfl | hp
-    · exact he
-    · refine ih (E.push e.entry) (fun j a hj ↦ ?_) h.2 p hp
-      rcases Nat.lt_trichotomy j E.size with hlt | rfl | hgt
-      · rw [Array.getElem?_push_lt hlt, ← Array.getElem?_eq_getElem hlt] at hj
-        exact hE j a hj
-      · rw [Array.getElem?_push_size] at hj
-        obtain rfl := Option.some_inj.mp hj
-        exact he
-      · rw [Array.getElem?_eq_none (by rw [Array.size_push]; omega)] at hj
-        cases hj
-
-end Theorems
-
-/-- The soundness of the internal language's derivations: in every model of the theory extended
-by the combinators' definitions and those the definitions compile to, every theorem of a
-development that checks is valid, when the check accepts the constants. -/
-theorem valid_of_checkThms_ok {pre cds : List PartialHorn.Defn}
-    {M : Model.{v} (ext (pre ++ cds)).sig} (hM : IsModel (ext (pre ++ cds)) M) {G : Globals}
-    (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
-    (hc : compileDefs G = some cds) {ds : List Decl} (h : checkThms G ds #[] = true) :
-    ∀ p ∈ ds, p.entry.Valid M G := by
-  have hG := Globals.wf_of_ok hok
-  have hps : ∀ (m : ℕ) (ρ : List M.Val), ρ.map Sigma.fst = List.replicate m obj →
-      PrimsHom M ρ G m := fun _ _ hρ ↦ primsHom_of_ok hM hok hρ
-  obtain ⟨hds, -⟩ := defsInv hM hbase hG hc hps G.defs.length le_rfl
-  simp only [List.take_length] at hds
-  -- a certificate is checked only where no definitions of the combinators precede those of G
-  have hcert : ∀ cds', compileDefs G = some cds' → G.base = sig.length → pre ++ cds = cds' :=
-    fun cds' hc' hb ↦ by
-      obtain rfl := Option.some_inj.mp (hc.symm.trans hc')
-      have hpre : pre.length = 0 :=
-        Nat.add_left_cancel ((hbase.symm.trans hb).trans (Nat.add_zero _).symm)
-      rw [List.length_eq_zero_iff.mp hpre, List.nil_append]
-  exact valid_of_checkThms hM hG hps hds (fun _ _ hd ↦ defn_body hM hbase hG hc hps hd) hcert ds
-    #[] (fun _ _ hj ↦ by simp at hj) h
-
-/-- The one-point model is a model of every well-formed extension of the theory. -/
-theorem isModel_point_ext {pre cds : List PartialHorn.Defn}
-    (hwf : PartialHorn.DefnsWF sig (pre ++ cds)) :
-    IsModel (ext (pre ++ cds)) (PartialHorn.pointModel (ext (pre ++ cds)).sig) :=
-  PartialHorn.isModel_point
-    (PartialHorn.sidesSorted_extendAll (pre ++ cds) theory theory_sidesSorted hwf)
-
-/-- The soundness of the internal language's derivations for the theory itself, for
-equations: each equation proved without hypotheses in a development that checks has sides that
-compile in its context to arrows of one type, whose equation, with every definition unfolded,
-holds in every model of the theory, when the check accepts the constants and their definitions
-are well formed. -/
-theorem valid_unfoldAll_of_checkThms {pre cds : List PartialHorn.Defn} {G : Globals}
-    (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
-    (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds))
-    {ds : List Decl} (h : checkThms G ds #[] = true) {a : Thm} {d : Deriv}
-    (hp : Decl.language a d ∈ ds) (hnil : a.hyps = []) {l r : Term}
-    (hlr : eqParts a.concl = some (l, r)) :
-    ∃ f g A, compile G a.arity l (ctxObj a.ctx) (stdEnv a.ctx) = some (f, A) ∧
-      compile G a.arity r (ctxObj a.ctx) (stdEnv a.ctx) = some (g, A) ∧
-      ∀ (M : Model.{v} theory.sig), IsModel theory M →
-        (PartialHorn.unfoldAll sig (pre ++ cds)
-          ⟨List.replicate a.arity obj, [], ⟨f, g⟩⟩).Valid M := by
-  obtain ⟨hctx, -, hcon, -⟩ := valid_of_checkThms_ok (isModel_point_ext hwf) hbase hok hc h _ hp
-  obtain ⟨⟨C, C'⟩, hC, -⟩ := Option.map_eq_some_iff.mp hcon
-  rw [eqParts_eq_some hlr] at hC
-  obtain ⟨l', r', hlr', f, A, hf, g, hg, -⟩ := compile_eq_iff.mp hC
-  simp only [List.cons.injEq, and_true] at hlr'
-  obtain ⟨rfl, rfl⟩ := hlr'
-  refine ⟨f, g, A, hf, hg, fun M hM ↦ ?_⟩
-  have hG := Globals.wf_of_ok hok
-  have hsrt := fun {s : Term} {r : Tree × Tree}
-      (hs : compile G a.arity s (ctxObj a.ctx) (stdEnv a.ctx) = some r) ↦
-    compile_sortOf (defs := pre ++ cds) hG (fun k p hp ↦ sortOf_prims_of_ok hok hp)
-      (fun k d hd ↦ getElem?_sig_compileDefs hbase hc hd) s _ _ r hs (sortOf_ctxObj _ hctx)
-      (sortOf_stdEnv _ hctx)
-  refine PartialHorn.valid_unfoldAll (pre ++ cds) theory M hM theory_ofSig hwf _ ?_ ?_
-  · intro q hq
-    obtain rfl : q = ⟨f, g⟩ := by simpa using hq
-    exact ⟨⟨arr, (hsrt hf).1⟩, ⟨arr, (hsrt hg).1⟩⟩
-  · intro N hN ρ hρ _
-    obtain ⟨-, -, -, hv⟩ := valid_of_checkThms_ok hN hbase hok hc h _ hp
-    obtain ⟨hpsN, hdsN, hfN⟩ := hv ρ hρ
-    have hstd := stdEnv_hom hN hρ _ hctx
-    have hH := hfN _ _ hstd (map_snd_stdEnv _) (by rw [hnil]; exact fun _ h ↦ by simp at h) _
-      (by rw [eqParts_eq_some hlr]; exact compile_eq_iff.mpr ⟨_, _, rfl, f, A, hf, g, hg, rfl⟩)
-    have heq := (holds_eq_iff hN hG hρ hpsN hdsN hstd hf hg).mp hH
-    obtain ⟨w, hw, -⟩ := (compile_hom hN hG hρ hpsN hdsN _ _ _ _ hf hstd).1.exists_eval
-    exact ⟨w, hw, heq.symm.trans hw⟩
-
-/-- The soundness of the internal language's derivations for the theory itself, for formulas:
-each formula proved without hypotheses in a development that checks compiles in its context to
-an arrow that, with every definition unfolded, is true in every model of the theory, when the
-check accepts the constants and their definitions are well formed. -/
-theorem valid_unfoldAll_holds_of_checkThms {pre cds : List PartialHorn.Defn} {G : Globals}
-    (hbase : G.base = sig.length + pre.length) (hok : G.ok (ExtEnv.ofDefs (pre ++ cds)) = true)
-    (hc : compileDefs G = some cds) (hwf : PartialHorn.DefnsWF sig (pre ++ cds))
-    {ds : List Decl} (h : checkThms G ds #[] = true) {a : Thm} {d : Deriv}
-    (hp : Decl.language a d ∈ ds) (hnil : a.hyps = []) :
-    ∃ C, compile G a.arity a.concl (ctxObj a.ctx) (stdEnv a.ctx) = some (C, omega) ∧
-      ∀ (M : Model.{v} theory.sig), IsModel theory M →
-        (PartialHorn.unfoldAll sig (pre ++ cds)
-          ⟨List.replicate a.arity obj, [], ⟨C, comp tru (bang (ctxObj a.ctx))⟩⟩).Valid M := by
-  obtain ⟨hctx, -, hcon, -⟩ := valid_of_checkThms_ok (isModel_point_ext hwf) hbase hok hc h _ hp
-  obtain ⟨⟨C, C'⟩, hC, hC'⟩ := Option.map_eq_some_iff.mp hcon
-  obtain rfl : C' = omega := hC'
-  refine ⟨C, hC, fun M hM ↦ ?_⟩
-  have hG := Globals.wf_of_ok hok
-  have hsC := (compile_sortOf (defs := pre ++ cds) hG (fun k p hp ↦ sortOf_prims_of_ok hok hp)
-    (fun k d hd ↦ getElem?_sig_compileDefs hbase hc hd) _ _ _ _ hC (sortOf_ctxObj _ hctx)
-    (sortOf_stdEnv _ hctx)).1
-  refine PartialHorn.valid_unfoldAll (pre ++ cds) theory M hM theory_ofSig hwf _ ?_ ?_
-  · intro q hq
-    obtain rfl : q = ⟨C, comp tru (bang (ctxObj a.ctx))⟩ := by simpa using hq
-    exact ⟨⟨arr, hsC⟩, ⟨arr, sortOf_comp (sortOf_op rfl rfl)
-      (sortOf_bang (sortOf_ctxObj _ hctx))⟩⟩
-  · intro N hN ρ hρ _
-    obtain ⟨-, -, -, hv⟩ := valid_of_checkThms_ok hN hbase hok hc h _ hp
-    obtain ⟨-, -, hfN⟩ := hv ρ hρ
-    have hstd := stdEnv_hom hN hρ _ hctx
-    have hH := hfN _ _ hstd (map_snd_stdEnv _) (by rw [hnil]; exact fun _ h ↦ by simp at h) _ hC
-    obtain ⟨w, hw, -⟩ := (truth_hom hN hstd.1).exists_eval
-    exact ⟨w, hH.2.trans hw, hw⟩
 
 end Geb.FreeTopos.Internal
 

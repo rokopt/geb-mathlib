@@ -125,7 +125,7 @@ theorem checkFrom_sound (hM : IsModel T M) (D : Development) :
     (fun _ _ _ a ha ↦ absurd ha (by simp))
     (fun e D ih E hE h ↦ by
       simp only [checkFrom, Bool.and_eq_true, beq_iff_eq] at h
-      have he : e.1.Valid M := check_sound hM hE e.2 _ _ _ h.1
+      have he : e.1.Valid M := check_sound (List.prefix_refl _) hM hE e.2 _ _ _ h.1
       have hE' : ∀ a ∈ E.push e.1, a.Valid M := by
         simp only [Array.mem_push]
         rintro a (ha | rfl)

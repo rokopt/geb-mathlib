@@ -123,7 +123,7 @@ theorem toposOracle_sound {E : ExtEnv} (hE : E.WF) {M : Model.{v} (ext E.defs).s
     (hM : IsModel (ext E.defs) M) {st : Store} (hst : st.WF) (Γ : List ℕ) (H : List Eqn) :
     (toposOracle E st Γ H).Sound st M Γ H := by
   intro ρ hρ hH
-  have hinf := (infers_sound hE hM hρ hH (inferFuel + 1)).2
+  have hinf := (infers_sound (hE.sound_self hM) hρ hH (inferFuel + 1)).2
   refine ⟨fun i hi ↦ ?_, fun a b hab ↦ ?_⟩
   · obtain ⟨x, hx⟩ := Option.isSome_iff_exists.mp hi
     obtain ⟨w, hw, -⟩ := hinf _ x (annotate_getElem? hst hx)

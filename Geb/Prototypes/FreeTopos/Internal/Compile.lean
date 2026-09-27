@@ -45,8 +45,8 @@ arguments and objects of each application into the definition's body, itself unf
 * {lit}`compileEq` — the sequent an equation of two terms in a context compiles to.
 * {lit}`unfold` — the unfolding of the definitions a term applies.
 * {lit}`Prim`, {lit}`Globals` — the primitive arrows, and the constants a term may apply.
-* {lit}`Prim.ok`, {lit}`Globals.ok` — the check that the constants are well formed and each
-  primitive arrow has the types it names.
+* {lit}`Prim.wf`, {lit}`Prim.ok`, {lit}`Globals.ok` — the check that the constants are well
+  formed and each primitive arrow has the types it names.
 
 ## References
 
@@ -292,12 +292,17 @@ def unfold (ubs : List Term) : Term → Term :=
 def unfoldBodies (ds : List Defn) : List Term :=
   ds.foldl (fun ubs d ↦ ubs ++ [unfold ubs d.body]) []
 
+/-- Whether a primitive arrow is a term in its object parameters of the sort of arrows of a
+signature, between types in them. -/
+def Prim.wf (S : PartialHorn.Sig) (p : Prim) : Bool :=
+  PartialHorn.Scoped p.arity p.arrow && IsTy p.arity p.dom && IsTy p.arity p.cod &&
+    PartialHorn.sortOf S (List.replicate p.arity obj) p.arrow == some arr
+
 /-- Whether a primitive arrow is a term in its object parameters that has, by the inference of
 the checker, the domain and the codomain it names, which are types in them, with the definitions
 of the combinators of {lit}`E`, and is an arrow of their signature. -/
 def Prim.ok (E : ExtEnv) (p : Prim) : Bool :=
-  PartialHorn.Scoped p.arity p.arrow && IsTy p.arity p.dom && IsTy p.arity p.cod &&
-    PartialHorn.sortOf E.sg.toList (List.replicate p.arity obj) p.arrow == some arr &&
+  p.wf E.sg.toList &&
     match (infers E (List.replicate p.arity obj) [] inferFuel).2 p.arrow with
     | some a => a.sort == arr && a.lo == p.dom && a.hi == p.cod
     | none => false

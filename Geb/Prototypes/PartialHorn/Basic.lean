@@ -39,7 +39,8 @@ operation at a defined application; the strictness of operations, by which the a
 defined application are defined; the instance of an axiom at defined terms of its context's
 sorts whose hypotheses are proved, which is partial term substitution followed by cut; cut; and
 the instance of a theorem of an environment, as of an axiom. Every conclusion the checker
-computes holds in every model of the theory in which the environment's theorems hold.
+computes holds in every model of the theory in which the environment's theorems hold, and in
+every model of an extension of its signature in which its axioms hold.
 
 ## Main definitions
 
@@ -425,6 +426,37 @@ theorem sortOf_node_succ (Γ : List ℕ) (k : ℕ) (cs : List Tree) :
   simp only [sortOf, RoseTree.para_node, List.map_map]
   rfl
 
+/-- A term's sort is its sort in every signature that extends its own. -/
+theorem sortOf_append (S' : Sig) {Γ : List ℕ} :
+    ∀ t : Tree, ∀ {s : ℕ}, sortOf S Γ t = some s → sortOf (S ++ S') Γ t = some s :=
+  RoseTree.ind fun l cs ih s hs ↦ by
+    rcases l with _ | k
+    · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
+      · simp [sortOf] at hs
+      rotate_left
+      · simp [sortOf] at hs
+      rw [sortOf_node_zero] at hs ⊢
+      exact hs
+    · rw [sortOf_node_succ] at hs ⊢
+      obtain ⟨o, ho, hs⟩ := Option.bind_eq_some_iff.mp hs
+      rw [List.getElem?_append_left (List.getElem?_eq_some_iff.mp ho).1, ho, Option.bind_some]
+      split_ifs at hs with hcs
+      have hcs' : cs.map (sortOf (S ++ S') Γ) = o.1.map some := by
+        rw [← hcs]
+        refine List.map_congr_left fun c hc ↦ ?_
+        obtain ⟨s', hs'⟩ : ∃ s', sortOf S Γ c = some s' := by
+          have hm : sortOf S Γ c ∈ o.1.map some := hcs ▸ List.mem_map_of_mem hc
+          obtain ⟨s', -, h⟩ := List.mem_map.mp hm
+          exact ⟨s', h.symm⟩
+        rw [hs', ih c hc hs']
+      simpa [hcs'] using hs
+
+/-- A term's sort is its sort in every signature its own is a prefix of. -/
+theorem sortOf_of_prefix {S S' : Sig} (h : S <+: S') {Γ : List ℕ} {t : Tree} {s : ℕ}
+    (ht : sortOf S Γ t = some s) : sortOf S' Γ t = some s := by
+  obtain ⟨S'', rfl⟩ := h
+  exact sortOf_append S'' t ht
+
 /-- A defined term's value has the term's sort, at an assignment of the context's sorts. -/
 theorem sort_eval {Γ : List ℕ} (hρ : ρ.map Sigma.fst = Γ) :
     ∀ t : Tree, ∀ {s : ℕ} {w : M.Val}, sortOf S Γ t = some s → eval M ρ t = Part.some w →
@@ -466,10 +498,12 @@ theorem exists_map_eq_map_some {α β : Type*} {f : α → Part β} (l : List α
       obtain ⟨bs, hbs⟩ := ih fun a' ha' ↦ h a' (List.mem_cons_of_mem a ha')
       exact ⟨b :: bs, by simp [hb, hbs]⟩)
 
-/-- An instance of a valid sequent is valid, when the checker's premises are. -/
-theorem inst_sound {a : Seq} {cs : List (Tree × Chk)} {Γ : List ℕ} {H : List Eqn} {q : Eqn}
-    (ha : a.Valid M) (hcs : ∀ c ∈ cs, ∀ Γ' H' q', c.2 Γ' H' = some q' → Valid M Γ' H' q')
-    (h : inst S a cs Γ H = some q) : Valid M Γ H q := by
+/-- An instance of a valid sequent is valid, when the checker's premises are, its terms sorted
+in a signature that the model's extends. -/
+theorem inst_sound {S₀ : Sig} (hS : S₀ <+: S) {a : Seq} {cs : List (Tree × Chk)} {Γ : List ℕ}
+    {H : List Eqn} {q : Eqn} (ha : a.Valid M)
+    (hcs : ∀ c ∈ cs, ∀ Γ' H' q', c.2 Γ' H' = some q' → Valid M Γ' H' q')
+    (h : inst S₀ a cs Γ H = some q) : Valid M Γ H q := by
   simp only [inst] at h
   split at h
   · rename_i hc
@@ -498,7 +532,7 @@ theorem inst_sound {a : Seq} {cs : List (Tree × Chk)} {Γ : List ℕ} {H : List
       simp only [List.getElem?_map, List.getElem?_eq_getElem hi,
         List.getElem?_eq_getElem (hlw ▸ h2), List.getElem?_eq_getElem h2, Option.map_some,
         Option.some.injEq] at e1 e2
-      simpa using sort_eval hρ _ e2 e1
+      simpa using sort_eval hρ _ (sortOf_of_prefix hS e2) e1
     have hsc' := hsc
     simp only [Seq.Scoped, Bool.and_eq_true, List.all_eq_true, Eqn.Scoped] at hsc'
     obtain ⟨hsh, hscl, hscr⟩ := hsc'
@@ -516,10 +550,10 @@ theorem inst_sound {a : Seq} {cs : List (Tree × Chk)} {Γ : List ℕ} {H : List
     exact ⟨w, (eval_subst hws _ hscl).trans h1, (eval_subst hws _ hscr).trans h2⟩
   · exact absurd h (by simp)
 
-/-- Every conclusion the checker computes is valid in every model of the theory in which the
-environment's theorems are valid. -/
-theorem check_sound {T : Theory} {E : Array Seq} {M : Model.{v} T.sig} (hM : IsModel T M)
-    (hE : ∀ a ∈ E, a.Valid M) :
+/-- Every conclusion the checker computes is valid in every model, of a signature the theory's
+is a prefix of, in which the theory's axioms and the environment's theorems are valid. -/
+theorem check_sound {T : Theory} {E : Array Seq} (hS : T.sig <+: S)
+    (hM : ∀ a ∈ T.axioms, a.Valid M) (hE : ∀ a ∈ E, a.Valid M) :
     ∀ c : Tree, ∀ Γ H q, check T E c Γ H = some q → Valid M Γ H q :=
   RoseTree.ind fun l cs ih Γ H q h ↦ by
     have hcs : ∀ c ∈ cs.map (fun c ↦ (c, check T E c)), ∀ Γ' H' q',
@@ -622,7 +656,7 @@ theorem check_sound {T : Theory} {E : Array Seq} {M : Model.{v} T.sig} (hM : IsM
     · -- an instance of an axiom
       rename_i _ _ cs'
       obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-      exact inst_sound (hM a (List.mem_of_getElem? ha))
+      exact inst_sound hS (hM a (List.mem_of_getElem? ha))
         (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
     · -- cut
       simp only [Option.bind_eq_some_iff] at h
@@ -634,7 +668,7 @@ theorem check_sound {T : Theory} {E : Array Seq} {M : Model.{v} T.sig} (hM : IsM
     · -- an instance of a theorem
       rename_i _ _ cs'
       obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
-      exact inst_sound (hE a (Array.mem_of_getElem? ha))
+      exact inst_sound hS (hE a (Array.mem_of_getElem? ha))
         (fun c hc ↦ hcs c (List.mem_cons_of_mem _ hc)) h
     · exact absurd h (by simp)
 

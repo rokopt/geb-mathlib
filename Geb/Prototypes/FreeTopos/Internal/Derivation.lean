@@ -39,12 +39,17 @@ derivation names no term but the steps of its inductions, the formulas of its cu
 of the theorems it cites, and the checker computes every substitution.
 
 A development mixes the two checkers: a declaration is a theorem of the language with its
-derivation, or a sequent of the combinators with its certificate, each checked with the entries
-before it. A theorem of the language states to a certificate the sequent it compiles to
-({lit}`Thm.seq`): the equation of its conclusion's sides' arrows, or of its conclusion's arrow
-with truth, after the inclusion of the subobject on which its hypotheses are true where it has
-hypotheses. A certificate is checked in the theory extended by the compilations of the
-language's definitions, with every entry's sequent as its theorems.
+derivation, a sequent of the combinators with its certificate, a definition of the language, or a
+primitive arrow, each checked with the constants and the entries before it, so that the constants
+grow with the development. A theorem of the language states to a certificate the sequent it
+compiles to ({lit}`Thm.seq`): the equation of its conclusion's sides' arrows, or of its
+conclusion's arrow with truth, after the inclusion of the subobject on which its hypotheses are
+true where it has hypotheses. A certificate is checked in the theory extended by the
+compilations of the language's definitions so far, with every entry's sequent as its theorems. A
+definition is checked by its compilation; a primitive arrow, a term of the combinators in object
+parameters, by the checker's inference of its domain and codomain, or by a certificate of the
+sequent that it is an arrow between them ({lit}`Prim.seq`), which may cite the theorems before
+it.
 
 ## Main definitions
 
@@ -54,7 +59,10 @@ language's definitions, with every entry's sequent as its theorems.
 * {lit}`Entry`, {lit}`Decl` — the entries of a development's environment, and its declarations
   with their proofs.
 * {lit}`check` — the rewriting a derivation performs, and the judgments it proves.
-* {lit}`checkThms` — the check of a development, each declaration proved with those before it.
+* {lit}`Prim.seq`, {lit}`Prim.confirms` — the sequent that a primitive arrow is an arrow between
+  its types, and the confirmation of a primitive arrow a development declares.
+* {lit}`Decl.step`, {lit}`checkDev`, {lit}`checkThms` — the check of a development, each
+  declaration proved with the constants and the entries before it.
 
 ## References
 
@@ -558,28 +566,54 @@ def Thm.checks (G : Globals) (E : Array Entry) (a : Thm) (d : Deriv) : Bool :=
     decide (typeIn G a.arity a.ctx a.concl = some omega) &&
     (check G E a.arity d).2 a.ctx a.hyps a.concl
 
+/-- The sequent of the combinators that a primitive arrow is an arrow from its domain to its
+codomain, in its object parameters: its composite with the identities of its domain and of its
+codomain is itself. -/
+def Prim.seq (p : Prim) : Seq :=
+  ⟨List.replicate p.arity obj, [], ⟨comp (idt p.cod) (comp p.arrow (idt p.dom)), p.arrow⟩⟩
+
+/-- Whether a primitive arrow is confirmed with the constants of {lit}`G` and the entries of
+{lit}`E`: by the checker's inference, or by a certificate of its sequent, in the theory extended
+by the compilations of the definitions of {lit}`G`. -/
+def Prim.confirms (G : Globals) (E : Array Entry) (p : Prim) : Option Tree → Bool
+  | none => (compileDefs G).any fun cds ↦ decide (G.base = sig.length) && p.ok (ExtEnv.ofDefs cds)
+  | some c => (compileDefs G).any (fun cds ↦ p.wf (ext cds).sig) && certifies G E c p.seq
+
+/-- Whether a definition compiles with the constants of {lit}`G`, the type of its value a type. -/
+def Defn.checks (G : Globals) (d : Defn) : Bool := (d.compile G).isSome && IsTy d.arity d.type
+
 /-- A declaration of a development, with its proof: a theorem of the language with its
-derivation, or a sequent of the combinators with its certificate. -/
+derivation, a sequent of the combinators with its certificate, a definition of the language, or a
+primitive arrow with the certificate of its sequent, or none where the checker's inference
+confirms it. -/
 inductive Decl where
   /-- A theorem of the language, with its derivation. -/
   | language (a : Thm) (d : Deriv)
   /-- A sequent of the combinators, with its certificate. -/
   | combinators (s : Seq) (c : Tree)
+  /-- A definition of the language. -/
+  | definition (d : Defn)
+  /-- A primitive arrow, with the certificate of its sequent where inference does not confirm
+  it. -/
+  | constant (p : Prim) (c : Option Tree)
 
-/-- The entry a declaration adds to the environment. -/
-def Decl.entry : Decl → Entry
-  | .language a _ => .language a
-  | .combinators s _ => .combinators s
+/-- The constants and the environment after a declaration, where its proof proves it with the
+constants of {lit}`G` and the environment {lit}`E`: a theorem's entry added to the environment, a
+definition or a primitive arrow to the constants. -/
+def Decl.step (G : Globals) (E : Array Entry) : Decl → Option (Globals × Array Entry)
+  | .language a d => if a.checks G E d then some (G, E.push (.language a)) else none
+  | .combinators s c => if certifies G E c s then some (G, E.push (.combinators s)) else none
+  | .definition d => if d.checks G then some ({ G with defs := G.defs ++ [d] }, E) else none
+  | .constant p c =>
+    if p.confirms G E c then some ({ G with prims := G.prims ++ [p] }, E) else none
 
-/-- Whether a declaration's proof proves it with the constants of {lit}`G` and the environment
-{lit}`E`. -/
-def Decl.checks (G : Globals) (E : Array Entry) : Decl → Bool
-  | .language a d => a.checks G E d
-  | .combinators s c => certifies G E c s
+/-- The constants and the environment after a development, where each declaration's proof
+proves it with the constants and the entries before it. -/
+def checkDev (G : Globals) (E : Array Entry) (ds : List Decl) : Option (Globals × Array Entry) :=
+  ds.foldlM (fun st d ↦ d.step st.1 st.2) (G, E)
 
-/-- Whether a development checks: each declaration proved with the entries before it. -/
-def checkThms (G : Globals) : List Decl → Array Entry → Bool :=
-  List.rec (fun _ ↦ true) fun e _ ih E ↦ e.checks G E && ih (E.push e.entry)
+/-- Whether a development checks: each declaration proved with those before it. -/
+def checkThms (G : Globals) (ds : List Decl) (E : Array Entry) : Bool := (checkDev G E ds).isSome
 
 end Geb.FreeTopos.Internal
 
