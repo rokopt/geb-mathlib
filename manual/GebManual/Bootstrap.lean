@@ -179,7 +179,7 @@ sections below detail:
     * Complete. Object definitions declared in a development: objects
       of the combinators in object parameters, which name types of the
       language.
-    * Ready. Quotient types: the coequalizer of a relation's
+    * Complete. Quotient types: the coequalizer of a relation's
       projections, with its rules.
     * Ready. The partial Horn logic's term model and completeness
       theorem, the completeness of the language with its citations, and
@@ -853,8 +853,8 @@ and each phase below opens with a table of the states of its steps.
   * In progress
   * The Mitchell–Bénabou language's fourth stage: in progress, its
     citations of certificates, its declared definitions and primitive
-    arrows, and its object definitions complete, and its quotient types
-    and completeness theorems ready in turn; the
+    arrows, its object definitions and its quotient types complete, and
+    its completeness theorems ready; the
     second construction and the converse of the first: ready; the fifth
     choice: waiting on the second construction; the checker and prover
     written in Geb: waiting on the fourth stage
@@ -2220,7 +2220,7 @@ State: in progress (the next phase). Its parts, in order:
 * Complete. Citations between the two checkers.
 * Complete. Declared definitions of the language and primitive arrows.
 * Complete. Object definitions.
-* Ready. Quotient types.
+* Complete. Quotient types.
 * Ready. The completeness theorems and the round
   trips.
 
@@ -2404,25 +2404,41 @@ by certificates; an arrow of a definition of the combinators, the arrow
 a functional relation determines among them, enters as a primitive
 arrow of its body.
 
-Quotient types, ready. The
-quotient of a type by a relation, a formula in two variables of the
-type, is the coequalizer of the two projections of the relation's
-pullback of truth, an object definition, and the
-arrow to it a primitive arrow. The rules are these:
-related elements have equal images in the quotient, by the coequalizer's
-equation; a formula holds of every element of the quotient when it holds
-at the image of every element of the type, since the arrow to the
-quotient is an epimorphism by the uniqueness of the coequalizer's
-factorization; and a function that respects the relation descends to
-the quotient, the descent a primitive arrow whose certificate cites the
-theorem that the function respects the relation, with its computation
-at an image. For an equivalence relation, the quotient is isomorphic to
-the object of equivalence classes that power objects construct, the
-image of the arrow taking an element to its class, since in a topos an
-equivalence relation is the kernel pair of its coequalizer; that
-isomorphism follows the bootstrap (the road map). An equivalence
-relation and its coequalizer state a quotient as programs state it,
-where the object of equivalence classes states it as a set of subsets.
+Quotient types, complete. The quotient of a type by a relation, a
+formula in two variables of the type, is declared in a development
+({name}`Geb.FreeTopos.Internal.Decl`): the coequalizer of the two
+projections of the relation's pullback of truth
+({name}`Geb.FreeTopos.Internal.relPair`), an object definition, the
+projection to it, a primitive arrow, and the theorem that related
+elements have equal images, sound because a pair of related elements
+factors through the pullback of truth, whose projections the projection
+coequalizes ({name}`Geb.FreeTopos.Internal.relPair_coeq`). A formula
+holds of every element of the codomain of a coequalizer's projection
+when it holds at the projection's image of every element of its domain
+(`quotInd`, {name}`Geb.FreeTopos.Internal.quotInd_sound`): the
+projection is an epimorphism, by the uniqueness of the coequalizer's
+factorization, and so is its product with an object, the product being
+a left adjoint ({name}`Geb.FreeTopos.coeqProj_epi`,
+{name}`Geb.FreeTopos.prod_coeq_ext`). The descent of a function is a
+declaration citing the theorem that the function respects the relation:
+a primitive arrow from the quotient, the coequalizer's factorization,
+and the theorem of its computation at an image. Its definedness follows
+in Lean from the cited theorem, applied in the environment of the
+relation's pullback of truth, where the relation holds, rather than from
+a certificate of the combinators, so that the program states no
+certificate. A development takes the quotient of the pairs of natural
+numbers by equal sums, applies the theorem of related elements to a
+pair and the pair with zero added to its second component, descends the
+sum and the sum with zero added, and proves the descents equal by
+induction on the quotient
+(`GebTests/Prototypes/FreeTopos/InternalQuotients.lean`). For an
+equivalence relation, the quotient is isomorphic to the object of
+equivalence classes that power objects construct, the image of the
+arrow taking an element to its class, since in a topos an equivalence
+relation is the kernel pair of its coequalizer; that isomorphism
+follows the bootstrap (the road map). An equivalence relation and its
+coequalizer state a quotient as programs state it, where the object of
+equivalence classes states it as a set of subsets.
 
 Completeness, ready. The partial
 Horn logic's term model and its completeness theorem, of the section on
@@ -2531,9 +2547,9 @@ fourth stage):
    types of the language, as declarations of the development beside its
    theorems, each confirmed by the checker's inference or by a
    certificate, which may cite the theorems before it.
-3. Quotient types: the coequalizer of a relation's projections, with
-   the arrow to it, the equality of related elements' images, induction
-   on the quotient, and descent with its computation.
+3. Quotient types, complete: the coequalizer of a relation's
+   projections, with the arrow to it, the equality of related elements'
+   images, induction on the quotient, and descent with its computation.
 4. Completeness: the partial Horn logic's term model and completeness
    theorem, from which follow the completeness of the language citing
    certificates and the round trips of the compilation.
