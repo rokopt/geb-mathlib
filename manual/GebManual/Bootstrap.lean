@@ -185,7 +185,7 @@ sections below detail:
     * Complete. The partial Horn logic's term model and completeness
       theorem, the completeness of the language citing certificates,
       and the round trips of the compilation.
-  * Ready (the next phase). The fifth choice.
+  * In progress (the next phase). The fifth choice, by measurement.
   * Ready. The checker and prover written in Geb, the fourth stage's
     completeness having settled the language's rules.
 
@@ -853,8 +853,9 @@ and each phase below opens with a table of the states of its steps.
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage and the second
-    construction: complete; the fifth choice, the next phase: ready;
-    the checker and prover written in Geb: ready
+    construction: complete; the fifth choice, the next phase: in
+    progress, by measurement; the checker and prover written in Geb:
+    ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -2471,7 +2472,8 @@ the term by the citation of a certificate
 #### The second construction and the fifth choice
 
 State: the second construction is complete, with the converse of the
-first; the fifth choice is the next phase.
+first; the fifth choice is the next phase, its measurement in
+progress.
 
 The fifth choice follows the three constructions.
 
@@ -2543,7 +2545,103 @@ It is made in five parts, in order:
   `Classical.choice`, and it is admitted to it as the constructive-only
   rules provide.
 
-The fifth choice follows the second construction.
+The fifth choice follows the second construction. Its options are two.
+In the first, the computational core keeps its checker and prover, and
+an equation between kernel programs is proved in the core. In the
+second, the core's checker is retired, and such an equation is proved
+in the Mitchell–Bénabou language, about the translation of the kernel's
+terms into the language's. The two mix already, since a proof in the
+core may cite an equation between kernel terms that the metalogic
+proves. The factors are these.
+
+* What each states. The core states equations between kernel terms of
+  a type, under equations as hypotheses, and proves them with induction
+  on lists, trees and labels. The language has the connectives and the
+  quantifiers, subobjects, description and quotients, and is complete,
+  citing the combinators' certificates. The core's next proof, the type
+  checker's preservation of types by weakening, is an implication
+  between typings, which the core states as an equation between
+  functions of a context, proved by an induction whose hypothesis is an
+  equation between lists of functions, and which needs the core's
+  prover to rewrite at applications under binders; the admission of a
+  stronger checker has the same form.
+* Size and time. On the benchmark's seven theorems the core's
+  certificates have 2071 nodes and check in 29 milliseconds, the
+  language's derivations 169 nodes and 2.4 milliseconds, and the
+  combinators' shared certificates 18754 nodes and 0.9 seconds. The
+  language's derivations are of statements written in it, not of
+  translated kernel programs. The core's δ rules evaluate a primitive at
+  literals in one step, by the host's arithmetic; the natural numbers
+  object is unary, so the translation of a label's literal has the
+  size of its value, and label arithmetic at literals is a fold. The
+  kernel's programs are rich in literals: an atom is a list of
+  character codes.
+* Trust. The core's validity is defined by the Lean denotations of
+  kernel terms. The metalogic's is validity in every model, and it
+  bears on kernel programs through one theorem in Lean: the translation
+  of a kernel term evaluates, in the topos of types and functional
+  relations, to the graph of the term's denotation. Its induction's
+  cases are the graphs' closure under composition, pairing,
+  copairing, the folds and currying with evaluation, together with the
+  primitives. Either option needs the theorem as soon as a proof in the
+  core cites the metalogic. The metalogic states the soundness of the
+  core's checker, which the core cannot prove of itself; the soundness
+  of each stays in Lean.
+* Implementation. Retiring the core leaves the metalogic's checker, the
+  larger, as the one checker written in Geb that is trusted; keeping it
+  keeps two rule sets, each specified in Lean and implemented in Geb,
+  and two provers.
+* Work. Keeping the core continues its prover, with rewriting under
+  binders, and its proofs; the metalogic's checker and prover are
+  written in Geb in either case. Retiring it adds the translation of
+  kernel terms, in Lean and in Geb, its correctness in Lean, and the
+  prover's front end reading programs and statements from Surface 1
+  files, as the core's prover does; the core's proofs, prelude, nat,
+  check, equations and surface, remain citable.
+* One language. The fourth choice made the language the one mathematics
+  is written in. Keeping the core writes proofs about programs in a
+  second logic; the translation of a kernel term is itself a λ-term.
+
+The choice leans to retiring the core's checker, which removes a rule
+set, its specification and its implementation from what is trusted, and
+the redundancy of two provers, unless the measurement below shows the
+cost prohibitive. The cost of literals has a remedy of its own: a type
+of bitstrings in the language, the initial algebra of the functor
+taking an object to its sum with the terminal object and two copies of
+itself, whose universal property gives its computation and uniqueness
+rules as the natural numbers object's gives theirs, so that a literal
+has the size of its binary representation and arithmetic at literals
+is a fold over its bits. The repository's value representation is rose
+trees of bitstrings (`Geb/Prototypes/RoseTree.lean`), and its
+type-checking prototypes build decision problems from expressions of
+the algebra of {citet Oitavem2010}[], whose expressions define exactly
+the logspace functions on bitstrings, by their syntax alone
+(`Geb/Prototypes/Typechecker/Oitavem.lean`); labels that are bitstrings
+would bring the kernel's values, the value representation and that
+algebra to one carrier.
+
+The choice is made by measurement, in these parts, in order:
+
+* In progress. The translation of kernel types and terms into the
+  language, in Lean: the base type of trees to the rose-tree object,
+  whose labels are the natural numbers object, the unit, product,
+  function and list types to their objects, and each term former, the
+  kernel's constants and its primitives to terms and definitions of the
+  language.
+* Ready. The literals' cost: the sizes of the translations of the
+  programs the core's proofs are about, with unary numerals, against
+  the kernel terms'.
+* Ready. The proofs: the statements of the core's proofs, prelude, nat,
+  check, equations and surface, translated and proved by the language's
+  prover, with the sizes of the derivations and the times to check
+  them against the core's certificates. Where the literals' cost is
+  prohibitive, bitstrings, as above, are measured in place of the unary
+  labels.
+* Ready. The translation's correctness in Lean, by the graphs, made
+  after the representation of labels is settled, since it depends on
+  it.
+* Waiting on the parts above. The decision, and with it the rest of the
+  computational core's proofs, in the logic it selects.
 
 ## Improvements
 
@@ -2653,7 +2751,9 @@ as graphs, and the bridge from mathlib's elementary toposes.
 The next phase is the fifth choice: whether the computational core
 keeps a checker and prover of its own, or its equations are proved in
 the metalogic through the translation of kernel terms, whose
-denotations, functions, the graphs relate to the model's arrows. The
+denotations, functions, the graphs relate to the model's arrows. It is
+made by measurement, whose parts and their states the section on the
+second construction and the fifth choice lists, with the factors. The
 computational core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the type checker's preservation of
 types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
