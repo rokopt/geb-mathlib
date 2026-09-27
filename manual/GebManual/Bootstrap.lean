@@ -2472,8 +2472,8 @@ the term by the citation of a certificate
 #### The second construction and the fifth choice
 
 State: the second construction is complete, with the converse of the
-first; the fifth choice is the next phase, its measurement made and the
-translation's correctness waiting on the representation of labels.
+first; the fifth choice is the next phase, its measurement made with
+labels that are bitstrings and the translation's correctness next.
 
 The fifth choice follows the three constructions.
 
@@ -2572,8 +2572,8 @@ proves. The factors are these.
   language's derivations are of statements written in it, not of
   translated kernel programs. The core's δ rules evaluate a primitive at
   literals in one step, by the host's arithmetic; the natural numbers
-  object is unary, so the translation of a label's literal has the
-  size of its value, and label arithmetic at literals is a fold. The
+  object is unary, so a label's literal translated to it has the size
+  of its value, and label arithmetic at literals is a fold. The
   kernel's programs are rich in literals: an atom is a list of
   character codes.
 * Trust. The core's validity is defined by the Lean denotations of
@@ -2605,35 +2605,54 @@ proves. The factors are these.
 The choice leans to retiring the core's checker, which removes a rule
 set, its specification and its implementation from what is trusted, and
 the redundancy of two provers, unless the measurement below shows the
-cost prohibitive. The cost of literals has a remedy of its own: a type
-of bitstrings in the language, the initial algebra of the functor
-taking an object to its sum with the terminal object and two copies of
-itself, whose universal property gives its computation and uniqueness
-rules as the natural numbers object's gives theirs, so that a literal
-has the size of its binary representation and arithmetic at literals
-is a fold over its bits. The repository's value representation is rose
-trees of bitstrings (`Geb/Prototypes/RoseTree.lean`), and its
-type-checking prototypes build decision problems from expressions of
-the algebra of {citet Oitavem2010}[], whose expressions define exactly
-the logspace functions on bitstrings, by their syntax alone
+cost prohibitive. The cost of literals has a remedy of its own, which
+the measurement takes: labels that are bitstrings, the initial algebra
+of the functor taking an object to its sum with the terminal object and
+two copies of itself, whose universal property gives its computation
+and uniqueness rules as the natural numbers object's gives theirs, so
+that a literal has the size of its binary representation and arithmetic
+at literals is a fold over its bits. The bitstrings are the list object
+of the coproduct of the terminal object with itself, since the sum of
+one with two copies of an object is the sum of one with the product of
+two and the object: their fold and its uniqueness are the list object's
+composed with the coproduct's, and the theory, the checker and their
+proofs are unchanged. A label is the bitstring of its index in the
+bijective numeration of {citet Oitavem2010}[]
+({name}`Geb.Oitavem.unrank`), least significant bit first, in which
+every bitstring is the numeral of exactly one number; Lean's lists of
+Booleans and rose trees of them are the same carriers. The repository's
+value representation is rose trees of bitstrings
+(`Geb/Prototypes/RoseTree.lean`), and its type-checking prototypes
+build decision problems from expressions of the algebra of
+{citet Oitavem2010}[], whose expressions define exactly the logspace
+functions on bitstrings, by their syntax alone
 (`Geb/Prototypes/Typechecker/Oitavem.lean`); labels that are bitstrings
-would bring the kernel's values, the value representation and that
-algebra to one carrier.
+bring the kernel's values, the value representation and that algebra to
+one carrier.
 
 The choice is made by measurement, in these parts, in order:
 
 * Complete. The translation of kernel types and terms into the
   language, in Lean ({name}`Geb.FreeTopos.Translation.term`): the base
-  type of trees to the rose-tree object, whose labels are the natural
-  numbers object, the unit, product, function and list types to their
-  objects, and each term former, the kernel's constants and its
-  primitives to terms and definitions of the language
-  ({name}`Geb.FreeTopos.Translation.lib`), a fold whose step uses the
-  context folding into functions of it.
+  type of trees to the rose-tree object over the bitstrings, a label to
+  its numeral ({name}`Geb.FreeTopos.Translation.numeral`), the unit,
+  product, function and list types to their objects, and each term
+  former, the kernel's constants and its primitives to terms and
+  definitions of the language ({name}`Geb.FreeTopos.Translation.lib`), a
+  fold whose step uses the context folding into functions of it. The
+  primitives' arithmetic is structural recursion on the bits, since the
+  numeral of a bit before a bitstring denotes twice the bitstring's
+  number, plus one, plus the bit: addition and comparison from the least
+  significant bits, a successor as the carry; subtraction likewise, of a
+  number at most the first; multiplication by doubling; division by
+  long division; and iteration of a step twice the rest's number of
+  times and then once or twice. A test checks each against the natural
+  numbers' operations.
 * Complete. The literals' cost. The prelude, the reader and the type
   checker, 97 definitions of 6218 nodes with 306 quoted trees of 461
-  nodes, translate to definitions of 25420 nodes, of which 16411 are
-  the successors of unary numerals; the translation's library has 299
+  nodes, translate to definitions of 9501 nodes, of which 1685 are the
+  numerals' bits and ends, where unary numerals took 25420 nodes, 16411
+  of them successors; the translation's library has 659
   (`GebTests/Prototypes/FreeTopos/Translation.lean`, which prints them).
 * Complete. The proofs. Each theorem of the core's proofs is proved in
   the language by its prover, from the translation of its statement, the
@@ -2641,83 +2660,118 @@ The choice is made by measurement, in these parts, in order:
   Lambek's lemma, that a tree is rebuilt from its unfolding, by the
   uniqueness of the rose tree's fold, from the fold of a list by
   construction and the fusion of two folds of lists, each by list
-  induction. The nodes of the core's certificates and of the language's
-  derivations, the terms they name counted, the steps of the natural
-  numbers' fold among the latter, and the least of three times each
-  checker takes, the lemmas included
-  (`GebTests/Prototypes/FreeTopos/TranslationProofs.lean`, which prints
-  them):
+  induction; and the addition of one, addition to zero and the addition
+  of a successor on bitstrings, which the core takes from its axiom that
+  addition iterates the successor, by induction on the bitstrings, case
+  analysis of their bits and, for the functions of the first summand,
+  extensionality. The nodes of the core's certificates and of the
+  language's derivations, the terms they name counted, the case analyses
+  of bits among the latter, and the least of three times each checker
+  takes, the lemmas each development proves before the core's theorems in
+  rows of their own (`GebTests/Prototypes/FreeTopos/TranslationProofs.lean`,
+  which prints them):
 
 :::table +header
 *
   * File
   * Core's nodes
   * Language's nodes
-  * Fold steps
+  * Bit steps
   * Core's time
   * Language's time
 *
   * prelude
   * 1748
-  * 473
+  * 475
   * 0
-  * 11.5 ms
-  * 6.8 ms
+  * 13 ms
+  * 12 ms
+*
+  * nat, lemmas
+  * none
+  * 12214
+  * 58
+  * none
+  * 620 ms
 *
   * nat
   * 323
-  * 216
-  * 8
+  * 184
+  * 0
   * 2.6 ms
-  * 2.7 ms
+  * 3.8 ms
 *
   * check
   * 82602
-  * 14185
-  * 1667
-  * 490 ms
-  * 287 ms
+  * 2915
+  * 80
+  * 576 ms
+  * 178 ms
+*
+  * equations, lemmas
+  * none
+  * 79
+  * 0
+  * none
+  * 4.6 ms
 *
   * equations
   * 3449
-  * 462
-  * 6
-  * 60 ms
-  * 13 ms
+  * 541
+  * 2
+  * 61 ms
+  * 9.9 ms
+*
+  * surface, lemmas
+  * none
+  * 79
+  * 0
+  * none
+  * 4.5 ms
 *
   * surface
   * 6384
-  * 1139
-  * 17
-  * 51 ms
-  * 106 ms
+  * 1115
+  * 4
+  * 54 ms
+  * 27 ms
 :::
 
-Innermost normalization, the core's prover's strategy, does not reach
-the normal form of the type checker's statement within fifteen
+Three properties of the prover and the checker the measurement rests
+on. Innermost normalization, the core's prover's strategy, does not
+reach the normal form of the type checker's statement within fifteen
 minutes, since it normalizes the cases the checker's conditionals
-discard. The language's prover normalizes to the weak head normal form
-first ({name}`Geb.FreeTopos.Internal.normalizeW`), so that a fold whose
-datum computes selects its case before the cases are normalized, and
-it matches a theorem's side against a term with the variables bound
-in it matched only by themselves ({name}`Geb.FreeTopos.Internal.matchTerm`).
-The type checker's derivation takes most of its size from the unary
-comparisons of the checker's dispatch on labels. The language checks
-every file but surface faster than the core; surface, whose
-derivations are a sixth of the size of the core's certificates and
-take few steps of the fold, takes twice the core's time, a cost the
-measurement does not locate.
+discard; the language's prover reduces to weak head normal forms first
+({name}`Geb.FreeTopos.Internal.eval`), so that a fold whose datum
+computes selects its case before the cases are normalized. It reduces
+an argument that an abstraction uses more than once before substituting
+it, so that its value is computed once rather than at each use, which,
+with unary labels, took the type checker's time from 287 milliseconds
+to 163 and surface's from 106 to 35. And the
+checker computes the contexts of a congruence's children, which type a
+fold's start and datum, only where a rewritten child is in a context of
+its own ({name}`Geb.FreeTopos.Internal.congCtxs`), which takes the type
+checker's time from 733 milliseconds to 178. The prover proves the
+bitstrings' lemmas by case analysis of a bit anywhere in the context
+({name}`Geb.FreeTopos.Internal.bySplit`), from extensionality and the
+case analysis of an innermost variable, so that the checker's rules
+are unchanged.
 
-The cost does not forbid retiring the core's checker. The unary
-numerals account for most of the translated programs' size and of the
-type checker's derivation, which bitstrings, as above, reduce to the
-size of the labels' binary representations.
+The cost does not forbid retiring the core's checker. The language's
+derivations are smaller than the core's certificates, the type
+checker's by a factor of 28, and check faster in every file but nat,
+whose theorems check in about the core's time. The lemmas on the
+bitstrings' addition, which the core takes as an axiom, are proved once
+and cost 12214 nodes and 620 milliseconds, 10908 of the nodes the
+induction on functions that proves the addition of a successor.
 
 The parts that remain:
 
 * Ready (the next part). The translation's correctness in Lean, by the
-  graphs, made after the representation of labels, unary or bitstrings,
-  is settled, since it depends on it.
+  graphs: the translation of a kernel term, at the numerals of its
+  labels, evaluates in the topos of types and functional relations to
+  the graph of the term's denotation, the primitives' cases by the
+  bitstrings' arithmetic's agreement with the natural numbers'.
 * Waiting on the parts above. The decision, and with it the rest of the
   computational core's proofs, in the logic it selects.
 
