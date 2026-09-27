@@ -17,6 +17,7 @@ public import Geb.Prototypes.FreeTopos.Internal
 public import Geb.Prototypes.FreeTopos.Model
 public import Geb.Prototypes.FreeTopos.Prover
 public import Geb.Prototypes.FreeTopos.Recursion
+public import Geb.Prototypes.FreeTopos.Relations
 public import Geb.Prototypes.FreeTopos.Theory
 public import Geb.Prototypes.FreeTopos.Topos
 
@@ -29,8 +30,8 @@ rose-tree objects, as a partial Horn theory whose sorts are objects and arrows, 
 that the category of each of its models is an elementary topos, a checker that infers the
 typing of the terms of its certificates, a prover that computes certificates in it, the
 uniqueness of its folds with a parameter, the distributivity of its products over its coproducts,
-its internal language, compiled to its combinators, and toposes with chosen structure in dependent
-form.
+its internal language, compiled to its combinators, toposes with chosen structure in dependent
+form, and the topos of Lean's types and functional relations.
 -/
 
 set_option doc.verso true
