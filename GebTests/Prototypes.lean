@@ -32,6 +32,7 @@ import GebTests.Prototypes.FreeTopos.InternalQuotients
 import GebTests.Prototypes.FreeTopos.InternalRoseTrees
 import GebTests.Prototypes.FreeTopos.Prover
 import GebTests.Prototypes.FreeTopos.Translation
+import GebTests.Prototypes.FreeTopos.TranslationProofs
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType
