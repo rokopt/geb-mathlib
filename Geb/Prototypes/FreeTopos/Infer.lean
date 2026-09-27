@@ -308,7 +308,7 @@ application's by {lit}`inferOp`. -/
 def patStep (patInf : List (Tree × Ann) → Tree → Option (Tree × Ann)) (env : List (Tree × Ann))
     (l : ℕ) (cs : List (Tree × Option (Tree × Ann))) : Option (Tree × Ann) :=
   match l, cs with
-  | 0, [(v, _)] => env[v.label]?
+  | 0, [(v, _)] => if v.children.isEmpty then env[v.label]? else none
   | k + 1, cs => do
     let args ← cs.mapM Prod.snd
     let a ← inferOp E patInf k args
@@ -320,7 +320,7 @@ by {lit}`inferOp`. -/
 def treeStep (Γ : List ℕ) (H : List Eqn) (patInf : List (Tree × Ann) → Tree → Option (Tree × Ann))
     (treeInf : Tree → Option Ann) (l : ℕ) (cs : List (Tree × Option Ann)) : Option Ann :=
   match l, cs with
-  | 0, [(v, _)] => inferVar E Γ H treeInf v.label
+  | 0, [(v, _)] => if v.children.isEmpty then inferVar E Γ H treeInf v.label else none
   | k + 1, cs => do
     let as ← cs.mapM Prod.snd
     inferOp E patInf k ((cs.map Prod.fst).zip as)
@@ -782,9 +782,11 @@ theorem infers_sound (hM : E.Sound M) {Γ : List ℕ} {H : List Eqn}
         rcases l with _ | k
         · rcases cs with _ | ⟨v, _ | ⟨v', cs⟩⟩
           · simp [patStep] at h
-          · simp only [patStep, List.map_cons, List.map_nil] at h
+          · simp only [patStep, List.map_cons, List.map_nil, Option.ite_none_right_eq_some,
+              List.isEmpty_iff] at h
+            obtain ⟨hv, h⟩ := h
             refine ⟨?_, henv r (List.mem_of_getElem? h)⟩
-            rw [subst_node_zero, List.getElem?_map, h, Option.map_some, Option.getD_some]
+            rw [subst_node_zero _ hv, List.getElem?_map, h, Option.map_some, Option.getD_some]
           · simp [patStep] at h
         · simp only [patStep, Option.bind_eq_bind, Option.bind_eq_some_iff] at h
           obtain ⟨args, hargs, a, ha, hr⟩ := h
@@ -810,9 +812,11 @@ theorem infers_sound (hM : E.Sound M) {Γ : List ℕ} {H : List Eqn}
         rcases l with _ | k
         · rcases cs with _ | ⟨v, _ | ⟨v', cs⟩⟩
           · simp [treeStep] at h
-          · simp only [treeStep, List.map_cons, List.map_nil] at h
+          · simp only [treeStep, List.map_cons, List.map_nil, Option.ite_none_right_eq_some,
+              List.isEmpty_iff] at h
+            obtain ⟨hv, h⟩ := h
             refine Ann.holds_of_eval_eq ?_ (inferVar_sound hM hρ hH ih.2 h)
-            rw [eval_node_zero, eval_var]
+            rw [eval_node_zero hv, eval_var]
           · simp [treeStep] at h
         · simp only [treeStep, Option.bind_eq_bind, Option.bind_eq_some_iff, List.map_map] at h
           obtain ⟨as, has, ha⟩ := h

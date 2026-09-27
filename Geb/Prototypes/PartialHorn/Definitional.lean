@@ -93,7 +93,7 @@ deriving DecidableEq
 /-- Whether the variable of index {lit}`i` occurs in a term. -/
 def Occurs (i : ℕ) : Tree → Bool :=
   RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(j, _)] => j.label == i
+    | 0, [(j, _)] => j.children.isEmpty && j.label == i
     | 0, _ => false
     | _ + 1, cs => cs.any Prod.snd
 
@@ -182,8 +182,10 @@ theorem lt_of_getElem?_extend {k : ℕ} {o : List ℕ × ℕ} (ho : (S.extend d)
   simp only [Sig.extend, List.length_append, List.length_singleton] at h
   omega
 
-/-- A variable's node's occurrences. -/
-theorem occurs_node_zero (i : ℕ) (j : Tree) : Occurs i (RoseTree.node 0 [j]) = (j.label == i) := by
+/-- A node of label zero over one child is an occurrence of a variable exactly when the child is
+the leaf of its index. -/
+theorem occurs_node_zero_iff (i : ℕ) (j : Tree) :
+    Occurs i (RoseTree.node 0 [j]) = true ↔ j.children = [] ∧ j.label = i := by
   simp [Occurs]
 
 /-- An application's occurrences are its arguments'. -/
@@ -237,7 +239,9 @@ theorem eval_expand_of_opsBelow (hd : sortOf S d.ctx d.body = some d.sort) (ρ :
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
       · simp [eval]
-      · rw [eval_node_zero, eval_node_zero]
+      · rcases hc : i.children with _ | ⟨e, es⟩
+        · rw [eval_node_zero hc, eval_node_zero hc]
+        · rw [eval_node_zero_of_not (by simp [hc]), eval_node_zero_of_not (by simp [hc])]
       · simp [eval]
     · rw [opsBelow_node_succ, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at ht
       rw [eval_node_succ, eval_node_succ, mapM_congr fun c hc ↦ ih c hc (ht.2 c hc)]
@@ -306,8 +310,8 @@ theorem exists_eval_of_occurs {ρ : List M.Val} {us : List Tree} {j : ℕ} (hj :
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨i', cs⟩⟩
       · simp [Occurs] at hb
-      · rw [occurs_node_zero, beq_iff_eq] at hb
-        rw [subst_node_zero, hb, List.getElem?_eq_getElem hj, Option.getD_some] at hw
+      · obtain ⟨hc, hb⟩ := (occurs_node_zero_iff _ _).mp hb
+        rw [subst_node_zero _ hc, hb, List.getElem?_eq_getElem hj, Option.getD_some] at hw
         exact ⟨w, hw⟩
       · simp [Occurs] at hb
     · rw [occurs_node_succ, List.any_eq_true] at hb
@@ -329,14 +333,14 @@ theorem sortOf_subst {Γ Δ : List ℕ} {us : List Tree}
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨i', cs⟩⟩
       · simp [sortOf] at hs
-      · rw [sortOf_node_zero] at hs
+      · obtain ⟨hc, hs⟩ := sortOf_node_zero_eq_some.mp hs
         have hi : i.label < Δ.length := (List.getElem?_eq_some_iff.mp hs).1
         have hlen : us.length = Δ.length := by simpa using congrArg List.length hus
         have e := congrArg (fun l ↦ l[i.label]?) hus
         simp only [List.getElem?_map, List.getElem?_eq_getElem (hlen ▸ hi),
           List.getElem?_eq_getElem hi, Option.map_some, Option.some.injEq] at e
         rw [List.getElem?_eq_getElem hi] at hs
-        rw [subst_node_zero, List.getElem?_eq_getElem (hlen ▸ hi), Option.getD_some, e, hs]
+        rw [subst_node_zero _ hc, List.getElem?_eq_getElem (hlen ▸ hi), Option.getD_some, e, hs]
       · simp [sortOf] at hs
     · rw [sortOf_node_succ, Option.bind_eq_some_iff] at hs
       obtain ⟨o, ho, hs⟩ := hs
@@ -359,9 +363,8 @@ theorem scoped_of_sortOf {Γ : List ℕ} :
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨i', cs⟩⟩
       · simp [sortOf] at hs
-      · rw [sortOf_node_zero] at hs
-        rw [scoped_node_zero, decide_eq_true_eq]
-        exact (List.getElem?_eq_some_iff.mp hs).1
+      · obtain ⟨hc, hs⟩ := sortOf_node_zero_eq_some.mp hs
+        exact scoped_node_zero_iff.mpr ⟨hc, (List.getElem?_eq_some_iff.mp hs).1⟩
       · simp [sortOf] at hs
     · rw [sortOf_node_succ, Option.bind_eq_some_iff] at hs
       obtain ⟨o, -, hs⟩ := hs
@@ -400,7 +403,9 @@ theorem eval_expand_unfold (hd : d.WF S) {Γ : List ℕ} {ρ : List M.Val}
     · rw [unfoldOp_node_zero]
       rcases cs with _ | ⟨i, _ | ⟨i', cs⟩⟩
       · simp [eval]
-      · rw [eval_node_zero, eval_node_zero]
+      · rcases hc : i.children with _ | ⟨e, es⟩
+        · rw [eval_node_zero hc, eval_node_zero hc]
+        · rw [eval_node_zero_of_not (by simp [hc]), eval_node_zero_of_not (by simp [hc])]
       · simp [eval]
     · rw [sortOf_node_succ, Option.bind_eq_some_iff] at hs
       obtain ⟨o, ho, hs⟩ := hs
@@ -469,8 +474,7 @@ theorem sortOf_unfold (hd : d.WF S) {Γ : List ℕ} : ∀ t : Tree, ∀ {s : ℕ
     · rw [unfoldOp_node_zero]
       rcases cs with _ | ⟨i, _ | ⟨i', cs⟩⟩
       · simp [sortOf] at hs
-      · rw [sortOf_node_zero] at hs ⊢
-        exact hs
+      · exact sortOf_node_zero_eq_some.mpr (sortOf_node_zero_eq_some.mp hs)
       · simp [sortOf] at hs
     · rw [sortOf_node_succ, Option.bind_eq_some_iff] at hs
       obtain ⟨o, ho, hs⟩ := hs

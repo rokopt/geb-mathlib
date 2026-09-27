@@ -128,7 +128,7 @@ def matchNode (i l : ℕ) (tests : List (ℕ → Bool)) : Bool :=
 application a node of its label whose children match its arguments. -/
 def matchStep (σ : List ℕ) (l : ℕ) (cs : List (Tree × (ℕ → Bool))) (i : ℕ) : Bool :=
   match l, cs with
-  | 0, [(v, _)] => σ[v.label]? == some i
+  | 0, [(v, _)] => v.children.isEmpty && σ[v.label]? == some i
   | l, cs => st.matchNode i l (cs.map Prod.snd)
 
 /-- Whether a node is the instance of a pattern at an assignment of nodes to its variables. -/
@@ -144,7 +144,7 @@ has the context's sort at its child's label, and an application the operation's 
 when its children have the operation's argument sorts. -/
 def sortStep (S : Sig) (Γ : List ℕ) (acc : Array (Option ℕ)) (x : ℕ × List ℕ) : Option ℕ :=
   match x with
-  | (0, [c]) => (st.nodes[c]?).bind fun y ↦ Γ[y.1]?
+  | (0, [c]) => (st.nodes[c]?).bind fun y ↦ if y.2.isEmpty then Γ[y.1]? else none
   | (0, _) => none
   | (k + 1, cs) => S[k]?.bind fun o ↦
     if cs.map (fun c ↦ acc[c]?.join) = o.1.map some then some o.2 else none
@@ -191,7 +191,7 @@ theorem of_matchNode {i l : ℕ} {tests : List (ℕ → Bool)} (h : st.matchNode
 
 /-- A pattern's variable matches the node assigned to it. -/
 theorem matchPat_var (σ : List ℕ) (v : Tree) (i : ℕ) :
-    st.matchPat σ (RoseTree.node 0 [v]) i = (σ[v.label]? == some i) := by
+    st.matchPat σ (RoseTree.node 0 [v]) i = (v.children.isEmpty && σ[v.label]? == some i) := by
   simp [matchPat, matchStep]
 
 /-- A pattern's application matches a node of its label whose children match its arguments. -/
@@ -249,8 +249,8 @@ theorem denote_of_matchPat (hst : st.WF) (σ : List ℕ) :
     by_cases hv : l = 0 ∧ cs.length = 1
     · obtain ⟨rfl, hl⟩ := hv
       obtain ⟨v, rfl⟩ := List.length_eq_one_iff.mp hl
-      rw [matchPat_var, beq_iff_eq] at h
-      rw [subst_node_zero, List.getElem?_map, h, Option.map_some, Option.getD_some]
+      rw [matchPat_var, Bool.and_eq_true, beq_iff_eq, List.isEmpty_iff] at h
+      rw [subst_node_zero _ h.1, List.getElem?_map, h.2, Option.map_some, Option.getD_some]
     · rw [matchPat_app σ hv] at h
       rw [subst_app _ hv]
       exact denote_of_matchNode hst h fun c hc k hk ↦ ih c hc hk
@@ -280,8 +280,12 @@ theorem sortStep_eq (hst : st.WF) (S : Sig) (Γ : List ℕ) {acc : Array (Option
       obtain ⟨l', cs', hc'⟩ : ∃ l' cs', st.nodes[c]? = some (l', cs') :=
         ⟨_, _, Array.getElem?_eq_getElem hcs⟩
       simp only [sortStep, hc', Option.bind_some, List.map_cons, List.map_nil]
-      rw [sortOf_node_zero, denote_eq hst hc']
-      rfl
+      rw [denote_eq hst hc']
+      rcases cs' with _ | ⟨e, es⟩
+      · rw [sortOf_node_zero _ rfl]
+        rfl
+      · rw [sortOf_node_zero_of_not _ (by simp)]
+        rfl
     · simp [sortStep, sortOf]
   · simp only [sortStep]
     rw [sortOf_node_succ, List.map_map]
@@ -362,53 +366,57 @@ store's sorts {lit}`srt`, and the sequent's variables must lie in its context. -
 def sinst (st : Store) (srt : Array (Option ℕ)) (a : Seq) (cs : List (Tree × SChk)) : SChk :=
   fun H ↦
   let n := a.ctx.length
-  let ts := (cs.take n).map fun c ↦ c.1.label
   let ds := ((cs.drop n).take n).map fun c ↦ (c.2 H).map Prod.fst
   let hs := (cs.drop (n + n)).take a.hyps.length
-  match cs.drop (n + n + a.hyps.length) with
-  | [(l, _), (r, _)] =>
-    if a.Scoped && ts.map (fun t ↦ srt[t]?.join) == a.ctx.map some && ds == ts.map some &&
-        hs.length == a.hyps.length &&
-        (hs.zip a.hyps).all (fun p ↦ match p.1.2 H with
-          | some (x, y) => st.matchPat ts p.2.lhs x && st.matchPat ts p.2.rhs y
-          | none => false) &&
-        st.matchPat ts a.concl.lhs l.label && st.matchPat ts a.concl.rhs r.label then
-      some (l.label, r.label)
-    else none
-  | _ => none
+  match (cs.take n).mapM (fun c ↦ leafIndex c.1), cs.drop (n + n + a.hyps.length) with
+  | some ts, [(l, _), (r, _)] => match leafIndex l, leafIndex r with
+    | some l, some r =>
+      if a.Scoped && ts.map (fun t ↦ srt[t]?.join) == a.ctx.map some && ds == ts.map some &&
+          hs.length == a.hyps.length &&
+          (hs.zip a.hyps).all (fun p ↦ match p.1.2 H with
+            | some (x, y) => st.matchPat ts p.2.lhs x && st.matchPat ts p.2.rhs y
+            | none => false) &&
+          st.matchPat ts a.concl.lhs l && st.matchPat ts a.concl.rhs r then
+        some (l, r)
+      else none
+    | _, _ => none
+  | _, _ => none
 
 /-- One rule of the shared checker, by the label of a certificate's node, in a context of
 {lit}`m` variables whose sorts give the store's sorts {lit}`srt`, with an oracle. -/
 def scheckStep (T : Theory) (E : Array Seq) (st : Store) (m : ℕ) (srt : Array (Option ℕ))
     (orc : Oracle) (l : ℕ) (cs : List (Tree × SChk)) : SChk := fun H ↦
   match l, cs with
-  | Rule.hyp, [(i, _)] => H[i.label]?
-  | Rule.refl, [(i, _), (v, _)] =>
-    if i.label < m && st.matchTree (var i.label) v.label then some (v.label, v.label) else none
+  | Rule.hyp, [(i, _)] => (leafIndex i).bind fun i ↦ H[i]?
+  | Rule.refl, [(i, _), (v, _)] => (leafIndex i).bind fun i ↦ (leafIndex v).bind fun v ↦
+    if i < m && st.matchTree (var i) v then some (v, v) else none
   | Rule.symm, [(_, p)] => (p H).map fun q ↦ (q.2, q.1)
   | Rule.trans, [(_, p), (_, p')] => (p H).bind fun q ↦ (p' H).bind fun q' ↦
     if q.2 == q'.1 then some (q.1, q'.2) else none
   | Rule.cong, (_, d) :: ps => (d H).bind fun q ↦
     match ps.getLast?, st.nodes[q.1]? with
-    | some (r, _), some (lx, ks) =>
-      match st.nodes[r.label]? with
+    | some (r, _), some (lx, ks) => (leafIndex r).bind fun r ↦
+      match st.nodes[r]? with
       | some (lr, rs) =>
         if lx != 0 && lr == lx && ks.length == rs.length &&
             (ps.dropLast.map fun p ↦ p.2 H) == (ks.zip rs).map some then
-          some (q.1, r.label)
+          some (q.1, r)
         else none
       | none => none
     | _, _ => none
-  | Rule.strict, [(j, _), (_, p)] => (p H).bind fun q ↦
+  | Rule.strict, [(j, _), (_, p)] => (leafIndex j).bind fun j ↦ (p H).bind fun q ↦
     match st.nodes[q.1]? with
-    | some (lx, ks) => if lx != 0 then ks[j.label]?.map fun c ↦ (c, c) else none
+    | some (lx, ks) => if lx != 0 then ks[j]?.map fun c ↦ (c, c) else none
     | none => none
-  | Rule.ax, (j, _) :: cs => T.axioms[j.label]?.bind fun a ↦ sinst st srt a cs H
+  | Rule.ax, (j, _) :: cs => (leafIndex j).bind fun j ↦
+    T.axioms[j]?.bind fun a ↦ sinst st srt a cs H
   | Rule.cut, [(_, p), (_, p')] => (p H).bind fun h ↦ p' (h :: H)
-  | Rule.thm, (j, _) :: cs => E[j.label]?.bind fun a ↦ sinst st srt a cs H
-  | Rule.typed, [(i, _)] => if orc.typed i.label then some (i.label, i.label) else none
-  | Rule.objEq, [(a, _), (b, _)] =>
-    if orc.equal a.label b.label then some (a.label, b.label) else none
+  | Rule.thm, (j, _) :: cs => (leafIndex j).bind fun j ↦
+    E[j]?.bind fun a ↦ sinst st srt a cs H
+  | Rule.typed, [(i, _)] => (leafIndex i).bind fun i ↦
+    if orc.typed i then some (i, i) else none
+  | Rule.objEq, [(a, _), (b, _)] => (leafIndex a).bind fun a ↦ (leafIndex b).bind fun b ↦
+    if orc.equal a b then some (a, b) else none
   | _, _ => none
 
 /-- The shared checker: the conclusion of a shared certificate in a theory, an environment of
@@ -440,14 +448,17 @@ theorem sinst_sound (hst : st.WF) {Γ : List ℕ} {a : Seq} {cs : List (Tree × 
     (h : sinst st (st.sorts T.sig Γ) a cs H = some q) : Valid M Γ (H.map st.eqn) (st.eqn q) := by
   simp only [sinst] at h
   split at h
-  · rename_i l _ r _ hrest
+  · rename_i ts _ _ _ _ _ _
+    split at h
+    rotate_left
+    · exact absurd h (by simp)
+    rename_i l r _ _
     split at h
     · rename_i hc
       cases h
       simp only [Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hc
       obtain ⟨⟨⟨⟨⟨⟨hsc, hsort⟩, hds⟩, hlen⟩, hhs⟩, hl⟩, hr⟩ := hc
       intro ρ hρ hH
-      set ts := (cs.take a.ctx.length).map fun c ↦ c.1.label with hts
       have htl : ts.length = a.ctx.length := by simpa using congrArg List.length hsort
       -- each instance term is defined, by its premise
       have hdef : ∀ t ∈ ts.map st.denote, ∃ w, eval M ρ t = Part.some w := by
@@ -502,10 +513,10 @@ theorem sinst_sound (hst : st.WF) {Γ : List ℕ} {a : Seq} {cs : List (Tree × 
         · exact absurd hm (by simp)
       obtain ⟨w, h₁, h₂⟩ := ha ws hwsort hhyp
       refine ⟨w, ?_, ?_⟩
-      · change eval M ρ (st.denote l.label) = _
+      · change eval M ρ (st.denote l) = _
         rw [Store.denote_of_matchPat hst ts _ hl, eval_subst hws _ hscl]
         exact h₁
-      · change eval M ρ (st.denote r.label) = _
+      · change eval M ρ (st.denote r) = _
         rw [Store.denote_of_matchPat hst ts _ hr, eval_subst hws _ hscr]
         exact h₂
     · exact absurd h (by simp)
@@ -548,20 +559,22 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
     unfold scheckStep at h
     split at h
     · -- a hypothesis
-      exact fun ρ _ hH ↦ hH _ (List.mem_map_of_mem (List.mem_of_getElem? h))
+      obtain ⟨i, -, hi⟩ := Option.bind_eq_some_iff.mp h
+      exact fun ρ _ hH ↦ hH _ (List.mem_map_of_mem (List.mem_of_getElem? hi))
     · -- the reflexivity of a variable
-      rename_i i _ v _
+      obtain ⟨i, -, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨v, -, h⟩ := Option.bind_eq_some_iff.mp h
       split at h
       · rename_i hc
         cases h
         simp only [Bool.and_eq_true, decide_eq_true_eq] at hc
         obtain ⟨hi, hv⟩ := hc
         intro ρ hρ _
-        have hi' : i.label < ρ.length := by simpa [← hρ] using hi
-        have hd : st.eqn (v.label, v.label) = ⟨var i.label, var i.label⟩ := by
+        have hi' : i < ρ.length := by simpa [← hρ] using hi
+        have hd : st.eqn (v, v) = ⟨var i, var i⟩ := by
           simp [Store.eqn, Store.denote_of_matchTree hst _ hv]
         rw [hd]
-        exact ⟨ρ[i.label], by simp [hi', Part.coe_some], by simp [hi', Part.coe_some]⟩
+        exact ⟨ρ[i], by simp [hi', Part.coe_some], by simp [hi', Part.coe_some]⟩
       · exact absurd h (by simp)
     · -- symmetry
       obtain ⟨q', hq', rfl⟩ := Option.map_eq_some_iff.mp h
@@ -589,7 +602,8 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
       simp only [Option.bind_eq_some_iff] at h
       obtain ⟨q₀, hq₀, h⟩ := h
       split at h
-      · rename_i r _ lx ks hr hx
+      · rename_i r' _ lx ks hr hx
+        obtain ⟨r, -, h⟩ := Option.bind_eq_some_iff.mp h
         split at h
         · rename_i lr rs hrs
           split at h
@@ -618,16 +632,16 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
               simp only [List.getElem_map]
               exact (show eval M ρ (st.denote ks[n]) = _ from hv₁).trans hv₂.symm
             refine ⟨w, h₁, ?_⟩
-            change eval M ρ (st.denote r.label) = _
+            change eval M ρ (st.denote r) = _
             rw [← h₁, Store.denote_eq hst hrs, Store.denote_eq hst hx, eval_node_succ,
               eval_node_succ, mapM_congr_map hmap.symm]
           · exact absurd h (by simp)
         · exact absurd h (by simp)
       · exact absurd h (by simp)
     · -- strictness: an argument of a defined application is defined
-      rename_i j _ _ p
+      rename_i _ _ _ p
       simp only [Option.bind_eq_some_iff] at h
-      obtain ⟨q₀, hq₀, h⟩ := h
+      obtain ⟨j, -, q₀, hq₀, h⟩ := h
       split at h
       · rename_i lx ks hx
         split at h
@@ -642,7 +656,7 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
           rw [Store.denote_eq hst hx, eval_node_succ, part_bind_eq_some_iff] at h₁
           obtain ⟨args, hargs, -⟩ := h₁
           rw [mapM_part_eq_some_iff] at hargs
-          have e := congrArg (fun l ↦ l[j.label]?) hargs
+          have e := congrArg (fun l ↦ l[j]?) hargs
           simp only [List.getElem?_map, hc, Option.map_some] at e
           obtain ⟨u, -, hu⟩ := Option.map_eq_some_iff.mp e.symm
           exact ⟨u, hu.symm, hu.symm⟩
@@ -650,7 +664,8 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
       · exact absurd h (by simp)
     · -- an instance of an axiom
       rename_i _ _ cs'
-      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨j, -, hj⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp hj
       exact sinst_sound hst (hM a (List.mem_of_getElem? ha))
         (fun c hc q' h' ↦ hcs c (List.mem_cons_of_mem _ hc) H q' hsub h') h
     · -- cut
@@ -663,10 +678,12 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
         (List.forall_mem_cons.mpr ⟨h₁, hH⟩)
     · -- an instance of a theorem
       rename_i _ _ cs'
-      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨j, -, hj⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨a, ha, h⟩ := Option.bind_eq_some_iff.mp hj
       exact sinst_sound hst (hE a (Array.mem_of_getElem? ha))
         (fun c hc q' h' ↦ hcs c (List.mem_cons_of_mem _ hc) H q' hsub h') h
     · -- the definedness of a node, by the oracle
+      obtain ⟨i, -, h⟩ := Option.bind_eq_some_iff.mp h
       split at h
       · rename_i ht
         cases h
@@ -675,6 +692,8 @@ theorem scheck_sound (hM : IsModel T M) {E : Array Seq} (hE : ∀ a ∈ E, a.Val
         exact ⟨w, hw, hw⟩
       · exact absurd h (by simp)
     · -- the equation of two nodes, by the oracle
+      obtain ⟨a, -, h⟩ := Option.bind_eq_some_iff.mp h
+      obtain ⟨b, -, h⟩ := Option.bind_eq_some_iff.mp h
       split at h
       · rename_i he
         cases h

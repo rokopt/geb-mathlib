@@ -108,8 +108,7 @@ theorem isTy_mono {G G' : Globals} (hle : G.Le G') {n : ℕ} :
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
       · simp [IsTy] at hA
-      · rw [isTy_var_node] at hA ⊢
-        exact hA
+      · exact isTy_var_node_iff.mpr (isTy_var_node_iff.mp hA)
       · simp [IsTy] at hA
     · change IsTy G n (op k cs) = true at hA
       change IsTy G' n (op k cs) = true
@@ -610,8 +609,8 @@ theorem scoped_of_eval {ρ : List M.Val} :
       · simp [eval] at h
       rotate_left
       · simp [eval] at h
-      rw [PartialHorn.eval_node_zero] at h
-      rw [PartialHorn.scoped_node_zero, decide_eq_true_eq]
+      obtain ⟨hc, h⟩ := PartialHorn.eval_node_zero_eq_some.mp h
+      refine PartialHorn.scoped_node_zero_iff.mpr ⟨hc, ?_⟩
       by_contra hi
       rw [List.getElem?_eq_none (by omega)] at h
       simp at h

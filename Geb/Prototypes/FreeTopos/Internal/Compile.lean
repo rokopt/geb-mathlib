@@ -203,7 +203,7 @@ def Globals.isTyOp (G : Globals) (k m : ℕ) : Bool :=
 definitions. -/
 def IsTy (G : Globals) (n : ℕ) : Tree → Bool :=
   RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(i, _)] => decide (i.label < n)
+    | 0, [(i, _)] => i.children.isEmpty && decide (i.label < n)
     | 0, _ => false
     | k + 1, cs => G.isTyOp k cs.length && cs.all Prod.snd
 

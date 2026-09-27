@@ -16,7 +16,8 @@ Appending lists and addition, defined in the internal language by folds into exp
 the equations of the computational core's theorems about them, stated in the internal language.
 The definitions compile to well-formed definitions of the combinators whose arrows have the types
 they name, the equations, and their unfoldings, compile to sequents of the combinators, and each
-equation's formula is a term of the subobject classifier's type.
+equation's formula is a term of the subobject classifier's type. An object variable is a type,
+and a node of label zero over a child that is not a leaf is not.
 
 ## Main definitions
 
@@ -121,6 +122,9 @@ def statements : List (ℕ × List Tree × Term × Term) := [
 -- each equation's formula, the equality of its sides, is a formula in its context
 #guard statements.all fun (n, Γ, t, u) ↦
   (compile G n (Term.eq t u) (ctxObj Γ) (stdEnv Γ)).any (·.2 == omega)
+
+-- an object variable is a type, and a node of label zero over a child that is not a leaf is not
+#guard Internal.IsTy G 1 (var 0) && !Internal.IsTy G 1 (RoseTree.node 0 [RoseTree.node 0 [var 0]])
 
 end GebTests.Prototypes.FreeTopos.Internal
 

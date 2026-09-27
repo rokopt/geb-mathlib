@@ -24,7 +24,6 @@ subterms' values.
 
 * {lit}`IsObj` — an object term denotes an object.
 * {lit}`Hom` — an arrow term denotes an arrow between two objects.
-* {lit}`LeafIndices` — each variable node of a term has a leaf for its index.
 
 ## Main statements
 
@@ -69,7 +68,7 @@ theorem subst_op (ts : List Tree) (k : ℕ) (cs : List Tree) :
 
 /-- Substitution at a variable in the substitution's range. -/
 theorem subst_x (ts : List Tree) (i : ℕ) : subst ts (x i) = ts[i]?.getD (x i) := by
-  simp [x, var, subst_node_zero]
+  simp [x, var, subst_node_zero _ (rfl : (RoseTree.node i [] : Tree).children = [])]
 
 /-- Substituting after a substitution is substituting the substituted terms, for a term in the
 first substitution's scope. -/
@@ -81,8 +80,8 @@ theorem subst_subst (θ θ' : List Tree) :
       · simp [Scoped] at ht
       rotate_left
       · simp [Scoped] at ht
-      rw [scoped_node_zero, decide_eq_true_eq] at ht
-      rw [subst_node_zero, subst_node_zero, List.getElem?_eq_getElem ht,
+      obtain ⟨hc, ht⟩ := scoped_node_zero_iff.mp ht
+      rw [subst_node_zero _ hc, subst_node_zero _ hc, List.getElem?_eq_getElem ht,
         List.getElem?_eq_getElem (by simpa using ht)]
       simp
     · rw [scoped_node_succ, List.all_eq_true] at ht
@@ -90,35 +89,24 @@ theorem subst_subst (θ θ' : List Tree) :
       exact congrArg (RoseTree.node (k + 1))
         (List.map_congr_left fun c hc ↦ ih c hc (ht c hc))
 
-/-- Whether each variable node of a term has a leaf for its index. -/
-def LeafIndices : Tree → Bool :=
-  RoseTree.para fun l cs ↦ match l, cs with
-    | 0, [(i, _)] => i.children.isEmpty
-    | 0, _ => false
-    | _ + 1, cs => cs.all Prod.snd
-
-/-- Substituting its variables for the variables of a term in their scope, with leaves for
-indices, leaves the term: the unit law of substitution on the right. -/
+/-- Substituting its variables for the variables of a term in their scope leaves the term: the
+unit law of substitution on the right. -/
 theorem subst_vars (n : ℕ) :
-    ∀ t : Tree, Scoped n t = true → LeafIndices t = true →
-      subst ((List.range n).map var) t = t :=
-  RoseTree.ind fun l cs ih ht hl ↦ by
+    ∀ t : Tree, Scoped n t = true → subst ((List.range n).map var) t = t :=
+  RoseTree.ind fun l cs ih ht ↦ by
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
       · simp [Scoped] at ht
       rotate_left
       · simp [Scoped] at ht
-      rw [scoped_node_zero, decide_eq_true_eq] at ht
-      have hi : i.children = [] := by simpa [LeafIndices] using hl
-      rw [subst_node_zero, List.getElem?_map, List.getElem?_range ht]
+      obtain ⟨hi, ht⟩ := scoped_node_zero_iff.mp ht
+      rw [subst_node_zero _ hi, List.getElem?_map, List.getElem?_range ht]
       simp only [Option.map_some, Option.getD_some, var]
       rw [← hi, RoseTree.node_label_children]
     · rw [scoped_node_succ, List.all_eq_true] at ht
-      have hl' : ∀ c ∈ cs, LeafIndices c = true := by
-        simpa [LeafIndices, RoseTree.para_node, List.all_map] using hl
       rw [subst_node_succ]
       exact congrArg (RoseTree.node (k + 1))
-        ((List.map_congr_left fun c hc ↦ ih c hc (ht c hc) (hl' c hc)).trans (List.map_id cs))
+        ((List.map_congr_left fun c hc ↦ ih c hc (ht c hc)).trans (List.map_id cs))
 
 /-- Substitution in a composite. -/
 theorem subst_comp (θ : List Tree) (g f : Tree) :

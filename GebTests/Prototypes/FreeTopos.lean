@@ -18,13 +18,16 @@ hypothesis, of the instance of an axiom at a compound term, of the uniqueness of
 the natural numbers object, which is induction, and of an equation of a characteristic map; and
 rejects certificates that instantiate an axiom at a term of the wrong sort, cite a missing
 hypothesis, compose equations whose middle terms differ, apply strictness to a variable, or
-prove a hypothesis other than the instance the axiom requires. A definition is well formed over
-the signature, and in the theory's extension by it the new operation equals its body where the
-body is defined.
+prove a hypothesis other than the instance the axiom requires. A node of label zero over a
+child that is not a leaf is not a variable: it has no sort and is in no scope, and a certificate
+names an index by a leaf alone. A definition is
+well formed over the signature, and in the theory's extension by it the new operation equals its
+body where the body is defined.
 
 ## Main definitions
 
 * {lit}`idx` — the index of an axiom by its block and its position there.
+* {lit}`notVar` — a node of label zero that is not a variable.
 * {lit}`natIdRec` — the certificate that recursion with zero and the successor is the identity.
 * {lit}`swapDefn` — a definition, checked in the theory's extension by it.
 
@@ -55,6 +58,18 @@ def wellSorted (Γ : List ℕ) (q : Eqn) : Bool :=
 
 -- every axiom is in scope and well sorted
 #guard axioms.all fun a ↦ a.Scoped && (a.concl :: a.hyps).all (wellSorted a.ctx)
+
+/-- A node of label zero over a child that is not a leaf: not a variable. -/
+def notVar : Tree := RoseTree.node 0 [RoseTree.node 0 [RoseTree.node 0 []]]
+
+-- a variable has its sort and is in scope; a node of label zero over a child that is not a leaf
+-- has no sort, is in no scope, and is left in place by substitution
+#guard sortOf sig [obj] (var 0) = some obj && Scoped 1 (var 0)
+#guard sortOf sig [obj] notVar = none && !Scoped 1 notVar && subst [var 0] notVar = notVar
+
+-- a certificate names an index by a leaf, and a node with children names none
+#guard chk (Cert.refl 0) [arr] [] = some ⟨x 0, x 0⟩
+#guard chk (RoseTree.node Rule.refl [RoseTree.node 0 [Cert.leaf 0]]) [arr] [] = none
 
 -- the domain of an arrow is defined
 #guard chk (Cert.ax 0 [x 0] [Cert.refl 0] []) [arr] [] = some (dfd (dom (x 0)))

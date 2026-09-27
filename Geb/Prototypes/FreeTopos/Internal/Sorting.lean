@@ -156,8 +156,8 @@ theorem sortOf_of_isTy {n : ℕ} :
       · simp [IsTy] at hA
       rotate_left
       · simp [IsTy] at hA
-      rw [isTy_var_node, decide_eq_true_eq] at hA
-      rw [PartialHorn.sortOf_node_zero]
+      obtain ⟨hc, hA⟩ := isTy_var_node_iff.mp hA
+      rw [PartialHorn.sortOf_node_zero _ hc]
       simp [hA]
     · change IsTy G n (op k cs) = true at hA
       rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA

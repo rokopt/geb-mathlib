@@ -2035,9 +2035,11 @@ language's definitions unfold by this substitution. The combinators'
 substitution for their object variables obeys the same unit laws and
 associativity ({name}`Geb.FreeTopos.subst_x`,
 {name}`Geb.FreeTopos.subst_vars`, {name}`Geb.FreeTopos.subst_subst`),
-its law of identity stated of terms whose variables' indices are leaves,
-which the inference of a term's sort does not check, since it reads only
-an index's label.
+its law of identity stated of terms in scope. A variable is the node of
+label zero over the leaf of its index, and a node of label zero over a
+child that is not a leaf is no term: it has no sort, no value and no
+variable in scope, and it is no type, so that no children of an index
+are admitted only to be ignored.
 
 ##### Soundness and completeness
 
