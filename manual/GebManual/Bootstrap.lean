@@ -144,12 +144,12 @@ sections below detail:
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
-    objects: the first construction, in one direction.
-  * In progress (the next phase). The model in Lean with functional
-    relations, the second construction, with the converse of the first,
-    a model of the theory from a topos with chosen structure and the
-    data objects, and Lean's functions as graphs in it, which are
-    complete, and the bridge from mathlib's elementary toposes.
+    objects: the first construction, with its converse.
+  * Complete. The model in Lean with functional relations, the second
+    construction, with the converse of the first, a model of the theory
+    from a topos with chosen structure and the data objects, Lean's
+    functions as graphs in it, and the bridge from mathlib's elementary
+    toposes.
   * Complete. The definitional extension with its unfolding theorem,
     for the models: the third construction. The unfolding of
     certificates is ready.
@@ -185,7 +185,7 @@ sections below detail:
     * Complete. The partial Horn logic's term model and completeness
       theorem, the completeness of the language citing certificates,
       and the round trips of the compilation.
-  * Waiting on the second construction. The fifth choice.
+  * Ready (the next phase). The fifth choice.
   * Ready. The checker and prover written in Geb, the fourth stage's
     completeness having settled the language's rules.
 
@@ -852,10 +852,9 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the metalogic
   * In progress
-  * The Mitchell–Bénabou language's fourth stage: complete; the second
-    construction, the next phase: in progress, the converse of the
-    first and the graphs complete; the fifth choice: waiting on the
-    second construction; the checker and prover written in Geb: ready
+  * The Mitchell–Bénabou language's fourth stage and the second
+    construction: complete; the fifth choice, the next phase: ready;
+    the checker and prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1263,9 +1262,9 @@ the hash written in Geb.
     complete; the rest wait on the metalogic's fifth choice
 *
   * Metalogic, 1: the rule set and its soundness
-  * In progress: the rule set, its checker and their soundness in every
-    model are complete; the model of Lean types, the second
-    construction, is in progress
+  * Complete: the rule set, its checker and their soundness in every
+    model, and the model of Lean's types and functional relations, the
+    second construction, with the converse of the first
 *
   * Metalogic, 2 and 3: the checker and prover in Geb
   * Ready: the fourth stage of the Mitchell–Bénabou language, whose
@@ -1769,15 +1768,14 @@ constructible:
    which are functional relations (the second construction).
 
 The first construction precedes the other two, which are independent of
-each other; the choices follow them. The first, third and fourth are
-complete, the first in one direction; the second is in progress; and
-the fifth waits on the second.
+each other; the choices follow them. The first four are complete, and
+the fifth is the next phase.
 
 #### The first construction
 
-State: complete in one direction; the converse is in progress.
+State: complete, with its converse.
 
-The first construction is made in one direction. The rule set is
+The first construction is made in both directions. The rule set is
 {name}`Geb.FreeTopos.theory`, a partial Horn theory whose sorts are the
 objects and the arrows, and its certificates are rose trees that
 {name}`Geb.PartialHorn.check` checks, sound in every model of the theory
@@ -1793,9 +1791,10 @@ objects and of the initial algebra of rose trees
 category and of its universal morphisms uses no axiom beyond
 `propext` and `Quot.sound`; only the packaging as mathlib's structures,
 whose limit cones and pullbacks do, uses `Classical.choice`. The
-converse, a model of the theory from an elementary topos with chosen
-structure and data objects, is made with the second construction (the
-section on the second construction and the fifth choice). A model's
+converse, a model of the theory from a topos with chosen structure and
+the data objects ({name}`Geb.FreeTopos.ChosenTopos.isModel`), is made
+with the second construction (the section on the second construction
+and the fifth choice). A model's
 operations
 ({name}`Geb.PartialHorn.Model`) are partial functions whose domains of
 definition are propositions, as mathlib's `Part` states them, so that a
@@ -2471,13 +2470,10 @@ the term by the citation of a certificate
 
 #### The second construction and the fifth choice
 
-State: the second construction is in progress (the next phase): the
-converse of the first and the graphs of Lean's functions are complete,
-and the fifth choice waits on the bridge from mathlib.
+State: the second construction is complete, with the converse of the
+first; the fifth choice is the next phase.
 
-The fifth choice is deferred until the three constructions are made,
-and the second construction, the model in Lean with morphisms as
-functional relations, is the one not made.
+The fifth choice follows the three constructions.
 
 The second construction is a model of the theory in Lean without
 `Classical.choice`: its objects are the types of `Type`, and its arrows
@@ -2535,8 +2531,14 @@ It is made in five parts, in order:
   kernel's denotations and the model's arrows on which the fifth choice
   turns. A test derives, from the prover's development, that the right
   fold of lists with the empty list and construction is the identity.
-* Ready. The bridge from mathlib: an elementary topos of the
-  repository's class, with chosen data objects, gives a record. Its
+* Complete. The bridge from mathlib: an elementary topos of the
+  repository's class, with chosen data objects, initial algebras of
+  mathlib's endofunctor algebras, and chosen limit cones for its
+  subobject classifier's squares, gives a record
+  ({name}`Geb.FreeTopos.Elementary.chosenTopos`). The class states the
+  classifier's squares to be pullbacks by a proposition, from which the
+  inverse comparison is computed only by `Classical.choice`, so their
+  limit cones are chosen as the class chooses its other limits. Its
   subject is the correspondence with mathlib's structures, which use
   `Classical.choice`, and it is admitted to it as the constructive-only
   rules provide.
@@ -2580,8 +2582,9 @@ the change that removes it.
   between functions is not used at their applications. And it
   normalizes innermost first, so that the branches a conditional
   discards are normalized as well. Rewriting at applications under
-  binders (the next phase), and normalizing a conditional's test before
-  its branches, remove each.
+  binders (which the type checker's preservation of types by weakening
+  needs), and normalizing a conditional's test before its branches,
+  remove each.
 * Atoms as character codes. The Geb sources spell the atoms they
   compare with, the keywords of the reader, the expansion and the
   prover, as quoted lists of character codes, since a datum has no
@@ -2641,15 +2644,17 @@ stage):
    completeness theorem, from which follow the completeness of the
    language citing certificates and the round trips of the compilation.
 
-The next phase is the second construction, the model in Lean with
-morphisms as functional relations, with the converse of the first (the
+The second construction, the model in Lean with morphisms as
+functional relations, with the converse of the first, is complete (the
 section on the second construction and the fifth choice): the record of
 a topos with chosen structure and the data objects, the record of
-Lean's types and functional relations, the converse, and Lean's
-functions as graphs, complete; the bridge from mathlib's elementary
-toposes.
-The fifth choice follows it. The computational
-core's step 3, whose proofs are about kernel programs whichever the
+Lean's types and functional relations, the converse, Lean's functions
+as graphs, and the bridge from mathlib's elementary toposes.
+The next phase is the fifth choice: whether the computational core
+keeps a checker and prover of its own, or its equations are proved in
+the metalogic through the translation of kernel terms, whose
+denotations, functions, the graphs relate to the model's arrows. The
+computational core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the type checker's preservation of
 types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
 `bootstrap/metalogic/equations.geb`: for every environment `G`, contexts
