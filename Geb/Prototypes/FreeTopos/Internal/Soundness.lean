@@ -528,6 +528,119 @@ theorem check_node (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : Li
     check G E n (RoseTree.node l cs) = checkStep G E n l (cs.map fun c ↦ (c, check G E n c)) :=
   RoseTree.para_node _ l cs
 
+/-- A derivation of the identity rule rewrites a term only to itself. -/
+theorem check_isRefl {G : Globals} {E : Array Entry} {n : ℕ} {c : Deriv}
+    (hc : c.label.isRefl = true) {Γ : List Tree} {Φ : List Term} {t t' : Term}
+    (h : (check G E n c).1 Γ Φ t = some t') : t' = t := by
+  obtain ⟨l, cs, rfl⟩ : ∃ l cs, c = RoseTree.node l cs :=
+    ⟨_, _, (RoseTree.node_label_children c).symm⟩
+  cases l <;> simp only [RoseTree.label_node, Rule.isRefl, reduceCtorEq] at hc
+  rw [check_node] at h
+  rcases cs with _ | ⟨c', cs⟩
+  · exact (Option.some_inj.mp h).symm
+  · simp [checkStep] at h
+
+/-- Where a node compiles in an environment of a context's types, the contexts of its children
+are defined. -/
+theorem childCtxs_isSome {G : Globals} {n : ℕ} {l : Label} {ts : List Term} {Γ : List Tree}
+    (Φ : List Term) {X : Tree} {e : List (Tree × Tree)} {r : Tree × Tree}
+    (hΓ : e.map Prod.snd = Γ) (h : compile G n (RoseTree.node l ts) X e = some r) :
+    ∃ Γs, childCtxs G n l ts Γ Φ = some Γs := by
+  cases l with
+  | natRec =>
+    obtain ⟨z, s, m, rfl, z', c, hz, s', hs, m', hm, rfl⟩ := compile_natRec_iff.mp h
+    have hc : typeIn G n [] z = some c := by
+      change (compile G n z one []).map Prod.snd = some c
+      rw [hz]
+      rfl
+    refine ⟨[([], []), ([c], []), (Γ, Φ)], ?_⟩
+    change (typeIn G n [] z).bind (fun c ↦ some [([], []), ([c], []), (Γ, Φ)]) = _
+    rw [hc, Option.bind_some]
+  | listRec =>
+    obtain ⟨z, s, m, rfl, m', A, hm, z', c, hz, s', hs, rfl⟩ := compile_listRec_iff.mp h
+    have hc : typeIn G n [] z = some c := by
+      change (compile G n z one []).map Prod.snd = some c
+      rw [hz]
+      rfl
+    obtain ⟨f₀, hf₀⟩ := compile_retype m X e _ hm (ctxObj Γ) (stdEnv Γ)
+      (by rw [map_snd_stdEnv, hΓ])
+    have hmt : typeIn G n Γ m = some (list A) := by
+      change (compile G n m (ctxObj Γ) (stdEnv Γ)).map Prod.snd = some (list A)
+      rw [hf₀]
+      rfl
+    refine ⟨[([], []), ([c, A], []), (Γ, Φ)], ?_⟩
+    change (typeIn G n [] z).bind (fun c ↦ ((typeIn G n Γ m).bind listPart).bind
+      fun a ↦ some [([], []), ([c, a], []), (Γ, Φ)]) = _
+    rw [hc, Option.bind_some, hmt, Option.bind_some, listPart_eq_some.mpr rfl, Option.bind_some]
+  | roseRec c =>
+    obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
+    obtain ⟨f₀, hf₀⟩ := compile_retype m X e _ hm (ctxObj Γ) (stdEnv Γ)
+      (by rw [map_snd_stdEnv, hΓ])
+    have hmt : typeIn G n Γ m = some t := by
+      change (compile G n m (ctxObj Γ) (stdEnv Γ)).map Prod.snd = some t
+      rw [hf₀]
+      rfl
+    refine ⟨[([prod a (list c)], []), (Γ, Φ)], ?_⟩
+    change ((typeIn G n Γ m).bind roseParts).bind
+      (fun p ↦ some [([prod p.1 (list c)], []), (Γ, Φ)]) = _
+    rw [hmt, Option.bind_some, ht, Option.bind_some]
+  | lam a => rcases ts with _ | ⟨b, _ | ⟨b', ts⟩⟩ <;> exact ⟨_, rfl⟩
+  | _ => exact ⟨_, rfl⟩
+
+/-- The contexts of a node's children number its children. -/
+theorem childCtxs_length {G : Globals} {n : ℕ} {l : Label} {ts : List Term} {Γ : List Tree}
+    {Φ : List Term} {Γs : List (List Tree × List Term)} (hΓs : childCtxs G n l ts Γ Φ = some Γs) :
+    Γs.length = ts.length := by
+  unfold childCtxs at hΓs
+  split at hΓs
+  · cases hΓs
+    rfl
+  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at hΓs
+    obtain ⟨_, -, rfl⟩ := hΓs
+    rfl
+  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at hΓs
+    obtain ⟨_, -, _, -, rfl⟩ := hΓs
+    rfl
+  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at hΓs
+    obtain ⟨_, -, rfl⟩ := hΓs
+    rfl
+  · cases hΓs
+    exact List.length_map _
+
+/-- The contexts {lit}`childCtxs` gives the children in the node's context are the node's. -/
+theorem childCtxs_sameCtx {G : Globals} {n : ℕ} {l : Label} {ts : List Term} {Γ : List Tree}
+    {Φ : List Term} {Γs : List (List Tree × List Term)} (hΓs : childCtxs G n l ts Γ Φ = some Γs)
+    {i : ℕ} {p : List Tree × List Term} (hp : Γs[i]? = some p) (hi : sameCtx l i = true) :
+    p = (Γ, Φ) := by
+  unfold childCtxs at hΓs
+  split at hΓs
+  · simp [sameCtx] at hi
+  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at hΓs
+    obtain ⟨_, -, rfl⟩ := hΓs
+    obtain rfl : i = 2 := by simpa [sameCtx] using hi
+    simp only [List.getElem?_cons_succ, List.getElem?_cons_zero, Option.some.injEq] at hp
+    exact hp.symm
+  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at hΓs
+    obtain ⟨_, -, _, -, rfl⟩ := hΓs
+    obtain rfl : i = 2 := by simpa [sameCtx] using hi
+    simp only [List.getElem?_cons_succ, List.getElem?_cons_zero, Option.some.injEq] at hp
+    exact hp.symm
+  · simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at hΓs
+    obtain ⟨_, -, rfl⟩ := hΓs
+    obtain rfl : i = 1 := by simpa [sameCtx] using hi
+    simp only [List.getElem?_cons_succ, List.getElem?_cons_zero, Option.some.injEq] at hp
+    exact hp.symm
+  · cases hΓs
+    simp only [List.getElem?_map, Option.map_eq_some_iff] at hp
+    obtain ⟨_, -, rfl⟩ := hp
+    rfl
+
 variable (hM : IsModel (ext defs) M) {G : Globals} (hG : G.WF) {n : ℕ}
   (hρ : ρ.map Sigma.fst = List.replicate n obj) (hps : PrimsHom M ρ G n) (hds : DefsHom M ρ G n)
 include hM hG hρ hps hds
@@ -1684,6 +1797,28 @@ theorem cong_sound {l : Label} {ts ts' : List Term} {Γ : List Tree} {Φ : List 
     exact ⟨_, compile_defn_iff.mpr ⟨d, rs', hd, hrs', hl, hθ,
       (map_snd_of_forall₂ hRR).trans hsnd, rfl⟩, rfl,
       eval_op₂_congr 3 rfl (eval_tuple_of_forall₂ X hRR)⟩
+
+/-- Congruence in the node's context is sound: a node whose children rewrite soundly in its
+context, each child not in the node's context rewriting to itself, rewrites soundly to the node
+of their rewrites. -/
+theorem cong_sound_same {l : Label} {ts ts' : List Term} {Γ : List Tree} {Φ : List Term}
+    (hR : List.Forall₂ (RwSound M ρ G n Γ Φ) ts ts')
+    (hkeep : ∀ (i : ℕ) (h₁ : i < ts.length) (h₂ : i < ts'.length), sameCtx l i = false →
+      ts'[i] = ts[i]) :
+    RwSound M ρ G n Γ Φ (RoseTree.node l ts) (RoseTree.node l ts') := by
+  intro X e he hΓ hΦ r h
+  obtain ⟨Γs, hΓs⟩ := childCtxs_isSome Φ hΓ h
+  have hlen := childCtxs_length hΓs
+  obtain ⟨hl, hR⟩ := List.forall₂_iff_get.mp hR
+  refine cong_sound hM hG hρ hps hds hΓs ?_ X e he hΓ hΦ r h
+  refine List.forall₂_iff_get.mpr ⟨by simp [hlen, hl], fun i h₁ h₂ ↦ ?_⟩
+  simp only [List.length_zip] at h₁
+  simp only [List.get_eq_getElem, List.getElem_zip]
+  cases hs : sameCtx l i
+  · rw [hkeep i (by omega) h₂ hs]
+    exact RwSound.refl _ _ _
+  · rw [childCtxs_sameCtx hΓs (List.getElem?_eq_getElem _) hs]
+    exact hR i (by omega) h₂
 
 end Rewriting
 

@@ -1475,15 +1475,34 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
       split_ifs at h with hlen
       obtain ⟨ts', hts', h⟩ := Option.bind_eq_some_iff.mp h
       obtain rfl := Option.some_inj.mp h
-      refine cong_sound hM hG hρ hps hds hΓs ?_
-      refine forall₂_zip_imp
-        (P := fun x : Deriv × Checks ↦ ∀ Γ Φ t t', x.2.1 Γ Φ t = some t' →
-          RwSound M ρ G n Γ Φ t t')
-        (R := fun x r ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2 = some r)
-        (fun _ _ _ hx hR ↦ hx _ _ _ _ hR) _ _ _ (by simp [hlen.1, hlen.2])
-        (fun x hx ↦ ?_) (forall₂_of_mapM _ hts')
-      obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
-      exact (ih c hc).1
+      have hR : List.Forall₂ (fun (p : (List Tree × List Term) × Term) u ↦
+          RwSound M ρ G n p.1.1 p.1.2 p.2 u) (Γs.zip ts) ts' := by
+        refine forall₂_zip_imp
+          (P := fun x : Deriv × Checks ↦ ∀ Γ Φ t t', x.2.1 Γ Φ t = some t' →
+            RwSound M ρ G n Γ Φ t t')
+          (R := fun x r ↦ x.1.2.1 x.2.1.1 x.2.1.2 x.2.2 = some r)
+          (fun _ _ _ hx hR ↦ hx _ _ _ _ hR) _ _ _ (by simp [hlen.1, hlen.2])
+          (fun x hx ↦ ?_) (forall₂_of_mapM _ hts')
+        obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hx
+        exact (ih c hc).1
+      unfold congCtxs at hΓs
+      split_ifs at hΓs with hall
+      · obtain rfl := Option.some_inj.mp hΓs
+        refine cong_sound_same hM hG hρ hps hds (forall₂_zip_const
+          (R := fun (p : List Tree × List Term) ↦ RwSound M ρ G n p.1 p.2) ts hR)
+          fun i h₁ h₂ hs ↦ ?_
+        obtain ⟨hl₁, hR₁⟩ := List.forall₂_iff_get.mp (forall₂_of_mapM _ hts')
+        simp only [List.length_zip, List.length_map] at hl₁ hlen
+        have hi : i < cs.length := by omega
+        have hrefl : cs[i].label.isRefl = true := by
+          have := List.all_eq_true.mp hall _
+            (List.getElem_mem (l := (List.map Prod.fst
+              (List.map (fun c ↦ (c, check G E n c)) cs)).zipIdx) (n := i) (by simpa using hi))
+          simpa [List.getElem_zipIdx, hs] using this
+        have hx := hR₁ i (by simp only [List.length_zip, List.length_map]; omega) h₂
+        simp only [List.get_eq_getElem, List.getElem_zip, List.getElem_map] at hx
+        exact check_isRefl hrefl hx
+      · exact cong_sound hM hG hρ hps hds hΓs hR
     all_goals
       rcases cs with _ | ⟨c, cs⟩
       · exact rootStep_sound hM hG hρ hps hds hδ hEl

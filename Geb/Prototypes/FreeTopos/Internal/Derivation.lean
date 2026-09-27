@@ -414,6 +414,29 @@ def childCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tr
     pure [([prod p.1 (list c)], []), (Γ, Φ)]
   | _, ts => some (ts.map fun _ ↦ (Γ, Φ))
 
+/-- Whether a node's child of an index is in the node's context: every child but an
+abstraction's body and a fold's start and step. -/
+def sameCtx (l : Label) (i : ℕ) : Bool := match l with
+  | .lam _ => false
+  | .natRec | .listRec => i = 2
+  | .roseRec _ => i = 1
+  | _ => true
+
+/-- Whether a rule is the identity rewriting. -/
+def Rule.isRefl : Rule → Bool
+  | .refl => true
+  | _ => false
+
+/-- The contexts in which a congruence rewrites a node's children by the derivations
+{lit}`ds`: the node's context for each child where every child not in it has the identity
+derivation, which rewrites a term to itself in any context, and else {lit}`childCtxs`, which
+computes the types a fold's start and datum have. -/
+def congCtxs (G : Globals) (n : ℕ) (l : Label) (ts : List Term) (Γ : List Tree) (Φ : List Term)
+    (ds : List Deriv) : Option (List (List Tree × List Term)) :=
+  if ds.zipIdx.all fun (d, i) ↦ sameCtx l i || d.label.isRefl then
+    some (ts.map fun _ ↦ (Γ, Φ))
+  else childCtxs G n l ts Γ Φ
+
 /-- The rewriting of a term at its root by a rule of the language's equations, with the
 constants of {lit}`G`, the theorems of the language among the entries of {lit}`E` and the
 hypotheses {lit}`Φ`. -/
@@ -497,7 +520,7 @@ def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (D
     | .refl, [] => some t
     | .trans, [(_, c₁), (_, c₂)] => (c₁.1 Γ Φ t).bind (c₂.1 Γ Φ)
     | .cong, cs => do
-      let Γs ← childCtxs G n t.label t.children Γ Φ
+      let Γs ← congCtxs G n t.label t.children Γ Φ (cs.map Prod.fst)
       if cs.length = t.children.length ∧ Γs.length = t.children.length then do
         let ts ← ((cs.zip (Γs.zip t.children)).mapM fun (c, (Δ, Ψ), u) ↦ c.2.1 Δ Ψ u)
         pure (RoseTree.node t.label ts)
