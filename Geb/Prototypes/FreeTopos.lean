@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.FreeTopos.Arrows
 public import Geb.Prototypes.FreeTopos.Category
 public import Geb.Prototypes.FreeTopos.Check
+public import Geb.Prototypes.FreeTopos.Chosen
 public import Geb.Prototypes.FreeTopos.Classifier
 public import Geb.Prototypes.FreeTopos.Coequalizers
 public import Geb.Prototypes.FreeTopos.Coproducts
@@ -28,7 +29,8 @@ rose-tree objects, as a partial Horn theory whose sorts are objects and arrows, 
 that the category of each of its models is an elementary topos, a checker that infers the
 typing of the terms of its certificates, a prover that computes certificates in it, the
 uniqueness of its folds with a parameter, the distributivity of its products over its coproducts,
-and its internal language, compiled to its combinators.
+its internal language, compiled to its combinators, and toposes with chosen structure in dependent
+form.
 -/
 
 set_option doc.verso true
