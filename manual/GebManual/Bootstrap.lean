@@ -148,8 +148,8 @@ sections below detail:
   * In progress (the next phase). The model in Lean with functional
     relations, the second construction, with the converse of the first,
     a model of the theory from a topos with chosen structure and the
-    data objects, which is complete, and the bridge from mathlib's
-    elementary toposes.
+    data objects, and Lean's functions as graphs in it, which are
+    complete, and the bridge from mathlib's elementary toposes.
   * Complete. The definitional extension with its unfolding theorem,
     for the models: the third construction. The unfolding of
     certificates is ready.
@@ -854,8 +854,8 @@ and each phase below opens with a table of the states of its steps.
   * In progress
   * The Mitchell–Bénabou language's fourth stage: complete; the second
     construction, the next phase: in progress, the converse of the
-    first complete; the fifth choice: waiting on the second
-    construction; the checker and prover written in Geb: ready
+    first and the graphs complete; the fifth choice: waiting on the
+    second construction; the checker and prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -2472,8 +2472,8 @@ the term by the citation of a certificate
 #### The second construction and the fifth choice
 
 State: the second construction is in progress (the next phase): the
-converse of the first is complete, and the fifth choice waits on the
-graphs of Lean's functions and the bridge from mathlib.
+converse of the first and the graphs of Lean's functions are complete,
+and the fifth choice waits on the bridge from mathlib.
 
 The fifth choice is deferred until the three constructions are made,
 and the second construction, the model in Lean with morphisms as
@@ -2524,11 +2524,17 @@ It is made in five parts, in order:
   those of variables, and closes the evaluated conclusion by the laws.
   At the record of types and functional relations it gives the second
   construction.
-* Ready. Lean's functions as functional relations: the graph of a
-  function, faithful and preserving the structure the kernel's
-  denotations use, so that a sequent a certificate proves of graphs is
-  a theorem about the functions, the link between the kernel's
-  denotations and the model's arrows on which the fifth choice turns.
+* Complete. Lean's functions as functional relations: the graph of a
+  function determines it ({name}`Geb.FreeTopos.FunRel.ofFun_injective`),
+  and the graphs are closed under composition, pairing, copairing, the
+  folds of the data objects, and currying with evaluation, so that a
+  sequent a certificate proves, or a development that checks, equates
+  the functions whose graphs its sides evaluate to
+  ({name}`Geb.FreeTopos.eq_of_check`,
+  {name}`Geb.FreeTopos.eq_of_checkDevelopment`): the link between the
+  kernel's denotations and the model's arrows on which the fifth choice
+  turns. A test derives, from the prover's development, that the right
+  fold of lists with the empty list and construction is the identity.
 * Ready. The bridge from mathlib: an elementary topos of the
   repository's class, with chosen data objects, gives a record. Its
   subject is the correspondence with mathlib's structures, which use
@@ -2639,8 +2645,8 @@ The next phase is the second construction, the model in Lean with
 morphisms as functional relations, with the converse of the first (the
 section on the second construction and the fifth choice): the record of
 a topos with chosen structure and the data objects, the record of
-Lean's types and functional relations, and the converse, complete;
-Lean's functions as graphs, and the bridge from mathlib's elementary
+Lean's types and functional relations, the converse, and Lean's
+functions as graphs, complete; the bridge from mathlib's elementary
 toposes.
 The fifth choice follows it. The computational
 core's step 3, whose proofs are about kernel programs whichever the
