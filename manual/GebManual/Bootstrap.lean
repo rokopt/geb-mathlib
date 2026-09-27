@@ -2791,26 +2791,26 @@ The restriction to types of first order is Lean's rather than the
 translation's, and it has a factoring that separates the two. Unique
 choice, the principle that a relation relating each element to exactly
 one element is the graph of a function, the axiom of unique choice of
-{citet ContenteMaietti2024}[], section 3.2, makes the representation of
-every function type total on functional relations, so that every
-type's representation relates its values bijectively. Stated in Lean
-as a proposition and taken as a hypothesis, it gives the theorem for
-every type without `Classical.choice`; Lean proves it from
-`Classical.choice`, and every model of the theory validates it without
+{citet ContenteMaietti2024}[], section 3.2, stated in Lean as a
+proposition ({name}`Geb.FreeTopos.UniqueChoice`), makes the
+representation of every function type total on functional relations,
+so that every type's representation relates its values bijectively.
+Taken as a hypothesis, it gives the theorem for every type without
+`Classical.choice`
+({name}`Geb.FreeTopos.Translation.thm_valid_of_uniqueChoice`). Lean
+proves it from `Classical.choice` ({name}`Geb.FreeTopos.uniqueChoice`),
+and the two give the theorem for every type
+({name}`Geb.FreeTopos.Translation.thm_valid_classical`), in two modules
+of their own, admitted to the axiom linter's allowlist; every model of
+the theory validates unique choice without `Classical.choice`
 ({name}`Geb.FreeTopos.unique_choice`). The hypothesis thus marks the
 one step that a proof of the theorem inside the free topos takes from
 the topos's own logic.
 
 The parts that remain:
 
-* Ready (the next part). The translation's soundness for every type:
-  unique choice stated as a proposition of Lean; the soundness for every
-  type under it as a hypothesis, without `Classical.choice`; its proof
-  from `Classical.choice` in a module of its own; and, in another, the
-  soundness for every type from the two, those two modules admitted to
-  the axiom linter's allowlist.
-* Then. The decision, and with it the rest of the computational core's
-  proofs, in the logic it selects.
+* Ready (the next part). The decision, and with it the rest of the
+  computational core's proofs, in the logic it selects.
 
 ## Improvements
 
