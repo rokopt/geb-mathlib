@@ -14,6 +14,7 @@ public import Geb.Prototypes.FreeTopos.Internal.Inversion
 public import Geb.Prototypes.FreeTopos.Internal.Logic
 public import Geb.Prototypes.FreeTopos.Internal.Proofs
 public import Geb.Prototypes.FreeTopos.Internal.Prove
+public import Geb.Prototypes.FreeTopos.Internal.Represent
 public import Geb.Prototypes.FreeTopos.Internal.Semantics
 public import Geb.Prototypes.FreeTopos.Internal.Soundness
 public import Geb.Prototypes.FreeTopos.Internal.Sorting
@@ -32,8 +33,9 @@ combinators, its definitions, compiled to definitions of the
 combinators, and the proof that compiling a term and unfolding the combinators' definitions
 agrees, in every model, with unfolding the language's definitions and compiling; its derivations
 of formulas under hypotheses, their checker and a prover, and the proofs that the checker is
-sound and, citing certificates of the combinators, complete; and its connectives, defined from
-equality, with their rules derived, their meaning in every model, and description.
+sound and, citing certificates of the combinators, complete; its connectives, defined from
+equality, with their rules derived, their meaning in every model, and description; and the
+representation of Lean's functions by its terms in the topos of types and functional relations.
 -/
 
 set_option doc.verso true
