@@ -218,12 +218,12 @@ arrows. -/
 theorem compile_subst (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj)
     (hps : PrimsHom M ρ G n) (hds : DefsHom M ρ G n) (s : Term) :
     ∀ (X : Tree) (E : List (Tree × Tree)) (r : Tree × Tree), compile G n s X E = some r →
-      ∀ (e : List (Tree × Tree)) (σ : ℕ → Term), EnvHom M ρ n X e →
+      ∀ (e : List (Tree × Tree)) (σ : ℕ → Term), EnvHom M ρ G n X e →
       SubstEq M ρ G n X e σ E →
       ∃ r', compile G n (Term.subst s σ) X e = some r' ∧ ResEq M ρ r r' := by
   refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (E : List (Tree × Tree)) (r : Tree × Tree),
     compile G n s X E = some r → ∀ (e : List (Tree × Tree)) (σ : ℕ → Term),
-      EnvHom M ρ n X e → SubstEq M ρ G n X e σ E →
+      EnvHom M ρ G n X e → SubstEq M ρ G n X e σ E →
       ∃ r', compile G n (Term.subst s σ) X e = some r' ∧ ResEq M ρ r r')
     (fun l cs ih ↦ ?_) s
   intro X E r h e σ he hσ
@@ -251,7 +251,7 @@ theorem compile_subst (hG : G.WF) (hρ : ρ.map Sigma.fst = List.replicate n obj
     exact ⟨_, compile_snd_iff.mpr ⟨_, f', a, b, rfl, ht', rfl⟩, rfl, eval_op₂_congr 3 rfl hf⟩
   | lam a =>
     obtain ⟨t, f, b, rfl, hat, ht, rfl⟩ := compile_lam_iff.mp h
-    have hA := isObj_of_isTy hM hρ a hat
+    have hA := isObj_of_isTy hM hds.2 hρ a hat
     have fX := fst_hom hM he.1 hA
     -- the lifted substitution compiles, in the extended environment, to the extended values
     have hσ' : SubstEq M ρ G n (prod X a) (extEnv X a e) (Term.liftS σ) (extEnv X a E) := by
@@ -325,7 +325,7 @@ def substPair (θ : List Tree) (p : Tree × Tree) : Tree × Tree :=
   (PartialHorn.subst θ p.1, PartialHorn.subst θ p.2)
 
 /-- A type is in the scope of its object variables. -/
-theorem scoped_of_isTy {n : ℕ} : ∀ A : Tree, IsTy n A = true → Scoped n A = true :=
+theorem scoped_of_isTy {n : ℕ} : ∀ A : Tree, IsTy G n A = true → Scoped n A = true :=
   RoseTree.ind fun l cs ih hA ↦ by
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
@@ -335,7 +335,7 @@ theorem scoped_of_isTy {n : ℕ} : ∀ A : Tree, IsTy n A = true → Scoped n A 
       rw [isTy_var_node] at hA
       rw [PartialHorn.scoped_node_zero]
       exact hA
-    · change IsTy n (op k cs) = true at hA
+    · change IsTy G n (op k cs) = true at hA
       rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA
       rw [PartialHorn.scoped_node_succ, List.all_eq_true]
       exact fun c hc ↦ ih c hc (hA.2 c hc)
@@ -398,7 +398,7 @@ theorem roseParts_subst (θ : List Tree) {t a : Tree} {F : Tree → Tree}
 /-- A term with objects substituted for its object variables compiles, in the substituted
 environment, to its arrow and type with them substituted. -/
 theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = n)
-    (hθ : θ.all (IsTy m) = true) (s : Term) :
+    (hθ : θ.all (IsTy G m) = true) (s : Term) :
     ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
       compile G m (Term.osubst θ s) (PartialHorn.subst θ X) (e.map (substPair θ)) =
         some (substPair θ r) := by
@@ -409,8 +409,8 @@ theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = 
   intro X e r h
   rw [Term.osubst_node]
   have hty := isTy_subst hl hθ
-  have hall : ∀ θ' : List Tree, θ'.all (IsTy n) = true →
-      (θ'.map (PartialHorn.subst θ)).all (IsTy m) = true := fun θ' h' ↦ by
+  have hall : ∀ θ' : List Tree, θ'.all (IsTy G n) = true →
+      (θ'.map (PartialHorn.subst θ)).all (IsTy G m) = true := fun θ' h' ↦ by
     rw [List.all_map, List.all_eq_true]
     exact fun x hx ↦ hty x (List.all_eq_true.mp h' x hx)
   cases l with
@@ -493,7 +493,7 @@ theorem compile_osubst (hG : G.WF) {m : ℕ} {θ : List Tree} (hl : θ.length = 
   | defn k θ' =>
     obtain ⟨d, rs, hd, hrs, hl', hθ', htys, rfl⟩ := compile_defn_iff.mp h
     obtain ⟨hpt, htt⟩ := hG.defs k d hd
-    have hsub : ∀ x : Tree, IsTy d.arity x = true →
+    have hsub : ∀ x : Tree, IsTy G d.arity x = true →
         PartialHorn.subst θ (PartialHorn.subst θ' x) =
           PartialHorn.subst (θ'.map (PartialHorn.subst θ)) x :=
       fun x hx ↦ subst_subst θ θ' x (hl' ▸ scoped_of_isTy x hx)

@@ -176,14 +176,14 @@ sections below detail:
       declared in a development, each confirmed by its compilation, by
       the checker's inference, or by a certificate that may cite the
       theorems before it.
-    * Ready. Definitions of the combinators declared in a development,
-      objects among them as types of the language.
-    * Waiting on the definitions of the combinators. Quotient types: the
-      coequalizer of a relation's projections, with its rules.
-    * Waiting on the definitions of the combinators. The partial Horn
-      logic's term model and completeness theorem, the completeness of
-      the language with its citations, and the round trips of the
-      compilation.
+    * Complete. Object definitions declared in a development: objects
+      of the combinators in object parameters, which name types of the
+      language.
+    * Ready. Quotient types: the coequalizer of a relation's
+      projections, with its rules.
+    * Ready. The partial Horn logic's term model and completeness
+      theorem, the completeness of the language with its citations, and
+      the round trips of the compilation.
   * Waiting on the second construction. The fifth choice.
   * Waiting on the fourth stage, whose completeness settles the
     language's rules. The checker and prover written in Geb.
@@ -852,9 +852,9 @@ and each phase below opens with a table of the states of its steps.
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage: in progress, its
-    citations of certificates and its declared definitions and primitive
-    arrows complete, its declared definitions of the combinators ready,
-    and its quotient types and completeness theorems waiting in turn; the
+    citations of certificates, its declared definitions and primitive
+    arrows, and its object definitions complete, and its quotient types
+    and completeness theorems ready in turn; the
     second construction and the converse of the first: ready; the fifth
     choice: waiting on the second construction; the checker and prover
     written in Geb: waiting on the fourth stage
@@ -2219,10 +2219,9 @@ State: in progress (the next phase). Its parts, in order:
   trees over a type of labels, with induction on rose trees.
 * Complete. Citations between the two checkers.
 * Complete. Declared definitions of the language and primitive arrows.
-* Ready. Declared definitions of the combinators.
-* Waiting on the definitions of the combinators. Quotient types.
-* Waiting on the definitions of the combinators. The completeness
-  theorems and the round
+* Complete. Object definitions.
+* Ready. Quotient types.
+* Ready. The completeness theorems and the round
   trips.
 
 The arrow a relation determines is the second projection after the
@@ -2335,9 +2334,9 @@ sound by the certificates' checker's soundness
 ({name}`Geb.FreeTopos.Internal.cert_sound`). A certificate is checked in
 the theory extended by the compilations of the language's definitions,
 so a development citing certificates has no definitions of the
-combinators before the language's; declared definitions of the
-combinators make those definitions declarations of the development. The
-prover's library of
+combinators before the language's; its own objects and arrows of the
+combinators are object definitions and primitive arrows declared in it.
+The prover's library of
 the combinators opens a development that the language continues: the
 language proves that appending the empty list gives the list by
 induction, the prover proves that appending it twice does by rewriting
@@ -2357,7 +2356,7 @@ the checker's inference of its domain and codomain, or by a certificate
 of the sequent that its composite with the identities of its domain and
 of its codomain is itself ({name}`Geb.FreeTopos.Internal.Prim.seq`),
 since that composite is defined only where they are its domain and
-codomain ({name}`Geb.FreeTopos.Internal.Prim.hom_of_seq`); the
+codomain ({name}`Geb.FreeTopos.Internal.Prim.val_of_seq`); the
 certificate may cite the theorems before it, whose validity uses only
 the constants before them. A theorem valid with fewer constants is valid
 with more, its formulas compiling to the same arrows
@@ -2376,24 +2375,39 @@ confirmed by the prover's certificate, a definition applying adding
 two, and a theorem applying the three
 (`GebTests/Prototypes/FreeTopos/InternalConstants.lean`).
 
-Declared definitions of the combinators, ready. A definition of the
-combinators is a term of the combinators in object parameters, an object
-or an arrow, declared in a development and confirmed as a primitive
-arrow is. A type names an object definition by its operation, so that
-typing remains a syntactic test, and a certificate names an arrow
-definition by its operation. The partial constructions whose
-definedness a certificate establishes, the factorization through an
-equalizer and the descent through a coequalizer, have objects that are
-not types as domains or codomains, and become primitive arrows between
-object definitions. The definitions of the combinators that a
-development citing certificates may not have before the language's, the
-arrow a functional relation determines among them, become declarations
-of the development.
+Object definitions, complete. An object definition is an object of
+the combinators in object parameters, declared in a development
+({name}`Geb.FreeTopos.Internal.Definition`) and confirmed by the
+checker's inference of its definedness or by a certificate of it
+({name}`Geb.FreeTopos.Internal.objConfirms`). It compiles to a
+definition of the combinators, and its operation at types is a type, so
+that typing remains a syntactic test, the object definitions of the
+constants among the operations that build types
+({name}`Geb.FreeTopos.Internal.IsTy`). The language's definitions and
+the object definitions are one list, each the operation of its
+position. A primitive arrow's types may name object definitions: the
+inference confirms it where the canonical forms of its inferred domain
+and codomain are those of its types. As the object definitions grow the
+types, a development's invariant is stated at every assignment of
+objects to the constants' object parameters rather than at types
+({name}`Geb.FreeTopos.Internal.DefsVal`), and at types follows by
+substitution. A development declares the pairs of an object parameter,
+confirmed by the inference, the product of the natural numbers with
+themselves, confirmed by the prover's certificate, arrows into and out
+of the pairs, and theorems in a context of the pairs
+(`GebTests/Prototypes/FreeTopos/InternalConstants.lean`). The partial
+constructions whose definedness a certificate establishes, the
+factorization through an equalizer and the descent through a
+coequalizer, have as domains or codomains objects that object
+definitions name, and enter a development as primitive arrows confirmed
+by certificates; an arrow of a definition of the combinators, the arrow
+a functional relation determines among them, enters as a primitive
+arrow of its body.
 
-Quotient types, waiting on the definitions of the combinators. The
+Quotient types, ready. The
 quotient of a type by a relation, a formula in two variables of the
 type, is the coequalizer of the two projections of the relation's
-pullback of truth, an object definition of the combinators, and the
+pullback of truth, an object definition, and the
 arrow to it a primitive arrow. The rules are these:
 related elements have equal images in the quotient, by the coequalizer's
 equation; a formula holds of every element of the quotient when it holds
@@ -2410,7 +2424,7 @@ isomorphism follows the bootstrap (the road map). An equivalence
 relation and its coequalizer state a quotient as programs state it,
 where the object of equivalence classes states it as a set of subsets.
 
-Completeness, waiting on the definitions of the combinators. The partial
+Completeness, ready. The partial
 Horn logic's term model and its completeness theorem, of the section on
 soundness and completeness, give the completeness of the language
 citing certificates, and the round trips of the compilation, a
@@ -2512,10 +2526,10 @@ fourth stage):
    sequent it compiles to, and the theorems of the language as theorems
    of a certificate's environment, in a development of declarations of
    both kinds.
-2. Declared constants: the language's definitions and primitive arrows
-   as declarations of the development beside its theorems, complete; and
-   definitions of the combinators, objects among them as types of the
-   language, next; each confirmed by the checker's inference or by a
+2. Declared constants, complete: the language's definitions, primitive
+   arrows and object definitions, objects of the combinators that name
+   types of the language, as declarations of the development beside its
+   theorems, each confirmed by the checker's inference or by a
    certificate, which may cite the theorems before it.
 3. Quotient types: the coequalizer of a relation's projections, with
    the arrow to it, the equality of related elements' images, induction

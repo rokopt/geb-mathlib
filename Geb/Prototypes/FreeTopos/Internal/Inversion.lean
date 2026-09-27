@@ -169,7 +169,7 @@ theorem compile_snd_iff {cs : List Term} {X : Tree} {e : List (Tree × Tree)}
 /-- The compilation of an abstraction. -/
 theorem compile_lam_iff {a : Tree} {cs : List Term} {X : Tree} {e : List (Tree × Tree)}
     {r : Tree × Tree} : compile G n (RoseTree.node (.lam a) cs) X e = some r ↔
-      ∃ t f b, cs = [t] ∧ IsTy n a = true ∧
+      ∃ t f b, cs = [t] ∧ IsTy G n a = true ∧
         compile G n t (prod X a) (extEnv X a e) = some (f, b) ∧
         (curry X a f, exp a b) = r := by
   rw [compile_node]
@@ -190,7 +190,7 @@ theorem compile_arr_iff {k : ℕ} {θ : List Tree} {cs : List Term} {X : Tree}
     {e : List (Tree × Tree)} {r : Tree × Tree} :
     compile G n (RoseTree.node (.arr k θ) cs) X e = some r ↔
       ∃ t, cs = [t] ∧ ∃ p, G.prims[k]? = some p ∧ ∃ g, compile G n t X e =
-        some (g, PartialHorn.subst θ p.dom) ∧ θ.length = p.arity ∧ θ.all (IsTy n) = true ∧
+        some (g, PartialHorn.subst θ p.dom) ∧ θ.length = p.arity ∧ θ.all (IsTy G n) = true ∧
         (comp (PartialHorn.subst θ p.arrow) g, PartialHorn.subst θ p.cod) = r := by
   rw [compile_node]
   rcases cs with _ | ⟨t, _ | ⟨u, cs⟩⟩ <;>
@@ -220,7 +220,7 @@ theorem compile_listRec_iff {cs : List Term} {X : Tree} {e : List (Tree × Tree)
 /-- The compilation of a fold of a rose tree. -/
 theorem compile_roseRec_iff {c : Tree} {cs : List Term} {X : Tree} {e : List (Tree × Tree)}
     {r : Tree × Tree} : compile G n (RoseTree.node (.roseRec c) cs) X e = some r ↔
-      ∃ s m m' t a F s', cs = [s, m] ∧ IsTy n c = true ∧ compile G n m X e = some (m', t) ∧
+      ∃ s m m' t a F s', cs = [s, m] ∧ IsTy G n c = true ∧ compile G n m X e = some (m', t) ∧
         roseParts t = some (a, F) ∧
         compile G n s (prod a (list c)) [(idt (prod a (list c)), prod a (list c))] =
           some (s', c) ∧ (comp (F s') m', c) = r := by
@@ -228,16 +228,27 @@ theorem compile_roseRec_iff {c : Tree} {cs : List Term} {X : Tree} {e : List (Tr
   rcases cs with _ | ⟨s, _ | ⟨m, _ | ⟨v, cs⟩⟩⟩ <;>
     simp [compileStep, Option.bind_eq_some_iff, Prod.exists]
 
+/-- A definition is a given definition of the language exactly when it is that one. -/
+theorem Definition.language?_eq_some {d : Definition} {d' : Defn} :
+    d.language? = some d' ↔ d = .language d' := by
+  cases d <;> simp [Definition.language?]
+
+/-- The definition of the language at a position, where there is one. -/
+theorem bind_language?_eq_some {o : Option Definition} {d : Defn} :
+    o.bind Definition.language? = some d ↔ o = some (.language d) := by
+  simp [Option.bind_eq_some_iff, Definition.language?_eq_some]
+
 /-- The compilation of an application of a definition. -/
 theorem compile_defn_iff {k : ℕ} {θ : List Tree} {cs : List Term} {X : Tree}
     {e : List (Tree × Tree)} {r : Tree × Tree} :
     compile G n (RoseTree.node (.defn k θ) cs) X e = some r ↔
-      ∃ d rs, G.defs[k]? = some d ∧ cs.mapM (fun c ↦ compile G n c X e) = some rs ∧
-        θ.length = d.arity ∧ θ.all (IsTy n) = true ∧
+      ∃ d rs, G.defs[k]? = some (.language d) ∧ cs.mapM (fun c ↦ compile G n c X e) = some rs ∧
+        θ.length = d.arity ∧ θ.all (IsTy G n) = true ∧
         rs.map Prod.snd = d.params.map (PartialHorn.subst θ) ∧
         (comp (op (G.base + k) θ) (tuple X (rs.map Prod.fst)), PartialHorn.subst θ d.type) = r := by
   rw [compile_node]
-  simp [compileStep, Option.bind_eq_some_iff, List.mapM_map, Function.comp_def, and_assoc]
+  simp [compileStep, Option.bind_eq_some_iff, List.mapM_map, Function.comp_def, and_assoc,
+    Definition.language?_eq_some]
 
 /-- The compilation of an equality. -/
 theorem compile_eq_iff {cs : List Term} {X : Tree} {e : List (Tree × Tree)} {r : Tree × Tree} :

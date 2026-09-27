@@ -71,7 +71,7 @@ universe v
 
 /-- The connectives' definitions are those of {lit}`G` from the index {lit}`o`. -/
 def LogicAt (G : Globals) (o : ℕ) : Prop :=
-  ∀ (k : ℕ) (d : Defn), (Logic.defs o)[k]? = some d → G.defs[o + k]? = some d
+  ∀ (k : ℕ) (d : Defn), (Logic.defs o)[k]? = some d → G.defs[o + k]? = some (.language d)
 
 /-- A map with failure of a list of one element succeeds at the element. -/
 theorem mapM_one {α β : Type} {f : α → Option β} {a : α} {rs : List β}
@@ -113,9 +113,9 @@ variable (hM : IsModel (ext defs) M) {G : Globals} (hG : G.WF) {n : ℕ}
 include hM hG hρ hps hds hδ
 
 /-- The application of a definition compiles to a result related to its unfolding's. -/
-theorem compile_delta {k : ℕ} {d : Defn} (hd : G.defs[k]? = some d) {θ : List Tree}
+theorem compile_delta {k : ℕ} {d : Defn} (hd : G.defs[k]? = some (.language d)) {θ : List Tree}
     {args : List Term} {t : Term} (ht : Term.subst (Term.osubst θ d.body) (Term.substList args) = t)
-    {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e) {r : Tree × Tree}
+    {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e) {r : Tree × Tree}
     (h : compile G n (Term.defn k θ args) X e = some r) :
     ∃ r', compile G n t X e = some r' ∧ ResEq M ρ r r' :=
   ht ▸ delta_sound hM hG hρ hps hds (Φ := []) hδ hd (e.map Prod.snd) θ args X e he rfl
@@ -125,7 +125,7 @@ omit hδ in
 /-- A term weakened past two new variables compiles, in the environment extended by them, to its
 arrow after the projection to the environment's object. -/
 theorem compile_weaken_two {s : Term} {X a b : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) (ha : IsObj M ρ a) (hb : IsObj M ρ b) {r : Tree × Tree}
+    (he : EnvHom M ρ G n X e) (ha : IsObj M ρ a) (hb : IsObj M ρ b) {r : Tree × Tree}
     (h : compile G n s X e = some r) :
     ∃ r', compile G n (Term.rename (Term.rename s Nat.succ) Nat.succ) (prod (prod X a) b)
         (extEnv (prod X a) b (extEnv X a e)) = some r' ∧
@@ -147,7 +147,7 @@ theorem compile_weaken_two {s : Term} {X a b : Tree} {e : List (Tree × Tree)}
 include hL
 
 /-- Truth holds. -/
-theorem holds_tt {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e) {r : Tree × Tree}
+theorem holds_tt {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e) {r : Tree × Tree}
     (h : compile G n (Logic.tt o) X e = some r) : Holds M ρ X r := by
   obtain ⟨r', h', hr⟩ := compile_delta hM hG hρ hps hds hδ (hL 0 _ rfl)
     (t := Term.eq Term.star Term.star) rfl he h
@@ -162,12 +162,12 @@ theorem holds_tt {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e) {
   exact ⟨rfl, chi_diag_pair_self hM (bang_hom hM he.1)⟩
 
 /-- A conjunction holds exactly when both its formulas hold. -/
-theorem holds_conj_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e)
+theorem holds_conj_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
     {r : Tree × Tree} (h : compile G n (Logic.conj o p q) X e = some r) :
     ∃ P Q, compile G n p X e = some (P, omega) ∧ compile G n q X e = some (Q, omega) ∧
       (Holds M ρ X r ↔ Holds M ρ X (P, omega) ∧ Holds M ρ X (Q, omega)) := by
   obtain ⟨d, rs, hd, hrs, -, -, hsnd, -⟩ := compile_defn_iff.mp h
-  obtain rfl := Option.some_inj.mp (hd.symm.trans (hL 1 _ rfl))
+  obtain rfl := Definition.language.inj (Option.some_inj.mp (hd.symm.trans (hL 1 _ rfl)))
   obtain ⟨⟨Q, c⟩, ⟨P, c'⟩, hq, hp, rfl⟩ := mapM_two hrs
   obtain ⟨rfl, rfl⟩ : c = omega ∧ c' = omega := by simpa [subst_omega] using hsnd
   refine ⟨P, Q, hp, hq, ?_⟩
@@ -200,7 +200,7 @@ theorem holds_conj_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : E
   simp only [Holds, true_and, hT.2]
 
 /-- A conjunction is true after an arrow exactly when both its formulas are. -/
-theorem conj_comp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e)
+theorem conj_comp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
     {C P Q : Tree} (hc : compile G n (Logic.conj o p q) X e = some (C, omega))
     (hp : compile G n p X e = some (P, omega)) (hq : compile G n q X e = some (Q, omega))
     {Y h : Tree} (hh : Hom M ρ h Y X) :
@@ -222,14 +222,14 @@ theorem conj_comp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : En
 
 /-- An implication holds exactly when its consequent is true after every arrow after which its
 antecedent is. -/
-theorem holds_imp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e)
+theorem holds_imp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
     {r : Tree × Tree} (h : compile G n (Logic.imp o p q) X e = some r) :
     ∃ P Q, compile G n p X e = some (P, omega) ∧ compile G n q X e = some (Q, omega) ∧
       (Holds M ρ X r ↔ ∀ Y k : Tree, Hom M ρ k Y X →
         eval M ρ (comp P k) = eval M ρ (comp tru (bang Y)) →
           eval M ρ (comp Q k) = eval M ρ (comp tru (bang Y))) := by
   obtain ⟨d, rs, hd, hrs, -, -, hsnd, -⟩ := compile_defn_iff.mp h
-  obtain rfl := Option.some_inj.mp (hd.symm.trans (hL 2 _ rfl))
+  obtain rfl := Definition.language.inj (Option.some_inj.mp (hd.symm.trans (hL 2 _ rfl)))
   obtain ⟨⟨Q, c⟩, ⟨P, c'⟩, hq, hp, rfl⟩ := mapM_two hrs
   obtain ⟨rfl, rfl⟩ : c = omega ∧ c' = omega := by simpa [subst_omega] using hsnd
   refine ⟨P, Q, hp, hq, ?_⟩
@@ -256,15 +256,15 @@ theorem holds_imp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : En
 /-- A universal quantification holds exactly when the predicate is true at the generic element,
 the second projection of the product with the quantified type. -/
 theorem holds_all_iff {a : Tree} {P : Term} {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) {r : Tree × Tree} (h : compile G n (Logic.all o a P) X e = some r) :
-    ∃ F, IsTy n a = true ∧ compile G n P X e = some (F, exp a omega) ∧
+    (he : EnvHom M ρ G n X e) {r : Tree × Tree} (h : compile G n (Logic.all o a P) X e = some r) :
+    ∃ F, IsTy G n a = true ∧ compile G n P X e = some (F, exp a omega) ∧
       (Holds M ρ X r ↔ eval M ρ (comp (ev a omega) (pair (comp F (fst X a)) (snd X a))) =
         eval M ρ (comp tru (bang (prod X a)))) := by
   obtain ⟨d, rs, hd, hrs, -, hθ, hsnd, -⟩ := compile_defn_iff.mp h
-  obtain rfl := Option.some_inj.mp (hd.symm.trans (hL 3 _ rfl))
+  obtain rfl := Definition.language.inj (Option.some_inj.mp (hd.symm.trans (hL 3 _ rfl)))
   obtain ⟨⟨F, c⟩, hP, rfl⟩ := mapM_one hrs
   obtain rfl : c = exp a omega := by simpa [subst_exp, subst_x, subst_omega] using hsnd
-  have ha : IsTy n a = true := by simpa using hθ
+  have ha : IsTy G n a = true := by simpa using hθ
   refine ⟨F, ha, hP, ?_⟩
   obtain ⟨r', h', hr⟩ := compile_delta hM hG hρ hps hds hδ (hL 3 _ rfl)
     (t := Term.eq P (Term.lam a (Logic.tt o))) rfl he h
@@ -276,7 +276,7 @@ theorem holds_all_iff {a : Tree} {P : Term} {X : Tree} {e : List (Tree × Tree)}
   obtain ⟨t₁, T, b, ht₁, -, hT, hgb⟩ := compile_lam_iff.mp hg
   obtain rfl : t₁ = Logic.tt o := by simpa using ht₁.symm
   obtain ⟨rfl, -⟩ := Prod.mk.inj hgb
-  have hA := isObj_of_isTy hM hρ a ha
+  have hA := isObj_of_isTy hM hds.2 hρ a ha
   have he' := he.ext hM hA ha
   have hTt := holds_tt hM hG hρ hps hds hδ hL he' hT
   obtain rfl : b = omega := hTt.1
@@ -289,7 +289,7 @@ theorem holds_all_iff {a : Tree} {P : Term} {X : Tree} {e : List (Tree × Tree)}
 
 /-- An implication is true after an arrow exactly when its consequent is true after every
 arrow through it after which its antecedent is. -/
-theorem imp_comp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ n X e)
+theorem imp_comp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : EnvHom M ρ G n X e)
     {I P Q : Tree} (hi : compile G n (Logic.imp o p q) X e = some (I, omega))
     (hp : compile G n p X e = some (P, omega)) (hq : compile G n q X e = some (Q, omega))
     {Y k : Tree} (hk : Hom M ρ k Y X) :
@@ -323,7 +323,8 @@ theorem imp_comp_iff {p q : Term} {X : Tree} {e : List (Tree × Tree)} (he : Env
 /-- A universal quantification is true after an arrow exactly when the predicate after it is
 true at the generic element. -/
 theorem all_comp_iff {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) {A F : Tree} (h : compile G n (Logic.all o a Pr) X e = some (A, omega))
+    (he : EnvHom M ρ G n X e) {A F : Tree}
+    (h : compile G n (Logic.all o a Pr) X e = some (A, omega))
     (hF : compile G n Pr X e = some (F, exp a omega)) {Y k : Tree} (hk : Hom M ρ k Y X) :
     eval M ρ (comp A k) = eval M ρ (comp tru (bang Y)) ↔
       eval M ρ (comp (ev a omega) (pair (comp (comp F k) (fst Y a)) (snd Y a))) =
@@ -344,7 +345,7 @@ theorem all_comp_iff {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)}
 /-- A universal quantification of an abstraction true after an arrow has its body true after
 the pairing of the arrow with each element. -/
 theorem all_lam_inst {a : Tree} {b : Term} {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) {A : Tree}
+    (he : EnvHom M ρ G n X e) {A : Tree}
     (h : compile G n (Logic.all o a (Term.lam a b)) X e = some (A, omega)) {Bd : Tree}
     (hb : compile G n b (prod X a) (extEnv X a e) = some (Bd, omega)) {Y k y : Tree}
     (hk : Hom M ρ k Y X) (hy : Hom M ρ y Y a)
@@ -356,7 +357,7 @@ theorem all_lam_inst {a : Tree} {b : Term} {X : Tree} {e : List (Tree × Tree)}
   rw [hb] at hb'
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some_inj.mp hb')
   obtain ⟨rfl, -⟩ := Prod.mk.inj hFc
-  have hAa := isObj_of_isTy hM hρ a ha
+  have hAa := isObj_of_isTy hM hds.2 hρ a ha
   have hY := hk.isObj_dom
   have hBh : Hom M ρ Bd (prod X a) omega :=
     (compile_hom hM hG hρ hps hds _ _ _ _ hb (he.ext hM hAa ha)).1
@@ -380,7 +381,7 @@ theorem all_lam_inst {a : Tree} {b : Term} {X : Tree} {e : List (Tree × Tree)}
 classifier that is true after each arrow at whose pairing with an element the predicate is
 true. -/
 theorem holds_ex_elim {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) {r : Tree × Tree} (h : compile G n (Logic.ex o a Pr) X e = some r)
+    (he : EnvHom M ρ G n X e) {r : Tree × Tree} (h : compile G n (Logic.ex o a Pr) X e = some r)
     (hr : Holds M ρ X r) {F : Tree} (hF : compile G n Pr X e = some (F, exp a omega))
     {R : Tree} (hR : Hom M ρ R X omega)
     (hRF : ∀ Y k y : Tree, Hom M ρ k Y X → Hom M ρ y Y a →
@@ -388,9 +389,9 @@ theorem holds_ex_elim {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)
         eval M ρ (comp R k) = eval M ρ (comp tru (bang Y))) :
     eval M ρ R = eval M ρ (comp tru (bang X)) := by
   obtain ⟨d, rs, hd, -, -, hθ, -, -⟩ := compile_defn_iff.mp h
-  obtain rfl := Option.some_inj.mp (hd.symm.trans (hL 7 _ rfl))
-  have ha : IsTy n a = true := by simpa using hθ
-  have hA := isObj_of_isTy hM hρ a ha
+  obtain rfl := Definition.language.inj (Option.some_inj.mp (hd.symm.trans (hL 7 _ rfl)))
+  have ha : IsTy G n a = true := by simpa using hθ
+  have hA := isObj_of_isTy hM hds.2 hρ a ha
   have hO := isObj_omega (ρ := ρ) hM
   have hX := he.1
   have hty := compile_hom hM hG hρ hps hds
@@ -506,9 +507,9 @@ theorem holds_ex_elim {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)
 /-- A unique existential quantification that holds is an existential quantification that
 holds, and its predicate is true at the pairing of an arrow with at most one element. -/
 theorem holds_exu {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) {r : Tree × Tree} (h : compile G n (Logic.exu o a Pr) X e = some r)
+    (he : EnvHom M ρ G n X e) {r : Tree × Tree} (h : compile G n (Logic.exu o a Pr) X e = some r)
     (hr : Holds M ρ X r) :
-    ∃ F, IsTy n a = true ∧ compile G n Pr X e = some (F, exp a omega) ∧
+    ∃ F, IsTy G n a = true ∧ compile G n Pr X e = some (F, exp a omega) ∧
       (∀ R : Tree, Hom M ρ R X omega → (∀ Y k y : Tree, Hom M ρ k Y X → Hom M ρ y Y a →
         eval M ρ (comp (ev a omega) (pair (comp F k) y)) = eval M ρ (comp tru (bang Y)) →
           eval M ρ (comp R k) = eval M ρ (comp tru (bang Y))) →
@@ -518,11 +519,11 @@ theorem holds_exu {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)}
         eval M ρ (comp (ev a omega) (pair (comp F k) y')) = eval M ρ (comp tru (bang Y)) →
           eval M ρ y = eval M ρ y' := by
   obtain ⟨d, rs, hd, hrs, -, hθ, hsnd, -⟩ := compile_defn_iff.mp h
-  obtain rfl := Option.some_inj.mp (hd.symm.trans (hL 8 _ rfl))
+  obtain rfl := Definition.language.inj (Option.some_inj.mp (hd.symm.trans (hL 8 _ rfl)))
   obtain ⟨⟨F, c⟩, hF, rfl⟩ := mapM_one hrs
   obtain rfl : c = exp a omega := by simpa [subst_exp, subst_x, subst_omega] using hsnd
-  have ha : IsTy n a = true := by simpa using hθ
-  have hA := isObj_of_isTy hM hρ a ha
+  have ha : IsTy G n a = true := by simpa using hθ
+  have hA := isObj_of_isTy hM hds.2 hρ a ha
   have hO := isObj_omega (ρ := ρ) hM
   have hty := compile_hom hM hG hρ hps hds
   obtain ⟨r', h', hr'⟩ := compile_delta hM hG hρ hps hds hδ (hL 8 _ rfl) (θ := [a])
@@ -633,7 +634,7 @@ theorem holds_exu {a : Tree} {Pr : Term} {X : Tree} {e : List (Tree × Tree)}
 /-- Description: a formula of a new variable of which a unique existential quantification holds
 holds at an element of the variable's type, and at no other. -/
 theorem description {B : Tree} {φ : Term} {X : Tree} {e : List (Tree × Tree)}
-    (he : EnvHom M ρ n X e) {r : Tree × Tree}
+    (he : EnvHom M ρ G n X e) {r : Tree × Tree}
     (h : compile G n (Logic.exu o B (Term.lam B φ)) X e = some r) (hr : Holds M ρ X r) :
     ∃ x, Hom M ρ x X B ∧ (∃ q, compile G n φ X ((x, B) :: e) = some q ∧ Holds M ρ X q) ∧
       ∀ x', Hom M ρ x' X B →
@@ -644,7 +645,7 @@ theorem description {B : Tree} {φ : Term} {X : Tree} {e : List (Tree × Tree)}
   obtain rfl := (List.cons.inj ht).1
   obtain ⟨rfl, hc⟩ := Prod.mk.inj hFc
   obtain ⟨-, rfl⟩ := exp_inj hc
-  have hBo := isObj_of_isTy hM hρ B hB
+  have hBo := isObj_of_isTy hM hds.2 hρ B hB
   have hΦh : Hom M ρ Φ (prod X B) omega :=
     (compile_hom hM hG hρ hps hds _ _ _ _ hΦ (he.ext hM hBo hB)).1
   have hev : ∀ {Y k y : Tree}, Hom M ρ k Y X → Hom M ρ y Y B →

@@ -43,7 +43,7 @@ open Geb.FreeTopos.Internal.Logic (nd)
 /-- The constants: the primitive arrows of the natural numbers and lists, the constructions of
 rose trees, and the definitions of appending, addition and the connectives. -/
 def GR : Internal.Globals :=
-  ⟨prims ++ [nodePrim, lnodePrim], defs ++ Internal.Logic.defs 2, sig.length⟩
+  ⟨prims ++ [nodePrim, lnodePrim], (defs ++ Internal.Logic.defs 2).map .language, sig.length⟩
 
 -- the constants are well formed, the primitive arrows of the types they name
 #guard (compileDefs GR).any fun cs ↦ GR.ok (ExtEnv.ofDefs cs)

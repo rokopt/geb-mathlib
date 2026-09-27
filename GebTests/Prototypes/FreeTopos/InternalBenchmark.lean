@@ -153,7 +153,7 @@ def splitDefs : List Internal.Defn := [
 /-- The definitions of the combinators that the four-part definitions compile to, whose
 operations have the arities, domains and codomains of the combinators' benchmark's. -/
 def splitCds : List PartialHorn.Defn :=
-  (compileDefs ⟨prims, splitDefs, sig.length⟩).getD []
+  (compileDefs ⟨prims, splitDefs.map .language, sig.length⟩).getD []
 
 -- the combinators' benchmark's proofs prove its theorems with the compiled four-part
 -- definitions in force, and the development checks

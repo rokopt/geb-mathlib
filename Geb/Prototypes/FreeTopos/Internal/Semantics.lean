@@ -26,8 +26,8 @@ the naturality of currying ({name}`Geb.FreeTopos.curry_comp`).
 
 * {lit}`EnvEq` — two environments of the same types whose arrows have equal values.
 * {lit}`EnvHom` — an environment of arrows from an object.
-* {lit}`PrimsHom`, {lit}`DefsHom` — the primitive arrows and the definitions' operations are
-  arrows.
+* {lit}`PrimsHom`, {lit}`DefsHom`, {lit}`ObjsHom` — the primitive arrows and the definitions'
+  operations are arrows, and the object definitions' operations take objects to objects.
 
 ## Main statements
 
@@ -213,64 +213,69 @@ theorem exists_of_mapM {α β : Type} {f : α → Option β} {l : List α} {rs :
   obtain ⟨a, ha, he⟩ := List.mem_map.mp (h ▸ List.mem_map_of_mem hr : some r ∈ l.map f)
   exact ⟨a, ha, he⟩
 
+section Types
+
+variable {G : Globals}
+
 /-- Whether a type is one: the equation of the type operations. -/
 theorem isTy_op (n k : ℕ) (cs : List Tree) :
-    IsTy n (op k cs) = (decide ((k, cs.length) ∈ tyOps) && cs.all (IsTy n)) := by
+    IsTy G n (op k cs) = (G.isTyOp k cs.length && cs.all (IsTy G n)) := by
   simp only [IsTy, op, RoseTree.para_node, List.length_map]
   rw [List.all_map]
   rfl
 
 /-- A variable is a type when its index is below the number of object variables. -/
 theorem isTy_var_node (n : ℕ) (i : Tree) :
-    IsTy n (RoseTree.node 0 [i]) = decide (i.label < n) := by
+    IsTy G n (RoseTree.node 0 [i]) = decide (i.label < n) := by
   simp [IsTy]
 
 /-- A product of types is a type. -/
-theorem isTy_prod {n : ℕ} {a b : Tree} : IsTy n (prod a b) = (IsTy n a && IsTy n b) := by
-  simp [prod, isTy_op, tyOps]
+theorem isTy_prod {n : ℕ} {a b : Tree} : IsTy G n (prod a b) = (IsTy G n a && IsTy G n b) := by
+  simp [prod, isTy_op, Globals.isTyOp, tyOps]
 
 /-- A coproduct of types is a type. -/
-theorem isTy_coprod {n : ℕ} {a b : Tree} : IsTy n (coprod a b) = (IsTy n a && IsTy n b) := by
-  simp [coprod, isTy_op, tyOps]
+theorem isTy_coprod {n : ℕ} {a b : Tree} : IsTy G n (coprod a b) = (IsTy G n a && IsTy G n b) := by
+  simp [coprod, isTy_op, Globals.isTyOp, tyOps]
 
 /-- An exponential of types is a type. -/
-theorem isTy_exp {n : ℕ} {a b : Tree} : IsTy n (exp a b) = (IsTy n a && IsTy n b) := by
-  simp [exp, isTy_op, tyOps]
+theorem isTy_exp {n : ℕ} {a b : Tree} : IsTy G n (exp a b) = (IsTy G n a && IsTy G n b) := by
+  simp [exp, isTy_op, Globals.isTyOp, tyOps]
 
 /-- A list object of a type is a type. -/
-theorem isTy_list {n : ℕ} {a : Tree} : IsTy n (list a) = IsTy n a := by
-  simp [list, isTy_op, tyOps]
+theorem isTy_list {n : ℕ} {a : Tree} : IsTy G n (list a) = IsTy G n a := by
+  simp [list, isTy_op, Globals.isTyOp, tyOps]
 
 /-- A rose-tree object over a type of labels is a type. -/
-theorem isTy_lrose {n : ℕ} {a : Tree} : IsTy n (lrose a) = IsTy n a := by
-  simp [lrose, isTy_op, tyOps]
+theorem isTy_lrose {n : ℕ} {a : Tree} : IsTy G n (lrose a) = IsTy G n a := by
+  simp [lrose, isTy_op, Globals.isTyOp, tyOps]
 
 /-- A rose-tree object's type of labels is a type where the object is. -/
 theorem isTy_of_roseParts {n : ℕ} {t a : Tree} {F : Tree → Tree} (h : roseParts t = some (a, F))
-    (ht : IsTy n t = true) : IsTy n a = true := by
+    (ht : IsTy G n t = true) : IsTy G n a = true := by
   rcases roseParts_eq_some.mp h with ⟨-, rfl, -⟩ | ⟨rfl, -⟩
-  · simp [nat, isTy_op, tyOps]
+  · simp [nat, isTy_op, Globals.isTyOp, tyOps]
   · simpa [isTy_lrose] using ht
 
 /-- The terminal object is a type. -/
-theorem isTy_one {n : ℕ} : IsTy n one = true := by simp [one, isTy_op, tyOps]
+theorem isTy_one {n : ℕ} : IsTy G n one = true := by simp [one, isTy_op, Globals.isTyOp, tyOps]
 
 /-- The initial object is a type. -/
-theorem isTy_zero {n : ℕ} : IsTy n zero = true := by simp [zero, isTy_op, tyOps]
+theorem isTy_zero {n : ℕ} : IsTy G n zero = true := by simp [zero, isTy_op, Globals.isTyOp, tyOps]
 
 /-- The subobject classifier is a type. -/
-theorem isTy_omega {n : ℕ} : IsTy n omega = true := by simp [omega, isTy_op, tyOps]
+theorem isTy_omega {n : ℕ} : IsTy G n omega = true := by
+  simp [omega, isTy_op, Globals.isTyOp, tyOps]
 
 /-- The natural numbers object is a type. -/
-theorem isTy_nat {n : ℕ} : IsTy n nat = true := by simp [nat, isTy_op, tyOps]
+theorem isTy_nat {n : ℕ} : IsTy G n nat = true := by simp [nat, isTy_op, Globals.isTyOp, tyOps]
 
 /-- The rose-tree object is a type. -/
-theorem isTy_rose {n : ℕ} : IsTy n rose = true := by simp [rose, isTy_op, tyOps]
+theorem isTy_rose {n : ℕ} : IsTy G n rose = true := by simp [rose, isTy_op, Globals.isTyOp, tyOps]
 
 /-- A type in {lit}`m` object variables, with types in {lit}`n` substituted for them, is a type in
 {lit}`n`. -/
-theorem isTy_subst {m n : ℕ} {θ : List Tree} (hl : θ.length = m) (hθ : θ.all (IsTy n) = true) :
-    ∀ A : Tree, IsTy m A = true → IsTy n (PartialHorn.subst θ A) = true :=
+theorem isTy_subst {m n : ℕ} {θ : List Tree} (hl : θ.length = m) (hθ : θ.all (IsTy G n) = true) :
+    ∀ A : Tree, IsTy G m A = true → IsTy G n (PartialHorn.subst θ A) = true :=
   RoseTree.ind fun l cs ih hA ↦ by
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
@@ -282,22 +287,40 @@ theorem isTy_subst {m n : ℕ} {θ : List Tree} (hl : θ.length = m) (hθ : θ.a
       have hi : i.label < θ.length := hl ▸ hA
       rw [List.getElem?_eq_getElem hi, Option.getD_some]
       exact List.all_eq_true.mp hθ _ (List.getElem_mem hi)
-    · change IsTy m (op k cs) = true at hA
+    · change IsTy G m (op k cs) = true at hA
       rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA
-      change IsTy n (PartialHorn.subst θ (op k cs)) = true
+      change IsTy G n (PartialHorn.subst θ (op k cs)) = true
       rw [subst_op, isTy_op, Bool.and_eq_true, List.all_eq_true, List.length_map]
       exact ⟨hA.1, fun c hc ↦ by
         obtain ⟨c', hc', rfl⟩ := List.mem_map.mp hc
         exact ih c' hc' (hA.2 c' hc')⟩
 
+end Types
+
 section Typing
 
 variable {defs : List PartialHorn.Defn} {M : Model.{v} (ext defs).sig} {ρ : List M.Val}
 
+variable (M) in
+/-- Each object definition's operation takes objects to an object. -/
+def ObjsHom (G : Globals) : Prop :=
+  ∀ (k m : ℕ) (b : Tree), G.defs[k]? = some (.object m b) →
+    ∀ ws : List M.Val, ws.map Sigma.fst = List.replicate m obj →
+      ∃ w, M.op (G.base + k) ws = Part.some w ∧ w.1 = obj
+
+/-- Objects have values, objects. -/
+theorem exists_vals_of_isObj :
+    ∀ cs : List Tree, (∀ c ∈ cs, IsObj M ρ c) → ∃ ws : List M.Val,
+      cs.map (eval M ρ) = ws.map Part.some ∧ ws.map Sigma.fst = List.replicate cs.length obj :=
+  List.rec (fun _ ↦ ⟨[], rfl, rfl⟩) fun c cs ih h ↦ by
+    obtain ⟨w, hw, hws⟩ := h c List.mem_cons_self
+    obtain ⟨ws, h₁, h₂⟩ := ih fun c' hc' ↦ h c' (List.mem_cons_of_mem _ hc')
+    exact ⟨w :: ws, by simp [hw, h₁], by simp [hws, h₂, List.replicate_succ]⟩
+
 /-- A type denotes an object at an assignment of objects to its variables. -/
-theorem isObj_of_isTy (hM : IsModel (ext defs) M) {n : ℕ}
+theorem isObj_of_isTy (hM : IsModel (ext defs) M) {G : Globals} (hO : ObjsHom M G) {n : ℕ}
     (hρ : ρ.map Sigma.fst = List.replicate n obj) :
-    ∀ A : Tree, IsTy n A = true → IsObj M ρ A :=
+    ∀ A : Tree, IsTy G n A = true → IsObj M ρ A :=
   RoseTree.ind fun l cs ih hA ↦ by
     rcases l with _ | k
     · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
@@ -314,12 +337,25 @@ theorem isObj_of_isTy (hM : IsModel (ext defs) M) {n : ℕ}
         simp only [List.getElem?_map, List.getElem?_eq_getElem hi,
           List.getElem?_replicate] at this
         simpa [hA] using this
-    · change IsTy n (op k cs) = true at hA
-      rw [isTy_op, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq] at hA
+    · change IsTy G n (op k cs) = true at hA
+      rw [isTy_op, Bool.and_eq_true, List.all_eq_true] at hA
       have hc : ∀ c ∈ cs, IsObj M ρ c := fun c hc ↦ ih c hc (hA.2 c hc)
       change IsObj M ρ (op k cs)
-      simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hA
-      rcases hA.1 with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
+      have h₁ := hA.1
+      simp only [Globals.isTyOp, Bool.or_eq_true, decide_eq_true_eq, Bool.and_eq_true] at h₁
+      rcases h₁ with h₁ | ⟨hk, hm⟩
+      rotate_left
+      · -- an object definition
+        split at hm
+        · rename_i m' b hdef
+          obtain rfl : m' = cs.length := by simpa using hm
+          obtain ⟨ws, hws, hwsort⟩ := exists_vals_of_isObj cs hc
+          obtain ⟨w, hw, hwo⟩ := hO _ _ b hdef ws hwsort
+          rw [Nat.add_sub_cancel' hk] at hw
+          exact ⟨w, (eval_op_of_values hws k).trans hw, hwo⟩
+        · simp at hm
+      simp only [tyOps, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at h₁
+      rcases h₁ with ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ |
           ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩ | ⟨rfl, hl⟩
       · obtain rfl := List.length_eq_zero_iff.mp hl
         exact isObj_one hM
@@ -346,25 +382,26 @@ theorem isObj_of_isTy (hM : IsModel (ext defs) M) {n : ℕ}
 variable (M ρ) in
 /-- An environment over an object, each of whose variables' types is a type and whose arrow is
 an arrow from the object to it. -/
-def EnvHom (n : ℕ) (X : Tree) (e : List (Tree × Tree)) : Prop :=
-  IsObj M ρ X ∧ ∀ p ∈ e, Hom M ρ p.1 X p.2 ∧ IsTy n p.2 = true
+def EnvHom (G : Globals) (n : ℕ) (X : Tree) (e : List (Tree × Tree)) : Prop :=
+  IsObj M ρ X ∧ ∀ p ∈ e, Hom M ρ p.1 X p.2 ∧ IsTy G n p.2 = true
 
 variable (M ρ) in
 /-- Each primitive arrow, at types, is an arrow between its domain and its codomain. -/
 def PrimsHom (G : Globals) (n : ℕ) : Prop :=
   ∀ (k : ℕ) (p : Prim), G.prims[k]? = some p →
-    ∀ θ : List Tree, θ.length = p.arity → θ.all (IsTy n) = true →
+    ∀ θ : List Tree, θ.length = p.arity → θ.all (IsTy G n) = true →
       Hom M ρ (PartialHorn.subst θ p.arrow) (PartialHorn.subst θ p.dom)
         (PartialHorn.subst θ p.cod)
 
 variable (M ρ) in
-/-- Each definition's operation, at types, is an arrow from the product of its parameters' types
-to its value's type. -/
+/-- Each definition of the language's operation, at types, is an arrow from the product of its
+parameters' types to its value's type, and each object definition's operation takes objects to an
+object. -/
 def DefsHom (G : Globals) (n : ℕ) : Prop :=
-  ∀ (k : ℕ) (d : Defn), G.defs[k]? = some d →
-    ∀ θ : List Tree, θ.length = d.arity → θ.all (IsTy n) = true →
+  (∀ (k : ℕ) (d : Defn), G.defs[k]? = some (.language d) →
+    ∀ θ : List Tree, θ.length = d.arity → θ.all (IsTy G n) = true →
       Hom M ρ (op (G.base + k) θ) (ctxObj (d.params.map (PartialHorn.subst θ)))
-        (PartialHorn.subst θ d.type)
+        (PartialHorn.subst θ d.type)) ∧ ObjsHom M G
 
 section
 
@@ -372,8 +409,9 @@ variable (hM : IsModel (ext defs) M)
 include hM
 
 /-- Extending an environment by a variable of a type keeps it an environment of arrows. -/
-theorem EnvHom.ext {n : ℕ} {X a : Tree} {e : List (Tree × Tree)} (h : EnvHom M ρ n X e)
-    (ha : IsObj M ρ a) (hat : IsTy n a = true) : EnvHom M ρ n (prod X a) (extEnv X a e) := by
+theorem EnvHom.ext {G : Globals} {n : ℕ} {X a : Tree} {e : List (Tree × Tree)}
+    (h : EnvHom M ρ G n X e) (ha : IsObj M ρ a) (hat : IsTy G n a = true) :
+    EnvHom M ρ G n (prod X a) (extEnv X a e) := by
   refine ⟨isObj_prod hM h.1 ha, fun p hp ↦ ?_⟩
   simp only [extEnv, List.mem_cons, List.mem_map] at hp
   rcases hp with rfl | ⟨q, hq, rfl⟩
@@ -404,12 +442,12 @@ theorem compile_hom {G : Globals} {n : ℕ} (hG : G.WF)
     (hρ : ρ.map Sigma.fst = List.replicate n obj) (hps : PrimsHom M ρ G n)
     (hds : DefsHom M ρ G n) (s : Term) :
     ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
-      EnvHom M ρ n X e → Hom M ρ r.1 X r.2 ∧ IsTy n r.2 = true := by
+      EnvHom M ρ G n X e → Hom M ρ r.1 X r.2 ∧ IsTy G n r.2 = true := by
   refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree),
-    compile G n s X e = some r → EnvHom M ρ n X e →
-      Hom M ρ r.1 X r.2 ∧ IsTy n r.2 = true) (fun l cs ih ↦ ?_) s
+    compile G n s X e = some r → EnvHom M ρ G n X e →
+      Hom M ρ r.1 X r.2 ∧ IsTy G n r.2 = true) (fun l cs ih ↦ ?_) s
   intro X e r h he
-  have hobj := isObj_of_isTy hM hρ
+  have hobj := isObj_of_isTy hM hds.2 hρ
   cases l with
   | var i =>
     obtain ⟨rfl, hi⟩ := compile_var_iff.mp h
@@ -469,7 +507,7 @@ theorem compile_hom {G : Globals} {n : ℕ} (hG : G.WF)
     obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp h
     obtain ⟨hm', htt⟩ := ih m (by simp) X e _ hm he
     have hat := isTy_of_roseParts ht htt
-    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+    have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨hs', -⟩ := ih s (by simp) _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
     exact ⟨comp_hom hM hm' (roseParts_hom hM ht (hobj a hat) hs'), hct⟩
@@ -485,7 +523,7 @@ theorem compile_hom {G : Globals} {n : ℕ} (hG : G.WF)
       exact (ih c hc X e r hcr he).1
     have ht := tuple_hom hM he.1 rs hr
     rw [hty] at ht
-    exact ⟨comp_hom hM ht (hds k d hd θ hl hθ), isTy_subst hl hθ _ (hG.defs k d hd).2⟩
+    exact ⟨comp_hom hM ht (hds.1 k d hd θ hl hθ), isTy_subst hl hθ _ (hG.defs k d hd).2⟩
 
 end
 
@@ -524,14 +562,14 @@ theorem compile_comp {G : Globals} {n : ℕ} (hG : G.WF)
     (hρ : ρ.map Sigma.fst = List.replicate n obj) (hps : PrimsHom M ρ G n)
     (hds : DefsHom M ρ G n) (s : Term) :
     ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree), compile G n s X e = some r →
-      EnvHom M ρ n X e → ∀ Y h, Hom M ρ h Y X →
+      EnvHom M ρ G n X e → ∀ Y h, Hom M ρ h Y X →
       ∃ r', compile G n s Y (precomp h e) = some r' ∧ ResEq M ρ (comp r.1 h, r.2) r' := by
   refine RoseTree.ind (P := fun s ↦ ∀ (X : Tree) (e : List (Tree × Tree)) (r : Tree × Tree),
-    compile G n s X e = some r → EnvHom M ρ n X e → ∀ Y h, Hom M ρ h Y X →
+    compile G n s X e = some r → EnvHom M ρ G n X e → ∀ Y h, Hom M ρ h Y X →
       ∃ r', compile G n s Y (precomp h e) = some r' ∧ ResEq M ρ (comp r.1 h, r.2) r')
     (fun l cs ih ↦ ?_) s
   intro X e r hc he Y h hh
-  have hobj := isObj_of_isTy hM hρ
+  have hobj := isObj_of_isTy hM hds.2 hρ
   have hty := compile_hom hM hG hρ hps hds
   cases l with
   | var i =>
@@ -640,7 +678,7 @@ theorem compile_comp {G : Globals} {n : ℕ} (hG : G.WF)
     obtain ⟨s, m, m', t, a, F, s', rfl, hct, hm, ht, hs, rfl⟩ := compile_roseRec_iff.mp hc
     obtain ⟨hmt, htt⟩ := hty m X e _ hm he
     have hat := isTy_of_roseParts ht htt
-    have hPt : IsTy n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
+    have hPt : IsTy G n (prod a (list c)) = true := by simp [isTy_prod, isTy_list, hat, hct]
     have hP := hobj _ hPt
     obtain ⟨hs', -⟩ := hty s _ _ _ hs ⟨hP, by simpa using ⟨idt_hom hM hP, hPt⟩⟩
     have hF := roseParts_hom hM ht (hobj a hat) hs'
@@ -669,7 +707,7 @@ theorem compile_comp {G : Globals} {n : ℕ} (hG : G.WF)
     rw [htys] at ht
     exact ⟨_, compile_defn_iff.mpr ⟨d, rs', hd, hrs', hl, hθ, hsn.trans htys, rfl⟩, rfl,
       (eval_op₂_congr 3 rfl htu).trans
-        (comp_assoc hM hh ht (hds k d hd θ hl hθ))⟩
+        (comp_assoc hM hh ht (hds.1 k d hd θ hl hθ))⟩
 
 end
 

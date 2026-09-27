@@ -43,7 +43,8 @@ open Geb.FreeTopos.Internal (Term Thm Deriv Entry Decl Rule byNatIndHyp byListIn
 open Geb.FreeTopos.Internal.Logic (nd tt imp all impI allI)
 
 /-- The constants: the primitive arrows, and appending, addition and the connectives. -/
-def GL : Internal.Globals := ⟨prims, defs ++ Internal.Logic.defs 2, sig.length⟩
+def GL : Internal.Globals :=
+  ⟨prims, (defs ++ Internal.Logic.defs 2).map .language, sig.length⟩
 
 -- the definitions compile, each to a well-formed definition of the combinators over the
 -- signature the earlier ones extend, and the constants are well formed

@@ -45,7 +45,7 @@ case analysis and the arrow from the initial object, and the definitions of appe
 and the connectives. -/
 def GC : Internal.Globals :=
   ⟨prims ++ [inlPrim, inrPrim, casePrim, ⟨1, absurd (x 0), zero, x 0⟩],
-    defs ++ Internal.Logic.defs 2, sig.length⟩
+    (defs ++ Internal.Logic.defs 2).map .language, sig.length⟩
 
 /-- The left injection into the coproduct of {lit}`a` and {lit}`b`. -/
 def inlT (a b : Tree) (t : Term) : Term := Term.arr 4 [a, b] t
