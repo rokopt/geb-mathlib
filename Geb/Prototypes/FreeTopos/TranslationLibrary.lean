@@ -101,7 +101,7 @@ scoped macro (name := objVal) "obj_val" : tactic =>
     try simp only [one, prod, exp, coprod, list, lrose, subst_op, subst_x, List.map_cons,
       List.map_nil, List.getElem?_cons_zero, Option.getD_some]
     try simp_unfold
-    repeat
+    repeat'
       first
       | exact eval_one
       | apply eval_prod
@@ -110,7 +110,8 @@ scoped macro (name := objVal) "obj_val" : tactic =>
       | apply eval_list
       | apply eval_lrose
       | exact Internal.objVal_x0
-      | exact Internal.objVal_x1))
+      | exact Internal.objVal_x1
+      | assumption))
 
 /-- The translation's types are types, at every constants. -/
 scoped macro (name := isTy) "is_ty" : tactic =>
