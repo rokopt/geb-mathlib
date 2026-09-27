@@ -1204,6 +1204,27 @@ theorem truthSub_foldl {X : Tree} :
           ((eval_op₂_congr 3 ((comp_assoc hM hi hm hH).trans hti) rfl).trans (truth_comp hM hk)))
       · exact hall H' h'
 
+omit hG hρ hps hds in
+/-- An arrow after which each of a list of arrows into the subobject classifier is truth, and
+which factors through an arrow into their domain, factors through the inclusion of the subobject
+on which they are truth, folded from that arrow. -/
+theorem truthSub_lift {X Y x : Tree} :
+    ∀ (Hs : List Tree) (S m k : Tree), Hom M ρ m S X → Hom M ρ k Y S →
+      eval M ρ (comp m k) = eval M ρ x →
+      (∀ H ∈ Hs, Hom M ρ H X omega ∧ eval M ρ (comp H x) = eval M ρ (comp tru (bang Y))) →
+      ∃ k', Hom M ρ k' Y (Hs.foldl truthStep (S, m)).1 ∧
+        eval M ρ (comp (Hs.foldl truthStep (S, m)).2 k') = eval M ρ x :=
+  List.rec (fun _ _ k _ hk hmk _ ↦ ⟨k, hk, hmk⟩) fun H Hs ih S m k hm hk hmk hHs ↦ by
+    obtain ⟨hH, hHx⟩ := hHs H List.mem_cons_self
+    have hHm := comp_hom hM hm hH
+    have hHmk : eval M ρ (comp (comp H m) k) = eval M ρ (comp tru (bang Y)) :=
+      (comp_assoc hM hk hm hH).symm.trans ((eval_op₂_congr 3 rfl hmk).trans hHx)
+    obtain ⟨hl, hil⟩ := truthLift_hom hM hHm hk hHmk
+    obtain ⟨hi, -⟩ := truthIncl_hom hM hHm
+    exact ih _ _ _ (comp_hom hM hi hm) hl
+      ((comp_assoc hM hl hi hm).symm.trans ((eval_op₂_congr 3 rfl hil).trans hmk))
+      fun H' h' ↦ hHs H' (List.mem_cons_of_mem _ h')
+
 omit hρ hps hds in
 /-- The sequent of the combinators a valid theorem compiles to is valid. -/
 theorem Thm.seq_valid {a : Thm} (ha : a.Valid M G) : (a.seq G).Valid M := by
@@ -1338,6 +1359,87 @@ theorem cert_sound {E : Array Entry} (hE : ∀ (j : ℕ) (e : Entry), E[j]? = so
   obtain rfl := Option.some_inj.mp (hr₂.symm.trans hu)
   exact (holds_eq_iff hM hG hρ hps hds he ht hu).mpr
     (hres₁.2.trans ((eval_op₂_congr 3 hfg rfl).trans hres₂.2.symm))
+
+/-- A formula proved under hypotheses by a certificate of the sequent its theorem compiles to,
+with the valid entries' sequents as its theorems, holds, when the model's definitions are the
+compilations of the definitions of {lit}`G`: the arrow of an environment in
+which the hypotheses hold factors through the subobject on which their arrows are truth, after
+whose inclusion the conclusion's arrows are equal. -/
+theorem certSeq_sound {E : Array Entry}
+    (hE : ∀ (j : ℕ) (e : Entry), E[j]? = some e → e.Valid M G)
+    (hcert : ∀ cds, compileDefs G = some cds → G.base = sig.length → cds <+: defs)
+    {Γ : List Tree} {Φ : List Term} {φ : Term} (hΦ : ∀ ψ ∈ Φ, typeIn G n Γ ψ = some omega)
+    (hφ : typeIn G n Γ φ = some omega) {c : Tree}
+    (hc : certifies G E c (Thm.seq G ⟨n, Γ, Φ, φ⟩) = true) : FmSound M ρ G n Γ Φ φ := by
+  have hv := certifies_valid hM hG hE hcert hc ρ hρ fun _ h ↦ by simp [Thm.seq] at h
+  intro X e he hΓ hH r hr
+  subst hΓ
+  have hctx : (e.map Prod.snd).all (IsTy G n) = true := by
+    rw [List.all_map, List.all_eq_true]
+    exact fun p hp ↦ (he.2 p hp).2
+  have hstd := stdEnv_hom hM hds.2 hρ _ hctx
+  have hx := tuple_hom hM he.1 e fun p hp ↦ (he.2 p hp).1
+  set a : Thm := ⟨n, e.map Prod.snd, Φ, φ⟩
+  set x := tuple X (e.map Prod.fst)
+  have hform : ∀ {ψ : Term}, typeIn G n (e.map Prod.snd) ψ = some omega →
+      compile G n ψ (ctxObj (e.map Prod.snd)) (stdEnv (e.map Prod.snd)) =
+        some (a.arrow G ψ, omega) := fun h ↦ by
+    obtain ⟨⟨F, A⟩, hF, rfl⟩ := Option.map_eq_some_iff.mp h
+    simp [a, Thm.arrow, hF]
+  -- the environment's arrow factors through the subobject on which the hypotheses hold
+  have hHs : ∀ H ∈ Φ.map (a.arrow G), Hom M ρ H (ctxObj (e.map Prod.snd)) omega ∧
+      eval M ρ (comp H x) = eval M ρ (comp tru (bang X)) := fun H hH' ↦ by
+    obtain ⟨ψ, hψ, rfl⟩ := List.mem_map.mp hH'
+    have hc := hform (hΦ ψ hψ)
+    obtain ⟨r₁, hr₁, hres⟩ := compile_of_stdEnv hM hG hρ hps hds hc he rfl
+    obtain ⟨r₂, hr₂, hh⟩ := hH ψ hψ
+    obtain rfl := Option.some_inj.mp (hr₁.symm.trans hr₂)
+    exact ⟨(compile_hom hM hG hρ hps hds _ _ _ _ hc hstd).1, hres.2.symm.trans hh.2⟩
+  obtain ⟨k, hk, hik⟩ := truthSub_lift hM _ _ _ _ (idt_hom hM hstd.1) hx (idt_comp hM hx) hHs
+  have hm := (truthSub_foldl hM (Φ.map (a.arrow G)) _ _ (idt_hom hM hstd.1)
+    fun H h ↦ (hHs H h).1).1
+  have hside : ∀ {f Y : Tree}, Hom M ρ f (ctxObj (e.map Prod.snd)) Y →
+      eval M ρ (comp f x) = eval M ρ (comp (a.side G f) k) := fun hf ↦ by
+    refine (eval_op₂_congr 3 rfl hik.symm).trans ((comp_assoc hM hk hm hf).trans ?_)
+    by_cases hnil : Φ = []
+    · simp only [Thm.side, a, hnil, ↓reduceIte]
+      exact eval_op₂_congr 3 (comp_idt hM hf) rfl
+    · simp only [Thm.side, a, hnil, ↓reduceIte]
+      rfl
+  cases hq : eqParts φ with
+  | some tu =>
+    obtain ⟨t, u⟩ := tu
+    obtain rfl := eqParts_eq_some hq
+    simp only [Thm.seq, a, hq] at hv
+    obtain ⟨C, hC⟩ := Option.map_eq_some_iff.mp hφ |>.imp fun _ h ↦ h.1
+    obtain ⟨t', u', htu', f, A, hf, g, hg, -⟩ := compile_eq_iff.mp hC
+    simp only [List.cons.injEq, and_true] at htu'
+    obtain ⟨rfl, rfl⟩ := htu'
+    obtain ⟨t', u', htu, f', A', ht, g', hu, rfl⟩ := compile_eq_iff.mp hr
+    simp only [List.cons.injEq, and_true] at htu
+    obtain ⟨rfl, rfl⟩ := htu
+    obtain ⟨r₁, hr₁, hres₁⟩ := compile_of_stdEnv hM hG hρ hps hds hf he rfl
+    obtain rfl := Option.some_inj.mp (hr₁.symm.trans ht)
+    obtain ⟨r₂, hr₂, hres₂⟩ := compile_of_stdEnv hM hG hρ hps hds hg he rfl
+    obtain rfl := Option.some_inj.mp (hr₂.symm.trans hu)
+    have hfh := (compile_hom hM hG hρ hps hds _ _ _ _ hf hstd).1
+    have hgh := (compile_hom hM hG hρ hps hds _ _ _ _ hg hstd).1
+    have harrow : ∀ {s : Term} {F B : Tree}, compile G n s (ctxObj (e.map Prod.snd))
+        (stdEnv (e.map Prod.snd)) = some (F, B) → a.arrow G s = F := fun h ↦ by
+      simp [a, Thm.arrow, h]
+    rw [harrow hf, harrow hg] at hv
+    refine (holds_eq_iff hM hG hρ hps hds he ht hu).mpr (hres₁.2.trans ?_)
+    exact (hside hfh).trans ((eval_op₂_congr 3 (eval_eq_of_holds hv) rfl).trans
+      ((hside hgh).symm.trans hres₂.2.symm))
+  | none =>
+    simp only [Thm.seq, a, hq] at hv
+    have hc := hform hφ
+    obtain ⟨r₁, hr₁, hres⟩ := compile_of_stdEnv hM hG hρ hps hds hc he rfl
+    obtain rfl := Option.some_inj.mp (hr₁.symm.trans hr)
+    have hFh := (compile_hom hM hG hρ hps hds _ _ _ _ hc hstd).1
+    have htX := truth_hom hM hstd.1
+    exact ⟨hres.1, hres.2.trans ((hside hFh).trans ((eval_op₂_congr 3 (eval_eq_of_holds hv)
+      rfl).trans ((hside htX).symm.trans (truth_comp hM hx))))⟩
 
 /-- The checker is sound: every rewriting a derivation performs is sound, and every formula it
 proves holds, with sound unfoldings and valid earlier entries, when the model's definitions are
@@ -1586,6 +1688,12 @@ theorem check_sound (hδ : DefnsOk M G) {E : Array Entry}
             exact cert_sound hM hG hρ hps hds hE hcert hq h
           · simp at h
         · simp at h
+      · simp [checkStep] at h
+    case certSeq c =>
+      rcases cs with _ | ⟨c₀, cs⟩
+      · simp only [checkStep, List.map_nil, Bool.and_eq_true, decide_eq_true_eq] at h
+        obtain ⟨⟨hΦ, hφ⟩, hc⟩ := h
+        exact certSeq_sound hM hG hρ hps hds hE hcert hΦ hφ hc
       · simp [checkStep] at h
     case quotInd kq θ =>
       rcases cs with _ | ⟨c₀, _ | ⟨c₁, cs⟩⟩

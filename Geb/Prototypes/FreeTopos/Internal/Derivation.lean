@@ -32,8 +32,10 @@ successor or a construction; a formula by case analysis on the innermost variabl
 type, with its instances at the two injections; every formula in a context with a variable of
 the initial type; a formula by induction on the innermost variable of the codomain of a
 coequalizer's projection, with its instance at the projection's image of a variable of the
-domain; and an equation by a certificate of the combinators that proves the sequent it compiles
-to. These rules are the basic axioms and rules of a local set theory
+domain; an equation by a certificate of the combinators that proves the sequent it compiles to;
+and a formula under hypotheses by a certificate that proves the sequent its theorem compiles to
+({lit}`Thm.seq`), the rule by which the language is complete. These
+rules are the basic axioms and rules of a local set theory
 ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of the
 formula and membership application, with the extensionality of every exponential in place of that of
 power types, and with induction. The rewriting takes its terms from the term it rewrites, so that a
@@ -172,6 +174,10 @@ inductive Rule where
   /-- An equation by the certificate {lit}`c` of the combinators, which proves the sequent the
   equation compiles to with the development's sequents as its theorems. -/
   | cert (c : Tree)
+  /-- A formula under hypotheses by the certificate {lit}`c` of the combinators, which proves the
+  sequent the theorem of the formula in its context under its hypotheses compiles to, with the
+  development's sequents as its theorems. -/
+  | certSeq (c : Tree)
   /-- An equation between two terms in a context of a rose tree alone, under no hypotheses, by
   induction in the form of the uniqueness of the fold: each side at a construction, the primitive
   of index {lit}`kn`, is the step {lit}`s` at the label and the list of the side's values at the
@@ -591,6 +597,9 @@ def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (D
         | some q => certifies G E c q
         | none => false
       | none => false
+    | .certSeq c, [] =>
+      decide ((∀ ψ ∈ Φ, typeIn G n Γ ψ = some omega) ∧ typeIn G n Γ φ = some omega) &&
+        certifies G E c (Thm.seq G ⟨n, Γ, Φ, φ⟩)
     | .roseInd kn kl kc s, [(_, p₁), (_, p₂)] => match eqParts φ, Γ with
       | some (t, u), [r] => match typeIn G n Γ t, roseParts r with
         | some C, some (a, _) => decide (((G.prims[kn]? = some nodePrim ∧ r = rose) ∨
