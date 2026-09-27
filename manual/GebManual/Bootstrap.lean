@@ -2473,7 +2473,8 @@ the term by the citation of a certificate
 
 State: the second construction is complete, with the converse of the
 first; the fifth choice is the next phase, its measurement made with
-labels that are bitstrings and the translation's correctness next.
+labels that are bitstrings and the translation's correctness proved,
+the decision next.
 
 The fifth choice follows the three constructions.
 
@@ -2765,14 +2766,30 @@ bitstrings' addition, which the core takes as an axiom, are proved once
 and cost 12214 nodes and 620 milliseconds, 10908 of the nodes the
 induction on functions that proves the addition of a successor.
 
+The translation is correct
+({name}`Geb.FreeTopos.Translation.translation_sound`). Each definition
+of the library, compiled and unfolded, represents in the topos of types
+and functional relations the Lean function it computes, the arithmetic
+through the indices of the bitstrings in the bijective numeration. A
+logical relation relates each kernel type's denotation to its
+translation's value ({name}`Geb.FreeTopos.Translation.KRel`), a label to
+the bitstring of its index, and its fundamental lemma states that a
+kernel term's translation, in a represented context, has the type the
+kernel's checker infers and represents the term's denotation
+({name}`Geb.FreeTopos.Translation.repC_term`). A program's translation
+represents, definition by definition, the globals the kernel loads, and
+an equation whose translation a development proves holds in the
+kernel's semantics at each value of its context that has a
+representation. The values of the types of first order, whose function
+types have domains of data, all have one, so that such a theorem is
+valid ({name}`Geb.FreeTopos.Translation.thm_valid`); a value of a
+function type whose domain contains a function type has one by unique
+choice, which the internal language validates and Lean's logic without
+`Classical.choice` does not.
+
 The parts that remain:
 
-* Ready (the next part). The translation's correctness in Lean, by the
-  graphs: the translation of a kernel term, at the numerals of its
-  labels, evaluates in the topos of types and functional relations to
-  the graph of the term's denotation, the primitives' cases by the
-  bitstrings' arithmetic's agreement with the natural numbers'.
-* Waiting on the parts above. The decision, and with it the rest of the
+* Ready (the next part). The decision, and with it the rest of the
   computational core's proofs, in the logic it selects.
 
 ## Improvements
