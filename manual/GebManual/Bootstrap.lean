@@ -148,7 +148,8 @@ sections below detail:
   * In progress (the next phase). The model in Lean with functional
     relations, the second construction, with the converse of the first,
     a model of the theory from a topos with chosen structure and the
-    data objects, and the bridge from mathlib's elementary toposes.
+    data objects, which is complete, and the bridge from mathlib's
+    elementary toposes.
   * Complete. The definitional extension with its unfolding theorem,
     for the models: the third construction. The unfolding of
     certificates is ready.
@@ -852,9 +853,9 @@ and each phase below opens with a table of the states of its steps.
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage: complete; the second
-    construction, the next phase, with the converse of the first: in
-    progress; the fifth choice: waiting on the second construction; the
-    checker and prover written in Geb: ready
+    construction, the next phase: in progress, the converse of the
+    first complete; the fifth choice: waiting on the second
+    construction; the checker and prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -2470,8 +2471,9 @@ the term by the citation of a certificate
 
 #### The second construction and the fifth choice
 
-State: the second construction is in progress (the next phase), with
-the converse of the first, and the fifth choice waits on it.
+State: the second construction is in progress (the next phase): the
+converse of the first is complete, and the fifth choice waits on the
+graphs of Lean's functions and the bridge from mathlib.
 
 The fifth choice is deferred until the three constructions are made,
 and the second construction, the model in Lean with morphisms as
@@ -2512,10 +2514,15 @@ It is made in five parts, in order:
   `Prop`, and the inverse comparison of a monomorphism relates an
   element of the pullback of truth to the element whose image it is
   ({name}`Geb.FreeTopos.FunRel.chiInv`) rather than choosing it.
-* Ready. The converse of the first construction, for the record: every
-  record gives a model of the theory, the partial Horn logic's partial
-  operations and evaluation handled once, axiom by axiom. At the record
-  of types and functional relations it gives the second
+* Complete. The converse of the first construction, for the record:
+  every record gives a model of the theory
+  ({name}`Geb.FreeTopos.ChosenTopos.isModel`), its sorts the record's
+  objects and its arrows with their domains and codomains, each
+  operation defined where the typing axioms make it defined. The
+  validity of every axiom is proved by one procedure, which evaluates
+  the hypotheses into equations of objects and arrows, substitutes
+  those of variables, and closes the evaluated conclusion by the laws.
+  At the record of types and functional relations it gives the second
   construction.
 * Ready. Lean's functions as functional relations: the graph of a
   function, faithful and preserving the structure the kernel's
@@ -2631,8 +2638,8 @@ stage):
 The next phase is the second construction, the model in Lean with
 morphisms as functional relations, with the converse of the first (the
 section on the second construction and the fifth choice): the record of
-a topos with chosen structure and the data objects and the record of
-Lean's types and functional relations, complete; the converse for it,
+a topos with chosen structure and the data objects, the record of
+Lean's types and functional relations, and the converse, complete;
 Lean's functions as graphs, and the bridge from mathlib's elementary
 toposes.
 The fifth choice follows it. The computational
