@@ -15,13 +15,17 @@ set_option doc.verso true in
 A prover, prototyped in Lean, that computes derivations the checker
 {name}`Geb.FreeTopos.Internal.check` checks. It normalizes a term innermost first: it
 normalizes the children, each in its own context, then applies at the root the first rule of a
-list that applies, and normalizes the result. The rules are the language's equations and the
-earlier theorems, whose instances it finds by matching their left sides. It proves an equation by
-normalizing both sides to one term, by induction on the innermost variable with a step it is
-given, and by induction on a rose tree in the form of the uniqueness of its fold, each premise by
-normalization; with the induction hypothesis, it normalizes the
-hypothesis, cuts in the normal form, and rewrites the step by it. The prover is not trusted: a
-derivation it computes is checked.
+list that applies, and normalizes the result; or weak head normal forms first, an argument used
+more than once reduced before it is substituted, so that its value is computed once, and a case
+analysis's branches reduced only once one is selected. The rules are the language's equations,
+the earlier theorems, whose instances it finds by matching their left sides, and the hypotheses.
+It proves an equation by normalizing both sides to one term, by induction on the innermost
+variable with a step it is given, and by induction on a rose tree in the form of the uniqueness
+of its fold, each premise by normalization; with the induction hypothesis, it normalizes the
+hypothesis, cuts in the normal form, and rewrites the step by it. Proofs compose: an equation of
+functions by extensionality, an equation by case analysis of a variable of a coproduct anywhere
+in the context, and list induction whose premises other proofs prove. The prover is not
+trusted: a derivation it computes is checked.
 
 ## Main definitions
 
@@ -29,6 +33,9 @@ derivation it computes is checked.
 * {lit}`normalize` — the normal form of a term and its rewriting derivation.
 * {lit}`byNorm`, {lit}`byNatInd`, {lit}`byListInd`, {lit}`byNatIndHyp`, {lit}`byListIndHyp`,
   {lit}`byRoseInd`, {lit}`byNormW` — the proofs of an equation.
+* {lit}`byFunExt`, {lit}`bySplit`, {lit}`byListIndWith` — the proofs of an equation from proofs
+  of others: of functions by extensionality, by case analysis of a variable of a coproduct
+  anywhere in the context, and by list induction with each premise proved by a prover.
 * {lit}`eval`, {lit}`whnf`, {lit}`normalizeW` — the reduction to a depth, sharing an argument's
   value among its uses, the weak head normal form, and the normal form reached through it.
 
@@ -328,6 +335,57 @@ def byNormW (rs : List NormRule) (fuel : ℕ) (Γ : List Tree) (Φ : List Term) 
   let (v, d₁, _) ← normalizeW G E n rs fuel Γ Φ t
   let (v', d₂, _) ← normalizeW G E n rs fuel Γ Φ u
   if v = v' then some (RoseTree.node .join [d₁, d₂]) else none
+
+/-- A prover of equations: a derivation of the equation of two terms in a context under
+hypotheses. -/
+abbrev Prover : Type := List Tree → List Term → Term → Term → Option Deriv
+
+/-- The abstraction of a term over its variable of index {lit}`i`, of the type {lit}`c`: the
+function whose application to that variable is the term. -/
+def abstractVar (i : ℕ) (c : Tree) (t : Term) : Term :=
+  Term.lam c (Term.subst (weaken1 t) fun j ↦ if j = i + 1 then Term.var 0 else Term.var j)
+
+/-- The proof of an equation of functions by the proof, by {lit}`prove`, of the equation of
+their applications to a new variable. -/
+def byFunExt (prove : Prover) : Prover := fun Γ Φ f g ↦ do
+  let (a, _) ← (typeIn G n Γ f).bind expParts
+  let d ← prove (a :: Γ) (Φ.map weaken1) (Term.app (weaken1 f) (Term.var 0))
+    (Term.app (weaken1 g) (Term.var 0))
+  pure (RoseTree.node .funExt [d])
+
+/-- The proof of an equation by case analysis on the variable of index {lit}`i`, of a coproduct
+whose injections are the primitives of indices {lit}`kl` and {lit}`kr`, each case proved by
+{lit}`prove`: the sides abstracted over the variable are equal functions, by extensionality and
+the case analysis of the new, innermost variable, and the equation follows, cut in as a
+hypothesis, by applying them to the variable. -/
+def bySplit (kl kr i : ℕ) (prove : Prover) : Prover := fun Γ Φ t u ↦ do
+  let c ← Γ[i]?
+  let (a, b) ← coprodParts c
+  let F := abstractVar i c t
+  let H := abstractVar i c u
+  let inj (k : ℕ) (s : Term) : Term := Term.app (weaken1 s) (Term.arr k [a, b] (Term.var 0))
+  let q₀ ← prove (a :: Γ) (Φ.map weaken1) (inj kl F) (inj kl H)
+  let q₁ ← prove (b :: Γ) (Φ.map weaken1) (inj kr F) (inj kr H)
+  let pψ := RoseTree.node .funExt [RoseTree.node (.coprodInd kl kr) [q₀, q₁]]
+  let dχ := RoseTree.node .cong [RoseTree.node .beta [], RoseTree.node .beta []]
+  let pχ := RoseTree.node .join [RoseTree.node .cong
+    [RoseTree.node (.rwHyp Φ.length false) [], RoseTree.node .refl []], RoseTree.node .refl []]
+  let χ := Term.eq (Term.app F (Term.var i)) (Term.app H (Term.var i))
+  pure (RoseTree.node (.cut (Term.eq F H)) [pψ, RoseTree.node (.convFrom χ) [dχ, pχ]])
+
+/-- The proof of an equation in a context of a list variable by induction on it with the
+induction hypothesis, each premise by its prover: the empty list's, and the construction's
+with the induction hypothesis the last of its hypotheses. -/
+def byListIndWith (kn kc : ℕ) (p₀ p₁ : Prover) : Prover := fun Γ Φ t u ↦ match Γ with
+  | c :: Γ' => do
+    let a ← listPart c
+    let Φ' ← lowerHyps G n Γ' Φ
+    let d₀ ← p₀ Γ' Φ' (Term.subst t (instVar (Term.arr kn [a] Term.star)))
+      (Term.subst u (instVar (Term.arr kn [a] Term.star)))
+    let d₁ ← p₁ (c :: a :: Γ') (Φ'.map weaken2 ++ [weakenElem (Term.eq t u)])
+      (listConsAt kc a t) (listConsAt kc a u)
+    pure (RoseTree.node (.listIndHyp kn kc) [d₀, d₁])
+  | [] => none
 
 /-- The proof of an equation in a context of a rose tree alone by induction in the form of the
 uniqueness of the fold, with the step {lit}`s` at the label and the list of the values at the
