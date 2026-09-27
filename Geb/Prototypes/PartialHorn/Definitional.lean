@@ -598,6 +598,11 @@ extend. -/
 def DefnsWF (S : Sig) (ds : List Defn) : Prop :=
   ds.rec (motive := fun _ ↦ Sig → Prop) (fun _ ↦ True) (fun d _ ih S ↦ d.WF S ∧ ih (S.extend d)) S
 
+/-- The definitions before others of a well-formed list are well formed. -/
+theorem defnsWF_of_append (e : List Defn) :
+    ∀ (ds : List Defn) (S : Sig), DefnsWF S (ds ++ e) → DefnsWF S ds :=
+  List.rec (fun _ _ ↦ trivial) fun d _ ih S h ↦ ⟨h.1, ih (S.extend d) h.2⟩
+
 /-- The unfolding of a list of definitions, the last first, so that each definition's unfolding
 meets only the definitions before it. -/
 def unfoldAll (S : Sig) (ds : List Defn) (a : Seq) : Seq :=

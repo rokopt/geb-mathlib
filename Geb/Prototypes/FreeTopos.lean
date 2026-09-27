@@ -27,6 +27,7 @@ public import Geb.Prototypes.FreeTopos.Topos
 public import Geb.Prototypes.FreeTopos.Translation
 public import Geb.Prototypes.FreeTopos.TranslationKernel
 public import Geb.Prototypes.FreeTopos.TranslationLibrary
+public import Geb.Prototypes.FreeTopos.TranslationSound
 public import Geb.Prototypes.FreeTopos.Unfolding
 
 set_option doc.verso true in

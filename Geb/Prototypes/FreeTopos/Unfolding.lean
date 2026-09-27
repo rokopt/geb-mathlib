@@ -77,6 +77,19 @@ theorem unfoldTerm_of_opsBelow (ds : List Defn) :
       rw [ih _ t (opsBelow_mono (by simp [Sig.extend]) t ht)]
       exact unfoldOp_of_opsBelow _ _ t ht)
 
+/-- The unfolding of definitions followed by others is the unfolding of the first in a term of
+the signature extended by them. -/
+theorem unfoldTerm_append (e : List Defn) (ds : List Defn) :
+    ∀ (S : Sig) (t : Tree), OpsBelow (S.extendAll ds).length t = true →
+      unfoldTerm S (ds ++ e) t = unfoldTerm S ds t :=
+  ds.rec (motive := fun ds ↦ ∀ (S : Sig) (t : Tree), OpsBelow (S.extendAll ds).length t = true →
+      unfoldTerm S (ds ++ e) t = unfoldTerm S ds t)
+    (fun S t ht ↦ unfoldTerm_of_opsBelow e S t ht)
+    (fun d ds ih S t ht ↦ by
+      change unfoldOp S.length d.body (unfoldTerm (S.extend d) (ds ++ e) t) =
+        unfoldOp S.length d.body (unfoldTerm (S.extend d) ds t)
+      rw [ih (S.extend d) t ht])
+
 /-- The unfolding of an application of an operation of the signature is the application of the
 operation to the unfolded arguments. -/
 theorem unfoldTerm_op_lt (ds : List Defn) {k : ℕ} (ts : List Tree) :
