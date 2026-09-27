@@ -164,14 +164,25 @@ sections below detail:
   * Complete. Its derivations of equations, its logical rules, and its
     connectives, comprehension and description, the first three stages,
     each with its checker proved sound.
-  * In progress. Its term models and its completeness, with the
-    partial Horn logic's own: the fourth stage (the next phase). The
-    arrow a functional relation determines, a definition of the
-    combinators, is complete, as are binary coproducts, the initial
-    object, and rose trees over a type of labels with induction on rose
-    trees, in the language.
+  * In progress. The fourth stage (the next phase), in order:
+    * Complete. The arrow a functional relation determines, a definition
+      of the combinators; binary coproducts and the initial object; and
+      rose trees over a type of labels, with induction on rose trees.
+    * Ready. Citations between the two checkers: a derivation of the
+      language citing a certificate of the combinators, and a
+      certificate citing a theorem of the language.
+    * Waiting on the citations. Constants of the combinators declared in
+      a development: objects as types of the language and arrows as its
+      primitive arrows, each confirmed by the checker's inference or by
+      a certificate.
+    * Waiting on the constants. Quotient types: the coequalizer of a
+      relation's projections, with its rules.
+    * Waiting on the citations and the constants. The partial Horn
+      logic's term model and completeness theorem, the completeness of
+      the language with its citations, and the round trips of the
+      compilation.
   * Waiting on the second construction. The fifth choice.
-  * Waiting on the fourth stage, whose completeness proof settles the
+  * Waiting on the fourth stage, whose completeness settles the
     language's rules. The checker and prover written in Geb.
 
 Extension:
@@ -216,6 +227,13 @@ in the metalogic otherwise:
   with the rose-tree object and the free topos with a natural numbers
   object; and the extraction of programs from proofs of totality,
   through a realizability topos.
+* The Mitchell–Bénabou language's terms inside the combinators' terms,
+  the direction of the two presentations' mixing that the bootstrap
+  leaves; and the language's own term model, of its provably functional
+  relations after {citet LambekScott1980}[], proving its rules complete
+  without citations of certificates, with the isomorphism of its
+  quotient types and the objects of equivalence classes that power
+  objects construct.
 * A backend without Lean, a milestone separate from the bootstrap (the
   section on what self-compilation establishes).
 
@@ -830,10 +848,12 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the metalogic
   * In progress
-  * The Mitchell–Bénabou language's term models and completeness: in
-    progress; the second construction and the converse of the first:
-    ready; the fifth choice: waiting on the second construction; the
-    checker and prover written in Geb: waiting on the completeness proof
+  * The Mitchell–Bénabou language's fourth stage: in progress, its
+    citations of certificates ready, and its declared constants,
+    quotient types and completeness theorems waiting in turn; the
+    second construction and the converse of the first: ready; the fifth
+    choice: waiting on the second construction; the checker and prover
+    written in Geb: waiting on the fourth stage
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1246,8 +1266,8 @@ the hash written in Geb.
     construction, is ready
 *
   * Metalogic, 2 and 3: the checker and prover in Geb
-  * Waiting on the completeness proof of the Mitchell–Bénabou language,
-    which settles its rules
+  * Waiting on the fourth stage of the Mitchell–Bénabou language, whose
+    completeness settles its rules
 *
   * Acceptance
   * Met for the computational core; waiting, for the metalogic, on its
@@ -1805,10 +1825,11 @@ the formula of equality; its certificates name its rules, as the
 computational core's do, and the checker computes each substitution, so
 that a certificate has the size of the core's rather than of the
 combinators'. The checker is proved sound in Lean against the language's
-interpretation in the free topos, and the language is proved complete
-for it. A user of the language then proves theorems about its
-constructions in the language they are written in, and the compilation
-states what each construction means in the object language. Its terms
+interpretation in the free topos, and the language, with its citations
+of the combinators' certificates, is proved complete for it. A user of
+the language then proves theorems about its constructions in the
+language they are written in, and the compilation states what each
+construction means in the object language. Its terms
 refer to the definitions made in the combinators before it, so that the
 development continues in it without rewriting them.
 
@@ -2026,24 +2047,47 @@ formulations as different as the language's typing and logical rules
 over λ-terms and the axioms of an elementary topos, agreeing on what is
 definable and provable, are evidence for each other, and the partial
 Horn presentation is itself related to mathlib's elementary toposes by
-the first construction. Completeness needs formulas and comprehension,
-since some of the free topos's objects are subobjects, named by
-comprehension over formulas, and it needs description, since some of its
-arrows are given by functional relations. It is proved through the language's term model,
-the topos whose arrows are the language's provably functional
-relations, as {citet LambekScott1980}[] construct the free topos from a
-type theory, with a translation of each combinator into the language
-whose round trips with the compilation are provably the identity; the
-second construction is the same construction over Lean's propositions in
-place of the language's provability. The partial Horn logic's own
-completeness, through the term model of its theory, relates the
-combinators' checker to the same models from the other side. The stages
-are the checker with equations as its formulas and induction as the
-uniqueness of recursion, measured against the core's certificates; the
-logical rules, whose soundness needs the internal Heyting algebra of the
-subobject classifier; comprehension and description; and the term models
-with the completeness theorems. The first three are complete, and the
-fourth is in progress.
+the first construction.
+
+The two presentations mix. In the Mitchell–Bénabou language of a topos
+every object is a type and every arrow applies to terms
+({citet MacLaneMoerdijk1992}[], Section VI.5); the language here is the
+fragment its type formers generate, and its compilation interprets that
+fragment. The fourth stage widens it in one direction. A derivation
+cites a certificate of the combinators for an equation whose compiled
+sequent the certificate proves, and a certificate cites a theorem of the
+language by the sequent it compiles to; and a development declares
+constants of the combinators, objects that become types and arrows that
+the language applies, each confirmed by the checker's inference or by a
+certificate of its definedness, so that every object and arrow of the
+free topos is named in the language. The other direction, the
+language's terms inside the combinators' terms, follows the bootstrap
+(the road map), since the language is the one in which programs and
+proofs are written.
+
+Completeness then follows from the partial Horn logic's. The values of
+the theory's term model in a context under hypotheses are the terms
+provably defined there, modulo provable equality; it is a model of the
+theory, and in it, at the context's variables, a sequent holds exactly
+when it is proved ({citet Kawase2024}[], Section 6.3, whose finitary
+case is {citet PalmgrenVickers2007}[]'s). A sequent of the language
+that holds in every model compiles to a sequent of the combinators that
+holds in every model, which a certificate therefore proves, and the
+language cites the certificate. A combinator translates into the
+language as its declared constant, and the round trips of the
+compilation are provably the identity by certificates. The language's
+own term model, the topos of its types with predicates and its provably
+functional relations as {citet LambekScott1980}[] construct the free
+topos from a type theory, proves its rules complete without citations;
+it follows the bootstrap (the road map), and the second construction is
+the same construction over Lean's propositions in place of the
+language's provability. The stages are the checker with equations as
+its formulas and induction as the uniqueness of recursion, measured
+against the core's certificates; the logical rules, whose soundness
+needs the internal Heyting algebra of the subobject classifier;
+comprehension and description; and the types built in, the mixing of the
+two presentations and the completeness theorems. The first three are
+complete, and the fourth is in progress.
 
 ##### Stage 1: equations
 
@@ -2162,13 +2206,18 @@ operation of the theory, gives the section after which the second
 projection is the arrow, as {citet DubucSzyld2015}[], Proposition 1.21,
 characterize the relations that are the graphs of arrows.
 
-##### Stage 4: term models and completeness
+##### Stage 4: types built in, mixing and completeness
 
-State: in progress (the next phase). The arrow a functional relation
-determines, as a definition of the combinators, is complete, as are
-binary coproducts, the initial object, and rose trees over a type of
-labels with induction on rose trees, in the language; the term models
-are next.
+State: in progress (the next phase). Its parts, in order:
+
+* Complete. The arrow a functional relation determines, a definition of
+  the combinators; binary coproducts and the initial object; and rose
+  trees over a type of labels, with induction on rose trees.
+* Ready. Citations between the two checkers.
+* Waiting on the citations. Declared constants of the combinators.
+* Waiting on the constants. Quotient types.
+* Waiting on the citations and the constants. The completeness theorems
+  and the round trips.
 
 The arrow a relation determines is the second projection after the
 inverse of the first projection of the relation's pullback of truth
@@ -2263,13 +2312,55 @@ exponentials. The fold that rebuilds a tree is the identity by the rule,
 with the fold that rebuilds a list, the identity by induction on lists,
 cited at the children (`GebTests/Prototypes/FreeTopos/InternalRoseTrees.lean`).
 
-The language's term model is the topos whose objects are its types with
-predicates and whose arrows are its provably functional relations,
-after {citet LambekScott1980}[], Definition 4.3. That it is a model of
-the partial Horn theory, with the partial Horn logic's completeness
-through the term model of its theory and the translations of the
-combinators into the language, gives the completeness theorems and the
-round trips of the section on soundness and completeness.
+Citations between the two checkers, ready. A derivation proves an
+equation between two terms of a context, under any hypotheses, by a
+certificate of the combinators that proves the sequent the equation
+compiles to ({name}`Geb.FreeTopos.Internal.compileEq`); the rule is sound
+by the soundness of the certificates' checker and of the compilation. A
+certificate cites a theorem of the language without hypotheses by the
+sequent its equation compiles to, which holds in every model, as a
+theorem of its environment.
+
+Declared constants, waiting on the citations. A development becomes one
+list of declarations, each checked with those before it: definitions of
+the language, constants of the combinators and theorems. A constant is a
+term of the combinators in object parameters, an object or an arrow with
+a domain and a codomain. It compiles to a definition of the
+combinators, so that a type names an object constant by that
+definition's operation and typing remains a syntactic test, and the
+language applies an arrow constant as it applies a primitive arrow,
+which the constants replace. A constant is confirmed as the primitive
+arrows are, by the checker's inference, or, where inference does not
+establish its definedness, as for the factorization through an
+equalizer, the descent through a coequalizer or the arrow a functional
+relation determines, by a certificate of its definedness, its domain and
+its codomain, which may cite the theorems before it.
+
+Quotient types, waiting on the constants. The quotient of a type by a
+relation, a formula in two variables of the type, is the coequalizer of
+the two projections of the relation's pullback of truth, an object
+constant, and the arrow to it an arrow constant. The rules are these:
+related elements have equal images in the quotient, by the coequalizer's
+equation; a formula holds of every element of the quotient when it holds
+at the image of every element of the type, since the arrow to the
+quotient is an epimorphism by the uniqueness of the coequalizer's
+factorization; and a function that respects the relation descends to
+the quotient, the descent an arrow constant whose certificate cites the
+theorem that the function respects the relation, with its computation
+at an image. For an equivalence relation, the quotient is isomorphic to
+the object of equivalence classes that power objects construct, the
+image of the arrow taking an element to its class, since in a topos an
+equivalence relation is the kernel pair of its coequalizer; that
+isomorphism follows the bootstrap (the road map). An equivalence
+relation and its coequalizer state a quotient as programs state it,
+where the object of equivalence classes states it as a set of subsets.
+
+Completeness, waiting on the citations and the constants. The partial
+Horn logic's term model and its completeness theorem, of the section on
+soundness and completeness, give the completeness of the language
+citing certificates, and the round trips of the compilation, a
+combinator to its declared constant and a term of the language to the
+constant of its compiled arrow, are provably the identity.
 
 #### The second construction and the fifth choice
 
@@ -2357,18 +2448,29 @@ the change that removes it.
 
 ## The next phase
 
-The fourth stage of the Mitchell–Bénabou language continues after the
-arrow a functional relation determines, a definition of the
-combinators, and binary coproducts, the initial object, and rose trees
-over a type of labels with induction on rose trees, in the language,
-which are complete (the section on the fourth stage), with the term
-models and the completeness theorems of the section on the
-Mitchell–Bénabou language: the language's term model of provably
-functional relations, the partial Horn logic's term model, and the
-translations whose round trips with the compilation are provably the
-identity.
+The fourth stage of the Mitchell–Bénabou language continues after its
+types built in, which are complete, in this order (the section on the
+fourth stage):
 
-The second construction and the fifth choice follow. The computational
+1. Citations between the two checkers: a rule of the language's
+   derivations proving an equation by a certificate of the sequent it
+   compiles to, and the theorems of the language as theorems of a
+   certificate's environment, each sound by the two checkers'
+   soundness.
+2. Declared constants: a development as one list of definitions,
+   constants and theorems; object constants as types, and arrow
+   constants in place of the primitive arrows; each confirmed by the
+   checker's inference or by a certificate, which may cite the theorems
+   before it.
+3. Quotient types: the coequalizer of a relation's projections, with
+   the arrow to it, the equality of related elements' images, induction
+   on the quotient, and descent with its computation.
+4. Completeness: the partial Horn logic's term model and completeness
+   theorem, from which follow the completeness of the language citing
+   certificates and the round trips of the compilation.
+
+The fourth completes the fourth stage. The second construction and the
+fifth choice follow. The computational
 core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the type checker's preservation of
 types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
