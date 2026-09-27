@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.FreeTopos.Internal.Development
 public import Geb.Prototypes.FreeTopos.TranslationKernel
+public import Geb.Prototypes.FreeTopos.UniqueChoice
 public import Geb.Prototypes.Kernel.Reader
 meta import GebMeta -- shake: keep
 
@@ -36,20 +37,27 @@ so the denotations agree wherever the representations determine them.
 * {lit}`ctxRep_std` — a theorem's context is represented at the product of its types.
 * {lit}`ty_inj` — the translation of types is injective.
 * {lit}`order_props` — the representations of types of first order are total and unique.
+* {lit}`bij_of_ty` — under unique choice, the representation of every type with a translation is
+  total and unique.
 * {lit}`translation_sound` — the soundness of the translation.
 * {lit}`thm_valid` — a kernel theorem of first order whose translation is proved is valid.
+* {lit}`thm_valid_of_uniqueChoice` — under unique choice, a kernel theorem whose translation is
+  proved is valid.
 
 ## Implementation notes
 
 The soundness theorem concludes the agreement of the sides at the values of the context that
 have representations, when the equation's type's representations each represent one value; both
 hold of the types of first order, whose function types have domains of data. A value of a
-function type whose domain contains a function type has a representation only by unique choice:
-the representation of a kernel function of functions relates each functional relation to the
-kernel function's value at the function it represents, and extracting that function from a
-functional relation, whose value at each argument exists uniquely, needs unique choice, which
-Lean's logic without {lit}`Classical.choice` does not provide. The internal language validates
-unique choice; the restriction arises only in reading its results back as Lean functions.
+function type whose domain contains a function type has a representation only by unique choice
+({name}`Geb.FreeTopos.UniqueChoice`): the representation of a kernel function of functions
+relates each functional relation to the kernel function's value at the function it represents,
+and extracting that function from a functional relation, whose value at each argument exists
+uniquely, is unique choice ({lit}`exp_rtot`), which Lean's logic without {lit}`Classical.choice`
+does not provide. Under unique choice as a hypothesis the theorem holds for every type. The
+internal language validates unique choice, so the hypothesis marks the one step that a proof of
+the theorem inside the free topos takes from the topos's own logic;
+{lit}`Geb.FreeTopos.Translation.thm_valid_classical` discharges it by {lit}`Classical.choice`.
 
 ## Tags
 
@@ -493,9 +501,89 @@ theorem order_props : ∀ T : Kernel.Tree,
       · simp
     · simp
 
+open SetRel in
+/-- Under unique choice, the representation of functions by functional relations is total on
+functional relations, when the domain's representation is total on values and represents each
+value at most once, and the codomain's is total on representations and unique. -/
+theorem exp_rtot (huc : UniqueChoice.{1, 1}) (hl : LTot R) (hlu : LUni R) (hrt : RTot R')
+    (hru : RUni R') : RTot (Rep.exp R R') := fun φ ↦ by
+  obtain ⟨f, hf⟩ := huc S S' (fun s t ↦ ∀ a, R s a → ∀ b, a ~[φ.rel] b → R' t b) fun s ↦ by
+    obtain ⟨a, ha⟩ := hl s
+    obtain ⟨b, hb, -⟩ := φ.functional a
+    obtain ⟨t, ht⟩ := hrt b
+    refine ⟨t, fun a' ha' b' hb' ↦ ?_, fun t' ht' ↦ hru t' t b (ht' a ha b hb) ht⟩
+    obtain rfl := hlu s a a' ha ha'
+    obtain rfl := (φ.functional a).unique hb' hb
+    exact ht
+  exact ⟨f, fun s a ha b hb ↦ hf s a ha b hb⟩
+
+/-- Under unique choice, the representation of functions by functional relations is total and
+unique when its domain's and codomain's are. -/
+theorem exp_props_uc (huc : UniqueChoice.{1, 1}) (h : LTot R ∧ RTot R ∧ LUni R ∧ RUni R)
+    (h' : LTot R' ∧ RTot R' ∧ LUni R' ∧ RUni R') :
+    LTot (Rep.exp R R') ∧ RTot (Rep.exp R R') ∧ LUni (Rep.exp R R') ∧ RUni (Rep.exp R R') :=
+  let ⟨hl, hlu, hru⟩ := exp_props h ⟨h'.1, h'.2.2⟩
+  ⟨hl, exp_rtot huc h.1 h.2.2.1 h'.2.1 h'.2.2.2, hlu, hru⟩
+
+/-- Under unique choice, the representation of every kernel type with a translation is total
+and unique. -/
+theorem bij_of_ty (huc : UniqueChoice.{1, 1}) : ∀ (T : Kernel.Tree) {a : Tree}, ty T = some a →
+    LTot (KRel T) ∧ RTot (KRel T) ∧ LUni (KRel T) ∧ RUni (KRel T) :=
+  RoseTree.ind fun l cs ih a h ↦ by
+    rw [ty, RoseTree.elim_node] at h
+    have two : ∀ {c₀ c₁ : Kernel.Tree} {f : Tree → Tree → Tree}, cs = [c₀, c₁] →
+        (do pure (f (← ty c₀) (← ty c₁))) = some a →
+        (LTot (KRel c₀) ∧ RTot (KRel c₀) ∧ LUni (KRel c₀) ∧ RUni (KRel c₀)) ∧
+          (LTot (KRel c₁) ∧ RTot (KRel c₁) ∧ LUni (KRel c₁) ∧ RUni (KRel c₁)) := by
+      intro c₀ c₁ f hcs h
+      simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+        Option.some.injEq] at h
+      obtain ⟨x, hx, y, hy, -⟩ := h
+      exact ⟨ih c₀ (by simp [hcs]) hx, ih c₁ (by simp [hcs]) hy⟩
+    split at h
+    · rename_i hcs
+      obtain rfl := List.map_eq_nil_iff.mp hcs
+      exact rose_props
+    · rename_i hcs
+      obtain rfl := List.map_eq_nil_iff.mp hcs
+      exact ⟨fun _ ↦ ⟨(), trivial⟩, fun _ ↦ ⟨(), trivial⟩, fun _ _ _ _ _ ↦ rfl,
+        fun _ _ _ _ _ ↦ rfl⟩
+    · rename_i hcs
+      rcases cs with _ | ⟨c₀, _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩⟩ <;> simp only [List.map_cons, List.map_nil,
+        List.cons.injEq, reduceCtorEq, and_false] at hcs
+      obtain ⟨rfl, rfl, -⟩ := hcs
+      obtain ⟨h₀, h₁⟩ := two rfl h
+      exact prod_props h₀ h₁
+    · rename_i hcs
+      rcases cs with _ | ⟨c₀, _ | ⟨c₁, _ | ⟨c₂, cs⟩⟩⟩ <;> simp only [List.map_cons, List.map_nil,
+        List.cons.injEq, reduceCtorEq, and_false] at hcs
+      obtain ⟨rfl, rfl, -⟩ := hcs
+      obtain ⟨h₀, h₁⟩ := two rfl h
+      exact exp_props_uc huc h₀ h₁
+    · rename_i hcs
+      rcases cs with _ | ⟨c₀, _ | ⟨c₁, cs⟩⟩ <;> simp only [List.map_cons, List.map_nil,
+        List.cons.injEq, reduceCtorEq, and_false] at hcs
+      obtain ⟨rfl, -⟩ := hcs
+      simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+        Option.some.injEq] at h
+      obtain ⟨x, hx, -⟩ := h
+      exact list_props (ih c₀ (by simp) hx)
+    · exact nomatch h
+
 end Props
 
 /-! Soundness. -/
+
+/-- Each type of a context with a translation has one. -/
+theorem ty_of_mapM : ∀ (Γ : Kernel.Ctx) (Γ' : List Tree), Γ.mapM ty = some Γ' →
+    ∀ T ∈ Γ, ∃ b, ty T = some b :=
+  List.rec (fun _ _ _ h ↦ nomatch h) fun T Γ ih Γ' h T' hT' ↦ by
+    simp only [List.mapM_cons, Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def,
+      Option.some.injEq] at h
+    obtain ⟨a, ha, Γ₀', hΓ, -⟩ := h
+    rcases List.mem_cons.mp hT' with rfl | hT'
+    · exact ⟨a, ha⟩
+    · exact ih Γ₀' hΓ T' hT'
 
 /-- The translations of a context's types are types. -/
 theorem all_isTy_of_mapM {G : Globals} {n : ℕ} :
@@ -519,7 +607,8 @@ theorem translation_sound {D : List Kernel.Tree} {gt : List Tree} {defs : List D
     {F : List PartialHorn.Defn} (hFf : compileDefs Gf = some F)
     (hwfF : PartialHorn.DefnsWF sig F) {j : ℕ} (hj : Ef[j]? = some (.language th)) :
     ∃ G, Kernel.load D = some G ∧ ∃ T dl dr, Kernel.infer G a.ctx a.eqn.lhs = some ⟨T, dl⟩ ∧
-      Kernel.infer G a.ctx a.eqn.rhs = some ⟨T, dr⟩ ∧
+      Kernel.infer G a.ctx a.eqn.rhs = some ⟨T, dr⟩ ∧ (∃ b, ty T = some b) ∧
+        (∀ T' ∈ a.ctx, ∃ b, ty T' = some b) ∧
         ((∀ T' ∈ a.ctx, LTotal T') → RUnique T → ∀ e, dl e = dr e) := by
   have hle := Internal.le_of_checkDev decls hdev
   obtain ⟨ext', rfl⟩ := Internal.compileDefs_prefix hle hF hFf
@@ -553,7 +642,7 @@ theorem translation_sound {D : List Kernel.Tree} {gt : List Tree} {defs : List D
     have h := PartialHorn.opsBelow_of_sortOf _ this
     rw [List.nil_append, PartialHorn.Theory.extendAll_sig] at h
     exact h
-  refine ⟨Tl, dl, dr, hdl, hdr, fun hctx hu e ↦ ?_⟩
+  refine ⟨Tl, dl, dr, hdl, hdr, ⟨_, hal⟩, ty_of_mapM a.ctx Γ' hΓ', fun hctx hu e ↦ ?_⟩
   have hv := hvalid relTopos.model relTopos.isModel
   rw [unfoldAll_eq, List.nil_append] at hv
   obtain ⟨w, hw₁, hw₂⟩ := hv [] rfl (fun _ h ↦ nomatch h)
@@ -584,13 +673,35 @@ theorem thm_valid {D : List Kernel.Tree} {gt : List Tree} {defs : List Defn}
     {G : List Kernel.Glob} (hload : Kernel.load D = some G)
     (htyped : Metalogic.typeOf G a.ctx a.eqn.lhs = some a.eqn.ty)
     (hctx : ∀ T ∈ a.ctx, FirstOrder T) (hT : FirstOrder a.eqn.ty) : a.Valid G := by
-  obtain ⟨G', hG', T, dl, dr, hdl, hdr, hagree⟩ :=
+  obtain ⟨G', hG', T, dl, dr, hdl, hdr, -, -, hagree⟩ :=
     translation_sound hprog hF hok hth hdev hFf hwfF hj
   obtain rfl := Option.some.inj (hG'.symm.trans hload)
   rw [Metalogic.typeOf, hdl] at htyped
   obtain rfl : T = a.eqn.ty := Option.some.inj htyped
   exact ⟨dl, dr, hdl, hdr, fun e _ ↦ hagree (fun T' hT' ↦ ((order_props T').2 (hctx T' hT')).1)
     ((order_props _).2 hT).2.2 e⟩
+
+/-- The soundness of the translation for every type, under unique choice: when the internal
+language's checker proves the translation of a kernel theorem whose left side has the equation's
+type, the theorem is valid in the globals the kernel loads from the program. -/
+theorem thm_valid_of_uniqueChoice (huc : UniqueChoice.{1, 1}) {D : List Kernel.Tree}
+    {gt : List Tree} {defs : List Defn} (hprog : program D = some (gt, defs))
+    (hF : compileDefs (globals defs) = some ds)
+    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : Metalogic.Thm} {th : Internal.Thm}
+    (hth : thm gt a = some th) {decls : List Internal.Decl} {Gf : Globals}
+    {Ef : Array Internal.Entry} (hdev : Internal.checkDev (globals defs) #[] decls = some (Gf, Ef))
+    {F : List PartialHorn.Defn} (hFf : compileDefs Gf = some F)
+    (hwfF : PartialHorn.DefnsWF sig F) {j : ℕ} (hj : Ef[j]? = some (.language th))
+    {G : List Kernel.Glob} (hload : Kernel.load D = some G)
+    (htyped : Metalogic.typeOf G a.ctx a.eqn.lhs = some a.eqn.ty) : a.Valid G := by
+  obtain ⟨G', hG', T, dl, dr, hdl, hdr, ⟨b, hb⟩, hctx, hagree⟩ :=
+    translation_sound hprog hF hok hth hdev hFf hwfF hj
+  obtain rfl := Option.some.inj (hG'.symm.trans hload)
+  rw [Metalogic.typeOf, hdl] at htyped
+  obtain rfl : T = a.eqn.ty := Option.some.inj htyped
+  refine ⟨dl, dr, hdl, hdr, fun e _ ↦ hagree (fun T' hT' ↦ ?_) (bij_of_ty huc _ hb).2.2.2 e⟩
+  obtain ⟨b', hb'⟩ := hctx T' hT'
+  exact (bij_of_ty huc T' hb').1
 
 end Geb.FreeTopos.Translation
 
