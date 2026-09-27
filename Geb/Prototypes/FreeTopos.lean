@@ -11,6 +11,7 @@ public import Geb.Prototypes.FreeTopos.Check
 public import Geb.Prototypes.FreeTopos.Chosen
 public import Geb.Prototypes.FreeTopos.Classifier
 public import Geb.Prototypes.FreeTopos.Coequalizers
+public import Geb.Prototypes.FreeTopos.Converse
 public import Geb.Prototypes.FreeTopos.Coproducts
 public import Geb.Prototypes.FreeTopos.Infer
 public import Geb.Prototypes.FreeTopos.Internal
@@ -31,7 +32,7 @@ that the category of each of its models is an elementary topos, a checker that i
 typing of the terms of its certificates, a prover that computes certificates in it, the
 uniqueness of its folds with a parameter, the distributivity of its products over its coproducts,
 its internal language, compiled to its combinators, toposes with chosen structure in dependent
-form, and the topos of Lean's types and functional relations.
+form, each a model of the theory, and the topos of Lean's types and functional relations.
 -/
 
 set_option doc.verso true
