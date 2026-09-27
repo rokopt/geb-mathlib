@@ -17,13 +17,17 @@ set_option doc.verso true in
 # The computational core's theorems, translated
 
 The theorems of the computational core's proofs, with the programs they are about, translated
-into the internal language and proved there by its prover: the prelude's appending and the
-labels' addition by normalization and induction, the kernel's type checker at a quoted tree,
-the metalogic's checker's accessors and a program by structural recursion by normalization,
-weak head normal forms first, rewriting by Lambek's lemma, which follows from two lemmas on
-lists by the uniqueness of the rose tree's fold. Each development checks, and the report prints,
-for each file, the nodes of the core's certificates and of the language's derivations, the
-numeral steps among the latter, and the times each checker takes.
+into the internal language, whose labels are bitstrings, and proved there by its prover: the
+prelude's appending by normalization and induction; the labels' addition by rewriting with
+lemmas on the bitstrings' addition, which the development proves first by induction on the
+bitstrings, case analysis of their bits and, for the functions of the first summand,
+extensionality, where the core instead takes addition's recursion as an axiom; the kernel's type
+checker at a quoted tree, the metalogic's checker's accessors and a program by structural
+recursion by normalization, weak head normal forms first, rewriting by Lambek's lemma, which
+follows from two lemmas on lists by the uniqueness of the rose tree's fold. Each development
+checks, and the report prints, for each file, the nodes of the core's certificates and of the
+language's derivations of its theorems, the bit steps among the latter, and the times each
+checker takes, and the same for the lemmas proved before the theorems.
 
 ## Main definitions
 
@@ -48,7 +52,7 @@ namespace GebTests.Prototypes.FreeTopos.TranslationProofs
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
 open Geb.Metalogic.ProofTests
-open GebTests.Prototypes.FreeTopos.Translation (sizeK sizeM)
+open GebTests.Prototypes.FreeTopos.Translation (sizeK sizeM baseRules)
 open scoped FinEnum
 
 /-- The texts of the proof files, each after the programs it is about: the prelude, the labels,
@@ -82,12 +86,6 @@ def ruleTerms : Rule → List Term
 /-- The number of nodes of a derivation, the terms its rules name counted. -/
 def derivSize : Deriv → ℕ := RoseTree.elim fun l rs ↦ 1 + rs.sum + ((ruleTerms l).map sizeM).sum
 
-/-- The language's equations the normalizer applies: β, the components of pairs, and the
-computation of the folds at the primitive arrows. -/
-def baseRules : List NormRule := [.rule .beta, .rule .fstPair, .rule .sndPair,
-  .rule (.natZero 0), .rule (.natSucc 1), .rule (.listNil 2), .rule (.listCons 3),
-  .rule (.roseNode 4 2 3)]
-
 /-- The unfolding of every definition below an index. -/
 def deltas (m : ℕ) : List NormRule := (List.range m).map NormRule.delta
 
@@ -118,39 +116,103 @@ def norm (G : Internal.Globals) (rs : List NormRule) (fuel : ℕ) (a : Internal.
     (E : Array Entry) : Option Deriv :=
   Internal.byNorm G E 0 rs fuel a.ctx a.hyps (sides a).1 (sides a).2
 
+/-- The proof by normalization, weak head normal forms first, of a theorem with rules. -/
+def normW (G : Internal.Globals) (rs : List NormRule) (fuel : ℕ) (a : Internal.Thm)
+    (E : Array Entry) : Option Deriv :=
+  Internal.byNormW G E 0 rs fuel a.ctx a.hyps (sides a).1 (sides a).2
+
 /-- The proof of a theorem by induction on its innermost list variable with a step. -/
 def listInd (G : Internal.Globals) (s : Term) (rs : List NormRule) (fuel : ℕ)
     (a : Internal.Thm) (E : Array Entry) : Option Deriv :=
-  Internal.byListInd G E 0 2 3 s rs fuel a.ctx a.hyps (sides a).1 (sides a).2
-
-/-- The proof of a theorem by induction on its innermost natural number variable with a step. -/
-def natInd (G : Internal.Globals) (s : Term) (rs : List NormRule) (fuel : ℕ)
-    (a : Internal.Thm) (E : Array Entry) : Option Deriv :=
-  Internal.byNatInd G E 0 0 1 s rs fuel a.ctx a.hyps (sides a).1 (sides a).2
+  Internal.byListInd G E 0 0 1 s rs fuel a.ctx a.hyps (sides a).1 (sides a).2
 
 /-- The prelude's development: the unit laws and the associativity of appending, and appending
 the empty list twice by rewriting with the right unit law. -/
 def preludeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
   let rs := baseRules ++ deltas m
-  let step := consT rose (Term.var 1) (Term.var 0)
+  let step := consT treeTy (Term.var 1) (Term.var 0)
   match ts with
   | [t₀, t₁, t₂, t₃] => develop [(t₀, norm G rs 256 t₀), (t₁, listInd G step rs 256 t₁),
       (t₂, listInd G step rs 256 t₂), (t₃, norm G (baseRules ++ [.thm 1 []]) 256 t₃)]
   | _ => none
 
-/-- Addition from zero on the natural numbers object, the lemma the left unit law rewrites by. -/
-def addZeroLeftN : Internal.Thm :=
-  ⟨0, [nat], [], Term.eq (call D.add [] [zeroT, Term.var 0]) (Term.var 0)⟩
+/-- The first fold of a term, in preorder: its start and its step. -/
+def firstFold : Term → Option (Term × Term) := RoseTree.para fun l cs ↦ match l, cs with
+  | .listRec, [(z, _), (s, _), _] => some (z, s)
+  | _, cs => cs.findSome? (·.2)
 
-/-- The labels' development: the recursion equations of addition by normalization, and the left
-unit law by rewriting with addition from zero on the natural numbers object. -/
-def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
+/-- The normal form of a term in a context, in object variables, by rules, or the term. -/
+def nf (G : Internal.Globals) (rs : List NormRule) (k : ℕ) (Γ : List Tree) (t : Term) : Term :=
+  ((Internal.normalizeW G #[] k rs 4096 Γ [] t).map Prod.fst).getD t
+
+/-- The rebuilding of a bitstring by the fold of the definition of an index that pairs the list
+with its value: the first component of the fold is the list, its side in normal form. -/
+def rebuild (G : Internal.Globals) (rs : List NormRule) (k : ℕ) : Option Internal.Thm := do
+  let (z, s) ← (lib[k]?).bind fun d ↦ firstFold d.body
+  pure ⟨0, [bitsTy], [], Term.eq (nf G rs 0 [bitsTy] (Term.fst (Term.listRec z s (v 0)))) (v 0)⟩
+
+/-- The rebuilding of a list by the fold of the case analysis of lists, at any pair of cases: the
+first component of the fold applied to the pair is the list, its side in normal form. -/
+def lcaseRebuild (G : Internal.Globals) (rs : List NormRule) : Option Internal.Thm := do
+  let (z, s) ← (lib[D.lcase]?).bind fun d ↦ firstFold d.body
+  let P := prod (exp one X₁) (exp X₀ (exp (list X₀) X₁))
+  pure ⟨2, [list X₀, P], [], Term.eq
+    (nf G rs 2 [list X₀, P] (Term.fst (Term.app (Term.listRec z s (v 0)) (v 1)))) (v 0)⟩
+
+/-- The proof by normalization, weak head normal forms first, with the hypotheses as rewriting
+rules before the rules given. -/
+def normH (G : Internal.Globals) (E : Array Entry) (rs : List NormRule) : Internal.Prover :=
+  fun Γ Φ t u ↦ Internal.byNormW G E 0 ((List.range Φ.length).map NormRule.hyp ++ rs) 1024 Γ Φ t u
+
+/-- The proof by induction on a bitstring, the empty one by {lit}`p₀` and a construction by case
+analysis of its bit, each case by {lit}`p₁`. -/
+def bitsInd (G : Internal.Globals) (p₀ p₁ : Internal.Prover) : Internal.Prover :=
+  Internal.byListIndWith G 0 0 1 p₀ (Internal.bySplit 3 4 1 p₁)
+
+/-- The numeral one in normal form. -/
+def oneN : Term := consT bitTy bit0T (nilT bitTy)
+
+/-- The labels' development: the rebuilding of bitstrings by the folds of addition, of the
+successor and of the case analysis of lists; addition of one is the successor, addition to
+zero is the identity, and addition of a successor is the successor of the sum, by induction on
+the bitstrings and case analysis of their bits, the last first for the functions of the first
+summand; and then the theorems, the first by normalization and the others by rewriting with
+these lemmas. -/
+def natDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) := do
   let rs := baseRules ++ deltas m
-  match ts with
-  | [t₀, t₁, t₂] => develop [(t₀, norm G rs 256 t₀), (t₁, norm G rs 256 t₁),
-      (addZeroLeftN, natInd G (succT (Term.var 0)) rs 256 addZeroLeftN),
-      (t₂, norm G (.thm 2 [] :: baseRules ++ deltasExcept m [D.add]) 256 t₂)]
-  | _ => none
+  let [t₀, t₁, t₂] := ts | none
+  let rA ← rebuild G rs D.add
+  let rS ← rebuild G rs D.succ
+  let rL ← lcaseRebuild G rs
+  let (zA, sA) ← (lib[D.add]?).bind fun d ↦ firstFold d.body
+  let rsR : List NormRule := [.thm 0 [], .thm 1 [], .thm 2 [bitTy, bitsTy]] ++ rs
+  let side (a : Internal.Thm) (p : Internal.Prover) : Option Deriv :=
+    p a.ctx a.hyps (sides a).1 (sides a).2
+  let addOne : Internal.Thm :=
+    ⟨0, [bitsTy], [], Term.eq (call D.add [] [v 0, oneN]) (call D.succ [] [v 0])⟩
+  let addZero : Internal.Thm := ⟨0, [bitsTy], [], Term.eq (call D.add [] [nilT bitTy, v 0]) (v 0)⟩
+  let addSuccF : Internal.Thm := ⟨0, [bitsTy], [], Term.eq
+    (nf G rs 0 [bitsTy] (Term.snd (Term.listRec zA sA (call D.succ [] [v 0]))))
+    (Term.lam bitsTy (call D.succ [] [call D.add [] [v 0, v 1]]))⟩
+  let addSucc : Internal.Thm := ⟨0, [bitsTy, bitsTy], [], Term.eq
+    (call D.add [] [v 1, call D.succ [] [v 0]]) (call D.succ [] [call D.add [] [v 1, v 0]])⟩
+  let byFun (E : Array Entry) : Internal.Prover :=
+    Internal.byFunExt G 0 (bitsInd G (normH G E rsR) (normH G E rsR))
+  develop [
+    (rA, listInd G (consT bitTy (v 1) (v 0)) rs 256 rA),
+    (rS, listInd G (consT bitTy (v 1) (v 0)) rs 256 rS),
+    (rL, fun E ↦ Internal.byListInd G E 2 0 1 (consT X₀ (v 1) (v 0)) rs 256 rL.ctx rL.hyps
+      (sides rL).1 (sides rL).2),
+    (addOne, fun E ↦ side addOne (bitsInd G (normH G E rsR) (normH G E rsR))),
+    (addZero, fun E ↦ side addZero
+      (Internal.byListIndWith G 0 0 1 (normH G E rsR) (normH G E rsR))),
+    (addSuccF, fun E ↦ side addSuccF (Internal.byListIndWith G 0 0 1 (byFun E)
+      (Internal.bySplit 3 4 1 (byFun E)))),
+    (addSucc, fun E ↦ side addSucc (normH G E (.thm 5 [] :: rs))),
+    (t₀, fun E ↦ side t₀ (normH G E rs)),
+    (t₁, fun E ↦ side t₁
+      (normH G E ([.thm 3 [], .thm 6 []] ++ baseRules ++ deltasExcept m [D.add, D.succ]))),
+    (t₂, fun E ↦ side t₂ (normH G E (.thm 4 [] :: baseRules ++ deltasExcept m [D.add])))]
 
 /-- The least time, over three evaluations, to evaluate a Boolean, in microseconds, with its
 value. -/
@@ -167,7 +229,7 @@ def timeUs (f : Unit → Bool) : IO (Bool × ℕ) := do
 
 /-- The type the unfolding of trees folds into: the pair of a label and the list of the
 children. -/
-def P : Tree := prod nat (list rose)
+def P : Tree := prod bitsTy (list treeTy)
 
 /-- The step of the unfolding of trees, the library's. -/
 def unnodeStep : Term := match lib[D.unnode]? with
@@ -179,52 +241,38 @@ def unnodeU (t : Term) : Term := Term.roseRec P unnodeStep t
 
 /-- The fold of a list of trees by construction is the list. -/
 def mapId : Internal.Thm :=
-  ⟨0, [list rose], [], Term.eq (Term.listRec (nilT rose) (consT rose (Term.var 1) (Term.var 0))
-    (Term.var 0)) (Term.var 0)⟩
+  ⟨0, [list treeTy], [], Term.eq (Term.listRec (nilT treeTy)
+    (consT treeTy (Term.var 1) (Term.var 0)) (Term.var 0)) (Term.var 0)⟩
 
 /-- The trees rebuilt from the unfoldings of a list of trees are the rebuilt unfoldings. -/
 def mapFusion : Internal.Thm :=
-  ⟨0, [list rose], [], Term.eq
-    (Term.listRec (nilT rose) (consT rose (nodeT (Term.var 1)) (Term.var 0))
+  ⟨0, [list treeTy], [], Term.eq
+    (Term.listRec (nilT treeTy) (consT treeTy (nodeT (Term.var 1)) (Term.var 0))
       (Term.listRec (nilT P) (consT P (unnodeU (Term.var 1)) (Term.var 0)) (Term.var 0)))
-    (Term.listRec (nilT rose) (consT rose (nodeT (unnodeU (Term.var 1))) (Term.var 0))
+    (Term.listRec (nilT treeTy) (consT treeTy (nodeT (unnodeU (Term.var 1))) (Term.var 0))
       (Term.var 0))⟩
 
 /-- A tree is rebuilt from its unfolding, by Lambek's lemma. -/
 def lambek : Internal.Thm :=
-  ⟨0, [rose], [], Term.eq (nodeT (unnodeU (Term.var 0))) (Term.var 0)⟩
+  ⟨0, [treeTy], [], Term.eq (nodeT (unnodeU (Term.var 0))) (Term.var 0)⟩
 
 /-- The lemmas on the unfolding of trees, each with its proof: the fold by construction and the
 fusion of the rebuilding with the unfolding by list induction, and Lambek's lemma by the
 uniqueness of the fold, rewriting by them. -/
 def treeLemmas (G : Internal.Globals) : List (Internal.Thm × (Array Entry → Option Deriv)) :=
-  [(mapId, listInd G (consT rose (Term.var 1) (Term.var 0)) baseRules 64 mapId),
-   (mapFusion, listInd G (consT rose (nodeT (unnodeU (Term.var 1))) (Term.var 0)) baseRules 64
+  [(mapId, listInd G (consT treeTy (Term.var 1) (Term.var 0)) baseRules 64 mapId),
+   (mapFusion, listInd G (consT treeTy (nodeT (unnodeU (Term.var 1))) (Term.var 0)) baseRules 64
       mapFusion),
-   (lambek, fun E ↦ Internal.byRoseInd G E 0 4 2 3 (nodeT (Term.pair (Term.var 1) (Term.var 0)))
+   (lambek, fun E ↦ Internal.byRoseInd G E 0 2 0 1 (nodeT (Term.pair (Term.var 1) (Term.var 0)))
       (baseRules ++ [.thm 0 [], .thm 1 []]) 64 lambek.ctx (sides lambek).1 (sides lambek).2)]
-
-/-- The proof by normalization, weak head normal forms first, of a theorem with rules. -/
-def normW (G : Internal.Globals) (rs : List NormRule) (fuel : ℕ) (a : Internal.Thm)
-    (E : Array Entry) : Option Deriv :=
-  Internal.byNormW G E 0 rs fuel a.ctx a.hyps (sides a).1 (sides a).2
 
 /-- The prelude's development, weak head normal forms first. -/
 def preludeDevW (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
   let rs := baseRules ++ deltas m
-  let step := consT rose (Term.var 1) (Term.var 0)
+  let step := consT treeTy (Term.var 1) (Term.var 0)
   match ts with
   | [t₀, t₁, t₂, t₃] => develop [(t₀, normW G rs 256 t₀), (t₁, listInd G step rs 256 t₁),
       (t₂, listInd G step rs 256 t₂), (t₃, normW G (baseRules ++ [.thm 1 []]) 256 t₃)]
-  | _ => none
-
-/-- The labels' development, weak head normal forms first. -/
-def natDevW (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (List Decl) :=
-  let rs := baseRules ++ deltas m
-  match ts with
-  | [t₀, t₁, t₂] => develop [(t₀, normW G rs 256 t₀), (t₁, normW G rs 256 t₁),
-      (addZeroLeftN, natInd G (succT (Term.var 0)) rs 256 addZeroLeftN),
-      (t₂, normW G (.thm 2 [] :: baseRules ++ deltasExcept m [D.add]) 256 t₂)]
   | _ => none
 
 /-- The type checker's development: the quoted tree's type, weak head normal forms first,
@@ -238,42 +286,51 @@ def treeDev (G : Internal.Globals) (m : ℕ) (ts : List Internal.Thm) : Option (
   develop (treeLemmas G ++
     ts.map fun t ↦ (t, normW G (.thm 2 [] :: baseRules ++ deltas m) 4096 t))
 
-/-- The numeral steps of a derivation: the computations of the natural numbers' fold at zero
-and at a successor. -/
-def numeralSteps : Deriv → ℕ := RoseTree.elim fun l rs ↦
-  (match l with | .natZero _ | .natSucc _ => 1 | _ => 0) + rs.sum
+/-- The bit steps of a derivation: the case analyses of bits, which only the arithmetic of the
+labels performs. -/
+def bitSteps : Deriv → ℕ := RoseTree.elim fun l rs ↦
+  (match l with | .caseInl _ _ | .caseInr _ _ => 1 | _ => 0) + rs.sum
 
 /-- The report of a file, printed, and an error when a development does not check: the nodes of
-the core's certificates and of the language's derivations, the numeral steps among the latter,
-and the least of three times each checker takes, in microseconds. -/
+the core's certificates and of the language's derivations of the file's theorems, the bit steps
+among the latter, and the least of three times each checker takes, in microseconds; and a row of
+the same for the lemmas the development proves before the theorems, which the core does not
+prove; the file's name alone where no development is computed. -/
 def report (name : String) (D : List Tree) (rs : List (Metalogic.Thm × Tree))
     (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : IO Unit := do
   match translate D rs with
   | none => throw (IO.userError s!"{name}: no translation")
   | some (G, m, ts) => match dev G m ts with
-    | none => throw (IO.userError s!"{name}: no development")
+    | none => IO.println s!"{name},no development"
     | some ds => do
+      let k := ds.length - ts.length
       let (okC, tC) ← timeUs fun _ ↦ recheck D (rs.map fun p ↦ RoseTree.node 0
         [Kernel.leaf 0, RoseTree.node 0 [RoseTree.node 0 p.1.ctx,
           RoseTree.node 0 [p.1.eqn.ty, p.1.eqn.lhs, p.1.eqn.rhs]], p.2])
-      let (okL, tL) ← timeUs fun _ ↦ Internal.checkThms G ds #[]
-      if !(okC && okL) then throw (IO.userError s!"{name}: a development does not check")
-      let dvs := ds.filterMap fun | Decl.language _ d => some d | _ => none
-      let row := [(rs.map fun p ↦ sizeK p.2).sum, (dvs.map derivSize).sum,
-        (dvs.map numeralSteps).sum, tC, tL]
-      IO.println (name ++ "," ++ ",".intercalate (row.map toString))
+      let (okA, tA) ← timeUs fun _ ↦ Internal.checkThms G (ds.take k) #[]
+      let some (G₁, E₁) := Internal.checkDev G #[] (ds.take k)
+        | throw (IO.userError s!"{name}: the lemmas do not check")
+      let (okL, tL) ← timeUs fun _ ↦ Internal.checkThms G₁ (ds.drop k) E₁
+      if !(okC && okA && okL) then throw (IO.userError s!"{name}: a development does not check")
+      let dvs (l : List Decl) : List Deriv :=
+        l.filterMap fun | Decl.language _ d => some d | _ => none
+      let row (xs : List ℕ) : String := ",".intercalate (xs.map toString)
+      if k > 0 then
+        IO.println (name ++ "-lemmas,0," ++ row [((dvs (ds.take k)).map derivSize).sum,
+          ((dvs (ds.take k)).map bitSteps).sum, 0, tA])
+      IO.println (name ++ "," ++ row [(rs.map fun p ↦ sizeK p.2).sum,
+        ((dvs (ds.drop k)).map derivSize).sum, ((dvs (ds.drop k)).map bitSteps).sum, tC, tL])
 
-/-- The reports of the files, from the core's results, the prelude's and the labels'
-developments both by innermost normalization and weak head normal forms first. -/
+/-- The reports of the files, from the core's results, the prelude's development both by
+innermost normalization and weak head normal forms first. -/
 def reports (core : Option (List (List Tree × List (Metalogic.Thm × Tree)))) : IO Unit := do
   match core with
   | some [(D₀, r₀), (D₁, r₁), (D₂, r₂), (D₃, r₃), (D₄, r₄)] => do
-    IO.println ("file,core_nodes,language_nodes,numeral_steps,core_microseconds," ++
+    IO.println ("file,core_nodes,language_nodes,bit_steps,core_microseconds," ++
       "language_microseconds")
     report "prelude" D₀ r₀ preludeDev
     report "prelude-whnf" D₀ r₀ preludeDevW
     report "nat" D₁ r₁ natDev
-    report "nat-whnf" D₁ r₁ natDevW
     report "check" D₂ r₂ checkDev
     report "equations" D₃ r₃ treeDev
     report "surface" D₄ r₄ treeDev
