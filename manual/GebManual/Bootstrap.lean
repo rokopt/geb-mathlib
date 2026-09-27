@@ -145,10 +145,10 @@ sections below detail:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
     objects: the first construction, in one direction.
-  * Ready. The converse, a model of the theory from an elementary topos
-    with chosen structure and the data objects.
-  * Ready. The model in Lean with functional relations: the second
-    construction.
+  * In progress (the next phase). The model in Lean with functional
+    relations, the second construction, with the converse of the first,
+    a model of the theory from a topos with chosen structure and the
+    data objects, and the bridge from mathlib's elementary toposes.
   * Complete. The definitional extension with its unfolding theorem,
     for the models: the third construction. The unfolding of
     certificates is ready.
@@ -852,9 +852,9 @@ and each phase below opens with a table of the states of its steps.
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage: complete; the second
-    construction, the next phase, and the converse of the first: ready;
-    the fifth choice: waiting on the second construction; the checker
-    and prover written in Geb: ready
+    construction, the next phase, with the converse of the first: in
+    progress; the fifth choice: waiting on the second construction; the
+    checker and prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1264,7 +1264,7 @@ the hash written in Geb.
   * Metalogic, 1: the rule set and its soundness
   * In progress: the rule set, its checker and their soundness in every
     model are complete; the model of Lean types, the second
-    construction, is ready
+    construction, is in progress
 *
   * Metalogic, 2 and 3: the checker and prover in Geb
   * Ready: the fourth stage of the Mitchell–Bénabou language, whose
@@ -1769,12 +1769,12 @@ constructible:
 
 The first construction precedes the other two, which are independent of
 each other; the choices follow them. The first, third and fourth are
-complete, the first in one direction; the second is ready; and the
-fifth waits on the second.
+complete, the first in one direction; the second is in progress; and
+the fifth waits on the second.
 
 #### The first construction
 
-State: complete in one direction; the converse is ready.
+State: complete in one direction; the converse is in progress.
 
 The first construction is made in one direction. The rule set is
 {name}`Geb.FreeTopos.theory`, a partial Horn theory whose sorts are the
@@ -1793,7 +1793,9 @@ category and of its universal morphisms uses no axiom beyond
 `propext` and `Quot.sound`; only the packaging as mathlib's structures,
 whose limit cones and pullbacks do, uses `Classical.choice`. The
 converse, a model of the theory from an elementary topos with chosen
-structure and data objects, is not constructed. A model's operations
+structure and data objects, is made with the second construction (the
+section on the second construction and the fifth choice). A model's
+operations
 ({name}`Geb.PartialHorn.Model`) are partial functions whose domains of
 definition are propositions, as mathlib's `Part` states them, so that a
 model need not decide where an operation is defined: neither the
@@ -2468,12 +2470,57 @@ the term by the citation of a certificate
 
 #### The second construction and the fifth choice
 
-State: the second construction is ready, and the fifth choice waits on
-it.
+State: the second construction is in progress (the next phase), with
+the converse of the first, and the fifth choice waits on it.
 
 The fifth choice is deferred until the three constructions are made,
 and the second construction, the model in Lean with morphisms as
 functional relations, is the one not made.
+
+The second construction is a model of the theory in Lean without
+`Classical.choice`: its objects are the types of `Type`, and its arrows
+functional relations between them, relations under which each element
+of the domain is related to exactly one element of the codomain. Lean's
+types with functions are not such a model. The inverse of the
+factorization of a monomorphism through the pullback of truth along its
+characteristic map takes an element of that pullback, which records
+that some element of the domain has the given image, to that element,
+and a proof that one exists yields no term of a type without
+`Classical.choice`, though the element is unique. The arrow a
+functional relation determines is the relation itself, so that unique
+choice holds in the model by construction, as it holds in the free
+topos by the arrow a functional relation determines there. The model
+is the construction of a topos from a type theory by its types and
+provably functional relations, after {citet LambekScott1980}[], over
+Lean's propositions; the language's own term model is the same
+construction over the language's provability.
+
+It is made in five parts, in order:
+
+* Ready. A topos with chosen structure and the data objects in
+  dependent form: a record of the theory's operations, their arguments
+  typed by their domains and codomains, and of its equational axioms.
+  It presents the models the partial Horn theory presents, as a
+  generalized algebraic theory presents what an essentially algebraic
+  one does, and the typing axioms hold in it by the operations' types.
+* Ready. The converse of the first construction, for the record: every
+  record gives a model of the theory, the partial Horn logic's partial
+  operations and evaluation handled once, axiom by axiom.
+* Ready. The record of Lean's types and functional relations, whose
+  model, by the converse, is the second construction, without
+  `Classical.choice`, which the axiom linter checks.
+* Ready. Lean's functions as functional relations: the graph of a
+  function, faithful and preserving the structure the kernel's
+  denotations use, so that a sequent a certificate proves of graphs is
+  a theorem about the functions, the link between the kernel's
+  denotations and the model's arrows on which the fifth choice turns.
+* Ready. The bridge from mathlib: an elementary topos of the
+  repository's class, with chosen data objects, gives a record. Its
+  subject is the correspondence with mathlib's structures, which use
+  `Classical.choice`, and it is admitted to it as the constructive-only
+  rules provide.
+
+The fifth choice follows the second construction.
 
 ## Improvements
 
@@ -2574,8 +2621,12 @@ stage):
    language citing certificates and the round trips of the compilation.
 
 The next phase is the second construction, the model in Lean with
-morphisms as functional relations (the section on the constructions and
-the choices), and the fifth choice follows it. The computational
+morphisms as functional relations, with the converse of the first (the
+section on the second construction and the fifth choice): the record of
+a topos with chosen structure and the data objects, the converse for
+it, the record of Lean's types and functional relations, Lean's
+functions as graphs, and the bridge from mathlib's elementary toposes.
+The fifth choice follows it. The computational
 core's step 3, whose proofs are about kernel programs whichever the
 fifth choice, resumes after it, at the type checker's preservation of
 types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
