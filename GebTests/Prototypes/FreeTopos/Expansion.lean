@@ -12,18 +12,18 @@ public meta import GebTests.Prototypes.FreeTopos.TreeCases -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The Surface 1 expansion of kernel forms
+# The datatype language's expansion of kernel forms
 
-The Surface 1 expansion ({lit}`bootstrap/surface.geb`) is the identity on programs of kernel
-forms, proved in the internal language about the translation of the programs: for every list
-{lit}`es` of trees of which each is a kernel form, {lit}`expandProgram es` is
+The expansion of the datatype language ({lit}`bootstrap/datatype.geb`) is the identity on programs
+of kernel forms, proved in the internal language about the translation of the programs: for every
+list {lit}`es` of trees of which each is a kernel form, {lit}`expandProgram es` is
 {lit}`some (node 0 es)`. A kernel expression is a tree no list of which has a head that the reader
 names by the atom {lit}`case` or {lit}`cata`; a kernel form is a list of three trees whose head it
-names by {lit}`def`, with a kernel expression as the third, or by {lit}`deftype` or
-{lit}`defnum`. The predicates are folds written in Geb beside the statement, and the statement is
-an equation of two functions of the forms, each a mask: the conditional on the predicate of the
-forms between a side and {lit}`none`. The program is the prelude, the reader, the type checker and
-the expansion, with those definitions.
+names by {lit}`def`, with a kernel expression as the third, or by {lit}`deftype` or {lit}`defnum`.
+The predicates are folds written in Geb beside the statement, and the statement is an equation of
+two functions of the forms, each a mask: the conditional on the predicate of the forms between a
+side and {lit}`none`. The program is the prelude, the reader, the type checker and the expansion,
+with those definitions.
 
 The proof is a development of lemmas, each an equation of two functions under a mask, in four
 stages. The expression's identity: under the mask of the expression's predicate, the expansion of
@@ -57,7 +57,7 @@ case analysis of trees then splits.
 
 ## Tags
 
-internal language, Surface 1, expansion, rose trees, induction, test
+internal language, datatype language, expansion, rose trees, induction, test
 -/
 
 set_option doc.verso true
@@ -143,11 +143,11 @@ def statement : String := "
 (def fR (lam ((e T) (env Ts) (out Ts))
   (if (formOk e) (pair 1 (pair (envAfter e env) (cons e out))) xpFail)))"
 
-/-- The program: the prelude, the reader, the type checker, the Surface 1 expansion and the
-statement. -/
+/-- The program: the prelude, the reader, the type checker, the expansion of the datatype language
+and the statement. -/
 def programText : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.surface ++ "\n" ++ statement
+    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype ++ "\n" ++ statement
 
 /-! The folds at a construction. -/
 

@@ -23,8 +23,8 @@ compiler, and on malformed terms; and the stage-0 compiler, from a program's sou
 image, against the seed's reader, checker and image writer on the programs of the kernel's
 examples, rejected and ill-typed ones included. The fixed point of self-compilation on images,
 where the two agree byte for byte on the compiler's own source, is checked natively by
-{lit}`scripts/bootstrap.sh`. Programs in the Surface 1
-forms, datatypes, case analysis, structural recursion and functions with result types, are
+{lit}`scripts/bootstrap.sh`. Programs in the forms of the datatype
+language, datatypes, case analysis, structural recursion and functions with result types, are
 compiled by the stage-0 compiler and run from their images; case analyses that are not
 exhaustive or mix datatypes, unknown constructors, patterns of the wrong length and
 recursion over what is not a datatype are rejected.
@@ -35,10 +35,10 @@ characters inside each {lit}`#guard`: core's {lit}`String.toList` depends on
 
 ## Main definitions
 
-* {lit}`prelude`, {lit}`serialize`, {lit}`reader`, {lit}`check`, {lit}`surface` and
+* {lit}`prelude`, {lit}`serialize`, {lit}`reader`, {lit}`check`, {lit}`datatype` and
   {lit}`compile` are the sources.
-* {lit}`runSurface` compiles a program with the stage-0 compiler and runs its last
-  definition; {lit}`naturals` and {lit}`roses` are Surface 1 programs.
+* {lit}`runDatatype` compiles a program with the stage-0 compiler and runs its last
+  definition; {lit}`naturals` and {lit}`roses` are programs in the datatype language.
 * {lit}`checker` returns the types of a bundle's definitions, and {lit}`seedTypes` is the
   seed's answer; {lit}`malformed` are terms the checker rejects.
 * {lit}`serializer` applies {lit}`image` to its input, and {lit}`compiler` is the stage-0
@@ -70,8 +70,8 @@ def reader : String := include_str "../../bootstrap/reader.geb"
 /-- The type checker's source. -/
 def check : String := include_str "../../bootstrap/check.geb"
 
-/-- The Surface 1 expansion's source. -/
-def surface : String := include_str "../../bootstrap/surface.geb"
+/-- The expansion of the datatype language's source. -/
+def datatype : String := include_str "../../bootstrap/datatype.geb"
 
 /-- The compiler's entry point. -/
 def compile : String := include_str "../../bootstrap/compile.geb"
@@ -82,12 +82,12 @@ def serializer : String := prelude ++ serialize ++ "(def main (lam ((t T)) (imag
 /-- The stage-0 compiler, its sources joined, each followed by a newline, as the host driver
 joins them. -/
 def compiler : String :=
-  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ surface ++ "\n" ++
+  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ datatype ++ "\n" ++
     compile ++ "\n"
 
 /-- Compile a program with the stage-0 compiler, given as text, read the image back, and apply
 its definition named {lit}`main` to an input tree. -/
-def runSurface (compilerText text : List Char) (input : Tree) : Option Tree := do
+def runDatatype (compilerText text : List Char) (input : Tree) : Option Tree := do
   let img ← toBytes (← runMain compilerText (nameTree text))
   runEntry (← readImage img) ['m', 'a', 'i', 'n'] input
 
@@ -172,9 +172,9 @@ def samples : List Tree :=
     "(def f (lam (x T) (add x unit)))", "(def f (lam (x T) (x x)))", "(defnum n m)",
     "(defnum n (1 2))"].all fun p ↦
   runMain compiler.toList (nameTree p.toList) == some (seedCompile p.toList)
--- Surface 1 programs, compiled by the stage-0 compiler and run from their images
-#guard runSurface compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
-#guard runSurface compiler.toList roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])
+-- Programs in the datatype language, compiled by the stage-0 compiler and run from their images
+#guard runDatatype compiler.toList naturals.toList (leaf 5) = some (mk 0 [leaf 10, leaf 4])
+#guard runDatatype compiler.toList roses.toList (leaf 0) = some (mk 0 [leaf 4, leaf 1, leaf 0])
 #guard ["(data Nat (zero) (succ Nat)) (defn f ((n Nat)) T (case n ((zero) 1))) (def main f)",
     "(data A (a)) (data B (b)) (defn f ((n A)) T (case n ((a) 1) ((b) 0))) (def main f)",
     "(data A (a)) (defn f ((n A)) T (case n ((c) 1) (else 0))) (def main f)",

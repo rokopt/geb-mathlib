@@ -5,7 +5,8 @@
 # Regenerate or check the bootstrap's committed build artifacts: the
 # stage-1 compiler's image, bootstrap/compiler.img, and the Lean it emits
 # from its own source, bootstrap/lean/GebBoot.lean (the manual's
-# Bootstrap chapter, Phase 5 and What self-compilation establishes).
+# Bootstrap chapter, Speed and a second host and What self-compilation
+# establishes).
 #
 # The stage-1 compiler's source S is the files of STAGE1 joined as the
 # host driver joins sources, each followed by a newline.
@@ -26,9 +27,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 b=bootstrap
-stage0=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/surface.geb"
+stage0=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/datatype.geb"
         "$b/compile.geb")
-stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/stage1/surface.geb"
+stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/stage1/datatype.geb"
         "$b/compile.geb" "$b/stage1/lean.geb")
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean

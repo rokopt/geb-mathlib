@@ -86,7 +86,7 @@ own requires a prior `lake build`.
 - `scripts/bootstrap.sh check`: the bootstrap's committed image and
   emitted Lean regenerate byte for byte, and the compiler built from
   the emitted Lean reproduces both (the manual's Bootstrap chapter,
-  Phase 5).
+  § Speed and a second host).
 - `lake build GebTests` then `lake exe batteries/runLinter GebTests`, then
   `scripts/literate.sh build` (§ Literate site build), whose
   `lake lint` lints `Geb` and whose direct `batteries/runLinter` invocation

@@ -2,8 +2,8 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Surface 1: datatypes, case analysis, structural recursion and functions with result types,
-; expanded into the kernel's syntax. A surface program's S-expressions are rewritten into
+; The datatype language: datatypes, case analysis, structural recursion and functions with
+; result types, expanded into the kernel's syntax. A program's S-expressions are rewritten into
 ; kernel S-expressions, which the reader then resolves; a program of kernel forms alone is
 ; unchanged. Datatypes are erased: a value of a datatype is a tree, the node labelled by its
 ; constructor's position over its fields.
@@ -21,7 +21,7 @@
 ; remaining children when c has a & field; the & is not repeated in the pattern.
 ;
 ; Names beginning with % are reserved for the expansion. The expansion refers to the
-; primitives label, child, children, node and eq by name, so a surface program does not rebind
+; primitives label, child, children, node and eq by name, so a program does not rebind
 ; them around case and cata. Requires the prelude, the reader and the checker.
 
 ; S-expressions under construction

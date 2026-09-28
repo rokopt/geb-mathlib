@@ -19,8 +19,8 @@ import Geb.Prototypes.Computability.Triage.Simulation
 
 The design record for bootstrapping Geb: the decisions that fix the
 seed, a survey of how other languages and proof checkers bootstrap,
-the staged plan with an executable acceptance condition for each
-step, and the statement of what self-compilation establishes.
+the plan, each of its parts with an executable acceptance condition,
+and the statement of what self-compilation establishes.
 -/
 
 open Verso.Genre Manual
@@ -39,8 +39,8 @@ seed runs until the compiler written in Geb reproduces itself.
 
 This chapter records a road map of the bootstrap and of the work
 written in Geb after it, the decisions that fix the seed, a survey of
-how other languages and proof checkers bootstrap, and the plan, a
-sequence of phases each ending with an executable acceptance condition.
+how other languages and proof checkers bootstrap, and the plan, each
+of whose sections ends with an executable acceptance condition.
 The
 optimized representation that the chapter on value representation
 designs is not a prerequisite: the seed uses the plain representation,
@@ -75,14 +75,16 @@ order of dependence.
   Rust, where a second seed reproduces the fixed points; and an
   interaction-net runtime, HVM, Bend or a similar one, which a compiler
   written in Geb targets for parallel workloads. Complete for Lean; the
-  systems language and the interaction-net runtime wait on Phase 2.
+  systems language and the interaction-net runtime wait on
+  {ref "choice-of-machine"}[the choice of machine].
 * Logic. One checker, proved sound in Lean and written again in Geb,
   the checker written in Geb proved in Lean to agree with it, and a
   prover in Geb whose tactics construct its derivations: the
   metalogic's, the free topos with the natural numbers, list and
   rose-tree objects, presented as the initial model of one partial Horn
   theory, whose developments mix the Mitchell–Bénabou language's
-  derivations with the combinators' certificates (Phase 7). Kernel
+  derivations with the combinators' certificates ({ref "logic"}[The
+  logic]). Kernel
   programs are reasoned about through their translation into the
   language, sound by a theorem in Lean. In progress: the checker and the
   translation are constructed in Lean and proved sound, and the proofs
@@ -91,80 +93,99 @@ order of dependence.
   and the bootstrap is not complete until the agreement of the checker
   written in Geb with the Lean checker is proved in Lean.
   The checker of Gödel's T, the equational theory of the kernel's terms,
-  constructed and written in Geb first, is retired by the fifth choice.
+  constructed and written in Geb first, is retired: equations between
+  kernel programs are proved in the metalogic
+  ({ref "functional-relations"}[Functional relations and the checker of
+  Gödel's T]).
 * Extension. A program is extended by definitions whose identity
-  survives edits, and Surface 1 is complete enough to write the rest of
-  Geb in, with diagnostics that name what fails. In progress: closed
-  bundles and Surface 1 are complete, and content identity is ready.
+  survives edits, and the datatype language is complete enough to write
+  the rest of Geb in, with diagnostics that name what fails. In
+  progress: closed bundles and the datatype language are complete, and
+  content identity is ready.
 
 ## The bootstrap
 
 Computation:
 
-* Complete. The seed, Phase 1: the kernel's syntax, its type checker
+* Complete. The seed ({ref "kernel-in-lean"}[The kernel runs in Lean]):
+  the kernel's syntax, its type checker
   and evaluator, the primitives and the reader, with numeral
   abbreviations for labels. The reader's printer and the retraction law
   between them are ready.
-* Complete. Definitions and images, Phase 3: closed bundles, the image
+* Complete. {ref "definitions-and-images"}[Definitions and images]:
+  closed bundles, the image
   format and the host driver `geb-kernel`. The names of bound variables
   and comments beside a bundle are ready.
-* Complete. Geb grows in itself, Phase 4: the stage-0 compiler in the
-  kernel's syntax, the Surface 1 expansion, the stage-1 compiler written
-  in Surface 1, and their fixed points.
-* Complete. The Lean backend, Phase 5 step 3:
+* Complete. {ref "geb-grows-in-itself"}[Geb grows in itself]: the
+  stage-0 compiler in the kernel's syntax, the datatype language's
+  expansion, the stage-1 compiler written in the datatype language, and
+  their fixed points.
+* Complete. The Lean backend ({ref "speed-and-second-host"}[Speed and a
+  second host]):
   `bootstrap/stage1/lean.geb`, the committed `bootstrap/compiler.img`
   and `bootstrap/lean/GebBoot.lean`, and the executable `geb-compile`.
-* Ready. Surface 1's completion, the section on improvements: generated
+* Ready. The datatype language's completion
+  ({ref "improvements"}[Improvements]): generated
   recognizers, type parameters, a static check of datatypes, patterns
   with `&`, unused pattern variables, primitives that no binding
   shadows, emitted names that no definition captures, and diagnostics
   naming the definition that fails.
-* Deferred until before the second host. The choice of machine, Phase
-  2: the benchmark programs, the environment machine, the compilation to
+* Deferred until before the second host.
+  {ref "choice-of-machine"}[The choice of machine]: the benchmark
+  programs, the environment machine, the compilation to
   the triage calculus, the compilation to interaction combinators, and
   the decision.
-* Waiting on Phase 2. The second host, Phase 5 step 1: the evaluator
+* Waiting on the choice of machine. The second host
+  ({ref "speed-and-second-host"}[Speed and a second host]): the evaluator
   and loader in Rust, reproducing the stage-0 and stage-1 fixed points,
   which is diverse double-compiling across hosts.
-* Ready. Accelerations, Phase 5 step 2: native code bound by position
+* Ready. Accelerations ({ref "speed-and-second-host"}[Speed and a
+  second host]): native code bound by position
   or builtin identifier, proved in Lean against the denotation and run
   in shadow mode.
-* Waiting on Phase 2. The interaction-net target, Phase 5 step 3: a
+* Waiting on the choice of machine. The interaction-net target
+  ({ref "speed-and-second-host"}[Speed and a second host]): a
   compiler written in Geb to HVM, Bend or a similar runtime, each pinned
   to a revision and tested, within the limits on duplicating λ-values
   of the section on operational semantics.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
-Logic, Phase 7, Gödel's T and then the metalogic, as the sections below
-detail:
+Logic ({ref "logic"}[The logic]), Gödel's T and then the metalogic, as
+the sections below detail:
 
 * Gödel's T over rose trees, the equational theory of the kernel's
   terms:
   * Complete. The rules and their soundness in Lean, and the checker
-    written in Geb, with its prover begun; the metalogic's fifth choice
-    retires both, and their proofs remain and are checked.
-  * In progress. The proofs about the compiler's components: the first
-    two, in Gödel's T, are complete; the rest are proved in the
-    metalogic, about the components' translations, the type checker's
-    preservation of types by weakening and by substitution and the
-    Surface 1 expansion's identity on programs of kernel forms complete,
-    and the reader's inverse to the printer waiting on the printer.
+    written in Geb, with its prover begun; both are retired, equations
+    between kernel programs being proved in the metalogic, and their
+    proofs remain and are checked.
+  * In progress. The proofs about the compiler's components: those of
+    the prelude's lists and labels and of the checker's accessors, in
+    Gödel's T, are complete; the rest are proved in the metalogic, about
+    the components' translations, the type checker's preservation of
+    types by weakening and by substitution and the datatype language's
+    expansion's identity on programs of kernel forms complete, and the
+    reader's inverse to the printer waiting on the printer.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
-    objects: the first construction, with its converse.
-  * Complete. The model in Lean with functional relations, the second
-    construction, with the converse of the first, a model of the theory
-    from a topos with chosen structure and the data objects, Lean's
+    objects, with its converse ({ref "rule-set-models"}[The rule set and
+    its models]).
+  * Complete. The model in Lean with functional relations
+    ({ref "functional-relations"}[Functional relations and the checker of
+    Gödel's T]), with a model of the theory from a topos with chosen
+    structure and the data objects, Lean's
     functions as graphs in it, and the bridge from mathlib's elementary
     toposes.
   * Complete. The definitional extension with its unfolding theorem,
-    for the models: the third construction. The unfolding of
-    certificates is ready.
+    for the models ({ref "definitional-extensions"}[Definitional
+    extensions and shared certificates]). The unfolding of certificates
+    is ready.
   * Complete. A prover prototyped in Lean, and with it the measurement
     that decides when the Mitchell–Bénabou language is written, both
-    criteria failing: the fourth choice.
+    criteria failing ({ref "when-mb-written"}[When the Mitchell–Bénabou
+    language is written]).
   * Complete. Certificates over a store of shared terms, checked with
     the typing of their terms inferred.
   * Complete. The Mitchell–Bénabou language's terms, compilation and
@@ -172,9 +193,11 @@ detail:
     every model, the laws of its renaming and substitution, and the
     benchmark's theorems stated in it.
   * Complete. Its derivations of equations, its logical rules, and its
-    connectives, comprehension and description, the first three stages,
-    each with its checker proved sound.
-  * Complete. The fourth stage, in order:
+    connectives, comprehension and description, each with its checker
+    proved sound.
+  * Complete. Its types built in, the mixing of the two presentations
+    and its completeness ({ref "mb-types-mixing-completeness"}[Types
+    built in, mixing and completeness]), in order:
     * Complete. The arrow a functional relation determines, a definition
       of the combinators; binary coproducts and the initial object; and
       rose trees over a type of labels, with induction on rose trees.
@@ -194,11 +217,12 @@ detail:
     * Complete. The partial Horn logic's term model and completeness
       theorem, the completeness of the language citing certificates,
       and the round trips of the compilation.
-  * Complete. The fifth choice: its measurement, the translation's
-    soundness, and the decision, to retire the checker of Gödel's T.
+  * Complete. The choice whether Gödel's T keeps its own checker: its
+    measurement, the translation's soundness, and the decision, to
+    retire the checker of Gödel's T.
   * Ready. The checker, its prover and the translation of kernel
-    programs written in Geb, the fourth stage's completeness having
-    settled the language's rules.
+    programs written in Geb, the language's completeness having settled
+    its rules.
   * Waiting on the checker written in Geb. The proof in Lean that the
     checker written in Geb agrees with the Lean checker: its denotation,
     at every development, is the Lean checker's result. The bootstrap is
@@ -206,15 +230,17 @@ detail:
   * Waiting on the checker written in Geb and the proof of its
     agreement. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
-    metalogic's derivations (the section on the metalogic and its
-    checker), the checker of the shared certificates among the
+    metalogic's derivations ({ref "metalogic-and-checker"}[The
+    metalogic and its checker]), the checker of the shared certificates
+    among the
     candidates, by unsharing.
 
 Extension:
 
-* Complete. Closed bundles referring to definitions by position, Phase
-  3.
-* Ready. Content identity, Phase 6: the hash and its version tag,
+* Complete. Closed bundles referring to definitions by position
+  ({ref "definitions-and-images"}[Definitions and images]).
+* Ready. {ref "content-identity"}[Content identity]: the hash and its
+  version tag,
   BLAKE3 and SHA3-256 reconciled; its input, recorded in
   `docs/definitions.md` § Content identity; the hash written in Geb and
   compared with a host binding; the migration from positions to
@@ -230,7 +256,7 @@ Every item waits on the bootstrap. Each is written in Geb, and each
 proof in the metalogic, a proof about programs being about their
 translations:
 
-* Surface 2: quotients whose respect is proved, subset types by
+* The setoid language: quotients whose respect is proved, subset types by
   propositions, definitions by equations whose unique solution is
   proved, and dependent products of families, each a construction of
   the metalogic's topos.
@@ -307,9 +333,11 @@ The following are fixed; the plan builds on them.
 * Semantics. The reference semantics of the kernel is its denotation.
   Which machine runs it, an environment machine, a compilation to tree
   calculus, or a compilation to interaction combinators, is decided by
-  the comparison of Phase 2, run on the same kernel programs.
-* Layers. Above the kernel, the language grows in three layers. Surface
-  1 is computational: named datatypes whose constructors and structural
+  the comparison of {ref "choice-of-machine"}[the choice of machine],
+  run on the same kernel programs.
+* Layers. Above the kernel, the language grows in three layers. The
+  datatype language is computational: named datatypes whose
+  constructors and structural
   recursion are derived from their declarations, case analysis,
   functions with result types, type parameters instantiated at
   elaboration, and quotients only by computable normal forms. Its types
@@ -317,14 +345,16 @@ The following are fixed; the plan builds on them.
   the kernel defines, which has finite limits and finite coproducts;
   that category has no subobject classifier for propositions about
   programs (the necessity theorem of `Geb/Prototypes/Typechecker/`'s
-  classifier module), so logic is not a Surface 1 construct. The
-  metalogic of Phase 7 holds propositions and their proofs about kernel
-  programs, equations between them among the propositions, stated of
-  the programs' translations into its internal language. Surface 2,
-  built on it, adds subset types by arbitrary
+  classifier module), so logic is not a construct of the datatype
+  language. The metalogic ({ref "logic"}[The logic]) holds propositions
+  and their proofs about kernel programs, equations between them among
+  the propositions, stated of the programs' translations into its
+  internal language. The setoid language, built on it, adds subset
+  types by arbitrary
   propositions, quotients whose respect for their relation is proved,
   and definitions by equations whose unique solution is proved; it is
-  the setoid completion of Surface 1 with its obligations discharged in
+  the setoid completion of the datatype language with its obligations
+  discharged in
   the metalogic. Type parameters are instantiated at elaboration
   because the polymorphic λ-calculus has no set-theoretic model, which
   the kernel's denotation in Lean types requires.
@@ -338,13 +368,15 @@ The following are fixed; the plan builds on them.
   equivalence with the free topos with a natural numbers object is
   proved in Geb. It is presented at once, as the initial model of one
   partial Horn theory of an elementary topos with the data objects
-  (Phase 7, the section on the metalogic), and no classical logic is an
+  ({ref "metalogic"}[The metalogic]), and no classical logic is an
   intermediate step. Kernel programs enter it through their translation
   into its internal language, the Mitchell–Bénabou language. Gödel's
   T over rose trees, the equational theory of the kernel's terms of
   every type, whose rules are the laws of a cartesian closed category
   with the data objects, since the kernel's programs have function
-  types, preceded it, and the fifth choice retires its checker.
+  types, preceded it, and its checker is retired
+  ({ref "functional-relations"}[Functional relations and the checker of
+  Gödel's T]).
 * Artifacts. The compiler's image and, once the compiler emits Lean,
   the emitted Lean are committed as build artifacts. Continuous
   integration regenerates them and compares their bytes with the
@@ -465,7 +497,8 @@ before the first image, because every digest will depend on them.
 
 The migration from positions to digests is a fold over the dependency
 order, the shape of Git's
-[conversion of a repository from SHA-1 to SHA-256](https://git-scm.com/docs/hash-function-transition),
+[conversion of a repository from SHA-1 to
+SHA-256](https://git-scm.com/docs/hash-function-transition),
 and it is safe because nothing without a digest has an identity to
 preserve. It fails on a missing dependency rather than substituting a
 placeholder, recomputes each digest before rewriting, and gives the
@@ -535,7 +568,8 @@ Format changes are what force a bootstrap to be rerun: OCaml rebuilds
 its seed when the bytecode format or the set of primitives changes,
 and Lean when its object-file format changes. The image is therefore
 a kernel term, not the state of a particular machine, so that the
-choice of Phase 2 cannot invalidate it; it carries a version header,
+choice of machine ({ref "choice-of-machine"}[The choice of machine])
+cannot invalidate it; it carries a version header,
 and it shares no subtrees, compression being a separate outer layer.
 Ribbit's compiler likewise emits trees without sharing, which keeps
 its decoder small {citep YvonFeeley2021}[].
@@ -589,12 +623,13 @@ Light with an end-to-end soundness theorem, whose classical logic Geb
 does not adopt. The [tree-calculus
 workflow](https://treecalcul.us/quick-start/) loads a compiler
 represented as a tree and reads a lightweight notation, the workflow
-Phase 2's triage arm needs.
+triage arm of {ref "choice-of-machine"}[the choice of machine] needs.
 
 ## Operational semantics
 
-Three candidates run the kernel, and Phase 2 compares them on the same
-programs.
+Three candidates run the kernel, and
+{ref "choice-of-machine"}[the choice of machine] compares them on the
+same programs.
 
 Environment machines. The Categorical Abstract Machine executes
 categorical combinators, morphisms of a free cartesian closed
@@ -649,9 +684,12 @@ to a revision and tested before any step depends on it.
 
 The evidence points to an environment machine as the reference and to
 interaction combinators as a compilation target for measured parallel
-workloads; Phase 2 decides.
+workloads; {ref "choice-of-machine"}[the choice of machine] decides.
 
 ## The metalogic and its checker
+%%%
+tag := "metalogic-and-checker"
+%%%
 
 The free topos is the topos generated by pure intuitionistic type
 theory, whose types include a natural numbers type and power types
@@ -669,16 +707,17 @@ object and its translation back. Its proof is an induction on terms and
 derivations.
 
 The metalogic presents the free topos with the data objects directly, as
-the initial model of a partial Horn theory (Phase 7, the section on the
-metalogic). The equational logic of the kernel's terms, whose judgments
+the initial model of a partial Horn theory ({ref "metalogic"}[The
+metalogic]). The equational logic of the kernel's terms, whose judgments
 are equations between kernel terms of a type under hypotheses, is a
 variant of Gödel's T whose rules are the laws of a cartesian closed
 category with list objects and a rose-tree object, since the kernel's
 programs are terms of System T, whose types include function types (the
-section on Gödel's T); its checker was implemented first, and the fifth
-choice retires it. The kernel's types, function
-types included, are objects of the metalogic, and Surface 1's
-recognized types are subobjects of the type of trees there, cut out by
+section on Gödel's T); its checker was implemented first, and is retired
+({ref "functional-relations"}[Functional relations and the checker of
+Gödel's T]). The kernel's types, function
+types included, are objects of the metalogic, and the datatype
+language's recognized types are subobjects of the type of trees there, cut out by
 their recognizers.
 
 A kernel program enters the metalogic by its translation into the
@@ -700,8 +739,8 @@ another of the same judgments when a Geb program translates each
 certificate the first accepts into one the second accepts with the same
 conclusion. The condition is a proposition about kernel programs under
 the hypothesis that the first checker accepts, so both checkers are Geb
-programs, the second the metalogic's checker written in Geb (Phase 7's
-second step); it is proved in the metalogic,
+programs, the second the metalogic's checker written in Geb
+({ref "logic"}[The logic]); it is proved in the metalogic,
 about the programs' translations, by induction on certificates; the
 checkers' results are functions of the context and the hypotheses, so
 the proposition is stated of functions, and its induction hypothesis
@@ -786,8 +825,9 @@ Geb takes both courses, in turn. During the bootstrap its checker is
 extended in Lean, each extension proved sound there, and its
 certificates are made compact as Metamath Zero's are, each term stated
 once in a store and cited by its index: the certificates over a store of
-shared terms and the checker that infers their typing (the section on
-the third construction and shared certificates) are checked by a Lean
+shared terms and the checker that infers their typing
+({ref "definitional-extensions"}[Definitional extensions and shared
+certificates]) are checked by a Lean
 checker proved sound there, not admitted. The developments that mix the
 language's derivations with the combinators' certificates cite
 certificates in their plain form
@@ -811,7 +851,8 @@ is sound as far as the checker it is admitted beside: the proposition
 holds of the programs' denotations by the translation's soundness at
 the types of first order it is stated at, functions of data; and the
 metalogic's checker written in Geb is sound through its agreement with
-the Lean checker, which Phase 7's second step tests on valid and
+the Lean checker, which the checker in Geb ({ref "logic"}[The logic])
+tests on valid and
 malformed certificates and proves in Lean, of the Geb checker's
 denotation, the counterpart of Davis and Myreen's proof that Milawa's
 kernel is faithful to its logic. No checker proves
@@ -865,10 +906,12 @@ candidates for porting, not seed components.
   by combinators. Its equations do not force its subobject classifier
   to classify, since interpreting that object as the terminal object
   satisfies them, and its equalizers are restricted to base arrows; it
-  is superseded by the partial Horn presentation of Phase 7.
+  is superseded by the partial Horn presentation
+  ({ref "presentation"}[The presentation]).
 * `InteractionNets.lean` evaluates Lafont's combinators with maximal
   parallel steps and no proofs; it is the starting point of the
-  interaction arm of Phase 2, after a well-formedness invariant for its
+  interaction arm of {ref "choice-of-machine"}[the choice of machine],
+  after a well-formedness invariant for its
   graphs is stated. `InteractionExecution.lean` separates its
   polynomial machines and polling constructions from a translation of
   net graphs, and does not discharge that translation.
@@ -889,11 +932,11 @@ later Geb compiler to categorical combinators repeats.
 
 # The plan
 
-Each step is marked by where it lives: the Lean seed, Geb code, or a
-comparison whose output is a decision. Each phase ends with an
-executable acceptance condition, and every step retains a runnable
-fixture, the source that regenerates it, and its input and output
-contract.
+Each part of the plan is marked by where it lives: the Lean seed, Geb
+code, or a comparison whose output is a decision. Each section below
+ends with an executable acceptance condition, and every part retains a
+runnable fixture, the source that regenerates it, and its input and
+output contract.
 
 ## Status
 
@@ -906,61 +949,64 @@ The state of every part of the plan is one of five:
   complete;
 * deferred: not begun, by a decision that names when it is taken up.
 
-A phase is complete when its acceptance is met; the parts it leaves are
-listed beside it, each with its own state. The road map at the head of
-the chapter marks its items by these states,
-and each phase below opens with a table of the states of its steps.
+A section of the plan is complete when its acceptance is met; the parts
+it leaves are listed beside it, each with its own state. The road map at
+the head of the chapter marks its items by these states, and each
+section below opens with a table of the states of its parts.
 
 :::table +header
 *
-  * Phase
+  * Section
   * State
   * What remains, and its state
 *
-  * 1, the kernel runs in Lean
+  * {ref "kernel-in-lean"}[The kernel runs in Lean]
   * Complete
   * The reader's printer and the retraction law: ready
 *
-  * 2, the choice of machine
+  * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
-  * Every step
+  * Every part
 *
-  * 3, definitions and images
+  * {ref "definitions-and-images"}[Definitions and images]
   * Complete
   * The names of bound variables and comments: ready; the hash binding:
-    deferred to Phase 6
+    deferred to content identity
 *
-  * 4, Geb grows in itself
+  * {ref "geb-grows-in-itself"}[Geb grows in itself]
   * Complete
-  * Surface 1's completion, the section on improvements: ready
+  * The datatype language's completion ({ref "improvements"}[Improvements]):
+    ready
 *
-  * 5, speed and a second host
+  * {ref "speed-and-second-host"}[Speed and a second host]
   * In progress
-  * The second host and the interaction-net target: waiting on Phase 2;
-    accelerations: ready
+  * The second host and the interaction-net target: waiting on the choice
+    of machine; accelerations: ready
 *
-  * 6, content identity
+  * {ref "content-identity"}[Content identity]
   * Ready
-  * Every step
+  * Every part
 *
-  * 7, Gödel's T
+  * {ref "goedel-t"}[Gödel's T]
   * In progress
-  * Weakening, substitution and the Surface 1 expansion's identity:
-    complete; the reader's inverse to the printer: waiting on the printer
+  * Weakening, substitution and the identity of the datatype language's
+    expansion: complete; the reader's inverse to the printer: waiting on
+    the printer
 *
-  * 7, the metalogic
+  * {ref "metalogic"}[The metalogic]
   * In progress
-  * The Mitchell–Bénabou language's fourth stage, the second
-    construction and the fifth choice: complete; the checker, the prover
-    and the translation written in Geb: ready; the proof of the
-    checker's agreement and stronger checkers: waiting on the checker in
-    Geb
+  * The Mitchell–Bénabou language's completeness, the model of functional
+    relations and the retirement of the checker of Gödel's T: complete;
+    the checker, the prover and the translation written in Geb: ready;
+    the proof of the checker's agreement and stronger checkers: waiting
+    on the checker in Geb
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
 stage-0 compiler, written in the kernel's syntax, and the stage-0
-compiler builds the stage-1 compiler, whose Surface 1 expansion is
-written in Surface 1 and which also emits Lean; each, run by the Lean
+compiler builds the stage-1 compiler, whose expansion of the datatype
+language is written in the datatype language and which also emits Lean;
+each, run by the Lean
 evaluator from its image, compiles its own source to that image. Built
 by Lake from the Lean it emits from its own source, the stage-1
 compiler emits the same Lean and the same image. The stage-1 compiler's
@@ -970,77 +1016,80 @@ every fixed point on every build.
 The implementation changed the plan in these respects. The kernel's
 terms and types are rose trees read directly, and its checker and
 evaluator are one fold whose results are Lean closures, so no machine
-is needed before the first fixed point and Phase 2 left the critical
-path. The kernel gained lists, case analysis of lists and the
+is needed before the first fixed point and the choice of machine left
+the critical path. The kernel gained lists, case analysis of lists and the
 logarithm of a label, each for a cost measured on the bootstrap's own
 programs. And the representation of rose trees tabulates a node's
 children in an array, without which a fold over a wide node, such as a
 file, takes quadratic time.
 
-## Phase 1: the kernel runs in Lean
+## The kernel runs in Lean
+%%%
+tag := "kernel-in-lean"
+%%%
 
 :::table +header
 *
   * Step
   * State
 *
-  * 1 to 3: the syntax, the type checker and evaluator, the primitives
+  * The syntax, the type checker and evaluator, the primitives
   * Complete
 *
-  * 4: the reader
+  * The reader
   * Complete; its printer and the retraction law are ready
 *
   * Acceptance
   * Met
 :::
 
-1. Lean: the kernel's syntax. Terms and types are rose trees read
-   directly, the label of a node naming its constructor, so a program
-   is a value of the language and needs no separate syntax type: de
-   Bruijn variables, abstraction over a domain type, application, the
-   unit value, pairs and projections, quoted trees, a conditional on
-   whether a label is non-zero, lists with their right fold
-   ({name}`Geb.Kernel.foldrDen`) and their case analysis
-   ({name}`Geb.Kernel.lcaseDen`), which the fold alone gives only in
-   time linear in the list, the fold of trees and iteration at
-   given result types, primitives and references by index; the types
-   `T`, `1`, products, functions and lists. A tree is a label with a
-   list of trees, and the fold's step receives the leaf of a node's
-   label and the list of its children's results
-   ({name}`Geb.Kernel.foldDen`), so the fold is the recursion of the
-   carrier itself. Lists are in the kernel because a node is built from
-   the list of its children: building a node one child at a time copies
-   the children at each step, which on a node of many children, a file
-   of bytes among them, takes quadratic time, while a list of children
-   is built in linear time and tabulated once.
-2. Lean: the type checker and the evaluator are one paramorphism,
-   {name}`Geb.Kernel.infer`, returning a term's type together with its
-   denotation, or nothing when the term is ill-typed: `T` denotes
-   {name}`Geb.RoseTree`, the fold denotes {name}`Geb.RoseTree.elim`,
-   and a well-typed term denotes a Lean function
-   ({name}`Geb.Kernel.Ty.den`). The evaluator agrees with the
-   denotation by construction. The term is traversed once and its
-   meaning is a Lean closure, so running a program is compiled Lean
-   code rather than an interpretive loop.
-3. Lean: the primitives {name}`Geb.Kernel.prims`, on labels and
-   children: a node's label, arity and child by index; a node from a
-   label and a list of children, and the list of a node's children;
-   arithmetic and comparison of labels; equality of trees; and the
-   base-two logarithm of a label, without which a label's bit length
-   would need as many steps of iteration as the label's value. The
-   table is only extended, and its members are chosen by what the
-   reader, substitution and the checker need.
-4. Lean: the reader. A program is a sequence of named definitions in
-   S-expressions over lists of characters; names resolve to de Bruijn
-   indices, references and primitives ({name}`Geb.Kernel.readProgram`),
-   and the reader expands type abbreviations, abstractions over lists
-   of binders and local bindings, which the kernel does not have, and
-   numeral abbreviations, which name labels as an assembler's symbolic
-   constants do and leave no trace in the terms read; the
-   definitions are checked and evaluated in order
-   ({name}`Geb.Kernel.load`), and the last is applied to an input tree
-   ({name}`Geb.Kernel.runMain`). A printer and the retraction law
-   between it and the reader remain to be written.
+* Lean: the kernel's syntax. Terms and types are rose trees read
+  directly, the label of a node naming its constructor, so a program
+  is a value of the language and needs no separate syntax type: de
+  Bruijn variables, abstraction over a domain type, application, the
+  unit value, pairs and projections, quoted trees, a conditional on
+  whether a label is non-zero, lists with their right fold
+  ({name}`Geb.Kernel.foldrDen`) and their case analysis
+  ({name}`Geb.Kernel.lcaseDen`), which the fold alone gives only in
+  time linear in the list, the fold of trees and iteration at
+  given result types, primitives and references by index; the types
+  `T`, `1`, products, functions and lists. A tree is a label with a
+  list of trees, and the fold's step receives the leaf of a node's
+  label and the list of its children's results
+  ({name}`Geb.Kernel.foldDen`), so the fold is the recursion of the
+  carrier itself. Lists are in the kernel because a node is built from
+  the list of its children: building a node one child at a time copies
+  the children at each step, which on a node of many children, a file
+  of bytes among them, takes quadratic time, while a list of children
+  is built in linear time and tabulated once.
+* Lean: the type checker and the evaluator are one paramorphism,
+  {name}`Geb.Kernel.infer`, returning a term's type together with its
+  denotation, or nothing when the term is ill-typed: `T` denotes
+  {name}`Geb.RoseTree`, the fold denotes {name}`Geb.RoseTree.elim`,
+  and a well-typed term denotes a Lean function
+  ({name}`Geb.Kernel.Ty.den`). The evaluator agrees with the
+  denotation by construction. The term is traversed once and its
+  meaning is a Lean closure, so running a program is compiled Lean
+  code rather than an interpretive loop.
+* Lean: the primitives {name}`Geb.Kernel.prims`, on labels and
+  children: a node's label, arity and child by index; a node from a
+  label and a list of children, and the list of a node's children;
+  arithmetic and comparison of labels; equality of trees; and the
+  base-two logarithm of a label, without which a label's bit length
+  would need as many steps of iteration as the label's value. The
+  table is only extended, and its members are chosen by what the
+  reader, substitution and the checker need.
+* Lean: the reader. A program is a sequence of named definitions in
+  S-expressions over lists of characters; names resolve to de Bruijn
+  indices, references and primitives ({name}`Geb.Kernel.readProgram`),
+  and the reader expands type abbreviations, abstractions over lists
+  of binders and local bindings, which the kernel does not have, and
+  numeral abbreviations, which name labels as an assembler's symbolic
+  constants do and leave no trace in the terms read; the
+  definitions are checked and evaluated in order
+  ({name}`Geb.Kernel.load`), and the last is applied to an input tree
+  ({name}`Geb.Kernel.runMain`). A printer and the retraction law
+  between it and the reader remain to be written.
 
 Acceptance: a program written by hand in S-expressions is read, type
 checked and run, with arithmetic beyond a machine word; ill-typed and
@@ -1051,95 +1100,102 @@ of a list in linear time by the right fold, definitions
 referring to earlier ones, and rejections of ill-typed, unbalanced,
 unresolved and mistyped programs.
 
-## Phase 2: the choice of machine
+## The choice of machine
+%%%
+tag := "choice-of-machine"
+%%%
 
 :::table +header
 *
   * Step
   * State
 *
-  * 1 to 3: the benchmark programs, the arms, the measurements
+  * The benchmark programs, the arms, the measurements
   * Deferred until before the second host
 *
   * Acceptance
   * Not met
 :::
 
-1. The benchmark programs, written once in kernel S-expressions: a fold
-   over a balanced tree of $`2^{20}` leaves, as the value-representation
-   chapter measures; a comb and a node of many children; labels beyond
-   a machine word; a reader over a megabyte of bytes; the kernel
-   evaluator written in the kernel, with a step bound; a normalizer and
-   type checker for simply typed terms; and the higher-order terms that
-   probe the oracle-free fragment.
-2. The arms: an environment machine derived from the denotation, with
-   fold frames given by dissections and a proof that it agrees with the
-   denotation, and a bounded runner that resumes to the same result; a
-   compilation of the kernel to the triage calculus by bracket
-   abstraction, run by the repository's machine; and a compilation of
-   the kernel's first-order folds to interaction combinators. Every
-   result is compared with the denotation.
-3. Measurements: agreement, host lines, proof lines, steps and time per
-   leaf, memory and its reclamation, and speedup with threads, one heavy
-   process at a time. The decision on the reference machine and the
-   compilation targets is recorded in this chapter.
+* The benchmark programs, written once in kernel S-expressions: a fold
+  over a balanced tree of $`2^{20}` leaves, as the value-representation
+  chapter measures; a comb and a node of many children; labels beyond
+  a machine word; a reader over a megabyte of bytes; the kernel
+  evaluator written in the kernel, with a step bound; a normalizer and
+  type checker for simply typed terms; and the higher-order terms that
+  probe the oracle-free fragment.
+* The arms: an environment machine derived from the denotation, with
+  fold frames given by dissections and a proof that it agrees with the
+  denotation, and a bounded runner that resumes to the same result; a
+  compilation of the kernel to the triage calculus by bracket
+  abstraction, run by the repository's machine; and a compilation of
+  the kernel's first-order folds to interaction combinators. Every
+  result is compared with the denotation.
+* Measurements: agreement, host lines, proof lines, steps and time per
+  leaf, memory and its reclamation, and speedup with threads, one heavy
+  process at a time. The decision on the reference machine and the
+  compilation targets is recorded in this chapter.
 
 Acceptance: the measurements and the decision are recorded.
 
 Deferred: images are kernel terms and the Lean evaluator runs compiled
 closures, so the choice of machine matters for the second host and the
 backends, not for the first fixed point; the comparison runs before
-Phase 5's second host.
+the second host ({ref "speed-and-second-host"}[Speed and a second
+host]).
 
-## Phase 3: definitions and images
+## Definitions and images
+%%%
+tag := "definitions-and-images"
+%%%
 
 :::table +header
 *
   * Step
   * State
 *
-  * 1: the closed bundle
+  * The closed bundle
   * Complete
 *
-  * 2: the annotation table
+  * The annotation table
   * In progress: the names of definitions are kept; those of bound
     variables and comments are ready
 *
-  * 3: the image and the host driver
+  * The image and the host driver
   * Complete
 *
-  * 4: the hash binding
-  * Deferred to Phase 6
+  * The hash binding
+  * Deferred to {ref "content-identity"}[Content identity]
 *
   * Acceptance
   * Met
 :::
 
-1. Lean: the closed bundle, a well-founded block of kernel definitions
-   stored as a rose tree and linked through the reference node,
-   evaluated by one fold over its order. {name}`Geb.Kernel.bundle`
-   stores a program's definitions beside the table of their names, and
-   {name}`Geb.Kernel.runEntry` loads a bundle by
-   {name}`Geb.Kernel.load` and applies its named definition; a
-   reference to a definition that is not earlier fails to load, so a
-   loaded bundle is well founded.
-2. Lean: the annotation table of names and comments, keyed by vertex.
-   Names of definitions are kept in the bundle; names of bound
-   variables and comments are not yet kept.
-3. Lean: the image, a header of a magic number, a version and a bit
-   count, followed by the word-level form of the interleaved wire
-   format without sharing ({name}`Geb.Kernel.writeImage`). Its reader
-   {name}`Geb.Kernel.readImage` rejects a wrong magic number or
-   version, truncation, trailing data and non-zero bits beyond the
-   count. The host driver, the executable `geb-kernel` over
-   {name}`Geb.Kernel.Command.run`, builds an image from a program's
-   source and runs an image's named definition on a file, presented as
-   the tree whose children are the leaves of its bytes. The word-level
-   codec agrees with the list form by test, not by proof.
-4. Lean: the host binding of the selected hash, if the
-   content-addressed workflow is wanted before the library grows, with
-   the node-digest rule restated for rose trees; digests are then a
-   function of the image's canonical bytes.
+* Lean: the closed bundle, a well-founded block of kernel definitions
+  stored as a rose tree and linked through the reference node,
+  evaluated by one fold over its order. {name}`Geb.Kernel.bundle`
+  stores a program's definitions beside the table of their names, and
+  {name}`Geb.Kernel.runEntry` loads a bundle by
+  {name}`Geb.Kernel.load` and applies its named definition; a
+  reference to a definition that is not earlier fails to load, so a
+  loaded bundle is well founded.
+* Lean: the annotation table of names and comments, keyed by vertex.
+  Names of definitions are kept in the bundle; names of bound
+  variables and comments are not yet kept.
+* Lean: the image, a header of a magic number, a version and a bit
+  count, followed by the word-level form of the interleaved wire
+  format without sharing ({name}`Geb.Kernel.writeImage`). Its reader
+  {name}`Geb.Kernel.readImage` rejects a wrong magic number or
+  version, truncation, trailing data and non-zero bits beyond the
+  count. The host driver, the executable `geb-kernel` over
+  {name}`Geb.Kernel.Command.run`, builds an image from a program's
+  source and runs an image's named definition on a file, presented as
+  the tree whose children are the leaves of its bytes. The word-level
+  codec agrees with the list form by test, not by proof.
+* Lean: the host binding of the selected hash, if the
+  content-addressed workflow is wanted before the library grows, with
+  the node-digest rule restated for rose trees; digests are then a
+  function of the image's canonical bytes.
 
 Acceptance: an image holding a definition and a client of it
 round-trips through the codec and runs a named entry point, and each
@@ -1151,15 +1207,18 @@ megabytes of memory: the plain representation costs hundreds of bytes
 per node, which the optimized representation of the value-representation
 chapter addresses later.
 
-## Phase 4: Geb grows in itself
+## Geb grows in itself
+%%%
+tag := "geb-grows-in-itself"
+%%%
 
 :::table +header
 *
   * Step
   * State
 *
-  * 1 to 5: the libraries and serializer, the reader, the type checker,
-    the elaborator, and its self-compilation
+  * The libraries and serializer, the reader, the type checker, the
+    elaborator, and its self-compilation
   * Complete; the elaborator's completion, the section on improvements,
     is ready
 *
@@ -1167,41 +1226,42 @@ chapter addresses later.
   * Met
 :::
 
-1. Geb: libraries of lists, bytes and text, label operations and tree
-   utilities, written in kernel S-expressions; the serializer first,
-   which must match the seed codec byte for byte, then the reference
-   resolver. The sources are under `bootstrap/`: `prelude.geb` names
-   the kernel's labels and primitives by numeral abbreviations and holds
-   list and digit utilities, and `serialize.geb` writes a tree's image,
-   which `GebTests/Prototypes/Stage0.lean` compares with
-   {name}`Geb.Kernel.writeImage` byte for byte, on labels of zero and
-   beyond a machine word, a node of many children, and the bundle of
-   the serializer's own program. These are measured on the growing bundle of the compiler's
-   own source before interning, cached hashes, succinct pages or
-   parallel evaluation are added.
-2. Geb: the reader, from bytes to trees with name resolution, accepting
-   exactly the syntax the seed reader accepts, abbreviations included.
-   The Lean reader remains as the independent route.
-3. Geb: the kernel type checker, compared with the Lean one on valid
-   and malformed fixtures.
-4. Geb: a minimal elaborator in kernel S-expressions: named variables,
-   definitions, and signature declarations whose constructors,
-   recognizers and folds are derived generically. `bootstrap/surface.geb`
-   expands the Surface 1 forms into kernel S-expressions before the
-   reader resolves them: a datatype declaration, whose values are erased
-   to trees, the node labelled by a constructor's position over its
-   fields, a last field taking the remaining children; case analysis,
-   exhaustive unless it has an else clause; structural recursion at a
-   result type, the kernel's fold at pairs of a subtree and a suspended
-   result, so that no clause is evaluated at the subtrees of fields
-   that are not recursive; and functions with result types. A program of
-   kernel forms alone expands to itself, so the fixed point holds with
-   the expansion in the compiler. Recognizers, type parameters and a
-   static check of datatypes are still to be added; the expansion
-   refers to some primitives by name, so a program does not rebind them
-   around case analysis and structural recursion.
-5. Geb: the elaborator rewritten in the surface language it accepts,
-   and its staged self-compilation.
+* Geb: libraries of lists, bytes and text, label operations and tree
+  utilities, written in kernel S-expressions; the serializer first,
+  which must match the seed codec byte for byte, then the reference
+  resolver. The sources are under `bootstrap/`: `prelude.geb` names
+  the kernel's labels and primitives by numeral abbreviations and holds
+  list and digit utilities, and `serialize.geb` writes a tree's image,
+  which `GebTests/Prototypes/Stage0.lean` compares with
+  {name}`Geb.Kernel.writeImage` byte for byte, on labels of zero and
+  beyond a machine word, a node of many children, and the bundle of
+  the serializer's own program. These are measured on the growing bundle of the compiler's
+  own source before interning, cached hashes, succinct pages or
+  parallel evaluation are added.
+* Geb: the reader, from bytes to trees with name resolution, accepting
+  exactly the syntax the seed reader accepts, abbreviations included.
+  The Lean reader remains as the independent route.
+* Geb: the kernel type checker, compared with the Lean one on valid
+  and malformed fixtures.
+* Geb: a minimal elaborator in kernel S-expressions: named variables,
+  definitions, and signature declarations whose constructors,
+  recognizers and folds are derived generically. `bootstrap/datatype.geb`
+  expands the forms of the datatype language into kernel S-expressions
+  before the
+  reader resolves them: a datatype declaration, whose values are erased
+  to trees, the node labelled by a constructor's position over its
+  fields, a last field taking the remaining children; case analysis,
+  exhaustive unless it has an else clause; structural recursion at a
+  result type, the kernel's fold at pairs of a subtree and a suspended
+  result, so that no clause is evaluated at the subtrees of fields
+  that are not recursive; and functions with result types. A program of
+  kernel forms alone expands to itself, so the fixed point holds with
+  the expansion in the compiler. Recognizers, type parameters and a
+  static check of datatypes are still to be added; the expansion
+  refers to some primitives by name, so a program does not rebind them
+  around case analysis and structural recursion.
+* Geb: the elaborator rewritten in the datatype language it accepts,
+  and its staged self-compilation.
 
 Acceptance: the fixed point of the section on what self-compilation
 establishes, on images, becomes a continuous-integration target, and
@@ -1223,61 +1283,70 @@ compiler and malformed terms, and the compiler with the seed on the
 kernel's examples, rejected and ill-typed ones included, and on its own
 source, on every build.
 
-The stage-1 compiler is the stage-0 compiler with the Surface 1
-expansion rewritten in Surface 1, `bootstrap/stage1/surface.geb`:
+The stage-1 compiler is the stage-0 compiler with the expansion of the
+datatype language rewritten in the datatype language,
+`bootstrap/stage1/datatype.geb`:
 datatypes for optional trees, S-expressions and declarations, case
 analysis and structural recursion in place of tests of labels and folds,
 and functions with result types, computing the same function of a
-program's forms. The seed cannot read Surface 1, so the stage-0 compiler
+program's forms. The seed cannot read the datatype language, so the
+stage-0 compiler
 builds its image; run from that image, the stage-1 compiler compiles its
 own source to the same image, of about sixteen kilobytes, in 0.61
 seconds on one machine, and the image it produces reproduces itself.
 `GebTests/Prototypes/Stage1.lean` checks this fixed point and the
-agreement of the two compilers on the Surface 1 programs and the
+agreement of the two compilers on the programs in the datatype language
+and the
 kernel's examples on every build. The rewrite needed neither generated
 recognizers nor type parameters, which are therefore added when a
 program needs them. The stage-0 sources remain the independent route
 from the seed.
 
-## Phase 5: speed and a second host
+## Speed and a second host
+%%%
+tag := "speed-and-second-host"
+%%%
 
 :::table +header
 *
   * Step
   * State
 *
-  * 1: the second host
-  * Waiting on Phase 2
+  * The second host
+  * Waiting on the choice of machine
 *
-  * 2: accelerations
+  * Accelerations
   * Ready
 *
-  * 3: the compilers
+  * The compilers
   * In progress: the Lean backend is complete; the interaction-net
-    target waits on Phase 2
+    target waits on the choice of machine
 *
   * Acceptance
-  * Met on emitted Lean; the second host's fixed point waits on step 1
+  * Met on emitted Lean; the second host's fixed point waits on the
+    second host
 :::
 
-1. A systems-language host: the evaluator and loader ported from the
-   Rust crate of the value-representation prototypes.
-2. Lean and Geb: accelerations bound by position or builtin
-   identifier, each proved in Lean against the denotation of the term
-   it replaces, with the shadow mode that runs both.
-3. Geb: compilers to the targets Phase 2 selects, emitting Lean first
-   and then an interaction-net runtime, HVM, Bend or a similar one; the
-   optimized compiler compiles itself. The emitted Lean is
-   committed beside the image, each definition under a name derived
-   from its Geb name and in the order of the source, so that a change
-   of the compiler's source changes the emitted definitions it touches
-   and no others.
+* A systems-language host: the evaluator and loader ported from the
+  Rust crate of the value-representation prototypes.
+* Lean and Geb: accelerations bound by position or builtin
+  identifier, each proved in Lean against the denotation of the term
+  it replaces, with the shadow mode that runs both.
+* Geb: compilers to the targets the choice of machine selects, emitting
+  Lean first
+  and then an interaction-net runtime, HVM, Bend or a similar one; the
+  optimized compiler compiles itself. The emitted Lean is
+  committed beside the image, each definition under a name derived
+  from its Geb name and in the order of the source, so that a change
+  of the compiler's source changes the emitted definitions it touches
+  and no others.
 
 Acceptance: both hosts reach the same image fixed point, and the
 compiler emitting Lean reaches the fixed point on emitted Lean, which
 regenerates the committed Lean byte for byte.
 
-What the first four phases fix for this one: a second host implements
+What the sections before the choice of machine fix for this one: a
+second host implements
 the kernel as {name}`Geb.Kernel.infer` defines it, the labels of its
 types and terms and the table {name}`Geb.Kernel.prims`, whose indices
 are only extended, together with the image format of
@@ -1290,7 +1359,7 @@ that the emitted program is the denotation written out, and the
 executable fixed point of the section on what self-compilation
 establishes takes Lake's build as the host build.
 
-The Lean backend of step 3 is constructed. `bootstrap/stage1/lean.geb`
+The Lean backend is constructed. `bootstrap/stage1/lean.geb`
 writes a checked program's bundle as a Lean module in which each
 definition, in order and under its name, is its denotation written with
 the functions of the namespace `Geb.Kernel.Const`, those the seed's
@@ -1313,93 +1382,103 @@ pre-push checklist, checks every fixed point with the compiled
 executables. On one machine the compiled compiler emits its Lean in 0.5
 seconds, where its image run by the Lean evaluator takes 1.2 seconds.
 
-## Phase 6: content identity
+## Content identity
+%%%
+tag := "content-identity"
+%%%
 
 :::table +header
 *
   * Step
   * State
 *
-  * 1 to 3: the node-digest rule, the hash, the migration
+  * The node-digest rule, the hash, the migration
   * Ready
 *
   * Acceptance
   * Not met
 :::
 
-1. The node-digest rule, the hash function and its version tag, if
-   Phase 3 did not fix them.
-2. Geb: the hash, compared with known answers from the host binding.
-3. Geb: the migration from positions to digests, the namespace tree,
-   and the re-keying of annotations.
+* The node-digest rule, the hash function and its version tag, if
+  {ref "definitions-and-images"}[Definitions and images] did not fix
+  them.
+* Geb: the hash, compared with known answers from the host binding.
+* Geb: the migration from positions to digests, the namespace tree,
+  and the re-keying of annotations.
 
 Acceptance: a rename leaves every digest unchanged, a changed
 dependency changes the digests of its dependents, and running the
 migration twice changes nothing.
 
-What the first four phases fix for this one: the reference node is
+What the sections before the choice of machine fix for this one: the
+reference node is
 the kernel's constructor of label 23 over a definition's position in
 its bundle, which the migration rewrites to a digest; the node-digest
 rule is restated for rose trees with natural-number labels; and the
 serializer written in Geb, `bootstrap/serialize.geb`, is the model for
 the hash written in Geb.
 
-## Phase 7: the metalogic
+## The logic
+%%%
+tag := "logic"
+%%%
 
 :::table +header
 *
-  * Step
+  * Part
   * State
 *
-  * Gödel's T, 1: the rule set and its soundness
+  * Gödel's T: the rule set and its soundness
   * Complete
 *
-  * Gödel's T, 2: the checker in Geb
+  * Gödel's T: the checker in Geb
   * Complete
 *
-  * Gödel's T, 3: proof construction and proofs
-  * In progress: the first two proofs are complete in Gödel's T, whose
-    checker and prover the metalogic's fifth choice retires; the rest
-    are proved in the metalogic, the preservation of types by weakening
-    and by substitution and the Surface 1 expansion's identity complete,
-    and the admission of stronger checkers waiting on the metalogic's
-    checker in Geb
+  * Gödel's T: proof construction and proofs
+  * In progress: the proofs of the prelude's lists and labels and of the
+    checker's accessors are complete in Gödel's T, whose checker and
+    prover are retired; the rest are proved in the metalogic, the
+    preservation of types by weakening and by substitution and the
+    identity of the datatype language's expansion complete, and the
+    admission of stronger checkers waiting on the metalogic's checker in
+    Geb
 *
-  * Metalogic, 1: the rule set and its soundness
+  * Metalogic: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
-    model, and the model of Lean's types and functional relations, the
-    second construction, with the converse of the first
+    model, and the model of Lean's types and functional relations, with
+    a model from every topos with chosen structure and the data objects
 *
-  * Metalogic, 2 and 3: the checker and prover in Geb
-  * Ready: the fourth stage of the Mitchell–Bénabou language, whose
-    completeness settles its rules, is complete; the proof in Lean of
-    the checker's agreement waits on the checker
+  * Metalogic: the checker and prover in Geb
+  * Ready: the Mitchell–Bénabou language's completeness, which settles
+    its rules, is proved; the proof in Lean of the checker's agreement
+    waits on the checker
 *
   * Acceptance
   * Met for Gödel's T; waiting, for the metalogic, on its
     checker in Geb and the proof of its agreement
 :::
 
-Phase 7 builds the metalogic's checker (the section on the metalogic
-and its checker) by the steps below, as it built that of Gödel's T
-first, which the fifth choice retires.
+The metalogic's checker ({ref "metalogic-and-checker"}[The metalogic and
+its checker]) is built by the parts below, as that of Gödel's T was
+built first; the checker of Gödel's T is retired.
 
-1. Lean: the rule set and its soundness, without `Classical.choice`, in
-   the model of Lean types, and for the metalogic also in a model that
-   is not Boolean. For Gödel's T this step depends only on
-   Phase 1 and may proceed in parallel with Phases 2 to 6.
-2. Geb: the proof checker, a fold over proof objects, compared with the
-   Lean checker on valid and malformed certificates; for the metalogic,
-   also proved in Lean to agree with the Lean checker, its denotation at
-   every development being the Lean checker's result.
-3. Geb: proof construction, and proofs about Geb programs that exercise
-   it, the compiler's components first, each in the metalogic about the
-   programs' translations, the checker of Gödel's T being
-   retired (the section on the second construction and the fifth
-   choice); and stronger checkers admitted by relative soundness
-   proofs, each a translation of their certificates into the
-   metalogic's derivations, proved in the metalogic. The rest of what the metalogic states, the
-   richer definitions, Surface 2, the mathematics the libraries consume
+* The rule set and its soundness, in Lean, without `Classical.choice`,
+  in the model of Lean types, and for the metalogic also in a model that
+  is not Boolean. For Gödel's T this part depends only on
+  {ref "kernel-in-lean"}[The kernel runs in Lean].
+* The checker in Geb, a fold over proof objects, compared with the
+  Lean checker on valid and malformed certificates; for the metalogic,
+  also proved in Lean to agree with the Lean checker, its denotation at
+  every development being the Lean checker's result.
+* Proof construction in Geb, and proofs about Geb programs that
+  exercise it, the compiler's components first, each in the metalogic
+  about the programs' translations, the checker of Gödel's T being
+  retired ({ref "functional-relations"}[Functional relations and the
+  checker of Gödel's T]); and stronger checkers admitted by relative
+  soundness proofs, each a translation of their certificates into the
+  metalogic's derivations, proved in the metalogic. The rest of what the
+  metalogic states, the richer definitions, the setoid language, the
+  mathematics the libraries consume
    and the equivalence of the free topos with the rose-tree object and
    the free topos with a natural numbers object, is written in Geb
    after the bootstrap (the road map).
@@ -1410,7 +1489,7 @@ dependencies or false conclusions fail; for the metalogic, a
 characteristic map checks as well, and the checker written in Geb is
 proved in Lean to agree with the Lean checker.
 
-For Gödel's T, step 1 is constructed.
+For Gödel's T, the rule set and its soundness are constructed.
 `Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
 substitutes for their innermost variable through one traversal
 ({name}`Geb.Kernel.trav`), and proves that both agree with the
@@ -1487,8 +1566,9 @@ closed term is derived instead, from the δ rules, the computation rules
 and congruence, by a certificate whose size grows with the length of
 the evaluation.
 
-For Gödel's T, step 2 is constructed as well.
-`bootstrap/goedel-t/equations.geb` is the checker written in Surface 1,
+For Gödel's T, the checker in Geb is constructed as well.
+`bootstrap/goedel-t/equations.geb` is the checker written in the
+datatype language,
 deciding as {name}`Geb.GoedelT.check` decides: a fold over the
 certificate whose result at each node is the node paired with its
 conclusion as a function of the context and the hypotheses, over the
@@ -1496,7 +1576,7 @@ traversal, weakening and substitution of kernel terms and the values of
 the primitives written in Geb, with `bootstrap/check.geb` typing terms
 in a context. The examples of `GebTests/Prototypes/GoedelT.lean`
 compile it with the stage-0 compiler and compare its conclusion with
-the Lean checker's at the certificates of step 1, one certificate of
+the Lean checker's at the certificates above, one certificate of
 each rule besides, and malformed variants of each, the certificate's
 root relabelled with every rule's label and one beyond or deprived of
 its last child; the two agree on every one, the tables of axioms
@@ -1507,7 +1587,7 @@ abbreviations in Lean, `Geb.Kernel.Label`,
 `Geb.Kernel.Prim` and `Geb.GoedelT.Rule`, which the
 tests hold equal name for name.
 
-Step 3 was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
+Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
 trusted. Normalization, innermost first, contracts the redexes of the
 computation rules, with literals put in constructor form by δ rules
@@ -1520,7 +1600,8 @@ rewrite a side at a chosen occurrence, and split a goal by induction on
 a list, a tree or a label into the goals the checker's induction rules
 expect. A file of a program's forms and theorems is read with each
 theorem's statement read as a definition of the program, so that it is
-expanded, resolved and typed as the program is, its Surface 1 forms
+expanded, resolved and typed as the program is, its forms of the
+datatype language
 expanded by the stage-0 expansion that the prover carries, and each
 theorem's certificate is checked against its statement, citing the
 theorems before it. `bootstrap/proofs/prelude.geb` proves the empty
@@ -1530,18 +1611,23 @@ its definition by iteration and proves zero a left unit of addition by
 induction on labels; `bootstrap/proofs/check.geb` proves, about the
 kernel's type checker written in Geb, that a quoted tree has the type of
 trees in every context and environment; `bootstrap/proofs/equations.geb`
-proves, about the checker of Gödel's T written in Surface 1, that the
+proves, about the checker of Gödel's T written in the datatype
+language, that the
 accessors of an equation return the fields it is built from; and
-`bootstrap/proofs/surface.geb` derives the recursion equations of a
+`bootstrap/proofs/datatype.geb` derives the recursion equations of a
 function by structural recursion over a declared datatype from its
 expansion. The examples of
 `GebTests/Prototypes/Proofs.lean` check every certificate in Geb and
 again with {name}`Geb.GoedelT.check`, and reject a false equation and
-an unproved one. The metalogic's fifth choice retires this checker and
-its prover: their proofs remain and are checked, and the proofs that
+an unproved one. This checker and its prover are retired
+({ref "functional-relations"}[Functional relations and the checker of
+Gödel's T]): their proofs remain and are checked, and the proofs that
 follow them are made in the metalogic, about the programs' translations.
 
 ### Gödel's T
+%%%
+tag := "goedel-t"
+%%%
 
 Gödel's T {citep Goedel1958}[] is the quantifier-free theory of the
 primitive recursive functionals of finite type: its atomic formulas are
@@ -1554,10 +1640,9 @@ standing in place of the natural numbers; a formula is a sequent, an
 equation under equational hypotheses; and the rules are the laws of a
 cartesian closed category with list objects and a rose-tree object, the
 η rules among them. Its checker, the bootstrap's first, is built by the
-three steps above, and the fifth choice retires it: a kernel program is
-interpreted soundly in the free topos by its translation into the
-Mitchell–Bénabou language (the section on the second construction and
-the fifth choice).
+parts above, and is retired: a kernel program is interpreted soundly in
+the free topos by its translation into the Mitchell–Bénabou language
+({ref "functional-relations"}[Functional relations and the checker of Gödel's T]).
 
 Its category of contexts under equational hypotheses is conjectured to
 be a cartesian closed locos (the road map, after the bootstrap). Since
@@ -1591,25 +1676,27 @@ Gödel's T states and proves the following.
   ({name}`Geb.GoedelT.check_sound`). Complete.
 * In Geb: the checker `bootstrap/goedel-t/equations.geb`, complete;
   the prover `bootstrap/goedel-t/prove.geb`, with normalization,
-  rewriting, induction and the Surface 1 forms, begun; both retired by
-  the metalogic's fifth choice.
+  rewriting, induction and the forms of the datatype language, begun;
+  both retired, equations between kernel programs being proved in the
+  metalogic.
 * Proofs of the bootstrap, which exercise a prover on the compiler's
-  components, in order, the first two in Gödel's T and the rest in the
-  metalogic, about the components' translations:
-  1. lists and labels: the prelude's appending, addition's recursion
-     equations and zero as a unit of addition, complete;
-  2. the accessors of the checker's equations, and the recursion
-     equations of a structural recursion, through the Surface 1
-     expansion, complete;
-  3. the type checker's preservation of types by weakening and by
-     substitution, complete;
-  4. the Surface 1 expansion's identity on programs of kernel forms,
-     complete;
-  5. the reader's inverse to the printer, waiting on the printer;
-  6. the admission of a stronger checker by the proof that a Geb
-     program translates its certificates into the metalogic's
-     derivations with the same conclusions, waiting on the metalogic's
-     checker written in Geb, beside which it is admitted.
+  components, in order, those of lists and labels and of the checker's
+  accessors in Gödel's T and the rest in the metalogic, about the
+  components' translations:
+  * lists and labels: the prelude's appending, addition's recursion
+    equations and zero as a unit of addition, complete;
+  * the accessors of the checker's equations, and the recursion
+    equations of a structural recursion, through the expansion of the
+    datatype language, complete;
+  * the type checker's preservation of types by weakening and by
+    substitution, complete;
+  * the identity of the datatype language's expansion on programs of
+    kernel forms, complete;
+  * the reader's inverse to the printer, waiting on the printer;
+  * the admission of a stronger checker by the proof that a Geb
+    program translates its certificates into the metalogic's
+    derivations with the same conclusions, waiting on the metalogic's
+    checker written in Geb, beside which it is admitted.
 * After the bootstrap: equational theorems about programs, in the
   metalogic.
 
@@ -1681,7 +1768,8 @@ which the lemmas substitution adds have 25434, and the theorem's
 derivation 604928, which the prover finds in 66 seconds and the checker
 checks in 35.
 
-The Surface 1 expansion's identity on programs of kernel forms is
+The identity of the datatype language's expansion on programs of kernel
+forms is
 proved in the metalogic (`GebTests/Prototypes/FreeTopos/Expansion.lean`):
 for every list `es` of trees of which each is a kernel form,
 `expandProgram es` is `some (node 0 es)`. A kernel expression is a tree
@@ -1690,8 +1778,8 @@ no list of which has a head that the reader names by the atom `case` or
 `def`, with a kernel expression as the third, `deftype` or `defnum`.
 The predicates are folds written in Geb beside the statement, which is
 an equation between masks: the conditionals on the predicate between
-each side and `none`. The proof has four stages, each an equation of
-functions under a mask: the expression's identity in every scope, by
+each side and `none`. The proof proceeds by equations of functions
+under a mask: the expression's identity in every scope, by
 induction on rose trees with an induction hypothesis, whose instances
 at the children give, by induction on the children, an equation of the
 lists of the two sides' functions; the identity of the expansion's step
@@ -1707,6 +1795,9 @@ test selects. The development has 668870 nodes, which the prover finds
 in 72 seconds and the checker checks in 34.
 
 ### The metalogic
+%%%
+tag := "metalogic"
+%%%
 
 The metalogic is the free topos with the natural numbers, list and
 rose-tree objects, presented at once and checked by one checker, which
@@ -1717,8 +1808,12 @@ the questions its form depended on, which were settled by constructing
 and measuring.
 
 #### The presentation
+%%%
+tag := "presentation"
+%%%
 
-State: complete, as the rule set of the first construction.
+State: complete, as the rule set of
+{ref "rule-set-models"}[The rule set and its models].
 
 A category is a presheaf on the walking parallel pair whose two objects
 are the objects and the morphisms and whose two restrictions are the
@@ -1856,8 +1951,8 @@ objects, of morphisms and of equalities in place of the definitions of
 kernel terms. The internal language of the topos, the Mitchell–Bénabou
 language, the intuitionistic higher-order type theory of the section on
 the metalogic and its checker, is written over them: its terms compile
-into the combinators by their interpretation in a topos, as Surface 1
-is expanded into the kernel, and its derivations bind variables where
+into the combinators by their interpretation in a topos, as the
+datatype language is expanded into the kernel, and its derivations bind variables where
 the combinators compose projections (the section on the
 Mitchell–Bénabou language). A development mixes the two, its theorems
 of the language and its sequents of the combinators each citing the
@@ -1870,8 +1965,10 @@ enter the presentation by their translation into the Mitchell–Bénabou
 language, whose compilation into the combinators follows the
 translation between λ-terms and the morphisms of a free cartesian
 closed category that the Categorical Abstract Machine compiles by
-{citep CousineauCurienMauny1987}[] (the section on the second
-construction and the fifth choice).
+{citep CousineauCurienMauny1987}[]
+({ref "functional-relations"}[Functional relations and the checker of
+Gödel's
+T]).
 
 The theory, its axioms and the certificates of its derivations are
 finite syntax, rose trees, and so data of the metalogic: the checker is
@@ -1928,7 +2025,9 @@ presentation, in the Boolean case.
 #### Definitions
 
 State: complete for one sort in `Geb/Prototypes/Definition/`, and for
-the partial Horn theory, in its models, by the third construction.
+the partial Horn theory, in its models
+({ref "definitional-extensions"}[Definitional extensions and shared
+certificates]).
 
 A term with references to definitions is checked and interpreted in an
 environment of definitions, each an object or a morphism over the
@@ -1959,7 +2058,9 @@ this monadic one: definitions, from new operations to terms of a
 signature, extend to a morphism of free monads from the extended
 signature to the signature, which is the unfolding, and the defining
 equations make it inverse to the inclusion of the signature's terms. The
-third construction carries that structure to the partial Horn theory of
+definitional extension ({ref "definitional-extensions"}[Definitional
+extensions and shared certificates]) carries that
+structure to the partial Horn theory of
 two sorts, a defined operation being defined where its body is and equal
 to it there, iterated, so that a definition refers to earlier ones; a
 theorem of a development is cited by its sequent, not unfolded into its
@@ -1978,39 +2079,48 @@ the free monad's own laws being Cslib's.
 The questions are of two kinds. The first are constructions, each of
 which is established by carrying it out:
 
-1. the rule set, the axioms of each operation above as partial Horn
-   sequents with the rules of partial Horn logic, checked against its
-   specification: its models are the elementary toposes with chosen
-   structure and the data objects, which the literature establishes for
-   some such rule set and not for this one;
-2. the model in Lean, with morphisms as functional relations: whether
-   the universal property of every operation, the exponential's among
-   them, holds there without `Classical.choice`, and so whether the rule
-   set is sound in it;
-3. the definitional extension of a partial Horn theory in the monadic
-   form, iterated: whether unfolding preserves the judgments of
-   definedness and equality, so that certificates unfold as well as
-   terms, and its unfolding theorem.
+* the rule set, the axioms of each operation above as partial Horn
+  sequents with the rules of partial Horn logic, checked against its
+  specification: its models are the elementary toposes with chosen
+  structure and the data objects, which the literature establishes for
+  some such rule set and not for this one ({ref "rule-set-models"}[The rule set and its models]);
+* the model in Lean, with morphisms as functional relations: whether
+  the universal property of every operation, the exponential's among
+  them, holds there without `Classical.choice`, and so whether the rule
+  set is sound in it ({ref "functional-relations"}[Functional relations
+  and the checker of Gödel's T]);
+* the definitional extension of a partial Horn theory in the monadic
+  form, iterated: whether unfolding preserves the judgments of
+  definedness and equality, so that certificates unfold as well as
+  terms, and its unfolding theorem
+  ({ref "definitional-extensions"}[Definitional extensions and shared
+  certificates]).
 
 The second are choices between options each of which is known to be
 constructible:
 
-4. whether the Mitchell–Bénabou language is written as a surface
-   language during the bootstrap or after it;
-5. whether Gödel's T keeps a checker and prover of its
-   own, or its equations are proved in the metalogic through the
-   translation of kernel terms, which depends on how the kernel's
-   denotations, which are functions, relate to the model's morphisms,
-   which are functional relations (the second construction).
+* whether the Mitchell–Bénabou language is written during the bootstrap
+  or after it ({ref "when-mb-written"}[When the Mitchell–Bénabou language is written]);
+* whether Gödel's T keeps a checker and prover of its
+  own, or its equations are proved in the metalogic through the
+  translation of kernel terms, which depends on how the kernel's
+  denotations, which are functions, relate to the model's morphisms,
+  which are functional relations
+  ({ref "functional-relations"}[Functional relations and the checker of
+  Gödel's T]).
 
-The first construction precedes the other two, which are independent of
-each other; the choices follow them. All five are complete.
+The rule set and its models precede the other two constructions, which
+are independent of each other; the choices follow them. Each is
+complete.
 
-#### The first construction
+#### The rule set and its models
+%%%
+tag := "rule-set-models"
+%%%
 
 State: complete, with its converse.
 
-The first construction is made in both directions. The rule set is
+The rule set's models are established in both directions. The rule set is
 {name}`Geb.FreeTopos.theory`, a partial Horn theory whose sorts are the
 objects and the arrows, and its certificates are rose trees that
 {name}`Geb.PartialHorn.check` checks, sound in every model of the theory
@@ -2028,22 +2138,28 @@ category and of its universal morphisms uses no axiom beyond
 whose limit cones and pullbacks do, uses `Classical.choice`. The
 converse, a model of the theory from a topos with chosen structure and
 the data objects ({name}`Geb.FreeTopos.ChosenTopos.isModel`), is made
-with the second construction (the section on the second construction
-and the fifth choice). A model's
+with the model of functional relations
+({ref "functional-relations"}[Functional relations and the checker of
+Gödel's
+T]). A model's
 operations
 ({name}`Geb.PartialHorn.Model`) are partial functions whose domains of
 definition are propositions, as mathlib's `Part` states them, so that a
 model need not decide where an operation is defined: neither the
-converse nor the second construction is confined to a topos whose
+converse nor the model of functional relations is confined to a topos
+whose
 objects have decidable equality.
 
-#### The fourth choice
+#### When the Mitchell–Bénabou language is written
+%%%
+tag := "when-mb-written"
+%%%
 
 State: complete; the Mitchell–Bénabou language is written during the
 bootstrap.
 
-The fourth choice is made by measurement. Soon after the first
-construction, the theorems proved in Gödel's T in
+The choice is made by measurement. Once the rule set's models are
+established, the theorems proved in Gödel's T in
 `bootstrap/proofs/prelude.geb` and `bootstrap/proofs/nat.geb` are
 proved again in the combinators, and the two are compared on the size
 of their certificates and the time to check them, and on how they read.
@@ -2054,9 +2170,10 @@ for it. The Mitchell–Bénabou language is deferred while checking stays
 within a small multiple of the time of Gödel's T and the proofs read as
 their mathematics rather than as the arrangement of projections,
 pairings and curryings. When either fails, it is written at the
-earliest point at which it can be, after the first construction, since
-its interpretation needs every operation of the topos and nothing of the
-other two constructions. It is written as a logic of its own, with a
+earliest point at which it can be, once the rule set's models are
+established, since its interpretation needs every operation of the
+topos and neither the model of functional relations nor the definitional
+extension. It is written as a logic of its own, with a
 checker of its own. Its judgments state that hypotheses entail a
 formula, a term of the subobject classifier's type, an equation being
 the formula of equality; its certificates name its rules, as the
@@ -2107,17 +2224,22 @@ certificates' nodes, 89 in 100 are the terms that instances of axioms
 and theorems repeat in full, the expansions of appending and addition
 among them. The Mitchell–Bénabou language compiles to the same
 certificates, so it answers how the development reads and not how long
-it takes to check. The third construction, by which a certificate names
+it takes to check. The definitional extension, by which a certificate
+names
 a definition rather than repeating its expansion, bears on the size;
 and a checker that infers definedness and canonical objects, as the
 checker of Gödel's T infers the types of kernel terms, proved sound in Lean,
 bears on the facts the certificates prove besides.
 
-#### The third construction and shared certificates
+#### Definitional extensions and shared certificates
+%%%
+tag := "definitional-extensions"
+%%%
 
 State: complete for the models; the unfolding of certificates is ready.
 
-The third construction is made for the models, where the checker needs
+The definitional extension is made for the models, where the checker
+needs
 it. A definition names a term of the signature in the variables of a
 context, each of which occurs in it; the extension by it adds an
 operation, defined where the body is and equal to it there, and defined
@@ -2187,15 +2309,18 @@ the oracle by the typing lemmas the prover emits without it (the
 section on the metalogic and its checker).
 
 #### The Mitchell–Bénabou language
+%%%
+tag := "mb-language"
+%%%
 
-State: complete; its four stages are complete, and its own term model
-follows the bootstrap.
+State: complete, and its own term model follows the bootstrap.
 
 ##### Terms, compilation and definitions
 
 State: complete.
 
-The Mitchell–Bénabou language is written after the third construction,
+The Mitchell–Bénabou language is written after the definitional
+extension,
 with definitions of its own. Its terms are those of the typed λ-calculus
 with products whose types are object terms of the combinators, built
 from object variables by the terminal object, products, the initial
@@ -2299,13 +2424,14 @@ formulations as different as the language's typing and logical rules
 over λ-terms and the axioms of an elementary topos, agreeing on what is
 definable and provable, are evidence for each other, and the partial
 Horn presentation is itself related to mathlib's elementary toposes by
-the first construction.
+{ref "rule-set-models"}[The rule set and its models].
 
 The two presentations mix. In the Mitchell–Bénabou language of a topos
 every object is a type and every arrow applies to terms
 ({citet MacLaneMoerdijk1992}[], Section VI.5); the language here is the
 fragment its type formers generate, and its compilation interprets that
-fragment. The fourth stage widens it in one direction. A derivation
+fragment. {ref "mb-types-mixing-completeness"}[Types built in, mixing
+and completeness] widens it in one direction. A derivation
 cites a certificate of the combinators for an equation whose compiled
 sequent the certificate proves, and a certificate cites a theorem of the
 language by the sequent it compiles to; and a development declares
@@ -2333,17 +2459,19 @@ compilation are provably the identity by certificates. The language's
 own term model, the topos of its types with predicates and its provably
 functional relations as {citet LambekScott1980}[] construct the free
 topos from a type theory, proves its rules complete without citations;
-it follows the bootstrap (the road map), and the second construction is
-the same construction over Lean's propositions in place of the
-language's provability. The stages are the checker with equations as
+it follows the bootstrap (the road map), and the model of functional
+relations is the same construction over Lean's propositions in place of
+the language's provability. Its parts are the checker with equations as
 its formulas and induction as the uniqueness of recursion, measured
 against the certificates of Gödel's T; the logical rules, whose soundness
 needs the internal Heyting algebra of the subobject classifier;
 comprehension and description; and the types built in, the mixing of the
-two presentations and the completeness theorems. The four are
-complete.
+two presentations and the completeness theorems. Each is complete.
 
-##### Stage 1: equations
+##### Equations
+%%%
+tag := "mb-equations"
+%%%
 
 State: complete.
 
@@ -2379,7 +2507,10 @@ and check in 2.4 milliseconds, where the combinators' development of the
 same theorems, the lemmas it proves for them included, checks in about
 0.9 seconds.
 
-##### Stage 2: logical rules
+##### Logical rules
+%%%
+tag := "mb-logical-rules"
+%%%
 
 State: complete.
 
@@ -2425,7 +2556,10 @@ milliseconds; the two inductions under the hypothesis have 48 and 52
 nodes, where the same equations by the uniqueness of recursion have 25
 and 29.
 
-##### Stage 3: connectives, comprehension and description
+##### Connectives, comprehension and description
+%%%
+tag := "mb-connectives"
+%%%
 
 State: complete.
 
@@ -2446,7 +2580,8 @@ syntax of its own: the comprehension of a formula over a type is its
 abstraction, membership is application, the comprehension axiom is β,
 and the subobject a formula names is its pullback of truth. Description
 is not an operator of the language either, which keeps its terms the
-λ-terms that the second construction interprets as Lean functions
+λ-terms that the model of functional relations interprets as Lean
+functions
 without unique choice: an arrow a functional relation determines is
 named by the relation, and description is the theorem that a formula of
 which a unique existential quantification holds holds, in every model,
@@ -2460,7 +2595,10 @@ operation of the theory, gives the section after which the second
 projection is the arrow, as {citet DubucSzyld2015}[], Proposition 1.21,
 characterize the relations that are the graphs of arrows.
 
-##### Stage 4: types built in, mixing and completeness
+##### Types built in, mixing and completeness
+%%%
+tag := "mb-types-mixing-completeness"
+%%%
 
 State: complete. Its parts, in order:
 
@@ -2729,16 +2867,21 @@ context's variables ({name}`Geb.FreeTopos.Internal.varsTerm`), equals
 the term by the citation of a certificate
 ({name}`Geb.FreeTopos.Internal.roundTrip_term`).
 
-#### The second construction and the fifth choice
+#### Functional relations and the checker of Gödel's T
+%%%
+tag := "functional-relations"
+%%%
 
-State: complete. The second construction is complete, with the
-converse of the first, and the fifth choice is made, by a measurement
-with labels that are bitstrings and the translation's correctness: the
-checker of Gödel's T is retired.
+State: complete. The model of functional relations is complete, with
+the converse of the rule set's models, and the choice whether Gödel's T
+keeps its own checker is made, by a measurement with labels that are
+bitstrings and the translation's correctness: the checker of Gödel's T
+is retired.
 
-The fifth choice follows the three constructions.
+The choice follows the constructions.
 
-The second construction is a model of the theory in Lean without
+The model of functional relations is a model of the theory in Lean
+without
 `Classical.choice`: its objects are the types of `Type`, and its arrows
 functional relations between them, relations under which each element
 of the domain is related to exactly one element of the codomain. Lean's
@@ -2773,7 +2916,7 @@ It is made in five parts, in order:
   `Prop`, and the inverse comparison of a monomorphism relates an
   element of the pullback of truth to the element whose image it is
   ({name}`Geb.FreeTopos.FunRel.chiInv`) rather than choosing it.
-* Complete. The converse of the first construction, for the record:
+* Complete. The converse of the rule set's models, for the record:
   every record gives a model of the theory
   ({name}`Geb.FreeTopos.ChosenTopos.isModel`), its sorts the record's
   objects and its arrows with their domains and codomains, each
@@ -2781,8 +2924,8 @@ It is made in five parts, in order:
   validity of every axiom is proved by one procedure, which evaluates
   the hypotheses into equations of objects and arrows, substitutes
   those of variables, and closes the evaluated conclusion by the laws.
-  At the record of types and functional relations it gives the second
-  construction.
+  At the record of types and functional relations it gives the model of
+  functional relations.
 * Complete. Lean's functions as functional relations: the graph of a
   function determines it ({name}`Geb.FreeTopos.FunRel.ofFun_injective`),
   and the graphs are closed under composition, pairing, copairing, the
@@ -2791,8 +2934,9 @@ It is made in five parts, in order:
   the functions whose graphs its sides evaluate to
   ({name}`Geb.FreeTopos.eq_of_check`,
   {name}`Geb.FreeTopos.eq_of_checkDevelopment`): the link between the
-  kernel's denotations and the model's arrows on which the fifth choice
-  turns. A test derives, from the prover's development, that the right
+  kernel's denotations and the model's arrows on which the choice
+  whether Gödel's T keeps its own checker turns. A test derives, from
+  the prover's development, that the right
   fold of lists with the empty list and construction is the identity.
 * Complete. The bridge from mathlib: an elementary topos of the
   repository's class, with chosen data objects, initial algebras of
@@ -2806,7 +2950,8 @@ It is made in five parts, in order:
   `Classical.choice`, and it is admitted to it as the constructive-only
   rules provide.
 
-The fifth choice follows the second construction. Its options are two.
+The choice whether Gödel's T keeps its own checker follows the model of
+functional relations. Its options are two.
 In the first, Gödel's T keeps its checker and prover, and an equation
 between kernel programs is proved in it. In the second, its checker is
 retired, and such an equation is proved in the Mitchell–Bénabou
@@ -2860,12 +3005,15 @@ are these.
   binders, and its proofs; the metalogic's checker and prover are
   written in Geb in either case. Retiring it adds the translation of
   kernel terms in Geb, and the prover's front end reading programs and
-  statements from Surface 1 files, as the prover of Gödel's T does; the
-  translation in Lean and its correctness in Lean are complete, and the
-  proofs in Gödel's T, prelude, nat, check, equations and surface, remain
+  statements from files in the datatype language, as the prover of
+  Gödel's T does; the translation in Lean and its correctness in Lean are
+  complete, and the proofs in Gödel's T, prelude, nat, check, equations
+  and datatype, remain
   citable.
-* One language. The fourth choice made the language the one mathematics
-  is written in. Keeping Gödel's T writes proofs about programs in a
+* One language. Writing the Mitchell–Bénabou language during the
+  bootstrap ({ref "when-mb-written"}[When the Mitchell–Bénabou language
+  is written]) made the language the one
+  mathematics is written in. Keeping Gödel's T writes proofs about programs in a
   second logic; the translation of a kernel term is itself a λ-term.
 
 The factors favour retiring the checker of Gödel's T, which removes a rule
@@ -2992,14 +3140,14 @@ The choice is made by measurement, in these parts, in order:
   * 59 ms
   * 8.3 ms
 *
-  * surface, lemmas
+  * datatype, lemmas
   * none
   * 79
   * 0
   * none
   * 4.3 ms
 *
-  * surface
+  * datatype
   * 6384
   * 1037
   * 0
@@ -3018,7 +3166,7 @@ computes selects its case before the cases are normalized. It reduces
 an argument that an abstraction uses more than once before substituting
 it, so that its value is computed once rather than at each use, which,
 with unary labels, took the type checker's time from 287 milliseconds
-to 163 and surface's from 106 to 35. And the
+to 163 and datatype's from 106 to 35. And the
 checker computes the contexts of a congruence's children, which type a
 fold's start and datum, only where a rewritten child is in a context of
 its own ({name}`Geb.FreeTopos.Internal.congCtxs`), which divides the type
@@ -3104,11 +3252,15 @@ language, about the programs' translations. Its consequences are these.
   `scripts/bootstrap.sh` compiles.
 
 ## Improvements
+%%%
+tag := "improvements"
+%%%
 
 The following are known limitations of what is constructed, each with
 the change that removes it.
 
-* Primitives named in expansions. The Surface 1 expansion refers to the
+* Primitives named in expansions. The expansion of the datatype language
+  refers to the
   primitives `label`, `child`, `children`, `node` and `eq` by name, so a
   program that binds one of these names around a case analysis or a
   structural recursion changes the expansion's meaning. A reference to
@@ -3124,7 +3276,8 @@ the change that removes it.
   message, a failing program is diagnosed by expanding it with the
   stage-0 expansion, printing the kernel forms, and applying
   {name}`Geb.Kernel.diagnose` to them.
-* The reader's printer and the retraction law of Phase 1, and the
+* The reader's printer and the retraction law
+  ({ref "kernel-in-lean"}[The kernel runs in Lean]), and the
   unification of the readable S-expressions of the kernel's reader and
   of `Geb/Prototypes/ReadableSExpr.lean` as one reader and printer over
   the canonical S-expressions of `Geb/Prototypes/CanonicalSExpr.lean`,
@@ -3160,7 +3313,8 @@ the change that removes it.
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
   are qualified removes the restriction.
-* Surface 1 lacks generated recognizers, type parameters and a static
+* The datatype language lacks generated recognizers, type parameters
+  and a static
   check of datatypes; a pattern omits the `&` that a declaration
   writes; and every pattern variable is bound whether or not the clause
   uses it.
@@ -3183,9 +3337,9 @@ the change that removes it.
 
 The proofs about the compiler's components that need neither the
 printer nor a checker written in Geb are complete: the type checker's
-preservation of types by weakening and by substitution and the Surface 1
-expansion's identity on programs of kernel forms (the section on
-Gödel's T). The two that
+preservation of types by weakening and by substitution and the identity
+of the datatype language's expansion on programs of kernel forms
+({ref "goedel-t"}[Gödel's T]). The two that
 remain wait: the reader's inverse to the printer on the printer, and the
 admission of a stronger checker on the metalogic's checker written in
 Geb, beside which it is admitted (the section on the metalogic and its
@@ -3193,8 +3347,8 @@ checker). The next phase is to be chosen between the two items those
 wait on, each ready:
 
 * The metalogic's checker, its prover and the translation of kernel
-  programs written in Geb, Phase 7's second and third steps for the
-  metalogic: the checker compared with the Lean checker on valid and
+  programs written in Geb, the checker in Geb and proof construction for
+  the metalogic ({ref "logic"}[The logic]): the checker compared with the Lean checker on valid and
   malformed derivations and proved in Lean to agree with it, which the
   bootstrap requires; the prover constructing derivations as the Lean
   prototype does; and the translation compared with the Lean
@@ -3210,7 +3364,8 @@ wait on, each ready:
   proofs.
 
 The admission of stronger checkers follows the first. Which checker is
-admitted first is decided, as the fourth and fifth choices were, by
+admitted first is decided, as the choices of when the Mitchell–Bénabou
+language is written and whether Gödel's T keeps its own checker were, by
 measurement: the nodes of the complete proofs' derivations, counted by
 rule, locate the steps a stronger checker would take at once. The
 provers compare the sides of an equation in their normal forms under
@@ -3289,7 +3444,8 @@ GNU Guix compares builds the same way:
 compares the digest of a locally built item with the digests that
 substitute servers publish and reports each mismatch.
 
-The digests of Phase 6 give definitions an identity across edits; they
+The digests of {ref "content-identity"}[Content identity] give
+definitions an identity across edits; they
 are not needed for this comparison, since the image is a canonical
 serialization without sharing and the digest of its bytes identifies
 the bundle. A table of them, one per definition, would locate a
