@@ -965,22 +965,57 @@ theorem rep_eqB (hF : compileDefs (globals defs) = some ds) (hwf : PartialHorn.D
     Represents [] (unfoldTerm sig ds fk) (Rep.prod RBits RBits) RBits
       fun p ↦ ofNum (if rankB p.1 = rankB p.2 then 1 else 0) := by
   obtain ⟨fn, hfn⟩ := compiled_language hF (k := D.bnil) (d := lib[D.bnil]) rfl
-  obtain ⟨f0, hf0⟩ := compiled_language hF (k := D.b0) (d := lib[D.b0]) rfl
-  obtain ⟨fc, hfc⟩ := compiled_language hF (k := D.cmp) (d := lib[D.cmp]) rfl
+  obtain ⟨fi, hfi⟩ := compiled_language hF (k := D.isNil) (d := lib[D.isNil]) rfl
+  obtain ⟨fl, hfl⟩ := compiled_language hF (k := D.lcase) (d := lib[D.lcase]) rfl
+  let RV := Rep.exp RBits RBits
   refine rep_def (τ' := []) hF
-    (d := mkDefn 0 [bitsTy, bitsTy] bitsTy (ifOrd bitsTy (cmpT (v 1) (v 0)) bnilT trueT bnilT))
-    rfl (repC_ifOrd rfl ?_
-      (repC_call₂ (τ' := []) (a := ordTy) rfl rfl hwf hfc rfl (by simp) (by simp) .nil rfl rfl
-        (rep_cmp hF hwf hfc) (repC_var (envRep_std₂ ?_ ?_ RBits RBits) rfl)
-        (repC_var (envRep_std₂ ?_ ?_ RBits RBits) rfl))
-      (repC_call₀ rfl rfl hwf hfn rfl rfl (a := bitsTy) rfl ?_ (rep_bnil hF hfn))
-      (repC_call₁ (τ' := []) (a := bitsTy) rfl rfl hwf hf0 rfl (by simp) (by simp) .nil rfl rfl
-        (rep_b0 hF hf0) (repC_call₀ rfl rfl hwf hfn rfl rfl (a := bitsTy) rfl ?_ (rep_bnil hF hfn)))
-      (repC_call₀ rfl rfl hwf hfn rfl rfl (a := bitsTy) rfl ?_ (rep_bnil hF hfn)) ?_ ?_) ?hc hdk
+    (d := mkDefn 0 [bitsTy, bitsTy] bitsTy
+      (Term.app (Term.listRec (Term.lam bitsTy (call D.isNil [bitTy] [v 0]))
+        (Term.lam bitsTy (lcaseB bitTy bitsTy (v 0) bnilT
+          (Term.lam bitTy (Term.lam bitsTy
+            (ifBit bitsTy (v 1) (ifBit bitsTy (v 4) (Term.app (v 3) (v 0)) bnilT)
+              (ifBit bitsTy (v 4) bnilT (Term.app (v 3) (v 0))))))))
+        (v 0)) (v 1))) rfl
+    (repC_app (repC_listRec (repC_var (envRep_std₂ ?_ ?_ RBits RBits) rfl)
+      (repC_lam ?_ ?_ ?_ (repC_call₁ (τ' := [Bit]) (a := bitsTy) rfl rfl hwf hfi rfl ?_ ?_
+        (.cons ?_ .nil) rfl rfl (rep_isNil hF hwf hfi RBit) (repC_var0 ?_ ?_)))
+      (repC_lam ?_ ?_ ?_ (repC_call₃ (τ' := [Bit, List Bit]) (a := bitsTy) rfl rfl hwf hfl rfl
+        ?_ ?_ (.cons ?_ (.cons ?_ .nil)) rfl rfl (rep_lcase hF hfl RBit RBits) (repC_var0 ?_ ?_)
+        (repC_lam ?_ ?_ ?_
+          (repC_call₀ rfl rfl hwf hfn rfl rfl (a := bitsTy) rfl ?_ (rep_bnil hF hfn)))
+        (repC_lam ?_ ?_ ?_ (repC_lam ?_ ?_ ?_ (repC_ifBit rfl ?_
+          (repC_varS ?_ ?_ (repC_var0 ?_ ?_))
+          (repC_ifBit rfl ?_
+            (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_
+              (repC_var (envRep_listStep ?_ ?_ RBit RV) rfl)))))
+            (repC_app (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_
+                (repC_varS ?_ ?_ (repC_var (envRep_listStep ?_ ?_ RBit RV) rfl))))))
+              (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_var0 ?_ ?_))) ?_ ?_)
+            (repC_call₀ rfl rfl hwf hfn rfl rfl (a := bitsTy) rfl ?_ (rep_bnil hF hfn)) ?_ ?_)
+          (repC_ifBit rfl ?_
+            (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_
+              (repC_var (envRep_listStep ?_ ?_ RBit RV) rfl)))))
+            (repC_call₀ rfl rfl hwf hfn rfl rfl (a := bitsTy) rfl ?_ (rep_bnil hF hfn))
+            (repC_app (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_varS ?_ ?_
+                (repC_varS ?_ ?_ (repC_var (envRep_listStep ?_ ?_ RBit RV) rfl))))))
+              (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_var0 ?_ ?_))) ?_ ?_) ?_ ?_) ?_ ?_))))) ?_)
+      (repC_var (envRep_std₂ ?_ ?_ RBits RBits) rfl) ?_ ?_) ?hc hdk
   case hc =>
     rintro ⟨m, w⟩
-    simp only [ordB, Function.comp_apply, id]
-    split_ifs <;> first | rfl | omega
+    refine congrFun (foldr_eq _ _ (fun w m ↦ ofNum (if rankB m = rankB w then 1 else 0)) ?_ ?_
+      w) m
+    · funext m
+      rcases m with _ | ⟨(⟨⟨⟩⟩ | ⟨⟨⟩⟩), m⟩ <;>
+        simp only [rankB_cons_inl, rankB_cons_inr, rankB_nil] <;>
+        first | rfl | (rw [ite_eq_right] <;> first | rfl | omega)
+    · intro y l
+      funext m
+      rcases m with _ | ⟨(⟨⟨⟩⟩ | ⟨⟨⟩⟩), m⟩ <;> rcases y with ⟨⟨⟩⟩ | ⟨⟨⟩⟩ <;>
+        simp only [rankB_cons_inl, rankB_cons_inr, rankB_nil, Function.comp_apply, Sum.elim_inl,
+          Sum.elim_inr] <;>
+        first
+          | (rw [ite_eq_right] <;> first | rfl | omega)
+          | exact congrArg ofNum (if_congr ⟨fun _ ↦ by omega, fun _ ↦ by omega⟩ rfl rfl)
   side_goals
 
 /-- The difference of bitstrings, by the definition that assumes the second index at most the

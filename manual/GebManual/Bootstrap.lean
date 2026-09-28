@@ -2703,7 +2703,9 @@ The choice is made by measurement, in these parts, in order:
   primitives' arithmetic is structural recursion on the bits, since the
   numeral of a bit before a bitstring denotes twice the bitstring's
   number, plus one, plus the bit: addition and comparison from the least
-  significant bits, a successor as the carry; subtraction likewise, of a
+  significant bits, a successor as the carry; equality likewise, decided
+  by the first unequal bits rather than by the comparison, which reaches
+  the most significant; subtraction likewise, of a
   number at most the first; multiplication by doubling; division by
   long division; and iteration of a step twice the rest's number of
   times and then once or twice. A test checks each against the natural
@@ -2712,7 +2714,7 @@ The choice is made by measurement, in these parts, in order:
   checker, 97 definitions of 6218 nodes with 306 quoted trees of 461
   nodes, translate to definitions of 9501 nodes, of which 1685 are the
   numerals' bits and ends, where unary numerals took 25420 nodes, 16411
-  of them successors; the translation's library has 659
+  of them successors; the translation's library has 681
   (`GebTests/Prototypes/FreeTopos/Translation.lean`, which prints them).
 * Complete. The proofs. Each theorem of the core's proofs is proved in
   the language by its prover, from the translation of its statement, the
@@ -2744,29 +2746,29 @@ The choice is made by measurement, in these parts, in order:
   * 1748
   * 475
   * 0
-  * 13 ms
-  * 12 ms
+  * 11 ms
+  * 9.1 ms
 *
   * nat, lemmas
   * none
   * 12214
   * 58
   * none
-  * 620 ms
+  * 582 ms
 *
   * nat
   * 323
   * 184
   * 0
   * 2.6 ms
-  * 3.8 ms
+  * 3.6 ms
 *
   * check
   * 82602
-  * 2915
-  * 80
-  * 576 ms
-  * 178 ms
+  * 2022
+  * 32
+  * 539 ms
+  * 81 ms
 *
   * equations, lemmas
   * none
@@ -2779,22 +2781,22 @@ The choice is made by measurement, in these parts, in order:
   * 3449
   * 541
   * 2
-  * 61 ms
-  * 9.9 ms
+  * 59 ms
+  * 8.3 ms
 *
   * surface, lemmas
   * none
   * 79
   * 0
   * none
-  * 4.5 ms
+  * 4.3 ms
 *
   * surface
   * 6384
-  * 1115
-  * 4
-  * 54 ms
-  * 27 ms
+  * 1037
+  * 0
+  * 52 ms
+  * 22 ms
 :::
 
 Three properties of the prover and the checker the measurement rests
@@ -2810,8 +2812,8 @@ with unary labels, took the type checker's time from 287 milliseconds
 to 163 and surface's from 106 to 35. And the
 checker computes the contexts of a congruence's children, which type a
 fold's start and datum, only where a rewritten child is in a context of
-its own ({name}`Geb.FreeTopos.Internal.congCtxs`), which takes the type
-checker's time from 733 milliseconds to 178. The prover proves the
+its own ({name}`Geb.FreeTopos.Internal.congCtxs`), which divides the type
+checker's time by four. The prover proves the
 bitstrings' lemmas by case analysis of a bit anywhere in the context
 ({name}`Geb.FreeTopos.Internal.bySplit`), from extensionality and the
 case analysis of an innermost variable, so that the checker's rules
@@ -2819,10 +2821,10 @@ are unchanged.
 
 The cost does not forbid retiring the core's checker. The language's
 derivations are smaller than the core's certificates, the type
-checker's by a factor of 28, and check faster in every file but nat,
+checker's by a factor of 40, and check faster in every file but nat,
 whose theorems check in about the core's time. The lemmas on the
 bitstrings' addition, which the core takes as an axiom, are proved once
-and cost 12214 nodes and 620 milliseconds, 10908 of the nodes the
+and cost 12214 nodes and 582 milliseconds, 10908 of the nodes the
 induction on functions that proves the addition of a successor.
 
 The translation is correct
