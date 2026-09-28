@@ -667,6 +667,27 @@ def lemmaRules (ix : String → ℕ) : List NormRule :=
     .thm (ix "fstCond") [treeTy, exp (list treeTy) treeTy], .thm (ix "labCond") [],
     .thm (ix "appCond") [list treeTy, treeTy], .thm (ix "nthP") []]
 
+/-- The rules of the lemmas on bitstrings: the rebuildings of bitstrings and lists by the folds
+of addition, of the successor, of the predecessor and of the case analysis of lists, before the
+language's rules and the definitions. -/
+def rulesN (P : Prog) (ix : String → ℕ) : List NormRule :=
+  [.thm (ix "rebA") [], .thm (ix "rebS") [], .thm (ix "rebP") [],
+    .thm (ix "rebL") [bitTy, ordTy], .thm (ix "rebL") [bitTy, bitsTy]] ++ baseNorm P
+
+/-- The rules of the lemmas on comparisons: the case analysis of a comparison of a case
+analysis, before {name}`rulesN`. -/
+def rulesC (P : Prog) (ix : String → ℕ) : List NormRule :=
+  [.thm (ix "ordCase") [ordTy], .thm (ix "ordCase") [bitsTy]] ++ rulesN P ix
+
+/-- The rules of the lookup lemmas: comparisons with zero, the addition of one, the lengths,
+comparisons and iteration at successors, the successor out of a conditional, the unfolding of
+trees, the tail's rebuilding and the label out of a conditional, before {name}`rulesC`. -/
+def rulesNth (P : Prog) (ix : String → ℕ) : List NormRule :=
+  [.thm (ix "ltZero") [], .thm (ix "ltZeroSucc") [], .thm (ix "addOne") [],
+    .thm (ix "lenK") [], .thm (ix "cmpSuccP") [], .thm (ix "iterSuccP") [list treeTy],
+    .thm (ix "condSucc") [], .thm (ix "kids") [], .thm (ix "lambek") [],
+    .thm (ix "rebT") [treeTy], .thm (ix "labCond") []] ++ rulesC P ix
+
 /-- The lemmas on bitstrings: comparisons with zero and of zero with a successor, the successor
 moved out of a conditional, the predecessor's rebuilding of the rest, the successor of the
 predecessor of a bitstring that is not empty, comparisons and iteration at successors, the
@@ -689,9 +710,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
   let rebL : Internal.Thm := ⟨2, [list (x 0),
     prod (exp one (x 1)) (exp (x 0) (exp (list (x 0)) (x 1)))],
     [], Term.eq (Term.fst (Term.app (Term.listRec zL sL (v 0)) (v 1))) (v 0)⟩
-  let rsN (ix : String → ℕ) : List NormRule :=
-    [.thm (ix "rebA") [], .thm (ix "rebS") [], .thm (ix "rebP") [],
-      .thm (ix "rebL") [bitTy, ordTy], .thm (ix "rebL") [bitTy, bitsTy]] ++ rs
+  let rsN := rulesN P
   let ltZero := weakThm P 0 [bitsTy] (call D.ltB [] [v 0, bnilT]) bnilT
   let ltZeroSucc := weakThm P 0 [bitsTy] (call D.ltB [] [bnilT, call D.succ [] [v 0]]) trueT
   let condSucc := weakThm P 0 [bitsTy, bitsTy, bitsTy]
@@ -723,8 +742,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
   let iterSucc : Internal.Thm := ⟨1, [bitsTy, exp (x 0) (x 0)], [], Term.eq
     (Term.lam (x 0) (it (sc (v 1)) (v 2) (v 0)))
     (Term.lam (x 0) (it (v 1) (v 2) (Term.app (v 2) (v 0))))⟩
-  let rsC (ix : String → ℕ) : List NormRule :=
-    [.thm (ix "ordCase") [ordTy], .thm (ix "ordCase") [bitsTy]] ++ rsN ix
+  let rsC := rulesC P
   -- induction on the second number, as functions of the first: at the empty list by the
   -- automatic prover; at a bit before a list by case analysis of the bit, then of the first
   -- number, then of its first bit, each case with the induction hypothesis's instances
@@ -753,11 +771,7 @@ def numLemmas (P : Prog) : Option (List Step) := do
   let addSuccL : Internal.Thm := ⟨0, [bitsTy], [], Term.eq
     (Term.lam bitsTy (call D.add [] [sc (v 0), v 1]))
     (Term.lam bitsTy (sc (call D.add [] [v 0, v 1])))⟩
-  let rsNth (ix : String → ℕ) : List NormRule :=
-    [.thm (ix "ltZero") [], .thm (ix "ltZeroSucc") [], .thm (ix "addOne") [],
-      .thm (ix "lenK") [], .thm (ix "cmpSuccP") [], .thm (ix "iterSuccP") [list treeTy],
-      .thm (ix "condSucc") [], .thm (ix "kids") [], .thm (ix "lambek") [],
-      .thm (ix "rebT") [treeTy], .thm (ix "labCond") []] ++ rsC ix
+  let rsNth := rulesNth P
   -- induction on the innermost number, as functions of the next variable, each premise by the
   -- automatic prover
   let byIndAuto (names : List String) (a : Internal.Thm) (ix : String → ℕ) (E : Array Entry) :

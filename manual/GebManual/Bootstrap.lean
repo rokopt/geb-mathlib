@@ -139,7 +139,8 @@ sections below detail:
   * In progress. The proofs about the compiler's components: the first
     two, in the core, are complete; the rest are proved in the
     metalogic, about the components' translations, the type checker's
-    preservation of types by weakening complete and by substitution the
+    preservation of types by weakening and by substitution complete and
+    the Surface 1 expansion's identity on programs of kernel forms the
     next phase.
   * Waiting on those proofs. Stronger checkers admitted by translations
     of their certificates into the metalogic's derivations.
@@ -1266,7 +1267,8 @@ the hash written in Geb.
   * In progress: the first two proofs are complete in the core, whose
     checker and prover the metalogic's fifth choice retires; the rest
     are proved in the metalogic, the preservation of types by weakening
-    complete and by substitution the next phase
+    and by substitution complete and the Surface 1 expansion's identity
+    the next phase
 *
   * Metalogic, 1: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -1473,10 +1475,10 @@ and proves the following.
   2. the accessors of the checker's equations, and the recursion
      equations of a structural recursion, through the Surface 1
      expansion, complete;
-  3. the type checker's preservation of types by weakening, complete,
-     and by substitution, the next phase;
+  3. the type checker's preservation of types by weakening and by
+     substitution, complete;
   4. the Surface 1 expansion's identity on programs of kernel forms,
-     waiting on the third;
+     the next phase;
   5. the reader's inverse to the printer, waiting on the printer;
   6. the admission of a stronger checker by the proof that a Geb
      program translates its certificates into the metalogic's
@@ -1525,6 +1527,32 @@ lemmas after them, each matched by a matching of its left side prepared
 once ({name}`Geb.FreeTopos.Internal.prepareRules`). The lemmas'
 derivations have 60492 nodes and the theorem's 540159, which the prover
 finds in 60 seconds and the checker checks in 31.
+
+The preservation of types by substitution is proved in the metalogic
+(`GebTests/Prototypes/FreeTopos/Substitution.lean`): for every
+environment `G`, contexts `c1` and `c`, type `a` and terms `u` and `t`,
+if `typeIn G c u` is `some a`, then
+`typeIn G (append c1 c) (trav (substVar u) t (length c1))` equals
+`typeIn G (append c1 (cons a c)) t`, of which the metalogic's `subst`
+is the instance at the empty `c1`. The statement is an equation between
+two functions of `G`, `c1`, `c`, `a` and `u` into the subobject
+classifier, the implication of the equation by the typing and truth,
+proved by induction on rose trees with an induction hypothesis as
+weakening is. At each label the implication is introduced, and its
+antecedent, in normal form, rewrites the substituted term's type; the
+induction hypothesis's instances at the children are implications with
+that antecedent, whose conclusions modus ponens cuts in. At the
+substituted variable, the substituted term weakened past `c1` has in
+the context of `c1` and `c` its type in `c`, by weakening past a list
+below no part; the lookups before, at and past the substituted
+variable's index are the lookup in the context with it, by induction on
+`c1`, with lemmas on successors: a successor is not empty, the
+predecessor, the double and the difference with one of a successor are
+computed, and two successors are equal as their predecessors are. The
+development, which contains the weakening proof, has 626085 nodes, of
+which the lemmas substitution adds have 25434, and the theorem's
+derivation 604928, which the prover finds in 66 seconds and the checker
+checks in 35.
 
 ### The metalogic
 
@@ -2971,7 +2999,9 @@ the change that removes it.
   both; a substitution that shifts a substituted term once rather than
   at each binder, and leaves a closed one in place, is a tenth to a fifth
   faster, and would replace the language's by a `csimp` lemma proving the
-  two equal; and a stored derivation would leave the check alone.
+  two equal; and a stored derivation would leave the check alone, and
+  spare the substitution test, which proves weakening again as a lemma
+  before its own theorem.
 * Names. The computational core's checker and prover are in the
   namespace `Geb.Metalogic` and under `bootstrap/metalogic/`, although
   the metalogic is the free topos above the core; renaming them for the
@@ -3012,20 +3042,12 @@ The fifth choice is made (the section on the second construction and
 the fifth choice): the computational core's checker is retired, and the
 core's step 3 continues in the Mitchell–Bénabou language, about the
 programs' translations, in this order: the type checker's preservation
-of types by weakening, complete (the section on the computational core),
-then by substitution, then the Surface 1 expansion's identity on
+of types by weakening and by substitution, both complete (the section on
+the computational core), then the Surface 1 expansion's identity on
 programs of kernel forms, then the admission of stronger checkers. The
-next phase is the second, of `subst` in
-`bootstrap/metalogic/equations.geb`: for a term `u` of type `a` in a
-context `c`, the checker's type for `t` with `u`, weakened past `c1`,
-substituted for the variable below `c1` is its type for `t` in the
-context of `c1`, `a` and `c`. The hypothesis on `u` makes the statement
-an implication, which the induction carries, and the substituted term's
-type is given by weakening by a list of types, complete; the method and
-the development carry over.
-
-The expansion's identity on programs of kernel forms follows
-substitution. The rest of the road map's bootstrap, the
+next phase is the third: a program of kernel forms alone expands to
+itself under the Surface 1 expansion (`bootstrap/surface.geb`), about
+its translation, by the method of the first two. The rest of the road map's bootstrap, the
 choice of machine and the second host, content identity and the syntax
 unification, is independent of the metalogic and may proceed beside it.
 
