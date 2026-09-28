@@ -3941,7 +3941,9 @@ checklist and in CI.
   kernel's type checker written in Geb, `bootstrap/check.geb`, preserves
   types by weakening and by substitution; `TreeCases.lean` supplies case
   analysis of a tree variable in any context and rewriting under a test,
-  with the lemmas that exercise them. The
+  with the lemmas that exercise them, and `Expansion.lean` proves with
+  them that the Surface 1 expansion, `bootstrap/surface.geb`, is the
+  identity on programs of kernel forms. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of
