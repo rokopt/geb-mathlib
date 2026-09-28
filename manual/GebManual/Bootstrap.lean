@@ -210,8 +210,8 @@ Extension:
   digests, the namespace tree and the re-keying of annotations.
 * Ready. A printer for the kernel's readable syntax and the retraction
   law, and the unification of the readable S-expressions with the
-  canonical ones, with a quoted spelling for atoms that are not tokens
-  (`TODO.md` § Bootstrap).
+  canonical ones, with a quoted spelling for atoms that are not tokens,
+  the section on improvements.
 
 ## After the bootstrap
 
@@ -2962,8 +2962,11 @@ the change that removes it.
   stage-0 expansion, printing the kernel forms, and applying
   {name}`Geb.Kernel.diagnose` to them.
 * The reader's printer and the retraction law of Phase 1, and the
-  unification of the readable S-expressions with the canonical ones,
-  with a quoted spelling for atoms that are not tokens.
+  unification of the readable S-expressions of the kernel's reader and
+  of `Geb/Prototypes/ReadableSExpr.lean` as one reader and printer over
+  the canonical S-expressions of `Geb/Prototypes/CanonicalSExpr.lean`,
+  with a quoted spelling for atoms that are not tokens, so that every
+  canonical S-expression has a readable spelling.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
