@@ -12,16 +12,17 @@ set_option doc.verso true in
 /-!
 # The stage-1 compiler
 
-The stage-1 compiler is the stage-0 compiler with the Surface 1 expansion rewritten in
-Surface 1, {lit}`bootstrap/stage1/surface.geb`. The seed cannot read Surface 1, so the stage-0
-compiler builds its image; run from that image, the stage-1 compiler agrees with the stage-0
-compiler on the Surface 1 programs and the kernel's examples. The fixed point of the staged
+The stage-1 compiler is the stage-0 compiler with the expansion of the datatype language rewritten
+in the datatype language, {lit}`bootstrap/stage1/datatype.geb`. The seed cannot read the datatype
+language, so the stage-0 compiler builds its image; run from that image, the stage-1 compiler
+agrees with the stage-0 compiler on the programs in the datatype language and the kernel's
+examples. The fixed point of the staged
 self-compilation, where the stage-1 compiler compiles its own source to its own image, is
 checked natively by {lit}`scripts/bootstrap.sh`, with the Lean backend.
 
 ## Main definitions
 
-* {lit}`stage1Surface` is the rewritten expansion and {lit}`stage1` the stage-1 compiler's
+* {lit}`stage1Datatype` is the rewritten expansion and {lit}`stage1` the stage-1 compiler's
   source, joined as the host driver joins sources.
 * {lit}`runImage` runs an image's definition named {lit}`main` on an input tree.
 
@@ -38,12 +39,12 @@ namespace Geb.Kernel.Stage1Tests
 
 open Stage0Tests
 
-/-- The Surface 1 expansion written in Surface 1. -/
-def stage1Surface : String := include_str "../../bootstrap/stage1/surface.geb"
+/-- The expansion of the datatype language written in the datatype language. -/
+def stage1Datatype : String := include_str "../../bootstrap/stage1/datatype.geb"
 
 /-- The stage-1 compiler's source. -/
 def stage1 : String :=
-  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ stage1Surface ++
+  prelude ++ "\n" ++ serialize ++ "\n" ++ reader ++ "\n" ++ check ++ "\n" ++ stage1Datatype ++
     "\n" ++ compile ++ "\n"
 
 /-- Run an image, given as a file's tree, on an input tree: apply its definition named
@@ -52,7 +53,7 @@ def runImage (img input : Tree) : Option Tree := do
   runEntry (← readImage (← toBytes img)) ['m', 'a', 'i', 'n'] input
 
 -- built by the stage-0 compiler, the stage-1 compiler agrees with the stage-0 compiler on the
--- Surface 1 programs and the kernel's examples
+-- Programs in the datatype language and the kernel's examples
 #guard
   let c1 := (runMain compiler.toList (nameTree stage1.toList)).getD (leaf 0)
   c1.children.length > 0 &&

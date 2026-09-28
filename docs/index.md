@@ -3715,15 +3715,17 @@ checklist and in CI.
   names the kernel's labels and primitives by numeral abbreviations and
   holds list and digit utilities, `serialize.geb` writes a tree's image,
   `reader.geb` reads a program's text into its bundle as the seed does,
-  `check.geb` is the kernel's type checker, `surface.geb` expands the
-  Surface 1 forms (datatypes, case analysis, structural recursion and
+  `check.geb` is the kernel's type checker, `datatype.geb` expands the
+  forms of the datatype language (datatypes, case analysis, structural
+  recursion and
   functions with result types) into kernel forms, and `compile.geb`
   composes them into the stage-0 compiler from source to image, rejecting
   ill-typed programs. `GebTests/Prototypes/Stage0.lean` compares the
   serializer with `Geb.Kernel.writeImage`, the checker with the seed's, and
-  the compiler with the seed on the kernel's examples, runs Surface 1
-  programs compiled by the compiler. `bootstrap/stage1/surface.geb`
-  rewrites the expansion in Surface 1, and `bootstrap/stage1/lean.geb` is a
+  the compiler with the seed on the kernel's examples, runs programs in
+  the datatype language compiled by the compiler.
+  `bootstrap/stage1/datatype.geb` rewrites the expansion in the datatype
+  language, and `bootstrap/stage1/lean.geb` is a
   backend emitting a Lean module in place of an image; the stage-1 compiler
   they make, built by the stage-0 compiler, is committed as
   `bootstrap/compiler.img`, and the Lean it emits from its own source as
@@ -3762,7 +3764,8 @@ checklist and in CI.
   appending the empty list to a list gives the list, that iterating the
   identity leaves its start unchanged, and that a fold whose step ignores
   its arguments is constant. `bootstrap/goedel-t/equations.geb` is the
-  same checker written in Surface 1; the tests compile it with the stage-0
+  same checker written in the datatype language; the tests compile it
+  with the stage-0
   compiler and compare it with `Geb.GoedelT.check` on their
   certificates and on malformed variants of each, and check that its
   numeral abbreviations and the prelude's name the rules
@@ -3772,20 +3775,21 @@ checklist and in CI.
   rules: normalization, innermost first, simplification of both sides of
   a goal, and induction; it reads a file of a program's forms and
   theorems, whose statements the reader reads as the program's own
-  definitions, its Surface 1 forms expanded, and checks each theorem's
+  definitions, its forms of the datatype language expanded, and checks
+  each theorem's
   certificate.
   `bootstrap/proofs/prelude.geb` proves theorems about the prelude's
   lists, `bootstrap/proofs/nat.geb` about the labels, addition's
   recursion equations from its definition by iteration and a theorem by
   induction on labels, `bootstrap/proofs/check.geb` about the
   kernel's type checker written in Geb, `bootstrap/proofs/equations.geb`
-  about the checker of Gödel's T written in Surface 1, and
-  `bootstrap/proofs/surface.geb` about a function by structural
+  about the checker of Gödel's T written in the datatype language, and
+  `bootstrap/proofs/datatype.geb` about a function by structural
   recursion over a declared datatype, which
   `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records
-  Gödel's T, whose checker the metalogic's fifth choice retires in favour
-  of the internal language of `Geb/Prototypes/FreeTopos/`, the proofs
+  Gödel's T, whose checker is retired in favour of the internal language
+  of `Geb/Prototypes/FreeTopos/`, the proofs
   above remaining and checked. Depends on
   `Geb.Prototypes.Kernel.Subst` and `Geb.Prototypes.Kernel.Reader`.
 - `Geb/Prototypes/PartialHorn/` — the logic of partial Horn theories
@@ -3824,7 +3828,7 @@ checklist and in CI.
   reads a model's operations as functions, and `Category.lean` and
   `Topos.lean` make every model an elementary topos of
   `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean`
-  (`Geb.FreeTopos.ToposModel.elementaryTopos`), the first construction.
+  (`Geb.FreeTopos.ToposModel.elementaryTopos`).
   `Arrows.lean`, `Recursion.lean`, `Coproducts.lean`, `Coequalizers.lean`
   and `Classifier.lean` derive, of the values of terms, the structure the
   internal language rests on: the uniqueness of the folds with a
@@ -3838,8 +3842,8 @@ checklist and in CI.
   (`Geb.FreeTopos.ChosenTopos`), and `Converse.lean` makes it a model of
   the theory (`Geb.FreeTopos.ChosenTopos.isModel`). `Relations.lean`
   constructs the topos of Lean's types and functional relations
-  (`Geb.FreeTopos.relTopos`), which has unique choice by construction:
-  the second construction. `Graphs.lean` shows the graphs of Lean's
+  (`Geb.FreeTopos.relTopos`), which has unique choice by construction.
+  `Graphs.lean` shows the graphs of Lean's
   functions closed under the operations with which programs are built,
   so that a development that checks proves equations of Lean functions
   (`Geb.FreeTopos.eq_of_checkDevelopment`), and `Represent.lean` relates
@@ -3942,7 +3946,8 @@ checklist and in CI.
   types by weakening and by substitution; `TreeCases.lean` supplies case
   analysis of a tree variable in any context and rewriting under a test,
   with the lemmas that exercise them, and `Expansion.lean` proves with
-  them that the Surface 1 expansion, `bootstrap/surface.geb`, is the
+  them that the expansion of the datatype language,
+  `bootstrap/datatype.geb`, is the
   identity on programs of kernel forms. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the

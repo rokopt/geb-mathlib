@@ -2,13 +2,14 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The proof checker of Gödel's T over rose trees, written in Surface 1: the conclusion of a
-; certificate, given a program's definitions, theorems about it, the types of the global
-; environment the definitions load, a context, innermost first, and a list of hypotheses, or
-; nothing when the certificate does not check, deciding as Geb.GoedelT.check decides. An
-; equation is the node of label 0 over its type and its two sides, and a theorem the node of
-; label 0 over the node of its context and its equation; an optional equation is represented as
-; the reader represents optional trees. Requires the prelude, the reader and the checker.
+; The proof checker of Gödel's T over rose trees, written in the datatype language: the
+; conclusion of a certificate, given a program's definitions, theorems about it, the types of
+; the global environment the definitions load, a context, innermost first, and a list of
+; hypotheses, or nothing when the certificate does not check, deciding as Geb.GoedelT.check
+; decides. An equation is the node of label 0 over its type and its two sides, and a theorem the
+; node of label 0 over the node of its context and its equation; an optional equation is
+; represented as the reader represents optional trees. Requires the prelude, the reader and the
+; checker.
 
 ; the labels of the certificates' rules, as Geb.GoedelT.Rule names them
 (defnum Rule.hyp 0)

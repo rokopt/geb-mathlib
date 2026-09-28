@@ -62,7 +62,7 @@ def files : List String :=
   let prc := pr ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++ Kernel.Stage0Tests.check
   [pr ++ "\n" ++ preludeProofs, pr ++ "\n" ++ natProofs, prc ++ "\n" ++ checkProofs,
     prc ++ "\n" ++ GoedelT.Tests.equationsGeb ++ "\n" ++ equationsProofs,
-    prc ++ "\n" ++ surfaceProofs]
+    prc ++ "\n" ++ datatypeProofs]
 
 /-- The results in Gödel's T of each file, from the texts of the bundler, the prover and the files:
 the program's definitions, and each theorem with its certificate. -/
@@ -333,7 +333,7 @@ def reports (goedelT : Option (List (List Tree × List (GoedelT.Thm × Tree)))) 
     report "nat" D₁ r₁ natDev
     report "check" D₂ r₂ checkDev
     report "equations" D₃ r₃ treeDev
-    report "surface" D₄ r₄ treeDev
+    report "datatype" D₄ r₄ treeDev
   | _ => throw (IO.userError "the results in Gödel's T are missing")
 
 #eval reports (goedelTResults bundler.toList prover.toList (files.map String.toList))

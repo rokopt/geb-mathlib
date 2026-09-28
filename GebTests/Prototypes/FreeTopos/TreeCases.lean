@@ -14,7 +14,7 @@ set_option doc.verso true in
 
 Two provers of the internal language beyond those of the weakening proof, and the lemmas that
 exercise them, about the translation of the prelude, the reader, the type checker and the
-Surface 1 expansion.
+expansion of the datatype language.
 
 Case analysis of a tree variable in any context: the induction on rose trees applies to a tree
 alone, so the sides at a tree of a new label and new children are proved instead, their
@@ -61,10 +61,11 @@ open GebTests.Prototypes.FreeTopos.Weakening
 open Internal (Term NormRule Entry Deriv Decl Definition)
 open scoped FinEnum
 
-/-- The program: the prelude, the reader, the type checker and the Surface 1 expansion. -/
+/-- The program: the prelude, the reader, the type checker and the expansion of the datatype
+language. -/
 def programText : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.surface
+    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype
 
 /-! Case analysis of a tree. -/
 

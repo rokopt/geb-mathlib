@@ -13,13 +13,13 @@ set_option doc.verso true in
 # Proofs about Geb programs
 
 Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, about the labels, the
-natural numbers object inside the trees, {lit}`bootstrap/proofs/nat.geb`, about the kernel's
-type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, about the checker of Gödel's T,
-a program in the Surface 1 forms, {lit}`bootstrap/proofs/equations.geb`, and about a function by
-structural recursion over a declared datatype, {lit}`bootstrap/proofs/surface.geb`, proved by
-the derived rules of {lit}`bootstrap/goedel-t/prove.geb`, which expands the Surface 1 forms as
-the compiler does, and checked by the checker of Gödel's T written in Geb. The
-prover's program is read and expanded by the stage-0 compiler and loaded by the seed, without an
+natural numbers object inside the trees, {lit}`bootstrap/proofs/nat.geb`, about the kernel's type
+checker written in Geb, {lit}`bootstrap/proofs/check.geb`, about the checker of Gödel's T, a program
+in the forms of the datatype language, {lit}`bootstrap/proofs/equations.geb`, and about a function
+by structural recursion over a declared datatype, {lit}`bootstrap/proofs/datatype.geb`, proved by
+the derived rules of {lit}`bootstrap/goedel-t/prove.geb`, which expands the forms of the datatype
+language as the compiler does, and checked by the checker of Gödel's T written in Geb. The prover's
+program is read and expanded by the stage-0 compiler and loaded by the seed, without an
 image, whose serializer's recursion is as deep as the image is long; it checks each theorem's
 certificate, and each certificate is checked again by {name}`Geb.GoedelT.check`, citing the
 theorems before it, in the global environment the program's definitions load. A false
@@ -58,22 +58,22 @@ def natProofs : String := include_str "../../bootstrap/proofs/nat.geb"
 /-- The theorems about the kernel's type checker. -/
 def checkProofs : String := include_str "../../bootstrap/proofs/check.geb"
 
-/-- The theorems about the checker of Gödel's T, a Surface 1 program. -/
+/-- The theorems about the checker of Gödel's T, a program in the datatype language. -/
 def equationsProofs : String := include_str "../../bootstrap/proofs/equations.geb"
 
 /-- The theorems about a program by structural recursion over a declared datatype. -/
-def surfaceProofs : String := include_str "../../bootstrap/proofs/surface.geb"
+def datatypeProofs : String := include_str "../../bootstrap/proofs/datatype.geb"
 
-/-- The program of the prover: the prelude, the reader, the kernel's checker, the Surface 1
-expansion, the checker of Gödel's T and the proof construction, applying the proof construction
-to a file of program forms and theorems. -/
+/-- The program of the prover: the prelude, the reader, the kernel's checker, the expansion of the
+datatype language, the checker of Gödel's T and the proof construction, applying the proof
+construction to a file of program forms and theorems. -/
 def prover : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.surface ++ "\n" ++ Tests.equationsGeb ++
+    Kernel.Stage0Tests.check ++ "\n" ++ Kernel.Stage0Tests.datatype ++ "\n" ++ Tests.equationsGeb ++
     "\n" ++ proveGeb ++ "\n(def main (lam ((file T)) (proveFile 256 file)))"
 
 /-- The stage-0 compiler with an entry point giving a program's bundle: its text read and its
-Surface 1 forms expanded, without the image written. -/
+forms of the datatype language expanded, without the image written. -/
 def bundler : String :=
   Kernel.Stage0Tests.compiler ++ "(def bundleMain (lam ((file T)) (let sx T (readSExps " ++
     "(children file)) (if (isSome sx) (let kx T (expandProgram (children (get sx))) " ++
@@ -138,7 +138,7 @@ def allCheck (f : Tree → Option Tree) (fileText : List Char) : Bool :=
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ Tests.equationsGeb ++ "\n" ++ equationsProofs).toList &&
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ surfaceProofs).toList &&
+    Kernel.Stage0Tests.check ++ "\n" ++ datatypeProofs).toList &&
   (results f (Kernel.Stage0Tests.prelude ++ "\n" ++ rejected).toList).any fun (_, rs) ↦
     rs.length == 2 && !rs.any accepted
 

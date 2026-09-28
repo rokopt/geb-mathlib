@@ -15,14 +15,14 @@ set_option doc.verso true in
 /-!
 # The model of a topos with chosen structure
 
-The converse of the first construction: a topos with chosen structure and the data objects
-({name}`Geb.FreeTopos.ChosenTopos`) is a model of the partial Horn theory of a topos. The values
-of the model's sort of objects are the topos's objects, and those of its sort of arrows are the
-arrows with their domains and codomains. Each operation is defined exactly where the theory's
+The converse of every model's being an elementary topos: a topos with chosen structure and the data
+objects ({name}`Geb.FreeTopos.ChosenTopos`) is a model of the partial Horn theory of a topos. The
+values of the model's sort of objects are the topos's objects, and those of its sort of arrows are
+the arrows with their domains and codomains. Each operation is defined exactly where the theory's
 typing axioms make it defined: at arrows whose domains and codomains are the objects its typing
-names, its arguments cast along those equations, and, for the factorization through an
-equalizer, the descent through a coequalizer and the characteristic map with its inverse
-comparison, where the equation or the cancellability the operation needs holds.
+names, its arguments cast along those equations, and, for the factorization through an equalizer,
+the descent through a coequalizer and the characteristic map with its inverse comparison, where the
+equation or the cancellability the operation needs holds.
 
 ## Main definitions
 

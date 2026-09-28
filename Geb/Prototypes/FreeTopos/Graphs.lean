@@ -14,7 +14,8 @@ set_option doc.verso true in
 # Lean's functions in the topos of functional relations
 
 The topos of Lean's types and functional relations ({name}`Geb.FreeTopos.relTopos`) is a model
-of the theory of a topos, by the converse of the first construction: the second construction.
+of the theory of a topos, by the model of every topos with chosen structure
+({name}`Geb.FreeTopos.ChosenTopos.isModel`).
 Lean's functions enter it as their graphs ({name}`Geb.FreeTopos.FunRel.ofFun`). A graph
 determines its function, and the graphs are closed under the operations with which programs
 are built: composition, pairing, copairing, the folds of the natural numbers, of lists and of

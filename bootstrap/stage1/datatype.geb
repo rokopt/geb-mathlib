@@ -2,13 +2,13 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The Surface 1 expansion written in Surface 1: the same function of a program's forms as
-; bootstrap/surface.geb, which is written in the kernel's syntax, with datatypes for optional
-; trees, S-expressions and declarations, case analysis and structural recursion in place of
-; tests of labels and folds, and functions with result types. The stage-1 compiler is the
-; stage-0 compiler with this expansion in place of that one; built by the stage-0 compiler, it
-; produces the image the stage-0 compiler produces of it.
-; Requires the prelude, the reader and the checker.
+; The expansion of the datatype language written in the datatype language: the same function of
+; a program's forms as bootstrap/datatype.geb, which is written in the kernel's syntax, with
+; datatypes for optional trees, S-expressions and declarations, case analysis and structural
+; recursion in place of tests of labels and folds, and functions with result types. The stage-1
+; compiler is the stage-0 compiler with this expansion in place of that one; built by the
+; stage-0 compiler, it produces the image the stage-0 compiler produces of it. Requires the
+; prelude, the reader and the checker.
 
 ; optional trees and S-expressions, as the reader represents them: nothing is the leaf 0 and
 ; just the node of label 1 over the tree; an atom is the node of label 1 over its characters

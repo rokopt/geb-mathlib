@@ -2,9 +2,9 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Theorems about the checker of Gödel's T written in Surface 1, bootstrap/goedel-t/equations.geb,
-; checked by bootstrap/goedel-t/prove.geb against its definitions, the datatypes and case
-; analyses expanded as the compiler expands them.
+; Theorems about the checker of Gödel's T written in the datatype language,
+; bootstrap/goedel-t/equations.geb, checked by bootstrap/goedel-t/prove.geb against its
+; definitions, the datatypes and case analyses expanded as the compiler expands them.
 
 ; the sides and the type of an equation are the fields it is built from
 (theorem eqTyEqn ((a T) (s T) (t T)) (eqTy (eqn a s t)) a
