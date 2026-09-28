@@ -19,9 +19,9 @@ language about the translation of the programs, whose labels are bitstrings: for
 environment, contexts {lit}`c1`, {lit}`c0` and {lit}`c2` and term {lit}`t`, the type the checker
 infers for {lit}`t` weakened past the types {lit}`c0`, inserted below {lit}`c1`, in the context
 of {lit}`c1`, {lit}`c0` and {lit}`c2`, is the type it infers for {lit}`t` in the context of
-{lit}`c1` and {lit}`c2`. The program is the prelude, the reader, the checker and the
-metalogic's checker, whose weakening of kernel terms the statement cites, with the statement's two
-sides as definitions, read and expanded by the stage-0 compiler's front end.
+{lit}`c1` and {lit}`c2`. The program is the prelude, the reader, the checker and the checker of
+Gödel's T, whose weakening of kernel terms the statement cites, with the statement's two sides as
+definitions, read and expanded by the stage-0 compiler's front end.
 
 The statement is an equation between the two sides as functions of the environment and the
 contexts, proved by induction on rose trees with the induction hypothesis
@@ -88,11 +88,11 @@ def statement : String := "
 (def nthS (lam ((c0 Ts) (c2 Ts) (t T)) (nth (append c0 c2) (add (label t) (length c0)))))
 (def nthT (lam ((c0 Ts) (c2 Ts) (t T)) (nth c2 (label t))))"
 
-/-- The program: the prelude, the reader, the type checker, the metalogic's checker, whose
+/-- The program: the prelude, the reader, the type checker, the checker of Gödel's T, whose
 weakening of kernel terms the statement cites, and the statement. -/
 def programText : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
-    Kernel.Stage0Tests.check ++ "\n" ++ Metalogic.Tests.equationsGeb ++ "\n" ++ statement
+    Kernel.Stage0Tests.check ++ "\n" ++ GoedelT.Tests.equationsGeb ++ "\n" ++ statement
 
 /-- A program's definitions with their names, read and expanded by the stage-0 compiler's
 front end. -/
@@ -1013,7 +1013,7 @@ def checkWeakening (ds : List (List Char × Tree)) (idx : String → ℕ) : IO U
   IO.println s!"{lemmaNodes},{derivSize d},{t₁ - t₀},{t₂ - t₁}"
 
 #eval do
-  let some ds := bundled Metalogic.ProofTests.bundler.toList programText.toList
+  let some ds := bundled GoedelT.ProofTests.bundler.toList programText.toList
     | throw (IO.userError "the program does not read")
   checkWeakening ds fun name ↦ (defIndex ds name.toList).getD 0
 

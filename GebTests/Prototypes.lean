@@ -35,10 +35,10 @@ import GebTests.Prototypes.FreeTopos.Substitution
 import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs
 import GebTests.Prototypes.FreeTopos.Weakening
+import GebTests.Prototypes.GoedelT
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType
-import GebTests.Prototypes.Metalogic
 import GebTests.Prototypes.Proofs
 import GebTests.Prototypes.ParanaturalRank
 import GebTests.Prototypes.PresheafIRUniv

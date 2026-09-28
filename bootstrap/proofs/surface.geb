@@ -2,7 +2,7 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Theorems about a program in the Surface 1 forms, checked by bootstrap/metalogic/prove.geb,
+; Theorems about a program in the Surface 1 forms, checked by bootstrap/goedel-t/prove.geb,
 ; which expands the forms as the compiler does: a function by structural recursion over a
 ; declared datatype satisfies its recursion equations at the datatype's constructors.
 

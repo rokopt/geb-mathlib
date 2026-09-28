@@ -14,25 +14,25 @@ public meta import Geb.Prototypes.FreeTopos.Internal.Prove -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The computational core's theorems, translated
+# The theorems of Gödel's T, translated
 
-The theorems of the computational core's proofs, with the programs they are about, translated
-into the internal language, whose labels are bitstrings, and proved there by its prover: the
-prelude's appending by normalization and induction; the labels' addition by rewriting with
-lemmas on the bitstrings' addition, which the development proves first by induction on the
-bitstrings, case analysis of their bits and, for the functions of the first summand,
-extensionality, where the core instead takes addition's recursion as an axiom; the kernel's type
-checker at a quoted tree, the metalogic's checker's accessors and a program by structural
-recursion by normalization, weak head normal forms first, rewriting by Lambek's lemma, which
-follows from two lemmas on lists by the uniqueness of the rose tree's fold. Each development
-checks, and the report prints, for each file, the nodes of the core's certificates and of the
-language's derivations of its theorems, the bit steps among the latter, and the times each
-checker takes, and the same for the lemmas proved before the theorems.
+The theorems of the proofs in Gödel's T, with the programs they are about, translated into the
+internal language, whose labels are bitstrings, and proved there by its prover: the prelude's
+appending by normalization and induction; the labels' addition by rewriting with lemmas on the
+bitstrings' addition, which the development proves first by induction on the bitstrings, case
+analysis of their bits and, for the functions of the first summand, extensionality, where Gödel's T
+instead takes addition's recursion as an axiom; the kernel's type checker at a quoted tree, the
+accessors of the checker of Gödel's T and a program by structural recursion by normalization, weak
+head normal forms first, rewriting by Lambek's lemma, which follows from two lemmas on lists by the
+uniqueness of the rose tree's fold. Each development checks, and the report prints, for each file,
+the nodes of the certificates of Gödel's T and of the language's derivations of its theorems, the
+bit steps among the latter, and the times each checker takes, and the same for the lemmas proved
+before the theorems.
 
 ## Main definitions
 
 * {lit}`files` — the texts of the proof files, each after the programs it is about.
-* {lit}`coreResults` — the core's results of each file: the program's definitions, and each
+* {lit}`goedelTResults` — the results in Gödel's T of each file: the program's definitions, and each
   theorem with its certificate.
 * {lit}`treeLemmas` — the fold of a list by construction, the fusion of the rebuilding of trees
   with their unfolding, and Lambek's lemma.
@@ -41,7 +41,7 @@ checker takes, and the same for the lemmas proved before the theorems.
 
 ## Tags
 
-internal language, computational core, translation, measurement, test
+internal language, Gödel's T, translation, measurement, test
 -/
 
 set_option doc.verso true
@@ -51,7 +51,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.TranslationProofs
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
-open Geb.Metalogic.ProofTests
+open Geb.GoedelT.ProofTests
 open GebTests.Prototypes.FreeTopos.Translation (sizeK sizeM baseRules)
 open scoped FinEnum
 
@@ -61,13 +61,13 @@ def files : List String :=
   let pr := Kernel.Stage0Tests.prelude
   let prc := pr ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++ Kernel.Stage0Tests.check
   [pr ++ "\n" ++ preludeProofs, pr ++ "\n" ++ natProofs, prc ++ "\n" ++ checkProofs,
-    prc ++ "\n" ++ Metalogic.Tests.equationsGeb ++ "\n" ++ equationsProofs,
+    prc ++ "\n" ++ GoedelT.Tests.equationsGeb ++ "\n" ++ equationsProofs,
     prc ++ "\n" ++ surfaceProofs]
 
-/-- The core's results of each file, from the texts of the bundler, the prover and the files:
+/-- The results in Gödel's T of each file, from the texts of the bundler, the prover and the files:
 the program's definitions, and each theorem with its certificate. -/
-def coreResults (bundler prover : List Char) (files : List (List Char)) :
-    Option (List (List Tree × List (Metalogic.Thm × Tree))) := do
+def goedelTResults (bundler prover : List Char) (files : List (List Char)) :
+    Option (List (List Tree × List (GoedelT.Thm × Tree))) := do
   let f ← proverFn? bundler prover
   files.mapM fun text ↦ do
     let (D, rs) ← results f text
@@ -102,7 +102,7 @@ def develop (ts : List (Internal.Thm × (Array Entry → Option Deriv))) : Optio
 
 /-- The translation of a file's program and theorems: the constants, the number of definitions,
 and the translated theorems. -/
-def translate (D : List Tree) (rs : List (Metalogic.Thm × Tree)) :
+def translate (D : List Tree) (rs : List (GoedelT.Thm × Tree)) :
     Option (Internal.Globals × ℕ × List Internal.Thm) := do
   let (gt, defs) ← program D
   pure (globals defs, lib.length + defs.length, ← rs.mapM fun p ↦ thm gt p.1)
@@ -291,12 +291,12 @@ labels performs. -/
 def bitSteps : Deriv → ℕ := RoseTree.elim fun l rs ↦
   (match l with | .caseInl _ _ | .caseInr _ _ => 1 | _ => 0) + rs.sum
 
-/-- The report of a file, printed, and an error when a development does not check: the nodes of
-the core's certificates and of the language's derivations of the file's theorems, the bit steps
-among the latter, and the least of three times each checker takes, in microseconds; and a row of
-the same for the lemmas the development proves before the theorems, which the core does not
+/-- The report of a file, printed, and an error when a development does not check: the nodes of the
+certificates of Gödel's T and of the language's derivations of the file's theorems, the bit steps
+among the latter, and the least of three times each checker takes, in microseconds; and a row of the
+same for the lemmas the development proves before the theorems, which the proofs in Gödel's T do not
 prove; the file's name alone where no development is computed. -/
-def report (name : String) (D : List Tree) (rs : List (Metalogic.Thm × Tree))
+def report (name : String) (D : List Tree) (rs : List (GoedelT.Thm × Tree))
     (dev : Internal.Globals → ℕ → List Internal.Thm → Option (List Decl)) : IO Unit := do
   match translate D rs with
   | none => throw (IO.userError s!"{name}: no translation")
@@ -321,12 +321,12 @@ def report (name : String) (D : List Tree) (rs : List (Metalogic.Thm × Tree))
       IO.println (name ++ "," ++ row [(rs.map fun p ↦ sizeK p.2).sum,
         ((dvs (ds.drop k)).map derivSize).sum, ((dvs (ds.drop k)).map bitSteps).sum, tC, tL])
 
-/-- The reports of the files, from the core's results, the prelude's development both by
+/-- The reports of the files, from the results in Gödel's T, the prelude's development both by
 innermost normalization and weak head normal forms first. -/
-def reports (core : Option (List (List Tree × List (Metalogic.Thm × Tree)))) : IO Unit := do
-  match core with
+def reports (goedelT : Option (List (List Tree × List (GoedelT.Thm × Tree)))) : IO Unit := do
+  match goedelT with
   | some [(D₀, r₀), (D₁, r₁), (D₂, r₂), (D₃, r₃), (D₄, r₄)] => do
-    IO.println ("file,core_nodes,language_nodes,bit_steps,core_microseconds," ++
+    IO.println ("file,goedel_t_nodes,language_nodes,bit_steps,goedel_t_microseconds," ++
       "language_microseconds")
     report "prelude" D₀ r₀ preludeDev
     report "prelude-whnf" D₀ r₀ preludeDevW
@@ -334,9 +334,9 @@ def reports (core : Option (List (List Tree × List (Metalogic.Thm × Tree)))) :
     report "check" D₂ r₂ checkDev
     report "equations" D₃ r₃ treeDev
     report "surface" D₄ r₄ treeDev
-  | _ => throw (IO.userError "the core's results are missing")
+  | _ => throw (IO.userError "the results in Gödel's T are missing")
 
-#eval reports (coreResults bundler.toList prover.toList (files.map String.toList))
+#eval reports (goedelTResults bundler.toList prover.toList (files.map String.toList))
 
 end GebTests.Prototypes.FreeTopos.TranslationProofs
 

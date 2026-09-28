@@ -8,7 +8,7 @@ module
 public import Geb.Prototypes.Computability.Oitavem.Word
 public import Geb.Prototypes.FreeTopos.Internal.Derivation
 public import Geb.Prototypes.Kernel.Basic
-public import Geb.Prototypes.Metalogic.Equations
+public import Geb.Prototypes.GoedelT.Equations
 meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
@@ -48,7 +48,7 @@ number of times and then once or twice.
   translation of a quoted tree.
 * {lit}`Translation.term` — the translation of a kernel term, with its kernel type.
 * {lit}`Translation.globals` — the constants of a translated program.
-* {lit}`Translation.thm` — the translation of a theorem of the computational core.
+* {lit}`Translation.thm` — the translation of a theorem of Gödel's T.
 
 ## References
 
@@ -611,9 +611,9 @@ followed by the program's, whose operations follow the signature's. -/
 def globals (defs : List Defn) : Globals :=
   ⟨prims, (lib ++ defs).map Definition.language, sig.length⟩
 
-/-- The translation of a theorem of the computational core, with the types of the globals: the
+/-- The translation of a theorem of Gödel's T, with the types of the globals: the
 equality of its sides' translations, in the translation of its context. -/
-def thm (gt : List Tree) (a : Metalogic.Thm) : Option Internal.Thm := do
+def thm (gt : List Tree) (a : GoedelT.Thm) : Option Internal.Thm := do
   let Γ ← a.ctx.mapM ty
   let (_, l) ← term gt a.ctx a.eqn.lhs
   let (_, r) ← term gt a.ctx a.eqn.rhs

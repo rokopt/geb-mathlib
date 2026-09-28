@@ -12,7 +12,7 @@ public meta import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The computational core's theorems, proved in the combinators
+# The theorems of Gödel's T, proved in the combinators
 
 The theorems of {lit}`bootstrap/proofs/prelude.geb` and {lit}`bootstrap/proofs/nat.geb`, proved
 again in the theory of an elementary topos by the prover: appending lists, and addition on the

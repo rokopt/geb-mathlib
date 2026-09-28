@@ -13,7 +13,7 @@ meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The translation of the computational core is sound
+# The translation of the kernel's programs is sound
 
 A kernel program's translation ({name}`Geb.FreeTopos.Translation.program`) represents, definition
 by definition, the globals the kernel loads ({name}`Geb.Kernel.load`); and when the internal
@@ -601,7 +601,7 @@ whose types' values are all represented, when that type's representations each r
 value. -/
 theorem translation_sound {D : List Kernel.Tree} {gt : List Tree} {defs : List Defn}
     (hprog : program D = some (gt, defs)) (hF : compileDefs (globals defs) = some ds)
-    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : Metalogic.Thm} {th : Internal.Thm}
+    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : GoedelT.Thm} {th : Internal.Thm}
     (hth : thm gt a = some th) {decls : List Internal.Decl} {Gf : Globals}
     {Ef : Array Internal.Entry} (hdev : Internal.checkDev (globals defs) #[] decls = some (Gf, Ef))
     {F : List PartialHorn.Defn} (hFf : compileDefs Gf = some F)
@@ -665,18 +665,18 @@ of first order and whose left side has the equation's type, the theorem is valid
 the kernel loads from the program. -/
 theorem thm_valid {D : List Kernel.Tree} {gt : List Tree} {defs : List Defn}
     (hprog : program D = some (gt, defs)) (hF : compileDefs (globals defs) = some ds)
-    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : Metalogic.Thm} {th : Internal.Thm}
+    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : GoedelT.Thm} {th : Internal.Thm}
     (hth : thm gt a = some th) {decls : List Internal.Decl} {Gf : Globals}
     {Ef : Array Internal.Entry} (hdev : Internal.checkDev (globals defs) #[] decls = some (Gf, Ef))
     {F : List PartialHorn.Defn} (hFf : compileDefs Gf = some F)
     (hwfF : PartialHorn.DefnsWF sig F) {j : ℕ} (hj : Ef[j]? = some (.language th))
     {G : List Kernel.Glob} (hload : Kernel.load D = some G)
-    (htyped : Metalogic.typeOf G a.ctx a.eqn.lhs = some a.eqn.ty)
+    (htyped : GoedelT.typeOf G a.ctx a.eqn.lhs = some a.eqn.ty)
     (hctx : ∀ T ∈ a.ctx, FirstOrder T) (hT : FirstOrder a.eqn.ty) : a.Valid G := by
   obtain ⟨G', hG', T, dl, dr, hdl, hdr, -, -, hagree⟩ :=
     translation_sound hprog hF hok hth hdev hFf hwfF hj
   obtain rfl := Option.some.inj (hG'.symm.trans hload)
-  rw [Metalogic.typeOf, hdl] at htyped
+  rw [GoedelT.typeOf, hdl] at htyped
   obtain rfl : T = a.eqn.ty := Option.some.inj htyped
   exact ⟨dl, dr, hdl, hdr, fun e _ ↦ hagree (fun T' hT' ↦ ((order_props T').2 (hctx T' hT')).1)
     ((order_props _).2 hT).2.2 e⟩
@@ -687,17 +687,17 @@ type, the theorem is valid in the globals the kernel loads from the program. -/
 theorem thm_valid_of_uniqueChoice (huc : UniqueChoice.{1, 1}) {D : List Kernel.Tree}
     {gt : List Tree} {defs : List Defn} (hprog : program D = some (gt, defs))
     (hF : compileDefs (globals defs) = some ds)
-    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : Metalogic.Thm} {th : Internal.Thm}
+    (hok : (globals defs).ok (ExtEnv.ofDefs ds) = true) {a : GoedelT.Thm} {th : Internal.Thm}
     (hth : thm gt a = some th) {decls : List Internal.Decl} {Gf : Globals}
     {Ef : Array Internal.Entry} (hdev : Internal.checkDev (globals defs) #[] decls = some (Gf, Ef))
     {F : List PartialHorn.Defn} (hFf : compileDefs Gf = some F)
     (hwfF : PartialHorn.DefnsWF sig F) {j : ℕ} (hj : Ef[j]? = some (.language th))
     {G : List Kernel.Glob} (hload : Kernel.load D = some G)
-    (htyped : Metalogic.typeOf G a.ctx a.eqn.lhs = some a.eqn.ty) : a.Valid G := by
+    (htyped : GoedelT.typeOf G a.ctx a.eqn.lhs = some a.eqn.ty) : a.Valid G := by
   obtain ⟨G', hG', T, dl, dr, hdl, hdr, ⟨b, hb⟩, hctx, hagree⟩ :=
     translation_sound hprog hF hok hth hdev hFf hwfF hj
   obtain rfl := Option.some.inj (hG'.symm.trans hload)
-  rw [Metalogic.typeOf, hdl] at htyped
+  rw [GoedelT.typeOf, hdl] at htyped
   obtain rfl : T = a.eqn.ty := Option.some.inj htyped
   refine ⟨dl, dr, hdl, hdr, fun e _ ↦ hagree (fun T' hT' ↦ ?_) (bij_of_ty huc _ hb).2.2.2 e⟩
   obtain ⟨b', hb'⟩ := hctx T' hT'

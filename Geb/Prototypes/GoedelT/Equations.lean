@@ -7,17 +7,25 @@ module
 
 public import Geb.Prototypes.Kernel.Reader
 public import Geb.Prototypes.Kernel.Subst
+meta import GebMeta -- shake: keep
 
 set_option doc.verso true in
 /-!
-# Equations between kernel terms
+# Gödel's T over rose trees
 
-The computational core's logic: equations between the kernel's terms, of every type, derived
-from equational hypotheses by the rules of a cartesian closed category with finite limits, list
-objects and the rose-tree object. A sequent is a context, a list of hypotheses and a
-conclusion, each an equation between two terms of a type in that context; it is valid when, at
-every value of the context at which the hypotheses hold, both sides of the conclusion have its
-type and denote the same value.
+A variant of Gödel's T {cite}`Goedel1958`, the quantifier-free theory of the primitive recursive
+functionals of finite type, whose atomic formulas are equations between terms of one type and
+which has a rule of induction ({cite}`AvigadFeferman1998`, Section 2.2). The functionals here are
+the kernel's terms, of the unit, product, function, list and tree types, the rose trees with
+natural-number labels standing in place of the natural numbers; a formula is a sequent, an
+equation derived from equational hypotheses; and the rules are the laws of a cartesian closed
+category with list objects and a rose-tree object, the η rules among them. Its checker was the
+bootstrap's first, which the metalogic's retires, the kernel's programs translating soundly into
+the internal language of the free topos.
+
+A sequent is a context, a list of hypotheses and a conclusion, each an equation between two terms
+of a type in that context; it is valid when, at every value of the context at which the
+hypotheses hold, both sides of the conclusion have its type and denote the same value.
 
 A certificate is a rose tree whose node's label names a rule and whose children are its
 premises' certificates and the terms and types the rule names. The checker is a fold over the
@@ -77,9 +85,15 @@ environment's theorems, each by its own rule, and the labels of the rules, as th
 axioms, are only extended: a certificate therefore checks alike when axioms or rules are added,
 as they are for a new primitive.
 
+## References
+
+* {cite}`Goedel1958`, the theory T.
+* {cite}`AvigadFeferman1998`, Section 2.2, for T as a quantifier-free theory with a rule of
+  induction.
+
 ## Tags
 
-bootstrap, metalogic, equational logic, proof certificate, System T, soundness
+bootstrap, Gödel's T, equational logic, proof certificate, System T, soundness
 -/
 
 set_option doc.verso true
@@ -408,7 +422,7 @@ theorem infer_closed {G : List Glob} {t : Tree} {m : Meaning []} (h : infer G []
 
 end Geb.Kernel
 
-namespace Geb.Metalogic
+namespace Geb.GoedelT
 
 open Geb.Kernel
 open scoped FinEnum
@@ -521,7 +535,7 @@ theorem loaded_foldl : ∀ (D D0 : List Tree) (G0 G : List Glob), Loaded D0 G0 �
 deriving DecidableEq
 
 /-- A theorem holds in a global environment: its equation is valid in its context. -/
-def Thm.Valid (G : List Glob) (th : Thm) : Prop := Metalogic.Valid G th.ctx [] th.eqn
+def Thm.Valid (G : List Glob) (th : Thm) : Prop := GoedelT.Valid G th.ctx [] th.eqn
 
 /-- The global facts a certificate may cite: a program's definitions, and theorems about it. -/
 structure Env where
@@ -573,7 +587,7 @@ def Eqn.subst (u : Tree) (q : Eqn) : Eqn := ⟨q.ty, Kernel.subst u q.lhs, Kerne
 
 /-- An equation with both sides weakened by {lit}`n` variables below {lit}`k` bound ones. -/
 def Eqn.wkAt (k n : ℕ) (q : Eqn) : Eqn :=
-  ⟨q.ty, Metalogic.wkAt k n q.lhs, Metalogic.wkAt k n q.rhs⟩
+  ⟨q.ty, GoedelT.wkAt k n q.lhs, GoedelT.wkAt k n q.rhs⟩
 
 /-- An equation with its variables replaced by terms, innermost first: each term, weakened past
 the variables after it, replaces the innermost variable in turn. -/
@@ -2252,6 +2266,6 @@ theorem check_sound : ∀ (c : Tree) (E : Env) (G : List Glob) (Γ : Ctx) (H : L
 
 end Soundness
 
-end Geb.Metalogic
+end Geb.GoedelT
 
 end

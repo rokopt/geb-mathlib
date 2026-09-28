@@ -2,7 +2,7 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Theorems about the prelude's lists, checked by bootstrap/metalogic/prove.geb against the
+; Theorems about the prelude's lists, checked by bootstrap/goedel-t/prove.geb against the
 ; prelude's definitions. A theorem is (theorem name binders lhs rhs tactic), its induction
 ; variable, when it has one, bound last.
 
