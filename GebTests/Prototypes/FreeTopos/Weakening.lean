@@ -16,31 +16,33 @@ set_option doc.verso true in
 
 The kernel's type checker written in Geb preserves types by weakening, proved in the internal
 language about the translation of the programs, whose labels are bitstrings: for every
-environment, contexts {lit}`c1` and {lit}`c2`, type {lit}`a` and term {lit}`t`, the type the
-checker infers for {lit}`t` weakened past {lit}`a`, inserted below {lit}`c1`, in the context of
-{lit}`c1`, {lit}`a` and {lit}`c2`, is the type it infers for {lit}`t` in the context of {lit}`c1`
-and {lit}`c2`. The program is the prelude, the reader, the checker and the metalogic's checker,
-whose weakening of kernel terms the statement cites, with the statement's two sides as
-definitions, read and expanded by the stage-0 compiler's front end.
+environment, contexts {lit}`c1`, {lit}`c0` and {lit}`c2` and term {lit}`t`, the type the checker
+infers for {lit}`t` weakened past the types {lit}`c0`, inserted below {lit}`c1`, in the context
+of {lit}`c1`, {lit}`c0` and {lit}`c2`, is the type it infers for {lit}`t` in the context of
+{lit}`c1` and {lit}`c2`. The program is the prelude, the reader, the checker and the
+metalogic's checker, whose weakening of kernel terms the statement cites, with the statement's two
+sides as definitions, read and expanded by the stage-0 compiler's front end.
 
-The statement is an equation between the two sides as functions of the environment, the contexts
-and the inserted type, proved by induction on rose trees with the induction hypothesis
+The statement is an equation between the two sides as functions of the environment and the
+contexts, proved by induction on rose trees with the induction hypothesis
 ({name}`Geb.FreeTopos.Internal.byRoseIndHyp`). At a construction, the label is split into its
 bits, which decides every test the traversal and the checker make on it. At a label whose case
 depends on its children's types, the list of the children is split to their number, with the
 induction hypothesis, which mentions it, reverted into an implication and introduced again in
 each case, and then instantiated at each child, at the arguments and, for an abstraction's body,
 at the first context extended by the abstraction's type. At a variable, the lookup in the
-context at the index moved past the inserted type is the lookup at the index.
+context at the index moved past the inserted types is the lookup at the index, by induction on
+the first context and, below it, on the inserted types.
 
 Both sides are compared in weak normal form, which leaves the steps of folds, and the bodies of
 abstractions, unreduced, so that a fold at a child that is a variable does not unfold the
 checker. The lemmas the comparison rewrites by make up the development: the unfolding of trees,
 the connectives' rules, the conditionals moved through projections, applications and folds, the
-folds' first components rebuilding their trees and lists, the lengths of the lists the folds
-rebuild, and the labels' arithmetic, where the comparison and the iteration of bitstrings at
-successors, and the lookup lemma, are proved by induction on bitstrings with case analysis of
-their bits.
+folds' first components rebuilding their trees and lists, the traversal's at every function at a
+variable, the lengths of the lists the folds rebuild, and the labels' arithmetic, where the
+comparison and the iteration of bitstrings at successors, addition at a successor on either
+side, and the lookup lemmas, are proved by induction on bitstrings with case analysis of their
+bits.
 
 ## Main definitions
 
@@ -72,16 +74,19 @@ open scoped FinEnum
 /-! The program. -/
 
 /-- The two sides of the statement, as definitions of the program: the type of a term weakened
-past a type inserted below a context's first part, and its type in the context without it; and
-the two sides of the lookup at a variable, at its index moved past the inserted type and at its
-index. -/
+past a list of types inserted below a context's first part, and its type in the context without
+it; the two sides of the lookup at a variable, at its index moved past the inserted types and at
+its index; and the two sides of the lookup past the inserted types below no part. -/
 def statement : String := "
-(def wkL (lam ((t T) (G Ts) (c1 Ts) (c2 Ts) (a T))
-  (typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t))))
-(def wkR (lam ((t T) (G Ts) (c1 Ts) (c2 Ts) (a T)) (typeIn G (append c1 c2) t)))
-(def nthL (lam ((c1 Ts) (c2 Ts) (a T) (t T))
-  (nth (append c1 (cons a c2)) (if (lt (label t) (length c1)) (label t) (add (label t) 1)))))
-(def nthR (lam ((c1 Ts) (c2 Ts) (a T) (t T)) (nth (append c1 c2) (label t))))"
+(def wkL (lam ((t T) (G Ts) (c1 Ts) (c0 Ts) (c2 Ts))
+  (typeIn G (append c1 (append c0 c2)) (wkAt (length c1) (length c0) t))))
+(def wkR (lam ((t T) (G Ts) (c1 Ts) (c0 Ts) (c2 Ts)) (typeIn G (append c1 c2) t)))
+(def nthL (lam ((c1 Ts) (c0 Ts) (c2 Ts) (t T))
+  (nth (append c1 (append c0 c2))
+    (if (lt (label t) (length c1)) (label t) (add (label t) (length c0))))))
+(def nthR (lam ((c1 Ts) (c0 Ts) (c2 Ts) (t T)) (nth (append c1 c2) (label t))))
+(def nthS (lam ((c0 Ts) (c2 Ts) (t T)) (nth (append c0 c2) (add (label t) (length c0)))))
+(def nthT (lam ((c0 Ts) (c2 Ts) (t T)) (nth c2 (label t))))"
 
 /-- The program: the prelude, the reader, the type checker, the metalogic's checker, whose
 weakening of kernel terms the statement cites, and the statement. -/
@@ -406,6 +411,25 @@ def unfoldingThms (P : Prog) : List Step :=
   (["mapId", "mapFusion", "lambek"].zip (treeLemmas P.G)).map fun (name, a, p) ↦
     step name a fun _ ↦ p
 
+/-- The pointwise form of an earlier theorem that equates two abstractions over one variable of
+the type {lit}`a`: in the theorem's context extended by that variable, the bodies' normal forms at
+the given depth with the given rules, by applying both sides to the variable. -/
+def pointwise (P : Prog) (rules : (String → ℕ) → List NormRule) (m : Internal.Depth)
+    (name src : String) (a : Tree) : Step :=
+  (name, fun ix E ↦ do
+    let some (Entry.language b) := E[ix src]? | none
+    let (F, H) ← Internal.eqParts b.concl
+    let Γ := a :: b.ctx
+    let F' := Term.app (Internal.weaken1 F) (v 0)
+    let H' := Term.app (Internal.weaken1 H) (v 0)
+    let (f, dF, _) ← Internal.eval P.G E b.arity (rules ix) 4096 m Γ [] F'
+    let (h, dH, _) ← Internal.eval P.G E b.arity (rules ix) 4096 m Γ [] H'
+    let σ := (List.range b.ctx.length).map fun j ↦ v (j + 1)
+    pure (⟨b.arity, Γ, [], Term.eq f h⟩, RoseTree.node (.convFrom (Term.eq F' H'))
+      [RoseTree.node .cong [dF, dH], RoseTree.node .join [RoseTree.node .cong
+        [RoseTree.node (.thm (ix src) ((List.range b.arity).map x) σ false) [],
+          RoseTree.node .refl []], RoseTree.node .refl []]]))
+
 /-- The fold of the first term of a translated definition's body that is a rose tree's fold: its
 type and its step. -/
 def firstRose : Term → Option (Tree × Term) := RoseTree.para fun l cs ↦ match l, cs with
@@ -451,12 +475,16 @@ def firstFoldApp : Term → Option (Tree × Term × Term) := RoseTree.para fun l
 /-- The kernel's label of a tree, translated. -/
 def labelK : Term := (primT Kernel.Prim.label).getD Term.star
 
+/-- The type of the traversal's function at a variable, of its number of binders and its index
+to its replacement. -/
+def varFnTy : Tree := exp treeTy (exp treeTy treeTy)
+
 /-- The folds of the traversal of kernel terms and of the type checker, at a variable: each
-fold's type and step, and the traversal's step function, closed, and the checker's, in the
-environment of index one. -/
+fold's type and step, and the traversal's step function in the traversal's function at a
+variable, of index two, and the checker's in the environment of index one. -/
 def folds (P : Prog) : Option ((Tree × Term × Term) × (Tree × Term × Term)) := do
-  let w := weakNF P (baseNorm P) 0 [treeTy, treeTy]
-    (apps (call (P.idx "wkAt") [] []) [v 1, quoteT (Kernel.leaf 1), v 0])
+  let w := weakNF P (baseNorm P) 0 [treeTy, treeTy, varFnTy]
+    (apps (call (P.idx "trav") [] []) [v 2, v 0, v 1])
   let t := weakNF P (baseNorm P) 0 [treeTy, list treeTy]
     (apps (call (P.idx "typeIn") [] []) [v 1, nilT treeTy, v 0])
   pure (← firstFoldApp w, ← firstFoldApp t)
@@ -468,24 +496,48 @@ def kidsOf (t : Term) : Option Term := match t.label, t.children with
     | _, _ => none
   | _, _ => none
 
+/-- The proof of an equation in a context of a list variable by induction on it with the induction
+hypothesis, each case by weak reduction, the construction's with the hypothesis in weak normal
+form as a rewriting rule. -/
+def byListIndHypWeak (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) :
+    Internal.Prover :=
+  Internal.byListIndWith G n 0 1 (byWeak G E n rs) fun Γ Φ t u ↦
+    withWeakHyps G E n rs [Φ.length - 1] (fun extra ↦ byWeak G E n (extra ++ rs)) (m := .weak)
+      Γ Φ t u
+
 /-- The lemmas on the folds: the fold of a list by construction rebuilds it; the traversal's
-fold of the list of the children's folds is the fold of the children by the first components of
-their folds, and its fold rebuilds its tree; and the label of the tree the type checker's fold
+fold rebuilds its tree, at every function at a variable, first as functions of that function by
+induction on rose trees, the rebuilt children the applications of the children's functions, and
+applications of constant functions their values; the rebuilt children are the children, and the
+children the traversal computes are as many; and the label of the tree the type checker's fold
 rebuilds is the tree's, first as functions of the environment. -/
 def foldLemmas (P : Prog) : Option (List Step) := do
   let ((CT, sT, fW), (CR, sR, fG)) ← folds P
   let rs := baseNorm P
-  let node2 := Term.arr 2 [bitsTy] (Term.pair (v 1) (v 0))
+  let VT := varFnTy
+  -- the traversal's step function at the function at a variable of index i
+  let stepAt (i : ℕ) : Term := Term.rename fW fun j ↦ if j = 2 then i else j
   let kids := weakThm P 0 [list treeTy] (sides mapFusion).1 (v 0)
-  let fstBody := Term.fst (Term.app (Term.roseRec CT sT (v 0)) fW)
-  let fstT : Internal.Thm := weakThm P 0 [treeTy] fstBody (v 0)
-  let kidsL ← kidsOf (weakNF P rs 0 [list treeTy, bitsTy]
-    (Internal.roseNodeAt 2 treeTy bitsTy fstBody))
-  let stepR := consT treeTy (Internal.weaken1 (Internal.weaken1 fstBody) |>.rename
-    (fun i ↦ if i = 2 then 1 else i)) (v 0)
-  let fusT := weakThm P 0 [list treeTy] kidsL
-    (Term.listRec (nilT treeTy) stepR (v 0))
-  let trT := weakThm P 0 [list treeTy] kidsL (v 0)
+  let fstBody := Term.fst (Term.app (Term.roseRec CT sT (v 0)) (stepAt 1))
+  let fstAbs : Internal.Thm := ⟨0, [treeTy], [], Term.eq (Internal.abstractVar 1 VT fstBody)
+    (Term.lam VT (v 1))⟩
+  -- the rose tree's step: the node of the label and the children's functions' applications
+  let sF := Term.lam VT (Term.arr 2 [bitsTy]
+    (Term.pair (v 2) (call D.mapApp [VT, treeTy] [v 1, v 0])))
+  let mapF := Term.listRec (nilT (exp VT treeTy))
+    (consT (exp VT treeTy) (Term.lam VT (Term.fst (Term.app (Term.roseRec CT sT (v 2))
+      (stepAt 0)))) (v 0)) (v 0)
+  let kidsL ← kidsOf (weakNF P rs 0 [list treeTy, bitsTy, VT]
+    (Term.fst (Term.app (Term.roseRec CT sT (Term.arr 2 [bitsTy] (Term.pair (v 1) (v 0))))
+      (stepAt 2))))
+  let kidsV := Term.rename kidsL fun j ↦ if j = 2 then 1 else j
+  let fusF := weakThm P 0 [list treeTy, VT] kidsV (call D.mapApp [VT, treeTy] [mapF, v 1])
+  let mapConst := weakThm P 0 [list treeTy, VT]
+    (call D.mapApp [VT, treeTy]
+      [Term.listRec (nilT (exp VT treeTy)) (consT (exp VT treeTy) (Term.lam VT (v 2)) (v 0))
+        (v 0), v 1])
+    (v 0)
+  let trT := weakThm P 0 [list treeTy, VT] kidsV (v 0)
   let (FT, aT) ← Internal.expParts CT
   let (FR, aR) ← Internal.expParts CR
   let lenOf (t : Term) : Term := call D.length [treeTy] [t]
@@ -494,10 +546,10 @@ def foldLemmas (P : Prog) : Option (List Step) := do
       [call D.mapApp [FR, aR] [Term.listRec (nilT CR) (consT CR (Term.roseRec CR sR (v 1)) (v 0))
         (v 0), fG]]))
     (lenOf (v 0))
-  let lenT := weakThm P 0 [list treeTy, treeTy]
+  let lenT := weakThm P 0 [list treeTy, treeTy, VT]
     (lenOf (apps (call (P.idx "trAll") [] [])
       [call D.mapApp [FT, aT] [Term.listRec (nilT CT) (consT CT (Term.roseRec CT sT (v 1)) (v 0))
-        (v 0), fW], v 1]))
+        (v 0), stepAt 2], v 1]))
     (lenOf (v 0))
   let succ0 := call D.succ [] [v 0]
   let lblBody := Term.app labelK (Term.fst (Term.app (Term.roseRec CR sR (v 0)) fG))
@@ -508,11 +560,14 @@ def foldLemmas (P : Prog) : Option (List Step) := do
   pure [
     step "kids" kids (fun ix E ↦ byListIndWeak P.G E 0 (consT treeTy (v 1) (v 0))
       ([.thm (ix "lambek") []] ++ rs) kids.ctx [] (sides kids).1 (sides kids).2),
-    step "fusT" fusT (fun _ E ↦ byListIndWeak P.G E 0 stepR rs fusT.ctx [] (sides fusT).1
-      (sides fusT).2),
-    step "fstT" fstT (fun ix E ↦ byRoseIndWith P.G 0 node2
-      (byWeak P.G E 0 ([.thm (ix "fusT") [], .thm (ix "mapId") []] ++ rs)) fstT.ctx []
-      (sides fstT).1 (sides fstT).2),
+    step "fusF" fusF (fun _ E ↦ byListIndHypWeak P.G E 0 rs fusF.ctx [] (sides fusF).1
+      (sides fusF).2),
+    step "mapConst" mapConst (fun _ E ↦ byListIndHypWeak P.G E 0 rs mapConst.ctx []
+      (sides mapConst).1 (sides mapConst).2),
+    step "fstAbs" fstAbs (fun ix E ↦ byRoseIndWith P.G 0 sF (Internal.byFunExt P.G 0
+      (byWeak P.G E 0 ([.thm (ix "fusF") [], .thm (ix "mapConst") []] ++ rs))) fstAbs.ctx []
+      (sides fstAbs).1 (sides fstAbs).2),
+    pointwise P (fun _ ↦ rs) .weak "fstT" "fstAbs" VT,
     step "trT" trT (fun ix E ↦ byListIndWeak P.G E 0 (consT treeTy (v 1) (v 0))
       ([.thm (ix "fstT") []] ++ rs) trT.ctx [] (sides trT).1 (sides trT).2),
     step "lenR" lenR (fun _ E ↦ byListIndWeak P.G E 0 succ0 rs lenR.ctx [] (sides lenR).1
@@ -534,9 +589,11 @@ def foldLemmas (P : Prog) : Option (List Step) := do
           [RoseTree.node (.thm (ix "lblAbs") [] [v 0] false) [], RoseTree.node .refl []],
           RoseTree.node .refl []]]))]
 
-/-- The lemmas on labels: the addition of one is the successor, by case analysis of the bits,
-and the label of the prelude's length of a list, a fold by addition, is the library's length,
-by list induction. -/
+/-- The lemmas on labels: the addition of one is the successor, by case analysis of the bits;
+the label of the prelude's length of a list, a fold by addition, is the library's length, by list
+induction; and the addition of a successor is the successor of the sum, first as the fold of
+addition at a successor, by induction on the bitstrings with the folds' rebuildings in normal
+form. -/
 def arithLemmas (P : Prog) : Option (List Step) := do
   let rs := baseNorm P
   -- the rests of a bitstring the folds of addition and of the successor rebuild
@@ -557,6 +614,22 @@ def arithLemmas (P : Prog) : Option (List Step) := do
     (call D.lab [] [apps (call (P.idx "length") [] []) [v 0]]) (call D.length [treeTy] [v 0])
   let rsA (ix : String → ℕ) : List NormRule :=
     [.thm (ix "rebA") [], .thm (ix "rebA₂") [], .thm (ix "rebS") []] ++ rs
+  -- the addition of a successor, first as the fold of addition at a successor, a function of the
+  -- first summand, by full normalization with the folds' rebuildings in normal form
+  let rAf ← rebuild P.G rs D.add
+  let rSf ← rebuild P.G rs D.succ
+  let rLf ← lcaseRebuild P.G rs
+  let (zA, sA) ← (lib[D.add]?).bind fun d ↦ firstFold d.body
+  let sc (t : Term) : Term := call D.succ [] [t]
+  let addSuccF : Internal.Thm := ⟨0, [bitsTy], [], Term.eq
+    (nf P.G rs 0 [bitsTy] (Term.snd (Term.listRec zA sA (sc (v 0)))))
+    (Term.lam bitsTy (sc (call D.add [] [v 0, v 1])))⟩
+  let addSucc := weakThm P 0 [bitsTy, bitsTy] (call D.add [] [v 1, sc (v 0)])
+    (sc (call D.add [] [v 1, v 0]))
+  let rsF (ix : String → ℕ) : List NormRule :=
+    [.thm (ix "rebAF") [], .thm (ix "rebSF") [], .thm (ix "rebLF") [bitTy, bitsTy]] ++ rs
+  let byFun (ix : String → ℕ) (E : Array Entry) : Internal.Prover :=
+    Internal.byFunExt P.G 0 (bitsInd P.G (normH P.G E (rsF ix)) (normH P.G E (rsF ix)))
   pure [
    step "rebA" rebA (fun _ E ↦ byListIndWeak P.G E 0 (consT bitTy (v 1) (v 0)) rs rebA.ctx []
       (sides rebA).1 (sides rebA).2),
@@ -571,7 +644,16 @@ def arithLemmas (P : Prog) : Option (List Step) := do
       (Internal.bySplit 3 4 1 (byWeak P.G E 0 (rsA ix))) addOne₂.ctx [] (sides addOne₂).1
       (sides addOne₂).2),
    step "lenK" lenK (fun ix E ↦ byListIndWeak P.G E 0 (call D.succ [] [v 0])
-      ([.thm (ix "addOne") []] ++ rs) lenK.ctx [] (sides lenK).1 (sides lenK).2)]
+      ([.thm (ix "addOne") []] ++ rs) lenK.ctx [] (sides lenK).1 (sides lenK).2),
+   step "rebAF" rAf (fun _ E ↦ listInd P.G (consT bitTy (v 1) (v 0)) rs 256 rAf E),
+   step "rebSF" rSf (fun _ E ↦ listInd P.G (consT bitTy (v 1) (v 0)) rs 256 rSf E),
+   step "rebLF" rLf (fun _ E ↦ Internal.byListInd P.G E 2 0 1 (consT (x 0) (v 1) (v 0)) rs 256
+      rLf.ctx rLf.hyps (sides rLf).1 (sides rLf).2),
+   step "addSuccF" addSuccF (fun ix E ↦ Internal.byListIndWith P.G 0 0 1 (byFun ix E)
+      (Internal.bySplit 3 4 1 (byFun ix E)) addSuccF.ctx [] (sides addSuccF).1
+      (sides addSuccF).2),
+   step "addSucc" addSucc (fun ix E ↦ normH P.G E (.thm (ix "addSuccF") [] :: rs) addSucc.ctx []
+      (sides addSucc).1 (sides addSucc).2)]
 
 /-- The rewriting rules of the lemmas: each theorem of the development from its left side to its
 right, at the object instances given. -/
@@ -585,28 +667,10 @@ def lemmaRules (ix : String → ℕ) : List NormRule :=
     .thm (ix "fstCond") [treeTy, exp (list treeTy) treeTy], .thm (ix "labCond") [],
     .thm (ix "appCond") [list treeTy, treeTy], .thm (ix "nthP") []]
 
-/-- The pointwise form of an earlier theorem that equates two abstractions over one variable of
-the type {lit}`a`: in the theorem's context extended by that variable, the bodies' normal forms at
-the given depth with the given rules, by applying both sides to the variable. -/
-def pointwise (P : Prog) (rules : (String → ℕ) → List NormRule) (m : Internal.Depth)
-    (name src : String) (a : Tree) : Step :=
-  (name, fun ix E ↦ do
-    let some (Entry.language b) := E[ix src]? | none
-    let (F, H) ← Internal.eqParts b.concl
-    let Γ := a :: b.ctx
-    let F' := Term.app (Internal.weaken1 F) (v 0)
-    let H' := Term.app (Internal.weaken1 H) (v 0)
-    let (f, dF, _) ← Internal.eval P.G E b.arity (rules ix) 4096 m Γ [] F'
-    let (h, dH, _) ← Internal.eval P.G E b.arity (rules ix) 4096 m Γ [] H'
-    let σ := (List.range b.ctx.length).map fun j ↦ v (j + 1)
-    pure (⟨b.arity, Γ, [], Term.eq f h⟩, RoseTree.node (.convFrom (Term.eq F' H'))
-      [RoseTree.node .cong [dF, dH], RoseTree.node .join [RoseTree.node .cong
-        [RoseTree.node (.thm (ix src) ((List.range b.arity).map x) σ false) [],
-          RoseTree.node .refl []], RoseTree.node .refl []]]))
-
 /-- The lemmas on bitstrings: comparisons with zero and of zero with a successor, the successor
-moved out of a conditional, the predecessor's rebuilding of the rest, and the successor of the
-predecessor of a bitstring that is not empty. -/
+moved out of a conditional, the predecessor's rebuilding of the rest, the successor of the
+predecessor of a bitstring that is not empty, comparisons and iteration at successors, the
+addition of a successor on the left, and the lookups past inserted types. -/
 def numLemmas (P : Prog) : Option (List Step) := do
   let rs := baseNorm P
   let rest (t : Term) : Option Term := match t.label, t.children with
@@ -674,12 +738,21 @@ def numLemmas (P : Prog) : Option (List Step) := do
       (bit 2 (byListSplit P.G 0 1 leaf (bit 1 leaf))) Γ Φ t u
     Internal.byListIndWith P.G 0 0 1 (Internal.byFunExt P.G 0 (byAuto P.G E 0 rules 8 .open))
       cons a.ctx [] (sides a).1 (sides a).2
-  -- the lookup at a variable's index moved past an inserted type, by induction on the context's
+  -- the lookup at a variable's index moved past inserted types, by induction on the context's
   -- first part, as functions of the index
   let nthSide (name : String) : Term := Term.lam bitsTy
     (apps (call (P.idx name) [] []) [v 1, v 2, v 3, leafT (v 0)])
-  let nthThm : Internal.Thm := ⟨0, [list treeTy, list treeTy, treeTy], [],
+  let nthThm : Internal.Thm := ⟨0, [list treeTy, list treeTy, list treeTy], [],
     Term.eq (nthSide "nthL") (nthSide "nthR")⟩
+  -- the lookup past the inserted types below no part, by induction on them
+  let skipSide (name : String) : Term := Term.lam bitsTy
+    (apps (call (P.idx name) [] []) [v 1, v 2, leafT (v 0)])
+  let skipThm : Internal.Thm := ⟨0, [list treeTy, list treeTy], [],
+    Term.eq (skipSide "nthS") (skipSide "nthT")⟩
+  -- addition of a successor on the left, as functions of the first summand
+  let addSuccL : Internal.Thm := ⟨0, [bitsTy], [], Term.eq
+    (Term.lam bitsTy (call D.add [] [sc (v 0), v 1]))
+    (Term.lam bitsTy (sc (call D.add [] [v 0, v 1])))⟩
   let rsNth (ix : String → ℕ) : List NormRule :=
     [.thm (ix "ltZero") [], .thm (ix "ltZeroSucc") [], .thm (ix "addOne") [],
       .thm (ix "lenK") [], .thm (ix "cmpSuccP") [], .thm (ix "iterSuccP") [list treeTy],
@@ -727,8 +800,17 @@ def numLemmas (P : Prog) : Option (List Step) := do
     step "iterSucc" iterSucc (byIndAuto ["iterCommP"] iterSucc),
     pointwise P rsC .open "iterSuccP" "iterSucc" (x 0),
     pointwise P rsC .open "succPredP" "succPred" bitTy,
+    step "addSuccL" addSuccL (byIndAuto [] addSuccL),
+    pointwise P rsNth .open "addSuccLP" "addSuccL" bitsTy,
+    step "nthSkip" skipThm (fun ix E ↦
+      let rules := .thm (ix "addSucc") [] :: rsNth ix
+      Internal.byListIndWith P.G 0 0 1
+        (Internal.byFunExt P.G 0 (byAuto P.G E 0 rules 2 .open))
+        (Internal.byFunExt P.G 0 (byInsts .open P.G E 0 rules 1))
+        skipThm.ctx [] (sides skipThm).1 (sides skipThm).2),
+    pointwise P rsNth .open "nthSkipP" "nthSkip" bitsTy,
     step "nth" nthThm (fun ix E ↦
-      let rules := rsNth ix
+      let rules := [.thm (ix "nthSkipP") [], .thm (ix "addSuccLP") []] ++ rsNth ix
       Internal.byListIndWith P.G 0 0 1
         (Internal.byFunExt P.G 0 (byAuto P.G E 0 rules 2 .open))
         (Internal.byFunExt P.G 0 (byListSplit P.G 0 0
@@ -884,9 +966,9 @@ def byLabels (P : Prog) (ix : String → ℕ) (E : Array Entry) : Internal.Prove
       (bySplit2 3 4 1 (rec (bs ++ [false]) 1) (rec (bs ++ [true]) 1))
   go 4 [] 1
 
-/-- The statement: the type of a term weakened past a type inserted below a context's first part
-is its type in the context without it, the two sides as functions of the environment, the
-context's parts and the inserted type. -/
+/-- The statement: the type of a term weakened past types inserted below a context's first part
+is its type in the context without them, the two sides as functions of the environment, the
+context's parts and the inserted types. -/
 def weakening (P : Prog) : Internal.Thm :=
   ⟨0, [treeTy], [], Term.eq (Term.app (call (P.idx "wkL") [] []) (v 0))
     (Term.app (call (P.idx "wkR") [] []) (v 0))⟩
