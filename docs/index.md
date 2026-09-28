@@ -3939,7 +3939,9 @@ checklist and in CI.
   proves the theorems of Gödel's T about the translated
   programs, and `Weakening.lean` and `Substitution.lean` prove that the
   kernel's type checker written in Geb, `bootstrap/check.geb`, preserves
-  types by weakening and by substitution. The
+  types by weakening and by substitution; `TreeCases.lean` supplies case
+  analysis of a tree variable in any context and rewriting under a test,
+  with the lemmas that exercise them. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of

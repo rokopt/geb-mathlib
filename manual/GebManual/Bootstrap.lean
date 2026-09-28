@@ -3078,7 +3078,13 @@ expansion's identity on programs of kernel forms, then the admission of
 stronger checkers. The next phase is the third: a program of kernel
 forms alone expands to itself under the Surface 1 expansion
 (`bootstrap/surface.geb`), proved about its translation by the method
-of the first two.
+of the first two. Its proof needs two provers beyond theirs,
+constructed in `GebTests/Prototypes/FreeTopos/TreeCases.lean`: case
+analysis of a tree variable in any context, where the induction on rose
+trees applies to a tree alone, and rewriting in the branch a
+conditional selects by a lemma that holds under its test; with them,
+the head of a form that the expansion names by the atom `def` is that
+atom.
 
 The rest of the road map's bootstrap is independent of these proofs and
 may proceed beside them: the metalogic's checker, its prover and the
