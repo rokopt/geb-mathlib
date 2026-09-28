@@ -6,7 +6,9 @@
 # stage-1 compiler's image, bootstrap/compiler.img, and the Lean it emits
 # from its own source, bootstrap/lean/GebBoot.lean (the manual's
 # Bootstrap chapter, Speed and a second host and What self-compilation
-# establishes).
+# establishes); and the Lean it emits from the programs whose agreement
+# with a Lean function is proved, each under bootstrap/lean/GebMirror/ in
+# a namespace of its own.
 #
 # The stage-1 compiler's source S is the files of STAGE1 joined as the
 # host driver joins sources, each followed by a newline.
@@ -33,6 +35,8 @@ stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/s
         "$b/compile.geb" "$b/stage1/lean.geb")
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
+# each mirror: its name, then its sources
+mirrors=("GoedelT $b/prelude.geb $b/reader.geb $b/check.geb $b/goedel-t/equations.geb")
 kernel=.lake/build/bin/geb-kernel
 
 tmp=$(mktemp -d)
@@ -52,12 +56,28 @@ generate() {
   [ -s "$1/GebBoot.lean" ] || fail "the image's mainLean rejects S"
 }
 
+# The Lean the committed image emits from a mirror's sources, in the namespace GebMirror.<name>,
+# written to $2.
+mirror() {
+  local name=$1; shift
+  local out=$1; shift
+  join "$@" > "$tmp/$name.geb"
+  "$kernel" run "$img" mainLean "$tmp/$name.geb" "$tmp/$name.raw"
+  [ -s "$tmp/$name.raw" ] || fail "the image's mainLean rejects the mirror $name"
+  sed "s/^namespace GebBoot$/namespace GebMirror.$name/; s/^end GebBoot$/end GebMirror.$name/" \
+    "$tmp/$name.raw" > "$out"
+}
+
 lake build geb-kernel
 case "${1:-}" in
   regen)
     generate "$tmp"
     cp "$tmp/compiler.img" "$img"
     cp "$tmp/GebBoot.lean" "$lean"
+    for m in "${mirrors[@]}"; do
+      read -r -a a <<< "$m"
+      mirror "${a[0]}" "$b/lean/GebMirror/${a[0]}.lean" "${a[@]:1}"
+    done
     ;;
   check)
     generate "$tmp"
@@ -73,6 +93,12 @@ case "${1:-}" in
     same "$tmp/C1.lean" "$lean" "the compiled compiler does not reproduce the committed Lean"
     .lake/build/bin/geb-compile image "$tmp/S.geb" "$tmp/C1.img"
     same "$tmp/C1.img" "$img" "the compiled compiler does not reproduce the committed image"
+    for m in "${mirrors[@]}"; do
+      read -r -a a <<< "$m"
+      mirror "${a[0]}" "$tmp/mirror.lean" "${a[@]:1}"
+      same "$tmp/mirror.lean" "$b/lean/GebMirror/${a[0]}.lean" \
+        "the committed mirror ${a[0]} is not the image's Lean of its sources"
+    done
     echo "bootstrap: every fixed point holds"
     ;;
   *)
