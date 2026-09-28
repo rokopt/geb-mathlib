@@ -144,11 +144,11 @@ detail:
   * In progress. The proofs about the compiler's components: the first
     two, in Gödel's T, are complete; the rest are proved in the
     metalogic, about the components' translations, the type checker's
-    preservation of types by weakening and by substitution complete and
-    the Surface 1 expansion's identity on programs of kernel forms the
-    next phase.
-  * Waiting on those proofs. Stronger checkers admitted by translations
-    of their certificates into the metalogic's derivations.
+    preservation of types by weakening and by substitution and the
+    Surface 1 expansion's identity on programs of kernel forms complete,
+    and the reader's inverse to the printer waiting on the printer.
+  * Ready. Stronger checkers admitted by translations of their
+    certificates into the metalogic's derivations, the next phase.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -874,9 +874,8 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, Gödel's T
   * In progress
-  * The proofs from the Surface 1 expansion's identity on, in the
-    metalogic: the next phase, weakening and substitution complete;
-    stronger checkers: waiting on them
+  * Stronger checkers, in the metalogic: the next phase; weakening,
+    substitution and the Surface 1 expansion's identity: complete
 *
   * 7, the metalogic
   * In progress
@@ -1289,8 +1288,8 @@ the hash written in Geb.
   * In progress: the first two proofs are complete in Gödel's T, whose
     checker and prover the metalogic's fifth choice retires; the rest
     are proved in the metalogic, the preservation of types by weakening
-    and by substitution complete and the Surface 1 expansion's identity
-    the next phase
+    and by substitution and the Surface 1 expansion's identity complete,
+    and the admission of stronger checkers the next phase
 *
   * Metalogic, 1: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -1527,11 +1526,11 @@ Gödel's T states and proves the following.
   3. the type checker's preservation of types by weakening and by
      substitution, complete;
   4. the Surface 1 expansion's identity on programs of kernel forms,
-     the next phase;
+     complete;
   5. the reader's inverse to the printer, waiting on the printer;
   6. the admission of a stronger checker by the proof that a Geb
      program translates its certificates into the metalogic's
-     derivations with the same conclusions, waiting on the fourth.
+     derivations with the same conclusions, the next phase.
 * After the bootstrap: equational theorems about programs, in the
   metalogic.
 
@@ -1602,6 +1601,31 @@ development, which contains the weakening proof, has 626085 nodes, of
 which the lemmas substitution adds have 25434, and the theorem's
 derivation 604928, which the prover finds in 66 seconds and the checker
 checks in 35.
+
+The Surface 1 expansion's identity on programs of kernel forms is
+proved in the metalogic (`GebTests/Prototypes/FreeTopos/Expansion.lean`):
+for every list `es` of trees of which each is a kernel form,
+`expandProgram es` is `some (node 0 es)`. A kernel expression is a tree
+no list of which has a head that the reader names by the atom `case` or
+`cata`, and a kernel form is a list of three trees whose head names
+`def`, with a kernel expression as the third, `deftype` or `defnum`.
+The predicates are folds written in Geb beside the statement, which is
+an equation between masks: the conditionals on the predicate between
+each side and `none`. The proof has four stages, each an equation of
+functions under a mask: the expression's identity in every scope, by
+induction on rose trees with an induction hypothesis, whose instances
+at the children give, by induction on the children, an equation of the
+lists of the two sides' functions; the identity of the expansion's step
+at a form, which adds the form to the output and a type's alias to the
+environment; the run over the forms, by induction on them; and the
+program's, by the reversal of a reversal. The provers of
+`GebTests/Prototypes/FreeTopos/TreeCases.lean` carry the proofs: a
+compound test, such as whether a head names a keyword, is generalized
+to a new tree variable and split by case analysis of trees, and a term
+under a mask is rewritten by a hypothesis that holds under the mask's
+test, the absorption lemma moving the rewriting into the branch the
+test selects. The development has 668870 nodes, which the prover finds
+in 72 seconds and the checker checks in 34.
 
 ### The metalogic
 
@@ -3071,20 +3095,21 @@ the change that removes it.
 
 The proofs about the compiler's components continue in the
 Mitchell–Bénabou language, about the programs' translations (the section
-on the second construction and the fifth choice), in this order: the
-type checker's preservation of types by weakening and by substitution,
-complete (the section on Gödel's T), then the Surface 1
-expansion's identity on programs of kernel forms, then the admission of
-stronger checkers. The next phase is the third: a program of kernel
-forms alone expands to itself under the Surface 1 expansion
-(`bootstrap/surface.geb`), proved about its translation by the method
-of the first two. Its proof needs two provers beyond theirs,
-constructed in `GebTests/Prototypes/FreeTopos/TreeCases.lean`: case
-analysis of a tree variable in any context, where the induction on rose
-trees applies to a tree alone, and rewriting in the branch a
-conditional selects by a lemma that holds under its test; with them,
-the head of a form that the expansion names by the atom `def` is that
-atom.
+on the second construction and the fifth choice). The type checker's
+preservation of types by weakening and by substitution and the Surface 1
+expansion's identity on programs of kernel forms are complete (the
+section on Gödel's T), and the reader's inverse to the printer waits on
+the printer. The next phase is the admission of stronger checkers by
+relative soundness (the section on the metalogic and its checker): a Geb
+program translates each certificate a checker accepts into the
+metalogic's derivations with the same conclusion, which is proved about
+the programs' translations by induction on certificates, the checkers'
+results stated as functions of the context and the hypotheses, as the
+preservation of types by substitution is. The provers the three
+completed proofs use apply to it: induction on rose trees with an
+induction hypothesis, the introduction and elimination of implications,
+case analysis of trees in any context, generalization, and rewriting
+under a mask.
 
 The rest of the road map's bootstrap is independent of these proofs and
 may proceed beside them: the metalogic's checker, its prover and the
