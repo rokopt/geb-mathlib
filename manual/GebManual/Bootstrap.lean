@@ -226,7 +226,8 @@ the sections below detail:
   * Waiting on the checker written in Geb. The proof in Lean that the
     checker written in Geb agrees with the Lean checker: its denotation,
     at every development, is the Lean checker's result. The bootstrap is
-    not complete without it.
+    not complete without it. Its method is established on the checker of
+    Gödel's T, whose agreement is proved ({ref "logic"}[The logic]).
   * Waiting on the checker written in Geb and the proof of its
     agreement. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
@@ -1586,6 +1587,28 @@ indices and the checker's rules are named by numeral abbreviations in
 abbreviations in Lean, `Geb.Kernel.Label`,
 `Geb.Kernel.Prim` and `Geb.GoedelT.Rule`, which the
 tests hold equal name for name.
+
+The checker of Gödel's T written in Geb is also proved in Lean to agree
+with the Lean checker, by a method the metalogic's checker reuses. The
+stage-1 compiler's Lean backend emits the checker's program as Lean
+definitions, one for each of its definitions, committed as
+`bootstrap/lean/GebMirror/GoedelT.lean` and compared with a fresh
+emission by `scripts/bootstrap.sh check`.
+`GebTests/Prototypes/GoedelT/MirrorLoad.lean` states that loading the
+program with {name}`Geb.Kernel.load` gives globals whose denotations are
+those definitions, one definition at a time, each step closed by
+reflexivity, which the kernel checks by evaluating the
+checker-evaluator. The other modules of `GebTests/Prototypes/GoedelT/`
+prove, side by side, that the emitted definitions compute what the Lean
+checker computes: the type checker, the traversal of terms with
+weakening and substitution, the operations on equations and theorems,
+the values of primitives at literals, and each rule, assembled by
+induction on the certificate. `GebTests/Prototypes/GoedelT/Agreement.lean`
+states the result: at every certificate, program, theorems, global
+environment, context and hypotheses, encoded, the loaded checker gives
+the encoding of what {name}`Geb.GoedelT.check` gives, so the two accept
+the same certificates with the same conclusions. The proof depends on no
+axiom beyond `propext` and `Quot.sound`.
 
 Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
