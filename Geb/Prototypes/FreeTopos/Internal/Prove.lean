@@ -17,8 +17,12 @@ A prover, prototyped in Lean, that computes derivations the checker
 normalizes the children, each in its own context, then applies at the root the first rule of a
 list that applies, and normalizes the result; or weak head normal forms first, an argument used
 more than once reduced before it is substituted, so that its value is computed once, and a case
-analysis's branches reduced only once one is selected. The rules are the language's equations,
-the earlier theorems, whose instances it finds by matching their left sides, and the hypotheses.
+analysis's branches reduced only once one is selected, to a weak normal form, which leaves the
+bodies of abstractions and the starts and steps of folds, to a normal form but for folds' starts
+and steps, or to the normal form. The rules are the language's equations, the unfolding of the
+definitions below an index, a variable of the terminal type as its element, the earlier
+theorems, whose instances it finds by matching their left sides, and the hypotheses; a rule is
+tried again at a node whose children a reduction rewrote.
 It proves an equation by normalizing both sides to one term, by induction on the innermost
 variable with a step it is given, and by induction on a rose tree in the form of the uniqueness
 of its fold, each premise by normalization; with the induction hypothesis, it normalizes the
@@ -37,8 +41,9 @@ trusted: a derivation it computes is checked.
   equation from proofs of others: of functions by extensionality, by case analysis of a variable
   of a coproduct anywhere in the context, and by list induction and rose-tree induction with each
   premise proved by a prover.
-* {lit}`eval`, {lit}`whnf`, {lit}`normalizeW` — the reduction to a depth, sharing an argument's
-  value among its uses, the weak head normal form, and the normal form reached through it.
+* {lit}`Depth`, {lit}`eval`, {lit}`whnf`, {lit}`normalizeW` — the depths of reduction, the
+  reduction to a depth, sharing an argument's value among its uses, the weak head normal form,
+  and the normal form reached through it.
 
 ## Tags
 
@@ -63,6 +68,10 @@ inductive NormRule where
   | rule (r : Rule)
   /-- The unfolding of the definition of an index, and of no other. -/
   | delta (k : ℕ)
+  /-- The unfolding of every definition of an index below {lit}`m` but those of a list. -/
+  | deltaBelow (m : ℕ) (except : List ℕ)
+  /-- A variable of the terminal type is its element. -/
+  | unitVar
   /-- The equational theorem of an index at objects, from its left side to its right. -/
   | thm (j : ℕ) (θ : List Tree)
   /-- The equation among the hypotheses of an index, from its left side to its right. -/
@@ -92,6 +101,15 @@ def matchTerm (p : Term) : ℕ → Term → List (Option Term) → Option (List 
         | _, ps, us => (ps.zip us).foldl (fun acc (q, u) ↦ acc.bind (q.2 d u)) (some σ)
       else none) p
 
+/-- Whether a pattern's root may match a term's root, before the pattern's object variables are
+instantiated: the pattern's root is a variable, or the two roots are nodes of one kind. -/
+def sameShape : Label → Label → Bool
+  | .var _, _ => true
+  | .star, .star | .pair, .pair | .fst, .fst | .snd, .snd | .app, .app | .natRec, .natRec
+    | .listRec, .listRec | .eq, .eq | .lam _, .lam _ | .roseRec _, .roseRec _ => true
+  | .arr k _, .arr k' _ | .defn k _, .defn k' _ => k == k'
+  | _, _ => false
+
 /-- The derivation of one rewriting after another, the identity left out. -/
 def dTrans (d₁ d₂ : Deriv × Bool) : Deriv × Bool :=
   match d₁.2, d₂.2 with
@@ -114,10 +132,22 @@ def rootRewrite (rs : List NormRule) (Γ : List Tree) (Φ : List Term) (t : Term
           (rootStep G E n Γ Φ .delta t).map fun t' ↦ (t', RoseTree.node .delta [])
         else none
       | _ => none
+    | .unitVar => match t.label with
+      | .var i => if Γ[i]? = some one then
+          (rootStep G E n Γ Φ .unitEta t).map fun t' ↦ (t', RoseTree.node .unitEta [])
+        else none
+      | _ => none
+    | .deltaBelow m ks => match t.label with
+      | .defn k' _ => if k' < m ∧ k' ∉ ks then
+          (rootStep G E n Γ Φ .delta t).map fun t' ↦ (t', RoseTree.node .delta [])
+        else none
+      | _ => none
     | .thm j θ => do
       let a ← (E[j]?).bind Entry.language?
       let (l, _) ← eqParts a.concl
-      let σ ← matchTerm (Term.osubst θ l) 0 t (List.replicate a.ctx.length none)
+      if !sameShape l.label t.label then none else
+      let σ ← matchTerm (if θ.isEmpty then l else Term.osubst θ l) 0 t
+        (List.replicate a.ctx.length none)
       let σ ← σ.mapM id
       let l := Rule.thm j θ σ false
       (rootStep G E n Γ Φ l t).map fun t' ↦ (t', RoseTree.node l [])
@@ -226,15 +256,25 @@ def headChild : Label → List Term → Option ℕ
 
 /-- How far the evaluator reduces a term: to its weak head normal form; to its weak normal form,
 every subterm reduced but those under an abstraction and a fold's start and step, which have
-contexts of their own; or to its normal form. -/
+contexts of their own; to its normal form but for folds' starts and steps; or to its normal
+form. -/
 inductive Depth where
   /-- The weak head normal form. -/
   | head
   /-- The weak normal form. -/
   | weak
+  /-- The normal form but for the starts and steps of folds, which have contexts of their own. -/
+  | open
   /-- The normal form. -/
   | full
 deriving DecidableEq
+
+/-- Whether the normal form but for folds' starts and steps leaves a node's child of an index in
+place: the start and the step of a fold. -/
+def keepsFold (l : Label) (i : ℕ) : Bool := match l with
+  | .natRec | .listRec => i < 2
+  | .roseRec _ => i = 0
+  | _ => false
 
 /-- Whether the weak normal form leaves a node's child of an index in place: every child of an
 abstraction, and the start and the step of a fold. -/
@@ -268,9 +308,11 @@ receives its scrutinee; that of any other node is the first rule that rewrites t
 root, the unfolding of a definition receiving its arguments unreduced, else the weak head normal
 form of the child it depends on and the first rule that then rewrites the root. The branches of
 a case analysis, abstractions, are reduced only once one is selected. The weak normal form then
-reduces the children but those {lit}`keepsWeak` leaves, and the normal form every child, each in
-its own context, and a rule at the root. The children the weak head and weak normal forms reduce
-are in the node's context, which they therefore do not compute. -/
+reduces the children but those {lit}`keepsWeak` leaves, the open one those but {lit}`keepsFold`
+leaves, each in its own context, and the normal form every child, each in its own context; each
+then applies a rule at the root, the weak and open ones where a child was rewritten, and reduces
+the result. The children the weak head and weak normal forms reduce are in
+the node's context, which they therefore do not compute. -/
 def eval (rs : List NormRule) (fuel : ℕ) :
     Depth → List Tree → List Term → Term → Option (Term × Deriv × Bool) :=
   fuel.rec (fun _ _ _ t ↦ some (t, dRefl)) fun _ rec depth Γ Φ t ↦ do
@@ -306,7 +348,24 @@ def eval (rs : List NormRule) (fuel : ℕ) :
     | .weak => do
       let cs ← w.children.zipIdx.mapM fun (u, i) ↦
         if keepsWeak w.label i then some (u, dRefl) else rec .weak Γ Φ u
-      pure (RoseTree.node w.label (cs.map Prod.fst), dTrans dw (dCong (cs.map Prod.snd)))
+      let t₁ := RoseTree.node w.label (cs.map Prod.fst)
+      let d₁ := dTrans dw (dCong (cs.map Prod.snd))
+      match (if cs.any (·.2.2) then rootRewrite G E n rs Γ Φ t₁ else none) with
+      | some (t₂, dr) => do
+        let (t₃, d₃) ← rec .weak Γ Φ t₂
+        pure (t₃, dTrans d₁ (dTrans (dr, true) d₃))
+      | none => pure (t₁, d₁)
+    | .open => do
+      let Γs ← childCtxs G n w.label w.children Γ Φ
+      let cs ← ((Γs.zip w.children).zipIdx).mapM fun (((Δ, Ψ), u), i) ↦
+        if keepsFold w.label i then some (u, dRefl) else rec .open Δ Ψ u
+      let t₁ := RoseTree.node w.label (cs.map Prod.fst)
+      let d₁ := dTrans dw (dCong (cs.map Prod.snd))
+      match (if cs.any (·.2.2) then rootRewrite G E n rs Γ Φ t₁ else none) with
+      | some (t₂, dr) => do
+        let (t₃, d₃) ← rec .open Γ Φ t₂
+        pure (t₃, dTrans d₁ (dTrans (dr, true) d₃))
+      | none => pure (t₁, d₁)
     | .full => do
       let Γs ← childCtxs G n w.label w.children Γ Φ
       let cs ← (Γs.zip w.children).mapM fun ((Δ, Ψ), u) ↦ rec .full Δ Ψ u
