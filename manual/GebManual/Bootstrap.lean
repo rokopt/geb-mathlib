@@ -2472,8 +2472,8 @@ the term by the citation of a certificate
 #### The second construction and the fifth choice
 
 State: the second construction is complete, with the converse of the
-first; the fifth choice is the next phase, its measurement in
-progress.
+first; the fifth choice is the next phase, its measurement made and the
+translation's correctness waiting on the representation of labels.
 
 The fifth choice follows the three constructions.
 
@@ -2622,24 +2622,102 @@ algebra to one carrier.
 
 The choice is made by measurement, in these parts, in order:
 
-* In progress. The translation of kernel types and terms into the
-  language, in Lean: the base type of trees to the rose-tree object,
-  whose labels are the natural numbers object, the unit, product,
-  function and list types to their objects, and each term former, the
-  kernel's constants and its primitives to terms and definitions of the
-  language.
-* Ready. The literals' cost: the sizes of the translations of the
-  programs the core's proofs are about, with unary numerals, against
-  the kernel terms'.
-* Ready. The proofs: the statements of the core's proofs, prelude, nat,
-  check, equations and surface, translated and proved by the language's
-  prover, with the sizes of the derivations and the times to check
-  them against the core's certificates. Where the literals' cost is
-  prohibitive, bitstrings, as above, are measured in place of the unary
-  labels.
-* Ready. The translation's correctness in Lean, by the graphs, made
-  after the representation of labels is settled, since it depends on
-  it.
+* Complete. The translation of kernel types and terms into the
+  language, in Lean ({name}`Geb.FreeTopos.Translation.term`): the base
+  type of trees to the rose-tree object, whose labels are the natural
+  numbers object, the unit, product, function and list types to their
+  objects, and each term former, the kernel's constants and its
+  primitives to terms and definitions of the language
+  ({name}`Geb.FreeTopos.Translation.lib`), a fold whose step uses the
+  context folding into functions of it.
+* Complete. The literals' cost. The prelude, the reader and the type
+  checker, 97 definitions of 6218 nodes with 306 quoted trees of 461
+  nodes, translate to definitions of 25420 nodes, of which 16411 are
+  the successors of unary numerals; the translation's library has 299
+  (`GebTests/Prototypes/FreeTopos/Translation.lean`, which prints them).
+* Complete. The proofs. Each theorem of the core's proofs is proved in
+  the language by its prover, from the translation of its statement, the
+  facts the core's axioms state of the primitives proved as lemmas:
+  Lambek's lemma, that a tree is rebuilt from its unfolding, by the
+  uniqueness of the rose tree's fold, from the fold of a list by
+  construction and the fusion of two folds of lists, each by list
+  induction. The nodes of the core's certificates and of the language's
+  derivations, the terms they name counted, the steps of the natural
+  numbers' fold among the latter, and the least of three times each
+  checker takes, the lemmas included
+  (`GebTests/Prototypes/FreeTopos/TranslationProofs.lean`, which prints
+  them):
+
+:::table +header
+*
+  * File
+  * Core's nodes
+  * Language's nodes
+  * Fold steps
+  * Core's time
+  * Language's time
+*
+  * prelude
+  * 1748
+  * 473
+  * 0
+  * 11.5 ms
+  * 6.8 ms
+*
+  * nat
+  * 323
+  * 216
+  * 8
+  * 2.6 ms
+  * 2.7 ms
+*
+  * check
+  * 82602
+  * 14185
+  * 1667
+  * 490 ms
+  * 287 ms
+*
+  * equations
+  * 3449
+  * 462
+  * 6
+  * 60 ms
+  * 13 ms
+*
+  * surface
+  * 6384
+  * 1139
+  * 17
+  * 51 ms
+  * 106 ms
+:::
+
+Innermost normalization, the core's prover's strategy, does not reach
+the normal form of the type checker's statement within fifteen
+minutes, since it normalizes the cases the checker's conditionals
+discard. The language's prover normalizes to the weak head normal form
+first ({name}`Geb.FreeTopos.Internal.normalizeW`), so that a fold whose
+datum computes selects its case before the cases are normalized, and
+it matches a theorem's side against a term with the variables bound
+in it matched only by themselves ({name}`Geb.FreeTopos.Internal.matchTerm`).
+The type checker's derivation takes most of its size from the unary
+comparisons of the checker's dispatch on labels. The language checks
+every file but surface faster than the core; surface, whose
+derivations are a sixth of the size of the core's certificates and
+take few steps of the fold, takes twice the core's time, a cost the
+measurement does not locate.
+
+The cost does not forbid retiring the core's checker. The unary
+numerals account for most of the translated programs' size and of the
+type checker's derivation, which bitstrings, as above, reduce to the
+size of the labels' binary representations.
+
+The parts that remain:
+
+* Ready (the next part). The translation's correctness in Lean, by the
+  graphs, made after the representation of labels, unary or bitstrings,
+  is settled, since it depends on it.
 * Waiting on the parts above. The decision, and with it the rest of the
   computational core's proofs, in the logic it selects.
 
