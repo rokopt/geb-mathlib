@@ -76,15 +76,19 @@ order of dependence.
   interaction-net runtime, HVM, Bend or a similar one, which a compiler
   written in Geb targets for parallel workloads. Complete for Lean; the
   systems language and the interaction-net runtime wait on Phase 2.
-* Logic. Two checkers, each proved sound in Lean and written again in
-  Geb, where a prover has tactics that construct its certificates: the
-  computational core's, of equations between kernel terms, and the
+* Logic. One checker, proved sound in Lean and written again in Geb,
+  where a prover has tactics that construct its derivations: the
   metalogic's, the free topos with the natural numbers, list and
   rose-tree objects, presented as the initial model of one partial Horn
-  theory (Phase 7). In progress: both checkers are constructed in Lean
-  and proved sound; the computational core's is written in Geb and its
-  proof construction is in progress; the metalogic's is not yet written
-  in Geb.
+  theory, whose developments mix the Mitchell–Bénabou language's
+  derivations with the combinators' certificates (Phase 7). Kernel
+  programs are reasoned about through their translation into the
+  language, sound by a theorem in Lean. In progress: the checker and the
+  translation are constructed in Lean and proved sound, and the proofs
+  about the compiler's components are made in the language; the
+  checker, its prover and the translation are not yet written in Geb.
+  The computational core's checker, constructed and written in Geb
+  first, is retired by the fifth choice.
 * Extension. A program is extended by definitions whose identity
   survives edits, and Surface 1 is complete enough to write the rest of
   Geb in, with diagnostics that name what fails. In progress: closed
@@ -134,8 +138,8 @@ sections below detail:
 
 * The computational core, a cartesian closed locos:
   * Complete. The rules and their soundness in Lean, and the checker
-    written in Geb. The metalogic's fifth choice retires the checker
-    and its prover, begun.
+    written in Geb, with its prover begun; the metalogic's fifth choice
+    retires both, and their proofs remain and are checked.
   * In progress. The proofs about the compiler's components: the first
     two, in the core, are complete; the rest are proved in the
     metalogic, about the components' translations, the type checker's
@@ -191,8 +195,9 @@ sections below detail:
   * Complete. The fifth choice: its measurement, the translation's
     soundness, and the decision, to retire the computational core's
     checker.
-  * Ready. The checker and prover written in Geb, the fourth stage's
-    completeness having settled the language's rules.
+  * Ready. The checker, its prover and the translation of kernel
+    programs written in Geb, the fourth stage's completeness having
+    settled the language's rules.
 
 Extension:
 
@@ -210,9 +215,9 @@ Extension:
 
 ## After the bootstrap
 
-Every item waits on the bootstrap. Each is written in Geb, each proof in
-the computational core when it is an equation between kernel terms, and
-in the metalogic otherwise:
+Every item waits on the bootstrap. Each is written in Geb, and each
+proof in the metalogic, a proof about programs being about their
+translations:
 
 * Surface 2: quotients whose respect is proved, subset types by
   propositions, definitions by equations whose unique solution is
@@ -231,11 +236,10 @@ in the metalogic otherwise:
 * The optimized representation of the chapter on value representation,
   after its decision gates, and the further concrete syntaxes of
   `docs/concrete-syntaxes.md` § Roadmap.
-* Theorems about the metalogic proved in it: the soundness of the
-  computational core's checker, and the equivalence of the free topos
-  with the rose-tree object and the free topos with a natural numbers
-  object; and the extraction of programs from proofs of totality,
-  through a realizability topos.
+* Theorems about the metalogic proved in it: the equivalence of the
+  free topos with the rose-tree object and the free topos with a natural
+  numbers object; and the extraction of programs from proofs of
+  totality, through a realizability topos.
 * The Mitchell–Bénabou language's terms inside the combinators' terms,
   the direction of the two presentations' mixing that the bootstrap
   leaves; and the language's own term model, of its provably functional
@@ -287,8 +291,9 @@ The following are fixed; the plan builds on them.
   programs (the necessity theorem of `Geb/Prototypes/Typechecker/`'s
   classifier module), so logic is not a Surface 1 construct. The
   metalogic of Phase 7 holds propositions and their proofs about kernel
-  programs, and the computational core the equations between them.
-  Surface 2, built on both, adds subset types by arbitrary
+  programs, equations between them among the propositions, stated of
+  the programs' translations into its internal language. Surface 2,
+  built on it, adds subset types by arbitrary
   propositions, quotients whose respect for their relation is proved,
   and definitions by equations whose unique solution is proved; it is
   the setoid completion of Surface 1 with its obligations discharged in
@@ -306,10 +311,12 @@ The following are fixed; the plan builds on them.
   proved in Geb. It is presented at once, as the initial model of one
   partial Horn theory of an elementary topos with the data objects
   (Phase 7, the section on the metalogic), and no classical logic is an
-  intermediate step. Beneath it, the computational core is the
-  equational logic of the kernel's terms of every type, a cartesian
-  closed category with the data objects, since the kernel's programs
-  have function types.
+  intermediate step. Kernel programs enter it through their translation
+  into its internal language, the Mitchell–Bénabou language. The
+  computational core, the equational logic of the kernel's terms of
+  every type, a cartesian closed category with the data objects, since
+  the kernel's programs have function types, preceded it and is retired
+  by the fifth choice.
 * Artifacts. The compiler's image and, once the compiler emits Lean,
   the emitted Lean are committed as build artifacts. Continuous
   integration regenerates them and compares their bytes with the
@@ -635,45 +642,45 @@ derivations.
 
 The metalogic presents the free topos with the data objects directly, as
 the initial model of a partial Horn theory (Phase 7, the section on the
-metalogic). Beneath it, the computational core is the equational logic
-of the kernel's terms: its judgments are equations between kernel terms
-of a type under hypotheses, the logic of a locos as
-{citet Maietti2010}[] defines it with exponentials added, since the
-kernel's programs are terms of System T, whose types include function
-types. The kernel's types, function types included, are objects of the
-metalogic, and Surface 1's recognized types are subobjects of the type
-of trees there, cut out by their recognizers.
+metalogic). The equational logic of the kernel's terms, whose judgments
+are equations between kernel terms of a type under hypotheses, is the
+logic of a locos as {citet Maietti2010}[] defines it with exponentials
+added, since the kernel's programs are terms of System T, whose types
+include function types; the computational core implemented it first,
+and the fifth choice retires its checker. The kernel's types, function
+types included, are objects of the metalogic, and Surface 1's
+recognized types are subobjects of the type of trees there, cut out by
+their recognizers.
 
-The functor from the free cartesian closed category of the kernel's
-terms to the free topos that preserves its structure sends each
-equation the computational core proves to one the metalogic proves, so
-a proof checked in the core remains valid in the metalogic. The functor
-need not be full or faithful: the free topos has arrows between natural
-numbers that no System T term defines (below), and it may prove
-equations between programs that the core does not. A proof therefore
-moves from the core to the metalogic by a translation of its
-certificate, through the translation of λ-terms into the combinators,
-and back only by being checked again. Within the core, a certificate
-cites an axiom by its index in the table of axioms and a theorem by its
-index among the theorems, by two rules, so that the axioms added later
-leave every citation unchanged. A cited theorem need only be valid, so a
-proof in the core may cite an equation between kernel terms that the
-metalogic proves.
+A kernel program enters the metalogic by its translation into the
+Mitchell–Bénabou language, compositional in the kernel's term formers,
+whose soundness is a theorem in Lean: the translation of a kernel term
+represents its denotation ({name}`Geb.FreeTopos.Translation.repC_term`),
+so that an equation between kernel terms whose translation the checker
+proves holds of their denotations at every represented value of its
+context ({name}`Geb.FreeTopos.Translation.translation_sound`). The
+translation need not be full or faithful: the free topos has arrows
+between natural numbers that no System T term defines (below), and it
+proves equations between programs that the kernel's equational logic
+does not. A
+proposition about kernel programs is therefore stated of their
+translations and proved in the metalogic.
 
 Relative soundness takes two forms. One checker is admitted beside
 another of the same judgments when a Geb program translates each
 certificate the first accepts into one the second accepts with the same
-conclusion. That is an equation between kernel programs under the
-hypothesis that the first checker accepts, and it is proved in the
-computational core by induction on certificates; the checkers' results
-are functions of the context and the hypotheses, so the equation is
-stated at function types and its induction hypothesis covers the
-contexts and hypotheses of the premises. That a checker is sound, every
-certificate it accepts valid, is a statement about the denotation of
-kernel terms, which no kernel term computes (below); it is stated in
-the metalogic, whose topos has System T's evaluator. The computational
-core cannot prove its own checker sound, since the core's consistency is
-an equation between kernel terms that the core does not prove.
+conclusion. That is a proposition about kernel programs under the
+hypothesis that the first checker accepts, proved in the metalogic,
+about the programs' translations, by induction on certificates; the
+checkers' results are functions of the context and the hypotheses, so
+the proposition is stated of functions, and its induction hypothesis
+covers the contexts and hypotheses of the premises, as the type
+checker's preservation of types by substitution is proved (the section
+on the computational core). That a checker is sound, every certificate
+it accepts valid, is a statement about the denotation of kernel terms,
+which no kernel term computes (below); it is stated in the metalogic,
+whose topos has System T's evaluator, and no checker proves itself
+sound, which would prove its own consistency.
 
 Each checker's rule set states typing, substitution, extensionality and
 induction explicitly; the equalities of computation supply none of
@@ -852,15 +859,15 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the computational core
   * In progress
-  * The proofs from the type checker's preservation of types by
-    substitution on, in the metalogic: the next phase, weakening
-    complete; stronger checkers: waiting on them
+  * The proofs from the Surface 1 expansion's identity on, in the
+    metalogic: the next phase, weakening and substitution complete;
+    stronger checkers: waiting on them
 *
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage, the second
-    construction and the fifth choice: complete; the checker and prover
-    written in Geb: ready
+    construction and the fifth choice: complete; the checker, the prover
+    and the translation written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1284,9 +1291,9 @@ the hash written in Geb.
     checker in Geb
 :::
 
-Phase 7 builds two checkers, the computational core's and the
-metalogic's (the section on the metalogic and its checker), each by the
-same steps.
+Phase 7 builds the metalogic's checker (the section on the metalogic
+and its checker) by the steps below, as it built the computational
+core's first, which the fifth choice retires.
 
 1. Lean: the rule set and its soundness, without `Classical.choice`, in
    the model of Lean types, and for the metalogic also in a model that
@@ -1408,7 +1415,7 @@ abbreviations in Lean, `Geb.Kernel.Label`,
 `Geb.Kernel.Prim` and `Geb.Metalogic.Rule`, which the
 tests hold equal name for name.
 
-Step 3 is begun for the computational core. `bootstrap/metalogic/prove.geb`
+Step 3 was begun for the computational core. `bootstrap/metalogic/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
 trusted. Normalization, innermost first, contracts the redexes of the
 computation rules, with literals put in constructor form by δ rules
@@ -1561,8 +1568,8 @@ rose-tree objects, presented at once and checked by one checker, which
 is built by the method the computational core establishes: a checker
 defined, proved sound in Lean and written again in Geb. This section
 states the presentation, its relation to the computational core, and
-the questions that remain, which are settled by constructing and
-measuring.
+the questions its form depended on, which were settled by constructing
+and measuring.
 
 #### The presentation
 
@@ -1698,23 +1705,28 @@ domain of a composite being that of its first morphism. The checker
 computes domains and codomains instead, as a fold cutting a subtype out
 of rose trees, the form of the slice W-types' {name}`SlicePFunctor.W`.
 
-The checker's language is the combinators, the terms of the fibered
-presentation, a program being extended by definitions of objects, of
-morphisms and of equalities in place of the definitions of kernel terms.
-The internal language of the topos, the Mitchell–Bénabou language,
-which is the intuitionistic higher-order type theory of the section on
-the metalogic and its checker, may be a surface language over them,
-elaborated into the combinators by its interpretation in a topos, as
-Surface 1 is elaborated into the kernel; its proofs bind variables where
-the combinators compose projections.
+The certificates' language is the combinators, the terms of the
+fibered presentation, a program being extended by definitions of
+objects, of morphisms and of equalities in place of the definitions of
+kernel terms. The internal language of the topos, the Mitchell–Bénabou
+language, the intuitionistic higher-order type theory of the section on
+the metalogic and its checker, is written over them: its terms compile
+into the combinators by their interpretation in a topos, as Surface 1
+is expanded into the kernel, and its derivations bind variables where
+the combinators compose projections (the section on the
+Mitchell–Bénabou language). A development mixes the two, its theorems
+of the language and its sequents of the combinators each citing the
+others.
 
 The kernel remains the language of computation, since the free topos
-has arrows that no System T term defines. The computational core's
-rules are the equations of the fragment that the kernel's terms denote,
-the cartesian closed category with the data objects, related to the
-presentation by the translation between λ-terms and the morphisms of a
-free cartesian closed category that the Categorical Abstract Machine
-compiles by {citep CousineauCurienMauny1987}[].
+has arrows that no System T term defines. The kernel's terms denote
+arrows of the cartesian closed category with the data objects, and they
+enter the presentation by their translation into the Mitchell–Bénabou
+language, whose compilation into the combinators follows the
+translation between λ-terms and the morphisms of a free cartesian
+closed category that the Categorical Abstract Machine compiles by
+{citep CousineauCurienMauny1987}[] (the section on the second
+construction and the fifth choice).
 
 The theory, its axioms and the certificates of its derivations are
 finite syntax, rose trees, and so data of the metalogic: the checker is
@@ -1773,14 +1785,12 @@ presentation, in the Boolean case.
 State: complete for one sort in `Geb/Prototypes/Definition/`, and for
 the partial Horn theory, in its models, by the third construction.
 
-Definitions would be one index of the checker's syntax: a Boolean
-states whether a term may refer to definitions, the node of a
-reference being admitted at one value only. A term with references is
-checked and interpreted in an environment of definitions, each an
-object, a morphism or an equality over the definitions before it; the
-unfolding replaces each reference by its definition, from the syntax
-with references to the syntax without; and a theorem proved in Lean
-states that the interpretation of every term is that of its unfolding.
+A term with references to definitions is checked and interpreted in an
+environment of definitions, each an object or a morphism over the
+definitions before it; the unfolding replaces each reference by its
+definition, from the syntax with references to the syntax without; and
+a theorem proved in Lean states that the interpretation of every term is
+that of its unfolding.
 The unfolding is not run but on small tests; checking and evaluation
 use the definitions. The definition of a definition is the structure
 the unfolding theorem is stated over. For one sort it is constructed in
@@ -1799,16 +1809,16 @@ and the criteria of eliminability and non-creativity {citep Suppes1957}[]
 are theorems ({name}`Geb.Definition.Presentation.cls_inlTerm_unfoldOps`,
 {name}`Geb.Definition.Presentation.eq_of_cls_inlTerm_eq`), the models of
 the extension being the algebras of the signature it extends
-({name}`Geb.Definition.Presentation.modelEquiv`). The Boolean chooses
-between the sum and the signature. The form chosen is this monadic one:
-definitions, from new operations to terms of a signature, extend to a
-morphism of free monads from the extended signature to the signature,
-which is the unfolding, and the defining equations make it inverse to
-the inclusion of the signature's terms. The proposal needs that structure
-for a partial Horn theory of two sorts, a defined operation being defined
-where its body is and equal to it there; iterated, so that a definition
-refers to earlier ones; and with defined equalities, theorems whose
-unfolding is their certificates. In the computational core a reference unfolds
+({name}`Geb.Definition.Presentation.modelEquiv`). The form chosen is
+this monadic one: definitions, from new operations to terms of a
+signature, extend to a morphism of free monads from the extended
+signature to the signature, which is the unfolding, and the defining
+equations make it inverse to the inclusion of the signature's terms. The
+third construction carries that structure to the partial Horn theory of
+two sorts, a defined operation being defined where its body is and equal
+to it there, iterated, so that a definition refers to earlier ones; a
+theorem of a development is cited by its sequent, not unfolded into its
+certificate. In the computational core a reference unfolds
 one step at a time ({name}`Geb.Metalogic.valid_unfold`), resting on
 {name}`Geb.Metalogic.load_loaded`; no theorem yet unfolds every
 reference of a kernel term. The families of definitions of
@@ -3010,46 +3020,22 @@ the change that removes it.
 
 ## The next phase
 
-The fourth stage of the Mitchell–Bénabou language is complete, its
-types built in followed by, in this order (the section on the fourth
-stage):
+The proofs about the compiler's components continue in the
+Mitchell–Bénabou language, about the programs' translations (the section
+on the second construction and the fifth choice), in this order: the
+type checker's preservation of types by weakening and by substitution,
+complete (the section on the computational core), then the Surface 1
+expansion's identity on programs of kernel forms, then the admission of
+stronger checkers. The next phase is the third: a program of kernel
+forms alone expands to itself under the Surface 1 expansion
+(`bootstrap/surface.geb`), proved about its translation by the method
+of the first two.
 
-1. Citations between the two checkers, complete: a rule of the
-   language's derivations proving an equation by a certificate of the
-   sequent it compiles to, and the theorems of the language as theorems
-   of a certificate's environment, in a development of declarations of
-   both kinds.
-2. Declared constants, complete: the language's definitions, primitive
-   arrows and object definitions, objects of the combinators that name
-   types of the language, as declarations of the development beside its
-   theorems, each confirmed by the checker's inference or by a
-   certificate, which may cite the theorems before it.
-3. Quotient types, complete: the coequalizer of a relation's
-   projections, with the arrow to it, the equality of related elements'
-   images, induction on the quotient, and descent with its computation.
-4. Completeness, complete: the partial Horn logic's term model and
-   completeness theorem, from which follow the completeness of the
-   language citing certificates and the round trips of the compilation.
-
-The second construction, the model in Lean with morphisms as
-functional relations, with the converse of the first, is complete (the
-section on the second construction and the fifth choice): the record of
-a topos with chosen structure and the data objects, the record of
-Lean's types and functional relations, the converse, Lean's functions
-as graphs, and the bridge from mathlib's elementary toposes.
-
-The fifth choice is made (the section on the second construction and
-the fifth choice): the computational core's checker is retired, and the
-core's step 3 continues in the Mitchell–Bénabou language, about the
-programs' translations, in this order: the type checker's preservation
-of types by weakening and by substitution, both complete (the section on
-the computational core), then the Surface 1 expansion's identity on
-programs of kernel forms, then the admission of stronger checkers. The
-next phase is the third: a program of kernel forms alone expands to
-itself under the Surface 1 expansion (`bootstrap/surface.geb`), about
-its translation, by the method of the first two. The rest of the road map's bootstrap, the
-choice of machine and the second host, content identity and the syntax
-unification, is independent of the metalogic and may proceed beside it.
+The rest of the road map's bootstrap is independent of these proofs and
+may proceed beside them: the metalogic's checker, its prover and the
+translation written in Geb, whose rules the fourth stage's completeness
+settled; the choice of machine and the second host; content identity;
+and the syntax unification.
 
 ## What self-compilation establishes
 
