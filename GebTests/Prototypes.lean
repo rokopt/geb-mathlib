@@ -34,6 +34,7 @@ import GebTests.Prototypes.FreeTopos.Prover
 import GebTests.Prototypes.FreeTopos.Substitution
 import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs
+import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
 import GebTests.Prototypes.GoedelT
 import GebTests.Prototypes.Kernel
