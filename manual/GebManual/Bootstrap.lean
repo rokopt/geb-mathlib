@@ -207,7 +207,8 @@ detail:
     agreement. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations (the section on the metalogic and its
-    checker).
+    checker), the checker of the shared certificates among the
+    candidates, by unsharing.
 
 Extension:
 
@@ -791,7 +792,9 @@ checker proved sound there, not admitted. The developments that mix the
 language's derivations with the combinators' certificates cite
 certificates in their plain form
 ({name}`Geb.FreeTopos.Internal.checkDev`), and the proofs about programs
-cite none. Once the
+cite none, so the checker written in Geb decides the plain form, and
+the shared form reaches Geb by admission rather than by a second proof
+of agreement in Lean. Once the
 metalogic's checker is written in Geb, Geb admits stronger checkers as
 Milawa does, by relative soundness: the translation of a stronger
 checker's certificates is the counterpart of Milawa's builders, and the
@@ -2174,6 +2177,15 @@ from 7 to 30 times as many nodes as those of Gödel's T, 18754 against
 2071, and the development checks in 0.9 seconds against 29 milliseconds
 for Gödel's T.
 
+The shared certificates are checked by a Lean checker of their own,
+proved sound there, and the developments of the language cite
+certificates in the plain form. In Geb the shared checker is not written
+again with a proof of its agreement: it is a candidate for admission
+beside the checker written in Geb, by unsharing, a translation that
+spells out each index as the term it denotes and replaces each rule of
+the oracle by the typing lemmas the prover emits without it (the
+section on the metalogic and its checker).
+
 #### The Mitchell–Bénabou language
 
 State: complete; its four stages are complete, and its own term model
@@ -3208,7 +3220,12 @@ candidate is a checker with a step of conversion to a normal form under
 named rules, which the checker computes, admitted by the translation of
 that step into the derivation the provers construct; the evaluation of
 primitives at literals, which the language derives by folds over their
-bits, is another. During the bootstrap a stronger checker shortens the
+bits, is another; and the checker of the shared certificates, admitted
+by unsharing, a translation that spells out each index as its term and
+each rule of the oracle as the typing lemmas the prover emits without
+it, is a third, whose use is the speed of developments of the
+combinators' certificates, which the proofs about programs do not cite.
+During the bootstrap a stronger checker shortens the
 proofs about the compiler's components, whose derivations have from
 600000 to 1240000 nodes and take from 30 to 40 seconds to check. After
 the bootstrap it bears on the size of the proofs of the mathematics the
