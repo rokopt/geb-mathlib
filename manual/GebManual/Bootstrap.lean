@@ -147,8 +147,6 @@ detail:
     preservation of types by weakening and by substitution and the
     Surface 1 expansion's identity on programs of kernel forms complete,
     and the reader's inverse to the printer waiting on the printer.
-  * Ready. Stronger checkers admitted by translations of their
-    certificates into the metalogic's derivations, the next phase.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -198,6 +196,10 @@ detail:
   * Ready. The checker, its prover and the translation of kernel
     programs written in Geb, the fourth stage's completeness having
     settled the language's rules.
+  * Waiting on the checker written in Geb. Stronger checkers admitted
+    beside it by relative soundness, each by a translation of its
+    certificates into the metalogic's derivations (the section on the
+    metalogic and its checker).
 
 Extension:
 
@@ -684,8 +686,10 @@ translations and proved in the metalogic.
 Relative soundness takes two forms. One checker is admitted beside
 another of the same judgments when a Geb program translates each
 certificate the first accepts into one the second accepts with the same
-conclusion. That is a proposition about kernel programs under the
-hypothesis that the first checker accepts, proved in the metalogic,
+conclusion. The condition is a proposition about kernel programs under
+the hypothesis that the first checker accepts, so both checkers are Geb
+programs, the second the metalogic's checker written in Geb (Phase 7's
+second step); it is proved in the metalogic,
 about the programs' translations, by induction on certificates; the
 checkers' results are functions of the context and the hypotheses, so
 the proposition is stated of functions, and its induction hypothesis
@@ -737,16 +741,61 @@ evaluator. Extracting programs from proofs of totality is a later
 concern, through a realizability topos over a combinatory algebra of
 programs {citep Hyland1982}[].
 
-Other checkers bound the size of this one. Milawa admits a sequence of
-increasingly capable proof checkers, each after the previous one
-verifies it, and is proved sound down to the machine code that runs it
-{citep DavisMyreen2015}[]. Metamath Zero trusts a verifier and a
-specification file, and takes proofs as untrusted input
-{citep Carneiro2019}[]. CakeML bootstraps a verified compiler inside
-the logic of HOL {citep KumarMyreenNorrishOwens2014}[]. After
-self-hosting, Geb admits stronger checkers as Milawa does; no checker
-proves itself sound, which would prove its own consistency, so the
-metalogic's soundness proof stays in Lean.
+A checker whose rules are explicit makes its certificates long, and two
+systems answer that cost in opposite ways. Milawa's first checker,
+Level 1, accepts only primitive steps; each later level accepts derived
+rules of inference as single steps, up to Level 11, whose single step
+replays a proof skeleton of its tactics. A command switches the kernel
+to a new checker once the current one has accepted its fidelity claim,
+that whenever the new checker accepts a proof, a Level 1 proof of the
+same conclusion exists; the claim is proved through builders, functions
+that construct the lower-level proof of a step, each with theorems that
+the proof has the step's conclusion and that the lower level accepts it
+(Sections 4.5 and 12.1 of {citet Davis2009}[]). The levels exist
+because fully expansive proofs of the tactics' soundness were too large
+to construct: one lemma's proof has 3681 megaconses and checks in 11440
+seconds at Level 1, and 0.8 megaconses and 12.6 seconds at Level 11, and
+the construction of a Level 1 proof of another exhausted 32 gigabytes
+(Section 12.11 of {citet Davis2009}[]). Trusting Level 11 requires
+trusting Level 1 alone, and the kernel, the switch included, is proved
+sound down to the machine code that runs it {citep DavisMyreen2015}[].
+Metamath Zero instead keeps its verifier fixed: the verifier and the
+specification file are trusted, the proof file is untrusted input whose
+format is designed to be checked fast, each term constructed once so
+that equality is identity of references, an untrusted front end does
+the search, and the proofs of other systems enter by translation
+(Sections 1.4, 3 and 5 of {citet Carneiro2019}[]). CakeML applies its
+verified compiler, a function in the logic of HOL4, to itself, and so
+obtains a verified machine-code implementation of the compiler
+{citep KumarMyreenNorrishOwens2014}[], a bootstrap inside a logic where
+Geb's fixed points are a bootstrap outside one.
+
+Geb takes both courses, in turn. During the bootstrap its checker is
+extended in Lean, each extension proved sound there, and its
+certificates are made compact as Metamath Zero's are, each term stated
+once in a store and cited by its index: the certificates over a store of
+shared terms and the checker that infers their typing (the section on
+the third construction and shared certificates) are parts of the
+metalogic's one checker, not checkers admitted beside it. Once the
+metalogic's checker is written in Geb, Geb admits stronger checkers as
+Milawa does, by relative soundness: the translation of a stronger
+checker's certificates is the counterpart of Milawa's builders, and the
+proposition proved about it in the metalogic is the counterpart of the
+fidelity claim, which Milawa states as the existence of a Level 1 proof
+and Geb as the translation's result. An admission adds no proof in Lean
+and nothing to what is trusted, which is why it is the course after the
+bootstrap, when the rest of Geb is written in Geb. An admitted checker
+is sound as far as the checker it is admitted beside: the proposition
+holds of the programs' denotations by the translation's soundness at
+the types of first order it is stated at, functions of data; and the
+metalogic's checker written in Geb is sound through its agreement with
+the Lean checker, which Phase 7's second step tests on valid and
+malformed certificates. A proof of that agreement in Lean, about the
+Geb checker's denotation, would be the counterpart of Davis and Myreen's
+proof that Milawa's kernel is faithful to its logic. No checker proves
+itself sound, which would prove its own consistency: Milawa's levels
+prove their fidelity to Level 1, not its soundness, and the metalogic's
+soundness proof stays in Lean.
 
 Two kinds of extension differ. A derived definition, a derived rule or
 a proof-producing tactic can be written in Geb and produce evidence
@@ -874,14 +923,15 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, Gödel's T
   * In progress
-  * Stronger checkers, in the metalogic: the next phase; weakening,
-    substitution and the Surface 1 expansion's identity: complete
+  * Weakening, substitution and the Surface 1 expansion's identity:
+    complete; the reader's inverse to the printer: waiting on the printer
 *
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage, the second
     construction and the fifth choice: complete; the checker, the prover
-    and the translation written in Geb: ready
+    and the translation written in Geb: ready; stronger checkers:
+    waiting on the checker in Geb
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1289,7 +1339,8 @@ the hash written in Geb.
     checker and prover the metalogic's fifth choice retires; the rest
     are proved in the metalogic, the preservation of types by weakening
     and by substitution and the Surface 1 expansion's identity complete,
-    and the admission of stronger checkers the next phase
+    and the admission of stronger checkers waiting on the metalogic's
+    checker in Geb
 *
   * Metalogic, 1: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -1530,7 +1581,8 @@ Gödel's T states and proves the following.
   5. the reader's inverse to the printer, waiting on the printer;
   6. the admission of a stronger checker by the proof that a Geb
      program translates its certificates into the metalogic's
-     derivations with the same conclusions, the next phase.
+     derivations with the same conclusions, waiting on the metalogic's
+     checker written in Geb, beside which it is admitted.
 * After the bootstrap: equational theorems about programs, in the
   metalogic.
 
@@ -3093,29 +3145,54 @@ the change that removes it.
 
 ## The next phase
 
-The proofs about the compiler's components continue in the
-Mitchell–Bénabou language, about the programs' translations (the section
-on the second construction and the fifth choice). The type checker's
+The proofs about the compiler's components that need neither the
+printer nor a checker written in Geb are complete: the type checker's
 preservation of types by weakening and by substitution and the Surface 1
-expansion's identity on programs of kernel forms are complete (the
-section on Gödel's T), and the reader's inverse to the printer waits on
-the printer. The next phase is the admission of stronger checkers by
-relative soundness (the section on the metalogic and its checker): a Geb
-program translates each certificate a checker accepts into the
-metalogic's derivations with the same conclusion, which is proved about
-the programs' translations by induction on certificates, the checkers'
-results stated as functions of the context and the hypotheses, as the
-preservation of types by substitution is. The provers the three
-completed proofs use apply to it: induction on rose trees with an
-induction hypothesis, the introduction and elimination of implications,
-case analysis of trees in any context, generalization, and rewriting
-under a mask.
+expansion's identity on programs of kernel forms (the section on
+Gödel's T). The two that
+remain wait: the reader's inverse to the printer on the printer, and the
+admission of a stronger checker on the metalogic's checker written in
+Geb, beside which it is admitted (the section on the metalogic and its
+checker). The next phase is to be chosen between the two items those
+wait on, each ready:
+
+* The metalogic's checker, its prover and the translation of kernel
+  programs written in Geb, Phase 7's second and third steps for the
+  metalogic: the checker compared with the Lean checker on valid and
+  malformed derivations, the prover constructing derivations as the
+  Lean prototype does, and the translation compared with the Lean
+  translation. During the bootstrap it meets the logic's end point and
+  the metalogic's acceptance, lets the proofs about programs be made
+  without the Lean prototype, and is the checker every stronger checker
+  is admitted beside. After the bootstrap it checks the proofs the road map
+  lists, written in Geb, and is the checker of a host or a backend
+  without Lean, which cannot run the Lean checker.
+* The printer for the kernel's readable syntax and the retraction law
+  (the section on improvements), and then the reader's inverse to the
+  printer, proved in the metalogic by the method of the three complete
+  proofs.
+
+The admission of stronger checkers follows the first. Which checker is
+admitted first is decided, as the fourth and fifth choices were, by
+measurement: the nodes of the complete proofs' derivations, counted by
+rule, locate the steps a stronger checker would take at once. The
+provers compare the sides of an equation in their normal forms under
+rewriting rules, a conversion that the metalogic's checker does not
+compute but checks step by step in the derivation, so the first
+candidate is a checker with a step of conversion to a normal form under
+named rules, which the checker computes, admitted by the translation of
+that step into the derivation the provers construct; the evaluation of
+primitives at literals, which the language derives by folds over their
+bits, is another. During the bootstrap a stronger checker shortens the
+proofs about the compiler's components, whose derivations have from
+600000 to 1240000 nodes and take from 30 to 40 seconds to check. After
+the bootstrap it bears on the size of the proofs of the mathematics the
+road map lists, and adds decision procedures and tactics as single
+steps without adding to what is trusted.
 
 The rest of the road map's bootstrap is independent of these proofs and
-may proceed beside them: the metalogic's checker, its prover and the
-translation written in Geb, whose rules the fourth stage's completeness
-settled; the choice of machine and the second host; content identity;
-and the syntax unification.
+may proceed beside them: the choice of machine and the second host;
+content identity; and the syntax unification.
 
 ## What self-compilation establishes
 
