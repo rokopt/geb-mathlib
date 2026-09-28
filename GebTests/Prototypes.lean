@@ -31,6 +31,7 @@ import GebTests.Prototypes.FreeTopos.InternalLogic
 import GebTests.Prototypes.FreeTopos.InternalQuotients
 import GebTests.Prototypes.FreeTopos.InternalRoseTrees
 import GebTests.Prototypes.FreeTopos.Prover
+import GebTests.Prototypes.FreeTopos.Substitution
 import GebTests.Prototypes.FreeTopos.Translation
 import GebTests.Prototypes.FreeTopos.TranslationProofs
 import GebTests.Prototypes.FreeTopos.Weakening
