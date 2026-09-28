@@ -18,8 +18,8 @@ language about the translation of the programs: for every environment {lit}`G`, 
 type {lit}`a` for {lit}`u` in {lit}`c`, then the type it infers for {lit}`t` with {lit}`u`,
 weakened past {lit}`c1`, substituted for the variable below {lit}`c1`, in the context of
 {lit}`c1` and {lit}`c`, is the type it infers for {lit}`t` in the context of {lit}`c1`,
-{lit}`a` and {lit}`c`. The metalogic's substitution for the innermost variable is the instance at
-the empty {lit}`c1`. The program is the weakening proof's, with the statement's two sides as
+{lit}`a` and {lit}`c`. The substitution of Gödel's T for the innermost variable is the instance
+at the empty {lit}`c1`. The program is the weakening proof's, with the statement's two sides as
 definitions.
 
 The statement is an equation between two functions, into the subobject classifier, of the
@@ -356,7 +356,7 @@ def checkSubstitution (ds : List (List Char × Tree)) (idx : String → ℕ) : I
   IO.println s!"{devNodes},{derivSize d},{t₁ - t₀},{t₂ - t₁}"
 
 #eval do
-  let some ds := bundled Metalogic.ProofTests.bundler.toList programText.toList
+  let some ds := bundled GoedelT.ProofTests.bundler.toList programText.toList
     | throw (IO.userError "the program does not read")
   checkSubstitution ds fun name ↦ (defIndex ds name.toList).getD 0
 

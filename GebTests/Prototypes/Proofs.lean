@@ -5,8 +5,8 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.Metalogic -- shake: keep
-public meta import GebTests.Prototypes.Metalogic -- shake: keep
+public import GebTests.Prototypes.GoedelT -- shake: keep
+public meta import GebTests.Prototypes.GoedelT -- shake: keep
 
 set_option doc.verso true in
 /-!
@@ -14,14 +14,14 @@ set_option doc.verso true in
 
 Theorems about the prelude's lists, {lit}`bootstrap/proofs/prelude.geb`, about the labels, the
 natural numbers object inside the trees, {lit}`bootstrap/proofs/nat.geb`, about the kernel's
-type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, about the metalogic's checker, a
-program in the Surface 1 forms, {lit}`bootstrap/proofs/equations.geb`, and about a function by
+type checker written in Geb, {lit}`bootstrap/proofs/check.geb`, about the checker of Gödel's T,
+a program in the Surface 1 forms, {lit}`bootstrap/proofs/equations.geb`, and about a function by
 structural recursion over a declared datatype, {lit}`bootstrap/proofs/surface.geb`, proved by
-the derived rules of {lit}`bootstrap/metalogic/prove.geb`, which expands the Surface 1 forms as
-the compiler does, and checked by the metalogic's checker written in Geb. The
+the derived rules of {lit}`bootstrap/goedel-t/prove.geb`, which expands the Surface 1 forms as
+the compiler does, and checked by the checker of Gödel's T written in Geb. The
 prover's program is read and expanded by the stage-0 compiler and loaded by the seed, without an
 image, whose serializer's recursion is as deep as the image is long; it checks each theorem's
-certificate, and each certificate is checked again by {name}`Geb.Metalogic.check`, citing the
+certificate, and each certificate is checked again by {name}`Geb.GoedelT.check`, citing the
 theorems before it, in the global environment the program's definitions load. A false
 equation, and a true one whose tactic does not prove it, are rejected.
 
@@ -35,19 +35,19 @@ equation, and a true one whose tactic does not prove it, are rejected.
 
 ## Tags
 
-bootstrap, metalogic, proof certificate, test
+bootstrap, Gödel's T, proof certificate, test
 -/
 
 set_option doc.verso true
 
 @[expose] public section
 
-namespace Geb.Metalogic.ProofTests
+namespace Geb.GoedelT.ProofTests
 
 open Geb.Kernel
 
 /-- The proof construction written in Geb. -/
-def proveGeb : String := include_str "../../bootstrap/metalogic/prove.geb"
+def proveGeb : String := include_str "../../bootstrap/goedel-t/prove.geb"
 
 /-- The theorems about the prelude. -/
 def preludeProofs : String := include_str "../../bootstrap/proofs/prelude.geb"
@@ -58,14 +58,14 @@ def natProofs : String := include_str "../../bootstrap/proofs/nat.geb"
 /-- The theorems about the kernel's type checker. -/
 def checkProofs : String := include_str "../../bootstrap/proofs/check.geb"
 
-/-- The theorems about the metalogic's checker, a Surface 1 program. -/
+/-- The theorems about the checker of Gödel's T, a Surface 1 program. -/
 def equationsProofs : String := include_str "../../bootstrap/proofs/equations.geb"
 
 /-- The theorems about a program by structural recursion over a declared datatype. -/
 def surfaceProofs : String := include_str "../../bootstrap/proofs/surface.geb"
 
 /-- The program of the prover: the prelude, the reader, the kernel's checker, the Surface 1
-expansion, the metalogic's checker and the proof construction, applying the proof construction
+expansion, the checker of Gödel's T and the proof construction, applying the proof construction
 to a file of program forms and theorems. -/
 def prover : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
@@ -127,8 +127,8 @@ def rejected : String :=
 def allCheck (f : Tree → Option Tree) (fileText : List Char) : Bool :=
   (results f fileText).any fun (D, rs) ↦ !rs.isEmpty && rs.all accepted && recheck D rs
 
--- every theorem about the prelude, the labels, the kernel's type checker, the metalogic's
--- checker and a program by structural recursion checks, in Geb and again in Lean, and the prover
+-- every theorem about the prelude, the labels, the kernel's type checker, the checker of
+-- Gödel's T and a program by structural recursion checks, in Geb and again in Lean, and the prover
 -- rejects the false equation and the unproved one
 #guard (proverFn? bundler.toList prover.toList).any fun f ↦
   allCheck f (Kernel.Stage0Tests.prelude ++ "\n" ++ preludeProofs).toList &&
@@ -142,6 +142,6 @@ def allCheck (f : Tree → Option Tree) (fileText : List Char) : Bool :=
   (results f (Kernel.Stage0Tests.prelude ++ "\n" ++ rejected).toList).any fun (_, rs) ↦
     rs.length == 2 && !rs.any accepted
 
-end Geb.Metalogic.ProofTests
+end Geb.GoedelT.ProofTests
 
 end

@@ -2,14 +2,14 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; Proof construction for the computational core, written in Surface 1: derived rules
-; that compute certificates the checker of bootstrap/metalogic/equations.geb accepts, so that
+; Proof construction for Gödel's T over rose trees, written in Surface 1: derived rules
+; that compute certificates the checker of bootstrap/goedel-t/equations.geb accepts, so that
 ; nothing here is trusted. Normalization, innermost first, returns a term's normal form with the
 ; certificate of the equation between them, contracting the redexes of the computation rules and
 ; rewriting with the rules a tactic names; a goal is proved when both of its sides normalize to
 ; one term, and induction splits it into the goals the checker's induction rules expect. A
 ; rewritten term is represented with its certificate as the node of label 0 over both. Requires
-; the prelude, the reader, the checker, the Surface 1 expansion and the metalogic's checker.
+; the prelude, the reader, the checker, the Surface 1 expansion and the checker of Gödel's T.
 
 ; certificates, by rule
 (defn cRefl ((t T)) T (mk1 Rule.refl t))

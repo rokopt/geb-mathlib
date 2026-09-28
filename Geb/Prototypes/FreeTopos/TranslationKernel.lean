@@ -12,7 +12,7 @@ set_option doc.verso true in
 /-!
 # The kernel's values represented in the topos of types and functional relations
 
-The translation of the computational core ({name}`Geb.FreeTopos.Translation.term`) takes each
+The translation of the kernel ({name}`Geb.FreeTopos.Translation.term`) takes each
 kernel type to an object of the internal language ({name}`Geb.FreeTopos.Translation.ty`) and each
 well-typed kernel term to a term of the internal language. This module relates the kernel's
 denotation of each type ({name}`Geb.Kernel.Ty.den`) to the value of its translation in the topos

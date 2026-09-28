@@ -82,9 +82,9 @@ checklist and in CI.
   conjectured, and the last section lists the constructions that remain.
 - [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) — a Verso
   manual chapter recording the bootstrap: a road map of the bootstrap
-  and of the work written in Geb after it, each item with its state; the
-  computational core, the equational logic of kernel terms, whose checker
-  is retired, and the metalogic, the free topos presented as the initial
+  and of the work written in Geb after it, each item with its state;
+  Gödel's T over rose trees, the equational theory of kernel terms, whose
+  checker is retired; and the metalogic, the free topos presented as the initial
   model of one partial Horn theory, with the Mitchell–Bénabou language,
   the translation of kernel programs into it, and the proofs about the
   compiler's components made in it, each with what it defines and
@@ -3737,10 +3737,17 @@ checklist and in CI.
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
   `Geb.Prototypes.RoseTree.Packed` and `Mathlib.Data.Fin.VecNotation`.
-- `Geb/Prototypes/Metalogic/` — the computational core's logic.
-  `Equations.lean`: sequents of equations between
-  kernel terms of every type under equational hypotheses, certificates as
-  rose trees, and the checker `Geb.Metalogic.check`, a paramorphism
+- `Geb/Prototypes/GoedelT/` — Gödel's T over rose trees, a variant of
+  Gödel's quantifier-free theory T of the primitive recursive functionals
+  of finite type [Goedel1958] whose functionals are the kernel's terms and
+  whose rules are the laws of a cartesian closed category with list
+  objects and a rose-tree object; its category of contexts under
+  hypotheses is conjectured to be a cartesian closed locos, a finitely
+  complete category with stable disjoint finite coproducts and
+  parameterized list objects [Cockett1990], [Maietti2010].
+  `Equations.lean`: sequents of equations between kernel terms of every
+  type under equational hypotheses, certificates as
+  rose trees, and the checker `Geb.GoedelT.check`, a paramorphism
   computing each conclusion from its premises' conclusions, with rules of
   equality, congruence, the β and η rules of functions, pairs and the unit
   type, the δ rules of the primitives at literals, weakening, cut,
@@ -3748,20 +3755,20 @@ checklist and in CI.
   tree, of the right fold and case analysis of lists, of iteration and of
   the fold of trees, induction on lists, trees and labels, and references
   to the definitions of a loaded program
-  (`Geb.Metalogic.Loaded`, `Geb.Metalogic.load_loaded`).
-  `Geb.Metalogic.check_sound` proves every computed conclusion valid in
+  (`Geb.GoedelT.Loaded`, `Geb.GoedelT.load_loaded`).
+  `Geb.GoedelT.check_sound` proves every computed conclusion valid in
   the kernel's denotation, without `Classical.choice`. Tested in
-  `GebTests/Prototypes/Metalogic.lean`, including inductive proofs that
+  `GebTests/Prototypes/GoedelT.lean`, including inductive proofs that
   appending the empty list to a list gives the list, that iterating the
   identity leaves its start unchanged, and that a fold whose step ignores
-  its arguments is constant. `bootstrap/metalogic/equations.geb` is the
+  its arguments is constant. `bootstrap/goedel-t/equations.geb` is the
   same checker written in Surface 1; the tests compile it with the stage-0
-  compiler and compare it with `Geb.Metalogic.check` on their
+  compiler and compare it with `Geb.GoedelT.check` on their
   certificates and on malformed variants of each, and check that its
   numeral abbreviations and the prelude's name the rules
-  (`Geb.Metalogic.Rule`), the labels and the primitives as the Lean
+  (`Geb.GoedelT.Rule`), the labels and the primitives as the Lean
   abbreviations do.
-  `bootstrap/metalogic/prove.geb` constructs certificates by derived
+  `bootstrap/goedel-t/prove.geb` constructs certificates by derived
   rules: normalization, innermost first, simplification of both sides of
   a goal, and induction; it reads a file of a program's forms and
   theorems, whose statements the reader reads as the program's own
@@ -3772,14 +3779,14 @@ checklist and in CI.
   recursion equations from its definition by iteration and a theorem by
   induction on labels, `bootstrap/proofs/check.geb` about the
   kernel's type checker written in Geb, `bootstrap/proofs/equations.geb`
-  about the metalogic's checker written in Surface 1, and
+  about the checker of Gödel's T written in Surface 1, and
   `bootstrap/proofs/surface.geb` about a function by structural
   recursion over a declared datatype, which
   `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
-  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
-  computational core, whose checker the metalogic's fifth choice retires
-  in favour of the internal language of `Geb/Prototypes/FreeTopos/`, the
-  proofs above remaining and checked. Depends on
+  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records
+  Gödel's T, whose checker the metalogic's fifth choice retires in favour
+  of the internal language of `Geb/Prototypes/FreeTopos/`, the proofs
+  above remaining and checked. Depends on
   `Geb.Prototypes.Kernel.Subst` and `Geb.Prototypes.Kernel.Reader`.
 - `Geb/Prototypes/PartialHorn/` — the logic of partial Horn theories
   [PalmgrenVickers2007] over rose trees, in which the metalogic presents
@@ -3853,7 +3860,7 @@ checklist and in CI.
   the theorems that need it, and `UniqueChoiceClassical.lean` proves it
   from `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos.lean`
   and in `GebTests/Prototypes/FreeTopos/`: the prover's library, the
-  computational core's theorems proved in the combinators
+  theorems of Gödel's T proved in the combinators
   (`Benchmark.lean`), and a theorem about Lean's functions from a
   development (`Graphs.lean`). Depends on the modules of
   `Geb/Prototypes/PartialHorn/`, `Geb.Prototypes.RoseTree.Basic`,
@@ -3903,7 +3910,7 @@ checklist and in CI.
   every derivation it computes is checked by
   `Geb.FreeTopos.Internal.check`. Tested in the modules of
   `GebTests/Prototypes/FreeTopos/` named `Internal*.lean`, among them the
-  computational core's theorems derived in the language
+  theorems of Gödel's T derived in the language
   (`InternalDerivation.lean`), its logic, coproducts, rose trees,
   quotients, declared constants, and citations between the two checkers.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
@@ -3929,7 +3936,7 @@ checklist and in CI.
   which `TranslationSoundClassical.lean` discharges by
   `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos/`:
   `Translation.lean` computes with the library, `TranslationProofs.lean`
-  proves the computational core's theorems about the translated
+  proves the theorems of Gödel's T about the translated
   programs, and `Weakening.lean` and `Substitution.lean` prove that the
   kernel's type checker written in Geb, `bootstrap/check.geb`, preserves
   types by weakening and by substitution. The
@@ -3937,7 +3944,7 @@ checklist and in CI.
   metalogic, the choices that fixed its form, and the proofs about the
   compiler's components made in it. Depends on the modules of
   `Geb/Prototypes/FreeTopos/Internal/`, `Geb.Prototypes.Kernel.Reader`,
-  `Geb.Prototypes.Metalogic.Equations` and
+  `Geb.Prototypes.GoedelT.Equations` and
   `Geb.Prototypes.Computability.Oitavem.Word`.
 - `Geb/Prototypes/RelSeparation.lean` — whether separating a
   proof-relevant relation, a span, to its image commutes with the type

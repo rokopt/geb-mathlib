@@ -2,15 +2,15 @@
 ; Released under Apache 2.0 license as described in the file LICENSE.
 ; Authors: Terence Rokop
 ;
-; The computational core's proof checker, written in Surface 1: the conclusion of a
+; The proof checker of Gödel's T over rose trees, written in Surface 1: the conclusion of a
 ; certificate, given a program's definitions, theorems about it, the types of the global
 ; environment the definitions load, a context, innermost first, and a list of hypotheses, or
-; nothing when the certificate does not check, deciding as Geb.Metalogic.check decides. An
+; nothing when the certificate does not check, deciding as Geb.GoedelT.check decides. An
 ; equation is the node of label 0 over its type and its two sides, and a theorem the node of
 ; label 0 over the node of its context and its equation; an optional equation is represented as
 ; the reader represents optional trees. Requires the prelude, the reader and the checker.
 
-; the labels of the certificates' rules, as Geb.Metalogic.Rule names them
+; the labels of the certificates' rules, as Geb.GoedelT.Rule names them
 (defnum Rule.hyp 0)
 (defnum Rule.refl 1)
 (defnum Rule.symm 2)
@@ -171,14 +171,14 @@
        (lam ((as Ts)) 1) us)
      as)))
 ; a theorem cited in a context at terms for its variables: its instance there, when the terms
-; have the types of its context, as Geb.Metalogic.Thm.cite computes it
+; have the types of its context, as Geb.GoedelT.Thm.cite computes it
 (defn cite ((G Ts) (ctx Ts) (us Ts) (th T)) T
   (let tctx Ts (children (child th 0))
     (if (typesMatch G ctx us tctx)
       (some (instAll us (eqWkAt (length tctx) (length ctx) (child th 1))))
       none)))
 
-; the defining equations of the primitives, as Geb.Metalogic.axioms states them
+; the defining equations of the primitives, as Geb.GoedelT.axioms states them
 (def tyT2 (node2 Label.tyProd Label.tyTree Label.tyTree))
 (def tyLT (tyList Label.tyTree))
 (defn num ((n T)) T (mk1 Label.quote n))

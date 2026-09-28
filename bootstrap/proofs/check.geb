@@ -3,7 +3,7 @@
 ; Authors: Terence Rokop
 ;
 ; Theorems about the kernel's type checker, bootstrap/check.geb, checked by
-; bootstrap/metalogic/prove.geb against the prelude's, the reader's and the checker's
+; bootstrap/goedel-t/prove.geb against the prelude's, the reader's and the checker's
 ; definitions.
 
 ; a quoted tree has the type of trees, in every context and every environment

@@ -13,7 +13,7 @@ set_option doc.verso true in
 # The internal language's definitions and equations, compiled
 
 Appending lists and addition, defined in the internal language by folds into exponentials, and
-the equations of the computational core's theorems about them, stated in the internal language.
+the equations of the theorems of Gödel's T about them, stated in the internal language.
 The definitions compile to well-formed definitions of the combinators whose arrows have the types
 they name, the equations, and their unfoldings, compile to sequents of the combinators, and each
 equation's formula is a term of the subobject classifier's type. An object variable is a type,
@@ -89,7 +89,7 @@ def appendT (xs ys : Term) : Term := Term.defn 0 [A] [ys, xs]
 /-- The application of addition to two numbers. -/
 def addT (m n : Term) : Term := Term.defn 1 [] [n, m]
 
-/-- The equations of the computational core's theorems, each with its number of object
+/-- The equations of the theorems of Gödel's T, each with its number of object
 variables and its context. -/
 def statements : List (ℕ × List Tree × Term × Term) := [
   (1, [L], appendT nilT (Term.var 0), Term.var 0),

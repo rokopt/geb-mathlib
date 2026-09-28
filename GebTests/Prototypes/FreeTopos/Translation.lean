@@ -18,7 +18,7 @@ set_option doc.verso true in
 
 The library of the translation compiles, each definition over those before it, and computes:
 the arithmetic, comparison, logarithm and iteration of bitstrings, normalized, give the numerals
-of the natural numbers' operations. The programs the computational core's proofs are about, the
+of the natural numbers' operations. The programs the proofs in Gödel's T are about, the
 prelude, the reader and the kernel's type checker written in the kernel's syntax, translate: each
 definition's translation has, in the internal language, the translation of its kernel type. The
 literals' cost is printed: the sizes of the program and of its translation, and of the latter's

@@ -5,17 +5,17 @@ Authors: Terence Rokop
 -/
 module
 
-public import Geb.Prototypes.Metalogic -- shake: keep
-public meta import Geb.Prototypes.Metalogic -- shake: keep
+public import Geb.Prototypes.GoedelT -- shake: keep
+public meta import Geb.Prototypes.GoedelT -- shake: keep
 public import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import GebTests.Prototypes.Stage0 -- shake: keep
 public meta import Lean.Elab.Command -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The computational core's logic
+# Gödel's T over rose trees
 
-Certificates checked by {name}`Geb.Metalogic.check`: a theorem with a hypothesis, derived by
+Certificates checked by {name}`Geb.GoedelT.check`: a theorem with a hypothesis, derived by
 congruence; a substitution, instantiating a variable of a derived equation; an induction on a
 list, proving that appending the empty list to a list, written with the kernel's right fold,
 gives the list; an induction on a label, proving that iterating the identity leaves its start
@@ -26,8 +26,8 @@ axioms and of a theorem, each axiom's instance at the variables of its context b
 and iteration's reading of the label and the conditional as an iteration. Certificates with an
 altered binder, an invalid dependency or a false conclusion do not check to that conclusion.
 
-The checker written in Geb, {lit}`bootstrap/metalogic/equations.geb`, is compiled by the stage-0
-compiler and compared with {name}`Geb.Metalogic.check` on these certificates, one of each rule
+The checker written in Geb, {lit}`bootstrap/goedel-t/equations.geb`, is compiled by the stage-0
+compiler and compared with {name}`Geb.GoedelT.check` on these certificates, one of each rule
 not among them, and malformed variants of each; agreement at each axiom's instance at its
 variables makes the two checkers' tables of axioms agree. The malformed variants of a
 certificate are its root relabelled with every rule's label and one beyond, and its root with
@@ -58,14 +58,14 @@ the sources from the files.
 
 ## Tags
 
-bootstrap, metalogic, proof certificate, differential testing, test
+bootstrap, Gödel's T, proof certificate, differential testing, test
 -/
 
 set_option doc.verso true
 
 @[expose] public section
 
-namespace Geb.Metalogic.Tests
+namespace Geb.GoedelT.Tests
 
 open Geb.Kernel
 open scoped FinEnum
@@ -244,13 +244,12 @@ def globals : List Glob := (load program).getD []
 #guard chk labelInduction [] [] [lt, tT] [] = none
 #guard chk (mk Rule.foldNode [leaf 9, zeroStep, Tm.var 1, Tm.var 0]) [] [] [lt, tT] [] = none
 
-/-- The metalogic's checker written in Geb. -/
-def equationsGeb : String := include_str "../../bootstrap/metalogic/equations.geb"
+/-- The checker of Gödel's T written in Geb. -/
+def equationsGeb : String := include_str "../../bootstrap/goedel-t/equations.geb"
 
-/-- The program of the Geb checker: the prelude, the reader, the kernel's checker and the
-metalogic's, applying the metalogic's checker to a node over a certificate, a program's
-definitions, theorems about it, the types of its global environment, a context and a list of
-hypotheses. -/
+/-- The program of the Geb checker: the prelude, the reader, the kernel's checker and that of
+Gödel's T, applying the latter to a node over a certificate, a program's definitions, theorems
+about it, the types of its global environment, a context and a list of hypotheses. -/
 def gebChecker : String :=
   Kernel.Stage0Tests.prelude ++ "\n" ++ Kernel.Stage0Tests.reader ++ "\n" ++
     Kernel.Stage0Tests.check ++ "\n" ++ equationsGeb ++ "\n" ++
@@ -278,7 +277,7 @@ def thmTree (th : Thm) : Tree := mk 0 [mk 0 th.ctx, eqnTree th.eqn]
 environment, a context and a list of hypotheses. -/
 abbrev Input : Type := Tree × Env × List Glob × Ctx × List Eqn
 
-/-- Whether the Geb checker agrees with {name}`Geb.Metalogic.check` at an input, the Lean
+/-- Whether the Geb checker agrees with {name}`Geb.GoedelT.check` at an input, the Lean
 checker's result represented as the Geb checker represents an optional equation. -/
 def agrees (f : Tree → Option Tree) (x : Input) : Bool :=
   let (c, E, G, Γ, H) := x
@@ -407,9 +406,9 @@ run_cmd do
         else none
       | _ => none
   let mut geb := []
-  for f in ["bootstrap/prelude.geb", "bootstrap/metalogic/equations.geb"] do
+  for f in ["bootstrap/prelude.geb", "bootstrap/goedel-t/equations.geb"] do
     geb := geb ++ defnums (← IO.FS.readFile f)
-  let spaces := [`Geb.Kernel.Label, `Geb.Kernel.Prim, `Geb.Metalogic.Rule]
+  let spaces := [`Geb.Kernel.Label, `Geb.Kernel.Prim, `Geb.GoedelT.Rule]
   let consts := (← getEnv).constants.fold (init := #[]) fun acc c info ↦
     if spaces.contains c.getPrefix then acc.push (c, info) else acc
   let lean ← liftTermElabM <| consts.toList.filterMapM fun (c, info) ↦ do
@@ -418,7 +417,7 @@ run_cmd do
   unless geb.length == lean.length && geb.all lean.contains do
     throwError "the Geb abbreviations {geb} are not the Lean abbreviations {lean}"
 
-end Geb.Metalogic.Tests
+end Geb.GoedelT.Tests
 
 
 end

@@ -14,7 +14,7 @@ public meta import Geb.Prototypes.FreeTopos.Prover -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The computational core's theorems, stated in the internal language
+# The theorems of Gödel's T, stated in the internal language
 
 The theorems of {lit}`bootstrap/proofs/prelude.geb` and {lit}`bootstrap/proofs/nat.geb`, stated
 as equations of the internal language between terms applying its definitions of appending and

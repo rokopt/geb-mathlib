@@ -10,7 +10,7 @@ public meta import GebTests.Prototypes.FreeTopos.Internal -- shake: keep
 
 set_option doc.verso true in
 /-!
-# The computational core's theorems, derived in the internal language
+# The theorems of Gödel's T, derived in the internal language
 
 The theorems of {lit}`bootstrap/proofs/prelude.geb` and {lit}`bootstrap/proofs/nat.geb` about
 appending and addition, defined in the internal language, proved by derivations of the language
