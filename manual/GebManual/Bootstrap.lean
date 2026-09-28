@@ -134,13 +134,13 @@ sections below detail:
 
 * The computational core, a cartesian closed locos:
   * Complete. The rules and their soundness in Lean, and the checker
-    written in Geb.
-  * In progress. The proof construction, and the proofs about the
-    compiler's components that exercise the prover: the first two
-    proofs are complete, and the rest wait on the metalogic's fifth
-    choice.
-  * Waiting on the fifth choice. Stronger checkers admitted by
-    translations of certificates.
+    written in Geb. The metalogic's fifth choice retires the checker
+    and its prover, begun.
+  * In progress. The proofs about the compiler's components: the first
+    two, in the core, are complete; the rest are proved in the
+    metalogic, about the components' translations, the next phase.
+  * Waiting on those proofs. Stronger checkers admitted by translations
+    of their certificates into the metalogic's derivations.
 * The metalogic, the free topos in one presentation:
   * Complete. The rule set with its checker in Lean, sound, and the
     proof that every model is an elementary topos with the data
@@ -185,8 +185,9 @@ sections below detail:
     * Complete. The partial Horn logic's term model and completeness
       theorem, the completeness of the language citing certificates,
       and the round trips of the compilation.
-  * In progress (the next phase). The fifth choice: its measurement and
-    the translation's soundness are complete, and the decision is ready.
+  * Complete. The fifth choice: its measurement, the translation's
+    soundness, and the decision, to retire the computational core's
+    checker.
   * Ready. The checker and prover written in Geb, the fourth stage's
     completeness having settled the language's rules.
 
@@ -848,15 +849,14 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the computational core
   * In progress
-  * The proofs from the type checker's preservation of types on, and
-    stronger checkers: waiting on the metalogic's fifth choice
+  * The proofs from the type checker's preservation of types on, in the
+    metalogic: the next phase; stronger checkers: waiting on them
 *
   * 7, the metalogic
   * In progress
-  * The Mitchell–Bénabou language's fourth stage and the second
-    construction: complete; the fifth choice, the next phase: its
-    measurement and the translation's soundness complete, the decision
-    ready; the checker and prover written in Geb: ready
+  * The Mitchell–Bénabou language's fourth stage, the second
+    construction and the fifth choice: complete; the checker and prover
+    written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1260,8 +1260,9 @@ the hash written in Geb.
   * Complete
 *
   * Computational core, 3: proof construction and proofs
-  * In progress: the prover is begun and the first two proofs are
-    complete; the rest wait on the metalogic's fifth choice
+  * In progress: the first two proofs are complete in the core, whose
+    checker and prover the metalogic's fifth choice retires; the rest
+    are proved in the metalogic, the next phase
 *
   * Metalogic, 1: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -1288,11 +1289,12 @@ same steps.
 2. Geb: the proof checker, a fold over proof objects, compared with the
    Lean checker on valid and malformed certificates.
 3. Geb: proof construction, and proofs about Geb programs that exercise
-   it, each in the computational core when it is an equation between
-   kernel terms and in the metalogic otherwise, the compiler's
-   components first; and stronger checkers admitted by relative
-   soundness proofs, each a translation of certificates proved in the
-   computational core. The rest of what the metalogic states, the
+   it, the compiler's components first, each in the metalogic about the
+   programs' translations, the computational core's checker being
+   retired (the section on the second construction and the fifth
+   choice); and stronger checkers admitted by relative soundness
+   proofs, each a translation of their certificates into the
+   metalogic's derivations, proved in the metalogic. The rest of what the metalogic states, the
    richer definitions, Surface 2, the mathematics the libraries consume
    and the equivalence of the free topos with the rose-tree object and
    the free topos with a natural numbers object, is written in Geb
@@ -1430,7 +1432,9 @@ function by structural recursion over a declared datatype from its
 expansion. The examples of
 `GebTests/Prototypes/Proofs.lean` check every certificate in Geb and
 again with {name}`Geb.Metalogic.check`, and reject a false equation and
-an unproved one.
+an unproved one. The metalogic's fifth choice retires this checker and
+its prover: their proofs remain and are checked, and the proofs that
+follow them are made in the metalogic, about the programs' translations.
 
 ### The computational core
 
@@ -1455,25 +1459,26 @@ and proves the following.
   ({name}`Geb.Metalogic.check_sound`). Complete.
 * In Geb: the checker `bootstrap/metalogic/equations.geb`, complete;
   the prover `bootstrap/metalogic/prove.geb`, with normalization,
-  rewriting, induction and the Surface 1 forms, in progress.
-* Proofs of the bootstrap, which exercise the prover on the compiler's
-  components, in order:
+  rewriting, induction and the Surface 1 forms, begun; both retired by
+  the metalogic's fifth choice.
+* Proofs of the bootstrap, which exercise a prover on the compiler's
+  components, in order, the first two in the core and the rest in the
+  metalogic, about the components' translations:
   1. lists and labels: the prelude's appending, addition's recursion
      equations and zero as a unit of addition, complete;
   2. the accessors of the checker's equations, and the recursion
      equations of a structural recursion, through the Surface 1
      expansion, complete;
   3. the type checker's preservation of types by weakening and by
-     substitution, waiting on the metalogic's fifth choice (the next
-     phase);
+     substitution, the next phase;
   4. the Surface 1 expansion's identity on programs of kernel forms,
      waiting on the third;
   5. the reader's inverse to the printer, waiting on the printer;
   6. the admission of a stronger checker by the proof that a Geb
-     program translates its certificates into the computational core's
-     with the same conclusions, waiting on the fifth choice.
-* After the bootstrap: equational theorems about programs, and the
-  lemmas that the metalogic's proofs cite.
+     program translates its certificates into the metalogic's
+     derivations with the same conclusions, waiting on the fourth.
+* After the bootstrap: equational theorems about programs, in the
+  metalogic.
 
 ### The metalogic
 
@@ -1770,8 +1775,7 @@ constructible:
    which are functional relations (the second construction).
 
 The first construction precedes the other two, which are independent of
-each other; the choices follow them. The first four are complete, and
-the fifth is the next phase.
+each other; the choices follow them. All five are complete.
 
 #### The first construction
 
@@ -2472,10 +2476,10 @@ the term by the citation of a certificate
 
 #### The second construction and the fifth choice
 
-State: the second construction is complete, with the converse of the
-first; the fifth choice is the next phase, its measurement made with
-labels that are bitstrings and the translation's correctness proved,
-the decision next.
+State: complete. The second construction is complete, with the
+converse of the first, and the fifth choice is made, by a measurement
+with labels that are bitstrings and the translation's correctness: the
+computational core's checker is retired.
 
 The fifth choice follows the three constructions.
 
@@ -2607,7 +2611,7 @@ proves. The factors are these.
   is written in. Keeping the core writes proofs about programs in a
   second logic; the translation of a kernel term is itself a λ-term.
 
-The choice leans to retiring the core's checker, which removes a rule
+The factors favour retiring the core's checker, which removes a rule
 set, its specification and its implementation from what is trusted, and
 the redundancy of two provers, unless the measurement below shows the
 cost prohibitive. The cost of literals has a remedy of its own, which
@@ -2811,10 +2815,30 @@ the theory validates unique choice without `Classical.choice`
 one step that a proof of the theorem inside the free topos takes from
 the topos's own logic.
 
-The parts that remain:
+The decision follows: the cost is not prohibitive and the translation
+is sound, so the computational core's checker is retired, and an
+equation between kernel programs is proved in the Mitchell–Bénabou
+language, about the programs' translations. Its consequences are these.
 
-* Ready (the next part). The decision, and with it the rest of the
-  computational core's proofs, in the logic it selects.
+* The metalogic's checker is the one checker written in Geb that is
+  trusted. A proof about kernel programs bears on them through the
+  translation's soundness in Lean, for the types of first order without
+  `Classical.choice` and for every type under unique choice.
+* The translation joins it in what is trusted once it is written in
+  Geb, since a Geb program then states what the checker checks; a test
+  compares it with the translation in Lean, as the checkers written in
+  Geb are compared with theirs.
+* The core's checker, its prover and their proofs remain, checked by
+  their tests, and nothing is added to them. The weakening and the
+  substitution of kernel terms that `bootstrap/metalogic/equations.geb`
+  defines are programs, which the proofs about the type checker are
+  about.
+* A stronger checker is admitted by the proof, in the metalogic, that a
+  Geb program translates its certificates into the metalogic's
+  derivations with the same conclusions.
+* The bootstrap's fixed points are unchanged: the core's checker and
+  prover are outside the compiler's source closure, which
+  `scripts/bootstrap.sh` compiles.
 
 ## Improvements
 
@@ -2846,16 +2870,6 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
-* Proof construction. The prover rewrites with a hypothesis only where
-  its side occurs outside the goal's binders and unapplied: a side that
-  reaches a binder by β-reduction is rewritten first, since
-  normalization contracts arguments before the redex, but a hypothesis
-  between functions is not used at their applications. And it
-  normalizes innermost first, so that the branches a conditional
-  discards are normalized as well. Rewriting at applications under
-  binders (which the type checker's preservation of types by weakening
-  needs), and normalizing a conditional's test before its branches,
-  remove each.
 * Atoms as character codes. The Geb sources spell the atoms they
   compare with, the keywords of the reader, the expansion and the
   prover, as quoted lists of character codes, since a datum has no
@@ -2921,40 +2935,43 @@ section on the second construction and the fifth choice): the record of
 a topos with chosen structure and the data objects, the record of
 Lean's types and functional relations, the converse, Lean's functions
 as graphs, and the bridge from mathlib's elementary toposes.
-The next phase is the fifth choice: whether the computational core
-keeps a checker and prover of its own, or its equations are proved in
-the metalogic through the translation of kernel terms, whose
-denotations the translations represent in the model of Lean's types and
-functional relations. Its measurement is complete, and the translation
-is proved sound, for the types of first order without
-`Classical.choice` and for every type under unique choice (the section
-on the second construction and the fifth choice, which lists the
-factors); the decision remains. The computational core's step 3, whose
-proofs are about kernel programs whichever the fifth choice, resumes
-after it, at the type checker's preservation of
-types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
-`bootstrap/metalogic/equations.geb`: for every environment `G`, contexts
-`c1` and `c2`, type `a` and term
+
+The fifth choice is made (the section on the second construction and
+the fifth choice): the computational core's checker is retired, and the
+core's step 3 continues in the Mitchell–Bénabou language, about the
+programs' translations, in this order: the type checker's preservation
+of types by weakening, then by substitution, then the Surface 1
+expansion's identity on programs of kernel forms, then the admission of
+stronger checkers. The next phase is the first, of `typeIn` in
+`bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
+for every environment `G`, contexts `c1` and `c2`, type `a` and term
 `t`, `typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
 `typeIn G (append c1 c2) t`. The checker checks an abstraction's body
 one binder deeper, where the inserted type is one position further in,
-so the statement is proved as an equation between functions of `c1`,
-by induction on `t`; the induction's hypothesis is an equation between
-the lists of the children's functions. The checker tests a node's label
-by a chain of conditionals, which do not reduce at a variable label.
-The proof needs, in order:
+so the statement is proved of the two sides as functions of `G`, `c1`,
+`c2` and `a`, by induction on `t`. The checker and the traversal test a
+node's label by chains of conditionals, which do not reduce at a
+variable label. The proof needs, in order:
 
-1. lemmas moving a fold, a projection and an application through a
-   conditional, stated with variables of function type and proved by
-   induction on the label of the test;
-2. lemmas on lists: the fusion of two maps, the element of a mapped
-   list at a position, and the positions of an appended list;
-3. a tactic that proves an intermediate equation and adds it as a
-   hypothesis by cut, so that the list equation of the induction yields
-   an equation for each child;
-4. rewriting with a hypothesis between functions at its applications,
-   `f u` to `g u`, by congruence of application and β, under binders,
-   the hypothesis's free variables weakened past them.
+1. induction on rose trees with an induction hypothesis: a rule of the
+   language's derivations, beside those of the natural numbers and of
+   lists, proving a formula of a rose tree from the formula at a
+   construction under the hypothesis that it holds at each child; sound
+   in every model by the fold into the formula's pullback of truth,
+   whose inclusion after the fold is the identity by the uniqueness of
+   the fold;
+2. lemmas on the folds of the traversal and of the checker, whose first
+   components rebuild the tree folded, so that a node's children are
+   found again after either fold;
+3. lemmas on labels as bitstrings: the equality of two successors and
+   of a successor with zero, which decide the checker's tests of a
+   node's number of children, and the lookup in an appended list at an
+   index past the inserted type, the case of a variable;
+4. the proof: the equation at a construction, by case analysis of the
+   label's bits, which decides every test on the label, and of the list
+   of the children where a label's case depends on their number, each
+   child's type rewritten by the induction hypothesis, at `c1` or,
+   under an abstraction, at `c1` extended by the abstraction's type.
 
 Substitution follows by the same method, then the expansion's identity
 on programs of kernel forms. The rest of the road map's bootstrap, the
