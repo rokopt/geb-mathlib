@@ -1513,9 +1513,12 @@ successor, the comparison of two successors, iteration at a successor
 and the successor of a predecessor, each by induction on bitstrings with
 case analysis of their bits. The prover finds those proofs by
 instantiating the induction hypothesis where its body occurs in a normal
-form and splitting a variable the normal form is stuck on. The lemmas'
-derivations have 37091 nodes and the theorem's 786692, which the prover
-finds in 291 seconds and the checker checks in 44.
+form and splitting a variable the normal form is stuck on. At a label
+it tries the language's rules and the definitions alone first, and the
+lemmas after them, each matched by a matching of its left side prepared
+once ({name}`Geb.FreeTopos.Internal.prepareRules`). The lemmas'
+derivations have 37091 nodes and the theorem's 530547, which the prover
+finds in 58 seconds and the checker checks in 30.
 
 ### The metalogic
 
@@ -2953,12 +2956,16 @@ the change that removes it.
   uses it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
-* Proof time. The prover finds the weakening proof in about five
-  minutes, most of it normalizing the checker afresh at each of the
-  label's cases. Recursion equations of the checker and of the traversal
-  at a construction, proved once and rewritten by with their folds left
-  unexpanded, shorten it, and a stored derivation would leave the
-  check alone.
+* Proof time. The prover finds the weakening proof in about a minute
+  and the checker checks it in half of one, most of both normalizing the
+  checker afresh at each of the label's cases, whose cost is the
+  substitutions of β-reduction and of the folds' steps. Recursion
+  equations of the checker and of the traversal at a construction,
+  proved once and rewritten by with their folds left unexpanded, shorten
+  both; a substitution that shifts a substituted term once rather than
+  at each binder, and leaves a closed one in place, is a tenth to a fifth
+  faster, and would replace the language's by a `csimp` lemma proving the
+  two equal; and a stored derivation would leave the check alone.
 * Names. The computational core's checker and prover are in the
   namespace `Geb.Metalogic` and under `bootstrap/metalogic/`, although
   the metalogic is the free topos above the core; renaming them for the
