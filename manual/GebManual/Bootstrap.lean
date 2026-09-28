@@ -77,7 +77,8 @@ order of dependence.
   written in Geb targets for parallel workloads. Complete for Lean; the
   systems language and the interaction-net runtime wait on Phase 2.
 * Logic. One checker, proved sound in Lean and written again in Geb,
-  where a prover has tactics that construct its derivations: the
+  the checker written in Geb proved in Lean to agree with it, and a
+  prover in Geb whose tactics construct its derivations: the
   metalogic's, the free topos with the natural numbers, list and
   rose-tree objects, presented as the initial model of one partial Horn
   theory, whose developments mix the Mitchell–Bénabou language's
@@ -86,7 +87,9 @@ order of dependence.
   language, sound by a theorem in Lean. In progress: the checker and the
   translation are constructed in Lean and proved sound, and the proofs
   about the compiler's components are made in the language; the
-  checker, its prover and the translation are not yet written in Geb.
+  checker, its prover and the translation are not yet written in Geb,
+  and the bootstrap is not complete until the agreement of the checker
+  written in Geb with the Lean checker is proved in Lean.
   The checker of Gödel's T, the equational theory of the kernel's terms,
   constructed and written in Geb first, is retired by the fifth choice.
 * Extension. A program is extended by definitions whose identity
@@ -196,10 +199,15 @@ detail:
   * Ready. The checker, its prover and the translation of kernel
     programs written in Geb, the fourth stage's completeness having
     settled the language's rules.
-  * Waiting on the checker written in Geb. Stronger checkers admitted
-    beside it by relative soundness, each by a translation of its
-    certificates into the metalogic's derivations (the section on the
-    metalogic and its checker).
+  * Waiting on the checker written in Geb. The proof in Lean that the
+    checker written in Geb agrees with the Lean checker: its denotation,
+    at every development, is the Lean checker's result. The bootstrap is
+    not complete without it.
+  * Waiting on the checker written in Geb and the proof of its
+    agreement. Stronger checkers admitted beside it by relative
+    soundness, each by a translation of its certificates into the
+    metalogic's derivations (the section on the metalogic and its
+    checker).
 
 Extension:
 
@@ -274,7 +282,10 @@ The following are fixed; the plan builds on them.
   the kernel's evaluator is proved to agree with the kernel's
   denotation, and every codec with its decoder. The proof checker for
   the metalogic is a Geb program written after Geb compiles itself,
-  and its soundness proof stays in Lean.
+  and its soundness proof stays in Lean: the Lean checker is proved
+  sound, and the denotation of the checker written in Geb is proved in
+  Lean to agree with it, a proof without which the bootstrap is not
+  complete.
 * Kernel. The kernel language is Gödel's System T
   {citep Goedel1958}[] over rose trees: simple types built from the
   single base type of rose trees by products, function types and lists,
@@ -775,14 +786,22 @@ extended in Lean, each extension proved sound there, and its
 certificates are made compact as Metamath Zero's are, each term stated
 once in a store and cited by its index: the certificates over a store of
 shared terms and the checker that infers their typing (the section on
-the third construction and shared certificates) are parts of the
-metalogic's one checker, not checkers admitted beside it. Once the
+the third construction and shared certificates) are checked by a Lean
+checker proved sound there, not admitted. The developments that mix the
+language's derivations with the combinators' certificates cite
+certificates in their plain form
+({name}`Geb.FreeTopos.Internal.checkDev`), and the proofs about programs
+cite none. Once the
 metalogic's checker is written in Geb, Geb admits stronger checkers as
 Milawa does, by relative soundness: the translation of a stronger
 checker's certificates is the counterpart of Milawa's builders, and the
 proposition proved about it in the metalogic is the counterpart of the
 fidelity claim, which Milawa states as the existence of a Level 1 proof
-and Geb as the translation's result. An admission adds no proof in Lean
+and Geb as the translation's result. A stronger checker is stronger in
+the steps it accepts, not in its theory: every conclusion it accepts is
+one the metalogic derives, so its theorems are the metalogic's, and a
+new principle is the other kind of extension (below). An admission adds
+no proof in Lean
 and nothing to what is trusted, which is why it is the course after the
 bootstrap, when the rest of Geb is written in Geb. An admitted checker
 is sound as far as the checker it is admitted beside: the proposition
@@ -790,9 +809,9 @@ holds of the programs' denotations by the translation's soundness at
 the types of first order it is stated at, functions of data; and the
 metalogic's checker written in Geb is sound through its agreement with
 the Lean checker, which Phase 7's second step tests on valid and
-malformed certificates. A proof of that agreement in Lean, about the
-Geb checker's denotation, would be the counterpart of Davis and Myreen's
-proof that Milawa's kernel is faithful to its logic. No checker proves
+malformed certificates and proves in Lean, of the Geb checker's
+denotation, the counterpart of Davis and Myreen's proof that Milawa's
+kernel is faithful to its logic. No checker proves
 itself sound, which would prove its own consistency: Milawa's levels
 prove their fidelity to Level 1, not its soundness, and the metalogic's
 soundness proof stays in Lean.
@@ -930,8 +949,9 @@ and each phase below opens with a table of the states of its steps.
   * In progress
   * The Mitchell–Bénabou language's fourth stage, the second
     construction and the fifth choice: complete; the checker, the prover
-    and the translation written in Geb: ready; stronger checkers:
-    waiting on the checker in Geb
+    and the translation written in Geb: ready; the proof of the
+    checker's agreement and stronger checkers: waiting on the checker in
+    Geb
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1349,11 +1369,12 @@ the hash written in Geb.
 *
   * Metalogic, 2 and 3: the checker and prover in Geb
   * Ready: the fourth stage of the Mitchell–Bénabou language, whose
-    completeness settles its rules, is complete
+    completeness settles its rules, is complete; the proof in Lean of
+    the checker's agreement waits on the checker
 *
   * Acceptance
   * Met for Gödel's T; waiting, for the metalogic, on its
-    checker in Geb
+    checker in Geb and the proof of its agreement
 :::
 
 Phase 7 builds the metalogic's checker (the section on the metalogic
@@ -1365,7 +1386,9 @@ first, which the fifth choice retires.
    is not Boolean. For Gödel's T this step depends only on
    Phase 1 and may proceed in parallel with Phases 2 to 6.
 2. Geb: the proof checker, a fold over proof objects, compared with the
-   Lean checker on valid and malformed certificates.
+   Lean checker on valid and malformed certificates; for the metalogic,
+   also proved in Lean to agree with the Lean checker, its denotation at
+   every development being the Lean checker's result.
 3. Geb: proof construction, and proofs about Geb programs that exercise
    it, the compiler's components first, each in the metalogic about the
    programs' translations, the checker of Gödel's T being
@@ -1381,7 +1404,8 @@ first, which the fifth choice retires.
 Acceptance, for each checker: a theorem with hypotheses, a substitution
 and an induction checks, and certificates with altered binders, invalid
 dependencies or false conclusions fail; for the metalogic, a
-characteristic map checks as well.
+characteristic map checks as well, and the checker written in Geb is
+proved in Lean to agree with the Lean checker.
 
 For Gödel's T, step 1 is constructed.
 `Geb/Prototypes/Kernel/Subst.lean` weakens kernel terms and
@@ -3159,13 +3183,14 @@ wait on, each ready:
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, Phase 7's second and third steps for the
   metalogic: the checker compared with the Lean checker on valid and
-  malformed derivations, the prover constructing derivations as the
-  Lean prototype does, and the translation compared with the Lean
+  malformed derivations and proved in Lean to agree with it, which the
+  bootstrap requires; the prover constructing derivations as the Lean
+  prototype does; and the translation compared with the Lean
   translation. During the bootstrap it meets the logic's end point and
   the metalogic's acceptance, lets the proofs about programs be made
   without the Lean prototype, and is the checker every stronger checker
-  is admitted beside. After the bootstrap it checks the proofs the road map
-  lists, written in Geb, and is the checker of a host or a backend
+  is admitted beside. After the bootstrap it checks the proofs the road
+  map lists, written in Geb, and is the checker of a host or a backend
   without Lean, which cannot run the Lean checker.
 * The printer for the kernel's readable syntax and the retraction law
   (the section on improvements), and then the reader's inverse to the
