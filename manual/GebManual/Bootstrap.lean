@@ -1486,12 +1486,14 @@ and proves the following.
 
 The preservation of types by weakening is proved in the metalogic
 (`GebTests/Prototypes/FreeTopos/Weakening.lean`): for every environment
-`G`, contexts `c1` and `c2`, type `a` and term `t`,
-`typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
-`typeIn G (append c1 c2) t`, about the translations of the prelude, the
-reader, the type checker and the metalogic's checker, read and expanded
-by the stage-0 compiler's front end. The two sides, as functions of `G`,
-`c1`, `c2` and `a`, are equal by induction on rose trees with an
+`G`, contexts `c1`, `c0` and `c2` and term `t`,
+`typeIn G (append c1 (append c0 c2)) (wkAt (length c1) (length c0) t)`
+equals `typeIn G (append c1 c2) t`, weakening past a list of types, of
+which weakening past one is the instance at a list of one, about the
+translations of the prelude, the reader, the type checker and the
+metalogic's checker, read and expanded by the stage-0 compiler's front
+end. The two sides, as functions of `G`, `c1`, `c0` and `c2`, are equal
+by induction on rose trees with an
 induction hypothesis ({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`).
 At a construction the label's bits are split, which decides every test
 the traversal and the checker make on it. Where the label's case depends
@@ -1500,7 +1502,8 @@ number, with the induction hypothesis, which mentions the list,
 reverted into an implication and introduced again in each case, and
 instantiated at each child, at `c1` or, under an abstraction, at `c1`
 extended by the abstraction's type. At a variable, a lookup lemma
-relates the index moved past the inserted type to the index.
+relates the index moved past the inserted types to the index, by
+induction on `c1` and, below it, on `c0`.
 
 The sides are compared in weak normal form, which leaves the steps of
 folds and the bodies of abstractions unreduced, so that the fold at a
@@ -1508,17 +1511,20 @@ child that is a variable does not unfold the checker; they are
 rewritten by a development of lemmas. The conditionals are moved through
 projections, applications and folds; the folds' first components rebuild
 their trees and lists, whose lengths are the lengths of the lists they
-come from; and the labels' arithmetic gives the addition of one as the
-successor, the comparison of two successors, iteration at a successor
-and the successor of a predecessor, each by induction on bitstrings with
-case analysis of their bits. The prover finds those proofs by
+come from, the traversal's at every function it applies at a variable,
+which weakening and substitution instantiate; and the labels' arithmetic
+gives the addition of one as the successor, the addition of a successor
+on either side as the successor of the sum, the comparison of two
+successors, iteration at a successor and the successor of a
+predecessor, each by induction on bitstrings with case analysis of
+their bits. The prover finds those proofs by
 instantiating the induction hypothesis where its body occurs in a normal
 form and splitting a variable the normal form is stuck on. At a label
 it tries the language's rules and the definitions alone first, and the
 lemmas after them, each matched by a matching of its left side prepared
 once ({name}`Geb.FreeTopos.Internal.prepareRules`). The lemmas'
-derivations have 37091 nodes and the theorem's 530547, which the prover
-finds in 58 seconds and the checker checks in 30.
+derivations have 60492 nodes and the theorem's 540159, which the prover
+finds in 60 seconds and the checker checks in 31.
 
 ### The metalogic
 
@@ -3015,9 +3021,8 @@ context `c`, the checker's type for `t` with `u`, weakened past `c1`,
 substituted for the variable below `c1` is its type for `t` in the
 context of `c1`, `a` and `c`. The hypothesis on `u` makes the statement
 an implication, which the induction carries, and the substituted term's
-type needs weakening by a list of types rather than by one, the
-weakening proof with the inserted type generalized to a list; the method
-and the development carry over.
+type is given by weakening by a list of types, complete; the method and
+the development carry over.
 
 The expansion's identity on programs of kernel forms follows
 substitution. The rest of the road map's bootstrap, the
