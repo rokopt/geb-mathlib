@@ -28,6 +28,7 @@ is a type with a computable isomorphism to {lit}`RoseTree`.
   the children's results.
 * {lit}`RoseTree.para` — the paramorphism, whose step also sees each child as a
   tree.
+* {lit}`RoseTree.map` — the functor's action on the labels.
 
 # Main statements
 
@@ -100,6 +101,12 @@ theorem node_eq_mk (a : α) (cs : List (RoseTree α)) {n : ℕ} (hlen : cs.lengt
   obtain ⟨⟨a, n⟩, f⟩ := t
   exact node_eq_mk a (List.ofFn f) List.length_ofFn f fun i ↦ by simp
 
+/-- A node is a tree exactly when its label and children are the tree's. -/
+theorem node_eq_iff {a : α} {cs : List (RoseTree α)} {t : RoseTree α} :
+    node a cs = t ↔ a = t.label ∧ cs = t.children :=
+  ⟨fun h ↦ h ▸ ⟨(label_node a cs).symm, (children_node a cs).symm⟩,
+    fun ⟨h₁, h₂⟩ ↦ by rw [h₁, h₂, node_label_children]⟩
+
 /-- Induction: a property of every node over children that have it holds of
 every tree. -/
 theorem ind {P : RoseTree α → Prop} (h : ∀ a cs, (∀ c ∈ cs, P c) → P (node a cs)) :
@@ -145,6 +152,37 @@ theorem elim_paraStep_fst (f : α → List (RoseTree α × β) → β) (t : Rose
   simp only [para, elim_node, paraStep]
   exact congrArg (f a) (List.map_congr_left fun c _ ↦
     Prod.ext (elim_paraStep_fst f c) rfl)
+
+/-- The tree of the same shape with a function applied at each label: the functor's action. -/
+def map {γ : Type} (f : α → γ) : RoseTree α → RoseTree γ := elim fun a cs ↦ node (f a) cs
+
+/-- The computation rule of the map. -/
+@[simp] theorem map_node {γ : Type} (f : α → γ) (a : α) (cs : List (RoseTree α)) :
+    map f (node a cs) = node (f a) (cs.map (map f)) := by
+  simp [map]
+
+/-- The label of a mapped tree is the mapped label. -/
+@[simp] theorem label_map {γ : Type} (f : α → γ) (t : RoseTree α) :
+    (map f t).label = f t.label := by
+  rw [← node_label_children t, map_node, label_node, label_node]
+
+/-- The children of a mapped tree are the mapped children. -/
+@[simp] theorem children_map {γ : Type} (f : α → γ) (t : RoseTree α) :
+    (map f t).children = t.children.map (map f) := by
+  rw [← node_label_children t, map_node, children_node, children_node]
+
+/-- Mapping twice is mapping by the composite. -/
+theorem map_map {γ δ : Type} (f : α → γ) (g : γ → δ) (t : RoseTree α) :
+    map g (map f t) = map (g ∘ f) t :=
+  ind (P := fun t ↦ map g (map f t) = map (g ∘ f) t) (fun a cs ih ↦ by
+    simp only [map_node, List.map_map]
+    exact congrArg _ (List.map_congr_left fun c hc ↦ ih c hc)) t
+
+/-- Mapping by the identity is the identity. -/
+@[simp] theorem map_id (t : RoseTree α) : map id t = t :=
+  ind (P := fun t ↦ map id t = t) (fun a cs ih ↦ by
+    simp only [map_node, id]
+    exact congrArg _ ((List.map_congr_left fun c hc ↦ ih c hc).trans cs.map_id)) t
 
 end RoseTree
 

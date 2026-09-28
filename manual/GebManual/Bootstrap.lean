@@ -185,7 +185,8 @@ sections below detail:
     * Complete. The partial Horn logic's term model and completeness
       theorem, the completeness of the language citing certificates,
       and the round trips of the compilation.
-  * In progress (the next phase). The fifth choice, by measurement.
+  * In progress (the next phase). The fifth choice: its measurement and
+    the translation's soundness are complete, and the decision is ready.
   * Ready. The checker and prover written in Geb, the fourth stage's
     completeness having settled the language's rules.
 
@@ -853,9 +854,9 @@ and each phase below opens with a table of the states of its steps.
   * 7, the metalogic
   * In progress
   * The Mitchell–Bénabou language's fourth stage and the second
-    construction: complete; the fifth choice, the next phase: in
-    progress, by measurement; the checker and prover written in Geb:
-    ready
+    construction: complete; the fifth choice, the next phase: its
+    measurement and the translation's soundness complete, the decision
+    ready; the checker and prover written in Geb: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -2473,7 +2474,8 @@ the term by the citation of a certificate
 
 State: the second construction is complete, with the converse of the
 first; the fifth choice is the next phase, its measurement made with
-labels that are bitstrings and the translation's correctness next.
+labels that are bitstrings and the translation's correctness proved,
+the decision next.
 
 The fifth choice follows the three constructions.
 
@@ -2578,13 +2580,15 @@ proves. The factors are these.
   character codes.
 * Trust. The core's validity is defined by the Lean denotations of
   kernel terms. The metalogic's is validity in every model, and it
-  bears on kernel programs through one theorem in Lean: the translation
-  of a kernel term evaluates, in the topos of types and functional
-  relations, to the graph of the term's denotation. Its induction's
-  cases are the graphs' closure under composition, pairing,
-  copairing, the folds and currying with evaluation, together with the
-  primitives. Either option needs the theorem as soon as a proof in the
-  core cites the metalogic. The metalogic states the soundness of the
+  bears on kernel programs through one theorem in Lean, now proved
+  (below): the translation of a kernel term represents, in the topos of
+  types and functional relations, the term's denotation, by a logical
+  relation that relates a tree to the tree of its labels' bitstrings
+  and is built by products, functional relations and lists at the other
+  types. Its induction's cases are the representations' closure under
+  composition, pairing, copairing, the folds and currying with
+  evaluation, together with the primitives. Either option needs the
+  theorem as soon as a proof in the core cites the metalogic. The metalogic states the soundness of the
   core's checker, which the core cannot prove of itself; the soundness
   of each stays in Lean.
 * Implementation. Retiring the core leaves the metalogic's checker, the
@@ -2594,10 +2598,11 @@ proves. The factors are these.
 * Work. Keeping the core continues its prover, with rewriting under
   binders, and its proofs; the metalogic's checker and prover are
   written in Geb in either case. Retiring it adds the translation of
-  kernel terms, in Lean and in Geb, its correctness in Lean, and the
-  prover's front end reading programs and statements from Surface 1
-  files, as the core's prover does; the core's proofs, prelude, nat,
-  check, equations and surface, remain citable.
+  kernel terms in Geb, and the prover's front end reading programs and
+  statements from Surface 1 files, as the core's prover does; the
+  translation in Lean and its correctness in Lean are complete, and the
+  core's proofs, prelude, nat, check, equations and surface, remain
+  citable.
 * One language. The fourth choice made the language the one mathematics
   is written in. Keeping the core writes proofs about programs in a
   second logic; the translation of a kernel term is itself a λ-term.
@@ -2765,14 +2770,50 @@ bitstrings' addition, which the core takes as an axiom, are proved once
 and cost 12214 nodes and 620 milliseconds, 10908 of the nodes the
 induction on functions that proves the addition of a successor.
 
+The translation is correct
+({name}`Geb.FreeTopos.Translation.translation_sound`). Each definition
+of the library, compiled and unfolded, represents in the topos of types
+and functional relations the Lean function it computes, the arithmetic
+through the indices of the bitstrings in the bijective numeration. A
+logical relation relates each kernel type's denotation to its
+translation's value ({name}`Geb.FreeTopos.Translation.KRel`), a label to
+the bitstring of its index, and its fundamental lemma states that a
+kernel term's translation, in a represented context, has the type the
+kernel's checker infers and represents the term's denotation
+({name}`Geb.FreeTopos.Translation.repC_term`). A program's translation
+represents, definition by definition, the globals the kernel loads, and
+an equation whose translation a development proves holds in the
+kernel's semantics at each value of its context that has a
+representation. The values of the types of first order, whose function
+types have domains of data, all have one, so that such a theorem is
+valid ({name}`Geb.FreeTopos.Translation.thm_valid`); a value of a
+function type whose domain contains a function type has one by unique
+choice, which the internal language validates and Lean's logic without
+`Classical.choice` does not.
+
+The restriction to types of first order is Lean's rather than the
+translation's, and it has a factoring that separates the two. Unique
+choice, the principle that a relation relating each element to exactly
+one element is the graph of a function, the axiom of unique choice of
+{citet ContenteMaietti2024}[], section 3.2, stated in Lean as a
+proposition ({name}`Geb.FreeTopos.UniqueChoice`), makes the
+representation of every function type total on functional relations,
+so that every type's representation relates its values bijectively.
+Taken as a hypothesis, it gives the theorem for every type without
+`Classical.choice`
+({name}`Geb.FreeTopos.Translation.thm_valid_of_uniqueChoice`). Lean
+proves it from `Classical.choice` ({name}`Geb.FreeTopos.uniqueChoice`),
+and the two give the theorem for every type
+({name}`Geb.FreeTopos.Translation.thm_valid_classical`), in two modules
+of their own, admitted to the axiom linter's allowlist; every model of
+the theory validates unique choice without `Classical.choice`
+({name}`Geb.FreeTopos.unique_choice`). The hypothesis thus marks the
+one step that a proof of the theorem inside the free topos takes from
+the topos's own logic.
+
 The parts that remain:
 
-* Ready (the next part). The translation's correctness in Lean, by the
-  graphs: the translation of a kernel term, at the numerals of its
-  labels, evaluates in the topos of types and functional relations to
-  the graph of the term's denotation, the primitives' cases by the
-  bitstrings' arithmetic's agreement with the natural numbers'.
-* Waiting on the parts above. The decision, and with it the rest of the
+* Ready (the next part). The decision, and with it the rest of the
   computational core's proofs, in the logic it selects.
 
 ## Improvements
@@ -2883,11 +2924,14 @@ as graphs, and the bridge from mathlib's elementary toposes.
 The next phase is the fifth choice: whether the computational core
 keeps a checker and prover of its own, or its equations are proved in
 the metalogic through the translation of kernel terms, whose
-denotations, functions, the graphs relate to the model's arrows. It is
-made by measurement, whose parts and their states the section on the
-second construction and the fifth choice lists, with the factors. The
-computational core's step 3, whose proofs are about kernel programs whichever the
-fifth choice, resumes after it, at the type checker's preservation of
+denotations the translations represent in the model of Lean's types and
+functional relations. Its measurement is complete, and the translation
+is proved sound, for the types of first order without
+`Classical.choice` and for every type under unique choice (the section
+on the second construction and the fifth choice, which lists the
+factors); the decision remains. The computational core's step 3, whose
+proofs are about kernel programs whichever the fifth choice, resumes
+after it, at the type checker's preservation of
 types by weakening, of `typeIn` in `bootstrap/check.geb` and `wkAt` in
 `bootstrap/metalogic/equations.geb`: for every environment `G`, contexts
 `c1` and `c2`, type `a` and term

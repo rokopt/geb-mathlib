@@ -423,6 +423,23 @@ theorem subst_node_succ (ts : List Tree) (k : ℕ) (cs : List Tree) :
   simp [subst]
   rfl
 
+/-- Substitution of no terms leaves every term in place. -/
+theorem subst_nil : ∀ t : Tree, subst [] t = t :=
+  RoseTree.ind fun l cs ih ↦ by
+    rcases l with _ | k
+    · rcases cs with _ | ⟨i, _ | ⟨j, cs⟩⟩
+      · simp [subst]
+      · by_cases hi : i.children = []
+        · rw [subst_node_zero _ hi, List.getElem?_nil, Option.getD_none, var,
+            ← RoseTree.node_label_children i, hi, RoseTree.label_node]
+        · exact subst_node_zero_of_not _ hi
+      · simp only [subst, RoseTree.para_node, List.map_cons, List.map_map]
+        change RoseTree.node 0 (subst [] i :: subst [] j :: cs.map (subst [])) = _
+        rw [ih i (by simp), ih j (by simp),
+          (List.map_congr_left fun c hc ↦ ih c (by simp [hc])).trans (List.map_id cs)]
+    · rw [subst_node_succ]
+      exact congrArg _ ((List.map_congr_left ih).trans (List.map_id cs))
+
 /-- A variable's node is in scope when its index is. -/
 theorem scoped_node_zero (n : ℕ) {i : Tree} (hi : i.children = []) :
     Scoped n (RoseTree.node 0 [i]) = decide (i.label < n) := by
