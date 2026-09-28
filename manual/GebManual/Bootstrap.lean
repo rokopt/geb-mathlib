@@ -138,7 +138,9 @@ sections below detail:
     and its prover, begun.
   * In progress. The proofs about the compiler's components: the first
     two, in the core, are complete; the rest are proved in the
-    metalogic, about the components' translations, the next phase.
+    metalogic, about the components' translations, the type checker's
+    preservation of types by weakening complete and by substitution the
+    next phase.
   * Waiting on those proofs. Stronger checkers admitted by translations
     of their certificates into the metalogic's derivations.
 * The metalogic, the free topos in one presentation:
@@ -849,8 +851,9 @@ and each phase below opens with a table of the states of its steps.
 *
   * 7, the computational core
   * In progress
-  * The proofs from the type checker's preservation of types on, in the
-    metalogic: the next phase; stronger checkers: waiting on them
+  * The proofs from the type checker's preservation of types by
+    substitution on, in the metalogic: the next phase, weakening
+    complete; stronger checkers: waiting on them
 *
   * 7, the metalogic
   * In progress
@@ -1262,7 +1265,8 @@ the hash written in Geb.
   * Computational core, 3: proof construction and proofs
   * In progress: the first two proofs are complete in the core, whose
     checker and prover the metalogic's fifth choice retires; the rest
-    are proved in the metalogic, the next phase
+    are proved in the metalogic, the preservation of types by weakening
+    complete and by substitution the next phase
 *
   * Metalogic, 1: the rule set and its soundness
   * Complete: the rule set, its checker and their soundness in every
@@ -1469,8 +1473,8 @@ and proves the following.
   2. the accessors of the checker's equations, and the recursion
      equations of a structural recursion, through the Surface 1
      expansion, complete;
-  3. the type checker's preservation of types by weakening and by
-     substitution, the next phase;
+  3. the type checker's preservation of types by weakening, complete,
+     and by substitution, the next phase;
   4. the Surface 1 expansion's identity on programs of kernel forms,
      waiting on the third;
   5. the reader's inverse to the printer, waiting on the printer;
@@ -1479,6 +1483,39 @@ and proves the following.
      derivations with the same conclusions, waiting on the fourth.
 * After the bootstrap: equational theorems about programs, in the
   metalogic.
+
+The preservation of types by weakening is proved in the metalogic
+(`GebTests/Prototypes/FreeTopos/Weakening.lean`): for every environment
+`G`, contexts `c1` and `c2`, type `a` and term `t`,
+`typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
+`typeIn G (append c1 c2) t`, about the translations of the prelude, the
+reader, the type checker and the metalogic's checker, read and expanded
+by the stage-0 compiler's front end. The two sides, as functions of `G`,
+`c1`, `c2` and `a`, are equal by induction on rose trees with an
+induction hypothesis ({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`).
+At a construction the label's bits are split, which decides every test
+the traversal and the checker make on it. Where the label's case depends
+on its children's types, the list of the children is split to their
+number, with the induction hypothesis, which mentions the list,
+reverted into an implication and introduced again in each case, and
+instantiated at each child, at `c1` or, under an abstraction, at `c1`
+extended by the abstraction's type. At a variable, a lookup lemma
+relates the index moved past the inserted type to the index.
+
+The sides are compared in weak normal form, which leaves the steps of
+folds and the bodies of abstractions unreduced, so that the fold at a
+child that is a variable does not unfold the checker; they are
+rewritten by a development of lemmas. The conditionals are moved through
+projections, applications and folds; the folds' first components rebuild
+their trees and lists, whose lengths are the lengths of the lists they
+come from; and the labels' arithmetic gives the addition of one as the
+successor, the comparison of two successors, iteration at a successor
+and the successor of a predecessor, each by induction on bitstrings with
+case analysis of their bits. The prover finds those proofs by
+instantiating the induction hypothesis where its body occurs in a normal
+form and splitting a variable the normal form is stuck on. The lemmas'
+derivations have 37091 nodes and the theorem's 786692, which the prover
+finds in 291 seconds and the checker checks in 44.
 
 ### The metalogic
 
@@ -2914,6 +2951,12 @@ the change that removes it.
   uses it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
+* Proof time. The prover finds the weakening proof in about five
+  minutes, most of it normalizing the checker afresh at each of the
+  label's cases. Recursion equations of the checker and of the traversal
+  at a construction, proved once and rewritten by with their folds left
+  unexpanded, shorten it, and a stored derivation would leave the
+  check alone.
 * Names. The computational core's checker and prover are in the
   namespace `Geb.Metalogic` and under `bootstrap/metalogic/`, although
   the metalogic is the free topos above the core; renaming them for the
@@ -2954,39 +2997,21 @@ The fifth choice is made (the section on the second construction and
 the fifth choice): the computational core's checker is retired, and the
 core's step 3 continues in the Mitchell–Bénabou language, about the
 programs' translations, in this order: the type checker's preservation
-of types by weakening, then by substitution, then the Surface 1
-expansion's identity on programs of kernel forms, then the admission of
-stronger checkers. The next phase is the first, of `typeIn` in
-`bootstrap/check.geb` and `wkAt` in `bootstrap/metalogic/equations.geb`:
-for every environment `G`, contexts `c1` and `c2`, type `a` and term
-`t`, `typeIn G (append c1 (cons a c2)) (wkAt (length c1) 1 t)` equals
-`typeIn G (append c1 c2) t`. The checker checks an abstraction's body
-one binder deeper, where the inserted type is one position further in,
-so the statement is proved of the two sides as functions of `G`, `c1`,
-`c2` and `a`, by induction on `t`. The checker and the traversal test a
-node's label by chains of conditionals, which do not reduce at a
-variable label. The proof needs, in order:
+of types by weakening, complete (the section on the computational core),
+then by substitution, then the Surface 1 expansion's identity on
+programs of kernel forms, then the admission of stronger checkers. The
+next phase is the second, of `subst` in
+`bootstrap/metalogic/equations.geb`: for a term `u` of type `a` in a
+context `c`, the checker's type for `t` with `u`, weakened past `c1`,
+substituted for the variable below `c1` is its type for `t` in the
+context of `c1`, `a` and `c`. The hypothesis on `u` makes the statement
+an implication, which the induction carries, and the substituted term's
+type needs weakening by a list of types rather than by one, the
+weakening proof with the inserted type generalized to a list; the method
+and the development carry over.
 
-1. induction on rose trees with an induction hypothesis, complete: a
-   rule of the language's derivations, beside those of the natural
-   numbers and of lists, proving a formula of a rose tree from the
-   formula at a construction under the hypothesis that it holds at each
-   child (the section on the fourth stage);
-2. lemmas on the folds of the traversal and of the checker, whose first
-   components rebuild the tree folded, so that a node's children are
-   found again after either fold;
-3. lemmas on labels as bitstrings: the equality of two successors and
-   of a successor with zero, which decide the checker's tests of a
-   node's number of children, and the lookup in an appended list at an
-   index past the inserted type, the case of a variable;
-4. the proof: the equation at a construction, by case analysis of the
-   label's bits, which decides every test on the label, and of the list
-   of the children where a label's case depends on their number, each
-   child's type rewritten by the induction hypothesis, at `c1` or,
-   under an abstraction, at `c1` extended by the abstraction's type.
-
-Substitution follows by the same method, then the expansion's identity
-on programs of kernel forms. The rest of the road map's bootstrap, the
+The expansion's identity on programs of kernel forms follows
+substitution. The rest of the road map's bootstrap, the
 choice of machine and the second host, content identity and the syntax
 unification, is independent of the metalogic and may proceed beside it.
 
