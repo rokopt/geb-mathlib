@@ -361,9 +361,18 @@ def lib : List Defn := [
         (Term.lam bitTy (Term.lam bitsTy
           (ifOrd ordTy (Term.app (v 3) (v 0)) ltO (bitOrdT (v 1) (v 4)) gtO)))))
       (v 0)) (v 1)),
-  -- less and equal
+  -- less, by the comparison
   mkDefn 0 [bitsTy, bitsTy] bitsTy (ifOrd bitsTy (cmpT (v 1) (v 0)) trueT bnilT bnilT),
-  mkDefn 0 [bitsTy, bitsTy] bitsTy (ifOrd bitsTy (cmpT (v 1) (v 0)) bnilT trueT bnilT),
+  -- equality, by recursion on the second number into functions of the first: the first is
+  -- empty where the second is, and otherwise has an equal least significant bit before a rest
+  -- equal to the second's, which the first unequal bits decide without the rests
+  mkDefn 0 [bitsTy, bitsTy] bitsTy
+    (Term.app (Term.listRec (Term.lam bitsTy (call D.isNil [bitTy] [v 0]))
+      (Term.lam bitsTy (lcaseB bitTy bitsTy (v 0) bnilT
+        (Term.lam bitTy (Term.lam bitsTy
+          (ifBit bitsTy (v 1) (ifBit bitsTy (v 4) (Term.app (v 3) (v 0)) bnilT)
+            (ifBit bitsTy (v 4) bnilT (Term.app (v 3) (v 0))))))))
+      (v 0)) (v 1)),
   -- subtraction of a number at most the first, by recursion on it into functions of the first:
   -- the difference of the rests doubled where the bits are equal, the bit zero before it where
   -- the first's bit is one, and before its predecessor where the first's bit is zero

@@ -282,16 +282,22 @@ def stuckVar (skip : ℕ → Bool) (t : Term) : Option ℕ :=
 /-- Whether a term mentions the variable of an index. -/
 def mentions (t : Term) (i : ℕ) : Bool := Internal.uses t i > 0
 
-/-- The arguments at which the body of an abstraction of {lit}`k` variables matches the subterms
-of a term, its other variables those of the context. -/
-def matchesOf (body : Term) (k : ℕ) (t : Term) : List (List Term) :=
+/-- The arguments at which a matching of the body of an abstraction of {lit}`k` variables matches
+the subterms of a term, its other variables those of the context. -/
+def matchesWith (m : ℕ → Term → List (Option Term) → Option (List (Option Term))) (k : ℕ)
+    (t : Term) : List (List Term) :=
   let width := k + 64
   let σ₀ : List (Option Term) := (List.range width).map fun j ↦
     if j < k then none else some (v (j - k))
   ((openSubterms t).filterMap fun u ↦ do
-    let σ ← Internal.matchTerm body 0 u σ₀
+    let σ ← m 0 u σ₀
     let σ ← (σ.take k).mapM id
     pure σ.reverse).eraseDups
+
+/-- The arguments at which the body of an abstraction of {lit}`k` variables matches the subterms
+of a term, the body folded into its matching once rather than at each subterm. -/
+def matchesOf (body : Term) (k : ℕ) (t : Term) : List (List Term) :=
+  matchesWith (RoseTree.para Internal.matchStep body) k t
 
 /-- The proof of an equation by weak reduction with the instances of the hypotheses that are
 equations of abstractions of one variable, at the arguments at which the left side's body, in
@@ -831,18 +837,21 @@ def arityOf (l : ℕ) : Option ℕ :=
   else if l = Kernel.Label.cond then some 3
   else none
 
-/-- The proof at a label: by weak reduction of the statement's sides under their arguments, or,
+/-- The proof at a label: by weak reduction of the statement's sides under their arguments, by
+the language's rules and the definitions alone and, where that fails, with the lemmas as well; or,
 for a label whose case depends on the children's types, by case analysis of the list of the
-children to their number, the induction hypothesis reverted and, at that number, instantiated at
-each child, at the arguments, and for an abstraction's body at the first context extended by the
-abstraction's type. -/
-def labelLeaf (P : Prog) (ix : String → ℕ) (E : Array Entry) (bits : Option (List Bool)) :
+children to their number, each shorter list by weak reduction with the lemmas, the induction
+hypothesis reverted and, at that number, instantiated at each child, at the arguments, and for an
+abstraction's body at the first context extended by the abstraction's type, the instances
+rewriting after the language's rules and before the lemmas. The lemmas' matchings are prepared
+({name}`Geb.FreeTopos.Internal.prepareRules`). -/
+def labelLeaf (P : Prog) (lemmas : List NormRule) (E : Array Entry) (bits : Option (List Bool)) :
     Internal.Prover := fun Γ Φ t u ↦ do
-  let rs := lemmaRules ix ++ baseNorm P
+  let rs := baseNorm P ++ lemmas
   let plain := funExt4 P.G (byWeak P.G E 0 rs)
   let k? := bits.bind fun bs ↦ arityOf (Oitavem.rank bs)
   match k? with
-  | none => plain Γ Φ t u
+  | none => (funExt4 P.G (byWeak P.G E 0 (baseNorm P)) Γ Φ t u).orElse fun _ ↦ plain Γ Φ t u
   | some k => do
     -- the children's list: the variable the induction hypothesis folds
     let (L, _) ← Internal.eqParts (← Φ[0]?)
@@ -856,7 +865,8 @@ def labelLeaf (P : Prog) (ix : String → ℕ) (E : Array Entry) (bits : Option 
         (Term.rename fG fun j ↦ if j = 1 then 3 else j))
       funExt4 P.G (withChildHyps P.G E 0 rs (Φ.length - 1) (List.range k) (fun p ↦
           [[v 3, v 2, v 1, v 0]] ++ if p = 1 then [[v 3, consT treeTy A (v 2), v 1, v 0]] else [])
-        (fun insts ↦ withWeakHyps P.G E 0 rs insts fun extra ↦ byWeak P.G E 0 (extra ++ rs)))
+        (fun insts ↦ withWeakHyps P.G E 0 rs insts fun extra ↦
+          byWeak P.G E 0 (baseNorm P ++ extra ++ lemmas)))
         Γ Φ t u
     let levels : ℕ → Internal.Prover := fun m ↦ m.rec rest fun _ next ↦
       fun Γ Φ t u ↦ revertCase P.G 0 P.o 0 (Φ.length - 1) plain next Γ Φ t u
@@ -866,9 +876,10 @@ def labelLeaf (P : Prog) (ix : String → ℕ) (E : Array Entry) (bits : Option 
 proved by {lit}`labelLeaf` with the bits of a label ending there, or none past the fourth,
 which no kernel label has. -/
 def byLabels (P : Prog) (ix : String → ℕ) (E : Array Entry) : Internal.Prover :=
+  let lemmas := Internal.prepareRules E (lemmaRules ix)
   let go : ℕ → List Bool → ℕ → Internal.Prover := fun d ↦ d.rec
-    (fun bs i ↦ byListSplit P.G 0 i (labelLeaf P ix E (some bs)) (labelLeaf P ix E none))
-    fun _ rec bs i ↦ byListSplit P.G 0 i (labelLeaf P ix E (some bs))
+    (fun bs i ↦ byListSplit P.G 0 i (labelLeaf P lemmas E (some bs)) (labelLeaf P lemmas E none))
+    fun _ rec bs i ↦ byListSplit P.G 0 i (labelLeaf P lemmas E (some bs))
       -- the bit, zero then one, the rest at index one after the case's variable
       (bySplit2 3 4 1 (rec (bs ++ [false]) 1) (rec (bs ++ [true]) 1))
   go 4 [] 1

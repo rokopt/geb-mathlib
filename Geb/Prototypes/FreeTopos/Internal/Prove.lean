@@ -34,6 +34,7 @@ trusted: a derivation it computes is checked.
 ## Main definitions
 
 * {lit}`NormRule` — a rule the normalizer applies at a term's root.
+* {lit}`prepareRules` — the rules with each theorem's matching prepared once.
 * {lit}`normalize` — the normal form of a term and its rewriting derivation.
 * {lit}`byNorm`, {lit}`byNatInd`, {lit}`byListInd`, {lit}`byNatIndHyp`, {lit}`byListIndHyp`,
   {lit}`byRoseInd`, {lit}`byNormW` — the proofs of an equation.
@@ -74,32 +75,13 @@ inductive NormRule where
   | unitVar
   /-- The equational theorem of an index at objects, from its left side to its right. -/
   | thm (j : ℕ) (θ : List Tree)
+  /-- The equational theorem of an index at objects, from its left side to its right, with the
+  label at the root of its left side at the objects, that left side's matching, prepared
+  beforehand, and the number of its variables. -/
+  | thmAt (j : ℕ) (θ : List Tree) (root : Label)
+      (matching : ℕ → Term → List (Option Term) → Option (List (Option Term))) (vars : ℕ)
   /-- The equation among the hypotheses of an index, from its left side to its right. -/
   | hyp (i : ℕ)
-
-/-- The matching of a pattern against a term under {lit}`d` binders, the pattern's variables
-from {lit}`d` on bound in the assignment to terms that do not mention the binders' variables:
-the extended assignment, or nothing when they do not match. A variable below {lit}`d` matches
-itself; the start and the step of a fold, in contexts of their own, match only themselves. -/
-def matchTerm (p : Term) : ℕ → Term → List (Option Term) → Option (List (Option Term)) :=
-  RoseTree.para (fun l ps d t σ ↦ match l with
-    | .var i => if i < d then (if t = Term.var i then some σ else none) else
-      let t' := Term.rename t (· - d)
-      if Term.rename t' (· + d) = t then match σ[i - d]? with
-        | some none => some (σ.set (i - d) (some t'))
-        | some (some s) => if s = t' then some σ else none
-        | none => if t' = Term.var (i - d) then some σ else none
-      else none
-    | l => if l = t.label ∧ ps.length = t.children.length then
-        match l, ps, t.children with
-        | .lam _, [(_, q)], [u] => q (d + 1) u σ
-        | .natRec, [(z, _), (s, _), (_, q)], [z', s', u] =>
-          if z = z' ∧ s = s' then q d u σ else none
-        | .listRec, [(z, _), (s, _), (_, q)], [z', s', u] =>
-          if z = z' ∧ s = s' then q d u σ else none
-        | .roseRec _, [(s, _), (_, q)], [s', u] => if s = s' then q d u σ else none
-        | _, ps, us => (ps.zip us).foldl (fun acc (q, u) ↦ acc.bind (q.2 d u)) (some σ)
-      else none) p
 
 /-- Whether a pattern's root may match a term's root, before the pattern's object variables are
 instantiated: the pattern's root is a variable, or the two roots are nodes of one kind. -/
@@ -109,6 +91,39 @@ def sameShape : Label → Label → Bool
     | .listRec, .listRec | .eq, .eq | .lam _, .lam _ | .roseRec _, .roseRec _ => true
   | .arr k _, .arr k' _ | .defn k _, .defn k' _ => k == k'
   | _, _ => false
+
+/-- One step of the matching of a pattern against a term, at a node of the pattern of a label,
+from the pattern's children with their matchings. -/
+def matchStep (l : Label)
+    (ps : List (Term × (ℕ → Term → List (Option Term) → Option (List (Option Term)))))
+    (d : ℕ) (t : Term) (σ : List (Option Term)) : Option (List (Option Term)) := match l with
+  | .var i => if i < d then (if t = Term.var i then some σ else none) else
+    -- under no binders the term mentions none of theirs and is its own lowering
+    let t' := if d = 0 then t else Term.rename t (· - d)
+    if d = 0 ∨ Term.rename t' (· + d) = t then match σ[i - d]? with
+      | some none => some (σ.set (i - d) (some t'))
+      | some (some s) => if s = t' then some σ else none
+      | none => if t' = Term.var (i - d) then some σ else none
+    else none
+  | l => if l = t.label ∧ ps.length = t.children.length then
+      match l, ps, t.children with
+      | .lam _, [(_, q)], [u] => q (d + 1) u σ
+      | .natRec, [(z, _), (s, _), (_, q)], [z', s', u] =>
+        if z = z' ∧ s = s' then q d u σ else none
+      | .listRec, [(z, _), (s, _), (_, q)], [z', s', u] =>
+        if z = z' ∧ s = s' then q d u σ else none
+      | .roseRec _, [(s, _), (_, q)], [s', u] => if s = s' then q d u σ else none
+      | _, ps, us => (ps.zip us).foldl (fun acc (q, u) ↦ acc.bind (q.2 d u)) (some σ)
+    else none
+
+/-- The matching of a pattern against a term under {lit}`d` binders, the pattern's variables
+from {lit}`d` on bound in the assignment to terms that do not mention the binders' variables:
+the extended assignment, or nothing when they do not match. A variable below {lit}`d` matches
+itself; the start and the step of a fold, in contexts of their own, match only themselves.
+Lean compiles it at its full arity, so that its application to the pattern alone folds the
+pattern again at each call; {lit}`prepareRules` folds a theorem's once. -/
+def matchTerm (p : Term) : ℕ → Term → List (Option Term) → Option (List (Option Term)) :=
+  RoseTree.para matchStep p
 
 /-- The derivation of one rewriting after another, the identity left out. -/
 def dTrans (d₁ d₂ : Deriv × Bool) : Deriv × Bool :=
@@ -151,8 +166,28 @@ def rootRewrite (rs : List NormRule) (Γ : List Tree) (Φ : List Term) (t : Term
       let σ ← σ.mapM id
       let l := Rule.thm j θ σ false
       (rootStep G E n Γ Φ l t).map fun t' ↦ (t', RoseTree.node l [])
+    | .thmAt j θ root m k => if !sameShape root t.label then none else do
+      let σ ← m 0 t (List.replicate k none)
+      let σ ← σ.mapM id
+      let l := Rule.thm j θ σ false
+      (rootStep G E n Γ Φ l t).map fun t' ↦ (t', RoseTree.node l [])
     | .hyp i => (rootStep G E n Γ Φ (.rwHyp i false) t).map fun t' ↦
         (t', RoseTree.node (.rwHyp i false) [])) none
+
+/-- The rules with each theorem's matching prepared beforehand, its left side instantiated at
+its objects and folded into the matching once, so that a rule tried at many nodes does neither
+at each. -/
+def prepareRules (rs : List NormRule) : List NormRule :=
+  rs.map fun r ↦ match r with
+    | .thm j θ => match (E[j]?).bind Entry.language? with
+      | some a => match eqParts a.concl with
+        | some (l, _) =>
+          let p := if θ.isEmpty then l else Term.osubst θ l
+          -- the fold applied in full, so that it is computed here rather than at each call
+          .thmAt j θ p.label (RoseTree.para matchStep p) a.ctx.length
+        | none => r
+      | none => r
+    | r => r
 
 /-- The normal form of a term in a context under hypotheses, by rules, innermost first, within
 a depth of {lit}`fuel`, with its rewriting derivation, marked when it rewrites. -/
@@ -288,11 +323,11 @@ def keepsWeak (l : Label) (i : ℕ) : Bool := match l with
 twice, since the abstraction may be applied more than once; a fold's start and step, in contexts
 of their own, have none. -/
 def uses : Term → ℕ → ℕ :=
-  RoseTree.para fun l cs d ↦ match l, cs with
+  RoseTree.elim fun l cs d ↦ match l, cs with
     | .var i, _ => if i = d then 1 else 0
-    | .lam _, cs => 2 * (cs.map fun c ↦ c.2 (d + 1)).sum
-    | .natRec, [_, _, (_, m)] | .listRec, [_, _, (_, m)] | .roseRec _, [_, (_, m)] => m d
-    | _, cs => (cs.map fun c ↦ c.2 d).sum
+    | .lam _, cs => 2 * (cs.map (· (d + 1))).sum
+    | .natRec, [_, _, m] | .listRec, [_, _, m] | .roseRec _, [_, m] => m d
+    | _, cs => (cs.map (· d)).sum
 
 /-- The derivation of a node's rewriting from its children's, marked when one rewrites. -/
 def dCong (cs : List (Deriv × Bool)) : Deriv × Bool :=
