@@ -3777,5 +3777,176 @@ checklist and in CI.
   recursion over a declared datatype, which
   `GebTests/Prototypes/Proofs.lean` checks in Geb and again in Lean. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
-  computational core and the metalogic above it. Depends on
+  computational core, whose checker the metalogic's fifth choice retires
+  in favour of the internal language of `Geb/Prototypes/FreeTopos/`, the
+  proofs above remaining and checked. Depends on
   `Geb.Prototypes.Kernel.Subst` and `Geb.Prototypes.Kernel.Reader`.
+- `Geb/Prototypes/PartialHorn/` — the logic of partial Horn theories
+  [PalmgrenVickers2007] over rose trees, in which the metalogic presents
+  the free topos. `Basic.lean` carries signatures and theories, terms as
+  rose trees, models whose operations are partial functions with
+  propositional domains of definition, sequents and their validity
+  (`Geb.PartialHorn.Valid`, `Geb.PartialHorn.IsModel`), and the checker
+  `Geb.PartialHorn.check`, a fold over a certificate computing each
+  conclusion from its premises' conclusions, sound in every model
+  (`Geb.PartialHorn.check_sound`). `Development.lean` checks lists of
+  sequents, each certificate citing the sequents before it
+  (`Geb.PartialHorn.checkFrom_sound`). `Definitional.lean` extends a
+  theory by definitions and unfolds them, with the eliminability and
+  non-creativity of [Suppes1957] (`Geb.PartialHorn.eval_expand_unfold`,
+  `Geb.PartialHorn.valid_of_valid_extendAll`), so that a development
+  checked in an extension is sound for the theory's models
+  (`Geb.PartialHorn.checkDevelopment_extendAll_sound`). `Point.lean`
+  gives the one-point model. `Completeness.lean` constructs the term
+  model of a context under hypotheses [Kawase2024] and proves derivability
+  by a certificate equivalent to validity in every model
+  (`Geb.PartialHorn.derivable_iff_valid`). `Shared.lean` checks
+  certificates over a store of shared terms
+  (`Geb.PartialHorn.checkShared_sound`), and `Share.lean` converts a
+  development into one, a conversion whose output is checked rather than
+  trusted. Tested through the theory of `Geb/Prototypes/FreeTopos/`.
+  Depends on `Geb.Prototypes.RoseTree.Basic`, `Geb.Mathlib.Data.W.Basic`,
+  `Geb.Mathlib.Data.FinEnum` and `Mathlib.Data.Part`.
+- `Geb/Prototypes/FreeTopos/` — the metalogic: the free elementary topos
+  with the natural numbers, list and rose-tree objects, presented as the
+  initial model of one partial Horn theory. `Theory.lean` states the
+  theory (`Geb.FreeTopos.theory`): the operations of a category, as in
+  Example 4 of [PalmgrenVickers2007], of an elementary topos as Section
+  4.3 of [Goldblatt1984] defines it, with coproducts and coequalizers, and
+  of the data objects as initial algebras with their folds. `Model.lean`
+  reads a model's operations as functions, and `Category.lean` and
+  `Topos.lean` make every model an elementary topos of
+  `Geb/Mathlib/CategoryTheory/ElementaryTopos.lean`
+  (`Geb.FreeTopos.ToposModel.elementaryTopos`), the first construction.
+  `Arrows.lean`, `Recursion.lean`, `Coproducts.lean`, `Coequalizers.lean`
+  and `Classifier.lean` derive, of the values of terms, the structure the
+  internal language rests on: the uniqueness of the folds with a
+  parameter [EscardoSimpson2025] (`Geb.FreeTopos.natRec_param_unique`),
+  distributivity and the strictness of the initial object
+  [CarboniLackWalters1993], the projection of a coequalizer an
+  epimorphism, the uniqueness of characteristic maps
+  (`Geb.FreeTopos.omega_ext`), induction on subobjects, and unique choice
+  (`Geb.FreeTopos.unique_choice`, after [DubucSzyld2015]). `Chosen.lean`
+  states a topos with chosen structure and the data objects
+  (`Geb.FreeTopos.ChosenTopos`), and `Converse.lean` makes it a model of
+  the theory (`Geb.FreeTopos.ChosenTopos.isModel`). `Relations.lean`
+  constructs the topos of Lean's types and functional relations
+  (`Geb.FreeTopos.relTopos`), which has unique choice by construction:
+  the second construction. `Graphs.lean` shows the graphs of Lean's
+  functions closed under the operations with which programs are built,
+  so that a development that checks proves equations of Lean functions
+  (`Geb.FreeTopos.eq_of_checkDevelopment`), and `Represent.lean` relates
+  the model's arrows to Lean functions through representations of values
+  (`Geb.FreeTopos.Represents`). `Elementary.lean` constructs a topos with
+  chosen structure from an elementary topos with chosen data objects
+  (`Geb.FreeTopos.Elementary.chosenTopos`), in a module admitted to
+  `Classical.choice` as a correspondence with mathlib's category theory.
+  `Unfolding.lean` unfolds definitions in a term, `Infer.lean` infers the
+  typing of terms (`Geb.FreeTopos.infers_sound`), and `Check.lean` checks
+  shared developments with the inferred typings as an oracle
+  (`Geb.FreeTopos.checkTopos_sound`). `Prover/` is a prover of the
+  combinators prototyped in Lean: it types terms, rewrites innermost
+  first by the axioms and a development's equations, and proves
+  equations by normalization and by induction as the uniqueness of
+  folds, and its certificates are checked. `UniqueChoice.lean` states
+  unique choice [ContenteMaietti2024] as a proposition, a hypothesis of
+  the theorems that need it, and `UniqueChoiceClassical.lean` proves it
+  from `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos.lean`
+  and in `GebTests/Prototypes/FreeTopos/`: the prover's library, the
+  computational core's theorems proved in the combinators
+  (`Benchmark.lean`), and a theorem about Lean's functions from a
+  development (`Graphs.lean`). Depends on the modules of
+  `Geb/Prototypes/PartialHorn/`, `Geb.Prototypes.RoseTree.Basic`,
+  `Geb.Mathlib.CategoryTheory.ElementaryTopos` and
+  `Mathlib.CategoryTheory.Endofunctor.Algebra`.
+- `Geb/Prototypes/FreeTopos/Internal/` — the Mitchell–Bénabou language
+  of the free topos (Section VI.5 of [MacLaneMoerdijk1992]).
+  `Syntax.lean` carries its terms, rose trees with de Bruijn variables,
+  and `SyntaxLaws.lean` the monad laws of their renaming and substitution
+  [AltenkirchChapmanUustalu2015]. `Compile.lean` types a term and
+  compiles it to an arrow of the combinators in one pass, the
+  interpretation of Part I of [LambekScott1986] as the categorical
+  abstract machine [CousineauCurienMauny1987] compiles it, and compiles
+  the language's definitions and object definitions to definitions of
+  the combinators. `Sorting.lean`, `Semantics.lean`, `Inversion.lean` and
+  `Substitution.lean` prove the compiled arrows well sorted, of their
+  types and natural, and substitution composition
+  (`Geb.FreeTopos.Internal.compile_subst`); `Square.lean` proves that
+  compiling agrees with unfolding the language's definitions in every
+  model (`Geb.FreeTopos.Internal.compile_unfold`). `Derivation.lean` is
+  the checker of derivations, `Geb.FreeTopos.Internal.check`: rewriting
+  by the language's equations, and proof by rewriting, cut, propositional
+  and function extensionality, the instances of earlier theorems,
+  induction on the natural numbers, lists, rose trees and quotients, case
+  analysis on coproducts, and the citation of certificates of the
+  combinators, the basic axioms and rules of a local set theory
+  [RuizHernandezSolorzano2021] with induction. Its developments
+  (`Geb.FreeTopos.Internal.checkDev`) mix theorems of the language with
+  certificates of the combinators and declare definitions, primitive
+  arrows, object definitions and quotients. `Soundness.lean` and
+  `Proofs.lean` prove the checker sound
+  (`Geb.FreeTopos.Internal.check_sound`), and `Development.lean` every
+  entry of a development that checks valid, with its definitions
+  unfolded in every model of the theory itself
+  (`Geb.FreeTopos.Internal.valid_unfoldAll_of_checkDev`). `Logic.lean`
+  defines the connectives from equality with their introduction and
+  elimination rules, `Connectives.lean` proves their Kripke–Joyal
+  conditions (Section VI.6 of [MacLaneMoerdijk1992]) and description by
+  unique choice (`Geb.FreeTopos.Internal.description`), and
+  `Completeness.lean` proves the language complete by the citation of
+  certificates (`Geb.FreeTopos.Internal.exists_certSeq_of_valid`), with
+  the round trips of the compilation. `Represent.lean` represents Lean's
+  functions by the language's terms in the topos of functional
+  relations. `Prove.lean` is the language's prover prototyped in Lean:
+  normalization innermost first or to weak normal forms, earlier theorems
+  as rewriting rules found by matching, induction and case analysis;
+  every derivation it computes is checked by
+  `Geb.FreeTopos.Internal.check`. Tested in the modules of
+  `GebTests/Prototypes/FreeTopos/` named `Internal*.lean`, among them the
+  computational core's theorems derived in the language
+  (`InternalDerivation.lean`), its logic, coproducts, rose trees,
+  quotients, declared constants, and citations between the two checkers.
+  Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
+  `Geb.Prototypes.PartialHorn.Completeness`.
+- `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the
+  kernel's types and terms into the internal language
+  (`Geb.FreeTopos.Translation.term`): a label is a bitstring in the
+  bijective numeration of [Oitavem2010], the type of trees the rose-tree
+  object over the bitstrings, and the kernel's primitives, folds and
+  iteration applications of the definitions of a library
+  (`Geb.FreeTopos.Translation.lib`). `TranslationLibrary.lean` proves that
+  each definition of the library represents the function it computes,
+  and `TranslationKernel.lean` the fundamental lemma: the translation of a
+  well-typed kernel term represents its denotation
+  (`Geb.FreeTopos.Translation.repC_term`). `TranslationSound.lean` proves
+  that a program's translation represents the globals the kernel loads
+  (`Geb.FreeTopos.Translation.rep_program`) and that an equation between
+  kernel terms whose translation the internal language's checker proves
+  holds of their denotations
+  (`Geb.FreeTopos.Translation.translation_sound`), at every type of first
+  order (`Geb.FreeTopos.Translation.thm_valid`), and at every type under
+  unique choice (`Geb.FreeTopos.Translation.thm_valid_of_uniqueChoice`),
+  which `TranslationSoundClassical.lean` discharges by
+  `Classical.choice`. Tested in `GebTests/Prototypes/FreeTopos/`:
+  `Translation.lean` computes with the library, `TranslationProofs.lean`
+  proves the computational core's theorems about the translated
+  programs, and `Weakening.lean` and `Substitution.lean` prove that the
+  kernel's type checker written in Geb, `bootstrap/check.geb`, preserves
+  types by weakening and by substitution. The
+  [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
+  metalogic, the choices that fixed its form, and the proofs about the
+  compiler's components made in it. Depends on the modules of
+  `Geb/Prototypes/FreeTopos/Internal/`, `Geb.Prototypes.Kernel.Reader`,
+  `Geb.Prototypes.Metalogic.Equations` and
+  `Geb.Prototypes.Computability.Oitavem.Word`.
+- `Geb/Prototypes/RelSeparation.lean` — whether separating a
+  proof-relevant relation, a span, to its image commutes with the type
+  formers, over the point and over the walking arrow. The dependent sum
+  commutes, constructively and with no hypothesis
+  (`GebProto.RelSeparation.sep_sigmaRel_iff`); the dependent product
+  commutes exactly when an inhabited family has an inhabited product
+  (`GebProto.RelSeparation.piSepCommutes_iff_choiceForFamilies`), and over
+  the walking arrow it fails with no choice principle in question
+  (`GebProto.RelSeparation.not_arrowPiSepCommutes`). No declaration
+  depends on `Classical.choice`. Tested in
+  `GebTests/Prototypes/RelSeparation.lean`. Depends on Lean core alone.
