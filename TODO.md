@@ -133,25 +133,12 @@ chapter's status lines are updated as they are made.
 
 ### Bootstrap
 
-The manual chapter `manual/GebManual/Bootstrap.lean` records the plan for
-bootstrapping Geb in phases, each ending with an executable acceptance
-condition: the kernel running in Lean, the choice of machine, closed
-bundles and images, Geb growing in itself to the first fixed point, a
-second host with accelerations and compilers, content identity, and the
-metalogic. The chapter is the list of follow-ups; it is revised as each
-phase is carried out. Its Road map lists every item of the bootstrap and
-of the work written in Geb after it, each marked with its state; the
-subsections of Phase 7 state what the computational core and the
-metalogic define and prove; and its sections Improvements and The next
-phase record the known limitations with their fixes and where work
-resumes.
-
-The readable S-expressions of the kernel's reader and of
-`Geb/Prototypes/ReadableSExpr.lean` are to be unified as one reader and
-printer over the canonical S-expressions of
-`Geb/Prototypes/CanonicalSExpr.lean`, with the retraction law, and given a
-quoted spelling for atoms that are not tokens, so that every canonical
-S-expression has a readable spelling.
+The manual chapter `manual/GebManual/Bootstrap.lean` is the list of this
+workstream's follow-ups: its Road map marks every item of the bootstrap
+and of the work written in Geb after it with its state, its section
+Status gives the state of each phase, and its sections Improvements and
+The next phase record the known limitations with their fixes and where
+work resumes.
 
 ### Definitions
 
