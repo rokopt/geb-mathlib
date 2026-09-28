@@ -33,9 +33,10 @@ trusted: a derivation it computes is checked.
 * {lit}`normalize` — the normal form of a term and its rewriting derivation.
 * {lit}`byNorm`, {lit}`byNatInd`, {lit}`byListInd`, {lit}`byNatIndHyp`, {lit}`byListIndHyp`,
   {lit}`byRoseInd`, {lit}`byNormW` — the proofs of an equation.
-* {lit}`byFunExt`, {lit}`bySplit`, {lit}`byListIndWith` — the proofs of an equation from proofs
-  of others: of functions by extensionality, by case analysis of a variable of a coproduct
-  anywhere in the context, and by list induction with each premise proved by a prover.
+* {lit}`byFunExt`, {lit}`bySplit`, {lit}`byListIndWith`, {lit}`byRoseIndHyp` — the proofs of an
+  equation from proofs of others: of functions by extensionality, by case analysis of a variable
+  of a coproduct anywhere in the context, and by list induction and rose-tree induction with each
+  premise proved by a prover.
 * {lit}`eval`, {lit}`whnf`, {lit}`normalizeW` — the reduction to a depth, sharing an argument's
   value among its uses, the weak head normal form, and the normal form reached through it.
 
@@ -400,6 +401,17 @@ def byRoseInd (kn kl kc : ℕ) (s : Term) (rs : List NormRule) (fuel : ℕ) (Γ 
     let p₂ ← byNorm G E n rs fuel [list r, a] [] (roseNodeAt kn r a u)
       (Term.subst s (atVar0 (roseMapAt kl kc C u)))
     pure (RoseTree.node (.roseInd kn kl kc s) [p₁, p₂])
+  | _ => none
+
+/-- The proof of an equation in a context of a rose tree alone by induction on it with the
+induction hypothesis, the premise at a construction proved by {lit}`p` under the hypothesis that
+the equation holds at each child. -/
+def byRoseIndHyp (kn kl kc : ℕ) (p : Prover) : Prover := fun Γ _ t u ↦ match Γ with
+  | [r] => do
+    let (a, _) ← roseParts r
+    let d ← p [list r, a] [roseHyp kl kc (Term.eq t u)] (roseNodeAt kn r a t)
+      (roseNodeAt kn r a u)
+    pure (RoseTree.node (.roseIndHyp kn kl kc) [d])
   | _ => none
 
 end Geb.FreeTopos.Internal

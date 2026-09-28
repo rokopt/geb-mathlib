@@ -28,19 +28,20 @@ formula proved first; the equality of two formulas that entail each other, and o
 whose applications to a new variable are equal; an instance of an earlier theorem, its hypotheses'
 instances proved; a formula by induction on the innermost variable of the natural numbers or of a
 list type, with the formula's instance at the start and, under the induction hypothesis, at a
-successor or a construction; a formula by case analysis on the innermost variable of a coproduct
-type, with its instances at the two injections; every formula in a context with a variable of
-the initial type; a formula by induction on the innermost variable of the codomain of a
-coequalizer's projection, with its instance at the projection's image of a variable of the
-domain; an equation by a certificate of the combinators that proves the sequent it compiles to;
+successor or a construction; a formula of a rose tree alone by induction on it, with its instance at
+a construction under the hypothesis that it holds at each child; a formula by case analysis on the
+innermost variable of a coproduct type, with its instances at the two injections; every formula in a
+context with a variable of the initial type; a formula by induction on the innermost variable of the
+codomain of a coequalizer's projection, with its instance at the projection's image of a variable of
+the domain; an equation by a certificate of the combinators that proves the sequent it compiles to;
 and a formula under hypotheses by a certificate that proves the sequent its theorem compiles to
-({lit}`Thm.seq`), the rule by which the language is complete. These
-rules are the basic axioms and rules of a local set theory
-({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's comprehension the abstraction of the
-formula and membership application, with the extensionality of every exponential in place of that of
-power types, and with induction. The rewriting takes its terms from the term it rewrites, so that a
-derivation names no term but the steps of its inductions, the formulas of its cuts and the instances
-of the theorems it cites, and the checker computes every substitution.
+({lit}`Thm.seq`), the rule by which the language is complete. These rules are the basic axioms and
+rules of a local set theory ({cite}`RuizHernandezSolorzano2021`, Section 3.2), a formula's
+comprehension the abstraction of the formula and membership application, with the extensionality of
+every exponential in place of that of power types, and with induction. The rewriting takes its terms
+from the term it rewrites, so that a derivation names no term but the steps of its inductions, the
+formulas of its cuts and the instances of the theorems it cites, and the checker computes every
+substitution.
 
 A development mixes the two checkers: a declaration is a theorem of the language with its
 derivation, a sequent of the combinators with its certificate, a definition of the language, a
@@ -183,6 +184,11 @@ inductive Rule where
   of index {lit}`kn`, is the step {lit}`s` at the label and the list of the side's values at the
   children, the list built by the primitives of indices {lit}`kl` and {lit}`kc`. -/
   | roseInd (kn kl kc : ℕ) (s : Term)
+  /-- A formula in a context of a rose tree alone by induction on it: proved at a construction,
+  the primitive of index {lit}`kn`, under the hypothesis that it holds at each child, its list of
+  values at the children, built by the primitives of indices {lit}`kl` and {lit}`kc`, being that
+  of truth. -/
+  | roseIndHyp (kn kl kc : ℕ)
   /-- A formula by case analysis on the innermost variable, of a coproduct type, with the
   injections the primitives of indices {lit}`kl` and {lit}`kr`: proved at the left injection of a
   variable of the first summand and at the right injection of a variable of the second, under
@@ -315,6 +321,12 @@ indices {lit}`kl` and {lit}`kc`. -/
 def roseMapAt (kl kc : ℕ) (c : Tree) (t : Term) : Term :=
   Term.listRec (Term.arr kl [c] Term.star) (Term.arr kc [c] (Term.pair (weaken1 t) (Term.var 0)))
     (Term.var 0)
+
+/-- The hypothesis of induction on rose trees: a formula in a context of a rose tree holds at each
+child, the innermost variable, its list of values at the children being that of truth, the
+equality of the terminal object's element with itself. -/
+def roseHyp (kl kc : ℕ) (φ : Term) : Term :=
+  Term.eq (roseMapAt kl kc omega φ) (roseMapAt kl kc omega (Term.eq Term.star Term.star))
 
 /-- The sides of an equation. -/
 def eqParts (φ : Term) : Option (Term × Term) := match φ.label, φ.children with
@@ -635,6 +647,14 @@ def checkStep (G : Globals) (E : Array Entry) (n : ℕ) (l : Rule) (cs : List (D
               (Term.subst s (atVar0 (roseMapAt kl kc C u))))
         | _, _ => false
       | _, _ => false
+    | .roseIndHyp kn kl kc, [(_, p₁)] => match Γ with
+      | [r] => match roseParts r with
+        | some (a, _) => decide (((G.prims[kn]? = some nodePrim ∧ r = rose) ∨
+              (G.prims[kn]? = some lnodePrim ∧ r = lrose a)) ∧ G.prims[kl]? = some nilPrim ∧
+              G.prims[kc]? = some consPrim ∧ typeIn G n Γ φ = some omega) &&
+            p₁.2 [list r, a] [roseHyp kl kc φ] (roseNodeAt kn r a φ)
+        | none => false
+      | _ => false
     | _, _ => false)
 
 /-- The checker: the rewriting a derivation performs on a term in a context under hypotheses,

@@ -34,6 +34,7 @@ parameters, evaluated at the parameter.
 * {lit}`roseRec_node`, {lit}`lroseRec_node`, {lit}`lroseRec_unique` — the folds of the rose-tree
   objects.
 * {lit}`eval_listMap` — the action of a list object on an arrow is a fold.
+* {lit}`listMap_comp`, {lit}`listMap_idt` — the action of a list object is functorial.
 * {lit}`natRec_param_unique`, {lit}`listRec_param_unique` — the uniqueness of the folds with a
   parameter.
 * {lit}`natRec_param_exists`, {lit}`listRec_param_exists` — the existence of the folds with a
@@ -382,6 +383,156 @@ theorem pair_fst_snd {A B : Tree} (hA : IsObj M ρ A) (hB : IsObj M ρ B) :
   (eval_op₂_congr 9 (comp_idt hM (fst_hom hM hA hB)).symm
     (comp_idt hM (snd_hom hM hA hB)).symm).trans
     (pair_eta hM hA hB (idt_hom hM (isObj_prod hM hA hB)))
+
+/-- The product of an object with an arrow is an arrow between the products. -/
+theorem prodMapRight_hom {h L N : Tree} (A : Tree) (hA : IsObj M ρ A) (hh : Hom M ρ h L N) :
+    Hom M ρ (prodMapRight A h) (prod A L) (prod A N) :=
+  (pair_hom hM (fst_hom hM hA hh.isObj_dom) (comp_hom hM (snd_hom hM hA hh.isObj_dom) hh)).congr
+    (eval_prodMapRight A hh) rfl rfl
+
+/-- The product of an object with an arrow after its product with another is its product with
+the composite. -/
+theorem prodMapRight_comp {f g L N P : Tree} (A : Tree) (hA : IsObj M ρ A) (hf : Hom M ρ f L N)
+    (hg : Hom M ρ g N P) :
+    eval M ρ (comp (prodMapRight A g) (prodMapRight A f)) =
+      eval M ρ (prodMapRight A (comp g f)) := by
+  have hL := hf.isObj_dom
+  have hfA := fst_hom hM hA hL
+  have hsA := snd_hom hM hA hL
+  refine (eval_op₂_congr 3 rfl (eval_prodMapRight A hf)).trans ((prodMapRight_pair hM hfA
+    (comp_hom hM hsA hf) hg).trans ((eval_op₂_congr 9 rfl (comp_assoc hM hsA hf hg)).trans ?_))
+  exact (eval_prodMapRight A (comp_hom hM hf hg)).symm
+
+/-- The product of an object with an identity is the identity of the product. -/
+theorem prodMapRight_idt {B : Tree} (A : Tree) (hA : IsObj M ρ A) (hB : IsObj M ρ B) :
+    eval M ρ (prodMapRight A (idt B)) = eval M ρ (idt (prod A B)) :=
+  (eval_prodMapRight A (idt_hom hM hB)).trans ((eval_op₂_congr 9 rfl
+    (idt_comp hM (snd_hom hM hA hB))).trans (pair_fst_snd hM hA hB))
+
+/-- An arrow after a pairing whose components are arrows after the projections is the arrow
+after the pairing of their composites with the pairing's components. -/
+theorem comp_pair_proj {c u v a b P L X W Y Z : Tree} (hc : Hom M ρ c (prod X W) Z)
+    (hu : Hom M ρ u P X) (hv : Hom M ρ v L W) (ha : Hom M ρ a Y P) (hb : Hom M ρ b Y L) :
+    eval M ρ (comp (comp c (pair (comp u (fst P L)) (comp v (snd P L)))) (pair a b)) =
+      eval M ρ (comp c (pair (comp u a) (comp v b))) := by
+  have hP := hu.isObj_dom
+  have hL := hv.isObj_dom
+  have hf := fst_hom hM hP hL
+  have hs := snd_hom hM hP hL
+  have hab := pair_hom hM ha hb
+  have hp := pair_hom hM (comp_hom hM hf hu) (comp_hom hM hs hv)
+  refine (comp_assoc hM hab hp hc).symm.trans (eval_op₂_congr 3 rfl ?_)
+  refine (pair_comp hM (comp_hom hM hf hu) (comp_hom hM hs hv) hab).trans
+    (eval_op₂_congr 9 ?_ ?_)
+  · exact (comp_assoc hM hab hf hu).symm.trans (eval_op₂_congr 3 rfl (fst_pair hM ha hb))
+  · exact (comp_assoc hM hab hs hv).symm.trans (eval_op₂_congr 3 rfl (snd_pair hM ha hb))
+
+/-- The action of the list object on an arrow after construction is the construction of the
+arrow at the element onto the action at the tail. -/
+theorem listMap_cons {f A B : Tree} (hf : Hom M ρ f A B) :
+    eval M ρ (comp (listMap f) (cons A)) =
+      eval M ρ (comp (cons B) (pair (comp f (fst A (list A)))
+        (comp (listMap f) (snd A (list A))))) := by
+  have hA := hf.isObj_dom
+  have hB := hf.isObj_cod
+  have hLA := isObj_list hM hA
+  have hLB := isObj_list hM hB
+  have hz := comp_hom hM (bang_hom hM (isObj_one hM)) (nil_hom hM hB)
+  have hsL := snd_hom hM hA hLB
+  have hs := comp_hom hM (pair_hom hM (comp_hom hM (fst_hom hM hA hLB) hf) hsL) (cons_hom hM hB)
+  have hLf := listMap_hom hM hf
+  refine (eval_op₂_congr 3 (eval_listMap hM hf) rfl).trans ((listRec_cons hM hA hz hs).trans ?_)
+  refine (eval_op₂_congr 3 rfl (eval_op₂_congr 9 rfl (eval_op₂_congr 3
+    (eval_listMap hM hf).symm rfl))).trans ?_
+  refine (eval_op₂_congr 3 (eval_op₂_congr 3 rfl (eval_op₂_congr 9 rfl
+    (idt_comp hM hsL).symm)) rfl).trans ?_
+  refine (comp_pair_proj hM (cons_hom hM hB) hf (idt_hom hM hLB) (fst_hom hM hA hLA)
+    (comp_hom hM (snd_hom hM hA hLA) hLf)).trans ?_
+  exact eval_op₂_congr 3 rfl (eval_op₂_congr 9 rfl (idt_comp hM (comp_hom hM
+    (snd_hom hM hA hLA) hLf)))
+
+/-- The action of the list object on an arrow at the empty list is the empty list. -/
+theorem listMap_nil {f A B : Tree} (hf : Hom M ρ f A B) :
+    eval M ρ (comp (listMap f) (nil A)) = eval M ρ (nil B) := by
+  have hA := hf.isObj_dom
+  have hB := hf.isObj_cod
+  have h1 := isObj_one (ρ := ρ) hM
+  have hz := comp_hom hM (bang_hom hM h1) (nil_hom hM hB)
+  have hs := comp_hom hM (pair_hom hM (comp_hom hM (fst_hom hM hA (isObj_list hM hB)) hf)
+    (snd_hom hM hA (isObj_list hM hB))) (cons_hom hM hB)
+  refine (eval_op₂_congr 3 (eval_listMap hM hf) rfl).trans ((listRec_nil hM hA hz hs).trans ?_)
+  exact (eval_op₂_congr 3 rfl (bang_unique hM (idt_hom hM h1)).symm).trans
+    (comp_idt hM (nil_hom hM hB))
+
+/-- The action of the list object on arrows of equal value has one value. -/
+theorem listMap_congr {f f' A B : Tree} (hf : Hom M ρ f A B) (hf' : Hom M ρ f' A B)
+    (h : eval M ρ f = eval M ρ f') : eval M ρ (listMap f) = eval M ρ (listMap f') :=
+  (eval_listMap hM hf).trans ((eval_op₃_congr 36 rfl rfl (eval_op₂_congr 3 rfl
+    (eval_op₂_congr 9 (eval_op₂_congr 3 h rfl) rfl))).trans (eval_listMap hM hf').symm)
+
+/-- The action of the list object on a composite is the composite of the actions. -/
+theorem listMap_comp {f g A B C : Tree} (hf : Hom M ρ f A B) (hg : Hom M ρ g B C) :
+    eval M ρ (comp (listMap g) (listMap f)) = eval M ρ (listMap (comp g f)) := by
+  have hA := hf.isObj_dom
+  have hB := hf.isObj_cod
+  have hC := hg.isObj_cod
+  have hLA := isObj_list hM hA
+  have hLC := isObj_list hM hC
+  have h1 := isObj_one (ρ := ρ) hM
+  have hgf := comp_hom hM hf hg
+  have hLf := listMap_hom hM hf
+  have hLg := listMap_hom hM hg
+  have hh := comp_hom hM hLf hLg
+  have hz := comp_hom hM (bang_hom hM h1) (nil_hom hM hC)
+  have hsL := snd_hom hM hA hLC
+  have hs := comp_hom hM (pair_hom hM (comp_hom hM (fst_hom hM hA hLC) hgf) hsL)
+    (cons_hom hM hC)
+  have hfA := fst_hom hM hA hLA
+  have hsA := snd_hom hM hA hLA
+  refine Eq.trans ?_ (eval_listMap hM hgf).symm
+  refine listRec_unique hM hA hz hs hh ?_ ?_
+  · -- at the empty list
+    refine (comp_assoc hM (nil_hom hM hA) hLf hLg).symm.trans ?_
+    refine (eval_op₂_congr 3 rfl (listMap_nil hM hf)).trans ((listMap_nil hM hg).trans ?_)
+    exact ((eval_op₂_congr 3 rfl (bang_unique hM (idt_hom hM h1)).symm).trans
+      (comp_idt hM (nil_hom hM hC))).symm
+  · -- at a construction
+    refine (comp_assoc hM (cons_hom hM hA) hLf hLg).symm.trans ?_
+    refine (eval_op₂_congr 3 rfl (listMap_cons hM hf)).trans ?_
+    refine (comp_assoc hM (pair_hom hM (comp_hom hM hfA hf) (comp_hom hM hsA hLf))
+      (cons_hom hM hB) hLg).trans ?_
+    refine (eval_op₂_congr 3 (listMap_cons hM hg) rfl).trans ?_
+    refine (comp_pair_proj hM (cons_hom hM hC) hg hLg (comp_hom hM hfA hf)
+      (comp_hom hM hsA hLf)).trans ?_
+    refine Eq.trans ?_ (eval_op₂_congr 3 (eval_op₂_congr 3 rfl (eval_op₂_congr 9 rfl
+      (idt_comp hM hsL))) rfl)
+    refine Eq.trans ?_ (comp_pair_proj hM (cons_hom hM hC) hgf (idt_hom hM hLC) hfA
+      (comp_hom hM hsA hh)).symm
+    exact eval_op₂_congr 3 rfl (eval_op₂_congr 9 (comp_assoc hM hfA hf hg)
+      ((comp_assoc hM hsA hLf hLg).trans (idt_comp hM (comp_hom hM hsA hh)).symm))
+
+/-- The action of the list object on an identity is the identity of the list object. -/
+theorem listMap_idt {A : Tree} (hA : IsObj M ρ A) :
+    eval M ρ (listMap (idt A)) = eval M ρ (idt (list A)) := by
+  have hLA := isObj_list hM hA
+  have h1 := isObj_one (ρ := ρ) hM
+  have hi := idt_hom hM hA
+  have hz := comp_hom hM (bang_hom hM h1) (nil_hom hM hA)
+  have hsL := snd_hom hM hA hLA
+  have hfA := fst_hom hM hA hLA
+  have hs := comp_hom hM (pair_hom hM (comp_hom hM hfA hi) hsL) (cons_hom hM hA)
+  refine (eval_listMap hM hi).trans (listRec_unique hM hA hz hs (idt_hom hM hLA) ?_ ?_).symm
+  · exact (idt_comp hM (nil_hom hM hA)).trans ((eval_op₂_congr 3 rfl
+      (bang_unique hM (idt_hom hM h1)).symm).trans (comp_idt hM (nil_hom hM hA))).symm
+  · have hi' := idt_hom hM hLA
+    refine (idt_comp hM (cons_hom hM hA)).trans ((comp_idt hM (cons_hom hM hA)).symm.trans ?_)
+    refine (eval_op₂_congr 3 rfl (pair_fst_snd hM hA hLA).symm).trans ?_
+    refine Eq.trans ?_ (eval_op₂_congr 3 (eval_op₂_congr 3 rfl (eval_op₂_congr 9 rfl
+      (idt_comp hM hsL))) rfl)
+    refine Eq.trans ?_ (comp_pair_proj hM (cons_hom hM hA) hi hi' hfA
+      (comp_hom hM hsL hi')).symm
+    exact eval_op₂_congr 3 rfl (eval_op₂_congr 9 (idt_comp hM hfA).symm
+      ((idt_comp hM hsL).symm.trans (idt_comp hM (comp_hom hM hsL hi')).symm))
 
 /-- The exchange of a product's factors after a pairing is the exchanged pairing. -/
 theorem swap_pair {f g X A B : Tree} (hf : Hom M ρ f X A) (hg : Hom M ρ g X B) :

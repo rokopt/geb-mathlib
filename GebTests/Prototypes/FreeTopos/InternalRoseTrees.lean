@@ -17,7 +17,9 @@ placed after the primitive arrows of the natural numbers and lists and confirmed
 inference, and the computation of the fold of each at a construction checked: the fold that
 takes a tree to its root's label computes the label. The fold that rebuilds a tree is the
 identity, by induction on rose trees, with the fold that rebuilds a list, the identity by
-induction on lists, cited at the children.
+induction on lists, cited at the children. Induction on rose trees with an induction hypothesis
+proves a formula from its instance at a construction, and a derivation whose premise does not
+prove that instance is rejected.
 
 ## Main definitions
 
@@ -82,6 +84,23 @@ def theorems : List (Thm × Deriv) := [
 
 -- the development checks
 #guard checkThms GR (theorems.map fun (a, d) ↦ .language a d) #[]
+
+/-- The fold of a rose tree over the object parameter that takes it to its root's label. -/
+def labelRose : Term :=
+  Term.roseRec (x 0) (Term.fst (Term.var 0)) (Term.var 0)
+
+/-- A tree's root's label is its rebuilding's, by induction on rose trees with the induction
+hypothesis: at a construction both sides compute the label. -/
+def labelRebuild : Thm :=
+  ⟨1, [lrose (x 0)], [], Term.eq (Term.app (Term.lam (lrose (x 0)) labelRose) rebuildRose)
+    labelRose⟩
+
+-- the induction with the hypothesis checks, and fails where its premise is not proved
+#guard checkThms GR [.language labelRebuild (nd (.roseIndHyp 5 0 1) [
+  nd .join [nd .trans [nd .cong [nd .refl, nd (.roseNode 5 0 1)], nd .trans [nd .beta,
+    nd .trans [nd (.roseNode 5 0 1), nd .fstPair]]], nd .trans [nd (.roseNode 5 0 1),
+      nd .fstPair]]])] #[]
+#guard !checkThms GR [.language labelRebuild (nd (.roseIndHyp 5 0 1) [nd (.hyp 0)])] #[]
 
 end GebTests.Prototypes.FreeTopos.InternalRoseTrees
 

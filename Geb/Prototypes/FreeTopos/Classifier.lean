@@ -60,6 +60,8 @@ partial operation defined where its body is, the arrow is an operation of the th
 * {lit}`subObj_hom`, {lit}`subObj_lift` — the universal property of the iterated pullback.
 * {lit}`truth_of_natInd`, {lit}`truth_of_listInd` — induction on the natural numbers object
   and on a list object, with parameters.
+* {lit}`truth_of_roseInd` — induction on an initial algebra of the product of an object with the
+  list object, the rose-tree objects'.
 * {lit}`chi_hom`, {lit}`chiInv_hom`, {lit}`mono_cancel` — the characteristic map of a
   monomorphism, the inverse of its factorization, and its cancellation.
 * {lit}`unique_choice`, {lit}`functional_of_desc` — unique choice and its converse.
@@ -591,6 +593,55 @@ theorem truth_of_listInd {F P A : Tree} (hP : IsObj M ρ P) (hA : IsObj M ρ A)
   exact (comp_idt hM hF).symm.trans ((eval_op₂_congr 3 rfl hgid.symm).trans
     ((comp_assoc hM hf hi hF).trans ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hf))))
 
+
+/-- Induction on an initial algebra of the functor taking an object to the product of the object
+{lit}`a` with its list object, the rose-tree objects' presented by their structure map, folds and
+the folds' uniqueness: an arrow into the subobject classifier that is true at the structure map's
+value at each label and list of elements of its pullback of truth is true. The fold into the
+pullback of truth of the structure map there, followed by the pullback's inclusion, is the
+identity, by the uniqueness of the fold. -/
+theorem truth_of_roseInd {F r a nd : Tree} {fold : Tree → Tree} (hA : IsObj M ρ a)
+    (hnd : Hom M ρ nd (prod a (list r)) r)
+    (hfold : ∀ {S C}, Hom M ρ S (prod a (list C)) C → Hom M ρ (fold S) r C ∧
+      eval M ρ (comp (fold S) nd) = eval M ρ (comp S (prodMapRight a (listMap (fold S)))))
+    (huniq : ∀ {S C h}, Hom M ρ S (prod a (list C)) C → Hom M ρ h r C →
+      eval M ρ (comp h nd) = eval M ρ (comp S (prodMapRight a (listMap h))) →
+      eval M ρ h = eval M ρ (fold S))
+    (hF : Hom M ρ F r omega)
+    (h₁ : eval M ρ (comp (comp F nd) (prodMapRight a (listMap (truthIncl F)))) =
+      eval M ρ (comp tru (bang (prod a (list (truthEq F)))))) :
+    eval M ρ F = eval M ρ (comp tru (bang r)) := by
+  have hR := hF.isObj_dom
+  obtain ⟨hi, hFi⟩ := truthIncl_hom hM hF
+  have hLi := listMap_hom hM hi
+  have hk := prodMapRight_hom hM a hA hLi
+  have hndk := comp_hom hM hk hnd
+  -- the structure map on the pullback of truth, and the fold into it
+  obtain ⟨hα, hια⟩ := truthLift_hom hM hF hndk ((comp_assoc hM hk hnd hF).trans h₁)
+  obtain ⟨hf, hfnd⟩ := hfold hα
+  have hif := comp_hom hM hf hi
+  have hLf := listMap_hom hM hf
+  have hkf := prodMapRight_hom hM a hA hLf
+  -- the inclusion after the fold satisfies the recursion of the identity
+  have e₁ : eval M ρ (comp (comp (truthIncl F) (fold (truthLift F (comp nd
+      (prodMapRight a (listMap (truthIncl F))))))) nd) =
+      eval M ρ (comp nd (prodMapRight a (listMap (comp (truthIncl F)
+        (fold (truthLift F (comp nd (prodMapRight a (listMap (truthIncl F)))))))))) := by
+    refine (comp_assoc hM hnd hf hi).symm.trans ((eval_op₂_congr 3 rfl hfnd).trans ?_)
+    refine (comp_assoc hM hkf hα hi).trans ((eval_op₂_congr 3 hια rfl).trans ?_)
+    refine (comp_assoc hM hkf hk hnd).symm.trans (eval_op₂_congr 3 rfl ?_)
+    exact (prodMapRight_comp hM a hA hLf hLi).trans ((eval_prodMapRight a
+      (comp_hom hM hLf hLi)).trans ((eval_op₂_congr 9 rfl (eval_op₂_congr 3
+        (listMap_comp hM hf hi) rfl)).trans (eval_prodMapRight a (listMap_hom hM hif)).symm))
+  have hLR := isObj_list hM hR
+  have e₂ : eval M ρ (comp (idt r) nd) = eval M ρ (comp nd (prodMapRight a (listMap (idt r)))) :=
+    (idt_comp hM hnd).trans ((comp_idt hM hnd).symm.trans (eval_op₂_congr 3 rfl
+      ((prodMapRight_idt hM a hA hLR).symm.trans ((eval_prodMapRight a (idt_hom hM hLR)).trans
+        ((eval_op₂_congr 9 rfl (eval_op₂_congr 3 (listMap_idt hM hR).symm rfl)).trans
+          (eval_prodMapRight a (listMap_hom hM (idt_hom hM hR))).symm)))))
+  have hid := (huniq hnd hif e₁).trans (huniq hnd (idt_hom hM hR) e₂).symm
+  exact (comp_idt hM hF).symm.trans ((eval_op₂_congr 3 rfl hid.symm).trans
+    ((comp_assoc hM hf hi hF).trans ((eval_op₂_congr 3 hFi rfl).trans (truth_comp hM hf))))
 
 end Induction
 
