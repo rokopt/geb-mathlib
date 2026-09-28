@@ -29,8 +29,8 @@ derivation it computes is checked.
 * {lit}`normalize` — the normal form of a term and its rewriting derivation.
 * {lit}`byNorm`, {lit}`byNatInd`, {lit}`byListInd`, {lit}`byNatIndHyp`, {lit}`byListIndHyp`,
   {lit}`byRoseInd`, {lit}`byNormW` — the proofs of an equation.
-* {lit}`whnf`, {lit}`normalizeW` — the weak head normal form, and the normal form reached
-  through it.
+* {lit}`eval`, {lit}`whnf`, {lit}`normalizeW` — the reduction to a depth, sharing an argument's
+  value among its uses, the weak head normal form, and the normal form reached through it.
 
 ## Tags
 
@@ -206,10 +206,9 @@ def byListIndHyp (kn kc : ℕ) (rs : List NormRule) (fuel : ℕ) (Γ : List Tree
     pure (RoseTree.node (.listIndHyp kn kc) [p₀, RoseTree.node (.cut ψ) [ih, q]])
   | [] => none
 
-/-- The child of a node whose normalization can enable a rule at the node's root: the function
-of an application, the pair of a component, and the datum of a fold. -/
+/-- The child of a node other than an application whose normalization can enable a rule at the
+node's root: the pair of a component, and the datum of a fold. -/
 def headChild : Label → List Term → Option ℕ
-  | .app, [_, _] => some 0
   | .fst, [_] => some 0
   | .snd, [_] => some 0
   | .natRec, [_, _, _] => some 2
@@ -217,54 +216,110 @@ def headChild : Label → List Term → Option ℕ
   | .roseRec _, [_, _] => some 1
   | _, _ => none
 
-/-- The weak head normal form of a term in a context under hypotheses, by rules, within a depth
-of {lit}`fuel`, with its rewriting derivation, marked when it rewrites: the first rule that
-rewrites the root, else the weak head normal form of the child it depends on and the first rule
-that then rewrites the root, until none does. -/
+/-- How far the evaluator reduces a term: to its weak head normal form; to its weak normal form,
+every subterm reduced but those under an abstraction and a fold's start and step, which have
+contexts of their own; or to its normal form. -/
+inductive Depth where
+  /-- The weak head normal form. -/
+  | head
+  /-- The weak normal form. -/
+  | weak
+  /-- The normal form. -/
+  | full
+deriving DecidableEq
+
+/-- Whether the weak normal form leaves a node's child of an index in place: every child of an
+abstraction, and the start and the step of a fold. -/
+def keepsWeak (l : Label) (i : ℕ) : Bool := match l with
+  | .lam _ => true
+  | .natRec | .listRec => i < 2
+  | .roseRec _ => i = 0
+  | _ => false
+
+/-- The uses of the variable of index {lit}`d` in a term, each under an abstraction counted
+twice, since the abstraction may be applied more than once; a fold's start and step, in contexts
+of their own, have none. -/
+def uses : Term → ℕ → ℕ :=
+  RoseTree.para fun l cs d ↦ match l, cs with
+    | .var i, _ => if i = d then 1 else 0
+    | .lam _, cs => 2 * (cs.map fun c ↦ c.2 (d + 1)).sum
+    | .natRec, [_, _, (_, m)] | .listRec, [_, _, (_, m)] | .roseRec _, [_, (_, m)] => m d
+    | _, cs => (cs.map fun c ↦ c.2 d).sum
+
+/-- The derivation of a node's rewriting from its children's, marked when one rewrites. -/
+def dCong (cs : List (Deriv × Bool)) : Deriv × Bool :=
+  if cs.any (·.2) then (RoseTree.node .cong (cs.map (·.1)), true) else dRefl
+
+/-- The reduction of a term in a context under hypotheses, by rules, to a depth, within a depth
+of recursion of {lit}`fuel`, with its rewriting derivation, marked when it rewrites. The weak
+head normal form of an application is that of its function, and then, before a rule at the root,
+the weak normal form of its argument when the function is an abstraction whose variable
+{lit}`uses` counts more than once, so that its value is computed once rather than at each use,
+and its weak head normal form when the function is not an abstraction, so that a case analysis
+receives its scrutinee; that of any other node is the first rule that rewrites the
+root, the unfolding of a definition receiving its arguments unreduced, else the weak head normal
+form of the child it depends on and the first rule that then rewrites the root. The branches of
+a case analysis, abstractions, are reduced only once one is selected. The weak normal form then
+reduces the children but those {lit}`keepsWeak` leaves, and the normal form every child, each in
+its own context, and a rule at the root. The children the weak head and weak normal forms reduce
+are in the node's context, which they therefore do not compute. -/
+def eval (rs : List NormRule) (fuel : ℕ) :
+    Depth → List Tree → List Term → Term → Option (Term × Deriv × Bool) :=
+  fuel.rec (fun _ _ _ t ↦ some (t, dRefl)) fun _ rec depth Γ Φ t ↦ do
+    -- the weak head normal form, then the root's rewriting and its weak head normal form
+    let atRoot (t₁ : Term) (d₁ : Deriv × Bool) : Option (Term × Deriv × Bool) :=
+      match rootRewrite G E n rs Γ Φ t₁ with
+      | some (t₂, dr) => do
+        let (t₃, d₃) ← rec .head Γ Φ t₂
+        pure (t₃, dTrans d₁ (dTrans (dr, true) d₃))
+      | none => pure (t₁, d₁)
+    let (w, dw) ← match t.label, t.children with
+      | .app, [f, u] => do
+        let (f', df) ← rec .head Γ Φ f
+        let (u', du) ← match f'.label, f'.children with
+          | .lam _, [b] => if uses b 0 < 2 then some (u, dRefl) else rec .weak Γ Φ u
+          | _, _ => rec .head Γ Φ u
+        atRoot (Term.app f' u') (dCong [df, du])
+      | l, cs => match rootRewrite G E n rs Γ Φ t with
+        | some (t₁, dr) => do
+          let (t₂, d₂) ← rec .head Γ Φ t₁
+          pure (t₂, dTrans (dr, true) d₂)
+        | none => match headChild l cs with
+          | none => some (t, dRefl)
+          | some i => do
+            let c ← cs[i]?
+            let (c', dc) ← rec .head Γ Φ c
+            if dc.2 then
+              atRoot (RoseTree.node l (cs.set i c'))
+                (dCong ((List.range cs.length).map fun j ↦ if j = i then dc else dRefl))
+            else some (t, dRefl)
+    match depth with
+    | .head => pure (w, dw)
+    | .weak => do
+      let cs ← w.children.zipIdx.mapM fun (u, i) ↦
+        if keepsWeak w.label i then some (u, dRefl) else rec .weak Γ Φ u
+      pure (RoseTree.node w.label (cs.map Prod.fst), dTrans dw (dCong (cs.map Prod.snd)))
+    | .full => do
+      let Γs ← childCtxs G n w.label w.children Γ Φ
+      let cs ← (Γs.zip w.children).mapM fun ((Δ, Ψ), u) ↦ rec .full Δ Ψ u
+      let t₁ := RoseTree.node w.label (cs.map Prod.fst)
+      let d₁ := dCong (cs.map Prod.snd)
+      match rootRewrite G E n rs Γ Φ t₁ with
+      | some (t₂, dr) => do
+        let (t₃, d₃) ← rec .full Γ Φ t₂
+        pure (t₃, dTrans dw (dTrans d₁ (dTrans (dr, true) d₃)))
+      | none => pure (t₁, dTrans dw d₁)
+
+/-- The weak head normal form of a term, by {lit}`eval`. -/
 def whnf (rs : List NormRule) (fuel : ℕ) :
     List Tree → List Term → Term → Option (Term × Deriv × Bool) :=
-  fuel.rec (fun _ _ t ↦ some (t, dRefl)) fun _ rec Γ Φ t ↦
-    match rootRewrite G E n rs Γ Φ t with
-    | some (t₁, dr) => do
-      let (t₂, d₂) ← rec Γ Φ t₁
-      pure (t₂, dTrans (dr, true) d₂)
-    | none => match headChild t.label t.children with
-      | none => some (t, dRefl)
-      | some i => do
-        let Γs ← childCtxs G n t.label t.children Γ Φ
-        let (Δ, Ψ) ← Γs[i]?
-        let c ← t.children[i]?
-        let (c', dc, ch) ← rec Δ Ψ c
-        if ch then
-          let t₁ := RoseTree.node t.label (t.children.set i c')
-          let d₁ : Deriv × Bool := (RoseTree.node .cong
-            ((List.range t.children.length).map fun j ↦ if j = i then dc else dRefl.1), true)
-          match rootRewrite G E n rs Γ Φ t₁ with
-          | some (t₂, dr) => do
-            let (t₃, d₃) ← rec Γ Φ t₂
-            pure (t₃, dTrans d₁ (dTrans (dr, true) d₃))
-          | none => pure (t₁, d₁)
-        else some (t, dRefl)
+  eval G E n rs fuel .head
 
-/-- The normal form of a term in a context under hypotheses, by rules, within a depth of
-{lit}`fuel`, with its rewriting derivation, marked when it rewrites: the weak head normal form
-first, so that a fold whose datum computes selects its case before the cases are normalized,
-then its children's normal forms, and a rule at the root. -/
+/-- The normal form of a term reached through its weak head normal form, by {lit}`eval`: a fold
+whose datum computes selects its case before the cases are normalized. -/
 def normalizeW (rs : List NormRule) (fuel : ℕ) :
     List Tree → List Term → Term → Option (Term × Deriv × Bool) :=
-  fuel.rec (fun _ _ t ↦ some (t, dRefl)) fun _ rec Γ Φ t ↦ do
-    let (w, dw) ← whnf G E n rs fuel Γ Φ t
-    let Γs ← childCtxs G n w.label w.children Γ Φ
-    let cs ← (Γs.zip w.children).mapM fun ((Δ, Ψ), u) ↦ rec Δ Ψ u
-    let t₁ := RoseTree.node w.label (cs.map Prod.fst)
-    let d₁ : Deriv × Bool := if cs.any (·.2.2) then
-        (RoseTree.node .cong (cs.map (·.2.1)), true)
-      else dRefl
-    match rootRewrite G E n rs Γ Φ t₁ with
-    | some (t₂, dr) => do
-      let (t₃, d₃) ← rec Γ Φ t₂
-      pure (t₃, dTrans dw (dTrans d₁ (dTrans (dr, true) d₃)))
-    | none => pure (t₁, dTrans dw d₁)
+  eval G E n rs fuel .full
 
 /-- The proof of an equation by normalizing both sides, weak head normal forms first, to one
 term. -/
