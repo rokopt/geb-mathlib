@@ -83,12 +83,13 @@ checklist and in CI.
 - [Bootstrapping Geb](../manual/GebManual/Bootstrap.lean) — a Verso
   manual chapter recording the bootstrap: a road map of the bootstrap
   and of the work written in Geb after it, each item with its state; the
-  computational core, the equational logic of kernel terms, and the
-  metalogic, the free topos presented as the initial model of one
-  partial Horn theory, each with what it defines and proves and the
-  metalogic with its remaining questions, its prover prototyped in Lean
-  and the measurement of its certificates against the core's; the
-  decisions that fix the seed
+  computational core, the equational logic of kernel terms, whose checker
+  is retired, and the metalogic, the free topos presented as the initial
+  model of one partial Horn theory, with the Mitchell–Bénabou language,
+  the translation of kernel programs into it, and the proofs about the
+  compiler's components made in it, each with what it defines and
+  proves, and the constructions, choices and measurements that fixed the
+  metalogic's form; the decisions that fix the seed
   (values, the typed kernel, closed bundles and references, input and
   output), a survey of seed images, self-extending kernels, operational
   semantics, proof checkers for the free topos and content addressing,
