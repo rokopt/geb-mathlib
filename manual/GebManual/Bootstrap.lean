@@ -2326,6 +2326,20 @@ exponentials. The fold that rebuilds a tree is the identity by the rule,
 with the fold that rebuilds a list, the identity by induction on lists,
 cited at the children (`GebTests/Prototypes/FreeTopos/InternalRoseTrees.lean`).
 
+Induction on rose trees with an induction hypothesis is a second rule,
+beside those of the natural numbers and lists: a formula in a context of
+a rose tree alone holds when it holds at a construction under the
+hypothesis that it holds at each child, the list of its values at the
+children being the list of truths of the same length
+({name}`Geb.FreeTopos.Internal.roseIndHyp_sound`). Its soundness is the
+fold of the formula's pullback of truth by the structure map there,
+which the premise gives: that fold followed by the pullback's inclusion
+is the identity, by the uniqueness of the fold, so the formula is true
+({name}`Geb.FreeTopos.truth_of_roseInd`), with the action of the list
+object on arrows functorial ({name}`Geb.FreeTopos.listMap_comp`). The
+rule takes a context of the tree alone for the reason the first does;
+quantifiers, or abstraction, bring other variables under it.
+
 Citations between the two checkers, complete. A development is one list
 of declarations, each checked with the entries before it: a theorem of
 the language with its derivation, or a sequent of the combinators with
@@ -2953,13 +2967,11 @@ so the statement is proved of the two sides as functions of `G`, `c1`,
 node's label by chains of conditionals, which do not reduce at a
 variable label. The proof needs, in order:
 
-1. induction on rose trees with an induction hypothesis: a rule of the
-   language's derivations, beside those of the natural numbers and of
-   lists, proving a formula of a rose tree from the formula at a
-   construction under the hypothesis that it holds at each child; sound
-   in every model by the fold into the formula's pullback of truth,
-   whose inclusion after the fold is the identity by the uniqueness of
-   the fold;
+1. induction on rose trees with an induction hypothesis, complete: a
+   rule of the language's derivations, beside those of the natural
+   numbers and of lists, proving a formula of a rose tree from the
+   formula at a construction under the hypothesis that it holds at each
+   child (the section on the fourth stage);
 2. lemmas on the folds of the traversal and of the checker, whose first
    components rebuild the tree folded, so that a node's children are
    found again after either fold;
