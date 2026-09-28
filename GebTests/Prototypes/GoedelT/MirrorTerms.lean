@@ -12,7 +12,18 @@ set_option doc.verso true in
 /-!
 # The traversal of kernel terms written in Geb
 
-Work in progress.
+The traversal of de Bruijn terms written in Geb, which replaces each variable by a function of
+the number of binders around it and of its index, and the weakening and substitution defined
+from it, are proved equal in their Lean mirror to the kernel's {name}`Geb.Kernel.trav`,
+{name}`Geb.Kernel.wk` and {name}`Geb.Kernel.subst`: {lit}`trav_eq`, {lit}`wk_eq` and
+{lit}`subst_eq`. The mirror's fold carries each node with the function of the number of binders;
+at a variable it applies the replacement, at an abstraction it traverses the body under one more
+binder, and at a node whose children are all terms it traverses each child.
+
+## Main statements
+
+* {lit}`trav_eq` — the mirror's traversal is the kernel's, when their replacements agree.
+* {lit}`wk_eq`, {lit}`subst_eq` — the mirror's weakening and substitution are the kernel's.
 
 ## Tags
 

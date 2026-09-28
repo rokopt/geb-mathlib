@@ -12,7 +12,25 @@ set_option doc.verso true in
 /-!
 # The type checker written in Geb decides as the kernel's
 
-Work in progress.
+The kernel's checker written in Geb, {lit}`bootstrap/check.geb`, gives the type of a term in a
+global environment's types and a context, as the reader represents an optional tree:
+{lit}`enc`. Its Lean mirror, {lit}`GebMirror.GoedelT.typeIn`, emitted by the bootstrap compiler,
+is here proved equal to the type the kernel's checker-evaluator {name}`Geb.Kernel.infer` gives,
+at every term: {lit}`typeIn_eq`.
+
+The proof follows the mirror's fold over the term. At each node, the mirror's test of the label
+and the number of children selects one of the kernel's rules, and a lemma per rule states that
+the mirror's branch gives the type {name}`Geb.Kernel.inferStep` gives there, from the children's
+types; nodes of a label or arity no rule has give nothing on both sides.
+
+## Main definitions
+
+* {lit}`enc` — an optional tree as the reader represents it.
+* {lit}`tyOf` — the optional type of a term, as the checker-evaluator gives it.
+
+## Main statements
+
+* {lit}`typeIn_eq` — the mirror's type of a term is the checker-evaluator's.
 
 ## Tags
 
