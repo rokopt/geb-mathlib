@@ -741,9 +741,11 @@ operational structure, distinct from the sharing of immutable pointers
 in a rose-tree runtime. [HVM2](https://github.com/HigherOrderCO/HVM2)
 and HVM4 implement different calculi with different interfaces, so each
 is a separate target, pinned to a revision and tested before any step
-depends on it; HVM4's repository carries no licence, so neither its
-code nor its text can enter this repository, only the published rules
-of the calculus it implements, re-derived and cited.
+depends on it. HVM4's repository carries no licence, nor does that of
+the calculus it implements, so neither's code nor text can enter this
+repository, only the published rules of the calculus, re-derived and
+cited; HVM1 and HVM3 are licensed MIT, and HVM2 and both versions of
+Bend Apache-2.0.
 
 Ownership-based native code. Bend's second version, which succeeds the
 first, runs on no interaction net, and gives up optimal reduction of
@@ -1270,29 +1272,49 @@ proof, and each program running at the highest stage it qualifies for
    one agent that applies them, one agent for each occurrence of a
    fold, with a rule for each constructor
    {citep MackiePintoVilaca2009}[], and the nodes of rose trees as
-   agents whose labels are attributes. No λ-value is duplicated, only
+   agents whose labels are attributes, which data and conditional rules
+   admit with one-step confluence kept {citep Sato2024}[]. No λ-value is
+   duplicated, only
    data, which a copying agent copies constructor by constructor, so
    every kernel program runs, and the work under a copied closure is
    repeated in each copy.
 2. λ-values in the net, a function copied only once it is closed: a
    linear System T that iterates only closed functions is, under closed
    reduction, as powerful as System T
-   {citep AlvesFernandezFloridoMackie2010}[].
+   {citep AlvesFernandezFloridoMackie2010}[]. This stage's proof of
+   correctness is to be written; the other route to a machine for
+   linear System T, a token machine of the geometry of interaction, can
+   be exponentially slower than an environment machine on higher-order
+   programs {citep AccattoliDalLagoVanoni2021}[].
 3. Duplicators indexed by the depths of an elementary-affine typing,
    for the programs a typing certifies, which reduce with optimal
    sharing {citep BaillotCoppolaDalLago2011}[]; the other programs run
-   at the second stage.
+   at the second stage. The labels come from the typing: no result
+   supports labels chosen otherwise, by the nesting of recursors for
+   instance, and HVM2's single label fails on Church numeral two applied
+   to itself {citep Taelin2024}[], a term the discipline types.
 4. Superpositions of candidates, for searching certificates. The
    checker re-checks what a search returns, so a runtime without a
    proof of correctness costs a search completeness or time, never
    soundness. A search gains from sharing only with a checker that
    produces a rule's conclusion before checking its premises and reads
-   each subtree of a certificate once.
+   each subtree of a certificate once, and with the labels forked at
+   each child position of a node, siblings otherwise being entangled. A
+   superposed term denotes a family of values indexed by assignments to
+   its labels, as choice identifiers do in pull-tabbing
+   {citep Antoy2011}[], and a correctness statement would say that
+   collapsing its normal form returns that family, which no source
+   states. Whether shared evaluation outperforms a lazy, pruning
+   enumerator {citep RuncimanNaylorLindblad2008}[] is measured before
+   this stage is built.
 5. Realizers extracted from the metalogic's proofs, after the
    bootstrap. They are untyped, so they run at the second stage:
    closed reduction evaluates them correctly and without optimal
    sharing {citep FernandezMackieSinot2005}[], and optimal sharing for
-   them needs the oracle.
+   them needs the oracle. Realizability over the geometry of
+   interaction is established {citep AbramskyHaghverdiScott2002}[];
+   whether closed nets under application form a partial combinatory
+   algebra is not settled.
 
 The machine runs kernel programs. The metalogic's terms are data that
 its checker, a kernel program, reads, and are not executed, so no stage
@@ -1302,16 +1324,24 @@ correctness, which the first stage has for all of System T; an
 elementary-affine discipline decides where the third stage applies.
 
 The first stage's prototype in Lean is the interaction system of a
-kernel program, a sequential reducer on configurations with explicit
-fresh names, read-back at the type of trees, and the theorem that for
+kernel program, a sequential reducer on the configurations of the
+calculus of interaction nets {citep FernandezMackie1999}[], its names
+allocated explicitly so that each step is a function, read-back at the
+type of trees, and the theorem that for
 every closed program from trees to trees and every input the reducer
 reaches a normal form whose read-back is the denotation
 {name}`Geb.Kernel.infer` assigns, by a logical relation between
 configurations and denotations observed at trees. A second milestone is
 the one-step diamond property up to renaming of cells and wires, the
 cells indexed by `Fin k` so that renamings are permutations and the
-quotient is decidable: it extends the theorem to every schedule, so
-that a parallel runtime is covered.
+quotient is decidable: it extends the theorem to every schedule, by
+mathlib's `Relation.church_rosser` or CSLib's
+`Relation.Diamond.to_confluent`, so that a parallel runtime is covered.
+De Falco's presentation of nets by partial permutations, with strong
+confluence proved on paper, is the algebraic alternative to indexed
+cells {citep DeFalco2010}[]. A later milestone proves a data structure
+in close correspondence with the calculus, as in
+{citet HassanMackieSato2015}[], to refine the reduction of nets.
 
 Elementary-affine typability was measured on the programs by
 `scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
@@ -1326,9 +1356,16 @@ the stage-1 compiler's 315, 359 of the prover of Gödel's T's 368 and
 fails, among them the type checker `typeIn` and the resolver `resolve`,
 is a fold at pairs of a subtree and a function whose step reads the
 list of its children's results more than once, contracting a list of
-functions; a step that splits the list once, as the datatype language's
-structural recursion does, contracts none, and whether the folds so
-rewritten are typable is not yet measured. Typing a whole program with
+functions. A step that reads the list once contracts none, and on
+folds into functions of an argument is typable in some forms only: a
+step that applies the first child's function by case analysis, or that
+composes the children's functions into one by a right fold and returns
+that function, is typable, and a step returning a closure over the
+argument that loops over the children's functions is not, the right
+fold's list of functions needing a box that the closure's body cannot
+give it. The serializer's `treeBits`, which pairs its children's count
+with the composition of their results, takes the composing form, and
+`scripts/eal/examples.defs` holds the four shapes. Typing a whole program with
 one decoration per definition fails for three of the four programs, so
 a program's typing needs a decoration per use of a definition. The exemption is not proved sound
 for a net machine; the third stage needs it, and the first two need no
@@ -3615,9 +3652,11 @@ the change that removes it.
   programs that an elementary-affine typing with first-order data
   exempted rejects ({ref "choice-of-machine"}[The choice of machine]).
   A step that splits the list once, as the datatype language's
-  structural recursion does, contracts no list of functions, and the
-  requirement that the bootstrap's programs be decorated waits on that
-  rewriting.
+  structural recursion does, contracts no list of functions; where the
+  step loops over the children's functions, the loop composes them
+  into one function and the step returns it, a loop inside a closure
+  over the argument not being typable. The requirement that the
+  bootstrap's programs be decorated waits on that rewriting.
 * Atoms as character codes. The Geb sources spell the atoms they
   compare with, the keywords of the reader, the expansion and the
   prover, as quoted lists of character codes, since a datum has no

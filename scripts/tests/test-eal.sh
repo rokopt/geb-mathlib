@@ -31,8 +31,8 @@ untypable() { # mode expected-names...
   fi
 }
 
-untypable "" foldTwice twoPasses
-untypable --pure foldTwice squareByIter twoPasses
+untypable "" foldTwice twoPasses readTwice loopInside
+untypable --pure foldTwice squareByIter twoPasses readTwice loopInside composeFirst
 
 if ! python3 "$EAL" --explain twoPasses "$DEFS" | grep -q 'contraction'; then
   echo "FAIL [explain]: twoPasses's conflict names no contraction"
