@@ -3928,6 +3928,19 @@ checklist and in CI.
   theorems of Gödel's T derived in the language
   (`InternalDerivation.lean`), its logic, coproducts, rose trees,
   quotients, declared constants, and citations between the two checkers.
+  `bootstrap/free-topos/` is the checker written again in the datatype
+  language: the partial Horn logic's checker of certificates and
+  extension by definitions (`partial-horn.geb`), the theory
+  (`theory.geb`), the inference of typings (`infer.geb`), the language's
+  terms and compilation (`language.geb`), and the checker of derivations
+  and developments (`derivation.geb`). `GebCheck.lean` and
+  `GebCheckInternal.lean` load it with the stage-0 compiler and compare
+  its definitions with the Lean definitions they transcribe: the checker
+  of certificates at certificates and malformed variants of each, the
+  theory, the inference at the sides of every axiom, and the checker of
+  developments at the developments of the `Internal*.lean` modules, at
+  each small development with a declaration removed, and at altered
+  declarations.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

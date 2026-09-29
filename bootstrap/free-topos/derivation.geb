@@ -1,0 +1,696 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The checker of the internal language's derivations and of developments, written in the datatype
+; language, deciding as Geb.FreeTopos.Internal decides: the rewriting a derivation performs and
+; the judgments it proves, the sequents theorems compile to, the certificates of the combinators,
+; and the check of a development's declarations, each with the constants and the entries before
+; it. A derivation is the node of its rule's position among Geb.FreeTopos.Internal.Rule's
+; constructors over the node of the rule's data followed by its children, a term among the data
+; as the language encodes it, objects and terms the node of their list and a truth value a
+; label. A theorem is the node of label 0 over its arity, the node of its context, the node of its
+; hypotheses and its conclusion, an entry and a declaration the node of their constructor's
+; position over their fields, an optional certificate the optional tree, and the state of a
+; development the pair of its constants and the node of its entries. Requires the prelude, the
+; base, partial Horn logic, the theory, the inference and the language.
+
+; the case analysis of a coproduct into an object
+(defn copairIn ((X T) (A T) (B T) (C T) (F T) (G T)) T
+  (comp (ev X C)
+    (cPair (comp (copair (curry A X (comp F (cPair (cSnd A X) (cFst A X))))
+                         (curry B X (comp G (cPair (cSnd B X) (cFst B X)))))
+                 (cSnd X (coprod A B)))
+           (cFst X (coprod A B)))))
+(defn caseArr ((A T) (B T) (C T)) T
+  (let P T (prod (exp A C) (exp B C))
+    (curry P (coprod A B)
+      (copairIn P A B C
+        (comp (ev A C) (cPair (comp (cFst (exp A C) (exp B C)) (cFst P A)) (cSnd P A)))
+        (comp (ev B C) (cPair (comp (cSnd (exp A C) (exp B C)) (cFst P B)) (cSnd P B)))))))
+
+; the primitive arrows of the data objects and of coproducts
+(def zeroPrim (primitive 0 zeroN one nat))
+(def succPrim (primitive 0 succ nat nat))
+(def nilPrim (primitive 1 (cNil (x 0)) one (list (x 0))))
+(def consPrim (primitive 1 (cCons (x 0)) (prod (x 0) (list (x 0))) (list (x 0))))
+(def nodePrim (primitive 0 cNode (prod nat (list rose)) rose))
+(def lnodePrim (primitive 1 (lnode (x 0)) (prod (x 0) (list (lrose (x 0)))) (lrose (x 0))))
+(def inlPrim (primitive 2 (inl (x 0) (x 1)) (x 0) (coprod (x 0) (x 1))))
+(def inrPrim (primitive 2 (inr (x 0) (x 1)) (x 1) (coprod (x 0) (x 1))))
+(def casePrim (primitive 3 (caseArr (x 0) (x 1) (x 2)) (prod (exp (x 0) (x 2)) (exp (x 1) (x 2)))
+  (exp (coprod (x 0) (x 1)) (x 2))))
+(defn primIs ((G T) (k T) (p T)) T (equal (nth (gPrims G) k) (some p)))
+(defn objVars ((n T)) Ts (mapT x (range n)))
+
+; the recognition of a coequalizer's projection, and of a quotient's by a relation
+(defn isCoeqProj ((p T)) T
+  (let a T (prArrow p)
+    (if (eq (arity a) 2)
+        (let f T (child a 0)
+          (let g T (child a 1)
+            (if (and (eq (arity f) 2) (eq (arity g) 2))
+                (and (equal a (coeqProj f g))
+                  (and (equal f (comp (child f 0) (child f 1))) (equal g (comp (child g 0) (child g 1)))))
+                0)))
+        0)))
+(defn relL ((A T) (r T)) T (comp (cFst A A) (truthIncl r)))
+(defn relR ((A T) (r T)) T (comp (cSnd A A) (truthIncl r)))
+(defn primRel ((p T)) T
+  (let a T (prArrow p)
+    (if (eq (arity a) 2)
+        (let f T (child a 0)
+          (if (eq (arity f) 2)
+              (let m T (child f 1)
+                (if (eq (arity m) 2)
+                    (let r T (child m 0)
+                      (if (equal a (coeqProj (relL (prDom p) r) (relR (prDom p) r))) (some r) none))
+                    none))
+              none))
+        none)))
+
+; substitutions for the innermost variables, and weakenings
+(defn instVar ((u T) (i T)) T (if (eq i 0) u (mVar (sub i 1))))
+(defn atVar0 ((u T) (i T)) T (if (eq i 0) u (mVar i)))
+(defn natSuccAt ((ks T) (t T)) T (subst t (atVar0 (mArr ks (nil T) (mVar 0)))))
+(defn listConsAt ((kc T) (a T) (t T)) T
+  (subst t (lam ((i T))
+    (if (eq i 0) (mArr kc (single a) (mPair (mVar 1) (mVar 0))) (mVar (add i 1))))))
+(defn roseNodeAt ((kn T) (r T) (a T) (t T)) T
+  (subst t (instVar (mArr kn (if (equal r rose) (nil T) (single a)) (mPair (mVar 1) (mVar 0))))))
+(defn weakenElem ((t T)) T (rename t (lam ((i T)) (if (eq i 0) 0 (add i 1)))))
+(defn weaken1 ((t T)) T (rename t (lam ((i T)) (add i 1))))
+(defn weaken2 ((t T)) T (rename t (lam ((i T)) (add i 2))))
+(defn lower1 ((t T)) T (rename t (lam ((i T)) (sub i 1))))
+(defn roseMapAt ((kl T) (kc T) (c T) (t T)) T
+  (mListRec (mArr kl (single c) mStar) (mArr kc (single c) (mPair (weaken1 t) (mVar 0))) (mVar 0)))
+(defn roseHyp ((kl T) (kc T) (phi T)) T
+  (mEq (roseMapAt kl kc omega phi) (roseMapAt kl kc omega (mEq mStar mStar))))
+
+; the sides of an equation, the instance of a theorem's term, and the type of a term in a context
+(defn eqParts ((phi T)) T (if (mIs 12 2 phi) (some (pr (mArg phi 0) (mArg phi 1))) none))
+(defn instTerm ((th Ts) (sg Ts) (s T)) T (subst (osubst th s) (substList sg)))
+(defn typeIn ((G T) (n T) (g Ts) (t T)) T (mapO p2 ((compile G n t) (ctxObj g) (stdEnv g))))
+(defn isFormula ((G T) (n T) (g Ts) (t T)) T (equal (typeIn G n g t) (some omega)))
+
+; hypotheses that do not mention the innermost variable, in the context without it
+(defn lowerHyps ((G T) (n T) (g Ts) (hs Ts)) T
+  (allSomeT (mapT
+    (lam ((h T))
+      (let l T (lower1 h) (if (and (equal (weaken1 l) h) (isFormula G n g l)) (some l) none)))
+    hs)))
+
+; theorems: an arity, a context, hypotheses and a conclusion
+(data Thm (mkThm T T T T))
+(defn thArity ((a T)) T (case a ((mkThm m c h q) m)))
+(defn thCtx ((a T)) Ts (case a ((mkThm m c h q) (children c))))
+(defn thHyps ((a T)) Ts (case a ((mkThm m c h q) (children h))))
+(defn thConcl ((a T)) T (case a ((mkThm m c h q) q)))
+
+; whether objects and terms instantiate a theorem in a context
+(defn instOk ((G T) (n T) (g Ts) (a T) (th Ts) (sg Ts)) T
+  (and (eq (length th) (thArity a))
+    (and (allT (isTy G n) th)
+      (and (eq (length sg) (length (thCtx a)))
+        (allT (lam ((i T)) (equal (typeIn G n g (at sg i)) (some (phSubst th (at (thCtx a) i)))))
+          (range (length sg)))))))
+
+; the subobject on which arrows into the subobject classifier are truth, with its inclusion
+(defn truthSub ((X T) (hs Ts)) T
+  (foldr T T
+    (lam ((h T) (p T))
+      (let c T (comp h (p2 p)) (pr (truthEq c) (comp (p2 p) (truthIncl c)))))
+    (pr X (idt X)) (reverse hs)))
+
+; the sequent of the combinators a theorem compiles to
+(defn thmArrow ((G T) (a T) (phi T)) T
+  (getD (mapO p1 ((compile G (thArity a) phi) (ctxObj (thCtx a)) (stdEnv (thCtx a))))
+    (idt (ctxObj (thCtx a)))))
+(defn thmSide ((G T) (a T) (f T)) T
+  (if (isEmpty (thHyps a)) f
+    (comp f (p2 (truthSub (ctxObj (thCtx a)) (mapT (thmArrow G a) (thHyps a)))))))
+(defn thmSeq ((G T) (a T)) T
+  (let ep T (eqParts (thConcl a))
+    (mkSeq (replicate (thArity a) Sorts.obj) (nil T)
+      (if (isSome ep)
+          (eqn (thmSide G a (thmArrow G a (p1 (get ep)))) (thmSide G a (thmArrow G a (p2 (get ep)))))
+          (eqn (thmSide G a (thmArrow G a (thConcl a)))
+               (thmSide G a (comp tru (bang (ctxObj (thCtx a))))))))))
+
+; the entries of a development: theorems of the language and sequents of the combinators
+(data Entry (entLang T) (entComb T))
+(defn entryLanguage ((e T)) T (case e ((entLang a) (some a)) ((entComb s) none)))
+(defn entrySeq ((G T) (e T)) T (case e ((entLang a) (thmSeq G a)) ((entComb s) s)))
+
+; whether the compilations of the constants' definitions pass a test, and whether a certificate
+; proves a sequent in the theory they extend, with the entries' sequents as its theorems
+(defn anyDefs ((G T) (f (Arrow Ts T))) T
+  (let cd T (compileDefs G) (if (isSome cd) (f (children (get cd))) 0)))
+(defn certifies ((G T) (E Ts) (c T) (s T)) T
+  (anyDefs G (lam ((cds Ts))
+    (if (eq (gBase G) (length sig))
+        (equal ((pcheck (ext cds) (mapT (entrySeq G) E) c) (seqCtx s) (seqHyps s))
+          (some (seqConcl s)))
+        0))))
+
+; the contexts and hypotheses of a node's children, as pairs of nodes
+(defn ctxPair ((g Ts) (hs Ts)) T (pr (node 0 g) (node 0 hs)))
+(defn childCtxs ((G T) (n T) (t T) (g Ts) (hs Ts)) T
+  (let l T (label t)
+    (let ts Ts (mArgs t)
+      (let k T (length ts)
+        (if (and (eq l 5) (eq k 1))
+            (some (node 0 (single (ctxPair (cons (mD t 0) g) (mapT weaken1 hs)))))
+        (if (and (eq l 8) (eq k 3))
+            (bindO (typeIn G n (nil T) (at ts 0)) (lam ((c T))
+              (some (node 0 (l3 (ctxPair (nil T) (nil T)) (ctxPair (single c) (nil T))
+                                (ctxPair g hs))))))
+        (if (and (eq l 9) (eq k 3))
+            (bindO (typeIn G n (nil T) (at ts 0)) (lam ((c T))
+              (bindO (bindO (typeIn G n g (at ts 2)) listPart) (lam ((a T))
+                (some (node 0 (l3 (ctxPair (nil T) (nil T)) (ctxPair (l2 c a) (nil T))
+                                  (ctxPair g hs))))))))
+        (if (and (eq l 10) (eq k 2))
+            (bindO (bindO (typeIn G n g (at ts 1)) roseLabel) (lam ((a T))
+              (some (node 0 (l2 (ctxPair (single (prod a (list (mD t 0)))) (nil T))
+                                (ctxPair g hs))))))
+          (some (node 0 (mapT (lam ((u T)) (ctxPair g hs)) ts)))))))))))
+(defn sameCtx ((l T) (i T)) T
+  (if (eq l 5) 0 (if (or (eq l 8) (eq l 9)) (eq i 2) (if (eq l 10) (eq i 1) 1))))
+(defn congCtxs ((G T) (n T) (t T) (g Ts) (hs Ts) (ds Ts)) T
+  (if (allT (lam ((i T)) (or (sameCtx (label t) i) (eq (label (at ds i)) 0))) (range (length ds)))
+      (some (node 0 (mapT (lam ((u T)) (ctxPair g hs)) (mArgs t))))
+      (childCtxs G n t g hs)))
+
+; the rewritings of a term at its root by the rules of the language's equations, each by one
+; rule: beta, the components of a pair, the eta of pairs and of the terminal type, the unfolding
+; of a definition, the folds of the natural numbers, lists and rose trees at their constructions,
+; the case analysis of a coproduct, an equational theorem and an equation among the hypotheses
+(defn rootBeta ((t T)) T
+  (let a0 T (mArg t 0)
+    (if (and (mIs 6 2 t) (mIs 5 1 a0)) (some (subst (mArg a0 0) (instVar (mArg t 1)))) none)))
+(defn rootFst ((t T)) T
+  (let a0 T (mArg t 0) (if (and (mIs 3 1 t) (mIs 2 2 a0)) (some (mArg a0 0)) none)))
+(defn rootSnd ((t T)) T
+  (let a0 T (mArg t 0) (if (and (mIs 4 1 t) (mIs 2 2 a0)) (some (mArg a0 1)) none)))
+(defn rootPairEta ((t T)) T
+  (let a0 T (mArg t 0)
+    (let a1 T (mArg t 1)
+      (if (and (mIs 2 2 t) (and (mIs 3 1 a0) (mIs 4 1 a1)))
+          (if (equal (mArg a0 0) (mArg a1 0)) (some (mArg a0 0)) none)
+          none))))
+(defn rootUnitEta ((G T) (n T) (g Ts) (t T)) T
+  (if (equal (typeIn G n g t) (some one)) (some mStar) none))
+(defn rootDelta ((G T) (t T)) T
+  (if (eq (label t) 11)
+      (mapO (lam ((df T)) (subst (osubst (children (mD t 1)) (ldBody df)) (substList (mArgs t))))
+        (bindO (nth (gDefs G) (mD t 0)) defLanguage))
+      none))
+(defn rootNat ((G T) (rl T) (rd Ts) (t T)) T
+  (let a0 T (mArg t 0)
+    (let a1 T (mArg t 1)
+      (let a2 T (mArg t 2)
+        (if (and (mIs 8 3 t) (and (mIs 7 1 a2) (eq (arity (mD a2 1)) 0)))
+            (let k T (at rd 0)
+              (if (eq rl 9)
+                  (if (and (eq (mD a2 0) k) (and (primIs G k zeroPrim) (equal (mArg a2 0) mStar)))
+                      (some a0) none)
+                  (if (and (eq (mD a2 0) k) (primIs G k succPrim))
+                      (some (subst a1 (instVar (mNatRec a0 a1 (mArg a2 0))))) none)))
+            none)))))
+(defn rootListNil ((G T) (rd Ts) (t T)) T
+  (let a2 T (mArg t 2)
+    (if (and (mIs 9 3 t) (and (mIs 7 1 a2) (eq (arity (mD a2 1)) 1)))
+        (let k T (at rd 0)
+          (if (and (eq (mD a2 0) k) (and (primIs G k nilPrim) (equal (mArg a2 0) mStar)))
+              (some (mArg t 0)) none))
+        none)))
+(defn rootListCons ((G T) (rd Ts) (t T)) T
+  (let a2 T (mArg t 2)
+    (if (and (mIs 9 3 t) (and (mIs 7 1 a2) (eq (arity (mD a2 1)) 1)))
+        (let p T (mArg a2 0)
+          (let k T (at rd 0)
+            (if (and (mIs 2 2 p) (and (eq (mD a2 0) k) (primIs G k consPrim)))
+                (some (subst (mArg t 1)
+                  (substList (l2 (mListRec (mArg t 0) (mArg t 1) (mArg p 1)) (mArg p 0)))))
+                none)))
+        none)))
+(defn rootRoseNode ((G T) (rd Ts) (t T)) T
+  (let a0 T (mArg t 0)
+    (let a1 T (mArg t 1)
+      (if (and (mIs 10 2 t) (mIs 7 1 a1))
+          (let p T (mArg a1 0)
+            (let kn T (at rd 0)
+              (let kl T (at rd 1)
+                (let kc T (at rd 2)
+                  (let c T (mD t 0)
+                    (if (and (mIs 2 2 p)
+                          (and (eq (mD a1 0) kn)
+                            (and (or (primIs G kn nodePrim) (primIs G kn lnodePrim))
+                              (and (primIs G kl nilPrim) (primIs G kc consPrim)))))
+                        (some (subst a0 (instVar (mPair (mArg p 0)
+                          (mListRec (mArr kl (single c) mStar)
+                            (mArr kc (single c) (mPair (mRoseRec c a0 (mVar 1)) (mVar 0)))
+                            (mArg p 1))))))
+                        none))))))
+          none))))
+(defn rootCase ((G T) (pj T) (i T) (rd Ts) (t T)) T
+  (let a0 T (mArg t 0)
+    (let a1 T (mArg t 1)
+      (if (and (mIs 6 2 t) (and (mIs 7 1 a0) (mIs 7 1 a1)))
+          (let p T (mArg a0 0)
+            (let kc T (at rd 0)
+              (let kj T (at rd 1)
+                (if (and (mIs 2 2 p)
+                      (and (eq (mD a0 0) kc)
+                        (and (eq (mD a1 0) kj) (and (primIs G kc casePrim) (primIs G kj pj)))))
+                    (some (mApp (mArg p i) (mArg a1 0)))
+                    none))))
+          none))))
+(defn rootThm ((G T) (E Ts) (n T) (g Ts) (rd Ts) (t T)) T
+  (let th Ts (children (at rd 1))
+    (let sg Ts (children (at rd 2))
+      (let fl T (at rd 3)
+        (bindO (bindO (nth E (at rd 0)) entryLanguage) (lam ((a T))
+          (bindO (if (isEmpty (thHyps a)) (eqParts (thConcl a)) none) (lam ((lr T))
+            (if (and (instOk G n g a th sg)
+                  (equal t (instTerm th sg (if fl (p2 lr) (p1 lr)))))
+                (some (instTerm th sg (if fl (p1 lr) (p2 lr))))
+                none)))))))))
+(defn rootHyp ((hs Ts) (rd Ts) (t T)) T
+  (let fl T (at rd 1)
+    (bindO (bindO (nth hs (at rd 0)) eqParts) (lam ((lr T))
+      (if (equal t (if fl (p2 lr) (p1 lr))) (some (if fl (p1 lr) (p2 lr))) none)))))
+
+; the rewriting of a term at its root by a rule of the language's equations
+(defn rootStep ((G T) (E Ts) (n T) (g Ts) (hs Ts) (rl T) (rd Ts) (t T)) T
+  (if (eq rl 3) (rootBeta t)
+  (if (eq rl 4) (rootFst t)
+  (if (eq rl 5) (rootSnd t)
+  (if (eq rl 6) (rootPairEta t)
+  (if (eq rl 7) (rootUnitEta G n g t)
+  (if (eq rl 8) (rootDelta G t)
+  (if (or (eq rl 9) (eq rl 10)) (rootNat G rl rd t)
+  (if (eq rl 11) (rootListNil G rd t)
+  (if (eq rl 12) (rootListCons G rd t)
+  (if (eq rl 13) (rootRoseNode G rd t)
+  (if (eq rl 14) (rootCase G inlPrim 0 rd t)
+  (if (eq rl 15) (rootCase G inrPrim 1 rd t)
+  (if (eq rl 16) (rootThm G E n g rd t)
+  (if (eq rl 17) (rootHyp hs rd t)
+    none)))))))))))))))
+
+; the fold of a derivation with the derivation at each node, its values its rewriting and its
+; proving, each a function of a context, hypotheses and a term
+(deftype Chk3 (Arrow Ts (Arrow Ts (Arrow T T))))
+(deftype DV (Prod Chk3 Chk3))
+(deftype DP (Prod T DV))
+(deftype DPs (List DP))
+(defn dpTrees ((rs DPs)) Ts (foldr DP Ts (lam ((r DP) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+(defn dpTail ((rs DPs)) DPs (lcase DP DPs rs (nil DP) (lam ((r DP) (rest DPs)) rest)))
+(defn dpAt ((rs DPs) (i T)) DV
+  (lcase DP DV (iter DPs dpTail rs i)
+    (pair (lam ((g Ts) (hs Ts) (t T)) none) (lam ((g Ts) (hs Ts) (t T)) 0))
+    (lam ((r DP) (rest DPs)) (snd r))))
+(defn rw ((rs DPs) (i T)) Chk3 (fst (dpAt rs i)))
+(defn pf ((rs DPs) (i T)) Chk3 (snd (dpAt rs i)))
+
+; one step of the rewriting, at a node of a rule, from its children's results
+(defn rewriteStep ((G T) (E Ts) (n T) (rl T) (rd Ts) (ds Ts) (as DPs) (g Ts) (hs Ts) (t T)) T
+  (let k T (length ds)
+    (if (and (eq rl 0) (eq k 0)) (some t)
+    (if (and (eq rl 1) (eq k 2)) (bindO ((rw as 0) g hs t) ((rw as 1) g hs))
+    (if (eq rl 2)
+        (bindO (congCtxs G n t g hs ds) (lam ((cxN T))
+          (let cx Ts (children cxN)
+            (let ta Ts (mArgs t)
+              (if (and (eq k (length ta)) (eq (length cx) (length ta)))
+                  (mapO (lam ((tsN T)) (node (label t) (cons (child t 0) (children tsN))))
+                    (allSomeT (mapT
+                      (lam ((i T))
+                        (let c T (at cx i)
+                          ((rw as i) (children (p1 c)) (children (p2 c)) (at ta i))))
+                      (range k))))
+                  none)))))
+    (if (eq k 0) (rootStep G E n g hs rl rd t)
+      none))))))
+
+; the premises of induction on the innermost variable of a type of the data objects
+(defn rosePrimsOk ((G T) (kn T) (kl T) (kc T) (r T) (a T)) T
+  (and (or (and (primIs G kn nodePrim) (equal r rose))
+         (and (primIs G kn lnodePrim) (equal r (lrose a))))
+    (and (primIs G kl nilPrim) (primIs G kc consPrim))))
+
+; one step of the proving, at a node of a rule, from its children's results
+(defn proveStep ((G T) (E Ts) (n T) (rl T) (rd Ts) (ds Ts) (as DPs) (g Ts) (hs Ts) (phi T)) T
+  (let k T (length ds)
+  (let ep T (eqParts phi)
+  (let tt T (p1 (get ep))
+  (let uu T (p2 (get ep))
+  (let d0 T (at rd 0)
+  (let d1 T (at rd 1)
+  (if (and (eq rl 18) (eq k 2))
+      (if (isSome ep)
+          (let v T ((rw as 0) g hs tt)
+            (let w T ((rw as 1) g hs uu) (and (isSome v) (and (isSome w) (equal (get v) (get w))))))
+          0)
+  (if (and (eq rl 19) (eq k 3))
+      (if (and (isSome ep) (not (isEmpty g)))
+          (let c T (at g 0)
+            (let g1 Ts (tail g)
+              (let s T (at rd 2)
+                (let mC T (typeIn G n g tt)
+                  (let mH T (lowerHyps G n g1 hs)
+                    (if (and (isSome mC) (isSome mH))
+                        (let C T (get mC)
+                          (let z T (mArr d0 (nil T) mStar)
+                            (if (and (equal c nat)
+                                  (and (primIs G d0 zeroPrim)
+                                    (and (primIs G d1 succPrim)
+                                      (and (equal (typeIn G n g uu) (some C))
+                                        (equal (typeIn G n (cons C g1) s) (some C))))))
+                                (if ((pf as 0) g1 (children (get mH))
+                                      (mEq (subst tt (instVar z)) (subst uu (instVar z))))
+                                    (if ((pf as 1) g hs (mEq (natSuccAt d1 tt) (subst s (atVar0 tt))))
+                                        ((pf as 2) g hs (mEq (natSuccAt d1 uu) (subst s (atVar0 uu))))
+                                        0)
+                                    0)
+                                0)))
+                        0))))))
+          0)
+  (if (and (eq rl 20) (eq k 3))
+      (if (and (isSome ep) (not (isEmpty g)))
+          (let c T (at g 0)
+            (let g1 Ts (tail g)
+              (let s T (at rd 2)
+                (let mC T (typeIn G n g tt)
+                  (let ma T (listPart c)
+                    (let mH T (lowerHyps G n g1 hs)
+                      (if (and (isSome mC) (and (isSome ma) (isSome mH)))
+                          (let C T (get mC)
+                            (let a T (get ma)
+                              (let g2 Ts (cons c (cons a g1))
+                                (let h2 Ts (mapT weaken2 (children (get mH)))
+                                  (let z T (mArr d0 (single a) mStar)
+                                    (if (and (primIs G d0 nilPrim)
+                                          (and (primIs G d1 consPrim)
+                                            (and (equal (typeIn G n g uu) (some C))
+                                              (equal (typeIn G n (cons C (cons a g1)) s) (some C)))))
+                                        (if ((pf as 0) g1 (children (get mH))
+                                              (mEq (subst tt (instVar z)) (subst uu (instVar z))))
+                                            (if ((pf as 1) g2 h2 (mEq (listConsAt d1 a tt)
+                                                                   (subst s (atVar0 (weakenElem tt)))))
+                                                ((pf as 2) g2 h2 (mEq (listConsAt d1 a uu)
+                                                                   (subst s (atVar0 (weakenElem uu)))))
+                                                0)
+                                            0)
+                                        0))))))
+                          0)))))))
+          0)
+  (if (and (eq rl 21) (eq k 0)) (equal (nth hs d0) (some phi))
+  (if (and (eq rl 22) (eq k 2))
+      (if (isFormula G n g d0)
+          (if ((pf as 0) g hs d0) ((pf as 1) g (append hs (single d0)) phi) 0)
+          0)
+  (if (and (eq rl 23) (eq k 2))
+      (let m T ((rw as 0) g hs phi) (if (isSome m) ((pf as 1) g hs (get m)) 0))
+  (if (and (eq rl 24) (eq k 2))
+      (if (and (isFormula G n g d0) (equal ((rw as 0) g hs d0) (some phi))) ((pf as 1) g hs d0) 0)
+  (if (and (eq rl 25) (eq k 2))
+      (if (isSome ep)
+          (if (and (isFormula G n g tt) (isFormula G n g uu))
+              (if ((pf as 0) g (append hs (single tt)) uu) ((pf as 1) g (append hs (single uu)) tt) 0)
+              0)
+          0)
+  (if (and (eq rl 26) (eq k 1))
+      (if (isSome ep)
+          (let mab T (bindO (typeIn G n g tt) expParts)
+            (if (isSome mab)
+                ((pf as 0) (cons (p1 (get mab)) g) (mapT weaken1 hs)
+                  (mEq (mApp (weaken1 tt) (mVar 0)) (mApp (weaken1 uu) (mVar 0))))
+                0))
+          0)
+  (if (eq rl 27)
+      (let th Ts (children d1)
+        (let sg Ts (children (at rd 2))
+          (let ma T (bindO (nth E d0) entryLanguage)
+            (if (isSome ma)
+                (let a T (get ma)
+                  (if (and (instOk G n g a th sg)
+                        (and (equal phi (instTerm th sg (thConcl a))) (eq k (length (thHyps a)))))
+                      (allT (lam ((i T)) ((pf as i) g hs (instTerm th sg (at (thHyps a) i))))
+                        (range k))
+                      0))
+                0))))
+  (if (and (eq rl 28) (eq k 2))
+      (if (not (isEmpty g))
+          (let c T (at g 0)
+            (let g1 Ts (tail g)
+              (let mH T (lowerHyps G n g1 hs)
+                (if (isSome mH)
+                    (if (and (equal c nat)
+                          (and (primIs G d0 zeroPrim)
+                            (and (primIs G d1 succPrim) (isFormula G n g phi))))
+                        (if ((pf as 0) g1 (children (get mH))
+                              (subst phi (instVar (mArr d0 (nil T) mStar))))
+                            ((pf as 1) g (append hs (single phi)) (natSuccAt d1 phi))
+                            0)
+                        0)
+                    0))))
+          0)
+  (if (and (eq rl 29) (eq k 2))
+      (if (not (isEmpty g))
+          (let c T (at g 0)
+            (let g1 Ts (tail g)
+              (let ma T (listPart c)
+                (let mH T (lowerHyps G n g1 hs)
+                  (if (and (isSome ma) (isSome mH))
+                      (let a T (get ma)
+                        (if (and (primIs G d0 nilPrim)
+                              (and (primIs G d1 consPrim) (isFormula G n g phi)))
+                            (if ((pf as 0) g1 (children (get mH))
+                                  (subst phi (instVar (mArr d0 (single a) mStar))))
+                                ((pf as 1) (cons c (cons a g1))
+                                  (append (mapT weaken2 (children (get mH))) (single (weakenElem phi)))
+                                  (listConsAt d1 a phi))
+                                0)
+                            0))
+                      0)))))
+          0)
+  (if (and (eq rl 34) (eq k 2))
+      (if (not (isEmpty g))
+          (let c T (at g 0)
+            (let g1 Ts (tail g)
+              (let mab T (coprodParts c)
+                (let mH T (lowerHyps G n g1 hs)
+                  (if (and (isSome mab) (isSome mH))
+                      (let a T (p1 (get mab))
+                        (let b T (p2 (get mab))
+                          (if (and (primIs G d0 inlPrim)
+                                (and (primIs G d1 inrPrim) (isFormula G n g phi)))
+                              (if ((pf as 0) (cons a g1) hs
+                                    (subst phi (atVar0 (mArr d0 (l2 a b) (mVar 0)))))
+                                  ((pf as 1) (cons b g1) hs
+                                    (subst phi (atVar0 (mArr d1 (l2 a b) (mVar 0)))))
+                                  0)
+                              0)))
+                      0)))))
+          0)
+  (if (and (eq rl 35) (eq k 0))
+      (and (equal (nth g d0) (some cZero)) (isFormula G n g phi))
+  (if (and (eq rl 36) (eq k 1))
+      (let th Ts (children d1)
+        (let mp T (nth (gPrims G) d0)
+          (if (and (not (isEmpty g)) (isSome mp))
+              (let c T (at g 0)
+                (let g1 Ts (tail g)
+                  (let p T (get mp)
+                    (if (and (isCoeqProj p) (isSome (lowerHyps G n g1 hs)))
+                        (if (and (eq (length th) (prArity p))
+                              (and (allT (isTy G n) th)
+                                (and (equal c (phSubst th (prCod p))) (isFormula G n g phi))))
+                            ((pf as 0) (cons (phSubst th (prDom p)) g1) hs
+                              (subst phi (atVar0 (mArr d0 th (mVar 0)))))
+                            0)
+                        0))))
+              0)))
+  (if (and (eq rl 30) (eq k 0))
+      (if (isSome ep)
+          (let mq T (compileEq G n g tt uu) (if (isSome mq) (certifies G E d0 (get mq)) 0))
+          0)
+  (if (and (eq rl 31) (eq k 0))
+      (if (and (allT (isFormula G n g) hs) (isFormula G n g phi))
+          (certifies G E d0 (thmSeq G (mkThm n (node 0 g) (node 0 hs) phi)))
+          0)
+  (if (and (eq rl 32) (eq k 2))
+      (if (and (isSome ep) (eq (length g) 1))
+          (let r T (at g 0)
+            (let mC T (typeIn G n g tt)
+              (let ma T (roseLabel r)
+                (if (and (isSome mC) (isSome ma))
+                    (let C T (get mC)
+                      (let a T (get ma)
+                        (let s T (at rd 3)
+                          (let kl T d1
+                            (let kc T (at rd 2)
+                              (let g2 Ts (l2 (list r) a)
+                                (if (and (rosePrimsOk G d0 kl kc r a)
+                                      (and (equal (typeIn G n g uu) (some C))
+                                        (equal (typeIn G n (l2 (list C) a) s) (some C))))
+                                    (if ((pf as 0) g2 (nil T)
+                                          (mEq (roseNodeAt d0 r a tt)
+                                               (subst s (atVar0 (roseMapAt kl kc C tt)))))
+                                        ((pf as 1) g2 (nil T)
+                                          (mEq (roseNodeAt d0 r a uu)
+                                               (subst s (atVar0 (roseMapAt kl kc C uu)))))
+                                        0)
+                                    0)))))))
+                    0))))
+          0)
+  (if (and (eq rl 33) (eq k 1))
+      (if (eq (length g) 1)
+          (let r T (at g 0)
+            (let ma T (roseLabel r)
+              (if (isSome ma)
+                  (let a T (get ma)
+                    (let kc T (at rd 2)
+                      (if (and (rosePrimsOk G d0 d1 kc r a) (isFormula G n g phi))
+                          ((pf as 0) (l2 (list r) a) (single (roseHyp d1 kc phi))
+                            (roseNodeAt d0 r a phi))
+                          0)))
+                  0)))
+          0)
+    0))))))))))))))))))))))))))
+
+; the checker: the rewriting a derivation performs and whether it proves a formula, in a context
+; under hypotheses
+(defn check ((G T) (E Ts) (n T) (d T)) DV
+  (snd (fold DP
+    (lam ((l T) (rs DPs))
+      (let ts Ts (dpTrees rs)
+        (let rd Ts (children (at ts 0))
+          (let as DPs (dpTail rs)
+            (let ds Ts (tail ts)
+              (pair (node l ts)
+                (pair (lam ((g Ts) (hs Ts) (t T)) (rewriteStep G E n l rd ds as g hs t))
+                      (lam ((g Ts) (hs Ts) (phi T)) (proveStep G E n l rd ds as g hs phi)))))))))
+    d)))
+
+; whether a derivation proves a theorem
+(defn thmChecks ((G T) (E Ts) (a T) (d T)) T
+  (let n T (thArity a)
+    (let g Ts (thCtx a)
+      (if (and (allT (isTy G n) g)
+            (and (allT (isFormula G n g) (thHyps a)) (isFormula G n g (thConcl a))))
+          ((snd (check G E n d)) g (thHyps a) (thConcl a))
+          0))))
+
+; the confirmation of primitive arrows, object definitions and definitions of the language
+(defn primSeq ((p T)) T
+  (mkSeq (replicate (prArity p) Sorts.obj) (nil T)
+    (eqn (comp (idt (prCod p)) (comp (prArrow p) (idt (prDom p)))) (prArrow p))))
+(defn primConfirms ((G T) (E Ts) (p T) (c T)) T
+  (if (isSome c)
+      (if (anyDefs G (lam ((cds Ts)) (primWf G (thySig (ext cds)) p)))
+          (certifies G E (get c) (primSeq p))
+          0)
+      (anyDefs G (lam ((cds Ts))
+        (if (eq (gBase G) (length sig)) (primOk G (envOfDefs cds) p) 0)))))
+(defn objConfirms ((G T) (E Ts) (m T) (b T) (c T)) T
+  (if (isSome c)
+      (if (anyDefs G (lam ((cds Ts))
+            (equal (sortOf (thySig (ext cds)) (replicate m Sorts.obj) b) (some Sorts.obj))))
+          (certifies G E (get c) (mkSeq (replicate m Sorts.obj) (nil T) (dfd b)))
+          0)
+      (anyDefs G (lam ((cds Ts)) (if (eq (gBase G) (length sig)) (objOk (envOfDefs cds) m b) 0)))))
+(defn ldChecks ((G T) (d T)) T (and (isSome (ldCompile G d)) (isTy G (ldArity d) (ldType d))))
+
+; declarations, and the state of a development
+(data Decl (declLang T T) (declComb T T) (declDef T) (declConst T T) (declObj T T T)
+  (declQuot T T T) (declDesc T T T T))
+(defn devState ((G T) (E Ts)) T (pr G (node 0 E)))
+(defn withPrims ((G T) (ps Ts)) T (globals (node 0 ps) (node 0 (gDefs G)) (gBase G)))
+(defn withDefs ((G T) (ds Ts)) T (globals (node 0 (gPrims G)) (node 0 ds) (gBase G)))
+(defn push ((E Ts) (e T)) Ts (append E (single e)))
+(defn sortsArr ((G T) (m T) (f T)) T
+  (anyDefs G (lam ((cds Ts))
+    (equal (sortOf (thySig (ext cds)) (replicate m Sorts.obj) f) (some Sorts.arr)))))
+
+; the quotient of a type by a relation
+(defn quotStep ((G T) (E Ts) (n T) (A T) (R T)) T
+  (let AA Ts (l2 A A)
+    (bindO ((compile G n R) (ctxObj AA) (stdEnv AA)) (lam ((rt T))
+      (let f T (relL A (p1 rt))
+        (let g T (relR A (p1 rt))
+          (let q T (primitive n (coeqProj f g) A
+                     (phOp (add (gBase G) (length (gDefs G))) (objVars n)))
+            (let G2 T (globals (node 0 (push (gPrims G) q))
+                               (node 0 (push (gDefs G) (defObj n (coeqz f g)))) (gBase G))
+              (let k T (length (gPrims G))
+                (let rel T (mkThm n (node 0 AA) (node 0 (single R))
+                             (mEq (mArr k (objVars n) (mVar 1)) (mArr k (objVars n) (mVar 0))))
+                  (if (and (eq (gBase G) (length sig))
+                        (and (isTy G n A)
+                          (and (equal (p2 rt) omega)
+                            (and (scoped n (prArrow q))
+                              (and (isTy G2 n (prCod q))
+                                (and (sortsArr G n (prArrow q))
+                                  (isFormula G2 n AA (thConcl rel))))))))
+                      (some (devState G2 (push E (entLang rel))))
+                      none)))))))))))
+
+; the descent of a function through a quotient
+(defn descStep ((G T) (E Ts) (kq T) (C T) (h T) (jr T)) T
+  (bindO (nth (gPrims G) kq) (lam ((p T))
+    (bindO (bindO (nth E jr) entryLanguage) (lam ((Th T))
+      (bindO (primRel p) (lam ((r T))
+        (let m T (prArity p)
+          (let D Ts (single (prDom p))
+            (bindO ((compile G m h) (ctxObj D) (stdEnv D)) (lam ((HC T))
+              (if (eq (length (thHyps Th)) 1)
+                  (let R2 T (at (thHyps Th) 0)
+                    (let DD Ts (l2 (prDom p) (prDom p))
+                      (let dp T (primitive m
+                                  (coeqDesc (relL (prDom p) r) (relR (prDom p) r) (p1 HC))
+                                  (prCod p) C)
+                        (let G2 T (withPrims G (push (gPrims G) dp))
+                          (let dq T (mArr (length (gPrims G)) (objVars m)
+                                      (mArr kq (objVars m) (mVar 0)))
+                            (let cmp T (mkThm m (node 0 D) (node 0 (nil T)) (mEq dq h))
+                              (if (and (eq (gBase G) (length sig))
+                                    (and (equal (p2 HC) C)
+                                      (and (isTy G m C)
+                                        (and (eq (thArity Th) m)
+                                          (and (equalTs (thCtx Th) DD)
+                                            (and (equal (thConcl Th) (mEq (weaken1 h) h))
+                                              (and (equal ((compile G m R2) (ctxObj DD) (stdEnv DD))
+                                                          (some (pr r omega)))
+                                                (and (scoped m (prArrow dp))
+                                                  (and (sortsArr G m (prArrow dp))
+                                                    (isFormula G2 m D (thConcl cmp)))))))))))
+                                  (some (devState G2 (push E (entLang cmp))))
+                                  none)))))))
+                  none))))))))))))
+
+; the state after a declaration, where its proof proves it with the constants and the entries
+; before it
+(defn declStep ((G T) (E Ts) (d T)) T
+  (case d
+    ((declLang a dv) (if (thmChecks G E a dv) (some (devState G (push E (entLang a)))) none))
+    ((declComb s c) (if (certifies G E c s) (some (devState G (push E (entComb s)))) none))
+    ((declDef df)
+      (if (ldChecks G df) (some (devState (withDefs G (push (gDefs G) (defLang df))) E)) none))
+    ((declConst p c)
+      (if (primConfirms G E p c) (some (devState (withPrims G (push (gPrims G) p)) E)) none))
+    ((declObj m b c)
+      (if (objConfirms G E m b c)
+          (some (devState (withDefs G (push (gDefs G) (defObj m b))) E))
+          none))
+    ((declQuot m A R) (quotStep G E m A R))
+    ((declDesc kq C h jr) (descStep G E kq C h jr))))
+
+; the state after a development, each declaration proved with those before it
+(defn checkDev ((G T) (E Ts) (ds Ts)) T
+  (foldr T T
+    (lam ((d T) (st T)) (bindO st (lam ((s T)) (declStep (p1 s) (children (p2 s)) d))))
+    (some (devState G E)) (reverse ds)))
