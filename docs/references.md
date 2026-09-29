@@ -16,6 +16,7 @@
 - [Profunctors](#profunctors)
 - [Parametricity and Free Theorems](#parametricity-and-free-theorems)
 - [Computability](#computability)
+- [Interaction nets](#interaction-nets)
 - [Monad algebra](#monad-algebra)
 - [Kan extensions](#kan-extensions)
 - [Grothendieck Construction](#grothendieck-construction)
@@ -225,6 +226,48 @@ neither specifications nor citable literature.
   — the Coq development accompanying [HeraudNowak2011], at commit
   `1f03b9296104646ddc2b2b4b12e35a6619c17a99`. Licensed CeCILL; no code is
   taken from it.
+
+## Interaction nets
+
+Runtimes and formalizations of interaction nets, the candidates for the
+interaction-net arm of the Bootstrap chapter's choice of machine. The
+state is as of 2026-09-29.
+
+- [etiamz/interaction-net-resources](https://github.com/etiamz/interaction-net-resources)
+  — a collection of resources about interaction nets.
+- [HigherOrderCO/HVM1](https://github.com/HigherOrderCO/HVM1),
+  [HVM2](https://github.com/HigherOrderCO/HVM2),
+  [HVM3](https://github.com/HigherOrderCO/HVM3) and
+  [HVM4](https://github.com/HigherOrderCO/HVM4) — the runtimes of the
+  Higher Order Company; HVM1 and HVM3 are licensed MIT, HVM2 Apache-2.0,
+  and HVM4 carries no licence, so no code or text is taken from it.
+- [VictorTaelin/Interaction-Calculus](https://github.com/VictorTaelin/Interaction-Calculus)
+  — the labelled calculus HVM3 and HVM4 implement; no licence.
+- [HigherOrderCO/Bend1](https://github.com/HigherOrderCO/Bend1) — Bend's
+  first version, on HVM2 (Apache-2.0);
+  [bendlang/bend](https://github.com/bendlang/bend) — its second, on no
+  interaction net, with its papers under `paper/` (Apache-2.0).
+- [VineLang/vine](https://github.com/VineLang/vine) — a language based
+  on interaction nets (Apache-2.0).
+- [inpla/inpla](https://github.com/inpla/inpla) — interaction nets as a
+  programming language, with built-in agents (MIT).
+- [etiamz/optiscope](https://github.com/etiamz/optiscope) — a Lévy-optimal
+  λ-calculus reducer (BSD-3-Clause).
+- [lexzaiello/ic-sandbox](https://github.com/lexzaiello/ic-sandbox) — a
+  virtual machine for the symmetric combinators with a textual
+  intermediate representation (MIT).
+- [SrGaabriel/soma](https://github.com/SrGaabriel/soma) — a dependently
+  typed language implemented in Lean 4 and run on interaction nets
+  (Apache-2.0).
+- [Lamagraph/interaction-nets-in-fpga](https://github.com/Lamagraph/interaction-nets-in-fpga)
+  — a processor for interaction nets in Clash (MIT).
+- [GrigoryEvko/FX](https://github.com/GrigoryEvko/FX) — Lean 4 files
+  (`lean-fx-3/FX1Poly/Polygraph/Net/LafontInteractionNet.lean`) proving
+  that two firings at distinct agents commute, in a model of nets as
+  lists of agents under explicit freshness hypotheses; they record the
+  general diamond of nets as graphs as not proved (Apache-2.0).
+- [RemiDiG/proofnet_mll](https://github.com/RemiDiG/proofnet_mll) —
+  proof nets for multiplicative linear logic in Rocq (LGPL-3.0).
 
 ## Monad algebra
 

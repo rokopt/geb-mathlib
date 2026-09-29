@@ -12,6 +12,14 @@
 #                not typable, the list of thunks being contracted
 #   onePass      the same fold, its step splitting the list once (unzipR)
 # with their helpers sum, rawsOf, forceAll, thunksOf and unzipR.
+# and four folds into functions T -> T, compiled likewise, whose step reads the list of
+# its children's functions:
+#   readTwice    twice: not typable
+#   loopInside   once, by a right fold inside the closure over the argument: not typable,
+#                the fold's list of functions needing a box it cannot enter
+#   composeFirst once, by a right fold composing them into one function, then applied:
+#                typable only with first-order data exempted, the argument used twice
+#   splitHead    once, by case analysis, applying the first child's function
 # Definitions refer to earlier ones by position, so the compiled ones come first.
 sum	(9 (4 (0)) (10 (10 (10 (21 (0) (0)) (9 (0) (9 (0) (10 (10 (22 (5)) (8 (1))) (8 (0)))))) (15 (0))) (8 (0))))
 rawsOf	(9 (4 (2 (0) (3 (1) (0)))) (10 (10 (10 (21 (2 (0) (3 (1) (0))) (4 (0))) (9 (2 (0) (3 (1) (0))) (9 (4 (0)) (20 (13 (8 (1))) (8 (0)))))) (19 (0))) (8 (0))))
@@ -25,3 +33,7 @@ foldOnce	(9 (0) (10 (10 (17 (3 (0) (0))) (9 (0) (9 (4 (3 (0) (0))) (9 (0) (10 (1
 foldTwice	(9 (0) (10 (10 (17 (3 (0) (0))) (9 (0) (9 (4 (3 (0) (0))) (9 (0) (10 (10 (10 (24 (3 (0) (0)) (0)) (8 (1))) (8 (0))) (9 (3 (0) (0)) (9 (4 (3 (0) (0))) (10 (8 (1)) (10 (8 (1)) (8 (2))))))))))) (8 (0))))
 iterTwice	(9 (0) (10 (10 (10 (18 (3 (0) (0))) (9 (3 (0) (0)) (9 (0) (10 (8 (1)) (10 (8 (1)) (8 (0))))))) (9 (0) (8 (0)))) (8 (0))))
 squareByIter	(9 (0) (10 (10 (10 (18 (0)) (10 (22 (5)) (8 (0)))) (15 (0))) (8 (0))))
+readTwice	(9 (0) (10 (10 (10 (17 (3 (0) (0))) (9 (0) (9 (4 (3 (0) (0))) (9 (0) (10 (10 (22 (5)) (10 (10 (10 (21 (3 (0) (0)) (0)) (9 (3 (0) (0)) (9 (0) (10 (10 (22 (5)) (10 (8 (1)) (8 (2)))) (8 (0)))))) (8 (2))) (8 (1)))) (10 (10 (10 (21 (3 (0) (0)) (0)) (9 (3 (0) (0)) (9 (0) (10 (10 (22 (5)) (10 (8 (1)) (8 (2)))) (8 (0)))))) (8 (2))) (8 (1)))))))) (8 (0))) (15 (0))))
+loopInside	(9 (0) (10 (10 (10 (17 (3 (0) (0))) (9 (0) (9 (4 (3 (0) (0))) (9 (0) (10 (10 (10 (21 (3 (0) (0)) (0)) (9 (3 (0) (0)) (9 (0) (10 (10 (22 (5)) (10 (8 (1)) (8 (2)))) (8 (0)))))) (8 (2))) (8 (1))))))) (8 (0))) (15 (0))))
+composeFirst	(9 (0) (10 (10 (10 (17 (3 (0) (0))) (9 (0) (9 (4 (3 (0) (0))) (10 (10 (10 (21 (3 (0) (0)) (3 (0) (0))) (9 (3 (0) (0)) (9 (3 (0) (0)) (9 (0) (10 (10 (22 (5)) (10 (8 (2)) (8 (0)))) (10 (8 (1)) (8 (0)))))))) (9 (0) (8 (2)))) (8 (0)))))) (8 (0))) (15 (0))))
+splitHead	(9 (0) (10 (10 (10 (17 (3 (0) (0))) (9 (0) (9 (4 (3 (0) (0))) (10 (10 (10 (24 (3 (0) (0)) (3 (0) (0))) (8 (0))) (9 (0) (8 (2)))) (9 (3 (0) (0)) (9 (4 (3 (0) (0))) (9 (0) (10 (10 (22 (5)) (10 (8 (2)) (8 (0)))) (8 (4)))))))))) (8 (0))) (15 (0))))
