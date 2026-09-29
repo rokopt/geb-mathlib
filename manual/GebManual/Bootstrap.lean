@@ -1241,14 +1241,16 @@ cells indexed by `Fin k` so that renamings are permutations and the
 quotient is decidable: it extends the theorem to every schedule, so
 that a parallel runtime is covered.
 
-Elementary-affine typability was measured on the programs, with an
-inference in the style of {citet CoppolaMartini2006}[], linear
-constraints on the numbers of boxes solved by an SMT solver, and with
-first-order data exempted from the discipline, since duplicating data
-duplicates no λ-value. One at a time, 197 of the stage-0 compiler's 200
-definitions are typable, 313 of the stage-1 compiler's 315, 359 of the
-prover of Gödel's T's 368 and 370 of the metalogic checker's 374;
-without the exemption, 187, 296, 342 and 363. Every definition that
+Elementary-affine typability was measured on the programs by
+`scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
+from an image, with an inference in the style of
+{citet CoppolaMartini2006}[], linear constraints on the numbers of boxes
+solved by an SMT solver, and with first-order data exempted from the
+discipline, since duplicating data duplicates no λ-value. One at a
+time, 197 of the stage-0 compiler's 200 definitions are typable, 313 of
+the stage-1 compiler's 315, 359 of the prover of Gödel's T's 368 and
+370 of the metalogic checker's 374; without the exemption, 187, 296,
+342 and 363. Every definition that
 fails, among them the type checker `typeIn` and the resolver `resolve`,
 is a fold at pairs of a subtree and a function whose step reads the
 list of its children's results more than once, contracting a list of

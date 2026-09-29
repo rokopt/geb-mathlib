@@ -3736,7 +3736,10 @@ checklist and in CI.
   both and checks the fixed points: each compiler reproduces its own image,
   and the compiler built from the emitted Lean reproduces the Lean and the
   image. `GebTests/Prototypes/Stage1.lean` checks the stage-1 compiler's
-  agreement with the stage-0 compiler. The
+  agreement with the stage-0 compiler. The executable `geb-defs`
+  (`GebDefsMain.lean`) writes an image's definitions as S-expressions of
+  labels, from which `scripts/eal/eal.py` decides each definition's
+  elementary-affine typability. The
   [bootstrap chapter](../manual/GebManual/Bootstrap.lean) records the
   kernel's place in the plan. Depends on `Geb.Prototypes.RoseTree.Basic`,
   `Geb.Mathlib.Data.W.Basic`, `Geb.Mathlib.Data.FinEnum`,
