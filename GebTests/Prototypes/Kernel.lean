@@ -187,6 +187,19 @@ def imageOf (text : List Char) : ByteArray :=
     Tm.var 1]))).map (·.1)) =
   some (tProd tT tT)
 
+-- filling under a binder preserves the reference to the surrounding variable
+#guard fillHole [] [tT, tT] tT (mk Label.lam [tT, mk Label.pair [Tm.var 1, Tm.var 0]])
+    (Tm.var 1) = some (mk Label.lam [tT, mk Label.pair [Tm.var 2, Tm.var 0]])
+-- a shared hole replaces both occurrences
+#guard fillHole [] [] tT (mk Label.pair [Tm.var 0, Tm.var 0]) (mk Label.quote [leaf 7]) =
+  some (mk Label.pair [mk Label.quote [leaf 7], mk Label.quote [leaf 7]])
+-- reject a filling of the wrong type, an out-of-scope filling, an ill-typed sketch,
+-- and a malformed expected type
+#guard fillHole [] [] tT (Tm.var 0) (mk Label.unit []) = none
+#guard fillHole [] [] tT (Tm.var 0) (Tm.var 0) = none
+#guard fillHole [] [] tT (mk Label.app [Tm.var 0, Tm.var 0]) (mk Label.quote [leaf 7]) = none
+#guard fillHole [] [] (leaf 999) (Tm.var 0) (mk Label.quote [leaf 7]) = none
+
 end Geb.Kernel.Tests
 
 end

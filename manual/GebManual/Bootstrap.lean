@@ -275,6 +275,11 @@ Extension:
   law, and the unification of the readable S-expressions with the
   canonical ones, with a quoted spelling for atoms that are not tokens,
   the section on improvements.
+* In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
+  revisions]: preservation of source documents, bindings and dependency
+  references through format changes. Checked filling of one contextual
+  term hole in Lean is complete; its source syntax and obligation display
+  are ready.
 
 ## After the bootstrap
 
@@ -1106,6 +1111,11 @@ section below opens with a table of the states of its parts.
   * Ready
   * Every part
 *
+  * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
+  * In progress
+  * Checked contextual-hole filling in Lean: complete; document codecs,
+    migration contracts and authoring tools: ready
+*
   * {ref "goedel-t"}[Gödel's T]
   * In progress
   * Weakening, substitution and the identity of the datatype language's
@@ -1714,6 +1724,99 @@ its bundle, which the migration rewrites to a digest; the node-digest
 rule is restated for rose trees with natural-number labels; and the
 serializer written in Geb, `bootstrap/serialize.geb`, is the model for
 the hash written in Geb.
+
+## Authoring across bootstrap revisions
+%%%
+tag := "authoring-compatibility"
+%%%
+
+:::table +header
+*
+  * Step
+  * State
+*
+  * Checked filling of one contextual term hole in Lean
+  * Complete
+*
+  * Document preservation, syntax profiles and migration contracts
+  * Ready
+*
+  * Hole syntax, obligation display, documentation and editor integration
+  * Ready
+*
+  * Acceptance
+  * Not met
+:::
+
+Programs written during the bootstrap require preservation of their
+authoring information as well as their denotation. The proposals and
+their tradeoffs are recorded in `docs/bootstrap-authoring.md`. The
+syntax survey's retractions are over its finite-alphabet trees; they do
+not yet give a printer for the kernel's program reader or preserve its
+comments and binder names. The document-level law is that parsing a
+printed document returns that document, including its annotations.
+Conversion between two such syntaxes preserves the parsed document.
+
+The first authoring representation retains declaration and binder names,
+prose, examples and links beside the source forms and their checked
+expansion. Comments on equal subtrees can differ, so their keys identify
+occurrences relative to a document or definition revision. A change of
+representation transports those keys and proves that subterm selection
+commutes with the transport. A change of code may delete or duplicate
+occurrences; its edit map records that correspondence, with unmatched
+annotations retained for reconciliation.
+
+Content identity can follow this preservation work. Until then, a
+definition position is relative to a complete frozen bundle and its
+semantic profile. Migration to digests follows dependency order and
+rewrites the reference constructors, preserving quoted data and
+re-keying annotations. The payload schema and interpretation are
+versioned separately from the hash algorithm. A digest is a locator;
+the equality used by a checker is equality of validated contents.
+
+Typed holes have an initial construction in the existing kernel.
+A sketch with a hole of type `A` in context `Γ` is a kernel term in
+`A :: Γ`; a filling has type `A` in `Γ`. The operation
+{name}`Geb.Kernel.fillHole` checks the type, filling and sketch and
+substitutes the filling for the innermost free variable. The theorem
+{name}`Geb.Kernel.infer_fillHole` states the type and denotation of every
+accepted result, by {name}`Geb.Kernel.infer_subst`. It covers repeated
+occurrences and occurrences under binders. `GebTests/Prototypes/Kernel.lean`
+checks capture avoidance and rejection of ill-typed or out-of-scope
+fillings. This is a Lean operation; the reader has no hole syntax yet.
+
+The authoring layer records each hole's identity, declaring context,
+expected type and source occurrences. Uses in different contexts carry
+explicit substitutions. A proof hole records an open sequent and its
+obligations. Only a term with all its holes filled, or a derivation with
+all its obligations discharged, is accepted as the completed program or
+theorem. Search may propose fillings; the checker checks their types and
+the certificates of any claimed properties. Admission of this
+elaboration by relative soundness is a candidate alongside the stronger
+checkers of {ref "the-next-phase"}[The next phase], without making an
+unresolved hole an axiom.
+
+Canonical-style refinement is a candidate for general program and proof
+search through this interface. It assigns a hole's head and creates its
+argument holes together, allowing constraints from later arguments to
+guide earlier ones. Checks blocked on unknown terms are suspended and
+resumed after refinement. A bounded implementation can reuse the
+internal-language prover's normalization and induction combinators,
+with every completed derivation checked. Contextual metavariables and
+suspended constraints remain to be implemented; the source assessment,
+adaptation choices and comparison with SupGen and SMT are in
+`docs/bootstrap-authoring.md`.
+
+Acceptance: a documented module survives conversion between the
+selected readable and canonical program syntaxes, retaining names,
+comments, examples, links and dependency resolution, and compiles to
+the same checked core. A documentation-only edit leaves core identity
+unchanged. Its documentation renders through Verso. The selected VS Code
+structural editor preserves the parsed document when formatting it.
+A typed hole displays its context and target, accepts a well-typed
+filling without capture, and prevents a remaining obligation from being
+reported as a completed theorem. These conditions concern authoring;
+network storage and a second runtime are independent of them.
 
 ## The logic
 %%%
@@ -3808,6 +3911,9 @@ the change that removes it.
   before its own theorem.
 
 ## The next phase
+%%%
+tag := "the-next-phase"
+%%%
 
 The proofs about the compiler's components that need neither the
 printer nor a checker written in Geb are complete: the type checker's

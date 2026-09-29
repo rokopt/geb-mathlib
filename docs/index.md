@@ -3720,8 +3720,16 @@ checklist and in CI.
   trees to a file. `Subst.lean` weakens terms and substitutes for their
   innermost variable, through one traversal replacing variables
   (`Geb.Kernel.trav`), and proves both agree with the denotation
-  (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). Tested in
-  `GebTests/Prototypes/Kernel.lean`. The Geb-written
+  (`Geb.Kernel.infer_wk`, `Geb.Kernel.infer_subst`). `Hole.lean` checks
+  a proposed filling of the innermost free variable against its expected
+  type and the sketch's context (`Geb.Kernel.fillHole`), and proves
+  acceptance of well-typed inputs and the type and denotation of every
+  accepted result (`Geb.Kernel.fillHole_of_infer`,
+  `Geb.Kernel.infer_fillHole`). Tested in
+  `GebTests/Prototypes/Kernel.lean`. The
+  [authoring proposals](bootstrap-authoring.md) describe document
+  preservation, migration contracts and the remaining hole interface.
+  The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   names the kernel's labels and primitives by numeral abbreviations and
   holds list and digit utilities, `serialize.geb` writes a tree's image,
