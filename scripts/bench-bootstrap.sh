@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 #
-# scripts/bench-bootstrap.sh [RUNS]
+# scripts/bench-bootstrap.sh [ROUNDS]
+# scripts/bench-bootstrap.sh snapshot DIR
+# scripts/bench-bootstrap.sh compare DIR_A DIR_B [ROUNDS]
 #
-# Time the bootstrap's programs on their own sources, the median of RUNS
-# (default 5) wall-clock runs after one warm-up, one heavy process at a
+# Time the bootstrap's programs on their own sources, one heavy process at a
 # time:
 #
 #   compile/native  geb-compile, the compiler built from the emitted Lean,
@@ -16,59 +17,188 @@
 #
 # S and the prover's program are assembled as scripts/bootstrap.sh and
 # GebTests/Prototypes/Proofs.lean assemble them.
+#
+# A build is a directory holding bin/geb-kernel, bin/geb-compile and the
+# bootstrap/ sources. `snapshot DIR` builds the working copy's binaries and
+# copies them and its sources into DIR. Without a mode the working copy is
+# snapshotted to a temporary directory and timed; `compare` times two
+# snapshots, alternating their order from round to round, and prints the
+# ratio of the second's medians to the first's with a 95% bootstrap
+# interval.
+#
+# Byte-identical copies of a binary can differ in speed by up to a quarter,
+# reproducibly per copy (measured on a WSL2 host), so one copy per build can
+# show a difference between builds that is only where the copies' pages lie.
+# Each build is therefore timed over COPIES (default 4) copies of its
+# binaries, each written anew and used in every COPIES-th of the ROUNDS
+# (default 16) rounds after a warm-up of every copy, and the medians of each
+# copy are printed beside the whole ones, so that a slow copy shows.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-runs=${1:-5}
-b=bootstrap
-kernel=.lake/build/bin/geb-kernel
-native=.lake/build/bin/geb-compile
+usage() {
+  sed -n '3,5p' "$0" | sed 's/^# /usage: /' >&2
+  exit 2
+}
+
+snapshot() {
+  lake build geb-kernel geb-compile > /dev/null
+  mkdir -p "$1/bin"
+  cp .lake/build/bin/geb-kernel .lake/build/bin/geb-compile "$1/bin/"
+  rm -rf "$1/bootstrap"
+  cp -r bootstrap "$1/bootstrap"
+}
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-join() { local f; for f in "$@"; do cat "$f"; echo; done; }
+case "${1:-}" in
+  snapshot)
+    [ $# -eq 2 ] || usage
+    snapshot "$2"
+    exit 0 ;;
+  compare)
+    [ $# -ge 3 ] && [ $# -le 4 ] || usage
+    builds=("$(realpath "$2")" "$(realpath "$3")")
+    rounds=${4:-16} ;;
+  '' | [0-9]*)
+    [ $# -le 1 ] || usage
+    rounds=${1:-16}
+    snapshot "$tmp/work"
+    builds=("$tmp/work") ;;
+  *) usage ;;
+esac
 
-# The median wall time in seconds of running the command $2.. $runs times, after a warm-up, as
-# the line "$1 <seconds>".
-bench() {
-  local name=$1; shift
-  "$@" > /dev/null
-  local i s e ts=()
-  for ((i = 0; i < runs; i++)); do
-    s=$(date +%s.%N); "$@" > /dev/null; e=$(date +%s.%N)
-    ts+=("$(echo "$e - $s" | bc)")
-  done
-  printf '%-22s %s\n' "$name" "$(printf '%s\n' "${ts[@]}" | sort -g | sed -n "$(((runs + 1) / 2))p")"
+python3 - "$rounds" "${COPIES:-4}" "$tmp" "${builds[@]}" <<'PY'
+import os, random, shutil, statistics, subprocess, sys, time
+
+rounds, copies, tmp = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+builds = sys.argv[4:]
+
+STAGE0 = ["prelude", "serialize", "reader", "check", "datatype", "compile"]
+STAGE1 = ["prelude", "serialize", "reader", "check", "stage1/datatype", "compile",
+          "stage1/lean"]
+PROVER = ["prelude", "reader", "check", "datatype", "goedel-t/equations", "goedel-t/prove"]
+# the prover's entry point, giving the number of theorems the Geb checker accepts
+PROVER_MAIN = b"""(def main (lam ((file T)) (node 0 (single (foldr T T (lam ((x T) (n T))
+    (if (eq (label (child x 3)) 1) (add n 1) n)) 0 (children (child (child (proveFile 256 file) 0) 1)))))))
+"""
+PROOFS = {
+    "prelude": ["prelude", "proofs/prelude"],
+    "nat": ["prelude", "proofs/nat"],
+    "check": ["prelude", "reader", "check", "proofs/check"],
+    "equations": ["prelude", "reader", "check", "goedel-t/equations", "proofs/equations"],
+    "datatype": ["prelude", "reader", "check", "proofs/datatype"],
 }
 
-lake build geb-kernel geb-compile > /dev/null
 
-join $b/prelude.geb $b/serialize.geb $b/reader.geb $b/check.geb $b/stage1/datatype.geb \
-  $b/compile.geb $b/stage1/lean.geb > "$tmp/S.geb"
-bench compile/native "$native" image "$tmp/S.geb" "$tmp/out.img"
-bench compile/seed "$kernel" run $b/compiler.img main "$tmp/S.geb" "$tmp/out.img"
+def join(paths, out):
+    with open(out, "wb") as f:
+        for p in paths:
+            with open(p, "rb") as g:
+                f.write(g.read())
+            f.write(b"\n")
 
-# The prover, its entry point giving the number of theorems the Geb checker accepts.
-"$kernel" build $b/prelude.geb $b/serialize.geb $b/reader.geb $b/check.geb $b/datatype.geb \
-  $b/compile.geb "$tmp/stage0.img"
-{ join $b/prelude.geb $b/reader.geb $b/check.geb $b/datatype.geb $b/goedel-t/equations.geb \
-    $b/goedel-t/prove.geb
-  echo '(def main (lam ((file T)) (node 0 (single (foldr T T (lam ((x T) (n T))
-    (if (eq (label (child x 3)) 1) (add n 1) n)) 0 (children (child (child (proveFile 256 file) 0) 1)))))))'
-} > "$tmp/prover.geb"
-"$kernel" run "$tmp/stage0.img" main "$tmp/prover.geb" "$tmp/prover.img"
-[ -s "$tmp/prover.img" ] || { echo "bench-bootstrap: the stage-0 compiler rejects the prover" >&2; exit 1; }
 
-p=$b/proofs
-for f in prelude nat check equations datatype; do
-  case $f in
-    prelude|nat) join $b/prelude.geb $p/$f.geb ;;
-    check|datatype) join $b/prelude.geb $b/reader.geb $b/check.geb $p/$f.geb ;;
-    equations) join $b/prelude.geb $b/reader.geb $b/check.geb $b/goedel-t/equations.geb $p/$f.geb ;;
-  esac > "$tmp/$f.in"
-  "$kernel" run "$tmp/prover.img" main "$tmp/$f.in" "$tmp/$f.out"
-  bench "prove/$f ($(od -An -tu1 "$tmp/$f.out" | tr -d ' ') ok)" \
-    "$kernel" run "$tmp/prover.img" main "$tmp/$f.in" "$tmp/$f.out"
-done
+def prepare(i, d):
+    """The build's inputs, its workloads as (binary, arguments), and its copies' directories."""
+    b, t = os.path.join(d, "bootstrap"), os.path.join(tmp, str(i))
+    os.makedirs(t)
+    src = lambda xs: [os.path.join(b, x + ".geb") for x in xs]
+    at = lambda x: os.path.join(t, x)
+    kernel = os.path.join(d, "bin", "geb-kernel")
+    join(src(STAGE1), at("S.geb"))
+    subprocess.run([kernel, "build", *src(STAGE0), at("stage0.img")], check=True,
+                   stdout=subprocess.DEVNULL)
+    join(src(PROVER), at("prover.geb"))
+    with open(at("prover.geb"), "ab") as f:
+        f.write(PROVER_MAIN)
+    subprocess.run([kernel, "run", at("stage0.img"), "main", at("prover.geb"), at("prover.img")],
+                   check=True)
+    if os.path.getsize(at("prover.img")) == 0:
+        sys.exit(f"bench-bootstrap: the stage-0 compiler of {d} rejects the prover")
+    work = {
+        "compile/native": ("geb-compile", ["image", at("S.geb"), at("out.img")]),
+        "compile/seed": ("geb-kernel", ["run", os.path.join(b, "compiler.img"), "main",
+                                        at("S.geb"), at("out.img")]),
+    }
+    for f, xs in PROOFS.items():
+        join(src(xs), at(f + ".in"))
+        work["prove/" + f] = ("geb-kernel", ["run", at("prover.img"), "main", at(f + ".in"),
+                                             at(f + ".out")])
+    bins = []
+    for c in range(copies):
+        cb = at(f"bin{c}")
+        os.makedirs(cb)
+        for x in ("geb-kernel", "geb-compile"):
+            shutil.copyfile(os.path.join(d, "bin", x), os.path.join(cb, x))
+            os.chmod(os.path.join(cb, x), 0o755)
+        bins.append(cb)
+    return work, bins, t
+
+
+def once(cmd):
+    s = time.perf_counter()
+    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL)
+    return time.perf_counter() - s
+
+
+preps = [prepare(i, d) for i, d in enumerate(builds)]
+names = list(preps[0][0])
+cmd = lambda p, c, f: [os.path.join(p[1][c], p[0][f][0])] + p[0][f][1]
+for p in preps:
+    for c in range(copies):
+        for f in names:
+            once(cmd(p, c, f))
+accepted = [{f: "".join(str(x) for x in open(os.path.join(p[2], f[6:] + ".out"), "rb").read())
+             for f in names if f.startswith("prove/")} for p in preps]
+times = [{f: [[] for _ in range(copies)] for f in names} for _ in preps]
+for r in range(rounds):
+    order = list(range(len(preps)))
+    if r % 2:
+        order.reverse()
+    for f in names:
+        for i in order:
+            times[i][f][r % copies].append(once(cmd(preps[i], r % copies, f)))
+
+
+def q(xs, p):
+    xs = sorted(xs)
+    k = p * (len(xs) - 1)
+    lo = int(k)
+    return xs[lo] + (xs[min(lo + 1, len(xs) - 1)] - xs[lo]) * (k - lo)
+
+
+def summary(i, f):
+    xs = [x for c in times[i][f] for x in c]
+    return f"{statistics.median(xs):.3f} [{q(xs, .25):.3f},{q(xs, .75):.3f}]"
+
+
+def per_copy(i, f):
+    return " ".join(f"{statistics.median(c):.3f}" for c in times[i][f] if c)
+
+
+def name(f):
+    ok = " | ".join(a[f] for a in accepted) if f in accepted[0] else ""
+    return f + (f" ({ok} ok)" if ok else "")
+
+
+width = max(len(name(f)) for f in names)
+if len(preps) == 1:
+    print(f"{'workload':{width}}  {'median [IQR]':>21}  per copy")
+    for f in names:
+        print(f"{name(f):{width}}  {summary(0, f):>21}  {per_copy(0, f)}")
+else:
+    random.seed(0)
+    print(f"{'workload':{width}}  {'A median [IQR]':>21}  {'B median [IQR]':>21}  "
+          f"{'B/A':>5}  {'95% interval':>13}  per copy A | B")
+    for f in names:
+        a = [x for c in times[0][f] for x in c]
+        b = [x for c in times[1][f] for x in c]
+        boot = sorted(statistics.median(random.choices(b, k=len(b))) /
+                      statistics.median(random.choices(a, k=len(a))) for _ in range(4000))
+        ratio = statistics.median(b) / statistics.median(a)
+        print(f"{name(f):{width}}  {summary(0, f):>21}  {summary(1, f):>21}  {ratio:5.3f}  "
+              f"[{boot[100]:.3f},{boot[3899]:.3f}]  {per_copy(0, f)} | {per_copy(1, f)}")
+PY
