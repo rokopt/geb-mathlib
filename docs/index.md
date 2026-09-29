@@ -3940,7 +3940,21 @@ checklist and in CI.
   theory, the inference at the sides of every axiom, and the checker of
   developments at the developments of the `Internal*.lean` modules, at
   each small development with a declaration removed, and at altered
-  declarations.
+  declarations. `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the
+  checker written in Geb equal to `Geb.FreeTopos.Internal.checkDev`, by
+  the method of the checker of Gödel's T: the Lean the bootstrap compiler
+  emits from the program, `bootstrap/lean/GebMirror/Metalogic.lean`, is
+  the denotation of each of the program's definitions as
+  `Geb.Kernel.load` loads them, checked by the kernel's evaluation
+  (`Agreement/Load.lean`), and agrees definition by definition with the
+  Lean definitions it transcribes (`Agreement/`): each fold of the program
+  is related to a paramorphism of the tree it encodes (`Fold.lean`), and
+  the partial Horn logic, the theory, the inference, the language and the
+  checker of derivations and developments each agree at every encoded
+  input. At every development, its constants, entries and declarations
+  encoded, the loaded check gives the encoding of the Lean checker's
+  state, without `Classical.choice`; the tests' encodings are the
+  proof's (`Agreement/Encode.lean`).
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

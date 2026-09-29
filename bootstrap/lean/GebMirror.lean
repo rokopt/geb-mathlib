@@ -6,6 +6,7 @@ Authors: Terence Rokop
 module
 
 public import GebMirror.GoedelT
+public import GebMirror.Metalogic
 
 /-!
 # The Lean of Geb programs whose agreement with Lean functions is proved

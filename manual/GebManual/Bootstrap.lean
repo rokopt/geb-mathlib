@@ -89,10 +89,8 @@ order of dependence.
   language, sound by a theorem in Lean. In progress: the checker and the
   translation are constructed in Lean and proved sound, the proofs
   about the compiler's components are made in the language, and the
-  checker is written in Geb and compared with the Lean checker; its
-  prover and the translation are not yet written in Geb, and the
-  bootstrap is not complete until the agreement of the checker written
-  in Geb with the Lean checker is proved in Lean.
+  checker is written in Geb and proved in Lean to agree with the Lean
+  checker; its prover and the translation are not yet written in Geb.
   The checker of Gödel's T, the equational theory of the kernel's terms,
   constructed and written in Geb first, is retired: equations between
   kernel programs are proved in the metalogic
@@ -227,13 +225,11 @@ the sections below detail:
     ({ref "logic"}[The logic]).
   * Ready. The checker's prover and the translation of kernel programs
     written in Geb.
-  * Ready. The proof in Lean that the checker written in Geb agrees with
-    the Lean checker: its denotation, at every development, is the Lean
-    checker's result. The bootstrap is not complete without it. Its
-    method is established on the checker of Gödel's T, whose agreement
-    is proved ({ref "logic"}[The logic]).
-  * Waiting on the checker written in Geb and the proof of its
-    agreement. Stronger checkers admitted beside it by relative
+  * Complete. The proof in Lean that the checker written in Geb agrees
+    with the Lean checker: its denotation, at every development, is the
+    Lean checker's result, by the method of the checker of Gödel's T
+    ({ref "logic"}[The logic]).
+  * Ready. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations ({ref "metalogic-and-checker"}[The
     metalogic and its checker]), the checker of the shared certificates
@@ -1642,6 +1638,22 @@ with a declaration removed, and at declarations altered in their
 equations, types, arities, objects, indices, certificates and
 derivations, each checked in the state before the declaration it
 alters.
+
+`GebTests/Prototypes/FreeTopos/Agreement.lean` proves the checker
+written in Geb equal to {name}`Geb.FreeTopos.Internal.checkDev`, by the
+method of the checker of Gödel's T. The Lean the bootstrap compiler
+emits from the program, `GebMirror.Metalogic`, is the denotation of
+each of the program's definitions as {name}`Geb.Kernel.load` loads
+them, checked by the kernel's evaluation, and agrees definition by
+definition with the Lean definitions it transcribes: each fold of the
+program pairing a node's tree with its result is related to a
+paramorphism of the tree it encodes, and the partial Horn logic, the
+theory, the inference, the language and the checker of derivations and
+developments each agree at every encoded input. At every development,
+its constants, entries and declarations encoded, the loaded check gives
+the encoding of the state the Lean checker gives, so the two accept the
+same developments with the same results. The proof depends on no axiom
+beyond `propext` and `Quot.sound`.
 
 Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
@@ -3395,13 +3407,13 @@ The proofs about the compiler's components that need neither the
 printer nor a checker written in Geb are complete: the type checker's
 preservation of types by weakening and by substitution and the identity
 of the datatype language's expansion on programs of kernel forms
-({ref "goedel-t"}[Gödel's T]). The two that
-remain wait: the reader's inverse to the printer on the printer, and the
-admission of a stronger checker on the metalogic's checker written in
-Geb and the proof of its agreement, beside which it is admitted (the
-section on the metalogic and its checker). The next phase is the first
-of the two items those wait on, in progress, the checker being written
-in Geb and compared with the Lean checker; the second is ready:
+({ref "goedel-t"}[Gödel's T]). The reader's
+inverse to the printer waits on the printer; the admission of a stronger
+checker beside the metalogic's checker written in Geb, whose agreement
+with the Lean checker is proved, is ready (the section on the metalogic
+and its checker). The next phase is the first of the two items below, in
+progress, the checker written in Geb and its agreement proved, its
+prover and the translation remaining; the second is ready:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for
@@ -3420,11 +3432,12 @@ in Geb and compared with the Lean checker; the second is ready:
   printer, proved in the metalogic by the method of the three complete
   proofs.
 
-The admission of stronger checkers follows the first. Which checker is
-admitted first is decided, as the choices of when the Mitchell–Bénabou
-language is written and whether Gödel's T keeps its own checker were, by
-measurement: the nodes of the complete proofs' derivations, counted by
-rule, locate the steps a stronger checker would take at once. The
+The admission of stronger checkers rests on the checker written in Geb
+and its agreement. Which checker is admitted first is decided, as the
+choices of when the Mitchell–Bénabou language is written and whether
+Gödel's T keeps its own checker were, by measurement: the nodes of the
+complete proofs' derivations, counted by rule, locate the steps a
+stronger checker would take at once. The
 provers compare the sides of an equation in their normal forms under
 rewriting rules, a conversion that the metalogic's checker does not
 compute but checks step by step in the derivation, so the first

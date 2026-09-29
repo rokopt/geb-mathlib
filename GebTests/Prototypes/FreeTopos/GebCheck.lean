@@ -7,6 +7,7 @@ module
 
 public import Geb.Prototypes.Kernel
 public import GebTests.Prototypes.FreeTopos
+public meta import GebTests.Prototypes.FreeTopos.Agreement.Encode -- shake: keep
 public meta import GebTests.Prototypes.FreeTopos -- shake: keep
 public meta import GebTests.Prototypes.Proofs -- shake: keep
 
@@ -19,13 +20,13 @@ by the stage-0 compiler's front end and loaded by the kernel, and its definition
 with the Lean definitions they transcribe: the sorts, scope and substitution of partial Horn
 terms, the checker of certificates at the certificates of
 {lit}`GebTests.Prototypes.FreeTopos` and malformed variants of each, and the extension of the
-theory by a definition. Inputs are encoded as the Geb program represents them.
+theory by a definition. Inputs are encoded as the Geb program represents them, by the encodings
+of {lit}`GebTests.Prototypes.FreeTopos.Agreement.Encode`.
 
 ## Main definitions
 
 * {lit}`loaded` — the program's definitions, loaded, by name.
 * {lit}`fn` — a definition of the program at a type.
-* {lit}`encEqn`, {lit}`encSeq`, {lit}`encTheory` — equations, sequents and theories as trees.
 
 ## Tags
 
@@ -39,6 +40,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.GebCheck
 
 open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Sorts GebTests.Prototypes.FreeTopos
+  GebTests.Prototypes.FreeTopos.Agreement.Encode
 open scoped FinEnum
 
 /-- The prelude. -/
@@ -83,52 +85,6 @@ abbrev tyTs : Tree := Kernel.tList Kernel.tT
 /-- The function type. -/
 abbrev arrow (A B : Tree) : Tree := Kernel.tArrow A B
 
-/-- An optional tree as the reader represents it. -/
-def encOpt : Option Tree → Tree
-  | some t => RoseTree.node 1 [t]
-  | none => Kernel.leaf 0
-
-/-- A truth value as a label. -/
-def encBool (b : Bool) : Tree := Kernel.leaf (if b then 1 else 0)
-
-/-- An operation's signature: the node of its arguments' sorts and its sort. -/
-def encOpSig (o : List ℕ × ℕ) : Tree :=
-  RoseTree.node 0 [RoseTree.node 0 (o.1.map Kernel.leaf), Kernel.leaf o.2]
-
-/-- An equation as the node of its sides. -/
-def encEqn (q : Eqn) : Tree := RoseTree.node 0 [q.lhs, q.rhs]
-
-/-- A sequent as the node of its context's sorts, its hypotheses and its conclusion. -/
-def encSeq (a : Seq) : Tree :=
-  RoseTree.node 0 [RoseTree.node 0 (a.ctx.map Kernel.leaf), RoseTree.node 0 (a.hyps.map encEqn),
-    encEqn a.concl]
-
-/-- A theory as the node of its signature and its axioms. -/
-def encTheory (T : Theory) : Tree :=
-  RoseTree.node 0 [RoseTree.node 0 (T.sig.map encOpSig), RoseTree.node 0 (T.axioms.map encSeq)]
-
-/-- A definition as the node of its arguments' sorts, its sort and its body. -/
-def encDefn (d : Defn) : Tree :=
-  RoseTree.node 0 [RoseTree.node 0 (d.ctx.map Kernel.leaf), Kernel.leaf d.sort, d.body]
-
-/-- A definedness rule as the node of its kind's position over an axiom's index. -/
-def encDfdRule : DfdRule → Tree
-  | .direct j => RoseTree.node 0 [Kernel.leaf j]
-  | .strict j => RoseTree.node 1 [Kernel.leaf j]
-  | .rhs j => RoseTree.node 2 [Kernel.leaf j]
-
-/-- A typing as the node of its sort and its canonical forms. -/
-def encAnn (a : Ann) : Tree := RoseTree.node 0 [Kernel.leaf a.sort, a.lo, a.hi]
-
-/-- An extension's environment as the node of its definitions, axioms, signature and rule
-tables. -/
-def encExtEnv (E : ExtEnv) : Tree :=
-  RoseTree.node 0 [RoseTree.node 0 (E.defs.map encDefn), RoseTree.node 0 (E.axs.toList.map encSeq),
-    RoseTree.node 0 (E.sg.toList.map encOpSig),
-    RoseTree.node 0 (E.dfds.toList.map fun r ↦ encOpt (r.map encDfdRule)),
-    RoseTree.node 0 (E.doms.toList.map fun r ↦ encOpt (r.map Kernel.leaf)),
-    RoseTree.node 0 (E.cods.toList.map fun r ↦ encOpt (r.map Kernel.leaf))]
-
 /-- The terms the comparisons of sorts, scope and substitution run on: the sides of every
 equation of every axiom, and a node of label zero that is not a variable. -/
 def terms : List Tree :=
@@ -143,7 +99,7 @@ def terms : List Tree :=
   pure <| axioms.all fun a ↦ terms.all fun t ↦
     so (sig.map encOpSig) (a.ctx.map Kernel.leaf) t ==
         encOpt ((sortOf sig a.ctx t).map Kernel.leaf) &&
-      sc (Kernel.leaf a.ctx.length) t == encBool (Scoped a.ctx.length t) &&
+      sc (Kernel.leaf a.ctx.length) t == Kernel.ofBool (Scoped a.ctx.length t) &&
       su [x 1, op 4 []] t == subst [x 1, op 4 []] t).getD false
 
 /-- The certificates the checkers are compared on, each with its theory's extension, the
