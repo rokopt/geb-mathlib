@@ -87,22 +87,18 @@ def «treeBits» :=
   fun (x0 : T) =>
     Const.fold
       (α := List T → List T)
-      (fun (x1 : T) (x2 : List (List T → List T)) (x3 : List T) =>
-        «append»
-          («nodeBits»
-            (Const.foldr
-              (α := List T → List T)
-              (β := T)
-              (fun (_ : List T → List T) (x5 : T) => Const.add x5 (leaf 1))
-              (leaf 0)
-              x2)
-            x1)
-          (Const.foldr
-            (α := List T → List T)
-            (β := List T)
-            (fun (x4 : List T → List T) (x5 : List T) => x4 x5)
-            x3
-            x2))
+      (fun (x1 : T) (x2 : List (List T → List T)) =>
+        let x3 : T ×
+          (List T →
+            List
+              T) := Const.foldr
+          (α := List T → List T)
+          (β := T × (List T → List T))
+          (fun (x3 : List T → List T) (x4 : T × (List T → List T)) =>
+            (Const.add (x4).1 (leaf 1), fun (x5 : List T) => x3 ((x4).2 x5)))
+          (leaf 0, fun (x3 : List T) => x3)
+          x2;
+        fun (x4 : List T) => «append» («nodeBits» (x3).1 x1) ((x3).2 x4))
       x0
       ([] : List T)
 
