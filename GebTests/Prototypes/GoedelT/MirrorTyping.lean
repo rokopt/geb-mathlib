@@ -634,6 +634,18 @@ theorem node_fold (G : List Glob) (Γ : Ctx) (A : Tree) :
   rw [isTy_eq, foldTy_eq]
   cases Ty.IsTy A <;> rfl
 
+/-- The mirror's type of the fold of trees whose step sees the node itself: the type of the
+fold. -/
+theorem node_para (G : List Glob) (Γ : Ctx) (A : Tree) :
+    GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.para [A]) (withTys G [A]) Γ =
+      enc (tyOf G Γ (RoseTree.node Label.para [A])) := by
+  change (if (GebMirror.GoedelT.isTy A).label ≠ 0 then GebMirror.GoedelT.some
+    (GebMirror.GoedelT.foldTy A) else GebMirror.GoedelT.none) = _
+  rw [tyOf_node]
+  change _ = enc (fstOf (if Ty.IsTy A then some (constant ⟨foldTy A, paraDen A⟩) else none))
+  rw [isTy_eq, foldTy_eq]
+  cases Ty.IsTy A <;> rfl
+
 /-- The mirror's type of iteration. -/
 theorem node_iter (G : List Glob) (Γ : Ctx) (A : Tree) :
     GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node Label.iter [A]) (withTys G [A]) Γ =
@@ -727,7 +739,7 @@ theorem node_ref (G : List Glob) (Γ : Ctx) (n : Tree) :
   rw [nth_eq, tyOf_node, List.map_singleton, inferStep_ref]
 
 /-- The mirror's type of a node whose label is past the kernel's labels: nothing. -/
-theorem node_other (G : List Glob) (Γ : Ctx) (l : ℕ) (hl : 24 < l) (cs : List Tree) :
+theorem node_other (G : List Glob) (Γ : Ctx) (l : ℕ) (hl : 25 < l) (cs : List Tree) :
     GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node l cs) (withTys G cs) Γ =
       enc (tyOf G Γ (RoseTree.node l cs)) := by
   rw [tyOf_node]
@@ -741,7 +753,7 @@ theorem node_other (G : List Glob) (Γ : Ctx) (l : ℕ) (hl : 24 < l) (cs : List
     show l ≠ 12 by omega, show l ≠ 13 by omega, show l ≠ 14 by omega, show l ≠ 15 by omega,
     show l ≠ 16 by omega, show l ≠ 17 by omega, show l ≠ 18 by omega, show l ≠ 19 by omega,
     show l ≠ 20 by omega, show l ≠ 21 by omega, show l ≠ 22 by omega, show l ≠ 23 by omega,
-    show l ≠ 24 by omega, ite_false]
+    show l ≠ 24 by omega, show l ≠ 25 by omega, ite_false]
   rfl
 
 /-- A node of four or more children fails every test of the kernel's arities. -/
@@ -758,7 +770,7 @@ theorem node_many (G : List Glob) (Γ : Ctx) (l : ℕ) (a b c d : Tree) (rest : 
     GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node l (a :: b :: c :: d :: rest))
       (withTys G (a :: b :: c :: d :: rest)) Γ =
       enc (tyOf G Γ (RoseTree.node l (a :: b :: c :: d :: rest))) := by
-  by_cases hl : 24 < l
+  by_cases hl : 25 < l
   · exact node_other G Γ l hl _
   rw [tyOf_node, List.map_cons, List.map_cons, List.map_cons, List.map_cons]
   unfold GebMirror.GoedelT.checkNode
@@ -767,22 +779,22 @@ theorem node_many (G : List Glob) (Γ : Ctx) (l : ℕ) (a b c d : Tree) (rest : 
   match l, hl with
   | 0, _ | 1, _ | 2, _ | 3, _ | 4, _ | 5, _ | 6, _ | 7, _ | 8, _ | 9, _ | 10, _ | 11, _ |
     12, _ | 13, _ | 14, _ | 15, _ | 16, _ | 17, _ | 18, _ | 19, _ | 20, _ | 21, _ | 22, _ |
-    23, _ | 24, _ => rfl
-  | _ + 25, h => exact (h (by omega)).elim
+    23, _ | 24, _ | 25, _ => rfl
+  | _ + 26, h => exact (h (by omega)).elim
 
 /-- The mirror's type of a node, from its children's types. -/
 theorem checkNode_eq (G : List Glob) (Γ : Ctx) (l : ℕ) (cs : List Tree) :
     GebMirror.GoedelT.checkNode (G.map (·.1)) (RoseTree.node l cs) (withTys G cs) Γ =
       enc (tyOf G Γ (RoseTree.node l cs)) := by
-  by_cases hl : 24 < l
+  by_cases hl : 25 < l
   · exact node_other G Γ l hl cs
   rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, _ | ⟨d, rest⟩⟩⟩⟩
   · match l, hl with
     | 11, _ => exact node_unit G Γ
     | 0, _ | 1, _ | 2, _ | 3, _ | 4, _ | 5, _ | 6, _ | 7, _ | 8, _ | 9, _ | 10, _ | 12, _ |
       13, _ | 14, _ | 15, _ | 16, _ | 17, _ | 18, _ | 19, _ | 20, _ | 21, _ | 22, _ | 23, _ |
-      24, _ => rfl
-    | _ + 25, h => exact (h (by omega)).elim
+      24, _ | 25, _ => rfl
+    | _ + 26, h => exact (h (by omega)).elim
   · match l, hl with
     | 8, _ => exact node_var G Γ a
     | 13, _ => exact node_fst G Γ a
@@ -793,9 +805,10 @@ theorem checkNode_eq (G : List Glob) (Γ : Ctx) (l : ℕ) (cs : List Tree) :
     | 19, _ => exact node_nil G Γ a
     | 22, _ => exact node_prim G Γ a
     | 23, _ => exact node_ref G Γ a
+    | 25, _ => exact node_para G Γ a
     | 0, _ | 1, _ | 2, _ | 3, _ | 4, _ | 5, _ | 6, _ | 7, _ | 9, _ | 10, _ | 11, _ | 12, _ |
       16, _ | 20, _ | 21, _ | 24, _ => rfl
-    | _ + 25, h => exact (h (by omega)).elim
+    | _ + 26, h => exact (h (by omega)).elim
   · match l, hl with
     | 9, _ => exact node_lam G Γ a b
     | 10, _ => exact node_app G Γ a b
@@ -804,14 +817,14 @@ theorem checkNode_eq (G : List Glob) (Γ : Ctx) (l : ℕ) (cs : List Tree) :
     | 21, _ => exact node_foldr G Γ a b
     | 24, _ => exact node_lcase G Γ a b
     | 0, _ | 1, _ | 2, _ | 3, _ | 4, _ | 5, _ | 6, _ | 7, _ | 8, _ | 11, _ | 13, _ | 14, _ |
-      15, _ | 16, _ | 17, _ | 18, _ | 19, _ | 22, _ | 23, _ => rfl
-    | _ + 25, h => exact (h (by omega)).elim
+      15, _ | 16, _ | 17, _ | 18, _ | 19, _ | 22, _ | 23, _ | 25, _ => rfl
+    | _ + 26, h => exact (h (by omega)).elim
   · match l, hl with
     | 16, _ => exact node_cond G Γ a b c
     | 0, _ | 1, _ | 2, _ | 3, _ | 4, _ | 5, _ | 6, _ | 7, _ | 8, _ | 9, _ | 10, _ | 11, _ |
       12, _ | 13, _ | 14, _ | 15, _ | 17, _ | 18, _ | 19, _ | 20, _ | 21, _ | 22, _ | 23, _ |
-      24, _ => rfl
-    | _ + 25, h => exact (h (by omega)).elim
+      24, _ | 25, _ => rfl
+    | _ + 26, h => exact (h (by omega)).elim
   · exact node_many G Γ l a b c d rest
 
 /-- The step of the mirror's type checker at a node: the node rebuilt, and its type as a

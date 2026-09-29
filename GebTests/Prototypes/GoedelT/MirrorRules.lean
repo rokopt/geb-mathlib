@@ -631,6 +631,17 @@ theorem more_foldNode (E : Env) (G : List Glob) (A f x xs : Tree)
   simp only [isTy_label, hasType_label, tyArrow_eq, tyList_eq, mapBy_eq, wk_eq]
   rule_close
 
+/-- The mirror's rule of the fold of trees whose step sees the node itself, at a node. -/
+theorem more_paraNode (E : Env) (G : List Glob) (A f x xs : Tree)
+    (pA pf px pxs : List Tree → List Tree → Tree) (PA Pf Px Pxs : Chk) (Γ : Ctx) (H : List Eqn) :
+    GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf 37) [A, f, x, xs]
+      [(A, pA), (f, pf), (x, px), (xs, pxs)] Γ (H.map encEqn) =
+      enc ((checkMore 37 [(A, PA), (f, Pf), (x, Px), (xs, Pxs)] E G Γ H).map encEqn) := by
+  rule_dispatch
+  simp only [hasType_tT, tyArrow_tT, tyList_tT]
+  simp only [isTy_label, hasType_label, tyArrow_eq, tyList_eq, mapBy_eq, wk_eq]
+  rule_close
+
 /-- The mirror's rule of induction on a tree. -/
 theorem more_indTree (E : Env) (G : List Glob) (s t c1 : Tree)
     (ps pt p1 : List Tree → List Tree → Tree) (Ps Pt P1 : Chk) (hp1 : Agrees E G p1 P1)
