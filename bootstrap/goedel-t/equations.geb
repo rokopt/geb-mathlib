@@ -49,6 +49,7 @@
 (defnum Rule.iterLabel 34)
 (defnum Rule.condIter 35)
 (defnum Rule.thm 36)
+(defnum Rule.paraNode 37)
 
 (data Eqn (eqn T T T))
 (defn eqTy ((q T)) T (case q ((eqn a s t) a)))
@@ -530,7 +531,15 @@
       none)
   ; an instance of a theorem, each variable replaced by a term of its type
   (if (and (eq l Rule.thm) (lt 0 k)) (bindO (nth Th (label c0)) (cite G ctx (tail cs)))
-    none)))))))))))))))))))
+  ; the fold of trees whose step sees the node itself, at a node
+  (if (shape l k Rule.paraNode 4)
+    (if (and (isTy c0) (and (hasType G ctx c1 (tyArrow Label.tyTree (tyArrow (tyList c0) c0)))
+          (and (hasType G ctx c2 Label.tyTree) (hasType G ctx c3 (tyList Label.tyTree)))))
+      (some (eqn c0 (app2 (mk1 Label.para c0) c1 (app2 (mk1 Label.prim Prim.node) c2 c3))
+                 (app2 c1 (app2 (mk1 Label.prim Prim.node) c2 c3)
+                       (mapBy Label.tyTree c0 (app2 (mk1 Label.para c0) (wk 2 c1) (var 1)) c3))))
+      none)
+    none))))))))))))))))))))
 
 ; the checker: the conclusion of a certificate, given a program's definitions, theorems about
 ; it, the types of its global environment, a context and a list of hypotheses

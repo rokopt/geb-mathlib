@@ -218,6 +218,7 @@ def resolveStep (tys : TypeNames) (defs : List (List Char)) (a : Option (List Ch
     | some "cons", _ => (args rest).map (mk Label.cons)
     | some "nil", [(A, _)] => (readType tys A).map fun A ↦ mk Label.nil [A]
     | some "fold", (A, _) :: xs => do apps (mk Label.fold [← readType tys A]) (← args xs)
+    | some "para", (A, _) :: xs => do apps (mk Label.para [← readType tys A]) (← args xs)
     | some "iter", (A, _) :: xs => do apps (mk Label.iter [← readType tys A]) (← args xs)
     | some "foldr", (A, _) :: (B, _) :: xs => do
       apps (mk Label.foldr [← readType tys A, ← readType tys B]) (← args xs)

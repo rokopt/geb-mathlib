@@ -3691,12 +3691,14 @@ checklist and in CI.
   `Geb.Kernel.Prim`; the primitives `Geb.Kernel.prims`
   operate on labels and children, lists carry their right fold and their
   case analysis, the fold of
-  trees denotes `Geb.RoseTree.elim` over the list of children's results, and
-  iteration repeats a step as often as a label's value. `Reader.lean` reads
-  programs, sequences of named definitions and of type and numeral
-  abbreviations in S-expressions over lists of characters, resolving names
-  to de Bruijn indices, references and primitives and expanding lists of
-  binders, local bindings and numeral abbreviations
+  trees denotes `Geb.RoseTree.elim` over the list of children's results, the
+  fold whose step sees the node (`Geb.Kernel.Const.para`,
+  `Geb.Kernel.Const.para_node`) the same fold at pairs of a rebuilt node and
+  its result, and iteration repeats a step as often as a label's value.
+  `Reader.lean` reads programs, sequences of named definitions and of type
+  and numeral abbreviations in S-expressions over lists of characters,
+  resolving names to de Bruijn indices, references and primitives and
+  expanding lists of binders, local bindings and numeral abbreviations
   (`Geb.Kernel.readProgram`), loads them in order
   (`Geb.Kernel.load`), and applies the last to an input tree
   (`Geb.Kernel.runMain`). `Image.lean` stores a program as one tree
@@ -3754,8 +3756,9 @@ checklist and in CI.
   equality, congruence, the β and η rules of functions, pairs and the unit
   type, the δ rules of the primitives at literals, weakening, cut,
   instantiation, the computation rules of the conditional at a quoted
-  tree, of the right fold and case analysis of lists, of iteration and of
-  the fold of trees, induction on lists, trees and labels, and references
+  tree, of the right fold and case analysis of lists, of iteration, of
+  the fold of trees and of the fold whose step sees the node, induction on
+  lists, trees and labels, and references
   to the definitions of a loaded program
   (`Geb.GoedelT.Loaded`, `Geb.GoedelT.load_loaded`).
   `Geb.GoedelT.check_sound` proves every computed conclusion valid in
@@ -3963,7 +3966,9 @@ checklist and in CI.
   bijective numeration of [Oitavem2010], the type of trees the rose-tree
   object over the bitstrings, and the kernel's primitives, folds and
   iteration applications of the definitions of a library
-  (`Geb.FreeTopos.Translation.lib`). `TranslationLibrary.lean` proves that
+  (`Geb.FreeTopos.Translation.lib`), the fold whose step sees the node the
+  rose-tree fold at pairs of a rebuilt node and its value
+  (`Geb.FreeTopos.Translation.paraT`). `TranslationLibrary.lean` proves that
   each definition of the library represents the function it computes,
   and `TranslationKernel.lean` the fundamental lemma: the translation of a
   well-typed kernel term represents its denotation

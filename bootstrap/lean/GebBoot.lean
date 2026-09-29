@@ -357,6 +357,8 @@ def «kwNil» := mk 0 [leaf 110, leaf 105, leaf 108]
 
 def «kwFold» := mk 0 [leaf 102, leaf 111, leaf 108, leaf 100]
 
+def «kwPara» := mk 0 [leaf 112, leaf 97, leaf 114, leaf 97]
+
 def «kwIter» := mk 0 [leaf 105, leaf 116, leaf 101, leaf 114]
 
 def «kwFoldr» :=
@@ -831,37 +833,36 @@ def «resolveList» :=
                           else
                             «none»
                         else
-                          if (if («named» x6 «kwIter»).label ≠ 0 then
+                          if (if («named» x6 «kwPara»).label ≠ 0 then
                             Const.lt (leaf 1) x5
                           else
                             leaf 0).label ≠ 0 then
                             let x7 : T := «readType» x0 («at» x4 (leaf 1));
                             if («isSome» x7).label ≠ 0 then
                               «appsOpt»
-                                («some» (Const.node (leaf 18) («single» («get» x7))))
+                                («some» (Const.node (leaf 25) («single» («get» x7))))
                                 («argsOf» x2 (leaf 2) x3)
                             else
                               «none»
                           else
-                            if (if («named» x6 «kwFoldr»).label ≠ 0 then
-                              Const.lt (leaf 2) x5
+                            if (if («named» x6 «kwIter»).label ≠ 0 then
+                              Const.lt (leaf 1) x5
                             else
                               leaf 0).label ≠ 0 then
-                              let x7 : T := «some2»
-                                (leaf 21)
-                                («readType» x0 («at» x4 (leaf 1)))
-                                («readType» x0 («at» x4 (leaf 2)));
+                              let x7 : T := «readType» x0 («at» x4 (leaf 1));
                               if («isSome» x7).label ≠ 0 then
-                                «appsOpt» x7 («argsOf» x2 (leaf 3) x3)
+                                «appsOpt»
+                                  («some» (Const.node (leaf 18) («single» («get» x7))))
+                                  («argsOf» x2 (leaf 2) x3)
                               else
                                 «none»
                             else
-                              if (if («named» x6 «kwLcase»).label ≠ 0 then
+                              if (if («named» x6 «kwFoldr»).label ≠ 0 then
                                 Const.lt (leaf 2) x5
                               else
                                 leaf 0).label ≠ 0 then
                                 let x7 : T := «some2»
-                                  (leaf 24)
+                                  (leaf 21)
                                   («readType» x0 («at» x4 (leaf 1)))
                                   («readType» x0 («at» x4 (leaf 2)));
                                 if («isSome» x7).label ≠ 0 then
@@ -869,7 +870,20 @@ def «resolveList» :=
                                 else
                                   «none»
                               else
-                                «appsOpt» («rrAt» x2 (leaf 0) x3) («argsOf» x2 (leaf 1) x3)
+                                if (if («named» x6 «kwLcase»).label ≠ 0 then
+                                  Const.lt (leaf 2) x5
+                                else
+                                  leaf 0).label ≠ 0 then
+                                  let x7 : T := «some2»
+                                    (leaf 24)
+                                    («readType» x0 («at» x4 (leaf 1)))
+                                    («readType» x0 («at» x4 (leaf 2)));
+                                  if («isSome» x7).label ≠ 0 then
+                                    «appsOpt» x7 («argsOf» x2 (leaf 3) x3)
+                                  else
+                                    «none»
+                                else
+                                  «appsOpt» («rrAt» x2 (leaf 0) x3) («argsOf» x2 (leaf 1) x3)
 
 def «resolve» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) (x3 : List T) =>
@@ -1172,78 +1186,87 @@ def «checkNode» :=
                         else
                           «none»
                       else
-                        if (Const.eq x4 (leaf 18)).label ≠ 0 then
+                        if (Const.eq x4 (leaf 25)).label ≠ 0 then
                           if (Const.eq x6 (leaf 1)).label ≠ 0 then
                             if («isTy» («at» x5 (leaf 0))).label ≠ 0 then
-                              «some» («iterTy» («at» x5 (leaf 0)))
+                              «some» («foldTy» («at» x5 (leaf 0)))
                             else
                               «none»
                           else
                             «none»
                         else
-                          if (Const.eq x4 (leaf 19)).label ≠ 0 then
+                          if (Const.eq x4 (leaf 18)).label ≠ 0 then
                             if (Const.eq x6 (leaf 1)).label ≠ 0 then
                               if («isTy» («at» x5 (leaf 0))).label ≠ 0 then
-                                «some» («tyList» («at» x5 (leaf 0)))
+                                «some» («iterTy» («at» x5 (leaf 0)))
                               else
                                 «none»
                             else
                               «none»
                           else
-                            if (Const.eq x4 (leaf 20)).label ≠ 0 then
-                              if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                                let x7 : T := «rrAt» x2 (leaf 0) x3;
-                                let x8 : T := «rrAt» x2 (leaf 1) x3;
-                                if («both» x7 x8).label ≠ 0 then
-                                  if («isListTy» («get» x8)).label ≠ 0 then
-                                    if (Const.equal
-                                      («get» x7)
-                                      (Const.child («get» x8) (leaf 0))).label ≠ 0 then
-                                      «some» («tyList» («get» x7))
-                                    else
-                                      «none»
-                                  else
-                                    «none»
+                            if (Const.eq x4 (leaf 19)).label ≠ 0 then
+                              if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                if («isTy» («at» x5 (leaf 0))).label ≠ 0 then
+                                  «some» («tyList» («at» x5 (leaf 0)))
                                 else
                                   «none»
                               else
                                 «none»
                             else
-                              if (Const.eq x4 (leaf 21)).label ≠ 0 then
+                              if (Const.eq x4 (leaf 20)).label ≠ 0 then
                                 if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                                  if («and»
-                                    («isTy» («at» x5 (leaf 0)))
-                                    («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
-                                    «some» («foldrTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
+                                  let x7 : T := «rrAt» x2 (leaf 0) x3;
+                                  let x8 : T := «rrAt» x2 (leaf 1) x3;
+                                  if («both» x7 x8).label ≠ 0 then
+                                    if («isListTy» («get» x8)).label ≠ 0 then
+                                      if (Const.equal
+                                        («get» x7)
+                                        (Const.child («get» x8) (leaf 0))).label ≠ 0 then
+                                        «some» («tyList» («get» x7))
+                                      else
+                                        «none»
+                                    else
+                                      «none»
                                   else
                                     «none»
                                 else
                                   «none»
                               else
-                                if (Const.eq x4 (leaf 22)).label ≠ 0 then
-                                  if (Const.eq x6 (leaf 1)).label ≠ 0 then
-                                    «nth» «primTypes» (Const.label («at» x5 (leaf 0)))
-                                  else
-                                    «none»
-                                else
-                                  if (Const.eq x4 (leaf 23)).label ≠ 0 then
-                                    if (Const.eq x6 (leaf 1)).label ≠ 0 then
-                                      «nth» x0 (Const.label («at» x5 (leaf 0)))
+                                if (Const.eq x4 (leaf 21)).label ≠ 0 then
+                                  if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                    if («and»
+                                      («isTy» («at» x5 (leaf 0)))
+                                      («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
+                                      «some» («foldrTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
                                     else
                                       «none»
                                   else
-                                    if (Const.eq x4 (leaf 24)).label ≠ 0 then
-                                      if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                                        if («and»
-                                          («isTy» («at» x5 (leaf 0)))
-                                          («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
-                                          «some» («lcaseTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
+                                    «none»
+                                else
+                                  if (Const.eq x4 (leaf 22)).label ≠ 0 then
+                                    if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                      «nth» «primTypes» (Const.label («at» x5 (leaf 0)))
+                                    else
+                                      «none»
+                                  else
+                                    if (Const.eq x4 (leaf 23)).label ≠ 0 then
+                                      if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                        «nth» x0 (Const.label («at» x5 (leaf 0)))
+                                      else
+                                        «none»
+                                    else
+                                      if (Const.eq x4 (leaf 24)).label ≠ 0 then
+                                        if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                          if («and»
+                                            («isTy» («at» x5 (leaf 0)))
+                                            («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
+                                            «some» («lcaseTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
+                                          else
+                                            «none»
                                         else
                                           «none»
                                       else
                                         «none»
-                                    else
-                                      «none»
 
 def «typeIn» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) =>
@@ -1342,6 +1365,8 @@ def «aFoldr» :=
 
 def «aFold» := mk 1 [leaf 102, leaf 111, leaf 108, leaf 100]
 
+def «aPara» := mk 1 [leaf 112, leaf 97, leaf 114, leaf 97]
+
 def «aDef» := mk 1 [leaf 100, leaf 101, leaf 102]
 
 def «aDeftype» :=
@@ -1410,6 +1435,8 @@ def «aR» := mk 1 [leaf 37, leaf 114]
 def «aD» := mk 1 [leaf 37, leaf 100]
 
 def «aRest» := mk 1 [leaf 37, leaf 114, leaf 101, leaf 115, leaf 116]
+
+def «aK» := mk 1 [leaf 37, leaf 107]
 
 def «kwData» := mk 0 [leaf 100, leaf 97, leaf 116, leaf 97]
 
@@ -1608,134 +1635,93 @@ def «ctorsOf» :=
 
 def «expandAliases» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : T := (Const.fold
-      (α := T × (Unit → T))
-      (fun (x2 : T) (x3 : List (T × (Unit → T))) =>
-        let x4 : T := Const.node
-          x2
-          (Const.foldr
-            (α := T × (Unit → T))
-            (β := List T)
-            (fun (x4 : T × (Unit → T)) (x5 : List T) => ((x4).1 :: x5))
-            ([] : List T)
-            x3);
-        (x4,
-          fun (_ : Unit) =>
-            if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-              let x6 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x6 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x6
-                    ([] : List T)
-                    (fun (_ : T) (x8 : List T) => x8))
-                (Const.children x4)
-                (leaf 0);
-              let x7 : T := «findAlias» (Const.node (leaf 0) x6) x0;
-              if (Const.eq (Const.label x7) (leaf 1)).label ≠ 0 then
-                let x8 : T := Const.child x7 (leaf 0); x8
-              else
-                «atom» x6
-            else
-              if (Const.eq (Const.label x4) (leaf 2)).label ≠ 0 then
-                let x6 : List
-                  T := Const.foldr
-                  (α := T × (Unit → T))
-                  (β := List T)
-                  (fun (x6 : T × (Unit → T)) (x7 : List T) => (((x6).2 ()) :: x7))
-                  ([] : List T)
-                  (Const.iter
-                    (α := List (T × (Unit → T)))
-                    (fun (x6 : List (T × (Unit → T))) =>
-                      Const.lcase
-                        (α := T × (Unit → T))
-                        (β := List (T × (Unit → T)))
-                        x6
-                        ([] : List (T × (Unit → T)))
-                        (fun (_ : T × (Unit → T)) (x8 : List (T × (Unit → T))) => x8))
-                    x3
-                    (leaf 0));
-                «lst» x6
-              else
-                «sx0»))
-      x1).2
+    let x2 : T := Const.para
+      (α := Unit → T)
+      (fun (x2 : T) (x3 : List (Unit → T)) (_ : Unit) =>
+        if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+          let x5 : List
+            T := Const.iter
+            (α := List T)
+            (fun (x5 : List T) =>
+              Const.lcase
+                (α := T)
+                (β := List T)
+                x5
+                ([] : List T)
+                (fun (_ : T) (x7 : List T) => x7))
+            (Const.children x2)
+            (leaf 0);
+          let x6 : T := «findAlias» (Const.node (leaf 0) x5) x0;
+          if (Const.eq (Const.label x6) (leaf 1)).label ≠ 0 then
+            let x7 : T := Const.child x6 (leaf 0); x7
+          else
+            «atom» x5
+        else
+          if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+            let x5 : List
+              T := Const.foldr
+              (α := Unit → T)
+              (β := List T)
+              (fun (x5 : Unit → T) (x6 : List T) => ((x5 ()) :: x6))
+              ([] : List T)
+              x3;
+            «lst» x5
+          else
+            «sx0»)
+      x1
       ();
     x2
 
 def «defaultOf» :=
   fun (x0 : T) =>
-    let x1 : T := ((Const.fold
-      (α := T × (Unit → T × T))
-      (fun (x1 : T) (x2 : List (T × (Unit → T × T))) =>
-        let x3 : T := Const.node
-          x1
-          (Const.foldr
-            (α := T × (Unit → T × T))
-            (β := List T)
-            (fun (x3 : T × (Unit → T × T)) (x4 : List T) => ((x3).1 :: x4))
-            ([] : List T)
-            x2);
-        (x3,
-          fun (_ : Unit) =>
-            if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-              let x5 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x5 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x5
-                    ([] : List T)
-                    (fun (_ : T) (x7 : List T) => x7))
-                (Const.children x3)
-                (leaf 0);
-              («atom» x5,
-                if (Const.equal (Const.node (leaf 0) x5) «kwUnit»).label ≠ 0 then
-                  «aUnitV»
-                else
-                  «aZero»)
+    let x1 : T := (Const.para
+      (α := Unit → T × T)
+      (fun (x1 : T) (x2 : List (Unit → T × T)) (_ : Unit) =>
+        if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+          let x4 : List
+            T := Const.iter
+            (α := List T)
+            (fun (x4 : List T) =>
+              Const.lcase
+                (α := T)
+                (β := List T)
+                x4
+                ([] : List T)
+                (fun (_ : T) (x6 : List T) => x6))
+            (Const.children x1)
+            (leaf 0);
+          («atom» x4,
+            if (Const.equal (Const.node (leaf 0) x4) «kwUnit»).label ≠ 0 then
+              «aUnitV»
             else
-              if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
-                let x5 : List
-                  (T ×
-                    T) := Const.foldr
-                  (α := T × (Unit → T × T))
-                  (β := List (T × T))
-                  (fun (x5 : T × (Unit → T × T)) (x6 : List (T × T)) =>
-                    (((x5).2 ()) :: x6))
-                  ([] : List (T × T))
-                  (Const.iter
-                    (α := List (T × (Unit → T × T)))
-                    (fun (x5 : List (T × (Unit → T × T))) =>
-                      Const.lcase
-                        (α := T × (Unit → T × T))
-                        (β := List (T × (Unit → T × T)))
-                        x5
-                        ([] : List (T × (Unit → T × T)))
-                        (fun (_ : T × (Unit → T × T)) (x7 : List (T × (Unit → T × T))) => x7))
-                    x2
-                    (leaf 0));
-                let x6 : T := «lst» («rtTrees» x5);
-                let x7 : List T := «rtValues» x5;
-                let x8 : T := «at» (Const.children x6) (leaf 0);
-                (x6,
-                  if («named» x8 «kwProd»).label ≠ 0 then
-                    «sx3» «aPair» («at» x7 (leaf 1)) («at» x7 (leaf 2))
-                  else
-                    if («named» x8 «kwArrow»).label ≠ 0 then
-                      «sLam1» «aD» («at» (Const.children x6) (leaf 1)) («at» x7 (leaf 2))
-                    else
-                      if («named» x8 «kwList»).label ≠ 0 then
-                        «sx2» «aNil» («at» (Const.children x6) (leaf 1))
-                      else
-                        «aZero»)
+              «aZero»)
+        else
+          if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
+            let x4 : List
+              (T ×
+                T) := Const.foldr
+              (α := Unit → T × T)
+              (β := List (T × T))
+              (fun (x4 : Unit → T × T) (x5 : List (T × T)) => ((x4 ()) :: x5))
+              ([] : List (T × T))
+              x2;
+            let x5 : T := «lst» («rtTrees» x4);
+            let x6 : List T := «rtValues» x4;
+            let x7 : T := «at» (Const.children x5) (leaf 0);
+            (x5,
+              if («named» x7 «kwProd»).label ≠ 0 then
+                «sx3» «aPair» («at» x6 (leaf 1)) («at» x6 (leaf 2))
               else
-                («sx0», «aZero»)))
-      x0).2
+                if («named» x7 «kwArrow»).label ≠ 0 then
+                  «sLam1» «aD» («at» (Const.children x5) (leaf 1)) («at» x6 (leaf 2))
+                else
+                  if («named» x7 «kwList»).label ≠ 0 then
+                    «sx2» «aNil» («at» (Const.children x5) (leaf 1))
+                  else
+                    «aZero»)
+          else
+            («sx0», «aZero»))
+      x0
       ()).2;
     x1
 
@@ -2008,29 +1994,48 @@ def «expandCase» :=
                      «nothing»);
     x3
 
-def «pTy» :=
-  fun (x0 : T) => let x1 : T := «sProd» «aT» («sArrow» «aUnit» x0); x1
+def «thTy» := fun (x0 : T) => let x1 : T := «sArrow» «aUnit» x0; x1
 
-def «forced» :=
-  fun (x0 : T) => let x1 : T := «sx2» («sx2» «aSnd» x0) «aUnitV»; x1
+def «splitTy» :=
+  fun (x0 : T) =>
+    let x1 : T := «sProd» («thTy» x0) («sList» («thTy» x0)); x1
 
-def «nthP» :=
-  fun (x0 : T) (x1 : T) (x2 : T) =>
-    let x3 : T := «sx6»
-      «aLcase»
-      («pTy» x0)
-      («pTy» x0)
-      («sDrop» («pTy» x0) «aRs» x2)
-      («sx3» «aPair» «aZero» («sLam1» «aU» «aUnit» x1))
-      («sLam2» «aH» («pTy» x0) «aTl» («sList» («pTy» x0)) «aH»);
-    x3
+def «qAtom» :=
+  fun (x0 : T) =>
+    let x1 : T := Const.node
+      (leaf 1)
+      ((leaf 37) :: ((leaf 113) :: («decimalChars» x0)));
+    x1
+
+def «resultsAt» :=
+  fun (x0 : T) =>
+    let x1 : T := (if (Const.eq x0 (leaf 0)).label ≠ 0 then
+      «aK»
+    else
+      «sx2» «aSnd» («qAtom» (Const.sub x0 (leaf 1))));
+    x1
 
 def «cataField» :=
   fun (x0 : T) (x1 : T) (x2 : T) (x3 : T) (x4 : T) (x5 : T) (x6 : T) =>
-    let x7 : T := (if («named» x4 x0).label ≠ 0 then
-      «sLet» x5 x1 («forced» («nthP» x1 x2 x3)) x6
-    else
-      «sLet» x5 «aT» («sx3» «aChild» «aO» («numAtom» x3)) x6);
+    let x7 : T := «sLet»
+      («qAtom» x3)
+      («splitTy» x1)
+      («sx6»
+        «aLcase»
+        («thTy» x1)
+        («splitTy» x1)
+        («resultsAt» x3)
+        («sx3» «aPair» («sLam1» «aU» «aUnit» x2) («sx2» «aNil» («thTy» x1)))
+        («sLam2»
+          «aH»
+          («thTy» x1)
+          «aTl»
+          («sList» («thTy» x1))
+          («sx3» «aPair» «aH» «aTl»)))
+      (if («named» x4 x0).label ≠ 0 then
+        «sLet» x5 x1 («sx2» («sx2» «aFst» («qAtom» x3)) «aUnitV») x6
+      else
+        «sLet» x5 «aT» («sx3» «aChild» «aO» («numAtom» x3)) x6);
     x7
 
 def «cataRest» :=
@@ -2041,16 +2046,16 @@ def «cataRest» :=
         («sList» x1)
         («sx6»
           «aFoldr»
-          («pTy» x1)
+          («thTy» x1)
           («sList» x1)
           («sLam2»
-            «aP»
-            («pTy» x1)
+            «aH»
+            («thTy» x1)
             «aA»
             («sList» x1)
-            («sx3» «aCons» («forced» «aP») «aA»))
+            («sx3» «aCons» («sx2» «aH» «aUnitV») «aA»))
           («sx2» «aNil» x1)
-          («sDrop» («pTy» x1) «aRs» x2))
+          («resultsAt» x2))
         x5
     else
       «sLet»
@@ -2059,34 +2064,6 @@ def «cataRest» :=
         («sDrop» «aT» («sx2» «aChildren» «aO») x2)
         x5);
     x6
-
-def «cataStep» :=
-  fun (x0 : T) (x1 : T) =>
-    let x2 : T := «sLam2»
-      «aL»
-      «aT»
-      «aRs»
-      («sList» («pTy» x0))
-      («sLet»
-        «aO»
-        «aT»
-        («sx3»
-          «aNode»
-          «aL»
-          («sx6»
-            «aFoldr»
-            («pTy» x0)
-            («sList» «aT»)
-            («sLam2»
-              «aP»
-              («pTy» x0)
-              «aA»
-              («sList» «aT»)
-              («sx3» «aCons» («sx2» «aFst» «aP») «aA»))
-            («sx2» «aNil» «aT»)
-            «aRs»))
-        («sx3» «aPair» «aO» («sLam1» «aU» «aUnit» x1)));
-    x2
 
 def «expandCata» :=
   fun (x0 : List T) (x1 : T) (x2 : List (T × (List T → T))) =>
@@ -2113,7 +2090,19 @@ def «expandCata» :=
                      let x9 : T := x6;
                      if (Const.eq (Const.label x9) (leaf 1)).label ≠ 0 then
                        let x10 : T := Const.child x9 (leaf 0);
-                       «just» («forced» («sx4» «aFold» («pTy» x5) («cataStep» x5 x10) x8))
+                       «just»
+                         («sx2»
+                           («sx4»
+                             «aPara»
+                             («thTy» x5)
+                             («sLam2»
+                               «aO»
+                               «aT»
+                               «aK»
+                               («sList» («thTy» x5))
+                               («sLam1» «aU» «aUnit» x10))
+                             x8)
+                           «aUnitV»)
                      else
                        «nothing»
                    else
@@ -2122,83 +2111,55 @@ def «expandCata» :=
 
 def «expandExpr» :=
   fun (x0 : List T) (x1 : T) =>
-    let x2 : T := ((Const.fold
-      (α := T × (Unit → T × (List T → T)))
-      (fun (x2 : T) (x3 : List (T × (Unit → T × (List T → T)))) =>
-        let x4 : T := Const.node
-          x2
-          (Const.foldr
-            (α := T × (Unit → T × (List T → T)))
-            (β := List T)
-            (fun (x4 : T × (Unit → T × (List T → T))) (x5 : List T) =>
-              ((x4).1 :: x5))
-            ([] : List T)
-            x3);
-        (x4,
-          fun (_ : Unit) =>
-            if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-              let x6 : List
-                T := Const.iter
-                (α := List T)
-                (fun (x6 : List T) =>
-                  Const.lcase
-                    (α := T)
-                    (β := List T)
-                    x6
-                    ([] : List T)
-                    (fun (_ : T) (x8 : List T) => x8))
-                (Const.children x4)
-                (leaf 0);
-              («atom» x6, fun (_ : List T) => «just» («atom» x6))
-            else
-              if (Const.eq (Const.label x4) (leaf 2)).label ≠ 0 then
-                let x6 : List
-                  (T ×
-                    (List T →
-                      T)) := Const.foldr
-                  (α := T × (Unit → T × (List T → T)))
-                  (β := List (T × (List T → T)))
-                  (fun (x6 : T × (Unit → T × (List T → T)))
-                     (x7 : List (T × (List T → T))) =>
-                    (((x6).2 ()) :: x7))
-                  ([] : List (T × (List T → T)))
-                  (Const.iter
-                    (α := List (T × (Unit → T × (List T → T))))
-                    (fun (x6 : List (T × (Unit → T × (List T → T)))) =>
-                      Const.lcase
-                        (α := T × (Unit → T × (List T → T)))
-                        (β := List (T × (Unit → T × (List T → T))))
-                        x6
-                        ([] : List (T × (Unit → T × (List T → T))))
-                        (fun (_ : T × (Unit → T × (List T → T)))
-                           (x8 : List (T × (Unit → T × (List T → T)))) =>
-                          x8))
-                    x3
-                    (leaf 0));
-                let x7 : T := «lst» («rrTrees» x6);
-                (x7,
-                  fun (x8 : List T) =>
-                    let x9 : T := «at» (Const.children x7) (leaf 0);
-                    let x10 : T := Const.arity x7;
-                    if («and»
-                      («named» x9 «kwCase»)
-                      (Const.lt (leaf 2) x10)).label ≠ 0 then
-                      «expandCase» x8 x7 x6
+    let x2 : T := (Const.para
+      (α := Unit → T × (List T → T))
+      (fun (x2 : T) (x3 : List (Unit → T × (List T → T))) (_ : Unit) =>
+        if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+          let x5 : List
+            T := Const.iter
+            (α := List T)
+            (fun (x5 : List T) =>
+              Const.lcase
+                (α := T)
+                (β := List T)
+                x5
+                ([] : List T)
+                (fun (_ : T) (x7 : List T) => x7))
+            (Const.children x2)
+            (leaf 0);
+          («atom» x5, fun (_ : List T) => «just» («atom» x5))
+        else
+          if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+            let x5 : List
+              (T ×
+                (List T →
+                  T)) := Const.foldr
+              (α := Unit → T × (List T → T))
+              (β := List (T × (List T → T)))
+              (fun (x5 : Unit → T × (List T → T)) (x6 : List (T × (List T → T))) =>
+                ((x5 ()) :: x6))
+              ([] : List (T × (List T → T)))
+              x3;
+            let x6 : T := «lst» («rrTrees» x5);
+            (x6,
+              fun (x7 : List T) =>
+                let x8 : T := «at» (Const.children x6) (leaf 0);
+                let x9 : T := Const.arity x6;
+                if («and» («named» x8 «kwCase») (Const.lt (leaf 2) x9)).label ≠ 0 then
+                  «expandCase» x7 x6 x5
+                else
+                  if («and» («named» x8 «kwCata») (Const.lt (leaf 4) x9)).label ≠ 0 then
+                    «expandCata» x7 x6 x5
+                  else
+                    let x10 : T := «allSome» («rrApply» x5 x7);
+                    if (Const.eq (Const.label x10) (leaf 1)).label ≠ 0 then
+                      let x11 : T := Const.child x10 (leaf 0);
+                      «just» («lst» (Const.children x11))
                     else
-                      if («and»
-                        («named» x9 «kwCata»)
-                        (Const.lt (leaf 4) x10)).label ≠ 0 then
-                        «expandCata» x8 x7 x6
-                      else
-                        let x11 : T := «allSome» («rrApply» x6 x8);
-                        if (Const.eq (Const.label x11) (leaf 1)).label ≠ 0 then
-                          let x12 : T := Const.child x11 (leaf 0);
-                          «just» («lst» (Const.children x12))
-                        else
-                          «nothing»)
-              else
-                («sx0», fun (_ : List T) => «just» «sx0»)))
-      x1).2
+                      «nothing»)
+          else
+            («sx0», fun (_ : List T) => «just» «sx0»))
+      x1
       ()).2
       x0;
     x2
@@ -2645,6 +2606,20 @@ def «tLcase» :=
         leaf 115,
         leaf 101]))
 
+def «tPara» :=
+  «text»
+    (Const.children
+      (mk 0 [leaf 67,
+        leaf 111,
+        leaf 110,
+        leaf 115,
+        leaf 116,
+        leaf 46,
+        leaf 112,
+        leaf 97,
+        leaf 114,
+        leaf 97]))
+
 def «tConstDot» :=
   «text»
     (Const.children
@@ -3011,344 +2986,241 @@ def «layout» :=
                            (T × List T) →
                              T ×
                                List
-                                 T) := (Const.fold
-                     (α := T ×
-                       (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                                 T) := Const.para
+                     (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
                      (fun (x1 : T)
                         (x2 : List
-                          (T ×
-                            (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))) =>
-                       let x3 : T := Const.node
-                         x1
-                         (Const.foldr
-                           (α := T ×
-                             (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                           (β := List T)
-                           (fun (x3 : T ×
-                                (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                              (x4 : List T) =>
-                             ((x3).1 :: x4))
-                           ([] : List T)
-                           x2);
-                       (x3,
-                         fun (_ : Unit) =>
-                           if (Const.eq (Const.label x3) (leaf 0)).label ≠ 0 then
-                             let x5 : T := Const.child x3 (leaf 0);
-                             let x6 : T := Const.child x3 (leaf 1);
-                             («ms» x5 (leaf 0) x5,
-                               fun (_ : T) (_ : T) (_ : T) (x10 : T × List T) =>
-                                 (Const.add (x10).1 x5, «revOnto» (Const.children x6) (x10).2))
-                           else
-                             if (Const.eq (Const.label x3) (leaf 1)).label ≠ 0 then
-                               let x5 : List
-                                 ((T × (T × T)) ×
-                                   (T →
+                          (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                        (_ : Unit) =>
+                       if (Const.eq (Const.label x1) (leaf 0)).label ≠ 0 then
+                         let x4 : (Unit →
+                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                           List
+                             (Unit →
+                               (T × (T × T)) ×
+                                 (T →
+                                   T →
                                      T →
+                                       (T × List T) →
+                                         T ×
+                                           List
+                                             T)) := Const.lcase
+                           (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                           (β := (Unit →
+                             (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                             List (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                           x2
+                           (fun (_ : Unit) =>
+                             ((leaf 0, (leaf 0, leaf 0)),
+                               fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                 (leaf 0, ([] : List T))),
+                             ([] : List (Unit →
+                               (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                           (fun (x4 : Unit →
+                                (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                              (x5 : List
+                                (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
+                             (x4, x5));
+                         let x5 : T := Const.child x1 (leaf 0);
+                         let _ : (Unit →
+                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                           List
+                             (Unit →
+                               (T × (T × T)) ×
+                                 (T →
+                                   T →
+                                     T →
+                                       (T × List T) →
+                                         T ×
+                                           List
+                                             T)) := Const.lcase
+                           (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                           (β := (Unit →
+                             (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                             List (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                           (x4).2
+                           (fun (_ : Unit) =>
+                             ((leaf 0, (leaf 0, leaf 0)),
+                               fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                 (leaf 0, ([] : List T))),
+                             ([] : List (Unit →
+                               (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                           (fun (x6 : Unit →
+                                (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                              (x7 : List
+                                (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
+                             (x6, x7));
+                         let x7 : T := Const.child x1 (leaf 1);
+                         («ms» x5 (leaf 0) x5,
+                           fun (_ : T) (_ : T) (_ : T) (x11 : T × List T) =>
+                             (Const.add (x11).1 x5, «revOnto» (Const.children x7) (x11).2))
+                       else
+                         if (Const.eq (Const.label x1) (leaf 1)).label ≠ 0 then
+                           let x4 : List
+                             ((T × (T × T)) ×
+                               (T →
+                                 T →
+                                   T →
+                                     (T × List T) →
+                                       T ×
+                                         List
+                                           T)) := Const.foldr
+                             (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                             (β := List ((T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                             (fun (x4 : Unit →
+                                  (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                (x5 : List
+                                  ((T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
+                               ((x4 ()) :: x5))
+                             ([] : List ((T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                             x2;
+                           Const.foldr
+                             (α := (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                             (β := (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                             «catWP»
+                             («ms» (leaf 0) (leaf 0) (leaf 0),
+                               fun (_ : T) (_ : T) (_ : T) (x8 : T × List T) => x8)
+                             x4
+                         else
+                           if (Const.eq (Const.label x1) (leaf 2)).label ≠ 0 then
+                             let x4 : (Unit →
+                               (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                               List
+                                 (Unit →
+                                   (T × (T × T)) ×
+                                     (T →
                                        T →
-                                         (T × List T) →
-                                           T ×
-                                             List
-                                               T)) := Const.foldr
-                                 (α := T ×
+                                         T →
+                                           (T × List T) →
+                                             T ×
+                                               List
+                                                 T)) := Const.lcase
+                               (α := Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                               (β := (Unit →
+                                 (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                 List
                                    (Unit → (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                 (β := List
-                                   ((T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                 (fun (x5 : T ×
-                                      (Unit →
-                                        (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                    (x6 : List
-                                      ((T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
-                                   (((x5).2 ()) :: x6))
-                                 ([] : List ((T × (T × T)) ×
-                                   (T → T → T → (T × List T) → T × List T)))
-                                 (Const.iter
-                                   (α := List
-                                     (T ×
-                                       (Unit →
-                                         (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
-                                   (fun (x5 : List
-                                        (T ×
-                                          (Unit →
-                                            (T × (T × T)) ×
-                                              (T → T → T → (T × List T) → T × List T)))) =>
-                                     Const.lcase
-                                       (α := T ×
-                                         (Unit →
-                                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                       (β := List
-                                         (T ×
-                                           (Unit →
-                                             (T × (T × T)) ×
-                                               (T → T → T → (T × List T) → T × List T))))
-                                       x5
-                                       ([] : List (T ×
-                                         (Unit →
-                                           (T × (T × T)) ×
-                                             (T → T → T → (T × List T) → T × List T))))
-                                       (fun (_ : T ×
-                                            (Unit →
-                                              (T × (T × T)) ×
-                                                (T → T → T → (T × List T) → T × List T)))
-                                          (x7 : List
-                                            (T ×
-                                              (Unit →
-                                                (T × (T × T)) ×
-                                                  (T → T → T → (T × List T) → T × List T)))) =>
-                                         x7))
-                                   x2
-                                   (leaf 0));
-                               Const.foldr
-                                 (α := (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                 (β := (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
-                                 «catWP»
-                                 («ms» (leaf 0) (leaf 0) (leaf 0),
-                                   fun (_ : T) (_ : T) (_ : T) (x9 : T × List T) => x9)
-                                 x5
-                             else
-                               if (Const.eq (Const.label x3) (leaf 2)).label ≠ 0 then
-                                 let x5 : (T × (T × T)) ×
-                                   (T →
-                                     T →
-                                       T →
-                                         (T × List T) →
-                                           T ×
-                                             List
-                                               T) := (Const.lcase
-                                   (α := T ×
-                                     (Unit →
-                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                   (β := T ×
-                                     (Unit →
-                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                   (Const.iter
-                                     (α := List
-                                       (T ×
-                                         (Unit →
-                                           (T × (T × T)) ×
-                                             (T → T → T → (T × List T) → T × List T))))
-                                     (fun (x5 : List
-                                          (T ×
-                                            (Unit →
-                                              (T × (T × T)) ×
-                                                (T → T → T → (T × List T) → T × List T)))) =>
-                                       Const.lcase
-                                         (α := T ×
-                                           (Unit →
-                                             (T × (T × T)) ×
-                                               (T → T → T → (T × List T) → T × List T)))
-                                         (β := List
-                                           (T ×
-                                             (Unit →
-                                               (T × (T × T)) ×
-                                                 (T → T → T → (T × List T) → T × List T))))
-                                         x5
-                                         ([] : List (T ×
-                                           (Unit →
-                                             (T × (T × T)) ×
-                                               (T → T → T → (T × List T) → T × List T))))
-                                         (fun (_ : T ×
-                                              (Unit →
-                                                (T × (T × T)) ×
-                                                  (T → T → T → (T × List T) → T × List T)))
-                                            (x7 : List
-                                              (T ×
-                                                (Unit →
-                                                  (T × (T × T)) ×
-                                                    (T → T → T → (T × List T) → T × List T)))) =>
-                                           x7))
-                                     x2
-                                     (leaf 0))
-                                   (leaf 0,
-                                     fun (_ : Unit) =>
-                                       ((leaf 0, (leaf 0, leaf 0)),
-                                         fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
-                                           (leaf 0, ([] : List T))))
-                                   (fun (x5 : T ×
-                                        (Unit →
-                                          (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                      (_ : List
-                                        (T ×
-                                          (Unit →
-                                            (T × (T × T)) ×
-                                              (T → T → T → (T × List T) → T × List T)))) =>
-                                     x5)).2
-                                   ();
-                                 ((x5).1,
-                                   fun (x6 : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
-                                     (x5).2 (Const.add x6 (leaf 2)) x7 x8 x9)
-                               else
-                                 if (Const.eq (Const.label x3) (leaf 3)).label ≠ 0 then
-                                   («ms» (leaf 1) (leaf 1) (leaf 0),
-                                     fun (x5 : T) (x6 : T) (_ : T) (x8 : T × List T) =>
-                                       if (x6).label ≠ 0 then
-                                         (Const.add (x8).1 (leaf 1), ((leaf 32) :: (x8).2))
-                                       else
-                                         (x5,
-                                           «revOnto»
-                                             («replicate» x5 (leaf 32))
-                                             ((leaf 10) :: (x8).2)))
-                                 else
-                                   if (Const.eq (Const.label x3) (leaf 4)).label ≠ 0 then
-                                     let x5 : (T × (T × T)) ×
-                                       (T →
-                                         T →
-                                           T →
-                                             (T × List T) →
-                                               T ×
-                                                 List
-                                                   T) := (Const.lcase
-                                       (α := T ×
-                                         (Unit →
-                                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                       (β := T ×
-                                         (Unit →
-                                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                       (Const.iter
-                                         (α := List
-                                           (T ×
-                                             (Unit →
-                                               (T × (T × T)) ×
-                                                 (T → T → T → (T × List T) → T × List T))))
-                                         (fun (x5 : List
-                                              (T ×
-                                                (Unit →
-                                                  (T × (T × T)) ×
-                                                    (T → T → T → (T × List T) → T × List T)))) =>
-                                           Const.lcase
-                                             (α := T ×
-                                               (Unit →
-                                                 (T × (T × T)) ×
-                                                   (T → T → T → (T × List T) → T × List T)))
-                                             (β := List
-                                               (T ×
-                                                 (Unit →
-                                                   (T × (T × T)) ×
-                                                     (T → T → T → (T × List T) → T × List T))))
-                                             x5
-                                             ([] : List (T ×
-                                               (Unit →
-                                                 (T × (T × T)) ×
-                                                   (T → T → T → (T × List T) → T × List T))))
-                                             (fun (_ : T ×
-                                                  (Unit →
-                                                    (T × (T × T)) ×
-                                                      (T → T → T → (T × List T) → T × List T)))
-                                                (x7 : List
-                                                  (T ×
-                                                    (Unit →
-                                                      (T × (T × T)) ×
-                                                        (T →
-                                                          T → T → (T × List T) → T × List T)))) =>
-                                               x7))
-                                         x2
-                                         (leaf 0))
-                                       (leaf 0,
-                                         fun (_ : Unit) =>
-                                           ((leaf 0, (leaf 0, leaf 0)),
-                                             fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
-                                               (leaf 0, ([] : List T))))
-                                       (fun (x5 : T ×
-                                            (Unit →
-                                              (T × (T × T)) ×
-                                                (T → T → T → (T × List T) → T × List T)))
-                                          (_ : List
-                                            (T ×
-                                              (Unit →
-                                                (T × (T × T)) ×
-                                                  (T → T → T → (T × List T) → T × List T)))) =>
-                                         x5)).2
-                                       ();
-                                     («ms» («wOf» x5) (leaf 0) («wOf» x5),
-                                       fun (x6 : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
-                                         (x5).2
-                                           x6
-                                           («or»
-                                             x7
-                                             («and»
-                                               (Const.lt
-                                                 (Const.add (x9).1 (Const.add («wOf» x5) x8))
-                                                 (leaf 101))
-                                               (Const.lt
-                                                 (Const.add
-                                                   (Const.sub (x9).1 x6)
-                                                   (Const.add («wOf» x5) x8))
-                                                 (leaf 71))))
-                                           x8
-                                           x9)
+                               x2
+                               (fun (_ : Unit) =>
+                                 ((leaf 0, (leaf 0, leaf 0)),
+                                   fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                     (leaf 0, ([] : List T))),
+                                 ([] : List (Unit →
+                                   (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                               (fun (x4 : Unit →
+                                    (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                  (x5 : List
+                                    (Unit →
+                                      (T × (T × T)) × (T → T → T → (T × List T) → T × List T))) =>
+                                 (x4, x5));
+                             let x5 : (T × (T × T)) ×
+                               (T → T → T → (T × List T) → T × List T) := (x4).1 ();
+                             ((x5).1,
+                               fun (x6 : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
+                                 (x5).2 (Const.add x6 (leaf 2)) x7 x8 x9)
+                           else
+                             if (Const.eq (Const.label x1) (leaf 3)).label ≠ 0 then
+                               («ms» (leaf 1) (leaf 1) (leaf 0),
+                                 fun (x4 : T) (x5 : T) (_ : T) (x7 : T × List T) =>
+                                   if (x5).label ≠ 0 then
+                                     (Const.add (x7).1 (leaf 1), ((leaf 32) :: (x7).2))
                                    else
-                                     let x5 : (T × (T × T)) ×
-                                       (T →
-                                         T →
+                                     (x4,
+                                       «revOnto» («replicate» x4 (leaf 32)) ((leaf 10) :: (x7).2)))
+                             else
+                               if (Const.eq (Const.label x1) (leaf 4)).label ≠ 0 then
+                                 let x4 : (Unit →
+                                   (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                   List
+                                     (Unit →
+                                       (T × (T × T)) ×
+                                         (T →
                                            T →
-                                             (T × List T) →
-                                               T ×
-                                                 List
-                                                   T) := (Const.lcase
-                                       (α := T ×
-                                         (Unit →
-                                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                       (β := T ×
-                                         (Unit →
-                                           (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
-                                       (Const.iter
-                                         (α := List
-                                           (T ×
-                                             (Unit →
-                                               (T × (T × T)) ×
-                                                 (T → T → T → (T × List T) → T × List T))))
-                                         (fun (x5 : List
-                                              (T ×
-                                                (Unit →
-                                                  (T × (T × T)) ×
-                                                    (T → T → T → (T × List T) → T × List T)))) =>
-                                           Const.lcase
-                                             (α := T ×
-                                               (Unit →
-                                                 (T × (T × T)) ×
-                                                   (T → T → T → (T × List T) → T × List T)))
-                                             (β := List
-                                               (T ×
-                                                 (Unit →
-                                                   (T × (T × T)) ×
-                                                     (T → T → T → (T × List T) → T × List T))))
-                                             x5
-                                             ([] : List (T ×
-                                               (Unit →
-                                                 (T × (T × T)) ×
-                                                   (T → T → T → (T × List T) → T × List T))))
-                                             (fun (_ : T ×
-                                                  (Unit →
-                                                    (T × (T × T)) ×
-                                                      (T → T → T → (T × List T) → T × List T)))
-                                                (x7 : List
-                                                  (T ×
-                                                    (Unit →
-                                                      (T × (T × T)) ×
-                                                        (T →
-                                                          T → T → (T × List T) → T × List T)))) =>
-                                               x7))
-                                         x2
-                                         (leaf 0))
-                                       (leaf 0,
-                                         fun (_ : Unit) =>
-                                           ((leaf 0, (leaf 0, leaf 0)),
-                                             fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
-                                               (leaf 0, ([] : List T))))
-                                       (fun (x5 : T ×
-                                            (Unit →
-                                              (T × (T × T)) ×
-                                                (T → T → T → (T × List T) → T × List T)))
-                                          (_ : List
-                                            (T ×
-                                              (Unit →
-                                                (T × (T × T)) ×
-                                                  (T → T → T → (T × List T) → T × List T)))) =>
-                                         x5)).2
-                                       ();
-                                     ((x5).1,
-                                       fun (_ : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
-                                         (x5).2 (x9).1 x7 x8 x9)))
-                     x0).2
+                                             T →
+                                               (T × List T) →
+                                                 T ×
+                                                   List
+                                                     T)) := Const.lcase
+                                   (α := Unit →
+                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                   (β := (Unit →
+                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                     List
+                                       (Unit →
+                                         (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                                   x2
+                                   (fun (_ : Unit) =>
+                                     ((leaf 0, (leaf 0, leaf 0)),
+                                       fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                         (leaf 0, ([] : List T))),
+                                     ([] : List (Unit →
+                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                                   (fun (x4 : Unit →
+                                        (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                      (x5 : List
+                                        (Unit →
+                                          (T × (T × T)) ×
+                                            (T → T → T → (T × List T) → T × List T))) =>
+                                     (x4, x5));
+                                 let x5 : (T × (T × T)) ×
+                                   (T → T → T → (T × List T) → T × List T) := (x4).1 ();
+                                 («ms» («wOf» x5) (leaf 0) («wOf» x5),
+                                   fun (x6 : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
+                                     (x5).2
+                                       x6
+                                       («or»
+                                         x7
+                                         («and»
+                                           (Const.lt
+                                             (Const.add (x9).1 (Const.add («wOf» x5) x8))
+                                             (leaf 101))
+                                           (Const.lt
+                                             (Const.add
+                                               (Const.sub (x9).1 x6)
+                                               (Const.add («wOf» x5) x8))
+                                             (leaf 71))))
+                                       x8
+                                       x9)
+                               else
+                                 let x4 : (Unit →
+                                   (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                   List
+                                     (Unit →
+                                       (T × (T × T)) ×
+                                         (T →
+                                           T →
+                                             T →
+                                               (T × List T) →
+                                                 T ×
+                                                   List
+                                                     T)) := Const.lcase
+                                   (α := Unit →
+                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                   (β := (Unit →
+                                     (T × (T × T)) × (T → T → T → (T × List T) → T × List T)) ×
+                                     List
+                                       (Unit →
+                                         (T × (T × T)) × (T → T → T → (T × List T) → T × List T)))
+                                   x2
+                                   (fun (_ : Unit) =>
+                                     ((leaf 0, (leaf 0, leaf 0)),
+                                       fun (_ : T) (_ : T) (_ : T) (_ : T × List T) =>
+                                         (leaf 0, ([] : List T))),
+                                     ([] : List (Unit →
+                                       (T × (T × T)) × (T → T → T → (T × List T) → T × List T))))
+                                   (fun (x4 : Unit →
+                                        (T × (T × T)) × (T → T → T → (T × List T) → T × List T))
+                                      (x5 : List
+                                        (Unit →
+                                          (T × (T × T)) ×
+                                            (T → T → T → (T × List T) → T × List T))) =>
+                                     (x4, x5));
+                                 let x5 : (T × (T × T)) ×
+                                   (T → T → T → (T × List T) → T × List T) := (x4).1 ();
+                                 ((x5).1,
+                                   fun (_ : T) (x7 : T) (x8 : T) (x9 : T × List T) =>
+                                     (x5).2 (x9).1 x7 x8 x9))
+                     x0
                      ();
                    Const.node
                      (leaf 0)
@@ -3553,6 +3425,9 @@ def «kLcase» :=
   fun (x0 : T) (x1 : T) =>
     Const.node (leaf 24) (x0 :: (x1 :: ([] : List T)))
 
+def «kPara» :=
+  fun (x0 : T) => Const.node (leaf 25) (x0 :: ([] : List T))
+
 def «orList» :=
   fun (x0 : List T) (x1 : List T) =>
     let x2 : List
@@ -3635,856 +3510,686 @@ def «emTerm» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : List T ×
       (T →
-        T) := (Const.fold
-      (α := T × (Unit → List T × (T → T)))
-      (fun (x2 : T) (x3 : List (T × (Unit → List T × (T → T)))) =>
-        let x4 : T := Const.node
-          x2
-          (Const.foldr
-            (α := T × (Unit → List T × (T → T)))
-            (β := List T)
-            (fun (x4 : T × (Unit → List T × (T → T))) (x5 : List T) =>
-              ((x4).1 :: x5))
-            ([] : List T)
-            x3);
-        (x4,
-          fun (_ : Unit) =>
-            if (Const.eq (Const.label x4) (leaf 0)).label ≠ 0 then
-              «closed» «tT»
+        T) := Const.para
+      (α := Unit → List T × (T → T))
+      (fun (x2 : T) (x3 : List (Unit → List T × (T → T))) (_ : Unit) =>
+        if (Const.eq (Const.label x2) (leaf 0)).label ≠ 0 then
+          «closed» «tT»
+        else
+          if (Const.eq (Const.label x2) (leaf 1)).label ≠ 0 then
+            «closed» «tUnitTy»
+          else
+            if (Const.eq (Const.label x2) (leaf 2)).label ≠ 0 then
+              let x5 : (Unit → List T × (T → T)) ×
+                List
+                  (Unit →
+                    List T ×
+                      (T →
+                        T)) := Const.lcase
+                (α := Unit → List T × (T → T))
+                (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                x3
+                (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                  ([] : List (Unit → List T × (T → T))))
+                (fun (x5 : Unit → List T × (T → T))
+                   (x6 : List (Unit → List T × (T → T))) =>
+                  (x5, x6));
+              let x6 : List T × (T → T) := (x5).1 ();
+              let x7 : (Unit → List T × (T → T)) ×
+                List
+                  (Unit →
+                    List T ×
+                      (T →
+                        T)) := Const.lcase
+                (α := Unit → List T × (T → T))
+                (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                (x5).2
+                (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                  ([] : List (Unit → List T × (T → T))))
+                (fun (x7 : Unit → List T × (T → T))
+                   (x8 : List (Unit → List T × (T → T))) =>
+                  (x7, x8));
+              let x8 : List T × (T → T) := (x7).1 ();
+              «closedSh»
+                («compound»
+                  («grp»
+                    («cat3»
+                      («opDoc» ((x6).2 (leaf 0)))
+                      «tTimes»
+                      («indented» («opDoc» ((x8).2 (leaf 0)))))))
             else
-              if (Const.eq (Const.label x4) (leaf 1)).label ≠ 0 then
-                «closed» «tUnitTy»
-              else
-                if (Const.eq (Const.label x4) (leaf 2)).label ≠ 0 then
-                  let x6 : List T ×
-                    (T →
-                      T) := (Const.lcase
-                    (α := T × (Unit → List T × (T → T)))
-                    (β := T × (Unit → List T × (T → T)))
-                    (Const.iter
-                      (α := List (T × (Unit → List T × (T → T))))
-                      (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                        Const.lcase
-                          (α := T × (Unit → List T × (T → T)))
-                          (β := List (T × (Unit → List T × (T → T))))
-                          x6
-                          ([] : List (T × (Unit → List T × (T → T))))
-                          (fun (_ : T × (Unit → List T × (T → T)))
-                             (x8 : List (T × (Unit → List T × (T → T)))) =>
-                            x8))
-                      x3
-                      (leaf 0))
-                    (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                    (fun (x6 : T × (Unit → List T × (T → T)))
-                       (_ : List (T × (Unit → List T × (T → T)))) =>
-                      x6)).2
-                    ();
-                  let x7 : List T ×
-                    (T →
-                      T) := (Const.lcase
-                    (α := T × (Unit → List T × (T → T)))
-                    (β := T × (Unit → List T × (T → T)))
-                    (Const.iter
-                      (α := List (T × (Unit → List T × (T → T))))
-                      (fun (x7 : List (T × (Unit → List T × (T → T)))) =>
-                        Const.lcase
-                          (α := T × (Unit → List T × (T → T)))
-                          (β := List (T × (Unit → List T × (T → T))))
-                          x7
-                          ([] : List (T × (Unit → List T × (T → T))))
-                          (fun (_ : T × (Unit → List T × (T → T)))
-                             (x9 : List (T × (Unit → List T × (T → T)))) =>
-                            x9))
-                      x3
-                      (leaf 1))
-                    (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                    (fun (x7 : T × (Unit → List T × (T → T)))
-                       (_ : List (T × (Unit → List T × (T → T)))) =>
-                      x7)).2
-                    ();
-                  «closedSh»
-                    («compound»
-                      («grp»
-                        («cat3»
-                          («opDoc» ((x6).2 (leaf 0)))
-                          «tTimes»
-                          («indented» («opDoc» ((x7).2 (leaf 0)))))))
-                else
-                  if (Const.eq (Const.label x4) (leaf 3)).label ≠ 0 then
-                    let x6 : List T ×
-                      (T →
-                        T) := (Const.lcase
-                      (α := T × (Unit → List T × (T → T)))
-                      (β := T × (Unit → List T × (T → T)))
-                      (Const.iter
-                        (α := List (T × (Unit → List T × (T → T))))
-                        (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                          Const.lcase
-                            (α := T × (Unit → List T × (T → T)))
-                            (β := List (T × (Unit → List T × (T → T))))
-                            x6
-                            ([] : List (T × (Unit → List T × (T → T))))
-                            (fun (_ : T × (Unit → List T × (T → T)))
-                               (x8 : List (T × (Unit → List T × (T → T)))) =>
-                              x8))
-                        x3
-                        (leaf 0))
-                      (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                      (fun (x6 : T × (Unit → List T × (T → T)))
-                         (_ : List (T × (Unit → List T × (T → T)))) =>
-                        x6)).2
-                      ();
-                    let x7 : List T ×
-                      (T →
-                        T) := (Const.lcase
-                      (α := T × (Unit → List T × (T → T)))
-                      (β := T × (Unit → List T × (T → T)))
-                      (Const.iter
-                        (α := List (T × (Unit → List T × (T → T))))
-                        (fun (x7 : List (T × (Unit → List T × (T → T)))) =>
-                          Const.lcase
-                            (α := T × (Unit → List T × (T → T)))
-                            (β := List (T × (Unit → List T × (T → T))))
-                            x7
-                            ([] : List (T × (Unit → List T × (T → T))))
-                            (fun (_ : T × (Unit → List T × (T → T)))
-                               (x9 : List (T × (Unit → List T × (T → T)))) =>
-                              x9))
-                        x3
-                        (leaf 1))
-                      (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                      (fun (x7 : T × (Unit → List T × (T → T)))
-                         (_ : List (T × (Unit → List T × (T → T)))) =>
-                        x7)).2
-                      ();
-                    «closedSh»
-                      («compound»
-                        («grp»
-                          («cat3» («opDoc» ((x6).2 (leaf 0))) «tTo» («indented» («tyDoc» x7)))))
-                  else
-                    if (Const.eq (Const.label x4) (leaf 4)).label ≠ 0 then
-                      let x6 : List T ×
+              if (Const.eq (Const.label x2) (leaf 3)).label ≠ 0 then
+                let x5 : (Unit → List T × (T → T)) ×
+                  List
+                    (Unit →
+                      List T ×
                         (T →
-                          T) := (Const.lcase
-                        (α := T × (Unit → List T × (T → T)))
-                        (β := T × (Unit → List T × (T → T)))
-                        (Const.iter
-                          (α := List (T × (Unit → List T × (T → T))))
-                          (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                            Const.lcase
-                              (α := T × (Unit → List T × (T → T)))
-                              (β := List (T × (Unit → List T × (T → T))))
-                              x6
-                              ([] : List (T × (Unit → List T × (T → T))))
-                              (fun (_ : T × (Unit → List T × (T → T)))
-                                 (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                x8))
-                          x3
-                          (leaf 0))
-                        (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                        (fun (x6 : T × (Unit → List T × (T → T)))
-                           (_ : List (T × (Unit → List T × (T → T)))) =>
-                          x6)).2
-                        ();
-                      «closedSh» («ap» «tList» («single» («argDoc» ((x6).2 (leaf 0)))))
+                          T)) := Const.lcase
+                  (α := Unit → List T × (T → T))
+                  (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                  x3
+                  (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                    ([] : List (Unit → List T × (T → T))))
+                  (fun (x5 : Unit → List T × (T → T))
+                     (x6 : List (Unit → List T × (T → T))) =>
+                    (x5, x6));
+                let x6 : List T × (T → T) := (x5).1 ();
+                let x7 : (Unit → List T × (T → T)) ×
+                  List
+                    (Unit →
+                      List T ×
+                        (T →
+                          T)) := Const.lcase
+                  (α := Unit → List T × (T → T))
+                  (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                  (x5).2
+                  (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                    ([] : List (Unit → List T × (T → T))))
+                  (fun (x7 : Unit → List T × (T → T))
+                     (x8 : List (Unit → List T × (T → T))) =>
+                    (x7, x8));
+                let x8 : List T × (T → T) := (x7).1 ();
+                «closedSh»
+                  («compound»
+                    («grp»
+                      («cat3» («opDoc» ((x6).2 (leaf 0))) «tTo» («indented» («tyDoc» x8)))))
+              else
+                if (Const.eq (Const.label x2) (leaf 4)).label ≠ 0 then
+                  let x5 : (Unit → List T × (T → T)) ×
+                    List
+                      (Unit →
+                        List T ×
+                          (T →
+                            T)) := Const.lcase
+                    (α := Unit → List T × (T → T))
+                    (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                    x3
+                    (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                      ([] : List (Unit → List T × (T → T))))
+                    (fun (x5 : Unit → List T × (T → T))
+                       (x6 : List (Unit → List T × (T → T))) =>
+                      (x5, x6));
+                  let x6 : List T × (T → T) := (x5).1 ();
+                  «closedSh» («ap» «tList» («single» («argDoc» ((x6).2 (leaf 0)))))
+                else
+                  if (Const.eq (Const.label x2) (leaf 8)).label ≠ 0 then
+                    let _ : (Unit → List T × (T → T)) ×
+                      List
+                        (Unit →
+                          List T ×
+                            (T →
+                              T)) := Const.lcase
+                      (α := Unit → List T × (T → T))
+                      (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                      x3
+                      (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                        ([] : List (Unit → List T × (T → T))))
+                      (fun (x5 : Unit → List T × (T → T))
+                         (x6 : List (Unit → List T × (T → T))) =>
+                        (x5, x6));
+                    let x6 : T := Const.child x2 (leaf 0);
+                    («append» («replicate» (Const.label x6) (leaf 0)) («single» (leaf 1)),
+                      fun (x7 : T) =>
+                        «atomic»
+                          («varDoc» (Const.sub (Const.sub x7 (leaf 1)) (Const.label x6))))
+                  else
+                    if (Const.eq (Const.label x2) (leaf 9)).label ≠ 0 then
+                      let x5 : (Unit → List T × (T → T)) ×
+                        List
+                          (Unit →
+                            List T ×
+                              (T →
+                                T)) := Const.lcase
+                        (α := Unit → List T × (T → T))
+                        (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                        x3
+                        (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                          ([] : List (Unit → List T × (T → T))))
+                        (fun (x5 : Unit → List T × (T → T))
+                           (x6 : List (Unit → List T × (T → T))) =>
+                          (x5, x6));
+                      let x6 : List T × (T → T) := (x5).1 ();
+                      let x7 : (Unit → List T × (T → T)) ×
+                        List
+                          (Unit →
+                            List T ×
+                              (T →
+                                T)) := Const.lcase
+                        (α := Unit → List T × (T → T))
+                        (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                        (x5).2
+                        (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                          ([] : List (Unit → List T × (T → T))))
+                        (fun (x7 : Unit → List T × (T → T))
+                           (x8 : List (Unit → List T × (T → T))) =>
+                          (x7, x8));
+                      let x8 : List T × (T → T) := (x7).1 ();
+                      («tail» (x8).1,
+                        fun (x9 : T) =>
+                          let x10 : T := Const.lcase
+                            (α := T)
+                            (β := T)
+                            (x8).1
+                            (leaf 0)
+                            (fun (x10 : T) (_ : List T) => x10);
+                          let x11 : T := «node2»
+                            (leaf 0)
+                            (if (x10).label ≠ 0 then «varDoc» x9 else «tUnder»)
+                            («tyDoc» x6);
+                          let x12 : T := (x8).2 (Const.add x9 (leaf 1));
+                          let x13 : T := x12;
+                          if (Const.eq (Const.label x13) (leaf 2)).label ≠ 0 then
+                            let x14 : T := Const.child x13 (leaf 0);
+                            let x15 : T := Const.child x13 (leaf 1);
+                            «fn» (Const.node (leaf 0) (x11 :: (Const.children x14))) x15
+                          else
+                            «fn» (Const.node (leaf 0) («single» x11)) («shDoc» x12))
                     else
-                      if (Const.eq (Const.label x4) (leaf 8)).label ≠ 0 then
-                        let x6 : T := Const.child x4 (leaf 0);
-                        («append» («replicate» (Const.label x6) (leaf 0)) («single» (leaf 1)),
-                          fun (x7 : T) =>
-                            «atomic»
-                              («varDoc» (Const.sub (Const.sub x7 (leaf 1)) (Const.label x6))))
-                      else
-                        if (Const.eq (Const.label x4) (leaf 9)).label ≠ 0 then
-                          let x6 : List T ×
-                            (T →
-                              T) := (Const.lcase
-                            (α := T × (Unit → List T × (T → T)))
-                            (β := T × (Unit → List T × (T → T)))
-                            (Const.iter
-                              (α := List (T × (Unit → List T × (T → T))))
-                              (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                Const.lcase
-                                  (α := T × (Unit → List T × (T → T)))
-                                  (β := List (T × (Unit → List T × (T → T))))
-                                  x6
-                                  ([] : List (T × (Unit → List T × (T → T))))
-                                  (fun (_ : T × (Unit → List T × (T → T)))
-                                     (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                    x8))
-                              x3
-                              (leaf 0))
-                            (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                            (fun (x6 : T × (Unit → List T × (T → T)))
-                               (_ : List (T × (Unit → List T × (T → T)))) =>
-                              x6)).2
-                            ();
-                          let x7 : List T ×
-                            (T →
-                              T) := (Const.lcase
-                            (α := T × (Unit → List T × (T → T)))
-                            (β := T × (Unit → List T × (T → T)))
-                            (Const.iter
-                              (α := List (T × (Unit → List T × (T → T))))
-                              (fun (x7 : List (T × (Unit → List T × (T → T)))) =>
-                                Const.lcase
-                                  (α := T × (Unit → List T × (T → T)))
-                                  (β := List (T × (Unit → List T × (T → T))))
-                                  x7
-                                  ([] : List (T × (Unit → List T × (T → T))))
-                                  (fun (_ : T × (Unit → List T × (T → T)))
-                                     (x9 : List (T × (Unit → List T × (T → T)))) =>
-                                    x9))
-                              x3
-                              (leaf 1))
-                            (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                            (fun (x7 : T × (Unit → List T × (T → T)))
-                               (_ : List (T × (Unit → List T × (T → T)))) =>
-                              x7)).2
-                            ();
-                          («tail» (x7).1,
-                            fun (x8 : T) =>
-                              let x9 : T := Const.lcase
-                                (α := T)
-                                (β := T)
-                                (x7).1
-                                (leaf 0)
-                                (fun (x9 : T) (_ : List T) => x9);
-                              let x10 : T := «node2»
-                                (leaf 0)
-                                (if (x9).label ≠ 0 then «varDoc» x8 else «tUnder»)
-                                («tyDoc» x6);
-                              let x11 : T := (x7).2 (Const.add x8 (leaf 1));
-                              let x12 : T := x11;
+                      if (Const.eq (Const.label x2) (leaf 10)).label ≠ 0 then
+                        let x5 : (Unit → List T × (T → T)) ×
+                          List
+                            (Unit →
+                              List T ×
+                                (T →
+                                  T)) := Const.lcase
+                          (α := Unit → List T × (T → T))
+                          (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                          x3
+                          (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                            ([] : List (Unit → List T × (T → T))))
+                          (fun (x5 : Unit → List T × (T → T))
+                             (x6 : List (Unit → List T × (T → T))) =>
+                            (x5, x6));
+                        let x6 : List T × (T → T) := (x5).1 ();
+                        let x7 : (Unit → List T × (T → T)) ×
+                          List
+                            (Unit →
+                              List T ×
+                                (T →
+                                  T)) := Const.lcase
+                          (α := Unit → List T × (T → T))
+                          (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                          (x5).2
+                          (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                            ([] : List (Unit → List T × (T → T))))
+                          (fun (x7 : Unit → List T × (T → T))
+                             (x8 : List (Unit → List T × (T → T))) =>
+                            (x7, x8));
+                        let x8 : List T × (T → T) := (x7).1 ();
+                        («orList» (x6).1 (x8).1,
+                          fun (x9 : T) =>
+                            let x10 : T := (x6).2 x9;
+                            let x11 : T := (x8).2 x9;
+                            let x12 : T := x10;
+                            if (Const.eq (Const.label x12) (leaf 3)).label ≠ 0 then
+                              let x13 : T := Const.child x12 (leaf 0);
+                              let x14 : List
+                                T := Const.iter
+                                (α := List T)
+                                (fun (x14 : List T) =>
+                                  Const.lcase
+                                    (α := T)
+                                    (β := List T)
+                                    x14
+                                    ([] : List T)
+                                    (fun (_ : T) (x16 : List T) => x16))
+                                (Const.children x12)
+                                (leaf 1);
+                              «ap» x13 («append» x14 («single» («argDoc» x11)))
+                            else
                               if (Const.eq (Const.label x12) (leaf 2)).label ≠ 0 then
                                 let x13 : T := Const.child x12 (leaf 0);
                                 let x14 : T := Const.child x12 (leaf 1);
-                                «fn» (Const.node (leaf 0) (x10 :: (Const.children x13))) x14
+                                «compound» («letDoc» (Const.children x13) x14 x11)
                               else
-                                «fn» (Const.node (leaf 0) («single» x10)) («shDoc» x11))
+                                «ap» («argDoc» x10) («single» («argDoc» x11)))
+                      else
+                        if (Const.eq (Const.label x2) (leaf 11)).label ≠ 0 then
+                          «closed» «tUnitV»
                         else
-                          if (Const.eq (Const.label x4) (leaf 10)).label ≠ 0 then
-                            let x6 : List T ×
-                              (T →
-                                T) := (Const.lcase
-                              (α := T × (Unit → List T × (T → T)))
-                              (β := T × (Unit → List T × (T → T)))
-                              (Const.iter
-                                (α := List (T × (Unit → List T × (T → T))))
-                                (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                  Const.lcase
-                                    (α := T × (Unit → List T × (T → T)))
-                                    (β := List (T × (Unit → List T × (T → T))))
-                                    x6
-                                    ([] : List (T × (Unit → List T × (T → T))))
-                                    (fun (_ : T × (Unit → List T × (T → T)))
-                                       (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                      x8))
-                                x3
-                                (leaf 0))
-                              (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                              (fun (x6 : T × (Unit → List T × (T → T)))
-                                 (_ : List (T × (Unit → List T × (T → T)))) =>
-                                x6)).2
-                              ();
-                            let x7 : List T ×
-                              (T →
-                                T) := (Const.lcase
-                              (α := T × (Unit → List T × (T → T)))
-                              (β := T × (Unit → List T × (T → T)))
-                              (Const.iter
-                                (α := List (T × (Unit → List T × (T → T))))
-                                (fun (x7 : List (T × (Unit → List T × (T → T)))) =>
-                                  Const.lcase
-                                    (α := T × (Unit → List T × (T → T)))
-                                    (β := List (T × (Unit → List T × (T → T))))
-                                    x7
-                                    ([] : List (T × (Unit → List T × (T → T))))
-                                    (fun (_ : T × (Unit → List T × (T → T)))
-                                       (x9 : List (T × (Unit → List T × (T → T)))) =>
-                                      x9))
-                                x3
-                                (leaf 1))
-                              (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                              (fun (x7 : T × (Unit → List T × (T → T)))
-                                 (_ : List (T × (Unit → List T × (T → T)))) =>
-                                x7)).2
-                              ();
-                            («orList» (x6).1 (x7).1,
-                              fun (x8 : T) =>
-                                let x9 : T := (x6).2 x8;
-                                let x10 : T := (x7).2 x8;
-                                let x11 : T := x9;
-                                if (Const.eq (Const.label x11) (leaf 3)).label ≠ 0 then
-                                  let x12 : T := Const.child x11 (leaf 0);
-                                  let x13 : List
-                                    T := Const.iter
-                                    (α := List T)
-                                    (fun (x13 : List T) =>
-                                      Const.lcase
-                                        (α := T)
-                                        (β := List T)
-                                        x13
-                                        ([] : List T)
-                                        (fun (_ : T) (x15 : List T) => x15))
-                                    (Const.children x11)
-                                    (leaf 1);
-                                  «ap» x12 («append» x13 («single» («argDoc» x10)))
-                                else
-                                  if (Const.eq (Const.label x11) (leaf 2)).label ≠ 0 then
-                                    let x12 : T := Const.child x11 (leaf 0);
-                                    let x13 : T := Const.child x11 (leaf 1);
-                                    «compound» («letDoc» (Const.children x12) x13 x10)
-                                  else
-                                    «ap» («argDoc» x9) («single» («argDoc» x10)))
-                          else
-                            if (Const.eq (Const.label x4) (leaf 11)).label ≠ 0 then
-                              «closed» «tUnitV»
-                            else
-                              if (Const.eq (Const.label x4) (leaf 12)).label ≠ 0 then
-                                let x6 : List T ×
-                                  (T →
-                                    T) := (Const.lcase
-                                  (α := T × (Unit → List T × (T → T)))
-                                  (β := T × (Unit → List T × (T → T)))
-                                  (Const.iter
-                                    (α := List (T × (Unit → List T × (T → T))))
-                                    (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                      Const.lcase
-                                        (α := T × (Unit → List T × (T → T)))
-                                        (β := List (T × (Unit → List T × (T → T))))
-                                        x6
-                                        ([] : List (T × (Unit → List T × (T → T))))
-                                        (fun (_ : T × (Unit → List T × (T → T)))
-                                           (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                          x8))
-                                    x3
-                                    (leaf 0))
-                                  (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                                  (fun (x6 : T × (Unit → List T × (T → T)))
-                                     (_ : List (T × (Unit → List T × (T → T)))) =>
-                                    x6)).2
-                                  ();
-                                let x7 : List T ×
-                                  (T →
-                                    T) := (Const.lcase
-                                  (α := T × (Unit → List T × (T → T)))
-                                  (β := T × (Unit → List T × (T → T)))
-                                  (Const.iter
-                                    (α := List (T × (Unit → List T × (T → T))))
-                                    (fun (x7 : List (T × (Unit → List T × (T → T)))) =>
-                                      Const.lcase
-                                        (α := T × (Unit → List T × (T → T)))
-                                        (β := List (T × (Unit → List T × (T → T))))
-                                        x7
-                                        ([] : List (T × (Unit → List T × (T → T))))
-                                        (fun (_ : T × (Unit → List T × (T → T)))
-                                           (x9 : List (T × (Unit → List T × (T → T)))) =>
-                                          x9))
-                                    x3
-                                    (leaf 1))
-                                  (leaf 0, fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                                  (fun (x7 : T × (Unit → List T × (T → T)))
-                                     (_ : List (T × (Unit → List T × (T → T)))) =>
-                                    x7)).2
-                                  ();
-                                («orList» (x6).1 (x7).1,
-                                  fun (x8 : T) =>
-                                    «atomic»
-                                      («grp»
-                                        («cat5»
-                                          «tLp»
-                                          («shDoc» ((x6).2 x8))
-                                          «tComma»
-                                          («indented» («shDoc» ((x7).2 x8)))
-                                          «tRp»)))
-                              else
-                                if (Const.eq (Const.label x4) (leaf 13)).label ≠ 0 then
-                                  let x6 : List T ×
+                          if (Const.eq (Const.label x2) (leaf 12)).label ≠ 0 then
+                            let x5 : (Unit → List T × (T → T)) ×
+                              List
+                                (Unit →
+                                  List T ×
                                     (T →
-                                      T) := (Const.lcase
-                                    (α := T × (Unit → List T × (T → T)))
-                                    (β := T × (Unit → List T × (T → T)))
-                                    (Const.iter
-                                      (α := List (T × (Unit → List T × (T → T))))
-                                      (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                        Const.lcase
-                                          (α := T × (Unit → List T × (T → T)))
-                                          (β := List (T × (Unit → List T × (T → T))))
-                                          x6
-                                          ([] : List (T × (Unit → List T × (T → T))))
-                                          (fun (_ : T × (Unit → List T × (T → T)))
-                                             (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                            x8))
-                                      x3
-                                      (leaf 0))
-                                    (leaf 0,
-                                      fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                                    (fun (x6 : T × (Unit → List T × (T → T)))
-                                       (_ : List (T × (Unit → List T × (T → T)))) =>
-                                      x6)).2
-                                    ();
-                                  ((x6).1,
-                                    fun (x7 : T) =>
-                                      «atomic» («cat3» «tLp» («shDoc» ((x6).2 x7)) «tDot1»))
-                                else
-                                  if (Const.eq (Const.label x4) (leaf 14)).label ≠ 0 then
-                                    let x6 : List T ×
+                                      T)) := Const.lcase
+                              (α := Unit → List T × (T → T))
+                              (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                              x3
+                              (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                ([] : List (Unit → List T × (T → T))))
+                              (fun (x5 : Unit → List T × (T → T))
+                                 (x6 : List (Unit → List T × (T → T))) =>
+                                (x5, x6));
+                            let x6 : List T × (T → T) := (x5).1 ();
+                            let x7 : (Unit → List T × (T → T)) ×
+                              List
+                                (Unit →
+                                  List T ×
+                                    (T →
+                                      T)) := Const.lcase
+                              (α := Unit → List T × (T → T))
+                              (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                              (x5).2
+                              (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                ([] : List (Unit → List T × (T → T))))
+                              (fun (x7 : Unit → List T × (T → T))
+                                 (x8 : List (Unit → List T × (T → T))) =>
+                                (x7, x8));
+                            let x8 : List T × (T → T) := (x7).1 ();
+                            («orList» (x6).1 (x8).1,
+                              fun (x9 : T) =>
+                                «atomic»
+                                  («grp»
+                                    («cat5»
+                                      «tLp»
+                                      («shDoc» ((x6).2 x9))
+                                      «tComma»
+                                      («indented» («shDoc» ((x8).2 x9)))
+                                      «tRp»)))
+                          else
+                            if (Const.eq (Const.label x2) (leaf 13)).label ≠ 0 then
+                              let x5 : (Unit → List T × (T → T)) ×
+                                List
+                                  (Unit →
+                                    List T ×
                                       (T →
-                                        T) := (Const.lcase
-                                      (α := T × (Unit → List T × (T → T)))
-                                      (β := T × (Unit → List T × (T → T)))
-                                      (Const.iter
-                                        (α := List (T × (Unit → List T × (T → T))))
-                                        (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                          Const.lcase
-                                            (α := T × (Unit → List T × (T → T)))
-                                            (β := List (T × (Unit → List T × (T → T))))
-                                            x6
-                                            ([] : List (T × (Unit → List T × (T → T))))
-                                            (fun (_ : T × (Unit → List T × (T → T)))
-                                               (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                              x8))
-                                        x3
-                                        (leaf 0))
-                                      (leaf 0,
-                                        fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0))
-                                      (fun (x6 : T × (Unit → List T × (T → T)))
-                                         (_ : List (T × (Unit → List T × (T → T)))) =>
-                                        x6)).2
-                                      ();
-                                    ((x6).1,
-                                      fun (x7 : T) =>
-                                        «atomic» («cat3» «tLp» («shDoc» ((x6).2 x7)) «tDot2»))
-                                  else
-                                    if (Const.eq (Const.label x4) (leaf 15)).label ≠ 0 then
-                                      let x6 : T := Const.child x4 (leaf 0);
-                                      (([] : List T), fun (_ : T) => «compound» («quoteDoc» x6))
-                                    else
-                                      if (Const.eq (Const.label x4) (leaf 16)).label ≠ 0 then
-                                        let x6 : List T ×
+                                        T)) := Const.lcase
+                                (α := Unit → List T × (T → T))
+                                (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                                x3
+                                (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                  ([] : List (Unit → List T × (T → T))))
+                                (fun (x5 : Unit → List T × (T → T))
+                                   (x6 : List (Unit → List T × (T → T))) =>
+                                  (x5, x6));
+                              let x6 : List T × (T → T) := (x5).1 ();
+                              ((x6).1,
+                                fun (x7 : T) =>
+                                  «atomic» («cat3» «tLp» («shDoc» ((x6).2 x7)) «tDot1»))
+                            else
+                              if (Const.eq (Const.label x2) (leaf 14)).label ≠ 0 then
+                                let x5 : (Unit → List T × (T → T)) ×
+                                  List
+                                    (Unit →
+                                      List T ×
+                                        (T →
+                                          T)) := Const.lcase
+                                  (α := Unit → List T × (T → T))
+                                  (β := (Unit → List T × (T → T)) × List (Unit → List T × (T → T)))
+                                  x3
+                                  (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                    ([] : List (Unit → List T × (T → T))))
+                                  (fun (x5 : Unit → List T × (T → T))
+                                     (x6 : List (Unit → List T × (T → T))) =>
+                                    (x5, x6));
+                                let x6 : List T × (T → T) := (x5).1 ();
+                                ((x6).1,
+                                  fun (x7 : T) =>
+                                    «atomic» («cat3» «tLp» («shDoc» ((x6).2 x7)) «tDot2»))
+                              else
+                                if (Const.eq (Const.label x2) (leaf 15)).label ≠ 0 then
+                                  let _ : (Unit → List T × (T → T)) ×
+                                    List
+                                      (Unit →
+                                        List T ×
                                           (T →
-                                            T) := (Const.lcase
-                                          (α := T × (Unit → List T × (T → T)))
-                                          (β := T × (Unit → List T × (T → T)))
-                                          (Const.iter
-                                            (α := List (T × (Unit → List T × (T → T))))
-                                            (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                              Const.lcase
-                                                (α := T × (Unit → List T × (T → T)))
-                                                (β := List (T × (Unit → List T × (T → T))))
-                                                x6
-                                                ([] : List (T × (Unit → List T × (T → T))))
-                                                (fun (_ : T × (Unit → List T × (T → T)))
-                                                   (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                                  x8))
-                                            x3
-                                            (leaf 0))
-                                          (leaf 0,
-                                            fun (_ : Unit) =>
-                                              (([] : List T), fun (_ : T) => leaf 0))
-                                          (fun (x6 : T × (Unit → List T × (T → T)))
-                                             (_ : List (T × (Unit → List T × (T → T)))) =>
-                                            x6)).2
-                                          ();
-                                        let x7 : List T ×
-                                          (T →
-                                            T) := (Const.lcase
-                                          (α := T × (Unit → List T × (T → T)))
-                                          (β := T × (Unit → List T × (T → T)))
-                                          (Const.iter
-                                            (α := List (T × (Unit → List T × (T → T))))
-                                            (fun (x7 : List (T × (Unit → List T × (T → T)))) =>
-                                              Const.lcase
-                                                (α := T × (Unit → List T × (T → T)))
-                                                (β := List (T × (Unit → List T × (T → T))))
-                                                x7
-                                                ([] : List (T × (Unit → List T × (T → T))))
-                                                (fun (_ : T × (Unit → List T × (T → T)))
-                                                   (x9 : List (T × (Unit → List T × (T → T)))) =>
-                                                  x9))
-                                            x3
-                                            (leaf 1))
-                                          (leaf 0,
-                                            fun (_ : Unit) =>
-                                              (([] : List T), fun (_ : T) => leaf 0))
-                                          (fun (x7 : T × (Unit → List T × (T → T)))
-                                             (_ : List (T × (Unit → List T × (T → T)))) =>
-                                            x7)).2
-                                          ();
-                                        let x8 : List T ×
-                                          (T →
-                                            T) := (Const.lcase
-                                          (α := T × (Unit → List T × (T → T)))
-                                          (β := T × (Unit → List T × (T → T)))
-                                          (Const.iter
-                                            (α := List (T × (Unit → List T × (T → T))))
-                                            (fun (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                              Const.lcase
-                                                (α := T × (Unit → List T × (T → T)))
-                                                (β := List (T × (Unit → List T × (T → T))))
-                                                x8
-                                                ([] : List (T × (Unit → List T × (T → T))))
-                                                (fun (_ : T × (Unit → List T × (T → T)))
-                                                   (x10 : List (T × (Unit → List T × (T → T)))) =>
-                                                  x10))
-                                            x3
-                                            (leaf 2))
-                                          (leaf 0,
-                                            fun (_ : Unit) =>
-                                              (([] : List T), fun (_ : T) => leaf 0))
-                                          (fun (x8 : T × (Unit → List T × (T → T)))
-                                             (_ : List (T × (Unit → List T × (T → T)))) =>
-                                            x8)).2
-                                          ();
-                                        («orList» (x6).1 («orList» (x7).1 (x8).1),
-                                          fun (x9 : T) =>
-                                            «compound»
-                                              («grp»
-                                                («cat»
-                                                  («tIf» ::
-                                                    ((«shDoc» ((x6).2 x9)) ::
-                                                      («tThen» ::
-                                                        ((«indented» («shDoc» ((x7).2 x9))) ::
-                                                          («line» ::
-                                                            («tElse» ::
-                                                              («single»
-                                                                («indented»
-                                                                  («shDoc» ((x8).2 x9)))))))))))))
-                                      else
-                                        if (Const.eq (Const.label x4) (leaf 17)).label ≠ 0 then
-                                          let x6 : List T ×
+                                            T)) := Const.lcase
+                                    (α := Unit → List T × (T → T))
+                                    (β := (Unit → List T × (T → T)) ×
+                                      List (Unit → List T × (T → T)))
+                                    x3
+                                    (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                      ([] : List (Unit → List T × (T → T))))
+                                    (fun (x5 : Unit → List T × (T → T))
+                                       (x6 : List (Unit → List T × (T → T))) =>
+                                      (x5, x6));
+                                  let x6 : T := Const.child x2 (leaf 0);
+                                  (([] : List T), fun (_ : T) => «compound» («quoteDoc» x6))
+                                else
+                                  if (Const.eq (Const.label x2) (leaf 16)).label ≠ 0 then
+                                    let x5 : (Unit → List T × (T → T)) ×
+                                      List
+                                        (Unit →
+                                          List T ×
                                             (T →
-                                              T) := (Const.lcase
-                                            (α := T × (Unit → List T × (T → T)))
-                                            (β := T × (Unit → List T × (T → T)))
-                                            (Const.iter
-                                              (α := List (T × (Unit → List T × (T → T))))
-                                              (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                                Const.lcase
-                                                  (α := T × (Unit → List T × (T → T)))
-                                                  (β := List (T × (Unit → List T × (T → T))))
-                                                  x6
-                                                  ([] : List (T × (Unit → List T × (T → T))))
-                                                  (fun (_ : T × (Unit → List T × (T → T)))
-                                                     (x8 : List (T × (Unit → List T × (T → T)))) =>
-                                                    x8))
-                                              x3
-                                              (leaf 0))
-                                            (leaf 0,
-                                              fun (_ : Unit) =>
-                                                (([] : List T), fun (_ : T) => leaf 0))
-                                            (fun (x6 : T × (Unit → List T × (T → T)))
-                                               (_ : List (T × (Unit → List T × (T → T)))) =>
-                                              x6)).2
-                                            ();
-                                          (([] : List T),
-                                            fun (_ : T) =>
-                                              «ap» «tFold» («single» («namedArg» «tAlpha» x6)))
-                                        else
-                                          if (Const.eq (Const.label x4) (leaf 18)).label ≠ 0 then
-                                            let x6 : List T ×
+                                              T)) := Const.lcase
+                                      (α := Unit → List T × (T → T))
+                                      (β := (Unit → List T × (T → T)) ×
+                                        List (Unit → List T × (T → T)))
+                                      x3
+                                      (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                        ([] : List (Unit → List T × (T → T))))
+                                      (fun (x5 : Unit → List T × (T → T))
+                                         (x6 : List (Unit → List T × (T → T))) =>
+                                        (x5, x6));
+                                    let x6 : List T × (T → T) := (x5).1 ();
+                                    let x7 : (Unit → List T × (T → T)) ×
+                                      List
+                                        (Unit →
+                                          List T ×
+                                            (T →
+                                              T)) := Const.lcase
+                                      (α := Unit → List T × (T → T))
+                                      (β := (Unit → List T × (T → T)) ×
+                                        List (Unit → List T × (T → T)))
+                                      (x5).2
+                                      (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                        ([] : List (Unit → List T × (T → T))))
+                                      (fun (x7 : Unit → List T × (T → T))
+                                         (x8 : List (Unit → List T × (T → T))) =>
+                                        (x7, x8));
+                                    let x8 : List T × (T → T) := (x7).1 ();
+                                    let x9 : (Unit → List T × (T → T)) ×
+                                      List
+                                        (Unit →
+                                          List T ×
+                                            (T →
+                                              T)) := Const.lcase
+                                      (α := Unit → List T × (T → T))
+                                      (β := (Unit → List T × (T → T)) ×
+                                        List (Unit → List T × (T → T)))
+                                      (x7).2
+                                      (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                        ([] : List (Unit → List T × (T → T))))
+                                      (fun (x9 : Unit → List T × (T → T))
+                                         (x10 : List (Unit → List T × (T → T))) =>
+                                        (x9, x10));
+                                    let x10 : List T × (T → T) := (x9).1 ();
+                                    («orList» (x6).1 («orList» (x8).1 (x10).1),
+                                      fun (x11 : T) =>
+                                        «compound»
+                                          («grp»
+                                            («cat»
+                                              («tIf» ::
+                                                ((«shDoc» ((x6).2 x11)) ::
+                                                  («tThen» ::
+                                                    ((«indented» («shDoc» ((x8).2 x11))) ::
+                                                      («line» ::
+                                                        («tElse» ::
+                                                          («single»
+                                                            («indented»
+                                                              («shDoc» ((x10).2 x11)))))))))))))
+                                  else
+                                    if (Const.eq (Const.label x2) (leaf 17)).label ≠ 0 then
+                                      let x5 : (Unit → List T × (T → T)) ×
+                                        List
+                                          (Unit →
+                                            List T ×
                                               (T →
-                                                T) := (Const.lcase
-                                              (α := T × (Unit → List T × (T → T)))
-                                              (β := T × (Unit → List T × (T → T)))
-                                              (Const.iter
-                                                (α := List (T × (Unit → List T × (T → T))))
-                                                (fun (x6 : List (T × (Unit → List T × (T → T)))) =>
-                                                  Const.lcase
-                                                    (α := T × (Unit → List T × (T → T)))
-                                                    (β := List (T × (Unit → List T × (T → T))))
-                                                    x6
-                                                    ([] : List (T × (Unit → List T × (T → T))))
-                                                    (fun (_ : T × (Unit → List T × (T → T)))
-                                                       (x8 : List
-                                                         (T × (Unit → List T × (T → T)))) =>
-                                                      x8))
-                                                x3
-                                                (leaf 0))
-                                              (leaf 0,
-                                                fun (_ : Unit) =>
-                                                  (([] : List T), fun (_ : T) => leaf 0))
-                                              (fun (x6 : T × (Unit → List T × (T → T)))
-                                                 (_ : List (T × (Unit → List T × (T → T)))) =>
-                                                x6)).2
-                                              ();
-                                            (([] : List T),
-                                              fun (_ : T) =>
-                                                «ap» «tIter» («single» («namedArg» «tAlpha» x6)))
-                                          else
-                                            if (Const.eq (Const.label x4) (leaf 19)).label ≠ 0 then
-                                              let x6 : List T ×
+                                                T)) := Const.lcase
+                                        (α := Unit → List T × (T → T))
+                                        (β := (Unit → List T × (T → T)) ×
+                                          List (Unit → List T × (T → T)))
+                                        x3
+                                        (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                          ([] : List (Unit → List T × (T → T))))
+                                        (fun (x5 : Unit → List T × (T → T))
+                                           (x6 : List (Unit → List T × (T → T))) =>
+                                          (x5, x6));
+                                      let x6 : List T × (T → T) := (x5).1 ();
+                                      (([] : List T),
+                                        fun (_ : T) =>
+                                          «ap» «tFold» («single» («namedArg» «tAlpha» x6)))
+                                    else
+                                      if (Const.eq (Const.label x2) (leaf 18)).label ≠ 0 then
+                                        let x5 : (Unit → List T × (T → T)) ×
+                                          List
+                                            (Unit →
+                                              List T ×
                                                 (T →
-                                                  T) := (Const.lcase
-                                                (α := T × (Unit → List T × (T → T)))
-                                                (β := T × (Unit → List T × (T → T)))
-                                                (Const.iter
-                                                  (α := List (T × (Unit → List T × (T → T))))
-                                                  (fun (x6 : List
-                                                       (T × (Unit → List T × (T → T)))) =>
-                                                    Const.lcase
-                                                      (α := T × (Unit → List T × (T → T)))
-                                                      (β := List (T × (Unit → List T × (T → T))))
-                                                      x6
-                                                      ([] : List (T × (Unit → List T × (T → T))))
-                                                      (fun (_ : T × (Unit → List T × (T → T)))
-                                                         (x8 : List
-                                                           (T × (Unit → List T × (T → T)))) =>
-                                                        x8))
-                                                  x3
-                                                  (leaf 0))
-                                                (leaf 0,
-                                                  fun (_ : Unit) =>
-                                                    (([] : List T), fun (_ : T) => leaf 0))
-                                                (fun (x6 : T × (Unit → List T × (T → T)))
-                                                   (_ : List (T × (Unit → List T × (T → T)))) =>
-                                                  x6)).2
-                                                ();
-                                              «closed»
-                                                («cat3» «tNilLp» («argDoc» ((x6).2 (leaf 0))) «tRp»)
+                                                  T)) := Const.lcase
+                                          (α := Unit → List T × (T → T))
+                                          (β := (Unit → List T × (T → T)) ×
+                                            List (Unit → List T × (T → T)))
+                                          x3
+                                          (fun (_ : Unit) => (([] : List T), fun (_ : T) => leaf 0),
+                                            ([] : List (Unit → List T × (T → T))))
+                                          (fun (x5 : Unit → List T × (T → T))
+                                             (x6 : List (Unit → List T × (T → T))) =>
+                                            (x5, x6));
+                                        let x6 : List T × (T → T) := (x5).1 ();
+                                        (([] : List T),
+                                          fun (_ : T) =>
+                                            «ap» «tIter» («single» («namedArg» «tAlpha» x6)))
+                                      else
+                                        if (Const.eq (Const.label x2) (leaf 19)).label ≠ 0 then
+                                          let x5 : (Unit → List T × (T → T)) ×
+                                            List
+                                              (Unit →
+                                                List T ×
+                                                  (T →
+                                                    T)) := Const.lcase
+                                            (α := Unit → List T × (T → T))
+                                            (β := (Unit → List T × (T → T)) ×
+                                              List (Unit → List T × (T → T)))
+                                            x3
+                                            (fun (_ : Unit) =>
+                                              (([] : List T), fun (_ : T) => leaf 0),
+                                              ([] : List (Unit → List T × (T → T))))
+                                            (fun (x5 : Unit → List T × (T → T))
+                                               (x6 : List (Unit → List T × (T → T))) =>
+                                              (x5, x6));
+                                          let x6 : List T × (T → T) := (x5).1 ();
+                                          «closed»
+                                            («cat3» «tNilLp» («argDoc» ((x6).2 (leaf 0))) «tRp»)
+                                        else
+                                          if (Const.eq (Const.label x2) (leaf 20)).label ≠ 0 then
+                                            let x5 : (Unit → List T × (T → T)) ×
+                                              List
+                                                (Unit →
+                                                  List T ×
+                                                    (T →
+                                                      T)) := Const.lcase
+                                              (α := Unit → List T × (T → T))
+                                              (β := (Unit → List T × (T → T)) ×
+                                                List (Unit → List T × (T → T)))
+                                              x3
+                                              (fun (_ : Unit) =>
+                                                (([] : List T), fun (_ : T) => leaf 0),
+                                                ([] : List (Unit → List T × (T → T))))
+                                              (fun (x5 : Unit → List T × (T → T))
+                                                 (x6 : List (Unit → List T × (T → T))) =>
+                                                (x5, x6));
+                                            let x6 : List T × (T → T) := (x5).1 ();
+                                            let x7 : (Unit → List T × (T → T)) ×
+                                              List
+                                                (Unit →
+                                                  List T ×
+                                                    (T →
+                                                      T)) := Const.lcase
+                                              (α := Unit → List T × (T → T))
+                                              (β := (Unit → List T × (T → T)) ×
+                                                List (Unit → List T × (T → T)))
+                                              (x5).2
+                                              (fun (_ : Unit) =>
+                                                (([] : List T), fun (_ : T) => leaf 0),
+                                                ([] : List (Unit → List T × (T → T))))
+                                              (fun (x7 : Unit → List T × (T → T))
+                                                 (x8 : List (Unit → List T × (T → T))) =>
+                                                (x7, x8));
+                                            let x8 : List T × (T → T) := (x7).1 ();
+                                            («orList» (x6).1 (x8).1,
+                                              fun (x9 : T) =>
+                                                «atomic»
+                                                  («grp»
+                                                    («cat5»
+                                                      «tLp»
+                                                      («argDoc» ((x6).2 x9))
+                                                      «tConsOp»
+                                                      («indented» («argDoc» ((x8).2 x9)))
+                                                      «tRp»)))
+                                          else
+                                            if (Const.eq (Const.label x2) (leaf 21)).label ≠ 0 then
+                                              let x5 : (Unit → List T × (T → T)) ×
+                                                List
+                                                  (Unit →
+                                                    List T ×
+                                                      (T →
+                                                        T)) := Const.lcase
+                                                (α := Unit → List T × (T → T))
+                                                (β := (Unit → List T × (T → T)) ×
+                                                  List (Unit → List T × (T → T)))
+                                                x3
+                                                (fun (_ : Unit) =>
+                                                  (([] : List T), fun (_ : T) => leaf 0),
+                                                  ([] : List (Unit → List T × (T → T))))
+                                                (fun (x5 : Unit → List T × (T → T))
+                                                   (x6 : List (Unit → List T × (T → T))) =>
+                                                  (x5, x6));
+                                              let x6 : List T × (T → T) := (x5).1 ();
+                                              let x7 : (Unit → List T × (T → T)) ×
+                                                List
+                                                  (Unit →
+                                                    List T ×
+                                                      (T →
+                                                        T)) := Const.lcase
+                                                (α := Unit → List T × (T → T))
+                                                (β := (Unit → List T × (T → T)) ×
+                                                  List (Unit → List T × (T → T)))
+                                                (x5).2
+                                                (fun (_ : Unit) =>
+                                                  (([] : List T), fun (_ : T) => leaf 0),
+                                                  ([] : List (Unit → List T × (T → T))))
+                                                (fun (x7 : Unit → List T × (T → T))
+                                                   (x8 : List (Unit → List T × (T → T))) =>
+                                                  (x7, x8));
+                                              let x8 : List T × (T → T) := (x7).1 ();
+                                              (([] : List T),
+                                                fun (_ : T) =>
+                                                  «ap»
+                                                    «tFoldr»
+                                                    ((«namedArg» «tAlpha» x6) ::
+                                                      («single» («namedArg» «tBeta» x8))))
                                             else
                                               if (Const.eq
-                                                (Const.label x4)
-                                                (leaf 20)).label ≠ 0 then
-                                                let x6 : List T ×
-                                                  (T →
-                                                    T) := (Const.lcase
-                                                  (α := T × (Unit → List T × (T → T)))
-                                                  (β := T × (Unit → List T × (T → T)))
-                                                  (Const.iter
-                                                    (α := List (T × (Unit → List T × (T → T))))
-                                                    (fun (x6 : List
-                                                         (T × (Unit → List T × (T → T)))) =>
-                                                      Const.lcase
-                                                        (α := T × (Unit → List T × (T → T)))
-                                                        (β := List (T × (Unit → List T × (T → T))))
-                                                        x6
-                                                        ([] : List (T × (Unit → List T × (T → T))))
-                                                        (fun (_ : T × (Unit → List T × (T → T)))
-                                                           (x8 : List
-                                                             (T × (Unit → List T × (T → T)))) =>
-                                                          x8))
-                                                    x3
-                                                    (leaf 0))
-                                                  (leaf 0,
-                                                    fun (_ : Unit) =>
-                                                      (([] : List T), fun (_ : T) => leaf 0))
-                                                  (fun (x6 : T × (Unit → List T × (T → T)))
-                                                     (_ : List (T × (Unit → List T × (T → T)))) =>
-                                                    x6)).2
-                                                  ();
-                                                let x7 : List T ×
-                                                  (T →
-                                                    T) := (Const.lcase
-                                                  (α := T × (Unit → List T × (T → T)))
-                                                  (β := T × (Unit → List T × (T → T)))
-                                                  (Const.iter
-                                                    (α := List (T × (Unit → List T × (T → T))))
-                                                    (fun (x7 : List
-                                                         (T × (Unit → List T × (T → T)))) =>
-                                                      Const.lcase
-                                                        (α := T × (Unit → List T × (T → T)))
-                                                        (β := List (T × (Unit → List T × (T → T))))
-                                                        x7
-                                                        ([] : List (T × (Unit → List T × (T → T))))
-                                                        (fun (_ : T × (Unit → List T × (T → T)))
-                                                           (x9 : List
-                                                             (T × (Unit → List T × (T → T)))) =>
-                                                          x9))
-                                                    x3
-                                                    (leaf 1))
-                                                  (leaf 0,
-                                                    fun (_ : Unit) =>
-                                                      (([] : List T), fun (_ : T) => leaf 0))
-                                                  (fun (x7 : T × (Unit → List T × (T → T)))
-                                                     (_ : List (T × (Unit → List T × (T → T)))) =>
-                                                    x7)).2
-                                                  ();
-                                                («orList» (x6).1 (x7).1,
-                                                  fun (x8 : T) =>
-                                                    «atomic»
-                                                      («grp»
-                                                        («cat5»
-                                                          «tLp»
-                                                          («argDoc» ((x6).2 x8))
-                                                          «tConsOp»
-                                                          («indented» («argDoc» ((x7).2 x8)))
-                                                          «tRp»)))
+                                                (Const.label x2)
+                                                (leaf 22)).label ≠ 0 then
+                                                let _ : (Unit → List T × (T → T)) ×
+                                                  List
+                                                    (Unit →
+                                                      List T ×
+                                                        (T →
+                                                          T)) := Const.lcase
+                                                  (α := Unit → List T × (T → T))
+                                                  (β := (Unit → List T × (T → T)) ×
+                                                    List (Unit → List T × (T → T)))
+                                                  x3
+                                                  (fun (_ : Unit) =>
+                                                    (([] : List T), fun (_ : T) => leaf 0),
+                                                    ([] : List (Unit → List T × (T → T))))
+                                                  (fun (x5 : Unit → List T × (T → T))
+                                                     (x6 : List (Unit → List T × (T → T))) =>
+                                                    (x5, x6));
+                                                let x6 : T := Const.child x2 (leaf 0);
+                                                «closed»
+                                                  («cat2»
+                                                    «tConstDot»
+                                                    («text»
+                                                      (Const.children
+                                                        («at» «primNames» (Const.label x6)))))
                                               else
                                                 if (Const.eq
-                                                  (Const.label x4)
-                                                  (leaf 21)).label ≠ 0 then
-                                                  let x6 : List T ×
-                                                    (T →
-                                                      T) := (Const.lcase
-                                                    (α := T × (Unit → List T × (T → T)))
-                                                    (β := T × (Unit → List T × (T → T)))
-                                                    (Const.iter
-                                                      (α := List (T × (Unit → List T × (T → T))))
-                                                      (fun (x6 : List
-                                                           (T × (Unit → List T × (T → T)))) =>
-                                                        Const.lcase
-                                                          (α := T × (Unit → List T × (T → T)))
-                                                          (β := List
-                                                            (T × (Unit → List T × (T → T))))
-                                                          x6
-                                                          ([] : List (T ×
-                                                            (Unit → List T × (T → T))))
-                                                          (fun (_ : T × (Unit → List T × (T → T)))
-                                                             (x8 : List
-                                                               (T × (Unit → List T × (T → T)))) =>
-                                                            x8))
-                                                      x3
-                                                      (leaf 0))
-                                                    (leaf 0,
-                                                      fun (_ : Unit) =>
-                                                        (([] : List T), fun (_ : T) => leaf 0))
-                                                    (fun (x6 : T × (Unit → List T × (T → T)))
-                                                       (_ : List (T × (Unit → List T × (T → T)))) =>
-                                                      x6)).2
-                                                    ();
-                                                  let x7 : List T ×
-                                                    (T →
-                                                      T) := (Const.lcase
-                                                    (α := T × (Unit → List T × (T → T)))
-                                                    (β := T × (Unit → List T × (T → T)))
-                                                    (Const.iter
-                                                      (α := List (T × (Unit → List T × (T → T))))
-                                                      (fun (x7 : List
-                                                           (T × (Unit → List T × (T → T)))) =>
-                                                        Const.lcase
-                                                          (α := T × (Unit → List T × (T → T)))
-                                                          (β := List
-                                                            (T × (Unit → List T × (T → T))))
-                                                          x7
-                                                          ([] : List (T ×
-                                                            (Unit → List T × (T → T))))
-                                                          (fun (_ : T × (Unit → List T × (T → T)))
-                                                             (x9 : List
-                                                               (T × (Unit → List T × (T → T)))) =>
-                                                            x9))
-                                                      x3
-                                                      (leaf 1))
-                                                    (leaf 0,
-                                                      fun (_ : Unit) =>
-                                                        (([] : List T), fun (_ : T) => leaf 0))
-                                                    (fun (x7 : T × (Unit → List T × (T → T)))
-                                                       (_ : List (T × (Unit → List T × (T → T)))) =>
-                                                      x7)).2
-                                                    ();
-                                                  (([] : List T),
-                                                    fun (_ : T) =>
-                                                      «ap»
-                                                        «tFoldr»
-                                                        ((«namedArg» «tAlpha» x6) ::
-                                                          («single» («namedArg» «tBeta» x7))))
+                                                  (Const.label x2)
+                                                  (leaf 23)).label ≠ 0 then
+                                                  let _ : (Unit → List T × (T → T)) ×
+                                                    List
+                                                      (Unit →
+                                                        List T ×
+                                                          (T →
+                                                            T)) := Const.lcase
+                                                    (α := Unit → List T × (T → T))
+                                                    (β := (Unit → List T × (T → T)) ×
+                                                      List (Unit → List T × (T → T)))
+                                                    x3
+                                                    (fun (_ : Unit) =>
+                                                      (([] : List T), fun (_ : T) => leaf 0),
+                                                      ([] : List (Unit → List T × (T → T))))
+                                                    (fun (x5 : Unit → List T × (T → T))
+                                                       (x6 : List (Unit → List T × (T → T))) =>
+                                                      (x5, x6));
+                                                  let x6 : T := Const.child x2 (leaf 0);
+                                                  «closed»
+                                                    («cat3»
+                                                      «tLg»
+                                                      («text»
+                                                        (Const.children
+                                                          (Const.child x0 (Const.label x6))))
+                                                      «tRg»)
                                                 else
                                                   if (Const.eq
-                                                    (Const.label x4)
-                                                    (leaf 22)).label ≠ 0 then
-                                                    let x6 : T := Const.child x4 (leaf 0);
-                                                    «closed»
-                                                      («cat2»
-                                                        «tConstDot»
-                                                        («text»
-                                                          (Const.children
-                                                            («at» «primNames» (Const.label x6)))))
+                                                    (Const.label x2)
+                                                    (leaf 24)).label ≠ 0 then
+                                                    let x5 : (Unit → List T × (T → T)) ×
+                                                      List
+                                                        (Unit →
+                                                          List T ×
+                                                            (T →
+                                                              T)) := Const.lcase
+                                                      (α := Unit → List T × (T → T))
+                                                      (β := (Unit → List T × (T → T)) ×
+                                                        List (Unit → List T × (T → T)))
+                                                      x3
+                                                      (fun (_ : Unit) =>
+                                                        (([] : List T), fun (_ : T) => leaf 0),
+                                                        ([] : List (Unit → List T × (T → T))))
+                                                      (fun (x5 : Unit → List T × (T → T))
+                                                         (x6 : List (Unit → List T × (T → T))) =>
+                                                        (x5, x6));
+                                                    let x6 : List T × (T → T) := (x5).1 ();
+                                                    let x7 : (Unit → List T × (T → T)) ×
+                                                      List
+                                                        (Unit →
+                                                          List T ×
+                                                            (T →
+                                                              T)) := Const.lcase
+                                                      (α := Unit → List T × (T → T))
+                                                      (β := (Unit → List T × (T → T)) ×
+                                                        List (Unit → List T × (T → T)))
+                                                      (x5).2
+                                                      (fun (_ : Unit) =>
+                                                        (([] : List T), fun (_ : T) => leaf 0),
+                                                        ([] : List (Unit → List T × (T → T))))
+                                                      (fun (x7 : Unit → List T × (T → T))
+                                                         (x8 : List (Unit → List T × (T → T))) =>
+                                                        (x7, x8));
+                                                    let x8 : List T × (T → T) := (x7).1 ();
+                                                    (([] : List T),
+                                                      fun (_ : T) =>
+                                                        «ap»
+                                                          «tLcase»
+                                                          ((«namedArg» «tAlpha» x6) ::
+                                                            («single» («namedArg» «tBeta» x8))))
                                                   else
                                                     if (Const.eq
-                                                      (Const.label x4)
-                                                      (leaf 23)).label ≠ 0 then
-                                                      let x6 : T := Const.child x4 (leaf 0);
-                                                      «closed»
-                                                        («cat3»
-                                                          «tLg»
-                                                          («text»
-                                                            (Const.children
-                                                              (Const.child x0 (Const.label x6))))
-                                                          «tRg»)
+                                                      (Const.label x2)
+                                                      (leaf 25)).label ≠ 0 then
+                                                      let x5 : (Unit → List T × (T → T)) ×
+                                                        List
+                                                          (Unit →
+                                                            List T ×
+                                                              (T →
+                                                                T)) := Const.lcase
+                                                        (α := Unit → List T × (T → T))
+                                                        (β := (Unit → List T × (T → T)) ×
+                                                          List (Unit → List T × (T → T)))
+                                                        x3
+                                                        (fun (_ : Unit) =>
+                                                          (([] : List T), fun (_ : T) => leaf 0),
+                                                          ([] : List (Unit → List T × (T → T))))
+                                                        (fun (x5 : Unit → List T × (T → T))
+                                                           (x6 : List (Unit → List T × (T → T))) =>
+                                                          (x5, x6));
+                                                      let x6 : List T × (T → T) := (x5).1 ();
+                                                      (([] : List T),
+                                                        fun (_ : T) =>
+                                                          «ap»
+                                                            «tPara»
+                                                            («single» («namedArg» «tAlpha» x6)))
                                                     else
-                                                      if (Const.eq
-                                                        (Const.label x4)
-                                                        (leaf 24)).label ≠ 0 then
-                                                        let x6 : List T ×
-                                                          (T →
-                                                            T) := (Const.lcase
-                                                          (α := T × (Unit → List T × (T → T)))
-                                                          (β := T × (Unit → List T × (T → T)))
-                                                          (Const.iter
-                                                            (α := List
-                                                              (T × (Unit → List T × (T → T))))
-                                                            (fun (x6 : List
-                                                                 (T × (Unit → List T × (T → T)))) =>
-                                                              Const.lcase
-                                                                (α := T × (Unit → List T × (T → T)))
-                                                                (β := List
-                                                                  (T × (Unit → List T × (T → T))))
-                                                                x6
-                                                                ([] : List (T ×
-                                                                  (Unit → List T × (T → T))))
-                                                                (fun (_ : T ×
-                                                                     (Unit → List T × (T → T)))
-                                                                   (x8 : List
-                                                                     (T ×
-                                                                       (Unit →
-                                                                         List T × (T → T)))) =>
-                                                                  x8))
-                                                            x3
-                                                            (leaf 0))
-                                                          (leaf 0,
-                                                            fun (_ : Unit) =>
-                                                              (([] : List T),
-                                                                fun (_ : T) => leaf 0))
-                                                          (fun (x6 : T × (Unit → List T × (T → T)))
-                                                             (_ : List
-                                                               (T × (Unit → List T × (T → T)))) =>
-                                                            x6)).2
-                                                          ();
-                                                        let x7 : List T ×
-                                                          (T →
-                                                            T) := (Const.lcase
-                                                          (α := T × (Unit → List T × (T → T)))
-                                                          (β := T × (Unit → List T × (T → T)))
-                                                          (Const.iter
-                                                            (α := List
-                                                              (T × (Unit → List T × (T → T))))
-                                                            (fun (x7 : List
-                                                                 (T × (Unit → List T × (T → T)))) =>
-                                                              Const.lcase
-                                                                (α := T × (Unit → List T × (T → T)))
-                                                                (β := List
-                                                                  (T × (Unit → List T × (T → T))))
-                                                                x7
-                                                                ([] : List (T ×
-                                                                  (Unit → List T × (T → T))))
-                                                                (fun (_ : T ×
-                                                                     (Unit → List T × (T → T)))
-                                                                   (x9 : List
-                                                                     (T ×
-                                                                       (Unit →
-                                                                         List T × (T → T)))) =>
-                                                                  x9))
-                                                            x3
-                                                            (leaf 1))
-                                                          (leaf 0,
-                                                            fun (_ : Unit) =>
-                                                              (([] : List T),
-                                                                fun (_ : T) => leaf 0))
-                                                          (fun (x7 : T × (Unit → List T × (T → T)))
-                                                             (_ : List
-                                                               (T × (Unit → List T × (T → T)))) =>
-                                                            x7)).2
-                                                          ();
-                                                        (([] : List T),
-                                                          fun (_ : T) =>
-                                                            «ap»
-                                                              «tLcase»
-                                                              ((«namedArg» «tAlpha» x6) ::
-                                                                («single» («namedArg» «tBeta» x7))))
-                                                      else
-                                                        «closed» «tUnder»))
-      x1).2
+                                                      «closed» «tUnder»)
+      x1
       ();
     x2
 

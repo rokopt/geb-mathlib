@@ -13,7 +13,8 @@ set_option doc.verso true in
 # Kernel examples
 
 Programs written in the kernel's readable syntax, read, checked and run: factorial beyond a
-machine word by iteration, the size and the mirror image of a tree by the fold, the reversal
+machine word by iteration, the size and the mirror image of a tree by the fold, the arities of
+a tree's nodes by the fold whose step sees the node, the reversal
 of a list by the right fold, case analysis of lists, definitions referring to earlier ones,
 a conditional, and the reader's type abbreviations, lists of binders and local bindings.
 Ill-typed, malformed and unresolved programs, and programs whose last definition is not a
@@ -29,7 +30,8 @@ The programs are string constants, converted to lists of characters inside each
 
 * {lit}`datum` reads a quoted tree from text.
 * {lit}`imageOf` writes the image of a program's bundle.
-* {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`reverseChildren`,
+* {lit}`factorial`, {lit}`size`, {lit}`reverse`, {lit}`mirror`, {lit}`arities`,
+  {lit}`reverseChildren`,
   {lit}`quadruple`, {lit}`isZero`, {lit}`listCase`, {lit}`sugar` and {lit}`numerals` are
   programs.
 
@@ -75,6 +77,11 @@ def reverse : String := "
 def mirror : String := reverse ++ "
 (def mirror (lam (t T) (fold T (lam (l T) (lam (rs (List T)) (node l (rev rs)))) t)))"
 
+/-- Each node relabelled by its number of children, which the step of the fold that sees the node
+reads from the node. -/
+def arities : String := "
+(def arities (lam (t T) (para T (lam (n T) (lam (rs (List T)) (node (arity n) rs))) t)))"
+
 /-- The root's children in reverse order, the subtrees unchanged. -/
 def reverseChildren : String := reverse ++ "
 (def main (lam (t T) (node t (rev (children t)))))"
@@ -109,6 +116,8 @@ def numerals : String := "
 #guard runMain factorial.toList (leaf 30) = some (leaf 265252859812191058636308480000000)
 #guard runMain factorial.toList (leaf 0) = some (leaf 1)
 #guard runMain size.toList (datum "(1 (2) (3 (4) (5)))".toList) = some (leaf 5)
+#guard runMain arities.toList (datum "(1 (2) (3 (4) (5)))".toList) =
+  some (datum "(2 (0) (2 (0) (0)))".toList)
 #guard runMain mirror.toList (datum "(1 (2) (3 (4) (5)))".toList) =
   some (datum "(1 (3 (5) (4)) (2))".toList)
 #guard runMain reverseChildren.toList (datum "(1 (2 (5) (6)) (3) (4))".toList) =

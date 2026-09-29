@@ -34,9 +34,9 @@ the term's denotation.
 
 * {lit}`ty_spec` — a kernel type's translation is a type of the internal language whose value is
   {lit}`MTy`.
-* {lit}`repC_primT`, {lit}`repC_foldT`, {lit}`repC_iterT`, {lit}`repC_foldrT`,
-  {lit}`repC_lcaseT`, {lit}`repC_quote` — the translations of the kernel's primitives, constants
-  and quoted trees represent them.
+* {lit}`repC_primT`, {lit}`repC_foldT`, {lit}`repC_paraT`, {lit}`repC_iterT`,
+  {lit}`repC_foldrT`, {lit}`repC_lcaseT`, {lit}`repC_quote` — the translations of the kernel's
+  primitives, constants and quoted trees represent them.
 * {lit}`repC_term` — the fundamental lemma.
 
 ## Implementation notes
@@ -837,9 +837,9 @@ scoped macro (name := kSideGoals) "kside_goals" : tactic =>
 
 section Consts
 
-open Internal (repC_var repC_lam repC_app repC_pair repC_fst repC_snd repC_nil repC_lnode
-  repC_star repC_listRec repC_roseRec repC_call₀ repC_call₁ repC_call₂ repC_call₃ compiled_language
-  envRep_idt)
+open Internal (repC_var repC_lam repC_app repC_pair repC_fst repC_snd repC_nil repC_cons
+  repC_lnode repC_star repC_listRec repC_roseRec repC_call₀ repC_call₁ repC_call₂ repC_call₃
+  compiled_language envRep_idt)
 
 variable {defs defsF : List Defn} (hF : compileDefs (globals defsF) = some ds)
   (hwf : PartialHorn.DefnsWF sig ds) {X : Tree} {e : List (Tree × Tree)} {S A : Type}
@@ -939,6 +939,62 @@ theorem repC_foldT :
     funext f (t : Kernel.Tree)
     refine elim_apply_eq _ (fun l rs ↦ f (Kernel.leaf l) rs) f ?_ t
     exact fun _ _ ↦ rfl
+  kside_goals
+
+/-- The fold of trees whose step sees the node itself, at a type, represents the kernel's. -/
+theorem repC_paraT :
+    RepC (globals defs) 0 ds [] (paraT a) X e
+      (exp (exp treeTy (exp (list a) a)) (exp treeTy a)) R
+      (KRel (Kernel.foldTy T)) fun _ ↦ Kernel.paraDen T := by
+  obtain ⟨hi, ho, hv⟩ := ty_spec (G := globals defs) (n := 0) (ρ := []) (ds := ds) T hT
+  have hF' : ty (Kernel.tArrow Kernel.tT (Kernel.tArrow (Kernel.tList T) T)) =
+      some (exp treeTy (exp (list a) a)) := by simp [hT]
+  obtain ⟨hFi, hFo, -⟩ := ty_spec (G := globals defs) (n := 0) (ρ := []) (ds := ds) _ hF'
+  have hP' : ty (Kernel.tProd Kernel.tT T) = some (prod treeTy a) := by simp [hT]
+  obtain ⟨hPi, hPo, hPv⟩ := ty_spec (G := globals defs) (n := 0) (ρ := []) (ds := ds) _ hP'
+  obtain ⟨fm, hfm⟩ := compiled_language hF (k := D.mapApp) (d := lib[D.mapApp]) rfl
+  let RF := KRel (Kernel.tArrow Kernel.tT (Kernel.tArrow (Kernel.tList T) T))
+  let RQ := KRel (Kernel.tProd Kernel.tT T)
+  let RP := Rep.prod RN (Rep.list (Rep.exp RF RQ))
+  let RL := Rep.list (Rep.rose RN)
+  refine repC_congr (repC_lam ?_ hX ?_ (repC_lam ?_ ?_ ?_ (repC_snd (repC_app (repC_roseRec ?_
+      (repC_var0 ?_ ?_)
+      (repC_lam ?_ ?_ ?_ (repC_app (repC_lam ?_ ?_ ?_
+          (repC_app (repC_lam ?_ ?_ ?_
+              (repC_pair (repC_var0 ?_ ?_)
+                (repC_app (repC_app (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_var0 ?_ ?_)))
+                    (repC_var0 ?_ ?_) ?_ ?_)
+                  (repC_listRec (repC_varS ?_ ?_ (repC_var0 ?_ ?_))
+                    (repC_nil rfl ?_ (repC_star ?_ _) ?_ (KRel T))
+                    (repC_cons rfl ?_ (repC_pair
+                      (repC_snd (repC_var (Internal.envRep_listStep ?_ ?_ RQ (Rep.list (KRel T)))
+                        (i := 1) rfl) ?_ ?_)
+                      (repC_var (Internal.envRep_listStep ?_ ?_ RQ (Rep.list (KRel T)))
+                        (i := 0) rfl)) ?_) ?_) ?_ ?_)))
+            (repC_lnode rfl ?_ (repC_pair
+              (repC_fst (repC_varS ?_ ?_ (repC_varS ?_ ?_ (repC_var (envRep_idt ?_ RP) rfl))) ?_ ?_)
+              (repC_listRec (repC_var0 ?_ ?_)
+                (repC_nil rfl ?_ (repC_star ?_ _) ?_ (Rep.rose RN))
+                (repC_cons rfl ?_ (repC_pair
+                  (repC_fst (repC_var (Internal.envRep_listStep ?_ ?_ RQ RL) (i := 1) rfl) ?_ ?_)
+                  (repC_var (Internal.envRep_listStep ?_ ?_ RQ RL) (i := 0) rfl)) ?_) ?_)) ?_)
+            ?_ ?_))
+        (repC_call₂ (τ' := [MTy (Kernel.tArrow Kernel.tT (Kernel.tArrow (Kernel.tList T) T)),
+            MTy (Kernel.tProd Kernel.tT T)]) (a := list (prod treeTy a)) rfl rfl hwf hfm rfl
+          (by simp [hFi, hPi]) (by simp [hFo, hPo])
+          (.cons (objVal_ty hF') (.cons (objVal_ty hP') .nil)) rfl rfl
+          (rep_mapApp hF hfm RF RQ)
+          (repC_snd (repC_varS ?_ ?_ (repC_var (envRep_idt ?_ RP) rfl)) ?_ ?_) (repC_var0 ?_ ?_))
+        ?_ ?_)) ?_)
+    (repC_varS ?_ ?_ (repC_var0 hX ?_)) ?_ ?_) ?_ ?_))) ?hc
+  case hc =>
+    intro s
+    funext f (t : Kernel.Tree)
+    refine congrArg Prod.snd (elim_apply_eq _ (Kernel.Const.paraStep f) f ?_ t)
+    intro l fs
+    simp only [Kernel.Const.paraStep, List.map_eq_foldr (f := Prod.fst),
+      List.map_eq_foldr (f := Prod.snd)]
+    rfl
   kside_goals
 
 end Consts
@@ -1309,6 +1365,16 @@ theorem repC_term : ∀ (t : Kernel.Tree) (Γ : Kernel.Ctx) {X : Tree} {e : List
         repC_lcaseT hF hwf hX ha hb⟩
       simp only [List.map_cons, List.map_nil, Kernel.inferStep, isTy_of_ty A' ha, isTy_of_ty B' hb,
         Bool.and_self, ↓reduceIte]
+      rfl
+    · -- the fold of trees whose step sees the node itself
+      rename_i A' x hcs
+      obtain ⟨rfl, rfl⟩ := map_tr_eq_one hcs
+      simp only [Option.bind_eq_bind, Option.bind_eq_some_iff, Option.pure_def, Option.some.injEq,
+        Prod.mk.injEq] at h
+      obtain ⟨a, ha, rfl, rfl⟩ := h
+      refine ⟨fun _ ↦ Kernel.paraDen A', _, ?_, by simp [Kernel.foldTy, ha],
+        repC_paraT hF hwf hX ha⟩
+      simp only [List.map_cons, List.map_nil, Kernel.inferStep, isTy_of_ty A' ha, ↓reduceIte]
       rfl
     · exact nomatch h
 

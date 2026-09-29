@@ -341,7 +341,14 @@ theorem infer_append {G : List Glob} (G' : List Glob) :
       cases h
       simp only [infer_node, List.map_cons, List.map_nil, inferStep, hAB, ↓reduceIte]
     · cases h
-  case h_18 => cases h
+  case h_18 A sA heq =>
+    obtain ⟨rfl, rfl⟩ := map_para_eq_one heq
+    split at h
+    · rename_i hA
+      cases h
+      simp only [infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte]
+    · cases h
+  case h_19 => cases h
 
 /-- The denotation of the primitive giving a tree's label. -/
 theorem infer_label (G : List Glob) (Γ : Ctx) :
@@ -392,6 +399,12 @@ theorem infer_eqPrim (G : List Glob) (Γ : Ctx) :
 /-- The denotation of the fold of trees. -/
 theorem infer_fold {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) :
     infer G Γ (mk Label.fold [A]) = some ⟨foldTy A, fun _ ↦ foldDen A⟩ := by
+  simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte]
+  rfl
+
+/-- The denotation of the fold of trees whose step sees the node itself. -/
+theorem infer_para {G : List Glob} {Γ : Ctx} {A : Tree} (hA : Ty.IsTy A = true) :
+    infer G Γ (mk Label.para [A]) = some ⟨foldTy A, fun _ ↦ paraDen A⟩ := by
   simp only [mk, infer_node, List.map_cons, List.map_nil, inferStep, hA, ↓reduceIte]
   rfl
 
@@ -883,6 +896,9 @@ context. -/
 theorems. -/
 @[match_pattern] abbrev thm : ℕ := 36
 
+/-- The label of the rule of the fold of trees whose step sees the node itself, at a node. -/
+@[match_pattern] abbrev paraNode : ℕ := 37
+
 end Rule
 
 /-- The checker's result at a certificate: the conclusion, as a function of a program's
@@ -1079,6 +1095,14 @@ def checkMore (l : ℕ) (cs : List (Tree × Chk)) : Chk := fun E G Γ H ↦
     else none
   -- an instance of a theorem, each variable replaced by a term of its type
   | Rule.thm, (j, _) :: us => E.thms[j.label]?.bind (·.cite G Γ (us.map Prod.fst))
+  -- the fold of trees whose step sees the node itself, at a node
+  | Rule.paraNode, [(A, _), (f, _), (x, _), (xs, _)] =>
+    if Ty.IsTy A ∧ typeOf G Γ f = some (tArrow tT (tArrow (tList A) A)) ∧
+        typeOf G Γ x = some tT ∧ typeOf G Γ xs = some (tList tT) then
+      some ⟨A, apps (mk Label.para [A]) [f, apps (mk Label.prim [leaf Prim.node]) [x, xs]],
+        apps f [apps (mk Label.prim [leaf Prim.node]) [x, xs],
+          mapBy tT A (apps (mk Label.para [A]) [Kernel.wk 2 f, Tm.var 1]) xs]⟩
+    else none
   | _, _ => none
 
 /-- One rule of the checker, by the label of a certificate's node. -/
@@ -1701,6 +1725,29 @@ theorem valid_foldNode {A f x xs : Tree} (hA : Ty.IsTy A = true)
   exact ⟨_, _, hlhs, hrhs, fun e _ ↦
     RoseTree.elim_node (fun l rs ↦ ff e (leaf l) rs) (fx e : Tree).label (fxs e)⟩
 
+/-- The fold of trees whose step sees the node itself, at a node. -/
+theorem valid_paraNode {A f x xs : Tree} (hA : Ty.IsTy A = true)
+    (hf : typeOf G Γ f = some (tArrow tT (tArrow (tList A) A))) (hx : typeOf G Γ x = some tT)
+    (hxs : typeOf G Γ xs = some (tList tT)) :
+    Valid G Γ H ⟨A, apps (mk Label.para [A]) [f, apps (mk Label.prim [leaf Prim.node]) [x, xs]],
+      apps f [apps (mk Label.prim [leaf Prim.node]) [x, xs],
+        mapBy tT A (apps (mk Label.para [A]) [Kernel.wk 2 f, Tm.var 1]) xs]⟩ := by
+  obtain ⟨ff, hff⟩ := typeOf_eq_some.mp hf
+  obtain ⟨fx, hfx⟩ := typeOf_eq_some.mp hx
+  obtain ⟨fxs, hfxs⟩ := typeOf_eq_some.mp hxs
+  have hnode := infer_app (infer_app (infer_nodePrim G Γ) hfx) hfxs
+  have hlhs := infer_app (infer_app (infer_para hA) hff) hnode
+  have hw : infer G (tList A :: tT :: Γ) (Kernel.wk 2 f) =
+      some ⟨_, ff ∘ Ctx.drop [tList A, tT]⟩ := infer_wk [tList A, tT] hff
+  have hv : infer G (tList A :: tT :: Γ) (Tm.var 1) = some ⟨tT, fun d ↦ d.2.1⟩ := by
+    rw [infer_var]
+    rfl
+  have hbody := infer_app (infer_app (infer_para hA) hw) hv
+  have hmap := infer_mapBy (g := fun c e ↦ paraDen A (ff e) c) (rfl : Ty.IsTy tT = true) hA hbody
+    hfxs
+  have hrhs := infer_app (infer_app hff hnode) hmap
+  exact ⟨_, _, hlhs, hrhs, fun e _ ↦ Const.para_node (ff e) (fx e : Tree).label (fxs e)⟩
+
 /-- Induction on the innermost variable, a tree, under the hypothesis for its children. -/
 theorem valid_indTree {Γ' : Ctx} {B s t : Tree} (hB : Ty.IsTy B = true)
     (hs : typeOf G (tT :: Γ') s = some B) (ht : typeOf G (tT :: Γ') t = some B)
@@ -2252,7 +2299,14 @@ theorem checkMore_sound {l : ℕ} {cs : List Tree} {E : Env} {G : List Glob} {Γ
   case h_13 j sj us heq =>
     obtain ⟨th, hth, h⟩ := Option.bind_eq_some_iff.mp h
     exact valid_cite (hE.2 th (List.mem_of_getElem? hth)) h
-  case h_14 => cases h
+  case h_14 A sA f sf x sx xs sxs heq =>
+    split at h
+    · rename_i hcond
+      cases h
+      obtain ⟨hA, hf, hx, hxs⟩ := hcond
+      exact valid_paraNode hA hf hx hxs
+    · cases h
+  case h_15 => cases h
 
 /-- Every conclusion the checker computes, in a program's definitions and the environment they
 load, is valid. -/

@@ -317,8 +317,10 @@ The following are fixed; the plan builds on them.
 * Kernel. The kernel language is Gödel's System T
   {citep Goedel1958}[] over rose trees: simple types built from the
   single base type of rose trees by products, function types and lists,
-  the constructors and destructors of rose trees, and a fold whose
-  result may be of any type. Every program terminates, and its denotation is
+  the constructors and destructors of rose trees, and folds whose
+  result may be of any type, one whose step sees the leaf of a node's
+  label and one whose step sees the node itself. Every program terminates,
+  and its denotation is
   a Lean function. The functions it defines are those of System T over
   the natural numbers, the recursive functions provably total in Peano
   arithmetic (Section 7.4.2 of {citet GirardLafontTaylor1989}[]),
@@ -1053,13 +1055,16 @@ tag := "kernel-in-lean"
   whether a label is non-zero, lists with their right fold
   ({name}`Geb.Kernel.foldrDen`) and their case analysis
   ({name}`Geb.Kernel.lcaseDen`), which the fold alone gives only in
-  time linear in the list, the fold of trees and iteration at
-  given result types, primitives and references by index; the types
-  `T`, `1`, products, functions and lists. A tree is a label with a
-  list of trees, and the fold's step receives the leaf of a node's
-  label and the list of its children's results
+  time linear in the list, the fold of trees, the fold whose step sees
+  the node, and iteration at given result types, primitives and
+  references by index; the types `T`, `1`, products, functions and lists.
+  A tree is a label with a list of trees, and the fold's step receives
+  the leaf of a node's label and the list of its children's results
   ({name}`Geb.Kernel.foldDen`), so the fold is the recursion of the
-  carrier itself. Lists are in the kernel because a node is built from
+  carrier itself; the second fold's step receives the node itself and the
+  same list ({name}`Geb.Kernel.paraDen`), so that a recursion needing a
+  node's subtrees need not rebuild them from its results. Lists are in
+  the kernel because a node is built from
   the list of its children: building a node one child at a time copies
   the children at each step, which on a node of many children, a file
   of bytes among them, takes quadratic time, while a list of children
@@ -1254,9 +1259,11 @@ tag := "geb-grows-in-itself"
   to trees, the node labelled by a constructor's position over its
   fields, a last field taking the remaining children; case analysis,
   exhaustive unless it has an else clause; structural recursion at a
-  result type, the kernel's fold at pairs of a subtree and a suspended
-  result, so that no clause is evaluated at the subtrees of fields
-  that are not recursive; and functions with result types. A program of
+  result type, the kernel's fold whose step sees the node, at a
+  suspended result, the clause's fields taking the children's suspended
+  results in order, so that no clause is evaluated at the subtrees of
+  fields that are not recursive and no subtree is rebuilt; and functions
+  with result types. A program of
   kernel forms alone expands to itself, so the fixed point holds with
   the expansion in the compiler. Recognizers, type parameters and a
   static check of datatypes are still to be added; the expansion
