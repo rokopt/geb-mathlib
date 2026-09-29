@@ -30,6 +30,7 @@
 (defnum Label.prim 22)
 (defnum Label.ref 23)
 (defnum Label.lcase 24)
+(defnum Label.para 25)
 (defnum Prim.label 0)
 (defnum Prim.arity 1)
 (defnum Prim.child 2)

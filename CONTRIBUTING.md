@@ -83,6 +83,11 @@ does not run config commands on a contributor's behalf.
    The pre-push checklist skips the TOC check when `doctoc` is
    missing rather than failing, so this step is recommended but
    not blocking.
+9. Install the `z3-solver` Python package to run
+   `scripts/eal/eal.py`, the elementary-affine typability checker:
+   `pip install -r scripts/eal/requirements.txt`. Its test in
+   `scripts/test-tooling.sh` is skipped when the package is
+   missing.
 
 ## Working
 

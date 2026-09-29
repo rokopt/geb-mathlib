@@ -96,6 +96,7 @@
 (def kwCons (quote (0 99 111 110 115)))
 (def kwNil (quote (0 110 105 108)))
 (def kwFold (quote (0 102 111 108 100)))
+(def kwPara (quote (0 112 97 114 97)))
 (def kwIter (quote (0 105 116 101 114)))
 (def kwFoldr (quote (0 102 111 108 100 114)))
 (def kwLcase (quote (0 108 99 97 115 101)))
@@ -286,6 +287,10 @@
             (let A T (readType tys (at es 1))
               (if (isSome A)
                   (appsOpt (some (node Label.fold (single (get A)))) (argsOf rs 2 scope)) none))
+          (if (if (named h kwPara) (lt 1 k) 0)
+            (let A T (readType tys (at es 1))
+              (if (isSome A)
+                  (appsOpt (some (node Label.para (single (get A)))) (argsOf rs 2 scope)) none))
           (if (if (named h kwIter) (lt 1 k) 0)
             (let A T (readType tys (at es 1))
               (if (isSome A)
@@ -296,7 +301,7 @@
           (if (if (named h kwLcase) (lt 2 k) 0)
             (let A T (some2 Label.lcase (readType tys (at es 1)) (readType tys (at es 2)))
               (if (isSome A) (appsOpt A (argsOf rs 3 scope)) none))
-            (appsOpt (rrAt rs 0 scope) (argsOf rs 1 scope)))))))))))))))))))))
+            (appsOpt (rrAt rs 0 scope) (argsOf rs 1 scope))))))))))))))))))))))
 
 ; an S-expression resolved into a kernel term, given the type abbreviations in force, the names
 ; of the definitions before it and the names bound around it

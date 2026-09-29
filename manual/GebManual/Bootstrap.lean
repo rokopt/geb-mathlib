@@ -68,13 +68,17 @@ order of dependence.
 * Computation. Geb's implementation, the reader, the expansion, the
   type checker and the compilers, is written in Geb and compiled by Geb,
   with the host code reduced to the seed, and every compiler reproduces
-  itself (the section on what self-compilation establishes). Complete on
-  the Lean host.
+  itself (the section on what self-compilation establishes); the
+  bootstrap's programs carry elementary-affine decorations that a
+  checker and a search written in Geb check and find
+  ({ref "choice-of-machine"}[The choice of machine]). Complete on the
+  Lean host but for the decorations, which are in progress.
 * Hosts and targets. The kernel runs on three hosts or targets: Lean,
   where the seed and the backend emitting Lean are; a systems language,
   Rust, where a second seed reproduces the fixed points; and an
-  interaction-net runtime, HVM, Bend or a similar one, which a compiler
-  written in Geb targets for parallel workloads. Complete for Lean; the
+  interaction-net runtime running the staged interaction system of the
+  choice of machine, which a compiler written in Geb targets for
+  parallel workloads. Complete for Lean; the
   systems language and the interaction-net runtime wait on
   {ref "choice-of-machine"}[the choice of machine].
 * Logic. One checker, proved sound in Lean and written again in Geb,
@@ -129,11 +133,15 @@ Computation:
   with `&`, unused pattern variables, primitives that no binding
   shadows, emitted names that no definition captures, and diagnostics
   naming the definition that fails.
+* Ready. The first stage of the interaction-net arm of
+  {ref "choice-of-machine"}[the choice of machine]: a kernel program's
+  interaction system, duplicating no λ-value, with a sequential reducer
+  in Lean and the proof that its read-back is the denotation.
 * Deferred until before the second host.
   {ref "choice-of-machine"}[The choice of machine]: the benchmark
   programs, the environment machine, the compilation to
-  the triage calculus, the compilation to interaction combinators, and
-  the decision.
+  the triage calculus, native code with forks over a node's children,
+  the staged interaction system, and the decision.
 * Waiting on the choice of machine. The second host
   ({ref "speed-and-second-host"}[Speed and a second host]): the evaluator
   and loader in Rust, reproducing the stage-0 and stage-1 fixed points,
@@ -144,9 +152,19 @@ Computation:
   in shadow mode.
 * Waiting on the choice of machine. The interaction-net target
   ({ref "speed-and-second-host"}[Speed and a second host]): a
-  compiler written in Geb to HVM, Bend or a similar runtime, each pinned
-  to a revision and tested, within the limits on duplicating λ-values
-  of the section on operational semantics.
+  compiler written in Geb to the staged interaction system of the
+  choice of machine, run on a runtime pinned to a revision and tested,
+  within the limits on duplicating λ-values of the section on
+  operational semantics; HVM4 serves as an external back end for
+  measurement and for searching certificates.
+* In progress. Elementary-affine decorations of the bootstrap's
+  programs ({ref "choice-of-machine"}[The choice of machine]): each
+  program typable with first-order data copied natively, its decoration
+  found by an untrusted search and checked in the build by a checker
+  specified in Lean and written in Geb; then a search written in Geb,
+  which full self-hosting requires; and later, elementary affine logic
+  without the exemption. The search with z3, `scripts/eal/eal.py`, is
+  constructed, and the rest is ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -317,8 +335,10 @@ The following are fixed; the plan builds on them.
 * Kernel. The kernel language is Gödel's System T
   {citep Goedel1958}[] over rose trees: simple types built from the
   single base type of rose trees by products, function types and lists,
-  the constructors and destructors of rose trees, and a fold whose
-  result may be of any type. Every program terminates, and its denotation is
+  the constructors and destructors of rose trees, and folds whose
+  result may be of any type, one whose step sees the leaf of a node's
+  label and one whose step sees the node itself. Every program terminates,
+  and its denotation is
   a Lean function. The functions it defines are those of System T over
   the natural numbers, the recursive functions provably total in Peano
   arithmetic (Section 7.4.2 of {citet GirardLafontTaylor1989}[]),
@@ -628,7 +648,7 @@ triage arm of {ref "choice-of-machine"}[the choice of machine] needs.
 
 ## Operational semantics
 
-Three candidates run the kernel, and
+Four candidates run the kernel, and
 {ref "choice-of-machine"}[the choice of machine] compares them on the
 same programs.
 
@@ -660,32 +680,120 @@ need bracket abstraction, which is a compiler, before stage 0 can be
 written in it.
 
 Interaction combinators. Three symbols and six rules suffice to encode
-any interaction system {citep Lafont1997}[], and their parallelism is
-the reason to consider them. Evaluating λ-terms by optimal reduction
-needs Lamping's bookkeeping, the oracle {citep Lamping1990}[]
-{citep AspertiGuerrini1998}[]; without it, the abstract algorithm is
-sound and complete for terms typable in elementary or light affine
-logic {citep BaillotCoppolaDalLago2011}[]. Elementary linear logic
-captures the elementary functions {citep DanosJoinet2003}[], and System
-T defines functions that are not elementary, so the kernel does not
-lie inside the certified fragment: duplication of λ-values needs a
-per-program certificate, a copying discipline without optimal sharing,
-or the oracle's cost. Duplication of first-order data is not
-restricted. The value-representation chapter records the state of the
-interaction-net runtimes and their measurements. As a compilation
+any interaction system, and interaction nets reduce with the one-step
+diamond property, so that every reduction to normal form has the same
+length and the number of interactions is a cost independent of the
+schedule {citep Lafont1997}[]. Their parallelism is the reason to
+consider them. The symmetric variant, whose two annihilations both
+connect auxiliary ports straight, is equally expressive and has a
+relational semantics for which it is fully complete
+{citep Mazza2007}[] {citep Mazza2009}[], a semantics against which a
+read-back could be stated.
+
+Evaluating λ-terms by optimal reduction needs Lamping's bookkeeping,
+the oracle {citep Lamping1990}[] {citep AspertiGuerrini1998}[].
+Without it, the abstract algorithm is sound and complete for the terms
+typable in elementary or light affine logic, its duplicators indexed as
+the typing assigns {citep BaillotCoppolaDalLago2011}[], and it is not
+sound for System T: the simply typed term
+`(λn.(n λy.(n λz.y)) λx.(x (x y)))` of base type reduces under it to a
+cycle, which is no λ-term {citep CoppolaMartini2006}[]. That term uses
+an iterator twice, once inside the argument of the other use, a
+pattern that the kernel's folds at function type can form. Elementary
+affine logic captures the elementary functions
+{citep DanosJoinet2003}[], and System T defines functions that are not
+elementary, so no elementary-affine typing certifies every kernel
+program; typability is decidable {citep CoppolaMartini2006}[], so it
+can certify programs one at a time. Duplication of first-order data is
+not restricted. [HVM4](https://github.com/HigherOrderCO/HVM4) labels
+its duplicators by their occurrences in a program's source, every
+instance of a definition sharing its labels, not as a typing assigns,
+so the theorem does not cover it, and it normalizes the twice
+combinator applied to itself to three applications instead of four
+([HVM4 issue 22](https://github.com/HigherOrderCO/HVM4/issues/22)).
+Optimal sharing is also not efficiency: the cost of implementing the
+parallel β-steps that optimal reduction counts is not bounded by any
+elementary function of their number {citep AspertiMairson2001}[], and
+closed reduction, which copies only closed terms and shares less, was
+measured more efficient than optimal reduction in many cases
+{citep FernandezMackieSinot2005}[].
+
+Bend's first version, a high-level language, ran on HVM2, which adds
+native agents for numbers to the combinators, emulating arithmetic by
+Church or Scott numerals being too slow, and has a single duplicator,
+sound only for programs in which no higher-order λ that copies its
+variable is itself copied, an invariant it leaves to the source
+language to check. Its paper
+proposes an elementary-affine inference, with Lamping's bookkeeping as
+a fallback about ten times slower, as future work
+{citep Taelin2024}[].
+
+The value-representation chapter records the state of the
+interaction-net runtimes and their measurements: a fold over a tree of
+$`2^{20}` leaves took about a second on HVM2 with sixteen threads and on
+HVM4 with one, where Lean's compiled code folds at about 42 nanoseconds
+per node. As a compilation
 target, a net runtime needs its own contract: well-formedness of
 graphs, interfaces, reduction, read-back, and preservation of the
 source's observations. A tree can serialize a graph by storing node
 and port references, and sharing, erasure and duplication in a net are
 operational structure, distinct from the sharing of immutable pointers
 in a rose-tree runtime. [HVM2](https://github.com/HigherOrderCO/HVM2)
-and [HVM4](https://github.com/HigherOrderCO/HVM4) implement different
-calculi with different interfaces, so each is a separate target, pinned
-to a revision and tested before any step depends on it.
+and HVM4 implement different calculi with different interfaces, so each
+is a separate target, pinned to a revision and tested before any step
+depends on it; HVM4's repository carries no licence, so neither its
+code nor its text can enter this repository, only the published rules
+of the calculus it implements, re-derived and cited.
+
+Ownership-based native code. Bend's second version, which succeeds the
+first, runs on no interaction net, and gives up optimal reduction of
+shared redexes for sequential code at native speed, flat memory and a
+cost model a programmer can read {citep Taelin2026BendRT}[]. Its type
+theory makes running code affine: a variable is used at most once
+unless its type is of kind `Data`, whose values hold labels, pairs and
+proofs of equality and no function, a list being of kind `Data` when
+its elements are, and a definition calls itself only on smaller
+arguments. Since the paradoxes of a type of all types and of datatypes
+negative in themselves each copy a function, the theory admits both
+and is consistent; termination and consistency are proved in one Lean
+file, and the cost of evaluation has no bound, Ackermann's function
+being typable {citep Taelin2026BendTT}[]. The runtime compiles a
+program to one C file that runs sequentially, on threads and on a GPU.
+Affinity makes the match that consumes a value the place that frees it,
+so there is no collector; reference counts exist only for the types a
+whole-program analysis finds shared, and an argument a callee only
+reads is lent without a count. Parallelism is a fork of calls the
+program marks, dealt to a fixed grid of task rings without work
+stealing, on the program's promise, unverified, that its forks split
+the work evenly. On one machine the sequential build runs within 0.8 to
+1.5 times the time of the same programs written in C, sixteen threads
+run 8.8 to 12.1 times faster than one, and a GPU runs up to 67 times
+faster on uniform work and slower than sixteen threads on divergent
+work {citep Taelin2026BendRT}[]. Its speed of compilation, as its
+[README](https://github.com/bendlang/bend/blob/018751270e800bc222a93dad7f257083ee53a5f7/README.md)
+states, is that of its checker, which checks in under a second files
+that proof assistants take minutes over, while compiling to native code
+through a C, Metal or CUDA compiler is slow and not incremental.
+
+Its discipline, copying data and never a function, is the first stage
+of the staged interaction system of
+{ref "choice-of-machine"}[the choice of machine], stated as a type
+system of the source language where that stage obtains it by
+defunctionalization, and the folds the elementary-affine checker
+rejects for reading their children's results twice are rejected by it
+too. The Lean backend already has the memory half of the design, the
+reference counting of Lean's runtime {citep UllrichDeMoura2019}[], and
+the kernel's fold offers the fork: the results of a node's children are
+independent of each other, so a fold may compute them in parallel. This
+target needs no discipline on λ-values; the elementary-affine
+decorations keep a target with optimal sharing available beside it.
 
 The evidence points to an environment machine as the reference and to
-interaction combinators as a compilation target for measured parallel
-workloads; {ref "choice-of-machine"}[the choice of machine] decides.
+two parallel targets for measured parallel workloads: ownership-based
+native code with forks over a node's children, and an interaction
+system staged by how it duplicates λ-values, its first stage
+duplicating none; {ref "choice-of-machine"}[the choice of machine]
+decides.
 
 ## The metalogic and its checker
 %%%
@@ -967,7 +1075,8 @@ section below opens with a table of the states of its parts.
 *
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
-  * Every part
+  * The first stage of the interaction-net arm: ready; the
+    elementary-affine decorations: in progress; the rest: deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
@@ -1053,13 +1162,16 @@ tag := "kernel-in-lean"
   whether a label is non-zero, lists with their right fold
   ({name}`Geb.Kernel.foldrDen`) and their case analysis
   ({name}`Geb.Kernel.lcaseDen`), which the fold alone gives only in
-  time linear in the list, the fold of trees and iteration at
-  given result types, primitives and references by index; the types
-  `T`, `1`, products, functions and lists. A tree is a label with a
-  list of trees, and the fold's step receives the leaf of a node's
-  label and the list of its children's results
+  time linear in the list, the fold of trees, the fold whose step sees
+  the node, and iteration at given result types, primitives and
+  references by index; the types `T`, `1`, products, functions and lists.
+  A tree is a label with a list of trees, and the fold's step receives
+  the leaf of a node's label and the list of its children's results
   ({name}`Geb.Kernel.foldDen`), so the fold is the recursion of the
-  carrier itself. Lists are in the kernel because a node is built from
+  carrier itself; the second fold's step receives the node itself and the
+  same list ({name}`Geb.Kernel.paraDen`), so that a recursion needing a
+  node's subtrees need not rebuild them from its results. Lists are in
+  the kernel because a node is built from
   the list of its children: building a node one child at a time copies
   the children at each step, which on a node of many children, a file
   of bytes among them, takes quadratic time, while a list of children
@@ -1112,6 +1224,12 @@ tag := "choice-of-machine"
   * Step
   * State
 *
+  * The stages of the interaction-net arm
+  * Complete
+*
+  * The first stage in Lean, its read-back proved to be the denotation
+  * Ready
+*
   * The benchmark programs, the arms, the measurements
   * Deferred until before the second host
 *
@@ -1130,15 +1248,125 @@ tag := "choice-of-machine"
   fold frames given by dissections and a proof that it agrees with the
   denotation, and a bounded runner that resumes to the same result; a
   compilation of the kernel to the triage calculus by bracket
-  abstraction, run by the repository's machine; and a compilation of
-  the kernel's first-order folds to interaction combinators. Every
-  result is compared with the denotation.
+  abstraction, run by the repository's machine; native code with
+  ownership-based memory and forks over the children of a node, the
+  design of Bend's runtime {citep Taelin2026BendRT}[] grown from the
+  Lean backend; and the interaction system below, at its first stage.
+  Every result is compared with the denotation.
 * Measurements: agreement, host lines, proof lines, steps and time per
   leaf, memory and its reclamation, and speedup with threads, one heavy
   process at a time. The decision on the reference machine and the
   compilation targets is recorded in this chapter.
 
 Acceptance: the measurements and the decision are recorded.
+
+The interaction-net arm is staged by how it duplicates λ-values, each
+stage adding one family of agents whose correctness has a published
+proof, and each program running at the highest stage it qualifies for
+(the section on operational semantics gives the reasons):
+
+1. The first-order kernel. A program becomes an interaction system of
+   its own: its closures defunctionalized into first-order data with
+   one agent that applies them, one agent for each occurrence of a
+   fold, with a rule for each constructor
+   {citep MackiePintoVilaca2009}[], and the nodes of rose trees as
+   agents whose labels are attributes. No λ-value is duplicated, only
+   data, which a copying agent copies constructor by constructor, so
+   every kernel program runs, and the work under a copied closure is
+   repeated in each copy.
+2. λ-values in the net, a function copied only once it is closed: a
+   linear System T that iterates only closed functions is, under closed
+   reduction, as powerful as System T
+   {citep AlvesFernandezFloridoMackie2010}[].
+3. Duplicators indexed by the depths of an elementary-affine typing,
+   for the programs a typing certifies, which reduce with optimal
+   sharing {citep BaillotCoppolaDalLago2011}[]; the other programs run
+   at the second stage.
+4. Superpositions of candidates, for searching certificates. The
+   checker re-checks what a search returns, so a runtime without a
+   proof of correctness costs a search completeness or time, never
+   soundness. A search gains from sharing only with a checker that
+   produces a rule's conclusion before checking its premises and reads
+   each subtree of a certificate once.
+5. Realizers extracted from the metalogic's proofs, after the
+   bootstrap. They are untyped, so they run at the second stage:
+   closed reduction evaluates them correctly and without optimal
+   sharing {citep FernandezMackieSinot2005}[], and optimal sharing for
+   them needs the oracle.
+
+The machine runs kernel programs. The metalogic's terms are data that
+its checker, a kernel program, reads, and are not executed, so no stage
+needs optimal reduction of the metalogic, whose functions are not all
+System T's. Nor does the kernel's strength bear on the machine's
+correctness, which the first stage has for all of System T; an
+elementary-affine discipline decides where the third stage applies.
+
+The first stage's prototype in Lean is the interaction system of a
+kernel program, a sequential reducer on configurations with explicit
+fresh names, read-back at the type of trees, and the theorem that for
+every closed program from trees to trees and every input the reducer
+reaches a normal form whose read-back is the denotation
+{name}`Geb.Kernel.infer` assigns, by a logical relation between
+configurations and denotations observed at trees. A second milestone is
+the one-step diamond property up to renaming of cells and wires, the
+cells indexed by `Fin k` so that renamings are permutations and the
+quotient is decidable: it extends the theorem to every schedule, so
+that a parallel runtime is covered.
+
+Elementary-affine typability was measured on the programs by
+`scripts/eal/eal.py`, over the definitions `lake exe geb-defs` writes
+from an image, with an inference in the style of
+{citet CoppolaMartini2006}[], linear constraints on the numbers of boxes
+solved by an SMT solver, and with first-order data exempted from the
+discipline, since duplicating data duplicates no λ-value. One at a
+time, 197 of the stage-0 compiler's 200 definitions are typable, 313 of
+the stage-1 compiler's 315, 359 of the prover of Gödel's T's 368 and
+370 of the metalogic checker's 374; without the exemption, 187, 296,
+342 and 363. Every definition that
+fails, among them the type checker `typeIn` and the resolver `resolve`,
+is a fold at pairs of a subtree and a function whose step reads the
+list of its children's results more than once, contracting a list of
+functions; a step that splits the list once, as the datatype language's
+structural recursion does, contracts none, and whether the folds so
+rewritten are typable is not yet measured. Typing a whole program with
+one decoration per definition fails for three of the four programs, so
+a program's typing needs a decoration per use of a definition. The exemption is not proved sound
+for a net machine; the third stage needs it, and the first two need no
+typing.
+
+The bootstrap's programs, its compilers, checkers and prover, and its
+reader and printer once they are written in Geb, are required to be
+typable in this discipline, first-order data copied natively and the
+fold whose step sees the node among the primitives that copy it, so
+that the third stage can run them with optimal sharing. A program's
+decoration is a certificate. A search finds it and is not trusted, and
+a checker checks it and is, which is the rule for every solver the
+bootstrap uses: `scripts/eal/eal.py` is the search, with z3 as its
+solver, and checking a decoration is checking linear inequalities
+between given numbers, which needs no solver. The steps, in order: a
+decoration per use of a definition, each use taking a fresh copy of the
+linear constraints that describe the definition's decorations, all of
+which the constraints on its simple principal type schema yield
+{citep CoppolaMartini2006}[]; the rewriting of the folds that read their
+children's results twice; a checker of decorations specified in Lean
+and written in Geb, the checker written in Geb proved in Lean to agree
+with it by the method of the metalogic's checker, and the check in the
+build of every program's committed decoration, the checker's own among
+them; and a search written in Geb, which full self-hosting requires so
+that no external solver regenerates a decoration. An inference in
+polynomial time given a simple type derivation
+{citep BaillotTerui2005}[], for a system without sharing or
+polymorphism, is the search's starting point, extended to the kernel's
+constants, and its verdicts are compared with those of the search that
+uses z3.
+
+A stricter requirement is a later step: elementary affine logic
+without the exemption, to which the published soundness of the
+oracle-free algorithm applies as proved. The fold whose step sees the
+node cannot be defined in it, since its step receives the node whose
+children its recursion also consumes, so that step replaces that fold
+by a fold whose step receives the node under a box, or proves the
+native copying of data sound.
 
 Deferred: images are kernel terms and the Lean evaluator runs compiled
 closures, so the choice of machine matters for the second host and the
@@ -1254,9 +1482,11 @@ tag := "geb-grows-in-itself"
   to trees, the node labelled by a constructor's position over its
   fields, a last field taking the remaining children; case analysis,
   exhaustive unless it has an else clause; structural recursion at a
-  result type, the kernel's fold at pairs of a subtree and a suspended
-  result, so that no clause is evaluated at the subtrees of fields
-  that are not recursive; and functions with result types. A program of
+  result type, the kernel's fold whose step sees the node, at a
+  suspended result, the clause's fields taking the children's suspended
+  results in order, so that no clause is evaluated at the subtrees of
+  fields that are not recursive and no subtree is rebuilt; and functions
+  with result types. A program of
   kernel forms alone expands to itself, so the fixed point holds with
   the expansion in the compiler. Recognizers, type parameters and a
   static check of datatypes are still to be added; the expansion
@@ -1336,7 +1566,8 @@ tag := "speed-and-second-host"
   it replaces, with the shadow mode that runs both.
 * Geb: compilers to the targets the choice of machine selects, emitting
   Lean first
-  and then an interaction-net runtime, HVM, Bend or a similar one; the
+  and then the staged interaction system for an interaction-net
+  runtime; the
   optimized compiler compiles itself. The emitted Lean is
   committed beside the image, each definition under a name derived
   from its Geb name and in the order of the source, so that a change
@@ -1383,6 +1614,26 @@ committed Lean and the committed image byte for byte, which is
 pre-push checklist, checks every fixed point with the compiled
 executables. On one machine the compiled compiler emits its Lean in 0.5
 seconds, where its image run by the Lean evaluator takes 1.2 seconds.
+
+`scripts/bench-bootstrap.sh` times both compilers on the compiler's own
+source and the prover of Gödel's T on the files of theorems its tests
+check, and compares two builds. Byte-identical copies of an executable
+were measured to differ in speed by up to a quarter, reproducibly per
+copy, a bias of the kind an executable's layout causes
+{citep MytkowiczDiwanHauswirthSweeney2009}[]; a comparison timing one
+copy per build can therefore report a difference that is only layout.
+The script times each build over several copies of its executables,
+written independently and rotated across rounds that alternate the
+builds' order, and reports each copy's medians beside the whole ones.
+Measured so, the fold whose step sees the node made the compiler run
+by the Lean evaluator 5 percent faster, the compiled compiler 3 percent
+faster and the prover 13 percent faster on the datatype language's
+theorems, and made the prover 4.5 percent slower on the theorems about
+the type checker, whose source it extends with the new fold's case; on
+the same input files the two provers do not differ measurably, nor do
+they on the other workloads. Moving the new fold's tests to the ends of
+the type checker's and the prover's chains of tests made no measurable
+difference.
 
 ## Content identity
 %%%
@@ -3357,6 +3608,16 @@ the change that removes it.
 * Memory. The plain representation takes about 480 bytes of memory per
   byte of input to the host driver; the optimized representation of the
   value-representation chapter removes most of it.
+* Folds that read their children's results twice. The type checker
+  `typeIn`, the resolver `resolve` and the other folds at pairs of a
+  subtree and a function whose step reads the list of its children's
+  results more than once are the only definitions of the bootstrap's
+  programs that an elementary-affine typing with first-order data
+  exempted rejects ({ref "choice-of-machine"}[The choice of machine]).
+  A step that splits the list once, as the datatype language's
+  structural recursion does, contracts no list of functions, and the
+  requirement that the bootstrap's programs be decorated waits on that
+  rewriting.
 * Atoms as character codes. The Geb sources spell the atoms they
   compare with, the keywords of the reader, the expansion and the
   prover, as quoted lists of character codes, since a datum has no

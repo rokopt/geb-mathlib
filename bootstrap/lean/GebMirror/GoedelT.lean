@@ -277,6 +277,8 @@ def «kwNil» := mk 0 [leaf 110, leaf 105, leaf 108]
 
 def «kwFold» := mk 0 [leaf 102, leaf 111, leaf 108, leaf 100]
 
+def «kwPara» := mk 0 [leaf 112, leaf 97, leaf 114, leaf 97]
+
 def «kwIter» := mk 0 [leaf 105, leaf 116, leaf 101, leaf 114]
 
 def «kwFoldr» :=
@@ -751,37 +753,36 @@ def «resolveList» :=
                           else
                             «none»
                         else
-                          if (if («named» x6 «kwIter»).label ≠ 0 then
+                          if (if («named» x6 «kwPara»).label ≠ 0 then
                             Const.lt (leaf 1) x5
                           else
                             leaf 0).label ≠ 0 then
                             let x7 : T := «readType» x0 («at» x4 (leaf 1));
                             if («isSome» x7).label ≠ 0 then
                               «appsOpt»
-                                («some» (Const.node (leaf 18) («single» («get» x7))))
+                                («some» (Const.node (leaf 25) («single» («get» x7))))
                                 («argsOf» x2 (leaf 2) x3)
                             else
                               «none»
                           else
-                            if (if («named» x6 «kwFoldr»).label ≠ 0 then
-                              Const.lt (leaf 2) x5
+                            if (if («named» x6 «kwIter»).label ≠ 0 then
+                              Const.lt (leaf 1) x5
                             else
                               leaf 0).label ≠ 0 then
-                              let x7 : T := «some2»
-                                (leaf 21)
-                                («readType» x0 («at» x4 (leaf 1)))
-                                («readType» x0 («at» x4 (leaf 2)));
+                              let x7 : T := «readType» x0 («at» x4 (leaf 1));
                               if («isSome» x7).label ≠ 0 then
-                                «appsOpt» x7 («argsOf» x2 (leaf 3) x3)
+                                «appsOpt»
+                                  («some» (Const.node (leaf 18) («single» («get» x7))))
+                                  («argsOf» x2 (leaf 2) x3)
                               else
                                 «none»
                             else
-                              if (if («named» x6 «kwLcase»).label ≠ 0 then
+                              if (if («named» x6 «kwFoldr»).label ≠ 0 then
                                 Const.lt (leaf 2) x5
                               else
                                 leaf 0).label ≠ 0 then
                                 let x7 : T := «some2»
-                                  (leaf 24)
+                                  (leaf 21)
                                   («readType» x0 («at» x4 (leaf 1)))
                                   («readType» x0 («at» x4 (leaf 2)));
                                 if («isSome» x7).label ≠ 0 then
@@ -789,7 +790,20 @@ def «resolveList» :=
                                 else
                                   «none»
                               else
-                                «appsOpt» («rrAt» x2 (leaf 0) x3) («argsOf» x2 (leaf 1) x3)
+                                if (if («named» x6 «kwLcase»).label ≠ 0 then
+                                  Const.lt (leaf 2) x5
+                                else
+                                  leaf 0).label ≠ 0 then
+                                  let x7 : T := «some2»
+                                    (leaf 24)
+                                    («readType» x0 («at» x4 (leaf 1)))
+                                    («readType» x0 («at» x4 (leaf 2)));
+                                  if («isSome» x7).label ≠ 0 then
+                                    «appsOpt» x7 («argsOf» x2 (leaf 3) x3)
+                                  else
+                                    «none»
+                                else
+                                  «appsOpt» («rrAt» x2 (leaf 0) x3) («argsOf» x2 (leaf 1) x3)
 
 def «resolve» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) (x3 : List T) =>
@@ -1092,78 +1106,87 @@ def «checkNode» :=
                         else
                           «none»
                       else
-                        if (Const.eq x4 (leaf 18)).label ≠ 0 then
+                        if (Const.eq x4 (leaf 25)).label ≠ 0 then
                           if (Const.eq x6 (leaf 1)).label ≠ 0 then
                             if («isTy» («at» x5 (leaf 0))).label ≠ 0 then
-                              «some» («iterTy» («at» x5 (leaf 0)))
+                              «some» («foldTy» («at» x5 (leaf 0)))
                             else
                               «none»
                           else
                             «none»
                         else
-                          if (Const.eq x4 (leaf 19)).label ≠ 0 then
+                          if (Const.eq x4 (leaf 18)).label ≠ 0 then
                             if (Const.eq x6 (leaf 1)).label ≠ 0 then
                               if («isTy» («at» x5 (leaf 0))).label ≠ 0 then
-                                «some» («tyList» («at» x5 (leaf 0)))
+                                «some» («iterTy» («at» x5 (leaf 0)))
                               else
                                 «none»
                             else
                               «none»
                           else
-                            if (Const.eq x4 (leaf 20)).label ≠ 0 then
-                              if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                                let x7 : T := «rrAt» x2 (leaf 0) x3;
-                                let x8 : T := «rrAt» x2 (leaf 1) x3;
-                                if («both» x7 x8).label ≠ 0 then
-                                  if («isListTy» («get» x8)).label ≠ 0 then
-                                    if (Const.equal
-                                      («get» x7)
-                                      (Const.child («get» x8) (leaf 0))).label ≠ 0 then
-                                      «some» («tyList» («get» x7))
-                                    else
-                                      «none»
-                                  else
-                                    «none»
+                            if (Const.eq x4 (leaf 19)).label ≠ 0 then
+                              if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                if («isTy» («at» x5 (leaf 0))).label ≠ 0 then
+                                  «some» («tyList» («at» x5 (leaf 0)))
                                 else
                                   «none»
                               else
                                 «none»
                             else
-                              if (Const.eq x4 (leaf 21)).label ≠ 0 then
+                              if (Const.eq x4 (leaf 20)).label ≠ 0 then
                                 if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                                  if («and»
-                                    («isTy» («at» x5 (leaf 0)))
-                                    («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
-                                    «some» («foldrTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
+                                  let x7 : T := «rrAt» x2 (leaf 0) x3;
+                                  let x8 : T := «rrAt» x2 (leaf 1) x3;
+                                  if («both» x7 x8).label ≠ 0 then
+                                    if («isListTy» («get» x8)).label ≠ 0 then
+                                      if (Const.equal
+                                        («get» x7)
+                                        (Const.child («get» x8) (leaf 0))).label ≠ 0 then
+                                        «some» («tyList» («get» x7))
+                                      else
+                                        «none»
+                                    else
+                                      «none»
                                   else
                                     «none»
                                 else
                                   «none»
                               else
-                                if (Const.eq x4 (leaf 22)).label ≠ 0 then
-                                  if (Const.eq x6 (leaf 1)).label ≠ 0 then
-                                    «nth» «primTypes» (Const.label («at» x5 (leaf 0)))
-                                  else
-                                    «none»
-                                else
-                                  if (Const.eq x4 (leaf 23)).label ≠ 0 then
-                                    if (Const.eq x6 (leaf 1)).label ≠ 0 then
-                                      «nth» x0 (Const.label («at» x5 (leaf 0)))
+                                if (Const.eq x4 (leaf 21)).label ≠ 0 then
+                                  if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                    if («and»
+                                      («isTy» («at» x5 (leaf 0)))
+                                      («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
+                                      «some» («foldrTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
                                     else
                                       «none»
                                   else
-                                    if (Const.eq x4 (leaf 24)).label ≠ 0 then
-                                      if (Const.eq x6 (leaf 2)).label ≠ 0 then
-                                        if («and»
-                                          («isTy» («at» x5 (leaf 0)))
-                                          («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
-                                          «some» («lcaseTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
+                                    «none»
+                                else
+                                  if (Const.eq x4 (leaf 22)).label ≠ 0 then
+                                    if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                      «nth» «primTypes» (Const.label («at» x5 (leaf 0)))
+                                    else
+                                      «none»
+                                  else
+                                    if (Const.eq x4 (leaf 23)).label ≠ 0 then
+                                      if (Const.eq x6 (leaf 1)).label ≠ 0 then
+                                        «nth» x0 (Const.label («at» x5 (leaf 0)))
+                                      else
+                                        «none»
+                                    else
+                                      if (Const.eq x4 (leaf 24)).label ≠ 0 then
+                                        if (Const.eq x6 (leaf 2)).label ≠ 0 then
+                                          if («and»
+                                            («isTy» («at» x5 (leaf 0)))
+                                            («isTy» («at» x5 (leaf 1)))).label ≠ 0 then
+                                            «some» («lcaseTy» («at» x5 (leaf 0)) («at» x5 (leaf 1)))
+                                          else
+                                            «none»
                                         else
                                           «none»
                                       else
                                         «none»
-                                    else
-                                      «none»
 
 def «typeIn» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) =>
@@ -2794,7 +2817,46 @@ def «checkMore» :=
                                                («nth» x1 (Const.label x9))
                                                («cite» x2 x6 («tail» x4))
                                            else
-                                             «none»);
+                                             if («shape» x3 x8 (leaf 37) (leaf 4)).label ≠ 0 then
+                                               if («and»
+                                                 («isTy» x9)
+                                                 («and»
+                                                   («hasType»
+                                                     x2
+                                                     x6
+                                                     x10
+                                                     («tyArrow»
+                                                       (leaf 0)
+                                                       («tyArrow» («tyList» x9) x9)))
+                                                   («and»
+                                                     («hasType» x2 x6 x11 (leaf 0))
+                                                     («hasType»
+                                                       x2
+                                                       x6
+                                                       x12
+                                                       («tyList» (leaf 0)))))).label ≠ 0 then
+                                                 «some»
+                                                   («eqn»
+                                                     x9
+                                                     («app2»
+                                                       («mk1» (leaf 25) x9)
+                                                       x10
+                                                       («app2» («mk1» (leaf 22) (leaf 3)) x11 x12))
+                                                     («app2»
+                                                       x10
+                                                       («app2» («mk1» (leaf 22) (leaf 3)) x11 x12)
+                                                       («mapBy»
+                                                         (leaf 0)
+                                                         x9
+                                                         («app2»
+                                                           («mk1» (leaf 25) x9)
+                                                           («wk» (leaf 2) x10)
+                                                           («var» (leaf 1)))
+                                                         x12)))
+                                               else
+                                                 «none»
+                                             else
+                                               «none»);
     x8
 
 def «checkCert» :=

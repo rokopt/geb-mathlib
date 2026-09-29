@@ -216,6 +216,10 @@ name = "geb-compile"
 root = "GebCompileMain"
 
 [[lean_exe]]
+name = "geb-defs"
+root = "GebDefsMain"
+
+[[lean_exe]]
 name = "geb-manual"
 srcDir = "manual"
 root = "Main"

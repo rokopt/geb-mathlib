@@ -230,24 +230,24 @@ theorem checkCore_eq (E : Env) (G : List Glob) (l : ℕ) (hl : l < 24) (cs : Lis
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node without children. -/
-theorem more_nil (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37)
+theorem more_nil (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) []
       ([].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l ([].map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
   match l, hl, hl' with
   | 24, _, _ | 25, _, _ | 26, _, _ | 27, _, _ | 28, _, _ | 29, _, _ | 30, _, _ | 31, _, _
-  | 32, _, _ | 33, _, _ | 34, _, _ | 35, _, _ | 36, _, _ => rule_none
+  | 32, _, _ | 33, _, _ | 34, _, _ | 35, _, _ | 36, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of one child. -/
-theorem more_one (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37) (a : Tree)
+theorem more_one (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a]
       ([a].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
@@ -262,17 +262,17 @@ theorem more_one (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 
     exact more_thm E G a [] (p a) [] (P a)
       [] rfl Γ H
   | 24, _, _ | 25, _, _ | 26, _, _ | 27, _, _ | 28, _, _ | 29, _, _ | 30, _, _ | 32, _, _
-  | 34, _, _ | 35, _, _ => rule_none
+  | 34, _, _ | 35, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of two children. -/
-theorem more_two (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37) (a b : Tree)
+theorem more_two (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b]
       ([a, b].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
@@ -286,17 +286,17 @@ theorem more_two (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 
     exact more_thm E G a [b] (p a) [(b, p b)] (P a)
       [(b, P b)] rfl Γ H
   | 24, _, _ | 25, _, _ | 26, _, _ | 27, _, _ | 28, _, _ | 29, _, _ | 30, _, _ | 31, _, _
-  | 32, _, _ | 34, _, _ | 35, _, _ => rule_none
+  | 32, _, _ | 34, _, _ | 35, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of three children. -/
-theorem more_three (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37) (a b c : Tree)
+theorem more_three (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hc : Agrees E G (p c) (P c)) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c]
@@ -314,17 +314,17 @@ theorem more_three (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l 
     exact more_thm E G a [b, c] (p a) [(b, p b), (c, p c)] (P a)
       [(b, P b), (c, P c)] rfl Γ H
   | 24, _, _ | 25, _, _ | 27, _, _ | 28, _, _ | 30, _, _ | 31, _, _ | 34, _, _
-  | 35, _, _ => rule_none
+  | 35, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of four children. -/
-theorem more_four (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37) (a b c d : Tree)
+theorem more_four (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c d : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk)
     (hc : Agrees E G (p c) (P c)) (hd : Agrees E G (p d) (P d)) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d]
@@ -335,6 +335,7 @@ theorem more_four (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l <
   | 24, _, _ => exact more_lcaseNil E G a b c d (p a) (p b) (p c) (p d) (P a) (P b) (P c) (P d) Γ H
   | 27, _, _ => exact more_iterSucc E G a b c d (p a) (p b) (p c) (p d) (P a) (P b) (P c) (P d) Γ H
   | 28, _, _ => exact more_foldNode E G a b c d (p a) (p b) (p c) (p d) (P a) (P b) (P c) (P d) Γ H
+  | 37, _, _ => exact more_paraNode E G a b c d (p a) (p b) (p c) (p d) (P a) (P b) (P c) (P d) Γ H
   | 30, _, _ =>
     exact more_indLabel E G a b c d (p a) (p b) (p c) (p d) (P a) (P b) (P c) (P d) hc hd Γ H
   | 34, _, _ => exact more_iterLabel E G a b c d (p a) (p b) (p c) (p d) (P a) (P b) (P c) (P d) Γ H
@@ -350,12 +351,12 @@ theorem more_four (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l <
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of five children. -/
-theorem more_five (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37) (a b c d e : Tree)
+theorem more_five (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c d e : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d, e]
       ([a, b, c, d, e].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
@@ -369,17 +370,17 @@ theorem more_five (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l <
     exact more_thm E G a [b, c, d, e] (p a) [(b, p b), (c, p c), (d, p d), (e, p e)] (P a)
       [(b, P b), (c, P c), (d, P d), (e, P e)] rfl Γ H
   | 24, _, _ | 25, _, _ | 26, _, _ | 27, _, _ | 28, _, _ | 29, _, _ | 30, _, _ | 31, _, _
-  | 32, _, _ | 34, _, _ | 35, _, _ => rule_none
+  | 32, _, _ | 34, _, _ | 35, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of six children. -/
-theorem more_six (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37) (a b c d e f : Tree)
+theorem more_six (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38) (a b c d e f : Tree)
     (p : Tree → List Tree → List Tree → Tree) (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) [a, b, c, d, e, f]
       ([a, b, c, d, e, f].map fun c ↦ (c, p c)) Γ (H.map encEqn) =
@@ -398,17 +399,17 @@ theorem more_six (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 
       [(b, p b), (c, p c), (d, p d), (e, p e), (f, p f)] (P a)
       [(b, P b), (c, P c), (d, P d), (e, P e), (f, P f)] rfl Γ H
   | 24, _, _ | 26, _, _ | 27, _, _ | 28, _, _ | 29, _, _ | 30, _, _ | 31, _, _ | 32, _, _
-  | 34, _, _ | 35, _, _ => rule_none
+  | 34, _, _ | 35, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 set_option maxHeartbeats 1000000 in
 -- each label's case evaluates the chain of the checker's tests of label and arity
 /-- The mirror's other rules at a node of seven or more children. -/
-theorem more_many (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 37)
+theorem more_many (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l < 38)
     (a b c d e f g : Tree) (rest : List Tree) (p : Tree → List Tree → List Tree → Tree)
     (P : Tree → Chk) (Γ : Ctx) (H : List Eqn) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l)
@@ -429,21 +430,21 @@ theorem more_many (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (hl' : l <
       ((b :: c :: d :: e :: f :: g :: rest).map fun c ↦ (c, P c))
       (by simp [List.map_map, Function.comp_def]) Γ H
   | 24, _, _ | 25, _, _ | 26, _, _ | 27, _, _ | 28, _, _ | 29, _, _ | 30, _, _ | 31, _, _
-  | 32, _, _ | 34, _, _ | 35, _, _ => rule_none
+  | 32, _, _ | 34, _, _ | 35, _, _ | 37, _, _ => rule_none
   | 0, h, _ | 1, h, _ | 2, h, _ | 3, h, _ | 4, h, _ | 5, h, _ | 6, h, _ | 7, h, _ | 8, h, _
   | 9, h, _ | 10, h, _ | 11, h, _ | 12, h, _ | 13, h, _ | 14, h, _ | 15, h, _ | 16, h, _
   | 17, h, _ | 18, h, _ | 19, h, _ | 20, h, _ | 21, h, _ | 22, h, _
   | 23, h, _ => exact absurd h (by omega)
-  | _ + 37, _, h => exact absurd h (by omega)
+  | _ + 38, _, h => exact absurd h (by omega)
 
 /-- The kernel's rules give nothing at a node whose label is past its rules. -/
-theorem checkMore_other (E : Env) (G : List Glob) (l : ℕ) (hl : 36 < l) (cs : List (Tree × Chk))
+theorem checkMore_other (E : Env) (G : List Glob) (l : ℕ) (hl : 37 < l) (cs : List (Tree × Chk))
     (Γ : Ctx) (H : List Eqn) : checkMore l cs E G Γ H = none := by
   unfold checkMore
   split <;> first | omega | rfl
 
 /-- The mirror's rules give nothing at a node whose label is past its rules. -/
-theorem more_other (E : Env) (G : List Glob) (l : ℕ) (hl : 36 < l) (cs : List Tree)
+theorem more_other (E : Env) (G : List Glob) (l : ℕ) (hl : 37 < l) (cs : List Tree)
     (ps : List (Tree × (List Tree → List Tree → Tree))) (Γ : Ctx) (H : List Tree) :
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) cs ps Γ H =
       enc none := by
@@ -451,7 +452,7 @@ theorem more_other (E : Env) (G : List Glob) (l : ℕ) (hl : 36 < l) (cs : List 
     length_eq, show l ≠ 24 by omega, show l ≠ 25 by omega, show l ≠ 26 by omega,
     show l ≠ 27 by omega, show l ≠ 28 by omega, show l ≠ 29 by omega, show l ≠ 30 by omega,
     show l ≠ 31 by omega, show l ≠ 32 by omega, show l ≠ 33 by omega, show l ≠ 34 by omega,
-    show l ≠ 35 by omega, show l ≠ 36 by omega, false_and]
+    show l ≠ 35 by omega, show l ≠ 36 by omega, show l ≠ 37 by omega, false_and]
   rfl
 
 /-- The mirror's rules from case analysis of lists on agree with the kernel's at every node whose
@@ -462,7 +463,7 @@ theorem checkMore_eq (E : Env) (G : List Glob) (l : ℕ) (hl : 24 ≤ l) (cs : L
     GebMirror.GoedelT.checkMore E.defs (E.thms.map encThm) (G.map (·.1)) (leaf l) cs
       (cs.map fun c ↦ (c, p c)) Γ (H.map encEqn) =
       enc ((checkMore l (cs.map fun c ↦ (c, P c)) E G Γ H).map encEqn) := by
-  by_cases hl' : l < 37
+  by_cases hl' : l < 38
   · rcases cs with _ | ⟨a, _ | ⟨b, _ | ⟨c, _ | ⟨d, _ | ⟨e, _ | ⟨f, _ | ⟨g, rest⟩⟩⟩⟩⟩⟩⟩
     · exact more_nil E G l hl hl' p P Γ H
     · exact more_one E G l hl hl' a p P Γ H

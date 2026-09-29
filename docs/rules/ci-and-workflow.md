@@ -138,7 +138,9 @@ fixtures:
   `scripts/tests/test-axiom-linter.sh`,
   `scripts/tests/test-lint-driver.sh`,
   `scripts/tests/test-check-md-links.sh`,
-  `scripts/tests/test-check-commit-msg.sh`.
+  `scripts/tests/test-check-commit-msg.sh`,
+  `scripts/tests/test-eal.sh` (skipped when the `z3-solver`
+  Python package is absent).
 - `scripts/tests/test-mathlib-bump-detect.sh`,
   `scripts/tests/test-jj-bump-detect.sh`,
   `scripts/tests/test-regenerate-integration.sh`,

@@ -28,7 +28,8 @@ products, exponentials and list objects. A term former is the language's former 
 name; a quoted tree is the construction of its nodes, each label the numeral built by the
 definitions of the empty bitstring and of a bit before a bitstring; the conditional, the
 kernel's folds and iteration, its case analysis of lists and its primitives are applications of
-definitions of the language.
+definitions of the language. The fold whose step sees the node is the rose-tree fold at pairs of
+a rebuilt node and its value, as the kernel's is.
 
 The language's folds take their start and their step in contexts of their own, so a fold whose
 step uses a variable of the context folds into the exponential of that variable's type and is
@@ -466,6 +467,27 @@ def foldT (a : Tree) : Term :=
     (Term.lam F (Term.app (Term.app (v 0) (leafT (Term.fst (v 1))))
       (call D.mapApp [F, a] [Term.snd (v 1), v 0]))) (v 0)) (v 1)))
 
+/-- The subtrees of a list of pairs of a subtree and a value. -/
+def fstsT (ps : Term) : Term := Term.listRec (nilT treeTy) (consT treeTy (Term.fst (v 1)) (v 0)) ps
+
+/-- The values of a list of pairs of a subtree and a value of the type {lit}`a`. -/
+def sndsT (a : Tree) (ps : Term) : Term :=
+  Term.listRec (nilT a) (consT a (Term.snd (v 1)) (v 0)) ps
+
+/-- The fold of trees whose step sees the node itself, at the result type {lit}`a`: the rose-tree
+fold into functions of the step, each node's value at the step the pair of the node, rebuilt
+from its children's first components, and the step at the node and the children's second
+components, the fold at pairs of {name}`Geb.Kernel.Const.para`. -/
+def paraT (a : Tree) : Term :=
+  let F := exp treeTy (exp (list a) a)
+  let P := prod treeTy a
+  Term.lam F (Term.lam treeTy (Term.snd (Term.app (Term.roseRec (exp F P)
+    (Term.lam F (Term.app (Term.lam (list P)
+        (Term.app
+          (Term.lam treeTy (Term.pair (v 0) (Term.app (Term.app (v 2) (v 0)) (sndsT a (v 1)))))
+          (nodeT (Term.pair (Term.fst (v 2)) (fstsT (v 0))))))
+      (call D.mapApp [F, P] [Term.snd (v 1), v 0]))) (v 0)) (v 1))))
+
 /-- Iteration at the result type {lit}`a`: the step iterated as many times as the tree's
 label. -/
 def iterT (a : Tree) : Term :=
@@ -592,6 +614,7 @@ def termStep (l : ℕ) (cs : List (Tree × Tr)) : Tr := fun gt Γ ↦
   | Kernel.Label.ref, [(n, _)] => do pure (← gt[n.label]?, call (lib.length + n.label) [] [])
   | Kernel.Label.lcase, [(A, _), (B, _)] => do
     pure (Kernel.lcaseTy A B, lcaseT (← ty A) (← ty B))
+  | Kernel.Label.para, [(A, _)] => do pure (Kernel.foldTy A, paraT (← ty A))
   | _, _ => none
 
 /-- The translation of a kernel term in a context, with the types of the globals: its kernel

@@ -38,6 +38,7 @@
 (def aLcase (quote (1 108 99 97 115 101)))
 (def aFoldr (quote (1 102 111 108 100 114)))
 (def aFold (quote (1 102 111 108 100)))
+(def aPara (quote (1 112 97 114 97)))
 (def aDef (quote (1 100 101 102)))
 (def aDeftype (quote (1 100 101 102 116 121 112 101)))
 (def aUnitV (quote (1 117 110 105 116)))
@@ -65,6 +66,7 @@
 (def aR (quote (1 37 114)))
 (def aD (quote (1 37 100)))
 (def aRest (quote (1 37 114 101 115 116)))
+(def aK (quote (1 37 107)))
 (def kwData (quote (0 100 97 116 97)))
 (def kwCase (quote (0 99 97 115 101)))
 (def kwCata (quote (0 99 97 116 97)))
@@ -241,31 +243,29 @@
         ((just s) (case chain ((just c) (just (sLet aS aT s c))) ((nothing) nothing)))
         ((nothing) nothing)))))
 
-; structural recursion: the kernel's fold at pairs of a subtree and its suspended result; a
-; recursive field is bound to its forced result, any other to the subtree's child
-(defn pTy ((r T)) T (sProd aT (sArrow aUnit r)))
-(defn forced ((p T)) T (sx2 (sx2 aSnd p) aUnitV))
-(defn nthP ((r T) (dr T) (k T)) T
-  (sx6 aLcase (pTy r) (pTy r) (sDrop (pTy r) aRs k) (sx3 aPair aZero (sLam1 aU aUnit dr))
-       (sLam2 aH (pTy r) aTl (sList (pTy r)) aH)))
+; structural recursion: the kernel's fold of trees whose step sees the node itself, at the
+; suspended result; the clause's fields take the children's suspended results in order, one
+; binding each, so that each is used once; a recursive field is bound to its forced result, any
+; other to the node's child
+(defn thTy ((r T)) T (sArrow aUnit r))
+(defn splitTy ((r T)) T (sProd (thTy r) (sList (thTy r))))
+(defn qAtom ((k T)) T (node 1 (cons 37 (cons 113 (decimalChars k)))))
+; the suspended results remaining at field k
+(defn resultsAt ((k T)) T (if (eq k 0) aK (sx2 aSnd (qAtom (sub k 1)))))
 (defn cataField ((d T) (r T) (dr T) (k T) (ty T) (v T) (b T)) T
-  (if (named ty d)
-    (sLet v r (forced (nthP r dr k)) b)
-    (sLet v aT (sx3 aChild aO (numAtom k)) b)))
+  (sLet (qAtom k) (splitTy r)
+    (sx6 aLcase (thTy r) (splitTy r) (resultsAt k) (sx3 aPair (sLam1 aU aUnit dr) (sx2 aNil (thTy r)))
+         (sLam2 aH (thTy r) aTl (sList (thTy r)) (sx3 aPair aH aTl)))
+    (if (named ty d)
+      (sLet v r (sx2 (sx2 aFst (qAtom k)) aUnitV) b)
+      (sLet v aT (sx3 aChild aO (numAtom k)) b))))
 (defn cataRest ((d T) (r T) (nf T) (ty T) (v T) (b T)) T
   (if (named ty d)
     (sLet v (sList r)
-      (sx6 aFoldr (pTy r) (sList r) (sLam2 aP (pTy r) aA (sList r) (sx3 aCons (forced aP) aA))
-           (sx2 aNil r) (sDrop (pTy r) aRs nf))
+      (sx6 aFoldr (thTy r) (sList r) (sLam2 aH (thTy r) aA (sList r) (sx3 aCons (sx2 aH aUnitV) aA))
+           (sx2 aNil r) (resultsAt nf))
       b)
     (sLet v (sList aT) (sDrop aT (sx2 aChildren aO) nf) b)))
-(defn cataStep ((r T) (chain T)) T
-  (sLam2 aL aT aRs (sList (pTy r))
-    (sLet aO aT
-      (sx3 aNode aL (sx6 aFoldr (pTy r) (sList aT)
-                         (sLam2 aP (pTy r) aA (sList aT) (sx3 aCons (sx2 aFst aP) aA))
-                         (sx2 aNil aT) aRs))
-      (sx3 aPair aO (sLam1 aU aUnit chain)))))
 (defn expandCata ((env Ts) (raw T) (rs RRs)) T
   (let es Ts (children raw)
     (let d T (nameOf (at es 1))
@@ -277,7 +277,8 @@
           (case (rrAt rs 3 env)
             ((just s)
               (case chain
-                ((just c) (just (forced (sx4 aFold (pTy r) (cataStep r c) s))))
+                ((just c) (just (sx2 (sx4 aPara (thTy r) (sLam2 aO aT aK (sList (thTy r)) (sLam1 aU aUnit c)) s)
+                                     aUnitV)))
                 ((nothing) nothing)))
             ((nothing) nothing)))))))
 

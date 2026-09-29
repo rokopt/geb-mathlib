@@ -52,6 +52,7 @@
 (def tIter (text (children (quote (0 67 111 110 115 116 46 105 116 101 114)))))
 (def tFoldr (text (children (quote (0 67 111 110 115 116 46 102 111 108 100 114)))))
 (def tLcase (text (children (quote (0 67 111 110 115 116 46 108 99 97 115 101)))))
+(def tPara (text (children (quote (0 67 111 110 115 116 46 112 97 114 97)))))
 (def tConstDot (text (children (quote (0 67 111 110 115 116 46)))))
 (def tAlpha (text (children (quote (0 206 177)))))
 (def tBeta (text (children (quote (0 206 178)))))
@@ -151,7 +152,7 @@
 (data Kt (ktT) (ktUnit) (ktProd Kt Kt) (ktArrow Kt Kt) (ktList Kt) (kt5) (kt6) (kt7)
   (kVar T) (kLam Kt Kt) (kApp Kt Kt) (kUnit) (kPair Kt Kt) (kFst Kt) (kSnd Kt) (kQuote T)
   (kIf Kt Kt Kt) (kFold Kt) (kIter Kt) (kNil Kt) (kCons Kt Kt) (kFoldr Kt Kt) (kPrim T) (kRef T)
-  (kLcase Kt Kt))
+  (kLcase Kt Kt) (kPara Kt))
 
 ; a type or term emitted: the free variables it uses, as a list whose entry at a de Bruijn
 ; index is 1 when that variable occurs, and its shape as a function of the binding depth
@@ -235,6 +236,7 @@
     ((kRef j) (closed (cat3 tLg (text (children (child nm (label j)))) tRg)))
     ((kLcase a b)
       (pair (nil T) (lam ((d T)) (ap tLcase (cons (namedArg tAlpha a) (single (namedArg tBeta b)))))))
+    ((kPara a) (pair (nil T) (lam ((d T)) (ap tPara (single (namedArg tAlpha a))))))
     (else (closed tUnder))))
 
 ; a bundle's module: the header, each definition under its name, and the footer

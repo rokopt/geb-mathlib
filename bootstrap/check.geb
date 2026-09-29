@@ -91,6 +91,8 @@
             none)
         (if (eq l Label.fold)
             (if (eq k 1) (if (isTy (at es 0)) (some (foldTy (at es 0))) none) none)
+        (if (eq l Label.para)
+            (if (eq k 1) (if (isTy (at es 0)) (some (foldTy (at es 0))) none) none)
         (if (eq l Label.iter)
             (if (eq k 1) (if (isTy (at es 0)) (some (iterTy (at es 0))) none) none)
         (if (eq l Label.nil) (if (eq k 1) (if (isTy (at es 0)) (some (tyList (at es 0))) none) none)
@@ -114,7 +116,7 @@
           (if (eq k 2)
             (if (and (isTy (at es 0)) (isTy (at es 1))) (some (lcaseTy (at es 0) (at es 1))) none)
             none)
-          none))))))))))))))))))))))
+          none)))))))))))))))))))))))
 
 ; the type of a term in a context, innermost first, given the types of the definitions before
 ; it
