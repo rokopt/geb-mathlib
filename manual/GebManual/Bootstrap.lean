@@ -68,8 +68,11 @@ order of dependence.
 * Computation. Geb's implementation, the reader, the expansion, the
   type checker and the compilers, is written in Geb and compiled by Geb,
   with the host code reduced to the seed, and every compiler reproduces
-  itself (the section on what self-compilation establishes). Complete on
-  the Lean host.
+  itself (the section on what self-compilation establishes); the
+  bootstrap's programs carry elementary-affine decorations that a
+  checker and a search written in Geb check and find
+  ({ref "choice-of-machine"}[The choice of machine]). Complete on the
+  Lean host but for the decorations, which are in progress.
 * Hosts and targets. The kernel runs on three hosts or targets: Lean,
   where the seed and the backend emitting Lean are; a systems language,
   Rust, where a second seed reproduces the fixed points; and an
@@ -153,6 +156,14 @@ Computation:
   within the limits on duplicating λ-values of the section on
   operational semantics; HVM4 serves as an external back end for
   measurement and for searching certificates.
+* In progress. Elementary-affine decorations of the bootstrap's
+  programs ({ref "choice-of-machine"}[The choice of machine]): each
+  program typable with first-order data copied natively, its decoration
+  found by an untrusted search and checked in the build by a checker
+  specified in Lean and written in Geb; then a search written in Geb,
+  which full self-hosting requires; and later, elementary affine logic
+  without the exemption. The search with z3, `scripts/eal/eal.py`, is
+  constructed, and the rest is ready.
 * Ready. The Geb reader and serializer in constant depth, and the stage
   tests run by the compiled executables, the section on improvements.
 
@@ -1005,8 +1016,8 @@ section below opens with a table of the states of its parts.
 *
   * {ref "choice-of-machine"}[The choice of machine]
   * Deferred until before the second host
-  * The first stage of the interaction-net arm: ready; the rest:
-    deferred
+  * The first stage of the interaction-net arm: ready; the
+    elementary-affine decorations: in progress; the rest: deferred
 *
   * {ref "definitions-and-images"}[Definitions and images]
   * Complete
@@ -1261,6 +1272,40 @@ one decoration per definition fails for three of the four programs, so
 a program's typing needs a decoration per use of a definition. The exemption is not proved sound
 for a net machine; the third stage needs it, and the first two need no
 typing.
+
+The bootstrap's programs, its compilers, checkers and prover, and its
+reader and printer once they are written in Geb, are required to be
+typable in this discipline, first-order data copied natively and the
+fold whose step sees the node among the primitives that copy it, so
+that the third stage can run them with optimal sharing. A program's
+decoration is a certificate. A search finds it and is not trusted, and
+a checker checks it and is, which is the rule for every solver the
+bootstrap uses: `scripts/eal/eal.py` is the search, with z3 as its
+solver, and checking a decoration is checking linear inequalities
+between given numbers, which needs no solver. The steps, in order: a
+decoration per use of a definition, each use taking a fresh copy of the
+linear constraints that describe the definition's decorations, all of
+which the constraints on its simple principal type schema yield
+{citep CoppolaMartini2006}[]; the rewriting of the folds that read their
+children's results twice; a checker of decorations specified in Lean
+and written in Geb, the checker written in Geb proved in Lean to agree
+with it by the method of the metalogic's checker, and the check in the
+build of every program's committed decoration, the checker's own among
+them; and a search written in Geb, which full self-hosting requires so
+that no external solver regenerates a decoration. An inference in
+polynomial time given a simple type derivation
+{citep BaillotTerui2005}[], for a system without sharing or
+polymorphism, is the search's starting point, extended to the kernel's
+constants, and its verdicts are compared with those of the search that
+uses z3.
+
+A stricter requirement is a later step: elementary affine logic
+without the exemption, to which the published soundness of the
+oracle-free algorithm applies as proved. The fold whose step sees the
+node cannot be defined in it, since its step receives the node whose
+children its recursion also consumes, so that step replaces that fold
+by a fold whose step receives the node under a box, or proves the
+native copying of data sound.
 
 Deferred: images are kernel terms and the Lean evaluator runs compiled
 closures, so the choice of machine matters for the second host and the
@@ -3509,9 +3554,9 @@ the change that removes it.
   programs that an elementary-affine typing with first-order data
   exempted rejects ({ref "choice-of-machine"}[The choice of machine]).
   A step that splits the list once, as the datatype language's
-  structural recursion does, contracts no list of functions; the
-  rejection matters to the third stage of the interaction-net arm
-  alone.
+  structural recursion does, contracts no list of functions, and the
+  requirement that the bootstrap's programs be decorated waits on that
+  rewriting.
 * Atoms as character codes. The Geb sources spell the atoms they
   compare with, the keywords of the reader, the expansion and the
   prover, as quoted lists of character codes, since a datum has no
