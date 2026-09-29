@@ -140,7 +140,8 @@ Computation:
 * Deferred until before the second host.
   {ref "choice-of-machine"}[The choice of machine]: the benchmark
   programs, the environment machine, the compilation to
-  the triage calculus, the staged interaction system, and the decision.
+  the triage calculus, native code with forks over a node's children,
+  the staged interaction system, and the decision.
 * Waiting on the choice of machine. The second host
   ({ref "speed-and-second-host"}[Speed and a second host]): the evaluator
   and loader in Rust, reproducing the stage-0 and stage-1 fixed points,
@@ -647,7 +648,7 @@ triage arm of {ref "choice-of-machine"}[the choice of machine] needs.
 
 ## Operational semantics
 
-Three candidates run the kernel, and
+Four candidates run the kernel, and
 {ref "choice-of-machine"}[the choice of machine] compares them on the
 same programs.
 
@@ -717,8 +718,21 @@ closed reduction, which copies only closed terms and shares less, was
 measured more efficient than optimal reduction in many cases
 {citep FernandezMackieSinot2005}[].
 
+Bend's first version, a high-level language, ran on HVM2, which adds
+native agents for numbers to the combinators, emulating arithmetic by
+Church or Scott numerals being too slow, and has a single duplicator,
+sound only for programs in which no higher-order λ that copies its
+variable is itself copied, an invariant it leaves to the source
+language to check. Its paper
+proposes an elementary-affine inference, with Lamping's bookkeeping as
+a fallback about ten times slower, as future work
+{citep Taelin2024}[].
+
 The value-representation chapter records the state of the
-interaction-net runtimes and their measurements. As a compilation
+interaction-net runtimes and their measurements: a fold over a tree of
+$`2^{20}` leaves took about a second on HVM2 with sixteen threads and on
+HVM4 with one, where Lean's compiled code folds at about 42 nanoseconds
+per node. As a compilation
 target, a net runtime needs its own contract: well-formedness of
 graphs, interfaces, reduction, read-back, and preservation of the
 source's observations. A tree can serialize a graph by storing node
@@ -731,10 +745,55 @@ depends on it; HVM4's repository carries no licence, so neither its
 code nor its text can enter this repository, only the published rules
 of the calculus it implements, re-derived and cited.
 
+Ownership-based native code. Bend's second version, which succeeds the
+first, runs on no interaction net, and gives up optimal reduction of
+shared redexes for sequential code at native speed, flat memory and a
+cost model a programmer can read {citep Taelin2026BendRT}[]. Its type
+theory makes running code affine: a variable is used at most once
+unless its type is of kind `Data`, whose values hold labels, pairs and
+proofs of equality and no function, a list being of kind `Data` when
+its elements are, and a definition calls itself only on smaller
+arguments. Since the paradoxes of a type of all types and of datatypes
+negative in themselves each copy a function, the theory admits both
+and is consistent; termination and consistency are proved in one Lean
+file, and the cost of evaluation has no bound, Ackermann's function
+being typable {citep Taelin2026BendTT}[]. The runtime compiles a
+program to one C file that runs sequentially, on threads and on a GPU.
+Affinity makes the match that consumes a value the place that frees it,
+so there is no collector; reference counts exist only for the types a
+whole-program analysis finds shared, and an argument a callee only
+reads is lent without a count. Parallelism is a fork of calls the
+program marks, dealt to a fixed grid of task rings without work
+stealing, on the program's promise, unverified, that its forks split
+the work evenly. On one machine the sequential build runs within 0.8 to
+1.5 times the time of the same programs written in C, sixteen threads
+run 8.8 to 12.1 times faster than one, and a GPU runs up to 67 times
+faster on uniform work and slower than sixteen threads on divergent
+work {citep Taelin2026BendRT}[]. Its speed of compilation, as its
+[README](https://github.com/bendlang/bend/blob/018751270e800bc222a93dad7f257083ee53a5f7/README.md)
+states, is that of its checker, which checks in under a second files
+that proof assistants take minutes over, while compiling to native code
+through a C, Metal or CUDA compiler is slow and not incremental.
+
+Its discipline, copying data and never a function, is the first stage
+of the staged interaction system of
+{ref "choice-of-machine"}[the choice of machine], stated as a type
+system of the source language where that stage obtains it by
+defunctionalization, and the folds the elementary-affine checker
+rejects for reading their children's results twice are rejected by it
+too. The Lean backend already has the memory half of the design, the
+reference counting of Lean's runtime {citep UllrichDeMoura2019}[], and
+the kernel's fold offers the fork: the results of a node's children are
+independent of each other, so a fold may compute them in parallel. This
+target needs no discipline on λ-values; the elementary-affine
+decorations keep a target with optimal sharing available beside it.
+
 The evidence points to an environment machine as the reference and to
-an interaction system staged by how it duplicates λ-values, its first
-stage duplicating none, as a compilation target for measured parallel
-workloads; {ref "choice-of-machine"}[the choice of machine] decides.
+two parallel targets for measured parallel workloads: ownership-based
+native code with forks over a node's children, and an interaction
+system staged by how it duplicates λ-values, its first stage
+duplicating none; {ref "choice-of-machine"}[the choice of machine]
+decides.
 
 ## The metalogic and its checker
 %%%
@@ -1189,9 +1248,11 @@ tag := "choice-of-machine"
   fold frames given by dissections and a proof that it agrees with the
   denotation, and a bounded runner that resumes to the same result; a
   compilation of the kernel to the triage calculus by bracket
-  abstraction, run by the repository's machine; and the interaction
-  system below, at its first stage. Every result is compared with the
-  denotation.
+  abstraction, run by the repository's machine; native code with
+  ownership-based memory and forks over the children of a node, the
+  design of Bend's runtime {citep Taelin2026BendRT}[] grown from the
+  Lean backend; and the interaction system below, at its first stage.
+  Every result is compared with the denotation.
 * Measurements: agreement, host lines, proof lines, steps and time per
   leaf, memory and its reclamation, and speedup with threads, one heavy
   process at a time. The decision on the reference machine and the
