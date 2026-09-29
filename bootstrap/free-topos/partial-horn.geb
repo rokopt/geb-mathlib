@@ -1,0 +1,206 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; Partial Horn logic over rose trees, written in the datatype language, deciding as
+; Geb.PartialHorn decides: the sorts of terms, their variables' scope and substitution,
+; sequents, the checker of certificates, and the extension of a theory by definitions. A term
+; is a rose tree, a variable the node of label 0 over the leaf of its index and an operation's
+; application the node of the operation's index plus one; a sort is a label. An operation's
+; signature is the node of label 0 over the node of its arguments' sorts and its sort, an
+; equation the node of label 0 over its sides, a sequent the node of label 0 over the node of
+; its context's sorts, the node of its hypotheses and its conclusion, a theory the node of label
+; 0 over the node of its signature and the node of its axioms, and a definition the node of
+; label 0 over the node of its arguments' sorts, its sort and its body. Requires the prelude and
+; the base.
+
+; the labels of the certificates' rules, as Geb.PartialHorn.Rule names them
+(defnum PRule.hyp 0)
+(defnum PRule.refl 1)
+(defnum PRule.symm 2)
+(defnum PRule.trans 3)
+(defnum PRule.cong 4)
+(defnum PRule.strict 5)
+(defnum PRule.ax 6)
+(defnum PRule.cut 7)
+(defnum PRule.thm 8)
+
+; terms
+(defn phVar ((i T)) T (node 0 (single (node i (nil T)))))
+(defn phOp ((k T) (ts Ts)) T (node (add k 1) ts))
+
+; the fold of a tree with the tree at each node, for paramorphisms
+(deftype PT (Prod T T))
+(deftype PTs (List PT))
+(defn ptTrees ((rs PTs)) Ts (foldr PT Ts (lam ((r PT) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+(defn ptValues ((rs PTs)) Ts (foldr PT Ts (lam ((r PT) (acc Ts)) (cons (snd r) acc)) (nil T) rs))
+
+; signatures: an operation's arguments' sorts and its sort
+(data OpSig (opSig T T))
+(defn opArgs ((o T)) Ts (case o ((opSig as s) (children as))))
+(defn opSort ((o T)) T (case o ((opSig as s) s)))
+
+; the sort of a term in a context of sorts, or nothing when it is not well sorted
+(defn sortOf ((S Ts) (ctx Ts) (t T)) T
+  (snd (fold PT
+    (lam ((l T) (rs PTs))
+      (let cs Ts (ptTrees rs)
+        (pair (node l cs)
+          (if (eq l 0)
+              (if (eq (length cs) 1)
+                  (let i T (at cs 0) (if (eq (arity i) 0) (nth ctx (label i)) none))
+                  none)
+              (bindO (nth S (sub l 1))
+                (lam ((o T))
+                  (if (equalTs (ptValues rs) (mapT some (opArgs o))) (some (opSort o)) none)))))))
+    t)))
+
+; whether every variable of a term has an index below n
+(defn scoped ((n T) (t T)) T
+  (snd (fold PT
+    (lam ((l T) (rs PTs))
+      (let cs Ts (ptTrees rs)
+        (pair (node l cs)
+          (if (eq l 0)
+              (if (eq (length cs) 1)
+                  (let i T (at cs 0) (and (eq (arity i) 0) (lt (label i) n)))
+                  0)
+              (allT (lam ((b T)) b) (ptValues rs))))))
+    t)))
+
+; the substitution of terms for a term's variables, by index; a variable beyond the terms, and a
+; node of label 0 that is not a variable, is left in place
+(defn phSubst ((ts Ts) (t T)) T
+  (snd (fold PT
+    (lam ((l T) (rs PTs))
+      (let cs Ts (ptTrees rs)
+        (pair (node l cs)
+          (if (and (eq l 0) (eq (length cs) 1))
+              (let i T (at cs 0)
+                (if (eq (arity i) 0) (getD (nth ts (label i)) (phVar (label i))) (node 0 cs)))
+              (node l (ptValues rs))))))
+    t)))
+
+; equations and sequents
+(data Eqn (eqn T T))
+(defn eqLhs ((q T)) T (case q ((eqn s t) s)))
+(defn eqRhs ((q T)) T (case q ((eqn s t) t)))
+(defn eqSubst ((ts Ts) (q T)) T (eqn (phSubst ts (eqLhs q)) (phSubst ts (eqRhs q))))
+(defn eqScoped ((n T) (q T)) T (and (scoped n (eqLhs q)) (scoped n (eqRhs q))))
+(data Seq (seq T T T))
+(defn seqCtx ((a T)) Ts (case a ((seq c h q) (children c))))
+(defn seqHyps ((a T)) Ts (case a ((seq c h q) (children h))))
+(defn seqConcl ((a T)) T (case a ((seq c h q) q)))
+(defn mkSeq ((ctx Ts) (hs Ts) (q T)) T (seq (node 0 ctx) (node 0 hs) q))
+(defn seqScoped ((a T)) T
+  (let n T (length (seqCtx a)) (and (allT (eqScoped n) (seqHyps a)) (eqScoped n (seqConcl a)))))
+
+; theories: a signature and axioms
+(data Theory (theory T T))
+(defn thySig ((th T)) Ts (case th ((theory s a) (children s))))
+(defn thyAxioms ((th T)) Ts (case th ((theory s a) (children a))))
+
+; the checker's result at a certificate: an optional equation, as a function of the context's
+; sorts and the hypotheses
+(deftype Chk (Arrow Ts (Arrow Ts T)))
+(deftype PC (Prod T Chk))
+(deftype PCs (List PC))
+(defn pcTrees ((rs PCs)) Ts (foldr PC Ts (lam ((r PC) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
+(defn pcResults ((rs PCs) (ctx Ts) (hs Ts)) Ts
+  (foldr PC Ts (lam ((r PC) (acc Ts)) (cons ((snd r) ctx hs) acc)) (nil T) rs))
+(defn pcTail ((rs PCs)) PCs (lcase PC PCs rs (nil PC) (lam ((r PC) (rest PCs)) rest)))
+(defn pcPrem ((rs PCs) (i T)) Chk
+  (lcase PC Chk (iter PCs pcTail rs i) (lam ((ctx Ts) (hs Ts)) none)
+    (lam ((r PC) (rest PCs)) (snd r))))
+
+; the index a leaf names
+(defn leafIndex ((t T)) T (if (eq (arity t) 0) (some (label t)) none))
+
+; the instance of a sequent at the terms of a certificate's node: the terms for the context's
+; variables, then a premise for each term whose conclusion's left side is that term, then a
+; premise for each hypothesis whose conclusion is its instance
+(defn inst ((S Ts) (a T) (cs PCs) (ctx Ts) (hs Ts)) T
+  (let n T (length (seqCtx a))
+    (let ts Ts (take n (pcTrees cs))
+      (let rs Ts (pcResults cs ctx hs)
+        (if (and (seqScoped a)
+              (and (equalTs (mapT (sortOf S ctx) ts) (mapT some (seqCtx a)))
+                (and (equalTs (mapT (mapO eqLhs) (take n (drop n rs))) (mapT some ts))
+                  (equalTs (drop (add n n) rs)
+                    (mapT (lam ((h T)) (some (eqSubst ts h))) (seqHyps a))))))
+            (some (eqSubst ts (seqConcl a)))
+            none)))))
+
+; one rule of the checker, by the label of a certificate's node
+(defn pShape ((l T) (k T) (l0 T) (k0 T)) T (and (eq l l0) (eq k k0)))
+(defn pcheckStep ((th T) (E Ts) (l T) (cs Ts) (rs PCs) (ctx Ts) (hs Ts)) T
+  (let k T (length cs)
+  (let c0 T (at cs 0)
+  (if (pShape l k PRule.hyp 1) (bindO (leafIndex c0) (lam ((i T)) (nth hs i)))
+  (if (pShape l k PRule.refl 1)
+      (bindO (leafIndex c0)
+        (lam ((i T)) (if (lt i (length ctx)) (some (eqn (phVar i) (phVar i))) none)))
+  (if (pShape l k PRule.symm 1)
+      (mapO (lam ((q T)) (eqn (eqRhs q) (eqLhs q))) ((pcPrem rs 0) ctx hs))
+  (if (pShape l k PRule.trans 2)
+      (bindO ((pcPrem rs 0) ctx hs) (lam ((q T))
+        (bindO ((pcPrem rs 1) ctx hs) (lam ((q2 T))
+          (if (equal (eqRhs q) (eqLhs q2)) (some (eqn (eqLhs q) (eqRhs q2))) none)))))
+  (if (and (eq l PRule.cong) (lt 0 k))
+      (bindO ((pcPrem rs 0) ctx hs) (lam ((q T))
+        (let res Ts (pcResults (pcTail rs) ctx hs)
+          (if (and (not (eq (label (eqLhs q)) 0))
+                (equalTs (mapT (mapO eqLhs) res) (mapT some (children (eqLhs q)))))
+              (mapO (lam ((ts T)) (eqn (eqLhs q) (node (label (eqLhs q)) (children ts))))
+                (allSomeT (mapT (mapO eqRhs) res)))
+              none))))
+  (if (pShape l k PRule.strict 2)
+      (bindO (leafIndex c0) (lam ((j T))
+        (bindO ((pcPrem rs 1) ctx hs) (lam ((q T))
+          (if (not (eq (label (eqLhs q)) 0))
+              (mapO (lam ((t T)) (eqn t t)) (nth (children (eqLhs q)) j))
+              none)))))
+  (if (and (eq l PRule.ax) (lt 0 k))
+      (bindO (leafIndex c0) (lam ((j T))
+        (bindO (nth (thyAxioms th) j) (lam ((a T))
+          (inst (thySig th) a (pcTail rs) ctx hs)))))
+  (if (pShape l k PRule.cut 2)
+      (bindO ((pcPrem rs 0) ctx hs) (lam ((h T)) ((pcPrem rs 1) ctx (cons h hs))))
+  (if (and (eq l PRule.thm) (lt 0 k))
+      (bindO (leafIndex c0) (lam ((j T))
+        (bindO (nth E j) (lam ((a T)) (inst (thySig th) a (pcTail rs) ctx hs)))))
+    none))))))))))))
+
+; the checker: the conclusion of a certificate in a theory and an environment of theorems, as a
+; function of the context's sorts and the hypotheses
+(defn pcheck ((th T) (E Ts) (c T)) Chk
+  (snd (fold PC
+    (lam ((l T) (rs PCs))
+      (let cs Ts (pcTrees rs)
+        (pair (node l cs) (lam ((ctx Ts) (hs Ts)) (pcheckStep th E l cs rs ctx hs)))))
+    c)))
+
+; definitions of operations: the arguments' sorts, the sort and the body
+(data PDefn (pdefn T T T))
+(defn pdCtx ((d T)) Ts (case d ((pdefn c s b) (children c))))
+(defn pdSort ((d T)) T (case d ((pdefn c s b) s)))
+(defn pdBody ((d T)) T (case d ((pdefn c s b) b)))
+
+; the application of the operation of index n to the first m variables
+(defn opVars ((n T) (m T)) T (phOp n (mapT phVar (range m))))
+
+; the axioms of a definition as the operation of index n: the operation is defined where the
+; body is and equal to it there, and defined only where the body is
+(defn pdAxioms ((n T) (d T)) Ts
+  (let t T (opVars n (length (pdCtx d)))
+    (let b T (pdBody d)
+      (cons (mkSeq (pdCtx d) (single (eqn b b)) (eqn t b))
+        (single (mkSeq (pdCtx d) (single (eqn t t)) (eqn b b)))))))
+
+; the extension of a theory by a definition, and by a list of definitions in order
+(defn thyExtend ((th T) (d T)) T
+  (let S Ts (thySig th)
+    (theory (node 0 (append S (single (opSig (node 0 (pdCtx d)) (pdSort d)))))
+            (node 0 (append (thyAxioms th) (pdAxioms (length S) d))))))
+(defn thyExtendAll ((th T) (ds Ts)) T
+  (foldr T T (lam ((d T) (acc T)) (thyExtend acc d)) th (reverse ds)))

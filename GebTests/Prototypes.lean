@@ -20,6 +20,8 @@ import GebTests.Prototypes.FiniteChoice
 import GebTests.Prototypes.FreeTopos
 import GebTests.Prototypes.FreeTopos.Benchmark
 import GebTests.Prototypes.FreeTopos.Expansion
+import GebTests.Prototypes.FreeTopos.GebCheck
+import GebTests.Prototypes.FreeTopos.GebCheckInternal
 import GebTests.Prototypes.FreeTopos.Graphs
 import GebTests.Prototypes.FreeTopos.Internal
 import GebTests.Prototypes.FreeTopos.InternalBenchmark
