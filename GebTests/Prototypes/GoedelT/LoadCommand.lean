@@ -93,17 +93,20 @@ followed by an index is the global its definition loads, at its type and the def
 name in the namespace {lit}`m`, the Lean the bootstrap compiler emits from the program;
 {lit}`n.pre` followed by an index is the list of the globals before it; {lit}`n.step` followed by
 an index states that the definition loads its global after them, checked by the kernel;
-{lit}`n.load_eq` states that the program loads to its globals, composed from the steps; and
+{lit}`n.load_eq` states that the program loads to its globals, composed from the steps;
 {lit}`n.last_heq` states that the last global's value is the last definition's mirror, the type the
-kernel computes for the definition denoting the type the mirror declares, checked by the
-kernel. -/
-syntax (name := gebProgram) "geb_program " ident " from " str* " mirror " ident : command
+kernel computes for the definition denoting the type the mirror declares, checked by the kernel;
+and, for each name {lit}`x` after {lit}`exports`, {lit}`n.x_heq` states the same of the global of
+the definition of that name. -/
+syntax (name := gebProgram)
+  "geb_program " ident " from " str* " mirror " ident (" exports " ident+)? : command
 
 /-- The elaborator of {lit}`geb_program`. -/
 @[command_elab gebProgram] meta def elabGebProgram : CommandElab := fun stx ↦ do
   let n := (← getCurrNamespace) ++ stx[1].getId
   let paths := stx[3].getArgs.filterMap (·.isStrLit?)
   let m := stx[5].getId
+  let exported := if stx[6].isNone then #[] else stx[6][1].getArgs.map (·.getId)
   let mut text := ""
   for p in paths do
     text := text ++ (← IO.FS.readFile p) ++ "\n"
@@ -163,16 +166,23 @@ syntax (name := gebProgram) "geb_program " ident " from " str* " mirror " ident 
       (eqOf (optOf (listOf globT)) (mkApp (mkConst ``Kernel.load) (mkConst n))
         (some' (listOf globT) final))
       chain
-    let k := count - 1
-    let mName := m ++ .mkSimple (String.ofList ((ds.map Prod.fst).getD k []))
-    let some info := (← getEnv).find? mName | throwError "the last definition has no mirror"
-    let gk := mkConst (nm "g" k)
-    let fstE := mkApp3 (mkConst ``Sigma.fst [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk
-    let sndE := mkApp3 (mkConst ``Sigma.snd [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk
-    let tyLast := mkApp (mkConst ``Kernel.Ty.den) fstE
-    thm (n ++ `last_heq) "The last global's value is the last definition's mirror."
-      (mkApp4 (mkConst ``HEq [1]) tyLast sndE info.type (mkConst mName))
-      (mkApp2 (mkConst ``HEq.refl [1]) tyLast sndE)
+    -- the global of the definition of index k is its mirror, stated without elaborating the
+    -- global's type, whose reduction evaluates the checker
+    let heq (k : ℕ) (thmName : Name) (doc : String) : CoreM Unit := do
+      let mName := m ++ .mkSimple (String.ofList ((ds.map Prod.fst).getD k []))
+      let some info := (← getEnv).find? mName | throwError "the definition {mName} has no mirror"
+      let gk := mkConst (nm "g" k)
+      let fstE := mkApp3 (mkConst ``Sigma.fst [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk
+      let sndE := mkApp3 (mkConst ``Sigma.snd [0, 0]) treeT (mkConst ``Kernel.Ty.den) gk
+      let tyK := mkApp (mkConst ``Kernel.Ty.den) fstE
+      thm thmName doc (mkApp4 (mkConst ``HEq [1]) tyK sndE info.type (mkConst mName))
+        (mkApp2 (mkConst ``HEq.refl [1]) tyK sndE)
+    heq (count - 1) (n ++ `last_heq) "The last global's value is the last definition's mirror."
+    for x in exported do
+      let some k := (ds.map Prod.fst).idxOf? x.getString!.toList
+        | throwError "the program has no definition {x}"
+      heq k (n ++ .mkSimple s!"{x.getString!}_heq")
+        s!"The global of the definition `{x.getString!}` is its mirror."
 
 /-- {lit}`kernel_rfl n : lhs = rhs` declares the theorem {lit}`n` proved by reflexivity, the two
 sides' definitional equality checked by the kernel alone; a heterogeneous equality

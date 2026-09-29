@@ -31,6 +31,8 @@ steps are related node by node, the results at the children related.
 * {lit}`fold_pair_enc` — the fold's result at an encoded tree is related to a paramorphism
   of the tree it encodes.
 * {lit}`elim_eq_para` — a fold is a paramorphism.
+* {lit}`fold_rel`, {lit}`para_rel` — a fold, and the kernel's fold whose step sees the node, is
+  related to a fold, and a paramorphism, of the same tree.
 * {lit}`encWith_inj` — the encoding is injective where a label's position and data determine it.
 
 ## Tags
@@ -157,6 +159,30 @@ theorem fold_pair_enc {L V W : Type} (tag : L → ℕ) (dat : L → Tree) (R : V
     Prod.ext (fold_pair_fst hst _) rfl
   rw [encWith_node, fold_node, RoseTree.para_node, List.map_cons, map_fold_pair hst, e]
   simpa only [List.map_map, Function.comp_def] using this
+
+/-- A fold is related to a fold of the same tree when their steps are related at every node whose
+children's results are related. -/
+theorem fold_rel {V W : Type} (R : V → W → Prop) (f : Tree → List V → V) (g : ℕ → List W → W)
+    (h : ∀ (l : ℕ) (xs : List (V × W)), (∀ x ∈ xs, R x.1 x.2) →
+      R (f (leaf l) (xs.map Prod.fst)) (g l (xs.map Prod.snd)))
+    (t : Tree) : R (Const.fold f t) (RoseTree.elim g t) := by
+  refine RoseTree.ind (P := fun t ↦ R (Const.fold f t) (RoseTree.elim g t)) (fun a cs ih ↦ ?_) t
+  have := h a (cs.map fun c ↦ (Const.fold f c, RoseTree.elim g c)) (by simpa using ih)
+  rw [fold_node, RoseTree.elim_node]
+  simpa only [List.map_map, Function.comp_def] using this
+
+/-- The kernel's fold whose step sees the node is related to a paramorphism of the same tree when
+their steps are related at every node whose children's results are related. -/
+theorem para_rel {V W : Type} (R : V → W → Prop) (f : Tree → List V → V)
+    (g : ℕ → List (Tree × W) → W)
+    (h : ∀ (l : ℕ) (xs : List (Tree × V × W)), (∀ x ∈ xs, R x.2.1 x.2.2) →
+      R (f (RoseTree.node l (xs.map Prod.fst)) (xs.map fun x ↦ x.2.1))
+        (g l (xs.map fun x ↦ (x.1, x.2.2))))
+    (t : Tree) : R (Const.para f t) (RoseTree.para g t) := by
+  refine RoseTree.ind (P := fun t ↦ R (Const.para f t) (RoseTree.para g t)) (fun a cs ih ↦ ?_) t
+  have := h a (cs.map fun c ↦ (c, Const.para f c, RoseTree.para g c)) (by simpa using ih)
+  rw [Const.para_node, RoseTree.para_node]
+  simpa only [List.map_map, Function.comp_def, List.map_id'] using this
 
 end GebTests.Prototypes.FreeTopos.Agreement.Fold
 
