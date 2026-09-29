@@ -49,6 +49,42 @@ def «replicate» :=
 
 def «single» := fun (x0 : T) => (x0 :: ([] : List T))
 
+def «some» := fun (x0 : T) => Const.node (leaf 1) («single» x0)
+
+def «none» := leaf 0
+
+def «isSome» := fun (x0 : T) => Const.eq (Const.label x0) (leaf 1)
+
+def «get» := fun (x0 : T) => Const.child x0 (leaf 0)
+
+def «and» :=
+  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then x1 else leaf 0
+
+def «or» :=
+  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then leaf 1 else x1
+
+def «at» :=
+  fun (x0 : List T) (x1 : T) => Const.child (Const.node (leaf 0) x0) x1
+
+def «nth» :=
+  fun (x0 : List T) (x1 : T) =>
+    if (Const.lt x1 («length» x0)).label ≠ 0 then
+      «some» («at» x0 x1)
+    else
+      «none»
+
+def «tail» :=
+  fun (x0 : List T) =>
+    Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2)
+
+def «drop» :=
+  fun (x0 : T) (x1 : List T) => Const.iter (α := List T) «tail» x1 x0
+
 def «digitsMsb» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     (Const.iter
@@ -141,20 +177,9 @@ def «image» :=
           («digitsLsb» (leaf 256) («length» x1) (leaf 8))
           («packBits» x1)))
 
-def «some» := fun (x0 : T) => Const.node (leaf 1) («single» x0)
-
-def «none» := leaf 0
-
-def «isSome» := fun (x0 : T) => Const.eq (Const.label x0) (leaf 1)
-
-def «get» := fun (x0 : T) => Const.child x0 (leaf 0)
-
 def «both» :=
   fun (x0 : T) (x1 : T) =>
     if («isSome» x0).label ≠ 0 then «isSome» x1 else leaf 0
-
-def «at» :=
-  fun (x0 : List T) (x1 : T) => Const.child (Const.node (leaf 0) x0) x1
 
 def «nonEmpty» :=
   fun (x0 : List T) =>
@@ -164,18 +189,6 @@ def «nonEmpty» :=
       x0
       (leaf 0)
       (fun (_ : T) (_ : List T) => leaf 1)
-
-def «tail» :=
-  fun (x0 : List T) =>
-    Const.lcase
-      (α := T)
-      (β := List T)
-      x0
-      ([] : List T)
-      (fun (_ : T) (x2 : List T) => x2)
-
-def «drop» :=
-  fun (x0 : T) (x1 : List T) => Const.iter (α := List T) «tail» x1 x0
 
 def «allSome» :=
   fun (x0 : List T) =>
@@ -981,12 +994,6 @@ def «readProgram» :=
     else
       «none»
 
-def «and» :=
-  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then x1 else leaf 0
-
-def «or» :=
-  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then leaf 1 else x1
-
 def «tyArrow» := fun (x0 : T) (x1 : T) => «node2» (leaf 3) x0 x1
 
 def «tyList» := fun (x0 : T) => Const.node (leaf 4) («single» x0)
@@ -1069,13 +1076,6 @@ def «primTypes» :=
           ((«tyArrow» (leaf 0) («tyArrow» («tyList» (leaf 0)) (leaf 0))) ::
             ((«tyArrow» (leaf 0) («tyList» (leaf 0))) :: ([] : List T))))))
     («append» («replicate» (leaf 8) x1) («single» x0))
-
-def «nth» :=
-  fun (x0 : List T) (x1 : T) =>
-    if (Const.lt x1 («length» x0)).label ≠ 0 then
-      «some» («at» x0 x1)
-    else
-      «none»
 
 def «checkNode» :=
   fun (x0 : List T)

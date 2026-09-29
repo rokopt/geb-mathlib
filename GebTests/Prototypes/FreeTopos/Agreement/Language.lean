@@ -545,8 +545,8 @@ theorem isTyOp_eq (G : Internal.Globals) (k m : ℕ) :
 
 /-- The mirror's test of a type in object variables. -/
 theorem isTy_eq (G : Internal.Globals) (n : ℕ) (t : Tree) :
-    GebMirror.Metalogic.isTy (encGlobals G) (leaf n) t = ofBool (Internal.IsTy G n t) := by
-  simp only [GebMirror.Metalogic.isTy, Internal.IsTy]
+    GebMirror.Metalogic.mIsTy (encGlobals G) (leaf n) t = ofBool (Internal.IsTy G n t) := by
+  simp only [GebMirror.Metalogic.mIsTy, Internal.IsTy]
   apply fold_pair_snd (fun (v : Tree) (w : Bool) ↦ v = ofBool w)
   · intro l rs
     simp
@@ -689,7 +689,7 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
       compile_simp [hf]
     split_ifs <;> simp
   case arr k θ =>
-    have hall : GebMirror.Metalogic.allT (GebMirror.Metalogic.isTy (encGlobals G) (leaf n)) θ =
+    have hall : GebMirror.Metalogic.allT (GebMirror.Metalogic.mIsTy (encGlobals G) (leaf n)) θ =
         ofBool (θ.all (Internal.IsTy G n)) := allT_eq _ _ θ fun t _ ↦ isTy_eq G n t
     rcases xs with _ | ⟨x0, _ | ⟨x1, r⟩⟩ <;>
       compile_simp [h0, gPrims_eq, hall, phSubst_eq, prArity_eq, prArrow_eq, prDom_eq, prCod_eq]
@@ -697,7 +697,7 @@ theorem compileStep_eq (G : Internal.Globals) (n : ℕ) (l : Label) (v : Tree �
     rcases x0.2.2 X e with _ | ⟨g, d⟩ <;> compile_simp []
     split_ifs with h <;> simp only [h, and_self, ↓reduceIte, Option.map_some, Option.map_none]
   case defn k θ =>
-    have hall : GebMirror.Metalogic.allT (GebMirror.Metalogic.isTy (encGlobals G) (leaf n)) θ =
+    have hall : GebMirror.Metalogic.allT (GebMirror.Metalogic.mIsTy (encGlobals G) (leaf n)) θ =
         ofBool (θ.all (Internal.IsTy G n)) := allT_eq _ _ θ fun t _ ↦ isTy_eq G n t
     have hxs : xs.map (fun x ↦ x.2.1 X (e.map encPair)) =
         xs.map fun x ↦ encOpt ((x.2.2 X e).map encPair) :=
@@ -720,7 +720,7 @@ theorem compile_eq (G : Internal.Globals) (n : ℕ) (t : Term) :
 
 /-- The mirror's test that a list of objects are types. -/
 theorem allT_isTy (G : Internal.Globals) (n : ℕ) (ts : List Tree) :
-    GebMirror.Metalogic.allT (GebMirror.Metalogic.isTy (encGlobals G) (leaf n)) ts =
+    GebMirror.Metalogic.allT (GebMirror.Metalogic.mIsTy (encGlobals G) (leaf n)) ts =
       ofBool (ts.all (Internal.IsTy G n)) :=
   allT_eq _ _ ts fun t _ ↦ isTy_eq G n t
 

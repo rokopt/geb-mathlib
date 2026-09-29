@@ -159,7 +159,7 @@
     (and (not (lt k (gBase G)))
       (let d T (nth (gDefs G) (sub k (gBase G)))
         (if (isSome d) (case (get d) ((defLang l) 0) ((defObj m2 b) (eq m2 m))) 0)))))
-(defn isTy ((G T) (n T) (t T)) T
+(defn mIsTy ((G T) (n T) (t T)) T
   (snd (fold PT
     (lam ((l T) (rs PTs))
       (let cs Ts (ptTrees rs)
@@ -201,7 +201,7 @@
             (some (pr (comp (cSnd (p1 ab) (p2 ab)) (p1 p)) (p2 ab))))))))
   (if (and (eq l 5) (eq k 1))
       (let a T (at d 0)
-        (if (isTy G n a)
+        (if (mIsTy G n a)
             (bindO (r0 (prod X a) (extendEnv X a e)) (lam ((p T))
               (some (pr (curry X a (p1 p)) (exp a (p2 p))))))
             none))
@@ -215,7 +215,7 @@
       (let th Ts (children (at d 1))
         (bindO (nth (gPrims G) (at d 0)) (lam ((pm T)) (bindO (r0 X e) (lam ((q T))
           (if (and (eq (length th) (prArity pm))
-                (and (allT (isTy G n) th) (equal (p2 q) (phSubst th (prDom pm)))))
+                (and (allT (mIsTy G n) th) (equal (p2 q) (phSubst th (prDom pm)))))
               (some (pr (comp (phSubst th (prArrow pm)) (p1 q)) (phSubst th (prCod pm))))
               none))))))
   (if (and (eq l 8) (eq k 3))
@@ -234,7 +234,7 @@
               (if (equal (p2 s) c) (some (pr (comp (listRec a (p1 z) (p1 s)) (p1 m)) c)) none))))))))))
   (if (and (eq l 10) (eq k 2))
       (let c T (at d 0)
-        (if (isTy G n c)
+        (if (mIsTy G n c)
             (bindO (r1 X e) (lam ((m T)) (bindO (roseLabel (p2 m)) (lam ((a T))
               (let pc T (prod a (list c))
                 (bindO (r0 pc (single (pr (idt pc) pc))) (lam ((s T))
@@ -251,7 +251,7 @@
           (bindO (allSomeT (cpAll as X e)) (lam ((rsN T))
             (let rl Ts (children rsN)
               (if (and (eq (length th) (ldArity df))
-                    (and (allT (isTy G n) th)
+                    (and (allT (mIsTy G n) th)
                       (equalTs (mapT p2 rl) (mapT (phSubst th) (ldParams df)))))
                   (some (pr (comp (phOp (add (gBase G) (at d 0)) th) (tuple X (mapT p1 rl)))
                             (phSubst th (ldType df))))
@@ -269,7 +269,7 @@
 (defn ldCompile ((G T) (d T)) T
   (bindO ((compile G (ldArity d) (ldBody d)) (ctxObj (ldParams d)) (stdEnv (ldParams d)))
     (lam ((p T))
-      (if (and (allT (isTy G (ldArity d)) (ldParams d)) (equal (p2 p) (ldType d)))
+      (if (and (allT (mIsTy G (ldArity d)) (ldParams d)) (equal (p2 p) (ldType d)))
           (some (pdefn (node 0 (replicate (ldArity d) Sorts.obj)) Sorts.arr (p1 p)))
           none))))
 (defn defCompile ((G T) (d T)) T
@@ -286,7 +286,7 @@
 (defn compileEq ((G T) (n T) (g Ts) (t T) (u T)) T
   (bindO ((compile G n t) (ctxObj g) (stdEnv g)) (lam ((p T))
     (bindO ((compile G n u) (ctxObj g) (stdEnv g)) (lam ((q T))
-      (if (and (allT (isTy G n) g) (equal (p2 p) (p2 q)))
+      (if (and (allT (mIsTy G n) g) (equal (p2 p) (p2 q)))
           (some (mkSeq (replicate n Sorts.obj) (nil T) (eqn (p1 p) (p1 q))))
           none))))))
 
@@ -295,8 +295,8 @@
 (defn primWf ((G T) (S Ts) (p T)) T
   (let m T (prArity p)
     (and (scoped m (prArrow p))
-      (and (isTy G m (prDom p))
-        (and (isTy G m (prCod p))
+      (and (mIsTy G m (prDom p))
+        (and (mIsTy G m (prCod p))
           (equal (sortOf S (replicate m Sorts.obj) (prArrow p)) (some Sorts.arr)))))))
 (defn primOk ((G T) (E T) (p T)) T
   (and (primWf G (envSg E) p)

@@ -8,26 +8,16 @@
 ; and any other true. Requires the prelude.
 
 ; optional trees
-(def some (lam ((x T)) (node 1 (single x))))
-(def none 0)
-(def isSome (lam ((m T)) (eq (label m) 1)))
-(def get (lam ((m T)) (child m 0)))
 (defn getD ((m T) (d T)) T (if (isSome m) (get m) d))
 (defn mapO ((f (Arrow T T)) (m T)) T (if (isSome m) (some (f (get m))) none))
 (defn bindO ((m T) (f (Arrow T T))) T (if (isSome m) (f (get m)) none))
 
 ; truth values
-(def and (lam ((a T) (b T)) (if a b 0)))
-(def or (lam ((a T) (b T)) (if a 1 b)))
 (def not (lam ((a T)) (if a 0 1)))
 
-; lists of trees: the element at a position, the leaf of label 0 or nothing out of range
-(def at (lam ((xs Ts) (i T)) (child (node 0 xs) i)))
-(def nth (lam ((xs Ts) (i T)) (if (lt i (length xs)) (some (at xs i)) none)))
+; lists of trees
 (def isEmpty (lam ((xs Ts)) (eq (length xs) 0)))
 (def equalTs (lam ((xs Ts) (ys Ts)) (equal (node 0 xs) (node 0 ys))))
-(def tail (lam ((xs Ts)) (lcase T Ts xs (nil T) (lam ((x T) (r Ts)) r))))
-(def drop (lam ((n T) (xs Ts)) (iter Ts tail xs n)))
 ; the first n elements, those with fewer than length - n elements after them
 (defn take ((n T) (xs Ts)) Ts
   (let len T (length xs)

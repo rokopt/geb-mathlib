@@ -49,6 +49,42 @@ def «replicate» :=
 
 def «single» := fun (x0 : T) => (x0 :: ([] : List T))
 
+def «some» := fun (x0 : T) => Const.node (leaf 1) («single» x0)
+
+def «none» := leaf 0
+
+def «isSome» := fun (x0 : T) => Const.eq (Const.label x0) (leaf 1)
+
+def «get» := fun (x0 : T) => Const.child x0 (leaf 0)
+
+def «and» :=
+  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then x1 else leaf 0
+
+def «or» :=
+  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then leaf 1 else x1
+
+def «at» :=
+  fun (x0 : List T) (x1 : T) => Const.child (Const.node (leaf 0) x0) x1
+
+def «nth» :=
+  fun (x0 : List T) (x1 : T) =>
+    if (Const.lt x1 («length» x0)).label ≠ 0 then
+      «some» («at» x0 x1)
+    else
+      «none»
+
+def «tail» :=
+  fun (x0 : List T) =>
+    Const.lcase
+      (α := T)
+      (β := List T)
+      x0
+      ([] : List T)
+      (fun (_ : T) (x2 : List T) => x2)
+
+def «drop» :=
+  fun (x0 : T) (x1 : List T) => Const.iter (α := List T) «tail» x1 x0
+
 def «digitsMsb» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     (Const.iter
@@ -60,14 +96,6 @@ def «digitsMsb» :=
 
 def «digitsLsb» :=
   fun (x0 : T) (x1 : T) (x2 : T) => «reverse» («digitsMsb» x0 x1 x2)
-
-def «some» := fun (x0 : T) => Const.node (leaf 1) («single» x0)
-
-def «none» := leaf 0
-
-def «isSome» := fun (x0 : T) => Const.eq (Const.label x0) (leaf 1)
-
-def «get» := fun (x0 : T) => Const.child x0 (leaf 0)
 
 def «getD» :=
   fun (x0 : T) (x1 : T) =>
@@ -89,41 +117,13 @@ def «bindO» :=
       «none»);
     x2
 
-def «and» :=
-  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then x1 else leaf 0
-
-def «or» :=
-  fun (x0 : T) (x1 : T) => if (x0).label ≠ 0 then leaf 1 else x1
-
 def «not» := fun (x0 : T) => if (x0).label ≠ 0 then leaf 0 else leaf 1
-
-def «at» :=
-  fun (x0 : List T) (x1 : T) => Const.child (Const.node (leaf 0) x0) x1
-
-def «nth» :=
-  fun (x0 : List T) (x1 : T) =>
-    if (Const.lt x1 («length» x0)).label ≠ 0 then
-      «some» («at» x0 x1)
-    else
-      «none»
 
 def «isEmpty» := fun (x0 : List T) => Const.eq («length» x0) (leaf 0)
 
 def «equalTs» :=
   fun (x0 : List T) (x1 : List T) =>
     Const.equal (Const.node (leaf 0) x0) (Const.node (leaf 0) x1)
-
-def «tail» :=
-  fun (x0 : List T) =>
-    Const.lcase
-      (α := T)
-      (β := List T)
-      x0
-      ([] : List T)
-      (fun (_ : T) (x2 : List T) => x2)
-
-def «drop» :=
-  fun (x0 : T) (x1 : List T) => Const.iter (α := List T) «tail» x1 x0
 
 def «take» :=
   fun (x0 : T) (x1 : List T) =>
@@ -3012,7 +3012,7 @@ def «isTyOp» :=
            leaf 0));
     x3
 
-def «isTy» :=
+def «mIsTy» :=
   fun (x0 : T) (x1 : T) (x2 : T) =>
     let x3 : T := (Const.fold
       (α := T × T)
@@ -3146,7 +3146,7 @@ def «compileStep» :=
                              (Const.eq x2 (leaf 5))
                              (Const.eq x8 (leaf 1))).label ≠ 0 then
                              let x12 : T := «at» x6 (leaf 0);
-                             if («isTy» x0 x1 x12).label ≠ 0 then
+                             if («mIsTy» x0 x1 x12).label ≠ 0 then
                                «bindO»
                                  (x9 («prod» x4 x12) («extendEnv» x4 x12 x5))
                                  (fun (x13 : T) =>
@@ -3189,7 +3189,7 @@ def «compileStep» :=
                                          if («and»
                                            (Const.eq («length» x12) («prArity» x13))
                                            («and»
-                                             («allT» («isTy» x0 x1) x12)
+                                             («allT» («mIsTy» x0 x1) x12)
                                              (Const.equal
                                                («p2» x14)
                                                («phSubst» x12 («prDom» x13))))).label ≠ 0 then
@@ -3259,7 +3259,7 @@ def «compileStep» :=
                                        (Const.eq x2 (leaf 10))
                                        (Const.eq x8 (leaf 2))).label ≠ 0 then
                                        let x12 : T := «at» x6 (leaf 0);
-                                       if («isTy» x0 x1 x12).label ≠ 0 then
+                                       if («mIsTy» x0 x1 x12).label ≠ 0 then
                                          «bindO»
                                            (x10 x4 x5)
                                            (fun (x13 : T) =>
@@ -3317,7 +3317,7 @@ def «compileStep» :=
                                                    if («and»
                                                      (Const.eq («length» x12) («ldArity» x13))
                                                      («and»
-                                                       («allT» («isTy» x0 x1) x12)
+                                                       («allT» («mIsTy» x0 x1) x12)
                                                        («equalTs»
                                                          («mapT» «p2» x15)
                                                          («mapT»
@@ -3362,7 +3362,7 @@ def «ldCompile» :=
         («stdEnv» («ldParams» x1)))
       (fun (x2 : T) =>
         if («and»
-          («allT» («isTy» x0 («ldArity» x1)) («ldParams» x1))
+          («allT» («mIsTy» x0 («ldArity» x1)) («ldParams» x1))
           (Const.equal («p2» x2) («ldType» x1))).label ≠ 0 then
           «some»
             («pdefn»
@@ -3412,7 +3412,7 @@ def «compileEq» :=
           («compile» x0 x1 x4 («ctxObj» x2) («stdEnv» x2))
           (fun (x6 : T) =>
             if («and»
-              («allT» («isTy» x0 x1) x2)
+              («allT» («mIsTy» x0 x1) x2)
               (Const.equal («p2» x5) («p2» x6))).label ≠ 0 then
               «some»
                 («mkSeq»
@@ -3429,9 +3429,9 @@ def «primWf» :=
                    «and»
                      («scoped» x3 («prArrow» x2))
                      («and»
-                       («isTy» x0 x3 («prDom» x2))
+                       («mIsTy» x0 x3 («prDom» x2))
                        («and»
-                         («isTy» x0 x3 («prCod» x2))
+                         («mIsTy» x0 x3 («prCod» x2))
                          (Const.equal
                            («sortOf» x1 («replicate» x3 (leaf 0)) («prArrow» x2))
                            («some» (leaf 1))))));
@@ -3729,7 +3729,7 @@ def «instTerm» :=
   fun (x0 : List T) (x1 : List T) (x2 : T) =>
     let x3 : T := «subst» («osubst» x0 x2) («substList» x1); x3
 
-def «typeIn» :=
+def «mTypeIn» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
     let x4 : T := «mapO»
       «p2»
@@ -3738,7 +3738,7 @@ def «typeIn» :=
 
 def «isFormula» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
-    let x4 : T := Const.equal («typeIn» x0 x1 x2 x3) («some» «omega»); x4
+    let x4 : T := Const.equal («mTypeIn» x0 x1 x2 x3) («some» «omega»); x4
 
 def «lowerHyps» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : List T) =>
@@ -3807,13 +3807,13 @@ def «instOk» :=
     let x6 : T := «and»
       (Const.eq («length» x4) («thArity» x3))
       («and»
-        («allT» («isTy» x0 x1) x4)
+        («allT» («mIsTy» x0 x1) x4)
         («and»
           (Const.eq («length» x5) («length» («thCtx» x3)))
           («allT»
             (fun (x6 : T) =>
               Const.equal
-                («typeIn» x0 x1 x2 («at» x5 x6))
+                («mTypeIn» x0 x1 x2 («at» x5 x6))
                 («some» («phSubst» x4 («at» («thCtx» x3) x6))))
             («range» («length» x5)))));
     x6
@@ -3947,7 +3947,7 @@ def «childCtxs» :=
                        (Const.eq x5 (leaf 8))
                        (Const.eq x7 (leaf 3))).label ≠ 0 then
                        «bindO»
-                         («typeIn» x0 x1 ([] : List T) («at» x6 (leaf 0)))
+                         («mTypeIn» x0 x1 ([] : List T) («at» x6 (leaf 0)))
                          (fun (x8 : T) =>
                            «some»
                              (Const.node
@@ -3961,10 +3961,10 @@ def «childCtxs» :=
                          (Const.eq x5 (leaf 9))
                          (Const.eq x7 (leaf 3))).label ≠ 0 then
                          «bindO»
-                           («typeIn» x0 x1 ([] : List T) («at» x6 (leaf 0)))
+                           («mTypeIn» x0 x1 ([] : List T) («at» x6 (leaf 0)))
                            (fun (x8 : T) =>
                              «bindO»
-                               («bindO» («typeIn» x0 x1 x3 («at» x6 (leaf 2))) «listPart»)
+                               («bindO» («mTypeIn» x0 x1 x3 («at» x6 (leaf 2))) «listPart»)
                                (fun (x9 : T) =>
                                  «some»
                                    (Const.node
@@ -3978,7 +3978,7 @@ def «childCtxs» :=
                            (Const.eq x5 (leaf 10))
                            (Const.eq x7 (leaf 2))).label ≠ 0 then
                            «bindO»
-                             («bindO» («typeIn» x0 x1 x3 («at» x6 (leaf 1))) «roseLabel»)
+                             («bindO» («mTypeIn» x0 x1 x3 («at» x6 (leaf 1))) «roseLabel»)
                              (fun (x8 : T) =>
                                «some»
                                  (Const.node
@@ -4083,7 +4083,7 @@ def «rootPairEta» :=
 def «rootUnitEta» :=
   fun (x0 : T) (x1 : T) (x2 : List T) (x3 : T) =>
     let x4 : T := (if (Const.equal
-      («typeIn» x0 x1 x2 x3)
+      («mTypeIn» x0 x1 x2 x3)
       («some» «one»)).label ≠ 0 then
       «some» «mStar»
     else
@@ -4533,7 +4533,7 @@ def «proveStep» :=
                           let x16 : T := «at» x7 (leaf 0);
                           let x17 : List T := «tail» x7;
                           let x18 : T := «at» x4 (leaf 2);
-                          let x19 : T := «typeIn» x0 x2 x7 x12;
+                          let x19 : T := «mTypeIn» x0 x2 x7 x12;
                           let x20 : T := «lowerHyps» x0 x2 x17 x8;
                           if («and» («isSome» x19) («isSome» x20)).label ≠ 0 then
                             let x21 : T := «get» x19;
@@ -4545,9 +4545,9 @@ def «proveStep» :=
                                 («and»
                                   («primIs» x0 x15 «succPrim»)
                                   («and»
-                                    (Const.equal («typeIn» x0 x2 x7 x13) («some» x21))
+                                    (Const.equal («mTypeIn» x0 x2 x7 x13) («some» x21))
                                     (Const.equal
-                                      («typeIn» x0 x2 (x21 :: x17) x18)
+                                      («mTypeIn» x0 x2 (x21 :: x17) x18)
                                       («some» x21)))))).label ≠ 0 then
                               if («pf»
                                 x6
@@ -4589,7 +4589,7 @@ def «proveStep» :=
                             let x16 : T := «at» x7 (leaf 0);
                             let x17 : List T := «tail» x7;
                             let x18 : T := «at» x4 (leaf 2);
-                            let x19 : T := «typeIn» x0 x2 x7 x12;
+                            let x19 : T := «mTypeIn» x0 x2 x7 x12;
                             let x20 : T := «listPart» x16;
                             let x21 : T := «lowerHyps» x0 x2 x17 x8;
                             if («and»
@@ -4605,9 +4605,9 @@ def «proveStep» :=
                                 («and»
                                   («primIs» x0 x15 «consPrim»)
                                   («and»
-                                    (Const.equal («typeIn» x0 x2 x7 x13) («some» x22))
+                                    (Const.equal («mTypeIn» x0 x2 x7 x13) («some» x22))
                                     (Const.equal
-                                      («typeIn» x0 x2 (x22 :: (x23 :: x17)) x18)
+                                      («mTypeIn» x0 x2 (x22 :: (x23 :: x17)) x18)
                                       («some» x22))))).label ≠ 0 then
                                 if («pf»
                                   x6
@@ -4706,7 +4706,7 @@ def «proveStep» :=
                                       (Const.eq x3 (leaf 26))
                                       (Const.eq x10 (leaf 1))).label ≠ 0 then
                                       if («isSome» x11).label ≠ 0 then
-                                        let x16 : T := «bindO» («typeIn» x0 x2 x7 x12) «expParts»;
+                                        let x16 : T := «bindO» («mTypeIn» x0 x2 x7 x12) «expParts»;
                                         if («isSome» x16).label ≠ 0 then
                                           «pf»
                                             x6
@@ -4914,7 +4914,7 @@ def «proveStep» :=
                                                       if («and»
                                                         (Const.eq («length» x16) («prArity» x20))
                                                         («and»
-                                                          («allT» («isTy» x0 x2) x16)
+                                                          («allT» («mIsTy» x0 x2) x16)
                                                           («and»
                                                             (Const.equal
                                                               x18
@@ -4981,7 +4981,7 @@ def «proveStep» :=
                                                             («length» x7)
                                                             (leaf 1))).label ≠ 0 then
                                                           let x16 : T := «at» x7 (leaf 0);
-                                                          let x17 : T := «typeIn» x0 x2 x7 x12;
+                                                          let x17 : T := «mTypeIn» x0 x2 x7 x12;
                                                           let x18 : T := «roseLabel» x16;
                                                           if («and»
                                                             («isSome» x17)
@@ -4997,10 +4997,10 @@ def «proveStep» :=
                                                               («rosePrimsOk» x0 x14 x22 x23 x16 x20)
                                                               («and»
                                                                 (Const.equal
-                                                                  («typeIn» x0 x2 x7 x13)
+                                                                  («mTypeIn» x0 x2 x7 x13)
                                                                   («some» x19))
                                                                 (Const.equal
-                                                                  («typeIn»
+                                                                  («mTypeIn»
                                                                     x0
                                                                     x2
                                                                     («l2» («list» x19) x20)
@@ -5116,7 +5116,7 @@ def «thmChecks» :=
     let x4 : T := (let x4 : T := «thArity» x2;
                    let x5 : List T := «thCtx» x2;
                    if («and»
-                     («allT» («isTy» x0 x4) x5)
+                     («allT» («mIsTy» x0 x4) x5)
                      («and»
                        («allT» («isFormula» x0 x4 x5) («thHyps» x2))
                        («isFormula» x0 x4 x5 («thConcl» x2)))).label ≠ 0 then
@@ -5187,7 +5187,7 @@ def «ldChecks» :=
   fun (x0 : T) (x1 : T) =>
     let x2 : T := «and»
       («isSome» («ldCompile» x0 x1))
-      («isTy» x0 («ldArity» x1) («ldType» x1));
+      («mIsTy» x0 («ldArity» x1) («ldType» x1));
     x2
 
 def «declLang» :=
@@ -5283,13 +5283,13 @@ def «quotStep» :=
                        if («and»
                          (Const.eq («gBase» x0) («length» «sig»))
                          («and»
-                           («isTy» x0 x2 x3)
+                           («mIsTy» x0 x2 x3)
                            («and»
                              (Const.equal («p2» x6) «omega»)
                              («and»
                                («scoped» x2 («prArrow» x9))
                                («and»
-                                 («isTy» x10 x2 («prCod» x9))
+                                 («mIsTy» x10 x2 («prCod» x9))
                                  («and»
                                    («sortsArr» x0 x2 («prArrow» x9))
                                    («isFormula» x10 x2 x5 («thConcl» x12)))))))).label ≠ 0 then
@@ -5340,7 +5340,7 @@ def «descStep» :=
                         («and»
                           (Const.equal («p2» x11) x3)
                           («and»
-                            («isTy» x0 x9 x3)
+                            («mIsTy» x0 x9 x3)
                             («and»
                               (Const.eq («thArity» x7) x9)
                               («and»

@@ -58,6 +58,24 @@
 (def replicate (lam ((n T) (x T)) (iter Ts (lam ((r Ts)) (cons x r)) (nil T) n)))
 (def single (lam ((x T)) (cons x (nil T))))
 
+; optional trees: the node of label 1 over a tree, or the leaf 0
+(def some (lam ((x T)) (node 1 (single x))))
+(def none 0)
+(def isSome (lam ((m T)) (eq (label m) 1)))
+(def get (lam ((m T)) (child m 0)))
+
+; the conjunction and the disjunction of two tests
+(def and (lam ((a T) (b T)) (if a b 0)))
+(def or (lam ((a T) (b T)) (if a 1 b)))
+
+; lists of trees by position, through a node's constant-time children: the element at a
+; position, the leaf 0 out of range; the element when the position is in range; the tail; and
+; the list without its first n elements
+(def at (lam ((xs Ts) (i T)) (child (node 0 xs) i)))
+(def nth (lam ((xs Ts) (i T)) (if (lt i (length xs)) (some (at xs i)) none)))
+(def tail (lam ((xs Ts)) (lcase T Ts xs (nil T) (lam ((x T) (r Ts)) r))))
+(def drop (lam ((n T) (xs Ts)) (iter Ts tail xs n)))
+
 ; the low n digits of m in a base, most significant first
 (deftype Digits (Prod T Ts))
 (def digitsMsb (lam ((base T) (m T) (n T))
