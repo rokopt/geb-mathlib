@@ -33,13 +33,15 @@ derivations and developments, written in the datatype language ({lit}`bootstrap/
 read by the stage-0 compiler's front end with the metalogic's checker and loaded by the kernel, and
 compared with the Lean definitions they transcribe at the developments of the test modules of the
 internal language and at variants of each with a declaration removed. Inputs are encoded as the
-Geb program represents them.
+Geb program represents them, by the encodings of
+{lit}`GebTests.Prototypes.FreeTopos.Agreement.Encode`.
 
 ## Main definitions
 
-* {lit}`encTerm`, {lit}`encDeriv` — terms and derivations as trees.
-* {lit}`encGlobals`, {lit}`encDecl`, {lit}`encState` — constants, declarations and the state of a
-  development as trees.
+* {lit}`developments` — the developments of the test modules, each with its constants.
+* {lit}`alterations`, {lit}`subVariants` — the alterations of a declaration, and the variants of a
+  declaration of the language with its derivation replaced by a proper subtree.
+* {lit}`variants` — declarations with the states before them, the checkers compared at each.
 
 ## Tags
 
@@ -53,6 +55,7 @@ set_option doc.verso true
 namespace GebTests.Prototypes.FreeTopos.GebCheckInternal
 
 open Geb Geb.PartialHorn Geb.FreeTopos GebTests.Prototypes.FreeTopos.GebCheck
+  GebTests.Prototypes.FreeTopos.Agreement.Encode
 
 /-- The language and the checker of derivations. -/
 def languageGeb : String := include_str "../../../bootstrap/free-topos/language.geb"
@@ -62,117 +65,6 @@ def derivationGeb : String := include_str "../../../bootstrap/free-topos/derivat
 
 /-- The program: the metalogic's checker, the language and the checker of derivations. -/
 def internalProgram : String := program ++ languageGeb ++ "\n" ++ derivationGeb ++ "\n"
-
-/-- The position of a label's constructor, and its data. -/
-def labelData : Internal.Label → ℕ × List Tree
-  | .var i => (0, [Kernel.leaf i])
-  | .star => (1, [])
-  | .pair => (2, [])
-  | .fst => (3, [])
-  | .snd => (4, [])
-  | .lam a => (5, [a])
-  | .app => (6, [])
-  | .arr k θ => (7, [Kernel.leaf k, RoseTree.node 0 θ])
-  | .natRec => (8, [])
-  | .listRec => (9, [])
-  | .roseRec c => (10, [c])
-  | .defn k θ => (11, [Kernel.leaf k, RoseTree.node 0 θ])
-  | .eq => (12, [])
-
-/-- A term as the node of its label's position over the node of the label's data and its
-children. -/
-def encTerm : Internal.Term → Tree :=
-  RoseTree.elim fun l cs ↦ RoseTree.node (labelData l).1 (RoseTree.node 0 (labelData l).2 :: cs)
-
-/-- The position of a rule's constructor, and its data. -/
-def ruleData : Internal.Rule → ℕ × List Tree
-  | .refl => (0, [])
-  | .trans => (1, [])
-  | .cong => (2, [])
-  | .beta => (3, [])
-  | .fstPair => (4, [])
-  | .sndPair => (5, [])
-  | .pairEta => (6, [])
-  | .unitEta => (7, [])
-  | .delta => (8, [])
-  | .natZero k => (9, [Kernel.leaf k])
-  | .natSucc k => (10, [Kernel.leaf k])
-  | .listNil k => (11, [Kernel.leaf k])
-  | .listCons k => (12, [Kernel.leaf k])
-  | .roseNode kn kl kc => (13, [Kernel.leaf kn, Kernel.leaf kl, Kernel.leaf kc])
-  | .caseInl kc kl => (14, [Kernel.leaf kc, Kernel.leaf kl])
-  | .caseInr kc kr => (15, [Kernel.leaf kc, Kernel.leaf kr])
-  | .thm j θ σ flip =>
-    (16, [Kernel.leaf j, RoseTree.node 0 θ, RoseTree.node 0 (σ.map encTerm), encBool flip])
-  | .rwHyp i flip => (17, [Kernel.leaf i, encBool flip])
-  | .join => (18, [])
-  | .natInd kz ks s => (19, [Kernel.leaf kz, Kernel.leaf ks, encTerm s])
-  | .listInd kn kc s => (20, [Kernel.leaf kn, Kernel.leaf kc, encTerm s])
-  | .hyp i => (21, [Kernel.leaf i])
-  | .cut φ => (22, [encTerm φ])
-  | .conv => (23, [])
-  | .convFrom φ => (24, [encTerm φ])
-  | .propExt => (25, [])
-  | .funExt => (26, [])
-  | .apply j θ σ => (27, [Kernel.leaf j, RoseTree.node 0 θ, RoseTree.node 0 (σ.map encTerm)])
-  | .natIndHyp kz ks => (28, [Kernel.leaf kz, Kernel.leaf ks])
-  | .listIndHyp kn kc => (29, [Kernel.leaf kn, Kernel.leaf kc])
-  | .cert c => (30, [c])
-  | .certSeq c => (31, [c])
-  | .roseInd kn kl kc s => (32, [Kernel.leaf kn, Kernel.leaf kl, Kernel.leaf kc, encTerm s])
-  | .roseIndHyp kn kl kc => (33, [Kernel.leaf kn, Kernel.leaf kl, Kernel.leaf kc])
-  | .coprodInd kl kr => (34, [Kernel.leaf kl, Kernel.leaf kr])
-  | .zeroInd i => (35, [Kernel.leaf i])
-  | .quotInd kq θ => (36, [Kernel.leaf kq, RoseTree.node 0 θ])
-
-/-- A derivation as the node of its rule's position over the node of the rule's data and its
-children. -/
-def encDeriv : Internal.Deriv → Tree :=
-  RoseTree.elim fun r cs ↦ RoseTree.node (ruleData r).1 (RoseTree.node 0 (ruleData r).2 :: cs)
-
-/-- A primitive arrow as the node of its arity, arrow, domain and codomain. -/
-def encPrim (p : Internal.Prim) : Tree :=
-  RoseTree.node 0 [Kernel.leaf p.arity, p.arrow, p.dom, p.cod]
-
-/-- A definition of the language as the node of its arity, its parameters' types, its type and
-its body. -/
-def encLDefn (d : Internal.Defn) : Tree :=
-  RoseTree.node 0 [Kernel.leaf d.arity, RoseTree.node 0 d.params, d.type, encTerm d.body]
-
-/-- A definition of either kind as the node of its kind's position over its fields. -/
-def encDefinition : Internal.Definition → Tree
-  | .language d => RoseTree.node 0 [encLDefn d]
-  | .object m b => RoseTree.node 1 [Kernel.leaf m, b]
-
-/-- The constants as the node of the node of the primitive arrows, the node of the definitions
-and the index of the first definition's operation. -/
-def encGlobals (G : Internal.Globals) : Tree :=
-  RoseTree.node 0 [RoseTree.node 0 (G.prims.map encPrim),
-    RoseTree.node 0 (G.defs.map encDefinition), Kernel.leaf G.base]
-
-/-- A theorem as the node of its arity, context, hypotheses and conclusion. -/
-def encThm (a : Internal.Thm) : Tree :=
-  RoseTree.node 0 [Kernel.leaf a.arity, RoseTree.node 0 a.ctx,
-    RoseTree.node 0 (a.hyps.map encTerm), encTerm a.concl]
-
-/-- An entry as the node of its kind's position over its theorem or sequent. -/
-def encEntry : Internal.Entry → Tree
-  | .language a => RoseTree.node 0 [encThm a]
-  | .combinators s => RoseTree.node 1 [encSeq s]
-
-/-- A declaration as the node of its constructor's position over its fields. -/
-def encDecl : Internal.Decl → Tree
-  | .language a d => RoseTree.node 0 [encThm a, encDeriv d]
-  | .combinators s c => RoseTree.node 1 [encSeq s, c]
-  | .definition d => RoseTree.node 2 [encLDefn d]
-  | .constant p c => RoseTree.node 3 [encPrim p, encOpt c]
-  | .object m b c => RoseTree.node 4 [Kernel.leaf m, b, encOpt c]
-  | .quotient n A R => RoseTree.node 5 [Kernel.leaf n, A, encTerm R]
-  | .descent kq C h jr => RoseTree.node 6 [Kernel.leaf kq, C, encTerm h, Kernel.leaf jr]
-
-/-- The state of a development as the pair of its constants and the node of its entries. -/
-def encState (s : Internal.Globals × Array Internal.Entry) : Tree :=
-  RoseTree.node 0 [encGlobals s.1, RoseTree.node 0 (s.2.toList.map encEntry)]
 
 /-- The developments of the test modules of the internal language, each with its constants. -/
 def developments : List (String × Internal.Globals × List Internal.Decl) :=

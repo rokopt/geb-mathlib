@@ -36,7 +36,11 @@ stage1=("$b/prelude.geb" "$b/serialize.geb" "$b/reader.geb" "$b/check.geb" "$b/s
 img=$b/compiler.img
 lean=$b/lean/GebBoot.lean
 # each mirror: its name, then its sources
-mirrors=("GoedelT $b/prelude.geb $b/reader.geb $b/check.geb $b/goedel-t/equations.geb")
+f=$b/free-topos
+metalogic="$b/prelude.geb $f/base.geb $f/partial-horn.geb $f/theory.geb $f/infer.geb"
+metalogic+=" $f/language.geb $f/derivation.geb"
+mirrors=("GoedelT $b/prelude.geb $b/reader.geb $b/check.geb $b/goedel-t/equations.geb"
+         "Metalogic $metalogic")
 kernel=.lake/build/bin/geb-kernel
 
 tmp=$(mktemp -d)
