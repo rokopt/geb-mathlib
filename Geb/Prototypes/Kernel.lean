@@ -8,6 +8,7 @@ module
 public import Geb.Prototypes.Kernel.Basic
 public import Geb.Prototypes.Kernel.Command
 public import Geb.Prototypes.Kernel.Hole
+public import Geb.Prototypes.Kernel.Document
 public import Geb.Prototypes.Kernel.Image
 public import Geb.Prototypes.Kernel.LoadCommand
 public import Geb.Prototypes.Kernel.Loading
