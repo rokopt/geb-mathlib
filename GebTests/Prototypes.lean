@@ -38,6 +38,16 @@ import GebTests.Prototypes.FreeTopos.TranslationProofs
 import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
 import GebTests.Prototypes.GoedelT
+import GebTests.Prototypes.GoedelT.Agreement
+import GebTests.Prototypes.GoedelT.Load
+import GebTests.Prototypes.GoedelT.LoadCommand
+import GebTests.Prototypes.GoedelT.MirrorChecker
+import GebTests.Prototypes.GoedelT.MirrorDelta
+import GebTests.Prototypes.GoedelT.MirrorEquations
+import GebTests.Prototypes.GoedelT.MirrorLoad
+import GebTests.Prototypes.GoedelT.MirrorRules
+import GebTests.Prototypes.GoedelT.MirrorTerms
+import GebTests.Prototypes.GoedelT.MirrorTyping
 import GebTests.Prototypes.Kernel
 import GebTests.Prototypes.LargeIR
 import GebTests.Prototypes.MType

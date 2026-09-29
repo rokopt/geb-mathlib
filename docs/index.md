@@ -3770,7 +3770,18 @@ checklist and in CI.
   certificates and on malformed variants of each, and check that its
   numeral abbreviations and the prelude's name the rules
   (`Geb.GoedelT.Rule`), the labels and the primitives as the Lean
-  abbreviations do.
+  abbreviations do. `GebTests/Prototypes/GoedelT/` proves the checker
+  written in Geb equal to `Geb.GoedelT.check`: the Lean the bootstrap
+  compiler emits from the checker's program,
+  `bootstrap/lean/GebMirror/GoedelT.lean`, is the denotation of each of
+  the program's definitions as `Geb.Kernel.load` loads them, checked by
+  the kernel's evaluation (`MirrorLoad.lean`), and agrees definition by
+  definition with the Lean checker: its type checker with
+  `Geb.Kernel.infer`, its traversal, weakening and substitution with the
+  kernel's, its operations on equations and theorems, its δ rule and each
+  of its rules with the Lean checker's. `Agreement.lean` combines these
+  into the equality of the two checkers' results at every encoded input,
+  without `Classical.choice`.
   `bootstrap/goedel-t/prove.geb` constructs certificates by derived
   rules: normalization, innermost first, simplification of both sides of
   a goal, and induction; it reads a file of a program's forms and
