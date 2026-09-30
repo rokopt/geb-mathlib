@@ -93,9 +93,9 @@ order of dependence.
   language, sound by a theorem in Lean. In progress: the checker and the
   translation are constructed in Lean and proved sound, the proofs
   about the compiler's components are made in the language, and the
-  checker, the translation and the prover are written in Geb and proved
-  in Lean to agree with the Lean checker, translation and prover; the
-  prover's tactics and the combinator prover are not yet written in Geb.
+  checker, the translation, the prover and its tactics are written in
+  Geb and proved in Lean to agree with the Lean checker, translation,
+  prover and tactics; the combinator prover is not yet written in Geb.
   The checker of Gödel's T, the equational theory of the kernel's terms,
   constructed and written in Geb first, is retired: equations between
   kernel programs are proved in the metalogic
@@ -246,10 +246,12 @@ the sections below detail:
     proved in Lean to agree with the Lean translation: its translations
     of a program, of a translated program's constants and of a theorem
     of Gödel's T, at every input, are the Lean translation's.
-  * Ready. The checker's prover, its tactics and the combinator prover
-    written in Geb, each proved in Lean to agree with its Lean
-    prototype, so that the prover written in Geb constructs exactly the
-    derivations the Lean prover constructs.
+  * Complete. The checker's prover and its tactics written in Geb,
+    each proved in Lean to agree with its Lean prototype, so that the
+    prover written in Geb constructs exactly the derivations the Lean
+    prover constructs.
+  * Ready. The combinator prover written in Geb, proved in Lean to
+    agree with its Lean prototype.
   * Complete. The proof in Lean that the checker written in Geb agrees
     with the Lean checker: its denotation, at every development, is the
     Lean checker's result, by the method of the checker of Gödel's T
@@ -1117,9 +1119,9 @@ section below opens with a table of the states of its parts.
   * The Mitchell–Bénabou language's completeness, the model of functional
     relations and the retirement of the checker of Gödel's T: complete;
     the checker and the translation written in Geb and the proofs of
-    their agreement: complete; the prover written in Geb and the proof
-    of its agreement: complete; its tactics and the combinator prover
-    written in Geb: ready; stronger checkers: ready
+    their agreement: complete; the prover and its tactics written in
+    Geb and the proofs of their agreement: complete; the combinator
+    prover written in Geb: ready; stronger checkers: ready
 :::
 
 The fixed points hold on images and on Lean. The seed builds the
@@ -1984,6 +1986,22 @@ points gives the encoding of the Lean prover's derivation, so that the
 prover written in Geb constructs exactly the derivations the Lean prover
 constructs. The proof depends on no axiom beyond `propext` and
 `Quot.sound`.
+
+The tactics the proofs about the compiler's components compose from the
+prover are written in Geb in `bootstrap/free-topos/tactics.geb`, in the
+same program, as {name}`Geb.FreeTopos.Tactics.byAuto` and the tactics
+beside it compose them: proofs by reduction to a depth, by induction and
+case analysis of lists, bitstrings, rose trees, coproducts and trees,
+with hypotheses and their instances cut in as rewriting rules, by the
+search of the hypotheses' instances and of the variables the sides are
+stuck on, and by rewriting under a conditional's mask.
+`GebTests/Prototypes/FreeTopos/GebTactics.lean` compares them with the
+Lean tactics at the theorems of the test modules and at their subterms,
+and `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean` proves each
+of their definitions equal to the Lean definition it transcribes by the
+same method, at encoded arguments, rules related to the normalizer's,
+provers related to Lean's and provers from rules related to Lean's. The
+proof depends on no axiom beyond `propext` and `Quot.sound`.
 
 Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
 constructs certificates by derived rules, so that nothing in it is
@@ -3753,9 +3771,9 @@ inverse to the printer waits on the printer; the admission of a stronger
 checker beside the metalogic's checker written in Geb, whose agreement
 with the Lean checker is proved, is ready (the section on the metalogic
 and its checker). The next phase is the first of the two items below, in
-progress, the checker, the translation and the prover written in Geb
-and their agreement proved, the prover's tactics and the combinator
-prover remaining; the second is ready:
+progress, the checker, the translation, the prover and its tactics
+written in Geb and their agreement proved, the combinator prover
+remaining; the second is ready:
 
 * The metalogic's checker, its prover and the translation of kernel
   programs written in Geb, the checker in Geb and proof construction for

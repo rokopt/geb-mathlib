@@ -39,7 +39,7 @@ lean=$b/lean/GebBoot.lean
 f=$b/free-topos
 metalogic="$b/prelude.geb $f/base.geb $f/partial-horn.geb $f/theory.geb $f/infer.geb"
 metalogic+=" $f/language.geb $f/derivation.geb $b/reader.geb $b/check.geb $f/translation.geb"
-metalogic+=" $f/prove.geb"
+metalogic+=" $f/prove.geb $f/tactics.geb"
 mirrors=("GoedelT $b/prelude.geb $b/reader.geb $b/check.geb $b/goedel-t/equations.geb"
          "Metalogic $metalogic")
 kernel=.lake/build/bin/geb-kernel

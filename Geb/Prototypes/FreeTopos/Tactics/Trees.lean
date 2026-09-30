@@ -109,6 +109,16 @@ def byTreeSplit (lk i : ℕ) (p : Internal.Prover) : Internal.Prover :=
     pure (RoseTree.node (.cut (Term.eq Fl Hl))
       [dG, RoseTree.node (.convFrom χ) [RoseTree.node .cong [side t, side u], dχ]])
 
+/-- The proof of an equation by case analysis of the variable of index {lit}`i`, a list, a
+coproduct or a tree, each case by {lit}`rec`; Lambek's lemma is the entry of index {lit}`lk`. -/
+def splitStuck (G : Internal.Globals) (n lk i : ℕ) (rec : Internal.Prover) : Internal.Prover :=
+  fun Γ Φ t u ↦ do
+    let c ← Γ[i]?
+    match Internal.listPart c, Internal.coprodParts c with
+    | some _, _ => byListSplit G n i rec rec Γ Φ t u
+    | none, some _ => bySplit2 3 4 i rec rec Γ Φ t u
+    | none, none => if c = treeTy then byTreeSplit lk i rec Γ Φ t u else none
+
 /-- The proof of an equation by reducing both sides to one normal form, with the instances of the
 hypotheses it starts with where there are any, or else by case analysis of a variable the normal
 forms are stuck on, a list, a coproduct or a tree, each case the same way, to a depth; Lambek's
@@ -130,12 +140,7 @@ def byAutoT (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List Nor
     let skip (i : ℕ) : Bool := (Φ.take hs).any (mentions · i)
     let i ← ((stuckVar skip t').orElse fun _ ↦ stuckVar skip u').orElse fun _ ↦
       (stuckVar (fun _ ↦ false) t').orElse fun _ ↦ stuckVar (fun _ ↦ false) u'
-    let c ← Γ[i]?
-    match Internal.listPart c, Internal.coprodParts c with
-    | some _, _ => byListSplit G n i rec rec Γ Φ t u
-    | none, some _ => bySplit2 3 4 i rec rec Γ Φ t u
-    | none, none => if c = treeTy then byTreeSplit lk i rec Γ Φ t u else none :
-    Internal.Prover) Γ₀ Φ₀ t₀ u₀
+    splitStuck G n lk i rec Γ Φ t u : Internal.Prover) Γ₀ Φ₀ t₀ u₀
 
 /-- The proof of an equation by reducing both sides to one normal form, or else by case analysis
 of a variable the normal forms are stuck on, a folded conditional's test among them, each case
@@ -146,11 +151,7 @@ def byAutoC (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List Nor
     let (t', _, _) ← Internal.eval G E n rs 4096 .weak Γ Φ t
     let (u', _, _) ← Internal.eval G E n rs 4096 .weak Γ Φ u
     let i ← (stuckVarC (fun _ ↦ false) t').orElse fun _ ↦ stuckVarC (fun _ ↦ false) u'
-    let c ← Γ[i]?
-    match Internal.listPart c, Internal.coprodParts c with
-    | some _, _ => byListSplit G n i rec rec Γ Φ t u
-    | none, some _ => bySplit2 3 4 i rec rec Γ Φ t u
-    | none, none => if c = treeTy then byTreeSplit lk i rec Γ Φ t u else none
+    splitStuck G n lk i rec Γ Φ t u
 
 /-- The abstraction, over a new variable of the type {lit}`b`, of a term's occurrences of the
 term {lit}`x`: the function whose application to {lit}`x` is the term. Folds' starts and steps,
@@ -193,6 +194,28 @@ def maskRw (a b : Tree) (ab j : ℕ) (θ : List Tree) (σ : List Term) (c d x x'
     Deriv :=
   maskRwD a b ab (RoseTree.node (.thm j θ σ false) []) c d x x' z y
 
+/-- The rewriting of the conditional subterm {lit}`S`, of the type {lit}`a` on the test {lit}`c`
+between {lit}`y` and {lit}`d`, by the hypothesis of index {lit}`i`, where its first term is a
+conditional on the same test whose first branch {lit}`y` mentions: the subterm, its rewriting and
+the derivation of their equation, as {lit}`maskSub` describes. -/
+def maskAt (ab cs : ℕ) (Φ : List Term) (a : Tree) (c y d S : Term) (i : ℕ) :
+    Option (Term × Term × Deriv) := do
+  let (L, R) ← Internal.eqParts (← Φ[i]?)
+  let (b, c', x, z) ← condParts L
+  if c' ≠ c then none else
+  let (x', dM) ← match condParts R with
+    | some (_, c'', x', z') =>
+      if c'' = c ∧ z' = z then some (x', RoseTree.node (.rwHyp i false) []) else none
+    | none =>
+      if R = z then some (R, RoseTree.node .trans [RoseTree.node (.rwHyp i false) [],
+        RoseTree.node (.thm cs [b] [c, R] true) []]) else none
+  if x = x' then none else
+  let F := abstractTerm b x y
+  let body ← F.children.head?
+  if Internal.uses body 0 = 0 then none else
+  let S' := condT a c (Term.subst body (Internal.instVar x')) d
+  pure (S, S', maskRwD a b ab dM c d x x' z y)
+
 /-- The rewriting of the first conditional subterm of a term whose test is that of one of the
 hypotheses, the latest first, and whose first branch mentions that hypothesis's first term: the
 subterm, its rewriting and the derivation of their equation, by the absorption lemma of index
@@ -202,22 +225,7 @@ its second branch, which the condition lemma makes the conditional between it an
 def maskSub (ab cs : ℕ) (Φ : List Term) (w : Term) : Option (Term × Term × Deriv) :=
   (openSubterms w).findSome? fun S ↦ do
     let (a, c, y, d) ← condParts S
-    (List.range Φ.length).reverse.findSome? fun i ↦ do
-      let (L, R) ← Internal.eqParts (← Φ[i]?)
-      let (b, c', x, z) ← condParts L
-      if c' ≠ c then none else
-      let (x', dM) ← match condParts R with
-        | some (_, c'', x', z') =>
-          if c'' = c ∧ z' = z then some (x', RoseTree.node (.rwHyp i false) []) else none
-        | none =>
-          if R = z then some (R, RoseTree.node .trans [RoseTree.node (.rwHyp i false) [],
-            RoseTree.node (.thm cs [b] [c, R] true) []]) else none
-      if x = x' then none else
-      let F := abstractTerm b x y
-      let body ← F.children.head?
-      if Internal.uses body 0 = 0 then none else
-      let S' := condT a c (Term.subst body (Internal.instVar x')) d
-      pure (S, S', maskRwD a b ab dM c d x x' z y)
+    (List.range Φ.length).reverse.findSome? (maskAt ab cs Φ a c y d S)
 
 /-- The proof of an equation by rewriting under masks by the hypotheses, as
 {lit}`maskSub` finds them in either side, up to {lit}`n` times, each rewriting cut in and added as

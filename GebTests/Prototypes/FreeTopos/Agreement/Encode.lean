@@ -24,6 +24,7 @@ rule's position over the node of the label's or the rule's data followed by its 
 * {lit}`encOpt`, {lit}`encSeq`, {lit}`encTheory`, {lit}`encExtEnv` — optional trees, sequents,
   theories and the inference's environments.
 * {lit}`encTerm`, {lit}`encDeriv`, {lit}`encRule` — terms, derivations and the prover's rules.
+* {lit}`encCond` — a conditional's parts, as the tactics find them.
 * {lit}`encGlobals`, {lit}`encEntry`, {lit}`encDecl`, {lit}`encState` — constants, entries,
   declarations and the state of a development.
 
@@ -109,6 +110,10 @@ def labelData : Internal.Label → ℕ × List Tree
 children. -/
 def encTerm : Internal.Term → Tree :=
   encWith (fun l ↦ (labelData l).1) fun l ↦ RoseTree.node 0 (labelData l).2
+
+/-- A conditional's parts, its type, test and branches, as the node of the type and the terms. -/
+def encCond (p : Tree × Internal.Term × Internal.Term × Internal.Term) : Tree :=
+  RoseTree.node 0 [p.1, encTerm p.2.1, encTerm p.2.2.1, encTerm p.2.2.2]
 
 /-- The position of a rule's constructor, and its data. -/
 def ruleData : Internal.Rule → ℕ × List Tree

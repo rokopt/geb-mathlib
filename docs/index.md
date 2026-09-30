@@ -4025,8 +4025,15 @@ checklist and in CI.
   (`Tactics/Trees.lean`). Tested by the proofs of
   `GebTests/Prototypes/FreeTopos/` that use them: `TranslationProofs.lean`,
   `Weakening.lean`, `Substitution.lean`, `TreeCases.lean` and
-  `Expansion.lean`. Depends on `Geb/Prototypes/FreeTopos/Translation.lean`
-  and the modules of `Geb/Prototypes/FreeTopos/Internal/`.
+  `Expansion.lean`. `bootstrap/free-topos/tactics.geb`, in the
+  metalogic's program, is the tactics written again in the datatype
+  language: `GebTactics.lean` compares it with the Lean tactics at the
+  theorems of `InternalDerivation.lean` and `InternalLogic.lean` and at
+  their subterms, and `Agreement/Tactics.lean` proves each of its
+  definitions equal to the Lean definition it transcribes at every
+  encoded input, at rules related to the normalizer's and provers related
+  to Lean's. Depends on `Geb/Prototypes/FreeTopos/Translation.lean` and
+  the modules of `Geb/Prototypes/FreeTopos/Internal/`.
 - `Geb/Prototypes/RelSeparation.lean` — whether separating a
   proof-relevant relation, a span, to its image commutes with the type
   formers, over the point and over the walking arrow. The dependent sum
