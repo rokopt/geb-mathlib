@@ -89,16 +89,24 @@ written. The work to do first:
    qualified names, and hygienic generated names
    ([Files](#files-assembly-and-the-host-boundary),
    [Modules](#modules-and-name-uniqueness)).
-4. Pin elaboration as well as syntax: an edition per program, and a
+4. Record what an author knows of types and organization: the datatype
+   language's completion, with datatype names as exact types checked at
+   every use, explicit representation and decoding, opaque type
+   parameters and the soundness of the typing, and modules with
+   parameters, imports and export lists. Which datatype a value belongs
+   to, and which definitions a module exports, are information no tool
+   recovers later ([Modules](#modules-and-name-uniqueness),
+   [Datatypes](#datatypes-type-parameters-and-interfaces)).
+5. Pin elaboration as well as syntax: an edition per program, and a
    committed record of each program's elaborated definitions compared in
    continuous integration ([Elaboration](#stability-of-elaboration)).
-5. Version every interface that persists: document and core schemas,
+6. Version every interface that persists: document and core schemas,
    semantic profiles, datatype encodings, certificates and host protocols
    ([Further requirements](#further-requirements-before-substantial-authoring)).
-6. Write comments in Verso markup (decided), with explicit links for
+7. Write comments in Verso markup (decided), with explicit links for
    references to code, since links cannot be added mechanically to prose
    written without them ([Documentation](#documentation-through-verso)).
-7. State which steps of the pipeline are proved and which are tested
+8. State which steps of the pipeline are proved and which are tested
    ([The compatibility contract](#the-compatibility-contract)).
 
 Content storage, a network of identifiers, a language server,
@@ -1592,6 +1600,7 @@ reader:
 | Adopt the document reader and the formatter | `bootstrap/` formatted in one mechanical change with images and emitted Lean unchanged, as measured above; `geb-fmt --check` and the test of parinfer's fixed points in continuous integration |
 | Reject duplicate and ambiguous names | both readers reject duplicates and accept every present source unchanged |
 | Modules with parameters, imports and export lists | the bootstrap sources, organized into modules with export lists and without the prefixes that avoided collisions, compile and pass their tests; a clash, an unresolved name and an import leaving a parameter unsupplied are rejected |
+| The datatype language's completion | every source of the datatype language retyped with datatype names as exact types, checked at every use, with representation and decoding written explicitly, generated recognizers and opaque type parameters, compiles and passes its tests; the soundness of the typing is proved with the prover in Geb |
 | The syntaxes of RFC 9804 and the authoring profile, with the importer | the four retractions proved over one document type; the bootstrap sources convert, and compile to the same checked bundles |
 | Manifests with editions; the record of elaborated definitions | the build and tests read manifests; the regenerated record equals the committed one |
 | A durable document with versioned profiles | declaration and binder names, prose, examples, links and unknown optional fields survive reading, printing and conversion |
