@@ -54,6 +54,19 @@ name = "cslib"
 scope = "leanprover"
 rev = "v4.35.0-rc3"
 
+# Canonical, a solver for type inhabitation (docs/source-format.md
+# § Canonical), for experiments only: no module of `Geb`, `GebLang` or
+# `GebTests` imports it, so a default build never fetches its solver
+# library, which Lake downloads from a GitHub release named after a Lean
+# version. It has no dependencies. Its tag `v4.34.0` was measured to build
+# and run under this repository's toolchain; bump `rev` to the tag of the
+# toolchain when Canonical publishes one. `TODO.md` § Triggers records
+# the condition for removing it.
+[[require]]
+name = "Canonical"
+scope = "chasenorman"
+rev = "v4.34.0"
+
 # Pinned in lockstep with `lean-toolchain`; bump `rev` when bumping
 # the toolchain version.
 [[require]]

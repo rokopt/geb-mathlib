@@ -1235,6 +1235,17 @@ Correcting these is a separate concern from any current branch per
 
 ## Triggers (do when condition fires)
 
+- **Canonical as a dependency**: `lakefile.toml` requires Canonical
+  ([docs/source-format.md](docs/source-format.md) § Canonical) for
+  experiments with search, in a library of their own that no module of
+  `Geb`, `GebLang` or `GebTests` imports; committed experiments call its
+  solver as a program and check what they decode with Geb's checkers.
+  Trigger: everything done with it, and everything planned with it, is
+  written in Geb, or writable in Geb by the Geb-native refinement search,
+  at which point the require, its manifest entry and the experiments that
+  import it are removed, their findings kept in the report. Until then, a
+  toolchain bump moves its `rev` to the tag Canonical publishes for the
+  new toolchain, or confirms that the tag in use still builds and loads.
 - **Choice-free bound for `Fin.divNat` in Batteries**:
   `Geb/Mathlib/Data/Fin/Basic.lean` exists because Batteries' `Fin.divNat`
   proves its bound through `Nat.div_lt_of_lt_mul`, which depends on
