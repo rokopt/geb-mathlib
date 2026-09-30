@@ -50,9 +50,6 @@ bits.
 * {lit}`development` — the lemmas, each with its proof.
 * {lit}`weakening` — the statement.
 * {lit}`byLabels` — the proof at a construction.
-* {lit}`byAuto` — the proof of an equation by instances of the hypotheses and case analysis of
-  stuck variables.
-* {lit}`revertCase` — the case analysis of a list variable that a hypothesis mentions.
 
 ## Tags
 
@@ -65,7 +62,7 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.FreeTopos.Weakening
 
-open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
+open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Translation (baseRules)
 open Internal (Term NormRule Entry Deriv Decl Definition)
@@ -124,9 +121,6 @@ def prog? (ds : List (List Char × Tree)) (idx : String → ℕ) : Option Prog :
 
 /-! Proofs of equations. -/
 
-/-- The application of a term to arguments, the first first. -/
-def apps (f : Term) (xs : List Term) : Term := xs.foldl Term.app f
-
 /-- The rules of the normalization: the language's equations and the unfolding of every
 definition of the library and the program. -/
 def baseNorm (P : Prog) : List NormRule := baseRules ++ [.unitVar, .deltaBelow P.o []]
@@ -135,247 +129,9 @@ def baseNorm (P : Prog) : List NormRule := baseRules ++ [.unitVar, .deltaBelow P
 def weakNF (P : Prog) (rs : List NormRule) (n : ℕ) (Γ : List Tree) (t : Term) : Term :=
   ((Internal.eval P.G #[] n rs 4096 .weak Γ [] t).map Prod.fst).getD t
 
-/-- The proof of an equation by reducing both sides to one normal form, to a depth. -/
-def byMode (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : ℕ)
-    (rs : List NormRule) : Internal.Prover := fun Γ Φ t u ↦ do
-  let (v, d₁, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-  let (v', d₂, _) ← Internal.eval G E n rs 4096 m Γ Φ u
-  if v = v' then some (RoseTree.node .join [d₁, d₂]) else none
-
-/-- The proof of an equation by reducing both sides to one weak normal form. -/
-def byWeak (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) :
-    Internal.Prover := byMode .weak G E n rs
-
 /-- A theorem in object variables and a context whose sides are stated in weak normal form. -/
 def weakThm (P : Prog) (n : ℕ) (Γ : List Tree) (t u : Term) : Internal.Thm :=
   ⟨n, Γ, [], Term.eq (weakNF P (baseNorm P) n Γ t) (weakNF P (baseNorm P) n Γ u)⟩
-
-/-- The proof of an equation in a context of a list variable by induction on it in the form of
-the uniqueness of its fold, with the step {lit}`s`, each premise by weak reduction. -/
-def byListIndWeak (G : Internal.Globals) (E : Array Entry) (n : ℕ) (s : Term)
-    (rs : List NormRule) : Internal.Prover := fun Γ Φ t u ↦ match Γ with
-  | c :: Γ' => do
-    let a ← Internal.listPart c
-    let Φ' ← Internal.lowerHyps G n Γ' Φ
-    let z := Internal.instVar (Term.arr 0 [a] Term.star)
-    let p₀ ← byWeak G E n rs Γ' Φ' (Term.subst t z) (Term.subst u z)
-    let p₁ ← byWeak G E n rs (c :: a :: Γ') (Φ'.map Internal.weaken2) (Internal.listConsAt 1 a t)
-      (Term.subst s (Internal.atVar0 (Internal.weakenElem t)))
-    let p₂ ← byWeak G E n rs (c :: a :: Γ') (Φ'.map Internal.weaken2) (Internal.listConsAt 1 a u)
-      (Term.subst s (Internal.atVar0 (Internal.weakenElem u)))
-    pure (RoseTree.node (.listInd 0 1 s) [p₀, p₁, p₂])
-  | [] => none
-
-/-- The proof of an equation in a context of a rose tree alone by induction on it in the form of
-the uniqueness of its fold, with the step {lit}`s`, each premise by {lit}`p`. -/
-def byRoseIndWith (G : Internal.Globals) (n : ℕ) (s : Term) (p : Internal.Prover) :
-    Internal.Prover := fun Γ _ t u ↦ match Γ with
-  | [r] => do
-    let (a, _) ← Internal.roseParts r
-    let C ← Internal.typeIn G n Γ t
-    let p₁ ← p [list r, a] [] (Internal.roseNodeAt 2 r a t)
-      (Term.subst s (Internal.atVar0 (Internal.roseMapAt 0 1 C t)))
-    let p₂ ← p [list r, a] [] (Internal.roseNodeAt 2 r a u)
-      (Term.subst s (Internal.atVar0 (Internal.roseMapAt 0 1 C u)))
-    pure (RoseTree.node (.roseInd 2 0 1 s) [p₁, p₂])
-  | _ => none
-
-/-- The proof of an equation by case analysis of the list variable of index {lit}`i`: the sides
-abstracted over it are equal functions, by extensionality and list induction on the new variable,
-each case by its prover, and the equation follows by applying them to the variable. -/
-def byListSplit (G : Internal.Globals) (n i : ℕ) (p₀ p₁ : Internal.Prover) : Internal.Prover :=
-  fun Γ Φ t u ↦ do
-    let c ← Γ[i]?
-    let F := Internal.abstractVar i c t
-    let H := Internal.abstractVar i c u
-    let q ← Internal.byListIndWith G n 0 1 p₀ p₁ (c :: Γ) (Φ.map Internal.weaken1)
-      (Term.app (Internal.weaken1 F) (v 0)) (Term.app (Internal.weaken1 H) (v 0))
-    let χ := Term.eq (Term.app F (v i)) (Term.app H (v i))
-    pure (RoseTree.node (.cut (Term.eq F H)) [RoseTree.node .funExt [q],
-      RoseTree.node (.convFrom χ) [RoseTree.node .cong [RoseTree.node .beta [],
-        RoseTree.node .beta []], RoseTree.node .join [RoseTree.node .cong
-          [RoseTree.node (.rwHyp Φ.length false) [], RoseTree.node .refl []],
-          RoseTree.node .refl []]]])
-
-/-- The proof of an equation by case analysis of the variable of index {lit}`i`, of a
-coproduct whose injections are the primitives of indices {lit}`kl` and {lit}`kr`, the first case
-by {lit}`p₀` and the second by {lit}`p₁`, as {name}`Geb.FreeTopos.Internal.bySplit` proves it. -/
-def bySplit2 (kl kr i : ℕ) (p₀ p₁ : Internal.Prover) : Internal.Prover := fun Γ Φ t u ↦ do
-  let c ← Γ[i]?
-  let (a, b) ← Internal.coprodParts c
-  let F := Internal.abstractVar i c t
-  let H := Internal.abstractVar i c u
-  let inj (k : ℕ) (s : Term) : Term := Term.app (Internal.weaken1 s) (Term.arr k [a, b] (v 0))
-  let q₀ ← p₀ (a :: Γ) (Φ.map Internal.weaken1) (inj kl F) (inj kl H)
-  let q₁ ← p₁ (b :: Γ) (Φ.map Internal.weaken1) (inj kr F) (inj kr H)
-  let χ := Term.eq (Term.app F (v i)) (Term.app H (v i))
-  pure (RoseTree.node (.cut (Term.eq F H)) [RoseTree.node .funExt
-    [RoseTree.node (.coprodInd kl kr) [q₀, q₁]], RoseTree.node (.convFrom χ)
-      [RoseTree.node .cong [RoseTree.node .beta [], RoseTree.node .beta []],
-        RoseTree.node .join [RoseTree.node .cong [RoseTree.node (.rwHyp Φ.length false) [],
-          RoseTree.node .refl []], RoseTree.node .refl []]]])
-
-/-- The proof of an equation by case analysis of its innermost variable, a list: empty, or an
-element before a list, each case by {lit}`p`. -/
-def byListCases (G : Internal.Globals) (n : ℕ) (p : Internal.Prover) : Internal.Prover :=
-  Internal.byListIndWith G n 0 1 p p
-
-/-- The proof of an equation by case analysis of its innermost variable, a bitstring: empty, or
-a bit before a bitstring, the bit's two cases, each by {lit}`p`. -/
-def bitsCases (G : Internal.Globals) (n : ℕ) (p : Internal.Prover) : Internal.Prover :=
-  Internal.byListIndWith G n 0 1 p (Internal.bySplit 3 4 1 p)
-
-/-- The proof of an equation with the hypotheses of the given indices, equations, cut in in weak
-normal form and used as rewriting rules before those given to {lit}`k`. -/
-def withWeakHyps (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
-    (is : List ℕ) (k : List NormRule → Internal.Prover) (m : Internal.Depth := .weak) :
-    Internal.Prover := fun Γ Φ t u ↦
-  (is.foldr (fun i (acc : List Term → List NormRule → Option Deriv) Φ₁ extra ↦ do
-      let (a, b) ← Internal.eqParts (← Φ₁[i]?)
-      let (a', da, _) ← Internal.eval G E n rs 4096 m Γ Φ₁ a
-      let (b', db, _) ← Internal.eval G E n rs 4096 m Γ Φ₁ b
-      let ψ := Term.eq a' b'
-      let rest ← acc (Φ₁ ++ [ψ]) (extra ++ [.hyp Φ₁.length])
-      pure (RoseTree.node (.cut ψ) [RoseTree.node (.convFrom (Term.eq a b))
-        [RoseTree.node .cong [da, db], RoseTree.node (.hyp i) []], rest]))
-    (fun Φ₁ extra ↦ k extra Γ Φ₁ t u)) Φ []
-
-/-- A derivation rewriting the function of an application to arguments by the hypothesis of
-index {lit}`i`. -/
-def rwFun (i : ℕ) : ℕ → Deriv :=
-  Nat.rec (RoseTree.node (.rwHyp i false) []) fun _ d ↦
-    RoseTree.node .cong [d, RoseTree.node .refl []]
-
-/-- The proof of an equation with the instances of the hypothesis of index {lit}`h`, an
-equation of functions, at the lists of arguments {lit}`αs`, each cut in and then in weak normal
-form, as rewriting rules before those given to {lit}`k`. -/
-def withInsts (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) (h : ℕ)
-    (αs : List (List Term)) (k : List NormRule → Internal.Prover) (m : Internal.Depth := .weak) :
-    Internal.Prover :=
-  fun Γ Φ t u ↦ do
-    let (F, H) ← Internal.eqParts (← Φ[h]?)
-    let insts := αs.map fun α ↦ Term.eq (apps F α) (apps H α)
-    let rest ← withWeakHyps G E n rs ((List.range αs.length).map (Φ.length + ·)) k (m := m) Γ
-      (Φ ++ insts) t u
-    pure ((αs.zip insts).foldr (fun (α, q) r ↦ RoseTree.node (.cut q)
-      [RoseTree.node .join [rwFun h α.length, RoseTree.node .refl []], r]) rest)
-
-/-- The subterms of a term outside its binders and its folds' starts and steps, each with its
-context's extension, none. -/
-def openSubterms : Term → List Term := RoseTree.para fun l cs ↦
-  RoseTree.node l (cs.map (·.1)) :: match l with
-    | .lam _ => []
-    | .natRec | .listRec => (cs.drop 2).flatMap (·.2)
-    | .roseRec _ => (cs.drop 1).flatMap (·.2)
-    | _ => cs.flatMap (·.2)
-
-/-- The variable a weak normal form is stuck on: the datum of a fold, or the scrutinee of a case
-analysis, the primitive of index five, that is a variable, the first in preorder. -/
-def stuckVar (skip : ℕ → Bool) (t : Term) : Option ℕ :=
-  let subs := openSubterms t
-  -- a case analysis's scrutinee first, then a fold's datum
-  (subs.findSome? fun u ↦ match u.label, u.children with
-    | .app, [f, m] => match f.label, m.label with
-      | .arr 5 _, .var i => if skip i then none else some i
-      | _, _ => none
-    | _, _ => none).orElse fun _ ↦ subs.findSome? fun u ↦ match u.label, u.children with
-    | .natRec, [_, _, m] | .listRec, [_, _, m] | .roseRec _, [_, m] => match m.label with
-      | .var i => if skip i then none else some i
-      | _ => none
-    | _, _ => none
-
-/-- Whether a term mentions the variable of an index. -/
-def mentions (t : Term) (i : ℕ) : Bool := Internal.uses t i > 0
-
-/-- The arguments at which a matching of the body of an abstraction of {lit}`k` variables matches
-the subterms of a term, its other variables those of the context. -/
-def matchesWith (m : ℕ → Term → List (Option Term) → Option (List (Option Term))) (k : ℕ)
-    (t : Term) : List (List Term) :=
-  let width := k + 64
-  let σ₀ : List (Option Term) := (List.range width).map fun j ↦
-    if j < k then none else some (v (j - k))
-  ((openSubterms t).filterMap fun u ↦ do
-    let σ ← m 0 u σ₀
-    let σ ← (σ.take k).mapM id
-    pure σ.reverse).eraseDups
-
-/-- The arguments at which the body of an abstraction of {lit}`k` variables matches the subterms
-of a term, the body folded into its matching once rather than at each subterm. -/
-def matchesOf (body : Term) (k : ℕ) (t : Term) : List (List Term) :=
-  matchesWith (RoseTree.para Internal.matchStep body) k t
-
-/-- The proof of an equation by weak reduction with the instances of the hypotheses that are
-equations of abstractions of one variable, at the arguments at which the left side's body, in
-weak normal form, matches the sides' weak normal forms, each cut in. -/
-def byInstsOnce (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : ℕ)
-    (rs : List NormRule) (hs : ℕ) (next : List NormRule → Internal.Prover) : Internal.Prover :=
-  fun Γ Φ t u ↦ do
-  let (t', _, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-  let (u', _, _) ← Internal.eval G E n rs 4096 m Γ Φ u
-  if t' = u' then byMode m G E n rs Γ Φ t u else
-  let found := (List.range (min hs Φ.length)).filterMap fun h ↦ do
-    let (F, _) ← Internal.eqParts (← Φ[h]?)
-    match F.label, F.children with
-    | .lam a, [b] =>
-      let (bw, _, _) ← Internal.eval G E n rs 4096 m (a :: Γ) (Φ.map Internal.weaken1) b
-      let αs := (matchesOf bw 1 t' ++ matchesOf bw 1 u').eraseDups
-      if αs.isEmpty then none else some (h, αs)
-    | _, _ => none
-  let go := found.foldr (fun (h, αs) (k : List NormRule → Internal.Prover) extra ↦
-      withInsts G E n rs h αs (fun ex ↦ k (extra ++ ex)) (m := m)) next
-  if found.isEmpty then none else go [] Γ Φ t u
-
-/-- The proof of an equation by {lit}`byInstsOnce` repeated, each round's instances rewriting
-before the next looks for more, three rounds. -/
-def byInsts (m : Internal.Depth) (G : Internal.Globals) (E : Array Entry) (n : ℕ)
-    (rs : List NormRule) (hs : ℕ) : Internal.Prover :=
-  let last (extra : List NormRule) : Internal.Prover := byMode m G E n (extra ++ rs)
-  let round (next : List NormRule → Internal.Prover) (extra : List NormRule) : Internal.Prover :=
-    fun Γ Φ t u ↦ (byMode m G E n (extra ++ rs) Γ Φ t u).orElse fun _ ↦
-      byInstsOnce m G E n (extra ++ rs) hs (fun ex ↦ next (extra ++ ex)) Γ Φ t u
-  round (round (round last)) []
-
-/-- The proof of an equation by {lit}`byInsts` with the hypotheses it starts with, or else by
-case analysis of a variable its normal forms are stuck on, a list or a coproduct, preferring the
-scrutinee of a case analysis to the datum of a fold and a variable those hypotheses do not
-mention, each case the same way, to a depth. -/
-def byAuto (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) (d : ℕ)
-    (m : Internal.Depth := .weak) : Internal.Prover := fun Γ₀ Φ₀ t₀ u₀ ↦
-  let hs := Φ₀.length
-  (d.rec (byInsts m G E n rs hs) fun _ rec Γ Φ t u ↦
-  (byInsts m G E n rs hs Γ Φ t u).orElse fun _ ↦ do
-    let (t', _, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-    let (u', _, _) ← Internal.eval G E n rs 4096 m Γ Φ u
-    let skip (i : ℕ) : Bool := (Φ.take hs).any (mentions · i)
-    let i ← ((stuckVar skip t').orElse fun _ ↦ stuckVar skip u').orElse fun _ ↦
-      (stuckVar (fun _ ↦ false) t').orElse fun _ ↦ stuckVar (fun _ ↦ false) u'
-    let c ← Γ[i]?
-    match Internal.listPart c, Internal.coprodParts c with
-    | some _, _ => byListSplit G n i rec rec Γ Φ t u
-    | none, some _ => bySplit2 3 4 i rec rec Γ Φ t u
-    | none, none => none : Internal.Prover) Γ₀ Φ₀ t₀ u₀
-
-/-- A prover under four new variables of the statement's arguments, by extensionality. -/
-def funExt4 (G : Internal.Globals) (p : Internal.Prover) : Internal.Prover :=
-  (List.replicate 4 ()).foldr (fun _ q ↦ Internal.byFunExt G 0 q) p
-
-/-- The proof of an equation of two applications to a bit before a bitstring, the last two
-variables, by the proof, by {lit}`p`, of the equation at the successor of the bitstring's
-predecessor, into which the theorem of index {lit}`j` rewrites it backwards. -/
-def bySuccPred (E : Array Entry) (j : ℕ) (p : Internal.Prover) : Internal.Prover :=
-  fun Γ Φ t u ↦ do
-  let some (Entry.language b) := E[j]? | none
-  let (l, _) ← Internal.eqParts b.concl
-  let σ := [v 1, v 0]
-  let back : Deriv := RoseTree.node (.thm j [] σ true) []
-  let rw (s : Term) : Option (Term × Deriv) := match s.label, s.children with
-    | .app, [f, _] => some (Term.app f (Internal.instTerm [] σ l),
-        RoseTree.node .cong [RoseTree.node .refl [], back])
-    | _, _ => none
-  let (t', dt) ← rw t
-  let (u', du) ← rw u
-  let q ← p Γ Φ t' u'
-  pure (RoseTree.node .conv [RoseTree.node .cong [dt, du], q])
 
 /-! The development. -/
 
@@ -495,15 +251,6 @@ def kidsOf (t : Term) : Option Term := match t.label, t.children with
     | .pair, [_, k] => some k
     | _, _ => none
   | _, _ => none
-
-/-- The proof of an equation in a context of a list variable by induction on it with the induction
-hypothesis, each case by weak reduction, the construction's with the hypothesis in weak normal
-form as a rewriting rule. -/
-def byListIndHypWeak (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) :
-    Internal.Prover :=
-  Internal.byListIndWith G n 0 1 (byWeak G E n rs) fun Γ Φ t u ↦
-    withWeakHyps G E n rs [Φ.length - 1] (fun extra ↦ byWeak G E n (extra ++ rs)) (m := .weak)
-      Γ Φ t u
 
 /-- The lemmas on the folds: the fold of a list by construction rebuilds it; the traversal's
 fold rebuilds its tree, at every function at a variable, first as functions of that function by
@@ -629,7 +376,7 @@ def arithLemmas (P : Prog) : Option (List Step) := do
   let rsF (ix : String → ℕ) : List NormRule :=
     [.thm (ix "rebAF") [], .thm (ix "rebSF") [], .thm (ix "rebLF") [bitTy, bitsTy]] ++ rs
   let byFun (ix : String → ℕ) (E : Array Entry) : Internal.Prover :=
-    Internal.byFunExt P.G 0 (bitsInd P.G (normH P.G E (rsF ix)) (normH P.G E (rsF ix)))
+    Internal.byFunExt P.G 0 (bitsInd P.G 0 (normH P.G E (rsF ix)) (normH P.G E (rsF ix)))
   pure [
    step "rebA" rebA (fun _ E ↦ byListIndWeak P.G E 0 (consT bitTy (v 1) (v 0)) rs rebA.ctx []
       (sides rebA).1 (sides rebA).2),
@@ -846,84 +593,6 @@ def development (P : Prog) : Option (List Step) := do
 
 /-! The theorem. -/
 
-/-- The induction hypothesis at the children: for the hypothesis of index {lit}`h`, that the
-two lists of formulas its sides fold from the list of children are equal, the formula at each
-child among the first {lit}`k`, cut in, then its instance at each list of arguments of
-{lit}`args` of that child, cut in, and {lit}`k'` proving the goal with the instances' indices. -/
-def withChildHyps (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
-    (h : ℕ) (kids : List ℕ) (args : ℕ → List (List Term)) (k' : List ℕ → Internal.Prover) :
-    Internal.Prover := fun Γ Φ t u ↦ do
-  let (L₀, R₀) ← Internal.eqParts (← Φ[h]?)
-  let tt : Term := Term.eq Term.star Term.star
-  let nthOf (X : Term) (p : ℕ) : Term :=
-    call D.headD [omega] [tt, p.rec X fun _ Y ↦ call D.tail [omega] [Y]]
-  (kids.foldr (fun p (acc : List Term → List ℕ → Option Deriv) Φ₁ insts ↦ do
-      let A := nthOf L₀ p
-      let B := nthOf R₀ p
-      let (A', dA, _) ← Internal.eval G E n rs 4096 .weak Γ Φ₁ A
-      let (B', dB, _) ← Internal.eval G E n rs 4096 .weak Γ Φ₁ B
-      let (_, dAh, _) ← Internal.eval G E n [.hyp h] 4096 .weak Γ Φ₁ A
-      let (F, H) ← Internal.eqParts A'
-      let i₁ := Φ₁.length
-      let i₂ := i₁ + 1
-      let αs := args p
-      let Φ₂ := Φ₁ ++ [Term.eq A' B', A'] ++ αs.map fun α ↦ Term.eq (apps F α) (apps H α)
-      let rest ← acc Φ₂ (insts ++ (List.range αs.length).map (i₂ + 1 + ·))
-      let instDs := αs.map fun α ↦ RoseTree.node .join [rwFun i₂ α.length, RoseTree.node .refl []]
-      let body := (αs.zip instDs).foldr (fun (α, d) r ↦
-        RoseTree.node (.cut (Term.eq (apps F α) (apps H α))) [d, r]) rest
-      pure (RoseTree.node (.cut (Term.eq A' B')) [RoseTree.node (.convFrom (Term.eq A B))
-        [RoseTree.node .cong [dA, dB], RoseTree.node .join [dAh, RoseTree.node .refl []]],
-        RoseTree.node (.cut A') [RoseTree.node .conv [RoseTree.node (.rwHyp i₁ false) [],
-          RoseTree.node .join [RoseTree.node .refl [], RoseTree.node .refl []]], body]]))
-    (fun Φ₁ insts ↦ k' insts Γ Φ₁ t u)) Φ []
-
-/-- The proof of an equation by case analysis of the list variable of index {lit}`i`, the
-hypothesis of index {lit}`h`, which mentions it, reverted: the implication of the equation by the
-hypothesis, abstracted over the variable, equals the constant truth, by extensionality and list
-induction on the new variable, the hypothesis introduced again in each case and each case's
-equation proved by its prover under it, the last hypothesis; the equation follows from the
-implication at the variable and the hypothesis. The connectives are the definitions from the
-index {lit}`o`, their rules the theorems from {lit}`logicBase`. -/
-def revertCase (G : Internal.Globals) (n o i h : ℕ) (pNil pCons : Internal.Prover) :
-    Internal.Prover := fun Γ Φ t u ↦ do
-  let c ← Γ[i]?
-  let a ← Internal.listPart c
-  let ψ ← Φ[h]?
-  let q := Term.eq t u
-  let imp (p r : Term) : Term := Internal.Logic.imp o p r
-  let tt := Internal.Logic.tt o
-  let Fχ := Internal.abstractVar i c (imp ψ q)
-  let sub (x : Term) : Term :=
-    Term.subst (Internal.weaken1 x) fun j ↦ if j = i + 1 then v 0 else v j
-  let ψ₁ := sub ψ
-  let q₁ := sub q
-  let Φ₁ := Φ.map Internal.weaken1 ++ [tt]
-  let Φ' ← Internal.lowerHyps G n Γ Φ₁
-  -- the empty list
-  let z := Internal.instVar (Term.arr 0 [a] Term.star)
-  let ψ₀ := Term.subst ψ₁ z
-  let q₀ := Term.subst q₁ z
-  let (t₀, u₀) ← Internal.eqParts q₀
-  let d₀ ← pNil Γ (Φ' ++ [ψ₀]) t₀ u₀
-  -- a construction
-  let Φc := Φ'.map Internal.weaken2 ++ [Internal.weakenElem (imp ψ₁ q₁)]
-  let ψc := Internal.listConsAt 1 a ψ₁
-  let qc := Internal.listConsAt 1 a q₁
-  let (tc, uc) ← Internal.eqParts qc
-  let dc ← pCons (c :: a :: Γ) (Φc ++ [ψc]) tc uc
-  let dχ₁ := RoseTree.node (.listIndHyp 0 1) [Internal.Logic.impI logicBase Φ'.length ψ₀ q₀ d₀,
-    Internal.Logic.impI logicBase Φc.length ψc qc dc]
-  let dFun := RoseTree.node .funExt [RoseTree.node .conv [RoseTree.node .cong
-    [RoseTree.node .beta [], RoseTree.node .beta []],
-    RoseTree.node .propExt [Internal.Logic.trueI, dχ₁]]]
-  let dχ := RoseTree.node (.cut (Term.eq Fχ (Term.lam c tt))) [dFun,
-    RoseTree.node (.convFrom (Term.app Fχ (v i))) [RoseTree.node .beta [],
-      RoseTree.node .conv [RoseTree.node .trans [RoseTree.node .cong
-        [RoseTree.node (.rwHyp Φ.length false) [], RoseTree.node .refl []],
-        RoseTree.node .beta []], Internal.Logic.trueI]]]
-  pure (RoseTree.node (.apply (logicBase + 4) [] [q, ψ]) [dχ, RoseTree.node (.hyp h) []])
-
 /-- The number of children the kernel's term of a label has, where the type checker's case
 depends on the children's types. -/
 def arityOf (l : ℕ) : Option ℕ :=
@@ -944,10 +613,10 @@ rewriting after the language's rules and before the lemmas. The lemmas' matching
 def labelLeaf (P : Prog) (lemmas : List NormRule) (E : Array Entry) (bits : Option (List Bool)) :
     Internal.Prover := fun Γ Φ t u ↦ do
   let rs := baseNorm P ++ lemmas
-  let plain := funExt4 P.G (byWeak P.G E 0 rs)
+  let plain := funExts 4 P.G (byWeak P.G E 0 rs)
   let k? := bits.bind fun bs ↦ arityOf (Oitavem.rank bs)
   match k? with
-  | none => (funExt4 P.G (byWeak P.G E 0 (baseNorm P)) Γ Φ t u).orElse fun _ ↦ plain Γ Φ t u
+  | none => (funExts 4 P.G (byWeak P.G E 0 (baseNorm P)) Γ Φ t u).orElse fun _ ↦ plain Γ Φ t u
   | some k => do
     -- the children's list: the variable the induction hypothesis folds
     let (L, _) ← Internal.eqParts (← Φ[0]?)
@@ -959,14 +628,14 @@ def labelLeaf (P : Prog) (lemmas : List NormRule) (E : Array Entry) (bits : Opti
       let child (p : ℕ) : Term := v (4 + 2 * (k - 1 - p) + 1)
       let A := Term.fst (Term.app (Term.roseRec CR sR (child 0))
         (Term.rename fG fun j ↦ if j = 1 then 3 else j))
-      funExt4 P.G (withChildHyps P.G E 0 rs (Φ.length - 1) (List.range k) (fun p ↦
+      funExts 4 P.G (withChildHyps P.G E 0 rs (Φ.length - 1) (List.range k) (fun p ↦
           [[v 3, v 2, v 1, v 0]] ++ if p = 1 then [[v 3, consT treeTy A (v 2), v 1, v 0]] else [])
         (fun insts ↦ withWeakHyps P.G E 0 rs insts fun extra ↦
           byWeak P.G E 0 (baseNorm P ++ extra ++ lemmas)))
         Γ Φ t u
     let levels : ℕ → Internal.Prover := fun m ↦ m.rec rest fun _ next ↦
-      fun Γ Φ t u ↦ revertCase P.G 0 P.o 0 (Φ.length - 1) plain next Γ Φ t u
-    revertCase P.G 0 P.o i 0 plain (levels (k - 1)) Γ Φ t u
+      fun Γ Φ t u ↦ revertCase P.G 0 P.o logicBase 0 (Φ.length - 1) plain next Γ Φ t u
+    revertCase P.G 0 P.o logicBase i 0 plain (levels (k - 1)) Γ Φ t u
 
 /-- The proof at a construction: case analysis of the label's bits, to five of them, each case
 proved by {lit}`labelLeaf` with the bits of a label ending there, or none past the fourth,

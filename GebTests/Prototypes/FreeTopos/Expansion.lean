@@ -42,15 +42,13 @@ of the forms' predicate, the forms reversed onto the output. The program's: the 
 empty environment and output, projected through the conditional, and the reversal of a reversal.
 
 Rewriting under a mask is the absorption lemma of
-{name}`GebTests.Prototypes.FreeTopos.TreeCases.maskRw`, applied where a hypothesis equates a
+{name}`Geb.FreeTopos.Tactics.maskRw`, applied where a hypothesis equates a
 conditional with one on the same test; a compound term is generalized to a new variable, which
 case analysis of trees then splits.
 
 ## Main definitions
 
 * {lit}`statement` — the predicates, the two sides and the terms of the lemmas, in Geb.
-* {lit}`byGeneralize` — the proof of an equation by generalizing a term.
-* {lit}`byMaskSubs` — the proof of an equation by rewriting under masks by the hypotheses.
 * {lit}`exprSteps`, {lit}`formSteps`, {lit}`runSteps`, {lit}`programSteps` — the identities of
   the expression, the step at a form, the run and the program.
 * {lit}`development` — the lemmas, each with its proof.
@@ -66,11 +64,10 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.FreeTopos.Expansion
 
-open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation
+open Geb Geb.PartialHorn Geb.FreeTopos Geb.FreeTopos.Translation Geb.FreeTopos.Tactics
 open GebTests.Prototypes.FreeTopos.TranslationProofs
 open GebTests.Prototypes.FreeTopos.Weakening
 open GebTests.Prototypes.FreeTopos.TreeCases
-open GebTests.Prototypes.FreeTopos.Substitution (byImpI withImpElim hypIndex)
 open GebTests.Prototypes.FreeTopos.Translation (baseRules)
 open Internal (Term NormRule Entry Deriv Decl Definition)
 open scoped FinEnum
@@ -192,49 +189,6 @@ def children (k : KFold) : Option Term := do
 
 end KFold
 
-/-! Generalization. -/
-
-/-- The proof of an equation by generalizing the term {lit}`c`, of the type {lit}`a`: the sides
-abstracted over its occurrences are equal functions, by extensionality and {lit}`p` at a new,
-innermost variable, and the equation follows, cut in as a hypothesis, by applying them to the
-term. -/
-def byGeneralize (a : Tree) (c : Term) (p : Internal.Prover) : Internal.Prover :=
-  fun Γ Φ t u ↦ do
-    let F := abstractTerm a c t
-    let H := abstractTerm a c u
-    let q ← p (a :: Γ) (Φ.map Internal.weaken1) (Term.app (Internal.weaken1 F) (v 0))
-      (Term.app (Internal.weaken1 H) (v 0))
-    let refl : Deriv := RoseTree.node .refl []
-    let dχ := RoseTree.node .cong [RoseTree.node .beta [], RoseTree.node .beta []]
-    let pχ := RoseTree.node .join [RoseTree.node .cong
-      [RoseTree.node (.rwHyp Φ.length false) [], refl], refl]
-    let χ := Term.eq (Term.app F c) (Term.app H c)
-    pure (RoseTree.node (.cut (Term.eq F H)) [RoseTree.node .funExt [q],
-      RoseTree.node (.convFrom χ) [dχ, pχ]])
-
-/-- The proof of an equation in a context of a list variable by induction on it, the induction
-hypothesis in weak normal form a rewriting rule. -/
-def byListIndRw (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule) :
-    Internal.Prover :=
-  Internal.byListIndWith G n 0 1 (byWeak G E n rs) fun Γ Φ t u ↦
-    withWeakHyps G E n rs [Φ.length - 1]
-      (fun extra ↦ byWeak G E n (extra ++ rs)) (m := .weak)
-      Γ Φ t u
-
-/-- The proof of an equation in a context of a rose tree alone by induction on it in the form of
-the uniqueness of its fold, with the step {lit}`s`, each premise by {lit}`p`. -/
-def byRoseIndP (G : Internal.Globals) (n : ℕ) (s : Term) (p : Internal.Prover) :
-    Internal.Prover := fun Γ _ t u ↦ match Γ with
-  | [r] => do
-    let (a, _) ← Internal.roseParts r
-    let C ← Internal.typeIn G n Γ t
-    let p₁ ← p [list r, a] [] (Internal.roseNodeAt 2 r a t)
-      (Term.subst s (Internal.atVar0 (Internal.roseMapAt 0 1 C t)))
-    let p₂ ← p [list r, a] [] (Internal.roseNodeAt 2 r a u)
-      (Term.subst s (Internal.atVar0 (Internal.roseMapAt 0 1 C u)))
-    pure (RoseTree.node (.roseInd 2 0 1 s) [p₁, p₂])
-  | _ => none
-
 /-- The first components of the folds of the expansion and of the predicate: of the children's
 values, the trees their names give, the first component at each; the first component of each
 fold, the tree, by the uniqueness of the fold; and the first components of the children's
@@ -250,10 +204,10 @@ def firstLemmas (P : Prog) : Option (List Step) := do
     let fu := weakThm P 0 [list treeTy] trees firsts
     let fi : Internal.Thm := ⟨0, [treeTy], [], Term.eq (Term.fst (k.ap (Term.var 0))) (Term.var 0)⟩
     let wh := weakThm P 0 [list treeTy] trees (Term.var 0)
-    pure [step s!"fu{tag}" fu (fun _ E ↦ side fu (byListIndRw P.G E 0 (baseNorm P))),
+    pure [step s!"fu{tag}" fu (fun _ E ↦ side fu (byListIndHypWeak P.G E 0 (baseNorm P))),
       step s!"first{tag}" fi (fun ix E ↦
         let rs := baseNorm P ++ [.thm (ix s!"fu{tag}") [], .thm (ix "mapId") []]
-        side fi (byRoseIndP P.G 0 (nodeT (Term.pair (Term.var 1) (Term.var 0)))
+        side fi (byRoseIndWith P.G 0 (nodeT (Term.pair (Term.var 1) (Term.var 0)))
           (byWeak P.G E 0 rs))),
       step s!"trees{tag}" wh (fun ix E ↦ side wh (byMode .full P.G E 0 (baseNorm P ++
         [.thm (ix s!"fu{tag}") [], .thm (ix s!"first{tag}") [], .thm (ix "mapId") []])))]
@@ -266,27 +220,9 @@ def conjLemmas (P : Prog) : Option (List Step) := do
   let kids ← kK.children
   let allK := weakThm P 0 [list treeTy] (apps (call (P.idx "kAll") [] []) [kids])
     (apps (call (P.idx "allKe") [] []) [Term.var 0])
-  pure [step "allK" allK (fun _ E ↦ side allK (byListIndRw P.G E 0 (baseNorm P)))]
+  pure [step "allK" allK (fun _ E ↦ side allK (byListIndHypWeak P.G E 0 (baseNorm P)))]
 
 /-! The expression's node. -/
-
-/-- The proof of an equation by rewriting its sides to their normal forms at a depth and proving
-the rewritten equation by {lit}`p`. -/
-def byNF (G : Internal.Globals) (E : Array Entry) (n : ℕ) (rs : List NormRule)
-    (m : Internal.Depth) (p : Internal.Prover) : Internal.Prover := fun Γ Φ t u ↦ do
-  let (t', dt, _) ← Internal.eval G E n rs 4096 m Γ Φ t
-  let (u', du, _) ← Internal.eval G E n rs 4096 m Γ Φ u
-  let q ← p Γ Φ t' u'
-  pure (RoseTree.node .conv [RoseTree.node .cong [dt, du], q])
-
-/-- The applications of the definition of index {lit}`k` to two arguments among a term's
-subterms outside binders and folds' starts and steps. -/
-def appsOf (k : ℕ) (t : Term) : List Term :=
-  (openSubterms t).filter fun u ↦ match u.label, u.children with
-    | .app, [f, _] => match f.label, f.children with
-      | .app, [g, _] => g.label = .defn k []
-      | _, _ => false
-    | _, _ => false
 
 /-- The proof of an equation by case analysis on the truth of each application of
 {lit}`named`, in turn: the application generalized to a new tree variable, split, and its label
@@ -299,12 +235,6 @@ def byNamedCases (P : Prog) (E : Array Entry) (lk : ℕ) (rs : List NormRule)
     | none => q Γ Φ t u
     | some N => byGeneralize treeTy N (byTreeSplit lk 0
         (byListSplit P.G 0 1 rec p)) Γ Φ t u
-
-/-- The proof of an equation by case analysis on the bitstring variable of index {lit}`i`, to
-{lit}`d` bits, each case by {lit}`p`. -/
-def byBits (G : Internal.Globals) (p : Internal.Prover) : ℕ → ℕ → Internal.Prover :=
-  fun d ↦ d.rec (fun _ ↦ p) fun _ rec i ↦
-    byListSplit G 0 i p (bySplit2 3 4 1 (rec 1) (rec 1))
 
 /-! The induction hypothesis as an equation of lists. -/
 
@@ -327,7 +257,7 @@ def mapEqSteps (P : Prog) : List Step :=
     let (z, sT) ← (lib[D.tail]?).bind fun d ↦ firstFold d.body
     pure ⟨1, [list (x 0)], [], Term.eq (Term.fst (Term.listRec z sT (v 0))) (v 0)⟩
   (match tailReb with
-    | some tr => [step "tailReb" tr (fun _ E ↦ side tr (byListIndRw P.G E 1 (baseNorm P)))]
+    | some tr => [step "tailReb" tr (fun _ E ↦ side tr (byListIndHypWeak P.G E 1 (baseNorm P)))]
     | none => []) ++
   [step "mapEq" a (fun ix E ↦
     let rs := rs ix
@@ -350,78 +280,15 @@ def mapEqSteps (P : Prog) : List Step :=
       let dx := RoseTree.node .conv [RoseTree.node (.rwHyp Φ.length false) [],
         RoseTree.node .join [refl, refl]]
       let Φ₂ := Φ₁ ++ [h₁]
-      let rest ← withImpElim P.o (Φ.length + 1) [0] (fun concls ↦
+      let rest ← withImpElim P.o logicBase (Φ.length + 1) [0] (fun concls ↦
         withWeakHyps P.G E 0 rs (concls.filterMap hypIndex) (fun extra ↦
           byWeak P.G E 0 (extra ++ [.hyp (Φ₁.length)] ++ rs)) (m := .weak)) Γ Φ₂ l r
       pure (RoseTree.node (.cut (Term.eq h₁ h₂)) [dHd, RoseTree.node (.cut (Term.eq t₁ t₂))
         [dTl, RoseTree.node (.cut h₁) [dx, rest]]])
-    side a (Internal.byListIndWith P.G 0 0 1 (byImpI P.G E P.o (byWeak P.G E 0 rs))
-      (byImpI P.G E P.o consP)))]
+    side a (Internal.byListIndWith P.G 0 0 1 (byImpI P.G E P.o logicBase (byWeak P.G E 0 rs))
+      (byImpI P.G E P.o logicBase consP)))]
 
 /-! Rewriting under a mask by a hypothesis. -/
-
-/-- The type, test, first branch and second branch of a conditional of the library. -/
-def condParts (w : Term) : Option (Tree × Term × Term × Term) := match w.label, w.children with
-  | .defn k [a], [d, y, c] => if k = D.cond then some (a, c, y, d) else none
-  | _, _ => none
-
-/-- The proof that a conditional of the type {lit}`a` on the test {lit}`c`, between {lit}`y` and
-{lit}`d`, is the conditional between {lit}`y` with {lit}`x'` for {lit}`x` and {lit}`d`, as
-{name}`GebTests.Prototypes.FreeTopos.TreeCases.maskRw`, the conditional of the type {lit}`b` on
-the same test between {lit}`x` and {lit}`z` rewritten to that between {lit}`x'` and {lit}`z` by
-{lit}`dM`. -/
-def maskRwD (a b : Tree) (ab : ℕ) (dM : Deriv) (c d x x' z y : Term) : Deriv :=
-  let F := abstractTerm b x y
-  let refl : Deriv := RoseTree.node .refl []
-  let beta : Deriv := RoseTree.node .beta []
-  let χ := Term.eq (condT a c (Term.app F x) d) (condT a c (Term.app F x') d)
-  let dχ := RoseTree.node .join [RoseTree.node .trans
-    [RoseTree.node (.thm ab [a, b] [c, d, x, z, F] true) [],
-      RoseTree.node .trans [RoseTree.node .cong [refl, RoseTree.node .cong [refl, dM], refl],
-        RoseTree.node (.thm ab [a, b] [c, d, x', z, F] false) []]], refl]
-  RoseTree.node (.convFrom χ) [RoseTree.node .cong
-    [RoseTree.node .cong [refl, beta, refl], RoseTree.node .cong [refl, beta, refl]], dχ]
-
-/-- The rewriting of the first conditional subterm of a term whose test is that of one of the
-hypotheses, the latest first, and whose first branch mentions that hypothesis's first term: the
-subterm, its rewriting and the derivation of their equation, by the absorption lemma of index
-{lit}`ab` and the condition lemma of index {lit}`cs`. A hypothesis equates a conditional with a
-conditional on its test with another first branch and the same second, or with a term that is
-its second branch, which the condition lemma makes the conditional between it and itself. -/
-def maskSub (ab cs : ℕ) (Φ : List Term) (w : Term) : Option (Term × Term × Deriv) :=
-  (openSubterms w).findSome? fun S ↦ do
-    let (a, c, y, d) ← condParts S
-    (List.range Φ.length).reverse.findSome? fun i ↦ do
-      let (L, R) ← Internal.eqParts (← Φ[i]?)
-      let (b, c', x, z) ← condParts L
-      if c' ≠ c then none else
-      let (x', dM) ← match condParts R with
-        | some (_, c'', x', z') =>
-          if c'' = c ∧ z' = z then some (x', RoseTree.node (.rwHyp i false) []) else none
-        | none =>
-          if R = z then some (R, RoseTree.node .trans [RoseTree.node (.rwHyp i false) [],
-            RoseTree.node (.thm cs [b] [c, R] true) []]) else none
-      if x = x' then none else
-      let F := abstractTerm b x y
-      let body ← F.children.head?
-      if Internal.uses body 0 = 0 then none else
-      let S' := condT a c (Term.subst body (Internal.instVar x')) d
-      pure (S, S', maskRwD a b ab dM c d x x' z y)
-
-/-- The proof of an equation by rewriting under masks by the hypotheses, as
-{lit}`maskSub` finds them in either side, up to {lit}`n` times, each rewriting cut in and added as
-a rule for the later rounds' reductions, and then by {lit}`p` with the rules added. -/
-def byMaskSubs (G : Internal.Globals) (E : Array Entry) (ab cs : ℕ) (rs : List NormRule) :
-    ℕ → (List NormRule → Internal.Prover) → Internal.Prover :=
-  fun n ↦ (n.rec (fun extra p ↦ p extra) fun _ rec extra p ↦
-    byNF G E 0 (extra ++ rs) .weak fun Γ Φ t u ↦
-      match (maskSub ab cs Φ t).orElse fun _ ↦ maskSub ab cs Φ u with
-      | none => p extra Γ Φ t u
-      | some (S, S', dS) =>
-        match rec (.hyp Φ.length :: extra) p Γ (Φ ++ [Term.eq S S']) t u with
-        | some q => some (RoseTree.node (.cut (Term.eq S S')) [dS, q])
-        | none => none :
-    List NormRule → (List NormRule → Internal.Prover) → Internal.Prover) []
 
 /-- The conditional's computation at an empty test and at a bit before a bitstring. -/
 def condSteps (P : Prog) : List Step :=
@@ -494,7 +361,7 @@ def applySteps (P : Prog) : Option (List Step) := do
   let a := weakThm P 0 [list treeTy, list treeTy]
     (apps (call (P.idx "rrApply") [] []) [kids, v 1])
     (apps (call (P.idx "expAll") [] []) [v 0, v 1])
-  pure [step "applyF" a (fun _ E ↦ side a (byListIndRw P.G E 0 (baseNorm P)))]
+  pure [step "applyF" a (fun _ E ↦ side a (byListIndHypWeak P.G E 0 (baseNorm P)))]
 
 /-- The expression's identity, by induction on rose trees with the induction hypothesis: at a
 construction, the label split to decide a list; in the list case the applications of
@@ -523,7 +390,7 @@ def exprSteps (P : Prog) : List Step :=
           [RoseTree.node (.thm (ix name) [] [csv] false) [], refl], refl])
       let (e₁, d₁) := instEq "acc1" "g1L" "g1R"
       let (e₂, d₂) := instEq "acc2" "g2L" "g2R"
-      let k ← withImpElim P.o 0 [Φ.length] (fun concls ↦
+      let k ← withImpElim P.o logicBase 0 [Φ.length] (fun concls ↦
         withWeakHyps P.G E 0 rs (concls.filterMap hypIndex ++ [Φ₁.length, Φ₁.length + 1])
           (fun extra ↦
             let rs' := extra ++ rs
@@ -537,34 +404,6 @@ def exprSteps (P : Prog) : List Step :=
     side a (Internal.byRoseIndHyp 2 0 1 (Internal.byFunExt P.G 0 (byBits P.G leaf 3 2))))]
 
 /-! The forms. -/
-
-/-- The proof of an equation in a context whose list variable of index {lit}`i` is split to three
-elements, each shorter or longer list by {lit}`q` and the three elements' case by {lit}`p`. -/
-def byLength3 (G : Internal.Globals) (i : ℕ) (p q : Internal.Prover) : Internal.Prover :=
-  byListSplit G 0 i q (byListSplit G 0 0 q (byListSplit G 0 0 q (byListSplit G 0 0 p q)))
-
-/-- The variable a weak normal form is stuck on, including the test of a folded conditional. -/
-def stuckVarC (skip : ℕ → Bool) (t : Term) : Option ℕ :=
-  ((openSubterms t).findSome? fun u ↦ match condParts u with
-    | some (_, c, _, _) => match c.label with
-      | .var i => if skip i then none else some i
-      | _ => none
-    | none => none).orElse fun _ ↦ stuckVar skip t
-
-/-- The proof of an equation by reducing both sides to one normal form, or else by case analysis
-of a variable the normal forms are stuck on, a folded conditional's test among them, each case
-the same way, to a depth. -/
-def byAutoC (G : Internal.Globals) (E : Array Entry) (n lk : ℕ) (rs : List NormRule) (d : ℕ) :
-    Internal.Prover :=
-  d.rec (byWeak G E n rs) fun _ rec Γ Φ t u ↦ (byWeak G E n rs Γ Φ t u).orElse fun _ ↦ do
-    let (t', _, _) ← Internal.eval G E n rs 4096 .weak Γ Φ t
-    let (u', _, _) ← Internal.eval G E n rs 4096 .weak Γ Φ u
-    let i ← (stuckVarC (fun _ ↦ false) t').orElse fun _ ↦ stuckVarC (fun _ ↦ false) u'
-    let c ← Γ[i]?
-    match Internal.listPart c, Internal.coprodParts c with
-    | some _, _ => byListSplit G n i rec rec Γ Φ t u
-    | none, some _ => bySplit2 3 4 i rec rec Γ Φ t u
-    | none, none => if c = treeTy then byTreeSplit lk i rec Γ Φ t u else none
 
 /-- The lemmas of the step at a form: a conditional on the label of a conditional is the
 conditional on the inner test between the conditionals on the branches' labels, and a tree the
@@ -687,7 +526,7 @@ def revSteps (P : Prog) : List Step :=
   let revRev := weakThm P 0 [list treeTy]
     (apps (call (P.idx "revApp") [] []) [apps (call (P.idx "revApp") [] []) [v 0, nilT treeTy],
       nilT treeTy]) (v 0)
-  [step "appendNil" appNil (fun _ E ↦ side appNil (byListIndRw P.G E 0 (baseNorm P))),
+  [step "appendNil" appNil (fun _ E ↦ side appNil (byListIndHypWeak P.G E 0 (baseNorm P))),
     step "revGen" revGen (fun ix E ↦
       let rs := baseNorm P ++ [.thm (ix "appendNil") []]
       side revGen (Internal.byListIndWith P.G 0 0 1
