@@ -23,7 +23,7 @@ rule's position over the node of the label's or the rule's data followed by its 
 
 * {lit}`encOpt`, {lit}`encSeq`, {lit}`encTheory`, {lit}`encExtEnv` — optional trees, sequents,
   theories and the inference's environments.
-* {lit}`encTerm`, {lit}`encDeriv` — terms and derivations.
+* {lit}`encTerm`, {lit}`encDeriv`, {lit}`encRule` — terms, derivations and the prover's rules.
 * {lit}`encGlobals`, {lit}`encEntry`, {lit}`encDecl`, {lit}`encState` — constants, entries,
   declarations and the state of a development.
 
@@ -155,6 +155,19 @@ def ruleData : Internal.Rule → ℕ × List Tree
 children. -/
 def encDeriv : Internal.Deriv → Tree :=
   encWith (fun r ↦ (ruleData r).1) fun r ↦ RoseTree.node 0 (ruleData r).2
+
+/-- A rule of the prover's normalizer as the node of its constructor's position over its
+fields: a prepared theorem's matching, a function, is left out, the leaf of label zero standing
+for its root's label. -/
+def encRule : Internal.NormRule → Tree
+  | .rule r => RoseTree.node 0 [Kernel.leaf (ruleData r).1, RoseTree.node 0 (ruleData r).2]
+  | .delta k => RoseTree.node 1 [Kernel.leaf k]
+  | .deltaBelow m ks => RoseTree.node 2 [Kernel.leaf m, RoseTree.node 0 (ks.map Kernel.leaf)]
+  | .unitVar => RoseTree.node 3 []
+  | .thm j θ => RoseTree.node 4 [Kernel.leaf j, RoseTree.node 0 θ]
+  | .thmAt j θ _ _ k => RoseTree.node 5 [Kernel.leaf j, RoseTree.node 0 θ, Kernel.leaf 0,
+      Kernel.leaf k]
+  | .hyp i => RoseTree.node 6 [Kernel.leaf i]
 
 /-- A primitive arrow as the node of its arity, arrow, domain and codomain. -/
 def encPrim (p : Internal.Prim) : Tree :=

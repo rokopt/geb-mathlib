@@ -3960,7 +3960,13 @@ checklist and in CI.
   input. At every development, its constants, entries and declarations
   encoded, the loaded check gives the encoding of the Lean checker's
   state, without `Classical.choice`; the tests' encodings are the
-  proof's (`Agreement/Encode.lean`).
+  proof's (`Agreement/Encode.lean`). `bootstrap/free-topos/prove.geb`,
+  in the same program, is the prover written again in the datatype
+  language: `GebProve.lean` compares it with the Lean prover at the
+  proofs of `InternalDerivation.lean` and `InternalLogic.lean`, and
+  `Agreement/Prove.lean` proves each of its entry points equal to the
+  Lean prover's at every encoded input, at rules related to the
+  normalizer's and provers related to Lean's.
   Depends on the modules of `Geb/Prototypes/FreeTopos/` above and
   `Geb.Prototypes.PartialHorn.Completeness`.
 - `Geb/Prototypes/FreeTopos/Translation.lean` — the translation of the

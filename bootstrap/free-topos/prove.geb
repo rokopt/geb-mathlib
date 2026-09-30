@@ -1,0 +1,466 @@
+; Copyright (c) 2026 Terence Rokop. All rights reserved.
+; Released under Apache 2.0 license as described in the file LICENSE.
+; Authors: Terence Rokop
+;
+; The prover of the internal language, written in the datatype language, proving as
+; Geb.FreeTopos.Internal's prover in Lean proves: normalization innermost first, or weak head
+; normal forms first to a depth, by the language's equations, the unfolding of definitions, the
+; element of the terminal type, earlier theorems found by matching their left sides, and the
+; hypotheses; induction on natural numbers, lists and rose trees; and the proofs of an equation
+; from proofs of others. A derivation is encoded as the checker of derivations encodes it, a
+; derivation with a mark whether it rewrites as the pair of the two, and a rule of the normalizer
+; as the node of its constructor's position over its fields, paired with its left side's
+; matching where it has one. Requires the prelude, the base, partial Horn logic, the theory, the
+; inference, the language and the checker of derivations.
+
+; derivations, and a rewriting's derivation marked when it rewrites
+(defn dNode ((r T) (d Ts) (cs Ts)) T (mNode r d cs))
+(def dRefl (pr (dNode 0 (nil T) (nil T)) 0))
+(defn dTrans ((d1 T) (d2 T)) T
+  (if (p2 d1) (if (p2 d2) (pr (dNode 1 (nil T) (l2 (p1 d1) (p1 d2))) 1) d1) d2))
+(defn dCong ((cs Ts)) T (if (anyT p2 cs) (pr (dNode 2 (nil T) (mapT p1 cs)) 1) dRefl))
+
+; whether a pattern's root may match a term's root: the pattern's root is a variable, or the two
+; roots are of one kind, of one index for a primitive or a definition
+(defn sameShape ((p T) (t T)) T
+  (let l T (label p)
+    (if (eq l 0) 1
+      (if (eq (label t) l) (if (or (eq l 7) (eq l 11)) (eq (mD p 0) (mD t 0)) 1) 0))))
+
+; a list with the element at a position replaced
+(defn setAt ((xs Ts) (i T) (x T)) Ts
+  (mapT (lam ((j T)) (if (eq j i) x (at xs j))) (range (length xs))))
+
+; the matching of a pattern against a term under d binders, extending an assignment of the
+; pattern's variables to optional terms: the optional node of the extended assignment
+(deftype Mt (Arrow T (Arrow T (Arrow Ts T))))
+(deftype Mts (List Mt))
+(defn mtTail ((rs Mts)) Mts (lcase Mt Mts rs (nil Mt) (lam ((r Mt) (rest Mts)) rest)))
+(defn mtAt ((rs Mts) (i T)) Mt
+  (lcase Mt Mt (iter Mts mtTail rs i) (lam ((d T) (t T) (s Ts)) none)
+    (lam ((r Mt) (rest Mts)) r)))
+(defn matchVar ((i T) (d T) (t T) (s Ts)) T
+  (if (lt i d) (if (equal t (mVar i)) (some (node 0 s)) none)
+    (let t1 T (if (eq d 0) t (rename t (lam ((j T)) (sub j d))))
+      (if (or (eq d 0) (equal (rename t1 (lam ((j T)) (add j d))) t))
+          (let e T (nth s (sub i d))
+            (if (isSome e)
+                (if (isSome (get e))
+                    (if (equal (get (get e)) t1) (some (node 0 s)) none)
+                    (some (node 0 (setAt s (sub i d) (some t1)))))
+                (if (equal t1 (mVar (sub i d))) (some (node 0 s)) none)))
+          none))))
+(deftype MA (Arrow Ts (Arrow T T)))
+(defn matchAll ((rs Mts) (d T) (us Ts) (s Ts)) T
+  ((foldr Mt MA
+     (lam ((q Mt) (k MA))
+       (lam ((ts Ts) (acc T))
+         (lcase T T ts acc
+           (lam ((u T) (rest Ts)) (k rest (bindO acc (lam ((sn T)) (q d u (children sn)))))))))
+     (lam ((ts Ts) (acc T)) acc)
+     (mtTail rs))
+   us (some (node 0 s))))
+(defn matchStep ((nd T) (rs Mts)) Mt
+  (lam ((d T) (t T) (s Ts))
+    (let l T (label nd)
+      (if (eq l 0) (matchVar (mD nd 0) d t s)
+        (let us Ts (mArgs t)
+          (let k T (length us)
+            (if (and (and (eq l (label t)) (equal (child nd 0) (child t 0)))
+                     (eq (length (mArgs nd)) k))
+                (if (and (eq l 5) (eq k 1)) ((mtAt rs 1) (add d 1) (at us 0) s)
+                (if (and (or (eq l 8) (eq l 9)) (eq k 3))
+                    (if (and (equal (mArg nd 0) (at us 0)) (equal (mArg nd 1) (at us 1)))
+                        ((mtAt rs 3) d (at us 2) s)
+                        none)
+                (if (and (eq l 10) (eq k 2))
+                    (if (equal (mArg nd 0) (at us 0)) ((mtAt rs 2) d (at us 1) s) none)
+                  (matchAll rs d us s))))
+                none)))))))
+(defn matchTerm ((p T)) Mt (para Mt matchStep p))
+
+; the rules of the normalizer: the node of a rule of the checker's position and data, of the
+; unfolding of one definition, of the definitions below an index but a list, of the terminal
+; type's element, of a theorem at objects, of a theorem at objects with its left side, and of a
+; hypothesis; each paired with its left side's matching, or with none
+(deftype NR (Prod T Mt))
+(deftype NRs (List NR))
+(def noMatch (lam ((d T) (t T) (s Ts)) none))
+
+; the first rule that rewrites a term at its root: the pair of the result and its derivation
+(deftype RW (Arrow T T))
+(defn thmRewrite ((G T) (E Ts) (n T) (g Ts) (hs Ts) (j T) (th Ts) (m Mt) (k T) (t T)) T
+  (bindO (m 0 t (replicate k none)) (lam ((sn T))
+    (bindO (allSomeT (children sn)) (lam ((sg T))
+      (let rd Ts (l4 j (node 0 th) sg 0)
+        (mapO (lam ((t2 T)) (pr t2 (dNode 16 rd (nil T)))) (rootStep G E n g hs 16 rd t))))))))
+(defn tryRule ((G T) (E Ts) (n T) (g Ts) (hs Ts) (r NR) (t T)) T
+  (let rt T (fst r)
+    (let k T (label rt)
+      (if (eq k 0)
+          (let rl T (child rt 0)
+            (let rd Ts (children (child rt 1))
+              (mapO (lam ((t2 T)) (pr t2 (dNode rl rd (nil T)))) (rootStep G E n g hs rl rd t))))
+      (if (eq k 1)
+          (if (and (eq (label t) 11) (eq (mD t 0) (child rt 0)))
+              (mapO (lam ((t2 T)) (pr t2 (dNode 8 (nil T) (nil T))))
+                (rootStep G E n g hs 8 (nil T) t))
+              none)
+      (if (eq k 2)
+          (if (and (eq (label t) 11)
+                   (and (lt (mD t 0) (child rt 0))
+                        (not (anyT (lam ((x T)) (eq x (mD t 0))) (children (child rt 1))))))
+              (mapO (lam ((t2 T)) (pr t2 (dNode 8 (nil T) (nil T))))
+                (rootStep G E n g hs 8 (nil T) t))
+              none)
+      (if (eq k 3)
+          (if (and (eq (label t) 0) (equal (nth g (mD t 0)) (some one)))
+              (mapO (lam ((t2 T)) (pr t2 (dNode 7 (nil T) (nil T))))
+                (rootStep G E n g hs 7 (nil T) t))
+              none)
+      (if (eq k 4)
+          (let j T (child rt 0)
+            (let th Ts (children (child rt 1))
+              (bindO (bindO (nth E j) entryLanguage) (lam ((a T))
+                (bindO (eqParts (thConcl a)) (lam ((lr T))
+                  (if (sameShape (p1 lr) t)
+                      (thmRewrite G E n g hs j th
+                        (matchTerm (if (isEmpty th) (p1 lr) (osubst th (p1 lr))))
+                        (length (thCtx a)) t)
+                      none)))))))
+      (if (eq k 5)
+          (if (sameShape (child rt 2) t)
+              (thmRewrite G E n g hs (child rt 0) (children (child rt 1)) (snd r) (child rt 3) t)
+              none)
+      (if (eq k 6)
+          (let rd Ts (l2 (child rt 0) 0)
+            (mapO (lam ((t2 T)) (pr t2 (dNode 17 rd (nil T)))) (rootStep G E n g hs 17 rd t)))
+        none))))))))))
+(defn rootRewrite ((G T) (E Ts) (n T) (rs NRs) (g Ts) (hs Ts) (t T)) T
+  ((foldr NR RW
+     (lam ((r NR) (rest RW))
+       (lam ((u T)) (let v T (tryRule G E n g hs r u) (if (isSome v) v (rest u)))))
+     (lam ((u T)) none) rs)
+   t))
+
+; the rules with each theorem's matching prepared, its left side instantiated at its objects
+(defn prepareRule ((E Ts) (r T)) NR
+  (if (eq (label r) 4)
+      (let j T (child r 0)
+        (let th Ts (children (child r 1))
+          (let a T (bindO (nth E j) entryLanguage)
+            (let lr T (bindO a (lam ((a1 T)) (eqParts (thConcl a1))))
+              (if (isSome lr)
+                  (let p T (if (isEmpty th) (p1 (get lr)) (osubst th (p1 (get lr))))
+                    (pair (node 5 (l4 j (node 0 th) p (length (thCtx (get a))))) (matchTerm p)))
+                  (pair r noMatch))))))
+      (pair r noMatch)))
+(defn prepareRules ((E Ts) (rs Ts)) NRs
+  (foldr T NRs (lam ((r T) (acc NRs)) (cons (prepareRule E r) acc)) (nil NR) rs))
+
+; the normal form of a term in a context under hypotheses, innermost first, within a depth of
+; fuel: the optional pair of the normal form and its rewriting derivation, marked
+(deftype NF (Arrow Ts (Arrow Ts (Arrow T T))))
+(defn rebuild ((t T) (cs Ts)) T (node (label t) (cons (child t 0) (mapT p1 cs))))
+(defn marked ((cs Ts)) T (anyT (lam ((c T)) (p2 (p2 c))) cs))
+; the pairs of the elements of two lists at the positions of the shorter
+(defn zipTs ((xs Ts) (ys Ts)) Ts
+  ((foldr T (Arrow Ts Ts)
+     (lam ((x T) (k (Arrow Ts Ts)))
+       (lam ((zs Ts)) (lcase T Ts zs (nil T) (lam ((y T) (rest Ts)) (cons (pr x y) (k rest))))))
+     (lam ((zs Ts)) (nil T)) xs)
+   ys))
+(defn normStep ((G T) (E Ts) (n T) (rs NRs) (rec NF)) NF
+  (lam ((g Ts) (hs Ts) (t T))
+    (bindO (childCtxs G n t g hs) (lam ((cxn T))
+      (let cx Ts (children cxn)
+        (bindO
+          (allSomeT (mapT (lam ((cu T))
+                            (let c T (p1 cu) (rec (children (p1 c)) (children (p2 c)) (p2 cu))))
+                          (zipTs cx (mArgs t))))
+          (lam ((csn T))
+            (let cs Ts (children csn)
+              (let t1 T (rebuild t cs)
+                (let d1 T (if (marked cs)
+                            (pr (dNode 2 (nil T) (mapT (lam ((c T)) (p1 (p2 c))) cs)) 1)
+                            dRefl)
+                  (let rr T (rootRewrite G E n rs g hs t1)
+                    (if (isSome rr)
+                        (let r T (get rr)
+                          (mapO (lam ((r3 T))
+                                  (pr (p1 r3) (dTrans d1 (dTrans (pr (p2 r) 1) (p2 r3)))))
+                                (rec g hs (p1 r))))
+                        (some (pr t1 d1))))))))))))))
+(defn normalize ((G T) (E Ts) (n T) (rs NRs) (fuel T)) NF
+  (iter NF (normStep G E n rs) (lam ((g Ts) (hs Ts) (t T)) (some (pr t dRefl))) fuel))
+
+; the proof of an equation by normalizing both sides to one term
+(defn joinBy ((nf NF) (g Ts) (hs Ts) (t T) (u T)) T
+  (bindO (nf g hs t) (lam ((a T))
+    (bindO (nf g hs u) (lam ((b T))
+      (if (equal (p1 a) (p1 b)) (some (dNode 18 (nil T) (l2 (p1 (p2 a)) (p1 (p2 b))))) none))))))
+(defn byNorm ((G T) (E Ts) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
+  (joinBy (normalize G E n rs fuel) g hs t u))
+
+; induction on the innermost variable, of the natural numbers or a list, with a step, each premise
+; by normalization
+(defn instAt ((k T) (th Ts) (t T)) T (subst t (instVar (mArr k th mStar))))
+(defn byNatInd ((G T) (E Ts) (n T) (kz T) (ks T) (s T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T)
+  (u T)) T
+  (lcase T T g none (lam ((c T) (g1 Ts))
+    (bindO (lowerHyps G n g1 hs) (lam ((hn T))
+      (let h1 Ts (children hn)
+        (bindO (byNorm G E n rs fuel g1 h1 (instAt kz (nil T) t) (instAt kz (nil T) u))
+          (lam ((p0 T))
+          (bindO (byNorm G E n rs fuel g hs (natSuccAt ks t) (subst s (atVar0 t))) (lam ((p1d T))
+            (mapO (lam ((p2d T)) (dNode 19 (l3 kz ks s) (l3 p0 p1d p2d)))
+              (byNorm G E n rs fuel g hs (natSuccAt ks u) (subst s (atVar0 u))))))))))))))
+(defn byListInd ((G T) (E Ts) (n T) (kn T) (kc T) (s T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T)
+  (u T)) T
+  (lcase T T g none (lam ((c T) (g1 Ts))
+    (bindO (listPart c) (lam ((a T))
+      (bindO (lowerHyps G n g1 hs) (lam ((hn T))
+        (let h1 Ts (children hn)
+          (let g2 Ts (cons c (cons a g1))
+            (let h2 Ts (mapT weaken2 h1)
+              (bindO (byNorm G E n rs fuel g1 h1 (instAt kn (single a) t) (instAt kn (single a) u))
+                (lam ((p0 T))
+                  (bindO (byNorm G E n rs fuel g2 h2 (listConsAt kc a t)
+                           (subst s (atVar0 (weakenElem t))))
+                    (lam ((p1d T))
+                      (mapO (lam ((p2d T)) (dNode 20 (l3 kn kc s) (l3 p0 p1d p2d)))
+                        (byNorm G E n rs fuel g2 h2 (listConsAt kc a u)
+                          (subst s (atVar0 (weakenElem u)))))))))))))))))))
+
+; induction with the induction hypothesis: the step's, normalized, cut in to rewrite by, the rules
+; followed by the rewriting by the hypothesis of an index
+(defn withHyp ((rs NRs) (i T)) NRs
+  (foldr NR NRs (lam ((x NR) (acc NRs)) (cons x acc))
+    (cons (pair (node 6 (single i)) noMatch) (nil NR))
+    rs))
+(defn byNatIndHyp ((G T) (E Ts) (n T) (kz T) (ks T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
+  (lcase T T g none (lam ((c T) (g1 Ts))
+    (bindO (lowerHyps G n g1 hs) (lam ((hn T))
+      (let h1 Ts (children hn)
+        (bindO (byNorm G E n rs fuel g1 h1 (instAt kz (nil T) t) (instAt kz (nil T) u))
+          (lam ((p0 T))
+          (let f1 Ts (append hs (single (mEq t u)))
+            (bindO ((normalize G E n rs fuel) g f1 (mEq t u)) (lam ((npsi T))
+              (let psi T (p1 npsi)
+                (bindO (byNorm G E n (withHyp rs (length f1))
+                         fuel g (append f1 (single psi)) (natSuccAt ks t) (natSuccAt ks u))
+                  (lam ((q T))
+                    (let ih T (dNode 24 (single (mEq t u))
+                                (l2 (p1 (p2 npsi)) (dNode 21 (single (length hs)) (nil T))))
+                      (some (dNode 28 (l2 kz ks) (l2 p0 (dNode 22 (single psi)
+                        (l2 ih q))))))))))))))))))))
+(defn byListIndHyp ((G T) (E Ts) (n T) (kn T) (kc T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
+  (lcase T T g none (lam ((c T) (g1 Ts))
+    (bindO (listPart c) (lam ((a T))
+      (bindO (lowerHyps G n g1 hs) (lam ((hn T))
+        (let h1 Ts (children hn)
+          (bindO (byNorm G E n rs fuel g1 h1 (instAt kn (single a) t) (instAt kn (single a) u))
+            (lam ((p0 T))
+              (let dl Ts (cons c (cons a g1))
+                (let e T (weakenElem (mEq t u))
+                  (let f1 Ts (append (mapT weaken2 h1) (single e))
+                    (bindO ((normalize G E n rs fuel) dl f1 e) (lam ((npsi T))
+                      (let psi T (p1 npsi)
+                        (bindO (byNorm G E n (withHyp rs (length f1))
+                                 fuel dl (append f1 (single psi)) (listConsAt kc a t)
+                                   (listConsAt kc a u))
+                          (lam ((q T))
+                            (let ih T (dNode 24 (single e)
+                                        (l2 (p1 (p2 npsi)) (dNode 21 (single (length h1)) (nil T))))
+                              (some (dNode 29 (l2 kn kc) (l2 p0 (dNode 22 (single psi)
+                                (l2 ih q))))))))))))))))))))))))
+
+; the child whose normalization can enable a rule at a node's root other than an application: the
+; pair's component a projection takes, and a fold's datum
+(defn headChild ((t T)) T
+  (if (or (mIs 3 1 t) (mIs 4 1 t)) (some 0)
+    (if (or (mIs 8 3 t) (mIs 9 3 t)) (some 2) (if (mIs 10 2 t) (some 1) none))))
+; whether the normal form but for folds' starts and steps, and the weak normal form, leave a
+; node's child of an index in place
+(defn keepsFold ((l T) (i T)) T
+  (if (or (eq l 8) (eq l 9)) (lt i 2) (if (eq l 10) (eq i 0) 0)))
+(defn keepsWeak ((l T) (i T)) T (if (eq l 5) 1 (keepsFold l i)))
+
+; the uses of the variable of an index in a term, each under an abstraction counted twice, a
+; fold's start and step having none
+(deftype UF (Arrow T T))
+(deftype UFs (List UF))
+(defn ufTail ((rs UFs)) UFs (lcase UF UFs rs (nil UF) (lam ((r UF) (rest UFs)) rest)))
+(defn ufAt ((rs UFs) (i T)) UF
+  (lcase UF UF (iter UFs ufTail rs i) (lam ((d T)) 0) (lam ((r UF) (rest UFs)) r)))
+(defn ufSum ((rs UFs) (d T)) T (foldr UF T (lam ((r UF) (acc T)) (add (r d) acc)) 0 (ufTail rs)))
+(defn usesStep ((nd T) (rs UFs)) UF
+  (lam ((d T))
+    (let l T (label nd)
+      (let k T (length (mArgs nd))
+        (if (eq l 0) (if (eq (mD nd 0) d) 1 0)
+        (if (eq l 5) (mul 2 (ufSum rs (add d 1)))
+        (if (and (or (eq l 8) (eq l 9)) (eq k 3)) ((ufAt rs 3) d)
+        (if (and (eq l 10) (eq k 2)) ((ufAt rs 2) d)
+          (ufSum rs d)))))))))
+(defn uses ((t T) (d T)) T ((para UF usesStep t) d))
+
+; the reduction of a term to a depth, 0 the weak head normal form, 1 the weak normal form, 2 the
+; normal form but for folds' starts and steps and 3 the normal form, within a depth of fuel
+(deftype EV (Arrow T NF))
+(defn atRoot ((G T) (E Ts) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (dp T) (t1 T) (d1 T)) T
+  (let rr T (rootRewrite G E n rs g hs t1)
+    (if (isSome rr)
+        (let r T (get rr)
+          (mapO (lam ((r3 T)) (pr (p1 r3) (dTrans d1 (dTrans (pr (p2 r) 1) (p2 r3)))))
+            (rec dp g hs (p1 r))))
+        (some (pr t1 d1)))))
+(defn headStep ((G T) (E Ts) (n T) (rs NRs) (rec EV) (g Ts) (hs Ts) (t T)) T
+  (if (mIs 6 2 t)
+      (bindO (rec 0 g hs (mArg t 0)) (lam ((rf T))
+        (let f1 T (p1 rf)
+          (let u T (mArg t 1)
+            (bindO (if (mIs 5 1 f1)
+                       (if (lt (uses (mArg f1 0) 0) 2) (some (pr u dRefl)) (rec 1 g hs u))
+                       (rec 0 g hs u))
+              (lam ((ru T))
+                (atRoot G E n rs rec g hs 0 (mApp f1 (p1 ru)) (dCong (l2 (p2 rf) (p2 ru))))))))))
+      (let rr T (rootRewrite G E n rs g hs t)
+        (if (isSome rr)
+            (let r T (get rr)
+              (mapO (lam ((r2 T)) (pr (p1 r2) (dTrans (pr (p2 r) 1) (p2 r2))))
+                (rec 0 g hs (p1 r))))
+            (let hc T (headChild t)
+              (if (isSome hc)
+                  (let i T (get hc)
+                    (let cs Ts (mArgs t)
+                      (bindO (nth cs i) (lam ((c T))
+                        (bindO (rec 0 g hs c) (lam ((rc T))
+                          (if (p2 (p2 rc))
+                              (atRoot G E n rs rec g hs 0
+                                (node (label t) (cons (child t 0) (setAt cs i (p1 rc))))
+                                (dCong (mapT (lam ((j T)) (if (eq j i) (p2 rc) dRefl))
+                                         (range (length cs)))))
+                              (some (pr t dRefl)))))))))
+                  (some (pr t dRefl))))))))
+(defn deepStep ((G T) (E Ts) (n T) (rs NRs) (rec EV) (dp T) (g Ts) (hs Ts) (w T) (dw T)) T
+  (let l T (label w)
+    (let ws Ts (mArgs w)
+      (if (eq dp 1)
+          (bindO
+            (allSomeT (mapT (lam ((i T)) (if (keepsWeak l i) (some (pr (at ws i) dRefl))
+                                           (rec 1 g hs (at ws i))))
+                        (range (length ws))))
+            (lam ((csn T))
+              (let cs Ts (children csn)
+                (let t1 T (rebuild w cs)
+                  (let d1 T (dTrans dw (dCong (mapT p2 cs)))
+                    (if (marked cs) (atRoot G E n rs rec g hs 1 t1 d1) (some (pr t1 d1))))))))
+          (bindO (childCtxs G n w g hs) (lam ((cxn T))
+            (let cx Ts (children cxn)
+              (bindO
+                (let z Ts (zipTs cx ws)
+                  (allSomeT (mapT (lam ((i T))
+                                    (let cu T (at z i)
+                                      (let c T (p1 cu)
+                                        (if (and (eq dp 2) (keepsFold l i))
+                                            (some (pr (p2 cu) dRefl))
+                                          (rec dp (children (p1 c)) (children (p2 c)) (p2 cu))))))
+                              (range (length z)))))
+                (lam ((csn T))
+                  (let cs Ts (children csn)
+                    (let t1 T (rebuild w cs)
+                      (if (eq dp 2)
+                          (let d1 T (dTrans dw (dCong (mapT p2 cs)))
+                            (if (marked cs) (atRoot G E n rs rec g hs 2 t1 d1) (some (pr t1 d1))))
+                          (let d1 T (dCong (mapT p2 cs))
+                            (let rr T (rootRewrite G E n rs g hs t1)
+                              (if (isSome rr)
+                                  (let r T (get rr)
+                                    (mapO (lam ((r3 T))
+                                            (pr (p1 r3)
+                                                (dTrans dw (dTrans d1 (dTrans (pr (p2 r) 1)
+                                                  (p2 r3))))))
+                                      (rec 3 g hs (p1 r))))
+                                  (some (pr t1 (dTrans dw d1))))))))))))))))))
+(defn evalStep ((G T) (E Ts) (n T) (rs NRs) (rec EV)) EV
+  (lam ((dp T) (g Ts) (hs Ts) (t T))
+    (bindO (headStep G E n rs rec g hs t) (lam ((w T))
+      (if (eq dp 0) (some w) (deepStep G E n rs rec dp g hs (p1 w) (p2 w)))))))
+(defn eval ((G T) (E Ts) (n T) (rs NRs) (fuel T)) EV
+  (iter EV (evalStep G E n rs) (lam ((dp T) (g Ts) (hs Ts) (t T)) (some (pr t dRefl))) fuel))
+(defn whnf ((G T) (E Ts) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 0))
+(defn normalizeW ((G T) (E Ts) (n T) (rs NRs) (fuel T)) NF (eval G E n rs fuel 3))
+(defn byNormW ((G T) (E Ts) (n T) (rs NRs) (fuel T) (g Ts) (hs Ts) (t T) (u T)) T
+  (joinBy (normalizeW G E n rs fuel) g hs t u))
+
+; provers of equations, and the proofs of an equation from proofs of others
+(deftype Pv (Arrow Ts (Arrow Ts (Arrow T (Arrow T T)))))
+(defn abstractVar ((i T) (c T) (t T)) T
+  (mLam c (subst (weaken1 t) (lam ((j T)) (if (eq j (add i 1)) (mVar 0) (mVar j))))))
+(defn byFunExt ((G T) (n T) (prove Pv)) Pv
+  (lam ((g Ts) (hs Ts) (f T) (h T))
+    (bindO (bindO (mTypeIn G n g f) expParts) (lam ((ab T))
+      (mapO (lam ((d T)) (dNode 26 (nil T) (single d)))
+        (prove (cons (p1 ab) g) (mapT weaken1 hs) (mApp (weaken1 f) (mVar 0))
+          (mApp (weaken1 h) (mVar 0))))))))
+(defn bySplit ((kl T) (kr T) (i T) (prove Pv)) Pv
+  (lam ((g Ts) (hs Ts) (t T) (u T))
+    (bindO (nth g i) (lam ((c T))
+      (bindO (coprodParts c) (lam ((ab T))
+        (let a T (p1 ab)
+          (let b T (p2 ab)
+            (let F T (abstractVar i c t)
+              (let H T (abstractVar i c u)
+                (let inj (Arrow T (Arrow T T))
+                         (lam ((k T) (s T)) (mApp (weaken1 s) (mArr k (l2 a b) (mVar 0))))
+                  (bindO (prove (cons a g) (mapT weaken1 hs) (inj kl F) (inj kl H)) (lam ((q0 T))
+                    (bindO (prove (cons b g) (mapT weaken1 hs) (inj kr F) (inj kr H)) (lam ((q1 T))
+                      (let pp T (dNode 26 (nil T) (single (dNode 34 (l2 kl kr) (l2 q0 q1))))
+                        (let dx T (dNode 2 (nil T)
+                                    (l2 (dNode 3 (nil T) (nil T)) (dNode 3 (nil T) (nil T))))
+                          (let px T (dNode 18 (nil T)
+                                      (l2 (dNode 2 (nil T)
+                                            (l2 (dNode 17 (l2 (length hs) 0) (nil T))
+                                                (dNode 0 (nil T) (nil T))))
+                                          (dNode 0 (nil T) (nil T))))
+                            (let chi T (mEq (mApp F (mVar i)) (mApp H (mVar i)))
+                              (some (dNode 22 (single (mEq F H))
+                                      (l2 pp (dNode 24 (single chi)
+                                        (l2 dx px))))))))))))))))))))))))
+(defn byListIndWith ((G T) (n T) (kn T) (kc T) (p0 Pv) (p1v Pv)) Pv
+  (lam ((g Ts) (hs Ts) (t T) (u T))
+    (lcase T T g none (lam ((c T) (g1 Ts))
+      (bindO (listPart c) (lam ((a T))
+        (bindO (lowerHyps G n g1 hs) (lam ((hn T))
+          (let h1 Ts (children hn)
+            (bindO (p0 g1 h1 (instAt kn (single a) t) (instAt kn (single a) u)) (lam ((d0 T))
+              (mapO (lam ((d1 T)) (dNode 29 (l2 kn kc) (l2 d0 d1)))
+                (p1v (cons c (cons a g1)) (append (mapT weaken2 h1) (single (weakenElem (mEq t u))))
+                  (listConsAt kc a t) (listConsAt kc a u))))))))))))))
+
+; induction on a rose tree alone, in the form of the uniqueness of its fold, each premise by
+; normalization; and with the hypothesis at each child, the premise by a prover
+(defn byRoseInd ((G T) (E Ts) (n T) (kn T) (kl T) (kc T) (s T) (rs NRs) (fuel T) (g Ts) (t T)
+  (u T)) T
+  (if (eq (length g) 1)
+      (let r T (at g 0)
+        (bindO (roseLabel r) (lam ((a T))
+          (bindO (mTypeIn G n g t) (lam ((C T))
+            (let g2 Ts (l2 (list r) a)
+              (bindO (byNorm G E n rs fuel g2 (nil T) (roseNodeAt kn r a t)
+                       (subst s (atVar0 (roseMapAt kl kc C t))))
+                (lam ((q1 T))
+                  (mapO (lam ((q2 T)) (dNode 32 (l4 kn kl kc s) (l2 q1 q2)))
+                    (byNorm G E n rs fuel g2 (nil T) (roseNodeAt kn r a u)
+                      (subst s (atVar0 (roseMapAt kl kc C u)))))))))))))
+      none))
+(defn byRoseIndHyp ((kn T) (kl T) (kc T) (p Pv)) Pv
+  (lam ((g Ts) (hs Ts) (t T) (u T))
+    (if (eq (length g) 1)
+        (let r T (at g 0)
+          (bindO (roseLabel r) (lam ((a T))
+            (mapO (lam ((d T)) (dNode 33 (l3 kn kl kc) (single d)))
+              (p (l2 (list r) a) (single (roseHyp kl kc (mEq t u))) (roseNodeAt kn r a t)
+                (roseNodeAt kn r a u))))))
+        none)))
