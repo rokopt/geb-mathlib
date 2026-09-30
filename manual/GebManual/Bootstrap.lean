@@ -279,7 +279,7 @@ Extension:
   BLAKE3 and SHA3-256 reconciled; its input, recorded in
   `docs/definitions.md` § Content identity; the hash written in Geb and
   compared with a host binding; the migration from positions to
-  digests, the namespace tree and the re-keying of annotations.
+  digests, the tree of modules and the re-keying of annotations.
 * Ready. The syntaxes of {citet RFC9804}[] and the Geb authoring profile,
   reading into one document type with proved retractions, and the
   importer from the present syntax
@@ -290,9 +290,10 @@ Extension:
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
   term hole in Lean, and source documents keeping comments with their
-  retraction and formatter, are complete; namespace blocks with export
-  lists, the syntax of holes, the checker of holes in programs in its
-  suspending form, and the display of their obligations are ready.
+  retraction and formatter, are complete; modules with parameters,
+  imports and export lists, the syntax of holes, the checker of holes in
+  programs in its suspending form, and the display of their obligations
+  are ready.
 
 ## After the bootstrap
 
@@ -401,9 +402,9 @@ The following are fixed; the plan builds on them.
   is the initial algebra of its declaration, a type distinct from the
   type of trees, reaching them only through its representation, the
   unique algebra morphism into them, and its decoding by its recognizer;
-  generic code is parameterized by an interface, a theory, and a model of
-  it instantiates the code, so that abstraction needs no construct of its
-  own. Its types
+  generic code is a module parameterized by an interface, a theory, and a
+  model of it instantiates the code, so that abstraction needs no
+  construct of its own. Its types
   denote objects of the category of recognized types over the functions
   the kernel defines, which has finite limits and finite coproducts;
   that category has no subobject classifier for propositions about
@@ -1753,7 +1754,7 @@ tag := "content-identity"
   {ref "definitions-and-images"}[Definitions and images] did not fix
   them.
 * Geb: the hash, compared with known answers from the host binding.
-* Geb: the migration from positions to digests, the namespace tree,
+* Geb: the migration from positions to digests, the tree of modules,
   and the re-keying of annotations.
 
 Acceptance: a rename leaves every digest unchanged, a changed
@@ -1787,8 +1788,8 @@ tag := "authoring-compatibility"
   * The syntaxes of RFC 9804 and the authoring profile, with the importer
   * Ready
 *
-  * Namespace blocks with export lists, document fields and migration
-    contracts
+  * Modules with parameters, imports and export lists, document fields
+    and migration contracts
   * Ready
 *
   * The checker of holes in programs, suspending, with hole syntax and
@@ -1806,7 +1807,9 @@ Programs written during the bootstrap require preservation of their
 authoring information as well as their denotation. The decisions, their
 reasons and the alternatives weighed are recorded in
 `docs/source-format.md`: source in the syntaxes the decision on concrete
-syntax names; namespaces as reopenable blocks independent of files, each
+syntax names; modules as blocks independent of files, each a telescope
+of parameters and of imports supplying every parameter of what they
+import, every definition taking all of its module's parameters, and each
 exporting only what its export list names; documentation in Verso markup,
 with a role for Geb's definitions beside Lean's, rendered as literate
 pages generated from Geb source; and an editor language `geb` with Mike's

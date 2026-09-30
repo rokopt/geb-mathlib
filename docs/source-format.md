@@ -13,7 +13,7 @@
   - [Documents and separate annotations](#documents-and-separate-annotations)
   - [Hashes and content identity](#hashes-and-content-identity)
   - [Files, assembly and the host boundary](#files-assembly-and-the-host-boundary)
-  - [Namespaces and name uniqueness](#namespaces-and-name-uniqueness)
+  - [Modules and name uniqueness](#modules-and-name-uniqueness)
   - [Datatypes, type parameters and interfaces](#datatypes-type-parameters-and-interfaces)
   - [Free-monad and cofree-comonad addressing](#free-monad-and-cofree-comonad-addressing)
   - [Documentation through Verso](#documentation-through-verso)
@@ -85,10 +85,10 @@ written. The work to do first:
    ([Readable and canonical S-expressions](#readable-and-canonical-s-expressions),
    [Tokens](#tokens-numerals-and-editions)).
 3. Make name resolution a function of recorded data: a manifest per
-   program, rejection of duplicate and ambiguous names, a namespace
-   separator, and hygienic generated names
+   program, rejection of duplicate and ambiguous names, a separator of
+   qualified names, and hygienic generated names
    ([Files](#files-assembly-and-the-host-boundary),
-   [Namespaces](#namespaces-and-name-uniqueness)).
+   [Modules](#modules-and-name-uniqueness)).
 4. Pin elaboration as well as syntax: an edition per program, and a
    committed record of each program's elaborated definitions compared in
    continuous integration ([Elaboration](#stability-of-elaboration)).
@@ -226,7 +226,7 @@ term and the second its denotation. Four things lie outside both.
    tactic script is a program for one prover
    ([Proof scripts](#proof-scripts-and-certificates)).
 4. Organization: which definitions form a program, their order, files,
-   sections and namespaces, recorded now in the source lists of
+   sections and modules, recorded now in the source lists of
    [scripts/bootstrap.sh](../scripts/bootstrap.sh) and in the
    `include_str` definitions of the tests.
 
@@ -614,47 +614,113 @@ contracts, which a later interface of effects implements. Paths, clocks,
 environment variables and the width of machine integers are never hidden
 semantic inputs.
 
-With content identity, a file is a view: a path in a namespace names a
+With content identity, a file is a view: a qualified name names a
 definition's digest, and a program's order is the order of its references.
 The manifest migrates mechanically into that; names being unique, a file
 resolves alike in every program that includes it.
 
-### Namespaces and name uniqueness
+### Modules and name uniqueness
 
-A namespace is a block form, `(namespace X forms…)` (decided;
+A module is a block form, `(module M header… body…)` (decided;
 [Decisions](#decisions)). It does not depend on files, so the same source
 can be kept in files, in a database or in a content-addressed store, and
-membership in a namespace is structural: a namespace is a subtree of the
-document, and a definition's namespace travels with it. Blocks nest, each
+membership in a module is structural: a module is a subtree of the
+document, and a definition's module travels with it. Blocks nest, each
 level indenting its contents by two columns under the layout policy, so the
-depth of nesting shows at a glance. A block may be reopened: several blocks
-of one name contribute to one namespace, so a namespace can span files or
-entries of a store. `(open Y)` within a block opens `Y` for that block
-alone. A name resolves in the current namespace, then in the enclosing
-ones, then in the opened ones, then as a name qualified from the root; an
-ambiguous or unresolved name is rejected. `.` separates the components of a
-qualified name, being a token character of [RFC9804] and already used so
-(`Label.app`, `Prim.add`, `Rule.hyp`); `namespace` and `open` are keywords
-no definition may shadow.
+depth of nesting shows at a glance.
 
-A block's export list names the definitions visible outside it, and a
-block without one exports nothing (decided): a test's ad hoc definitions,
-for instance, stay unreachable from other code. The resolver rejects an
-entry naming nothing; the interface of a reopened namespace is the union of
-its blocks' lists; and a nested block's name is visible outside an
-enclosing block only if every block on the way exports it.
+The header is a telescope followed by an export list. Its entries,
+`(parameter …)` and `(import …)`, stand in the order of their dependence,
+each in scope for the entries after it and for the body: a parameter's type
+may use an imported name, and an import may take a parameter as an
+argument. A parameter is a sort, an operation, a certificate of a
+proposition, or a named telescope, which abbreviates its entries: declared
+as `(interface I entries…)`, parameter and import entries under a name,
+and taken as `(parameter (m I))`, its entries then named `m.x` (decided).
+An import
+names a module and supplies every one of its parameters; a module leaving
+one of them open declares a parameter of its own and passes it through.
+`(import M)` brings `M`'s exports into scope unqualified, and a clash
+between two names in scope is rejected; `(import M as N)` brings them in
+qualified alone, as `N.x`, which two instances of one module in one block
+need. The export list, `(export …)`, follows the telescope and may name
+imported definitions as well as the body's, re-exporting them. A module
+refers to nothing outside it except through its imports, its parameters and
+the blocks enclosing it, so its meaning is its text and the identities of
+its imports. An import names a module by its path from the root; `.`
+separates the components of a qualified name, being a token character of
+[RFC9804] and already used so (`Label.app`, `Prim.add`, `Rule.hyp`).
+`module`, `parameter`, `import`, `export` and `interface` are keywords no
+definition may shadow. In the present syntax of definitions:
 
-Names are annotations and bear no identity, so namespaces are a matter of
-the reader and migrate mechanically. Now: reject duplicates and reserve `.`
-for qualification. Then organize the present sources into namespace
-blocks with export lists, before the sources grow. Prefixes that avoid collisions,
-such as `mTypeIn` beside `typeIn`, otherwise accumulate, and removing them
-later is renaming by hand. A whole namespace written as one block is one
-form, so an unbalanced parenthesis inside it leaves the block unreadable;
-the kernel's reader already rejects an unbalanced text as a whole, and a
-language server's recovery from errors, not the reader, answers it. The
-block's closing parenthesis ends the line of its last definition, so
-appending a definition changes that line too.
+```text
+(module Sorting
+  (import Prelude)             ; List, Bool
+  (parameter A)
+  (parameter (le (A A) Bool))  ; typed by the import above
+  (import (Orders A le))       ; both parameters passed through
+  (export sort)
+  (defn sort ((xs (List A))) (List A) …))
+```
+
+A block without an export list exports nothing (decided): a test's ad hoc
+definitions, for instance, stay unreachable from other code. The resolver
+rejects an entry naming nothing. A module is not reopened: a second block
+of one module would either see the first's unexported definitions or
+divide its interface, and a module extending another imports it.
+
+Every definition in a module takes all of its parameters (decided), as in
+Agda's parameterized modules
+([Agda's module system](https://agda.readthedocs.io/en/latest/language/module-system.html)):
+the body is one structure over the context the parameters form, abstracted
+over all of them as a whole, and an import instantiates the whole of it at
+once. A definition that takes fewer belongs in an enclosing block. A
+nested module's context extends the enclosing one by its own parameters
+(decided): the rest of the enclosing body refers to the exports of a nested
+module without parameters of its own by qualified name, `N.x`, and a
+nested module with parameters is used through an import in a later
+module's header, supplying parameters being an import's work.
+Declarations keep parameters of their own, supplied where they are used
+(decided): a module uses a declaration at several arguments, as
+[partial-horn.geb](../bootstrap/free-topos/partial-horn.geb) writes
+`(List PT)` beside `(nil T)`, and a nested datatype such as
+`(data Tree (node T (List Tree)))` applies `List` to the type being
+defined, which no header can name.
+
+For parameters that are terms or certificates, the body lies in the slice
+over the context `Γ` the parameters form, a telescope denoting one object:
+an iterated dependent pair, a certificate contributing a subset rather than
+a component. A definition in the body is a morphism in the context,
+corresponding to a morphism out of `Γ × X` by functional completeness
+[LambekScott1986]; an import at arguments `σ : Δ → Γ` is reindexing along
+`σ`, which on the syntax is substitution; and imports passing parameters
+through compose as their substitutions do. In a topos a slice is again a
+topos and reindexing is a logical functor [MacLaneMoerdijk1992], so the
+language of a module's body is the whole language, and a theorem proved in
+a module holds at every instance. A sort parameter extends the language
+instead, and its instantiation is the logical functor of
+[Datatypes](#datatypes-type-parameters-and-interfaces). A named telescope
+therefore adds nothing to the semantics. Isabelle's locales are
+parameterized by assumptions as well as by constants, each interpretation
+discharging the assumptions as an import supplies a certificate
+[Ballarin2014].
+
+Parameters make modules a matter of elaboration: the elaborator abstracts
+each module's definitions over its parameters and instantiates an import by
+substitution, type parameters being instantiated at elaboration as
+[Datatypes](#datatypes-type-parameters-and-interfaces) states, and the
+correctness of the step is the substitution lemma. Imports and exports are
+otherwise a matter of the reader; names are annotations and bear no
+identity, so modules migrate mechanically. Now: reject duplicates and
+reserve `.` for qualification. Then organize the present sources into
+modules with export lists, before the sources grow. Prefixes that avoid
+collisions, such as `mTypeIn` beside `typeIn`, otherwise accumulate, and
+removing them later is renaming by hand. A whole module written as one
+block is one form, so an unbalanced parenthesis inside it leaves the block
+unreadable; the kernel's reader already rejects an unbalanced text as a
+whole, and a language server's recovery from errors, not the reader,
+answers it. The block's closing parenthesis ends the line of its last
+definition, so appending a definition changes that line too.
 
 ### Datatypes, type parameters and interfaces
 
@@ -713,9 +779,10 @@ hypothesis; it is proved by induction on the check.
 Abstraction is mathematical, not syntactic, and needs no mark of its own.
 An interface is a theory, a presentation of operations and axioms
 ([definitions.md](definitions.md) § Definitions as presentations). Generic
-code is a term over it, parameterized by an opaque type and by the
-interface's operations, so it holds no reference to a concrete type and
-has no representation to inspect. Instantiation is interpretation by the
+code is a module over it ([Modules](#modules-and-name-uniqueness)),
+parameterized by an opaque type and by the interface's operations, so it
+holds no reference to a concrete type and has no representation to
+inspect. Instantiation is interpretation by the
 universal property, evaluation into an implementation, a model of the
 theory, as `Geb.Definition.eval` and `derivedAlg` evaluate. In the
 metalogic this is the topos generated by the language extended by the
@@ -1524,6 +1591,7 @@ reader:
 | --- | --- |
 | Adopt the document reader and the formatter | `bootstrap/` formatted in one mechanical change with images and emitted Lean unchanged, as measured above; `geb-fmt --check` and the test of parinfer's fixed points in continuous integration |
 | Reject duplicate and ambiguous names | both readers reject duplicates and accept every present source unchanged |
+| Modules with parameters, imports and export lists | the bootstrap sources, organized into modules with export lists and without the prefixes that avoided collisions, compile and pass their tests; a clash, an unresolved name and an import leaving a parameter unsupplied are rejected |
 | The syntaxes of RFC 9804 and the authoring profile, with the importer | the four retractions proved over one document type; the bootstrap sources convert, and compile to the same checked bundles |
 | Manifests with editions; the record of elaborated definitions | the build and tests read manifests; the regenerated record equals the committed one |
 | A durable document with versioned profiles | declaration and binder names, prose, examples, links and unknown optional fields survive reading, printing and conversion |
@@ -1532,7 +1600,7 @@ reader:
 | The `geb` language with Mike's Paredit | the pinned extensions pass the profile's fixture |
 
 Early in writing, alongside the first substantial module where it helps:
-namespaces; `let*` and `cond`; quoted atoms; the syntax of holes, the
+`let*` and `cond`; quoted atoms; the syntax of holes, the
 suspending checker of holes in programs and the display of their
 obligations; diagnostics with locations through
 efm-langserver; literate pages generated from documents; and the typed
@@ -1580,20 +1648,36 @@ binding or dependency information already kept.
 - 2026-09-30: a hole is the form `(hole name)`, with `(hole name T)` for
   an expected type; the authoring profile writes a one-argument hole as
   `?name` ([Tokens](#tokens-numerals-and-editions)).
-- 2026-09-30: a namespace is a reopenable block form `(namespace X …)`,
-  independent of files, with `(open Y)` scoped to its block
-  ([Namespaces](#namespaces-and-name-uniqueness)).
+- 2026-09-30: code is organized in modules, block forms `(module M …)`
+  independent of files and not reopened. A module's header is a telescope
+  of parameters and imports in the order of their dependence, followed by
+  an export list, which may re-export imported definitions; an import
+  supplies every parameter of the module it imports, a parameter of the
+  importer passing through any left open; `(import M)` brings names in
+  unqualified, a clash being rejected, and `(import M as N)` qualified
+  alone ([Modules](#modules-and-name-uniqueness)).
+- 2026-09-30: every definition in a module takes all of its parameters, a
+  module's body being one structure over the context they form;
+  declarations keep parameters of their own, supplied where they are used;
+  and a parameter may take a named telescope, an abbreviation of its
+  entries ([Modules](#modules-and-name-uniqueness)).
+- 2026-09-30: a named telescope is declared as `(interface I entries…)`
+  and taken as `(parameter (m I))`, its entries then named `m.x`; the rest
+  of an enclosing body refers to the exports of a nested module without
+  parameters of its own by qualified name, and uses a nested module with
+  parameters through an import in a later module's header
+  ([Modules](#modules-and-name-uniqueness)).
 - 2026-09-30: the prover's public contract is any checked certificate of
   the statement, behind an abstraction clients may check or cite but not
   inspect; exact agreement with the Lean prover is a milestone of the
   bootstrap, not a promise to clients
   ([The compatibility contract](#the-compatibility-contract)).
-- 2026-09-30: before substantial authoring come export lists in namespace
-  blocks, a block without one exporting nothing; the datatype language's
+- 2026-09-30: before substantial authoring come modules with export
+  lists, a block without one exporting nothing; the datatype language's
   completion, datatype names as types with the static check; and type
   parameters checked opaquely, abstraction being parameterization over
   interfaces rather than a syntactic mark
-  ([Namespaces](#namespaces-and-name-uniqueness),
+  ([Modules](#modules-and-name-uniqueness),
   [Datatypes](#datatypes-type-parameters-and-interfaces)).
 - 2026-09-30: until the bootstrap completes, no source is kept unchanged
   for its own sake: whatever is preferable is adopted everywhere, and the
