@@ -304,6 +304,17 @@ translations:
   propositions, definitions by equations whose unique solution is
   proved, and dependent products of families, each a construction of
   the metalogic's topos.
+* Internal universes and internal category theory: the universe of
+  datatypes, whose codes are their recognizers as elements of `2^T`, and
+  the universe of subobjects of the trees, with codes in the power object
+  `Ω^T`, each interpreting a code by membership; internal categories
+  carried by subobjects of the trees, a category and one of its objects
+  forming a parameter of an ordinary type; and the conversion of code
+  generic over opaque type parameters into code over a universe, by the
+  logical functor the generic family determines. No universe interprets
+  every object of the free topos, truth being undefinable
+  ({citet Tarski1935}[]). `docs/source-format.md` § Datatypes, type
+  parameters and interfaces details both.
 * The richer forms of definition of `docs/definitions.md`: well-founded
   and guarded blocks, presentations, presheaf signatures, a binding
   language with its substitution laws, and modules. Their Lean

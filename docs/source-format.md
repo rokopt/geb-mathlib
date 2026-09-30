@@ -726,6 +726,43 @@ proof of a proposition works under it, the slice over the proposition's
 subterminal, and instantiating supplies the proof. The prover's contract,
 any checked certificate of the statement, is kept by clients written so.
 
+Type parameters are sorts through the bootstrap. After it, written in Geb
+among the first items, they become parameters over internal universes
+(decided; [Decisions](#decisions)). A universe is a family `El → U`, `U` an
+object of codes and `El X` the type the code `X` names. Two are defined
+from the exponentials and power objects every topos has
+[MacLaneMoerdijk1992], and interpret a code by membership. Every value is a
+tree and a datatype is a complemented subobject of `T`, so the datatypes
+have codes in `2^T`, the morphisms `T → 1 + 1`, a datatype's code being the
+transpose of its recognizer, with `El X = {t : T | X t = 1}`; and the
+subobjects of `T`, the setoid language's subset types of trees among them,
+have codes in the power object `Ω^T`, with `El X = {t : T | t ∈ X}`.
+Internal categories whose objects and arrows are carried by subobjects of
+`T` form an object too, a subobject of a product of power objects, so a
+pair of such a category and one of its objects is a parameter of an
+ordinary type; using the elements of that object takes an interpretation
+of the category in a universe. Code generic over an opaque sort converts to
+code over a universe by the universal property above: sending the sort to
+the generic family `El → U` is a model of the extended language in the
+slice over `U`, which determines a logical functor, so every theorem about
+the generic code holds of the converted code [LambekScott1986].
+
+No universe interprets every object of the topos. The free topos with a
+natural numbers object contains arithmetic, and its syntax, being
+inductively generated, has codes in it. A family `El` over the codes of its
+objects with `El ⌜A⌝ ≅ A` for every closed object `A` would, at the codes
+of subterminals, make `Tr c := ∃ e : El c` satisfy `Tr ⌜φ⌝ ↔ φ` for every
+closed proposition `φ`. The diagonal lemma gives a `ψ` with
+`ψ ↔ ¬ Tr ⌜ψ⌝`, hence `ψ ↔ ¬ψ`, which is contradictory in intuitionistic as
+in classical logic; the free topos being non-degenerate, no such family
+exists, which is the undefinability of truth [Tarski1935]. The codes of the
+whole language are therefore data that a program constructs and inspects
+but that no program interprets uniformly, and each universe interprets a
+part of the topos. Within their parts `2^T` and `Ω^T` meet no such limit,
+since their codes are not syntax: a code is the subobject itself, an
+element of an exponential or a power object, and no step interprets a
+program's text.
+
 ### Free-monad and cofree-comonad addressing
 
 The constructions of
@@ -1570,6 +1607,12 @@ binding or dependency information already kept.
 - 2026-09-30: the layout policy is the prototype's: a list that does not
   fit breaks every remaining element onto its own line, none hung on the
   current line ([Source documents](#source-documents-and-a-verified-formatter)).
+- 2026-09-30: type parameters are sorts through the bootstrap; after it,
+  among the first work written in Geb, category theory is internalized and
+  type parameters become parameters over internal universes defined from
+  the topos's structure, the datatypes' codes in `2^T` and the subobjects'
+  in `Ω^T`, each interpreted by membership; no universe interprets every
+  object ([Datatypes](#datatypes-type-parameters-and-interfaces)).
 
 ## Open decisions
 

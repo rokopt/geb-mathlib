@@ -140,6 +140,15 @@ Status gives the state of each phase, and its sections Improvements and
 The next phase record the known limitations with their fixes and where
 work resumes.
 
+Among the first work written in Geb after the bootstrap, after the setoid
+language, come the internal universes: the datatypes' codes in `2^T` and
+the subobjects of the trees' codes in `Ω^T`, each interpreted by
+membership, with category theory internalized over them and type
+parameters converted from sorts to parameters over a universe. No universe
+interprets every object of the free topos, truth being undefinable.
+`docs/source-format.md` § Datatypes, type parameters and interfaces
+records the mathematics of both.
+
 ### Definitions
 
 [docs/definitions.md](docs/definitions.md) records the design of
