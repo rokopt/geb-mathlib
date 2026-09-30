@@ -278,8 +278,9 @@ Extension:
 * In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
-  term hole in Lean is complete; its source syntax and obligation display
-  are ready.
+  term hole in Lean, and source documents keeping comments with their
+  retraction and formatter, are complete; the syntax of holes and the
+  display of their obligations are ready.
 
 ## After the bootstrap
 
@@ -1113,8 +1114,9 @@ section below opens with a table of the states of its parts.
 *
   * {ref "authoring-compatibility"}[Authoring across bootstrap revisions]
   * In progress
-  * Checked contextual-hole filling in Lean: complete; document codecs,
-    migration contracts and authoring tools: ready
+  * Checked contextual-hole filling and source documents with their
+    formatter, in Lean: complete; document fields, profiles, migration
+    contracts and authoring tools: ready
 *
   * {ref "goedel-t"}[Gödel's T]
   * In progress
@@ -1738,7 +1740,10 @@ tag := "authoring-compatibility"
   * Checked filling of one contextual term hole in Lean
   * Complete
 *
-  * Document preservation, syntax profiles and migration contracts
+  * Source documents keeping comments, their retraction and the formatter
+  * Complete
+*
+  * Document fields, syntax profiles and migration contracts
   * Ready
 *
   * Hole syntax, obligation display, documentation and editor integration
@@ -1750,12 +1755,20 @@ tag := "authoring-compatibility"
 
 Programs written during the bootstrap require preservation of their
 authoring information as well as their denotation. The proposals and
-their tradeoffs are recorded in `docs/bootstrap-authoring.md`. The
-syntax survey's retractions are over its finite-alphabet trees; they do
-not yet give a printer for the kernel's program reader or preserve its
-comments and binder names. The document-level law is that parsing a
-printed document returns that document, including its annotations.
-Conversion between two such syntaxes preserves the parsed document.
+their tradeoffs are recorded in `docs/source-format.md`. The document-level
+law is that parsing a printed document returns that document, including
+its annotations; conversion between two such syntaxes preserves the parsed
+document. The syntax survey's retractions are over its finite-alphabet
+trees. The source documents of {name}`Geb.Kernel.Document.readDoc` keep a
+program's comments and empty lines as items in document order: erasing the
+comments gives what the kernel's reader reads, at every text
+({name}`Geb.Kernel.Document.readDoc_erase`), and reading a document printed
+at any layout gives it back ({name}`Geb.Kernel.Document.readDoc_print`), so
+the formatter {name}`Geb.Kernel.Document.format`, the executable
+`geb-fmt`, is idempotent whatever its layout policy. The bootstrap's
+sources, formatted, compile to the same images and the same emitted Lean
+byte for byte. Binder names at the level of kernel terms are not yet
+kept.
 
 The first authoring representation retains declaration and binder names,
 prose, examples and links beside the source forms and their checked
@@ -1804,8 +1817,8 @@ resumed after refinement. A bounded implementation can reuse the
 internal-language prover's normalization and induction combinators,
 with every completed derivation checked. Contextual metavariables and
 suspended constraints remain to be implemented; the source assessment,
-adaptation choices and comparison with SupGen and SMT are in
-`docs/bootstrap-authoring.md`.
+experiments with Canonical, adaptation choices and comparison with SupGen
+and SMT are in `docs/source-format.md`.
 
 Acceptance: a documented module survives conversion between the
 selected readable and canonical program syntaxes, retaining names,

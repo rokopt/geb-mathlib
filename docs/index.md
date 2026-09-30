@@ -3725,10 +3725,18 @@ checklist and in CI.
   type and the sketch's context (`Geb.Kernel.fillHole`), and proves
   acceptance of well-typed inputs and the type and denotation of every
   accepted result (`Geb.Kernel.fillHole_of_infer`,
-  `Geb.Kernel.infer_fillHole`). Tested in
-  `GebTests/Prototypes/Kernel.lean`. The
-  [authoring proposals](bootstrap-authoring.md) describe document
-  preservation, migration contracts and the remaining hole interface.
+  `Geb.Kernel.infer_fillHole`). `Document.lean` reads a text as a source
+  document keeping its comments and empty lines (`Geb.Kernel.Document.readDoc`),
+  proves that erasing the comments gives the kernel reader's S-expressions
+  and that reading a document printed at any layout gives it back
+  (`Geb.Kernel.Document.readDoc_erase`, `Geb.Kernel.Document.readDoc_print`),
+  and formats text idempotently (`Geb.Kernel.Document.format`), which the
+  executable `geb-fmt` applies to files. Tested in
+  `GebTests/Prototypes/Kernel.lean` and
+  `GebTests/Prototypes/Kernel/Document.lean`. The
+  [source-format report](source-format.md) describes document
+  preservation, migration contracts, the remaining hole interface and
+  synthesis.
   The Geb-written
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   names the kernel's labels and primitives by numeral abbreviations and

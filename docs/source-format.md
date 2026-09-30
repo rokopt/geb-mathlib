@@ -4,171 +4,236 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Summary](#summary)
-- [The criterion](#the-criterion)
+- [The compatibility contract](#the-compatibility-contract)
 - [What the existing guarantees do not cover](#what-the-existing-guarantees-do-not-cover)
 - [The state of the repository](#the-state-of-the-repository)
 - [Source documents and a verified formatter](#source-documents-and-a-verified-formatter)
 - [The considerations](#the-considerations)
   - [Readable and canonical S-expressions](#readable-and-canonical-s-expressions)
-  - [Out-of-band data and editor support](#out-of-band-data-and-editor-support)
-  - [Hashes and multihash references](#hashes-and-multihash-references)
-  - [Files and references across them](#files-and-references-across-them)
+  - [Documents and separate annotations](#documents-and-separate-annotations)
+  - [Hashes and content identity](#hashes-and-content-identity)
+  - [Files, assembly and the host boundary](#files-assembly-and-the-host-boundary)
+  - [Namespaces and name uniqueness](#namespaces-and-name-uniqueness)
   - [Free-monad and cofree-comonad addressing](#free-monad-and-cofree-comonad-addressing)
   - [Documentation through Verso](#documentation-through-verso)
-  - [Paredit, parinfer and coloured parentheses](#paredit-parinfer-and-coloured-parentheses)
+  - [Structural editing and parinfer](#structural-editing-and-parinfer)
   - [Tree-sitter and a language server](#tree-sitter-and-a-language-server)
   - [Typed holes](#typed-holes)
-  - [Program and proof synthesis](#program-and-proof-synthesis)
+  - [Synthesis and certificates](#synthesis-and-certificates)
   - [Canonical](#canonical)
   - [Grammar narrowing and editions](#grammar-narrowing-and-editions)
-  - [Namespaces and name uniqueness](#namespaces-and-name-uniqueness)
   - [Stability of elaboration](#stability-of-elaboration)
   - [Proof scripts and certificates](#proof-scripts-and-certificates)
   - [Comment conventions](#comment-conventions)
   - [N-ary chains in the surface language](#n-ary-chains-in-the-surface-language)
+  - [Further requirements before substantial authoring](#further-requirements-before-substantial-authoring)
   - [Scale](#scale)
-- [A sequence](#a-sequence)
+- [A sequence and its acceptance](#a-sequence-and-its-acceptance)
 - [Open decisions](#open-decisions)
 - [Sources](#sources)
 
 <!-- END doctoc -->
 
-This report states what must be fixed about Geb's source format before
-most of Geb's code is written in Geb, so that every later change of
-format is a mechanical, provable translation. It surveys the concrete
-syntax, comments and documentation, names and files, content identity,
-editor tooling, typed holes and synthesis, and records the prototype
-that settles the first of them:
-[Geb/Prototypes/Kernel/Document.lean](../Geb/Prototypes/Kernel/Document.lean),
-with its tests and the formatter `lake exe geb-fmt`
-([GebFmtMain.lean](../GebFmtMain.lean)).
+This report states what must be fixed about Geb's source and its
+authoring tools before most of Geb's code is written in Geb, so that every
+later change of format or implementation is a mechanical, provable
+translation. It covers the compatibility contracts, the concrete syntax,
+comments and documentation, names, files and the host boundary, content
+identity, editor tooling, typed holes and synthesis. Two prototypes
+implement first steps:
+
+- source documents that keep comments, with a verified formatter:
+  [Geb/Prototypes/Kernel/Document.lean](../Geb/Prototypes/Kernel/Document.lean),
+  its tests, and `lake exe geb-fmt` ([GebFmtMain.lean](../GebFmtMain.lean));
+- checked filling of one contextual hole:
+  [Geb/Prototypes/Kernel/Hole.lean](../Geb/Prototypes/Kernel/Hole.lean).
+
+The [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Authoring
+across bootstrap revisions records their state as milestones; the
+[syntax survey](concrete-syntaxes.md) supplies the constructions of syntax
+and annotation, and [definitions](definitions.md) those of blocks, linking
+and addresses.
 
 Status: report of 2026-09-29. Measurements of the repository refer to
-`main` at commit `b3aa139a`; those of external tools name the version
-measured. The recommendations are proposals; Section
-[Open decisions](#open-decisions) lists those that are the user's.
+`main` at commit `b3aa139a` with the two prototypes added; those of
+external tools name the version measured. The recommendations are
+proposals; [Open decisions](#open-decisions) lists those that are the
+user's.
 
 ## Summary
 
 A later change of format is a mechanical, provable translation exactly
 when the source written now records every piece of information a person
-supplies, and the reading of that source is fixed by a recorded version.
-Whatever a program can compute from the source — digests, addresses, the
-separation of comments from code, highlighting, rendered documentation,
-reports of holes, synthesized terms — can be added at any later time
-without touching what was written. The work to do first is therefore
-small:
+supplies, the reading of that source is fixed by a recorded version, and
+every artifact that persists has a versioned contract. Whatever a program
+can compute from the source — digests, addresses, the separation of
+comments from code, highlighting, rendered documentation, reports of
+holes, synthesized terms — can be added later without touching what was
+written. The work to do first:
 
-1. Read comments and empty lines as data. They are the only content a
-   person writes that no later tool can recover, and reading them settles
-   most of the questions of out-of-band data, documentation and
-   formatting ([Source documents](#source-documents-and-a-verified-formatter)).
+1. Read comments and empty lines as data, in a document type that also
+   carries declaration and binder names, prose, examples and links
+   ([Source documents](#source-documents-and-a-verified-formatter),
+   [Documents and annotations](#documents-and-separate-annotations)).
 2. Narrow the grammar now, so that every later addition widens it:
    reserve ``" ' ` , # | [ ] { } \ @`` and restrict atoms to numerals and
    identifiers beginning with a letter
-   ([Grammar narrowing](#grammar-narrowing-and-editions)). No file under
+   ([Grammar narrowing](#grammar-narrowing-and-editions)). No source under
    `bootstrap/` is affected.
 3. Make name resolution a function of recorded data: a manifest per
-   program naming its files in order, rejection of duplicate names, and a
-   namespace separator ([Files](#files-and-references-across-them),
+   program, rejection of duplicate and ambiguous names, a namespace
+   separator, and hygienic generated names
+   ([Files](#files-assembly-and-the-host-boundary),
    [Namespaces](#namespaces-and-name-uniqueness)).
-4. Pin the elaborator as well as the syntax: an edition per program, and
-   a committed record of each program's elaborated definitions compared
-   in continuous integration
-   ([Elaboration](#stability-of-elaboration)).
-5. Fix the markup of comments, since cross-references cannot be added
-   mechanically to prose written without them
+4. Pin elaboration as well as syntax: an edition per program, and a
+   committed record of each program's elaborated definitions compared in
+   continuous integration ([Elaboration](#stability-of-elaboration)).
+5. Version every interface that persists: document and core schemas,
+   semantic profiles, datatype encodings, certificates and host protocols
+   ([Further requirements](#further-requirements-before-substantial-authoring)).
+6. Fix the markup of comments, with explicit links for references to code,
+   since links cannot be added mechanically to prose written without them
    ([Documentation](#documentation-through-verso)).
+7. State which steps of the pipeline are proved and which are tested
+   ([The compatibility contract](#the-compatibility-contract)).
 
-Digests, the content store, vertex-keyed annotation tables, tree-sitter,
-a language server, typed holes and synthesis are derived from the source
-and can follow; each consideration below states its present obligation,
-usually none or a reserved character.
+Content storage, a network of identifiers, a language server,
+tree-sitter, richer holes and synthesis derive from the source and follow;
+each consideration below states its present obligation, usually none or a
+reserved character.
 
-## The criterion
+## The compatibility contract
 
-Let `read_e : Text ⇀ D_e` be the reader of an edition `e` into its
-document type `D_e`, and `print_e' : D_e' → Text` a printer of an edition
-`e'` with `read_e' ∘ print_e' = id`. For an embedding `ι : D_e → D_e'`,
-the migration `print_e' ∘ ι ∘ read_e` satisfies
-`read_e' (migrate t) = ι (read_e t)` by the retraction law alone. Three
-conditions make that theorem available:
+For a syntax with parser `p : C → Option D` and printer `q : D → C`, the
+required equation is `p (q d) = some d`: the parser retracts the printer.
+Parsing followed by printing is then a partial idempotent, and the printer
+is injective; [ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean)
+proves both consequences once. For two syntaxes of one document type,
 
-- Completeness of `D_e`: whatever a person wrote that `D_e` omits is lost
-  by every migration. [concrete-syntaxes.md](concrete-syntaxes.md)
-  § The laws must be lifted to the annotated level states the same
-  requirement.
-- Determinism of `read_e` relative to recorded context: the migration
-  replays the old reader, its resolution rules included, and whatever the
-  reader consults, such as the order in which files are joined, is
-  recorded.
-- An embedding `ι`: every old document has an image in the new edition.
-  Widening a grammar supplies `ι`; narrowing one does not.
+```text
+migrate₁₂ c = (p₁ c).map q₂
+(migrate₁₂ c).bind p₂ = p₁ c
+(migrate₁₂ c).bind migrate₂₃ = migrate₁₃ c
+```
+
+follow from the destination's retraction alone. A migration preserves the
+parsed document, not its whitespace; a formatter chooses a normal layout
+while preserving every name, comment and link the document type holds.
+
+A change of the document or core schema needs a computable map and its
+preservation theorem: for a document migration `M`, a core migration `m`
+and erasures `erase₁`, `erase₂`,
+
+```text
+erase₂ (M d) = m (erase₁ d).
+```
+
+Widening a grammar is the case in which `M` is an embedding and `m` the
+identity. A lossless change needs an inverse or a retained representation
+of the old information. Three conditions make migration available:
+
+- completeness of the document type: whatever a person wrote that it
+  omits is lost by every migration
+  ([concrete-syntaxes.md](concrete-syntaxes.md) § The laws must be lifted
+  to the annotated level);
+- determinism of the reader relative to recorded context: a migration
+  replays the old reader, its rules of resolution included, and whatever
+  the reader consults, such as the order in which files are joined, is
+  recorded;
+- an image in the new edition for every old document.
 
 Two consequences follow. Restrictions cost little before code exists and
 much after, and extensions the reverse, so the grammar is made as narrow
 as present code requires. And a feature may be deferred when its data is
-a function of `D_e`.
+a function of the document.
+
+Universal properties fix the interpretation up to the relevant
+isomorphism, or equivalence where categories are compared. They supply no
+serialized schema, executable migration, source location or bound on
+cost. A replacement implementation provides the comparison and shows that
+interpretation commutes with it; where representations of input or output
+change, the maps of observation commute as well.
+[definitions.md](definitions.md) § Content identity separates equality of
+presentations from equality of their denotations in the same way.
+
+Libraries need their own contract. Two sound provers may return different
+certificates, or succeed on different inputs; soundness does not make them
+equal as Geb functions returning certificates. A replacement keeps the old
+dependency available or is proved equal for the observations its interface
+permits. Hiding a certificate behind a proved abstraction permits changes
+of its representation; promising only some checked witness does not erase
+differences a client can observe. Exact agreement with the Lean
+implementation is a milestone of the bootstrap, not a choice of that
+public contract.
+
+The compatibility policy covers accepted programs of a named profile. A
+program that depended on an implementation error may admit no migration to
+the corrected meaning preserving its semantics: its source and compiler
+profile are kept, the discrepancy is identified, and a repair is decided
+explicitly. Neither a universal property nor a converter infers which
+behavior the author intended.
+
+The verification boundary is tracked through the whole pipeline.
+Soundness of the metalogic's checkers and their agreement do not prove the
+reader, the serializer, the code generator, the host compiler or the file
+driver correct, and the bootstrap's fixed points, byte for byte, are
+evidence against regression, not preservation theorems. Which steps are
+proved and which tested is stated explicitly, the agreement of the word
+codec with the wire form, tested and not proved, among them.
 
 ## What the existing guarantees do not cover
 
-Geb specifies no concrete syntax, only an abstract syntax with a
-retraction to each concrete one, and it specifies its semantics by
-universal properties. The first protects the kernel term; the second its
-denotation. Four things lie outside both.
+Geb specifies an abstract syntax with a retraction to each concrete one,
+and its semantics by universal properties: the first protects the kernel
+term and the second its denotation. Four things lie outside both.
 
 1. Content that is not a kernel term: comments, names of bound variables,
    abbreviations and layout. A retraction at the level of kernel terms
    prints `app (lam A b) e` where a person wrote `let` or `defn`, and loses
    numeral abbreviations such as `Label.app`, which the reader expands
    before resolution. The formatter's retraction therefore belongs at the
-   level of S-expression documents; the retraction at the level of kernel
-   terms, the printer for the kernel's readable syntax of the Bootstrap
-   chapter, serves generated code and decompilation.
+   level of documents; the retraction at the level of kernel terms, the
+   Bootstrap chapter's printer for the kernel's readable syntax, serves
+   generated code and decompilation.
 2. Elaboration. The datatype language is defined by a Geb program,
-   [bootstrap/stage1/datatype.geb](../bootstrap/stage1/datatype.geb), not
-   by a universal property, and its encoding (the constructor of position
-   `i` as the node of label `i` over its fields, `&` taking the remaining
-   children) is observable: sources use it directly, as
+   [bootstrap/stage1/datatype.geb](../bootstrap/stage1/datatype.geb), and
+   its encoding (the constructor of position `i` as the node of label `i`
+   over its fields, `&` taking the remaining children) is observable:
+   sources use it directly, as
    [bootstrap/free-topos/base.geb](../bootstrap/free-topos/base.geb) does
    for optional trees. A revision of the expansion changes the meaning of
-   existing source while every universal property still holds. Unison
-   avoids the problem by storing elaborated terms and printing text from
-   them; a text-first Geb needs editions and a record of elaboration
+   existing source while every universal property still holds. Elaboration
+   need not be invertible, since a printed expansion cannot recover the
+   author's abstractions: the authoring document is kept beside its
+   elaborated result, and the elaborator is versioned
    ([Elaboration](#stability-of-elaboration)).
 3. Proof scripts. A proposition of the metalogic keeps its meaning, but a
-   tactic script is a program for one prover and changes meaning when the
-   prover changes. The durable artifact is the certificate, checked by the
-   fixed rule set ([Proof scripts](#proof-scripts-and-certificates)).
+   tactic script is a program for one prover
+   ([Proof scripts](#proof-scripts-and-certificates)).
 4. Organization: which definitions form a program, their order, files,
-   sections and namespaces. It is recorded now in the source lists of
+   sections and namespaces, recorded now in the source lists of
    [scripts/bootstrap.sh](../scripts/bootstrap.sh) and in the
    `include_str` definitions of the tests.
 
 ## The state of the repository
 
-The facts below were measured at commit `b3aa139a`.
+| Component | Contract or limitation |
+| --- | --- |
+| [Kernel reader](../Geb/Prototypes/Kernel/Reader.lean) and [its Geb counterpart](../bootstrap/reader.geb) | Resolve definition names to positions in the bundle and binders to de Bruijn indices; expand abbreviations; discard comments. An atom is any run of characters other than whitespace, parentheses and `;`, one character per byte; there are no strings and no program printer. |
+| [Source documents](../Geb/Prototypes/Kernel/Document.lean) | Read comments and empty lines into a document conservatively over the kernel reader, and print it at any layout with a proved retraction ([Source documents](#source-documents-and-a-verified-formatter)). Binder names at the level of kernel terms are not yet kept. |
+| [Canonical S-expressions](../Geb/Prototypes/CanonicalSExpr.lean) | Proved retractions for the presentations of trees over a finite alphabet; the generic renderer counts characters, so its conformance to [RFC9804] holds for ASCII atoms. |
+| [Readable S-expressions](../Geb/Prototypes/ReadableSExpr.lean) | A proved syntax of rose trees labelled by numerals, distinct from the kernel reader and from the advanced encoding of [RFC9804]. |
+| [Definition vertices](../Geb/Prototypes/Definition/Vertex.lean) | Selection of subterms, composition of addresses and their laws: a basis for addressing occurrences. |
+| [Images](../Geb/Prototypes/Kernel/Image.lean) | A versioned bundle keeping definition names, without binder names or comments; the word codec's agreement with the wire form is tested, not proved. |
+| [File driver](../Geb/Prototypes/Kernel/Command.lean) | Joins ordered source files with a newline; file operations stay in the host. |
+| [Lean emitter](../bootstrap/stage1/lean.geb) | Emits definitions under their names with a generated module comment; variables are named by depth, and author documentation and source spans are not carried. |
+| [Contextual hole filling](../Geb/Prototypes/Kernel/Hole.lean) | Checks and fills one explicitly typed contextual hole, with theorems for the result's typing and denotation; a Lean interface, not a surface or editor feature. |
 
-- Three S-expression readers exist, none a superset of another:
-  - the kernel's reader, `Geb.Kernel.readSExps` in
-    [Geb/Prototypes/Kernel/Reader.lean](../Geb/Prototypes/Kernel/Reader.lean),
-    and its counterpart in Geb,
-    [bootstrap/reader.geb](../bootstrap/reader.geb): an atom is any run
-    of characters other than whitespace, parentheses and `;`, a `;`
-    comment is discarded, and there are no strings;
-  - [Geb/Prototypes/ReadableSExpr.lean](../Geb/Prototypes/ReadableSExpr.lean),
-    rose trees over `Fin k` spelled as numerals;
-  - [Geb/Prototypes/CanonicalSExpr.lean](../Geb/Prototypes/CanonicalSExpr.lean),
-    the canonical form of [RFC9804] over the same trees.
+The syntax prototypes' retractions do not yet certify the migration of
+bootstrap programs: the connection needs arbitrary atom bytes, the program
+grammar, name resolution and the document. The facts below were measured
+at commit `b3aa139a`.
 
-  The second and third validate the retraction architecture; the
-  bootstrap uses neither.
-- The data model of the kernel's reader is that of [RFC9804]:
-  `SExp := RoseTree (Option (List Char))`, atoms and lists.
-  [concrete-syntaxes.md](concrete-syntaxes.md) § Readable S-expressions
-  records why the readable form of [RFC9804], its advanced
-  representation, was declined: a token cannot begin with a digit, so `0`
-  would be written `"0"` or `1:0`.
 - The 21 files under `bootstrap/` (about 250 kilobytes):
   - use atoms from `[A-Za-z0-9.&-]` only, each a numeral, an identifier
     beginning with a letter, or `&`;
@@ -189,13 +254,8 @@ The facts below were measured at commit `b3aa139a`.
   substitutes numeral abbreviations into binder names, `expandNums`
   running before resolution. No source relies on these; a migration
   replays them.
-- A program is a concatenation of files whose lists are kept in
-  `scripts/bootstrap.sh` and the tests; dependencies between files are
-  recorded in prose only ("Requires the prelude, the reader and the
-  checker").
-- The image keeps the names of definitions only; the Lean backend names
-  variables by depth and writes no comments. The Bootstrap chapter lists
-  the names of bound variables and comments as ready.
+- Dependencies between files are recorded in prose only ("Requires the
+  prelude, the reader and the checker").
 - Content identity is designed: the node-digest rule, the migration from
   positions to digests and the annotation tables keyed by vertex
   ([Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Definitions,
@@ -204,11 +264,6 @@ The facts below were measured at commit `b3aa139a`.
 
 ## Source documents and a verified formatter
 
-[Geb/Prototypes/Kernel/Document.lean](../Geb/Prototypes/Kernel/Document.lean),
-with
-[GebTests/Prototypes/Kernel/Document.lean](../GebTests/Prototypes/Kernel/Document.lean)
-and the executable `geb-fmt`, implements the document layer.
-
 A document is a list of items, each a `RoseTree Lab` with
 `Lab = {gap : Bool, kind : atom s | list | comment s}`. Comments are items
 in document order, not annotations of the nodes after them: the design of
@@ -216,7 +271,8 @@ the lossless syntax trees of Roslyn and of rust-analyzer's rowan, and of
 rewrite-clj, on which cljfmt and zprint are built. Reading attaches no
 comment to a node; an attachment is a separate function of the document.
 An empty line is a flag on the item after it, as gofmt and ormolu keep at
-most one empty line between items.
+most one empty line between items. The lexer reads one character per
+byte, as the kernel's readers do, so atoms and comments keep their bytes.
 
 Three theorems hold, none depending on `Classical.choice`:
 
@@ -241,6 +297,7 @@ Measured on a copy of the files under `bootstrap/`:
 | `geb-fmt --check` after formatting | no file changes |
 | Stage-0 image from formatted sources, built by the seed | the original's, byte for byte |
 | Stage-1 image from the formatted compiler, built by the stage-0 compiler | the original's, and `bootstrap/compiler.img`, byte for byte |
+| Lean emitted by `bootstrap/compiler.img` from the formatted compiler | `bootstrap/lean/GebBoot.lean`, byte for byte |
 | parinfer 3.13.1, Paren Mode and Indent Mode, on formatted files | no file changes |
 | parinfer on the files as written | 16 files changed by Paren Mode, 15 by Indent Mode, and an Indent Mode error in `goedel-t/prove.geb` |
 | Lines beyond 100 columns after formatting | 17, all comments in the chain of conditionals of `goedel-t/equations.geb` |
@@ -254,12 +311,14 @@ invariant: each continuation line is indented beyond the innermost open
 parenthesis and not beyond a parenthesis closed at the end of the line
 before ([parinfer](https://shaunlebron.github.io/parinfer/#mathematical-foundation)).
 The written files place a nested `let` or conditional at its parent's
-indentation, which parinfer's Indent Mode reads as closing the parent.
-
-The same cause produces the long lines: the kernel's binary conditional
-and single-binding `let` make chains nest, and nesting is indentation
-under any layout parinfer admits
-([N-ary chains](#n-ary-chains-in-the-surface-language)).
+indentation, which parinfer's Indent Mode reads as closing the parent. The
+same cause produces the long lines: the kernel's binary conditional and
+single-binding `let` make chains nest, and nesting is indentation under
+any layout parinfer admits
+([N-ary chains](#n-ary-chains-in-the-surface-language)). Parinfer's Paren
+Mode, which never changes the tree, would also serve as a formatter, but
+its equations are stated properties, not proofs for Geb's grammar; the
+formatter here has its proofs.
 
 The prototype leaves three things open. A list whose last element is a
 comment prints its closing parenthesis at the start of a line, which
@@ -272,45 +331,93 @@ not yet written.
 
 ### Readable and canonical S-expressions
 
-[RFC9804] specifies a canonical encoding and an advanced encoding for
-people. The readable S-expressions of this repository are not the
-advanced encoding, which cannot write a numeral as a bare token and has
-no `&`; they belong to the family of [R7RS] `<datum>`, [EDN] and
-`sexplib`, and the kernel's syntax lies in that family already, every atom
-of the sources being a numeral or an identifier of [R7RS] and [EDN].
-Neither encoding of [RFC9804] carries information the present syntax
-cannot: what they add are spellings over the same data model of octet
-strings (quoted atoms, hexadecimal and base-64 atoms, display hints), so
-a later translation into them is mechanical.
+[RFC9804] specifies a canonical encoding for hashing and signing, an
+advanced encoding for people, and a basic encoding for transport; it is an
+Informational RFC, not on the standards track. Its atoms are octet strings
+with optional display hints; canonical lengths count bytes; an advanced
+token cannot begin with a digit; and its grammar has no comments.
 
-- Now: reserve the characters those spellings use
-  ([Grammar narrowing](#grammar-narrowing-and-editions)).
-- Later: an export of `SExp` to the canonical encoding, atoms as
-  `length:bytes`, a fold with a retraction, for exchanging source. Kernel
-  terms have a canonical, versioned exchange format already, the image
-  (`Geb.Kernel.writeImage`), compared by bytes in continuous integration.
-  The bytes of a source identify a document; the digest of a kernel term
-  identifies a definition.
+Two routes to a durable readable profile are open.
 
-The syntax unification of the Bootstrap chapter, one reader over the
-canonical data model with a quoted spelling for atoms that are not tokens,
-is a widening, and waits until quoted atoms are wanted; its first use is
+- A Geb readable profile: the kernel's present syntax, narrowed
+  ([Grammar narrowing](#grammar-narrowing-and-editions)), inside [R7RS]
+  `<datum>`, [EDN] and `sexplib`, with bare numerals, `;` comments read
+  into the document by the reader of
+  [Source documents](#source-documents-and-a-verified-formatter), and
+  quoted atoms added when wanted. Every present source is already in it;
+  the seed's reader, the reader in Geb and generic tools for Lisps read
+  it; the formatter and its theorems exist. It is a profile of its own and
+  is not called [RFC9804].
+- The advanced encoding of [RFC9804]: numerals acquire quotes or length
+  prefixes (`"0"`, `1:0`), atoms outside the token alphabet such as `&`
+  acquire quotes, and prose is an explicit annotation form of the grammar,
+  a quoted string, since the grammar has no comments. It is a published
+  specification with several implementations. Either both of the
+  compilers' readers change, or an importer converts it into the legacy
+  syntax the compilers read.
+
+Both are printers of one document type, whose data model is that of
+[RFC9804], atoms and lists; so the choice can be revisited by a mechanical
+translation, provided the document type holds comments as data. The
+recommendation is to author in the Geb readable profile and to add
+printers of [RFC9804] as further profiles with their own retractions: the
+canonical encoding for exchange first, the advanced encoding if a
+published readable form is wanted. The advanced encoding costs quotes on
+every numeral of kernel source and prose written as quoted strings; its
+benefit is a specification maintained outside Geb
+([Open decisions](#open-decisions)).
+
+Common to either route:
+
+- Atoms are byte strings preserved exactly; human names and prose are
+  UTF-8, without implicit Unicode normalization. Whether an atom names a
+  numeral, an identifier or a datum is decided by Geb's grammar, not by
+  the S-expression layer, so a change of spelling changes no decoded
+  bytes.
+- Binary atoms stay available for exchange. A canonical file holding
+  arbitrary bytes is not an editor buffer, since trimming whitespace or
+  converting encodings corrupts a length-prefixed atom.
+- Display hints are excluded from the first profile, as [RFC9804] § 8
+  permits; format information is a field of the document, and hints
+  accepted later keep their bytes.
+- A restricted codec claims conformance only for the subset it
+  implements; general conformance to [RFC9804] also requires the basic
+  encoding for transport.
+- A profile is accepted when the actual bootstrap sources convert into it
+  with names and comments preserved and compile to the same checked
+  bundles; a proof over trees of numerals does not meet that condition.
+- Strict quoted strings escape non-ASCII bytes, and verbatim atoms need
+  byte lengths; prose in UTF-8 spelled directly belongs to a convenience
+  profile with the same document retraction, a mechanical change of
+  spelling.
+
+Now: reserve the characters these spellings use. Later: an export of the
+document to the canonical encoding, a fold with a retraction, for
+exchanging source. Kernel terms have a canonical, versioned exchange format
+already, the image (`Geb.Kernel.writeImage`), compared by bytes in
+continuous integration. The bytes of a source identify a document; the
+digest of a kernel term identifies a definition. The Bootstrap chapter's
+syntax unification, one reader over the canonical data model with a quoted
+spelling for atoms that are not tokens, is a widening; its first use is
 replacing the lists of character codes of
-[bootstrap/stage1/datatype.geb](../bootstrap/stage1/datatype.geb), such
-as `(quote (1 108 101 116))`.
+[bootstrap/stage1/datatype.geb](../bootstrap/stage1/datatype.geb), such as
+`(quote (1 108 101 116))`.
 
-### Out-of-band data and editor support
+### Documents and separate annotations
 
-Comments never reach the image, and the compiler reads the core tree
-only, so separating them has no motive at compilation. Its motives are
-identity, the digest excluding annotations, and a future content store.
-Two arrangements are available.
+Comments never reach the image, and the compiler reads the core tree only,
+so their separation has no motive at compilation. Its motives are identity,
+the digest excluding annotations; reuse of a checked core when only
+documentation changes, whose benefit is to be measured; and a future
+content store. Two arrangements are available.
 
-- Text is primary, comments are data in it, and the separation is derived
-  when reading. The file is the combined view, so editors, diffs, merges
-  and searches need nothing new. Precedents:
+- Text is primary, comments are data in it, and the separation into core
+  and annotations is derived when reading, in memory and in build
+  artifacts. The file is the combined view, so editors, diffs, merges,
+  reviews and searches need nothing new. Precedents:
   [Clojure's metadata](https://clojure.org/reference/metadata), which does
-  not affect equality or hashes; [Dhall](https://docs.dhall-lang.org/discussions/Safety-guarantees.html),
+  not affect equality or hashes;
+  [Dhall](https://docs.dhall-lang.org/discussions/Safety-guarantees.html),
   which hashes a normal form without comments; and
   [Yatima](https://github.com/argumentcomputer/yatima-lang-alpha), whose
   `Term::embed` separates a nameless tree for the content identifier from
@@ -318,9 +425,11 @@ Two arrangements are available.
   fails when the shapes differ. Darklang returned from a structure editor
   to text as the source of truth
   ([status update](https://blog.darklang.com/an-overdue-status-update/)).
-- The separation is primary and text is a projection: Unison, Lamdu, MPS,
-  and Unison's design of 2019, not built, of comments keyed by a hash and
-  a path ([unison#443](https://github.com/unisonweb/unison/issues/443)).
+- Two independently authoritative artifacts, core and annotations, with
+  text as a projection: Unison, Lamdu, MPS, and Unison's design of 2019,
+  not built, of comments keyed by a hash and a path
+  ([unison#443](https://github.com/unisonweb/unison/issues/443)). They need
+  atomic updates, detection of stale annotations and coordinated merging.
   Keys by path move under edits, as Go's comment map does
   ([golang/go#20744](https://github.com/golang/go/issues/20744)); keys by
   hash conflate structurally equal definitions
@@ -331,88 +440,217 @@ Two arrangements are available.
   removed its metadata links
   ([unison#4574](https://github.com/unisonweb/unison/pull/4574)).
 
-The first is recommended. The reader of the prototype supplies the
-document; the side table is a function
-`attach : List Item → Core × (Vertex ⇀ Notes)`, not stored as primary
-data. A store, when one exists, keys its annotations by the named entry,
-a core digest together with its names, as Yatima does, rather than by a
-core digest and a path, and checks shapes as `unembed` does.
+The first is recommended; the second is adopted when a store or editor
+provides those operations, with a proved conversion from the single
+document. The document keeps at least:
 
-### Hashes and multihash references
+- declaration and binder names, ordered prose, links, examples, and the
+  associations of source to core;
+- unknown annotation fields of a known version, kept on read and write;
+- everything that affects elaboration — type annotations, datatype
+  encodings — in the checked input, since calling such information a
+  decoration must not let its erasure change meaning.
 
-Nothing is needed in the source now. References are names, resolved
-deterministically given the manifest and the edition, and digests are
-then the fold over the order of dependencies that the Bootstrap chapter
-specifies. The one decision that touches the source is whether it will
-contain a digest literal, pinning a dependency as Unison's `#…` does;
-reserving `#` keeps that possible. Before the first digest is stored, the
-hash is chosen between BLAKE3 and SHA3-256, the envelope and the tags of
-[concrete-syntaxes.md](concrete-syntaxes.md) § Structural
-content-addressing specification are fixed, and the vocabulary of
-vertices is versioned.
+The side table is a function `attach : List Item → Core × (Vertex ⇀ Notes)`
+of the document. Its keys identify occurrences relative to one revision of
+a document or definition: two equal subtrees can carry different comments,
+which a key made from their hash cannot distinguish, while metadata meant
+for every instance of an equal definition uses that definition's content
+identity; the two are different attachments
+([concrete-syntaxes.md](concrete-syntaxes.md) § Wrapper model, environment
+model, and the occurrence pitfall). A path means something only at its
+identified root, and a change of representation transports paths. An edit
+of a program can delete, duplicate or merge occurrences, so a migration of
+meaning cannot place every comment: an explicit map of the edit is kept,
+or unmatched annotations are kept for reconciliation, never attached to
+the nearest equal subtree. A map of sources through elaboration is a
+relation, one source form generating several core nodes. A store, when one
+exists, keys annotations by the named entry, a core digest with its names,
+as Yatima does, and checks shapes as `unembed` does.
 
-### Files and references across them
+### Hashes and content identity
 
-Files stay outside Geb's semantics. A toolchain needs three things:
+The payload that bears identity is frozen before durable identifiers are
+published. The block proposal of [definitions.md](definitions.md)
+§ Content identity is its starting point:
 
-- a manifest per program, an S-expression naming the program, its
-  edition and its files in order, read by the host driver, the tests, the
-  formatter and a language server, replacing the lists in
-  `scripts/bootstrap.sh` and the tests and the dependencies stated in
-  comments;
-- rejection of duplicate names by both readers, a narrowing that affects
-  no present program;
-- namespaces ([Namespaces](#namespaces-and-name-uniqueness)).
+```text
+(schema version, semantic profile reference,
+ import interface, export layout, definition bodies)
+```
+
+The profile fixes primitive identities, binding rules and the
+interpretation of the representation; display names and comments stay
+outside the payload; types and certificates are inside it when they affect
+meaning, and a separately checked certificate of an identified term is an
+artifact of its own.
+
+- An identifier is versioned and carries a multihash, or is a CIDv1 of an
+  actual serialized block with a specified codec. A multihash names an
+  algorithm and a digest; it neither versions Geb's schema nor specifies
+  the bytes hashed, and a CID also names the codec
+  ([IPLD primer](https://ipld.io/docs/intro/primer/)). A structural digest
+  of the Merkle kind is not presented as the CID of unrelated exchange
+  bytes.
+- One algorithm is chosen, between BLAKE3 and SHA3-256, before
+  identifiers are assigned; the envelope and the tags of
+  [concrete-syntaxes.md](concrete-syntaxes.md) § Structural
+  content-addressing specification are fixed then. The choice does not
+  delay writing source. A local store of canonical blocks suffices at
+  first; networking, CAR archives, digests per node and deduplication
+  across graphs are features of storage for later.
+- This is structural identity, not semantic identity: renaming bound
+  variables leaves the resolved representation unchanged, while inlining,
+  changing a derived operation or choosing another proof usually does
+  not, and semantic equivalence belongs to checked certificates. Equal
+  finite digests prove nothing about unbounded trees: retrieved content is
+  verified, payloads are compared before objects are identified, and an
+  identifier associated with conflicting payloads is rejected.
+- Unison separates names from identity and refers to a member of a
+  recursive component by the component's hash and an index
+  ([hashes](https://www.unison-lang.org/docs/language-reference/hashes/));
+  Geb uses its validated export direction for the index.
+
+Nothing is needed in the source now. Before digests exist, a reference is
+a position relative to a complete frozen bundle and its profile, never a
+globally meaningful integer; complete bundles, their profiles and their
+order of dependencies are kept. The migration to digests runs in that
+order, rewrites the constructor of external references, produces a map
+from old references to new, and re-keys annotations with it; a later
+change of algorithm or schema computes new identifiers without promising
+equal ones. The traversal follows the grammar: a data tree inside a
+quotation may contain the label of the reference constructor without
+being a reference, as
+[the substitution traversal](../Geb/Prototypes/Kernel/Subst.lean) already
+treats quotations apart from term children, and reflective code values
+need an identified schema and a transport of their own. The one decision
+touching source is whether it will contain a digest literal, pinning a
+dependency as Unison's `#…` does; reserving `#` keeps that possible.
+
+### Files, assembly and the host boundary
+
+Files stay outside Geb's semantics: they organize writing and delivery,
+and semantic dependencies are references to definitions.
+
+- A manifest per program, an S-expression naming the program, its edition,
+  its sources in order and its entry points, is read by the host driver,
+  the tests, the formatter and a language server. It replaces the lists in
+  `scripts/bootstrap.sh` and the tests, and the dependencies stated in
+  comments. No scan of directories or working directory decides the order
+  of binding implicitly.
+- The first linker keeps the present well-founded order, resolves each
+  import to an explicit definition, rejects unresolved and ambiguous
+  references, and checks the bundle; references by digest replace frozen
+  positions later. General cyclic blocks and a canonical order of
+  recursive components are unnecessary for the bootstrap's recursion by
+  folds, and sorting the members of a cycle by their digests does not
+  solve symmetric cycles.
+- Generated names are made hygienic before a large library is written:
+  identifiers the expansion generates are reserved or its expansion is
+  hygienic, and emitted Lean names escape injectively with the runtime's
+  names qualified. The Bootstrap chapter records the capture of primitives
+  in the datatype language's expansion and the conflicts with emitted `T`,
+  `leaf` and `mk`.
+- Importing existing source keeps the old resolver's meaning: changing the
+  rules of duplicates or shadowing retroactively can change a program once
+  accepted, which is why duplicates are rejected in a new edition, no
+  present source having one.
+
+Interaction with the operating system stays a pure interface of requests
+and results with an interpreter in the host. Byte encoding, framing of
+input and output, errors and exhaustion of resources have explicit
+contracts, which a later interface of effects implements. Paths, clocks,
+environment variables and the width of machine integers are never hidden
+semantic inputs.
 
 With content identity, a file is a view: a path in a namespace names a
-definition's digest, and a program's order is the order of its
-references. The manifest migrates mechanically into that; names being
-unique, a file resolves alike in every program that includes it.
+definition's digest, and a program's order is the order of its references.
+The manifest migrates mechanically into that; names being unique, a file
+resolves alike in every program that includes it.
+
+### Namespaces and name uniqueness
+
+`.` separates qualifiers in the sources already (`Label.app`, `Prim.add`,
+`Rule.hyp`). Names are annotations and bear no identity, so a namespace is
+a matter of the reader: a namespace per entry of the manifest or a
+`(namespace X)` form, with resolution in the current namespace, then the
+opened ones, then by qualified name. Now: reject duplicates and reserve `.`
+for qualification; present names stay valid in the root namespace. Before
+the sources grow: the mechanism itself. Prefixes that avoid collisions,
+such as `mTypeIn` beside `typeIn`, otherwise accumulate, and removing them
+later is renaming by hand.
 
 ### Free-monad and cofree-comonad addressing
 
-Nothing is needed now. Vertices, the directions of the cofree comonoid
-([Geb/Prototypes/Definition/Vertex.lean](../Geb/Prototypes/Definition/Vertex.lean)),
-and the directions of the free monad are computed from trees; no source
-mentions them. They become persistent when a table keyed by vertex is
-stored, which the arrangement recommended above never does, or when a
-reference is a digest of a block with a direction, which blocks of
-several members, absent from the kernel, need. Before either, the
-vocabulary of vertices is versioned. The annotated document type
-`μX. Ann × F X` of [concrete-syntaxes.md](concrete-syntaxes.md) and the
-prototype's `RoseTree Lab` are one idea: the prototype keeps comments as
-siblings, and `attach` makes them the `Ann` components.
+The constructions of
+[Geb/Prototypes/Definition/Vertex.lean](../Geb/Prototypes/Definition/Vertex.lean)
+are reused. A direction of the free monad selects a variable leaf, a
+vertex any node; an export layout marks exports as variable leaves
+deliberately, and an annotation on an internal expression uses a vertex.
+Treating the two kinds of address as one loses occurrences.
+
+Now: record the vocabulary of addresses as those vertices, with the root
+of each, and check paths on input wherever a path is read; the compact wire
+spelling and a surface syntax for navigation wait. Addresses become
+persistent only when a table keyed by vertex is stored, which the
+arrangement recommended above never does, or when a reference is a digest
+of a block with a direction, which blocks of several members, absent from
+the kernel, need. A change of representation supplies a transport of
+addresses with a proof that selection commutes with it; an isomorphism of
+values alone does not preserve a chosen set of addressable intermediate
+nodes. The finite decorated trees of
+[ConcreteSyntax.lean](../Geb/Prototypes/ConcreteSyntax.lean), with their
+comonad laws, or their side-table presentation with a proved
+correspondence, serve the annotations; [concrete-syntaxes.md](concrete-syntaxes.md)
+§ The document type is a μ, not a ν distinguishes them from the possibly
+infinite cofree comonad, and no new comonad is a prerequisite. The
+prototype's `RoseTree Lab` keeps comments as siblings, and `attach` makes
+them the `Ann` components.
 
 ### Documentation through Verso
 
-Now: the markup of comments. The comments of the sources read as Verso
-inline text but for one `_`, whereas a cross-reference such as
-``{name}`typeIn` `` cannot be inferred mechanically from prose that reads
-"the type checker". Verso markup, with the four roles the repository's
-Lean modules use and `{name}` resolving to Geb definitions and checked
-when documentation is built, is recommended, together with the convention
-the sources follow: a block of comments immediately before a form
-documents it, and a block followed by an empty line is prose.
+Now: the storage and markup of documentation, before substantial prose is
+written; rendering follows once storage round-trips. The comments of the
+sources read as Verso inline text but for one `_`, whereas a reference such
+as ``{name}`typeIn` `` cannot be inferred mechanically from prose that
+reads "the type checker". A migration keeps unmarked prose byte for byte
+but cannot tell which words were meant as references, so references that
+should follow renaming are marked as links from the start. Verso markup is
+recommended, with the four roles the repository's Lean modules use,
+`{name}` resolving to Geb definitions through the compiler's maps of names
+and sources, and checked when documentation is built; a field of format
+and version with the prose's bytes permits starting from a subset of Verso
+without a complete parser of documentation. The convention the sources
+follow is kept: a block of comments immediately before a form documents
+it, and a block followed by an empty line is prose.
 
 Two routes render it.
 
 - Docstrings in the emitted Lean: the backend
   [bootstrap/stage1/lean.geb](../bootstrap/stage1/lean.geb) writes
-  `/-- … -/` before each definition from comments the Geb reader keeps. The
-  literate site renders them beside the Lean denotations, not the Geb
-  source, and the compiler and its artifacts change.
+  `/-- … -/` before each definition from comments the Geb reader keeps, and
+  the literate site renders them beside the Lean denotations, not the Geb
+  source. Lean's comment delimiters, quoted identifiers and markup are
+  escaped explicitly; a string interpolated into generated Lean is not a
+  safe encoding of a document. The compiler and its artifacts change.
 - A literate page per Geb file, generated from its document: top-level
   comments become prose and forms become code blocks of a `geb` expander
   (Verso supports `@[code_block]` expanders, as its `InlineLean` shows),
-  which reads each block, fails the documentation build on one that does
-  not read, and anchors each definition. No compiler change is needed and
-  the page shows Geb source. This route is recommended.
+  which reads each block, fails the build of documentation on one that
+  does not read, and anchors each definition; Lean may still check its
+  examples. No compiler change is needed and the page shows Geb source.
+  This route is recommended.
 
-Files whose comments come first and literate Markdown whose prose comes
-first are two printers of the same document type, so either can be
-adopted later by a mechanical translation.
+The model of documentation stays independent of its renderer, which
+permits either view and renderers without Lean. Files whose comments come
+first and literate Markdown whose prose comes first are two printers of
+one document type, so either can be adopted later mechanically. The
+acceptance is a module with a description, a documented definition, a
+checked example and a cross-reference; editing only its documentation
+changes the rendered manual and the document's identity and leaves the
+checked core's identity unchanged.
 
-### Paredit, parinfer and coloured parentheses
+### Structural editing and parinfer
 
 The following was determined for VS Code on 2026-09-29.
 
@@ -421,65 +659,123 @@ The following was determined for VS Code on 2026-09-29.
   1.67); brackets inside comments are skipped only when a TextMate grammar
   marks the comment as one
   ([bracket pair colorization](https://code.visualstudio.com/blogs/2021/09/29/bracket-pair-colorization)).
-- `ailisp.strict-paredit` 0.3.1 fixes the languages it serves
-  (`commonlisp`, `clojure`, `lisp`, `scheme`); Calva's paredit serves
-  `clojure` files only.
+  A language configuration and a small TextMate grammar are declarative
+  features and need no language server
+  ([language extensions](https://code.visualstudio.com/api/language-extensions/overview)).
+- [Mike's Paredit](https://marketplace.visualstudio.com/items?itemName=MikeDelmonaco.paredit)
+  (`MikeDelmonaco.paredit`, MIT) extracts Calva's structural operations
+  (navigation, selection, slurp, barf, raise, splice, transpose, wrap,
+  kill), is independent of language, takes delimiters per language
+  (`paredit.customDelimiters`) and reads the comment configuration of a
+  language's extension. It had 29 installations, so it is pinned and
+  tested. `ailisp.strict-paredit` 0.3.1 fixes the languages it serves
+  (`commonlisp`, `clojure`, `lisp`, `scheme`), and Calva's paredit serves
+  Clojure only.
 - The parinfer extensions (`shaunlebron.vscode-parinfer` 0.6.2 and its
   forks) fix their languages likewise. The library `parinfer` 3.13.1
-  exposes `parenMode` and `indentMode` over whole texts, and treats `[`,
+  exposes `parenMode` and `indentMode` over whole texts and treats `[`,
   `]`, `{`, `}` as parentheses, `"` as a string delimiter and `\` as an
-  escape, so atoms containing them break it.
+  escape, so atoms containing them break it. Paren Mode never changes the
+  tree; Indent Mode changes it by design and is an operation of editing,
+  not a formatter.
 
-Now, without code: associate `*.geb` with `scheme`
-(`"files.associations": {"*.geb": "scheme"}`), install
-`sjhuangx.vscode-scheme`, for the grammar and language configuration,
-and `ailisp.strict-paredit`, and use `shaunlebron.vscode-parinfer` on
-formatted files only. This is sound because atoms avoid the characters
-Scheme treats specially, and the narrowed grammar keeps it so. Paren Mode,
-which never changes the tree, and strict paredit serve the files as
-written; Indent Mode is safe only on the formatter's output. A test in
-continuous integration, `parenMode(x).text === x && indentMode(x).text
-=== x` at a pinned parinfer, keeps the formatter compatible.
+Explicit paredit edits come first. Without writing an extension:
+associate `*.geb` with `scheme` (`"files.associations": {"*.geb":
+"scheme"}`), install `sjhuangx.vscode-scheme` for a grammar and language
+configuration, and use Mike's Paredit or `ailisp.strict-paredit`. This is
+sound because atoms avoid the characters Scheme treats specially, and the
+narrowed grammar keeps it so. With a little code: a `geb` language (a
+manifest, a language configuration and a TextMate grammar of some fifteen
+lines) with Mike's Paredit configured for it. `geb-fmt` is the formatter;
+a test in continuous integration, `parenMode(x).text === x &&
+indentMode(x).text === x` at a pinned parinfer, keeps its output usable
+under parinfer, and Indent Mode is used on formatted files only.
 
-Later: a `geb` language (a manifest, a language configuration and a
-TextMate grammar of some fifteen lines) with one-line forks of
-strict-paredit and parinfer, and formatting on save through
-`pucelle.run-on-save` calling `geb-fmt`.
+Before an extension is the supported default, it passes a fixture of the
+profile: nested bindings, parentheses in comments, parentheses and
+semicolons in quoted atoms, escaped quotes, Unicode names, input with
+CRLF, and incomplete syntax. Navigation, selection, wrap, slurp, barf and
+undo are tested in VS Code; formatting is tested by comparing the parsed
+documents, annotations included, before and after, and structural edits by
+their intended change of the tree with the checker run again. An editor's
+recognition of other brackets or reader macros never defines Geb syntax.
+Formatting on save, through `pucelle.run-on-save` calling `geb-fmt`, stays
+off until the fixture passes.
 
 ### Tree-sitter and a language server
 
-VS Code offers no user-extensible tree-sitter highlighting (experimental
-grammars for a few built-in languages only;
-[vscode#50140](https://github.com/microsoft/vscode/issues/50140) is
-open); [tree-sitter-vscode](https://github.com/AlecGhost/tree-sitter-vscode)
+Tree-sitter is an incremental concrete-syntax parser that recovers from
+errors ([introduction](https://tree-sitter.github.io/tree-sitter/)); it
+helps selection and incomplete buffers independently of a language
+server. VS Code offers no user-extensible tree-sitter highlighting
+(experimental grammars for a few built-in languages only;
+[vscode#50140](https://github.com/microsoft/vscode/issues/50140) is open);
+[tree-sitter-vscode](https://github.com/AlecGhost/tree-sitter-vscode)
 highlights with a supplied grammar through semantic tokens, and Neovim,
 Helix, Zed and Emacs 29 use tree-sitter natively. A grammar for Geb is
-small; tree-sitter-scheme (MIT) is a base. Nothing is needed now.
+derived from the same profile when those services need it, from
+tree-sitter-scheme (MIT) as a base, and its recovery from errors never
+supplies trusted input to the compiler. Nothing is needed now.
 
 Diagnostics come before a language server:
 [efm-langserver](https://github.com/mattn/efm-langserver) turns a checker
 on the command line into diagnostics, with a generic client for VS Code,
 and the checker to run is `Geb.Kernel.diagnose`, which names the first
 failing definition, applied after the stage-0 expansion for the datatype
-language. Diagnostics with locations need a map from vertices to spans,
-another derived annotation, and a checker that reports the failing
-vertex; the trusted checker stays as it is, and the locating checker is a
-separate, untrusted function. A language server in Lean, with
-diagnostics, hover (a definition's type and comment) and navigation
-(resolution against the manifest), has typed holes as its first use.
+language. A language service then needs source spans and structured
+diagnostics, lookup of definitions, inferred and expected types, and the
+obligations of holes
+([language-server guide](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide)).
+The protocol transports those services between the checker and the
+editor; it does not store or rebuild annotations. The existing checker
+serves behind it; the server tracks versions of buffers, cancels stale
+checks, and translates offsets of bytes into the position encoding the
+editor negotiates, which reliable diagnostics after Unicode edits require.
+Diagnostics with locations need a map from vertices to spans, a derived
+annotation, and a checker that reports the failing vertex; the trusted
+checker stays as it is, and the locating checker is a separate, untrusted
+function.
 
 ### Typed holes
+
+The first step is implemented.
+[Hole.lean](../Geb/Prototypes/Kernel/Hole.lean) treats a sketch with one
+hole of type `A` in context `Γ` as a kernel term in `A :: Γ`, the
+innermost free variable standing for the hole, its occurrences under
+binders included, and a filling as a term of type `A` in `Γ`:
+
+```text
+sketch : A :: Γ ⊢ B
+filling : Γ ⊢ A
+subst filling sketch : Γ ⊢ B
+```
+
+In the cartesian interpretation the sketch is a map `A × Γ → B`, the
+filling a map `Γ → A`, and filling composes the sketch with
+`⟨filling, id⟩ : Γ → A × Γ`: ordinary substitution, whose denotation is the
+kernel's `infer_subst`. `fillHole` checks the expected type, the filling
+and the sketch before substituting; `infer_fillHole` gives the type and
+denotation of every accepted result, and `fillHole_of_infer` accepts every
+valid input. The [kernel examples](../GebTests/Prototypes/Kernel.lean)
+cover capture avoidance, repeated occurrences, and rejection of wrong
+types, variables escaping their scope, invalid sketches and malformed
+expected types. No slice or presheaf construction is needed for this
+operation.
+
+The literature for the richer interface:
 
 - A hole of type `A` in a context `Γ` is a metavariable `u :: A[Γ]`
   occurring as `clo(u, id_Γ)` [NanevskiPfenningPientka2008]. Their Theorem
   4.6 translates such a metavariable into an ordinary variable of type
-  `B₁ → … → Bₘ → A`, instantiation being substitution followed by β.
-  Holes are lambda-lifted variables, and in a cartesian closed category a
-  term with a hole is a morphism out of the exponential `[Γ ⇒ A]`, by
-  functional completeness [LambekScott1986].
-- Hazelnut Live assigns a hole its type in checking mode (rule EAEHole),
-  and filling commutes with evaluation (Theorems 4.1 and 4.2)
-  [OmarVoyseyChughHammer2019].
+  `B₁ → … → Bₘ → A`, instantiation being substitution followed by β:
+  holes are lambda-lifted variables, of which `fillHole` is the case of one
+  hole, and in a cartesian closed category a term with a hole is a
+  morphism out of the exponential `[Γ ⇒ A]`, by functional completeness
+  [LambekScott1986].
+- Hazelnut studies typed editing states, incomplete terms included
+  [OmarVoyseyHiltonAldrichHammer2017]; Hazelnut Live assigns a hole its
+  type in checking mode (rule EAEHole), and filling commutes with
+  evaluation (Theorems 4.1 and 4.2) [OmarVoyseyChughHammer2019].
 - The free Σ-monoid over presheaves on contexts characterizes
   metavariables, metasubstitution being the monad's bind [FioreHur2010]
   [FioreSzamozvancev2022].
@@ -487,39 +783,115 @@ diagnostics, hover (a definition's type and comment) and navigation
   `[ψ₁, …, ψₙ] ⇒ C`, the subgoals lifted over their parameters, and admits
   nothing [Paulson1989], unlike an axiom such as Lean's `sorryAx`.
 
-Programs. Holes are written `?name`, `?` being reserved as the initial
-character of an atom. The reader takes them as variables of the free
-monad of the definition, the directions of
-[definitions.md](definitions.md), and filling is `link`, the Kleisli
-composition the definitions prototype proves associative. Their types come
-from bidirectional checking with first-order unification of simple types,
-which is decidable; people fill holes, so no higher-order unification
-arises. Each hole is reported with its context, the names of its binders
-taken from the document, and its type. The trusted checker is unchanged:
-a program with holes checks exactly when its lambda-lifting does. A slice
-`Set/(Ctx × Ty)` is the bookkeeping; presheaves on contexts are needed
-only for metasubstitution capturing ambient variables or for first-class
-contextual types, neither of which is wanted.
+These are references for the interface; their calculi need not enter
+Geb's trusted logic.
 
-Proofs. A leaf `hole` carries a judgement `Γ_h | Φ_h ⊢ ψ_h`; the checker
-returns the conclusion with the list of open holes, and certifies
-`(⋀_h ∀Γ_h. (⋀Φ_h ⇒ ψ_h)) ⊢ goal`, sound in every topos since it uses
-intuitionistic `∀` and `⇒` alone. Filling is grafting, the bind of the free
-monad of derivation trees.
+Holes in programs, the next layer:
 
-A checker of holes is not stronger than the metalogic's checker, its
-conclusions being conditional; it is admitted by a translation of its
-certificates into derivations under hypotheses, so it exercises the
-admission of checkers in a small case, in the form the Bootstrap chapter
-prescribes, a translation with a proof in the metalogic. It waits on the
-metalogic's prover in Geb.
+- Holes are written `?name`, `?` being reserved as the initial character
+  of an atom. The reader takes them as variables of the free monad of the
+  definition, the directions of [definitions.md](definitions.md), so that
+  filling is `link`, the Kleisli composition the definitions prototype
+  proves associative.
+- Each hole has an identity, a declaring context, an expected type and
+  its occurrences in the source; repeated uses of a named hole share one
+  obligation, and unrelated holes of one type do not. Uses in contexts
+  other than the declaring one carry explicit substitutions from it, the
+  closures of [NanevskiPfenningPientka2008].
+- Expected types come from bidirectional checking, with first-order
+  unification of simple types, which is decidable; people fill holes, so
+  no higher-order unification arises. An initial implementation may
+  require explicit types and decline to evaluate through holes; inference
+  of missing types and live evaluation are extensions.
+- Each hole is reported with its context, the names of its binders taken
+  from the document, and its type. The trusted checker is unchanged: a
+  program with holes checks exactly when its lambda-lifting does.
+- A slice `Set/(Ctx × Ty)` is the bookkeeping; presheaves on contexts are
+  needed only for metasubstitution capturing ambient variables or for
+  first-class contextual types, neither of which is wanted.
 
-The checker of [Canonical](#canonical) is itself a checker of holes: it
-checks terms containing unassigned metavariables and suspends at each,
-so the report of a hole and the search that fills it share one
-implementation.
+Holes in proofs: a leaf `hole` carries an open sequent `Γ_h | Φ_h ⊢ ψ_h`;
+the checker returns the conclusion with the list of open obligations and
+certifies `(⋀_h ∀Γ_h. (⋀Φ_h ⇒ ψ_h)) ⊢ goal`, sound in every topos since it
+uses intuitionistic `∀` and `⇒` alone. Filling is grafting, the bind of the
+free monad of derivation trees. Only a closed derivation is accepted as
+the original theorem; a sketch is state of the editor, not an axiom or a
+completed program.
 
-### Program and proof synthesis
+An elaborator of holes, whose filled obligations produce an ordinary
+checked term or derivation, is admitted by relative soundness, a
+translation of its certificates into derivations under hypotheses with a
+proof in the metalogic. It is a small case of the admission of checkers
+but need not be the first: its conclusions are conditional, not stronger,
+and the Bootstrap chapter's candidates of conversion and shared
+certificates address existing costs of proofs more directly, the
+conversion step with the further support of [Canonical](#canonical)'s
+measurements. Admitting a checker of open sketches is not admitting their
+unresolved conclusions. It waits on the metalogic's prover in Geb.
+
+A checker written as Canonical-min's is, suspending at unassigned
+metavariables, reports each hole's goal as the constraints suspended on
+it, so the report of holes and the search that fills them share one
+implementation ([Canonical](#canonical)).
+
+### Synthesis and certificates
+
+The obligation of a hole is the interface to synthesis. A request carries
+the frozen dependencies, the profile, the context, the target type or
+proposition, the permitted grammar, examples and a budget of resources; a
+result carries a candidate and, when a semantic property is claimed, its
+certificate, with the revision of its input, so that it is not applied
+silently to another hole. Failure or exhaustion of the budget refutes
+nothing.
+
+The target is explicit. Inhabiting a computational type such as
+`Tree → Tree` specifies no behavior, so a program and a derivation of its
+specification are searched together, sharing unknowns. A derivation of an
+internal existential statement is not an executable witness: a topos
+interprets existential quantification through images, without sections
+of every epimorphism
+([Borceux, *Some flavours of topos theory*, §§ 3.5, 4.4–4.5](https://www.uclouvain.be/system/files/uclouvain_assetmanager/groups/cms-editors-irmp/Lecture%20Notes.pdf)),
+and a broader claim of extraction needs its own theorem. For unique
+existence the repository proves the property of descriptions in
+[Internal/Connectives.lean](../Geb/Prototypes/FreeTopos/Internal/Connectives.lean).
+When a program is requested, a term of the executable fragment is
+required.
+
+In order of availability:
+
+1. Lookup of matching local terms, introduction of constructors,
+   application, rewriting by named theorems and bounded enumeration, with
+   the prover as the producer of certificates: these make explicit typed
+   holes useful without a new dependency.
+2. A typed enumerator beside
+   [Geb/Prototypes/FreeTopos/Prover/](../Geb/Prototypes/FreeTopos/Prover.lean),
+   recursing only through `iter`, `fold`, `para` and `foldr`, so that
+   totality is given. The universal property of the fold turns the
+   synthesis of a recursive function from examples into the synthesis of
+   its non-recursive step [Hutton1999] [FeserChaudhuriDillig2015]
+   [OseraZdancewic2015]; candidates are pruned by observational
+   equivalence and by evaluating partial candidates, the suspension of
+   [Canonical](#canonical) supplying the latter. A certificate is the
+   kernel term with its examples, checked by typing and evaluation, or,
+   against a specification, a derivation from the prover's normalization
+   and induction.
+3. Search over the prover's choices, with equality saturation
+   [WillseyNandiWangFlattTatlockPanchekha2021] whose explanations become
+   the prover's certificates of rewriting, and refinement in the manner of
+   [Canonical](#canonical) for choices of induction, motive and lemma.
+4. SMT and syntax-guided synthesis for fragments with suitable encodings.
+   Z3 already proposes decorations in the
+   [elementary-affine prototype](../scripts/eal/eal.py), validated in Geb;
+   cvc5's SyGuS interface also restricts candidates by a grammar
+   ([example](https://cvc5.github.io/docs/latest/examples/sygus-fun.html),
+   [SyGuS 2.1](https://arxiv.org/abs/2312.06001)). An SMT proof is not a Geb
+   proof: its theory, Boolean reasoning and encoding must be related to the
+   constructive metalogic, and a proof of unsatisfiability of the negated
+   goal in a classical encoding yields constructively only a doubly
+   negated conclusion. A first integration takes candidates checked by
+   Geb's rules, or a fragment with a proved translation of certificates,
+   and a report of no solution is never trusted.
+5. Shared enumeration in the manner of SupGen.
 
 SupGen's mechanism, from its two
 [gists](https://gist.github.com/VictorTaelin/7fe49a99ebca42e5721aa1a3bb32e278)
@@ -534,34 +906,28 @@ SmallCheck [RuncimanNaylorLindblad2008], shared under optimal reduction.
 SupGen's source is not published and HVM4 has no licence; Bend 2, launched
 without it, states that it has no tactics or proof search. Its reported
 speeds are not reproduced independently, and its programs recurse through
-`Y`, so they need not be total. Stage 4 of the interaction-net arm of the
+`Y`, so they need not be total. Material for a bounded experiment exists:
+[HVM3](https://github.com/HigherOrderCO/HVM3)'s
+[enumerator of affine λ-terms](https://github.com/HigherOrderCO/HVM3/blob/fba2e9c82faf6e2f019c9ecea94c32f19a8b7820/examples/enum_lam_smart.hvm),
+which bounds the depth of binding and the arity of application, and its
+[type-directed enumerator](https://github.com/HigherOrderCO/HVM3/blob/fba2e9c82faf6e2f019c9ecea94c32f19a8b7820/examples/enum_coc_smart.hvm),
+both needing adaptation of their discipline of contexts and grammar of
+candidates to Geb; and the
+[SupVM gist](https://gist.github.com/VictorTaelin/7ae3d262e4d0b80a4e8817a80f976a68),
+a small evaluator in TypeScript for a stated subset of HVM, representing
+correlated labelled choices by a map, which is neither a specification nor
+a verification of HVM. Superposition is a representation of search, not a
+new constructor of the accepted language; the decoded result passes Geb's
+checker whatever found it. Stage 4 of the interaction-net arm of the
 Bootstrap chapter, superpositions for searching certificates, is where it
-would enter.
+would enter, after typed and shared enumeration are compared on one finite
+grammar and set of obligations, measuring generation, checking, size of
+certificates, time and peak memory together.
 
-In order of availability:
-
-1. A typed enumerator beside
-   [Geb/Prototypes/FreeTopos/Prover/](../Geb/Prototypes/FreeTopos/Prover.lean),
-   recursing only through `iter`, `fold`, `para` and `foldr`, so that
-   totality is given. The universal property of the fold turns the
-   synthesis of a recursive function from examples into the synthesis of
-   its non-recursive step [Hutton1999] [FeserChaudhuriDillig2015]
-   [OseraZdancewic2015]; candidates are pruned by observational
-   equivalence and by evaluating partial candidates, the suspension of
-   [Canonical](#canonical) supplying the latter. A certificate is the
-   kernel term with its examples, checked by typing and evaluation, or,
-   against a specification, a derivation from the prover's normalization
-   and induction.
-2. Search over the prover's choices, with equality saturation
-   [WillseyNandiWangFlattTatlockPanchekha2021] whose explanations become
-   the prover's certificates of rewriting, and [Canonical](#canonical) for
-   the choices of induction, motive and lemma.
-3. SyGuS solvers such as cvc5 for first-order steps, their results checked
-   again and a report of no solution never trusted.
-4. A search in the manner of SupGen on an interaction-net runtime.
-
-Nothing is needed in the source now; synthesis produces source and
-constrains the format through holes only.
+Constraint pruning and sharing address different costs and may later be
+combined. None of these is a prerequisite for preserving source across
+revisions of the bootstrap; synthesis produces source and constrains the
+format through holes only.
 
 ### Canonical
 
@@ -574,7 +940,9 @@ Canonical is a solver for type inhabitation in dependent type theory
   `λ x̄. let ȳ := M̄. f Ā`, and the type of a symbol determines its arity.
 - A search refines one metavariable at a time. It chooses a head from the
   metavariable's local context and creates fresh metavariables for the
-  head's arguments, all at once, so that they may be refined in any order.
+  head's arguments, all at once, so that they may be refined in any order
+  and a later argument, a proof for instance, can constrain an earlier
+  one, the witness it is about.
 - Terms carry explicit substitutions, so an equation between partial
   terms is found violated as soon as its head symbols differ, and the
   branch is abandoned.
@@ -591,17 +959,24 @@ Canonical is a solver for type inhabitation in dependent type theory
   tactics as absent. Canonical produces cut-free proofs.
 
 Canonical-min [NormanAvigad2026] is a reference implementation in 185
-lines of Lean
-([repository](https://github.com/chasenorman/Canonical-min)).
+lines of Lean ([repository](https://github.com/chasenorman/Canonical-min),
+cited here at revision `72a24f13ec2e6ff3150e609cb5edbc70ef59a236`).
 
 - Its type checker for dependent type theory runs in a continuation
   monad. Meeting an unassigned metavariable, the checker stores the rest
-  of the check as a constraint on that metavariable; assigning the
+  of the check as a constraint on that metavariable, and continues the
+  independent checks of other arguments (`judgment`); assigning the
   metavariable resumes it.
-- The search is iterative deepening over assignments of heads.
+- The search is iterative deepening over assignments of heads, favoring
+  rigid constraints and otherwise later arguments, and raising both a
+  bound on the size of terms and a heuristic budget.
 - On DTTBench, 31 problems from Lean's library needing β-reduction only,
   with a timeout of 60 seconds, it solves 31. Twelf solves 8, sauto 6 and
   Mimer 2.
+- Its search is written with `partial` functions, so being Lean source
+  proves neither soundness nor completeness of the search; and its tactic
+  wrapper imports Canonical itself for preparing premises, translation and
+  reconstruction of proofs.
 
 Canonical is available under the MIT licence: the solver in Rust with the
 Lean tactic ([Canonical](https://github.com/chasenorman/Canonical),
@@ -610,29 +985,31 @@ for each Lean version with precompiled libraries for three platforms, the
 latest for Lean v4.34.0 on 2026-09-27. Outside Lean it reads a problem in
 an undocumented JSON form. A mode for program synthesis, in which an
 equation stuck on the major argument of a recursor counts as stuck rather
-than violated, is described in the paper and absent from the released
-tactic.
+than violated (§ 3.3.1 of the paper), is absent from the released tactic.
+A stuck check is not a failed one — `natRec z s ?n = z` becomes true when
+`?n` is zero — so a search claiming completeness over its grammar keeps
+stuck branches that remain viable. The paper's encoding of Lean (§ 4)
+erases universes; it is not a foundation for Geb, whose final checker
+stays the boundary of acceptance.
 
 Three properties of Geb fit it.
 
 - A checker of Geb is a fold over a tree of rule applications, that is,
   over the terms of a signature of the Logical Framework: judgements are
   families of types indexed by the terms they relate, and rules are
-  constants. An inhabitant Canonical finds is a certificate, translated
-  constant by constant, and Geb's trusted checker checks it again. The
-  adequacy of the encoding need not be proved, since a wrong encoding
-  costs completeness and never soundness.
+  constants. An inhabitant of a judgement is, after decoding, a
+  certificate for Geb's trusted checker to check again, and a wrong
+  encoding costs completeness, never soundness.
 - Canonical's metavariables with local contexts are the metavariables of
   contextual modal type theory, and a checker written as Canonical-min's
-  is reports each hole's goal as the constraints suspended on it. The
-  hole report and the filling search are one program
+  is reports each hole's goal as the constraints suspended on it: the
+  report of holes and the search that fills them are one program
   ([Typed holes](#typed-holes)).
 - Canonical accepts reduction rules. Given the kernel's computation rules
   (β, projections, the folds at constructors) as rules, an equation that
   holds by computation holds definitionally, and the search is left the
-  structural choices of induction, motive and lemma. That complements
-  the normalizing prover, which makes the computational steps and not the
-  choices.
+  structural choices of induction, motive and lemma, which complements
+  the normalizing prover.
 
 Experiments, on one machine, with Canonical and Canonical-min at Lean
 v4.34.0, the goals stated in Lean as Canonical-min's DTTBench states them,
@@ -648,12 +1025,12 @@ the signature as hypotheses:
 | length and sum of `List Nat` from three examples each | Lean's `List` and `Nat` | not found in 30 s and 60 s | not run |
 
 The machine has 16 threads (AMD Ryzen AI 9 HX 370); Canonical used all of
-them. Canonical-min was measured at commit `72a24f1` of its repository,
-Canonical at tag `v4.34.0` of CanonicalLean. To reproduce: the manifest of
-Canonical-min pins an untagged revision of CanonicalLean, for which no
-release archive exists, so the revision is replaced by the tag's; and the
-tactic's native library is loaded when a goal is built as a module of the
-package by `lake build`, not by `lake env lean`.
+them. Canonical-min was measured at the revision above, Canonical at tag
+`v4.34.0` of CanonicalLean. To reproduce: the manifest of Canonical-min
+pins an untagged revision of CanonicalLean, for which no release archive
+exists, so the revision is replaced by the tag's; and the tactic's native
+library is loaded when a goal is built as a module of the package by
+`lake build`, not by `lake env lean`.
 
 The signature of the rules of Gödel's T over lists, in higher-order
 abstract syntax, with nothing computing definitionally, is:
@@ -678,7 +1055,7 @@ abstract syntax, with nothing computing definitionally, is:
 ```
 
 For the goal `Eq (List A) (foldr A (List A) (nil A) (λ x r. cons A x r) xs)
-xs`, Canonical returns the following term, a derivation of Gödel's T
+xs`, Canonical returns the following term, a derivation in these rules
 (induction on the list, the fold's rules and congruence of `cons`), its
 motive synthesized:
 
@@ -693,8 +1070,11 @@ indList A (fun xs ↦ Eq (List A) (foldr A (List A) (nil A) (fun x r ↦ cons A 
   xs
 ```
 
-Four conclusions follow from the measurements, within their small
-number.
+The encoding is in higher-order abstract syntax, and Geb's checker of
+Gödel's T works with de Bruijn contexts and hypotheses; the terms found
+were not decoded into Geb certificates and checked, so they establish
+which encodings search well, not a working route. Four conclusions follow
+from the measurements, within their small number.
 
 - With the rules as axioms, Canonical finds derivations of a few steps
   with a synthesized motive, and those that chain several equational
@@ -713,30 +1093,65 @@ number.
 - Programs from examples are not found, the released tactic lacking the
   mode for synthesis; they remain the enumerator's.
 - Canonical-min, without the heuristics and parallelism of the solver in
-  Rust, did not find the shortest derivation in 60 s; it serves as the
-  specification of the algorithm rather than as a solver.
+  Rust, did not find the shortest derivation in 60 s; it specifies the
+  algorithm rather than serving as a solver.
 
-Recommendations:
+The operations that transfer to Geb are three: each unknown has its
+declaring context and an explicit substitution at each use, and a
+candidate application is its head with all its argument holes; a check
+needing an unassigned hole is suspended on it while independent checks
+continue; and a step chooses a hole and a head, allocates the argument
+holes together, resumes the checks waiting on that assignment, rejects
+the branch when a constraint fails, and undoes its assignments and
+constraints on backtracking. Two routes implement them:
 
-- Now: nothing in the source format beyond the syntax of holes.
-- The checker of holes is written as Canonical-min's is, in a monad that
-  suspends at unassigned metavariables, so that it serves as the search's
-  checker.
-- A first integration, from Lean: the prover
-  ([Geb/Prototypes/FreeTopos/Prover/](../Geb/Prototypes/FreeTopos/Prover.lean))
-  states a subgoal in a Logical Framework signature of a checker's rules,
-  calls Canonical, translates the term into a certificate and checks it
-  with the Lean checker. This adds Canonical as a dependency of the
-  package, a decision for the user; a release is published per Lean
-  version, and the Rust solver is built from source otherwise.
-- A Geb-native solver, after the metalogic's prover in Geb: the algorithm
-  of Canonical-min written in Geb, bounded by fuel as every Geb program
-  that searches is, and parameterized by a signature, so that each of
-  Geb's checkers is searched by one program.
-- Programs from examples take the enumerator of
-  [Program and proof synthesis](#program-and-proof-synthesis), with the
-  suspension of Canonical-min in place of a separate evaluator of partial
-  candidates.
+| Route | Benefit | Work required |
+| --- | --- | --- |
+| Encode Geb's derivations as a signature for Canonical | Exercises an existing, parallel search at once | Specify the signature, scoping, substitution and decoding exactly; decode each found term into a Geb derivation and check it; a Lean proof of an analogous statement alone is insufficient |
+| Implement refinement over Geb's terms and derivations | Uses the actual language and checker; a bounded search written in Geb survives the bootstrap | Contextual metavariables and suspended constraints; checking, branching and reduction adapted to partial syntax |
+
+The second is the implementation meant to last, and the first serves
+experiment. The Geb-native search starts from the finite grammar of
+selected heads and proof rules for actual obligations; for logical goals
+it searches for a Geb derivation of the sequent, and for computational
+goals it shares the holes of a candidate term with the derivation of its
+required property, which needs no dependent types in Geb's object
+language. It reuses the
+[internal-language prover](../Geb/Prototypes/FreeTopos/Internal/Prove.lean)
+— scoped matching of theorems, normalization producing certificates,
+function extensionality, case analysis and combinators of induction —
+whose matcher handles supplied terms, suspension and shared unknowns being
+additional work rather than an existing general unifier; normalization in
+search uses justified computational equations and does not treat equality
+in the metalogic as decidable by normalization. Where Canonical-min keeps
+suspended work as closures of Lean, a first implementation in Geb keeps it
+as explicit finite work items carrying contexts and substitutions, resumes
+only those an assignment affects, and bounds search and reduction by a
+natural number, returning unfinished state when the bound is spent, so
+that each run is a total operation of System T that the host may repeat;
+a heuristic entropy in floating point is not needed at first.
+
+Its obligations are separate: checking every completed candidate gives
+correctness of accepted results through the existing checker; correct
+pruning also needs that a rejected partial state has no valid completion;
+and completeness also needs coverage of the chosen grammar, correct
+scoping and backtracking, and fair exploration as bounds grow. An
+exhausted finite run establishes none of the global claims. The first
+experiment compares refinement with typed enumeration on one finite
+grammar, with composition, repeated holes under binders, a proof
+constraining an earlier witness, and a fold stuck on an unknown
+argument; it replays every certificate and records nodes searched,
+reduction, time of checking and size of certificates; the search for
+induction motives follows once the basic constraints work, the existing
+combinators of induction serving meanwhile. It needs contextual holes
+richer than `fillHole`.
+
+Recommendations: nothing in the source format beyond the syntax of holes;
+the checker of holes written to suspend, so that it serves as the search's
+checker; the Geb-native refinement as the lasting implementation; and the
+first route, which adds Canonical as a dependency of the package, only if
+an experiment from Lean is wanted before it
+([Open decisions](#open-decisions)).
 
 ### Grammar narrowing and editions
 
@@ -747,51 +1162,47 @@ keyword. No source changes. The syntax then lies in [R7RS] `<datum>`,
 [EDN] and `sexplib`, so generic tools for Lisps (paredit, parinfer,
 grammars for Scheme) read it correctly, and strings, digest literals with
 `#`, symbols quoted with `|`, vectors and holes can each be added as a
-widening. Identifiers beyond ASCII, by Unicode's UAX #31 and
-normalization form C, are a widening too, no source using one.
+widening. Identifiers beyond ASCII are a widening too, no source using
+one: admitted by Unicode's UAX #31, compared byte for byte, and, since no
+reader normalizes, rejected when not already in normalization form C, so
+that equal-looking names are equal.
 
-Record an edition per program in the manifest, as Racket's `#lang`,
-Rust's editions and Go's `go` directive do. An edition fixes the reader,
-its rules of resolution included, and the elaborator. An elaborator is a
-committed image and the kernel is fixed, so an old edition's image runs
-unchanged. Mixing editions in one program needs an interface between the
+Record an edition per program in the manifest, as Racket's `#lang`, Rust's
+editions and Go's `go` directive do. An edition fixes the reader, its rules
+of resolution included, and the elaborator. An elaborator is a committed
+image and the kernel is fixed, so an old edition's image runs unchanged.
+Mixing editions in one program needs an interface between the
 environments of elaborators, such as declarations of constructors; that
 is its cost.
 
-### Namespaces and name uniqueness
-
-`.` separates qualifiers in the sources already (`Label.app`, `Prim.add`,
-`Rule.hyp`). Names are annotations and bear no identity, so a namespace
-is a matter of the reader: a namespace per entry of the manifest or a
-`(namespace X)` form, and resolution in the current namespace, then the
-opened ones, then by qualified name. Now: reject duplicates and reserve
-`.` for qualification; present names remain valid in the root namespace.
-Before the sources grow: the mechanism itself. Prefixes that avoid
-collisions, such as `mTypeIn` beside `typeIn`, otherwise accumulate, and
-removing them later is renaming by hand.
-
 ### Stability of elaboration
 
+The higher-level source is kept beside its resolved core, the rules of
+expansion and name resolution are versioned by edition, and generated
+names are hygienic ([Files](#files-assembly-and-the-host-boundary)).
 Commit, for each program, the elaborated definitions that
 `lake exe geb-defs` writes, regenerate them in continuous integration and
-compare them. Any change of expansion or resolution that alters existing
-code is then detected, before digests exist; `bootstrap/compiler.img` has
-that role for the compiler alone. State the encoding of the datatype
+compare them: any change of expansion or resolution that alters existing
+code is then detected, before digests exist, as `bootstrap/compiler.img`
+detects it for the compiler alone. State the encoding of the datatype
 language in the manual as part of the first edition. A specification of
 the expansion in Lean, as the checkers have, would free its meaning from
 one Geb program; that is larger and can follow.
 
 ### Proof scripts and certificates
 
-Before many proofs are written in Geb, fix the durable artifact: scripts
-are the source; certificates, derivations under the fixed rule set, are
-cached artifacts of the build, keyed by the statement and the elaborated
-definitions it cites; and a script that fails after a change of the
-prover falls back to its cached certificate while it is repaired. The
-complete proofs about the compiler's components have from 600000 to
-1240000 nodes, so the cache holds the form of shared certificates. The
-metalogic has no surface syntax for statements in Geb text yet, and it
-will need its own retraction at the level of documents.
+Before many proofs are written in Geb, fix the durable artifact. Scripts
+are the source. A certificate is kept with its statement, theory and
+profile, dependencies and format, and replayed, or translated by a
+certified translator, when rules or encodings change. Certificates,
+derivations under the fixed rule set, are cached artifacts of the build,
+keyed by the statement and the elaborated definitions it cites, and a
+script that fails after a change of the prover falls back to its cached
+certificate while it is repaired. The complete proofs about the compiler's
+components have from 600000 to 1240000 nodes, so the cache holds the form
+of shared certificates. The metalogic has no surface syntax for statements
+in Geb text yet, and it will need its own retraction at the level of
+documents.
 
 ### Comment conventions
 
@@ -816,6 +1227,21 @@ Forms `let*`, of several bindings, and `cond`, of several guarded
 branches, expanded by the reader as the lists of binders of `lam` are,
 remove both; they are widenings, and precede long chains.
 
+### Further requirements before substantial authoring
+
+| Requirement | Minimum contract |
+| --- | --- |
+| Schema and feature versions | Syntax, core, annotations, certificates and semantic profile are identified separately; an unsupported mandatory feature is rejected and an optional field kept opaque. |
+| Persistent data | Serialized values, tags of datatype constructors, examples and saved inputs of programs are versioned interfaces; migrating code does not migrate values stored outside it. |
+| Library behavior | Dependencies are frozen; an implementation is replaced only with proved equality for the observations its interface permits, or kept under its old identity ([contract](#the-compatibility-contract)). |
+| Verification boundary | Which steps of parsing, elaboration, serialization, code generation and host execution are proved and which tested is stated, and correctness is carried through the whole path that runs a program. |
+| Reproducible builds | Source, the closure of dependencies and the compiler profile are kept; the identities of document, checked core and generated artifacts are distinct; a corpus of previously accepted programs is kept. |
+| Diagnostics | A structured result of success or error with its source occurrence; an empty output of the compiler is not an interface for developers. |
+| Editing and recovery | Incomplete documents, obligations of holes and unattached annotations are saved; drafts are distinguished from accepted programs; updates of several artifacts are atomic. |
+| Performance and limits | Exhaustion of resources is distinct from falsity and from ill-typing; representative operations of editing, checking and compiling are measured; implementations may improve without promising equal cost. |
+| Reflection | Representations of code are distinguished from ordinary data; which structural observations are stable, and how quoted schemas migrate, is stated. |
+| Host protocols | Contracts of bytes, framing, errors and types of entry points are fixed independently of files, the width of machine words and the names of backends ([host boundary](#files-assembly-and-the-host-boundary)). |
+
 ### Scale
 
 The Bootstrap chapter's section on improvements lists the limits that
@@ -830,46 +1256,61 @@ Content identity also gives incremental compilation, a cache per
 definition keyed by digest, which is a reason to take it early, though
 not one of format.
 
-## A sequence
+## A sequence and its acceptance
 
-Before most Geb code is written; these steps change `bootstrap/reader.geb`
-and the committed images, so they follow other work on the reader:
+Before most Geb code is written; the steps that change
+`bootstrap/reader.geb` and the committed images follow other work on the
+reader:
 
-1. Adopt the document reader and the formatter. Format `bootstrap/` in one
-   mechanical change, the images unchanged as measured above, and add
-   `geb-fmt --check` and the test of parinfer's fixed points to continuous
-   integration.
-2. Narrow the grammar in both readers and reject duplicate names.
-3. Add manifests with editions, and the record of elaborated definitions.
-4. Fix the markup and conventions of comments.
-5. Configure VS Code: the association with Scheme, strict paredit, and
-   parinfer on formatted files.
+| Step | Acceptance |
+| --- | --- |
+| Adopt the document reader and the formatter | `bootstrap/` formatted in one mechanical change with images and emitted Lean unchanged, as measured above; `geb-fmt --check` and the test of parinfer's fixed points in continuous integration |
+| Narrow the grammar; reject duplicate and ambiguous names | both readers reject the reserved characters and duplicates, and accept every present source unchanged |
+| Manifests with editions; the record of elaborated definitions | the build and tests read manifests; the regenerated record equals the committed one |
+| A durable document with versioned profiles | declaration and binder names, prose, examples, links and unknown optional fields survive reading, printing and conversion |
+| Hygienic elaboration, explicit assembly, diagnostics | shadowing a primitive cannot alter generated operations; imports resolve deterministically; failures name a source occurrence and preserve existing outputs |
+| Markup and conventions of comments; documentation | one Geb module renders prose, a checked example and a link through Verso; editing only its documentation leaves the core identity unchanged |
+| Editor configuration | the pinned VS Code extension passes the profile's fixture |
 
-Early in writing: namespaces; `let*` and `cond`; quoted atoms; the report
-of holes in programs; diagnostics with locations through efm-langserver;
-literate pages generated from documents; and the first integration of
-Canonical.
-
-When their consumers exist: digests and the store, the versioned
-vocabulary of vertices, `attach` and hover text, a language server,
-tree-sitter, holes in proofs, the enumerator, the cache of certificates,
-the export to canonical S-expressions, and a Geb-native solver.
+Early in writing, alongside the first substantial module where it helps:
+namespaces; `let*` and `cond`; quoted atoms; the syntax of holes and the
+display of their obligations; diagnostics with locations through
+efm-langserver; literate pages generated from documents; and the typed
+enumerator. When their consumers exist: digests and the store, `attach`
+and hover text, a language server, tree-sitter, holes in proofs, the cache
+of certificates, the export to canonical S-expressions, and the
+Geb-native refinement search. The library then written in Geb drives
+content storage, richer language services, adapters to solvers and
+optimization of the runtime; none of them may discard the document,
+binding or dependency information already kept.
 
 ## Open decisions
 
-1. The reserved characters: whether `&` stays an atom, and whether
+1. The readable profile: the Geb readable profile, recommended, or the
+   advanced encoding of [RFC9804]
+   ([Readable and canonical S-expressions](#readable-and-canonical-s-expressions)).
+2. The reserved characters: whether `&` stays an atom, and whether
    identifiers beyond ASCII are admitted now.
-2. Namespaces: per file, by a form, or by qualified names only.
-3. The markup of comments: Verso or Markdown.
-4. The route to documentation: literate pages from Geb source, or
+3. Namespaces: per file, by a form, or by qualified names only.
+4. The markup of comments: Verso or Markdown.
+5. The route to documentation: literate pages from Geb source, or
    docstrings in the emitted Lean.
-5. The layout policy. The retraction holds at every policy; parinfer
+6. The layout policy. The retraction holds at every policy; parinfer
    constrains it to continuation lines inside the innermost open
    parenthesis and not beyond a parenthesis closed on the line before;
    whether a list that does not fit may keep its last element on its
    first line, as in `(def pick (lam (…)`, is style.
-6. Whether Canonical becomes a dependency of the package, for the first
-   integration, or is only ported.
+7. The structural editor: Mike's Paredit with a `geb` language, or the
+   association with Scheme and strict paredit.
+8. Canonical: whether it becomes a dependency of the package for
+   experiments from Lean, the Geb-native refinement being the lasting
+   implementation either way.
+9. The first stronger checker: the conversion step, which the chapter
+   ranks first and the measurements of Canonical support, or another.
+10. Whether the checker of holes in programs is written now, in Lean and
+    in the suspending form, so that the same code later drives search.
+11. The public contract of the prover as a library: exact certificates, or
+    any checked certificate behind a proved abstraction.
 
 ## Sources
 
@@ -886,7 +1327,9 @@ where cited; beyond those:
   [60d3bc72](https://gist.github.com/VictorTaelin/60d3bc72fb4edefecd42095e44138b41)
   and
   [7fe49a99](https://gist.github.com/VictorTaelin/7fe49a99ebca42e5721aa1a3bb32e278);
-- Chase Norman's talks on Canonical
+- the paper's PDF,
+  [Canonical for Automated Theorem Proving in Lean](https://drops.dagstuhl.de/storage/00lipics/lipics-vol352-itp2025/LIPIcs.ITP.2025.14/LIPIcs.ITP.2025.14.pdf),
+  and Chase Norman's talks on Canonical
   ([video 1](https://www.youtube.com/watch?v=y6p0hHkabXs),
   [video 2](https://www.youtube.com/watch?v=Me7WFEvoksw)).
 
