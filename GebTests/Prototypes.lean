@@ -23,6 +23,7 @@ import GebTests.Prototypes.FreeTopos.Benchmark
 import GebTests.Prototypes.FreeTopos.Expansion
 import GebTests.Prototypes.FreeTopos.GebCheck
 import GebTests.Prototypes.FreeTopos.GebCheckInternal
+import GebTests.Prototypes.FreeTopos.GebCombinator
 import GebTests.Prototypes.FreeTopos.GebProve
 import GebTests.Prototypes.FreeTopos.GebTactics
 import GebTests.Prototypes.FreeTopos.Graphs
