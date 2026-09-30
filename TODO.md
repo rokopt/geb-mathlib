@@ -1235,6 +1235,15 @@ Correcting these is a separate concern from any current branch per
 
 ## Triggers (do when condition fires)
 
+- **The checker of shared certificates**: the Bootstrap chapter's section
+  The next phase requires two stronger checkers, the conversion step and
+  the checker of holes, and makes the checker of the shared certificates,
+  admitted by unsharing, a requirement only if measurement shows the
+  checking or storage of cached certificates to need it. Trigger: such a
+  measurement during the bootstrap, at which point it becomes a
+  requirement of the bootstrap; or the bootstrap's completion without
+  one, at which point it becomes an early item of the work after the
+  bootstrap in the chapter's road map.
 - **Canonical as a dependency**: `lakefile.toml` requires Canonical
   ([docs/source-format.md](docs/source-format.md) § Canonical) for
   experiments with search, in a library of their own that no module of

@@ -129,11 +129,15 @@ Computation:
   `bootstrap/stage1/lean.geb`, the committed `bootstrap/compiler.img`
   and `bootstrap/lean/GebBoot.lean`, and the executable `geb-compile`.
 * Ready. The datatype language's completion
-  ({ref "improvements"}[Improvements]): generated
-  recognizers, type parameters, a static check of datatypes, patterns
-  with `&`, unused pattern variables, primitives that no binding
-  shadows, emitted names that no definition captures, and diagnostics
-  naming the definition that fails.
+  ({ref "improvements"}[Improvements]), before substantial authoring:
+  datatype names as types distinct from the type of trees, checked at
+  every use, a datatype reaching the trees only through its
+  representation and its decoding by its generated recognizer, both
+  written explicitly; type parameters checked opaquely; the soundness of
+  the typing, proved with the prover in Geb; patterns with `&`, unused
+  pattern variables, primitives that no binding shadows, emitted names
+  that no definition captures, and diagnostics naming the definition that
+  fails.
 * Ready. The first stage of the interaction-net arm of
   {ref "choice-of-machine"}[the choice of machine]: a kernel program's
   interaction system, duplicating no λ-value, with a sequential reducer
@@ -257,9 +261,14 @@ the sections below detail:
   * Ready. Stronger checkers admitted beside it by relative
     soundness, each by a translation of its certificates into the
     metalogic's derivations ({ref "metalogic-and-checker"}[The
-    metalogic and its checker]), the checker of the shared certificates
-    among the
-    candidates, by unsharing.
+    metalogic and its checker]). Two are required by the bootstrap: the
+    checker with a step of conversion to a normal form under named
+    rules, the evaluation of primitives at literals among its rules, and
+    the checker of holes, admitted beside it
+    ({ref "the-next-phase"}[The next phase]). The checker of the shared
+    certificates, by unsharing, is required if measurement shows the
+    checking or storage of certificates to need it, and follows the
+    bootstrap otherwise.
 
 Extension:
 
@@ -271,16 +280,19 @@ Extension:
   `docs/definitions.md` § Content identity; the hash written in Geb and
   compared with a host binding; the migration from positions to
   digests, the namespace tree and the re-keying of annotations.
-* Ready. A printer for the kernel's readable syntax and the retraction
-  law, and the unification of the readable S-expressions with the
-  canonical ones, with a quoted spelling for atoms that are not tokens,
-  the section on improvements.
+* Ready. The syntaxes of {citet RFC9804}[] and the Geb authoring profile,
+  reading into one document type with proved retractions, and the
+  importer from the present syntax
+  ({ref "authoring-compatibility"}[Authoring across bootstrap
+  revisions]); and a printer for the kernel's terms with the retraction
+  law, the section on improvements.
 * In progress. {ref "authoring-compatibility"}[Authoring across bootstrap
   revisions]: preservation of source documents, bindings and dependency
   references through format changes. Checked filling of one contextual
   term hole in Lean, and source documents keeping comments with their
-  retraction and formatter, are complete; the syntax of holes and the
-  display of their obligations are ready.
+  retraction and formatter, are complete; namespace blocks with export
+  lists, the syntax of holes, the checker of holes in programs in its
+  suspending form, and the display of their obligations are ready.
 
 ## After the bootstrap
 
@@ -374,7 +386,13 @@ The following are fixed; the plan builds on them.
   constructors and structural
   recursion are derived from their declarations, case analysis,
   functions with result types, type parameters instantiated at
-  elaboration, and quotients only by computable normal forms. Its types
+  elaboration, and quotients only by computable normal forms. A datatype
+  is the initial algebra of its declaration, a type distinct from the
+  type of trees, reaching them only through its representation, the
+  unique algebra morphism into them, and its decoding by its recognizer;
+  generic code is parameterized by an interface, a theory, and a model of
+  it instantiates the code, so that abstraction needs no construct of its
+  own. Its types
   denote objects of the category of recognized types over the functions
   the kernel defines, which has finite limits and finite coproducts;
   that category has no subobject classifier for propositions about
@@ -393,10 +411,22 @@ The following are fixed; the plan builds on them.
   because the polymorphic λ-calculus has no set-theoretic model, which
   the kernel's denotation in Lean types requires.
 * Concrete syntax. Geb specifies its abstract syntax, rose trees, and
-  not a concrete syntax. Until Geb can express arbitrary concrete
-  syntaxes itself, the default is readable S-expressions, the readable
-  form of the canonical S-expressions of {citet RFC9804}[], whose data
-  model the reader's S-expressions share.
+  not a concrete syntax. Source is written in the syntaxes of
+  {citet RFC9804}[]: its canonical encoding and the transport encoding of
+  it, for exchange, hashing and signing; its advanced encoding; and a Geb
+  authoring profile, the advanced encoding with line comments, UTF-8 and
+  line breaks in quoted strings, numerals as bare runs of digits, `&` as a
+  token, and `?name` for the form `(hole name)`. All four read into one
+  document type, which keeps comments and empty lines, and each printer is
+  a section of its parser, so conversion among them preserves the
+  document ({ref "authoring-compatibility"}[Authoring across bootstrap
+  revisions]). The present sources' syntax, the kernel reader's, is
+  converted into the authoring profile.
+* Conversion. Until the bootstrap completes, no source is kept unchanged
+  for its own sake: whatever is preferable is adopted everywhere, every
+  source converted to it, and the languages admit exactly what the
+  mathematics states, without implicit coercions or silent
+  conversions.
 * Metalogic. The metalogic is the free topos with the inductive types
   the bootstrap uses, natural numbers and rose trees, and its
   equivalence with the free topos with a natural numbers object is
@@ -1743,10 +1773,18 @@ tag := "authoring-compatibility"
   * Source documents keeping comments, their retraction and the formatter
   * Complete
 *
-  * Document fields, syntax profiles and migration contracts
+  * The syntaxes of RFC 9804 and the authoring profile, with the importer
   * Ready
 *
-  * Hole syntax, obligation display, documentation and editor integration
+  * Namespace blocks with export lists, document fields and migration
+    contracts
+  * Ready
+*
+  * The checker of holes in programs, suspending, with hole syntax and
+    obligation display
+  * Ready
+*
+  * Documentation as literate pages and the `geb` editor language
   * Ready
 *
   * Acceptance
@@ -1754,8 +1792,14 @@ tag := "authoring-compatibility"
 :::
 
 Programs written during the bootstrap require preservation of their
-authoring information as well as their denotation. The proposals and
-their tradeoffs are recorded in `docs/source-format.md`. The document-level
+authoring information as well as their denotation. The decisions, their
+reasons and the alternatives weighed are recorded in
+`docs/source-format.md`: source in the syntaxes the decision on concrete
+syntax names; namespaces as reopenable blocks independent of files, each
+exporting only what its export list names; documentation in Verso markup,
+with a role for Geb's definitions beside Lean's, rendered as literate
+pages generated from Geb source; and an editor language `geb` with Mike's
+Paredit for structural editing. The document-level
 law is that parsing a printed document returns that document, including
 its annotations; conversion between two such syntaxes preserves the parsed
 document. The syntax survey's retractions are over its finite-alphabet
@@ -1797,6 +1841,14 @@ accepted result, by {name}`Geb.Kernel.infer_subst`. It covers repeated
 occurrences and occurrences under binders. `GebTests/Prototypes/Kernel.lean`
 checks capture avoidance and rejection of ill-typed or out-of-scope
 fillings. This is a Lean operation; the reader has no hole syntax yet.
+A hole is the form `(hole name)`, with `(hole name T)` for an expected
+type, and the authoring profile writes a hole of one argument `?name`.
+The checker of holes in programs is written in Lean in the suspending
+form: a check that needs an unassigned hole is kept as an explicit work
+item, carrying its context and substitution, resumed when an assignment
+affects it, within a natural-number budget, which is the form a checker
+written in Geb needs. It extends {name}`Geb.Kernel.fillHole` from one hole
+to many and leaves {name}`Geb.Kernel.infer` unchanged.
 
 The authoring layer records each hole's identity, declaring context,
 expected type and source occurrences. Uses in different contexts carry
@@ -1804,15 +1856,17 @@ explicit substitutions. A proof hole records an open sequent and its
 obligations. Only a term with all its holes filled, or a derivation with
 all its obligations discharged, is accepted as the completed program or
 theorem. Search may propose fillings; the checker checks their types and
-the certificates of any claimed properties. Admission of this
-elaboration by relative soundness is a candidate alongside the stronger
-checkers of {ref "the-next-phase"}[The next phase], without making an
-unresolved hole an axiom.
+the certificates of any claimed properties. The checker of holes is the
+second stronger checker the bootstrap requires, admitted beside the first
+({ref "the-next-phase"}[The next phase]), without making an unresolved
+hole an axiom.
 
-Canonical-style refinement is a candidate for general program and proof
-search through this interface. It assigns a hole's head and creates its
-argument holes together, allowing constraints from later arguments to
-guide earlier ones. Checks blocked on unknown terms are suspended and
+Canonical-style refinement, written in Geb, is the search for program and
+proof holes through this interface; Canonical itself is a dependency of
+the package for experiments until everything done with it is written in
+Geb (`TODO.md` § Triggers). Refinement assigns a hole's head and creates
+its argument holes together, allowing constraints from later arguments to
+guide earlier ones. Checks stuck on unknown terms are suspended and
 resumed after refinement. A bounded implementation can reuse the
 internal-language prover's normalization and induction combinators,
 with every completed derivation checked. Contextual metavariables and
@@ -1820,12 +1874,12 @@ suspended constraints remain to be implemented; the source assessment,
 experiments with Canonical, adaptation choices and comparison with SupGen
 and SMT are in `docs/source-format.md`.
 
-Acceptance: a documented module survives conversion between the
-selected readable and canonical program syntaxes, retaining names,
+Acceptance: a documented module survives conversion among the syntaxes of
+RFC 9804 and the authoring profile, retaining names,
 comments, examples, links and dependency resolution, and compiles to
 the same checked core. A documentation-only edit leaves core identity
-unchanged. Its documentation renders through Verso. The selected VS Code
-structural editor preserves the parsed document when formatting it.
+unchanged. Its documentation renders through Verso. The `geb` editor
+language with Mike's Paredit preserves the parsed document.
 A typed hole displays its context and target, accepts a well-typed
 filling without capture, and prevents a remaining obligation from being
 reported as a completed theorem. These conditions concern authoring;
@@ -3834,12 +3888,12 @@ the change that removes it.
   stage-0 expansion, printing the kernel forms, and applying
   {name}`Geb.Kernel.diagnose` to them.
 * The reader's printer and the retraction law
-  ({ref "kernel-in-lean"}[The kernel runs in Lean]), and the
-  unification of the readable S-expressions of the kernel's reader and
-  of `Geb/Prototypes/ReadableSExpr.lean` as one reader and printer over
-  the canonical S-expressions of `Geb/Prototypes/CanonicalSExpr.lean`,
-  with a quoted spelling for atoms that are not tokens, so that every
-  canonical S-expression has a readable spelling.
+  ({ref "kernel-in-lean"}[The kernel runs in Lean]), and the syntaxes of
+  {citet RFC9804}[] with the Geb authoring profile, one document type read
+  by all of them, replacing the kernel reader's syntax through an
+  importer; `Geb/Prototypes/CanonicalSExpr.lean` supplies the canonical
+  codec over trees of numerals, generalized to atoms of bytes, and
+  `Geb/Prototypes/Kernel/Document.lean` the document and its layouts.
 * The equivalence of the word-level codec with
   {name}`Geb.RoseTree.wire`, tested and not proved, which is the first
   of the decision gates of the value-representation chapter.
@@ -3903,11 +3957,11 @@ the change that removes it.
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
   are qualified removes the restriction.
-* The datatype language lacks generated recognizers, type parameters
-  and a static
-  check of datatypes; a pattern omits the `&` that a declaration
-  writes; and every pattern variable is bound whether or not the clause
-  uses it.
+* The datatype language annotates every value of a datatype as the type
+  of trees and lacks generated recognizers, type parameters and a static
+  check of datatypes, so the datatype a value belongs to is recorded
+  nowhere; a pattern omits the `&` that a declaration writes; and every
+  pattern variable is bound whether or not the clause uses it.
 * Only the names of definitions are kept beside a bundle; the names of
   bound variables and comments are not.
 * Proof time. The prover finds the weakening proof in about a minute
@@ -3961,23 +4015,33 @@ second, which is ready:
   proofs.
 
 The admission of stronger checkers rests on the checker written in Geb
-and its agreement. Which checker is admitted first is decided, as the
-choices of when the Mitchell–Bénabou language is written and whether
-Gödel's T keeps its own checker were, by measurement: the nodes of the
-complete proofs' derivations, counted by rule, locate the steps a
-stronger checker would take at once. The
-provers compare the sides of an equation in their normal forms under
-rewriting rules, a conversion that the metalogic's checker does not
-compute but checks step by step in the derivation, so the first
-candidate is a checker with a step of conversion to a normal form under
-named rules, which the checker computes, admitted by the translation of
-that step into the derivation the provers construct; the evaluation of
-primitives at literals, which the language derives by folds over their
-bits, is another; and the checker of the shared certificates, admitted
+and its agreement, and two are required by the bootstrap. The provers
+compare the sides of an equation in their normal forms under rewriting
+rules, a conversion that the metalogic's checker does not compute but
+checks step by step in the derivation, so the first is a checker with a
+step of conversion to a normal form under named rules, which the checker
+computes, admitted by the translation of that step into the derivation
+the provers construct. The evaluation of primitives at literals, which the
+language derives by folds over their bits, is a family of its rules, each
+step translated into that derivation. Which rules it carries is decided,
+as the choices of when the Mitchell–Bénabou language is written and
+whether Gödel's T keeps its own checker were, by measurement: the nodes
+of the complete proofs' derivations, counted by rule, locate the steps it
+would take at once. The second is the checker of holes, admitted beside
+the first rather than beside the metalogic's checker: its certificates
+are the first's with leaves for open obligations, its translation targets
+the first, and its soundness rests on the first's, as each of Milawa's
+levels rests on the one below. Its conclusions are conditional, the
+obligations of the holes implying the goal, which the metalogic's checker
+can state ({ref "authoring-compatibility"}[Authoring across bootstrap
+revisions]). One checker admitted beside another admitted checker shows
+the admission repeatable. The checker of the shared certificates, admitted
 by unsharing, a translation that spells out each index as its term and
-each rule of the oracle as the typing lemmas the prover emits without
-it, is a third, whose use is the speed of developments of the
-combinators' certificates, which the proofs about programs do not cite.
+each rule of the oracle as the typing lemmas the prover emits without it,
+speeds the developments of the combinators' certificates, which the
+proofs about programs do not cite; it is required by the bootstrap if
+measurement shows the checking or storage of cached certificates to need
+it, and follows the bootstrap otherwise (`TODO.md` § Triggers).
 During the bootstrap a stronger checker shortens the
 proofs about the compiler's components, whose derivations have from
 600000 to 1240000 nodes and take from 30 to 40 seconds to check. After
