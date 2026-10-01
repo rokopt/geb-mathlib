@@ -3790,7 +3790,8 @@ checklist and in CI.
   compiler emits from the checker's program,
   `bootstrap/lean/GebMirror/GoedelT.lean`, is the denotation of each of
   the program's definitions as `Geb.Kernel.load` loads them, checked by
-  the kernel's evaluation (`MirrorLoad.lean`), and agrees definition by
+  the kernel's evaluation in the loading mode `rfl` (`MirrorLoad.lean`;
+  `docs/rules/ci-and-workflow.md` § Loading modes), and agrees definition by
   definition with the Lean checker: its type checker with
   `Geb.Kernel.infer`, its traversal, weakening and substitution with the
   kernel's, its operations on equations and theorems, its δ rule and each
@@ -3968,7 +3969,7 @@ checklist and in CI.
   emits from the program, `bootstrap/lean/GebMirror/Metalogic/`, a module
   per layer of the program, is the denotation of each of the program's
   definitions as `Geb.Kernel.load` loads them, checked by the kernel's
-  evaluation a layer to a generated module
+  evaluation in the loading mode `rfl` a layer to a generated module
   (`bootstrap/lean/GebMirror/Metalogic/Load/`) and composed in
   `Agreement/Load.lean`, and agrees definition by definition with the
   Lean definitions it transcribes (`Agreement/`): each fold of the program

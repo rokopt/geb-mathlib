@@ -21,10 +21,10 @@ additionally permit `Classical.choice`. Axiom collection does not
 descend into the constants of `upstreamChoiceRoots`, upstream
 constants whose data is choice-free and whose `Classical.choice`
 dependency is confined to proof terms. The axioms of the modules in
-`loadingAxiomModules`, the loading of the metalogic's program stated
-without proof in the loading mode `native`, are permitted to every
-declaration in that mode and to none in the mode `rfl`, as the
-environment variable `GEB_LOADING` selects.
+`loadingAxiomModules`, the loading of the programs whose agreement with
+Lean is proved, stated without proof in the loading mode `native`, are
+permitted to every declaration in that mode and to none in the mode
+`rfl`, as the environment variable `GEB_LOADING` selects.
 
 `cite` is a docstring role for literate modules
 (`docs/rules/lean-coding.md` § Literate modules): ``{cite}`Key` ``
@@ -312,14 +312,16 @@ def upstreamChoiceRoots : NameSet :=
     ``Fin.instLinearOrderPackage]
 
 /-- Exact module names whose axioms are permitted in the loading mode
-`native`: the modules `scripts/bootstrap.sh` generates to declare the
-loading of the metalogic's program a layer at a time, which in that mode
-state each definition's equation of types and loading step as axioms
-(`Geb.Kernel.LoadCommand.declareLoading`). -/
+`native`: the modules that declare the loading of a program whose
+agreement with Lean is proved, which in that mode state each
+definition's equation of types and loading step as axioms
+(`Geb.Kernel.LoadCommand.declareLoading`): those `scripts/bootstrap.sh`
+generates for the metalogic's program, a layer to a module, and the
+test module that loads the checker of Gödel's T. -/
 def loadingAxiomModules : NameSet :=
   NameSet.ofList [`GebMirror.Metalogic.Load.Checker, `GebMirror.Metalogic.Load.Translation,
     `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Tactics,
-    `GebMirror.Metalogic.Load.Combinator]
+    `GebMirror.Metalogic.Load.Combinator, `GebTests.Prototypes.GoedelT.MirrorLoad]
 
 /-- Whether the environment variable `GEB_LOADING` selects the loading
 mode `native`, as it does unless it is `rfl`. -/

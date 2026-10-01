@@ -17,9 +17,10 @@ The bootstrap compiler's Lean backend emits the checker of the metalogic written
 {lit}`bootstrap/free-topos/`, with the kernel's checker it translates the kernel's terms by, the
 translation of the kernel into the internal language, the prover of the internal language, its
 tactics and the combinator prover, as Lean definitions, one for each of the program's
-definitions: the program's mirror, {lit}`GebMirror.Metalogic`. This module states, and the kernel
-checks, that loading the program with {name}`Geb.Kernel.load` gives globals whose denotations are
-the mirror's definitions.
+definitions: the program's mirror, {lit}`GebMirror.Metalogic`. This module states, and in the
+loading mode {lit}`rfl` the kernel checks, that loading the program with {name}`Geb.Kernel.load`
+gives globals whose denotations are the mirror's definitions; in the mode {lit}`native` the steps
+of the loading are axioms ({lit}`docs/rules/ci-and-workflow.md` § Loading modes).
 
 The command {lit}`geb_program` of {lit}`GebTests.Prototypes.GoedelT.LoadCommand` declares the
 program's definitions, globals and loading, one definition at a time. Among the globals are the

@@ -19,11 +19,11 @@ compiler's front end on them, and declares, by {name}`Geb.Kernel.LoadCommand.dec
 each of the program's definitions not yet declared, its tree, its global and the globals before
 it, each global's value the definition of the same name that the bootstrap compiler's Lean backend
 emits from the program, and the step of loading it, closed by reflexivity, which the kernel checks
-by evaluating the checker-evaluator {name}`Geb.Kernel.infer` on the definition; it declares them
-in the mode {lit}`rfl` whatever the environment selects. The definitions of a long program are
-declared ahead of the command, a layer to a module, by the command {lit}`geb_load` the generated
-modules of {lit}`GebMirror` run, in the mode the environment selects; {lit}`geb_program` then
-checks that the trees they declared are the program's. It declares the loading of the whole program,
+by evaluating the checker-evaluator {name}`Geb.Kernel.infer` on the definition, or stated as an
+axiom, in the mode {name}`Geb.Kernel.LoadCommand.nativeLoading` reads. The definitions of a long
+program are declared ahead of the command, a layer to a module, by the command {lit}`geb_load`
+the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks that the trees they
+declared are the program's. It declares the loading of the whole program,
 composed from the steps, and the equality of the exported globals with their mirrors. The command
 {lit}`kernel_rfl` declares a theorem proved by reflexivity, checked by the kernel alone.
 
@@ -99,7 +99,7 @@ syntax (name := gebProgram)
     addDocStringCore name doc
   let count := ds.length
   liftCoreM do
-    declareLoading n m ds false
+    declareLoading n m ds (← nativeLoading)
     defn n "The trees of the program's definitions." (listOf treeT)
       (listExpr treeT ((List.range count).map fun k ↦ mkConst (nm "d" k)))
     let final := mkConst (nm "pre" count)
