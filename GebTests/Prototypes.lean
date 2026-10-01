@@ -45,7 +45,6 @@ import GebTests.Prototypes.FreeTopos.TreeCases
 import GebTests.Prototypes.FreeTopos.Weakening
 import GebTests.Prototypes.GoedelT
 import GebTests.Prototypes.GoedelT.Agreement
-import GebTests.Prototypes.GoedelT.Load
 import GebTests.Prototypes.GoedelT.LoadCommand
 import GebTests.Prototypes.GoedelT.MirrorChecker
 import GebTests.Prototypes.GoedelT.MirrorDelta

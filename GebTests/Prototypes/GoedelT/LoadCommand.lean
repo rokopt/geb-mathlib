@@ -5,8 +5,7 @@ Authors: Terence Rokop
 -/
 module
 
-public import GebTests.Prototypes.GoedelT.Load
-public import Geb.Prototypes.Kernel.Reader
+public import Geb.Prototypes.Kernel.LoadCommand
 public import Mathlib.Tactic.NormNum
 public meta import GebTests.Prototypes.Proofs -- shake: keep
 public meta import Lean.Elab.Command
@@ -16,17 +15,16 @@ set_option doc.verso true in
 # Commands embedding a Geb program in Lean
 
 The command {lit}`geb_program` reads a Geb program's sources at elaboration, runs the stage-0
-compiler's front end on them, and declares, for each of the program's definitions, its tree, its
-global and the globals before it, each global's value the definition of the same name that the
-bootstrap compiler's Lean backend emits from the program; it then declares the loading of the
-program, one definition at a time, each step closed by reflexivity, which the kernel checks by
-evaluating the checker-evaluator {name}`Geb.Kernel.infer` on the definition. The command
+compiler's front end on them, and declares, by {name}`Geb.Kernel.LoadCommand.declareLoading`, for
+each of the program's definitions not yet declared, its tree, its global and the globals before
+it, each global's value the definition of the same name that the bootstrap compiler's Lean backend
+emits from the program, and the step of loading it, closed by reflexivity, which the kernel checks
+by evaluating the checker-evaluator {name}`Geb.Kernel.infer` on the definition. The definitions
+of a long program are declared ahead of the command, a layer to a module, by the command
+{lit}`geb_load` the generated modules of {lit}`GebMirror` run; {lit}`geb_program` then checks
+that the trees they declared are the program's. It declares the loading of the whole program,
+composed from the steps, and the equality of the exported globals with their mirrors. The command
 {lit}`kernel_rfl` declares a theorem proved by reflexivity, checked by the kernel alone.
-
-Each global's type is the type the kernel computes,
-{name}`GebTests.Prototypes.GoedelT.Load.defType`, rather than a literal type tree: equating a
-computed type with a literal one makes the kernel evaluate the checker-evaluator on every
-definition the one depends on.
 
 ## Implementation notes
 
@@ -45,46 +43,7 @@ set_option doc.verso true
 
 namespace GebTests.Prototypes.GoedelT.LoadCommand
 
-open Geb Geb.Kernel Lean Elab Command GebTests.Prototypes.GoedelT.Load
-
-/-- The expression of a list of expressions of a type. -/
-meta def listExpr (ty : Expr) (xs : List Expr) : Expr :=
-  xs.foldr (fun x acc ↦ mkApp3 (mkConst ``List.cons [0]) ty x acc)
-    (mkApp (mkConst ``List.nil [0]) ty)
-
-/-- The expression of a tree, built by its constructor. -/
-meta def treeExpr : Tree → Expr :=
-  RoseTree.elim fun l cs ↦
-    mkApp3 (mkConst ``RoseTree.node) (mkConst ``Nat) (mkRawNatLit l)
-      (listExpr (mkConst ``Kernel.Tree) cs)
-
-/-- The expression of a type, built by the kernel's constructors of types, as the checker
-builds the types it computes, so that the two are equal by their constructors. -/
-meta def typeExpr : Tree → Expr :=
-  RoseTree.elim fun l cs ↦
-    match l, cs with
-    | Label.tyProd, [a, b] => mkApp2 (mkConst ``Kernel.tProd) a b
-    | Label.tyArrow, [a, b] => mkApp2 (mkConst ``Kernel.tArrow) a b
-    | Label.tyList, [a] => mkApp (mkConst ``Kernel.tList) a
-    | _, [] => mkApp (mkConst ``Kernel.leaf) (mkRawNatLit l)
-    | _, _ => mkApp3 (mkConst ``RoseTree.node) (mkConst ``Nat) (mkRawNatLit l)
-        (listExpr (mkConst ``Kernel.Tree) cs)
-
-/-- Whether the child of a term's node at a position is a type. -/
-meta def typePosition (l i : ℕ) : Bool :=
-  match l with
-  | Label.lam | Label.fold | Label.iter | Label.nil => i == 0
-  | Label.foldr | Label.lcase => i == 0 || i == 1
-  | _ => false
-
-/-- The expression of a term, its types built by {lit}`typeExpr` and its quoted trees by
-{lit}`treeExpr`. -/
-meta def termExpr : Tree → Expr :=
-  RoseTree.para fun l cs ↦
-    let kids := (List.range cs.length).zip cs |>.map fun (i, t, e) ↦
-      if typePosition l i then typeExpr t else if l == Label.quote then treeExpr t else e
-    mkApp3 (mkConst ``RoseTree.node) (mkConst ``Nat) (mkRawNatLit l)
-      (listExpr (mkConst ``Kernel.Tree) kids)
+open Geb Geb.Kernel Geb.Kernel.LoadCommand Lean Elab Command
 
 /-- {lit}`geb_program n from "f" ... mirror m` embeds the program the files make, each followed
 by a newline, as the host driver joins sources, read and expanded by the stage-0 compiler's front
@@ -97,13 +56,14 @@ an index states that the definition loads its global after them, checked by the 
 {lit}`n.last_heq` states that the last global's value is the last definition's mirror, the type the
 kernel computes for the definition denoting the type the mirror declares, checked by the kernel;
 and, for each name {lit}`x` after {lit}`exports`, {lit}`n.x_heq` states the same of the global of
-the definition of that name. -/
+the definition of that name. A name {lit}`n` beginning with {lit}`_root_` is taken from the root
+namespace, and the declarations of {lit}`n` already made are checked rather than made again. -/
 syntax (name := gebProgram)
   "geb_program " ident " from " str* " mirror " ident (" exports " ident+)? : command
 
 /-- The elaborator of {lit}`geb_program`. -/
 @[command_elab gebProgram] meta def elabGebProgram : CommandElab := fun stx ↦ do
-  let n := (← getCurrNamespace) ++ stx[1].getId
+  let n ← programName stx[1].getId
   let paths := stx[3].getArgs.filterMap (·.isStrLit?)
   let m := stx[5].getId
   let exported := if stx[6].isNone then #[] else stx[6][1].getArgs.map (·.getId)
@@ -116,14 +76,14 @@ syntax (name := gebProgram)
   let some b := (if r.label == 1 then r.children.head? else none)
     | throwError "the program does not read"
   let some ds := unbundle b | throwError "the bundle does not unbundle"
-  let some G := load (ds.map Prod.snd) | throwError "the program does not load"
+  if (load (ds.map Prod.snd)).isNone then throwError "the program does not load"
   let treeT := mkConst ``Kernel.Tree
   let globT := mkConst ``Kernel.Glob
   let listOf (t : Expr) : Expr := mkApp (mkConst ``List [0]) t
   let optOf (t : Expr) : Expr := mkApp (mkConst ``Option [0]) t
   let some' (t e : Expr) : Expr := mkApp2 (mkConst ``Option.some [0]) t e
   let eqOf (t a b : Expr) : Expr := mkApp3 (mkConst ``Eq [1]) t a b
-  let nm (s : String) (k : ℕ) : Name := n ++ .mkSimple s!"{s}{k}"
+  let nm := indexed n
   let defn (name : Name) (doc : String) (tyE valE : Expr) : CoreM Unit := do
     addDecl <| .defnDecl
       { name := name, levelParams := [], type := tyE, value := valE,
@@ -134,24 +94,7 @@ syntax (name := gebProgram)
     addDocStringCore name doc
   let count := ds.length
   liftCoreM do
-    defn (nm "pre" 0) "The globals before the program's first definition." (listOf globT)
-      (mkApp (mkConst ``List.nil [0]) globT)
-    for (k, (name, d)) in (List.range count).zip ds do
-      let pre := mkConst (nm "pre" k)
-      let dname := String.ofList name
-      defn (nm "d" k) s!"The tree of the program's definition `{dname}`." treeT (termExpr d)
-      defn (nm "g" k)
-        s!"The global the program's definition `{dname}` loads: its type, and its mirror."
-        globT (mkApp4 (mkConst ``Sigma.mk [0, 0]) treeT (mkConst ``Kernel.Ty.den)
-        (mkApp2 (mkConst ``defType) pre (mkConst (nm "d" k)))
-        (mkConst (m ++ .mkSimple (String.ofList name))))
-      let snoc := mkApp2 (mkConst ``snoc) pre (mkConst (nm "g" k))
-      defn (nm "pre" (k + 1)) s!"The globals after the program's definition `{dname}`."
-        (listOf globT) snoc
-      let lhs := mkApp2 (mkConst ``loadStep) (some' (listOf globT) pre) (mkConst (nm "d" k))
-      thm (nm "step" k) s!"The program's definition `{dname}` loads its global."
-        (eqOf (optOf (listOf globT)) lhs (some' (listOf globT) snoc))
-        (mkApp2 (mkConst ``Eq.refl [1]) (optOf (listOf globT)) lhs)
+    declareLoading n m ds
     defn n "The trees of the program's definitions." (listOf treeT)
       (listExpr treeT ((List.range count).map fun k ↦ mkConst (nm "d" k)))
     let final := mkConst (nm "pre" count)

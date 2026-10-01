@@ -3753,6 +3753,22 @@ the change that removes it.
   sources that some of its modules read by `include_str`; a library of
   those modules alone would confine the rebuild to them and their
   importers.
+* Load time. The kernel checks the loading of the metalogic's program
+  by evaluating the checker-evaluator {name}`Geb.Kernel.infer`, by
+  reduction, on each definition in the globals before it: each reference
+  to a global walks the list of those globals, and each global's type is
+  computed from its definition ({name}`Geb.Kernel.defType`) rather than
+  stored, so a step that applies a global reduces that computation
+  again. The check takes hours and grows faster than the program. The
+  program is loaded a layer to a module, generated with the mirror by
+  `scripts/bootstrap.sh`, so a change to a layer's sources checks again
+  that layer, the layers after it, and the equality of the program's
+  exported definitions with their mirrors, which the agreement proofs
+  state once for the whole program, and no other layer. A lookup of a
+  global the kernel reduces in fewer steps, and types it reads rather
+  than computes, shorten the check itself; they are made before or
+  shortly after the end of the bootstrap, as the check's duration
+  requires.
 * Emitted names. A program's definition named `T`, `leaf` or `mk` makes
   the emitted module ill-typed, since the module refers to the tree type,
   the leaf and the node by those names; qualifying them as the constants
