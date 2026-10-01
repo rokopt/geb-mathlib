@@ -20,7 +20,11 @@ is `{propext, Quot.sound}`; modules in `classicalAllowedModules`
 additionally permit `Classical.choice`. Axiom collection does not
 descend into the constants of `upstreamChoiceRoots`, upstream
 constants whose data is choice-free and whose `Classical.choice`
-dependency is confined to proof terms.
+dependency is confined to proof terms. The axioms of the modules in
+`loadingAxiomModules`, the loading of the metalogic's program stated
+without proof in the loading mode `native`, are permitted to every
+declaration in that mode and to none in the mode `rfl`, as the
+environment variable `GEB_LOADING` selects.
 
 `cite` is a docstring role for literate modules
 (`docs/rules/lean-coding.md` § Literate modules): ``{cite}`Key` ``
@@ -36,6 +40,8 @@ parsed bibliography it and the manual's generated entries share.
   additionally permitted to depend on `Classical.choice`.
 * `GebMeta.upstreamChoiceRoots` — the upstream constants at which
   axiom collection stops.
+* `GebMeta.loadingAxiomModules` — the exact module names whose axioms
+  the loading mode `native` permits.
 * `cite` — the docstring role, at the root namespace.
 * `GebMeta.loadBibliography` — the parsed `docs/references.bib` of
   the repository containing a given source file.
@@ -305,6 +311,21 @@ def upstreamChoiceRoots : NameSet :=
   NameSet.ofList [``Fin.instMin, ``Fin.instMax, ``Fin.val_min, ``Fin.val_max,
     ``Fin.instLinearOrderPackage]
 
+/-- Exact module names whose axioms are permitted in the loading mode
+`native`: the modules `scripts/bootstrap.sh` generates to declare the
+loading of the metalogic's program a layer at a time, which in that mode
+state each definition's equation of types and loading step as axioms
+(`Geb.Kernel.LoadCommand.declareLoading`). -/
+def loadingAxiomModules : NameSet :=
+  NameSet.ofList [`GebMirror.Metalogic.Load.Checker, `GebMirror.Metalogic.Load.Translation,
+    `GebMirror.Metalogic.Load.Prover, `GebMirror.Metalogic.Load.Tactics,
+    `GebMirror.Metalogic.Load.Combinator]
+
+/-- Whether the environment variable `GEB_LOADING` selects the loading
+mode `native`, as it does unless it is `rfl`. -/
+def nativeLoading : BaseIO Bool :=
+  return (← IO.getEnv "GEB_LOADING") != some "rfl"
+
 /-- The constants the type and value of `c` use. -/
 def usedConstants (env : Environment) (c : Name) : Array Name :=
   match env.find? c with
@@ -368,16 +389,22 @@ def moduleOf? (env : Environment) (declName : Name) : Option Name :=
 
 /-- Flags a declaration depending on an axiom outside its permitted
 set. A declaration in a module listed in `classicalAllowedModules`
-additionally permits `Classical.choice` (and only that); every other
-axiom (`sorryAx`, `Lean.ofReduceBool`, …) is forbidden everywhere. A
-declaration whose module is unresolvable is held to the strict set.
-Collection stops at `upstreamChoiceRoots`. -/
+additionally permits `Classical.choice` (and only that); in the loading
+mode `native`, every declaration additionally permits the axioms of the
+modules of `loadingAxiomModules`; every other axiom (`sorryAx`,
+`Lean.ofReduceBool`, …) is forbidden everywhere. A declaration whose
+module is unresolvable is held to the strict set. Collection stops at
+`upstreamChoiceRoots`. -/
 @[env_linter] def detectNonstandardAxiom : Batteries.Tactic.Lint.Linter where
   test declName := do
-    let mod := (moduleOf? (← getEnv) declName).getD .anonymous
+    let env ← getEnv
+    let mod := (moduleOf? env declName).getD .anonymous
     let permitted := permittedAxioms classicalAllowedModules mod
     let used ← collectAxiomsStopping upstreamChoiceRoots axiomsCache declName
-    let bad := offendingAxioms permitted used
+    let native ← nativeLoading
+    let loading (a : Name) : Bool :=
+      native && ((moduleOf? env a).map loadingAxiomModules.contains).getD false
+    let bad := (offendingAxioms permitted used).filter (!loading ·)
     if bad.isEmpty then return none
     else return some m!"depends on non-standard axiom(s): {bad.toList}"
   noErrorsFound := "All declarations depend only on permitted axioms."

@@ -15,6 +15,9 @@
 # olean cache that pre-push.sh's `lake exe cache get` and `lake build`
 # steps leave behind.
 #
+# Usage: scripts/pre-push-full.sh [--loading=native|rfl], the argument
+# passed to scripts/pre-push.sh.
+#
 # Exits non-zero on any failure.
 
 set -euo pipefail
@@ -26,5 +29,5 @@ lint_log="$(mktemp)"
 trap 'rm -f "$lint_log"' EXIT
 export GEB_LINT_LOG="$lint_log"
 
-bash scripts/pre-push.sh
+bash scripts/pre-push.sh "$@"
 bash scripts/test-tooling.sh

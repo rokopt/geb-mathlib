@@ -1,0 +1,35 @@
+name: Kernel-checked loading
+
+# The loading of the metalogic's program in the loading mode rfl, every
+# fact of it checked by the kernel, which the other workflows build in
+# the mode native (docs/rules/ci-and-workflow.md § Loading modes).
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rfl:
+    name: Build and lint GebTests in the loading mode rfl
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GEB_LOADING: rfl
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      # The GitHub cache would restore modules built in the mode native,
+      # which Lake would not rebuild, the mode being no input it tracks.
+      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596  # v1
+        with:
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+      - name: lake build GebTests
+        run: lake build GebTests
+      # In the mode rfl the axiom linter permits no axiom of the loading.
+      - name: lint GebTests
+        run: lake exe batteries/runLinter GebTests

@@ -3697,9 +3697,13 @@ checklist and in CI.
   its result, and iteration repeats a step as often as a label's value.
   `Loading.lean` states a program's loading as a fold of one step
   (`Geb.Kernel.loadStep`), and `LoadCommand.lean` declares the loading one
-  definition at a time, each step checked by the kernel, beyond the
-  definitions earlier modules declare (`Geb.Kernel.LoadCommand.declareLoading`,
-  the command `geb_load`, which reads a program's image).
+  definition at a time beyond the definitions earlier modules declare
+  (`Geb.Kernel.LoadCommand.declareLoading`, the command `geb_load`, which
+  reads a program's image): each global's value is its mirror cast along
+  the equation of the mirror's type with the denotation of the computed
+  type, and that equation and the step appending the global are theorems
+  the kernel checks in the loading mode `rfl` and axioms in the mode
+  `native` (`docs/rules/ci-and-workflow.md` § Loading modes).
   `Reader.lean` reads programs, sequences of named definitions and of type
   and numeral abbreviations in S-expressions over lists of characters,
   resolving names to de Bruijn indices, references and primitives and
