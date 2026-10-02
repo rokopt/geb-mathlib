@@ -55,6 +55,9 @@ name in the namespace {lit}`m`, the Lean the bootstrap compiler emits from the p
 {lit}`n.pre` followed by an index is the list of the globals before it; {lit}`n.step` followed by
 an index states that the definition loads its global after them, checked by the kernel;
 {lit}`n.load_eq` states that the program loads to its globals, composed from the steps;
+{lit}`n.globals` lists them one by one, so that the kernel reaches an entry in as many steps as
+its index rather than unfolding the appends that build the last list of them, and
+{lit}`n.load_globals` states that the program loads to that list;
 {lit}`n.last_heq` states that the last global's value is the last definition's mirror, from that
 equation;
 and, for each name {lit}`x` after {lit}`exports`, {lit}`n.x_heq` states the same of the global of
@@ -111,6 +114,15 @@ syntax (name := gebProgram)
       (eqOf (optOf (listOf globT)) (mkApp (mkConst ``Kernel.load) (mkConst n))
         (some' (listOf globT) final))
       chain
+    -- the last list of globals, built by appending, which the kernel unfolds once here, rather
+    -- than at every lookup of an entry
+    let globals := n ++ `globals
+    defn globals "The program's globals, listed one by one." (listOf globT)
+      (listExpr globT ((List.range count).map fun k ↦ mkConst (nm "g" k)))
+    thm (n ++ `load_globals) "The program loads to its globals, listed one by one."
+      (eqOf (optOf (listOf globT)) (mkApp (mkConst ``Kernel.load) (mkConst n))
+        (some' (listOf globT) (mkConst globals)))
+      (mkConst (n ++ `load_eq))
     -- the global of the definition of index k is its mirror, cast along the equation of their
     -- types, stated without elaborating the global's type, whose reduction evaluates the checker
     let heq (k : ℕ) (thmName : Name) (doc : String) : CoreM Unit := do

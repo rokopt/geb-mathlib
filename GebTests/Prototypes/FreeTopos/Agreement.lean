@@ -93,7 +93,7 @@ theorem checkDev_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       ∀ (G : Internal.Globals) (E : Array Internal.Entry) (ds : List Internal.Decl),
         f (encGlobals G) (E.toList.map encEntry) (ds.map encDecl) =
           encOpt ((Internal.checkDev G E ds).map encState) :=
-  ⟨_, metalogic.load_eq, GebMirror.Metalogic.checkDev, metalogic_checkDev, checkDev_eq⟩
+  ⟨_, metalogic.load_globals, GebMirror.Metalogic.checkDev, metalogic_checkDev, checkDev_eq⟩
 
 /-- The translation written in Geb translates as the translation in Lean: its program loads to
 globals among which are functions of their types that, at a program's definitions, at encoded
@@ -109,7 +109,7 @@ theorem translation_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       ∀ (gt : List Tree) (a : GoedelT.Thm),
         f gt (GebTests.Prototypes.GoedelT.MirrorEquations.encThm a) =
           encOpt ((Translation.thm gt a).map encThm)) :=
-  ⟨_, metalogic.load_eq, ⟨GebMirror.Metalogic.program, metalogic_program, program_eq⟩,
+  ⟨_, metalogic.load_globals, ⟨GebMirror.Metalogic.program, metalogic_program, program_eq⟩,
     ⟨GebMirror.Metalogic.trGlobals, metalogic_trGlobals, trGlobals_eq⟩,
     ⟨GebMirror.Metalogic.thm, metalogic_thm, thm_eq⟩⟩
 
@@ -165,7 +165,7 @@ theorem prover_agree : ∃ G' : List Glob, load metalogic = some G' ∧
     (∃ f : Ty.den proverFnTy, G'[588]? = some ⟨proverFnTy, f⟩ ∧
       ∀ kn kl kc p' p, PRel p' p →
         PRel (f (leaf kn) (leaf kl) (leaf kc) p') (Internal.byRoseIndHyp kn kl kc p)) :=
-  ⟨_, metalogic.load_eq,
+  ⟨_, metalogic.load_globals,
     ⟨_, metalogic_prepareRules, fun E rs h ↦ prepareRules_eq E rs h⟩,
     ⟨_, metalogic_byNorm, fun G E n _ _ h fuel ↦ byNorm_eq G E n _ _ h fuel⟩,
     ⟨_, metalogic_byNormW, fun G E n _ _ h fuel ↦ byNormW_eq G E n _ _ h fuel⟩,
@@ -296,7 +296,7 @@ theorem tactics_agree : ∃ G' : List Glob, load metalogic = some G' ∧
           (Tactics.byMaskSubs G E ab cs rs n p)) ∧
     (∃ f : Ty.den funExtTy, G'[672]? = some ⟨funExtTy, f⟩ ∧
       ∀ a c p' p, PRel p' p → PRel (f a (encTerm c) p') (Tactics.byGeneralize a c p)) :=
-  ⟨_, metalogic.load_eq, ⟨_, metalogic_byMode, byMode_eq⟩, ⟨_, metalogic_byWeak, byWeak_eq⟩,
+  ⟨_, metalogic.load_globals, ⟨_, metalogic_byMode, byMode_eq⟩, ⟨_, metalogic_byWeak, byWeak_eq⟩,
     ⟨_, metalogic_byNF, byNF_eq⟩, ⟨_, metalogic_normH, normH_eq⟩,
     ⟨_, metalogic_funExts, funExts_eq⟩, ⟨_, metalogic_byListIndWeak, byListIndWeak_eq⟩,
     ⟨_, metalogic_byRoseIndWith, byRoseIndWith_eq⟩, ⟨_, metalogic_byListSplit, byListSplit_eq⟩,
@@ -356,7 +356,7 @@ theorem combinator_agree : ∃ G' : List Glob, load metalogic = some G' ∧
       ∀ infer, f (ofBool infer) = encLib (Prover.libraryWith infer)) ∧
     (∃ f : Ty.den libRulesTy, G'[803]? = some ⟨libRulesTy, f⟩ ∧
       ∀ i, f (encIdx i) = (Prover.rules i).map encRw) :=
-  ⟨_, metalogic.load_eq, ⟨_, metalogic_typeTerm, Combinator.typeTerm_rel⟩,
+  ⟨_, metalogic.load_globals, ⟨_, metalogic_typeTerm, Combinator.typeTerm_rel⟩,
     ⟨_, metalogic_pNormalize, Combinator.normalize_rel⟩,
     ⟨_, metalogic_pInst, Combinator.inst_rel⟩, ⟨_, metalogic_etaExpand, Combinator.etaExpand_rel⟩,
     ⟨_, metalogic_deltaRule, Combinator.deltaRule_eq⟩,
