@@ -3751,7 +3751,8 @@ checklist and in CI.
   stage 0 is under `bootstrap/`, in the kernel's syntax: `prelude.geb`
   names the kernel's labels and primitives by numeral abbreviations and
   holds list and digit utilities, `serialize.geb` writes a tree's image,
-  `reader.geb` reads a program's text into its bundle as the seed does,
+  `reader.geb` reads a program's text, in the authoring profile, into its
+  bundle as the seed does,
   `check.geb` is the kernel's type checker, `datatype.geb` expands the
   forms of the datatype language (datatypes, case analysis, structural
   recursion and
