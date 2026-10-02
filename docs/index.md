@@ -3750,10 +3750,20 @@ checklist and in CI.
   (`Geb.Kernel.Document.readDoc_canonOf`), writes a document in strict form,
   its decorations as annotation forms, and reads it back from its canonical
   encoding (`Geb.Kernel.Document.readStrictDoc_printCanonDoc`) or from the
-  basic transport encoding (`Geb.Kernel.Document.readBasic`). Tested in
+  basic transport encoding (`Geb.Kernel.Document.readBasic`).
+  `Blake3.lean` computes the hash BLAKE3 [OConnorAumassonNevesWilcoxOHearn2020]
+  (`Geb.Blake3.hash`). `Identity.lean` identifies a definition by the
+  CIDv1 [RatajBerjon2026] of its payload, the canonical encoding of its
+  body with its references replaced by positions among the CIDs it
+  imports (`Geb.Kernel.Identity.payloadOf`), computes the payloads of a
+  bundle (`Geb.Kernel.Identity.migrate`) and links payloads back into a
+  bundle (`Geb.Kernel.Identity.link`), and proves that migrating a linked
+  bundle gives its payloads back (`Geb.Kernel.Identity.migrate_link`).
+  Tested in
   `GebTests/Prototypes/Kernel.lean`,
-  `GebTests/Prototypes/Kernel/Document.lean` and
-  `GebTests/Prototypes/Kernel/Strict.lean`. The
+  `GebTests/Prototypes/Kernel/Document.lean`,
+  `GebTests/Prototypes/Kernel/Strict.lean` and
+  `GebTests/Prototypes/Kernel/Identity.lean`. The
   [Bootstrap chapter](../manual/GebManual/Bootstrap.lean) § Authoring
   across bootstrap revisions describes document preservation, migration
   contracts, the remaining hole interface and synthesis.

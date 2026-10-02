@@ -275,7 +275,7 @@ Extension:
 
 * Complete. Closed bundles referring to definitions by position
   ({ref "definitions-and-images"}[Definitions and images]).
-* Ready. {ref "content-identity"}[Content identity]: identifiers as
+* In progress. {ref "content-identity"}[Content identity]: identifiers as
   CIDs whose multihashes are of BLAKE3, and their codec; its input,
   recorded in
   `docs/definitions.md` § Content identity; the hash written in Geb and
@@ -2272,13 +2272,13 @@ tag := "content-identity"
   * State
 *
   * The identity-bearing payload and the format of identifiers
-  * Ready
+  * In progress: definitions in Lean
 *
   * The node-digest rule, the hash, the migration
-  * Ready
+  * In progress: in Lean, the linker's relabelling proved; in Geb, ready
 *
   * Acceptance
-  * Not met
+  * Met in Lean; not met in Geb
 :::
 
 * The identity-bearing payload and the format of identifiers, frozen
@@ -2298,6 +2298,20 @@ tag := "content-identity"
 Acceptance: a rename leaves every digest unchanged, a changed
 dependency changes the digests of its dependents, and running the
 migration twice changes nothing.
+
+In Lean, `Geb/Prototypes/Kernel/Blake3.lean` is the host binding of the
+hash, tested against the official vectors, and
+`Geb/Prototypes/Kernel/Identity.lean` defines the varint, the
+multihash, the CIDv1 of codec `raw`, the payload
+`(geb-def/v1 geb-kernel/v1 (imports …) body)`, the migration and the
+linker. A payload's imports are the CIDs of the definitions its body
+refers to, each once, in the order of their first references, and its
+body refers to them by their positions among the imports. The theorem
+`migrate_link` states that the migration of a linked bundle of payloads,
+each derived from the payloads before it, gives those payloads back,
+and `migrate_idem` that running the migration twice changes nothing;
+`GebTests/Prototypes/Kernel/Identity.lean` checks the three conditions
+of acceptance on examples and on the stage-0 compiler.
 
 What the sections before the choice of machine fix for this one: the
 reference node is
