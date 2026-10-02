@@ -19,7 +19,8 @@ position {lit}`i`, at lengths on each side of the block, chunk and tree boundari
 starts with its version, codec, hash code and digest length. The identifiers of
 definitions are unchanged by renaming a definition and
 changed, for a definition and the definitions referring to it, by a change of its body; the
-migration of the stage-0 compiler's linked bundle gives back its payloads.
+migration of the stage-0 compiler's linked bundle gives back its payloads. BLAKE3 and the
+migration written in Geb, {lit}`bootstrap/identity.geb`, agree with Lean's.
 
 ## Tags
 
@@ -91,6 +92,36 @@ def sameCids (src src' : List Char) : Option (List Bool) := do
   | some ds =>
     let ps := migrate (ds.map Prod.snd)
     (migrate (link ps)).map Payload.cid == ps.map Payload.cid
+  | none => false
+
+/-- The source of content identity written in Geb. -/
+def identity : String := include_str "../../../bootstrap/identity.geb"
+
+/-- The stage-0 compiler's sources and content identity, followed by a definition. -/
+def withIdentity (main : String) : String := compiler ++ identity ++ "\n" ++ main
+
+/-- BLAKE3 written in Geb, applied to the bytes of its input's children. -/
+def hasher : String := withIdentity "(def hashMain (lam ((t T)) (node 0 (blake3 (children t)))))"
+
+/-- The migration written in Geb, applied to a bundle's definitions. -/
+def migrator : String :=
+  withIdentity "(def migrateMain (lam ((b T)) (node 0 (migrate (children (child b 0))))))"
+
+/-- Bytes as a node over their leaves. -/
+def bytesTree (bs : List UInt8) : Tree := mk 0 (bs.map fun b ↦ leaf b.toNat)
+
+-- BLAKE3 written in Geb agrees with the host binding about the block, chunk and tree boundaries
+#guard [0, 1, 64, 65, 1024, 1025, 2049, 4096].all fun n ↦
+  runMain hasher.toList (bytesTree (input n)) == some (bytesTree (Blake3.hash (input n)))
+
+-- the migration written in Geb agrees with Lean's on examples and on the prelude and serializer
+#guard ["(def a (lam ((x T)) x)) (def b (lam ((y T)) (a (a y))))",
+    "(def a (lam ((x T)) (quote (23 0)))) (def b (lam ((y T)) (pair (a y) (a (a y)))))",
+    serializer].all fun src ↦
+  match readProgram src.toList with
+  | some ds =>
+    runMain migrator.toList (bundle ds) ==
+      some (mk 0 ((migrate (ds.map Prod.snd)).map fun p ↦ bytesTree p.cid))
   | none => false
 
 end Geb.Kernel.Identity.Tests

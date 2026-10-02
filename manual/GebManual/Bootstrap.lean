@@ -2272,13 +2272,15 @@ tag := "content-identity"
   * State
 *
   * The identity-bearing payload and the format of identifiers
-  * In progress: definitions in Lean
+  * In progress: definitions in Lean and Geb
 *
   * The node-digest rule, the hash, the migration
-  * In progress: in Lean, the linker's relabelling proved; in Geb, ready
+  * In progress: the hash and the migration in Lean and Geb, agreeing; the
+    linker in Lean, its relabelling proved; the tree of modules and the
+    re-keying of annotations, ready
 *
   * Acceptance
-  * Met in Lean; not met in Geb
+  * Met in Lean, and in Geb by agreement with Lean
 :::
 
 * The identity-bearing payload and the format of identifiers, frozen
@@ -2311,7 +2313,10 @@ body refers to them by their positions among the imports. The theorem
 each derived from the payloads before it, gives those payloads back,
 and `migrate_idem` that running the migration twice changes nothing;
 `GebTests/Prototypes/Kernel/Identity.lean` checks the three conditions
-of acceptance on examples and on the stage-0 compiler.
+of acceptance on examples and on the stage-0 compiler. In Geb,
+`bootstrap/identity.geb` computes BLAKE3 by arithmetic, a payload's
+canonical bytes, its CID and the migration, and the same tests compare
+each with Lean's.
 
 What the sections before the choice of machine fix for this one: the
 reference node is
