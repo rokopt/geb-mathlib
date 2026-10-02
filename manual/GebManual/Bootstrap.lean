@@ -1862,9 +1862,10 @@ tag := "geb-grows-in-itself"
   with result types. A program of
   kernel forms alone expands to itself, so the fixed point holds with
   the expansion in the compiler. Recognizers, type parameters and a
-  static check of datatypes are still to be added; the expansion
-  refers to some primitives by name, so a program does not rebind them
-  around case analysis and structural recursion.
+  static check of datatypes are the datatype language's completion
+  ({ref "datatype-completion"}[The datatype language's completion]); the
+  expansion refers to some primitives by name, so a program does not
+  rebind them around case analysis and structural recursion.
 * Geb: the elaborator rewritten in the datatype language it accepts,
   and its staged self-compilation.
 
@@ -1903,9 +1904,142 @@ seconds on one machine, and the image it produces reproduces itself.
 agreement of the two compilers on the programs in the datatype language
 and the
 kernel's examples on every build. The rewrite needed neither generated
-recognizers nor type parameters, which are therefore added when a
-program needs them. The stage-0 sources remain the independent route
-from the seed.
+recognizers nor type parameters, which the datatype language's
+completion adds before substantial authoring. The stage-0 sources remain
+the independent route from the seed.
+
+### The datatype language's completion
+%%%
+tag := "datatype-completion"
+%%%
+
+State: ready.
+
+The sources annotate every value of a declared datatype as `T`:
+`bootstrap/free-topos/partial-horn.geb` declares `(data Eqn (eqn T T))`,
+and functions over optional trees take `(m T)`. The expansion of the
+datatype language ignores the types of fields. Which datatype a value is
+meant to belong to is therefore recorded nowhere, and it is information
+no tool recovers later. The layers of the decisions make the datatype
+language's types denote recognized types instead, a datatype being the
+subset of trees its recognizer accepts, a subobject
+`{t : T | rec_D t}` of the tree object in the metalogic, whose language
+is typed throughout. The completion consists of six parts, all of which
+precede substantial authoring:
+
+:::table +header
+*
+  * Part
+  * Content
+*
+  * Datatype names as types
+  * `(m Opt)` rather than `(m T)`, in fields, parameters and results
+*
+  * Static check at every use
+  * Constructors produce `D`, case analysis and structural recursion
+    consume `D`, and fields and results are checked; `D` and `T` are
+    distinct types, with no implicit conversion between them
+*
+  * Representation and decoding
+  * `D`'s representation `D → T` and its decoding `T → 1 + D`, each
+    written explicitly where it is used
+*
+  * Generated recognizers
+  * The kernel program deciding membership in `D`, which decoding and the
+    meaning of `D` need
+*
+  * Type parameters checked opaquely
+  * A parameter `X` has no representation; it is instantiated at
+    elaboration, as the decision on layers states, with the interface's
+    operations passed as values
+*
+  * Soundness of the typing
+  * A checked program maps members of `D` to members of `E`, so that
+    typed programs translate into morphisms between subobjects; proved
+    with the metalogic's prover in Geb
+:::
+
+The types are exactly those of the mathematics. A datatype `D` is the
+initial algebra of the polynomial functor its declaration presents: its
+constructors are the algebra's structure map, its case analysis the
+inverse that Lambek's lemma gives, and its structural recursion the fold.
+The encoding of a constructor as the node of its position over its
+fields' encodings makes the trees an algebra of the same functor, so
+initiality determines the representation `D → T` as the unique algebra
+morphism, chosen by no convention; it is a monomorphism, and `D`'s
+recognizer cuts out its image. The recognizer decides membership, so the
+image is a complemented subobject and decoding `T → 1 + D` is a total
+morphism. `D` and `T` are distinct types: a tree operation such as
+`label` or `child` applies to a value of `D` only through its
+representation, written where it is used, which marks exactly the code
+that depends on the encoding. The kernel erases the distinction, the
+representation compiling to the identity on trees, and the soundness of
+the typing relates the two.
+
+The first five parts are work of the elaborator, a Geb program; the
+kernel is unchanged, and the check is outside the trusted base, since a
+wrong check can accept an ill-typed program but cannot change a kernel
+term's meaning. Every source of the datatype language is retyped
+exactly, the metalogic's checker in Geb included; the stage-0 sources,
+written in the kernel's syntax, keep the kernel's types, exact for a
+kernel whose only type of data is the trees. The soundness theorem lets
+a proof use a datatype's type as a hypothesis; it is proved by induction
+on the check.
+
+Abstraction is mathematical, not syntactic, and needs no mark of its
+own. An interface is a theory, a presentation of operations and axioms
+(`docs/definitions.md` § Definitions as presentations). Generic code is
+a module over it ({ref "modules"}[Modules]), parameterized by an opaque
+type and by the interface's operations, so it holds no reference to a
+concrete type and has no representation to inspect. Instantiation is
+interpretation by the universal property, evaluation into an
+implementation, a model of the theory, as {name}`Geb.Definition.eval` and
+{name}`Geb.Definition.derivedAlg` evaluate. In the metalogic this is the
+topos generated by the language extended by the interface's constants
+and axioms, from which an implementation determines a logical functor,
+so a theorem proved of the generic code holds of every instance
+{citep LambekScott1986}[]. A certificate is a hypothesis: code using a
+proof of a proposition works under it, in the slice over the
+proposition's subterminal, and instantiating supplies the proof. The
+prover's contract, any checked certificate of the statement, is kept by
+clients written so.
+
+Type parameters are sorts through the bootstrap. After it, written in Geb
+among the first items, they become parameters over internal universes
+(the road map). A universe is a family `El → U`, `U` an object of codes
+and `El X` the type the code `X` names. Two are defined from the
+exponentials and power objects every topos has {citep MacLaneMoerdijk1992}[],
+and interpret a code by membership. Every value is a tree and a datatype
+is a complemented subobject of `T`, so the datatypes have codes in `2^T`,
+the morphisms `T → 1 + 1`, a datatype's code being the transpose of its
+recognizer, with `El X = {t : T | X t = 1}`; and the subobjects of `T`,
+the setoid language's subset types of trees among them, have codes in
+the power object `Ω^T`, with `El X = {t : T | t ∈ X}`. Internal
+categories whose objects and arrows are carried by subobjects of `T`
+form an object too, a subobject of a product of power objects, so a pair
+of such a category and one of its objects is a parameter of an ordinary
+type; using the elements of that object takes an interpretation of the
+category in a universe. Code generic over an opaque sort converts to code
+over a universe by the universal property above: sending the sort to the
+generic family `El → U` is a model of the extended language in the slice
+over `U`, which determines a logical functor, so every theorem about the
+generic code holds of the converted code {citep LambekScott1986}[].
+
+No universe interprets every object of the topos. The free topos with a
+natural numbers object contains arithmetic, and its syntax, being
+inductively generated, has codes in it. A family `El` over the codes of
+its objects with `El ⌜A⌝ ≅ A` for every closed object `A` would, at the
+codes of subterminals, make `Tr c := ∃ e : El c` satisfy `Tr ⌜φ⌝ ↔ φ` for
+every closed proposition `φ`. The diagonal lemma gives a `ψ` with
+`ψ ↔ ¬ Tr ⌜ψ⌝`, hence `ψ ↔ ¬ψ`, which is contradictory in intuitionistic
+as in classical logic; the free topos being non-degenerate, no such
+family exists, which is the undefinability of truth {citep Tarski1935}[].
+The codes of the whole language are therefore data that a program
+constructs and inspects but that no program interprets uniformly, and
+each universe interprets a part of the topos. Within their parts `2^T`
+and `Ω^T` meet no such limit, since their codes are not syntax: a code is
+the subobject itself, an element of an exponential or a power object, and
+no step interprets a program's text.
 
 ## Speed and a second host
 %%%
@@ -2018,6 +2152,9 @@ tag := "content-identity"
   * Step
   * State
 *
+  * The identity-bearing payload and the format of identifiers
+  * Ready
+*
   * The node-digest rule, the hash, the migration
   * Ready
 *
@@ -2025,6 +2162,8 @@ tag := "content-identity"
   * Not met
 :::
 
+* The identity-bearing payload and the format of identifiers, frozen
+  before durable identifiers are published.
 * The node-digest rule, the hash function and its version tag, if
   {ref "definitions-and-images"}[Definitions and images] did not fix
   them.
@@ -2043,6 +2182,73 @@ its bundle, which the migration rewrites to a digest; the node-digest
 rule is restated for rose trees with natural-number labels; and the
 serializer written in Geb, `bootstrap/serialize.geb`, is the model for
 the hash written in Geb.
+
+Content identity follows the preservation of authoring information
+({ref "authoring-compatibility"}[Authoring across bootstrap revisions]).
+The block of `docs/definitions.md` § Content identity is the starting
+point of the payload that bears identity:
+
+```
+(schema version, semantic profile reference,
+ import interface, export layout, definition bodies)
+```
+
+The profile fixes primitive identities, binding rules and the
+interpretation of the representation; display names and comments stay
+outside the payload; types and certificates are inside it when they
+affect meaning, and a separately checked certificate of an identified
+term is an artifact of its own. The payload's schema and its
+interpretation are versioned separately from the hash algorithm.
+
+* An identifier is versioned and carries a multihash, or is a CIDv1 of
+  an actual serialized block with a specified codec
+  ({ref "source-tools"}[Source and its tools]). A structural digest of
+  the Merkle kind is not presented as the CID of unrelated exchange
+  bytes.
+* One algorithm is chosen, between BLAKE3 and SHA3-256, before
+  identifiers are assigned; the envelope and the tags of
+  `docs/concrete-syntaxes.md` § Structural content-addressing
+  specification are fixed then. The choice does not delay writing
+  source. A local store of canonical blocks suffices at first;
+  networking, CAR archives, digests per node and deduplication across
+  graphs are features of storage for later.
+* This is structural identity, not semantic identity: renaming bound
+  variables leaves the resolved representation unchanged, while
+  inlining, changing a derived operation or choosing another proof
+  usually does not, and semantic equivalence belongs to checked
+  certificates. Equal finite digests prove nothing about unbounded
+  trees: retrieved content is verified, payloads are compared before
+  objects are identified, and an identifier associated with conflicting
+  payloads is rejected.
+* A member of a block of several members is referred to by the block's
+  digest and its validated export direction, where Unison uses an index
+  into a recursive component.
+
+Nothing is needed in the source before digests exist. A reference is
+then a position relative to a complete frozen bundle and its profile,
+never a globally meaningful integer, and complete bundles, their
+profiles and their order of dependencies are kept. The migration to
+digests runs in that order, rewrites the constructor of external
+references, produces a map from old references to new, and re-keys
+annotations with it; a later change of algorithm or schema computes new
+identifiers without promising equal ones. The traversal follows the
+grammar: a data tree inside a quotation may contain the label of the
+reference constructor without being a reference, as the substitution
+traversal of `Geb/Prototypes/Kernel/Subst.lean` already treats
+quotations apart from term children, and reflective code values need an
+identified schema and a transport of their own. A digest literal in
+source, pinning a dependency as Unison's `#…` does, is a hexadecimal or
+base-64 atom of {citet RFC9804}[] that Geb's grammar reads as a
+reference.
+
+With content identity a file is a view: a qualified name names a
+definition's digest, and a program's order is the order of its
+references. The manifest of a program
+({ref "files-editions"}[Files, editions and the host boundary]) migrates
+mechanically into that; names being unique, a file resolves alike in
+every program that includes it. Content identity also gives incremental
+compilation, a cache per definition keyed by digest, which is a reason
+to take it early, though not one of format.
 
 ## Authoring across bootstrap revisions
 %%%
