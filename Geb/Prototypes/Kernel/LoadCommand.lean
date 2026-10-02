@@ -30,8 +30,9 @@ axioms, declared after the program's loading has been evaluated by the compiled 
 so that the check costs the time of that evaluation rather than of the kernel's; the axioms are
 listed by {lit}`#print axioms` for every declaration that depends on them, and the axiom linter
 permits them in that mode alone ({lit}`GebMeta.loadingAxiomModules`). Both modes declare the same
-statements, so a module depending on the loading is the same in either. {lit}`geb_load` reads the
-mode from the environment variable {lit}`GEB_LOADING`, {lit}`native` when it is unset.
+statements, so a module depending on the loading is the same in either. {lit}`geb_load`, and the
+command {lit}`geb_program` of the tests, read the mode from the environment variable
+{lit}`GEB_LOADING`, {lit}`native` when it is unset.
 
 Each global's type is the type the kernel computes ({name}`Geb.Kernel.defType`), rather than a
 literal type tree: the checker-evaluator builds a type from its constructors and from annotations

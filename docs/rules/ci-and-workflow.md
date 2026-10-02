@@ -236,9 +236,11 @@ checkout provides an `https` remote, so the workflows set nothing.
 
 ## Loading modes
 
-The loading of the metalogic's program, declared by the modules
-`scripts/bootstrap.sh` generates under `bootstrap/lean/GebMirror/Metalogic/Load/`,
-is checked in one of two modes, which the environment variable
+The loading of the programs whose agreement with Lean is proved, the
+metalogic's, declared by the modules `scripts/bootstrap.sh` generates
+under `bootstrap/lean/GebMirror/Metalogic/Load/`, and the checker of
+Gödel's T, declared by `GebTests/Prototypes/GoedelT/MirrorLoad.lean`, is
+checked in one of two modes, which the environment variable
 `GEB_LOADING` selects (`Geb/Prototypes/Kernel/LoadCommand.lean`). In
 the mode `native`, the default, each definition's equation of types and
 loading step, the facts whose proofs evaluate the checker-evaluator, are
@@ -250,8 +252,8 @@ permits none of them. `scripts/pre-push.sh` and `scripts/pre-push-full.sh`
 take `--loading=native` or `--loading=rfl`; every other workflow builds in
 the mode `native`. Lake does not track the variable, so a module built in
 one mode is reused in the other: the mode `rfl` of `scripts/pre-push.sh`
-deletes the outputs of the generated modules and of those depending on
-them, and `rfl-loading.yml` builds without the GitHub cache. A stale
+deletes the outputs of the modules declaring the loading and of those
+depending on them, and `rfl-loading.yml` builds without the GitHub cache. A stale
 module built in the mode `native` that is left in an `rfl` build depends
 on an axiom of the loading, which the linter then rejects.
 `rfl-loading.yml` builds and lints `GebTests` in the mode `rfl` daily and

@@ -456,7 +456,7 @@ rationale.
   verification that admits it and removed once the upstream proof is
   constructive. In the loading mode `native`, every declaration also
   permits the axioms of the modules in `GebMeta.loadingAxiomModules`,
-  the generated loading of the metalogic's program
+  the loading of the programs whose agreement with Lean is proved
   (`docs/rules/ci-and-workflow.md` § Loading modes).
   It runs in CI and the pre-push checklist;
   `scripts/tests/test-axiom-linter.sh` smoke-tests it.

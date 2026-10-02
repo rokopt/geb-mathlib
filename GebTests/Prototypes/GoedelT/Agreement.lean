@@ -26,9 +26,9 @@ Theorems are encoded by
 {name}`GebTests.Prototypes.GoedelT.MirrorEquations.encThm`, equations by
 {name}`GebTests.Prototypes.GoedelT.MirrorEquations.encEqn`, optional trees by
 {name}`GebTests.Prototypes.GoedelT.MirrorTyping.enc`, and a global environment by the list of
-its globals' types. The proof composes the kernel's evaluation of the loading
-({lit}`GebTests.Prototypes.GoedelT.MirrorLoad`) with the agreement of the program's Lean mirror
-with the Lean checker, proved definition by definition
+its globals' types. The proof composes the loading, checked by the kernel's evaluation in the
+loading mode {lit}`rfl` ({lit}`GebTests.Prototypes.GoedelT.MirrorLoad`), with the agreement of
+the program's Lean mirror with the Lean checker, proved definition by definition
 ({name}`GebTests.Prototypes.GoedelT.MirrorChecker.checkCert_eq`).
 
 ## Main statements

@@ -1893,18 +1893,21 @@ emission by `scripts/bootstrap.sh check`.
 `GebTests/Prototypes/GoedelT/MirrorLoad.lean` states that loading the
 program with {name}`Geb.Kernel.load` gives globals whose denotations are
 those definitions, one definition at a time, each step closed by
-reflexivity, which the kernel checks by evaluating the
-checker-evaluator. The other modules of `GebTests/Prototypes/GoedelT/`
-prove, side by side, that the emitted definitions compute what the Lean
-checker computes: the type checker, the traversal of terms with
-weakening and substitution, the operations on equations and theorems,
-the values of primitives at literals, and each rule, assembled by
-induction on the certificate. `GebTests/Prototypes/GoedelT/Agreement.lean`
-states the result: at every certificate, program, theorems, global
-environment, context and hypotheses, encoded, the loaded checker gives
-the encoding of what {name}`Geb.GoedelT.check` gives, so the two accept
-the same certificates with the same conclusions. The proof depends on no
-axiom beyond `propext` and `Quot.sound`.
+reflexivity, which the kernel checks by evaluating the checker-evaluator
+in the loading mode `rfl`, and stated as an axiom in the mode `native`
+(`docs/rules/ci-and-workflow.md` § Loading modes). The other modules of
+`GebTests/Prototypes/GoedelT/` prove, side by side, that the emitted
+definitions compute what the Lean checker computes: the type checker,
+the traversal of terms with weakening and substitution, the operations
+on equations and theorems, the values of primitives at literals, and
+each rule, assembled by induction on the certificate.
+`GebTests/Prototypes/GoedelT/Agreement.lean` states the result: at every
+certificate, program, theorems, global environment, context and
+hypotheses, encoded, the loaded checker gives the encoding of what
+{name}`Geb.GoedelT.check` gives, so the two accept the same certificates
+with the same conclusions. In the loading mode `rfl` the proof depends
+on no axiom beyond `propext` and `Quot.sound`; in the mode `native` it
+depends also on the axioms stating the loading.
 
 The metalogic's checker is written in Geb in `bootstrap/free-topos/`, in
 the datatype language, deciding as the Lean definitions it transcribes
@@ -1937,18 +1940,19 @@ alters.
 `GebTests/Prototypes/FreeTopos/Agreement.lean` proves the checker
 written in Geb equal to {name}`Geb.FreeTopos.Internal.checkDev`, by the
 method of the checker of Gödel's T. The Lean the bootstrap compiler
-emits from the program, `GebMirror.Metalogic`, is the denotation of
-each of the program's definitions as {name}`Geb.Kernel.load` loads
-them, checked by the kernel's evaluation, and agrees definition by
-definition with the Lean definitions it transcribes: each fold of the
-program pairing a node's tree with its result is related to a
-paramorphism of the tree it encodes, and the partial Horn logic, the
+emits from the program, `GebMirror.Metalogic`, is the denotation of each
+of the program's definitions as {name}`Geb.Kernel.load` loads them,
+checked by the kernel's evaluation in the loading mode `rfl`, and agrees
+definition by definition with the Lean definitions it transcribes: each
+fold of the program pairing a node's tree with its result is related to
+a paramorphism of the tree it encodes, and the partial Horn logic, the
 theory, the inference, the language and the checker of derivations and
 developments each agree at every encoded input. At every development,
 its constants, entries and declarations encoded, the loaded check gives
 the encoding of the state the Lean checker gives, so the two accept the
-same developments with the same results. The proof depends on no axiom
-beyond `propext` and `Quot.sound`.
+same developments with the same results. In the loading mode `rfl` the
+proof depends on no axiom beyond `propext` and `Quot.sound`; in the mode
+`native` it depends also on the axioms stating the loading.
 
 The translation of kernel programs into the Mitchell–Bénabou language is
 written in Geb in `bootstrap/free-topos/translation.geb`, translating as
@@ -1963,8 +1967,9 @@ and the translation of a term, each node's step related to the step of
 the paramorphism {name}`Geb.RoseTree.para` of the term. At every
 program, every translated program's definitions and every theorem of
 Gödel's T, the loaded translation gives the encoding of the Lean
-translation's result. The proof depends on no axiom beyond `propext` and
-`Quot.sound`.
+translation's result. In the loading mode `rfl` the proof depends on no
+axiom beyond `propext` and `Quot.sound`; in the mode `native` it depends
+also on the axioms stating the loading.
 
 The language's prover is written in Geb in
 `bootstrap/free-topos/prove.geb`, in the same program, proving as
@@ -1982,8 +1987,9 @@ the Lean prover by the same method: at encoded arguments, rules related
 to the normalizer's and provers related to Lean's, each of its entry
 points gives the encoding of the Lean prover's derivation, so that the
 prover written in Geb constructs exactly the derivations the Lean prover
-constructs. The proof depends on no axiom beyond `propext` and
-`Quot.sound`.
+constructs. In the loading mode `rfl` the proof depends on no axiom
+beyond `propext` and `Quot.sound`; in the mode `native` it depends also
+on the axioms stating the loading.
 
 The tactics the proofs about the compiler's components compose from the
 prover are written in Geb in `bootstrap/free-topos/tactics.geb`, in the
@@ -1998,8 +2004,10 @@ Lean tactics at the theorems of the test modules and at their subterms,
 and `GebTests/Prototypes/FreeTopos/Agreement/Tactics.lean` proves each
 of their definitions equal to the Lean definition it transcribes by the
 same method, at encoded arguments, rules related to the normalizer's,
-provers related to Lean's and provers from rules related to Lean's. The
-proof depends on no axiom beyond `propext` and `Quot.sound`.
+provers related to Lean's and provers from rules related to Lean's. In
+the loading mode `rfl` the proof depends on no axiom beyond `propext`
+and `Quot.sound`; in the mode `native` it depends also on the axioms
+stating the loading.
 
 The combinator prover, which proves equations of the theory of an
 elementary topos and certifies them for the checker of partial Horn
@@ -2017,8 +2025,9 @@ Lean prover at the library and at the benchmark's development, and
 `GebTests/Prototypes/FreeTopos/Agreement/Combinator.lean` proves each of
 its definitions equal to the Lean definition it transcribes by the same
 method, at encoded arguments and related states, a list related to a
-table when their lookups agree. The proof depends on no axiom beyond
-`propext` and `Quot.sound`.
+table when their lookups agree. In the loading mode `rfl` the proof
+depends on no axiom beyond `propext` and `Quot.sound`; in the mode
+`native` it depends also on the axioms stating the loading.
 
 Proof construction was begun for Gödel's T. `bootstrap/goedel-t/prove.geb`
 constructs certificates by derived rules, so that nothing in it is

@@ -19,8 +19,9 @@
 # is evaluated by compiled code, and the linter permits them. In the
 # mode rfl the kernel checks each of them and the linter permits none.
 # Lake does not track the variable, so the mode rfl deletes the outputs
-# of the modules declaring the loading and of those depending on it,
-# which the build then remakes with every fact checked.
+# of the modules declaring the loading of the metalogic's program and of
+# the checker of Goedel's T, and of those depending on them, which the
+# build then remakes with every fact checked.
 #
 # Exits non-zero on any failure.
 
@@ -80,9 +81,10 @@ else
 fi
 
 if [ "$loading" = rfl ]; then
-  step "delete the outputs of the metalogic's loading and its dependents (mode rfl)"
+  step "delete the outputs of the programs' loading and its dependents (mode rfl)"
   for m in GebMirror/Metalogic/Load GebTests/Prototypes/FreeTopos/Agreement/Load \
-           GebTests/Prototypes/FreeTopos/Agreement; do
+           GebTests/Prototypes/FreeTopos/Agreement GebTests/Prototypes/GoedelT/MirrorLoad \
+           GebTests/Prototypes/GoedelT/Agreement; do
     rm -rf .lake/build/lib/lean/"$m".* .lake/build/ir/"$m".*
   done
   rm -rf .lake/build/lib/lean/GebMirror/Metalogic/Load .lake/build/ir/GebMirror/Metalogic/Load

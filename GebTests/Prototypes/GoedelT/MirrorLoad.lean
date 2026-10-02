@@ -15,8 +15,10 @@ set_option doc.verso true in
 
 The bootstrap compiler's Lean backend emits a Geb program as Lean definitions, one for each of
 the program's definitions: the program's mirror, {lit}`GebMirror.GoedelT` for the checker of
-Gödel's T. This module states, and the kernel checks, that loading the checker's program with
-{name}`Geb.Kernel.load` gives globals whose denotations are the mirror's definitions.
+Gödel's T. This module states, and in the loading mode {lit}`rfl` the kernel checks, that
+loading the checker's program with {name}`Geb.Kernel.load` gives globals whose denotations are the
+mirror's definitions; in the mode {lit}`native` the steps of the loading are axioms
+({lit}`docs/rules/ci-and-workflow.md` § Loading modes).
 
 The command {lit}`geb_program` of {lit}`GebTests.Prototypes.GoedelT.LoadCommand` declares the
 program's definitions, globals and loading, one definition at a time. The last global is the
