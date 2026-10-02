@@ -205,10 +205,10 @@ theorem eqParts_eq (φ : Term) :
 
 /-- The mirror's type of a term in a context. -/
 @[simp] theorem typeIn_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (t : Term) :
-    GebMirror.Metalogic.typeIn (encGlobals G) (leaf n) Γ (encTerm t) =
+    GebMirror.Metalogic.mTypeIn (encGlobals G) (leaf n) Γ (encTerm t) =
       encOpt (Internal.typeIn G n Γ t) := by
   have hc := compile_eq G n t (Internal.ctxObj Γ) (Internal.stdEnv Γ)
-  simp only [GebMirror.Metalogic.typeIn, ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
+  simp only [GebMirror.Metalogic.mTypeIn, ctxObj_eq, stdEnv_eq, hc, mapO_eq, Option.map_map,
     Internal.typeIn]
   rfl
 
@@ -283,7 +283,7 @@ theorem instOk_eq (G : Internal.Globals) (n : ℕ) (Γ : List Tree) (a : Interna
   simp only [GebMirror.Metalogic.instOk, thArity_eq, thCtx_eq, length_eq, List.length_map,
     eq_leaf, allT_isTy, range_eq, Internal.instOk]
   by_cases hl : σ.length = a.ctx.length
-  · have hr := allT_map (fun t ↦ Const.equal (GebMirror.Metalogic.typeIn (encGlobals G) (leaf n) Γ
+  · have hr := allT_map (fun t ↦ Const.equal (GebMirror.Metalogic.mTypeIn (encGlobals G) (leaf n) Γ
         (GebMirror.Metalogic.at (σ.map encTerm) t))
         (GebMirror.Metalogic.some (GebMirror.Metalogic.phSubst θ (GebMirror.Metalogic.at a.ctx t))))
       leaf (fun i ↦ decide (Internal.typeIn G n Γ (σ.getD i Internal.Term.star) =

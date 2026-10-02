@@ -102,15 +102,15 @@
 
 ; the checker's result at a certificate: an optional equation, as a function of the context's
 ; sorts and the hypotheses
-(deftype Chk (Arrow Ts (Arrow Ts T)))
-(deftype PC (Prod T Chk))
+(deftype PhChk (Arrow Ts (Arrow Ts T)))
+(deftype PC (Prod T PhChk))
 (deftype PCs (List PC))
 (defn pcTrees ((rs PCs)) Ts (foldr PC Ts (lam ((r PC) (acc Ts)) (cons (fst r) acc)) (nil T) rs))
 (defn pcResults ((rs PCs) (ctx Ts) (hs Ts)) Ts
   (foldr PC Ts (lam ((r PC) (acc Ts)) (cons ((snd r) ctx hs) acc)) (nil T) rs))
 (defn pcTail ((rs PCs)) PCs (lcase PC PCs rs (nil PC) (lam ((r PC) (rest PCs)) rest)))
-(defn pcPrem ((rs PCs) (i T)) Chk
-  (lcase PC Chk (iter PCs pcTail rs i) (lam ((ctx Ts) (hs Ts)) none)
+(defn pcPrem ((rs PCs) (i T)) PhChk
+  (lcase PC PhChk (iter PCs pcTail rs i) (lam ((ctx Ts) (hs Ts)) none)
     (lam ((r PC) (rest PCs)) (snd r))))
 
 ; the index a leaf names
@@ -173,7 +173,7 @@
 
 ; the checker: the conclusion of a certificate in a theory and an environment of theorems, as a
 ; function of the context's sorts and the hypotheses
-(defn pcheck ((th T) (E Ts) (c T)) Chk
+(defn pcheck ((th T) (E Ts) (c T)) PhChk
   (snd (fold PC
     (lam ((l T) (rs PCs))
       (let cs Ts (pcTrees rs)

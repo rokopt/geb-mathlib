@@ -12,18 +12,9 @@
 ; node of label 2 over a list's elements. An optional tree is the node of label 1 over the
 ; tree, or the leaf 0. A name is a node of label 0 over its characters.
 
-; optional trees
-(def some (lam ((x T)) (node 1 (single x))))
-(def none 0)
-(def isSome (lam ((m T)) (eq (label m) 1)))
-(def get (lam ((m T)) (child m 0)))
+; whether two optional trees are both present, and whether a list has an element
 (def both (lam ((a T) (b T)) (if (isSome a) (isSome b) 0)))
-
-; lists of trees by position, through a node's constant-time children
-(def at (lam ((xs Ts) (i T)) (child (node 0 xs) i)))
 (def nonEmpty (lam ((xs Ts)) (lcase T T xs 0 (lam ((x T) (r Ts)) 1))))
-(def tail (lam ((xs Ts)) (lcase T Ts xs (nil T) (lam ((x T) (r Ts)) r))))
-(def drop (lam ((n T) (xs Ts)) (iter Ts tail xs n)))
 
 ; the list of the values of a list of optional trees, when every one is present
 (deftype Opts (Prod T Ts))
