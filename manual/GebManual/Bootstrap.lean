@@ -422,6 +422,18 @@ The following are fixed; the plan builds on them.
   the metalogic. Type parameters are instantiated at elaboration
   because the polymorphic λ-calculus has no set-theoretic model, which
   the kernel's denotation in Lean types requires.
+* Datatypes. The datatype language's completion precedes substantial
+  authoring, entire: datatype names as exact types checked at every use,
+  the representation and the decoding written explicitly where they are
+  used, generated recognizers, type parameters checked opaquely, and the
+  soundness of the typing, proved with the prover in Geb
+  ({ref "datatype-completion"}[The datatype language's completion]).
+  Type parameters are sorts through the bootstrap. After it, among the
+  first work written in Geb, category theory is internalized and type
+  parameters become parameters over internal universes defined from the
+  topos's structure, the datatypes' codes in `2^T` and the subobjects' in
+  `Ω^T`, each interpreted by membership; no universe interprets every
+  object.
 * Concrete syntax. Geb specifies its abstract syntax, rose trees, and
   not a concrete syntax. Source is written in the syntaxes of
   {citet RFC9804}[]: its canonical encoding and the transport encoding of
@@ -431,14 +443,50 @@ The following are fixed; the plan builds on them.
   token, and `?name` for the form `(hole name)`. All four read into one
   document type, which keeps comments and empty lines, and each printer is
   a section of its parser, so conversion among them preserves the
-  document ({ref "authoring-compatibility"}[Authoring across bootstrap
-  revisions]). The present sources' syntax, the kernel reader's, is
-  converted into the authoring profile.
+  document, and the four share code as far as their grammars allow
+  ({ref "rfc9804-syntaxes"}[The syntaxes of RFC 9804]). Identifiers are
+  its tokens, and a name beyond ASCII is a quoted atom in Unicode's
+  normalization form C. The strict printers write numerals and `&`
+  quoted, `"0"` and `"&"`. A hole is the form `(hole name)` in every
+  syntax, `(hole name T)` giving an expected type. The present sources'
+  syntax, the kernel reader's, is converted into the authoring profile.
+* Layout. The formatter writes a list that fits on one line on it;
+  otherwise the list's elements fill the first line while they fit, the
+  parentheses that close after them included, and each remaining element
+  begins a line of its own, indented past the list's opening parenthesis
+  by two columns after an atom at its head and by one otherwise, none
+  hung on the current line ({ref "source-documents"}[Source documents and
+  the formatter]).
 * Conversion. Until the bootstrap completes, no source is kept unchanged
   for its own sake: whatever is preferable is adopted everywhere, every
   source converted to it, and the languages admit exactly what the
   mathematics states, without implicit coercions or silent
   conversions.
+* Modules. Code is organized in modules, block forms `(module M …)`
+  independent of files and not reopened. A module's header is a
+  telescope of parameters and imports in the order of their dependence,
+  followed by an export list, which may re-export imported definitions; a
+  block without one exports nothing. An import supplies every parameter
+  of the module it imports, a parameter of the importer passing through
+  any left open; `(import M)` brings names in unqualified, a clash being
+  rejected, and `(import M as N)` qualified alone. Every definition in a
+  module takes all of its parameters, a module's body being one structure
+  over the context they form; declarations keep parameters of their own,
+  supplied where they are used. A parameter may take a named telescope,
+  an abbreviation of its entries, declared as `(interface I entries…)` and
+  taken as `(parameter (m I))`, its entries then named `m.x`. The rest of
+  an enclosing body refers to the exports of a nested module without
+  parameters of its own by qualified name, and uses a nested module with
+  parameters through an import in a later module's header
+  ({ref "modules"}[Modules]).
+* Documentation. The markup of comments and documentation is Verso's,
+  with the role `{name}` for Lean constants and a role `{geb}` for Geb
+  definitions, and documentation renders as literate pages generated from
+  Geb source, not as docstrings in the emitted Lean
+  ({ref "documentation"}[Documentation]).
+* Editor. The editor is a `geb` language with Mike's Paredit as the
+  structural editor; parinfer is optional, through the `geb` extension
+  ({ref "editing"}[Editing]).
 * Metalogic. The metalogic is the free topos with the inductive types
   the bootstrap uses, natural numbers and rose trees, and its
   equivalence with the free topos with a natural numbers object is
@@ -453,6 +501,25 @@ The following are fixed; the plan builds on them.
   types, preceded it, and its checker is retired
   ({ref "functional-relations"}[Functional relations and the checker of
   Gödel's T]).
+* Stronger checkers. The bootstrap requires two: first the checker with
+  a step of conversion to a normal form under named rules, the evaluation
+  of primitives at literals a family of its rules, and second the checker
+  of holes, admitted beside the first. The checker of shared certificates
+  becomes a requirement only if measurement of checking or storing cached
+  certificates calls for it, and is otherwise an early item after the
+  bootstrap ({ref "the-next-phase"}[The next phase]). The checker of holes
+  in programs is written now, in Lean, in the suspending form with
+  explicit work items and a budget, to be transcribed into Geb and proved
+  to agree ({ref "typed-holes"}[Typed holes]).
+* Libraries. The prover's public contract is any checked certificate of
+  the statement, behind an abstraction clients may check or cite but not
+  inspect; exact agreement with the Lean prover is a milestone of the
+  bootstrap, not a promise to clients
+  ({ref "compatibility-contract"}[The compatibility contract]).
+* Canonical. Canonical is a dependency of the package for experiments,
+  removed once everything done or planned with it is written, or
+  writable, in Geb ({ref "search-synthesis"}[Search and synthesis];
+  `TODO.md` § Triggers).
 * Artifacts. The compiler's image and, once the compiler emits Lean,
   the emitted Lean are committed as build artifacts. Continuous
   integration regenerates them and compares their bytes with the
